@@ -8,10 +8,13 @@ export default defineConfig({
     environment: "jsdom",
     globals: true,
     passWithNoTests: true,
+    // `npm run test` solo ejecuta tests unitarios.
+    // `npm run test:integration` ejecuta tests/integration/ por separado.
+    include: ["tests/unit/**/*.{test,spec}.{ts,tsx}"],
     setupFiles: ["./tests/setup.ts"],
     coverage: {
       reporter: ["text", "json", "html"],
-      exclude: ["node_modules/", ".next/", "tests/e2e/"],
+      exclude: ["node_modules/", ".next/", "tests/e2e/", "tests/integration/"],
     },
   },
   resolve: {
