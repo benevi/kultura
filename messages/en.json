@@ -15,12 +15,15 @@
     "email": "Email address",
     "password": "Password",
     "confirmPassword": "Confirm password",
-    "forgotPassword": "Forgot password",
+    "forgotPassword": "Forgot your password?",
     "resetPassword": "Reset password",
     "sendResetLink": "Send reset link",
     "alreadyHaveAccount": "Already have an account?",
     "dontHaveAccount": "Don't have an account?",
-    "createAccount": "Create account"
+    "createAccount": "Create account",
+    "or": "or",
+    "checkEmail": "Check your email",
+    "resetLinkSent": "We've sent you a link to reset your password. Check your inbox."
   },
   "media": {
     "movie": "Movie",
@@ -51,7 +54,11 @@
     "unauthorized": "Unauthorized",
     "invalidEmail": "Invalid email address",
     "passwordMismatch": "Passwords do not match",
-    "passwordTooShort": "Password must be at least 8 characters"
+    "passwordTooShort": "Password must be at least 8 characters",
+    "invalidCredentials": "Invalid email or password",
+    "emailNotConfirmed": "Please confirm your email before signing in",
+    "userAlreadyExists": "An account with this email already exists",
+    "tooManyRequests": "Too many attempts. Please wait a moment and try again"
   },
   "common": {
     "loading": "Loading...",
@@ -64,5 +71,31 @@
     "seeAll": "See all",
     "addToLibrary": "Add to library",
     "share": "Share"
+  },
+  "landing": {
+    "hero": {
+      "tagline": "Discover, track and share your culture",
+      "cta": "Get started for free"
+    },
+    "what": {
+      "title": "Your entire cultural universe, in one place",
+      "description": "Keep track of movies you've watched, books you've read, games you've completed. Share with friends and discover what they're enjoying."
+    },
+    "features": {
+      "title": "Everything you need",
+      "library": "Personal library",
+      "libraryDesc": "Log what you've watched, read or played with ratings and progress",
+      "friends": "Connect with friends",
+      "friendsDesc": "See what the people you care about are enjoying",
+      "lists": "Collaborative lists",
+      "listsDesc": "Create lists with friends and discover things together",
+      "ai": "AI recommendations",
+      "aiDesc": "Discover your next favourite with the help of artificial intelligence"
+    },
+    "cta": {
+      "title": "Join KULTURA",
+      "subtitle": "Start for free. No credit card required.",
+      "button": "Create free account"
+    }
   }
 }

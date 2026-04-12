@@ -15,12 +15,15 @@
     "email": "Correo electrónico",
     "password": "Contraseña",
     "confirmPassword": "Confirmar contraseña",
-    "forgotPassword": "Olvidé mi contraseña",
+    "forgotPassword": "¿Olvidaste tu contraseña?",
     "resetPassword": "Restablecer contraseña",
     "sendResetLink": "Enviar enlace",
     "alreadyHaveAccount": "¿Ya tienes cuenta?",
     "dontHaveAccount": "¿No tienes cuenta?",
-    "createAccount": "Crear cuenta"
+    "createAccount": "Crear cuenta",
+    "or": "o",
+    "checkEmail": "Revisa tu correo",
+    "resetLinkSent": "Te hemos enviado un enlace para restablecer tu contraseña. Revisa tu bandeja de entrada."
   },
   "media": {
     "movie": "Película",
@@ -51,7 +54,11 @@
     "unauthorized": "No autorizado",
     "invalidEmail": "Correo electrónico inválido",
     "passwordMismatch": "Las contraseñas no coinciden",
-    "passwordTooShort": "La contraseña debe tener al menos 8 caracteres"
+    "passwordTooShort": "La contraseña debe tener al menos 8 caracteres",
+    "invalidCredentials": "Correo o contraseña incorrectos",
+    "emailNotConfirmed": "Confirma tu correo antes de iniciar sesión",
+    "userAlreadyExists": "Ya existe una cuenta con este correo",
+    "tooManyRequests": "Demasiados intentos. Espera un momento e inténtalo de nuevo"
   },
   "common": {
     "loading": "Cargando...",
@@ -64,5 +71,31 @@
     "seeAll": "Ver todo",
     "addToLibrary": "Añadir a biblioteca",
     "share": "Compartir"
+  },
+  "landing": {
+    "hero": {
+      "tagline": "Descubre, registra y comparte tu cultura",
+      "cta": "Empieza gratis"
+    },
+    "what": {
+      "title": "Todo tu universo cultural, en un solo lugar",
+      "description": "Lleva el registro de las películas que has visto, los libros que has leído, los juegos que has completado. Comparte con amigos y descubre qué están disfrutando."
+    },
+    "features": {
+      "title": "Todo lo que necesitas",
+      "library": "Biblioteca personal",
+      "libraryDesc": "Registra lo que has visto, lees o juegas con puntuaciones y progreso",
+      "friends": "Conecta con amigos",
+      "friendsDesc": "Ve qué están disfrutando las personas que te importan",
+      "lists": "Listas colaborativas",
+      "listsDesc": "Crea listas con amigos y descubrid cosas juntos",
+      "ai": "Recomendaciones IA",
+      "aiDesc": "Descubre tu próximo favorito con ayuda de inteligencia artificial"
+    },
+    "cta": {
+      "title": "Únete a KULTURA",
+      "subtitle": "Empieza gratis. Sin tarjeta de crédito.",
+      "button": "Crear cuenta gratis"
+    }
   }
 }
