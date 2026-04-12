@@ -1,0 +1,68 @@
+{
+  "nav": {
+    "home": "Inicio",
+    "discover": "Descubrir",
+    "search": "Buscar",
+    "library": "Mi biblioteca",
+    "friends": "Amigos",
+    "notifications": "Notificaciones",
+    "settings": "Ajustes"
+  },
+  "auth": {
+    "signIn": "Iniciar sesión",
+    "signUp": "Registrarse",
+    "signOut": "Cerrar sesión",
+    "email": "Correo electrónico",
+    "password": "Contraseña",
+    "confirmPassword": "Confirmar contraseña",
+    "forgotPassword": "Olvidé mi contraseña",
+    "resetPassword": "Restablecer contraseña",
+    "sendResetLink": "Enviar enlace",
+    "alreadyHaveAccount": "¿Ya tienes cuenta?",
+    "dontHaveAccount": "¿No tienes cuenta?",
+    "createAccount": "Crear cuenta"
+  },
+  "media": {
+    "movie": "Película",
+    "movies": "Películas",
+    "tv": "Serie",
+    "tvs": "Series",
+    "anime": "Anime",
+    "animes": "Animes",
+    "book": "Libro",
+    "books": "Libros",
+    "comic": "Cómic",
+    "comics": "Cómics",
+    "manga": "Manga",
+    "mangas": "Mangas",
+    "game": "Videojuego",
+    "games": "Videojuegos"
+  },
+  "status": {
+    "completed": "Completado",
+    "in_progress": "En progreso",
+    "pending": "Pendiente",
+    "abandoned": "Abandonado"
+  },
+  "errors": {
+    "somethingWentWrong": "Algo salió mal",
+    "tryAgain": "Inténtalo de nuevo",
+    "notFound": "No encontrado",
+    "unauthorized": "No autorizado",
+    "invalidEmail": "Correo electrónico inválido",
+    "passwordMismatch": "Las contraseñas no coinciden",
+    "passwordTooShort": "La contraseña debe tener al menos 8 caracteres"
+  },
+  "common": {
+    "loading": "Cargando...",
+    "save": "Guardar",
+    "cancel": "Cancelar",
+    "delete": "Eliminar",
+    "edit": "Editar",
+    "confirm": "Confirmar",
+    "back": "Volver",
+    "seeAll": "Ver todo",
+    "addToLibrary": "Añadir a biblioteca",
+    "share": "Compartir"
+  }
+}
