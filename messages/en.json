@@ -1,0 +1,68 @@
+{
+  "nav": {
+    "home": "Home",
+    "discover": "Discover",
+    "search": "Search",
+    "library": "My Library",
+    "friends": "Friends",
+    "notifications": "Notifications",
+    "settings": "Settings"
+  },
+  "auth": {
+    "signIn": "Sign in",
+    "signUp": "Sign up",
+    "signOut": "Sign out",
+    "email": "Email address",
+    "password": "Password",
+    "confirmPassword": "Confirm password",
+    "forgotPassword": "Forgot password",
+    "resetPassword": "Reset password",
+    "sendResetLink": "Send reset link",
+    "alreadyHaveAccount": "Already have an account?",
+    "dontHaveAccount": "Don't have an account?",
+    "createAccount": "Create account"
+  },
+  "media": {
+    "movie": "Movie",
+    "movies": "Movies",
+    "tv": "TV Show",
+    "tvs": "TV Shows",
+    "anime": "Anime",
+    "animes": "Anime",
+    "book": "Book",
+    "books": "Books",
+    "comic": "Comic",
+    "comics": "Comics",
+    "manga": "Manga",
+    "mangas": "Manga",
+    "game": "Game",
+    "games": "Games"
+  },
+  "status": {
+    "completed": "Completed",
+    "in_progress": "In progress",
+    "pending": "Pending",
+    "abandoned": "Abandoned"
+  },
+  "errors": {
+    "somethingWentWrong": "Something went wrong",
+    "tryAgain": "Please try again",
+    "notFound": "Not found",
+    "unauthorized": "Unauthorized",
+    "invalidEmail": "Invalid email address",
+    "passwordMismatch": "Passwords do not match",
+    "passwordTooShort": "Password must be at least 8 characters"
+  },
+  "common": {
+    "loading": "Loading...",
+    "save": "Save",
+    "cancel": "Cancel",
+    "delete": "Delete",
+    "edit": "Edit",
+    "confirm": "Confirm",
+    "back": "Back",
+    "seeAll": "See all",
+    "addToLibrary": "Add to library",
+    "share": "Share"
+  }
+}
