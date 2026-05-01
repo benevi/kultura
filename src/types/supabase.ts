@@ -14,6 +14,7 @@ export interface DbUser {
   avatar_color: string;
   avatar_initials: string;
   created_at: string; // timestamptz
+  preferred_locale: string | null; // añadido en 010_settings_columns.sql
 }
 
 /** Tabla: media */
@@ -25,6 +26,7 @@ export interface DbMedia {
   poster: string | null;
   backdrop: string | null;
   year: number | null;
+  synopsis: string | null; // añadida en 002_add_synopsis.sql
   metadata: Record<string, unknown> | null; // jsonb
   updated_at: string; // timestamptz
 }
@@ -39,6 +41,7 @@ export interface DbUserMedia {
   watched_at: string | null; // date
   episode_progress: { season?: number; episode: number } | null; // jsonb
   created_at: string; // timestamptz
+  updated_at: string; // timestamptz — set by trigger on UPDATE (migración 006)
 }
 
 /** Tabla: friendships */
@@ -113,9 +116,13 @@ export interface DbReport {
 export interface Database {
   public: {
     Tables: {
-      users: { Row: DbUser; Insert: Omit<DbUser, "created_at">; Update: Partial<Omit<DbUser, "id">> };
-      media: { Row: DbMedia; Insert: Omit<DbMedia, "updated_at">; Update: Partial<Omit<DbMedia, "id">> };
-      user_media: { Row: DbUserMedia; Insert: Omit<DbUserMedia, "id" | "created_at">; Update: Partial<Omit<DbUserMedia, "id" | "user_id" | "media_id">> };
+      users: { Row: DbUser; Insert: Omit<DbUser, "created_at" | "preferred_locale"> & { preferred_locale?: string | null }; Update: Partial<Omit<DbUser, "id">> };
+      media: {
+        Row: DbMedia;
+        Insert: Omit<DbMedia, "updated_at" | "synopsis"> & { synopsis?: string | null };
+        Update: Partial<Omit<DbMedia, "id">>;
+      };
+      user_media: { Row: DbUserMedia; Insert: Omit<DbUserMedia, "id" | "created_at" | "updated_at">; Update: Partial<Omit<DbUserMedia, "id" | "user_id" | "media_id" | "updated_at">> };
       friendships: { Row: DbFriendship; Insert: Omit<DbFriendship, "id" | "created_at">; Update: Pick<DbFriendship, "status"> };
       recommendations: { Row: DbRecommendation; Insert: Omit<DbRecommendation, "id" | "created_at">; Update: Pick<DbRecommendation, "read_at"> };
       lists: { Row: DbList; Insert: Omit<DbList, "id" | "created_at">; Update: Partial<Omit<DbList, "id" | "owner_id">> };
