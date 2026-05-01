@@ -6,7 +6,7 @@ import { useTranslations } from "next-intl";
 import { useRouter } from "@/i18n/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { getAuthErrorKey } from "@/lib/utils/auth-errors";
-import { Button } from "@/components/ui/Button";
+import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils/index";
 
 // ---------------------------------------------------------------------------
@@ -61,14 +61,15 @@ export function LoginPage({ locale }: LoginPageProps) {
     success: false,
   });
 
-  // Redirect if already authenticated
+  // Redirect if already authenticated (only in login mode — register/reset allow new accounts)
   useEffect(() => {
+    if (mode !== "login") return;
     const supabase = createClient();
     supabase.auth.getSession().then(({ data }) => {
       if (data.session) router.push("/home");
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [mode]);
 
   // Reset state when mode changes
   useEffect(() => {
@@ -145,6 +146,7 @@ export function LoginPage({ locale }: LoginPageProps) {
 
   async function handleRegister() {
     const supabase = createClient();
+    await supabase.auth.signOut();
     const { error, data } = await supabase.auth.signUp({
       email: form.email,
       password: form.password,
@@ -170,7 +172,8 @@ export function LoginPage({ locale }: LoginPageProps) {
 
   async function handleReset() {
     const supabase = createClient();
-    const callbackUrl = `${window.location.origin}/api/auth/callback?next=/${locale}/login?mode=reset`;
+    const origin = process.env.NEXT_PUBLIC_SITE_URL ?? window.location.origin;
+    const callbackUrl = `${origin}/api/auth/callback?next=/${locale}/login?mode=reset`;
 
     const { error } = await supabase.auth.resetPasswordForEmail(form.email, {
       redirectTo: callbackUrl,
@@ -244,7 +247,7 @@ export function LoginPage({ locale }: LoginPageProps) {
 
   return (
     <main className="flex min-h-screen flex-col items-center justify-center bg-bg px-4">
-      <div className="w-full max-w-md rounded-xl border border-border bg-surface p-8">
+      <div className="w-full max-w-sm rounded-xl border border-border bg-surface p-6 md:p-8">
         {/* Logo */}
         <div className="mb-8 text-center">
           <h1 className="font-display text-5xl tracking-widest text-accent">
@@ -253,7 +256,7 @@ export function LoginPage({ locale }: LoginPageProps) {
           <p className="mt-2 text-sm text-muted">
             {mode === "reset"
               ? tAuth("resetPassword")
-              : "Descubre tu cultura"}
+              : tAuth("tagline")}
           </p>
         </div>
 
@@ -402,7 +405,7 @@ export function LoginPage({ locale }: LoginPageProps) {
               <button
                 type="button"
                 onClick={() => switchMode("reset")}
-                className="text-sm text-muted underline-offset-4 hover:text-text hover:underline"
+                className="text-sm text-accent hover:underline underline-offset-4"
               >
                 {tAuth("forgotPassword")}
               </button>
