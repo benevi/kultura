@@ -25,13 +25,28 @@ const jetbrainsMono = JetBrains_Mono({
   display: "swap",
 });
 
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://kultura.app'
+
 export const metadata: Metadata = {
   title: {
-    template: "%s | KULTURA",
+    template: "%s · KULTURA",
     default: "KULTURA — Descubre tu cultura",
   },
   description:
     "Descubre, registra y comparte películas, series, anime, libros, cómics, manga y videojuegos.",
+  metadataBase: new URL(SITE_URL),
+  openGraph: {
+    siteName: 'KULTURA',
+    type: 'website',
+    locale: 'es_ES',
+    title: 'KULTURA — Descubre tu cultura',
+    description: 'Descubre, registra y comparte películas, series, anime, libros, cómics, manga y videojuegos.',
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'KULTURA — Descubre tu cultura',
+    description: 'Descubre, registra y comparte películas, series, anime, libros, cómics, manga y videojuegos.',
+  },
 };
 
 export default async function LocaleLayout({

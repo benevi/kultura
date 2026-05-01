@@ -3,13 +3,44 @@
 @tailwind utilities;
 
 :root {
+  /* Tokens propios KULTURA */
   --bg: #080b10;
   --surface: #0e1218;
   --surface2: #151b24;
-  --border: #1e2730;
-  --accent: #e82020;
-  --text: #d4dce8;
-  --muted: #5a6878;
+  --border-color: #1e2730;
+  --accent-color: #e82020;
+  --text-color: #d4dce8;
+  --muted-color: #5a6878;
+
+  /* Tokens adicionales */
+  --surface3: #1c2430;
+  --muted-light: #8a9ab0;
+  --success: #22c55e;
+  --warning: #f59e0b;
+  --info: #3b82f6;
+  --danger: #ef4444;
+
+  /* shadcn/ui CSS variables — mapeadas a tokens KULTURA */
+  --background: 220 15% 5%;
+  --foreground: 213 28% 83%;
+  --card: 220 15% 8%;
+  --card-foreground: 213 28% 83%;
+  --popover: 220 15% 8%;
+  --popover-foreground: 213 28% 83%;
+  --primary: 0 79% 51%;
+  --primary-foreground: 0 0% 100%;
+  --secondary: 215 23% 12%;
+  --secondary-foreground: 213 28% 83%;
+  --muted: 215 23% 12%;
+  --muted-foreground: 208 19% 40%;
+  --accent: 215 23% 12%;
+  --accent-foreground: 213 28% 83%;
+  --destructive: 0 72% 51%;
+  --destructive-foreground: 0 0% 100%;
+  --border: 211 22% 15%;
+  --input: 211 22% 15%;
+  --ring: 0 79% 51%;
+  --radius: 0.5rem;
 }
 
 @layer base {
