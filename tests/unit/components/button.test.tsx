@@ -1,6 +1,6 @@
-import { render, screen, fireEvent } from "@testing-library/react";
+﻿import { render, screen, fireEvent } from "@testing-library/react";
 import { describe, it, expect, vi } from "vitest";
-import { Button } from "@/components/ui/Button";
+import { Button } from "@/components/ui/button";
 
 describe("Button", () => {
   it("renderiza con variante primary por defecto", () => {

@@ -10,6 +10,14 @@ vi.mock("next/image", () => ({
   },
 }));
 
+// next-intl en el entorno de test no puede resolver next/navigation —
+// mockeamos @/i18n/navigation con un <a> simple.
+vi.mock("@/i18n/navigation", () => ({
+  Link: ({ href, children, ...props }: React.AnchorHTMLAttributes<HTMLAnchorElement> & { href: string }) => (
+    <a href={href} {...props}>{children}</a>
+  ),
+}));
+
 import { MediaCard } from "@/components/media/MediaCard";
 
 const baseItem: MediaItem = {
