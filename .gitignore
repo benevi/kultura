@@ -34,3 +34,12 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+.vercel
+
+
+# Claude Code config (puede contener settings.local.json con datos personales)
+.claude/
+
+# AUDIT y notas internas (opcional, descomenta si no las quieres versionar)
+# AUDIT.md
