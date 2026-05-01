@@ -6,6 +6,7 @@ export interface MediaGridProps {
   items: MediaItem[];
   loading?: boolean;
   emptyMessage?: string;
+  showType?: boolean;
   className?: string;
 }
 
@@ -25,10 +26,11 @@ export function MediaGrid({
   items,
   loading = false,
   emptyMessage,
+  showType = false,
   className,
 }: MediaGridProps) {
   const gridClasses = cn(
-    "grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4",
+    "grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-3",
     className
   );
 
@@ -55,7 +57,7 @@ export function MediaGrid({
   return (
     <div className={gridClasses}>
       {items.map((item) => (
-        <MediaCard key={item.id} item={item} />
+        <MediaCard key={item.id} item={item} showType={showType} />
       ))}
     </div>
   );
