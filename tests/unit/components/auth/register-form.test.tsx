@@ -6,6 +6,7 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 // ---------------------------------------------------------------------------
 
 const mockSignUp = vi.fn();
+const mockSignOut = vi.fn().mockResolvedValue({});
 const mockGetSession = vi.fn().mockResolvedValue({ data: { session: null } });
 const mockRouterPush = vi.fn();
 
@@ -13,6 +14,7 @@ vi.mock("@/lib/supabase/client", () => ({
   createClient: () => ({
     auth: {
       signUp: mockSignUp,
+      signOut: mockSignOut,
       getSession: mockGetSession,
     },
   }),
