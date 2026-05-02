@@ -75,7 +75,7 @@ function isValidType(t: unknown): t is MediaType {
 export async function getLibraryContext(userId: string, supabaseClient?: SupabaseClient): Promise<LibraryItem[]> {
   const supabase = supabaseClient ?? createClient()
 
-  const { data, error } = await supabase
+  const { data } = await supabase
     .from('user_media')
     .select('status, score, updated_at, media(title, type, year)')
     .eq('user_id', userId)
