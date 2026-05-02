@@ -1,10 +1,12 @@
 // ============================================================
 // KULTURA — Tipos de base de datos Supabase
-// Refleja exactamente las columnas de 001_initial_schema.sql
+// Tipos derivados del schema actual de Supabase.
 // Usa snake_case igual que PostgreSQL.
 //
-// NOTA: Estos tipos se escriben a mano siguiendo el esquema SQL.
-// En Fase 6 se sincronizarán con `supabase gen types typescript`.
+// NOTA: Estos tipos se mantienen a mano. Fuente de verdad SQL:
+// `supabase/migrations/` (pendiente de recuperar — ver B2/B2-DOC en
+// `docs/BACKLOG.md`). Migración futura a `supabase gen types typescript`
+// queda en backlog (E17).
 // ============================================================
 
 /** Tabla: users */
@@ -14,7 +16,7 @@ export interface DbUser {
   avatar_color: string;
   avatar_initials: string;
   created_at: string; // timestamptz
-  preferred_locale: string | null; // añadido en 010_settings_columns.sql
+  preferred_locale: string | null;
 }
 
 /** Tabla: media */
@@ -26,7 +28,7 @@ export interface DbMedia {
   poster: string | null;
   backdrop: string | null;
   year: number | null;
-  synopsis: string | null; // añadida en 002_add_synopsis.sql
+  synopsis: string | null;
   metadata: Record<string, unknown> | null; // jsonb
   updated_at: string; // timestamptz
 }
@@ -41,7 +43,7 @@ export interface DbUserMedia {
   watched_at: string | null; // date
   episode_progress: { season?: number; episode: number } | null; // jsonb
   created_at: string; // timestamptz
-  updated_at: string; // timestamptz — set by trigger on UPDATE (migración 006)
+  updated_at: string; // timestamptz — set by trigger set_updated_at on UPDATE
 }
 
 /** Tabla: friendships */

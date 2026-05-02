@@ -30,7 +30,7 @@ type FeedRow = DbUserMedia & {
  *   1. Obtener los IDs de amigos aceptados.
  *   2. Obtener user_media de esos amigos ordenado por updated_at DESC.
  *
- * updated_at se actualiza automáticamente vía trigger (migración 006)
+ * updated_at se actualiza automáticamente vía trigger `set_updated_at`
  * cada vez que el usuario cambia status, score o progreso — refleja
  * actividad real, no solo cuándo se añadió el item.
  */
