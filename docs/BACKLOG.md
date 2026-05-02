@@ -46,11 +46,11 @@ Sin esto, cada cambio posterior es ruleta rusa.
   6 errores en `tests/` impiden `tsc --noEmit`: 3 tests de componentes Library inexistentes, 1 test de `@/lib/env` (módulo aún no creado, es B3), 2 mocks desactualizados en `queries.test.ts`.
   Hecho cuando: `tsc --noEmit` exit 0, `vitest run` exit 0, hay commit `[B1-A] Limpiar tests rotos`.
 
-- [ ] **B1-B. CI básico en GitHub Actions**
+- [x] **B1-B. CI básico en GitHub Actions** ✅ (cerrada el 2026-05-02)
   El B1 original. Workflow con typecheck + tests unit + build.
   Depende de: B1-A.
    
-- [ ] **B1-C. Arreglar 4 tests fallando en register-form.test.tsx**
+- [x] **B1-C. Arreglar 4 tests fallando en register-form.test.tsx** ✅ (cerrada el 2026-05-02, absorbida por B1-B)
   mockRouterPush nunca se llama. Investigar: ¿mock router 
   mal? ¿signUp mock falta? ¿flujo del componente cambió?
   Hecho cuando: vitest run pasa los 4 tests de register-form.

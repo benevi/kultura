@@ -1,16 +1,16 @@
-## Tarea activa: B1-B — CI básico en GitHub Actions
+## Tarea activa: B2 — Migraciones SQL versionadas
 
 Iniciada: pendiente
-Bloqueante de: que el repo tenga checks automáticos en cada push
+Bloqueante de: que un dev nuevo pueda levantar el schema desde cero
 
 ### Qué cambia
-Workflow GitHub Actions con typecheck (tsc --noEmit) + tests unit (vitest run) + build (next build) en cada push y PR contra master.
+`supabase db pull` contra el proyecto actual. Commitear `supabase/migrations/*.sql` incluyendo RLS policies. README en `supabase/` explicando cómo aplicar en entorno nuevo.
 
 ### Cómo sé que funciona
-Hacer un push trivial y comprobar que el workflow corre verde en https://github.com/benevi/kultura/actions
+Un dev nuevo puede levantar un Supabase local desde cero con `supabase db reset` y el schema queda idéntico al de producción.
 
 ### Archivos que toco
-.github/workflows/ci.yml (nuevo).
+`supabase/migrations/*.sql` (nuevos o actualizados), `supabase/README.md` (nuevo).
 
 ### Cuándo paro
-Cuando un push a master dispara el workflow y termina verde.
+Cuando `supabase/migrations/` contiene el schema completo con RLS policies commitado en git.
