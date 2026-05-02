@@ -46,3 +46,7 @@ next-env.d.ts
 
 # Supabase CLI cache (machine-local, regenerated automatically)
 supabase/.temp/
+# CLI cache (per-branch)
+supabase/.branches/
+
+db_snapshot.txt
