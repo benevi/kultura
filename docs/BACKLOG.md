@@ -73,6 +73,10 @@ Sin esto, cada cambio posterior es ruleta rusa.
   `src/lib/env.ts` con Zod que valide todas las env vars requeridas. Importar en `app/layout.tsx`.
   Hecho cuando: arrancar sin `ANTHROPIC_API_KEY` falla con mensaje claro en startup, no en primera request.
 
+- [ ] **B4. Auditar y eliminar `kultura-backup-2026-05-01.zip`**
+  Zip de ~280 MB en `e:\app movies\` (raíz, fuera del repo). Detectado en `ESTADO_PROYECTO.md` §15.5 / §18.1. Riesgo: puede contener `.env.local` con credenciales antiguas (pre-A1/A3) o snapshots del proyecto. Acciones: (a) inspeccionar contenido sin extraer (listar entradas); (b) confirmar si se ha compartido alguna vez por email/cloud; (c) si contiene secretos y nunca salió de la máquina, borrar; si salió, registrar el hecho aunque las claves ya estén rotadas.
+  Hecho cuando: el zip está borrado o movido a almacenamiento offline encriptado, y hay nota en DONE.md indicando si hubo o no exposición externa.
+
 ---
 
 ## BLOQUE C — Que producción no sea una caja negra (3–4 días)
@@ -90,6 +94,11 @@ Sin esto, cuando algo falle en prod no te vas a enterar.
 - [ ] **C3. Rate limiting → Vercel KV**
   Reemplazar el `Map` en memoria por `@vercel/kv`. Sliding window igual que ahora, pero distribuido.
   Hecho cuando: dos requests paralelos desde dos instancias diferentes de Vercel respetan el mismo contador.
+
+- [ ] **C4. Rate-limit en endpoints sin proteger**
+  Detectados en `ESTADO_PROYECTO.md` §15.5: `POST /api/chat/[id]` (vector spam de mensajes), `POST /api/groups` (un usuario podría crear miles de grupos), `POST /api/suggestions` (vector spam), `GET /api/users/search` (enumeración de usuarios). Aplicar `applyRateLimit` con cuotas razonables (orientativo: chat 30/min/user, groups 5/min/user, suggestions 5/min/user, users/search 30/min/user).
+  Depende de C3 (idealmente sobre rate-limit ya distribuido; si C3 se retrasa, aplicar in-memory provisional).
+  Hecho cuando: cada uno de los 4 endpoints devuelve 429 al superar su cuota y hay tests unitarios o de integración que lo verifican.
 
 ---
 
@@ -145,6 +154,43 @@ No bloqueantes. Atacar solo después de A–D.
 - [ ] **E14. Reportar bug a Supabase CLI: `db dump --dry-run` imprime credenciales en stdout**
   Durante B2 se detectó que `supabase db dump --dry-run` (o variante similar) imprime la cadena de conexión incluyendo la service role key en stdout. Esto es un bug de seguridad en la CLI de Supabase. Redactar y enviar un issue al repo `supabase/cli` con reproducción mínima y output censurado.
   Hecho cuando: issue abierto en github.com/supabase/cli con enlace documentado aquí.
+
+- [ ] **E15. Eliminar código muerto**
+  - `src/lib/api/openlibrary.ts` — no usado por `searchAll` (Open Library figura como fallback documentado pero el adapter actual no se invoca desde el flujo de búsqueda; verificar antes de borrar).
+  - `src/components/lists/` — carpeta vacía; los componentes reales viven en `src/components/social/`.
+  - `tests/_pending/` — si tras B3 sigue sin desbloquearse, mover a `_archive` o borrar.
+  Hecho cuando: las 3 rutas no existen o se documenta por qué se conservan.
+
+- [ ] **E16. Deduplicar tipo `EpisodeProgress`**
+  Definido dos veces con la misma forma: `src/types/library.ts:17-20` y `src/types/user.ts:35-38`. Dejar una única definición y reexportar desde el otro módulo si hace falta para no romper imports.
+  Hecho cuando: `grep -rn "EpisodeProgress" src/types/` muestra una sola declaración y `npm run type-check` pasa.
+
+- [ ] **E17. Tipar las 7 tablas faltantes en `src/types/supabase.ts`**
+  Tras B2 (migraciones recuperadas), añadir interfaces `DbSuggestion`, `DbConversation`, `DbConversationMember`, `DbMessage`, `DbGroup`, `DbGroupMember`, `DbGroupPost` derivadas del SQL canónico. Sustituir los `as unknown as Array<{...}>` ad-hoc por estos tipos.
+  Depende de: B2 / B2-DOC.
+  Hecho cuando: `src/types/supabase.ts` exporta las 7 interfaces y el código consumidor (`/api/chat`, `/api/groups`, `/api/suggestions`, `social/feed.ts`, etc.) ya no usa `as unknown as`.
+
+- [ ] **E18. Reemplazar `console.error` por logger estructurado**
+  17 instancias listadas en `ESTADO_PROYECTO.md` §15.8. Cross-link con C2 (logger estructurado): esta tarea es la migración mecánica de los call-sites una vez C2 introduce `src/lib/logger.ts`.
+  Depende de: C2.
+  Hecho cuando: `grep -rn "console\." src/ --include="*.ts" --include="*.tsx"` devuelve 0 o solo casos justificados, y `npm run lint` pasa.
+
+- [ ] **E19. Eliminar casts `as unknown as Array<{...}>` repetidos**
+  Una vez E17 introduce los tipos completos, los casts de `groups/route.ts`, `chat/route.ts`, etc. dejan de hacer falta. Limpiar y dejar tipado idiomático Supabase.
+  Depende de: E17.
+  Hecho cuando: `grep -rn "as unknown as" src/` devuelve 0 (o solo casos justificados con comentario).
+
+- [ ] **E20. Migrar inputs de `LoginPage.tsx` a componente `<Input>`**
+  Coherencia con el resto del proyecto: `src/app/[locale]/login/LoginPage.tsx:303-372` usa `<input>` raw en lugar del componente `<Input>` de `src/components/ui/`.
+  Hecho cuando: el archivo no contiene `<input` y la pantalla de login sigue funcionando (manual + e2e auth.spec).
+
+- [ ] **E21. Endpoint `DELETE /api/groups/[id]` y endpoint para `group_posts`**
+  Actualmente: no hay endpoint para eliminar grupos (solo crear/listar/join/leave) y los posts de grupo se insertan cliente-direct vía RLS. Crear `DELETE /api/groups/[id]` (solo `owner`) y `POST /api/groups/[id]/posts` (solo miembros). Aplicar rate-limit de C4 cuando se haga.
+  Hecho cuando: ambos endpoints existen, validan rol/membership server-side, y hay tests de integración mínimos.
+
+- [ ] **E22. Página `/groups` con listado público de grupos**
+  Hoy solo existe `/groups/[id]`. Sin listado, los grupos son invisibles para no-miembros (ver `ESTADO_PROYECTO.md` §18.3). Crear `src/app/[locale]/(app)/groups/page.tsx` con listado básico (paginado, filtro por nombre).
+  Hecho cuando: la ruta `/[locale]/groups` renderiza grupos visibles y enlaza a `/groups/[id]`.
 
 ---
 

@@ -37,7 +37,7 @@ Web app de descubrimiento cultural (películas, series, anime, libros, cómics, 
 
 ## Stack
 
-Next.js 14 App Router · React 18 · TypeScript strict · Tailwind CSS 3 · Supabase (PG + Auth + RLS + Realtime) · Anthropic SDK (Claude `claude-sonnet-4-20250514`) · next-intl 4 · Vitest 4 · Playwright 1 · Vercel · Node ≥ 20
+Next.js 14 App Router · React 18 · TypeScript strict · Tailwind CSS 3 · Supabase (PG + Auth + RLS + Realtime) · Anthropic SDK (Claude `claude-sonnet-4-6`) · next-intl 4 · Vitest 4 · Playwright 1 · Vercel · Node ≥ 20
 
 ## APIs externas
 | Tipo | API | Base URL | Auth |
@@ -46,9 +46,9 @@ Next.js 14 App Router · React 18 · TypeScript strict · Tailwind CSS 3 · Supa
 | Anime+Manga | Jikan v4 | api.jikan.moe/v4 | — |
 | Books | Google Books | googleapis.com/books/v1 | `?key=GOOGLE_BOOKS_KEY` |
 | Books fallback | Open Library | openlibrary.org | — |
-| Comics | ComicVine | comicvine.gamespot.com/api | `?api_key=COMICVINE_KEY` |
+| Comics | ComicVine | comicvine.gamespot.com/api | `?api_key=COMICVINE_KEY` (clave presente, sin handler — E6) |
 | Manga | MangaDex | api.mangadex.org | — |
-| Games | RAWG | api.rawg.io/api | `?key=RAWG_KEY` |
+| Games | RAWG | api.rawg.io/api | `?key=RAWG_API_KEY` |
 | AI | Claude | api.anthropic.com/v1 | Bearer `ANTHROPIC_API_KEY` |
 
 **Idioma:** TMDB→`language=es-ES` fallback `en-US` · Books→`langRestrict=es` · resto inglés.
@@ -65,17 +65,21 @@ Next.js 14 App Router · React 18 · TypeScript strict · Tailwind CSS 3 · Supa
 
 ## Env vars
 ```
-NEXT_PUBLIC_TMDB_API_KEY=
-NEXT_PUBLIC_RAWG_KEY=
-NEXT_PUBLIC_GOOGLE_BOOKS_KEY=
-COMICVINE_KEY=              # server-only
+TMDB_API_KEY=               # server-only
+RAWG_API_KEY=               # server-only
+GOOGLE_BOOKS_KEY=           # server-only
+COMICVINE_KEY=              # server-only — presente, sin uso en código actual (E6)
 ANTHROPIC_API_KEY=          # server-only
 NEXT_PUBLIC_SUPABASE_URL=
 NEXT_PUBLIC_SUPABASE_ANON_KEY=
 SUPABASE_SERVICE_ROLE_KEY=  # server-only
+SUPABASE_TEST_URL=          # proyecto Supabase separado para tests de integración
+SUPABASE_TEST_ANON_KEY=
+NEXT_PUBLIC_SITE_URL=       # base URL pública (usada por SEO/og:url)
 ```
 
 > **Nota:** estas claves NO deben aparecer en el repo. `.env.local` está en `.gitignore`. Producción → Vercel Environment Variables.
+> Los nombres canónicos son sin prefijo `NEXT_PUBLIC_` para todo lo server-only (post-A4). Sincronizado con `.env.local` y Vercel.
 
 ## Comandos clave
 ```bash
@@ -143,18 +147,24 @@ type MediaItem = {
 ```
 
 ## DB Schema
+
+> 17 tablas reales en producción. 10 documentadas a continuación con su SQL canónico (derivado del código + tipos en `src/types/supabase.ts`); 7 más solo descritas a alto nivel y marcadas `[POR VERIFICAR EN B2]` porque el SQL exacto vive en el dashboard remoto y `supabase/migrations/` está pendiente de recuperar (ver B2 / B2-DOC). RLS activado en todas (49 policies según baseline B2).
+
 ```sql
 create table users (
   id uuid references auth.users primary key,
   username text unique not null,
   avatar_color text not null default '#E82020',
   avatar_initials text not null,
+  preferred_locale text,                -- añadido en migración 010 (histórica)
   created_at timestamptz default now()
 );
 create table media (
   id text primary key,                  -- "{type}_{external_id}"
   external_id text not null, type text not null, title text not null,
-  poster text, backdrop text, year int, metadata jsonb,
+  poster text, backdrop text, year int,
+  synopsis text,                        -- añadido en migración 002 (histórica)
+  metadata jsonb,
   updated_at timestamptz default now()
 );
 create table user_media (
@@ -166,6 +176,7 @@ create table user_media (
   watched_at date,
   episode_progress jsonb,               -- {season,episode}
   created_at timestamptz default now(),
+  updated_at timestamptz default now(), -- mantenido por trigger set_updated_at
   unique(user_id, media_id)
 );
 create table friendships (
@@ -219,7 +230,64 @@ create table reports (
 );
 ```
 
-> El schema completo (incluyendo RLS policies) vive en `supabase/migrations/`. Si una migración aún no existe ahí pero el schema sí está en el dashboard, esa es la tarea **B2** del backlog.
+### Tablas adicionales — documentación a alto nivel `[POR VERIFICAR EN B2]`
+
+Estas 7 tablas existen en producción y son consumidas por el código, pero su SQL exacto (constraints, defaults, índices, RLS policies) está pendiente de recuperar. Lo aquí descrito está **derivado de los tipos ad-hoc inline** (`as unknown as Array<{...}>`) en los Route Handlers que las leen. El detalle completo se confirmará en B2.
+
+```text
+suggestions                 -- /api/suggestions
+  user_id uuid FK → users(id)
+  type    text — enum 'bug' | 'feature' | 'improvement' | 'other'
+  subject text — 3..120 chars (Zod en endpoint)
+  description text — 10..2000 chars
+  created_at timestamptz   [POR VERIFICAR EN B2]
+
+conversations               -- /api/chat (DM 1-a-1 entre amigos)
+  id              uuid PK
+  last_message_at timestamptz   [POR VERIFICAR EN B2]
+
+conversation_members        -- pivot users ↔ conversations
+  conversation_id uuid FK → conversations(id)
+  user_id         uuid FK → users(id)
+  last_read_at    timestamptz | null
+  PK (conversation_id, user_id)   [POR VERIFICAR EN B2]
+
+messages                    -- mensajes dentro de una conversación
+  id              uuid PK
+  conversation_id uuid FK → conversations(id) on delete cascade
+  sender_id       uuid FK → users(id)
+  content         text
+  created_at      timestamptz   [POR VERIFICAR EN B2]
+
+groups                      -- /api/groups
+  id           uuid PK
+  owner_id     uuid FK → users(id)
+  name         text — 2..60 chars
+  description  text | null — ≤200 chars
+  cover_color  text — formato hex `#RRGGBB` (default '#E82020')
+  created_at   timestamptz   [POR VERIFICAR EN B2]
+
+group_members               -- pivot users ↔ groups
+  group_id  uuid FK → groups(id)
+  user_id   uuid FK → users(id)
+  role      text — `Inferido:` enum 'owner' | 'admin' | 'member'
+  joined_at timestamptz
+  PK (group_id, user_id)   [POR VERIFICAR EN B2]
+
+group_posts                 -- feed dentro de un grupo (consumido por components/social/GroupFeed)
+  -- columnas exactas no derivables del código actual.   [POR VERIFICAR EN B2]
+```
+
+### Funciones trigger `[POR VERIFICAR EN B2]`
+
+4 funciones presentes en producción según baseline B2. SQL exacto pendiente de capturar (`docs/SESSION_2026-05-02.md`):
+
+- `handle_new_user` — `Inferido:` se dispara al crear fila en `auth.users` y crea la fila correspondiente en `public.users` (avatar_color/avatar_initials por defecto).
+- `handle_new_group` — `Inferido:` al crear `groups`, inserta al `owner_id` como miembro inicial en `group_members` (rol `owner`).
+- `handle_new_message` — `Inferido:` al insertar en `messages`, actualiza `conversations.last_message_at`.
+- `set_updated_at` — trigger genérico `BEFORE UPDATE` que mantiene la columna `updated_at` (ver `user_media`).
+
+> El schema completo (incluyendo RLS policies y SQL exacto de las 7 tablas + 4 funciones) debe vivir en `supabase/migrations/`. Tarea **B2** del backlog (recuperar el `db pull` desaparecido) y **B2-DOC** (sustituir aquí los `[POR VERIFICAR EN B2]` por el SQL canónico).
 
 ---
 
