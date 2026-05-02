@@ -26,7 +26,8 @@ Sin esto, todo lo demás se hace con la casa ardiendo.
   En Vercel las claves son `TMDB_API_KEY`, `RAWG_API_KEY`, `GOOGLE_BOOKS_KEY` (sin `NEXT_PUBLIC_`). En `.env.local` puede que sigan con el prefijo viejo. Decidir nombres canónicos (server-only, sin `NEXT_PUBLIC_`) y unificar.
   Hecho cuando: `.env.local` y Vercel usan exactamente los mismos nombres y la app funciona en ambos entornos.
 
-- [ ] **A5. Versionar el estado actual del proyecto (commits temáticos + remoto GitHub)**.Bloqueante de todo lo demás.
+- [x] **A5. Versionar el estado actual del proyecto (commits temáticos + remoto GitHub)**✅ (cerrada el 2026-05-02).
+ 13 commits temáticos en 4 sesiones + reescritura de identidad + push a https://github.com/benevi/kultura (privado). Detalles en DONE.md. Working tree limpio, master en sync con origin.
 
 - [ ] **A6. Auditoría de coherencia repo vs disco**
         Verificar que después de A5 no quedan archivos en disco que no estén
