@@ -233,6 +233,7 @@ create table reports (
 6. **TypeScript estricto.** Sin `any` salvo `metadata: Record<string, any>` en MediaItem.
 7. **Mobile-first** en todos los componentes.
 8. **Nuevas dependencias se proponen antes de instalar.** No `npm install` silencioso.
+9. **Sin `Co-Authored-By` en commits.** Los commits son del autor humano. La asistencia de IA es herramienta, no co-autoría. Si una plantilla o herramienta inserta el trailer automáticamente, eliminarlo antes del commit.
 
 ---
 
