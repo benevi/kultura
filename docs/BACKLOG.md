@@ -59,6 +59,16 @@ Sin esto, cada cambio posterior es ruleta rusa.
   `supabase db pull` contra el proyecto actual. Commitear `supabase/migrations/*.sql` incluyendo RLS policies. README en `supabase/` explicando cómo aplicar en entorno nuevo.
   Hecho cuando: un dev nuevo puede levantar un Supabase local desde cero con `supabase db reset` y el schema queda idéntico al de producción.
 
+- [ ] **B2-DOC. Actualizar CLAUDE.md con tablas y triggers no documentados**
+  Añadir al DB Schema de CLAUDE.md las 7 tablas no documentadas (`conversations`, `conversation_members`, `messages`, `groups`, `group_members`, `group_posts`, `suggestions`) y las 4 funciones trigger (`handle_new_group`, `handle_new_message`, `handle_new_user`, `set_updated_at`).
+  Hecho cuando: CLAUDE.md refleja el schema completo real y hay commit `[B2-DOC] ...`.
+  Depende de: B2.
+
+- [ ] **B2-VERIFY. Verificar `supabase db reset` en local**
+  Ejecutar `supabase db reset` en entorno local y confirmar que el schema resultante es idéntico al de producción. Requisito previo: Docker Desktop operativo y proyecto Supabase local iniciado.
+  Hecho cuando: `supabase db reset` sale con exit 0 y un diff contra producción devuelve vacío.
+  Depende de: B2.
+
 - [ ] **B3. Validación de env vars al startup**
   `src/lib/env.ts` con Zod que valide todas las env vars requeridas. Importar en `app/layout.tsx`.
   Hecho cuando: arrancar sin `ANTHROPIC_API_KEY` falla con mensaje claro en startup, no en primera request.
@@ -131,6 +141,10 @@ No bloqueantes. Atacar solo después de A–D.
   Limpieza de pasado (E12 previene futuro). Ejecutar `git ls-files | sort -f | uniq -di` y resolver cualquier colisión que aparezca. Si no hay ninguna, cerrar la tarea con el output vacío como prueba.
   Hecho cuando: `git ls-files | sort -f | uniq -di` devuelve vacío, hay commit `[E13] ...` (aunque sea solo de cierre documental si no había colisiones reales).
   Depende de: E12 (orden lógico, no técnico — E12 evita que reaparezcan tras limpiar).
+
+- [ ] **E14. Reportar bug a Supabase CLI: `db dump --dry-run` imprime credenciales en stdout**
+  Durante B2 se detectó que `supabase db dump --dry-run` (o variante similar) imprime la cadena de conexión incluyendo la service role key en stdout. Esto es un bug de seguridad en la CLI de Supabase. Redactar y enviar un issue al repo `supabase/cli` con reproducción mínima y output censurado.
+  Hecho cuando: issue abierto en github.com/supabase/cli con enlace documentado aquí.
 
 ---
 
