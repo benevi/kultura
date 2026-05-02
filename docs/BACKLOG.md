@@ -123,6 +123,15 @@ No bloqueantes. Atacar solo después de A–D.
   Hecho cuando: búsqueda de libros y detalle funcionan con la nueva API, las 10 queries de E10 dan mejores resultados que antes, y los tests de contrato pasan en verde.
   Depende de: E10.
 
+- [ ] **E12. Activar `forceConsistentCasingInFileNames` en tsconfig.json**
+  Previene la clase de bug detectada en B1-B (`Button.tsx` vs import `button`). Windows oculta colisiones case-only que Linux CI sí ve. Con esta flag, `tsc --noEmit` las caza en local.
+  Hecho cuando: `tsconfig.json` tiene `"forceConsistentCasingInFileNames": true` en `compilerOptions`, `npm run type-check` pasa en verde, hay commit `[E12] ...`.
+
+- [ ] **E13. Auditoría de colisiones case-only en el repo entero**
+  Limpieza de pasado (E12 previene futuro). Ejecutar `git ls-files | sort -f | uniq -di` y resolver cualquier colisión que aparezca. Si no hay ninguna, cerrar la tarea con el output vacío como prueba.
+  Hecho cuando: `git ls-files | sort -f | uniq -di` devuelve vacío, hay commit `[E13] ...` (aunque sea solo de cierre documental si no había colisiones reales).
+  Depende de: E12 (orden lógico, no técnico — E12 evita que reaparezcan tras limpiar).
+
 ---
 
 ## BLOQUE F — Monetización (fase aparte)
