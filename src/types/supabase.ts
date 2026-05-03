@@ -4,9 +4,8 @@
 // Usa snake_case igual que PostgreSQL.
 //
 // NOTA: Estos tipos se mantienen a mano. Fuente de verdad SQL:
-// `supabase/migrations/` (pendiente de recuperar — ver B2/B2-DOC en
-// `docs/BACKLOG.md`). Migración futura a `supabase gen types typescript`
-// queda en backlog (E17).
+// `supabase/migrations/20260502233945_remote_schema.sql` (baseline B2).
+// Migración futura a `supabase gen types typescript` queda en backlog.
 // ============================================================
 
 /** Tabla: users */
@@ -111,6 +110,67 @@ export interface DbReport {
   created_at: string; // timestamptz
 }
 
+/** Tabla: suggestions */
+export interface DbSuggestion {
+  id: string; // uuid
+  user_id: string | null; // uuid → users.id (on delete set null)
+  type: "bug" | "feature" | "improvement" | "other";
+  subject: string;
+  description: string;
+  created_at: string; // timestamptz
+}
+
+/** Tabla: conversations (DM 1-a-1 entre amigos) */
+export interface DbConversation {
+  id: string; // uuid
+  created_at: string; // timestamptz
+  last_message_at: string; // timestamptz — actualizado por trigger handle_new_message
+}
+
+/** Tabla: conversation_members (pivot users ↔ conversations) */
+export interface DbConversationMember {
+  conversation_id: string; // uuid → conversations.id (on delete cascade)
+  user_id: string; // uuid → users.id (on delete cascade)
+  last_read_at: string | null; // timestamptz
+}
+
+/** Tabla: messages (mensajes dentro de una conversación) */
+export interface DbMessage {
+  id: string; // uuid
+  conversation_id: string; // uuid → conversations.id (on delete cascade)
+  sender_id: string; // uuid → users.id (on delete cascade)
+  content: string;
+  created_at: string; // timestamptz
+}
+
+/** Tabla: groups */
+export interface DbGroup {
+  id: string; // uuid
+  owner_id: string; // uuid → users.id (on delete cascade)
+  name: string;
+  description: string | null;
+  cover_color: string; // hex '#RRGGBB' — default '#E82020'
+  created_at: string; // timestamptz
+}
+
+/** Tabla: group_members (pivot users ↔ groups) */
+export interface DbGroupMember {
+  group_id: string; // uuid → groups.id (on delete cascade)
+  user_id: string; // uuid → users.id (on delete cascade)
+  role: "owner" | "member";
+  joined_at: string; // timestamptz
+}
+
+/** Tabla: group_posts (feed de un grupo) */
+export interface DbGroupPost {
+  id: string; // uuid
+  group_id: string; // uuid → groups.id (on delete cascade)
+  user_id: string; // uuid → users.id (on delete cascade)
+  content: string;
+  media_id: string | null; // text → media.id
+  created_at: string; // timestamptz
+}
+
 /**
  * Mapa completo del schema — útil para tipar el cliente Supabase genérico.
  * Uso: createClient<Database>()
@@ -132,6 +192,13 @@ export interface Database {
       list_items: { Row: DbListItem; Insert: Omit<DbListItem, "id" | "added_at">; Update: never };
       notifications: { Row: DbNotification; Insert: Omit<DbNotification, "id" | "created_at">; Update: Pick<DbNotification, "read_at"> };
       reports: { Row: DbReport; Insert: Omit<DbReport, "id" | "created_at">; Update: never };
+      suggestions: { Row: DbSuggestion; Insert: Omit<DbSuggestion, "id" | "created_at">; Update: never };
+      conversations: { Row: DbConversation; Insert: Partial<Pick<DbConversation, "id" | "created_at" | "last_message_at">>; Update: Pick<DbConversation, "last_message_at"> };
+      conversation_members: { Row: DbConversationMember; Insert: Omit<DbConversationMember, "last_read_at"> & { last_read_at?: string | null }; Update: Pick<DbConversationMember, "last_read_at"> };
+      messages: { Row: DbMessage; Insert: Omit<DbMessage, "id" | "created_at">; Update: never };
+      groups: { Row: DbGroup; Insert: Omit<DbGroup, "id" | "created_at" | "cover_color"> & { cover_color?: string }; Update: Partial<Omit<DbGroup, "id" | "owner_id">> };
+      group_members: { Row: DbGroupMember; Insert: Omit<DbGroupMember, "joined_at" | "role"> & { role?: "owner" | "member" }; Update: Pick<DbGroupMember, "role"> };
+      group_posts: { Row: DbGroupPost; Insert: Omit<DbGroupPost, "id" | "created_at">; Update: never };
     };
   };
 }
