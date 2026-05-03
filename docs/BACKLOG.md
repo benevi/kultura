@@ -43,7 +43,7 @@ Sin esto, todo lo demás se hace con la casa ardiendo.
 Sin esto, cada cambio posterior es ruleta rusa.
 
 - [x] **B1-A. Limpiar tests rotos huérfanos**✅ (cerrada el 2026-05-01)
-  6 errores en `tests/` impiden `tsc --noEmit`: 3 tests de componentes Library inexistentes, 1 test de `@/lib/env` (módulo aún no creado, es B3), 2 mocks desactualizados en `queries.test.ts`.
+  6 errores en `tests/` impiden `tsc --noEmit`: 3 tests de componentes Library inexistentes, 1 test de `@/lib/env` (módulo aún no creado, es E24), 2 mocks desactualizados en `queries.test.ts`.
   Hecho cuando: `tsc --noEmit` exit 0, `vitest run` exit 0, hay commit `[B1-A] Limpiar tests rotos`.
 
 - [x] **B1-B. CI básico en GitHub Actions** ✅ (cerrada el 2026-05-02)
@@ -69,10 +69,6 @@ Sin esto, cada cambio posterior es ruleta rusa.
   **Intento del 2026-05-03 bloqueado** por degradación de Docker Desktop (`input/output error` en blob storage de containerd, persistente tras restart).
   Hecho cuando: `supabase db reset` sale con exit 0 y un diff contra producción devuelve vacío.
   Depende de: B2 (✅).
-
-- [ ] **B3. Validación de env vars al startup**
-  `src/lib/env.ts` con Zod que valide todas las env vars requeridas. Importar en `app/layout.tsx`.
-  Hecho cuando: arrancar sin `ANTHROPIC_API_KEY` falla con mensaje claro en startup, no en primera request.
 
 - [x] **B4. Auditar y eliminar `kultura-backup-2026-05-01.zip`** ✅ (cerrada el 2026-05-03)
   Zip auditado en B3: 280.4 MB, 30876 archivos, incluía `kultura\.env.local` con credenciales reales y vigentes (idénticas al `.env.local` actual). Tras 6 verificaciones por el usuario (no OneDrive, no Google Drive, no compartido, no segunda máquina, no backup automático en la nube), confirmado que el zip nunca salió de la máquina. Decisión: NO rotar claves. Zip borrado por el usuario, carpeta temporal de auditoría eliminada.
@@ -208,6 +204,10 @@ No bloqueantes. Atacar solo después de A–D.
 - [ ] **E23. Unificar policies duplicadas en `users`**
   Hay dos policies UPDATE casi-idénticas con el mismo predicate (`auth.uid() = id`): `users can update own profile` y `users_update_own`. Ruido en la capa de seguridad. Eliminar una de las dos creando una migración nueva (`supabase migration new dedupe_users_update_policies`). Prioridad baja, hacer antes de producción real.
   Hecho cuando: `pg_policies WHERE tablename='users' AND cmd='UPDATE'` devuelve exactamente 1 fila y hay commit con migración.
+
+- [ ] **E24. Validación de env vars al startup**
+  `src/lib/env.ts` con Zod que valide todas las env vars requeridas. Importar en `app/layout.tsx`.
+  Hecho cuando: arrancar sin `ANTHROPIC_API_KEY` falla con mensaje claro en startup, no en primera request.
 
 ---
 

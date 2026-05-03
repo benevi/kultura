@@ -8,7 +8,7 @@ Bloque 4 cierra los bloqueantes de producción restantes tras B3. Candidatos pri
 - **C3** — Rate limiting distribuido con Vercel KV (reemplaza Map en memoria).
 - **C1** — Sentry integrado (errores de Route Handlers + componentes cliente).
 - **C2 / E18** — Logger estructurado (`src/lib/logger.ts`) + migración de los 17 `console.error`.
-- **B3** — Validación de env vars al startup con Zod (`src/lib/env.ts` + import en `app/layout.tsx`).
+- **E24** — Validación de env vars al startup con Zod (`src/lib/env.ts` + import en `app/layout.tsx`).
 
 ### Cómo sé que funciona
 A definir en el prompt del Bloque 4.
