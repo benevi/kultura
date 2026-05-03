@@ -74,9 +74,8 @@ Sin esto, cada cambio posterior es ruleta rusa.
   `src/lib/env.ts` con Zod que valide todas las env vars requeridas. Importar en `app/layout.tsx`.
   Hecho cuando: arrancar sin `ANTHROPIC_API_KEY` falla con mensaje claro en startup, no en primera request.
 
-- [ ] **B4. Auditar y eliminar `kultura-backup-2026-05-01.zip`**
-  Zip de ~280 MB en `e:\app movies\` (raíz, fuera del repo). Detectado en `ESTADO_PROYECTO.md` §15.5 / §18.1. Riesgo: puede contener `.env.local` con credenciales antiguas (pre-A1/A3) o snapshots del proyecto. Acciones: (a) inspeccionar contenido sin extraer (listar entradas); (b) confirmar si se ha compartido alguna vez por email/cloud; (c) si contiene secretos y nunca salió de la máquina, borrar; si salió, registrar el hecho aunque las claves ya estén rotadas.
-  Hecho cuando: el zip está borrado o movido a almacenamiento offline encriptado, y hay nota en DONE.md indicando si hubo o no exposición externa.
+- [x] **B4. Auditar y eliminar `kultura-backup-2026-05-01.zip`** ✅ (cerrada el 2026-05-03)
+  Zip auditado en B3: 280.4 MB, 30876 archivos, incluía `kultura\.env.local` con credenciales reales y vigentes (idénticas al `.env.local` actual). Tras 6 verificaciones por el usuario (no OneDrive, no Google Drive, no compartido, no segunda máquina, no backup automático en la nube), confirmado que el zip nunca salió de la máquina. Decisión: NO rotar claves. Zip borrado por el usuario, carpeta temporal de auditoría eliminada.
 
 ---
 
@@ -96,10 +95,25 @@ Sin esto, cuando algo falle en prod no te vas a enterar.
   Reemplazar el `Map` en memoria por `@vercel/kv`. Sliding window igual que ahora, pero distribuido.
   Hecho cuando: dos requests paralelos desde dos instancias diferentes de Vercel respetan el mismo contador.
 
-- [ ] **C4. Rate-limit en endpoints sin proteger**
-  Detectados en `ESTADO_PROYECTO.md` §15.5: `POST /api/chat/[id]` (vector spam de mensajes), `POST /api/groups` (un usuario podría crear miles de grupos), `POST /api/suggestions` (vector spam), `GET /api/users/search` (enumeración de usuarios). Aplicar `applyRateLimit` con cuotas razonables (orientativo: chat 30/min/user, groups 5/min/user, suggestions 5/min/user, users/search 30/min/user).
-  Depende de C3 (idealmente sobre rate-limit ya distribuido; si C3 se retrasa, aplicar in-memory provisional).
-  Hecho cuando: cada uno de los 4 endpoints devuelve 429 al superar su cuota y hay tests unitarios o de integración que lo verifican.
+- [x] **C4. Rate-limit en endpoints sin proteger** ✅ (cerrada el 2026-05-03)
+  Aplicado `checkRateLimit` en 6 endpoints: `POST /api/chat` (10/h), `POST /api/chat/[id]` (10/min), `GET /api/chat/[id]` (60/min), `POST /api/groups` (5/h), `POST /api/suggestions` (3/h), `GET /api/users/search` (30/min). Sistema in-memory existente extendido con 6 nuevos presets en `LIMITS`. Tests: 6 nuevos en `tests/unit/rate-limit/rate-limit.test.ts` (18 total, 18 green). Todos devuelven 429 + `Retry-After`.
+
+- [ ] **C5. Activar CSP en modo enforce mejorado**
+  El CSP actual tiene `'unsafe-inline'` en script-src. Eliminar requires nonces (ver C7). Tras C7, pasar CSP a modo enforce sin `'unsafe-inline'` y verificar en producción que no hay regresiones.
+  Depende de: C7.
+  Hecho cuando: `Content-Security-Policy` en producción no contiene `'unsafe-inline'` y el sitio funciona.
+
+- [ ] **C6. Auditar dominios externos en CSP y limpiar allowlist**
+  El `img-src https:` actual permite cualquier dominio HTTPS para imágenes. Cuando se tenga tráfico real, revisar los logs/reports de CSP para confirmar qué dominios realmente se usan y reemplazar `https:` por una allowlist explícita. Prioridad baja.
+  Hecho cuando: `img-src` no contiene `https:` genérico, sino dominios específicos verificados.
+
+- [ ] **C7. Eliminar `'unsafe-inline'` de CSP script-src usando nonces**
+  Next.js 14 permite nonces en CSP via middleware. Requiere generar un nonce por request en `middleware.ts` y pasarlo tanto al header CSP como al `<script>` de `_document`. Prioridad media, hacer antes de B6 (monetización).
+  Hecho cuando: `Content-Security-Policy` no contiene `'unsafe-inline'` en `script-src`, `npm run build` pasa, y la app funciona sin errores de CSP en consola.
+
+- [ ] **C8. Verificar periódicamente que Vercel sigue añadiendo HSTS**
+  Vercel añade automáticamente `Strict-Transport-Security: max-age=63072000` (confirmado 2026-05-03). Si cambia el plan de Vercel, se migra de proveedor, o Vercel modifica su política, HSTS podría desaparecer. Chequear tras cualquier cambio de plan y como mínimo una vez al año.
+  Hecho cuando: verificación manual en DevTools confirma presencia del header. Si desaparece, reactivar en `next.config.mjs` con `max-age=63072000; includeSubDomains; preload`.
 
 ---
 

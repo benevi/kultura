@@ -1,16 +1,20 @@
-## Tarea activa: pendiente de aprobación — Bloque 3 (Hardening de seguridad básico)
+## Tarea activa: pendiente de aprobación — Bloque 4 (Producción real)
 
 Iniciada: pendiente de aprobación
-Bloqueante de: producción mínimamente segura
+Bloqueante de: observabilidad en producción, rate-limit distribuido, startup seguro
 
 ### Qué cambia
-A definir en el prompt del Bloque 3. Candidatos del BACKLOG: A6 (auditoría de coherencia repo↔disco), B3 (validación de env vars al startup con Zod), B4 (auditar y eliminar `kultura-backup-2026-05-01.zip`), B2-DOC-CLAUDE (resolver discrepancia `group_members.role` y limpiar marcadores en CLAUDE.md), B2-VERIFY (reintentar `supabase db reset` cuando Docker se restaure).
+Bloque 4 cierra los bloqueantes de producción restantes tras B3. Candidatos priorizados del BACKLOG:
+- **C3** — Rate limiting distribuido con Vercel KV (reemplaza Map en memoria).
+- **C1** — Sentry integrado (errores de Route Handlers + componentes cliente).
+- **C2 / E18** — Logger estructurado (`src/lib/logger.ts`) + migración de los 17 `console.error`.
+- **B3** — Validación de env vars al startup con Zod (`src/lib/env.ts` + import en `app/layout.tsx`).
 
 ### Cómo sé que funciona
-A definir en el prompt del Bloque 3.
+A definir en el prompt del Bloque 4.
 
 ### Archivos que toco
-A definir en el prompt del Bloque 3.
+A definir en el prompt del Bloque 4.
 
 ### Cuándo paro
-Hasta que el usuario apruebe el alcance del Bloque 3.
+Hasta que el usuario apruebe el alcance del Bloque 4.

@@ -299,6 +299,7 @@ create table group_posts (                -- feed de un grupo
 ## Reglas técnicas innegociables
 
 1. **`COMICVINE_KEY`, `ANTHROPIC_API_KEY` y `SUPABASE_SERVICE_ROLE_KEY`** → server-only. Nunca en `NEXT_PUBLIC_*`. Acceso solo vía Route Handlers.
+1b. **Todo nuevo endpoint POST/PATCH/DELETE debe aplicar `checkRateLimit` antes de cualquier operación de BD o llamada a API externa.** Para endpoints que cuestan dinero (Anthropic, otros LLM), límite estricto (≤10 req/min por usuario). Usar el sistema en `src/lib/rate-limit.ts`: añadir preset a `LIMITS`, aplicar patrón `const rl = checkRateLimit(key, LIMITS.x); if (!rl.allowed) return 429`.
 2. **Toda respuesta de API externa pasa por `normalizer`** antes de llegar a componentes. Componentes solo conocen `MediaItem`.
 3. **Cache de títulos en tabla `media`**: upsert antes de insertar en `user_media`. No llamar a APIs externas para títulos ya guardados.
 4. **RLS activado en todas las tablas.** Cualquier tabla nueva se crea con policies en la misma migración.
@@ -307,6 +308,7 @@ create table group_posts (                -- feed de un grupo
 7. **Mobile-first** en todos los componentes.
 8. **Nuevas dependencias se proponen antes de instalar.** No `npm install` silencioso.
 9. **Sin `Co-Authored-By` en commits.** Los commits son del autor humano. La asistencia de IA es herramienta, no co-autoría. Si una plantilla o herramienta inserta el trailer automáticamente, eliminarlo antes del commit.
+10. **Headers de seguridad: fuentes de verdad divididas.** Vercel gestiona HSTS (`max-age=63072000`, verificado 2026-05-03). `next.config.mjs` gestiona el resto: CSP, X-Frame-Options, X-Content-Type-Options, Referrer-Policy, Permissions-Policy. Antes de añadir un header nuevo, verificar en DevTools de producción si Vercel ya lo añade.
 
 ---
 
