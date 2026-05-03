@@ -88,4 +88,16 @@ export const LIMITS = {
   lists: { windowMs: 60_000, max: 20 },
   /** PATCH /api/notifications — 30 req/min por usuario */
   notifications: { windowMs: 60_000, max: 30 },
+  /** POST /api/chat — crear conversación, 10/hora por usuario */
+  chat_create: { windowMs: 60 * 60_000, max: 10 },
+  /** POST /api/chat/[id] — enviar mensaje, 10/min por usuario */
+  chat_message: { windowMs: 60_000, max: 10 },
+  /** GET /api/chat/[id] — leer mensajes, 60/min por usuario */
+  chat_read: { windowMs: 60_000, max: 60 },
+  /** POST /api/groups — crear grupo, 5/hora por usuario */
+  groups: { windowMs: 60 * 60_000, max: 5 },
+  /** POST /api/suggestions — 3/hora por usuario */
+  suggestions: { windowMs: 60 * 60_000, max: 3 },
+  /** GET /api/users/search — 30/min por usuario o IP */
+  users_search: { windowMs: 60_000, max: 30 },
 } as const

@@ -123,4 +123,46 @@ describe('checkRateLimit — configuraciones predefinidas', () => {
     const { LIMITS } = await import('@/lib/rate-limit')
     expect(LIMITS.search.max).toBe(60)
   })
+
+  it('LIMITS.chat_message tiene windowMs=60000 y max=10', async () => {
+    const { LIMITS } = await import('@/lib/rate-limit')
+    expect(LIMITS.chat_message.windowMs).toBe(60_000)
+    expect(LIMITS.chat_message.max).toBe(10)
+  })
+
+  it('LIMITS.chat_create tiene ventana de 1 hora y max=10', async () => {
+    const { LIMITS } = await import('@/lib/rate-limit')
+    expect(LIMITS.chat_create.windowMs).toBe(60 * 60_000)
+    expect(LIMITS.chat_create.max).toBe(10)
+  })
+
+  it('LIMITS.groups tiene ventana de 1 hora y max=5', async () => {
+    const { LIMITS } = await import('@/lib/rate-limit')
+    expect(LIMITS.groups.windowMs).toBe(60 * 60_000)
+    expect(LIMITS.groups.max).toBe(5)
+  })
+
+  it('LIMITS.suggestions tiene ventana de 1 hora y max=3', async () => {
+    const { LIMITS } = await import('@/lib/rate-limit')
+    expect(LIMITS.suggestions.windowMs).toBe(60 * 60_000)
+    expect(LIMITS.suggestions.max).toBe(3)
+  })
+
+  it('LIMITS.users_search tiene windowMs=60000 y max=30', async () => {
+    const { LIMITS } = await import('@/lib/rate-limit')
+    expect(LIMITS.users_search.windowMs).toBe(60_000)
+    expect(LIMITS.users_search.max).toBe(30)
+  })
+})
+
+describe('checkRateLimit — endpoint chat_message (crítico)', () => {
+  it('bloquea al superar 10 mensajes por minuto', () => {
+    const opts = { windowMs: 60_000, max: 10 }
+    for (let i = 0; i < 10; i++) {
+      expect(checkRateLimit('chat_message:user1', opts).allowed).toBe(true)
+    }
+    const blocked = checkRateLimit('chat_message:user1', opts)
+    expect(blocked.allowed).toBe(false)
+    expect(blocked.retryAfterSeconds).toBeGreaterThan(0)
+  })
 })

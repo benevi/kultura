@@ -7,6 +7,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { z } from 'zod'
+import { checkRateLimit, LIMITS } from '@/lib/rate-limit'
 
 const CreateGroupSchema = z.object({
   name: z.string().min(2).max(60),
@@ -44,6 +45,14 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
   const supabase = createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return NextResponse.json({ error: 'Not authenticated' }, { status: 401 })
+
+  const rl = checkRateLimit(`groups:${user.id}`, LIMITS.groups)
+  if (!rl.allowed) {
+    return NextResponse.json(
+      { error: 'Too many requests' },
+      { status: 429, headers: { 'Retry-After': String(rl.retryAfterSeconds) } }
+    )
+  }
 
   const body = await req.json().catch(() => null)
   const parsed = CreateGroupSchema.safeParse(body)
