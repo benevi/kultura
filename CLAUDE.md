@@ -309,6 +309,7 @@ create table group_posts (                -- feed de un grupo
 8. **Nuevas dependencias se proponen antes de instalar.** No `npm install` silencioso.
 9. **Sin `Co-Authored-By` en commits.** Los commits son del autor humano. La asistencia de IA es herramienta, no co-autoría. Si una plantilla o herramienta inserta el trailer automáticamente, eliminarlo antes del commit.
 10. **Headers de seguridad: fuentes de verdad divididas.** Vercel gestiona HSTS (`max-age=63072000`, verificado 2026-05-03). `next.config.mjs` gestiona el resto: CSP, X-Frame-Options, X-Content-Type-Options, Referrer-Policy, Permissions-Policy. Antes de añadir un header nuevo, verificar en DevTools de producción si Vercel ya lo añade.
+11. **Verificación post-deploy NO se limita a headers HTTP, status codes y logs.** Incluye obligatoriamente un paso de uso funcional: abrir la app desplegada, navegar por las secciones principales (auth, biblioteca, feed, chat, grupos, perfil) e intentar las acciones críticas. Si algo falla visualmente o falta una sección, reportarlo aunque los headers y los tests estén verdes.
 
 ---
 

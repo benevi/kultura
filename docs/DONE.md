@@ -64,3 +64,17 @@ No se edita a mano durante el día. Solo se añade una línea al terminar cada t
 2026-05-03 | B3-headers | (pendiente de commit) | `next.config.mjs` actualizado: añadidos `Strict-Transport-Security: max-age=31536000` (conservador, verificar si Vercel ya lo añade) y `Permissions-Policy: camera=(), microphone=(), geolocation=(), interest-cohort=()`. CSP enforce existente sin cambios. Auditoría de dominios externos: sin gaps detectados (APIs externas son server-side, no browser-fetch). `npm run build` ✅, `tsc --noEmit` ✅, `vitest run` 493/493 ✅.
 
 ---
+
+## B3 — Hardening de seguridad básico (cerrado 2026-05-03)
+
+- Rate-limit añadido a 6 endpoints (4 planificados + 2 detectados durante implementación): POST /api/chat, POST /api/chat/[id], GET /api/chat/[id], POST /api/groups, POST /api/suggestions, GET /api/users/search.
+- Headers de seguridad: Permissions-Policy añadido en next.config.mjs. HSTS gestionado por Vercel (verificado, no se duplica). CSP enforce ya existía con 'unsafe-inline' (ver C5/C7).
+- Auditoría de zip backup: limpia, borrado.
+- Documentos generados: docs/B3_DEPLOY_PLAN.md.
+- BACKLOG: cerradas B4-zip y C4. Añadidas C5, C6, C7, C8.
+- Tests: 487 → 493 (+6 tests del rate-limit).
+- Commits: 224dcac, 03e4c29, b9e941f.
+- Verificación post-deploy: headers OK, consola limpia, sin warnings CSP.
+- Hallazgo colateral: app en estado funcionalmente incompleta a nivel UI/UX (no causado por B3; preexistente). Motiva el sprint B3.5.
+
+---
