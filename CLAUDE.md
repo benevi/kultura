@@ -148,7 +148,7 @@ type MediaItem = {
 
 ## DB Schema
 
-> 17 tablas reales en producción. 10 documentadas a continuación con su SQL canónico (derivado del código + tipos en `src/types/supabase.ts`); 7 más solo descritas a alto nivel y marcadas `[POR VERIFICAR EN B2]` porque el SQL exacto vive en el dashboard remoto y `supabase/migrations/` está pendiente de recuperar (ver B2 / B2-DOC). RLS activado en todas (49 policies según baseline B2).
+> 17 tablas reales en producción. Schema completo en `supabase/migrations/20260502233945_remote_schema.sql` (baseline B2, verificada contra db_snapshot.txt el 2026-05-03). RLS activado en las 17 tablas (49 policies). Los tipos TypeScript correspondientes están en `src/types/supabase.ts`.
 
 ```sql
 create table users (
@@ -156,7 +156,8 @@ create table users (
   username text unique not null,
   avatar_color text not null default '#E82020',
   avatar_initials text not null,
-  preferred_locale text,                -- añadido en migración 010 (histórica)
+  bio text,                             -- biografía corta del usuario, mostrada en el perfil público
+  preferred_locale text check (preferred_locale in ('es','en')),
   created_at timestamptz default now()
 );
 create table media (
@@ -230,64 +231,68 @@ create table reports (
 );
 ```
 
-### Tablas adicionales — documentación a alto nivel `[POR VERIFICAR EN B2]`
+### Tablas adicionales (SQL canónico confirmado en B2)
 
-Estas 7 tablas existen en producción y son consumidas por el código, pero su SQL exacto (constraints, defaults, índices, RLS policies) está pendiente de recuperar. Lo aquí descrito está **derivado de los tipos ad-hoc inline** (`as unknown as Array<{...}>`) en los Route Handlers que las leen. El detalle completo se confirmará en B2.
-
-```text
-suggestions                 -- /api/suggestions
-  user_id uuid FK → users(id)
-  type    text — enum 'bug' | 'feature' | 'improvement' | 'other'
-  subject text — 3..120 chars (Zod en endpoint)
-  description text — 10..2000 chars
-  created_at timestamptz   [POR VERIFICAR EN B2]
-
-conversations               -- /api/chat (DM 1-a-1 entre amigos)
-  id              uuid PK
-  last_message_at timestamptz   [POR VERIFICAR EN B2]
-
-conversation_members        -- pivot users ↔ conversations
-  conversation_id uuid FK → conversations(id)
-  user_id         uuid FK → users(id)
-  last_read_at    timestamptz | null
-  PK (conversation_id, user_id)   [POR VERIFICAR EN B2]
-
-messages                    -- mensajes dentro de una conversación
-  id              uuid PK
-  conversation_id uuid FK → conversations(id) on delete cascade
-  sender_id       uuid FK → users(id)
-  content         text
-  created_at      timestamptz   [POR VERIFICAR EN B2]
-
-groups                      -- /api/groups
-  id           uuid PK
-  owner_id     uuid FK → users(id)
-  name         text — 2..60 chars
-  description  text | null — ≤200 chars
-  cover_color  text — formato hex `#RRGGBB` (default '#E82020')
-  created_at   timestamptz   [POR VERIFICAR EN B2]
-
-group_members               -- pivot users ↔ groups
-  group_id  uuid FK → groups(id)
-  user_id   uuid FK → users(id)
-  role      text — `Inferido:` enum 'owner' | 'admin' | 'member'
-  joined_at timestamptz
-  PK (group_id, user_id)   [POR VERIFICAR EN B2]
-
-group_posts                 -- feed dentro de un grupo (consumido por components/social/GroupFeed)
-  -- columnas exactas no derivables del código actual.   [POR VERIFICAR EN B2]
+```sql
+create table suggestions (                -- /api/suggestions
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid references users(id) on delete set null,
+  type text not null check (type in ('bug','feature','improvement','other')),
+  subject text not null,                  -- 3..120 chars (Zod en endpoint)
+  description text not null,             -- 10..2000 chars (Zod en endpoint)
+  created_at timestamptz default now()
+);
+create table conversations (              -- DM 1-a-1 entre amigos
+  id uuid primary key default gen_random_uuid(),
+  created_at timestamptz default now(),
+  last_message_at timestamptz default now() -- actualizado por trigger handle_new_message
+);
+create table conversation_members (       -- pivot users ↔ conversations
+  conversation_id uuid references conversations(id) on delete cascade,
+  user_id uuid references users(id) on delete cascade,
+  last_read_at timestamptz,
+  primary key (conversation_id, user_id)
+);
+create table messages (
+  id uuid primary key default gen_random_uuid(),
+  conversation_id uuid references conversations(id) on delete cascade,
+  sender_id uuid references users(id) on delete cascade,
+  content text not null,
+  created_at timestamptz default now()
+);
+create table groups (                     -- /api/groups
+  id uuid primary key default gen_random_uuid(),
+  owner_id uuid references users(id) on delete cascade,
+  name text not null,                     -- 2..60 chars (Zod en endpoint)
+  description text,                       -- ≤200 chars (Zod en endpoint)
+  cover_color text not null default '#E82020',
+  created_at timestamptz default now()
+);
+create table group_members (              -- pivot users ↔ groups
+  group_id uuid references groups(id) on delete cascade,
+  user_id uuid references users(id) on delete cascade,
+  role text not null default 'member' check (role in ('owner','member')),
+  joined_at timestamptz default now(),
+  primary key (group_id, user_id)
+);
+create table group_posts (                -- feed de un grupo
+  id uuid primary key default gen_random_uuid(),
+  group_id uuid references groups(id) on delete cascade,
+  user_id uuid references users(id) on delete cascade,
+  content text not null,
+  media_id text references media(id),
+  created_at timestamptz default now()
+);
 ```
 
-### Funciones trigger `[POR VERIFICAR EN B2]`
+### Funciones trigger
 
-4 funciones presentes en producción según baseline B2. SQL exacto pendiente de capturar (`docs/SESSION_2026-05-02.md`):
+4 funciones confirmadas en `supabase/migrations/20260502233945_remote_schema.sql`:
 
-- `handle_new_user` — `Inferido:` se dispara al crear fila en `auth.users` y crea la fila correspondiente en `public.users` (avatar_color/avatar_initials por defecto).
-- `handle_new_group` — `Inferido:` al crear `groups`, inserta al `owner_id` como miembro inicial en `group_members` (rol `owner`).
-- `handle_new_message` — `Inferido:` al insertar en `messages`, actualiza `conversations.last_message_at`.
-- `set_updated_at` — trigger genérico `BEFORE UPDATE` que mantiene la columna `updated_at` (ver `user_media`).
-
-> El schema completo (incluyendo RLS policies y SQL exacto de las 7 tablas + 4 funciones) debe vivir en `supabase/migrations/`. Tarea **B2** del backlog (recuperar el `db pull` desaparecido) y **B2-DOC** (sustituir aquí los `[POR VERIFICAR EN B2]` por el SQL canónico).
+- `handle_new_user` — `AFTER INSERT ON auth.users`. Crea fila en `public.users`: deriva `username` del prefijo del email (limpio, truncado a 15 chars, sufijo numérico si duplicado), `avatar_initials` = `upper(left(username, 2))`, `avatar_color` = `'#E82020'`.
+- `handle_new_group` — `AFTER INSERT ON groups`. Inserta al `owner_id` como miembro inicial en `group_members` con `role = 'owner'`.
+- `handle_new_message` — `AFTER INSERT ON messages`. Actualiza `conversations.last_message_at = new.created_at`.
+- `set_updated_at` — `BEFORE UPDATE ON user_media`. Mantiene `updated_at = now()`.
 
 ---
 

@@ -55,19 +55,20 @@ Sin esto, cada cambio posterior es ruleta rusa.
   mal? ¿signUp mock falta? ¿flujo del componente cambió?
   Hecho cuando: vitest run pasa los 4 tests de register-form.
   
-- [ ] **B2. Migraciones SQL versionadas**
-  `supabase db pull` contra el proyecto actual. Commitear `supabase/migrations/*.sql` incluyendo RLS policies. README en `supabase/` explicando cómo aplicar en entorno nuevo.
-  Hecho cuando: un dev nuevo puede levantar un Supabase local desde cero con `supabase db reset` y el schema queda idéntico al de producción.
+- [x] **B2. Migraciones SQL versionadas** ✅ (cerrada el 2026-05-03)
+  Baseline SQL recuperada vía `supabase db pull --schema public` tras reparar entrada huérfana de migración `20260502155455` (`supabase migration repair --status reverted`). Archivo: `supabase/migrations/20260502233945_remote_schema.sql` (~32 KB, 17 tablas, 49 RLS policies, 4 funciones trigger). Verificada contra `db_snapshot.txt` sin discrepancias. Sintaxis SQL validada con postgres puro (Plan B) — `supabase db reset` local quedó pendiente por degradación de Docker Desktop (ver B2-VERIFY).
 
-- [ ] **B2-DOC. Actualizar CLAUDE.md con tablas y triggers no documentados**
-  Añadir al DB Schema de CLAUDE.md las 7 tablas no documentadas (`conversations`, `conversation_members`, `messages`, `groups`, `group_members`, `group_posts`, `suggestions`) y las 4 funciones trigger (`handle_new_group`, `handle_new_message`, `handle_new_user`, `set_updated_at`).
-  Hecho cuando: CLAUDE.md refleja el schema completo real y hay commit `[B2-DOC] ...`.
-  Depende de: B2.
+- [x] **B2-DOC. Documentación de la baseline** ✅ (cerrada el 2026-05-03)
+  Cubierta por `supabase/migrations/README.md` (cómo aplicar, política de migraciones futuras, advertencia sobre `db push` sobre la baseline) + tipos TypeScript completos en `src/types/supabase.ts` (interfaces `DbSuggestion`, `DbConversation`, `DbConversationMember`, `DbMessage`, `DbGroup`, `DbGroupMember`, `DbGroupPost` añadidas). NOTA: la actualización de los marcadores `[POR VERIFICAR EN B2]` en CLAUDE.md queda separada en B2-DOC-CLAUDE por discrepancia detectada en `group_members.role` (ver B2-DOC-CLAUDE).
+
+- [x] **B2-DOC-CLAUDE. Actualizar CLAUDE.md con SQL canónico de las 7 tablas** ✅ (cerrada el 2026-05-03)
+  CLAUDE.md actualizado en commit B2: marcadores `[POR VERIFICAR EN B2]` eliminados, `group_members.role` corregido a `'owner' | 'member'` (no existía `admin`), `users.bio` documentada, SQL de las 7 tablas confirmado contra `db_snapshot.txt`.
 
 - [ ] **B2-VERIFY. Verificar `supabase db reset` en local**
-  Ejecutar `supabase db reset` en entorno local y confirmar que el schema resultante es idéntico al de producción. Requisito previo: Docker Desktop operativo y proyecto Supabase local iniciado.
+  Ejecutar `supabase db reset` en entorno local y confirmar que el schema resultante es idéntico al de producción. Reintentar cuando Docker Desktop esté operativo. Bloqueo no afecta progreso del proyecto: SQL validado contra postgres puro sin errores reales, y schema vivo en remoto desde abril sin incidencias. Ejecutar `supabase start && supabase db reset` cuando Docker esté restaurado y verificar conteos: 17 tablas / ~49 policies / 4 funciones trigger.
+  **Intento del 2026-05-03 bloqueado** por degradación de Docker Desktop (`input/output error` en blob storage de containerd, persistente tras restart).
   Hecho cuando: `supabase db reset` sale con exit 0 y un diff contra producción devuelve vacío.
-  Depende de: B2.
+  Depende de: B2 (✅).
 
 - [ ] **B3. Validación de env vars al startup**
   `src/lib/env.ts` con Zod que valide todas las env vars requeridas. Importar en `app/layout.tsx`.
@@ -165,10 +166,8 @@ No bloqueantes. Atacar solo después de A–D.
   Definido dos veces con la misma forma: `src/types/library.ts:17-20` y `src/types/user.ts:35-38`. Dejar una única definición y reexportar desde el otro módulo si hace falta para no romper imports.
   Hecho cuando: `grep -rn "EpisodeProgress" src/types/` muestra una sola declaración y `npm run type-check` pasa.
 
-- [ ] **E17. Tipar las 7 tablas faltantes en `src/types/supabase.ts`**
-  Tras B2 (migraciones recuperadas), añadir interfaces `DbSuggestion`, `DbConversation`, `DbConversationMember`, `DbMessage`, `DbGroup`, `DbGroupMember`, `DbGroupPost` derivadas del SQL canónico. Sustituir los `as unknown as Array<{...}>` ad-hoc por estos tipos.
-  Depende de: B2 / B2-DOC.
-  Hecho cuando: `src/types/supabase.ts` exporta las 7 interfaces y el código consumidor (`/api/chat`, `/api/groups`, `/api/suggestions`, `social/feed.ts`, etc.) ya no usa `as unknown as`.
+- [x] **E17. Tipar las 7 tablas faltantes en `src/types/supabase.ts`** ✅ (cerrada el 2026-05-03)
+  Añadidas interfaces `DbSuggestion`, `DbConversation`, `DbConversationMember`, `DbMessage`, `DbGroup`, `DbGroupMember`, `DbGroupPost` derivadas del SQL canónico (`supabase/migrations/20260502233945_remote_schema.sql`) + entradas correspondientes en el mapa `Database`. `npm run type-check` pasa. Refactor de los `as unknown as Array<{...}>` ad-hoc → E19.
 
 - [ ] **E18. Reemplazar `console.error` por logger estructurado**
   17 instancias listadas en `ESTADO_PROYECTO.md` §15.8. Cross-link con C2 (logger estructurado): esta tarea es la migración mecánica de los call-sites una vez C2 introduce `src/lib/logger.ts`.
@@ -191,6 +190,10 @@ No bloqueantes. Atacar solo después de A–D.
 - [ ] **E22. Página `/groups` con listado público de grupos**
   Hoy solo existe `/groups/[id]`. Sin listado, los grupos son invisibles para no-miembros (ver `ESTADO_PROYECTO.md` §18.3). Crear `src/app/[locale]/(app)/groups/page.tsx` con listado básico (paginado, filtro por nombre).
   Hecho cuando: la ruta `/[locale]/groups` renderiza grupos visibles y enlaza a `/groups/[id]`.
+
+- [ ] **E23. Unificar policies duplicadas en `users`**
+  Hay dos policies UPDATE casi-idénticas con el mismo predicate (`auth.uid() = id`): `users can update own profile` y `users_update_own`. Ruido en la capa de seguridad. Eliminar una de las dos creando una migración nueva (`supabase migration new dedupe_users_update_policies`). Prioridad baja, hacer antes de producción real.
+  Hecho cuando: `pg_policies WHERE tablename='users' AND cmd='UPDATE'` devuelve exactamente 1 fila y hay commit con migración.
 
 ---
 
