@@ -6,6 +6,7 @@
 
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
+import { checkRateLimit, LIMITS } from '@/lib/rate-limit'
 
 interface RouteParams {
   params: Promise<{ id: string }>
@@ -16,6 +17,14 @@ export async function GET(_req: NextRequest, { params }: RouteParams): Promise<N
   const supabase = createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return NextResponse.json({ error: 'Not authenticated' }, { status: 401 })
+
+  const rl = checkRateLimit(`chat_read:${user.id}`, LIMITS.chat_read)
+  if (!rl.allowed) {
+    return NextResponse.json(
+      { error: 'Too many requests' },
+      { status: 429, headers: { 'Retry-After': String(rl.retryAfterSeconds) } }
+    )
+  }
 
   // Verify membership
   const { data: member } = await supabase
@@ -51,6 +60,14 @@ export async function POST(req: NextRequest, { params }: RouteParams): Promise<N
   const supabase = createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return NextResponse.json({ error: 'Not authenticated' }, { status: 401 })
+
+  const rl = checkRateLimit(`chat_message:${user.id}`, LIMITS.chat_message)
+  if (!rl.allowed) {
+    return NextResponse.json(
+      { error: 'Too many requests' },
+      { status: 429, headers: { 'Retry-After': String(rl.retryAfterSeconds) } }
+    )
+  }
 
   const { content } = await req.json().catch(() => ({}))
   if (!content?.trim()) return NextResponse.json({ error: 'Empty message' }, { status: 400 })

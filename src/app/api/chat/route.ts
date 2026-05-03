@@ -6,6 +6,7 @@
 
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
+import { checkRateLimit, LIMITS } from '@/lib/rate-limit'
 
 export async function GET(): Promise<NextResponse> {
   const supabase = createClient()
@@ -81,6 +82,14 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
   const supabase = createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return NextResponse.json({ error: 'Not authenticated' }, { status: 401 })
+
+  const rl = checkRateLimit(`chat_create:${user.id}`, LIMITS.chat_create)
+  if (!rl.allowed) {
+    return NextResponse.json(
+      { error: 'Too many requests' },
+      { status: 429, headers: { 'Retry-After': String(rl.retryAfterSeconds) } }
+    )
+  }
 
   const { targetUserId } = await req.json().catch(() => ({}))
   if (!targetUserId) return NextResponse.json({ error: 'Missing targetUserId' }, { status: 400 })
