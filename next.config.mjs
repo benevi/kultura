@@ -51,6 +51,13 @@ const nextConfig = {
             key: "Referrer-Policy",
             value: "strict-origin-when-cross-origin",
           },
+          // HSTS gestionado por Vercel automáticamente (max-age=63072000, verificado 2026-05-03).
+          // NO añadir aquí — produciría header duplicado.
+          // Bloquea APIs de navegador que la app no usa.
+          {
+            key: "Permissions-Policy",
+            value: "camera=(), microphone=(), geolocation=(), interest-cohort=()",
+          },
         ],
       },
     ];
