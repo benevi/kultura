@@ -8,6 +8,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { z } from 'zod'
 import { checkRateLimit, LIMITS } from '@/lib/rate-limit'
+import { getUserGroups } from '@/lib/social/groups'
 
 const CreateGroupSchema = z.object({
   name: z.string().min(2).max(60),
@@ -20,23 +21,7 @@ export async function GET(): Promise<NextResponse> {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return NextResponse.json({ error: 'Not authenticated' }, { status: 401 })
 
-  const { data } = await supabase
-    .from('group_members')
-    .select('group_id, role, groups(id, name, description, cover_color, created_at, owner_id)')
-    .eq('user_id', user.id)
-    .order('joined_at', { ascending: false })
-
-  const groups = ((data ?? []) as unknown as Array<{
-    group_id: string
-    role: string
-    groups: {
-      id: string; name: string; description: string | null
-      cover_color: string; created_at: string; owner_id: string
-    } | null
-  }>).map((row) => ({
-    ...(row.groups ?? {}),
-    memberRole: row.role,
-  }))
+  const groups = await getUserGroups(user.id)
 
   return NextResponse.json({ groups })
 }
