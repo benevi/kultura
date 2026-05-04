@@ -78,3 +78,33 @@ No se edita a mano durante el día. Solo se añade una línea al terminar cada t
 - Hallazgo colateral: app en estado funcionalmente incompleta a nivel UI/UX (no causado por B3; preexistente). Motiva el sprint B3.5.
 
 ---
+
+## B3.5a — Auditoría UI/UX por código (cerrado 2026-05-03)
+
+- Inventario sistemático de 17 rutas, 49 componentes, 19 endpoints.
+- 0 endpoints huérfanos, 0 llamadas huérfanas.
+- 18 strings hardcodeados en español detectados en 4 componentes de Home.
+- Hallazgo: chat, lists y suggestions no enlazados desde NavLinks ni BottomNav.
+- Documento: docs/UI_AUDIT.md (commit 9f4e1f5).
+
+---
+
+## B3.5b — Verificación visual del usuario (cerrado 2026-05-04)
+
+- Pase visual por los hallazgos de B3.5a + componentes "necesita verificación".
+- 5 flujos rotos en runtime: chat (POST 500), GroupFeed, /en/home (switcher no cambia idioma), /notifications, paginación de Discover.
+- 2 flujos OK: settings, library (con nota de mejorar filtros).
+- Hallazgos anotados en la sección "Recomendaciones" de docs/UI_AUDIT.md.
+
+---
+
+## B3.5d — Diagnóstico estructural (cerrado 2026-05-04)
+
+- Auditoría de coherencia interna del código en 10 áreas.
+- Veredicto: 🟡 base sólida con 2 inconsistencias reales (validación heterogénea + tests con cobertura cero en flujos críticos UI).
+- Lo que está bien: cliente Supabase, auth+RLS, server/client components, manejo de errores HTTP, rate limiting, tests de integración DB.
+- Lo que falta: tests E2E de UI (0 escritos), src/lib/social/groups.ts (no existe; lists.ts sí), normalización de validación, error handling en GroupFeed/ConversationClient.
+- Documento: docs/STRUCTURAL_AUDIT.md.
+- Recomendación adoptada por el usuario: meter B3.5e (red de seguridad) antes de los fixes en B3.5c-1.
+
+---
