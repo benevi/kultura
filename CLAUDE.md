@@ -73,9 +73,10 @@ ANTHROPIC_API_KEY=          # server-only
 NEXT_PUBLIC_SUPABASE_URL=
 NEXT_PUBLIC_SUPABASE_ANON_KEY=
 SUPABASE_SERVICE_ROLE_KEY=  # server-only
-SUPABASE_TEST_URL=          # proyecto Supabase separado para tests de integración
-SUPABASE_TEST_ANON_KEY=
-NEXT_PUBLIC_SITE_URL=       # base URL pública (usada por SEO/og:url)
+SUPABASE_TEST_URL=               # proyecto Supabase separado para tests de integración (kultura-test)
+SUPABASE_TEST_ANON_KEY=          # anon key del proyecto kultura-test
+SUPABASE_TEST_SERVICE_ROLE_KEY=  # service_role key — solo para migraciones/seed, nunca en código de app
+NEXT_PUBLIC_SITE_URL=            # base URL pública (usada por SEO/og:url)
 ```
 
 > **Nota:** estas claves NO deben aparecer en el repo. `.env.local` está en `.gitignore`. Producción → Vercel Environment Variables.
