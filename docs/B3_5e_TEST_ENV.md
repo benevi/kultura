@@ -114,3 +114,55 @@ node --env-file=.env.local scripts/seed-test.mjs
 La red de seguridad **no está validada**: 9/9 tests fallan, pero los fallos son en su mayoría por problemas de entorno (H1, H3), no por los bugs de aplicación que se pretendía detectar. Los bugs de B3.5b existen, pero los specs no pueden llegar a ellos mientras el login no funcione (H1) y mientras el discover esté globalmente vacío (H3).
 
 **Próximo paso antes de B3.5e-3-prod**: resolver H1 (crear usuarios de test también en producción, o configurar el dev server de Playwright para usar el proyecto de test) y diagnosticar H3 (por qué discover está vacío en el contexto de Playwright).
+
+---
+
+## Doble entorno (B3.5e-3-local-FIX)
+
+Para que los specs E2E ejecuten contra `kultura-test`, el dev server arrancado
+por Playwright sobreescribe `NEXT_PUBLIC_SUPABASE_URL` y `NEXT_PUBLIC_SUPABASE_ANON_KEY`
+con los valores de `kultura-test`. El resto de vars (TMDB, ANTHROPIC, etc.) se
+heredan de `.env.local`.
+
+**Setup:**
+- `.env.local`: vars normales de desarrollo (apunta a Supabase de producción).
+- `.env.test.local`: solo `NEXT_PUBLIC_SUPABASE_URL` y `NEXT_PUBLIC_SUPABASE_ANON_KEY`
+  apuntando a `kultura-test`. Sobreescribe las anteriores cuando Playwright arranca dev server.
+- `.env.test.local` está cubierto por `.env*.local` en `.gitignore` — nunca se commitea.
+
+**Por qué doble env:**
+- Desarrollo manual (`npm run dev`) sigue contra Supabase de producción.
+- E2E (`npx playwright test`) arranca dev server con vars sobreescritas
+  apuntando a `kultura-test`, donde el seed garantiza usuarios y datos predecibles.
+
+**Decisión técnica:** merge manual en `playwright.config.ts` `webServer.env`
+para evitar añadir `cross-env` como nueva dependencia.
+
+## Resultado B3.5e-3-local-FIX — 2026-05-05
+
+### Fixes mecánicos aplicados (adicionales a B3.5e-3-local)
+
+1. **`.env.test.local` creado**: `NEXT_PUBLIC_SUPABASE_URL` + `NEXT_PUBLIC_SUPABASE_ANON_KEY` apuntando a `kultura-test`.
+2. **`playwright.config.ts`**: merge de `.env.test.local` en `webServer.env` — resuelve H1.
+3. **`language-switch.spec.ts`**: eliminado sub-test `landing pública` (H2). Segundo assert cambiado a `html[lang="en"]` (fix mobile viewport).
+4. **`chat-send.spec.ts`**: selector del botón corregido de `/nuevo|new|chat/i` a `/nueva conversación|new conversation|start.*chat/i`.
+
+### Tabla resumen final
+
+| Spec | Test | Resultado | Categoría | Bug B3.5b cubierto |
+|---|---|---|---|---|
+| language-switch | home autenticado | VERDE | VERDE-INESPERADO | bug 3 — no reproducible en local |
+| discover-pagination | tab movie (control) | ROJO | H3 pendiente | n/a |
+| discover-pagination | tab anime | ROJO | H3 pendiente | bug 6 |
+| discover-pagination | tab manga | ROJO | H3 pendiente | bug 6 |
+| discover-pagination | paginación | ROJO | H3 pendiente | bug 6 |
+| notifications-render | render | VERDE | VERDE-INESPERADO | bug 5 — no reproducible en local |
+| chat-send | enviar mensaje | ROJO | ROJO-ESPERADO | bug 1 — POST /api/chat no redirige a /chat/[id] |
+| group-feed-post | publicar post | VERDE | VERDE-INESPERADO | bug 4 — no reproducible en local |
+
+### Veredicto final
+
+- **Bug 1 (chat)**: confirmado ROJO-ESPERADO. La red lo captura.
+- **Bugs 3, 4, 5 (language-switch, group-feed, notifications)**: VERDE-INESPERADO — o los bugs se arreglaron en algún commit intermedio, o el entorno de test (kultura-test) difiere de producción en algo que enmascara los fallos. A investigar en B3.5c-1.
+- **Bug 6 (discover)**: H3 pendiente — todos los tabs (incluido control movie) vacíos. Diagnosticar en B3.5c-1.
+- **Discover (H3)**: `waitForLoadState('networkidle')` resuelve en ~1s pero el grid está vacío. El Server Component de discover llama a APIs externas (TMDB, Jikan) que pueden tener timeout o no responder en el contexto headless. A diagnosticar en B3.5c-1.

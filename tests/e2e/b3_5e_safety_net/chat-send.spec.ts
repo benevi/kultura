@@ -20,8 +20,8 @@ test.describe('Chat — enviar mensaje [B3.5e]', () => {
     await login(page)
     await page.goto(`${BASE}/es/chat`)
 
-    // Abrir picker de nuevo chat
-    await page.getByRole('button', { name: /nuevo|new|chat/i }).first().click()
+    // Abrir picker de nuevo chat ("+ Nueva conversación")
+    await page.getByRole('button', { name: /nueva conversación|new conversation|start.*chat/i }).first().click()
 
     // Seleccionar el primer amigo disponible
     const friendButton = page.locator('button').filter({ hasText: /\w+/ }).first()

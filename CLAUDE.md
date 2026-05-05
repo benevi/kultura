@@ -85,6 +85,8 @@ TEST_GROUP_ID=                   # server-only — UUID del grupo seedeado (rell
 
 > **Nota:** estas claves NO deben aparecer en el repo. `.env.local` está en `.gitignore`. Producción → Vercel Environment Variables.
 > Los nombres canónicos son sin prefijo `NEXT_PUBLIC_` para todo lo server-only (post-A4). Sincronizado con `.env.local` y Vercel.
+>
+> **`.env.test.local`** (no en git, cubierto por `.env*.local` en `.gitignore`): sobreescribe `NEXT_PUBLIC_SUPABASE_URL` y `NEXT_PUBLIC_SUPABASE_ANON_KEY` con los valores de `kultura-test`. Usado exclusivamente por Playwright al arrancar el dev server para specs E2E — ver `playwright.config.ts` `webServer.env`. Desarrollo manual (`npm run dev`) sigue contra Supabase de producción.
 
 ## Comandos clave
 ```bash
