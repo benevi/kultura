@@ -75,3 +75,42 @@ node --env-file=.env.local scripts/seed-test.mjs
 - `TEST_GROUP_ID` — UUID del grupo seedeado.
 
 **Próximo paso:** B3.5e-3 ejecuta los 5 specs E2E contra este seed.
+
+---
+
+## Ejecución local (B3.5e-3-local) — 2026-05-05
+
+### Fix mecánicos aplicados
+
+1. **`playwright.config.ts`**: añadido `loadEnvConfig(process.cwd())` de `@next/env` al inicio. Sin este fix, `process.env.TEST_USER_EMAIL` era `undefined` en el proceso de Playwright → `hasCredentials()` devolvía `false` → todos los tests que requieren auth se salteaban. Ahora las vars de `.env.local` llegan correctamente.
+2. **`.gitignore`**: añadidas entradas `/test-results/` y `/playwright-report/` (generados por Playwright, no deben trackearse).
+
+### Hallazgos estructurales (no son bugs de test, son de diseño)
+
+**H1 — Login imposible en local**: el dev server (arrancado por `webServer` en `playwright.config.ts`) usa `NEXT_PUBLIC_SUPABASE_URL=zfrbyphzvfuvejdwjfea` (producción). Los usuarios de test (`test-user-a@example.com`) solo existen en el proyecto de test (`xqvicvypoxxfbezqnkwr`). El login falla silenciosamente (no redirige) → `waitForURL` timeout. **Todos los specs con `login()` son bloqueados por esto.**
+
+**H2 — `/es` landing sin LanguageSwitcher**: el `<Header />` de la landing pública no incluye `<LanguageSwitcher />`. El selector del test `language-switch` (test 1 — landing pública) no puede encontrar el botón. Ambiguo: podría ser bug del test (asumió mal el componente) o bug del código (el switcher debería estar también en la landing). No tocar hasta resolver H1.
+
+**H3 — Discover vacío para todos los tabs incluyendo movie (control)**: el test de control `tab movie` también falla. Toda la página `/discover` retorna grids vacíos. Esto sugiere que la API de TMDB no responde en el contexto del dev server durante los tests (rate limit, timeout de red, o que el `waitForLoadState('networkidle')` resuelve antes de que lleguen los datos). Investigar en B3.5c-3.
+
+### Tabla resumen
+
+> Nota: cada spec corre en 2 proyectos Playwright (chromium + Mobile Chrome). La tabla agrupa por test lógico (no por proyecto).
+
+| Spec | Test | Resultado | Categoría | Bug B3.5b cubierto | Acción |
+|---|---|---|---|---|---|
+| language-switch | landing pública `/es` → switcher | ROJO | ROJO-INESPERADO (ambiguo) | n/a (control esperado) | Anotar H2, resolver tras H1 |
+| language-switch | home autenticado | ROJO | ROJO-INESPERADO (entorno) | bug 3 | Bloqueado por H1 |
+| discover-pagination | tab movie (control) | ROJO | ROJO-INESPERADO (entorno/código) | n/a (control) | Anotar H3, investigar |
+| discover-pagination | tab anime | ROJO | ROJO-ESPERADO o entorno | bug 6 | Bloqueado por H3 (control también falla) |
+| discover-pagination | tab manga | ROJO | ROJO-ESPERADO o entorno | bug 6 | Bloqueado por H3 |
+| discover-pagination | paginación | ROJO | Cascada desde H3 | bug 6 | Bloqueado por H3 |
+| notifications-render | render | ROJO | ROJO-INESPERADO (entorno) | bug 5 | Bloqueado por H1 |
+| chat-send | enviar mensaje | ROJO | ROJO-INESPERADO (entorno) | bug 1 | Bloqueado por H1 |
+| group-feed-post | publicar post | ROJO | ROJO-INESPERADO (entorno) | bug 4 | Bloqueado por H1 |
+
+### Veredicto
+
+La red de seguridad **no está validada**: 9/9 tests fallan, pero los fallos son en su mayoría por problemas de entorno (H1, H3), no por los bugs de aplicación que se pretendía detectar. Los bugs de B3.5b existen, pero los specs no pueden llegar a ellos mientras el login no funcione (H1) y mientras el discover esté globalmente vacío (H3).
+
+**Próximo paso antes de B3.5e-3-prod**: resolver H1 (crear usuarios de test también en producción, o configurar el dev server de Playwright para usar el proyecto de test) y diagnosticar H3 (por qué discover está vacío en el contexto de Playwright).

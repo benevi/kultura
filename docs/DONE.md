@@ -119,3 +119,11 @@ No se edita a mano durante el día. Solo se añade una línea al terminar cada t
 - Recomendación adoptada por el usuario: meter B3.5e (red de seguridad) antes de los fixes en B3.5c-1.
 
 ---
+
+2026-05-05 [B3.5e-2] Script de seed automatizado para tests E2E — a32c19d
+
+---
+
+2026-05-05 [B3.5e-3-local] Specs E2E ejecutados en local; 0/9 verdes esperados, 0/9 rojos esperados — bloqueado por H1 (login vs prod Supabase) y H3 (discover vacío globalmente). 2 fixes mecánicos: loadEnvConfig en playwright.config.ts + playwright artifacts en .gitignore — (hash pendiente)
+
+---

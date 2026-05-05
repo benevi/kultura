@@ -1,34 +1,34 @@
-## NOW — B3.5e-2: Script de seed automatizado para kultura-test
+# B3.5e-3-local-FIX — Resolver bloqueos de entorno E2E
 
-### Qué cambia
+## Contexto
 
-Crear un script de seed que, dado el proyecto `kultura-test` vacío con schema aplicado, crea los usuarios de test necesarios para los tests de integración. Los usuarios deben existir tanto en `auth.users` (Supabase Auth) como en `public.users` (via trigger `handle_new_user`).
+B3.5e-3-local ejecutó los 5 specs pero encontró 2 bloqueos estructurales que impiden validar la red de seguridad:
 
-Usuarios mínimos necesarios (detectados en B3.5e-1):
-- `test-user-a@example.com` / password conocida
-- `test-user-b@example.com` / password conocida
+**H1 — Login imposible**: el dev server usa `NEXT_PUBLIC_SUPABASE_URL=zfrbyphzvfuvejdwjfea` (producción). Los usuarios de test (`test-user-a@example.com`) solo existen en el proyecto de test (`xqvicvypoxxfbezqnkwr`). El `login()` del helper hace submit del formulario → Supabase de producción rechaza credenciales → no redirige → timeout. Afecta: language-switch (test 2), notifications-render, chat-send, group-feed-post (4 tests de 5 specs).
 
-El script usa `SUPABASE_TEST_SERVICE_ROLE_KEY` para llamar a la Admin Auth API (crear usuarios sin email confirmation). Solo se ejecuta contra el proyecto de test, nunca contra producción.
+**H3 — Discover vacío globalmente**: `/discover?type=movie` también retorna grid vacío. El control falla igual que los bugs esperados. Puede ser rate-limit de TMDB, timeout de red durante `networkidle`, o que el Server Component de discover falla silenciosamente sin mostrar error. Afecta: los 4 tests de discover-pagination.
 
-### Contexto (hallazgo B3.5e-1)
+## Qué cambia
 
-Supabase rechaza el dominio `@kultura.test` con `email_address_invalid`. Usar `@example.com` en su lugar. Si el proyecto de test tiene restricción de dominios, configurarlo para aceptar cualquier dominio (Settings → Auth → Email).
+**Para H1** — Dos opciones (elegir antes de implementar):
+- Opción A: crear los usuarios de test también en producción via seed. Riesgo: contamina prod con cuentas de test.
+- Opción B: configurar Playwright para que el dev server arranque apuntando al proyecto de test (`NEXT_PUBLIC_SUPABASE_URL=xqvicvypoxxfbezqnkwr`). Requiere un `.env.test.local` o override en `webServer.env` del playwright.config.ts.
 
-### Cómo sé que funciona
+**Para H3** — Diagnosticar qué retorna `/api/discover?type=movie` durante los tests y por qué el grid está vacío.
 
-```bash
-node scripts/seed-test.mjs
-# → "Created 2 users: test-user-a@example.com, test-user-b@example.com"
-npx vitest run -c vitest.integration.config.ts
-# → supabase-clients: 4/4 ✓, trigger: 3/3 ✓ (o más tests en verde)
-```
+## Cómo sé que funciona
 
-### Archivos que toco
+- `login()` completa sin timeout (URL cambia a `/es/home` en ≤15s).
+- Tab movie en `/discover` muestra al menos 1 card (test de control verde).
+- Los 4 specs que dependen de auth llegan a la página destino y fallan por el bug de la app (no por login).
+- El tab movie es verde-esperado; anime/manga/paginación son rojo-esperado.
 
-- `scripts/seed-test.mjs` (nuevo)
-- `docs/B3_5e_TEST_ENV.md` (actualizar sección "Tests verificados")
-- `docs/DONE.md` + `docs/NOW.md`
+## Archivos que toco
 
-### Cuándo paro
+- `playwright.config.ts` (webServer.env para H1-B, o similar)
+- posiblemente `.env.test.local` (nuevo archivo, en .gitignore)
+- NO tocar `src/` — solo config de entorno de test
 
-Cuando `npx vitest run -c vitest.integration.config.ts` muestra más tests verdes que antes de B3.5e-2, y el script de seed es idempotente (re-ejecutable sin errores).
+## Cuándo paro
+
+Tras re-ejecutar los 5 specs con el login funcionando y el control de discover verde.
