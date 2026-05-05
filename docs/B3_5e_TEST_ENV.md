@@ -52,7 +52,26 @@ Los tests de trigger (`trigger.test.ts`) usan el dominio `@kultura.test` para re
 
 `vitest.integration.config.ts` actualizado para cargar `.env.local` vía `loadEnv` de Vite (antes el config de integración no cargaba variables de entorno, causando `supabaseUrl is required`).
 
-## Próximos pasos
+## Seed (B3.5e-2)
 
-- B3.5e-2: script de seed automatizado (crear usuarios de test + datos base).
-- B3.5e-3: ejecutar tests E2E contra proyecto de test con seed.
+Script: `scripts/seed-test.mjs`. Idempotente. Lee credenciales de `.env.local`.
+
+**Ejecutar:**
+```bash
+node --env-file=.env.local scripts/seed-test.mjs
+```
+
+**Datos creados:**
+- 2 usuarios (`test-user-a@example.com`, `test-user-b@example.com`).
+- Amistad aceptada A↔B.
+- 1 grupo con A=owner y B=member.
+- 1 group_post de A en el grupo.
+- 1 conversación A↔B con 1 mensaje.
+- 1 notificación para A.
+
+**Variables consumidas por specs E2E:**
+- `TEST_USER_EMAIL`, `TEST_USER_PASSWORD` — login de usuario A.
+- `TEST_USER_B_EMAIL` — referencia para flujos sociales.
+- `TEST_GROUP_ID` — UUID del grupo seedeado.
+
+**Próximo paso:** B3.5e-3 ejecuta los 5 specs E2E contra este seed.

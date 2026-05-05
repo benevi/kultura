@@ -77,6 +77,10 @@ SUPABASE_TEST_URL=               # proyecto Supabase separado para tests de inte
 SUPABASE_TEST_ANON_KEY=          # anon key del proyecto kultura-test
 SUPABASE_TEST_SERVICE_ROLE_KEY=  # service_role key — solo para migraciones/seed, nunca en código de app
 NEXT_PUBLIC_SITE_URL=            # base URL pública (usada por SEO/og:url)
+TEST_USER_EMAIL=                 # server-only — email usuario A para specs E2E (test-user-a@example.com)
+TEST_USER_PASSWORD=              # server-only — password compartida usuarios A y B (seed B3.5e-2)
+TEST_USER_B_EMAIL=               # server-only — email usuario B para flujos sociales E2E
+TEST_GROUP_ID=                   # server-only — UUID del grupo seedeado (rellenar tras correr seed)
 ```
 
 > **Nota:** estas claves NO deben aparecer en el repo. `.env.local` está en `.gitignore`. Producción → Vercel Environment Variables.
