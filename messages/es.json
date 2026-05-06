@@ -283,7 +283,8 @@
     "invitedYou": "te invitó a la lista",
     "friendRequest": "te envió una solicitud de amistad",
     "friendAccepted": "aceptó tu solicitud de amistad",
-    "markAllRead": "Marcar todo como leído"
+    "markAllRead": "Marcar todo como leído",
+    "loadError": "No se pudieron cargar las notificaciones. Inténtalo de nuevo."
   },
   "recommendations": {
     "recommend": "Recomendar",
@@ -391,6 +392,7 @@
     "postPlaceholder": "Escribe algo en el grupo...",
     "publish": "Publicar",
     "beFirst": "Sé el primero en publicar algo en este grupo",
+    "postError": "No se pudo publicar el post. Inténtalo de nuevo.",
     "member": "Miembro"
   },
   "chat": {

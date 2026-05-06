@@ -283,7 +283,8 @@
     "invitedYou": "invited you to the list",
     "friendRequest": "sent you a friend request",
     "friendAccepted": "accepted your friend request",
-    "markAllRead": "Mark all as read"
+    "markAllRead": "Mark all as read",
+    "loadError": "Could not load notifications. Please try again."
   },
   "recommendations": {
     "recommend": "Recommend",
@@ -391,6 +392,7 @@
     "postPlaceholder": "Write something in the group...",
     "publish": "Post",
     "beFirst": "Be the first to post in this group",
+    "postError": "Could not publish the post. Please try again.",
     "member": "Member"
   },
   "chat": {
