@@ -129,3 +129,11 @@ No se edita a mano durante el día. Solo se añade una línea al terminar cada t
 2026-05-05 [B3.5e-3-local-FIX] Doble env para E2E (NEXT_PUBLIC_SUPABASE_* → kultura-test) + 3 fixes mecánicos de tests. Resultado: bug 1 (chat) ROJO-ESPERADO; bugs 3/4/5 VERDE-INESPERADO; bug 6 (discover) H3 pendiente diagnóstico — a9a8651
 
 ---
+
+2026-05-06 [B3.5c-1] Diagnóstico de los 6 bugs detectados en B3.5b — 359d0dd
+
+---
+
+2026-05-06 [B3.5c-2] UX mecánico: navegación + i18n Home + comic oculto — 3067802
+
+---
