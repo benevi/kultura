@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { getTranslations } from "next-intl/server";
 import { getPopularMovies, getPopularTV } from "@/lib/api/tmdb";
 import { getPopularAnime, getPopularManga } from "@/lib/api/jikan";
 import { searchBooks } from "@/lib/api/googlebooks";
@@ -37,7 +38,9 @@ export async function generateMetadata({
   };
 }
 
-export default async function DiscoverPage({ searchParams }: Props) {
+export default async function DiscoverPage({ params, searchParams }: Props) {
+  const { locale } = await params;
+  const t = await getTranslations({ locale, namespace: "discover" });
   const resolvedSearchParams = await searchParams;
   const type = resolvedSearchParams.type ?? "movie";
   const page = Math.max(1, parseInt(resolvedSearchParams.page ?? "1", 10) || 1);
@@ -110,7 +113,7 @@ export default async function DiscoverPage({ searchParams }: Props) {
     <main className="max-w-6xl mx-auto px-4 md:px-8 py-8">
       {fetchError && (
         <div className="mb-6 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 dark:border-red-900 dark:bg-red-950 dark:text-red-400">
-          No se pudo cargar el contenido. Comprueba tu conexión e inténtalo de nuevo.
+          {t("fetchError")}
         </div>
       )}
       <DiscoverClient

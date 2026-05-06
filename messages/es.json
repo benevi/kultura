@@ -105,7 +105,8 @@
     "of": "de",
     "previous": "Anterior",
     "next": "Siguiente",
-    "noResults": "No hay resultados para estos filtros"
+    "noResults": "No hay resultados para estos filtros",
+    "fetchError": "No se pudo cargar el contenido. Inténtalo de nuevo más tarde."
   },
   "search": {
     "title": "Buscar",
