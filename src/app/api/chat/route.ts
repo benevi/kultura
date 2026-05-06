@@ -126,10 +126,14 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
   }
 
   // Add both members
-  await supabase.from('conversation_members').insert([
+  const { error: membersError } = await supabase.from('conversation_members').insert([
     { conversation_id: conv.id, user_id: user.id },
     { conversation_id: conv.id, user_id: targetUserId },
   ])
+
+  if (membersError) {
+    return NextResponse.json({ error: 'Failed to add conversation members' }, { status: 500 })
+  }
 
   return NextResponse.json({ conversationId: conv.id }, { status: 201 })
 }
