@@ -137,3 +137,7 @@ No se edita a mano durante el día. Solo se añade una línea al terminar cada t
 2026-05-06 [B3.5c-2] UX mecánico: navegación + i18n Home + comic oculto — 3067802
 
 ---
+
+2026-05-06 [B3.5c-3] Fixes bugs 1,4,5,6 + refuerzo tests E2E — 232ef07
+
+---

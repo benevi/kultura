@@ -40,6 +40,14 @@ La inserción de members en línea 129-132 usa `await supabase.from('conversatio
 
 Añadir aserción intermedia: después del click en el amigo, verificar que la respuesta del fetch no fue un error antes del waitForURL. Ejemplo: interceptar `page.on('response', r => r.url().includes('/api/chat') && r.status())` para distinguir 500 de timeout.
 
+### Fix aplicado (B3.5c-3)
+- Archivos modificados: `src/middleware.ts`, `src/app/api/chat/route.ts`, `supabase/migrations/20260506000001_fix_conversation_members_policy.sql`
+- Causa raíz confirmada: middleware no cubría rutas `/api/*` → JWT no se refrescaba → RLS rechazaba INSERT en `conversations`. Además, el INSERT bulk en `conversation_members` fallaba por policy `WITH CHECK (user_id = auth.uid())` al insertar targetUserId.
+- Fix: (1) middleware ahora incluye `/api/:path*` en el matcher y hace refresh de sesión sin aplicar next-intl; (2) nueva migration que amplía la policy de `conversation_members` para permitir al creador añadir al otro miembro; (3) captura de error del INSERT de members.
+- Migration aplicada a kultura-test. Pendiente aplicar a producción (app-movies).
+- Commit: db3bf18
+- Test E2E: pendiente verificación con dev server correcto (ver nota en sección 9)
+
 ---
 
 ## Bug 2 — `/lists` no accesible desde navegación
@@ -180,6 +188,12 @@ El canal `supabase.channel('group:${groupId}')` se subscribe a `postgres_changes
 2. Añadir captura del error de inserción: tras el click en "Publicar", verificar que NO aparece ningún estado de error (si se añade manejo de error en el fix) y que el texto del post aparece.
 3. El fix de B3.5c debe añadir `const { error } = await supabase.from('group_posts').insert(...)` y mostrar feedback de error al usuario.
 
+### Fix aplicado (B3.5c-3)
+- Archivos modificados: `src/app/[locale]/(app)/groups/[id]/GroupFeed.tsx`, `messages/es.json`, `messages/en.json`
+- Cambio: captura `{ error }` del insert; si hay error muestra `t('groups.postError')` inline; texto solo se limpia si el insert fue exitoso.
+- Commit: 0785b90
+- Test E2E: pendiente verificación con dev server correcto (ver nota en sección 9)
+
 ---
 
 ## Bug 5 — `/notifications` roto
@@ -235,6 +249,14 @@ El test tiene lógica especial: si el usuario no tiene notificaciones, el primer
 1. Verificar en seed que el usuario de prueba tiene al menos 1 notificación con payload completo (`fromUsername`, `mediaTitle`, `mediaId`).
 2. Añadir aserción sobre el contenido renderizado: verificar que el username del remitente aparece como texto (no "undefined").
 3. Verificar que no hay errores en consola: `page.on('console', msg => msg.type() === 'error' && errors.push(msg.text()))`.
+
+### Fix aplicado (B3.5c-3)
+- Archivos modificados: `src/app/[locale]/(app)/notifications/page.tsx`, `src/app/[locale]/(app)/notifications/NotificationsList.tsx`, `messages/es.json`, `messages/en.json`, `tests/e2e/b3_5e_safety_net/notifications-render.spec.ts`
+- 5a: `notifications/page.tsx` — try/catch en `getNotifications()`; si falla muestra `t('notifications.loadError')`.
+- 5b: `NotificationsList.tsx` — casts cambiados a `string | undefined`; `mediaId?.split()` con null-safety; renderizado condicional de links si campos ausentes.
+- Test reforzado: añade aserción de que ningún item contiene texto "undefined".
+- Commits: d163214 (fix), 232ef07 (test)
+- Test E2E: pendiente verificación con dev server correcto (ver nota en sección 9)
 
 ---
 
@@ -301,6 +323,13 @@ Jikan v4 tiene rate limit de 3 req/seg y 60 req/min. Si los tests de discover se
 1. Antes de los asserts de cards, verificar que el grid no está en estado de error silencioso: `expect(page.locator('[data-empty]')).not.toBeVisible()` (MediaGrid añade `data-empty` al div de estado vacío).
 2. Capturar logs del servidor para detectar errores de fetch: difícil en Playwright, pero posible via `page.on('requestfailed', ...)`.
 3. Diagnóstico previo al fix: ejecutar manualmente `npm run dev` con las mismas env vars que Playwright y navegar a `/discover` — si funciona, el problema es de propagación de env.
+
+### Fix aplicado (B3.5c-3)
+- Archivos modificados: `src/app/[locale]/(app)/discover/page.tsx`
+- Cambio: `catch` ahora loguea `console.error('[discover] API error:', e)` y establece `fetchError = true`; si `fetchError`, se muestra banner de error visible sobre el DiscoverClient.
+- H3 (TMDB_API_KEY no propagada) descartada en este entorno: `loadEnvConfig` la inyecta correctamente en `process.env`. Causa raíz de los fallos E2E confirmada como dev server incorrecto (ver nota en sección 9).
+- Commit: 78ab53e
+- Test E2E: ROJO por dev server — los tests de anime/manga pueden seguir rojos por rate limit Jikan (BACKLOG)
 
 ---
 
