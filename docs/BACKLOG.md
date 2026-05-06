@@ -209,6 +209,14 @@ No bloqueantes. Atacar solo después de A–D.
   `src/lib/env.ts` con Zod que valide todas las env vars requeridas. Importar en `app/layout.tsx`.
   Hecho cuando: arrancar sin `ANTHROPIC_API_KEY` falla con mensaje claro en startup, no en primera request.
 
+- [ ] **E25. Refactorizar specs E2E de `discover-pagination`**
+  Los 4 tests del spec asumen que `/discover` es pública pero está dentro del grupo `(app)` cuyo layout redirige a `/login` si no hay sesión. Soluciones a evaluar: (a) añadir `login()` al `beforeEach` del spec; (b) mover `/discover` fuera de `(app)` si tiene sentido por producto. Mientras tanto, los fixes de bug 6 (try/catch en `discover/page.tsx` + env vars) están validados manualmente vía verificación visual del usuario, no automatizada.
+  Hecho cuando: el spec ejecuta sin redirigir a login y los 4 tests son evaluables (verde o rojo por causa real).
+
+- [ ] **E26. Reforzar selector del picker en `chat-send.spec.ts`**
+  El selector `page.locator('button').filter({ hasText: /\w+/ }).first()` después de abrir el picker es frágil — puede capturar el botón "Nueva conversación" en lugar del botón del amigo. Cambiar a un selector basado en `data-testid` o en el username concreto (`testuserb`) tras añadir el atributo si hace falta.
+  Hecho cuando: el test pasa verde de forma reproducible en 3 ejecuciones consecutivas. Verificar también si el redirect a `/chat/[id]` sin locale prefix causa problemas con next-intl (deuda colateral mencionada en el reporte de B3.5c-3-CLOSE).
+
 ---
 
 ## BLOQUE F — Monetización (fase aparte)
