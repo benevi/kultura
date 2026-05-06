@@ -105,7 +105,8 @@
     "of": "of",
     "previous": "Previous",
     "next": "Next",
-    "noResults": "No results for these filters"
+    "noResults": "No results for these filters",
+    "fetchError": "Couldn't load content. Please try again later."
   },
   "search": {
     "title": "Search",
