@@ -35,6 +35,7 @@ export function GroupFeed({ groupId, currentUserId }: Props) {
   const [loading, setLoading] = useState(true)
   const [text, setText] = useState('')
   const [posting, setPosting] = useState(false)
+  const [postError, setPostError] = useState<string | null>(null)
 
   useEffect(() => {
     const supabase = createClient()
@@ -72,10 +73,15 @@ export function GroupFeed({ groupId, currentUserId }: Props) {
     e.preventDefault()
     if (!text.trim() || posting) return
     setPosting(true)
+    setPostError(null)
     const supabase = createClient()
     const content = text.trim()
-    setText('')
-    await supabase.from('group_posts').insert({ group_id: groupId, user_id: currentUserId, content })
+    const { error } = await supabase.from('group_posts').insert({ group_id: groupId, user_id: currentUserId, content })
+    if (error) {
+      setPostError(t('postError'))
+    } else {
+      setText('')
+    }
     setPosting(false)
   }
 
@@ -91,6 +97,9 @@ export function GroupFeed({ groupId, currentUserId }: Props) {
           maxLength={1000}
           className="w-full bg-surface2 border border-border rounded-xl px-3 py-2.5 text-sm text-text placeholder-muted resize-none focus:outline-none focus:ring-1 focus:ring-accent"
         />
+        {postError && (
+          <p className="text-xs text-red-500">{postError}</p>
+        )}
         <div className="flex justify-end">
           <button
             type="submit"
