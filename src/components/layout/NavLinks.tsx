@@ -8,7 +8,10 @@ const NAV_ITEMS = [
   { key: 'home', href: '/home' },
   { key: 'discover', href: '/discover' },
   { key: 'library', href: '/library' },
+  { key: 'lists', href: '/lists' },
+  { key: 'chat', href: '/chat' },
   { key: 'friends', href: '/friends' },
+  { key: 'suggestions', href: '/suggestions' },
 ] as const
 
 export function NavLinks() {

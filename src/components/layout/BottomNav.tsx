@@ -3,7 +3,7 @@
 import { useTranslations } from 'next-intl'
 import { Link, usePathname } from '@/i18n/navigation'
 import { cn } from '@/lib/utils/index'
-import { Home, Compass, Search, BookOpen, User } from 'lucide-react'
+import { Home, Compass, MessageCircle, BookOpen, User } from 'lucide-react'
 
 interface BottomNavProps {
   username: string
@@ -16,7 +16,7 @@ export function BottomNav({ username }: BottomNavProps) {
   const items = [
     { key: 'home', href: '/home', icon: Home },
     { key: 'discover', href: '/discover', icon: Compass },
-    { key: 'search', href: '/search', icon: Search },
+    { key: 'chat', href: '/chat', icon: MessageCircle },
     { key: 'library', href: '/library', icon: BookOpen },
     { key: 'profile', href: `/profile/${username}`, icon: User },
   ] as const
