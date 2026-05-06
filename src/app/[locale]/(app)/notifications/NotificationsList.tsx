@@ -31,20 +31,26 @@ function NotificationItem({ notif }: { notif: AppNotification }) {
   let content: React.ReactNode = null
 
   if (notif.type === 'recommendation') {
-    const fromUsername = p.fromUsername as string
-    const mediaTitle = p.mediaTitle as string
-    const mediaId = p.mediaId as string
+    const fromUsername = p.fromUsername as string | undefined
+    const mediaTitle = p.mediaTitle as string | undefined
+    const mediaId = p.mediaId as string | undefined
     const message = p.message as string | undefined
+    const mediaType = mediaId?.split('_')[0] ?? null
+    const mediaExternalId = mediaId?.split('_').slice(1).join('_') ?? null
     content = (
       <div className="flex-1 min-w-0">
         <p className="text-sm text-text">
-          <Link href={`/profile/${fromUsername}`} className="font-medium hover:text-accent transition-colors">
-            {fromUsername}
-          </Link>
+          {fromUsername ? (
+            <Link href={`/profile/${fromUsername}`} className="font-medium hover:text-accent transition-colors">
+              {fromUsername}
+            </Link>
+          ) : null}
           {' '}{t('recommendedYou')}{' '}
-          <Link href={`/media/${mediaId.split('_')[0]}/${mediaId.split('_').slice(1).join('_')}`} className="font-medium hover:text-accent transition-colors">
-            {mediaTitle}
-          </Link>
+          {mediaType && mediaExternalId && mediaTitle ? (
+            <Link href={`/media/${mediaType}/${mediaExternalId}`} className="font-medium hover:text-accent transition-colors">
+              {mediaTitle}
+            </Link>
+          ) : (mediaTitle ?? null)}
         </p>
         {message && (
           <p className="text-xs text-muted mt-0.5 truncate">&ldquo;{message}&rdquo;</p>
@@ -52,19 +58,23 @@ function NotificationItem({ notif }: { notif: AppNotification }) {
       </div>
     )
   } else if (notif.type === 'list_invite') {
-    const fromUsername = p.fromUsername as string
-    const listName = p.listName as string
-    const listId = p.listId as string
+    const fromUsername = p.fromUsername as string | undefined
+    const listName = p.listName as string | undefined
+    const listId = p.listId as string | undefined
     content = (
       <div className="flex-1 min-w-0">
         <p className="text-sm text-text">
-          <Link href={`/profile/${fromUsername}`} className="font-medium hover:text-accent transition-colors">
-            {fromUsername}
-          </Link>
+          {fromUsername ? (
+            <Link href={`/profile/${fromUsername}`} className="font-medium hover:text-accent transition-colors">
+              {fromUsername}
+            </Link>
+          ) : null}
           {' '}{t('invitedYou')}{' '}
-          <Link href={`/lists/${listId}`} className="font-medium hover:text-accent transition-colors">
-            {listName}
-          </Link>
+          {listId && listName ? (
+            <Link href={`/lists/${listId}`} className="font-medium hover:text-accent transition-colors">
+              {listName}
+            </Link>
+          ) : (listName ?? null)}
         </p>
       </div>
     )
