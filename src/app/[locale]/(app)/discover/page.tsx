@@ -45,6 +45,7 @@ export default async function DiscoverPage({ searchParams }: Props) {
   let items: MediaItem[] = [];
   let totalPages = 1;
 
+  let fetchError = false;
   try {
     switch (type) {
       case "movie": {
@@ -98,13 +99,20 @@ export default async function DiscoverPage({ searchParams }: Props) {
         break;
       }
     }
-  } catch {
+  } catch (e) {
+    console.error(`[discover] API error (type=${type} page=${page}):`, e);
+    fetchError = true;
     items = [];
     totalPages = 1;
   }
 
   return (
     <main className="max-w-6xl mx-auto px-4 md:px-8 py-8">
+      {fetchError && (
+        <div className="mb-6 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 dark:border-red-900 dark:bg-red-950 dark:text-red-400">
+          No se pudo cargar el contenido. Comprueba tu conexión e inténtalo de nuevo.
+        </div>
+      )}
       <DiscoverClient
         items={items}
         currentType={type}
