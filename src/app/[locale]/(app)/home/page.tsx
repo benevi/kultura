@@ -9,6 +9,7 @@ import { MediaRow } from '@/components/home/MediaRow'
 import { AiRecommendations } from '@/components/home/AiRecommendations'
 import { PopularInCircle } from '@/components/home/PopularInCircle'
 import { GenreNews } from '@/components/home/GenreNews'
+import { getTranslations } from 'next-intl/server'
 import type { Metadata } from 'next'
 import type { HeroItem } from '@/components/home/HeroSection'
 
@@ -17,6 +18,7 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 export default async function HomePage() {
+  const t = await getTranslations('home')
   const supabase = createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/login')
@@ -85,7 +87,7 @@ export default async function HomePage() {
 
       {filteredRecent.length > 0 && (
         <MediaRow
-          title="Continúa donde lo dejaste"
+          title={t('continueWatching')}
           items={filteredRecent}
         />
       )}

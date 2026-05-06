@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { MediaRow } from '@/components/home/MediaRow'
+import { useTranslations } from 'next-intl'
 import type { MediaItem } from '@/types/media'
 
 interface GenreNewsData {
@@ -11,6 +12,7 @@ interface GenreNewsData {
 }
 
 export function GenreNews() {
+  const t = useTranslations('home')
   const [data, setData] = useState<GenreNewsData | null>(null)
   const [status, setStatus] = useState<'loading' | 'done' | 'empty' | 'error'>('loading')
 
@@ -37,7 +39,7 @@ export function GenreNews() {
   if (status === 'loading') {
     return (
       <div className="space-y-6">
-        <MediaRow title="Novedades" items={[]} isLoading />
+        <MediaRow title={t('trends')} items={[]} isLoading />
       </div>
     )
   }
@@ -54,7 +56,7 @@ export function GenreNews() {
       poster: item.poster,
       type: item.type,
     }))
-    return <MediaRow title="Tendencias" items={allItems} />
+    return <MediaRow title={t('trends')} items={allItems} />
   }
 
   const movieItems = data.movies.slice(0, 8).map((item) => ({
@@ -74,11 +76,11 @@ export function GenreNews() {
   const rows: { title: string; items: typeof movieItems }[] = []
 
   if (movieItems.length > 0) {
-    rows.push({ title: `Novedades en ${genres[0]}`, items: movieItems })
+    rows.push({ title: t('genreNewsTitle', { genre: genres[0] }), items: movieItems })
   }
   if (tvItems.length > 0 && rows.length < 3) {
     const genreLabel = genres[1] ?? genres[0]
-    rows.push({ title: `Series en ${genreLabel}`, items: tvItems })
+    rows.push({ title: t('genreSeriesTitle', { genre: genreLabel }), items: tvItems })
   }
 
   return (
