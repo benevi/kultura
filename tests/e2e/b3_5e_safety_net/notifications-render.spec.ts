@@ -59,5 +59,14 @@ test.describe('Notifications — render de items [B3.5e]', () => {
       hasItems,
       'Estado vacío visible — posible bug: query de notificaciones retorna vacío (RLS o migración pendiente)'
     ).toBeTruthy()
+
+    // Aserción reforzada: los items no deben contener texto "undefined"
+    // (detecta el bug de payload con campos ausentes que causan TypeError en render)
+    if (hasItems) {
+      const itemsText = await notifItems.allTextContents()
+      for (const text of itemsText) {
+        expect(text, 'Item de notificación contiene "undefined" — payload con campo ausente').not.toContain('undefined')
+      }
+    }
   })
 })
