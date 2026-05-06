@@ -2,23 +2,16 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import { Link } from '@/i18n/navigation'
+import { useTranslations } from 'next-intl'
 import type { AiRec } from '@/lib/claude/recommendations'
 
 type Status = 'loading' | 'done' | 'empty' | 'error' | 'rate_limited'
 
-const TYPE_LABELS: Record<string, string> = {
-  movie: 'Película',
-  tv: 'Serie',
-  anime: 'Anime',
-  book: 'Libro',
-  comic: 'Cómic',
-  manga: 'Manga',
-  game: 'Juego',
-}
-
 const SKELETON_KEYS = [0, 1, 2, 3, 4, 5]
 
 export function AiRecommendations() {
+  const t = useTranslations('aiRecommendations')
+  const tMedia = useTranslations('media')
   const [recs, setRecs] = useState<AiRec[]>([])
   const [status, setStatus] = useState<Status>('loading')
 
@@ -51,8 +44,8 @@ export function AiRecommendations() {
   return (
     <section>
       <div className="flex items-baseline gap-2 mb-3">
-        <h2 className="font-display text-xl">Para ti</h2>
-        <span className="text-xs text-muted">Claude IA</span>
+        <h2 className="font-display text-xl">{t('title')}</h2>
+        <span className="text-xs text-muted">{t('poweredBy')}</span>
       </div>
 
       {status === 'loading' && (
@@ -65,22 +58,20 @@ export function AiRecommendations() {
 
       {status === 'empty' && (
         <p className="text-sm text-muted">
-          Añade al menos 3 títulos completados o puntuados para recibir recomendaciones.
+          {t('needMoreItems')}
         </p>
       )}
 
       {(status === 'rate_limited' || status === 'error') && (
         <div className="bg-surface border border-border rounded-xl p-5 flex items-center justify-between gap-3">
           <p className="text-sm text-muted">
-            {status === 'rate_limited'
-              ? 'Demasiadas solicitudes. Espera un momento.'
-              : 'No se pudieron cargar las recomendaciones.'}
+            {status === 'rate_limited' ? t('rateLimited') : t('error')}
           </p>
           <button
             onClick={fetchRecs}
             className="text-xs font-medium text-accent hover:underline flex-shrink-0"
           >
-            Reintentar
+            {t('retry')}
           </button>
         </div>
       )}
@@ -98,7 +89,7 @@ export function AiRecommendations() {
                   {rec.title.slice(0, 2).toUpperCase()}
                 </span>
                 <span className="absolute top-1.5 right-1.5 text-[10px] bg-bg/80 px-1.5 py-0.5 rounded text-muted-light">
-                  {TYPE_LABELS[rec.type] ?? rec.type}
+                  {tMedia(rec.type as Parameters<typeof tMedia>[0]) ?? rec.type}
                 </span>
               </div>
               <div className="p-2">

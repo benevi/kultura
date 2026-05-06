@@ -2,9 +2,11 @@
 
 import { useState, useEffect } from 'react'
 import { MediaRow } from '@/components/home/MediaRow'
+import { useTranslations } from 'next-intl'
 import type { CircleMediaItem } from '@/lib/social/circle'
 
 export function PopularInCircle() {
+  const t = useTranslations('home')
   const [items, setItems] = useState<CircleMediaItem[]>([])
   const [status, setStatus] = useState<'loading' | 'done' | 'empty' | 'error'>('loading')
 
@@ -37,11 +39,11 @@ export function PopularInCircle() {
 
   return (
     <MediaRow
-      title="Popular entre tus amigos"
+      title={t('popularInCircle')}
       items={rowItems}
       isLoading={status === 'loading'}
-      emptyMessage={status === 'empty' ? 'Añade amigos para ver qué están viendo' : undefined}
-      emptyAction={status === 'empty' ? { label: 'Añadir amigos', href: '/friends' } : undefined}
+      emptyMessage={status === 'empty' ? t('noFriends') : undefined}
+      emptyAction={status === 'empty' ? { label: t('addFriends'), href: '/friends' } : undefined}
     />
   )
 }

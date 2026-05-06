@@ -1,5 +1,8 @@
+'use client'
+
 import Image from 'next/image'
 import { Link } from '@/i18n/navigation'
+import { useTranslations } from 'next-intl'
 
 export interface HeroItem {
   media_id: string
@@ -19,16 +22,18 @@ interface HeroSectionProps {
 }
 
 export function HeroSection({ item }: HeroSectionProps) {
+  const t = useTranslations('home')
+
   if (!item?.media) {
     return (
       <section className="bg-surface border border-border rounded-xl p-6 flex flex-col gap-3">
-        <p className="text-lg font-semibold text-text">¿Qué estás viendo?</p>
-        <p className="text-sm text-muted">Añade títulos a tu biblioteca para ver tu progreso aquí</p>
+        <p className="text-lg font-semibold text-text">{t('welcomeTitle')}</p>
+        <p className="text-sm text-muted">{t('welcomeSubtitle')}</p>
         <Link
           href="/discover"
           className="w-fit px-4 py-2 text-sm font-semibold bg-accent text-white rounded-lg hover:bg-accent-hover transition-colors"
         >
-          Explorar contenido
+          {t('goDiscover')}
         </Link>
       </section>
     )
@@ -73,7 +78,7 @@ export function HeroSection({ item }: HeroSectionProps) {
         )}
 
         <div className="flex flex-col justify-end min-w-0">
-          <p className="text-xs text-muted-light uppercase tracking-wide mb-1">Continuando</p>
+          <p className="text-xs text-muted-light uppercase tracking-wide mb-1">{t('continuing')}</p>
           <h2 className="text-xl md:text-2xl font-bold text-white leading-tight">{media.title}</h2>
           <p className="text-sm text-muted-light mt-0.5">
             {[media.year, media.type].filter(Boolean).join(' · ')}
@@ -99,7 +104,7 @@ export function HeroSection({ item }: HeroSectionProps) {
             href={href}
             className="mt-3 w-fit inline-flex items-center px-3 py-1.5 text-sm font-semibold bg-accent text-white rounded-lg hover:bg-accent-hover transition-colors"
           >
-            Continuar
+            {t('continue')}
           </Link>
         </div>
       </div>

@@ -14,6 +14,10 @@ vi.mock('@/i18n/navigation', () => ({
   ),
 }))
 
+vi.mock('next-intl', () => ({
+  useTranslations: vi.fn(() => (key: string) => key),
+}))
+
 import { HeroSection } from '@/components/home/HeroSection'
 import type { HeroItem } from '@/components/home/HeroSection'
 
@@ -36,7 +40,8 @@ describe('HeroSection', () => {
   it('con item in_progress muestra el título y botón Continuar con href correcto', () => {
     render(<HeroSection item={baseItem} />)
     expect(screen.getByText('Fight Club')).toBeInTheDocument()
-    const link = screen.getByText('Continuar').closest('a')
+    expect(screen.getByText('continuing')).toBeInTheDocument()
+    const link = screen.getByText('continue').closest('a')
     expect(link).toHaveAttribute('href', '/media/movie/550')
   })
 
@@ -52,8 +57,9 @@ describe('HeroSection', () => {
 
   it('sin item muestra texto bienvenida y botón Explorar contenido', () => {
     render(<HeroSection item={null} />)
-    expect(screen.getByText('¿Qué estás viendo?')).toBeInTheDocument()
-    const link = screen.getByText('Explorar contenido').closest('a')
+    expect(screen.getByText('welcomeTitle')).toBeInTheDocument()
+    expect(screen.getByText('welcomeSubtitle')).toBeInTheDocument()
+    const link = screen.getByText('goDiscover').closest('a')
     expect(link).toHaveAttribute('href', '/discover')
   })
 
