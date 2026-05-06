@@ -8,6 +8,7 @@
     "notifications": "Notifications",
     "settings": "Settings",
     "chat": "Messages",
+    "lists": "Lists",
     "suggestions": "Feedback",
     "profile": "My profile",
     "signOut": "Sign out"
@@ -323,6 +324,8 @@
     "goDiscover": "Explore content",
     "aiTitle": "For you",
     "genreNewsTitle": "New in {genre}",
+    "genreSeriesTitle": "Series in {genre}",
+    "continuing": "Continuing",
     "trends": "Trending"
   },
   "friends": {

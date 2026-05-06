@@ -6,7 +6,7 @@ vi.mock('next-intl', () => ({
     const map: Record<string, string> = {
       home: 'Inicio',
       discover: 'Descubrir',
-      search: 'Buscar',
+      chat: 'Mensajes',
       library: 'Mi biblioteca',
       profile: 'Perfil',
     }
@@ -24,7 +24,7 @@ vi.mock('@/i18n/navigation', () => ({
 vi.mock('lucide-react', () => ({
   Home: () => <svg data-testid="icon-home" />,
   Compass: () => <svg data-testid="icon-compass" />,
-  Search: () => <svg data-testid="icon-search" />,
+  MessageCircle: () => <svg data-testid="icon-messagecircle" />,
   BookOpen: () => <svg data-testid="icon-bookopen" />,
   User: () => <svg data-testid="icon-user" />,
 }))
@@ -36,7 +36,7 @@ describe('BottomNav', () => {
     render(<BottomNav username="testuser" />)
     expect(screen.getByText('Inicio')).toBeInTheDocument()
     expect(screen.getByText('Descubrir')).toBeInTheDocument()
-    expect(screen.getByText('Buscar')).toBeInTheDocument()
+    expect(screen.getByText('Mensajes')).toBeInTheDocument()
     expect(screen.getByText('Mi biblioteca')).toBeInTheDocument()
     expect(screen.getByText('Perfil')).toBeInTheDocument()
   })
