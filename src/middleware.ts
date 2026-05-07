@@ -6,61 +6,58 @@ import { routing } from "./i18n/routing";
 const intlMiddleware = createIntlMiddleware(routing);
 
 export async function middleware(request: NextRequest) {
-  // Acumula las cookies que Supabase quiere escribir en la respuesta
-  const pendingCookies: Array<{
-    name: string;
-    value: string;
-    options: Record<string, unknown>;
-  }> = [];
+  // Start with a response that forwards the request as-is.
+  // We'll replace it if the session gets refreshed.
+  let supabaseResponse = NextResponse.next({ request });
 
-  // 1. Crear cliente Supabase en el contexto del middleware
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
       cookies: {
         getAll: () => request.cookies.getAll(),
-        setAll: (cookies) => {
-          cookies.forEach((cookie) => pendingCookies.push(cookie));
+        setAll(cookiesToSet) {
+          // Write refreshed cookies into the forwarded request headers so
+          // the Route Handler (or Server Component) receives the updated JWT.
+          cookiesToSet.forEach(({ name, value }) =>
+            request.cookies.set(name, value)
+          );
+          // Rebuild the supabaseResponse with the mutated request so the
+          // refreshed cookies flow downstream.
+          supabaseResponse = NextResponse.next({ request });
+          // Also set them on the response so the browser updates its cookies.
+          cookiesToSet.forEach(({ name, value, options }) =>
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            supabaseResponse.cookies.set(name, value, options as any)
+          );
         },
       },
     }
   );
 
-  // 2. Refrescar sesión — getUser() valida contra el servidor de auth,
-  //    más seguro que getSession() que solo verifica la firma local.
+  // Validate session against auth server; refreshes token if expired.
   await supabase.auth.getUser();
 
-  // Para rutas API: solo refrescar el token, no aplicar routing de idioma.
+  // For API routes: return the Supabase response (carries refreshed session).
   if (request.nextUrl.pathname.startsWith("/api/")) {
-    const response = NextResponse.next();
-    pendingCookies.forEach(({ name, value, options }) => {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      response.cookies.set(name, value, options as any);
-    });
-    return response;
+    return supabaseResponse;
   }
 
-  // 3. Dejar que next-intl procese el routing de idioma
-  const response = intlMiddleware(request);
+  // For page routes: let next-intl handle locale routing, then merge cookies.
+  const intlResponse = intlMiddleware(request);
 
-  // 4. Aplicar cookies de sesión de Supabase a la respuesta de next-intl
-  pendingCookies.forEach(({ name, value, options }) => {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    response.cookies.set(name, value, options as any);
+  supabaseResponse.cookies.getAll().forEach((cookie) => {
+    intlResponse.cookies.set(cookie);
   });
 
-  return response;
+  return intlResponse;
 }
 
 export const config = {
   matcher: [
-    // Rutas raíz y con prefijo de locale
     "/",
     "/(es|en)/:path*",
-    // Rutas API — para refrescar sesión Supabase antes de llegar al Route Handler
     "/api/:path*",
-    // Todo excepto: _next, _vercel, archivos con extensión
     "/((?!_next|_vercel|.*\\..*).*)",
   ],
 };

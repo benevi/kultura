@@ -48,6 +48,9 @@ Añadir aserción intermedia: después del click en el amigo, verificar que la r
 - Commit: db3bf18
 - Test E2E: pendiente verificación con dev server correcto (ver nota en sección 9)
 
+**Cierre (B3.5c-3-FIX4, 2026-05-07):** Confirmado patrón H1 — el middleware refrescaba el JWT de sesión y escribía las cookies actualizadas en la `response` (para el browser), pero NO las propagaba en los headers de la `request` hacia el Route Handler. En consecuencia, `createClient()` en el Route Handler leía el JWT expirado de la request original → rol efectivo `anon` en PostgREST → 42501. `getUser()` en el handler devolvía usuario porque el SDK auth valida contra el servidor (no depende del JWT local), pero el INSERT PostgREST sí usaba el JWT expirado de las cookies.
+Fix: `middleware.ts` ahora muta `request.cookies` al refrescar y reconstruye `NextResponse.next({ request })` con la request actualizada, garantizando que el Route Handler recibe el JWT vigente. Verificado contra kultura-test: TSC limpio, lint sin errores nuevos, 493/493 tests verdes.
+
 ---
 
 ## Bug 2 — `/lists` no accesible desde navegación
