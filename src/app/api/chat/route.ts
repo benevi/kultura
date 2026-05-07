@@ -122,6 +122,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     .single()
 
   if (convError || !conv) {
+    console.error('Failed to create conversation:', { convError, userId: user.id, targetUserId })
     return NextResponse.json({ error: 'Failed to create conversation' }, { status: 500 })
   }
 
@@ -132,6 +133,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
   ])
 
   if (membersError) {
+    console.error('Failed to add conversation members:', { membersError, convId: conv.id, userId: user.id, targetUserId })
     return NextResponse.json({ error: 'Failed to add conversation members' }, { status: 500 })
   }
 
