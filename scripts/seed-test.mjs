@@ -38,7 +38,15 @@ async function findOrCreateUser(email, password) {
 
   const existing = listData.users.find(u => u.email === email)
   if (existing) {
-    log('found', 'auth.user', email)
+    // Sincronizar password con .env.local en cada ejecución.
+    // El seed debe ser idempotente: si los valores cambian en .env.local,
+    // re-ejecutar el seed reconcilia el estado en Supabase.
+    const { error: updateErr } = await admin.auth.admin.updateUserById(existing.id, {
+      password,
+      email_confirm: true,
+    })
+    if (updateErr) throw new Error(`updateUserById(${email}) failed: ${updateErr.message}`)
+    log('synced', 'auth.user', email)
     return existing.id
   }
 
@@ -51,7 +59,6 @@ async function findOrCreateUser(email, password) {
   log('created', 'auth.user', email)
   return data.user.id
 }
-
 async function waitForPublicUser(userId) {
   // Trigger handle_new_user fires async — retry up to 3s
   for (let i = 0; i < 6; i++) {
