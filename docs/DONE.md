@@ -170,6 +170,6 @@ No se edita a mano durante el día. Solo se añade una línea al terminar cada t
 
 ---
 
-2026-05-12 [B3.5g-AUDIT-RLS-2] docs: E34-E36 en BACKLOG, NOW como TBD, DONE actualizado — {hash2}
+2026-05-12 [B3.5g-AUDIT-RLS-2] docs: E34-E36 en BACKLOG, NOW como TBD, DONE actualizado — 541a3b2
 
 ---
