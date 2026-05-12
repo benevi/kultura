@@ -1,6 +1,6 @@
 import { test, expect } from "@playwright/test";
 
-const BASE = "http://localhost:3001";
+const BASE = "";
 const TEST_EMAIL = `test_${Date.now()}@kultura-test.dev`;
 const TEST_PASSWORD = "Test1234!";
 
