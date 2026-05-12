@@ -263,6 +263,37 @@ No bloqueantes. Atacar solo después de A–D.
   El endurecimiento aplicado en B3.5g-AUDIT-RLS-2 (Tarea 2) es defensa básica (`auth.uid() IS NOT NULL`). Una policy más estricta requiere: (a) añadir columna `created_by` a `conversations`, (b) trigger `AFTER INSERT` que añada al creador a `conversation_members`, (c) policy `WITH CHECK (created_by = auth.uid())`. Patrón paralelo a `handle_new_group`. Prioridad baja porque el Route Handler ya valida el flujo.
   Hecho cuando: `conversations` tiene columna `created_by`, trigger correspondiente, y policy `WITH CHECK (created_by = auth.uid())`. Tests E2E de chat siguen en verde.
 
+- [x] **E37** — Puerto hardcodeado en `tests/e2e/auth.spec.ts`. `localhost:3001` hardcodeado
+  mientras `playwright.config.ts` configura `baseURL: http://localhost:3000`. Corregido en
+  B3.5g-AUDIT-RLS-2-E2E sustituyendo `const BASE = "http://localhost:3001"` por `const BASE = ""`,
+  usando el `baseURL` de Playwright. ✅ Cerrada en este bloque. Auditar otros specs en busca del
+  mismo patrón (`grep -r "localhost:" tests/e2e/`).
+
+- [ ] **E38** — Playwright debería cargar `.env.test.local` automáticamente. El workaround
+  actual (merge manual en `playwright.config.ts` `webServer.env`) funciona pero es frágil —
+  si el archivo no existe, Playwright corre contra producción sin advertir. Solución de raíz:
+  `globalSetup` que valide presencia de `.env.test.local` antes de arrancar, o `dotenv-cli`
+  en el script `test:e2e` de `package.json`. Prioridad media — el flujo actual funciona.
+
+- [ ] **E39** — `playwright.config.ts` tiene `reuseExistingServer: !process.env.CI`. Permite
+  que un dev server externo (arrancado manualmente con `.env.local` → producción) sea reutilizado
+  por Playwright, anulando la carga de `.env.test.local` via `webServer.env`. Detectado en
+  B3.5g-AUDIT-RLS-2-E2E: `chat-send.spec.ts` falló en `login()` porque el dev server
+  reutilizado apuntaba a producción y los users de test solo existen en kultura-test. Más grave:
+  `auth.spec.ts` pasó verde durante ese run porque sus tests son agnósticos al entorno (UI
+  pública, errores esperados, sin login real), enmascarando el problema. Opciones de fix:
+  (a) `reuseExistingServer: false` — Playwright siempre arranca el suyo, falla si `:3000`
+  ocupado; (b) health-check en `webServer.url` que valide el entorno correcto antes de aceptarlo.
+  **Prioridad ALTA** — compromete la integridad de toda la red E2E. Candidato principal para
+  B3.5h-AUDIT-E2E.
+
+- [ ] **E40** — `tests/e2e/auth.spec.ts` (9 tests) es potencialmente falso verde estructural.
+  Detectado en B3.5g-AUDIT-RLS-2-E2E: los 9 tests pasaron verdes tanto contra producción (dev
+  server externo) como contra kultura-test. Ninguno es sensible al entorno de Supabase —
+  pueden ser legítimamente agnósticos (UI pública, validación client-side, errores esperados
+  sin tocar DB), pero conviene auditarlos uno por uno en B3.5h-AUDIT-E2E para confirmar que
+  la cobertura aparente coincide con la real. Caso de estudio número 1 para AUDIT-E2E.
+
 ---
 
 ## BLOQUE B3.5 — Diagnóstico y fixes pre-producción
