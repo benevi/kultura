@@ -149,3 +149,15 @@ No se edita a mano durante el día. Solo se añade una línea al terminar cada t
 2026-05-07 [B3.5c-3-FIX2] Fix recursión RLS conversation_members + limpieza diagnóstico — 3703fe4
 
 ---
+
+2026-05-07 [B3.5c-3-FIX3] Fix recursión policy SELECT conversation_members — 92aa455
+
+---
+
+2026-05-11 [B3.5c-3-FIX4] Fix idempotencia password en seed-test.mjs (findOrCreateUser sincroniza con .env.local) — 0bc9b4c
+
+---
+
+2026-05-11 [B3.5c-3-CLOSE-FINAL] Cierre definitivo B3.5c-3 tras sub-saga FIX2/FIX3/FIX4 + verificación manual exitosa kultura-test. Bugs 1,4,5,6 cerrados. Deuda E27-E33 anotada en BACKLOG. Próximo: B3.5g-AUDIT-RLS-1 — e4589a8
+
+---

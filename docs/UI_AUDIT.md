@@ -303,25 +303,25 @@ Comparación:
 
 Pantallas ordenadas por probabilidad de problema según este análisis:
 
-1. **`/chat`** — Sección funcionalmente completa pero no accesible desde navegación. Verificar si hay link escondido en algún lado, o confirmar que es una ruta huérfana de navegación.
+1. **`/chat`** — Sección funcionalmente completa pero no accesible desde navegación. Verificar si hay link escondido en algún lado, o confirmar que es una ruta huérfana de navegación. 🔴 Roto --> No es accesible si no es por barra de dirección. Al seleccionar amigo para escribir aparece " POST /api/chat 500 in 204ms"
 
-2. **`/lists`** — Mismo problema. Verificar si hay link desde algún componente no analizado (ej. desde perfil o library detail).
+2. **`/lists`** — Mismo problema. Verificar si hay link desde algún componente no analizado (ej. desde perfil o library detail).🔴 Roto --> No es accesible si no es por barra de dirección.
 
-3. **`/en/home`** — Con locale en inglés, verificar que los 4 componentes de Home muestran texto en español hardcodeado (HeroSection, AiRecommendations, PopularInCircle, GenreNews). Debería ser visible el bug inmediatamente.
+3. **`/en/home`** — Con locale en inglés, verificar que los 4 componentes de Home muestran texto en español hardcodeado (HeroSection, AiRecommendations, PopularInCircle, GenreNews). Debería ser visible el bug inmediatamente.🔴 Roto --> No cambia de idioma
 
-4. **`/groups/[id]`** → `GroupFeed` — Publicar un post en un grupo. El Client Component no fue leído en detalle; verificar que el formulario funciona y los posts se muestran.
+4. **`/groups/[id]`** → `GroupFeed` — Publicar un post en un grupo. El Client Component no fue leído en detalle; verificar que el formulario funciona y los posts se muestran.🔴 Roto --> No funciona
 
-5. **`/settings`** — Verificar el botón "Cambiar contraseña": ¿envía email? ¿muestra feedback? La feature "Eliminar cuenta" debería mostrar el texto "disponible próximamente".
+5. **`/settings`** — Verificar el botón "Cambiar contraseña": ¿envía email? ¿muestra feedback? La feature "Eliminar cuenta" debería mostrar el texto "disponible próximamente".🟢 OK
 
-6. **`/chat/[id]`** → `ConversationClient` — Verificar mensajes en tiempo real. No confirmado si usa Supabase Realtime o polling.
+6. **`/chat/[id]`** → `ConversationClient` — Verificar mensajes en tiempo real. No confirmado si usa Supabase Realtime o polling.⚪ No probado
 
-7. **`/notifications`** — Verificar que las notificaciones de tipo `recommendation` y `list_invite` se renderizan correctamente (NotificationsList no fue leído en detalle).
+7. **`/notifications`** — Verificar que las notificaciones de tipo `recommendation` y `list_invite` se renderizan correctamente (NotificationsList no fue leído en detalle).🔴 Roto
 
-8. **`/discover`** → `DiscoverClient` — Verificar que el cambio de tab (película/serie/anime/...) funciona con la paginación.
+8. **`/discover`** → `DiscoverClient` — Verificar que el cambio de tab (película/serie/anime/...) funciona con la paginación. 🔴 Roto --> Paginacion no funicona correctamente, anime + comics + manga no tienen resultados. Mejorar los filtros de busqueda
 
-9. **`/media/comic/[id]`** — COMICVINE_KEY presente pero sin handler. Intentar navegar a un comic debería dar 404 o error (VALID_TYPES en media detail no incluye 'comic').
+9. **`/media/comic/[id]`** — COMICVINE_KEY presente pero sin handler. Intentar navegar a un comic debería dar 404 o error (VALID_TYPES en media detail no incluye 'comic').⚪ No probado
 
-10. **`/library`** → `LibraryClient` — Verificar filtros (tipo/estado/puntuación) y que las entradas se pueden actualizar y eliminar.
+10. **`/library`** → `LibraryClient` — Verificar filtros (tipo/estado/puntuación) y que las entradas se pueden actualizar y eliminar.🟡 OK con nota --> mejorar los filtros
 
 ---
 

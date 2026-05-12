@@ -217,6 +217,67 @@ No bloqueantes. Atacar solo después de A–D.
   El selector `page.locator('button').filter({ hasText: /\w+/ }).first()` después de abrir el picker es frágil — puede capturar el botón "Nueva conversación" en lugar del botón del amigo. Cambiar a un selector basado en `data-testid` o en el username concreto (`testuserb`) tras añadir el atributo si hace falta.
   Hecho cuando: el test pasa verde de forma reproducible en 3 ejecuciones consecutivas. Verificar también si el redirect a `/chat/[id]` sin locale prefix causa problemas con next-intl (deuda colateral mencionada en el reporte de B3.5c-3-CLOSE).
 
+- [ ] **E27. Auditar policies RLS por recursión potencial**
+  Durante B3.5c-3 se destaparon 3 capas de RLS rotas en `conversation_members` que emergieron secuencialmente al arreglar la anterior. Patrón a buscar: policies con `WITH CHECK` o `qual` que consulten la propia tabla. Tablas a revisar: `messages`, `group_members`, `group_posts`, `friendships`, `list_members`, `list_items`. Esta tarea es el contenido del bloque B3.5g-AUDIT-RLS y se ejecutará como sprint completo (no como E-task suelta).
+  Hecho cuando: cada policy de las 17 tablas está clasificada (segura / recursiva / dudosa) y las recursivas han sido refactorizadas con SECURITY DEFINER functions o reescritas para evitar self-reference.
+  Depende de: nada. Promovido a bloque B3.5g.
+
+- [ ] **E28. Reforzar red de seguridad E2E con sesión real (no service_role)**
+  El seed actual (`scripts/seed-test.mjs`) usa service_role y bypassa RLS. Por eso B3.5c-3 tuvo bugs de RLS verdes en tests pero rojos en uso real. Pensar en seedar parte vía API con login real, o añadir un nivel de tests E2E que ejerciten flujos críticos con sesión auth válida (no service_role).
+  Hecho cuando: existe al menos un spec E2E que ejecuta INSERT/UPDATE/DELETE como usuario autenticado real y verifica que las RLS no bloquean falsamente operaciones legítimas (regresión de bug 1).
+
+- [ ] **E29. Defensa null-safety en `discover/page.tsx`**
+  Tras el fix de bug 6, sigue logueándose `TypeError: Cannot read properties of undefined (reading 'map')` en tabs anime y manga cuando Jikan rate-limita. El banner i18n captura el fetch error pero el render aún asume arrays presentes. Añadir guards `(items ?? []).map(...)` en los puntos de renderizado.
+  Hecho cuando: tab anime con rate-limit Jikan activo no produce error en consola; en su lugar muestra estado vacío + banner.
+
+- [ ] **E30. CSP en development debe permitir `'unsafe-eval'`**
+  El CSP actual es el mismo en dev y prod, y rompe HMR de React Refresh en development (requiere `unsafe-eval`). Patrón a aplicar en `next.config.mjs`:
+```js
+  const isDev = process.env.NODE_ENV !== 'production';
+  const scriptSrc = isDev
+    ? "'self' 'unsafe-inline' 'unsafe-eval'"
+    : "'self' 'unsafe-inline'";  // pendiente quitar 'unsafe-inline' en C7
+```
+  Hecho cuando: `npm run dev` no muestra warnings de CSP por `unsafe-eval`, y `npm run build` + producción mantienen el CSP estricto sin `unsafe-eval`.
+
+- [ ] **E31. Documentar workaround swap `.env.local` en `docs/B3_5e_TEST_ENV.md`**
+  La verificación manual contra kultura-test se hace vía swap del archivo `.env.local` (NO con `NODE_ENV=test` + `npm run dev`, que rompe HMR por CSP). Documentar el procedimiento exacto: backup → reemplazar URLs/keys → `npm run dev` normal → restaurar al terminar. Tras cerrar E30 este workaround puede simplificarse a un `npm run dev:test` limpio.
+  Hecho cuando: `docs/B3_5e_TEST_ENV.md` contiene la sección "Verificación manual contra kultura-test" con comandos PowerShell paso a paso y la nota sobre simplificación post-E30.
+
+- [x] **E32. Bug `findOrCreateUser` no idempotente para password** ✅ (cerrada el 2026-05-11, hash 0bc9b4c)
+  `scripts/seed-test.mjs` decía ser idempotente pero no actualizaba la password si el usuario ya existía — solo retornaba el `id`. Si la pass cambiaba en `.env.local`, el seed no la reconciliaba. Fix: `findOrCreateUser` ahora llama `auth.admin.updateUserById` con la password de `.env.local` cuando el usuario existe.
+
+- [ ] **E33. Documentar convención de comillas en `.env*` para credenciales con caracteres especiales**
+  Node con `--env-file` (Node 20+) trata `#` como inicio de comentario y trunca silenciosamente. Bug visto en sesión 5: password `SeS1*WiZY7JES^HETQi%e#rf` (24 chars) se leía como `SeS1*WiZY7JES^HETQi%e` (21 chars). Solución: envolver SIEMPRE entre comillas dobles cualquier credencial generada que pueda contener `#`, `$`, espacios u otros caracteres conflictivos. Documentar en `docs/B3_5e_TEST_ENV.md` y/o en `CLAUDE.md` sección env vars.
+  Hecho cuando: la convención está documentada en al menos uno de esos dos archivos, con ejemplo del bug y la forma correcta.
+
+---
+
+## BLOQUE B3.5 — Diagnóstico y fixes pre-producción
+
+Paréntesis abierto tras B3 al detectar gap entre tests verdes y realidad. Cierra hasta que B3.5g (auditoría RLS) y opcionalmente B3.5f (diseño) terminen. Después → BLOQUE 4 (producción real).
+
+- [x] **B3.5a. Auditoría UI/UX por código** ✅ (cerrada el 2026-05-05) — `docs/UI_AUDIT.md`.
+- [x] **B3.5b. Verificación visual del usuario** ✅ (cerrada el 2026-05-05) — anotaciones de estado en `UI_AUDIT.md`.
+- [x] **B3.5c-1. Diagnóstico de los 6 bugs** ✅ (cerrada el 2026-05-06) — `docs/B3_5c_BUGS.md`.
+- [x] **B3.5c-2. UX mecánico (nav + i18n + comic)** ✅ (cerrada el 2026-05-06) — 3 commits.
+- [x] **B3.5c-3. Fixes bugs 1, 4, 5, 6 + sub-saga FIX2/FIX3/FIX4** ✅ (cerrada el 2026-05-11) — verificación manual contra kultura-test confirmada por el usuario.
+- [x] **B3.5d. Diagnóstico estructural** ✅ (cerrada el 2026-05-05) — `docs/STRUCTURAL_AUDIT.md`, veredicto 🟡.
+- [x] **B3.5e. Red de seguridad E2E + `lib/social/groups`** ✅ (cerrada el 2026-05-06).
+- [x] **B3.5e-1. Documentar entorno Supabase de test** ✅ (cerrada el 2026-05-06) — `docs/B3_5e_TEST_ENV.md`.
+- [x] **B3.5e-2. Seed automatizado** ✅ (cerrada el 2026-05-06) — `scripts/seed-test.mjs`.
+
+- [ ] **B3.5g-AUDIT-RLS. Auditoría sistemática de policies RLS**
+  Próximo bloque oficial. Contenido detallado en E27. Recomendado antes de B4 (producción) porque B4 introduce Sentry, logger y Vercel KV — capas que no arreglan RLS roto, solo lo hacen más visible.
+  Hecho cuando: criterios de E27 cumplidos + commit `[B3.5g-AUDIT-RLS-CLOSE]` con reporte de hallazgos en `docs/RLS_AUDIT.md`.
+
+- [ ] **B3.5e-3-prod. Gate E2E contra producción**
+  Alternativa a B3.5g-AUDIT-RLS si la prioridad es validar en prod antes de auditar. Menos prioritaria que B3.5g según veredicto de HANDOVER_5.
+
+- [ ] **B3.5f. Sprint de diseño visual** (opcional, decidir al cerrar B3.5g).
+
+- [ ] **B3.5g-COMIC. ComicVine completo (renombrado de E6)** — pendiente, post-B4.
+
 ---
 
 ## BLOQUE F — Monetización (fase aparte)
