@@ -267,9 +267,11 @@ Paréntesis abierto tras B3 al detectar gap entre tests verdes y realidad. Cierr
 - [x] **B3.5e-1. Documentar entorno Supabase de test** ✅ (cerrada el 2026-05-06) — `docs/B3_5e_TEST_ENV.md`.
 - [x] **B3.5e-2. Seed automatizado** ✅ (cerrada el 2026-05-06) — `scripts/seed-test.mjs`.
 
-- [ ] **B3.5g-AUDIT-RLS. Auditoría sistemática de policies RLS**
-  Próximo bloque oficial. Contenido detallado en E27. Recomendado antes de B4 (producción) porque B4 introduce Sentry, logger y Vercel KV — capas que no arreglan RLS roto, solo lo hacen más visible.
-  Hecho cuando: criterios de E27 cumplidos + commit `[B3.5g-AUDIT-RLS-CLOSE]` con reporte de hallazgos en `docs/RLS_AUDIT.md`.
+- [x] **B3.5g-AUDIT-RLS-1. Inventario y clasificación de policies RLS** ✅ (cerrada el 2026-05-12) — `docs/RLS_AUDIT.md`. 49 policies: 46🟢 / 3🟡 / 0🔴. Sin recursiones activas.
+
+- [ ] **B3.5g-AUDIT-RLS-2. Refactor de policies 🟡**
+  Aplicar el plan de `docs/RLS_AUDIT.md` sección 5: (1) deduplicar policies UPDATE duplicadas en `users`; (2) evaluar/documentar `conversations` INSERT `WITH CHECK:true`. Requiere decisión del usuario sobre (2) antes de empezar.
+  Hecho cuando: `pg_policies WHERE tablename='users' AND cmd='UPDATE'` devuelve 1 fila y tests pasan.
 
 - [ ] **B3.5e-3-prod. Gate E2E contra producción**
   Alternativa a B3.5g-AUDIT-RLS si la prioridad es validar en prod antes de auditar. Menos prioritaria que B3.5g según veredicto de HANDOVER_5.
