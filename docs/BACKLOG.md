@@ -251,6 +251,18 @@ No bloqueantes. Atacar solo después de A–D.
   Node con `--env-file` (Node 20+) trata `#` como inicio de comentario y trunca silenciosamente. Bug visto en sesión 5: password `SeS1*WiZY7JES^HETQi%e#rf` (24 chars) se leía como `SeS1*WiZY7JES^HETQi%e` (21 chars). Solución: envolver SIEMPRE entre comillas dobles cualquier credencial generada que pueda contener `#`, `$`, espacios u otros caracteres conflictivos. Documentar en `docs/B3_5e_TEST_ENV.md` y/o en `CLAUDE.md` sección env vars.
   Hecho cuando: la convención está documentada en al menos uno de esos dos archivos, con ejemplo del bug y la forma correcta.
 
+- [ ] **E34. Documentar política de acceso a `reports`**
+  La tabla tiene RLS habilitado con solo INSERT policy; SELECT/UPDATE/DELETE solo accesibles via `service_role`. Decidir si: (a) se mantiene así con documentación explícita en un comentario SQL, (b) se añade una policy SELECT restringida (ej. solo el reporter ve sus propios reports), o (c) se construye un panel de admin que use service_role. Hallazgo de B3.5g-AUDIT-RLS-1 (sección 6).
+  Hecho cuando: existe documentación explícita de la decisión (comentario SQL en la migration o entrada en `docs/`) o se ha añadido la policy SELECT decidida.
+
+- [ ] **E35. Normalizar `roles={public}` → `{authenticated}` en ~30 policies**
+  Las policies funcionan correctamente porque los predicados `auth.uid() = ...` filtran a anon, pero el alcance declarado es subóptimo y ensucia auditorías futuras. Cambio cosmético, sin riesgo funcional. Aplicar via migration única que regenere las ~30 policies con `TO authenticated` explícito. Hallazgo de B3.5g-AUDIT-RLS-1 (sección 6).
+  Hecho cuando: `SELECT count(*) FROM pg_policies WHERE schemaname='public' AND roles='{public}'` devuelve 0 (o solo las policies donde `public` es realmente intencional).
+
+- [ ] **E36. Rediseño defensivo de `conversations` INSERT**
+  El endurecimiento aplicado en B3.5g-AUDIT-RLS-2 (Tarea 2) es defensa básica (`auth.uid() IS NOT NULL`). Una policy más estricta requiere: (a) añadir columna `created_by` a `conversations`, (b) trigger `AFTER INSERT` que añada al creador a `conversation_members`, (c) policy `WITH CHECK (created_by = auth.uid())`. Patrón paralelo a `handle_new_group`. Prioridad baja porque el Route Handler ya valida el flujo.
+  Hecho cuando: `conversations` tiene columna `created_by`, trigger correspondiente, y policy `WITH CHECK (created_by = auth.uid())`. Tests E2E de chat siguen en verde.
+
 ---
 
 ## BLOQUE B3.5 — Diagnóstico y fixes pre-producción
@@ -269,9 +281,8 @@ Paréntesis abierto tras B3 al detectar gap entre tests verdes y realidad. Cierr
 
 - [x] **B3.5g-AUDIT-RLS-1. Inventario y clasificación de policies RLS** ✅ (cerrada el 2026-05-12) — `docs/RLS_AUDIT.md`. 49 policies: 46🟢 / 3🟡 / 0🔴. Sin recursiones activas.
 
-- [ ] **B3.5g-AUDIT-RLS-2. Refactor de policies 🟡**
-  Aplicar el plan de `docs/RLS_AUDIT.md` sección 5: (1) deduplicar policies UPDATE duplicadas en `users`; (2) evaluar/documentar `conversations` INSERT `WITH CHECK:true`. Requiere decisión del usuario sobre (2) antes de empezar.
-  Hecho cuando: `pg_policies WHERE tablename='users' AND cmd='UPDATE'` devuelve 1 fila y tests pasan.
+- [x] **B3.5g-AUDIT-RLS-2. Refactor de policies 🟡** ✅ (cerrada el 2026-05-12)
+  Deduplicada policy UPDATE en `users` (eliminada `users can update own profile`, retenida `users_update_own`). Endurecida `conversations` INSERT: `WITH CHECK: true` → `WITH CHECK (auth.uid() IS NOT NULL)`. 2 migrations aplicadas a prod + kultura-test. Deuda anotada: E34, E35, E36.
 
 - [ ] **B3.5e-3-prod. Gate E2E contra producción**
   Alternativa a B3.5g-AUDIT-RLS si la prioridad es validar en prod antes de auditar. Menos prioritaria que B3.5g según veredicto de HANDOVER_5.
