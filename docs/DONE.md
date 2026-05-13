@@ -181,3 +181,33 @@ No se edita a mano durante el día. Solo se añade una línea al terminar cada t
 2026-05-12 [B3.5g-AUDIT-RLS-2-E2E] docs: E37✅ E38/E39/E40 anotadas, cierre AUDIT-2 con hallazgos colaterales. auth.spec.ts verde (18/18). chat-send.spec.ts falla en selector E26 (preexistente), no en INSERT de conversación — NO es regresión de AUDIT-2. E39 prioridad ALTA para B3.5h-AUDIT-E2E — 281cd12
 
 ---
+
+### B3.5h-AUDIT-E2E-1 — ✅ DONE
+
+**Commits:**
+- 723a91b — `[B3.5h-AUDIT-E2E-1] docs: inventario E2E — crear docs/E2E_AUDIT.md`
+- {HASH_COMMIT_2} — `[B3.5h-AUDIT-E2E-1] docs: actualizar NOW, BACKLOG, DONE tras AUDIT-E2E-1`
+
+**Output:** `docs/E2E_AUDIT.md`.
+
+**Métrica clave:**
+- 6 specs auditados, 17 declaraciones `test(...)` (34 corridas chromium+mobile).
+- 🟢 2 specs / 8 tests verdes (47% red E2E sólida).
+- 🟡 3 specs / 8 tests con sospecha.
+- 🔴 1 spec / 1 test falso verde estructural confirmado.
+- ⚪ 0.
+
+**Hallazgos críticos:**
+- **E40 confirmado** (`auth.spec.ts:81`): assert OR de 3 ramas donde
+  `/correo/i` coincide siempre con texto del formulario. Falso verde.
+- **E39 confirmado** (`playwright.config.ts:50`): `reuseExistingServer:
+  !process.env.CI` permite bypass de `webServer.env` por dev server
+  externo. Recomendación audit: opción (b) puerto `:3001`.
+- **E26 sin resolver** (`chat-send.spec.ts:27`): selector frágil
+  confirmado, propuesta `data-testid="friend-picker-item"`.
+
+**Hallazgos colaterales:** E41, E42, E43, E44 añadidos a BACKLOG.
+
+**Próximo:** B3.5h-AUDIT-E2E-2 con orden propuesto en NOW.
+
+---

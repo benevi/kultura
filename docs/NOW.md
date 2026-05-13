@@ -4,18 +4,18 @@
 
 ---
 
-## Próximo bloque — pendiente de decisión del usuario
+## NOW
 
-**B3.5g cerrado.** AUDIT-RLS-1 y AUDIT-RLS-2 completos. Verificación funcional
-aplicada via E2E. Hallazgo crítico E39 anotado (reuseExistingServer comprometido).
+**B3.5h-AUDIT-E2E-1 → ✅ CERRADO** (commit 723a91b)
 
-**Opciones para el siguiente bloque:**
+**Siguiente:** B3.5h-AUDIT-E2E-2 — refactor de hallazgos del audit.
+Orden propuesto:
+1. E39 (puerto :3001, riesgo producción real).
+2. E26 (selector frágil de chat-send).
+3. E40 (falso verde "successful registration" auth.spec.ts:81).
+4. E43 + vecinos (OR + .first() sistémico, 5 ocurrencias en 3 archivos).
+5. E41 (Jikan mock para discover-pagination).
+6. E42 (BASE redundante en auth.spec.ts).
 
-- **B3.5h-AUDIT-E2E-1** — Auditoría solo-lectura de specs E2E, replicando patrón
-  de AUDIT-RLS. Output: `docs/E2E_AUDIT.md`. E37/E38/E39/E40 son candidatos
-  directos a refactor en AUDIT-E2E-2.
-- **B3.5e-3-prod** — Gate E2E contra producción (validar specs en entorno real).
-- **B3.5f** — Sprint de diseño visual (opcional).
-- **B4** — Producción real: Vercel KV, Sentry, logger, E24 Zod.
-
-Esperando decisión del usuario.
+Pendiente: revisar con humano si se acomete completo o se prioriza solo
+E39 + E40 + E26 (los tres con valor de cobertura real).

@@ -294,6 +294,23 @@ No bloqueantes. Atacar solo después de A–D.
   sin tocar DB), pero conviene auditarlos uno por uno en B3.5h-AUDIT-E2E para confirmar que
   la cobertura aparente coincide con la real. Caso de estudio número 1 para AUDIT-E2E.
 
+- [ ] **E41** — Jikan API sin mock en discover-pagination spec. Flakiness por
+  dependencia externa. Detectado en B3.5h-AUDIT-E2E-1.
+
+- [ ] **E42** — `BASE = ""` redundante en `auth.spec.ts` (post-fix de E37).
+  Cosmético: el spec ya usa `baseURL` de Playwright, la constante es ruido.
+  Detectado en B3.5h-AUDIT-E2E-1.
+
+- [ ] **E43** — Antipatrón sistémico OR + `.first()`. 5 ocurrencias detectadas
+  en 3 archivos. Estructuralmente similar a E26. Detectado en
+  B3.5h-AUDIT-E2E-1. Bloque de fix sugerido junto a E26 para reuso de
+  decisión sobre data-testid.
+
+- [ ] **E44** — Vercel auto-promote desactivado: producción requiere promoción
+  manual. Detectado en sesión 8 al verificar deploy post-handover_7.
+  Investigar si es setting de proyecto (toggle) o política del plan Hobby.
+  Refuerza importancia de regla 11 (verificar Current, no solo Ready).
+
 ---
 
 ## BLOQUE B3.5 — Diagnóstico y fixes pre-producción
