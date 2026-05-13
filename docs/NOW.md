@@ -6,16 +6,12 @@
 
 ## NOW
 
-**B3.5h-AUDIT-E2E-1 → ✅ CERRADO** (commit 723a91b)
+**B3.5h-AUDIT-E2E-2 → ✅ CERRADO** (commits 54d183f, 17290c6, eba7afa, 51ddcc0, 7107cab, 22c2ee3 + docs)
 
-**Siguiente:** B3.5h-AUDIT-E2E-2 — refactor de hallazgos del audit.
-Orden propuesto:
-1. E39 (puerto :3001, riesgo producción real).
-2. E26 (selector frágil de chat-send).
-3. E40 (falso verde "successful registration" auth.spec.ts:81).
-4. E43 + vecinos (OR + .first() sistémico, 5 ocurrencias en 3 archivos).
-5. E41 (Jikan mock para discover-pagination).
-6. E42 (BASE redundante en auth.spec.ts).
+**Siguiente:** Decidir con humano entre:
+1. **B3.5e-3-prod** — Gate E2E contra producción (validar en prod antes de cualquier nuevo bloque).
+2. **B4** — Bloque 4 (producción real). Requiere A–D cerrado.
+3. **E41-redesign** — Rediseñar discover-pagination para que fetches sean browser-side (Route Handler), habilitando mock con `page.route()`.
+4. **E44** — Investigar Vercel auto-promote (toggle o política del plan Hobby).
 
-Pendiente: revisar con humano si se acomete completo o se prioriza solo
-E39 + E40 + E26 (los tres con valor de cobertura real).
+Pendiente: promoción manual del último deploy a Production: Current (E44 vigente).

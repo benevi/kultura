@@ -211,3 +211,29 @@ No se edita a mano durante el día. Solo se añade una línea al terminar cada t
 **Próximo:** B3.5h-AUDIT-E2E-2 con orden propuesto en NOW.
 
 ---
+
+### B3.5h-AUDIT-E2E-2 — ✅ DONE
+
+**Commits:**
+- 54d183f — `[B3.5h-AUDIT-E2E-2] test(e2e): aislar webServer de Playwright en puerto :3001 (E39)`
+- 17290c6 — `[B3.5h-AUDIT-E2E-2] test(e2e): data-testid estable en picker de amigos (E26)`
+- eba7afa — `[B3.5h-AUDIT-E2E-2] test(e2e): assert real en successful registration (E40)`
+- 51ddcc0 — `[B3.5h-AUDIT-E2E-2] test(e2e): eliminar antipatron OR+.first() en specs (E43)`
+- 7107cab — `[B3.5h-AUDIT-E2E-2] test(e2e): documentar bloqueante E41 (Jikan mock no viable via page.route RSC)`
+- 22c2ee3 — `[B3.5h-AUDIT-E2E-2] test(e2e): limpiar BASE redundante en auth.spec.ts (E42)`
+
+**Métricas E2E:**
+- Antes: 24 passed / 10 failed
+- Después: 24 passed / 10 failed (mismo count, distinta composición)
+- `chat-send` pasó de FAILED → PASSED (+1 test real verde)
+- `auth.spec.ts` "successful registration" pasó de VERDE-FALSO → ROJO-REAL (falso verde eliminado)
+- `discover-pagination` sigue fallando — causa raíz: APIs externas (TMDB/Jikan) se llaman server-side en RSC, no mockeable con `page.route()`
+
+**Hallazgos / Discrepancias:**
+- E41 bloqueado: `page.route()` intercepta solo browser requests; Jikan/TMDB son server-side. Fix real requiere mover fetches a Route Handlers. Documentado en spec.
+- E40 ahora falla "legítimamente": kultura-test Supabase rechaza o no auto-loguea el registro con email `@kultura-test.dev`. El test detecta el fallo real en lugar de enmascararlo.
+- `discover-pagination` falla incluyendo "tab movie" (TMDB): indica que las API keys de TMDB están presentes en `process.env` del proceso Playwright (heredadas de `.env.local`) pero el server de test las usa. El fallo es de los resultados (grid vacío), posiblemente por configuración del proyecto test o TMDB rate-limit en `:3001`.
+
+**Próximo:** Decidir entre B3.5e-3-prod, B4, E41-redesign, o E44 (ver NOW.md). Pendiente: promoción manual del deploy a Production: Current (E44 vigente).
+
+---

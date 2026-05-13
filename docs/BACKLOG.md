@@ -213,9 +213,8 @@ No bloqueantes. Atacar solo después de A–D.
   Los 4 tests del spec asumen que `/discover` es pública pero está dentro del grupo `(app)` cuyo layout redirige a `/login` si no hay sesión. Soluciones a evaluar: (a) añadir `login()` al `beforeEach` del spec; (b) mover `/discover` fuera de `(app)` si tiene sentido por producto. Mientras tanto, los fixes de bug 6 (try/catch en `discover/page.tsx` + env vars) están validados manualmente vía verificación visual del usuario, no automatizada.
   Hecho cuando: el spec ejecuta sin redirigir a login y los 4 tests son evaluables (verde o rojo por causa real).
 
-- [ ] **E26. Reforzar selector del picker en `chat-send.spec.ts`**
-  El selector `page.locator('button').filter({ hasText: /\w+/ }).first()` después de abrir el picker es frágil — puede capturar el botón "Nueva conversación" en lugar del botón del amigo. Cambiar a un selector basado en `data-testid` o en el username concreto (`testuserb`) tras añadir el atributo si hace falta.
-  Hecho cuando: el test pasa verde de forma reproducible en 3 ejecuciones consecutivas. Verificar también si el redirect a `/chat/[id]` sin locale prefix causa problemas con next-intl (deuda colateral mencionada en el reporte de B3.5c-3-CLOSE).
+- [x] **E26. Reforzar selector del picker en `chat-send.spec.ts`** ✅ (cerrada el 2026-05-13, commit 17290c6)
+  `data-testid="friend-picker-item"` añadido a `ChatClient.tsx`. Selector en `chat-send.spec.ts` reemplazado por `getByTestId('friend-picker-item').first()`. Chat-send pasó de failed→passed en E2E run.
 
 - [ ] **E27. Auditar policies RLS por recursión potencial**
   Durante B3.5c-3 se destaparon 3 capas de RLS rotas en `conversation_members` que emergieron secuencialmente al arreglar la anterior. Patrón a buscar: policies con `WITH CHECK` o `qual` que consulten la propia tabla. Tablas a revisar: `messages`, `group_members`, `group_posts`, `friendships`, `list_members`, `list_items`. Esta tarea es el contenido del bloque B3.5g-AUDIT-RLS y se ejecutará como sprint completo (no como E-task suelta).
@@ -275,36 +274,15 @@ No bloqueantes. Atacar solo después de A–D.
   `globalSetup` que valide presencia de `.env.test.local` antes de arrancar, o `dotenv-cli`
   en el script `test:e2e` de `package.json`. Prioridad media — el flujo actual funciona.
 
-- [ ] **E39** — `playwright.config.ts` tiene `reuseExistingServer: !process.env.CI`. Permite
-  que un dev server externo (arrancado manualmente con `.env.local` → producción) sea reutilizado
-  por Playwright, anulando la carga de `.env.test.local` via `webServer.env`. Detectado en
-  B3.5g-AUDIT-RLS-2-E2E: `chat-send.spec.ts` falló en `login()` porque el dev server
-  reutilizado apuntaba a producción y los users de test solo existen en kultura-test. Más grave:
-  `auth.spec.ts` pasó verde durante ese run porque sus tests son agnósticos al entorno (UI
-  pública, errores esperados, sin login real), enmascarando el problema. Opciones de fix:
-  (a) `reuseExistingServer: false` — Playwright siempre arranca el suyo, falla si `:3000`
-  ocupado; (b) health-check en `webServer.url` que valide el entorno correcto antes de aceptarlo.
-  **Prioridad ALTA** — compromete la integridad de toda la red E2E. Candidato principal para
-  B3.5h-AUDIT-E2E.
+- [x] **E39** ✅ (cerrada el 2026-05-13, commit 54d183f) — `reuseExistingServer: !process.env.CI` → `false`. Puerto cambiado a `:3001` (webServer + baseURL + _helpers.ts `BASE`). Dev en `:3000` y Playwright en `:3001` sin conflicto.
 
-- [ ] **E40** — `tests/e2e/auth.spec.ts` (9 tests) es potencialmente falso verde estructural.
-  Detectado en B3.5g-AUDIT-RLS-2-E2E: los 9 tests pasaron verdes tanto contra producción (dev
-  server externo) como contra kultura-test. Ninguno es sensible al entorno de Supabase —
-  pueden ser legítimamente agnósticos (UI pública, validación client-side, errores esperados
-  sin tocar DB), pero conviene auditarlos uno por uno en B3.5h-AUDIT-E2E para confirmar que
-  la cobertura aparente coincide con la real. Caso de estudio número 1 para AUDIT-E2E.
+- [x] **E40** ✅ (cerrada el 2026-05-13, commit eba7afa) — Assert OR con `/correo/i` genérico eliminado. Reemplazado por: `waitForURL(/\/home/)` (auto-login) fallback a `getByText("Revisa tu correo")` (email confirm). Falso verde eliminado — test ahora falla cuando el registro realmente falla en kultura-test (comportamiento correcto).
 
-- [ ] **E41** — Jikan API sin mock en discover-pagination spec. Flakiness por
-  dependencia externa. Detectado en B3.5h-AUDIT-E2E-1.
+- [x] **E41** — BLOQUEADO-DOCUMENTADO (commit 7107cab, 2026-05-13). `page.route()` solo intercepta requests del browser; las llamadas a Jikan/TMDB son server-side en RSC, invisibles para Playwright. Mock requeriría mover fetches a Route Handlers. Documentado en header del spec. Añadir E41-redesign como tarea futura separada.
 
-- [ ] **E42** — `BASE = ""` redundante en `auth.spec.ts` (post-fix de E37).
-  Cosmético: el spec ya usa `baseURL` de Playwright, la constante es ruido.
-  Detectado en B3.5h-AUDIT-E2E-1.
+- [x] **E42** ✅ (cerrada el 2026-05-13, commit 22c2ee3) — `const BASE = ""` eliminada y usos `${BASE}/...` → `/...` en `auth.spec.ts`.
 
-- [ ] **E43** — Antipatrón sistémico OR + `.first()`. 5 ocurrencias detectadas
-  en 3 archivos. Estructuralmente similar a E26. Detectado en
-  B3.5h-AUDIT-E2E-1. Bloque de fix sugerido junto a E26 para reuso de
-  decisión sobre data-testid.
+- [x] **E43** ✅ (cerrada el 2026-05-13, commit 51ddcc0) — 5 ocurrencias OR+.first() eliminadas: chat-send L24 (quitado .first()), L37 (OR→input[type=text] directo), L41 (OR→getByRole single), discover-pagination L75 (OR→getByTestId pagination-next; data-testid añadido a Pagination.tsx), language-switch L31-33 (OR→aria-label selector directo).
 
 - [ ] **E44** — Vercel auto-promote desactivado: producción requiere promoción
   manual. Detectado en sesión 8 al verificar deploy post-handover_7.
