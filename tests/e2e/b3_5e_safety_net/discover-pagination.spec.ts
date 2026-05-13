@@ -11,6 +11,14 @@
 //
 // Este test NO requiere credenciales: /discover es pública para navegación
 // (aunque el menú de auth esté presente, el contenido se carga sin auth).
+//
+// NOTA E41 (2026-05-13): las llamadas a Jikan (anime/manga) y TMDB (movie/tv)
+// se realizan en React Server Components — el fetch ocurre en el proceso Node
+// del servidor, no en el navegador. page.route() de Playwright solo intercepta
+// requests del browser, por lo que no puede mockear estas APIs server-side.
+// El mock requeriría mover los fetches a Route Handlers (/api/discover) que el
+// browser llamaría, o usar un proxy de red a nivel de servidor. Pendiente como
+// E41-blocked — ver docs/BACKLOG.md para el rediseño necesario.
 // ============================================================
 
 import { test, expect } from '@playwright/test'
