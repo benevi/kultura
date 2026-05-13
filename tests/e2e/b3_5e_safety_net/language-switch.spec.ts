@@ -28,9 +28,7 @@ test.describe('LanguageSwitcher [B3.5e]', () => {
       await page.goto(`${BASE}/es/home`)
     }
 
-    const switcher = page.locator('button[aria-label*="Switch"]').or(
-      page.locator('button').filter({ hasText: /^ES$/ })
-    ).first()
+    const switcher = page.locator('button[aria-label*="Switch"]')
     await expect(switcher).toBeVisible({ timeout: 5_000 })
     await switcher.click()
 

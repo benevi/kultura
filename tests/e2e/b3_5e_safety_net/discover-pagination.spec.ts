@@ -70,9 +70,7 @@ test.describe('Discover — tabs anime/manga + paginación [B3.5e]', () => {
     await page.waitForLoadState('networkidle', { timeout: 15_000 })
 
     // Verificar que hay botón de siguiente página
-    const nextBtn = page.getByRole('button', { name: /siguiente|next|›|»/i }).or(
-      page.locator('button[aria-label*="next"]')
-    ).first()
+    const nextBtn = page.getByTestId('pagination-next')
 
     // Si no hay resultados, la paginación no aparece — el fallo es en el test anterior
     const paginationExists = await nextBtn.isVisible().catch(() => false)

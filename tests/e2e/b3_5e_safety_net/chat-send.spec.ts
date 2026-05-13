@@ -21,7 +21,7 @@ test.describe('Chat — enviar mensaje [B3.5e]', () => {
     await page.goto(`${BASE}/es/chat`)
 
     // Abrir picker de nuevo chat ("+ Nueva conversación")
-    await page.getByRole('button', { name: /nueva conversación|new conversation|start.*chat/i }).first().click()
+    await page.getByRole('button', { name: /nueva conversación|new conversation|start.*chat/i }).click()
 
     // Seleccionar el primer amigo disponible
     const friendButton = page.getByTestId('friend-picker-item').first()
@@ -33,12 +33,10 @@ test.describe('Chat — enviar mensaje [B3.5e]', () => {
 
     const messageText = `test-b3-5e-${Date.now()}`
 
-    // Escribir y enviar mensaje
-    const input = page.locator('input[type=text]').or(page.locator('textarea')).first()
+    // Escribir y enviar mensaje (ConversationClient usa input[type=text])
+    const input = page.locator('input[type=text]')
     await input.fill(messageText)
-    await page.getByRole('button', { name: /enviar|send/i }).or(
-      page.locator('button[aria-label*="end"]')
-    ).first().click()
+    await page.getByRole('button', { name: /enviar|send/i }).click()
 
     // ASERCIÓN: el mensaje debe aparecer en la conversación
     // En estado roto: el mensaje optimista desaparece (removed on error)
