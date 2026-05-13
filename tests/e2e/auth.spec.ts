@@ -78,14 +78,12 @@ test.describe("Auth flow", () => {
     await page.locator("#password").fill(TEST_PASSWORD);
     await page.locator("#confirmPassword").fill(TEST_PASSWORD);
     await page.locator("form button[type=submit]").click();
-    // Supabase email confirm → shows "Revisa tu correo" message
-    // OR auto-login → redirects away from /login
-    await expect(
-      page.locator("text=/Revisa tu correo/i").or(
-        page.locator("text=/correo/i")
-      ).or(
-        page.getByRole("heading", { name: /Descubrir|Mi biblioteca|Inicio/i })
-      )
-    ).toBeVisible({ timeout: 12000 });
+    // Two exclusive success states — neither exists in the initial form DOM:
+    // (a) Email confirmation required → "Revisa tu correo" replaces the form entirely
+    // (b) Auto-login enabled → URL changes to /home
+    const didRedirect = await page.waitForURL(/\/home/, { timeout: 12000 }).then(() => true).catch(() => false);
+    if (!didRedirect) {
+      await expect(page.getByText("Revisa tu correo")).toBeVisible({ timeout: 2000 });
+    }
   });
 });
