@@ -186,7 +186,7 @@ No se edita a mano durante el día. Solo se añade una línea al terminar cada t
 
 **Commits:**
 - 723a91b — `[B3.5h-AUDIT-E2E-1] docs: inventario E2E — crear docs/E2E_AUDIT.md`
-- {HASH_COMMIT_2} — `[B3.5h-AUDIT-E2E-1] docs: actualizar NOW, BACKLOG, DONE tras AUDIT-E2E-1`
+- 9da3552 — `[B3.5h-AUDIT-E2E-1] docs: actualizar NOW, BACKLOG, DONE tras AUDIT-E2E-1`
 
 **Output:** `docs/E2E_AUDIT.md`.
 
