@@ -29,7 +29,7 @@ export default defineConfig({
   workers: 1,
   reporter: "html",
   use: {
-    baseURL: "http://localhost:3000",
+    baseURL: "http://localhost:3001",
     trace: "on-first-retry",
   },
   projects: [
@@ -43,12 +43,13 @@ export default defineConfig({
     },
   ],
   webServer: {
-    command: "npm run dev",
-    url: "http://localhost:3000",
-    reuseExistingServer: !process.env.CI,
+    command: "npm run dev -- --port 3001",
+    url: "http://localhost:3001",
+    reuseExistingServer: false,
     env: {
       ...(process.env as Record<string, string>),
       ...testEnvOverrides,
+      PORT: "3001",
     },
   },
 });

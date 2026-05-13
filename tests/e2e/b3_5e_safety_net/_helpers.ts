@@ -16,7 +16,7 @@ export const TEST_USER_EMAIL = process.env.TEST_USER_EMAIL ?? ''
 export const TEST_USER_PASSWORD = process.env.TEST_USER_PASSWORD ?? ''
 export const TEST_GROUP_ID = process.env.TEST_GROUP_ID ?? ''
 
-export const BASE = 'http://localhost:3000'
+export const BASE = 'http://localhost:3001'
 
 export function hasCredentials(): boolean {
   return Boolean(TEST_USER_EMAIL && TEST_USER_PASSWORD)
