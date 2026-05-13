@@ -24,7 +24,7 @@ test.describe('Chat — enviar mensaje [B3.5e]', () => {
     await page.getByRole('button', { name: /nueva conversación|new conversation|start.*chat/i }).first().click()
 
     // Seleccionar el primer amigo disponible
-    const friendButton = page.locator('button').filter({ hasText: /\w+/ }).first()
+    const friendButton = page.getByTestId('friend-picker-item').first()
     await expect(friendButton).toBeVisible({ timeout: 8_000 })
     await friendButton.click()
 
