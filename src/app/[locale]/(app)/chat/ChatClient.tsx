@@ -96,6 +96,7 @@ export function ChatClient({ friends }: Props) {
             friends.map(f => (
               <button
                 key={f.id}
+                data-testid="friend-picker-item"
                 onClick={() => startConversation(f.id)}
                 disabled={startingChat === f.id}
                 className="flex items-center gap-3 p-2 rounded-lg hover:bg-surface2 transition-colors text-left disabled:opacity-50"
