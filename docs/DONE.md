@@ -212,6 +212,30 @@ No se edita a mano durante el día. Solo se añade una línea al terminar cada t
 
 ---
 
+### B3.5h-AUDIT-E2E-3 — ✅ DONE
+
+**Commits:**
+- 0514c72 — `[B3.5h-AUDIT-E2E-3] docs: diagnostico de rojos persistentes — crear docs/E2E_AUDIT_3.md`
+- {COMMIT_2} — `[B3.5h-AUDIT-E2E-3] docs: actualizar NOW, BACKLOG, DONE tras AUDIT-E2E-3`
+
+**Output:** `docs/E2E_AUDIT_3.md`.
+
+**Métricas E2E:**
+- Baseline: 24 passed / 10 failed (confirmado — coincide con expectativa).
+- Rojos diagnosticados: 10 / 10.
+- Causas raíz distintas: 2.
+
+**Causa E40 (2 corridas):** `supabase.auth.signUp({ email: "test_<ts>@kultura-test.dev" })` retorna error. El componente entra por el path `if (error)` → `form.error` set → formulario permanece visible sin mensaje de éxito ni redirect. Causa probable: dominio `@kultura-test.dev` rechazado por Supabase (H-E40-B, requiere verificación en Dashboard por el humano). Fix propuesto: cambiar `auth.spec.ts:3` a `@example.com`.
+
+**Causa DISC (8 corridas):** `/es/discover` está dentro del route group `(app)`. El layout `(app)/layout.tsx:13` redirige a `/login` si no hay sesión. El spec de discover navega sin login previo → redirect → página de login renderizada → cero cards → todos los asserts fallan. E41 (Jikan RSC mock no viable) sigue en BACKLOG pero NO es la causa del rojo actual. Fix propuesto: añadir `login()` en `beforeEach` del spec (ya documentado en E25).
+
+**Hallazgos colaterales:**
+- Nota en DONE.md de AUDIT-E2E-2 sobre TMDB/discover era incorrecta (hipótesis de API keys, no verificada con page snapshot).
+- `discover-pagination.spec.ts:11` tenía comentario erróneo ("NO requiere credenciales: /discover es pública") — la ruta está protegida por auth desde el inicio.
+- Verificación de H-E40-B requiere acción del humano en Dashboard de Supabase kultura-test.
+
+---
+
 ### B3.5h-AUDIT-E2E-2 — ✅ DONE
 
 **Commits:**
