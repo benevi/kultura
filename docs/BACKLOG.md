@@ -275,7 +275,7 @@ No bloqueantes. Atacar solo después de A–D.
 
 - [x] **E39** ✅ (cerrada el 2026-05-13, commit 54d183f) — `reuseExistingServer: !process.env.CI` → `false`. Puerto cambiado a `:3001` (webServer + baseURL + _helpers.ts `BASE`). Dev en `:3000` y Playwright en `:3001` sin conflicto.
 
-- [ ] **E40** — Rojo legítimo documentado (B3.5h-AUDIT-E2E-4, 2026-05-14). Fixes aplicados: (1) dominio `@kultura-test.dev` → `@example.com` (Supabase ya no rechaza el email por dominio inválido); (2) email único por ejecución del test de registro (`test_reg_${Date.now()}_${random}@example.com`). Bloqueante: rate-limit global de Supabase kultura-test (free tier) activa durante suite paralela — "Demasiados intentos" incluso con email nuevo. Documentado en `docs/TEST_EXCEPTIONS.md`. Fix definitivo requiere: aumentar rate-limit en kultura-test Dashboard, o serializar tests de auth, o mover tests de validación client-side a no-submit. Ver TEST_EXCEPTIONS.md para opciones detalladas.
+- [x] **E40** ✅ CERRADA en B3.5h-AUDIT-E2E-5 (2026-05-14). Fix: desactivar "Confirm email" en Dashboard de kultura-test (Authentication → Sign In / Providers → Email). signUp ahora auto-confirma → `data.session` no-nulo → redirect a `/home`. 34/34 verdes (chromium + mobile). El spec no necesitó cambios — la lógica dual ya cubría ambas ramas. Ver `docs/TEST_EXCEPTIONS.md` y `docs/SUPABASE_TEST_SETUP.md`.
 
 - [x] **E41** — BLOQUEADO-DOCUMENTADO (commit 7107cab, 2026-05-13). `page.route()` solo intercepta requests del browser; las llamadas a Jikan/TMDB son server-side en RSC, invisibles para Playwright. Mock requeriría mover fetches a Route Handlers. Documentado en header del spec. Añadir E41-redesign como tarea futura separada.
 
