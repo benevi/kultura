@@ -4,11 +4,13 @@
 
 ---
 
-## E40 — auth.spec.ts "successful registration flow" [ROJO LEGÍTIMO]
+## E40 — auth.spec.ts "successful registration flow" [ROJO LEGÍTIMO → RESUELTO]
+
+> **RESUELTO en B3.5h-AUDIT-E2E-5** (hash: pendiente — ver DONE.md): "Confirm email" desactivado en Dashboard de kultura-test (Authentication → Sign In / Providers → Email). signUp auto-confirma → `data.session` no-nulo → redirect a `/home`. 34/34 verdes. El spec no necesitó cambios de código. Esta entrada se conserva como referencia histórica del problema y su solución.
 
 **Fecha:** 2026-05-14  
 **Bloque:** B3.5h-AUDIT-E2E-4  
-**Estado:** Rojo en suite paralela contra kultura-test (Supabase free tier)
+**Estado:** ✅ RESUELTO en B3.5h-AUDIT-E2E-5 (2026-05-14)
 
 ### Qué hace el test
 
