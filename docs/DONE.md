@@ -261,3 +261,34 @@ No se edita a mano durante el día. Solo se añade una línea al terminar cada t
 **Próximo:** Decidir entre B3.5e-3-prod, B4, E41-redesign, o E44 (ver NOW.md). Pendiente: promoción manual del deploy a Production: Current (E44 vigente).
 
 ---
+
+### B3.5h-AUDIT-E2E-4 — ✅ DONE
+
+**Fecha:** 2026-05-14
+
+**Commits:** (ver hashes tras push)
+
+**Métricas E2E:**
+- Antes: 24 passed / 10 failed
+- Después: **32 passed / 2 failed**
+- 8 rojos de discover-pagination → verdes (Fix H2)
+- 2 rojos de successful registration → rojo legítimo documentado (Caso C)
+
+**Fix H2 — RESUELTO:**
+`tests/e2e/b3_5e_safety_net/discover-pagination.spec.ts`: añadido `import { login }` + `test.beforeEach(login)`. La ruta `/discover` está dentro del route group `(app)` cuyo layout redirige a `/login` sin sesión — el spec nunca había autenticado. Comentario erróneo ("NO requiere credenciales") corregido. Helper `login()` reutilizado de `_helpers.ts` (ya existía). E25 cerrada.
+
+**Fix H1 — PARCIAL / CASO C:**
+`auth.spec.ts:3`: dominio `@kultura-test.dev` → `@example.com` (Supabase ya acepta el email). Test de registro usa email único por ejecución (`test_reg_${Date.now()}_${random}@example.com`). Aun así, el test falla: rate-limit global de Supabase kultura-test (free tier) activa en suite paralela — "Demasiados intentos" incluso con email nuevo y único. Los fixes están aplicados correctamente; la inestabilidad es del entorno, no del código. E40 permanece abierto con opciones de fix definitivo documentadas en `docs/TEST_EXCEPTIONS.md`.
+
+**Paso 0 (verificación H1):**
+La hipótesis del plan (email `test-user-a@example.com` duplicado en `auth.users`) no aplicaba: el spec usa `TEST_EMAIL` generado dinámico con `Date.now()`, no `TEST_USER_EMAIL`. La causa raíz real era el dominio `@kultura-test.dev` rechazado + rate-limit global (descubierto tras el fix del dominio).
+
+**Documentos creados:**
+- `docs/TEST_EXCEPTIONS.md` — E40 documentado como rojo legítimo con opciones de fix definitivo.
+
+**Discrepancias / hallazgos:**
+- El plan asumía verificación psql de `TEST_USER_EMAIL` en `auth.users` (hipótesis: email duplicado). La causa real era dominio rechazado + rate-limit global. Se reportó antes de ejecutar — humano confirmó proceder con fix directo.
+- Rate-limit de Supabase free tier es global por IP/proyecto en suite paralela. Email único no es suficiente cuando hay múltiples signUps en poco tiempo.
+- Auth Logs de kultura-test no fueron verificados en Dashboard (no se tuvo acceso en este bloque). Si el humano los revisa, podría confirmar el rate-limit y ajustar el límite desde Dashboard → Authentication → Rate Limits.
+
+---

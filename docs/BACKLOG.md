@@ -209,9 +209,8 @@ No bloqueantes. Atacar solo después de A–D.
   `src/lib/env.ts` con Zod que valide todas las env vars requeridas. Importar en `app/layout.tsx`.
   Hecho cuando: arrancar sin `ANTHROPIC_API_KEY` falla con mensaje claro en startup, no en primera request.
 
-- [ ] **E25. Refactorizar specs E2E de `discover-pagination`**
-  Los 4 tests del spec asumen que `/discover` es pública pero está dentro del grupo `(app)` cuyo layout redirige a `/login` si no hay sesión. Soluciones a evaluar: (a) añadir `login()` al `beforeEach` del spec; (b) mover `/discover` fuera de `(app)` si tiene sentido por producto. Mientras tanto, los fixes de bug 6 (try/catch en `discover/page.tsx` + env vars) están validados manualmente vía verificación visual del usuario, no automatizada.
-  Hecho cuando: el spec ejecuta sin redirigir a login y los 4 tests son evaluables (verde o rojo por causa real).
+- [x] **E25. Refactorizar specs E2E de `discover-pagination`** ✅ (cerrada el 2026-05-14, B3.5h-AUDIT-E2E-4)
+  Añadido `login()` en `beforeEach` de `tests/e2e/b3_5e_safety_net/discover-pagination.spec.ts`. Los 4 tests (anime, manga, paginación, movie-control) pasaron de ROJO-POR-REDIRECT a evaluables. Resultado: todos verdes con API real de Jikan/TMDB. 8 corridas (chromium + mobile) → verde. Comentario erróneo ("NO requiere credenciales") corregido en el spec.
 
 - [x] **E26. Reforzar selector del picker en `chat-send.spec.ts`** ✅ (cerrada el 2026-05-13, commit 17290c6)
   `data-testid="friend-picker-item"` añadido a `ChatClient.tsx`. Selector en `chat-send.spec.ts` reemplazado por `getByTestId('friend-picker-item').first()`. Chat-send pasó de failed→passed en E2E run.
@@ -276,7 +275,7 @@ No bloqueantes. Atacar solo después de A–D.
 
 - [x] **E39** ✅ (cerrada el 2026-05-13, commit 54d183f) — `reuseExistingServer: !process.env.CI` → `false`. Puerto cambiado a `:3001` (webServer + baseURL + _helpers.ts `BASE`). Dev en `:3000` y Playwright en `:3001` sin conflicto.
 
-- [x] **E40** ✅ (cerrada el 2026-05-13, commit eba7afa) — Assert OR con `/correo/i` genérico eliminado. Reemplazado por: `waitForURL(/\/home/)` (auto-login) fallback a `getByText("Revisa tu correo")` (email confirm). Falso verde eliminado — test ahora falla cuando el registro realmente falla en kultura-test (comportamiento correcto).
+- [ ] **E40** — Rojo legítimo documentado (B3.5h-AUDIT-E2E-4, 2026-05-14). Fixes aplicados: (1) dominio `@kultura-test.dev` → `@example.com` (Supabase ya no rechaza el email por dominio inválido); (2) email único por ejecución del test de registro (`test_reg_${Date.now()}_${random}@example.com`). Bloqueante: rate-limit global de Supabase kultura-test (free tier) activa durante suite paralela — "Demasiados intentos" incluso con email nuevo. Documentado en `docs/TEST_EXCEPTIONS.md`. Fix definitivo requiere: aumentar rate-limit en kultura-test Dashboard, o serializar tests de auth, o mover tests de validación client-side a no-submit. Ver TEST_EXCEPTIONS.md para opciones detalladas.
 
 - [x] **E41** — BLOQUEADO-DOCUMENTADO (commit 7107cab, 2026-05-13). `page.route()` solo intercepta requests del browser; las llamadas a Jikan/TMDB son server-side en RSC, invisibles para Playwright. Mock requeriría mover fetches a Route Handlers. Documentado en header del spec. Añadir E41-redesign como tarea futura separada.
 
