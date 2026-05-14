@@ -216,7 +216,7 @@ No se edita a mano durante el día. Solo se añade una línea al terminar cada t
 
 **Commits:**
 - 0514c72 — `[B3.5h-AUDIT-E2E-3] docs: diagnostico de rojos persistentes — crear docs/E2E_AUDIT_3.md`
-- {COMMIT_2} — `[B3.5h-AUDIT-E2E-3] docs: actualizar NOW, BACKLOG, DONE tras AUDIT-E2E-3`
+- b8d94e0 — `[B3.5h-AUDIT-E2E-3] docs: actualizar NOW, BACKLOG, DONE tras AUDIT-E2E-3`
 
 **Output:** `docs/E2E_AUDIT_3.md`.
 

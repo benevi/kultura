@@ -6,7 +6,7 @@
 
 ## NOW
 
-**B3.5h-AUDIT-E2E-3 → ✅ CERRADO** (commits 0514c72, {COMMIT_2})
+**B3.5h-AUDIT-E2E-3 → ✅ CERRADO** (commits 0514c72, b8d94e0)
 
 **Siguiente:** Decidir con humano entre:
 1. **B3.5h-AUDIT-E2E-4** — Fix de los 2 rojos diagnosticados: (a) `auth.spec.ts:3` cambiar `@kultura-test.dev` → `@example.com`; (b) `discover-pagination.spec.ts` añadir `login()` en `beforeEach`. Prerequisito: verificar H-E40-B en Dashboard de Supabase kultura-test (ver `docs/E2E_AUDIT_3.md`).
