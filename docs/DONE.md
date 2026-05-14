@@ -266,7 +266,7 @@ No se edita a mano durante el día. Solo se añade una línea al terminar cada t
 
 **Fecha:** 2026-05-14
 
-**Commits:** (ver hashes tras push)
+**Commits:** 8f35bb2 (specs), 88f0d99 (docs)
 
 **Métricas E2E:**
 - Antes: 24 passed / 10 failed
