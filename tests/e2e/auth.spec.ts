@@ -1,6 +1,6 @@
 import { test, expect } from "@playwright/test";
 
-const TEST_EMAIL = `test_${Date.now()}@kultura-test.dev`;
+const TEST_EMAIL = `test_${Date.now()}@example.com`;
 const TEST_PASSWORD = "Test1234!";
 
 // Tab buttons live in the toggle container (not inside <form>)
@@ -71,9 +71,13 @@ test.describe("Auth flow", () => {
   });
 
   test("successful registration flow", async ({ page }) => {
+    // Email único por ejecución de este test para evitar rate-limit de Supabase.
+    // Los otros tests del describe reusan TEST_EMAIL (definido en módulo) y pueden
+    // acumular intentos fallidos con ese email antes de que llegue este test.
+    const regEmail = `test_reg_${Date.now()}_${Math.random().toString(36).slice(2, 6)}@example.com`;
     await page.goto(`/es/login?mode=register`);
     await tabRegister(page).click();
-    await page.getByLabel("Correo electrónico").fill(TEST_EMAIL);
+    await page.getByLabel("Correo electrónico").fill(regEmail);
     await page.locator("#password").fill(TEST_PASSWORD);
     await page.locator("#confirmPassword").fill(TEST_PASSWORD);
     await page.locator("form button[type=submit]").click();

@@ -9,8 +9,8 @@
 //   "no tienen resultados" — la API de Jikan puede fallar o retornar vacío,
 //   o la paginación no propaga el param type correctamente.
 //
-// Este test NO requiere credenciales: /discover es pública para navegación
-// (aunque el menú de auth esté presente, el contenido se carga sin auth).
+// CORRECCIÓN: /discover NO es pública — está en el route group (app) cuyo layout
+// redirige a /login si no hay sesión. El beforeEach hace login antes de cada test.
 //
 // NOTA E41 (2026-05-13): las llamadas a Jikan (anime/manga) y TMDB (movie/tv)
 // se realizan en React Server Components — el fetch ocurre en el proceso Node
@@ -22,9 +22,14 @@
 // ============================================================
 
 import { test, expect } from '@playwright/test'
-import { BASE } from './_helpers'
+import { login, BASE } from './_helpers'
 
 test.describe('Discover — tabs anime/manga + paginación [B3.5e]', () => {
+  // /discover está dentro del route group (app) — el layout requiere auth.
+  // Sin login previo, el servidor redirige a /login antes de renderizar el grid.
+  test.beforeEach(async ({ page }) => {
+    await login(page)
+  })
   test('tab anime muestra resultados', async ({ page }) => {
     await page.goto(`${BASE}/es/discover?type=anime&page=1`)
 
