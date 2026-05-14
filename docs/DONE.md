@@ -292,3 +292,35 @@ La hipótesis del plan (email `test-user-a@example.com` duplicado en `auth.users
 - Auth Logs de kultura-test no fueron verificados en Dashboard (no se tuvo acceso en este bloque). Si el humano los revisa, podría confirmar el rate-limit y ajustar el límite desde Dashboard → Authentication → Rate Limits.
 
 ---
+
+### B3.5h-AUDIT-E2E-5 — ✅ DONE
+
+**Fecha:** 2026-05-14
+
+**Commits:** b49e09b (test/docs E40), 1f5cfda (docs NOW/BACKLOG/SUPABASE_TEST_SETUP)
+
+**Métricas E2E:**
+
+- Antes: 32 passed / 2 failed
+- Después: **34 passed / 0 failed**
+- E40 (successful registration × chromium + mobile) → verdes
+
+**Fix E40 — RESUELTO:**
+Acción humana en Dashboard de kultura-test: Authentication → Sign In / Providers → Email → "Confirm email" desactivado. `supabase.auth.signUp()` ahora devuelve `data.session` no-nulo → `router.push('/home')`. El rate-limit de 2 emails/h del plan free deja de aplicar porque ya no se emiten emails de confirmación.
+
+**Refactor de specs — NO necesario:**
+Paso 0 confirmó que ambas validaciones de error (`mismatched passwords`, `short password`) son 100% client-side (`validate()` en `handleSubmit` antes de llamar a Supabase). Los tests ya hacen click en submit pero nunca llegan a la red — correctos. El spec de `successful registration` ya tenía lógica dual (waitForURL /home + fallback "Revisa tu correo") — funcionó sin cambios.
+
+**Discrepancias / hallazgos:**
+
+- El spec no necesitó ningún cambio de código. El fix fue 100% config de Dashboard.
+- Sub-saga E2E (AUDIT-E2E-1 → AUDIT-E2E-5) cerrada.
+
+**Documentos creados/actualizados:**
+
+- `docs/SUPABASE_TEST_SETUP.md` — nuevo: config de kultura-test que vive solo en Dashboard.
+- `docs/TEST_EXCEPTIONS.md` — E40 marcado RESUELTO con hash b49e09b.
+- `docs/BACKLOG.md` — E40 marcada [x].
+- `docs/NOW.md` — B3.5h-AUDIT-E2E-5 cerrado, opciones siguientes listadas.
+
+---
