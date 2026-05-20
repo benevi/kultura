@@ -58,6 +58,6 @@ export const config = {
     "/",
     "/(es|en)/:path*",
     "/api/:path*",
-    "/((?!_next|_vercel|.*\\..*).*)",
+    "/((?!_next|_vercel|dev(?:/.*)?|.*\\..*).*)",
   ],
 };
