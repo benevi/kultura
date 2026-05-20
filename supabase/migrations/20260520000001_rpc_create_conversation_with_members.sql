@@ -69,3 +69,5 @@ $$;
 
 REVOKE ALL ON FUNCTION public.create_conversation_with_members(uuid) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION public.create_conversation_with_members(uuid) TO authenticated;
+
+NOTIFY pgrst, 'reload schema';
