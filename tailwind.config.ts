@@ -10,26 +10,55 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
-        bg: "#080b10",
-        surface: "#0e1218",
-        surface2: "#151b24",
+        /* ─── Design System tokens — modo oscuro ─── */
+        "surface-base": "var(--surface-base)",
+        "surface-default": "var(--surface-default)",
+        "surface-elevated": "var(--surface-elevated)",
+        "surface-border": "var(--surface-border)",
+
+        "text-primary": "var(--text-primary)",
+        "text-secondary": "var(--text-secondary)",
+        "text-tertiary": "var(--text-tertiary)",
+
+        "accent-positive": "var(--accent-positive)",
+        "accent-highlight": "var(--accent-highlight)",
+        "accent-info": "var(--accent-info)",
+        "accent-danger": "var(--accent-danger)",
+
+        "on-accent-positive": "var(--on-accent-positive)",
+        "on-accent-highlight": "var(--on-accent-highlight)",
+        "on-accent-info": "var(--on-accent-info)",
+
+        /* ─── Legacy aliases (compatibilidad componentes existentes) ─── */
+        bg: "var(--surface-base)",
+        surface: "var(--surface-default)",
+        surface2: "var(--surface-elevated)",
         surface3: "#1c2430",
-        border: "#1e2730",
+        border: "var(--surface-border)",
         accent: "#E82020",
         "accent-hover": "#c91a1a",
         "accent-subtle": "rgba(232,32,32,0.12)",
-        text: "#d4dce8",
-        muted: "#5a6878",
-        "muted-light": "#8a9ab0",
-        success: "#22c55e",
-        warning: "#f59e0b",
-        info: "#3b82f6",
-        danger: "#ef4444",
+        text: "var(--text-primary)",
+        muted: "var(--text-tertiary)",
+        "muted-light": "var(--text-secondary)",
+        success: "var(--accent-positive)",
+        warning: "var(--accent-highlight)",
+        info: "var(--accent-info)",
+        danger: "var(--accent-danger)",
       },
       fontFamily: {
-        display: ["var(--font-bebas)", "Impact", "sans-serif"],
-        body: ["var(--font-dm-sans)", "system-ui", "sans-serif"],
-        mono: ["var(--font-jetbrains)", "monospace"],
+        /* New design system fonts */
+        display: ["var(--font-space-grotesk)", "system-ui", "sans-serif"],
+        body: ["var(--font-inter)", "system-ui", "sans-serif"],
+        /* Legacy aliases */
+        mono: ["monospace"],
+      },
+      borderRadius: {
+        card: "12px",
+        button: "10px",
+        pill: "20px",
+        modal: "8px",
+        nav: "4px",
       },
       backgroundImage: {
         "gradient-radial": "radial-gradient(var(--tw-gradient-stops))",
