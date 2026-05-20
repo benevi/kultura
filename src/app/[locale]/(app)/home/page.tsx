@@ -31,11 +31,11 @@ export default async function HomePage() {
     const username = rawUsername.slice(0, 15)
     const { error: insertError } = await supabase
       .from('users')
-      .insert({ id: user.id, username, avatar_initials: username.slice(0, 2).toUpperCase(), avatar_color: '#E82020' })
+      .insert({ id: user.id, username, avatar_initials: username.slice(0, 2).toUpperCase(), avatar_color: '#6FCF97' })
     if (insertError?.code === '23505') {
       const { error: e2 } = await supabase
         .from('users')
-        .insert({ id: user.id, username: `${username}1`, avatar_initials: username.slice(0, 2).toUpperCase(), avatar_color: '#E82020' })
+        .insert({ id: user.id, username: `${username}1`, avatar_initials: username.slice(0, 2).toUpperCase(), avatar_color: '#6FCF97' })
       if (e2) { await supabase.auth.signOut(); redirect('/login') }
     } else if (insertError) {
       await supabase.auth.signOut()

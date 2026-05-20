@@ -23,7 +23,7 @@ export async function AuthHeader({ profile, unreadCount }: AuthHeaderProps) {
       <div className="flex items-center h-14 max-w-6xl mx-auto px-4 md:px-8">
         {/* Logo */}
         <Link href="/home" className="flex-shrink-0">
-          <span className="font-display text-xl font-bold tracking-widest text-accent hover:text-accent/80 transition-colors">
+          <span className="font-display text-xl font-bold tracking-widest text-accent-positive hover:opacity-80 transition-opacity">
             KULTURA
           </span>
         </Link>
@@ -56,7 +56,7 @@ export async function AuthHeader({ profile, unreadCount }: AuthHeaderProps) {
               <path d="M13.73 21a2 2 0 0 1-3.46 0" />
             </svg>
             {unreadCount > 0 && (
-              <span className="absolute -top-0.5 -right-0.5 min-w-[16px] h-4 bg-accent text-white text-[10px] font-bold rounded-full flex items-center justify-center px-0.5 leading-none">
+              <span className="absolute -top-0.5 -right-0.5 min-w-[16px] h-4 bg-accent-positive text-on-accent-positive text-[10px] font-bold rounded-full flex items-center justify-center px-0.5 leading-none">
                 {unreadCount > 99 ? '99+' : unreadCount}
               </span>
             )}

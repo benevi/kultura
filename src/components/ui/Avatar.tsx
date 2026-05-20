@@ -23,7 +23,7 @@ const sizePixels: Record<NonNullable<AvatarProps["size"]>, number> = {
 
 export function Avatar({
   initials,
-  color = "#E82020",
+  color = "var(--surface-elevated)",
   size = "md",
   src,
   className,

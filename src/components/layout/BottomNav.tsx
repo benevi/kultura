@@ -35,7 +35,7 @@ export function BottomNav({ username }: BottomNavProps) {
               href={href}
               className={cn(
                 'flex flex-col items-center justify-center gap-0.5 flex-1 h-full',
-                active ? 'text-accent' : 'text-muted'
+                active ? 'text-accent-positive' : 'text-text-secondary'
               )}
             >
               <Icon size={22} strokeWidth={active ? 2.5 : 1.75} />
