@@ -42,7 +42,9 @@ export function PopularInCircle() {
       title={t('popularInCircle')}
       items={rowItems}
       isLoading={status === 'loading'}
+      emptyIcon={status === 'empty' ? '👥' : undefined}
       emptyMessage={status === 'empty' ? t('noFriends') : undefined}
+      emptyHint={status === 'empty' ? t('noFriendsHint') : undefined}
       emptyAction={status === 'empty' ? { label: t('addFriends'), href: '/friends' } : undefined}
     />
   )

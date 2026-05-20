@@ -266,6 +266,9 @@
     "error": "Could not load recommendations. Try again.",
     "retry": "Try again",
     "rateLimited": "Too many requests. Wait a moment and try again.",
+    "needMoreItemsHint": "The more you add to your library, the better your recommendations will be.",
+    "exploreContent": "Explore content",
+    "tryAgainLater": "This service is temporarily unavailable.",
     "viewAll": "View all"
   },
   "popularInCircle": {
