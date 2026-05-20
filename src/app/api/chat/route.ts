@@ -94,48 +94,15 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
   const { targetUserId } = await req.json().catch(() => ({}))
   if (!targetUserId) return NextResponse.json({ error: 'Missing targetUserId' }, { status: 400 })
 
-  // Check if conversation already exists between these two users
-  const { data: existing } = await supabase
-    .from('conversation_members')
-    .select('conversation_id')
-    .eq('user_id', user.id)
+  const { data: conversationId, error: rpcError } = await supabase.rpc(
+    'create_conversation_with_members',
+    { target_user_id: targetUserId },
+  )
 
-  if (existing) {
-    for (const row of existing as Array<{ conversation_id: string }>) {
-      const { data: other } = await supabase
-        .from('conversation_members')
-        .select('user_id')
-        .eq('conversation_id', row.conversation_id)
-        .eq('user_id', targetUserId)
-        .maybeSingle()
-      if (other) {
-        return NextResponse.json({ conversationId: row.conversation_id })
-      }
-    }
-  }
-
-  // Create new conversation
-  const { data: conv, error: convError } = await supabase
-    .from('conversations')
-    .insert({})
-    .select()
-    .single()
-
-  if (convError || !conv) {
-    console.error('Failed to create conversation:', { convError, userId: user.id, targetUserId })
+  if (rpcError || !conversationId) {
+    console.error('Failed to create conversation:', { rpcError, userId: user.id, targetUserId })
     return NextResponse.json({ error: 'Failed to create conversation' }, { status: 500 })
   }
 
-  // Add both members
-  const { error: membersError } = await supabase.from('conversation_members').insert([
-    { conversation_id: conv.id, user_id: user.id },
-    { conversation_id: conv.id, user_id: targetUserId },
-  ])
-
-  if (membersError) {
-    console.error('Failed to add conversation members:', { membersError, convId: conv.id, userId: user.id, targetUserId })
-    return NextResponse.json({ error: 'Failed to add conversation members' }, { status: 500 })
-  }
-
-  return NextResponse.json({ conversationId: conv.id }, { status: 201 })
+  return NextResponse.json({ conversationId }, { status: 201 })
 }
