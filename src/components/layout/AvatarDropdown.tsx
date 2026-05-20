@@ -39,7 +39,7 @@ export function AvatarDropdown({ username, avatarColor, avatarInitials }: Avatar
     <div ref={ref} className="relative ml-1">
       <button
         onClick={() => setOpen(v => !v)}
-        className="rounded-full focus:outline-none focus:ring-2 focus:ring-accent"
+        className="rounded-full focus:outline-none focus:ring-2 focus:ring-accent-positive"
         aria-label={username}
         aria-expanded={open}
         aria-haspopup="menu"

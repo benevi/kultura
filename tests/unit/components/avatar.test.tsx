@@ -23,10 +23,10 @@ describe("Avatar", () => {
     expect(avatar).toHaveStyle({ backgroundColor: "#123456" });
   });
 
-  it("usa color por defecto #E82020 cuando no se pasa color", () => {
+  it("usa color por defecto (surface-elevated) cuando no se pasa color", () => {
     render(<Avatar initials="AB" />);
     const avatar = screen.getByText("AB").closest("div");
-    expect(avatar).toHaveStyle({ backgroundColor: "#E82020" });
+    expect(avatar).toHaveStyle({ backgroundColor: "var(--surface-elevated)" });
   });
 
   it("renderiza image cuando hay src", () => {

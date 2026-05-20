@@ -41,16 +41,16 @@ describe('BottomNav', () => {
     expect(screen.getByText('Perfil')).toBeInTheDocument()
   })
 
-  it('item activo tiene clase text-accent', () => {
+  it('item activo tiene clase text-accent-positive', () => {
     render(<BottomNav username="testuser" />)
     const homeLink = screen.getByText('Inicio').closest('a')
-    expect(homeLink?.className).toContain('text-accent')
+    expect(homeLink?.className).toContain('text-accent-positive')
   })
 
-  it('item inactivo tiene clase text-muted', () => {
+  it('item inactivo tiene clase text-text-secondary', () => {
     render(<BottomNav username="testuser" />)
     const discoverLink = screen.getByText('Descubrir').closest('a')
-    expect(discoverLink?.className).toContain('text-muted')
+    expect(discoverLink?.className).toContain('text-text-secondary')
   })
 
   it('link de perfil incluye el username', () => {
