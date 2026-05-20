@@ -19,7 +19,7 @@ export async function AuthHeader({ profile, unreadCount }: AuthHeaderProps) {
   const t = await getTranslations('nav')
 
   return (
-    <header className="sticky top-0 z-40 bg-bg/95 backdrop-blur-sm border-b border-border">
+    <header className="sticky top-0 z-40 bg-surface-default border-b border-surface-border">
       <div className="flex items-center h-14 max-w-6xl mx-auto px-4 md:px-8">
         {/* Logo */}
         <Link href="/home" className="flex-shrink-0">

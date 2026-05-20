@@ -23,7 +23,7 @@ export function BottomNav({ username }: BottomNavProps) {
 
   return (
     <nav
-      className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-bg/95 backdrop-blur-sm border-t border-border"
+      className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-surface-default border-t border-surface-border"
       style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
     >
       <div className="flex items-center justify-around h-16">
