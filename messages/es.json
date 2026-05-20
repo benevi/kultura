@@ -266,6 +266,9 @@
     "error": "No se pudieron cargar las recomendaciones. Inténtalo de nuevo.",
     "retry": "Reintentar",
     "rateLimited": "Demasiadas solicitudes. Espera un momento.",
+    "needMoreItemsHint": "Cuanto más añadas a tu biblioteca, mejores serán tus recomendaciones.",
+    "exploreContent": "Explorar contenido",
+    "tryAgainLater": "El servicio no está disponible en este momento.",
     "viewAll": "Ver todo"
   },
   "popularInCircle": {

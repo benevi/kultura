@@ -50,9 +50,8 @@ describe('HeroSection', () => {
       ...baseItem,
       episode_progress: { episode: 5, current: 5, total: 10 },
     }
-    const { container } = render(<HeroSection item={itemWithProgress} />)
-    const progressFill = container.querySelector('.bg-accent.rounded-full.h-1\\.5')
-    expect(progressFill).toBeInTheDocument()
+    render(<HeroSection item={itemWithProgress} />)
+    expect(screen.getByTestId('progress-fill')).toBeInTheDocument()
   })
 
   it('sin item muestra texto bienvenida y botón Explorar contenido', () => {
