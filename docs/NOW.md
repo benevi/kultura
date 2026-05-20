@@ -4,20 +4,50 @@
 
 ---
 
-## Estado
+## Tarea activa: B3.5f-1 — Sistema de diseño base
 
-**B3.5h-AUDIT-E2E-5 → ✅ CERRADO** (ver DONE.md para hashes)
+**Estado:** 🔄 EN CURSO
 
-**Resultado E2E:** 34 passed / 0 failed. Sub-saga E2E completa.
+### Qué cambia
 
-**E40 cerrado:** "Confirm email" desactivado en Dashboard kultura-test → signUp auto-confirma → test de registro exitoso. El spec no necesitó cambios de código.
+- Tokens CSS semánticos (modo oscuro) en `globals.css` — todos los `--surface-*`, `--text-*`, `--accent-*`.
+- Fuentes: Space Grotesk (500, 700) + Inter (400, 500, 600) vía `next/font/google`, expuestas como variables CSS, mapeadas en Tailwind.
+- 4 componentes core en `src/components/ui/`: `ContentCard`, `KButton`, `FilterChip`, `KInput`.
+- Página `/dev` (solo desarrollo) para verificación visual de tokens y componentes.
+- Las pantallas existentes (Home, Discover, etc.) **no se tocan** — eso es B3.5f-2.
+
+### Alcance estricto (NO expandir)
+
+- NO aplicar sistema a pantallas reales existentes.
+- NO implementar modo claro (tokens nombrados semánticamente para soportarlo después sin reescritura).
+- NO hardcodear hex en componentes — todo pasa por token CSS.
+
+### Cómo sé que funciona
+
+1. `npm run lint` → 0 errores.
+2. `tsc --noEmit` → 0 errores.
+3. `vitest run` → 499 passed (+ los 2 rojos pre-existentes de library/route y settings/route que NO son de este bloque).
+4. Navegando `/dev` en local: swatches de color con nombre de token, todos los componentes en sus variantes/estados.
+
+### Archivos que toco
+
+- `docs/NOW.md` (este)
+- `docs/DONE.md` (añadir fix /api/chat 500 / E36)
+- `src/app/globals.css` — tokens semánticos
+- `src/app/[locale]/layout.tsx` — fuentes Space Grotesk + Inter
+- `tailwind.config.ts` — mapeo de tokens
+- `src/components/ui/ContentCard.tsx` — nuevo
+- `src/components/ui/KButton.tsx` — nuevo
+- `src/components/ui/FilterChip.tsx` — nuevo
+- `src/components/ui/KInput.tsx` — nuevo
+- `src/app/[locale]/(dev)/page.tsx` — nuevo (ruta /dev)
+
+### Cuándo paro
+
+Cuando el humano apruebe la verificación visual de `/dev`. No aplicar a pantallas reales sin confirmación.
 
 ---
 
-## Siguiente — elegir una de estas opciones
+## Contexto: 2 rojos pre-existentes
 
-1. **B4** — Bloque 4 (producción real). Requiere A–D cerrado.
-2. **B3.5e-3-prod** — Gate E2E contra producción.
-3. **E44** — Investigar Vercel auto-promote. Pendiente: promoción manual del último deploy a Production: Current.
-
-Pendiente de decisión del humano.
+`library/route` y `settings/route` fallan por timeout (5s) — son pre-existentes, no causados por B3.5f-1. Si SOLO fallan esos dos, es lo esperado. Si falla algo más, parar y reportar.

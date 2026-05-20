@@ -324,3 +324,11 @@ Paso 0 confirmó que ambas validaciones de error (`mismatched passwords`, `short
 - `docs/NOW.md` — B3.5h-AUDIT-E2E-5 cerrado, opciones siguientes listadas.
 
 ---
+
+2026-05-20 | B3.5h-AUDIT-E2E-5 | 1f5cfda | Sub-saga E2E completa: 34/34 passed. E40 resuelto via Dashboard kultura-test (Confirm email desactivado). NOW.md actualizado a B3.5f-1.
+
+---
+
+2026-05-20 | E36 (fix /api/chat 500) | absorbido en B3.5c-3 | Fix conversación POST 500 + recursión RLS conversation_members. Cerrado en B3.5c-3-FIX2/FIX3. Ver commits 3703fe4, 92aa455.
+
+---

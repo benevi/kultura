@@ -3,22 +3,44 @@
 @tailwind utilities;
 
 :root {
-  /* Tokens propios KULTURA */
-  --bg: #080b10;
-  --surface: #0e1218;
-  --surface2: #151b24;
-  --border-color: #1e2730;
-  --accent-color: #e82020;
-  --text-color: #d4dce8;
-  --muted-color: #5a6878;
+  /* ─── KULTURA Design System — modo oscuro (canónico) ─── */
 
-  /* Tokens adicionales */
+  /* Superficies */
+  --surface-base: #0A0C0E;
+  --surface-default: #14181B;
+  --surface-elevated: #1E2429;
+  --surface-border: #2C343A;
+
+  /* Texto */
+  --text-primary: #F4F3EF;
+  --text-secondary: #9AA0A6;
+  --text-tertiary: #6B7177;
+
+  /* Acentos con rol semántico (no usar fuera de su rol) */
+  --accent-positive: #6FCF97;   /* verde — estado positivo/consumado, acento principal */
+  --accent-highlight: #E6A23C;  /* ámbar — destacado/aspiracional: rating, premium */
+  --accent-info: #5A9EE6;       /* azul — información y enlaces */
+  --accent-danger: #E25C5C;     /* rojo desaturado — SOLO destructivo: eliminar, error */
+
+  /* Texto sobre acentos */
+  --on-accent-positive: #0A1810;
+  --on-accent-highlight: #1A1209;
+  --on-accent-info: #06182E;
+
+  /* ─── Legacy tokens (conservados para compatibilidad con componentes existentes) ─── */
+  --bg: var(--surface-base);
+  --surface: var(--surface-default);
+  --surface2: var(--surface-elevated);
   --surface3: #1c2430;
-  --muted-light: #8a9ab0;
-  --success: #22c55e;
-  --warning: #f59e0b;
-  --info: #3b82f6;
-  --danger: #ef4444;
+  --border-color: var(--surface-border);
+  --accent-color: var(--accent-danger);
+  --text-color: var(--text-primary);
+  --muted-color: var(--text-tertiary);
+  --muted-light: var(--text-secondary);
+  --success: var(--accent-positive);
+  --warning: var(--accent-highlight);
+  --info: var(--accent-info);
+  --danger: var(--accent-danger);
 
   /* shadcn/ui CSS variables — mapeadas a tokens KULTURA */
   --background: 220 15% 5%;
@@ -46,8 +68,8 @@
 @layer base {
   html,
   body {
-    background-color: #080b10;
-    color: #d4dce8;
+    background-color: var(--surface-base);
+    color: var(--text-primary);
     margin: 0;
     padding: 0;
     min-height: 100vh;
@@ -63,20 +85,20 @@
     height: 6px;
   }
   ::-webkit-scrollbar-track {
-    background: #0e1218;
+    background: var(--surface-default);
   }
   ::-webkit-scrollbar-thumb {
-    background: #1e2730;
+    background: var(--surface-border);
     border-radius: 3px;
   }
   ::-webkit-scrollbar-thumb:hover {
-    background: #5a6878;
+    background: var(--text-tertiary);
   }
 
   /* Selection */
   ::selection {
-    background: rgba(232, 32, 32, 0.3);
-    color: #d4dce8;
+    background: rgba(111, 207, 151, 0.25);
+    color: var(--text-primary);
   }
 }
 
