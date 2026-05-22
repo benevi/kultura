@@ -355,4 +355,4 @@ Paso 0 confirmó que ambas validaciones de error (`mismatched passwords`, `short
 
 2026-05-22 | B3.5f-DEBUG-DOC | 5d6443a | docs/DEBUG_PRINCIPLES.md creado (4 principios de depuración destilados de ~13 ocurrencias reales). Regla 12 añadida en CLAUDE.md enlazando el doc. Sin cambios de código, sin lint/tsc/vitest necesarios.
 
-2026-05-22 | B3.5f-2f | (pending) | Error boundaries + páginas de error unificadas al design system. 11 error.tsx → wrappers finos sobre ErrorState.tsx (KButton secondary, verde, sin rojo legacy). not-found.tsx creado ([locale] level, i18n es/en). global-error.tsx creado (root, autosuficiente, inline styles con tokens). --primary no tocada. Vitest 506/506.
+2026-05-22 | B3.5f-2f | 007b7db | Error boundaries + páginas de error unificadas al design system. 11 error.tsx → wrappers finos sobre ErrorState.tsx (KButton secondary, verde, sin rojo legacy). not-found.tsx creado ([locale] level, i18n es/en). global-error.tsx creado (root, autosuficiente, inline styles con tokens). --primary no tocada. Vitest 506/506.
