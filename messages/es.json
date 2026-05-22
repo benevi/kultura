@@ -64,7 +64,10 @@
     "invalidCredentials": "Correo o contraseña incorrectos",
     "emailNotConfirmed": "Confirma tu correo antes de iniciar sesión",
     "userAlreadyExists": "Ya existe una cuenta con este correo",
-    "tooManyRequests": "Demasiados intentos. Espera un momento e inténtalo de nuevo"
+    "tooManyRequests": "Demasiados intentos. Espera un momento e inténtalo de nuevo",
+    "notFoundTitle": "Página no encontrada",
+    "notFoundDescription": "La página que buscas no existe o fue movida.",
+    "goHome": "Ir al inicio"
   },
   "common": {
     "loading": "Cargando...",
