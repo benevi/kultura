@@ -36,13 +36,15 @@ export function EpisodeProgress({ value, onChange, showSeason }: EpisodeProgress
   }
 
   const inputClass =
-    'bg-surface border border-border rounded-md px-3 py-2 text-sm text-text focus:outline-none focus:ring-2 focus:ring-accent'
+    'bg-surface-base border border-surface-border rounded-button px-3 py-2 text-sm font-body text-text-primary placeholder:text-text-tertiary focus-visible:outline-none focus-visible:border-accent-positive focus-visible:ring-1 focus-visible:ring-accent-positive/40 transition-colors'
 
   return (
     <div className="flex items-end gap-4">
       {showSeason && (
         <div className="flex flex-col">
-          <label className="block text-xs text-muted mb-1">{t('season')}</label>
+          <label className="block text-xs font-body font-medium text-text-secondary mb-1">
+            {t('season')}
+          </label>
           <input
             type="number"
             min={1}
@@ -56,7 +58,9 @@ export function EpisodeProgress({ value, onChange, showSeason }: EpisodeProgress
       )}
 
       <div className="flex flex-col">
-        <label className="block text-xs text-muted mb-1">{t('episode')}</label>
+        <label className="block text-xs font-body font-medium text-text-secondary mb-1">
+          {t('episode')}
+        </label>
         <input
           type="number"
           min={1}
@@ -72,7 +76,7 @@ export function EpisodeProgress({ value, onChange, showSeason }: EpisodeProgress
         <button
           type="button"
           onClick={() => onChange(null)}
-          className="text-muted hover:text-text text-sm pb-2 self-end leading-none"
+          className="text-text-tertiary hover:text-text-primary text-sm pb-2 self-end leading-none transition-colors"
           aria-label={t('clearProgress')}
           data-testid="clear-progress"
         >

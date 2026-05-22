@@ -187,8 +187,10 @@
     "score5only": "★★★★★ 5",
     "empty": {
       "title": "Your library is empty",
-      "cta": "Discover content",
-      "filtered": "No results for these filters",
+      "hint": "Start collecting: add movies, series, books, or games you've enjoyed or want to discover.",
+      "cta": "Explore content",
+      "filtered": "Nothing matches these filters",
+      "filteredHint": "Your library has titles, but none match the current combination. Try adjusting or clearing the filters.",
       "clearFilters": "Clear filters"
     },
     "viewDetail": "View detail",

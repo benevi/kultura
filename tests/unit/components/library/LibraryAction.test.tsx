@@ -126,7 +126,7 @@ describe('LibraryAction', () => {
     )
     const badge = screen.getByText('status.completed')
     expect(badge).toBeInTheDocument()
-    expect(badge.className).toMatch(/green/)
+    expect(badge.className).toMatch(/accent-positive/)
   })
 
   it('autenticado con entry → muestra botones Actualizar y Eliminar', () => {

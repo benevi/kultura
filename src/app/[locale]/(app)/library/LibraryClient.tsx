@@ -4,9 +4,9 @@ import { useMemo } from 'react'
 import { useSearchParams } from 'next/navigation'
 import { useTranslations } from 'next-intl'
 import { useRouter, Link } from '@/i18n/navigation'
-import { FilterBar, type FilterGroup } from '@/components/ui/FilterBar'
+import { FilterChip } from '@/components/ui/FilterChip'
+import { KButton } from '@/components/ui/KButton'
 import { MediaGrid } from '@/components/media/MediaGrid'
-import { Button } from '@/components/ui/button'
 import type { LibraryEntry } from '@/types/library'
 import type { MediaItem, MediaType } from '@/types/media'
 
@@ -34,6 +34,76 @@ function entryToMediaItem(entry: LibraryEntry): MediaItem {
   }
 }
 
+const TYPE_OPTIONS = [
+  { value: 'movie' as const, labelKey: 'movie' as const },
+  { value: 'tv' as const, labelKey: 'tv' as const },
+  { value: 'anime' as const, labelKey: 'anime' as const },
+  { value: 'book' as const, labelKey: 'book' as const },
+  { value: 'comic' as const, labelKey: 'comic' as const },
+  { value: 'manga' as const, labelKey: 'manga' as const },
+  { value: 'game' as const, labelKey: 'game' as const },
+]
+
+const STATUS_OPTIONS = [
+  { value: 'in_progress' as const, labelKey: 'inProgress' as const },
+  { value: 'pending' as const, labelKey: 'pending' as const },
+  { value: 'completed' as const, labelKey: 'completed' as const },
+  { value: 'abandoned' as const, labelKey: 'dropped' as const },
+]
+
+const SCORE_OPTIONS = [
+  { value: '5', label: '★★★★★ 5' },
+  { value: '4', label: '★★★★ 4+' },
+  { value: '3', label: '★★★ 3+' },
+  { value: '2', label: '★★ 2+' },
+]
+
+function EmptyLibrary({ t }: { t: ReturnType<typeof useTranslations<'library'>> }) {
+  return (
+    <div className="flex flex-col items-center justify-center py-20 px-4 text-center gap-4">
+      <div className="text-5xl select-none" aria-hidden="true">📚</div>
+      <div className="flex flex-col gap-2 max-w-sm">
+        <h2 className="font-display text-xl font-semibold text-text-primary">
+          {t('empty.title')}
+        </h2>
+        <p className="text-sm text-text-secondary leading-relaxed">
+          {t('empty.hint')}
+        </p>
+      </div>
+      <KButton asChild variant="primary" size="md">
+        <Link href="/discover">{t('empty.cta')}</Link>
+      </KButton>
+    </div>
+  )
+}
+
+function EmptyFiltered({
+  t,
+  tF,
+  onReset,
+}: {
+  t: ReturnType<typeof useTranslations<'library'>>
+  tF: ReturnType<typeof useTranslations<'filters'>>
+  onReset: () => void
+}) {
+  return (
+    <div className="flex flex-col items-center justify-center py-16 px-4 text-center gap-3">
+      <div className="text-4xl select-none" aria-hidden="true">🔍</div>
+      <div className="flex flex-col gap-1.5 max-w-xs">
+        <p className="font-body font-medium text-text-primary text-base">
+          {t('empty.filtered')}
+        </p>
+        <p className="text-sm text-text-secondary leading-relaxed">
+          {t('empty.filteredHint')}
+        </p>
+      </div>
+      <KButton variant="secondary" size="sm" onClick={onReset}>
+        {tF('reset')}
+      </KButton>
+    </div>
+  )
+}
+
 export function LibraryClient({ entries }: LibraryClientProps) {
   const t = useTranslations('library')
   const tF = useTranslations('filters')
@@ -43,50 +113,6 @@ export function LibraryClient({ entries }: LibraryClientProps) {
   const currentType = searchParams.get('type') ?? 'all'
   const currentStatus = searchParams.get('status') ?? 'all'
   const currentScore = searchParams.get('score') ?? 'all'
-
-  const items = entries
-
-  const filterGroups: FilterGroup[] = [
-    {
-      key: 'type',
-      label: tF('type'),
-      options: [
-        { value: 'movie', label: tF('movie') },
-        { value: 'tv', label: tF('tv') },
-        { value: 'anime', label: tF('anime') },
-        { value: 'book', label: tF('book') },
-        { value: 'comic', label: tF('comic') },
-        { value: 'manga', label: tF('manga') },
-        { value: 'game', label: tF('game') },
-      ],
-    },
-    {
-      key: 'status',
-      label: tF('status'),
-      options: [
-        { value: 'in_progress', label: tF('inProgress') },
-        { value: 'pending', label: tF('pending') },
-        { value: 'completed', label: tF('completed') },
-        { value: 'abandoned', label: tF('dropped') },
-      ],
-    },
-    {
-      key: 'score',
-      label: tF('minScore'),
-      options: [
-        { value: '5', label: '5' },
-        { value: '4', label: '4+' },
-        { value: '3', label: '3+' },
-        { value: '2', label: '2+' },
-      ],
-    },
-  ]
-
-  const activeFilters: Record<string, string> = {
-    type: currentType,
-    status: currentStatus,
-    score: currentScore,
-  }
 
   function handleFilterChange(key: string, value: string) {
     const params = new URLSearchParams()
@@ -106,7 +132,7 @@ export function LibraryClient({ entries }: LibraryClientProps) {
 
   const filtered = useMemo(
     () =>
-      items
+      entries
         .filter((e) => currentType === 'all' || e.mediaId.startsWith(currentType + '_'))
         .filter((e) => currentStatus === 'all' || e.status === currentStatus)
         .filter((e) => {
@@ -114,7 +140,7 @@ export function LibraryClient({ entries }: LibraryClientProps) {
           const min = parseInt(currentScore, 10)
           return e.score !== null && e.score >= min
         }),
-    [items, currentType, currentStatus, currentScore]
+    [entries, currentType, currentStatus, currentScore]
   )
 
   const mediaItems = useMemo(
@@ -122,47 +148,108 @@ export function LibraryClient({ entries }: LibraryClientProps) {
     [filtered]
   )
 
+  const hasActiveFilters = currentType !== 'all' || currentStatus !== 'all' || currentScore !== 'all'
+
+  if (entries.length === 0) {
+    return (
+      <div>
+        <h1 className="font-display text-3xl font-bold text-text-primary mb-8">{t('title')}</h1>
+        <EmptyLibrary t={t} />
+      </div>
+    )
+  }
+
   return (
     <div>
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
-        <h1 className="font-display text-3xl">{t('title')}</h1>
-        <span className="text-muted text-sm">
+        <h1 className="font-display text-3xl font-bold text-text-primary">{t('title')}</h1>
+        <span className="text-text-tertiary text-sm font-body">
           {filtered.length} {t('items')}
         </span>
       </div>
 
-      {/* FilterBar */}
-      <div className="mb-6">
-        <FilterBar
-          groups={filterGroups}
-          activeFilters={activeFilters}
-          onChange={handleFilterChange}
-        />
+      {/* Filters */}
+      <div className="flex flex-col gap-4 mb-8">
+        {/* Tipo */}
+        <div>
+          <p className="text-xs font-body font-medium text-text-tertiary uppercase tracking-wider mb-2">
+            {tF('type')}
+          </p>
+          <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide flex-nowrap">
+            <FilterChip
+              label={tF('all')}
+              active={currentType === 'all'}
+              onClick={() => handleFilterChange('type', 'all')}
+            />
+            {TYPE_OPTIONS.map((opt) => (
+              <FilterChip
+                key={opt.value}
+                label={tF(opt.labelKey)}
+                active={currentType === opt.value}
+                onClick={() => handleFilterChange('type', currentType === opt.value ? 'all' : opt.value)}
+              />
+            ))}
+          </div>
+        </div>
+
+        {/* Estado */}
+        <div>
+          <p className="text-xs font-body font-medium text-text-tertiary uppercase tracking-wider mb-2">
+            {tF('status')}
+          </p>
+          <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide flex-nowrap">
+            <FilterChip
+              label={tF('all')}
+              active={currentStatus === 'all'}
+              onClick={() => handleFilterChange('status', 'all')}
+            />
+            {STATUS_OPTIONS.map((opt) => (
+              <FilterChip
+                key={opt.value}
+                label={tF(opt.labelKey)}
+                active={currentStatus === opt.value}
+                onClick={() => handleFilterChange('status', currentStatus === opt.value ? 'all' : opt.value)}
+              />
+            ))}
+          </div>
+        </div>
+
+        {/* Puntuación */}
+        <div>
+          <p className="text-xs font-body font-medium text-text-tertiary uppercase tracking-wider mb-2">
+            {tF('minScore')}
+          </p>
+          <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide flex-nowrap">
+            <FilterChip
+              label={tF('all')}
+              active={currentScore === 'all'}
+              onClick={() => handleFilterChange('score', 'all')}
+            />
+            {SCORE_OPTIONS.map((opt) => (
+              <FilterChip
+                key={opt.value}
+                label={opt.label}
+                active={currentScore === opt.value}
+                onClick={() => handleFilterChange('score', currentScore === opt.value ? 'all' : opt.value)}
+              />
+            ))}
+          </div>
+        </div>
+
+        {/* Reset rápido si hay filtros activos */}
+        {hasActiveFilters && (
+          <div className="flex">
+            <KButton variant="secondary" size="sm" onClick={resetFilters}>
+              {tF('reset')}
+            </KButton>
+          </div>
+        )}
       </div>
 
-      {/* Empty: no items at all */}
-      {items.length === 0 && (
-        <div className="text-center py-16">
-          <p className="text-lg font-medium text-text">{t('emptyTitle')}</p>
-          <p className="text-muted text-sm mt-1">{t('emptyHint')}</p>
-          <Button asChild className="mt-4">
-            <Link href="/discover">{t('goDiscover')}</Link>
-          </Button>
-        </div>
-      )}
-
-      {/* Empty: items exist but filters produce no results */}
-      {items.length > 0 && filtered.length === 0 && (
-        <div className="text-center py-12">
-          <p className="text-muted">{t('noResults')}</p>
-          <button
-            onClick={resetFilters}
-            className="text-accent text-sm mt-2 hover:text-accent/80 transition-colors"
-          >
-            {tF('reset')}
-          </button>
-        </div>
+      {/* Empty filtered */}
+      {filtered.length === 0 && (
+        <EmptyFiltered t={t} tF={tF} onReset={resetFilters} />
       )}
 
       {/* Grid */}
