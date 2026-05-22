@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { useTranslations } from 'next-intl'
-import { Button } from '@/components/ui/button'
+import { KButton } from '@/components/ui/KButton'
 import { sendFriendRequest, respondToFriendRequest, removeFriend } from '@/lib/social/actions'
 import type { FriendshipStatusResult } from '@/lib/social/friends'
 
@@ -66,38 +66,38 @@ export function FriendshipButton({
 
   if (status === 'none') {
     return (
-      <Button variant="primary" size="sm" loading={loading} onClick={handleSendRequest}>
+      <KButton variant="primary" size="sm" loading={loading} onClick={handleSendRequest}>
         {t('addFriend')}
-      </Button>
+      </KButton>
     )
   }
 
   if (status === 'pending_sent') {
     return (
-      <Button variant="ghost" size="sm" disabled>
+      <KButton variant="secondary" size="sm" disabled>
         {t('requestSent')}
-      </Button>
+      </KButton>
     )
   }
 
   if (status === 'pending_received') {
     return (
-      <Button variant="primary" size="sm" loading={loading} onClick={handleAccept}>
+      <KButton variant="primary" size="sm" loading={loading} onClick={handleAccept}>
         {t('accept')}
-      </Button>
+      </KButton>
     )
   }
 
-  // accepted
+  // accepted — "Quitar amigo" es acción destructiva → accent-danger
   return (
-    <Button
-      variant="ghost"
+    <KButton
+      variant="secondary"
       size="sm"
       loading={loading}
       onClick={handleRemove}
-      className="text-muted hover:text-red-400"
+      className="text-text-secondary hover:text-accent-danger hover:border-accent-danger"
     >
       {t('friends')} ✓
-    </Button>
+    </KButton>
   )
 }

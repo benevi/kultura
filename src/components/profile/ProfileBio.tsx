@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { useTranslations } from 'next-intl'
 import { createClient } from '@/lib/supabase/client'
+import { KButton } from '@/components/ui/KButton'
 
 interface Props {
   bio: string | null
@@ -35,24 +36,26 @@ export function ProfileBio({ bio, isOwner, userId }: Props) {
           maxLength={200}
           rows={3}
           placeholder={t('bioPlaceholder')}
-          className="w-full bg-surface2 border border-border rounded-lg px-3 py-2 text-sm text-text placeholder-muted resize-none focus:outline-none focus:ring-1 focus:ring-accent"
+          className="w-full bg-surface-elevated border border-surface-border rounded-button px-3 py-2 text-sm text-text-primary placeholder:text-text-tertiary resize-none focus:outline-none focus:ring-1 focus:ring-accent-positive"
           autoFocus
         />
         <div className="flex items-center gap-2">
-          <button
+          <KButton
+            size="sm"
+            variant="primary"
             onClick={handleSave}
-            disabled={saving}
-            className="px-3 py-1.5 text-xs font-semibold bg-accent text-white rounded-lg hover:bg-accent-hover disabled:opacity-50 transition-colors"
+            loading={saving}
           >
-            {saving ? '...' : t('saveBio')}
-          </button>
-          <button
+            {t('saveBio')}
+          </KButton>
+          <KButton
+            size="sm"
+            variant="secondary"
             onClick={() => { setEditing(false); setDraft(currentBio) }}
-            className="px-3 py-1.5 text-xs font-medium text-muted hover:text-text transition-colors"
           >
             {t('cancelBio')}
-          </button>
-          <span className="ml-auto text-xs text-muted">{draft.length}/200</span>
+          </KButton>
+          <span className="ml-auto text-xs text-text-tertiary">{draft.length}/200</span>
         </div>
       </div>
     )
@@ -61,11 +64,11 @@ export function ProfileBio({ bio, isOwner, userId }: Props) {
   if (currentBio) {
     return (
       <div className="flex items-start gap-2 group">
-        <p className="text-sm text-muted leading-relaxed flex-1">{currentBio}</p>
+        <p className="text-sm text-text-secondary leading-relaxed flex-1">{currentBio}</p>
         {isOwner && (
           <button
             onClick={() => setEditing(true)}
-            className="opacity-0 group-hover:opacity-100 transition-opacity text-xs text-muted hover:text-accent flex-shrink-0 mt-0.5"
+            className="opacity-0 group-hover:opacity-100 transition-opacity text-xs text-text-tertiary hover:text-accent-positive flex-shrink-0 mt-0.5"
           >
             {t('editBio')}
           </button>
@@ -78,7 +81,7 @@ export function ProfileBio({ bio, isOwner, userId }: Props) {
     return (
       <button
         onClick={() => setEditing(true)}
-        className="text-sm text-muted hover:text-accent transition-colors"
+        className="text-sm text-text-tertiary hover:text-accent-positive transition-colors"
       >
         + {t('editBio')}
       </button>

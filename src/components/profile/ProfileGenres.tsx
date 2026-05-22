@@ -17,12 +17,12 @@ export async function ProfileGenres({ topGenres }: ProfileGenresProps) {
 
   return (
     <section>
-      <h2 className="font-display text-xl text-text mb-4">{t('topGenres')}</h2>
+      <h2 className="font-display text-xl text-text-primary mb-4">{t('topGenres')}</h2>
       <div className="flex flex-wrap gap-2">
         {top8.map(({ genre, count }) => (
           <span
             key={genre}
-            className="bg-surface2 text-xs px-3 py-1.5 rounded-full text-muted"
+            className="bg-surface-elevated border border-surface-border text-xs px-3 py-1.5 rounded-full text-text-secondary"
             title={`${count} títulos`}
           >
             {genre}

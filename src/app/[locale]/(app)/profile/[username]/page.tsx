@@ -16,6 +16,8 @@ import { ProfileGenres } from '@/components/profile/ProfileGenres'
 import { FriendshipButton } from '@/components/social/FriendshipButton'
 import { ReportButton } from '@/components/social/ReportButton'
 import { MediaRow } from '@/components/home/MediaRow'
+import { KButton } from '@/components/ui/KButton'
+import { Link } from '@/i18n/navigation'
 import type { DbFriendship } from '@/types/supabase'
 import { getTranslations } from 'next-intl/server'
 
@@ -121,12 +123,9 @@ export default async function ProfilePage({ params }: Props) {
           </div>
         )}
         {isOwnProfile && (
-          <a
-            href="/settings"
-            className="flex-shrink-0 inline-flex items-center gap-1.5 text-sm text-muted border border-border rounded-md px-3 py-1.5 hover:text-text hover:border-muted transition-colors"
-          >
-            {t('editProfile')}
-          </a>
+          <KButton asChild variant="secondary" size="sm" className="flex-shrink-0">
+            <Link href="/settings">{t('editProfile')}</Link>
+          </KButton>
         )}
       </div>
 
