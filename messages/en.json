@@ -439,6 +439,15 @@
     "dangerZone": "Danger zone",
     "deleteAccountSoon": "Delete account — coming soon"
   },
+  "report": {
+    "label": "Report",
+    "prompt": "Why do you want to report this?",
+    "placeholder": "Describe the issue (optional)",
+    "error": "Failed to send report",
+    "cancel": "Cancel",
+    "submit": "Send report",
+    "sent": "Report sent"
+  },
   "landing": {
     "hero": {
       "tagline": "Discover, track and share your culture",
