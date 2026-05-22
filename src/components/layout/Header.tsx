@@ -1,6 +1,6 @@
 ﻿import { getTranslations } from "next-intl/server";
 import { Link } from "@/i18n/navigation";
-import { Button } from "@/components/ui/button";
+import { KButton } from "@/components/ui/KButton";
 
 export async function Header() {
   const t = await getTranslations("auth");
@@ -14,12 +14,12 @@ export async function Header() {
           </span>
         </Link>
         <nav className="flex items-center gap-2">
-          <Button variant="ghost" size="md" asChild>
+          <KButton variant="secondary" size="md" asChild>
             <Link href="/login?mode=login">{t("signIn")}</Link>
-          </Button>
-          <Button variant="primary" size="md" asChild>
+          </KButton>
+          <KButton variant="primary" size="md" asChild>
             <Link href="/login?mode=register">{t("signUp")}</Link>
-          </Button>
+          </KButton>
         </nav>
       </div>
     </header>

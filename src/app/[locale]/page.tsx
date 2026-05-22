@@ -2,7 +2,7 @@ import { getTranslations } from "next-intl/server";
 import { Link } from "@/i18n/navigation";
 import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/layout/Footer";
-import { Button } from "@/components/ui/button";
+import { KButton } from "@/components/ui/KButton";
 
 export default async function HomePage() {
   const t = await getTranslations("landing");
@@ -17,12 +17,12 @@ export default async function HomePage() {
             {t("hero.tagline")}
           </h1>
           <div className="flex flex-col sm:flex-row gap-3 mt-2">
-            <Button variant="primary" size="lg" asChild>
+            <KButton variant="primary" size="lg" asChild>
               <Link href="/login?mode=register">{t("hero.cta")}</Link>
-            </Button>
-            <Button variant="outline" size="lg" asChild>
+            </KButton>
+            <KButton variant="secondary" size="lg" asChild>
               <Link href="#features">{t("hero.ctaSecondary")}</Link>
-            </Button>
+            </KButton>
           </div>
         </section>
 
@@ -50,7 +50,7 @@ export default async function HomePage() {
                 viewBox="0 0 24 24"
                 strokeWidth={1.5}
                 stroke="currentColor"
-                className="w-8 h-8 text-accent"
+                className="w-8 h-8 text-accent-positive"
               >
                 <path
                   strokeLinecap="round"
@@ -72,7 +72,7 @@ export default async function HomePage() {
                 viewBox="0 0 24 24"
                 strokeWidth={1.5}
                 stroke="currentColor"
-                className="w-8 h-8 text-accent"
+                className="w-8 h-8 text-accent-positive"
               >
                 <path
                   strokeLinecap="round"
@@ -94,7 +94,7 @@ export default async function HomePage() {
                 viewBox="0 0 24 24"
                 strokeWidth={1.5}
                 stroke="currentColor"
-                className="w-8 h-8 text-accent"
+                className="w-8 h-8 text-accent-positive"
               >
                 <path
                   strokeLinecap="round"
@@ -116,7 +116,7 @@ export default async function HomePage() {
                 viewBox="0 0 24 24"
                 strokeWidth={1.5}
                 stroke="currentColor"
-                className="w-8 h-8 text-accent"
+                className="w-8 h-8 text-accent-positive"
               >
                 <path
                   strokeLinecap="round"
@@ -139,9 +139,9 @@ export default async function HomePage() {
               {t("cta.title")}
             </h2>
             <p className="text-muted text-lg mb-8">{t("cta.subtitle")}</p>
-            <Button variant="primary" size="lg" asChild>
+            <KButton variant="primary" size="lg" asChild>
               <Link href="/login?mode=register">{t("cta.button")}</Link>
-            </Button>
+            </KButton>
           </div>
         </section>
       </main>
