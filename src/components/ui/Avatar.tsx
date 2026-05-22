@@ -21,6 +21,8 @@ const sizePixels: Record<NonNullable<AvatarProps["size"]>, number> = {
   lg: 56,
 };
 
+const LEGACY_RED = "#E82020";
+
 export function Avatar({
   initials,
   color = "var(--surface-elevated)",
@@ -29,6 +31,8 @@ export function Avatar({
   className,
 }: AvatarProps) {
   const px = sizePixels[size];
+  const resolvedColor =
+    color === LEGACY_RED ? "var(--accent-positive)" : color;
 
   if (src) {
     return (
@@ -57,7 +61,7 @@ export function Avatar({
         sizeClasses[size],
         className
       )}
-      style={{ backgroundColor: color }}
+      style={{ backgroundColor: resolvedColor }}
     >
       {initials}
     </div>

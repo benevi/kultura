@@ -29,6 +29,12 @@ describe("Avatar", () => {
     expect(avatar).toHaveStyle({ backgroundColor: "var(--surface-elevated)" });
   });
 
+  it("redirige el rojo legacy #E82020 a --accent-positive", () => {
+    render(<Avatar initials="VF" color="#E82020" />);
+    const avatar = screen.getByText("VF").closest("div");
+    expect(avatar).toHaveStyle({ backgroundColor: "var(--accent-positive)" });
+  });
+
   it("renderiza image cuando hay src", () => {
     render(<Avatar initials="JD" src="https://example.com/avatar.jpg" />);
     const img = screen.getByRole("img");

@@ -10,7 +10,7 @@ export async function AppFooter() {
         <span className="font-display text-sm tracking-widest text-muted">KULTURA</span>
         <Link
           href="/suggestions"
-          className="text-xs text-muted hover:text-accent transition-colors"
+          className="text-xs text-muted hover:text-accent-positive transition-colors"
         >
           {t('suggestions')}
         </Link>
