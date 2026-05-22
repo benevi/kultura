@@ -3,11 +3,12 @@
 import { useState } from 'react'
 import { useTranslations, useLocale } from 'next-intl'
 import { useRouter, usePathname } from 'next/navigation'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
+import { KButton } from '@/components/ui/KButton'
+import { KInput } from '@/components/ui/KInput'
 import { useToastContext } from '@/components/ui/ToastProvider'
 import { AVATAR_COLORS, isValidAvatarColor } from '@/lib/constants/avatarColors'
 import type { AvatarColorName } from '@/lib/constants/avatarColors'
+import { cn } from '@/lib/utils/index'
 import Link from 'next/link'
 
 interface SettingsFormProps {
@@ -94,22 +95,23 @@ export function SettingsForm({
 
   return (
     <div className="flex flex-col gap-8">
-      <h1 className="text-2xl font-bold text-text">{t('title')}</h1>
+      <h1 className="font-display text-2xl font-bold text-text-primary">{t('title')}</h1>
 
       {/* Sección Perfil */}
-      <section className="flex flex-col gap-6 bg-surface rounded-xl p-6 border border-border">
-        <h2 className="text-lg font-semibold text-text">{t('profile')}</h2>
+      <section className="flex flex-col gap-6 rounded-modal border border-surface-border bg-surface-default p-6">
+        <h2 className="font-display text-lg font-medium text-text-primary">{t('profile')}</h2>
 
         {/* Email (solo lectura) */}
         <div className="flex flex-col gap-1">
-          <label className="text-sm text-muted">{t('email')}</label>
-          <p className="text-sm text-text px-3 py-2 bg-surface2 rounded-md border border-border opacity-60 select-all">
+          <label className="text-sm font-body text-text-secondary">{t('email')}</label>
+          <p className="select-all rounded-button border border-surface-border bg-surface-base px-3 py-2 text-sm font-body text-text-primary opacity-60">
             {userEmail}
           </p>
         </div>
 
         {/* Username */}
-        <Input
+        <KInput
+          id="username"
           label={t('username')}
           value={username}
           onChange={e => handleUsernameChange(e.target.value)}
@@ -121,7 +123,7 @@ export function SettingsForm({
 
         {/* Color de avatar */}
         <div className="flex flex-col gap-3">
-          <label className="text-sm text-muted">{t('avatarColor')}</label>
+          <label className="text-sm font-body text-text-secondary">{t('avatarColor')}</label>
           <div className="grid grid-cols-8 gap-2">
             {AVATAR_COLORS.map(color => (
               <button
@@ -129,12 +131,12 @@ export function SettingsForm({
                 type="button"
                 aria-label={color.name}
                 onClick={() => setAvatarColor(color.name)}
-                className={[
-                  'w-8 h-8 rounded-full transition-transform hover:scale-110',
+                className={cn(
+                  'h-8 w-8 rounded-full transition-transform hover:scale-110',
                   avatarColor === color.name
-                    ? 'ring-2 ring-offset-2 ring-offset-surface ring-white scale-110'
-                    : '',
-                ].join(' ')}
+                    ? 'scale-110 ring-2 ring-accent-positive ring-offset-2 ring-offset-surface-default'
+                    : ''
+                )}
                 style={{ backgroundColor: color.hex }}
               />
             ))}
@@ -142,33 +144,35 @@ export function SettingsForm({
         </div>
 
         {/* Cambiar contraseña */}
-        <div className="flex flex-col gap-1">
-          <p className="text-sm text-muted">{t('changePasswordHint') ?? 'Te enviaremos un email con el enlace de restablecimiento'}</p>
-          <Button variant="outline" size="sm" className="w-fit" asChild>
+        <div className="flex flex-col gap-2">
+          <p className="text-sm font-body text-text-tertiary">
+            {t('changePasswordHint') ?? 'Te enviaremos un email con el enlace de restablecimiento'}
+          </p>
+          <KButton variant="secondary" size="sm" className="w-fit" asChild>
             <Link href={`/${currentLocale}/login?mode=reset`}>{t('changePassword')}</Link>
-          </Button>
+          </KButton>
         </div>
       </section>
 
       {/* Sección Preferencias */}
-      <section className="flex flex-col gap-6 bg-surface rounded-xl p-6 border border-border">
-        <h2 className="text-lg font-semibold text-text">{t('preferences')}</h2>
+      <section className="flex flex-col gap-6 rounded-modal border border-surface-border bg-surface-default p-6">
+        <h2 className="font-display text-lg font-medium text-text-primary">{t('preferences')}</h2>
 
         {/* Idioma */}
         <div className="flex flex-col gap-3">
-          <label className="text-sm text-muted">{t('language')}</label>
+          <label className="text-sm font-body text-text-secondary">{t('language')}</label>
           <div className="flex gap-2">
             {(['es', 'en'] as const).map(loc => (
               <button
                 key={loc}
                 type="button"
                 onClick={() => setLocale(loc)}
-                className={[
-                  'px-4 py-2 rounded-md text-sm font-medium border transition-colors',
+                className={cn(
+                  'rounded-pill px-4 py-2 text-sm font-medium font-body border transition-colors',
                   locale === loc
-                    ? 'bg-accent text-white border-accent'
-                    : 'bg-surface2 text-text border-border hover:border-muted',
-                ].join(' ')}
+                    ? 'bg-accent-positive text-on-accent-positive border-accent-positive'
+                    : 'bg-surface-elevated text-text-secondary border-surface-border hover:text-text-primary'
+                )}
               >
                 {loc === 'es' ? 'Español' : 'English'}
               </button>
@@ -177,16 +181,16 @@ export function SettingsForm({
         </div>
       </section>
 
-      {/* Sección Zona de peligro */}
-      <section className="flex flex-col gap-3 bg-red-950/20 border border-red-900/30 rounded-lg p-4">
-        <h2 className="text-lg font-semibold text-text">{t('dangerZone')}</h2>
-        <p className="text-sm text-muted">{t('deleteAccountSoon')}</p>
+      {/* Sección Zona de peligro — stub "próximamente", presentación neutra */}
+      <section className="flex flex-col gap-3 rounded-modal border border-surface-border bg-surface-default p-4 opacity-60">
+        <h2 className="font-display text-lg font-medium text-text-secondary">{t('dangerZone')}</h2>
+        <p className="text-sm font-body text-text-tertiary">{t('deleteAccountSoon')}</p>
       </section>
 
       {/* Botón guardar */}
-      <Button onClick={handleSave} loading={saving} disabled={saving}>
+      <KButton onClick={handleSave} loading={saving} className="w-full sm:w-fit">
         {saving ? t('saving') : t('save')}
-      </Button>
+      </KButton>
     </div>
   )
 }
