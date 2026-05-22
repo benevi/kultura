@@ -33,7 +33,7 @@ export function NavLinks() {
           >
             {t(key)}
             {active && (
-              <span className="absolute bottom-0 left-1/2 -translate-x-1/2 w-1 h-1 bg-accent rounded-full" />
+              <span className="absolute bottom-0 left-1/2 -translate-x-1/2 w-1 h-1 bg-accent-positive rounded-full" />
             )}
           </Link>
         )
