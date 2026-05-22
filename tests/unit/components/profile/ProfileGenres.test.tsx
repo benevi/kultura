@@ -34,14 +34,14 @@ describe('ProfileGenres', () => {
     expect(screen.getByText('Drama')).toBeInTheDocument()
   })
 
-  it('renderiza chips con clase bg-surface2', async () => {
+  it('renderiza chips con clase bg-surface-elevated', async () => {
     const topGenres = [
       { genre: 'Action', count: 10 },
       { genre: 'Drama', count: 5 },
     ]
     const component = await ProfileGenres({ topGenres })
     const { container } = render(component!)
-    const chips = container.querySelectorAll('.bg-surface2')
+    const chips = container.querySelectorAll('.bg-surface-elevated')
     expect(chips.length).toBeGreaterThanOrEqual(2)
   })
 
