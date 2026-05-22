@@ -1,4 +1,4 @@
-﻿'use client'
+'use client'
 
 // ============================================================
 // KULTURA — LibraryStatusModal
@@ -9,7 +9,8 @@ import { useState } from 'react'
 import { useTranslations } from 'next-intl'
 import { Select } from '@/components/ui/Select'
 import { StarRating } from '@/components/ui/StarRating'
-import { Button } from '@/components/ui/button'
+import { KButton } from '@/components/ui/KButton'
+import { KInput } from '@/components/ui/KInput'
 import { EpisodeProgress } from '@/components/library/EpisodeProgress'
 import type { LibraryEntry, LibraryStatus, EpisodeProgress as EpisodeProgressType } from '@/types/library'
 
@@ -78,11 +79,11 @@ export function LibraryStatusModal({
 
       {/* Panel */}
       <div
-        className="relative z-10 bg-surface border border-border rounded-xl shadow-2xl w-full max-w-sm mx-4 p-6"
+        className="relative z-10 bg-surface-elevated border border-surface-border rounded-modal shadow-2xl w-full max-w-sm mx-4 p-6"
         onClick={(e) => e.stopPropagation()}
         data-testid="modal-panel"
       >
-        <h2 className="font-display text-xl text-text mb-6">
+        <h2 className="font-display text-xl font-semibold text-text-primary mb-6">
           {current ? t('updateEntry') : t('addToLibrary')}
         </h2>
 
@@ -97,30 +98,25 @@ export function LibraryStatusModal({
 
           {/* Puntuación */}
           <div className="flex flex-col gap-1">
-            <span className="text-sm text-muted">{t('score')}</span>
+            <span className="text-sm font-body font-medium text-text-secondary">{t('score')}</span>
             <StarRating value={score} onChange={setScore} size="lg" />
           </div>
 
           {/* Fecha — solo visible cuando status = 'completed' */}
           {status === 'completed' && (
-            <div className="flex flex-col gap-1">
-              <label className="text-sm text-muted" htmlFor="watched-at">
-                {t('watchedAt')}
-              </label>
-              <input
-                id="watched-at"
-                type="date"
-                value={watchedAt}
-                onChange={(e) => setWatchedAt(e.target.value)}
-                className="bg-surface border border-border rounded-md px-3 py-2 text-sm text-text w-full focus:outline-none focus:ring-2 focus:ring-accent"
-              />
-            </div>
+            <KInput
+              id="watched-at"
+              type="date"
+              label={t('watchedAt')}
+              value={watchedAt}
+              onChange={(e) => setWatchedAt(e.target.value)}
+            />
           )}
 
           {/* Progreso de episodios — solo para tv/anime */}
           {showEpisodeProgress && (
             <div className="flex flex-col gap-1">
-              <span className="text-sm text-muted">{t('episode')}</span>
+              <span className="text-sm font-body font-medium text-text-secondary">{t('episode')}</span>
               <EpisodeProgress
                 value={episodeProgress}
                 onChange={setEpisodeProgress}
@@ -131,23 +127,22 @@ export function LibraryStatusModal({
 
           {/* Botones */}
           <div className="flex items-center gap-3 pt-2">
-            <Button
+            <KButton
               type="submit"
               variant="primary"
               disabled={loading}
-              loading={loading}
               className="flex-1"
             >
-              {t('saveStatus')}
-            </Button>
-            <Button
+              {loading ? '…' : t('saveStatus')}
+            </KButton>
+            <KButton
               type="button"
-              variant="ghost"
+              variant="secondary"
               onClick={onClose}
               disabled={loading}
             >
               {t('cancel')}
-            </Button>
+            </KButton>
           </div>
         </form>
       </div>
