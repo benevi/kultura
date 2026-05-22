@@ -64,7 +64,10 @@
     "invalidCredentials": "Invalid email or password",
     "emailNotConfirmed": "Please confirm your email before signing in",
     "userAlreadyExists": "An account with this email already exists",
-    "tooManyRequests": "Too many attempts. Please wait a moment and try again"
+    "tooManyRequests": "Too many attempts. Please wait a moment and try again",
+    "notFoundTitle": "Page not found",
+    "notFoundDescription": "The page you're looking for doesn't exist or has been moved.",
+    "goHome": "Go to home"
   },
   "common": {
     "loading": "Loading...",
