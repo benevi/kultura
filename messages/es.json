@@ -439,6 +439,15 @@
     "dangerZone": "Zona de peligro",
     "deleteAccountSoon": "Eliminar cuenta — disponible próximamente"
   },
+  "report": {
+    "label": "Reportar",
+    "prompt": "¿Por qué quieres reportar esto?",
+    "placeholder": "Describe el problema (opcional)",
+    "error": "Error al enviar el reporte",
+    "cancel": "Cancelar",
+    "submit": "Enviar reporte",
+    "sent": "Reporte enviado"
+  },
   "landing": {
     "hero": {
       "tagline": "Descubre, registra y comparte tu cultura",
