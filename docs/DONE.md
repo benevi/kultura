@@ -332,3 +332,15 @@ Paso 0 confirmó que ambas validaciones de error (`mismatched passwords`, `short
 2026-05-20 | E36 (fix /api/chat 500) | absorbido en B3.5c-3 | Fix conversación POST 500 + recursión RLS conversation_members. Cerrado en B3.5c-3-FIX2/FIX3. Ver commits 3703fe4, 92aa455.
 
 ---
+- [B3.5f-1] Sistema de diseño base: tokens semánticos (surface/text/accent), 
+  fuentes Space Grotesk + Inter (next/font), 4 componentes core 
+  (ContentCard, KButton, FilterChip, KInput), página /dev. 
+  Commits: 0386cea, f6ca683, 0554db7, + FIX2 estilos. Verificado visualmente.
+- [B3.5f-FIX] Reconciliación migraciones: CLI re-vinculada a producción, 
+  20260520000001 registrada en schema_migrations de prod, NOTIFY pgrst añadido.
+2026-05-20 | B3.5f-2a | 31d510c | Migración Home a tokens semánticos + estados vacíos. HeroSection, MediaRow, AiRecommendations, PopularInCircle migrados. KButton en CTAs. Iconos + mensajes + acción verde en cada estado vacío.
+2026-05-20 | B3.5f-2a-FIX | 06a65c9 | Chrome de marca migrado: wordmark verde, badge notif verde, BottomNav activo verde, Avatar fallback surface-elevated. Home auto-create default #6FCF97.
+
+2026-05-20 | B3.5f-2a-FIX-2 | 1de8010 | BottomNav y AuthHeader: cristal eliminado, fondo bg-surface-default opaco, borde border-surface-border. Rojo ya migrado en 06a65c9.
+
+2026-05-22 | B3.5f-2b | d2ca0c2 | Library migrada a tokens semánticos. FilterChip reemplaza FilterBar legacy. Estados vacíos (biblioteca total + filtro activo) con icono + título + subtítulo + KButton verde. LibraryAction statusColors a tokens. LibraryStatusModal → KButton + KInput. EpisodeProgress → focus-visible:ring-accent-positive. Test badge /green/ → /accent-positive/. Claves i18n empty.hint + empty.filteredHint añadidas (es/en).
