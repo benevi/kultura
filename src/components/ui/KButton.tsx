@@ -1,6 +1,7 @@
 import * as React from "react";
 import { Slot } from "@radix-ui/react-slot";
 import { cn } from "@/lib/utils/index";
+import { Spinner } from "./Spinner";
 
 export type KButtonVariant = "primary" | "secondary";
 export type KButtonSize = "sm" | "md" | "lg";
@@ -9,6 +10,7 @@ export interface KButtonProps extends React.ButtonHTMLAttributes<HTMLButtonEleme
   variant?: KButtonVariant;
   size?: KButtonSize;
   asChild?: boolean;
+  loading?: boolean;
 }
 
 const sizeClasses: Record<KButtonSize, string> = {
@@ -18,13 +20,14 @@ const sizeClasses: Record<KButtonSize, string> = {
 };
 
 export const KButton = React.forwardRef<HTMLButtonElement, KButtonProps>(
-  ({ variant = "primary", size = "md", asChild = false, className, children, disabled, ...props }, ref) => {
+  ({ variant = "primary", size = "md", asChild = false, loading = false, className, children, disabled, ...props }, ref) => {
     const Comp = asChild ? Slot : "button";
+    const isDisabled = disabled || loading;
 
     return (
       <Comp
         ref={ref}
-        disabled={disabled}
+        disabled={isDisabled}
         className={cn(
           /* Base */
           "inline-flex items-center justify-center gap-2 rounded-button font-body font-medium whitespace-nowrap",
@@ -50,7 +53,12 @@ export const KButton = React.forwardRef<HTMLButtonElement, KButtonProps>(
         )}
         {...props}
       >
-        {children}
+        {asChild ? children : (
+          <>
+            {loading && <Spinner size="sm" className="text-current" />}
+            {children}
+          </>
+        )}
       </Comp>
     );
   }

@@ -6,7 +6,8 @@ import { useTranslations } from "next-intl";
 import { useRouter } from "@/i18n/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { getAuthErrorKey } from "@/lib/utils/auth-errors";
-import { Button } from "@/components/ui/button";
+import { KButton } from "@/components/ui/KButton";
+import { KInput } from "@/components/ui/KInput";
 import { cn } from "@/lib/utils/index";
 
 // ---------------------------------------------------------------------------
@@ -217,12 +218,12 @@ export function LoginPage({ locale }: LoginPageProps) {
 
   if (form.success && mode === "reset") {
     return (
-      <main className="flex min-h-screen flex-col items-center justify-center bg-bg px-4">
-        <div className="w-full max-w-md rounded-xl border border-border bg-surface p-8 text-center">
-          <h1 className="font-display text-5xl tracking-widest text-accent">
+      <main className="flex min-h-screen flex-col items-center justify-center bg-surface-base px-4">
+        <div className="w-full max-w-md rounded-modal border border-surface-border bg-surface-elevated p-8 text-center">
+          <h1 className="font-display text-5xl font-bold tracking-widest text-accent-positive">
             KULTURA
           </h1>
-          <p className="mt-6 text-text">{tAuth("resetLinkSent")}</p>
+          <p className="mt-6 text-sm text-text-secondary">{tAuth("resetLinkSent")}</p>
         </div>
       </main>
     );
@@ -230,12 +231,12 @@ export function LoginPage({ locale }: LoginPageProps) {
 
   if (form.success && mode === "register") {
     return (
-      <main className="flex min-h-screen flex-col items-center justify-center bg-bg px-4">
-        <div className="w-full max-w-md rounded-xl border border-border bg-surface p-8 text-center">
-          <h1 className="font-display text-5xl tracking-widest text-accent">
+      <main className="flex min-h-screen flex-col items-center justify-center bg-surface-base px-4">
+        <div className="w-full max-w-md rounded-modal border border-surface-border bg-surface-elevated p-8 text-center">
+          <h1 className="font-display text-5xl font-bold tracking-widest text-accent-positive">
             KULTURA
           </h1>
-          <p className="mt-6 text-text">{tAuth("checkEmail")}</p>
+          <p className="mt-6 text-sm text-text-secondary">{tAuth("checkEmail")}</p>
         </div>
       </main>
     );
@@ -246,14 +247,14 @@ export function LoginPage({ locale }: LoginPageProps) {
   // -------------------------------------------------------------------------
 
   return (
-    <main className="flex min-h-screen flex-col items-center justify-center bg-bg px-4">
-      <div className="w-full max-w-sm rounded-xl border border-border bg-surface p-6 md:p-8">
-        {/* Logo */}
+    <main className="flex min-h-screen flex-col items-center justify-center bg-surface-base px-4">
+      <div className="w-full max-w-sm rounded-modal border border-surface-border bg-surface-elevated p-6 md:p-8">
+        {/* Wordmark */}
         <div className="mb-8 text-center">
-          <h1 className="font-display text-5xl tracking-widest text-accent">
+          <h1 className="font-display text-5xl font-bold tracking-widest text-accent-positive">
             KULTURA
           </h1>
-          <p className="mt-2 text-sm text-muted">
+          <p className="mt-2 text-sm text-text-tertiary">
             {mode === "reset"
               ? tAuth("resetPassword")
               : tAuth("tagline")}
@@ -262,15 +263,15 @@ export function LoginPage({ locale }: LoginPageProps) {
 
         {/* Tabs (hidden in reset mode) */}
         {mode !== "reset" && (
-          <div className="mb-6 flex gap-0 rounded-lg border border-border p-1">
+          <div className="mb-6 flex gap-0 rounded-pill border border-surface-border p-1">
             <button
               type="button"
               onClick={() => switchMode("login")}
               className={cn(
-                "flex-1 rounded-md py-2 text-sm font-medium transition-colors",
+                "flex-1 rounded-pill py-2 text-sm font-medium font-body transition-colors",
                 mode === "login"
-                  ? "bg-accent text-white"
-                  : "text-muted hover:text-text"
+                  ? "bg-accent-positive text-on-accent-positive"
+                  : "text-text-tertiary hover:text-text-primary"
               )}
             >
               {tAuth("signIn")}
@@ -279,10 +280,10 @@ export function LoginPage({ locale }: LoginPageProps) {
               type="button"
               onClick={() => switchMode("register")}
               className={cn(
-                "flex-1 rounded-md py-2 text-sm font-medium transition-colors",
+                "flex-1 rounded-pill py-2 text-sm font-medium font-body transition-colors",
                 mode === "register"
-                  ? "bg-accent text-white"
-                  : "text-muted hover:text-text"
+                  ? "bg-accent-positive text-on-accent-positive"
+                  : "text-text-tertiary hover:text-text-primary"
               )}
             >
               {tAuth("signUp")}
@@ -293,101 +294,54 @@ export function LoginPage({ locale }: LoginPageProps) {
         {/* Form */}
         <form onSubmit={handleSubmit} noValidate className="space-y-4">
           {/* Email */}
-          <div>
-            <label
-              htmlFor="email"
-              className="mb-1 block text-sm font-medium text-text"
-            >
-              {tAuth("email")}
-            </label>
-            <input
-              id="email"
-              type="email"
-              autoComplete="email"
-              value={form.email}
-              onChange={(e) => setField("email", e.target.value)}
-              className={cn(
-                "w-full rounded-md border bg-bg px-3 py-2 text-sm text-text placeholder:text-muted focus:outline-none focus:ring-2 focus:ring-accent",
-                form.fieldErrors.email ? "border-red-500" : "border-border"
-              )}
-              placeholder="you@example.com"
-            />
-            {form.fieldErrors.email && (
-              <p className="mt-1 text-xs text-red-500">
-                {form.fieldErrors.email}
-              </p>
-            )}
-          </div>
+          <KInput
+            id="email"
+            type="email"
+            autoComplete="email"
+            label={tAuth("email")}
+            value={form.email}
+            onChange={(e) => setField("email", e.target.value)}
+            error={form.fieldErrors.email}
+            placeholder="you@example.com"
+          />
 
           {/* Password (hidden in reset mode) */}
           {mode !== "reset" && (
-            <div>
-              <label
-                htmlFor="password"
-                className="mb-1 block text-sm font-medium text-text"
-              >
-                {tAuth("password")}
-              </label>
-              <input
-                id="password"
-                type="password"
-                autoComplete={mode === "register" ? "new-password" : "current-password"}
-                value={form.password}
-                onChange={(e) => setField("password", e.target.value)}
-                className={cn(
-                  "w-full rounded-md border bg-bg px-3 py-2 text-sm text-text placeholder:text-muted focus:outline-none focus:ring-2 focus:ring-accent",
-                  form.fieldErrors.password ? "border-red-500" : "border-border"
-                )}
-                placeholder="••••••••"
-              />
-              {form.fieldErrors.password && (
-                <p className="mt-1 text-xs text-red-500">
-                  {form.fieldErrors.password}
-                </p>
-              )}
-            </div>
+            <KInput
+              id="password"
+              type="password"
+              autoComplete={mode === "register" ? "new-password" : "current-password"}
+              label={tAuth("password")}
+              value={form.password}
+              onChange={(e) => setField("password", e.target.value)}
+              error={form.fieldErrors.password}
+              placeholder="••••••••"
+            />
           )}
 
           {/* Confirm Password (register only) */}
           {mode === "register" && (
-            <div>
-              <label
-                htmlFor="confirmPassword"
-                className="mb-1 block text-sm font-medium text-text"
-              >
-                {tAuth("confirmPassword")}
-              </label>
-              <input
-                id="confirmPassword"
-                type="password"
-                autoComplete="new-password"
-                value={form.confirmPassword}
-                onChange={(e) => setField("confirmPassword", e.target.value)}
-                className={cn(
-                  "w-full rounded-md border bg-bg px-3 py-2 text-sm text-text placeholder:text-muted focus:outline-none focus:ring-2 focus:ring-accent",
-                  form.fieldErrors.confirmPassword
-                    ? "border-red-500"
-                    : "border-border"
-                )}
-                placeholder="••••••••"
-              />
-              {form.fieldErrors.confirmPassword && (
-                <p className="mt-1 text-xs text-red-500">
-                  {form.fieldErrors.confirmPassword}
-                </p>
-              )}
-            </div>
+            <KInput
+              id="confirmPassword"
+              type="password"
+              autoComplete="new-password"
+              label={tAuth("confirmPassword")}
+              value={form.confirmPassword}
+              onChange={(e) => setField("confirmPassword", e.target.value)}
+              error={form.fieldErrors.confirmPassword}
+              placeholder="••••••••"
+            />
           )}
 
-          {/* Global error */}
+          {/* Global auth error — semantic danger red */}
           {form.error && (
-            <p className="rounded-md bg-red-500/10 px-3 py-2 text-sm text-red-500">
+            <p className="rounded-button bg-accent-danger/10 px-3 py-2 text-sm text-accent-danger">
               {form.error}
             </p>
           )}
 
           {/* Submit */}
-          <Button
+          <KButton
             type="submit"
             loading={form.loading}
             className="w-full"
@@ -397,7 +351,7 @@ export function LoginPage({ locale }: LoginPageProps) {
               : mode === "register"
                 ? tAuth("signUp")
                 : tAuth("sendResetLink")}
-          </Button>
+          </KButton>
 
           {/* Forgot password link (login mode only) */}
           {mode === "login" && (
@@ -405,7 +359,7 @@ export function LoginPage({ locale }: LoginPageProps) {
               <button
                 type="button"
                 onClick={() => switchMode("reset")}
-                className="text-sm text-accent hover:underline underline-offset-4"
+                className="text-sm text-text-secondary underline-offset-4 hover:text-text-primary hover:underline"
               >
                 {tAuth("forgotPassword")}
               </button>
@@ -418,7 +372,7 @@ export function LoginPage({ locale }: LoginPageProps) {
               <button
                 type="button"
                 onClick={() => switchMode("login")}
-                className="text-sm text-muted underline-offset-4 hover:text-text hover:underline"
+                className="text-sm text-text-tertiary underline-offset-4 hover:text-text-primary hover:underline"
               >
                 {tAuth("alreadyHaveAccount")} {tAuth("signIn")}
               </button>
