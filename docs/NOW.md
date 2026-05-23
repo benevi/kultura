@@ -12,10 +12,11 @@ B3.5f-PUBLIC-AUDIT → ✅ CERRADO (auditoría sin código de pantallas pública
 B3.5f-2f → ✅ CERRADO (error boundaries + páginas de error, 506 tests green)
 B3.5f-2f-FIX → ✅ CERRADO (wiring not-found para rutas desconocidas, 506 tests green)
 B3.5f-2g → ✅ CERRADO (Profile migrado al DS, loading skeleton, i18n ReportButton, 506 tests green, commits 87beaf0…c4c227e)
+B3.5f-2g-2 → ✅ CERRADO (fila Pendientes + empty state propio/ajeno, 506 tests green, commit 19a82af)
 
 ## Tarea activa
 
-**Ninguna. Pendiente verificación visual de B3.5f-2g por el usuario (Regla 11).**
+**Ninguna. Pendiente verificación visual de B3.5f-2g-2 por el usuario (Regla 11).**
 
 ## Qué se hizo en B3.5f-2g
 
