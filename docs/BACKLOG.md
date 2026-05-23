@@ -288,6 +288,50 @@ No bloqueantes. Atacar solo después de A–D.
   Investigar si es setting de proyecto (toggle) o política del plan Hobby.
   Refuerza importancia de regla 11 (verificar Current, no solo Ready).
 
+- [ ] **E45. Grupos: flujo de descubrimiento + RLS de join + visibilidad/invitaciones**
+
+  **Flujo roto detectado (diagnóstico GRUPOS-DIAG, 2026-05-23):** El módulo de grupos
+  existe estructuralmente (tablas, endpoint, UI de detalle) pero es inaccesible como
+  producto: no hay forma de encontrar grupos, y el mecanismo de unión está además bloqueado
+  a nivel de RLS.
+
+  **Qué existe hoy:**
+  - Tablas: `groups` (id, owner_id, name, description, cover_color) y `group_members`
+    (group_id, user_id, role ∈ {owner, member}, joined_at). Sin columna de visibilidad
+    (`is_public`, `privacy`, etc.) ni tabla de invitaciones.
+  - Rutas UI: solo `src/app/[locale]/(app)/groups/[id]/page.tsx` (detalle). No existe
+    `groups/page.tsx` (listado/búsqueda). Registrado parcialmente en E22.
+  - Creación: formulario inline en `FriendsClient.tsx` (pantalla Amigos), llama a
+    `POST /api/groups`.
+  - Endpoint join/leave: `POST /api/groups/[id]/join` — lógica correcta (toggle member
+    ↔ leave, bloquea owner-leave), pero usa `createClient()` autenticado, por lo que
+    está sujeto a RLS.
+  - `GET /api/groups`: devuelve solo los grupos del usuario autenticado (no listado global).
+
+  **Qué falta / bugs:**
+  - a. **RLS bloqueante (bug real):** `group_members` INSERT tiene una única policy
+    `"Group owners can manage members"` — solo permite al owner insertar filas. No existe
+    policy de self-join (`user_id = auth.uid()`). Consecuencia: `POST /api/groups/[id]/join`
+    falla con error 500 para cualquier usuario no-owner porque la INSERT queda bloqueada
+    por RLS. El join no funciona aunque llegues por URL directa.
+  - b. **Descubrimiento:** no hay ruta `/groups` ni buscador. Los grupos son invisibles
+    salvo que conozcas el UUID. (Solapamiento con E22, que solo contempla el listado UI
+    pero no el bug de RLS ni el modelo de visibilidad.)
+  - c. **Modelo de visibilidad:** la tabla `groups` no tiene columna de visibilidad
+    (`is_public` / `privacy`). Todos los grupos son implícitamente "abiertos" pero
+    inaccesibles. No existe modelo de invitaciones (ninguna tabla).
+
+  **Sub-piezas para cuando se planifique:**
+  - E45-a: Migración que añade policy RLS de self-join en `group_members` (fix bloqueante,
+    pequeño, independiente).
+  - E45-b: Página `/groups` con listado/búsqueda (engloba E22; E22 puede cerrarse al
+    completar esto).
+  - E45-c: Columna `is_public boolean default true` en `groups` + policy RLS que filtre
+    grupos privados en SELECT; ajuste UI en detalle y listado.
+  - E45-d: Tabla `group_invitations` + flujo de invitación (enviar / aceptar / rechazar).
+
+  No planificar aún. Solo backlog.
+
 ---
 
 ## BLOQUE B3.5 — Diagnóstico y fixes pre-producción
