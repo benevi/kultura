@@ -74,10 +74,11 @@ export default async function ProfilePage({ params }: Props) {
     }
   }
 
-  const [stats, recentCompleted, recentInProgress] = await Promise.all([
+  const [stats, recentCompleted, recentInProgress, recentPending] = await Promise.all([
     getUserStats(profileUser.id),
     getRecentLibraryByStatus(profileUser.id, 'completed', 8),
     getRecentLibraryByStatus(profileUser.id, 'in_progress', 8),
+    getRecentLibraryByStatus(profileUser.id, 'pending', 8),
   ])
 
   const completedItems = recentCompleted.map(entry => ({
@@ -93,6 +94,15 @@ export default async function ProfilePage({ params }: Props) {
     poster: entry.poster ?? null,
     type: entry.mediaId.split('_')[0],
   }))
+
+  const pendingItems = recentPending.map(entry => ({
+    mediaId: entry.mediaId,
+    title: entry.title ?? '',
+    poster: entry.poster ?? null,
+    type: entry.mediaId.split('_')[0],
+  }))
+
+  const hasAnyContent = completedItems.length > 0 || inProgressItems.length > 0 || pendingItems.length > 0
 
   return (
     <main className="max-w-4xl mx-auto px-4 md:px-8 py-8 flex flex-col gap-10">
@@ -129,14 +139,34 @@ export default async function ProfilePage({ params }: Props) {
         )}
       </div>
 
+      {/* Viendo ahora */}
+      {inProgressItems.length > 0 && (
+        <MediaRow title={t('watchingNow')} items={inProgressItems} />
+      )}
+
       {/* Últimos completados */}
       {completedItems.length > 0 && (
         <MediaRow title={t('lastCompleted')} items={completedItems} />
       )}
 
-      {/* Viendo ahora */}
-      {inProgressItems.length > 0 && (
-        <MediaRow title={t('watchingNow')} items={inProgressItems} />
+      {/* Pendientes */}
+      {pendingItems.length > 0 && (
+        <MediaRow title={t('pendingRow')} items={pendingItems} />
+      )}
+
+      {/* Empty state cuando la biblioteca está vacía */}
+      {!hasAnyContent && (
+        <div className="flex flex-col items-center gap-3 py-16 text-center">
+          <span className="text-5xl">📚</span>
+          <p className="font-medium" style={{ color: 'var(--text-primary)' }}>
+            {isOwnProfile
+              ? t('emptyOwn')
+              : t('emptyOther', { username: profileUser.username })}
+          </p>
+          <p className="text-sm" style={{ color: 'var(--text-tertiary)' }}>
+            {isOwnProfile ? t('emptyOwnHint') : t('emptyOtherHint')}
+          </p>
+        </div>
       )}
 
       {/* Estadísticas detalladas */}

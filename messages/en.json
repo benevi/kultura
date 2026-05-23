@@ -228,8 +228,13 @@
     "inProgress": "in progress",
     "lastCompleted": "Last completed",
     "watchingNow": "Watching now",
+    "pendingRow": "Pending",
     "noCompleted": "No completed titles",
-    "noInProgress": "No titles in progress"
+    "noInProgress": "No titles in progress",
+    "emptyOwn": "You haven't added anything to your library yet",
+    "emptyOwnHint": "Start tracking movies, shows, books or games",
+    "emptyOther": "{username} has no activity yet",
+    "emptyOtherHint": "Their library is empty"
   },
   "lists": {
     "title": "My lists",

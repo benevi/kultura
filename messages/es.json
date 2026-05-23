@@ -228,8 +228,13 @@
     "colorLabel": "Color del avatar",
     "lastCompleted": "Últimos completados",
     "watchingNow": "Viendo ahora",
+    "pendingRow": "Pendientes",
     "noCompleted": "Sin títulos completados",
-    "noInProgress": "Sin títulos en progreso"
+    "noInProgress": "Sin títulos en progreso",
+    "emptyOwn": "Aún no has añadido nada a tu biblioteca",
+    "emptyOwnHint": "Empieza a registrar películas, series, libros o juegos",
+    "emptyOther": "{username} aún no tiene actividad",
+    "emptyOtherHint": "Su biblioteca está vacía"
   },
   "lists": {
     "title": "Mis listas",
