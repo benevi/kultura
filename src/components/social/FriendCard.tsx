@@ -4,7 +4,7 @@ import { useState } from 'react'
 import { useTranslations } from 'next-intl'
 import { Link } from '@/i18n/navigation'
 import { Avatar } from '@/components/ui/Avatar'
-import { Button } from '@/components/ui/button'
+import { KButton } from '@/components/ui/KButton'
 import { respondToFriendRequest, removeFriend } from '@/lib/social/actions'
 import type { Friendship } from '@/types/user'
 
@@ -56,7 +56,7 @@ export function FriendCard({ friendship, variant, onAction }: FriendCardProps) {
   }
 
   return (
-    <div className="flex items-center gap-3 py-3 border-b border-border last:border-0">
+    <div className="flex items-center gap-3 py-3 border-b border-surface-border last:border-0">
       <Link href={`/profile/${otherUser.username}`}>
         <Avatar
           initials={otherUser.avatarInitials}
@@ -68,7 +68,7 @@ export function FriendCard({ friendship, variant, onAction }: FriendCardProps) {
       <div className="flex-1 min-w-0">
         <Link
           href={`/profile/${otherUser.username}`}
-          className="font-medium text-text hover:text-accent transition-colors block truncate"
+          className="font-medium text-text-primary hover:text-accent-positive transition-colors block truncate"
         >
           {otherUser.username}
         </Link>
@@ -77,23 +77,23 @@ export function FriendCard({ friendship, variant, onAction }: FriendCardProps) {
       <div className="flex items-center gap-2 flex-shrink-0">
         {variant === 'pending' ? (
           <>
-            <Button size="sm" variant="primary" loading={loading} onClick={handleAccept}>
+            <KButton size="sm" variant="primary" loading={loading} onClick={handleAccept}>
               {t('accept')}
-            </Button>
-            <Button size="sm" variant="ghost" loading={loading} onClick={handleDecline}>
+            </KButton>
+            <KButton size="sm" variant="secondary" loading={loading} onClick={handleDecline}>
               {t('decline')}
-            </Button>
+            </KButton>
           </>
         ) : (
-          <Button
+          <KButton
             size="sm"
-            variant="ghost"
+            variant="secondary"
             loading={loading}
             onClick={handleRemove}
-            className="text-muted hover:text-red-400"
+            className="text-text-secondary hover:text-accent-danger"
           >
             {t('removeFriend')}
-          </Button>
+          </KButton>
         )}
       </div>
     </div>
