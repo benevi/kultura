@@ -39,21 +39,21 @@ function NotificationItem({ notif }: { notif: AppNotification }) {
     const mediaExternalId = mediaId?.split('_').slice(1).join('_') ?? null
     content = (
       <div className="flex-1 min-w-0">
-        <p className="text-sm text-text">
+        <p className="text-sm text-text-primary">
           {fromUsername ? (
-            <Link href={`/profile/${fromUsername}`} className="font-medium hover:text-accent transition-colors">
+            <Link href={`/profile/${fromUsername}`} className="font-medium hover:text-accent-info transition-colors">
               {fromUsername}
             </Link>
           ) : null}
           {' '}{t('recommendedYou')}{' '}
           {mediaType && mediaExternalId && mediaTitle ? (
-            <Link href={`/media/${mediaType}/${mediaExternalId}`} className="font-medium hover:text-accent transition-colors">
+            <Link href={`/media/${mediaType}/${mediaExternalId}`} className="font-medium hover:text-accent-info transition-colors">
               {mediaTitle}
             </Link>
           ) : (mediaTitle ?? null)}
         </p>
         {message && (
-          <p className="text-xs text-muted mt-0.5 truncate">&ldquo;{message}&rdquo;</p>
+          <p className="text-xs text-text-tertiary mt-0.5 truncate">&ldquo;{message}&rdquo;</p>
         )}
       </div>
     )
@@ -63,15 +63,15 @@ function NotificationItem({ notif }: { notif: AppNotification }) {
     const listId = p.listId as string | undefined
     content = (
       <div className="flex-1 min-w-0">
-        <p className="text-sm text-text">
+        <p className="text-sm text-text-primary">
           {fromUsername ? (
-            <Link href={`/profile/${fromUsername}`} className="font-medium hover:text-accent transition-colors">
+            <Link href={`/profile/${fromUsername}`} className="font-medium hover:text-accent-info transition-colors">
               {fromUsername}
             </Link>
           ) : null}
           {' '}{t('invitedYou')}{' '}
           {listId && listName ? (
-            <Link href={`/lists/${listId}`} className="font-medium hover:text-accent transition-colors">
+            <Link href={`/lists/${listId}`} className="font-medium hover:text-accent-info transition-colors">
               {listName}
             </Link>
           ) : (listName ?? null)}
@@ -81,10 +81,10 @@ function NotificationItem({ notif }: { notif: AppNotification }) {
   }
 
   return (
-    <div className={`flex items-start gap-3 p-4 ${!notif.readAt ? 'bg-accent/5' : ''}`}>
-      <div className="flex-shrink-0 mt-0.5 text-muted">
+    <div className={`flex items-start gap-3 p-4 ${!notif.readAt ? 'bg-accent-positive/5' : ''}`}>
+      <div className="flex-shrink-0 mt-0.5 text-text-tertiary">
         {notif.type === 'recommendation' ? (
-          <Sparkles className="w-5 h-5 text-accent" />
+          <Sparkles className="w-5 h-5 text-accent-info" />
         ) : notif.type === 'list_invite' ? (
           <List className="w-5 h-5" />
         ) : (
@@ -92,7 +92,7 @@ function NotificationItem({ notif }: { notif: AppNotification }) {
         )}
       </div>
       {content}
-      <span className="text-xs text-muted flex-shrink-0 mt-0.5">{relativeDate(notif.createdAt, locale)}</span>
+      <span className="text-xs text-text-tertiary flex-shrink-0 mt-0.5">{relativeDate(notif.createdAt, locale)}</span>
     </div>
   )
 }
@@ -102,16 +102,16 @@ export function NotificationsList({ notifications }: Props) {
 
   if (notifications.length === 0) {
     return (
-      <div className="bg-surface border border-border rounded-xl p-10 text-center flex flex-col items-center gap-3">
-        <Bell className="w-8 h-8 text-muted" />
-        <p className="font-medium text-text">{t('noNotifications')}</p>
-        <p className="text-sm text-muted">{t('noNotificationsHint')}</p>
+      <div className="bg-surface-default border border-surface-border rounded-xl p-10 text-center flex flex-col items-center gap-3">
+        <Bell className="w-8 h-8 text-text-tertiary" />
+        <p className="font-medium text-text-primary">{t('noNotifications')}</p>
+        <p className="text-sm text-text-tertiary">{t('noNotificationsHint')}</p>
       </div>
     )
   }
 
   return (
-    <div className="bg-surface border border-border rounded-xl divide-y divide-border overflow-hidden">
+    <div className="bg-surface-default border border-surface-border rounded-xl divide-y divide-surface-border overflow-hidden">
       {notifications.map((n) => (
         <NotificationItem key={n.id} notif={n} />
       ))}
