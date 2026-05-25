@@ -1,19 +1,12 @@
-﻿'use client'
+'use client'
 
 import { useState } from 'react'
 import { useTranslations } from 'next-intl'
 import { useRouter } from '@/i18n/navigation'
-import { Button } from '@/components/ui/button'
+import { KButton } from '@/components/ui/KButton'
 
-const MEDIA_TYPES = [
-  { value: 'movie', label: 'Películas' },
-  { value: 'tv', label: 'Series' },
-  { value: 'anime', label: 'Anime' },
-  { value: 'book', label: 'Libros' },
-  { value: 'comic', label: 'Cómics' },
-  { value: 'manga', label: 'Manga' },
-  { value: 'game', label: 'Videojuegos' },
-]
+const MEDIA_TYPE_KEYS = ['movie', 'tv', 'anime', 'book', 'comic', 'manga', 'game'] as const
+type MediaTypeKey = typeof MEDIA_TYPE_KEYS[number]
 
 interface CreateListModalProps {
   onClose: () => void
@@ -21,10 +14,12 @@ interface CreateListModalProps {
 
 export function CreateListModal({ onClose }: CreateListModalProps) {
   const t = useTranslations('lists')
+  const tf = useTranslations('filters')
+  const tc = useTranslations('common')
   const router = useRouter()
 
   const [name, setName] = useState('')
-  const [mediaType, setMediaType] = useState('movie')
+  const [mediaType, setMediaType] = useState<MediaTypeKey>('movie')
   const [isCollaborative, setIsCollaborative] = useState(false)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -56,35 +51,35 @@ export function CreateListModal({ onClose }: CreateListModalProps) {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60">
-      <div className="bg-surface border border-border rounded-xl w-full max-w-sm flex flex-col gap-4 p-5">
+      <div className="bg-surface-elevated border border-surface-border rounded-xl w-full max-w-sm flex flex-col gap-4 p-5">
         <div className="flex items-center justify-between">
-          <h2 className="font-display text-xl">{t('createList')}</h2>
-          <button onClick={onClose} className="text-muted hover:text-text text-xl leading-none">×</button>
+          <h2 className="font-display text-xl text-text-primary">{t('createList')}</h2>
+          <button onClick={onClose} className="text-text-secondary hover:text-text-primary text-xl leading-none">×</button>
         </div>
 
         <div className="flex flex-col gap-3">
           {/* Nombre */}
           <div>
-            <label className="text-xs text-muted mb-1 block">{t('listName')}</label>
+            <label className="text-xs text-text-secondary mb-1 block">{t('listName')}</label>
             <input
               type="text"
               value={name}
               onChange={(e) => setName(e.target.value)}
               placeholder="Mi lista de películas..."
-              className="w-full bg-bg border border-border rounded-md px-3 py-2 text-sm text-text placeholder:text-muted focus:outline-none focus:ring-1 focus:ring-accent"
+              className="w-full bg-surface-base border border-surface-border rounded-button px-3 py-2 text-sm text-text-primary placeholder:text-text-tertiary focus:outline-none focus:ring-1 focus:ring-accent-positive"
             />
           </div>
 
           {/* Tipo */}
           <div>
-            <label className="text-xs text-muted mb-1 block">{t('mediaType')}</label>
+            <label className="text-xs text-text-secondary mb-1 block">{t('mediaType')}</label>
             <select
               value={mediaType}
-              onChange={(e) => setMediaType(e.target.value)}
-              className="w-full bg-bg border border-border rounded-md px-3 py-2 text-sm text-text focus:outline-none focus:ring-1 focus:ring-accent"
+              onChange={(e) => setMediaType(e.target.value as MediaTypeKey)}
+              className="w-full bg-surface-base border border-surface-border rounded-button px-3 py-2 text-sm text-text-primary focus:outline-none focus:ring-1 focus:ring-accent-positive"
             >
-              {MEDIA_TYPES.map((m) => (
-                <option key={m.value} value={m.value}>{m.label}</option>
+              {MEDIA_TYPE_KEYS.map((key) => (
+                <option key={key} value={key}>{tf(key)}</option>
               ))}
             </select>
           </div>
@@ -95,20 +90,20 @@ export function CreateListModal({ onClose }: CreateListModalProps) {
               type="checkbox"
               checked={isCollaborative}
               onChange={(e) => setIsCollaborative(e.target.checked)}
-              className="accent-accent w-4 h-4"
+              className="accent-accent-positive w-4 h-4"
             />
             <div>
-              <p className="text-sm font-medium text-text">{t('collaborative')}</p>
-              <p className="text-xs text-muted">{t('collaborativeHint')}</p>
+              <p className="text-sm font-medium text-text-primary">{t('collaborative')}</p>
+              <p className="text-xs text-text-tertiary">{t('collaborativeHint')}</p>
             </div>
           </label>
         </div>
 
-        {error && <p className="text-xs text-red-400">{error}</p>}
+        {error && <p className="text-xs text-accent-danger">{error}</p>}
 
         <div className="flex gap-2 justify-end">
-          <Button variant="ghost" size="sm" onClick={onClose}>Cancelar</Button>
-          <Button
+          <KButton variant="secondary" size="sm" onClick={onClose}>{tc('cancel')}</KButton>
+          <KButton
             variant="primary"
             size="sm"
             loading={loading}
@@ -116,7 +111,7 @@ export function CreateListModal({ onClose }: CreateListModalProps) {
             onClick={handleCreate}
           >
             {t('create')}
-          </Button>
+          </KButton>
         </div>
       </div>
     </div>
