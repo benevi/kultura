@@ -9,6 +9,7 @@ No se edita a mano durante el día. Solo se añade una línea al terminar cada t
 2026-05-01 | A1 | (sin commit, trabajo de dashboards) | Migración a sistema nuevo de Supabase API keys (`sb_publishable_*` + `sb_secret_*`). Legacy JWT keys deshabilitadas. App verificada en local + Vercel actualizado.
 2026-05-23 | B3.5f-2g-2 | 19a82af | Fila "Pendientes" + empty state en /profile/[username]. Status enum `pending` confirmado. 506 tests green.
 2026-05-23 | B3.5f-2h-AMIGOS | 6eccb5a | Pantalla Amigos migrada al DS. FriendCard Button→KButton (primary/secondary/danger), FriendsClient raw buttons→KButton, todos los tokens legacy neutralizados. 506 tests green.
+2026-05-25 | B3.5f-2h-LISTAS | 535e726 | Listas migrada al DS. 5 archivos: tokens legacy→canónicos, Button→KButton, accent→accent-positive/danger, badge "Colaborativa" i18n en SC, empty state /lists/[id] con emoji 📋, 0 alias legacy en scope. E46 creada en BACKLOG (MediaCard pendiente). 506/57 green.
 
 ---
 

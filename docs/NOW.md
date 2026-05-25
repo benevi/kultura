@@ -14,7 +14,8 @@ B3.5f-2f-FIX → ✅ CERRADO (wiring not-found para rutas desconocidas, 506 test
 B3.5f-2g → ✅ CERRADO (Profile migrado al DS, loading skeleton, i18n ReportButton, 506 tests green)
 B3.5f-2g-2 → ✅ CERRADO (fila Pendientes + empty state propio/ajeno, 506 tests green, commit 19a82af)
 B3.5f-2h-AMIGOS → ✅ CERRADO (Amigos migrada al DS, 506 tests green, commit 6eccb5a)
+B3.5f-2h-LISTAS → ✅ CERRADO (Listas migrada al DS, 506 tests green, commit 535e726)
 
 ## Tarea activa
 
-**Ninguna. B3.5f-2h-AMIGOS cerrado. Esperando siguiente tarea del usuario.**
+Pendiente de asignación por el usuario.
