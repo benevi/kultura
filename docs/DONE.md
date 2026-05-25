@@ -10,6 +10,7 @@ No se edita a mano durante el día. Solo se añade una línea al terminar cada t
 2026-05-23 | B3.5f-2g-2 | 19a82af | Fila "Pendientes" + empty state en /profile/[username]. Status enum `pending` confirmado. 506 tests green.
 2026-05-23 | B3.5f-2h-AMIGOS | 6eccb5a | Pantalla Amigos migrada al DS. FriendCard Button→KButton (primary/secondary/danger), FriendsClient raw buttons→KButton, todos los tokens legacy neutralizados. 506 tests green.
 2026-05-25 | B3.5f-2h-LISTAS | 535e726 | Listas migrada al DS. 5 archivos: tokens legacy→canónicos, Button→KButton, accent→accent-positive/danger, badge "Colaborativa" i18n en SC, empty state /lists/[id] con emoji 📋, 0 alias legacy en scope. E46 creada en BACKLOG (MediaCard pendiente). 506/57 green.
+2026-05-25 | B3.5f-2h-NOTIF | b40c518 | Notificaciones migrada al DS. 2 archivos: bg-surface→bg-surface-default, border-border→border-surface-border, divide-border→divide-surface-border, text-text→text-text-primary, text-muted→text-text-tertiary, hover:text-accent→hover:text-accent-info (enlaces azules DS §1), Sparkles text-accent→text-accent-info, bg-accent/5→bg-accent-positive/5 (fondo no-leída). i18n completo (sin literales sueltos). 506/57 green. E48 en BACKLOG. 5 archivos: tokens legacy→canónicos, Button→KButton, accent→accent-positive/danger, badge "Colaborativa" i18n en SC, empty state /lists/[id] con emoji 📋, 0 alias legacy en scope. E46 creada en BACKLOG (MediaCard pendiente). 506/57 green.
 
 ---
 

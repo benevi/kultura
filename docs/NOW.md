@@ -15,7 +15,8 @@ B3.5f-2g → ✅ CERRADO (Profile migrado al DS, loading skeleton, i18n ReportBu
 B3.5f-2g-2 → ✅ CERRADO (fila Pendientes + empty state propio/ajeno, 506 tests green, commit 19a82af)
 B3.5f-2h-AMIGOS → ✅ CERRADO (Amigos migrada al DS, 506 tests green, commit 6eccb5a)
 B3.5f-2h-LISTAS → ✅ CERRADO (Listas migrada al DS, 506 tests green, commit 535e726)
+B3.5f-2h-NOTIF → ✅ CERRADO (Notificaciones migrada al DS, 506 tests green, commit b40c518)
 
 ## Tarea activa
 
-Pendiente de asignación por el usuario.
+Sin tarea activa. Ver BACKLOG para siguiente tarea.
