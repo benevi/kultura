@@ -332,6 +332,27 @@ No bloqueantes. Atacar solo después de A–D.
 
   No planificar aún. Solo backlog.
 
+- [ ] **E47. Listas: UI para añadir títulos a una lista (endpoint ya existe)**
+
+  **Diagnóstico LISTAS-ADD-DIAG (2026-05-25):** El endpoint `POST /api/lists/[id]` existe y
+  funciona correctamente (acepta `{ mediaId, mediaCache? }`, llama `canEditList`, inserta en
+  `list_items`). La RLS de INSERT es correcta: permite owner + miembros de listas colaborativas.
+  El flujo NO existe en la UI: ni `ListDetail.tsx` ni `MediaDetail.tsx` ni `MediaCard.tsx`
+  tienen ningún botón/acción de "añadir a lista". Tampoco existen claves i18n para ello.
+
+  **Veredicto:** (B) backend completo sin UI.
+
+  **Qué falta:**
+  - CTA en `MediaDetail.tsx` (ficha de título): botón "Añadir a lista" que abra un selector
+    de listas del usuario compatibles por `media_type`. Llamada a `POST /api/lists/[id]` con
+    `mediaCache` para garantizar el upsert en tabla `media`.
+  - CTA alternativo / adicional en `ListDetail.tsx`: botón en el header o en el estado vacío
+    que abra buscador de títulos y los añada directamente desde la lista.
+  - Claves i18n: `lists.addItem`, `lists.addToList`, `lists.selectList`, etc.
+
+  Hecho cuando: desde la ficha de un título autenticado se puede añadir a una lista propia
+  y el ítem aparece en `/lists/[id]` sin necesidad de ir al detalle de la lista primero.
+
 - [ ] **E46. Migrar MediaCard al sistema de diseño**
   `src/components/media/MediaCard.tsx` usa tokens legacy (`bg-surface2`, `text-muted`, `text-amber-400`).
   Componente compartido por Library, Discover, Search, ListDetail y otros — su migración es tarea propia.
