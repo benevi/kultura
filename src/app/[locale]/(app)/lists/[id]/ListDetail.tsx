@@ -4,7 +4,7 @@ import { useState } from 'react'
 import { useTranslations } from 'next-intl'
 import { Link } from '@/i18n/navigation'
 import { Avatar } from '@/components/ui/Avatar'
-import { Button } from '@/components/ui/button'
+import { KButton } from '@/components/ui/KButton'
 import { MediaCard } from '@/components/media/MediaCard'
 import type { List, ListItem, ListMember } from '@/types/list'
 
@@ -91,7 +91,6 @@ export function ListDetail({
     }
   }
 
-  // Amigos no miembros aún (para el selector de invitación)
   const memberIds = new Set(members.map((m) => m.userId))
   memberIds.add(list.ownerId)
   const invitableFriends = currentUserFriends.filter((f) => !memberIds.has(f.id))
@@ -100,13 +99,14 @@ export function ListDetail({
     <div className="flex flex-col gap-10">
       {/* Items */}
       <section>
-        <h2 className="font-display text-xl mb-4">
+        <h2 className="font-display text-xl mb-4 text-text-primary">
           {t('itemsTitle')}
-          <span className="ml-2 text-sm font-body font-medium text-muted">{items.length}</span>
+          <span className="ml-2 text-sm font-body font-medium text-text-secondary">{items.length}</span>
         </h2>
         {items.length === 0 ? (
-          <div className="bg-surface border border-border rounded-xl p-8 text-center text-muted text-sm">
-            {t('noItems')}
+          <div className="bg-surface-default border border-surface-border rounded-xl p-8 text-center flex flex-col items-center gap-2">
+            <span className="text-3xl">📋</span>
+            <p className="text-text-secondary text-sm">{t('noItems')}</p>
           </div>
         ) : (
           <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-3">
@@ -115,15 +115,15 @@ export function ListDetail({
                 {item.media ? (
                   <MediaCard item={item.media} />
                 ) : (
-                  <div className="aspect-[2/3] bg-surface2 rounded-lg flex items-center justify-center">
-                    <span className="text-xs text-muted text-center px-1 line-clamp-3">{item.mediaId}</span>
+                  <div className="aspect-[2/3] bg-surface-elevated rounded-lg flex items-center justify-center">
+                    <span className="text-xs text-text-secondary text-center px-1 line-clamp-3">{item.mediaId}</span>
                   </div>
                 )}
                 {canEdit && (
                   <button
                     onClick={() => handleRemoveItem(item.id)}
                     disabled={removingItem === item.id}
-                    className="absolute top-1 right-1 w-6 h-6 rounded-full bg-bg/80 text-muted hover:text-red-400 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity text-xs disabled:opacity-50"
+                    className="absolute top-1 right-1 w-6 h-6 rounded-full bg-surface-base/80 text-text-secondary hover:text-accent-danger flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity text-xs disabled:opacity-50"
                     aria-label={t('removeItem')}
                   >
                     ✕
@@ -138,17 +138,17 @@ export function ListDetail({
       {/* Miembros (solo listas colaborativas) */}
       {list.isCollaborative && (
         <section>
-          <h2 className="font-display text-xl mb-4">{t('membersTitle')}</h2>
-          <div className="bg-surface border border-border rounded-xl divide-y divide-border">
+          <h2 className="font-display text-xl mb-4 text-text-primary">{t('membersTitle')}</h2>
+          <div className="bg-surface-default border border-surface-border rounded-xl divide-y divide-surface-border">
             {/* Owner */}
             {list.owner && (
               <div className="flex items-center gap-3 p-3">
                 <Avatar initials={list.owner.avatarInitials} color={list.owner.avatarColor} size="sm" />
                 <div className="flex-1">
-                  <Link href={`/profile/${list.owner.username}`} className="text-sm font-medium hover:text-accent transition-colors">
+                  <Link href={`/profile/${list.owner.username}`} className="text-sm font-medium hover:text-accent-positive transition-colors">
                     {list.owner.username}
                   </Link>
-                  <span className="ml-2 text-xs text-muted">{t('owner')}</span>
+                  <span className="ml-2 text-xs text-text-secondary">{t('owner')}</span>
                 </div>
               </div>
             )}
@@ -157,19 +157,19 @@ export function ListDetail({
                 <div key={m.userId} className="flex items-center gap-3 p-3">
                   <Avatar initials={m.user.avatarInitials} color={m.user.avatarColor} size="sm" />
                   <div className="flex-1">
-                    <Link href={`/profile/${m.user.username}`} className="text-sm font-medium hover:text-accent transition-colors">
+                    <Link href={`/profile/${m.user.username}`} className="text-sm font-medium hover:text-accent-positive transition-colors">
                       {m.user.username}
                     </Link>
                   </div>
                   {isOwner && (
-                    <Button
-                      variant="ghost"
+                    <KButton
+                      variant="secondary"
                       size="sm"
                       onClick={() => handleRemoveMember(m.userId)}
-                      className="text-muted hover:text-red-400 flex-shrink-0"
+                      className="text-text-secondary hover:text-accent-danger flex-shrink-0"
                     >
                       {t('removeMember')}
-                    </Button>
+                    </KButton>
                   )}
                 </div>
               )
@@ -182,14 +182,14 @@ export function ListDetail({
               <select
                 value={inviteUserId}
                 onChange={(e) => setInviteUserId(e.target.value)}
-                className="flex-1 bg-bg border border-border rounded-md px-3 py-2 text-sm text-text focus:outline-none focus:ring-1 focus:ring-accent"
+                className="flex-1 bg-surface-base border border-surface-border rounded-button px-3 py-2 text-sm text-text-primary focus:outline-none focus:ring-1 focus:ring-accent-positive"
               >
                 <option value="">{t('selectFriend')}</option>
                 {invitableFriends.map((f) => (
                   <option key={f.id} value={f.id}>{f.username}</option>
                 ))}
               </select>
-              <Button
+              <KButton
                 variant="primary"
                 size="sm"
                 loading={inviting}
@@ -197,7 +197,7 @@ export function ListDetail({
                 onClick={handleInvite}
               >
                 {t('invite')}
-              </Button>
+              </KButton>
             </div>
           )}
         </section>
