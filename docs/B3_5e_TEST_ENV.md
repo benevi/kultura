@@ -131,7 +131,8 @@ heredan de `.env.local`.
 - `.env.test.local` está cubierto por `.env*.local` en `.gitignore` — nunca se commitea.
 
 **Por qué doble env:**
-- Desarrollo manual (`npm run dev`) sigue contra Supabase de producción.
+
+- Desarrollo manual (`npm run dev`) sigue contra Supabase de producción. ← **DECISIÓN INVERTIDA en E49** (ver abajo)
 - E2E (`npx playwright test`) arranca dev server con vars sobreescritas
   apuntando a `kultura-test`, donde el seed garantiza usuarios y datos predecibles.
 
@@ -166,3 +167,24 @@ para evitar añadir `cross-env` como nueva dependencia.
 - **Bugs 3, 4, 5 (language-switch, group-feed, notifications)**: VERDE-INESPERADO — o los bugs se arreglaron en algún commit intermedio, o el entorno de test (kultura-test) difiere de producción en algo que enmascara los fallos. A investigar en B3.5c-1.
 - **Bug 6 (discover)**: H3 pendiente — todos los tabs (incluido control movie) vacíos. Diagnosticar en B3.5c-1.
 - **Discover (H3)**: `waitForLoadState('networkidle')` resuelve en ~1s pero el grid está vacío. El Server Component de discover llama a APIs externas (TMDB, Jikan) que pueden tener timeout o no responder en el contexto headless. A diagnosticar en B3.5c-1.
+
+---
+
+## E49 — Dev local apunta a kultura-test por defecto (2026-05-25)
+
+**Decisión invertida.** A partir de E49, `npm run dev` apunta a kultura-test (`xqvicvypoxxfbezqnkwr`) por defecto. Producción (`zfrbyphzvfuvejdwjfea`) requiere intención explícita.
+
+**Mecanismo:** `.env.development.local` (cubierto por `.env*.local` en `.gitignore`, nunca en git) con `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY` y `SUPABASE_SERVICE_ROLE_KEY` de kultura-test. Next.js 14 carga `.env.development.local` antes que `.env.local` en `next dev`, por lo que tapa las vars de prod.
+
+**Para apuntar a producción en local:** comentar o borrar `.env.development.local`.
+
+**Efectos colaterales verificados:**
+
+- `vitest run` (unit): 506/506 verdes. Sin cambio de BD — Vitest usa `mode=test`, carga `.env.test.local`, no `.env.development.local`.
+- `vitest run --config vitest.integration.config.ts`: Vite `loadEnv('test', ...)` ya apuntaba a kultura-test vía `.env.test.local`. Sin cambio.
+- `playwright test`: sin cambio. `playwright.config.ts` no se modificó; sigue cargando `.env.local` + override de `.env.test.local` en `webServer.env`.
+- `tsc --noEmit`: limpio.
+- `npm run lint`: solo warnings preexistentes en `SearchResults.tsx`, sin relación con este cambio.
+- `git status`: `.env.development.local` no aparece (cubierto por `.gitignore`). Vercel no afectado (sus vars vienen del dashboard, no de ficheros locales).
+
+**Evidencia de resolución:** `loadEnvConfig(process.cwd(), true)` de `@next/env` con `NODE_ENV=development` resuelve `NEXT_PUBLIC_SUPABASE_URL=https://xqvicvypoxxfbezqnkwr.supabase.co` (ref: `xqvicvypoxxfbezqnkwr`, test). Antes era `zfrbyphzvfuvejdwjfea` (prod).
