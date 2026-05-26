@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import { useTranslations, useLocale } from 'next-intl'
 import { Link } from '@/i18n/navigation'
 import { Avatar } from '@/components/ui/Avatar'
+import { KButton } from '@/components/ui/KButton'
 
 interface OtherUser {
   id: string
@@ -75,23 +76,24 @@ export function ChatClient({ friends }: Props) {
     <div className="flex flex-col gap-4">
       {/* Header actions */}
       <div className="flex items-center justify-between">
-        <span className="text-sm text-muted">
+        <span className="text-sm text-text-secondary">
           {conversations.length > 0 ? `${conversations.length} conversaciones` : ''}
         </span>
-        <button
+        <KButton
+          variant="primary"
+          size="sm"
           onClick={() => setShowNewChat(v => !v)}
-          className="px-3 py-2 text-sm font-semibold bg-accent text-white rounded-lg hover:bg-accent-hover transition-colors"
         >
           + {t('startChat')}
-        </button>
+        </KButton>
       </div>
 
       {/* New chat: select a friend */}
       {showNewChat && (
-        <div className="bg-surface border border-border rounded-xl p-4 flex flex-col gap-2">
-          <p className="text-sm font-medium text-text mb-1">{t('selectFriend')}</p>
+        <div className="bg-surface-default border border-surface-border rounded-[8px] p-4 flex flex-col gap-2">
+          <p className="text-sm font-medium text-text-primary mb-1">{t('selectFriend')}</p>
           {friends.length === 0 ? (
-            <p className="text-sm text-muted">{t('noFriendsToChat')}</p>
+            <p className="text-sm text-text-secondary">{t('noFriendsToChat')}</p>
           ) : (
             friends.map(f => (
               <button
@@ -99,11 +101,11 @@ export function ChatClient({ friends }: Props) {
                 data-testid="friend-picker-item"
                 onClick={() => startConversation(f.id)}
                 disabled={startingChat === f.id}
-                className="flex items-center gap-3 p-2 rounded-lg hover:bg-surface2 transition-colors text-left disabled:opacity-50"
+                className="flex items-center gap-3 p-2 rounded-[10px] hover:bg-surface-elevated transition-colors text-left disabled:opacity-50"
               >
                 <Avatar initials={f.avatar_initials} color={f.avatar_color} size="sm" />
-                <span className="text-sm text-text">{f.username}</span>
-                {startingChat === f.id && <span className="ml-auto text-xs text-muted">...</span>}
+                <span className="text-sm text-text-primary">{f.username}</span>
+                {startingChat === f.id && <span className="ml-auto text-xs text-text-secondary">...</span>}
               </button>
             ))
           )}
@@ -112,20 +114,20 @@ export function ChatClient({ friends }: Props) {
 
       {/* Conversations list */}
       {loading ? (
-        <div className="text-center py-12 text-muted text-sm">...</div>
+        <div className="text-center py-12 text-text-secondary text-sm">...</div>
       ) : conversations.length === 0 ? (
-        <div className="bg-surface border border-border rounded-xl p-10 text-center flex flex-col gap-2">
+        <div className="bg-surface-default border border-surface-border rounded-[8px] p-10 text-center flex flex-col gap-2">
           <div className="text-4xl">💬</div>
-          <p className="font-semibold text-text">{t('noConversations')}</p>
-          <p className="text-sm text-muted">{t('noConversationsHint')}</p>
+          <p className="font-semibold text-text-primary">{t('noConversations')}</p>
+          <p className="text-sm text-text-secondary">{t('noConversationsHint')}</p>
         </div>
       ) : (
-        <div className="bg-surface border border-border rounded-xl overflow-hidden divide-y divide-border">
+        <div className="bg-surface-default border border-surface-border rounded-[8px] overflow-hidden divide-y divide-surface-border">
           {conversations.map(conv => (
             <Link
               key={conv.id}
               href={`/chat/${conv.id}`}
-              className="flex items-center gap-3 px-4 py-3 hover:bg-surface2 transition-colors"
+              className="flex items-center gap-3 px-4 py-3 hover:bg-surface-elevated transition-colors"
             >
               {conv.otherUser ? (
                 <Avatar
@@ -134,27 +136,27 @@ export function ChatClient({ friends }: Props) {
                   size="md"
                 />
               ) : (
-                <div className="w-10 h-10 rounded-full bg-surface2" />
+                <div className="w-10 h-10 rounded-full bg-surface-elevated" />
               )}
               <div className="flex-1 min-w-0">
                 <div className="flex items-center justify-between gap-2">
-                  <span className={`text-sm font-semibold ${conv.unread ? 'text-text' : 'text-muted'}`}>
+                  <span className={`text-sm font-semibold ${conv.unread ? 'text-text-primary' : 'text-text-secondary'}`}>
                     {conv.otherUser?.username ?? '?'}
                   </span>
                   {conv.lastMessageAt && (
-                    <span className="text-xs text-muted flex-shrink-0">
+                    <span className="text-xs text-text-secondary flex-shrink-0">
                       {relativeDate(conv.lastMessageAt, locale)}
                     </span>
                   )}
                 </div>
                 {conv.lastMessage && (
-                  <p className={`text-xs truncate mt-0.5 ${conv.unread ? 'text-text' : 'text-muted'}`}>
+                  <p className={`text-xs truncate mt-0.5 ${conv.unread ? 'text-text-primary' : 'text-text-secondary'}`}>
                     {conv.lastMessage.isMine ? `${t('you')}: ` : ''}{conv.lastMessage.content}
                   </p>
                 )}
               </div>
               {conv.unread && (
-                <div className="w-2 h-2 rounded-full bg-accent flex-shrink-0" />
+                <div className="w-2 h-2 rounded-full bg-accent-positive flex-shrink-0" />
               )}
             </Link>
           ))}
