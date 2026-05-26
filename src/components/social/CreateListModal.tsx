@@ -50,8 +50,8 @@ export function CreateListModal({ onClose }: CreateListModalProps) {
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60">
-      <div className="bg-surface-elevated border border-surface-border rounded-xl w-full max-w-sm flex flex-col gap-4 p-5">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 animate-backdrop-in">
+      <div className="bg-surface-elevated border border-surface-border rounded-xl w-full max-w-sm flex flex-col gap-4 p-5 animate-modal-in">
         <div className="flex items-center justify-between">
           <h2 className="font-display text-xl text-text-primary">{t('createList')}</h2>
           <button onClick={onClose} className="text-text-secondary hover:text-text-primary text-xl leading-none">×</button>

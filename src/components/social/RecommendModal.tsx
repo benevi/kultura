@@ -81,8 +81,8 @@ export function RecommendModal({ mediaId, mediaCache, onClose }: RecommendModalP
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60">
-      <div className="bg-surface border border-border rounded-xl w-full max-w-sm flex flex-col gap-4 p-5">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 animate-backdrop-in">
+      <div className="bg-surface border border-border rounded-xl w-full max-w-sm flex flex-col gap-4 p-5 animate-modal-in">
         <div className="flex items-center justify-between">
           <h2 className="font-display text-xl">{t('recommendTo')}</h2>
           <button

@@ -119,6 +119,61 @@
   }
 }
 
+/* ─── Modal animations ─── */
+@keyframes modal-in {
+  from {
+    opacity: 0;
+    transform: scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes backdrop-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+/* ─── Toast animations ─── */
+@keyframes toast-in {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes toast-out {
+  from {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  to {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+}
+
+@layer utilities {
+  .animate-modal-in {
+    animation: modal-in var(--duration-slow) var(--ease-standard) both;
+  }
+  .animate-backdrop-in {
+    animation: backdrop-in var(--duration-slow) var(--ease-standard) both;
+  }
+  .animate-toast-in {
+    animation: toast-in var(--duration-base) var(--ease-standard) both;
+  }
+  .animate-toast-out {
+    animation: toast-out var(--duration-base) var(--ease-standard) both;
+  }
+}
+
 @layer utilities {
   .text-balance {
     text-wrap: balance;
