@@ -71,7 +71,7 @@ export function LibraryStatusModal({
     >
       {/* Overlay */}
       <div
-        className="absolute inset-0 bg-black/60"
+        className="absolute inset-0 bg-black/60 animate-backdrop-in"
         onClick={onClose}
         aria-hidden="true"
         data-testid="modal-overlay"
@@ -79,7 +79,7 @@ export function LibraryStatusModal({
 
       {/* Panel */}
       <div
-        className="relative z-10 bg-surface-elevated border border-surface-border rounded-modal shadow-2xl w-full max-w-sm mx-4 p-6"
+        className="relative z-10 bg-surface-elevated border border-surface-border rounded-modal shadow-2xl w-full max-w-sm mx-4 p-6 animate-modal-in"
         onClick={(e) => e.stopPropagation()}
         data-testid="modal-panel"
       >
