@@ -472,6 +472,24 @@ Paréntesis abierto tras B3 al detectar gap entre tests verdes y realidad. Cierr
   sacrificios de producto, modelo de claves, y plan de migración — antes de escribir
   una sola línea de código.
 
+- [x] **E55. KButton: active:scale(0.98) no implementado** ✅ CERRADA en B3.5f-3 (nivel mínimo)
+
+  DS §5 especificaba `active:scale(0.98)` en botones pero `KButton.tsx` no lo tenía. Añadido `active:scale-[0.98]` en variantes `primary` y `secondary`. 506/57 green.
+
+- [ ] **E56. Faltan loading.tsx en rutas principales** — solo `/profile` tiene skeleton de carga.
+
+  Rutas sin `loading.tsx`: home, discover, search, library, media/[type]/[id], friends, notifications, settings, chat, groups/[id], lists/[id]. Causa: Sprint B3.5f migró el DS pero no añadió loading skeletons.
+
+  **Prioridad:** media. Sin loading.tsx, Next.js muestra página en blanco durante SSR. No es bug funcional pero degrada UX en conexiones lentas.
+
+  Hecho cuando: las rutas principales tienen `loading.tsx` con skeleton coherente al DS (surface-default, animate-pulse).
+
+  **Nota:** nivel medio de B3.5f-3. No tocar hasta confirmar con el usuario.
+
+- [x] **E57. prefers-reduced-motion no implementado** ✅ CERRADA en B3.5f-3 (nivel mínimo)
+
+  WCAG 2.1 §2.3.3. `globals.css` ahora neutraliza `transition-duration` y `animation-duration` a `0.01ms` globalmente bajo `@media (prefers-reduced-motion: reduce)`.
+
 ---
 
 ## BLOQUE F — Monetización (fase aparte)

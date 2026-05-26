@@ -16,13 +16,15 @@ B3.5f-2g-2 → ✅ CERRADO (fila Pendientes + empty state propio/ajeno, 506 test
 B3.5f-2h-AMIGOS → ✅ CERRADO (Amigos migrada al DS, 506 tests green, commit 6eccb5a)
 B3.5f-2h-LISTAS → ✅ CERRADO (Listas migrada al DS, 506 tests green, commit 535e726)
 B3.5f-2h-NOTIF → ✅ CERRADO (Notificaciones migrada al DS, 506 tests green, commit b40c518)
-
 B3.5f-2h-SUGERENCIAS → ✅ CERRADO (Sugerencias migrada al DS, 506 tests green, commit 388c8fc)
+B3.5f-2h-CHAT → ✅ CERRADO (Chat migrada al DS, 506 tests green, commit 8af552f)
+B3.5f-3 (nivel mínimo) → ✅ CERRADO (tokens movimiento, prefers-reduced-motion, FilterBar normalizada, DS §8, 506/57 green, commits 17d7186 + 63e76be)
 
 ## Tarea activa
 
-**B3.5f-2h-CHAT** — ✅ CERRADO (Chat migrada al DS, 506 tests green)
+**TBD** — Pendiente confirmación del usuario.
 
-## Tarea activa
-
-Ninguna. B3.5f-2h-CHAT cerrada. Próxima tarea: ver BACKLOG.
+Opciones sugeridas:
+- B3.5f-3 nivel medio: loading.tsx en rutas (E56) + animaciones modales/toast/stagger
+- Próxima pantalla pendiente de migración al DS
+- Bloque C / D de BACKLOG
