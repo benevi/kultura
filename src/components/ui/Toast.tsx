@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState, useCallback } from 'react'
 import { createPortal } from 'react-dom'
 
 export type ToastType = 'success' | 'error' | 'info'
@@ -35,31 +35,36 @@ const iconStyles: Record<ToastType, string> = {
   info:    'text-blue-400',
 }
 
+const ANIM_DURATION = 150 // matches --duration-base
+
 function SingleToast({ toast, onDismiss }: SingleToastProps) {
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const [exiting, setExiting] = useState(false)
+
+  const startExit = useCallback(() => {
+    setExiting(true)
+    setTimeout(() => onDismiss(toast.id), ANIM_DURATION)
+  }, [toast.id, onDismiss])
 
   useEffect(() => {
-    timerRef.current = setTimeout(() => {
-      onDismiss(toast.id)
-    }, toast.duration ?? 4000)
-
+    timerRef.current = setTimeout(startExit, toast.duration ?? 4000)
     return () => {
       if (timerRef.current) clearTimeout(timerRef.current)
     }
-  }, [toast.id, toast.duration, onDismiss])
+  }, [toast.id, toast.duration, startExit])
 
   return (
     <div
       role="alert"
       aria-live={toast.type === 'error' ? 'assertive' : 'polite'}
-      className={`flex items-start gap-3 px-4 py-3 rounded-lg border shadow-lg text-sm w-80 ${typeStyles[toast.type]}`}
+      className={`flex items-start gap-3 px-4 py-3 rounded-lg border shadow-lg text-sm w-80 ${typeStyles[toast.type]} ${exiting ? 'animate-toast-out' : 'animate-toast-in'}`}
     >
       <span className={`font-bold mt-0.5 flex-shrink-0 ${iconStyles[toast.type]}`}>
         {typeIcon[toast.type]}
       </span>
       <span className="flex-1 leading-snug">{toast.message}</span>
       <button
-        onClick={() => onDismiss(toast.id)}
+        onClick={startExit}
         aria-label="Cerrar"
         className="text-muted hover:text-text transition-colors flex-shrink-0 mt-0.5"
       >

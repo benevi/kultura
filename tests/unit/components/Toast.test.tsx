@@ -41,7 +41,8 @@ describe('ToastContainer', () => {
         onDismiss={dismiss}
       />
     )
-    act(() => { vi.advanceTimersByTime(2000) })
+    // 2000ms triggers startExit → 150ms exit animation → onDismiss
+    act(() => { vi.advanceTimersByTime(2150) })
     expect(dismiss).toHaveBeenCalledWith('42')
   })
 
@@ -54,6 +55,8 @@ describe('ToastContainer', () => {
       />
     )
     fireEvent.click(screen.getByRole('button', { name: /cerrar/i }))
+    // 150ms exit animation before onDismiss
+    act(() => { vi.advanceTimersByTime(150) })
     expect(dismiss).toHaveBeenCalledWith('99')
   })
 
