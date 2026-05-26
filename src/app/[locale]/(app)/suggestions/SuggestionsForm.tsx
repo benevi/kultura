@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { useTranslations } from 'next-intl'
+import { KButton } from '@/components/ui/KButton'
 
 export function SuggestionsForm() {
   const t = useTranslations('suggestions')
@@ -28,13 +29,13 @@ export function SuggestionsForm() {
 
   if (status === 'success') {
     return (
-      <div className="bg-surface border border-border rounded-xl p-10 text-center flex flex-col gap-3">
+      <div className="bg-surface-default border border-surface-border rounded-modal p-10 text-center flex flex-col gap-3">
         <div className="text-4xl">✅</div>
-        <p className="font-semibold text-text text-lg">{t('success')}</p>
-        <p className="text-sm text-muted">{t('successHint')}</p>
+        <p className="font-semibold text-text-primary text-lg">{t('success')}</p>
+        <p className="text-sm text-text-tertiary">{t('successHint')}</p>
         <button
           onClick={() => { setStatus('idle'); setSubject(''); setDescription('') }}
-          className="mx-auto mt-2 px-4 py-2 text-sm font-medium text-accent hover:underline"
+          className="mx-auto mt-2 px-4 py-2 text-sm font-medium text-accent-positive hover:underline"
         >
           {t('newFeedback')}
         </button>
@@ -53,17 +54,17 @@ export function SuggestionsForm() {
     <form onSubmit={handleSubmit} className="flex flex-col gap-5">
       {/* Type */}
       <div>
-        <label className="block text-sm font-medium text-text mb-2">{t('typeLabel')}</label>
+        <label className="block text-sm font-medium text-text-primary mb-2">{t('typeLabel')}</label>
         <div className="flex flex-wrap gap-2">
           {typeOptions.map(opt => (
             <button
               key={opt.value}
               type="button"
               onClick={() => setType(opt.value)}
-              className={`px-4 py-2 rounded-lg text-sm font-medium border transition-all ${
+              className={`px-4 py-2 rounded-pill text-sm font-medium border transition-all ${
                 type === opt.value
-                  ? 'bg-accent text-white border-accent'
-                  : 'bg-surface border-border text-muted hover:text-text hover:border-muted'
+                  ? 'bg-accent-positive text-on-accent-positive border-accent-positive'
+                  : 'bg-surface-default border-surface-border text-text-tertiary hover:text-text-primary hover:border-surface-border'
               }`}
             >
               {opt.label}
@@ -74,7 +75,7 @@ export function SuggestionsForm() {
 
       {/* Subject */}
       <div>
-        <label className="block text-sm font-medium text-text mb-2">
+        <label className="block text-sm font-medium text-text-primary mb-2">
           {t('subjectLabel')}
         </label>
         <input
@@ -84,13 +85,13 @@ export function SuggestionsForm() {
           placeholder={t('subjectPlaceholder')}
           maxLength={120}
           required
-          className="w-full bg-surface2 border border-border rounded-lg px-3 py-2.5 text-sm text-text placeholder-muted focus:outline-none focus:ring-1 focus:ring-accent"
+          className="w-full bg-surface-elevated border border-surface-border rounded-button px-3 py-2.5 text-sm text-text-primary placeholder-text-tertiary focus:outline-none focus:ring-1 focus:ring-accent-positive"
         />
       </div>
 
       {/* Description */}
       <div>
-        <label className="block text-sm font-medium text-text mb-2">
+        <label className="block text-sm font-medium text-text-primary mb-2">
           {t('descriptionLabel')}
         </label>
         <textarea
@@ -100,22 +101,24 @@ export function SuggestionsForm() {
           maxLength={2000}
           rows={5}
           required
-          className="w-full bg-surface2 border border-border rounded-lg px-3 py-2.5 text-sm text-text placeholder-muted resize-none focus:outline-none focus:ring-1 focus:ring-accent"
+          className="w-full bg-surface-elevated border border-surface-border rounded-button px-3 py-2.5 text-sm text-text-primary placeholder-text-tertiary resize-none focus:outline-none focus:ring-1 focus:ring-accent-positive"
         />
-        <p className="text-xs text-muted mt-1 text-right">{description.length}/2000</p>
+        <p className="text-xs text-text-tertiary mt-1 text-right">{description.length}/2000</p>
       </div>
 
       {status === 'error' && (
-        <p className="text-sm text-red-400">{t('error')}</p>
+        <p className="text-sm text-accent-danger">{t('error')}</p>
       )}
 
-      <button
+      <KButton
         type="submit"
-        disabled={status === 'sending'}
-        className="w-full py-3 text-sm font-semibold bg-accent text-white rounded-lg hover:bg-accent-hover disabled:opacity-50 transition-colors"
+        variant="primary"
+        size="lg"
+        loading={status === 'sending'}
+        className="w-full"
       >
         {status === 'sending' ? t('submitting') : t('submit')}
-      </button>
+      </KButton>
     </form>
   )
 }
