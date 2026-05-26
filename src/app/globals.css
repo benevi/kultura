@@ -27,6 +27,12 @@
   --on-accent-highlight: #1A1209;
   --on-accent-info: #06182E;
 
+  /* ─── Tokens de movimiento ─── */
+  --duration-fast: 100ms;
+  --duration-base: 150ms;
+  --duration-slow: 250ms;
+  --ease-standard: cubic-bezier(0, 0, 0.2, 1); /* ease-out con suavidad material */
+
   /* ─── Legacy tokens (conservados para compatibilidad con componentes existentes) ─── */
   --bg: var(--surface-base);
   --surface: var(--surface-default);
@@ -99,6 +105,17 @@
   ::selection {
     background: rgba(111, 207, 151, 0.25);
     color: var(--text-primary);
+  }
+}
+
+/* WCAG 2.1 — prefers-reduced-motion: neutralizar todas las transiciones y animaciones */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
   }
 }
 
