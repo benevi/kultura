@@ -355,6 +355,31 @@ No bloqueantes. Atacar solo después de A–D.
 
 - [ ] **E46. Migrar MediaCard al sistema de diseño**
 
+- [ ] **E49. (reservado)**
+
+- [ ] **E50. Notificaciones: estado no-leído efímero por `markAllRead` en carga**
+
+  **Hallazgo (sesión 2026-05-26):** El fondo verde (`accent-positive/5`) del estado
+  no-leído está correctamente aplicado en el DS visual. El problema es de producto:
+  `markAllRead` (en `src/lib/social/notifications.ts`) se llama al montar la página
+  `/notifications`, lo que marca todas las notifs como leídas antes de que el usuario
+  las vea. El efecto visual del estado no-leído es por tanto efímero (apenas perceptible
+  en la primera carga) y en la práctica invisible.
+
+  **No es un bug de migración visual** — el token y el color están bien aplicados.
+  Es un bug de flujo de producto.
+
+  **Flujo afectado:** `src/lib/social/notifications.ts` (`markAllRead`) +
+  página `src/app/[locale]/(app)/notifications/` (caller de `markAllRead` en montaje).
+
+  **Arreglo futuro (fuera del carril visual):** retrasar `markAllRead` usando una de
+  estas estrategias: (a) retardo temporal tras render inicial, (b) marcar leído por
+  interacción explícita (clic / hover), (c) marcar al salir de la pantalla
+  (`IntersectionObserver` o `beforeunload`). Ninguna de las tres requiere cambios de
+  diseño ni de tokens.
+
+  Sin priorizar. No atacar hasta decidir estrategia de producto.
+
 - [ ] **E48. Notificaciones: mejoras DS aplazadas**
   Sub-piezas (sin priorizar):
   (a) `loading.tsx` — skeleton para estado de carga (actualmente no existe en `/notifications`).
