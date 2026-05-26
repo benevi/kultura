@@ -155,9 +155,49 @@ Esto se detalla por pantalla en el bloque de aplicación.
 
 ---
 
-## 8. Pendiente de definir en bloques posteriores
+## 8. Movimiento y transiciones (implementado en B3.5f-3)
+
+### Tokens de duración
+
+| Token CSS | Valor | Clase Tailwind | Uso |
+|---|---|---|---|
+| `--duration-fast` | `100ms` | `duration-fast` | Feedback inmediato: focus rings, highlights pequeños |
+| `--duration-base` | `150ms` | `duration-base` | Interacciones estándar: hover de botones, chips, inputs |
+| `--duration-slow` | `250ms` | `duration-slow` | Transiciones de contexto: aparición de paneles, modales |
+
+### Easing estándar
+
+| Token CSS | Valor | Clase Tailwind | Descripción |
+|---|---|---|---|
+| `--ease-standard` | `cubic-bezier(0, 0, 0.2, 1)` | `ease-standard` | Ease-out suave (Material motion). Salida rápida, llegada suave. |
+
+### Regla de aplicación
+
+- **Botones primario/secundario (KButton):** `transition-all duration-150 ease-out` + `active:scale-[0.98]`.
+- **Chips de filtro (FilterBar):** `transition-colors duration-base`.
+- **Inputs (KInput):** `transition-colors duration-150` (equivalente al token base).
+- **Resto de componentes (~30 sitios):** usan `transition-colors` sin duración explícita. El default de Tailwind es 150ms = `--duration-base`. Se dejan en default intencionadamente para no introducir ruido; el token existe para normalizar a futuro por componente.
+
+### prefers-reduced-motion (WCAG 2.1 §2.3.3)
+
+`globals.css` contiene:
+
+```css
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+  }
+}
+```
+
+Neutraliza todas las transiciones y animaciones CSS para usuarios que lo requieran. No elimina completamente (evita flash) — usa 0.01ms que es perceptualmente instantáneo.
+
+### Pendiente de definir en bloques posteriores
 
 - Modo claro completo (B3.5f-claro).
-- Sistema de movimiento/transiciones (B3.5f-2): se especifica aparte.
+- Animaciones de modales / toast / stagger (B3.5f-3 nivel medio).
+- Loading skeletons en rutas principales — E56 (B3.5f-3 nivel medio).
 - Aplicación pantalla por pantalla (B3.5f-aplicación).
 - Wordmark/logo definitivo: por ahora Space Grotesk 700 en `--text-primary`. Si se quiere logo gráfico, es sub-tarea aparte.
