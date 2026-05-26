@@ -60,6 +60,14 @@ const config: Config = {
         modal: "8px",
         nav: "4px",
       },
+      transitionDuration: {
+        fast: "var(--duration-fast)",   /* 100ms */
+        base: "var(--duration-base)",   /* 150ms */
+        slow: "var(--duration-slow)",   /* 250ms */
+      },
+      transitionTimingFunction: {
+        standard: "var(--ease-standard)", /* cubic-bezier(0,0,0.2,1) */
+      },
       backgroundImage: {
         "gradient-radial": "radial-gradient(var(--tw-gradient-stops))",
       },

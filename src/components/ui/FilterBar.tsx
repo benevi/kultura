@@ -62,7 +62,7 @@ export function FilterBar({ groups, activeFilters, onChange, className }: Filter
                     type="button"
                     onClick={handleClick}
                     className={cn(
-                      "text-xs px-3 py-1.5 rounded-full border whitespace-nowrap cursor-pointer transition-colors",
+                      "text-xs px-3 py-1.5 rounded-full border whitespace-nowrap cursor-pointer transition-colors duration-base",
                       isActive
                         ? "bg-accent-subtle text-accent border-accent"
                         : "bg-surface2 text-muted border-border hover:border-accent/50"
