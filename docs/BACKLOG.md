@@ -440,6 +440,10 @@ Paréntesis abierto tras B3 al detectar gap entre tests verdes y realidad. Cierr
 
 - [ ] **B3.5g-COMIC. ComicVine completo (renombrado de E6)** — pendiente, post-B4.
 
+- [ ] **E52. Silent fail duplicado en ChatClient + ConversationClient** — `.catch(() => setLoading(false))` en ambos archivos traga el error de carga y deja pantalla vacía sin feedback al usuario. Mejora funcional, no bug de migración. Fix futuro debe añadir el test que lo detecta (TDD retrospectivo) antes de cambiar el handler.
+
+- [ ] **E53. String hardcodeado sin i18n en ChatClient** — `${conversations.length} conversaciones` no pasa por `t()`. Fix: añadir clave `chat.conversationCount` (con plural forms) a `messages/es.json` y `messages/en.json` y usar `t('conversationCount', { count })`.
+
 ---
 
 ## BLOQUE F — Monetización (fase aparte)

@@ -17,6 +17,12 @@ B3.5f-2h-AMIGOS → ✅ CERRADO (Amigos migrada al DS, 506 tests green, commit 6
 B3.5f-2h-LISTAS → ✅ CERRADO (Listas migrada al DS, 506 tests green, commit 535e726)
 B3.5f-2h-NOTIF → ✅ CERRADO (Notificaciones migrada al DS, 506 tests green, commit b40c518)
 
+B3.5f-2h-SUGERENCIAS → ✅ CERRADO (Sugerencias migrada al DS, 506 tests green, commit 388c8fc)
+
 ## Tarea activa
 
-Sin tarea activa. Ver BACKLOG para siguiente tarea.
+**B3.5f-2h-CHAT** — ✅ CERRADO (Chat migrada al DS, 506 tests green)
+
+## Tarea activa
+
+Ninguna. B3.5f-2h-CHAT cerrada. Próxima tarea: ver BACKLOG.
