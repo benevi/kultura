@@ -357,6 +357,26 @@ No bloqueantes. Atacar solo después de A–D.
 
 - [ ] **E49. (reservado)**
 
+- [ ] **E51. Validación en cliente + mensajes específicos en SuggestionsForm**
+
+  **Hallazgo (diagnóstico SUGERENCIAS-400, 2026-05-26):** El 400 en `POST /api/suggestions`
+  es validación Zod esperada y correcta — `description.min(10)` rechaza inputs cortos como
+  `"nynf"` (4 chars). No hay bug de payload ni rate-limit. La UX es pobre:
+
+  - `SuggestionsForm.tsx:87` — `subject` solo tiene `maxLength={120}` + `required`, sin `minLength={3}`.
+  - `SuggestionsForm.tsx:99` — `description` solo tiene `maxLength={2000}` + `required`, sin `minLength={10}`.
+  - Sin validación Zod en cliente: cualquier entrada de 1 char se envía al servidor y falla.
+  - `route.ts:33` devuelve `{ error: 'Invalid data' }` genérico (sin detalle por campo).
+  - `SuggestionsForm.tsx:23` ignora el body del 400; muestra siempre `t('error')` fijo.
+
+  **Qué falta:**
+  - Añadir `minLength={3}` a `subject` y `minLength={10}` a `description` (o validación Zod en cliente).
+  - Mostrar conteo/feedback por campo cuando la longitud no alcanza el mínimo.
+  - Opcional: que el servidor devuelva los errores de Zod por campo (`parsed.error.flatten()`).
+
+  Hecho cuando: enviar `description` de 4 chars muestra error inline antes de hacer fetch,
+  y el form no puede enviarse con datos que fallen la validación del servidor.
+
 - [ ] **E50. Notificaciones: estado no-leído efímero por `markAllRead` en carga**
 
   **Hallazgo (sesión 2026-05-26):** El fondo verde (`accent-positive/5`) del estado
