@@ -444,6 +444,34 @@ Paréntesis abierto tras B3 al detectar gap entre tests verdes y realidad. Cierr
 
 - [ ] **E53. String hardcodeado sin i18n en ChatClient** — `${conversations.length} conversaciones` no pasa por `t()`. Fix: añadir clave `chat.conversationCount` (con plural forms) a `messages/es.json` y `messages/en.json` y usar `t('conversationCount', { count })`.
 
+- [ ] **E54. Chat: cifrado de extremo a extremo (E2EE) — DECISIÓN DE ARQUITECTURA**
+
+  Hoy los mensajes se guardan en texto plano en Supabase (`messages.content text not null`).
+  E2EE implica cambios de calado que afectan al producto completo:
+
+  **Impacto técnico:**
+  - Cifrado en cliente: elegir protocolo/librería (Signal, libsodium, etc.).
+  - Gestión de claves por usuario: derivación, almacenamiento local, pérdida de dispositivo,
+    acceso multi-dispositivo, recuperación (sin clave no hay recuperación posible).
+  - Rotura de funciones que leen el contenido del servidor:
+    - Preview "Tú: …" en lista de conversaciones (lee `messages.content` server-side).
+    - Políticas RLS sobre texto plano (dejan de proteger contenido, solo metadata).
+    - Supabase Realtime sobre filas con texto cifrado (entrega ciega, sin semántica).
+    - Búsqueda de mensajes (imposible sin índice server-side o arquitectura adicional).
+
+  **Antes de cualquier implementación se requiere un bloque de diseño propio:**
+  - Elección de protocolo y librería (con análisis de madurez, mantenimiento, tamaño bundle).
+  - Decisión sobre qué se sacrifica del producto actual (preview, búsqueda, Realtime con semántica).
+  - Modelo de recuperación de claves (o documentar que no existe).
+  - Migración de mensajes existentes (imposible → asumir brecha, o borrar y empezar).
+
+  **No atacar en caliente. Sin priorizar. No planificar hasta cerrar D (Legal mínimo)
+  y tener usuarios reales que lo demanden.**
+
+  Hecho cuando: existe `docs/decisions/e2ee-chat.md` con protocolo elegido, tabla de
+  sacrificios de producto, modelo de claves, y plan de migración — antes de escribir
+  una sola línea de código.
+
 ---
 
 ## BLOQUE F — Monetización (fase aparte)
