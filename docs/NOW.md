@@ -19,12 +19,14 @@ B3.5f-2h-NOTIF → ✅ CERRADO (Notificaciones migrada al DS, 506 tests green, c
 B3.5f-2h-SUGERENCIAS → ✅ CERRADO (Sugerencias migrada al DS, 506 tests green, commit 388c8fc)
 B3.5f-2h-CHAT → ✅ CERRADO (Chat migrada al DS, 506 tests green, commit 8af552f)
 B3.5f-3 (nivel mínimo) → ✅ CERRADO (tokens movimiento, prefers-reduced-motion, FilterBar normalizada, DS §8, 506/57 green, commits 17d7186 + 63e76be)
+B3.5f-3 (nivel medio) → ✅ CERRADO (modales fade+scale, loading.tsx home/discover/library E56, toast slide-in/out, FilterChip scale, 506/57 green, commits 714ffb6 + c537376 + 4cabe88)
 
 ## Tarea activa
 
 **TBD** — Pendiente confirmación del usuario.
 
 Opciones sugeridas:
-- B3.5f-3 nivel medio: loading.tsx en rutas (E56) + animaciones modales/toast/stagger
+
+- B3.5f-3 nivel completo: page transitions (template.tsx), stagger en grids, Framer Motion
 - Próxima pantalla pendiente de migración al DS
 - Bloque C / D de BACKLOG
