@@ -224,9 +224,8 @@ No bloqueantes. Atacar solo después de A–D.
   El seed actual (`scripts/seed-test.mjs`) usa service_role y bypassa RLS. Por eso B3.5c-3 tuvo bugs de RLS verdes en tests pero rojos en uso real. Pensar en seedar parte vía API con login real, o añadir un nivel de tests E2E que ejerciten flujos críticos con sesión auth válida (no service_role).
   Hecho cuando: existe al menos un spec E2E que ejecuta INSERT/UPDATE/DELETE como usuario autenticado real y verifica que las RLS no bloquean falsamente operaciones legítimas (regresión de bug 1).
 
-- [ ] **E29. Defensa null-safety en `discover/page.tsx`**
-  Tras el fix de bug 6, sigue logueándose `TypeError: Cannot read properties of undefined (reading 'map')` en tabs anime y manga cuando Jikan rate-limita. El banner i18n captura el fetch error pero el render aún asume arrays presentes. Añadir guards `(items ?? []).map(...)` en los puntos de renderizado.
-  Hecho cuando: tab anime con rate-limit Jikan activo no produce error en consola; en su lugar muestra estado vacío + banner.
+- [x] **E29. Defensa null-safety en `discover/page.tsx`** ✅ (cerrada 2026-05-27, commits 389d99f+445dcc3+93db7c5+fe4f3f1)
+  Causa real: Jikan 429 tragado por catch genérico + posible data: null sin guard. Fix: JikanError(.status), guard Array.isArray en anime/manga, guard totalItems books, catch distingue 429→"rate-limit" / resto→"generic", banner muestra mensaje específico. fetchDiscoverData extraída a lib/api/discover.ts (testeable). 521/58 green.
 
 - [ ] **E30. CSP en development debe permitir `'unsafe-eval'`**
   El CSP actual es el mismo en dev y prod, y rompe HMR de React Refresh en development (requiere `unsafe-eval`). Patrón a aplicar en `next.config.mjs`:
