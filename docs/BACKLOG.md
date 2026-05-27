@@ -423,6 +423,17 @@ No bloqueantes. Atacar solo después de A–D.
 
   Hecho cuando: 0 tokens legacy en `FilterBar`, chips activos usan `accent-positive`, inactivos usan tokens DS, y las 3 pantallas no presentan regresiones visuales.
 
+- [ ] **E60. Decisión de producto: scope de Discover/Books (idioma)**
+
+  `src/lib/api/googlebooks.ts:56` aplica `langRestrict: "es"`, lo que reduce drásticamente
+  `totalItems` y agrava el bug de paginación de books (totalPages inflados o erróneos cuando
+  hay pocos resultados en español). Es una decisión de producto: ¿Discover de libros
+  español-céntrico (consistente con i18n del proyecto) o global?
+
+  Aplica también a otras APIs si tienen restricción regional similar.
+
+  Sin priorizar. No tocar `langRestrict` hasta tomar la decisión.
+
 ---
 
 ## BLOQUE B3.5 — Diagnóstico y fixes pre-producción
