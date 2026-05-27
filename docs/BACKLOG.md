@@ -412,6 +412,17 @@ No bloqueantes. Atacar solo después de A–D.
   Hecho cuando: MediaCard usa exclusivamente tokens canónicos del DS, 0 ocurrencias de alias legacy,
   y las pantallas que lo consumen no presentan regresiones visuales.
 
+- [ ] **E59. FilterBar: migrar chips de filtro al DS**
+
+  Chips de filtro en `FilterBar` usan tokens legacy:
+  - **Activo:** `bg-accent-subtle text-accent border-accent` (rojo legacy `#E82020`) → debe ser verde `accent-positive` (tokens DS).
+  - **Inactivo:** `bg-surface2 text-muted border-border` → reemplazar por tokens DS canónicos.
+
+  Componente COMPARTIDO (Discover, Search, Library) — migrar con verificación de las 3 pantallas.
+  Sin priorizar.
+
+  Hecho cuando: 0 tokens legacy en `FilterBar`, chips activos usan `accent-positive`, inactivos usan tokens DS, y las 3 pantallas no presentan regresiones visuales.
+
 ---
 
 ## BLOQUE B3.5 — Diagnóstico y fixes pre-producción
