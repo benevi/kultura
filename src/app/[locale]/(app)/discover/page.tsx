@@ -39,7 +39,7 @@ export default async function DiscoverPage({ params, searchParams }: Props) {
   return (
     <main className="max-w-6xl mx-auto px-4 md:px-8 py-8">
       {fetchErrorKind !== null && (
-        <div className="mb-6 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 dark:border-red-900 dark:bg-red-950 dark:text-red-400">
+        <div className="mb-6 rounded-xl border border-accent-danger/30 bg-accent-danger/10 px-4 py-3 text-sm text-accent-danger">
           {fetchErrorKind === "rate-limit"
             ? t("fetchError.rateLimit")
             : t("fetchError.generic")}
