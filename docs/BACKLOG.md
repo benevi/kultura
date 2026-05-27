@@ -354,6 +354,13 @@ No bloqueantes. Atacar solo después de A–D.
 
 - [ ] **E46. Migrar MediaCard al sistema de diseño**
 
+- [ ] **E48. Notificaciones: mejoras DS aplazadas**
+  Sub-piezas (sin priorizar):
+  (a) `loading.tsx` — skeleton para estado de carga (actualmente no existe en `/notifications`).
+  (b) Acción primaria en empty state (DS §7) — añadir botón verde que lleve a Descubrir o Amigos.
+  (c) Cablear `markOneRead` — función huérfana en `notifications.ts:66`, sin caller en la UI.
+  (d) Paginación — hoy límite duro de 50 resultados en `getNotifications`; añadir cursor-pagination.
+
 - [ ] **E49. (reservado)**
 
 - [ ] **E51. Validación en cliente + mensajes específicos en SuggestionsForm**
@@ -399,17 +406,6 @@ No bloqueantes. Atacar solo después de A–D.
 
   Sin priorizar. No atacar hasta decidir estrategia de producto.
 
-- [ ] **E48. Notificaciones: mejoras DS aplazadas**
-  Sub-piezas (sin priorizar):
-  (a) `loading.tsx` — skeleton para estado de carga (actualmente no existe en `/notifications`).
-  (b) Acción primaria en empty state (DS §7) — añadir botón verde que lleve a Descubrir o Amigos.
-  (c) Cablear `markOneRead` — función huérfana en `notifications.ts:66`, sin caller en la UI.
-  (d) Paginación — hoy límite duro de 50 resultados en `getNotifications`; añadir cursor-pagination.
-  `src/components/media/MediaCard.tsx` usa tokens legacy (`bg-surface2`, `text-muted`, `text-amber-400`).
-  Componente compartido por Library, Discover, Search, ListDetail y otros — su migración es tarea propia.
-  Consecuencia asumida hasta que se resuelva: las tarjetas dentro de `/lists/[id]` muestran tokens viejos (esperado, no es fallo de B3.5f-2h-LISTAS).
-  Hecho cuando: MediaCard usa exclusivamente tokens canónicos del DS, 0 ocurrencias de alias legacy,
-  y las pantallas que lo consumen no presentan regresiones visuales.
 
 - [ ] **E59. FilterBar: migrar chips de filtro al DS**
 

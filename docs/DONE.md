@@ -369,3 +369,25 @@ Paso 0 confirmó que ambas validaciones de error (`mismatched passwords`, `short
 2026-05-22 | B3.5f-2f-FIX | cc60bc3 | Causa raíz: not-found.tsx de 2f vivía solo en [locale]/ — nunca se disparaba para rutas inexistentes porque Next.js App Router busca not-found.tsx en el segmento raíz, no en [locale]/. Fix mínimo: (1) src/app/[locale]/[...rest]/page.tsx catch-all llama notFound() → dispara [locale]/not-found.tsx para /es/asdfgh. (2) src/app/not-found.tsx raíz para /asdfgh (sin locale). (3) NotFoundContent.tsx componente compartido para no duplicar markup. globals.css importado en root layout.tsx. Verificado: /es/asdfgh y /asdfgh → 404 de marca. Vitest 506/506.
 
 2026-05-23 | B3.5f-2g | 87beaf0 + 2e0a2c0 + 391145c + c4c227e | Profile (/profile/[username]) migrado al design system. Commits: (87beaf0) ProfileBio: bg-accent/ring-accent → accent-positive, botones Guardar/Cancelar → KButton; ProfileHeader: bg-surface/text-text/border-border → tokens canónicos, borde añadido; ProfileStats: bg-surface2 → surface-elevated, text-muted → text-secondary/tertiary; ProfileGenres: ídem; page.tsx: link "Editar perfil" → KButton asChild secondary; FriendshipButton: Button legacy → KButton, red-400 → accent-danger (semántico destructivo); ReportButton: Button legacy → KButton, bg-bg → surface-base, ring-accent → ring-accent-positive, red-400 → accent-danger, label prop eliminado, strings → useTranslations('report'). (2e0a2c0) loading.tsx: skeleton completo (header card, 2 filas media, stats grid, chips géneros). (391145c) feat(i18n): namespace 'report' en es.json + en.json con paridad (label/prompt/placeholder/error/cancel/submit/sent). (c4c227e) test: ProfileGenres test bg-surface2 → bg-surface-elevated. Verificado con Playwright: perfil propio (Editar perfil KButton visible, 0 bg-accent E82020, 0 bg-surface2), bio edit (Save=bg-accent-positive), perfil ajeno (FriendshipButton + ReportButton visibles, dialog bg-surface-base), not-found (404 página de marca), color audit (0 elementos con computed E82020). Vitest 506/506.
+
+---
+
+## B3.5f-4 — Discover: hardening funcional + migración visual (COMPLETO) ✅
+
+**Fecha cierre:** 2026-05-27
+
+**Fase A — Hardening funcional (commits: 914436c, 4eafd0e, 128990c, 389d99f, 445dcc3, 93db7c5, fe4f3f1):**
+- `JikanError` tipado con `.status` para distinguir 429 de errores genéricos.
+- Guards `Array.isArray` en datos anime/manga; guard `totalItems` en books.
+- `catch` distingue 429 → banner `"rate-limit"` vs resto → banner `"generic"`.
+- `fetchDiscoverData` extraída a `lib/api/discover.ts` (testeable, desacoplada del RSC).
+- i18n: clave `errors.rateLimit` añadida en `es.json` + `en.json`.
+- E29 (TypeError anime/manga en Discover): **CERRADA**. Ver entrada E29 en BACKLOG.
+- 521 tests / 58 archivos — verdes.
+
+**Fase B — Migración visual al DS (commits: 94d9870, 38cd520):**
+- Banner de error: tokens legacy → `accent-danger` (rojo semántico DS).
+- `DiscoverClient`: tokens legacy → `accent-info` (azul semántico DS).
+- `MediaGrid` ya migrado al DS (hallazgo: no requería cambios).
+
+**Hashes en orden:** 914436c · 4eafd0e · 128990c · 389d99f · 445dcc3 · 93db7c5 · fe4f3f1 · e962be0 · 94d9870 · 38cd520
