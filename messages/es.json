@@ -109,7 +109,10 @@
     "previous": "Anterior",
     "next": "Siguiente",
     "noResults": "No hay resultados para estos filtros",
-    "fetchError": "No se pudo cargar el contenido. Inténtalo de nuevo más tarde."
+    "fetchError": {
+      "generic": "No se pudo cargar el contenido. Inténtalo de nuevo más tarde.",
+      "rateLimit": "El servicio ha alcanzado su límite. Inténtalo de nuevo en unos segundos."
+    }
   },
   "search": {
     "title": "Buscar",
