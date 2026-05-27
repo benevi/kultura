@@ -490,6 +490,10 @@ Paréntesis abierto tras B3 al detectar gap entre tests verdes y realidad. Cierr
 
   WCAG 2.1 §2.3.3. `globals.css` ahora neutraliza `transition-duration` y `animation-duration` a `0.01ms` globalmente bajo `@media (prefers-reduced-motion: reduce)`.
 
+- [ ] **E58. RecommendModal + Toast: migrar tokens legacy al DS**
+
+  `RecommendModal` usa `bg-surface`, `border-border`, `text-text`; `Toast` usa `bg-surface2`, `border-border`, `text-accent`. Mismo patrón legacy ya visto y migrado en Chat/Notif. Migrar a tokens canónicos del DESIGN_SYSTEM.md. Sin priorizar.
+
 ---
 
 ## BLOQUE F — Monetización (fase aparte)
