@@ -52,6 +52,18 @@ export interface JikanVideosResponse {
   data: { promo: { trailer: { youtube_id: string } }[] };
 }
 
+// ── Error class ───────────────────────────────────────────────────────────────
+
+export class JikanError extends Error {
+  readonly status: number;
+
+  constructor(path: string, status: number) {
+    super(`Jikan ${path} → ${status}`);
+    this.name = "JikanError";
+    this.status = status;
+  }
+}
+
 // ── Helper ────────────────────────────────────────────────────────────────────
 
 async function jikanFetch<T>(
@@ -61,7 +73,7 @@ async function jikanFetch<T>(
   const url = new URL(`https://api.jikan.moe/v4${path}`);
   Object.entries(params).forEach(([k, v]) => url.searchParams.set(k, v));
   const res = await fetch(url.toString());
-  if (!res.ok) throw new Error(`Jikan ${path} → ${res.status}`);
+  if (!res.ok) throw new JikanError(path, res.status);
   return res.json() as Promise<T>;
 }
 
