@@ -113,7 +113,7 @@ export function DiscoverClient({
             <p className="text-muted">{t("noResults")}</p>
             <button
               onClick={resetFilters}
-              className="text-accent text-sm mt-2 hover:text-accent/80 transition-colors"
+              className="text-accent-info text-sm mt-2 hover:text-accent-info/80 transition-colors"
             >
               {tF("reset")}
             </button>
