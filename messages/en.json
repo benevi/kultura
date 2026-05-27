@@ -109,7 +109,10 @@
     "previous": "Previous",
     "next": "Next",
     "noResults": "No results for these filters",
-    "fetchError": "Couldn't load content. Please try again later."
+    "fetchError": {
+      "generic": "Couldn't load content. Please try again later.",
+      "rateLimit": "Service rate limit reached. Try again in a few seconds."
+    }
   },
   "search": {
     "title": "Search",
