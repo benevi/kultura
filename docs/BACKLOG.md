@@ -429,6 +429,30 @@ No bloqueantes. Atacar solo después de A–D.
 
   Sin priorizar. No tocar `langRestrict` hasta tomar la decisión.
 
+- [ ] **E61. Seguridad: `DELETE /api/lists/[id]` bypassa RLS con service-role**
+
+  Descubierto en Fase 0 de E47. El endpoint usa service-role client y solo comprueba
+  `canEditList`, por lo que un colaborador puede borrar items añadidos por otros
+  colaboradores ignorando la RLS real (`added_by OR owner`).
+  Toca: `src/app/api/lists/[id]/route.ts` (handler DELETE).
+  Riesgo: seguridad (privilege escalation entre colaboradores).
+
+- [ ] **E62. Patrón transversal: mutaciones optimistas sin verificar `res.ok`**
+
+  Casos confirmados: `ListDetail.tsx` `handleRemoveItem` (línea 37) y `handleInvite`
+  (línea 53). Si el server responde 403 o 500, el cambio queda aplicado en la UI sin
+  revertir. Mismo patrón sospechado en E51 (Sugerencias) y E52 (Chat), ya registrados.
+  Acción sugerida: barrido del repo buscando `await fetch(` en client components sin
+  chequeo posterior de `res.ok` en mutaciones (POST/PATCH/DELETE). Documentar lista de
+  archivos afectados antes de fixear.
+
+- [ ] **E63. `ListsClient.tsx` descarta el setter de `useState`**
+
+  Línea 16: `const [lists] = useState<List[]>(initialLists)`. Sin setter, la nueva lista
+  creada via `CreateListModal` solo aparece tras full navigation. Fix: `const [lists,
+  setLists] = useState(...)` y pasar `setLists` (o callback `onCreated`) a
+  `CreateListModal` para actualizar el grid tras crear.
+
 ---
 
 ## BLOQUE B3.5 — Diagnóstico y fixes pre-producción
