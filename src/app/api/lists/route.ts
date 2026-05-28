@@ -1,5 +1,6 @@
 // ============================================================
 // KULTURA — Route Handler: /api/lists
+// GET:    listar listas del usuario autenticado (con filtro ?mediaType=)
 // POST:   crear una lista
 // DELETE: eliminar una lista (solo el owner)
 // ============================================================
@@ -9,6 +10,37 @@ import { createClient } from '@/lib/supabase/server'
 import { checkRateLimit, LIMITS } from '@/lib/rate-limit'
 
 const VALID_TYPES = ['movie', 'tv', 'anime', 'book', 'comic', 'manga', 'game']
+
+/** GET /api/lists — listar listas propias, opcionalmente filtradas por ?mediaType= */
+export async function GET(request: Request): Promise<NextResponse> {
+  const supabase = createClient()
+
+  const { data: { user }, error: authError } = await supabase.auth.getUser()
+  if (authError || !user) {
+    return NextResponse.json({ error: 'Not authenticated' }, { status: 401 })
+  }
+
+  const { searchParams } = new URL(request.url)
+  const mediaType = searchParams.get('mediaType')
+
+  let query = supabase
+    .from('lists')
+    .select('id, owner_id, name, media_type, is_collaborative, created_at')
+    .eq('owner_id', user.id)
+    .order('created_at', { ascending: false })
+
+  if (mediaType && VALID_TYPES.includes(mediaType)) {
+    query = query.eq('media_type', mediaType)
+  }
+
+  const { data, error } = await query
+
+  if (error) {
+    return NextResponse.json({ error: 'Failed to fetch lists' }, { status: 500 })
+  }
+
+  return NextResponse.json({ lists: data ?? [] })
+}
 
 /** POST /api/lists — crear lista */
 export async function POST(request: Request): Promise<NextResponse> {

@@ -45,6 +45,56 @@ vi.mock('@/lib/social/lists', async (importOriginal) => {
   return { ...actual, canEditList: vi.fn().mockResolvedValue(true) }
 })
 
+function makeGetRequest(search = ''): Request {
+  return new Request(`http://localhost/api/lists${search}`, { method: 'GET' })
+}
+
+// ── GET /api/lists ────────────────────────────────────────────────────────────
+
+describe('GET /api/lists', () => {
+  beforeEach(() => vi.clearAllMocks())
+
+  it('returns 401 if not authenticated', async () => {
+    mockGetUser.mockResolvedValue({ data: { user: null }, error: null })
+    const { GET } = await import('@/app/api/lists/route')
+    const res = await GET(makeGetRequest())
+    expect(res.status).toBe(401)
+  })
+
+  it('returns all lists when no mediaType filter', async () => {
+    mockGetUser.mockResolvedValue({ data: { user: AUTH_USER }, error: null })
+    mockFromLists.mockReturnValue({
+      select: vi.fn().mockReturnValue({
+        eq: vi.fn().mockReturnValue({
+          order: vi.fn().mockResolvedValue({ data: [LIST_ROW], error: null }),
+        }),
+      }),
+    })
+    const { GET } = await import('@/app/api/lists/route')
+    const res = await GET(makeGetRequest())
+    expect(res.status).toBe(200)
+    const body = await res.json()
+    expect(body.lists).toHaveLength(1)
+  })
+
+  it('filters lists by mediaType', async () => {
+    mockGetUser.mockResolvedValue({ data: { user: AUTH_USER }, error: null })
+    const mockEq2 = vi.fn().mockResolvedValue({ data: [LIST_ROW], error: null })
+    const mockOrder = vi.fn().mockReturnValue({ eq: mockEq2 })
+    mockFromLists.mockReturnValue({
+      select: vi.fn().mockReturnValue({
+        eq: vi.fn().mockReturnValue({
+          order: mockOrder,
+        }),
+      }),
+    })
+    const { GET } = await import('@/app/api/lists/route')
+    const res = await GET(makeGetRequest('?mediaType=movie'))
+    expect(res.status).toBe(200)
+    expect(mockEq2).toHaveBeenCalledWith('media_type', 'movie')
+  })
+})
+
 // ── POST /api/lists ───────────────────────────────────────────────────────────
 
 describe('POST /api/lists', () => {
