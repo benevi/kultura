@@ -15,6 +15,7 @@ import { StreamingProviders } from "./StreamingProviders";
 import { SynopsisSection } from "./SynopsisSection";
 import { LibraryAction } from "@/components/library/LibraryAction";
 import { RecommendButton } from "@/components/social/RecommendButton";
+import { AddToListButton } from "@/components/social/AddToListButton";
 import { ReportButton } from "@/components/social/ReportButton";
 
 interface MediaDetailProps {
@@ -236,6 +237,7 @@ export async function MediaDetail({
         {isAuthenticated && (
           <div className="flex items-center gap-3 flex-wrap">
             <RecommendButton item={item} />
+            <AddToListButton item={item} />
             <ReportButton targetType="media" targetId={item.id} />
           </div>
         )}
