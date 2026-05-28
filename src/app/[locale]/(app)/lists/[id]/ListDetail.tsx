@@ -104,9 +104,16 @@ export function ListDetail({
           <span className="ml-2 text-sm font-body font-medium text-text-secondary">{items.length}</span>
         </h2>
         {items.length === 0 ? (
-          <div className="bg-surface-default border border-surface-border rounded-xl p-8 text-center flex flex-col items-center gap-2">
+          <div className="bg-surface-default border border-surface-border rounded-xl p-8 text-center flex flex-col items-center gap-3">
             <span className="text-3xl">📋</span>
-            <p className="text-text-secondary text-sm">{t('noItems')}</p>
+            <p className="text-text-primary text-sm font-medium">{t('noItems')}</p>
+            <p className="text-text-secondary text-sm">{t('noItemsHint')}</p>
+            <Link
+              href="/discover"
+              className="inline-flex items-center justify-center h-8 px-3 text-xs rounded-button font-body font-medium bg-accent-positive text-on-accent-positive hover:brightness-110 transition-all"
+            >
+              {t('noItemsDiscover')}
+            </Link>
           </div>
         ) : (
           <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-3">
