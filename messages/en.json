@@ -270,6 +270,7 @@
     "selectList": "Select a list",
     "addButton": "Add",
     "createListCta": "Create a list",
+    "cancel": "Cancel",
     "added": "Added to {name}",
     "alreadyIn": "Already in {name}",
     "errorAdding": "Failed to add title",
