@@ -34,7 +34,7 @@ export function AddToListButton({ item }: AddToListButtonProps) {
     if (!open) return
     setLoadingLists(true)
     setFetchError(false)
-    fetch(`/api/lists?mediaType=${item.type}`)
+    fetch(`/api/lists`)
       .then((r) => {
         if (!r.ok) throw new Error('fetch failed')
         return r.json()
@@ -86,7 +86,7 @@ export function AddToListButton({ item }: AddToListButtonProps) {
     }
   }
 
-  const compatibleLists = lists
+  const compatibleLists = lists.filter((l) => l.media_type === item.type)
 
   return (
     <>
