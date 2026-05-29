@@ -333,7 +333,7 @@ No bloqueantes. Atacar solo después de A–D.
 
 - [ ] **E46. Migrar MediaCard al sistema de diseño**
 
-- [ ] **E47. Listas: UI para añadir títulos a una lista (endpoint ya existe)**
+- [x] **E47. Listas: UI para añadir títulos a una lista (endpoint ya existe)** ✅ (cerrada el 2026-05-29)
 
   **Diagnóstico LISTAS-ADD-DIAG (2026-05-25):** El endpoint `POST /api/lists/[id]` existe y
   funciona correctamente (acepta `{ mediaId, mediaCache? }`, llama `canEditList`, inserta en

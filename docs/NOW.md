@@ -21,10 +21,11 @@ B3.5f-2h-CHAT → ✅ CERRADO (Chat migrada al DS, 506 tests green, commit 8af55
 B3.5f-3 (nivel mínimo) → ✅ CERRADO (tokens movimiento, prefers-reduced-motion, FilterBar normalizada, DS §8, 506/57 green, commits 17d7186 + 63e76be)
 B3.5f-3 (nivel medio) → ✅ CERRADO (modales fade+scale, loading.tsx home/discover/library E56, toast slide-in/out, FilterChip scale, 506/57 green, commits 714ffb6 + c537376 + 4cabe88)
 B3.5f-4 + E29 → ✅ CERRADO (JikanError+guards+catch 429+i18n rateLimit, fetchDiscoverData extraída, 521/58 green, commits 389d99f+445dcc3+93db7c5+fe4f3f1; Fase B visual: banner accent-danger + DiscoverClient accent-info + MediaGrid ya migrado, commits 94d9870+38cd520)
+E47 → ✅ CERRADO (Listas: añadir/quitar título, alcance ampliado, 530/59 green, commits b64680c+7e77796+6d8d8d1+5bf789b+049c061+540d0e7+bec8bc4; hallazgos previos en 59701e7)
 
 ## Tarea activa
 
-**SIN BLOQUE ACTIVO** — B3.5f-4 cerrado formalmente el 2026-05-27. Pendiente confirmación del usuario para el siguiente bloque.
+**SIN TAREA ACTIVA** — E47 cerrado formalmente el 2026-05-29. Pendiente confirmación del usuario para la siguiente tarea.
 
 Opciones sugeridas:
 

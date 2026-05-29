@@ -6,6 +6,10 @@ No se edita a mano durante el día. Solo se añade una línea al terminar cada t
 
 ---
 
+2026-05-29 | E47 | b64680c, 7e77796, 6d8d8d1, 5bf789b, 049c061, 540d0e7, bec8bc4 | Listas: añadir/quitar título (alcance ampliado vs BACKLOG original). Backend (POST/DELETE /api/lists/[id]) ya completo desde antes. Frontend nuevo: GET /api/lists con filtro `mediaType`, componente `AddToListButton` con modal y filtrado por `media_type` en cliente, integrado en `MediaDetail`, CTA en estado vacío de `ListDetail`. Quitar título ya existía vía botón ✕ en `ListDetail` y se mantuvo verificado. Verificado visualmente por el usuario (escenarios 1/2/3, Regla 11). 530/59 tests verdes. Registro previo de hallazgos en 59701e7 (E61/E62/E63 abiertos por Fase 0 de E47). Alcance ampliado: BACKLOG decía "añadir títulos"; se cubrió añadir + quitar.
+
+---
+
 2026-05-01 | A1 | (sin commit, trabajo de dashboards) | Migración a sistema nuevo de Supabase API keys (`sb_publishable_*` + `sb_secret_*`). Legacy JWT keys deshabilitadas. App verificada en local + Vercel actualizado.
 2026-05-23 | B3.5f-2g-2 | 19a82af | Fila "Pendientes" + empty state en /profile/[username]. Status enum `pending` confirmado. 506 tests green.
 2026-05-23 | B3.5f-2h-AMIGOS | 6eccb5a | Pantalla Amigos migrada al DS. FriendCard Button→KButton (primary/secondary/danger), FriendsClient raw buttons→KButton, todos los tokens legacy neutralizados. 506 tests green.
