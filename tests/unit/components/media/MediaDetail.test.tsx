@@ -48,6 +48,10 @@ vi.mock("@/components/social/ReportButton", () => ({
   ReportButton: () => <div data-testid="report-button" />,
 }));
 
+vi.mock("@/components/social/AddToListButton", () => ({
+  AddToListButton: () => <div data-testid="add-to-list-button" />,
+}));
+
 vi.mock("@/components/media/StreamingProviders", () => ({
   StreamingProviders: ({
     providers,
