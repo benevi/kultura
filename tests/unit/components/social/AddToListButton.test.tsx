@@ -67,22 +67,18 @@ describe('AddToListButton', () => {
     })
   })
 
-  it('shows noCompatibleLists when lists exist but none match type', async () => {
-    // GET returns empty because filter is applied server-side and returns []
-    // but we simulate a UI path: lists.length > 0 but compatibleLists.length === 0
-    // In the component lists.length === 0 → noListsAtAll branch.
-    // noCompatibleLists branch is unreachable via GET filter, but we test it by
-    // verifying the component renders the message when lists come back empty from a
-    // filtered fetch (same code path).
+  it('shows noCompatibleLists when lists exist but none match item type', async () => {
+    // API returns lists of type 'book', but item is type 'movie' → client filter → 0 compatible
+    const lists = [{ id: 'list-2', name: 'Mis libros', media_type: 'book', is_collaborative: false }]
     mockFetch.mockResolvedValueOnce({
       ok: true,
-      json: async () => ({ lists: [] }),
+      json: async () => ({ lists }),
     })
     renderBtn()
     fireEvent.click(screen.getByRole('button', { name: /addToList/i }))
     await waitFor(() => {
-      // The API already filters, so 0 results → noListsAtAll message shown
-      expect(screen.getByText('noListsAtAll')).toBeInTheDocument()
+      expect(screen.getByText('noCompatibleLists')).toBeInTheDocument()
+      expect(screen.queryByText('Mis libros')).not.toBeInTheDocument()
     })
   })
 
