@@ -506,6 +506,32 @@ No bloqueantes. Atacar solo después de A–D.
   setLists] = useState(...)` y pasar `setLists` (o callback `onCreated`) a
   `CreateListModal` para actualizar el grid tras crear.
 
+- [ ] **E64. Seguridad/visual: RecommendModal usa colores hardcodeados (viola DS)**
+
+  Descubierto en Fase 0 de E47. `RecommendModal` usa `text-green-400` y `text-red-400`
+  hardcodeados en lugar de tokens DS (`accent-positive`, `accent-danger`). El componente
+  nuevo `AddToListButton` creado en E47 NO replica este patrón — usa tokens y
+  `useToastContext` correctamente. Esta E-task cubre la migración del `RecommendModal`
+  existente.
+
+  Toca: `src/components/social/RecommendModal.tsx`.
+
+  Solapamiento parcial con E58 (RecommendModal + Toast). Considerar unificar al
+  planificar.
+
+- [ ] **E65. Listas: UI para borrar una lista (endpoint ya existe)**
+
+  Descubierto en verificación visual de E47. El endpoint `DELETE /api/lists` existe y
+  funciona (solo owner). El usuario reporta que NO hay botón ni acción en `/lists` ni
+  `/lists/[id]` para borrar una lista. Mismo patrón que tenía E47 antes de cerrarse:
+  backend completo sin UI.
+
+  Qué falta: botón en `ListCard` o en header de `ListDetail` (con confirmación) + claves
+  i18n (`lists.delete`, `lists.deleteConfirm`, `lists.deleted`).
+
+  Hecho cuando: desde `/lists` o `/lists/[id]`, el owner puede borrar su lista con
+  confirmación y desaparece del grid.
+
 ---
 
 ## BLOQUE B3.5 — Diagnóstico y fixes pre-producción
