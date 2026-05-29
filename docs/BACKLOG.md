@@ -331,6 +331,8 @@ No bloqueantes. Atacar solo después de A–D.
 
   No planificar aún. Solo backlog.
 
+- [ ] **E46. Migrar MediaCard al sistema de diseño**
+
 - [ ] **E47. Listas: UI para añadir títulos a una lista (endpoint ya existe)**
 
   **Diagnóstico LISTAS-ADD-DIAG (2026-05-25):** El endpoint `POST /api/lists/[id]` existe y
@@ -352,8 +354,6 @@ No bloqueantes. Atacar solo después de A–D.
   Hecho cuando: desde la ficha de un título autenticado se puede añadir a una lista propia
   y el ítem aparece en `/lists/[id]` sin necesidad de ir al detalle de la lista primero.
 
-- [ ] **E46. Migrar MediaCard al sistema de diseño**
-
 - [ ] **E48. Notificaciones: mejoras DS aplazadas**
   Sub-piezas (sin priorizar):
   (a) `loading.tsx` — skeleton para estado de carga (actualmente no existe en `/notifications`).
@@ -362,26 +362,6 @@ No bloqueantes. Atacar solo después de A–D.
   (d) Paginación — hoy límite duro de 50 resultados en `getNotifications`; añadir cursor-pagination.
 
 - [ ] **E49. (reservado)**
-
-- [ ] **E51. Validación en cliente + mensajes específicos en SuggestionsForm**
-
-  **Hallazgo (diagnóstico SUGERENCIAS-400, 2026-05-26):** El 400 en `POST /api/suggestions`
-  es validación Zod esperada y correcta — `description.min(10)` rechaza inputs cortos como
-  `"nynf"` (4 chars). No hay bug de payload ni rate-limit. La UX es pobre:
-
-  - `SuggestionsForm.tsx:87` — `subject` solo tiene `maxLength={120}` + `required`, sin `minLength={3}`.
-  - `SuggestionsForm.tsx:99` — `description` solo tiene `maxLength={2000}` + `required`, sin `minLength={10}`.
-  - Sin validación Zod en cliente: cualquier entrada de 1 char se envía al servidor y falla.
-  - `route.ts:33` devuelve `{ error: 'Invalid data' }` genérico (sin detalle por campo).
-  - `SuggestionsForm.tsx:23` ignora el body del 400; muestra siempre `t('error')` fijo.
-
-  **Qué falta:**
-  - Añadir `minLength={3}` a `subject` y `minLength={10}` a `description` (o validación Zod en cliente).
-  - Mostrar conteo/feedback por campo cuando la longitud no alcanza el mínimo.
-  - Opcional: que el servidor devuelva los errores de Zod por campo (`parsed.error.flatten()`).
-
-  Hecho cuando: enviar `description` de 4 chars muestra error inline antes de hacer fetch,
-  y el form no puede enviarse con datos que fallen la validación del servidor.
 
 - [ ] **E50. Notificaciones: estado no-leído efímero por `markAllRead` en carga**
 
@@ -406,6 +386,79 @@ No bloqueantes. Atacar solo después de A–D.
 
   Sin priorizar. No atacar hasta decidir estrategia de producto.
 
+- [ ] **E51. Validación en cliente + mensajes específicos en SuggestionsForm**
+
+  **Hallazgo (diagnóstico SUGERENCIAS-400, 2026-05-26):** El 400 en `POST /api/suggestions`
+  es validación Zod esperada y correcta — `description.min(10)` rechaza inputs cortos como
+  `"nynf"` (4 chars). No hay bug de payload ni rate-limit. La UX es pobre:
+
+  - `SuggestionsForm.tsx:87` — `subject` solo tiene `maxLength={120}` + `required`, sin `minLength={3}`.
+  - `SuggestionsForm.tsx:99` — `description` solo tiene `maxLength={2000}` + `required`, sin `minLength={10}`.
+  - Sin validación Zod en cliente: cualquier entrada de 1 char se envía al servidor y falla.
+  - `route.ts:33` devuelve `{ error: 'Invalid data' }` genérico (sin detalle por campo).
+  - `SuggestionsForm.tsx:23` ignora el body del 400; muestra siempre `t('error')` fijo.
+
+  **Qué falta:**
+  - Añadir `minLength={3}` a `subject` y `minLength={10}` a `description` (o validación Zod en cliente).
+  - Mostrar conteo/feedback por campo cuando la longitud no alcanza el mínimo.
+  - Opcional: que el servidor devuelva los errores de Zod por campo (`parsed.error.flatten()`).
+
+  Hecho cuando: enviar `description` de 4 chars muestra error inline antes de hacer fetch,
+  y el form no puede enviarse con datos que fallen la validación del servidor.
+
+- [ ] **E52. Silent fail duplicado en ChatClient + ConversationClient** — `.catch(() => setLoading(false))` en ambos archivos traga el error de carga y deja pantalla vacía sin feedback al usuario. Mejora funcional, no bug de migración. Fix futuro debe añadir el test que lo detecta (TDD retrospectivo) antes de cambiar el handler.
+
+- [ ] **E53. String hardcodeado sin i18n en ChatClient** — `${conversations.length} conversaciones` no pasa por `t()`. Fix: añadir clave `chat.conversationCount` (con plural forms) a `messages/es.json` y `messages/en.json` y usar `t('conversationCount', { count })`.
+
+- [ ] **E54. Chat: cifrado de extremo a extremo (E2EE) — DECISIÓN DE ARQUITECTURA**
+
+  Hoy los mensajes se guardan en texto plano en Supabase (`messages.content text not null`).
+  E2EE implica cambios de calado que afectan al producto completo:
+
+  **Impacto técnico:**
+  - Cifrado en cliente: elegir protocolo/librería (Signal, libsodium, etc.).
+  - Gestión de claves por usuario: derivación, almacenamiento local, pérdida de dispositivo,
+    acceso multi-dispositivo, recuperación (sin clave no hay recuperación posible).
+  - Rotura de funciones que leen el contenido del servidor:
+    - Preview "Tú: …" en lista de conversaciones (lee `messages.content` server-side).
+    - Políticas RLS sobre texto plano (dejan de proteger contenido, solo metadata).
+    - Supabase Realtime sobre filas con texto cifrado (entrega ciega, sin semántica).
+    - Búsqueda de mensajes (imposible sin índice server-side o arquitectura adicional).
+
+  **Antes de cualquier implementación se requiere un bloque de diseño propio:**
+  - Elección de protocolo y librería (con análisis de madurez, mantenimiento, tamaño bundle).
+  - Decisión sobre qué se sacrifica del producto actual (preview, búsqueda, Realtime con semántica).
+  - Modelo de recuperación de claves (o documentar que no existe).
+  - Migración de mensajes existentes (imposible → asumir brecha, o borrar y empezar).
+
+  **No atacar en caliente. Sin priorizar. No planificar hasta cerrar D (Legal mínimo)
+  y tener usuarios reales que lo demanden.**
+
+  Hecho cuando: existe `docs/decisions/e2ee-chat.md` con protocolo elegido, tabla de
+  sacrificios de producto, modelo de claves, y plan de migración — antes de escribir
+  una sola línea de código.
+
+- [x] **E55. KButton: active:scale(0.98) no implementado** ✅ CERRADA en B3.5f-3 (nivel mínimo)
+
+  DS §5 especificaba `active:scale(0.98)` en botones pero `KButton.tsx` no lo tenía. Añadido `active:scale-[0.98]` en variantes `primary` y `secondary`. 506/57 green.
+
+- [ ] **E56. Faltan loading.tsx en rutas principales** — solo `/profile` tiene skeleton de carga.
+
+  Rutas sin `loading.tsx`: home, discover, search, library, media/[type]/[id], friends, notifications, settings, chat, groups/[id], lists/[id]. Causa: Sprint B3.5f migró el DS pero no añadió loading skeletons.
+
+  **Prioridad:** media. Sin loading.tsx, Next.js muestra página en blanco durante SSR. No es bug funcional pero degrada UX en conexiones lentas.
+
+  Hecho cuando: las rutas principales tienen `loading.tsx` con skeleton coherente al DS (surface-default, animate-pulse).
+
+  **Nota:** nivel medio de B3.5f-3. No tocar hasta confirmar con el usuario.
+
+- [x] **E57. prefers-reduced-motion no implementado** ✅ CERRADA en B3.5f-3 (nivel mínimo)
+
+  WCAG 2.1 §2.3.3. `globals.css` ahora neutraliza `transition-duration` y `animation-duration` a `0.01ms` globalmente bajo `@media (prefers-reduced-motion: reduce)`.
+
+- [ ] **E58. RecommendModal + Toast: migrar tokens legacy al DS**
+
+  `RecommendModal` usa `bg-surface`, `border-border`, `text-text`; `Toast` usa `bg-surface2`, `border-border`, `text-accent`. Mismo patrón legacy ya visto y migrado en Chat/Notif. Migrar a tokens canónicos del DESIGN_SYSTEM.md. Sin priorizar.
 
 - [ ] **E59. FilterBar: migrar chips de filtro al DS**
 
@@ -480,60 +533,6 @@ Paréntesis abierto tras B3 al detectar gap entre tests verdes y realidad. Cierr
 - [ ] **B3.5f. Sprint de diseño visual** (opcional, decidir al cerrar B3.5g).
 
 - [ ] **B3.5g-COMIC. ComicVine completo (renombrado de E6)** — pendiente, post-B4.
-
-- [ ] **E52. Silent fail duplicado en ChatClient + ConversationClient** — `.catch(() => setLoading(false))` en ambos archivos traga el error de carga y deja pantalla vacía sin feedback al usuario. Mejora funcional, no bug de migración. Fix futuro debe añadir el test que lo detecta (TDD retrospectivo) antes de cambiar el handler.
-
-- [ ] **E53. String hardcodeado sin i18n en ChatClient** — `${conversations.length} conversaciones` no pasa por `t()`. Fix: añadir clave `chat.conversationCount` (con plural forms) a `messages/es.json` y `messages/en.json` y usar `t('conversationCount', { count })`.
-
-- [ ] **E54. Chat: cifrado de extremo a extremo (E2EE) — DECISIÓN DE ARQUITECTURA**
-
-  Hoy los mensajes se guardan en texto plano en Supabase (`messages.content text not null`).
-  E2EE implica cambios de calado que afectan al producto completo:
-
-  **Impacto técnico:**
-  - Cifrado en cliente: elegir protocolo/librería (Signal, libsodium, etc.).
-  - Gestión de claves por usuario: derivación, almacenamiento local, pérdida de dispositivo,
-    acceso multi-dispositivo, recuperación (sin clave no hay recuperación posible).
-  - Rotura de funciones que leen el contenido del servidor:
-    - Preview "Tú: …" en lista de conversaciones (lee `messages.content` server-side).
-    - Políticas RLS sobre texto plano (dejan de proteger contenido, solo metadata).
-    - Supabase Realtime sobre filas con texto cifrado (entrega ciega, sin semántica).
-    - Búsqueda de mensajes (imposible sin índice server-side o arquitectura adicional).
-
-  **Antes de cualquier implementación se requiere un bloque de diseño propio:**
-  - Elección de protocolo y librería (con análisis de madurez, mantenimiento, tamaño bundle).
-  - Decisión sobre qué se sacrifica del producto actual (preview, búsqueda, Realtime con semántica).
-  - Modelo de recuperación de claves (o documentar que no existe).
-  - Migración de mensajes existentes (imposible → asumir brecha, o borrar y empezar).
-
-  **No atacar en caliente. Sin priorizar. No planificar hasta cerrar D (Legal mínimo)
-  y tener usuarios reales que lo demanden.**
-
-  Hecho cuando: existe `docs/decisions/e2ee-chat.md` con protocolo elegido, tabla de
-  sacrificios de producto, modelo de claves, y plan de migración — antes de escribir
-  una sola línea de código.
-
-- [x] **E55. KButton: active:scale(0.98) no implementado** ✅ CERRADA en B3.5f-3 (nivel mínimo)
-
-  DS §5 especificaba `active:scale(0.98)` en botones pero `KButton.tsx` no lo tenía. Añadido `active:scale-[0.98]` en variantes `primary` y `secondary`. 506/57 green.
-
-- [ ] **E56. Faltan loading.tsx en rutas principales** — solo `/profile` tiene skeleton de carga.
-
-  Rutas sin `loading.tsx`: home, discover, search, library, media/[type]/[id], friends, notifications, settings, chat, groups/[id], lists/[id]. Causa: Sprint B3.5f migró el DS pero no añadió loading skeletons.
-
-  **Prioridad:** media. Sin loading.tsx, Next.js muestra página en blanco durante SSR. No es bug funcional pero degrada UX en conexiones lentas.
-
-  Hecho cuando: las rutas principales tienen `loading.tsx` con skeleton coherente al DS (surface-default, animate-pulse).
-
-  **Nota:** nivel medio de B3.5f-3. No tocar hasta confirmar con el usuario.
-
-- [x] **E57. prefers-reduced-motion no implementado** ✅ CERRADA en B3.5f-3 (nivel mínimo)
-
-  WCAG 2.1 §2.3.3. `globals.css` ahora neutraliza `transition-duration` y `animation-duration` a `0.01ms` globalmente bajo `@media (prefers-reduced-motion: reduce)`.
-
-- [ ] **E58. RecommendModal + Toast: migrar tokens legacy al DS**
-
-  `RecommendModal` usa `bg-surface`, `border-border`, `text-text`; `Toast` usa `bg-surface2`, `border-border`, `text-accent`. Mismo patrón legacy ya visto y migrado en Chat/Notif. Migrar a tokens canónicos del DESIGN_SYSTEM.md. Sin priorizar.
 
 ---
 
