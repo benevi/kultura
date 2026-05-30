@@ -10,6 +10,10 @@ No se edita a mano durante el día. Solo se añade una línea al terminar cada t
 
 ---
 
+2026-05-30 | E-AI-GEMINI | 241d4fe | Migrar recomendaciones IA de Anthropic (Claude `claude-sonnet-4-6`) a Google Gemini (`@google/genai` ^2.7.0, modelo `gemini-2.5-flash`, free tier). Motivo: coste. Cambios: quitar `@anthropic-ai/sdk` + añadir `@google/genai` (package.json/lock); `recommendations.ts` import + `new GoogleGenAI({apiKey})` + `models.generateContent({model,contents,config:{maxOutputTokens,systemInstruction}})` + `response.text`, env `ANTHROPIC_API_KEY`→`GEMINI_API_KEY`, comentarios; `route.ts` comentario cabecera; 2 tests re-mockeados a `@google/genai` (forma respuesta `{text}`); CLAUDE.md (Stack, tabla APIs, Env vars, Reglas 1/1b). Firma pública de `getAiRecommendations` intacta → sin cambios en consumidores. `.env.local` con `GEMINI_API_KEY=` (no en git, lo rellena el usuario). tsc EXIT 0, lint 0 errores, 530/59 tests verdes. Hallazgos abiertos: 2 refs ANTHROPIC stale en BACKLOG (líneas 22, 210, tareas no relacionadas) y `ANTHROPIC_API_KEY` aún en `.env.local` — fuera de alcance.
+
+---
+
 2026-05-01 | A1 | (sin commit, trabajo de dashboards) | Migración a sistema nuevo de Supabase API keys (`sb_publishable_*` + `sb_secret_*`). Legacy JWT keys deshabilitadas. App verificada en local + Vercel actualizado.
 2026-05-23 | B3.5f-2g-2 | 19a82af | Fila "Pendientes" + empty state en /profile/[username]. Status enum `pending` confirmado. 506 tests green.
 2026-05-23 | B3.5f-2h-AMIGOS | 6eccb5a | Pantalla Amigos migrada al DS. FriendCard Button→KButton (primary/secondary/danger), FriendsClient raw buttons→KButton, todos los tokens legacy neutralizados. 506 tests green.

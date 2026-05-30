@@ -22,10 +22,11 @@ B3.5f-3 (nivel mínimo) → ✅ CERRADO (tokens movimiento, prefers-reduced-moti
 B3.5f-3 (nivel medio) → ✅ CERRADO (modales fade+scale, loading.tsx home/discover/library E56, toast slide-in/out, FilterChip scale, 506/57 green, commits 714ffb6 + c537376 + 4cabe88)
 B3.5f-4 + E29 → ✅ CERRADO (JikanError+guards+catch 429+i18n rateLimit, fetchDiscoverData extraída, 521/58 green, commits 389d99f+445dcc3+93db7c5+fe4f3f1; Fase B visual: banner accent-danger + DiscoverClient accent-info + MediaGrid ya migrado, commits 94d9870+38cd520)
 E47 → ✅ CERRADO (Listas: añadir/quitar título, alcance ampliado, 530/59 green, commits b64680c+7e77796+6d8d8d1+5bf789b+049c061+540d0e7+bec8bc4; hallazgos previos en 59701e7)
+E-AI-GEMINI → ✅ CERRADO (Recomendaciones IA migradas de Anthropic/Claude a Google Gemini `gemini-2.5-flash` free tier, 530/59 green, commit 241d4fe)
 
 ## Tarea activa
 
-**E-AI-GEMINI** — Migrar recomendaciones IA de Anthropic (Claude) a Google Gemini (free tier).
+**SIN TAREA ACTIVA** — E-AI-GEMINI cerrado el 2026-05-30. Pendiente confirmación del usuario para la siguiente tarea.
 
 Motivo: coste. Anthropic de pago; Gemini free tier suficiente para el motor de recomendaciones.
 
