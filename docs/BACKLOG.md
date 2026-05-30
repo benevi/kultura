@@ -532,6 +532,21 @@ No bloqueantes. Atacar solo después de A–D.
   Hecho cuando: desde `/lists` o `/lists/[id]`, el owner puede borrar su lista con
   confirmación y desaparece del grid.
 
+[ ] E66 — AiRecommendations: carátula + navegación a ficha
+    Contexto: el componente muestra iniciales en vez de póster y el click
+    va a /search en vez de a /media/[type]/[id].
+    Causa: AiRec no incluye posterUrl ni mediaId — el endpoint solo devuelve
+    título, tipo, año, reason y searchQuery.
+    Fix completo:
+    - Ampliar AiRec con posterUrl?: string y mediaId?: string
+    - En getAiRecommendations, tras obtener la respuesta de Claude, enriquecer
+      cada rec buscando su ID y póster en la API externa correspondiente
+      (TMDB para movie/tv, Jikan para anime/manga, IGDB para game, Google Books para book)
+    - En AiRecommendations.tsx: mostrar <Image> del póster y href="/media/[type]/[mediaId]"
+    - Manejo de fallo de enriquecimiento: si no encuentra ID, mantener fallback
+      a /search (comportamiento actual)
+    Subtareas: E66-a (enriquecer endpoint), E66-b (UI componente)
+
 ---
 
 ## BLOQUE B3.5 — Diagnóstico y fixes pre-producción
