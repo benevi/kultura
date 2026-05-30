@@ -172,6 +172,8 @@ export async function getAiRecommendations(
 
   const items = await getLibraryContext(userId, supabaseClient)
 
+  console.log('[AI-RECS DEBUG] library items:', items.length)
+
   // Mínimo 3 items para contexto útil
   if (items.length < 3) return []
 
@@ -186,7 +188,7 @@ export async function getAiRecommendations(
   let rawText: string
   try {
     const response = await client.models.generateContent({
-      model: 'gemini-2.5-flash',
+      model: 'gemini-2.0-flash',
       contents: buildPrompt(items, topGenres, locale),
       config: {
         maxOutputTokens: 1024,
@@ -194,11 +196,18 @@ export async function getAiRecommendations(
       },
     })
 
+    console.log('[AI-RECS DEBUG] response keys:', Object.keys(response ?? {}))
+    console.log('[AI-RECS DEBUG] response.text type:', typeof response.text)
+    console.log('[AI-RECS DEBUG] response raw:', JSON.stringify(response).substring(0, 500))
     const text = response.text
-    if (!text) return []
+    if (!text) {
+      console.log('[AI-RECS DEBUG] response.text empty/undefined')
+      return []
+    }
     rawText = text
+    console.log('[AI-RECS DEBUG] rawText:', rawText.substring(0, 200))
   } catch (err) {
-    console.error('Gemini API error:', err)
+    console.error('[AI-RECS DEBUG] Gemini API error:', JSON.stringify(err, Object.getOwnPropertyNames(err)))
     return []
   }
 
@@ -207,39 +216,43 @@ export async function getAiRecommendations(
   // raíz ([{...}]) en lugar de un objeto, jsonMatch es null y se devuelve [].
   // El schema del prompt pide siempre un objeto, así que es poco probable.
   try {
+    console.log('[AI-RECS DEBUG] rawText length:', rawText.length)
+    console.log('[AI-RECS DEBUG] rawText full:', rawText)
     const jsonMatch = rawText.match(/\{[\s\S]*\}/)
+    console.log('[AI-RECS DEBUG] jsonMatch found:', !!jsonMatch)
     if (!jsonMatch) return []
 
-    const parsed = JSON.parse(jsonMatch[0]) as {
-      recommendations?: unknown[]
-    }
+    const parsed = JSON.parse(jsonMatch[0]) as { recommendations?: unknown[] }
+    console.log('[AI-RECS DEBUG] parsed ok, recs:', parsed.recommendations?.length)
 
     if (!Array.isArray(parsed.recommendations)) return []
 
     const currentYear = new Date().getFullYear()
-
     const results = parsed.recommendations
       .filter((r): r is Record<string, unknown> => typeof r === 'object' && r !== null)
-      .filter((r) =>
-        typeof r.title === 'string' && r.title.trim() !== '' &&
-        isValidType(r.type) &&
-        typeof r.reason === 'string' && r.reason.trim() !== ''
-      )
+      .filter((r) => {
+        const ok = typeof r.title === 'string' && r.title.trim() !== '' &&
+          isValidType(r.type) &&
+          typeof r.reason === 'string' && r.reason.trim() !== ''
+        if (!ok) console.log('[AI-RECS DEBUG] item failed validation:', JSON.stringify(r))
+        return ok
+      })
       .slice(0, 5)
       .map((r) => ({
         title: (r.title as string).trim(),
         type: r.type as MediaType,
         year: typeof r.year === 'number' && r.year > 1800 && r.year <= currentYear + 5
-          ? r.year
-          : undefined,
+          ? r.year : undefined,
         reason: (r.reason as string).trim(),
         searchQuery: encodeURIComponent((r.title as string).trim()),
       }))
 
+    console.log('[AI-RECS DEBUG] results final:', results.length)
     setCached(cacheKey, results)
     return results
-  } catch {
-    console.error('Failed to parse AI response:', rawText)
+  } catch (err) {
+    console.error('[AI-RECS DEBUG] parse error:', err)
+    console.error('[AI-RECS DEBUG] rawText was:', rawText)
     return []
   }
 }
