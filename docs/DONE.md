@@ -6,6 +6,16 @@ No se edita a mano durante el día. Solo se añade una línea al terminar cada t
 
 ---
 
+## E66 — AiRecommendations: carátula + navegación a ficha (2026-05-31)
+
+Commit: fe15a2d
+- `AiRec` ampliado con `id?`, `posterUrl?`, `mediaUrl?`; `PROMPT_VERSION` v2→v3 (invalida cache vieja).
+- `resolveMediaRefs` resuelve cada rec vía `searchByType(searchQuery, type)` tras parsear Claude; un fallo de búsqueda no tumba el resto (Promise.all + try/catch por item).
+- Handler ComicVine nuevo: `src/lib/api/comicvine.ts` (`searchComics`, server-only, COMICVINE_KEY) + `normalizeComic` en normalizer + `ComicVineIssue`/`ComicVineSearchResponse` en types. `searchByType` case `comic` deja de devolver `[]`.
+- `AiRecommendations.tsx`: href usa `mediaUrl` (fallback `/search?q=`), carátula `<img object-cover>` si hay `posterUrl` (fallback iniciales).
+- `mediaUrl` para `comic` queda undefined a propósito (ficha `/media/comic/{id}` aún no existe — ver E66-COMIC-FICHA en BACKLOG).
+- Verde: tsc 0, vitest 533/533, lint 0 errores.
+
 ## ai-recommendations — Diagnóstico + migración a Anthropic Haiku (2026-05-30)
 
 Commits: 241d4fe, 61288e5, 2293709, cefe91e, [hash-CLAUDE.md], c39879c

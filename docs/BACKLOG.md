@@ -532,20 +532,19 @@ No bloqueantes. Atacar solo después de A–D.
   Hecho cuando: desde `/lists` o `/lists/[id]`, el owner puede borrar su lista con
   confirmación y desaparece del grid.
 
-[ ] E66 — AiRecommendations: carátula + navegación a ficha
-    Contexto: el componente muestra iniciales en vez de póster y el click
-    va a /search en vez de a /media/[type]/[id].
-    Causa: AiRec no incluye posterUrl ni mediaId — el endpoint solo devuelve
-    título, tipo, año, reason y searchQuery.
-    Fix completo:
-    - Ampliar AiRec con posterUrl?: string y mediaId?: string
-    - En getAiRecommendations, tras obtener la respuesta de Claude, enriquecer
-      cada rec buscando su ID y póster en la API externa correspondiente
-      (TMDB para movie/tv, Jikan para anime/manga, IGDB para game, Google Books para book)
-    - En AiRecommendations.tsx: mostrar <Image> del póster y href="/media/[type]/[mediaId]"
-    - Manejo de fallo de enriquecimiento: si no encuentra ID, mantener fallback
-      a /search (comportamiento actual)
-    Subtareas: E66-a (enriquecer endpoint), E66-b (UI componente)
+- [x] **E66** — AiRecommendations: carátula + navegación a ficha ✅ (cerrada el 2026-05-31, fe15a2d)
+    Resuelto server-side: `resolveMediaRefs` enriquece cada rec con `id`/`posterUrl`/`mediaUrl`
+    vía `searchByType`. Handler ComicVine añadido (`comicvine.ts` + `normalizeComic`). Componente
+    muestra póster (`<img object-cover>`) y navega a `/media/[type]/[id]` con fallback a `/search`.
+    533/59 green. Comic resuelve carátula pero su ficha aún no existe → ver E66-COMIC-FICHA.
+
+- [ ] **E66-COMIC-FICHA** — Ficha de cómic vía ComicVine (detail)
+    `getMediaDetail` no soporta `comic` (no está en VALID_TYPES de `/media/[type]/[id]`). Las recs
+    de cómic ya resuelven carátula, pero `mediaUrl` queda undefined (cae a /search) porque la ficha
+    `/media/comic/{id}` daría 404. Fix: `getComicById` en `comicvine.ts` + case `comic` en la página
+    de detalle, luego incluir `comic` en `DETAIL_TYPES` de `recommendations.ts`.
+    Hecho cuando: abrir `/media/comic/{id}` de una rec de cómic renderiza la ficha (no 404) y la rec
+    de cómic enlaza a la ficha en vez de a /search.
 
 ---
 
