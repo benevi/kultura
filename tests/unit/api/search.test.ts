@@ -92,6 +92,27 @@ vi.mock("@/lib/api/rawg", () => ({
   }),
 }));
 
+vi.mock("@/lib/api/comicvine", () => ({
+  searchComics: vi.fn().mockResolvedValue({
+    status_code: 1,
+    error: "OK",
+    number_of_total_results: 1,
+    results: [
+      {
+        id: 42,
+        name: "Year One",
+        issue_number: "1",
+        cover_date: "1987-02-01",
+        store_date: null,
+        deck: "Origin story",
+        description: null,
+        image: { medium_url: "https://example.com/cv.jpg" },
+        volume: { name: "Batman" },
+      },
+    ],
+  }),
+}));
+
 vi.mock("@/lib/api/normalizer", () => ({
   normalizeMovie: vi.fn((raw: { id: number; title: string }) => ({
     id: `movie_${raw.id}`,
@@ -131,6 +152,12 @@ vi.mock("@/lib/api/normalizer", () => ({
     id: `game_${raw.id}`,
     externalId: String(raw.id),
     type: "game",
+    title: raw.name,
+  })),
+  normalizeComic: vi.fn((raw: { id: number; name: string }) => ({
+    id: `comic_${raw.id}`,
+    externalId: String(raw.id),
+    type: "comic",
     title: raw.name,
   })),
 }));
@@ -231,8 +258,11 @@ describe("searchByType", () => {
     expect(results[0].type).toBe("book");
   });
 
-  it("devuelve [] para type='comic' (proxy server-side)", async () => {
-    const results = await searchByType("spiderman", "comic");
-    expect(results).toHaveLength(0);
+  it("type='comic' → delega en searchComics (ComicVine, server-only)", async () => {
+    const { searchComics } = await import("@/lib/api/comicvine");
+    const results = await searchByType("batman", "comic");
+    expect(searchComics).toHaveBeenCalledWith("batman");
+    expect(results).toHaveLength(1);
+    expect(results[0].type).toBe("comic");
   });
 });

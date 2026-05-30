@@ -33,6 +33,12 @@ vi.mock('@/lib/claude/recommendations', () => ({
   getLibraryContext: vi.fn(),
 }))
 
+// resolveMediaRefs llama a searchByType; mockear para que el parser real no
+// dispare APIs externas reales en los tests de abajo.
+vi.mock('@/lib/api/search', () => ({
+  searchByType: vi.fn().mockResolvedValue([]),
+}))
+
 // ── GET /api/ai-recommendations ───────────────────────────────────────────────
 
 describe('GET /api/ai-recommendations', () => {

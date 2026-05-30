@@ -9,8 +9,10 @@ import Anthropic from '@anthropic-ai/sdk'
 import { createClient } from '@/lib/supabase/server'
 import type { SupabaseClient } from '@supabase/supabase-js'
 import type { MediaType } from '@/types/media'
+import { searchByType } from '@/lib/api/search'
 
-const PROMPT_VERSION = 'v2'
+// v3: AiRec resuelve id/posterUrl/mediaUrl server-side (E66) — invalida cache v2.
+const PROMPT_VERSION = 'v3'
 
 export interface AiRec {
   title: string
@@ -18,6 +20,12 @@ export interface AiRec {
   year?: number
   reason: string
   searchQuery: string
+  /** id normalizado del item resuelto ("{type}_{externalId}"), si searchByType encontró match. */
+  id?: string
+  /** carátula del item resuelto. */
+  posterUrl?: string
+  /** ruta a la ficha del item ("/media/{type}/{externalId}"), si se resolvió. */
+  mediaUrl?: string
 }
 
 interface LibraryItem {
@@ -154,6 +162,39 @@ Responde ÚNICAMENTE con JSON válido. Sin markdown, sin texto adicional. Ejempl
 }`
 }
 
+// Tipos cuya ficha (/media/{type}/{id}) puede renderizarse hoy. Comic resuelve
+// carátula vía ComicVine pero getMediaDetail aún no soporta comic (ver BACKLOG
+// E66-COMIC-FICHA), así que no enlazamos su ficha: el componente cae a /search.
+const DETAIL_TYPES: MediaType[] = ['movie', 'tv', 'anime', 'book', 'manga', 'game']
+
+/**
+ * Resuelve id/posterUrl/mediaUrl de cada rec llamando a searchByType.
+ * Si una búsqueda falla o no devuelve resultados, los campos quedan undefined
+ * y el componente cae al fallback /search. Un fallo no tumba el resto.
+ */
+async function resolveMediaRefs(recs: AiRec[]): Promise<AiRec[]> {
+  return Promise.all(
+    recs.map(async (rec) => {
+      try {
+        const results = await searchByType(rec.searchQuery, rec.type)
+        const top = results[0]
+        if (!top) return rec
+        return {
+          ...rec,
+          id: top.id,
+          posterUrl: top.poster,
+          mediaUrl: DETAIL_TYPES.includes(rec.type)
+            ? `/media/${rec.type}/${top.id}`
+            : undefined,
+        }
+      } catch (err) {
+        console.error(`resolveMediaRefs failed for "${rec.searchQuery}" (${rec.type}):`, err)
+        return rec
+      }
+    })
+  )
+}
+
 /**
  * Llama al modelo de IA y devuelve recomendaciones parseadas.
  * Devuelve [] si la respuesta es inválida o la API falla.
@@ -214,7 +255,7 @@ export async function getAiRecommendations(
     if (!Array.isArray(parsed.recommendations)) return []
 
     const currentYear = new Date().getFullYear()
-    const results = parsed.recommendations
+    const recs: AiRec[] = parsed.recommendations
       .filter((r): r is Record<string, unknown> => typeof r === 'object' && r !== null)
       .filter((r) => {
         return typeof r.title === 'string' && r.title.trim() !== '' &&
@@ -228,8 +269,14 @@ export async function getAiRecommendations(
         year: typeof r.year === 'number' && r.year > 1800 && r.year <= currentYear + 5
           ? r.year : undefined,
         reason: (r.reason as string).trim(),
-        searchQuery: encodeURIComponent((r.title as string).trim()),
+        // searchQuery sin codificar: se usa tal cual para la búsqueda real, y el
+        // componente lo codifica al construir el href de fallback a /search.
+        searchQuery: typeof r.searchQuery === 'string' && (r.searchQuery as string).trim() !== ''
+          ? (r.searchQuery as string).trim()
+          : (r.title as string).trim(),
       }))
+
+    const results = await resolveMediaRefs(recs)
 
     setCached(cacheKey, results)
     return results

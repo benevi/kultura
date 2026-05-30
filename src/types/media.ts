@@ -82,3 +82,28 @@ export interface MediaItem {
    */
   metadata?: Record<string, unknown>;
 }
+
+// ── ComicVine raw types (cómics, server-only) ─────────────────────────────────
+
+export interface ComicVineIssue {
+  id: number;
+  name: string | null;
+  issue_number: string | null;
+  cover_date: string | null;
+  store_date: string | null;
+  deck: string | null;
+  description: string | null;
+  image: {
+    medium_url?: string | null;
+    small_url?: string | null;
+    original_url?: string | null;
+  } | null;
+  volume: { name: string } | null;
+}
+
+export interface ComicVineSearchResponse {
+  status_code: number;
+  error: string;
+  number_of_total_results: number;
+  results: ComicVineIssue[];
+}
