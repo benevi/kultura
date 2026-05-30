@@ -161,7 +161,8 @@ Responde ÚNICAMENTE con JSON válido. Sin markdown, sin texto adicional. Ejempl
 export async function getAiRecommendations(
   userId: string,
   topGenres: string[],
-  locale: string = 'es'
+  locale: string = 'es',
+  supabaseClient?: SupabaseClient
 ): Promise<AiRec[]> {
   const cacheKey = `${userId}:${locale}:${PROMPT_VERSION}`
 
@@ -169,7 +170,7 @@ export async function getAiRecommendations(
   const cached = getCached(cacheKey)
   if (cached) return cached
 
-  const items = await getLibraryContext(userId)
+  const items = await getLibraryContext(userId, supabaseClient)
 
   // Mínimo 3 items para contexto útil
   if (items.length < 3) return []

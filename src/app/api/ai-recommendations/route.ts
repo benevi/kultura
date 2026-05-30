@@ -35,7 +35,7 @@ export async function GET(): Promise<NextResponse> {
   const stats = await getUserStats(user.id)
   const topGenres = stats.topGenres.map((g) => g.genre)
 
-  const recommendations = await getAiRecommendations(user.id, topGenres, locale)
+  const recommendations = await getAiRecommendations(user.id, topGenres, locale, supabase)
 
   return NextResponse.json({ recommendations })
 }
