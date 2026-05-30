@@ -1,11 +1,11 @@
 // ============================================================
-// KULTURA — Claude AI Recommendations
+// KULTURA — AI Recommendations
 // Genera recomendaciones personalizadas usando la biblioteca
 // del usuario y sus géneros favoritos.
-// Solo para uso server-side — ANTHROPIC_API_KEY nunca al cliente.
+// Solo para uso server-side — GEMINI_API_KEY nunca al cliente.
 // ============================================================
 
-import Anthropic from '@anthropic-ai/sdk'
+import { GoogleGenAI } from '@google/genai'
 import { createClient } from '@/lib/supabase/server'
 import type { SupabaseClient } from '@supabase/supabase-js'
 import type { MediaType } from '@/types/media'
@@ -155,7 +155,7 @@ Responde ÚNICAMENTE con JSON válido. Sin markdown, sin texto adicional. Ejempl
 }
 
 /**
- * Llama a Claude y devuelve recomendaciones parseadas.
+ * Llama al modelo de IA y devuelve recomendaciones parseadas.
  * Devuelve [] si la respuesta es inválida o la API falla.
  */
 export async function getAiRecommendations(
@@ -165,7 +165,7 @@ export async function getAiRecommendations(
 ): Promise<AiRec[]> {
   const cacheKey = `${userId}:${locale}:${PROMPT_VERSION}`
 
-  // Cache hit — evitar llamada a Anthropic si los datos son recientes
+  // Cache hit — evitar llamada a Gemini si los datos son recientes
   const cached = getCached(cacheKey)
   if (cached) return cached
 
@@ -174,35 +174,35 @@ export async function getAiRecommendations(
   // Mínimo 3 items para contexto útil
   if (items.length < 3) return []
 
-  const apiKey = process.env.ANTHROPIC_API_KEY
+  const apiKey = process.env.GEMINI_API_KEY
   if (!apiKey) {
-    console.error('ANTHROPIC_API_KEY not set')
+    console.error('GEMINI_API_KEY not set')
     return []
   }
 
-  const client = new Anthropic({ apiKey })
+  const client = new GoogleGenAI({ apiKey })
 
   let rawText: string
   try {
-    const message = await client.messages.create({
-      model: 'claude-sonnet-4-6',
-      max_tokens: 1024,
-      system: 'Eres un motor de recomendaciones de contenido cultural. Respondes ÚNICAMENTE con JSON válido, sin explicaciones ni texto adicional.',
-      messages: [
-        { role: 'user', content: buildPrompt(items, topGenres, locale) },
-      ],
+    const response = await client.models.generateContent({
+      model: 'gemini-2.5-flash',
+      contents: buildPrompt(items, topGenres, locale),
+      config: {
+        maxOutputTokens: 1024,
+        systemInstruction: 'Eres un motor de recomendaciones de contenido cultural. Respondes ÚNICAMENTE con JSON válido, sin explicaciones ni texto adicional.',
+      },
     })
 
-    const block = message.content[0]
-    if (block.type !== 'text') return []
-    rawText = block.text
+    const text = response.text
+    if (!text) return []
+    rawText = text
   } catch (err) {
-    console.error('Claude API error:', err)
+    console.error('Gemini API error:', err)
     return []
   }
 
   // Parsear y validar JSON
-  // Nota: el regex extrae el primer bloque {...}. Si Claude responde con un array
+  // Nota: el regex extrae el primer bloque {...}. Si el modelo responde con un array
   // raíz ([{...}]) en lugar de un objeto, jsonMatch es null y se devuelve [].
   // El schema del prompt pide siempre un objeto, así que es poco probable.
   try {
@@ -238,7 +238,7 @@ export async function getAiRecommendations(
     setCached(cacheKey, results)
     return results
   } catch {
-    console.error('Failed to parse Claude response:', rawText)
+    console.error('Failed to parse AI response:', rawText)
     return []
   }
 }
