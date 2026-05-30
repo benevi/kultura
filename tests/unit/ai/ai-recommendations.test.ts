@@ -70,23 +70,23 @@ describe('GET /api/ai-recommendations', () => {
     expect(body.recommendations).toHaveLength(0)
   })
 
-  it('returns 200 with empty array when Gemini API fails', async () => {
+  it('returns 200 with empty array when Anthropic API fails', async () => {
     mockGetUser.mockResolvedValue({ data: { user: AUTH_USER }, error: null })
     mockGetAiRecommendations.mockResolvedValue([])
 
     const { GET } = await import('@/app/api/ai-recommendations/route')
     const res = await GET()
-    // Route siempre 200 — el fallo de Gemini es silencioso para el cliente
+    // Route siempre 200 — el fallo de Anthropic es silencioso para el cliente
     expect(res.status).toBe(200)
     const body = await res.json()
     expect(body.recommendations).toHaveLength(0)
   })
 })
 
-// ── Parser de respuesta del modelo ────────────────────────────────────────────
+// ── Parser de respuesta Claude ────────────────────────────────────────────────
 
 // Para testear el parser real necesitamos desactivar el mock del módulo
-// y mockear el SDK de Gemini directamente.
+// y mockear el SDK de Anthropic directamente.
 
 describe('getAiRecommendations — parser y validación', () => {
   beforeEach(() => vi.clearAllMocks())
@@ -99,11 +99,13 @@ describe('getAiRecommendations — parser y validación', () => {
     status: 'completed',
   }))
 
-  function makeGeminiMock(responseText: string) {
+  function makeAnthropicMock(responseText: string) {
     return {
-      GoogleGenAI: vi.fn().mockImplementation(() => ({
-        models: {
-          generateContent: vi.fn().mockResolvedValue({ text: responseText }),
+      default: vi.fn().mockImplementation(() => ({
+        messages: {
+          create: vi.fn().mockResolvedValue({
+            content: [{ type: 'text', text: responseText }],
+          }),
         },
       })),
     }
@@ -130,8 +132,8 @@ describe('getAiRecommendations — parser y validación', () => {
     vi.doUnmock('@/lib/supabase/server')
   })
 
-  it('filters recommendations with invalid type from the model', async () => {
-    vi.doMock('@google/genai', () => makeGeminiMock(JSON.stringify({
+  it('filters recommendations with invalid type from Claude', async () => {
+    vi.doMock('@anthropic-ai/sdk', () => makeAnthropicMock(JSON.stringify({
       recommendations: [
         { title: 'Valid Movie', type: 'movie', year: 2020, reason: 'Great film' },
         { title: 'Podcast Thing', type: 'podcast', year: 2021, reason: 'test' },
@@ -152,20 +154,20 @@ describe('getAiRecommendations — parser y validación', () => {
       }),
     }))
 
-    vi.stubEnv('GEMINI_API_KEY', 'test-key')
+    vi.stubEnv('ANTHROPIC_API_KEY', 'test-key')
 
     const { getAiRecommendations } = await import('@/lib/claude/recommendations')
     const result = await getAiRecommendations('user-001', ['Drama'])
     // Solo 'movie' pasa el filtro — 'podcast' y 'music' son inválidos
     expect(result.every((r) => ['movie', 'tv', 'anime', 'book', 'comic', 'manga', 'game'].includes(r.type))).toBe(true)
 
-    vi.doUnmock('@google/genai')
+    vi.doUnmock('@anthropic-ai/sdk')
     vi.doUnmock('@/lib/supabase/server')
     vi.unstubAllEnvs()
   })
 
   it('filters recommendations with empty title or reason', async () => {
-    vi.doMock('@google/genai', () => makeGeminiMock(JSON.stringify({
+    vi.doMock('@anthropic-ai/sdk', () => makeAnthropicMock(JSON.stringify({
       recommendations: [
         { title: 'Valid Movie', type: 'movie', year: 2020, reason: 'Great film' },
         { title: '', type: 'movie', year: 2020, reason: 'Has empty title' },
@@ -186,20 +188,20 @@ describe('getAiRecommendations — parser y validación', () => {
       }),
     }))
 
-    vi.stubEnv('GEMINI_API_KEY', 'test-key')
+    vi.stubEnv('ANTHROPIC_API_KEY', 'test-key')
 
     const { getAiRecommendations } = await import('@/lib/claude/recommendations')
     const result = await getAiRecommendations('user-001', ['Drama'])
     // Solo el item con title y reason no vacíos pasa
     expect(result.every((r) => r.title.trim() !== '' && r.reason.trim() !== '')).toBe(true)
 
-    vi.doUnmock('@google/genai')
+    vi.doUnmock('@anthropic-ai/sdk')
     vi.doUnmock('@/lib/supabase/server')
     vi.unstubAllEnvs()
   })
 
-  it('returns [] if the model returns malformed JSON', async () => {
-    vi.doMock('@google/genai', () => makeGeminiMock('Aquí tienes mis recomendaciones: no es JSON'))
+  it('returns [] if Claude returns malformed JSON', async () => {
+    vi.doMock('@anthropic-ai/sdk', () => makeAnthropicMock('Aquí tienes mis recomendaciones: no es JSON'))
 
     vi.doMock('@/lib/supabase/server', () => ({
       createClient: () => ({
@@ -214,19 +216,19 @@ describe('getAiRecommendations — parser y validación', () => {
       }),
     }))
 
-    vi.stubEnv('GEMINI_API_KEY', 'test-key')
+    vi.stubEnv('ANTHROPIC_API_KEY', 'test-key')
 
     const { getAiRecommendations } = await import('@/lib/claude/recommendations')
     const result = await getAiRecommendations('user-001', ['Drama'])
     expect(result).toEqual([])
 
-    vi.doUnmock('@google/genai')
+    vi.doUnmock('@anthropic-ai/sdk')
     vi.doUnmock('@/lib/supabase/server')
     vi.unstubAllEnvs()
   })
 
   it('clamps year to undefined if out of valid range', async () => {
-    vi.doMock('@google/genai', () => makeGeminiMock(JSON.stringify({
+    vi.doMock('@anthropic-ai/sdk', () => makeAnthropicMock(JSON.stringify({
       recommendations: [
         { title: 'Ancient Recs', type: 'movie', year: 1700, reason: 'Too old year' },
         { title: 'String Year', type: 'book', year: 'época medieval', reason: 'Non-numeric year' },
@@ -247,7 +249,7 @@ describe('getAiRecommendations — parser y validación', () => {
       }),
     }))
 
-    vi.stubEnv('GEMINI_API_KEY', 'test-key')
+    vi.stubEnv('ANTHROPIC_API_KEY', 'test-key')
 
     const { getAiRecommendations } = await import('@/lib/claude/recommendations')
     const result = await getAiRecommendations('user-001', ['Drama'])
@@ -259,7 +261,7 @@ describe('getAiRecommendations — parser y validación', () => {
       }
     })
 
-    vi.doUnmock('@google/genai')
+    vi.doUnmock('@anthropic-ai/sdk')
     vi.doUnmock('@/lib/supabase/server')
     vi.unstubAllEnvs()
   })

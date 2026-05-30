@@ -1,7 +1,7 @@
 // ============================================================
 // KULTURA — Route Handler: /api/ai-recommendations
 // GET: genera recomendaciones IA personalizadas.
-// GEMINI_API_KEY solo se usa aquí — nunca en el cliente.
+// ANTHROPIC_API_KEY solo se usa aquí — nunca en el cliente.
 // ============================================================
 
 import { NextResponse } from 'next/server'
