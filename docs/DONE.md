@@ -6,6 +6,16 @@ No se edita a mano durante el día. Solo se añade una línea al terminar cada t
 
 ---
 
+## ai-recommendations — Diagnóstico + migración a Anthropic Haiku (2026-05-30)
+
+Commits: 241d4fe, 61288e5, 2293709, cefe91e, [hash-CLAUDE.md], c39879c
+- Diagnóstico: endpoint funcionaba, problema era pérdida de contexto auth Supabase en prod
+- Fix: pasar supabaseClient desde route.ts a getAiRecommendations → getLibraryContext
+- Migración fallida a Gemini (rate limits, truncado de respuesta) → revertido a Anthropic
+- Modelo: claude-haiku-4-5 (económico, fiable)
+- E66 registrada: carátula + navegación a ficha (pendiente)
+- Verificado en local y producción: 5 recomendaciones reales generadas ✅
+
 2026-05-29 | E47 | b64680c, 7e77796, 6d8d8d1, 5bf789b, 049c061, 540d0e7, bec8bc4 | Listas: añadir/quitar título (alcance ampliado vs BACKLOG original). Backend (POST/DELETE /api/lists/[id]) ya completo desde antes. Frontend nuevo: GET /api/lists con filtro `mediaType`, componente `AddToListButton` con modal y filtrado por `media_type` en cliente, integrado en `MediaDetail`, CTA en estado vacío de `ListDetail`. Quitar título ya existía vía botón ✕ en `ListDetail` y se mantuvo verificado. Verificado visualmente por el usuario (escenarios 1/2/3, Regla 11). 530/59 tests verdes. Registro previo de hallazgos en 59701e7 (E61/E62/E63 abiertos por Fase 0 de E47). Alcance ampliado: BACKLOG decía "añadir títulos"; se cubrió añadir + quitar.
 
 ---
