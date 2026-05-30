@@ -25,10 +25,29 @@ E47 → ✅ CERRADO (Listas: añadir/quitar título, alcance ampliado, 530/59 gr
 
 ## Tarea activa
 
-**SIN TAREA ACTIVA** — E47 cerrado formalmente el 2026-05-29. Pendiente confirmación del usuario para la siguiente tarea.
+**E-AI-GEMINI** — Migrar recomendaciones IA de Anthropic (Claude) a Google Gemini (free tier).
 
-Opciones sugeridas:
+Motivo: coste. Anthropic de pago; Gemini free tier suficiente para el motor de recomendaciones.
 
-- B3.5f-3 nivel completo: page transitions (template.tsx), stagger en grids, Framer Motion
-- Próxima pantalla pendiente de migración al DS
-- Bloque C / D de BACKLOG
+### Qué cambia
+
+- `package.json`: quitar `@anthropic-ai/sdk`, añadir `@google/genai`.
+- `src/lib/claude/recommendations.ts`: import, init de cliente y llamada (`messages.create` → `models.generateContent`), extracción de texto de respuesta, comentario de cabecera (Claude→AI, ANTHROPIC→GEMINI). Resto intacto (caché, tipos, buildPrompt, getLibraryContext, validación JSON, exports, firma pública).
+- `src/app/api/ai-recommendations/route.ts`: comentario de cabecera (ANTHROPIC→GEMINI).
+- Tests `tests/unit/claude/recommendations.test.ts` y `tests/unit/ai/ai-recommendations.test.ts`: re-mockear `@google/genai` con forma de respuesta Gemini (`messages.create`→`models.generateContent`, `content[0].text`→`response.text`), env `ANTHROPIC_API_KEY`→`GEMINI_API_KEY`.
+- `.env.local`: añadir `GEMINI_API_KEY=` (vacío, lo rellena el usuario). No al repo.
+- `CLAUDE.md`: Stack, tabla APIs, Env vars, Reglas 1 y 1b → Gemini.
+
+Modelo objetivo: `gemini-2.5-flash`. SDK: `@google/genai`.
+
+### Cómo sé que funciona
+
+- `npx tsc --noEmit` → EXIT 0
+- `npm run lint` → 0 errores
+- `npx vitest run` → 530 passed / 59 files
+
+### Archivos que toco
+package.json · package-lock.json · src/lib/claude/recommendations.ts · src/app/api/ai-recommendations/route.ts · tests/unit/claude/recommendations.test.ts · tests/unit/ai/ai-recommendations.test.ts · CLAUDE.md · .env.local (no-git)
+
+### Cuándo paro
+Tras los 3 checks verdes y el commit. No empezar siguiente tarea sin confirmación.

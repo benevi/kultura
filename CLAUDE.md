@@ -37,7 +37,7 @@ Web app de descubrimiento cultural (películas, series, anime, libros, cómics, 
 
 ## Stack
 
-Next.js 14 App Router · React 18 · TypeScript strict · Tailwind CSS 3 · Supabase (PG + Auth + RLS + Realtime) · Anthropic SDK (Claude `claude-sonnet-4-6`) · next-intl 4 · Vitest 4 · Playwright 1 · Vercel · Node ≥ 20
+Next.js 14 App Router · React 18 · TypeScript strict · Tailwind CSS 3 · Supabase (PG + Auth + RLS + Realtime) · Google Gemini SDK (`@google/genai`, modelo `gemini-2.5-flash`, free tier) · next-intl 4 · Vitest 4 · Playwright 1 · Vercel · Node ≥ 20
 
 ## APIs externas
 | Tipo | API | Base URL | Auth |
@@ -49,7 +49,7 @@ Next.js 14 App Router · React 18 · TypeScript strict · Tailwind CSS 3 · Supa
 | Comics | ComicVine | comicvine.gamespot.com/api | `?api_key=COMICVINE_KEY` (clave presente, sin handler — E6) |
 | Manga | MangaDex | api.mangadex.org | — |
 | Games | RAWG | api.rawg.io/api | `?key=RAWG_API_KEY` |
-| AI | Claude | api.anthropic.com/v1 | Bearer `ANTHROPIC_API_KEY` |
+| AI | Google Gemini (`gemini-2.5-flash`) | generativelanguage.googleapis.com | `GEMINI_API_KEY` |
 
 **Idioma:** TMDB→`language=es-ES` fallback `en-US` · Books→`langRestrict=es` · resto inglés.
 
@@ -69,7 +69,7 @@ TMDB_API_KEY=               # server-only
 RAWG_API_KEY=               # server-only
 GOOGLE_BOOKS_KEY=           # server-only
 COMICVINE_KEY=              # server-only — presente, sin uso en código actual (E6)
-ANTHROPIC_API_KEY=          # server-only
+GEMINI_API_KEY=             # server-only — Google Gemini (recomendaciones IA, free tier)
 NEXT_PUBLIC_SUPABASE_URL=
 NEXT_PUBLIC_SUPABASE_ANON_KEY=
 SUPABASE_SERVICE_ROLE_KEY=  # server-only
@@ -305,8 +305,8 @@ create table group_posts (                -- feed de un grupo
 
 ## Reglas técnicas innegociables
 
-1. **`COMICVINE_KEY`, `ANTHROPIC_API_KEY` y `SUPABASE_SERVICE_ROLE_KEY`** → server-only. Nunca en `NEXT_PUBLIC_*`. Acceso solo vía Route Handlers.
-1b. **Todo nuevo endpoint POST/PATCH/DELETE debe aplicar `checkRateLimit` antes de cualquier operación de BD o llamada a API externa.** Para endpoints que cuestan dinero (Anthropic, otros LLM), límite estricto (≤10 req/min por usuario). Usar el sistema en `src/lib/rate-limit.ts`: añadir preset a `LIMITS`, aplicar patrón `const rl = checkRateLimit(key, LIMITS.x); if (!rl.allowed) return 429`.
+1. **`COMICVINE_KEY`, `GEMINI_API_KEY` y `SUPABASE_SERVICE_ROLE_KEY`** → server-only. Nunca en `NEXT_PUBLIC_*`. Acceso solo vía Route Handlers.
+1b. **Todo nuevo endpoint POST/PATCH/DELETE debe aplicar `checkRateLimit` antes de cualquier operación de BD o llamada a API externa.** Para endpoints que llaman a un LLM (Gemini, otros), límite estricto (≤10 req/min por usuario). Usar el sistema en `src/lib/rate-limit.ts`: añadir preset a `LIMITS`, aplicar patrón `const rl = checkRateLimit(key, LIMITS.x); if (!rl.allowed) return 429`.
 2. **Toda respuesta de API externa pasa por `normalizer`** antes de llegar a componentes. Componentes solo conocen `MediaItem`.
 3. **Cache de títulos en tabla `media`**: upsert antes de insertar en `user_media`. No llamar a APIs externas para títulos ya guardados.
 4. **RLS activado en todas las tablas.** Cualquier tabla nueva se crea con policies en la misma migración.

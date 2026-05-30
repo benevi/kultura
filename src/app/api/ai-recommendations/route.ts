@@ -1,7 +1,7 @@
 // ============================================================
 // KULTURA — Route Handler: /api/ai-recommendations
 // GET: genera recomendaciones IA personalizadas.
-// ANTHROPIC_API_KEY solo se usa aquí — nunca en el cliente.
+// GEMINI_API_KEY solo se usa aquí — nunca en el cliente.
 // ============================================================
 
 import { NextResponse } from 'next/server'
@@ -11,7 +11,7 @@ import { getAiRecommendations } from '@/lib/claude/recommendations'
 import { getUserStats } from '@/lib/library/stats'
 import { checkRateLimit } from '@/lib/rate-limit'
 
-// 5 req/min — Anthropic calls are expensive
+// 5 req/min — AI calls are expensive
 const AI_LIMIT = { windowMs: 60_000, max: 5 }
 
 /** GET /api/ai-recommendations */

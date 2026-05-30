@@ -9,8 +9,8 @@ vi.mock('@/lib/supabase/server', () => ({
   createClient: vi.fn(),
 }))
 
-vi.mock('@anthropic-ai/sdk', () => ({
-  default: vi.fn(),
+vi.mock('@google/genai', () => ({
+  GoogleGenAI: vi.fn(),
 }))
 
 // ── buildPrompt ───────────────────────────────────────────────────────────────
@@ -79,52 +79,48 @@ describe('getAiRecommendations — cache key includes locale and version', () =>
     }
   }
 
-  function makeAnthropicMock(createFn: ReturnType<typeof vi.fn>) {
+  function makeGeminiMock(generateFn: ReturnType<typeof vi.fn>) {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const Ctor = vi.fn().mockImplementation(function(this: any) {
-      this.messages = { create: createFn }
+      this.models = { generateContent: generateFn }
     })
-    return { default: Ctor }
+    return { GoogleGenAI: Ctor }
   }
 
   beforeEach(() => {
     vi.resetModules()
-    vi.stubEnv('ANTHROPIC_API_KEY', 'test-key')
+    vi.stubEnv('GEMINI_API_KEY', 'test-key')
   })
 
-  it('different locales produce different cache keys (en → calls Anthropic again)', async () => {
-    const createMock = vi.fn().mockResolvedValue({
-      content: [{ type: 'text', text: VALID_RESPONSE }],
-    })
+  it('different locales produce different cache keys (en → calls Gemini again)', async () => {
+    const generateMock = vi.fn().mockResolvedValue({ text: VALID_RESPONSE })
 
-    vi.doMock('@anthropic-ai/sdk', () => makeAnthropicMock(createMock))
+    vi.doMock('@google/genai', () => makeGeminiMock(generateMock))
     vi.doMock('@/lib/supabase/server', () => makeSupabaseMock())
 
     const { getAiRecommendations } = await import('@/lib/claude/recommendations')
 
     await getAiRecommendations('u1', [], 'es')
-    expect(createMock).toHaveBeenCalledTimes(1)
+    expect(generateMock).toHaveBeenCalledTimes(1)
 
     await getAiRecommendations('u1', [], 'en')
-    // Different locale = different cache key = new Anthropic call
-    expect(createMock).toHaveBeenCalledTimes(2)
+    // Different locale = different cache key = new Gemini call
+    expect(generateMock).toHaveBeenCalledTimes(2)
   })
 
-  it('same locale hits cache on second call (no extra Anthropic call)', async () => {
-    const createMock = vi.fn().mockResolvedValue({
-      content: [{ type: 'text', text: VALID_RESPONSE }],
-    })
+  it('same locale hits cache on second call (no extra Gemini call)', async () => {
+    const generateMock = vi.fn().mockResolvedValue({ text: VALID_RESPONSE })
 
-    vi.doMock('@anthropic-ai/sdk', () => makeAnthropicMock(createMock))
+    vi.doMock('@google/genai', () => makeGeminiMock(generateMock))
     vi.doMock('@/lib/supabase/server', () => makeSupabaseMock())
 
     const { getAiRecommendations } = await import('@/lib/claude/recommendations')
 
     await getAiRecommendations('u2', [], 'es')
-    expect(createMock).toHaveBeenCalledTimes(1)
+    expect(generateMock).toHaveBeenCalledTimes(1)
 
     await getAiRecommendations('u2', [], 'es')
-    // Same key → cache hit → no second Anthropic call
-    expect(createMock).toHaveBeenCalledTimes(1)
+    // Same key → cache hit → no second Gemini call
+    expect(generateMock).toHaveBeenCalledTimes(1)
   })
 })
