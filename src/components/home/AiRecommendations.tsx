@@ -89,13 +89,23 @@ export function AiRecommendations() {
           {recs.map((rec, i) => (
             <Link
               key={i}
-              href={`/search?q=${rec.searchQuery}`}
+              href={rec.mediaUrl ?? `/search?q=${encodeURIComponent(rec.searchQuery)}`}
               className="bg-surface-default border border-surface-border rounded-card overflow-hidden hover:border-accent-positive/50 transition-colors relative group"
             >
               <div className="aspect-[2/3] bg-surface-elevated flex items-center justify-center relative">
-                <span className="font-display text-3xl font-bold text-text-tertiary select-none">
-                  {rec.title.slice(0, 2).toUpperCase()}
-                </span>
+                {rec.posterUrl ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    src={rec.posterUrl}
+                    alt={rec.title}
+                    loading="lazy"
+                    className="absolute inset-0 w-full h-full object-cover"
+                  />
+                ) : (
+                  <span className="font-display text-3xl font-bold text-text-tertiary select-none">
+                    {rec.title.slice(0, 2).toUpperCase()}
+                  </span>
+                )}
                 <span
                   className="absolute top-1.5 right-1.5 font-body text-[10px] px-1.5 py-0.5 rounded text-text-secondary"
                   style={{ background: 'rgba(10,12,14,0.85)' }}

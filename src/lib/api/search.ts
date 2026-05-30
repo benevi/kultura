@@ -10,6 +10,7 @@ import { searchAnime, searchManga } from "./jikan";
 import type { JikanAnime, JikanManga } from "./jikan";
 import { searchBooks } from "./googlebooks";
 import { searchGames } from "./rawg";
+import { searchComics } from "./comicvine";
 import {
   normalizeMovie,
   normalizeTV,
@@ -17,6 +18,7 @@ import {
   normalizeMangaJikan,
   normalizeBookGoogle,
   normalizeGame,
+  normalizeComic,
 } from "./normalizer";
 import type { TmdbMovieDetail, TmdbTVDetail } from "./tmdb";
 import type { JikanAnimeDetail, JikanMangaDetail } from "./jikan";
@@ -107,8 +109,11 @@ export async function searchByType(
         r.results.map((raw) => normalizeGame(raw))
       );
     case "comic":
-      // Comics use server-side ComicVine proxy — not available client-side
-      return [];
+      // ComicVine es server-only (COMICVINE_KEY). searchByType solo se llama
+      // desde código server-side (recomendaciones IA, route handlers).
+      return searchComics(query).then((r) =>
+        (r.results ?? []).map((raw) => normalizeComic(raw))
+      );
     default:
       return [];
   }

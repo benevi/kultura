@@ -19,6 +19,7 @@ import type { GoogleBooksVolume } from "./googlebooks";
 import type { OpenLibraryDoc } from "./openlibrary";
 import { openLibraryCover } from "./openlibrary";
 import type { RawgGame } from "./rawg";
+import type { ComicVineIssue } from "@/types/media";
 
 // ── Provider helper ───────────────────────────────────────────────────────────
 
@@ -304,5 +305,32 @@ export function normalizeGame(raw: RawgGame): MediaItem {
       developers,
       publishers,
     },
+  };
+}
+
+export function normalizeComic(raw: ComicVineIssue): MediaItem {
+  const externalId = String(raw.id);
+  const volume = raw.volume?.name ?? null;
+  const issueLabel = raw.issue_number ? `#${raw.issue_number}` : null;
+  const title =
+    [volume, issueLabel, raw.name].filter(Boolean).join(" ") ||
+    raw.name ||
+    `Comic ${externalId}`;
+  const cover =
+    raw.image?.medium_url ??
+    raw.image?.original_url ??
+    raw.image?.small_url ??
+    undefined;
+
+  return {
+    id: `comic_${externalId}`,
+    externalId,
+    type: "comic",
+    title,
+    poster: cover ?? undefined,
+    year: extractYear(raw.cover_date ?? raw.store_date),
+    synopsis: raw.deck || undefined,
+    genres: [],
+    ratingSource: "ComicVine",
   };
 }
