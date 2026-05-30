@@ -4,6 +4,8 @@
 // ============================================================
 
 import type { ComicVineIssue, ComicVineSearchResponse } from "@/types/media";
+import type { MediaItem } from "@/types/media";
+import { normalizeComic } from "@/lib/api/normalizer";
 
 /** Respuesta del endpoint de detalle /issue/4000-{id}/ (un único result objeto). */
 interface ComicVineIssueResponse {
@@ -64,4 +66,19 @@ export async function getComic(externalId: string): Promise<ComicVineIssue> {
   );
   if (!resp.results) throw new Error(`ComicVine issue ${externalId} sin results`);
   return resp.results;
+}
+
+/**
+ * Issues recientes ordenados por fecha de portada descendente.
+ * Paginado vía offset (page-1)*20. Normaliza a MediaItem.
+ */
+export async function getRecentComics(page: number = 1): Promise<MediaItem[]> {
+  const resp = await comicVineFetch<ComicVineSearchResponse>("/issues/", {
+    sort: "cover_date:desc",
+    limit: "20",
+    offset: String((page - 1) * 20),
+    field_list: "id,name,issue_number,cover_date,store_date,deck,image,volume",
+  });
+  if (!resp.results) return [];
+  return resp.results.map(normalizeComic);
 }

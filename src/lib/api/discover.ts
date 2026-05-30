@@ -7,6 +7,7 @@ import { getPopularMovies, getPopularTV } from "@/lib/api/tmdb";
 import { getPopularAnime, getPopularManga, JikanError } from "@/lib/api/jikan";
 import { searchBooks } from "@/lib/api/googlebooks";
 import { getPopularGames } from "@/lib/api/rawg";
+import { getRecentComics } from "@/lib/api/comicvine";
 import {
   normalizeMovie,
   normalizeTV,
@@ -75,6 +76,10 @@ export async function fetchDiscoverData(
           res.totalItems && res.totalItems > 0
             ? Math.min(Math.ceil(res.totalItems / 20), 50)
             : 1;
+        break;
+      }
+      case "comic": {
+        items = await getRecentComics(page);
         break;
       }
       case "game": {
