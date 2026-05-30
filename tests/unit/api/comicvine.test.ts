@@ -3,7 +3,7 @@
 // ============================================================
 
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { getComic } from "@/lib/api/comicvine";
+import { getComic, getRecentComics } from "@/lib/api/comicvine";
 
 // Issue de detalle tal como lo devuelve ComicVine en `results` (objeto, no array).
 const ISSUE = {
@@ -80,5 +80,55 @@ describe("getComic", () => {
     );
 
     await expect(getComic("999")).rejects.toThrow(/ComicVine 404/);
+  });
+});
+
+describe("getRecentComics", () => {
+  beforeEach(() => {
+    process.env.COMICVINE_KEY = "test-key";
+  });
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
+    vi.clearAllMocks();
+  });
+
+  it("happy path: pide /issues/ ordenado por fecha y normaliza a MediaItem", async () => {
+    const fetchMock = vi.fn().mockResolvedValue(
+      mockResponse({
+        status_code: 1,
+        error: "OK",
+        number_of_total_results: 1,
+        results: [ISSUE],
+      })
+    );
+    vi.stubGlobal("fetch", fetchMock);
+
+    const result = await getRecentComics(2);
+
+    expect(result).toHaveLength(1);
+    expect(result[0]).toMatchObject({
+      id: "comic_12345",
+      externalId: "12345",
+      type: "comic",
+      ratingSource: "ComicVine",
+    });
+
+    const calledUrl = fetchMock.mock.calls[0][0] as string;
+    expect(calledUrl).toContain("/issues/");
+    expect(calledUrl).toContain("sort=cover_date%3Adesc");
+    expect(calledUrl).toContain("limit=20");
+    expect(calledUrl).toContain("offset=20");
+  });
+
+  it("devuelve [] si results es null", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue(
+        mockResponse({ status_code: 1, error: "OK", results: null })
+      )
+    );
+
+    await expect(getRecentComics()).resolves.toEqual([]);
   });
 });
