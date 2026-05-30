@@ -93,6 +93,17 @@ const nextConfig = {
         protocol: "https",
         hostname: "cdn.myanimelist.net",
       },
+      {
+        // ComicVine sirve imágenes desde su propio host (verificado: medium_url
+        // = comicvine.gamespot.com/a/uploads/...). *.cbsistatic.com como respaldo
+        // por si el CDN cambia.
+        protocol: "https",
+        hostname: "comicvine.gamespot.com",
+      },
+      {
+        protocol: "https",
+        hostname: "*.cbsistatic.com",
+      },
     ],
   },
 };
