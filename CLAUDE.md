@@ -37,7 +37,7 @@ Web app de descubrimiento cultural (películas, series, anime, libros, cómics, 
 
 ## Stack
 
-Next.js 14 App Router · React 18 · TypeScript strict · Tailwind CSS 3 · Supabase (PG + Auth + RLS + Realtime) · Google Gemini SDK (`@google/genai`, modelo `gemini-2.5-flash`, free tier) · next-intl 4 · Vitest 4 · Playwright 1 · Vercel · Node ≥ 20
+Next.js 14 App Router · React 18 · TypeScript strict · Tailwind CSS 3 · Supabase (PG + Auth + RLS + Realtime) · Anthropic Claude SDK (`@anthropic-ai/sdk`, modelo `claude-haiku-4-5`) · next-intl 4 · Vitest 4 · Playwright 1 · Vercel · Node ≥ 20
 
 ## APIs externas
 | Tipo | API | Base URL | Auth |
@@ -49,7 +49,7 @@ Next.js 14 App Router · React 18 · TypeScript strict · Tailwind CSS 3 · Supa
 | Comics | ComicVine | comicvine.gamespot.com/api | `?api_key=COMICVINE_KEY` (clave presente, sin handler — E6) |
 | Manga | MangaDex | api.mangadex.org | — |
 | Games | RAWG | api.rawg.io/api | `?key=RAWG_API_KEY` |
-| AI | Google Gemini (`gemini-2.5-flash`) | generativelanguage.googleapis.com | `GEMINI_API_KEY` |
+| AI | Anthropic Claude (`claude-haiku-4-5`) | api.anthropic.com | `ANTHROPIC_API_KEY` |
 
 **Idioma:** TMDB→`language=es-ES` fallback `en-US` · Books→`langRestrict=es` · resto inglés.
 
@@ -69,7 +69,7 @@ TMDB_API_KEY=               # server-only
 RAWG_API_KEY=               # server-only
 GOOGLE_BOOKS_KEY=           # server-only
 COMICVINE_KEY=              # server-only — presente, sin uso en código actual (E6)
-GEMINI_API_KEY=             # server-only — Google Gemini (recomendaciones IA, free tier)
+ANTHROPIC_API_KEY=          # server-only — Anthropic Claude (recomendaciones IA, claude-haiku-4-5)
 NEXT_PUBLIC_SUPABASE_URL=
 NEXT_PUBLIC_SUPABASE_ANON_KEY=
 SUPABASE_SERVICE_ROLE_KEY=  # server-only
