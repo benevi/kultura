@@ -3,7 +3,14 @@
 // SOLO server-side — COMICVINE_KEY nunca al cliente.
 // ============================================================
 
-import type { ComicVineSearchResponse } from "@/types/media";
+import type { ComicVineIssue, ComicVineSearchResponse } from "@/types/media";
+
+/** Respuesta del endpoint de detalle /issue/4000-{id}/ (un único result objeto). */
+interface ComicVineIssueResponse {
+  status_code: number;
+  error: string;
+  results: ComicVineIssue | null;
+}
 
 const COMICVINE_BASE = "https://comicvine.gamespot.com/api";
 
@@ -42,4 +49,19 @@ export async function searchComics(query: string): Promise<ComicVineSearchRespon
     sort: "cover_date:desc",
     field_list: "id,name,issue_number,cover_date,store_date,deck,description,image,volume",
   });
+}
+
+/**
+ * Detalle de un issue concreto. El recurso ComicVine usa el prefijo de tipo
+ * 4000 para los issues: /issue/4000-{externalId}/. Lanza si no hay results.
+ */
+export async function getComic(externalId: string): Promise<ComicVineIssue> {
+  const resp = await comicVineFetch<ComicVineIssueResponse>(
+    `/issue/4000-${externalId}/`,
+    {
+      field_list: "id,name,issue_number,cover_date,store_date,deck,image,volume",
+    }
+  );
+  if (!resp.results) throw new Error(`ComicVine issue ${externalId} sin results`);
+  return resp.results;
 }

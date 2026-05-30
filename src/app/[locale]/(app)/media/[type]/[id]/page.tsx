@@ -1,7 +1,7 @@
 // ============================================================
 // KULTURA — Media Detail Page
 // Ruta: /[locale]/media/[type]/[id]
-// Tipos soportados: movie, tv, anime, manga, book, game
+// Tipos soportados: movie, tv, anime, manga, book, comic, game
 // Server Component — fetch de datos en servidor, sin exponer keys.
 // ============================================================
 
@@ -13,6 +13,7 @@ import type { TmdbProvidersResponse } from "@/lib/api/tmdb";
 import { getAnime, getAnimeVideos, getManga } from "@/lib/api/jikan";
 import { getBook } from "@/lib/api/googlebooks";
 import { getGame } from "@/lib/api/rawg";
+import { getComic } from "@/lib/api/comicvine";
 import {
   normalizeMovie,
   normalizeTV,
@@ -20,6 +21,7 @@ import {
   normalizeMangaJikan,
   normalizeBookGoogle,
   normalizeGame,
+  normalizeComic,
 } from "@/lib/api/normalizer";
 import { MediaDetail } from "@/components/media/MediaDetail";
 import { createClient } from "@/lib/supabase/server";
@@ -34,6 +36,7 @@ const VALID_TYPES: MediaType[] = [
   "anime",
   "manga",
   "book",
+  "comic",
   "game",
 ];
 
@@ -103,6 +106,11 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       title = detail.name;
       description = detail.description_raw;
       image = detail.background_image ?? undefined;
+    } else if (type === "comic") {
+      const norm = normalizeComic(await getComic(id));
+      title = norm.title;
+      description = norm.synopsis;
+      image = norm.poster;
     }
 
     if (!title) return { title: "KULTURA" };
@@ -215,6 +223,10 @@ export default async function MediaDetailPage({ params }: Props) {
       const detail = await getGame(Number(id)).catch(() => null);
       if (!detail) notFound();
       item = normalizeGame(detail);
+    } else if (mediaType === "comic") {
+      const detail = await getComic(id).catch(() => null);
+      if (!detail) notFound();
+      item = normalizeComic(detail);
     }
   } catch {
     notFound();
