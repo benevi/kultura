@@ -48,6 +48,7 @@ export function DiscoverClient({
         { value: "book", label: tF("book") },
         { value: "manga", label: tF("manga") },
         { value: "game", label: tF("game") },
+        { value: "comic", label: tF("comic") },
       ],
     },
     {
