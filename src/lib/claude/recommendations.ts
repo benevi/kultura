@@ -1,11 +1,11 @@
 // ============================================================
-// KULTURA — AI Recommendations
+// KULTURA — Claude AI Recommendations
 // Genera recomendaciones personalizadas usando la biblioteca
 // del usuario y sus géneros favoritos.
-// Solo para uso server-side — GEMINI_API_KEY nunca al cliente.
+// Solo para uso server-side — ANTHROPIC_API_KEY nunca al cliente.
 // ============================================================
 
-import { GoogleGenAI } from '@google/genai'
+import Anthropic from '@anthropic-ai/sdk'
 import { createClient } from '@/lib/supabase/server'
 import type { SupabaseClient } from '@supabase/supabase-js'
 import type { MediaType } from '@/types/media'
@@ -166,48 +166,38 @@ export async function getAiRecommendations(
 ): Promise<AiRec[]> {
   const cacheKey = `${userId}:${locale}:${PROMPT_VERSION}`
 
-  // Cache hit — evitar llamada a Gemini si los datos son recientes
+  // Cache hit — evitar llamada a Claude si los datos son recientes
   const cached = getCached(cacheKey)
   if (cached) return cached
 
   const items = await getLibraryContext(userId, supabaseClient)
 
-  console.log('[AI-RECS DEBUG] library items:', items.length)
-
   // Mínimo 3 items para contexto útil
   if (items.length < 3) return []
 
-  const apiKey = process.env.GEMINI_API_KEY
+  const apiKey = process.env.ANTHROPIC_API_KEY
   if (!apiKey) {
-    console.error('GEMINI_API_KEY not set')
+    console.error('ANTHROPIC_API_KEY not set')
     return []
   }
 
-  const client = new GoogleGenAI({ apiKey })
+  const client = new Anthropic({ apiKey })
 
   let rawText: string
   try {
-    const response = await client.models.generateContent({
-      model: 'gemini-2.0-flash',
-      contents: buildPrompt(items, topGenres, locale),
-      config: {
-        maxOutputTokens: 1024,
-        systemInstruction: 'Eres un motor de recomendaciones de contenido cultural. Respondes ÚNICAMENTE con JSON válido, sin explicaciones ni texto adicional.',
-      },
+    const message = await client.messages.create({
+      model: 'claude-haiku-4-5',
+      max_tokens: 1024,
+      system: 'Eres un motor de recomendaciones de contenido cultural. Respondes ÚNICAMENTE con JSON válido, sin explicaciones ni texto adicional.',
+      messages: [
+        { role: 'user', content: buildPrompt(items, topGenres, locale) },
+      ],
     })
-
-    console.log('[AI-RECS DEBUG] response keys:', Object.keys(response ?? {}))
-    console.log('[AI-RECS DEBUG] response.text type:', typeof response.text)
-    console.log('[AI-RECS DEBUG] response raw:', JSON.stringify(response).substring(0, 500))
-    const text = response.text
-    if (!text) {
-      console.log('[AI-RECS DEBUG] response.text empty/undefined')
-      return []
-    }
-    rawText = text
-    console.log('[AI-RECS DEBUG] rawText:', rawText.substring(0, 200))
+    const block = message.content[0]
+    if (block.type !== 'text') return []
+    rawText = block.text
   } catch (err) {
-    console.error('[AI-RECS DEBUG] Gemini API error:', JSON.stringify(err, Object.getOwnPropertyNames(err)))
+    console.error('Claude API error:', err)
     return []
   }
 
@@ -216,14 +206,10 @@ export async function getAiRecommendations(
   // raíz ([{...}]) en lugar de un objeto, jsonMatch es null y se devuelve [].
   // El schema del prompt pide siempre un objeto, así que es poco probable.
   try {
-    console.log('[AI-RECS DEBUG] rawText length:', rawText.length)
-    console.log('[AI-RECS DEBUG] rawText full:', rawText)
     const jsonMatch = rawText.match(/\{[\s\S]*\}/)
-    console.log('[AI-RECS DEBUG] jsonMatch found:', !!jsonMatch)
     if (!jsonMatch) return []
 
     const parsed = JSON.parse(jsonMatch[0]) as { recommendations?: unknown[] }
-    console.log('[AI-RECS DEBUG] parsed ok, recs:', parsed.recommendations?.length)
 
     if (!Array.isArray(parsed.recommendations)) return []
 
@@ -231,11 +217,9 @@ export async function getAiRecommendations(
     const results = parsed.recommendations
       .filter((r): r is Record<string, unknown> => typeof r === 'object' && r !== null)
       .filter((r) => {
-        const ok = typeof r.title === 'string' && r.title.trim() !== '' &&
+        return typeof r.title === 'string' && r.title.trim() !== '' &&
           isValidType(r.type) &&
           typeof r.reason === 'string' && r.reason.trim() !== ''
-        if (!ok) console.log('[AI-RECS DEBUG] item failed validation:', JSON.stringify(r))
-        return ok
       })
       .slice(0, 5)
       .map((r) => ({
@@ -247,12 +231,10 @@ export async function getAiRecommendations(
         searchQuery: encodeURIComponent((r.title as string).trim()),
       }))
 
-    console.log('[AI-RECS DEBUG] results final:', results.length)
     setCached(cacheKey, results)
     return results
   } catch (err) {
-    console.error('[AI-RECS DEBUG] parse error:', err)
-    console.error('[AI-RECS DEBUG] rawText was:', rawText)
+    console.error('Failed to parse Claude response:', err)
     return []
   }
 }
