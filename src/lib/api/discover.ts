@@ -81,7 +81,11 @@ export async function fetchDiscoverData(
       case "comic": {
         const res = await getRecentComics(page);
         items = res.items;
-        totalPages = Math.min(Math.ceil(res.total / 20), 50);
+        // Sin cap: exponemos todas las páginas que reporta ComicVine. res.total es
+        // el total bruto de issues; ceil(total/20) da el nº de páginas navegables.
+        // Si la API corta el offset en páginas muy altas, devolverán vacío, pero no
+        // imponemos tope artificial.
+        totalPages = Math.max(Math.ceil(res.total / 20), 1);
         break;
       }
       case "game": {
