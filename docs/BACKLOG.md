@@ -522,7 +522,7 @@ No bloqueantes. Atacar solo despuÃ©s de Aâ€“D.
   Solapamiento parcial con E58 (RecommendModal + Toast). Considerar unificar al
   planificar.
 
-- [ ] **E65. Listas: UI para borrar una lista (endpoint ya existe)**
+- [x] **E65. Listas: UI para borrar una lista (endpoint ya existe)**
 
   Descubierto en verificaciÃ³n visual de E47. El endpoint `DELETE /api/lists` existe y
   funciona (solo owner). El usuario reporta que NO hay botÃ³n ni acciÃ³n en `/lists` ni
