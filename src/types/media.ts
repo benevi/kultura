@@ -98,7 +98,7 @@ export interface ComicVineIssue {
     small_url?: string | null;
     original_url?: string | null;
   } | null;
-  volume: { name: string } | null;
+  volume: { id?: number; name: string } | null;
 }
 
 export interface ComicVineSearchResponse {
