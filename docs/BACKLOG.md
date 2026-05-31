@@ -546,6 +546,10 @@ No bloqueantes. Atacar solo despuÃ©s de Aâ€“D.
   Falla esporádicamente en la suite completa (`vitest run`) pero pasa siempre aislado (`vitest run tests/unit/library/route.test.ts` → 8/8 verde). Síntoma de test pollution / estado de mock compartido entre archivos (orden de ejecución, `global.fetch` o mocks de Supabase no reseteados). Detectado durante E45-b (commit da4a902): 1 fallo en primera corrida, 571/571 en re-corrida.
   Hecho cuando: el test pasa de forma determinista en 5 corridas consecutivas de la suite completa, o se identifica y corrige la fuente de contaminación (mock sin `vi.clearAllMocks`/`resetModules`).
 
-- [ ] **E68. Tests de integración real para RPC `get_discoverable_groups`**
-  Hoy el RPC solo está cubierto por tests unitarios con el cliente Supabase mockeado (`tests/unit/social/discover-route.test.ts`). Faltan tests de integración contra DB real (kultura-test) que ejerciten los boundaries de `p_size`: 10/11 (small↔medium) y 50/51 (medium↔large), además de scope joined/unjoined y paginación limit/offset reales.
-  Hecho cuando: existe spec en `tests/integration/` que seedea grupos con membresías de tamaños 10, 11, 50 y 51, y verifica que el filtro `size` los clasifica correctamente con DB real.
+- [~] **E68. (OBSOLETA 2026-05-31) Tests de integración real para RPC `get_discoverable_groups`**
+  Obsoletada por el hotfix de E45 (commit 2d11228): el descubrimiento ya no usa la RPC `get_discoverable_groups` sino queries directas (la RPC quedaba cacheada en el schema de PostgREST). Sin RPC en el flujo, no hay nada que cubrir con tests de integración. La RPC zombi se elimina en E70.
+  ~~Hoy el RPC solo está cubierto por tests unitarios con el cliente Supabase mockeado (`tests/unit/social/discover-route.test.ts`). Faltan tests de integración contra DB real (kultura-test) que ejerciten los boundaries de `p_size`: 10/11 (small↔medium) y 50/51 (medium↔large), además de scope joined/unjoined y paginación limit/offset reales.~~
+
+- [ ] **E70. Drop RPC zombi `public.get_discoverable_groups(...)` en DB prod**
+  Tras el hotfix de E45 (commit 2d11228) el descubrimiento de grupos usa queries directas en vez de la RPC (la RPC quedaba cacheada en el schema de PostgREST y devolvía resultados obsoletos). La función `public.get_discoverable_groups(text, text, text, integer, integer)` queda sin uso en el código. Eliminarla con `DROP FUNCTION` cuando se haga limpieza de DB, en una migración nueva (`supabase migration new drop_rpc_discover_groups`).
+  Hecho cuando: `DROP FUNCTION IF EXISTS public.get_discoverable_groups(text, text, text, integer, integer);` aplicado en prod vía migración versionada, `NOTIFY pgrst, 'reload schema'`, y `\df public.get_discoverable_groups` en prod no devuelve filas.
