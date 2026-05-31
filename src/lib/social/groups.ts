@@ -45,6 +45,29 @@ export interface GroupMember {
   } | null
 }
 
+/** Grupo en la pestaña "Descubrir": metadata + nº de miembros + si ya soy miembro. */
+export interface DiscoverGroup {
+  id: string
+  ownerId: string
+  name: string
+  description: string | null
+  coverColor: string
+  createdAt: string
+  memberCount: number
+  isMember: boolean
+}
+
+export type DiscoverScope = 'all' | 'joined' | 'unjoined'
+export type DiscoverSize = 'all' | 'small' | 'medium' | 'large'
+
+export interface DiscoverGroupsParams {
+  q?: string
+  scope?: DiscoverScope
+  size?: DiscoverSize
+  limit?: number
+  offset?: number
+}
+
 // ── Mappers ───────────────────────────────────────────────────────────────────
 
 function mapGroup(row: GroupRow): Group {
@@ -169,4 +192,53 @@ export async function isGroupMember(groupId: string, userId: string): Promise<bo
  */
 export async function isGroupOwner(groupId: string, userId: string): Promise<boolean> {
   return (await getMemberRole(groupId, userId)) === 'owner'
+}
+
+// ── Discover ────────────────────────────────────────────────────────────────
+
+interface DiscoverGroupRpcRow {
+  id: string
+  owner_id: string
+  name: string
+  description: string | null
+  cover_color: string
+  created_at: string
+  member_count: number | string
+  is_member: boolean | null
+}
+
+function mapDiscoverGroup(row: DiscoverGroupRpcRow): DiscoverGroup {
+  return {
+    id: row.id,
+    ownerId: row.owner_id,
+    name: row.name,
+    description: row.description,
+    coverColor: row.cover_color,
+    createdAt: row.created_at,
+    memberCount: Number(row.member_count),
+    isMember: row.is_member ?? false,
+  }
+}
+
+/**
+ * Grupos para la pestaña "Descubrir" vía RPC get_discoverable_groups.
+ * Filtra server-side por búsqueda/scope/size y pagina con limit/offset.
+ * El límite efectivo lo recorta el RPC a [1, 50].
+ */
+export async function getDiscoverableGroups(
+  params: DiscoverGroupsParams = {}
+): Promise<DiscoverGroup[]> {
+  const supabase = createClient()
+
+  const { data, error } = await supabase.rpc('get_discoverable_groups', {
+    p_q: params.q ?? null,
+    p_scope: params.scope ?? 'all',
+    p_size: params.size ?? 'all',
+    p_limit: params.limit ?? 50,
+    p_offset: params.offset ?? 0,
+  })
+
+  if (error) throw new Error(`Failed to fetch discoverable groups: ${error.message}`)
+
+  return ((data ?? []) as unknown as DiscoverGroupRpcRow[]).map(mapDiscoverGroup)
 }
