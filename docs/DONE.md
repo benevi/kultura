@@ -6,6 +6,24 @@ No se edita a mano durante el día. Solo se añade una línea al terminar cada t
 
 ---
 
+## E66 — Discover cómic: filtrar publishers occidentales (2026-05-31)
+
+Commit: 4e6e803
+
+- `resolveVolumePublishers(volumeIds)` en `src/lib/api/comicvine.ts`: batch GET `/volumes/?filter=id:{a|b|c}&field_list=id,publisher&limit=100`. El objeto `volume` inline de `/issues/` NO trae publisher (diagnóstico previo confirmado), así que se resuelve aparte. Cache module-level `Map<volumeId,string>` — la relación volumen→editorial es inmutable, solo se piden los ids no cacheados.
+- `WESTERN_PUBLISHERS` (15 editoriales) + `isWesternPublisher(name)`: lista blanca, match case-insensitive por substring.
+- `getRecentComics(page)`: ahora `limit=100` (offset `(page-1)*100`) para compensar el filtrado — el feed `cover_date:desc` viene saturado de manga. Tras el fetch: extrae volumeIds únicos → `resolveVolumePublishers` → filtra a occidentales → normaliza hasta 20. `total` mantiene `number_of_total_results`.
+- `ComicVineIssue.volume` ampliado con `id?: number` en `src/types/media.ts`.
+- Tests: `tests/unit/api/comicvine.test.ts` — filtrado occidental vs manga, cap 20, cache no re-fetchea, field_list correcto. tsc 0, lint 0 errores, **544 passed** (536→544).
+
+## E66-COMIC-FICHA — Ficha de cómic vía ComicVine detail (2026-05-31)
+
+Commit: c89c5d0
+
+- `getComic(externalId)` en `src/lib/api/comicvine.ts`: GET `/issue/4000-{id}/` (prefijo de tipo 4000), mismo patrón auth/User-Agent que `searchComics`; lanza si `results` es null.
+- `page.tsx`: `comic` añadido a `VALID_TYPES`; ramas comic en `generateMetadata` y `MediaDetailPage` → `getComic` + `normalizeComic`. Sin trailerKey/providers (undefined OK).
+- Tests: `tests/unit/api/comicvine.test.ts` (happy path + results null + HTTP !ok). 533→536 passed.
+
 ## E66 — AiRecommendations: carátula + navegación a ficha (2026-05-31)
 
 Commit: fe15a2d

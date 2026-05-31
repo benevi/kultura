@@ -3,10 +3,8 @@
 
 ## Estado
 
-E66 → ✅ CERRADO (AiRecommendations: carátula + navegación a ficha, 533/59 green, commit fe15a2d)
+E66-COMIC-OCCIDENTAL → ✅ CERRADO (getRecentComics filtra publishers occidentales vía batch /volumes/ + cache; 544 green, commit 4e6e803)
 
 ## Tarea activa
 
 **SIN TAREA ACTIVA** — esperando confirmación del usuario.
-
-Siguiente candidata en BACKLOG (prioridad media): **E66-COMIC-FICHA** — habilitar ficha `/media/comic/{id}` (ComicVine detail) para que las recs de cómic naveguen a ficha en vez de caer a /search.
