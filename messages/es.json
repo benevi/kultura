@@ -99,7 +99,14 @@
     "dropped": "Abandonado",
     "minScore": "Puntuación mínima",
     "reset": "Quitar filtros",
-    "all": "Todos"
+    "all": "Todos",
+    "scope": "Pertenencia",
+    "scopeMember": "Ya soy miembro",
+    "scopeNonMember": "No soy miembro",
+    "size": "Tamaño",
+    "size_1_10": "1–10",
+    "size_11_50": "11–50",
+    "size_50plus": "50+"
   },
   "discover": {
     "title": "Descubrir",
@@ -418,13 +425,21 @@
   },
   "groups": {
     "title": "Grupo",
+    "pageTitle": "Grupos",
     "members": "Miembros",
     "joinHint": "Únete al grupo para ver y publicar mensajes",
     "postPlaceholder": "Escribe algo en el grupo...",
     "publish": "Publicar",
     "beFirst": "Sé el primero en publicar algo en este grupo",
     "postError": "No se pudo publicar el post. Inténtalo de nuevo.",
-    "member": "Miembro"
+    "member": "Miembro",
+    "myGroupsTab": "Mis grupos",
+    "discoverTab": "Descubrir",
+    "searchPlaceholder": "Buscar grupos...",
+    "membersCount": "{count, plural, one {# miembro} other {# miembros}}",
+    "noGroupsFound": "No se encontraron grupos",
+    "alreadyMember": "Ya eres miembro",
+    "loadMore": "Cargar más"
   },
   "chat": {
     "title": "Mensajes",

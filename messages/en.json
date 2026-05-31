@@ -99,7 +99,14 @@
     "dropped": "Dropped",
     "minScore": "Min. score",
     "reset": "Clear filters",
-    "all": "All"
+    "all": "All",
+    "scope": "Membership",
+    "scopeMember": "I'm a member",
+    "scopeNonMember": "Not a member",
+    "size": "Size",
+    "size_1_10": "1–10",
+    "size_11_50": "11–50",
+    "size_50plus": "50+"
   },
   "discover": {
     "title": "Discover",
@@ -418,13 +425,21 @@
   },
   "groups": {
     "title": "Group",
+    "pageTitle": "Groups",
     "members": "Members",
     "joinHint": "Join this group to view and post messages",
     "postPlaceholder": "Write something in the group...",
     "publish": "Post",
     "beFirst": "Be the first to post in this group",
     "postError": "Could not publish the post. Please try again.",
-    "member": "Member"
+    "member": "Member",
+    "myGroupsTab": "My groups",
+    "discoverTab": "Discover",
+    "searchPlaceholder": "Search groups...",
+    "membersCount": "{count, plural, one {# member} other {# members}}",
+    "noGroupsFound": "No groups found",
+    "alreadyMember": "Already a member",
+    "loadMore": "Load more"
   },
   "chat": {
     "title": "Messages",
