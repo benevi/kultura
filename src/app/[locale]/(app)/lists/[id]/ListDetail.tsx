@@ -55,6 +55,7 @@ export function ListDetail({
         return
       }
       router.push('/lists')
+      router.refresh()
     } catch {
       setDeleteError(t('errorDelete'))
       setDeleting(false)
