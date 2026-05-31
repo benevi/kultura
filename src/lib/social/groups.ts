@@ -196,49 +196,89 @@ export async function isGroupOwner(groupId: string, userId: string): Promise<boo
 
 // ── Discover ────────────────────────────────────────────────────────────────
 
-interface DiscoverGroupRpcRow {
+/** Fila de groups con join anidado a group_members (solo user_id). */
+interface DiscoverGroupQueryRow {
   id: string
   owner_id: string
   name: string
   description: string | null
   cover_color: string
   created_at: string
-  member_count: number | string
-  is_member: boolean | null
+  group_members: { user_id: string }[] | null
 }
 
-function mapDiscoverGroup(row: DiscoverGroupRpcRow): DiscoverGroup {
-  return {
-    id: row.id,
-    ownerId: row.owner_id,
-    name: row.name,
-    description: row.description,
-    coverColor: row.cover_color,
-    createdAt: row.created_at,
-    memberCount: Number(row.member_count),
-    isMember: row.is_member ?? false,
+function inSizeBucket(count: number, size: DiscoverSize): boolean {
+  switch (size) {
+    case 'small':
+      return count >= 1 && count <= 10
+    case 'medium':
+      return count >= 11 && count <= 50
+    case 'large':
+      return count > 50
+    default:
+      return true
   }
 }
 
 /**
- * Grupos para la pestaña "Descubrir" vía RPC get_discoverable_groups.
- * Filtra server-side por búsqueda/scope/size y pagina con limit/offset.
- * El límite efectivo lo recorta el RPC a [1, 50].
+ * Grupos para la pestaña "Descubrir" mediante queries directas PostgREST.
+ *
+ * Reemplaza el RPC get_discoverable_groups: el schema cache de PostgREST en
+ * Supabase Cloud no recargaba la función (ver migración DEPRECATED). Trae los
+ * grupos con un join anidado a group_members y deriva memberCount/isMember,
+ * filtros (scope/size) y paginación en JS. El límite se recorta a [1, 50].
  */
 export async function getDiscoverableGroups(
   params: DiscoverGroupsParams = {}
 ): Promise<DiscoverGroup[]> {
   const supabase = createClient()
 
-  const { data, error } = await supabase.rpc('get_discoverable_groups', {
-    p_q: params.q ?? null,
-    p_scope: params.scope ?? 'all',
-    p_size: params.size ?? 'all',
-    p_limit: params.limit ?? 50,
-    p_offset: params.offset ?? 0,
-  })
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) throw new Error('Failed to fetch discoverable groups: not authenticated')
+
+  const q = params.q?.trim()
+  const scope: DiscoverScope = params.scope ?? 'all'
+  const size: DiscoverSize = params.size ?? 'all'
+  const limit = Math.min(Math.max(params.limit ?? 50, 1), 50)
+  const offset = Math.max(params.offset ?? 0, 0)
+
+  let query = supabase
+    .from('groups')
+    .select('id, owner_id, name, description, cover_color, created_at, group_members(user_id)')
+    .order('created_at', { ascending: false })
+
+  if (q) query = query.ilike('name', `%${q}%`)
+
+  const { data, error } = await query
 
   if (error) throw new Error(`Failed to fetch discoverable groups: ${error.message}`)
 
-  return ((data ?? []) as unknown as DiscoverGroupRpcRow[]).map(mapDiscoverGroup)
+  const mapped: DiscoverGroup[] = ((data ?? []) as unknown as DiscoverGroupQueryRow[]).map(
+    (row) => {
+      const members = row.group_members ?? []
+      return {
+        id: row.id,
+        ownerId: row.owner_id,
+        name: row.name,
+        description: row.description,
+        coverColor: row.cover_color,
+        createdAt: row.created_at,
+        memberCount: members.length,
+        isMember: members.some((m) => m.user_id === user.id),
+      }
+    }
+  )
+
+  return mapped
+    .filter((g) => {
+      if (scope === 'joined' && !g.isMember) return false
+      if (scope === 'unjoined' && g.isMember) return false
+      return inSizeBucket(g.memberCount, size)
+    })
+    .sort((a, b) =>
+      b.memberCount !== a.memberCount
+        ? b.memberCount - a.memberCount
+        : b.createdAt.localeCompare(a.createdAt)
+    )
+    .slice(offset, offset + limit)
 }
