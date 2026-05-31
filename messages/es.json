@@ -394,7 +394,8 @@
     "leaveGroup": "Salir",
     "membersCount": "{count} miembros",
     "groupCreated": "¡Grupo creado!",
-    "groupError": "Error al crear el grupo"
+    "groupError": "Error al crear el grupo",
+    "joinGroupError": "No se pudo unir al grupo"
   },
   "suggestions": {
     "title": "Sugerencias y comentarios",

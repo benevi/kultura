@@ -394,7 +394,8 @@
     "leaveGroup": "Leave",
     "membersCount": "{count} members",
     "groupCreated": "Group created!",
-    "groupError": "Failed to create group"
+    "groupError": "Failed to create group",
+    "joinGroupError": "Could not join the group"
   },
   "suggestions": {
     "title": "Suggestions & Feedback",
