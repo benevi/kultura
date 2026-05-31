@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useTranslations } from 'next-intl'
+import { useToastContext } from '@/components/ui/ToastProvider'
 
 interface Props {
   groupId: string
@@ -14,6 +15,7 @@ export function JoinGroupButton({ groupId, isMember, isOwner }: Props) {
   const [loading, setLoading] = useState(false)
   const router = useRouter()
   const t = useTranslations('friends')
+  const { show } = useToastContext()
 
   if (isOwner) return null
 
@@ -21,7 +23,13 @@ export function JoinGroupButton({ groupId, isMember, isOwner }: Props) {
     setLoading(true)
     try {
       const res = await fetch(`/api/groups/${groupId}/join`, { method: 'POST' })
-      if (res.ok) router.refresh()
+      if (res.ok) {
+        router.refresh()
+      } else {
+        show({ message: t('joinGroupError'), type: 'error' })
+      }
+    } catch {
+      show({ message: t('joinGroupError'), type: 'error' })
     } finally {
       setLoading(false)
     }
