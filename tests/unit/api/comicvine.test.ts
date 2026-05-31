@@ -1,9 +1,14 @@
 // ============================================================
-// KULTURA — comicvine.ts unit tests (getComic)
+// KULTURA — comicvine.ts unit tests
 // ============================================================
 
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { getComic, getRecentComics } from "@/lib/api/comicvine";
+import {
+  getComic,
+  getRecentComics,
+  resolveVolumePublishers,
+  isWesternPublisher,
+} from "@/lib/api/comicvine";
 
 // Issue de detalle tal como lo devuelve ComicVine en `results` (objeto, no array).
 const ISSUE = {
@@ -18,7 +23,7 @@ const ISSUE = {
     small_url: "https://comicvine.example/small.jpg",
     original_url: "https://comicvine.example/original.jpg",
   },
-  volume: { name: "Batman" },
+  volume: { id: 796, name: "Batman" },
 };
 
 function mockResponse(body: unknown, ok = true, status = 200) {
@@ -27,6 +32,18 @@ function mockResponse(body: unknown, ok = true, status = 200) {
     status,
     json: () => Promise.resolve(body),
   } as Response;
+}
+
+/**
+ * Mock de fetch que responde según el path: /volumes/ → volumesBody,
+ * cualquier otro (/issues/) → issuesBody. getRecentComics hace ambas llamadas.
+ */
+function mockFetchByPath(issuesBody: unknown, volumesBody: unknown) {
+  return vi.fn().mockImplementation((url: string) =>
+    Promise.resolve(
+      mockResponse(url.includes("/volumes/") ? volumesBody : issuesBody)
+    )
+  );
 }
 
 describe("getComic", () => {
@@ -83,6 +100,71 @@ describe("getComic", () => {
   });
 });
 
+describe("isWesternPublisher", () => {
+  it("acepta editoriales de la lista blanca (case-insensitive, substring)", () => {
+    expect(isWesternPublisher("DC Comics")).toBe(true);
+    expect(isWesternPublisher("marvel")).toBe(true);
+    expect(isWesternPublisher("Marvel Comics")).toBe(true); // substring
+    expect(isWesternPublisher("IMAGE COMICS")).toBe(true);
+  });
+
+  it("rechaza editoriales no occidentales y vacíos", () => {
+    expect(isWesternPublisher("Shueisha")).toBe(false);
+    expect(isWesternPublisher("Kodansha")).toBe(false);
+    expect(isWesternPublisher("")).toBe(false);
+  });
+});
+
+describe("resolveVolumePublishers", () => {
+  beforeEach(() => {
+    process.env.COMICVINE_KEY = "test-key";
+  });
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
+    vi.clearAllMocks();
+  });
+
+  it("mapea volumeId→publisher y pide /volumes/ con field_list=id,publisher", async () => {
+    const fetchMock = vi.fn().mockResolvedValue(
+      mockResponse({
+        status_code: 1,
+        error: "OK",
+        results: [
+          { id: 400, publisher: { id: 1, name: "Dark Horse" } },
+          { id: 401, publisher: { id: 2, name: "Oni Press" } },
+        ],
+      })
+    );
+    vi.stubGlobal("fetch", fetchMock);
+
+    const map = await resolveVolumePublishers([400, 401]);
+
+    expect(map.get(400)).toBe("Dark Horse");
+    expect(map.get(401)).toBe("Oni Press");
+    const calledUrl = fetchMock.mock.calls[0][0] as string;
+    expect(calledUrl).toContain("/volumes/");
+    expect(calledUrl).toContain("field_list=id%2Cpublisher");
+    expect(calledUrl).toContain("filter=id%3A400%7C401");
+  });
+
+  it("cachea: segunda llamada al mismo id no re-fetchea", async () => {
+    const fetchMock = vi.fn().mockResolvedValue(
+      mockResponse({
+        status_code: 1,
+        error: "OK",
+        results: [{ id: 500, publisher: { id: 1, name: "Valiant" } }],
+      })
+    );
+    vi.stubGlobal("fetch", fetchMock);
+
+    await resolveVolumePublishers([500]);
+    await resolveVolumePublishers([500]);
+
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+});
+
 describe("getRecentComics", () => {
   beforeEach(() => {
     process.env.COMICVINE_KEY = "test-key";
@@ -93,20 +175,25 @@ describe("getRecentComics", () => {
     vi.clearAllMocks();
   });
 
-  it("happy path: pide /issues/ ordenado por fecha y normaliza a MediaItem", async () => {
-    const fetchMock = vi.fn().mockResolvedValue(
-      mockResponse({
+  it("happy path: pide /issues/ por fecha (limit=100), filtra occidental y normaliza", async () => {
+    const fetchMock = mockFetchByPath(
+      {
         status_code: 1,
         error: "OK",
-        number_of_total_results: 1,
+        number_of_total_results: 716,
         results: [ISSUE],
-      })
+      },
+      {
+        status_code: 1,
+        error: "OK",
+        results: [{ id: 796, publisher: { id: 10, name: "DC Comics" } }],
+      }
     );
     vi.stubGlobal("fetch", fetchMock);
 
     const result = await getRecentComics(2);
 
-    expect(result.total).toBe(1);
+    expect(result.total).toBe(716);
     expect(result.items).toHaveLength(1);
     expect(result.items[0]).toMatchObject({
       id: "comic_12345",
@@ -115,11 +202,61 @@ describe("getRecentComics", () => {
       ratingSource: "ComicVine",
     });
 
-    const calledUrl = fetchMock.mock.calls[0][0] as string;
-    expect(calledUrl).toContain("/issues/");
-    expect(calledUrl).toContain("sort=cover_date%3Adesc");
-    expect(calledUrl).toContain("limit=20");
-    expect(calledUrl).toContain("offset=20");
+    const issuesUrl = fetchMock.mock.calls.find((c) =>
+      (c[0] as string).includes("/issues/")
+    )![0] as string;
+    expect(issuesUrl).toContain("sort=cover_date%3Adesc");
+    expect(issuesUrl).toContain("limit=100");
+    expect(issuesUrl).toContain("offset=100");
+  });
+
+  it("descarta issues de editorial no occidental (manga)", async () => {
+    const fetchMock = mockFetchByPath(
+      {
+        status_code: 1,
+        error: "OK",
+        number_of_total_results: 5,
+        results: [
+          { ...ISSUE, id: 10, volume: { id: 100, name: "Batman" } },
+          { ...ISSUE, id: 11, volume: { id: 101, name: "Cookie" } },
+        ],
+      },
+      {
+        status_code: 1,
+        error: "OK",
+        results: [
+          { id: 100, publisher: { id: 1, name: "DC Comics" } },
+          { id: 101, publisher: { id: 2, name: "Shueisha" } },
+        ],
+      }
+    );
+    vi.stubGlobal("fetch", fetchMock);
+
+    const result = await getRecentComics();
+
+    expect(result.items).toHaveLength(1);
+    expect(result.items[0].id).toBe("comic_10");
+  });
+
+  it("limita a 20 items aunque haya más occidentales", async () => {
+    const results = Array.from({ length: 25 }, (_, i) => ({
+      ...ISSUE,
+      id: 200 + i,
+      volume: { id: 300, name: "Saga" },
+    }));
+    const fetchMock = mockFetchByPath(
+      { status_code: 1, error: "OK", number_of_total_results: 999, results },
+      {
+        status_code: 1,
+        error: "OK",
+        results: [{ id: 300, publisher: { id: 3, name: "Image Comics" } }],
+      }
+    );
+    vi.stubGlobal("fetch", fetchMock);
+
+    const result = await getRecentComics();
+
+    expect(result.items).toHaveLength(20);
   });
 
   it("devuelve items vacíos y total 0 si results es null", async () => {
