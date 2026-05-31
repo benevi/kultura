@@ -8,6 +8,8 @@ import { Input } from '@/components/ui/input'
 import { KButton } from '@/components/ui/KButton'
 import { FriendCard } from '@/components/social/FriendCard'
 import { FriendshipButton } from '@/components/social/FriendshipButton'
+import { TabButton } from '@/components/ui/TabButton'
+import { CreateGroupForm, type CreatedGroup } from '@/components/social/CreateGroupForm'
 import type { Friendship } from '@/types/user'
 
 interface SearchUser {
@@ -53,9 +55,6 @@ export function FriendsClient({
   const [groups, setGroups] = useState<Group[]>([])
   const [groupsLoaded, setGroupsLoaded] = useState(false)
   const [showCreateGroup, setShowCreateGroup] = useState(false)
-  const [groupName, setGroupName] = useState('')
-  const [groupDesc, setGroupDesc] = useState('')
-  const [creatingGroup, setCreatingGroup] = useState(false)
   const [activeTab, setActiveTab] = useState<'friends' | 'groups'>('friends')
 
   // ── Friends logic ──────────────────────────────────────────
@@ -99,23 +98,9 @@ export function FriendsClient({
     setGroupsLoaded(true)
   }
 
-  async function handleCreateGroup(e: React.FormEvent) {
-    e.preventDefault()
-    if (!groupName.trim()) return
-    setCreatingGroup(true)
-    const res = await fetch('/api/groups', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name: groupName.trim(), description: groupDesc.trim() || undefined }),
-    })
-    const data = await res.json()
-    if (data.group) {
-      setGroups(prev => [{ ...data.group, memberRole: 'owner' }, ...prev])
-      setGroupName('')
-      setGroupDesc('')
-      setShowCreateGroup(false)
-    }
-    setCreatingGroup(false)
+  function handleGroupCreated(group: CreatedGroup) {
+    setGroups(prev => [{ ...group }, ...prev])
+    setShowCreateGroup(false)
   }
 
   return (
@@ -268,44 +253,10 @@ export function FriendsClient({
           </div>
 
           {showCreateGroup && (
-            <form onSubmit={handleCreateGroup} className="bg-surface-default border border-surface-border rounded-xl p-4 flex flex-col gap-3">
-              <input
-                type="text"
-                value={groupName}
-                onChange={e => setGroupName(e.target.value)}
-                placeholder={t('groupNamePlaceholder')}
-                maxLength={60}
-                required
-                className="w-full bg-surface-elevated border border-surface-border rounded-lg px-3 py-2 text-sm text-text-primary placeholder:text-text-tertiary focus:outline-none focus:ring-1 focus:ring-accent-positive"
-              />
-              <textarea
-                value={groupDesc}
-                onChange={e => setGroupDesc(e.target.value)}
-                placeholder={t('groupDescPlaceholder')}
-                maxLength={200}
-                rows={2}
-                className="w-full bg-surface-elevated border border-surface-border rounded-lg px-3 py-2 text-sm text-text-primary placeholder:text-text-tertiary resize-none focus:outline-none focus:ring-1 focus:ring-accent-positive"
-              />
-              <div className="flex gap-2">
-                <KButton
-                  type="submit"
-                  size="sm"
-                  variant="primary"
-                  loading={creatingGroup}
-                  disabled={creatingGroup}
-                >
-                  {creatingGroup ? '...' : t('createGroup')}
-                </KButton>
-                <KButton
-                  type="button"
-                  size="sm"
-                  variant="secondary"
-                  onClick={() => setShowCreateGroup(false)}
-                >
-                  ✕
-                </KButton>
-              </div>
-            </form>
+            <CreateGroupForm
+              onCreated={handleGroupCreated}
+              onCancel={() => setShowCreateGroup(false)}
+            />
           )}
 
           {!groupsLoaded ? (
@@ -343,28 +294,5 @@ export function FriendsClient({
         </div>
       )}
     </div>
-  )
-}
-
-function TabButton({
-  active,
-  onClick,
-  children,
-}: {
-  active: boolean
-  onClick: () => void
-  children: React.ReactNode
-}) {
-  return (
-    <button
-      onClick={onClick}
-      className={`flex-1 px-4 py-2 text-sm font-semibold rounded-lg transition-colors ${
-        active
-          ? 'bg-surface-elevated text-text-primary'
-          : 'text-text-secondary hover:text-text-primary'
-      }`}
-    >
-      {children}
-    </button>
   )
 }
