@@ -4,7 +4,6 @@
 // ============================================================
 
 import { notFound } from 'next/navigation'
-import { getTranslations } from 'next-intl/server'
 import { createClient } from '@/lib/supabase/server'
 import { getListDetail, canEditList } from '@/lib/social/lists'
 import { getFriends } from '@/lib/social/friends'
@@ -23,7 +22,6 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
 export default async function ListDetailPage({ params }: Props) {
   const { id } = await params
-  const t = await getTranslations('lists')
   const supabase = createClient()
   const { data: { user } } = await supabase.auth.getUser()
 
@@ -45,17 +43,6 @@ export default async function ListDetailPage({ params }: Props) {
 
   return (
     <main className="max-w-4xl mx-auto px-4 md:px-8 py-8">
-      <div className="mb-8">
-        <div className="flex items-center gap-3 flex-wrap">
-          <h1 className="font-display text-3xl text-text-primary">{list.name}</h1>
-          {list.isCollaborative && (
-            <span className="text-xs font-semibold bg-surface-elevated text-text-secondary rounded-full px-2.5 py-1">
-              {t('collaborative')}
-            </span>
-          )}
-        </div>
-        <p className="text-sm text-text-secondary mt-1">{list.owner?.username}</p>
-      </div>
       <ListDetail
         list={list}
         items={items}
