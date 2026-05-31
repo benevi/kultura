@@ -52,3 +52,10 @@ supabase/.temp/
 supabase/.branches/
 
 db_snapshot.txt
+
+dev_err.txt
+dev_out.txt
+dev_output.txt
+e2e_after_fix.txt
+e2e_baseline.txt
+*.e2e.txt
