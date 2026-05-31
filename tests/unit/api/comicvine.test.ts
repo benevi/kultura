@@ -106,8 +106,9 @@ describe("getRecentComics", () => {
 
     const result = await getRecentComics(2);
 
-    expect(result).toHaveLength(1);
-    expect(result[0]).toMatchObject({
+    expect(result.total).toBe(1);
+    expect(result.items).toHaveLength(1);
+    expect(result.items[0]).toMatchObject({
       id: "comic_12345",
       externalId: "12345",
       type: "comic",
@@ -121,7 +122,7 @@ describe("getRecentComics", () => {
     expect(calledUrl).toContain("offset=20");
   });
 
-  it("devuelve [] si results es null", async () => {
+  it("devuelve items vacíos y total 0 si results es null", async () => {
     vi.stubGlobal(
       "fetch",
       vi.fn().mockResolvedValue(
@@ -129,6 +130,6 @@ describe("getRecentComics", () => {
       )
     );
 
-    await expect(getRecentComics()).resolves.toEqual([]);
+    await expect(getRecentComics()).resolves.toEqual({ items: [], total: 0 });
   });
 });
