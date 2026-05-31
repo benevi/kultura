@@ -3,7 +3,7 @@
 
 ## Estado
 
-E66-COMIC-OCCIDENTAL → ✅ CERRADO (getRecentComics filtra publishers occidentales vía batch /volumes/ + cache; 544 green, commit 4e6e803)
+E45 → ✅ CERRADO (group_members RLS auto-join self-INSERT + JoinGroupButton feedback toast; commit 37e38a6)
 
 ## Tarea activa
 

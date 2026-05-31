@@ -6,6 +6,15 @@ No se edita a mano durante el día. Solo se añade una línea al terminar cada t
 
 ---
 
+## E45 — Grupos: RLS auto-join + feedback UI (2026-05-31)
+
+Commit: 37e38a6
+
+- Migration `20260531000001_fix_group_members_self_join.sql`: policy `"Users can join groups"` en `group_members` INSERT — `WITH CHECK (user_id = auth.uid() AND role = 'member')`. Desbloquea `POST /api/groups/[id]/join` para no-owners (antes 500 por RLS: solo existía `"Group owners can manage members"`). Sub-pieza E45-a del backlog. E45-b/c/d (descubrimiento, visibilidad, invitaciones) siguen abiertas.
+- `JoinGroupButton.tsx`: toast de error en `!res.ok` (antes el fallo de join era silencioso).
+- i18n: `friends.joinGroupError` en es/en.
+- Test: `tests/unit/social/groups-join-route.test.ts` cubre join/leave/401/404/owner-400.
+
 ## E66 — Discover cómic: filtrar publishers occidentales (2026-05-31)
 
 Commit: 4e6e803

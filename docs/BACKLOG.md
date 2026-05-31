@@ -287,7 +287,9 @@ No bloqueantes. Atacar solo despuÃ©s de Aâ€“D.
   Investigar si es setting de proyecto (toggle) o polÃ­tica del plan Hobby.
   Refuerza importancia de regla 11 (verificar Current, no solo Ready).
 
-- [ ] **E45. Grupos: flujo de descubrimiento + RLS de join + visibilidad/invitaciones**
+- [~] **E45. Grupos: flujo de descubrimiento + RLS de join + visibilidad/invitaciones**
+
+  **Estado (2026-05-31, commit 37e38a6):** E45-a CERRADA (RLS self-join + feedback UI). E45-b/c/d siguen abiertas.
 
   **Flujo roto detectado (diagnÃ³stico GRUPOS-DIAG, 2026-05-23):** El mÃ³dulo de grupos
   existe estructuralmente (tablas, endpoint, UI de detalle) pero es inaccesible como
@@ -321,8 +323,9 @@ No bloqueantes. Atacar solo despuÃ©s de Aâ€“D.
     inaccesibles. No existe modelo de invitaciones (ninguna tabla).
 
   **Sub-piezas para cuando se planifique:**
-  - E45-a: MigraciÃ³n que aÃ±ade policy RLS de self-join en `group_members` (fix bloqueante,
-    pequeÃ±o, independiente).
+  - [x] E45-a: MigraciÃ³n que aÃ±ade policy RLS de self-join en `group_members` (fix bloqueante,
+    pequeÃ±o, independiente). ✅ CERRADA 2026-05-31 (commit 37e38a6) — policy `"Users can join groups"`
+    `WITH CHECK (user_id = auth.uid() AND role = 'member')` + JoinGroupButton toast + test.
   - E45-b: PÃ¡gina `/groups` con listado/bÃºsqueda (engloba E22; E22 puede cerrarse al
     completar esto).
   - E45-c: Columna `is_public boolean default true` en `groups` + policy RLS que filtre
