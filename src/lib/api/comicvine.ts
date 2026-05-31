@@ -72,13 +72,18 @@ export async function getComic(externalId: string): Promise<ComicVineIssue> {
  * Issues recientes ordenados por fecha de portada descendente.
  * Paginado vía offset (page-1)*20. Normaliza a MediaItem.
  */
-export async function getRecentComics(page: number = 1): Promise<MediaItem[]> {
+export async function getRecentComics(
+  page: number = 1
+): Promise<{ items: MediaItem[]; total: number }> {
   const resp = await comicVineFetch<ComicVineSearchResponse>("/issues/", {
     sort: "cover_date:desc",
     limit: "20",
     offset: String((page - 1) * 20),
     field_list: "id,name,issue_number,cover_date,store_date,deck,image,volume",
   });
-  if (!resp.results) return [];
-  return resp.results.map(normalizeComic);
+  if (!resp.results) return { items: [], total: 0 };
+  return {
+    items: resp.results.map(normalizeComic),
+    total: resp.number_of_total_results ?? 0,
+  };
 }

@@ -79,7 +79,9 @@ export async function fetchDiscoverData(
         break;
       }
       case "comic": {
-        items = await getRecentComics(page);
+        const res = await getRecentComics(page);
+        items = res.items;
+        totalPages = Math.ceil(res.total / 20);
         break;
       }
       case "game": {
