@@ -81,7 +81,7 @@ export async function fetchDiscoverData(
       case "comic": {
         const res = await getRecentComics(page);
         items = res.items;
-        totalPages = Math.ceil(res.total / 20);
+        totalPages = Math.min(Math.ceil(res.total / 20), 50);
         break;
       }
       case "game": {
