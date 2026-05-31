@@ -1,3 +1,5 @@
+-- DEPRECATED: sustituido por queries directas (PostgREST schema cache no
+-- recargaba la función en Supabase Cloud). Mantenido como referencia.
 -- ============================================================
 -- KULTURA — RPC get_discoverable_groups (E45 Fase 2)
 --
