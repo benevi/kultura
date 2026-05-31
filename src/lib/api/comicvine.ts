@@ -17,35 +17,127 @@ interface ComicVineIssueResponse {
 const COMICVINE_BASE = "https://comicvine.gamespot.com/api";
 
 /**
- * Lista blanca de editoriales occidentales. Comparación case-insensitive por
- * substring: el feed /issues/ de ComicVine viene saturado de manga, así que solo
- * conservamos issues cuyo volumen pertenece a una de estas editoriales.
+ * Lista negra de editoriales de manga. El catálogo de cómics aspira a ser mundial
+ * (US + BD europea + UK + ES + LatAm + clásicos), excepto manga, que tiene su propio
+ * apartado (MangaDex). En vez de mantener una lista blanca limitada de editoriales
+ * occidentales, aceptamos TODA editorial salvo las de manga listadas aquí.
+ *
+ * Comparación case-insensitive por substring contra el nombre de publisher que
+ * ComicVine asocia al volumen. Cubre las grandes japonesas + sus sellos/imprints
+ * occidentales que publican manga traducido (Viz, Yen Press, Seven Seas, etc.),
+ * además de las principales coreanas (manhwa) y chinas (manhua), que también
+ * tienen tratamiento aparte fuera de este catálogo de cómic occidental.
  */
-export const WESTERN_PUBLISHERS: string[] = [
-  "DC Comics",
-  "Marvel",
-  "Image Comics",
-  "Dark Horse",
-  "IDW Publishing",
-  "BOOM! Studios",
-  "Dynamite",
-  "Valiant",
-  "Fantagraphics",
-  "Drawn & Quarterly",
-  "Oni Press",
-  "Archie Comics",
-  "Vertigo",
-  "Wildstorm",
-  "Top Cow",
+export const MANGA_PUBLISHERS: string[] = [
+  // Japón — grandes editoriales
+  "Shueisha",
+  "Kodansha",
+  "Shogakukan",
+  "Kadokawa",
+  "Square Enix",
+  "Hakusensha",
+  "Akita Shoten",
+  "Futabasha",
+  "Houbunsha",
+  "Ichijinsha",
+  "Coamix",
+  "Takeshobo",
+  "Shinchosha",
+  "Enterbrain",
+  "Mag Garden",
+  "Media Factory",
+  "Flex Comix",
+  "Bunkasha",
+  "Libre",
+  "Tokuma Shoten",
+  "Hobby Japan",
+  "Gentosha",
+  "Leed",
+  "Nihon Bungeisha",
+  "Kaiohsha",
+  "Ohzora",
+  "Jive",
+  "Frontier Works",
+  "Comicsmart",
+  "Kill Time Communication",
+  "Wani Books",
+  "Tobido",
+  "Seibido",
+  // Sellos/editoriales occidentales que publican manga traducido
+  "Viz",
+  "Yen Press",
+  "Seven Seas",
+  "Kodansha USA",
+  "Kodansha Comics",
+  "Dark Horse Manga",
+  "Tokyopop",
+  "Vertical",
+  "Denpa",
+  "J-Novel",
+  "Digital Manga",
+  "Glénat Manga",
+  "Norma Manga",
+  // Manhwa (Corea) y manhua (China) — fuera del catálogo de cómic occidental
+  "Webtoon",
+  "Naver",
+  "Daewon",
+  "Haksan",
+  "Lezhin",
+  "Kakao",
+  "Tappytoon",
+  "Tapas",
+  "D&C Media",
+  "Redice",
+  "Bilibili",
+  "Tencent",
+  "Kuaikan",
 ];
 
-const WESTERN_PUBLISHERS_LC = WESTERN_PUBLISHERS.map((p) => p.toLowerCase());
+const MANGA_PUBLISHERS_LC = MANGA_PUBLISHERS.map((p) => p.toLowerCase());
 
-/** True si el nombre de editorial contiene (case-insensitive) alguna de la lista blanca. */
-export function isWesternPublisher(name: string): boolean {
+/** True si el nombre de editorial contiene (case-insensitive) alguna editorial de manga. */
+export function isMangaPublisher(name: string): boolean {
   if (!name) return false;
   const lc = name.toLowerCase();
-  return WESTERN_PUBLISHERS_LC.some((p) => lc.includes(p));
+  return MANGA_PUBLISHERS_LC.some((p) => lc.includes(p));
+}
+
+/**
+ * Lista negra de editoriales/sellos de cómic erótico o pornográfico. Mismo
+ * mecanismo que el filtro de manga: comparación case-insensitive por substring
+ * contra el publisher que ComicVine asocia al volumen. Cubre los sellos adultos
+ * occidentales más comunes en ComicVine. (El hentai japonés ya cae por la lista
+ * de manga.)
+ */
+export const ADULT_PUBLISHERS: string[] = [
+  "Eros Comix",
+  "Amerotica",
+  "NBM Amerotica",
+  "Last Gasp",
+  "Fantagraphics Eros",
+  "FAKKU",
+  "Project H",
+  "Adult Comics",
+  "Hentai",
+  "Pink",
+  "Erotic",
+  "Penthouse Comix",
+  "Playboy",
+  "Hustler",
+  "Sizzle",
+  "Class Comics",
+  "Bruno Gmünder",
+  "NQ Publishers",
+  "Slipshine",
+];
+
+const ADULT_PUBLISHERS_LC = ADULT_PUBLISHERS.map((p) => p.toLowerCase());
+
+/** True si el nombre de editorial contiene (case-insensitive) algún sello adulto/erótico. */
+export function isAdultPublisher(name: string): boolean {
+  if (!name) return false;
+  const lc = name.toLowerCase();
+  return ADULT_PUBLISHERS_LC.some((p) => lc.includes(p));
 }
 
 /**
@@ -150,9 +242,10 @@ export async function resolveVolumePublishers(
 }
 
 /**
- * Issues recientes ordenados por fecha de portada descendente, filtrados a
- * editoriales occidentales. Fetchea limit=100 para compensar el filtrado (el
- * feed viene dominado por manga) y normaliza hasta 20 issues occidentales.
+ * Issues recientes ordenados por fecha de portada descendente, excluyendo manga
+ * y sellos adultos/eróticos (catálogo mundial de cómic: US + BD europea + UK + ES
+ * + clásicos). Fetchea limit=100 para compensar el filtrado y normaliza hasta 20
+ * issues. Issues sin publisher resuelto se descartan (la mayoría del manga llega así).
  * Paginado vía offset (page-1)*100.
  */
 export async function getRecentComics(
@@ -171,15 +264,19 @@ export async function getRecentComics(
     .filter((id): id is number => typeof id === "number");
   const publishers = await resolveVolumePublishers(volumeIds);
 
-  const western = resp.results.filter((issue) => {
+  const nonManga = resp.results.filter((issue) => {
     const publisher = issue.volume?.id
       ? publishers.get(issue.volume.id)
       : undefined;
-    return publisher ? isWesternPublisher(publisher) : false;
+    // Solo conservamos issues con publisher resuelto que NO sea de manga ni de
+    // sello adulto/erótico. Los issues sin publisher (la API no lo devuelve) se
+    // descartan: en ComicVine el grueso del manga llega así y se colaba.
+    if (!publisher) return false;
+    return !isMangaPublisher(publisher) && !isAdultPublisher(publisher);
   });
 
   return {
-    items: western.slice(0, 20).map(normalizeComic),
+    items: nonManga.slice(0, 20).map(normalizeComic),
     total: resp.number_of_total_results ?? 0,
   };
 }

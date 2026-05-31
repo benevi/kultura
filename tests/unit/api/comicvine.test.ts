@@ -7,7 +7,8 @@ import {
   getComic,
   getRecentComics,
   resolveVolumePublishers,
-  isWesternPublisher,
+  isMangaPublisher,
+  isAdultPublisher,
 } from "@/lib/api/comicvine";
 
 // Issue de detalle tal como lo devuelve ComicVine en `results` (objeto, no array).
@@ -100,18 +101,40 @@ describe("getComic", () => {
   });
 });
 
-describe("isWesternPublisher", () => {
-  it("acepta editoriales de la lista blanca (case-insensitive, substring)", () => {
-    expect(isWesternPublisher("DC Comics")).toBe(true);
-    expect(isWesternPublisher("marvel")).toBe(true);
-    expect(isWesternPublisher("Marvel Comics")).toBe(true); // substring
-    expect(isWesternPublisher("IMAGE COMICS")).toBe(true);
+describe("isMangaPublisher", () => {
+  it("detecta editoriales de manga (case-insensitive, substring)", () => {
+    expect(isMangaPublisher("Shueisha")).toBe(true);
+    expect(isMangaPublisher("kodansha")).toBe(true);
+    expect(isMangaPublisher("Kodansha USA Publishing")).toBe(true); // substring
+    expect(isMangaPublisher("VIZ Media")).toBe(true);
+    expect(isMangaPublisher("Yen Press")).toBe(true);
+    expect(isMangaPublisher("Webtoon")).toBe(true); // manhwa
   });
 
-  it("rechaza editoriales no occidentales y vacíos", () => {
-    expect(isWesternPublisher("Shueisha")).toBe(false);
-    expect(isWesternPublisher("Kodansha")).toBe(false);
-    expect(isWesternPublisher("")).toBe(false);
+  it("acepta cualquier editorial de cómic occidental/mundial y trata vacío como no-manga", () => {
+    expect(isMangaPublisher("DC Comics")).toBe(false);
+    expect(isMangaPublisher("Marvel")).toBe(false);
+    expect(isMangaPublisher("Dargaud")).toBe(false); // BD europea
+    expect(isMangaPublisher("Norma Editorial")).toBe(false); // ES
+    expect(isMangaPublisher("2000 AD")).toBe(false); // UK
+    expect(isMangaPublisher("")).toBe(false);
+  });
+});
+
+describe("isAdultPublisher", () => {
+  it("detecta sellos eróticos/porno (case-insensitive, substring)", () => {
+    expect(isAdultPublisher("Eros Comix")).toBe(true);
+    expect(isAdultPublisher("NBM Amerotica")).toBe(true);
+    expect(isAdultPublisher("FAKKU")).toBe(true);
+    expect(isAdultPublisher("Penthouse Comix")).toBe(true);
+    expect(isAdultPublisher("class comics")).toBe(true);
+  });
+
+  it("acepta editoriales de cómic normales y trata vacío como no-adulto", () => {
+    expect(isAdultPublisher("DC Comics")).toBe(false);
+    expect(isAdultPublisher("Image Comics")).toBe(false);
+    expect(isAdultPublisher("Dargaud")).toBe(false);
+    expect(isAdultPublisher("")).toBe(false);
   });
 });
 
@@ -210,7 +233,62 @@ describe("getRecentComics", () => {
     expect(issuesUrl).toContain("offset=100");
   });
 
-  it("descarta issues de editorial no occidental (manga)", async () => {
+  it("descarta issues sin publisher resuelto (el manga llega así y se colaba)", async () => {
+    const fetchMock = mockFetchByPath(
+      {
+        status_code: 1,
+        error: "OK",
+        number_of_total_results: 2,
+        results: [
+          { ...ISSUE, id: 20, volume: { id: 200, name: "Naruto" } },
+          { ...ISSUE, id: 21, volume: { id: 201, name: "Saga" } },
+        ],
+      },
+      {
+        status_code: 1,
+        error: "OK",
+        // /volumes/ solo resuelve el cómic occidental (201); el volumen 200 queda
+        // sin publisher y debe descartarse.
+        results: [{ id: 201, publisher: { id: 3, name: "Image Comics" } }],
+      }
+    );
+    vi.stubGlobal("fetch", fetchMock);
+
+    const result = await getRecentComics();
+
+    expect(result.items).toHaveLength(1);
+    expect(result.items[0].id).toBe("comic_21");
+  });
+
+  it("descarta issues de sello adulto/erótico", async () => {
+    const fetchMock = mockFetchByPath(
+      {
+        status_code: 1,
+        error: "OK",
+        number_of_total_results: 2,
+        results: [
+          { ...ISSUE, id: 30, volume: { id: 300, name: "Saga" } },
+          { ...ISSUE, id: 31, volume: { id: 301, name: "Birdland" } },
+        ],
+      },
+      {
+        status_code: 1,
+        error: "OK",
+        results: [
+          { id: 300, publisher: { id: 3, name: "Image Comics" } },
+          { id: 301, publisher: { id: 4, name: "Eros Comix" } },
+        ],
+      }
+    );
+    vi.stubGlobal("fetch", fetchMock);
+
+    const result = await getRecentComics();
+
+    expect(result.items).toHaveLength(1);
+    expect(result.items[0].id).toBe("comic_30");
+  });
+
+  it("descarta issues de editorial de manga", async () => {
     const fetchMock = mockFetchByPath(
       {
         status_code: 1,
