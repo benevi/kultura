@@ -2,9 +2,10 @@
 
 import { useState } from 'react'
 import { useTranslations } from 'next-intl'
-import { Link } from '@/i18n/navigation'
+import { Link, useRouter } from '@/i18n/navigation'
 import { Avatar } from '@/components/ui/Avatar'
 import { KButton } from '@/components/ui/KButton'
+import { ConfirmModal } from '@/components/ui/ConfirmModal'
 import { MediaCard } from '@/components/media/MediaCard'
 import type { List, ListItem, ListMember } from '@/types/list'
 
@@ -26,13 +27,39 @@ export function ListDetail({
   canEdit,
 }: ListDetailProps) {
   const t = useTranslations('lists')
+  const tc = useTranslations('common')
+  const router = useRouter()
   const [items, setItems] = useState<ListItem[]>(initialItems)
   const [members, setMembers] = useState<ListMember[]>(initialMembers)
   const [removingItem, setRemovingItem] = useState<string | null>(null)
   const [inviteUserId, setInviteUserId] = useState('')
   const [inviting, setInviting] = useState(false)
+  const [confirmDelete, setConfirmDelete] = useState(false)
+  const [deleting, setDeleting] = useState(false)
+  const [deleteError, setDeleteError] = useState<string | null>(null)
 
   const isOwner = list.ownerId === currentUserId
+
+  async function handleDeleteList() {
+    setDeleting(true)
+    setDeleteError(null)
+    try {
+      const res = await fetch('/api/lists', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ listId: list.id }),
+      })
+      if (!res.ok) {
+        setDeleteError(t('errorDelete'))
+        setDeleting(false)
+        return
+      }
+      router.push('/lists')
+    } catch {
+      setDeleteError(t('errorDelete'))
+      setDeleting(false)
+    }
+  }
 
   async function handleRemoveItem(itemId: string) {
     setRemovingItem(itemId)
@@ -97,6 +124,45 @@ export function ListDetail({
 
   return (
     <div className="flex flex-col gap-10">
+      {/* Header */}
+      <header className="flex items-start justify-between gap-3">
+        <div>
+          <div className="flex items-center gap-3 flex-wrap">
+            <h1 className="font-display text-3xl text-text-primary">{list.name}</h1>
+            {list.isCollaborative && (
+              <span className="text-xs font-semibold bg-surface-elevated text-text-secondary rounded-full px-2.5 py-1">
+                {t('collaborative')}
+              </span>
+            )}
+          </div>
+          <p className="text-sm text-text-secondary mt-1">{list.owner?.username}</p>
+        </div>
+        {isOwner && (
+          <KButton
+            variant="secondary"
+            size="sm"
+            onClick={() => setConfirmDelete(true)}
+            className="text-text-secondary hover:text-accent-danger flex-shrink-0"
+          >
+            {t('deleteList')}
+          </KButton>
+        )}
+      </header>
+
+      {deleteError && <p className="text-xs text-accent-danger">{deleteError}</p>}
+
+      <ConfirmModal
+        isOpen={confirmDelete}
+        title={t('deleteListTitle')}
+        message={t('deleteListConfirm')}
+        confirmLabel={tc('confirm')}
+        cancelLabel={tc('cancel')}
+        isDestructive
+        loading={deleting}
+        onConfirm={handleDeleteList}
+        onCancel={() => setConfirmDelete(false)}
+      />
+
       {/* Items */}
       <section>
         <h2 className="font-display text-xl mb-4 text-text-primary">
