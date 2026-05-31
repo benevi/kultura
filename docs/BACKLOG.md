@@ -197,7 +197,7 @@ No bloqueantes. Atacar solo despuÃ©s de Aâ€“D.
   Actualmente: no hay endpoint para eliminar grupos (solo crear/listar/join/leave) y los posts de grupo se insertan cliente-direct vÃ­a RLS. Crear `DELETE /api/groups/[id]` (solo `owner`) y `POST /api/groups/[id]/posts` (solo miembros). Aplicar rate-limit de C4 cuando se haga.
   Hecho cuando: ambos endpoints existen, validan rol/membership server-side, y hay tests de integraciÃ³n mÃ­nimos.
 
-- [ ] **E22. PÃ¡gina `/groups` con listado pÃºblico de grupos**
+- [x] **E22. (CERRADA 2026-05-31, absorbida por E45-b)** **PÃ¡gina `/groups` con listado pÃºblico de grupos**
   Hoy solo existe `/groups/[id]`. Sin listado, los grupos son invisibles para no-miembros (ver `ESTADO_PROYECTO.md` Â§18.3). Crear `src/app/[locale]/(app)/groups/page.tsx` con listado bÃ¡sico (paginado, filtro por nombre).
   Hecho cuando: la ruta `/[locale]/groups` renderiza grupos visibles y enlaza a `/groups/[id]`.
 
@@ -289,7 +289,7 @@ No bloqueantes. Atacar solo despuÃ©s de Aâ€“D.
 
 - [~] **E45. Grupos: flujo de descubrimiento + RLS de join + visibilidad/invitaciones**
 
-  **Estado (2026-05-31, commit 37e38a6):** E45-a CERRADA (RLS self-join + feedback UI). E45-b/c/d siguen abiertas.
+  **Estado (2026-05-31):** E45-a CERRADA (RLS self-join + feedback UI; commit 37e38a6). E45-b CERRADA (descubrimiento + pagina /groups con tabs + DiscoverGroupsClient + GroupCard + refactor FriendsClient + nav; commits 2ef43f7, a96f8a2, da4a902, 1251994; engloba y cierra E22). E45-c (visibilidad is_public) y E45-d (invitaciones) siguen abiertas.
 
   **Flujo roto detectado (diagnÃ³stico GRUPOS-DIAG, 2026-05-23):** El mÃ³dulo de grupos
   existe estructuralmente (tablas, endpoint, UI de detalle) pero es inaccesible como
@@ -326,7 +326,7 @@ No bloqueantes. Atacar solo despuÃ©s de Aâ€“D.
   - [x] E45-a: MigraciÃ³n que aÃ±ade policy RLS de self-join en `group_members` (fix bloqueante,
     pequeÃ±o, independiente). ✅ CERRADA 2026-05-31 (commit 37e38a6) — policy `"Users can join groups"`
     `WITH CHECK (user_id = auth.uid() AND role = 'member')` + JoinGroupButton toast + test.
-  - E45-b: PÃ¡gina `/groups` con listado/bÃºsqueda (engloba E22; E22 puede cerrarse al
+  - [x] E45-b (CERRADA 2026-05-31): PÃ¡gina `/groups` con listado/bÃºsqueda (engloba E22; E22 puede cerrarse al
     completar esto).
   - E45-c: Columna `is_public boolean default true` en `groups` + policy RLS que filtre
     grupos privados en SELECT; ajuste UI en detalle y listado.
@@ -541,3 +541,11 @@ No bloqueantes. Atacar solo despuÃ©s de Aâ€“D.
     536 green. getComic + VALID_TYPES + page.tsx comic branch.
 - [x] **E66-COMIC-OCCIDENTAL** — Discover cómic: filtrar publishers occidentales vía batch volumes ✅ (cerrada el 2026-05-31, 4e6e803)
     544 green. resolveVolumePublishers (batch /volumes/ + cache) + WESTERN_PUBLISHERS/isWesternPublisher + getRecentComics limit=100 filtra a occidentales.
+
+- [ ] **E67. Flaky test `tests/unit/library/route.test.ts` (401 no autenticado)**
+  Falla esporádicamente en la suite completa (`vitest run`) pero pasa siempre aislado (`vitest run tests/unit/library/route.test.ts` → 8/8 verde). Síntoma de test pollution / estado de mock compartido entre archivos (orden de ejecución, `global.fetch` o mocks de Supabase no reseteados). Detectado durante E45-b (commit da4a902): 1 fallo en primera corrida, 571/571 en re-corrida.
+  Hecho cuando: el test pasa de forma determinista en 5 corridas consecutivas de la suite completa, o se identifica y corrige la fuente de contaminación (mock sin `vi.clearAllMocks`/`resetModules`).
+
+- [ ] **E68. Tests de integración real para RPC `get_discoverable_groups`**
+  Hoy el RPC solo está cubierto por tests unitarios con el cliente Supabase mockeado (`tests/unit/social/discover-route.test.ts`). Faltan tests de integración contra DB real (kultura-test) que ejerciten los boundaries de `p_size`: 10/11 (small↔medium) y 50/51 (medium↔large), además de scope joined/unjoined y paginación limit/offset reales.
+  Hecho cuando: existe spec en `tests/integration/` que seedea grupos con membresías de tamaños 10, 11, 50 y 51, y verifica que el filtro `size` los clasifica correctamente con DB real.

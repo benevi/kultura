@@ -15,6 +15,16 @@ Commit: 37e38a6
 - i18n: `friends.joinGroupError` en es/en.
 - Test: `tests/unit/social/groups-join-route.test.ts` cubre join/leave/401/404/owner-400.
 
+## E45-b — Grupos: descubrimiento + página /groups + nav (2026-05-31)
+
+Commits: 2ef43f7 (RPC+endpoint), a96f8a2 (página+componentes), da4a902 (refactor FriendsClient), 1251994 (nav).
+
+- **RPC + endpoint** (2ef43f7): `get_discoverable_groups(p_q, p_scope, p_size, p_limit, p_offset)` + `GET /api/groups/discover` (Zod, rate-limit, mapeo a `DiscoverGroup`). `getDiscoverableGroups` en `src/lib/social/groups.ts`.
+- **Página /groups** (a96f8a2): `groups/page.tsx` (Server Component, `getUserGroups`), `GroupsClient.tsx` (tabs "Mis grupos" / "Descubrir"), `DiscoverGroupsClient.tsx` (search debounce 400ms manual + FilterBar scope/size + grid + paginación "Cargar más" LIMIT 50/offset). Componentes extraídos: `ui/TabButton.tsx` (compartido Friends+Groups), `social/CreateGroupForm.tsx` (reutilizable, antes inline en Friends), `social/GroupCard.tsx` (avatar color, nombre, desc, memberCount plural ICU, badge isMember). Mapeo UI→API: chips "Ya soy miembro"/"No soy miembro" → scope joined/unjoined. i18n es/en (groups.* + filters.scope/size + nav.groups). Tests: `DiscoverGroupsClient.test.tsx`, `GroupsClient.test.tsx`.
+- **Refactor FriendsClient** (da4a902): eliminado tab grupos + estado/lógica de grupos; Friends queda como vista única (share → search → pending → lista) + link a /groups. −188/+90.
+- **Nav** (1251994): `/groups` añadido a `NavLinks.tsx` tras `/friends` (social), key `nav.groups` es/en.
+- Cierra E22 (página /groups con listado). Engloba el listado/búsqueda. tsc 0, lint 0, **571 passed**.
+
 ## E66 — Discover cómic: filtrar publishers occidentales (2026-05-31)
 
 Commit: 4e6e803
