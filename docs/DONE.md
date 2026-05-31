@@ -6,6 +6,10 @@ No se edita a mano durante el día. Solo se añade una línea al terminar cada t
 
 ---
 
+## E70 — Drop RPC zombi get_discoverable_groups (2026-05-31)
+
+Migración `20260531201838_drop_rpc_discover_groups.sql`: `DROP FUNCTION IF EXISTS public.get_discoverable_groups(text, text, text, integer, integer)` + `NOTIFY pgrst, 'reload schema'`. RPC muerta desde el hotfix de E45-b (discover usa queries directas en `src/lib/social/groups.ts`). Migración vieja `20260531180450_rpc_discover_groups.sql` se conserva como histórico DEPRECATED. Grep: 0 referencias a la RPC en `src/` (solo 2 comentarios). Drop en prod ejecutado manualmente. lint/tsc/vitest verdes (576 passed).
+
 ## E45 — Grupos: RLS auto-join + feedback UI (2026-05-31)
 
 Commit: 37e38a6
