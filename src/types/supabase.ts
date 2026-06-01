@@ -94,7 +94,7 @@ export interface DbListItem {
 export interface DbNotification {
   id: string; // uuid
   user_id: string; // uuid → users.id
-  type: "recommendation" | "list_invite";
+  type: "recommendation" | "list_invite" | "group_invite";
   payload: Record<string, unknown>; // jsonb
   read_at: string | null; // timestamptz
   created_at: string; // timestamptz
@@ -162,6 +162,16 @@ export interface DbGroupMember {
   joined_at: string; // timestamptz
 }
 
+/** Tabla: group_invitations (invitaciones a grupos — solo amigos, accept vía notificación) */
+export interface DbGroupInvitation {
+  id: string; // uuid
+  group_id: string; // uuid → groups.id (on delete cascade)
+  inviter_id: string; // uuid → users.id (on delete cascade)
+  invitee_id: string; // uuid → users.id (on delete cascade)
+  status: "pending" | "accepted";
+  created_at: string; // timestamptz
+}
+
 /** Tabla: group_posts (feed de un grupo) */
 export interface DbGroupPost {
   id: string; // uuid
@@ -200,6 +210,7 @@ export interface Database {
       groups: { Row: DbGroup; Insert: Omit<DbGroup, "id" | "created_at" | "cover_color" | "is_public"> & { cover_color?: string; is_public?: boolean }; Update: Partial<Omit<DbGroup, "id" | "owner_id">> };
       group_members: { Row: DbGroupMember; Insert: Omit<DbGroupMember, "joined_at" | "role"> & { role?: "owner" | "member" }; Update: Pick<DbGroupMember, "role"> };
       group_posts: { Row: DbGroupPost; Insert: Omit<DbGroupPost, "id" | "created_at">; Update: never };
+      group_invitations: { Row: DbGroupInvitation; Insert: Omit<DbGroupInvitation, "id" | "created_at" | "status"> & { status?: "pending" | "accepted" }; Update: Pick<DbGroupInvitation, "status"> };
     };
   };
 }
