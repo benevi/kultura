@@ -14,6 +14,7 @@ const CreateGroupSchema = z.object({
   name: z.string().min(2).max(60),
   description: z.string().max(200).optional(),
   cover_color: z.string().regex(/^#[0-9a-fA-F]{6}$/).optional(),
+  is_public: z.boolean().optional().default(true),
 })
 
 export async function GET(): Promise<NextResponse> {
@@ -50,6 +51,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       name: parsed.data.name,
       description: parsed.data.description ?? null,
       cover_color: parsed.data.cover_color ?? '#E82020',
+      is_public: parsed.data.is_public,
     })
     .select()
     .single()
