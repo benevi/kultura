@@ -6,6 +6,10 @@ No se edita a mano durante el día. Solo se añade una línea al terminar cada t
 
 ---
 
+2026-06-01 | E71 | (código + docs en 2 commits) | `DELETE /api/lists/[id]` (handler item): `.delete({ count: 'exact' })` + `if (count === 0)` → 404 `Not found`, mirror exacto del patrón de `/api/library` DELETE. Borrar item inexistente ahora devuelve 404 en vez de 200 `{ok:true}`. `canEditList` (403) y rama de borrar lista entera intactos. +5 tests en `tests/unit/social/lists-id-route.test.ts` (401/400/403/404/200). tsc 0, lint 0, vitest **589 passed** (584→589, +5). Cierre del residuo cosmético de E61. No es seguridad (RLS `list_items_delete_adder_or_owner` ya protege), es feedback al cliente.
+
+---
+
 2026-06-01 | E61 | (sin commit de código — solo docs) | Auditoría Fase 0: NO-VULN. `DELETE /api/lists/[id]` usa `createClient()` (anon+sesión), no service-role; RLS `list_items_delete_adder_or_owner` sí aplica. Diagnóstico de E47 era incorrecto. Residuo cosmético (no verifica filas afectadas) → E71.
 
 ---

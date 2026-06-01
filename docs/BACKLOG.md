@@ -550,7 +550,7 @@ No bloqueantes. Atacar solo despuÃ©s de Aâ€“D.
   Hecho cuando: `DROP FUNCTION IF EXISTS public.get_discoverable_groups(text, text, text, integer, integer);` aplicado en prod vía migración versionada, `NOTIFY pgrst, 'reload schema'`, y `\df public.get_discoverable_groups` en prod no devuelve filas.
   Cerrada 2026-05-31: migración `20260531201838_drop_rpc_discover_groups.sql` (drop versionado + reload schema). Migración vieja `20260531180450` queda como histórico DEPRECATED. Grep confirma 0 referencias a la RPC en `src/` (solo 2 comentarios mencionando el nombre). Drop en prod ejecutado manualmente.
 
-- [ ] **E71. `DELETE /api/lists/[id]` no verifica `count` tras borrar item**
-  Hallazgo Fase 0 E61. El handler hace `.delete().eq('id',itemId).eq('list_id',listId)` y devuelve `{ok:true}` sin comprobar filas afectadas. Si la RLS filtra (item de otro colaborador) borra 0 filas pero responde 200. Patrón correcto ya existe en `/api/library` (usa `count` → 404). Fix: añadir `{ count: 'exact' }` o verificar resultado y devolver 404 si 0 filas. No es seguridad (RLS ya protege), es feedback.
-  Toca: `src/app/api/lists/[id]/route.ts` DELETE handler (~L203-224).
-  Hecho cuando: borrar item inexistente o sin permiso devuelve 404, no 200; +test.
+- [x] **E71. (CERRADA 2026-06-01) `DELETE /api/lists/[id]` no verifica `count` tras borrar item**
+  Fix: `.delete({ count: 'exact' })` + `if (count === 0)` → 404, mirror exacto del patrón de `/api/library` DELETE. El check `canEditList` (403) y la rama de borrar lista entera quedaron intactos. +5 tests en `tests/unit/social/lists-id-route.test.ts` (401/400/403/404/200). tsc 0, lint 0, **589 passed** (584→589).
+  Toca: `src/app/api/lists/[id]/route.ts` DELETE handler.
+  ~~Hallazgo Fase 0 E61. El handler hace `.delete().eq('id',itemId).eq('list_id',listId)` y devuelve `{ok:true}` sin comprobar filas afectadas. Si la RLS filtra (item de otro colaborador) borra 0 filas pero responde 200. Patrón correcto ya existe en `/api/library` (usa `count` → 404). Fix: añadir `{ count: 'exact' }` o verificar resultado y devolver 404 si 0 filas. No es seguridad (RLS ya protege), es feedback.~~
