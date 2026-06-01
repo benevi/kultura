@@ -211,14 +211,19 @@ export async function DELETE(request: Request, { params }: Params): Promise<Next
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
   }
 
-  const { error: deleteErr } = await supabase
+  const { error: deleteErr, count } = await supabase
     .from('list_items')
-    .delete()
+    .delete({ count: 'exact' })
     .eq('id', itemId)
     .eq('list_id', listId)
 
   if (deleteErr) {
     return NextResponse.json({ error: 'Failed to remove item' }, { status: 500 })
+  }
+
+  // 404 si no existía
+  if (count === 0) {
+    return NextResponse.json({ error: 'Not found' }, { status: 404 })
   }
 
   return NextResponse.json({ ok: true })
