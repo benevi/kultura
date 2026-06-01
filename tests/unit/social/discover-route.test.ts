@@ -12,6 +12,7 @@ import { NextRequest } from 'next/server'
 const mockGetUser = vi.fn()
 const mockOrder = vi.fn()
 const mockIlike = vi.fn()
+const mockEq = vi.fn()
 const mockSelect = vi.fn()
 const mockFrom = vi.fn()
 
@@ -23,6 +24,7 @@ let queryResult: { data: unknown; error: unknown } = { data: [], error: null }
 function makeBuilder() {
   const builder: Record<string, unknown> = {}
   builder.select = mockSelect.mockReturnValue(builder)
+  builder.eq = mockEq.mockReturnValue(builder)
   builder.order = mockOrder.mockReturnValue(builder)
   builder.ilike = mockIlike.mockReturnValue(builder)
   builder.then = (resolve: (v: typeof queryResult) => unknown) => resolve(queryResult)
@@ -145,11 +147,26 @@ describe('GET /api/groups/discover', () => {
     expect(res.status).toBe(200)
     expect(mockFrom).toHaveBeenCalledWith('groups')
     expect(mockSelect).toHaveBeenCalledWith(
-      'id, owner_id, name, description, cover_color, created_at, group_members(user_id)'
+      'id, owner_id, name, description, cover_color, is_public, created_at, group_members(user_id)'
     )
+    // Filtro explícito de visibilidad: solo grupos públicos (E45-c).
+    expect(mockEq).toHaveBeenCalledWith('is_public', true)
     expect(mockOrder).toHaveBeenCalledWith('created_at', { ascending: false })
     // Sin q → sin ilike.
     expect(mockIlike).not.toHaveBeenCalled()
+  })
+
+  it('always filters out private groups via .eq(is_public, true)', async () => {
+    // El filtro de visibilidad es server-side (PostgREST + RLS): los grupos
+    // privados nunca llegan al cliente. Garantía a nivel unit = el .eq se aplica
+    // siempre, también con q/scope/size presentes.
+    mockGetUser.mockResolvedValue({ data: { user: AUTH_USER }, error: null })
+    setRows([])
+
+    const { GET } = await import('@/app/api/groups/discover/route')
+    const res = await GET(makeRequest('q=cine&scope=unjoined&size=small'))
+    expect(res.status).toBe(200)
+    expect(mockEq).toHaveBeenCalledWith('is_public', true)
   })
 
   it('applies ilike on name when q is present', async () => {

@@ -203,6 +203,7 @@ interface DiscoverGroupQueryRow {
   name: string
   description: string | null
   cover_color: string
+  is_public: boolean
   created_at: string
   group_members: { user_id: string }[] | null
 }
@@ -244,7 +245,9 @@ export async function getDiscoverableGroups(
 
   let query = supabase
     .from('groups')
-    .select('id, owner_id, name, description, cover_color, created_at, group_members(user_id)')
+    .select('id, owner_id, name, description, cover_color, is_public, created_at, group_members(user_id)')
+    // La RLS ya oculta grupos privados a no-miembros; filtro explícito por claridad (E45-c).
+    .eq('is_public', true)
     .order('created_at', { ascending: false })
 
   if (q) query = query.ilike('name', `%${q}%`)

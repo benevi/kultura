@@ -150,6 +150,7 @@ export interface DbGroup {
   name: string;
   description: string | null;
   cover_color: string; // hex '#RRGGBB' — default '#E82020'
+  is_public: boolean; // default true — grupos privados invisibles a no-miembros (E45-c)
   created_at: string; // timestamptz
 }
 
@@ -196,7 +197,7 @@ export interface Database {
       conversations: { Row: DbConversation; Insert: Partial<Pick<DbConversation, "id" | "created_at" | "last_message_at">>; Update: Pick<DbConversation, "last_message_at"> };
       conversation_members: { Row: DbConversationMember; Insert: Omit<DbConversationMember, "last_read_at"> & { last_read_at?: string | null }; Update: Pick<DbConversationMember, "last_read_at"> };
       messages: { Row: DbMessage; Insert: Omit<DbMessage, "id" | "created_at">; Update: never };
-      groups: { Row: DbGroup; Insert: Omit<DbGroup, "id" | "created_at" | "cover_color"> & { cover_color?: string }; Update: Partial<Omit<DbGroup, "id" | "owner_id">> };
+      groups: { Row: DbGroup; Insert: Omit<DbGroup, "id" | "created_at" | "cover_color" | "is_public"> & { cover_color?: string; is_public?: boolean }; Update: Partial<Omit<DbGroup, "id" | "owner_id">> };
       group_members: { Row: DbGroupMember; Insert: Omit<DbGroupMember, "joined_at" | "role"> & { role?: "owner" | "member" }; Update: Pick<DbGroupMember, "role"> };
       group_posts: { Row: DbGroupPost; Insert: Omit<DbGroupPost, "id" | "created_at">; Update: never };
     };
