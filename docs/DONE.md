@@ -6,6 +6,10 @@ No se edita a mano durante el día. Solo se añade una línea al terminar cada t
 
 ---
 
+2026-06-01 | E61 | (sin commit de código — solo docs) | Auditoría Fase 0: NO-VULN. `DELETE /api/lists/[id]` usa `createClient()` (anon+sesión), no service-role; RLS `list_items_delete_adder_or_owner` sí aplica. Diagnóstico de E47 era incorrecto. Residuo cosmético (no verifica filas afectadas) → E71.
+
+---
+
 ## E65 — Refrescar /lists tras borrar lista (2026-05-31)
 
 Commit: be2f08c

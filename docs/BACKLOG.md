@@ -485,13 +485,8 @@ No bloqueantes. Atacar solo despuÃ©s de Aâ€“D.
 
   Sin priorizar. No tocar `langRestrict` hasta tomar la decisiÃ³n.
 
-- [ ] **E61. Seguridad: `DELETE /api/lists/[id]` bypassa RLS con service-role**
-
-  Descubierto en Fase 0 de E47. El endpoint usa service-role client y solo comprueba
-  `canEditList`, por lo que un colaborador puede borrar items aÃ±adidos por otros
-  colaboradores ignorando la RLS real (`added_by OR owner`).
-  Toca: `src/app/api/lists/[id]/route.ts` (handler DELETE).
-  Riesgo: seguridad (privilege escalation entre colaboradores).
+- [x] **E61. (CERRADA 2026-06-01 — NO-VULN, mal diagnosticada)** ~~Seguridad: `DELETE /api/lists/[id]` bypassa RLS con service-role~~
+  Fase 0 (chat actual) desmontó el diagnóstico de E47: el handler usa `createClient()` (anon + sesión, server.ts:15-17), NO service-role — no existe service-role en runtime (único uso: scripts/seed-test.mjs). La RLS de `list_items` DELETE (`list_items_delete_adder_or_owner`, migración L743-745) restringe a `added_by = auth.uid() OR owner` y SÍ se aplica al ir con sesión. Un colaborador que intenta borrar item de otro → 0 filas afectadas, sin escalada. `canEditList` es defensa-en-capa, no la única barrera. Residuo cosmético (no seguridad) → E71.
 
 - [ ] **E62. PatrÃ³n transversal: mutaciones optimistas sin verificar `res.ok`**
 
@@ -554,3 +549,8 @@ No bloqueantes. Atacar solo despuÃ©s de Aâ€“D.
   Tras el hotfix de E45 (commit 2d11228) el descubrimiento de grupos usa queries directas en vez de la RPC (la RPC quedaba cacheada en el schema de PostgREST y devolvía resultados obsoletos). La función `public.get_discoverable_groups(text, text, text, integer, integer)` queda sin uso en el código. Eliminarla con `DROP FUNCTION` cuando se haga limpieza de DB, en una migración nueva (`supabase migration new drop_rpc_discover_groups`).
   Hecho cuando: `DROP FUNCTION IF EXISTS public.get_discoverable_groups(text, text, text, integer, integer);` aplicado en prod vía migración versionada, `NOTIFY pgrst, 'reload schema'`, y `\df public.get_discoverable_groups` en prod no devuelve filas.
   Cerrada 2026-05-31: migración `20260531201838_drop_rpc_discover_groups.sql` (drop versionado + reload schema). Migración vieja `20260531180450` queda como histórico DEPRECATED. Grep confirma 0 referencias a la RPC en `src/` (solo 2 comentarios mencionando el nombre). Drop en prod ejecutado manualmente.
+
+- [ ] **E71. `DELETE /api/lists/[id]` no verifica `count` tras borrar item**
+  Hallazgo Fase 0 E61. El handler hace `.delete().eq('id',itemId).eq('list_id',listId)` y devuelve `{ok:true}` sin comprobar filas afectadas. Si la RLS filtra (item de otro colaborador) borra 0 filas pero responde 200. Patrón correcto ya existe en `/api/library` (usa `count` → 404). Fix: añadir `{ count: 'exact' }` o verificar resultado y devolver 404 si 0 filas. No es seguridad (RLS ya protege), es feedback.
+  Toca: `src/app/api/lists/[id]/route.ts` DELETE handler (~L203-224).
+  Hecho cuando: borrar item inexistente o sin permiso devuelve 404, no 200; +test.
