@@ -3,7 +3,7 @@
 
 ## Estado
 
-E45-b → ✅ CERRADO (página /groups con tabs + DiscoverGroupsClient + GroupCard + refactor FriendsClient + nav; commits a96f8a2, da4a902, 1251994). E45 sigue [~] parcial: E45-c (visibilidad is_public) y E45-d (invitaciones) abiertos.
+E45-c → ✅ CERRADO 2026-06-01 (is_public + RLS `is_group_member` SECURITY DEFINER + discover filtra privados + UI toggle/badge/join condicional + i18n; commit 759c1b3). E45 sigue [~] parcial: queda solo E45-d (invitaciones).
 
 ## Tarea activa
 

@@ -289,7 +289,7 @@ No bloqueantes. Atacar solo despuÃ©s de Aâ€“D.
 
 - [~] **E45. Grupos: flujo de descubrimiento + RLS de join + visibilidad/invitaciones**
 
-  **Estado (2026-05-31):** E45-a CERRADA (RLS self-join + feedback UI; commit 37e38a6). E45-b CERRADA (descubrimiento + pagina /groups con tabs + DiscoverGroupsClient + GroupCard + refactor FriendsClient + nav; commits 2ef43f7, a96f8a2, da4a902, 1251994; engloba y cierra E22). E45-c (visibilidad is_public) y E45-d (invitaciones) siguen abiertas.
+  **Estado (2026-06-01):** E45-a ✅, E45-b ✅, E45-c ✅. Queda solo E45-d (invitaciones). E45-a CERRADA (RLS self-join + feedback UI; commit 37e38a6). E45-b CERRADA (descubrimiento + pagina /groups con tabs + DiscoverGroupsClient + GroupCard + refactor FriendsClient + nav; commits 2ef43f7, a96f8a2, da4a902, 1251994; engloba y cierra E22). E45-c CERRADA 2026-06-01 (is_public + RLS + discover filtra privados + UI; commit 759c1b3).
 
   **Flujo roto detectado (diagnÃ³stico GRUPOS-DIAG, 2026-05-23):** El mÃ³dulo de grupos
   existe estructuralmente (tablas, endpoint, UI de detalle) pero es inaccesible como
@@ -328,8 +328,10 @@ No bloqueantes. Atacar solo despuÃ©s de Aâ€“D.
     `WITH CHECK (user_id = auth.uid() AND role = 'member')` + JoinGroupButton toast + test.
   - [x] E45-b (CERRADA 2026-05-31): PÃ¡gina `/groups` con listado/bÃºsqueda (engloba E22; E22 puede cerrarse al
     completar esto).
-  - E45-c: Columna `is_public boolean default true` en `groups` + policy RLS que filtre
-    grupos privados en SELECT; ajuste UI en detalle y listado.
+  - [x] E45-c (CERRADA 2026-06-01): `is_public boolean default true` en `groups` + RLS
+    (función `SECURITY DEFINER` `is_group_member`, sin recursión) + discover filtra privados +
+    UI toggle crear / badge privado / join condicional (`showJoin = isMember || isOwner || isPublic`) +
+    propagación `isPublic` + i18n. Privados solo admiten miembros vía owner hasta E45-d. Commit 759c1b3.
   - E45-d: Tabla `group_invitations` + flujo de invitaciÃ³n (enviar / aceptar / rechazar).
 
   No planificar aÃºn. Solo backlog.

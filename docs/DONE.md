@@ -43,6 +43,17 @@ Commits: 2ef43f7 (RPC+endpoint), a96f8a2 (página+componentes), da4a902 (refacto
 - **Nav** (1251994): `/groups` añadido a `NavLinks.tsx` tras `/friends` (social), key `nav.groups` es/en.
 - Cierra E22 (página /groups con listado). Engloba el listado/búsqueda. tsc 0, lint 0, **571 passed**.
 
+## E45-c — Grupos: visibilidad is_public + UI (2026-06-01)
+
+Commit código: 759c1b3.
+
+- **DB/RLS** (migraciones previas E45-c): columna `is_public boolean default true` en `groups`. RLS SELECT filtra privados a no-miembros vía función `SECURITY DEFINER` `is_group_member` (evita recursión de la policy sobre `group_members`). `getDiscoverableGroups` filtra `is_public = true` explícito.
+- **Propagación `isPublic`** (759c1b3): `Group` interface + `mapGroup` + selects de `getUserGroups`/`getGroupById` en `src/lib/social/groups.ts`.
+- **UI crear** (`CreateGroupForm.tsx`): toggle segmentado Público/Privado (default público, tokens DS `accent-positive`/`on-accent-positive`, `role=group` + `aria-pressed`), envía `is_public` en POST, hint privado cierto al estado actual ("no aparece en Descubrir, el propietario añade miembros").
+- **UI detalle** (`groups/[id]/page.tsx`): badge "Privado" (`Badge variant=muted`) junto al nombre si `!isPublic`; `showJoin = isMember || isOwner || isPublic` oculta el botón unirse a no-miembros de grupos privados (evita 403/RLS confuso).
+- i18n es/en: `groups.{visibility,public,private,privateHint,privateBadge}`. Test nuevo `CreateGroupForm.test.tsx` (3: is_public default true, private→false, visibilidad del hint).
+- Privados solo admiten miembros vía owner hasta E45-d (invitaciones). tsc 0, lint 0, **599 passed**.
+
 ## E66 — Discover cómic: filtrar publishers occidentales (2026-05-31)
 
 Commit: 4e6e803
