@@ -7,4 +7,7 @@ E45-c → ✅ CERRADO 2026-06-01 (is_public + RLS `is_group_member` SECURITY DEF
 
 ## Tarea activa
 
-**SIN TAREA ACTIVA** — esperando confirmación del usuario.
+**E45-d (invitaciones a grupos) — EN PROGRESO**
+
+- **d.1 (migración + backend) ✓** — tabla `group_invitations` + RLS + trigger accept→alta miembro + enum `notifications.type += group_invite`; tipos `supabase.ts`; endpoints invite/accept/reject; +23 tests. Migración `20260601000002_group_invitations.sql` **ya ejecutada en prod**.
+- **d.2 (UI) — pendiente** — botón "invitar amigos" en grupo + branch `group_invite` en `NotificationsList` + i18n.
