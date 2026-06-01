@@ -443,7 +443,12 @@
     "membersCount": "{count, plural, one {# miembro} other {# miembros}}",
     "noGroupsFound": "No se encontraron grupos",
     "alreadyMember": "Ya eres miembro",
-    "loadMore": "Cargar más"
+    "loadMore": "Cargar más",
+    "visibility": "Visibilidad",
+    "public": "Público",
+    "private": "Privado",
+    "privateHint": "No aparece en Descubrir. El propietario añade miembros.",
+    "privateBadge": "Privado"
   },
   "chat": {
     "title": "Mensajes",

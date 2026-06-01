@@ -28,6 +28,7 @@ export interface Group {
   name: string
   description: string | null
   coverColor: string
+  isPublic: boolean
   createdAt: string
   memberRole?: string
 }
@@ -77,6 +78,7 @@ function mapGroup(row: GroupRow): Group {
     name: row.name,
     description: row.description,
     coverColor: row.cover_color,
+    isPublic: row.is_public,
     createdAt: row.created_at,
     memberRole: row.memberRole,
   }
@@ -110,7 +112,7 @@ export async function getUserGroups(userId: string): Promise<Group[]> {
 
   const { data, error } = await supabase
     .from('group_members')
-    .select('group_id, role, groups(id, name, description, cover_color, created_at, owner_id)')
+    .select('group_id, role, groups(id, name, description, cover_color, is_public, created_at, owner_id)')
     .eq('user_id', userId)
     .order('joined_at', { ascending: false })
 
@@ -133,7 +135,7 @@ export async function getGroupById(groupId: string): Promise<Group | null> {
 
   const { data, error } = await supabase
     .from('groups')
-    .select('id, name, description, cover_color, created_at, owner_id')
+    .select('id, name, description, cover_color, is_public, created_at, owner_id')
     .eq('id', groupId)
     .maybeSingle()
 
