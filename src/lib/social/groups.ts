@@ -8,7 +8,7 @@
 // ============================================================
 
 import { createClient } from '@/lib/supabase/server'
-import type { DbGroup, DbGroupMember, DbUser } from '@/types/supabase'
+import type { DbGroup, DbGroupInvitation, DbGroupMember, DbUser } from '@/types/supabase'
 
 // ── Row types ─────────────────────────────────────────────────────────────────
 
@@ -286,4 +286,114 @@ export async function getDiscoverableGroups(
         : b.createdAt.localeCompare(a.createdAt)
     )
     .slice(offset, offset + limit)
+}
+
+// ── Invitaciones ──────────────────────────────────────────────────────────────
+
+/** Amigo invitable a un grupo: perfil mínimo para el picker de la UI (d.2). */
+export interface InvitableFriend {
+  id: string
+  username: string
+  avatarColor: string
+  avatarInitials: string
+}
+
+/**
+ * Amigos del owner (friendships accepted, ambas direcciones) que pueden ser
+ * invitados a un grupo: excluye a los miembros actuales y a quienes ya tienen
+ * una invitación pending. Pensado para el owner del grupo.
+ */
+export async function getInvitableFriends(
+  groupId: string,
+  ownerId: string
+): Promise<InvitableFriend[]> {
+  const supabase = createClient()
+
+  const [friendsRes, membersRes, pendingRes] = await Promise.all([
+    supabase
+      .from('friendships')
+      .select(
+        'requester_id, receiver_id, requester:requester_id(id, username, avatar_color, avatar_initials), receiver:receiver_id(id, username, avatar_color, avatar_initials)'
+      )
+      .eq('status', 'accepted')
+      .or(`requester_id.eq.${ownerId},receiver_id.eq.${ownerId}`),
+    supabase.from('group_members').select('user_id').eq('group_id', groupId),
+    supabase
+      .from('group_invitations')
+      .select('invitee_id')
+      .eq('group_id', groupId)
+      .eq('status', 'pending'),
+  ])
+
+  if (friendsRes.error) {
+    throw new Error(`Failed to fetch invitable friends: ${friendsRes.error.message}`)
+  }
+
+  const excluded = new Set<string>([
+    ...((membersRes.data ?? []) as { user_id: string }[]).map((m) => m.user_id),
+    ...((pendingRes.data ?? []) as { invitee_id: string }[]).map((p) => p.invitee_id),
+  ])
+
+  type FriendProfile = Pick<DbUser, 'id' | 'username' | 'avatar_color' | 'avatar_initials'>
+  type FriendRow = {
+    requester_id: string
+    receiver_id: string
+    requester: FriendProfile | null
+    receiver: FriendProfile | null
+  }
+
+  const friends: InvitableFriend[] = []
+  const seen = new Set<string>()
+
+  for (const row of (friendsRes.data ?? []) as unknown as FriendRow[]) {
+    const otherRaw = row.requester_id === ownerId ? row.receiver : row.requester
+    if (!otherRaw) continue
+    if (excluded.has(otherRaw.id) || seen.has(otherRaw.id)) continue
+    seen.add(otherRaw.id)
+    friends.push({
+      id: otherRaw.id,
+      username: otherRaw.username,
+      avatarColor: otherRaw.avatar_color,
+      avatarInitials: otherRaw.avatar_initials,
+    })
+  }
+
+  return friends
+}
+
+/** Invitación a grupo, ya mapeada a camelCase. */
+export interface GroupInvitation {
+  id: string
+  groupId: string
+  inviterId: string
+  inviteeId: string
+  status: 'pending' | 'accepted'
+  createdAt: string
+}
+
+function mapInvitation(row: DbGroupInvitation): GroupInvitation {
+  return {
+    id: row.id,
+    groupId: row.group_id,
+    inviterId: row.inviter_id,
+    inviteeId: row.invitee_id,
+    status: row.status,
+    createdAt: row.created_at,
+  }
+}
+
+/** Invitaciones pending enviadas para un grupo (visibles al inviter por RLS). */
+export async function getSentGroupInvitations(groupId: string): Promise<GroupInvitation[]> {
+  const supabase = createClient()
+
+  const { data, error } = await supabase
+    .from('group_invitations')
+    .select('id, group_id, inviter_id, invitee_id, status, created_at')
+    .eq('group_id', groupId)
+    .eq('status', 'pending')
+    .order('created_at', { ascending: false })
+
+  if (error) throw new Error(`Failed to fetch sent invitations: ${error.message}`)
+
+  return (data as DbGroupInvitation[]).map(mapInvitation)
 }
