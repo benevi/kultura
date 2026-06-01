@@ -7,6 +7,7 @@ import { createClient } from '@/lib/supabase/server'
 import { redirect, notFound } from 'next/navigation'
 import { getTranslations } from 'next-intl/server'
 import { Avatar } from '@/components/ui/Avatar'
+import { Badge } from '@/components/ui/Badge'
 import { GroupFeed } from './GroupFeed'
 import { JoinGroupButton } from './JoinGroupButton'
 import { getGroupById, getMemberRole, getGroupMembers } from '@/lib/social/groups'
@@ -36,6 +37,9 @@ export default async function GroupPage({ params }: Props) {
   if (!group) notFound()
 
   const isMember = memberRole !== null
+  const isOwner = group.ownerId === user.id
+  // Privado no auto-unible: ocultar el botón a quien no es miembro ni owner (evita 403/RLS confuso).
+  const showJoin = isMember || isOwner || group.isPublic
 
   const t = await getTranslations('friends')
   const tG = await getTranslations('groups')
@@ -54,7 +58,12 @@ export default async function GroupPage({ params }: Props) {
           {group.name.slice(0, 1).toUpperCase()}
         </div>
         <div className="flex-1 min-w-0">
-          <h1 className="font-display text-2xl text-text truncate">{group.name}</h1>
+          <div className="flex items-center gap-2 min-w-0">
+            <h1 className="font-display text-2xl text-text truncate">{group.name}</h1>
+            {!group.isPublic && (
+              <Badge variant="muted" className="flex-shrink-0">{tG('privateBadge')}</Badge>
+            )}
+          </div>
           {group.description && (
             <p className="text-sm text-muted mt-1">{group.description}</p>
           )}
@@ -62,11 +71,13 @@ export default async function GroupPage({ params }: Props) {
             {members.length} {t('membersCount', { count: members.length })}
           </p>
         </div>
-        <JoinGroupButton
-          groupId={id}
-          isMember={isMember}
-          isOwner={group.ownerId === user.id}
-        />
+        {showJoin && (
+          <JoinGroupButton
+            groupId={id}
+            isMember={isMember}
+            isOwner={isOwner}
+          />
+        )}
       </div>
 
       <div className="grid md:grid-cols-3 gap-6">

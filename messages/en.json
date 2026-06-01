@@ -443,7 +443,12 @@
     "membersCount": "{count, plural, one {# member} other {# members}}",
     "noGroupsFound": "No groups found",
     "alreadyMember": "Already a member",
-    "loadMore": "Load more"
+    "loadMore": "Load more",
+    "visibility": "Visibility",
+    "public": "Public",
+    "private": "Private",
+    "privateHint": "Not shown in Discover. The owner adds members.",
+    "privateBadge": "Private"
   },
   "chat": {
     "title": "Messages",

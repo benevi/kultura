@@ -25,8 +25,10 @@ interface CreateGroupFormProps {
  */
 export function CreateGroupForm({ onCreated, onCancel }: CreateGroupFormProps) {
   const t = useTranslations('friends')
+  const tG = useTranslations('groups')
   const [groupName, setGroupName] = useState('')
   const [groupDesc, setGroupDesc] = useState('')
+  const [isPublic, setIsPublic] = useState(true)
   const [creating, setCreating] = useState(false)
 
   async function handleSubmit(e: React.FormEvent) {
@@ -36,13 +38,18 @@ export function CreateGroupForm({ onCreated, onCancel }: CreateGroupFormProps) {
     const res = await fetch('/api/groups', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name: groupName.trim(), description: groupDesc.trim() || undefined }),
+      body: JSON.stringify({
+        name: groupName.trim(),
+        description: groupDesc.trim() || undefined,
+        is_public: isPublic,
+      }),
     })
     const data = await res.json()
     if (data.group) {
       onCreated({ ...data.group, memberRole: 'owner' })
       setGroupName('')
       setGroupDesc('')
+      setIsPublic(true)
     }
     setCreating(false)
   }
@@ -69,6 +76,42 @@ export function CreateGroupForm({ onCreated, onCancel }: CreateGroupFormProps) {
         rows={2}
         className="w-full bg-surface-elevated border border-surface-border rounded-lg px-3 py-2 text-sm text-text-primary placeholder:text-text-tertiary resize-none focus:outline-none focus:ring-1 focus:ring-accent-positive"
       />
+      <div className="flex flex-col gap-1.5">
+        <span className="text-xs font-medium text-text-secondary">{tG('visibility')}</span>
+        <div
+          role="group"
+          aria-label={tG('visibility')}
+          className="flex gap-1 bg-surface-elevated border border-surface-border rounded-lg p-1"
+        >
+          <button
+            type="button"
+            aria-pressed={isPublic}
+            onClick={() => setIsPublic(true)}
+            className={`flex-1 rounded-md px-3 py-1.5 text-sm transition-colors ${
+              isPublic
+                ? 'bg-accent-positive text-on-accent-positive'
+                : 'text-text-tertiary hover:text-text-secondary'
+            }`}
+          >
+            {tG('public')}
+          </button>
+          <button
+            type="button"
+            aria-pressed={!isPublic}
+            onClick={() => setIsPublic(false)}
+            className={`flex-1 rounded-md px-3 py-1.5 text-sm transition-colors ${
+              !isPublic
+                ? 'bg-accent-positive text-on-accent-positive'
+                : 'text-text-tertiary hover:text-text-secondary'
+            }`}
+          >
+            {tG('private')}
+          </button>
+        </div>
+        {!isPublic && (
+          <p className="text-xs text-text-tertiary">{tG('privateHint')}</p>
+        )}
+      </div>
       <div className="flex gap-2">
         <KButton
           type="submit"
