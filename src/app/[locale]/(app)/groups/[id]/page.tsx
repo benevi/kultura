@@ -10,6 +10,7 @@ import { Avatar } from '@/components/ui/Avatar'
 import { Badge } from '@/components/ui/Badge'
 import { GroupFeed } from './GroupFeed'
 import { JoinGroupButton } from './JoinGroupButton'
+import { InviteButton } from './InviteButton'
 import { getGroupById, getMemberRole, getGroupMembers } from '@/lib/social/groups'
 import type { Metadata } from 'next'
 
@@ -71,13 +72,16 @@ export default async function GroupPage({ params }: Props) {
             {members.length} {t('membersCount', { count: members.length })}
           </p>
         </div>
-        {showJoin && (
-          <JoinGroupButton
-            groupId={id}
-            isMember={isMember}
-            isOwner={isOwner}
-          />
-        )}
+        <div className="flex-shrink-0 flex items-center gap-2">
+          {isOwner && <InviteButton groupId={id} />}
+          {showJoin && (
+            <JoinGroupButton
+              groupId={id}
+              isMember={isMember}
+              isOwner={isOwner}
+            />
+          )}
+        </div>
       </div>
 
       <div className="grid md:grid-cols-3 gap-6">

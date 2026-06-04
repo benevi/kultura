@@ -324,6 +324,12 @@
     "invitedYou": "te invitó a la lista",
     "friendRequest": "te envió una solicitud de amistad",
     "friendAccepted": "aceptó tu solicitud de amistad",
+    "groupInvite": "te invitó al grupo",
+    "accept": "Aceptar",
+    "reject": "Rechazar",
+    "inviteAccepted": "Te has unido al grupo",
+    "inviteRejected": "Invitación rechazada",
+    "inviteActionError": "No se pudo procesar la invitación. Inténtalo de nuevo.",
     "markAllRead": "Marcar todo como leído",
     "loadError": "No se pudieron cargar las notificaciones. Inténtalo de nuevo."
   },
@@ -447,8 +453,13 @@
     "visibility": "Visibilidad",
     "public": "Público",
     "private": "Privado",
-    "privateHint": "No aparece en Descubrir. El propietario añade miembros.",
-    "privateBadge": "Privado"
+    "privateHint": "No aparece en Descubrir. El propietario invita a sus amigos.",
+    "privateBadge": "Privado",
+    "invite": "Invitar",
+    "inviteFriends": "Invitar amigos",
+    "noInvitableFriends": "No tienes amigos para invitar a este grupo",
+    "inviteSent": "Invitación enviada",
+    "inviteError": "No se pudo enviar la invitación. Inténtalo de nuevo."
   },
   "chat": {
     "title": "Mensajes",
