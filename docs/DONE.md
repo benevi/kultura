@@ -6,6 +6,10 @@ No se edita a mano durante el día. Solo se añade una línea al terminar cada t
 
 ---
 
+2026-06-04 | E45-d.2 | d96e40f | UI invitaciones a grupos. `InviteButton` (owner-gated en `groups/[id]/page.tsx`, junto a `JoinGroupButton`) abre `InviteFriendsModal` (tokens DS, mirror de CreateListModal): `GET /api/groups/[id]/invitations` lista amigos invitables, `POST {inviteeId}` invita, comprueba `res.ok`, toast éxito/error, estado vacío, quita al invitado de la lista. `NotificationsList` branch `group_invite`: texto "{from} te invitó al grupo {name}" + botones Aceptar (`PATCH /api/groups/invitations/[id]`) / Rechazar (`DELETE …`), `res.ok` + `router.refresh()` (Router Cache Next 14) → badge unread baja. Se reusó el endpoint GET existente (no se creó ruta nueva). i18n es/en paridad exacta (465=465): `groups.{invite,inviteFriends,noInvitableFriends,inviteSent,inviteError}` + `notifications.{groupInvite,accept,reject,inviteAccepted,inviteRejected,inviteActionError}` + `privateHint` reescrito ("el propietario invita a sus amigos"). +17 tests. tsc 0, lint 0, vitest **639 passed** (622→639). **Cierra E45-d y con ello E45 completo** (a✅ b✅ c✅ d✅). Smoke test manual saltado por decisión del usuario (requería 2 cuentas + verificación de trigger en prod).
+
+---
+
 2026-06-01 | E71 | (código + docs en 2 commits) | `DELETE /api/lists/[id]` (handler item): `.delete({ count: 'exact' })` + `if (count === 0)` → 404 `Not found`, mirror exacto del patrón de `/api/library` DELETE. Borrar item inexistente ahora devuelve 404 en vez de 200 `{ok:true}`. `canEditList` (403) y rama de borrar lista entera intactos. +5 tests en `tests/unit/social/lists-id-route.test.ts` (401/400/403/404/200). tsc 0, lint 0, vitest **589 passed** (584→589, +5). Cierre del residuo cosmético de E61. No es seguridad (RLS `list_items_delete_adder_or_owner` ya protege), es feedback al cliente.
 
 ---

@@ -287,9 +287,9 @@ No bloqueantes. Atacar solo despuÃ©s de Aâ€“D.
   Investigar si es setting de proyecto (toggle) o polÃ­tica del plan Hobby.
   Refuerza importancia de regla 11 (verificar Current, no solo Ready).
 
-- [~] **E45. Grupos: flujo de descubrimiento + RLS de join + visibilidad/invitaciones**
+- [x] **E45. Grupos: flujo de descubrimiento + RLS de join + visibilidad/invitaciones** — ✅ CERRADA COMPLETA 2026-06-04
 
-  **Estado (2026-06-01):** E45-a ✅, E45-b ✅, E45-c ✅. Queda solo E45-d (invitaciones). E45-a CERRADA (RLS self-join + feedback UI; commit 37e38a6). E45-b CERRADA (descubrimiento + pagina /groups con tabs + DiscoverGroupsClient + GroupCard + refactor FriendsClient + nav; commits 2ef43f7, a96f8a2, da4a902, 1251994; engloba y cierra E22). E45-c CERRADA 2026-06-01 (is_public + RLS + discover filtra privados + UI; commit 759c1b3).
+  **Estado (2026-06-04):** E45-a ✅, E45-b ✅, E45-c ✅, E45-d ✅. **E45 cerrada completa.** E45-a CERRADA (RLS self-join + feedback UI; commit 37e38a6). E45-b CERRADA (descubrimiento + pagina /groups con tabs + DiscoverGroupsClient + GroupCard + refactor FriendsClient + nav; commits 2ef43f7, a96f8a2, da4a902, 1251994; engloba y cierra E22). E45-c CERRADA 2026-06-01 (is_public + RLS + discover filtra privados + UI; commit 759c1b3). E45-d CERRADA 2026-06-04 (d.1 backend commit 410340c + d.2 UI commit d96e40f).
 
   **Flujo roto detectado (diagnÃ³stico GRUPOS-DIAG, 2026-05-23):** El mÃ³dulo de grupos
   existe estructuralmente (tablas, endpoint, UI de detalle) pero es inaccesible como
@@ -332,7 +332,8 @@ No bloqueantes. Atacar solo despuÃ©s de Aâ€“D.
     (función `SECURITY DEFINER` `is_group_member`, sin recursión) + discover filtra privados +
     UI toggle crear / badge privado / join condicional (`showJoin = isMember || isOwner || isPublic`) +
     propagación `isPublic` + i18n. Privados solo admiten miembros vía owner hasta E45-d. Commit 759c1b3.
-  - E45-d: Tabla `group_invitations` + flujo de invitaciÃ³n (enviar / aceptar / rechazar).
+  - [x] E45-d (CERRADA 2026-06-04): Tabla `group_invitations` + flujo de invitación (enviar / aceptar / rechazar).
+    d.1 backend (migración `20260601000002_group_invitations.sql` + RLS + trigger accept→alta + enum `group_invite` + endpoints; commit 410340c, +23 tests). d.2 UI (InviteButton owner-gated + InviteFriendsModal + branch `group_invite` en NotificationsList con Aceptar PATCH / Rechazar DELETE + `router.refresh()` + i18n es/en; commit d96e40f, +17 tests). vitest 639 passed.
 
   No planificar aÃºn. Solo backlog.
 

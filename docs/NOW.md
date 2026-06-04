@@ -3,11 +3,10 @@
 
 ## Estado
 
-E45-c → ✅ CERRADO 2026-06-01 (is_public + RLS `is_group_member` SECURITY DEFINER + discover filtra privados + UI toggle/badge/join condicional + i18n; commit 759c1b3). E45 sigue [~] parcial: queda solo E45-d (invitaciones).
+E45 → ✅ **CERRADO COMPLETO 2026-06-04** (a✅ b✅ c✅ d✅). E45-d cerrado: d.1 backend (commit 410340c) + d.2 UI (commit d96e40f). Invitaciones a grupos funcionando end-to-end: owner invita amigos vía modal, invitee acepta/rechaza desde notificaciones, trigger da el alta. vitest 639 passed, i18n paridad 465=465.
 
 ## Tarea activa
 
-**E45-d (invitaciones a grupos) — EN PROGRESO**
+**(ninguna)** — esperando confirmación del usuario para elegir la siguiente del BACKLOG.
 
-- **d.1 (migración + backend) ✓** — tabla `group_invitations` + RLS + trigger accept→alta miembro + enum `notifications.type += group_invite`; tipos `supabase.ts`; endpoints invite/accept/reject; +23 tests. Migración `20260601000002_group_invitations.sql` **ya ejecutada en prod**.
-- **d.2 (UI) — pendiente** — botón "invitar amigos" en grupo + branch `group_invite` en `NotificationsList` + i18n.
+Nota: smoke test manual de la ruta crítica E45-d se saltó por decisión del usuario (requería 2 cuentas logueadas + verificación del trigger en Supabase prod). Pendiente como validación funcional post-deploy (regla #11 CLAUDE.md) si se quiere confirmar en prod.
