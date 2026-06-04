@@ -324,6 +324,12 @@
     "invitedYou": "invited you to the list",
     "friendRequest": "sent you a friend request",
     "friendAccepted": "accepted your friend request",
+    "groupInvite": "invited you to the group",
+    "accept": "Accept",
+    "reject": "Reject",
+    "inviteAccepted": "You joined the group",
+    "inviteRejected": "Invitation rejected",
+    "inviteActionError": "Could not process the invitation. Please try again.",
     "markAllRead": "Mark all as read",
     "loadError": "Could not load notifications. Please try again."
   },
@@ -447,8 +453,13 @@
     "visibility": "Visibility",
     "public": "Public",
     "private": "Private",
-    "privateHint": "Not shown in Discover. The owner adds members.",
-    "privateBadge": "Private"
+    "privateHint": "Not shown in Discover. The owner invites their friends.",
+    "privateBadge": "Private",
+    "invite": "Invite",
+    "inviteFriends": "Invite friends",
+    "noInvitableFriends": "You have no friends to invite to this group",
+    "inviteSent": "Invitation sent",
+    "inviteError": "Could not send the invitation. Please try again."
   },
   "chat": {
     "title": "Messages",

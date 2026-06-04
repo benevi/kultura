@@ -1,8 +1,10 @@
 'use client'
 
+import { useState } from 'react'
 import { useTranslations, useLocale } from 'next-intl'
-import { Link } from '@/i18n/navigation'
-import { Sparkles, List, UserPlus, Bell } from 'lucide-react'
+import { Link, useRouter } from '@/i18n/navigation'
+import { Sparkles, List, UserPlus, Users, Bell } from 'lucide-react'
+import { useToastContext } from '@/components/ui/ToastProvider'
 import type { AppNotification } from '@/lib/social/notifications'
 
 interface Props {
@@ -21,6 +23,58 @@ function relativeDate(iso: string, locale: string): string {
   const months = Math.floor(days / 30)
   if (months < 12) return rtf.format(-months, 'month')
   return rtf.format(-Math.floor(months / 12), 'year')
+}
+
+function InviteActions({ invitationId }: { invitationId: string }) {
+  const t = useTranslations('notifications')
+  const router = useRouter()
+  const { show } = useToastContext()
+  const [loading, setLoading] = useState(false)
+  const [done, setDone] = useState(false)
+
+  async function respond(action: 'accept' | 'reject') {
+    setLoading(true)
+    try {
+      const res = await fetch(`/api/groups/invitations/${invitationId}`, {
+        method: action === 'accept' ? 'PATCH' : 'DELETE',
+      })
+      if (!res.ok) {
+        show({ message: t('inviteActionError'), type: 'error' })
+        setLoading(false)
+        return
+      }
+      show({
+        message: action === 'accept' ? t('inviteAccepted') : t('inviteRejected'),
+        type: 'success',
+      })
+      setDone(true)
+      router.refresh()
+    } catch {
+      show({ message: t('inviteActionError'), type: 'error' })
+      setLoading(false)
+    }
+  }
+
+  if (done) return null
+
+  return (
+    <div className="flex gap-2 mt-2">
+      <button
+        onClick={() => respond('accept')}
+        disabled={loading}
+        className="px-3 py-1 text-xs font-semibold bg-accent-positive text-on-accent-positive rounded-full hover:brightness-110 transition-all disabled:opacity-50"
+      >
+        {t('accept')}
+      </button>
+      <button
+        onClick={() => respond('reject')}
+        disabled={loading}
+        className="px-3 py-1 text-xs font-semibold bg-surface2 text-muted rounded-full hover:bg-red-950/40 hover:text-danger transition-colors disabled:opacity-50"
+      >
+        {t('reject')}
+      </button>
+    </div>
+  )
 }
 
 function NotificationItem({ notif }: { notif: AppNotification }) {
@@ -78,6 +132,29 @@ function NotificationItem({ notif }: { notif: AppNotification }) {
         </p>
       </div>
     )
+  } else if (notif.type === 'group_invite') {
+    const fromUsername = p.fromUsername as string | undefined
+    const groupName = p.groupName as string | undefined
+    const groupId = p.groupId as string | undefined
+    const invitationId = p.invitationId as string | undefined
+    content = (
+      <div className="flex-1 min-w-0">
+        <p className="text-sm text-text-primary">
+          {fromUsername ? (
+            <Link href={`/profile/${fromUsername}`} className="font-medium hover:text-accent-info transition-colors">
+              {fromUsername}
+            </Link>
+          ) : null}
+          {' '}{t('groupInvite')}{' '}
+          {groupId && groupName ? (
+            <Link href={`/groups/${groupId}`} className="font-medium hover:text-accent-info transition-colors">
+              {groupName}
+            </Link>
+          ) : (groupName ?? null)}
+        </p>
+        {invitationId && !notif.readAt && <InviteActions invitationId={invitationId} />}
+      </div>
+    )
   }
 
   return (
@@ -87,6 +164,8 @@ function NotificationItem({ notif }: { notif: AppNotification }) {
           <Sparkles className="w-5 h-5 text-accent-info" />
         ) : notif.type === 'list_invite' ? (
           <List className="w-5 h-5" />
+        ) : notif.type === 'group_invite' ? (
+          <Users className="w-5 h-5" />
         ) : (
           <UserPlus className="w-5 h-5" />
         )}
