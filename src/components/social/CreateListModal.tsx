@@ -42,6 +42,7 @@ export function CreateListModal({ onClose }: CreateListModalProps) {
         return
       }
       router.push(`/lists/${data.list.id}`)
+      router.refresh()
       onClose()
     } catch {
       setError(t('errorCreate'))

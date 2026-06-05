@@ -292,6 +292,9 @@
     "notFound": "List not found",
     "errorCreate": "Failed to create list",
     "errorAddItem": "Failed to add title",
+    "removeError": "Failed to remove title",
+    "inviteError": "Failed to invite member",
+    "removeMemberError": "Failed to remove member",
     "notAllowed": "You don't have permission to edit this list"
   },
   "aiRecommendations": {

@@ -37,6 +37,7 @@ export function ListDetail({
   const [confirmDelete, setConfirmDelete] = useState(false)
   const [deleting, setDeleting] = useState(false)
   const [deleteError, setDeleteError] = useState<string | null>(null)
+  const [actionError, setActionError] = useState<string | null>(null)
 
   const isOwner = list.ownerId === currentUserId
 
@@ -64,15 +65,21 @@ export function ListDetail({
 
   async function handleRemoveItem(itemId: string) {
     setRemovingItem(itemId)
+    setActionError(null)
     try {
-      await fetch(`/api/lists/${list.id}`, {
+      const res = await fetch(`/api/lists/${list.id}`, {
         method: 'DELETE',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ itemId }),
       })
+      if (!res.ok) {
+        setActionError(t('removeError'))
+        return
+      }
       setItems((prev) => prev.filter((i) => i.id !== itemId))
     } catch (err) {
       console.error('Failed to remove item:', err)
+      setActionError(t('removeError'))
     } finally {
       setRemovingItem(null)
     }
@@ -81,12 +88,17 @@ export function ListDetail({
   async function handleInvite() {
     if (!inviteUserId) return
     setInviting(true)
+    setActionError(null)
     try {
-      await fetch(`/api/lists/${list.id}`, {
+      const res = await fetch(`/api/lists/${list.id}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'x-action': 'invite' },
         body: JSON.stringify({ userId: inviteUserId }),
       })
+      if (!res.ok) {
+        setActionError(t('inviteError'))
+        return
+      }
       const friend = currentUserFriends.find((f) => f.id === inviteUserId)
       if (friend) {
         setMembers((prev) => [
@@ -101,21 +113,28 @@ export function ListDetail({
       setInviteUserId('')
     } catch (err) {
       console.error('Failed to invite member:', err)
+      setActionError(t('inviteError'))
     } finally {
       setInviting(false)
     }
   }
 
   async function handleRemoveMember(userId: string) {
+    setActionError(null)
     try {
-      await fetch(`/api/lists/${list.id}`, {
+      const res = await fetch(`/api/lists/${list.id}`, {
         method: 'DELETE',
         headers: { 'Content-Type': 'application/json', 'x-action': 'remove-member' },
         body: JSON.stringify({ userId }),
       })
+      if (!res.ok) {
+        setActionError(t('removeMemberError'))
+        return
+      }
       setMembers((prev) => prev.filter((m) => m.userId !== userId))
     } catch (err) {
       console.error('Failed to remove member:', err)
+      setActionError(t('removeMemberError'))
     }
   }
 
@@ -151,6 +170,7 @@ export function ListDetail({
       </header>
 
       {deleteError && <p className="text-xs text-accent-danger">{deleteError}</p>}
+      {actionError && <p className="text-xs text-accent-danger">{actionError}</p>}
 
       <ConfirmModal
         isOpen={confirmDelete}
