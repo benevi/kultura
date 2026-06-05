@@ -42,6 +42,7 @@ export function ConversationClient({ conversationId, otherUser, currentUserId }:
   const { show } = useToastContext()
   const [messages, setMessages] = useState<Message[]>([])
   const [loading, setLoading] = useState(true)
+  const [loadError, setLoadError] = useState(false)
   const [text, setText] = useState('')
   const [sending, setSending] = useState(false)
   const bottomRef = useRef<HTMLDivElement>(null)
@@ -51,7 +52,9 @@ export function ConversationClient({ conversationId, otherUser, currentUserId }:
   }, [])
 
   // Load messages
-  useEffect(() => {
+  const loadMessages = useCallback(() => {
+    setLoading(true)
+    setLoadError(false)
     fetch(`/api/chat/${conversationId}`)
       .then(r => r.json())
       .then(d => {
@@ -59,8 +62,10 @@ export function ConversationClient({ conversationId, otherUser, currentUserId }:
         setLoading(false)
         setTimeout(scrollToBottom, 50)
       })
-      .catch(() => setLoading(false))
+      .catch(() => { setLoadError(true); setLoading(false) })
   }, [conversationId, scrollToBottom])
+
+  useEffect(() => { loadMessages() }, [loadMessages])
 
   // Realtime subscription
   useEffect(() => {
@@ -179,7 +184,19 @@ export function ConversationClient({ conversationId, otherUser, currentUserId }:
         {loading && (
           <div className="text-center text-sm text-text-secondary py-8">...</div>
         )}
-        {!loading && messages.length === 0 && (
+        {!loading && loadError && (
+          <div className="text-center py-8 flex flex-col items-center gap-3">
+            <p className="text-sm text-text-secondary">{t('loadError')}</p>
+            <button
+              type="button"
+              onClick={loadMessages}
+              className="px-4 py-1.5 rounded-full bg-surface-elevated border border-surface-border text-sm text-text-primary hover:bg-surface-default transition-colors"
+            >
+              {t('retry')}
+            </button>
+          </div>
+        )}
+        {!loading && !loadError && messages.length === 0 && (
           <div className="text-center text-sm text-text-secondary py-8">
             {t('messagePlaceholder')}
           </div>
