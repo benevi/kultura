@@ -491,7 +491,7 @@ No bloqueantes. Atacar solo despuÃ©s de Aâ€“D.
 - [x] **E61. (CERRADA 2026-06-01 — NO-VULN, mal diagnosticada)** ~~Seguridad: `DELETE /api/lists/[id]` bypassa RLS con service-role~~
   Fase 0 (chat actual) desmontó el diagnóstico de E47: el handler usa `createClient()` (anon + sesión, server.ts:15-17), NO service-role — no existe service-role en runtime (único uso: scripts/seed-test.mjs). La RLS de `list_items` DELETE (`list_items_delete_adder_or_owner`, migración L743-745) restringe a `added_by = auth.uid() OR owner` y SÍ se aplica al ir con sesión. Un colaborador que intenta borrar item de otro → 0 filas afectadas, sin escalada. `canEditList` es defensa-en-capa, no la única barrera. Residuo cosmético (no seguridad) → E71.
 
-- [ ] **E62. PatrÃ³n transversal: mutaciones optimistas sin verificar `res.ok`**
+- [x] **E62. PatrÃ³n transversal: mutaciones optimistas sin verificar `res.ok`** (barrido `ListDetail` hecho — era el Ãºnico archivo afectado segÃºn Fase 0)
 
   Casos confirmados: `ListDetail.tsx` `handleRemoveItem` (lÃ­nea 37) y `handleInvite`
   (lÃ­nea 53). Si el server responde 403 o 500, el cambio queda aplicado en la UI sin
@@ -500,14 +500,14 @@ No bloqueantes. Atacar solo despuÃ©s de Aâ€“D.
   chequeo posterior de `res.ok` en mutaciones (POST/PATCH/DELETE). Documentar lista de
   archivos afectados antes de fixear.
 
-- [ ] **E63. `ListsClient.tsx` descarta el setter de `useState`**
+- [x] **E63. `ListsClient.tsx` descarta el setter de `useState`**
 
   LÃ­nea 16: `const [lists] = useState<List[]>(initialLists)`. Sin setter, la nueva lista
   creada via `CreateListModal` solo aparece tras full navigation. Fix: `const [lists,
   setLists] = useState(...)` y pasar `setLists` (o callback `onCreated`) a
   `CreateListModal` para actualizar el grid tras crear.
 
-- [ ] **E64. Seguridad/visual: RecommendModal usa colores hardcodeados (viola DS)**
+- [x] **E64. Seguridad/visual: RecommendModal usa colores hardcodeados (viola DS)**
 
   Descubierto en Fase 0 de E47. `RecommendModal` usa `text-green-400` y `text-red-400`
   hardcodeados en lugar de tokens DS (`accent-positive`, `accent-danger`). El componente
