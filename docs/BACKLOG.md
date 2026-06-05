@@ -392,7 +392,7 @@ No bloqueantes. Atacar solo despuÃ©s de Aâ€“D.
 
   Sin priorizar. No atacar hasta decidir estrategia de producto.
 
-- [ ] **E51. ValidaciÃ³n en cliente + mensajes especÃ­ficos en SuggestionsForm**
+- [x] **E51. ValidaciÃ³n en cliente + mensajes especÃ­ficos en SuggestionsForm**
 
   **Hallazgo (diagnÃ³stico SUGERENCIAS-400, 2026-05-26):** El 400 en `POST /api/suggestions`
   es validaciÃ³n Zod esperada y correcta â€” `description.min(10)` rechaza inputs cortos como
@@ -412,7 +412,9 @@ No bloqueantes. Atacar solo despuÃ©s de Aâ€“D.
   Hecho cuando: enviar `description` de 4 chars muestra error inline antes de hacer fetch,
   y el form no puede enviarse con datos que fallen la validaciÃ³n del servidor.
 
-- [ ] **E52. Silent fail duplicado en ChatClient + ConversationClient** â€” `.catch(() => setLoading(false))` en ambos archivos traga el error de carga y deja pantalla vacÃ­a sin feedback al usuario. Mejora funcional, no bug de migraciÃ³n. Fix futuro debe aÃ±adir el test que lo detecta (TDD retrospectivo) antes de cambiar el handler.
+- [~] **E52. Silent fail duplicado en ChatClient + ConversationClient** â€” `.catch(() => setLoading(false))` en ambos archivos traga el error de carga y deja pantalla vacÃ­a sin feedback al usuario. Mejora funcional, no bug de migraciÃ³n. Fix futuro debe aÃ±adir el test que lo detecta (TDD retrospectivo) antes de cambiar el handler.
+
+  **PARCIAL (2026-06-05, commit `9cc9b37`):** se cerrÃ³ el sÃ­ntoma "doble render" del mensaje optimista en `ConversationClient` (id `temp-*` nunca coincidÃ­a con el UUID real â†’ dedup roto â†’ mensaje duplicado en pantalla). Fix: reconciliar el temp con el real tanto en la respuesta del POST como en el handler de realtime. **NO cubierto todavÃ­a:** el `.catch(() => setLoading(false))` original del backlog (error de CARGA tragado sin feedback) en ChatClient ni ConversationClient. Sigue abierto â€” el alcance del backlog y el alcance del fix pedido por el usuario divergÃ­an.
 
 - [x] **E53. String hardcodeado sin i18n en ChatClient** â€” `${conversations.length} conversaciones` no pasa por `t()`. Fix: aÃ±adir clave `chat.conversationCount` (con plural forms) a `messages/es.json` y `messages/en.json` y usar `t('conversationCount', { count })`.
 

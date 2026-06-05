@@ -6,7 +6,11 @@ No se edita a mano durante el día. Solo se añade una línea al terminar cada t
 
 ---
 
-2026-06-05 | E53 | 6cb9c36 | String hardcodeado `${conversations.length} conversaciones` en `ChatClient.tsx:80` → `t('conversationCount', { count })`. Nueva clave `chat.conversationCount` con plural ICU (`=0`/`one`/`other`) en `messages/es.json` y `en.json` (paridad 14=14 keys en namespace chat, top-level igual). tsc 0, lint 0 (solo warnings pre-existentes en `SearchResults`), vitest **639 passed**.
+2026-06-05 | E51 | 4ce64d4 | Validación cliente + errores granulares en `SuggestionsForm`. `handleSubmit` ahora hace `trim()` de subject/description y rechaza pre-fetch si `subject<3` o `description<10` (`errorTooShort`); el body envía los valores ya trimmeados; `!res.ok` distingue 429 (`errorRateLimit`) del resto (`error`). Nuevo state `errorKey`; el render de error muestra `t(errorKey)` en vez de `t('error')` fijo. Dos claves nuevas en namespace `suggestions` de es/en. Paridad i18n 471=471 (suggestions 19=19). tsc 0, lint 0 (solo warnings pre-existentes en `SearchResults`), vitest **639 passed**.
+
+---
+
+2026-06-05 | E52 | 9cc9b37 | **Parcial** — fix del doble render del mensaje optimista en `ConversationClient` (el síntoma "duplicado"). Causa: optimistic add usaba `id = temp-{Date.now()}` que nunca coincide con el UUID real, el dedup por id del handler realtime fallaba y el mensaje aparecía dos veces (temp + realtime). Fix A: tras `res.ok` se parsea el body del POST (`{ message }`, shape `id/content/sender_id/created_at`, mapeado a `Message` con `users: null`) y se reemplaza el temp por el real. Fix B: el handler realtime, si `sender_id === currentUserId`, busca un `temp-*` con mismo `content` y lo reemplaza en vez de añadir (cubre la race realtime-antes-de-POST). Idempotente en ambos órdenes. `currentUserId` añadido a deps del useEffect. **No** cubre el `.catch(() => setLoading(false))` del backlog original (error de carga tragado) — sigue abierto, alcances divergentes. tsc 0, lint 0, vitest **639 passed**. String hardcodeado `${conversations.length} conversaciones` en `ChatClient.tsx:80` → `t('conversationCount', { count })`. Nueva clave `chat.conversationCount` con plural ICU (`=0`/`one`/`other`) en `messages/es.json` y `en.json` (paridad 14=14 keys en namespace chat, top-level igual). tsc 0, lint 0 (solo warnings pre-existentes en `SearchResults`), vitest **639 passed**.
 
 ---
 
