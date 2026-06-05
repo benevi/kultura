@@ -77,7 +77,7 @@ export function ChatClient({ friends }: Props) {
       {/* Header actions */}
       <div className="flex items-center justify-between">
         <span className="text-sm text-text-secondary">
-          {conversations.length > 0 ? `${conversations.length} conversaciones` : ''}
+          {conversations.length > 0 ? t('conversationCount', { count: conversations.length }) : ''}
         </span>
         <KButton
           variant="primary"

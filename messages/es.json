@@ -477,7 +477,8 @@
     "you": "Tú",
     "typeToSearch": "Buscar amigos...",
     "noFriendsToChat": "Añade amigos primero para empezar a chatear",
-    "sendError": "No se pudo enviar el mensaje. Inténtalo de nuevo."
+    "sendError": "No se pudo enviar el mensaje. Inténtalo de nuevo.",
+    "conversationCount": "{count, plural, =0 {Sin conversaciones} one {# conversación} other {# conversaciones}}"
   },
   "settings": {
     "title": "Configuración",
