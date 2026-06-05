@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useTranslations, useLocale } from 'next-intl'
 import { Link } from '@/i18n/navigation'
 import { Avatar } from '@/components/ui/Avatar'
@@ -48,15 +48,20 @@ export function ChatClient({ friends }: Props) {
 
   const [conversations, setConversations] = useState<Conversation[]>([])
   const [loading, setLoading] = useState(true)
+  const [loadError, setLoadError] = useState(false)
   const [showNewChat, setShowNewChat] = useState(false)
   const [startingChat, setStartingChat] = useState<string | null>(null)
 
-  useEffect(() => {
+  const loadConversations = useCallback(() => {
+    setLoading(true)
+    setLoadError(false)
     fetch('/api/chat')
       .then(r => r.json())
       .then(d => { setConversations(d.conversations ?? []); setLoading(false) })
-      .catch(() => setLoading(false))
+      .catch(() => { setLoadError(true); setLoading(false) })
   }, [])
+
+  useEffect(() => { loadConversations() }, [loadConversations])
 
   async function startConversation(friendId: string) {
     setStartingChat(friendId)
@@ -115,6 +120,15 @@ export function ChatClient({ friends }: Props) {
       {/* Conversations list */}
       {loading ? (
         <div className="text-center py-12 text-text-secondary text-sm">...</div>
+      ) : loadError ? (
+        <div className="bg-surface-default border border-surface-border rounded-[8px] p-10 text-center flex flex-col gap-3">
+          <p className="text-sm text-text-secondary">{t('loadError')}</p>
+          <div>
+            <KButton variant="secondary" size="sm" onClick={loadConversations}>
+              {t('retry')}
+            </KButton>
+          </div>
+        </div>
       ) : conversations.length === 0 ? (
         <div className="bg-surface-default border border-surface-border rounded-[8px] p-10 text-center flex flex-col gap-2">
           <div className="text-4xl">💬</div>
