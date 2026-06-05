@@ -91,6 +91,15 @@ export function ConversationClient({ conversationId, otherUser, currentUserId }:
           setMessages(prev => {
             // Avoid duplicate if we already added it optimistically
             if (prev.some(m => m.id === fullMsg.id)) return prev
+            // Reconcile optimistic temp message with the real one (covers realtime-before-POST race)
+            if (fullMsg.sender_id === currentUserId) {
+              const i = prev.findIndex(m => m.id.startsWith('temp-') && m.content === fullMsg.content)
+              if (i !== -1) {
+                const c = [...prev]
+                c[i] = fullMsg
+                return c
+              }
+            }
             return [...prev, fullMsg]
           })
           setTimeout(scrollToBottom, 50)
@@ -99,7 +108,7 @@ export function ConversationClient({ conversationId, otherUser, currentUserId }:
       .subscribe()
 
     return () => { supabase.removeChannel(channel) }
-  }, [conversationId, scrollToBottom])
+  }, [conversationId, scrollToBottom, currentUserId])
 
   async function handleSend(e: React.FormEvent) {
     e.preventDefault()
@@ -131,6 +140,13 @@ export function ConversationClient({ conversationId, otherUser, currentUserId }:
       setMessages(prev => prev.filter(m => m.id !== tempId))
       setText(content)
       show({ message: t('sendError'), type: 'error' })
+    } else {
+      // Reconcile: replace the optimistic temp message with the real one (id UUID from server)
+      const { message: real } = await res.json().catch(() => ({ message: null }))
+      if (real) {
+        const realMsg: Message = { ...real, users: null }
+        setMessages(prev => prev.map(m => (m.id === tempId ? realMsg : m)))
+      }
     }
 
     setSending(false)
