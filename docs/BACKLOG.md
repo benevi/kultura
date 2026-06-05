@@ -540,9 +540,9 @@ No bloqueantes. Atacar solo despuÃ©s de Aâ€“D.
 - [x] **E66-COMIC-OCCIDENTAL** — Discover cómic: filtrar publishers occidentales vía batch volumes ✅ (cerrada el 2026-05-31, 4e6e803)
     544 green. resolveVolumePublishers (batch /volumes/ + cache) + WESTERN_PUBLISHERS/isWesternPublisher + getRecentComics limit=100 filtra a occidentales.
 
-- [ ] **E67. Flaky test `tests/unit/library/route.test.ts` (401 no autenticado)**
-  Falla esporádicamente en la suite completa (`vitest run`) pero pasa siempre aislado (`vitest run tests/unit/library/route.test.ts` → 8/8 verde). Síntoma de test pollution / estado de mock compartido entre archivos (orden de ejecución, `global.fetch` o mocks de Supabase no reseteados). Detectado durante E45-b (commit da4a902): 1 fallo en primera corrida, 571/571 en re-corrida.
-  Hecho cuando: el test pasa de forma determinista en 5 corridas consecutivas de la suite completa, o se identifica y corrige la fuente de contaminación (mock sin `vi.clearAllMocks`/`resetModules`).
+- [x] **E67. Flaky test por test pollution en suite completa** ✅ (cerrada 2026-06-05, código `6d30a42`)
+  Síntoma: fallos esporádicos en `vitest run` según el orden de ejecución (mocks compartidos entre archivos). Fuente: el bloque parser de `tests/unit/ai/ai-recommendations.test.ts` mezclaba `vi.mock('@/lib/claude/recommendations')` (mockeaba el módulo bajo test) con `vi.doMock`/`vi.doUnmock` del SDK y Supabase en el mismo archivo, dejando estado de mock contaminado según el orden. Fix (Opción 1): split del bloque parser a `tests/unit/ai/recommendations-parser.test.ts` SIN mock del módulo (carga el real), con fixtures anidadas `{ status, score, media }` reales que espera `getLibraryContext`, `searchByType` hoisted y `vi.resetModules()` en beforeEach (mismo patrón que `claude/recommendations.test.ts`). Asserts reescritos contra el resultado real del parser (no `undefined`).
+  Verificado: `npm test` 639 passed; `--sequence.shuffle --sequence.seed 12345` 639 passed (antes 5 fail); `--sequence.seed 99999` 639 passed.
 
 - [~] **E68. (OBSOLETA 2026-05-31) Tests de integración real para RPC `get_discoverable_groups`**
   Obsoletada por el hotfix de E45 (commit 2d11228): el descubrimiento ya no usa la RPC `get_discoverable_groups` sino queries directas (la RPC quedaba cacheada en el schema de PostgREST). Sin RPC en el flujo, no hay nada que cubrir con tests de integración. La RPC zombi se elimina en E70.
