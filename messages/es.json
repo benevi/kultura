@@ -434,6 +434,8 @@
     "success": "¡Gracias por tu comentario!",
     "successHint": "Leemos todas las sugerencias y las usamos para mejorar KULTURA.",
     "error": "Error al enviar. Inténtalo de nuevo.",
+    "errorTooShort": "Revisa: el asunto necesita 3 caracteres mínimo y la descripción 10.",
+    "errorRateLimit": "Demasiados envíos. Espera un momento e inténtalo de nuevo.",
     "newFeedback": "Enviar otro"
   },
   "groups": {
