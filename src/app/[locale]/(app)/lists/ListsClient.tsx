@@ -11,9 +11,8 @@ interface Props {
   lists: List[]
 }
 
-export function ListsClient({ lists: initialLists }: Props) {
+export function ListsClient({ lists }: Props) {
   const t = useTranslations('lists')
-  const [lists] = useState<List[]>(initialLists)
   const [showModal, setShowModal] = useState(false)
 
   return (

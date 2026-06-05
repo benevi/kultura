@@ -292,6 +292,9 @@
     "notFound": "Lista no encontrada",
     "errorCreate": "Error al crear la lista",
     "errorAddItem": "Error al añadir el título",
+    "removeError": "Error al eliminar el título",
+    "inviteError": "Error al invitar al miembro",
+    "removeMemberError": "Error al eliminar al miembro",
     "notAllowed": "No tienes permiso para editar esta lista"
   },
   "aiRecommendations": {

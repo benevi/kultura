@@ -151,10 +151,10 @@ export function RecommendModal({ mediaId, mediaCache, onClose }: RecommendModalP
             </Button>
           )}
           {status === 'sent' && (
-            <span className="text-sm text-green-400 self-center">{t('sent')}</span>
+            <span className="text-sm text-success self-center">{t('sent')}</span>
           )}
           {status === 'error' && (
-            <span className="text-sm text-red-400 self-center">{t('error')}</span>
+            <span className="text-sm text-danger self-center">{t('error')}</span>
           )}
         </div>
       </div>
