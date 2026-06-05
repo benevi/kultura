@@ -5,7 +5,9 @@
 
 E51 → ✅ **CERRADA 2026-06-05** (commit código `4ce64d4`). Validación cliente + errores granulares en `SuggestionsForm`: `trim()` + rechazo pre-fetch si subject<3/description<10 (`errorTooShort`), 429 → `errorRateLimit`, state `errorKey` + `t(errorKey)`. 2 claves nuevas en namespace `suggestions` es/en. Paridad i18n 471=471. tsc 0, lint 0, vitest 639 passed.
 
-E52 → 🟡 **PARCIAL 2026-06-05** (commit código `9cc9b37`). Fix doble render del mensaje optimista en `ConversationClient` (reconciliar `temp-*` con UUID real en respuesta POST + handler realtime). **OJO:** el backlog define E52 como el `.catch(() => setLoading(false))` que traga el error de CARGA — eso NO se tocó, sigue abierto. El fix pedido por el usuario (doble render) y el backlog divergían; ver nota en BACKLOG E52. tsc 0, lint 0, vitest 639 passed.
+E72 → ✅ **CERRADA 2026-06-05** (commit código `9cc9b37`, re-etiquetada 2026-06-06). Fix doble render del mensaje optimista en `ConversationClient` (reconciliar `temp-*` con UUID real en respuesta POST + handler realtime). Antes etiquetada E52 por error; era trabajo distinto. tsc 0, lint 0, vitest 639 passed.
+
+E52 → ✅ **CERRADA 2026-06-06** (commit código `589b870`). Silent fail real de carga: `.catch(() => setLoading(false))` en `ChatClient` y `ConversationClient` tragaba el error de fetch → pantalla vacía sin feedback. Fix: state `loadError`, carga en `useCallback`, render distingue cargando / error (i18n `loadError` + botón `retry`) / vacío real. 2 claves nuevas chat es/en, paridad 473=473. tsc 0, lint 0, vitest 639 passed.
 
 E53 → ✅ **CERRADA 2026-06-05** (commit código `6cb9c36`). i18n del contador de conversaciones: string hardcodeado `${conversations.length} conversaciones` en `ChatClient.tsx:80` → `t('conversationCount', { count })`. Nueva clave `chat.conversationCount` con plural ICU en es/en (paridad 14=14 en namespace chat). tsc 0, lint 0, vitest 639 passed.
 

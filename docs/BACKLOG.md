@@ -412,9 +412,11 @@ No bloqueantes. Atacar solo despuÃ©s de Aâ€“D.
   Hecho cuando: enviar `description` de 4 chars muestra error inline antes de hacer fetch,
   y el form no puede enviarse con datos que fallen la validaciÃ³n del servidor.
 
-- [~] **E52. Silent fail duplicado en ChatClient + ConversationClient** â€” `.catch(() => setLoading(false))` en ambos archivos traga el error de carga y deja pantalla vacÃ­a sin feedback al usuario. Mejora funcional, no bug de migraciÃ³n. Fix futuro debe aÃ±adir el test que lo detecta (TDD retrospectivo) antes de cambiar el handler.
+- [x] **E52. Silent fail duplicado en ChatClient + ConversationClient** â€” `.catch(() => setLoading(false))` en ambos archivos traga el error de carga y deja pantalla vacÃ­a sin feedback al usuario. Mejora funcional, no bug de migraciÃ³n.
 
-  **PARCIAL (2026-06-05, commit `9cc9b37`):** se cerrÃ³ el sÃ­ntoma "doble render" del mensaje optimista en `ConversationClient` (id `temp-*` nunca coincidÃ­a con el UUID real â†’ dedup roto â†’ mensaje duplicado en pantalla). Fix: reconciliar el temp con el real tanto en la respuesta del POST como en el handler de realtime. **NO cubierto todavÃ­a:** el `.catch(() => setLoading(false))` original del backlog (error de CARGA tragado sin feedback) en ChatClient ni ConversationClient. Sigue abierto â€” el alcance del backlog y el alcance del fix pedido por el usuario divergÃ­an.
+  **CERRADA (2026-06-06):** state `loadError` en ambos componentes; carga extraÃ­da a fn `useCallback` que en el catch hace `setLoadError(true)` ademÃ¡s de `setLoading(false)`. El render distingue 3 estados: cargando, error de carga (mensaje i18n `chat.loadError` + botÃ³n `chat.retry` que rellama la carga), y vacÃ­o real (placeholder existente `noConversations`/`messagePlaceholder`). 2 claves nuevas es/en, paridad 473=473. tsc 0, lint 0, vitest 639 passed.
+
+  **Nota de re-etiquetado (2026-06-06):** el commit `9cc9b37` (2026-06-05) NO era este silent fail â€” era el doble render del mensaje optimista en `ConversationClient`. Ese trabajo es ahora **E72** (cerrada, ver DONE). E52 era y sigue siendo el silent fail de carga, cerrado hoy.
 
 - [x] **E53. String hardcodeado sin i18n en ChatClient** â€” `${conversations.length} conversaciones` no pasa por `t()`. Fix: aÃ±adir clave `chat.conversationCount` (con plural forms) a `messages/es.json` y `messages/en.json` y usar `t('conversationCount', { count })`.
 
