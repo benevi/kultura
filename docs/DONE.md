@@ -6,6 +6,10 @@ No se edita a mano durante el día. Solo se añade una línea al terminar cada t
 
 ---
 
+2026-06-05 | E53 | 6cb9c36 | String hardcodeado `${conversations.length} conversaciones` en `ChatClient.tsx:80` → `t('conversationCount', { count })`. Nueva clave `chat.conversationCount` con plural ICU (`=0`/`one`/`other`) en `messages/es.json` y `en.json` (paridad 14=14 keys en namespace chat, top-level igual). tsc 0, lint 0 (solo warnings pre-existentes en `SearchResults`), vitest **639 passed**.
+
+---
+
 2026-06-05 | E67 | 6d30a42 | Test pollution fix (Opción 1). Split del bloque parser de `tests/unit/ai/ai-recommendations.test.ts` a su propio archivo `tests/unit/ai/recommendations-parser.test.ts`. La causa del flake: el archivo original mezclaba `vi.mock('@/lib/claude/recommendations')` (que mockeaba el módulo bajo test, para el bloque GET de la ruta) con `vi.doMock`/`vi.doUnmock` del SDK Anthropic + Supabase en el bloque parser → estado de mock contaminado según orden de ejecución (5 fail con seed 12345). El bloque GET se queda en el archivo original (sigue necesitando el mock del módulo). El bloque parser se va al archivo nuevo SIN ese mock → carga el módulo REAL, con cobertura real del parsing. Fixtures `LIBRARY_ITEMS` reescritas a la forma anidada `{ status, score, media: { title, type, year } }` que espera `getLibraryContext` (recommendations.ts:96-103), no la plana anterior. `searchByType` hoisted + `vi.resetModules()` en beforeEach (patrón de `claude/recommendations.test.ts`). Asserts reescritos contra el resultado real (p.ej. type inválido → `result.map(r=>r.type)` = `['movie']`; year 1700/string → `undefined`, 2010 → conservado). tsc 0, lint 0 (solo warnings pre-existentes en `SearchResults`), vitest **639 passed** (sin cambio neto: 5 tests del bloque → 5 tests en el archivo nuevo). Determinista en shuffle seeds 12345 y 99999 (antes 5 fail con 12345).
 
 ---

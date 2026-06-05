@@ -414,7 +414,7 @@ No bloqueantes. Atacar solo despuÃ©s de Aâ€“D.
 
 - [ ] **E52. Silent fail duplicado en ChatClient + ConversationClient** â€” `.catch(() => setLoading(false))` en ambos archivos traga el error de carga y deja pantalla vacÃ­a sin feedback al usuario. Mejora funcional, no bug de migraciÃ³n. Fix futuro debe aÃ±adir el test que lo detecta (TDD retrospectivo) antes de cambiar el handler.
 
-- [ ] **E53. String hardcodeado sin i18n en ChatClient** â€” `${conversations.length} conversaciones` no pasa por `t()`. Fix: aÃ±adir clave `chat.conversationCount` (con plural forms) a `messages/es.json` y `messages/en.json` y usar `t('conversationCount', { count })`.
+- [x] **E53. String hardcodeado sin i18n en ChatClient** â€” `${conversations.length} conversaciones` no pasa por `t()`. Fix: aÃ±adir clave `chat.conversationCount` (con plural forms) a `messages/es.json` y `messages/en.json` y usar `t('conversationCount', { count })`.
 
 - [ ] **E54. Chat: cifrado de extremo a extremo (E2EE) â€” DECISIÃ“N DE ARQUITECTURA**
 

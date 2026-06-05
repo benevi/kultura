@@ -3,6 +3,8 @@
 
 ## Estado
 
+E53 → ✅ **CERRADA 2026-06-05** (commit código `6cb9c36`). i18n del contador de conversaciones: string hardcodeado `${conversations.length} conversaciones` en `ChatClient.tsx:80` → `t('conversationCount', { count })`. Nueva clave `chat.conversationCount` con plural ICU en es/en (paridad 14=14 en namespace chat). tsc 0, lint 0, vitest 639 passed.
+
 E67 → ✅ **CERRADA 2026-06-05** (commit código `6d30a42`). Test pollution fix: split del bloque parser de `tests/unit/ai/ai-recommendations.test.ts` a `tests/unit/ai/recommendations-parser.test.ts` (carga el módulo REAL, sin mock de `@/lib/claude/recommendations`), fixtures anidadas reales para `getLibraryContext`. tsc 0, lint 0, vitest **639 passed**, determinista en shuffle seeds 12345 (antes 5 fail) y 99999.
 
 E62/E63/E64 → ✅ **CERRADAS 2026-06-05** (commit código `47becaf`). Tres fixes de deuda: E62 `res.ok` en las 3 mutaciones de `ListDetail` (cerrada completa, era el único archivo afectado según Fase 0), E63 `useState` muerto en `ListsClient` + `router.refresh()` en `CreateListModal`, E64 tokens DS en `RecommendModal`. tsc 0, lint 0, vitest 639 passed.
