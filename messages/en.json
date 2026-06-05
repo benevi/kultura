@@ -434,6 +434,8 @@
     "success": "Thanks for your feedback!",
     "successHint": "We read every suggestion and use them to improve KULTURA.",
     "error": "Failed to send. Please try again.",
+    "errorTooShort": "Check: subject needs at least 3 characters, description at least 10.",
+    "errorRateLimit": "Too many submissions. Please wait a moment and try again.",
     "newFeedback": "Submit another"
   },
   "groups": {

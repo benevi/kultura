@@ -10,19 +10,32 @@ export function SuggestionsForm() {
   const [subject, setSubject] = useState('')
   const [description, setDescription] = useState('')
   const [status, setStatus] = useState<'idle' | 'sending' | 'success' | 'error'>('idle')
+  const [errorKey, setErrorKey] = useState<string>('error')
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
+    const s = subject.trim()
+    const d = description.trim()
+    if (s.length < 3 || d.length < 10) {
+      setErrorKey('errorTooShort')
+      setStatus('error')
+      return
+    }
     setStatus('sending')
     try {
       const res = await fetch('/api/suggestions', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ type, subject, description }),
+        body: JSON.stringify({ type, subject: s, description: d }),
       })
-      if (!res.ok) throw new Error()
+      if (!res.ok) {
+        setErrorKey(res.status === 429 ? 'errorRateLimit' : 'error')
+        setStatus('error')
+        return
+      }
       setStatus('success')
     } catch {
+      setErrorKey('error')
       setStatus('error')
     }
   }
@@ -107,7 +120,7 @@ export function SuggestionsForm() {
       </div>
 
       {status === 'error' && (
-        <p className="text-sm text-accent-danger">{t('error')}</p>
+        <p className="text-sm text-accent-danger">{t(errorKey)}</p>
       )}
 
       <KButton
