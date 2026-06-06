@@ -6,6 +6,7 @@
 
 import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/admin'
 import { checkRateLimit, LIMITS } from '@/lib/rate-limit'
 
 interface RecommendPayload {
@@ -121,8 +122,10 @@ export async function POST(request: Request): Promise<NextResponse> {
     return NextResponse.json({ error: 'Failed to create recommendation' }, { status: 500 })
   }
 
-  // Insertar notificación (best-effort — no bloquea si falla)
-  await supabase.from('notifications').insert({
+  // Notificación vía admin client (notifications no tiene policy INSERT para anon).
+  // No bloquea la recomendación si falla; ya no es silencioso.
+  const admin = createAdminClient()
+  const { error: notifErr } = await admin.from('notifications').insert({
     user_id: body.toUserId,
     type: 'recommendation',
     payload: {
@@ -134,6 +137,7 @@ export async function POST(request: Request): Promise<NextResponse> {
       message: body.message ?? null,
     },
   })
+  if (notifErr) console.error('[E83] notif insert failed', { type: 'recommendation', notifErr })
 
   return NextResponse.json({ recommendationId: recommendation.id }, { status: 201 })
 }

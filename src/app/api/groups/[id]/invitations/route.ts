@@ -7,6 +7,7 @@
 
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/admin'
 import { checkRateLimit, LIMITS } from '@/lib/rate-limit'
 import {
   getGroupById,
@@ -119,7 +120,8 @@ export async function POST(req: NextRequest, { params }: Props): Promise<NextRes
     .eq('id', user.id)
     .maybeSingle()
 
-  await supabase.from('notifications').insert({
+  const admin = createAdminClient()
+  const { error: notifErr } = await admin.from('notifications').insert({
     user_id: inviteeId,
     type: 'group_invite',
     payload: {
@@ -130,6 +132,7 @@ export async function POST(req: NextRequest, { params }: Props): Promise<NextRes
       fromUsername: senderProfile?.username ?? '',
     },
   })
+  if (notifErr) console.error('[E83] notif insert failed', { type: 'group_invite', notifErr })
 
   return NextResponse.json({ invitation }, { status: 201 })
 }

@@ -36,9 +36,20 @@ vi.mock('@/lib/supabase/server', () => ({
   }),
 }))
 
+// E83: la notif se inserta vía admin client (service-role), no vía el server client.
+const mockAdminNotifInsert = vi.fn()
+vi.mock('@/lib/supabase/admin', () => ({
+  createAdminClient: () => ({
+    from: vi.fn((table: string) =>
+      table === 'notifications' ? { insert: mockAdminNotifInsert } : {}
+    ),
+  }),
+}))
+
 describe('POST /api/recommendations', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    mockAdminNotifInsert.mockResolvedValue({ error: null })
   })
 
   it('returns 401 if not authenticated', async () => {
@@ -123,15 +134,16 @@ describe('POST /api/recommendations', () => {
         }),
       }),
     })
-    mockFromNotifications.mockReturnValue({
-      insert: vi.fn().mockResolvedValue({ error: null }),
-    })
-
     const { POST } = await import('@/app/api/recommendations/route')
     const res = await POST(makeRequest({ toUserId: RECEIVER_ID, mediaId: MEDIA_ID }))
     expect(res.status).toBe(201)
     const body = await res.json()
     expect(body.recommendationId).toBe('rec-001')
+    // E83: notif insertada vía admin client
+    expect(mockAdminNotifInsert).toHaveBeenCalledOnce()
+    expect(mockAdminNotifInsert).toHaveBeenCalledWith(
+      expect.objectContaining({ user_id: RECEIVER_ID, type: 'recommendation' })
+    )
   })
 
   it('upserts media cache when mediaCache is provided', async () => {
@@ -152,10 +164,6 @@ describe('POST /api/recommendations', () => {
         }),
       }),
     })
-    mockFromNotifications.mockReturnValue({
-      insert: vi.fn().mockResolvedValue({ error: null }),
-    })
-
     const { POST } = await import('@/app/api/recommendations/route')
     const res = await POST(makeRequest({
       toUserId: RECEIVER_ID,
@@ -165,5 +173,35 @@ describe('POST /api/recommendations', () => {
 
     expect(res.status).toBe(201)
     expect(mockUpsert).toHaveBeenCalledOnce()
+  })
+
+  it('E83: notif insert failure is logged but recommendation still returns 201', async () => {
+    mockGetUser.mockResolvedValue({ data: { user: AUTH_USER }, error: null })
+    mockFromUsers.mockReturnValue({
+      select: vi.fn().mockReturnValue({
+        eq: vi.fn().mockReturnValue({
+          maybeSingle: vi.fn().mockResolvedValue({ data: { id: RECEIVER_ID }, error: null }),
+        }),
+      }),
+    })
+    mockFromRecommendations.mockReturnValue({
+      insert: vi.fn().mockReturnValue({
+        select: vi.fn().mockReturnValue({
+          single: vi.fn().mockResolvedValue({ data: { id: 'rec-001' }, error: null }),
+        }),
+      }),
+    })
+    mockAdminNotifInsert.mockResolvedValue({ error: { message: 'boom' } })
+    const errSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+
+    const { POST } = await import('@/app/api/recommendations/route')
+    const res = await POST(makeRequest({ toUserId: RECEIVER_ID, mediaId: MEDIA_ID }))
+
+    expect(res.status).toBe(201)
+    expect(errSpy).toHaveBeenCalledWith(
+      '[E83] notif insert failed',
+      expect.objectContaining({ type: 'recommendation' })
+    )
+    errSpy.mockRestore()
   })
 })
