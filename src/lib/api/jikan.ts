@@ -101,6 +101,23 @@ export async function getPopularAnime(
   });
 }
 
+/**
+ * Descubre anime vía /anime (endpoint de búsqueda, que SÍ acepta filtros:
+ * genres/status/order_by/start_date…). E59 F3b: se usa en lugar de /top/anime
+ * cuando hay filtros activos; sin filtros se mantiene /top/anime (paridad).
+ * `params` extra se pasan tal cual. sfw=true por defecto (catálogo familiar).
+ */
+export async function discoverAnime(
+  page = 1,
+  params: Record<string, string> = {}
+): Promise<JikanSearchResponse> {
+  return jikanFetch<JikanSearchResponse>("/anime", {
+    sfw: "true",
+    page: String(page),
+    ...params,
+  });
+}
+
 export async function getAnimeVideos(id: number): Promise<JikanVideosResponse> {
   return jikanFetch<JikanVideosResponse>(`/anime/${id}/videos`);
 }
@@ -126,5 +143,20 @@ export async function getPopularManga(
 ): Promise<JikanSearchResponse> {
   return jikanFetch<JikanSearchResponse>("/top/manga", {
     page: String(page),
+  });
+}
+
+/**
+ * Descubre manga vía /manga (endpoint de búsqueda con filtros). E59 F3b:
+ * análogo a discoverAnime — se usa cuando hay filtros, /top/manga sin ellos.
+ */
+export async function discoverManga(
+  page = 1,
+  params: Record<string, string> = {}
+): Promise<JikanSearchResponse> {
+  return jikanFetch<JikanSearchResponse>("/manga", {
+    sfw: "true",
+    page: String(page),
+    ...params,
   });
 }
