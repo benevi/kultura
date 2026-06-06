@@ -187,6 +187,42 @@ describe("fetchDiscoverData — guard totalItems books (E29)", () => {
   });
 });
 
+// ── Books: rama con filtros vs. sin filtros (E59 F3c) ──────────────────────────
+
+describe("fetchDiscoverData — books filtros (E59 F3c)", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    vi.mocked(searchBooks).mockResolvedValue({ items: [], totalItems: 0 });
+  });
+
+  it("sin filtros → query base 'popular', sin orderBy/filter (paridad)", async () => {
+    await fetchDiscoverData("book", 1);
+    expect(searchBooks).toHaveBeenCalledWith("popular", 0);
+  });
+
+  it("con filtros → buildBooksQuery (q subject: + params)", async () => {
+    await fetchDiscoverData("book", 2, {
+      genre: ["fantasia"],
+      formato: "free",
+      idioma: "en",
+      sort: "release_desc",
+    });
+    // page 2 → startIndex (2-1)*20 = 20
+    expect(searchBooks).toHaveBeenCalledWith('subject:"Fantasy"', 20, {
+      orderBy: "newest",
+      filter: "free-ebooks",
+      langRestrict: "en",
+    });
+  });
+
+  it("year no dispara rama de filtros (oculto book) → query base", async () => {
+    await fetchDiscoverData("book", 1, {
+      year: "2020s",
+    } as Parameters<typeof fetchDiscoverData>[2]);
+    expect(searchBooks).toHaveBeenCalledWith("popular", 0);
+  });
+});
+
 // ── Catch tipado: JikanError 429 vs genérico ──────────────────────────────────
 
 describe("fetchDiscoverData — catch tipado (E29)", () => {
