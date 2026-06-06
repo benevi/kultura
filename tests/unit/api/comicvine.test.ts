@@ -347,4 +347,83 @@ describe("getRecentComics", () => {
 
     await expect(getRecentComics()).resolves.toEqual({ items: [], total: 0 });
   });
+
+  // ── Filtros E59 F3c ──────────────────────────────────────────────────────────
+
+  it("filters: sort dinámico + filter cover_date cuando hay year", async () => {
+    const fetchMock = mockFetchByPath(
+      {
+        status_code: 1,
+        error: "OK",
+        number_of_total_results: 1,
+        results: [{ ...ISSUE, id: 40, volume: { id: 400, name: "Saga" } }],
+      },
+      {
+        status_code: 1,
+        error: "OK",
+        results: [{ id: 400, publisher: { id: 3, name: "Image Comics" } }],
+      }
+    );
+    vi.stubGlobal("fetch", fetchMock);
+
+    await getRecentComics(1, { sort: "release_asc", year: "2021" });
+
+    const issuesUrl = fetchMock.mock.calls.find((c) =>
+      (c[0] as string).includes("/issues/")
+    )![0] as string;
+    expect(issuesUrl).toContain("sort=cover_date%3Aasc");
+    expect(issuesUrl).toContain(
+      "filter=cover_date%3A2021-01-01%7C2021-12-31"
+    );
+  });
+
+  it("filters: editorial post-filter mantiene publisher coincidente, descarta el resto", async () => {
+    const fetchMock = mockFetchByPath(
+      {
+        status_code: 1,
+        error: "OK",
+        number_of_total_results: 2,
+        results: [
+          { ...ISSUE, id: 50, volume: { id: 500, name: "Spider-Man" } },
+          { ...ISSUE, id: 51, volume: { id: 501, name: "Saga" } },
+        ],
+      },
+      {
+        status_code: 1,
+        error: "OK",
+        results: [
+          { id: 500, publisher: { id: 1, name: "Marvel Comics" } },
+          { id: 501, publisher: { id: 3, name: "Image Comics" } },
+        ],
+      }
+    );
+    vi.stubGlobal("fetch", fetchMock);
+
+    const result = await getRecentComics(1, { editorial: ["marvel"] });
+
+    // Solo el issue de Marvel sobrevive; Image no coincide con el substring.
+    expect(result.items).toHaveLength(1);
+    expect(result.items[0].id).toBe("comic_50");
+  });
+
+  it("sin filters: params idénticos a hoy (paridad, sort cover_date:desc, sin filter)", async () => {
+    const fetchMock = mockFetchByPath(
+      {
+        status_code: 1,
+        error: "OK",
+        number_of_total_results: 0,
+        results: [],
+      },
+      { status_code: 1, error: "OK", results: [] }
+    );
+    vi.stubGlobal("fetch", fetchMock);
+
+    await getRecentComics(1);
+
+    const issuesUrl = fetchMock.mock.calls.find((c) =>
+      (c[0] as string).includes("/issues/")
+    )![0] as string;
+    expect(issuesUrl).toContain("sort=cover_date%3Adesc");
+    expect(issuesUrl).not.toContain("filter=");
+  });
 });

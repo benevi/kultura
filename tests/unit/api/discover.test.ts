@@ -33,6 +33,10 @@ vi.mock("@/lib/api/rawg", () => ({
   discoverGames: vi.fn(),
 }));
 
+vi.mock("@/lib/api/comicvine", () => ({
+  getRecentComics: vi.fn(),
+}));
+
 vi.mock("@/lib/api/normalizer", () => ({
   normalizeMovie: vi.fn((m) => ({ id: `movie_${m.id}`, title: m.title })),
   normalizeTV: vi.fn((tv) => ({ id: `tv_${tv.id}`, title: tv.name })),
@@ -51,6 +55,7 @@ vi.mock("@/lib/api/normalizer", () => ({
 import { fetchDiscoverData } from "@/lib/api/discover";
 import { getPopularAnime, getPopularManga } from "@/lib/api/jikan";
 import { searchBooks } from "@/lib/api/googlebooks";
+import { getRecentComics } from "@/lib/api/comicvine";
 
 // ── JikanError ────────────────────────────────────────────────────────────────
 
@@ -220,6 +225,35 @@ describe("fetchDiscoverData — books filtros (E59 F3c)", () => {
       year: "2020s",
     } as Parameters<typeof fetchDiscoverData>[2]);
     expect(searchBooks).toHaveBeenCalledWith("popular", 0);
+  });
+});
+
+// ── Comic: rama con filtros vs. sin filtros (E59 F3c) ──────────────────────────
+
+describe("fetchDiscoverData — comic filtros (E59 F3c)", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    vi.mocked(getRecentComics).mockResolvedValue({ items: [], total: 0 });
+  });
+
+  it("sin filtros → getRecentComics(page) (paridad, sin filters)", async () => {
+    await fetchDiscoverData("comic", 3);
+    expect(getRecentComics).toHaveBeenCalledWith(3);
+  });
+
+  it("con filtros (sort/year/editorial) → getRecentComics(page, filters)", async () => {
+    const filters = {
+      sort: "release_asc",
+      year: "2020",
+      editorial: ["marvel"],
+    };
+    await fetchDiscoverData("comic", 2, filters);
+    expect(getRecentComics).toHaveBeenCalledWith(2, filters);
+  });
+
+  it("solo sort default (popularity → cover_date:desc) NO dispara filtros", async () => {
+    await fetchDiscoverData("comic", 1, { sort: "popularity" });
+    expect(getRecentComics).toHaveBeenCalledWith(1);
   });
 });
 
