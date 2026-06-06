@@ -162,6 +162,41 @@ export async function getPopularTV(page = 1): Promise<TmdbTVSearchResponse> {
   });
 }
 
+/**
+ * Descubre películas vía /discover/movie. E59: reemplaza a getPopularMovies en
+ * el flujo de Descubrir para habilitar filtros nativos (with_genres, sort_by,
+ * primary_release_date.gte/lte…). Con sort_by=popularity.desc por defecto el
+ * comportamiento es equivalente a /movie/popular (misma paginación).
+ * `params` extra se pasan tal cual a TMDB (para F3+).
+ */
+export async function discoverMovies(
+  page = 1,
+  params: Record<string, string> = {}
+): Promise<TmdbSearchResponse> {
+  return tmdbFetch<TmdbSearchResponse>("/discover/movie", {
+    sort_by: "popularity.desc",
+    page: String(page),
+    ...params,
+  });
+}
+
+/**
+ * Descubre series vía /discover/tv. Equivalente a /tv/popular con
+ * sort_by=popularity.desc. NOTA E59: /discover/tv NO devuelve
+ * number_of_seasons (solo genre_ids/fechas/idioma) — el filtro "temporadas"
+ * exigiría una llamada de detalle por ítem (N+1), por eso queda oculto en F1.
+ */
+export async function discoverTV(
+  page = 1,
+  params: Record<string, string> = {}
+): Promise<TmdbTVSearchResponse> {
+  return tmdbFetch<TmdbTVSearchResponse>("/discover/tv", {
+    sort_by: "popularity.desc",
+    page: String(page),
+    ...params,
+  });
+}
+
 export async function getTrendingMovies(
   timeWindow: "day" | "week" = "week"
 ): Promise<TmdbSearchResponse> {

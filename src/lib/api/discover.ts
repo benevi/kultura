@@ -3,7 +3,7 @@
 // Extracted from app/[locale]/(app)/discover/page.tsx for testability.
 // ============================================================
 
-import { getPopularMovies, getPopularTV } from "@/lib/api/tmdb";
+import { discoverMovies, discoverTV } from "@/lib/api/tmdb";
 import { getPopularAnime, getPopularManga, JikanError } from "@/lib/api/jikan";
 import { searchBooks } from "@/lib/api/googlebooks";
 import { getPopularGames } from "@/lib/api/rawg";
@@ -39,7 +39,7 @@ export async function fetchDiscoverData(
   try {
     switch (type) {
       case "movie": {
-        const res = await getPopularMovies(page);
+        const res = await discoverMovies(page);
         items = res.results.map((m) =>
           normalizeMovie(m as unknown as TmdbMovieDetail)
         );
@@ -47,7 +47,7 @@ export async function fetchDiscoverData(
         break;
       }
       case "tv": {
-        const res = await getPopularTV(page);
+        const res = await discoverTV(page);
         items = res.results.map((tv) =>
           normalizeTV(tv as unknown as TmdbTVDetail)
         );
@@ -95,7 +95,7 @@ export async function fetchDiscoverData(
         break;
       }
       default: {
-        const res = await getPopularMovies(page);
+        const res = await discoverMovies(page);
         items = res.results.map((m) =>
           normalizeMovie(m as unknown as TmdbMovieDetail)
         );
