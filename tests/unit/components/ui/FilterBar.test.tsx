@@ -57,7 +57,7 @@ describe('FilterBar', () => {
       />
     )
     const todosBtn = screen.getByText('Todos')
-    expect(todosBtn).toHaveClass('border-accent')
+    expect(todosBtn).toHaveClass('border-accent-positive')
   })
 
   it('click en chip inactivo llama onChange con key y value correctos', () => {
@@ -86,7 +86,7 @@ describe('FilterBar', () => {
     expect(onChange).toHaveBeenCalledWith('type', 'all')
   })
 
-  it('chip activo tiene clase border-accent', () => {
+  it('chip activo tiene clase border-accent-positive', () => {
     render(
       <FilterBar
         groups={[groups[0]]}
@@ -95,7 +95,7 @@ describe('FilterBar', () => {
       />
     )
     const seriesBtn = screen.getByText('Series')
-    expect(seriesBtn).toHaveClass('border-accent')
+    expect(seriesBtn).toHaveClass('border-accent-positive')
   })
 
   it('chip inactivo tiene clase border-border', () => {

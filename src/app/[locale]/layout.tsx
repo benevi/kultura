@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Space_Grotesk, Inter } from "next/font/google";
+import { Space_Grotesk, Inter, JetBrains_Mono } from "next/font/google";
 import { NextIntlClientProvider } from "next-intl";
 import { getMessages } from "next-intl/server";
 import { notFound } from "next/navigation";
@@ -17,6 +17,12 @@ const inter = Inter({
   subsets: ["latin"],
   weight: ["400", "500", "600"],
   variable: "--font-inter",
+  display: "swap",
+});
+
+const jetbrainsMono = JetBrains_Mono({
+  subsets: ["latin"],
+  variable: "--font-mono",
   display: "swap",
 });
 
@@ -62,7 +68,7 @@ export default async function LocaleLayout({
   return (
     <html lang={locale}>
       <body
-        className={`${spaceGrotesk.variable} ${inter.variable} font-body bg-surface-base text-text-primary antialiased grain`}
+        className={`${spaceGrotesk.variable} ${inter.variable} ${jetbrainsMono.variable} font-body bg-surface-base text-text-primary antialiased grain`}
       >
         <NextIntlClientProvider messages={messages}>
           {children}
