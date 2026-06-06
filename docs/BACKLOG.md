@@ -561,3 +561,36 @@ No bloqueantes. Atacar solo después de A–D.
   Fix: `.delete({ count: 'exact' })` + `if (count === 0)` → 404, mirror exacto del patrón de `/api/library` DELETE. El check `canEditList` (403) y la rama de borrar lista entera quedaron intactos. +5 tests en `tests/unit/social/lists-id-route.test.ts` (401/400/403/404/200). tsc 0, lint 0, **589 passed** (584→589).
   Toca: `src/app/api/lists/[id]/route.ts` DELETE handler.
   ~~Hallazgo Fase 0 E61. El handler hace `.delete().eq('id',itemId).eq('list_id',listId)` y devuelve `{ok:true}` sin comprobar filas afectadas. Si la RLS filtra (item de otro colaborador) borra 0 filas pero responde 200. Patrón correcto ya existe en `/api/library` (usa `count` → 404). Fix: añadir `{ count: 'exact' }` o verificar resultado y devolver 404 si 0 filas. No es seguridad (RLS ya protege), es feedback.~~
+
+- [ ] **E74. Grupos no aparecen en móvil (fuego funcional)**
+  Síntoma en prod: el módulo de grupos de amigos no se muestra en viewport móvil (sí en desktop, presumiblemente). Posible problema responsive/layout o query/render condicionado por breakpoint, NO necesariamente el RLS de E45 (ya cerrado).
+  Fase 0 obligatoria: reproducir en móvil y aislar si es CSS/responsive, datos, o render.
+  Hecho cuando: grupos visibles y operativos en móvil.
+
+- [ ] **E75. Botón cambio de idioma: mejora visual**
+  Mejorar la presentación visual del selector de idioma (estética, no la lógica i18n, que ya funciona).
+  Hecho cuando: botón alineado al DS, legible y con estado claro.
+
+- [ ] **E76. Foto de perfil: mejora visual**
+  Mejorar la visual de la foto de perfil (encuadre/recorte/placeholder/estados).
+  Hecho cuando: avatar consistente con el DS en sus estados.
+
+- [ ] **E77. Botón editar perfil: mejora visual**
+  Mejorar la visual del botón de editar perfil.
+  Hecho cuando: botón al DS, jerarquía/affordance claros.
+
+- [ ] **E78. Iconos genéricos: sustituir por set característico**
+  Los iconos actuales son demasiado genéricos; sustituir por un set más característico/coherente. Definir set en Fase 0.
+  Hecho cuando: iconografía coherente aplicada en las vistas clave.
+
+- [ ] **E79. Paginación: mejora (UX)**
+  Mejora de paginación, distinta de E3 (verify-queries) y E48d (notif-cursor). Definir alcance en Fase 0: qué listados, infinite-scroll vs páginas.
+  Hecho cuando: paginación consistente y performante en los listados objetivo.
+
+- [ ] **E80. Ranking por estrellas (votación interna)**
+  Sistema de valoración interna por estrellas y ranking derivado. Diseño pendiente en Fase 0: modelo de datos, RLS, dónde se vota/muestra.
+  Hecho cuando: usuarios pueden votar y ver ranking.
+
+- [ ] **E81. Mejora de autenticación (técnico)**
+  Endurecer/mejorar el flujo de auth, distinto de E7 (OAuth), E8 (pwd-reset), E20 (Input). Alcance a concretar en Fase 0.
+  Hecho cuando: a definir según alcance.
