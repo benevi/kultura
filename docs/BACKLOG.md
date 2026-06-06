@@ -470,16 +470,22 @@ No bloqueantes. Atacar solo después de A–D.
 
   `RecommendModal` usa `bg-surface`, `border-border`, `text-text`; `Toast` usa `bg-surface2`, `border-border`, `text-accent`. Mismo patrón legacy ya visto y migrado en Chat/Notif. Migrar a tokens canónicos del DESIGN_SYSTEM.md. Sin priorizar.
 
-- [ ] **E59. FilterBar: migrar chips de filtro al DS**
+- [ ] **E59. Rediseño del filtro Descubrir (FilterBar) — visual/UX**
 
-  Chips de filtro en `FilterBar` usan tokens legacy:
-  - **Activo:** `bg-accent-subtle text-accent border-accent` (rojo legacy `#E82020`) → debe ser verde `accent-positive` (tokens DS).
-  - **Inactivo:** `bg-surface2 text-muted border-border` → reemplazar por tokens DS canónicos.
+  El `FilterBar` de `/descubrir` (chips TIPO/AÑO) necesita mejora profunda de visual y UX,
+  no solo consistencia de estilo. Componente COMPARTIDO (Discover, Search, Library) — validar
+  las 3 pantallas.
 
-  Componente COMPARTIDO (Discover, Search, Library) — migrar con verificación de las 3 pantallas.
-  Sin priorizar.
+  Fase 0: auditar problemas concretos y definir alcance — jerarquía TIPO/AÑO, estados
+  activo/inactivo, combinaciones de filtros, scroll horizontal/responsive en móvil, posibles
+  ejes de filtrado adicionales.
 
-  Hecho cuando: 0 tokens legacy en `FilterBar`, chips activos usan `accent-positive`, inactivos usan tokens DS, y las 3 pantallas no presentan regresiones visuales.
+  Incluye como sub-paso la migración de los chips al componente compartido del DS (tokens legacy
+  actuales: activo `bg-accent-subtle text-accent border-accent` rojo `#E82020` → verde
+  `accent-positive`; inactivo `bg-surface2 text-muted border-border` → tokens DS canónicos).
+
+  Hecho cuando: filtro rediseñado y validado en móvil+desktop, 0 tokens legacy en `FilterBar`,
+  sin regresiones visuales en las 3 pantallas.
 
 - [ ] **E60. Decisión de producto: scope de Discover/Books (idioma)**
 
