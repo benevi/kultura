@@ -1,6 +1,4 @@
 import type { Metadata } from "next";
-import { getTranslations } from "next-intl/server";
-import { fetchDiscoverData } from "@/lib/api/discover";
 import { DiscoverClient } from "./DiscoverClient";
 
 interface SearchParams {
@@ -24,33 +22,17 @@ export async function generateMetadata({
   };
 }
 
-export default async function DiscoverPage({ params, searchParams }: Props) {
-  const { locale } = await params;
-  const t = await getTranslations({ locale, namespace: "discover" });
+// E59 F2: el fetch de datos se movió a /api/discover (lo llama el cliente),
+// por lo que esta página ya no hace fetch server-side. Solo resuelve los params
+// de URL y delega en DiscoverClient, que pide los datos al Route Handler.
+export default async function DiscoverPage({ searchParams }: Props) {
   const resolvedSearchParams = await searchParams;
   const type = resolvedSearchParams.type ?? "movie";
   const page = Math.max(1, parseInt(resolvedSearchParams.page ?? "1", 10) || 1);
 
-  const { items, totalPages, fetchErrorKind } = await fetchDiscoverData(
-    type,
-    page
-  );
-
   return (
     <main className="max-w-6xl mx-auto px-4 md:px-8 py-8">
-      {fetchErrorKind !== null && (
-        <div className="mb-6 rounded-xl border border-accent-danger/30 bg-accent-danger/10 px-4 py-3 text-sm text-accent-danger">
-          {fetchErrorKind === "rate-limit"
-            ? t("fetchError.rateLimit")
-            : t("fetchError.generic")}
-        </div>
-      )}
-      <DiscoverClient
-        items={items}
-        currentType={type}
-        currentPage={page}
-        totalPages={totalPages}
-      />
+      <DiscoverClient currentType={type} currentPage={page} />
     </main>
   );
 }

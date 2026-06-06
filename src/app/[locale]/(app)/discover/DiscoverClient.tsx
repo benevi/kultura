@@ -1,18 +1,17 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useTranslations } from "next-intl";
 import { useRouter } from "@/i18n/navigation";
 import type { MediaItem } from "@/types/media";
+import type { DiscoverResult } from "@/lib/api/discover";
 import { MediaGrid } from "@/components/media/MediaGrid";
 import { Pagination } from "@/components/ui/Pagination";
 import { FilterBar, type FilterGroup } from "@/components/ui/FilterBar";
 
 export interface DiscoverClientProps {
-  items: MediaItem[];
   currentType: string;
   currentPage: number;
-  totalPages: number;
 }
 
 function matchesYear(item: MediaItem, yearFilter: string): boolean {
@@ -26,16 +25,51 @@ function matchesYear(item: MediaItem, yearFilter: string): boolean {
 }
 
 export function DiscoverClient({
-  items,
   currentType,
   currentPage,
-  totalPages,
 }: DiscoverClientProps) {
   const t = useTranslations("discover");
   const tF = useTranslations("filters");
   const router = useRouter();
 
   const [yearFilter, setYearFilter] = useState("all");
+
+  // E59 F2: el fetch vive en el navegador (vía /api/discover) para que los E2E
+  // puedan mockearlo con page.route. Se re-pide al cambiar type o page.
+  const [items, setItems] = useState<MediaItem[]>([]);
+  const [totalPages, setTotalPages] = useState(1);
+  const [fetchErrorKind, setFetchErrorKind] =
+    useState<DiscoverResult["fetchErrorKind"]>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    let cancelled = false;
+    setLoading(true);
+    const params = new URLSearchParams({
+      type: currentType,
+      page: String(currentPage),
+    });
+    fetch(`/api/discover?${params.toString()}`)
+      .then((res) => res.json() as Promise<DiscoverResult>)
+      .then((data) => {
+        if (cancelled) return;
+        setItems(data.items ?? []);
+        setTotalPages(data.totalPages ?? 1);
+        setFetchErrorKind(data.fetchErrorKind ?? null);
+      })
+      .catch(() => {
+        if (cancelled) return;
+        setItems([]);
+        setTotalPages(1);
+        setFetchErrorKind("generic");
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [currentType, currentPage]);
 
   const filterGroups: FilterGroup[] = [
     {
@@ -96,6 +130,15 @@ export function DiscoverClient({
         <h1 className="font-display text-4xl tracking-wide">{t("title")}</h1>
       </div>
 
+      {/* Fetch error banner */}
+      {fetchErrorKind !== null && (
+        <div className="mb-6 rounded-xl border border-accent-danger/30 bg-accent-danger/10 px-4 py-3 text-sm text-accent-danger">
+          {fetchErrorKind === "rate-limit"
+            ? t("fetchError.rateLimit")
+            : t("fetchError.generic")}
+        </div>
+      )}
+
       {/* FilterBar — sticky below app header (h-14) */}
       <div className="sticky top-14 z-30 bg-bg/95 backdrop-blur-sm border-b border-border py-3 px-4 -mx-4 mb-6">
         <FilterBar
@@ -106,7 +149,17 @@ export function DiscoverClient({
       </div>
 
       {/* Grid */}
-      {filteredItems.length > 0 ? (
+      {loading ? (
+        <div className="animate-pulse grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-3 md:gap-4">
+          {Array.from({ length: 18 }).map((_, i) => (
+            <div key={i} className="flex flex-col gap-2">
+              <div className="aspect-[2/3] bg-surface-elevated rounded-card" />
+              <div className="h-3 w-3/4 bg-surface-elevated rounded-button" />
+              <div className="h-3 w-1/2 bg-surface-elevated rounded-button" />
+            </div>
+          ))}
+        </div>
+      ) : filteredItems.length > 0 ? (
         <MediaGrid items={filteredItems} showType={false} />
       ) : (
         <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-3">
@@ -123,7 +176,7 @@ export function DiscoverClient({
       )}
 
       {/* Pagination */}
-      {totalPages > 1 && (
+      {!loading && totalPages > 1 && (
         <div className="flex justify-center items-center gap-4 mt-8">
           <Pagination
             currentPage={currentPage}
