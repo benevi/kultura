@@ -3,6 +3,8 @@
 
 ## Estado
 
+E73 → ✅ **CERRADA 2026-06-06** (commit `642a56c`). Fix encoding de `docs/BACKLOG.md`: mojibake por doble-encode CP1252→UTF-8 revertido solo en tokens dañados (478 revertidos, 0 leads `ÃÂâ` restantes), BOM+CRLF preservados, conteos post-fix validados contra el audit. Era deuda de documentación, no de código; sin hook (repo sin pre-commit).
+
 E51 → ✅ **CERRADA 2026-06-05** (commit código `4ce64d4`). Validación cliente + errores granulares en `SuggestionsForm`: `trim()` + rechazo pre-fetch si subject<3/description<10 (`errorTooShort`), 429 → `errorRateLimit`, state `errorKey` + `t(errorKey)`. 2 claves nuevas en namespace `suggestions` es/en. Paridad i18n 471=471. tsc 0, lint 0, vitest 639 passed.
 
 E72 → ✅ **CERRADA 2026-06-05** (commit código `9cc9b37`, re-etiquetada 2026-06-06). Fix doble render del mensaje optimista en `ConversationClient` (reconciliar `temp-*` con UUID real en respuesta POST + handler realtime). Antes etiquetada E52 por error; era trabajo distinto. tsc 0, lint 0, vitest 639 passed.
