@@ -10,6 +10,7 @@
 
 import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/admin'
 import { canEditList } from '@/lib/social/lists'
 import { checkRateLimit, LIMITS } from '@/lib/rate-limit'
 
@@ -78,12 +79,14 @@ export async function POST(request: Request, { params }: Params): Promise<NextRe
 
     if (insertErr) return NextResponse.json({ error: 'Failed to add member' }, { status: 500 })
 
-    // Notificación best-effort
-    await supabase.from('notifications').insert({
+    // Notificación vía admin client (notifications no tiene policy INSERT para anon)
+    const admin = createAdminClient()
+    const { error: notifErr } = await admin.from('notifications').insert({
       user_id: targetUserId,
       type: 'list_invite',
       payload: { listId, listName: list.name, fromUserId: user.id, fromUsername: senderProfile?.username ?? '' },
     })
+    if (notifErr) console.error('[E83] notif insert failed', { type: 'list_invite', notifErr })
 
     return NextResponse.json({ ok: true }, { status: 201 })
   }

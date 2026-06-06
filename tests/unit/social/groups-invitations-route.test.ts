@@ -47,6 +47,16 @@ vi.mock('@/lib/rate-limit', async (importOriginal) => {
   return { ...actual, checkRateLimit: () => mockCheckRateLimit() }
 })
 
+// E83: la notif se inserta vía admin client (service-role), no vía el server client.
+const mockAdminNotifInsert = vi.fn()
+vi.mock('@/lib/supabase/admin', () => ({
+  createAdminClient: () => ({
+    from: vi.fn((table: string) =>
+      table === 'notifications' ? { insert: mockAdminNotifInsert } : {}
+    ),
+  }),
+}))
+
 // ── Helpers ─────────────────────────────────────────────────────────────────
 
 function postReq(body: unknown): NextRequest {
@@ -115,6 +125,7 @@ beforeEach(() => {
   vi.clearAllMocks()
   for (const k of Object.keys(tableHandlers)) delete tableHandlers[k]
   mockCheckRateLimit.mockReturnValue({ allowed: true, retryAfterSeconds: 0 })
+  mockAdminNotifInsert.mockResolvedValue({ error: null })
 })
 
 // ── POST ──────────────────────────────────────────────────────────────────
@@ -206,17 +217,16 @@ describe('POST /api/groups/[id]/invitations', () => {
       created_at: '2026-06-01T00:00:00Z',
     }
     tableHandlers.group_invitations = invitationsBuilder({ inserted: INSERTED })
-    const notifInsert = vi.fn().mockResolvedValue({ error: null })
     tableHandlers.users = usersBuilder()
-    tableHandlers.notifications = () => ({ insert: notifInsert })
 
     const { POST } = await import('@/app/api/groups/[id]/invitations/route')
     const res = await POST(postReq({ inviteeId: INVITEE_ID }), ctx())
     expect(res.status).toBe(201)
     const body = await res.json()
     expect(body.invitation.id).toBe('inv-001')
-    expect(notifInsert).toHaveBeenCalledOnce()
-    const notifArg = notifInsert.mock.calls[0][0]
+    // E83: notif insertada vía admin client (service-role)
+    expect(mockAdminNotifInsert).toHaveBeenCalledOnce()
+    const notifArg = mockAdminNotifInsert.mock.calls[0][0]
     expect(notifArg.type).toBe('group_invite')
     expect(notifArg.user_id).toBe(INVITEE_ID)
     expect(notifArg.payload.invitationId).toBe('inv-001')
