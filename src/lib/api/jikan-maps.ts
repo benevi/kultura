@@ -6,6 +6,8 @@
 // Guard: vacío / desconocido se ignora. order_by/sort siempre presentes.
 // ============================================================
 
+import type { MediaItem } from "@/types/media";
+
 export type JikanMediaType = "anime" | "manga";
 
 // ── Géneros (MAL genre IDs) ─────────────────────────────────────────────────────
@@ -129,6 +131,9 @@ export interface JikanFilters {
   year?: string | null;
   status?: string | null;
   sort?: string | null;
+  // Solo manga, POST-filtro (no es param nativo de Jikan): se aplica sobre los
+  // items ya normalizados, no entra en buildJikanDiscoverParams. anime → oculto.
+  volumenes?: string | null;
 }
 
 function mapSlugs(
@@ -190,4 +195,37 @@ export function hasJikanFilters(filters: JikanFilters = {}): boolean {
       filters.status ||
       (filters.sort && filters.sort !== "popularity")
   );
+}
+
+// ── Volúmenes (manga) — POST-filtro de mínimo ───────────────────────────────────
+// Buckets canónicos (spec §1/§3): "1-5"/"6-20"/"20plus" → umbral mínimo de volumes.
+// kind "min": se conserva el manga cuyo volumes >= umbral. Solo manga (anime oculto).
+
+const VOLUMENES_MIN: Record<string, number> = {
+  "1-5": 1,
+  "6-20": 6,
+  "20plus": 20,
+};
+
+/** Umbral mínimo de volúmenes para un bucket canónico, o null si desconocido. */
+export function volumenesMin(bucket: string | null | undefined): number | null {
+  if (!bucket) return null;
+  return VOLUMENES_MIN[bucket] ?? null;
+}
+
+/**
+ * Post-filtra items de manga por mínimo de volúmenes. Conserva solo los que tienen
+ * `metadata.volumes` numérico y >= umbral del bucket. Bucket vacío/desconocido →
+ * devuelve los items intactos (no filtra). Items sin volumes resuelto se descartan.
+ */
+export function filterByMinVolumes(
+  items: MediaItem[],
+  bucket: string | null | undefined
+): MediaItem[] {
+  const min = volumenesMin(bucket);
+  if (min === null) return items;
+  return items.filter((item) => {
+    const v = item.metadata?.volumes;
+    return typeof v === "number" && v >= min;
+  });
 }
