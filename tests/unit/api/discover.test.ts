@@ -19,6 +19,8 @@ vi.mock("@/lib/api/jikan", async (importOriginal) => {
     ...actual,
     getPopularAnime: vi.fn(),
     getPopularManga: vi.fn(),
+    discoverAnime: vi.fn(),
+    discoverManga: vi.fn(),
   };
 });
 
@@ -28,6 +30,7 @@ vi.mock("@/lib/api/googlebooks", () => ({
 
 vi.mock("@/lib/api/rawg", () => ({
   getPopularGames: vi.fn(),
+  discoverGames: vi.fn(),
 }));
 
 vi.mock("@/lib/api/normalizer", () => ({
