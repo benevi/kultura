@@ -79,18 +79,34 @@ describe("parseDiscoverParams", () => {
 describe("GET /api/discover", () => {
   it("propaga type + page a fetchDiscoverData", async () => {
     await GET(req("?type=anime&page=3"));
-    expect(fetchDiscoverData).toHaveBeenCalledWith("anime", 3);
+    expect(fetchDiscoverData).toHaveBeenCalledWith(
+      "anime",
+      3,
+      expect.any(Object)
+    );
   });
 
-  it("F2: ignora params no soportados (solo type+page llegan al fetch)", async () => {
-    await GET(req("?type=tv&page=1&genre=accion&sort=rating&year=2024"));
-    expect(fetchDiscoverData).toHaveBeenCalledWith("tv", 1);
+  it("F3a: pasa los filtros TMDB al fetch (genre/year/sort/…)", async () => {
+    await GET(req("?type=tv&page=1&genre=accion-aventura&sort=rating&year=2024"));
+    expect(fetchDiscoverData).toHaveBeenCalledWith(
+      "tv",
+      1,
+      expect.objectContaining({
+        genre: ["accion-aventura"],
+        sort: "rating",
+        year: "2024",
+      })
+    );
     expect(fetchDiscoverData).toHaveBeenCalledTimes(1);
   });
 
   it("type inválido → fetch con 'movie'", async () => {
     await GET(req("?type=xyz&page=2"));
-    expect(fetchDiscoverData).toHaveBeenCalledWith("movie", 2);
+    expect(fetchDiscoverData).toHaveBeenCalledWith(
+      "movie",
+      2,
+      expect.any(Object)
+    );
   });
 
   it("devuelve el payload normalizado como JSON", async () => {
