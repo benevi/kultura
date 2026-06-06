@@ -46,15 +46,25 @@ async function googleBooksFetch<T>(
 
 // ── Public API ────────────────────────────────────────────────────────────────
 
+export interface SearchBooksOptions {
+  orderBy?: string;
+  filter?: string;
+  langRestrict?: string;
+}
+
 export async function searchBooks(
   query: string,
-  startIndex = 0
+  startIndex = 0,
+  options: SearchBooksOptions = {}
 ): Promise<GoogleBooksResponse> {
-  return googleBooksFetch<GoogleBooksResponse>("/volumes", {
+  const params: Record<string, string> = {
     q: query,
     startIndex: String(startIndex),
-    langRestrict: "es",
-  });
+    langRestrict: options.langRestrict ?? "es",
+  };
+  if (options.orderBy) params.orderBy = options.orderBy;
+  if (options.filter) params.filter = options.filter;
+  return googleBooksFetch<GoogleBooksResponse>("/volumes", params);
 }
 
 export async function getBook(id: string): Promise<GoogleBooksVolume> {
