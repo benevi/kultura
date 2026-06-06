@@ -6,6 +6,12 @@
 import type { ComicVineIssue, ComicVineSearchResponse } from "@/types/media";
 import type { MediaItem } from "@/types/media";
 import { normalizeComic } from "@/lib/api/normalizer";
+import {
+  comicSort,
+  comicCoverDateRange,
+  mapPublisherSubstrings,
+  type ComicFilters,
+} from "@/lib/api/comicvine-maps";
 
 /** Respuesta del endpoint de detalle /issue/4000-{id}/ (un único result objeto). */
 interface ComicVineIssueResponse {
@@ -249,20 +255,32 @@ export async function resolveVolumePublishers(
  * Paginado vía offset (page-1)*100.
  */
 export async function getRecentComics(
-  page: number = 1
+  page: number = 1,
+  filters: ComicFilters = {}
 ): Promise<{ items: MediaItem[]; total: number }> {
-  const resp = await comicVineFetch<ComicVineSearchResponse>("/issues/", {
-    sort: "cover_date:desc",
+  // Con filtros → sort dinámico + filter cover_date si year. Sin filtros →
+  // params idénticos a hoy (paridad). genre sigue oculto para comic.
+  const params: Record<string, string> = {
+    sort: comicSort(filters.sort),
     limit: "100",
     offset: String((page - 1) * 100),
     field_list: "id,name,issue_number,cover_date,store_date,deck,image,volume",
-  });
+  };
+  const coverDate = comicCoverDateRange(filters.year);
+  if (coverDate) params.filter = coverDate;
+
+  const resp = await comicVineFetch<ComicVineSearchResponse>("/issues/", params);
   if (!resp.results) return { items: [], total: 0 };
 
   const volumeIds = resp.results
     .map((issue) => issue.volume?.id)
     .filter((id): id is number => typeof id === "number");
   const publishers = await resolveVolumePublishers(volumeIds);
+
+  // Editorial = post-filtro sobre el publisher resuelto (substring, case-insensitive).
+  const publisherSubstrings = mapPublisherSubstrings(filters.editorial).map((p) =>
+    p.toLowerCase()
+  );
 
   const nonManga = resp.results.filter((issue) => {
     const publisher = issue.volume?.id
@@ -272,7 +290,13 @@ export async function getRecentComics(
     // sello adulto/erótico. Los issues sin publisher (la API no lo devuelve) se
     // descartan: en ComicVine el grueso del manga llega así y se colaba.
     if (!publisher) return false;
-    return !isMangaPublisher(publisher) && !isAdultPublisher(publisher);
+    if (isMangaPublisher(publisher) || isAdultPublisher(publisher)) return false;
+    // Editorial (si se pidió): mantener solo si el publisher incluye algún substring.
+    if (publisherSubstrings.length > 0) {
+      const lc = publisher.toLowerCase();
+      if (!publisherSubstrings.some((sub) => lc.includes(sub))) return false;
+    }
+    return true;
   });
 
   return {
