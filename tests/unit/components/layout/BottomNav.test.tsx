@@ -8,7 +8,7 @@ vi.mock('next-intl', () => ({
       discover: 'Descubrir',
       chat: 'Mensajes',
       library: 'Mi biblioteca',
-      profile: 'Perfil',
+      groups: 'Grupos',
     }
     return map[key] ?? key
   }),
@@ -26,36 +26,36 @@ vi.mock('lucide-react', () => ({
   Compass: () => <svg data-testid="icon-compass" />,
   MessageCircle: () => <svg data-testid="icon-messagecircle" />,
   BookOpen: () => <svg data-testid="icon-bookopen" />,
-  User: () => <svg data-testid="icon-user" />,
+  Users: () => <svg data-testid="icon-users" />,
 }))
 
 import { BottomNav } from '@/components/layout/BottomNav'
 
 describe('BottomNav', () => {
   it('renderiza los 5 items', () => {
-    render(<BottomNav username="testuser" />)
+    render(<BottomNav />)
     expect(screen.getByText('Inicio')).toBeInTheDocument()
     expect(screen.getByText('Descubrir')).toBeInTheDocument()
     expect(screen.getByText('Mensajes')).toBeInTheDocument()
     expect(screen.getByText('Mi biblioteca')).toBeInTheDocument()
-    expect(screen.getByText('Perfil')).toBeInTheDocument()
+    expect(screen.getByText('Grupos')).toBeInTheDocument()
   })
 
   it('item activo tiene clase text-accent-positive', () => {
-    render(<BottomNav username="testuser" />)
+    render(<BottomNav />)
     const homeLink = screen.getByText('Inicio').closest('a')
     expect(homeLink?.className).toContain('text-accent-positive')
   })
 
   it('item inactivo tiene clase text-text-secondary', () => {
-    render(<BottomNav username="testuser" />)
+    render(<BottomNav />)
     const discoverLink = screen.getByText('Descubrir').closest('a')
     expect(discoverLink?.className).toContain('text-text-secondary')
   })
 
-  it('link de perfil incluye el username', () => {
-    render(<BottomNav username="testuser" />)
-    const profileLink = screen.getByText('Perfil').closest('a')
-    expect(profileLink).toHaveAttribute('href', '/profile/testuser')
+  it('link de grupos apunta a /groups', () => {
+    render(<BottomNav />)
+    const groupsLink = screen.getByText('Grupos').closest('a')
+    expect(groupsLink).toHaveAttribute('href', '/groups')
   })
 })

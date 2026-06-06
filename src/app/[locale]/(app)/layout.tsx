@@ -28,7 +28,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
         <AuthHeader profile={profile} unreadCount={unreadCount} />
         <div className="flex-1 pb-16 md:pb-0">{children}</div>
         <AppFooter />
-        <BottomNav username={profile.username} />
+        <BottomNav />
       </div>
     </ToastProvider>
   )
