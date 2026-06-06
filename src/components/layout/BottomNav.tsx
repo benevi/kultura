@@ -3,13 +3,9 @@
 import { useTranslations } from 'next-intl'
 import { Link, usePathname } from '@/i18n/navigation'
 import { cn } from '@/lib/utils/index'
-import { Home, Compass, MessageCircle, BookOpen, User } from 'lucide-react'
+import { Home, Compass, MessageCircle, BookOpen, Users } from 'lucide-react'
 
-interface BottomNavProps {
-  username: string
-}
-
-export function BottomNav({ username }: BottomNavProps) {
+export function BottomNav() {
   const t = useTranslations('nav')
   const pathname = usePathname()
 
@@ -18,7 +14,7 @@ export function BottomNav({ username }: BottomNavProps) {
     { key: 'discover', href: '/discover', icon: Compass },
     { key: 'chat', href: '/chat', icon: MessageCircle },
     { key: 'library', href: '/library', icon: BookOpen },
-    { key: 'profile', href: `/profile/${username}`, icon: User },
+    { key: 'groups', href: '/groups', icon: Users },
   ] as const
 
   return (
