@@ -31,6 +31,10 @@ import {
 } from "@/lib/api/rawg-maps";
 import { getRecentComics } from "@/lib/api/comicvine";
 import {
+  hasComicFilters,
+  type ComicFilters,
+} from "@/lib/api/comicvine-maps";
+import {
   normalizeMovie,
   normalizeTV,
   normalizeAnime,
@@ -58,7 +62,8 @@ export interface DiscoverResult {
 export type DiscoverFilters = TmdbFilters &
   JikanFilters &
   RawgFilters &
-  BooksFilters;
+  BooksFilters &
+  ComicFilters;
 
 export async function fetchDiscoverData(
   type: string,
@@ -132,7 +137,11 @@ export async function fetchDiscoverData(
         break;
       }
       case "comic": {
-        const res = await getRecentComics(page);
+        // Con filtros (sort/year/editorial) → getRecentComics filtrado; sin
+        // filtros, paridad con hoy. genre sigue oculto para comic.
+        const res = hasComicFilters(filters)
+          ? await getRecentComics(page, filters)
+          : await getRecentComics(page);
         items = res.items;
         // Sin cap: exponemos todas las páginas que reporta ComicVine. res.total es
         // el total bruto de issues; ceil(total/20) da el nº de páginas navegables.
