@@ -51,7 +51,7 @@ const config: Config = {
         display: ["var(--font-space-grotesk)", "system-ui", "sans-serif"],
         body: ["var(--font-inter)", "system-ui", "sans-serif"],
         /* Legacy aliases */
-        mono: ["monospace"],
+        mono: ["var(--font-mono)", "monospace"],
       },
       borderRadius: {
         card: "12px",
