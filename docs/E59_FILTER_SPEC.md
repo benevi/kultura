@@ -73,7 +73,7 @@ Google Books `/volumes`; ComicVine `/issues`.
 | **year** | nativo `primary_release_date.gte/lte` (o `primary_release_year`) | nativo `first_air_date.gte/lte` | nativo `start_date`/`end_date` | nativo `start_date`/`end_date` | nativo `dates=a,b` | **post** (q no fiable) | nativo `filter=cover_date:a|b` |
 | **platform** | nativo `with_watch_providers`+`watch_region` | nativo `with_watch_providers`+`watch_region` | oculto | oculto | nativo `platforms` (IDs) | oculto | oculto |
 | **sort** | nativo `sort_by` | nativo `sort_by` | nativo `order_by`+`sort` | nativo `order_by`+`sort` | nativo `ordering` | nativo `orderBy` (relevance/newest) | nativo `sort` |
-| **status** | nativo `with_status` (tv) | nativo `with_status` | nativo `status` | nativo `status` | oculto | oculto | oculto |
+| **status** | **oculto** (movie no tiene `with_status`; `with_release_type` filtra formato de estreno, no estado) | nativo `with_status` | nativo `status` | nativo `status` | oculto | oculto | oculto |
 | **demografia** | oculto | oculto | nativo `genres` (IDs demo) | nativo `genres` (IDs demo) | oculto | oculto | oculto |
 | **duracion** | nativo `with_runtime.gte/lte` | oculto | oculto | oculto | oculto | oculto | oculto |
 | **temporadas** | oculto | **post** (`number_of_seasons`) | oculto | oculto | oculto | oculto | oculto |

@@ -4,6 +4,7 @@
 // ============================================================
 
 import { discoverMovies, discoverTV } from "@/lib/api/tmdb";
+import { buildTmdbDiscoverParams, type TmdbFilters } from "@/lib/api/tmdb-maps";
 import { getPopularAnime, getPopularManga, JikanError } from "@/lib/api/jikan";
 import { searchBooks } from "@/lib/api/googlebooks";
 import { getPopularGames } from "@/lib/api/rawg";
@@ -28,9 +29,16 @@ export interface DiscoverResult {
   fetchErrorKind: FetchErrorKind;
 }
 
+/**
+ * Filtros canónicos aplicables a la capa de fetch. F3a: solo TMDB (movie/tv) los
+ * consume; el resto de tipos los ignora hasta sus fases respectivas.
+ */
+export type DiscoverFilters = TmdbFilters;
+
 export async function fetchDiscoverData(
   type: string,
-  page: number
+  page: number,
+  filters: DiscoverFilters = {}
 ): Promise<DiscoverResult> {
   let items: MediaItem[] = [];
   let totalPages = 1;
@@ -39,7 +47,10 @@ export async function fetchDiscoverData(
   try {
     switch (type) {
       case "movie": {
-        const res = await discoverMovies(page);
+        const res = await discoverMovies(
+          page,
+          buildTmdbDiscoverParams("movie", filters)
+        );
         items = res.results.map((m) =>
           normalizeMovie(m as unknown as TmdbMovieDetail)
         );
@@ -47,7 +58,10 @@ export async function fetchDiscoverData(
         break;
       }
       case "tv": {
-        const res = await discoverTV(page);
+        const res = await discoverTV(
+          page,
+          buildTmdbDiscoverParams("tv", filters)
+        );
         items = res.results.map((tv) =>
           normalizeTV(tv as unknown as TmdbTVDetail)
         );
@@ -95,7 +109,10 @@ export async function fetchDiscoverData(
         break;
       }
       default: {
-        const res = await discoverMovies(page);
+        const res = await discoverMovies(
+          page,
+          buildTmdbDiscoverParams("movie", filters)
+        );
         items = res.results.map((m) =>
           normalizeMovie(m as unknown as TmdbMovieDetail)
         );

@@ -86,12 +86,22 @@ export function parseDiscoverParams(
 }
 
 export async function GET(request: NextRequest) {
-  const { type, page } = parseDiscoverParams(request.nextUrl.searchParams);
+  const parsed = parseDiscoverParams(request.nextUrl.searchParams);
+  const { type, page } = parsed;
 
-  // F2: solo type + page. fetchDiscoverData mantiene el manejo de 429/errores
-  // (devuelve fetchErrorKind, nunca lanza), así que la respuesta es siempre 200
-  // con el payload normalizado — paridad con el render RSC actual.
-  const result = await fetchDiscoverData(type, page);
+  // F3a: además de type+page se pasan los filtros que TMDB consume nativamente
+  // (genre/year/platform/sort/idioma/duracion/status). La capa TMDB ignora los
+  // vacíos/desconocidos. El resto de tipos ignora estos filtros hasta su fase.
+  // fetchDiscoverData nunca lanza (429/errores viajan como fetchErrorKind) → 200.
+  const result = await fetchDiscoverData(type, page, {
+    genre: parsed.genre,
+    year: parsed.year,
+    platform: parsed.platform,
+    sort: parsed.sort,
+    status: parsed.status,
+    duracion: parsed.duracion,
+    idioma: parsed.idioma,
+  });
 
   return NextResponse.json(result);
 }
