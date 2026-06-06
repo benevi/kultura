@@ -12,7 +12,8 @@ vi.mock("@/lib/api/discover", () => ({
   fetchDiscoverData: vi.fn(),
 }));
 
-import { GET, parseDiscoverParams } from "@/app/api/discover/route";
+import { GET } from "@/app/api/discover/route";
+import { parseDiscoverParams } from "@/lib/api/discover-params";
 import { fetchDiscoverData } from "@/lib/api/discover";
 
 function req(query: string): NextRequest {
