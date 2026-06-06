@@ -1,81 +1,81 @@
-﻿# BACKLOG â€” KULTURA
+﻿# BACKLOG — KULTURA
 
 > Una sola regla: **se trabaja de arriba a abajo. No se saltan tareas.**
-> Si algo "parece mÃ¡s urgente", o es porque no entiendes la dependencia, o porque el orden estÃ¡ mal y hay que discutirlo (no saltÃ¡rselo).
+> Si algo "parece más urgente", o es porque no entiendes la dependencia, o porque el orden está mal y hay que discutirlo (no saltárselo).
 >
-> Cada tarea tiene criterio binario de "hecho". No hay "en progreso" global â€” eso vive en `NOW.md`.
+> Cada tarea tiene criterio binario de "hecho". No hay "en progreso" global — eso vive en `NOW.md`.
 
 ---
 
-## BLOQUE A â€” Parar el sangrado (1â€“2 dÃ­as reales)
+## BLOQUE A — Parar el sangrado (1–2 días reales)
 
-Sin esto, todo lo demÃ¡s se hace con la casa ardiendo.
+Sin esto, todo lo demás se hace con la casa ardiendo.
 
-- [x] **A1. Rotar credenciales Supabase comprometidas** âœ… (cerrada el 2026-05-01)
-  MigraciÃ³n a sistema nuevo de Supabase API keys (`sb_publishable_*` + `sb_secret_*`). Legacy JWT-based keys deshabilitadas en el dashboard. App funcionando en local con las nuevas en `.env.local`. Vars actualizadas tambiÃ©n en Vercel.
+- [x] **A1. Rotar credenciales Supabase comprometidas** ✅ (cerrada el 2026-05-01)
+  Migración a sistema nuevo de Supabase API keys (`sb_publishable_*` + `sb_secret_*`). Legacy JWT-based keys deshabilitadas en el dashboard. App funcionando en local con las nuevas en `.env.local`. Vars actualizadas también en Vercel.
 
-- [x] **A2. Verificar y reforzar `.gitignore` + ausencia de secretos en historial** âœ… (cerrada el 2026-05-01, verificaciÃ³n sin cambios)
-  Confirmado que `.env.local` no estÃ¡ trackeado (`git ls-files .env.local` devuelve vacÃ­o). Falta: aÃ±adir `.claude/` a `.gitignore` (el directorio puede contener `settings.local.json` con info personal). Revisar si existe algÃºn otro archivo con secretos en el repo.
+- [x] **A2. Verificar y reforzar `.gitignore` + ausencia de secretos en historial** ✅ (cerrada el 2026-05-01, verificación sin cambios)
+  Confirmado que `.env.local` no está trackeado (`git ls-files .env.local` devuelve vacío). Falta: añadir `.claude/` a `.gitignore` (el directorio puede contener `settings.local.json` con info personal). Revisar si existe algún otro archivo con secretos en el repo.
   Hecho cuando: `.gitignore` incluye `.claude/`, y un `git grep -i "sb_secret_\|eyJhbGc" -- ':(exclude).env*'` no devuelve nada.
 
-- [x] **A3. Rotar el resto de claves API por higiene** âœ… (cerrada el 2026-05-01)
-  Aunque `TMDB_API_KEY`, `RAWG_API_KEY`, `GOOGLE_BOOKS_KEY`, `COMICVINE_KEY` y `ANTHROPIC_API_KEY` no aparecÃ­an en texto plano en el `settings.json` viejo, el archivo era una colecciÃ³n de comandos de debug. Por higiene: rotar todas. Para cada una: regenerar en su dashboard, actualizar `.env.local` local, actualizar Vercel.
+- [x] **A3. Rotar el resto de claves API por higiene** ✅ (cerrada el 2026-05-01)
+  Aunque `TMDB_API_KEY`, `RAWG_API_KEY`, `GOOGLE_BOOKS_KEY`, `COMICVINE_KEY` y `ANTHROPIC_API_KEY` no aparecían en texto plano en el `settings.json` viejo, el archivo era una colección de comandos de debug. Por higiene: rotar todas. Para cada una: regenerar en su dashboard, actualizar `.env.local` local, actualizar Vercel.
   Hecho cuando: las 5 claves tienen valores nuevos en local + Vercel y la app sigue arrancando.
 
-- [x] **A4. Sincronizar nombres de variables entre local y Vercel** âœ… (cerrada el 2026-05-01, ya unificado)
-  En Vercel las claves son `TMDB_API_KEY`, `RAWG_API_KEY`, `GOOGLE_BOOKS_KEY` (sin `NEXT_PUBLIC_`). En `.env.local` puede que sigan con el prefijo viejo. Decidir nombres canÃ³nicos (server-only, sin `NEXT_PUBLIC_`) y unificar.
+- [x] **A4. Sincronizar nombres de variables entre local y Vercel** ✅ (cerrada el 2026-05-01, ya unificado)
+  En Vercel las claves son `TMDB_API_KEY`, `RAWG_API_KEY`, `GOOGLE_BOOKS_KEY` (sin `NEXT_PUBLIC_`). En `.env.local` puede que sigan con el prefijo viejo. Decidir nombres canónicos (server-only, sin `NEXT_PUBLIC_`) y unificar.
   Hecho cuando: `.env.local` y Vercel usan exactamente los mismos nombres y la app funciona en ambos entornos.
 
-- [x] **A5. Versionar el estado actual del proyecto (commits temÃ¡ticos + remoto GitHub)**âœ… (cerrada el 2026-05-02).
- 13 commits temÃ¡ticos en 4 sesiones + reescritura de identidad + push a https://github.com/benevi/kultura (privado). Detalles en DONE.md. Working tree limpio, master en sync con origin.
+- [x] **A5. Versionar el estado actual del proyecto (commits temáticos + remoto GitHub)**✅ (cerrada el 2026-05-02).
+ 13 commits temáticos en 4 sesiones + reescritura de identidad + push a https://github.com/benevi/kultura (privado). Detalles en DONE.md. Working tree limpio, master en sync con origin.
 
-- [ ] **A6. AuditorÃ­a de coherencia repo vs disco**
-        Verificar que despuÃ©s de A5 no quedan archivos en disco que no estÃ©n
-        trackeados (salvo los explÃ­citamente ignorados por .gitignore). Si
-        hay huÃ©rfanos, decidir uno por uno: stagear, ignorar, o borrar.
+- [ ] **A6. Auditoría de coherencia repo vs disco**
+        Verificar que después de A5 no quedan archivos en disco que no estén
+        trackeados (salvo los explícitamente ignorados por .gitignore). Si
+        hay huérfanos, decidir uno por uno: stagear, ignorar, o borrar.
         Hecho cuando: `git status --short` solo lista archivos con cambios
-        legÃ­timos, sin "??" inesperados.
+        legítimos, sin "??" inesperados.
 
 ---
 
-## BLOQUE B â€” Base reproducible (2â€“3 dÃ­as)
+## BLOQUE B — Base reproducible (2–3 días)
 
 Sin esto, cada cambio posterior es ruleta rusa.
 
-- [x] **B1-A. Limpiar tests rotos huÃ©rfanos**âœ… (cerrada el 2026-05-01)
-  6 errores en `tests/` impiden `tsc --noEmit`: 3 tests de componentes Library inexistentes, 1 test de `@/lib/env` (mÃ³dulo aÃºn no creado, es E24), 2 mocks desactualizados en `queries.test.ts`.
+- [x] **B1-A. Limpiar tests rotos huérfanos**✅ (cerrada el 2026-05-01)
+  6 errores en `tests/` impiden `tsc --noEmit`: 3 tests de componentes Library inexistentes, 1 test de `@/lib/env` (módulo aún no creado, es E24), 2 mocks desactualizados en `queries.test.ts`.
   Hecho cuando: `tsc --noEmit` exit 0, `vitest run` exit 0, hay commit `[B1-A] Limpiar tests rotos`.
 
-- [x] **B1-B. CI bÃ¡sico en GitHub Actions** âœ… (cerrada el 2026-05-02)
+- [x] **B1-B. CI básico en GitHub Actions** ✅ (cerrada el 2026-05-02)
   El B1 original. Workflow con typecheck + tests unit + build.
   Depende de: B1-A.
    
-- [x] **B1-C. Arreglar 4 tests fallando en register-form.test.tsx** âœ… (cerrada el 2026-05-02, absorbida por B1-B)
-  mockRouterPush nunca se llama. Investigar: Â¿mock router 
-  mal? Â¿signUp mock falta? Â¿flujo del componente cambiÃ³?
+- [x] **B1-C. Arreglar 4 tests fallando en register-form.test.tsx** ✅ (cerrada el 2026-05-02, absorbida por B1-B)
+  mockRouterPush nunca se llama. Investigar: ¿mock router 
+  mal? ¿signUp mock falta? ¿flujo del componente cambió?
   Hecho cuando: vitest run pasa los 4 tests de register-form.
   
-- [x] **B2. Migraciones SQL versionadas** âœ… (cerrada el 2026-05-03)
-  Baseline SQL recuperada vÃ­a `supabase db pull --schema public` tras reparar entrada huÃ©rfana de migraciÃ³n `20260502155455` (`supabase migration repair --status reverted`). Archivo: `supabase/migrations/20260502233945_remote_schema.sql` (~32 KB, 17 tablas, 49 RLS policies, 4 funciones trigger). Verificada contra `db_snapshot.txt` sin discrepancias. Sintaxis SQL validada con postgres puro (Plan B) â€” `supabase db reset` local quedÃ³ pendiente por degradaciÃ³n de Docker Desktop (ver B2-VERIFY).
+- [x] **B2. Migraciones SQL versionadas** ✅ (cerrada el 2026-05-03)
+  Baseline SQL recuperada vía `supabase db pull --schema public` tras reparar entrada huérfana de migración `20260502155455` (`supabase migration repair --status reverted`). Archivo: `supabase/migrations/20260502233945_remote_schema.sql` (~32 KB, 17 tablas, 49 RLS policies, 4 funciones trigger). Verificada contra `db_snapshot.txt` sin discrepancias. Sintaxis SQL validada con postgres puro (Plan B) — `supabase db reset` local quedó pendiente por degradación de Docker Desktop (ver B2-VERIFY).
 
-- [x] **B2-DOC. DocumentaciÃ³n de la baseline** âœ… (cerrada el 2026-05-03)
-  Cubierta por `supabase/migrations/README.md` (cÃ³mo aplicar, polÃ­tica de migraciones futuras, advertencia sobre `db push` sobre la baseline) + tipos TypeScript completos en `src/types/supabase.ts` (interfaces `DbSuggestion`, `DbConversation`, `DbConversationMember`, `DbMessage`, `DbGroup`, `DbGroupMember`, `DbGroupPost` aÃ±adidas). NOTA: la actualizaciÃ³n de los marcadores `[POR VERIFICAR EN B2]` en CLAUDE.md queda separada en B2-DOC-CLAUDE por discrepancia detectada en `group_members.role` (ver B2-DOC-CLAUDE).
+- [x] **B2-DOC. Documentación de la baseline** ✅ (cerrada el 2026-05-03)
+  Cubierta por `supabase/migrations/README.md` (cómo aplicar, política de migraciones futuras, advertencia sobre `db push` sobre la baseline) + tipos TypeScript completos en `src/types/supabase.ts` (interfaces `DbSuggestion`, `DbConversation`, `DbConversationMember`, `DbMessage`, `DbGroup`, `DbGroupMember`, `DbGroupPost` añadidas). NOTA: la actualización de los marcadores `[POR VERIFICAR EN B2]` en CLAUDE.md queda separada en B2-DOC-CLAUDE por discrepancia detectada en `group_members.role` (ver B2-DOC-CLAUDE).
 
-- [x] **B2-DOC-CLAUDE. Actualizar CLAUDE.md con SQL canÃ³nico de las 7 tablas** âœ… (cerrada el 2026-05-03)
-  CLAUDE.md actualizado en commit B2: marcadores `[POR VERIFICAR EN B2]` eliminados, `group_members.role` corregido a `'owner' | 'member'` (no existÃ­a `admin`), `users.bio` documentada, SQL de las 7 tablas confirmado contra `db_snapshot.txt`.
+- [x] **B2-DOC-CLAUDE. Actualizar CLAUDE.md con SQL canónico de las 7 tablas** ✅ (cerrada el 2026-05-03)
+  CLAUDE.md actualizado en commit B2: marcadores `[POR VERIFICAR EN B2]` eliminados, `group_members.role` corregido a `'owner' | 'member'` (no existía `admin`), `users.bio` documentada, SQL de las 7 tablas confirmado contra `db_snapshot.txt`.
 
 - [ ] **B2-VERIFY. Verificar `supabase db reset` en local**
-  Ejecutar `supabase db reset` en entorno local y confirmar que el schema resultante es idÃ©ntico al de producciÃ³n. Reintentar cuando Docker Desktop estÃ© operativo. Bloqueo no afecta progreso del proyecto: SQL validado contra postgres puro sin errores reales, y schema vivo en remoto desde abril sin incidencias. Ejecutar `supabase start && supabase db reset` cuando Docker estÃ© restaurado y verificar conteos: 17 tablas / ~49 policies / 4 funciones trigger.
-  **Intento del 2026-05-03 bloqueado** por degradaciÃ³n de Docker Desktop (`input/output error` en blob storage de containerd, persistente tras restart).
-  Hecho cuando: `supabase db reset` sale con exit 0 y un diff contra producciÃ³n devuelve vacÃ­o.
-  Depende de: B2 (âœ…).
+  Ejecutar `supabase db reset` en entorno local y confirmar que el schema resultante es idéntico al de producción. Reintentar cuando Docker Desktop esté operativo. Bloqueo no afecta progreso del proyecto: SQL validado contra postgres puro sin errores reales, y schema vivo en remoto desde abril sin incidencias. Ejecutar `supabase start && supabase db reset` cuando Docker esté restaurado y verificar conteos: 17 tablas / ~49 policies / 4 funciones trigger.
+  **Intento del 2026-05-03 bloqueado** por degradación de Docker Desktop (`input/output error` en blob storage de containerd, persistente tras restart).
+  Hecho cuando: `supabase db reset` sale con exit 0 y un diff contra producción devuelve vacío.
+  Depende de: B2 (✅).
 
-- [x] **B4. Auditar y eliminar `kultura-backup-2026-05-01.zip`** âœ… (cerrada el 2026-05-03)
-  Zip auditado en B3: 280.4 MB, 30876 archivos, incluÃ­a `kultura\.env.local` con credenciales reales y vigentes (idÃ©nticas al `.env.local` actual). Tras 6 verificaciones por el usuario (no OneDrive, no Google Drive, no compartido, no segunda mÃ¡quina, no backup automÃ¡tico en la nube), confirmado que el zip nunca saliÃ³ de la mÃ¡quina. DecisiÃ³n: NO rotar claves. Zip borrado por el usuario, carpeta temporal de auditorÃ­a eliminada.
+- [x] **B4. Auditar y eliminar `kultura-backup-2026-05-01.zip`** ✅ (cerrada el 2026-05-03)
+  Zip auditado en B3: 280.4 MB, 30876 archivos, incluía `kultura\.env.local` con credenciales reales y vigentes (idénticas al `.env.local` actual). Tras 6 verificaciones por el usuario (no OneDrive, no Google Drive, no compartido, no segunda máquina, no backup automático en la nube), confirmado que el zip nunca salió de la máquina. Decisión: NO rotar claves. Zip borrado por el usuario, carpeta temporal de auditoría eliminada.
 
 ---
 
-## BLOQUE C â€” Que producciÃ³n no sea una caja negra (3â€“4 dÃ­as)
+## BLOQUE C — Que producción no sea una caja negra (3–4 días)
 
 Sin esto, cuando algo falle en prod no te vas a enterar.
 
@@ -87,105 +87,105 @@ Sin esto, cuando algo falle en prod no te vas a enterar.
   `src/lib/logger.ts` con pino o similar. Reemplazar las 15 instancias de `console.error` documentadas en el audit.
   Hecho cuando: `grep -rn "console\." src/ --include="*.ts" --include="*.tsx"` devuelve 0 o solo casos justificados.
 
-- [ ] **C3. Rate limiting â†’ Vercel KV**
+- [ ] **C3. Rate limiting → Vercel KV**
   Reemplazar el `Map` en memoria por `@vercel/kv`. Sliding window igual que ahora, pero distribuido.
   Hecho cuando: dos requests paralelos desde dos instancias diferentes de Vercel respetan el mismo contador.
 
-- [x] **C4. Rate-limit en endpoints sin proteger** âœ… (cerrada el 2026-05-03)
+- [x] **C4. Rate-limit en endpoints sin proteger** ✅ (cerrada el 2026-05-03)
   Aplicado `checkRateLimit` en 6 endpoints: `POST /api/chat` (10/h), `POST /api/chat/[id]` (10/min), `GET /api/chat/[id]` (60/min), `POST /api/groups` (5/h), `POST /api/suggestions` (3/h), `GET /api/users/search` (30/min). Sistema in-memory existente extendido con 6 nuevos presets en `LIMITS`. Tests: 6 nuevos en `tests/unit/rate-limit/rate-limit.test.ts` (18 total, 18 green). Todos devuelven 429 + `Retry-After`.
 
 - [ ] **C5. Activar CSP en modo enforce mejorado**
-  El CSP actual tiene `'unsafe-inline'` en script-src. Eliminar requires nonces (ver C7). Tras C7, pasar CSP a modo enforce sin `'unsafe-inline'` y verificar en producciÃ³n que no hay regresiones.
+  El CSP actual tiene `'unsafe-inline'` en script-src. Eliminar requires nonces (ver C7). Tras C7, pasar CSP a modo enforce sin `'unsafe-inline'` y verificar en producción que no hay regresiones.
   Depende de: C7.
-  Hecho cuando: `Content-Security-Policy` en producciÃ³n no contiene `'unsafe-inline'` y el sitio funciona.
+  Hecho cuando: `Content-Security-Policy` en producción no contiene `'unsafe-inline'` y el sitio funciona.
 
 - [ ] **C6. Auditar dominios externos en CSP y limpiar allowlist**
-  El `img-src https:` actual permite cualquier dominio HTTPS para imÃ¡genes. Cuando se tenga trÃ¡fico real, revisar los logs/reports de CSP para confirmar quÃ© dominios realmente se usan y reemplazar `https:` por una allowlist explÃ­cita. Prioridad baja.
-  Hecho cuando: `img-src` no contiene `https:` genÃ©rico, sino dominios especÃ­ficos verificados.
+  El `img-src https:` actual permite cualquier dominio HTTPS para imágenes. Cuando se tenga tráfico real, revisar los logs/reports de CSP para confirmar qué dominios realmente se usan y reemplazar `https:` por una allowlist explícita. Prioridad baja.
+  Hecho cuando: `img-src` no contiene `https:` genérico, sino dominios específicos verificados.
 
 - [ ] **C7. Eliminar `'unsafe-inline'` de CSP script-src usando nonces**
-  Next.js 14 permite nonces en CSP via middleware. Requiere generar un nonce por request en `middleware.ts` y pasarlo tanto al header CSP como al `<script>` de `_document`. Prioridad media, hacer antes de B6 (monetizaciÃ³n).
+  Next.js 14 permite nonces en CSP via middleware. Requiere generar un nonce por request en `middleware.ts` y pasarlo tanto al header CSP como al `<script>` de `_document`. Prioridad media, hacer antes de B6 (monetización).
   Hecho cuando: `Content-Security-Policy` no contiene `'unsafe-inline'` en `script-src`, `npm run build` pasa, y la app funciona sin errores de CSP en consola.
 
-- [ ] **C8. Verificar periÃ³dicamente que Vercel sigue aÃ±adiendo HSTS**
-  Vercel aÃ±ade automÃ¡ticamente `Strict-Transport-Security: max-age=63072000` (confirmado 2026-05-03). Si cambia el plan de Vercel, se migra de proveedor, o Vercel modifica su polÃ­tica, HSTS podrÃ­a desaparecer. Chequear tras cualquier cambio de plan y como mÃ­nimo una vez al aÃ±o.
-  Hecho cuando: verificaciÃ³n manual en DevTools confirma presencia del header. Si desaparece, reactivar en `next.config.mjs` con `max-age=63072000; includeSubDomains; preload`.
+- [ ] **C8. Verificar periódicamente que Vercel sigue añadiendo HSTS**
+  Vercel añade automáticamente `Strict-Transport-Security: max-age=63072000` (confirmado 2026-05-03). Si cambia el plan de Vercel, se migra de proveedor, o Vercel modifica su política, HSTS podría desaparecer. Chequear tras cualquier cambio de plan y como mínimo una vez al año.
+  Hecho cuando: verificación manual en DevTools confirma presencia del header. Si desaparece, reactivar en `next.config.mjs` con `max-age=63072000; includeSubDomains; preload`.
 
 ---
 
-## BLOQUE D â€” Legal mÃ­nimo (2 dÃ­as)
+## BLOQUE D — Legal mínimo (2 días)
 
 Bloqueante si tienes o quieres usuarios EU.
 
-- [ ] **D1. PolÃ­tica de privacidad + TÃ©rminos**
-  PÃ¡ginas estÃ¡ticas en `/[locale]/privacy` y `/[locale]/terms`. Enlazadas desde footer.
-  Hecho cuando: ambas pÃ¡ginas existen en es y en, y el footer las enlaza.
+- [ ] **D1. Política de privacidad + Términos**
+  Páginas estáticas en `/[locale]/privacy` y `/[locale]/terms`. Enlazadas desde footer.
+  Hecho cuando: ambas páginas existen en es y en, y el footer las enlaza.
 
-- [ ] **D2. Endpoint de eliminaciÃ³n de cuenta**
+- [ ] **D2. Endpoint de eliminación de cuenta**
   `DELETE /api/account` que borre al usuario actual. Cascades en DB ya existen (verificar).
   Hecho cuando: un usuario puede eliminar su cuenta desde settings y desaparece de todas las tablas.
 
-- [ ] **D3. ExportaciÃ³n de datos bÃ¡sica**
+- [ ] **D3. Exportación de datos básica**
   `GET /api/account/export` que devuelva JSON con toda la data del usuario.
   Hecho cuando: el endpoint responde con library + lists + friendships del usuario autenticado.
 
 ---
 
-## BLOQUE E â€” Mejoras de calidad (opcional para MVP)
+## BLOQUE E — Mejoras de calidad (opcional para MVP)
 
-No bloqueantes. Atacar solo despuÃ©s de Aâ€“D.
+No bloqueantes. Atacar solo después de A–D.
 
-- [ ] **E1.** `generateMetadata()` en pÃ¡ginas de contenido â€” `/media/[type]/[id]`, `/profile/[username]`, `/lists/[id]`.
+- [ ] **E1.** `generateMetadata()` en páginas de contenido — `/media/[type]/[id]`, `/profile/[username]`, `/lists/[id]`.
 - [ ] **E2.** Error Boundaries en secciones principales.
-- [ ] **E3.** PaginaciÃ³n verificada en todas las queries de listado.
+- [ ] **E3.** Paginación verificada en todas las queries de listado.
 - [ ] **E4.** Tests de componentes React con `@testing-library/react`.
-- [ ] **E5.** E2E ampliado â€” library add, recomendaciÃ³n user-to-user, crear lista.
-- [ ] **E6.** ComicVine implementado â€” `/api/comics/route.ts` + `lib/api/comicvine.ts`.
-- [ ] **E7.** OAuth Google vÃ­a Supabase Auth.
-- [ ] **E8.** RecuperaciÃ³n de contraseÃ±a personalizada.
-- [ ] **E9.** Form fields con id/name (warning visto en consola â€” accesibilidad).
+- [ ] **E5.** E2E ampliado — library add, recomendación user-to-user, crear lista.
+- [ ] **E6.** ComicVine implementado — `/api/comics/route.ts` + `lib/api/comicvine.ts`.
+- [ ] **E7.** OAuth Google vía Supabase Auth.
+- [ ] **E8.** Recuperación de contraseña personalizada.
+- [ ] **E9.** Form fields con id/name (warning visto en consola — accesibilidad).
 - [ ] **E10. Evaluar 3 APIs alternativas de libros**
-  MotivaciÃ³n: Google Books + Open Library devuelven pocos resultados o de baja calidad para tÃ­tulos en espaÃ±ol que no son bestsellers. Probar Hardcover (GraphQL, gratuito con cuenta), ISBNdb (REST, free tier 1 req/s), y Open Library standalone (gratis, sin key) con un set fijo de 10 queries reales que actualmente fallan o dan resultados pobres. Comparar: cobertura de resultados, calidad de metadatos en espaÃ±ol, calidad de portadas, lÃ­mites de rate.
-  Hecho cuando: existe `docs/decisions/books-api.md` con (a) las 10 queries de prueba, (b) tabla comparativa, (c) decisiÃ³n razonada, (d) API elegida.
+  Motivación: Google Books + Open Library devuelven pocos resultados o de baja calidad para títulos en español que no son bestsellers. Probar Hardcover (GraphQL, gratuito con cuenta), ISBNdb (REST, free tier 1 req/s), y Open Library standalone (gratis, sin key) con un set fijo de 10 queries reales que actualmente fallan o dan resultados pobres. Comparar: cobertura de resultados, calidad de metadatos en español, calidad de portadas, límites de rate.
+  Hecho cuando: existe `docs/decisions/books-api.md` con (a) las 10 queries de prueba, (b) tabla comparativa, (c) decisión razonada, (d) API elegida.
 
-- [ ] **E11. Migrar `lib/api/googlebooks.ts` â†’ API decidida en E10**
-  Implementar el adapter nuevo con la misma firma que `lib/api/googlebooks.ts` actual. El `normalizer` no deberÃ­a cambiar (todo termina en `MediaItem`). Mantener Open Library como fallback solo si la nueva API tiene huecos detectados en E10. Actualizar tests de contrato.
-  Hecho cuando: bÃºsqueda de libros y detalle funcionan con la nueva API, las 10 queries de E10 dan mejores resultados que antes, y los tests de contrato pasan en verde.
+- [ ] **E11. Migrar `lib/api/googlebooks.ts` → API decidida en E10**
+  Implementar el adapter nuevo con la misma firma que `lib/api/googlebooks.ts` actual. El `normalizer` no debería cambiar (todo termina en `MediaItem`). Mantener Open Library como fallback solo si la nueva API tiene huecos detectados en E10. Actualizar tests de contrato.
+  Hecho cuando: búsqueda de libros y detalle funcionan con la nueva API, las 10 queries de E10 dan mejores resultados que antes, y los tests de contrato pasan en verde.
   Depende de: E10.
 
 - [ ] **E12. Activar `forceConsistentCasingInFileNames` en tsconfig.json**
-  Previene la clase de bug detectada en B1-B (`Button.tsx` vs import `button`). Windows oculta colisiones case-only que Linux CI sÃ­ ve. Con esta flag, `tsc --noEmit` las caza en local.
+  Previene la clase de bug detectada en B1-B (`Button.tsx` vs import `button`). Windows oculta colisiones case-only que Linux CI sí ve. Con esta flag, `tsc --noEmit` las caza en local.
   Hecho cuando: `tsconfig.json` tiene `"forceConsistentCasingInFileNames": true` en `compilerOptions`, `npm run type-check` pasa en verde, hay commit `[E12] ...`.
 
-- [ ] **E13. AuditorÃ­a de colisiones case-only en el repo entero**
-  Limpieza de pasado (E12 previene futuro). Ejecutar `git ls-files | sort -f | uniq -di` y resolver cualquier colisiÃ³n que aparezca. Si no hay ninguna, cerrar la tarea con el output vacÃ­o como prueba.
-  Hecho cuando: `git ls-files | sort -f | uniq -di` devuelve vacÃ­o, hay commit `[E13] ...` (aunque sea solo de cierre documental si no habÃ­a colisiones reales).
-  Depende de: E12 (orden lÃ³gico, no tÃ©cnico â€” E12 evita que reaparezcan tras limpiar).
+- [ ] **E13. Auditoría de colisiones case-only en el repo entero**
+  Limpieza de pasado (E12 previene futuro). Ejecutar `git ls-files | sort -f | uniq -di` y resolver cualquier colisión que aparezca. Si no hay ninguna, cerrar la tarea con el output vacío como prueba.
+  Hecho cuando: `git ls-files | sort -f | uniq -di` devuelve vacío, hay commit `[E13] ...` (aunque sea solo de cierre documental si no había colisiones reales).
+  Depende de: E12 (orden lógico, no técnico — E12 evita que reaparezcan tras limpiar).
 
 - [ ] **E14. Reportar bug a Supabase CLI: `db dump --dry-run` imprime credenciales en stdout**
-  Durante B2 se detectÃ³ que `supabase db dump --dry-run` (o variante similar) imprime la cadena de conexiÃ³n incluyendo la service role key en stdout. Esto es un bug de seguridad en la CLI de Supabase. Redactar y enviar un issue al repo `supabase/cli` con reproducciÃ³n mÃ­nima y output censurado.
-  Hecho cuando: issue abierto en github.com/supabase/cli con enlace documentado aquÃ­.
+  Durante B2 se detectó que `supabase db dump --dry-run` (o variante similar) imprime la cadena de conexión incluyendo la service role key en stdout. Esto es un bug de seguridad en la CLI de Supabase. Redactar y enviar un issue al repo `supabase/cli` con reproducción mínima y output censurado.
+  Hecho cuando: issue abierto en github.com/supabase/cli con enlace documentado aquí.
 
-- [ ] **E15. Eliminar cÃ³digo muerto**
-  - `src/lib/api/openlibrary.ts` â€” no usado por `searchAll` (Open Library figura como fallback documentado pero el adapter actual no se invoca desde el flujo de bÃºsqueda; verificar antes de borrar).
-  - `src/components/lists/` â€” carpeta vacÃ­a; los componentes reales viven en `src/components/social/`.
-  - `tests/_pending/` â€” si tras B3 sigue sin desbloquearse, mover a `_archive` o borrar.
-  Hecho cuando: las 3 rutas no existen o se documenta por quÃ© se conservan.
+- [ ] **E15. Eliminar código muerto**
+  - `src/lib/api/openlibrary.ts` — no usado por `searchAll` (Open Library figura como fallback documentado pero el adapter actual no se invoca desde el flujo de búsqueda; verificar antes de borrar).
+  - `src/components/lists/` — carpeta vacía; los componentes reales viven en `src/components/social/`.
+  - `tests/_pending/` — si tras B3 sigue sin desbloquearse, mover a `_archive` o borrar.
+  Hecho cuando: las 3 rutas no existen o se documenta por qué se conservan.
 
 - [ ] **E16. Deduplicar tipo `EpisodeProgress`**
-  Definido dos veces con la misma forma: `src/types/library.ts:17-20` y `src/types/user.ts:35-38`. Dejar una Ãºnica definiciÃ³n y reexportar desde el otro mÃ³dulo si hace falta para no romper imports.
-  Hecho cuando: `grep -rn "EpisodeProgress" src/types/` muestra una sola declaraciÃ³n y `npm run type-check` pasa.
+  Definido dos veces con la misma forma: `src/types/library.ts:17-20` y `src/types/user.ts:35-38`. Dejar una única definición y reexportar desde el otro módulo si hace falta para no romper imports.
+  Hecho cuando: `grep -rn "EpisodeProgress" src/types/` muestra una sola declaración y `npm run type-check` pasa.
 
-- [x] **E17. Tipar las 7 tablas faltantes en `src/types/supabase.ts`** âœ… (cerrada el 2026-05-03)
-  AÃ±adidas interfaces `DbSuggestion`, `DbConversation`, `DbConversationMember`, `DbMessage`, `DbGroup`, `DbGroupMember`, `DbGroupPost` derivadas del SQL canÃ³nico (`supabase/migrations/20260502233945_remote_schema.sql`) + entradas correspondientes en el mapa `Database`. `npm run type-check` pasa. Refactor de los `as unknown as Array<{...}>` ad-hoc â†’ E19.
+- [x] **E17. Tipar las 7 tablas faltantes en `src/types/supabase.ts`** ✅ (cerrada el 2026-05-03)
+  Añadidas interfaces `DbSuggestion`, `DbConversation`, `DbConversationMember`, `DbMessage`, `DbGroup`, `DbGroupMember`, `DbGroupPost` derivadas del SQL canónico (`supabase/migrations/20260502233945_remote_schema.sql`) + entradas correspondientes en el mapa `Database`. `npm run type-check` pasa. Refactor de los `as unknown as Array<{...}>` ad-hoc → E19.
 
 - [ ] **E18. Reemplazar `console.error` por logger estructurado**
-  17 instancias listadas en `ESTADO_PROYECTO.md` Â§15.8. Cross-link con C2 (logger estructurado): esta tarea es la migraciÃ³n mecÃ¡nica de los call-sites una vez C2 introduce `src/lib/logger.ts`.
+  17 instancias listadas en `ESTADO_PROYECTO.md` §15.8. Cross-link con C2 (logger estructurado): esta tarea es la migración mecánica de los call-sites una vez C2 introduce `src/lib/logger.ts`.
   Depende de: C2.
   Hecho cuando: `grep -rn "console\." src/ --include="*.ts" --include="*.tsx"` devuelve 0 o solo casos justificados, y `npm run lint` pasa.
 
 - [ ] **E19. Eliminar casts `as unknown as Array<{...}>` repetidos**
-  Una vez E17 introduce los tipos completos, los casts de `groups/route.ts`, `chat/route.ts`, etc. dejan de hacer falta. Limpiar y dejar tipado idiomÃ¡tico Supabase.
+  Una vez E17 introduce los tipos completos, los casts de `groups/route.ts`, `chat/route.ts`, etc. dejan de hacer falta. Limpiar y dejar tipado idiomático Supabase.
   Depende de: E17.
   Hecho cuando: `grep -rn "as unknown as" src/` devuelve 0 (o solo casos justificados con comentario).
 
@@ -194,124 +194,124 @@ No bloqueantes. Atacar solo despuÃ©s de Aâ€“D.
   Hecho cuando: el archivo no contiene `<input` y la pantalla de login sigue funcionando (manual + e2e auth.spec).
 
 - [ ] **E21. Endpoint `DELETE /api/groups/[id]` y endpoint para `group_posts`**
-  Actualmente: no hay endpoint para eliminar grupos (solo crear/listar/join/leave) y los posts de grupo se insertan cliente-direct vÃ­a RLS. Crear `DELETE /api/groups/[id]` (solo `owner`) y `POST /api/groups/[id]/posts` (solo miembros). Aplicar rate-limit de C4 cuando se haga.
-  Hecho cuando: ambos endpoints existen, validan rol/membership server-side, y hay tests de integraciÃ³n mÃ­nimos.
+  Actualmente: no hay endpoint para eliminar grupos (solo crear/listar/join/leave) y los posts de grupo se insertan cliente-direct vía RLS. Crear `DELETE /api/groups/[id]` (solo `owner`) y `POST /api/groups/[id]/posts` (solo miembros). Aplicar rate-limit de C4 cuando se haga.
+  Hecho cuando: ambos endpoints existen, validan rol/membership server-side, y hay tests de integración mínimos.
 
-- [x] **E22. (CERRADA 2026-05-31, absorbida por E45-b)** **PÃ¡gina `/groups` con listado pÃºblico de grupos**
-  Hoy solo existe `/groups/[id]`. Sin listado, los grupos son invisibles para no-miembros (ver `ESTADO_PROYECTO.md` Â§18.3). Crear `src/app/[locale]/(app)/groups/page.tsx` con listado bÃ¡sico (paginado, filtro por nombre).
+- [x] **E22. (CERRADA 2026-05-31, absorbida por E45-b)** **Página `/groups` con listado público de grupos**
+  Hoy solo existe `/groups/[id]`. Sin listado, los grupos son invisibles para no-miembros (ver `ESTADO_PROYECTO.md` §18.3). Crear `src/app/[locale]/(app)/groups/page.tsx` con listado básico (paginado, filtro por nombre).
   Hecho cuando: la ruta `/[locale]/groups` renderiza grupos visibles y enlaza a `/groups/[id]`.
 
 - [ ] **E23. Unificar policies duplicadas en `users`**
-  Hay dos policies UPDATE casi-idÃ©nticas con el mismo predicate (`auth.uid() = id`): `users can update own profile` y `users_update_own`. Ruido en la capa de seguridad. Eliminar una de las dos creando una migraciÃ³n nueva (`supabase migration new dedupe_users_update_policies`). Prioridad baja, hacer antes de producciÃ³n real.
-  Hecho cuando: `pg_policies WHERE tablename='users' AND cmd='UPDATE'` devuelve exactamente 1 fila y hay commit con migraciÃ³n.
+  Hay dos policies UPDATE casi-idénticas con el mismo predicate (`auth.uid() = id`): `users can update own profile` y `users_update_own`. Ruido en la capa de seguridad. Eliminar una de las dos creando una migración nueva (`supabase migration new dedupe_users_update_policies`). Prioridad baja, hacer antes de producción real.
+  Hecho cuando: `pg_policies WHERE tablename='users' AND cmd='UPDATE'` devuelve exactamente 1 fila y hay commit con migración.
 
-- [ ] **E24. ValidaciÃ³n de env vars al startup**
+- [ ] **E24. Validación de env vars al startup**
   `src/lib/env.ts` con Zod que valide todas las env vars requeridas. Importar en `app/layout.tsx`.
   Hecho cuando: arrancar sin `ANTHROPIC_API_KEY` falla con mensaje claro en startup, no en primera request.
 
-- [x] **E25. Refactorizar specs E2E de `discover-pagination`** âœ… (cerrada el 2026-05-14, B3.5h-AUDIT-E2E-4)
-  AÃ±adido `login()` en `beforeEach` de `tests/e2e/b3_5e_safety_net/discover-pagination.spec.ts`. Los 4 tests (anime, manga, paginaciÃ³n, movie-control) pasaron de ROJO-POR-REDIRECT a evaluables. Resultado: todos verdes con API real de Jikan/TMDB. 8 corridas (chromium + mobile) â†’ verde. Comentario errÃ³neo ("NO requiere credenciales") corregido en el spec.
+- [x] **E25. Refactorizar specs E2E de `discover-pagination`** ✅ (cerrada el 2026-05-14, B3.5h-AUDIT-E2E-4)
+  Añadido `login()` en `beforeEach` de `tests/e2e/b3_5e_safety_net/discover-pagination.spec.ts`. Los 4 tests (anime, manga, paginación, movie-control) pasaron de ROJO-POR-REDIRECT a evaluables. Resultado: todos verdes con API real de Jikan/TMDB. 8 corridas (chromium + mobile) → verde. Comentario erróneo ("NO requiere credenciales") corregido en el spec.
 
-- [x] **E26. Reforzar selector del picker en `chat-send.spec.ts`** âœ… (cerrada el 2026-05-13, commit 17290c6)
-  `data-testid="friend-picker-item"` aÃ±adido a `ChatClient.tsx`. Selector en `chat-send.spec.ts` reemplazado por `getByTestId('friend-picker-item').first()`. Chat-send pasÃ³ de failedâ†’passed en E2E run.
+- [x] **E26. Reforzar selector del picker en `chat-send.spec.ts`** ✅ (cerrada el 2026-05-13, commit 17290c6)
+  `data-testid="friend-picker-item"` añadido a `ChatClient.tsx`. Selector en `chat-send.spec.ts` reemplazado por `getByTestId('friend-picker-item').first()`. Chat-send pasó de failed→passed en E2E run.
 
-- [ ] **E27. Auditar policies RLS por recursiÃ³n potencial**
-  Durante B3.5c-3 se destaparon 3 capas de RLS rotas en `conversation_members` que emergieron secuencialmente al arreglar la anterior. PatrÃ³n a buscar: policies con `WITH CHECK` o `qual` que consulten la propia tabla. Tablas a revisar: `messages`, `group_members`, `group_posts`, `friendships`, `list_members`, `list_items`. Esta tarea es el contenido del bloque B3.5g-AUDIT-RLS y se ejecutarÃ¡ como sprint completo (no como E-task suelta).
-  Hecho cuando: cada policy de las 17 tablas estÃ¡ clasificada (segura / recursiva / dudosa) y las recursivas han sido refactorizadas con SECURITY DEFINER functions o reescritas para evitar self-reference.
+- [ ] **E27. Auditar policies RLS por recursión potencial**
+  Durante B3.5c-3 se destaparon 3 capas de RLS rotas en `conversation_members` que emergieron secuencialmente al arreglar la anterior. Patrón a buscar: policies con `WITH CHECK` o `qual` que consulten la propia tabla. Tablas a revisar: `messages`, `group_members`, `group_posts`, `friendships`, `list_members`, `list_items`. Esta tarea es el contenido del bloque B3.5g-AUDIT-RLS y se ejecutará como sprint completo (no como E-task suelta).
+  Hecho cuando: cada policy de las 17 tablas está clasificada (segura / recursiva / dudosa) y las recursivas han sido refactorizadas con SECURITY DEFINER functions o reescritas para evitar self-reference.
   Depende de: nada. Promovido a bloque B3.5g.
 
-- [ ] **E28. Reforzar red de seguridad E2E con sesiÃ³n real (no service_role)**
-  El seed actual (`scripts/seed-test.mjs`) usa service_role y bypassa RLS. Por eso B3.5c-3 tuvo bugs de RLS verdes en tests pero rojos en uso real. Pensar en seedar parte vÃ­a API con login real, o aÃ±adir un nivel de tests E2E que ejerciten flujos crÃ­ticos con sesiÃ³n auth vÃ¡lida (no service_role).
-  Hecho cuando: existe al menos un spec E2E que ejecuta INSERT/UPDATE/DELETE como usuario autenticado real y verifica que las RLS no bloquean falsamente operaciones legÃ­timas (regresiÃ³n de bug 1).
+- [ ] **E28. Reforzar red de seguridad E2E con sesión real (no service_role)**
+  El seed actual (`scripts/seed-test.mjs`) usa service_role y bypassa RLS. Por eso B3.5c-3 tuvo bugs de RLS verdes en tests pero rojos en uso real. Pensar en seedar parte vía API con login real, o añadir un nivel de tests E2E que ejerciten flujos críticos con sesión auth válida (no service_role).
+  Hecho cuando: existe al menos un spec E2E que ejecuta INSERT/UPDATE/DELETE como usuario autenticado real y verifica que las RLS no bloquean falsamente operaciones legítimas (regresión de bug 1).
 
-- [x] **E29. Defensa null-safety en `discover/page.tsx`** âœ… (cerrada 2026-05-27, commits 389d99f+445dcc3+93db7c5+fe4f3f1)
-  Causa real: Jikan 429 tragado por catch genÃ©rico + posible data: null sin guard. Fix: JikanError(.status), guard Array.isArray en anime/manga, guard totalItems books, catch distingue 429â†’"rate-limit" / restoâ†’"generic", banner muestra mensaje especÃ­fico. fetchDiscoverData extraÃ­da a lib/api/discover.ts (testeable). 521/58 green.
+- [x] **E29. Defensa null-safety en `discover/page.tsx`** ✅ (cerrada 2026-05-27, commits 389d99f+445dcc3+93db7c5+fe4f3f1)
+  Causa real: Jikan 429 tragado por catch genérico + posible data: null sin guard. Fix: JikanError(.status), guard Array.isArray en anime/manga, guard totalItems books, catch distingue 429→"rate-limit" / resto→"generic", banner muestra mensaje específico. fetchDiscoverData extraída a lib/api/discover.ts (testeable). 521/58 green.
 
 - [ ] **E30. CSP en development debe permitir `'unsafe-eval'`**
-  El CSP actual es el mismo en dev y prod, y rompe HMR de React Refresh en development (requiere `unsafe-eval`). PatrÃ³n a aplicar en `next.config.mjs`:
+  El CSP actual es el mismo en dev y prod, y rompe HMR de React Refresh en development (requiere `unsafe-eval`). Patrón a aplicar en `next.config.mjs`:
 ```js
   const isDev = process.env.NODE_ENV !== 'production';
   const scriptSrc = isDev
     ? "'self' 'unsafe-inline' 'unsafe-eval'"
     : "'self' 'unsafe-inline'";  // pendiente quitar 'unsafe-inline' en C7
 ```
-  Hecho cuando: `npm run dev` no muestra warnings de CSP por `unsafe-eval`, y `npm run build` + producciÃ³n mantienen el CSP estricto sin `unsafe-eval`.
+  Hecho cuando: `npm run dev` no muestra warnings de CSP por `unsafe-eval`, y `npm run build` + producción mantienen el CSP estricto sin `unsafe-eval`.
 
 - [ ] **E31. Documentar workaround swap `.env.local` en `docs/B3_5e_TEST_ENV.md`**
-  La verificaciÃ³n manual contra kultura-test se hace vÃ­a swap del archivo `.env.local` (NO con `NODE_ENV=test` + `npm run dev`, que rompe HMR por CSP). Documentar el procedimiento exacto: backup â†’ reemplazar URLs/keys â†’ `npm run dev` normal â†’ restaurar al terminar. Tras cerrar E30 este workaround puede simplificarse a un `npm run dev:test` limpio.
-  Hecho cuando: `docs/B3_5e_TEST_ENV.md` contiene la secciÃ³n "VerificaciÃ³n manual contra kultura-test" con comandos PowerShell paso a paso y la nota sobre simplificaciÃ³n post-E30.
+  La verificación manual contra kultura-test se hace vía swap del archivo `.env.local` (NO con `NODE_ENV=test` + `npm run dev`, que rompe HMR por CSP). Documentar el procedimiento exacto: backup → reemplazar URLs/keys → `npm run dev` normal → restaurar al terminar. Tras cerrar E30 este workaround puede simplificarse a un `npm run dev:test` limpio.
+  Hecho cuando: `docs/B3_5e_TEST_ENV.md` contiene la sección "Verificación manual contra kultura-test" con comandos PowerShell paso a paso y la nota sobre simplificación post-E30.
 
-- [x] **E32. Bug `findOrCreateUser` no idempotente para password** âœ… (cerrada el 2026-05-11, hash 0bc9b4c)
-  `scripts/seed-test.mjs` decÃ­a ser idempotente pero no actualizaba la password si el usuario ya existÃ­a â€” solo retornaba el `id`. Si la pass cambiaba en `.env.local`, el seed no la reconciliaba. Fix: `findOrCreateUser` ahora llama `auth.admin.updateUserById` con la password de `.env.local` cuando el usuario existe.
+- [x] **E32. Bug `findOrCreateUser` no idempotente para password** ✅ (cerrada el 2026-05-11, hash 0bc9b4c)
+  `scripts/seed-test.mjs` decía ser idempotente pero no actualizaba la password si el usuario ya existía — solo retornaba el `id`. Si la pass cambiaba en `.env.local`, el seed no la reconciliaba. Fix: `findOrCreateUser` ahora llama `auth.admin.updateUserById` con la password de `.env.local` cuando el usuario existe.
 
-- [ ] **E33. Documentar convenciÃ³n de comillas en `.env*` para credenciales con caracteres especiales**
-  Node con `--env-file` (Node 20+) trata `#` como inicio de comentario y trunca silenciosamente. Bug visto en sesiÃ³n 5: password `SeS1*WiZY7JES^HETQi%e#rf` (24 chars) se leÃ­a como `SeS1*WiZY7JES^HETQi%e` (21 chars). SoluciÃ³n: envolver SIEMPRE entre comillas dobles cualquier credencial generada que pueda contener `#`, `$`, espacios u otros caracteres conflictivos. Documentar en `docs/B3_5e_TEST_ENV.md` y/o en `CLAUDE.md` secciÃ³n env vars.
-  Hecho cuando: la convenciÃ³n estÃ¡ documentada en al menos uno de esos dos archivos, con ejemplo del bug y la forma correcta.
+- [ ] **E33. Documentar convención de comillas en `.env*` para credenciales con caracteres especiales**
+  Node con `--env-file` (Node 20+) trata `#` como inicio de comentario y trunca silenciosamente. Bug visto en sesión 5: password `SeS1*WiZY7JES^HETQi%e#rf` (24 chars) se leía como `SeS1*WiZY7JES^HETQi%e` (21 chars). Solución: envolver SIEMPRE entre comillas dobles cualquier credencial generada que pueda contener `#`, `$`, espacios u otros caracteres conflictivos. Documentar en `docs/B3_5e_TEST_ENV.md` y/o en `CLAUDE.md` sección env vars.
+  Hecho cuando: la convención está documentada en al menos uno de esos dos archivos, con ejemplo del bug y la forma correcta.
 
-- [ ] **E34. Documentar polÃ­tica de acceso a `reports`**
-  La tabla tiene RLS habilitado con solo INSERT policy; SELECT/UPDATE/DELETE solo accesibles via `service_role`. Decidir si: (a) se mantiene asÃ­ con documentaciÃ³n explÃ­cita en un comentario SQL, (b) se aÃ±ade una policy SELECT restringida (ej. solo el reporter ve sus propios reports), o (c) se construye un panel de admin que use service_role. Hallazgo de B3.5g-AUDIT-RLS-1 (secciÃ³n 6).
-  Hecho cuando: existe documentaciÃ³n explÃ­cita de la decisiÃ³n (comentario SQL en la migration o entrada en `docs/`) o se ha aÃ±adido la policy SELECT decidida.
+- [ ] **E34. Documentar política de acceso a `reports`**
+  La tabla tiene RLS habilitado con solo INSERT policy; SELECT/UPDATE/DELETE solo accesibles via `service_role`. Decidir si: (a) se mantiene así con documentación explícita en un comentario SQL, (b) se añade una policy SELECT restringida (ej. solo el reporter ve sus propios reports), o (c) se construye un panel de admin que use service_role. Hallazgo de B3.5g-AUDIT-RLS-1 (sección 6).
+  Hecho cuando: existe documentación explícita de la decisión (comentario SQL en la migration o entrada en `docs/`) o se ha añadido la policy SELECT decidida.
 
-- [ ] **E35. Normalizar `roles={public}` â†’ `{authenticated}` en ~30 policies**
-  Las policies funcionan correctamente porque los predicados `auth.uid() = ...` filtran a anon, pero el alcance declarado es subÃ³ptimo y ensucia auditorÃ­as futuras. Cambio cosmÃ©tico, sin riesgo funcional. Aplicar via migration Ãºnica que regenere las ~30 policies con `TO authenticated` explÃ­cito. Hallazgo de B3.5g-AUDIT-RLS-1 (secciÃ³n 6).
+- [ ] **E35. Normalizar `roles={public}` → `{authenticated}` en ~30 policies**
+  Las policies funcionan correctamente porque los predicados `auth.uid() = ...` filtran a anon, pero el alcance declarado es subóptimo y ensucia auditorías futuras. Cambio cosmético, sin riesgo funcional. Aplicar via migration única que regenere las ~30 policies con `TO authenticated` explícito. Hallazgo de B3.5g-AUDIT-RLS-1 (sección 6).
   Hecho cuando: `SELECT count(*) FROM pg_policies WHERE schemaname='public' AND roles='{public}'` devuelve 0 (o solo las policies donde `public` es realmente intencional).
 
-- [ ] **E36. RediseÃ±o defensivo de `conversations` INSERT**
-  El endurecimiento aplicado en B3.5g-AUDIT-RLS-2 (Tarea 2) es defensa bÃ¡sica (`auth.uid() IS NOT NULL`). Una policy mÃ¡s estricta requiere: (a) aÃ±adir columna `created_by` a `conversations`, (b) trigger `AFTER INSERT` que aÃ±ada al creador a `conversation_members`, (c) policy `WITH CHECK (created_by = auth.uid())`. PatrÃ³n paralelo a `handle_new_group`. Prioridad baja porque el Route Handler ya valida el flujo.
+- [ ] **E36. Rediseño defensivo de `conversations` INSERT**
+  El endurecimiento aplicado en B3.5g-AUDIT-RLS-2 (Tarea 2) es defensa básica (`auth.uid() IS NOT NULL`). Una policy más estricta requiere: (a) añadir columna `created_by` a `conversations`, (b) trigger `AFTER INSERT` que añada al creador a `conversation_members`, (c) policy `WITH CHECK (created_by = auth.uid())`. Patrón paralelo a `handle_new_group`. Prioridad baja porque el Route Handler ya valida el flujo.
   Hecho cuando: `conversations` tiene columna `created_by`, trigger correspondiente, y policy `WITH CHECK (created_by = auth.uid())`. Tests E2E de chat siguen en verde.
 
-- [x] **E37** â€” Puerto hardcodeado en `tests/e2e/auth.spec.ts`. `localhost:3001` hardcodeado
+- [x] **E37** — Puerto hardcodeado en `tests/e2e/auth.spec.ts`. `localhost:3001` hardcodeado
   mientras `playwright.config.ts` configura `baseURL: http://localhost:3000`. Corregido en
   B3.5g-AUDIT-RLS-2-E2E sustituyendo `const BASE = "http://localhost:3001"` por `const BASE = ""`,
-  usando el `baseURL` de Playwright. âœ… Cerrada en este bloque. Auditar otros specs en busca del
-  mismo patrÃ³n (`grep -r "localhost:" tests/e2e/`).
+  usando el `baseURL` de Playwright. ✅ Cerrada en este bloque. Auditar otros specs en busca del
+  mismo patrón (`grep -r "localhost:" tests/e2e/`).
 
-- [ ] **E38** â€” Playwright deberÃ­a cargar `.env.test.local` automÃ¡ticamente. El workaround
-  actual (merge manual en `playwright.config.ts` `webServer.env`) funciona pero es frÃ¡gil â€”
-  si el archivo no existe, Playwright corre contra producciÃ³n sin advertir. SoluciÃ³n de raÃ­z:
+- [ ] **E38** — Playwright debería cargar `.env.test.local` automáticamente. El workaround
+  actual (merge manual en `playwright.config.ts` `webServer.env`) funciona pero es frágil —
+  si el archivo no existe, Playwright corre contra producción sin advertir. Solución de raíz:
   `globalSetup` que valide presencia de `.env.test.local` antes de arrancar, o `dotenv-cli`
-  en el script `test:e2e` de `package.json`. Prioridad media â€” el flujo actual funciona.
+  en el script `test:e2e` de `package.json`. Prioridad media — el flujo actual funciona.
 
-- [x] **E39** âœ… (cerrada el 2026-05-13, commit 54d183f) â€” `reuseExistingServer: !process.env.CI` â†’ `false`. Puerto cambiado a `:3001` (webServer + baseURL + _helpers.ts `BASE`). Dev en `:3000` y Playwright en `:3001` sin conflicto.
+- [x] **E39** ✅ (cerrada el 2026-05-13, commit 54d183f) — `reuseExistingServer: !process.env.CI` → `false`. Puerto cambiado a `:3001` (webServer + baseURL + _helpers.ts `BASE`). Dev en `:3000` y Playwright en `:3001` sin conflicto.
 
-- [x] **E40** âœ… CERRADA en B3.5h-AUDIT-E2E-5 (2026-05-14). Fix: desactivar "Confirm email" en Dashboard de kultura-test (Authentication â†’ Sign In / Providers â†’ Email). signUp ahora auto-confirma â†’ `data.session` no-nulo â†’ redirect a `/home`. 34/34 verdes (chromium + mobile). El spec no necesitÃ³ cambios â€” la lÃ³gica dual ya cubrÃ­a ambas ramas. Ver `docs/TEST_EXCEPTIONS.md` y `docs/SUPABASE_TEST_SETUP.md`.
+- [x] **E40** ✅ CERRADA en B3.5h-AUDIT-E2E-5 (2026-05-14). Fix: desactivar "Confirm email" en Dashboard de kultura-test (Authentication → Sign In / Providers → Email). signUp ahora auto-confirma → `data.session` no-nulo → redirect a `/home`. 34/34 verdes (chromium + mobile). El spec no necesitó cambios — la lógica dual ya cubría ambas ramas. Ver `docs/TEST_EXCEPTIONS.md` y `docs/SUPABASE_TEST_SETUP.md`.
 
-- [x] **E41** â€” BLOQUEADO-DOCUMENTADO (commit 7107cab, 2026-05-13). `page.route()` solo intercepta requests del browser; las llamadas a Jikan/TMDB son server-side en RSC, invisibles para Playwright. Mock requerirÃ­a mover fetches a Route Handlers. Documentado en header del spec. AÃ±adir E41-redesign como tarea futura separada.
+- [x] **E41** — BLOQUEADO-DOCUMENTADO (commit 7107cab, 2026-05-13). `page.route()` solo intercepta requests del browser; las llamadas a Jikan/TMDB son server-side en RSC, invisibles para Playwright. Mock requeriría mover fetches a Route Handlers. Documentado en header del spec. Añadir E41-redesign como tarea futura separada.
 
-- [x] **E42** âœ… (cerrada el 2026-05-13, commit 22c2ee3) â€” `const BASE = ""` eliminada y usos `${BASE}/...` â†’ `/...` en `auth.spec.ts`.
+- [x] **E42** ✅ (cerrada el 2026-05-13, commit 22c2ee3) — `const BASE = ""` eliminada y usos `${BASE}/...` → `/...` en `auth.spec.ts`.
 
-- [x] **E43** âœ… (cerrada el 2026-05-13, commit 51ddcc0) â€” 5 ocurrencias OR+.first() eliminadas: chat-send L24 (quitado .first()), L37 (ORâ†’input[type=text] directo), L41 (ORâ†’getByRole single), discover-pagination L75 (ORâ†’getByTestId pagination-next; data-testid aÃ±adido a Pagination.tsx), language-switch L31-33 (ORâ†’aria-label selector directo).
+- [x] **E43** ✅ (cerrada el 2026-05-13, commit 51ddcc0) — 5 ocurrencias OR+.first() eliminadas: chat-send L24 (quitado .first()), L37 (OR→input[type=text] directo), L41 (OR→getByRole single), discover-pagination L75 (OR→getByTestId pagination-next; data-testid añadido a Pagination.tsx), language-switch L31-33 (OR→aria-label selector directo).
 
-- [ ] **E44** â€” Vercel auto-promote desactivado: producciÃ³n requiere promociÃ³n
-  manual. Detectado en sesiÃ³n 8 al verificar deploy post-handover_7.
-  Investigar si es setting de proyecto (toggle) o polÃ­tica del plan Hobby.
+- [ ] **E44** — Vercel auto-promote desactivado: producción requiere promoción
+  manual. Detectado en sesión 8 al verificar deploy post-handover_7.
+  Investigar si es setting de proyecto (toggle) o política del plan Hobby.
   Refuerza importancia de regla 11 (verificar Current, no solo Ready).
 
 - [x] **E45. Grupos: flujo de descubrimiento + RLS de join + visibilidad/invitaciones** — ✅ CERRADA COMPLETA 2026-06-04
 
   **Estado (2026-06-04):** E45-a ✅, E45-b ✅, E45-c ✅, E45-d ✅. **E45 cerrada completa.** E45-a CERRADA (RLS self-join + feedback UI; commit 37e38a6). E45-b CERRADA (descubrimiento + pagina /groups con tabs + DiscoverGroupsClient + GroupCard + refactor FriendsClient + nav; commits 2ef43f7, a96f8a2, da4a902, 1251994; engloba y cierra E22). E45-c CERRADA 2026-06-01 (is_public + RLS + discover filtra privados + UI; commit 759c1b3). E45-d CERRADA 2026-06-04 (d.1 backend commit 410340c + d.2 UI commit d96e40f).
 
-  **Flujo roto detectado (diagnÃ³stico GRUPOS-DIAG, 2026-05-23):** El mÃ³dulo de grupos
+  **Flujo roto detectado (diagnóstico GRUPOS-DIAG, 2026-05-23):** El módulo de grupos
   existe estructuralmente (tablas, endpoint, UI de detalle) pero es inaccesible como
-  producto: no hay forma de encontrar grupos, y el mecanismo de uniÃ³n estÃ¡ ademÃ¡s bloqueado
+  producto: no hay forma de encontrar grupos, y el mecanismo de unión está además bloqueado
   a nivel de RLS.
 
-  **QuÃ© existe hoy:**
+  **Qué existe hoy:**
   - Tablas: `groups` (id, owner_id, name, description, cover_color) y `group_members`
-    (group_id, user_id, role âˆˆ {owner, member}, joined_at). Sin columna de visibilidad
+    (group_id, user_id, role ∈ {owner, member}, joined_at). Sin columna de visibilidad
     (`is_public`, `privacy`, etc.) ni tabla de invitaciones.
   - Rutas UI: solo `src/app/[locale]/(app)/groups/[id]/page.tsx` (detalle). No existe
-    `groups/page.tsx` (listado/bÃºsqueda). Registrado parcialmente en E22.
-  - CreaciÃ³n: formulario inline en `FriendsClient.tsx` (pantalla Amigos), llama a
+    `groups/page.tsx` (listado/búsqueda). Registrado parcialmente en E22.
+  - Creación: formulario inline en `FriendsClient.tsx` (pantalla Amigos), llama a
     `POST /api/groups`.
-  - Endpoint join/leave: `POST /api/groups/[id]/join` â€” lÃ³gica correcta (toggle member
-    â†” leave, bloquea owner-leave), pero usa `createClient()` autenticado, por lo que
-    estÃ¡ sujeto a RLS.
+  - Endpoint join/leave: `POST /api/groups/[id]/join` — lógica correcta (toggle member
+    ↔ leave, bloquea owner-leave), pero usa `createClient()` autenticado, por lo que
+    está sujeto a RLS.
   - `GET /api/groups`: devuelve solo los grupos del usuario autenticado (no listado global).
 
-  **QuÃ© falta / bugs:**
-  - a. **RLS bloqueante (bug real):** `group_members` INSERT tiene una Ãºnica policy
-    `"Group owners can manage members"` â€” solo permite al owner insertar filas. No existe
+  **Qué falta / bugs:**
+  - a. **RLS bloqueante (bug real):** `group_members` INSERT tiene una única policy
+    `"Group owners can manage members"` — solo permite al owner insertar filas. No existe
     policy de self-join (`user_id = auth.uid()`). Consecuencia: `POST /api/groups/[id]/join`
     falla con error 500 para cualquier usuario no-owner porque la INSERT queda bloqueada
     por RLS. El join no funciona aunque llegues por URL directa.
@@ -319,14 +319,14 @@ No bloqueantes. Atacar solo despuÃ©s de Aâ€“D.
     salvo que conozcas el UUID. (Solapamiento con E22, que solo contempla el listado UI
     pero no el bug de RLS ni el modelo de visibilidad.)
   - c. **Modelo de visibilidad:** la tabla `groups` no tiene columna de visibilidad
-    (`is_public` / `privacy`). Todos los grupos son implÃ­citamente "abiertos" pero
+    (`is_public` / `privacy`). Todos los grupos son implícitamente "abiertos" pero
     inaccesibles. No existe modelo de invitaciones (ninguna tabla).
 
   **Sub-piezas para cuando se planifique:**
-  - [x] E45-a: MigraciÃ³n que aÃ±ade policy RLS de self-join en `group_members` (fix bloqueante,
-    pequeÃ±o, independiente). ✅ CERRADA 2026-05-31 (commit 37e38a6) — policy `"Users can join groups"`
+  - [x] E45-a: Migración que añade policy RLS de self-join en `group_members` (fix bloqueante,
+    pequeño, independiente). ✅ CERRADA 2026-05-31 (commit 37e38a6) — policy `"Users can join groups"`
     `WITH CHECK (user_id = auth.uid() AND role = 'member')` + JoinGroupButton toast + test.
-  - [x] E45-b (CERRADA 2026-05-31): PÃ¡gina `/groups` con listado/bÃºsqueda (engloba E22; E22 puede cerrarse al
+  - [x] E45-b (CERRADA 2026-05-31): Página `/groups` con listado/búsqueda (engloba E22; E22 puede cerrarse al
     completar esto).
   - [x] E45-c (CERRADA 2026-06-01): `is_public boolean default true` en `groups` + RLS
     (función `SECURITY DEFINER` `is_group_member`, sin recursión) + discover filtra privados +
@@ -335,178 +335,178 @@ No bloqueantes. Atacar solo despuÃ©s de Aâ€“D.
   - [x] E45-d (CERRADA 2026-06-04): Tabla `group_invitations` + flujo de invitación (enviar / aceptar / rechazar).
     d.1 backend (migración `20260601000002_group_invitations.sql` + RLS + trigger accept→alta + enum `group_invite` + endpoints; commit 410340c, +23 tests). d.2 UI (InviteButton owner-gated + InviteFriendsModal + branch `group_invite` en NotificationsList con Aceptar PATCH / Rechazar DELETE + `router.refresh()` + i18n es/en; commit d96e40f, +17 tests). vitest 639 passed.
 
-  No planificar aÃºn. Solo backlog.
+  No planificar aún. Solo backlog.
 
-- [ ] **E46. Migrar MediaCard al sistema de diseÃ±o**
+- [ ] **E46. Migrar MediaCard al sistema de diseño**
 
-- [x] **E47. Listas: UI para aÃ±adir tÃ­tulos a una lista (endpoint ya existe)** âœ… (cerrada el 2026-05-29)
+- [x] **E47. Listas: UI para añadir títulos a una lista (endpoint ya existe)** ✅ (cerrada el 2026-05-29)
 
-  **DiagnÃ³stico LISTAS-ADD-DIAG (2026-05-25):** El endpoint `POST /api/lists/[id]` existe y
+  **Diagnóstico LISTAS-ADD-DIAG (2026-05-25):** El endpoint `POST /api/lists/[id]` existe y
   funciona correctamente (acepta `{ mediaId, mediaCache? }`, llama `canEditList`, inserta en
   `list_items`). La RLS de INSERT es correcta: permite owner + miembros de listas colaborativas.
   El flujo NO existe en la UI: ni `ListDetail.tsx` ni `MediaDetail.tsx` ni `MediaCard.tsx`
-  tienen ningÃºn botÃ³n/acciÃ³n de "aÃ±adir a lista". Tampoco existen claves i18n para ello.
+  tienen ningún botón/acción de "añadir a lista". Tampoco existen claves i18n para ello.
 
   **Veredicto:** (B) backend completo sin UI.
 
-  **QuÃ© falta:**
-  - CTA en `MediaDetail.tsx` (ficha de tÃ­tulo): botÃ³n "AÃ±adir a lista" que abra un selector
+  **Qué falta:**
+  - CTA en `MediaDetail.tsx` (ficha de título): botón "Añadir a lista" que abra un selector
     de listas del usuario compatibles por `media_type`. Llamada a `POST /api/lists/[id]` con
     `mediaCache` para garantizar el upsert en tabla `media`.
-  - CTA alternativo / adicional en `ListDetail.tsx`: botÃ³n en el header o en el estado vacÃ­o
-    que abra buscador de tÃ­tulos y los aÃ±ada directamente desde la lista.
+  - CTA alternativo / adicional en `ListDetail.tsx`: botón en el header o en el estado vacío
+    que abra buscador de títulos y los añada directamente desde la lista.
   - Claves i18n: `lists.addItem`, `lists.addToList`, `lists.selectList`, etc.
 
-  Hecho cuando: desde la ficha de un tÃ­tulo autenticado se puede aÃ±adir a una lista propia
-  y el Ã­tem aparece en `/lists/[id]` sin necesidad de ir al detalle de la lista primero.
+  Hecho cuando: desde la ficha de un título autenticado se puede añadir a una lista propia
+  y el ítem aparece en `/lists/[id]` sin necesidad de ir al detalle de la lista primero.
 
 - [ ] **E48. Notificaciones: mejoras DS aplazadas**
   Sub-piezas (sin priorizar):
-  (a) `loading.tsx` â€” skeleton para estado de carga (actualmente no existe en `/notifications`).
-  (b) AcciÃ³n primaria en empty state (DS Â§7) â€” aÃ±adir botÃ³n verde que lleve a Descubrir o Amigos.
-  (c) Cablear `markOneRead` â€” funciÃ³n huÃ©rfana en `notifications.ts:66`, sin caller en la UI.
-  (d) PaginaciÃ³n â€” hoy lÃ­mite duro de 50 resultados en `getNotifications`; aÃ±adir cursor-pagination.
+  (a) `loading.tsx` — skeleton para estado de carga (actualmente no existe en `/notifications`).
+  (b) Acción primaria en empty state (DS §7) — añadir botón verde que lleve a Descubrir o Amigos.
+  (c) Cablear `markOneRead` — función huérfana en `notifications.ts:66`, sin caller en la UI.
+  (d) Paginación — hoy límite duro de 50 resultados en `getNotifications`; añadir cursor-pagination.
 
 - [ ] **E49. (reservado)**
 
-- [ ] **E50. Notificaciones: estado no-leÃ­do efÃ­mero por `markAllRead` en carga**
+- [ ] **E50. Notificaciones: estado no-leído efímero por `markAllRead` en carga**
 
-  **Hallazgo (sesiÃ³n 2026-05-26):** El fondo verde (`accent-positive/5`) del estado
-  no-leÃ­do estÃ¡ correctamente aplicado en el DS visual. El problema es de producto:
-  `markAllRead` (en `src/lib/social/notifications.ts`) se llama al montar la pÃ¡gina
-  `/notifications`, lo que marca todas las notifs como leÃ­das antes de que el usuario
-  las vea. El efecto visual del estado no-leÃ­do es por tanto efÃ­mero (apenas perceptible
-  en la primera carga) y en la prÃ¡ctica invisible.
+  **Hallazgo (sesión 2026-05-26):** El fondo verde (`accent-positive/5`) del estado
+  no-leído está correctamente aplicado en el DS visual. El problema es de producto:
+  `markAllRead` (en `src/lib/social/notifications.ts`) se llama al montar la página
+  `/notifications`, lo que marca todas las notifs como leídas antes de que el usuario
+  las vea. El efecto visual del estado no-leído es por tanto efímero (apenas perceptible
+  en la primera carga) y en la práctica invisible.
 
-  **No es un bug de migraciÃ³n visual** â€” el token y el color estÃ¡n bien aplicados.
+  **No es un bug de migración visual** — el token y el color están bien aplicados.
   Es un bug de flujo de producto.
 
   **Flujo afectado:** `src/lib/social/notifications.ts` (`markAllRead`) +
-  pÃ¡gina `src/app/[locale]/(app)/notifications/` (caller de `markAllRead` en montaje).
+  página `src/app/[locale]/(app)/notifications/` (caller de `markAllRead` en montaje).
 
   **Arreglo futuro (fuera del carril visual):** retrasar `markAllRead` usando una de
-  estas estrategias: (a) retardo temporal tras render inicial, (b) marcar leÃ­do por
-  interacciÃ³n explÃ­cita (clic / hover), (c) marcar al salir de la pantalla
+  estas estrategias: (a) retardo temporal tras render inicial, (b) marcar leído por
+  interacción explícita (clic / hover), (c) marcar al salir de la pantalla
   (`IntersectionObserver` o `beforeunload`). Ninguna de las tres requiere cambios de
-  diseÃ±o ni de tokens.
+  diseño ni de tokens.
 
   Sin priorizar. No atacar hasta decidir estrategia de producto.
 
-- [x] **E51. ValidaciÃ³n en cliente + mensajes especÃ­ficos en SuggestionsForm**
+- [x] **E51. Validación en cliente + mensajes específicos en SuggestionsForm**
 
-  **Hallazgo (diagnÃ³stico SUGERENCIAS-400, 2026-05-26):** El 400 en `POST /api/suggestions`
-  es validaciÃ³n Zod esperada y correcta â€” `description.min(10)` rechaza inputs cortos como
+  **Hallazgo (diagnóstico SUGERENCIAS-400, 2026-05-26):** El 400 en `POST /api/suggestions`
+  es validación Zod esperada y correcta — `description.min(10)` rechaza inputs cortos como
   `"nynf"` (4 chars). No hay bug de payload ni rate-limit. La UX es pobre:
 
-  - `SuggestionsForm.tsx:87` â€” `subject` solo tiene `maxLength={120}` + `required`, sin `minLength={3}`.
-  - `SuggestionsForm.tsx:99` â€” `description` solo tiene `maxLength={2000}` + `required`, sin `minLength={10}`.
-  - Sin validaciÃ³n Zod en cliente: cualquier entrada de 1 char se envÃ­a al servidor y falla.
-  - `route.ts:33` devuelve `{ error: 'Invalid data' }` genÃ©rico (sin detalle por campo).
+  - `SuggestionsForm.tsx:87` — `subject` solo tiene `maxLength={120}` + `required`, sin `minLength={3}`.
+  - `SuggestionsForm.tsx:99` — `description` solo tiene `maxLength={2000}` + `required`, sin `minLength={10}`.
+  - Sin validación Zod en cliente: cualquier entrada de 1 char se envía al servidor y falla.
+  - `route.ts:33` devuelve `{ error: 'Invalid data' }` genérico (sin detalle por campo).
   - `SuggestionsForm.tsx:23` ignora el body del 400; muestra siempre `t('error')` fijo.
 
-  **QuÃ© falta:**
-  - AÃ±adir `minLength={3}` a `subject` y `minLength={10}` a `description` (o validaciÃ³n Zod en cliente).
-  - Mostrar conteo/feedback por campo cuando la longitud no alcanza el mÃ­nimo.
+  **Qué falta:**
+  - Añadir `minLength={3}` a `subject` y `minLength={10}` a `description` (o validación Zod en cliente).
+  - Mostrar conteo/feedback por campo cuando la longitud no alcanza el mínimo.
   - Opcional: que el servidor devuelva los errores de Zod por campo (`parsed.error.flatten()`).
 
   Hecho cuando: enviar `description` de 4 chars muestra error inline antes de hacer fetch,
-  y el form no puede enviarse con datos que fallen la validaciÃ³n del servidor.
+  y el form no puede enviarse con datos que fallen la validación del servidor.
 
-- [x] **E52. Silent fail duplicado en ChatClient + ConversationClient** â€” `.catch(() => setLoading(false))` en ambos archivos traga el error de carga y deja pantalla vacÃ­a sin feedback al usuario. Mejora funcional, no bug de migraciÃ³n.
+- [x] **E52. Silent fail duplicado en ChatClient + ConversationClient** — `.catch(() => setLoading(false))` en ambos archivos traga el error de carga y deja pantalla vacía sin feedback al usuario. Mejora funcional, no bug de migración.
 
-  **CERRADA (2026-06-06):** state `loadError` en ambos componentes; carga extraÃ­da a fn `useCallback` que en el catch hace `setLoadError(true)` ademÃ¡s de `setLoading(false)`. El render distingue 3 estados: cargando, error de carga (mensaje i18n `chat.loadError` + botÃ³n `chat.retry` que rellama la carga), y vacÃ­o real (placeholder existente `noConversations`/`messagePlaceholder`). 2 claves nuevas es/en, paridad 473=473. tsc 0, lint 0, vitest 639 passed.
+  **CERRADA (2026-06-06):** state `loadError` en ambos componentes; carga extraída a fn `useCallback` que en el catch hace `setLoadError(true)` además de `setLoading(false)`. El render distingue 3 estados: cargando, error de carga (mensaje i18n `chat.loadError` + botón `chat.retry` que rellama la carga), y vacío real (placeholder existente `noConversations`/`messagePlaceholder`). 2 claves nuevas es/en, paridad 473=473. tsc 0, lint 0, vitest 639 passed.
 
-  **Nota de re-etiquetado (2026-06-06):** el commit `9cc9b37` (2026-06-05) NO era este silent fail â€” era el doble render del mensaje optimista en `ConversationClient`. Ese trabajo es ahora **E72** (cerrada, ver DONE). E52 era y sigue siendo el silent fail de carga, cerrado hoy.
+  **Nota de re-etiquetado (2026-06-06):** el commit `9cc9b37` (2026-06-05) NO era este silent fail — era el doble render del mensaje optimista en `ConversationClient`. Ese trabajo es ahora **E72** (cerrada, ver DONE). E52 era y sigue siendo el silent fail de carga, cerrado hoy.
 
-- [x] **E53. String hardcodeado sin i18n en ChatClient** â€” `${conversations.length} conversaciones` no pasa por `t()`. Fix: aÃ±adir clave `chat.conversationCount` (con plural forms) a `messages/es.json` y `messages/en.json` y usar `t('conversationCount', { count })`.
+- [x] **E53. String hardcodeado sin i18n en ChatClient** — `${conversations.length} conversaciones` no pasa por `t()`. Fix: añadir clave `chat.conversationCount` (con plural forms) a `messages/es.json` y `messages/en.json` y usar `t('conversationCount', { count })`.
 
-- [ ] **E54. Chat: cifrado de extremo a extremo (E2EE) â€” DECISIÃ“N DE ARQUITECTURA**
+- [ ] **E54. Chat: cifrado de extremo a extremo (E2EE) — DECISIÓN DE ARQUITECTURA**
 
   Hoy los mensajes se guardan en texto plano en Supabase (`messages.content text not null`).
   E2EE implica cambios de calado que afectan al producto completo:
 
-  **Impacto tÃ©cnico:**
-  - Cifrado en cliente: elegir protocolo/librerÃ­a (Signal, libsodium, etc.).
-  - GestiÃ³n de claves por usuario: derivaciÃ³n, almacenamiento local, pÃ©rdida de dispositivo,
-    acceso multi-dispositivo, recuperaciÃ³n (sin clave no hay recuperaciÃ³n posible).
+  **Impacto técnico:**
+  - Cifrado en cliente: elegir protocolo/librería (Signal, libsodium, etc.).
+  - Gestión de claves por usuario: derivación, almacenamiento local, pérdida de dispositivo,
+    acceso multi-dispositivo, recuperación (sin clave no hay recuperación posible).
   - Rotura de funciones que leen el contenido del servidor:
-    - Preview "TÃº: â€¦" en lista de conversaciones (lee `messages.content` server-side).
-    - PolÃ­ticas RLS sobre texto plano (dejan de proteger contenido, solo metadata).
-    - Supabase Realtime sobre filas con texto cifrado (entrega ciega, sin semÃ¡ntica).
-    - BÃºsqueda de mensajes (imposible sin Ã­ndice server-side o arquitectura adicional).
+    - Preview "Tú: …" en lista de conversaciones (lee `messages.content` server-side).
+    - Políticas RLS sobre texto plano (dejan de proteger contenido, solo metadata).
+    - Supabase Realtime sobre filas con texto cifrado (entrega ciega, sin semántica).
+    - Búsqueda de mensajes (imposible sin índice server-side o arquitectura adicional).
 
-  **Antes de cualquier implementaciÃ³n se requiere un bloque de diseÃ±o propio:**
-  - ElecciÃ³n de protocolo y librerÃ­a (con anÃ¡lisis de madurez, mantenimiento, tamaÃ±o bundle).
-  - DecisiÃ³n sobre quÃ© se sacrifica del producto actual (preview, bÃºsqueda, Realtime con semÃ¡ntica).
-  - Modelo de recuperaciÃ³n de claves (o documentar que no existe).
-  - MigraciÃ³n de mensajes existentes (imposible â†’ asumir brecha, o borrar y empezar).
+  **Antes de cualquier implementación se requiere un bloque de diseño propio:**
+  - Elección de protocolo y librería (con análisis de madurez, mantenimiento, tamaño bundle).
+  - Decisión sobre qué se sacrifica del producto actual (preview, búsqueda, Realtime con semántica).
+  - Modelo de recuperación de claves (o documentar que no existe).
+  - Migración de mensajes existentes (imposible → asumir brecha, o borrar y empezar).
 
-  **No atacar en caliente. Sin priorizar. No planificar hasta cerrar D (Legal mÃ­nimo)
+  **No atacar en caliente. Sin priorizar. No planificar hasta cerrar D (Legal mínimo)
   y tener usuarios reales que lo demanden.**
 
   Hecho cuando: existe `docs/decisions/e2ee-chat.md` con protocolo elegido, tabla de
-  sacrificios de producto, modelo de claves, y plan de migraciÃ³n â€” antes de escribir
-  una sola lÃ­nea de cÃ³digo.
+  sacrificios de producto, modelo de claves, y plan de migración — antes de escribir
+  una sola línea de código.
 
-- [x] **E55. KButton: active:scale(0.98) no implementado** âœ… CERRADA en B3.5f-3 (nivel mÃ­nimo)
+- [x] **E55. KButton: active:scale(0.98) no implementado** ✅ CERRADA en B3.5f-3 (nivel mínimo)
 
-  DS Â§5 especificaba `active:scale(0.98)` en botones pero `KButton.tsx` no lo tenÃ­a. AÃ±adido `active:scale-[0.98]` en variantes `primary` y `secondary`. 506/57 green.
+  DS §5 especificaba `active:scale(0.98)` en botones pero `KButton.tsx` no lo tenía. Añadido `active:scale-[0.98]` en variantes `primary` y `secondary`. 506/57 green.
 
-- [ ] **E56. Faltan loading.tsx en rutas principales** â€” solo `/profile` tiene skeleton de carga.
+- [ ] **E56. Faltan loading.tsx en rutas principales** — solo `/profile` tiene skeleton de carga.
 
-  Rutas sin `loading.tsx`: home, discover, search, library, media/[type]/[id], friends, notifications, settings, chat, groups/[id], lists/[id]. Causa: Sprint B3.5f migrÃ³ el DS pero no aÃ±adiÃ³ loading skeletons.
+  Rutas sin `loading.tsx`: home, discover, search, library, media/[type]/[id], friends, notifications, settings, chat, groups/[id], lists/[id]. Causa: Sprint B3.5f migró el DS pero no añadió loading skeletons.
 
-  **Prioridad:** media. Sin loading.tsx, Next.js muestra pÃ¡gina en blanco durante SSR. No es bug funcional pero degrada UX en conexiones lentas.
+  **Prioridad:** media. Sin loading.tsx, Next.js muestra página en blanco durante SSR. No es bug funcional pero degrada UX en conexiones lentas.
 
   Hecho cuando: las rutas principales tienen `loading.tsx` con skeleton coherente al DS (surface-default, animate-pulse).
 
   **Nota:** nivel medio de B3.5f-3. No tocar hasta confirmar con el usuario.
 
-- [x] **E57. prefers-reduced-motion no implementado** âœ… CERRADA en B3.5f-3 (nivel mÃ­nimo)
+- [x] **E57. prefers-reduced-motion no implementado** ✅ CERRADA en B3.5f-3 (nivel mínimo)
 
-  WCAG 2.1 Â§2.3.3. `globals.css` ahora neutraliza `transition-duration` y `animation-duration` a `0.01ms` globalmente bajo `@media (prefers-reduced-motion: reduce)`.
+  WCAG 2.1 §2.3.3. `globals.css` ahora neutraliza `transition-duration` y `animation-duration` a `0.01ms` globalmente bajo `@media (prefers-reduced-motion: reduce)`.
 
 - [ ] **E58. RecommendModal + Toast: migrar tokens legacy al DS**
 
-  `RecommendModal` usa `bg-surface`, `border-border`, `text-text`; `Toast` usa `bg-surface2`, `border-border`, `text-accent`. Mismo patrÃ³n legacy ya visto y migrado en Chat/Notif. Migrar a tokens canÃ³nicos del DESIGN_SYSTEM.md. Sin priorizar.
+  `RecommendModal` usa `bg-surface`, `border-border`, `text-text`; `Toast` usa `bg-surface2`, `border-border`, `text-accent`. Mismo patrón legacy ya visto y migrado en Chat/Notif. Migrar a tokens canónicos del DESIGN_SYSTEM.md. Sin priorizar.
 
 - [ ] **E59. FilterBar: migrar chips de filtro al DS**
 
   Chips de filtro en `FilterBar` usan tokens legacy:
-  - **Activo:** `bg-accent-subtle text-accent border-accent` (rojo legacy `#E82020`) â†’ debe ser verde `accent-positive` (tokens DS).
-  - **Inactivo:** `bg-surface2 text-muted border-border` â†’ reemplazar por tokens DS canÃ³nicos.
+  - **Activo:** `bg-accent-subtle text-accent border-accent` (rojo legacy `#E82020`) → debe ser verde `accent-positive` (tokens DS).
+  - **Inactivo:** `bg-surface2 text-muted border-border` → reemplazar por tokens DS canónicos.
 
-  Componente COMPARTIDO (Discover, Search, Library) â€” migrar con verificaciÃ³n de las 3 pantallas.
+  Componente COMPARTIDO (Discover, Search, Library) — migrar con verificación de las 3 pantallas.
   Sin priorizar.
 
   Hecho cuando: 0 tokens legacy en `FilterBar`, chips activos usan `accent-positive`, inactivos usan tokens DS, y las 3 pantallas no presentan regresiones visuales.
 
-- [ ] **E60. DecisiÃ³n de producto: scope de Discover/Books (idioma)**
+- [ ] **E60. Decisión de producto: scope de Discover/Books (idioma)**
 
-  `src/lib/api/googlebooks.ts:56` aplica `langRestrict: "es"`, lo que reduce drÃ¡sticamente
-  `totalItems` y agrava el bug de paginaciÃ³n de books (totalPages inflados o errÃ³neos cuando
-  hay pocos resultados en espaÃ±ol). Es una decisiÃ³n de producto: Â¿Discover de libros
-  espaÃ±ol-cÃ©ntrico (consistente con i18n del proyecto) o global?
+  `src/lib/api/googlebooks.ts:56` aplica `langRestrict: "es"`, lo que reduce drásticamente
+  `totalItems` y agrava el bug de paginación de books (totalPages inflados o erróneos cuando
+  hay pocos resultados en español). Es una decisión de producto: ¿Discover de libros
+  español-céntrico (consistente con i18n del proyecto) o global?
 
-  Aplica tambiÃ©n a otras APIs si tienen restricciÃ³n regional similar.
+  Aplica también a otras APIs si tienen restricción regional similar.
 
-  Sin priorizar. No tocar `langRestrict` hasta tomar la decisiÃ³n.
+  Sin priorizar. No tocar `langRestrict` hasta tomar la decisión.
 
 - [x] **E61. (CERRADA 2026-06-01 — NO-VULN, mal diagnosticada)** ~~Seguridad: `DELETE /api/lists/[id]` bypassa RLS con service-role~~
   Fase 0 (chat actual) desmontó el diagnóstico de E47: el handler usa `createClient()` (anon + sesión, server.ts:15-17), NO service-role — no existe service-role en runtime (único uso: scripts/seed-test.mjs). La RLS de `list_items` DELETE (`list_items_delete_adder_or_owner`, migración L743-745) restringe a `added_by = auth.uid() OR owner` y SÍ se aplica al ir con sesión. Un colaborador que intenta borrar item de otro → 0 filas afectadas, sin escalada. `canEditList` es defensa-en-capa, no la única barrera. Residuo cosmético (no seguridad) → E71.
 
-- [x] **E62. PatrÃ³n transversal: mutaciones optimistas sin verificar `res.ok`** (barrido `ListDetail` hecho — era el Ãºnico archivo afectado segÃºn Fase 0)
+- [x] **E62. Patrón transversal: mutaciones optimistas sin verificar `res.ok`** (barrido `ListDetail` hecho — era el único archivo afectado según Fase 0)
 
-  Casos confirmados: `ListDetail.tsx` `handleRemoveItem` (lÃ­nea 37) y `handleInvite`
-  (lÃ­nea 53). Si el server responde 403 o 500, el cambio queda aplicado en la UI sin
-  revertir. Mismo patrÃ³n sospechado en E51 (Sugerencias) y E52 (Chat), ya registrados.
-  AcciÃ³n sugerida: barrido del repo buscando `await fetch(` en client components sin
+  Casos confirmados: `ListDetail.tsx` `handleRemoveItem` (línea 37) y `handleInvite`
+  (línea 53). Si el server responde 403 o 500, el cambio queda aplicado en la UI sin
+  revertir. Mismo patrón sospechado en E51 (Sugerencias) y E52 (Chat), ya registrados.
+  Acción sugerida: barrido del repo buscando `await fetch(` en client components sin
   chequeo posterior de `res.ok` en mutaciones (POST/PATCH/DELETE). Documentar lista de
   archivos afectados antes de fixear.
 
 - [x] **E63. `ListsClient.tsx` descarta el setter de `useState`**
 
-  LÃ­nea 16: `const [lists] = useState<List[]>(initialLists)`. Sin setter, la nueva lista
+  Línea 16: `const [lists] = useState<List[]>(initialLists)`. Sin setter, la nueva lista
   creada via `CreateListModal` solo aparece tras full navigation. Fix: `const [lists,
   setLists] = useState(...)` y pasar `setLists` (o callback `onCreated`) a
   `CreateListModal` para actualizar el grid tras crear.
@@ -515,8 +515,8 @@ No bloqueantes. Atacar solo despuÃ©s de Aâ€“D.
 
   Descubierto en Fase 0 de E47. `RecommendModal` usa `text-green-400` y `text-red-400`
   hardcodeados en lugar de tokens DS (`accent-positive`, `accent-danger`). El componente
-  nuevo `AddToListButton` creado en E47 NO replica este patrÃ³n â€” usa tokens y
-  `useToastContext` correctamente. Esta E-task cubre la migraciÃ³n del `RecommendModal`
+  nuevo `AddToListButton` creado en E47 NO replica este patrón — usa tokens y
+  `useToastContext` correctamente. Esta E-task cubre la migración del `RecommendModal`
   existente.
 
   Toca: `src/components/social/RecommendModal.tsx`.
@@ -526,16 +526,16 @@ No bloqueantes. Atacar solo despuÃ©s de Aâ€“D.
 
 - [x] **E65. Listas: UI para borrar una lista (endpoint ya existe)**
 
-  Descubierto en verificaciÃ³n visual de E47. El endpoint `DELETE /api/lists` existe y
-  funciona (solo owner). El usuario reporta que NO hay botÃ³n ni acciÃ³n en `/lists` ni
-  `/lists/[id]` para borrar una lista. Mismo patrÃ³n que tenÃ­a E47 antes de cerrarse:
+  Descubierto en verificación visual de E47. El endpoint `DELETE /api/lists` existe y
+  funciona (solo owner). El usuario reporta que NO hay botón ni acción en `/lists` ni
+  `/lists/[id]` para borrar una lista. Mismo patrón que tenía E47 antes de cerrarse:
   backend completo sin UI.
 
-  QuÃ© falta: botÃ³n en `ListCard` o en header de `ListDetail` (con confirmaciÃ³n) + claves
+  Qué falta: botón en `ListCard` o en header de `ListDetail` (con confirmación) + claves
   i18n (`lists.delete`, `lists.deleteConfirm`, `lists.deleted`).
 
   Hecho cuando: desde `/lists` o `/lists/[id]`, el owner puede borrar su lista con
-  confirmaciÃ³n y desaparece del grid.
+  confirmación y desaparece del grid.
 
 - [x] **E66** — AiRecommendations: carátula + navegación a ficha ✅ (cerrada el 2026-05-31, fe15a2d)
     533/59 green. Comic resuelve carátula pero su ficha aún no existe → ver E66-COMIC-FICHA.
