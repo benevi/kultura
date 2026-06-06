@@ -5,9 +5,24 @@
 
 import { discoverMovies, discoverTV } from "@/lib/api/tmdb";
 import { buildTmdbDiscoverParams, type TmdbFilters } from "@/lib/api/tmdb-maps";
-import { getPopularAnime, getPopularManga, JikanError } from "@/lib/api/jikan";
+import {
+  getPopularAnime,
+  getPopularManga,
+  discoverAnime,
+  discoverManga,
+  JikanError,
+} from "@/lib/api/jikan";
+import {
+  buildJikanDiscoverParams,
+  hasJikanFilters,
+  type JikanFilters,
+} from "@/lib/api/jikan-maps";
 import { searchBooks } from "@/lib/api/googlebooks";
-import { getPopularGames } from "@/lib/api/rawg";
+import { getPopularGames, discoverGames } from "@/lib/api/rawg";
+import {
+  buildRawgDiscoverParams,
+  type RawgFilters,
+} from "@/lib/api/rawg-maps";
 import { getRecentComics } from "@/lib/api/comicvine";
 import {
   normalizeMovie,
@@ -30,10 +45,11 @@ export interface DiscoverResult {
 }
 
 /**
- * Filtros canónicos aplicables a la capa de fetch. F3a: solo TMDB (movie/tv) los
- * consume; el resto de tipos los ignora hasta sus fases respectivas.
+ * Filtros canónicos aplicables a la capa de fetch. Unión de los subconjuntos que
+ * cada familia consume nativamente: TMDB (F3a), Jikan + RAWG (F3b). Cada builder
+ * toma solo los campos que entiende; el resto los ignora.
  */
-export type DiscoverFilters = TmdbFilters;
+export type DiscoverFilters = TmdbFilters & JikanFilters & RawgFilters;
 
 export async function fetchDiscoverData(
   type: string,
@@ -69,14 +85,19 @@ export async function fetchDiscoverData(
         break;
       }
       case "anime": {
-        const res = await getPopularAnime(page);
+        // Con filtros → /anime (búsqueda, acepta filtros); sin filtros → /top/anime.
+        const res = hasJikanFilters(filters)
+          ? await discoverAnime(page, buildJikanDiscoverParams("anime", filters))
+          : await getPopularAnime(page);
         const data = Array.isArray(res.data) ? (res.data as JikanAnime[]) : [];
         items = data.map((a) => normalizeAnime(a));
         totalPages = res.pagination?.last_visible_page ?? 1;
         break;
       }
       case "manga": {
-        const res = await getPopularManga(page);
+        const res = hasJikanFilters(filters)
+          ? await discoverManga(page, buildJikanDiscoverParams("manga", filters))
+          : await getPopularManga(page);
         const data = Array.isArray(res.data) ? (res.data as JikanManga[]) : [];
         items = data.map((m) => normalizeMangaJikan(m));
         totalPages = res.pagination?.last_visible_page ?? 1;
@@ -103,7 +124,17 @@ export async function fetchDiscoverData(
         break;
       }
       case "game": {
-        const res = await getPopularGames(page);
+        // Con filtros (género/plataforma/año/sort) → /games filtrado; sin filtros
+        // se mantiene getPopularGames (ordering=-rating) para paridad F2.
+        const hasRawgFilters = Boolean(
+          filters.genre?.length ||
+            filters.platform?.length ||
+            filters.year ||
+            filters.sort
+        );
+        const res = hasRawgFilters
+          ? await discoverGames(page, buildRawgDiscoverParams(filters))
+          : await getPopularGames(page);
         items = res.results.map((g) => normalizeGame(g));
         totalPages = Math.ceil(res.count / 20);
         break;

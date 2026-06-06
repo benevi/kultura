@@ -62,3 +62,19 @@ export async function getPopularGames(page = 1): Promise<RawgResponse> {
     page: String(page),
   });
 }
+
+/**
+ * Descubre juegos vía /games con filtros nativos (genres/platforms/dates/
+ * ordering). E59 F3b. `params` ya traducidos por rawg-maps. ordering por
+ * defecto -added (popularidad) si no se especifica en params.
+ */
+export async function discoverGames(
+  page = 1,
+  params: Record<string, string> = {}
+): Promise<RawgResponse> {
+  return rawgFetch<RawgResponse>("/games", {
+    ordering: "-added",
+    page: String(page),
+    ...params,
+  });
+}

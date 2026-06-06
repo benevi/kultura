@@ -89,16 +89,17 @@ export async function GET(request: NextRequest) {
   const parsed = parseDiscoverParams(request.nextUrl.searchParams);
   const { type, page } = parsed;
 
-  // F3a: además de type+page se pasan los filtros que TMDB consume nativamente
-  // (genre/year/platform/sort/idioma/duracion/status). La capa TMDB ignora los
-  // vacíos/desconocidos. El resto de tipos ignora estos filtros hasta su fase.
-  // fetchDiscoverData nunca lanza (429/errores viajan como fetchErrorKind) → 200.
+  // F3a+F3b: se pasan los filtros que cada familia consume nativamente
+  // (TMDB: genre/year/platform/sort/status/duracion/idioma; Jikan: +demografia;
+  // RAWG: genre/platform/year/sort). Cada builder ignora los vacíos/desconocidos
+  // y los campos que no entiende. fetchDiscoverData nunca lanza → 200.
   const result = await fetchDiscoverData(type, page, {
     genre: parsed.genre,
     year: parsed.year,
     platform: parsed.platform,
     sort: parsed.sort,
     status: parsed.status,
+    demografia: parsed.demografia,
     duracion: parsed.duracion,
     idioma: parsed.idioma,
   });
