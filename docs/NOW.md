@@ -3,6 +3,8 @@
 
 ## Estado
 
+E74 → ✅ **CERRADA 2026-06-06** (commit código `f353b13`). Grupos inalcanzables en móvil: `BottomNav` (`md:hidden`) no incluía `/groups`; desktop sí. Sustituido ítem `profile` por `groups` (icono lucide `Users`, label `nav.groups` ya existente). Perfil sigue accesible en móvil vía `AvatarDropdown` del header (`sticky`, sin gate de viewport). Prop `username` eliminada + caller `(app)/layout.tsx` y test unit actualizados. lint 0, tsc 0, vitest 639 passed.
+
 E73 → ✅ **CERRADA 2026-06-06** (commit `642a56c`). Fix encoding de `docs/BACKLOG.md`: mojibake por doble-encode CP1252→UTF-8 revertido solo en tokens dañados (478 revertidos, 0 leads `ÃÂâ` restantes), BOM+CRLF preservados, conteos post-fix validados contra el audit. Era deuda de documentación, no de código; sin hook (repo sin pre-commit).
 
 E51 → ✅ **CERRADA 2026-06-05** (commit código `4ce64d4`). Validación cliente + errores granulares en `SuggestionsForm`: `trim()` + rechazo pre-fetch si subject<3/description<10 (`errorTooShort`), 429 → `errorRateLimit`, state `errorKey` + `t(errorKey)`. 2 claves nuevas en namespace `suggestions` es/en. Paridad i18n 471=471. tsc 0, lint 0, vitest 639 passed.

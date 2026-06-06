@@ -6,6 +6,10 @@ No se edita a mano durante el día. Solo se añade una línea al terminar cada t
 
 ---
 
+2026-06-06 | E74 | f353b13 | Grupos inalcanzables en móvil. `BottomNav` (nav móvil, `md:hidden`) tenía 5 ítems hardcodeados (home/discover/chat/library/profile) **sin** entrada a `/groups`; el desktop `NavLinks` sí la tenía → único punto de acceso a grupos en móvil ausente (la página `/groups` renderiza bien, no era CSS ni datos: era falta de enlace de navegación). Fix: sustituido ítem `profile` por `groups` en `BottomNav` (icono lucide `Users`, label `nav.groups` ya existente, sin tocar messages). Perfil sigue accesible en móvil vía `AvatarDropdown` del `AuthHeader` (`sticky`, sin gate de viewport → presente en todos los breakpoints). Prop `username` de `BottomNav` eliminada (solo la usaba el href de profile); caller en `(app)/layout.tsx` actualizado a `<BottomNav />`. Test unit `BottomNav.test.tsx` actualizado al nuevo contrato (mock `Users`, assert href `/groups`). lint 0 err (2 warnings preexistentes en `SearchResults`), tsc 0, vitest **639 passed**.
+
+---
+
 2026-06-06 | E73 | 642a56c | Fix encoding `docs/BACKLOG.md`. El archivo tenía mojibake por doble-encode (UTF-8 original re-decodificado como CP1252 y re-guardado): `Ã³`→`ó`, `Ã­`→`í`, `Ã¡`→`á`, `â€”`→`—`, `âœ…`→`✅`, etc. Daño uniforme en tipo (un solo CP1252→UTF-8 doble-encode, sin U+FFFD lossy) pero parcial en alcance: convivían copias rotas y limpias del mismo carácter (p.ej. `ó` 142 rotas + 32 limpias), por lo que un re-encode plano habría doble-corrompido lo ya limpio. Solución: reversión byte a byte CP1252→UTF-8 **solo en tokens dañados** (run de chars ≥0x80, máx 3 bytes, exigiendo decode a 1 codepoint limpio). 478 tokens revertidos, 0 leads `ÃÂâ` restantes, re-read UTF-8 OK. BOM (EF BB BF) y CRLF (563 líneas, 0 lone-LF) preservados. Validado: conteos post-fix cuadran con suma roto+limpio del audit. Diff 246+/246−, único archivo. (No hubo hook lint/tsc/vitest: el repo no tiene pre-commit configurado.)
 
 ---

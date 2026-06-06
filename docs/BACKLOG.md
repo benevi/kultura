@@ -568,7 +568,7 @@ No bloqueantes. Atacar solo después de A–D.
   Toca: `src/app/api/lists/[id]/route.ts` DELETE handler.
   ~~Hallazgo Fase 0 E61. El handler hace `.delete().eq('id',itemId).eq('list_id',listId)` y devuelve `{ok:true}` sin comprobar filas afectadas. Si la RLS filtra (item de otro colaborador) borra 0 filas pero responde 200. Patrón correcto ya existe en `/api/library` (usa `count` → 404). Fix: añadir `{ count: 'exact' }` o verificar resultado y devolver 404 si 0 filas. No es seguridad (RLS ya protege), es feedback.~~
 
-- [ ] **E74. Grupos no aparecen en móvil (fuego funcional)**
+- [x] **E74. Grupos no aparecen en móvil (fuego funcional)**
   Síntoma en prod: el módulo de grupos de amigos no se muestra en viewport móvil (sí en desktop, presumiblemente). Posible problema responsive/layout o query/render condicionado por breakpoint, NO necesariamente el RLS de E45 (ya cerrado).
   Fase 0 obligatoria: reproducir en móvil y aislar si es CSS/responsive, datos, o render.
   Hecho cuando: grupos visibles y operativos en móvil.
