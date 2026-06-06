@@ -18,6 +18,12 @@ import {
   type JikanFilters,
 } from "@/lib/api/jikan-maps";
 import { searchBooks } from "@/lib/api/googlebooks";
+import {
+  buildBooksQuery,
+  hasBookFilters,
+  BOOKS_BASE_QUERY,
+  type BooksFilters,
+} from "@/lib/api/books-maps";
 import { getPopularGames, discoverGames } from "@/lib/api/rawg";
 import {
   buildRawgDiscoverParams,
@@ -49,7 +55,10 @@ export interface DiscoverResult {
  * cada familia consume nativamente: TMDB (F3a), Jikan + RAWG (F3b). Cada builder
  * toma solo los campos que entiende; el resto los ignora.
  */
-export type DiscoverFilters = TmdbFilters & JikanFilters & RawgFilters;
+export type DiscoverFilters = TmdbFilters &
+  JikanFilters &
+  RawgFilters &
+  BooksFilters;
 
 export async function fetchDiscoverData(
   type: string,
@@ -105,7 +114,16 @@ export async function fetchDiscoverData(
       }
       case "book": {
         const startIndex = (page - 1) * 20;
-        const res = await searchBooks("popular", startIndex);
+        // Con filtros (género/formato/idioma/sort) → query construida; sin
+        // filtros, paridad con hoy (query base "popular", sin orderBy/filter).
+        // year sigue sin aplicarse (oculto para book).
+        let res;
+        if (hasBookFilters(filters)) {
+          const { q, params } = buildBooksQuery(filters);
+          res = await searchBooks(q, startIndex, params);
+        } else {
+          res = await searchBooks(BOOKS_BASE_QUERY, startIndex);
+        }
         items = (res.items ?? []).map((b) => normalizeBookGoogle(b));
         totalPages =
           res.totalItems && res.totalItems > 0
