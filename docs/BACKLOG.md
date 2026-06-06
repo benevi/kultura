@@ -600,3 +600,9 @@ No bloqueantes. Atacar solo después de A–D.
 - [ ] **E81. Mejora de autenticación (técnico)**
   Endurecer/mejorar el flujo de auth, distinto de E7 (OAuth), E8 (pwd-reset), E20 (Input). Alcance a concretar en Fase 0.
   Hecho cuando: a definir según alcance.
+
+- [ ] **E82. Migrar acento legacy rojo `#E82020` → verde app-wide**
+  F4 (E59) solo migró `FilterBar`. Queda el acento rojo legacy en 15+ consumidores: `button`, `Badge`, `Toast`, `Select`, `Spinner`, `StarRating`, `StatusSelector`, `MediaDetail`, `SynopsisSection`, `RecommendModal`, `SearchFilters`, `SearchResults`, `SearchBar`, `GroupFeed`, `JoinGroupButton`. Migrar todos a verde (`accent-positive` / tokens DS canónicos).
+  Hecho cuando: 0 ocurrencias de `#E82020` (y aliases legacy `text-accent`/`bg-accent` rojos) en los consumidores listados, sin regresiones visuales.
+
+- [x] **E83. (CERRADA 2026-06-07 — commit `edca570`)** Entrega de notificaciones rota a nivel global. `notifications` con RLS habilitado y sin policy INSERT → todo insert vía cliente anon era denegado (default-deny); los 3 tipos (`recommendation`, `list_invite`, `group_invite`) insertaban best-effort sin error-check → fallo mudo, la notif nunca llegaba. Fix: `src/lib/supabase/admin.ts` (`createAdminClient()` service-role, bypassa RLS) en los 3 inserts + `console.error` en fallo; operación principal no falla si la notif falla. `.env.test.local` += `SUPABASE_SERVICE_ROLE_KEY` (kultura-test, gitignored). tsc 0, lint 0, vitest 765 passed. Detalle en DONE.md.

@@ -3,6 +3,10 @@
 
 ## Estado
 
+E83 → ✅ **CERRADA 2026-06-07** (commit código `edca570`). Entrega de notificaciones rota a nivel global: `notifications` tiene RLS habilitado con solo policies SELECT/UPDATE, **sin INSERT** → todo insert vía cliente anon (sesión de usuario) era denegado por default-deny. Los 3 tipos (`recommendation`, `list_invite`, `group_invite`) insertaban best-effort sin error-check → fallo silencioso: invitaciones/recos creadas pero notif nunca llegaba al destinatario. Fix opción B: nuevo `src/lib/supabase/admin.ts` (`createAdminClient()` service-role, bypassa RLS, key sin `NEXT_PUBLIC_`, throw si falta) usado en los 3 inserts + `console.error('[E83] notif insert failed', …)` (ya no mudo); la operación principal no falla si la notif falla. `.env.test.local` += `SUPABASE_SERVICE_ROLE_KEY` (valor de kultura-test, gitignored) para E2E. tsc 0, lint 0, vitest **765 passed** (761+3 migradas+1 regresión).
+
+E59 (F4) → ✅ **HECHO 2026-06-07**. Sub-paso F4 del rediseño FilterBar cerrado: `font-mono` + acento verde (`accent-positive`) en chips activos del FilterBar + primitivo `Popover` (Radix). Siguiente sub-paso: **F5 (UI)**. E59 sigue abierta en BACKLOG hasta completar el rediseño y validar las 3 pantallas (Discover/Search/Library).
+
 E74 → ✅ **CERRADA 2026-06-06** (commit código `f353b13`). Grupos inalcanzables en móvil: `BottomNav` (`md:hidden`) no incluía `/groups`; desktop sí. Sustituido ítem `profile` por `groups` (icono lucide `Users`, label `nav.groups` ya existente). Perfil sigue accesible en móvil vía `AvatarDropdown` del header (`sticky`, sin gate de viewport). Prop `username` eliminada + caller `(app)/layout.tsx` y test unit actualizados. lint 0, tsc 0, vitest 639 passed.
 
 E73 → ✅ **CERRADA 2026-06-06** (commit `642a56c`). Fix encoding de `docs/BACKLOG.md`: mojibake por doble-encode CP1252→UTF-8 revertido solo en tokens dañados (478 revertidos, 0 leads `ÃÂâ` restantes), BOM+CRLF preservados, conteos post-fix validados contra el audit. Era deuda de documentación, no de código; sin hook (repo sin pre-commit).
@@ -23,6 +27,6 @@ E45 → ✅ **CERRADO COMPLETO 2026-06-04** (a✅ b✅ c✅ d✅). E45-d cerrado
 
 ## Tarea activa
 
-**(ninguna)** — esperando confirmación del usuario para elegir la siguiente del BACKLOG.
+**E59 — F5 (UI del rediseño FilterBar)** — siguiente sub-paso tras F4 (font-mono + acento verde + Popover Radix, hecho 2026-06-07). Esperando confirmación del usuario para arrancar (rellenar las 4 secciones: Qué cambia / Cómo sé que funciona / Archivos que toco / Cuándo paro).
 
 Nota: smoke test manual de la ruta crítica E45-d se saltó por decisión del usuario (requería 2 cuentas logueadas + verificación del trigger en Supabase prod). Pendiente como validación funcional post-deploy (regla #11 CLAUDE.md) si se quiere confirmar en prod.
