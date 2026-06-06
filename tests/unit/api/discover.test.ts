@@ -9,8 +9,8 @@ import { JikanError } from "@/lib/api/jikan";
 // ── Mock all external API modules ─────────────────────────────────────────────
 
 vi.mock("@/lib/api/tmdb", () => ({
-  getPopularMovies: vi.fn(),
-  getPopularTV: vi.fn(),
+  discoverMovies: vi.fn(),
+  discoverTV: vi.fn(),
 }));
 
 vi.mock("@/lib/api/jikan", async (importOriginal) => {
