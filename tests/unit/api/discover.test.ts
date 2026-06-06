@@ -44,6 +44,7 @@ vi.mock("@/lib/api/normalizer", () => ({
   normalizeMangaJikan: vi.fn((m) => ({
     id: `manga_${m.mal_id}`,
     title: m.title,
+    metadata: { volumes: m.volumes ?? undefined },
   })),
   normalizeBookGoogle: vi.fn((b) => ({
     id: `book_${b.id}`,
@@ -225,6 +226,78 @@ describe("fetchDiscoverData — books filtros (E59 F3c)", () => {
       year: "2020s",
     } as Parameters<typeof fetchDiscoverData>[2]);
     expect(searchBooks).toHaveBeenCalledWith("popular", 0);
+  });
+});
+
+// ── Manga: post-filtro volúmenes (E59 F3c) ────────────────────────────────────
+
+describe("fetchDiscoverData — manga volúmenes post-filtro (E59 F3c)", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    // Lote con volumes variados, incluido null (sin resolver).
+    vi.mocked(getPopularManga).mockResolvedValue({
+      data: [
+        { mal_id: 1, title: "Corto", volumes: 3 },
+        { mal_id: 2, title: "Medio", volumes: 10 },
+        { mal_id: 3, title: "Largo", volumes: 30 },
+        { mal_id: 4, title: "Sin resolver", volumes: null },
+      ] as never[],
+      pagination: { last_visible_page: 1 },
+    });
+  });
+
+  it("volumenes='6-20' → descarta < 6 y volumes null", async () => {
+    const result = await fetchDiscoverData("manga", 1, { volumenes: "6-20" });
+    const ids = result.items.map((i) => i.id);
+    expect(ids).toEqual(["manga_2", "manga_3"]); // 10 y 30 ≥ 6; 3 y null fuera
+  });
+
+  it("volumenes='20plus' → solo >= 20", async () => {
+    const result = await fetchDiscoverData("manga", 1, { volumenes: "20plus" });
+    expect(result.items.map((i) => i.id)).toEqual(["manga_3"]);
+  });
+
+  it("volumenes='1-5' → >= 1 (descarta solo el de volumes null)", async () => {
+    const result = await fetchDiscoverData("manga", 1, { volumenes: "1-5" });
+    expect(result.items.map((i) => i.id)).toEqual([
+      "manga_1",
+      "manga_2",
+      "manga_3",
+    ]);
+  });
+
+  it("sin volumenes → no filtra (paridad, incluye volumes null)", async () => {
+    const result = await fetchDiscoverData("manga", 1);
+    expect(result.items).toHaveLength(4);
+  });
+
+  it("bucket desconocido → no filtra", async () => {
+    const result = await fetchDiscoverData("manga", 1, {
+      volumenes: "zzz",
+    } as Parameters<typeof fetchDiscoverData>[2]);
+    expect(result.items).toHaveLength(4);
+  });
+});
+
+// ── Anime: volúmenes IGNORADO (oculto para anime) (E59 F3c) ────────────────────
+
+describe("fetchDiscoverData — anime ignora volúmenes (E59 F3c)", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    vi.mocked(getPopularAnime).mockResolvedValue({
+      data: [
+        { mal_id: 1, title: "A" },
+        { mal_id: 2, title: "B" },
+      ] as never[],
+      pagination: { last_visible_page: 1 },
+    });
+  });
+
+  it("volumenes set en anime → NO filtra (no aplica a anime)", async () => {
+    const result = await fetchDiscoverData("anime", 1, {
+      volumenes: "20plus",
+    });
+    expect(result.items).toHaveLength(2);
   });
 });
 
