@@ -15,6 +15,7 @@ import {
 import {
   buildJikanDiscoverParams,
   hasJikanFilters,
+  filterByMinVolumes,
   type JikanFilters,
 } from "@/lib/api/jikan-maps";
 import { searchBooks } from "@/lib/api/googlebooks";
@@ -114,6 +115,9 @@ export async function fetchDiscoverData(
           : await getPopularManga(page);
         const data = Array.isArray(res.data) ? (res.data as JikanManga[]) : [];
         items = data.map((m) => normalizeMangaJikan(m));
+        // POST-filtro de volúmenes (solo manga): umbral mínimo sobre metadata.volumes.
+        // Vacío/desconocido → no filtra. anime no pasa por aquí (oculto).
+        items = filterByMinVolumes(items, filters.volumenes);
         totalPages = res.pagination?.last_visible_page ?? 1;
         break;
       }
