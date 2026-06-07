@@ -48,13 +48,13 @@ export const JIKAN_DEMOGRAPHIC: Record<string, number> = {
 // Los estados solo-manga (hiatus/discontinued) NO tienen clave canónica → se
 // aceptan como passthrough si llegan literalmente, pero no se derivan de canónico.
 
-const ANIME_STATUS: Record<string, string> = {
+export const ANIME_STATUS: Record<string, string> = {
   airing: "airing",
   complete: "complete",
   upcoming: "upcoming",
 };
 
-const MANGA_STATUS: Record<string, string> = {
+export const MANGA_STATUS: Record<string, string> = {
   airing: "publishing", // canónico "en emisión" → manga "publishing"
   complete: "complete",
   upcoming: "upcoming",
@@ -81,7 +81,7 @@ interface JikanSort {
   sort: string;
 }
 
-const JIKAN_SORT: Record<string, JikanSort> = {
+export const JIKAN_SORT: Record<string, JikanSort> = {
   popularity: { order_by: "popularity", sort: "asc" }, // rank 1 = más popular
   rating: { order_by: "score", sort: "desc" },
   release_desc: { order_by: "start_date", sort: "desc" },
@@ -201,7 +201,7 @@ export function hasJikanFilters(filters: JikanFilters = {}): boolean {
 // Buckets canónicos (spec §1/§3): "1-5"/"6-20"/"20plus" → umbral mínimo de volumes.
 // kind "min": se conserva el manga cuyo volumes >= umbral. Solo manga (anime oculto).
 
-const VOLUMENES_MIN: Record<string, number> = {
+export const VOLUMENES_MIN: Record<string, number> = {
   "1-5": 1,
   "6-20": 6,
   "20plus": 20,
