@@ -9,6 +9,8 @@
 // el param), de modo que un valor inválido nunca rompe la query TMDB.
 // ============================================================
 
+import { valoracionThreshold } from "@/lib/api/valoracion";
+
 export type TmdbMediaType = "movie" | "tv";
 
 // ── Géneros ───────────────────────────────────────────────────────────────────
@@ -209,6 +211,7 @@ export interface TmdbFilters {
   status?: string | null;
   duracion?: string | null;
   idioma?: string | null;
+  valoracion?: string | null;
 }
 
 /** Traduce una lista de slugs a IDs vía `table`, descartando los desconocidos. */
@@ -279,6 +282,10 @@ export function buildTmdbDiscoverParams(
     const code = TMDB_TV_STATUS[filters.status];
     if (code) params.with_status = code;
   }
+
+  // Valoracion (nativo movie+tv): umbral mínimo → vote_average.gte (escala 0–10).
+  const minVote = valoracionThreshold(filters.valoracion);
+  if (minVote !== null) params["vote_average.gte"] = String(minVote);
 
   return params;
 }

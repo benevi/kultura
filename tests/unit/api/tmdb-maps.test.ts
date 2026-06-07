@@ -147,6 +147,24 @@ describe("buildTmdbDiscoverParams — movie", () => {
     expect(p.with_status).toBeUndefined();
   });
 
+  it("valoracion → vote_average.gte con el umbral (R4b nativo)", () => {
+    expect(
+      buildTmdbDiscoverParams("movie", { valoracion: "8" })["vote_average.gte"]
+    ).toBe("8");
+    expect(
+      buildTmdbDiscoverParams("movie", { valoracion: "6" })["vote_average.gte"]
+    ).toBe("6");
+  });
+
+  it("valoracion desconocida/vacía se ignora (sin vote_average.gte)", () => {
+    expect(
+      buildTmdbDiscoverParams("movie", { valoracion: "11" })["vote_average.gte"]
+    ).toBeUndefined();
+    expect(
+      buildTmdbDiscoverParams("movie")["vote_average.gte"]
+    ).toBeUndefined();
+  });
+
   it("género desconocido se ignora (no rompe la query)", () => {
     const p = buildTmdbDiscoverParams("movie", {
       genre: ["accion", "inexistente"],
@@ -191,5 +209,11 @@ describe("buildTmdbDiscoverParams — tv", () => {
     expect(
       buildTmdbDiscoverParams("tv", { sort: "release_desc" }).sort_by
     ).toBe("first_air_date.desc");
+  });
+
+  it("valoracion → vote_average.gte (R4b nativo, también en tv)", () => {
+    expect(
+      buildTmdbDiscoverParams("tv", { valoracion: "7" })["vote_average.gte"]
+    ).toBe("7");
   });
 });

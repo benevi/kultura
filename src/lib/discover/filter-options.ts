@@ -30,6 +30,7 @@ import {
 import { RAWG_GENRE, RAWG_PLATFORM, RAWG_ORDERING } from "@/lib/api/rawg-maps";
 import { BOOKS_GENRE, BOOKS_FORMATO, BOOKS_PUBLISHER } from "@/lib/api/books-maps";
 import { COMIC_PUBLISHER } from "@/lib/api/comicvine-maps";
+import { VALORACION_SLUGS } from "@/lib/api/valoracion";
 
 export interface FilterOption {
   value: string;
@@ -132,7 +133,8 @@ export function getFilterOptions(
     // E59 R1 — keys nuevas del rediseño V2. Values estables; label vía
     // humanizeSlug (placeholder). // i18n: R6 sustituye por traducción real.
     case "valoracion":
-      return ["9", "8", "7", "6"].map((value) => ({
+      // Catálogo único compartido con los builders nativos (R4b).
+      return VALORACION_SLUGS.map((value) => ({
         value,
         label: humanizeSlug(value),
       }));
