@@ -28,7 +28,7 @@ import {
   VOLUMENES_MIN,
 } from "@/lib/api/jikan-maps";
 import { RAWG_GENRE, RAWG_PLATFORM, RAWG_ORDERING } from "@/lib/api/rawg-maps";
-import { BOOKS_GENRE, BOOKS_FORMATO } from "@/lib/api/books-maps";
+import { BOOKS_GENRE, BOOKS_FORMATO, BOOKS_PUBLISHER } from "@/lib/api/books-maps";
 import { COMIC_PUBLISHER } from "@/lib/api/comicvine-maps";
 
 export interface FilterOption {
@@ -124,7 +124,11 @@ export function getFilterOptions(
     case "volumenes":
       return optionsFromKeys(VOLUMENES_MIN);
     case "editorial":
-      return optionsFromKeys(COMIC_PUBLISHER);
+      // editorial aplica a book y comic con catálogos distintos (BUG R4a:
+      // antes devolvía COMIC_PUBLISHER para ambos). book→editoriales de libro.
+      return optionsFromKeys(
+        type === "book" ? BOOKS_PUBLISHER : COMIC_PUBLISHER
+      );
     // E59 R1 — keys nuevas del rediseño V2. Values estables; label vía
     // humanizeSlug (placeholder). // i18n: R6 sustituye por traducción real.
     case "valoracion":
