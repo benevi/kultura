@@ -104,3 +104,34 @@ describe("getFilterOptions — dispatch correcto por catálogo", () => {
     );
   });
 });
+
+// E59 R1 — keys nuevas del rediseño V2 (aditivo). Solo verifica value
+// correcto, longitud y no-vacío. Labels = placeholder humanizeSlug (i18n R6).
+describe("getFilterOptions — keys nuevas E59 R1", () => {
+  const CASES: Array<{ key: string; values: string[]; type?: string }> = [
+    { key: "valoracion", values: ["9", "8", "7", "6"] },
+    { key: "temporadas", values: ["1", "2-3", "4-6", "7plus"] },
+    { key: "modojuego", values: ["single", "multi", "coop", "online"] },
+    { key: "duracionmedia", values: ["lt10", "10-30", "30-60", "60plus"] },
+    { key: "estado", values: ["early-access", "released"], type: "game" },
+  ];
+
+  for (const { key, values, type } of CASES) {
+    const t = (type ?? "movie") as Parameters<typeof getFilterOptions>[0];
+    it(`${key} → values exactos y no vacíos`, () => {
+      const opts = getFilterOptions(t, key);
+      expect(opts.length).toBe(values.length);
+      expect(opts.length).toBeGreaterThan(0);
+      expect(opts.map((o) => o.value)).toEqual(values);
+      for (const o of opts) {
+        expect(o.value.length).toBeGreaterThan(0);
+        expect(o.label.length).toBeGreaterThan(0);
+      }
+    });
+  }
+
+  it("estado solo aplica a game (otros tipos → [])", () => {
+    expect(getFilterOptions("movie", "estado")).toEqual([]);
+    expect(getFilterOptions("tv", "estado")).toEqual([]);
+  });
+});
