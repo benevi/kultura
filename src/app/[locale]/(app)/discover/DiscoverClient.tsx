@@ -5,13 +5,16 @@ import { useTranslations } from "next-intl";
 import { useRouter } from "@/i18n/navigation";
 import { useSearchParams } from "next/navigation";
 import type { MediaItem } from "@/types/media";
-import type { MediaType } from "@/types/media";
 import type { DiscoverResult } from "@/lib/api/discover";
 import { MediaGrid } from "@/components/media/MediaGrid";
 import { Pagination } from "@/components/ui/Pagination";
 import { FilterBar, type FilterGroup } from "@/components/ui/FilterBar";
 import { SegmentedControl } from "@/components/ui/SegmentedControl";
-import { TYPE_ORDER, TYPE_FILTERS } from "@/lib/discover/type-filters";
+import {
+  TYPE_ORDER,
+  TYPE_FILTERS,
+  type DiscoverType,
+} from "@/lib/discover/type-filters";
 import { getFilterOptions } from "@/lib/discover/filter-options";
 
 export interface DiscoverClientProps {
@@ -38,6 +41,14 @@ const FILTER_PARAM_KEYS = [
   "editorial",
   "formato",
   "idioma",
+  // E59 R2 — paramKeys nuevos del rediseño V2. El backend los ignora hasta R4
+  // (inocuo: si no están en la URL no se envían; si están, /api/discover los
+  // descarta hasta que R4 los aplique server-side).
+  "rating",
+  "seasons",
+  "gamemode",
+  "playtime",
+  "estado",
 ] as const;
 
 /**
@@ -60,7 +71,7 @@ function buildYearBuckets(): { value: string; label: string }[] {
   return [...years, ...decades, { value: "classic", label: "classic" }];
 }
 
-function isMediaType(t: string): t is MediaType {
+function isDiscoverType(t: string): t is DiscoverType {
   return (TYPE_ORDER as readonly string[]).includes(t);
 }
 
@@ -73,7 +84,12 @@ export function DiscoverClient({
   const router = useRouter();
   const searchParams = useSearchParams();
 
-  const type: MediaType = isMediaType(currentType) ? currentType : "movie";
+  const type: DiscoverType = isDiscoverType(currentType)
+    ? currentType
+    : "movie";
+  // "all" = agregado (modo Descubrir todos). El fetch real llega en R5; aquí
+  // NO se llama a la API y se muestra un estado "Próximamente". // TODO R5.
+  const isAggregate = type === "all";
 
   // E59 F2/F5e: el fetch vive en el navegador (vía /api/discover) para que los
   // E2E puedan mockearlo con page.route. Se re-pide al cambiar cualquier param
@@ -98,6 +114,14 @@ export function DiscoverClient({
 
   useEffect(() => {
     let cancelled = false;
+    // Modo agregado "all": sin fetch hasta R5. Limpia estado y no carga.
+    if (isAggregate) {
+      setItems([]);
+      setTotalPages(1);
+      setFetchErrorKind(null);
+      setLoading(false);
+      return;
+    }
     setLoading(true);
     const params = new URLSearchParams(filterQuery);
     params.set("type", type);
@@ -122,7 +146,7 @@ export function DiscoverClient({
     return () => {
       cancelled = true;
     };
-  }, [type, currentPage, filterQuery]);
+  }, [type, currentPage, filterQuery, isAggregate]);
 
   // SegmentedControl de tipo: options derivadas de TYPE_ORDER.
   const typeOptions = useMemo(
@@ -136,6 +160,7 @@ export function DiscoverClient({
       TYPE_FILTERS[type].map((trigger) => ({
         key: trigger.key,
         kind: trigger.kind,
+        align: trigger.align,
         label: humanizeKey(trigger.key), // placeholder humanizado (i18n: F6)
         options:
           trigger.key === "year"
@@ -226,8 +251,12 @@ export function DiscoverClient({
         />
       </div>
 
-      {/* Grid — mobile-first: 1 col móvil → 2/3/4/5 en breakpoints. gap DS. */}
-      {loading ? (
+      {/* Modo agregado "all": estado "Próximamente" (fetch real en R5). // TODO R5 */}
+      {isAggregate ? (
+        <div className="text-center py-16">
+          <p className="text-muted">{t("comingSoon")}</p>
+        </div>
+      ) : loading ? (
         <div className="animate-pulse grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 md:gap-4">
           {Array.from({ length: 18 }).map((_, i) => (
             <div key={i} className="flex flex-col gap-2">

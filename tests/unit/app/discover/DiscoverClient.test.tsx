@@ -31,7 +31,7 @@ vi.mock("@/components/ui/Pagination", () => ({
   Pagination: () => <div data-testid="pagination" />,
 }));
 
-// Radix Popover (usado por FilterBar multi/menu) toca APIs que jsdom no trae.
+// Radix Popover (FilterBar v3 = TODO popover, incl. single) toca APIs jsdom no trae.
 beforeAll(() => {
   if (!Element.prototype.hasPointerCapture)
     Element.prototype.hasPointerCapture = () => false;
@@ -106,7 +106,8 @@ describe("DiscoverClient — E59 F5e", () => {
     render(<DiscoverClient currentType="movie" currentPage={1} />);
 
     const thisYear = String(new Date().getFullYear());
-    // year es kind 'single' → chips inline; click directo en el chip del año.
+    // year es kind 'single' → v3 popover; abrir trigger ("Year") y clicar opción.
+    fireEvent.click(screen.getByRole("button", { name: "Year" }));
     fireEvent.click(screen.getByText(thisYear));
 
     const url = mockRouterPush.mock.calls.at(-1)?.[0] as string;
@@ -136,7 +137,7 @@ describe("DiscoverClient — E59 F5e", () => {
     expect(params.get("sort")).toBe("popularity");
   });
 
-  it("seleccionar sort (menu) escribe sort en la URL", async () => {
+  it("seleccionar sort (single popover) escribe sort en la URL", async () => {
     mockFetchOk();
     render(<DiscoverClient currentType="movie" currentPage={1} />);
 
@@ -217,5 +218,27 @@ describe("DiscoverClient — E59 F5e", () => {
     await waitFor(() =>
       expect(screen.getByTestId("media-grid")).toHaveTextContent("3")
     );
+  });
+
+  // ── R2: tipo agregado "all" (modo Descubrir todos, fetch real en R5) ────────
+
+  it("type='all' NO llama a la API y muestra 'Próximamente' (comingSoon)", async () => {
+    const fetchFn = mockFetchOk([{ id: "a" }], 1);
+    current = new URLSearchParams("type=all&page=1");
+    render(<DiscoverClient currentType="all" currentPage={1} />);
+
+    // Estado "Próximamente" (clave comingSoon, mock = identidad).
+    expect(await screen.findByText("comingSoon")).toBeInTheDocument();
+    // Sin grid y sin fetch a /api/discover.
+    expect(screen.queryByTestId("media-grid")).not.toBeInTheDocument();
+    expect(fetchFn).not.toHaveBeenCalled();
+  });
+
+  it("type='all' sigue renderizando la barra de tipos (incluye 'all')", () => {
+    mockFetchOk();
+    current = new URLSearchParams("type=all&page=1");
+    render(<DiscoverClient currentType="all" currentPage={1} />);
+    // El SegmentedControl ofrece el tipo "all" (label i18n = "all").
+    expect(screen.getByText("all")).toBeInTheDocument();
   });
 });

@@ -1,9 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import { useTranslations } from "next-intl"
 import { cn } from "@/lib/utils/index"
-import { FilterChip } from "@/components/ui/FilterChip"
 import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/Popover"
 import type { FilterKind } from "@/lib/discover/type-filters"
 
@@ -17,20 +15,22 @@ export interface FilterGroup {
   key: string
   label: string
   options: FilterOption[]
-  /** Naturaleza del trigger. Default 'single' → backward-compat. */
+  /** Naturaleza del trigger. Default 'single'. */
   kind?: FilterKind
+  /** 'end' → empuja el trigger a la derecha de la fila (ml-auto). Solo sort. */
+  align?: "end"
 }
 
 export interface FilterBarProps {
   groups: FilterGroup[]
   activeFilters: Record<string, string | string[]>
-  /** single/min/menu emiten string; multi/searchable emiten string[]. */
+  /** single emite string; multi/searchable emiten string[]. */
   onChange: (key: string, value: string | string[]) => void
   className?: string
 }
 
-// Estilo compartido por triggers de popover (multi/searchable/min/menu). Reusa
-// el lenguaje visual de FilterChip/segmento sin ser un FilterChip (que toggle).
+// Estilo del trigger-pill con chevron, compartido por todos los kinds (v3 = todo
+// popover). Reusa el lenguaje visual de chip sin ser toggle.
 function popoverTriggerClass(active: boolean) {
   return cn(
     "inline-flex items-center gap-1 px-3 py-1.5 rounded-pill text-xs font-body font-medium whitespace-nowrap cursor-pointer",
@@ -42,90 +42,63 @@ function popoverTriggerClass(active: boolean) {
   )
 }
 
-export function FilterBar({ groups, activeFilters, onChange, className }: FilterBarProps) {
-  const t = useTranslations("filters")
-
+// Chevron inline (sin dependencia de iconos): rota cuando el popover abre.
+function Chevron({ open }: { open: boolean }) {
   return (
-    <div className={cn("flex flex-col gap-4", className)}>
-      {groups.map((group) => {
-        const kind = group.kind ?? "single"
-        const raw = activeFilters[group.key]
-
-        return (
-          <div key={group.key}>
-            <p className="text-xs text-muted uppercase tracking-wide mb-1.5">
-              {group.label}
-            </p>
-            {kind === "single" && (
-              <SingleGroup
-                group={group}
-                value={Array.isArray(raw) ? (raw[0] ?? "all") : (raw ?? "all")}
-                allLabel={t("all")}
-                onChange={onChange}
-              />
-            )}
-            {(kind === "multi" || kind === "searchable") && (
-              <MultiGroup
-                group={group}
-                searchable={kind === "searchable"}
-                value={Array.isArray(raw) ? raw : raw ? [raw] : []}
-                onChange={onChange}
-              />
-            )}
-            {kind === "min" && (
-              <MinGroup
-                group={group}
-                value={Array.isArray(raw) ? (raw[0] ?? "all") : (raw ?? "all")}
-                allLabel={t("all")}
-                onChange={onChange}
-              />
-            )}
-            {kind === "menu" && (
-              <MenuGroup
-                group={group}
-                value={Array.isArray(raw) ? (raw[0] ?? "") : (raw ?? "")}
-                onChange={onChange}
-              />
-            )}
-          </div>
-        )
-      })}
-    </div>
+    <svg
+      aria-hidden="true"
+      viewBox="0 0 12 12"
+      className={cn(
+        "h-3 w-3 transition-transform duration-150",
+        open && "rotate-180"
+      )}
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.5"
+    >
+      <path d="M3 4.5 6 7.5 9 4.5" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
   )
 }
 
-// ── single: fila de chips (FilterChip) con "all" inyectado + toggle-off ──────
-function SingleGroup({
-  group,
-  value,
-  allLabel,
+/**
+ * FilterBar v3 (E59 R2): TODO se renderiza como trigger-pill + Popover. No hay
+ * render inline. kinds: single (single-select con deselección), multi
+ * (checkboxes), searchable (multi + buscador). align:'end' empuja a la derecha.
+ */
+export function FilterBar({
+  groups,
+  activeFilters,
   onChange,
-}: {
-  group: FilterGroup
-  value: string
-  allLabel: string
-  onChange: FilterBarProps["onChange"]
-}) {
-  const allOptions: FilterOption[] = [
-    { value: "all", label: allLabel },
-    ...group.options,
-  ]
+  className,
+}: FilterBarProps) {
   return (
-    <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide flex-nowrap">
-      {allOptions.map((option) => {
-        const isActive = option.value === value
+    <div className={cn("flex flex-wrap items-center gap-2", className)}>
+      {groups.map((group) => {
+        const kind = group.kind ?? "single"
+        const raw = activeFilters[group.key]
+        const alignEnd = group.align === "end" ? "ml-auto" : undefined
+
+        if (kind === "single") {
+          return (
+            <SingleGroup
+              key={group.key}
+              group={group}
+              value={Array.isArray(raw) ? (raw[0] ?? "") : (raw ?? "")}
+              className={alignEnd}
+              onChange={onChange}
+            />
+          )
+        }
+        // multi | searchable
         return (
-          <FilterChip
-            key={option.value}
-            active={isActive}
-            label={option.icon ? `${option.icon} ${option.label}` : option.label}
-            onClick={() => {
-              if (isActive && option.value !== "all") {
-                onChange(group.key, "all")
-              } else {
-                onChange(group.key, option.value)
-              }
-            }}
+          <MultiGroup
+            key={group.key}
+            group={group}
+            searchable={kind === "searchable"}
+            value={Array.isArray(raw) ? raw : raw ? [raw] : []}
+            className={alignEnd}
+            onChange={onChange}
           />
         )
       })}
@@ -133,18 +106,78 @@ function SingleGroup({
   )
 }
 
-// ── multi / searchable: trigger-chip → Popover con checkboxes ────────────────
+// ── single: trigger-pill → Popover single-select, permite DESELECCIONAR ───────
+// El trigger muestra el label de la opción activa, o el nombre del filtro si no
+// hay ninguna. value vacío ("" o ausente) = sin filtro. Clic en la opción ya
+// activa la deselecciona (vuelve a sin filtro, value "all").
+function SingleGroup({
+  group,
+  value,
+  className,
+  onChange,
+}: {
+  group: FilterGroup
+  value: string
+  className?: string
+  onChange: FilterBarProps["onChange"]
+}) {
+  const [open, setOpen] = useState(false)
+  const active = value !== "" && value !== "all"
+  const activeOption = group.options.find((o) => o.value === value)
+  const triggerLabel = active && activeOption ? activeOption.label : group.label
+
+  function select(optValue: string) {
+    // deselección: clic en la opción ya activa → "all" (sin filtro).
+    onChange(group.key, optValue === value ? "all" : optValue)
+    setOpen(false)
+  }
+
+  return (
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>
+        <button
+          type="button"
+          aria-expanded={open}
+          className={cn(popoverTriggerClass(active), className)}
+        >
+          {triggerLabel}
+          <Chevron open={open} />
+        </button>
+      </PopoverTrigger>
+      <PopoverContent className="min-w-40 max-h-64 overflow-y-auto flex flex-col gap-0.5">
+        {group.options.map((option) => (
+          <button
+            key={option.value}
+            type="button"
+            onClick={() => select(option.value)}
+            className={cn(
+              "text-left px-2 py-1.5 rounded-lg text-xs cursor-pointer hover:bg-surface-elevated",
+              option.value === value && "text-accent-positive font-semibold"
+            )}
+          >
+            {option.icon ? `${option.icon} ${option.label}` : option.label}
+          </button>
+        ))}
+      </PopoverContent>
+    </Popover>
+  )
+}
+
+// ── multi / searchable: trigger-pill → Popover con checkboxes ─────────────────
 function MultiGroup({
   group,
   searchable,
   value,
+  className,
   onChange,
 }: {
   group: FilterGroup
   searchable: boolean
   value: string[]
+  className?: string
   onChange: FilterBarProps["onChange"]
 }) {
+  const [open, setOpen] = useState(false)
   const [query, setQuery] = useState("")
   const count = value.length
   const visible = searchable
@@ -161,9 +194,13 @@ function MultiGroup({
   }
 
   return (
-    <Popover>
+    <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
-        <button type="button" className={popoverTriggerClass(count > 0)}>
+        <button
+          type="button"
+          aria-expanded={open}
+          className={cn(popoverTriggerClass(count > 0), className)}
+        >
           {group.label}
           {count > 0 && (
             <span
@@ -173,6 +210,7 @@ function MultiGroup({
               {count}
             </span>
           )}
+          <Chevron open={open} />
         </button>
       </PopoverTrigger>
       <PopoverContent className="min-w-44 max-h-64 overflow-y-auto flex flex-col gap-0.5">
@@ -204,91 +242,6 @@ function MultiGroup({
             </label>
           )
         })}
-      </PopoverContent>
-    </Popover>
-  )
-}
-
-// ── min: trigger → Popover single-select con semántica "X+" ──────────────────
-function MinGroup({
-  group,
-  value,
-  allLabel,
-  onChange,
-}: {
-  group: FilterGroup
-  value: string
-  allLabel: string
-  onChange: FilterBarProps["onChange"]
-}) {
-  const active = value !== "all"
-  const activeOption = group.options.find((o) => o.value === value)
-  const triggerLabel = active && activeOption ? activeOption.label : group.label
-  const allOptions: FilterOption[] = [
-    { value: "all", label: allLabel },
-    ...group.options,
-  ]
-
-  return (
-    <Popover>
-      <PopoverTrigger asChild>
-        <button type="button" className={popoverTriggerClass(active)}>
-          {triggerLabel}
-        </button>
-      </PopoverTrigger>
-      <PopoverContent className="min-w-40 flex flex-col gap-0.5">
-        {allOptions.map((option) => (
-          <button
-            key={option.value}
-            type="button"
-            onClick={() => onChange(group.key, option.value)}
-            className={cn(
-              "text-left px-2 py-1.5 rounded-lg text-xs cursor-pointer hover:bg-surface-elevated",
-              option.value === value && "text-accent-positive font-semibold"
-            )}
-          >
-            {option.label}
-          </button>
-        ))}
-      </PopoverContent>
-    </Popover>
-  )
-}
-
-// ── menu: trigger etiquetado → Popover single-select, SIN "all" ──────────────
-function MenuGroup({
-  group,
-  value,
-  onChange,
-}: {
-  group: FilterGroup
-  value: string
-  onChange: FilterBarProps["onChange"]
-}) {
-  const activeOption = group.options.find((o) => o.value === value)
-  const triggerLabel = activeOption ? activeOption.label : group.label
-
-  return (
-    <Popover>
-      <PopoverTrigger asChild>
-        <button type="button" className={popoverTriggerClass(false)}>
-          {triggerLabel}
-        </button>
-      </PopoverTrigger>
-      <PopoverContent className="min-w-40 flex flex-col gap-0.5">
-        {group.options.map((option) => (
-          <button
-            key={option.value}
-            type="button"
-            onClick={() => onChange(group.key, option.value)}
-            className={cn(
-              "text-left px-2 py-1.5 rounded-lg text-xs cursor-pointer hover:bg-surface-elevated",
-              option.value === value && "text-accent-positive font-semibold"
-            )}
-          >
-            {option.icon ? `${option.icon} ${option.label}` : option.label}
-          </button>
-        ))}
       </PopoverContent>
     </Popover>
   )

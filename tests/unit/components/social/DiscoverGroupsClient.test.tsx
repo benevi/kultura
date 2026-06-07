@@ -5,7 +5,20 @@
 // ============================================================
 
 import { render, screen, fireEvent } from '@testing-library/react'
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
+import { describe, it, expect, vi, beforeAll, beforeEach, afterEach } from 'vitest'
+
+// FilterBar v3 = TODO popover (incl. single como 'scope'). Radix Popover toca
+// APIs del DOM que jsdom no trae; polyfill mínimo para poder abrir el popover.
+beforeAll(() => {
+  if (!Element.prototype.hasPointerCapture)
+    Element.prototype.hasPointerCapture = () => false
+  if (!Element.prototype.setPointerCapture)
+    Element.prototype.setPointerCapture = () => {}
+  if (!Element.prototype.releasePointerCapture)
+    Element.prototype.releasePointerCapture = () => {}
+  if (!Element.prototype.scrollIntoView)
+    Element.prototype.scrollIntoView = () => {}
+})
 
 // ── Mocks ─────────────────────────────────────────────────────────────────────
 
@@ -84,7 +97,9 @@ describe('DiscoverGroupsClient', () => {
     render(<DiscoverGroupsClient />)
     await vi.advanceTimersByTimeAsync(400)
 
-    // Click en el chip scopeMember (mapea a scope=joined).
+    // FilterBar v3: scope (single) es popover. Abrir el trigger y luego clicar
+    // la opción scopeMember (mapea a scope=joined).
+    fireEvent.click(screen.getByRole('button', { name: 'scope' }))
     fireEvent.click(screen.getByText('scopeMember'))
     await vi.advanceTimersByTimeAsync(400)
 
