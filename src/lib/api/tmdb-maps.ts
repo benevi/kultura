@@ -10,6 +10,7 @@
 // ============================================================
 
 import { valoracionThreshold } from "@/lib/api/valoracion";
+import type { MediaItem } from "@/types/media";
 
 export type TmdbMediaType = "movie" | "tv";
 
@@ -212,6 +213,9 @@ export interface TmdbFilters {
   duracion?: string | null;
   idioma?: string | null;
   valoracion?: string | null;
+  // R4c-2: temporadas×tv POST-filtro (no nativo en /discover/tv). No entra en el
+  // builder ni gatea el fetch; se aplica sobre los MediaItem ya normalizados.
+  temporadas?: string | null;
 }
 
 /** Traduce una lista de slugs a IDs vía `table`, descartando los desconocidos. */
@@ -288,4 +292,31 @@ export function buildTmdbDiscoverParams(
   if (minVote !== null) params["vote_average.gte"] = String(minVote);
 
   return params;
+}
+
+// ── POST-filtro temporadas×tv (R4c-2) ───────────────────────────────────────────
+// TMDB /discover/tv no filtra por nº de temporadas → post-filtro sobre
+// metadata.seasons (number_of_seasons). Catálogo R1: 1 / 2-3 / 4-6 / 7plus.
+// Vacío/desconocido → no filtra. Items sin seasons numérico se descartan.
+
+export const TEMPORADAS_BUCKETS: Record<
+  string,
+  { min: number; max: number }
+> = {
+  "1": { min: 1, max: 1 },
+  "2-3": { min: 2, max: 3 },
+  "4-6": { min: 4, max: 6 },
+  "7plus": { min: 7, max: Infinity },
+};
+
+export function filterTVByTemporadas(
+  items: MediaItem[],
+  temporadas: string | null | undefined
+): MediaItem[] {
+  if (!temporadas || !(temporadas in TEMPORADAS_BUCKETS)) return items;
+  const { min, max } = TEMPORADAS_BUCKETS[temporadas];
+  return items.filter((item) => {
+    const s = item.metadata?.seasons;
+    return typeof s === "number" && s >= min && s <= max;
+  });
 }

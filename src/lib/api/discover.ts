@@ -4,7 +4,11 @@
 // ============================================================
 
 import { discoverMovies, discoverTV } from "@/lib/api/tmdb";
-import { buildTmdbDiscoverParams, type TmdbFilters } from "@/lib/api/tmdb-maps";
+import {
+  buildTmdbDiscoverParams,
+  filterTVByTemporadas,
+  type TmdbFilters,
+} from "@/lib/api/tmdb-maps";
 import {
   getPopularAnime,
   getPopularManga,
@@ -22,6 +26,7 @@ import { searchBooks } from "@/lib/api/googlebooks";
 import {
   buildBooksQuery,
   hasBookFilters,
+  filterBooksByEditorial,
   BOOKS_BASE_QUERY,
   type BooksFilters,
 } from "@/lib/api/books-maps";
@@ -97,6 +102,9 @@ export async function fetchDiscoverData(
         items = res.results.map((tv) =>
           normalizeTV(tv as unknown as TmdbTVDetail)
         );
+        // POST-filtro temporadas (R4c-2): bucket sobre metadata.seasons. NO gatea
+        // el fetch nativo (no está en el builder). Vacío → no filtra.
+        items = filterTVByTemporadas(items, filters.temporadas);
         totalPages = res.total_pages;
         break;
       }
@@ -135,6 +143,9 @@ export async function fetchDiscoverData(
           res = await searchBooks(BOOKS_BASE_QUERY, startIndex);
         }
         items = (res.items ?? []).map((b) => normalizeBookGoogle(b));
+        // POST-filtro editorial (R4c-2, degradado): substring de publisher. NO
+        // gatea el fetch (no está en hasBookFilters). Vacío → no filtra.
+        items = filterBooksByEditorial(items, filters.editorial);
         totalPages =
           res.totalItems && res.totalItems > 0
             ? Math.min(Math.ceil(res.totalItems / 20), 50)

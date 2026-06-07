@@ -81,7 +81,9 @@ export function parseDiscoverParams(
     // Puente de naming: el front emite `rating`; el resto del pipeline usa
     // `valoracion`. Único punto de mapeo (contrato R4b).
     valoracion: searchParams.get("rating"),
-    temporadas: searchParams.get("temporadas"),
+    // Puente de naming (R4c-2): el front emite `seasons`; el pipeline usa
+    // `temporadas`. Único punto de mapeo.
+    temporadas: searchParams.get("seasons"),
     volumenes: searchParams.get("volumenes"),
     horas: searchParams.get("horas"),
     editorial: parseMulti(searchParams.get("editorial")),

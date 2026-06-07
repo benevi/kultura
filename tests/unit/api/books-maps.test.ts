@@ -12,7 +12,19 @@ import {
   booksFilter,
   hasBookFilters,
   buildBooksQuery,
+  filterBooksByEditorial,
 } from "@/lib/api/books-maps";
+import type { MediaItem } from "@/types/media";
+
+function book(id: string, publisher: unknown): MediaItem {
+  return {
+    id: `book_${id}`,
+    externalId: id,
+    type: "book",
+    title: id,
+    metadata: { publisher },
+  };
+}
 
 // ── Tablas ───────────────────────────────────────────────────────────────────
 
@@ -154,5 +166,50 @@ describe("buildBooksQuery", () => {
       filter: "free-ebooks",
       langRestrict: "es",
     });
+  });
+
+  it("editorial NO entra en la query nativa (es post-filtro R4c-2)", () => {
+    const { q, params } = buildBooksQuery({ editorial: ["planeta"] });
+    expect(q).toBe(BOOKS_BASE_QUERY);
+    expect(params).toEqual({ orderBy: "relevance" });
+  });
+});
+
+// ── filterBooksByEditorial (POST-filtro R4c-2, substring case-insensitive) ───
+
+describe("filterBooksByEditorial", () => {
+  const items = [
+    book("a", "Editorial Planeta S.A."),
+    book("b", "Norma Editorial"),
+    book("c", "Penguin Random House"),
+    book("d", undefined), // sin publisher → descartado cuando hay editorial
+  ];
+
+  it("filtra por substring case-insensitive del publisher", () => {
+    expect(
+      filterBooksByEditorial(items, ["planeta"]).map((i) => i.externalId)
+    ).toEqual(["a"]);
+  });
+
+  it("multi-select → OR (planeta + norma)", () => {
+    expect(
+      filterBooksByEditorial(items, ["planeta", "norma"])
+        .map((i) => i.externalId)
+        .sort()
+    ).toEqual(["a", "b"]);
+  });
+
+  it("editorial de cómic (image) no mapea a book → no filtra por ella", () => {
+    // "image" no está en BOOKS_PUBLISHER → substrings vacío → no filtra.
+    expect(filterBooksByEditorial(items, ["image"])).toHaveLength(4);
+  });
+
+  it("vacío → no filtra (intactos)", () => {
+    expect(filterBooksByEditorial(items, [])).toHaveLength(4);
+    expect(filterBooksByEditorial(items, undefined)).toHaveLength(4);
+  });
+
+  it("hasBookFilters NO se dispara por editorial (no gatea el fetch)", () => {
+    expect(hasBookFilters({ editorial: ["planeta"] })).toBe(false);
   });
 });

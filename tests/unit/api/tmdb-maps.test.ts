@@ -11,7 +11,19 @@ import {
   tmdbSortBy,
   tmdbYearRange,
   tmdbRuntimeRange,
+  filterTVByTemporadas,
 } from "@/lib/api/tmdb-maps";
+import type { MediaItem } from "@/types/media";
+
+function tv(id: string, seasons: unknown): MediaItem {
+  return {
+    id: `tv_${id}`,
+    externalId: id,
+    type: "tv",
+    title: id,
+    metadata: { seasons },
+  };
+}
 
 // ── sort_by ─────────────────────────────────────────────────────────────────
 
@@ -215,5 +227,51 @@ describe("buildTmdbDiscoverParams — tv", () => {
     expect(
       buildTmdbDiscoverParams("tv", { valoracion: "7" })["vote_average.gte"]
     ).toBe("7");
+  });
+
+  it("temporadas NO entra en el builder nativo (es post-filtro R4c-2)", () => {
+    const p = buildTmdbDiscoverParams("tv", { temporadas: "2-3" });
+    expect(Object.keys(p)).toEqual(["sort_by"]);
+  });
+});
+
+// ── filterTVByTemporadas (POST-filtro R4c-2) ─────────────────────────────────
+
+describe("filterTVByTemporadas", () => {
+  const items = [
+    tv("a", 1),
+    tv("b", 3),
+    tv("c", 5),
+    tv("d", 9),
+    tv("e", undefined), // sin seasons → se descarta cuando hay bucket
+  ];
+
+  it("'1' → exactamente 1 temporada", () => {
+    expect(filterTVByTemporadas(items, "1").map((i) => i.externalId)).toEqual([
+      "a",
+    ]);
+  });
+
+  it("'2-3' → 2..3 temporadas", () => {
+    expect(filterTVByTemporadas(items, "2-3").map((i) => i.externalId)).toEqual([
+      "b",
+    ]);
+  });
+
+  it("'4-6' → 4..6 temporadas", () => {
+    expect(filterTVByTemporadas(items, "4-6").map((i) => i.externalId)).toEqual([
+      "c",
+    ]);
+  });
+
+  it("'7plus' → 7+ temporadas", () => {
+    expect(filterTVByTemporadas(items, "7plus").map((i) => i.externalId)).toEqual(
+      ["d"]
+    );
+  });
+
+  it("vacío/desconocido → no filtra (intactos)", () => {
+    expect(filterTVByTemporadas(items, null)).toHaveLength(5);
+    expect(filterTVByTemporadas(items, "zzz")).toHaveLength(5);
   });
 });

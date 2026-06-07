@@ -9,6 +9,8 @@
 // se IGNORA (degradado). Guard: vacío / desconocido descartado.
 // ============================================================
 
+import type { MediaItem } from "@/types/media";
+
 // ── Géneros (slug canónico Kultura → término subject: BISAC en inglés) ──────────
 // Google Books no tiene IDs de género; se filtra vía operador subject: en q.
 // Multi-género → varios subject: unidos en la query (AND implícito de Books).
@@ -104,6 +106,10 @@ export interface BooksFilters {
   sort?: string | null;
   formato?: string | null;
   idioma?: string | null;
+  // R4c-2: editorial×book POST-filtro (degradado, spec §editorial). Google Books
+  // no filtra por editorial nativamente → substring case-insensitive sobre
+  // metadata.publisher. NO entra en buildBooksQuery ni gatea hasBookFilters.
+  editorial?: string[];
 }
 
 function mapGenreSubjects(slugs: string[] | undefined): string[] {
@@ -162,4 +168,36 @@ export function buildBooksQuery(filters: BooksFilters = {}): BooksQuery {
   if (lang) params.langRestrict = lang;
 
   return { q, params };
+}
+
+// ── POST-filtro editorial×book (R4c-2, degradado) ───────────────────────────────
+// Google Books no filtra por editorial → substring case-insensitive del label de
+// BOOKS_PUBLISHER contra metadata.publisher del item. Multi-select = OR (mantiene
+// si coincide con cualquiera). Vacío/desconocido → no filtra. Items sin publisher
+// resuelto se descartan cuando se pide editorial.
+
+/** Traduce slugs de editorial(book) a los substrings de publisher a comparar. */
+export function mapBookPublisherSubstrings(
+  slugs: string[] | undefined
+): string[] {
+  if (!slugs?.length) return [];
+  return slugs
+    .map((s) => BOOKS_PUBLISHER[s])
+    .filter((v): v is string => Boolean(v));
+}
+
+export function filterBooksByEditorial(
+  items: MediaItem[],
+  editorial: string[] | undefined
+): MediaItem[] {
+  const substrings = mapBookPublisherSubstrings(editorial).map((s) =>
+    s.toLowerCase()
+  );
+  if (substrings.length === 0) return items;
+  return items.filter((item) => {
+    const pub = item.metadata?.publisher;
+    if (typeof pub !== "string" || !pub) return false;
+    const lc = pub.toLowerCase();
+    return substrings.some((sub) => lc.includes(sub));
+  });
 }
