@@ -186,9 +186,14 @@ export function DiscoverClient({
     router.push(`/discover?${params.toString()}`);
   }
 
-  function resetFilters() {
+  // "Limpiar filtros": borra TODOS los params de filtro, mantiene type+page=1.
+  function clearFilters() {
     router.push(`/discover?type=${type}&page=1`);
   }
+
+  // Hay al menos un filtro aplicado en la URL (distingue "0 resultados con
+  // filtros" de "catálogo base vacío"). filterQuery solo recoge FILTER_PARAM_KEYS.
+  const hasActiveFilters = filterQuery !== "";
 
   return (
     <div>
@@ -221,9 +226,9 @@ export function DiscoverClient({
         />
       </div>
 
-      {/* Grid */}
+      {/* Grid — mobile-first: 1 col móvil → 2/3/4/5 en breakpoints. gap DS. */}
       {loading ? (
-        <div className="animate-pulse grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-3 md:gap-4">
+        <div className="animate-pulse grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 md:gap-4">
           {Array.from({ length: 18 }).map((_, i) => (
             <div key={i} className="flex flex-col gap-2">
               <div className="aspect-[2/3] bg-surface-elevated rounded-card" />
@@ -233,18 +238,31 @@ export function DiscoverClient({
           ))}
         </div>
       ) : items.length > 0 ? (
-        <MediaGrid items={items} showType={false} />
+        <MediaGrid
+          items={items}
+          showType={false}
+          className="grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5"
+        />
       ) : (
-        <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-3">
-          <div className="col-span-full text-center py-12">
+        <div className="text-center py-16">
+          {hasActiveFilters ? (
+            <>
+              {/* 0 resultados CON filtros: ofrecer limpiar.
+                  Mensaje y label reusan claves existentes (noResults ya está
+                  redactado en clave de filtros; reset = "Limpiar filtros").
+                  i18n: F6 puede dividirlos en claves dedicadas. */}
+              <p className="text-muted">{t("noResults")}</p>
+              <button
+                onClick={clearFilters}
+                className="text-accent-info text-sm mt-2 hover:text-accent-info/80 transition-colors"
+              >
+                {tF("reset")}
+              </button>
+            </>
+          ) : (
+            // Catálogo base vacío (sin filtros): no hay nada que limpiar.
             <p className="text-muted">{t("noResults")}</p>
-            <button
-              onClick={resetFilters}
-              className="text-accent-info text-sm mt-2 hover:text-accent-info/80 transition-colors"
-            >
-              {tF("reset")}
-            </button>
-          </div>
+          )}
         </div>
       )}
 

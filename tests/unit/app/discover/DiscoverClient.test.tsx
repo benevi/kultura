@@ -164,4 +164,58 @@ describe("DiscoverClient — E59 F5e", () => {
     const badge = await screen.findByTestId("badge-genre");
     expect(badge).toHaveTextContent("2");
   });
+
+  // ── F5f: grid + estado vacío + clear filters ────────────────────────────
+
+  it("0 resultados CON filtros activos → estado vacío con botón limpiar", async () => {
+    mockFetchOk([], 1);
+    current = new URLSearchParams("type=movie&page=1&genre=28");
+    render(<DiscoverClient currentType="movie" currentPage={1} />);
+
+    // No hay grid de resultados.
+    await waitFor(() =>
+      expect(screen.queryByTestId("media-grid")).not.toBeInTheDocument()
+    );
+    // Mensaje de vacío (clave noResults) + botón limpiar (clave reset).
+    expect(screen.getByText("noResults")).toBeInTheDocument();
+    expect(screen.getByText("reset")).toBeInTheDocument();
+  });
+
+  it("0 resultados SIN filtros → estado vacío sin botón limpiar", async () => {
+    mockFetchOk([], 1);
+    current = new URLSearchParams("type=movie&page=1");
+    render(<DiscoverClient currentType="movie" currentPage={1} />);
+
+    await waitFor(() =>
+      expect(screen.queryByTestId("media-grid")).not.toBeInTheDocument()
+    );
+    expect(screen.getByText("noResults")).toBeInTheDocument();
+    // Sin filtros activos no hay nada que limpiar → sin botón.
+    expect(screen.queryByText("reset")).not.toBeInTheDocument();
+  });
+
+  it("click 'Limpiar filtros' deja la URL solo con type+page=1", async () => {
+    mockFetchOk([], 1);
+    current = new URLSearchParams("type=movie&page=3&genre=28&year=2024");
+    render(<DiscoverClient currentType="movie" currentPage={3} />);
+
+    fireEvent.click(await screen.findByText("reset"));
+
+    const url = mockRouterPush.mock.calls.at(-1)?.[0] as string;
+    const params = new URLSearchParams(url.split("?")[1]);
+    expect(params.get("type")).toBe("movie");
+    expect(params.get("page")).toBe("1");
+    expect(params.get("genre")).toBeNull();
+    expect(params.get("year")).toBeNull();
+  });
+
+  it("grid renderiza N cards cuando hay resultados", async () => {
+    mockFetchOk([{ id: "a" }, { id: "b" }, { id: "c" }], 1);
+    current = new URLSearchParams("type=movie&page=1");
+    render(<DiscoverClient currentType="movie" currentPage={1} />);
+
+    await waitFor(() =>
+      expect(screen.getByTestId("media-grid")).toHaveTextContent("3")
+    );
+  });
 });
