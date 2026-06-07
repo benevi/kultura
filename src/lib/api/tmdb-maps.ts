@@ -112,7 +112,7 @@ export const TMDB_TV_STATUS: Record<string, string> = {
 // ── Sort (sort_by) ──────────────────────────────────────────────────────────────
 // El campo de fecha / título difiere entre movie y tv, así que se resuelve por tipo.
 
-const TMDB_SORT_MOVIE: Record<string, string> = {
+export const TMDB_SORT_MOVIE: Record<string, string> = {
   popularity: "popularity.desc",
   rating: "vote_average.desc",
   release_desc: "primary_release_date.desc",
@@ -121,7 +121,7 @@ const TMDB_SORT_MOVIE: Record<string, string> = {
   title_za: "original_title.desc",
 };
 
-const TMDB_SORT_TV: Record<string, string> = {
+export const TMDB_SORT_TV: Record<string, string> = {
   popularity: "popularity.desc",
   rating: "vote_average.desc",
   release_desc: "first_air_date.desc",
@@ -170,6 +170,14 @@ export function tmdbYearRange(
 
 // ── Duración (movie) → with_runtime gte/lte ─────────────────────────────────────
 // Buckets canónicos. tv no usa duración (oculto).
+
+// Buckets canónicos de duración (movie) → reflejan los slugs del switch de
+// tmdbRuntimeRange. Solo value; el rango real lo resuelve tmdbRuntimeRange.
+export const TMDB_DURACION: Record<string, true> = {
+  short: true, // < 90 min
+  medium: true, // 90–150 min
+  long: true, // > 150 min
+};
 
 export interface RuntimeRange {
   gte?: string;

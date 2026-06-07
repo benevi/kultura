@@ -46,7 +46,7 @@ export const RAWG_PLATFORM: Record<string, number> = {
 
 // ── Sort → ordering ─────────────────────────────────────────────────────────────
 
-const RAWG_ORDERING: Record<string, string> = {
+export const RAWG_ORDERING: Record<string, string> = {
   popularity: "-added",
   rating: "-rating",
   release_desc: "-released",

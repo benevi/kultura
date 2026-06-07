@@ -49,6 +49,14 @@ export function booksOrderBy(sort: string | null | undefined): string {
 // ── Formato → filter ────────────────────────────────────────────────────────────
 // free → free-ebooks, ebook → ebooks. physical no tiene filtro nativo → undefined.
 
+// Buckets canónicos de formato (book) → reflejan los slugs del switch de
+// booksFilter. Solo value; el filter nativo lo resuelve booksFilter.
+export const BOOKS_FORMATO: Record<string, true> = {
+  free: true, // free-ebooks
+  ebook: true, // ebooks
+  physical: true, // sin filter nativo
+};
+
 export function booksFilter(
   formato: string | null | undefined
 ): string | undefined {
