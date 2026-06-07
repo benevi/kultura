@@ -137,14 +137,15 @@ describe("DiscoverClient — E59 F5e", () => {
     expect(params.get("sort")).toBe("popularity");
   });
 
-  it("seleccionar sort (single popover) escribe sort en la URL", async () => {
+  it("seleccionar sort (variant 'Ordenar: <valor>') escribe sort en la URL", async () => {
     mockFetchOk();
     render(<DiscoverClient currentType="movie" currentPage={1} />);
 
-    // Trigger del menú sort (label humanizada = "Sort").
-    fireEvent.click(screen.getByRole("button", { name: "Sort" }));
-    // Primera opción del menú de sort.
-    const option = (await screen.findAllByRole("button")).find((b) =>
+    // R3: el trigger de sort se renderiza como "<sortLabel>: <valor>" (mock
+    // i18n: sortLabel = "sort"). Su nombre accesible contiene "sort:".
+    fireEvent.click(screen.getByRole("button", { name: /sort:/i }));
+    // Primera opción del popover de sort (role=radio, text-left).
+    const option = (await screen.findAllByRole("radio")).find((b) =>
       b.className.includes("text-left")
     );
     expect(option).toBeTruthy();
@@ -238,7 +239,36 @@ describe("DiscoverClient — E59 F5e", () => {
     mockFetchOk();
     current = new URLSearchParams("type=all&page=1");
     render(<DiscoverClient currentType="all" currentPage={1} />);
-    // El SegmentedControl ofrece el tipo "all" (label i18n = "all").
+    // La fila TIPO ofrece el tipo "all" (label i18n = "all").
     expect(screen.getByText("all")).toBeInTheDocument();
+  });
+
+  // ── R3: barra de 2 filas etiquetadas (TIPO / FILTROS) ───────────────────────
+
+  it("la barra muestra las etiquetas de fila TIPO y FILTROS", () => {
+    mockFetchOk();
+    current = new URLSearchParams("type=movie&page=1");
+    render(<DiscoverClient currentType="movie" currentPage={1} />);
+    // mock i18n = identidad: "type" (TIPO) y "filters" (FILTROS).
+    expect(screen.getByText("type")).toBeInTheDocument();
+    expect(screen.getByText("filters")).toBeInTheDocument();
+  });
+
+  it("la fila TIPO es un radiogroup con pills (radio) por tipo", () => {
+    mockFetchOk();
+    current = new URLSearchParams("type=movie&page=1");
+    render(<DiscoverClient currentType="movie" currentPage={1} />);
+    const group = screen.getByRole("radiogroup");
+    expect(group).toBeInTheDocument();
+    // La pill activa (movie) tiene aria-checked.
+    const movie = screen.getByRole("radio", { name: "movie" });
+    expect(movie).toHaveAttribute("aria-checked", "true");
+  });
+
+  it("el trigger sort se empuja a la derecha (ml-auto)", () => {
+    mockFetchOk();
+    current = new URLSearchParams("type=movie&page=1");
+    render(<DiscoverClient currentType="movie" currentPage={1} />);
+    expect(screen.getByRole("button", { name: /sort:/i })).toHaveClass("ml-auto");
   });
 });
