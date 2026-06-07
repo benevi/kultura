@@ -20,6 +20,8 @@ game: plataforma, genero, modojuego, anio, valoracion, duracionmedia, estado
 comic: genero, anio, editorial, volumenes, idioma
 (ordenar = aparte, derecha, en todos.)
 
+> Divergencia R2 (datos): comic NO renderiza `genero`. ComicVine no expone género en issues y no hay catálogo en comicvine-maps. Política "nunca trigger que mienta" prevalece sobre el mockup en esta única celda. Reintroducir si aparece fuente de género para cómics.
+
 ## Soporte backend
 NATIVO: valoracion(movie/tv/anime/manga), duracion(movie), estado(tv/anime/manga), plataforma, genero, anio, idioma, demografia, formato-ebook(book).
 POST-FILTER (overfetch, caveat paginación E79): valoracion(game=metacritic), temporadas(tv), volumenes(manga ya/comic), modojuego(game tags), duracionmedia(game playtime), estado(game tag Early Access), editorial(book substring/comic ya), formato-físico(book degradado).
