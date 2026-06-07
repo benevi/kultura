@@ -78,6 +78,11 @@ describe("parseDiscoverParams", () => {
     const p = parseDiscoverParams(new URLSearchParams("rating=8"));
     expect(p.valoracion).toBe("8");
   });
+
+  it("R4c-2: el paramKey 'seasons' se lee en el field temporadas (puente)", () => {
+    const p = parseDiscoverParams(new URLSearchParams("seasons=4-6"));
+    expect(p.temporadas).toBe("4-6");
+  });
 });
 
 // ── GET handler ───────────────────────────────────────────────────────────────
@@ -164,6 +169,15 @@ describe("GET /api/discover", () => {
         duracionmedia: "10-30",
         estado: "early-access",
       })
+    );
+  });
+
+  it("R4c-2: puentea seasons→temporadas aguas abajo", async () => {
+    await GET(req("?type=tv&page=1&seasons=2-3"));
+    expect(fetchDiscoverData).toHaveBeenCalledWith(
+      "tv",
+      1,
+      expect.objectContaining({ temporadas: "2-3" })
     );
   });
 

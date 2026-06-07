@@ -18,6 +18,7 @@ import {
   TMDB_SORT_MOVIE,
   TMDB_SORT_TV,
   TMDB_DURACION,
+  TEMPORADAS_BUCKETS,
 } from "@/lib/api/tmdb-maps";
 import {
   JIKAN_GENRE,
@@ -145,7 +146,8 @@ export function getFilterOptions(
         label: humanizeSlug(value),
       }));
     case "temporadas":
-      return ["1", "2-3", "4-6", "7plus"].map((value) => ({
+      // Catálogo único compartido con el post-filtro temporadas×tv (R4c-2).
+      return Object.keys(TEMPORADAS_BUCKETS).map((value) => ({
         value,
         label: humanizeSlug(value),
       }));

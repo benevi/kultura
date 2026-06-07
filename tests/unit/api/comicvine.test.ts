@@ -167,7 +167,8 @@ describe("resolveVolumePublishers", () => {
     expect(map.get(401)).toBe("Oni Press");
     const calledUrl = fetchMock.mock.calls[0][0] as string;
     expect(calledUrl).toContain("/volumes/");
-    expect(calledUrl).toContain("field_list=id%2Cpublisher");
+    // R4c-2: count_of_issues se pide en el mismo batch que publisher.
+    expect(calledUrl).toContain("field_list=id%2Cpublisher%2Ccount_of_issues");
     expect(calledUrl).toContain("filter=id%3A400%7C401");
   });
 
@@ -404,6 +405,79 @@ describe("getRecentComics", () => {
     // Solo el issue de Marvel sobrevive; Image no coincide con el substring.
     expect(result.items).toHaveLength(1);
     expect(result.items[0].id).toBe("comic_50");
+  });
+
+  it("filters: volumenes post-filter por count_of_issues del volumen (bucket)", async () => {
+    const fetchMock = mockFetchByPath(
+      {
+        status_code: 1,
+        error: "OK",
+        number_of_total_results: 2,
+        results: [
+          { ...ISSUE, id: 60, volume: { id: 600, name: "Mini" } }, // 3 issues
+          { ...ISSUE, id: 61, volume: { id: 601, name: "Maxi" } }, // 30 issues
+        ],
+      },
+      {
+        status_code: 1,
+        error: "OK",
+        results: [
+          {
+            id: 600,
+            publisher: { id: 3, name: "Image Comics" },
+            count_of_issues: 3,
+          },
+          {
+            id: 601,
+            publisher: { id: 3, name: "Image Comics" },
+            count_of_issues: 30,
+          },
+        ],
+      }
+    );
+    vi.stubGlobal("fetch", fetchMock);
+
+    // bucket "6-20" → min 6 issues: descarta el de 3, mantiene el de 30.
+    const result = await getRecentComics(1, { volumenes: "6-20" });
+
+    expect(result.items).toHaveLength(1);
+    expect(result.items[0].id).toBe("comic_61");
+  });
+
+  it("filters: volumenes '20plus' descarta volúmenes con pocos issues", async () => {
+    const fetchMock = mockFetchByPath(
+      {
+        status_code: 1,
+        error: "OK",
+        number_of_total_results: 2,
+        results: [
+          { ...ISSUE, id: 70, volume: { id: 700, name: "A" } },
+          { ...ISSUE, id: 71, volume: { id: 701, name: "B" } },
+        ],
+      },
+      {
+        status_code: 1,
+        error: "OK",
+        results: [
+          {
+            id: 700,
+            publisher: { id: 3, name: "Image Comics" },
+            count_of_issues: 12,
+          },
+          {
+            id: 701,
+            publisher: { id: 3, name: "Image Comics" },
+            count_of_issues: 25,
+          },
+        ],
+      }
+    );
+    vi.stubGlobal("fetch", fetchMock);
+
+    const result = await getRecentComics(1, { volumenes: "20plus" });
+
+    expect(result.items).toHaveLength(1);
+    expect(result.items[0].id).toBe("comic_71");
   });
 
   it("sin filters: params idénticos a hoy (paridad, sort cover_date:desc, sin filter)", async () => {

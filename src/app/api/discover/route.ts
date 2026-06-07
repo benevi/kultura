@@ -27,7 +27,9 @@ export async function GET(request: NextRequest) {
   // Puente de naming `rating`→`valoracion` hecho en parseDiscoverParams.
   // E59 R4c-1 — suite game post-filtros (valoracion×game/estado/modojuego/
   // duracionmedia). Puentes gamemode→modojuego, playtime→duracionmedia hechos en
-  // parseDiscoverParams. Pendiente R4c-2: tv/book/comic (temporadas…).
+  // parseDiscoverParams.
+  // E59 R4c-2 — post-filtros sueltos: temporadas×tv (puente seasons→temporadas),
+  // editorial×book (degradado), volumenes×comic. Todos post-fetch, ninguno gatea.
   const result = await fetchDiscoverData(type, page, {
     genre: parsed.genre,
     year: parsed.year,
@@ -38,6 +40,7 @@ export async function GET(request: NextRequest) {
     duracion: parsed.duracion,
     idioma: parsed.idioma,
     valoracion: parsed.valoracion,
+    temporadas: parsed.temporadas,
     volumenes: parsed.volumenes,
     editorial: parsed.editorial,
     formato: parsed.formato,

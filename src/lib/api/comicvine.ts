@@ -12,6 +12,7 @@ import {
   mapPublisherSubstrings,
   type ComicFilters,
 } from "@/lib/api/comicvine-maps";
+import { volumenesMin } from "@/lib/api/jikan-maps";
 
 /** Respuesta del endpoint de detalle /issue/4000-{id}/ (un único result objeto). */
 interface ComicVineIssueResponse {
@@ -152,12 +153,23 @@ export function isAdultPublisher(name: string): boolean {
  */
 const volumePublisherCache = new Map<number, string>();
 
-/** Respuesta del endpoint /volumes/ (lista de volúmenes con su publisher). */
+/**
+ * Cache module-level volumeId → count_of_issues (R4c-2). Como el publisher, el nº
+ * de issues del volumen es estable; se resuelve en el MISMO batch a /volumes/ (sin
+ * llamadas extra por item). 0 = desconocido/no devuelto.
+ */
+const volumeCountCache = new Map<number, number>();
+
+/** Respuesta del endpoint /volumes/ (lista de volúmenes con publisher + count). */
 interface ComicVineVolumesResponse {
   status_code: number;
   error: string;
   results:
-    | Array<{ id: number; publisher?: { id: number; name: string } | null }>
+    | Array<{
+        id: number;
+        publisher?: { id: number; name: string } | null;
+        count_of_issues?: number;
+      }>
     | null;
 }
 
@@ -228,21 +240,39 @@ export async function resolveVolumePublishers(
   if (missing.length > 0) {
     const resp = await comicVineFetch<ComicVineVolumesResponse>("/volumes/", {
       filter: `id:${missing.join("|")}`,
-      field_list: "id,publisher",
+      // R4c-2: count_of_issues se pide en el MISMO batch (sin fetch extra por item).
+      field_list: "id,publisher,count_of_issues",
       limit: "100",
     });
     for (const vol of resp.results ?? []) {
       volumePublisherCache.set(vol.id, vol.publisher?.name ?? "");
+      volumeCountCache.set(
+        vol.id,
+        typeof vol.count_of_issues === "number" ? vol.count_of_issues : 0
+      );
     }
     // Marca como vacíos los ids que la API no devolvió, para no re-pedirlos.
     for (const id of missing) {
       if (!volumePublisherCache.has(id)) volumePublisherCache.set(id, "");
+      if (!volumeCountCache.has(id)) volumeCountCache.set(id, 0);
     }
   }
 
   const result = new Map<number, string>();
   for (const id of unique) {
     result.set(id, volumePublisherCache.get(id) ?? "");
+  }
+  return result;
+}
+
+/**
+ * Map volumeId → count_of_issues, leyendo de la cache que llena
+ * resolveVolumePublishers. Debe llamarse DESPUÉS de aquél (mismo batch).
+ */
+function getVolumeCounts(volumeIds: number[]): Map<number, number> {
+  const result = new Map<number, number>();
+  for (const id of volumeIds) {
+    result.set(id, volumeCountCache.get(id) ?? 0);
   }
   return result;
 }
@@ -276,11 +306,17 @@ export async function getRecentComics(
     .map((issue) => issue.volume?.id)
     .filter((id): id is number => typeof id === "number");
   const publishers = await resolveVolumePublishers(volumeIds);
+  // count_of_issues sale de la cache que llena resolveVolumePublishers (mismo
+  // batch, sin fetch extra). Solo se usa si se pidió el filtro volumenes.
+  const volumeCounts = getVolumeCounts(volumeIds);
 
   // Editorial = post-filtro sobre el publisher resuelto (substring, case-insensitive).
   const publisherSubstrings = mapPublisherSubstrings(filters.editorial).map((p) =>
     p.toLowerCase()
   );
+
+  // Volumenes×comic (R4c-2): umbral mínimo de count_of_issues según bucket.
+  const minVolumes = volumenesMin(filters.volumenes);
 
   const nonManga = resp.results.filter((issue) => {
     const publisher = issue.volume?.id
@@ -295,6 +331,12 @@ export async function getRecentComics(
     if (publisherSubstrings.length > 0) {
       const lc = publisher.toLowerCase();
       if (!publisherSubstrings.some((sub) => lc.includes(sub))) return false;
+    }
+    // Volumenes (si se pidió): count_of_issues del volumen >= umbral del bucket.
+    // Issues sin count resuelto (0) se descartan cuando hay umbral.
+    if (minVolumes !== null) {
+      const count = issue.volume?.id ? volumeCounts.get(issue.volume.id) ?? 0 : 0;
+      if (count < minVolumes) return false;
     }
     return true;
   });

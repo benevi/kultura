@@ -24,7 +24,7 @@ comic: genero, anio, editorial, volumenes, idioma
 
 ## Soporte backend
 NATIVO: valoracion(movie/tv/anime/manga), duracion(movie), estado(tv/anime/manga), plataforma, genero, anio, idioma, demografia, formato-ebook(book).
-POST-FILTER (overfetch, caveat paginación E79): valoracion(game=metacritic), temporadas(tv), volumenes(manga ya/comic), modojuego(game tags), duracionmedia(game playtime), estado(game tag Early Access), editorial(book substring/comic ya), formato-físico(book degradado).
+POST-FILTER (overfetch, caveat paginación E79): valoracion(game=metacritic), temporadas(tv=metadata.seasons, R4c-2), volumenes(manga=metadata.volumes; comic=count_of_issues del volumen vía el batch /volumes/ existente, R4c-2 — corrige la nota anterior que lo daba por hecho, era falso/QA), modojuego(game tags), duracionmedia(game playtime), estado(game tag Early Access), editorial(book=substring de publisher, R4c-2; comic=substring de publisher resuelto), formato-físico(book degradado).
 OCULTOS (política A): valoracion×book, valoracion×comic, estado×book, estado×comic, temporadas×anime.
 
 ## Opciones + kind (labels ES del mockup; values estables)

@@ -92,6 +92,10 @@ export interface ComicFilters {
   sort?: string | null;
   year?: string | null;
   editorial?: string[];
+  // R4c-2: volumenes×comic POST-filtro. Reusa los buckets VOLUMENES_MIN de manga
+  // sobre count_of_issues del volumen. NO entra en hasComicFilters (no gatea el
+  // fetch); se aplica dentro de getRecentComics tras resolver los volúmenes.
+  volumenes?: string | null;
 }
 
 /**
