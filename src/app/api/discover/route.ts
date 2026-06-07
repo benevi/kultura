@@ -19,6 +19,12 @@ export async function GET(request: NextRequest) {
   // (TMDB: genre/year/platform/sort/status/duracion/idioma; Jikan: +demografia;
   // RAWG: genre/platform/year/sort). Cada builder ignora los vacíos/desconocidos
   // y los campos que no entiende. fetchDiscoverData nunca lanza → 200.
+  //
+  // E59 R4a — además se reenvían los campos que DiscoverFilters ya consume y que
+  // antes se perdían: volumenes (manga/comic post-filtro), editorial (book/comic),
+  // formato (book). Los demás campos del rediseño V2 (valoracion, temporadas,
+  // modojuego, duracionmedia, estado) aún no tienen field en DiscoverFilters ni
+  // builder que los consuma → quedan para R4b/c.
   const result = await fetchDiscoverData(type, page, {
     genre: parsed.genre,
     year: parsed.year,
@@ -28,6 +34,9 @@ export async function GET(request: NextRequest) {
     demografia: parsed.demografia,
     duracion: parsed.duracion,
     idioma: parsed.idioma,
+    volumenes: parsed.volumenes,
+    editorial: parsed.editorial,
+    formato: parsed.formato,
   });
 
   return NextResponse.json(result);

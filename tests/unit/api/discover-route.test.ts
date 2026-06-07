@@ -101,6 +101,43 @@ describe("GET /api/discover", () => {
     expect(fetchDiscoverData).toHaveBeenCalledTimes(1);
   });
 
+  it("R4a: reenvía los campos consumibles que antes se perdían (volumenes/editorial/formato)", async () => {
+    await GET(
+      req("?type=comic&page=1&volumenes=2-5&editorial=planeta,norma&formato=ebook")
+    );
+    expect(fetchDiscoverData).toHaveBeenCalledWith(
+      "comic",
+      1,
+      expect.objectContaining({
+        volumenes: "2-5",
+        editorial: ["planeta", "norma"],
+        formato: "ebook",
+      })
+    );
+  });
+
+  it("R4a: reenvía los 8 keys nativos (genre/year/platform/sort/status/demografia/duracion/idioma)", async () => {
+    await GET(
+      req(
+        "?type=anime&page=1&genre=accion&year=2024&platform=netflix&sort=rating&status=airing&demografia=shonen&duracion=lt90&idioma=ja"
+      )
+    );
+    expect(fetchDiscoverData).toHaveBeenCalledWith(
+      "anime",
+      1,
+      expect.objectContaining({
+        genre: ["accion"],
+        year: "2024",
+        platform: ["netflix"],
+        sort: "rating",
+        status: "airing",
+        demografia: "shonen",
+        duracion: "lt90",
+        idioma: "ja",
+      })
+    );
+  });
+
   it("type inválido → fetch con 'movie'", async () => {
     await GET(req("?type=xyz&page=2"));
     expect(fetchDiscoverData).toHaveBeenCalledWith(

@@ -12,6 +12,8 @@ import { TYPE_ORDER, TYPE_FILTERS } from "@/lib/discover/type-filters";
 import { RAWG_PLATFORM, RAWG_GENRE } from "@/lib/api/rawg-maps";
 import { TMDB_PROVIDER, TMDB_GENRE_MOVIE } from "@/lib/api/tmdb-maps";
 import { JIKAN_GENRE } from "@/lib/api/jikan-maps";
+import { BOOKS_PUBLISHER } from "@/lib/api/books-maps";
+import { COMIC_PUBLISHER } from "@/lib/api/comicvine-maps";
 
 const valuesOf = (type: Parameters<typeof getFilterOptions>[0], key: string) =>
   getFilterOptions(type, key).map((o) => o.value);
@@ -102,6 +104,29 @@ describe("getFilterOptions — dispatch correcto por catálogo", () => {
     expect(new Set(valuesOf("game", "genre"))).toEqual(
       new Set(Object.keys(RAWG_GENRE))
     );
+  });
+
+  it("book.genre usa BOOKS_GENRE (no RAWG/TMDB)", () => {
+    const book = new Set(valuesOf("book", "genre"));
+    expect(book.has("ciencia-ficcion")).toBe(true);
+    expect(book).not.toEqual(new Set(Object.keys(RAWG_GENRE)));
+  });
+
+  // R4a BUG fix: editorial ramifica por tipo. Antes devolvía COMIC_PUBLISHER
+  // para todo → book mostraba Marvel/DC/Image.
+  it("book.editorial usa BOOKS_PUBLISHER — sin editoriales de cómic", () => {
+    const book = new Set(valuesOf("book", "editorial"));
+    expect(book).toEqual(new Set(Object.keys(BOOKS_PUBLISHER)));
+    expect(book.has("planeta")).toBe(true);
+    expect(book.has("marvel")).toBe(false);
+    expect(book.has("dc")).toBe(false);
+    expect(book.has("image")).toBe(false);
+  });
+
+  it("comic.editorial sigue usando COMIC_PUBLISHER", () => {
+    const comic = new Set(valuesOf("comic", "editorial"));
+    expect(comic).toEqual(new Set(Object.keys(COMIC_PUBLISHER)));
+    expect(comic.has("marvel")).toBe(true);
   });
 });
 

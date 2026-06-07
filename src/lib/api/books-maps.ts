@@ -35,6 +35,21 @@ export const BOOKS_GENRE: Record<string, string> = {
 // Término base usado cuando NO hay género (paridad con discover.ts actual).
 export const BOOKS_BASE_QUERY = "popular";
 
+// ── Editorial (book) ─────────────────────────────────────────────────────────────
+// Catálogo de editoriales de LIBRO (spec E59_FILTER_SPEC_V2 §editorial, subconjunto
+// de libro). Editoriales españolas de libro general — NO las de cómic (Marvel/DC/
+// Image viven en COMIC_PUBLISHER). value = slug canónico → substring de publisher.
+// POST-filtro (Google Books no tiene filtro nativo de editorial).
+
+export const BOOKS_PUBLISHER: Record<string, string> = {
+  planeta: "Planeta",
+  norma: "Norma",
+  ivrea: "Ivrea",
+  panini: "Panini",
+  salamandra: "Salamandra",
+  sm: "SM",
+};
+
 // ── Sort → orderBy ──────────────────────────────────────────────────────────────
 // Google Books solo expone relevance | newest. release_desc/recientes → newest;
 // el resto (incluido popularity, rating, A–Z…) → relevance (no hay nativo).
