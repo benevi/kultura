@@ -9,13 +9,53 @@ import type { DiscoverResult } from "@/lib/api/discover";
 import { MediaGrid } from "@/components/media/MediaGrid";
 import { Pagination } from "@/components/ui/Pagination";
 import { FilterBar, type FilterGroup } from "@/components/ui/FilterBar";
-import { SegmentedControl } from "@/components/ui/SegmentedControl";
 import {
   TYPE_ORDER,
   TYPE_FILTERS,
   type DiscoverType,
 } from "@/lib/discover/type-filters";
 import { getFilterOptions } from "@/lib/discover/filter-options";
+import { cn } from "@/lib/utils/index";
+import {
+  type LucideIcon,
+  LayoutGrid,
+  Tag,
+  Calendar,
+  Star,
+  Monitor,
+  Clock,
+  Globe,
+  Activity,
+  Layers,
+  Users,
+  BookCopy,
+  Building2,
+  FileText,
+  Gamepad2,
+  Timer,
+  ArrowUpDown,
+} from "lucide-react";
+
+// Icono lucide por key de filtro (spec V2 §Barra). Mapea claves lógicas de
+// TYPE_FILTERS a su icono pequeño en trigger + cabecera de popover.
+const FILTER_ICONS: Record<string, LucideIcon> = {
+  genre: Tag,
+  year: Calendar,
+  valoracion: Star,
+  platform: Monitor,
+  duracion: Clock,
+  idioma: Globe,
+  status: Activity,
+  estado: Activity,
+  temporadas: Layers,
+  demografia: Users,
+  volumenes: BookCopy,
+  editorial: Building2,
+  formato: FileText,
+  modojuego: Gamepad2,
+  duracionmedia: Timer,
+  sort: ArrowUpDown,
+};
 
 export interface DiscoverClientProps {
   currentType: string;
@@ -155,19 +195,27 @@ export function DiscoverClient({
   );
 
   // FilterBar contextual: un group por trigger visible de TYPE_FILTERS[type].
+  // R3: icono lucide por key, y variante 'sort' para el pill "Ordenar: <valor>".
   const filterGroups: FilterGroup[] = useMemo(
     () =>
-      TYPE_FILTERS[type].map((trigger) => ({
-        key: trigger.key,
-        kind: trigger.kind,
-        align: trigger.align,
-        label: humanizeKey(trigger.key), // placeholder humanizado (i18n: F6)
-        options:
-          trigger.key === "year"
-            ? buildYearBuckets()
-            : getFilterOptions(type, trigger.key),
-      })),
-    [type]
+      TYPE_FILTERS[type].map((trigger) => {
+        const isSort = trigger.key === "sort";
+        return {
+          key: trigger.key,
+          kind: trigger.kind,
+          align: trigger.align,
+          icon: FILTER_ICONS[trigger.key],
+          label: humanizeKey(trigger.key), // placeholder humanizado (i18n: F6)
+          ...(isSort
+            ? { variant: "sort" as const, sortLabel: tF("sort") }
+            : {}),
+          options:
+            trigger.key === "year"
+              ? buildYearBuckets()
+              : getFilterOptions(type, trigger.key),
+        };
+      }),
+    [type, tF]
   );
 
   // activeFilters desde la URL: multi → CSV→string[]; resto → string.
@@ -236,19 +284,61 @@ export function DiscoverClient({
         </div>
       )}
 
-      {/* Type selector + FilterBar — sticky below app header (h-14) */}
-      <div className="sticky top-14 z-30 bg-bg/95 backdrop-blur-sm border-b border-border py-3 px-4 -mx-4 mb-6 flex flex-col gap-4">
-        <SegmentedControl
-          options={typeOptions}
-          value={type}
-          onChange={handleTypeChange}
-          ariaLabel={tF("type")}
-        />
-        <FilterBar
-          groups={filterGroups}
-          activeFilters={activeFilters}
-          onChange={handleFilterChange}
-        />
+      {/* Barra Descubrir (R3): 2 filas etiquetadas (TIPO / FILTROS) + separador.
+          Sticky bajo el header de app (h-14). El grid fluye debajo sin solapar. */}
+      <div className="sticky top-14 z-30 bg-bg/95 backdrop-blur-sm border-b border-border py-3 px-4 -mx-4 mb-6 flex flex-col gap-3">
+        {/* FILA 1 — TIPO: label tenue + pills separadas (radiogroup). */}
+        <div className="flex items-center gap-3">
+          <span className="shrink-0 font-mono uppercase text-xs tracking-widest text-muted">
+            {tF("type")}
+          </span>
+          <div
+            role="radiogroup"
+            aria-label={tF("type")}
+            className="flex items-center gap-2 overflow-x-auto scrollbar-hide flex-nowrap"
+          >
+            {typeOptions.map((option) => {
+              const active = option.value === type;
+              return (
+                <button
+                  key={option.value}
+                  type="button"
+                  role="radio"
+                  aria-checked={active}
+                  onClick={() => handleTypeChange(option.value)}
+                  className={cn(
+                    "inline-flex items-center justify-center px-4 py-2 rounded-full",
+                    "text-sm font-body font-medium whitespace-nowrap cursor-pointer border",
+                    "transition-all duration-150 ease-out active:scale-[0.97]",
+                    "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-positive focus-visible:ring-offset-2 focus-visible:ring-offset-surface-base",
+                    active
+                      ? "bg-accent-positive text-on-accent-positive border-accent-positive"
+                      : "bg-surface-elevated text-text-secondary border-surface-border hover:text-text-primary hover:border-text-tertiary"
+                  )}
+                >
+                  {option.label}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* SEPARADOR sutil entre filas. */}
+        <div className="border-t border-border" />
+
+        {/* FILA 2 — FILTROS: label con icono grid + triggers (sort a la derecha). */}
+        <div className="flex items-center gap-3">
+          <span className="shrink-0 inline-flex items-center gap-1.5 font-mono uppercase text-xs tracking-widest text-muted">
+            <LayoutGrid className="h-3.5 w-3.5" aria-hidden="true" />
+            {tF("filters")}
+          </span>
+          <FilterBar
+            className="flex-1"
+            groups={filterGroups}
+            activeFilters={activeFilters}
+            onChange={handleFilterChange}
+          />
+        </div>
       </div>
 
       {/* Modo agregado "all": estado "Próximamente" (fetch real en R5). // TODO R5 */}

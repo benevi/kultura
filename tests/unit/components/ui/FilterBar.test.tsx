@@ -52,11 +52,9 @@ describe('FilterBar — single (popover v3)', () => {
       <FilterBar groups={[singleGroup]} activeFilters={{ year: '2025' }} onChange={onChange} />
     )
     // Trigger etiquetado con la opción activa; abre y clica esa misma opción.
-    // Abierto hay 2 botones "2025" (trigger + opción); la opción es la última.
-    const triggers = screen.getAllByRole('button', { name: '2025' })
-    fireEvent.click(triggers[0])
-    const all2025 = screen.getAllByRole('button', { name: '2025' })
-    fireEvent.click(all2025[all2025.length - 1])
+    // El trigger es un button; la opción dentro del popover es role=radio.
+    fireEvent.click(screen.getByRole('button', { name: '2025' }))
+    fireEvent.click(screen.getByRole('radio', { name: '2025' }))
     expect(onChange).toHaveBeenLastCalledWith('year', 'all')
   })
 
@@ -64,7 +62,8 @@ describe('FilterBar — single (popover v3)', () => {
     render(
       <FilterBar groups={[singleGroup]} activeFilters={{ year: '2024' }} onChange={vi.fn()} />
     )
-    expect(screen.getByRole('button', { name: '2024' })).toHaveClass('bg-accent-positive')
+    // R3: activo = borde resaltado (border-accent-positive), fondo tenue.
+    expect(screen.getByRole('button', { name: '2024' })).toHaveClass('border-accent-positive')
   })
 
   it('grupo sin kind se comporta como single', () => {
@@ -127,7 +126,8 @@ describe('FilterBar — multi', () => {
         onChange={vi.fn()}
       />
     )
-    expect(screen.getByRole('button', { name: /Género/ })).toHaveClass('bg-accent-positive')
+    // R3: activo = borde resaltado (border-accent-positive).
+    expect(screen.getByRole('button', { name: /Género/ })).toHaveClass('border-accent-positive')
   })
 })
 
@@ -179,5 +179,42 @@ describe('FilterBar — align end (sort a la derecha)', () => {
     const noAlign: FilterGroup = { ...sortGroup, align: undefined }
     render(<FilterBar groups={[noAlign]} activeFilters={{}} onChange={vi.fn()} />)
     expect(screen.getByRole('button', { name: /Ordenar/ })).not.toHaveClass('ml-auto')
+  })
+})
+
+describe('FilterBar — variant sort ("Ordenar: <valor>")', () => {
+  const sortGroup: FilterGroup = {
+    key: 'sort',
+    label: 'Ordenar',
+    kind: 'single',
+    align: 'end',
+    variant: 'sort',
+    sortLabel: 'Ordenar',
+    options: [
+      { value: 'popularity', label: 'Popularidad' },
+      { value: 'recent', label: 'Más recientes' },
+    ],
+  }
+
+  it('muestra el prefijo "Ordenar:" + el valor activo en el trigger', () => {
+    render(
+      <FilterBar groups={[sortGroup]} activeFilters={{ sort: 'recent' }} onChange={vi.fn()} />
+    )
+    const trigger = screen.getByRole('button', { name: /Ordenar:/ })
+    expect(trigger).toHaveTextContent('Ordenar:')
+    expect(trigger).toHaveTextContent('Más recientes')
+  })
+
+  it('sin valor usa la primera opción como predeterminada visible', () => {
+    render(<FilterBar groups={[sortGroup]} activeFilters={{}} onChange={vi.fn()} />)
+    expect(screen.getByRole('button', { name: /Ordenar:/ })).toHaveTextContent('Popularidad')
+  })
+
+  it('seleccionar una opción emite onChange(key, value) (string, no array)', () => {
+    const onChange = vi.fn()
+    render(<FilterBar groups={[sortGroup]} activeFilters={{ sort: 'popularity' }} onChange={onChange} />)
+    fireEvent.click(screen.getByRole('button', { name: /Ordenar:/ }))
+    fireEvent.click(screen.getByRole('radio', { name: 'Más recientes' }))
+    expect(onChange).toHaveBeenCalledWith('sort', 'recent')
   })
 })

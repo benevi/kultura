@@ -101,6 +101,8 @@
     "minScore": "Min. score",
     "reset": "Clear filters",
     "all": "All",
+    "filters": "Filters",
+    "sort": "Sort",
     "scope": "Membership",
     "scopeMember": "I'm a member",
     "scopeNonMember": "Not a member",

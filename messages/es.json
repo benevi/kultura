@@ -101,6 +101,8 @@
     "minScore": "Puntuación mínima",
     "reset": "Quitar filtros",
     "all": "Todos",
+    "filters": "Filtros",
+    "sort": "Ordenar",
     "scope": "Pertenencia",
     "scopeMember": "Ya soy miembro",
     "scopeNonMember": "No soy miembro",
