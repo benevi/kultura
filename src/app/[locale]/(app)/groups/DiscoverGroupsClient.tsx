@@ -96,7 +96,9 @@ export function DiscoverGroupsClient() {
 
   const activeFilters: Record<string, string> = { scope, size }
 
-  function handleFilterChange(key: string, value: string) {
+  function handleFilterChange(key: string, raw: string | string[]) {
+    // Solo grupos single (string) en esta pantalla.
+    const value = Array.isArray(raw) ? (raw[0] ?? '') : raw
     if (key === 'scope') setScope(value as Scope)
     else if (key === 'size') setSize(value as Size)
   }

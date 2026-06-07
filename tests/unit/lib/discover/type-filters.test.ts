@@ -68,6 +68,13 @@ describe("TYPE_FILTERS — cobertura por tipo (spec §4)", () => {
       expect(keys[keys.length - 1]).toBe("sort");
     }
   });
+
+  it("sort es de kind 'menu' en todos los tipos (F5c)", () => {
+    for (const type of ALL_TYPES) {
+      const sort = TYPE_FILTERS[type].find((t) => t.key === "sort");
+      expect(sort?.kind).toBe("menu");
+    }
+  });
 });
 
 describe("TYPE_FILTERS — triggers ocultos NO aparecen (matriz §2)", () => {

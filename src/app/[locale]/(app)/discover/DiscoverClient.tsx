@@ -104,7 +104,9 @@ export function DiscoverClient({
     year: yearFilter,
   };
 
-  function handleFilterChange(key: string, value: string) {
+  function handleFilterChange(key: string, raw: string | string[]) {
+    // Solo grupos single (string) en esta pantalla.
+    const value = Array.isArray(raw) ? (raw[0] ?? "all") : raw;
     if (key === "type") {
       const newType = value === "all" ? "movie" : value;
       setYearFilter("all");
