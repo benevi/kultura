@@ -7,6 +7,7 @@
 // ============================================================
 
 import type { MediaItem } from "@/types/media";
+import { valoracionThreshold } from "@/lib/api/valoracion";
 
 export type JikanMediaType = "anime" | "manga";
 
@@ -131,6 +132,7 @@ export interface JikanFilters {
   year?: string | null;
   status?: string | null;
   sort?: string | null;
+  valoracion?: string | null;
   // Solo manga, POST-filtro (no es param nativo de Jikan): se aplica sobre los
   // items ya normalizados, no entra en buildJikanDiscoverParams. anime → oculto.
   volumenes?: string | null;
@@ -179,6 +181,10 @@ export function buildJikanDiscoverParams(
     params.end_date = range.end_date;
   }
 
+  // Valoracion (nativo anime+manga): umbral mínimo → min_score (escala 0–10).
+  const minScore = valoracionThreshold(filters.valoracion);
+  if (minScore !== null) params.min_score = String(minScore);
+
   return params;
 }
 
@@ -193,6 +199,7 @@ export function hasJikanFilters(filters: JikanFilters = {}): boolean {
       filters.demografia ||
       filters.year ||
       filters.status ||
+      filters.valoracion ||
       (filters.sort && filters.sort !== "popularity")
   );
 }

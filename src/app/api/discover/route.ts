@@ -22,9 +22,10 @@ export async function GET(request: NextRequest) {
   //
   // E59 R4a — además se reenvían los campos que DiscoverFilters ya consume y que
   // antes se perdían: volumenes (manga/comic post-filtro), editorial (book/comic),
-  // formato (book). Los demás campos del rediseño V2 (valoracion, temporadas,
-  // modojuego, duracionmedia, estado) aún no tienen field en DiscoverFilters ni
-  // builder que los consuma → quedan para R4b/c.
+  // formato (book).
+  // E59 R4b — valoracion NATIVO (movie/tv vote_average.gte, anime/manga min_score).
+  // Puente de naming `rating`→`valoracion` hecho en parseDiscoverParams.
+  // Pendientes R4c: temporadas, modojuego, duracionmedia, estado, valoracion×game.
   const result = await fetchDiscoverData(type, page, {
     genre: parsed.genre,
     year: parsed.year,
@@ -34,6 +35,7 @@ export async function GET(request: NextRequest) {
     demografia: parsed.demografia,
     duracion: parsed.duracion,
     idioma: parsed.idioma,
+    valoracion: parsed.valoracion,
     volumenes: parsed.volumenes,
     editorial: parsed.editorial,
     formato: parsed.formato,

@@ -33,6 +33,9 @@ export interface DiscoverParams {
   status: string | null;
   demografia: string | null;
   duracion: string | null;
+  // valoracion: el front emite paramKey `rating`; el route hace el puente
+  // rating→valoracion (R4b). Aquí guardamos ya el slug canónico ES.
+  valoracion: string | null;
   temporadas: string | null;
   volumenes: string | null;
   horas: string | null;
@@ -70,6 +73,9 @@ export function parseDiscoverParams(
     status: searchParams.get("status"),
     demografia: searchParams.get("demografia"),
     duracion: searchParams.get("duracion"),
+    // Puente de naming: el front emite `rating`; el resto del pipeline usa
+    // `valoracion`. Único punto de mapeo (contrato R4b).
+    valoracion: searchParams.get("rating"),
     temporadas: searchParams.get("temporadas"),
     volumenes: searchParams.get("volumenes"),
     horas: searchParams.get("horas"),

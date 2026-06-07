@@ -164,6 +164,22 @@ describe("buildJikanDiscoverParams", () => {
     expect(p.order_by).toBe("score");
     expect(p.sort).toBe("desc");
   });
+
+  it("valoracion → min_score con el umbral (R4b nativo, anime y manga)", () => {
+    expect(buildJikanDiscoverParams("anime", { valoracion: "8" }).min_score).toBe(
+      "8"
+    );
+    expect(buildJikanDiscoverParams("manga", { valoracion: "7" }).min_score).toBe(
+      "7"
+    );
+  });
+
+  it("valoracion desconocida/vacía se ignora (sin min_score)", () => {
+    expect(
+      buildJikanDiscoverParams("anime", { valoracion: "99" }).min_score
+    ).toBeUndefined();
+    expect(buildJikanDiscoverParams("anime").min_score).toBeUndefined();
+  });
 });
 
 // ── hasJikanFilters ────────────────────────────────────────────────────────────
@@ -181,6 +197,7 @@ describe("hasJikanFilters", () => {
     expect(hasJikanFilters({ year: "2020s" })).toBe(true);
     expect(hasJikanFilters({ status: "airing" })).toBe(true);
     expect(hasJikanFilters({ sort: "rating" })).toBe(true);
+    expect(hasJikanFilters({ valoracion: "8" })).toBe(true);
   });
 
   it("volumenes NO dispara endpoint de búsqueda (es post-filtro)", () => {

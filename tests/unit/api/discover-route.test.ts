@@ -73,6 +73,11 @@ describe("parseDiscoverParams", () => {
     expect(p.sort).toBe("rating");
     expect(p.status).toBe("airing");
   });
+
+  it("R4b: el paramKey 'rating' se lee en el field valoracion (puente de naming)", () => {
+    const p = parseDiscoverParams(new URLSearchParams("rating=8"));
+    expect(p.valoracion).toBe("8");
+  });
 });
 
 // ── GET handler ───────────────────────────────────────────────────────────────
@@ -135,6 +140,15 @@ describe("GET /api/discover", () => {
         duracion: "lt90",
         idioma: "ja",
       })
+    );
+  });
+
+  it("R4b: mapea el paramKey 'rating' del front → valoracion aguas abajo", async () => {
+    await GET(req("?type=movie&page=1&rating=8"));
+    expect(fetchDiscoverData).toHaveBeenCalledWith(
+      "movie",
+      1,
+      expect.objectContaining({ valoracion: "8" })
     );
   });
 
