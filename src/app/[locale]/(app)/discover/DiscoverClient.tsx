@@ -3,25 +3,65 @@
 import { useState, useMemo, useEffect } from "react";
 import { useTranslations } from "next-intl";
 import { useRouter } from "@/i18n/navigation";
+import { useSearchParams } from "next/navigation";
 import type { MediaItem } from "@/types/media";
+import type { MediaType } from "@/types/media";
 import type { DiscoverResult } from "@/lib/api/discover";
 import { MediaGrid } from "@/components/media/MediaGrid";
 import { Pagination } from "@/components/ui/Pagination";
 import { FilterBar, type FilterGroup } from "@/components/ui/FilterBar";
+import { SegmentedControl } from "@/components/ui/SegmentedControl";
+import { TYPE_ORDER, TYPE_FILTERS } from "@/lib/discover/type-filters";
+import { getFilterOptions } from "@/lib/discover/filter-options";
 
 export interface DiscoverClientProps {
   currentType: string;
   currentPage: number;
 }
 
-function matchesYear(item: MediaItem, yearFilter: string): boolean {
-  if (yearFilter === "all") return true;
-  if (!item.year) return false;
-  const y = item.year;
-  if (yearFilter === "2010s") return y >= 2010 && y <= 2019;
-  if (yearFilter === "2000s") return y >= 2000 && y <= 2009;
-  if (yearFilter === "classic") return y < 2000;
-  return y === parseInt(yearFilter, 10);
+// Triggers cuyo valor en URL es CSV (string[]). El resto es single (string).
+const MULTI_KINDS = new Set(["multi", "searchable"]);
+
+// Todos los query params de filtro que /api/discover parsea (discover-params.ts).
+// `type`/`page` se manejan aparte; el resto se reenvía tal cual al fetch.
+const FILTER_PARAM_KEYS = [
+  "genre",
+  "year",
+  "platform",
+  "sort",
+  "status",
+  "demografia",
+  "duracion",
+  "temporadas",
+  "volumenes",
+  "horas",
+  "editorial",
+  "formato",
+  "idioma",
+] as const;
+
+/**
+ * Buckets de año relativos al año actual: [actual, -1, -2] como YYYY +
+ * 2 décadas previas como YYYYs + 'classic'. value en el formato que parsea
+ * discover-params (YYYY / YYYYs / classic). label = placeholder (i18n: F6).
+ */
+function buildYearBuckets(): { value: string; label: string }[] {
+  const now = new Date().getFullYear();
+  const years = [now, now - 1, now - 2].map((y) => ({
+    value: String(y),
+    label: String(y),
+  }));
+  // Década que contiene el año más antiguo listado, y la anterior.
+  const baseDecade = Math.floor((now - 2) / 10) * 10;
+  const decades = [baseDecade - 10, baseDecade - 20].map((d) => ({
+    value: `${d}s`,
+    label: `${d}s`,
+  }));
+  return [...years, ...decades, { value: "classic", label: "classic" }];
+}
+
+function isMediaType(t: string): t is MediaType {
+  return (TYPE_ORDER as readonly string[]).includes(t);
 }
 
 export function DiscoverClient({
@@ -31,24 +71,37 @@ export function DiscoverClient({
   const t = useTranslations("discover");
   const tF = useTranslations("filters");
   const router = useRouter();
+  const searchParams = useSearchParams();
 
-  const [yearFilter, setYearFilter] = useState("all");
+  const type: MediaType = isMediaType(currentType) ? currentType : "movie";
 
-  // E59 F2: el fetch vive en el navegador (vía /api/discover) para que los E2E
-  // puedan mockearlo con page.route. Se re-pide al cambiar type o page.
+  // E59 F2/F5e: el fetch vive en el navegador (vía /api/discover) para que los
+  // E2E puedan mockearlo con page.route. Se re-pide al cambiar cualquier param
+  // de la URL (type, page, o cualquier filtro). Sin filtrado client-side: la
+  // URL es la única fuente de verdad y el servidor aplica todos los filtros.
   const [items, setItems] = useState<MediaItem[]>([]);
   const [totalPages, setTotalPages] = useState(1);
   const [fetchErrorKind, setFetchErrorKind] =
     useState<DiscoverResult["fetchErrorKind"]>(null);
   const [loading, setLoading] = useState(true);
 
+  // Cadena estable de los params de filtro presentes en la URL → dependencia
+  // del fetch (re-pide cuando cambia cualquier filtro, no solo type/page).
+  const filterQuery = useMemo(() => {
+    const out = new URLSearchParams();
+    for (const key of FILTER_PARAM_KEYS) {
+      const v = searchParams.get(key);
+      if (v) out.set(key, v);
+    }
+    return out.toString();
+  }, [searchParams]);
+
   useEffect(() => {
     let cancelled = false;
     setLoading(true);
-    const params = new URLSearchParams({
-      type: currentType,
-      page: String(currentPage),
-    });
+    const params = new URLSearchParams(filterQuery);
+    params.set("type", type);
+    params.set("page", String(currentPage));
     fetch(`/api/discover?${params.toString()}`)
       .then((res) => res.json() as Promise<DiscoverResult>)
       .then((data) => {
@@ -69,61 +122,73 @@ export function DiscoverClient({
     return () => {
       cancelled = true;
     };
-  }, [currentType, currentPage]);
+  }, [type, currentPage, filterQuery]);
 
-  const filterGroups: FilterGroup[] = [
-    {
-      key: "type",
-      label: tF("type"),
-      options: [
-        { value: "movie", label: tF("movie") },
-        { value: "tv", label: tF("tv") },
-        { value: "anime", label: tF("anime") },
-        { value: "book", label: tF("book") },
-        { value: "manga", label: tF("manga") },
-        { value: "game", label: tF("game") },
-        { value: "comic", label: tF("comic") },
-      ],
-    },
-    {
-      key: "year",
-      label: tF("year"),
-      options: [
-        { value: "2025", label: "2025" },
-        { value: "2024", label: "2024" },
-        { value: "2023", label: "2023" },
-        { value: "2010s", label: "2010s" },
-        { value: "2000s", label: "2000s" },
-        { value: "classic", label: tF("classic") },
-      ],
-    },
-  ];
+  // SegmentedControl de tipo: options derivadas de TYPE_ORDER.
+  const typeOptions = useMemo(
+    () => TYPE_ORDER.map((tp) => ({ value: tp, label: tF(tp) })),
+    [tF]
+  );
 
-  const activeFilters: Record<string, string> = {
-    type: currentType,
-    year: yearFilter,
-  };
+  // FilterBar contextual: un group por trigger visible de TYPE_FILTERS[type].
+  const filterGroups: FilterGroup[] = useMemo(
+    () =>
+      TYPE_FILTERS[type].map((trigger) => ({
+        key: trigger.key,
+        kind: trigger.kind,
+        label: humanizeKey(trigger.key), // placeholder humanizado (i18n: F6)
+        options:
+          trigger.key === "year"
+            ? buildYearBuckets()
+            : getFilterOptions(type, trigger.key),
+      })),
+    [type]
+  );
 
-  function handleFilterChange(key: string, raw: string | string[]) {
-    // Solo grupos single (string) en esta pantalla.
-    const value = Array.isArray(raw) ? (raw[0] ?? "all") : raw;
-    if (key === "type") {
-      const newType = value === "all" ? "movie" : value;
-      setYearFilter("all");
-      router.push(`/discover?type=${newType}&page=1`);
-    } else if (key === "year") {
-      setYearFilter(value);
+  // activeFilters desde la URL: multi → CSV→string[]; resto → string.
+  const activeFilters: Record<string, string | string[]> = useMemo(() => {
+    const out: Record<string, string | string[]> = {};
+    for (const trigger of TYPE_FILTERS[type]) {
+      const raw = searchParams.get(trigger.key);
+      if (MULTI_KINDS.has(trigger.kind)) {
+        out[trigger.key] = raw
+          ? raw
+              .split(",")
+              .map((v) => v.trim())
+              .filter(Boolean)
+          : [];
+      } else {
+        out[trigger.key] = raw ?? "all";
+      }
     }
+    return out;
+  }, [type, searchParams]);
+
+  // Cambio de tipo: navega a ?type=X&page=1 y BORRA el resto de filtros
+  // (los triggers difieren por tipo, sus valores no son portables).
+  function handleTypeChange(newType: string) {
+    router.push(`/discover?type=${newType}&page=1`);
+  }
+
+  // Cambio de un filtro: muta los searchParams actuales, siempre page=1.
+  function handleFilterChange(key: string, value: string | string[]) {
+    const params = new URLSearchParams(searchParams.toString());
+    if (value === "all") {
+      params.delete(key);
+    } else if (Array.isArray(value)) {
+      if (value.length === 0) params.delete(key);
+      else params.set(key, value.join(","));
+    } else {
+      params.set(key, value);
+    }
+    params.set("type", type);
+    params.set("page", "1");
+    router.push(`/discover?${params.toString()}`);
   }
 
   function resetFilters() {
-    setYearFilter("all");
+    router.push(`/discover?type=${type}&page=1`);
   }
-
-  const filteredItems = useMemo(
-    () => items.filter((item) => matchesYear(item, yearFilter)),
-    [items, yearFilter]
-  );
 
   return (
     <div>
@@ -141,8 +206,14 @@ export function DiscoverClient({
         </div>
       )}
 
-      {/* FilterBar — sticky below app header (h-14) */}
-      <div className="sticky top-14 z-30 bg-bg/95 backdrop-blur-sm border-b border-border py-3 px-4 -mx-4 mb-6">
+      {/* Type selector + FilterBar — sticky below app header (h-14) */}
+      <div className="sticky top-14 z-30 bg-bg/95 backdrop-blur-sm border-b border-border py-3 px-4 -mx-4 mb-6 flex flex-col gap-4">
+        <SegmentedControl
+          options={typeOptions}
+          value={type}
+          onChange={handleTypeChange}
+          ariaLabel={tF("type")}
+        />
         <FilterBar
           groups={filterGroups}
           activeFilters={activeFilters}
@@ -161,8 +232,8 @@ export function DiscoverClient({
             </div>
           ))}
         </div>
-      ) : filteredItems.length > 0 ? (
-        <MediaGrid items={filteredItems} showType={false} />
+      ) : items.length > 0 ? (
+        <MediaGrid items={items} showType={false} />
       ) : (
         <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-3">
           <div className="col-span-full text-center py-12">
@@ -183,12 +254,23 @@ export function DiscoverClient({
           <Pagination
             currentPage={currentPage}
             totalPages={totalPages}
-            onPageChange={(page) =>
-              router.push(`/discover?type=${currentType}&page=${page}`)
-            }
+            onPageChange={(page) => {
+              const params = new URLSearchParams(searchParams.toString());
+              params.set("type", type);
+              params.set("page", String(page));
+              router.push(`/discover?${params.toString()}`);
+            }}
           />
         </div>
       )}
     </div>
   );
+}
+
+/**
+ * Placeholder legible para la etiqueta de un trigger a partir de su key.
+ * i18n: F6 sustituye esto por traducciones reales por (type,key).
+ */
+function humanizeKey(key: string): string {
+  return key.charAt(0).toUpperCase() + key.slice(1);
 }
