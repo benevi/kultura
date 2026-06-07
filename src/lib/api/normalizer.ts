@@ -301,6 +301,11 @@ export function normalizeGame(raw: RawgGame): MediaItem {
     ratingSource: rating !== undefined ? "RAWG" : undefined,
     metadata: {
       metacritic: raw.metacritic ?? undefined,
+      // playtime (horas medias) y tags (slugs) → usados por los post-filtros
+      // game de E59 R4c-1 (duracionmedia, modojuego, estado). Omitidos si RAWG
+      // no los reporta.
+      playtime: typeof raw.playtime === "number" ? raw.playtime : undefined,
+      tags: raw.tags?.map((t) => t.slug) ?? [],
       platforms,
       developers,
       publishers,

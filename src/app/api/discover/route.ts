@@ -25,7 +25,9 @@ export async function GET(request: NextRequest) {
   // formato (book).
   // E59 R4b — valoracion NATIVO (movie/tv vote_average.gte, anime/manga min_score).
   // Puente de naming `rating`→`valoracion` hecho en parseDiscoverParams.
-  // Pendientes R4c: temporadas, modojuego, duracionmedia, estado, valoracion×game.
+  // E59 R4c-1 — suite game post-filtros (valoracion×game/estado/modojuego/
+  // duracionmedia). Puentes gamemode→modojuego, playtime→duracionmedia hechos en
+  // parseDiscoverParams. Pendiente R4c-2: tv/book/comic (temporadas…).
   const result = await fetchDiscoverData(type, page, {
     genre: parsed.genre,
     year: parsed.year,
@@ -39,6 +41,9 @@ export async function GET(request: NextRequest) {
     volumenes: parsed.volumenes,
     editorial: parsed.editorial,
     formato: parsed.formato,
+    modojuego: parsed.modojuego,
+    duracionmedia: parsed.duracionmedia,
+    estado: parsed.estado,
   });
 
   return NextResponse.json(result);

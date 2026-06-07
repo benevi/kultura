@@ -42,6 +42,11 @@ export interface DiscoverParams {
   editorial: string[];
   formato: string | null;
   idioma: string | null;
+  // R4c-1 (game post-filtros). Puentes de naming en parseDiscoverParams:
+  // gamemode→modojuego, playtime→duracionmedia, estado→estado (igual).
+  modojuego: string[];
+  duracionmedia: string | null;
+  estado: string | null;
 }
 
 function parseMulti(value: string | null): string[] {
@@ -82,5 +87,10 @@ export function parseDiscoverParams(
     editorial: parseMulti(searchParams.get("editorial")),
     formato: searchParams.get("formato"),
     idioma: searchParams.get("idioma"),
+    // Puentes de naming game (R4c-1): el front emite gamemode/playtime; el
+    // pipeline usa modojuego/duracionmedia. estado mantiene el mismo nombre.
+    modojuego: parseMulti(searchParams.get("gamemode")),
+    duracionmedia: searchParams.get("playtime"),
+    estado: searchParams.get("estado"),
   };
 }
