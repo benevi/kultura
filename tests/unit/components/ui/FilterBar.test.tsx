@@ -1,17 +1,11 @@
 import { render, screen, fireEvent } from '@testing-library/react'
 import { describe, it, expect, vi, beforeAll } from 'vitest'
 
-vi.mock('next-intl', () => ({
-  useTranslations: () => (key: string) => {
-    const map: Record<string, string> = { all: 'Todos' }
-    return map[key] ?? key
-  },
-}))
-
 import { FilterBar } from '@/components/ui/FilterBar'
 import type { FilterGroup } from '@/components/ui/FilterBar'
 
 // Radix Popover usa estas APIs del DOM al abrir el portal; jsdom no las trae.
+// v3 = TODO popover (incl. single), así que el polyfill cubre todos los kinds.
 beforeAll(() => {
   if (!Element.prototype.hasPointerCapture)
     Element.prototype.hasPointerCapture = () => false
@@ -23,79 +17,68 @@ beforeAll(() => {
     Element.prototype.scrollIntoView = () => {}
 })
 
-const groups: FilterGroup[] = [
-  {
-    key: 'type',
-    label: 'Tipo',
+// ── single: trigger-pill → Popover single-select (v3, ya NO chips inline) ─────
+describe('FilterBar — single (popover v3)', () => {
+  const singleGroup: FilterGroup = {
+    key: 'year',
+    label: 'Año',
+    kind: 'single',
     options: [
-      { value: 'movie', label: 'Películas' },
-      { value: 'tv', label: 'Series' },
+      { value: '2025', label: '2025' },
+      { value: '2024', label: '2024' },
     ],
-  },
-  {
-    key: 'status',
-    label: 'Estado',
-    options: [
-      { value: 'completed', label: 'Completado' },
-      { value: 'pending', label: 'Pendiente' },
-    ],
-  },
-]
+  }
 
-describe('FilterBar — single (default, backward-compat)', () => {
-  it('renderiza chips para cada opción más el chip Todos implícito', () => {
-    render(<FilterBar groups={groups} activeFilters={{}} onChange={vi.fn()} />)
-    // type group: Todos + 2 options
-    expect(screen.getAllByText('Todos')).toHaveLength(2)
-    expect(screen.getByText('Películas')).toBeInTheDocument()
-    expect(screen.getByText('Series')).toBeInTheDocument()
-    // status group
-    expect(screen.getByText('Completado')).toBeInTheDocument()
-    expect(screen.getByText('Pendiente')).toBeInTheDocument()
+  it('cerrado: trigger muestra el label del grupo si no hay valor activo', () => {
+    render(<FilterBar groups={[singleGroup]} activeFilters={{}} onChange={vi.fn()} />)
+    // Las opciones NO se renderizan hasta abrir el popover.
+    expect(screen.getByRole('button', { name: /Año/ })).toBeInTheDocument()
+    expect(screen.queryByText('2025')).not.toBeInTheDocument()
   })
 
-  it('chip Todos activo por defecto cuando activeFilters está vacío', () => {
-    render(<FilterBar groups={[groups[0]]} activeFilters={{}} onChange={vi.fn()} />)
-    const todosBtn = screen.getByText('Todos')
-    expect(todosBtn).toHaveClass('bg-accent-positive')
-  })
-
-  it('click en chip inactivo llama onChange con key y value correctos', () => {
+  it('abrir popover, seleccionar opción → onChange(key, value)', () => {
     const onChange = vi.fn()
     render(
-      <FilterBar groups={[groups[0]]} activeFilters={{ type: 'all' }} onChange={onChange} />
+      <FilterBar groups={[singleGroup]} activeFilters={{ year: 'all' }} onChange={onChange} />
     )
-    fireEvent.click(screen.getByText('Películas'))
-    expect(onChange).toHaveBeenCalledWith('type', 'movie')
+    fireEvent.click(screen.getByRole('button', { name: /Año/ }))
+    fireEvent.click(screen.getByText('2025'))
+    expect(onChange).toHaveBeenCalledWith('year', '2025')
   })
 
-  it('click en chip activo llama onChange con all (deselecciona)', () => {
+  it('seleccionar la opción ya activa la DESELECCIONA (emite "all")', () => {
     const onChange = vi.fn()
     render(
-      <FilterBar groups={[groups[0]]} activeFilters={{ type: 'movie' }} onChange={onChange} />
+      <FilterBar groups={[singleGroup]} activeFilters={{ year: '2025' }} onChange={onChange} />
     )
-    fireEvent.click(screen.getByText('Películas'))
-    expect(onChange).toHaveBeenCalledWith('type', 'all')
+    // Trigger etiquetado con la opción activa; abre y clica esa misma opción.
+    // Abierto hay 2 botones "2025" (trigger + opción); la opción es la última.
+    const triggers = screen.getAllByRole('button', { name: '2025' })
+    fireEvent.click(triggers[0])
+    const all2025 = screen.getAllByRole('button', { name: '2025' })
+    fireEvent.click(all2025[all2025.length - 1])
+    expect(onChange).toHaveBeenLastCalledWith('year', 'all')
   })
 
-  it('chip activo usa estilo activo (bg-accent-positive)', () => {
-    render(<FilterBar groups={[groups[0]]} activeFilters={{ type: 'tv' }} onChange={vi.fn()} />)
-    expect(screen.getByText('Series')).toHaveClass('bg-accent-positive')
-  })
-
-  it('chip inactivo usa estilo inactivo (bg-surface-elevated)', () => {
-    render(<FilterBar groups={[groups[0]]} activeFilters={{ type: 'tv' }} onChange={vi.fn()} />)
-    expect(screen.getByText('Películas')).toHaveClass('bg-surface-elevated')
-  })
-
-  it('grupo sin kind se comporta como single (backward-compat)', () => {
-    const onChange = vi.fn()
+  it('con valor activo, trigger muestra el label de la opción y estilo activo', () => {
     render(
-      <FilterBar groups={[groups[0]]} activeFilters={{ type: 'all' }} onChange={onChange} />
+      <FilterBar groups={[singleGroup]} activeFilters={{ year: '2024' }} onChange={vi.fn()} />
     )
-    // Sin kind: emite string, inyecta "all", toggle-off.
-    fireEvent.click(screen.getByText('Películas'))
-    expect(onChange).toHaveBeenCalledWith('type', 'movie')
+    expect(screen.getByRole('button', { name: '2024' })).toHaveClass('bg-accent-positive')
+  })
+
+  it('grupo sin kind se comporta como single', () => {
+    const onChange = vi.fn()
+    const noKind: FilterGroup = { ...singleGroup, kind: undefined }
+    render(<FilterBar groups={[noKind]} activeFilters={{ year: 'all' }} onChange={onChange} />)
+    fireEvent.click(screen.getByRole('button', { name: /Año/ }))
+    fireEvent.click(screen.getByText('2024'))
+    expect(onChange).toHaveBeenCalledWith('year', '2024')
+  })
+
+  it('trigger expone aria-expanded (a11y)', () => {
+    render(<FilterBar groups={[singleGroup]} activeFilters={{}} onChange={vi.fn()} />)
+    expect(screen.getByRole('button', { name: /Año/ })).toHaveAttribute('aria-expanded')
   })
 })
 
@@ -120,7 +103,6 @@ describe('FilterBar — multi', () => {
     fireEvent.click(screen.getByText('Acción'))
     expect(onChange).toHaveBeenLastCalledWith('genre', ['action'])
 
-    // Simula el padre actualizando value tras el primer cambio.
     rerender(
       <FilterBar groups={[multiGroup]} activeFilters={{ genre: ['action'] }} onChange={onChange} />
     )
@@ -176,67 +158,26 @@ describe('FilterBar — searchable', () => {
   })
 })
 
-describe('FilterBar — min', () => {
-  const minGroup: FilterGroup = {
-    key: 'score',
-    label: 'Nota',
-    kind: 'min',
-    options: [
-      { value: '6', label: '6+' },
-      { value: '7', label: '7+' },
-      { value: '8', label: '8+' },
-    ],
-  }
-
-  it('seleccionar opción → onChange(key, value)', () => {
-    const onChange = vi.fn()
-    render(
-      <FilterBar groups={[minGroup]} activeFilters={{ score: 'all' }} onChange={onChange} />
-    )
-    fireEvent.click(screen.getByRole('button', { name: 'Nota' }))
-    fireEvent.click(screen.getByText('7+'))
-    expect(onChange).toHaveBeenCalledWith('score', '7')
-  })
-
-  it('con value activo, trigger muestra label "X+" y estilo activo', () => {
-    // Popover cerrado: "7+" solo aparece en el trigger.
-    render(
-      <FilterBar groups={[minGroup]} activeFilters={{ score: '7' }} onChange={vi.fn()} />
-    )
-    expect(screen.getByRole('button', { name: '7+' })).toHaveClass('bg-accent-positive')
-  })
-})
-
-describe('FilterBar — menu', () => {
-  const menuGroup: FilterGroup = {
+describe('FilterBar — align end (sort a la derecha)', () => {
+  const sortGroup: FilterGroup = {
     key: 'sort',
     label: 'Ordenar',
-    kind: 'menu',
+    kind: 'single',
+    align: 'end',
     options: [
-      { value: 'popular', label: 'Popularidad' },
-      { value: 'recent', label: 'Más reciente' },
+      { value: 'popularity', label: 'Popularidad' },
+      { value: 'recent', label: 'Más recientes' },
     ],
   }
 
-  it('trigger muestra la opción activa; seleccionar → onChange', () => {
-    const onChange = vi.fn()
-    render(
-      <FilterBar groups={[menuGroup]} activeFilters={{ sort: 'popular' }} onChange={onChange} />
-    )
-    // Trigger etiquetado con la opción activa (no "all").
-    const trigger = screen.getByRole('button', { name: 'Popularidad' })
-    expect(trigger).toBeInTheDocument()
-
-    fireEvent.click(trigger)
-    const content = screen.getByText('Más reciente')
-    fireEvent.click(content)
-    expect(onChange).toHaveBeenCalledWith('sort', 'recent')
+  it('trigger con align:end lleva ml-auto', () => {
+    render(<FilterBar groups={[sortGroup]} activeFilters={{}} onChange={vi.fn()} />)
+    expect(screen.getByRole('button', { name: /Ordenar/ })).toHaveClass('ml-auto')
   })
 
-  it('sin valor activo, trigger muestra el label del grupo y NO inyecta "all"', () => {
-    render(<FilterBar groups={[menuGroup]} activeFilters={{}} onChange={vi.fn()} />)
-    expect(screen.getByRole('button', { name: 'Ordenar' })).toBeInTheDocument()
-    fireEvent.click(screen.getByRole('button', { name: 'Ordenar' }))
-    expect(screen.queryByText('Todos')).not.toBeInTheDocument()
+  it('sin align no lleva ml-auto', () => {
+    const noAlign: FilterGroup = { ...sortGroup, align: undefined }
+    render(<FilterBar groups={[noAlign]} activeFilters={{}} onChange={vi.fn()} />)
+    expect(screen.getByRole('button', { name: /Ordenar/ })).not.toHaveClass('ml-auto')
   })
 })

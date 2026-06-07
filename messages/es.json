@@ -117,6 +117,7 @@
     "previous": "Anterior",
     "next": "Siguiente",
     "noResults": "No hay resultados para estos filtros",
+    "comingSoon": "Próximamente",
     "fetchError": {
       "generic": "No se pudo cargar el contenido. Inténtalo de nuevo más tarde.",
       "rateLimit": "El servicio ha alcanzado su límite. Inténtalo de nuevo en unos segundos."
