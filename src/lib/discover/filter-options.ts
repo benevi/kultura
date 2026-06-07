@@ -8,7 +8,7 @@
 // NO inyecta la opción "all": eso lo hace FilterBar para kind single/min.
 // ============================================================
 
-import type { MediaType } from "@/types/media";
+import type { DiscoverType } from "@/lib/discover/type-filters";
 import {
   TMDB_GENRE_MOVIE,
   TMDB_GENRE_TV,
@@ -57,7 +57,9 @@ function optionsFromKeys(record: Record<string, unknown>): FilterOption[] {
 }
 
 // Catálogo de género por tipo (cada API tiene el suyo).
-const GENRE_BY_TYPE: Partial<Record<MediaType, Record<string, unknown>>> = {
+// "all" (agregado, R5): usa el catálogo de movie como proxy hasta el merge real.
+const GENRE_BY_TYPE: Partial<Record<DiscoverType, Record<string, unknown>>> = {
+  all: TMDB_GENRE_MOVIE,
   movie: TMDB_GENRE_MOVIE,
   tv: TMDB_GENRE_TV,
   anime: JIKAN_GENRE,
@@ -68,7 +70,9 @@ const GENRE_BY_TYPE: Partial<Record<MediaType, Record<string, unknown>>> = {
 };
 
 // Catálogo de sort por tipo (claves canónicas de cada SORT table).
-const SORT_BY_TYPE: Record<MediaType, Record<string, unknown>> = {
+// "all": claves canónicas base (popularity/rating/recent/title_az) vía TMDB_SORT_MOVIE.
+const SORT_BY_TYPE: Record<DiscoverType, Record<string, unknown>> = {
+  all: TMDB_SORT_MOVIE,
   movie: TMDB_SORT_MOVIE,
   tv: TMDB_SORT_TV,
   anime: JIKAN_SORT,
@@ -79,7 +83,7 @@ const SORT_BY_TYPE: Record<MediaType, Record<string, unknown>> = {
 };
 
 // Catálogo de status por tipo/subtipo.
-const STATUS_BY_TYPE: Partial<Record<MediaType, Record<string, unknown>>> = {
+const STATUS_BY_TYPE: Partial<Record<DiscoverType, Record<string, unknown>>> = {
   anime: ANIME_STATUS,
   manga: MANGA_STATUS,
   tv: TMDB_TV_STATUS,
@@ -89,7 +93,10 @@ const STATUS_BY_TYPE: Partial<Record<MediaType, Record<string, unknown>>> = {
  * Opciones seleccionables para un trigger (type,key). Devuelve [] si el trigger
  * no aplica a ese tipo (no debería ocurrir si key viene de TYPE_FILTERS[type]).
  */
-export function getFilterOptions(type: MediaType, key: string): FilterOption[] {
+export function getFilterOptions(
+  type: DiscoverType,
+  key: string
+): FilterOption[] {
   switch (key) {
     case "genre": {
       const record = GENRE_BY_TYPE[type];
