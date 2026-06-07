@@ -46,8 +46,10 @@ export const TYPE_ORDER: readonly MediaType[] = [
  *  - 'multi'      : lista de opciones combinables (genre, platform, editorial).
  *  - 'min'        : umbral mínimo numérico (reservado; sin uso en F5a).
  *  - 'searchable' : multi con buscador (reservado; sin uso en F5a).
+ *  - 'menu'       : single-select etiquetado en Popover, sin opción "all"
+ *                   inyectada (sort, donde "all" no tiene sentido).
  */
-export type FilterKind = "single" | "multi" | "min" | "searchable";
+export type FilterKind = "single" | "multi" | "min" | "searchable" | "menu";
 
 /** Un trigger visible: su clave UI, su naturaleza y el query param real. */
 export interface FilterTrigger {
@@ -68,7 +70,7 @@ export interface FilterTrigger {
 const GENRE: FilterTrigger = { key: "genre", kind: "multi", paramKey: "genre" };
 const YEAR: FilterTrigger = { key: "year", kind: "single", paramKey: "year" };
 const PLATFORM: FilterTrigger = { key: "platform", kind: "multi", paramKey: "platform" };
-const SORT: FilterTrigger = { key: "sort", kind: "single", paramKey: "sort" };
+const SORT: FilterTrigger = { key: "sort", kind: "menu", paramKey: "sort" };
 const STATUS: FilterTrigger = { key: "status", kind: "single", paramKey: "status" };
 const DEMOGRAFIA: FilterTrigger = { key: "demografia", kind: "single", paramKey: "demografia" };
 const DURACION: FilterTrigger = { key: "duracion", kind: "single", paramKey: "duracion" };
