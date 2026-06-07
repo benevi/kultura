@@ -118,6 +118,37 @@ export function getFilterOptions(type: MediaType, key: string): FilterOption[] {
       return optionsFromKeys(VOLUMENES_MIN);
     case "editorial":
       return optionsFromKeys(COMIC_PUBLISHER);
+    // E59 R1 — keys nuevas del rediseño V2. Values estables; label vía
+    // humanizeSlug (placeholder). // i18n: R6 sustituye por traducción real.
+    case "valoracion":
+      return ["9", "8", "7", "6"].map((value) => ({
+        value,
+        label: humanizeSlug(value),
+      }));
+    case "temporadas":
+      return ["1", "2-3", "4-6", "7plus"].map((value) => ({
+        value,
+        label: humanizeSlug(value),
+      }));
+    case "modojuego":
+      return ["single", "multi", "coop", "online"].map((value) => ({
+        value,
+        label: humanizeSlug(value),
+      }));
+    case "duracionmedia":
+      return ["lt10", "10-30", "30-60", "60plus"].map((value) => ({
+        value,
+        label: humanizeSlug(value),
+      }));
+    case "estado":
+      // estado(game) post-filter: tags Early Access / Lanzado. No toca
+      // "status" tv/anime/manga (key distinta arriba).
+      return type === "game"
+        ? ["early-access", "released"].map((value) => ({
+            value,
+            label: humanizeSlug(value),
+          }))
+        : [];
     default:
       return [];
   }
