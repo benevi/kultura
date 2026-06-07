@@ -28,6 +28,7 @@ import {
 import { getPopularGames, discoverGames } from "@/lib/api/rawg";
 import {
   buildRawgDiscoverParams,
+  applyGamePostFilters,
   type RawgFilters,
 } from "@/lib/api/rawg-maps";
 import { getRecentComics } from "@/lib/api/comicvine";
@@ -167,6 +168,11 @@ export async function fetchDiscoverData(
           ? await discoverGames(page, buildRawgDiscoverParams(filters))
           : await getPopularGames(page);
         items = res.results.map((g) => normalizeGame(g));
+        // POST-filtros game (R4c-1): valoracion(metacritic)/estado/modojuego/
+        // duracionmedia. NO gatean el fetch (no están en hasRawgFilters); se
+        // aplican tras normalizar, mismo patrón que volumenes×manga. Caveat
+        // paginación E79 conocido (overfetch sin recomputar totalPages).
+        items = applyGamePostFilters(items, filters);
         totalPages = Math.ceil(res.count / 20);
         break;
       }

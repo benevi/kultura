@@ -152,6 +152,21 @@ describe("GET /api/discover", () => {
     );
   });
 
+  it("R4c-1: puentea gamemode→modojuego, playtime→duracionmedia, estado→estado", async () => {
+    await GET(
+      req("?type=game&page=1&gamemode=single,coop&playtime=10-30&estado=early-access")
+    );
+    expect(fetchDiscoverData).toHaveBeenCalledWith(
+      "game",
+      1,
+      expect.objectContaining({
+        modojuego: ["single", "coop"],
+        duracionmedia: "10-30",
+        estado: "early-access",
+      })
+    );
+  });
+
   it("type inválido → fetch con 'movie'", async () => {
     await GET(req("?type=xyz&page=2"));
     expect(fetchDiscoverData).toHaveBeenCalledWith(

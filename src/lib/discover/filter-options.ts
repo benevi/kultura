@@ -27,7 +27,13 @@ import {
   MANGA_STATUS,
   VOLUMENES_MIN,
 } from "@/lib/api/jikan-maps";
-import { RAWG_GENRE, RAWG_PLATFORM, RAWG_ORDERING } from "@/lib/api/rawg-maps";
+import {
+  RAWG_GENRE,
+  RAWG_PLATFORM,
+  RAWG_ORDERING,
+  RAWG_MODOJUEGO_TAGS,
+  DURACIONMEDIA_BUCKETS,
+} from "@/lib/api/rawg-maps";
 import { BOOKS_GENRE, BOOKS_FORMATO, BOOKS_PUBLISHER } from "@/lib/api/books-maps";
 import { COMIC_PUBLISHER } from "@/lib/api/comicvine-maps";
 import { VALORACION_SLUGS } from "@/lib/api/valoracion";
@@ -144,12 +150,14 @@ export function getFilterOptions(
         label: humanizeSlug(value),
       }));
     case "modojuego":
-      return ["single", "multi", "coop", "online"].map((value) => ({
+      // Catálogo único compartido con el post-filtro game (R4c-1).
+      return Object.keys(RAWG_MODOJUEGO_TAGS).map((value) => ({
         value,
         label: humanizeSlug(value),
       }));
     case "duracionmedia":
-      return ["lt10", "10-30", "30-60", "60plus"].map((value) => ({
+      // Catálogo único compartido con el post-filtro game (R4c-1).
+      return Object.keys(DURACIONMEDIA_BUCKETS).map((value) => ({
         value,
         label: humanizeSlug(value),
       }));

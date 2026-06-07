@@ -173,7 +173,12 @@ const RAWG_FIXTURE: RawgGame = {
   released: "2013-09-17",
   rating: 4.47,
   metacritic: 97,
+  playtime: 74,
   genres: [{ name: "Action" }, { name: "Adventure" }],
+  tags: [
+    { name: "Singleplayer", slug: "singleplayer" },
+    { name: "Multiplayer", slug: "multiplayer" },
+  ],
   description_raw: "An action-adventure game set in the fictional state of San Andreas.",
   platforms: [{ platform: { name: "PlayStation 4" } }, { platform: { name: "Xbox One" } }],
   developers: [{ name: "Rockstar North" }],
@@ -525,6 +530,11 @@ describe("normalizeGame", () => {
     expect(result.metadata?.platforms).toContain("PlayStation 4");
     expect(result.metadata?.developers).toContain("Rockstar North");
     expect(result.metadata?.publishers).toContain("Rockstar Games");
+  });
+
+  it("metadata incluye playtime (horas) y tags (slugs) — R4c-1", () => {
+    expect(result.metadata?.playtime).toBe(74);
+    expect(result.metadata?.tags).toEqual(["singleplayer", "multiplayer"]);
   });
 });
 
