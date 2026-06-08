@@ -52,6 +52,9 @@ import {
 import type { MediaItem } from "@/types/media";
 import type { TmdbMovieDetail, TmdbTVDetail } from "@/lib/api/tmdb";
 import type { JikanAnime, JikanManga } from "@/lib/api/jikan";
+// Agregado modo "all" (R5a). Import diferido en uso (case "all") — el ciclo
+// discover↔aggregate se resuelve en runtime porque ninguno se invoca en módulo.
+import { fetchAggregateData } from "@/lib/api/aggregate";
 
 export type FetchErrorKind = "rate-limit" | "generic" | null;
 
@@ -186,6 +189,13 @@ export async function fetchDiscoverData(
         items = applyGamePostFilters(items, filters);
         totalPages = Math.ceil(res.count / 20);
         break;
+      }
+      case "all": {
+        // Agregado E59 R5a: fan-out a las 7 familias + merge/orden por sortKey.
+        // Delega en aggregate.ts (reusa este mismo pipeline por familia). Devuelve
+        // ya su propio DiscoverResult → retorno directo (no pasa por el merge de
+        // items/totalPages locales de esta función).
+        return fetchAggregateData(page, filters);
       }
       default: {
         const res = await discoverMovies(

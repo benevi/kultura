@@ -49,9 +49,11 @@ describe("TYPE_ORDER", () => {
     expect(new Set(TYPE_ORDER).size).toBe(TYPE_ORDER.length);
   });
 
-  it("cubre VALID_TYPES del parser + el agregado 'all'", () => {
-    const withoutAll = TYPE_ORDER.filter((t) => t !== "all");
-    expect([...withoutAll].sort()).toEqual([...VALID_TYPES].sort());
+  it("cubre VALID_TYPES del parser, incl. el agregado 'all' (R5a)", () => {
+    // R5a: 'all' ahora es un type válido del parser (el route lo acepta y lo
+    // delega al agregado), así que TYPE_ORDER y VALID_TYPES cubren el mismo set.
+    expect([...TYPE_ORDER].sort()).toEqual([...VALID_TYPES].sort());
+    expect(VALID_TYPES).toContain("all");
     expect(TYPE_ORDER).toContain("all");
   });
 });
