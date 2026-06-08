@@ -3,7 +3,19 @@
 import Image from "next/image";
 import { Link } from "@/i18n/navigation";
 import { cn } from "@/lib/utils/index";
-import type { MediaItem } from "@/types/media";
+import type { MediaItem, MediaType } from "@/types/media";
+
+// Label del tipo para el badge (modo "all", E59 R5b). Placeholder i18n: las
+// claves reales por tipo entran en R6 (mismo plan que humanizeKey en la barra).
+const TYPE_LABEL: Record<MediaType, string> = {
+  movie: "Película",
+  tv: "Serie",
+  anime: "Anime",
+  book: "Libro",
+  manga: "Manga",
+  game: "Videojuego",
+  comic: "Cómic",
+};
 
 export interface MediaCardProps {
   item: MediaItem;
@@ -45,10 +57,11 @@ export function MediaCard({
             </div>
           )}
 
-          {/* Type badge overlay */}
+          {/* Type badge overlay (modo "all", R5b): esquina superior, acento
+              verde del DS. Label localizado vía TYPE_LABEL (placeholder, R6). */}
           {showType && (
-            <div className="absolute top-2 left-2 text-[10px] bg-bg/80 backdrop-blur-sm px-1.5 py-0.5 rounded text-white leading-none">
-              {item.type}
+            <div className="absolute top-2 left-2 text-[10px] font-medium bg-accent-positive/90 backdrop-blur-sm px-1.5 py-0.5 rounded text-on-accent-positive leading-none">
+              {TYPE_LABEL[item.type] ?? item.type}
             </div>
           )}
 

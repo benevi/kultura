@@ -23,8 +23,10 @@ vi.mock("next/navigation", () => ({
 
 // MediaGrid / Pagination: stubs ligeros para aislar la lógica de DiscoverClient.
 vi.mock("@/components/media/MediaGrid", () => ({
-  MediaGrid: ({ items }: { items: unknown[] }) => (
-    <div data-testid="media-grid">{items.length}</div>
+  MediaGrid: ({ items, showType }: { items: unknown[]; showType?: boolean }) => (
+    <div data-testid="media-grid" data-show-type={String(Boolean(showType))}>
+      {items.length}
+    </div>
   ),
 }));
 vi.mock("@/components/ui/Pagination", () => ({
@@ -221,18 +223,48 @@ describe("DiscoverClient — E59 F5e", () => {
     );
   });
 
-  // ── R2: tipo agregado "all" (modo Descubrir todos, fetch real en R5) ────────
+  // ── R5b: tipo agregado "all" (modo Descubrir todos, grid mezclada) ──────────
 
-  it("type='all' NO llama a la API y muestra 'Próximamente' (comingSoon)", async () => {
-    const fetchFn = mockFetchOk([{ id: "a" }], 1);
+  it("type='all' llama a /api/discover?type=all y pinta la grid (sin 'Próximamente')", async () => {
+    const fetchFn = mockFetchOk([{ id: "a" }, { id: "b" }], 1);
     current = new URLSearchParams("type=all&page=1");
     render(<DiscoverClient currentType="all" currentPage={1} />);
 
-    // Estado "Próximamente" (clave comingSoon, mock = identidad).
-    expect(await screen.findByText("comingSoon")).toBeInTheDocument();
-    // Sin grid y sin fetch a /api/discover.
-    expect(screen.queryByTestId("media-grid")).not.toBeInTheDocument();
-    expect(fetchFn).not.toHaveBeenCalled();
+    // Ahora SÍ hace fetch a /api/discover con type=all.
+    await waitFor(() => expect(fetchFn).toHaveBeenCalled());
+    expect(lastFetchParams(fetchFn).get("type")).toBe("all");
+
+    // Grid normal con los items del merge; sin estado "Próximamente".
+    await waitFor(() =>
+      expect(screen.getByTestId("media-grid")).toHaveTextContent("2")
+    );
+    expect(screen.queryByText("comingSoon")).not.toBeInTheDocument();
+  });
+
+  it("type='all' pasa showType=true a la grid (badge de tipo por card)", async () => {
+    mockFetchOk([{ id: "a" }], 1);
+    current = new URLSearchParams("type=all&page=1");
+    render(<DiscoverClient currentType="all" currentPage={1} />);
+
+    await waitFor(() =>
+      expect(screen.getByTestId("media-grid")).toHaveAttribute(
+        "data-show-type",
+        "true"
+      )
+    );
+  });
+
+  it("type concreto (movie) pasa showType=false (badge redundante)", async () => {
+    mockFetchOk([{ id: "a" }], 1);
+    current = new URLSearchParams("type=movie&page=1");
+    render(<DiscoverClient currentType="movie" currentPage={1} />);
+
+    await waitFor(() =>
+      expect(screen.getByTestId("media-grid")).toHaveAttribute(
+        "data-show-type",
+        "false"
+      )
+    );
   });
 
   it("type='all' sigue renderizando la barra de tipos (incluye 'all')", () => {
