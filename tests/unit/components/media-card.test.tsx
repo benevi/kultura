@@ -63,13 +63,14 @@ describe("MediaCard", () => {
     expect(img).toBeInTheDocument();
   });
 
-  it("muestra badge de tipo cuando showType=true", () => {
+  it("muestra badge de tipo (label localizado) cuando showType=true", () => {
+    // R5b: el badge usa TYPE_LABEL (movie → "Película"), no el slug crudo.
     render(<MediaCard item={baseItem} showType />);
-    expect(screen.getByText("movie")).toBeInTheDocument();
+    expect(screen.getByText("Película")).toBeInTheDocument();
   });
 
   it("no muestra badge de tipo por defecto", () => {
     render(<MediaCard item={baseItem} />);
-    expect(screen.queryByText("movie")).not.toBeInTheDocument();
+    expect(screen.queryByText("Película")).not.toBeInTheDocument();
   });
 });

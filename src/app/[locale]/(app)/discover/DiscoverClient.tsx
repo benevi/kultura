@@ -127,8 +127,9 @@ export function DiscoverClient({
   const type: DiscoverType = isDiscoverType(currentType)
     ? currentType
     : "movie";
-  // "all" = agregado (modo Descubrir todos). El fetch real llega en R5; aquí
-  // NO se llama a la API y se muestra un estado "Próximamente". // TODO R5.
+  // "all" = agregado (modo Descubrir todos). R5a: backend responde el merge de
+  // las 7 familias por /api/discover?type=all. R5b: se pinta como grid normal,
+  // con badge de tipo por card (showType) porque aquí los tipos sí se mezclan.
   const isAggregate = type === "all";
 
   // E59 F2/F5e: el fetch vive en el navegador (vía /api/discover) para que los
@@ -154,14 +155,8 @@ export function DiscoverClient({
 
   useEffect(() => {
     let cancelled = false;
-    // Modo agregado "all": sin fetch hasta R5. Limpia estado y no carga.
-    if (isAggregate) {
-      setItems([]);
-      setTotalPages(1);
-      setFetchErrorKind(null);
-      setLoading(false);
-      return;
-    }
+    // R5b: "all" ya hace fetch normal a /api/discover?type=all (el backend R5a
+    // devuelve el merge de las 7 familias). Sin short-circuit.
     setLoading(true);
     const params = new URLSearchParams(filterQuery);
     params.set("type", type);
@@ -186,7 +181,7 @@ export function DiscoverClient({
     return () => {
       cancelled = true;
     };
-  }, [type, currentPage, filterQuery, isAggregate]);
+  }, [type, currentPage, filterQuery]);
 
   // SegmentedControl de tipo: options derivadas de TYPE_ORDER.
   const typeOptions = useMemo(
@@ -341,12 +336,7 @@ export function DiscoverClient({
         </div>
       </div>
 
-      {/* Modo agregado "all": estado "Próximamente" (fetch real en R5). // TODO R5 */}
-      {isAggregate ? (
-        <div className="text-center py-16">
-          <p className="text-muted">{t("comingSoon")}</p>
-        </div>
-      ) : loading ? (
+      {loading ? (
         <div className="animate-pulse grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 md:gap-4">
           {Array.from({ length: 18 }).map((_, i) => (
             <div key={i} className="flex flex-col gap-2">
@@ -359,7 +349,7 @@ export function DiscoverClient({
       ) : items.length > 0 ? (
         <MediaGrid
           items={items}
-          showType={false}
+          showType={isAggregate}
           className="grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5"
         />
       ) : (
