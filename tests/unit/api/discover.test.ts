@@ -54,8 +54,10 @@ vi.mock("@/lib/api/normalizer", () => ({
 }));
 
 import { fetchDiscoverData } from "@/lib/api/discover";
+import { discoverMovies, discoverTV } from "@/lib/api/tmdb";
 import { getPopularAnime, getPopularManga } from "@/lib/api/jikan";
 import { searchBooks } from "@/lib/api/googlebooks";
+import { getPopularGames, discoverGames } from "@/lib/api/rawg";
 import { getRecentComics } from "@/lib/api/comicvine";
 
 // ── JikanError ────────────────────────────────────────────────────────────────
@@ -370,6 +372,113 @@ describe("fetchDiscoverData — catch tipado (E29)", () => {
     );
 
     const result = await fetchDiscoverData("manga", 1);
+    expect(result.fetchErrorKind).toBe("rate-limit");
+  });
+});
+
+// ── E59 R5a: modo "all" (delegación a aggregate, end-to-end) ──────────────────
+// Aquí NO mockeamos aggregate.ts: ejercitamos el agregado REAL contra los mocks
+// de las APIs externas, validando el cableado case "all" → fetchAggregateData →
+// fan-out por familia. Sustituye al curl manual contra /api/discover?type=all.
+
+describe('fetchDiscoverData — modo "all" (R5a)', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  /** Configura las 7 familias con respuestas mínimas válidas. */
+  function setupAllFamilies() {
+    vi.mocked(discoverMovies).mockResolvedValue({
+      results: [{ id: 1, title: "Movie A" }],
+      total_pages: 1,
+    } as never);
+    vi.mocked(discoverTV).mockResolvedValue({
+      results: [{ id: 2, name: "TV B" }],
+      total_pages: 1,
+    } as never);
+    vi.mocked(getPopularAnime).mockResolvedValue({
+      data: [{ mal_id: 3, title: "Anime C" }] as never[],
+      pagination: { last_visible_page: 1 },
+    });
+    vi.mocked(searchBooks).mockResolvedValue({
+      items: [{ id: "b4", volumeInfo: { title: "Book D" } }],
+      totalItems: 1,
+    } as never);
+    vi.mocked(getPopularManga).mockResolvedValue({
+      data: [{ mal_id: 5, title: "Manga E" }] as never[],
+      pagination: { last_visible_page: 1 },
+    });
+    // sort=popularity gatea hasRawgFilters → game usa discoverGames; mockeamos
+    // ambas rutas por robustez (getPopularGames para el caso sin sort).
+    const gameRes = { results: [{ id: 6, name: "Game F" }], count: 1 } as never;
+    vi.mocked(getPopularGames).mockResolvedValue(gameRes);
+    vi.mocked(discoverGames).mockResolvedValue(gameRes);
+    vi.mocked(getRecentComics).mockResolvedValue({
+      items: [{ id: "comic_7", title: "Comic G" }] as never[],
+      total: 1,
+    } as never);
+  }
+
+  it("delega: fan-out a las 7 familias y agrega sus items (interleave popularity)", async () => {
+    setupAllFamilies();
+    const result = await fetchDiscoverData("all", 1, { sort: "popularity" });
+
+    expect(result.fetchErrorKind).toBeNull();
+    // 1 item por familia → 7 ítems en orden de FAMILIES (movie,tv,anime,book,
+    // manga,game,comic).
+    expect(result.items.map((i) => i.id)).toEqual([
+      "movie_1",
+      "tv_2",
+      "anime_3",
+      "book_b4",
+      "manga_5",
+      "game_6",
+      "comic_7",
+    ]);
+    expect(result.totalPages).toBe(1);
+  });
+
+  it("parcial-ok: una familia que lanza no rompe el agregado (resto presente)", async () => {
+    setupAllFamilies();
+    // sort=popularity → game va por discoverGames; lo hacemos fallar.
+    vi.mocked(discoverGames).mockRejectedValue(new Error("rawg down"));
+
+    const result = await fetchDiscoverData("all", 1, { sort: "popularity" });
+    const ids = result.items.map((i) => i.id);
+    expect(ids).toContain("movie_1");
+    expect(ids).not.toContain("game_6"); // game cayó
+    expect(result.fetchErrorKind).toBeNull(); // hay items → null
+  });
+
+  it("0 items + rate-limit en una familia → fetchErrorKind 'rate-limit'", async () => {
+    // Todas vacías; anime rate-limit (JikanError 429).
+    vi.mocked(discoverMovies).mockResolvedValue({
+      results: [],
+      total_pages: 1,
+    } as never);
+    vi.mocked(discoverTV).mockResolvedValue({
+      results: [],
+      total_pages: 1,
+    } as never);
+    vi.mocked(getPopularAnime).mockRejectedValue(
+      new JikanError("/top/anime", 429)
+    );
+    vi.mocked(searchBooks).mockResolvedValue({ items: [] } as never);
+    vi.mocked(getPopularManga).mockResolvedValue({
+      data: [] as never[],
+      pagination: { last_visible_page: 1 },
+    });
+    vi.mocked(getPopularGames).mockResolvedValue({
+      results: [],
+      count: 0,
+    } as never);
+    vi.mocked(getRecentComics).mockResolvedValue({
+      items: [] as never[],
+      total: 0,
+    } as never);
+
+    const result = await fetchDiscoverData("all", 1, {});
+    expect(result.items).toEqual([]);
     expect(result.fetchErrorKind).toBe("rate-limit");
   });
 });

@@ -7,6 +7,7 @@
 
 /** Tipos válidos de catálogo. `type` fuera de esta lista cae a "movie". */
 export const VALID_TYPES = [
+  "all",
   "movie",
   "tv",
   "anime",
