@@ -49,8 +49,7 @@ import {
   DURACIONMEDIA_BUCKETS,
 } from "@/lib/api/rawg-maps";
 import {
-  buildBooksQuery,
-  filterBooksByEditorial,
+  buildOpenLibraryQuery,
   BOOKS_GENRE,
   BOOKS_FORMATO,
   BOOKS_PUBLISHER,
@@ -284,11 +283,19 @@ describe("Matriz — cableado nativo (builder emite param real)", () => {
     ).toBeDefined();
   });
 
-  it("formato (book): buildBooksQuery→params.filter (free/ebook)", () => {
-    expect(buildBooksQuery({ formato: "free" }).params.filter).toBe(
-      "free-ebooks"
+  it("formato (book): buildOpenLibraryQuery→q ebook_access (free/ebook)", () => {
+    expect(buildOpenLibraryQuery({ formato: "free" }).q).toContain(
+      "ebook_access:public"
     );
-    expect(buildBooksQuery({ formato: "ebook" }).params.filter).toBe("ebooks");
+    expect(buildOpenLibraryQuery({ formato: "ebook" }).q).toContain(
+      "ebook_access:borrowable"
+    );
+  });
+
+  it("editorial (book): buildOpenLibraryQuery→q publisher: (nativo E84b)", () => {
+    expect(buildOpenLibraryQuery({ editorial: ["planeta"] }).q).toContain(
+      "publisher:Planeta"
+    );
   });
 });
 
@@ -329,14 +336,6 @@ describe("Matriz — cableado post-filtros (fn existe y filtra keep/drop)", () =
   it("temporadas×tv → filtra por seasons", () => {
     const items = [item("tv", { seasons: 1 }), item("tv", { seasons: 5 })];
     expect(filterTVByTemporadas(items, "1")).toHaveLength(1);
-  });
-
-  it("editorial×book → filtra por substring de publisher", () => {
-    const items = [
-      item("book", { publisher: "Editorial Planeta" }),
-      item("book", { publisher: "Penguin" }),
-    ];
-    expect(filterBooksByEditorial(items, ["planeta"])).toHaveLength(1);
   });
 
   it("volumenes manga → filtra por metadata.volumes (bucket)", () => {
