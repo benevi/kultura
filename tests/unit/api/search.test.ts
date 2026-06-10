@@ -58,19 +58,17 @@ vi.mock("@/lib/api/jikan", () => ({
   }),
 }));
 
-vi.mock("@/lib/api/googlebooks", () => ({
-  searchBooks: vi.fn().mockResolvedValue({
-    items: [
+vi.mock("@/lib/api/openlibrary", () => ({
+  searchOpenLibrary: vi.fn().mockResolvedValue({
+    docs: [
       {
-        id: "abc123",
-        volumeInfo: {
-          title: "Harry Potter",
-          authors: ["J.K. Rowling"],
-          publishedDate: "1997",
-        },
+        key: "/works/OL82563W",
+        title: "Harry Potter",
+        author_name: ["J.K. Rowling"],
+        first_publish_year: 1997,
       },
     ],
-    totalItems: 1,
+    numFound: 1,
   }),
 }));
 
@@ -140,13 +138,16 @@ vi.mock("@/lib/api/normalizer", () => ({
     type: "manga",
     title: raw.title,
   })),
-  normalizeBookGoogle: vi.fn(
-    (raw: { id: string; volumeInfo: { title: string } }) => ({
-      id: `book_${raw.id}`,
-      externalId: raw.id,
-      type: "book",
-      title: raw.volumeInfo.title,
-    })
+  normalizeBookOpenLibrary: vi.fn(
+    (raw: { key: string; title: string }) => {
+      const externalId = raw.key.replace(/^\/works\//, "");
+      return {
+        id: `book_${externalId}`,
+        externalId,
+        type: "book",
+        title: raw.title,
+      };
+    }
   ),
   normalizeGame: vi.fn((raw: { id: number; name: string }) => ({
     id: `game_${raw.id}`,
@@ -215,14 +216,14 @@ describe("searchAll", () => {
   it("si todas las APIs fallan → todos los tipos son []", async () => {
     const { searchMovies, searchTV } = await import("@/lib/api/tmdb");
     const { searchAnime, searchManga } = await import("@/lib/api/jikan");
-    const { searchBooks } = await import("@/lib/api/googlebooks");
+    const { searchOpenLibrary } = await import("@/lib/api/openlibrary");
     const { searchGames } = await import("@/lib/api/rawg");
 
     vi.mocked(searchMovies).mockRejectedValueOnce(new Error("fail"));
     vi.mocked(searchTV).mockRejectedValueOnce(new Error("fail"));
     vi.mocked(searchAnime).mockRejectedValueOnce(new Error("fail"));
     vi.mocked(searchManga).mockRejectedValueOnce(new Error("fail"));
-    vi.mocked(searchBooks).mockRejectedValueOnce(new Error("fail"));
+    vi.mocked(searchOpenLibrary).mockRejectedValueOnce(new Error("fail"));
     vi.mocked(searchGames).mockRejectedValueOnce(new Error("fail"));
 
     const results = await searchAll("test");

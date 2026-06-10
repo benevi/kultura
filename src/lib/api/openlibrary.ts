@@ -68,8 +68,42 @@ export async function searchOpenLibrary(
   });
 }
 
-export async function getBook(key: string): Promise<OpenLibraryWork> {
-  // key can be "/works/OL7353617W" or just "OL7353617W"
-  const normalizedKey = key.startsWith("/") ? key : `/works/${key}`;
-  return openLibraryFetch<OpenLibraryWork>(`${normalizedKey}.json`);
+/** Normaliza la description de un work: OL la devuelve como string o { value }. */
+function workDescription(
+  desc: string | { value: string } | undefined
+): string | undefined {
+  if (!desc) return undefined;
+  return typeof desc === "string" ? desc : desc.value;
+}
+
+export interface OpenLibraryBookDetail {
+  doc: OpenLibraryDoc;
+  description?: string;
+}
+
+/**
+ * Detalle de libro (E84c). id = workKey ("OL7353617W" o "/works/OL7353617W").
+ * 1) search-by-key (q=key:/works/{id}) → OpenLibraryDoc completo (cover, autor,
+ *    año, subjects) coherente con la grid → normalizeBookOpenLibrary.
+ * 2) /works/{key}.json best-effort SOLO para description (no la trae el search);
+ *    si falla o no existe → sin sinopsis, sin romper.
+ * 0 docs → null (el caller hace notFound).
+ */
+export async function getBookDetail(
+  id: string
+): Promise<OpenLibraryBookDetail | null> {
+  const workKey = id.startsWith("/works/") ? id : `/works/${id}`;
+  const res = await searchOpenLibrary(`key:${workKey}`);
+  const doc = res.docs?.[0];
+  if (!doc) return null;
+
+  let description: string | undefined;
+  try {
+    const work = await openLibraryFetch<OpenLibraryWork>(`${workKey}.json`);
+    description = workDescription(work.description);
+  } catch {
+    // best-effort: sin description si /works falla
+  }
+
+  return { doc, description };
 }

@@ -15,7 +15,6 @@ import {
 import type { JikanAnimeDetail, JikanMangaDetail } from "./jikan";
 import type { MangaDexManga } from "./mangadex";
 import { extractMangaCover } from "./mangadex";
-import type { GoogleBooksVolume } from "./googlebooks";
 import type { OpenLibraryDoc } from "./openlibrary";
 import { openLibraryCover } from "./openlibrary";
 import type { RawgGame } from "./rawg";
@@ -220,39 +219,6 @@ export function normalizeMangaDex(raw: MangaDexManga): MediaItem {
       status: attrs.status,
       lastChapter: attrs.lastChapter ?? undefined,
       lastVolume: attrs.lastVolume ?? undefined,
-    },
-  };
-}
-
-export function normalizeBookGoogle(raw: GoogleBooksVolume): MediaItem {
-  const externalId = raw.id;
-  const info = raw.volumeInfo;
-
-  // Google Books rating is 0-5, normalize to 0-10
-  const rating =
-    info.averageRating !== undefined ? info.averageRating * 2 : undefined;
-
-  return {
-    id: `book_${externalId}`,
-    externalId,
-    type: "book",
-    title: info.title,
-    poster: (info.imageLinks?.thumbnail ?? info.imageLinks?.smallThumbnail)?.replace(/^http:\/\//, 'https://'),
-    year: extractYear(info.publishedDate),
-    synopsis: info.description,
-    genres: info.categories,
-    rating,
-    ratingSource: rating !== undefined ? "Google Books" : undefined,
-    metadata: {
-      authors: info.authors ?? [],
-      publisher: info.publisher,
-      pageCount: info.pageCount,
-      language: info.language,
-      isbn:
-        info.industryIdentifiers?.find((i) => i.type === "ISBN_13")
-          ?.identifier ??
-        info.industryIdentifiers?.find((i) => i.type === "ISBN_10")
-          ?.identifier,
     },
   };
 }

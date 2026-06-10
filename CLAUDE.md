@@ -44,20 +44,19 @@ Next.js 14 App Router · React 18 · TypeScript strict · Tailwind CSS 3 · Supa
 |------|-----|----------|------|
 | Movies+TV | TMDB | api.themoviedb.org/3 | `?api_key=TMDB_API_KEY` |
 | Anime+Manga | Jikan v4 | api.jikan.moe/v4 | — |
-| Books | Google Books | googleapis.com/books/v1 | `?key=GOOGLE_BOOKS_KEY` |
-| Books fallback | Open Library | openlibrary.org | — |
+| Books | Open Library | openlibrary.org | — |
 | Comics | ComicVine | comicvine.gamespot.com/api | `?api_key=COMICVINE_KEY` (clave presente, sin handler — E6) |
 | Manga | MangaDex | api.mangadex.org | — |
 | Games | RAWG | api.rawg.io/api | `?key=RAWG_API_KEY` |
 | AI | Anthropic Claude (`claude-haiku-4-5`) | api.anthropic.com | `ANTHROPIC_API_KEY` |
 
-**Idioma:** TMDB→`language=es-ES` fallback `en-US` · Books→`langRestrict=es` · resto inglés.
+**Idioma:** TMDB→`language=es-ES` fallback `en-US` · Books (Open Library)→`language:<ISO-639-3>` cuando se filtra · resto inglés.
 
 **Imágenes:**
 - TMDB poster: `image.tmdb.org/t/p/w500{poster_path}`
 - TMDB backdrop: `image.tmdb.org/t/p/w1280{backdrop_path}`
 - TMDB logo: `image.tmdb.org/t/p/original{logo_path}`
-- Books: `volumeInfo.imageLinks.thumbnail`
+- Books (Open Library): `covers.openlibrary.org/b/id/{cover_i}-L.jpg`
 - MangaDex: `uploads.mangadex.org/covers/{manga_id}/{filename}`
 - RAWG: `background_image`
 
@@ -67,7 +66,7 @@ Next.js 14 App Router · React 18 · TypeScript strict · Tailwind CSS 3 · Supa
 ```
 TMDB_API_KEY=               # server-only
 RAWG_API_KEY=               # server-only
-GOOGLE_BOOKS_KEY=           # server-only
+GOOGLE_BOOKS_KEY=           # server-only — RETIRADO en E84c (libros → Open Library, sin auth). Sin uso en código.
 COMICVINE_KEY=              # server-only — presente, sin uso en código actual (E6)
 ANTHROPIC_API_KEY=          # server-only — Anthropic Claude (recomendaciones IA, claude-haiku-4-5)
 NEXT_PUBLIC_SUPABASE_URL=
@@ -114,7 +113,7 @@ src/app/api/
 src/components/
   ui/ · layout/ · media/ · home/ · library/ · profile/ · search/ · social/
 src/lib/
-  api/      tmdb · jikan · googlebooks · openlibrary · mangadex · rawg ·
+  api/      tmdb · jikan · openlibrary · mangadex · rawg ·
             normalizer · search · genre-news
   claude/   recommendations
   supabase/ client · server

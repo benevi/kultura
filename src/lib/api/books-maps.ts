@@ -5,7 +5,7 @@
 // idioma → language:<ISO-639-3>, año → first_publish_year:[Y TO Y],
 // formato → ebook_access:..., sort → params.sort (new|rating|title).
 //
-// Migrado de Google Books (E84b). googlebooks.ts (getBook) sigue para el detalle.
+// Migrado de Google Books (E84b/E84c). Open Library es la única fuente de libros.
 // physical → sin fragmento (Open Library no acota a físico). Guard: vacío /
 // desconocido descartado.
 // ============================================================

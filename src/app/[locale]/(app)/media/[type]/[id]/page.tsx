@@ -11,7 +11,7 @@ import type { MediaType, StreamingProvider } from "@/types/media";
 import { getMovie, getMovieVideos, getMovieProviders, getTVVideos, getTVProviders, getTV } from "@/lib/api/tmdb";
 import type { TmdbProvidersResponse } from "@/lib/api/tmdb";
 import { getAnime, getAnimeVideos, getManga } from "@/lib/api/jikan";
-import { getBook } from "@/lib/api/googlebooks";
+import { getBookDetail } from "@/lib/api/openlibrary";
 import { getGame } from "@/lib/api/rawg";
 import { getComic } from "@/lib/api/comicvine";
 import {
@@ -19,7 +19,7 @@ import {
   normalizeTV,
   normalizeAnime,
   normalizeMangaJikan,
-  normalizeBookGoogle,
+  normalizeBookOpenLibrary,
   normalizeGame,
   normalizeComic,
 } from "@/lib/api/normalizer";
@@ -97,10 +97,13 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       description = resp.data.synopsis ?? undefined;
       image = resp.data.images?.jpg?.large_image_url ?? undefined;
     } else if (type === "book") {
-      const detail = await getBook(id);
-      title = detail.volumeInfo.title;
-      description = detail.volumeInfo.description;
-      image = detail.volumeInfo.imageLinks?.thumbnail ?? undefined;
+      const detail = await getBookDetail(id);
+      if (detail) {
+        const item = normalizeBookOpenLibrary(detail.doc);
+        title = item.title;
+        description = detail.description;
+        image = item.poster;
+      }
     } else if (type === "game") {
       const detail = await getGame(Number(id));
       title = detail.name;
@@ -216,9 +219,10 @@ export default async function MediaDetailPage({ params }: Props) {
       if (!detail) notFound();
       item = normalizeMangaJikan(detail.data);
     } else if (mediaType === "book") {
-      const detail = await getBook(id).catch(() => null);
+      const detail = await getBookDetail(id).catch(() => null);
       if (!detail) notFound();
-      item = normalizeBookGoogle(detail);
+      item = normalizeBookOpenLibrary(detail.doc);
+      if (detail.description) item.synopsis = detail.description;
     } else if (mediaType === "game") {
       const detail = await getGame(Number(id)).catch(() => null);
       if (!detail) notFound();

@@ -10,14 +10,12 @@ import {
   normalizeAnime,
   normalizeMangaJikan,
   normalizeMangaDex,
-  normalizeBookGoogle,
   normalizeBookOpenLibrary,
   normalizeGame,
 } from "@/lib/api/normalizer";
 import type { TmdbMovieDetail, TmdbTVDetail, TmdbProvidersResponse } from "@/lib/api/tmdb";
 import type { JikanAnimeDetail, JikanMangaDetail } from "@/lib/api/jikan";
 import type { MangaDexManga } from "@/lib/api/mangadex";
-import type { GoogleBooksVolume } from "@/lib/api/googlebooks";
 import type { OpenLibraryDoc } from "@/lib/api/openlibrary";
 import type { RawgGame } from "@/lib/api/rawg";
 
@@ -134,27 +132,6 @@ const MANGADEX_FIXTURE: MangaDexManga = {
       attributes: { fileName: "cover.jpg" },
     },
   ],
-};
-
-const GOOGLE_BOOKS_FIXTURE: GoogleBooksVolume = {
-  id: "aGbQEAAAQBAJ",
-  volumeInfo: {
-    title: "Cien años de soledad",
-    authors: ["Gabriel García Márquez"],
-    description: "La historia de la familia Buendía a lo largo de siete generaciones.",
-    publishedDate: "1967-05-30",
-    pageCount: 417,
-    categories: ["Fiction", "Latin American fiction"],
-    imageLinks: {
-      thumbnail: "http://books.google.com/books/content?id=aGbQEAAAQBAJ&printsec=frontcover&img=1&zoom=1",
-    },
-    averageRating: 4.5,
-    publisher: "Editorial Sudamericana",
-    industryIdentifiers: [
-      { type: "ISBN_13", identifier: "9780060883287" },
-    ],
-    language: "es",
-  },
 };
 
 const OPEN_LIBRARY_FIXTURE: OpenLibraryDoc = {
@@ -428,45 +405,6 @@ describe("normalizeMangaDex", () => {
   });
 });
 
-// ── normalizeBookGoogle ───────────────────────────────────────────────────────
-
-describe("normalizeBookGoogle", () => {
-  const result = normalizeBookGoogle(GOOGLE_BOOKS_FIXTURE);
-
-  it("produce id book_*", () => {
-    expect(result.id).toBe("book_aGbQEAAAQBAJ");
-  });
-
-  it("tipo es book", () => {
-    expect(result.type).toBe("book");
-  });
-
-  it("rating Google 0-5 se multiplica por 2 para obtener 0-10", () => {
-    expect(result.rating).toBe(9); // 4.5 * 2
-  });
-
-  it("ratingSource es Google Books", () => {
-    expect(result.ratingSource).toBe("Google Books");
-  });
-
-  it("year extrae año de publishedDate", () => {
-    expect(result.year).toBe(1967);
-  });
-
-  it("poster es la URL de thumbnail", () => {
-    expect(result.poster).toContain("books.google.com");
-  });
-
-  it("metadata incluye authors y publisher", () => {
-    expect(result.metadata?.authors).toContain("Gabriel García Márquez");
-    expect(result.metadata?.publisher).toBe("Editorial Sudamericana");
-  });
-
-  it("metadata incluye ISBN", () => {
-    expect(result.metadata?.isbn).toBe("9780060883287");
-  });
-});
-
 // ── normalizeBookOpenLibrary ──────────────────────────────────────────────────
 
 describe("normalizeBookOpenLibrary", () => {
@@ -619,11 +557,6 @@ describe("formato de ID — todos los normalizadores", () => {
 
   it("normalizeMangaDex: id = manga_{externalId}", () => {
     const r = normalizeMangaDex(MANGADEX_FIXTURE);
-    expect(r.id).toBe(`${r.type}_${r.externalId}`);
-  });
-
-  it("normalizeBookGoogle: id = book_{externalId}", () => {
-    const r = normalizeBookGoogle(GOOGLE_BOOKS_FIXTURE);
     expect(r.id).toBe(`${r.type}_${r.externalId}`);
   });
 
