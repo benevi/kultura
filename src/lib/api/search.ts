@@ -8,7 +8,7 @@ import type { MediaItem, MediaType } from "@/types/media";
 import { searchMovies, searchTV } from "./tmdb";
 import { searchAnime, searchManga } from "./jikan";
 import type { JikanAnime, JikanManga } from "./jikan";
-import { searchBooks } from "./googlebooks";
+import { searchOpenLibrary } from "./openlibrary";
 import { searchGames } from "./rawg";
 import { searchComics } from "./comicvine";
 import {
@@ -16,7 +16,7 @@ import {
   normalizeTV,
   normalizeAnime,
   normalizeMangaJikan,
-  normalizeBookGoogle,
+  normalizeBookOpenLibrary,
   normalizeGame,
   normalizeComic,
 } from "./normalizer";
@@ -54,8 +54,8 @@ export async function searchAll(query: string): Promise<SearchResults> {
         normalizeMangaJikan(raw as JikanMangaDetail)
       )
     ),
-    searchBooks(query).then((r) =>
-      (r.items ?? []).map((raw) => normalizeBookGoogle(raw))
+    searchOpenLibrary(query).then((r) =>
+      (r.docs ?? []).map((raw) => normalizeBookOpenLibrary(raw))
     ),
     searchGames(query).then((r) =>
       r.results.map((raw) => normalizeGame(raw))
@@ -101,8 +101,8 @@ export async function searchByType(
         )
       );
     case "book":
-      return searchBooks(query).then((r) =>
-        (r.items ?? []).map((raw) => normalizeBookGoogle(raw))
+      return searchOpenLibrary(query).then((r) =>
+        (r.docs ?? []).map((raw) => normalizeBookOpenLibrary(raw))
       );
     case "game":
       return searchGames(query).then((r) =>
