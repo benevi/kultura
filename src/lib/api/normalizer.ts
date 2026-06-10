@@ -271,8 +271,11 @@ export function normalizeBookOpenLibrary(raw: OpenLibraryDoc): MediaItem {
     poster,
     year: raw.first_publish_year,
     genres: raw.subject?.slice(0, 5),
+    // rating: undefined (valoración de libros oculta)
     metadata: {
       authors: raw.author_name ?? [],
+      publisher: raw.publisher?.[0],
+      language: raw.language?.[0],
     },
   };
 }
