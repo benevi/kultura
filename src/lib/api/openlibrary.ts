@@ -1,6 +1,6 @@
 // ============================================================
 // KULTURA — Open Library API Integration
-// Libros (fallback) via Open Library
+// Libros (fuente principal) via Open Library Search API
 // Docs: https://openlibrary.org/developers/api
 // No requiere API key.
 // ============================================================
@@ -13,7 +13,10 @@ export interface OpenLibraryDoc {
   author_name?: string[];
   first_publish_year?: number;
   cover_i?: number; // cover: https://covers.openlibrary.org/b/id/{cover_i}-L.jpg
+  language?: string[];
+  publisher?: string[];
   subject?: string[];
+  ebook_access?: string;
 }
 
 export interface OpenLibraryResponse {
@@ -27,6 +30,9 @@ export interface OpenLibraryWork {
   description?: string | { value: string };
 }
 
+const SEARCH_FIELDS =
+  "key,title,author_name,first_publish_year,cover_i,language,publisher,subject,ebook_access";
+
 // ── Helper ────────────────────────────────────────────────────────────────────
 
 export function openLibraryCover(coverId: number): string {
@@ -39,21 +45,26 @@ async function openLibraryFetch<T>(
 ): Promise<T> {
   const url = new URL(`https://openlibrary.org${path}`);
   Object.entries(params).forEach(([k, v]) => url.searchParams.set(k, v));
-  const res = await fetch(url.toString());
+  const res = await fetch(url.toString(), {
+    headers: { "User-Agent": "KULTURA/1.0 (kultura app)" },
+  });
   if (!res.ok) throw new Error(`Open Library ${path} → ${res.status}`);
   return res.json() as Promise<T>;
 }
 
 // ── Public API ────────────────────────────────────────────────────────────────
 
-export async function searchBooks(
-  query: string,
-  page = 1
+export async function searchOpenLibrary(
+  q: string,
+  page = 1,
+  params: Record<string, string> = {}
 ): Promise<OpenLibraryResponse> {
   return openLibraryFetch<OpenLibraryResponse>("/search.json", {
-    q: query,
+    q,
     page: String(page),
     limit: "20",
+    fields: SEARCH_FIELDS,
+    ...params,
   });
 }
 

@@ -163,7 +163,15 @@ const OPEN_LIBRARY_FIXTURE: OpenLibraryDoc = {
   author_name: ["F. Scott Fitzgerald"],
   first_publish_year: 1925,
   cover_i: 8231856,
-  subject: ["American fiction", "Novels", "Jazz Age"],
+  language: ["eng", "spa"],
+  publisher: ["Scribner", "Penguin"],
+  subject: ["American fiction", "Novels", "Jazz Age", "Tragedy", "Love", "Wealth"],
+  ebook_access: "borrowable",
+};
+
+const OPEN_LIBRARY_MINIMAL: OpenLibraryDoc = {
+  key: "/works/OL123W",
+  title: "Untitled Work",
 };
 
 const RAWG_FIXTURE: RawgGame = {
@@ -485,8 +493,43 @@ describe("normalizeBookOpenLibrary", () => {
     expect(result.year).toBe(1925);
   });
 
-  it("genres es subset de subjects", () => {
+  it("genres es subset de subjects (máx 5)", () => {
     expect(result.genres).toContain("American fiction");
+    expect(result.genres).toHaveLength(5);
+    expect(result.genres).not.toContain("Wealth");
+  });
+
+  it("rating y ratingSource undefined (valoración oculta para book)", () => {
+    expect(result.rating).toBeUndefined();
+    expect(result.ratingSource).toBeUndefined();
+  });
+
+  it("metadata: authors, publisher (primero), language (primero)", () => {
+    expect(result.metadata?.authors).toEqual(["F. Scott Fitzgerald"]);
+    expect(result.metadata?.publisher).toBe("Scribner");
+    expect(result.metadata?.language).toBe("eng");
+  });
+});
+
+describe("normalizeBookOpenLibrary — doc mínimo", () => {
+  const result = normalizeBookOpenLibrary(OPEN_LIBRARY_MINIMAL);
+
+  it("sin cover_i → poster undefined", () => {
+    expect(result.poster).toBeUndefined();
+  });
+
+  it("sin author_name → authors []", () => {
+    expect(result.metadata?.authors).toEqual([]);
+  });
+
+  it("sin publisher/language/subject → undefined", () => {
+    expect(result.metadata?.publisher).toBeUndefined();
+    expect(result.metadata?.language).toBeUndefined();
+    expect(result.genres).toBeUndefined();
+  });
+
+  it("year undefined sin first_publish_year", () => {
+    expect(result.year).toBeUndefined();
   });
 });
 
