@@ -60,7 +60,7 @@ export function MediaCard({
           {/* Type badge overlay (modo "all", R5b): esquina superior, acento
               verde del DS. Label localizado vía TYPE_LABEL (placeholder, R6). */}
           {showType && (
-            <div className="absolute top-2 left-2 text-[10px] font-medium bg-accent-positive/90 backdrop-blur-sm px-1.5 py-0.5 rounded text-on-accent-positive leading-none">
+            <div className="absolute top-2 left-2 text-[10px] font-medium bg-black/70 backdrop-blur-sm px-1.5 py-0.5 rounded text-white leading-none shadow-md ring-1 ring-accent-positive/40">
               {TYPE_LABEL[item.type] ?? item.type}
             </div>
           )}
