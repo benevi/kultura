@@ -24,8 +24,8 @@ vi.mock("@/lib/api/jikan", async (importOriginal) => {
   };
 });
 
-vi.mock("@/lib/api/googlebooks", () => ({
-  searchBooks: vi.fn(),
+vi.mock("@/lib/api/openlibrary", () => ({
+  searchOpenLibrary: vi.fn(),
 }));
 
 vi.mock("@/lib/api/rawg", () => ({
@@ -46,9 +46,9 @@ vi.mock("@/lib/api/normalizer", () => ({
     title: m.title,
     metadata: { volumes: m.volumes ?? undefined },
   })),
-  normalizeBookGoogle: vi.fn((b) => ({
-    id: `book_${b.id}`,
-    title: b.volumeInfo?.title ?? "",
+  normalizeBookOpenLibrary: vi.fn((d) => ({
+    id: `book_${String(d.key).replace(/^\/works\//, "")}`,
+    title: d.title ?? "",
   })),
   normalizeGame: vi.fn((g) => ({ id: `game_${g.id}`, title: g.name })),
 }));
@@ -56,7 +56,7 @@ vi.mock("@/lib/api/normalizer", () => ({
 import { fetchDiscoverData } from "@/lib/api/discover";
 import { discoverMovies, discoverTV } from "@/lib/api/tmdb";
 import { getPopularAnime, getPopularManga } from "@/lib/api/jikan";
-import { searchBooks } from "@/lib/api/googlebooks";
+import { searchOpenLibrary } from "@/lib/api/openlibrary";
 import { getPopularGames, discoverGames } from "@/lib/api/rawg";
 import { getRecentComics } from "@/lib/api/comicvine";
 
@@ -144,17 +144,17 @@ describe("fetchDiscoverData — guard null-data (E29)", () => {
   });
 });
 
-// ── Guard: totalItems books ───────────────────────────────────────────────────
+// ── Guard: numFound books (E84b — Open Library) ───────────────────────────────
 
-describe("fetchDiscoverData — guard totalItems books (E29)", () => {
+describe("fetchDiscoverData — guard numFound books (E84b)", () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });
 
-  it("totalItems = 0 → totalPages = 1", async () => {
-    vi.mocked(searchBooks).mockResolvedValue({
-      items: [],
-      totalItems: 0,
+  it("numFound = 0 → totalPages = 1", async () => {
+    vi.mocked(searchOpenLibrary).mockResolvedValue({
+      docs: [],
+      numFound: 0,
     });
 
     const result = await fetchDiscoverData("book", 1);
@@ -162,20 +162,20 @@ describe("fetchDiscoverData — guard totalItems books (E29)", () => {
     expect(result.fetchErrorKind).toBeNull();
   });
 
-  it("totalItems = undefined → totalPages = 1", async () => {
-    vi.mocked(searchBooks).mockResolvedValue({
-      items: [],
-      totalItems: undefined as unknown as number,
+  it("numFound = undefined → totalPages = 1", async () => {
+    vi.mocked(searchOpenLibrary).mockResolvedValue({
+      docs: [],
+      numFound: undefined as unknown as number,
     });
 
     const result = await fetchDiscoverData("book", 1);
     expect(result.totalPages).toBe(1);
   });
 
-  it("totalItems = 100 → totalPages = 5", async () => {
-    vi.mocked(searchBooks).mockResolvedValue({
-      items: [],
-      totalItems: 100,
+  it("numFound = 100 → totalPages = 5", async () => {
+    vi.mocked(searchOpenLibrary).mockResolvedValue({
+      docs: [],
+      numFound: 100,
     });
 
     const result = await fetchDiscoverData("book", 1);
@@ -183,10 +183,10 @@ describe("fetchDiscoverData — guard totalItems books (E29)", () => {
     expect(result.totalPages).toBe(5);
   });
 
-  it("totalItems = 1200 → totalPages capped a 50", async () => {
-    vi.mocked(searchBooks).mockResolvedValue({
-      items: [],
-      totalItems: 1200,
+  it("numFound = 1200 → totalPages capped a 50", async () => {
+    vi.mocked(searchOpenLibrary).mockResolvedValue({
+      docs: [],
+      numFound: 1200,
     });
 
     const result = await fetchDiscoverData("book", 1);
@@ -195,39 +195,39 @@ describe("fetchDiscoverData — guard totalItems books (E29)", () => {
   });
 });
 
-// ── Books: rama con filtros vs. sin filtros (E59 F3c) ──────────────────────────
+// ── Books: rama con filtros vs. sin filtros (E84b — Open Library) ──────────────
 
-describe("fetchDiscoverData — books filtros (E59 F3c)", () => {
+describe("fetchDiscoverData — books filtros (E84b)", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    vi.mocked(searchBooks).mockResolvedValue({ items: [], totalItems: 0 });
+    vi.mocked(searchOpenLibrary).mockResolvedValue({ docs: [], numFound: 0 });
   });
 
-  it("sin filtros → query base 'popular', sin orderBy/filter (paridad)", async () => {
+  it("sin filtros → query base (subject:fiction), sin params (paridad)", async () => {
     await fetchDiscoverData("book", 1);
-    expect(searchBooks).toHaveBeenCalledWith("popular", 0);
+    expect(searchOpenLibrary).toHaveBeenCalledWith("subject:fiction", 1);
   });
 
-  it("con filtros → buildBooksQuery (q subject: + params)", async () => {
+  it("con filtros → buildOpenLibraryQuery (q + params.sort), page nativa", async () => {
     await fetchDiscoverData("book", 2, {
       genre: ["fantasia"],
+      editorial: ["planeta"],
       formato: "free",
       idioma: "en",
+      year: "2020",
       sort: "release_desc",
     });
-    // page 2 → startIndex (2-1)*20 = 20
-    expect(searchBooks).toHaveBeenCalledWith('subject:"Fantasy"', 20, {
-      orderBy: "newest",
-      filter: "free-ebooks",
-      langRestrict: "en",
-    });
+    // Open Library pagina por page (1-based), no startIndex.
+    expect(searchOpenLibrary).toHaveBeenCalledWith(
+      "subject:Fantasy publisher:Planeta language:eng first_publish_year:[2020 TO 2020] ebook_access:public",
+      2,
+      { sort: "new" }
+    );
   });
 
-  it("year no dispara rama de filtros (oculto book) → query base", async () => {
-    await fetchDiscoverData("book", 1, {
-      year: "2020s",
-    } as Parameters<typeof fetchDiscoverData>[2]);
-    expect(searchBooks).toHaveBeenCalledWith("popular", 0);
+  it("solo editorial → dispara rama nativa (ya no es post-filtro)", async () => {
+    await fetchDiscoverData("book", 1, { editorial: ["planeta"] });
+    expect(searchOpenLibrary).toHaveBeenCalledWith("publisher:Planeta", 1, {});
   });
 });
 
@@ -400,9 +400,9 @@ describe('fetchDiscoverData — modo "all" (R5a)', () => {
       data: [{ mal_id: 3, title: "Anime C" }] as never[],
       pagination: { last_visible_page: 1 },
     });
-    vi.mocked(searchBooks).mockResolvedValue({
-      items: [{ id: "b4", volumeInfo: { title: "Book D" } }],
-      totalItems: 1,
+    vi.mocked(searchOpenLibrary).mockResolvedValue({
+      docs: [{ key: "/works/b4", title: "Book D" }],
+      numFound: 1,
     } as never);
     vi.mocked(getPopularManga).mockResolvedValue({
       data: [{ mal_id: 5, title: "Manga E" }] as never[],
@@ -463,7 +463,10 @@ describe('fetchDiscoverData — modo "all" (R5a)', () => {
     vi.mocked(getPopularAnime).mockRejectedValue(
       new JikanError("/top/anime", 429)
     );
-    vi.mocked(searchBooks).mockResolvedValue({ items: [] } as never);
+    vi.mocked(searchOpenLibrary).mockResolvedValue({
+      docs: [],
+      numFound: 0,
+    } as never);
     vi.mocked(getPopularManga).mockResolvedValue({
       data: [] as never[],
       pagination: { last_visible_page: 1 },

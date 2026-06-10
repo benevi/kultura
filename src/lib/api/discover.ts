@@ -22,12 +22,11 @@ import {
   filterByMinVolumes,
   type JikanFilters,
 } from "@/lib/api/jikan-maps";
-import { searchBooks } from "@/lib/api/googlebooks";
+import { searchOpenLibrary } from "@/lib/api/openlibrary";
 import {
-  buildBooksQuery,
+  buildOpenLibraryQuery,
   hasBookFilters,
-  filterBooksByEditorial,
-  BOOKS_BASE_QUERY,
+  OPEN_LIBRARY_BASE_QUERY,
   type BooksFilters,
 } from "@/lib/api/books-maps";
 import { getPopularGames, discoverGames } from "@/lib/api/rawg";
@@ -46,7 +45,7 @@ import {
   normalizeTV,
   normalizeAnime,
   normalizeMangaJikan,
-  normalizeBookGoogle,
+  normalizeBookOpenLibrary,
   normalizeGame,
 } from "@/lib/api/normalizer";
 import type { MediaItem } from "@/types/media";
@@ -134,24 +133,20 @@ export async function fetchDiscoverData(
         break;
       }
       case "book": {
-        const startIndex = (page - 1) * 20;
-        // Con filtros (género/formato/idioma/sort) → query construida; sin
-        // filtros, paridad con hoy (query base "popular", sin orderBy/filter).
-        // year sigue sin aplicarse (oculto para book).
+        // E84b: Open Library /search.json. Con filtros (género/editorial/idioma/
+        // formato/año/sort) → query construida; sin filtros, query base poblada.
+        // editorial ahora es NATIVO (publisher: en q) → ya no hay post-filtro.
         let res;
         if (hasBookFilters(filters)) {
-          const { q, params } = buildBooksQuery(filters);
-          res = await searchBooks(q, startIndex, params);
+          const { q, params } = buildOpenLibraryQuery(filters);
+          res = await searchOpenLibrary(q, page, params);
         } else {
-          res = await searchBooks(BOOKS_BASE_QUERY, startIndex);
+          res = await searchOpenLibrary(OPEN_LIBRARY_BASE_QUERY, page);
         }
-        items = (res.items ?? []).map((b) => normalizeBookGoogle(b));
-        // POST-filtro editorial (R4c-2, degradado): substring de publisher. NO
-        // gatea el fetch (no está en hasBookFilters). Vacío → no filtra.
-        items = filterBooksByEditorial(items, filters.editorial);
+        items = (res.docs ?? []).map((d) => normalizeBookOpenLibrary(d));
         totalPages =
-          res.totalItems && res.totalItems > 0
-            ? Math.min(Math.ceil(res.totalItems / 20), 50)
+          res.numFound && res.numFound > 0
+            ? Math.min(Math.ceil(res.numFound / 20), 50)
             : 1;
         break;
       }

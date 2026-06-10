@@ -1,15 +1,14 @@
 // ============================================================
-// KULTURA — Google Books filter translation tables (E59 F3c)
-// Traduce el contrato canónico (docs/E59_FILTER_SPEC.md) a la query de /volumes:
-// género → subject: (BISAC inglés, unidos en q), sort → orderBy (relevance|newest),
-// formato → filter (ebooks/free-ebooks/paid-ebooks), idioma → langRestrict.
+// KULTURA — Open Library filter translation tables (E84b)
+// Traduce el contrato canónico a la query de /search.json:
+// género → subject:<BISAC>, editorial → publisher:<valor> (nativo, multi=OR),
+// idioma → language:<ISO-639-3>, año → first_publish_year:[Y TO Y],
+// formato → ebook_access:..., sort → params.sort (new|rating|title).
 //
-// year → OCULTO para book (spec §4): no se acepta como filtro aquí.
-// physical → sin filtro nativo en Google Books (filter solo expresa ebooks) →
-// se IGNORA (degradado). Guard: vacío / desconocido descartado.
+// Migrado de Google Books (E84b). googlebooks.ts (getBook) sigue para el detalle.
+// physical → sin fragmento (Open Library no acota a físico). Guard: vacío /
+// desconocido descartado.
 // ============================================================
-
-import type { MediaItem } from "@/types/media";
 
 // ── Géneros (slug canónico Kultura → término subject: BISAC en inglés) ──────────
 // Google Books no tiene IDs de género; se filtra vía operador subject: en q.
@@ -34,14 +33,15 @@ export const BOOKS_GENRE: Record<string, string> = {
   ensayo: "Essays",
 };
 
-// Término base usado cuando NO hay género (paridad con discover.ts actual).
-export const BOOKS_BASE_QUERY = "popular";
+// Query base usada cuando NO hay ningún fragmento de q (paridad: resultados
+// poblados). Open Library no tiene "popular"; subject:fiction mantiene un set amplio.
+export const OPEN_LIBRARY_BASE_QUERY = "subject:fiction";
 
 // ── Editorial (book) ─────────────────────────────────────────────────────────────
 // Catálogo de editoriales de LIBRO (spec E59_FILTER_SPEC_V2 §editorial, subconjunto
 // de libro). Editoriales españolas de libro general — NO las de cómic (Marvel/DC/
-// Image viven en COMIC_PUBLISHER). value = slug canónico → substring de publisher.
-// POST-filtro (Google Books no tiene filtro nativo de editorial).
+// Image viven en COMIC_PUBLISHER). value = slug canónico → término publisher:.
+// NATIVO en Open Library (E84b): publisher:<valor>, multi-select = OR en q.
 
 export const BOOKS_PUBLISHER: Record<string, string> = {
   planeta: "Planeta",
@@ -52,63 +52,84 @@ export const BOOKS_PUBLISHER: Record<string, string> = {
   sm: "SM",
 };
 
-// ── Sort → orderBy ──────────────────────────────────────────────────────────────
-// Google Books solo expone relevance | newest. release_desc/recientes → newest;
-// el resto (incluido popularity, rating, A–Z…) → relevance (no hay nativo).
+// ── Sort → params.sort ──────────────────────────────────────────────────────────
+// Open Library /search.json acepta sort=new|rating|title (entre otros).
+// recientes/release_desc → new; rating → rating; title/A–Z → title.
+// relevance/popularity → sin sort (orden por defecto, relevancia). Vacío → undefined.
 
-export function booksOrderBy(sort: string | null | undefined): string {
-  if (sort === "recientes" || sort === "newest" || sort === "release_desc") {
-    return "newest";
+export function openLibrarySort(
+  sort: string | null | undefined
+): string | undefined {
+  switch (sort) {
+    case "recientes":
+    case "newest":
+    case "release_desc":
+    case "recent":
+      return "new";
+    case "rating":
+      return "rating";
+    case "title":
+      return "title";
+    default:
+      return undefined; // relevance / popularity / vacío / desconocido → sin sort
   }
-  return "relevance";
 }
 
-// ── Formato → filter ────────────────────────────────────────────────────────────
-// free → free-ebooks, ebook → ebooks. physical no tiene filtro nativo → undefined.
+// ── Formato → ebook_access ───────────────────────────────────────────────────────
+// free → ebook_access:public ; ebook → (ebook_access:public OR ebook_access:borrowable);
+// physical → sin fragmento (Open Library no acota a físico).
 
-// Buckets canónicos de formato (book) → reflejan los slugs del switch de
-// booksFilter. Solo value; el filter nativo lo resuelve booksFilter.
+// Buckets canónicos de formato (book) → slugs del switch de bookFormatFragment.
+// Solo value; el fragmento de q lo resuelve bookFormatFragment.
 export const BOOKS_FORMATO: Record<string, true> = {
-  free: true, // free-ebooks
-  ebook: true, // ebooks
-  physical: true, // sin filter nativo
+  free: true, // ebook_access:public
+  ebook: true, // ebook_access:public OR ebook_access:borrowable
+  physical: true, // sin fragmento
 };
 
-export function booksFilter(
+function bookFormatFragment(
   formato: string | null | undefined
 ): string | undefined {
   switch (formato) {
     case "free":
-      return "free-ebooks";
+      return "ebook_access:public";
     case "ebook":
-      return "ebooks";
+      return "(ebook_access:public OR ebook_access:borrowable)";
     default:
-      return undefined; // physical / vacío / desconocido → sin filter
+      return undefined; // physical / vacío / desconocido → sin fragmento
   }
 }
 
-// ── Idioma → langRestrict (ISO-639-1) ───────────────────────────────────────────
-// El contrato canónico ya entrega ISO-639-1 (spec §1). Aceptamos códigos de 2
-// letras tal cual; cualquier otra cosa se descarta (caller mantiene default "es").
+// ── Idioma → language:<ISO-639-3> ─────────────────────────────────────────────────
+// El contrato canónico entrega ISO-639-1 (2 letras). Open Library usa ISO-639-3
+// (3 letras) en el campo language. Mapeo explícito; lo no mapeado se descarta.
 
-function booksLangRestrict(
+const ISO_639_1_TO_3: Record<string, string> = {
+  es: "spa",
+  en: "eng",
+  fr: "fre",
+  de: "ger",
+  it: "ita",
+  pt: "por",
+  ja: "jpn",
+};
+
+function bookLanguageIso3(
   idioma: string | null | undefined
 ): string | undefined {
   if (!idioma) return undefined;
-  return /^[a-z]{2}$/i.test(idioma) ? idioma.toLowerCase() : undefined;
+  return ISO_639_1_TO_3[idioma.toLowerCase()];
 }
 
-// ── Filtros de entrada (subconjunto canónico relevante a Google Books) ───────────
-// year EXCLUIDO: oculto para book (spec §4).
+// ── Filtros de entrada (subconjunto canónico relevante a Open Library) ────────────
 
 export interface BooksFilters {
   genre?: string[];
   sort?: string | null;
   formato?: string | null;
   idioma?: string | null;
-  // R4c-2: editorial×book POST-filtro (degradado, spec §editorial). Google Books
-  // no filtra por editorial nativamente → substring case-insensitive sobre
-  // metadata.publisher. NO entra en buildBooksQuery ni gatea hasBookFilters.
+  year?: string | null;
+  // E84b: editorial×book ahora NATIVO (publisher: en q). Multi-select = OR.
   editorial?: string[];
 }
 
@@ -121,83 +142,75 @@ function mapGenreSubjects(slugs: string[] | undefined): string[] {
 
 /**
  * True si los filtros implican construir una query con filtros (vs. la query
- * base de paridad). orderBy=relevance es el default de Books, así que un sort que
- * no produce "newest" no cuenta por sí solo; sí cuenta género, formato, idioma o
- * un sort que cambia orderBy.
+ * base de paridad). E84b: editorial pasa a ser NATIVO → cuenta. Año, idioma
+ * mapeable, género, formato (free/ebook) y un sort que produce param también
+ * cuentan. relevance/popularity (sort sin param) no cuenta por sí solo.
  */
 export function hasBookFilters(filters: BooksFilters = {}): boolean {
   return Boolean(
     filters.genre?.length ||
+      filters.editorial?.length ||
       filters.formato ||
       filters.idioma ||
-      (filters.sort && booksOrderBy(filters.sort) !== "relevance")
+      filters.year ||
+      openLibrarySort(filters.sort)
   );
 }
 
-export interface BooksQueryParams {
-  orderBy?: string;
-  filter?: string;
-  langRestrict?: string;
-}
-
-export interface BooksQuery {
+export interface OpenLibraryQuery {
   q: string;
-  params: BooksQueryParams;
+  params: Record<string, string>;
 }
 
-/**
- * Construye la query de /volumes. q = subjects unidos si hay género, si no el
- * término base. params lleva orderBy (siempre), y filter/langRestrict solo si
- * aplican. Vacío/desconocido se omite.
- */
-export function buildBooksQuery(filters: BooksFilters = {}): BooksQuery {
-  const subjects = mapGenreSubjects(filters.genre);
-  const q =
-    subjects.length > 0
-      ? subjects.map((s) => `subject:"${s}"`).join(" ")
-      : BOOKS_BASE_QUERY;
-
-  const params: BooksQueryParams = {
-    orderBy: booksOrderBy(filters.sort),
-  };
-
-  const filter = booksFilter(filters.formato);
-  if (filter) params.filter = filter;
-
-  const lang = booksLangRestrict(filters.idioma);
-  if (lang) params.langRestrict = lang;
-
-  return { q, params };
-}
-
-// ── POST-filtro editorial×book (R4c-2, degradado) ───────────────────────────────
-// Google Books no filtra por editorial → substring case-insensitive del label de
-// BOOKS_PUBLISHER contra metadata.publisher del item. Multi-select = OR (mantiene
-// si coincide con cualquiera). Vacío/desconocido → no filtra. Items sin publisher
-// resuelto se descartan cuando se pide editorial.
-
-/** Traduce slugs de editorial(book) a los substrings de publisher a comparar. */
-export function mapBookPublisherSubstrings(
-  slugs: string[] | undefined
-): string[] {
+/** Traduce slugs de editorial(book) a los términos publisher: a usar en q. */
+function mapPublisherTerms(slugs: string[] | undefined): string[] {
   if (!slugs?.length) return [];
   return slugs
     .map((s) => BOOKS_PUBLISHER[s])
     .filter((v): v is string => Boolean(v));
 }
 
-export function filterBooksByEditorial(
-  items: MediaItem[],
-  editorial: string[] | undefined
-): MediaItem[] {
-  const substrings = mapBookPublisherSubstrings(editorial).map((s) =>
-    s.toLowerCase()
-  );
-  if (substrings.length === 0) return items;
-  return items.filter((item) => {
-    const pub = item.metadata?.publisher;
-    if (typeof pub !== "string" || !pub) return false;
-    const lc = pub.toLowerCase();
-    return substrings.some((sub) => lc.includes(sub));
-  });
+/** Año canónico → fragmento first_publish_year:[Y TO Y]. Solo 4 dígitos. */
+function bookYearFragment(year: string | null | undefined): string | undefined {
+  if (!year) return undefined;
+  const m = /^(\d{4})/.exec(year);
+  return m ? `first_publish_year:[${m[1]} TO ${m[1]}]` : undefined;
+}
+
+/**
+ * Construye la query de /search.json. q = concatenación con espacios de SOLO los
+ * fragmentos activos (género subject:, editorial publisher: con OR multi, idioma
+ * language:, año first_publish_year:, formato ebook_access:). Si no hay ninguno →
+ * query base. params lleva sort solo si el sort canónico produce uno.
+ */
+export function buildOpenLibraryQuery(
+  filters: BooksFilters = {}
+): OpenLibraryQuery {
+  const fragments: string[] = [];
+
+  const subjects = mapGenreSubjects(filters.genre);
+  for (const s of subjects) fragments.push(`subject:${s}`);
+
+  const publishers = mapPublisherTerms(filters.editorial);
+  if (publishers.length > 0) {
+    const clause = publishers.map((p) => `publisher:${p}`).join(" OR ");
+    fragments.push(publishers.length > 1 ? `(${clause})` : clause);
+  }
+
+  const lang = bookLanguageIso3(filters.idioma);
+  if (lang) fragments.push(`language:${lang}`);
+
+  const yearFrag = bookYearFragment(filters.year);
+  if (yearFrag) fragments.push(yearFrag);
+
+  const formatFrag = bookFormatFragment(filters.formato);
+  if (formatFrag) fragments.push(formatFrag);
+
+  const q = fragments.length > 0 ? fragments.join(" ") : OPEN_LIBRARY_BASE_QUERY;
+
+  const params: Record<string, string> = {};
+  const sort = openLibrarySort(filters.sort);
+  if (sort) params.sort = sort;
+
+  return { q, params };
 }
