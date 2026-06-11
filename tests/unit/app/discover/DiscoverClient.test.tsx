@@ -6,9 +6,15 @@ import { describe, it, expect, vi, beforeAll, beforeEach } from "vitest";
 // ---------------------------------------------------------------------------
 
 // useTranslations: (key) => key. Vale tanto para "discover" como "filters".
-vi.mock("next-intl", () => ({
-  useTranslations: () => (key: string) => key,
-}));
+// R6: el translator expone .has() (API next-intl v4) que DiscoverClient usa
+// para decidir lookup i18n vs fallback humanizeSlug. En test .has()→true
+// (namespace poblado) → el label es la propia clave, suficiente para estos
+// asserts (verifican estructura, no el texto traducido).
+vi.mock("next-intl", () => {
+  const t = (key: string) => key;
+  t.has = () => true;
+  return { useTranslations: () => t };
+});
 
 const mockRouterPush = vi.fn();
 vi.mock("@/i18n/navigation", () => ({
@@ -85,9 +91,9 @@ describe("DiscoverClient — E59 F5e", () => {
     const fetchFn = mockFetchOk();
     render(<DiscoverClient currentType="movie" currentPage={1} />);
 
-    // Abrir el popover del trigger "genre" (label humanizada = "Genre").
-    // El <p> del grupo y el botón trigger comparten texto → seleccionar el botón.
-    fireEvent.click(screen.getByRole("button", { name: "Genre" }));
+    // Abrir el popover del trigger "genre". R6: el label es i18n (clave en el
+    // mock); seleccionamos por testid estable, no por texto del label.
+    fireEvent.click(screen.getByTestId("filter-trigger-genre"));
     // Marcar la primera opción de género disponible.
     const checkbox = (await screen.findAllByRole("checkbox"))[0];
     fireEvent.click(checkbox);
@@ -108,8 +114,9 @@ describe("DiscoverClient — E59 F5e", () => {
     render(<DiscoverClient currentType="movie" currentPage={1} />);
 
     const thisYear = String(new Date().getFullYear());
-    // year es kind 'single' → v3 popover; abrir trigger ("Year") y clicar opción.
-    fireEvent.click(screen.getByRole("button", { name: "Year" }));
+    // year es kind 'single' → v3 popover; abrir trigger por testid y clicar
+    // opción. El bucket de año tiene label literal (no i18n) = el año.
+    fireEvent.click(screen.getByTestId("filter-trigger-year"));
     fireEvent.click(screen.getByText(thisYear));
 
     const url = mockRouterPush.mock.calls.at(-1)?.[0] as string;

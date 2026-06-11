@@ -1,21 +1,10 @@
 "use client";
 
 import Image from "next/image";
+import { useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
 import { cn } from "@/lib/utils/index";
-import type { MediaItem, MediaType } from "@/types/media";
-
-// Label del tipo para el badge (modo "all", E59 R5b). Placeholder i18n: las
-// claves reales por tipo entran en R6 (mismo plan que humanizeKey en la barra).
-const TYPE_LABEL: Record<MediaType, string> = {
-  movie: "Película",
-  tv: "Serie",
-  anime: "Anime",
-  book: "Libro",
-  manga: "Manga",
-  game: "Videojuego",
-  comic: "Cómic",
-};
+import type { MediaItem } from "@/types/media";
 
 export interface MediaCardProps {
   item: MediaItem;
@@ -31,6 +20,9 @@ export function MediaCard({
   className,
 }: MediaCardProps) {
   const href = `/media/${item.type}/${item.externalId}` as const;
+  // Badge de tipo (modo "all", R5b): label localizado vía discoverFilters.typeBadge
+  // (singular, ≠ filters.<type> que es plural). R6.
+  const tBadge = useTranslations("discoverFilters.typeBadge");
 
   return (
     <Link href={href} className={cn("block", className)}>
@@ -58,10 +50,13 @@ export function MediaCard({
           )}
 
           {/* Type badge overlay (modo "all", R5b): esquina superior, acento
-              verde del DS. Label localizado vía TYPE_LABEL (placeholder, R6). */}
+              verde del DS. Label localizado vía discoverFilters.typeBadge. */}
           {showType && (
-            <div className="absolute top-2 left-2 text-[10px] font-medium bg-black/70 backdrop-blur-sm px-1.5 py-0.5 rounded text-white leading-none shadow-md ring-1 ring-accent-positive/40">
-              {TYPE_LABEL[item.type] ?? item.type}
+            <div
+              data-testid="media-type-badge"
+              className="absolute top-2 left-2 text-[10px] font-medium bg-black/70 backdrop-blur-sm px-1.5 py-0.5 rounded text-white leading-none shadow-md ring-1 ring-accent-positive/40"
+            >
+              {tBadge(item.type)}
             </div>
           )}
 

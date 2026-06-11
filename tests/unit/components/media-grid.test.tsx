@@ -18,6 +18,11 @@ vi.mock("@/i18n/navigation", () => ({
   ),
 }));
 
+// R6: MediaGrid renderiza MediaCard, que usa useTranslations para el badge.
+vi.mock("next-intl", () => ({
+  useTranslations: () => (key: string) => key,
+}));
+
 import { MediaGrid } from "@/components/media/MediaGrid";
 
 const makeItem = (n: number): MediaItem => ({

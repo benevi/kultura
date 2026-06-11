@@ -14,7 +14,7 @@ import {
   TYPE_FILTERS,
   type DiscoverType,
 } from "@/lib/discover/type-filters";
-import { getFilterOptions } from "@/lib/discover/filter-options";
+import { getFilterOptions, humanizeSlug } from "@/lib/discover/filter-options";
 import { cn } from "@/lib/utils/index";
 import {
   type LucideIcon,
@@ -121,6 +121,7 @@ export function DiscoverClient({
 }: DiscoverClientProps) {
   const t = useTranslations("discover");
   const tF = useTranslations("filters");
+  const tDF = useTranslations("discoverFilters");
   const router = useRouter();
   const searchParams = useSearchParams();
 
@@ -191,27 +192,48 @@ export function DiscoverClient({
 
   // FilterBar contextual: un group por trigger visible de TYPE_FILTERS[type].
   // R3: icono lucide por key, y variante 'sort' para el pill "Ordenar: <valor>".
-  const filterGroups: FilterGroup[] = useMemo(
-    () =>
-      TYPE_FILTERS[type].map((trigger) => {
-        const isSort = trigger.key === "sort";
-        return {
-          key: trigger.key,
-          kind: trigger.kind,
-          align: trigger.align,
-          icon: FILTER_ICONS[trigger.key],
-          label: humanizeKey(trigger.key), // placeholder humanizado (i18n: F6)
-          ...(isSort
-            ? { variant: "sort" as const, sortLabel: tF("sort") }
-            : {}),
-          options:
-            trigger.key === "year"
-              ? buildYearBuckets()
-              : getFilterOptions(type, trigger.key),
-        };
-      }),
-    [type, tF]
-  );
+  // R6: label de trigger y de opción vía i18n (namespace discoverFilters). El
+  // value (slug canónico) NUNCA se toca; solo se traduce el label visible. Para
+  // catálogos sin traducción (platform/editorial = nombres propios, o slugs de
+  // género no listados) se cae a humanizeSlug — la clave i18n actúa de override.
+  const filterGroups: FilterGroup[] = useMemo(() => {
+    // Label de trigger: discoverFilters.trigger.<key>, fallback humanizeSlug.
+    const triggerLabel = (key: string) =>
+      tDF.has(`trigger.${key}`) ? tDF(`trigger.${key}`) : humanizeSlug(key);
+    // Label de opción: discoverFilters.options.<key>.<slug>, fallback humanizeSlug.
+    const optionLabel = (key: string, value: string) =>
+      tDF.has(`options.${key}.${value}`)
+        ? tDF(`options.${key}.${value}`)
+        : humanizeSlug(value);
+
+    return TYPE_FILTERS[type].map((trigger) => {
+      const isSort = trigger.key === "sort";
+      // year: buckets propios (años/décadas/classic). Solo "classic" tiene
+      // label traducible; el resto son literales numéricos que no se traducen.
+      const rawOptions =
+        trigger.key === "year"
+          ? buildYearBuckets().map((o) =>
+              o.value === "classic"
+                ? { value: o.value, label: tF("classic") }
+                : o
+            )
+          : getFilterOptions(type, trigger.key).map((o) => ({
+              value: o.value,
+              label: optionLabel(trigger.key, o.value),
+            }));
+      return {
+        key: trigger.key,
+        kind: trigger.kind,
+        align: trigger.align,
+        icon: FILTER_ICONS[trigger.key],
+        label: triggerLabel(trigger.key),
+        ...(isSort
+          ? { variant: "sort" as const, sortLabel: tF("sort") }
+          : {}),
+        options: rawOptions,
+      };
+    });
+  }, [type, tF, tDF]);
 
   // activeFilters desde la URL: multi → CSV→string[]; resto → string.
   const activeFilters: Record<string, string | string[]> = useMemo(() => {
@@ -360,7 +382,9 @@ export function DiscoverClient({
                   Mensaje y label reusan claves existentes (noResults ya está
                   redactado en clave de filtros; reset = "Limpiar filtros").
                   i18n: F6 puede dividirlos en claves dedicadas. */}
-              <p className="text-muted">{t("noResults")}</p>
+              <p data-testid="discover-empty" className="text-muted">
+                {t("noResults")}
+              </p>
               <button
                 onClick={clearFilters}
                 className="text-accent-info text-sm mt-2 hover:text-accent-info/80 transition-colors"
@@ -392,12 +416,4 @@ export function DiscoverClient({
       )}
     </div>
   );
-}
-
-/**
- * Placeholder legible para la etiqueta de un trigger a partir de su key.
- * i18n: F6 sustituye esto por traducciones reales por (type,key).
- */
-function humanizeKey(key: string): string {
-  return key.charAt(0).toUpperCase() + key.slice(1);
 }
