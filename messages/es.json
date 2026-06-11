@@ -541,5 +541,154 @@
       "subtitle": "Empieza gratis. Sin tarjeta de crédito.",
       "button": "Crear cuenta gratis"
     }
+  },
+  "discoverFilters": {
+    "trigger": {
+      "genre": "Género",
+      "year": "Año",
+      "valoracion": "Valoración",
+      "platform": "Plataforma",
+      "duracion": "Duración",
+      "idioma": "Idioma",
+      "status": "Estado",
+      "estado": "Estado",
+      "temporadas": "Temporadas",
+      "demografia": "Demografía",
+      "volumenes": "Volúmenes",
+      "editorial": "Editorial",
+      "formato": "Formato",
+      "modojuego": "Modo de juego",
+      "duracionmedia": "Duración media",
+      "sort": "Ordenar"
+    },
+    "options": {
+      "valoracion": {
+        "6": "6+",
+        "7": "7+",
+        "8": "8+",
+        "9": "9+"
+      },
+      "temporadas": {
+        "1": "1",
+        "2-3": "2–3",
+        "4-6": "4–6",
+        "7plus": "7+"
+      },
+      "modojuego": {
+        "single": "Un jugador",
+        "multi": "Multijugador",
+        "coop": "Cooperativo",
+        "online": "En línea"
+      },
+      "duracionmedia": {
+        "lt10": "< 10 h",
+        "10-30": "10–30 h",
+        "30-60": "30–60 h",
+        "60plus": "60+ h"
+      },
+      "estado": {
+        "early-access": "Acceso anticipado",
+        "released": "Lanzado"
+      },
+      "formato": {
+        "free": "Gratis",
+        "ebook": "Ebook",
+        "physical": "Físico"
+      },
+      "volumenes": {
+        "1-5": "1–5",
+        "6-20": "6–20",
+        "20plus": "20+"
+      },
+      "status": {
+        "airing": "En emisión",
+        "complete": "Finalizado",
+        "upcoming": "Próximamente",
+        "publishing": "En publicación",
+        "hiatus": "En pausa",
+        "discontinued": "Descatalogado"
+      },
+      "demografia": {
+        "shonen": "Shōnen",
+        "shojo": "Shōjo",
+        "seinen": "Seinen",
+        "josei": "Josei",
+        "kids": "Infantil"
+      },
+      "duracion": {
+        "short": "Corta",
+        "medium": "Media",
+        "long": "Larga"
+      },
+      "sort": {
+        "popularity": "Popularidad",
+        "rating": "Valoración",
+        "release_desc": "Más recientes",
+        "release_asc": "Más antiguos",
+        "title_az": "Título A–Z",
+        "title_za": "Título Z–A"
+      },
+      "idioma": {
+        "espanol": "Español",
+        "ingles": "Inglés",
+        "japones": "Japonés",
+        "frances": "Francés",
+        "aleman": "Alemán",
+        "italiano": "Italiano",
+        "coreano": "Coreano",
+        "portugues": "Portugués"
+      },
+      "genre": {
+        "accion": "Acción",
+        "aventura": "Aventura",
+        "animacion": "Animación",
+        "comedia": "Comedia",
+        "crimen": "Crimen",
+        "documental": "Documental",
+        "drama": "Drama",
+        "familia": "Familia",
+        "fantasia": "Fantasía",
+        "historia": "Historia",
+        "terror": "Terror",
+        "musica": "Música",
+        "misterio": "Misterio",
+        "romance": "Romance",
+        "suspense": "Suspense",
+        "belica": "Bélica",
+        "western": "Western",
+        "infantil": "Infantil",
+        "noticias": "Noticias",
+        "reality": "Reality",
+        "telenovela": "Telenovela",
+        "talk": "Talk show",
+        "ciencia-ficcion": "Ciencia ficción",
+        "recuentos-de-la-vida": "Recuentos de la vida",
+        "deportes": "Deportes",
+        "sobrenatural": "Sobrenatural",
+        "rpg": "RPG",
+        "estrategia": "Estrategia",
+        "shooter": "Shooter",
+        "indie": "Indie",
+        "casual": "Casual",
+        "simulacion": "Simulación",
+        "puzzle": "Puzzle",
+        "arcade": "Arcade",
+        "plataformas": "Plataformas",
+        "carreras": "Carreras",
+        "lucha": "Lucha",
+        "poesia": "Poesía",
+        "biografia": "Biografía",
+        "ensayo": "Ensayo"
+      }
+    },
+    "typeBadge": {
+      "movie": "Película",
+      "tv": "Serie",
+      "anime": "Anime",
+      "book": "Libro",
+      "manga": "Manga",
+      "game": "Videojuego",
+      "comic": "Cómic"
+    }
   }
 }

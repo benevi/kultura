@@ -60,7 +60,7 @@ test.describe('Discover — tabs anime/manga + paginación [B3.5e]', () => {
   test('tab anime muestra resultados', async ({ page }) => {
     await page.goto(`${BASE}/es/discover?type=anime&page=1`)
 
-    const noResults = page.locator('text=/sin resultados|no results/i')
+    const noResults = page.getByTestId('discover-empty')
     const mediaCards = page.locator('a[href*="/media/anime/"]')
 
     await expect(mediaCards.first()).toBeVisible({ timeout: 10_000 })

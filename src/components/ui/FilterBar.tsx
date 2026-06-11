@@ -154,6 +154,7 @@ function SingleGroup({
         <button
           type="button"
           aria-expanded={open}
+          data-testid={`filter-trigger-${group.key}`}
           className={cn(triggerPillClass(active, open), className)}
         >
           {Icon && <Icon className="h-3.5 w-3.5" aria-hidden="true" />}
@@ -176,6 +177,7 @@ function SingleGroup({
                 type="button"
                 role="radio"
                 aria-checked={selected}
+                data-testid={`filter-opt-${group.key}-${option.value}`}
                 onClick={() => select(option.value)}
                 className={cn(
                   "px-2.5 py-1 rounded-pill text-xs cursor-pointer border transition-colors",
@@ -226,6 +228,7 @@ function SortGroup({
         <button
           type="button"
           aria-expanded={open}
+          data-testid={`filter-trigger-${group.key}`}
           className={cn(triggerPillClass(active, open), className)}
         >
           {Icon && <Icon className="h-3.5 w-3.5" aria-hidden="true" />}
@@ -249,6 +252,7 @@ function SortGroup({
               type="button"
               role="radio"
               aria-checked={option.value === value}
+              data-testid={`filter-opt-${group.key}-${option.value}`}
               onClick={() => select(option.value)}
               className={cn(
                 "text-left px-2 py-1.5 rounded-lg text-xs cursor-pointer hover:bg-surface-elevated",
@@ -301,6 +305,7 @@ function MultiGroup({
         <button
           type="button"
           aria-expanded={open}
+          data-testid={`filter-trigger-${group.key}`}
           className={cn(triggerPillClass(count > 0, open), className)}
         >
           {Icon && <Icon className="h-3.5 w-3.5" aria-hidden="true" />}
@@ -338,6 +343,7 @@ function MultiGroup({
             return (
               <label
                 key={option.value}
+                data-testid={`filter-opt-${group.key}-${option.value}`}
                 className="flex items-center gap-2 px-2 py-1.5 rounded-lg cursor-pointer hover:bg-surface-elevated text-xs"
               >
                 <input

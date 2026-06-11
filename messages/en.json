@@ -541,5 +541,154 @@
       "subtitle": "Start for free. No credit card required.",
       "button": "Create free account"
     }
+  },
+  "discoverFilters": {
+    "trigger": {
+      "genre": "Genre",
+      "year": "Year",
+      "valoracion": "Rating",
+      "platform": "Platform",
+      "duracion": "Runtime",
+      "idioma": "Language",
+      "status": "Status",
+      "estado": "Status",
+      "temporadas": "Seasons",
+      "demografia": "Demographic",
+      "volumenes": "Volumes",
+      "editorial": "Publisher",
+      "formato": "Format",
+      "modojuego": "Game mode",
+      "duracionmedia": "Avg. length",
+      "sort": "Sort"
+    },
+    "options": {
+      "valoracion": {
+        "6": "6+",
+        "7": "7+",
+        "8": "8+",
+        "9": "9+"
+      },
+      "temporadas": {
+        "1": "1",
+        "2-3": "2–3",
+        "4-6": "4–6",
+        "7plus": "7+"
+      },
+      "modojuego": {
+        "single": "Single-player",
+        "multi": "Multiplayer",
+        "coop": "Co-op",
+        "online": "Online"
+      },
+      "duracionmedia": {
+        "lt10": "< 10 h",
+        "10-30": "10–30 h",
+        "30-60": "30–60 h",
+        "60plus": "60+ h"
+      },
+      "estado": {
+        "early-access": "Early access",
+        "released": "Released"
+      },
+      "formato": {
+        "free": "Free",
+        "ebook": "Ebook",
+        "physical": "Physical"
+      },
+      "volumenes": {
+        "1-5": "1–5",
+        "6-20": "6–20",
+        "20plus": "20+"
+      },
+      "status": {
+        "airing": "Airing",
+        "complete": "Finished",
+        "upcoming": "Upcoming",
+        "publishing": "Publishing",
+        "hiatus": "On hiatus",
+        "discontinued": "Discontinued"
+      },
+      "demografia": {
+        "shonen": "Shōnen",
+        "shojo": "Shōjo",
+        "seinen": "Seinen",
+        "josei": "Josei",
+        "kids": "Kids"
+      },
+      "duracion": {
+        "short": "Short",
+        "medium": "Medium",
+        "long": "Long"
+      },
+      "sort": {
+        "popularity": "Popularity",
+        "rating": "Rating",
+        "release_desc": "Newest",
+        "release_asc": "Oldest",
+        "title_az": "Title A–Z",
+        "title_za": "Title Z–A"
+      },
+      "idioma": {
+        "espanol": "Spanish",
+        "ingles": "English",
+        "japones": "Japanese",
+        "frances": "French",
+        "aleman": "German",
+        "italiano": "Italian",
+        "coreano": "Korean",
+        "portugues": "Portuguese"
+      },
+      "genre": {
+        "accion": "Action",
+        "aventura": "Adventure",
+        "animacion": "Animation",
+        "comedia": "Comedy",
+        "crimen": "Crime",
+        "documental": "Documentary",
+        "drama": "Drama",
+        "familia": "Family",
+        "fantasia": "Fantasy",
+        "historia": "History",
+        "terror": "Horror",
+        "musica": "Music",
+        "misterio": "Mystery",
+        "romance": "Romance",
+        "suspense": "Thriller",
+        "belica": "War",
+        "western": "Western",
+        "infantil": "Kids",
+        "noticias": "News",
+        "reality": "Reality",
+        "telenovela": "Soap opera",
+        "talk": "Talk show",
+        "ciencia-ficcion": "Sci-Fi",
+        "recuentos-de-la-vida": "Slice of life",
+        "deportes": "Sports",
+        "sobrenatural": "Supernatural",
+        "rpg": "RPG",
+        "estrategia": "Strategy",
+        "shooter": "Shooter",
+        "indie": "Indie",
+        "casual": "Casual",
+        "simulacion": "Simulation",
+        "puzzle": "Puzzle",
+        "arcade": "Arcade",
+        "plataformas": "Platformer",
+        "carreras": "Racing",
+        "lucha": "Fighting",
+        "poesia": "Poetry",
+        "biografia": "Biography",
+        "ensayo": "Essay"
+      }
+    },
+    "typeBadge": {
+      "movie": "Movie",
+      "tv": "TV Show",
+      "anime": "Anime",
+      "book": "Book",
+      "manga": "Manga",
+      "game": "Game",
+      "comic": "Comic"
+    }
   }
 }

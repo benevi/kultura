@@ -18,6 +18,16 @@ vi.mock("@/i18n/navigation", () => ({
   ),
 }));
 
+// R6: MediaCard usa useTranslations("discoverFilters.typeBadge") para el badge.
+// Mock con el mapa singular ES real (movie → "Película").
+vi.mock("next-intl", () => {
+  const TYPE_BADGE: Record<string, string> = {
+    movie: "Película", tv: "Serie", anime: "Anime", book: "Libro",
+    manga: "Manga", game: "Videojuego", comic: "Cómic",
+  };
+  return { useTranslations: () => (key: string) => TYPE_BADGE[key] ?? key };
+});
+
 import { MediaCard } from "@/components/media/MediaCard";
 
 const baseItem: MediaItem = {

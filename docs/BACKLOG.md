@@ -470,22 +470,22 @@ No bloqueantes. Atacar solo después de A–D.
 
   `RecommendModal` usa `bg-surface`, `border-border`, `text-text`; `Toast` usa `bg-surface2`, `border-border`, `text-accent`. Mismo patrón legacy ya visto y migrado en Chat/Notif. Migrar a tokens canónicos del DESIGN_SYSTEM.md. Sin priorizar.
 
-- [ ] **E59. Rediseño del filtro Descubrir (FilterBar) — visual/UX**
+- [x] **E59. (CERRADA 2026-06-11) Rediseño del filtro Descubrir (FilterBar) — visual/UX**
 
-  El `FilterBar` de `/descubrir` (chips TIPO/AÑO) necesita mejora profunda de visual y UX,
-  no solo consistencia de estilo. Componente COMPARTIDO (Discover, Search, Library) — validar
-  las 3 pantallas.
+  Rediseño completo entregado en sub-pasos R0→R6 (commit final R6 `d080690`):
+  - R0–R3: nueva `FilterBar` v3.1 (trigger-pills + Popover Radix, kinds single/multi/searchable,
+    icono lucide por filtro, variante sort "Ordenar: <valor>", tokens DS acento verde). Barra
+    Descubrir 2 filas (TIPO/FILTROS) sticky. `TYPE_FILTERS` central como fuente de verdad de
+    triggers visibles por tipo (política A: triggers sin dato en la API se ocultan).
+  - R4: filtros nativos + post-filtros server-side (valoracion, temporadas, volumenes, modojuego,
+    duracionmedia, estado game) en los builders de cada API.
+  - R5: modo "all" (agregado de las 7 familias) con badge de tipo por card.
+  - R6: i18n de labels (trigger + opciones + badge) vía namespace `discoverFilters`; value=slug
+    canónico intacto en URL, solo el label se traduce (fallback `humanizeSlug`).
 
-  Fase 0: auditar problemas concretos y definir alcance — jerarquía TIPO/AÑO, estados
-  activo/inactivo, combinaciones de filtros, scroll horizontal/responsive en móvil, posibles
-  ejes de filtrado adicionales.
-
-  Incluye como sub-paso la migración de los chips al componente compartido del DS (tokens legacy
-  actuales: activo `bg-accent-subtle text-accent border-accent` rojo `#E82020` → verde
-  `accent-positive`; inactivo `bg-surface2 text-muted border-border` → tokens DS canónicos).
-
-  Hecho cuando: filtro rediseñado y validado en móvil+desktop, 0 tokens legacy en `FilterBar`,
-  sin regresiones visuales en las 3 pantallas.
+  Hecho: filtro rediseñado y validado en móvil+desktop (Playwright 16/16 es+en), 0 tokens legacy
+  en `FilterBar`, labels i18n es/en con paridad. Deuda separada del acento rojo legacy en otros
+  consumidores → **E82** (BACKLOG).
 
 - [ ] **E60. Decisión de producto: scope de Discover/Books (idioma)**
 
