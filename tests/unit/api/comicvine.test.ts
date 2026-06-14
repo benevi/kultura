@@ -130,6 +130,20 @@ describe("isAdultPublisher", () => {
     expect(isAdultPublisher("class comics")).toBe(true);
   });
 
+  it("detecta editoriales japonesas de ero-manga añadidas en E87 (substring)", () => {
+    // Bunendo = caso que motivó E87 (Comic Bavel #135), igualdad exacta.
+    expect(isAdultPublisher("Bunendo")).toBe(true);
+    expect(isAdultPublisher("bunendo")).toBe(true); // case-insensitive
+    expect(isAdultPublisher("Wani Magazine")).toBe(true);
+    expect(isAdultPublisher("Akaneshinsha")).toBe(true);
+    expect(isAdultPublisher("Coremagazine")).toBe(true);
+    expect(isAdultPublisher("Hit Publishing")).toBe(true);
+    expect(isAdultPublisher("Mediax")).toBe(true);
+    // Nombres exactos de la API que matchean por substring con la entrada corta.
+    expect(isAdultPublisher("Sanwa Publishing Company Ltd.")).toBe(true);
+    expect(isAdultPublisher("Kasakura Shuppansha")).toBe(true);
+  });
+
   it("acepta editoriales de cómic normales y trata vacío como no-adulto", () => {
     expect(isAdultPublisher("DC Comics")).toBe(false);
     expect(isAdultPublisher("Image Comics")).toBe(false);
@@ -287,6 +301,41 @@ describe("getRecentComics", () => {
 
     expect(result.items).toHaveLength(1);
     expect(result.items[0].id).toBe("comic_30");
+  });
+
+  it("E87: descarta 'Comic Bavel #135' (editorial Bunendo, ero-manga)", async () => {
+    const fetchMock = mockFetchByPath(
+      {
+        status_code: 1,
+        error: "OK",
+        number_of_total_results: 2,
+        results: [
+          // Comic Bavel #135 (Bunendo) — debe filtrarse.
+          {
+            ...ISSUE,
+            id: 520040,
+            issue_number: "135",
+            volume: { id: 88907, name: "Comic Bavel" },
+          },
+          // Cómic occidental que sí debe sobrevivir.
+          { ...ISSUE, id: 90, volume: { id: 900, name: "Saga" } },
+        ],
+      },
+      {
+        status_code: 1,
+        error: "OK",
+        results: [
+          { id: 88907, publisher: { id: 7358, name: "Bunendo" } },
+          { id: 900, publisher: { id: 3, name: "Image Comics" } },
+        ],
+      }
+    );
+    vi.stubGlobal("fetch", fetchMock);
+
+    const result = await getRecentComics();
+
+    expect(result.items).toHaveLength(1);
+    expect(result.items[0].id).toBe("comic_90");
   });
 
   it("descarta issues de editorial de manga", async () => {
