@@ -113,8 +113,10 @@ export function isMangaPublisher(name: string): boolean {
  * Lista negra de editoriales/sellos de cómic erótico o pornográfico. Mismo
  * mecanismo que el filtro de manga: comparación case-insensitive por substring
  * contra el publisher que ComicVine asocia al volumen. Cubre los sellos adultos
- * occidentales más comunes en ComicVine. (El hentai japonés ya cae por la lista
- * de manga.)
+ * occidentales más comunes en ComicVine, más editoriales japonesas de ero-manga
+ * que NO van en MANGA_PUBLISHERS (sus nombres no matchean las grandes japonesas;
+ * E87: "Comic Bavel" de Bunendo se colaba porque ninguna lista lo capturaba).
+ * Nombres exactos verificados contra la API de ComicVine (endpoint /publishers/).
  */
 export const ADULT_PUBLISHERS: string[] = [
   "Eros Comix",
@@ -136,6 +138,15 @@ export const ADULT_PUBLISHERS: string[] = [
   "Bruno Gmünder",
   "NQ Publishers",
   "Slipshine",
+  // Editoriales japonesas de ero-manga (E87 — verificadas en la API de ComicVine).
+  "Bunendo", // id 7358 — Comic Bavel (caso que motivó E87)
+  "Wani Magazine", // id 3559 — "various ero-manga and art books"
+  "Akaneshinsha", // id 3495 — "various adult manga brands"
+  "Sanwa Publishing", // id 4931 (Sanwa Publishing Company Ltd.) — "adult manga titles"
+  "Coremagazine", // id 3631 — Comic Hotmilk y otros hentai
+  "Kasakura", // id 8301 (Kasakura Shuppansha) — ero-manga
+  "Mediax", // id 7768 — ero-manga (Honey Dip, etc.)
+  "Hit Publishing", // id 3566 — Comic Aun y otros ero-manga
 ];
 
 const ADULT_PUBLISHERS_LC = ADULT_PUBLISHERS.map((p) => p.toLowerCase());

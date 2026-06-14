@@ -27,24 +27,26 @@ E45 → ✅ **CERRADO COMPLETO 2026-06-04** (a✅ b✅ c✅ d✅). E45-d cerrado
 
 BATCH-PUSH → ✅ **CERRADA 2026-06-14** (push `827aa60`). Batch acumulado subido a origin + validación funcional en prod OK por el usuario (regla #11). Sin cambios de código (operación de release).
 
+E86 → ✅ **CERRADA 2026-06-14** (commit `a90a100`). Filtro NSFW global (diseño B): capa nativa (TMDB `include_adult=false`, Jikan `sfw=true`, RAWG `exclude_tags`) + post-filtro compartido `filterNSFW` en `fetchDiscoverData`. tsc 0, lint 0, vitest 1138 passed.
+
 ## Tarea activa
 
-**E86 PASO 1 — Filtro NSFW global (diseño B).**
+**E87 — Blacklist editoriales adultas ComicVine (Comic Bavel / Bunendo).**
 
 ### Qué cambia
-- **Capa nativa:** TMDB `include_adult=false` explícito en `discoverMovies`/`discoverTV`; Jikan `sfw=true` también en `getPopularAnime`/`getPopularManga` (cierra el hueco de la rama sin filtros); RAWG `exclude_tags=nsfw,adult,hentai,sexual-content,porn` en `buildRawgDiscoverParams` + `getPopularGames` (slugs verificados contra la API de tags).
-- **Post-filtro compartido:** nuevo `src/lib/api/nsfw-filter.ts` con `filterNSFW(items)` + catálogos `NSFW_TERMS_LC` (texto libre) y `NSFW_GENRES_LC` (géneros). Aplicado en `fetchDiscoverData` como último paso antes del return → cubre las 7 familias + el agregado `type=all`.
-- **Matching:** géneros → igualdad exacta de slug normalizado; title/synopsis → word-boundary regex (`\b`, case-insensitive), nunca substring crudo. **Decisión "adult":** filtra como género/tag exacto pero NO en texto libre (falsos positivos: "Young Adult", "Adult Swim").
+- **Causa (Paso 0):** "Comic Bavel #135" se colaba en Descubrir→Cómics porque su editorial **Bunendo** (id 7358, ero-manga japonés) no estaba en ninguna blacklist. ComicVine no tiene campo rating/maturity en ningún recurso (volume/issue/publisher, verificado contra la API real) → única vía sistémica es blacklist por editorial.
+- **Cambio:** 8 editoriales japonesas de ero-manga añadidas a `ADULT_PUBLISHERS` en `comicvine.ts` (NO a `MANGA_PUBLISHERS`), nombres exactos verificados contra el endpoint `/publishers/` de ComicVine: Bunendo, Wani Magazine, Akaneshinsha, Sanwa Publishing, Coremagazine, Kasakura, Mediax, Hit Publishing.
+- **Matching:** `isAdultPublisher` ya usa `lc.includes(p)` (substring case-insensitive) → "Bunendo" captura "Bunendo", "Sanwa Publishing" captura "Sanwa Publishing Company Ltd.", "Kasakura" captura "Kasakura Shuppansha". Sin cambios en la lógica de matching.
 
 ### Cómo sé que funciona
 1. `tsc --noEmit` → 0 errores. ✅
-2. `npm run lint` (archivos tocados) → 0. ✅
-3. `vitest run` → 1138 passed (1126 base + nuevos nsfw-filter + rawg-maps extendidos). 1 fail aislado en `library/route.test.ts` (timeout 401 flaky bajo carga, pasa en aislado, preexistente y ajeno a E86). ✅
-4. Smoke: `filterNSFW` elimina "Charlie (Hazbin Hotel) mega porn pack 1" (verificado; el `exclude_tags` nativo NO lo cubría — el item no está tag-eado en RAWG — pero el post-filtro de título sí). ✅
+2. `eslint` (archivos tocados) → 0. ✅
+3. `vitest run` → 1141 passed (1138 base + 3 nuevos asserts/casos). Sin flaky. ✅
+4. Test E87 en `comicvine.test.ts`: "Comic Bavel #135" (vol 88907, publisher Bunendo) → filtrado; cómic occidental sobrevive. ✅
 
 ### Archivos que toco
-- `src/lib/api/nsfw-filter.ts` (nuevo), `discover.ts`, `jikan.ts`, `tmdb.ts`, `rawg.ts`, `rawg-maps.ts`.
-- Tests: `tests/unit/api/nsfw-filter.test.ts` (nuevo), `rawg-maps.test.ts` (assertions extendidas por `exclude_tags`).
+- `src/lib/api/comicvine.ts` (lista `ADULT_PUBLISHERS`).
+- `tests/unit/api/comicvine.test.ts` (asserts nuevas + caso Bavel/Bunendo).
 
 ### Cuándo paro
-- tsc/lint/suite verdes + smoke confirmado. Commit único `[E86]`. Parar y esperar confirmación antes de la siguiente tarea.
+- tsc/lint/suite verdes. Commit único `[E87]`. NO pushear (lo valida el usuario). Parar y esperar confirmación.
