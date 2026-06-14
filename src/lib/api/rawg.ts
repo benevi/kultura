@@ -4,6 +4,8 @@
 // Docs: https://api.rawg.io/docs/
 // ============================================================
 
+import { RAWG_EXCLUDE_NSFW_TAGS } from "@/lib/api/rawg-maps";
+
 // ── Internal types ────────────────────────────────────────────────────────────
 
 export interface RawgGame {
@@ -61,6 +63,9 @@ export async function getGame(id: number): Promise<RawgGame> {
 export async function getPopularGames(page = 1): Promise<RawgResponse> {
   return rawgFetch<RawgResponse>("/games", {
     ordering: "-rating",
+    // E86: excluir tags NSFW también en la rama sin filtros (closes el hueco que
+    // mostraba "...mega porn pack" en /discover games sin filtrar).
+    exclude_tags: RAWG_EXCLUDE_NSFW_TAGS,
     page: String(page),
   });
 }

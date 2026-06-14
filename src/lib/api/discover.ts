@@ -54,6 +54,7 @@ import type { JikanAnime, JikanManga } from "@/lib/api/jikan";
 // Agregado modo "all" (R5a). Import diferido en uso (case "all") — el ciclo
 // discover↔aggregate se resuelve en runtime porque ninguno se invoca en módulo.
 import { fetchAggregateData } from "@/lib/api/aggregate";
+import { filterNSFW } from "@/lib/api/nsfw-filter";
 
 export type FetchErrorKind = "rate-limit" | "generic" | null;
 
@@ -214,6 +215,13 @@ export async function fetchDiscoverData(
     items = [];
     totalPages = 1;
   }
+
+  // E86: post-filtro NSFW global, último paso antes del return. Cubre todas las
+  // familias (movie/tv/anime/manga/book/comic/game). El agregado type=all retorna
+  // antes (fetchAggregateData), pero cada familia que combina pasa por aquí → ya
+  // filtrada. Complementa los filtros nativos (TMDB include_adult / Jikan sfw /
+  // RAWG exclude_tags) capturando lo que escapa a la capa de API.
+  items = filterNSFW(items);
 
   return { items, totalPages, fetchErrorKind };
 }

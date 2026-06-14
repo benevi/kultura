@@ -25,24 +25,26 @@ E62/E63/E64 → ✅ **CERRADAS 2026-06-05** (commit código `47becaf`). Tres fix
 
 E45 → ✅ **CERRADO COMPLETO 2026-06-04** (a✅ b✅ c✅ d✅). E45-d cerrado: d.1 backend (commit 410340c) + d.2 UI (commit d96e40f). Invitaciones a grupos funcionando end-to-end: owner invita amigos vía modal, invitee acepta/rechaza desde notificaciones, trigger da el alta. vitest 639 passed, i18n paridad 465=465.
 
+BATCH-PUSH → ✅ **CERRADA 2026-06-14** (push `827aa60`). Batch acumulado subido a origin + validación funcional en prod OK por el usuario (regla #11). Sin cambios de código (operación de release).
+
 ## Tarea activa
 
-**BATCH-PUSH — push del batch completo + validación en preview de Vercel.**
+**E86 PASO 1 — Filtro NSFW global (diseño B).**
 
 ### Qué cambia
-- `git push origin master` del batch acumulado en local (~23 commits sin subir, hasta `d080690` E59-R6 incluido). No hay cambios de código nuevos: es operación de release.
-- Tras el push, Vercel genera un deployment de preview (o promueve según config). Validar el deploy ejecutando la regla #11 de CLAUDE.md: no basta con headers/status/logs verdes — abrir la app desplegada y usar las secciones críticas.
+- **Capa nativa:** TMDB `include_adult=false` explícito en `discoverMovies`/`discoverTV`; Jikan `sfw=true` también en `getPopularAnime`/`getPopularManga` (cierra el hueco de la rama sin filtros); RAWG `exclude_tags=nsfw,adult,hentai,sexual-content,porn` en `buildRawgDiscoverParams` + `getPopularGames` (slugs verificados contra la API de tags).
+- **Post-filtro compartido:** nuevo `src/lib/api/nsfw-filter.ts` con `filterNSFW(items)` + catálogos `NSFW_TERMS_LC` (texto libre) y `NSFW_GENRES_LC` (géneros). Aplicado en `fetchDiscoverData` como último paso antes del return → cubre las 7 familias + el agregado `type=all`.
+- **Matching:** géneros → igualdad exacta de slug normalizado; title/synopsis → word-boundary regex (`\b`, case-insensitive), nunca substring crudo. **Decisión "adult":** filtra como género/tag exacto pero NO en texto libre (falsos positivos: "Young Adult", "Adult Swim").
 
 ### Cómo sé que funciona
-1. `git push` sin error; `git log origin/master..master` **vacío** (todo subido).
-2. Confirmar hash de `origin/master` == hash local de `master`.
-3. Vercel: deployment con estado **Ready** (sin fallo de build).
-4. Validación funcional (regla #11) sobre la URL del deploy: auth (login), Descubrir (los filtros R6 rediseñados — abrir popovers, comprobar labels traducidos es/en, badge en `type=all`), biblioteca, feed/grupos, chat, perfil. Reportar cualquier fallo visual o sección faltante aunque build+tests estén verdes.
+1. `tsc --noEmit` → 0 errores. ✅
+2. `npm run lint` (archivos tocados) → 0. ✅
+3. `vitest run` → 1138 passed (1126 base + nuevos nsfw-filter + rawg-maps extendidos). 1 fail aislado en `library/route.test.ts` (timeout 401 flaky bajo carga, pasa en aislado, preexistente y ajeno a E86). ✅
+4. Smoke: `filterNSFW` elimina "Charlie (Hazbin Hotel) mega porn pack 1" (verificado; el `exclude_tags` nativo NO lo cubría — el item no está tag-eado en RAWG — pero el post-filtro de título sí). ✅
 
 ### Archivos que toco
-- Ninguno de código (operación git/deploy). Si la validación destapa un bug → regla de emergencia: `{ID}-FIX` en NOW, arreglar, verificar, retomar.
+- `src/lib/api/nsfw-filter.ts` (nuevo), `discover.ts`, `jikan.ts`, `tmdb.ts`, `rawg.ts`, `rawg-maps.ts`.
+- Tests: `tests/unit/api/nsfw-filter.test.ts` (nuevo), `rawg-maps.test.ts` (assertions extendidas por `exclude_tags`).
 
 ### Cuándo paro
-- `origin/master..master` vacío + deploy Ready + validación funcional pasada (o bug reportado). Parar y esperar confirmación del usuario antes de la siguiente tarea del BACKLOG.
-
-Nota: smoke test manual de la ruta crítica E45-d se saltó por decisión del usuario (requería 2 cuentas logueadas + verificación del trigger en Supabase prod). Pendiente como validación funcional post-deploy (regla #11 CLAUDE.md) si se quiere confirmar en prod.
+- tsc/lint/suite verdes + smoke confirmado. Commit único `[E86]`. Parar y esperar confirmación antes de la siguiente tarea.

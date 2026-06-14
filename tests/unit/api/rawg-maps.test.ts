@@ -66,8 +66,16 @@ describe("rawgDates", () => {
 // ── buildRawgDiscoverParams ──────────────────────────────────────────────────
 
 describe("buildRawgDiscoverParams", () => {
-  it("sin filtros → solo ordering default", () => {
-    expect(buildRawgDiscoverParams()).toEqual({ ordering: "-added" });
+  it("sin filtros → ordering default + exclude_tags NSFW (E86)", () => {
+    expect(buildRawgDiscoverParams()).toEqual({
+      ordering: "-added",
+      exclude_tags: "nsfw,adult,hentai,sexual-content,porn",
+    });
+  });
+
+  it("exclude_tags NSFW siempre presente (E86)", () => {
+    const p = buildRawgDiscoverParams({ genre: ["accion"] });
+    expect(p.exclude_tags).toBe("nsfw,adult,hentai,sexual-content,porn");
   });
 
   it("género → genres con slug RAWG", () => {
@@ -107,8 +115,12 @@ describe("buildRawgDiscoverParams", () => {
     expect(p.genres).toBe("action");
     expect(p.status).toBeUndefined();
     expect(p.horas).toBeUndefined();
-    // Solo ordering + genres, nada más.
-    expect(Object.keys(p).sort()).toEqual(["genres", "ordering"]);
+    // Solo ordering + genres + exclude_tags (E86), nada más.
+    expect(Object.keys(p).sort()).toEqual([
+      "exclude_tags",
+      "genres",
+      "ordering",
+    ]);
   });
 
   it("género/plataforma desconocidos se descartan", () => {
@@ -128,7 +140,11 @@ describe("buildRawgDiscoverParams", () => {
       duracionmedia: "lt10",
       valoracion: "8",
     });
-    expect(Object.keys(p).sort()).toEqual(["genres", "ordering"]);
+    expect(Object.keys(p).sort()).toEqual([
+      "exclude_tags",
+      "genres",
+      "ordering",
+    ]);
   });
 });
 

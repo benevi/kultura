@@ -96,7 +96,9 @@ export async function getAnime(id: number): Promise<{ data: JikanAnimeDetail }> 
 export async function getPopularAnime(
   page = 1
 ): Promise<JikanSearchResponse> {
+  // E86: sfw=true también en la rama sin filtros (cierra el hueco /top/anime).
   return jikanFetch<JikanSearchResponse>("/top/anime", {
+    sfw: "true",
     page: String(page),
   });
 }
@@ -141,7 +143,9 @@ export async function getManga(id: number): Promise<{ data: JikanMangaDetail }> 
 export async function getPopularManga(
   page = 1
 ): Promise<JikanSearchResponse> {
+  // E86: sfw=true también en la rama sin filtros (cierra el hueco /top/manga).
   return jikanFetch<JikanSearchResponse>("/top/manga", {
+    sfw: "true",
     page: String(page),
   });
 }
