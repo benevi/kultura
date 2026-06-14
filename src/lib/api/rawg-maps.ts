@@ -117,11 +117,23 @@ function mapPlatformIds(slugs: string[] | undefined): number[] {
  * CSV de slugs (OR), platforms como CSV de IDs (OR), dates como rango. Vacío/
  * desconocido se omite.
  */
+// E86: tags NSFW a excluir nativamente en /games. Slugs verificados contra la
+// API de tags de RAWG (existen y tienen games_count>0). best-effort: complementa
+// el post-filtro NSFW compartido (nsfw-filter.ts) que captura lo que escape.
+export const RAWG_EXCLUDE_NSFW_TAGS = [
+  "nsfw",
+  "adult",
+  "hentai",
+  "sexual-content",
+  "porn",
+].join(",");
+
 export function buildRawgDiscoverParams(
   filters: RawgFilters = {}
 ): Record<string, string> {
   const params: Record<string, string> = {
     ordering: rawgOrdering(filters.sort),
+    exclude_tags: RAWG_EXCLUDE_NSFW_TAGS,
   };
 
   const genres = mapGenreSlugs(filters.genre);

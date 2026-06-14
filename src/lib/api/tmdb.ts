@@ -175,6 +175,7 @@ export async function discoverMovies(
 ): Promise<TmdbSearchResponse> {
   return tmdbFetch<TmdbSearchResponse>("/discover/movie", {
     sort_by: "popularity.desc",
+    include_adult: "false", // E86: explícito (default TMDB ya es false, lo fijamos)
     page: String(page),
     ...params,
   });
@@ -192,6 +193,7 @@ export async function discoverTV(
 ): Promise<TmdbTVSearchResponse> {
   return tmdbFetch<TmdbTVSearchResponse>("/discover/tv", {
     sort_by: "popularity.desc",
+    include_adult: "false", // E86: explícito (default TMDB ya es false, lo fijamos)
     page: String(page),
     ...params,
   });
