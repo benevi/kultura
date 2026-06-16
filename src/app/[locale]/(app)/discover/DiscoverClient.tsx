@@ -138,7 +138,8 @@ export function DiscoverClient({
   // de la URL (type, page, o cualquier filtro). Sin filtrado client-side: la
   // URL es la única fuente de verdad y el servidor aplica todos los filtros.
   const [items, setItems] = useState<MediaItem[]>([]);
-  const [totalPages, setTotalPages] = useState(1);
+  // E79 slice 1: el gate de "next" usa hasMore (fuente cruda), no totalPages.
+  const [hasMore, setHasMore] = useState(false);
   const [fetchErrorKind, setFetchErrorKind] =
     useState<DiscoverResult["fetchErrorKind"]>(null);
   const [loading, setLoading] = useState(true);
@@ -167,13 +168,13 @@ export function DiscoverClient({
       .then((data) => {
         if (cancelled) return;
         setItems(data.items ?? []);
-        setTotalPages(data.totalPages ?? 1);
+        setHasMore(data.hasMore ?? false);
         setFetchErrorKind(data.fetchErrorKind ?? null);
       })
       .catch(() => {
         if (cancelled) return;
         setItems([]);
-        setTotalPages(1);
+        setHasMore(false);
         setFetchErrorKind("generic");
       })
       .finally(() => {
@@ -399,12 +400,13 @@ export function DiscoverClient({
         </div>
       )}
 
-      {/* Pagination */}
-      {!loading && totalPages > 1 && (
+      {/* Pagination — E79 slice 1: visible si hay siguiente (hasMore) o si no
+          estamos en la página 1 (para poder retroceder desde una última corta). */}
+      {!loading && (hasMore || currentPage > 1) && (
         <div className="flex justify-center items-center gap-4 mt-8">
           <Pagination
             currentPage={currentPage}
-            totalPages={totalPages}
+            hasMore={hasMore}
             onPageChange={(page) => {
               const params = new URLSearchParams(searchParams.toString());
               params.set("type", type);

@@ -25,6 +25,7 @@ beforeEach(() => {
   vi.mocked(fetchDiscoverData).mockResolvedValue({
     items: [],
     totalPages: 1,
+    hasMore: false,
     fetchErrorKind: null,
   });
 });
@@ -194,6 +195,7 @@ describe("GET /api/discover", () => {
     vi.mocked(fetchDiscoverData).mockResolvedValue({
       items: [{ id: "movie_1", title: "X" } as never],
       totalPages: 7,
+      hasMore: true,
       fetchErrorKind: null,
     });
     const res = await GET(req("?type=movie&page=1"));
@@ -201,6 +203,8 @@ describe("GET /api/discover", () => {
     const body = await res.json();
     expect(body.items).toHaveLength(1);
     expect(body.totalPages).toBe(7);
+    // E79 slice 1: hasMore viaja en el payload.
+    expect(body.hasMore).toBe(true);
     expect(body.fetchErrorKind).toBeNull();
   });
 
@@ -208,6 +212,7 @@ describe("GET /api/discover", () => {
     vi.mocked(fetchDiscoverData).mockResolvedValue({
       items: [],
       totalPages: 1,
+      hasMore: false,
       fetchErrorKind: "rate-limit",
     });
     const res = await GET(req("?type=anime&page=1"));

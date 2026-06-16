@@ -5,11 +5,14 @@ import { Button } from "./button";
 
 export interface PaginationProps {
   currentPage: number;
-  totalPages: number;
+  // E79 slice 1: gate de "next" basado en la FUENTE cruda, no en totalPages
+  // (que sigue inflado por los post-filtros). El componente es prev/next, no
+  // renderiza números, así que totalPages ya no se necesita.
+  hasMore: boolean;
   onPageChange: (page: number) => void;
 }
 
-export function Pagination({ currentPage, totalPages, onPageChange }: PaginationProps) {
+export function Pagination({ currentPage, hasMore, onPageChange }: PaginationProps) {
   const t = useTranslations("discover");
 
   return (
@@ -24,14 +27,14 @@ export function Pagination({ currentPage, totalPages, onPageChange }: Pagination
       </Button>
 
       <span className="text-sm text-muted">
-        {t("page")} {currentPage} {t("of")} {totalPages}
+        {t("page")} {currentPage}
       </span>
 
       <Button
         variant="outline"
         size="sm"
         data-testid="pagination-next"
-        disabled={currentPage >= totalPages}
+        disabled={!hasMore}
         onClick={() => onPageChange(currentPage + 1)}
       >
         {t("next")} →

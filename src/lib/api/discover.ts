@@ -61,6 +61,12 @@ export type FetchErrorKind = "rate-limit" | "generic" | null;
 export interface DiscoverResult {
   items: MediaItem[];
   totalPages: number;
+  // E79 slice 1 — "has-next": ¿la FUENTE cruda tiene más páginas tras la actual?
+  // Se computa contra el total del proveedor (PRE-post-filtro), no contra los
+  // items servidos. El post-filtro (temporadas/volumenes/game-suite/NSFW) recorta
+  // lo visible pero NO cambia si hay más fuente que paginar → el gate de "next"
+  // se basa en esto, no en totalPages (que sigue inflado por el mismo motivo).
+  hasMore: boolean;
   fetchErrorKind: FetchErrorKind;
 }
 
@@ -82,6 +88,9 @@ export async function fetchDiscoverData(
 ): Promise<DiscoverResult> {
   let items: MediaItem[] = [];
   let totalPages = 1;
+  // E79 slice 1: hasMore = page < providerTotalPages. Se setea por familia con
+  // el total del proveedor que ya se computa; default false (última/única página).
+  let hasMore = false;
   let fetchErrorKind: FetchErrorKind = null;
 
   try {
@@ -95,6 +104,7 @@ export async function fetchDiscoverData(
           normalizeMovie(m as unknown as TmdbMovieDetail)
         );
         totalPages = res.total_pages;
+        hasMore = page < res.total_pages;
         break;
       }
       case "tv": {
@@ -109,6 +119,7 @@ export async function fetchDiscoverData(
         // el fetch nativo (no está en el builder). Vacío → no filtra.
         items = filterTVByTemporadas(items, filters.temporadas);
         totalPages = res.total_pages;
+        hasMore = page < res.total_pages;
         break;
       }
       case "anime": {
@@ -118,7 +129,9 @@ export async function fetchDiscoverData(
           : await getPopularAnime(page);
         const data = Array.isArray(res.data) ? (res.data as JikanAnime[]) : [];
         items = data.map((a) => normalizeAnime(a));
-        totalPages = res.pagination?.last_visible_page ?? 1;
+        const lastPage = res.pagination?.last_visible_page ?? 1;
+        totalPages = lastPage;
+        hasMore = page < lastPage;
         break;
       }
       case "manga": {
@@ -130,7 +143,9 @@ export async function fetchDiscoverData(
         // POST-filtro de volúmenes (solo manga): umbral mínimo sobre metadata.volumes.
         // Vacío/desconocido → no filtra. anime no pasa por aquí (oculto).
         items = filterByMinVolumes(items, filters.volumenes);
-        totalPages = res.pagination?.last_visible_page ?? 1;
+        const lastPage = res.pagination?.last_visible_page ?? 1;
+        totalPages = lastPage;
+        hasMore = page < lastPage;
         break;
       }
       case "book": {
@@ -149,6 +164,7 @@ export async function fetchDiscoverData(
           res.numFound && res.numFound > 0
             ? Math.min(Math.ceil(res.numFound / 20), 50)
             : 1;
+        hasMore = page < totalPages;
         break;
       }
       case "comic": {
@@ -163,6 +179,7 @@ export async function fetchDiscoverData(
         // Si la API corta el offset en páginas muy altas, devolverán vacío, pero no
         // imponemos tope artificial.
         totalPages = Math.max(Math.ceil(res.total / 20), 1);
+        hasMore = page < totalPages;
         break;
       }
       case "game": {
@@ -184,6 +201,7 @@ export async function fetchDiscoverData(
         // paginación E79 conocido (overfetch sin recomputar totalPages).
         items = applyGamePostFilters(items, filters);
         totalPages = Math.ceil(res.count / 20);
+        hasMore = page < totalPages;
         break;
       }
       case "all": {
@@ -202,6 +220,7 @@ export async function fetchDiscoverData(
           normalizeMovie(m as unknown as TmdbMovieDetail)
         );
         totalPages = res.total_pages;
+        hasMore = page < res.total_pages;
         break;
       }
     }
@@ -214,6 +233,7 @@ export async function fetchDiscoverData(
     }
     items = [];
     totalPages = 1;
+    hasMore = false; // error → no hay siguiente que ofrecer.
   }
 
   // E86: post-filtro NSFW global, último paso antes del return. Cubre todas las
@@ -223,5 +243,5 @@ export async function fetchDiscoverData(
   // RAWG exclude_tags) capturando lo que escapa a la capa de API.
   items = filterNSFW(items);
 
-  return { items, totalPages, fetchErrorKind };
+  return { items, totalPages, hasMore, fetchErrorKind };
 }

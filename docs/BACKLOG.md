@@ -589,9 +589,11 @@ No bloqueantes. Atacar solo después de A–D.
   Los iconos actuales son demasiado genéricos; sustituir por un set más característico/coherente. Definir set en Fase 0.
   Hecho cuando: iconografía coherente aplicada en las vistas clave.
 
-- [ ] **E79. Paginación: mejora (UX)**
-  Mejora de paginación, distinta de E3 (verify-queries) y E48d (notif-cursor). Definir alcance en Fase 0: qué listados, infinite-scroll vs páginas.
-  Hecho cuando: paginación consistente y performante en los listados objetivo.
+- [ ] **E79. Paginación: mejora (UX)** — _slice 1 hecho, slice 2 pendiente_
+  Mejora de paginación, distinta de E3 (verify-queries) y E48d (notif-cursor). Alcance: Descubrir (overfetch + páginas cortas/vacías por post-filtros).
+  - [x] **slice 1 — has-next** (2026-06-16): `DiscoverResult.hasMore` (campo aditivo) = `page < providerTotalPages` por familia; agregado `all` = `page*20 < merged.length`. `Pagination` gatea "next" por `!hasMore` (ya no por `totalPages`, que sigue inflado por los post-filtros) y muestra "page X" sin el "of Y" mentiroso. Elimina páginas cortas/vacías que deshabilitaban "next" antes de tiempo. tsc 0, lint 0, vitest 1157 passed.
+  - [ ] **slice 2 — cachear pool + profundizar** (pendiente): cachear el pool del agregado `all` (hoy re-fetcha page 1 de las 7 familias en cada página) y el overfetch de `comic` (pide 100, tira ~80); profundizar la paginación real más allá del pool ya traído (back-fill / cursor por familia para no truncar la profundidad navegable).
+  Hecho cuando: paginación consistente y performante en Descubrir sin re-fetch redundante del pool.
 
 - [ ] **E80. Ranking por estrellas (votación interna)**
   Sistema de valoración interna por estrellas y ranking derivado. Diseño pendiente en Fase 0: modelo de datos, RLS, dónde se vota/muestra.
