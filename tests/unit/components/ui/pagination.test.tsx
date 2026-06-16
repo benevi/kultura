@@ -2,79 +2,207 @@ import { render, screen, fireEvent } from "@testing-library/react";
 import { describe, it, expect, vi } from "vitest";
 import { Pagination } from "@/components/ui/Pagination";
 
+// useTranslations: (key, params) => interpola {n} para distinguir aria-labels
+// por número de página ("Page 1", "Page 2", …). Sin params devuelve la clave.
 vi.mock("next-intl", () => ({
-  useTranslations: () => (key: string) => key,
+  useTranslations: () => (key: string, params?: Record<string, unknown>) => {
+    if (key === "pageN") return `Page ${params?.n}`;
+    if (key === "previous") return "Previous";
+    if (key === "next") return "Next";
+    if (key === "paginationLabel") return "Pagination";
+    return key;
+  },
 }));
 
-describe("Pagination", () => {
-  it("renderiza el texto de página actual (sin total mentiroso)", () => {
+describe("Pagination — E79 slice 1b (numerada)", () => {
+  it("renderiza un nav etiquetado con role navigation", () => {
     render(
-      <Pagination currentPage={3} hasMore={true} onPageChange={vi.fn()} />
+      <Pagination
+        currentPage={1}
+        hasMore
+        totalPages={5}
+        onPageChange={vi.fn()}
+      />
     );
-    // E79 slice 1: solo "page X", ya no "of Y".
-    expect(screen.getByText(/3/)).toBeInTheDocument();
+    expect(
+      screen.getByRole("navigation", { name: /pagination/i })
+    ).toBeInTheDocument();
+  });
+
+  it("renderiza los números de página (primera, ventana, última)", () => {
+    render(
+      <Pagination
+        currentPage={5}
+        hasMore
+        totalPages={10}
+        onPageChange={vi.fn()}
+      />
+    );
+    // ventana: 1 … 4 5 6 … 10
+    for (const n of [1, 4, 5, 6, 10]) {
+      expect(
+        screen.getByRole("button", { name: `Page ${n}` })
+      ).toBeInTheDocument();
+    }
+    // 2, 3, 7, 8, 9 quedan colapsados por la elipsis.
+    expect(
+      screen.queryByRole("button", { name: "Page 3" })
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: "Page 8" })
+    ).not.toBeInTheDocument();
+  });
+
+  it("muestra elipsis donde hay salto entre números", () => {
+    render(
+      <Pagination
+        currentPage={5}
+        hasMore
+        totalPages={10}
+        onPageChange={vi.fn()}
+      />
+    );
+    // Dos saltos (1↔4 y 6↔10) → dos elipsis.
+    expect(screen.getAllByText("…")).toHaveLength(2);
+  });
+
+  it("sin saltos (total pequeño) no hay elipsis y se listan todas las páginas", () => {
+    render(
+      <Pagination
+        currentPage={2}
+        hasMore
+        totalPages={3}
+        onPageChange={vi.fn()}
+      />
+    );
+    expect(screen.queryByText("…")).not.toBeInTheDocument();
+    for (const n of [1, 2, 3]) {
+      expect(
+        screen.getByRole("button", { name: `Page ${n}` })
+      ).toBeInTheDocument();
+    }
+  });
+
+  it("marca la página activa con aria-current='page'", () => {
+    render(
+      <Pagination
+        currentPage={3}
+        hasMore
+        totalPages={5}
+        onPageChange={vi.fn()}
+      />
+    );
+    const active = screen.getByRole("button", { name: "Page 3" });
+    expect(active).toHaveAttribute("aria-current", "page");
+    // Las demás no son current.
+    const other = screen.getByRole("button", { name: "Page 2" });
+    expect(other).not.toHaveAttribute("aria-current");
   });
 
   it("el botón Anterior está deshabilitado en la página 1", () => {
     render(
-      <Pagination currentPage={1} hasMore={true} onPageChange={vi.fn()} />
+      <Pagination
+        currentPage={1}
+        hasMore
+        totalPages={5}
+        onPageChange={vi.fn()}
+      />
     );
-    const prevBtn = screen.getByRole("button", { name: /previous/i });
-    expect(prevBtn).toBeDisabled();
-  });
-
-  it("el botón Siguiente está deshabilitado cuando no hay más (hasMore=false)", () => {
-    render(
-      <Pagination currentPage={5} hasMore={false} onPageChange={vi.fn()} />
-    );
-    const nextBtn = screen.getByRole("button", { name: /next/i });
-    expect(nextBtn).toBeDisabled();
-  });
-
-  it("llama onPageChange(2) al hacer click en Siguiente estando en página 1", () => {
-    const handlePageChange = vi.fn();
-    render(
-      <Pagination currentPage={1} hasMore={true} onPageChange={handlePageChange} />
-    );
-    const nextBtn = screen.getByRole("button", { name: /next/i });
-    fireEvent.click(nextBtn);
-    expect(handlePageChange).toHaveBeenCalledTimes(1);
-    expect(handlePageChange).toHaveBeenCalledWith(2);
-  });
-
-  it("llama onPageChange(1) al hacer click en Anterior estando en página 2", () => {
-    const handlePageChange = vi.fn();
-    render(
-      <Pagination currentPage={2} hasMore={true} onPageChange={handlePageChange} />
-    );
-    const prevBtn = screen.getByRole("button", { name: /previous/i });
-    fireEvent.click(prevBtn);
-    expect(handlePageChange).toHaveBeenCalledTimes(1);
-    expect(handlePageChange).toHaveBeenCalledWith(1);
+    expect(screen.getByRole("button", { name: /previous/i })).toBeDisabled();
   });
 
   it("el botón Anterior está habilitado en páginas > 1", () => {
     render(
-      <Pagination currentPage={3} hasMore={true} onPageChange={vi.fn()} />
+      <Pagination
+        currentPage={3}
+        hasMore
+        totalPages={5}
+        onPageChange={vi.fn()}
+      />
     );
-    const prevBtn = screen.getByRole("button", { name: /previous/i });
-    expect(prevBtn).not.toBeDisabled();
+    expect(
+      screen.getByRole("button", { name: /previous/i })
+    ).not.toBeDisabled();
+  });
+
+  it("el botón Siguiente está deshabilitado cuando no hay más (hasMore=false)", () => {
+    render(
+      <Pagination
+        currentPage={5}
+        hasMore={false}
+        totalPages={10}
+        onPageChange={vi.fn()}
+      />
+    );
+    expect(screen.getByRole("button", { name: /next/i })).toBeDisabled();
   });
 
   it("el botón Siguiente está habilitado cuando hay más (hasMore=true)", () => {
     render(
-      <Pagination currentPage={3} hasMore={true} onPageChange={vi.fn()} />
+      <Pagination
+        currentPage={3}
+        hasMore
+        totalPages={10}
+        onPageChange={vi.fn()}
+      />
     );
-    const nextBtn = screen.getByRole("button", { name: /next/i });
-    expect(nextBtn).not.toBeDisabled();
+    expect(screen.getByRole("button", { name: /next/i })).not.toBeDisabled();
   });
 
-  // ── E79 slice 1: caso clave ──────────────────────────────────────────────
-  // Última fuente con página llena tras post-filtro → next deshabilitado aunque
-  // currentPage sea bajo. El gate ya NO depende de totalPages.
-  it("next deshabilitado en la última fuente aunque currentPage sea bajo", () => {
+  it("click en un número llama onPageChange(n)", () => {
+    const onPageChange = vi.fn();
     render(
-      <Pagination currentPage={2} hasMore={false} onPageChange={vi.fn()} />
+      <Pagination
+        currentPage={5}
+        hasMore
+        totalPages={10}
+        onPageChange={onPageChange}
+      />
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Page 1" }));
+    expect(onPageChange).toHaveBeenCalledTimes(1);
+    expect(onPageChange).toHaveBeenCalledWith(1);
+  });
+
+  it("click en Siguiente llama onPageChange(currentPage + 1)", () => {
+    const onPageChange = vi.fn();
+    render(
+      <Pagination
+        currentPage={1}
+        hasMore
+        totalPages={5}
+        onPageChange={onPageChange}
+      />
+    );
+    fireEvent.click(screen.getByRole("button", { name: /next/i }));
+    expect(onPageChange).toHaveBeenCalledWith(2);
+  });
+
+  it("click en Anterior llama onPageChange(currentPage - 1)", () => {
+    const onPageChange = vi.fn();
+    render(
+      <Pagination
+        currentPage={2}
+        hasMore
+        totalPages={5}
+        onPageChange={onPageChange}
+      />
+    );
+    fireEvent.click(screen.getByRole("button", { name: /previous/i }));
+    expect(onPageChange).toHaveBeenCalledWith(1);
+  });
+
+  // ── E79 slice 1: el gate de "siguiente" NO depende de totalPages ──────────
+  // Última fuente con página llena tras post-filtro → next deshabilitado aunque
+  // currentPage sea bajo y totalPages diga que hay más.
+  it("next deshabilitado por hasMore=false aunque totalPages > currentPage", () => {
+    render(
+      <Pagination
+        currentPage={2}
+        hasMore={false}
+        totalPages={50}
+        onPageChange={vi.fn()}
+      />
     );
     expect(screen.getByRole("button", { name: /next/i })).toBeDisabled();
     // Anterior sigue disponible para retroceder desde una última corta.
