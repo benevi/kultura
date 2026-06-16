@@ -6,6 +6,7 @@
 import type { ComicVineIssue, ComicVineSearchResponse } from "@/types/media";
 import type { MediaItem } from "@/types/media";
 import { normalizeComic } from "@/lib/api/normalizer";
+import { env } from "@/lib/env";
 import {
   comicSort,
   comicCoverDateRange,
@@ -185,7 +186,8 @@ interface ComicVineVolumesResponse {
 }
 
 function getKey(): string {
-  const key = process.env.COMICVINE_KEY;
+  // Opcional en el schema: graceful, throw lazy solo si se usa sin configurar.
+  const key = env.COMICVINE_KEY;
   if (!key) throw new Error("COMICVINE_KEY no configurada");
   return key;
 }
