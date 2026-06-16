@@ -117,6 +117,8 @@
     "page": "Page",
     "previous": "Previous",
     "next": "Next",
+    "paginationLabel": "Pagination",
+    "pageN": "Page {n}",
     "noResults": "No results for these filters",
     "fetchError": {
       "generic": "Couldn't load content. Please try again later.",

@@ -140,6 +140,9 @@ export function DiscoverClient({
   const [items, setItems] = useState<MediaItem[]>([]);
   // E79 slice 1: el gate de "next" usa hasMore (fuente cruda), no totalPages.
   const [hasMore, setHasMore] = useState(false);
+  // E79 slice 1b: totalPages del proveedor (DiscoverResult) → ventana numerada.
+  // Solo alimenta la UI de la paginación; el gate de "siguiente" sigue en hasMore.
+  const [totalPages, setTotalPages] = useState(1);
   const [fetchErrorKind, setFetchErrorKind] =
     useState<DiscoverResult["fetchErrorKind"]>(null);
   const [loading, setLoading] = useState(true);
@@ -169,12 +172,14 @@ export function DiscoverClient({
         if (cancelled) return;
         setItems(data.items ?? []);
         setHasMore(data.hasMore ?? false);
+        setTotalPages(data.totalPages ?? 1);
         setFetchErrorKind(data.fetchErrorKind ?? null);
       })
       .catch(() => {
         if (cancelled) return;
         setItems([]);
         setHasMore(false);
+        setTotalPages(1);
         setFetchErrorKind("generic");
       })
       .finally(() => {
@@ -407,6 +412,7 @@ export function DiscoverClient({
           <Pagination
             currentPage={currentPage}
             hasMore={hasMore}
+            totalPages={totalPages}
             onPageChange={(page) => {
               const params = new URLSearchParams(searchParams.toString());
               params.set("type", type);
