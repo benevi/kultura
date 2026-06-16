@@ -41,7 +41,9 @@ function result(
   items: MediaItem[],
   fetchErrorKind: FetchErrorKind = null
 ): DiscoverResult {
-  return { items, totalPages: 1, fetchErrorKind };
+  // hasMore por familia es irrelevante aquí: el agregado recomputa el suyo sobre
+  // el pool merged (no propaga el de las familias). false fijo.
+  return { items, totalPages: 1, hasMore: false, fetchErrorKind };
 }
 
 /**
@@ -173,6 +175,9 @@ describe("paginación", () => {
     expect(p2.items).toHaveLength(5);
     expect(p1.totalPages).toBe(2);
     expect(p2.totalPages).toBe(2);
+    // E79 slice 1: hasMore = page*PAGE_SIZE < pool. p1: 20<25 true; p2: 40>=25 false.
+    expect(p1.hasMore).toBe(true);
+    expect(p2.hasMore).toBe(false);
     // continuidad: último de p1 precede al primero de p2.
     expect(p1.items[PAGE_SIZE - 1].id).toBe(`movie_${PAGE_SIZE - 1}`);
     expect(p2.items[0].id).toBe(`movie_${PAGE_SIZE}`);
@@ -180,9 +185,10 @@ describe("paginación", () => {
 
   it("pool vacío → totalPages mínimo 1, items vacío", async () => {
     setupByFamily({});
-    const { items, totalPages } = await fetchAggregateData(1, {});
+    const { items, totalPages, hasMore } = await fetchAggregateData(1, {});
     expect(items).toEqual([]);
     expect(totalPages).toBe(1);
+    expect(hasMore).toBe(false);
   });
 });
 

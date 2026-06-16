@@ -131,11 +131,15 @@ export async function fetchAggregateData(
   const start = (page - 1) * PAGE_SIZE;
   const items = merged.slice(start, start + PAGE_SIZE);
   const totalPages = Math.max(Math.ceil(merged.length / PAGE_SIZE), 1);
+  // E79 slice 1: hay más si el pool YA traído tiene ítems más allá de esta página.
+  // No profundizamos más allá del pool (cada familia trae solo su page 1) — eso
+  // es slice 2. hasMore aquí = quedan ítems sin servir en el merge actual.
+  const hasMore = page * PAGE_SIZE < merged.length;
 
   let fetchErrorKind: FetchErrorKind = null;
   if (!anyItems) {
     fetchErrorKind = anyRateLimit ? "rate-limit" : "generic";
   }
 
-  return { items, totalPages, fetchErrorKind };
+  return { items, totalPages, hasMore, fetchErrorKind };
 }

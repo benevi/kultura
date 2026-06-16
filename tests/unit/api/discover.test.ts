@@ -119,6 +119,8 @@ describe("fetchDiscoverData — guard null-data (E29)", () => {
     expect(result.fetchErrorKind).toBeNull();
     expect(result.items).toHaveLength(1);
     expect(result.totalPages).toBe(5);
+    // page 1 < last_visible_page 5 → hay más.
+    expect(result.hasMore).toBe(true);
   });
 
   it("manga: res.data = null → items=[], no lanza TypeError", async () => {
@@ -483,5 +485,164 @@ describe('fetchDiscoverData — modo "all" (R5a)', () => {
     const result = await fetchDiscoverData("all", 1, {});
     expect(result.items).toEqual([]);
     expect(result.fetchErrorKind).toBe("rate-limit");
+  });
+});
+
+// ── E79 slice 1: hasMore por familia (gate de "next" = fuente cruda) ───────────
+// hasMore = page < providerTotalPages. El post-filtro recorta items pero NO
+// cambia si hay más fuente que paginar → no provoca páginas cortas/vacías que
+// deshabiliten "next" antes de tiempo.
+
+describe("fetchDiscoverData — hasMore (E79 slice 1)", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it("movie: page < total_pages → hasMore true; última página → false", async () => {
+    vi.mocked(discoverMovies).mockResolvedValue({
+      results: [{ id: 1, title: "M" }],
+      total_pages: 3,
+    } as never);
+
+    expect((await fetchDiscoverData("movie", 1)).hasMore).toBe(true);
+    expect((await fetchDiscoverData("movie", 3)).hasMore).toBe(false);
+    expect((await fetchDiscoverData("movie", 4)).hasMore).toBe(false);
+  });
+
+  it("tv: hasMore desde total_pages del proveedor", async () => {
+    vi.mocked(discoverTV).mockResolvedValue({
+      results: [{ id: 2, name: "T" }],
+      total_pages: 2,
+    } as never);
+
+    expect((await fetchDiscoverData("tv", 1)).hasMore).toBe(true);
+    expect((await fetchDiscoverData("tv", 2)).hasMore).toBe(false);
+  });
+
+  it("anime: hasMore desde last_visible_page", async () => {
+    vi.mocked(getPopularAnime).mockResolvedValue({
+      data: [{ mal_id: 1, title: "A" }] as never[],
+      pagination: { last_visible_page: 4 },
+    });
+
+    expect((await fetchDiscoverData("anime", 3)).hasMore).toBe(true);
+    expect((await fetchDiscoverData("anime", 4)).hasMore).toBe(false);
+  });
+
+  it("manga: hasMore desde last_visible_page", async () => {
+    vi.mocked(getPopularManga).mockResolvedValue({
+      data: [{ mal_id: 1, title: "M" }] as never[],
+      pagination: { last_visible_page: 2 },
+    });
+
+    expect((await fetchDiscoverData("manga", 1)).hasMore).toBe(true);
+    expect((await fetchDiscoverData("manga", 2)).hasMore).toBe(false);
+  });
+
+  it("book: hasMore desde ceil(numFound/20) capado a 50", async () => {
+    vi.mocked(searchOpenLibrary).mockResolvedValue({
+      docs: [{ key: "/works/1", title: "B" }],
+      numFound: 60, // ceil(60/20)=3
+    } as never);
+
+    expect((await fetchDiscoverData("book", 2)).hasMore).toBe(true);
+    expect((await fetchDiscoverData("book", 3)).hasMore).toBe(false);
+  });
+
+  it("comic: hasMore desde ceil(total/20)", async () => {
+    vi.mocked(getRecentComics).mockResolvedValue({
+      items: [{ id: "comic_1", title: "C" }] as never[],
+      total: 50, // ceil(50/20)=3
+    } as never);
+
+    expect((await fetchDiscoverData("comic", 2)).hasMore).toBe(true);
+    expect((await fetchDiscoverData("comic", 3)).hasMore).toBe(false);
+  });
+
+  it("game: hasMore desde ceil(count/20)", async () => {
+    vi.mocked(getPopularGames).mockResolvedValue({
+      results: [{ id: 1, name: "G" }],
+      count: 40, // ceil(40/20)=2
+    } as never);
+
+    expect((await fetchDiscoverData("game", 1)).hasMore).toBe(true);
+    expect((await fetchDiscoverData("game", 2)).hasMore).toBe(false);
+  });
+
+  it("CASO CLAVE: hasMore se computa sobre la fuente cruda (count), no sobre items servidos", async () => {
+    // El gate de "next" lo decide la FUENTE (count → 10 páginas), no cuántos
+    // items sobreviven al post-filtro de esta página. Aunque un post-filtro
+    // recortara la página a 0, hasMore seguiría true porque la fuente tiene más.
+    // (Verificación E2E del render con página vacía + next activo:
+    //  discover-pagination.spec.ts → "página filtrada vacía no bloquea next".)
+    vi.mocked(getPopularGames).mockResolvedValue({
+      results: [{ id: 1, name: "G" }],
+      count: 200, // ceil(200/20)=10 páginas de fuente
+    } as never);
+
+    const p1 = await fetchDiscoverData("game", 1, {});
+    expect(p1.hasMore).toBe(true); // page 1 < 10
+    const p10 = await fetchDiscoverData("game", 10, {});
+    expect(p10.hasMore).toBe(false); // última página de la fuente
+  });
+
+  it("error (catch) → hasMore false (no hay siguiente que ofrecer)", async () => {
+    vi.mocked(getPopularAnime).mockRejectedValue(new Error("boom"));
+    const result = await fetchDiscoverData("anime", 1);
+    expect(result.fetchErrorKind).toBe("generic");
+    expect(result.hasMore).toBe(false);
+  });
+});
+
+// ── E79 slice 1: hasMore en agregado "all" ────────────────────────────────────
+
+describe('fetchDiscoverData — hasMore en "all" (E79 slice 1)', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it("hasMore true si el pool merged excede page*20; false al agotarlo", async () => {
+    // Cada familia devuelve 5 items → pool de 35 (7 familias). page 1 sirve 20,
+    // quedan 15 → hasMore true. page 2 sirve los 15 restantes → hasMore false.
+    const five = (mk: (i: number) => unknown) =>
+      Array.from({ length: 5 }, (_, i) => mk(i));
+    vi.mocked(discoverMovies).mockResolvedValue({
+      results: five((i) => ({ id: `m${i}`, title: "M" })),
+      total_pages: 1,
+    } as never);
+    vi.mocked(discoverTV).mockResolvedValue({
+      results: five((i) => ({ id: `t${i}`, name: "T" })),
+      total_pages: 1,
+    } as never);
+    vi.mocked(getPopularAnime).mockResolvedValue({
+      data: five((i) => ({ mal_id: `a${i}`, title: "A" })) as never[],
+      pagination: { last_visible_page: 1 },
+    });
+    vi.mocked(searchOpenLibrary).mockResolvedValue({
+      docs: five((i) => ({ key: `/works/b${i}`, title: "B" })),
+      numFound: 5,
+    } as never);
+    vi.mocked(getPopularManga).mockResolvedValue({
+      data: five((i) => ({ mal_id: `g${i}`, title: "G" })) as never[],
+      pagination: { last_visible_page: 1 },
+    });
+    const gameRes = {
+      results: five((i) => ({ id: `v${i}`, name: "V" })),
+      count: 5,
+    } as never;
+    vi.mocked(getPopularGames).mockResolvedValue(gameRes);
+    vi.mocked(discoverGames).mockResolvedValue(gameRes);
+    vi.mocked(getRecentComics).mockResolvedValue({
+      items: five((i) => ({ id: `comic_${i}`, title: "C" })) as never[],
+      total: 5,
+    } as never);
+
+    const p1 = await fetchDiscoverData("all", 1, {});
+    expect(p1.items).toHaveLength(20);
+    expect(p1.hasMore).toBe(true); // 20 < 35
+
+    const p2 = await fetchDiscoverData("all", 2, {});
+    expect(p2.items).toHaveLength(15);
+    expect(p2.hasMore).toBe(false); // 40 >= 35
   });
 });
