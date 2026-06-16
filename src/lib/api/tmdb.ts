@@ -4,6 +4,8 @@
 // Docs: https://developer.themoviedb.org/reference/intro/getting-started
 // ============================================================
 
+import { env } from "@/lib/env";
+
 export const TMDB_IMG_BASE = "https://image.tmdb.org/t/p";
 
 export function tmdbPoster(path: string | null): string | undefined {
@@ -108,7 +110,7 @@ async function tmdbFetch<T>(
   params: Record<string, string> = {}
 ): Promise<T> {
   const url = new URL(`https://api.themoviedb.org/3${path}`);
-  url.searchParams.set("api_key", process.env.TMDB_API_KEY!);
+  url.searchParams.set("api_key", env.TMDB_API_KEY);
   url.searchParams.set("language", "es-ES");
   Object.entries(params).forEach(([k, v]) => url.searchParams.set(k, v));
   const res = await fetch(url.toString());

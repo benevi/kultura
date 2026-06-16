@@ -205,7 +205,7 @@ No bloqueantes. Atacar solo después de A–D.
   Hay dos policies UPDATE casi-idénticas con el mismo predicate (`auth.uid() = id`): `users can update own profile` y `users_update_own`. Ruido en la capa de seguridad. Eliminar una de las dos creando una migración nueva (`supabase migration new dedupe_users_update_policies`). Prioridad baja, hacer antes de producción real.
   Hecho cuando: `pg_policies WHERE tablename='users' AND cmd='UPDATE'` devuelve exactamente 1 fila y hay commit con migración.
 
-- [ ] **E24. Validación de env vars al startup**
+- [x] **E24. Validación de env vars al startup**
   `src/lib/env.ts` con Zod que valide todas las env vars requeridas. Importar en `app/layout.tsx`.
   Hecho cuando: arrancar sin `ANTHROPIC_API_KEY` falla con mensaje claro en startup, no en primera request.
 

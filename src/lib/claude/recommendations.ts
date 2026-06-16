@@ -6,6 +6,7 @@
 // ============================================================
 
 import Anthropic from '@anthropic-ai/sdk'
+import { env } from '@/lib/env'
 import { createClient } from '@/lib/supabase/server'
 import type { SupabaseClient } from '@supabase/supabase-js'
 import type { MediaType } from '@/types/media'
@@ -216,7 +217,8 @@ export async function getAiRecommendations(
   // Mínimo 3 items para contexto útil
   if (items.length < 3) return []
 
-  const apiKey = process.env.ANTHROPIC_API_KEY
+  // Opcional en el schema: graceful, degrada a [] si no está configurada.
+  const apiKey = env.ANTHROPIC_API_KEY
   if (!apiKey) {
     console.error('ANTHROPIC_API_KEY not set')
     return []

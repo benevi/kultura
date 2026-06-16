@@ -94,7 +94,7 @@ describe('getAiRecommendations — cache key includes locale and version', () =>
 
   beforeEach(() => {
     vi.resetModules()
-    vi.stubEnv('ANTHROPIC_API_KEY', 'test-key')
+    vi.stubEnv('ANTHROPIC_API_KEY', 'sk-ant-test-key')
   })
 
   afterEach(() => {
@@ -178,7 +178,7 @@ describe('getAiRecommendations — resolves media refs via searchByType', () => 
     vi.resetModules()
     searchByTypeMock.mockReset()
     searchByTypeMock.mockResolvedValue([])
-    vi.stubEnv('ANTHROPIC_API_KEY', 'test-key')
+    vi.stubEnv('ANTHROPIC_API_KEY', 'sk-ant-test-key')
   })
 
   afterEach(() => {

@@ -5,6 +5,7 @@
 // ============================================================
 
 import { RAWG_EXCLUDE_NSFW_TAGS } from "@/lib/api/rawg-maps";
+import { env } from "@/lib/env";
 
 // ── Internal types ────────────────────────────────────────────────────────────
 
@@ -37,7 +38,7 @@ async function rawgFetch<T>(
   params: Record<string, string> = {}
 ): Promise<T> {
   const url = new URL(`https://api.rawg.io/api${path}`);
-  url.searchParams.set("key", process.env.RAWG_API_KEY!);
+  url.searchParams.set("key", env.RAWG_API_KEY);
   Object.entries(params).forEach(([k, v]) => url.searchParams.set(k, v));
   const res = await fetch(url.toString());
   if (!res.ok) throw new Error(`RAWG ${path} → ${res.status}`);

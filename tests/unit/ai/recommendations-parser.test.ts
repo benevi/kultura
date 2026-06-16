@@ -52,7 +52,7 @@ describe('getAiRecommendations — parser y validación', () => {
     vi.resetModules()
     searchByTypeMock.mockReset()
     searchByTypeMock.mockResolvedValue([])
-    vi.stubEnv('ANTHROPIC_API_KEY', 'test-key')
+    vi.stubEnv('ANTHROPIC_API_KEY', 'sk-ant-test-key')
   })
 
   afterEach(() => {

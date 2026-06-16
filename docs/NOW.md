@@ -31,22 +31,6 @@ E86 → ✅ **CERRADA 2026-06-14** (commit `a90a100`). Filtro NSFW global (dise�
 
 ## Tarea activa
 
-**E87 — Blacklist editoriales adultas ComicVine (Comic Bavel / Bunendo).**
+E24 → ✅ **CERRADA 2026-06-16** (este commit). Validación de env con Zod + fail-fast. `src/lib/env.ts` (publicSchema eager / serverSchema lazy-memoizado vía Proxy, error que lista vars que fallan) + `instrumentation.ts` (`register()` corre `parseServerEnv()` fail-fast en runtime nodejs, `instrumentationHook` estable en Next 14.2.35). Consumidores refactorizados (tmdb/rawg/supabase client·server·admin/middleware) a usar el módulo en vez de `process.env.X!`; graceful preservado en Anthropic y ComicVine. Vars de test fuera del schema de app; validación server en runtime, no en build. tsc 0, lint 0, vitest **1146 passed** (1141 base + 5).
 
-### Qué cambia
-- **Causa (Paso 0):** "Comic Bavel #135" se colaba en Descubrir→Cómics porque su editorial **Bunendo** (id 7358, ero-manga japonés) no estaba en ninguna blacklist. ComicVine no tiene campo rating/maturity en ningún recurso (volume/issue/publisher, verificado contra la API real) → única vía sistémica es blacklist por editorial.
-- **Cambio:** 8 editoriales japonesas de ero-manga añadidas a `ADULT_PUBLISHERS` en `comicvine.ts` (NO a `MANGA_PUBLISHERS`), nombres exactos verificados contra el endpoint `/publishers/` de ComicVine: Bunendo, Wani Magazine, Akaneshinsha, Sanwa Publishing, Coremagazine, Kasakura, Mediax, Hit Publishing.
-- **Matching:** `isAdultPublisher` ya usa `lc.includes(p)` (substring case-insensitive) → "Bunendo" captura "Bunendo", "Sanwa Publishing" captura "Sanwa Publishing Company Ltd.", "Kasakura" captura "Kasakura Shuppansha". Sin cambios en la lógica de matching.
-
-### Cómo sé que funciona
-1. `tsc --noEmit` → 0 errores. ✅
-2. `eslint` (archivos tocados) → 0. ✅
-3. `vitest run` → 1141 passed (1138 base + 3 nuevos asserts/casos). Sin flaky. ✅
-4. Test E87 en `comicvine.test.ts`: "Comic Bavel #135" (vol 88907, publisher Bunendo) → filtrado; cómic occidental sobrevive. ✅
-
-### Archivos que toco
-- `src/lib/api/comicvine.ts` (lista `ADULT_PUBLISHERS`).
-- `tests/unit/api/comicvine.test.ts` (asserts nuevas + caso Bavel/Bunendo).
-
-### Cuándo paro
-- tsc/lint/suite verdes. Commit único `[E87]`. NO pushear (lo valida el usuario). Parar y esperar confirmación.
+**Sin tarea activa.** Esperar al usuario para la siguiente (BACKLOG).
