@@ -58,6 +58,19 @@ import { filterNSFW } from "@/lib/api/nsfw-filter";
 
 export type FetchErrorKind = "rate-limit" | "generic" | null;
 
+// E89: tope real de páginas por proveedor. La UI numerada (slice 1b) ofrece
+// "última página" = totalPages; si totalPages refleja el conteo crudo del
+// proveedor (TMDB reporta total_pages hasta 57464) pero la API solo SIRVE hasta
+// 500, saltar a la última página devuelve un error 4xx → banner rojo falso.
+// Capamos totalPages al tope servible para que la última página sea navegable.
+//   - TMDB (movie/tv): hard cap documentado de 500.
+//   - book: ya capado a 50 (Open Library) en su rama.
+//   - RAWG (game): sin tope duro documentado; deep pages devuelven vacío pero no
+//     hay constante fiable que capar → sin cambio (anotado en E89).
+//   - Jikan (anime/manga): last_visible_page YA es el tope real del proveedor.
+//   - comic: ceil(total/20) es el total real navegable.
+const TMDB_MAX_PAGES = 500;
+
 export interface DiscoverResult {
   items: MediaItem[];
   totalPages: number;
@@ -96,6 +109,12 @@ export async function fetchDiscoverData(
   try {
     switch (type) {
       case "movie": {
+        // E89: page > tope servible → página fuera de rango (escrita a mano / salto
+        // de la UI). NO llamamos a TMDB (devolvería 4xx → banner rojo falso):
+        // página vacía sin error, distinta de un fallo de red real.
+        if (page > TMDB_MAX_PAGES) {
+          return { items: [], totalPages: TMDB_MAX_PAGES, hasMore: false, fetchErrorKind: null };
+        }
         const res = await discoverMovies(
           page,
           buildTmdbDiscoverParams("movie", filters)
@@ -103,11 +122,17 @@ export async function fetchDiscoverData(
         items = res.results.map((m) =>
           normalizeMovie(m as unknown as TmdbMovieDetail)
         );
-        totalPages = res.total_pages;
-        hasMore = page < res.total_pages;
+        // E89: cap al tope servible. hasMore se gobierna contra el cap también
+        // (page 500 ya no ofrece "siguiente" aunque total_pages crudo sea mayor).
+        totalPages = Math.min(res.total_pages, TMDB_MAX_PAGES);
+        hasMore = page < totalPages;
         break;
       }
       case "tv": {
+        // E89: ver case "movie" — fuera de rango → vacío sin error, sin llamada.
+        if (page > TMDB_MAX_PAGES) {
+          return { items: [], totalPages: TMDB_MAX_PAGES, hasMore: false, fetchErrorKind: null };
+        }
         const res = await discoverTV(
           page,
           buildTmdbDiscoverParams("tv", filters)
@@ -118,8 +143,9 @@ export async function fetchDiscoverData(
         // POST-filtro temporadas (R4c-2): bucket sobre metadata.seasons. NO gatea
         // el fetch nativo (no está en el builder). Vacío → no filtra.
         items = filterTVByTemporadas(items, filters.temporadas);
-        totalPages = res.total_pages;
-        hasMore = page < res.total_pages;
+        // E89: cap al tope servible (igual que movie).
+        totalPages = Math.min(res.total_pages, TMDB_MAX_PAGES);
+        hasMore = page < totalPages;
         break;
       }
       case "anime": {
@@ -212,6 +238,10 @@ export async function fetchDiscoverData(
         return fetchAggregateData(page, filters);
       }
       default: {
+        // E89: fallback = TMDB movies → mismo cap/guard que case "movie".
+        if (page > TMDB_MAX_PAGES) {
+          return { items: [], totalPages: TMDB_MAX_PAGES, hasMore: false, fetchErrorKind: null };
+        }
         const res = await discoverMovies(
           page,
           buildTmdbDiscoverParams("movie", filters)
@@ -219,8 +249,8 @@ export async function fetchDiscoverData(
         items = res.results.map((m) =>
           normalizeMovie(m as unknown as TmdbMovieDetail)
         );
-        totalPages = res.total_pages;
-        hasMore = page < res.total_pages;
+        totalPages = Math.min(res.total_pages, TMDB_MAX_PAGES);
+        hasMore = page < totalPages;
         break;
       }
     }

@@ -646,3 +646,72 @@ describe('fetchDiscoverData — hasMore en "all" (E79 slice 1)', () => {
     expect(p2.hasMore).toBe(false); // 40 >= 35
   });
 });
+
+// ── E89: cap totalPages al tope servible del proveedor (TMDB hard cap 500) ─────
+// TMDB reporta total_pages enorme (hasta 57464) pero la API solo SIRVE 500. Sin
+// cap, la UI numerada ofrece una "última página" que devuelve 4xx → banner rojo
+// falso. Capamos a 500 y distinguimos página fuera de rango (vacío, sin error).
+
+describe("fetchDiscoverData — cap TMDB 500 (E89)", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it("movie: total_pages enorme → totalPages capado a 500", async () => {
+    vi.mocked(discoverMovies).mockResolvedValue({
+      results: [{ id: 1, title: "M" }],
+      total_pages: 57464,
+    } as never);
+
+    const result = await fetchDiscoverData("movie", 1);
+    expect(result.totalPages).toBe(500);
+    expect(result.hasMore).toBe(true); // page 1 < 500
+  });
+
+  it("tv: total_pages enorme → totalPages capado a 500", async () => {
+    vi.mocked(discoverTV).mockResolvedValue({
+      results: [{ id: 2, name: "T" }],
+      total_pages: 30000,
+    } as never);
+
+    const result = await fetchDiscoverData("tv", 1);
+    expect(result.totalPages).toBe(500);
+  });
+
+  it("movie: total_pages < 500 → sin cambio (no infla)", async () => {
+    vi.mocked(discoverMovies).mockResolvedValue({
+      results: [{ id: 1, title: "M" }],
+      total_pages: 42,
+    } as never);
+
+    const result = await fetchDiscoverData("movie", 1);
+    expect(result.totalPages).toBe(42);
+  });
+
+  it("movie: page 500 (tope) → hasMore false (no ofrece siguiente)", async () => {
+    vi.mocked(discoverMovies).mockResolvedValue({
+      results: [{ id: 1, title: "M" }],
+      total_pages: 57464,
+    } as never);
+
+    const result = await fetchDiscoverData("movie", 500);
+    expect(result.hasMore).toBe(false); // 500 < 500 es false
+  });
+
+  it("movie: page > 500 (fuera de rango) → vacío, SIN banner de error, sin llamada API", async () => {
+    const result = await fetchDiscoverData("movie", 600);
+    expect(result.items).toEqual([]);
+    expect(result.fetchErrorKind).toBeNull(); // NO "generic" → sin banner rojo
+    expect(result.hasMore).toBe(false);
+    expect(result.totalPages).toBe(500);
+    // no se llama a TMDB (evita el 4xx que dispararía el banner).
+    expect(discoverMovies).not.toHaveBeenCalled();
+  });
+
+  it("tv: page > 500 (fuera de rango) → vacío, SIN error, sin llamada API", async () => {
+    const result = await fetchDiscoverData("tv", 9999);
+    expect(result.items).toEqual([]);
+    expect(result.fetchErrorKind).toBeNull();
+    expect(discoverTV).not.toHaveBeenCalled();
+  });
+});
