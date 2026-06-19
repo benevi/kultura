@@ -12,7 +12,8 @@
     "lists": "Listas",
     "suggestions": "Sugerencias",
     "profile": "Mi perfil",
-    "signOut": "Cerrar sesión"
+    "signOut": "Cerrar sesión",
+    "more": "Más"
   },
   "auth": {
     "signIn": "Iniciar sesión",
