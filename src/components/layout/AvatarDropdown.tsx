@@ -53,23 +53,6 @@ export function AvatarDropdown({ username, avatarColor, avatarInitials }: Avatar
           className="absolute right-0 top-full mt-2 w-48 bg-surface border border-border rounded-xl shadow-xl py-1 z-50"
         >
           <Link
-            href="/lists"
-            role="menuitem"
-            className="flex items-center gap-2 px-4 py-2 text-sm text-text hover:bg-surface2 transition-colors"
-            onClick={() => setOpen(false)}
-          >
-            {t('lists')}
-          </Link>
-          <Link
-            href="/suggestions"
-            role="menuitem"
-            className="flex items-center gap-2 px-4 py-2 text-sm text-text hover:bg-surface2 transition-colors"
-            onClick={() => setOpen(false)}
-          >
-            {t('suggestions')}
-          </Link>
-          <div className="my-1 border-t border-border" />
-          <Link
             href={`/profile/${username}`}
             role="menuitem"
             className="flex items-center gap-2 px-4 py-2 text-sm text-text hover:bg-surface2 transition-colors"

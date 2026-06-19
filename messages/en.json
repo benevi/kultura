@@ -12,7 +12,8 @@
     "lists": "Lists",
     "suggestions": "Feedback",
     "profile": "My profile",
-    "signOut": "Sign out"
+    "signOut": "Sign out",
+    "more": "More"
   },
   "auth": {
     "signIn": "Sign in",
