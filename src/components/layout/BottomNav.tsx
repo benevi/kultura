@@ -3,7 +3,7 @@
 import { useTranslations } from 'next-intl'
 import { Link, usePathname } from '@/i18n/navigation'
 import { cn } from '@/lib/utils/index'
-import { Home, Compass, MessageCircle, BookOpen, Users } from 'lucide-react'
+import { Home, Compass, MessageCircle, BookOpen, Users, Users2 } from 'lucide-react'
 
 export function BottomNav() {
   const t = useTranslations('nav')
@@ -14,6 +14,7 @@ export function BottomNav() {
     { key: 'discover', href: '/discover', icon: Compass },
     { key: 'chat', href: '/chat', icon: MessageCircle },
     { key: 'library', href: '/library', icon: BookOpen },
+    { key: 'friends', href: '/friends', icon: Users2 },
     { key: 'groups', href: '/groups', icon: Users },
   ] as const
 

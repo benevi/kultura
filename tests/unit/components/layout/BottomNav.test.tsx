@@ -8,6 +8,7 @@ vi.mock('next-intl', () => ({
       discover: 'Descubrir',
       chat: 'Mensajes',
       library: 'Mi biblioteca',
+      friends: 'Amigos',
       groups: 'Grupos',
     }
     return map[key] ?? key
@@ -27,17 +28,19 @@ vi.mock('lucide-react', () => ({
   MessageCircle: () => <svg data-testid="icon-messagecircle" />,
   BookOpen: () => <svg data-testid="icon-bookopen" />,
   Users: () => <svg data-testid="icon-users" />,
+  Users2: () => <svg data-testid="icon-users2" />,
 }))
 
 import { BottomNav } from '@/components/layout/BottomNav'
 
 describe('BottomNav', () => {
-  it('renderiza los 5 items', () => {
+  it('renderiza los 6 items', () => {
     render(<BottomNav />)
     expect(screen.getByText('Inicio')).toBeInTheDocument()
     expect(screen.getByText('Descubrir')).toBeInTheDocument()
     expect(screen.getByText('Mensajes')).toBeInTheDocument()
     expect(screen.getByText('Mi biblioteca')).toBeInTheDocument()
+    expect(screen.getByText('Amigos')).toBeInTheDocument()
     expect(screen.getByText('Grupos')).toBeInTheDocument()
   })
 
@@ -57,5 +60,11 @@ describe('BottomNav', () => {
     render(<BottomNav />)
     const groupsLink = screen.getByText('Grupos').closest('a')
     expect(groupsLink).toHaveAttribute('href', '/groups')
+  })
+
+  it('link de amigos apunta a /friends', () => {
+    render(<BottomNav />)
+    const friendsLink = screen.getByText('Amigos').closest('a')
+    expect(friendsLink).toHaveAttribute('href', '/friends')
   })
 })
