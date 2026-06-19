@@ -614,3 +614,9 @@ No bloqueantes. Atacar solo después de A–D.
 - [ ] **E88. Filtro de valoración (9+) no filtra**
   Con `valoracion=9` en la URL aparecen títulos con nota <9 (repro: `type=movie&year=2026&platform=netflix&valoracion=9&sort=title_az`). Investigar si el filtro de nota se mapea al param nativo del proveedor (TMDB `vote_average.gte`) o es post-filtro, y si el `sort` (p.ej. `title_az`) lo ignora/pisa. Aparcado, revisar más adelante.
   Hecho cuando: con `valoracion=9` no aparece ningún título con nota <9, independientemente del `sort`.
+
+- [x] **E90. (CERRADA 2026-06-19) Navegación móvil incompleta: faltan friends, lists, suggestions.** `BottomNav` (`md:hidden`) tenía 5 items (home·discover·chat·library·groups) sin `friends`; `NavLinks` desktop sí lo incluye. Listas duplicadas (no compartidas): friends omitido por entry ausente, no por slice/límite ni condicional de viewport. Fix: (1) `BottomNav` += `{key:'friends',href:'/friends',icon:Users2}` antes de groups (6 items finales), import `Users2` de lucide-react (groups mantiene `Users`), key i18n `nav.friends` reusada; (2) `AvatarDropdown` += `lists` y `suggestions` (Links arriba, antes de profile, con separador) reusando hrefs/keys de `NavLinks`. Test `BottomNav.test.tsx` actualizado (mock `Users2` + map `friends`, "6 items", nuevo test href `/friends`). tsc 0, lint 0, vitest 1169 passed. Detalle en DONE.md.
+
+- [ ] **E91. Search oculto en móvil**
+  El botón/acceso de búsqueda es `hidden md:flex` en `AuthHeader` → en móvil no hay buscador salvo escribiendo la URL `/search` a mano. Decidir dónde exponerlo en móvil (icono en header, entry en BottomNav, o en AvatarDropdown) sin desbordar la nav de 6 items.
+  Hecho cuando: usuario en móvil puede llegar a la búsqueda sin teclear la URL.
