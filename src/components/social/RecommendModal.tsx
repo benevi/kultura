@@ -130,6 +130,7 @@ export function RecommendModal({ mediaId, mediaCache, onClose }: RecommendModalP
             onChange={(e) => setMessage(e.target.value)}
             placeholder={t('messagePlaceholder')}
             rows={2}
+            maxLength={500}
             className="w-full bg-bg border border-border rounded-md px-3 py-2 text-sm text-text placeholder:text-muted resize-none focus:outline-none focus:ring-1 focus:ring-accent"
           />
         )}

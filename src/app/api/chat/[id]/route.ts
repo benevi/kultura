@@ -71,6 +71,11 @@ export async function POST(req: NextRequest, { params }: RouteParams): Promise<N
 
   const { content } = await req.json().catch(() => ({}))
   if (!content?.trim()) return NextResponse.json({ error: 'Empty message' }, { status: 400 })
+  // messages.content es TEXT sin constraint → tope de longitud aquí para evitar
+  // abuso de almacenamiento / payloads gigantes.
+  if (typeof content !== 'string' || content.length > 2000) {
+    return NextResponse.json({ error: 'Message too long (max 2000 chars)' }, { status: 400 })
+  }
 
   // Verify membership
   const { data: member } = await supabase

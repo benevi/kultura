@@ -67,6 +67,16 @@ export async function POST(request: Request): Promise<NextResponse> {
       { status: 400 }
     )
   }
+  // message es opcional; si viene, tope de longitud (recommendations.message es
+  // TEXT sin constraint) para evitar payloads gigantes.
+  if (body.message !== undefined && body.message !== null) {
+    if (typeof body.message !== 'string' || body.message.length > 500) {
+      return NextResponse.json(
+        { error: 'message too long (max 500 chars)' },
+        { status: 400 }
+      )
+    }
+  }
 
   // Verificar que el receptor existe
   const { data: receiver } = await supabase

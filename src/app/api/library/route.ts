@@ -73,6 +73,17 @@ export async function POST(request: Request): Promise<NextResponse> {
     )
   }
 
+  // Validar score (1..5) — la DB tiene CHECK (score BETWEEN 1 AND 5); sin este
+  // guard un score inválido devolvía un 500 opaco en vez de un 400 claro.
+  if (body.score !== undefined && body.score !== null) {
+    if (!Number.isInteger(body.score) || body.score < 1 || body.score > 5) {
+      return NextResponse.json(
+        { error: 'score must be an integer between 1 and 5' },
+        { status: 400 }
+      )
+    }
+  }
+
   // 3. Si viene mediaCache, upsert en tabla media (insert if not exists)
   if (body.mediaCache) {
     const { error: mediaError } = await supabase.from('media').upsert(
