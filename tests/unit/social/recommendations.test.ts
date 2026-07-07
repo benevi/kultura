@@ -100,6 +100,18 @@ describe('POST /api/recommendations', () => {
     expect(body.error).toContain('yourself')
   })
 
+  it('returns 400 if message exceeds max length (F4)', async () => {
+    mockGetUser.mockResolvedValue({ data: { user: AUTH_USER }, error: null })
+
+    const { POST } = await import('@/app/api/recommendations/route')
+    const res = await POST(
+      makeRequest({ toUserId: RECEIVER_ID, mediaId: MEDIA_ID, message: 'x'.repeat(501) })
+    )
+    expect(res.status).toBe(400)
+    const body = await res.json()
+    expect(body.error).toContain('too long')
+  })
+
   it('returns 404 if receiver does not exist', async () => {
     mockGetUser.mockResolvedValue({ data: { user: AUTH_USER }, error: null })
     mockFromUsers.mockReturnValue({

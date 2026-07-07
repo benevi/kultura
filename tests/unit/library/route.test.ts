@@ -98,6 +98,19 @@ describe('POST /api/library', () => {
     expect(body.error).toBe('mediaId is required')
   })
 
+  it('devuelve 400 con score fuera de rango (F3)', async () => {
+    for (const badScore of [0, 6, 3.5, -1]) {
+      mockGetUser.mockResolvedValueOnce({ data: { user: { id: 'user-uuid-001' } }, error: null })
+      const { POST } = await import('@/app/api/library/route')
+      const response = await POST(
+        makeRequest({ mediaId: 'movie_550', status: 'completed', score: badScore })
+      )
+      expect(response.status, `score=${badScore}`).toBe(400)
+      const body = await response.json() as { error: string }
+      expect(body.error).toContain('score must be an integer between 1 and 5')
+    }
+  })
+
   it('devuelve 200 y la entrada mapeada con upsert correcto', async () => {
     mockGetUser.mockResolvedValueOnce({ data: { user: { id: 'user-uuid-001' } }, error: null })
     // No mediaCache — skip media upsert
