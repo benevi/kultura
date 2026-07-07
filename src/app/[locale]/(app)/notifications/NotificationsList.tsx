@@ -69,7 +69,7 @@ function InviteActions({ invitationId }: { invitationId: string }) {
       <button
         onClick={() => respond('reject')}
         disabled={loading}
-        className="px-3 py-1 text-xs font-semibold bg-surface2 text-muted rounded-full hover:bg-red-950/40 hover:text-danger transition-colors disabled:opacity-50"
+        className="px-3 py-1 text-xs font-semibold bg-surface2 text-muted rounded-full hover:bg-accent-danger/10 hover:text-accent-danger transition-colors disabled:opacity-50"
       >
         {t('reject')}
       </button>

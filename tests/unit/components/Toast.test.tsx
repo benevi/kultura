@@ -82,6 +82,6 @@ describe('ToastContainer', () => {
       />
     )
     const icon = screen.getByText('✓')
-    expect(icon.className).toMatch(/green/)
+    expect(icon.className).toMatch(/text-accent-positive/)
   })
 })
