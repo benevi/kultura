@@ -124,7 +124,7 @@ src/lib/
 src/i18n/   navigation · request · routing
 src/middleware.ts
 src/types/  library · list · media · supabase · user
-messages/   es.json · en.json   (454 keys c/u)
+messages/   es.json · en.json   (594 keys c/u)
 supabase/migrations/
 tests/{unit,integration,contract,e2e}/
 ```
@@ -304,8 +304,8 @@ create table group_posts (                -- feed de un grupo
 
 ## Reglas técnicas innegociables
 
-1. **`COMICVINE_KEY`, `GEMINI_API_KEY` y `SUPABASE_SERVICE_ROLE_KEY`** → server-only. Nunca en `NEXT_PUBLIC_*`. Acceso solo vía Route Handlers.
-1b. **Todo nuevo endpoint POST/PATCH/DELETE debe aplicar `checkRateLimit` antes de cualquier operación de BD o llamada a API externa.** Para endpoints que llaman a un LLM (Gemini, otros), límite estricto (≤10 req/min por usuario). Usar el sistema en `src/lib/rate-limit.ts`: añadir preset a `LIMITS`, aplicar patrón `const rl = checkRateLimit(key, LIMITS.x); if (!rl.allowed) return 429`.
+1. **`COMICVINE_KEY`, `ANTHROPIC_API_KEY` y `SUPABASE_SERVICE_ROLE_KEY`** → server-only. Nunca en `NEXT_PUBLIC_*`. Acceso solo vía Route Handlers.
+1b. **Todo nuevo endpoint POST/PATCH/DELETE debe aplicar `checkRateLimit` antes de cualquier operación de BD o llamada a API externa.** Para endpoints que llaman a un LLM (Anthropic Claude, otros), límite estricto (≤10 req/min por usuario). Usar el sistema en `src/lib/rate-limit.ts`: añadir preset a `LIMITS`, aplicar patrón `const rl = checkRateLimit(key, LIMITS.x); if (!rl.allowed) return 429`.
 2. **Toda respuesta de API externa pasa por `normalizer`** antes de llegar a componentes. Componentes solo conocen `MediaItem`.
 3. **Cache de títulos en tabla `media`**: upsert antes de insertar en `user_media`. No llamar a APIs externas para títulos ya guardados.
 4. **RLS activado en todas las tablas.** Cualquier tabla nueva se crea con policies en la misma migración.
