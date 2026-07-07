@@ -30,9 +30,9 @@ const typeIcon: Record<ToastType, string> = {
 }
 
 const iconStyles: Record<ToastType, string> = {
-  success: 'text-green-400',
-  error:   'text-accent',
-  info:    'text-blue-400',
+  success: 'text-accent-positive',
+  error:   'text-accent-danger',
+  info:    'text-accent-info',
 }
 
 const ANIM_DURATION = 150 // matches --duration-base

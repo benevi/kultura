@@ -40,7 +40,7 @@ export function JoinGroupButton({ groupId, isMember, isOwner }: Props) {
       <button
         onClick={handleClick}
         disabled={loading}
-        className="flex-shrink-0 px-3 py-1.5 text-xs font-semibold bg-surface2 text-muted rounded-full hover:bg-red-950/40 hover:text-danger transition-colors disabled:opacity-50"
+        className="flex-shrink-0 px-3 py-1.5 text-xs font-semibold bg-surface2 text-muted rounded-full hover:bg-accent-danger/10 hover:text-accent-danger transition-colors disabled:opacity-50"
       >
         {loading ? '…' : t('leaveGroup')}
       </button>

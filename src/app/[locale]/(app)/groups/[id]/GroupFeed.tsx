@@ -98,7 +98,7 @@ export function GroupFeed({ groupId, currentUserId }: Props) {
           className="w-full bg-surface2 border border-border rounded-xl px-3 py-2.5 text-sm text-text placeholder-muted resize-none focus:outline-none focus:ring-1 focus:ring-accent"
         />
         {postError && (
-          <p className="text-xs text-red-500">{postError}</p>
+          <p className="text-xs text-accent-danger">{postError}</p>
         )}
         <div className="flex justify-end">
           <button

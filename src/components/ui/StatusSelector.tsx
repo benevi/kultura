@@ -18,10 +18,10 @@ const STATUS_OPTIONS: MediaStatus[] = [
 ];
 
 const statusColorClasses: Record<MediaStatus, string> = {
-  completed: "text-green-400",
-  in_progress: "text-blue-400",
-  pending: "text-yellow-400",
-  abandoned: "text-red-400",
+  completed: "text-accent-positive",
+  in_progress: "text-accent-info",
+  pending: "text-accent-highlight",
+  abandoned: "text-accent-danger",
 };
 
 export function StatusSelector({

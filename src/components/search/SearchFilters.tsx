@@ -183,7 +183,7 @@ export function SearchFilters({
               onChange={(e) =>
                 update({ minRating: parseFloat(e.target.value) })
               }
-              className="w-full accent-[#E82020] cursor-pointer"
+              className="w-full accent-[var(--accent-positive)] cursor-pointer"
             />
             <div className="flex justify-between text-xs text-muted mt-1">
               <span>0</span>
