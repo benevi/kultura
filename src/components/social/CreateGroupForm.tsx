@@ -30,28 +30,37 @@ export function CreateGroupForm({ onCreated, onCancel }: CreateGroupFormProps) {
   const [groupDesc, setGroupDesc] = useState('')
   const [isPublic, setIsPublic] = useState(true)
   const [creating, setCreating] = useState(false)
+  const [error, setError] = useState(false)
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     if (!groupName.trim()) return
     setCreating(true)
-    const res = await fetch('/api/groups', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        name: groupName.trim(),
-        description: groupDesc.trim() || undefined,
-        is_public: isPublic,
-      }),
-    })
-    const data = await res.json()
-    if (data.group) {
+    setError(false)
+    try {
+      const res = await fetch('/api/groups', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: groupName.trim(),
+          description: groupDesc.trim() || undefined,
+          is_public: isPublic,
+        }),
+      })
+      const data = await res.json().catch(() => null)
+      if (!res.ok || !data?.group) {
+        setError(true)
+        return
+      }
       onCreated({ ...data.group, memberRole: 'owner' })
       setGroupName('')
       setGroupDesc('')
       setIsPublic(true)
+    } catch {
+      setError(true)
+    } finally {
+      setCreating(false)
     }
-    setCreating(false)
   }
 
   return (
@@ -112,6 +121,9 @@ export function CreateGroupForm({ onCreated, onCancel }: CreateGroupFormProps) {
           <p className="text-xs text-text-tertiary">{tG('privateHint')}</p>
         )}
       </div>
+      {error && (
+        <p role="alert" className="text-xs text-accent-danger">{t('groupError')}</p>
+      )}
       <div className="flex gap-2">
         <KButton
           type="submit"

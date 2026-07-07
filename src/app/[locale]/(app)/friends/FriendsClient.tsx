@@ -40,6 +40,7 @@ export function FriendsClient({
   const [searchResults, setSearchResults] = useState<SearchUser[]>([])
   const [searching, setSearching] = useState(false)
   const [searchDone, setSearchDone] = useState(false)
+  const [searchError, setSearchError] = useState(false)
 
   // ── Friends logic ──────────────────────────────────────────
   function removeFriendFromList(friendshipId: string) {
@@ -66,11 +67,23 @@ export function FriendsClient({
     if (!searchQuery.trim()) return
     setSearching(true)
     setSearchDone(false)
-    const res = await fetch(`/api/users/search?q=${encodeURIComponent(searchQuery.trim())}`)
-    const data = await res.json()
-    setSearchResults(data.users ?? [])
-    setSearching(false)
-    setSearchDone(true)
+    setSearchError(false)
+    try {
+      const res = await fetch(`/api/users/search?q=${encodeURIComponent(searchQuery.trim())}`)
+      const data = await res.json().catch(() => null)
+      if (!res.ok || !data) {
+        setSearchError(true)
+        setSearchResults([])
+        return
+      }
+      setSearchResults(data.users ?? [])
+      setSearchDone(true)
+    } catch {
+      setSearchError(true)
+      setSearchResults([])
+    } finally {
+      setSearching(false)
+    }
   }
 
   return (
@@ -124,7 +137,11 @@ export function FriendsClient({
             </KButton>
           </form>
 
-          {searchDone && searchResults.length === 0 && (
+          {searchError && (
+            <p role="alert" className="text-sm text-accent-danger mt-3">{t('searchError')}</p>
+          )}
+
+          {!searchError && searchDone && searchResults.length === 0 && (
             <p className="text-sm text-text-secondary mt-3">{t('noUserFound')}</p>
           )}
 

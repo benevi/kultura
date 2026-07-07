@@ -51,6 +51,7 @@ export function ChatClient({ friends }: Props) {
   const [loadError, setLoadError] = useState(false)
   const [showNewChat, setShowNewChat] = useState(false)
   const [startingChat, setStartingChat] = useState<string | null>(null)
+  const [startError, setStartError] = useState(false)
 
   const loadConversations = useCallback(() => {
     setLoading(true)
@@ -65,16 +66,24 @@ export function ChatClient({ friends }: Props) {
 
   async function startConversation(friendId: string) {
     setStartingChat(friendId)
-    const res = await fetch('/api/chat', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ targetUserId: friendId }),
-    })
-    const data = await res.json()
-    if (data.conversationId) {
+    setStartError(false)
+    try {
+      const res = await fetch('/api/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ targetUserId: friendId }),
+      })
+      const data = await res.json().catch(() => null)
+      if (!res.ok || !data?.conversationId) {
+        setStartError(true)
+        return
+      }
       window.location.href = `/chat/${data.conversationId}`
+    } catch {
+      setStartError(true)
+    } finally {
+      setStartingChat(null)
     }
-    setStartingChat(null)
   }
 
   return (
@@ -113,6 +122,9 @@ export function ChatClient({ friends }: Props) {
                 {startingChat === f.id && <span className="ml-auto text-xs text-text-secondary">...</span>}
               </button>
             ))
+          )}
+          {startError && (
+            <p role="alert" className="text-xs text-accent-danger">{t('startError')}</p>
           )}
         </div>
       )}
