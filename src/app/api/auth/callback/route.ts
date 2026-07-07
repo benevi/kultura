@@ -1,6 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
+import { safeInternalPath } from "@/lib/utils/safe-redirect";
 
 /**
  * Route Handler: Supabase Auth code exchange.
@@ -10,12 +11,13 @@ import type { NextRequest } from "next/server";
  *
  * Parámetros de query:
  *   - code: PKCE authorization code de Supabase
- *   - next: ruta de destino tras el exchange (default "/")
+ *   - next: ruta de destino tras el exchange (default "/"). Saneada contra
+ *     open redirects vía safeInternalPath (solo rutas internas absolutas).
  */
 export async function GET(request: NextRequest) {
   const { searchParams, origin } = new URL(request.url);
   const code = searchParams.get("code");
-  const next = searchParams.get("next") ?? "/";
+  const next = safeInternalPath(searchParams.get("next"));
 
   if (code) {
     const supabase = createClient();

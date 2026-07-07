@@ -100,4 +100,10 @@ export const LIMITS = {
   suggestions: { windowMs: 60 * 60_000, max: 3 },
   /** GET /api/users/search — 30/min por usuario o IP */
   users_search: { windowMs: 60_000, max: 30 },
+  /** POST /api/groups/[id]/join — join/leave, 20/min por usuario */
+  groups_join: { windowMs: 60_000, max: 20 },
+  /** PATCH/DELETE /api/groups/invitations/[id] — aceptar/rechazar, 20/min por usuario */
+  group_invitations: { windowMs: 60_000, max: 20 },
+  /** PATCH /api/settings — actualizar perfil, 10/min por usuario */
+  settings: { windowMs: 60_000, max: 10 },
 } as const

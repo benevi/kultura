@@ -1,6 +1,9 @@
 /**
  * /dev — Design system sandbox. Dev verification only. Not linked from the app.
+ * S3: la ruta queda excluida del middleware, así que en producción se bloquea
+ * aquí con notFound() para no exponer el sandbox públicamente.
  */
+import { notFound } from "next/navigation";
 import { ContentCard } from "@/components/ui/ContentCard";
 import { KButton } from "@/components/ui/KButton";
 import { FilterChip } from "@/components/ui/FilterChip";
@@ -39,6 +42,8 @@ function Section({ title, children }: { title: string; children: React.ReactNode
 }
 
 export default function DevPage() {
+  if (process.env.NODE_ENV === "production") notFound();
+
   return (
     <div
       style={{
