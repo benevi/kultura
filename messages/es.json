@@ -405,6 +405,7 @@
     "searchPlaceholder": "Introduce un nombre de usuario...",
     "search": "Buscar",
     "noUserFound": "No se encontró ningún usuario con ese nombre",
+    "searchError": "Error al buscar usuarios. Inténtalo de nuevo.",
     "groups": "Grupos",
     "createGroup": "Crear grupo",
     "groupName": "Nombre del grupo",
@@ -484,6 +485,7 @@
     "typeToSearch": "Buscar amigos...",
     "noFriendsToChat": "Añade amigos primero para empezar a chatear",
     "sendError": "No se pudo enviar el mensaje. Inténtalo de nuevo.",
+    "startError": "No se pudo iniciar la conversación. Inténtalo de nuevo.",
     "loadError": "No se pudieron cargar los datos.",
     "retry": "Reintentar",
     "conversationCount": "{count, plural, =0 {Sin conversaciones} one {# conversación} other {# conversaciones}}"

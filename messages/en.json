@@ -405,6 +405,7 @@
     "searchPlaceholder": "Enter a username...",
     "search": "Search",
     "noUserFound": "No user found with that username",
+    "searchError": "Error searching for users. Please try again.",
     "groups": "Groups",
     "createGroup": "Create group",
     "groupName": "Group name",
@@ -484,6 +485,7 @@
     "typeToSearch": "Search friends...",
     "noFriendsToChat": "Add friends first to start chatting",
     "sendError": "Message could not be sent. Please try again.",
+    "startError": "Could not start the conversation. Please try again.",
     "loadError": "Couldn't load the data.",
     "retry": "Retry",
     "conversationCount": "{count, plural, =0 {No conversations} one {# conversation} other {# conversations}}"
