@@ -6,6 +6,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { getGroupById, getMemberRole } from '@/lib/social/groups'
+import { checkRateLimit, LIMITS } from '@/lib/rate-limit'
 
 interface Props {
   params: Promise<{ id: string }>
@@ -17,6 +18,14 @@ export async function POST(_req: NextRequest, { params }: Props): Promise<NextRe
 
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return NextResponse.json({ error: 'Not authenticated' }, { status: 401 })
+
+  const rl = checkRateLimit(`${user.id}:groups_join`, LIMITS.groups_join)
+  if (!rl.allowed) {
+    return NextResponse.json(
+      { error: 'Too many requests' },
+      { status: 429, headers: { 'Retry-After': String(rl.retryAfterSeconds) } }
+    )
+  }
 
   const group = await getGroupById(id)
   if (!group) return NextResponse.json({ error: 'Group not found' }, { status: 404 })
