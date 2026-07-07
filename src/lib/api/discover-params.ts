@@ -80,8 +80,10 @@ export function parseDiscoverParams(
     demografia: searchParams.get("demografia"),
     duracion: searchParams.get("duracion"),
     // Puente de naming: el front emite `rating`; el resto del pipeline usa
-    // `valoracion`. Único punto de mapeo (contrato R4b).
-    valoracion: searchParams.get("rating"),
+    // `valoracion`. Único punto de mapeo (contrato R4b). E88: se acepta también
+    // el alias `valoracion` en la URL (nombre "natural" ES) para que una URL
+    // escrita a mano no falle en silencio; `rating` (el que emite la UI) manda.
+    valoracion: searchParams.get("rating") ?? searchParams.get("valoracion"),
     // Puente de naming (R4c-2): el front emite `seasons`; el pipeline usa
     // `temporadas`. Único punto de mapeo.
     temporadas: searchParams.get("seasons"),
