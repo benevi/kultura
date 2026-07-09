@@ -619,4 +619,8 @@ No bloqueantes. Atacar solo después de A–D.
 
 - [x] **E92. (CERRADA 2026-07-09) Grid Descubrir: mínimo 2 columnas en móvil.** El skeleton (línea 368) y el grid de resultados (`MediaGrid` className, línea 381) de `DiscoverClient.tsx` arrancaban en `grid-cols-1` en móvil (<640px) → 1 card por fila. Fix: `grid-cols-1 sm:grid-cols-2` → `grid-cols-2` en ambos; md/lg/xl sin cambio. `loading.tsx` no tocado (E56). tsc 0, lint 0, vitest 1193 passed. Detalle en DONE.md.
 
+- [ ] **E93. (pregunta producto) ¿DMs solo entre amigos?**
+  `create_conversation_with_members` no exige amistad entre los participantes — cualquier usuario autenticado puede abrir conversación con cualquier otro. Detectado como S6 en la auditoría de 2026-07-07. Pendiente decisión de producto: ¿restringir DMs a amigos (chequeo de `friendships.status='accepted'` en la RPC/policy) o permitir DMs abiertos? NO implementar hasta decidir.
+  Hecho cuando: decisión tomada y, si aplica, restricción implementada con tests.
+
 - [x] **E91. (RESUELTO 2026-06-19 vía E90-amp)** Search oculto en móvil. El acceso de búsqueda era `hidden md:flex` en `AuthHeader` → móvil sin buscador salvo URL manual. Resuelto al ampliar E90: `search` (`/search`, lupa) es ahora una entry del bottom-sheet "Más" de `BottomNav`. Móvil llega a `/search` sin teclear la URL. Sin desbordar la barra (search vive en el sheet, no en las 5 celdas). Detalle en DONE.md (E90-amp).
