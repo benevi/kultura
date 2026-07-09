@@ -365,7 +365,7 @@ export function DiscoverClient({
       </div>
 
       {loading ? (
-        <div className="animate-pulse grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 md:gap-4">
+        <div className="animate-pulse grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 md:gap-4">
           {Array.from({ length: 18 }).map((_, i) => (
             <div key={i} className="flex flex-col gap-2">
               <div className="aspect-[2/3] bg-surface-elevated rounded-card" />
@@ -378,7 +378,7 @@ export function DiscoverClient({
         <MediaGrid
           items={items}
           showType={isAggregate}
-          className="grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5"
+          className="grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5"
         />
       ) : (
         <div className="text-center py-16">
