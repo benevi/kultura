@@ -624,3 +624,7 @@ No bloqueantes. Atacar solo después de A–D.
   Hecho cuando: decisión tomada y, si aplica, restricción implementada con tests.
 
 - [x] **E91. (RESUELTO 2026-06-19 vía E90-amp)** Search oculto en móvil. El acceso de búsqueda era `hidden md:flex` en `AuthHeader` → móvil sin buscador salvo URL manual. Resuelto al ampliar E90: `search` (`/search`, lupa) es ahora una entry del bottom-sheet "Más" de `BottomNav`. Móvil llega a `/search` sin teclear la URL. Sin desbordar la barra (search vive en el sheet, no en las 5 celdas). Detalle en DONE.md (E90-amp).
+
+- [ ] **E94. (a) Suelo de votos en Descubrir.** `buildTmdbDiscoverParams` (`tmdb-maps.ts`) añade `vote_count.gte=50` a los params de movie y tv → descarta contenido con muy pocos votos. Mismo umbral ya validado en `discoverByGenre` (genre-news). Nativo → paginación E79 lo refleja bien. Tests: `vote_count.gte=50` sale en movie+tv y convive con `vote_average.gte` sin pisarse. tsc 0, lint 0, vitest 1203 passed. Pendiente validación funcional en preview antes de cerrar en DONE.
+
+- [ ] **E95. `without_keywords` TMDB (softcore residual con muchos votos).** Evaluar si tras E94 sigue colándose contenido; requiere mantener keyword-IDs, solo cubre movie/tv.
