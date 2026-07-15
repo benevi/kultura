@@ -99,6 +99,12 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     { target_user_id: targetUserId },
   )
 
+  // E93: DMs solo entre amigos. El RPC lanza 'not_friends' (P0005) si
+  // caller y target no son amigos aceptados → 403, no 500 genérico.
+  if (rpcError?.message === 'not_friends' || rpcError?.code === 'P0005') {
+    return NextResponse.json({ error: 'not_friends' }, { status: 403 })
+  }
+
   if (rpcError || !conversationId) {
     console.error('Failed to create conversation:', { rpcError, userId: user.id, targetUserId })
     return NextResponse.json({ error: 'Failed to create conversation' }, { status: 500 })

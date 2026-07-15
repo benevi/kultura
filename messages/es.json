@@ -486,6 +486,7 @@
     "noFriendsToChat": "Añade amigos primero para empezar a chatear",
     "sendError": "No se pudo enviar el mensaje. Inténtalo de nuevo.",
     "startError": "No se pudo iniciar la conversación. Inténtalo de nuevo.",
+    "notFriendsError": "Solo puedes escribir a tus amigos.",
     "loadError": "No se pudieron cargar los datos.",
     "retry": "Reintentar",
     "conversationCount": "{count, plural, =0 {Sin conversaciones} one {# conversación} other {# conversaciones}}"
