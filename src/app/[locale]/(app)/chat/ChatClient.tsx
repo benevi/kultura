@@ -51,7 +51,7 @@ export function ChatClient({ friends }: Props) {
   const [loadError, setLoadError] = useState(false)
   const [showNewChat, setShowNewChat] = useState(false)
   const [startingChat, setStartingChat] = useState<string | null>(null)
-  const [startError, setStartError] = useState(false)
+  const [startError, setStartError] = useState<null | 'generic' | 'notFriends'>(null)
 
   const loadConversations = useCallback(() => {
     setLoading(true)
@@ -66,7 +66,7 @@ export function ChatClient({ friends }: Props) {
 
   async function startConversation(friendId: string) {
     setStartingChat(friendId)
-    setStartError(false)
+    setStartError(null)
     try {
       const res = await fetch('/api/chat', {
         method: 'POST',
@@ -75,12 +75,12 @@ export function ChatClient({ friends }: Props) {
       })
       const data = await res.json().catch(() => null)
       if (!res.ok || !data?.conversationId) {
-        setStartError(true)
+        setStartError(res.status === 403 ? 'notFriends' : 'generic')
         return
       }
       window.location.href = `/chat/${data.conversationId}`
     } catch {
-      setStartError(true)
+      setStartError('generic')
     } finally {
       setStartingChat(null)
     }
@@ -124,7 +124,9 @@ export function ChatClient({ friends }: Props) {
             ))
           )}
           {startError && (
-            <p role="alert" className="text-xs text-accent-danger">{t('startError')}</p>
+            <p role="alert" className="text-xs text-accent-danger">
+              {t(startError === 'notFriends' ? 'notFriendsError' : 'startError')}
+            </p>
           )}
         </div>
       )}
