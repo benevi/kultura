@@ -628,3 +628,11 @@ No bloqueantes. Atacar solo después de A–D.
 - [ ] **E94. (a) Suelo de votos en Descubrir.** `buildTmdbDiscoverParams` (`tmdb-maps.ts`) añade `vote_count.gte=50` a los params de movie y tv → descarta contenido con muy pocos votos. Mismo umbral ya validado en `discoverByGenre` (genre-news). Nativo → paginación E79 lo refleja bien. Tests: `vote_count.gte=50` sale en movie+tv y convive con `vote_average.gte` sin pisarse. tsc 0, lint 0, vitest 1203 passed. Pendiente validación funcional en preview antes de cerrar en DONE.
 
 - [ ] **E95. `without_keywords` TMDB (softcore residual con muchos votos).** Evaluar si tras E94 sigue colándose contenido; requiere mantener keyword-IDs, solo cubre movie/tv.
+
+- [ ] **E96. Chat realtime — mensajes entrantes sin recargar (Supabase Realtime) + badge/notificación de no-leídos**
+  Hoy los mensajes entrantes solo aparecen al recargar la conversación. Suscribir a `messages` vía Supabase Realtime para pintar mensajes entrantes en vivo sin recarga. Además: badge/notificación de no-leídos cuando el usuario NO está en la conversación (usa `conversation_members.last_read_at` para el conteo). Cross-link con E54 (E2EE rompería la semántica de Realtime — ver impacto documentado allí).
+  Hecho cuando: un mensaje enviado por el otro usuario aparece en la conversación abierta sin recargar, y llega badge/notif de no-leído cuando no estás en esa conversación.
+
+- [ ] **E79-s3. Páginas cortas en familias post-filtradas (opción B: overfetch + pool)**
+  Extraído de E79 slice 2. Cuando los post-filtros server-side (valoracion, temporadas, volumenes, etc.) recortan una familia, páginas intermedias/altas pueden salir cortas o vacías aunque `hasMore` siga true. Opción B decidida: **overfetch + pool** — pedir más de lo necesario al proveedor y mantener un pool para rellenar páginas hasta el tamaño completo (o señalar el final real). Cubre también los saltos arbitrarios de la paginación numerada (slice 1b): clic directo a página N lejana debe caer en página llena, no en hueco de post-filtro.
+  Hecho cuando: navegación (contigua y por saltos) en familias post-filtradas devuelve páginas llenas o marca el final real, sin re-fetch redundante del pool.
