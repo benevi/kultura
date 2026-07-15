@@ -240,6 +240,9 @@ export function buildTmdbDiscoverParams(
 ): Record<string, string> {
   const params: Record<string, string> = {
     sort_by: tmdbSortBy(mediaType, filters.sort),
+    // Suelo de votos (E94): descarta contenido con muy pocos votos. Mismo umbral
+    // ya validado en discoverByGenre (genre-news). Aplica a movie y tv.
+    "vote_count.gte": "50",
   };
 
   // Género (listas distintas movie/tv; OR con coma).

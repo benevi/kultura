@@ -101,10 +101,26 @@ describe("tmdbRuntimeRange", () => {
 // ── buildTmdbDiscoverParams ─────────────────────────────────────────────────
 
 describe("buildTmdbDiscoverParams — movie", () => {
-  it("sin filtros → solo sort_by default", () => {
+  it("sin filtros → sort_by default + suelo de votos (E94)", () => {
     expect(buildTmdbDiscoverParams("movie")).toEqual({
       sort_by: "popularity.desc",
+      "vote_count.gte": "50",
     });
+  });
+
+  it("suelo de votos vote_count.gte=50 siempre presente (E94)", () => {
+    expect(
+      buildTmdbDiscoverParams("movie")["vote_count.gte"]
+    ).toBe("50");
+    expect(
+      buildTmdbDiscoverParams("movie", { genre: ["accion"] })["vote_count.gte"]
+    ).toBe("50");
+  });
+
+  it("vote_count.gte convive con vote_average.gte sin pisarse (E94)", () => {
+    const p = buildTmdbDiscoverParams("movie", { valoracion: "8" });
+    expect(p["vote_count.gte"]).toBe("50");
+    expect(p["vote_average.gte"]).toBe("8");
   });
 
   it("género único → with_genres con ID de la lista movie", () => {
@@ -231,7 +247,20 @@ describe("buildTmdbDiscoverParams — tv", () => {
 
   it("temporadas NO entra en el builder nativo (es post-filtro R4c-2)", () => {
     const p = buildTmdbDiscoverParams("tv", { temporadas: "2-3" });
-    expect(Object.keys(p)).toEqual(["sort_by"]);
+    expect(Object.keys(p).sort()).toEqual(["sort_by", "vote_count.gte"]);
+  });
+
+  it("suelo de votos vote_count.gte=50 también en tv (E94)", () => {
+    expect(buildTmdbDiscoverParams("tv")["vote_count.gte"]).toBe("50");
+    expect(
+      buildTmdbDiscoverParams("tv", { genre: ["drama"] })["vote_count.gte"]
+    ).toBe("50");
+  });
+
+  it("vote_count.gte convive con vote_average.gte en tv (E94)", () => {
+    const p = buildTmdbDiscoverParams("tv", { valoracion: "7" });
+    expect(p["vote_count.gte"]).toBe("50");
+    expect(p["vote_average.gte"]).toBe("7");
   });
 });
 
