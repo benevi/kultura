@@ -144,7 +144,9 @@ export function DiscoverClient({
   const [hasMore, setHasMore] = useState(false);
   // E79 slice 1b: totalPages del proveedor (DiscoverResult) → ventana numerada.
   // Solo alimenta la UI de la paginación; el gate de "siguiente" sigue en hasMore.
-  const [totalPages, setTotalPages] = useState(1);
+  // E79 slice 2: `null` cuando hay post-filtro activo (N crudo miente) → la
+  // ventana se pinta sin la última página.
+  const [totalPages, setTotalPages] = useState<number | null>(1);
   const [fetchErrorKind, setFetchErrorKind] =
     useState<DiscoverResult["fetchErrorKind"]>(null);
   const [loading, setLoading] = useState(true);
@@ -174,7 +176,9 @@ export function DiscoverClient({
         if (cancelled) return;
         setItems(data.items ?? []);
         setHasMore(data.hasMore ?? false);
-        setTotalPages(data.totalPages ?? 1);
+        // E79 slice 2: `null` (post-filtro activo) es significativo — NO colapsar
+        // a 1 con `??`. Solo el campo ausente (undefined) cae al default 1.
+        setTotalPages(data.totalPages === undefined ? 1 : data.totalPages);
         setFetchErrorKind(data.fetchErrorKind ?? null);
       })
       .catch(() => {

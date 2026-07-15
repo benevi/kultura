@@ -71,9 +71,47 @@ export type FetchErrorKind = "rate-limit" | "generic" | null;
 //   - comic: ceil(total/20) es el total real navegable.
 const TMDB_MAX_PAGES = 500;
 
+// E79 slice 2 — ¿hay un post-filtro ACTIVO que recorte items tras el fetch sin
+// recomputar el conteo del proveedor? Si lo hay, totalPages crudo miente y se
+// devuelve `null`. Solo cuenta el post-filtro específico de la familia con VALOR;
+// NSFW global (siempre activo, recorte marginal) se excluye a propósito.
+//   - tv    → temporadas
+//   - manga → volumenes
+//   - game  → valoracion | estado | modojuego | duracionmedia
+function hasActivePostFilter(
+  type: string,
+  filters: DiscoverFilters
+): boolean {
+  switch (type) {
+    case "tv":
+      return Boolean(filters.temporadas);
+    case "manga":
+      return Boolean(filters.volumenes);
+    case "game":
+      return Boolean(
+        filters.valoracion ||
+          filters.estado ||
+          filters.modojuego?.length ||
+          filters.duracionmedia
+      );
+    default:
+      return false;
+  }
+}
+
 export interface DiscoverResult {
   items: MediaItem[];
-  totalPages: number;
+  // E79 slice 2 — `null` = totalPages NO fiable: la familia tiene un post-filtro
+  // ACTIVO (tv+temporadas, manga+volumenes, game+valoracion/estado/modojuego/
+  // duracionmedia) que recorta items DESPUÉS del fetch sin recomputar el conteo
+  // del proveedor → el N crudo (p.ej. RAWG count=900360 → 45018 páginas) miente.
+  // La UI (Pagination) omite la "última página [N]" y no permite saltar a ella;
+  // el gate de "siguiente" ya usa hasMore, no esto. Cuando es un número, la
+  // ventana numerada completa es fiable. Elegido `number|null` sobre un bool
+  // paralelo: hace IMPOSIBLE leer un N obsoleto cuando no es fiable (no hay valor
+  // que pintar), en vez de confiar en que el consumidor mire el flag. El post-
+  // filtro NSFW global NO cuenta (recorte marginal, aplica a todas las familias).
+  totalPages: number | null;
   // E79 slice 1 — "has-next": ¿la FUENTE cruda tiene más páginas tras la actual?
   // Se computa contra el total del proveedor (PRE-post-filtro), no contra los
   // items servidos. El post-filtro (temporadas/volumenes/game-suite/NSFW) recorta
@@ -273,5 +311,14 @@ export async function fetchDiscoverData(
   // RAWG exclude_tags) capturando lo que escapa a la capa de API.
   items = filterNSFW(items);
 
-  return { items, totalPages, hasMore, fetchErrorKind };
+  // E79 slice 2 — si un post-filtro específico de la familia está activo, el
+  // totalPages crudo del proveedor miente (no refleja el recorte) → `null`, y la
+  // UI omite la "última página [N]". En error (fetchErrorKind != null) totalPages
+  // ya es 1 y no hay recorte que ocultar → se mantiene el número.
+  const totalPagesOut: number | null =
+    fetchErrorKind === null && hasActivePostFilter(type, filters)
+      ? null
+      : totalPages;
+
+  return { items, totalPages: totalPagesOut, hasMore, fetchErrorKind };
 }
