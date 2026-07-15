@@ -6,6 +6,14 @@ No se edita a mano durante el día. Solo se añade una línea al terminar cada t
 
 ---
 
+2026-07-16 | E93 | 49f3dd2 (código) · cb2b606 (docs) | **DMs solo entre amigos.** Hallazgo S6 de la auditoría 2026-07-07: `create_conversation_with_members` no exigía amistad → cualquier usuario autenticado podía abrir DM con cualquier otro. Decisión de producto: **restringir a amigos.** Migración `20260716000001_dm_only_between_friends.sql` — la RPC ahora exige `friendships.status='accepted'` entre los participantes; `POST /api/chat` devuelve **403 `not_friends`** si no hay amistad. `ChatClient` maneja el 403 con mensaje i18n; +1 clave es/en. +29 líneas de tests en `chat-route.test.ts` (rama not_friends). Validado en prod por el usuario (regla #11).
+
+---
+
+2026-07-16 | E79-s2 | a208db0 | **totalPages `null` cuando hay post-filtro activo → ventana sin [N].** Cierre de E79 slice 2. Cuando una familia tiene un post-filtro server-side ACTIVO (tv+temporadas, manga+volumenes, game+valoracion/estado/modojuego/duracionmedia) que recorta items DESPUÉS del fetch sin recomputar el conteo del proveedor, el `totalPages` crudo miente (p.ej. RAWG count=900360 → 45018 páginas fantasma). Fix: `DiscoverResult.totalPages` pasa a `number | null`; `fetchDiscoverData` devuelve `null` vía `hasActivePostFilter(type, filters)` (NSFW global excluido a propósito: recorte marginal, siempre activo). `Pagination.buildPageWindow` con `total === null` pinta ventana abierta `[1] … [c-1][c][c+1] …` SIN última `[N]` ni salto a ella; una elipsis de cola señala "puede haber más" — el gate de "siguiente" ya usa `hasMore`, no `totalPages`. `DiscoverClient` distingue `null` (significativo) de `undefined` (campo ausente → default 1) sin colapsar con `??`. Elegido `number|null` sobre bool paralelo: imposible pintar un N obsoleto (no hay valor). +88 líneas tests discover + 59 pagination. Validado en prod por el usuario (regla #11). **E79-s3** (páginas cortas en familias post-filtradas, opción B overfetch+pool) sigue abierta en BACKLOG como remanente separado.
+
+---
+
 2026-07-09 | E92 | (este commit) | **Grid Descubrir: mínimo 2 columnas en móvil.** `DiscoverClient.tsx` usaba `grid-cols-1 sm:grid-cols-2 …` en el skeleton de carga (línea 368) y en el `className` pasado a `MediaGrid` (línea 381) → 1 sola card por fila en viewport <640px, desperdiciando pantalla con posters 2:3. Cambio: `grid-cols-1 sm:grid-cols-2` → `grid-cols-2` en ambos puntos (breakpoints md/lg/xl intactos: 3/4/5 col). `loading.tsx` NO tocado (fuera de alcance, deuda E56). tsc 0, lint 0 (2 warnings preexistentes ajenos en SearchResults), vitest **1193 passed** `--no-file-parallelism`.
 
 ---
