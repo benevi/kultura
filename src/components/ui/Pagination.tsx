@@ -10,7 +10,10 @@ export interface PaginationProps {
   hasMore: boolean;
   // E79 slice 1b: total de páginas mostradas (= totalPages del proveedor). Pinta
   // la ventana numerada. El gate de "siguiente" sigue usando hasMore, no esto.
-  totalPages: number;
+  // E79 slice 2: `null` = totalPages no fiable (post-filtro activo, el N crudo
+  // miente). La ventana se pinta SIN la última [N] y sin salto a ella; solo
+  // [1] … [c-1][c][c+1]. "Siguiente" sigue gobernado por hasMore.
+  totalPages: number | null;
   onPageChange: (page: number) => void;
 }
 
@@ -24,7 +27,28 @@ type PageEntry = number | typeof ELLIPSIS;
  * ventana es estrecha (1 vecino a cada lado) → como mucho 7 entradas, no
  * desborda en viewport angosto.
  */
-function buildPageWindow(current: number, total: number): PageEntry[] {
+function buildPageWindow(current: number, total: number | null): PageEntry[] {
+  // E79 slice 2: total no fiable (post-filtro activo). Ventana abierta anclada en
+  // [1] con current±1, SIN última [N] (el N crudo miente) y sin salto a ella. Una
+  // elipsis final señala "puede haber más" — el gate real de avance es hasMore.
+  if (total === null) {
+    const pages = new Set<number>([1, current - 1, current, current + 1]);
+    const sorted = Array.from(pages)
+      .filter((p) => p >= 1)
+      .sort((a, b) => a - b);
+
+    const out: PageEntry[] = [];
+    let prev = 0;
+    for (const p of sorted) {
+      if (p - prev > 1) out.push(ELLIPSIS);
+      out.push(p);
+      prev = p;
+    }
+    // Elipsis de cola: hay páginas más allá de la ventana pero no un [N] fiable.
+    out.push(ELLIPSIS);
+    return out;
+  }
+
   if (total <= 1) return [1];
 
   const pages = new Set<number>([1, total, current - 1, current, current + 1]);

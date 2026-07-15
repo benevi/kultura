@@ -594,6 +594,94 @@ describe("fetchDiscoverData — hasMore (E79 slice 1)", () => {
   });
 });
 
+// ── E79 slice 2: totalPages null cuando hay post-filtro activo ────────────────
+// El totalPages crudo del proveedor NO refleja el recorte de un post-filtro
+// (tv+temporadas, manga+volumenes, game+valoracion/estado/modojuego/duracionmedia)
+// → se devuelve `null` para que la UI omita la "última página [N]" mentirosa. Los
+// filtros nativos (movie+valoracion vía vote_average.gte) NO disparan el null.
+
+describe("fetchDiscoverData — totalPages null con post-filtro activo (E79 slice 2)", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it("REGRESIÓN game+valoracion: count crudo enorme → totalPages null (no 45018)", async () => {
+    // Repro exacto: RAWG count=900360 → ceil/20 = 45018 páginas crudas. valoracion
+    // es POST-filtro (metacritic), recorta a ~1 item sin recomputar el conteo.
+    // SIN el fix, totalPages sería 45018 y la UI pintaría [1] … [45018] con salto a
+    // páginas vacías. CON el fix, totalPages es null → sin última página falsa.
+    vi.mocked(getPopularGames).mockResolvedValue({
+      results: [{ id: 1, name: "G" }],
+      count: 900360,
+    } as never);
+
+    const result = await fetchDiscoverData("game", 1, { valoracion: "9" });
+    expect(result.totalPages).toBeNull();
+    // hasMore SIGUE gobernado por la fuente cruda (gate de "siguiente"): page 1 <
+    // 45018 → true. Es el número lo que deja de exponerse, no el avance.
+    expect(result.hasMore).toBe(true);
+  });
+
+  it("game sin post-filtro → totalPages numérico (ventana completa fiable)", async () => {
+    vi.mocked(getPopularGames).mockResolvedValue({
+      results: [{ id: 1, name: "G" }],
+      count: 40, // ceil/20 = 2
+    } as never);
+
+    const result = await fetchDiscoverData("game", 1, {});
+    expect(result.totalPages).toBe(2);
+  });
+
+  it("CONTRASTE movie+valoracion (NATIVO): totalPages numérico intacto", async () => {
+    // movie aplica valoracion como vote_average.gte NATIVO (en el builder) → el
+    // proveedor ya devuelve el total correcto, NO es post-filtro → totalPages real.
+    vi.mocked(discoverMovies).mockResolvedValue({
+      results: [{ id: 1, title: "M" }],
+      total_pages: 7,
+    } as never);
+
+    const result = await fetchDiscoverData("movie", 1, { valoracion: "9" });
+    expect(result.totalPages).toBe(7);
+  });
+
+  it("tv+temporadas → totalPages null (post-filtro sobre metadata.seasons)", async () => {
+    vi.mocked(discoverTV).mockResolvedValue({
+      results: [{ id: 1, name: "T" }],
+      total_pages: 200,
+    } as never);
+
+    const result = await fetchDiscoverData("tv", 1, { temporadas: "1" });
+    expect(result.totalPages).toBeNull();
+  });
+
+  it("tv sin temporadas → totalPages numérico", async () => {
+    vi.mocked(discoverTV).mockResolvedValue({
+      results: [{ id: 1, name: "T" }],
+      total_pages: 200,
+    } as never);
+
+    const result = await fetchDiscoverData("tv", 1, {});
+    expect(result.totalPages).toBe(200);
+  });
+
+  it("manga+volumenes → totalPages null (post-filtro sobre metadata.volumes)", async () => {
+    vi.mocked(getPopularManga).mockResolvedValue({
+      data: [{ mal_id: 1, title: "M", volumes: 10 }] as never[],
+      pagination: { last_visible_page: 50 },
+    });
+
+    const result = await fetchDiscoverData("manga", 1, { volumenes: "6-20" });
+    expect(result.totalPages).toBeNull();
+  });
+
+  it("game error (catch) → totalPages numérico (1), no null (no hay recorte que ocultar)", async () => {
+    vi.mocked(getPopularGames).mockRejectedValue(new Error("boom"));
+    const result = await fetchDiscoverData("game", 1, { valoracion: "9" });
+    expect(result.fetchErrorKind).toBe("generic");
+    expect(result.totalPages).toBe(1);
+  });
+});
+
 // ── E79 slice 1: hasMore en agregado "all" ────────────────────────────────────
 
 describe('fetchDiscoverData — hasMore en "all" (E79 slice 1)', () => {

@@ -210,4 +210,63 @@ describe("Pagination — E79 slice 1b (numerada)", () => {
       screen.getByRole("button", { name: /previous/i })
     ).not.toBeDisabled();
   });
+
+  // ── E79 slice 2: totalPages null (post-filtro activo, N crudo miente) ──────
+  // La ventana se pinta SIN la última página [N] y sin salto a ella.
+  describe("totalPages null (post-filtro activo)", () => {
+    it("REGRESIÓN: no pinta una última página [N] falsa (p.ej. 45018)", () => {
+      // Repro: game+valoracion → totalPages null. SIN el fix (totalPages=45018) la
+      // ventana incluiría [45018] con salto directo a páginas vacías.
+      render(
+        <Pagination
+          currentPage={1}
+          hasMore
+          totalPages={null}
+          onPageChange={vi.fn()}
+        />
+      );
+      expect(
+        screen.queryByRole("button", { name: "Page 45018" })
+      ).not.toBeInTheDocument();
+      // Ventana anclada en [1] con vecinos de la actual: [1][2] (current=1).
+      expect(
+        screen.getByRole("button", { name: "Page 1" })
+      ).toBeInTheDocument();
+      expect(
+        screen.getByRole("button", { name: "Page 2" })
+      ).toBeInTheDocument();
+    });
+
+    it("ventana abierta con elipsis de cola (señala 'puede haber más')", () => {
+      render(
+        <Pagination
+          currentPage={4}
+          hasMore
+          totalPages={null}
+          onPageChange={vi.fn()}
+        />
+      );
+      // [1] … [3][4][5] … (cola). Dos elipsis: hueco 1↔3 y la de cola.
+      expect(screen.getAllByText("…")).toHaveLength(2);
+      for (const n of [1, 3, 4, 5]) {
+        expect(
+          screen.getByRole("button", { name: `Page ${n}` })
+        ).toBeInTheDocument();
+      }
+    });
+
+    it("gate de 'siguiente' sigue en hasMore (habilitado si hasMore=true)", () => {
+      render(
+        <Pagination
+          currentPage={1}
+          hasMore
+          totalPages={null}
+          onPageChange={vi.fn()}
+        />
+      );
+      expect(
+        screen.getByRole("button", { name: /next/i })
+      ).not.toBeDisabled();
+    });
+  });
 });
