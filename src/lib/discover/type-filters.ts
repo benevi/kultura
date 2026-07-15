@@ -107,3 +107,27 @@ export const TYPE_FILTERS: Record<DiscoverType, FilterTrigger[]> = {
   // mienta" → se OMITE genre en comic (única divergencia del mockup). Ver spec V2.
   comic: [YEAR, EDITORIAL, VOLUMENES, IDIOMA, SORT],
 };
+
+/**
+ * Puente key→paramKey (E88). La UI opera con `key` (clave lógica / i18n); la URL
+ * y el parser del backend (discover-params.ts) operan con `paramKey`. Este es el
+ * ÚNICO punto de traducción: el cliente debe escribir/leer la URL por `paramKey`,
+ * no por `key`, o el filtro se pierde en el flujo real (bug E88: `valoracion` vs
+ * `rating`, y análogos `temporadas`/`seasons`, `modojuego`/`gamemode`,
+ * `duracionmedia`/`playtime`).
+ *
+ * Se deriva de TYPE_FILTERS (fuente de verdad única) recorriendo todos los
+ * triggers de todos los tipos. Un `key` con paramKey distinto según tipo sería
+ * incoherente; hoy cada `key` mapea a un único `paramKey` (VALORACION y
+ * VALORACION_GAME comparten key `valoracion` y paramKey `rating`).
+ */
+export const PARAM_KEY_BY_KEY: Record<string, string> = Object.fromEntries(
+  Object.values(TYPE_FILTERS)
+    .flat()
+    .map((trigger) => [trigger.key, trigger.paramKey])
+);
+
+/** paramKey de un `key` de filtro; si no hay mapeo, el propio key (identidad). */
+export function paramKeyFor(key: string): string {
+  return PARAM_KEY_BY_KEY[key] ?? key;
+}

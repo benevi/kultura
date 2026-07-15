@@ -12,6 +12,7 @@ import { FilterBar, type FilterGroup } from "@/components/ui/FilterBar";
 import {
   TYPE_ORDER,
   TYPE_FILTERS,
+  paramKeyFor,
   type DiscoverType,
 } from "@/lib/discover/type-filters";
 import { getFilterOptions, humanizeSlug } from "@/lib/discover/filter-options";
@@ -81,9 +82,10 @@ const FILTER_PARAM_KEYS = [
   "editorial",
   "formato",
   "idioma",
-  // E59 R2 — paramKeys nuevos del rediseño V2. El backend los ignora hasta R4
-  // (inocuo: si no están en la URL no se envían; si están, /api/discover los
-  // descarta hasta que R4 los aplique server-side).
+  // paramKeys cuyo `key` UI difiere del param de URL (E88). handleFilterChange
+  // escribe la URL por paramKey; estos deben estar aquí o el fetch los perdería
+  // al reconstruir filterQuery. Backend los aplica (rating→valoracion nativo,
+  // seasons/gamemode/playtime post-filtros).
   "rating",
   "seasons",
   "gamemode",
@@ -242,10 +244,12 @@ export function DiscoverClient({
   }, [type, tF, tDF]);
 
   // activeFilters desde la URL: multi → CSV→string[]; resto → string.
+  // E88: se lee por paramKey (lo que hay en la URL), no por key (clave UI); si no,
+  // el popover no reflejaría la selección de los triggers con key≠paramKey.
   const activeFilters: Record<string, string | string[]> = useMemo(() => {
     const out: Record<string, string | string[]> = {};
     for (const trigger of TYPE_FILTERS[type]) {
-      const raw = searchParams.get(trigger.key);
+      const raw = searchParams.get(paramKeyFor(trigger.key));
       if (MULTI_KINDS.has(trigger.kind)) {
         out[trigger.key] = raw
           ? raw
@@ -267,15 +271,18 @@ export function DiscoverClient({
   }
 
   // Cambio de un filtro: muta los searchParams actuales, siempre page=1.
+  // E88: la URL se escribe por paramKey (contrato del backend), no por la clave
+  // lógica UI. Traducción key→paramKey vía paramKeyFor (fuente: type-filters.ts).
   function handleFilterChange(key: string, value: string | string[]) {
+    const paramKey = paramKeyFor(key);
     const params = new URLSearchParams(searchParams.toString());
     if (value === "all") {
-      params.delete(key);
+      params.delete(paramKey);
     } else if (Array.isArray(value)) {
-      if (value.length === 0) params.delete(key);
-      else params.set(key, value.join(","));
+      if (value.length === 0) params.delete(paramKey);
+      else params.set(paramKey, value.join(","));
     } else {
-      params.set(key, value);
+      params.set(paramKey, value);
     }
     params.set("type", type);
     params.set("page", "1");

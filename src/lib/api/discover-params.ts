@@ -79,10 +79,12 @@ export function parseDiscoverParams(
     status: searchParams.get("status"),
     demografia: searchParams.get("demografia"),
     duracion: searchParams.get("duracion"),
-    // Puente de naming: el front emite `rating`; el resto del pipeline usa
-    // `valoracion`. Único punto de mapeo (contrato R4b). E88: se acepta también
-    // el alias `valoracion` en la URL (nombre "natural" ES) para que una URL
-    // escrita a mano no falle en silencio; `rating` (el que emite la UI) manda.
+    // Puente de naming: la UI emite `rating` (paramKey del trigger valoracion,
+    // traducido en DiscoverClient.handleFilterChange vía paramKeyFor); el resto
+    // del pipeline usa `valoracion`. Único punto de mapeo (contrato R4b).
+    // El alias `?? valoracion` YA NO es necesario para el flujo real (E88 fix: la
+    // UI escribe `rating`); se conserva solo como tolerancia a URLs escritas a
+    // mano con el nombre "natural" ES. `rating` (el de la UI) tiene prioridad.
     valoracion: searchParams.get("rating") ?? searchParams.get("valoracion"),
     // Puente de naming (R4c-2): el front emite `seasons`; el pipeline usa
     // `temporadas`. Único punto de mapeo.
