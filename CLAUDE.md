@@ -37,7 +37,7 @@ Web app de descubrimiento cultural (películas, series, anime, libros, cómics, 
 
 ## Stack
 
-Next.js 14 App Router · React 18 · TypeScript strict · Tailwind CSS 3 · Supabase (PG + Auth + RLS + Realtime) · Anthropic Claude SDK (`@anthropic-ai/sdk`, modelo `claude-haiku-4-5`) · next-intl 4 · Vitest 4 · Playwright 1 · Vercel · Node ≥ 20
+Next.js 14 App Router · React 18 · TypeScript strict · Tailwind CSS 3 · Supabase (PG + Auth + RLS + Realtime) · Anthropic Claude SDK (`@anthropic-ai/sdk`, modelo `claude-haiku-4-5`) · next-intl 4 · Vitest 4 · Playwright 1 · Vercel · Node ≥ 22
 
 ## APIs externas
 | Tipo | API | Base URL | Auth |
@@ -85,7 +85,10 @@ TEST_GROUP_ID=                   # server-only — UUID del grupo seedeado (rell
 > **Nota:** estas claves NO deben aparecer en el repo. `.env.local` está en `.gitignore`. Producción → Vercel Environment Variables.
 > Los nombres canónicos son sin prefijo `NEXT_PUBLIC_` para todo lo server-only (post-A4). Sincronizado con `.env.local` y Vercel.
 >
-> **`.env.test.local`** (no en git, cubierto por `.env*.local` en `.gitignore`): sobreescribe `NEXT_PUBLIC_SUPABASE_URL` y `NEXT_PUBLIC_SUPABASE_ANON_KEY` con los valores de `kultura-test`. Usado exclusivamente por Playwright al arrancar el dev server para specs E2E — ver `playwright.config.ts` `webServer.env`. Desarrollo manual (`npm run dev`) sigue contra Supabase de producción.
+> **`.env.test.local`** (no en git, cubierto por `.env*.local` en `.gitignore`): sobreescribe `NEXT_PUBLIC_SUPABASE_URL` y `NEXT_PUBLIC_SUPABASE_ANON_KEY` con los valores de `kultura-test`. Usado por Playwright al arrancar el dev server para specs E2E — ver `playwright.config.ts` `webServer.env`.
+>
+> **`.env.development.local`** (no en git): EXISTE en `kultura/` y Next.js lo carga con **prioridad sobre `.env.local`** en modo dev. Contiene las credenciales de `kultura-test` (proyecto `xqvicvypoxxfbezqnkwr`) → **`npm run dev` pega contra la BD de TEST, NO contra producción.** Motivo: aislar el desarrollo manual de los datos reales de producción.
+> ⚠️ Si necesitas dev contra producción, renombra o elimina temporalmente `.env.development.local` (y restáuralo al terminar).
 
 ## Comandos clave
 ```bash
