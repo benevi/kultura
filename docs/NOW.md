@@ -49,4 +49,6 @@ E79-s2 → ✅ **CERRADA 2026-07-16** (commit `a208db0`, validada en prod). `tot
 
 E93 → ✅ **CERRADA 2026-07-16** (commit `49f3dd2`, validada en prod). DMs solo entre amigos (decisión de producto sobre el hallazgo S6). Migración `20260716000001_dm_only_between_friends.sql` exige `friendships.status='accepted'` en la RPC; `POST /api/chat` → 403 `not_friends`; `ChatClient` maneja el 403 con i18n. +29 líneas tests. Detalle en DONE.md.
 
+E96 → ✅ **CERRADA 2026-07-16** (commit `7553ef1`, validada en dev por el usuario). Badge global de conversaciones no leídas (s2; s1 ya existía vía A5.8): `GET /api/chat?countOnly=1` (una query), `UnreadChatProvider` (realtime global + `markConversationRead`), badges BottomNav/NavLinks, i18n es/en. Incluye fix de bug latente setAuth/INITIAL_SESSION (canal realtime unido como anon = SUBSCRIBED pero sordo; afectaba también al chat por-conversación tras reload). tsc 0, lint 0, vitest 1245 passed. Detalle en DONE.md.
+
 **Sin tarea activa.** Esperar al usuario para la siguiente (BACKLOG).
