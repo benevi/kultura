@@ -13,7 +13,8 @@
     "suggestions": "Sugerencias",
     "profile": "Mi perfil",
     "signOut": "Cerrar sesión",
-    "more": "Más"
+    "more": "Más",
+    "unreadMessages": "{count, plural, one {# mensaje sin leer} other {# mensajes sin leer}}"
   },
   "auth": {
     "signIn": "Iniciar sesión",

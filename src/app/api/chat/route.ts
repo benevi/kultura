@@ -1,6 +1,6 @@
 // ============================================================
 // KULTURA — /api/chat
-// GET: lista de conversaciones del usuario
+// GET: lista de conversaciones del usuario (?countOnly=1 → solo count de no-leídas)
 // POST: crear/obtener conversación con un amigo
 // ============================================================
 
@@ -8,10 +8,35 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { checkRateLimit, LIMITS } from '@/lib/rate-limit'
 
-export async function GET(): Promise<NextResponse> {
+export async function GET(req: NextRequest): Promise<NextResponse> {
   const supabase = createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return NextResponse.json({ error: 'Not authenticated' }, { status: 401 })
+
+  // E96: badge global — solo el número de conversaciones con mensajes no leídos.
+  // Una única query (join conversations + count agregado de messages); el count
+  // anidado descarta conversaciones vacías, cuya last_message_at (default now()
+  // al crearse) contaría como no-leída sin haber nada que leer.
+  if (new URL(req.url).searchParams.get('countOnly') === '1') {
+    const { data: rows, error } = await supabase
+      .from('conversation_members')
+      .select('last_read_at, conversations!inner(last_message_at, messages(count))')
+      .eq('user_id', user.id)
+
+    if (error) return NextResponse.json({ error: 'Failed to count' }, { status: 500 })
+
+    const count = ((rows ?? []) as unknown as Array<{
+      last_read_at: string | null
+      conversations: { last_message_at: string; messages: Array<{ count: number }> } | null
+    }>).filter((row) => {
+      const conv = row.conversations
+      if (!conv || (conv.messages?.[0]?.count ?? 0) === 0) return false
+      if (!row.last_read_at) return true
+      return new Date(conv.last_message_at) > new Date(row.last_read_at)
+    }).length
+
+    return NextResponse.json({ count })
+  }
 
   // Conversations where user is a member, with last message + other member info
   const { data } = await supabase

@@ -6,6 +6,7 @@ import { Link, usePathname } from '@/i18n/navigation'
 import { cn } from '@/lib/utils/index'
 import { Home, Compass, MessageCircle, BookOpen, MoreHorizontal, type LucideIcon } from 'lucide-react'
 import { MoreSheet } from '@/components/ui/MoreSheet'
+import { useUnreadChat } from '@/components/layout/UnreadChatProvider'
 
 type NavItem =
   | { key: string; icon: LucideIcon; href: string; onClick?: never }
@@ -15,6 +16,7 @@ export function BottomNav() {
   const t = useTranslations('nav')
   const pathname = usePathname()
   const [sheetOpen, setSheetOpen] = useState(false)
+  const { unreadCount } = useUnreadChat()
 
   const items: NavItem[] = [
     { key: 'home', href: '/home', icon: Home },
@@ -39,7 +41,17 @@ export function BottomNav() {
             )
             const inner = (
               <>
-                <Icon size={22} strokeWidth={active ? 2.5 : 1.75} />
+                <span className="relative">
+                  <Icon size={22} strokeWidth={active ? 2.5 : 1.75} />
+                  {key === 'chat' && unreadCount > 0 && (
+                    <span
+                      aria-label={t('unreadMessages', { count: unreadCount })}
+                      className="absolute -top-1 -right-1.5 min-w-[16px] h-4 bg-accent-positive text-on-accent-positive text-[10px] font-bold rounded-full flex items-center justify-center px-0.5 leading-none"
+                    >
+                      {unreadCount > 99 ? '99+' : unreadCount}
+                    </span>
+                  )}
+                </span>
                 <span className="text-[10px] font-medium leading-none">{t(key)}</span>
               </>
             )
