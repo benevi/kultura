@@ -5,6 +5,7 @@ import { AuthHeader } from '@/components/layout/AuthHeader'
 import { BottomNav } from '@/components/layout/BottomNav'
 import { AppFooter } from '@/components/layout/AppFooter'
 import { ToastProvider } from '@/components/ui/ToastProvider'
+import { UnreadChatProvider } from '@/components/layout/UnreadChatProvider'
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   const supabase = createClient()
@@ -24,12 +25,14 @@ export default async function AppLayout({ children }: { children: React.ReactNod
 
   return (
     <ToastProvider>
-      <div className="min-h-screen flex flex-col">
-        <AuthHeader profile={profile} unreadCount={unreadCount} />
-        <div className="flex-1 pb-16 md:pb-0">{children}</div>
-        <AppFooter />
-        <BottomNav />
-      </div>
+      <UnreadChatProvider userId={user.id}>
+        <div className="min-h-screen flex flex-col">
+          <AuthHeader profile={profile} unreadCount={unreadCount} />
+          <div className="flex-1 pb-16 md:pb-0">{children}</div>
+          <AppFooter />
+          <BottomNav />
+        </div>
+      </UnreadChatProvider>
     </ToastProvider>
   )
 }

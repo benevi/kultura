@@ -1,5 +1,15 @@
 import { render, screen, fireEvent } from '@testing-library/react'
-import { describe, it, expect, vi } from 'vitest'
+import { describe, it, expect, vi, beforeEach } from 'vitest'
+
+// E96: badge de mensajes no leídos — count controlable por test
+const unreadState = vi.hoisted(() => ({ count: 0 }))
+vi.mock('@/components/layout/UnreadChatProvider', () => ({
+  useUnreadChat: () => ({
+    unreadCount: unreadState.count,
+    refreshUnread: vi.fn(),
+    markConversationRead: vi.fn(),
+  }),
+}))
 
 vi.mock('next-intl', () => ({
   useTranslations: vi.fn(() => (key: string) => {
@@ -42,6 +52,10 @@ vi.mock('lucide-react', () => ({
 import { BottomNav } from '@/components/layout/BottomNav'
 
 describe('BottomNav', () => {
+  beforeEach(() => {
+    unreadState.count = 0
+  })
+
   it('renderiza 5 items: home·discover·chat·library·Más', () => {
     render(<BottomNav />)
     expect(screen.getByText('Inicio')).toBeInTheDocument()
@@ -102,5 +116,25 @@ describe('BottomNav', () => {
     fireEvent.click(screen.getByText('Más'))
     fireEvent.click(screen.getByTestId('more-sheet-overlay'))
     expect(screen.queryByTestId('more-sheet-panel')).not.toBeInTheDocument()
+  })
+
+  // E96: badge de no-leídos en el item chat
+  it('sin no-leídos no muestra badge', () => {
+    render(<BottomNav />)
+    expect(screen.queryByText(/^\d+$/)).toBeNull()
+  })
+
+  it('con 3 no-leídos muestra badge "3" dentro del link de chat', () => {
+    unreadState.count = 3
+    render(<BottomNav />)
+    const badge = screen.getByText('3')
+    expect(badge).toBeInTheDocument()
+    expect(badge.closest('a')).toHaveAttribute('href', '/chat')
+  })
+
+  it('con más de 99 muestra "99+"', () => {
+    unreadState.count = 120
+    render(<BottomNav />)
+    expect(screen.getByText('99+')).toBeInTheDocument()
   })
 })

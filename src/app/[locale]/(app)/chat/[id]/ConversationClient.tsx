@@ -6,6 +6,7 @@ import { Link } from '@/i18n/navigation'
 import { Avatar } from '@/components/ui/Avatar'
 import { createClient } from '@/lib/supabase/client'
 import { useToastContext } from '@/components/ui/ToastProvider'
+import { useUnreadChat } from '@/components/layout/UnreadChatProvider'
 
 interface Message {
   id: string
@@ -40,6 +41,7 @@ export function ConversationClient({ conversationId, otherUser, currentUserId }:
   const t = useTranslations('chat')
   const locale = useLocale()
   const { show } = useToastContext()
+  const { markConversationRead } = useUnreadChat()
   const [messages, setMessages] = useState<Message[]>([])
   const [loading, setLoading] = useState(true)
   const [loadError, setLoadError] = useState(false)
@@ -61,9 +63,12 @@ export function ConversationClient({ conversationId, otherUser, currentUserId }:
         setMessages(d.messages ?? [])
         setLoading(false)
         setTimeout(scrollToBottom, 50)
+        // E96: el GET marca leído en servidor fire-and-forget; este update
+        // awaited + refetch garantiza que el badge global baje al abrir.
+        markConversationRead(conversationId)
       })
       .catch(() => { setLoadError(true); setLoading(false) })
-  }, [conversationId, scrollToBottom])
+  }, [conversationId, scrollToBottom, markConversationRead])
 
   useEffect(() => { loadMessages() }, [loadMessages])
 
@@ -108,12 +113,17 @@ export function ConversationClient({ conversationId, otherUser, currentUserId }:
             return [...prev, fullMsg]
           })
           setTimeout(scrollToBottom, 50)
+          // E96: mensaje ajeno recibido con el chat abierto → marcar leído
+          // para que no cuente en el badge global de no-leídos.
+          if (fullMsg.sender_id !== currentUserId) {
+            markConversationRead(conversationId)
+          }
         }
       )
       .subscribe()
 
     return () => { supabase.removeChannel(channel) }
-  }, [conversationId, scrollToBottom, currentUserId])
+  }, [conversationId, scrollToBottom, currentUserId, markConversationRead])
 
   async function handleSend(e: React.FormEvent) {
     e.preventDefault()

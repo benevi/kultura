@@ -13,7 +13,8 @@
     "suggestions": "Feedback",
     "profile": "My profile",
     "signOut": "Sign out",
-    "more": "More"
+    "more": "More",
+    "unreadMessages": "{count, plural, one {# unread message} other {# unread messages}}"
   },
   "auth": {
     "signIn": "Sign in",
