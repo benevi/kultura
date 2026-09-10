@@ -45,6 +45,15 @@ vi.mock('@/lib/supabase/server', () => ({
   createClient: () => buildSupabaseMock(),
 }))
 
+const mockCheckRateLimit = vi.fn<() => { allowed: boolean; retryAfterSeconds: number }>(() => ({
+  allowed: true,
+  retryAfterSeconds: 0,
+}))
+vi.mock('@/lib/rate-limit', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@/lib/rate-limit')>()
+  return { ...actual, checkRateLimit: () => mockCheckRateLimit() }
+})
+
 // ── DB rows ───────────────────────────────────────────────────────────────────
 
 const DB_ROW = {
@@ -63,6 +72,7 @@ const DB_ROW = {
 describe('POST /api/library', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    mockCheckRateLimit.mockReturnValue({ allowed: true, retryAfterSeconds: 0 })
   })
 
   it('devuelve 401 si el usuario no está autenticado', async () => {
@@ -163,6 +173,7 @@ describe('POST /api/library', () => {
 describe('DELETE /api/library', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    mockCheckRateLimit.mockReturnValue({ allowed: true, retryAfterSeconds: 0 })
   })
 
   it('devuelve 401 si el usuario no está autenticado', async () => {
@@ -202,5 +213,15 @@ describe('DELETE /api/library', () => {
     expect(response.status).toBe(200)
     const body = await response.json() as { ok: boolean }
     expect(body.ok).toBe(true)
+  })
+
+  it('devuelve 429 si se supera el rate limit (E99)', async () => {
+    mockGetUser.mockResolvedValueOnce({ data: { user: { id: 'user-uuid-001' } }, error: null })
+    mockCheckRateLimit.mockReturnValue({ allowed: false, retryAfterSeconds: 30 })
+
+    const { DELETE } = await import('@/app/api/library/route')
+    const response = await DELETE(makeRequest({ mediaId: 'movie_550' }, 'DELETE'))
+
+    expect(response.status).toBe(429)
   })
 })
