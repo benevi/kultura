@@ -51,4 +51,6 @@ E93 → ✅ **CERRADA 2026-07-16** (commit `49f3dd2`, validada en prod). DMs sol
 
 E96 → ✅ **CERRADA 2026-07-16** (commit `7553ef1`, validada en dev por el usuario). Badge global de conversaciones no leídas (s2; s1 ya existía vía A5.8): `GET /api/chat?countOnly=1` (una query), `UnreadChatProvider` (realtime global + `markConversationRead`), badges BottomNav/NavLinks, i18n es/en. Incluye fix de bug latente setAuth/INITIAL_SESSION (canal realtime unido como anon = SUBSCRIBED pero sordo; afectaba también al chat por-conversación tras reload). tsc 0, lint 0, vitest 1245 passed. Detalle en DONE.md.
 
+E99 → ✅ **CERRADA 2026-09-10** (commit `f4d624e`). Rate-limit ausente en `PATCH`/`DELETE /api/friends` y `DELETE /api/library` (hallazgo de revisión exhaustiva 2026-09-06, gap que dejó AUDIT-FIX S2). Fix: `checkRateLimit` reusando `LIMITS.friends`/`LIMITS.library` con la misma key que sus `POST` homólogos. +3 tests 429. tsc 0, lint 0, vitest **1248 passed**. Detalle en DONE.md / BACKLOG E99.
+
 **Sin tarea activa.** Esperar al usuario para la siguiente (BACKLOG).
