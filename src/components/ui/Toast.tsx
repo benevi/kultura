@@ -19,7 +19,7 @@ interface SingleToastProps {
 
 const typeStyles: Record<ToastType, string> = {
   success: 'bg-surface2 text-text border-border',
-  error:   'bg-surface2 text-text border-accent',
+  error:   'bg-surface2 text-text border-accent-danger',
   info:    'bg-surface2 text-text border-border',
 }
 

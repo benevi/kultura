@@ -274,7 +274,7 @@ describe("SearchResults", () => {
     expect(screen.queryByText("Anime 1")).not.toBeInTheDocument();
   });
 
-  it("tab activo tiene clase border-accent", () => {
+  it("tab activo tiene clase border-accent-positive", () => {
     const results: SearchResults = {
       ...emptyResults,
       movies: [makeMovie(1)],
@@ -289,7 +289,7 @@ describe("SearchResults", () => {
       />
     );
     const allTab = screen.getByText("Todos").closest("button");
-    expect(allTab?.className).toContain("border-accent");
+    expect(allTab?.className).toContain("border-accent-positive");
   });
 
   it("muestra el recuento de resultados en los tabs", () => {

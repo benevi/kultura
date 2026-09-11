@@ -79,7 +79,7 @@ export function Pagination({
   const baseBtn =
     "inline-flex items-center justify-center min-w-10 h-10 px-3 rounded-md " +
     "text-sm font-medium transition-colors cursor-pointer " +
-    "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent " +
+    "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-positive " +
     "focus-visible:ring-offset-2 focus-visible:ring-offset-bg " +
     "disabled:pointer-events-none disabled:opacity-50";
   // Botón inactivo: superficie/borde del DS, hover visible.
@@ -119,9 +119,8 @@ export function Pagination({
                 className={cn(
                   baseBtn,
                   entry === currentPage
-                    ? // Activo: VARIABLE de acento del DS (legacy), texto on-accent.
-                      // NUNCA hardcodear el hex. Usa bg-accent del DS.
-                      "bg-accent text-white border border-accent"
+                    ? // Activo: acento principal del DS (F2 — antes rojo legacy).
+                      "bg-accent-positive text-on-accent-positive border border-accent-positive"
                     : inactiveBtn
                 )}
                 aria-label={t("pageN", { n: entry })}

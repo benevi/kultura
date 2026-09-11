@@ -184,7 +184,7 @@ export function SearchResults({
             className={cn(
               "px-4 py-2 text-sm font-medium whitespace-nowrap border-b-2 transition-colors",
               activeType === tab.value
-                ? "border-accent text-text"
+                ? "border-accent-positive text-text"
                 : "border-transparent text-muted hover:text-text"
             )}
           >
@@ -212,8 +212,8 @@ export function SearchResults({
 
       {/* Random mode banner */}
       {randomItem && (
-        <div className="flex items-center gap-3 mb-4 px-3 py-2 rounded-lg bg-accent/10 border border-accent/30 text-sm">
-          <span className="text-accent">
+        <div className="flex items-center gap-3 mb-4 px-3 py-2 rounded-lg bg-accent-positive/10 border border-accent-positive/30 text-sm">
+          <span className="text-accent-positive">
             🎲{" "}
             {t("showingRandom", {
               count: filteredItems.length,
@@ -222,7 +222,7 @@ export function SearchResults({
           <div className="flex gap-2 ml-auto">
             <button
               onClick={handleRandomize}
-              className="text-accent hover:underline"
+              className="text-accent-positive hover:underline"
             >
               {t("randomizeAgain" as Parameters<typeof t>[0])}
             </button>
