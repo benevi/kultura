@@ -37,7 +37,24 @@ export async function middleware(request: NextRequest) {
   );
 
   // Validate session against auth server; refreshes token if expired.
-  await supabase.auth.getUser();
+  // HOTFIX (incidente prod 2026-09-11): sin timeout, un Supabase lento/caído
+  // cuelga esta llamada hasta que Vercel mata el middleware por timeout →
+  // 504 en TODO el sitio (el matcher cubre casi cualquier request). Peor caso
+  // con el timeout: esta request sigue sin sesión refrescada — las páginas/
+  // rutas protegidas hacen su propio check de auth y redirigen a login si
+  // hace falta — preferible a un 504 global.
+  const AUTH_CHECK_TIMEOUT_MS = 4000;
+  try {
+    await Promise.race([
+      supabase.auth.getUser(),
+      new Promise((_, reject) =>
+        setTimeout(() => reject(new Error("auth check timed out")), AUTH_CHECK_TIMEOUT_MS)
+      ),
+    ]);
+  } catch {
+    // Timeout o error del auth server: seguimos sin sesión refrescada en vez
+    // de bloquear la respuesta indefinidamente.
+  }
 
   // For API routes: return the Supabase response (carries refreshed session).
   if (request.nextUrl.pathname.startsWith("/api/")) {
