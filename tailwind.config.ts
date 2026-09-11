@@ -47,9 +47,9 @@ const config: Config = {
         danger: "var(--accent-danger)",
       },
       fontFamily: {
-        /* New design system fonts */
-        display: ["var(--font-space-grotesk)", "system-ui", "sans-serif"],
-        body: ["var(--font-inter)", "system-ui", "sans-serif"],
+        /* Design system fonts (F1 — Bricolage Grotesque + Figtree) */
+        display: ["var(--font-display)", "system-ui", "sans-serif"],
+        body: ["var(--font-body)", "system-ui", "sans-serif"],
         /* Legacy aliases */
         mono: ["var(--font-mono)", "monospace"],
       },
