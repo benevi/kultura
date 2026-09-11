@@ -63,6 +63,22 @@ D1 → ✅ **CERRADA 2026-09-11** (commit `e89664a`). Páginas públicas `/[loca
 
 D2/D3 → ✅ **CERRADAS 2026-09-11** (este commit). Cierra Bloque D completo. `DELETE /api/account` (D2) borra vía admin client + cascada verificada en el SQL real de las migraciones (13 tablas cascadean desde `users(id)`, `auth.users` cascada desde ahí). `GET /api/account/export` (D3) reusa queries existentes de biblioteca/listas/amigos, cero duplicación. UI real en Settings sustituyendo el stub "disponible próximamente": exportar descarga `.json`, eliminar pasa por `ConfirmModal` destructivo + signOut + redirect. +14 tests. Verificado en runtime real: 401 limpio sin sesión en ambos endpoints. tsc 0, lint 0, vitest **1284 passed**. Detalle en DONE.md / BACKLOG D2/D3.
 
-**Bloques C y D agotados hasta donde el código puede llevarlos sin más input del usuario** (C3 necesita Vercel KV, C6 necesita tráfico real, C8 es verificación manual periódica). Toca el turno de Bloque F (identidad editorial) — empieza por F0 (concepto visual), que requiere aprobación del usuario antes de tocar código de producción de UI.
+**Bloques C y D agotados hasta donde el código puede llevarlos sin más input del usuario** (C3 necesita Vercel KV, C6 necesita tráfico real, C8 es verificación manual periódica). Toca el turno de Bloque F.
 
-**Sin tarea activa.** Esperar al usuario para la siguiente (BACKLOG).
+F0 → ✅ **APROBADA 2026-09-11** (sin commit de código — vive en un canvas de Claude Design, no en el repo). Concepto v1 (editorial/revista) descartado por el usuario ("es feísimo"); v2 (desenfadado, Gen Z: modo oscuro, Bricolage Grotesque + Figtree, badges de match, mood-chips, gamificación, logo e iconos propios sin glifos de librería) iterado y aprobado ("me gusta mucho más" → "perfecto, prosigue"). Hallazgo registrado en BACKLOG como F1b: la app ya usa `lucide-react` (icono genérico), a sustituir.
+
+F1 → ✅ **CERRADA 2026-09-11** (commit `8f1e5ce`). Bricolage Grotesque + Figtree sustituyen a Space Grotesk/Inter, CSS vars renombradas a `--font-display`/`--font-body`. Detalle en DONE.md.
+
+F1b → ✅ **CERRADA 2026-09-11** (commit `5b99dbe`). 30 iconos propios sustituyen `lucide-react` en los 6 consumidores. Verificados visualmente (Chromium headless, 5 fondos reales) antes de integrar; 7 iconos con "agujero" que asumían el color de fondo reescritos con recortes SVG reales (`fill-rule: evenodd`). De paso, `IconSearch` deja de usar `--accent-danger` (token "solo destructivo") como decoración. `grep -rn "from 'lucide-react'" src/` → 0, dependencia eliminada. tsc 0, lint 0, vitest **1284 passed**, build+runtime real verificados. Detalle en DONE.md.
+
+## Tarea activa
+
+### F2. Resolver acento legacy rojo (`#E82020`) dentro del nuevo sistema de color
+
+**Qué cambia:** definir la paleta de color completa de la dirección Gen Z aprobada en F0 (más allá de "rojo→verde": los tokens ya existen parcialmente en `globals.css` — `--accent-positive` verde, `--accent-highlight` ámbar, `--accent-info` azul, `--accent-danger` rojo — pero el alias legacy `accent: "#E82020"` en `tailwind.config.ts` sigue vivo y en uso) y aplicarla en los consumidores que todavía usan el rojo legacy en vez de un token DS con significado semántico correcto. Fusiona y sustituye a E82.
+
+**Cómo sé que funciona:** `grep -rn "#E82020\|bg-accent\b\|text-accent\b\|border-accent\b" src/` (excluyendo `accent-positive`/`accent-highlight`/`accent-info`/`accent-danger`/`accent-subtle`/`accent-hover`) devuelve 0 usos del alias legacy fuera de su propia definición en `tailwind.config.ts`; cada sustitución usa el token semánticamente correcto (no un verde por defecto sin pensar el significado); tsc/lint/vitest en verde; verificación visual real (Chromium headless) de las pantallas afectadas antes de dar por cerrada.
+
+**Archivos que toco:** por determinar tras localizar los consumidores reales de `accent`/`#E82020` (búsqueda inicial de la tarea); `tailwind.config.ts`, `src/app/globals.css` si hace falta ampliar tokens.
+
+**Cuándo paro:** al cerrar F2, encadeno F3 (MediaCard) dentro del mismo bloque aprobado — Bloque F sigue en curso, sin pedir confirmación por tarea.

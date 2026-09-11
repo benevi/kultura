@@ -653,13 +653,13 @@ No bloqueantes. Atacar solo después de A–D.
   Hecho cuando: el usuario da luz verde definitiva a la dirección visual completa (puede seguir iterando detalles).
   Depende de: nada. Bloquea F1+.
 
-- [ ] **F1. Sistema tipográfico**
-  Definir e implementar la pareja tipográfica de F0 (Bricolage Grotesque display + Figtree texto, a confirmar tras luz verde final) y la escala tipográfica en `tailwind.config` / tokens DS, sustituyendo Space Grotesk/Inter. Alcance final a concretar tras F0.
+- [x] **F1. Sistema tipográfico** — _cerrada 2026-09-11, commit `8f1e5ce`_
+  Bricolage Grotesque (display) + Figtree (body) sustituyen a Space Grotesk/Inter. CSS vars renombradas a `--font-display`/`--font-body` en los 3 puntos de carga (`[locale]/layout.tsx`, `not-found.tsx`, `dev/layout.tsx`) + `tailwind.config.ts`.
   Depende de: F0.
 
-- [ ] **F1b. Sistema de iconos propio (sustituye `lucide-react`)**
-  Hallazgo 2026-09-11: la app en producción ya usa `lucide-react` (librería de iconos genérica — `BottomNav`, `MoreSheet`, etc.) para toda la navegación, justo el tipo de icono de plantilla que la regla de marca de este bloque prohíbe. Construir un set de iconos SVG propios como componentes React (mismo lenguaje visual que los iconos ya dibujados a mano en el concepto F0 — formas rellenas, no trazo fino tipo Feather/Heroicons, con el punto de firma de color como detalle de familia) y sustituir cada uso de `lucide-react` en la app. Cubre como mínimo los iconos usados hoy: navegación (home/discover/search/library/friends/groups/lists/suggestions/chat/settings/profile/more), `MoreSheet`, `AuthHeader`/`AvatarDropdown`, y cualquier icono de acción en componentes de detalle/social.
-  Hecho cuando: `grep -rn "from 'lucide-react'" src/` devuelve 0, la dependencia `lucide-react` se elimina de `package.json`, y la app sigue funcionando sin regresiones visuales ni de accesibilidad (mismo tamaño de área táctil, mismo significado).
+- [x] **F1b. Sistema de iconos propio (sustituye `lucide-react`)** — _cerrada 2026-09-11_
+  30 iconos SVG propios en `src/components/icons/index.tsx` (formas rellenas/chunky, `currentColor`, sin glifos de librería estándar). Verificados visualmente con Chromium headless contra 5 fondos reales de la app (incluido el caso de riesgo: iconos con "agujero" interior sobre fondos distintos de `surface-base`) antes de tocar código de producción — 7 iconos que asumían el color de fondo (`Compass`, `Tag`, `Calendar`, `Globe`, `Studio`, `Format`, `Gamepad`) se reescribieron con recortes SVG reales (`fill-rule: evenodd`), no con un color de fondo hardcodeado. `IconSearch` además corrige un mal uso semántico encontrado de paso: usaba `var(--accent-danger)` (token documentado como "solo destructivo") como adorno decorativo — ahora monocromo. Sustituidos los 6 consumidores (`BottomNav`, `MoreSheet`, `FilterBar`, `DiscoverClient`, `NotificationsList`, `InviteButton`), `lucide-react` eliminado de `package.json`.
+  Hecho cuando: `grep -rn "from 'lucide-react'" src/` devuelve 0, la dependencia `lucide-react` se elimina de `package.json`, y la app sigue funcionando sin regresiones visuales ni de accesibilidad (mismo tamaño de área táctil, mismo significado). **Verificado.**
   Depende de: F0.
 
 - [ ] **F2. Resolver acento legacy rojo (`#E82020`) dentro del nuevo sistema de color**
