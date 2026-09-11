@@ -77,14 +77,16 @@ F3 → **partida 2026-09-11 en F3a/F3b** (tarea demasiado grande, regla de emerg
 
 F3a → ✅ **CERRADA 2026-09-11** (commit `6827e8d`). Módulo `src/lib/recommendations/match-score.ts`: score 0-100 determinista (género 70% + tipo 15% + señal social de amigos 15%), gate por señal mínima de biblioteca (Map vacío si <3 items de señal real), cache 1h invalidada junto con `invalidateRecCache` en `/api/library`. Cero llamadas a Claude/APIs externas. +12 tests. tsc 0, lint 0, vitest **1296 passed**. Detalle en DONE.md / BACKLOG F3a.
 
+F3b → ✅ **CERRADA 2026-09-11** (este commit). `MediaCard`/`MediaGrid` restyle (rounded-bento, badge de match real, layout bento opt-in) + `DiscoverClient` en bento con matchScores desde `/api/discover` + `MediaRow`/`GenreNews` con badge compacto desde `/api/genre-news`. Verificado con Chromium headless sobre el CSS compilado real (`next build && next start`, desktop+móvil). +14 tests, tsc 0, lint 0, vitest **1304 passed**. Detalle en DONE.md / BACKLOG F3b.
+
 ## Tarea activa
 
-### F3b. Rediseño de `MediaCard` + grid bento de Descubrir/Home
+### F4. Rediseño de ficha de Media (`/media/[type]/[id]`)
 
-**Qué cambia:** sustituye el layout de card genérico y el grid CSS uniforme actual por el lenguaje visual del mockup F0 (releído: `Main.dc.html`/`Discover.dc.html` del canvas de Claude Design) — grid bento con tamaños de card variables y ligera rotación (decisión explícita del usuario: bento completo, no solo restilar la card sobre el grid uniforme). Badge de match usa `computeMatchScores` de F3a; se omite por completo cuando el item no tiene entrada en el Map devuelto (gate sin señal) — nunca un número decorativo. Cubre `MediaCard`, `MediaGrid`, `MediaRow` (Home), el grid de `DiscoverClient`.
+**Qué cambia:** aplicar la maquetación tipo "reportaje/portada" aprobada en F0 a la página de detalle (hero con backdrop, sinopsis, metadata, trailer). Antes de tocar código: releer `MediaDetail.dc.html` del canvas F0 para fijar el layout exacto — no reinventar sobre la marcha (mismo criterio que F3).
 
-**Cómo sé que funciona:** captura real (Chromium headless) de Discover y Home con datos reales/mock mostrando el nuevo layout bento; paginación y filtros existentes (`FilterBar`, `Pagination`) siguen operables sobre el nuevo grid; tsc/lint/vitest en verde; verificación en runtime real (`next build && next start`, no solo build).
+**Cómo sé que funciona:** captura real (Chromium headless) de la ficha de un título de cada familia relevante (movie/tv/anime/book al menos) mostrando el nuevo layout; trailer y metadata siguen funcionando; tsc/lint/vitest en verde; verificación en runtime real (`next build && next start`).
 
-**Archivos que toco:** `src/components/media/MediaCard.tsx`, `src/components/media/MediaGrid.tsx`, `src/components/home/MediaRow.tsx`, `src/app/[locale]/(app)/discover/DiscoverClient.tsx` y su data-fetching (para inyectar `computeMatchScores` server-side), `src/app/[locale]/(app)/home/page.tsx`. Por confirmar tras localizar todos los puntos donde se ensamblan los items antes de pasarlos a estos componentes.
+**Archivos que toco:** por determinar tras releer el mockup F0 y localizar el/los componente(s) reales de la página `/media/[type]/[id]` (búsqueda inicial de la tarea).
 
-**Cuándo paro:** al cerrar F3b, encadeno F4 (ficha de Media) dentro del mismo bloque aprobado — Bloque F sigue en curso, sin pedir confirmación por tarea.
+**Cuándo paro:** al cerrar F4, encadeno F5 (auditoría de accesibilidad) dentro del mismo bloque aprobado — Bloque F sigue en curso, sin pedir confirmación por tarea.

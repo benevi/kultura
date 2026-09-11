@@ -679,7 +679,7 @@ No bloqueantes. Atacar solo después de A–D.
     Hecho cuando: existe un módulo (`src/lib/recommendations/match-score.ts` o similar) con tests unitarios cubriendo el cálculo (perfil de género, gate por señal insuficiente, señal social), sin ninguna llamada a Claude/API externa en el cálculo, tsc/lint/vitest en verde.
     Depende de: F0 (aprobado). No depende de F1/F1b/F2 (es lógica de datos, no UI).
 
-  - [ ] **F3b. Rediseño de `MediaCard` + grid bento de Descubrir/Home**
+  - [x] **F3b. Rediseño de `MediaCard` + grid bento de Descubrir/Home** — _cerrada 2026-09-11_
     Sustituye el layout de card genérico y el grid uniforme actual por el lenguaje visual del mockup F0: grid bento con tamaños de card variables y ligera rotación (no un grid CSS uniforme con solo la card restilada — decisión explícita del usuario, más fiel al mockup pero con más riesgo de romper paginación/filtros/accesibilidad ya construidos sobre el grid uniforme, a vigilar en F5). Badge de match usa el score real de F3a (u omite el badge si el gate de F3a no da señal suficiente — nunca decorativo). Cubre `MediaCard`, `MediaGrid`, `MediaRow`, el grid de `DiscoverClient`.
     Hecho cuando: captura real (Chromium headless) de Discover y Home con datos reales/mock mostrando el nuevo layout; paginación y filtros existentes siguen funcionando sobre el nuevo grid; tsc/lint/vitest en verde; verificación en runtime real (`next build && next start`).
     Depende de: F0, F1, F1b, F2, F3a.
