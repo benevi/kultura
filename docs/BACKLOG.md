@@ -666,16 +666,30 @@ No bloqueantes. Atacar solo después de A–D.
   Fusiona y sustituye a E82. El alias Tailwind `accent`/`#E82020` sustituido por el token DS correcto según el significado de cada uso (no un solo color de reemplazo): `accent-positive` para acciones/estados activos, `accent-highlight` para rating, `accent-info` para enlaces, `accent-danger` donde ya faltaba en un borde de error. `groups.cover_color` remapeado al leer (mismo patrón que `avatar_color`/`LEGACY_RED`). Alias `accent`/`accent-hover`/`accent-subtle` eliminados de `tailwind.config.ts` tras confirmar cero consumidores.
   Depende de: F0.
 
-- [ ] **F3. Rediseño de `MediaCard` y grids de Descubrir/Home en maquetación editorial**
-  Sustituye el layout de card genérico por el lenguaje visual aprobado en F0. Cubre `MediaCard`, `MediaRow`, el grid de `DiscoverClient`.
-  Depende de: F0, F1, F1b, F2.
+- [ ] **F3. Rediseño de `MediaCard` y grids de Descubrir/Home** — _partida en F3a/F3b (2026-09-11): tarea demasiado grande tras decisión del usuario de construir un sistema de match real en vez de un badge decorativo, y un grid bento completo en vez de solo restilar la card sobre el grid uniforme actual._
+
+  - [x] **F3a. Sistema de match score real (sin llamadas a LLM por card)** — _cerrada 2026-09-11, commit `6827e8d`_
+    El mockup F0 muestra un badge "97% MATCH" tipo Netflix por card. Decisión del usuario (2026-09-11, tras preguntarse explícitamente): el % tiene que salir de un sistema de recomendación real, no de un número decorativo ni de una llamada a Claude por cada item de un grid (inviable: rate-limit de la regla 1b es ≤10 req/min por usuario para endpoints LLM, y un grid/fila puede tener docenas de items por carga).
+    Diseño: score determinista 0-100 calculado server-side a partir de señales ya existentes en la BD, sin llamar a ninguna API externa ni a Claude:
+    - Afinidad de género (peso ~70%): perfil de géneros del usuario ponderado por su propia valoración (`user_media.score`, o completado sin score) — no solo frecuencia como hoy `getUserStats.topGenres` — comparado contra `item.genres` (ya presente en `MediaItem`, viene del normalizer).
+    - Afinidad de tipo (peso ~15%): proporción del tipo del item (movie/tv/anime/...) dentro de la biblioteca ponderada del usuario.
+    - Señal social (peso ~15%): fracción de amigos aceptados que tienen ese mismo `media_id` completado o con score≥4 (una query acotada a los ids de la página actual, no biblioteca completa de cada amigo).
+    Gate: igual que `getAiRecommendations` (mínimo de señal en biblioteca, hoy 3 items) — sin señal suficiente, el campo de score no se calcula y la card no muestra badge (nunca un número inventado).
+    Caché en memoria por usuario (mismo patrón TTL 1h que `recCache` de `lib/claude/recommendations.ts`), invalidada cuando cambia la biblioteca (mismo hook que `invalidateRecCache`).
+    Hecho cuando: existe un módulo (`src/lib/recommendations/match-score.ts` o similar) con tests unitarios cubriendo el cálculo (perfil de género, gate por señal insuficiente, señal social), sin ninguna llamada a Claude/API externa en el cálculo, tsc/lint/vitest en verde.
+    Depende de: F0 (aprobado). No depende de F1/F1b/F2 (es lógica de datos, no UI).
+
+  - [ ] **F3b. Rediseño de `MediaCard` + grid bento de Descubrir/Home**
+    Sustituye el layout de card genérico y el grid uniforme actual por el lenguaje visual del mockup F0: grid bento con tamaños de card variables y ligera rotación (no un grid CSS uniforme con solo la card restilada — decisión explícita del usuario, más fiel al mockup pero con más riesgo de romper paginación/filtros/accesibilidad ya construidos sobre el grid uniforme, a vigilar en F5). Badge de match usa el score real de F3a (u omite el badge si el gate de F3a no da señal suficiente — nunca decorativo). Cubre `MediaCard`, `MediaGrid`, `MediaRow`, el grid de `DiscoverClient`.
+    Hecho cuando: captura real (Chromium headless) de Discover y Home con datos reales/mock mostrando el nuevo layout; paginación y filtros existentes siguen funcionando sobre el nuevo grid; tsc/lint/vitest en verde; verificación en runtime real (`next build && next start`).
+    Depende de: F0, F1, F1b, F2, F3a.
 
 - [ ] **F4. Rediseño de ficha de Media (`/media/[type]/[id]`)**
   Aplicar la maquetación tipo "reportaje/portada" aprobada en F0 a la página de detalle (hero, sinopsis, metadata, trailer).
   Depende de: F0, F1, F1b, F2.
 
 - [ ] **F5. Auditoría de accesibilidad post-rediseño**
-  Contraste (WCAG AA mínimo), tamaños táctiles mobile-first (regla 7 de CLAUDE.md), `prefers-reduced-motion` si F0 introduce motion. No cerrar el bloque sin esto.
-  Depende de: F3, F4.
+  Contraste (WCAG AA mínimo), tamaños táctiles mobile-first (regla 7 de CLAUDE.md), `prefers-reduced-motion` si F0 introduce motion. Con el grid bento de F3b, auditar además: orden de lectura/tabulación (el layout visual variable no debe romper el orden DOM lógico) y paginación/filtros siguen operables. No cerrar el bloque sin esto.
+  Depende de: F3a, F3b, F4.
 
   Resto de pantallas (Library, Profile, Social, Chat, Groups) se planifican como F6+ una vez validado el lenguaje visual en F0-F5 — no se especifican aún para no comprometerse a un alcance que F0 puede cambiar.
