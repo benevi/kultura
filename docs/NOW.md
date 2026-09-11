@@ -57,4 +57,20 @@ C1/C2 → ✅ **CERRADAS 2026-09-11** (este commit). Bloque C arrancado a petici
 
 **Incidente de esta sesión (contexto, no deuda de código):** el disco externo USB donde vivía el proyecto (`E:\Kultura`) falló físicamente a mitad de esta tarea — desconexiones intermitentes, corrupción repetida de `node_modules`, y finalmente dejó de ser detectado por Windows. Todo el trabajo commiteado y pusheado a GitHub estaba a salvo; el único riesgo era el trabajo de esta sesión sin commitear, que se recreó íntegro. El proyecto se movió a una partición interna nueva (`P:\Kultura`, clonada de `origin/master`) — de ahí que esta rama ya no viva en `E:\`. Sin relación con C1/C2 más allá de haber obligado a rehacer el trabajo dos veces.
 
+C7/C5 → ✅ **CERRADAS 2026-09-11** (commit `92b0df3`). CSP `script-src` sin `unsafe-inline` en producción vía nonce por request (`crypto.randomUUID()` en `src/middleware.ts` + nuevo `src/lib/csp.ts`); Next.js aplica el nonce automáticamente a sus propios scripts. Header fijado en ambos `return` de middleware (no en la reasignación intermedia que ocurre durante el refresh de cookies). `style-src` intacto (Radix necesita `style=""` inline para popovers, fuera de alcance). C5 se cierra junto a C7 — su criterio quedaba satisfecho por el mismo cambio. Verificado con `next build && next start` real (`curl -I`: nonce distinto por request, sin `unsafe-inline`, HTTP 200). Resto de Bloque C bloqueado de facto: C3 necesita Vercel KV (`docs/BLOCKERS.md`), C6 necesita tráfico real, C8 es una verificación periódica manual (no tarea de código). tsc 0, lint 0, vitest **1260 passed**. Detalle en DONE.md / BACKLOG C5/C7.
+
+## Tarea activa
+
+### D1. Política de privacidad + Términos
+
+**Contexto:** con Bloque C agotado hasta donde el código puede llevarlo (resto bloqueado por infra/tráfico/manual), se pasa a Bloque D (legal mínimo), también aprobado por el usuario como parte del "hardening técnico primero".
+
+**Qué cambia:** páginas estáticas `/[locale]/privacy` y `/[locale]/terms` (contenido genérico pero real para una app que trata datos de usuarios: qué se recoge — cuenta, biblioteca, actividad social —, uso de terceros — TMDB/Jikan/RAWG/OpenLibrary/ComicVine/MangaDex/Anthropic —, derechos del usuario). Enlazadas desde el footer (verificar si existe un footer global o hay que añadir uno mínimo en `(app)/layout.tsx`). i18n es/en con paridad.
+
+**Cómo sé que funciona:** ambas páginas existen y renderizan en `/es/privacy`, `/es/terms`, `/en/privacy`, `/en/terms`; el footer las enlaza; tsc/lint/vitest en verde; paridad i18n mantenida.
+
+**Archivos que toco:** `src/app/[locale]/(app)/privacy/` (o ruta pública si no requiere auth — a decidir según si hay layout público), `src/app/[locale]/(app)/terms/`, `messages/es.json`, `messages/en.json`, componente de footer si no existe.
+
+**Cuándo paro:** al cerrar D1, encadeno D2 (borrado de cuenta) y D3 (exportación de datos) dentro del mismo bloque aprobado, sin pedir permiso por tarea.
+
 **Sin tarea activa.** Esperar al usuario para la siguiente (BACKLOG).

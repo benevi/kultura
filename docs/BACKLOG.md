@@ -92,18 +92,15 @@ Sin esto, cuando algo falle en prod no te vas a enterar.
 - [x] **C4. Rate-limit en endpoints sin proteger** ✅ (cerrada el 2026-05-03)
   Aplicado `checkRateLimit` en 6 endpoints: `POST /api/chat` (10/h), `POST /api/chat/[id]` (10/min), `GET /api/chat/[id]` (60/min), `POST /api/groups` (5/h), `POST /api/suggestions` (3/h), `GET /api/users/search` (30/min). Sistema in-memory existente extendido con 6 nuevos presets en `LIMITS`. Tests: 6 nuevos en `tests/unit/rate-limit/rate-limit.test.ts` (18 total, 18 green). Todos devuelven 429 + `Retry-After`.
 
-- [ ] **C5. Activar CSP en modo enforce mejorado**
-  El CSP actual tiene `'unsafe-inline'` en script-src. Eliminar requires nonces (ver C7). Tras C7, pasar CSP a modo enforce sin `'unsafe-inline'` y verificar en producción que no hay regresiones.
-  Depende de: C7.
-  Hecho cuando: `Content-Security-Policy` en producción no contiene `'unsafe-inline'` y el sitio funciona.
+- [x] **C5. Activar CSP en modo enforce mejorado** ✅ (cerrada el 2026-09-11, entregada por C7)
+  El "Hecho cuando" de esta tarea (`Content-Security-Policy` en producción no contiene `'unsafe-inline'` en script-src y el sitio funciona) queda satisfecho por la implementación de C7 — nunca hubo un modo report-only intermedio que "activar" por separado, era el mismo cambio. Verificado local con `next build && next start` real (curl -I, sin errores de servidor). **Pendiente:** confirmación en producción real (Vercel) tras el próximo deploy — regla 11 de CLAUDE.md.
 
 - [ ] **C6. Auditar dominios externos en CSP y limpiar allowlist**
-  El `img-src https:` actual permite cualquier dominio HTTPS para imágenes. Cuando se tenga tráfico real, revisar los logs/reports de CSP para confirmar qué dominios realmente se usan y reemplazar `https:` por una allowlist explícita. Prioridad baja.
+  El `img-src https:` actual permite cualquier dominio HTTPS para imágenes. Cuando se tenga tráfico real, revisar los logs/reports de CSP para confirmar qué dominios realmente se usan y reemplazar `https:` por una allowlist explícita. Prioridad baja. Bloqueada de facto hasta que haya tráfico real que auditar.
   Hecho cuando: `img-src` no contiene `https:` genérico, sino dominios específicos verificados.
 
-- [ ] **C7. Eliminar `'unsafe-inline'` de CSP script-src usando nonces**
-  Next.js 14 permite nonces en CSP via middleware. Requiere generar un nonce por request en `middleware.ts` y pasarlo tanto al header CSP como al `<script>` de `_document`. Prioridad media, hacer antes de B6 (monetización).
-  Hecho cuando: `Content-Security-Policy` no contiene `'unsafe-inline'` en `script-src`, `npm run build` pasa, y la app funciona sin errores de CSP en consola.
+- [x] **C7. Eliminar `'unsafe-inline'` de CSP script-src usando nonces** ✅ (cerrada el 2026-09-11)
+  La CSP se generaba estática en `next.config.mjs`; un nonce por request no puede serlo. Movida a `src/middleware.ts` (nuevo `src/lib/csp.ts` con `buildCsp()`, testeable sin runtime Edge): en producción `script-src 'self' 'nonce-{uuid}'` (`crypto.randomUUID()`), Next.js aplica el nonce automáticamente a los scripts que inyecta el framework. Dev conserva `unsafe-inline`+`unsafe-eval` (HMR). `style-src` intacto a propósito (Radix posiciona vía `style=""` inline, fuera de alcance — solo `script-src`). Verificado con `next build && next start` real: `curl -I` muestra nonce distinto por request, sin `unsafe-inline`, HTTP 200, sin errores. `tests/unit/security/headers.test.ts` reescrito (20 tests: headers estáticos en `next.config.mjs` + `buildCsp()` aislado). tsc 0, lint 0, vitest **1260 passed**.
 
 - [ ] **C8. Verificar periódicamente que Vercel sigue añadiendo HSTS**
   Vercel añade automáticamente `Strict-Transport-Security: max-age=63072000` (confirmado 2026-05-03). Si cambia el plan de Vercel, se migra de proveedor, o Vercel modifica su política, HSTS podría desaparecer. Chequear tras cualquier cambio de plan y como mínimo una vez al año.
@@ -642,3 +639,38 @@ No bloqueantes. Atacar solo después de A–D.
 
 - [ ] **E98. Sincronizar CLAUDE.md con codigo real.** Tres afirmaciones de CLAUDE.md contradicen al repo (detectadas en Fase 0 del dossier, 2026-07-16): (1) ComicVine "clave presente, sin handler - E6" es falso: existe `src/lib/api/comicvine.ts` + `comicvine-maps.ts`, usados en search/discover/media y con tests unitarios; (2) "17 tablas reales... 49 policies" desactualizado: 18 tablas (`group_invitations`, migracion 20260601000002) y 53 policies vigentes tras aplicar las 14 migraciones; (3) "594 keys c/u" en messages: son 596 es = 596 en. El modelo Claude (`claude-haiku-4-5`) SI coincide con `src/lib/claude/recommendations.ts:232` (la desactualizada ahi es ESTADO_PROYECTO.md:387, que dice `claude-sonnet-4-6`).
   Hecho cuando: las 3 afirmaciones corregidas en CLAUDE.md, nota de ESTADO_PROYECTO.md actualizada o marcada obsoleta, y 0 contradicciones repo vs CLAUDE.md en esos puntos.
+
+---
+
+## BLOQUE F — Identidad editorial (salto de calidad artístico)
+
+> Abierto 2026-09-11 a petición del usuario: "salto cualitativo diferencial, técnico y artístico, con vistas a rentabilizar el proyecto". Dirección elegida: **editorial / revista cultural** — tipografía potente, maquetación tipo revista, alejarse del look genérico de "app de streaming" (Letterboxd/Trakt-alike). Se ejecuta **después** de cerrar Bloque C/D (hardening técnico), decisión explícita del usuario. Modelo de monetización: aún no decidido — no comprometerse a infra de pagos todavía.
+>
+> Regla de este bloque: **F0 es obligatorio antes de F1+**. No se toca código de producción de UI hasta que el usuario apruebe el concepto visual — rehacer un mockup es barato, rehacer componentes ya integrados no.
+
+- [ ] **F0. Concepto visual — 3 pantallas clave en dirección editorial**
+  Mockup (Claude Design canvas) de Home, Discover y ficha de Media (`/media/[type]/[id]`) explorando la dirección editorial/revista: sistema tipográfico con jerarquía fuerte, maquetación que rompa la grid de cards genérica, tratamiento de imagen tipo portada/reportaje. No es código de producción — es exploración visual para decidir antes de invertir ingeniería.
+  Hecho cuando: existe el canvas publicado, el usuario lo ha visto, y ha dado luz verde a una dirección concreta (puede ser iteración sobre el primer intento).
+  Depende de: nada. Bloquea F1+.
+
+- [ ] **F1. Sistema tipográfico editorial**
+  Definir e implementar la pareja tipográfica (display/serif editorial + texto) y la escala tipográfica en `tailwind.config` / tokens DS, sustituyendo la tipografía actual genérica. Alcance final a concretar tras F0.
+  Depende de: F0.
+
+- [ ] **F2. Resolver acento legacy rojo (`#E82020`) dentro del nuevo sistema de color**
+  Fusiona y sustituye a E82 (que quedaba huérfano si se rehace el color como parte de la identidad editorial en vez de solo migrar a verde). Definir la paleta editorial completa (no solo "rojo→verde") y aplicarla en los 15+ consumidores ya mapeados en E82.
+  Depende de: F0.
+
+- [ ] **F3. Rediseño de `MediaCard` y grids de Descubrir/Home en maquetación editorial**
+  Sustituye el layout de card genérico por el lenguaje visual aprobado en F0. Cubre `MediaCard`, `MediaRow`, el grid de `DiscoverClient`.
+  Depende de: F0, F1, F2.
+
+- [ ] **F4. Rediseño de ficha de Media (`/media/[type]/[id]`)**
+  Aplicar la maquetación tipo "reportaje/portada" aprobada en F0 a la página de detalle (hero, sinopsis, metadata, trailer).
+  Depende de: F0, F1, F2.
+
+- [ ] **F5. Auditoría de accesibilidad post-rediseño**
+  Contraste (WCAG AA mínimo), tamaños táctiles mobile-first (regla 7 de CLAUDE.md), `prefers-reduced-motion` si F0 introduce motion. No cerrar el bloque sin esto.
+  Depende de: F3, F4.
+
+  Resto de pantallas (Library, Profile, Social, Chat, Groups) se planifican como F6+ una vez validado el lenguaje visual en F0-F5 — no se especifican aún para no comprometerse a un alcance que F0 puede cambiar.
