@@ -648,13 +648,18 @@ No bloqueantes. Atacar solo después de A–D.
 > - **F0 es obligatorio antes de F1+**. No se toca código de producción de UI hasta que el usuario apruebe el concepto visual — rehacer un mockup es barato, rehacer componentes ya integrados no.
 > - **Logotipo, iconografía y todo icono de UI: nunca genéricos.** Prohibido dejar el nombre "KULTURA" tipografiado sin más como si fuera el logo, y prohibido usar iconos calcados de una librería estándar (lupa/play/flecha "de manual"). Todo tiene que ser una marca diseñada (icono/monograma propio con significado, tratamiento de letra propio, y cada icono de UI —búsqueda, play, flechas, etc.— con un trazo/detalle propio y reconocible, no el glifo por defecto de Feather/Heroicons/etc.). Regla explícita del usuario (2026-09-11, ampliada el mismo día a "los iconos tampoco pueden ser genéricos, tienen que ser únicos y exclusivos"): "nadie tiene que tener la sensación de estar usando una aplicación hecha por IA" — aplica a todo el Bloque F: evitar plantillas visualmente genéricas, gradientes/iconos de stock, y cualquier acabado que delate "hecho con IA sin criterio".
 
-- [ ] **F0. Concepto visual — 3 pantallas clave en dirección editorial**
-  Mockup (Claude Design canvas) de Home, Discover y ficha de Media (`/media/[type]/[id]`) explorando la dirección editorial/revista: sistema tipográfico con jerarquía fuerte, maquetación que rompa la grid de cards genérica, tratamiento de imagen tipo portada/reportaje. No es código de producción — es exploración visual para decidir antes de invertir ingeniería.
-  Hecho cuando: existe el canvas publicado, el usuario lo ha visto, y ha dado luz verde a una dirección concreta (puede ser iteración sobre el primer intento).
+- [ ] **F0. Concepto visual — 3 pantallas clave** — _en curso, v2 aprobada_
+  Mockup (Claude Design canvas) de Home, Discover y ficha de Media (`/media/[type]/[id]`). v1 (dirección editorial/revista) descartada por el usuario ("es feísimo"). v2 (desenfadada, Gen Z — modo oscuro, tipografía chunky, badges de match, mood-chips, gamificación) **aprobada 2026-09-11**, con iconografía y logo propios ya iterados (sin glifos de librería estándar). No es código de producción — es exploración visual para decidir antes de invertir ingeniería.
+  Hecho cuando: el usuario da luz verde definitiva a la dirección visual completa (puede seguir iterando detalles).
   Depende de: nada. Bloquea F1+.
 
-- [ ] **F1. Sistema tipográfico editorial**
-  Definir e implementar la pareja tipográfica (display/serif editorial + texto) y la escala tipográfica en `tailwind.config` / tokens DS, sustituyendo la tipografía actual genérica. Alcance final a concretar tras F0.
+- [ ] **F1. Sistema tipográfico**
+  Definir e implementar la pareja tipográfica de F0 (Bricolage Grotesque display + Figtree texto, a confirmar tras luz verde final) y la escala tipográfica en `tailwind.config` / tokens DS, sustituyendo Space Grotesk/Inter. Alcance final a concretar tras F0.
+  Depende de: F0.
+
+- [ ] **F1b. Sistema de iconos propio (sustituye `lucide-react`)**
+  Hallazgo 2026-09-11: la app en producción ya usa `lucide-react` (librería de iconos genérica — `BottomNav`, `MoreSheet`, etc.) para toda la navegación, justo el tipo de icono de plantilla que la regla de marca de este bloque prohíbe. Construir un set de iconos SVG propios como componentes React (mismo lenguaje visual que los iconos ya dibujados a mano en el concepto F0 — formas rellenas, no trazo fino tipo Feather/Heroicons, con el punto de firma de color como detalle de familia) y sustituir cada uso de `lucide-react` en la app. Cubre como mínimo los iconos usados hoy: navegación (home/discover/search/library/friends/groups/lists/suggestions/chat/settings/profile/more), `MoreSheet`, `AuthHeader`/`AvatarDropdown`, y cualquier icono de acción en componentes de detalle/social.
+  Hecho cuando: `grep -rn "from 'lucide-react'" src/` devuelve 0, la dependencia `lucide-react` se elimina de `package.json`, y la app sigue funcionando sin regresiones visuales ni de accesibilidad (mismo tamaño de área táctil, mismo significado).
   Depende de: F0.
 
 - [ ] **F2. Resolver acento legacy rojo (`#E82020`) dentro del nuevo sistema de color**
@@ -663,11 +668,11 @@ No bloqueantes. Atacar solo después de A–D.
 
 - [ ] **F3. Rediseño de `MediaCard` y grids de Descubrir/Home en maquetación editorial**
   Sustituye el layout de card genérico por el lenguaje visual aprobado en F0. Cubre `MediaCard`, `MediaRow`, el grid de `DiscoverClient`.
-  Depende de: F0, F1, F2.
+  Depende de: F0, F1, F1b, F2.
 
 - [ ] **F4. Rediseño de ficha de Media (`/media/[type]/[id]`)**
   Aplicar la maquetación tipo "reportaje/portada" aprobada en F0 a la página de detalle (hero, sinopsis, metadata, trailer).
-  Depende de: F0, F1, F2.
+  Depende de: F0, F1, F1b, F2.
 
 - [ ] **F5. Auditoría de accesibilidad post-rediseño**
   Contraste (WCAG AA mínimo), tamaños táctiles mobile-first (regla 7 de CLAUDE.md), `prefers-reduced-motion` si F0 introduce motion. No cerrar el bloque sin esto.
