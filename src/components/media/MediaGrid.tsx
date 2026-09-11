@@ -8,7 +8,28 @@ export interface MediaGridProps {
   emptyMessage?: string;
   showType?: boolean;
   className?: string;
+  /**
+   * 'bento' (F3b): tamaños de card variables en vez de grid uniforme, lenguaje
+   * visual del mockup F0/Discover. Default 'uniform' — no cambia el comportamiento
+   * de los consumidores existentes (Library, Lists, Profile) fuera del alcance de F3b.
+   */
+  layout?: "uniform" | "bento";
+  /** Match score real por item (F3a). Ausente = MediaCard no muestra badge para ese item. */
+  matchScores?: Map<string, number>;
 }
+
+// Patrón bento: ciclo de 6 celdas. Cadenas literales completas (no interpoladas)
+// para que Tailwind las detecte estáticamente en el análisis de contenido.
+// Exportado para que el skeleton de carga de DiscoverClient use el mismo patrón
+// (evita un layout shift entre skeleton y grid real).
+export const BENTO_CELL_CLASSES = [
+  "col-span-2 md:col-span-5 md:row-span-2",
+  "col-span-1 md:col-span-4 md:row-span-2",
+  "col-span-1 md:col-span-3 md:row-span-2",
+  "col-span-1 md:col-span-4 md:row-span-1",
+  "col-span-1 md:col-span-4 md:row-span-1",
+  "col-span-2 md:col-span-4 md:row-span-1",
+];
 
 function ShimmerCard() {
   return (
@@ -28,9 +49,13 @@ export function MediaGrid({
   emptyMessage,
   showType = false,
   className,
+  layout = "uniform",
+  matchScores,
 }: MediaGridProps) {
   const gridClasses = cn(
-    "grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-3",
+    layout === "bento"
+      ? "grid grid-cols-2 md:grid-cols-12 auto-rows-[130px] md:auto-rows-[150px] grid-flow-row-dense gap-3"
+      : "grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-3",
     className
   );
 
@@ -56,8 +81,18 @@ export function MediaGrid({
 
   return (
     <div className={gridClasses}>
-      {items.map((item) => (
-        <MediaCard key={item.id} item={item} showType={showType} />
+      {items.map((item, index) => (
+        <div
+          key={item.id}
+          className={layout === "bento" ? BENTO_CELL_CLASSES[index % BENTO_CELL_CLASSES.length] : undefined}
+        >
+          <MediaCard
+            item={item}
+            showType={showType}
+            matchScore={matchScores?.get(item.id)}
+            aspect={layout === "bento" ? "fill" : "2/3"}
+          />
+        </div>
       ))}
     </div>
   );

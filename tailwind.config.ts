@@ -56,6 +56,11 @@ const config: Config = {
         pill: "20px",
         modal: "8px",
         nav: "4px",
+        /* F3b — radios chunky del lenguaje visual F0 (Gen Z), más generosos que
+           `card` (12px, heredado del DS anterior, aún en uso en pantallas no
+           migradas). Nombre propio para no cambiar `card` a medio migrar. */
+        bento: "22px",
+        "bento-lg": "28px",
       },
       transitionDuration: {
         fast: "var(--duration-fast)",   /* 100ms */

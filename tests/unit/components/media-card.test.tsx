@@ -83,4 +83,15 @@ describe("MediaCard", () => {
     render(<MediaCard item={baseItem} />);
     expect(screen.queryByText("Película")).not.toBeInTheDocument();
   });
+
+  // F3a/F3b: badge de match real — nunca decorativo, solo si hay score calculado.
+  it("muestra el badge de match cuando matchScore está definido", () => {
+    render(<MediaCard item={baseItem} matchScore={87} />);
+    expect(screen.getByTestId("media-match-badge")).toHaveTextContent("87% MATCH");
+  });
+
+  it("no muestra badge de match cuando matchScore es undefined (sin señal, F3a gate)", () => {
+    render(<MediaCard item={baseItem} />);
+    expect(screen.queryByTestId("media-match-badge")).not.toBeInTheDocument();
+  });
 });

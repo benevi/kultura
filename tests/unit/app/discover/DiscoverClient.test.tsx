@@ -34,6 +34,8 @@ vi.mock("@/components/media/MediaGrid", () => ({
       {items.length}
     </div>
   ),
+  // F3b: DiscoverClient importa este patrón para el skeleton de carga bento.
+  BENTO_CELL_CLASSES: ["col-span-1"],
 }));
 vi.mock("@/components/ui/Pagination", () => ({
   Pagination: () => <div data-testid="pagination" />,
