@@ -18,44 +18,44 @@ import {
 import { getFilterOptions, humanizeSlug } from "@/lib/discover/filter-options";
 import { cn } from "@/lib/utils/index";
 import {
-  type LucideIcon,
-  LayoutGrid,
-  Tag,
-  Calendar,
-  Star,
-  Monitor,
-  Clock,
-  Globe,
-  Activity,
-  Layers,
-  Users,
-  BookCopy,
-  Building2,
-  FileText,
-  Gamepad2,
-  Timer,
-  ArrowUpDown,
-} from "lucide-react";
+  type KIcon,
+  IconGrid,
+  IconTag,
+  IconCalendar,
+  IconStar,
+  IconMonitor,
+  IconClock,
+  IconGlobe,
+  IconActivity,
+  IconLayers,
+  IconGroups,
+  IconVolumes,
+  IconStudio,
+  IconFormat,
+  IconGamepad,
+  IconTimer,
+  IconSort,
+} from "@/components/icons";
 
-// Icono lucide por key de filtro (spec V2 §Barra). Mapea claves lógicas de
+// Icono propio por key de filtro (spec V2 §Barra). Mapea claves lógicas de
 // TYPE_FILTERS a su icono pequeño en trigger + cabecera de popover.
-const FILTER_ICONS: Record<string, LucideIcon> = {
-  genre: Tag,
-  year: Calendar,
-  valoracion: Star,
-  platform: Monitor,
-  duracion: Clock,
-  idioma: Globe,
-  status: Activity,
-  estado: Activity,
-  temporadas: Layers,
-  demografia: Users,
-  volumenes: BookCopy,
-  editorial: Building2,
-  formato: FileText,
-  modojuego: Gamepad2,
-  duracionmedia: Timer,
-  sort: ArrowUpDown,
+const FILTER_ICONS: Record<string, KIcon> = {
+  genre: IconTag,
+  year: IconCalendar,
+  valoracion: IconStar,
+  platform: IconMonitor,
+  duracion: IconClock,
+  idioma: IconGlobe,
+  status: IconActivity,
+  estado: IconActivity,
+  temporadas: IconLayers,
+  demografia: IconGroups,
+  volumenes: IconVolumes,
+  editorial: IconStudio,
+  formato: IconFormat,
+  modojuego: IconGamepad,
+  duracionmedia: IconTimer,
+  sort: IconSort,
 };
 
 export interface DiscoverClientProps {
@@ -363,7 +363,7 @@ export function DiscoverClient({
         {/* FILA 2 — FILTROS: label con icono grid + triggers (sort a la derecha). */}
         <div className="flex items-center gap-3">
           <span className="shrink-0 inline-flex items-center gap-1.5 font-mono uppercase text-xs tracking-widest text-muted">
-            <LayoutGrid className="h-3.5 w-3.5" aria-hidden="true" />
+            <IconGrid className="h-3.5 w-3.5" aria-hidden="true" />
             {tF("filters")}
           </span>
           <FilterBar

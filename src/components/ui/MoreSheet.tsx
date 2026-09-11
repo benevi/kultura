@@ -3,19 +3,19 @@
 import { useEffect, useRef } from 'react'
 import { useTranslations } from 'next-intl'
 import { Link } from '@/i18n/navigation'
-import { Users2, Users, ListChecks, Lightbulb, Search, type LucideIcon } from 'lucide-react'
+import { IconFriends, IconGroups, IconLists, IconIdea, IconSearch, type KIcon } from '@/components/icons'
 
 interface MoreSheetProps {
   isOpen: boolean
   onClose: () => void
 }
 
-const ITEMS: { key: string; href: string; icon: LucideIcon }[] = [
-  { key: 'friends', href: '/friends', icon: Users2 },
-  { key: 'groups', href: '/groups', icon: Users },
-  { key: 'lists', href: '/lists', icon: ListChecks },
-  { key: 'suggestions', href: '/suggestions', icon: Lightbulb },
-  { key: 'search', href: '/search', icon: Search },
+const ITEMS: { key: string; href: string; icon: KIcon }[] = [
+  { key: 'friends', href: '/friends', icon: IconFriends },
+  { key: 'groups', href: '/groups', icon: IconGroups },
+  { key: 'lists', href: '/lists', icon: IconLists },
+  { key: 'suggestions', href: '/suggestions', icon: IconIdea },
+  { key: 'search', href: '/search', icon: IconSearch },
 ]
 
 /**
@@ -68,7 +68,7 @@ export function MoreSheet({ isOpen, onClose }: MoreSheetProps) {
               onClick={onClose}
               className="flex items-center gap-3 px-5 py-3 text-text hover:bg-surface2 transition-colors"
             >
-              <Icon size={20} strokeWidth={1.75} className="text-text-secondary" />
+              <Icon className="w-5 h-5 text-text-secondary" />
               <span className="text-sm font-medium">{t(key)}</span>
             </Link>
           ))}
