@@ -59,3 +59,4 @@ dev_output.txt
 e2e_after_fix.txt
 e2e_baseline.txt
 *.e2e.txt
+.env*
