@@ -1,22 +1,22 @@
 import type { Metadata } from "next";
-import { Space_Grotesk, Inter, JetBrains_Mono } from "next/font/google";
+import { Bricolage_Grotesque, Figtree, JetBrains_Mono } from "next/font/google";
 import { NextIntlClientProvider } from "next-intl";
 import { getMessages } from "next-intl/server";
 import { notFound } from "next/navigation";
 import { routing } from "@/i18n/routing";
 import "../globals.css";
 
-const spaceGrotesk = Space_Grotesk({
+const bricolageGrotesque = Bricolage_Grotesque({
   subsets: ["latin"],
-  weight: ["500", "700"],
-  variable: "--font-space-grotesk",
+  weight: ["500", "600", "700", "800"],
+  variable: "--font-display",
   display: "swap",
 });
 
-const inter = Inter({
+const figtree = Figtree({
   subsets: ["latin"],
-  weight: ["400", "500", "600"],
-  variable: "--font-inter",
+  weight: ["400", "500", "600", "700", "800"],
+  variable: "--font-body",
   display: "swap",
 });
 
@@ -68,7 +68,7 @@ export default async function LocaleLayout({
   return (
     <html lang={locale}>
       <body
-        className={`${spaceGrotesk.variable} ${inter.variable} ${jetbrainsMono.variable} font-body bg-surface-base text-text-primary antialiased grain`}
+        className={`${bricolageGrotesque.variable} ${figtree.variable} ${jetbrainsMono.variable} font-body bg-surface-base text-text-primary antialiased grain`}
       >
         <NextIntlClientProvider messages={messages}>
           {children}
