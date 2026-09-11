@@ -59,18 +59,10 @@ C1/C2 → ✅ **CERRADAS 2026-09-11** (este commit). Bloque C arrancado a petici
 
 C7/C5 → ✅ **CERRADAS 2026-09-11** (commit `92b0df3`). CSP `script-src` sin `unsafe-inline` en producción vía nonce por request (`crypto.randomUUID()` en `src/middleware.ts` + nuevo `src/lib/csp.ts`); Next.js aplica el nonce automáticamente a sus propios scripts. Header fijado en ambos `return` de middleware (no en la reasignación intermedia que ocurre durante el refresh de cookies). `style-src` intacto (Radix necesita `style=""` inline para popovers, fuera de alcance). C5 se cierra junto a C7 — su criterio quedaba satisfecho por el mismo cambio. Verificado con `next build && next start` real (`curl -I`: nonce distinto por request, sin `unsafe-inline`, HTTP 200). Resto de Bloque C bloqueado de facto: C3 necesita Vercel KV (`docs/BLOCKERS.md`), C6 necesita tráfico real, C8 es una verificación periódica manual (no tarea de código). tsc 0, lint 0, vitest **1260 passed**. Detalle en DONE.md / BACKLOG C5/C7.
 
-## Tarea activa
+D1 → ✅ **CERRADA 2026-09-11** (commit `e89664a`). Páginas públicas `/[locale]/privacy` y `/[locale]/terms`, contenido real (no placeholder), enlazadas desde ambos footers. `src/components/legal/LegalDocument.tsx` comparte layout. i18n `legal` es/en, paridad 646=646. +10 tests. Detalle en DONE.md / BACKLOG D1.
 
-### D1. Política de privacidad + Términos
+D2/D3 → ✅ **CERRADAS 2026-09-11** (este commit). Cierra Bloque D completo. `DELETE /api/account` (D2) borra vía admin client + cascada verificada en el SQL real de las migraciones (13 tablas cascadean desde `users(id)`, `auth.users` cascada desde ahí). `GET /api/account/export` (D3) reusa queries existentes de biblioteca/listas/amigos, cero duplicación. UI real en Settings sustituyendo el stub "disponible próximamente": exportar descarga `.json`, eliminar pasa por `ConfirmModal` destructivo + signOut + redirect. +14 tests. Verificado en runtime real: 401 limpio sin sesión en ambos endpoints. tsc 0, lint 0, vitest **1284 passed**. Detalle en DONE.md / BACKLOG D2/D3.
 
-**Contexto:** con Bloque C agotado hasta donde el código puede llevarlo (resto bloqueado por infra/tráfico/manual), se pasa a Bloque D (legal mínimo), también aprobado por el usuario como parte del "hardening técnico primero".
-
-**Qué cambia:** páginas estáticas `/[locale]/privacy` y `/[locale]/terms` (contenido genérico pero real para una app que trata datos de usuarios: qué se recoge — cuenta, biblioteca, actividad social —, uso de terceros — TMDB/Jikan/RAWG/OpenLibrary/ComicVine/MangaDex/Anthropic —, derechos del usuario). Enlazadas desde el footer (verificar si existe un footer global o hay que añadir uno mínimo en `(app)/layout.tsx`). i18n es/en con paridad.
-
-**Cómo sé que funciona:** ambas páginas existen y renderizan en `/es/privacy`, `/es/terms`, `/en/privacy`, `/en/terms`; el footer las enlaza; tsc/lint/vitest en verde; paridad i18n mantenida.
-
-**Archivos que toco:** `src/app/[locale]/(app)/privacy/` (o ruta pública si no requiere auth — a decidir según si hay layout público), `src/app/[locale]/(app)/terms/`, `messages/es.json`, `messages/en.json`, componente de footer si no existe.
-
-**Cuándo paro:** al cerrar D1, encadeno D2 (borrado de cuenta) y D3 (exportación de datos) dentro del mismo bloque aprobado, sin pedir permiso por tarea.
+**Bloques C y D agotados hasta donde el código puede llevarlos sin más input del usuario** (C3 necesita Vercel KV, C6 necesita tráfico real, C8 es verificación manual periódica). Toca el turno de Bloque F (identidad editorial) — empieza por F0 (concepto visual), que requiere aprobación del usuario antes de tocar código de producción de UI.
 
 **Sin tarea activa.** Esperar al usuario para la siguiente (BACKLOG).

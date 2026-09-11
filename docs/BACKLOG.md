@@ -112,17 +112,15 @@ Sin esto, cuando algo falle en prod no te vas a enterar.
 
 Bloqueante si tienes o quieres usuarios EU.
 
-- [ ] **D1. Política de privacidad + Términos**
-  Páginas estáticas en `/[locale]/privacy` y `/[locale]/terms`. Enlazadas desde footer.
-  Hecho cuando: ambas páginas existen en es y en, y el footer las enlaza.
+- [x] **D1. Política de privacidad + Términos** ✅ (cerrada el 2026-09-11)
+  Páginas públicas `/[locale]/privacy` y `/[locale]/terms` (fuera de `(app)`, sin login). Contenido real: datos recogidos, terceros (Supabase/Vercel infra, Anthropic Claude, Sentry opcional, catálogos TMDB/Jikan/RAWG/OpenLibrary/ComicVine/MangaDex sin envío de datos personales), derechos, cookies (solo sesión), términos de uso, límites de las recos de IA. `src/components/legal/LegalDocument.tsx` comparte el layout entre ambas. Enlazadas desde `Footer.tsx` (landing) y `AppFooter.tsx` (shell autenticado). i18n namespace `legal` es/en, paridad 646=646. +10 tests. Verificado en runtime real: HTTP 200 sin sesión. tsc 0, lint 0, vitest **1270 passed**.
 
-- [ ] **D2. Endpoint de eliminación de cuenta**
-  `DELETE /api/account` que borre al usuario actual. Cascades en DB ya existen (verificar).
-  Hecho cuando: un usuario puede eliminar su cuenta desde settings y desaparece de todas las tablas.
+- [x] **D2. Endpoint de eliminación de cuenta** ✅ (cerrada el 2026-09-11)
+  `DELETE /api/account`: autentica, rate-limit (`account_delete`, 3/hora — destructivo), y borra vía `createAdminClient().auth.admin.deleteUser(user.id)`. Verificado en el SQL de las migraciones que `public.users.id` tiene `ON DELETE CASCADE` hacia `auth.users(id)`, y las 13 tablas que referencian `users(id)` (user_media, friendships, lists, list_members, groups, group_members, group_posts, group_invitations, messages, conversation_members, notifications, recommendations, reports) cascadean a su vez — un solo delete basta (`list_items.added_by` y `suggestions.user_id` son `ON DELETE SET NULL`, comportamiento intencional del esquema). UI: sección "Zona de peligro" real en Settings (antes stub "disponible próximamente") con `ConfirmModal` (`isDestructive`) antes de ejecutar; tras el 200, `signOut()` cliente + redirect a `/login`. +9 tests (4 de ruta, 5 de flujo en `SettingsForm.test.tsx`).
 
-- [ ] **D3. Exportación de datos básica**
-  `GET /api/account/export` que devuelva JSON con toda la data del usuario.
-  Hecho cuando: el endpoint responde con library + lists + friendships del usuario autenticado.
+- [x] **D3. Exportación de datos básica** ✅ (cerrada el 2026-09-11)
+  `GET /api/account/export`: autentica, rate-limit (`account_export`, 5/hora), reusa `getUserMedia`/`getUserLists`/`getFriends` ya existentes (sin duplicar queries) + perfil (`users` + email de auth). Responde `{ exportedAt, profile, library, lists, friendships }`. UI: botón "Exportar mis datos" en Settings que descarga un `.json` (`Blob` + `URL.createObjectURL` + `<a download>`). +5 tests de ruta.
+  Verificado en runtime real (`next build && next start`): ambos endpoints devuelven 401 limpio sin sesión (sin 500 de configuración). tsc 0, lint 0, vitest **1284 passed**.
 
 ---
 
