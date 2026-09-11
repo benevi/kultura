@@ -106,4 +106,8 @@ export const LIMITS = {
   group_invitations: { windowMs: 60_000, max: 20 },
   /** PATCH /api/settings — actualizar perfil, 10/min por usuario */
   settings: { windowMs: 60_000, max: 10 },
+  /** DELETE /api/account — borrado de cuenta (D2), 3/hora por usuario — destructivo */
+  account_delete: { windowMs: 60 * 60_000, max: 3 },
+  /** GET /api/account/export — exportación de datos (D3), 5/hora por usuario */
+  account_export: { windowMs: 60 * 60_000, max: 5 },
 } as const

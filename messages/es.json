@@ -510,7 +510,16 @@
     "changePassword": "Cambiar contraseña",
     "changePasswordHint": "Te enviaremos un email con el enlace de restablecimiento",
     "dangerZone": "Zona de peligro",
-    "deleteAccountSoon": "Eliminar cuenta — disponible próximamente"
+    "exportData": "Exportar mis datos",
+    "exportDataHint": "Descarga un archivo JSON con tu biblioteca, tus listas y tus amistades.",
+    "exportDataError": "Error al exportar los datos",
+    "deleteAccount": "Eliminar cuenta",
+    "deleteAccountHint": "Esta acción es permanente: se borran tu perfil, tu biblioteca, tus listas y tu actividad social.",
+    "deleteAccountConfirmTitle": "¿Eliminar tu cuenta?",
+    "deleteAccountConfirmMessage": "Esta acción no se puede deshacer. Se eliminarán tu perfil, tu biblioteca, tus listas, tus amistades y todos tus datos.",
+    "deleteAccountConfirmButton": "Sí, eliminar mi cuenta",
+    "deleteAccountCancel": "Cancelar",
+    "deleteAccountError": "Error al eliminar la cuenta. Inténtalo de nuevo."
   },
   "report": {
     "label": "Reportar",
