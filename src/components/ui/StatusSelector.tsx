@@ -44,7 +44,7 @@ export function StatusSelector({
       onChange={handleChange}
       className={cn(
         "bg-surface2 border border-border rounded-md px-3 py-2 text-sm",
-        "focus:outline-none focus:border-accent",
+        "focus:outline-none focus:border-accent-positive",
         value ? statusColorClasses[value] : "text-muted",
         "cursor-pointer transition-colors",
         className

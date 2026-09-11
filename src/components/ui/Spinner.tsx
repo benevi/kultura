@@ -16,7 +16,7 @@ export function Spinner({ size = "md", className }: SpinnerProps) {
     <svg
       role="status"
       aria-label="Cargando"
-      className={cn("animate-spin text-accent", sizeClasses[size], className)}
+      className={cn("animate-spin text-accent-positive", sizeClasses[size], className)}
       xmlns="http://www.w3.org/2000/svg"
       fill="none"
       viewBox="0 0 24 24"

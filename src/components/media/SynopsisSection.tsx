@@ -21,7 +21,7 @@ export function SynopsisSection({ text }: Props) {
       {isLong && (
         <button
           onClick={() => setExpanded(!expanded)}
-          className="text-xs text-accent hover:underline mt-1.5"
+          className="text-xs text-accent-info hover:underline mt-1.5"
         >
           {expanded ? t('readLess') : t('readMore')}
         </button>

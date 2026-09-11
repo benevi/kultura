@@ -7,7 +7,7 @@ describe("Button", () => {
     render(<Button>Click me</Button>);
     const btn = screen.getByRole("button", { name: "Click me" });
     expect(btn).toBeInTheDocument();
-    expect(btn.className).toMatch(/bg-accent/);
+    expect(btn.className).toMatch(/bg-accent-positive/);
   });
 
   it("aplica clase correcta según variante ghost", () => {
