@@ -7,6 +7,9 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { z } from 'zod'
 import { checkRateLimit, LIMITS } from '@/lib/rate-limit'
+import { createLogger } from '@/lib/logger'
+
+const log = createLogger('api/suggestions')
 
 const SuggestionSchema = z.object({
   type: z.enum(['bug', 'feature', 'improvement', 'other']),
@@ -41,7 +44,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
   })
 
   if (error) {
-    console.error('suggestions insert error:', error)
+    log.error('suggestions insert error', { err: error })
     return NextResponse.json({ error: 'Failed to save' }, { status: 500 })
   }
 

@@ -211,6 +211,7 @@ describe('POST /api/recommendations', () => {
 
     expect(res.status).toBe(201)
     expect(errSpy).toHaveBeenCalledWith(
+      '[api/recommendations]',
       '[E83] notif insert failed',
       expect.objectContaining({ type: 'recommendation' })
     )

@@ -7,6 +7,9 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { checkRateLimit, LIMITS } from '@/lib/rate-limit'
+import { createLogger } from '@/lib/logger'
+
+const log = createLogger('api/chat')
 
 export async function GET(req: NextRequest): Promise<NextResponse> {
   const supabase = createClient()
@@ -131,7 +134,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
   }
 
   if (rpcError || !conversationId) {
-    console.error('Failed to create conversation:', { rpcError, userId: user.id, targetUserId })
+    log.error('Failed to create conversation', { rpcError, userId: user.id, targetUserId })
     return NextResponse.json({ error: 'Failed to create conversation' }, { status: 500 })
   }
 

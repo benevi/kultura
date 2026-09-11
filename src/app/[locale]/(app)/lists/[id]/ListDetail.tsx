@@ -7,7 +7,10 @@ import { Avatar } from '@/components/ui/Avatar'
 import { KButton } from '@/components/ui/KButton'
 import { ConfirmModal } from '@/components/ui/ConfirmModal'
 import { MediaCard } from '@/components/media/MediaCard'
+import { createLogger } from '@/lib/logger'
 import type { List, ListItem, ListMember } from '@/types/list'
+
+const log = createLogger('ListDetail')
 
 interface ListDetailProps {
   list: List
@@ -78,7 +81,7 @@ export function ListDetail({
       }
       setItems((prev) => prev.filter((i) => i.id !== itemId))
     } catch (err) {
-      console.error('Failed to remove item:', err)
+      log.error('Failed to remove item', { err })
       setActionError(t('removeError'))
     } finally {
       setRemovingItem(null)
@@ -112,7 +115,7 @@ export function ListDetail({
       }
       setInviteUserId('')
     } catch (err) {
-      console.error('Failed to invite member:', err)
+      log.error('Failed to invite member', { err })
       setActionError(t('inviteError'))
     } finally {
       setInviting(false)
@@ -133,7 +136,7 @@ export function ListDetail({
       }
       setMembers((prev) => prev.filter((m) => m.userId !== userId))
     } catch (err) {
-      console.error('Failed to remove member:', err)
+      log.error('Failed to remove member', { err })
       setActionError(t('removeMemberError'))
     }
   }

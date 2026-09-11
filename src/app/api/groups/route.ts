@@ -9,6 +9,9 @@ import { createClient } from '@/lib/supabase/server'
 import { z } from 'zod'
 import { checkRateLimit, LIMITS } from '@/lib/rate-limit'
 import { getUserGroups } from '@/lib/social/groups'
+import { createLogger } from '@/lib/logger'
+
+const log = createLogger('api/groups')
 
 const CreateGroupSchema = z.object({
   name: z.string().min(2).max(60),
@@ -57,7 +60,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     .single()
 
   if (error) {
-    console.error('group create error:', error)
+    log.error('group create error', { err: error })
     return NextResponse.json({ error: 'Failed to create group' }, { status: 500 })
   }
 

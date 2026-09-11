@@ -8,6 +8,9 @@ import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { checkRateLimit, LIMITS } from '@/lib/rate-limit'
+import { createLogger } from '@/lib/logger'
+
+const log = createLogger('api/recommendations')
 
 interface RecommendPayload {
   toUserId: string
@@ -147,7 +150,7 @@ export async function POST(request: Request): Promise<NextResponse> {
       message: body.message ?? null,
     },
   })
-  if (notifErr) console.error('[E83] notif insert failed', { type: 'recommendation', notifErr })
+  if (notifErr) log.error('[E83] notif insert failed', { type: 'recommendation', notifErr })
 
   return NextResponse.json({ recommendationId: recommendation.id }, { status: 201 })
 }

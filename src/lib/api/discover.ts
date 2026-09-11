@@ -3,6 +3,7 @@
 // Extracted from app/[locale]/(app)/discover/page.tsx for testability.
 // ============================================================
 
+import { createLogger } from "@/lib/logger";
 import { discoverMovies, discoverTV } from "@/lib/api/tmdb";
 import {
   buildTmdbDiscoverParams,
@@ -55,6 +56,8 @@ import type { JikanAnime, JikanManga } from "@/lib/api/jikan";
 // discover↔aggregate se resuelve en runtime porque ninguno se invoca en módulo.
 import { fetchAggregateData } from "@/lib/api/aggregate";
 import { filterNSFW } from "@/lib/api/nsfw-filter";
+
+const log = createLogger("discover");
 
 export type FetchErrorKind = "rate-limit" | "generic" | null;
 
@@ -293,7 +296,7 @@ export async function fetchDiscoverData(
       }
     }
   } catch (e) {
-    console.error(`[discover] API error (type=${type} page=${page}):`, e);
+    log.error("API error", { type, page, err: e });
     if (e instanceof JikanError && e.status === 429) {
       fetchErrorKind = "rate-limit";
     } else {

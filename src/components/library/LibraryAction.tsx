@@ -13,7 +13,10 @@ import { KButton } from '@/components/ui/KButton'
 import { LibraryStatusModal } from '@/components/library/LibraryStatusModal'
 import { addToLibrary, updateLibrary, removeFromLibrary } from '@/lib/library/actions'
 import { cn } from '@/lib/utils/index'
+import { createLogger } from '@/lib/logger'
 import type { LibraryEntry, LibraryStatus, LibraryPayload, EpisodeProgress } from '@/types/library'
+
+const log = createLogger('LibraryAction')
 
 interface LibraryActionProps {
   mediaId: string
@@ -71,7 +74,7 @@ export function LibraryAction({
       setEntry(saved)
       setModalOpen(false)
     } catch (err) {
-      console.error(err)
+      log.error('Failed to save library entry', { err })
     } finally {
       setLoading(false)
     }
@@ -83,7 +86,7 @@ export function LibraryAction({
       await removeFromLibrary(mediaId)
       setEntry(null)
     } catch (err) {
-      console.error(err)
+      log.error('Failed to remove library entry', { err })
     } finally {
       setLoading(false)
     }
