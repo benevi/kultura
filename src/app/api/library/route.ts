@@ -9,6 +9,7 @@ import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { checkRateLimit, LIMITS } from '@/lib/rate-limit'
 import { invalidateRecCache } from '@/lib/claude/recommendations'
+import { invalidateMatchScoreCache } from '@/lib/recommendations/match-score'
 import type { DbUserMedia } from '@/types/supabase'
 import type { LibraryEntry, LibraryPayload, LibraryStatus } from '@/types/library'
 import { isLibraryStatus } from '@/types/library'
@@ -126,8 +127,9 @@ export async function POST(request: Request): Promise<NextResponse> {
     return NextResponse.json({ error: 'Failed to save library entry' }, { status: 500 })
   }
 
-  // 5. Invalidar cache de recomendaciones — biblioteca cambió
+  // 5. Invalidar caches de recomendaciones — biblioteca cambió
   invalidateRecCache(user.id)
+  invalidateMatchScoreCache(user.id)
 
   const entry = mapEntry(data as DbUserMedia)
   return NextResponse.json({ entry })
@@ -179,8 +181,9 @@ export async function DELETE(request: Request): Promise<NextResponse> {
     return NextResponse.json({ error: 'Entry not found' }, { status: 404 })
   }
 
-  // 5. Invalidar cache de recomendaciones — biblioteca cambió
+  // 5. Invalidar caches de recomendaciones — biblioteca cambió
   invalidateRecCache(user.id)
+  invalidateMatchScoreCache(user.id)
 
   return NextResponse.json({ ok: true })
 }

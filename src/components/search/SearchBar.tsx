@@ -105,7 +105,7 @@ export function SearchBar({
         onKeyDown={handleKeyDown}
         placeholder={resolvedPlaceholder}
         aria-label={resolvedPlaceholder}
-        className="bg-surface border border-border rounded-lg px-4 py-2 text-sm w-full focus:outline-none focus:ring-2 focus:ring-accent pr-10"
+        className="bg-surface border border-border rounded-lg px-4 py-2 text-sm w-full focus:outline-none focus:ring-2 focus:ring-accent-positive pr-10"
       />
       {loading && (
         <Spinner

@@ -57,4 +57,36 @@ C1/C2 → ✅ **CERRADAS 2026-09-11** (este commit). Bloque C arrancado a petici
 
 **Incidente de esta sesión (contexto, no deuda de código):** el disco externo USB donde vivía el proyecto (`E:\Kultura`) falló físicamente a mitad de esta tarea — desconexiones intermitentes, corrupción repetida de `node_modules`, y finalmente dejó de ser detectado por Windows. Todo el trabajo commiteado y pusheado a GitHub estaba a salvo; el único riesgo era el trabajo de esta sesión sin commitear, que se recreó íntegro. El proyecto se movió a una partición interna nueva (`P:\Kultura`, clonada de `origin/master`) — de ahí que esta rama ya no viva en `E:\`. Sin relación con C1/C2 más allá de haber obligado a rehacer el trabajo dos veces.
 
-**Sin tarea activa.** Esperar al usuario para la siguiente (BACKLOG).
+C7/C5 → ✅ **CERRADAS 2026-09-11** (commit `92b0df3`). CSP `script-src` sin `unsafe-inline` en producción vía nonce por request (`crypto.randomUUID()` en `src/middleware.ts` + nuevo `src/lib/csp.ts`); Next.js aplica el nonce automáticamente a sus propios scripts. Header fijado en ambos `return` de middleware (no en la reasignación intermedia que ocurre durante el refresh de cookies). `style-src` intacto (Radix necesita `style=""` inline para popovers, fuera de alcance). C5 se cierra junto a C7 — su criterio quedaba satisfecho por el mismo cambio. Verificado con `next build && next start` real (`curl -I`: nonce distinto por request, sin `unsafe-inline`, HTTP 200). Resto de Bloque C bloqueado de facto: C3 necesita Vercel KV (`docs/BLOCKERS.md`), C6 necesita tráfico real, C8 es una verificación periódica manual (no tarea de código). tsc 0, lint 0, vitest **1260 passed**. Detalle en DONE.md / BACKLOG C5/C7.
+
+D1 → ✅ **CERRADA 2026-09-11** (commit `e89664a`). Páginas públicas `/[locale]/privacy` y `/[locale]/terms`, contenido real (no placeholder), enlazadas desde ambos footers. `src/components/legal/LegalDocument.tsx` comparte layout. i18n `legal` es/en, paridad 646=646. +10 tests. Detalle en DONE.md / BACKLOG D1.
+
+D2/D3 → ✅ **CERRADAS 2026-09-11** (este commit). Cierra Bloque D completo. `DELETE /api/account` (D2) borra vía admin client + cascada verificada en el SQL real de las migraciones (13 tablas cascadean desde `users(id)`, `auth.users` cascada desde ahí). `GET /api/account/export` (D3) reusa queries existentes de biblioteca/listas/amigos, cero duplicación. UI real en Settings sustituyendo el stub "disponible próximamente": exportar descarga `.json`, eliminar pasa por `ConfirmModal` destructivo + signOut + redirect. +14 tests. Verificado en runtime real: 401 limpio sin sesión en ambos endpoints. tsc 0, lint 0, vitest **1284 passed**. Detalle en DONE.md / BACKLOG D2/D3.
+
+**Bloques C y D agotados hasta donde el código puede llevarlos sin más input del usuario** (C3 necesita Vercel KV, C6 necesita tráfico real, C8 es verificación manual periódica). Toca el turno de Bloque F.
+
+F0 → ✅ **APROBADA 2026-09-11** (sin commit de código — vive en un canvas de Claude Design, no en el repo). Concepto v1 (editorial/revista) descartado por el usuario ("es feísimo"); v2 (desenfadado, Gen Z: modo oscuro, Bricolage Grotesque + Figtree, badges de match, mood-chips, gamificación, logo e iconos propios sin glifos de librería) iterado y aprobado ("me gusta mucho más" → "perfecto, prosigue"). Hallazgo registrado en BACKLOG como F1b: la app ya usa `lucide-react` (icono genérico), a sustituir.
+
+F1 → ✅ **CERRADA 2026-09-11** (commit `8f1e5ce`). Bricolage Grotesque + Figtree sustituyen a Space Grotesk/Inter, CSS vars renombradas a `--font-display`/`--font-body`. Detalle en DONE.md.
+
+F1b → ✅ **CERRADA 2026-09-11** (commit `5b99dbe`). 30 iconos propios sustituyen `lucide-react` en los 6 consumidores. Verificados visualmente (Chromium headless, 5 fondos reales) antes de integrar; 7 iconos con "agujero" que asumían el color de fondo reescritos con recortes SVG reales (`fill-rule: evenodd`). De paso, `IconSearch` deja de usar `--accent-danger` (token "solo destructivo") como decoración. `grep -rn "from 'lucide-react'" src/` → 0, dependencia eliminada. tsc 0, lint 0, vitest **1284 passed**, build+runtime real verificados. Detalle en DONE.md.
+
+F2 → ✅ **CERRADA 2026-09-11** (commit `8fb4406`). Alias legacy `accent`/`#E82020` sustituido por el token DS correcto según el significado de cada uso (no un solo color de reemplazo): `accent-positive` para acciones/estados activos, `accent-highlight` para rating (MediaDetail, StarRating), `accent-info` para enlaces, `accent-danger` donde faltaba en un borde de error. `groups.cover_color` remapeado al leer (mismo patrón que `avatar_color`/`LEGACY_RED`). Alias legacy eliminados de `tailwind.config.ts`. Hallazgo aparcado (no arreglado, fuera de alcance): `src/components/ui/button.tsx` tiene variantes (`default`/`destructive`/`outline`/`link`) con tokens shadcn muertos sin relación con el rojo — candidato a nuevo hallazgo BACKLOG. tsc 0, lint 0, vitest **1284 passed**, build+runtime real verificados. Detalle en DONE.md.
+
+F3 → **partida 2026-09-11 en F3a/F3b** (tarea demasiado grande, regla de emergencia de CLAUDE.md). El usuario, preguntado explícitamente sobre el badge "% match" del mockup F0 (que no puede ser un número decorativo ni una llamada a Claude por card), pidió "crea el sistema de recomendación real"; y sobre el alcance del grid, pidió el bento completo del mockup en vez de solo restilar la card sobre el grid uniforme actual. Detalle completo del split en `docs/BACKLOG.md` (F3a/F3b).
+
+F3a → ✅ **CERRADA 2026-09-11** (commit `6827e8d`). Módulo `src/lib/recommendations/match-score.ts`: score 0-100 determinista (género 70% + tipo 15% + señal social de amigos 15%), gate por señal mínima de biblioteca (Map vacío si <3 items de señal real), cache 1h invalidada junto con `invalidateRecCache` en `/api/library`. Cero llamadas a Claude/APIs externas. +12 tests. tsc 0, lint 0, vitest **1296 passed**. Detalle en DONE.md / BACKLOG F3a.
+
+F3b → ✅ **CERRADA 2026-09-11** (este commit). `MediaCard`/`MediaGrid` restyle (rounded-bento, badge de match real, layout bento opt-in) + `DiscoverClient` en bento con matchScores desde `/api/discover` + `MediaRow`/`GenreNews` con badge compacto desde `/api/genre-news`. Verificado con Chromium headless sobre el CSS compilado real (`next build && next start`, desktop+móvil). +14 tests, tsc 0, lint 0, vitest **1304 passed**. Detalle en DONE.md / BACKLOG F3b.
+
+## Tarea activa
+
+### F4. Rediseño de ficha de Media (`/media/[type]/[id]`)
+
+**Qué cambia:** aplicar la maquetación tipo "reportaje/portada" aprobada en F0 a la página de detalle (hero con backdrop, sinopsis, metadata, trailer). Antes de tocar código: releer `MediaDetail.dc.html` del canvas F0 para fijar el layout exacto — no reinventar sobre la marcha (mismo criterio que F3).
+
+**Cómo sé que funciona:** captura real (Chromium headless) de la ficha de un título de cada familia relevante (movie/tv/anime/book al menos) mostrando el nuevo layout; trailer y metadata siguen funcionando; tsc/lint/vitest en verde; verificación en runtime real (`next build && next start`).
+
+**Archivos que toco:** por determinar tras releer el mockup F0 y localizar el/los componente(s) reales de la página `/media/[type]/[id]` (búsqueda inicial de la tarea).
+
+**Cuándo paro:** al cerrar F4, encadeno F5 (auditoría de accesibilidad) dentro del mismo bloque aprobado — Bloque F sigue en curso, sin pedir confirmación por tarea.

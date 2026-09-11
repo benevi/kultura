@@ -8,7 +8,7 @@ export interface BadgeProps {
 
 const variantClasses: Record<NonNullable<BadgeProps["variant"]>, string> = {
   default: "bg-surface2 text-text",
-  accent: "bg-accent/20 text-accent",
+  accent: "bg-accent-positive/20 text-accent-positive",
   muted: "bg-surface text-muted",
 };
 

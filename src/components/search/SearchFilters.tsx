@@ -111,7 +111,7 @@ export function SearchFilters({
           className={cn(
             "flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-sm font-medium transition-colors",
             isOpen || activeCount > 0
-              ? "border-accent text-accent bg-accent/10"
+              ? "border-accent-positive text-accent-positive bg-accent-positive/10"
               : "border-border text-muted hover:text-text hover:border-text/30"
           )}
         >
@@ -130,7 +130,7 @@ export function SearchFilters({
           </svg>
           {t("filters" as SearchTranslationKey)}
           {activeCount > 0 && (
-            <span className="bg-accent text-white text-xs px-1.5 py-0.5 rounded-full leading-none">
+            <span className="bg-accent-positive text-on-accent-positive text-xs px-1.5 py-0.5 rounded-full leading-none">
               {activeCount}
             </span>
           )}
@@ -140,7 +140,7 @@ export function SearchFilters({
         <select
           value={filters.sortBy}
           onChange={(e) => update({ sortBy: e.target.value })}
-          className="px-3 py-1.5 rounded-lg border border-border bg-surface text-sm text-text focus:outline-none focus:border-accent cursor-pointer"
+          className="px-3 py-1.5 rounded-lg border border-border bg-surface text-sm text-text focus:outline-none focus:border-accent-positive cursor-pointer"
         >
           {SORT_OPTIONS.map((opt) => (
             <option key={opt.value} value={opt.value}>
@@ -168,7 +168,7 @@ export function SearchFilters({
               <span className="text-sm font-medium text-text">
                 {t("minRating" as SearchTranslationKey)}
               </span>
-              <span className="text-sm text-accent font-mono">
+              <span className="text-sm text-accent-positive font-mono">
                 {filters.minRating > 0
                   ? `${filters.minRating}/10`
                   : t("all" as SearchTranslationKey)}
@@ -209,7 +209,7 @@ export function SearchFilters({
                   className={cn(
                     "px-3 py-1 text-xs rounded-full border transition-colors",
                     filters.decade === d.value
-                      ? "border-accent bg-accent text-white"
+                      ? "border-accent-positive bg-accent-positive text-on-accent-positive"
                       : "border-border text-muted hover:text-text hover:border-text/30"
                   )}
                 >
@@ -233,7 +233,7 @@ export function SearchFilters({
                     className={cn(
                       "px-3 py-1 text-xs rounded-full border transition-colors",
                       filters.genres.includes(genre)
-                        ? "border-accent bg-accent text-white"
+                        ? "border-accent-positive bg-accent-positive text-on-accent-positive"
                         : "border-border text-muted hover:text-text hover:border-text/30"
                     )}
                   >
@@ -248,7 +248,7 @@ export function SearchFilters({
           {activeCount > 0 && (
             <button
               onClick={clearAll}
-              className="text-sm text-muted hover:text-accent transition-colors underline-offset-2 hover:underline"
+              className="text-sm text-muted hover:text-accent-positive transition-colors underline-offset-2 hover:underline"
             >
               {t("clearFilters" as SearchTranslationKey)}
             </button>

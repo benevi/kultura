@@ -65,4 +65,22 @@ describe("MediaGrid", () => {
     // In loading state, real items should not be shown
     expect(screen.queryByText("Movie 1")).not.toBeInTheDocument();
   });
+
+  // F3b: layout='bento' es opt-in — no cambia el default de consumidores existentes.
+  it("renderiza items con layout='bento' sin romper el render", () => {
+    const items = [makeItem(1), makeItem(2)];
+    render(<MediaGrid items={items} layout="bento" />);
+    expect(screen.getByText("Movie 1")).toBeInTheDocument();
+    expect(screen.getByText("Movie 2")).toBeInTheDocument();
+  });
+
+  // F3a→F3b: matchScores se propaga a cada MediaCard por id.
+  it("propaga matchScores a cada MediaCard por id", () => {
+    const items = [makeItem(1), makeItem(2)];
+    const matchScores = new Map([["movie_1", 92]]);
+    render(<MediaGrid items={items} matchScores={matchScores} />);
+    const badges = screen.getAllByTestId("media-match-badge");
+    expect(badges).toHaveLength(1);
+    expect(badges[0]).toHaveTextContent("92% MATCH");
+  });
 });

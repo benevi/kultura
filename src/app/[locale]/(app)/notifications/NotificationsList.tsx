@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import { useTranslations, useLocale } from 'next-intl'
 import { Link, useRouter } from '@/i18n/navigation'
-import { Sparkles, List, UserPlus, Users, Bell } from 'lucide-react'
+import { IconSparkles, IconLists, IconUserPlus, IconGroups, IconBell } from '@/components/icons'
 import { useToastContext } from '@/components/ui/ToastProvider'
 import type { AppNotification } from '@/lib/social/notifications'
 
@@ -161,13 +161,13 @@ function NotificationItem({ notif }: { notif: AppNotification }) {
     <div className={`flex items-start gap-3 p-4 ${!notif.readAt ? 'bg-accent-positive/5' : ''}`}>
       <div className="flex-shrink-0 mt-0.5 text-text-tertiary">
         {notif.type === 'recommendation' ? (
-          <Sparkles className="w-5 h-5 text-accent-info" />
+          <IconSparkles className="w-5 h-5 text-accent-info" />
         ) : notif.type === 'list_invite' ? (
-          <List className="w-5 h-5" />
+          <IconLists className="w-5 h-5" />
         ) : notif.type === 'group_invite' ? (
-          <Users className="w-5 h-5" />
+          <IconGroups className="w-5 h-5" />
         ) : (
-          <UserPlus className="w-5 h-5" />
+          <IconUserPlus className="w-5 h-5" />
         )}
       </div>
       {content}
@@ -182,7 +182,7 @@ export function NotificationsList({ notifications }: Props) {
   if (notifications.length === 0) {
     return (
       <div className="bg-surface-default border border-surface-border rounded-xl p-10 text-center flex flex-col items-center gap-3">
-        <Bell className="w-8 h-8 text-text-tertiary" />
+        <IconBell className="w-8 h-8 text-text-tertiary" />
         <p className="font-medium text-text-primary">{t('noNotifications')}</p>
         <p className="text-sm text-text-tertiary">{t('noNotificationsHint')}</p>
       </div>

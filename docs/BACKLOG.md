@@ -92,18 +92,15 @@ Sin esto, cuando algo falle en prod no te vas a enterar.
 - [x] **C4. Rate-limit en endpoints sin proteger** ✅ (cerrada el 2026-05-03)
   Aplicado `checkRateLimit` en 6 endpoints: `POST /api/chat` (10/h), `POST /api/chat/[id]` (10/min), `GET /api/chat/[id]` (60/min), `POST /api/groups` (5/h), `POST /api/suggestions` (3/h), `GET /api/users/search` (30/min). Sistema in-memory existente extendido con 6 nuevos presets en `LIMITS`. Tests: 6 nuevos en `tests/unit/rate-limit/rate-limit.test.ts` (18 total, 18 green). Todos devuelven 429 + `Retry-After`.
 
-- [ ] **C5. Activar CSP en modo enforce mejorado**
-  El CSP actual tiene `'unsafe-inline'` en script-src. Eliminar requires nonces (ver C7). Tras C7, pasar CSP a modo enforce sin `'unsafe-inline'` y verificar en producción que no hay regresiones.
-  Depende de: C7.
-  Hecho cuando: `Content-Security-Policy` en producción no contiene `'unsafe-inline'` y el sitio funciona.
+- [x] **C5. Activar CSP en modo enforce mejorado** ✅ (cerrada el 2026-09-11, entregada por C7)
+  El "Hecho cuando" de esta tarea (`Content-Security-Policy` en producción no contiene `'unsafe-inline'` en script-src y el sitio funciona) queda satisfecho por la implementación de C7 — nunca hubo un modo report-only intermedio que "activar" por separado, era el mismo cambio. Verificado local con `next build && next start` real (curl -I, sin errores de servidor). **Pendiente:** confirmación en producción real (Vercel) tras el próximo deploy — regla 11 de CLAUDE.md.
 
 - [ ] **C6. Auditar dominios externos en CSP y limpiar allowlist**
-  El `img-src https:` actual permite cualquier dominio HTTPS para imágenes. Cuando se tenga tráfico real, revisar los logs/reports de CSP para confirmar qué dominios realmente se usan y reemplazar `https:` por una allowlist explícita. Prioridad baja.
+  El `img-src https:` actual permite cualquier dominio HTTPS para imágenes. Cuando se tenga tráfico real, revisar los logs/reports de CSP para confirmar qué dominios realmente se usan y reemplazar `https:` por una allowlist explícita. Prioridad baja. Bloqueada de facto hasta que haya tráfico real que auditar.
   Hecho cuando: `img-src` no contiene `https:` genérico, sino dominios específicos verificados.
 
-- [ ] **C7. Eliminar `'unsafe-inline'` de CSP script-src usando nonces**
-  Next.js 14 permite nonces en CSP via middleware. Requiere generar un nonce por request en `middleware.ts` y pasarlo tanto al header CSP como al `<script>` de `_document`. Prioridad media, hacer antes de B6 (monetización).
-  Hecho cuando: `Content-Security-Policy` no contiene `'unsafe-inline'` en `script-src`, `npm run build` pasa, y la app funciona sin errores de CSP en consola.
+- [x] **C7. Eliminar `'unsafe-inline'` de CSP script-src usando nonces** ✅ (cerrada el 2026-09-11)
+  La CSP se generaba estática en `next.config.mjs`; un nonce por request no puede serlo. Movida a `src/middleware.ts` (nuevo `src/lib/csp.ts` con `buildCsp()`, testeable sin runtime Edge): en producción `script-src 'self' 'nonce-{uuid}'` (`crypto.randomUUID()`), Next.js aplica el nonce automáticamente a los scripts que inyecta el framework. Dev conserva `unsafe-inline`+`unsafe-eval` (HMR). `style-src` intacto a propósito (Radix posiciona vía `style=""` inline, fuera de alcance — solo `script-src`). Verificado con `next build && next start` real: `curl -I` muestra nonce distinto por request, sin `unsafe-inline`, HTTP 200, sin errores. `tests/unit/security/headers.test.ts` reescrito (20 tests: headers estáticos en `next.config.mjs` + `buildCsp()` aislado). tsc 0, lint 0, vitest **1260 passed**.
 
 - [ ] **C8. Verificar periódicamente que Vercel sigue añadiendo HSTS**
   Vercel añade automáticamente `Strict-Transport-Security: max-age=63072000` (confirmado 2026-05-03). Si cambia el plan de Vercel, se migra de proveedor, o Vercel modifica su política, HSTS podría desaparecer. Chequear tras cualquier cambio de plan y como mínimo una vez al año.
@@ -115,17 +112,15 @@ Sin esto, cuando algo falle en prod no te vas a enterar.
 
 Bloqueante si tienes o quieres usuarios EU.
 
-- [ ] **D1. Política de privacidad + Términos**
-  Páginas estáticas en `/[locale]/privacy` y `/[locale]/terms`. Enlazadas desde footer.
-  Hecho cuando: ambas páginas existen en es y en, y el footer las enlaza.
+- [x] **D1. Política de privacidad + Términos** ✅ (cerrada el 2026-09-11)
+  Páginas públicas `/[locale]/privacy` y `/[locale]/terms` (fuera de `(app)`, sin login). Contenido real: datos recogidos, terceros (Supabase/Vercel infra, Anthropic Claude, Sentry opcional, catálogos TMDB/Jikan/RAWG/OpenLibrary/ComicVine/MangaDex sin envío de datos personales), derechos, cookies (solo sesión), términos de uso, límites de las recos de IA. `src/components/legal/LegalDocument.tsx` comparte el layout entre ambas. Enlazadas desde `Footer.tsx` (landing) y `AppFooter.tsx` (shell autenticado). i18n namespace `legal` es/en, paridad 646=646. +10 tests. Verificado en runtime real: HTTP 200 sin sesión. tsc 0, lint 0, vitest **1270 passed**.
 
-- [ ] **D2. Endpoint de eliminación de cuenta**
-  `DELETE /api/account` que borre al usuario actual. Cascades en DB ya existen (verificar).
-  Hecho cuando: un usuario puede eliminar su cuenta desde settings y desaparece de todas las tablas.
+- [x] **D2. Endpoint de eliminación de cuenta** ✅ (cerrada el 2026-09-11)
+  `DELETE /api/account`: autentica, rate-limit (`account_delete`, 3/hora — destructivo), y borra vía `createAdminClient().auth.admin.deleteUser(user.id)`. Verificado en el SQL de las migraciones que `public.users.id` tiene `ON DELETE CASCADE` hacia `auth.users(id)`, y las 13 tablas que referencian `users(id)` (user_media, friendships, lists, list_members, groups, group_members, group_posts, group_invitations, messages, conversation_members, notifications, recommendations, reports) cascadean a su vez — un solo delete basta (`list_items.added_by` y `suggestions.user_id` son `ON DELETE SET NULL`, comportamiento intencional del esquema). UI: sección "Zona de peligro" real en Settings (antes stub "disponible próximamente") con `ConfirmModal` (`isDestructive`) antes de ejecutar; tras el 200, `signOut()` cliente + redirect a `/login`. +9 tests (4 de ruta, 5 de flujo en `SettingsForm.test.tsx`).
 
-- [ ] **D3. Exportación de datos básica**
-  `GET /api/account/export` que devuelva JSON con toda la data del usuario.
-  Hecho cuando: el endpoint responde con library + lists + friendships del usuario autenticado.
+- [x] **D3. Exportación de datos básica** ✅ (cerrada el 2026-09-11)
+  `GET /api/account/export`: autentica, rate-limit (`account_export`, 5/hora), reusa `getUserMedia`/`getUserLists`/`getFriends` ya existentes (sin duplicar queries) + perfil (`users` + email de auth). Responde `{ exportedAt, profile, library, lists, friendships }`. UI: botón "Exportar mis datos" en Settings que descarga un `.json` (`Blob` + `URL.createObjectURL` + `<a download>`). +5 tests de ruta.
+  Verificado en runtime real (`next build && next start`): ambos endpoints devuelven 401 limpio sin sesión (sin 500 de configuración). tsc 0, lint 0, vitest **1284 passed**.
 
 ---
 
@@ -642,3 +637,59 @@ No bloqueantes. Atacar solo después de A–D.
 
 - [ ] **E98. Sincronizar CLAUDE.md con codigo real.** Tres afirmaciones de CLAUDE.md contradicen al repo (detectadas en Fase 0 del dossier, 2026-07-16): (1) ComicVine "clave presente, sin handler - E6" es falso: existe `src/lib/api/comicvine.ts` + `comicvine-maps.ts`, usados en search/discover/media y con tests unitarios; (2) "17 tablas reales... 49 policies" desactualizado: 18 tablas (`group_invitations`, migracion 20260601000002) y 53 policies vigentes tras aplicar las 14 migraciones; (3) "594 keys c/u" en messages: son 596 es = 596 en. El modelo Claude (`claude-haiku-4-5`) SI coincide con `src/lib/claude/recommendations.ts:232` (la desactualizada ahi es ESTADO_PROYECTO.md:387, que dice `claude-sonnet-4-6`).
   Hecho cuando: las 3 afirmaciones corregidas en CLAUDE.md, nota de ESTADO_PROYECTO.md actualizada o marcada obsoleta, y 0 contradicciones repo vs CLAUDE.md en esos puntos.
+
+---
+
+## BLOQUE F — Identidad editorial (salto de calidad artístico)
+
+> Abierto 2026-09-11 a petición del usuario: "salto cualitativo diferencial, técnico y artístico, con vistas a rentabilizar el proyecto". Dirección elegida inicialmente: editorial/revista cultural — **descartada por el usuario** ("es feísimo") tras ver el primer concepto (F0 v1). Dirección definitiva (F0 v2, aprobada 2026-09-11): **desenfadada, orientada a Gen Z / público joven** — modo oscuro, tipografía chunky (Bricolage Grotesque + Figtree), badges de "% match" tipo Netflix/Spotify, mood-chips en vez de géneros formales, gamificación (rachas), actividad de amigos tipo stories/handles. Se ejecuta **después** de cerrar Bloque C/D (hardening técnico), decisión explícita del usuario. Modelo de monetización: aún no decidido — no comprometerse a infra de pagos todavía.
+>
+> Reglas de este bloque:
+> - **F0 es obligatorio antes de F1+**. No se toca código de producción de UI hasta que el usuario apruebe el concepto visual — rehacer un mockup es barato, rehacer componentes ya integrados no.
+> - **Logotipo, iconografía y todo icono de UI: nunca genéricos.** Prohibido dejar el nombre "KULTURA" tipografiado sin más como si fuera el logo, y prohibido usar iconos calcados de una librería estándar (lupa/play/flecha "de manual"). Todo tiene que ser una marca diseñada (icono/monograma propio con significado, tratamiento de letra propio, y cada icono de UI —búsqueda, play, flechas, etc.— con un trazo/detalle propio y reconocible, no el glifo por defecto de Feather/Heroicons/etc.). Regla explícita del usuario (2026-09-11, ampliada el mismo día a "los iconos tampoco pueden ser genéricos, tienen que ser únicos y exclusivos"): "nadie tiene que tener la sensación de estar usando una aplicación hecha por IA" — aplica a todo el Bloque F: evitar plantillas visualmente genéricas, gradientes/iconos de stock, y cualquier acabado que delate "hecho con IA sin criterio".
+
+- [ ] **F0. Concepto visual — 3 pantallas clave** — _en curso, v2 aprobada_
+  Mockup (Claude Design canvas) de Home, Discover y ficha de Media (`/media/[type]/[id]`). v1 (dirección editorial/revista) descartada por el usuario ("es feísimo"). v2 (desenfadada, Gen Z — modo oscuro, tipografía chunky, badges de match, mood-chips, gamificación) **aprobada 2026-09-11**, con iconografía y logo propios ya iterados (sin glifos de librería estándar). No es código de producción — es exploración visual para decidir antes de invertir ingeniería.
+  Hecho cuando: el usuario da luz verde definitiva a la dirección visual completa (puede seguir iterando detalles).
+  Depende de: nada. Bloquea F1+.
+
+- [x] **F1. Sistema tipográfico** — _cerrada 2026-09-11, commit `8f1e5ce`_
+  Bricolage Grotesque (display) + Figtree (body) sustituyen a Space Grotesk/Inter. CSS vars renombradas a `--font-display`/`--font-body` en los 3 puntos de carga (`[locale]/layout.tsx`, `not-found.tsx`, `dev/layout.tsx`) + `tailwind.config.ts`.
+  Depende de: F0.
+
+- [x] **F1b. Sistema de iconos propio (sustituye `lucide-react`)** — _cerrada 2026-09-11_
+  30 iconos SVG propios en `src/components/icons/index.tsx` (formas rellenas/chunky, `currentColor`, sin glifos de librería estándar). Verificados visualmente con Chromium headless contra 5 fondos reales de la app (incluido el caso de riesgo: iconos con "agujero" interior sobre fondos distintos de `surface-base`) antes de tocar código de producción — 7 iconos que asumían el color de fondo (`Compass`, `Tag`, `Calendar`, `Globe`, `Studio`, `Format`, `Gamepad`) se reescribieron con recortes SVG reales (`fill-rule: evenodd`), no con un color de fondo hardcodeado. `IconSearch` además corrige un mal uso semántico encontrado de paso: usaba `var(--accent-danger)` (token documentado como "solo destructivo") como adorno decorativo — ahora monocromo. Sustituidos los 6 consumidores (`BottomNav`, `MoreSheet`, `FilterBar`, `DiscoverClient`, `NotificationsList`, `InviteButton`), `lucide-react` eliminado de `package.json`.
+  Hecho cuando: `grep -rn "from 'lucide-react'" src/` devuelve 0, la dependencia `lucide-react` se elimina de `package.json`, y la app sigue funcionando sin regresiones visuales ni de accesibilidad (mismo tamaño de área táctil, mismo significado). **Verificado.**
+  Depende de: F0.
+
+- [x] **F2. Resolver acento legacy rojo (`#E82020`) dentro del nuevo sistema de color** — _cerrada 2026-09-11, commit `8fb4406`_
+  Fusiona y sustituye a E82. El alias Tailwind `accent`/`#E82020` sustituido por el token DS correcto según el significado de cada uso (no un solo color de reemplazo): `accent-positive` para acciones/estados activos, `accent-highlight` para rating, `accent-info` para enlaces, `accent-danger` donde ya faltaba en un borde de error. `groups.cover_color` remapeado al leer (mismo patrón que `avatar_color`/`LEGACY_RED`). Alias `accent`/`accent-hover`/`accent-subtle` eliminados de `tailwind.config.ts` tras confirmar cero consumidores.
+  Depende de: F0.
+
+- [ ] **F3. Rediseño de `MediaCard` y grids de Descubrir/Home** — _partida en F3a/F3b (2026-09-11): tarea demasiado grande tras decisión del usuario de construir un sistema de match real en vez de un badge decorativo, y un grid bento completo en vez de solo restilar la card sobre el grid uniforme actual._
+
+  - [x] **F3a. Sistema de match score real (sin llamadas a LLM por card)** — _cerrada 2026-09-11, commit `6827e8d`_
+    El mockup F0 muestra un badge "97% MATCH" tipo Netflix por card. Decisión del usuario (2026-09-11, tras preguntarse explícitamente): el % tiene que salir de un sistema de recomendación real, no de un número decorativo ni de una llamada a Claude por cada item de un grid (inviable: rate-limit de la regla 1b es ≤10 req/min por usuario para endpoints LLM, y un grid/fila puede tener docenas de items por carga).
+    Diseño: score determinista 0-100 calculado server-side a partir de señales ya existentes en la BD, sin llamar a ninguna API externa ni a Claude:
+    - Afinidad de género (peso ~70%): perfil de géneros del usuario ponderado por su propia valoración (`user_media.score`, o completado sin score) — no solo frecuencia como hoy `getUserStats.topGenres` — comparado contra `item.genres` (ya presente en `MediaItem`, viene del normalizer).
+    - Afinidad de tipo (peso ~15%): proporción del tipo del item (movie/tv/anime/...) dentro de la biblioteca ponderada del usuario.
+    - Señal social (peso ~15%): fracción de amigos aceptados que tienen ese mismo `media_id` completado o con score≥4 (una query acotada a los ids de la página actual, no biblioteca completa de cada amigo).
+    Gate: igual que `getAiRecommendations` (mínimo de señal en biblioteca, hoy 3 items) — sin señal suficiente, el campo de score no se calcula y la card no muestra badge (nunca un número inventado).
+    Caché en memoria por usuario (mismo patrón TTL 1h que `recCache` de `lib/claude/recommendations.ts`), invalidada cuando cambia la biblioteca (mismo hook que `invalidateRecCache`).
+    Hecho cuando: existe un módulo (`src/lib/recommendations/match-score.ts` o similar) con tests unitarios cubriendo el cálculo (perfil de género, gate por señal insuficiente, señal social), sin ninguna llamada a Claude/API externa en el cálculo, tsc/lint/vitest en verde.
+    Depende de: F0 (aprobado). No depende de F1/F1b/F2 (es lógica de datos, no UI).
+
+  - [x] **F3b. Rediseño de `MediaCard` + grid bento de Descubrir/Home** — _cerrada 2026-09-11_
+    Sustituye el layout de card genérico y el grid uniforme actual por el lenguaje visual del mockup F0: grid bento con tamaños de card variables y ligera rotación (no un grid CSS uniforme con solo la card restilada — decisión explícita del usuario, más fiel al mockup pero con más riesgo de romper paginación/filtros/accesibilidad ya construidos sobre el grid uniforme, a vigilar en F5). Badge de match usa el score real de F3a (u omite el badge si el gate de F3a no da señal suficiente — nunca decorativo). Cubre `MediaCard`, `MediaGrid`, `MediaRow`, el grid de `DiscoverClient`.
+    Hecho cuando: captura real (Chromium headless) de Discover y Home con datos reales/mock mostrando el nuevo layout; paginación y filtros existentes siguen funcionando sobre el nuevo grid; tsc/lint/vitest en verde; verificación en runtime real (`next build && next start`).
+    Depende de: F0, F1, F1b, F2, F3a.
+
+- [ ] **F4. Rediseño de ficha de Media (`/media/[type]/[id]`)**
+  Aplicar la maquetación tipo "reportaje/portada" aprobada en F0 a la página de detalle (hero, sinopsis, metadata, trailer).
+  Depende de: F0, F1, F1b, F2.
+
+- [ ] **F5. Auditoría de accesibilidad post-rediseño**
+  Contraste (WCAG AA mínimo), tamaños táctiles mobile-first (regla 7 de CLAUDE.md), `prefers-reduced-motion` si F0 introduce motion. Con el grid bento de F3b, auditar además: orden de lectura/tabulación (el layout visual variable no debe romper el orden DOM lógico) y paginación/filtros siguen operables. No cerrar el bloque sin esto.
+  Depende de: F3a, F3b, F4.
+
+  Resto de pantallas (Library, Profile, Social, Chat, Groups) se planifican como F6+ una vez validado el lenguaje visual en F0-F5 — no se especifican aún para no comprometerse a un alcance que F0 puede cambiar.

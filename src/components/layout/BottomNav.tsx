@@ -4,13 +4,13 @@ import { useState } from 'react'
 import { useTranslations } from 'next-intl'
 import { Link, usePathname } from '@/i18n/navigation'
 import { cn } from '@/lib/utils/index'
-import { Home, Compass, MessageCircle, BookOpen, MoreHorizontal, type LucideIcon } from 'lucide-react'
+import { IconHome, IconCompass, IconChat, IconLibrary, IconMore, type KIcon } from '@/components/icons'
 import { MoreSheet } from '@/components/ui/MoreSheet'
 import { useUnreadChat } from '@/components/layout/UnreadChatProvider'
 
 type NavItem =
-  | { key: string; icon: LucideIcon; href: string; onClick?: never }
-  | { key: string; icon: LucideIcon; href?: never; onClick: true }
+  | { key: string; icon: KIcon; href: string; onClick?: never }
+  | { key: string; icon: KIcon; href?: never; onClick: true }
 
 export function BottomNav() {
   const t = useTranslations('nav')
@@ -19,11 +19,11 @@ export function BottomNav() {
   const { unreadCount } = useUnreadChat()
 
   const items: NavItem[] = [
-    { key: 'home', href: '/home', icon: Home },
-    { key: 'discover', href: '/discover', icon: Compass },
-    { key: 'chat', href: '/chat', icon: MessageCircle },
-    { key: 'library', href: '/library', icon: BookOpen },
-    { key: 'more', onClick: true, icon: MoreHorizontal },
+    { key: 'home', href: '/home', icon: IconHome },
+    { key: 'discover', href: '/discover', icon: IconCompass },
+    { key: 'chat', href: '/chat', icon: IconChat },
+    { key: 'library', href: '/library', icon: IconLibrary },
+    { key: 'more', onClick: true, icon: IconMore },
   ]
 
   return (
@@ -42,7 +42,7 @@ export function BottomNav() {
             const inner = (
               <>
                 <span className="relative">
-                  <Icon size={22} strokeWidth={active ? 2.5 : 1.75} />
+                  <Icon className="w-[22px] h-[22px]" />
                   {key === 'chat' && unreadCount > 0 && (
                     <span
                       aria-label={t('unreadMessages', { count: unreadCount })}

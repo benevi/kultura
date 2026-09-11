@@ -61,4 +61,21 @@ describe('MediaRow', () => {
     expect(skeletons.length).toBeGreaterThan(0)
     expect(screen.queryByText('Fight Club')).not.toBeInTheDocument()
   })
+
+  // F3a/F3b: badge de match real por item — nunca decorativo.
+  it('muestra el badge de match solo en el item que tiene matchScore', () => {
+    const items = [
+      { ...sampleItems[0], matchScore: 91 },
+      sampleItems[1],
+    ]
+    render(<MediaRow title="Recientes" items={items} />)
+    const badges = screen.getAllByTestId('media-row-match-badge')
+    expect(badges).toHaveLength(1)
+    expect(badges[0]).toHaveTextContent('91%')
+  })
+
+  it('muestra el año cuando el item lo trae', () => {
+    render(<MediaRow title="Recientes" items={[{ ...sampleItems[0], year: 1999 }]} />)
+    expect(screen.getByText('1999')).toBeInTheDocument()
+  })
 })

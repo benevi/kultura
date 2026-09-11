@@ -30,7 +30,15 @@ export function GroupsClient({ myGroups: initialGroups }: GroupsClientProps) {
 
   function handleCreated(group: CreatedGroup) {
     setGroups(prev => [
-      { id: group.id, name: group.name, description: group.description, coverColor: group.cover_color, memberRole: group.memberRole },
+      {
+        id: group.id,
+        name: group.name,
+        description: group.description,
+        // Mismo default legacy que avatar_color (ver Avatar.tsx LEGACY_RED):
+        // se remapea al leer, no se toca el default a nivel de BD.
+        coverColor: group.cover_color === '#E82020' ? 'var(--accent-positive)' : group.cover_color,
+        memberRole: group.memberRole,
+      },
       ...prev,
     ])
     setShowCreate(false)

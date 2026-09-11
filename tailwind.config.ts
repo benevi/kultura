@@ -35,9 +35,6 @@ const config: Config = {
         surface2: "var(--surface-elevated)",
         surface3: "#1c2430",
         border: "var(--surface-border)",
-        accent: "#E82020",
-        "accent-hover": "#c91a1a",
-        "accent-subtle": "rgba(232,32,32,0.12)",
         text: "var(--text-primary)",
         muted: "var(--text-tertiary)",
         "muted-light": "var(--text-secondary)",
@@ -47,9 +44,9 @@ const config: Config = {
         danger: "var(--accent-danger)",
       },
       fontFamily: {
-        /* New design system fonts */
-        display: ["var(--font-space-grotesk)", "system-ui", "sans-serif"],
-        body: ["var(--font-inter)", "system-ui", "sans-serif"],
+        /* Design system fonts (F1 — Bricolage Grotesque + Figtree) */
+        display: ["var(--font-display)", "system-ui", "sans-serif"],
+        body: ["var(--font-body)", "system-ui", "sans-serif"],
         /* Legacy aliases */
         mono: ["var(--font-mono)", "monospace"],
       },
@@ -59,6 +56,11 @@ const config: Config = {
         pill: "20px",
         modal: "8px",
         nav: "4px",
+        /* F3b — radios chunky del lenguaje visual F0 (Gen Z), más generosos que
+           `card` (12px, heredado del DS anterior, aún en uso en pantallas no
+           migradas). Nombre propio para no cambiar `card` a medio migrar. */
+        bento: "22px",
+        "bento-lg": "28px",
       },
       transitionDuration: {
         fast: "var(--duration-fast)",   /* 100ms */

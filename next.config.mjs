@@ -4,30 +4,10 @@ import { withSentryConfig } from "@sentry/nextjs/config";
 const withNextIntl = createNextIntlPlugin("./src/i18n/request.ts");
 
 // ── Content Security Policy ───────────────────────────────────────────────────
-// Dev:  'unsafe-eval' + ws/wss necesarios para webpack HMR de Next.js.
-// Prod: sin 'unsafe-eval', sin ws — más estricto.
-const isDev = process.env.NODE_ENV === "development";
-
-const CSP_DIRECTIVES = [
-  "default-src 'self'",
-  "frame-src https://www.youtube-nocookie.com https://www.youtube.com",
-  // Next.js dev (webpack) requiere unsafe-eval para source maps y HMR
-  isDev
-    ? "script-src 'self' 'unsafe-inline' 'unsafe-eval'"
-    : "script-src 'self' 'unsafe-inline'",
-  "style-src 'self' 'unsafe-inline'",
-  "img-src 'self' data: blob: https:",
-  // ws/wss necesario en dev para Fast Refresh WebSocket; wss://*.supabase.co para Realtime en prod
-  isDev
-    ? "connect-src 'self' https: ws://localhost:* wss://localhost:* wss://*.supabase.co"
-    : "connect-src 'self' https: wss://*.supabase.co",
-  "font-src 'self' data:",
-  "media-src 'self'",
-  "object-src 'none'",
-  "base-uri 'self'",
-];
-
-const CSP = CSP_DIRECTIVES.join("; ");
+// C7: la CSP se genera dinámicamente por request en `src/middleware.ts` (necesita
+// inyectar un nonce distinto en cada respuesta) — no puede ser un header estático
+// aquí. Ver `src/lib/csp.ts` para las directivas. Los headers de abajo sí son
+// estáticos (no dependen del request) y se quedan en next.config.mjs.
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
@@ -36,10 +16,6 @@ const nextConfig = {
       {
         source: "/(.*)",
         headers: [
-          {
-            key: "Content-Security-Policy",
-            value: CSP,
-          },
           {
             key: "X-Content-Type-Options",
             value: "nosniff",

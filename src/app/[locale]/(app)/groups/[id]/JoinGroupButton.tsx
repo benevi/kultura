@@ -51,7 +51,7 @@ export function JoinGroupButton({ groupId, isMember, isOwner }: Props) {
     <button
       onClick={handleClick}
       disabled={loading}
-      className="flex-shrink-0 px-4 py-1.5 text-xs font-semibold bg-accent text-white rounded-full hover:bg-accent/80 transition-colors disabled:opacity-50"
+      className="flex-shrink-0 px-4 py-1.5 text-xs font-semibold bg-accent-positive text-on-accent-positive rounded-full hover:brightness-110 transition-colors disabled:opacity-50"
     >
       {loading ? '…' : t('joinGroup')}
     </button>

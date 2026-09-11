@@ -9,6 +9,7 @@ interface GenreNewsData {
   movies: MediaItem[]
   tv: MediaItem[]
   genres: string[]
+  matchScores?: Record<string, number>
 }
 
 export function GenreNews() {
@@ -48,30 +49,27 @@ export function GenreNews() {
 
   const genres = data.genres.slice(0, 3)
   const noGenres = genres.length === 0
+  const matchScores = data.matchScores ?? {}
+
+  // F3a/F3b: badge de match real — ausente en el Map/objeto = sin badge, no un
+  // número decorativo. `matchScores[item.id]` es undefined cuando no hay señal.
+  const toRowItem = (item: MediaItem) => ({
+    mediaId: item.id,
+    title: item.title,
+    poster: item.poster,
+    type: item.type,
+    year: item.year,
+    matchScore: matchScores[item.id],
+  })
 
   if (noGenres) {
-    const allItems = [...data.movies, ...data.tv].slice(0, 8).map((item) => ({
-      mediaId: item.id,
-      title: item.title,
-      poster: item.poster,
-      type: item.type,
-    }))
+    const allItems = [...data.movies, ...data.tv].slice(0, 8).map(toRowItem)
     return <MediaRow title={t('trends')} items={allItems} />
   }
 
-  const movieItems = data.movies.slice(0, 8).map((item) => ({
-    mediaId: item.id,
-    title: item.title,
-    poster: item.poster,
-    type: item.type,
-  }))
+  const movieItems = data.movies.slice(0, 8).map(toRowItem)
 
-  const tvItems = data.tv.slice(0, 8).map((item) => ({
-    mediaId: item.id,
-    title: item.title,
-    poster: item.poster,
-    type: item.type,
-  }))
+  const tvItems = data.tv.slice(0, 8).map(toRowItem)
 
   const rows: { title: string; items: typeof movieItems }[] = []
 
