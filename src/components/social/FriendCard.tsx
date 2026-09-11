@@ -6,7 +6,10 @@ import { Link } from '@/i18n/navigation'
 import { Avatar } from '@/components/ui/Avatar'
 import { KButton } from '@/components/ui/KButton'
 import { respondToFriendRequest, removeFriend } from '@/lib/social/actions'
+import { createLogger } from '@/lib/logger'
 import type { Friendship } from '@/types/user'
+
+const log = createLogger('FriendCard')
 
 interface FriendCardProps {
   friendship: Friendship
@@ -28,7 +31,7 @@ export function FriendCard({ friendship, variant, onAction }: FriendCardProps) {
       await respondToFriendRequest(friendship.id, 'accept')
       onAction(friendship.id)
     } catch (err) {
-      console.error('Failed to accept friend request:', err)
+      log.error('Failed to accept friend request', { err })
       setLoading(false)
     }
   }
@@ -39,7 +42,7 @@ export function FriendCard({ friendship, variant, onAction }: FriendCardProps) {
       await respondToFriendRequest(friendship.id, 'decline')
       onAction(friendship.id)
     } catch (err) {
-      console.error('Failed to decline friend request:', err)
+      log.error('Failed to decline friend request', { err })
       setLoading(false)
     }
   }
@@ -50,7 +53,7 @@ export function FriendCard({ friendship, variant, onAction }: FriendCardProps) {
       await removeFriend(friendship.id)
       onAction(friendship.id)
     } catch (err) {
-      console.error('Failed to remove friend:', err)
+      log.error('Failed to remove friend', { err })
       setLoading(false)
     }
   }

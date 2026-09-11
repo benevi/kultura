@@ -8,7 +8,10 @@ import { redirect } from 'next/navigation'
 import { getNotifications, markAllRead } from '@/lib/social/notifications'
 import { NotificationsList } from './NotificationsList'
 import { getTranslations } from 'next-intl/server'
+import { createLogger } from '@/lib/logger'
 import type { Metadata } from 'next'
+
+const log = createLogger('notifications')
 
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getTranslations('notifications')
@@ -27,12 +30,12 @@ export default async function NotificationsPage() {
   try {
     notifications = await getNotifications(user.id)
   } catch (e) {
-    console.error('[notifications] getNotifications failed:', e)
+    log.error('getNotifications failed', { err: e })
     fetchError = true
   }
 
   if (!fetchError) {
-    markAllRead(user.id).catch((err) => console.error('markAllRead failed:', err))
+    markAllRead(user.id).catch((err) => log.error('markAllRead failed', { err }))
   }
 
   return (

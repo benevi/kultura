@@ -79,13 +79,11 @@ Sin esto, cada cambio posterior es ruleta rusa.
 
 Sin esto, cuando algo falle en prod no te vas a enterar.
 
-- [ ] **C1. Sentry integrado**
-  `@sentry/nextjs` con DSN en env vars. Capturar errores de Route Handlers y componentes cliente.
-  Hecho cuando: un `throw new Error("test")` en una ruta aparece en el dashboard de Sentry en <1 min.
+- [x] **C1. Sentry integrado** ✅ (cerrada el 2026-09-11)
+  `@sentry/nextjs` con DSN en `NEXT_PUBLIC_SENTRY_DSN` (opcional — sin ella el SDK queda inactivo, mismo patrón que `ANTHROPIC_API_KEY`/`COMICVINE_KEY`). `sentry.client/server/edge.config.ts` + `withSentryConfig` en `next.config.mjs` + `onRequestError` en `instrumentation.ts` + captura en `global-error.tsx`. Falta: crear el proyecto en sentry.io y rellenar el DSN real en Vercel — sin eso el código está listo pero inactivo. Hecho cuando (repetido): con DSN configurado, un `throw new Error("test")` en una ruta debe aparecer en el dashboard — **pendiente de verificar en vivo, no verificable sin cuenta de Sentry**.
 
-- [ ] **C2. Logger estructurado reemplaza `console.error`**
-  `src/lib/logger.ts` con pino o similar. Reemplazar las 15 instancias de `console.error` documentadas en el audit.
-  Hecho cuando: `grep -rn "console\." src/ --include="*.ts" --include="*.tsx"` devuelve 0 o solo casos justificados.
+- [x] **C2. Logger estructurado reemplaza `console.error`** ✅ (cerrada el 2026-09-11)
+  `src/lib/logger.ts` (sin dependencia nueva — JSON en producción, texto legible en desarrollo, edge-safe). Reemplazadas las 24 instancias de `console.error` reales en `src/` (más que las 15-17 documentadas en audits previos — el código creció). `grep -rn "console\." src/` solo devuelve las líneas internas de `logger.ts` (justificadas). `log.error()` reenvía a Sentry (C1) vía import dinámico, best-effort.
 
 - [ ] **C3. Rate limiting → Vercel KV**
   Reemplazar el `Map` en memoria por `@vercel/kv`. Sliding window igual que ahora, pero distribuido.

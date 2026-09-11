@@ -25,6 +25,7 @@
     "@anthropic-ai/sdk": "^0.88.0",
     "@radix-ui/react-popover": "^1.1.16",
     "@radix-ui/react-slot": "^1.2.4",
+    "@sentry/nextjs": "^10.74.0",
     "@supabase/ssr": "^0.10.2",
     "@supabase/supabase-js": "^2.103.0",
     "class-variance-authority": "^0.7.1",

@@ -13,6 +13,9 @@ import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { canEditList } from '@/lib/social/lists'
 import { checkRateLimit, LIMITS } from '@/lib/rate-limit'
+import { createLogger } from '@/lib/logger'
+
+const log = createLogger('api/lists')
 
 interface Params {
   params: Promise<{ id: string }>
@@ -86,7 +89,7 @@ export async function POST(request: Request, { params }: Params): Promise<NextRe
       type: 'list_invite',
       payload: { listId, listName: list.name, fromUserId: user.id, fromUsername: senderProfile?.username ?? '' },
     })
-    if (notifErr) console.error('[E83] notif insert failed', { type: 'list_invite', notifErr })
+    if (notifErr) log.error('[E83] notif insert failed', { type: 'list_invite', notifErr })
 
     return NextResponse.json({ ok: true }, { status: 201 })
   }

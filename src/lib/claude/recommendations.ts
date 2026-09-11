@@ -11,6 +11,9 @@ import { createClient } from '@/lib/supabase/server'
 import type { SupabaseClient } from '@supabase/supabase-js'
 import type { MediaType } from '@/types/media'
 import { searchByType } from '@/lib/api/search'
+import { createLogger } from '@/lib/logger'
+
+const log = createLogger('claude/recommendations')
 
 // v3: AiRec resuelve id/posterUrl/mediaUrl server-side (E66) — invalida cache v2.
 const PROMPT_VERSION = 'v3'
@@ -189,7 +192,7 @@ async function resolveMediaRefs(recs: AiRec[]): Promise<AiRec[]> {
             : undefined,
         }
       } catch (err) {
-        console.error(`resolveMediaRefs failed for "${rec.searchQuery}" (${rec.type}):`, err)
+        log.error('resolveMediaRefs failed', { searchQuery: rec.searchQuery, type: rec.type, err })
         return rec
       }
     })
@@ -220,7 +223,9 @@ export async function getAiRecommendations(
   // Opcional en el schema: graceful, degrada a [] si no está configurada.
   const apiKey = env.ANTHROPIC_API_KEY
   if (!apiKey) {
-    console.error('ANTHROPIC_API_KEY not set')
+    // Clave opcional ausente — degradación esperada, no un fallo. warn, no error
+    // (evita ruido en Sentry en despliegues sin recomendaciones IA configuradas).
+    log.warn('ANTHROPIC_API_KEY not set — recomendaciones IA deshabilitadas')
     return []
   }
 
@@ -240,7 +245,7 @@ export async function getAiRecommendations(
     if (block.type !== 'text') return []
     rawText = block.text
   } catch (err) {
-    console.error('Claude API error:', err)
+    log.error('Claude API error', { err })
     return []
   }
 
@@ -283,7 +288,7 @@ export async function getAiRecommendations(
     setCached(cacheKey, results)
     return results
   } catch (err) {
-    console.error('Failed to parse Claude response:', err)
+    log.error('Failed to parse Claude response', { err })
     return []
   }
 }

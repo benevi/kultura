@@ -4,7 +4,10 @@ import { useState } from 'react'
 import { useTranslations } from 'next-intl'
 import { KButton } from '@/components/ui/KButton'
 import { sendFriendRequest, respondToFriendRequest, removeFriend } from '@/lib/social/actions'
+import { createLogger } from '@/lib/logger'
 import type { FriendshipStatusResult } from '@/lib/social/friends'
+
+const log = createLogger('FriendshipButton')
 
 interface FriendshipButtonProps {
   /** Estado inicial de la relación */
@@ -31,7 +34,7 @@ export function FriendshipButton({
       await sendFriendRequest(targetUserId)
       setStatus('pending_sent')
     } catch (err) {
-      console.error('Failed to send friend request:', err)
+      log.error('Failed to send friend request', { err })
     } finally {
       setLoading(false)
     }
@@ -44,7 +47,7 @@ export function FriendshipButton({
       await respondToFriendRequest(fId, 'accept')
       setStatus('accepted')
     } catch (err) {
-      console.error('Failed to accept friend request:', err)
+      log.error('Failed to accept friend request', { err })
     } finally {
       setLoading(false)
     }
@@ -58,7 +61,7 @@ export function FriendshipButton({
       setStatus('none')
       setFId(undefined)
     } catch (err) {
-      console.error('Failed to remove friend:', err)
+      log.error('Failed to remove friend', { err })
     } finally {
       setLoading(false)
     }

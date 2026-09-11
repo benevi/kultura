@@ -9,12 +9,15 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { checkRateLimit, LIMITS } from '@/lib/rate-limit'
+import { createLogger } from '@/lib/logger'
 import {
   getGroupById,
   getInvitableFriends,
   isGroupOwner,
   isGroupMember,
 } from '@/lib/social/groups'
+
+const log = createLogger('api/groups/invitations')
 
 interface Props {
   params: Promise<{ id: string }>
@@ -132,7 +135,7 @@ export async function POST(req: NextRequest, { params }: Props): Promise<NextRes
       fromUsername: senderProfile?.username ?? '',
     },
   })
-  if (notifErr) console.error('[E83] notif insert failed', { type: 'group_invite', notifErr })
+  if (notifErr) log.error('[E83] notif insert failed', { type: 'group_invite', notifErr })
 
   return NextResponse.json({ invitation }, { status: 201 })
 }
