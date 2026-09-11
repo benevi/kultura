@@ -8,6 +8,7 @@ import { createClient } from '@/lib/supabase/server'
 import { getUserStats } from '@/lib/library/stats'
 import { getGenreNews } from '@/lib/api/genre-news'
 import { checkRateLimit } from '@/lib/rate-limit'
+import { computeMatchScores } from '@/lib/recommendations/match-score'
 
 const GENRE_NEWS_LIMIT = { windowMs: 60_000, max: 20 }
 
@@ -32,5 +33,11 @@ export async function GET(): Promise<NextResponse> {
   const topGenres = stats.topGenres.map((g) => g.genre)
 
   const result = await getGenreNews(topGenres)
-  return NextResponse.json(result)
+
+  // F3b: badge de match real (F3a) para la fila "trending" de Home — la más
+  // análoga a las filas del mockup F0. Vacío si no hay señal suficiente
+  // (gate de computeMatchScores), nunca un número decorativo.
+  const matchScores = await computeMatchScores(user.id, [...result.movies, ...result.tv])
+
+  return NextResponse.json({ ...result, matchScores: Object.fromEntries(matchScores) })
 }

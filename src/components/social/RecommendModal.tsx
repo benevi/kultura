@@ -111,7 +111,7 @@ export function RecommendModal({ mediaId, mediaCache, onClose }: RecommendModalP
                 type="checkbox"
                 checked={selected.has(f.user.id)}
                 onChange={() => toggleFriend(f.user.id)}
-                className="accent-accent"
+                className="accent-accent-positive"
               />
               <Avatar
                 initials={f.user.avatar_initials}
@@ -131,7 +131,7 @@ export function RecommendModal({ mediaId, mediaCache, onClose }: RecommendModalP
             placeholder={t('messagePlaceholder')}
             rows={2}
             maxLength={500}
-            className="w-full bg-bg border border-border rounded-md px-3 py-2 text-sm text-text placeholder:text-muted resize-none focus:outline-none focus:ring-1 focus:ring-accent"
+            className="w-full bg-bg border border-border rounded-md px-3 py-2 text-sm text-text placeholder:text-muted resize-none focus:outline-none focus:ring-1 focus:ring-accent-positive"
           />
         )}
 

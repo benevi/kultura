@@ -115,7 +115,7 @@ export async function MediaDetail({
                 <span>{typeLabel}</span>
                 {item.rating !== undefined && (
                   <span className="flex items-center gap-1">
-                    <span className="text-accent">★</span>
+                    <span className="text-accent-highlight">★</span>
                     <span className="text-text font-medium">
                       {item.rating.toFixed(1)}
                     </span>

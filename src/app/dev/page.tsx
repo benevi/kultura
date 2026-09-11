@@ -50,7 +50,7 @@ export default function DevPage() {
         minHeight: "100vh",
         backgroundColor: "var(--surface-base)",
         color: "var(--text-primary)",
-        fontFamily: "var(--font-inter), system-ui, sans-serif",
+        fontFamily: "var(--font-body), system-ui, sans-serif",
         padding: "32px 24px",
         maxWidth: "960px",
         margin: "0 auto",
@@ -60,7 +60,7 @@ export default function DevPage() {
       <div className="mb-12">
         <h1
           style={{
-            fontFamily: "var(--font-space-grotesk), system-ui, sans-serif",
+            fontFamily: "var(--font-display), system-ui, sans-serif",
             fontSize: "24px",
             fontWeight: 700,
             color: "var(--text-primary)",
@@ -122,7 +122,7 @@ export default function DevPage() {
             </p>
             <p
               style={{
-                fontFamily: "var(--font-space-grotesk), system-ui, sans-serif",
+                fontFamily: "var(--font-display), system-ui, sans-serif",
                 fontSize: "24px",
                 fontWeight: 700,
                 color: "var(--text-primary)",
@@ -137,7 +137,7 @@ export default function DevPage() {
             </p>
             <p
               style={{
-                fontFamily: "var(--font-space-grotesk), system-ui, sans-serif",
+                fontFamily: "var(--font-display), system-ui, sans-serif",
                 fontSize: "28px",
                 fontWeight: 700,
                 color: "var(--text-primary)",
@@ -152,7 +152,7 @@ export default function DevPage() {
             </p>
             <p
               style={{
-                fontFamily: "var(--font-space-grotesk), system-ui, sans-serif",
+                fontFamily: "var(--font-display), system-ui, sans-serif",
                 fontSize: "20px",
                 fontWeight: 500,
                 color: "var(--text-primary)",
@@ -167,7 +167,7 @@ export default function DevPage() {
             </p>
             <p
               style={{
-                fontFamily: "var(--font-space-grotesk), system-ui, sans-serif",
+                fontFamily: "var(--font-display), system-ui, sans-serif",
                 fontSize: "16px",
                 fontWeight: 500,
                 color: "var(--text-primary)",
@@ -182,7 +182,7 @@ export default function DevPage() {
             </p>
             <p
               style={{
-                fontFamily: "var(--font-inter), system-ui, sans-serif",
+                fontFamily: "var(--font-body), system-ui, sans-serif",
                 fontSize: "16px",
                 fontWeight: 400,
                 color: "var(--text-primary)",
@@ -197,7 +197,7 @@ export default function DevPage() {
             </p>
             <p
               style={{
-                fontFamily: "var(--font-inter), system-ui, sans-serif",
+                fontFamily: "var(--font-body), system-ui, sans-serif",
                 fontSize: "14px",
                 fontWeight: 500,
                 color: "var(--text-primary)",
@@ -212,7 +212,7 @@ export default function DevPage() {
             </p>
             <p
               style={{
-                fontFamily: "var(--font-inter), system-ui, sans-serif",
+                fontFamily: "var(--font-body), system-ui, sans-serif",
                 fontSize: "12px",
                 fontWeight: 400,
                 color: "var(--text-secondary)",

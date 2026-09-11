@@ -6,7 +6,7 @@ import { useRouter } from "@/i18n/navigation";
 import { useSearchParams } from "next/navigation";
 import type { MediaItem } from "@/types/media";
 import type { DiscoverResult } from "@/lib/api/discover";
-import { MediaGrid } from "@/components/media/MediaGrid";
+import { MediaGrid, BENTO_CELL_CLASSES } from "@/components/media/MediaGrid";
 import { Pagination } from "@/components/ui/Pagination";
 import { FilterBar, type FilterGroup } from "@/components/ui/FilterBar";
 import {
@@ -18,45 +18,52 @@ import {
 import { getFilterOptions, humanizeSlug } from "@/lib/discover/filter-options";
 import { cn } from "@/lib/utils/index";
 import {
-  type LucideIcon,
-  LayoutGrid,
-  Tag,
-  Calendar,
-  Star,
-  Monitor,
-  Clock,
-  Globe,
-  Activity,
-  Layers,
-  Users,
-  BookCopy,
-  Building2,
-  FileText,
-  Gamepad2,
-  Timer,
-  ArrowUpDown,
-} from "lucide-react";
+  type KIcon,
+  IconGrid,
+  IconTag,
+  IconCalendar,
+  IconStar,
+  IconMonitor,
+  IconClock,
+  IconGlobe,
+  IconActivity,
+  IconLayers,
+  IconGroups,
+  IconVolumes,
+  IconStudio,
+  IconFormat,
+  IconGamepad,
+  IconTimer,
+  IconSort,
+} from "@/components/icons";
 
-// Icono lucide por key de filtro (spec V2 §Barra). Mapea claves lógicas de
+// Icono propio por key de filtro (spec V2 §Barra). Mapea claves lógicas de
 // TYPE_FILTERS a su icono pequeño en trigger + cabecera de popover.
-const FILTER_ICONS: Record<string, LucideIcon> = {
-  genre: Tag,
-  year: Calendar,
-  valoracion: Star,
-  platform: Monitor,
-  duracion: Clock,
-  idioma: Globe,
-  status: Activity,
-  estado: Activity,
-  temporadas: Layers,
-  demografia: Users,
-  volumenes: BookCopy,
-  editorial: Building2,
-  formato: FileText,
-  modojuego: Gamepad2,
-  duracionmedia: Timer,
-  sort: ArrowUpDown,
+const FILTER_ICONS: Record<string, KIcon> = {
+  genre: IconTag,
+  year: IconCalendar,
+  valoracion: IconStar,
+  platform: IconMonitor,
+  duracion: IconClock,
+  idioma: IconGlobe,
+  status: IconActivity,
+  estado: IconActivity,
+  temporadas: IconLayers,
+  demografia: IconGroups,
+  volumenes: IconVolumes,
+  editorial: IconStudio,
+  formato: IconFormat,
+  modojuego: IconGamepad,
+  duracionmedia: IconTimer,
+  sort: IconSort,
 };
+
+// Skeleton de carga con el mismo patrón bento que el grid real (F3b) — evita
+// layout shift entre el estado de carga y el grid ya poblado.
+const DISCOVER_SKELETON_CELLS = Array.from(
+  { length: 18 },
+  (_, i) => BENTO_CELL_CLASSES[i % BENTO_CELL_CLASSES.length]
+);
 
 export interface DiscoverClientProps {
   currentType: string;
@@ -140,6 +147,9 @@ export function DiscoverClient({
   // de la URL (type, page, o cualquier filtro). Sin filtrado client-side: la
   // URL es la única fuente de verdad y el servidor aplica todos los filtros.
   const [items, setItems] = useState<MediaItem[]>([]);
+  // F3a/F3b: match score real por item (id → 0-100). Vacío = ningún item recibe
+  // badge (sin sesión, o sin señal suficiente — gate de computeMatchScores).
+  const [matchScores, setMatchScores] = useState<Map<string, number>>(new Map());
   // E79 slice 1: el gate de "next" usa hasMore (fuente cruda), no totalPages.
   const [hasMore, setHasMore] = useState(false);
   // E79 slice 1b: totalPages del proveedor (DiscoverResult) → ventana numerada.
@@ -171,7 +181,7 @@ export function DiscoverClient({
     params.set("type", type);
     params.set("page", String(currentPage));
     fetch(`/api/discover?${params.toString()}`)
-      .then((res) => res.json() as Promise<DiscoverResult>)
+      .then((res) => res.json() as Promise<DiscoverResult & { matchScores?: Record<string, number> }>)
       .then((data) => {
         if (cancelled) return;
         setItems(data.items ?? []);
@@ -180,6 +190,7 @@ export function DiscoverClient({
         // a 1 con `??`. Solo el campo ausente (undefined) cae al default 1.
         setTotalPages(data.totalPages === undefined ? 1 : data.totalPages);
         setFetchErrorKind(data.fetchErrorKind ?? null);
+        setMatchScores(new Map(Object.entries(data.matchScores ?? {})));
       })
       .catch(() => {
         if (cancelled) return;
@@ -187,6 +198,7 @@ export function DiscoverClient({
         setHasMore(false);
         setTotalPages(1);
         setFetchErrorKind("generic");
+        setMatchScores(new Map());
       })
       .finally(() => {
         if (!cancelled) setLoading(false);
@@ -363,7 +375,7 @@ export function DiscoverClient({
         {/* FILA 2 — FILTROS: label con icono grid + triggers (sort a la derecha). */}
         <div className="flex items-center gap-3">
           <span className="shrink-0 inline-flex items-center gap-1.5 font-mono uppercase text-xs tracking-widest text-muted">
-            <LayoutGrid className="h-3.5 w-3.5" aria-hidden="true" />
+            <IconGrid className="h-3.5 w-3.5" aria-hidden="true" />
             {tF("filters")}
           </span>
           <FilterBar
@@ -376,20 +388,17 @@ export function DiscoverClient({
       </div>
 
       {loading ? (
-        <div className="animate-pulse grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 md:gap-4">
-          {Array.from({ length: 18 }).map((_, i) => (
-            <div key={i} className="flex flex-col gap-2">
-              <div className="aspect-[2/3] bg-surface-elevated rounded-card" />
-              <div className="h-3 w-3/4 bg-surface-elevated rounded-button" />
-              <div className="h-3 w-1/2 bg-surface-elevated rounded-button" />
-            </div>
+        <div className="animate-pulse grid grid-cols-2 md:grid-cols-12 auto-rows-[130px] md:auto-rows-[150px] grid-flow-row-dense gap-3">
+          {DISCOVER_SKELETON_CELLS.map((cellClass, i) => (
+            <div key={i} className={cn("bg-surface-elevated rounded-bento", cellClass)} />
           ))}
         </div>
       ) : items.length > 0 ? (
         <MediaGrid
           items={items}
           showType={isAggregate}
-          className="grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5"
+          layout="bento"
+          matchScores={matchScores}
         />
       ) : (
         <div className="text-center py-16">

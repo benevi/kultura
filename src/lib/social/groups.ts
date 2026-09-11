@@ -71,13 +71,22 @@ export interface DiscoverGroupsParams {
 
 // ── Mappers ───────────────────────────────────────────────────────────────────
 
+// El acento rojo legacy (#E82020) sigue siendo el default histórico en la
+// columna `cover_color` (mismo patrón que avatar_color, ver Avatar.tsx
+// LEGACY_RED) — se remapea al leer, no en la fila almacenada.
+const LEGACY_RED = '#E82020'
+
+function resolveCoverColor(coverColor: string): string {
+  return coverColor === LEGACY_RED ? 'var(--accent-positive)' : coverColor
+}
+
 function mapGroup(row: GroupRow): Group {
   return {
     id: row.id,
     ownerId: row.owner_id,
     name: row.name,
     description: row.description,
-    coverColor: row.cover_color,
+    coverColor: resolveCoverColor(row.cover_color),
     isPublic: row.is_public,
     createdAt: row.created_at,
     memberRole: row.memberRole,
@@ -266,7 +275,7 @@ export async function getDiscoverableGroups(
         ownerId: row.owner_id,
         name: row.name,
         description: row.description,
-        coverColor: row.cover_color,
+        coverColor: resolveCoverColor(row.cover_color),
         createdAt: row.created_at,
         memberCount: members.length,
         isMember: members.some((m) => m.user_id === user.id),

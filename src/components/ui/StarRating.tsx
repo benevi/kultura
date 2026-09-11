@@ -55,7 +55,7 @@ export function StarRating({
               filled={i < value}
               className={cn(
                 sizeClasses[size],
-                i < value ? "text-accent" : "text-muted"
+                i < value ? "text-accent-highlight" : "text-muted"
               )}
             />
           </span>
@@ -85,7 +85,7 @@ export function StarRating({
               filled={i < displayValue}
               className={cn(
                 sizeClasses[size],
-                i < displayValue ? "text-accent" : "text-muted",
+                i < displayValue ? "text-accent-highlight" : "text-muted",
                 "transition-colors"
               )}
             />

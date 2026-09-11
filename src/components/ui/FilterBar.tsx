@@ -1,8 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import type { LucideIcon } from "lucide-react"
-import { ChevronDown, ChevronUp } from "lucide-react"
+import { IconChevronDown, IconChevronUp, type KIcon } from "@/components/icons"
 import { cn } from "@/lib/utils/index"
 import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/Popover"
 import type { FilterKind } from "@/lib/discover/type-filters"
@@ -21,8 +20,8 @@ export interface FilterGroup {
   kind?: FilterKind
   /** 'end' → empuja el trigger a la derecha de la fila (ml-auto). Solo sort. */
   align?: "end"
-  /** Icono lucide pequeño dentro del trigger y la cabecera del popover. */
-  icon?: LucideIcon
+  /** Icono propio pequeño dentro del trigger y la cabecera del popover. */
+  icon?: KIcon
   /**
    * Variante 'sort': el trigger se renderiza como "<sortLabel>: <valor>"
    * (prefijo tenue + valor en negrita) en vez de pill estándar. Single-select.
@@ -56,7 +55,7 @@ function triggerPillClass(active: boolean, open: boolean) {
 }
 
 /**
- * FilterBar v3.1 (E59 R3): trigger-pills con icono lucide + chevron, todo en
+ * FilterBar v3.1 (E59 R3): trigger-pills con icono propio + chevron, todo en
  * Popover. kinds: single (single-select con deselección), multi (checkboxes),
  * searchable (multi + buscador). align:'end' empuja a la derecha; variant:'sort'
  * lo renderiza como "Ordenar: <valor>". Estilo del mockup, tokens DS.
@@ -160,9 +159,9 @@ function SingleGroup({
           {Icon && <Icon className="h-3.5 w-3.5" aria-hidden="true" />}
           {triggerLabel}
           {open ? (
-            <ChevronUp className="h-3 w-3" aria-hidden="true" />
+            <IconChevronUp className="h-3 w-3" aria-hidden="true" />
           ) : (
-            <ChevronDown className="h-3 w-3" aria-hidden="true" />
+            <IconChevronDown className="h-3 w-3" aria-hidden="true" />
           )}
         </button>
       </PopoverTrigger>
@@ -237,9 +236,9 @@ function SortGroup({
             {displayOption?.label ?? ""}
           </span>
           {open ? (
-            <ChevronUp className="h-3 w-3" aria-hidden="true" />
+            <IconChevronUp className="h-3 w-3" aria-hidden="true" />
           ) : (
-            <ChevronDown className="h-3 w-3" aria-hidden="true" />
+            <IconChevronDown className="h-3 w-3" aria-hidden="true" />
           )}
         </button>
       </PopoverTrigger>
@@ -319,9 +318,9 @@ function MultiGroup({
             </span>
           )}
           {open ? (
-            <ChevronUp className="h-3 w-3" aria-hidden="true" />
+            <IconChevronUp className="h-3 w-3" aria-hidden="true" />
           ) : (
-            <ChevronDown className="h-3 w-3" aria-hidden="true" />
+            <IconChevronDown className="h-3 w-3" aria-hidden="true" />
           )}
         </button>
       </PopoverTrigger>

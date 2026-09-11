@@ -158,7 +158,7 @@ export function AddToListButton({ item }: AddToListButtonProps) {
                       value={l.id}
                       checked={selectedListId === l.id}
                       onChange={() => setSelectedListId(l.id)}
-                      className="accent-accent"
+                      className="accent-accent-positive"
                     />
                     <span className="text-sm font-medium text-text">{l.name}</span>
                   </label>
