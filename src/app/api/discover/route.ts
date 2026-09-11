@@ -10,6 +10,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { fetchDiscoverData } from "@/lib/api/discover";
 import { parseDiscoverParams } from "@/lib/api/discover-params";
+import { createClient } from "@/lib/supabase/server";
+import { computeMatchScores } from "@/lib/recommendations/match-score";
 
 export async function GET(request: NextRequest) {
   const parsed = parseDiscoverParams(request.nextUrl.searchParams);
@@ -49,5 +51,12 @@ export async function GET(request: NextRequest) {
     estado: parsed.estado,
   });
 
-  return NextResponse.json(result);
+  // F3b: badge de match real (F3a) sobre los items devueltos. Sin sesión, o sin
+  // señal suficiente en la biblioteca (gate de computeMatchScores), matchScores
+  // queda vacío — MediaCard no muestra badge, nunca uno decorativo.
+  const supabase = createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  const matchScores = user ? await computeMatchScores(user.id, result.items, supabase) : new Map<string, number>();
+
+  return NextResponse.json({ ...result, matchScores: Object.fromEntries(matchScores) });
 }

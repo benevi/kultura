@@ -11,6 +11,13 @@ export interface MediaCardProps {
   showType?: boolean;
   priority?: boolean;
   className?: string;
+  /**
+   * Match score real 0-100 (F3a, `computeMatchScores`). Ausente = sin badge —
+   * nunca un número decorativo cuando no hay señal suficiente para calcularlo.
+   */
+  matchScore?: number;
+  /** 'fill' para grid bento (la imagen ocupa el alto que le da la celda del grid). Default '2/3'. */
+  aspect?: "2/3" | "fill";
 }
 
 export function MediaCard({
@@ -18,6 +25,8 @@ export function MediaCard({
   showType = false,
   priority = false,
   className,
+  matchScore,
+  aspect = "2/3",
 }: MediaCardProps) {
   const href = `/media/${item.type}/${item.externalId}` as const;
   // Badge de tipo (modo "all", R5b): label localizado vía discoverFilters.typeBadge
@@ -25,36 +34,55 @@ export function MediaCard({
   const tBadge = useTranslations("discoverFilters.typeBadge");
 
   return (
-    <Link href={href} className={cn("block", className)}>
-      <article className="group flex flex-col rounded-lg overflow-hidden cursor-pointer">
-        {/* Poster */}
-        <div className="relative aspect-[2/3] w-full overflow-hidden bg-surface2 rounded-lg">
+    <Link href={href} className={cn("group block h-full", className)}>
+      <article className="h-full rounded-bento overflow-hidden cursor-pointer">
+        <div
+          className={cn(
+            "relative w-full overflow-hidden bg-surface-elevated",
+            aspect === "2/3" ? "aspect-[2/3]" : "h-full min-h-[110px]"
+          )}
+        >
           {item.poster ? (
             <Image
               src={item.poster}
               alt={item.title}
               fill
-              sizes="(max-width: 640px) 33vw, (max-width: 768px) 25vw, (max-width: 1024px) 20vw, 16vw"
-              className="object-cover group-hover:scale-105 transition-transform duration-200"
+              sizes="(max-width: 640px) 45vw, (max-width: 1024px) 30vw, 20vw"
+              className="object-cover transition-transform duration-300 group-hover:scale-105"
               priority={priority}
             />
           ) : (
             <div
               data-placeholder
-              className="absolute inset-0 flex items-center justify-center bg-surface2"
+              className="absolute inset-0 flex items-center justify-center bg-surface-elevated"
             >
-              <span className="text-muted text-xs font-medium line-clamp-2 px-2 text-center">
+              <span className="text-text-tertiary text-xs font-display font-bold line-clamp-2 px-2 text-center">
                 {item.title.slice(0, 2).toUpperCase()}
               </span>
             </div>
           )}
 
-          {/* Type badge overlay (modo "all", R5b): esquina superior, acento
-              verde del DS. Label localizado vía discoverFilters.typeBadge. */}
+          {/* Scrim para que título/badges se lean sobre cualquier poster */}
+          <div className="absolute inset-x-0 bottom-0 h-2/3 bg-gradient-to-t from-black/85 via-black/25 to-transparent pointer-events-none" />
+
+          {/* Badge de match real (F3a) — solo si hay score calculado */}
+          {matchScore !== undefined && (
+            <div
+              data-testid="media-match-badge"
+              className="absolute top-2 left-2 rounded-full bg-accent-positive text-on-accent-positive text-[11px] font-display font-extrabold px-2.5 py-1 leading-none shadow-md"
+            >
+              {matchScore}% MATCH
+            </div>
+          )}
+
+          {/* Type badge overlay (modo "all", R5b) */}
           {showType && (
             <div
               data-testid="media-type-badge"
-              className="absolute top-2 left-2 text-[10px] font-medium bg-black/70 backdrop-blur-sm px-1.5 py-0.5 rounded text-white leading-none shadow-md ring-1 ring-accent-positive/40"
+              className={cn(
+                "absolute left-2 rounded-full bg-surface-base/80 backdrop-blur-sm text-text-primary text-[10px] font-semibold px-2 py-1 leading-none",
+                matchScore !== undefined ? "top-9" : "top-2"
+              )}
             >
               {tBadge(item.type)}
             </div>
@@ -62,23 +90,23 @@ export function MediaCard({
 
           {/* Rating overlay */}
           {item.rating !== undefined && (
-            <div className="absolute bottom-2 right-2 text-[10px] bg-bg/80 px-1.5 py-0.5 rounded text-amber-400 leading-none">
+            <div className="absolute bottom-2 right-2 rounded-full bg-surface-base/80 backdrop-blur-sm text-accent-highlight text-[11px] font-bold px-2 py-1 leading-none">
               ★ {item.rating.toFixed(1)}
             </div>
           )}
-        </div>
 
-        {/* Footer */}
-        <div className="pt-2 pb-1 px-0.5 flex flex-col gap-0.5">
-          <h3
-            className="text-xs font-medium line-clamp-2 text-text leading-tight"
-            title={item.title}
-          >
-            {item.title}
-          </h3>
-          {item.year && (
-            <p className="text-[10px] text-muted">{item.year}</p>
-          )}
+          {/* Título + año, superpuestos sobre el scrim */}
+          <div className="absolute inset-x-2 bottom-2">
+            <h3
+              className="font-display text-sm font-bold text-white line-clamp-2 leading-tight"
+              title={item.title}
+            >
+              {item.title}
+            </h3>
+            {item.year && (
+              <p className="text-[11px] text-white/75 font-medium mt-0.5">{item.year}</p>
+            )}
+          </div>
         </div>
       </article>
     </Link>

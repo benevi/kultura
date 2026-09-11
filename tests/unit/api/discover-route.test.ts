@@ -12,9 +12,21 @@ vi.mock("@/lib/api/discover", () => ({
   fetchDiscoverData: vi.fn(),
 }));
 
+// F3b: el handler consulta el usuario autenticado para calcular matchScores
+// (F3a). Sin sesión por defecto — los tests de este archivo no ejercitan auth.
+vi.mock("@/lib/supabase/server", () => ({
+  createClient: vi.fn(() => ({
+    auth: { getUser: vi.fn().mockResolvedValue({ data: { user: null } }) },
+  })),
+}));
+vi.mock("@/lib/recommendations/match-score", () => ({
+  computeMatchScores: vi.fn().mockResolvedValue(new Map()),
+}));
+
 import { GET } from "@/app/api/discover/route";
 import { parseDiscoverParams } from "@/lib/api/discover-params";
 import { fetchDiscoverData } from "@/lib/api/discover";
+import { computeMatchScores } from "@/lib/recommendations/match-score";
 
 function req(query: string): NextRequest {
   return new NextRequest(`http://localhost/api/discover${query}`);
@@ -220,5 +232,32 @@ describe("GET /api/discover", () => {
     expect(res.status).toBe(200);
     const body = await res.json();
     expect(body.fetchErrorKind).toBe("rate-limit");
+  });
+
+  // F3a/F3b: badge de match real adjunto a la respuesta.
+  it("sin sesión: matchScores viaja vacío y no se llama a computeMatchScores", async () => {
+    const res = await GET(req("?type=movie&page=1"));
+    const body = await res.json();
+    expect(body.matchScores).toEqual({});
+    expect(computeMatchScores).not.toHaveBeenCalled();
+  });
+
+  it("con sesión: matchScores viaja con los scores calculados por item", async () => {
+    const { createClient } = await import("@/lib/supabase/server");
+    vi.mocked(createClient).mockReturnValue({
+      auth: { getUser: vi.fn().mockResolvedValue({ data: { user: { id: "user-1" } } }) },
+    } as never);
+    vi.mocked(computeMatchScores).mockResolvedValue(new Map([["movie_1", 88]]));
+    vi.mocked(fetchDiscoverData).mockResolvedValue({
+      items: [{ id: "movie_1", title: "X" } as never],
+      totalPages: 1,
+      hasMore: false,
+      fetchErrorKind: null,
+    });
+
+    const res = await GET(req("?type=movie&page=1"));
+    const body = await res.json();
+    expect(computeMatchScores).toHaveBeenCalledWith("user-1", body.items, expect.anything());
+    expect(body.matchScores).toEqual({ movie_1: 88 });
   });
 });

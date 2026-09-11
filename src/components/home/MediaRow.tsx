@@ -9,6 +9,9 @@ export interface MediaRowItem {
   title: string
   poster?: string | null
   type: string
+  year?: number
+  /** Match score real (F3a). Ausente = sin badge — nunca decorativo. */
+  matchScore?: number
 }
 
 interface MediaRowProps {
@@ -28,21 +31,21 @@ export function MediaRow({ items, title, emptyIcon, emptyMessage, emptyHint, emp
 
   return (
     <section>
-      <h2 className="font-display text-xl mb-3 text-text-primary">{title}</h2>
+      <h2 className="font-display text-xl font-bold mb-3 text-text-primary">{title}</h2>
 
       {isLoading && (
         <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-hide">
           {SKELETONS.map((i) => (
             <div
               key={i}
-              className="w-24 md:w-32 flex-shrink-0 animate-pulse bg-surface-elevated rounded-card aspect-[2/3]"
+              className="w-28 md:w-36 flex-shrink-0 animate-pulse bg-surface-elevated rounded-bento aspect-[2/3]"
             />
           ))}
         </div>
       )}
 
       {!isLoading && items.length === 0 && emptyMessage && (
-        <div className="bg-surface-default border border-surface-border rounded-card p-6 text-center flex flex-col items-center gap-3">
+        <div className="bg-surface-default border border-surface-border rounded-bento p-6 text-center flex flex-col items-center gap-3">
           {emptyIcon && <span className="text-3xl">{emptyIcon}</span>}
           <p className="font-body text-sm font-medium text-text-primary">{emptyMessage}</p>
           {emptyHint && <p className="font-body text-xs text-text-tertiary">{emptyHint}</p>}
@@ -63,26 +66,40 @@ export function MediaRow({ items, title, emptyIcon, emptyMessage, emptyHint, emp
               <Link
                 key={item.mediaId}
                 href={href}
-                className="w-24 md:w-32 flex-shrink-0 cursor-pointer group"
+                className="w-28 md:w-36 flex-shrink-0 cursor-pointer group"
               >
-                <div className="aspect-[2/3] rounded-card overflow-hidden bg-surface-elevated relative">
+                <div className="relative aspect-[2/3] rounded-bento overflow-hidden bg-surface-elevated">
                   {item.poster ? (
                     <Image
                       src={item.poster}
                       alt={item.title}
                       fill
-                      className="object-cover group-hover:scale-105 transition-transform duration-200"
-                      sizes="(max-width: 768px) 96px, 128px"
+                      className="object-cover group-hover:scale-105 transition-transform duration-300"
+                      sizes="(max-width: 768px) 112px, 144px"
                     />
                   ) : (
                     <div className="w-full h-full flex items-center justify-center">
                       <span className="text-2xl text-text-tertiary">◻</span>
                     </div>
                   )}
+                  {item.matchScore !== undefined && (
+                    <div
+                      data-testid="media-row-match-badge"
+                      className="absolute top-2 left-2 rounded-full bg-accent-positive text-on-accent-positive text-[10px] font-display font-extrabold px-2 py-0.5 leading-none shadow-md"
+                    >
+                      {item.matchScore}%
+                    </div>
+                  )}
                 </div>
-                <p className="font-body text-xs mt-1 line-clamp-2 text-text-secondary leading-tight">
+                <p
+                  className="font-display text-sm font-bold mt-2 line-clamp-2 text-text-primary leading-tight"
+                  title={item.title}
+                >
                   {item.title}
                 </p>
+                {item.year && (
+                  <p className="font-body text-xs text-text-tertiary mt-0.5">{item.year}</p>
+                )}
               </Link>
             )
           })}
