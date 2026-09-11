@@ -510,7 +510,16 @@
     "changePassword": "Change password",
     "changePasswordHint": "We'll send you an email with the reset link",
     "dangerZone": "Danger zone",
-    "deleteAccountSoon": "Delete account — coming soon"
+    "exportData": "Export my data",
+    "exportDataHint": "Download a JSON file with your library, your lists and your friendships.",
+    "exportDataError": "Failed to export data",
+    "deleteAccount": "Delete account",
+    "deleteAccountHint": "This action is permanent: your profile, library, lists and social activity will be deleted.",
+    "deleteAccountConfirmTitle": "Delete your account?",
+    "deleteAccountConfirmMessage": "This action cannot be undone. Your profile, library, lists, friendships and all your data will be deleted.",
+    "deleteAccountConfirmButton": "Yes, delete my account",
+    "deleteAccountCancel": "Cancel",
+    "deleteAccountError": "Failed to delete account. Please try again."
   },
   "report": {
     "label": "Report",

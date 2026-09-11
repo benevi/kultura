@@ -5,10 +5,12 @@ import { useTranslations, useLocale } from 'next-intl'
 import { useRouter, usePathname } from 'next/navigation'
 import { KButton } from '@/components/ui/KButton'
 import { KInput } from '@/components/ui/KInput'
+import { ConfirmModal } from '@/components/ui/ConfirmModal'
 import { useToastContext } from '@/components/ui/ToastProvider'
 import { AVATAR_COLORS, isValidAvatarColor } from '@/lib/constants/avatarColors'
 import type { AvatarColorName } from '@/lib/constants/avatarColors'
 import { cn } from '@/lib/utils/index'
+import { createClient } from '@/lib/supabase/client'
 import Link from 'next/link'
 
 interface SettingsFormProps {
@@ -41,6 +43,9 @@ export function SettingsForm({
   const [locale, setLocale] = useState(initialLocale ?? currentLocale)
   const [saving, setSaving] = useState(false)
   const [usernameError, setUsernameError] = useState('')
+  const [exporting, setExporting] = useState(false)
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false)
+  const [deleting, setDeleting] = useState(false)
 
   function validateUsername(value: string): string {
     if (value.length < 3) return t('errorInvalidUsername')
@@ -90,6 +95,50 @@ export function SettingsForm({
       toast.show({ message: t('errorSave') ?? 'Error al guardar', type: 'error' })
     } finally {
       setSaving(false)
+    }
+  }
+
+  async function handleExportData() {
+    setExporting(true)
+    try {
+      const res = await fetch('/api/account/export')
+      if (!res.ok) {
+        toast.show({ message: t('exportDataError'), type: 'error' })
+        return
+      }
+      const data = await res.json()
+      const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' })
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = `kultura-export-${new Date().toISOString().slice(0, 10)}.json`
+      document.body.appendChild(a)
+      a.click()
+      a.remove()
+      URL.revokeObjectURL(url)
+    } catch {
+      toast.show({ message: t('exportDataError'), type: 'error' })
+    } finally {
+      setExporting(false)
+    }
+  }
+
+  async function handleDeleteAccount() {
+    setDeleting(true)
+    try {
+      const res = await fetch('/api/account', { method: 'DELETE' })
+      if (!res.ok) {
+        toast.show({ message: t('deleteAccountError'), type: 'error' })
+        return
+      }
+      const supabase = createClient()
+      await supabase.auth.signOut()
+      router.push('/login')
+    } catch {
+      toast.show({ message: t('deleteAccountError'), type: 'error' })
+    } finally {
+      setDeleting(false)
+      setDeleteModalOpen(false)
     }
   }
 
@@ -181,16 +230,52 @@ export function SettingsForm({
         </div>
       </section>
 
-      {/* Sección Zona de peligro — stub "próximamente", presentación neutra */}
-      <section className="flex flex-col gap-3 rounded-modal border border-surface-border bg-surface-default p-4 opacity-60">
+      {/* Sección Zona de peligro (D2/D3) */}
+      <section className="flex flex-col gap-4 rounded-modal border border-surface-border bg-surface-default p-4">
         <h2 className="font-display text-lg font-medium text-text-secondary">{t('dangerZone')}</h2>
-        <p className="text-sm font-body text-text-tertiary">{t('deleteAccountSoon')}</p>
+
+        <div className="flex flex-col gap-2">
+          <p className="text-sm font-body text-text-tertiary">{t('exportDataHint')}</p>
+          <KButton
+            variant="secondary"
+            size="sm"
+            className="w-fit"
+            onClick={handleExportData}
+            loading={exporting}
+          >
+            {t('exportData')}
+          </KButton>
+        </div>
+
+        <div className="flex flex-col gap-2 pt-3 border-t border-surface-border">
+          <p className="text-sm font-body text-text-tertiary">{t('deleteAccountHint')}</p>
+          <KButton
+            variant="secondary"
+            size="sm"
+            className="w-fit border-danger/40 text-danger hover:bg-danger/10"
+            onClick={() => setDeleteModalOpen(true)}
+          >
+            {t('deleteAccount')}
+          </KButton>
+        </div>
       </section>
 
       {/* Botón guardar */}
       <KButton onClick={handleSave} loading={saving} className="w-full sm:w-fit">
         {saving ? t('saving') : t('save')}
       </KButton>
+
+      <ConfirmModal
+        isOpen={deleteModalOpen}
+        title={t('deleteAccountConfirmTitle')}
+        message={t('deleteAccountConfirmMessage')}
+        confirmLabel={t('deleteAccountConfirmButton')}
+        cancelLabel={t('deleteAccountCancel')}
+        onConfirm={handleDeleteAccount}
+        onCancel={() => setDeleteModalOpen(false)}
+        isDestructive
+        loading={deleting}
+      />
     </div>
   )
 }
