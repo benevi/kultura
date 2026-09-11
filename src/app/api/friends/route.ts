@@ -141,6 +141,15 @@ export async function PATCH(request: Request): Promise<NextResponse> {
     return NextResponse.json({ error: 'Not authenticated' }, { status: 401 })
   }
 
+  // Rate limiting — 10 req/min por usuario
+  const rl = checkRateLimit(`${user.id}:friends`, LIMITS.friends)
+  if (!rl.allowed) {
+    return NextResponse.json(
+      { error: 'Too many requests' },
+      { status: 429, headers: { 'Retry-After': String(rl.retryAfterSeconds) } }
+    )
+  }
+
   let body: { friendshipId?: string; action?: string }
   try {
     body = await request.json() as { friendshipId?: string; action?: string }
@@ -212,6 +221,15 @@ export async function DELETE(request: Request): Promise<NextResponse> {
   const { data: { user }, error: authError } = await supabase.auth.getUser()
   if (authError || !user) {
     return NextResponse.json({ error: 'Not authenticated' }, { status: 401 })
+  }
+
+  // Rate limiting — 10 req/min por usuario
+  const rl = checkRateLimit(`${user.id}:friends`, LIMITS.friends)
+  if (!rl.allowed) {
+    return NextResponse.json(
+      { error: 'Too many requests' },
+      { status: 429, headers: { 'Retry-After': String(rl.retryAfterSeconds) } }
+    )
   }
 
   let body: { friendshipId?: string }

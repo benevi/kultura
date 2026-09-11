@@ -36,6 +36,15 @@ vi.mock('@/lib/supabase/server', () => ({
   createClient: () => buildSupabaseMock(),
 }))
 
+const mockCheckRateLimit = vi.fn<() => { allowed: boolean; retryAfterSeconds: number }>(() => ({
+  allowed: true,
+  retryAfterSeconds: 0,
+}))
+vi.mock('@/lib/rate-limit', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@/lib/rate-limit')>()
+  return { ...actual, checkRateLimit: () => mockCheckRateLimit() }
+})
+
 // ── Fixtures ──────────────────────────────────────────────────────────────────
 
 const AUTH_USER = { id: 'user-001' }
@@ -53,6 +62,7 @@ const FRIENDSHIP_ROW = {
 describe('POST /api/friends', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    mockCheckRateLimit.mockReturnValue({ allowed: true, retryAfterSeconds: 0 })
   })
 
   it('returns 401 if not authenticated', async () => {
@@ -155,6 +165,7 @@ describe('POST /api/friends', () => {
 describe('PATCH /api/friends', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    mockCheckRateLimit.mockReturnValue({ allowed: true, retryAfterSeconds: 0 })
   })
 
   it('returns 401 if not authenticated', async () => {
@@ -217,6 +228,15 @@ describe('PATCH /api/friends', () => {
     const body = await res.json()
     expect(body.friendship.status).toBe('accepted')
   })
+
+  it('returns 429 when rate limited (E99)', async () => {
+    mockGetUser.mockResolvedValue({ data: { user: AUTH_USER }, error: null })
+    mockCheckRateLimit.mockReturnValue({ allowed: false, retryAfterSeconds: 30 })
+
+    const { PATCH } = await import('@/app/api/friends/route')
+    const res = await PATCH(makeRequest({ friendshipId: 'f-001', action: 'accept' }, 'PATCH'))
+    expect(res.status).toBe(429)
+  })
 })
 
 // ── DELETE /api/friends ───────────────────────────────────────────────────────
@@ -224,6 +244,7 @@ describe('PATCH /api/friends', () => {
 describe('DELETE /api/friends', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    mockCheckRateLimit.mockReturnValue({ allowed: true, retryAfterSeconds: 0 })
   })
 
   it('returns 401 if not authenticated', async () => {
@@ -273,5 +294,14 @@ describe('DELETE /api/friends', () => {
     expect(res.status).toBe(200)
     const body = await res.json()
     expect(body.ok).toBe(true)
+  })
+
+  it('returns 429 when rate limited (E99)', async () => {
+    mockGetUser.mockResolvedValue({ data: { user: AUTH_USER }, error: null })
+    mockCheckRateLimit.mockReturnValue({ allowed: false, retryAfterSeconds: 30 })
+
+    const { DELETE } = await import('@/app/api/friends/route')
+    const res = await DELETE(makeRequest({ friendshipId: 'f-001' }, 'DELETE'))
+    expect(res.status).toBe(429)
   })
 })

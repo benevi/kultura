@@ -143,6 +143,15 @@ export async function DELETE(request: Request): Promise<NextResponse> {
     return NextResponse.json({ error: 'Not authenticated' }, { status: 401 })
   }
 
+  // 1b. Rate limiting — 30 req/min por usuario
+  const rl = checkRateLimit(`${user.id}:library`, LIMITS.library)
+  if (!rl.allowed) {
+    return NextResponse.json(
+      { error: 'Too many requests' },
+      { status: 429, headers: { 'Retry-After': String(rl.retryAfterSeconds) } }
+    )
+  }
+
   // 2. Leer mediaId del body
   let body: { mediaId: string }
   try {
