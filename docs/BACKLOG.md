@@ -662,8 +662,8 @@ No bloqueantes. Atacar solo después de A–D.
   Hecho cuando: `grep -rn "from 'lucide-react'" src/` devuelve 0, la dependencia `lucide-react` se elimina de `package.json`, y la app sigue funcionando sin regresiones visuales ni de accesibilidad (mismo tamaño de área táctil, mismo significado). **Verificado.**
   Depende de: F0.
 
-- [ ] **F2. Resolver acento legacy rojo (`#E82020`) dentro del nuevo sistema de color**
-  Fusiona y sustituye a E82 (que quedaba huérfano si se rehace el color como parte de la identidad editorial en vez de solo migrar a verde). Definir la paleta editorial completa (no solo "rojo→verde") y aplicarla en los 15+ consumidores ya mapeados en E82.
+- [x] **F2. Resolver acento legacy rojo (`#E82020`) dentro del nuevo sistema de color** — _cerrada 2026-09-11, commit `8fb4406`_
+  Fusiona y sustituye a E82. El alias Tailwind `accent`/`#E82020` sustituido por el token DS correcto según el significado de cada uso (no un solo color de reemplazo): `accent-positive` para acciones/estados activos, `accent-highlight` para rating, `accent-info` para enlaces, `accent-danger` donde ya faltaba en un borde de error. `groups.cover_color` remapeado al leer (mismo patrón que `avatar_color`/`LEGACY_RED`). Alias `accent`/`accent-hover`/`accent-subtle` eliminados de `tailwind.config.ts` tras confirmar cero consumidores.
   Depende de: F0.
 
 - [ ] **F3. Rediseño de `MediaCard` y grids de Descubrir/Home en maquetación editorial**
