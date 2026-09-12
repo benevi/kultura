@@ -388,7 +388,7 @@ export function DiscoverClient({
       </div>
 
       {loading ? (
-        <div className="animate-pulse grid grid-cols-2 md:grid-cols-12 auto-rows-[130px] md:auto-rows-[150px] grid-flow-row-dense gap-3">
+        <div className="animate-pulse grid grid-cols-2 md:grid-cols-12 auto-rows-[130px] md:auto-rows-[150px] grid-flow-row-dense gap-5">
           {DISCOVER_SKELETON_CELLS.map((cellClass, i) => (
             <div key={i} className={cn("bg-surface-elevated rounded-bento", cellClass)} />
           ))}
