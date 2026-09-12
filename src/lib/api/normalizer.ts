@@ -15,6 +15,7 @@ import {
 import type { JikanAnimeDetail, JikanMangaDetail } from "./jikan";
 import type { MangaDexManga } from "./mangadex";
 import { extractMangaCover } from "./mangadex";
+import { pickLocalizedText } from "./locale";
 import type { OpenLibraryDoc } from "./openlibrary";
 import { openLibraryCover } from "./openlibrary";
 import type { RawgGame } from "./rawg";
@@ -182,27 +183,31 @@ export function normalizeMangaJikan(raw: JikanMangaDetail): MediaItem {
   };
 }
 
-export function normalizeMangaDex(raw: MangaDexManga): MediaItem {
+/**
+ * MangaDex → MediaItem. `locale` (E-MANGADEX-LOCALE): idioma activo de la app.
+ *
+ * MangaDex entrega `title`, `description` y los nombres de tag como
+ * diccionarios `{ código: texto }`. Antes se leía SIEMPRE `["en"]`, así que un
+ * usuario en español veía título y sinopsis en inglés incluso cuando había
+ * versión española. Ahora se resuelven con `pickLocalizedText`, cuya cadena de
+ * fallback (idioma activo → inglés → romanización → primer valor) garantiza que
+ * nunca se pierde el dato por falta de traducción.
+ */
+export function normalizeMangaDex(
+  raw: MangaDexManga,
+  locale?: string | null
+): MediaItem {
   const externalId = raw.id;
   const attrs = raw.attributes;
 
-  // Title: prefer English, then romanized, then first available
-  const title =
-    attrs.title["en"] ??
-    attrs.title["ja-ro"] ??
-    Object.values(attrs.title)[0] ??
-    "Unknown";
+  const title = pickLocalizedText(attrs.title, locale) ?? "Unknown";
 
-  // Synopsis: prefer English
-  const synopsis =
-    attrs.description["en"] ??
-    Object.values(attrs.description)[0] ??
-    undefined;
+  const synopsis = pickLocalizedText(attrs.description, locale);
 
-  // Tags that are genre group
+  // Tags del grupo "genre", con el nombre en el idioma activo si existe.
   const genres = attrs.tags
     .filter((t) => t.attributes.group === "genre")
-    .map((t) => t.attributes.name["en"] ?? Object.values(t.attributes.name)[0])
+    .map((t) => pickLocalizedText(t.attributes.name, locale))
     .filter((name): name is string => Boolean(name));
 
   const poster = extractMangaCover(raw);
