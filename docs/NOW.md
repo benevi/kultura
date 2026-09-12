@@ -83,14 +83,22 @@ PR #2 fusionada a `master` (2026-09-12, commit `f8085ef`) con autorización expl
 
 F3a-FIX → ✅ **CERRADA 2026-09-12** (commit `f6c8d1d`). `computeMatchScores` excluye la afinidad de tipo cuando todos los items evaluados comparten tipo (Discover filtrado), redistribuyendo su peso entre género y social; sigue contribuyendo normalmente en modo agregado o listas mezcladas (GenreNews). +5 tests reproduciendo el escenario exacto de producción. Los 12 tests previos de F3a intactos. tsc 0, lint 0, vitest **1309 passed**, build verificado. Detalle en DONE.md / BACKLOG F3a-FIX.
 
+### Gobierno del proyecto actualizado (2026-09-12)
+
+El usuario pidió actualizar `CLAUDE.md` para operar con autonomía real hacia un objetivo explícito: máxima calidad técnica y sensorial, app "espectacular", con vistas a monetizar — incluyendo permiso para paralelizar con subagentes. Ver commit `[CLAUDE.md]` del mismo día. A partir de aquí, `NOW.md` deja de exigir "una tarea, cerrar, parar y pedir confirmación por ciclo"; sigue siendo memoria de continuidad entre sesiones, no una jaula.
+
+F4 → ✅ **CERRADA 2026-09-12** (commit `307a4c2`). El canvas de diseño original de esta pantalla (F0) no era accesible desde esta sesión de continuación (vivía en un canvas de una sesión anterior). Rediseñado con criterio propio coherente con F1/F1b/F2/F3a/F3b: hero cinematográfico a sangre (antes banda pequeña borrosa), poster grande `rounded-bento`, título a mayor escala, badge real de match score (reusa `computeMatchScores` de F3a para el item individual, mismo gate — nunca decorativo), "Detalles" con tiles e iconos propios (F1b) en vez de tabla de texto. Verificación visual real: harness temporal (borrado, no commiteado) + Chromium headless contra el CSS de Tailwind realmente compilado, mobile y desktop. +2 tests, tsc 0, lint 0, vitest **1311 passed**, build OK. Detalle en DONE.md / BACKLOG F4.
+
+En paralelo a F4 se lanzó un agente en worktree aislado para **F6** (logotipo de marca propio) + **F7** (paleta multicolor de acentos, decisión tomada de forma autónoma: adoptar la paleta completa del mockup F0 ya aprobado en vez de quedarse solo en el verde de F2) — sigue en curso, se fusionará cuando termine.
+
 ## Tarea activa
 
-### F4. Rediseño de ficha de Media (`/media/[type]/[id]`)
+### F5. Auditoría de accesibilidad post-rediseño
 
-**Qué cambia:** aplicar la maquetación tipo "reportaje/portada" aprobada en F0 a la página de detalle (hero con backdrop, sinopsis, metadata, trailer). Antes de tocar código: releer `MediaDetail.dc.html` del canvas F0 para fijar el layout exacto — no reinventar sobre la marcha (mismo criterio que F3).
+**Qué cambia:** revisar todo lo entregado en Bloque F (F1-F4: tipografía, iconos, color, bento/match score, ficha de media) contra WCAG AA: contraste real de texto sobre los nuevos fondos/badges, tamaños táctiles mobile-first (regla 7 de CLAUDE.md), `prefers-reduced-motion` en cualquier animación introducida. Con el grid bento de F3b: orden de lectura/tabulación (el layout visual variable no debe romper el orden DOM lógico) y que paginación/filtros de Discover sigan operables por teclado.
 
-**Cómo sé que funciona:** captura real (Chromium headless) de la ficha de un título de cada familia relevante (movie/tv/anime/book al menos) mostrando el nuevo layout; trailer y metadata siguen funcionando; tsc/lint/vitest en verde; verificación en runtime real (`next build && next start`).
+**Cómo sé que funciona:** hallazgos documentados con severidad + fix aplicado para cada uno que sea código (no solo lista de problemas); verificación real de contraste (cálculo o herramienta, no "a ojo"); tsc/lint/vitest en verde; captura o verificación de foco/tabulación en el grid bento y en la ficha de media.
 
-**Archivos que toco:** por determinar tras releer el mockup F0 y localizar el/los componente(s) reales de la página `/media/[type]/[id]` (búsqueda inicial de la tarea).
+**Archivos que toco:** por determinar tras la auditoría (previsiblemente `MediaCard`/`MediaGrid`/`MediaDetail`/`FilterBar`/tokens de color en `globals.css`).
 
-**Cuándo paro:** al cerrar F4, encadeno F5 (auditoría de accesibilidad) dentro del mismo bloque aprobado — Bloque F sigue en curso, sin pedir confirmación por tarea.
+Al cerrar F5 se cierra la primera pasada completa del Bloque F sobre las 3 pantallas de F0 (Home/Discover/Media). El resto de pantallas (Library, Profile, Social, Chat, Groups) y F6-F9 (piezas del mockup no cubiertas por F1-F5) quedan en BACKLOG para continuar sin pedir confirmación de bloque, salvo que surja una decisión genuinamente ambigua.
