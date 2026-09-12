@@ -27,6 +27,22 @@
   --on-accent-highlight: #1A1209;
   --on-accent-info: #06182E;
 
+  /* Acentos DECORATIVOS (F7) — sin rol semántico, variedad visual: mood-chips,
+     degradados de "stories" de amigos, badges, logotipo. No reutilizar donde
+     haga falta significado (usar los 4 acentos semánticos de arriba para eso).
+     Vibrantes sobre --surface-base (#0A0C0E) a propósito — tono Spotify/
+     Duolingo/Netflix Gen-Z, no paleta apagada de dashboard. */
+  --accent-pink: #FF4FA3;
+  --accent-lime: #B4FF3D;
+  --accent-orange: #FF7A3D;
+  --accent-purple: #9B6BFF;
+
+  /* Texto sobre acentos decorativos (mismo patrón que los semánticos) */
+  --on-accent-pink: #2B0617;
+  --on-accent-lime: #141F06;
+  --on-accent-orange: #2B1206;
+  --on-accent-purple: #150929;
+
   /* ─── Tokens de movimiento ─── */
   --duration-fast: 100ms;
   --duration-base: 150ms;
