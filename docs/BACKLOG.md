@@ -692,4 +692,14 @@ No bloqueantes. Atacar solo después de A–D.
   Contraste (WCAG AA mínimo), tamaños táctiles mobile-first (regla 7 de CLAUDE.md), `prefers-reduced-motion` si F0 introduce motion. Con el grid bento de F3b, auditar además: orden de lectura/tabulación (el layout visual variable no debe romper el orden DOM lógico) y paginación/filtros siguen operables. No cerrar el bloque sin esto.
   Depende de: F3a, F3b, F4.
 
-  Resto de pantallas (Library, Profile, Social, Chat, Groups) se planifican como F6+ una vez validado el lenguaje visual en F0-F5 — no se especifican aún para no comprometerse a un alcance que F0 puede cambiar.
+- [x] **F7. Paleta multicolor de acentos decorativos (tokens DS)** — _cerrada 2026-09-12, commit `dfedce2`_
+  4 tokens nuevos en `globals.css`/`tailwind.config.ts`: `--accent-pink` (#FF4FA3), `--accent-lime` (#B4FF3D), `--accent-orange` (#FF7A3D), `--accent-purple` (#9B6BFF), cada uno con su `--on-accent-*` (texto oscuro encima, contraste ≥5.9:1 en los 4). Puramente decorativos — variedad visual para mood-chips/stories/badges/logotipo — sin tocar ni sustituir los 4 acentos semánticos existentes (`accent-positive/highlight/info/danger`). No aplicados todavía a ningún componente de negocio salvo el logotipo (F6). Reutilizables por F8 (mood-chips) y F9 (gamificación) cuando arranquen.
+  Hecho cuando: tokens registrados en ambos archivos, disponibles como `text-accent-pink`/`bg-accent-pink` (y lime/orange/purple) vía Tailwind, tsc/lint/vitest en verde. **Verificado.**
+  Depende de: F0.
+
+- [x] **F6. Logotipo de marca propio (sustituye el texto plano "KULTURA")** — _cerrada 2026-09-12, este commit_
+  Nuevo `src/components/layout/Logo.tsx`: monograma abstracto (badge redondeado con 3 formas solapadas y rotadas en los acentos decorativos de F7 — lima, rosa, morado) + wordmark `kultura` en minúsculas (`font-display`) con un cuadradito de color rotado sustituyendo el punto final, en vez de un gradiente/icono de stock. Todo SVG/JSX inline, sin assets externos, mismo criterio que `icons/index.tsx`. Sustituye el `<span>KULTURA</span>` plano en `Header.tsx` y `AuthHeader.tsx`; texto "kultura" sigue siendo accesible vía `screen.getByText` (tests actualizados a minúsculas, misma intención: el logo enlaza a `/` o `/home`). Hallazgo corregido de paso en `AuthHeader.tsx`: los iconos de búsqueda y campana eran SVG inline genéricos (lupa/campana "de manual") en vez del sistema de iconos propio F1b — sustituidos por `IconSearch`/`IconBell` (mismo tamaño, mismo comportamiento, badge de no-leídos intacto).
+  Hecho cuando: verificación visual real (Chromium headless) del logo en landing (`Header`) y shell autenticado (`AuthHeader`), mobile (375px) y desktop, sin romper el layout del header; tsc/lint/vitest en verde sin regresiones. **Verificado.**
+  Depende de: F0, F1, F1b, F7.
+
+  Resto de pantallas (Library, Profile, Social, Chat, Groups) se planifican como F8+ una vez validado el lenguaje visual en F0-F5 — no se especifican aún para no comprometerse a un alcance que F0 puede cambiar. F8 (mood-chips) y F9 (gamificación) reutilizarán los acentos decorativos de F7.
