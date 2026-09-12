@@ -224,11 +224,21 @@ export function ConversationClient({ conversationId, otherUser, currentUserId }:
               )}
               <div className={`max-w-[75%] ${isMine ? 'items-end' : 'items-start'} flex flex-col gap-1`}>
                 <div
-                  className={`px-3 py-2 rounded-2xl text-sm leading-relaxed ${
+                  className="px-3.5 py-2.5 text-sm leading-relaxed"
+                  style={
                     isMine
-                      ? 'bg-accent-positive text-on-accent-positive rounded-tr-sm'
-                      : 'bg-surface-elevated text-text-primary rounded-tl-sm'
-                  }`}
+                      ? {
+                          background: 'oklch(68% 0.24 350)',
+                          color: 'oklch(15% 0.02 350)',
+                          fontWeight: 500,
+                          borderRadius: '20px 20px 4px 20px',
+                        }
+                      : {
+                          background: 'oklch(26% 0.025 280)',
+                          color: 'oklch(97% 0.004 280)',
+                          borderRadius: '20px 20px 20px 4px',
+                        }
+                  }
                 >
                   {msg.content}
                 </div>
