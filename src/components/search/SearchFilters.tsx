@@ -149,14 +149,13 @@ export function SearchFilters({
           ))}
         </select>
 
-        {resultCount > 0 && (
-          <button
-            onClick={onRandomize}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-border text-muted hover:text-text hover:border-text/30 text-sm transition-colors ml-auto"
-          >
-            🎲 {t("randomize" as SearchTranslationKey)}
-          </button>
-        )}
+        <button
+          onClick={onRandomize}
+          disabled={resultCount === 0}
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-border text-muted hover:text-text hover:border-text/30 text-sm transition-colors ml-auto disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:text-muted disabled:hover:border-border"
+        >
+          🎲 {t("randomize" as SearchTranslationKey)}
+        </button>
       </div>
 
       {/* Expanded panel */}
