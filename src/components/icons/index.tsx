@@ -359,3 +359,11 @@ export const IconManga: KIcon = (props) => (
     <rect x="18" y="3" width="3" height="18" rx="1.4" opacity="0.55" />
   </svg>
 )
+
+/** Cerrar/limpiar — aspa chunky (dos barras cruzadas redondeadas). */
+export const IconClose: KIcon = (props) => (
+  <svg {...base(props)}>
+    <rect x="4.5" y="10.5" width="15" height="3" rx="1.5" transform="rotate(45 12 12)" />
+    <rect x="4.5" y="10.5" width="15" height="3" rx="1.5" transform="rotate(-45 12 12)" />
+  </svg>
+)

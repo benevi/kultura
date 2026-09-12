@@ -17,7 +17,8 @@ import {
   DISCOVER_MAX_PAGES,
   PAGE_SIZE as DISCOVER_PAGE_SIZE,
 } from "@/lib/api/pagination";
-import type { MediaItem } from "@/types/media";
+import type { MediaItem, MediaType } from "@/types/media";
+import { searchByTypePaged, type SearchPage } from "@/lib/api/search";
 
 /** Familias agregadas, en orden canónico (= orden de interleave popularity). */
 export const FAMILIES = [
@@ -116,6 +117,68 @@ export function roundForPage(page: number): number {
 /** Página global → offset dentro del pool de su ronda. */
 export function offsetInRound(page: number): number {
   return ((Math.max(1, page) - 1) % PAGES_PER_ROUND) * PAGE_SIZE;
+}
+
+/**
+ * Modo "all" + BÚSQUEDA de texto (E-DISCOVER-SEARCH-MERGE).
+ *
+ * Mismo esquema de rondas que `fetchAggregateData`, pero la fuente de cada
+ * familia es su BUSCADOR (`searchByTypePaged`) en vez del catálogo. El orden es
+ * siempre interleave round-robin: en búsqueda manda la relevancia que devuelve
+ * cada proveedor, y no existe una clave global comparable entre familias.
+ *
+ * Devuelve `SearchPage` (no `DiscoverResult`) porque en búsqueda no hay
+ * `fetchErrorKind` por familia: `fetchDiscoverData` envuelve el error.
+ */
+export async function fetchAggregateSearch(
+  query: string,
+  page: number,
+  locale?: string | null
+): Promise<SearchPage> {
+  if (page > DISCOVER_MAX_PAGES) {
+    return { items: [], totalPages: DISCOVER_MAX_PAGES, hasMore: false };
+  }
+
+  const round = roundForPage(page);
+  const settled = await Promise.allSettled(
+    FAMILIES.map((type) =>
+      searchByTypePaged(query, type as MediaType, round, locale)
+    )
+  );
+
+  const lists: MediaItem[][] = [];
+  let anyFamilyHasMore = false;
+  for (const result of settled) {
+    // Una familia que falla (sin key, rate-limit, red) no rompe la búsqueda
+    // agregada: simplemente no aporta resultados.
+    if (result.status !== "fulfilled") continue;
+    lists.push(result.value.items);
+    if (result.value.hasMore) anyFamilyHasMore = true;
+  }
+
+  const merged = interleave(lists);
+  const start = offsetInRound(page);
+  const items = merged.slice(start, start + PAGE_SIZE);
+
+  const poolHasMore =
+    start + PAGE_SIZE < merged.length && offsetInRound(page + 1) > start;
+  const nextRoundExists =
+    anyFamilyHasMore && round * PAGES_PER_ROUND < DISCOVER_MAX_PAGES;
+
+  return {
+    items,
+    totalPages: anyFamilyHasMore
+      ? null
+      : Math.min(
+          Math.max(
+            (round - 1) * PAGES_PER_ROUND +
+              Math.min(Math.ceil(merged.length / PAGE_SIZE), PAGES_PER_ROUND),
+            1
+          ),
+          DISCOVER_MAX_PAGES
+        ),
+    hasMore: (poolHasMore || nextRoundExists) && page < DISCOVER_MAX_PAGES,
+  };
 }
 
 /**

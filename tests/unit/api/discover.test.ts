@@ -24,6 +24,11 @@ vi.mock("@/lib/api/jikan", async (importOriginal) => {
   };
 });
 
+// E-DISCOVER-SEARCH-MERGE: la rama de búsqueda delega en el buscador por familia.
+vi.mock("@/lib/api/search", () => ({
+  searchByTypePaged: vi.fn(),
+}));
+
 vi.mock("@/lib/api/googlebooks", async (importOriginal) => {
   // E-BOOKS-GOOGLE: solo se mockea la llamada de red; los helpers puros
   // (totalPages/startIndex/cover) son los reales.
@@ -66,6 +71,7 @@ import { fetchDiscoverData } from "@/lib/api/discover";
 import { discoverMovies, discoverTV } from "@/lib/api/tmdb";
 import { getPopularAnime, getPopularManga } from "@/lib/api/jikan";
 import { searchGoogleBooks } from "@/lib/api/googlebooks";
+import { searchByTypePaged } from "@/lib/api/search";
 import { DISCOVER_MAX_PAGES } from "@/lib/api/pagination";
 import { getPopularGames, discoverGames } from "@/lib/api/rawg";
 import { getRecentComics } from "@/lib/api/comicvine";
@@ -878,5 +884,86 @@ describe("fetchDiscoverData — tope común de páginas (E79-s3, antes E89)", ()
     } as never);
     const game = await fetchDiscoverData("game", 1);
     expect(game.totalPages).toBe(DISCOVER_MAX_PAGES);
+  });
+});
+
+// ── Rama de BÚSQUEDA (E-DISCOVER-SEARCH-MERGE) ───────────────────────────────
+
+describe("fetchDiscoverData — modo búsqueda (query)", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    vi.mocked(searchByTypePaged).mockResolvedValue({
+      items: [{ id: "movie_1", title: "Dune" } as never],
+      totalPages: 12,
+      hasMore: true,
+    });
+  });
+
+  it("con query delega en searchByTypePaged (NO en el catálogo de descubrir)", async () => {
+    const result = await fetchDiscoverData("movie", 2, {}, "en", "dune");
+    expect(searchByTypePaged).toHaveBeenCalledWith("dune", "movie", 2, "en");
+    expect(discoverMovies).not.toHaveBeenCalled();
+    expect(result.items).toHaveLength(1);
+    expect(result.totalPages).toBe(12);
+    expect(result.hasMore).toBe(true);
+    expect(result.fetchErrorKind).toBeNull();
+  });
+
+  it("sin query NO toca el buscador (catálogo normal)", async () => {
+    vi.mocked(discoverMovies).mockResolvedValue({
+      results: [{ id: 1, title: "M" }],
+      total_pages: 3,
+    } as never);
+    await fetchDiscoverData("movie", 1, {});
+    expect(searchByTypePaged).not.toHaveBeenCalled();
+  });
+
+  it("respeta el tope común de páginas también en búsqueda", async () => {
+    vi.mocked(searchByTypePaged).mockResolvedValue({
+      items: [],
+      totalPages: 50_000,
+      hasMore: true,
+    });
+    const result = await fetchDiscoverData("movie", 1, {}, "es", "dune");
+    expect(result.totalPages).toBe(DISCOVER_MAX_PAGES);
+  });
+
+  it("totalPages null del buscador se conserva (ventana abierta)", async () => {
+    vi.mocked(searchByTypePaged).mockResolvedValue({
+      items: [],
+      totalPages: null,
+      hasMore: true,
+    });
+    const result = await fetchDiscoverData("all", 1, {}, "es", "dune");
+    expect(result.totalPages).toBeNull();
+  });
+
+  it("un fallo del buscador devuelve fetchErrorKind sin lanzar", async () => {
+    vi.mocked(searchByTypePaged).mockRejectedValue(new Error("boom"));
+    const result = await fetchDiscoverData("movie", 1, {}, "es", "dune");
+    expect(result.items).toEqual([]);
+    expect(result.fetchErrorKind).toBe("generic");
+    expect(result.hasMore).toBe(false);
+  });
+
+  it("429 de Jikan en búsqueda → fetchErrorKind rate-limit", async () => {
+    vi.mocked(searchByTypePaged).mockRejectedValue(
+      new JikanError("/anime", 429)
+    );
+    const result = await fetchDiscoverData("anime", 1, {}, "es", "cowboy");
+    expect(result.fetchErrorKind).toBe("rate-limit");
+  });
+
+  it("página fuera del tope → vacío sin error y sin buscar", async () => {
+    const result = await fetchDiscoverData(
+      "movie",
+      DISCOVER_MAX_PAGES + 5,
+      {},
+      "es",
+      "dune"
+    );
+    expect(result.items).toEqual([]);
+    expect(result.fetchErrorKind).toBeNull();
+    expect(searchByTypePaged).not.toHaveBeenCalled();
   });
 });

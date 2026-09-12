@@ -41,13 +41,19 @@ describe('MoreSheet', () => {
     expect(container).toBeEmptyDOMElement()
   })
 
-  it('renderiza los 5 items cuando isOpen=true', () => {
+  it('renderiza los 4 items cuando isOpen=true', () => {
     render(<MoreSheet isOpen onClose={vi.fn()} />)
     expect(screen.getByText('Amigos')).toBeInTheDocument()
     expect(screen.getByText('Grupos')).toBeInTheDocument()
     expect(screen.getByText('Listas')).toBeInTheDocument()
     expect(screen.getByText('Sugerencias')).toBeInTheDocument()
-    expect(screen.getByText('Buscar')).toBeInTheDocument()
+  })
+
+  // E-DISCOVER-SEARCH-MERGE: la entrada "Buscar" sale del sheet — el buscador
+  // vive dentro de /discover, que ya está en el BottomNav.
+  it('ya NO incluye una entrada "Buscar"', () => {
+    render(<MoreSheet isOpen onClose={vi.fn()} />)
+    expect(screen.queryByText('Buscar')).not.toBeInTheDocument()
   })
 
   it('los items apuntan a sus rutas i18n-aware', () => {
@@ -56,7 +62,6 @@ describe('MoreSheet', () => {
     expect(screen.getByText('Grupos').closest('a')).toHaveAttribute('href', '/groups')
     expect(screen.getByText('Listas').closest('a')).toHaveAttribute('href', '/lists')
     expect(screen.getByText('Sugerencias').closest('a')).toHaveAttribute('href', '/suggestions')
-    expect(screen.getByText('Buscar').closest('a')).toHaveAttribute('href', '/search')
   })
 
   it('panel tiene role=dialog y aria-modal', () => {
