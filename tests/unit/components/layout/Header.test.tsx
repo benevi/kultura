@@ -42,16 +42,16 @@ vi.mock("@/components/ui/Button", () => ({
 import { Header } from "@/components/layout/Header";
 
 describe("Header", () => {
-  it("renderiza el texto KULTURA", async () => {
+  it("renderiza el texto kultura (wordmark del logo)", async () => {
     const HeaderResolved = await Header();
     render(HeaderResolved);
-    expect(screen.getByText("KULTURA")).toBeInTheDocument();
+    expect(screen.getByText("kultura")).toBeInTheDocument();
   });
 
   it("contiene un enlace al home (/)", async () => {
     const HeaderResolved = await Header();
     render(HeaderResolved);
-    const homeLink = screen.getByText("KULTURA").closest("a");
+    const homeLink = screen.getByText("kultura").closest("a");
     expect(homeLink).toHaveAttribute("href", "/");
   });
 

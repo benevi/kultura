@@ -709,22 +709,23 @@ No bloqueantes. Atacar solo después de A–D.
   tsc 0, lint 0, vitest **1311 passed** (sin tests nuevos — hallazgos de contraste verificados por cálculo, no por snapshot; el cambio de clase no altera ningún texto/rol que los tests existentes verifiquen).
   Depende de: F3a, F3b, F4.
 
-  Resto de pantallas (Library, Profile, Social, Chat, Groups) se planifican como F6+ una vez validado el lenguaje visual en F0-F5 — no se especifican aún para no comprometerse a un alcance que F0 puede cambiar.
+- [x] **F7. Paleta multicolor de acentos decorativos (tokens DS)** — _cerrada 2026-09-12, commit `dfedce2`_
+  Decisión tomada de forma autónoma (autonomía delegada por el usuario el mismo día — ver `CLAUDE.md`): adoptar la paleta multicolor completa del mockup F0 ya aprobado en vez de quedarse solo en el verde de F2. 4 tokens nuevos en `globals.css`/`tailwind.config.ts`: `--accent-pink` (#FF4FA3), `--accent-lime` (#B4FF3D), `--accent-orange` (#FF7A3D), `--accent-purple` (#9B6BFF), cada uno con su `--on-accent-*` (texto oscuro encima, contraste ≥5.9:1 en los 4). Puramente decorativos — variedad visual para mood-chips/stories/badges/logotipo — sin tocar ni sustituir los 4 acentos semánticos existentes (`accent-positive/highlight/info/danger`). No aplicados todavía a ningún componente de negocio salvo el logotipo (F6). Reutilizables por F8 (mood-chips) y F9 (gamificación) cuando arranquen.
+  Hecho cuando: tokens registrados en ambos archivos, disponibles como `text-accent-pink`/`bg-accent-pink` (y lime/orange/purple) vía Tailwind, tsc/lint/vitest en verde. **Verificado.**
+  Depende de: F0.
 
-  **Piezas del mockup F0 que nunca se implementaron** (hallazgo 2026-09-12, comparación exhaustiva app real vs. artefacto "Kultura Editorial" pedida por el usuario tras el primer despliegue del Bloque F). F3a/F3b cubrieron deliberadamente solo MediaCard/grid — estas piezas quedan fuera de ese alcance y se registran para decidir cuándo abordarlas, no para implementarlas ya:
+- [x] **F6. Logotipo de marca propio (sustituye el texto plano "KULTURA")** — _cerrada 2026-09-12, commit `2521fab`_
+  Nuevo `src/components/layout/Logo.tsx`: monograma abstracto (badge redondeado con 3 formas solapadas y rotadas en los acentos decorativos de F7 — lima, rosa, morado) + wordmark `kultura` en minúsculas (`font-display`) con un cuadradito de color rotado sustituyendo el punto final, en vez de un gradiente/icono de stock. Todo SVG/JSX inline, sin assets externos, mismo criterio que `icons/index.tsx`. Sustituye el `<span>KULTURA</span>` plano en `Header.tsx` y `AuthHeader.tsx`; texto "kultura" sigue siendo accesible vía `screen.getByText` (tests actualizados a minúsculas, misma intención: el logo enlaza a `/` o `/home`). Hallazgo corregido de paso en `AuthHeader.tsx`: los iconos de búsqueda y campana eran SVG inline genéricos (lupa/campana "de manual") en vez del sistema de iconos propio F1b — sustituidos por `IconSearch`/`IconBell` (mismo tamaño, mismo comportamiento, badge de no-leídos intacto).
+  Hecho cuando: verificación visual real (Chromium headless) del logo en landing (`Header`) y shell autenticado (`AuthHeader`), mobile (375px) y desktop, sin romper el layout del header; tsc/lint/vitest en verde sin regresiones. **Verificado.**
+  Depende de: F0, F1, F1b, F7.
 
-  - [ ] **F6. Logotipo de marca propio en el header**
-    El mockup F0 diseña un logotipo real: badge cuadrado redondeado con 3 píldoras de color solapadas y rotadas + wordmark "kultura" con un cuadradito rosa rotado a modo de punto tipográfico. La app real solo muestra el texto "KULTURA" en verde, sin ningún elemento gráfico — contradice la regla explícita del usuario ("nunca logotipos genéricos... nadie tiene que tener la sensación de estar usando una aplicación hecha por IA"), que hasta ahora solo se ha aplicado a iconos de UI (F1b), no al logotipo de marca en sí.
-    Hecho cuando: el header (autenticado y landing) muestra el logotipo compuesto del mockup, no solo texto.
-    Depende de: F0.
+  Resto de pantallas (Library, Profile, Social, Chat, Groups) se planifican una vez validado el lenguaje visual en F0-F5 — no se especifican aún para no comprometerse a un alcance que F0 puede cambiar.
 
-  - [ ] **F7. Paleta multicolor de acentos (más allá del verde)**
-    El mockup F0 define una paleta oklch completa (`--pink`, `--lime`, `--orange`, `--purple`, `--blue`, `--yellow`) usada en mood-chips, avatares con degradado cónico (stories de amigos), badges variados. F2 solo resolvió el rojo legado migrando a los tokens DS ya existentes (`accent-positive` verde, `accent-highlight` ámbar, `accent-info` azul, `accent-danger`); nunca se introdujo la paleta multicolor nueva del mockup. Decidir: ¿se adopta la paleta completa del mockup como tokens DS nuevos, o el verde único ya resuelto en F2 es la dirección definitiva? Requiere decisión del usuario antes de implementar.
-    Depende de: F0, F2.
+  **Piezas del mockup F0 que aún faltan** (F8/F9 — reutilizarán los acentos decorativos de F7 recién creados):
 
   - [ ] **F8. Mood-chips en Descubrir/Home** ("🍿 Para maratonear", "😭 Para llorar a moco tendido", etc.)
     El mockup los usa como filtro/entrada alternativa a los géneros formales, tanto en Home (chips bajo el saludo) como en Discover (chips secundarios bajo los tipos). No implementados — Discover sigue usando únicamente los filtros estructurados existentes (Género/Año/Valoración/...). Decidir si son un filtro real (necesitaría mapear cada mood a criterios de búsqueda concretos) o solo decorativos.
-    Depende de: F0.
+    Depende de: F0, F7.
 
   - [ ] **F9. Gamificación (racha de días activos, "🔥 12 días")**
     El mockup muestra una racha junto al logo en Home. Requiere lógica nueva (contador de días consecutivos de actividad) — no es solo UI. No planificado en detalle, requiere decisión de producto sobre qué cuenta como "actividad".
