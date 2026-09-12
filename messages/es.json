@@ -115,6 +115,7 @@
   },
   "discover": {
     "title": "Descubrir",
+    "searchPlaceholder": "Busca por título, mood...",
     "filterBy": "Filtrar por",
     "page": "Página",
     "previous": "Anterior",
