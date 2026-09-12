@@ -47,7 +47,7 @@ Next.js 14 App Router · React 18 · TypeScript strict · Tailwind CSS 3 · Supa
 | Anime+Manga | Jikan v4 (MyAnimeList) | api.jikan.moe/v4 | — · **sirve hoy anime Y manga** |
 | Books | **Google Books** | www.googleapis.com/books/v1 | `?key=GOOGLE_BOOKS_KEY` (opcional; sin key la cuota anónima por IP puede ser 0 → 429) |
 | Books (legacy) | Open Library | openlibrary.org | — (solo fichas de ids `book_OL…` ya guardados) |
-| Comics | ComicVine | comicvine.gamespot.com/api | `?api_key=COMICVINE_KEY` (clave presente, sin handler — E6) |
+| Comics | ComicVine | comicvine.gamespot.com/api | `?api_key=COMICVINE_KEY` — **implementado y en uso** (`src/lib/api/comicvine.ts` + `comicvine-maps.ts`: Descubrir, búsqueda y ficha) |
 | Manga (preparado, no en pipeline) | MangaDex | api.mangadex.org | — · cliente localizado pero NO enchufado: la familia manga la sirve Jikan → **E-MANGA-SOURCE** |
 | Games | RAWG | api.rawg.io/api | `?key=RAWG_API_KEY` |
 | AI | Anthropic Claude (`claude-haiku-4-5`) | api.anthropic.com | `ANTHROPIC_API_KEY` |
@@ -77,7 +77,8 @@ TMDB_API_KEY=               # server-only
 RAWG_API_KEY=               # server-only
 GOOGLE_BOOKS_KEY=           # server-only — OPCIONAL, REACTIVADO en E-BOOKS-GOOGLE (libros → Google Books).
                             # La API responde sin key, pero su cuota anónima va por IP y suele estar a 0 en cloud → ponerla en producción.
-COMICVINE_KEY=              # server-only — presente, sin uso en código actual (E6)
+COMICVINE_KEY=              # server-only — EN USO (cómics: Descubrir/búsqueda/ficha). Sin ella, `getKey()` lanza y la familia cómic queda vacía;
+                            # el resto de la app no se ve afectada.
 ANTHROPIC_API_KEY=          # server-only — Anthropic Claude (recomendaciones IA, claude-haiku-4-5)
 NEXT_PUBLIC_SUPABASE_URL=
 NEXT_PUBLIC_SUPABASE_ANON_KEY=
@@ -138,7 +139,7 @@ src/lib/
 src/i18n/   navigation · request · routing
 src/middleware.ts
 src/types/  library · list · media · supabase · user
-messages/   es.json · en.json   (594 keys c/u)
+messages/   es.json · en.json   (596 keys c/u — recontadas 2026-09-12)
 supabase/migrations/
 tests/{unit,integration,contract,e2e}/
 ```
@@ -168,7 +169,8 @@ type MediaItem = {
 
 ## DB Schema
 
-> 17 tablas reales en producción. Schema completo en `supabase/migrations/20260502233945_remote_schema.sql` (baseline B2, verificada contra db_snapshot.txt el 2026-05-03). RLS activado en las 17 tablas (49 policies). Los tipos TypeScript correspondientes están en `src/types/supabase.ts`.
+> **18 tablas** reales en producción. Baseline (17 tablas, 49 policies) en `supabase/migrations/20260502233945_remote_schema.sql` (verificada contra db_snapshot.txt el 2026-05-03); la 18ª es `group_invitations` (migración `20260601000002`). RLS activado en las 18 tablas, **53 policies** vigentes tras aplicar las 14 migraciones (recuento del audit de E98, 2026-07-16). Los tipos TypeScript correspondientes están en `src/types/supabase.ts`.
+> Las tablas listadas abajo son el SQL canónico de la baseline; `group_invitations` no aparece en el bloque (ver su migración).
 
 ```sql
 create table users (
