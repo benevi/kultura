@@ -177,12 +177,12 @@ const DETAIL_TYPES: MediaType[] = ['movie', 'tv', 'anime', 'book', 'manga', 'gam
  * y el componente cae al fallback /search. Un fallo no tumba el resto.
  */
 async function resolveMediaRefs(recs: AiRec[]): Promise<AiRec[]> {
-  return Promise.all(
-    recs.map(async (rec) => {
+  const resolved = await Promise.all(
+    recs.map(async (rec): Promise<AiRec | null> => {
       try {
         const results = await searchByType(rec.searchQuery, rec.type)
         const top = results[0]
-        if (!top) return rec
+        if (!top || !top.poster) return null
         return {
           ...rec,
           id: top.id,
@@ -193,10 +193,12 @@ async function resolveMediaRefs(recs: AiRec[]): Promise<AiRec[]> {
         }
       } catch (err) {
         log.error('resolveMediaRefs failed', { searchQuery: rec.searchQuery, type: rec.type, err })
-        return rec
+        return null
       }
     })
   )
+  // Sin portada no hay card que mostrar: se descarta en vez de caer a /search.
+  return resolved.filter((rec): rec is AiRec => rec !== null)
 }
 
 /**
