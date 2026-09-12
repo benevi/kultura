@@ -4,6 +4,7 @@ import Image from 'next/image'
 import { Link } from '@/i18n/navigation'
 import { useTranslations } from 'next-intl'
 import { KButton } from '@/components/ui/KButton'
+import { IconFilm } from '@/components/icons'
 
 export interface HeroItem {
   media_id: string
@@ -28,7 +29,7 @@ export function HeroSection({ item }: HeroSectionProps) {
   if (!item?.media) {
     return (
       <section className="bg-surface-default border border-surface-border rounded-card p-6 flex flex-col gap-3">
-        <span className="text-3xl">🎬</span>
+        <IconFilm className="w-8 h-8 text-text-secondary" />
         <div>
           <p className="font-display text-lg font-semibold text-text-primary">{t('welcomeTitle')}</p>
           <p className="font-body text-sm text-text-secondary mt-1">{t('welcomeSubtitle')}</p>

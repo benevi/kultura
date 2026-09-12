@@ -18,6 +18,7 @@ import { ReportButton } from '@/components/social/ReportButton'
 import { MediaRow } from '@/components/home/MediaRow'
 import { KButton } from '@/components/ui/KButton'
 import { Link } from '@/i18n/navigation'
+import { IconLibrary } from '@/components/icons'
 import type { DbFriendship } from '@/types/supabase'
 import { getTranslations } from 'next-intl/server'
 
@@ -157,7 +158,7 @@ export default async function ProfilePage({ params }: Props) {
       {/* Empty state cuando la biblioteca está vacía */}
       {!hasAnyContent && (
         <div className="flex flex-col items-center gap-3 py-16 text-center">
-          <span className="text-5xl">📚</span>
+          <IconLibrary className="w-12 h-12 text-text-tertiary" />
           <p className="font-medium" style={{ color: 'var(--text-primary)' }}>
             {isOwnProfile
               ? t('emptyOwn')
