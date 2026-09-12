@@ -97,12 +97,14 @@ En paralelo a F4/F5 se lanzó un agente en worktree aislado para **F6** (logotip
 
 PR benevi/kultura#4 abierta con F4-F7 (commits hasta `1caa42f`), CI en curso. Mientras se revisaba, se cerró de paso **E100** (foco de teclado con tokens shadcn muertos en `button.tsx`, hallazgo de F5) — commit `d10e0d6`, pendiente de push.
 
+PR #4 fusionada en `master` (commit `05b9cbe`). Usuario verificó producción con capturas reales y reportó que "no se parece en nada" al mockup F0 — diagnóstico verificado contra el código real (no solo la captura): el grid bento, el match score y toda la capa de producto funcionan; lo que nunca se tocó es el cromado interactivo de Discover y la navegación desktop, que siguen siendo UI de antes de Bloque F. Registrado como **Bloque G** (ver BACKLOG.md). Usuario autorizó explícitamente reconstrucción a fondo si hiciera falta y uso de múltiples agentes/sesiones en paralelo — evaluado que NO hace falta reconstruir nada (la app funciona correctamente), solo completar el vestido visual de piezas concretas ya identificadas.
+
 ## Tarea activa
 
-### Push del commit E100 a la PR #4 abierta + pausa para revisión del usuario
+### Bloque G — G1 (Discover: búsqueda + pills de tipo) y G2 (NavLinks desktop) en paralelo
 
-**Qué cambia:** pushear `d10e0d6` (E100) a la misma rama/PR #4 ya abierta, confirmar CI en verde sobre el head final, y pausar aquí — se ha acumulado bastante trabajo autónomo en una sola sesión (gobierno de CLAUDE.md + F4-F7 + E100) y toca dar visibilidad al usuario antes de abrir un nuevo frente grande (F8/F9 necesitan decisión de producto; el resto de Bloque F son pantallas nuevas, alcance considerable).
+**Qué cambia:** dos agentes en worktrees aislados ejecutando G1 y G2 simultáneamente (ver BACKLOG.md para el alcance exacto de cada uno).
 
-**Cómo sé que funciona:** push exitoso, CI verde sobre el head final de la PR.
+**Cómo sé que funciona:** cada agente verifica tsc/lint/vitest en verde + verificación visual real antes de cerrar; al fusionar ambos worktrees en esta rama, re-verificación completa del árbol combinado.
 
-**Archivos que toco:** ninguno nuevo.
+**Archivos que toco:** los que determine cada agente dentro de su alcance acotado (`DiscoverClient.tsx`/`FilterBar.tsx` para G1; `NavLinks.tsx` para G2) + `docs/BACKLOG.md`/`DONE.md` al cerrar cada uno.
