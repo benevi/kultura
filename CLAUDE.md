@@ -1,4 +1,52 @@
-# KULTURA — Sistema de diseño (fuente de verdad)
+# KULTURA — CLAUDE.md
+
+## Cómo trabajar en este proyecto (instrucciones operativas)
+
+**Meta-regla, la más importante de esta sección:** cualquier indicación
+operativa que el usuario dé sobre cómo trabajar (no sobre diseño visual —
+eso va en la sección de más abajo) se añade AQUÍ, para no depender de la
+memoria de una conversación concreta y saber en todo momento cómo actuar.
+
+- **Tests**: no ejecutar `vitest run` (suite completa) de forma rutinaria
+  mientras se itera — pierde tiempo. Usar archivos de test concretos
+  (`npx vitest run tests/unit/ruta/al/archivo.test.tsx`) relacionados con
+  lo que se está tocando. Reservar la suite completa (y `npx playwright
+  test` si aplica) para checkpoints explícitos: justo antes de un push
+  importante o al cerrar un bloque de trabajo.
+- **Verificación mínima antes de cada push**: `npx tsc --noEmit` limpio +
+  los tests unitarios directamente relacionados con los archivos tocados
+  en verde. No hace falta más para cada commit intermedio.
+- **Máximo paralelismo cuando se pida** ("usa agentes en paralelo", "usa
+  todo lo que tengas a tu disposición", etc.): lanzar varios `Agent` en
+  paralelo con `isolation: "worktree"`, uno por área de trabajo
+  independiente (pantalla, componente, feature — nunca dos agentes sobre
+  el mismo archivo). Cada agente debe: leer este archivo primero, hacer
+  solo el cambio que se le pide (paso puramente visual salvo que se diga
+  lo contrario), verificar con `tsc` + tests dirigidos, commitear
+  localmente (sin pushear, sin PR). Al terminar cada uno: revisar el
+  resultado, fusionar (`git merge --no-ff`) en la rama de trabajo,
+  resolver a mano los conflictos que aparezcan (los worktrees pueden
+  partir de un commit base distinto al HEAD actual si se lanzaron antes
+  de un push reciente — comprobar con `git merge-base` si algo no
+  cuadra), volver a verificar (`tsc` + tests dirigidos) y solo entonces
+  pushear. Limpiar los worktrees y ramas temporales (`git worktree
+  remove`, `git branch -d`) una vez fusionados.
+- **Una tarea o lote coherente de trabajo por commit**, mensaje
+  descriptivo en español (prefijo `[design]`/`[fix]`/`[cleanup]` según el
+  tipo). Sin `Co-Authored-By` salvo que el arnés de la sesión lo exija
+  explícitamente.
+- **PR activa**: mientras haya una PR abierta y suscrita (referencia
+  actual: `benevi/kultura#5`), cada push se verifica contra CI antes de
+  darlo por bueno; los avisos rutinarios de Vercel (building/ready) no
+  requieren ninguna acción, solo los fallos de CI o comentarios de
+  revisión nuevos.
+- **No fusionar/mergear la PR sin autorización explícita y fresca del
+  usuario** para esa PR en concreto — una aprobación anterior no vale
+  automáticamente para el siguiente push.
+
+---
+
+# Sistema de diseño (fuente de verdad)
 
 Este documento es el ÚNICO criterio de diseño válido para Kultura. Sustituye
 cualquier paleta, componente o layout usado antes en el código o en mockups
@@ -117,15 +165,38 @@ inventar uno.
   (extraerlos del canvas "Kultura Editorial" con el helper del skill de
   diseño), no desde memoria.
 
-## Cuando esto pase a código (Tailwind / componentes React)
+## Estado de la migración a código (Tailwind / componentes React)
 
-- Los tokens OKLCH de este documento deben mapearse 1:1 a las custom
-  properties CSS reales de la app (`globals.css` / `tailwind.config.ts`),
-  sustituyendo cualquier paleta hex previa. No mezclar ambos sistemas.
-- Los componentes reales (`MediaCard`, header/nav, chips, botones) deben
-  actualizarse para producir exactamente la marca visual descrita arriba
-  — no una aproximación. Si un componente existente no puede lograrlo sin
-  reescritura, se reescribe.
-- Esto es trabajo de implementación pendiente, no incluido en este
-  documento: este archivo fija el CRITERIO, no ejecuta la migración de
-  código. Confirmar con el usuario antes de tocar componentes reales.
+Los tokens OKLCH de este documento están mapeados 1:1 a las custom
+properties CSS reales (`globals.css`/`tailwind.config.ts`) — MISMOS
+nombres de variable que ya usaba el código (`--accent-positive`,
+`--surface-elevated`, etc.), valor nuevo; así se propaga solo a casi todo
+componente existente sin tocarlo. No mezclar con una paleta hex antigua.
+
+**Hecho:**
+- Tokens OKLCH + radios de chip/botón a píldora completa (999px).
+- `Logo` con la geometría literal de F0 (3 rectángulos rotados).
+- `MediaCard`: gradiente de poster determinista cuando no hay imagen real
+  (nunca gris plano) + acento radial opcional (`accentHue`) para las
+  cards "feature" del bento.
+- `KButton` ya es píldora completa (pesos 800/700 primario/secundario).
+- **Home, Discover y MediaDetail** ya tienen el acabado visual literal de
+  F0 (hero con badge colgante, bento con rotación + acento radial, layout
+  de dos columnas con badge colgante en MediaDetail).
+
+**Pendiente:** las 14 pantallas restantes (Landing, Login, Library,
+Search, Friends, Groups, GroupDetail, Chat, Notifications, Profile,
+Lists, ListDetail, Settings, Suggestions) heredan bien los colores vía
+custom properties pero no tienen todavía el acabado F0 específico de
+cada una (formas, sombras duras, chips colgantes, etc. — ver "Principio
+de extensión a pantallas nuevas" arriba). Migrar con el mismo patrón:
+un agente por pantalla o grupo de pantallas afines, siguiendo las
+instrucciones operativas de la cabecera de este documento.
+
+**Deuda detectada durante la migración, sin resolver todavía:**
+- `KButton` y `button.tsx` (shadcn-style) conviven como dos sistemas de
+  botón distintos — decidir cuál se queda antes de seguir migrando
+  pantallas que usan el segundo.
+- Revisar si el rojo legado de shadcn (`--primary: 0 79% 51%` en
+  `globals.css`) sigue siendo visible en algún componente real; no se ha
+  tocado en este pase.
