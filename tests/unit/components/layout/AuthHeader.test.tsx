@@ -48,7 +48,7 @@ describe('AuthHeader', () => {
   it('logo apunta a /home', async () => {
     const el = await AuthHeader({ profile: baseProfile, unreadCount: 0 })
     render(el)
-    const logo = screen.getByText('KULTURA').closest('a')
+    const logo = screen.getByText('kultura').closest('a')
     expect(logo).toHaveAttribute('href', '/home')
   })
 

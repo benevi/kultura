@@ -6,31 +6,32 @@ Web app de descubrimiento cultural (películas, series, anime, libros, cómics, 
 
 ## ⚡ Flujo de trabajo (LEER PRIMERO)
 
-**Antes de escribir código, leer en este orden:**
-1. `docs/NOW.md` — la única tarea activa.
-2. `docs/BACKLOG.md` — lista priorizada de pendientes (solo si NOW está vacío).
+### Objetivo del proyecto (la vara de medir todo lo demás)
 
-**Una tarea a la vez.** Si el usuario pide algo fuera de la tarea de NOW.md, responder:
-> "Eso no es la tarea activa en NOW.md (que es {tarea}). ¿Lo añadimos al BACKLOG o cambiamos de tarea?"
+Kultura tiene que llegar a un nivel de calidad técnica y sensorial que aguante comparación con apps con equipo de producto y diseño dedicados, con vistas a monetizar. Toda decisión — qué construir, en qué orden, cuánto pulir un detalle, si vale la pena una dependencia nueva — se evalúa contra esto: ¿esto acerca la app a "espectacular" (se ve y se siente premium, fluida, coherente) o es solo "funciona"? Ante la duda entre lo rápido y lo excelente, por defecto se elige excelente, salvo que el propio usuario indique lo contrario.
 
-**No expandir alcance.** Frases prohibidas: "aprovechando que toco este archivo", "ya que estoy aquí", "esto también debería". Lo que aparezca durante la ejecución va al BACKLOG, no al turno actual.
+**Autonomía total dentro de ese objetivo.** Libertad para decidir qué se construye y en qué orden, re-priorizar `docs/BACKLOG.md`, encadenar tareas sin pedir confirmación en cada cierre, y expandir el alcance de una tarea cuando sirve directamente a la calidad del resultado (dejando constancia del porqué en el commit/DONE, no pidiendo permiso primero). Pedir confirmación solo ante:
+- decisiones genuinamente irreversibles o de alto impacto (borrar datos, tocar producción fuera del flujo normal de PR, un cambio de dirección de marca entre opciones igual de válidas),
+- ambigüedad real donde el criterio del usuario pesa más que el propio (p. ej. dos direcciones de diseño igual de defendibles),
+- lo que ya exige el protocolo de git/PR de la sesión (fusionar una PR, push directo a una rama protegida) — eso sigue requiriendo autorización explícita, es una capa aparte de este archivo.
 
-**Criterio binario de hecho.** Al terminar, ejecutar los comandos de "Cómo sé que funciona" de NOW.md y pegar el output real. No "debería funcionar". Output pegado o no está hecho.
+**Paralelización.** Cuando haya trabajo independiente — rediseñar varias pantallas sin dependencias entre sí, escribir tests mientras se implementa otra pieza, investigar mientras avanza otra tarea — lanzar varios agentes en paralelo (herramienta Agent) en vez de secuenciar por costumbre.
 
-**Cierre de tarea (ejecutar en orden):**
-1. Verificar (output pegado).
-2. `git commit` con mensaje `[{ID}] {descripción}` (ej: `[A1] Rotar credenciales expuestas`).
+**`docs/NOW.md` / `docs/BACKLOG.md` son memoria del proyecto, no una jaula.** Siguen sirviendo para que cualquier sesión (o el propio usuario) entienda qué se hizo, por qué y qué queda — pero ya no imponen "una tarea, cerrar, parar y pedir permiso" en cada ciclo. Se pueden cerrar varias tareas seguidas, reordenar el backlog, o trabajar varias líneas en paralelo, si eso lleva antes al objetivo.
+
+**Criterio binario de hecho (se mantiene).** Al terminar cualquier tarea: ejecutar los comandos de verificación reales y pegar el output. "Debería funcionar" no cierra nada. Para cambios visuales/UI, verificación real significa además abrir la app (dev server o build) y mirarla — capturas si hace falta —, no solo tests en verde.
+
+**Cierre de tarea:**
+1. Verificar (output real pegado; captura si es visual).
+2. `git commit` con mensaje `[{ID}] {descripción}`.
 3. Añadir línea a `docs/DONE.md` con fecha + ID + hash.
 4. Marcar `[x]` en `docs/BACKLOG.md`.
-5. Sustituir contenido de `docs/NOW.md` con la siguiente tarea (rellenar 4 secciones: Qué cambia / Cómo sé que funciona / Archivos que toco / Cuándo paro).
-6. **Parar.** No empezar la siguiente sin confirmación del usuario.
-
-**Aprobación:** se aprueba **bloque** entero (A, B, C…), no tarea por tarea. Dentro de un bloque, encadenar tareas sin pedir permiso por cada una; pedir confirmación solo al cerrar el bloque.
+5. Seguir con la siguiente pieza de trabajo (misma línea u otra, o en paralelo) sin esperar confirmación — salvo que quede genuinamente bloqueado o toque uno de los puntos de la lista de arriba.
 
 ### Reglas de emergencia
-- **Bug en tarea anterior:** detener la actual, crear `{ID}-FIX` en NOW.md, arreglar, verificar, retomar.
+- **Bug en tarea anterior:** detener la actual, crear `{ID}-FIX`, arreglar, verificar, retomar.
 - **Dependencia bloqueante:** anotar en `docs/BLOCKERS.md` y proponer alternativa antes de seguir.
-- **Tarea demasiado grande:** detener, partir en `{ID}-A`, `{ID}-B` en BACKLOG, empezar por la primera.
+- **Tarea demasiado grande:** partirla en `{ID}-A`, `{ID}-B` en BACKLOG y seguir por la primera, sin parar a pedir permiso.
 - **Test imposible (caso edge real):** documentar en `docs/TEST_EXCEPTIONS.md` con justificación. No skipear silenciosamente.
 
 ---
@@ -320,6 +321,7 @@ create table group_posts (                -- feed de un grupo
 10. **Headers de seguridad: fuentes de verdad divididas.** Vercel gestiona HSTS (`max-age=63072000`, verificado 2026-05-03). `next.config.mjs` gestiona el resto: CSP, X-Frame-Options, X-Content-Type-Options, Referrer-Policy, Permissions-Policy. Antes de añadir un header nuevo, verificar en DevTools de producción si Vercel ya lo añade.
 11. **Verificación post-deploy NO se limita a headers HTTP, status codes y logs.** Incluye obligatoriamente un paso de uso funcional: abrir la app desplegada, navegar por las secciones principales (auth, biblioteca, feed, chat, grupos, perfil) e intentar las acciones críticas. Si algo falla visualmente o falta una sección, reportarlo aunque los headers y los tests estén verdes.
 12. **Leer [`docs/DEBUG_PRINCIPLES.md`](docs/DEBUG_PRINCIPLES.md) antes de diagnosticar o tocar cualquier pantalla.** Formaliza cuatro principios recurrentes: verificar estado real (no mensajes de herramienta ni docs viejos), no fiar de NOW.md como fuente de verdad, diagnosticar la raíz antes de escribir código, y revisar explícitamente pantallas de borde (login, landing, errores, rutas públicas) al cerrar cualquier sprint de migración o rediseño.
+13. **Ningún cambio visual/UI se da por hecho solo con tests en verde.** Antes de cerrar la tarea: levantar el dev server, navegar la pantalla afectada en mobile y desktop, y comprobar que se ve y se siente a la altura del objetivo del proyecto (arriba). Si algo desentona (espaciado, contraste, animación brusca, inconsistencia con el resto del sistema visual), es parte de la tarea arreglarlo antes de cerrar, no un ticket nuevo para el BACKLOG.
 
 ---
 

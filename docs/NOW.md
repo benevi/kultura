@@ -83,14 +83,26 @@ PR #2 fusionada a `master` (2026-09-12, commit `f8085ef`) con autorización expl
 
 F3a-FIX → ✅ **CERRADA 2026-09-12** (commit `f6c8d1d`). `computeMatchScores` excluye la afinidad de tipo cuando todos los items evaluados comparten tipo (Discover filtrado), redistribuyendo su peso entre género y social; sigue contribuyendo normalmente en modo agregado o listas mezcladas (GenreNews). +5 tests reproduciendo el escenario exacto de producción. Los 12 tests previos de F3a intactos. tsc 0, lint 0, vitest **1309 passed**, build verificado. Detalle en DONE.md / BACKLOG F3a-FIX.
 
+### Gobierno del proyecto actualizado (2026-09-12)
+
+El usuario pidió actualizar `CLAUDE.md` para operar con autonomía real hacia un objetivo explícito: máxima calidad técnica y sensorial, app "espectacular", con vistas a monetizar — incluyendo permiso para paralelizar con subagentes. Ver commit `[CLAUDE.md]` del mismo día. A partir de aquí, `NOW.md` deja de exigir "una tarea, cerrar, parar y pedir confirmación por ciclo"; sigue siendo memoria de continuidad entre sesiones, no una jaula.
+
+F4 → ✅ **CERRADA 2026-09-12** (commit `307a4c2`). El canvas de diseño original de esta pantalla (F0) no era accesible desde esta sesión de continuación (vivía en un canvas de una sesión anterior). Rediseñado con criterio propio coherente con F1/F1b/F2/F3a/F3b: hero cinematográfico a sangre (antes banda pequeña borrosa), poster grande `rounded-bento`, título a mayor escala, badge real de match score (reusa `computeMatchScores` de F3a para el item individual, mismo gate — nunca decorativo), "Detalles" con tiles e iconos propios (F1b) en vez de tabla de texto. Verificación visual real: harness temporal (borrado, no commiteado) + Chromium headless contra el CSS de Tailwind realmente compilado, mobile y desktop. +2 tests, tsc 0, lint 0, vitest **1311 passed**, build OK. Detalle en DONE.md / BACKLOG F4.
+
+F5 → ✅ **CERRADA 2026-09-12** (este commit). Auditoría real de accesibilidad sobre F1-F4: 4 fallos de contraste WCAG AA encontrados y corregidos en `MediaDetail.tsx` (`text-tertiary`→`text-secondary` en 4 sitios, verificado por cálculo de luminancia relativa, no a ojo); orden DOM/tabulación del grid bento (F3b) verificado matemáticamente sin bug real (el patrón de 6 celdas tila sin huecos, `grid-flow-row-dense` resulta inerte); `prefers-reduced-motion` confirmado con cobertura global; hallazgo de foco de teclado con tokens shadcn muertos en `button.tsx` registrado como **E100** (no arreglado aquí, toca un componente compartido fuera de Bloque F). tsc 0, lint 0, vitest **1311 passed**. Cierra la primera pasada completa de Bloque F sobre las 3 pantallas de F0 (Home/Discover/Media). Detalle en DONE.md / BACKLOG F5.
+
+En paralelo a F4/F5 se lanzó un agente en worktree aislado para **F6** (logotipo de marca propio) + **F7** (paleta multicolor de acentos, decisión tomada de forma autónoma: adoptar la paleta completa del mockup F0 ya aprobado en vez de quedarse solo en el verde de F2). Terminó con éxito (commits `dfedce2`/`2521fab`) y ya está **fusionado** en esta rama (merge commit `1caa42f`), re-verificado sobre el árbol completo: tsc 0, lint 0, vitest **1311 passed**, `npm run build` OK.
+
+**Bloque F — primera pasada sobre las 3 pantallas de F0 (Home/Discover/Media) completa:** F1, F1b, F2, F3a, F3a-FIX, F3b, F4, F5, F6, F7 cerradas. Quedan F8 (mood-chips) y F9 (gamificación) sin planificar en detalle (requieren alcance de producto), y el resto de pantallas (Library, Profile, Social, Chat, Groups) sin tocar todavía.
+
+PR benevi/kultura#4 abierta con F4-F7 (commits hasta `1caa42f`), CI en curso. Mientras se revisaba, se cerró de paso **E100** (foco de teclado con tokens shadcn muertos en `button.tsx`, hallazgo de F5) — commit `d10e0d6`, pendiente de push.
+
 ## Tarea activa
 
-### F4. Rediseño de ficha de Media (`/media/[type]/[id]`)
+### Push del commit E100 a la PR #4 abierta + pausa para revisión del usuario
 
-**Qué cambia:** aplicar la maquetación tipo "reportaje/portada" aprobada en F0 a la página de detalle (hero con backdrop, sinopsis, metadata, trailer). Antes de tocar código: releer `MediaDetail.dc.html` del canvas F0 para fijar el layout exacto — no reinventar sobre la marcha (mismo criterio que F3).
+**Qué cambia:** pushear `d10e0d6` (E100) a la misma rama/PR #4 ya abierta, confirmar CI en verde sobre el head final, y pausar aquí — se ha acumulado bastante trabajo autónomo en una sola sesión (gobierno de CLAUDE.md + F4-F7 + E100) y toca dar visibilidad al usuario antes de abrir un nuevo frente grande (F8/F9 necesitan decisión de producto; el resto de Bloque F son pantallas nuevas, alcance considerable).
 
-**Cómo sé que funciona:** captura real (Chromium headless) de la ficha de un título de cada familia relevante (movie/tv/anime/book al menos) mostrando el nuevo layout; trailer y metadata siguen funcionando; tsc/lint/vitest en verde; verificación en runtime real (`next build && next start`).
+**Cómo sé que funciona:** push exitoso, CI verde sobre el head final de la PR.
 
-**Archivos que toco:** por determinar tras releer el mockup F0 y localizar el/los componente(s) reales de la página `/media/[type]/[id]` (búsqueda inicial de la tarea).
-
-**Cuándo paro:** al cerrar F4, encadeno F5 (auditoría de accesibilidad) dentro del mismo bloque aprobado — Bloque F sigue en curso, sin pedir confirmación por tarea.
+**Archivos que toco:** ninguno nuevo.
