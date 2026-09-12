@@ -229,4 +229,17 @@ describe("MediaDetail", () => {
     expect(screen.getByText("El club de la lucha")).toBeInTheDocument();
     expect(screen.getByText("Fight Club")).toBeInTheDocument();
   });
+
+  it("muestra el badge de match cuando se pasa matchScore (F4)", async () => {
+    render(
+      await MediaDetail({ item: mockItem, initialEntry: null, isAuthenticated: false, matchScore: 82 })
+    );
+    const badge = screen.getByTestId("media-match-badge");
+    expect(badge).toHaveTextContent("82% MATCH");
+  });
+
+  it("no muestra el badge de match cuando matchScore es undefined (F4)", async () => {
+    render(await MediaDetail({ item: mockItem, initialEntry: null, isAuthenticated: false }));
+    expect(screen.queryByTestId("media-match-badge")).not.toBeInTheDocument();
+  });
 });
