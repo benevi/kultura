@@ -173,7 +173,9 @@
     "type": "Tipo",
     "rating": "Puntuación",
     "episodes": "Episodios",
-    "duration": "Duración"
+    "duration": "Duración",
+    "whyRecommended": "Por qué te lo recomendamos",
+    "whyRecommendedText": "Coincide con géneros que ya te gustan — {genres} — y tiene un {score}% de afinidad con tu biblioteca."
   },
   "library": {
     "status": {

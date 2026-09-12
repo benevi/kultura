@@ -121,19 +121,25 @@ describe("MediaDetail", () => {
     expect(posterImg).toBeInTheDocument();
   });
 
-  it("Hero renderiza fondo fallback (backdrop blur) cuando no hay poster ni backdrop", async () => {
+  it("Poster renderiza degradado con iniciales cuando no hay poster real", async () => {
     render(await MediaDetail({ item: mockItemMinimal, initialEntry: null, isAuthenticated: false }));
-    // Sin poster: muestra initials placeholder con texto
+    // Sin poster: muestra el degradado de fallback con las iniciales del título
     expect(screen.getByText("EL")).toBeInTheDocument();
   });
 
-  it("Hero usa backdrop como fondo borroso cuando existe", async () => {
+  // F0: MediaDetail usa un layout de dos columnas (poster + info) sin hero de
+  // backdrop a sangre — ese patrón era de la iteración F4, previa al canvas
+  // F0 ("Kultura Editorial"). `item.backdrop` ya no se pinta como imagen de
+  // fondo aparte; el poster real (o su degradado) es la única imagen del
+  // bloque izquierdo. Este caso cubre que un item con backdrop no rompe nada
+  // y sigue mostrando su poster real con normalidad.
+  it("Un item con backdrop sigue mostrando su poster real con normalidad", async () => {
     render(await MediaDetail({ item: mockItem, initialEntry: null, isAuthenticated: false }));
     const images = screen.getAllByAltText("Fight Club");
-    const backdropImg = images.find((img) =>
-      img.getAttribute("src")?.includes("backdrop.jpg")
-    );
-    expect(backdropImg).toBeInTheDocument();
+    const posterImg = images.find((img) => img.getAttribute("src")?.includes("poster.jpg"));
+    const backdropImg = images.find((img) => img.getAttribute("src")?.includes("backdrop.jpg"));
+    expect(posterImg).toBeInTheDocument();
+    expect(backdropImg).toBeUndefined();
   });
 
   it("Synopsis corta se muestra completa sin botón 'leer más'", async () => {
