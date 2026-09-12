@@ -684,6 +684,11 @@ No bloqueantes. Atacar solo después de A–D.
     Hecho cuando: captura real (Chromium headless) de Discover y Home con datos reales/mock mostrando el nuevo layout; paginación y filtros existentes siguen funcionando sobre el nuevo grid; tsc/lint/vitest en verde; verificación en runtime real (`next build && next start`).
     Depende de: F0, F1, F1b, F2, F3a.
 
+- [x] **F3a-FIX. Badge de match constante (siempre el mismo % dentro de una misma vista filtrada por tipo)** — _cerrada 2026-09-12, commit `f6c8d1d`_
+  Hallazgo en producción tras el merge de F3a/F3b (2026-09-12, verificado con capturas reales del usuario en `kultura-six.vercel.app/es/discover`): todas las cards de una página filtrada por un único tipo (p.ej. "Películas") muestran exactamente el mismo "% MATCH" (15% en el caso observado), sin ninguna variación entre títulos muy distintos entre sí. Causa raíz: cuando la vista ya está filtrada a un solo tipo, el componente "afinidad de tipo" (15% del peso, `scoreItem` en `match-score.ts`) es matemáticamente idéntico para todos los items de esa página — no aporta ninguna discriminación ahí, solo tiene sentido en modo agregado (`type=all`). Si además la afinidad de género (70% del peso) da 0 para todos (biblioteca sin solapamiento de género con el catálogo mostrado, o datos de género insuficientes), el resultado colapsa a una constante — el badge deja de transmitir personalización real, que era justo el requisito explícito del usuario para esta feature ("nunca un número decorativo").
+  Hecho cuando: en una vista filtrada por un solo tipo, el badge de match varía entre items reales de forma coherente con su género/señal social (o se omite si no hay ninguna señal discriminante, en vez de mostrar una constante); +tests que cubran el caso "filtro de tipo único" además de los ya existentes; tsc/lint/vitest en verde; verificado con datos reales o un fixture equivalente al escenario observado.
+  Depende de: F3a (cerrada). Prioridad alta — bug visible en producción sobre una feature recién entregada.
+
 - [ ] **F4. Rediseño de ficha de Media (`/media/[type]/[id]`)**
   Aplicar la maquetación tipo "reportaje/portada" aprobada en F0 a la página de detalle (hero, sinopsis, metadata, trailer).
   Depende de: F0, F1, F1b, F2.
@@ -693,3 +698,22 @@ No bloqueantes. Atacar solo después de A–D.
   Depende de: F3a, F3b, F4.
 
   Resto de pantallas (Library, Profile, Social, Chat, Groups) se planifican como F6+ una vez validado el lenguaje visual en F0-F5 — no se especifican aún para no comprometerse a un alcance que F0 puede cambiar.
+
+  **Piezas del mockup F0 que nunca se implementaron** (hallazgo 2026-09-12, comparación exhaustiva app real vs. artefacto "Kultura Editorial" pedida por el usuario tras el primer despliegue del Bloque F). F3a/F3b cubrieron deliberadamente solo MediaCard/grid — estas piezas quedan fuera de ese alcance y se registran para decidir cuándo abordarlas, no para implementarlas ya:
+
+  - [ ] **F6. Logotipo de marca propio en el header**
+    El mockup F0 diseña un logotipo real: badge cuadrado redondeado con 3 píldoras de color solapadas y rotadas + wordmark "kultura" con un cuadradito rosa rotado a modo de punto tipográfico. La app real solo muestra el texto "KULTURA" en verde, sin ningún elemento gráfico — contradice la regla explícita del usuario ("nunca logotipos genéricos... nadie tiene que tener la sensación de estar usando una aplicación hecha por IA"), que hasta ahora solo se ha aplicado a iconos de UI (F1b), no al logotipo de marca en sí.
+    Hecho cuando: el header (autenticado y landing) muestra el logotipo compuesto del mockup, no solo texto.
+    Depende de: F0.
+
+  - [ ] **F7. Paleta multicolor de acentos (más allá del verde)**
+    El mockup F0 define una paleta oklch completa (`--pink`, `--lime`, `--orange`, `--purple`, `--blue`, `--yellow`) usada en mood-chips, avatares con degradado cónico (stories de amigos), badges variados. F2 solo resolvió el rojo legado migrando a los tokens DS ya existentes (`accent-positive` verde, `accent-highlight` ámbar, `accent-info` azul, `accent-danger`); nunca se introdujo la paleta multicolor nueva del mockup. Decidir: ¿se adopta la paleta completa del mockup como tokens DS nuevos, o el verde único ya resuelto en F2 es la dirección definitiva? Requiere decisión del usuario antes de implementar.
+    Depende de: F0, F2.
+
+  - [ ] **F8. Mood-chips en Descubrir/Home** ("🍿 Para maratonear", "😭 Para llorar a moco tendido", etc.)
+    El mockup los usa como filtro/entrada alternativa a los géneros formales, tanto en Home (chips bajo el saludo) como en Discover (chips secundarios bajo los tipos). No implementados — Discover sigue usando únicamente los filtros estructurados existentes (Género/Año/Valoración/...). Decidir si son un filtro real (necesitaría mapear cada mood a criterios de búsqueda concretos) o solo decorativos.
+    Depende de: F0.
+
+  - [ ] **F9. Gamificación (racha de días activos, "🔥 12 días")**
+    El mockup muestra una racha junto al logo en Home. Requiere lógica nueva (contador de días consecutivos de actividad) — no es solo UI. No planificado en detalle, requiere decisión de producto sobre qué cuenta como "actividad".
+    Depende de: F0.

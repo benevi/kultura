@@ -79,6 +79,10 @@ F3a → ✅ **CERRADA 2026-09-11** (commit `6827e8d`). Módulo `src/lib/recommen
 
 F3b → ✅ **CERRADA 2026-09-11** (este commit). `MediaCard`/`MediaGrid` restyle (rounded-bento, badge de match real, layout bento opt-in) + `DiscoverClient` en bento con matchScores desde `/api/discover` + `MediaRow`/`GenreNews` con badge compacto desde `/api/genre-news`. Verificado con Chromium headless sobre el CSS compilado real (`next build && next start`, desktop+móvil). +14 tests, tsc 0, lint 0, vitest **1304 passed**. Detalle en DONE.md / BACKLOG F3b.
 
+PR #2 fusionada a `master` (2026-09-12, commit `f8085ef`) con autorización explícita del usuario. Bloque F desplegado a producción. Comparación exhaustiva app real vs. artefacto F0 pedida por el usuario tras el despliegue: coincide bien en tipografía/iconos/grid bento/colores base; no se implementó el logotipo de marca, la paleta multicolor completa, mood-chips ni gamificación del mockup (registrados como F6-F9 en BACKLOG, sin planificar aún). Se detectó además un bug real en producción sobre F3a (ver abajo) — regla de emergencia de CLAUDE.md: se detiene F4, se abre F3a-FIX.
+
+F3a-FIX → ✅ **CERRADA 2026-09-12** (commit `f6c8d1d`). `computeMatchScores` excluye la afinidad de tipo cuando todos los items evaluados comparten tipo (Discover filtrado), redistribuyendo su peso entre género y social; sigue contribuyendo normalmente en modo agregado o listas mezcladas (GenreNews). +5 tests reproduciendo el escenario exacto de producción. Los 12 tests previos de F3a intactos. tsc 0, lint 0, vitest **1309 passed**, build verificado. Detalle en DONE.md / BACKLOG F3a-FIX.
+
 ## Tarea activa
 
 ### F4. Rediseño de ficha de Media (`/media/[type]/[id]`)
