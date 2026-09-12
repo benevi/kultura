@@ -111,6 +111,26 @@ describe('scoreItem', () => {
     expect(score).toBeLessThanOrEqual(100)
     expect(score).toBeGreaterThanOrEqual(0)
   })
+
+  // F3a-FIX: con includeTypeAffinity=false (vista filtrada a un solo tipo), el
+  // peso de tipo se redistribuye entre género y social en vez de sumar un bono
+  // fijo que no discrimina nada entre items del mismo tipo.
+  describe('includeTypeAffinity: false (F3a-FIX)', () => {
+    it('redistribuye el peso de tipo a género en vez de sumarlo aparte', () => {
+      const score = scoreItem(item({ genres: ['Drama'], type: 'movie' }), profile, 0, {
+        includeTypeAffinity: false,
+      })
+      // genreScore=1 * (0.7/0.85) → round(82.35) = 82, sin bono de tipo
+      expect(score).toBe(82)
+    })
+
+    it('da 0 cuando no hay género ni social, aunque el tipo coincida con el perfil', () => {
+      const score = scoreItem(item({ genres: [], type: 'movie' }), profile, 0, {
+        includeTypeAffinity: false,
+      })
+      expect(score).toBe(0)
+    })
+  })
 })
 
 describe('computeMatchScores — gate por señal insuficiente', () => {
@@ -181,5 +201,91 @@ describe('computeMatchScores — gate por señal insuficiente', () => {
     // genreScore=1, typeScore=1, socialScore=1 (1/1 amigos con completed)
     // → round((1*0.7 + 1*0.15 + 1*0.15)*100) = 100
     expect(scores.get('movie_1')).toBe(100)
+  })
+
+  // F3a-FIX: reproduce el bug real visto en producción — vista filtrada a un
+  // solo tipo (Discover ?type=movie) donde, antes del fix, todos los items
+  // recibían el mismo % constante (el bono fijo de afinidad de tipo) sin
+  // importar cuánto coincidiera realmente su género con la biblioteca.
+  function makeSingleTypeSupabase(libraryRows: unknown[]) {
+    return {
+      from: vi.fn((table: string) => {
+        if (table === 'friendships') {
+          return {
+            select: vi.fn().mockReturnThis(),
+            eq: vi.fn().mockReturnThis(),
+            or: vi.fn().mockResolvedValue({ data: [] }), // sin amigos → social=0 siempre
+          }
+        }
+        return {
+          select: vi.fn().mockReturnThis(),
+          eq: vi.fn().mockResolvedValue({ data: libraryRows }),
+        }
+      }),
+    }
+  }
+
+  it('F3a-FIX: en una vista de un solo tipo, el score varía según género real (no una constante)', async () => {
+    const supabase = makeSingleTypeSupabase([
+      { status: 'completed', score: 5, media: { type: 'movie', metadata: { genres: ['Drama'] } } },
+      { status: 'completed', score: 5, media: { type: 'movie', metadata: { genres: ['Drama'] } } },
+      { status: 'completed', score: 5, media: { type: 'movie', metadata: { genres: ['Drama'] } } },
+    ])
+
+    const scores = await computeMatchScores(
+      'user-1',
+      [
+        item({ id: 'movie_1', genres: ['Drama'], type: 'movie' }), // coincide con la biblioteca
+        item({ id: 'movie_2', genres: ['Horror'], type: 'movie' }), // no coincide en absoluto
+      ],
+      supabase as never
+    )
+
+    expect(scores.get('movie_1')).toBeGreaterThan(0)
+    // El bug real: antes del fix ambos daban el mismo % (bono fijo de tipo).
+    expect(scores.get('movie_2')).not.toBe(scores.get('movie_1'))
+  })
+
+  it('F3a-FIX: sin ninguna coincidencia real de género, el score es 0 (no un % decorativo por tipo)', async () => {
+    const supabase = makeSingleTypeSupabase([
+      { status: 'completed', score: 5, media: { type: 'movie', metadata: { genres: ['Drama'] } } },
+      { status: 'completed', score: 5, media: { type: 'movie', metadata: { genres: ['Drama'] } } },
+      { status: 'completed', score: 5, media: { type: 'movie', metadata: { genres: ['Drama'] } } },
+    ])
+
+    const scores = await computeMatchScores(
+      'user-1',
+      [
+        item({ id: 'movie_1', genres: ['Horror'], type: 'movie' }),
+        item({ id: 'movie_2', genres: ['Comedy'], type: 'movie' }),
+      ],
+      supabase as never
+    )
+
+    // Escenario exacto observado en producción: sin señal real, ambos deben
+    // dar 0 — nunca la misma constante disfrazada de match real.
+    expect(scores.get('movie_1')).toBe(0)
+    expect(scores.get('movie_2')).toBe(0)
+  })
+
+  it('F3a-FIX: en modo agregado (varios tipos mezclados) la afinidad de tipo sigue contando', async () => {
+    const supabase = makeSingleTypeSupabase([
+      { status: 'completed', score: 5, media: { type: 'movie', metadata: { genres: [] } } },
+      { status: 'completed', score: 5, media: { type: 'movie', metadata: { genres: [] } } },
+      { status: 'completed', score: 5, media: { type: 'movie', metadata: { genres: [] } } },
+    ])
+
+    const scores = await computeMatchScores(
+      'user-1',
+      [
+        item({ id: 'movie_1', genres: [], type: 'movie' }), // tipo dominante del perfil
+        item({ id: 'tv_1', genres: [], type: 'tv' }), // tipo ausente del perfil
+      ],
+      supabase as never
+    )
+
+    // Con más de un tipo en la vista, la afinidad de tipo sigue discriminando:
+    // movie (tipo dominante) > tv (sin señal de tipo alguna).
+    expect(scores.get('movie_1')).toBeGreaterThan(scores.get('tv_1') ?? -1)
   })
 })
