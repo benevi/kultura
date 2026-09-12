@@ -305,6 +305,7 @@
   "aiRecommendations": {
     "title": "For you",
     "poweredBy": "Claude AI",
+    "aiPickBadge": "YOUR AI THINKS YOU'LL LOVE THIS",
     "generating": "Generating personalized recommendations...",
     "needMoreItems": "Add at least 3 completed or rated titles to your library to receive recommendations.",
     "search": "Search",
