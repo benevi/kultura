@@ -205,7 +205,8 @@ describe('getAiRecommendations — resolves media refs via searchByType', () => 
     const { getAiRecommendations } = await import('@/lib/claude/recommendations')
     const recs = await getAiRecommendations('u-resolve', [], 'es')
 
-    expect(searchByTypeMock).toHaveBeenCalledWith('Severance TV', 'tv')
+    // E-TMDB-LOCALE: la resolución de la referencia usa el locale activo.
+    expect(searchByTypeMock).toHaveBeenCalledWith('Severance TV', 'tv', 'es')
     expect(recs[0].id).toBe('tv_95396')
     expect(recs[0].posterUrl).toBe('https://img/poster.jpg')
     expect(recs[0].mediaUrl).toBe('/media/tv/tv_95396')

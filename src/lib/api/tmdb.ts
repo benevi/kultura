@@ -5,6 +5,7 @@
 // ============================================================
 
 import { env } from "@/lib/env";
+import { tmdbLanguage, tmdbRegion } from "@/lib/api/locale";
 
 export const TMDB_IMG_BASE = "https://image.tmdb.org/t/p";
 
@@ -107,11 +108,16 @@ export interface TmdbProvidersResponse {
 
 async function tmdbFetch<T>(
   path: string,
-  params: Record<string, string> = {}
+  params: Record<string, string> = {},
+  locale?: string | null
 ): Promise<T> {
   const url = new URL(`https://api.themoviedb.org/3${path}`);
   url.searchParams.set("api_key", env.TMDB_API_KEY);
-  url.searchParams.set("language", "es-ES");
+  // E-TMDB-LOCALE: antes `es-ES` HARDCODEADO en toda petición → un usuario en
+  // inglés recibía títulos/sinopsis en español. Ahora deriva del locale activo
+  // (`tmdbLanguage`), con `es-ES` como default cuando no se pasa locale (paridad
+  // con el comportamiento anterior para llamadas sin contexto de request).
+  url.searchParams.set("language", tmdbLanguage(locale));
   Object.entries(params).forEach(([k, v]) => url.searchParams.set(k, v));
   const res = await fetch(url.toString());
   if (!res.ok) throw new Error(`TMDB ${path} → ${res.status}`);
@@ -120,48 +126,76 @@ async function tmdbFetch<T>(
 
 // ── Public API ────────────────────────────────────────────────────────────────
 
+// E-TMDB-LOCALE: todas las funciones públicas aceptan un `locale` OPCIONAL como
+// último parámetro. Omitirlo mantiene `es-ES` (paridad con el comportamiento
+// pre-E-TMDB-LOCALE) para call sites sin contexto de request.
+
 export async function searchMovies(
   query: string,
-  page = 1
+  page = 1,
+  locale?: string | null
 ): Promise<TmdbSearchResponse> {
-  return tmdbFetch<TmdbSearchResponse>("/search/movie", {
-    query,
-    page: String(page),
-  });
+  return tmdbFetch<TmdbSearchResponse>(
+    "/search/movie",
+    { query, page: String(page) },
+    locale
+  );
 }
 
 export async function searchTV(
   query: string,
-  page = 1
+  page = 1,
+  locale?: string | null
 ): Promise<TmdbTVSearchResponse> {
-  return tmdbFetch<TmdbTVSearchResponse>("/search/tv", {
-    query,
-    page: String(page),
-  });
+  return tmdbFetch<TmdbTVSearchResponse>(
+    "/search/tv",
+    { query, page: String(page) },
+    locale
+  );
 }
 
-export async function getMovie(id: number): Promise<TmdbMovieDetail> {
-  return tmdbFetch<TmdbMovieDetail>(`/movie/${id}`, {
-    append_to_response: "credits,videos,watch/providers",
-  });
+export async function getMovie(
+  id: number,
+  locale?: string | null
+): Promise<TmdbMovieDetail> {
+  return tmdbFetch<TmdbMovieDetail>(
+    `/movie/${id}`,
+    { append_to_response: "credits,videos,watch/providers" },
+    locale
+  );
 }
 
-export async function getTV(id: number): Promise<TmdbTVDetail> {
-  return tmdbFetch<TmdbTVDetail>(`/tv/${id}`, {
-    append_to_response: "credits,videos,watch/providers",
-  });
+export async function getTV(
+  id: number,
+  locale?: string | null
+): Promise<TmdbTVDetail> {
+  return tmdbFetch<TmdbTVDetail>(
+    `/tv/${id}`,
+    { append_to_response: "credits,videos,watch/providers" },
+    locale
+  );
 }
 
-export async function getPopularMovies(page = 1): Promise<TmdbSearchResponse> {
-  return tmdbFetch<TmdbSearchResponse>("/movie/popular", {
-    page: String(page),
-  });
+export async function getPopularMovies(
+  page = 1,
+  locale?: string | null
+): Promise<TmdbSearchResponse> {
+  return tmdbFetch<TmdbSearchResponse>(
+    "/movie/popular",
+    { page: String(page) },
+    locale
+  );
 }
 
-export async function getPopularTV(page = 1): Promise<TmdbTVSearchResponse> {
-  return tmdbFetch<TmdbTVSearchResponse>("/tv/popular", {
-    page: String(page),
-  });
+export async function getPopularTV(
+  page = 1,
+  locale?: string | null
+): Promise<TmdbTVSearchResponse> {
+  return tmdbFetch<TmdbTVSearchResponse>(
+    "/tv/popular",
+    { page: String(page) },
+    locale
+  );
 }
 
 /**
@@ -173,14 +207,19 @@ export async function getPopularTV(page = 1): Promise<TmdbTVSearchResponse> {
  */
 export async function discoverMovies(
   page = 1,
-  params: Record<string, string> = {}
+  params: Record<string, string> = {},
+  locale?: string | null
 ): Promise<TmdbSearchResponse> {
-  return tmdbFetch<TmdbSearchResponse>("/discover/movie", {
-    sort_by: "popularity.desc",
-    include_adult: "false", // E86: explícito (default TMDB ya es false, lo fijamos)
-    page: String(page),
-    ...params,
-  });
+  return tmdbFetch<TmdbSearchResponse>(
+    "/discover/movie",
+    {
+      sort_by: "popularity.desc",
+      include_adult: "false", // E86: explícito (default TMDB ya es false, lo fijamos)
+      page: String(page),
+      ...params,
+    },
+    locale
+  );
 }
 
 /**
@@ -191,46 +230,71 @@ export async function discoverMovies(
  */
 export async function discoverTV(
   page = 1,
-  params: Record<string, string> = {}
+  params: Record<string, string> = {},
+  locale?: string | null
 ): Promise<TmdbTVSearchResponse> {
-  return tmdbFetch<TmdbTVSearchResponse>("/discover/tv", {
-    sort_by: "popularity.desc",
-    include_adult: "false", // E86: explícito (default TMDB ya es false, lo fijamos)
-    page: String(page),
-    ...params,
-  });
+  return tmdbFetch<TmdbTVSearchResponse>(
+    "/discover/tv",
+    {
+      sort_by: "popularity.desc",
+      include_adult: "false", // E86: explícito (default TMDB ya es false, lo fijamos)
+      page: String(page),
+      ...params,
+    },
+    locale
+  );
 }
 
 export async function getTrendingMovies(
-  timeWindow: "day" | "week" = "week"
+  timeWindow: "day" | "week" = "week",
+  locale?: string | null
 ): Promise<TmdbSearchResponse> {
-  return tmdbFetch<TmdbSearchResponse>(`/trending/movie/${timeWindow}`);
+  return tmdbFetch<TmdbSearchResponse>(
+    `/trending/movie/${timeWindow}`,
+    {},
+    locale
+  );
 }
 
-export async function getMovieVideos(id: number): Promise<TmdbVideosResponse> {
-  return tmdbFetch<TmdbVideosResponse>(`/movie/${id}/videos`);
+export async function getMovieVideos(
+  id: number,
+  locale?: string | null
+): Promise<TmdbVideosResponse> {
+  return tmdbFetch<TmdbVideosResponse>(`/movie/${id}/videos`, {}, locale);
 }
 
-export async function getTVVideos(id: number): Promise<TmdbVideosResponse> {
-  return tmdbFetch<TmdbVideosResponse>(`/tv/${id}/videos`);
+export async function getTVVideos(
+  id: number,
+  locale?: string | null
+): Promise<TmdbVideosResponse> {
+  return tmdbFetch<TmdbVideosResponse>(`/tv/${id}/videos`, {}, locale);
 }
 
+// Providers: `region` gobierna el CATÁLOGO de streaming (oferta por país), no el
+// idioma. E-TMDB-LOCALE lo deriva del locale (`es`→ES, `en`→US) cuando no se
+// pasa explícito, en vez de servir siempre la oferta española.
 export async function getMovieProviders(
   id: number,
-  region = "ES"
+  region?: string,
+  locale?: string | null
 ): Promise<TmdbProvidersResponse> {
-  return tmdbFetch<TmdbProvidersResponse>(`/movie/${id}/watch/providers`, {
-    region,
-  });
+  return tmdbFetch<TmdbProvidersResponse>(
+    `/movie/${id}/watch/providers`,
+    { region: region ?? tmdbRegion(locale) },
+    locale
+  );
 }
 
 export async function getTVProviders(
   id: number,
-  region = "ES"
+  region?: string,
+  locale?: string | null
 ): Promise<TmdbProvidersResponse> {
-  return tmdbFetch<TmdbProvidersResponse>(`/tv/${id}/watch/providers`, {
-    region,
-  });
+  return tmdbFetch<TmdbProvidersResponse>(
+    `/tv/${id}/watch/providers`,
+    { region: region ?? tmdbRegion(locale) },
+    locale
+  );
 }
 
 /**
@@ -280,7 +344,8 @@ export const TMDB_GENRE_MAP: Record<string, number> = {
 export async function discoverByGenre(
   mediaType: 'movie' | 'tv',
   genreIds: number[],
-  pageSize = 10
+  pageSize = 10,
+  locale?: string | null
 ): Promise<TmdbSearchResponse | TmdbTVSearchResponse> {
   const currentYear = new Date().getFullYear()
 
@@ -294,12 +359,12 @@ export async function discoverByGenre(
     // Películas del año actual o del anterior
     params['primary_release_date.gte'] = `${currentYear - 1}-01-01`
     params['vote_count.gte'] = '50'
-    const result = await tmdbFetch<TmdbSearchResponse>('/discover/movie', params)
+    const result = await tmdbFetch<TmdbSearchResponse>('/discover/movie', params, locale)
     return { ...result, results: result.results.slice(0, pageSize) }
   } else {
     params['first_air_date.gte'] = `${currentYear - 1}-01-01`
     params['vote_count.gte'] = '20'
-    const result = await tmdbFetch<TmdbTVSearchResponse>('/discover/tv', params)
+    const result = await tmdbFetch<TmdbTVSearchResponse>('/discover/tv', params, locale)
     return { ...result, results: result.results.slice(0, pageSize) }
   }
 }

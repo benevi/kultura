@@ -29,7 +29,8 @@ export async function generateMetadata({
   return { title };
 }
 
-export default async function SearchPage({ searchParams }: Props) {
+export default async function SearchPage({ params, searchParams }: Props) {
+  const { locale } = await params;
   const { q, type = "all" } = await searchParams;
 
   // No query → show only the centered search bar
@@ -53,7 +54,7 @@ export default async function SearchPage({ searchParams }: Props) {
 
   let results: SearchResults = emptyResults;
   try {
-    results = await searchAll(q);
+    results = await searchAll(q, locale);
   } catch {
     // Silently fall back to empty results
   }

@@ -135,10 +135,20 @@ export type DiscoverFilters = TmdbFilters &
   BooksFilters &
   ComicFilters;
 
+/**
+ * Resuelve una página de catálogo para una familia (o el agregado `all`).
+ *
+ * `locale` (E-TMDB-LOCALE): idioma activo de la app. Se propaga a los
+ * proveedores que lo soportan — TMDB (`language`), Google Books
+ * (`langRestrict`) y MangaDex (`availableTranslatedLanguage[]`). Jikan,
+ * ComicVine y RAWG no ofrecen catálogo en español: limitación aceptada,
+ * documentada en `src/lib/api/locale.ts`. Omitirlo equivale a `es`.
+ */
 export async function fetchDiscoverData(
   type: string,
   page: number,
-  filters: DiscoverFilters = {}
+  filters: DiscoverFilters = {},
+  locale?: string | null
 ): Promise<DiscoverResult> {
   let items: MediaItem[] = [];
   let totalPages = 1;
@@ -158,7 +168,8 @@ export async function fetchDiscoverData(
         }
         const res = await discoverMovies(
           page,
-          buildTmdbDiscoverParams("movie", filters)
+          buildTmdbDiscoverParams("movie", filters),
+          locale
         );
         items = res.results.map((m) =>
           normalizeMovie(m as unknown as TmdbMovieDetail)
@@ -176,7 +187,8 @@ export async function fetchDiscoverData(
         }
         const res = await discoverTV(
           page,
-          buildTmdbDiscoverParams("tv", filters)
+          buildTmdbDiscoverParams("tv", filters),
+          locale
         );
         items = res.results.map((tv) =>
           normalizeTV(tv as unknown as TmdbTVDetail)
@@ -276,7 +288,7 @@ export async function fetchDiscoverData(
         // Delega en aggregate.ts (reusa este mismo pipeline por familia). Devuelve
         // ya su propio DiscoverResult → retorno directo (no pasa por el merge de
         // items/totalPages locales de esta función).
-        return fetchAggregateData(page, filters);
+        return fetchAggregateData(page, filters, locale);
       }
       default: {
         // E89: fallback = TMDB movies → mismo cap/guard que case "movie".
@@ -285,7 +297,8 @@ export async function fetchDiscoverData(
         }
         const res = await discoverMovies(
           page,
-          buildTmdbDiscoverParams("movie", filters)
+          buildTmdbDiscoverParams("movie", filters),
+          locale
         );
         items = res.results.map((m) =>
           normalizeMovie(m as unknown as TmdbMovieDetail)

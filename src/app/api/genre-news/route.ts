@@ -6,6 +6,7 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { getUserStats } from '@/lib/library/stats'
+import { getLocale } from 'next-intl/server'
 import { getGenreNews } from '@/lib/api/genre-news'
 import { checkRateLimit } from '@/lib/rate-limit'
 import { computeMatchScores } from '@/lib/recommendations/match-score'
@@ -32,7 +33,9 @@ export async function GET(): Promise<NextResponse> {
   const stats = await getUserStats(user.id)
   const topGenres = stats.topGenres.map((g) => g.genre)
 
-  const result = await getGenreNews(topGenres)
+  // E-TMDB-LOCALE: novedades en el idioma activo de la app.
+  const locale = await getLocale()
+  const result = await getGenreNews(topGenres, 5, locale)
 
   // F3b: badge de match real (F3a) para la fila "trending" de Home — la más
   // análoga a las filas del mockup F0. Vacío si no hay señal suficiente

@@ -3,6 +3,12 @@
 // ============================================================
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 
+// E-TMDB-LOCALE: el route handler resuelve el locale activo con getLocale()
+// (next-intl/server no funciona fuera de un request real).
+vi.mock('next-intl/server', () => ({
+  getLocale: vi.fn().mockResolvedValue('es'),
+}))
+
 // ── genreNamesToIds (via TMDB_GENRE_MAP) ─────────────────────────────────────
 
 describe('TMDB_GENRE_MAP', () => {

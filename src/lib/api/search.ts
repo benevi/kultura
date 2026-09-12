@@ -35,13 +35,20 @@ export interface SearchResults {
 /**
  * Busca en todas las APIs en paralelo con Promise.allSettled.
  * Si una falla → array vacío para ese tipo, el resto permanece intacto.
+ *
+ * `locale` (E-TMDB-LOCALE / E-BOOKS-GOOGLE): idioma activo de la app. Se
+ * propaga a los proveedores que lo soportan (TMDB, Google Books); Jikan,
+ * ComicVine y RAWG lo ignoran (limitación documentada en `lib/api/locale.ts`).
  */
-export async function searchAll(query: string): Promise<SearchResults> {
+export async function searchAll(
+  query: string,
+  locale?: string | null
+): Promise<SearchResults> {
   const [movies, tv, anime, manga, books, games] = await Promise.allSettled([
-    searchMovies(query).then((r) =>
+    searchMovies(query, 1, locale).then((r) =>
       r.results.map((raw) => normalizeMovie(raw as TmdbMovieDetail))
     ),
-    searchTV(query).then((r) =>
+    searchTV(query, 1, locale).then((r) =>
       r.results.map((raw) => normalizeTV(raw as TmdbTVDetail))
     ),
     searchAnime(query).then((r) =>
@@ -74,18 +81,20 @@ export async function searchAll(query: string): Promise<SearchResults> {
 
 /**
  * Busca solo en el tipo de contenido indicado.
+ * `locale`: ver `searchAll`.
  */
 export async function searchByType(
   query: string,
-  type: MediaType
+  type: MediaType,
+  locale?: string | null
 ): Promise<MediaItem[]> {
   switch (type) {
     case "movie":
-      return searchMovies(query).then((r) =>
+      return searchMovies(query, 1, locale).then((r) =>
         r.results.map((raw) => normalizeMovie(raw as TmdbMovieDetail))
       );
     case "tv":
-      return searchTV(query).then((r) =>
+      return searchTV(query, 1, locale).then((r) =>
         r.results.map((raw) => normalizeTV(raw as TmdbTVDetail))
       );
     case "anime":
