@@ -29,22 +29,26 @@ export const KButton = React.forwardRef<HTMLButtonElement, KButtonProps>(
         ref={ref}
         disabled={isDisabled}
         className={cn(
-          /* Base */
-          "inline-flex items-center justify-center gap-2 rounded-button font-body font-medium whitespace-nowrap",
+          /* Base — radio F0: `rounded-pill` (20px) excede la mitad de la altura
+             de cualquier tamaño de botón (32/40/44px), por lo que el navegador
+             lo recorta a un estadio perfecto — el "botón pill" de CLAUDE.md. */
+          "inline-flex items-center justify-center gap-2 rounded-pill font-body whitespace-nowrap",
           "transition-all duration-150 ease-out",
           "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-positive focus-visible:ring-offset-2 focus-visible:ring-offset-surface-base",
           "disabled:pointer-events-none disabled:opacity-40",
           /* Size */
           sizeClasses[size],
-          /* Variant */
+          /* Variant — pesos de CLAUDE.md: primario 800, secundario 700 */
           variant === "primary" && [
+            "font-extrabold",
             "text-on-accent-positive",
             "bg-accent-positive",
             "hover:brightness-110",
             "active:scale-[0.98]",
           ],
           variant === "secondary" && [
-            "bg-transparent border border-surface-border",
+            "font-bold",
+            "bg-transparent border-2 border-surface-border",
             "text-text-secondary",
             "hover:bg-surface-elevated hover:text-text-primary",
             "active:scale-[0.98]",
