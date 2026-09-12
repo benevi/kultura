@@ -77,10 +77,19 @@ function InviteActions({ invitationId }: { invitationId: string }) {
   )
 }
 
+/** Colores decorativos F0 por tipo de notificación — literales OKLCH (ver CLAUDE.md). */
+const TYPE_ACCENT: Record<string, { fg: string; bg: string }> = {
+  recommendation: { fg: 'oklch(68% 0.16 250)', bg: 'oklch(68% 0.16 250 / 0.16)' }, // blue
+  list_invite: { fg: 'oklch(83% 0.24 130)', bg: 'oklch(83% 0.24 130 / 0.16)' }, // lime
+  group_invite: { fg: 'oklch(72% 0.19 55)', bg: 'oklch(72% 0.19 55 / 0.16)' }, // orange
+  friend_request: { fg: 'oklch(62% 0.19 300)', bg: 'oklch(62% 0.19 300 / 0.16)' }, // purple
+}
+
 function NotificationItem({ notif }: { notif: AppNotification }) {
   const t = useTranslations('notifications')
   const locale = useLocale()
   const p = notif.payload
+  const accent = TYPE_ACCENT[notif.type] ?? TYPE_ACCENT.friend_request
 
   let content: React.ReactNode = null
 
@@ -159,9 +168,12 @@ function NotificationItem({ notif }: { notif: AppNotification }) {
 
   return (
     <div className={`flex items-start gap-3 p-4 ${!notif.readAt ? 'bg-accent-positive/5' : ''}`}>
-      <div className="flex-shrink-0 mt-0.5 text-text-tertiary">
+      <div
+        className="flex-shrink-0 mt-0.5 w-9 h-9 rounded-full flex items-center justify-center"
+        style={{ background: accent.bg, color: accent.fg }}
+      >
         {notif.type === 'recommendation' ? (
-          <IconSparkles className="w-5 h-5 text-accent-info" />
+          <IconSparkles className="w-5 h-5" />
         ) : notif.type === 'list_invite' ? (
           <IconLists className="w-5 h-5" />
         ) : notif.type === 'group_invite' ? (
@@ -181,16 +193,16 @@ export function NotificationsList({ notifications }: Props) {
 
   if (notifications.length === 0) {
     return (
-      <div className="bg-surface-default border border-surface-border rounded-xl p-10 text-center flex flex-col items-center gap-3">
+      <div className="bg-surface-default border border-surface-border rounded-bento p-10 text-center flex flex-col items-center gap-3">
         <IconBell className="w-8 h-8 text-text-tertiary" />
-        <p className="font-medium text-text-primary">{t('noNotifications')}</p>
+        <p className="font-bold text-text-primary">{t('noNotifications')}</p>
         <p className="text-sm text-text-tertiary">{t('noNotificationsHint')}</p>
       </div>
     )
   }
 
   return (
-    <div className="bg-surface-default border border-surface-border rounded-xl divide-y divide-surface-border overflow-hidden">
+    <div className="bg-surface-default border border-surface-border rounded-bento divide-y divide-surface-border overflow-hidden">
       {notifications.map((n) => (
         <NotificationItem key={n.id} notif={n} />
       ))}
