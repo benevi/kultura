@@ -5,6 +5,7 @@
 // ============================================================
 
 import type { Metadata } from "next";
+import { getTranslations } from "next-intl/server";
 import { searchAll } from "@/lib/api/search";
 import type { SearchResults } from "@/lib/api/search";
 import { SearchBar } from "@/components/search/SearchBar";
@@ -34,8 +35,12 @@ export default async function SearchPage({ searchParams }: Props) {
 
   // No query → show only the centered search bar
   if (!q || q.trim().length < 2) {
+    const t = await getTranslations("search");
     return (
-      <main className="max-w-2xl mx-auto px-4 py-24">
+      <main className="max-w-2xl mx-auto px-4 py-24 flex flex-col items-center text-center gap-6">
+        <h1 className="font-display text-4xl tracking-wide text-text-primary">
+          {t("title")}
+        </h1>
         <SearchBar className="w-full" />
       </main>
     );
