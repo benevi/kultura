@@ -49,7 +49,8 @@ Next.js 14 App Router · React 18 · TypeScript strict · Tailwind CSS 3 · Supa
 | Books (legacy) | Open Library | openlibrary.org | — (solo fichas de ids `book_OL…` ya guardados) |
 | Comics | ComicVine | comicvine.gamespot.com/api | `?api_key=COMICVINE_KEY` — **implementado y en uso** (`src/lib/api/comicvine.ts` + `comicvine-maps.ts`: Descubrir, búsqueda y ficha) |
 | Manga (preparado, no en pipeline) | MangaDex | api.mangadex.org | — · cliente localizado pero NO enchufado: la familia manga la sirve Jikan → **E-MANGA-SOURCE** |
-| Games | RAWG | api.rawg.io/api | `?key=RAWG_API_KEY` |
+| Games | RAWG (Descubrir/listados/paginación) | api.rawg.io/api | `?key=RAWG_API_KEY` |
+| Games — detalle | **Steam Store** (enriquece la ficha: precio, capturas, idiomas) | store.steampowered.com/api | — (sin key) · solo `/media/game/{id}`, degrada en silencio |
 | AI | Anthropic Claude (`claude-haiku-4-5`) | api.anthropic.com | `ANTHROPIC_API_KEY` |
 
 **Idioma:** derivado del **locale activo** (`es`/`en`) — fuente única: `src/lib/api/locale.ts`. El locale se resuelve en el borde (`getLocale()` en `/api/discover`, `/api/search`, `/api/genre-news`; `params.locale` en `/[locale]/media/...`) y viaja como parámetro explícito hasta cada cliente de API.
@@ -68,6 +69,7 @@ Next.js 14 App Router · React 18 · TypeScript strict · Tailwind CSS 3 · Supa
 - Books legacy (Open Library): `covers.openlibrary.org/b/id/{cover_i}-L.jpg`
 - MangaDex: `uploads.mangadex.org/covers/{manga_id}/{filename}`
 - RAWG: `background_image`
+- Steam (capturas de la ficha de juego): `path_thumbnail` / `path_full` (`*.steamstatic.com`, `shared.akamaihd.net`)
 
 **Tráilers:** TMDB `/movie/{id}/videos` · `/tv/{id}/videos` · Jikan `/anime/{id}/videos` → embed `youtube.com/embed/{key}`
 
