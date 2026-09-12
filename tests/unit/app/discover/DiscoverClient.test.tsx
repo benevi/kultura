@@ -312,4 +312,28 @@ describe("DiscoverClient — E59 F5e", () => {
     render(<DiscoverClient currentType="movie" currentPage={1} />);
     expect(screen.getByRole("button", { name: /sort:/i })).toHaveClass("ml-auto");
   });
+
+  // ── G1: barra de búsqueda + emoji por tipo ──────────────────────────────
+
+  it("renderiza una barra de búsqueda que navega a /search (reusa /api/search)", () => {
+    mockFetchOk();
+    current = new URLSearchParams("type=movie&page=1");
+    render(<DiscoverClient currentType="movie" currentPage={1} />);
+
+    // SearchBar real (no stub): input type=search visible bajo la cabecera.
+    const input = screen.getByPlaceholderText("searchPlaceholder");
+    expect(input).toHaveAttribute("type", "search");
+  });
+
+  it("las pills de tipo llevan un emoji decorativo sin alterar el nombre accesible", () => {
+    mockFetchOk();
+    current = new URLSearchParams("type=movie&page=1");
+    render(<DiscoverClient currentType="movie" currentPage={1} />);
+
+    // El emoji es aria-hidden: el nombre accesible del radio sigue siendo
+    // exactamente la etiqueta i18n (mock identidad), no "🎬 movie".
+    const movie = screen.getByRole("radio", { name: "movie" });
+    expect(movie).toHaveTextContent("🎬");
+    expect(movie.querySelector('[aria-hidden="true"]')).toHaveTextContent("🎬");
+  });
 });
