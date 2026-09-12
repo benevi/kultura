@@ -176,11 +176,16 @@ const DETAIL_TYPES: MediaType[] = ['movie', 'tv', 'anime', 'book', 'manga', 'gam
  * Si una búsqueda falla o no devuelve resultados, los campos quedan undefined
  * y el componente cae al fallback /search. Un fallo no tumba el resto.
  */
-async function resolveMediaRefs(recs: AiRec[]): Promise<AiRec[]> {
+async function resolveMediaRefs(
+  recs: AiRec[],
+  locale?: string | null
+): Promise<AiRec[]> {
   const resolved = await Promise.all(
     recs.map(async (rec): Promise<AiRec | null> => {
       try {
-        const results = await searchByType(rec.searchQuery, rec.type)
+        // E-TMDB-LOCALE: resolver la referencia con el idioma activo → el
+        // título/póster que enlaza la recomendación coincide con el de la ficha.
+        const results = await searchByType(rec.searchQuery, rec.type, locale)
         const top = results[0]
         if (!top || !top.poster) return null
         return {
@@ -285,7 +290,7 @@ export async function getAiRecommendations(
           : (r.title as string).trim(),
       }))
 
-    const results = await resolveMediaRefs(recs)
+    const results = await resolveMediaRefs(recs, locale)
 
     setCached(cacheKey, results)
     return results

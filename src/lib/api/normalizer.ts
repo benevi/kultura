@@ -23,9 +23,10 @@ import type { ComicVineIssue } from "@/types/media";
 // ── Provider helper ───────────────────────────────────────────────────────────
 
 function extractProviders(
-  providersResp: TmdbProvidersResponse | undefined
+  providersResp: TmdbProvidersResponse | undefined,
+  region = "ES"
 ): StreamingProvider[] | undefined {
-  const es = providersResp?.results?.["ES"];
+  const es = providersResp?.results?.[region];
   if (!es) return undefined;
   const all: StreamingProvider[] = [];
   (["flatrate", "rent", "buy"] as const).forEach((type) => {

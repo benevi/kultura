@@ -100,14 +100,15 @@ function resolveSortKey(sort: string | null | undefined): SortKey {
  */
 export async function fetchAggregateData(
   page: number,
-  filters: DiscoverFilters = {}
+  filters: DiscoverFilters = {},
+  locale?: string | null
 ): Promise<DiscoverResult> {
   const sortKey = resolveSortKey(filters.sort);
 
   // Cada familia siempre pide su página 1 (overfetch): el merge + slice global
   // decide qué entra en la página solicitada del agregado.
   const settled = await Promise.allSettled(
-    FAMILIES.map((type) => fetchDiscoverData(type, 1, filters))
+    FAMILIES.map((type) => fetchDiscoverData(type, 1, filters, locale))
   );
 
   const lists: MediaItem[][] = [];

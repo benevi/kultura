@@ -8,6 +8,7 @@
 // ============================================================
 
 import { NextRequest, NextResponse } from "next/server";
+import { getLocale } from "next-intl/server";
 import { fetchDiscoverData } from "@/lib/api/discover";
 import { parseDiscoverParams } from "@/lib/api/discover-params";
 import { createClient } from "@/lib/supabase/server";
@@ -16,6 +17,12 @@ import { computeMatchScores } from "@/lib/recommendations/match-score";
 export async function GET(request: NextRequest) {
   const parsed = parseDiscoverParams(request.nextUrl.searchParams);
   const { type, page } = parsed;
+
+  // E-TMDB-LOCALE: locale ACTIVO de la petición (mismo patrón que
+  // /api/ai-recommendations). Se propaga a los proveedores que localizan
+  // catálogo (TMDB, Google Books, MangaDex) para que títulos y sinopsis salgan
+  // en el idioma elegido en la app, no siempre en español.
+  const locale = await getLocale();
 
   // F3a+F3b: se pasan los filtros que cada familia consume nativamente
   // (TMDB: genre/year/platform/sort/status/duracion/idioma; Jikan: +demografia;
@@ -49,7 +56,7 @@ export async function GET(request: NextRequest) {
     modojuego: parsed.modojuego,
     duracionmedia: parsed.duracionmedia,
     estado: parsed.estado,
-  });
+  }, locale);
 
   // F3b: badge de match real (F3a) sobre los items devueltos. Sin sesión, o sin
   // señal suficiente en la biblioteca (gate de computeMatchScores), matchScores

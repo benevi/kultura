@@ -70,7 +70,16 @@ describe("fan-out", () => {
 
     expect(mockFetch).toHaveBeenCalledTimes(FAMILIES.length);
     for (const fam of FAMILIES) {
-      expect(mockFetch).toHaveBeenCalledWith(fam, 1, filters);
+      expect(mockFetch).toHaveBeenCalledWith(fam, 1, filters, undefined);
+    }
+  });
+
+  // E-TMDB-LOCALE: el locale del agregado se reenvía a cada familia.
+  it("propaga el locale activo a cada familia", async () => {
+    setupByFamily({});
+    await fetchAggregateData(1, {}, "en");
+    for (const fam of FAMILIES) {
+      expect(mockFetch).toHaveBeenCalledWith(fam, 1, {}, "en");
     }
   });
 });

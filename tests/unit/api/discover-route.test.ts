@@ -23,6 +23,13 @@ vi.mock("@/lib/recommendations/match-score", () => ({
   computeMatchScores: vi.fn().mockResolvedValue(new Map()),
 }));
 
+// E-TMDB-LOCALE: el handler resuelve el locale activo con `getLocale()`
+// (next-intl/server no está disponible fuera de un request real).
+vi.mock("next-intl/server", () => ({
+  getLocale: vi.fn().mockResolvedValue("es"),
+}));
+
+import { getLocale } from "next-intl/server";
 import { GET } from "@/app/api/discover/route";
 import { parseDiscoverParams } from "@/lib/api/discover-params";
 import { fetchDiscoverData } from "@/lib/api/discover";
@@ -106,20 +113,19 @@ describe("GET /api/discover", () => {
     expect(fetchDiscoverData).toHaveBeenCalledWith(
       "anime",
       3,
-      expect.any(Object)
+      expect.any(Object),
+      "es"
     );
   });
 
   it("F3a: pasa los filtros TMDB al fetch (genre/year/sort/…)", async () => {
     await GET(req("?type=tv&page=1&genre=accion-aventura&sort=rating&year=2024"));
-    expect(fetchDiscoverData).toHaveBeenCalledWith(
-      "tv",
-      1,
-      expect.objectContaining({
+    expect(fetchDiscoverData).toHaveBeenCalledWith("tv", 1, expect.objectContaining({
         genre: ["accion-aventura"],
         sort: "rating",
         year: "2024",
-      })
+      }),
+      "es"
     );
     expect(fetchDiscoverData).toHaveBeenCalledTimes(1);
   });
@@ -128,14 +134,12 @@ describe("GET /api/discover", () => {
     await GET(
       req("?type=comic&page=1&volumenes=2-5&editorial=planeta,norma&formato=ebook")
     );
-    expect(fetchDiscoverData).toHaveBeenCalledWith(
-      "comic",
-      1,
-      expect.objectContaining({
+    expect(fetchDiscoverData).toHaveBeenCalledWith("comic", 1, expect.objectContaining({
         volumenes: "2-5",
         editorial: ["planeta", "norma"],
         formato: "ebook",
-      })
+      }),
+      "es"
     );
   });
 
@@ -145,10 +149,7 @@ describe("GET /api/discover", () => {
         "?type=anime&page=1&genre=accion&year=2024&platform=netflix&sort=rating&status=airing&demografia=shonen&duracion=lt90&idioma=ja"
       )
     );
-    expect(fetchDiscoverData).toHaveBeenCalledWith(
-      "anime",
-      1,
-      expect.objectContaining({
+    expect(fetchDiscoverData).toHaveBeenCalledWith("anime", 1, expect.objectContaining({
         genre: ["accion"],
         year: "2024",
         platform: ["netflix"],
@@ -157,16 +158,15 @@ describe("GET /api/discover", () => {
         demografia: "shonen",
         duracion: "lt90",
         idioma: "ja",
-      })
+      }),
+      "es"
     );
   });
 
   it("R4b: mapea el paramKey 'rating' del front → valoracion aguas abajo", async () => {
     await GET(req("?type=movie&page=1&rating=8"));
-    expect(fetchDiscoverData).toHaveBeenCalledWith(
-      "movie",
-      1,
-      expect.objectContaining({ valoracion: "8" })
+    expect(fetchDiscoverData).toHaveBeenCalledWith("movie", 1, expect.objectContaining({ valoracion: "8" }),
+      "es"
     );
   });
 
@@ -174,23 +174,19 @@ describe("GET /api/discover", () => {
     await GET(
       req("?type=game&page=1&gamemode=single,coop&playtime=10-30&estado=early-access")
     );
-    expect(fetchDiscoverData).toHaveBeenCalledWith(
-      "game",
-      1,
-      expect.objectContaining({
+    expect(fetchDiscoverData).toHaveBeenCalledWith("game", 1, expect.objectContaining({
         modojuego: ["single", "coop"],
         duracionmedia: "10-30",
         estado: "early-access",
-      })
+      }),
+      "es"
     );
   });
 
   it("R4c-2: puentea seasons→temporadas aguas abajo", async () => {
     await GET(req("?type=tv&page=1&seasons=2-3"));
-    expect(fetchDiscoverData).toHaveBeenCalledWith(
-      "tv",
-      1,
-      expect.objectContaining({ temporadas: "2-3" })
+    expect(fetchDiscoverData).toHaveBeenCalledWith("tv", 1, expect.objectContaining({ temporadas: "2-3" }),
+      "es"
     );
   });
 
@@ -199,7 +195,8 @@ describe("GET /api/discover", () => {
     expect(fetchDiscoverData).toHaveBeenCalledWith(
       "movie",
       2,
-      expect.any(Object)
+      expect.any(Object),
+      "es"
     );
   });
 
@@ -259,5 +256,17 @@ describe("GET /api/discover", () => {
     const body = await res.json();
     expect(computeMatchScores).toHaveBeenCalledWith("user-1", body.items, expect.anything());
     expect(body.matchScores).toEqual({ movie_1: 88 });
+  });
+
+  // ── E-TMDB-LOCALE ───────────────────────────────────────────────────────────
+  it("propaga el locale activo como 4º argumento de fetchDiscoverData", async () => {
+    vi.mocked(getLocale).mockResolvedValueOnce("en");
+    await GET(req("?type=movie&page=1"));
+    expect(fetchDiscoverData).toHaveBeenCalledWith(
+      "movie",
+      1,
+      expect.any(Object),
+      "en"
+    );
   });
 });

@@ -10,6 +10,7 @@ import type { Metadata } from "next";
 import type { MediaType, StreamingProvider } from "@/types/media";
 import { getMovie, getMovieVideos, getMovieProviders, getTVVideos, getTVProviders, getTV } from "@/lib/api/tmdb";
 import type { TmdbProvidersResponse } from "@/lib/api/tmdb";
+import { tmdbRegion } from "@/lib/api/locale";
 import { getAnime, getAnimeVideos, getManga } from "@/lib/api/jikan";
 import { getBookDetail } from "@/lib/api/openlibrary";
 import { getGame } from "@/lib/api/rawg";
@@ -49,12 +50,18 @@ interface Props {
 
 // ── Helper: extractors ────────────────────────────────────────────────────────
 
-function extractProvidersES(resp: TmdbProvidersResponse): StreamingProvider[] {
-  const es = resp.results?.["ES"];
-  if (!es) return [];
+// E-TMDB-LOCALE: la oferta de streaming es POR PAÍS. Antes se leía siempre
+// `results["ES"]`, así que al pedir la región del locale `en` (US) la sección
+// quedaba vacía. Ahora el extractor recibe la misma región que se pidió a TMDB.
+function extractProvidersForRegion(
+  resp: TmdbProvidersResponse,
+  region: string
+): StreamingProvider[] {
+  const forRegion = resp.results?.[region];
+  if (!forRegion) return [];
   const all: StreamingProvider[] = [];
   (["flatrate", "rent", "buy"] as const).forEach((type) => {
-    es[type]?.forEach((p) =>
+    forRegion[type]?.forEach((p) =>
       all.push({
         name: p.provider_name,
         logoPath: `https://image.tmdb.org/t/p/original${p.logo_path}`,
@@ -68,7 +75,7 @@ function extractProvidersES(resp: TmdbProvidersResponse): StreamingProvider[] {
 // ── Metadata ──────────────────────────────────────────────────────────────────
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
-  const { type, id } = await params;
+  const { locale, type, id } = await params;
 
   if (!VALID_TYPES.includes(type as MediaType)) return { title: "KULTURA" };
 
@@ -78,12 +85,12 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     let image: string | undefined;
 
     if (type === "movie") {
-      const detail = await getMovie(Number(id));
+      const detail = await getMovie(Number(id), locale);
       title = detail.title;
       description = detail.overview || undefined;
       if (detail.poster_path) image = `https://image.tmdb.org/t/p/w500${detail.poster_path}`;
     } else if (type === "tv") {
-      const detail = await getTV(Number(id));
+      const detail = await getTV(Number(id), locale);
       title = detail.name;
       description = detail.overview || undefined;
       if (detail.poster_path) image = `https://image.tmdb.org/t/p/w500${detail.poster_path}`;
@@ -145,7 +152,11 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 // ── Page ──────────────────────────────────────────────────────────────────────
 
 export default async function MediaDetailPage({ params }: Props) {
-  const { type, id } = await params;
+  const { locale, type, id } = await params;
+  // E-TMDB-LOCALE: `locale` ya viaja en la ruta (`/[locale]/media/...`) → se
+  // pasa a cada cliente de API que localiza contenido. La ficha deja de estar
+  // fijada a español.
+  const providerRegion = tmdbRegion(locale);
 
   if (!VALID_TYPES.includes(type as MediaType)) notFound();
 
@@ -170,9 +181,9 @@ export default async function MediaDetailPage({ params }: Props) {
     if (mediaType === "movie") {
       const numId = Number(id);
       const [detail, videos, prov] = await Promise.allSettled([
-        getMovie(numId),
-        getMovieVideos(numId),
-        getMovieProviders(numId),
+        getMovie(numId, locale),
+        getMovieVideos(numId, locale),
+        getMovieProviders(numId, providerRegion, locale),
       ]);
       if (detail.status === "rejected") notFound();
       item = normalizeMovie(detail.value);
@@ -183,14 +194,14 @@ export default async function MediaDetailPage({ params }: Props) {
         trailerKey = trailer?.key;
       }
       if (prov.status === "fulfilled") {
-        providers = extractProvidersES(prov.value);
+        providers = extractProvidersForRegion(prov.value, providerRegion);
       }
     } else if (mediaType === "tv") {
       const numId = Number(id);
       const [detail, videos, prov] = await Promise.allSettled([
-        getTV(numId),
-        getTVVideos(numId),
-        getTVProviders(numId),
+        getTV(numId, locale),
+        getTVVideos(numId, locale),
+        getTVProviders(numId, providerRegion, locale),
       ]);
       if (detail.status === "rejected") notFound();
       item = normalizeTV(detail.value);
@@ -201,7 +212,7 @@ export default async function MediaDetailPage({ params }: Props) {
         trailerKey = trailer?.key;
       }
       if (prov.status === "fulfilled") {
-        providers = extractProvidersES(prov.value);
+        providers = extractProvidersForRegion(prov.value, providerRegion);
       }
     } else if (mediaType === "anime") {
       const numId = Number(id);
