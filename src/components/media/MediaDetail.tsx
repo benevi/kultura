@@ -165,7 +165,7 @@ export async function MediaDetail({
                 {item.title}
               </h1>
               {item.originalTitle && item.originalTitle !== item.title && (
-                <p className="text-text-tertiary text-sm mb-2.5">{item.originalTitle}</p>
+                <p className="text-text-secondary text-sm mb-2.5">{item.originalTitle}</p>
               )}
 
               <div className="flex items-center gap-2.5 text-sm text-text-secondary mb-3 flex-wrap">
@@ -178,7 +178,7 @@ export async function MediaDetail({
                       {item.rating.toFixed(1)}
                     </span>
                     {item.ratingSource && (
-                      <span className="text-text-tertiary text-xs">
+                      <span className="text-text-secondary text-xs">
                         {item.ratingSource}
                       </span>
                     )}
@@ -234,12 +234,12 @@ export async function MediaDetail({
                   <Icon className="w-4 h-4 text-accent-positive" />
                 </div>
                 <div className="min-w-0">
-                  <p className="text-[11px] text-text-tertiary uppercase tracking-wide font-medium">
+                  <p className="text-[11px] text-text-secondary uppercase tracking-wide font-medium">
                     {label}
                   </p>
                   <p className="text-sm font-bold text-text-primary truncate">
                     {value}
-                    {hint && <span className="text-text-tertiary text-xs font-medium ml-1">{hint}</span>}
+                    {hint && <span className="text-text-secondary text-xs font-medium ml-1">{hint}</span>}
                   </p>
                 </div>
               </div>
