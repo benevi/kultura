@@ -91,16 +91,16 @@ F4 → ✅ **CERRADA 2026-09-12** (commit `307a4c2`). El canvas de diseño origi
 
 F5 → ✅ **CERRADA 2026-09-12** (este commit). Auditoría real de accesibilidad sobre F1-F4: 4 fallos de contraste WCAG AA encontrados y corregidos en `MediaDetail.tsx` (`text-tertiary`→`text-secondary` en 4 sitios, verificado por cálculo de luminancia relativa, no a ojo); orden DOM/tabulación del grid bento (F3b) verificado matemáticamente sin bug real (el patrón de 6 celdas tila sin huecos, `grid-flow-row-dense` resulta inerte); `prefers-reduced-motion` confirmado con cobertura global; hallazgo de foco de teclado con tokens shadcn muertos en `button.tsx` registrado como **E100** (no arreglado aquí, toca un componente compartido fuera de Bloque F). tsc 0, lint 0, vitest **1311 passed**. Cierra la primera pasada completa de Bloque F sobre las 3 pantallas de F0 (Home/Discover/Media). Detalle en DONE.md / BACKLOG F5.
 
-En paralelo a F4/F5 se lanzó un agente en worktree aislado para **F6** (logotipo de marca propio) + **F7** (paleta multicolor de acentos, decisión tomada de forma autónoma: adoptar la paleta completa del mockup F0 ya aprobado en vez de quedarse solo en el verde de F2). Terminó con éxito (commits `dfedce2`/`2521fab` en `worktree-agent-ade392e578a1a2377`, tsc/lint/vitest en verde, verificado visualmente) — pendiente de fusionar en esta rama.
+En paralelo a F4/F5 se lanzó un agente en worktree aislado para **F6** (logotipo de marca propio) + **F7** (paleta multicolor de acentos, decisión tomada de forma autónoma: adoptar la paleta completa del mockup F0 ya aprobado en vez de quedarse solo en el verde de F2). Terminó con éxito (commits `dfedce2`/`2521fab`) y ya está **fusionado** en esta rama (merge commit `1caa42f`), re-verificado sobre el árbol completo: tsc 0, lint 0, vitest **1311 passed**, `npm run build` OK.
+
+**Bloque F — primera pasada sobre las 3 pantallas de F0 (Home/Discover/Media) completa:** F1, F1b, F2, F3a, F3a-FIX, F3b, F4, F5, F6, F7 cerradas. Quedan F8 (mood-chips) y F9 (gamificación) sin planificar en detalle (requieren alcance de producto), y el resto de pantallas (Library, Profile, Social, Chat, Groups) sin tocar todavía.
 
 ## Tarea activa
 
-### Fusionar F6/F7 (worktree paralelo) + decidir siguiente pieza
+### Push + PR del trabajo acumulado de Bloque F (F4-F7) + decidir siguiente pieza
 
-**Qué cambia:** traer los commits del agente paralelo (`dfedce2` F7, `2521fab` F6) a esta rama, re-verificar el conjunto completo (tsc/lint/vitest/build) tras la fusión, y decidir la siguiente pieza de Bloque F o del resto del BACKLOG con la autonomía ya delegada por el usuario.
+**Qué cambia:** pushear la rama con el trabajo acumulado desde el merge de PR benevi/kultura#3 (F4, F5, F6, F7 + esta actualización de gobierno), abrir PR, suscribirse a su actividad, y — mientras se revisa — seguir avanzando en la siguiente pieza del BACKLOG con la autonomía ya delegada por el usuario (sin esperar a que la PR se apruebe para seguir trabajando localmente).
 
-**Cómo sé que funciona:** merge limpio sin conflictos (o resueltos), tsc/lint/vitest en verde sobre el árbol fusionado, verificación visual del logo + iconos de `AuthHeader` en runtime real.
+**Cómo sé que funciona:** push exitoso, PR creada con descripción fiel al alcance real, CI en verde.
 
-**Archivos que toco:** los del merge (`globals.css`, `tailwind.config.ts`, `Header.tsx`, `AuthHeader.tsx`, nuevo `Logo.tsx`, tests asociados) + `docs/BACKLOG.md`/`DONE.md` (ya cerrados por el propio agente, revisar coherencia tras el merge).
-
-El resto de pantallas de Bloque F (Library, Profile, Social, Chat, Groups) y F8/F9 (piezas del mockup aún no implementadas) quedan en BACKLOG para continuar sin pedir confirmación, salvo decisión genuinamente ambigua.
+**Archivos que toco:** ninguno nuevo — es una operación de release. La siguiente pieza de código (F8, o un tramo de BLOQUE E, según lo que se decida al reanudar) se registrará aquí cuando arranque.
