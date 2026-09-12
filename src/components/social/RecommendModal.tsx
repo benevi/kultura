@@ -25,6 +25,7 @@ interface RecommendModalProps {
     backdrop?: string
     year?: number
     synopsis?: string
+    genres?: string[]
   }
   onClose: () => void
 }

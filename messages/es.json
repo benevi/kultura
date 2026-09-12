@@ -116,6 +116,7 @@
   },
   "discover": {
     "title": "Descubrir",
+    "searchPlaceholder": "Busca por título, mood...",
     "filterBy": "Filtrar por",
     "page": "Página",
     "previous": "Anterior",
@@ -160,7 +161,9 @@
     "steamFree": "Gratis",
     "steamNoPrice": "Precio no disponible",
     "steamLanguages": "Idiomas",
-    "steamScreenshots": "Capturas"
+    "steamScreenshots": "Capturas",
+    "whyRecommended": "Por qué te lo recomendamos",
+    "whyRecommendedText": "Coincide con géneros que ya te gustan — {genres} — y tiene un {score}% de afinidad con tu biblioteca."
   },
   "library": {
     "status": {
@@ -293,6 +296,7 @@
   "aiRecommendations": {
     "title": "Para ti",
     "poweredBy": "Claude IA",
+    "aiPickBadge": "TU IA CREE QUE ESTO TE FLIPA",
     "generating": "Generando recomendaciones personalizadas...",
     "needMoreItems": "Añade al menos 3 títulos completados o puntuados a tu biblioteca para recibir recomendaciones.",
     "search": "Buscar",
@@ -522,7 +526,8 @@
     "hero": {
       "tagline": "Descubre, registra y comparte tu cultura",
       "cta": "Empieza gratis",
-      "ctaSecondary": "Ver más"
+      "ctaSecondary": "Ver más",
+      "badge": "7 formatos culturales"
     },
     "what": {
       "title": "Todo tu universo cultural, en un solo lugar",

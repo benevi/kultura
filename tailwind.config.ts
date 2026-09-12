@@ -40,6 +40,11 @@ const config: Config = {
         "on-accent-orange": "var(--on-accent-orange)",
         "on-accent-purple": "var(--on-accent-purple)",
 
+        "accent-blue": "var(--accent-blue)",
+        "accent-yellow": "var(--accent-yellow)",
+        "on-accent-blue": "var(--on-accent-blue)",
+        "on-accent-yellow": "var(--on-accent-yellow)",
+
         /* ─── Legacy aliases (compatibilidad componentes existentes) ─── */
         bg: "var(--surface-base)",
         surface: "var(--surface-default)",
@@ -63,8 +68,9 @@ const config: Config = {
       },
       borderRadius: {
         card: "12px",
-        button: "10px",
-        pill: "20px",
+        /* F0: botones y chips son píldoras completas (999px), no rect. redondeado */
+        button: "9999px",
+        pill: "9999px",
         modal: "8px",
         nav: "4px",
         /* F3b — radios chunky del lenguaje visual F0 (Gen Z), más generosos que

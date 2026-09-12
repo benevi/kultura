@@ -73,11 +73,15 @@ export interface DiscoverGroupsParams {
 
 // El acento rojo legacy (#E82020) sigue siendo el default histórico en la
 // columna `cover_color` (mismo patrón que avatar_color, ver Avatar.tsx
-// LEGACY_RED) — se remapea al leer, no en la fila almacenada.
+// LEGACY_RED) — se remapea al leer, no en la fila almacenada. El valor de
+// reemplazo es el token real `--accent-pink` (ya migrado a F0 en
+// globals.css) — mismo criterio de "acabado visual F0" que GroupsClient
+// aplica al remapear este mismo default en el estado optimista tras crear
+// un grupo.
 const LEGACY_RED = '#E82020'
 
 function resolveCoverColor(coverColor: string): string {
-  return coverColor === LEGACY_RED ? 'var(--accent-positive)' : coverColor
+  return coverColor === LEGACY_RED ? 'var(--accent-pink)' : coverColor
 }
 
 function mapGroup(row: GroupRow): Group {

@@ -447,4 +447,18 @@ describe("DiscoverClient — E59 F5e", () => {
       expect(screen.getByTestId("media-grid")).toHaveTextContent("2")
     );
   });
+
+  // ── E78: pills de tipo llevan icono propio, no emoji ────────────────────
+
+  it("las pills de tipo llevan un icono propio sin alterar el nombre accesible", () => {
+    mockFetchOk();
+    current = new URLSearchParams("type=movie&page=1");
+    render(<DiscoverClient currentType="movie" currentPage={1} />);
+
+    // El icono es aria-hidden (svg): el nombre accesible del radio sigue
+    // siendo exactamente la etiqueta i18n (mock identidad), no el icono.
+    const movie = screen.getByRole("radio", { name: "movie" });
+    expect(movie.querySelector('svg[aria-hidden="true"]')).toBeInTheDocument();
+    expect(movie).not.toHaveTextContent("🎬");
+  });
 });

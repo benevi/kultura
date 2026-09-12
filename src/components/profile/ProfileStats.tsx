@@ -42,14 +42,14 @@ export async function ProfileStats({ byType, totalItems }: ProfileStatsProps) {
 
   return (
     <section>
-      <h2 className="font-display text-xl text-text-primary mb-4">{t('stats')}</h2>
+      <h2 className="font-display text-xl font-bold text-text-primary mb-4">{t('stats')}</h2>
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         {byType.filter(s => s.total > 0).map(s => {
           const Icon = TYPE_ICONS[s.type] ?? IconStar
           return (
           <div
             key={s.type}
-            className="bg-surface-elevated rounded-card p-4 text-center border border-surface-border"
+            className="bg-surface-elevated rounded-2xl p-4 text-center border border-surface-border"
           >
             <Icon className="w-6 h-6 mx-auto text-text-secondary" />
             <p className="text-2xl font-bold text-text-primary leading-none mt-2">{s.total}</p>
