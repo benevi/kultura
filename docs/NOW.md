@@ -99,12 +99,14 @@ PR benevi/kultura#4 abierta con F4-F7 (commits hasta `1caa42f`), CI en curso. Mi
 
 PR #4 fusionada en `master` (commit `05b9cbe`). Usuario verificó producción con capturas reales y reportó que "no se parece en nada" al mockup F0 — diagnóstico verificado contra el código real (no solo la captura): el grid bento, el match score y toda la capa de producto funcionan; lo que nunca se tocó es el cromado interactivo de Discover y la navegación desktop, que siguen siendo UI de antes de Bloque F. Registrado como **Bloque G** (ver BACKLOG.md). Usuario autorizó explícitamente reconstrucción a fondo si hiciera falta y uso de múltiples agentes/sesiones en paralelo — evaluado que NO hace falta reconstruir nada (la app funciona correctamente), solo completar el vestido visual de piezas concretas ya identificadas.
 
+G1 y G2 terminaron con éxito (commits `a70dd8c`/`ed89e45`) y ya están fusionados en esta rama, re-verificados en conjunto: tsc 0, lint 0, vitest **1315 passed**, build OK. PR benevi/kultura#5 abierta, CI en curso.
+
 ## Tarea activa
 
-### Bloque G — G1 (Discover: búsqueda + pills de tipo) y G2 (NavLinks desktop) en paralelo
+### PR #5 (Bloque G) en revisión + pausa para feedback del usuario
 
-**Qué cambia:** dos agentes en worktrees aislados ejecutando G1 y G2 simultáneamente (ver BACKLOG.md para el alcance exacto de cada uno).
+**Qué cambia:** nada nuevo por ahora — esperar CI de la PR #5 y, sobre todo, que el usuario vea el resultado real (o capturas) y confirme si la brecha visual que reportó ("no se parece en nada") queda cerrada con G1/G2, antes de seguir invirtiendo en más piezas de cromado sin confirmar que la dirección es la correcta.
 
-**Cómo sé que funciona:** cada agente verifica tsc/lint/vitest en verde + verificación visual real antes de cerrar; al fusionar ambos worktrees en esta rama, re-verificación completa del árbol combinado.
+**Cómo sé que funciona:** CI verde en la PR; feedback del usuario sobre si el resultado visual ahora se acerca al mockup.
 
-**Archivos que toco:** los que determine cada agente dentro de su alcance acotado (`DiscoverClient.tsx`/`FilterBar.tsx` para G1; `NavLinks.tsx` para G2) + `docs/BACKLOG.md`/`DONE.md` al cerrar cada uno.
+**Archivos que toco:** ninguno hasta recibir ese feedback.
