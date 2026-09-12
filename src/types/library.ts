@@ -50,5 +50,9 @@ export interface LibraryPayload {
     backdrop?: string
     year?: number
     synopsis?: string
+    /** Géneros del item — se cachean en media.metadata.genres, fuente real del
+     * perfil de gustos de match-score.ts. Sin esto, computeMatchScores nunca
+     * tiene señal de género (bug real detectado en producción: 0% MATCH). */
+    genres?: string[]
   }
 }
