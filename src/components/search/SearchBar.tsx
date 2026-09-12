@@ -6,6 +6,7 @@ import { useRouter } from "@/i18n/navigation";
 import { cn } from "@/lib/utils/index";
 import { Spinner } from "@/components/ui/Spinner";
 import { Badge } from "@/components/ui/Badge";
+import { IconSearch } from "@/components/icons";
 import type { MediaItem } from "@/types/media";
 
 export interface SearchBarProps {
@@ -98,43 +99,49 @@ export function SearchBar({
 
   return (
     <div className={cn("relative", className)} ref={containerRef}>
-      <input
-        type="search"
-        value={inputValue}
-        onChange={(e) => setInputValue(e.target.value)}
-        onKeyDown={handleKeyDown}
-        placeholder={resolvedPlaceholder}
-        aria-label={resolvedPlaceholder}
-        className="bg-surface border border-border rounded-lg px-4 py-2 text-sm w-full focus:outline-none focus:ring-2 focus:ring-accent-positive pr-10"
-      />
-      {loading && (
-        <Spinner
-          size="sm"
-          className="absolute right-3 top-1/2 -translate-y-1/2"
+      <div className="relative">
+        <IconSearch
+          className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-text-tertiary"
+          aria-hidden="true"
         />
-      )}
+        <input
+          type="search"
+          value={inputValue}
+          onChange={(e) => setInputValue(e.target.value)}
+          onKeyDown={handleKeyDown}
+          placeholder={resolvedPlaceholder}
+          aria-label={resolvedPlaceholder}
+          className="w-full bg-surface-elevated border border-transparent rounded-pill pl-11 pr-11 py-3 text-sm font-body text-text-primary placeholder:text-text-tertiary focus:outline-none focus:ring-2 focus:ring-accent-positive transition-colors"
+        />
+        {loading && (
+          <Spinner
+            size="sm"
+            className="absolute right-4 top-1/2 -translate-y-1/2"
+          />
+        )}
+      </div>
 
       {open && suggestions.length > 0 && (
-        <ul className="absolute top-full mt-1 w-full bg-surface border border-border rounded-lg shadow-xl z-50 overflow-hidden">
+        <ul className="absolute top-full mt-2 w-full bg-surface-elevated border border-border rounded-card shadow-xl z-50 overflow-hidden py-1">
           {suggestions.map((item) => (
             <li key={item.id}>
               <button
                 type="button"
                 onClick={() => handleSelectSuggestion(item)}
-                className="flex items-center gap-3 px-4 py-2 hover:bg-surface2 w-full text-left"
+                className="flex items-center gap-3 px-4 py-2.5 hover:bg-surface2 w-full text-left transition-colors"
               >
                 {item.poster && (
                   // eslint-disable-next-line @next/next/no-img-element
                   <img
                     src={item.poster}
                     alt=""
-                    className="w-8 h-12 object-cover rounded flex-shrink-0"
+                    className="w-9 h-12 object-cover rounded-md flex-shrink-0"
                   />
                 )}
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm text-text truncate">{item.title}</p>
+                  <p className="text-sm font-body font-medium text-text-primary truncate">{item.title}</p>
                   {item.year && (
-                    <p className="text-xs text-muted">{item.year}</p>
+                    <p className="text-xs text-text-tertiary">{item.year}</p>
                   )}
                 </div>
                 <Badge variant="default">{item.type}</Badge>

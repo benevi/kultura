@@ -115,6 +115,7 @@
   },
   "discover": {
     "title": "Discover",
+    "searchPlaceholder": "Search by title, mood...",
     "filterBy": "Filter by",
     "page": "Page",
     "previous": "Previous",
@@ -172,7 +173,9 @@
     "type": "Type",
     "rating": "Rating",
     "episodes": "Episodes",
-    "duration": "Duration"
+    "duration": "Duration",
+    "whyRecommended": "Why we recommend it",
+    "whyRecommendedText": "It matches genres you already enjoy — {genres} — with a {score}% affinity to your library."
   },
   "library": {
     "status": {
@@ -305,6 +308,7 @@
   "aiRecommendations": {
     "title": "For you",
     "poweredBy": "Claude AI",
+    "aiPickBadge": "YOUR AI THINKS YOU'LL LOVE THIS",
     "generating": "Generating personalized recommendations...",
     "needMoreItems": "Add at least 3 completed or rated titles to your library to receive recommendations.",
     "search": "Search",
@@ -534,7 +538,8 @@
     "hero": {
       "tagline": "Discover, track and share your culture",
       "cta": "Get started for free",
-      "ctaSecondary": "Learn more"
+      "ctaSecondary": "Learn more",
+      "badge": "7 cultural formats"
     },
     "what": {
       "title": "Your entire cultural universe, in one place",

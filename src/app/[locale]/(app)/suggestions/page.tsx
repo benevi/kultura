@@ -23,10 +23,12 @@ export default async function SuggestionsPage() {
   return (
     <main className="max-w-xl mx-auto px-4 md:px-8 py-10">
       <div className="mb-8">
-        <h1 className="font-display text-3xl text-text-primary mb-2">{t('title')}</h1>
+        <h1 className="font-display text-3xl font-extrabold text-text-primary mb-2">
+          {t('title')} <span aria-hidden="true">💡</span>
+        </h1>
         <p className="text-text-tertiary text-sm">{t('subtitle')}</p>
       </div>
-      <div className="bg-surface-default border border-surface-border rounded-modal p-6">
+      <div className="bg-surface-default rounded-3xl p-6 sm:p-7">
         <SuggestionsForm />
       </div>
     </main>

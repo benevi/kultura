@@ -15,8 +15,9 @@ interface LogoProps {
   className?: string
 }
 
-/** Icono de marca: badge redondeado conteniendo 3 formas solapadas y
- * rotadas entre sí (monograma abstracto, no un glifo literal). */
+/** Icono de marca: badge redondeado conteniendo 3 rectángulos rotados en
+ * cascada (monograma abstracto, no un glifo literal) — geometría literal
+ * del canvas F0 v2 ("Kultura Editorial"), ver CLAUDE.md. */
 function Mark({ size }: { size: number }) {
   return (
     <svg
@@ -28,16 +29,20 @@ function Mark({ size }: { size: number }) {
     >
       <rect x="1" y="1" width="22" height="22" rx="7.5" fill="var(--surface-elevated)" />
       <rect
-        x="7.4" y="3.6" width="14.4" height="8" rx="4"
-        fill="var(--accent-lime)"
-        transform="rotate(-20 14.6 7.6)"
+        x="3.5" y="4.5" width="12" height="8.2" rx="3.8"
+        fill="var(--accent-pink)"
+        transform="rotate(-10 9.5 8.6)"
       />
       <rect
-        x="2" y="11.4" width="14.8" height="8.2" rx="4.1"
-        fill="var(--accent-pink)"
-        transform="rotate(16 9.4 15.5)"
+        x="8" y="8.5" width="12" height="8.2" rx="3.8"
+        fill="var(--accent-lime)"
+        transform="rotate(6 14 12.6)"
       />
-      <circle cx="16.2" cy="16" r="4.4" fill="var(--accent-purple)" />
+      <rect
+        x="4" y="12.5" width="12" height="8.2" rx="3.8"
+        fill="var(--accent-purple)"
+        transform="rotate(-4 10 16.6)"
+      />
     </svg>
   )
 }

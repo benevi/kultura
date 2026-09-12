@@ -32,7 +32,7 @@ export default async function GroupsPage() {
 
   return (
     <main className="max-w-2xl mx-auto px-4 md:px-8 py-8">
-      <h1 className="font-display text-3xl mb-8">{t('pageTitle')}</h1>
+      <h1 className="font-display text-3xl font-extrabold mb-8">{t('pageTitle')}</h1>
       <GroupsClient myGroups={myGroups} />
     </main>
   )

@@ -60,8 +60,13 @@ const SCORE_OPTIONS = [
 
 function EmptyLibrary({ t }: { t: ReturnType<typeof useTranslations<'library'>> }) {
   return (
-    <div className="flex flex-col items-center justify-center py-20 px-4 text-center gap-4">
-      <div className="text-5xl select-none" aria-hidden="true">📚</div>
+    <div className="flex flex-col items-center justify-center py-20 px-4 text-center gap-5">
+      <div
+        className="w-20 h-20 rounded-bento bg-surface-elevated flex items-center justify-center text-4xl select-none"
+        aria-hidden="true"
+      >
+        📚
+      </div>
       <div className="flex flex-col gap-2 max-w-sm">
         <h2 className="font-display text-xl font-semibold text-text-primary">
           {t('empty.title')}
@@ -87,8 +92,13 @@ function EmptyFiltered({
   onReset: () => void
 }) {
   return (
-    <div className="flex flex-col items-center justify-center py-16 px-4 text-center gap-3">
-      <div className="text-4xl select-none" aria-hidden="true">🔍</div>
+    <div className="flex flex-col items-center justify-center py-16 px-4 text-center gap-4">
+      <div
+        className="w-16 h-16 rounded-bento bg-surface-elevated flex items-center justify-center text-3xl select-none"
+        aria-hidden="true"
+      >
+        🔍
+      </div>
       <div className="flex flex-col gap-1.5 max-w-xs">
         <p className="font-body font-medium text-text-primary text-base">
           {t('empty.filtered')}
@@ -153,7 +163,7 @@ export function LibraryClient({ entries }: LibraryClientProps) {
   if (entries.length === 0) {
     return (
       <div>
-        <h1 className="font-display text-3xl font-bold text-text-primary mb-8">{t('title')}</h1>
+        <h1 className="font-display text-4xl tracking-wide text-text-primary mb-8">{t('title')}</h1>
         <EmptyLibrary t={t} />
       </div>
     )
@@ -162,18 +172,18 @@ export function LibraryClient({ entries }: LibraryClientProps) {
   return (
     <div>
       {/* Header */}
-      <div className="flex items-center justify-between mb-6">
-        <h1 className="font-display text-3xl font-bold text-text-primary">{t('title')}</h1>
-        <span className="text-text-tertiary text-sm font-body">
+      <div className="flex items-center justify-between gap-3 py-4 mb-2">
+        <h1 className="font-display text-4xl tracking-wide text-text-primary">{t('title')}</h1>
+        <span className="shrink-0 rounded-pill bg-surface-elevated px-3 py-1 text-xs font-body font-semibold text-text-secondary">
           {filtered.length} {t('items')}
         </span>
       </div>
 
       {/* Filters */}
-      <div className="flex flex-col gap-4 mb-8">
+      <div className="flex flex-col gap-4 mb-8 pb-6 border-b border-border">
         {/* Tipo */}
         <div>
-          <p className="text-xs font-body font-medium text-text-tertiary uppercase tracking-wider mb-2">
+          <p className="font-mono uppercase text-xs tracking-widest text-muted mb-2">
             {tF('type')}
           </p>
           <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide flex-nowrap">
@@ -195,7 +205,7 @@ export function LibraryClient({ entries }: LibraryClientProps) {
 
         {/* Estado */}
         <div>
-          <p className="text-xs font-body font-medium text-text-tertiary uppercase tracking-wider mb-2">
+          <p className="font-mono uppercase text-xs tracking-widest text-muted mb-2">
             {tF('status')}
           </p>
           <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide flex-nowrap">
@@ -217,7 +227,7 @@ export function LibraryClient({ entries }: LibraryClientProps) {
 
         {/* Puntuación */}
         <div>
-          <p className="text-xs font-body font-medium text-text-tertiary uppercase tracking-wider mb-2">
+          <p className="font-mono uppercase text-xs tracking-widest text-muted mb-2">
             {tF('minScore')}
           </p>
           <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide flex-nowrap">

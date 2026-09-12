@@ -6,6 +6,20 @@ import { Link } from "@/i18n/navigation";
 import { cn } from "@/lib/utils/index";
 import type { MediaItem } from "@/types/media";
 
+// Matices reutilizados literalmente del canvas F0 v2 para posters sin imagen
+// real — nunca gris plano: siempre un gradiente de dos paradas del mismo
+// matiz (ver CLAUDE.md → "Posters / cards sin imagen real").
+const POSTER_HUES = [300, 55, 320, 220, 160, 40, 150, 260, 95, 350, 130, 25, 45, 250];
+
+function posterGradient(seed: string): string {
+  let hash = 0;
+  for (let i = 0; i < seed.length; i++) {
+    hash = (hash * 31 + seed.charCodeAt(i)) >>> 0;
+  }
+  const hue = POSTER_HUES[hash % POSTER_HUES.length];
+  return `linear-gradient(155deg, oklch(50% 0.15 ${hue}), oklch(28% 0.08 ${hue}))`;
+}
+
 export interface MediaCardProps {
   item: MediaItem;
   showType?: boolean;
@@ -18,6 +32,13 @@ export interface MediaCardProps {
   matchScore?: number;
   /** 'fill' para grid bento (la imagen ocupa el alto que le da la celda del grid). Default '2/3'. */
   aspect?: "2/3" | "fill";
+  /**
+   * Acento radial de esquina superior-izquierda de las "cards feature" del
+   * bento (F0/CLAUDE.md §Cards feature grandes). Un matiz OKLCH (H de la
+   * paleta) activa la capa; ausente = sin acento (comportamiento actual,
+   * todos los consumidores fuera de MediaGrid layout="bento").
+   */
+  accentHue?: number;
 }
 
 export function MediaCard({
@@ -27,6 +48,7 @@ export function MediaCard({
   className,
   matchScore,
   aspect = "2/3",
+  accentHue,
 }: MediaCardProps) {
   const href = `/media/${item.type}/${item.externalId}` as const;
   // Badge de tipo (modo "all", R5b): label localizado vía discoverFilters.typeBadge
@@ -54,12 +76,26 @@ export function MediaCard({
           ) : (
             <div
               data-placeholder
-              className="absolute inset-0 flex items-center justify-center bg-surface-elevated"
+              className="absolute inset-0 flex items-center justify-center"
+              style={{ background: posterGradient(item.id || item.title) }}
             >
-              <span className="text-text-tertiary text-xs font-display font-bold line-clamp-2 px-2 text-center">
+              <span className="text-white/90 text-xs font-display font-bold line-clamp-2 px-2 text-center">
                 {item.title.slice(0, 2).toUpperCase()}
               </span>
             </div>
+          )}
+
+          {/* Acento radial de esquina (F0 §Cards feature grandes): solo en las
+              cards "feature" del bento (MediaGrid las marca con accentHue).
+              Va antes del scrim/badges para no taparlos. */}
+          {accentHue !== undefined && (
+            <div
+              aria-hidden="true"
+              className="absolute inset-0 pointer-events-none"
+              style={{
+                background: `radial-gradient(120% 100% at 20% 10%, oklch(58% 0.2 ${accentHue} / 0.55) 0%, transparent 55%)`,
+              }}
+            />
           )}
 
           {/* Scrim para que título/badges se lean sobre cualquier poster */}

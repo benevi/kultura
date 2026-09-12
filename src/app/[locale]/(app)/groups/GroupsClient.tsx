@@ -7,6 +7,7 @@ import { KButton } from '@/components/ui/KButton'
 import { TabButton } from '@/components/ui/TabButton'
 import { CreateGroupForm, type CreatedGroup } from '@/components/social/CreateGroupForm'
 import { DiscoverGroupsClient } from './DiscoverGroupsClient'
+import { F0 } from '@/lib/design/f0-tokens'
 
 export interface MyGroup {
   id: string
@@ -36,7 +37,7 @@ export function GroupsClient({ myGroups: initialGroups }: GroupsClientProps) {
         description: group.description,
         // Mismo default legacy que avatar_color (ver Avatar.tsx LEGACY_RED):
         // se remapea al leer, no se toca el default a nivel de BD.
-        coverColor: group.cover_color === '#E82020' ? 'var(--accent-positive)' : group.cover_color,
+        coverColor: group.cover_color === '#E82020' ? F0.pink : group.cover_color,
         memberRole: group.memberRole,
       },
       ...prev,
@@ -46,12 +47,19 @@ export function GroupsClient({ myGroups: initialGroups }: GroupsClientProps) {
 
   return (
     <div className="flex flex-col gap-6">
-      {/* Tabs */}
-      <div className="flex gap-1 bg-surface-default rounded-xl border border-surface-border p-1">
+      {/* Tabs — chips F0 (ver TabButton) */}
+      <div className="flex gap-2">
         <TabButton active={activeTab === 'mine'} onClick={() => setActiveTab('mine')}>
           {t('myGroupsTab')}
           {groups.length > 0 && (
-            <span className="ml-1.5 text-xs bg-surface-elevated text-text-secondary rounded-full px-1.5 py-0.5">
+            <span
+              className="ml-1.5 text-xs font-extrabold rounded-full px-1.5 py-0.5"
+              style={
+                activeTab === 'mine'
+                  ? { background: F0.onPink, color: F0.pink }
+                  : { background: F0.stroke, color: F0.textSecondary }
+              }
+            >
               {groups.length}
             </span>
           )}
@@ -65,8 +73,14 @@ export function GroupsClient({ myGroups: initialGroups }: GroupsClientProps) {
       {activeTab === 'mine' && (
         <div className="flex flex-col gap-6">
           <div className="flex items-center justify-between">
-            <h2 className="font-display text-xl">{tFriends('myGroups')}</h2>
-            <KButton size="sm" variant="primary" onClick={() => setShowCreate(v => !v)}>
+            <h2 className="font-display text-xl font-bold" style={{ color: F0.text }}>{tFriends('myGroups')}</h2>
+            <KButton
+              size="sm"
+              variant="primary"
+              onClick={() => setShowCreate(v => !v)}
+              className="rounded-full font-extrabold"
+              style={{ background: F0.pink, color: F0.onPink }}
+            >
               + {tFriends('createGroup')}
             </KButton>
           </div>
@@ -76,10 +90,10 @@ export function GroupsClient({ myGroups: initialGroups }: GroupsClientProps) {
           )}
 
           {groups.length === 0 ? (
-            <div className="bg-surface-default rounded-xl border border-surface-border p-8 text-center">
+            <div className="rounded-bento border p-8 text-center" style={{ background: F0.surface, borderColor: F0.stroke }}>
               <div className="text-3xl mb-3">💬</div>
-              <p className="text-text-secondary text-sm">{tFriends('noGroups')}</p>
-              <p className="text-text-tertiary text-xs mt-1">{tFriends('noGroupsHint')}</p>
+              <p className="text-sm" style={{ color: F0.textSecondary }}>{tFriends('noGroups')}</p>
+              <p className="text-xs mt-1" style={{ color: F0.muted }}>{tFriends('noGroupsHint')}</p>
             </div>
           ) : (
             <div className="grid gap-3 sm:grid-cols-2">
@@ -87,19 +101,20 @@ export function GroupsClient({ myGroups: initialGroups }: GroupsClientProps) {
                 <Link
                   key={g.id}
                   href={`/groups/${g.id}`}
-                  className="bg-surface-default border border-surface-border rounded-xl p-4 hover:border-text-tertiary transition-colors flex flex-col gap-1"
+                  className="rounded-bento border p-4 hover:brightness-110 transition-all flex flex-col gap-2"
+                  style={{ background: F0.surface, borderColor: F0.stroke }}
                 >
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2.5">
                     <span
-                      className="w-8 h-8 rounded-lg flex-shrink-0 flex items-center justify-center text-white font-bold text-sm"
-                      style={{ backgroundColor: g.coverColor }}
+                      className="w-11 h-11 rounded-[16px_16px_16px_4px] flex-shrink-0 flex items-center justify-center font-display font-extrabold text-sm"
+                      style={{ background: g.coverColor, color: F0.onPink }}
                     >
                       {g.name.slice(0, 1).toUpperCase()}
                     </span>
-                    <span className="font-semibold text-sm text-text-primary truncate">{g.name}</span>
+                    <span className="font-bold text-sm truncate" style={{ color: F0.text }}>{g.name}</span>
                   </div>
                   {g.description && (
-                    <p className="text-xs text-text-secondary line-clamp-2 mt-1">{g.description}</p>
+                    <p className="text-xs line-clamp-2" style={{ color: F0.textSecondary }}>{g.description}</p>
                   )}
                 </Link>
               ))}
