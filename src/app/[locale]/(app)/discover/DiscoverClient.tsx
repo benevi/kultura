@@ -20,6 +20,7 @@ import { getFilterOptions, humanizeSlug } from "@/lib/discover/filter-options";
 import { cn } from "@/lib/utils/index";
 import {
   type KIcon,
+  IconCompass,
   IconGrid,
   IconTag,
   IconCalendar,
@@ -39,7 +40,30 @@ import {
   IconSearch,
   IconDice,
   IconClose,
+  IconFilm,
+  IconTv,
+  IconAnime,
+  IconLibrary,
+  IconManga,
+  IconComic,
 } from "@/components/icons";
+
+// Icono distintivo por pill de tipo (peso visual, mismo lenguaje que el
+// resto del sistema propio F1b/E78) — sustituye el emoji genérico que traía
+// el mockup F0 (decisión: iconos propios > emoji suelto). Puramente
+// decorativo — aria-hidden en el render, nunca forma parte del nombre
+// accesible del radio (que sigue siendo la etiqueta i18n). No toca el
+// acento de color (sigue siendo accent-positive único — decisión F2).
+const TYPE_ICONS: Record<DiscoverType, KIcon> = {
+  all: IconGrid,
+  movie: IconFilm,
+  tv: IconTv,
+  anime: IconAnime,
+  book: IconLibrary,
+  manga: IconManga,
+  game: IconGamepad,
+  comic: IconComic,
+};
 
 // Icono propio por key de filtro (spec V2 §Barra). Mapea claves lógicas de
 // TYPE_FILTERS a su icono pequeño en trigger + cabecera de popover.
@@ -368,9 +392,15 @@ export function DiscoverClient({
 
   return (
     <div>
-      {/* Header */}
-      <div className="mb-0 py-4">
-        <h1 className="font-display text-4xl tracking-wide">{t("title")}</h1>
+      {/* Header — G1: mismo peso tipográfico chunky que MediaDetail (F4). */}
+      <div className="mb-4 pt-4 pb-2 flex items-center gap-2.5">
+        <IconCompass
+          className="h-8 w-8 sm:h-10 sm:w-10 text-accent-positive shrink-0"
+          aria-hidden="true"
+        />
+        <h1 className="font-display text-4xl sm:text-5xl md:text-6xl font-bold tracking-tight text-text-primary">
+          {t("title")}
+        </h1>
       </div>
 
       {/* Fetch error banner */}
@@ -456,6 +486,7 @@ export function DiscoverClient({
           >
             {typeOptions.map((option) => {
               const active = option.value === type;
+              const TypeIcon = TYPE_ICONS[option.value];
               return (
                 <button
                   key={option.value}
@@ -464,7 +495,7 @@ export function DiscoverClient({
                   aria-checked={active}
                   onClick={() => handleTypeChange(option.value)}
                   className={cn(
-                    "inline-flex items-center justify-center px-4 py-2 rounded-full",
+                    "inline-flex items-center justify-center gap-1.5 px-4 py-2 rounded-full",
                     "text-sm font-body font-medium whitespace-nowrap cursor-pointer border",
                     "transition-all duration-150 ease-out active:scale-[0.97]",
                     "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-positive focus-visible:ring-offset-2 focus-visible:ring-offset-surface-base",
@@ -473,6 +504,7 @@ export function DiscoverClient({
                       : "bg-surface-elevated text-text-secondary border-surface-border hover:text-text-primary hover:border-text-tertiary"
                   )}
                 >
+                  <TypeIcon className="w-4 h-4" aria-hidden="true" />
                   {option.label}
                 </button>
               );
@@ -504,7 +536,7 @@ export function DiscoverClient({
       </div>
 
       {loading ? (
-        <div className="animate-pulse grid grid-cols-2 md:grid-cols-12 auto-rows-[130px] md:auto-rows-[150px] grid-flow-row-dense gap-3">
+        <div className="animate-pulse grid grid-cols-2 md:grid-cols-12 auto-rows-[130px] md:auto-rows-[150px] grid-flow-row-dense gap-5">
           {DISCOVER_SKELETON_CELLS.map((cellClass, i) => (
             <div key={i} className={cn("bg-surface-elevated rounded-bento", cellClass)} />
           ))}

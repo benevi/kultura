@@ -1,10 +1,11 @@
-﻿'use client'
+'use client'
 
 import { useState } from 'react'
 import { useTranslations } from 'next-intl'
 import { KButton } from '@/components/ui/KButton'
 import { sendFriendRequest, respondToFriendRequest, removeFriend } from '@/lib/social/actions'
 import { createLogger } from '@/lib/logger'
+import { F0 } from '@/lib/design/f0-tokens'
 import type { FriendshipStatusResult } from '@/lib/social/friends'
 
 const log = createLogger('FriendshipButton')
@@ -69,7 +70,14 @@ export function FriendshipButton({
 
   if (status === 'none') {
     return (
-      <KButton variant="primary" size="sm" loading={loading} onClick={handleSendRequest}>
+      <KButton
+        variant="primary"
+        size="sm"
+        loading={loading}
+        onClick={handleSendRequest}
+        className="rounded-full font-extrabold"
+        style={{ background: F0.pink, color: F0.onPink }}
+      >
         {t('addFriend')}
       </KButton>
     )
@@ -77,7 +85,13 @@ export function FriendshipButton({
 
   if (status === 'pending_sent') {
     return (
-      <KButton variant="secondary" size="sm" disabled>
+      <KButton
+        variant="secondary"
+        size="sm"
+        disabled
+        className="rounded-full font-bold border-2"
+        style={{ borderColor: F0.stroke, color: F0.muted }}
+      >
         {t('requestSent')}
       </KButton>
     )
@@ -85,20 +99,29 @@ export function FriendshipButton({
 
   if (status === 'pending_received') {
     return (
-      <KButton variant="primary" size="sm" loading={loading} onClick={handleAccept}>
+      <KButton
+        variant="primary"
+        size="sm"
+        loading={loading}
+        onClick={handleAccept}
+        className="rounded-full font-extrabold"
+        style={{ background: F0.pink, color: F0.onPink }}
+      >
         {t('accept')}
       </KButton>
     )
   }
 
-  // accepted — "Quitar amigo" es acción destructiva → accent-danger
+  // accepted — pill secundario estándar (sin color de "peligro": F0 no define
+  // un matiz propio para eso entre los 6 acentos decorativos de CLAUDE.md).
   return (
     <KButton
       variant="secondary"
       size="sm"
       loading={loading}
       onClick={handleRemove}
-      className="text-text-secondary hover:text-accent-danger hover:border-accent-danger"
+      className="rounded-full font-bold border-2 hover:opacity-90"
+      style={{ borderColor: F0.stroke, color: F0.textSecondary }}
     >
       {t('friends')} ✓
     </KButton>

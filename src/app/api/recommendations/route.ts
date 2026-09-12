@@ -24,6 +24,7 @@ interface RecommendPayload {
     backdrop?: string
     year?: number
     synopsis?: string
+    genres?: string[]
   }
 }
 
@@ -111,8 +112,12 @@ export async function POST(request: Request): Promise<NextResponse> {
         backdrop: body.mediaCache.backdrop ?? null,
         year: body.mediaCache.year ?? null,
         synopsis: body.mediaCache.synopsis ?? null,
+        // Ver nota en /api/library: metadata.genres es la fuente real del
+        // perfil de gustos de match-score.ts — sin onConflict real (antes
+        // ignoreDuplicates) nunca se rellenaba/autocuraba.
+        metadata: { genres: body.mediaCache.genres ?? [] },
       },
-      { onConflict: 'id', ignoreDuplicates: true }
+      { onConflict: 'id' }
     )
     if (mediaError) {
       return NextResponse.json({ error: 'Failed to cache media' }, { status: 500 })

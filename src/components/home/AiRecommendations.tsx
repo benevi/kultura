@@ -43,8 +43,17 @@ export function AiRecommendations() {
   }, [fetchRecs])
 
   return (
-    <section>
-      <div className="flex items-baseline gap-2 mb-3">
+    <section className="relative">
+      {status === 'done' && (
+        <div
+          className="inline-block absolute -top-3.5 left-0 z-10 rounded-2xl px-3.5 py-1.5 md:px-4 md:py-2 bg-accent-lime text-on-accent-lime font-display text-[10px] md:text-[11px] font-extrabold tracking-wide"
+          style={{ transform: 'rotate(-4deg)', boxShadow: '4px 4px 0 rgba(0,0,0,0.35)' }}
+        >
+          🤖 {t('aiPickBadge')}
+        </div>
+      )}
+
+      <div className={`flex items-baseline gap-2 mb-3 ${status === 'done' ? 'pt-4 md:pt-5' : ''}`}>
         <h2 className="font-display text-xl text-text-primary">{t('title')}</h2>
         <span className="font-body text-xs text-text-tertiary">{t('poweredBy')}</span>
       </div>

@@ -1,9 +1,10 @@
 // ============================================================
-// KULTURA — MediaDetail (F4)
-// Ficha de detalle de un título cultural. Hero cinematográfico
-// tipo "reportaje/portada" (backdrop a sangre + scrim + poster
-// grande superpuesto) + badges reales (match score de F3a,
-// puntuación) + tiles de datos con iconos propios (F1b).
+// KULTURA — MediaDetail (F0)
+// Ficha de detalle de un título cultural. Layout de dos columnas
+// tal y como se diseñó a mano en el canvas F0 ("Kultura Editorial"):
+// poster grande con badge de match "colgante" + chips + CTAs a la
+// izquierda, explicación de recomendación + sinopsis + tráiler a
+// la derecha. Ver CLAUDE.md — fuente de verdad del sistema visual.
 // Server Component async (usa getTranslations).
 // ============================================================
 
@@ -57,6 +58,27 @@ interface DetailTile {
   hint?: string;
 }
 
+// ── Poster fallback (sin imagen real) ────────────────────────────────────────
+// Misma fórmula que "Posters/cards sin imagen real" + "Cards feature grandes"
+// del sistema de diseño (CLAUDE.md): degradado lineal de dos paradas del mismo
+// matiz + acento radial en la esquina superior-izquierda. El matiz se deriva
+// del id del item (determinista) para variar entre títulos sin depender de
+// un helper compartido — MediaCard no expone uno hoy, así que esto vive local
+// a MediaDetail siguiendo exactamente la misma receta de valores.
+const POSTER_HUES = [350, 130, 55, 300, 250, 95] as const;
+
+function posterGradient(seed: string): string {
+  let hash = 0;
+  for (let i = 0; i < seed.length; i++) {
+    hash = (hash * 31 + seed.charCodeAt(i)) >>> 0;
+  }
+  const hue = POSTER_HUES[hash % POSTER_HUES.length];
+  return [
+    `radial-gradient(120% 90% at 20% 15%, oklch(50% 0.16 ${hue} / 0.55) 0%, transparent 55%)`,
+    `linear-gradient(160deg, oklch(38% 0.13 ${hue}), oklch(18% 0.06 ${hue}))`,
+  ].join(", ");
+}
+
 function getExtraDetailValue(item: MediaItem): { key: "duration" | "episodes"; value: string } | null {
   const m = item.metadata;
   if (!m) return null;
@@ -86,7 +108,6 @@ export async function MediaDetail({
 }: MediaDetailProps) {
   const t = await getTranslations("media_detail");
   const tMedia = await getTranslations("media");
-  const backdropSrc = item.backdrop ?? item.poster;
   const extraDetail = getExtraDetailValue(item);
   const typeLabel = tMedia(item.type as Parameters<typeof tMedia>[0]);
 
@@ -113,187 +134,187 @@ export async function MediaDetail({
     });
   }
 
+  // "Por qué te lo recomendamos" — nunca texto de IA fabricado: MediaDetail no
+  // tiene hoy una explicación por-item generada por Claude (eso solo existe
+  // como feed agregado en /home vía getAiRecommendations, que no toma un
+  // item concreto como entrada). Esta sección se construye únicamente con
+  // datos reales ya presentes en esta página — géneros del item + el mismo
+  // match score real (F3a) — y se oculta por completo si no hay señal.
+  const topGenres = item.genres?.slice(0, 3) ?? [];
+  const showWhyRecommended = matchScore !== undefined && topGenres.length > 0;
+
   return (
     <div className="min-h-screen">
-      {/* Hero cinematográfico */}
-      <div className="relative w-full h-[52vh] sm:h-[60vh] md:h-[66vh] min-h-[400px] overflow-hidden">
-        {backdropSrc ? (
-          <Image
-            src={backdropSrc}
-            alt={item.title}
-            fill
-            className="object-cover"
-            sizes="100vw"
-            priority
-          />
-        ) : (
-          <div className="absolute inset-0 bg-surface-elevated" />
-        )}
-        {/* Scrim inferior — legibilidad del contenido superpuesto */}
-        <div className="absolute inset-0 bg-gradient-to-t from-surface-base via-surface-base/55 to-transparent" />
-        {/* Scrim superior sutil — legibilidad de badges */}
-        <div className="absolute inset-x-0 top-0 h-24 bg-gradient-to-b from-black/50 to-transparent" />
-
-        {/* Badge de match real (F3a) — solo si hay señal suficiente */}
-        {matchScore !== undefined && (
-          <div
-            data-testid="media-match-badge"
-            className="absolute top-4 right-4 rounded-full bg-accent-positive text-on-accent-positive text-xs font-display font-extrabold px-3 py-1.5 leading-none shadow-lg"
-          >
-            {matchScore}% MATCH
-          </div>
-        )}
-
-        {/* Contenido del hero */}
-        <div className="absolute bottom-0 left-0 right-0 pb-5 md:pb-10">
-          <div className="max-w-5xl mx-auto px-4 flex gap-4 md:gap-7 items-end">
-            {/* Poster */}
-            <div className="w-32 sm:w-40 md:w-52 flex-shrink-0 rounded-bento overflow-hidden shadow-2xl ring-1 ring-white/10 aspect-[2/3] bg-surface-elevated">
-              {item.poster ? (
-                <Image
-                  src={item.poster}
-                  alt={item.title}
-                  width={208}
-                  height={312}
-                  sizes="(max-width: 640px) 128px, (max-width: 768px) 160px, 208px"
-                  className="w-full h-full object-cover"
-                  priority
-                />
-              ) : (
-                <div className="w-full h-full flex items-center justify-center">
-                  <span className="text-text-tertiary font-display font-bold text-xl">
-                    {item.title.slice(0, 2).toUpperCase()}
-                  </span>
+      <div className="max-w-6xl mx-auto px-4 md:px-14 pt-3 pb-14">
+        <section className="flex flex-col md:flex-row gap-8 md:gap-14">
+          {/* ── Columna izquierda: poster ── */}
+          <div className="w-full md:w-[420px] flex-shrink-0">
+            <div className="relative">
+              {/* Badge de match real (F3a) — versión "colgante" (CLAUDE.md) */}
+              {matchScore !== undefined && (
+                <div
+                  data-testid="media-match-badge"
+                  className="absolute z-10 rounded-full font-display font-extrabold text-[15px] leading-none px-[18px] py-2.5"
+                  style={{
+                    top: "-14px",
+                    left: "-14px",
+                    transform: "rotate(-8deg)",
+                    background: "oklch(83% 0.24 130)",
+                    color: "oklch(18% 0.02 130)",
+                    boxShadow: "4px 4px 0 rgba(0,0,0,0.4)",
+                  }}
+                >
+                  {matchScore}% MATCH
                 </div>
               )}
+
+              <div
+                className="relative w-full aspect-[3/4] rounded-[32px] overflow-hidden flex items-end p-6 md:p-8"
+                style={{ boxShadow: "12px 12px 0 oklch(26% 0.025 280)" }}
+              >
+                {item.poster ? (
+                  <Image
+                    src={item.poster}
+                    alt={item.title}
+                    fill
+                    sizes="(max-width: 768px) 90vw, 420px"
+                    className="object-cover"
+                    priority
+                  />
+                ) : (
+                  <div
+                    className="absolute inset-0 flex items-center justify-center"
+                    style={{ background: posterGradient(item.id) }}
+                  >
+                    <span className="text-white/90 font-display font-extrabold text-3xl">
+                      {item.title.slice(0, 2).toUpperCase()}
+                    </span>
+                  </div>
+                )}
+
+                {/* Scrim inferior — legibilidad del título superpuesto */}
+                <div className="absolute inset-x-0 bottom-0 h-2/3 bg-gradient-to-t from-black/85 via-black/30 to-transparent pointer-events-none" />
+
+                <div className="relative z-[1] w-full">
+                  <h1 className="font-display text-2xl sm:text-3xl font-extrabold tracking-tight text-white line-clamp-3">
+                    {item.title}
+                  </h1>
+                  {item.originalTitle && item.originalTitle !== item.title && (
+                    <p className="text-white/70 text-sm mt-1 line-clamp-1">
+                      {item.originalTitle}
+                    </p>
+                  )}
+                </div>
+              </div>
             </div>
 
-            {/* Info */}
-            <div className="flex-1 min-w-0 pb-1">
-              <h1 className="font-display text-3xl sm:text-4xl md:text-6xl font-bold tracking-tight text-text-primary mb-1.5 line-clamp-3">
-                {item.title}
-              </h1>
-              {item.originalTitle && item.originalTitle !== item.title && (
-                <p className="text-text-secondary text-sm mb-2.5">{item.originalTitle}</p>
-              )}
-
-              <div className="flex items-center gap-2.5 text-sm text-text-secondary mb-3 flex-wrap">
-                {item.year && <span>{item.year}</span>}
-                <span>{typeLabel}</span>
-                {item.rating !== undefined && (
-                  <span className="flex items-center gap-1">
-                    <IconStar className="w-3.5 h-3.5 text-accent-highlight" />
-                    <span className="text-text-primary font-semibold">
-                      {item.rating.toFixed(1)}
-                    </span>
-                    {item.ratingSource && (
-                      <span className="text-text-secondary text-xs">
-                        {item.ratingSource}
-                      </span>
+            {/* Chips: tipo / año / rating / episodios (CLAUDE.md — chip inactivo) */}
+            {tiles.length > 0 && (
+              <div className="flex flex-wrap gap-2 mt-4">
+                {tiles.map(({ key, icon: Icon, label, value, hint }) => (
+                  <span
+                    key={key}
+                    aria-label={label}
+                    className="inline-flex items-center gap-1.5 rounded-full bg-surface-elevated text-text-primary font-bold text-xs px-4 py-2"
+                  >
+                    <Icon className="w-3.5 h-3.5 text-text-tertiary" />
+                    {value}
+                    {hint && (
+                      <span className="text-text-tertiary font-medium">{hint}</span>
                     )}
                   </span>
-                )}
+                ))}
               </div>
+            )}
 
-              {item.genres && item.genres.length > 0 && (
-                <div className="flex flex-wrap gap-1.5 mb-4">
-                  {item.genres.slice(0, 5).map((g) => (
-                    <span
-                      key={g}
-                      className="text-xs font-semibold bg-surface-elevated/90 backdrop-blur-sm px-2.5 py-1 rounded-full text-text-secondary"
-                    >
-                      {g}
-                    </span>
-                  ))}
+            {/* Géneros — chip "outline" (CLAUDE.md) */}
+            {item.genres && item.genres.length > 0 && (
+              <div className="flex flex-wrap gap-2 mt-2.5">
+                {item.genres.slice(0, 5).map((g) => (
+                  <span
+                    key={g}
+                    className="rounded-full border-2 border-surface-border text-text-secondary font-bold text-xs px-3.5 py-1.5"
+                  >
+                    {g}
+                  </span>
+                ))}
+              </div>
+            )}
+
+            {/* CTAs — primario "+ Añadir a mi biblioteca" / secundarios */}
+            <div className="flex flex-col gap-2.5 mt-6">
+              <LibraryAction
+                mediaId={item.id}
+                mediaCache={{
+                  externalId: item.externalId,
+                  type: item.type,
+                  title: item.title,
+                  poster: item.poster,
+                  backdrop: item.backdrop,
+                  year: item.year,
+                  synopsis: item.synopsis,
+                  genres: item.genres,
+                }}
+                initialEntry={initialEntry}
+                isAuthenticated={isAuthenticated}
+              />
+
+              {isAuthenticated && (
+                <div className="flex items-center gap-2.5 flex-wrap">
+                  <AddToListButton item={item} />
+                  <RecommendButton item={item} />
+                  <ReportButton targetType="media" targetId={item.id} />
                 </div>
               )}
-
-              <div className="mt-1">
-                <LibraryAction
-                  mediaId={item.id}
-                  mediaCache={{
-                    externalId: item.externalId,
-                    type: item.type,
-                    title: item.title,
-                    poster: item.poster,
-                    backdrop: item.backdrop,
-                    year: item.year,
-                    synopsis: item.synopsis,
-                  }}
-                  initialEntry={initialEntry}
-                  isAuthenticated={isAuthenticated}
-                />
-              </div>
             </div>
           </div>
-        </div>
-      </div>
 
-      {/* Contenido */}
-      <div className="max-w-5xl mx-auto px-4 mt-8 space-y-10 pb-14">
-        {/* Datos clave — tiles con icono propio */}
-        {tiles.length > 0 && (
-          <section className="grid grid-cols-2 md:grid-cols-4 gap-3">
-            {tiles.map(({ key, icon: Icon, label, value, hint }) => (
-              <div
-                key={key}
-                className="flex items-center gap-3 rounded-bento bg-surface-elevated p-3 md:p-4"
-              >
-                <div className="w-9 h-9 rounded-full bg-surface-base flex items-center justify-center flex-shrink-0">
-                  <Icon className="w-4 h-4 text-accent-positive" />
-                </div>
-                <div className="min-w-0">
-                  <p className="text-[11px] text-text-secondary uppercase tracking-wide font-medium">
-                    {label}
-                  </p>
-                  <p className="text-sm font-bold text-text-primary truncate">
-                    {value}
-                    {hint && <span className="text-text-secondary text-xs font-medium ml-1">{hint}</span>}
-                  </p>
-                </div>
-              </div>
-            ))}
-          </section>
-        )}
+          {/* ── Columna derecha: info ── */}
+          <div className="flex-1 min-w-0 pt-1 md:pt-2 space-y-8">
+            {/* Por qué te lo recomendamos — solo con señal real (ver arriba) */}
+            {showWhyRecommended && (
+              <section>
+                <span className="inline-flex items-center gap-1.5 rounded-full bg-surface-elevated text-text-primary font-bold text-xs px-4 py-2 mb-3">
+                  🤖 {t("whyRecommended")}
+                </span>
+                <p className="text-sm text-text-secondary leading-relaxed">
+                  {t("whyRecommendedText", {
+                    genres: topGenres.join(", "),
+                    score: matchScore,
+                  })}
+                </p>
+              </section>
+            )}
 
-        {/* Synopsis */}
-        {item.synopsis && (
-          <section>
-            <h2 className="font-display text-xl font-bold text-text-primary mb-3">
-              {t("synopsis")}
-            </h2>
-            <SynopsisSection text={item.synopsis} />
-          </section>
-        )}
+            {/* Sinopsis */}
+            {item.synopsis && (
+              <section>
+                <h2 className="font-display text-xl font-bold text-text-primary mb-3">
+                  {t("synopsis")}
+                </h2>
+                <SynopsisSection text={item.synopsis} />
+              </section>
+            )}
 
-        {/* Steam (solo juegos, y solo si se resolvió la ficha de tienda) */}
-        {steam && <SteamSection steam={steam} />}
+            {/* Steam (solo juegos, y solo si se resolvió la ficha de tienda) */}
+            {steam && <SteamSection steam={steam} />}
 
-        {/* Streaming providers */}
-        {providers && providers.length > 0 && (
-          <StreamingProviders providers={providers} title={t("streamingOn")} />
-        )}
+            {/* Streaming providers */}
+            {providers && providers.length > 0 && (
+              <StreamingProviders providers={providers} title={t("streamingOn")} />
+            )}
 
-        {/* Acciones sociales */}
-        {isAuthenticated && (
-          <div className="flex items-center gap-3 flex-wrap">
-            <RecommendButton item={item} />
-            <AddToListButton item={item} />
-            <ReportButton targetType="media" targetId={item.id} />
+            {/* Tráiler — iframe real (ya embebido, no hay paso de miniatura) */}
+            {trailerKey && (
+              <section>
+                <h2 className="font-display text-xl font-bold text-text-primary mb-3">
+                  {t("trailer")}
+                </h2>
+                <TrailerEmbed youtubeKey={trailerKey} title={item.title} />
+              </section>
+            )}
           </div>
-        )}
-
-        {/* Tráiler */}
-        {trailerKey && (
-          <section>
-            <h2 className="font-display text-xl font-bold text-text-primary mb-3">
-              {t("trailer")}
-            </h2>
-            <div className="max-w-2xl rounded-bento-lg overflow-hidden">
-              <TrailerEmbed youtubeKey={trailerKey} title={item.title} />
-            </div>
-          </section>
-        )}
+        </section>
       </div>
     </div>
   );

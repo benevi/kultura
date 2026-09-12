@@ -52,16 +52,16 @@ export function CreateListModal({ onClose }: CreateListModalProps) {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 animate-backdrop-in">
-      <div className="bg-surface-elevated border border-surface-border rounded-xl w-full max-w-sm flex flex-col gap-4 p-5 animate-modal-in">
+      <div className="bg-surface-elevated rounded-3xl w-full max-w-sm flex flex-col gap-4 p-6 animate-modal-in">
         <div className="flex items-center justify-between">
-          <h2 className="font-display text-xl text-text-primary">{t('createList')}</h2>
+          <h2 className="font-display text-xl font-extrabold text-text-primary">{t('createList')}</h2>
           <button onClick={onClose} className="text-text-secondary hover:text-text-primary text-xl leading-none">×</button>
         </div>
 
-        <div className="flex flex-col gap-3">
+        <div className="flex flex-col gap-4">
           {/* Nombre */}
           <div>
-            <label className="text-xs text-text-secondary mb-1 block">{t('listName')}</label>
+            <label className="text-xs font-semibold text-text-secondary mb-1.5 block">{t('listName')}</label>
             <input
               type="text"
               value={name}
@@ -73,7 +73,7 @@ export function CreateListModal({ onClose }: CreateListModalProps) {
 
           {/* Tipo */}
           <div>
-            <label className="text-xs text-text-secondary mb-1 block">{t('mediaType')}</label>
+            <label className="text-xs font-semibold text-text-secondary mb-1.5 block">{t('mediaType')}</label>
             <select
               value={mediaType}
               onChange={(e) => setMediaType(e.target.value as MediaTypeKey)}
@@ -86,12 +86,12 @@ export function CreateListModal({ onClose }: CreateListModalProps) {
           </div>
 
           {/* Colaborativa */}
-          <label className="flex items-center gap-3 cursor-pointer">
+          <label className="flex items-center gap-3 cursor-pointer rounded-2xl bg-surface-base px-3 py-3">
             <input
               type="checkbox"
               checked={isCollaborative}
               onChange={(e) => setIsCollaborative(e.target.checked)}
-              className="accent-accent-positive w-4 h-4"
+              className="accent-accent-positive w-4 h-4 flex-shrink-0"
             />
             <div>
               <p className="text-sm font-medium text-text-primary">{t('collaborative')}</p>

@@ -41,7 +41,13 @@ export async function ProfileHeader({
   }).format(new Date(createdAt))
 
   return (
-    <div className="bg-surface-default rounded-card p-6 md:p-8 w-full flex flex-col gap-4 border border-surface-border">
+    <div
+      className="relative overflow-hidden rounded-bento p-6 md:p-8 w-full flex flex-col gap-4 border border-surface-border"
+      style={{
+        background:
+          'radial-gradient(120% 100% at 20% 10%, oklch(68% 0.24 350 / 0.55), transparent 55%), var(--surface-default)',
+      }}
+    >
       {/* Avatar + nombre */}
       <div className="flex items-center gap-5">
         <Avatar

@@ -142,121 +142,129 @@ export function SettingsForm({
     }
   }
 
+  const eyebrow = 'text-[13px] font-extrabold uppercase tracking-wide text-text-tertiary mb-3'
+  const row = 'px-5 py-4 sm:px-6 sm:py-5'
+
   return (
     <div className="flex flex-col gap-8">
-      <h1 className="font-display text-2xl font-bold text-text-primary">{t('title')}</h1>
+      <h1 className="font-display text-2xl md:text-3xl font-extrabold text-text-primary">
+        {t('title')} <span aria-hidden="true">⚙️</span>
+      </h1>
 
       {/* Sección Perfil */}
-      <section className="flex flex-col gap-6 rounded-modal border border-surface-border bg-surface-default p-6">
-        <h2 className="font-display text-lg font-medium text-text-primary">{t('profile')}</h2>
-
-        {/* Email (solo lectura) */}
-        <div className="flex flex-col gap-1">
-          <label className="text-sm font-body text-text-secondary">{t('email')}</label>
-          <p className="select-all rounded-button border border-surface-border bg-surface-base px-3 py-2 text-sm font-body text-text-primary opacity-60">
-            {userEmail}
-          </p>
-        </div>
-
-        {/* Username */}
-        <KInput
-          id="username"
-          label={t('username')}
-          value={username}
-          onChange={e => handleUsernameChange(e.target.value)}
-          placeholder={t('usernamePlaceholder')}
-          error={usernameError}
-          autoComplete="off"
-          spellCheck={false}
-        />
-
-        {/* Color de avatar */}
-        <div className="flex flex-col gap-3">
-          <label className="text-sm font-body text-text-secondary">{t('avatarColor')}</label>
-          <div className="grid grid-cols-8 gap-2">
-            {AVATAR_COLORS.map(color => (
-              <button
-                key={color.name}
-                type="button"
-                aria-label={color.name}
-                onClick={() => setAvatarColor(color.name)}
-                className={cn(
-                  'h-8 w-8 rounded-full transition-transform hover:scale-110',
-                  avatarColor === color.name
-                    ? 'scale-110 ring-2 ring-accent-positive ring-offset-2 ring-offset-surface-default'
-                    : ''
-                )}
-                style={{ backgroundColor: color.hex }}
-              />
-            ))}
+      <section>
+        <p className={eyebrow}>{t('profile')}</p>
+        <div className="flex flex-col rounded-3xl bg-surface-default divide-y divide-surface-border overflow-hidden">
+          {/* Email (solo lectura) */}
+          <div className={cn(row, 'flex items-center justify-between gap-4 flex-wrap')}>
+            <span className="text-sm font-semibold text-text-primary">{t('email')}</span>
+            <span className="select-all text-sm text-text-tertiary">{userEmail}</span>
           </div>
-        </div>
 
-        {/* Cambiar contraseña */}
-        <div className="flex flex-col gap-2">
-          <p className="text-sm font-body text-text-tertiary">
-            {t('changePasswordHint') ?? 'Te enviaremos un email con el enlace de restablecimiento'}
-          </p>
-          <KButton variant="secondary" size="sm" className="w-fit" asChild>
-            <Link href={`/${currentLocale}/login?mode=reset`}>{t('changePassword')}</Link>
-          </KButton>
+          {/* Username */}
+          <div className={row}>
+            <KInput
+              id="username"
+              label={t('username')}
+              value={username}
+              onChange={e => handleUsernameChange(e.target.value)}
+              placeholder={t('usernamePlaceholder')}
+              error={usernameError}
+              autoComplete="off"
+              spellCheck={false}
+            />
+          </div>
+
+          {/* Color de avatar */}
+          <div className={cn(row, 'flex flex-col gap-3')}>
+            <label className="text-sm font-body text-text-secondary">{t('avatarColor')}</label>
+            <div className="grid grid-cols-8 gap-2">
+              {AVATAR_COLORS.map(color => (
+                <button
+                  key={color.name}
+                  type="button"
+                  aria-label={color.name}
+                  onClick={() => setAvatarColor(color.name)}
+                  className={cn(
+                    'h-8 w-8 rounded-full transition-transform hover:scale-110',
+                    avatarColor === color.name
+                      ? 'scale-110 ring-2 ring-accent-positive ring-offset-2 ring-offset-surface-default'
+                      : ''
+                  )}
+                  style={{ backgroundColor: color.hex }}
+                />
+              ))}
+            </div>
+          </div>
+
+          {/* Cambiar contraseña */}
+          <div className={cn(row, 'flex items-center justify-between gap-4 flex-wrap')}>
+            <p className="text-sm font-body text-text-tertiary max-w-xs">
+              {t('changePasswordHint') ?? 'Te enviaremos un email con el enlace de restablecimiento'}
+            </p>
+            <KButton variant="secondary" size="sm" className="flex-shrink-0" asChild>
+              <Link href={`/${currentLocale}/login?mode=reset`}>{t('changePassword')}</Link>
+            </KButton>
+          </div>
         </div>
       </section>
 
       {/* Sección Preferencias */}
-      <section className="flex flex-col gap-6 rounded-modal border border-surface-border bg-surface-default p-6">
-        <h2 className="font-display text-lg font-medium text-text-primary">{t('preferences')}</h2>
-
-        {/* Idioma */}
-        <div className="flex flex-col gap-3">
-          <label className="text-sm font-body text-text-secondary">{t('language')}</label>
-          <div className="flex gap-2">
-            {(['es', 'en'] as const).map(loc => (
-              <button
-                key={loc}
-                type="button"
-                onClick={() => setLocale(loc)}
-                className={cn(
-                  'rounded-pill px-4 py-2 text-sm font-medium font-body border transition-colors',
-                  locale === loc
-                    ? 'bg-accent-positive text-on-accent-positive border-accent-positive'
-                    : 'bg-surface-elevated text-text-secondary border-surface-border hover:text-text-primary'
-                )}
-              >
-                {loc === 'es' ? 'Español' : 'English'}
-              </button>
-            ))}
+      <section>
+        <p className={eyebrow}>{t('preferences')}</p>
+        <div className="flex flex-col rounded-3xl bg-surface-default overflow-hidden">
+          {/* Idioma */}
+          <div className={cn(row, 'flex items-center justify-between gap-4 flex-wrap')}>
+            <label className="text-sm font-semibold text-text-primary">{t('language')}</label>
+            <div className="flex gap-2">
+              {(['es', 'en'] as const).map(loc => (
+                <button
+                  key={loc}
+                  type="button"
+                  onClick={() => setLocale(loc)}
+                  className={cn(
+                    'rounded-pill px-4 py-2 text-sm font-bold font-body transition-colors',
+                    locale === loc
+                      ? 'bg-accent-positive text-on-accent-positive'
+                      : 'bg-surface-elevated text-text-secondary hover:text-text-primary'
+                  )}
+                >
+                  {loc === 'es' ? 'Español' : 'English'}
+                </button>
+              ))}
+            </div>
           </div>
         </div>
       </section>
 
       {/* Sección Zona de peligro (D2/D3) */}
-      <section className="flex flex-col gap-4 rounded-modal border border-surface-border bg-surface-default p-4">
-        <h2 className="font-display text-lg font-medium text-text-secondary">{t('dangerZone')}</h2>
+      <section>
+        <p className={cn(eyebrow, 'text-accent-danger')}>{t('dangerZone')}</p>
+        <div className="flex flex-col rounded-3xl bg-surface-default divide-y divide-surface-border overflow-hidden">
+          <div className={cn(row, 'flex items-center justify-between gap-4 flex-wrap')}>
+            <p className="text-sm font-body text-text-tertiary max-w-xs">{t('exportDataHint')}</p>
+            <KButton
+              variant="secondary"
+              size="sm"
+              className="flex-shrink-0"
+              onClick={handleExportData}
+              loading={exporting}
+            >
+              {t('exportData')}
+            </KButton>
+          </div>
 
-        <div className="flex flex-col gap-2">
-          <p className="text-sm font-body text-text-tertiary">{t('exportDataHint')}</p>
-          <KButton
-            variant="secondary"
-            size="sm"
-            className="w-fit"
-            onClick={handleExportData}
-            loading={exporting}
-          >
-            {t('exportData')}
-          </KButton>
-        </div>
-
-        <div className="flex flex-col gap-2 pt-3 border-t border-surface-border">
-          <p className="text-sm font-body text-text-tertiary">{t('deleteAccountHint')}</p>
-          <KButton
-            variant="secondary"
-            size="sm"
-            className="w-fit border-danger/40 text-danger hover:bg-danger/10"
-            onClick={() => setDeleteModalOpen(true)}
-          >
-            {t('deleteAccount')}
-          </KButton>
+          <div className={cn(row, 'flex items-center justify-between gap-4 flex-wrap')}>
+            <p className="text-sm font-body text-text-tertiary max-w-xs">{t('deleteAccountHint')}</p>
+            <KButton
+              variant="secondary"
+              size="sm"
+              className="flex-shrink-0 border-2 border-accent-danger/50 text-accent-danger hover:bg-accent-danger/10"
+              onClick={() => setDeleteModalOpen(true)}
+            >
+              {t('deleteAccount')}
+            </KButton>
+          </div>
         </div>
       </section>
 

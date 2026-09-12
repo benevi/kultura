@@ -12,6 +12,7 @@ import { GroupFeed } from './GroupFeed'
 import { JoinGroupButton } from './JoinGroupButton'
 import { InviteButton } from './InviteButton'
 import { getGroupById, getMemberRole, getGroupMembers } from '@/lib/social/groups'
+import { F0 } from '@/lib/design/f0-tokens'
 import type { Metadata } from 'next'
 
 interface Props {
@@ -45,34 +46,73 @@ export default async function GroupPage({ params }: Props) {
   const t = await getTranslations('friends')
   const tG = await getTranslations('groups')
 
+  // Preview "apilado" (CLAUDE.md — avatares apilados): primeros miembros de
+  // la lista ya cargada, mismo dato que el sidebar, solo tratamiento visual.
+  const stackPreview = members.slice(0, 5)
+
   return (
     <main className="max-w-3xl mx-auto px-4 md:px-8 py-8 flex flex-col gap-8">
-      {/* Group header */}
+      {/* Group header — card "feature" (CLAUDE.md: gradiente + acento radial) */}
       <div
-        className="bg-surface rounded-xl border border-border p-4 flex items-start gap-4 border-l-4"
-        style={{ borderLeftColor: group.coverColor }}
+        className="relative overflow-hidden rounded-bento-lg border p-5 flex items-start gap-4"
+        style={{ background: F0.surface, borderColor: F0.stroke }}
       >
         <div
-          className="w-12 h-12 rounded-xl flex-shrink-0 flex items-center justify-center text-white font-display text-xl"
-          style={{ backgroundColor: group.coverColor }}
+          className="absolute inset-0 pointer-events-none"
+          style={{
+            background: `radial-gradient(120% 100% at 15% 0%, color-mix(in oklch, ${group.coverColor} 60%, transparent) 0%, transparent 55%)`,
+          }}
+        />
+        <div
+          className="relative z-10 w-14 h-14 rounded-[16px_16px_16px_4px] flex-shrink-0 flex items-center justify-center font-display font-extrabold text-xl"
+          style={{ background: group.coverColor, color: F0.onPink }}
         >
           {group.name.slice(0, 1).toUpperCase()}
         </div>
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2 min-w-0">
-            <h1 className="font-display text-2xl text-text truncate">{group.name}</h1>
+        <div className="relative z-10 flex-1 min-w-0">
+          <div className="flex items-center gap-2 min-w-0 flex-wrap">
+            <h1 className="font-display text-2xl font-extrabold truncate" style={{ color: F0.text }}>
+              {group.name}
+            </h1>
             {!group.isPublic && (
-              <Badge variant="muted" className="flex-shrink-0">{tG('privateBadge')}</Badge>
+              <Badge
+                variant="muted"
+                className="flex-shrink-0 bg-transparent border-2 font-bold border-[oklch(32%_0.025_280)] text-[oklch(76%_0.02_280)]"
+              >
+                {tG('privateBadge')}
+              </Badge>
             )}
           </div>
           {group.description && (
-            <p className="text-sm text-muted mt-1">{group.description}</p>
+            <p className="text-sm mt-1" style={{ color: F0.textSecondary }}>{group.description}</p>
           )}
-          <p className="text-xs text-muted mt-1">
-            {members.length} {t('membersCount', { count: members.length })}
-          </p>
+
+          <div className="flex items-center gap-3 mt-3 flex-wrap">
+            {/* Amigos/miembros apilados (CLAUDE.md — avatares apilados) */}
+            {stackPreview.length > 0 && (
+              <div className="flex items-center">
+                {stackPreview.map((m, i) => m.user && (
+                  <div
+                    key={m.user.id}
+                    className="w-7 h-7 rounded-full flex items-center justify-center text-[10px] font-extrabold text-white"
+                    style={{
+                      background: `linear-gradient(135deg, ${m.user.avatarColor}, color-mix(in srgb, ${m.user.avatarColor} 55%, black))`,
+                      border: `2px solid ${F0.surface}`,
+                      marginLeft: i === 0 ? 0 : '-10px',
+                      zIndex: stackPreview.length - i,
+                    }}
+                  >
+                    {m.user.avatarInitials}
+                  </div>
+                ))}
+              </div>
+            )}
+            <p className="text-xs" style={{ color: F0.muted }}>
+              {members.length} {t('membersCount', { count: members.length })}
+            </p>
+          </div>
         </div>
-        <div className="flex-shrink-0 flex items-center gap-2">
+        <div className="relative z-10 flex-shrink-0 flex items-center gap-2">
           {isOwner && <InviteButton groupId={id} />}
           {showJoin && (
             <JoinGroupButton
@@ -90,7 +130,10 @@ export default async function GroupPage({ params }: Props) {
           {isMember ? (
             <GroupFeed groupId={id} currentUserId={user.id} />
           ) : (
-            <div className="bg-surface border border-border rounded-xl p-8 text-center text-sm text-muted">
+            <div
+              className="rounded-bento border p-8 text-center text-sm"
+              style={{ background: F0.surface, borderColor: F0.stroke, color: F0.textSecondary }}
+            >
               {tG('joinHint')}
             </div>
           )}
@@ -98,15 +141,28 @@ export default async function GroupPage({ params }: Props) {
 
         {/* Members sidebar */}
         <div className="flex flex-col gap-3">
-          <h2 className="font-display text-lg text-text">{tG('members')}</h2>
-          <div className="bg-surface border border-border rounded-xl overflow-hidden divide-y divide-border">
+          <h2 className="font-display text-lg font-bold" style={{ color: F0.text }}>{tG('members')}</h2>
+          <div className="rounded-bento border overflow-hidden" style={{ background: F0.surface, borderColor: F0.stroke }}>
             {members.map((m) => (
               m.user && (
-                <div key={m.user.id} className="flex items-center gap-3 px-3 py-2.5">
-                  <Avatar initials={m.user.avatarInitials} color={m.user.avatarColor} size="sm" />
-                  <span className="text-sm text-text flex-1 truncate">{m.user.username}</span>
+                <div
+                  key={m.user.id}
+                  className="flex items-center gap-3 px-3 py-2.5 border-t first:border-t-0"
+                  style={{ borderColor: F0.stroke }}
+                >
+                  {m.role === 'owner' ? (
+                    <div
+                      className="rounded-full p-[2px] flex-shrink-0"
+                      style={{ background: `conic-gradient(from 180deg, ${F0.yellow}, ${F0.orange}, ${F0.yellow})` }}
+                    >
+                      <Avatar initials={m.user.avatarInitials} color={m.user.avatarColor} size="sm" />
+                    </div>
+                  ) : (
+                    <Avatar initials={m.user.avatarInitials} color={m.user.avatarColor} size="sm" />
+                  )}
+                  <span className="text-sm flex-1 truncate font-medium" style={{ color: F0.text }}>{m.user.username}</span>
                   {m.role === 'owner' && (
-                    <span className="text-xs text-muted">👑</span>
+                    <span className="text-xs flex-shrink-0" style={{ color: F0.yellow }} aria-label={tG('members')}>👑</span>
                   )}
                 </div>
               )

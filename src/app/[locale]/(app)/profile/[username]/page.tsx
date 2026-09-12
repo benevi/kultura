@@ -159,7 +159,7 @@ export default async function ProfilePage({ params }: Props) {
       {!hasAnyContent && (
         <div className="flex flex-col items-center gap-3 py-16 text-center">
           <IconLibrary className="w-12 h-12 text-text-tertiary" />
-          <p className="font-medium" style={{ color: 'var(--text-primary)' }}>
+          <p className="font-bold" style={{ color: 'var(--text-primary)' }}>
             {isOwnProfile
               ? t('emptyOwn')
               : t('emptyOther', { username: profileUser.username })}

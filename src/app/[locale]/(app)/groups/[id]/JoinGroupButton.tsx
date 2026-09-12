@@ -3,7 +3,9 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useTranslations } from 'next-intl'
+import { KButton } from '@/components/ui/KButton'
 import { useToastContext } from '@/components/ui/ToastProvider'
+import { F0 } from '@/lib/design/f0-tokens'
 
 interface Props {
   groupId: string
@@ -37,23 +39,29 @@ export function JoinGroupButton({ groupId, isMember, isOwner }: Props) {
 
   if (isMember) {
     return (
-      <button
+      <KButton
+        variant="secondary"
+        size="sm"
         onClick={handleClick}
         disabled={loading}
-        className="flex-shrink-0 px-3 py-1.5 text-xs font-semibold bg-surface2 text-muted rounded-full hover:bg-accent-danger/10 hover:text-accent-danger transition-colors disabled:opacity-50"
+        className="flex-shrink-0 rounded-full font-bold border-2"
+        style={{ borderColor: F0.stroke, color: F0.textSecondary }}
       >
         {loading ? '…' : t('leaveGroup')}
-      </button>
+      </KButton>
     )
   }
 
   return (
-    <button
+    <KButton
+      variant="primary"
+      size="sm"
       onClick={handleClick}
       disabled={loading}
-      className="flex-shrink-0 px-4 py-1.5 text-xs font-semibold bg-accent-positive text-on-accent-positive rounded-full hover:brightness-110 transition-colors disabled:opacity-50"
+      className="flex-shrink-0 rounded-full font-extrabold"
+      style={{ background: F0.pink, color: F0.onPink }}
     >
       {loading ? '…' : t('joinGroup')}
-    </button>
+    </KButton>
   )
 }

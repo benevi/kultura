@@ -97,8 +97,14 @@ export async function POST(request: Request): Promise<NextResponse> {
         backdrop: body.mediaCache.backdrop ?? null,
         year: body.mediaCache.year ?? null,
         synopsis: body.mediaCache.synopsis ?? null,
+        // Bug real detectado en producción (2026-09-12): metadata.genres nunca
+        // se cacheaba aquí, así que match-score.ts (buildTasteProfile) nunca
+        // tenía señal de género → match score siempre 0% para cualquier
+        // usuario. onConflict SIN ignoreDuplicates para que además autocure
+        // (backfill) las filas ya cacheadas antes de este fix.
+        metadata: { genres: body.mediaCache.genres ?? [] },
       },
-      { onConflict: 'id', ignoreDuplicates: true }
+      { onConflict: 'id' }
     )
 
     if (mediaError) {

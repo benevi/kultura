@@ -148,17 +148,43 @@ export function ListDetail({
   return (
     <div className="flex flex-col gap-10">
       {/* Header */}
-      <header className="flex items-start justify-between gap-3">
+      <header className="flex items-start justify-between gap-3 flex-wrap">
         <div>
-          <div className="flex items-center gap-3 flex-wrap">
-            <h1 className="font-display text-3xl text-text-primary">{list.name}</h1>
+          <h1 className="font-display text-3xl md:text-4xl font-extrabold text-text-primary leading-tight">
+            {list.name}
+          </h1>
+          <div className="flex items-center gap-3 mt-3 flex-wrap">
             {list.isCollaborative && (
-              <span className="text-xs font-semibold bg-surface-elevated text-text-secondary rounded-full px-2.5 py-1">
-                {t('collaborative')}
-              </span>
+              <div className="flex items-center">
+                {list.owner && (
+                  <Avatar
+                    initials={list.owner.avatarInitials}
+                    color={list.owner.avatarColor}
+                    size="sm"
+                    className="ring-2 ring-surface-base"
+                  />
+                )}
+                {members.map((m, i) => (
+                  m.user && (
+                    <Avatar
+                      key={m.userId}
+                      initials={m.user.avatarInitials}
+                      color={m.user.avatarColor}
+                      size="sm"
+                      className={i === 0 && !list.owner ? 'ring-2 ring-surface-base' : '-ml-3 ring-2 ring-surface-base'}
+                    />
+                  )
+                ))}
+              </div>
             )}
+            <span className="text-sm text-text-secondary">
+              {list.isCollaborative && (
+                <span className="font-semibold text-text-primary">{t('collaborative')}</span>
+              )}
+              {list.isCollaborative && ' · '}
+              {items.length} {t('items')}
+            </span>
           </div>
-          <p className="text-sm text-text-secondary mt-1">{list.owner?.username}</p>
         </div>
         {isOwner && (
           <KButton
@@ -189,18 +215,18 @@ export function ListDetail({
 
       {/* Items */}
       <section>
-        <h2 className="font-display text-xl mb-4 text-text-primary">
+        <h2 className="font-display text-xl font-bold mb-4 text-text-primary">
           {t('itemsTitle')}
           <span className="ml-2 text-sm font-body font-medium text-text-secondary">{items.length}</span>
         </h2>
         {items.length === 0 ? (
-          <div className="bg-surface-default border border-surface-border rounded-xl p-8 text-center flex flex-col items-center gap-3">
+          <div className="bg-surface-default rounded-3xl p-10 text-center flex flex-col items-center gap-3">
             <span className="text-3xl">📋</span>
             <p className="text-text-primary text-sm font-medium">{t('noItems')}</p>
             <p className="text-text-secondary text-sm">{t('noItemsHint')}</p>
             <Link
               href="/discover"
-              className="inline-flex items-center justify-center h-8 px-3 text-xs rounded-button font-body font-medium bg-accent-positive text-on-accent-positive hover:brightness-110 transition-all"
+              className="inline-flex items-center justify-center h-8 px-4 mt-1 text-xs rounded-pill font-body font-bold bg-accent-positive text-on-accent-positive hover:brightness-110 transition-all"
             >
               {t('noItemsDiscover')}
             </Link>
@@ -212,7 +238,10 @@ export function ListDetail({
                 {item.media ? (
                   <MediaCard item={item.media} />
                 ) : (
-                  <div className="aspect-[2/3] bg-surface-elevated rounded-lg flex items-center justify-center">
+                  <div
+                    className="aspect-[2/3] rounded-bento flex items-center justify-center"
+                    style={{ background: 'linear-gradient(155deg, var(--surface2), var(--surface))' }}
+                  >
                     <span className="text-xs text-text-secondary text-center px-1 line-clamp-3">{item.mediaId}</span>
                   </div>
                 )}
@@ -235,11 +264,11 @@ export function ListDetail({
       {/* Miembros (solo listas colaborativas) */}
       {list.isCollaborative && (
         <section>
-          <h2 className="font-display text-xl mb-4 text-text-primary">{t('membersTitle')}</h2>
-          <div className="bg-surface-default border border-surface-border rounded-xl divide-y divide-surface-border">
+          <h2 className="font-display text-xl font-bold mb-4 text-text-primary">{t('membersTitle')}</h2>
+          <div className="bg-surface-default rounded-3xl divide-y divide-surface-border overflow-hidden">
             {/* Owner */}
             {list.owner && (
-              <div className="flex items-center gap-3 p-3">
+              <div className="flex items-center gap-3 px-5 py-4">
                 <Avatar initials={list.owner.avatarInitials} color={list.owner.avatarColor} size="sm" />
                 <div className="flex-1">
                   <Link href={`/profile/${list.owner.username}`} className="text-sm font-medium hover:text-accent-positive transition-colors">
@@ -251,7 +280,7 @@ export function ListDetail({
             )}
             {members.map((m) => (
               m.user && (
-                <div key={m.userId} className="flex items-center gap-3 p-3">
+                <div key={m.userId} className="flex items-center gap-3 px-5 py-4">
                   <Avatar initials={m.user.avatarInitials} color={m.user.avatarColor} size="sm" />
                   <div className="flex-1">
                     <Link href={`/profile/${m.user.username}`} className="text-sm font-medium hover:text-accent-positive transition-colors">

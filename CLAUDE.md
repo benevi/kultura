@@ -1,344 +1,350 @@
 # KULTURA — CLAUDE.md
 
-Web app de descubrimiento cultural (películas, series, anime, libros, cómics, manga, videojuegos). Biblioteca personal, amigos, listas, recomendaciones IA.
+## Cómo trabajar en este proyecto (instrucciones operativas)
+
+**Meta-regla, la más importante de esta sección:** cualquier indicación
+operativa que el usuario dé sobre cómo trabajar (no sobre diseño visual —
+eso va en la sección de más abajo) se añade AQUÍ, para no depender de la
+memoria de una conversación concreta y saber en todo momento cómo actuar.
+
+- **Tests**: no ejecutar `vitest run` (suite completa) de forma rutinaria
+  mientras se itera — pierde tiempo. Usar archivos de test concretos
+  (`npx vitest run tests/unit/ruta/al/archivo.test.tsx`) relacionados con
+  lo que se está tocando. Reservar la suite completa (y `npx playwright
+  test` si aplica) para checkpoints explícitos: justo antes de un push
+  importante o al cerrar un bloque de trabajo.
+- **Verificación mínima antes de cada push**: `npx tsc --noEmit` limpio +
+  los tests unitarios directamente relacionados con los archivos tocados
+  en verde. No hace falta más para cada commit intermedio.
+- **Máximo paralelismo cuando se pida** ("usa agentes en paralelo", "usa
+  todo lo que tengas a tu disposición", etc.): lanzar varios `Agent` en
+  paralelo con `isolation: "worktree"`, uno por área de trabajo
+  independiente (pantalla, componente, feature — nunca dos agentes sobre
+  el mismo archivo). Cada agente debe: leer este archivo primero, hacer
+  solo el cambio que se le pide (paso puramente visual salvo que se diga
+  lo contrario), verificar con `tsc` + tests dirigidos, commitear
+  localmente (sin pushear, sin PR). Al terminar cada uno: revisar el
+  resultado, fusionar (`git merge --no-ff`) en la rama de trabajo,
+  resolver a mano los conflictos que aparezcan (los worktrees pueden
+  partir de un commit base distinto al HEAD actual si se lanzaron antes
+  de un push reciente — comprobar con `git merge-base` si algo no
+  cuadra), volver a verificar (`tsc` + tests dirigidos) y solo entonces
+  pushear. Limpiar los worktrees y ramas temporales (`git worktree
+  remove`, `git branch -d`) una vez fusionados.
+- **Una tarea o lote coherente de trabajo por commit**, mensaje
+  descriptivo en español (prefijo `[design]`/`[fix]`/`[cleanup]` según el
+  tipo). Sin `Co-Authored-By` salvo que el arnés de la sesión lo exija
+  explícitamente.
+- **PR activa**: mientras haya una PR abierta y suscrita (referencia
+  actual: `benevi/kultura#5`), cada push se verifica contra CI antes de
+  darlo por bueno; los avisos rutinarios de Vercel (building/ready) no
+  requieren ninguna acción, solo los fallos de CI o comentarios de
+  revisión nuevos.
+- **No fusionar/mergear la PR sin autorización explícita y fresca del
+  usuario** para esa PR en concreto — una aprobación anterior no vale
+  automáticamente para el siguiente push.
 
 ---
 
-## ⚡ Flujo de trabajo (LEER PRIMERO)
+# Sistema de diseño (fuente de verdad)
 
-### Objetivo del proyecto (la vara de medir todo lo demás)
+Este documento es el ÚNICO criterio de diseño válido para Kultura. Sustituye
+cualquier paleta, componente o layout usado antes en el código o en mockups
+anteriores. Nace del canvas real **"Kultura Editorial" (F0 v2)** — Home,
+Discover y MediaDetail fueron diseñados a mano ahí; el resto de pantallas
+(publicado en el canvas **"Kultura — Diseño completo"**,
+`https://claude.ai/code/artifact/197b00e1-54dc-4bc7-8106-72c923d455bb`) se
+derivó extendiendo literalmente ese mismo vocabulario, no inventando uno
+nuevo.
 
-Kultura tiene que llegar a un nivel de calidad técnica y sensorial que aguante comparación con apps con equipo de producto y diseño dedicados, con vistas a monetizar. Toda decisión — qué construir, en qué orden, cuánto pulir un detalle, si vale la pena una dependencia nueva — se evalúa contra esto: ¿esto acerca la app a "espectacular" (se ve y se siente premium, fluida, coherente) o es solo "funciona"? Ante la duda entre lo rápido y lo excelente, por defecto se elige excelente, salvo que el propio usuario indique lo contrario.
+**Regla de oro:** ante cualquier duda de diseño (color, tipografía, forma de
+un componente, cómo tratar una pantalla nueva), la respuesta correcta es
+"¿qué haría exactamente F0 aquí, con estos mismos tokens?" — nunca una
+alternativa "parecida" o "mejorada". Si hace falta un patrón que F0 no
+cubre, se construye combinando los primitivos de abajo (mismos radios,
+mismos gradientes, mismos pesos), no con valores nuevos.
 
-**Autonomía total dentro de ese objetivo.** Libertad para decidir qué se construye y en qué orden, re-priorizar `docs/BACKLOG.md`, encadenar tareas sin pedir confirmación en cada cierre, y expandir el alcance de una tarea cuando sirve directamente a la calidad del resultado (dejando constancia del porqué en el commit/DONE, no pidiendo permiso primero). Pedir confirmación solo ante:
-- decisiones genuinamente irreversibles o de alto impacto (borrar datos, tocar producción fuera del flujo normal de PR, un cambio de dirección de marca entre opciones igual de válidas),
-- ambigüedad real donde el criterio del usuario pesa más que el propio (p. ej. dos direcciones de diseño igual de defendibles),
-- lo que ya exige el protocolo de git/PR de la sesión (fusionar una PR, push directo a una rama protegida) — eso sigue requiriendo autorización explícita, es una capa aparte de este archivo.
+## Tokens (OKLCH — literales, no aproximar a hex)
 
-**Paralelización.** Cuando haya trabajo independiente — rediseñar varias pantallas sin dependencias entre sí, escribir tests mientras se implementa otra pieza, investigar mientras avanza otra tarea — lanzar varios agentes en paralelo (herramienta Agent) en vez de secuenciar por costumbre.
-
-**`docs/NOW.md` / `docs/BACKLOG.md` son memoria del proyecto, no una jaula.** Siguen sirviendo para que cualquier sesión (o el propio usuario) entienda qué se hizo, por qué y qué queda — pero ya no imponen "una tarea, cerrar, parar y pedir permiso" en cada ciclo. Se pueden cerrar varias tareas seguidas, reordenar el backlog, o trabajar varias líneas en paralelo, si eso lleva antes al objetivo.
-
-**Criterio binario de hecho (se mantiene).** Al terminar cualquier tarea: ejecutar los comandos de verificación reales y pegar el output. "Debería funcionar" no cierra nada. Para cambios visuales/UI, verificación real significa además abrir la app (dev server o build) y mirarla — capturas si hace falta —, no solo tests en verde.
-
-**Cierre de tarea:**
-1. Verificar (output real pegado; captura si es visual).
-2. `git commit` con mensaje `[{ID}] {descripción}`.
-3. Añadir línea a `docs/DONE.md` con fecha + ID + hash.
-4. Marcar `[x]` en `docs/BACKLOG.md`.
-5. Seguir con la siguiente pieza de trabajo (misma línea u otra, o en paralelo) sin esperar confirmación — salvo que quede genuinamente bloqueado o toque uno de los puntos de la lista de arriba.
-
-### Reglas de emergencia
-- **Bug en tarea anterior:** detener la actual, crear `{ID}-FIX`, arreglar, verificar, retomar.
-- **Dependencia bloqueante:** anotar en `docs/BLOCKERS.md` y proponer alternativa antes de seguir.
-- **Tarea demasiado grande:** partirla en `{ID}-A`, `{ID}-B` en BACKLOG y seguir por la primera, sin parar a pedir permiso.
-- **Test imposible (caso edge real):** documentar en `docs/TEST_EXCEPTIONS.md` con justificación. No skipear silenciosamente.
-
----
-
-## Stack
-
-Next.js 14 App Router · React 18 · TypeScript strict · Tailwind CSS 3 · Supabase (PG + Auth + RLS + Realtime) · Anthropic Claude SDK (`@anthropic-ai/sdk`, modelo `claude-haiku-4-5`) · next-intl 4 · Vitest 4 · Playwright 1 · Vercel · Node ≥ 22
-
-## APIs externas
-| Tipo | API | Base URL | Auth |
-|------|-----|----------|------|
-| Movies+TV | TMDB | api.themoviedb.org/3 | `?api_key=TMDB_API_KEY` |
-| Anime+Manga | Jikan v4 (MyAnimeList) | api.jikan.moe/v4 | — · **sirve hoy anime Y manga** |
-| Books | **Google Books** | www.googleapis.com/books/v1 | `?key=GOOGLE_BOOKS_KEY` (opcional; sin key la cuota anónima por IP puede ser 0 → 429) |
-| Books (legacy) | Open Library | openlibrary.org | — (solo fichas de ids `book_OL…` ya guardados) |
-| Comics | ComicVine | comicvine.gamespot.com/api | `?api_key=COMICVINE_KEY` — **implementado y en uso** (`src/lib/api/comicvine.ts` + `comicvine-maps.ts`: Descubrir, búsqueda y ficha) |
-| Manga (preparado, no en pipeline) | MangaDex | api.mangadex.org | — · cliente localizado pero NO enchufado: la familia manga la sirve Jikan → **E-MANGA-SOURCE** |
-| Games | RAWG (Descubrir/listados/paginación) | api.rawg.io/api | `?key=RAWG_API_KEY` |
-| Games — detalle | **Steam Store** (enriquece la ficha: precio, capturas, idiomas) | store.steampowered.com/api | — (sin key) · solo `/media/game/{id}`, degrada en silencio |
-| AI | Anthropic Claude (`claude-haiku-4-5`) | api.anthropic.com | `ANTHROPIC_API_KEY` |
-
-**Idioma:** derivado del **locale activo** (`es`/`en`) — fuente única: `src/lib/api/locale.ts`. El locale se resuelve en el borde (`getLocale()` en `/api/discover`, `/api/search`, `/api/genre-news`; `params.locale` en `/[locale]/media/...`) y viaja como parámetro explícito hasta cada cliente de API.
-- TMDB → `language=es-ES | en-US` (+ `region=ES|US` en `watch/providers`)
-- Google Books → `langRestrict=es | en` (el trigger `idioma` de Descubrir lo sobreescribe)
-- MangaDex → `availableTranslatedLanguage[]=es,es-la,en | en` + texto elegido con `pickLocalizedText`
-- **Jikan (anime/manga) → inglés/japonés únicamente. Limitación aceptada:** no existe API gratuita de anime con traducción ES completa.
-- **ComicVine (cómics) → inglés únicamente. Limitación aceptada:** sin alternativa con catálogo ES.
-- RAWG (juegos) → inglés; la ficha se enriquece con Steam (`l=spanish|english`).
-
-**Imágenes:**
-- TMDB poster: `image.tmdb.org/t/p/w500{poster_path}`
-- TMDB backdrop: `image.tmdb.org/t/p/w1280{backdrop_path}`
-- TMDB logo: `image.tmdb.org/t/p/original{logo_path}`
-- Books (Google Books): `imageLinks` del volumen, normalizado a https + `zoom=1` (`googleBooksCover`)
-- Books legacy (Open Library): `covers.openlibrary.org/b/id/{cover_i}-L.jpg`
-- MangaDex: `uploads.mangadex.org/covers/{manga_id}/{filename}`
-- RAWG: `background_image`
-- Steam (capturas de la ficha de juego): `path_thumbnail` / `path_full` (`*.steamstatic.com`, `shared.akamaihd.net`)
-
-**Tráilers:** TMDB `/movie/{id}/videos` · `/tv/{id}/videos` · Jikan `/anime/{id}/videos` → embed `youtube.com/embed/{key}`
-
-## Env vars
-```
-TMDB_API_KEY=               # server-only
-RAWG_API_KEY=               # server-only
-GOOGLE_BOOKS_KEY=           # server-only — OPCIONAL, REACTIVADO en E-BOOKS-GOOGLE (libros → Google Books).
-                            # La API responde sin key, pero su cuota anónima va por IP y suele estar a 0 en cloud → ponerla en producción.
-COMICVINE_KEY=              # server-only — EN USO (cómics: Descubrir/búsqueda/ficha). Sin ella, `getKey()` lanza y la familia cómic queda vacía;
-                            # el resto de la app no se ve afectada.
-ANTHROPIC_API_KEY=          # server-only — Anthropic Claude (recomendaciones IA, claude-haiku-4-5)
-NEXT_PUBLIC_SUPABASE_URL=
-NEXT_PUBLIC_SUPABASE_ANON_KEY=
-SUPABASE_SERVICE_ROLE_KEY=  # server-only
-SUPABASE_TEST_URL=               # proyecto Supabase separado para tests de integración (kultura-test)
-SUPABASE_TEST_ANON_KEY=          # anon key del proyecto kultura-test
-SUPABASE_TEST_SERVICE_ROLE_KEY=  # service_role key — solo para migraciones/seed, nunca en código de app
-NEXT_PUBLIC_SITE_URL=            # base URL pública (usada por SEO/og:url)
-TEST_USER_EMAIL=                 # server-only — email usuario A para specs E2E (test-user-a@example.com)
-TEST_USER_PASSWORD=              # server-only — password compartida usuarios A y B (seed B3.5e-2)
-TEST_USER_B_EMAIL=               # server-only — email usuario B para flujos sociales E2E
-TEST_GROUP_ID=                   # server-only — UUID del grupo seedeado (rellenar tras correr seed)
+```css
+--bg: oklch(16% 0.015 280);
+--surface: oklch(21% 0.02 280);
+--surface-2: oklch(26% 0.025 280);
+--stroke: oklch(32% 0.025 280);
+--text: oklch(97% 0.004 280);
+--muted: oklch(68% 0.02 280);
+--pink: oklch(68% 0.24 350);
+--lime: oklch(83% 0.24 130);
+--orange: oklch(72% 0.19 55);
+--purple: oklch(62% 0.19 300);
+--blue: oklch(68% 0.16 250);
+--yellow: oklch(85% 0.17 95);
 ```
 
-> **Nota:** estas claves NO deben aparecer en el repo. `.env.local` está en `.gitignore`. Producción → Vercel Environment Variables.
-> Los nombres canónicos son sin prefijo `NEXT_PUBLIC_` para todo lo server-only (post-A4). Sincronizado con `.env.local` y Vercel.
->
-> **`.env.test.local`** (no en git, cubierto por `.env*.local` en `.gitignore`): sobreescribe `NEXT_PUBLIC_SUPABASE_URL` y `NEXT_PUBLIC_SUPABASE_ANON_KEY` con los valores de `kultura-test`. Usado por Playwright al arrancar el dev server para specs E2E — ver `playwright.config.ts` `webServer.env`.
->
-> **`.env.development.local`** (no en git): EXISTE en `kultura/` y Next.js lo carga con **prioridad sobre `.env.local`** en modo dev. Contiene las credenciales de `kultura-test` (proyecto `xqvicvypoxxfbezqnkwr`) → **`npm run dev` pega contra la BD de TEST, NO contra producción.** Motivo: aislar el desarrollo manual de los datos reales de producción.
-> ⚠️ Si necesitas dev contra producción, renombra o elimina temporalmente `.env.development.local` (y restáuralo al terminar).
+Colores "on-color" (texto sobre fondo sólido vivo, no blanco/negro puro):
+`oklch(15% 0.02 350)` sobre pink, `oklch(18% 0.02 130)` sobre lime,
+`oklch(15% 0.02 300)` sobre purple.
 
-## Comandos clave
-```bash
-npm run dev                                      # Dev server
-npm run build                                    # Producción
-tsc --noEmit                                     # Type check
-npm run lint                                     # ESLint
-vitest run                                       # Tests unitarios
-vitest run -c vitest.integration.config.ts       # Integración (Supabase real)
-vitest run -c vitest.contract.config.ts          # Contratos APIs externas
-npx playwright test                              # E2E
-```
+## Tipografía
 
-## Estructura
-```
-src/app/[locale]/
-  page.tsx · login/ · (app)/{home,discover,search,library,media/[type]/[id],
-                       profile/[username],lists/[id],friends,notifications,
-                       settings,suggestions,chat,groups/[id]}
-src/app/api/
-  ai-recommendations · auth/callback · chat · friends · genre-news ·
-  groups · groups/[id]/join · library · lists · lists/[id] · notifications ·
-  popular-in-circle · recommendations · reports · search · settings ·
-  suggestions · users/search
-src/components/
-  ui/ · layout/ · media/ · home/ · library/ · profile/ · search/ · social/
-src/lib/
-  api/      tmdb · jikan · googlebooks · openlibrary (legacy) · mangadex ·
-            rawg · comicvine · locale · normalizer · search · discover ·
-            aggregate · genre-news
-  claude/   recommendations
-  supabase/ client · server
-  library/  actions · queries · stats
-  social/   actions · circle · feed · friends · lists · notifications
-  utils/    auth-errors · index
-  rate-limit.ts
-src/i18n/   navigation · request · routing
-src/middleware.ts
-src/types/  library · list · media · supabase · user
-messages/   es.json · en.json   (596 keys c/u — recontadas 2026-09-12)
-supabase/migrations/
-tests/{unit,integration,contract,e2e}/
-```
+- Display / títulos: **Bricolage Grotesque** (pesos 500–800).
+- Cuerpo / UI: **Figtree** (pesos 400–800).
+- Google Fonts: `family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&family=Figtree:wght@400;500;600;700;800`.
 
-## MediaItem (tipo normalizado)
-```typescript
-type MediaType = 'movie' | 'tv' | 'anime' | 'book' | 'comic' | 'manga' | 'game'
+## Componentes base (no reinventar)
 
-type MediaItem = {
-  id: string              // "{type}_{external_id}"  e.g. "movie_550"
-  externalId: string
-  type: MediaType
-  title: string
-  originalTitle?: string
-  poster?: string
-  backdrop?: string
-  year?: number
-  synopsis?: string
-  genres?: string[]
-  rating?: number         // TMDB | MAL | Metacritic | ComicVine
-  ratingSource?: string
-  trailerKey?: string
-  streamingProviders?: StreamingProvider[]
-  metadata?: Record<string, any>
-}
-```
+- **Logo**: badge cuadrado `38×38` `border-radius:13px` fondo `--surface-2`,
+  con 3 rectángulos `19×13` `border-radius:6px` rotados (pink `-10deg`,
+  lime `6deg`, purple `-4deg`) posicionados en cascada dentro del badge.
+  Wordmark "kultura" en display 800, con un cuadrado pink `7×7`
+  `rotate(14deg)` colgando al final.
+- **Header** (todas las pantallas autenticadas): logo a la izquierda
+  (+ chip opcional, p. ej. racha), y a la derecha SOLO icono de búsqueda
+  (caja `44×44` `border-radius:16px` fondo `--surface-2`) + avatar
+  cuadrado `44×44` `border-radius:16px 16px 16px 4px` gradiente
+  `135deg` pink→purple con iniciales. **No hay barra de enlaces de
+  navegación en el header** — F0 no la tiene; no inventarla.
+- **Chips**: `border-radius:999px`, `font-weight:700`, `padding` variable
+  (8–20px según contexto). Activo = fondo de color vivo + texto "on-color"
+  correspondiente. Inactivo = fondo `--surface-2` + texto `--text`. Chip
+  "outline" = transparente + `border:2px solid var(--stroke)`.
+- **Botones pill**: primario = fondo pink + texto on-pink, `font-weight:800`.
+  Secundario = borde `2px solid var(--stroke)`, `font-weight:700`,
+  transparente.
+- **Posters / cards sin imagen real**: gradiente de dos paradas
+  `linear-gradient(150–160deg, oklch(L1% C1 H), oklch(L2% C2 H))` con el
+  mismo matiz (H) en ambas paradas y L2/C2 más bajos (más oscuro/apagado).
+  Nunca gris plano ni foto placeholder — siempre bloques de color vivo.
+- **Cards "feature" grandes**: además del gradiente lineal, un
+  `radial-gradient` de acento en la esquina superior-izquierda
+  (`120% 100% at 20% 10%`, color al 55-60% de opacidad, difuminando a
+  transparente a 55%).
+- **Badge de match**: pill `--lime` + texto on-lime, `font-weight:800`.
+  Versión "colgante" (esquina de poster, MediaDetail): offset
+  `top:-14px; left:-14px`, `rotate(-8deg)`,
+  `box-shadow:4px 4px 0 rgba(0,0,0,.4)` — sombra dura tipo pegatina, no
+  blur.
+- **Rotación de cards**: en grids tipo bento, las cards destacadas llevan
+  una rotación sutil (`-1.2deg` / `1deg`) — no todo el grid, solo las
+  piezas grandes, y alternando signo.
+- **Avatares circulares con actividad** (stories): anillo `conic-gradient`
+  de 2-3 colores de la paleta, padding `3px`, círculo interior fondo
+  `--bg` con iniciales.
+- **Avatares apilados** (amigos que vieron algo): círculo con
+  `linear-gradient(135deg, colorA, colorB)`, borde `2px solid var(--bg)`,
+  solapados con `margin-left` negativo (~`-12px`).
+- **Burbujas de chat**: entrante = `--surface-2`,
+  `border-radius:20px 20px 20px 4px`. Saliente = `--pink` + texto
+  on-pink, `border-radius:20px 20px 4px 20px`.
 
-## DB Schema
+## Principio de extensión a pantallas nuevas
 
-> **18 tablas** reales en producción. Baseline (17 tablas, 49 policies) en `supabase/migrations/20260502233945_remote_schema.sql` (verificada contra db_snapshot.txt el 2026-05-03); la 18ª es `group_invitations` (migración `20260601000002`). RLS activado en las 18 tablas, **53 policies** vigentes tras aplicar las 14 migraciones (recuento del audit de E98, 2026-07-16). Los tipos TypeScript correspondientes están en `src/types/supabase.ts`.
-> Las tablas listadas abajo son el SQL canónico de la baseline; `group_invitations` no aparece en el bloque (ver su migración).
+Cuando una pantalla no tiene equivalente literal en F0 (todo excepto
+Home/Discover/MediaDetail), se construye combinando ÚNICAMENTE los
+primitivos de arriba: mismo header, mismos chips, mismos pills, misma
+fórmula de gradiente para posters, mismos radios (~14-32px según jerarquía
+del elemento), mismo espaciado (`padding:28px 56px` en headers/secciones
+de página, `gap:20px` entre cards de una fila). No se añade una paleta,
+tipografía, sombra o forma de card que no exista ya en F0. Si algo no
+está claro, replicar el patrón más parecido que sí exista antes de
+inventar uno.
 
-```sql
-create table users (
-  id uuid references auth.users primary key,
-  username text unique not null,
-  avatar_color text not null default '#E82020',
-  avatar_initials text not null,
-  bio text,                             -- biografía corta del usuario, mostrada en el perfil público
-  preferred_locale text check (preferred_locale in ('es','en')),
-  created_at timestamptz default now()
-);
-create table media (
-  id text primary key,                  -- "{type}_{external_id}"
-  external_id text not null, type text not null, title text not null,
-  poster text, backdrop text, year int,
-  synopsis text,                        -- añadido en migración 002 (histórica)
-  metadata jsonb,
-  updated_at timestamptz default now()
-);
-create table user_media (
-  id uuid primary key default gen_random_uuid(),
-  user_id uuid references users(id) on delete cascade,
-  media_id text references media(id),
-  status text not null check (status in ('completed','in_progress','pending','abandoned')),
-  score smallint check (score between 1 and 5),
-  watched_at date,
-  episode_progress jsonb,               -- {season,episode}
-  created_at timestamptz default now(),
-  updated_at timestamptz default now(), -- mantenido por trigger set_updated_at
-  unique(user_id, media_id)
-);
-create table friendships (
-  id uuid primary key default gen_random_uuid(),
-  requester_id uuid references users(id) on delete cascade,
-  receiver_id uuid references users(id) on delete cascade,
-  status text not null check (status in ('pending','accepted')),
-  created_at timestamptz default now(),
-  unique(requester_id, receiver_id)
-);
-create table recommendations (
-  id uuid primary key default gen_random_uuid(),
-  from_user_id uuid references users(id) on delete cascade,
-  to_user_id uuid references users(id) on delete cascade,
-  media_id text references media(id),
-  message text, read_at timestamptz,
-  created_at timestamptz default now()
-);
-create table lists (
-  id uuid primary key default gen_random_uuid(),
-  owner_id uuid references users(id) on delete cascade,
-  name text not null, media_type text not null,
-  is_collaborative boolean default false,
-  created_at timestamptz default now()
-);
-create table list_members (
-  list_id uuid references lists(id) on delete cascade,
-  user_id uuid references users(id) on delete cascade,
-  primary key(list_id, user_id)
-);
-create table list_items (
-  id uuid primary key default gen_random_uuid(),
-  list_id uuid references lists(id) on delete cascade,
-  media_id text references media(id),
-  added_by uuid references users(id),
-  added_at timestamptz default now()
-);
-create table notifications (
-  id uuid primary key default gen_random_uuid(),
-  user_id uuid references users(id) on delete cascade,
-  type text not null check (type in ('recommendation','list_invite')),
-  payload jsonb not null, read_at timestamptz,
-  created_at timestamptz default now()
-);
-create table reports (
-  id uuid primary key default gen_random_uuid(),
-  reporter_id uuid references users(id) on delete cascade,
-  target_type text not null check (target_type in ('user','media')),
-  target_id text not null, reason text,
-  created_at timestamptz default now()
-);
-```
+## Fuentes de este sistema
 
-### Tablas adicionales (SQL canónico confirmado en B2)
+- Canvas original (mano, no tocar): **"Kultura Editorial"** — Home,
+  Discover, MediaDetail. Es la referencia literal; ante cualquier
+  discrepancia con este documento, el canvas manda.
+- Canvas derivado (las 17 pantallas, generado siguiendo este criterio):
+  **"Kultura — Diseño completo"** —
+  `https://claude.ai/code/artifact/197b00e1-54dc-4bc7-8106-72c923d455bb`.
+- Generador usado para producir las 14 pantallas derivadas (vocabulario
+  compartido en `shared.mjs`, una función por pantalla en `build.mjs`):
+  vive fuera del repo, en el scratchpad de la sesión que lo creó. Si se
+  necesita regenerar o ampliar el set de pantallas, reconstruir el
+  generador a partir de este documento y de los tres `.dc.html` de F0
+  (extraerlos del canvas "Kultura Editorial" con el helper del skill de
+  diseño), no desde memoria.
 
-```sql
-create table suggestions (                -- /api/suggestions
-  id uuid primary key default gen_random_uuid(),
-  user_id uuid references users(id) on delete set null,
-  type text not null check (type in ('bug','feature','improvement','other')),
-  subject text not null,                  -- 3..120 chars (Zod en endpoint)
-  description text not null,             -- 10..2000 chars (Zod en endpoint)
-  created_at timestamptz default now()
-);
-create table conversations (              -- DM 1-a-1 entre amigos
-  id uuid primary key default gen_random_uuid(),
-  created_at timestamptz default now(),
-  last_message_at timestamptz default now() -- actualizado por trigger handle_new_message
-);
-create table conversation_members (       -- pivot users ↔ conversations
-  conversation_id uuid references conversations(id) on delete cascade,
-  user_id uuid references users(id) on delete cascade,
-  last_read_at timestamptz,
-  primary key (conversation_id, user_id)
-);
-create table messages (
-  id uuid primary key default gen_random_uuid(),
-  conversation_id uuid references conversations(id) on delete cascade,
-  sender_id uuid references users(id) on delete cascade,
-  content text not null,
-  created_at timestamptz default now()
-);
-create table groups (                     -- /api/groups
-  id uuid primary key default gen_random_uuid(),
-  owner_id uuid references users(id) on delete cascade,
-  name text not null,                     -- 2..60 chars (Zod en endpoint)
-  description text,                       -- ≤200 chars (Zod en endpoint)
-  cover_color text not null default '#E82020',
-  created_at timestamptz default now()
-);
-create table group_members (              -- pivot users ↔ groups
-  group_id uuid references groups(id) on delete cascade,
-  user_id uuid references users(id) on delete cascade,
-  role text not null default 'member' check (role in ('owner','member')),
-  joined_at timestamptz default now(),
-  primary key (group_id, user_id)
-);
-create table group_posts (                -- feed de un grupo
-  id uuid primary key default gen_random_uuid(),
-  group_id uuid references groups(id) on delete cascade,
-  user_id uuid references users(id) on delete cascade,
-  content text not null,
-  media_id text references media(id),
-  created_at timestamptz default now()
-);
-```
+## Arbol de decisión: "¿Dudo de cómo diseñar/codificar algo?"
 
-### Funciones trigger
+1. **¿Existe en F0 v2 (Home/Discover/MediaDetail)?** → Usa exactamente eso.
+   Copia el HTML, los valores de CSS, los radios, los espacios. Zero
+   variación.
+2. **¿No existe en F0, pero existe un patrón análogo?** → Replica el patrón
+   exacto (mismo radio, misma fórmula de gradiente, misma sombra, mismo
+   peso). Cambiar solo lo que deba ser diferente semánticamente (p. ej.
+   color de fondo si es un chip "inactivo" vs uno "activo", pero mismo
+   radio 999px). Ejemplo: "Discover" tiene cards en bento rotadas;
+   "Library" necesita grid de tarjetas → mismo radio de card, misma
+   formula de rotación (±1deg), misma sombra, solo diferente fondo si el
+   contexto lo exige.
+3. **¿No existe patrón parecido en F0?** → NO inventar nada. Escalona hacia
+   arriba: busca en las 17 pantallas del canvas derivado cómo se resolvió
+   un problema similar. Si tampoco existe, pregunta — no es un caso que
+   F0 contemple aún, y así lo anotamos para futuras iteraciones.
 
-4 funciones confirmadas en `supabase/migrations/20260502233945_remote_schema.sql`:
+**Nunca, bajo ninguna circunstancia:**
+- Usar un radio que no esté en {0, 4px, 6px, 8px, 13px, 14px, 16px, 20px, 32px}
+  (o 999px para píldoras). Redondear a la que esté ya en uso.
+- Crear una sombra nueva. Las válidas son: sin sombra, `10px 10px 0 var(--surface-2)`
+  (hero cards), `4px 4px 0 rgba(0,0,0,.35/0.4)` (badges colgantes), soft blur como
+  `0 2px 8px rgba(0,0,0,0.15)` (solo si F0 ya la usa).
+- Mezclar hex con OKLCH. Si necesitas un color intermedio, calcula en OKLCH.
+  No approximar valores OKLCH a hex "por conveniencia".
+- Inventar un componente nuevo (p. ej. "card deslizable", "modal con backdrop
+  custom"). Si se necesita, combina componentes existentes — card + backdrop
+  estándar, etc.
+- Cambiar la tipografía (Bricolage/Figtree) ni los pesos. Si necesitas enfasis,
+  usa 700 en lugar de 500, o 800 en lugar de 700 — mismo juego de fuentes.
 
-- `handle_new_user` — `AFTER INSERT ON auth.users`. Crea fila en `public.users`: deriva `username` del prefijo del email (limpio, truncado a 15 chars, sufijo numérico si duplicado), `avatar_initials` = `upper(left(username, 2))`, `avatar_color` = `'#E82020'`.
-- `handle_new_group` — `AFTER INSERT ON groups`. Inserta al `owner_id` como miembro inicial en `group_members` con `role = 'owner'`.
-- `handle_new_message` — `AFTER INSERT ON messages`. Actualiza `conversations.last_message_at = new.created_at`.
-- `set_updated_at` — `BEFORE UPDATE ON user_media`. Mantiene `updated_at = now()`.
+## Paleta de espacios y medidas (literales de F0)
 
----
+Usar SIEMPRE estos valores — no añadir nuevos:
+- **Padding/margen principal** en secciones: `28px` (horizontal) × `28px–56px`
+  (vertical, según altura de sección).
+- **Gap entre cards en fila**: `20px`.
+- **Tamaño de card "standar"** en scroll horizontal: `220px`.
+- **Tamaño de avatar**: `44×44` (header), `36×36` (listas), `24×24` (inline).
+- **Radio de card estándar**: `14px` o `16px` (héroes y grandes: `20px`).
+- **Tamaño de icono en búsqueda**: caja `44×44` con radio `16px`.
 
-## Reglas técnicas innegociables
+No hagas cards de `180px`, `250px`, `300px`, etc. — el set de tamaños es cerrado.
 
-1. **`COMICVINE_KEY`, `ANTHROPIC_API_KEY` y `SUPABASE_SERVICE_ROLE_KEY`** → server-only. Nunca en `NEXT_PUBLIC_*`. Acceso solo vía Route Handlers.
-1b. **Todo nuevo endpoint POST/PATCH/DELETE debe aplicar `checkRateLimit` antes de cualquier operación de BD o llamada a API externa.** Para endpoints que llaman a un LLM (Anthropic Claude, otros), límite estricto (≤10 req/min por usuario). Usar el sistema en `src/lib/rate-limit.ts`: añadir preset a `LIMITS`, aplicar patrón `const rl = checkRateLimit(key, LIMITS.x); if (!rl.allowed) return 429`.
-2. **Toda respuesta de API externa pasa por `normalizer`** antes de llegar a componentes. Componentes solo conocen `MediaItem`.
-3. **Cache de títulos en tabla `media`**: upsert antes de insertar en `user_media`. No llamar a APIs externas para títulos ya guardados.
-4. **RLS activado en todas las tablas.** Cualquier tabla nueva se crea con policies en la misma migración.
-5. **Un commit por tarea.** Mensaje: `[{ID}] {descripción}`.
-6. **TypeScript estricto.** Sin `any` salvo `metadata: Record<string, any>` en MediaItem.
-7. **Mobile-first** en todos los componentes.
-8. **Nuevas dependencias se proponen antes de instalar.** No `npm install` silencioso.
-9. **Sin `Co-Authored-By` en commits.** Los commits son del autor humano. La asistencia de IA es herramienta, no co-autoría. Si una plantilla o herramienta inserta el trailer automáticamente, eliminarlo antes del commit.
-10. **Headers de seguridad: fuentes de verdad divididas.** Vercel gestiona HSTS (`max-age=63072000`, verificado 2026-05-03). `next.config.mjs` gestiona el resto: CSP, X-Frame-Options, X-Content-Type-Options, Referrer-Policy, Permissions-Policy. Antes de añadir un header nuevo, verificar en DevTools de producción si Vercel ya lo añade.
-11. **Verificación post-deploy NO se limita a headers HTTP, status codes y logs.** Incluye obligatoriamente un paso de uso funcional: abrir la app desplegada, navegar por las secciones principales (auth, biblioteca, feed, chat, grupos, perfil) e intentar las acciones críticas. Si algo falla visualmente o falta una sección, reportarlo aunque los headers y los tests estén verdes.
-12. **Leer [`docs/DEBUG_PRINCIPLES.md`](docs/DEBUG_PRINCIPLES.md) antes de diagnosticar o tocar cualquier pantalla.** Formaliza cuatro principios recurrentes: verificar estado real (no mensajes de herramienta ni docs viejos), no fiar de NOW.md como fuente de verdad, diagnosticar la raíz antes de escribir código, y revisar explícitamente pantallas de borde (login, landing, errores, rutas públicas) al cerrar cualquier sprint de migración o rediseño.
-13. **Ningún cambio visual/UI se da por hecho solo con tests en verde.** Antes de cerrar la tarea: levantar el dev server, navegar la pantalla afectada en mobile y desktop, y comprobar que se ve y se siente a la altura del objetivo del proyecto (arriba). Si algo desentona (espaciado, contraste, animación brusca, inconsistencia con el resto del sistema visual), es parte de la tarea arreglarlo antes de cerrar, no un ticket nuevo para el BACKLOG.
+## Checklist de validación antes de implementar una pantalla
 
----
+Antes de tocar código (React/Tailwind), revisar:
 
-## Estado del proyecto
+- [ ] ¿Existe un mockup en "Kultura Editorial" (F0 v2) o "Kultura — Diseño
+      Completo" (canvas derivado)? Si sí, visualizarlo primero.
+- [ ] Identificar cada componente usado: ¿header?, ¿cards?, ¿chips?, ¿pills
+      de botón?, ¿avatar?, ¿gradiente poster?
+- [ ] Para cada componente, confirmar: color (token OKLCH exacto), radio
+      (del set cerrado), tamaño, sombra (del set cerrado o ninguna).
+- [ ] ¿Hay algún elemento que no esté en este documento? Si sí, buscar en
+      el canvas derivado. Si tampoco, documentarlo como "patrón nuevo por
+      resolver" y no seguir adelante sin input del usuario.
+- [ ] ¿Usas todo CSS puro + Tailwind (clases)? No meter JS especial de
+      estilos inline si no es estrictamente necesario. Los radios, sombras,
+      colores deben salir de `globals.css` + clases de Tailwind.
 
-Hay un `AUDIT.md` con el estado real del codebase y los gaps abiertos. El BACKLOG actual deriva de ese audit. Las fases originales (Fundación → APIs → Biblioteca → Social → IA → Pulido) están **completadas o en pulido**; el trabajo abierto es **hardening de seguridad, infra y producción**, ordenado en `docs/BACKLOG.md`.
+## Guía de migración de componentes (diseño → código)
+
+### Fase 1: Inventario (no tocar código aún)
+1. Abre el mockup de la pantalla en el canvas derivado.
+2. Lista cada "elemento visual": header, hero, card, badge, chip, etc.
+3. Para cada uno, anota: nombre del componente, tokens usados, medidas,
+   propiedades especiales (rotación, sombra, gradiente).
+4. Compara con el componente React existente en `/src/components`.
+   - ¿Ya existe con el nombre correcto? (p. ej. `<MediaCard>`)
+   - ¿Su prop API es compatible con lo que el mockup necesita?
+   - ¿Está usando los tokens OKLCH correctos, o todavía usa hex viejo?
+
+### Fase 2: Actualización progresiva
+Si el componente existe pero usa tokens viejos:
+1. Reemplaza el color hardcoded por `var(--nombre-token-oklch)`.
+2. Ajusta radios si no están en el set válido.
+3. Actualiza sombras si no son del set cerrado.
+4. No refactorices lógica de negocio — solo estilos.
+5. Corre tests unitarios del componente. ✓
+
+Si el componente no existe:
+1. Crea uno nuevo basado en el patrón más cercano que SÍ exista.
+2. Ejemplo: necesitas `<StoryAvatar>` con anillo conic-gradient
+   → consulta cómo `<Avatar>` hace gradiente y amplía con parámetros
+   de colores adicionales para el anillo.
+3. No inventes estructura HTML nueva si puedes reutilizar `<div>` +
+   Tailwind.
+
+### Fase 3: Integración en pantalla
+1. Importa componentes ya migrads. Ejemplo: `import { MediaCard } from
+   "@/components/MediaCard"`.
+2. En la pantalla (p. ej. `Home.tsx`), construye el layout con esos
+   componentes, usando espacios del set cerrado (`gap-5` para 20px,
+   `p-7` para 28px en Tailwind, o ajustar config).
+3. Compara visual: ¿matches el mockup?
+4. Corre tests de la pantalla + `npx tsc --noEmit`.
+5. Push cuando esté verde.
+
+## Referencia rápida: tokens OKLCH → aproximación visual (para debug)
+
+Los valores OKLCH son autoridad. Esta tabla es SOLO para debug visual rápido:
+
+| Nombre | OKLCH | Hex aprox. | Uso |
+|--------|-------|-----------|-----|
+| `--bg` | oklch(16% 0.015 280) | #1a1620 | Fondo página |
+| `--surface` | oklch(21% 0.02 280) | #262230 | Card bg |
+| `--surface-2` | oklch(26% 0.025 280) | #312c3c | Chip inactivo, icono box |
+| `--stroke` | oklch(32% 0.025 280) | #464254 | Borde |
+| `--text` | oklch(97% 0.004 280) | #f8f7fa | Texto principal |
+| `--muted` | oklch(68% 0.02 280) | #a9a5b5 | Texto secundario |
+| `--pink` | oklch(68% 0.24 350) | #e63b7d | Accento primario |
+| `--lime` | oklch(83% 0.24 130) | #c4f037 | Accento complementario |
+| `--orange` | oklch(72% 0.19 55) | #e8933c | Warm accent |
+| `--purple` | oklch(62% 0.19 300) | #b83cc8 | Accent alternativo |
+| `--blue` | oklch(68% 0.16 250) | #4a7dd8 | Info/secondary |
+| `--yellow` | oklch(85% 0.17 95) | #d4e03c | Alert/warning |
+
+**Importante:** los valores hex son solo referencia visual; el código debe
+usar OKLCH. Si necesitas debug en navegador y Tailwind no genera la clase,
+usa directamente `background: oklch(...)` en `<style>`.
+
+## Estado de la migración a código (Tailwind / componentes React)
+
+Los tokens OKLCH de este documento están mapeados 1:1 a las custom
+properties CSS reales (`globals.css`/`tailwind.config.ts`) — MISMOS
+nombres de variable que ya usaba el código, valor nuevo; así se propaga
+automáticamente a casi todo componente existente sin tocarlo. No mezclar
+con una paleta hex antigua.
+
+**Hecho:**
+- Tokens OKLCH + radios de chip/botón a píldora completa (999px).
+- `Logo` con la geometría literal de F0 (3 rectángulos rotados).
+- `MediaCard`: gradiente de poster determinista cuando no hay imagen real
+  (nunca gris plano) + acento radial opcional (`accentHue`) para las
+  cards "feature" del bento.
+- `KButton` ya es píldora completa (pesos 800/700 primario/secundario).
+- **Home, Discover y MediaDetail** ya tienen el acabado visual literal de
+  F0 (hero con badge colgante, bento con rotación + acento radial, layout
+  de dos columnas con badge colgante en MediaDetail).
+
+**Pendiente:** las 14 pantallas restantes (Landing, Login, Library,
+Search, Friends, Groups, GroupDetail, Chat, Notifications, Profile,
+Lists, ListDetail, Settings, Suggestions) heredan bien los colores vía
+custom properties pero no tienen todavía el acabado F0 específico de
+cada una (formas, sombras duras, chips colgantes, etc. — ver "Principio
+de extensión a pantallas nuevas" arriba). Migrar con el mismo patrón:
+un agente por pantalla o grupo de pantallas afines, siguiendo las
+instrucciones operativas de la cabecera de este documento.
+
+**Deuda técnica por resolver:**
+- `KButton` y `button.tsx` (shadcn-style) conviven como dos sistemas de
+  botón distintos — decidir cuál se queda antes de seguir migrando
+  pantallas que usan el segundo.
+- Revisar si el rojo legado de shadcn (`--primary: 0 79% 51%` en
+  `globals.css`) sigue siendo visible en algún componente real; no se ha
+  tocado en este pase.
+
+## Flujo de trabajo recomendado para un nuevo sprint de diseño
+
+1. **Planificación:** listar pantallas a migrar (p. ej. "Landing, Login").
+2. **Lanzar agentes en paralelo** (si son 2+ pantallas):
+   - Cada agente lee este CLAUDE.md primero.
+   - Cada agente hace el checklist de validación.
+   - Cada agente toca componentes/pantalla de su área ÚNICAMENTE.
+   - Cada agente verifica con `tsc` + tests dirigidos localmente.
+   - Cada agente commitea sin pushear.
+3. **Fusión local:** revisar cada rama, hacer merge con `--no-ff`, resolver
+   conflictos de estilos/espacios a mano, volver a verificar.
+4. **Push único:** cuando todo esté verde y fusionado, push a la rama de
+   feature.
+5. **CI check:** esperar a que Vercel/CI se ponga verde.
+
+## "¿Y si necesito algo no documentado?"
+
+1. Abre una "issue de diseño" en el repo o apunta en este CLAUDE.md como
+   "patrón por resolver: [descripción]".
+2. No avances hasta que el usuario valide la solución.
+3. Una vez validado, añade la solución a este documento para que no dependa
+   de memoria.
+
+Este documento es vivo; evolucionará conforme aparezcan nuevos patrones.

@@ -201,7 +201,7 @@ describe('GET /api/groups/discover', () => {
       ownerId: 'user-002',
       name: 'Cinéfilos',
       description: 'Grupo de cine',
-      coverColor: 'var(--accent-positive)',
+      coverColor: 'var(--accent-pink)',
       createdAt: '2026-01-01T00:00:00Z',
       memberCount: 2,
       isMember: false,
