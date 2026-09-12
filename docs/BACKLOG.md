@@ -134,7 +134,7 @@ No bloqueantes. Atacar solo después de A–D.
 - [ ] **E4.** Tests de componentes React con `@testing-library/react`.
 - [ ] **E5.** E2E ampliado — library add, recomendación user-to-user, crear lista.
 - [ ] **E6.** ComicVine implementado — `/api/comics/route.ts` + `lib/api/comicvine.ts`.
-- [ ] **E7.** OAuth Google vía Supabase Auth.
+- [x] **E7.** OAuth Google vía Supabase Auth. ✅ (cerrada 2026-09-12) — botón "Continuar con Google" en `LoginPage.tsx` vía `signInWithOAuth({provider:'google'})`; reutiliza el callback PKCE genérico ya existente en `/api/auth/callback` (sin cambios). Pendiente de un paso manual fuera del repo: habilitar el provider Google en el dashboard de Supabase Auth (Client ID/Secret de Google Cloud Console) — sin eso el botón redirige a un error de provider no configurado.
 - [ ] **E8.** Recuperación de contraseña personalizada.
 - [ ] **E9.** Form fields con id/name (warning visto en consola — accesibilidad).
 - [ ] **E10. Evaluar 3 APIs alternativas de libros**
@@ -566,9 +566,10 @@ No bloqueantes. Atacar solo después de A–D.
   Fase 0 obligatoria: reproducir en móvil y aislar si es CSS/responsive, datos, o render.
   Hecho cuando: grupos visibles y operativos en móvil.
 
-- [ ] **E75. Botón cambio de idioma: mejora visual**
+- [x] **E75. Botón cambio de idioma: mejora visual** ✅ (cerrada 2026-09-12)
   Mejorar la presentación visual del selector de idioma (estética, no la lógica i18n, que ya funciona).
   Hecho cuando: botón alineado al DS, legible y con estado claro.
+  Rediseño: pill segmentado ES/EN con indicador deslizante `bg-accent-positive` (sin emoji de bandera). Verificado visualmente en `/login` (mobile 390px y desktop) con Playwright: toggle funcional, transición suave, tokens del DS.
 
 - [ ] **E76. Foto de perfil: mejora visual**
   Mejorar la visual de la foto de perfil (encuadre/recorte/placeholder/estados).
