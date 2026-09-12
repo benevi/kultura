@@ -76,6 +76,16 @@ const nextConfig = {
         hostname: "media.rawg.io",
       },
       {
+        // E-GAMES-STEAM: capturas de la ficha de tienda. Steam las sirve desde
+        // varios CDNs según la región/antigüedad del juego.
+        protocol: "https",
+        hostname: "*.steamstatic.com",
+      },
+      {
+        protocol: "https",
+        hostname: "shared.akamaihd.net",
+      },
+      {
         protocol: "https",
         hostname: "myanimelist.net",
       },

@@ -173,7 +173,13 @@
     "type": "Type",
     "rating": "Rating",
     "episodes": "Episodes",
-    "duration": "Duration"
+    "duration": "Duration",
+    "steamTitle": "On Steam",
+    "steamViewOnStore": "View on Steam",
+    "steamFree": "Free",
+    "steamNoPrice": "Price unavailable",
+    "steamLanguages": "Languages",
+    "steamScreenshots": "Screenshots"
   },
   "library": {
     "status": {

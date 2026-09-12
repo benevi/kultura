@@ -18,6 +18,7 @@ import {
   isOpenLibraryLegacyId,
 } from "@/lib/api/googlebooks";
 import { getGame } from "@/lib/api/rawg";
+import { getSteamInfoForGame, type SteamInfo } from "@/lib/api/steam";
 import { getComic } from "@/lib/api/comicvine";
 import {
   normalizeMovie,
@@ -203,6 +204,9 @@ export default async function MediaDetailPage({ params }: Props) {
   let item: ReturnType<typeof normalizeMovie> | undefined;
   let trailerKey: string | undefined;
   let providers: StreamingProvider[] | undefined;
+  // E-GAMES-STEAM: enriquecimiento de la ficha de juego. `null` = no se pudo
+  // resolver el appid con confianza (o Steam no respondió) → sin sección.
+  let steam: SteamInfo | null = null;
 
   try {
     if (mediaType === "movie") {
@@ -265,6 +269,8 @@ export default async function MediaDetailPage({ params }: Props) {
       const detail = await getGame(Number(id)).catch(() => null);
       if (!detail) notFound();
       item = normalizeGame(detail);
+      // Nunca lanza: `getSteamInfoForGame` captura todo y devuelve null.
+      steam = await getSteamInfoForGame(detail, locale);
     } else if (mediaType === "comic") {
       const detail = await getComic(id).catch(() => null);
       if (!detail) notFound();
@@ -293,6 +299,7 @@ export default async function MediaDetailPage({ params }: Props) {
       initialEntry={initialEntry}
       isAuthenticated={isAuthenticated}
       matchScore={matchScore}
+      steam={steam}
     />
   );
 }

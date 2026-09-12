@@ -23,6 +23,14 @@ export interface RawgGame {
   platforms?: { platform: { name: string } }[];
   developers?: { name: string }[];
   publishers?: { name: string }[];
+  // E-GAMES-STEAM: solo en el DETALLE (`/games/{id}`). Es la vía fiable para
+  // resolver el `appid` de Steam de un juego (enlace curado por RAWG) antes de
+  // caer al best-effort por nombre. Ver `steamAppIdFromRawgGame`.
+  stores?: {
+    id?: number;
+    url?: string;
+    store?: { id?: number; name?: string; slug?: string; domain?: string };
+  }[];
 }
 
 export interface RawgResponse {
