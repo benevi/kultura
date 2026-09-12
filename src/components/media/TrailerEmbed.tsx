@@ -11,7 +11,7 @@ interface TrailerEmbedProps {
 
 export function TrailerEmbed({ youtubeKey, title }: TrailerEmbedProps) {
   return (
-    <div className="relative aspect-video w-full rounded-xl overflow-hidden bg-surface2">
+    <div className="relative aspect-video w-full rounded-[24px] overflow-hidden bg-surface-elevated">
       <iframe
         src={`https://www.youtube.com/embed/${youtubeKey}`}
         title={title}
