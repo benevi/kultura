@@ -7,6 +7,7 @@ import { useRouter, Link } from '@/i18n/navigation'
 import { FilterChip } from '@/components/ui/FilterChip'
 import { KButton } from '@/components/ui/KButton'
 import { MediaGrid } from '@/components/media/MediaGrid'
+import { IconLibrary } from '@/components/icons'
 import type { LibraryEntry } from '@/types/library'
 import type { MediaItem, MediaType } from '@/types/media'
 
@@ -61,7 +62,7 @@ const SCORE_OPTIONS = [
 function EmptyLibrary({ t }: { t: ReturnType<typeof useTranslations<'library'>> }) {
   return (
     <div className="flex flex-col items-center justify-center py-20 px-4 text-center gap-4">
-      <div className="text-5xl select-none" aria-hidden="true">📚</div>
+      <IconLibrary className="w-12 h-12 text-text-tertiary" aria-hidden="true" />
       <div className="flex flex-col gap-2 max-w-sm">
         <h2 className="font-display text-xl font-semibold text-text-primary">
           {t('empty.title')}

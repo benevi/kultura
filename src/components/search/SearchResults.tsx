@@ -4,6 +4,7 @@ import { useState, useMemo } from "react";
 import { useTranslations } from "next-intl";
 import { cn } from "@/lib/utils/index";
 import { MediaGrid } from "@/components/media/MediaGrid";
+import { IconDice } from "@/components/icons";
 import { SearchFilters } from "./SearchFilters";
 import type { SearchFiltersState } from "./SearchFilters";
 import type { SearchResults } from "@/lib/api/search";
@@ -213,8 +214,8 @@ export function SearchResults({
       {/* Random mode banner */}
       {randomItem && (
         <div className="flex items-center gap-3 mb-4 px-3 py-2 rounded-lg bg-accent-positive/10 border border-accent-positive/30 text-sm">
-          <span className="text-accent-positive">
-            🎲{" "}
+          <span className="flex items-center gap-1.5 text-accent-positive">
+            <IconDice className="w-4 h-4 shrink-0" />
             {t("showingRandom", {
               count: filteredItems.length,
             } as Parameters<typeof t>[1])}

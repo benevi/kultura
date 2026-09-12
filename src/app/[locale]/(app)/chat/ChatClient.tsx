@@ -5,6 +5,7 @@ import { useTranslations, useLocale } from 'next-intl'
 import { Link } from '@/i18n/navigation'
 import { Avatar } from '@/components/ui/Avatar'
 import { KButton } from '@/components/ui/KButton'
+import { IconChat } from '@/components/icons'
 
 interface OtherUser {
   id: string
@@ -145,7 +146,7 @@ export function ChatClient({ friends }: Props) {
         </div>
       ) : conversations.length === 0 ? (
         <div className="bg-surface-default border border-surface-border rounded-[8px] p-10 text-center flex flex-col gap-2">
-          <div className="text-4xl">💬</div>
+          <IconChat className="w-10 h-10 mx-auto text-text-tertiary" />
           <p className="font-semibold text-text-primary">{t('noConversations')}</p>
           <p className="text-sm text-text-secondary">{t('noConversationsHint')}</p>
         </div>

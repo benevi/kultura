@@ -2,6 +2,7 @@
 
 import { useTranslations } from "next-intl";
 import { cn } from "@/lib/utils/index";
+import { IconDice } from "@/components/icons";
 
 export interface SearchFiltersState {
   minRating: number;
@@ -154,7 +155,8 @@ export function SearchFilters({
           disabled={resultCount === 0}
           className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-border text-muted hover:text-text hover:border-text/30 text-sm transition-colors ml-auto disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:text-muted disabled:hover:border-border"
         >
-          🎲 {t("randomize" as SearchTranslationKey)}
+          <IconDice className="w-4 h-4" />
+          {t("randomize" as SearchTranslationKey)}
         </button>
       </div>
 
