@@ -172,7 +172,9 @@
     "type": "Type",
     "rating": "Rating",
     "episodes": "Episodes",
-    "duration": "Duration"
+    "duration": "Duration",
+    "whyRecommended": "Why we recommend it",
+    "whyRecommendedText": "It matches genres you already enjoy — {genres} — with a {score}% affinity to your library."
   },
   "library": {
     "status": {
