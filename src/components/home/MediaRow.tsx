@@ -34,7 +34,7 @@ export function MediaRow({ items, title, emptyIcon, emptyMessage, emptyHint, emp
       <h2 className="font-display text-xl font-bold mb-3 text-text-primary">{title}</h2>
 
       {isLoading && (
-        <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-hide">
+        <div className="flex gap-5 overflow-x-auto pb-2 scrollbar-hide">
           {SKELETONS.map((i) => (
             <div
               key={i}
@@ -58,7 +58,7 @@ export function MediaRow({ items, title, emptyIcon, emptyMessage, emptyHint, emp
       )}
 
       {!isLoading && items.length > 0 && (
-        <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-hide">
+        <div className="flex gap-5 overflow-x-auto pb-2 scrollbar-hide">
           {items.map((item) => {
             const externalId = item.mediaId.split('_').slice(1).join('_')
             const href = `/media/${item.type}/${externalId}`

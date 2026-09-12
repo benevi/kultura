@@ -82,7 +82,7 @@ export default async function HomePage() {
     }))
 
   return (
-    <main className="max-w-4xl mx-auto px-4 py-6 space-y-8">
+    <main className="max-w-4xl mx-auto px-4 md:px-14 py-6 md:py-8 space-y-8 md:space-y-10">
       <HeroSection item={inProgress} />
 
       {filteredRecent.length > 0 && (
