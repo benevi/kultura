@@ -6,6 +6,20 @@ import { Link } from "@/i18n/navigation";
 import { cn } from "@/lib/utils/index";
 import type { MediaItem } from "@/types/media";
 
+// Matices reutilizados literalmente del canvas F0 v2 para posters sin imagen
+// real — nunca gris plano: siempre un gradiente de dos paradas del mismo
+// matiz (ver CLAUDE.md → "Posters / cards sin imagen real").
+const POSTER_HUES = [300, 55, 320, 220, 160, 40, 150, 260, 95, 350, 130, 25, 45, 250];
+
+function posterGradient(seed: string): string {
+  let hash = 0;
+  for (let i = 0; i < seed.length; i++) {
+    hash = (hash * 31 + seed.charCodeAt(i)) >>> 0;
+  }
+  const hue = POSTER_HUES[hash % POSTER_HUES.length];
+  return `linear-gradient(155deg, oklch(50% 0.15 ${hue}), oklch(28% 0.08 ${hue}))`;
+}
+
 export interface MediaCardProps {
   item: MediaItem;
   showType?: boolean;
@@ -54,9 +68,10 @@ export function MediaCard({
           ) : (
             <div
               data-placeholder
-              className="absolute inset-0 flex items-center justify-center bg-surface-elevated"
+              className="absolute inset-0 flex items-center justify-center"
+              style={{ background: posterGradient(item.id || item.title) }}
             >
-              <span className="text-text-tertiary text-xs font-display font-bold line-clamp-2 px-2 text-center">
+              <span className="text-white/90 text-xs font-display font-bold line-clamp-2 px-2 text-center">
                 {item.title.slice(0, 2).toUpperCase()}
               </span>
             </div>

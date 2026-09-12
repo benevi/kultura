@@ -3,45 +3,61 @@
 @tailwind utilities;
 
 :root {
-  /* ─── KULTURA Design System — modo oscuro (canónico) ─── */
+  /* ─── KULTURA Design System — modo oscuro (canónico) ───
+     Tokens OKLCH tomados literalmente del canvas de diseño F0 v2
+     ("Kultura Editorial" / "Kultura — Diseño completo").
+     Ver CLAUDE.md → "Sistema de diseño (fuente de verdad)". Los NOMBRES de
+     variable se conservan (compatibilidad con todo el código existente,
+     que ya canaliza colores a través de estos custom properties); lo que
+     cambia es el VALOR, ahora en la misma familia de matiz 280 (neutros)
+     + acentos vivos que usa F0. */
 
-  /* Superficies */
-  --surface-base: #0A0C0E;
-  --surface-default: #14181B;
-  --surface-elevated: #1E2429;
-  --surface-border: #2C343A;
+  /* Superficies — idénticas a --bg/--surface/--surface-2/--stroke de F0 */
+  --surface-base: oklch(16% 0.015 280);
+  --surface-default: oklch(21% 0.02 280);
+  --surface-elevated: oklch(26% 0.025 280);
+  --surface-border: oklch(32% 0.025 280);
 
-  /* Texto */
-  --text-primary: #F4F3EF;
-  --text-secondary: #9AA0A6;
-  --text-tertiary: #6B7177;
+  /* Texto — F0 solo define un tono "muted"; text-tertiary lo replica
+     exactamente y text-secondary es un tono intermedio derivado (misma
+     familia de matiz) para la jerarquía de dos niveles que ya usa la UI. */
+  --text-primary: oklch(97% 0.004 280);
+  --text-secondary: oklch(76% 0.02 280);
+  --text-tertiary: oklch(68% 0.02 280);
 
-  /* Acentos con rol semántico (no usar fuera de su rol) */
-  --accent-positive: #6FCF97;   /* verde — estado positivo/consumado, acento principal */
-  --accent-highlight: #E6A23C;  /* ámbar — destacado/aspiracional: rating, premium */
-  --accent-info: #5A9EE6;       /* azul — información y enlaces */
-  --accent-danger: #E25C5C;     /* rojo desaturado — SOLO destructivo: eliminar, error */
+  /* Acentos con rol semántico — remapeados a los matices vivos de F0
+     (no quedan colores "propios": cada uno reutiliza un matiz decorativo
+     de F0 con el rol semántico que ya tenía en la app). */
+  --accent-positive: oklch(83% 0.24 130); /* lime F0 — positivo/match, antes verde */
+  --accent-highlight: oklch(85% 0.17 95); /* yellow F0 — rating/premium, antes ámbar */
+  --accent-info: oklch(68% 0.16 250);     /* blue F0 — información/enlaces */
+  --accent-danger: oklch(60% 0.21 25);    /* rojo derivado (mismo matiz que los posters "Past Lives" de F0), F0 no define un rojo propio — SOLO destructivo */
 
-  /* Texto sobre acentos */
-  --on-accent-positive: #0A1810;
-  --on-accent-highlight: #1A1209;
-  --on-accent-info: #06182E;
+  /* Texto sobre acentos — mismo patrón que usa F0 (texto oscuro/saturado a
+     juego con el matiz de fondo, no blanco/negro puro) */
+  --on-accent-positive: oklch(18% 0.02 130);
+  --on-accent-highlight: oklch(18% 0.03 95);
+  --on-accent-info: oklch(14% 0.03 250);
+  --on-accent-danger: oklch(97% 0.01 25);
 
-  /* Acentos DECORATIVOS (F7) — sin rol semántico, variedad visual: mood-chips,
-     degradados de "stories" de amigos, badges, logotipo. No reutilizar donde
-     haga falta significado (usar los 4 acentos semánticos de arriba para eso).
-     Vibrantes sobre --surface-base (#0A0C0E) a propósito — tono Spotify/
-     Duolingo/Netflix Gen-Z, no paleta apagada de dashboard. */
-  --accent-pink: #FF4FA3;
-  --accent-lime: #B4FF3D;
-  --accent-orange: #FF7A3D;
-  --accent-purple: #9B6BFF;
+  /* Acentos DECORATIVOS — idénticos a los tokens --pink/--lime/--orange/
+     --purple de F0. Sin rol semántico: mood-chips, stories, logotipo.
+     accent-lime coincide a propósito con accent-positive (en F0 el lime
+     ES el color de "match"/positivo). */
+  --accent-pink: oklch(68% 0.24 350);
+  --accent-lime: oklch(83% 0.24 130);
+  --accent-orange: oklch(72% 0.19 55);
+  --accent-purple: oklch(62% 0.19 300);
+  --accent-blue: oklch(68% 0.16 250);
+  --accent-yellow: oklch(85% 0.17 95);
 
   /* Texto sobre acentos decorativos (mismo patrón que los semánticos) */
-  --on-accent-pink: #2B0617;
-  --on-accent-lime: #141F06;
-  --on-accent-orange: #2B1206;
-  --on-accent-purple: #150929;
+  --on-accent-pink: oklch(15% 0.02 350);
+  --on-accent-lime: oklch(18% 0.02 130);
+  --on-accent-orange: oklch(16% 0.03 55);
+  --on-accent-purple: oklch(15% 0.02 300);
+  --on-accent-blue: oklch(14% 0.03 250);
+  --on-accent-yellow: oklch(18% 0.03 95);
 
   /* ─── Tokens de movimiento ─── */
   --duration-fast: 100ms;
@@ -53,7 +69,7 @@
   --bg: var(--surface-base);
   --surface: var(--surface-default);
   --surface2: var(--surface-elevated);
-  --surface3: #1c2430;
+  --surface3: var(--surface-elevated);
   --border-color: var(--surface-border);
   --accent-color: var(--accent-danger);
   --text-color: var(--text-primary);
