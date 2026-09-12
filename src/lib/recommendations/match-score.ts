@@ -74,16 +74,37 @@ export function buildTasteProfile(rows: UserMediaRow[]): TasteProfile {
   }
 }
 
-/** Pura, testeable: score 0-100 de un item dado un perfil y una señal social 0-1. */
-export function scoreItem(item: MediaItem, profile: TasteProfile, socialFraction = 0): number {
+/**
+ * Pura, testeable: score 0-100 de un item dado un perfil y una señal social 0-1.
+ *
+ * `includeTypeAffinity` (default true) permite excluir el componente de
+ * afinidad de tipo: cuando todos los items evaluados en una misma vista
+ * comparten tipo (F3a-FIX — típico de Discover filtrado por `type=movie`,
+ * etc.), ese componente da el mismo valor a todos y no discrimina nada —
+ * incluirlo ahí colapsa el score a una constante disfrazada de personalización.
+ * Al excluirlo, su peso (0.15) se redistribuye proporcionalmente entre género
+ * y social para que sigan sumando 1.0.
+ */
+export function scoreItem(
+  item: MediaItem,
+  profile: TasteProfile,
+  socialFraction = 0,
+  options: { includeTypeAffinity?: boolean } = {}
+): number {
+  const includeTypeAffinity = options.includeTypeAffinity ?? true
+
   const genres = item.genres ?? []
   const genreScore =
     genres.length === 0
       ? 0
       : genres.reduce((sum, g) => sum + (profile.genreWeights.get(g) ?? 0), 0) / genres.length
-  const typeScore = profile.typeWeights.get(item.type) ?? 0
+  const typeScore = includeTypeAffinity ? (profile.typeWeights.get(item.type) ?? 0) : 0
 
-  const total = genreScore * 0.7 + typeScore * 0.15 + socialFraction * 0.15
+  const weights = includeTypeAffinity
+    ? { genre: 0.7, type: 0.15, social: 0.15 }
+    : { genre: 0.7 / 0.85, type: 0, social: 0.15 / 0.85 }
+
+  const total = genreScore * weights.genre + typeScore * weights.type + socialFraction * weights.social
   return Math.max(0, Math.min(100, Math.round(total * 100)))
 }
 
@@ -184,9 +205,16 @@ export async function computeMatchScores(
     supabase
   )
 
+  // F3a-FIX: si todos los items de esta vista son del mismo tipo (Discover
+  // filtrado por type=movie/tv/...), la afinidad de tipo es una constante que
+  // no discrimina nada entre ellos — se excluye del cálculo en ese caso. En
+  // modo agregado (type=all) o filas que mezclan tipos (GenreNews) sigue
+  // contribuyendo normalmente.
+  const includeTypeAffinity = new Set(items.map((item) => item.type)).size > 1
+
   const scores = new Map<string, number>()
   for (const item of items) {
-    scores.set(item.id, scoreItem(item, profile, social.get(item.id) ?? 0))
+    scores.set(item.id, scoreItem(item, profile, social.get(item.id) ?? 0, { includeTypeAffinity }))
   }
   return scores
 }
