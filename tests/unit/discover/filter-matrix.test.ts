@@ -25,7 +25,6 @@ import {
   TMDB_GENRE_MOVIE,
   TMDB_GENRE_TV,
   TMDB_PROVIDER,
-  TMDB_LANGUAGE,
   TMDB_DURACION,
 } from "@/lib/api/tmdb-maps";
 import {
@@ -123,14 +122,6 @@ const EXPECTED_CATALOG: Record<string, Record<string, string[]>> = {
     movie: Object.keys(TMDB_PROVIDER),
     tv: Object.keys(TMDB_PROVIDER),
     all: Object.keys(TMDB_PROVIDER),
-  },
-  idioma: {
-    movie: Object.keys(TMDB_LANGUAGE),
-    tv: Object.keys(TMDB_LANGUAGE),
-    anime: Object.keys(TMDB_LANGUAGE),
-    manga: Object.keys(TMDB_LANGUAGE),
-    book: Object.keys(TMDB_LANGUAGE),
-    comic: Object.keys(TMDB_LANGUAGE),
   },
   duracion: { movie: Object.keys(TMDB_DURACION) },
   demografia: {
@@ -256,10 +247,14 @@ describe("Matriz — cableado nativo (builder emite param real)", () => {
     ).toBeDefined();
   });
 
-  it("idioma: tmdb→with_original_language", () => {
+  // El trigger `idioma` se retiró de la UI de Descubrir (2026-09-12, a
+  // petición del usuario): el catálogo ya sigue el locale activo de la app.
+  // El builder conserva la capacidad de aceptar un override explícito (por
+  // si algún caller server-side lo necesita) — se verifica directo, sin
+  // pasar por `valuesOf` (que ya no tiene catálogo, al no ser visible).
+  it("idioma (capacidad retenida en el builder, sin trigger de UI): tmdb→with_original_language", () => {
     expect(
-      buildTmdbDiscoverParams("movie", { idioma: valuesOf("movie", "idioma")[0] })
-        .with_original_language
+      buildTmdbDiscoverParams("movie", { idioma: "es" }).with_original_language
     ).toBeDefined();
   });
 

@@ -77,6 +77,9 @@ export type FetchErrorKind = "rate-limit" | "generic" | null;
 //   - manga → volumenes
 //   - book  → anio (post-filtro desde E-BOOKS-GOOGLE)
 //   - game  → valoracion | estado | modojuego | duracionmedia
+//   - comic → editorial | volumenes (post-filtro sobre publisher/volumen
+//     resuelto vía /volumes tras el fetch de /issues — `total` de ComicVine
+//     NUNCA refleja este recorte, ver getRecentComics en comicvine.ts)
 function hasActivePostFilter(
   type: string,
   filters: DiscoverFilters
@@ -97,6 +100,8 @@ function hasActivePostFilter(
           filters.modojuego?.length ||
           filters.duracionmedia
       );
+    case "comic":
+      return Boolean(filters.editorial?.length || filters.volumenes);
     default:
       return false;
   }

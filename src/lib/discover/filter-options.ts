@@ -13,7 +13,6 @@ import {
   TMDB_GENRE_MOVIE,
   TMDB_GENRE_TV,
   TMDB_PROVIDER,
-  TMDB_LANGUAGE,
   TMDB_TV_STATUS,
   TMDB_SORT_MOVIE,
   TMDB_SORT_TV,
@@ -123,8 +122,6 @@ export function getFilterOptions(
     }
     case "demografia":
       return optionsFromKeys(JIKAN_DEMOGRAPHIC);
-    case "idioma":
-      return optionsFromKeys(TMDB_LANGUAGE);
     case "duracion":
       return optionsFromKeys(TMDB_DURACION);
     case "formato":

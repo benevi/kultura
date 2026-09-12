@@ -65,14 +65,19 @@ describe("TYPE_FILTERS — matriz por tipo en orden (spec V2)", () => {
 
   const expected: Record<DiscoverType, string[]> = {
     all: ["genre", "year", "valoracion", "platform", "sort"],
-    movie: ["genre", "year", "valoracion", "duracion", "platform", "idioma", "sort"],
-    tv: ["genre", "year", "valoracion", "status", "temporadas", "platform", "idioma", "sort"],
-    anime: ["genre", "year", "valoracion", "demografia", "status", "idioma", "sort"],
-    manga: ["genre", "year", "valoracion", "demografia", "status", "volumenes", "idioma", "sort"],
-    book: ["genre", "year", "editorial", "formato", "idioma", "sort"],
+    // `idioma` retirado de todos los tipos (2026-09-12): el catálogo sigue el
+    // locale activo de la app, un override manual con códigos TMDB rompía
+    // Google Books/Jikan (ver type-filters.ts).
+    movie: ["genre", "year", "valoracion", "duracion", "platform", "sort"],
+    tv: ["genre", "year", "valoracion", "status", "temporadas", "platform", "sort"],
+    anime: ["genre", "year", "valoracion", "demografia", "status", "sort"],
+    manga: ["genre", "year", "valoracion", "demografia", "status", "volumenes", "sort"],
+    // `editorial` retirado de book (2026-09-12, a petición del usuario) — se
+    // mantiene en comic, donde sí es un post-filtro fiable.
+    book: ["genre", "year", "formato", "sort"],
     game: ["platform", "genre", "modojuego", "year", "valoracion", "duracionmedia", "estado", "sort"],
     // genre omitido en comic: ComicVine sin catálogo de género (ver type-filters.ts).
-    comic: ["year", "editorial", "volumenes", "idioma", "sort"],
+    comic: ["year", "editorial", "volumenes", "sort"],
   };
 
   for (const type of ALL_TYPES) {
@@ -110,7 +115,7 @@ describe("TYPE_FILTERS — sort align:'end' en todos los tipos", () => {
 describe("TYPE_FILTERS — kinds correctos (FilterBar v3)", () => {
   it("genre y editorial son searchable", () => {
     expect(find("movie", "genre")?.kind).toBe("searchable");
-    expect(find("book", "editorial")?.kind).toBe("searchable");
+    expect(find("comic", "editorial")?.kind).toBe("searchable");
   });
 
   it("year, valoracion, duracion, temporadas, volumenes, duracionmedia son single", () => {
@@ -122,9 +127,8 @@ describe("TYPE_FILTERS — kinds correctos (FilterBar v3)", () => {
     expect(find("game", "duracionmedia")?.kind).toBe("single");
   });
 
-  it("platform, idioma, status, demografia, formato, modojuego, estado son multi", () => {
+  it("platform, status, demografia, formato, modojuego, estado son multi", () => {
     expect(find("movie", "platform")?.kind).toBe("multi");
-    expect(find("movie", "idioma")?.kind).toBe("multi");
     expect(find("tv", "status")?.kind).toBe("multi");
     expect(find("anime", "demografia")?.kind).toBe("multi");
     expect(find("book", "formato")?.kind).toBe("multi");
@@ -164,7 +168,7 @@ describe("TYPE_FILTERS — post-filters marcados (spec V2)", () => {
   it("temporadas, volumenes, editorial, modojuego, duracionmedia, estado(game) y valoracion(game) llevan postFilter", () => {
     expect(find("tv", "temporadas")?.postFilter).toBe(true);
     expect(find("manga", "volumenes")?.postFilter).toBe(true);
-    expect(find("book", "editorial")?.postFilter).toBe(true);
+    expect(find("comic", "editorial")?.postFilter).toBe(true);
     expect(find("game", "modojuego")?.postFilter).toBe(true);
     expect(find("game", "duracionmedia")?.postFilter).toBe(true);
     expect(find("game", "estado")?.postFilter).toBe(true);

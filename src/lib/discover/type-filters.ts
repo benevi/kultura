@@ -63,7 +63,6 @@ const GENRE: FilterTrigger = { key: "genre", kind: "searchable", paramKey: "genr
 const YEAR: FilterTrigger = { key: "year", kind: "single", paramKey: "year" };
 const VALORACION: FilterTrigger = { key: "valoracion", kind: "single", paramKey: "rating" };
 const PLATFORM: FilterTrigger = { key: "platform", kind: "multi", paramKey: "platform" };
-const IDIOMA: FilterTrigger = { key: "idioma", kind: "multi", paramKey: "idioma" };
 const STATUS: FilterTrigger = { key: "status", kind: "multi", paramKey: "status" };
 const DEMOGRAFIA: FilterTrigger = { key: "demografia", kind: "multi", paramKey: "demografia" };
 const DURACION: FilterTrigger = { key: "duracion", kind: "single", paramKey: "duracion" };
@@ -89,23 +88,28 @@ const ESTADO_GAME: FilterTrigger = { key: "estado", kind: "multi", paramKey: "es
 export const TYPE_FILTERS: Record<DiscoverType, FilterTrigger[]> = {
   // all: genero, anio, valoracion, plataforma.
   all: [GENRE, YEAR, VALORACION, PLATFORM, SORT],
-  // movie: genero, anio, valoracion, duracion, plataforma, idioma.
-  movie: [GENRE, YEAR, VALORACION, DURACION, PLATFORM, IDIOMA, SORT],
-  // tv: genero, anio, valoracion, estado, temporadas, plataforma, idioma.
-  tv: [GENRE, YEAR, VALORACION, STATUS, TEMPORADAS, PLATFORM, IDIOMA, SORT],
-  // anime: genero, anio, valoracion, demografia, estado, idioma.
-  anime: [GENRE, YEAR, VALORACION, DEMOGRAFIA, STATUS, IDIOMA, SORT],
-  // manga: genero, anio, valoracion, demografia, estado, volumenes, idioma.
-  manga: [GENRE, YEAR, VALORACION, DEMOGRAFIA, STATUS, VOLUMENES, IDIOMA, SORT],
-  // book: genero, anio, editorial, formato, idioma.
-  book: [GENRE, YEAR, EDITORIAL, FORMATO, IDIOMA, SORT],
+  // movie: genero, anio, valoracion, duracion, plataforma.
+  // Trigger `idioma` retirado: el catálogo ya sigue el locale activo de la app
+  // (E-TMDB-LOCALE) y el override manual usaba códigos TMDB (es-ES/en-US) que
+  // no son válidos para el resto de proveedores (Google Books/Jikan) — fuente
+  // de resultados vacíos. Ver también books-maps.ts.
+  movie: [GENRE, YEAR, VALORACION, DURACION, PLATFORM, SORT],
+  // tv: genero, anio, valoracion, estado, temporadas, plataforma.
+  tv: [GENRE, YEAR, VALORACION, STATUS, TEMPORADAS, PLATFORM, SORT],
+  // anime: genero, anio, valoracion, demografia, estado.
+  anime: [GENRE, YEAR, VALORACION, DEMOGRAFIA, STATUS, SORT],
+  // manga: genero, anio, valoracion, demografia, estado, volumenes.
+  manga: [GENRE, YEAR, VALORACION, DEMOGRAFIA, STATUS, VOLUMENES, SORT],
+  // book: genero, anio, formato. `editorial` retirado a petición del usuario
+  // (2026-09-12) — se mantiene en `comic`, donde sí es un post-filtro fiable.
+  book: [GENRE, YEAR, FORMATO, SORT],
   // game: plataforma, genero, modojuego, anio, valoracion, duracionmedia, estado.
   game: [PLATFORM, GENRE, MODOJUEGO, YEAR, VALORACION_GAME, DURACIONMEDIA, ESTADO_GAME, SORT],
-  // comic: anio, editorial, volumenes, idioma.
+  // comic: anio, editorial, volumenes.
   // NOTA R2: el mockup lista 'genero' en comic, pero ComicVine no expone género
   // en issues (sin catálogo en comicvine-maps). Política "nunca trigger que
   // mienta" → se OMITE genre en comic (única divergencia del mockup). Ver spec V2.
-  comic: [YEAR, EDITORIAL, VOLUMENES, IDIOMA, SORT],
+  comic: [YEAR, EDITORIAL, VOLUMENES, SORT],
 };
 
 /**
