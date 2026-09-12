@@ -23,11 +23,15 @@ import {
   filterByMinVolumes,
   type JikanFilters,
 } from "@/lib/api/jikan-maps";
-import { searchOpenLibrary } from "@/lib/api/openlibrary";
 import {
-  buildOpenLibraryQuery,
+  searchGoogleBooks,
+  googleBooksTotalPages,
+} from "@/lib/api/googlebooks";
+import {
+  buildGoogleBooksQuery,
+  bookYearMatcher,
   hasBookFilters,
-  OPEN_LIBRARY_BASE_QUERY,
+  GOOGLE_BOOKS_BASE_QUERY,
   type BooksFilters,
 } from "@/lib/api/books-maps";
 import { getPopularGames, discoverGames } from "@/lib/api/rawg";
@@ -46,7 +50,7 @@ import {
   normalizeTV,
   normalizeAnime,
   normalizeMangaJikan,
-  normalizeBookOpenLibrary,
+  normalizeBookGoogle,
   normalizeGame,
 } from "@/lib/api/normalizer";
 import type { MediaItem } from "@/types/media";
@@ -74,12 +78,16 @@ export type FetchErrorKind = "rate-limit" | "generic" | null;
 //   - comic: ceil(total/20) es el total real navegable.
 const TMDB_MAX_PAGES = 500;
 
+// Tope de páginas de la familia book (heredado de la etapa Open Library).
+const BOOK_MAX_PAGES = 50;
+
 // E79 slice 2 — ¿hay un post-filtro ACTIVO que recorte items tras el fetch sin
 // recomputar el conteo del proveedor? Si lo hay, totalPages crudo miente y se
 // devuelve `null`. Solo cuenta el post-filtro específico de la familia con VALOR;
 // NSFW global (siempre activo, recorte marginal) se excluye a propósito.
 //   - tv    → temporadas
 //   - manga → volumenes
+//   - book  → anio (post-filtro desde E-BOOKS-GOOGLE)
 //   - game  → valoracion | estado | modojuego | duracionmedia
 function hasActivePostFilter(
   type: string,
@@ -90,6 +98,10 @@ function hasActivePostFilter(
       return Boolean(filters.temporadas);
     case "manga":
       return Boolean(filters.volumenes);
+    case "book":
+      // E-BOOKS-GOOGLE: el año es post-filtro en Google Books (no hay operador
+      // de fecha en la query) → el conteo crudo del proveedor deja de ser fiable.
+      return Boolean(bookYearMatcher(filters.year));
     case "game":
       return Boolean(
         filters.valoracion ||
@@ -228,21 +240,26 @@ export async function fetchDiscoverData(
         break;
       }
       case "book": {
-        // E84b: Open Library /search.json. Con filtros (género/editorial/idioma/
-        // formato/año/sort) → query construida; sin filtros, query base poblada.
-        // editorial ahora es NATIVO (publisher: en q) → ya no hay post-filtro.
-        let res;
-        if (hasBookFilters(filters)) {
-          const { q, params } = buildOpenLibraryQuery(filters);
-          res = await searchOpenLibrary(q, page, params);
-        } else {
-          res = await searchOpenLibrary(OPEN_LIBRARY_BASE_QUERY, page);
-        }
-        items = (res.docs ?? []).map((d) => normalizeBookOpenLibrary(d));
-        totalPages =
-          res.numFound && res.numFound > 0
-            ? Math.min(Math.ceil(res.numFound / 20), 50)
-            : 1;
+        // E-BOOKS-GOOGLE: Google Books /volumes. Con filtros (género/editorial/
+        // formato/idioma/sort) → query construida; sin filtros, query base
+        // (Google Books exige `q` no vacío). El IDIOMA del catálogo lo fija
+        // `langRestrict` con el locale activo dentro de `searchGoogleBooks`; el
+        // trigger `idioma` de la UI actúa como override explícito.
+        const { q, params } = hasBookFilters(filters)
+          ? buildGoogleBooksQuery(filters)
+          : { q: GOOGLE_BOOKS_BASE_QUERY, params: {} };
+        const res = await searchGoogleBooks(q, page, params, locale);
+        items = (res.items ?? []).map((v) => normalizeBookGoogle(v));
+        // POST-filtro de año: Google Books no tiene operador de fecha en la
+        // query (Open Library sí lo tenía) → se filtra sobre el año ya
+        // normalizado. `hasActivePostFilter('book', …)` marca totalPages como
+        // no fiable cuando está activo.
+        const yearMatcher = bookYearMatcher(filters.year);
+        if (yearMatcher) items = items.filter((i) => yearMatcher(i.year));
+        // Cap 50 heredado de la etapa Open Library: se mantiene en este commit
+        // para no mezclar la migración de proveedor con el tope COMÚN de
+        // paginación (E79-s3, que lo unifica para las 7 familias).
+        totalPages = Math.min(googleBooksTotalPages(res.totalItems), BOOK_MAX_PAGES);
         hasMore = page < totalPages;
         break;
       }

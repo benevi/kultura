@@ -44,20 +44,28 @@ Next.js 14 App Router · React 18 · TypeScript strict · Tailwind CSS 3 · Supa
 | Tipo | API | Base URL | Auth |
 |------|-----|----------|------|
 | Movies+TV | TMDB | api.themoviedb.org/3 | `?api_key=TMDB_API_KEY` |
-| Anime+Manga | Jikan v4 | api.jikan.moe/v4 | — |
-| Books | Open Library | openlibrary.org | — |
+| Anime+Manga | Jikan v4 (MyAnimeList) | api.jikan.moe/v4 | — · **sirve hoy anime Y manga** |
+| Books | **Google Books** | www.googleapis.com/books/v1 | `?key=GOOGLE_BOOKS_KEY` (opcional; sin key la cuota anónima por IP puede ser 0 → 429) |
+| Books (legacy) | Open Library | openlibrary.org | — (solo fichas de ids `book_OL…` ya guardados) |
 | Comics | ComicVine | comicvine.gamespot.com/api | `?api_key=COMICVINE_KEY` (clave presente, sin handler — E6) |
-| Manga | MangaDex | api.mangadex.org | — |
+| Manga (preparado, no en pipeline) | MangaDex | api.mangadex.org | — · cliente localizado pero NO enchufado: la familia manga la sirve Jikan → **E-MANGA-SOURCE** |
 | Games | RAWG | api.rawg.io/api | `?key=RAWG_API_KEY` |
 | AI | Anthropic Claude (`claude-haiku-4-5`) | api.anthropic.com | `ANTHROPIC_API_KEY` |
 
-**Idioma:** TMDB→`language=es-ES` fallback `en-US` · Books (Open Library)→`language:<ISO-639-3>` cuando se filtra · resto inglés.
+**Idioma:** derivado del **locale activo** (`es`/`en`) — fuente única: `src/lib/api/locale.ts`. El locale se resuelve en el borde (`getLocale()` en `/api/discover`, `/api/search`, `/api/genre-news`; `params.locale` en `/[locale]/media/...`) y viaja como parámetro explícito hasta cada cliente de API.
+- TMDB → `language=es-ES | en-US` (+ `region=ES|US` en `watch/providers`)
+- Google Books → `langRestrict=es | en` (el trigger `idioma` de Descubrir lo sobreescribe)
+- MangaDex → `availableTranslatedLanguage[]=es,es-la,en | en` + texto elegido con `pickLocalizedText`
+- **Jikan (anime/manga) → inglés/japonés únicamente. Limitación aceptada:** no existe API gratuita de anime con traducción ES completa.
+- **ComicVine (cómics) → inglés únicamente. Limitación aceptada:** sin alternativa con catálogo ES.
+- RAWG (juegos) → inglés; la ficha se enriquece con Steam (`l=spanish|english`).
 
 **Imágenes:**
 - TMDB poster: `image.tmdb.org/t/p/w500{poster_path}`
 - TMDB backdrop: `image.tmdb.org/t/p/w1280{backdrop_path}`
 - TMDB logo: `image.tmdb.org/t/p/original{logo_path}`
-- Books (Open Library): `covers.openlibrary.org/b/id/{cover_i}-L.jpg`
+- Books (Google Books): `imageLinks` del volumen, normalizado a https + `zoom=1` (`googleBooksCover`)
+- Books legacy (Open Library): `covers.openlibrary.org/b/id/{cover_i}-L.jpg`
 - MangaDex: `uploads.mangadex.org/covers/{manga_id}/{filename}`
 - RAWG: `background_image`
 
@@ -67,7 +75,8 @@ Next.js 14 App Router · React 18 · TypeScript strict · Tailwind CSS 3 · Supa
 ```
 TMDB_API_KEY=               # server-only
 RAWG_API_KEY=               # server-only
-GOOGLE_BOOKS_KEY=           # server-only — RETIRADO en E84c (libros → Open Library, sin auth). Sin uso en código.
+GOOGLE_BOOKS_KEY=           # server-only — OPCIONAL, REACTIVADO en E-BOOKS-GOOGLE (libros → Google Books).
+                            # La API responde sin key, pero su cuota anónima va por IP y suele estar a 0 en cloud → ponerla en producción.
 COMICVINE_KEY=              # server-only — presente, sin uso en código actual (E6)
 ANTHROPIC_API_KEY=          # server-only — Anthropic Claude (recomendaciones IA, claude-haiku-4-5)
 NEXT_PUBLIC_SUPABASE_URL=
@@ -117,8 +126,9 @@ src/app/api/
 src/components/
   ui/ · layout/ · media/ · home/ · library/ · profile/ · search/ · social/
 src/lib/
-  api/      tmdb · jikan · openlibrary · mangadex · rawg ·
-            normalizer · search · genre-news
+  api/      tmdb · jikan · googlebooks · openlibrary (legacy) · mangadex ·
+            rawg · comicvine · locale · normalizer · search · discover ·
+            aggregate · genre-news
   claude/   recommendations
   supabase/ client · server
   library/  actions · queries · stats

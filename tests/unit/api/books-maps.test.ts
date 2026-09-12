@@ -1,196 +1,201 @@
 // ============================================================
-// KULTURA — Open Library filter translation tests (E84b)
-// género→subject:, editorial→publisher: (nativo, multi=OR), idioma→language:<iso3>,
-// año→first_publish_year:[Y TO Y], formato→ebook_access:, sort→params.sort,
-// guard de desconocidos, query base sin filtros.
+// KULTURA — Google Books filter translation tests (E-BOOKS-GOOGLE)
+// género→subject:"…", editorial→inpublisher:"…" (nativo, multi=OR),
+// formato→params.filter, sort→params.orderBy, idioma→override de langRestrict,
+// año→post-filtro (matcher), guard de desconocidos, query base sin filtros.
+//
+// Sustituye a los tests de la etapa Open Library (E84b): esos verificaban
+// `publisher:`/`language:<iso3>`/`first_publish_year:` y el param `sort`, que
+// ya no existen en el contrato de Google Books.
 // ============================================================
 
 import { describe, it, expect } from "vitest";
 import {
   BOOKS_GENRE,
-  OPEN_LIBRARY_BASE_QUERY,
-  openLibrarySort,
+  BOOKS_PUBLISHER,
+  GOOGLE_BOOKS_BASE_QUERY,
+  googleBooksOrderBy,
+  booksLangRestrictOverride,
+  bookYearMatcher,
   hasBookFilters,
-  buildOpenLibraryQuery,
+  buildGoogleBooksQuery,
 } from "@/lib/api/books-maps";
 
 // ── Tablas ───────────────────────────────────────────────────────────────────
 
-describe("BOOKS_GENRE", () => {
+describe("BOOKS_GENRE / BOOKS_PUBLISHER", () => {
   it("mapea slugs canónicos a términos subject BISAC inglés", () => {
     expect(BOOKS_GENRE["ciencia-ficcion"]).toBe("Science Fiction");
     expect(BOOKS_GENRE.fantasia).toBe("Fantasy");
     expect(BOOKS_GENRE.historia).toBe("History");
     expect(BOOKS_GENRE.terror).toBe("Horror");
   });
-});
 
-// ── openLibrarySort ────────────────────────────────────────────────────────────
-
-describe("openLibrarySort", () => {
-  it("recientes / newest / release_desc / recent → new", () => {
-    expect(openLibrarySort("recientes")).toBe("new");
-    expect(openLibrarySort("newest")).toBe("new");
-    expect(openLibrarySort("release_desc")).toBe("new");
-    expect(openLibrarySort("recent")).toBe("new");
-  });
-
-  it("rating → rating, title → title", () => {
-    expect(openLibrarySort("rating")).toBe("rating");
-    expect(openLibrarySort("title")).toBe("title");
-  });
-
-  it("relevance / popularity / null / desconocido → undefined", () => {
-    expect(openLibrarySort("relevance")).toBeUndefined();
-    expect(openLibrarySort("popularity")).toBeUndefined();
-    expect(openLibrarySort("zzz")).toBeUndefined();
-    expect(openLibrarySort(null)).toBeUndefined();
-    expect(openLibrarySort(undefined)).toBeUndefined();
+  it("mapea slugs de editorial a su nombre", () => {
+    expect(BOOKS_PUBLISHER.planeta).toBe("Planeta");
+    expect(BOOKS_PUBLISHER.salamandra).toBe("Salamandra");
   });
 });
 
-// ── hasBookFilters ─────────────────────────────────────────────────────────────
+// ── googleBooksOrderBy ───────────────────────────────────────────────────────
+
+describe("googleBooksOrderBy", () => {
+  it("recientes / newest / release_desc / recent → newest", () => {
+    expect(googleBooksOrderBy("recientes")).toBe("newest");
+    expect(googleBooksOrderBy("newest")).toBe("newest");
+    expect(googleBooksOrderBy("release_desc")).toBe("newest");
+    expect(googleBooksOrderBy("recent")).toBe("newest");
+  });
+
+  it("sorts sin equivalente nativo → undefined (relevancia, sin inventar orden)", () => {
+    // Google Books solo admite relevance|newest: rating y title NO existen.
+    expect(googleBooksOrderBy("rating")).toBeUndefined();
+    expect(googleBooksOrderBy("title")).toBeUndefined();
+    expect(googleBooksOrderBy("popularity")).toBeUndefined();
+    expect(googleBooksOrderBy("relevance")).toBeUndefined();
+    expect(googleBooksOrderBy(null)).toBeUndefined();
+    expect(googleBooksOrderBy(undefined)).toBeUndefined();
+  });
+});
+
+// ── booksLangRestrictOverride ────────────────────────────────────────────────
+
+describe("booksLangRestrictOverride", () => {
+  it("acepta ISO-639-1 de 2 letras y normaliza a minúsculas", () => {
+    expect(booksLangRestrictOverride("ja")).toBe("ja");
+    expect(booksLangRestrictOverride("EN")).toBe("en");
+    expect(booksLangRestrictOverride(" fr ")).toBe("fr");
+  });
+
+  it("descarta lo que no sea un código de 2 letras", () => {
+    expect(booksLangRestrictOverride("spa")).toBeUndefined();
+    expect(booksLangRestrictOverride("")).toBeUndefined();
+    expect(booksLangRestrictOverride(null)).toBeUndefined();
+    expect(booksLangRestrictOverride("es-ES")).toBeUndefined();
+  });
+});
+
+// ── bookYearMatcher (post-filtro) ────────────────────────────────────────────
+
+describe("bookYearMatcher", () => {
+  it("YYYY → predicado de igualdad sobre el año del item", () => {
+    const m = bookYearMatcher("2003");
+    expect(m).toBeDefined();
+    expect(m!(2003)).toBe(true);
+    expect(m!(2004)).toBe(false);
+    expect(m!(undefined)).toBe(false);
+  });
+
+  it("buckets no soportados (décadas / classic) → undefined, no filtra", () => {
+    // Google Books no tiene operador de fecha: solo se soporta el año exacto.
+    expect(bookYearMatcher("2010s")).toBeUndefined();
+    expect(bookYearMatcher("classic")).toBeUndefined();
+    expect(bookYearMatcher(null)).toBeUndefined();
+    expect(bookYearMatcher("")).toBeUndefined();
+  });
+});
+
+// ── hasBookFilters ───────────────────────────────────────────────────────────
 
 describe("hasBookFilters", () => {
-  it("sin filtros → false", () => {
-    expect(hasBookFilters()).toBe(false);
-    expect(hasBookFilters({})).toBe(false);
-  });
-
-  it("género / formato / idioma / año → true", () => {
+  it("true con género, editorial, formato, idioma-override o sort nativo", () => {
     expect(hasBookFilters({ genre: ["fantasia"] })).toBe(true);
-    expect(hasBookFilters({ formato: "free" })).toBe(true);
-    expect(hasBookFilters({ idioma: "en" })).toBe(true);
-    expect(hasBookFilters({ year: "2020" })).toBe(true);
-  });
-
-  it("editorial AHORA gatea (nativo E84b) → true", () => {
     expect(hasBookFilters({ editorial: ["planeta"] })).toBe(true);
+    expect(hasBookFilters({ formato: "free" })).toBe(true);
+    expect(hasBookFilters({ idioma: "ja" })).toBe(true);
+    expect(hasBookFilters({ sort: "recientes" })).toBe(true);
   });
 
-  it("sort que produce param (new/rating/title) → true; relevance-only → false", () => {
-    expect(hasBookFilters({ sort: "release_desc" })).toBe(true);
-    expect(hasBookFilters({ sort: "rating" })).toBe(true);
-    expect(hasBookFilters({ sort: "popularity" })).toBe(false);
-    expect(hasBookFilters({ sort: "relevance" })).toBe(false);
-  });
-
-  it("colecciones vacías no cuentan", () => {
+  it("false sin filtros o con valores que no producen query", () => {
+    expect(hasBookFilters({})).toBe(false);
     expect(hasBookFilters({ genre: [] })).toBe(false);
-    expect(hasBookFilters({ editorial: [] })).toBe(false);
+    expect(hasBookFilters({ sort: "relevance" })).toBe(false);
+    expect(hasBookFilters({ formato: "physical" })).toBe(false);
+  });
+
+  it("el AÑO no cuenta: es post-filtro, necesita el catálogo base", () => {
+    expect(hasBookFilters({ year: "2003" })).toBe(false);
   });
 });
 
-// ── buildOpenLibraryQuery ───────────────────────────────────────────────────────
+// ── buildGoogleBooksQuery ────────────────────────────────────────────────────
 
-describe("buildOpenLibraryQuery", () => {
-  it("sin filtros → q base, params vacío", () => {
-    const { q, params } = buildOpenLibraryQuery();
-    expect(q).toBe(OPEN_LIBRARY_BASE_QUERY);
+describe("buildGoogleBooksQuery", () => {
+  it("sin filtros → query base (Google Books exige q no vacío)", () => {
+    const { q, params } = buildGoogleBooksQuery({});
+    expect(q).toBe(GOOGLE_BOOKS_BASE_QUERY);
     expect(params).toEqual({});
   });
 
-  it("género → subject:", () => {
-    expect(buildOpenLibraryQuery({ genre: ["fantasia"] }).q).toBe(
-      "subject:Fantasy"
-    );
+  it("género → subject:\"…\" con comillas (si no, el espacio parte el término)", () => {
+    const { q } = buildGoogleBooksQuery({ genre: ["ciencia-ficcion"] });
+    expect(q).toBe('subject:"Science Fiction"');
   });
 
-  it("multi-género → varios subject: unidos por espacio", () => {
+  it("multi-género → un subject: por slug", () => {
+    const { q } = buildGoogleBooksQuery({ genre: ["fantasia", "terror"] });
+    expect(q).toBe('subject:"Fantasy" subject:"Horror"');
+  });
+
+  it("editorial única → inpublisher: sin paréntesis", () => {
+    const { q } = buildGoogleBooksQuery({ editorial: ["planeta"] });
+    expect(q).toBe('inpublisher:"Planeta"');
+  });
+
+  it("editorial múltiple → OR entre paréntesis", () => {
+    const { q } = buildGoogleBooksQuery({ editorial: ["planeta", "norma"] });
+    expect(q).toBe('(inpublisher:"Planeta" OR inpublisher:"Norma")');
+  });
+
+  it("combina género + editorial en la misma q", () => {
+    const { q } = buildGoogleBooksQuery({
+      genre: ["fantasia"],
+      editorial: ["salamandra"],
+    });
+    expect(q).toBe('subject:"Fantasy" inpublisher:"Salamandra"');
+  });
+
+  it("slugs desconocidos se descartan (y caen a la query base si no queda nada)", () => {
+    const { q } = buildGoogleBooksQuery({
+      genre: ["no-existe"],
+      editorial: ["tampoco"],
+    });
+    expect(q).toBe(GOOGLE_BOOKS_BASE_QUERY);
+  });
+
+  it("formato free/ebook → params.filter; physical → sin filter", () => {
+    expect(buildGoogleBooksQuery({ formato: "free" }).params.filter).toBe(
+      "free-ebooks"
+    );
+    expect(buildGoogleBooksQuery({ formato: "ebook" }).params.filter).toBe(
+      "ebooks"
+    );
     expect(
-      buildOpenLibraryQuery({ genre: ["fantasia", "ciencia-ficcion"] }).q
-    ).toBe("subject:Fantasy subject:Science Fiction");
+      buildGoogleBooksQuery({ formato: "physical" }).params.filter
+    ).toBeUndefined();
   });
 
-  it("género desconocido se descarta; todos desconocidos → q base", () => {
-    expect(buildOpenLibraryQuery({ genre: ["fantasia", "nope"] }).q).toBe(
-      "subject:Fantasy"
+  it("sort nativo → params.orderBy", () => {
+    expect(buildGoogleBooksQuery({ sort: "recientes" }).params.orderBy).toBe(
+      "newest"
     );
-    expect(buildOpenLibraryQuery({ genre: ["nope"] }).q).toBe(
-      OPEN_LIBRARY_BASE_QUERY
-    );
-  });
-
-  it("editorial → publisher: (nativo, single sin paréntesis)", () => {
-    expect(buildOpenLibraryQuery({ editorial: ["planeta"] }).q).toBe(
-      "publisher:Planeta"
-    );
-  });
-
-  it("multi-select editorial → publisher:a OR publisher:b entre paréntesis", () => {
     expect(
-      buildOpenLibraryQuery({ editorial: ["planeta", "norma"] }).q
-    ).toBe("(publisher:Planeta OR publisher:Norma)");
+      buildGoogleBooksQuery({ sort: "rating" }).params.orderBy
+    ).toBeUndefined();
   });
 
-  it("editorial desconocida (cómic image) se descarta", () => {
-    expect(buildOpenLibraryQuery({ editorial: ["image"] }).q).toBe(
-      OPEN_LIBRARY_BASE_QUERY
+  it("idioma → override de langRestrict en params", () => {
+    expect(buildGoogleBooksQuery({ idioma: "ja" }).params.langRestrict).toBe(
+      "ja"
     );
+    expect(
+      buildGoogleBooksQuery({ idioma: "spa" }).params.langRestrict
+    ).toBeUndefined();
   });
 
-  it("idioma 2→3 letras (ISO-639-3); no mapeable se descarta", () => {
-    expect(buildOpenLibraryQuery({ idioma: "es" }).q).toBe("language:spa");
-    expect(buildOpenLibraryQuery({ idioma: "EN" }).q).toBe("language:eng");
-    expect(buildOpenLibraryQuery({ idioma: "ja" }).q).toBe("language:jpn");
-    expect(buildOpenLibraryQuery({ idioma: "zz" }).q).toBe(
-      OPEN_LIBRARY_BASE_QUERY
-    );
-  });
-
-  it("año → first_publish_year:[Y TO Y]; no numérico se descarta", () => {
-    expect(buildOpenLibraryQuery({ year: "2020" }).q).toBe(
-      "first_publish_year:[2020 TO 2020]"
-    );
-    // bucket "2020s" → toma los 4 primeros dígitos.
-    expect(buildOpenLibraryQuery({ year: "2020s" }).q).toBe(
-      "first_publish_year:[2020 TO 2020]"
-    );
-    expect(buildOpenLibraryQuery({ year: "abc" }).q).toBe(
-      OPEN_LIBRARY_BASE_QUERY
-    );
-  });
-
-  it("formato free → ebook_access:public", () => {
-    expect(buildOpenLibraryQuery({ formato: "free" }).q).toBe(
-      "ebook_access:public"
-    );
-  });
-
-  it("formato ebook → (public OR borrowable)", () => {
-    expect(buildOpenLibraryQuery({ formato: "ebook" }).q).toBe(
-      "(ebook_access:public OR ebook_access:borrowable)"
-    );
-  });
-
-  it("formato physical → sin fragmento (q base)", () => {
-    expect(buildOpenLibraryQuery({ formato: "physical" }).q).toBe(
-      OPEN_LIBRARY_BASE_QUERY
-    );
-  });
-
-  it("sort → params.sort solo si produce uno", () => {
-    expect(buildOpenLibraryQuery({ sort: "release_desc" }).params).toEqual({
-      sort: "new",
-    });
-    expect(buildOpenLibraryQuery({ sort: "rating" }).params).toEqual({
-      sort: "rating",
-    });
-    expect(buildOpenLibraryQuery({ sort: "popularity" }).params).toEqual({});
-  });
-
-  it("combinación completa: género + editorial + idioma + año + formato + sort", () => {
-    const { q, params } = buildOpenLibraryQuery({
-      genre: ["historia"],
-      editorial: ["planeta", "norma"],
-      idioma: "es",
-      year: "2020",
-      formato: "free",
-      sort: "release_desc",
-    });
-    expect(q).toBe(
-      "subject:History (publisher:Planeta OR publisher:Norma) language:spa first_publish_year:[2020 TO 2020] ebook_access:public"
-    );
-    expect(params).toEqual({ sort: "new" });
+  it("el año NO entra en q ni en params (es post-filtro)", () => {
+    const { q, params } = buildGoogleBooksQuery({ year: "2003" });
+    expect(q).toBe(GOOGLE_BOOKS_BASE_QUERY);
+    expect(params).toEqual({});
   });
 });

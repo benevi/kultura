@@ -480,16 +480,10 @@ No bloqueantes. Atacar solo después de A–D.
   en `FilterBar`, labels i18n es/en con paridad. Deuda separada del acento rojo legacy en otros
   consumidores → **E82** (BACKLOG).
 
-- [ ] **E60. Decisión de producto: scope de Discover/Books (idioma)**
+- [x] **E60. (CERRADA 2026-09-12 — decisión tomada) Scope de Discover/Books (idioma)**
 
-  `src/lib/api/googlebooks.ts:56` aplica `langRestrict: "es"`, lo que reduce drásticamente
-  `totalItems` y agrava el bug de paginación de books (totalPages inflados o erróneos cuando
-  hay pocos resultados en español). Es una decisión de producto: ¿Discover de libros
-  español-céntrico (consistente con i18n del proyecto) o global?
-
-  Aplica también a otras APIs si tienen restricción regional similar.
-
-  Sin priorizar. No tocar `langRestrict` hasta tomar la decisión.
+  **Decisión del dueño de producto:** el catálogo sigue al **locale activo de la app**, no a un idioma fijo ni a "global". Aplicado de forma transversal (no solo a libros) en E-TMDB-LOCALE / E-MANGADEX-LOCALE / E-BOOKS-GOOGLE: `langRestrict` (Google Books), `language` + `region` (TMDB) y `availableTranslatedLanguage[]` (MangaDex) derivan del locale; `src/lib/api/locale.ts` es la fuente única.
+  El efecto colateral que preocupaba (paginación de books degradada al acotar idioma) queda resuelto por otra vía: el `totalItems` de Google Books se traduce con `googleBooksTotalPages` y el tope de páginas es común a todas las familias (E79-s3), así que menos resultados = menos páginas reales, sin números inflados. El trigger `idioma` de Descubrir se mantiene como **override explícito** del usuario (ver libros en japonés con la app en español).
 
 - [x] **E61. (CERRADA 2026-06-01 — NO-VULN, mal diagnosticada)** ~~Seguridad: `DELETE /api/lists/[id]` bypassa RLS con service-role~~
   Fase 0 (chat actual) desmontó el diagnóstico de E47: el handler usa `createClient()` (anon + sesión, server.ts:15-17), NO service-role — no existe service-role en runtime (único uso: scripts/seed-test.mjs). La RLS de `list_items` DELETE (`list_items_delete_adder_or_owner`, migración L743-745) restringe a `added_by = auth.uid() OR owner` y SÍ se aplica al ir con sesión. Un colaborador que intenta borrar item de otro → 0 filas afectadas, sin escalada. `canEditList` es defensa-en-capa, no la única barrera. Residuo cosmético (no seguridad) → E71.
@@ -640,6 +634,9 @@ No bloqueantes. Atacar solo después de A–D.
 
 - [x] **E99. Rate-limit ausente en `PATCH`/`DELETE /api/friends` y `DELETE /api/library`** ✅ (cerrada el 2026-09-10)
   Hallazgo de revisión exhaustiva (2026-09-06). El barrido de AUDIT-FIX (S2) cubrió `groups/[id]/join`, `groups/invitations/[id]` y `settings`, pero dejó sin proteger tres escrituras autenticadas que violaban la regla 1b: `PATCH /api/friends` (aceptar/rechazar), `DELETE /api/friends` (eliminar amistad) y `DELETE /api/library` (borrar entrada de biblioteca). Fix: mismo patrón que sus `POST` homólogos — `checkRateLimit` reusando `LIMITS.friends` (key `${user.id}:friends`) y `LIMITS.library` (key `${user.id}:library`). +3 tests de regresión (429). tsc 0, lint 0, vitest **1248 passed**.
+
+- [x] **E-BOOKS-GOOGLE. (CERRADA 2026-09-12) Libros: Open Library → Google Books, con `langRestrict` atado al locale.** Reversión deliberada de E84c (decisión de producto). Nuevo `src/lib/api/googlebooks.ts` (búsqueda `/volumes` con `startIndex`/`maxResults`/`printType`/`langRestrict`, detalle `/volumes/{id}` con 404→null, helpers de portada/paginación/id legacy). `books-maps.ts` reconvertido al contrato de Google Books: género→`subject:"…"`, editorial→`inpublisher:"…"` (OR multi), formato→`params.filter`, sort→`params.orderBy`, idioma→override de `langRestrict`, **año→post-filtro** (Google Books no tiene operador de fecha) que además marca `totalPages` como no fiable vía `hasActivePostFilter('book')`. `normalizeBookGoogle` aporta sinopsis y valoración (0-5→0-10) que Open Library no daba en el listado. `GOOGLE_BOOKS_KEY` reactivada como OPCIONAL en `src/lib/env.ts` + `.env.example`. `next.config.mjs` += hosts de portadas de Google. **Compatibilidad de datos:** los ids `book_OL…` guardados en bibliotecas se siguen resolviendo (`resolveBookItem` enruta por forma del id; `openlibrary.ts` queda SOLO para eso). +54 tests unit + 1 suite de contrato. tsc 0, lint 0, vitest 1316 passed.
+  **Hallazgo de entorno:** sin key, Google Books devuelve **429 `RESOURCE_EXHAUSTED` con `quota_limit_value: "0"`** desde IP de cloud (verificado con curl el 2026-09-12) → la key es opcional para la API pero **necesaria en producción**; documentado en el módulo, en `.env.example` y en CLAUDE.md. Por eso la suite de contrato degrada a SKIP en 429 en vez de fallar.
 
 - [x] **E-MANGADEX-LOCALE. (CERRADA 2026-09-12) MangaDex: idioma en params y en el texto normalizado.** `mangadex.ts` no tenía NINGÚN manejo de idioma. Añadido `availableTranslatedLanguage[]` derivado del locale (`es`+`es-la`+`en` de red de seguridad / solo `en`) en `searchManga` y `getPopularManga`; el DETALLE no filtra por idioma a propósito (un título sin traducción no debe dar 404). `mangaDexFetch` pasa de `Record<string,string>` a pares `[k,v]` con `append`: los params array de MangaDex (`includes[]`, `availableTranslatedLanguage[]`) se pisaban con `set`. `normalizeMangaDex(raw, locale)` elige `title`/`description`/nombres de tag con `pickLocalizedText` (cadena idioma activo → inglés → romanización → primer valor) en vez de leer siempre `["en"]`. Fix latente incluido: `order: "followedCount:desc"` → `order[followedCount]=desc` (sintaxis real de v5). +21 tests unit + 2 de contrato. tsc 0, lint 0, vitest 1285 passed.
 

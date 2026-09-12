@@ -18,6 +18,8 @@ import { extractMangaCover } from "./mangadex";
 import { pickLocalizedText } from "./locale";
 import type { OpenLibraryDoc } from "./openlibrary";
 import { openLibraryCover } from "./openlibrary";
+import type { GoogleBooksVolume } from "./googlebooks";
+import { googleBooksCover } from "./googlebooks";
 import type { RawgGame } from "./rawg";
 import type { ComicVineIssue } from "@/types/media";
 
@@ -229,6 +231,56 @@ export function normalizeMangaDex(
   };
 }
 
+/**
+ * Google Books → MediaItem (E-BOOKS-GOOGLE). Fuente principal de libros.
+ *
+ * Notas de shape (todos los campos de `volumeInfo` son opcionales en la API):
+ *  - `title` puede faltar en volúmenes basura → "Unknown" (el grid nunca pinta
+ *    una card sin título).
+ *  - `publishedDate` viene como "2003" o "2003-05-01" → se extrae el año.
+ *  - `averageRating` es 0-5 → se normaliza a 0-10 como el resto de MediaItem
+ *    (RAWG hace lo mismo). `ratingsCount` viaja en metadata.
+ *  - `description` es la sinopsis (Open Library no la traía en el listado: esto
+ *    es parte del motivo de la vuelta a Google Books).
+ */
+export function normalizeBookGoogle(raw: GoogleBooksVolume): MediaItem {
+  const externalId = raw.id;
+  const info = raw.volumeInfo ?? {};
+
+  const year = extractYear(info.publishedDate);
+  const rating =
+    typeof info.averageRating === "number" && info.averageRating > 0
+      ? info.averageRating * 2
+      : undefined;
+
+  return {
+    id: `book_${externalId}`,
+    externalId,
+    type: "book",
+    title: info.title ?? "Unknown",
+    poster: googleBooksCover(info.imageLinks),
+    year,
+    synopsis: info.description ?? undefined,
+    genres: info.categories?.slice(0, 5),
+    rating,
+    ratingSource: rating !== undefined ? "Google Books" : undefined,
+    metadata: {
+      authors: info.authors ?? [],
+      publisher: info.publisher,
+      language: info.language,
+      pageCount: info.pageCount,
+      ratingsCount: info.ratingsCount,
+      subtitle: info.subtitle,
+    },
+  };
+}
+
+/**
+ * Open Library → MediaItem. LEGACY (E-BOOKS-GOOGLE): los libros se sirven con
+ * Google Books; esto solo resuelve las fichas de ids `book_OL…` ya guardados en
+ * bibliotecas mientras Open Library fue la fuente (E84b/E84c). No se usa en
+ * Descubrir ni en la búsqueda.
+ */
 export function normalizeBookOpenLibrary(raw: OpenLibraryDoc): MediaItem {
   // key is "/works/OL7353617W" — use the path as externalId
   const externalId = raw.key.replace(/^\/works\//, "");

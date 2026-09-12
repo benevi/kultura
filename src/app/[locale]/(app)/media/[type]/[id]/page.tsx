@@ -13,6 +13,10 @@ import type { TmdbProvidersResponse } from "@/lib/api/tmdb";
 import { tmdbRegion } from "@/lib/api/locale";
 import { getAnime, getAnimeVideos, getManga } from "@/lib/api/jikan";
 import { getBookDetail } from "@/lib/api/openlibrary";
+import {
+  getGoogleBookDetail,
+  isOpenLibraryLegacyId,
+} from "@/lib/api/googlebooks";
 import { getGame } from "@/lib/api/rawg";
 import { getComic } from "@/lib/api/comicvine";
 import {
@@ -20,6 +24,7 @@ import {
   normalizeTV,
   normalizeAnime,
   normalizeMangaJikan,
+  normalizeBookGoogle,
   normalizeBookOpenLibrary,
   normalizeGame,
   normalizeComic,
@@ -72,6 +77,29 @@ function extractProvidersForRegion(
   return all;
 }
 
+// ── Helper: libro (Google Books + fallback legacy Open Library) ───────────────
+
+/**
+ * Resuelve la ficha de un libro (E-BOOKS-GOOGLE).
+ *
+ * Fuente actual: Google Books (`book_{volumeId}`). Pero las bibliotecas creadas
+ * mientras los libros venían de Open Library (E84b/E84c) guardaron
+ * `book_OL7353617W`; pedirle ese id a Google Books daría 404 y la ficha de un
+ * libro YA GUARDADO se rompería. Por eso se enruta por la forma del id y Open
+ * Library se conserva exclusivamente para ese caso legacy.
+ */
+async function resolveBookItem(id: string) {
+  if (isOpenLibraryLegacyId(id)) {
+    const legacy = await getBookDetail(id).catch(() => null);
+    if (!legacy) return null;
+    const item = normalizeBookOpenLibrary(legacy.doc);
+    if (legacy.description) item.synopsis = legacy.description;
+    return item;
+  }
+  const volume = await getGoogleBookDetail(id).catch(() => null);
+  return volume ? normalizeBookGoogle(volume) : null;
+}
+
 // ── Metadata ──────────────────────────────────────────────────────────────────
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
@@ -105,11 +133,10 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       description = resp.data.synopsis ?? undefined;
       image = resp.data.images?.jpg?.large_image_url ?? undefined;
     } else if (type === "book") {
-      const detail = await getBookDetail(id);
-      if (detail) {
-        const item = normalizeBookOpenLibrary(detail.doc);
+      const item = await resolveBookItem(id);
+      if (item) {
         title = item.title;
-        description = detail.description;
+        description = item.synopsis;
         image = item.poster;
       }
     } else if (type === "game") {
@@ -231,10 +258,9 @@ export default async function MediaDetailPage({ params }: Props) {
       if (!detail) notFound();
       item = normalizeMangaJikan(detail.data);
     } else if (mediaType === "book") {
-      const detail = await getBookDetail(id).catch(() => null);
-      if (!detail) notFound();
-      item = normalizeBookOpenLibrary(detail.doc);
-      if (detail.description) item.synopsis = detail.description;
+      const book = await resolveBookItem(id);
+      if (!book) notFound();
+      item = book;
     } else if (mediaType === "game") {
       const detail = await getGame(Number(id)).catch(() => null);
       if (!detail) notFound();
