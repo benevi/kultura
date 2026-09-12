@@ -2,6 +2,7 @@
 
 import { useTranslations } from "next-intl";
 import { cn } from "@/lib/utils/index";
+import { KButton } from "@/components/ui/KButton";
 
 export interface SearchFiltersState {
   minRating: number;
@@ -109,14 +110,15 @@ export function SearchFilters({
         <button
           onClick={onToggle}
           className={cn(
-            "flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-sm font-medium transition-colors",
+            "inline-flex items-center gap-1.5 px-3 py-1.5 rounded-pill text-xs font-body font-medium whitespace-nowrap cursor-pointer",
+            "border transition-all duration-150 ease-out active:scale-[0.97]",
             isOpen || activeCount > 0
-              ? "border-accent-positive text-accent-positive bg-accent-positive/10"
-              : "border-border text-muted hover:text-text hover:border-text/30"
+              ? "bg-accent-positive/15 border-accent-positive text-text-primary"
+              : "bg-transparent border-surface-border text-text-secondary hover:text-text-primary hover:border-text-tertiary"
           )}
         >
           <svg
-            className="w-4 h-4"
+            className="w-3.5 h-3.5"
             fill="none"
             viewBox="0 0 24 24"
             stroke="currentColor"
@@ -130,7 +132,7 @@ export function SearchFilters({
           </svg>
           {t("filters" as SearchTranslationKey)}
           {activeCount > 0 && (
-            <span className="bg-accent-positive text-on-accent-positive text-xs px-1.5 py-0.5 rounded-full leading-none">
+            <span className="inline-flex items-center justify-center min-w-4 h-4 px-1 rounded-full bg-accent-positive text-on-accent-positive text-[10px] font-semibold leading-none">
               {activeCount}
             </span>
           )}
@@ -140,7 +142,7 @@ export function SearchFilters({
         <select
           value={filters.sortBy}
           onChange={(e) => update({ sortBy: e.target.value })}
-          className="px-3 py-1.5 rounded-lg border border-border bg-surface text-sm text-text focus:outline-none focus:border-accent-positive cursor-pointer"
+          className="px-3 py-1.5 rounded-pill border border-surface-border bg-surface-elevated text-xs font-body font-medium text-text-secondary focus:outline-none focus:border-accent-positive cursor-pointer"
         >
           {SORT_OPTIONS.map((opt) => (
             <option key={opt.value} value={opt.value}>
@@ -150,18 +152,21 @@ export function SearchFilters({
         </select>
 
         {resultCount > 0 && (
-          <button
+          <KButton
+            type="button"
+            variant="secondary"
+            size="sm"
             onClick={onRandomize}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-border text-muted hover:text-text hover:border-text/30 text-sm transition-colors ml-auto"
+            className="ml-auto"
           >
             🎲 {t("randomize" as SearchTranslationKey)}
-          </button>
+          </KButton>
         )}
       </div>
 
       {/* Expanded panel */}
       {isOpen && (
-        <div className="mt-3 border border-border rounded-xl p-4 bg-surface space-y-5">
+        <div className="mt-3 border border-border rounded-card shadow-xl p-4 bg-surface space-y-5">
           {/* Rating slider */}
           <div>
             <div className="flex justify-between items-center mb-2">
@@ -207,10 +212,10 @@ export function SearchFilters({
                     })
                   }
                   className={cn(
-                    "px-3 py-1 text-xs rounded-full border transition-colors",
+                    "px-3 py-1 rounded-pill text-xs cursor-pointer border transition-colors",
                     filters.decade === d.value
-                      ? "border-accent-positive bg-accent-positive text-on-accent-positive"
-                      : "border-border text-muted hover:text-text hover:border-text/30"
+                      ? "bg-accent-positive text-on-accent-positive border-accent-positive font-semibold"
+                      : "bg-surface-elevated text-text-secondary border-surface-border hover:text-text-primary"
                   )}
                 >
                   {t(d.key as SearchTranslationKey)}
@@ -231,10 +236,10 @@ export function SearchFilters({
                     key={genre}
                     onClick={() => toggleGenre(genre)}
                     className={cn(
-                      "px-3 py-1 text-xs rounded-full border transition-colors",
+                      "px-3 py-1 rounded-pill text-xs cursor-pointer border transition-colors",
                       filters.genres.includes(genre)
-                        ? "border-accent-positive bg-accent-positive text-on-accent-positive"
-                        : "border-border text-muted hover:text-text hover:border-text/30"
+                        ? "bg-accent-positive text-on-accent-positive border-accent-positive font-semibold"
+                        : "bg-surface-elevated text-text-secondary border-surface-border hover:text-text-primary"
                     )}
                   >
                     {genre}

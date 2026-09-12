@@ -3,6 +3,20 @@ import { Link } from "@/i18n/navigation";
 import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/layout/Footer";
 import { KButton } from "@/components/ui/KButton";
+import { IconLibrary, IconFriends, IconLists, IconSparkles, type KIcon } from "@/components/icons";
+import { cn } from "@/lib/utils/index";
+
+// Acentos DECORATIVOS (F7) — mismo criterio que Logo/MediaCard: variedad
+// visual sin rol semántico, un color distinto por feature (sin patrón, solo
+// para no repetir accent-positive fuera de su rol interactivo).
+const FEATURE_ACCENTS: { icon: KIcon; bg: string; text: string }[] = [
+  { icon: IconLibrary, bg: "bg-accent-pink", text: "text-on-accent-pink" },
+  { icon: IconFriends, bg: "bg-accent-lime", text: "text-on-accent-lime" },
+  { icon: IconLists, bg: "bg-accent-purple", text: "text-on-accent-purple" },
+  { icon: IconSparkles, bg: "bg-accent-orange", text: "text-on-accent-orange" },
+];
+
+const FEATURE_KEYS = ["library", "friends", "lists", "ai"] as const;
 
 export default async function HomePage() {
   const t = await getTranslations("landing");
@@ -12,134 +26,125 @@ export default async function HomePage() {
       <Header />
       <main className="flex-1">
         {/* Hero */}
-        <section className="flex flex-col items-center justify-center text-center px-4 py-24 md:py-40">
-          <h1 className="font-display text-6xl md:text-8xl tracking-widest text-text mb-8 max-w-4xl">
-            {t("hero.tagline")}
-          </h1>
-          <div className="flex flex-col sm:flex-row gap-3 mt-2">
-            <KButton variant="primary" size="lg" asChild>
-              <Link href="/login?mode=register">{t("hero.cta")}</Link>
-            </KButton>
-            <KButton variant="secondary" size="lg" asChild>
-              <Link href="#features">{t("hero.ctaSecondary")}</Link>
-            </KButton>
+        <section className="px-4 md:px-8 pt-14 md:pt-20 pb-16 md:pb-24">
+          <div className="max-w-6xl mx-auto grid md:grid-cols-2 gap-10 md:gap-16 items-center">
+            <div className="text-center md:text-left">
+              <h1 className="font-display text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-extrabold tracking-tight text-text-primary leading-[1.05] mb-8 text-balance">
+                {t("hero.tagline")}
+              </h1>
+              <div className="flex flex-col sm:flex-row gap-3 justify-center md:justify-start">
+                <KButton variant="primary" size="lg" asChild>
+                  <Link href="/login?mode=register">{t("hero.cta")}</Link>
+                </KButton>
+                <KButton variant="secondary" size="lg" asChild>
+                  <Link href="#features">{t("hero.ctaSecondary")}</Link>
+                </KButton>
+              </div>
+            </div>
+
+            {/* Collage decorativo — mismo primitivo de "poster sin imagen real"
+                (gradiente de dos paradas, mismo matiz, segunda parada más
+                oscura vía el token on-accent-*) + rotación de cards + badge
+                colgante con sombra dura, sin desenfoque (F0). */}
+            <div
+              className="relative h-64 sm:h-80 md:h-96 mx-auto w-full max-w-xs hidden sm:block"
+              aria-hidden="true"
+            >
+              <div
+                className="absolute left-0 top-8 w-28 md:w-36 aspect-[2/3] rounded-bento rotate-[-6deg] flex items-center justify-center"
+                style={{ background: "linear-gradient(155deg, var(--accent-pink), var(--on-accent-pink))" }}
+              >
+                <IconLibrary className="w-9 h-9 md:w-10 md:h-10 text-on-accent-pink opacity-70" />
+              </div>
+              <div
+                className="absolute right-2 top-0 w-28 md:w-36 aspect-[2/3] rounded-bento rotate-[5deg] flex items-center justify-center"
+                style={{ background: "linear-gradient(155deg, var(--accent-purple), var(--on-accent-purple))" }}
+              >
+                <IconSparkles className="w-9 h-9 md:w-10 md:h-10 text-on-accent-purple opacity-70" />
+              </div>
+              <div
+                className="absolute left-1/2 -translate-x-1/2 bottom-0 w-28 md:w-36 aspect-[2/3] rounded-bento rotate-[-2deg] flex items-center justify-center"
+                style={{ background: "linear-gradient(155deg, var(--accent-lime), var(--on-accent-lime))" }}
+              >
+                <IconLists className="w-9 h-9 md:w-10 md:h-10 text-on-accent-lime opacity-70" />
+              </div>
+
+              {/* Badge colgante (mismo patrón que el badge de match de MediaCard/
+                  MediaDetail): pill de color vivo + sombra dura tipo pegatina. */}
+              <div
+                className="absolute top-1/3 right-0 translate-x-1/4 rotate-[-8deg] rounded-full bg-accent-lime text-on-accent-lime text-xs font-display font-extrabold px-3 py-1.5 leading-none whitespace-nowrap"
+                style={{ boxShadow: "4px 4px 0 rgba(0,0,0,.4)" }}
+              >
+                {t("hero.badge")}
+              </div>
+            </div>
           </div>
         </section>
 
         {/* What */}
         <section className="px-4 md:px-8 py-16 text-center max-w-3xl mx-auto">
-          <h2 className="font-display text-4xl tracking-wide text-text mb-6">
+          <h2 className="font-display text-3xl md:text-4xl font-bold tracking-tight text-text-primary mb-6 text-balance">
             {t("what.title")}
           </h2>
-          <p className="text-muted text-lg leading-relaxed">
+          <p className="text-text-secondary text-lg leading-relaxed">
             {t("what.description")}
           </p>
         </section>
 
         {/* Features */}
         <section id="features" className="px-4 md:px-8 py-16 max-w-6xl mx-auto">
-          <h2 className="font-display text-4xl tracking-wide text-text text-center mb-12">
+          <h2 className="font-display text-3xl md:text-4xl font-bold tracking-tight text-text-primary text-center mb-12">
             {t("features.title")}
           </h2>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6">
-            {/* Library */}
-            <div className="bg-surface rounded-xl border border-border p-6 flex flex-col gap-4">
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                fill="none"
-                viewBox="0 0 24 24"
-                strokeWidth={1.5}
-                stroke="currentColor"
-                className="w-8 h-8 text-accent-positive"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d="M12 6.042A8.967 8.967 0 0 0 6 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 0 1 6 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 0 1 6-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0 0 18 18a8.967 8.967 0 0 0-6 2.292m0-14.25v14.25"
-                />
-              </svg>
-              <div>
-                <h3 className="font-medium text-text mb-1">{t("features.library")}</h3>
-                <p className="text-muted text-sm leading-relaxed">{t("features.libraryDesc")}</p>
-              </div>
-            </div>
-
-            {/* Friends */}
-            <div className="bg-surface rounded-xl border border-border p-6 flex flex-col gap-4">
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                fill="none"
-                viewBox="0 0 24 24"
-                strokeWidth={1.5}
-                stroke="currentColor"
-                className="w-8 h-8 text-accent-positive"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d="M15 19.128a9.38 9.38 0 0 0 2.625.372 9.337 9.337 0 0 0 4.121-.952 4.125 4.125 0 0 0-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 0 1 8.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0 1 11.964-3.07M12 6.375a3.375 3.375 0 1 1-6.75 0 3.375 3.375 0 0 1 6.75 0Zm8.25 2.25a2.625 2.625 0 1 1-5.25 0 2.625 2.625 0 0 1 5.25 0Z"
-                />
-              </svg>
-              <div>
-                <h3 className="font-medium text-text mb-1">{t("features.friends")}</h3>
-                <p className="text-muted text-sm leading-relaxed">{t("features.friendsDesc")}</p>
-              </div>
-            </div>
-
-            {/* Lists */}
-            <div className="bg-surface rounded-xl border border-border p-6 flex flex-col gap-4">
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                fill="none"
-                viewBox="0 0 24 24"
-                strokeWidth={1.5}
-                stroke="currentColor"
-                className="w-8 h-8 text-accent-positive"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d="M9 12h3.75M9 15h3.75M9 18h3.75m3 .75H18a2.25 2.25 0 0 0 2.25-2.25V6.108c0-1.135-.845-2.098-1.976-2.192a48.424 48.424 0 0 0-1.123-.08m-5.801 0c-.065.21-.1.433-.1.664 0 .414.336.75.75.75h4.5a.75.75 0 0 0 .75-.75 2.25 2.25 0 0 0-.1-.664m-5.8 0A2.251 2.251 0 0 1 13.5 2.25H15c1.012 0 1.867.668 2.15 1.586m-5.8 0c-.376.023-.75.05-1.124.08C9.095 4.01 8.25 4.973 8.25 6.108V8.25m0 0H4.875c-.621 0-1.125.504-1.125 1.125v11.25c0 .621.504 1.125 1.125 1.125h9.75c.621 0 1.125-.504 1.125-1.125V9.375c0-.621-.504-1.125-1.125-1.125H8.25ZM6.75 12h.008v.008H6.75V12Zm0 3h.008v.008H6.75V15Zm0 3h.008v.008H6.75V18Z"
-                />
-              </svg>
-              <div>
-                <h3 className="font-medium text-text mb-1">{t("features.lists")}</h3>
-                <p className="text-muted text-sm leading-relaxed">{t("features.listsDesc")}</p>
-              </div>
-            </div>
-
-            {/* AI */}
-            <div className="bg-surface rounded-xl border border-border p-6 flex flex-col gap-4">
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                fill="none"
-                viewBox="0 0 24 24"
-                strokeWidth={1.5}
-                stroke="currentColor"
-                className="w-8 h-8 text-accent-positive"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d="M9.813 15.904 9 18.75l-.813-2.846a4.5 4.5 0 0 0-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 0 0 3.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 0 0 3.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 0 0-3.09 3.09ZM18.259 8.715 18 9.75l-.259-1.035a3.375 3.375 0 0 0-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 0 0 2.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 0 0 2.456 2.456L21.75 6l-1.035.259a3.375 3.375 0 0 0-2.456 2.456ZM16.894 20.567 16.5 21.75l-.394-1.183a2.25 2.25 0 0 0-1.423-1.423L13.5 18.75l1.183-.394a2.25 2.25 0 0 0 1.423-1.423l.394-1.183.394 1.183a2.25 2.25 0 0 0 1.423 1.423l1.183.394-1.183.394a2.25 2.25 0 0 0-1.423 1.423Z"
-                />
-              </svg>
-              <div>
-                <h3 className="font-medium text-text mb-1">{t("features.ai")}</h3>
-                <p className="text-muted text-sm leading-relaxed">{t("features.aiDesc")}</p>
-              </div>
-            </div>
+            {FEATURE_KEYS.map((key, i) => {
+              const { icon: Icon, bg, text } = FEATURE_ACCENTS[i];
+              // Rotación sutil alternada — solo en el grid desktop, solo las
+              // piezas del bento (F0 §Rotación de cards). Se endereza al hover.
+              const rotate = i % 2 === 0 ? "md:rotate-[-1.2deg]" : "md:rotate-[1deg]";
+              return (
+                <div
+                  key={key}
+                  className={cn(
+                    "bg-surface-default border border-surface-border rounded-bento p-5 md:p-6 flex flex-col gap-4",
+                    "transition-transform duration-base ease-standard hover:rotate-0",
+                    rotate
+                  )}
+                >
+                  <div className={cn("w-11 h-11 md:w-12 md:h-12 rounded-2xl flex items-center justify-center shrink-0", bg)}>
+                    <Icon className={cn("w-5 h-5 md:w-6 md:h-6", text)} />
+                  </div>
+                  <div>
+                    <h3 className="font-display font-bold text-text-primary mb-1">
+                      {t(`features.${key}`)}
+                    </h3>
+                    <p className="text-text-secondary text-sm leading-relaxed">
+                      {t(`features.${key}Desc`)}
+                    </p>
+                  </div>
+                </div>
+              );
+            })}
           </div>
         </section>
 
-        {/* CTA final */}
-        <section className="bg-surface px-4 md:px-8 py-24 text-center">
-          <div className="max-w-2xl mx-auto">
-            <h2 className="font-display text-4xl md:text-5xl tracking-wide text-text mb-4">
+        {/* CTA final — "card feature grande": gradiente radial de acento en la
+            esquina superior-izquierda sobre superficie sólida (mismo primitivo
+            que las cards destacadas del bento). */}
+        <section className="px-4 md:px-8 py-10 md:py-16">
+          <div
+            className="relative overflow-hidden rounded-bento-lg max-w-4xl mx-auto px-6 md:px-16 py-16 md:py-20 text-center border border-surface-border"
+            style={{
+              backgroundColor: "var(--surface-elevated)",
+              backgroundImage:
+                "radial-gradient(120% 100% at 20% 10%, rgba(255,79,163,0.35), transparent 55%)",
+            }}
+          >
+            <h2 className="relative font-display text-3xl md:text-5xl font-extrabold tracking-tight text-text-primary mb-4 text-balance">
               {t("cta.title")}
             </h2>
-            <p className="text-muted text-lg mb-8">{t("cta.subtitle")}</p>
-            <KButton variant="primary" size="lg" asChild>
+            <p className="relative text-text-secondary text-lg mb-8">{t("cta.subtitle")}</p>
+            <KButton variant="primary" size="lg" asChild className="relative">
               <Link href="/login?mode=register">{t("cta.button")}</Link>
             </KButton>
           </div>

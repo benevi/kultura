@@ -42,13 +42,13 @@ export function SuggestionsForm() {
 
   if (status === 'success') {
     return (
-      <div className="bg-surface-default border border-surface-border rounded-modal p-10 text-center flex flex-col gap-3">
+      <div className="p-4 text-center flex flex-col items-center gap-3">
         <div className="text-4xl">✅</div>
-        <p className="font-semibold text-text-primary text-lg">{t('success')}</p>
+        <p className="font-display font-extrabold text-text-primary text-lg">{t('success')}</p>
         <p className="text-sm text-text-tertiary">{t('successHint')}</p>
         <button
           onClick={() => { setStatus('idle'); setSubject(''); setDescription('') }}
-          className="mx-auto mt-2 px-4 py-2 text-sm font-medium text-accent-positive hover:underline"
+          className="rounded-pill bg-surface-elevated px-4 py-2 text-sm font-bold text-accent-positive mt-2 hover:brightness-110 transition-all"
         >
           {t('newFeedback')}
         </button>
@@ -67,17 +67,17 @@ export function SuggestionsForm() {
     <form onSubmit={handleSubmit} className="flex flex-col gap-5">
       {/* Type */}
       <div>
-        <label className="block text-sm font-medium text-text-primary mb-2">{t('typeLabel')}</label>
+        <label className="block text-sm font-semibold text-text-primary mb-2">{t('typeLabel')}</label>
         <div className="flex flex-wrap gap-2">
           {typeOptions.map(opt => (
             <button
               key={opt.value}
               type="button"
               onClick={() => setType(opt.value)}
-              className={`px-4 py-2 rounded-pill text-sm font-medium border transition-all ${
+              className={`px-4 py-2 rounded-pill text-sm font-bold transition-all ${
                 type === opt.value
-                  ? 'bg-accent-positive text-on-accent-positive border-accent-positive'
-                  : 'bg-surface-default border-surface-border text-text-tertiary hover:text-text-primary hover:border-surface-border'
+                  ? 'bg-accent-positive text-on-accent-positive'
+                  : 'bg-surface-elevated text-text-tertiary hover:text-text-primary'
               }`}
             >
               {opt.label}
@@ -88,7 +88,7 @@ export function SuggestionsForm() {
 
       {/* Subject */}
       <div>
-        <label className="block text-sm font-medium text-text-primary mb-2">
+        <label className="block text-sm font-semibold text-text-primary mb-2">
           {t('subjectLabel')}
         </label>
         <input
@@ -98,13 +98,13 @@ export function SuggestionsForm() {
           placeholder={t('subjectPlaceholder')}
           maxLength={120}
           required
-          className="w-full bg-surface-elevated border border-surface-border rounded-button px-3 py-2.5 text-sm text-text-primary placeholder-text-tertiary focus:outline-none focus:ring-1 focus:ring-accent-positive"
+          className="w-full bg-surface-elevated rounded-2xl px-4 py-3 text-sm text-text-primary placeholder-text-tertiary focus:outline-none focus:ring-2 focus:ring-accent-positive"
         />
       </div>
 
       {/* Description */}
       <div>
-        <label className="block text-sm font-medium text-text-primary mb-2">
+        <label className="block text-sm font-semibold text-text-primary mb-2">
           {t('descriptionLabel')}
         </label>
         <textarea
@@ -114,7 +114,7 @@ export function SuggestionsForm() {
           maxLength={2000}
           rows={5}
           required
-          className="w-full bg-surface-elevated border border-surface-border rounded-button px-3 py-2.5 text-sm text-text-primary placeholder-text-tertiary resize-none focus:outline-none focus:ring-1 focus:ring-accent-positive"
+          className="w-full bg-surface-elevated rounded-2xl px-4 py-3 text-sm text-text-primary placeholder-text-tertiary resize-none focus:outline-none focus:ring-2 focus:ring-accent-positive"
         />
         <p className="text-xs text-text-tertiary mt-1 text-right">{description.length}/2000</p>
       </div>

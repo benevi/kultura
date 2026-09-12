@@ -104,8 +104,8 @@ export function ChatClient({ friends }: Props) {
 
       {/* New chat: select a friend */}
       {showNewChat && (
-        <div className="bg-surface-default border border-surface-border rounded-[8px] p-4 flex flex-col gap-2">
-          <p className="text-sm font-medium text-text-primary mb-1">{t('selectFriend')}</p>
+        <div className="bg-surface-default border border-surface-border rounded-bento p-4 flex flex-col gap-2">
+          <p className="text-sm font-bold text-text-primary mb-1">{t('selectFriend')}</p>
           {friends.length === 0 ? (
             <p className="text-sm text-text-secondary">{t('noFriendsToChat')}</p>
           ) : (
@@ -115,7 +115,7 @@ export function ChatClient({ friends }: Props) {
                 data-testid="friend-picker-item"
                 onClick={() => startConversation(f.id)}
                 disabled={startingChat === f.id}
-                className="flex items-center gap-3 p-2 rounded-[10px] hover:bg-surface-elevated transition-colors text-left disabled:opacity-50"
+                className="flex items-center gap-3 p-2 rounded-2xl hover:bg-surface-elevated transition-colors text-left disabled:opacity-50"
               >
                 <Avatar initials={f.avatar_initials} color={f.avatar_color} size="sm" />
                 <span className="text-sm text-text-primary">{f.username}</span>
@@ -135,7 +135,7 @@ export function ChatClient({ friends }: Props) {
       {loading ? (
         <div className="text-center py-12 text-text-secondary text-sm">...</div>
       ) : loadError ? (
-        <div className="bg-surface-default border border-surface-border rounded-[8px] p-10 text-center flex flex-col gap-3">
+        <div className="bg-surface-default border border-surface-border rounded-bento p-10 text-center flex flex-col gap-3">
           <p className="text-sm text-text-secondary">{t('loadError')}</p>
           <div>
             <KButton variant="secondary" size="sm" onClick={loadConversations}>
@@ -144,13 +144,13 @@ export function ChatClient({ friends }: Props) {
           </div>
         </div>
       ) : conversations.length === 0 ? (
-        <div className="bg-surface-default border border-surface-border rounded-[8px] p-10 text-center flex flex-col gap-2">
+        <div className="bg-surface-default border border-surface-border rounded-bento p-10 text-center flex flex-col gap-2">
           <div className="text-4xl">💬</div>
-          <p className="font-semibold text-text-primary">{t('noConversations')}</p>
+          <p className="font-bold text-text-primary">{t('noConversations')}</p>
           <p className="text-sm text-text-secondary">{t('noConversationsHint')}</p>
         </div>
       ) : (
-        <div className="bg-surface-default border border-surface-border rounded-[8px] overflow-hidden divide-y divide-surface-border">
+        <div className="bg-surface-default border border-surface-border rounded-bento overflow-hidden divide-y divide-surface-border">
           {conversations.map(conv => (
             <Link
               key={conv.id}

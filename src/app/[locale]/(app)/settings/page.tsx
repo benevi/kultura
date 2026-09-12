@@ -21,7 +21,7 @@ export default async function SettingsPage() {
     .single()
 
   return (
-    <main className="max-w-lg mx-auto px-4 md:px-8 py-8">
+    <main className="max-w-xl mx-auto px-4 md:px-8 py-8">
       <SettingsForm
         initialUsername={profile?.username ?? ''}
         initialAvatarColor={profile?.avatar_color ?? 'blue'}

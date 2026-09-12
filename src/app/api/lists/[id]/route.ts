@@ -121,8 +121,12 @@ export async function POST(request: Request, { params }: Params): Promise<NextRe
         backdrop: mediaCache.backdrop ?? null,
         year: mediaCache.year ?? null,
         synopsis: mediaCache.synopsis ?? null,
+        // Ver nota en /api/library: metadata.genres es la fuente real del
+        // perfil de gustos de match-score.ts — sin onConflict real (antes
+        // ignoreDuplicates) nunca se rellenaba/autocuraba.
+        metadata: { genres: (mediaCache.genres as string[] | undefined) ?? [] },
       },
-      { onConflict: 'id', ignoreDuplicates: true }
+      { onConflict: 'id' }
     )
   }
 

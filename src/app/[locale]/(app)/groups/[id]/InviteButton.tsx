@@ -2,8 +2,10 @@
 
 import { useState } from 'react'
 import { useTranslations } from 'next-intl'
+import { KButton } from '@/components/ui/KButton'
 import { IconUserPlus } from '@/components/icons'
 import { InviteFriendsModal } from '@/components/social/InviteFriendsModal'
+import { F0 } from '@/lib/design/f0-tokens'
 
 interface Props {
   groupId: string
@@ -15,13 +17,16 @@ export function InviteButton({ groupId }: Props) {
 
   return (
     <>
-      <button
+      <KButton
+        variant="secondary"
+        size="sm"
         onClick={() => setOpen(true)}
-        className="flex-shrink-0 inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold bg-surface2 text-text-primary rounded-full hover:bg-surface-elevated transition-colors"
+        className="flex-shrink-0 rounded-full font-bold border-2"
+        style={{ borderColor: F0.stroke, color: F0.textSecondary }}
       >
         <IconUserPlus className="w-3.5 h-3.5" />
         {t('invite')}
-      </button>
+      </KButton>
       {open && <InviteFriendsModal groupId={groupId} onClose={() => setOpen(false)} />}
     </>
   )

@@ -173,24 +173,36 @@ export function SearchResults({
   return (
     <div>
       {/* Tabs */}
-      <div className="flex gap-1 border-b border-border mb-4 overflow-x-auto">
+      <div
+        role="tablist"
+        className="flex items-center gap-2 overflow-x-auto scrollbar-hide flex-nowrap mb-4"
+      >
         {availableTabs.map((tab) => (
           <button
             key={tab.value}
+            role="tab"
+            aria-selected={activeType === tab.value}
             onClick={() => {
               onTypeChange(tab.value);
               setRandomItem(null);
             }}
             className={cn(
-              "px-4 py-2 text-sm font-medium whitespace-nowrap border-b-2 transition-colors",
+              "inline-flex items-center px-4 py-2 rounded-pill text-sm font-body font-semibold whitespace-nowrap border transition-all duration-150 ease-out active:scale-[0.97]",
               activeType === tab.value
-                ? "border-accent-positive text-text"
-                : "border-transparent text-muted hover:text-text"
+                ? "bg-accent-positive text-on-accent-positive border-accent-positive"
+                : "bg-surface-elevated text-text-secondary border-transparent hover:text-text-primary"
             )}
           >
             {tab.label}
             {tab.count > 0 && (
-              <span className="text-xs text-muted ml-1">({tab.count})</span>
+              <span
+                className={cn(
+                  "text-xs ml-1",
+                  activeType === tab.value ? "text-on-accent-positive/70" : "text-text-tertiary"
+                )}
+              >
+                ({tab.count})
+              </span>
             )}
           </button>
         ))}
@@ -212,7 +224,7 @@ export function SearchResults({
 
       {/* Random mode banner */}
       {randomItem && (
-        <div className="flex items-center gap-3 mb-4 px-3 py-2 rounded-lg bg-accent-positive/10 border border-accent-positive/30 text-sm">
+        <div className="flex items-center gap-3 mb-4 px-4 py-2.5 rounded-card bg-accent-positive/10 border border-accent-positive/30 text-sm">
           <span className="text-accent-positive">
             🎲{" "}
             {t("showingRandom", {
