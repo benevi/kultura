@@ -8,9 +8,14 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 
 // searchByType se mockea hoisted para sobrevivir a vi.resetModules().
-// Devuelve [] por defecto → resolveMediaRefs deja id/posterUrl/mediaUrl undefined.
+// Devuelve un match con poster por defecto — resolveMediaRefs descarta
+// cualquier recomendación sin portada (E-IA-POSTER), así que el resto de
+// estos tests (que ejercen el parsing de title/type/reason/year, no la
+// resolución de portada) necesitan un mock con poster para no ser filtrados.
 const { searchByTypeMock } = vi.hoisted(() => ({ searchByTypeMock: vi.fn() }))
 vi.mock('@/lib/api/search', () => ({ searchByType: searchByTypeMock }))
+
+const MOCK_MATCH = { id: 'movie_1', poster: 'https://example.com/poster.jpg' }
 
 // getLibraryContext espera filas anidadas { status, score, media: { title, type, year } }
 // (ver recommendations.ts:96-103), no la forma plana.
@@ -51,7 +56,7 @@ describe('getAiRecommendations — parser y validación', () => {
   beforeEach(() => {
     vi.resetModules()
     searchByTypeMock.mockReset()
-    searchByTypeMock.mockResolvedValue([])
+    searchByTypeMock.mockResolvedValue([MOCK_MATCH])
     vi.stubEnv('ANTHROPIC_API_KEY', 'sk-ant-test-key')
   })
 
@@ -132,5 +137,30 @@ describe('getAiRecommendations — parser y validación', () => {
     expect(result.find((r) => r.title === 'String Year')?.year).toBeUndefined()
     // 2010 válido → se conserva
     expect(result.find((r) => r.title === 'Valid Year')?.year).toBe(2010)
+  })
+
+  it('discards recommendations resolved without poster (no card sin portada)', async () => {
+    vi.doMock('@anthropic-ai/sdk', () => makeAnthropicMock(JSON.stringify({
+      recommendations: [
+        { title: 'Has Poster', type: 'movie', year: 2020, reason: 'ok' },
+        { title: 'No Poster Match', type: 'movie', year: 2020, reason: 'ok' },
+        { title: 'No Match At All', type: 'movie', year: 2020, reason: 'ok' },
+      ],
+    })))
+    vi.doMock('@/lib/supabase/server', () => makeSupabaseMock(LIBRARY_ITEMS))
+
+    searchByTypeMock.mockImplementation(async (query: string) => {
+      if (query === 'Has Poster') return [MOCK_MATCH]
+      if (query === 'No Poster Match') return [{ id: 'movie_2', poster: undefined }]
+      return []
+    })
+
+    const { getAiRecommendations } = await import('@/lib/claude/recommendations')
+    const result = await getAiRecommendations('user-001', ['Drama'])
+    expect(result).toHaveLength(1)
+    expect(result[0].title).toBe('Has Poster')
+    expect(result[0].posterUrl).toBeTruthy()
+    // Ninguna rec sin portada debería tener mediaUrl (no se puede navegar a su ficha).
+    expect(result.every((r) => Boolean(r.posterUrl))).toBe(true)
   })
 })

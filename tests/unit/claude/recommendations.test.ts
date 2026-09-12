@@ -211,7 +211,7 @@ describe('getAiRecommendations — resolves media refs via searchByType', () => 
     expect(recs[0].mediaUrl).toBe('/media/tv/tv_95396')
   })
 
-  it('leaves refs undefined when searchByType returns no match', async () => {
+  it('discards the recommendation entirely when searchByType returns no match (sin portada, sin card)', async () => {
     const createMock = vi.fn().mockResolvedValue({
       content: [{ type: 'text', text: JSON.stringify({
         recommendations: [
@@ -227,10 +227,29 @@ describe('getAiRecommendations — resolves media refs via searchByType', () => 
     const { getAiRecommendations } = await import('@/lib/claude/recommendations')
     const recs = await getAiRecommendations('u-nomatch', [], 'es')
 
-    expect(recs[0].id).toBeUndefined()
-    expect(recs[0].posterUrl).toBeUndefined()
-    expect(recs[0].mediaUrl).toBeUndefined()
-    expect(recs[0].searchQuery).toBe('Obscure book')
+    // Sin match no hay portada que mostrar → se descarta, no cae a un card "vacío".
+    expect(recs).toEqual([])
+  })
+
+  it('discards the recommendation when searchByType resolves a match without poster', async () => {
+    const createMock = vi.fn().mockResolvedValue({
+      content: [{ type: 'text', text: JSON.stringify({
+        recommendations: [
+          { title: 'Obscure', type: 'book', reason: 'x', searchQuery: 'Obscure book' },
+        ],
+      }) }],
+    })
+    searchByTypeMock.mockResolvedValue([
+      { id: 'book_1', type: 'book', title: 'Obscure', poster: undefined },
+    ])
+
+    vi.doMock('@anthropic-ai/sdk', () => makeAnthropicMock(createMock))
+    vi.doMock('@/lib/supabase/server', () => makeSupabaseMock())
+
+    const { getAiRecommendations } = await import('@/lib/claude/recommendations')
+    const recs = await getAiRecommendations('u-noposter', [], 'es')
+
+    expect(recs).toEqual([])
   })
 
   it('does not set mediaUrl for comic (ficha not supported yet)', async () => {
