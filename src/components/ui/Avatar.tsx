@@ -61,7 +61,12 @@ export function Avatar({
         sizeClasses[size],
         className
       )}
-      style={{ backgroundColor: resolvedColor }}
+      /* `background` (no `backgroundColor`) a propósito: acepta tanto un color
+         plano (mismo resultado visual que antes) como un `linear-gradient(...)`
+         — necesario para el patrón "avatares apilados" de CLAUDE.md, que pasa
+         un gradiente de 2 paradas en `color`. No es un prop nuevo, sigue
+         siendo compatible con cualquier caller existente que pase un color. */
+      style={{ background: resolvedColor }}
     >
       {initials}
     </div>

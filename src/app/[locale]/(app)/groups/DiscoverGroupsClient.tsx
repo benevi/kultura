@@ -5,6 +5,7 @@ import { useTranslations } from 'next-intl'
 import { FilterBar, type FilterGroup } from '@/components/ui/FilterBar'
 import { GroupCard, type GroupCardData } from '@/components/social/GroupCard'
 import { KButton } from '@/components/ui/KButton'
+import { F0 } from '@/lib/design/f0-tokens'
 
 const PAGE_SIZE = 50
 
@@ -111,11 +112,15 @@ export function DiscoverGroupsClient() {
         onChange={e => setQuery(e.target.value)}
         placeholder={t('searchPlaceholder')}
         aria-label={t('searchPlaceholder')}
-        className="w-full bg-surface-elevated border border-surface-border rounded-lg px-4 py-2 text-sm text-text-primary placeholder:text-text-tertiary focus:outline-none focus:ring-1 focus:ring-accent-positive"
+        className="w-full rounded-2xl border-2 px-4 py-2.5 text-sm placeholder:opacity-60 focus:outline-none focus:ring-2 focus-visible:ring-[oklch(68%_0.24_350)]"
+        style={{ background: F0.surface2, borderColor: F0.stroke, color: F0.text }}
       />
 
       {/* Filtros sticky bajo el header de la app (h-14), como DiscoverClient */}
-      <div className="sticky top-14 z-30 bg-bg/95 backdrop-blur-sm border-b border-surface-border py-3 px-4 -mx-4">
+      <div
+        className="sticky top-14 z-30 backdrop-blur-sm border-b py-3 px-4 -mx-4"
+        style={{ background: `color-mix(in oklch, ${F0.bg} 95%, transparent)`, borderColor: F0.stroke }}
+      >
         <FilterBar
           groups={filterGroups}
           activeFilters={activeFilters}
@@ -124,9 +129,9 @@ export function DiscoverGroupsClient() {
       </div>
 
       {loaded && groups.length === 0 ? (
-        <div className="bg-surface-default rounded-xl border border-surface-border p-8 text-center">
+        <div className="rounded-bento border p-8 text-center" style={{ background: F0.surface, borderColor: F0.stroke }}>
           <div className="text-3xl mb-3">🔍</div>
-          <p className="text-text-secondary text-sm">{t('noGroupsFound')}</p>
+          <p className="text-sm" style={{ color: F0.textSecondary }}>{t('noGroupsFound')}</p>
         </div>
       ) : (
         <div className="grid gap-3 sm:grid-cols-2">
@@ -144,6 +149,8 @@ export function DiscoverGroupsClient() {
             loading={loading}
             disabled={loading}
             onClick={handleLoadMore}
+            className="rounded-full font-bold border-2"
+            style={{ borderColor: F0.stroke, color: F0.textSecondary }}
           >
             {loading ? '...' : t('loadMore')}
           </KButton>
