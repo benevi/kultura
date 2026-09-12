@@ -103,6 +103,20 @@ describe("parseDiscoverParams", () => {
     const p = parseDiscoverParams(new URLSearchParams("seasons=4-6"));
     expect(p.temporadas).toBe("4-6");
   });
+
+  // ── E-DISCOVER-SEARCH-MERGE: q ─────────────────────────────────────────────
+  it("q se trimea y se expone tal cual con 2+ caracteres", () => {
+    expect(parseDiscoverParams(new URLSearchParams("q=dune")).q).toBe("dune");
+    expect(parseDiscoverParams(new URLSearchParams("q=%20%20dune%20%20")).q).toBe(
+      "dune"
+    );
+  });
+
+  it("q con menos de 2 caracteres (o ausente) → null, no se busca", () => {
+    expect(parseDiscoverParams(new URLSearchParams("q=d")).q).toBeNull();
+    expect(parseDiscoverParams(new URLSearchParams("q=%20")).q).toBeNull();
+    expect(parseDiscoverParams(new URLSearchParams()).q).toBeNull();
+  });
 });
 
 // ── GET handler ───────────────────────────────────────────────────────────────
@@ -114,7 +128,8 @@ describe("GET /api/discover", () => {
       "anime",
       3,
       expect.any(Object),
-      "es"
+      "es",
+      null
     );
   });
 
@@ -125,7 +140,8 @@ describe("GET /api/discover", () => {
         sort: "rating",
         year: "2024",
       }),
-      "es"
+      "es",
+      null
     );
     expect(fetchDiscoverData).toHaveBeenCalledTimes(1);
   });
@@ -139,7 +155,8 @@ describe("GET /api/discover", () => {
         editorial: ["planeta", "norma"],
         formato: "ebook",
       }),
-      "es"
+      "es",
+      null
     );
   });
 
@@ -159,14 +176,16 @@ describe("GET /api/discover", () => {
         duracion: "lt90",
         idioma: "ja",
       }),
-      "es"
+      "es",
+      null
     );
   });
 
   it("R4b: mapea el paramKey 'rating' del front → valoracion aguas abajo", async () => {
     await GET(req("?type=movie&page=1&rating=8"));
     expect(fetchDiscoverData).toHaveBeenCalledWith("movie", 1, expect.objectContaining({ valoracion: "8" }),
-      "es"
+      "es",
+      null
     );
   });
 
@@ -179,14 +198,16 @@ describe("GET /api/discover", () => {
         duracionmedia: "10-30",
         estado: "early-access",
       }),
-      "es"
+      "es",
+      null
     );
   });
 
   it("R4c-2: puentea seasons→temporadas aguas abajo", async () => {
     await GET(req("?type=tv&page=1&seasons=2-3"));
     expect(fetchDiscoverData).toHaveBeenCalledWith("tv", 1, expect.objectContaining({ temporadas: "2-3" }),
-      "es"
+      "es",
+      null
     );
   });
 
@@ -196,7 +217,8 @@ describe("GET /api/discover", () => {
       "movie",
       2,
       expect.any(Object),
-      "es"
+      "es",
+      null
     );
   });
 
@@ -258,6 +280,29 @@ describe("GET /api/discover", () => {
     expect(body.matchScores).toEqual({ movie_1: 88 });
   });
 
+  // ── E-DISCOVER-SEARCH-MERGE ────────────────────────────────────────────────
+  it("propaga q como 5º argumento de fetchDiscoverData", async () => {
+    await GET(req("?type=movie&page=2&q=dune"));
+    expect(fetchDiscoverData).toHaveBeenCalledWith(
+      "movie",
+      2,
+      expect.any(Object),
+      "es",
+      "dune"
+    );
+  });
+
+  it("q de 1 carácter no activa búsqueda (llega null)", async () => {
+    await GET(req("?type=movie&page=1&q=d"));
+    expect(fetchDiscoverData).toHaveBeenCalledWith(
+      "movie",
+      1,
+      expect.any(Object),
+      "es",
+      null
+    );
+  });
+
   // ── E-TMDB-LOCALE ───────────────────────────────────────────────────────────
   it("propaga el locale activo como 4º argumento de fetchDiscoverData", async () => {
     vi.mocked(getLocale).mockResolvedValueOnce("en");
@@ -266,7 +311,8 @@ describe("GET /api/discover", () => {
       "movie",
       1,
       expect.any(Object),
-      "en"
+      "en",
+      null
     );
   });
 });

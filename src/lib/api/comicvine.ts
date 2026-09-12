@@ -214,10 +214,16 @@ async function comicVineFetch<T>(
  * Busca issues de cómic. Usa el endpoint /issues con filtro por nombre,
  * que devuelve la carátula (image) directamente, a diferencia de /search.
  */
-export async function searchComics(query: string): Promise<ComicVineSearchResponse> {
+export async function searchComics(
+  query: string,
+  page = 1
+): Promise<ComicVineSearchResponse> {
   return comicVineFetch<ComicVineSearchResponse>("/issues/", {
     filter: `name:${query}`,
     limit: "20",
+    // E-DISCOVER-SEARCH-MERGE: paginación por offset, el mismo mecanismo que ya
+    // usa `getRecentComics`. Antes solo servía la primera página.
+    offset: String((page - 1) * 20),
     sort: "cover_date:desc",
     field_list: "id,name,issue_number,cover_date,store_date,deck,description,image,volume",
   });

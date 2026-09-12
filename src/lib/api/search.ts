@@ -1,14 +1,21 @@
 // ============================================================
-// KULTURA — Search aggregator
-// Busca en todas las APIs externas en paralelo y devuelve
-// resultados normalizados al tipo unificado MediaItem.
+// KULTURA — Búsqueda por familia
+// Traduce una query de texto a la búsqueda nativa de cada proveedor y devuelve
+// resultados ya normalizados a MediaItem.
+//
+// E-DISCOVER-SEARCH-MERGE: `searchAll` (que agregaba las 6 familias en una sola
+// respuesta con forma `{movies, tv, anime, …}`) se ELIMINÓ al fusionar /search
+// dentro de /discover: su único consumidor era la página /search, que ahora es
+// un redirect. El agregado de búsqueda vive en `fetchAggregateSearch`
+// (aggregate.ts), que reusa `searchByTypePaged` y devuelve la misma forma
+// paginada que el resto de Descubrir.
 // ============================================================
 
 import type { MediaItem, MediaType } from "@/types/media";
 import { searchMovies, searchTV } from "./tmdb";
 import { searchAnime, searchManga } from "./jikan";
 import type { JikanAnime, JikanManga } from "./jikan";
-import { searchGoogleBooks } from "./googlebooks";
+import { searchGoogleBooks, googleBooksTotalPages } from "./googlebooks";
 import { searchGames } from "./rawg";
 import { searchComics } from "./comicvine";
 import {
@@ -23,65 +30,13 @@ import {
 import type { TmdbMovieDetail, TmdbTVDetail } from "./tmdb";
 import type { JikanAnimeDetail, JikanMangaDetail } from "./jikan";
 
-export interface SearchResults {
-  movies: MediaItem[];
-  tv: MediaItem[];
-  anime: MediaItem[];
-  manga: MediaItem[];
-  books: MediaItem[];
-  games: MediaItem[];
-}
-
 /**
- * Busca en todas las APIs en paralelo con Promise.allSettled.
- * Si una falla → array vacío para ese tipo, el resto permanece intacto.
+ * Busca solo en el tipo de contenido indicado (SIN paginar: primera página).
+ * La usan las recomendaciones IA para resolver la referencia de cada título.
  *
- * `locale` (E-TMDB-LOCALE / E-BOOKS-GOOGLE): idioma activo de la app. Se
- * propaga a los proveedores que lo soportan (TMDB, Google Books); Jikan,
- * ComicVine y RAWG lo ignoran (limitación documentada en `lib/api/locale.ts`).
- */
-export async function searchAll(
-  query: string,
-  locale?: string | null
-): Promise<SearchResults> {
-  const [movies, tv, anime, manga, books, games] = await Promise.allSettled([
-    searchMovies(query, 1, locale).then((r) =>
-      r.results.map((raw) => normalizeMovie(raw as TmdbMovieDetail))
-    ),
-    searchTV(query, 1, locale).then((r) =>
-      r.results.map((raw) => normalizeTV(raw as TmdbTVDetail))
-    ),
-    searchAnime(query).then((r) =>
-      (r.data as JikanAnime[]).map((raw) =>
-        normalizeAnime(raw as JikanAnimeDetail)
-      )
-    ),
-    searchManga(query).then((r) =>
-      (r.data as JikanManga[]).map((raw) =>
-        normalizeMangaJikan(raw as JikanMangaDetail)
-      )
-    ),
-    searchGoogleBooks(query, 1, {}, locale).then((r) =>
-      (r.items ?? []).map((raw) => normalizeBookGoogle(raw))
-    ),
-    searchGames(query).then((r) =>
-      r.results.map((raw) => normalizeGame(raw))
-    ),
-  ]);
-
-  return {
-    movies: movies.status === "fulfilled" ? movies.value : [],
-    tv: tv.status === "fulfilled" ? tv.value : [],
-    anime: anime.status === "fulfilled" ? anime.value : [],
-    manga: manga.status === "fulfilled" ? manga.value : [],
-    books: books.status === "fulfilled" ? books.value : [],
-    games: games.status === "fulfilled" ? games.value : [],
-  };
-}
-
-/**
- * Busca solo en el tipo de contenido indicado.
- * `locale`: ver `searchAll`.
+ * `locale`: idioma activo de la app. Se propaga a los proveedores que lo
+ * soportan (TMDB, Google Books); Jikan, ComicVine y RAWG lo ignoran (limitación
+ * documentada en `lib/api/locale.ts`).
  */
 export async function searchByType(
   query: string,
@@ -125,5 +80,118 @@ export async function searchByType(
       );
     default:
       return [];
+  }
+}
+
+// ── Búsqueda PAGINADA por familia (E-DISCOVER-SEARCH-MERGE) ──────────────────
+
+/**
+ * Una página de resultados de búsqueda de UNA familia, con la misma forma que
+ * consume la paginación de Descubrir (`items` / `totalPages` / `hasMore`).
+ *
+ * `totalPages` es `null` cuando el proveedor no da un total fiable para la
+ * búsqueda; la UI pinta entonces ventana abierta (patrón E79-s2).
+ */
+export interface SearchPage {
+  items: MediaItem[];
+  totalPages: number | null;
+  hasMore: boolean;
+}
+
+/** Ítems por página de búsqueda (= page-size de Descubrir). */
+const SEARCH_PAGE_SIZE = 20;
+
+/**
+ * Busca en una familia con paginación real donde el proveedor la soporta:
+ *   - movie/tv (TMDB `/search/*`): `page` + `total_pages`.
+ *   - anime/manga (Jikan `/anime`,`/manga`): `page` + `last_visible_page`.
+ *   - book (Google Books): `startIndex` + `totalItems`.
+ *   - game (RAWG `/games?search=`): `page` + `count`.
+ *   - comic (ComicVine `/issues/`): `offset` + `number_of_total_results`.
+ * Todos paginan, así que no hay familia degradada a "solo página 1"; el tope
+ * común de páginas lo aplica el llamador (`fetchDiscoverData`).
+ */
+export async function searchByTypePaged(
+  query: string,
+  type: MediaType,
+  page = 1,
+  locale?: string | null
+): Promise<SearchPage> {
+  switch (type) {
+    case "movie": {
+      const r = await searchMovies(query, page, locale);
+      const totalPages = Math.max(r.total_pages ?? 1, 1);
+      return {
+        items: r.results.map((raw) => normalizeMovie(raw as TmdbMovieDetail)),
+        totalPages,
+        hasMore: page < totalPages,
+      };
+    }
+    case "tv": {
+      const r = await searchTV(query, page, locale);
+      const totalPages = Math.max(r.total_pages ?? 1, 1);
+      return {
+        items: r.results.map((raw) => normalizeTV(raw as TmdbTVDetail)),
+        totalPages,
+        hasMore: page < totalPages,
+      };
+    }
+    case "anime": {
+      const r = await searchAnime(query, page);
+      const totalPages = Math.max(r.pagination?.last_visible_page ?? 1, 1);
+      return {
+        items: (r.data as JikanAnime[]).map((raw) =>
+          normalizeAnime(raw as JikanAnimeDetail)
+        ),
+        totalPages,
+        hasMore: page < totalPages,
+      };
+    }
+    case "manga": {
+      const r = await searchManga(query, page);
+      const totalPages = Math.max(r.pagination?.last_visible_page ?? 1, 1);
+      return {
+        items: (r.data as JikanManga[]).map((raw) =>
+          normalizeMangaJikan(raw as JikanMangaDetail)
+        ),
+        totalPages,
+        hasMore: page < totalPages,
+      };
+    }
+    case "book": {
+      const r = await searchGoogleBooks(query, page, {}, locale);
+      const totalPages = googleBooksTotalPages(r.totalItems);
+      return {
+        items: (r.items ?? []).map((raw) => normalizeBookGoogle(raw)),
+        totalPages,
+        hasMore: page < totalPages,
+      };
+    }
+    case "game": {
+      const r = await searchGames(query, page);
+      const totalPages = Math.max(
+        Math.ceil((r.count ?? 0) / SEARCH_PAGE_SIZE),
+        1
+      );
+      return {
+        items: r.results.map((raw) => normalizeGame(raw)),
+        totalPages,
+        hasMore: page < totalPages,
+      };
+    }
+    case "comic": {
+      const r = await searchComics(query, page);
+      const totalPages = Math.max(
+        Math.ceil((r.number_of_total_results ?? 0) / SEARCH_PAGE_SIZE),
+        1
+      );
+      return {
+        items: (r.results ?? []).map((raw) => normalizeComic(raw)),
+        totalPages,
+        hasMore: page < totalPages,
+      };
+    }
+    default:
+      return { items: [], totalPages: 1, hasMore: false };
   }
 }

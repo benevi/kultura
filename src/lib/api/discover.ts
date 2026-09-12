@@ -53,12 +53,13 @@ import {
   normalizeBookGoogle,
   normalizeGame,
 } from "@/lib/api/normalizer";
-import type { MediaItem } from "@/types/media";
+import type { MediaItem, MediaType } from "@/types/media";
 import type { TmdbMovieDetail, TmdbTVDetail } from "@/lib/api/tmdb";
 import type { JikanAnime, JikanManga } from "@/lib/api/jikan";
 // Agregado modo "all" (R5a). Import diferido en uso (case "all") — el ciclo
 // discover↔aggregate se resuelve en runtime porque ninguno se invoca en módulo.
-import { fetchAggregateData } from "@/lib/api/aggregate";
+import { fetchAggregateData, fetchAggregateSearch } from "@/lib/api/aggregate";
+import { searchByTypePaged } from "@/lib/api/search";
 import { filterNSFW } from "@/lib/api/nsfw-filter";
 import { DISCOVER_MAX_PAGES } from "@/lib/api/pagination";
 
@@ -142,12 +143,21 @@ export type DiscoverFilters = TmdbFilters &
  * (`langRestrict`) y MangaDex (`availableTranslatedLanguage[]`). Jikan,
  * ComicVine y RAWG no ofrecen catálogo en español: limitación aceptada,
  * documentada en `src/lib/api/locale.ts`. Omitirlo equivale a `es`.
+ *
+ * `query` (E-DISCOVER-SEARCH-MERGE): cuando llega, la página NO viene del
+ * catálogo de descubrir sino del buscador del proveedor para ese tipo, con la
+ * MISMA forma de respuesta (`items`/`totalPages`/`hasMore`) para que el grid y
+ * la paginación de Descubrir funcionen sin cambios. Los filtros de catálogo no
+ * se aplican en modo búsqueda: ningún buscador de los proveedores acepta esos
+ * parámetros, y aplicarlos client-side daría páginas cortas (por eso la UI
+ * oculta la barra de filtros mientras hay query).
  */
 export async function fetchDiscoverData(
   type: string,
   page: number,
   filters: DiscoverFilters = {},
-  locale?: string | null
+  locale?: string | null,
+  query?: string | null
 ): Promise<DiscoverResult> {
   let items: MediaItem[] = [];
   let totalPages = 1;
@@ -167,6 +177,37 @@ export async function fetchDiscoverData(
       hasMore: false,
       fetchErrorKind: null,
     };
+  }
+
+  // ── Modo BÚSQUEDA (E-DISCOVER-SEARCH-MERGE) ───────────────────────────────
+  if (query) {
+    try {
+      const res =
+        type === "all"
+          ? await fetchAggregateSearch(query, page, locale)
+          : await searchByTypePaged(query, type as MediaType, page, locale);
+      // El tope común también manda en búsqueda.
+      const totalPages =
+        res.totalPages === null
+          ? null
+          : Math.min(res.totalPages, DISCOVER_MAX_PAGES);
+      return {
+        items: filterNSFW(res.items),
+        totalPages,
+        hasMore: res.hasMore && page < DISCOVER_MAX_PAGES,
+        fetchErrorKind: null,
+      };
+    } catch (e) {
+      console.error(`[discover] search error (type=${type} page=${page}):`, e);
+      return {
+        items: [],
+        totalPages: 1,
+        hasMore: false,
+        fetchErrorKind: e instanceof JikanError && e.status === 429
+          ? "rate-limit"
+          : "generic",
+      };
+    }
   }
 
   try {

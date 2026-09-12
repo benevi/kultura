@@ -24,6 +24,10 @@ export async function GET(request: NextRequest) {
   // en el idioma elegido en la app, no siempre en español.
   const locale = await getLocale();
 
+  // E-DISCOVER-SEARCH-MERGE: `q` convierte la petición en una BÚSQUEDA (el
+  // buscador de /search vive ahora dentro de /discover). La respuesta mantiene
+  // la misma forma, así que el grid y la paginación del cliente no cambian.
+
   // F3a+F3b: se pasan los filtros que cada familia consume nativamente
   // (TMDB: genre/year/platform/sort/status/duracion/idioma; Jikan: +demografia;
   // RAWG: genre/platform/year/sort). Cada builder ignora los vacíos/desconocidos
@@ -56,7 +60,7 @@ export async function GET(request: NextRequest) {
     modojuego: parsed.modojuego,
     duracionmedia: parsed.duracionmedia,
     estado: parsed.estado,
-  }, locale);
+  }, locale, parsed.q);
 
   // F3b: badge de match real (F3a) sobre los items devueltos. Sin sesión, o sin
   // señal suficiente en la biblioteca (gate de computeMatchScores), matchScores

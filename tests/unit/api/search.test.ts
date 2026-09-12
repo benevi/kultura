@@ -59,7 +59,12 @@ vi.mock("@/lib/api/jikan", () => ({
 }));
 
 // E-BOOKS-GOOGLE: la búsqueda de libros pasa de Open Library a Google Books.
-vi.mock("@/lib/api/googlebooks", () => ({
+// Solo se mockea la llamada de red; `googleBooksTotalPages` (helper puro que
+// usa searchByTypePaged) es el real.
+vi.mock("@/lib/api/googlebooks", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@/lib/api/googlebooks")>();
+  return {
+  ...actual,
   searchGoogleBooks: vi.fn().mockResolvedValue({
     totalItems: 1,
     items: [
@@ -73,7 +78,8 @@ vi.mock("@/lib/api/googlebooks", () => ({
       },
     ],
   }),
-}));
+  };
+});
 
 vi.mock("@/lib/api/rawg", () => ({
   searchGames: vi.fn().mockResolvedValue({
@@ -166,74 +172,103 @@ vi.mock("@/lib/api/normalizer", () => ({
 
 // ── Import subject after mocks ────────────────────────────────────────────────
 
-import { searchAll, searchByType } from "@/lib/api/search";
+import { searchByType, searchByTypePaged } from "@/lib/api/search";
 
 // ── Tests ─────────────────────────────────────────────────────────────────────
 
-describe("searchAll", () => {
+// E-DISCOVER-SEARCH-MERGE: `searchAll` se eliminó (su único consumidor era la
+// página /search, hoy un redirect a /discover). El agregado de búsqueda vive en
+// `fetchAggregateSearch` y se apoya en `searchByTypePaged`, que es lo que se
+// testea aquí: forma paginada `{items, totalPages, hasMore}` por familia.
+
+describe("searchByTypePaged", () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });
 
-  it("devuelve estructura con todos los tipos", async () => {
-    const results = await searchAll("test");
-    expect(results).toHaveProperty("movies");
-    expect(results).toHaveProperty("tv");
-    expect(results).toHaveProperty("anime");
-    expect(results).toHaveProperty("manga");
-    expect(results).toHaveProperty("books");
-    expect(results).toHaveProperty("games");
-  });
-
-  it("normaliza los resultados de cada API", async () => {
-    const results = await searchAll("fight");
-    expect(results.movies).toHaveLength(1);
-    expect(results.movies[0]).toMatchObject({ type: "movie", title: "Fight Club" });
-    expect(results.anime).toHaveLength(1);
-    expect(results.anime[0]).toMatchObject({ type: "anime", title: "Cowboy Bebop" });
-    expect(results.books).toHaveLength(1);
-    expect(results.books[0]).toMatchObject({ type: "book", title: "Harry Potter" });
-    expect(results.games).toHaveLength(1);
-    expect(results.games[0]).toMatchObject({ type: "game", title: "Grand Theft Auto V" });
-  });
-
-  it("arrays vacíos para tv y manga (fixture vacío)", async () => {
-    const results = await searchAll("test");
-    expect(results.tv).toHaveLength(0);
-    expect(results.manga).toHaveLength(0);
-  });
-
-  it("si una API rechaza → ese tipo es [] y el resto tiene datos", async () => {
+  it("movie: totalPages desde total_pages de TMDB y hasMore por posición", async () => {
     const { searchMovies } = await import("@/lib/api/tmdb");
-    vi.mocked(searchMovies).mockRejectedValueOnce(new Error("TMDB down"));
+    vi.mocked(searchMovies).mockResolvedValue({
+      results: [{ id: 550, title: "Fight Club" }],
+      total_pages: 3,
+      total_results: 60,
+    } as never); // se llama dos veces en este test (página 1 y última)
 
-    const results = await searchAll("test");
-    expect(results.movies).toHaveLength(0);
-    // Other types should still work
-    expect(results.anime).toHaveLength(1);
-    expect(results.books).toHaveLength(1);
+    const first = await searchByTypePaged("fight", "movie", 1);
+    expect(first.items).toHaveLength(1);
+    expect(first.totalPages).toBe(3);
+    expect(first.hasMore).toBe(true);
+
+    const last = await searchByTypePaged("fight", "movie", 3);
+    expect(last.hasMore).toBe(false);
   });
 
-  it("si todas las APIs fallan → todos los tipos son []", async () => {
-    const { searchMovies, searchTV } = await import("@/lib/api/tmdb");
-    const { searchAnime, searchManga } = await import("@/lib/api/jikan");
+  it("movie: propaga page y locale al proveedor", async () => {
+    const { searchMovies } = await import("@/lib/api/tmdb");
+    await searchByTypePaged("fight", "movie", 4, "en");
+    expect(searchMovies).toHaveBeenCalledWith("fight", 4, "en");
+  });
+
+  it("anime/manga: totalPages desde last_visible_page (Jikan)", async () => {
+    const { searchAnime } = await import("@/lib/api/jikan");
+    vi.mocked(searchAnime).mockResolvedValueOnce({
+      data: [{ mal_id: 1, title: "Cowboy Bebop" }],
+      pagination: { last_visible_page: 7 },
+    } as never);
+
+    const res = await searchByTypePaged("cowboy", "anime", 2);
+    expect(res.totalPages).toBe(7);
+    expect(res.hasMore).toBe(true);
+    expect(searchAnime).toHaveBeenCalledWith("cowboy", 2);
+  });
+
+  it("book: totalPages desde totalItems de Google Books, con startIndex por página", async () => {
     const { searchGoogleBooks } = await import("@/lib/api/googlebooks");
+    vi.mocked(searchGoogleBooks).mockResolvedValueOnce({
+      totalItems: 45,
+      items: [{ id: "gb1", volumeInfo: { title: "Harry Potter" } }],
+    } as never);
+
+    const res = await searchByTypePaged("harry", "book", 2, "es");
+    expect(res.totalPages).toBe(3); // ceil(45/20)
+    expect(res.hasMore).toBe(true);
+    expect(searchGoogleBooks).toHaveBeenCalledWith("harry", 2, {}, "es");
+  });
+
+  it("game: totalPages desde count de RAWG", async () => {
     const { searchGames } = await import("@/lib/api/rawg");
+    vi.mocked(searchGames).mockResolvedValueOnce({
+      results: [{ id: 3498, name: "GTA V", rating: 4 }],
+      count: 25,
+      next: null,
+    } as never);
 
-    vi.mocked(searchMovies).mockRejectedValueOnce(new Error("fail"));
-    vi.mocked(searchTV).mockRejectedValueOnce(new Error("fail"));
-    vi.mocked(searchAnime).mockRejectedValueOnce(new Error("fail"));
-    vi.mocked(searchManga).mockRejectedValueOnce(new Error("fail"));
-    vi.mocked(searchGoogleBooks).mockRejectedValueOnce(new Error("fail"));
-    vi.mocked(searchGames).mockRejectedValueOnce(new Error("fail"));
+    const res = await searchByTypePaged("gta", "game", 1);
+    expect(res.totalPages).toBe(2);
+    expect(searchGames).toHaveBeenCalledWith("gta", 1);
+  });
 
-    const results = await searchAll("test");
-    expect(results.movies).toHaveLength(0);
-    expect(results.tv).toHaveLength(0);
-    expect(results.anime).toHaveLength(0);
-    expect(results.manga).toHaveLength(0);
-    expect(results.books).toHaveLength(0);
-    expect(results.games).toHaveLength(0);
+  it("comic: pagina por offset y usa number_of_total_results", async () => {
+    const { searchComics } = await import("@/lib/api/comicvine");
+    vi.mocked(searchComics).mockResolvedValueOnce({
+      results: [{ id: 1, name: "Batman" }],
+      number_of_total_results: 40,
+    } as never);
+
+    const res = await searchByTypePaged("batman", "comic", 2);
+    expect(res.totalPages).toBe(2);
+    expect(res.hasMore).toBe(false);
+    expect(searchComics).toHaveBeenCalledWith("batman", 2);
+  });
+
+  it("respuesta sin resultados → items vacío, 1 página, sin siguiente", async () => {
+    const { searchGoogleBooks } = await import("@/lib/api/googlebooks");
+    vi.mocked(searchGoogleBooks).mockResolvedValueOnce({ totalItems: 0 } as never);
+
+    const res = await searchByTypePaged("zzzz", "book", 1);
+    expect(res.items).toEqual([]);
+    expect(res.totalPages).toBe(1);
+    expect(res.hasMore).toBe(false);
   });
 });
 
