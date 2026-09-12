@@ -3,6 +3,8 @@ import { Link } from '@/i18n/navigation'
 import { NavLinks } from '@/components/layout/NavLinks'
 import { AvatarDropdown } from '@/components/layout/AvatarDropdown'
 import { LanguageSwitcher } from '@/components/layout/LanguageSwitcher'
+import { Logo } from '@/components/layout/Logo'
+import { IconSearch, IconBell } from '@/components/icons'
 
 interface UserProfile {
   username: string
@@ -22,10 +24,8 @@ export async function AuthHeader({ profile, unreadCount }: AuthHeaderProps) {
     <header className="sticky top-0 z-40 bg-surface-default border-b border-surface-border">
       <div className="flex items-center h-14 max-w-6xl mx-auto px-4 md:px-8">
         {/* Logo */}
-        <Link href="/home" className="flex-shrink-0">
-          <span className="font-display text-xl font-bold tracking-widest text-accent-positive hover:opacity-80 transition-opacity">
-            KULTURA
-          </span>
+        <Link href="/home" className="flex-shrink-0 hover:opacity-80 transition-opacity">
+          <Logo size={24} />
         </Link>
 
         {/* Desktop nav (centered) */}
@@ -39,10 +39,7 @@ export async function AuthHeader({ profile, unreadCount }: AuthHeaderProps) {
             aria-label={t('search')}
             className="hidden md:flex items-center justify-center w-8 h-8 text-muted hover:text-text hover:bg-surface2 rounded-md transition-colors"
           >
-            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-              <circle cx="11" cy="11" r="8" />
-              <path d="m21 21-4.35-4.35" />
-            </svg>
+            <IconSearch className="w-[18px] h-[18px]" />
           </Link>
 
           {/* Notifications bell — visible on all viewports */}
@@ -51,10 +48,7 @@ export async function AuthHeader({ profile, unreadCount }: AuthHeaderProps) {
             aria-label={t('notifications')}
             className="relative flex items-center justify-center w-8 h-8 text-muted hover:text-text hover:bg-surface2 rounded-md transition-colors"
           >
-            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
-              <path d="M13.73 21a2 2 0 0 1-3.46 0" />
-            </svg>
+            <IconBell className="w-[18px] h-[18px]" />
             {unreadCount > 0 && (
               <span className="absolute -top-0.5 -right-0.5 min-w-[16px] h-4 bg-accent-positive text-on-accent-positive text-[10px] font-bold rounded-full flex items-center justify-center px-0.5 leading-none">
                 {unreadCount > 99 ? '99+' : unreadCount}

@@ -29,6 +29,17 @@ const config: Config = {
         "on-accent-highlight": "var(--on-accent-highlight)",
         "on-accent-info": "var(--on-accent-info)",
 
+        /* ─── Acentos decorativos (F7) — variedad visual, sin rol semántico ─── */
+        "accent-pink": "var(--accent-pink)",
+        "accent-lime": "var(--accent-lime)",
+        "accent-orange": "var(--accent-orange)",
+        "accent-purple": "var(--accent-purple)",
+
+        "on-accent-pink": "var(--on-accent-pink)",
+        "on-accent-lime": "var(--on-accent-lime)",
+        "on-accent-orange": "var(--on-accent-orange)",
+        "on-accent-purple": "var(--on-accent-purple)",
+
         /* ─── Legacy aliases (compatibilidad componentes existentes) ─── */
         bg: "var(--surface-base)",
         surface: "var(--surface-default)",
