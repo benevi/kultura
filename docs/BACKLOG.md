@@ -579,9 +579,10 @@ No bloqueantes. Atacar solo después de A–D.
   Mejorar la visual del botón de editar perfil.
   Hecho cuando: botón al DS, jerarquía/affordance claros.
 
-- [ ] **E78. Iconos genéricos: sustituir por set característico**
+- [x] **E78. Iconos genéricos: sustituir por set característico** ✅ (cerrada 2026-09-12)
   Los iconos actuales son demasiado genéricos; sustituir por un set más característico/coherente. Definir set en Fase 0.
   Hecho cuando: iconografía coherente aplicada en las vistas clave.
+  El set propio (F1b) ya existía con buena calidad; el hueco real era 8 archivos que seguían usando emoji sueltos en vez de iconos. Añadidos IconDice/IconFilm/IconTv/IconAnime/IconComic/IconManga al mismo lenguaje visual y sustituidos en ProfileStats, HeroSection, GroupsClient, ChatClient, LibraryClient, ProfilePage, SearchResults, SearchFilters. tsc 0, lint 0, vitest 1313/1313.
 
 - [ ] **E79. Paginación: mejora (UX)** — _slice 1 hecho, slice 2 pendiente_
   Mejora de paginación, distinta de E3 (verify-queries) y E48d (notif-cursor). Alcance: Descubrir (overfetch + páginas cortas/vacías por post-filtros).
