@@ -8,7 +8,18 @@ import { createClient } from "@/lib/supabase/client";
 import { getAuthErrorKey } from "@/lib/utils/auth-errors";
 import { KButton } from "@/components/ui/KButton";
 import { KInput } from "@/components/ui/KInput";
+import { Logo } from "@/components/layout/Logo";
 import { cn } from "@/lib/utils/index";
+
+// Misma "card feature grande" que la CTA final de Landing: superficie sólida
+// + gradiente radial de acento en la esquina superior-izquierda (F0 §Cards
+// feature grandes). Un solo acento decorativo (purple) para la tarjeta de
+// auth, sin desenfoque.
+const AUTH_CARD_BACKGROUND = {
+  backgroundColor: "var(--surface-default)",
+  backgroundImage:
+    "radial-gradient(120% 100% at 20% 10%, rgba(155,107,255,0.3), transparent 55%)",
+};
 
 // ---------------------------------------------------------------------------
 // Types
@@ -219,10 +230,11 @@ export function LoginPage({ locale }: LoginPageProps) {
   if (form.success && mode === "reset") {
     return (
       <main className="flex min-h-screen flex-col items-center justify-center bg-surface-base px-4">
-        <div className="w-full max-w-md rounded-modal border border-surface-border bg-surface-elevated p-8 text-center">
-          <h1 className="font-display text-5xl font-bold tracking-widest text-accent-positive">
-            KULTURA
-          </h1>
+        <div
+          className="w-full max-w-md rounded-bento-lg border border-surface-border p-8 text-center"
+          style={AUTH_CARD_BACKGROUND}
+        >
+          <Logo size={32} className="justify-center" />
           <p className="mt-6 text-sm text-text-secondary">{tAuth("resetLinkSent")}</p>
         </div>
       </main>
@@ -232,10 +244,11 @@ export function LoginPage({ locale }: LoginPageProps) {
   if (form.success && mode === "register") {
     return (
       <main className="flex min-h-screen flex-col items-center justify-center bg-surface-base px-4">
-        <div className="w-full max-w-md rounded-modal border border-surface-border bg-surface-elevated p-8 text-center">
-          <h1 className="font-display text-5xl font-bold tracking-widest text-accent-positive">
-            KULTURA
-          </h1>
+        <div
+          className="w-full max-w-md rounded-bento-lg border border-surface-border p-8 text-center"
+          style={AUTH_CARD_BACKGROUND}
+        >
+          <Logo size={32} className="justify-center" />
           <p className="mt-6 text-sm text-text-secondary">{tAuth("checkEmail")}</p>
         </div>
       </main>
@@ -247,43 +260,51 @@ export function LoginPage({ locale }: LoginPageProps) {
   // -------------------------------------------------------------------------
 
   return (
-    <main className="flex min-h-screen flex-col items-center justify-center bg-surface-base px-4">
-      <div className="w-full max-w-sm rounded-modal border border-surface-border bg-surface-elevated p-6 md:p-8">
-        {/* Wordmark */}
-        <div className="mb-8 text-center">
-          <h1 className="font-display text-5xl font-bold tracking-widest text-accent-positive">
-            KULTURA
-          </h1>
-          <p className="mt-2 text-sm text-text-tertiary">
+    <main className="flex min-h-screen flex-col items-center justify-center bg-surface-base px-4 py-10">
+      <div
+        className="w-full max-w-sm overflow-hidden rounded-bento-lg border border-surface-border p-6 md:p-8"
+        style={AUTH_CARD_BACKGROUND}
+      >
+        {/* Wordmark — mismo Logo de marca que el header autenticado, no un
+            texto ad-hoc (F0 §Logo). */}
+        <div className="mb-8 flex flex-col items-center text-center">
+          <Logo size={32} />
+          <p className="mt-3 text-sm text-text-tertiary">
             {mode === "reset"
               ? tAuth("resetPassword")
               : tAuth("tagline")}
           </p>
         </div>
 
-        {/* Tabs (hidden in reset mode) */}
+        {/* Tabs (hidden in reset mode) — chip pill sólido, mismo patrón que el
+            radiogroup de tipo en Discover (F0 §Chips): activo = fondo de color
+            vivo + texto on-color, inactivo = surface-elevated + borde. */}
         {mode !== "reset" && (
-          <div className="mb-6 flex gap-0 rounded-pill border border-surface-border p-1">
+          <div role="tablist" className="mb-6 flex items-center gap-2">
             <button
               type="button"
+              role="tab"
+              aria-selected={mode === "login"}
               onClick={() => switchMode("login")}
               className={cn(
-                "flex-1 rounded-pill py-2 text-sm font-medium font-body transition-colors",
+                "flex-1 rounded-full py-2.5 text-sm font-body font-bold border transition-all duration-base ease-standard active:scale-[0.98]",
                 mode === "login"
-                  ? "bg-accent-positive text-on-accent-positive"
-                  : "text-text-tertiary hover:text-text-primary"
+                  ? "bg-accent-positive text-on-accent-positive border-accent-positive"
+                  : "bg-surface-elevated text-text-secondary border-surface-border hover:text-text-primary hover:border-text-tertiary"
               )}
             >
               {tAuth("signIn")}
             </button>
             <button
               type="button"
+              role="tab"
+              aria-selected={mode === "register"}
               onClick={() => switchMode("register")}
               className={cn(
-                "flex-1 rounded-pill py-2 text-sm font-medium font-body transition-colors",
+                "flex-1 rounded-full py-2.5 text-sm font-body font-bold border transition-all duration-base ease-standard active:scale-[0.98]",
                 mode === "register"
-                  ? "bg-accent-positive text-on-accent-positive"
-                  : "text-text-tertiary hover:text-text-primary"
+                  ? "bg-accent-positive text-on-accent-positive border-accent-positive"
+                  : "bg-surface-elevated text-text-secondary border-surface-border hover:text-text-primary hover:border-text-tertiary"
               )}
             >
               {tAuth("signUp")}
