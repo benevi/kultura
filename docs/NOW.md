@@ -89,16 +89,18 @@ El usuario pidió actualizar `CLAUDE.md` para operar con autonomía real hacia u
 
 F4 → ✅ **CERRADA 2026-09-12** (commit `307a4c2`). El canvas de diseño original de esta pantalla (F0) no era accesible desde esta sesión de continuación (vivía en un canvas de una sesión anterior). Rediseñado con criterio propio coherente con F1/F1b/F2/F3a/F3b: hero cinematográfico a sangre (antes banda pequeña borrosa), poster grande `rounded-bento`, título a mayor escala, badge real de match score (reusa `computeMatchScores` de F3a para el item individual, mismo gate — nunca decorativo), "Detalles" con tiles e iconos propios (F1b) en vez de tabla de texto. Verificación visual real: harness temporal (borrado, no commiteado) + Chromium headless contra el CSS de Tailwind realmente compilado, mobile y desktop. +2 tests, tsc 0, lint 0, vitest **1311 passed**, build OK. Detalle en DONE.md / BACKLOG F4.
 
-En paralelo a F4 se lanzó un agente en worktree aislado para **F6** (logotipo de marca propio) + **F7** (paleta multicolor de acentos, decisión tomada de forma autónoma: adoptar la paleta completa del mockup F0 ya aprobado en vez de quedarse solo en el verde de F2) — sigue en curso, se fusionará cuando termine.
+F5 → ✅ **CERRADA 2026-09-12** (este commit). Auditoría real de accesibilidad sobre F1-F4: 4 fallos de contraste WCAG AA encontrados y corregidos en `MediaDetail.tsx` (`text-tertiary`→`text-secondary` en 4 sitios, verificado por cálculo de luminancia relativa, no a ojo); orden DOM/tabulación del grid bento (F3b) verificado matemáticamente sin bug real (el patrón de 6 celdas tila sin huecos, `grid-flow-row-dense` resulta inerte); `prefers-reduced-motion` confirmado con cobertura global; hallazgo de foco de teclado con tokens shadcn muertos en `button.tsx` registrado como **E100** (no arreglado aquí, toca un componente compartido fuera de Bloque F). tsc 0, lint 0, vitest **1311 passed**. Cierra la primera pasada completa de Bloque F sobre las 3 pantallas de F0 (Home/Discover/Media). Detalle en DONE.md / BACKLOG F5.
+
+En paralelo a F4/F5 se lanzó un agente en worktree aislado para **F6** (logotipo de marca propio) + **F7** (paleta multicolor de acentos, decisión tomada de forma autónoma: adoptar la paleta completa del mockup F0 ya aprobado en vez de quedarse solo en el verde de F2). Terminó con éxito (commits `dfedce2`/`2521fab` en `worktree-agent-ade392e578a1a2377`, tsc/lint/vitest en verde, verificado visualmente) — pendiente de fusionar en esta rama.
 
 ## Tarea activa
 
-### F5. Auditoría de accesibilidad post-rediseño
+### Fusionar F6/F7 (worktree paralelo) + decidir siguiente pieza
 
-**Qué cambia:** revisar todo lo entregado en Bloque F (F1-F4: tipografía, iconos, color, bento/match score, ficha de media) contra WCAG AA: contraste real de texto sobre los nuevos fondos/badges, tamaños táctiles mobile-first (regla 7 de CLAUDE.md), `prefers-reduced-motion` en cualquier animación introducida. Con el grid bento de F3b: orden de lectura/tabulación (el layout visual variable no debe romper el orden DOM lógico) y que paginación/filtros de Discover sigan operables por teclado.
+**Qué cambia:** traer los commits del agente paralelo (`dfedce2` F7, `2521fab` F6) a esta rama, re-verificar el conjunto completo (tsc/lint/vitest/build) tras la fusión, y decidir la siguiente pieza de Bloque F o del resto del BACKLOG con la autonomía ya delegada por el usuario.
 
-**Cómo sé que funciona:** hallazgos documentados con severidad + fix aplicado para cada uno que sea código (no solo lista de problemas); verificación real de contraste (cálculo o herramienta, no "a ojo"); tsc/lint/vitest en verde; captura o verificación de foco/tabulación en el grid bento y en la ficha de media.
+**Cómo sé que funciona:** merge limpio sin conflictos (o resueltos), tsc/lint/vitest en verde sobre el árbol fusionado, verificación visual del logo + iconos de `AuthHeader` en runtime real.
 
-**Archivos que toco:** por determinar tras la auditoría (previsiblemente `MediaCard`/`MediaGrid`/`MediaDetail`/`FilterBar`/tokens de color en `globals.css`).
+**Archivos que toco:** los del merge (`globals.css`, `tailwind.config.ts`, `Header.tsx`, `AuthHeader.tsx`, nuevo `Logo.tsx`, tests asociados) + `docs/BACKLOG.md`/`DONE.md` (ya cerrados por el propio agente, revisar coherencia tras el merge).
 
-Al cerrar F5 se cierra la primera pasada completa del Bloque F sobre las 3 pantallas de F0 (Home/Discover/Media). El resto de pantallas (Library, Profile, Social, Chat, Groups) y F6-F9 (piezas del mockup no cubiertas por F1-F5) quedan en BACKLOG para continuar sin pedir confirmación de bloque, salvo que surja una decisión genuinamente ambigua.
+El resto de pantallas de Bloque F (Library, Profile, Social, Chat, Groups) y F8/F9 (piezas del mockup aún no implementadas) quedan en BACKLOG para continuar sin pedir confirmación, salvo decisión genuinamente ambigua.
