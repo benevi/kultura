@@ -66,6 +66,7 @@ import { fetchDiscoverData } from "@/lib/api/discover";
 import { discoverMovies, discoverTV } from "@/lib/api/tmdb";
 import { getPopularAnime, getPopularManga } from "@/lib/api/jikan";
 import { searchGoogleBooks } from "@/lib/api/googlebooks";
+import { DISCOVER_MAX_PAGES } from "@/lib/api/pagination";
 import { getPopularGames, discoverGames } from "@/lib/api/rawg";
 import { getRecentComics } from "@/lib/api/comicvine";
 
@@ -197,15 +198,15 @@ describe("fetchDiscoverData — guard totalItems books (E-BOOKS-GOOGLE)", () => 
     expect(result.totalPages).toBe(5);
   });
 
-  it("totalItems enorme → totalPages capado a 50 (tope de la familia book)", async () => {
+  it("totalItems enorme → totalPages capado al tope común (E79-s3)", async () => {
     vi.mocked(searchGoogleBooks).mockResolvedValue({
       totalItems: 1_000_000,
       items: [],
     });
 
     const result = await fetchDiscoverData("book", 1);
-    // ceil(1000000/20) = 50000, capado a 50 (el tope COMÚN llega en E79-s3).
-    expect(result.totalPages).toBe(50);
+    // ceil(1000000/20) = 50000 → capado a DISCOVER_MAX_PAGES.
+    expect(result.totalPages).toBe(DISCOVER_MAX_PAGES);
   });
 });
 
@@ -704,14 +705,14 @@ describe("fetchDiscoverData — totalPages null con post-filtro activo (E79 slic
     expect(result.totalPages).toBeNull();
   });
 
-  it("tv sin temporadas → totalPages numérico", async () => {
+  it("tv sin temporadas → totalPages numérico (capado al tope común)", async () => {
     vi.mocked(discoverTV).mockResolvedValue({
       results: [{ id: 1, name: "T" }],
       total_pages: 200,
     } as never);
 
     const result = await fetchDiscoverData("tv", 1, {});
-    expect(result.totalPages).toBe(200);
+    expect(result.totalPages).toBe(DISCOVER_MAX_PAGES);
   });
 
   it("manga+volumenes → totalPages null (post-filtro sobre metadata.volumes)", async () => {
@@ -790,33 +791,33 @@ describe('fetchDiscoverData — hasMore en "all" (E79 slice 1)', () => {
 // cap, la UI numerada ofrece una "última página" que devuelve 4xx → banner rojo
 // falso. Capamos a 500 y distinguimos página fuera de rango (vacío, sin error).
 
-describe("fetchDiscoverData — cap TMDB 500 (E89)", () => {
+describe("fetchDiscoverData — tope común de páginas (E79-s3, antes E89)", () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });
 
-  it("movie: total_pages enorme → totalPages capado a 500", async () => {
+  it("movie: total_pages enorme → totalPages capado al tope común", async () => {
     vi.mocked(discoverMovies).mockResolvedValue({
       results: [{ id: 1, title: "M" }],
       total_pages: 57464,
     } as never);
 
     const result = await fetchDiscoverData("movie", 1);
-    expect(result.totalPages).toBe(500);
-    expect(result.hasMore).toBe(true); // page 1 < 500
+    expect(result.totalPages).toBe(DISCOVER_MAX_PAGES);
+    expect(result.hasMore).toBe(true); // page 1 < tope
   });
 
-  it("tv: total_pages enorme → totalPages capado a 500", async () => {
+  it("tv: total_pages enorme → totalPages capado al tope común", async () => {
     vi.mocked(discoverTV).mockResolvedValue({
       results: [{ id: 2, name: "T" }],
       total_pages: 30000,
     } as never);
 
     const result = await fetchDiscoverData("tv", 1);
-    expect(result.totalPages).toBe(500);
+    expect(result.totalPages).toBe(DISCOVER_MAX_PAGES);
   });
 
-  it("movie: total_pages < 500 → sin cambio (no infla)", async () => {
+  it("movie: total_pages < tope → sin cambio (no infla)", async () => {
     vi.mocked(discoverMovies).mockResolvedValue({
       results: [{ id: 1, title: "M" }],
       total_pages: 42,
@@ -826,30 +827,56 @@ describe("fetchDiscoverData — cap TMDB 500 (E89)", () => {
     expect(result.totalPages).toBe(42);
   });
 
-  it("movie: page 500 (tope) → hasMore false (no ofrece siguiente)", async () => {
+  it("movie: última página del tope → hasMore false (no ofrece siguiente)", async () => {
     vi.mocked(discoverMovies).mockResolvedValue({
       results: [{ id: 1, title: "M" }],
       total_pages: 57464,
     } as never);
 
-    const result = await fetchDiscoverData("movie", 500);
-    expect(result.hasMore).toBe(false); // 500 < 500 es false
+    const result = await fetchDiscoverData("movie", DISCOVER_MAX_PAGES);
+    expect(result.hasMore).toBe(false);
   });
 
-  it("movie: page > 500 (fuera de rango) → vacío, SIN banner de error, sin llamada API", async () => {
-    const result = await fetchDiscoverData("movie", 600);
+  it("page > tope (fuera de rango) → vacío, SIN banner de error, sin llamada API", async () => {
+    const result = await fetchDiscoverData("movie", DISCOVER_MAX_PAGES + 1);
     expect(result.items).toEqual([]);
     expect(result.fetchErrorKind).toBeNull(); // NO "generic" → sin banner rojo
     expect(result.hasMore).toBe(false);
-    expect(result.totalPages).toBe(500);
-    // no se llama a TMDB (evita el 4xx que dispararía el banner).
+    expect(result.totalPages).toBe(DISCOVER_MAX_PAGES);
     expect(discoverMovies).not.toHaveBeenCalled();
   });
 
-  it("tv: page > 500 (fuera de rango) → vacío, SIN error, sin llamada API", async () => {
-    const result = await fetchDiscoverData("tv", 9999);
-    expect(result.items).toEqual([]);
-    expect(result.fetchErrorKind).toBeNull();
+  // E79-s3: el guard es ahora COMÚN — antes solo existía para movie/tv (E89), y
+  // anime/manga/book/comic/game llamaban al proveedor con una página imposible.
+  it("el guard de fuera de rango aplica a TODAS las familias, sin llamar al proveedor", async () => {
+    for (const type of ["tv", "anime", "manga", "book", "comic", "game"]) {
+      const result = await fetchDiscoverData(type, 9999);
+      expect(result.items).toEqual([]);
+      expect(result.fetchErrorKind).toBeNull();
+      expect(result.hasMore).toBe(false);
+      expect(result.totalPages).toBe(DISCOVER_MAX_PAGES);
+    }
     expect(discoverTV).not.toHaveBeenCalled();
+    expect(getPopularAnime).not.toHaveBeenCalled();
+    expect(getPopularManga).not.toHaveBeenCalled();
+    expect(searchGoogleBooks).not.toHaveBeenCalled();
+    expect(getRecentComics).not.toHaveBeenCalled();
+    expect(getPopularGames).not.toHaveBeenCalled();
+  });
+
+  it("comic y game: el conteo crudo del proveedor ya no se expone sin tope", async () => {
+    vi.mocked(getRecentComics).mockResolvedValue({
+      items: [{ id: "comic_1", title: "C" }],
+      total: 200_000,
+    } as never);
+    const comic = await fetchDiscoverData("comic", 1);
+    expect(comic.totalPages).toBe(DISCOVER_MAX_PAGES);
+
+    vi.mocked(getPopularGames).mockResolvedValue({
+      results: [{ id: 1, name: "G", rating: 4 }],
+      count: 900_360, // el caso real de RAWG: 45018 páginas fantasma
+    } as never);
+    const game = await fetchDiscoverData("game", 1);
+    expect(game.totalPages).toBe(DISCOVER_MAX_PAGES);
   });
 });
