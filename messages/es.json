@@ -305,6 +305,7 @@
   "aiRecommendations": {
     "title": "Para ti",
     "poweredBy": "Claude IA",
+    "aiPickBadge": "TU IA CREE QUE ESTO TE FLIPA",
     "generating": "Generando recomendaciones personalizadas...",
     "needMoreItems": "Añade al menos 3 títulos completados o puntuados a tu biblioteca para recibir recomendaciones.",
     "search": "Buscar",
