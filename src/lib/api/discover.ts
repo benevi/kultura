@@ -60,26 +60,13 @@ import type { JikanAnime, JikanManga } from "@/lib/api/jikan";
 // discover↔aggregate se resuelve en runtime porque ninguno se invoca en módulo.
 import { fetchAggregateData } from "@/lib/api/aggregate";
 import { filterNSFW } from "@/lib/api/nsfw-filter";
+import { DISCOVER_MAX_PAGES } from "@/lib/api/pagination";
 
 const log = createLogger("discover");
 
 export type FetchErrorKind = "rate-limit" | "generic" | null;
 
-// E89: tope real de páginas por proveedor. La UI numerada (slice 1b) ofrece
-// "última página" = totalPages; si totalPages refleja el conteo crudo del
-// proveedor (TMDB reporta total_pages hasta 57464) pero la API solo SIRVE hasta
-// 500, saltar a la última página devuelve un error 4xx → banner rojo falso.
-// Capamos totalPages al tope servible para que la última página sea navegable.
-//   - TMDB (movie/tv): hard cap documentado de 500.
-//   - book: ya capado a 50 (Open Library) en su rama.
-//   - RAWG (game): sin tope duro documentado; deep pages devuelven vacío pero no
-//     hay constante fiable que capar → sin cambio (anotado en E89).
-//   - Jikan (anime/manga): last_visible_page YA es el tope real del proveedor.
-//   - comic: ceil(total/20) es el total real navegable.
-const TMDB_MAX_PAGES = 500;
-
-// Tope de páginas de la familia book (heredado de la etapa Open Library).
-const BOOK_MAX_PAGES = 50;
+// Tope COMÚN de páginas para todas las familias (E79-s3) → lib/api/pagination.ts.
 
 // E79 slice 2 — ¿hay un post-filtro ACTIVO que recorte items tras el fetch sin
 // recomputar el conteo del proveedor? Si lo hay, totalPages crudo miente y se
@@ -169,15 +156,22 @@ export async function fetchDiscoverData(
   let hasMore = false;
   let fetchErrorKind: FetchErrorKind = null;
 
+  // E79-s3: página fuera del tope común (URL escrita a mano o salto de la UI
+  // numerada) → página vacía SIN llamar a ningún proveedor y SIN banner de
+  // error (`fetchErrorKind: null`), que es distinto de un fallo de red real.
+  // Antes este guard existía solo para TMDB (E89) y solo a 500.
+  if (page > DISCOVER_MAX_PAGES) {
+    return {
+      items: [],
+      totalPages: DISCOVER_MAX_PAGES,
+      hasMore: false,
+      fetchErrorKind: null,
+    };
+  }
+
   try {
     switch (type) {
       case "movie": {
-        // E89: page > tope servible → página fuera de rango (escrita a mano / salto
-        // de la UI). NO llamamos a TMDB (devolvería 4xx → banner rojo falso):
-        // página vacía sin error, distinta de un fallo de red real.
-        if (page > TMDB_MAX_PAGES) {
-          return { items: [], totalPages: TMDB_MAX_PAGES, hasMore: false, fetchErrorKind: null };
-        }
         const res = await discoverMovies(
           page,
           buildTmdbDiscoverParams("movie", filters),
@@ -186,17 +180,13 @@ export async function fetchDiscoverData(
         items = res.results.map((m) =>
           normalizeMovie(m as unknown as TmdbMovieDetail)
         );
-        // E89: cap al tope servible. hasMore se gobierna contra el cap también
-        // (page 500 ya no ofrece "siguiente" aunque total_pages crudo sea mayor).
-        totalPages = Math.min(res.total_pages, TMDB_MAX_PAGES);
+        // E79-s3: cap COMÚN. hasMore se gobierna contra el cap también (la última
+        // página no ofrece "siguiente" aunque total_pages crudo sea mayor).
+        totalPages = Math.min(res.total_pages, DISCOVER_MAX_PAGES);
         hasMore = page < totalPages;
         break;
       }
       case "tv": {
-        // E89: ver case "movie" — fuera de rango → vacío sin error, sin llamada.
-        if (page > TMDB_MAX_PAGES) {
-          return { items: [], totalPages: TMDB_MAX_PAGES, hasMore: false, fetchErrorKind: null };
-        }
         const res = await discoverTV(
           page,
           buildTmdbDiscoverParams("tv", filters),
@@ -208,8 +198,8 @@ export async function fetchDiscoverData(
         // POST-filtro temporadas (R4c-2): bucket sobre metadata.seasons. NO gatea
         // el fetch nativo (no está en el builder). Vacío → no filtra.
         items = filterTVByTemporadas(items, filters.temporadas);
-        // E89: cap al tope servible (igual que movie).
-        totalPages = Math.min(res.total_pages, TMDB_MAX_PAGES);
+        // E79-s3: cap COMÚN (igual que movie).
+        totalPages = Math.min(res.total_pages, DISCOVER_MAX_PAGES);
         hasMore = page < totalPages;
         break;
       }
@@ -220,9 +210,11 @@ export async function fetchDiscoverData(
           : await getPopularAnime(page);
         const data = Array.isArray(res.data) ? (res.data as JikanAnime[]) : [];
         items = data.map((a) => normalizeAnime(a));
+        // E79-s3: `last_visible_page` es el tope REAL de Jikan; se capa además
+        // al tope común para que todas las familias ofrezcan la misma profundidad.
         const lastPage = res.pagination?.last_visible_page ?? 1;
-        totalPages = lastPage;
-        hasMore = page < lastPage;
+        totalPages = Math.min(lastPage, DISCOVER_MAX_PAGES);
+        hasMore = page < totalPages;
         break;
       }
       case "manga": {
@@ -235,8 +227,8 @@ export async function fetchDiscoverData(
         // Vacío/desconocido → no filtra. anime no pasa por aquí (oculto).
         items = filterByMinVolumes(items, filters.volumenes);
         const lastPage = res.pagination?.last_visible_page ?? 1;
-        totalPages = lastPage;
-        hasMore = page < lastPage;
+        totalPages = Math.min(lastPage, DISCOVER_MAX_PAGES);
+        hasMore = page < totalPages;
         break;
       }
       case "book": {
@@ -256,10 +248,11 @@ export async function fetchDiscoverData(
         // no fiable cuando está activo.
         const yearMatcher = bookYearMatcher(filters.year);
         if (yearMatcher) items = items.filter((i) => yearMatcher(i.year));
-        // Cap 50 heredado de la etapa Open Library: se mantiene en este commit
-        // para no mezclar la migración de proveedor con el tope COMÚN de
-        // paginación (E79-s3, que lo unifica para las 7 familias).
-        totalPages = Math.min(googleBooksTotalPages(res.totalItems), BOOK_MAX_PAGES);
+        // E79-s3: cap COMÚN (antes 50, heredado de la etapa Open Library).
+        totalPages = Math.min(
+          googleBooksTotalPages(res.totalItems),
+          DISCOVER_MAX_PAGES
+        );
         hasMore = page < totalPages;
         break;
       }
@@ -270,11 +263,12 @@ export async function fetchDiscoverData(
           ? await getRecentComics(page, filters)
           : await getRecentComics(page);
         items = res.items;
-        // Sin cap: exponemos todas las páginas que reporta ComicVine. res.total es
-        // el total bruto de issues; ceil(total/20) da el nº de páginas navegables.
-        // Si la API corta el offset en páginas muy altas, devolverán vacío, pero no
-        // imponemos tope artificial.
-        totalPages = Math.max(Math.ceil(res.total / 20), 1);
+        // E79-s3: antes SIN cap (se exponían todas las páginas que reporta
+        // ComicVine; en offsets muy altos la API devuelve vacío). Ahora cap común.
+        totalPages = Math.min(
+          Math.max(Math.ceil(res.total / 20), 1),
+          DISCOVER_MAX_PAGES
+        );
         hasMore = page < totalPages;
         break;
       }
@@ -296,7 +290,11 @@ export async function fetchDiscoverData(
         // aplican tras normalizar, mismo patrón que volumenes×manga. Caveat
         // paginación E79 conocido (overfetch sin recomputar totalPages).
         items = applyGamePostFilters(items, filters);
-        totalPages = Math.ceil(res.count / 20);
+        // E79-s3: antes SIN cap → RAWG count=900360 daba 45018 páginas fantasma.
+        totalPages = Math.min(
+          Math.max(Math.ceil(res.count / 20), 1),
+          DISCOVER_MAX_PAGES
+        );
         hasMore = page < totalPages;
         break;
       }
@@ -308,10 +306,7 @@ export async function fetchDiscoverData(
         return fetchAggregateData(page, filters, locale);
       }
       default: {
-        // E89: fallback = TMDB movies → mismo cap/guard que case "movie".
-        if (page > TMDB_MAX_PAGES) {
-          return { items: [], totalPages: TMDB_MAX_PAGES, hasMore: false, fetchErrorKind: null };
-        }
+        // Fallback = TMDB movies → mismo cap que case "movie".
         const res = await discoverMovies(
           page,
           buildTmdbDiscoverParams("movie", filters),
@@ -320,7 +315,7 @@ export async function fetchDiscoverData(
         items = res.results.map((m) =>
           normalizeMovie(m as unknown as TmdbMovieDetail)
         );
-        totalPages = Math.min(res.total_pages, TMDB_MAX_PAGES);
+        totalPages = Math.min(res.total_pages, DISCOVER_MAX_PAGES);
         hasMore = page < totalPages;
         break;
       }
