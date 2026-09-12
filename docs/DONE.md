@@ -617,3 +617,8 @@ Paso 0 confirmó que ambas validaciones de error (`mismatched passwords`, `short
 - `MediaGrid` ya migrado al DS (hallazgo: no requería cambios).
 
 **Hashes en orden:** 914436c · 4eafd0e · 128990c · 389d99f · 445dcc3 · 93db7c5 · fe4f3f1 · e962be0 · 94d9870 · 38cd520
+
+2026-09-12 | E66-POSTER-GATE | 0e93815 | Recomendaciones IA: resolveMediaRefs descarta cualquier rec cuyo match de searchByType no tenga poster (antes se devolvía con mediaUrl apuntando a una ficha sin datos). AiRecommendations.tsx filtra defensivamente por si un item cacheado sin posterUrl llega igual al cliente. +2 tests (recommendations.test.ts), 2 tests reescritos (recommendations-parser.test.ts). tsc 0, lint 0, vitest 20/20 (ai+claude).
+2026-09-12 | E75 | 0f8f091 | Selector de idioma rediseñado: toggle segmentado ES/EN con indicador deslizante bg-accent-positive (sin emoji de bandera). Verificado visualmente con Playwright en /login (mobile 390px + desktop): transición suave, cambia locale al pulsar. tsc 0, lint 0.
+2026-09-12 | E7 | 6fd4c5e | Login con Google vía Supabase OAuth: botón "Continuar con Google" en LoginPage (modos login/registro), signInWithOAuth reutiliza el callback PKCE genérico existente (sin cambios en /api/auth/callback ni middleware). i18n auth.continueWithGoogle (es/en). Verificado visualmente con Playwright. Pendiente fuera del repo: habilitar provider Google en dashboard Supabase Auth. tsc 0, lint 0.
+2026-09-12 | E-RANDOMIZE-ALWAYS | 6e557ee | Botón "Sorpréndeme" (SearchFilters.tsx) ya no se oculta con resultCount=0 — ahora se deshabilita visualmente en vez de desaparecer. tsc 0, lint 0.
