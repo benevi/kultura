@@ -19,7 +19,7 @@ export default async function LibraryPage() {
 
   const entries = await getUserMedia(user.id)
   return (
-    <main className="max-w-4xl mx-auto px-4 md:px-8 py-8">
+    <main className="max-w-6xl mx-auto px-4 md:px-8 py-8">
       <LibraryClient entries={entries} />
     </main>
   )
