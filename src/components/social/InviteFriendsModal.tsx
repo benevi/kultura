@@ -5,6 +5,7 @@ import { useTranslations } from 'next-intl'
 import { useToastContext } from '@/components/ui/ToastProvider'
 import { Avatar } from '@/components/ui/Avatar'
 import { Spinner } from '@/components/ui/Spinner'
+import { F0 } from '@/lib/design/f0-tokens'
 
 interface InvitableFriend {
   id: string
@@ -87,14 +88,16 @@ export function InviteFriendsModal({ groupId, onClose }: InviteFriendsModalProps
         role="dialog"
         aria-modal="true"
         onClick={(e) => e.stopPropagation()}
-        className="bg-surface-elevated border border-surface-border rounded-xl w-full max-w-sm flex flex-col gap-4 p-5 animate-modal-in"
+        className="rounded-bento-lg border w-full max-w-sm flex flex-col gap-4 p-5 animate-modal-in"
+        style={{ background: F0.surface2, borderColor: F0.stroke }}
       >
         <div className="flex items-center justify-between">
-          <h2 className="font-display text-xl text-text-primary">{t('inviteFriends')}</h2>
+          <h2 className="font-display text-xl font-extrabold" style={{ color: F0.text }}>{t('inviteFriends')}</h2>
           <button
             onClick={onClose}
             aria-label={tc('cancel')}
-            className="text-text-secondary hover:text-text-primary text-xl leading-none"
+            className="text-xl leading-none hover:opacity-80 transition-opacity"
+            style={{ color: F0.textSecondary }}
           >
             ×
           </button>
@@ -105,19 +108,24 @@ export function InviteFriendsModal({ groupId, onClose }: InviteFriendsModalProps
             <Spinner size="md" />
           </div>
         ) : loadError ? (
-          <p className="text-sm text-accent-danger py-4 text-center">{t('inviteError')}</p>
+          <p className="text-sm py-4 text-center" style={{ color: F0.orange }}>{t('inviteError')}</p>
         ) : friends.length === 0 ? (
-          <p className="text-sm text-text-tertiary py-8 text-center">{t('noInvitableFriends')}</p>
+          <p className="text-sm py-8 text-center" style={{ color: F0.muted }}>{t('noInvitableFriends')}</p>
         ) : (
-          <ul className="flex flex-col divide-y divide-surface-border max-h-72 overflow-y-auto">
+          <ul className="flex flex-col max-h-72 overflow-y-auto">
             {friends.map((f) => (
-              <li key={f.id} className="flex items-center gap-3 py-2.5">
+              <li
+                key={f.id}
+                className="flex items-center gap-3 py-2.5 border-t first:border-t-0"
+                style={{ borderColor: F0.stroke }}
+              >
                 <Avatar initials={f.avatarInitials} color={f.avatarColor} size="sm" />
-                <span className="text-sm text-text-primary flex-1 truncate">{f.username}</span>
+                <span className="text-sm flex-1 truncate font-medium" style={{ color: F0.text }}>{f.username}</span>
                 <button
                   onClick={() => handleInvite(f.id)}
                   disabled={invitingId === f.id}
-                  className="flex-shrink-0 px-3 py-1.5 text-xs font-semibold bg-accent-positive text-on-accent-positive rounded-full hover:brightness-110 transition-all disabled:opacity-50"
+                  className="flex-shrink-0 px-3.5 py-1.5 text-xs font-extrabold rounded-full hover:brightness-110 transition-all disabled:opacity-50"
+                  style={{ background: F0.pink, color: F0.onPink }}
                 >
                   {invitingId === f.id ? '…' : t('invite')}
                 </button>

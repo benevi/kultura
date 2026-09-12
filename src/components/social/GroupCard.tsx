@@ -2,6 +2,7 @@
 
 import { useTranslations } from 'next-intl'
 import { Link } from '@/i18n/navigation'
+import { F0 } from '@/lib/design/f0-tokens'
 
 export interface GroupCardData {
   id: string
@@ -27,28 +28,32 @@ export function GroupCard({ group }: GroupCardProps) {
   return (
     <Link
       href={`/groups/${group.id}`}
-      className="bg-surface-default border border-surface-border rounded-xl p-4 hover:border-text-tertiary transition-colors flex flex-col gap-2"
+      className="rounded-bento border p-4 hover:brightness-110 transition-all flex flex-col gap-2"
+      style={{ background: F0.surface, borderColor: F0.stroke }}
     >
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-2.5">
         <span
-          className="w-8 h-8 rounded-lg flex-shrink-0 flex items-center justify-center text-white font-bold text-sm"
-          style={{ backgroundColor: group.coverColor }}
+          className="w-11 h-11 rounded-[16px_16px_16px_4px] flex-shrink-0 flex items-center justify-center font-display font-extrabold text-sm"
+          style={{ background: group.coverColor, color: F0.onPink }}
         >
           {group.name.slice(0, 1).toUpperCase()}
         </span>
-        <span className="font-semibold text-sm text-text-primary truncate">{group.name}</span>
+        <span className="font-bold text-sm truncate" style={{ color: F0.text }}>{group.name}</span>
         {group.isMember && (
-          <span className="ml-auto flex-shrink-0 text-xs font-medium px-2 py-0.5 rounded-full bg-accent-positive/15 text-accent-positive">
+          <span
+            className="ml-auto flex-shrink-0 text-xs font-extrabold px-2.5 py-1 rounded-full"
+            style={{ background: F0.lime, color: F0.onLime }}
+          >
             {t('alreadyMember')}
           </span>
         )}
       </div>
 
       {group.description && (
-        <p className="text-xs text-text-secondary line-clamp-2">{group.description}</p>
+        <p className="text-xs line-clamp-2" style={{ color: F0.textSecondary }}>{group.description}</p>
       )}
 
-      <p className="text-xs text-text-tertiary mt-auto">
+      <p className="text-xs mt-auto" style={{ color: F0.muted }}>
         {t('membersCount', { count: group.memberCount })}
       </p>
     </Link>

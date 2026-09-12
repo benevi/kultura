@@ -1,4 +1,4 @@
-﻿'use client'
+'use client'
 
 import { useState } from 'react'
 import { useTranslations } from 'next-intl'
@@ -7,6 +7,7 @@ import { Avatar } from '@/components/ui/Avatar'
 import { KButton } from '@/components/ui/KButton'
 import { respondToFriendRequest, removeFriend } from '@/lib/social/actions'
 import { createLogger } from '@/lib/logger'
+import { F0 } from '@/lib/design/f0-tokens'
 import type { Friendship } from '@/types/user'
 
 const log = createLogger('FriendCard')
@@ -16,6 +17,25 @@ interface FriendCardProps {
   /** 'friend' = amistad aceptada, 'pending' = solicitud entrante */
   variant: 'friend' | 'pending'
   onAction: (friendshipId: string) => void
+}
+
+/**
+ * Anillo "story" F0 (CLAUDE.md — avatares circulares con actividad):
+ * conic-gradient de 3 colores de la paleta + hueco --bg de 3px. Aquí marca
+ * "esto requiere tu atención" sobre el avatar de una solicitud pendiente,
+ * no un dato inventado — solo el tratamiento visual del avatar ya real.
+ */
+function AttentionRing({ children }: { children: React.ReactNode }) {
+  return (
+    <div
+      className="rounded-full p-[3px] flex-shrink-0"
+      style={{ background: `conic-gradient(from 180deg, ${F0.pink}, ${F0.orange}, ${F0.lime}, ${F0.pink})` }}
+    >
+      <div className="rounded-full p-[3px]" style={{ background: F0.bg }}>
+        {children}
+      </div>
+    </div>
+  )
 }
 
 export function FriendCard({ friendship, variant, onAction }: FriendCardProps) {
@@ -58,20 +78,22 @@ export function FriendCard({ friendship, variant, onAction }: FriendCardProps) {
     }
   }
 
+  const avatar = <Avatar initials={otherUser.avatarInitials} color={otherUser.avatarColor} size="md" />
+
   return (
-    <div className="flex items-center gap-3 py-3 border-b border-surface-border last:border-0">
+    <div
+      className="flex items-center gap-3 py-3 border-b last:border-0"
+      style={{ borderColor: F0.stroke }}
+    >
       <Link href={`/profile/${otherUser.username}`}>
-        <Avatar
-          initials={otherUser.avatarInitials}
-          color={otherUser.avatarColor}
-          size="md"
-        />
+        {variant === 'pending' ? <AttentionRing>{avatar}</AttentionRing> : avatar}
       </Link>
 
       <div className="flex-1 min-w-0">
         <Link
           href={`/profile/${otherUser.username}`}
-          className="font-medium text-text-primary hover:text-accent-positive transition-colors block truncate"
+          className="font-bold hover:opacity-80 transition-opacity block truncate"
+          style={{ color: F0.text }}
         >
           {otherUser.username}
         </Link>
@@ -80,10 +102,24 @@ export function FriendCard({ friendship, variant, onAction }: FriendCardProps) {
       <div className="flex items-center gap-2 flex-shrink-0">
         {variant === 'pending' ? (
           <>
-            <KButton size="sm" variant="primary" loading={loading} onClick={handleAccept}>
+            <KButton
+              size="sm"
+              variant="primary"
+              loading={loading}
+              onClick={handleAccept}
+              className="rounded-full font-extrabold"
+              style={{ background: F0.pink, color: F0.onPink }}
+            >
               {t('accept')}
             </KButton>
-            <KButton size="sm" variant="secondary" loading={loading} onClick={handleDecline}>
+            <KButton
+              size="sm"
+              variant="secondary"
+              loading={loading}
+              onClick={handleDecline}
+              className="rounded-full font-bold border-2"
+              style={{ borderColor: F0.stroke, color: F0.textSecondary }}
+            >
               {t('decline')}
             </KButton>
           </>
@@ -93,7 +129,8 @@ export function FriendCard({ friendship, variant, onAction }: FriendCardProps) {
             variant="secondary"
             loading={loading}
             onClick={handleRemove}
-            className="text-text-secondary hover:text-accent-danger"
+            className="rounded-full font-bold border-2 hover:opacity-90"
+            style={{ borderColor: F0.stroke, color: F0.textSecondary }}
           >
             {t('removeFriend')}
           </KButton>

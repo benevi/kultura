@@ -8,6 +8,7 @@
 // ============================================================
 
 import { createClient } from '@/lib/supabase/server'
+import { F0 } from '@/lib/design/f0-tokens'
 import type { DbGroup, DbGroupInvitation, DbGroupMember, DbUser } from '@/types/supabase'
 
 // ── Row types ─────────────────────────────────────────────────────────────────
@@ -73,11 +74,15 @@ export interface DiscoverGroupsParams {
 
 // El acento rojo legacy (#E82020) sigue siendo el default histórico en la
 // columna `cover_color` (mismo patrón que avatar_color, ver Avatar.tsx
-// LEGACY_RED) — se remapea al leer, no en la fila almacenada.
+// LEGACY_RED) — se remapea al leer, no en la fila almacenada. El valor de
+// reemplazo es el pink F0 literal (ver src/lib/design/f0-tokens.ts) en vez
+// de la var CSS antigua `--accent-positive` (aún en la paleta pre-F0 en este
+// worktree) — mismo criterio de "acabado visual F0" que GroupsClient aplica
+// al remapear este mismo default en el estado optimista tras crear un grupo.
 const LEGACY_RED = '#E82020'
 
 function resolveCoverColor(coverColor: string): string {
-  return coverColor === LEGACY_RED ? 'var(--accent-positive)' : coverColor
+  return coverColor === LEGACY_RED ? F0.pink : coverColor
 }
 
 function mapGroup(row: GroupRow): Group {
