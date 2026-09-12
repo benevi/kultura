@@ -9,6 +9,7 @@ import type { DiscoverResult } from "@/lib/api/discover";
 import { MediaGrid, BENTO_CELL_CLASSES } from "@/components/media/MediaGrid";
 import { Pagination } from "@/components/ui/Pagination";
 import { FilterBar, type FilterGroup } from "@/components/ui/FilterBar";
+import { SearchBar } from "@/components/search/SearchBar";
 import {
   TYPE_ORDER,
   TYPE_FILTERS,
@@ -19,6 +20,7 @@ import { getFilterOptions, humanizeSlug } from "@/lib/discover/filter-options";
 import { cn } from "@/lib/utils/index";
 import {
   type KIcon,
+  IconCompass,
   IconGrid,
   IconTag,
   IconCalendar,
@@ -36,6 +38,21 @@ import {
   IconTimer,
   IconSort,
 } from "@/components/icons";
+
+// G1: emoji distintivo por pill de tipo (peso visual Gen-Z, mockup F0). Puramente
+// decorativo — aria-hidden en el render, nunca forma parte del nombre accesible
+// del radio (que sigue siendo la etiqueta i18n). No toca el acento de color
+// (sigue siendo accent-positive único — decisión F2, ver docs/BACKLOG.md).
+const TYPE_EMOJI: Record<DiscoverType, string> = {
+  all: "✨",
+  movie: "🎬",
+  tv: "📺",
+  anime: "⛩️",
+  book: "📚",
+  manga: "🈷️",
+  game: "🎮",
+  comic: "💬",
+};
 
 // Icono propio por key de filtro (spec V2 §Barra). Mapea claves lógicas de
 // TYPE_FILTERS a su icono pequeño en trigger + cabecera de popover.
@@ -316,9 +333,25 @@ export function DiscoverClient({
 
   return (
     <div>
-      {/* Header */}
-      <div className="mb-0 py-4">
-        <h1 className="font-display text-4xl tracking-wide">{t("title")}</h1>
+      {/* Header — G1: mismo peso tipográfico chunky que MediaDetail (F4). */}
+      <div className="mb-4 pt-4 pb-2 flex items-center gap-2.5">
+        <IconCompass
+          className="h-8 w-8 sm:h-10 sm:w-10 text-accent-positive shrink-0"
+          aria-hidden="true"
+        />
+        <h1 className="font-display text-4xl sm:text-5xl md:text-6xl font-bold tracking-tight text-text-primary">
+          {t("title")}
+        </h1>
+      </div>
+
+      {/* G1: barra de búsqueda prominente (mockup F0). Reusa SearchBar (mismo
+          /api/search + normalizer + navegación a /search ya existentes) — no
+          se duplica lógica de búsqueda (regla técnica 2/3 de CLAUDE.md). */}
+      <div className="mb-6">
+        <SearchBar
+          placeholder={t("searchPlaceholder")}
+          className="w-full [&_input]:py-3 [&_input]:text-base [&_input]:rounded-bento [&_input]:border-2"
+        />
       </div>
 
       {/* Fetch error banner */}
@@ -362,6 +395,9 @@ export function DiscoverClient({
                       : "bg-surface-elevated text-text-secondary border-surface-border hover:text-text-primary hover:border-text-tertiary"
                   )}
                 >
+                  <span aria-hidden="true" className="mr-1.5">
+                    {TYPE_EMOJI[option.value]}
+                  </span>
                   {option.label}
                 </button>
               );
