@@ -64,6 +64,7 @@ export function AddToListButton({ item }: AddToListButtonProps) {
             backdrop: item.backdrop,
             year: item.year,
             synopsis: item.synopsis,
+            genres: item.genres,
           },
         }),
       })

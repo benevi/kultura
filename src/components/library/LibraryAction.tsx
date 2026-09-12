@@ -28,6 +28,7 @@ interface LibraryActionProps {
     backdrop?: string
     year?: number
     synopsis?: string
+    genres?: string[]
   }
   initialEntry: LibraryEntry | null
   isAuthenticated: boolean

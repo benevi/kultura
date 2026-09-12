@@ -210,6 +210,7 @@ export async function MediaDetail({
                     backdrop: item.backdrop,
                     year: item.year,
                     synopsis: item.synopsis,
+                    genres: item.genres,
                   }}
                   initialEntry={initialEntry}
                   isAuthenticated={isAuthenticated}

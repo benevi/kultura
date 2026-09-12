@@ -22,6 +22,7 @@ export function RecommendButton({ item }: RecommendButtonProps) {
     backdrop: item.backdrop,
     year: item.year,
     synopsis: item.synopsis,
+    genres: item.genres,
   }
 
   return (
