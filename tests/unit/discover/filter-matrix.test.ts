@@ -49,7 +49,7 @@ import {
   DURACIONMEDIA_BUCKETS,
 } from "@/lib/api/rawg-maps";
 import {
-  buildOpenLibraryQuery,
+  buildGoogleBooksQuery,
   BOOKS_GENRE,
   BOOKS_FORMATO,
   BOOKS_PUBLISHER,
@@ -283,18 +283,20 @@ describe("Matriz — cableado nativo (builder emite param real)", () => {
     ).toBeDefined();
   });
 
-  it("formato (book): buildOpenLibraryQuery→q ebook_access (free/ebook)", () => {
-    expect(buildOpenLibraryQuery({ formato: "free" }).q).toContain(
-      "ebook_access:public"
+  // E-BOOKS-GOOGLE: formato pasa de fragmento en q (ebook_access de Open
+  // Library) a `params.filter` nativo de Google Books.
+  it("formato (book): buildGoogleBooksQuery→params.filter (free/ebook)", () => {
+    expect(buildGoogleBooksQuery({ formato: "free" }).params.filter).toBe(
+      "free-ebooks"
     );
-    expect(buildOpenLibraryQuery({ formato: "ebook" }).q).toContain(
-      "ebook_access:borrowable"
+    expect(buildGoogleBooksQuery({ formato: "ebook" }).params.filter).toBe(
+      "ebooks"
     );
   });
 
-  it("editorial (book): buildOpenLibraryQuery→q publisher: (nativo E84b)", () => {
-    expect(buildOpenLibraryQuery({ editorial: ["planeta"] }).q).toContain(
-      "publisher:Planeta"
+  it("editorial (book): buildGoogleBooksQuery→q inpublisher: (nativo)", () => {
+    expect(buildGoogleBooksQuery({ editorial: ["planeta"] }).q).toContain(
+      'inpublisher:"Planeta"'
     );
   });
 });

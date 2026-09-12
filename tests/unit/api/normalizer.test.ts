@@ -11,6 +11,7 @@ import {
   normalizeMangaJikan,
   normalizeMangaDex,
   normalizeBookOpenLibrary,
+  normalizeBookGoogle,
   normalizeGame,
 } from "@/lib/api/normalizer";
 import type { TmdbMovieDetail, TmdbTVDetail, TmdbProvidersResponse } from "@/lib/api/tmdb";
@@ -402,6 +403,92 @@ describe("normalizeMangaDex", () => {
 
   it("year se extrae correctamente", () => {
     expect(result.year).toBe(1997);
+  });
+});
+
+// ── normalizeBookGoogle (E-BOOKS-GOOGLE) ──────────────────────────────────────
+
+const GOOGLE_BOOKS_FIXTURE = {
+  id: "wrOQLV6xB-wC",
+  volumeInfo: {
+    title: "El nombre de la rosa",
+    subtitle: "Edición conmemorativa",
+    authors: ["Umberto Eco"],
+    publisher: "Lumen",
+    publishedDate: "2003-05-01",
+    description: "En el año 1327…",
+    pageCount: 620,
+    categories: ["Fiction", "Historical", "Mystery", "Thriller", "Drama", "Extra"],
+    averageRating: 4.5,
+    ratingsCount: 120,
+    language: "es",
+    imageLinks: {
+      thumbnail: "http://books.google.com/books/content?id=wrOQ&zoom=5",
+    },
+  },
+};
+
+describe("normalizeBookGoogle", () => {
+  const result = normalizeBookGoogle(GOOGLE_BOOKS_FIXTURE);
+
+  it("id = book_{volumeId} y externalId es el id del volumen", () => {
+    expect(result.id).toBe("book_wrOQLV6xB-wC");
+    expect(result.externalId).toBe("wrOQLV6xB-wC");
+    expect(result.type).toBe("book");
+  });
+
+  it("extrae el año de publishedDate (YYYY-MM-DD y YYYY)", () => {
+    expect(result.year).toBe(2003);
+    expect(
+      normalizeBookGoogle({ id: "x", volumeInfo: { publishedDate: "1997" } }).year
+    ).toBe(1997);
+  });
+
+  it("sinopsis desde description (Google Books SÍ la trae en el listado)", () => {
+    expect(result.synopsis).toBe("En el año 1327…");
+  });
+
+  it("portada https con zoom=1 desde imageLinks", () => {
+    expect(result.poster).toBe(
+      "https://books.google.com/books/content?id=wrOQ&zoom=1"
+    );
+  });
+
+  it("averageRating 0-5 → rating 0-10 con ratingSource", () => {
+    expect(result.rating).toBe(9);
+    expect(result.ratingSource).toBe("Google Books");
+  });
+
+  it("categories recortadas a 5 géneros", () => {
+    expect(result.genres).toHaveLength(5);
+    expect(result.genres).not.toContain("Extra");
+  });
+
+  it("metadata lleva autores, editorial, idioma, páginas y subtítulo", () => {
+    expect(result.metadata?.authors).toEqual(["Umberto Eco"]);
+    expect(result.metadata?.publisher).toBe("Lumen");
+    expect(result.metadata?.language).toBe("es");
+    expect(result.metadata?.pageCount).toBe(620);
+    expect(result.metadata?.subtitle).toBe("Edición conmemorativa");
+  });
+
+  it("volumen mínimo (sin volumeInfo) no rompe: título Unknown, campos undefined", () => {
+    const minimal = normalizeBookGoogle({ id: "min" });
+    expect(minimal.title).toBe("Unknown");
+    expect(minimal.poster).toBeUndefined();
+    expect(minimal.year).toBeUndefined();
+    expect(minimal.rating).toBeUndefined();
+    expect(minimal.ratingSource).toBeUndefined();
+    expect(minimal.genres).toBeUndefined();
+  });
+
+  it("averageRating ausente → sin rating ni ratingSource (valoración no inventada)", () => {
+    const noRating = normalizeBookGoogle({
+      id: "nr",
+      volumeInfo: { title: "T" },
+    });
+    expect(noRating.rating).toBeUndefined();
+    expect(noRating.ratingSource).toBeUndefined();
   });
 });
 
