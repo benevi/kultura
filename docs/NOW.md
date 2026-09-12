@@ -95,12 +95,14 @@ En paralelo a F4/F5 se lanzó un agente en worktree aislado para **F6** (logotip
 
 **Bloque F — primera pasada sobre las 3 pantallas de F0 (Home/Discover/Media) completa:** F1, F1b, F2, F3a, F3a-FIX, F3b, F4, F5, F6, F7 cerradas. Quedan F8 (mood-chips) y F9 (gamificación) sin planificar en detalle (requieren alcance de producto), y el resto de pantallas (Library, Profile, Social, Chat, Groups) sin tocar todavía.
 
+PR benevi/kultura#4 abierta con F4-F7 (commits hasta `1caa42f`), CI en curso. Mientras se revisaba, se cerró de paso **E100** (foco de teclado con tokens shadcn muertos en `button.tsx`, hallazgo de F5) — commit `d10e0d6`, pendiente de push.
+
 ## Tarea activa
 
-### Push + PR del trabajo acumulado de Bloque F (F4-F7) + decidir siguiente pieza
+### Push del commit E100 a la PR #4 abierta + pausa para revisión del usuario
 
-**Qué cambia:** pushear la rama con el trabajo acumulado desde el merge de PR benevi/kultura#3 (F4, F5, F6, F7 + esta actualización de gobierno), abrir PR, suscribirse a su actividad, y — mientras se revisa — seguir avanzando en la siguiente pieza del BACKLOG con la autonomía ya delegada por el usuario (sin esperar a que la PR se apruebe para seguir trabajando localmente).
+**Qué cambia:** pushear `d10e0d6` (E100) a la misma rama/PR #4 ya abierta, confirmar CI en verde sobre el head final, y pausar aquí — se ha acumulado bastante trabajo autónomo en una sola sesión (gobierno de CLAUDE.md + F4-F7 + E100) y toca dar visibilidad al usuario antes de abrir un nuevo frente grande (F8/F9 necesitan decisión de producto; el resto de Bloque F son pantallas nuevas, alcance considerable).
 
-**Cómo sé que funciona:** push exitoso, PR creada con descripción fiel al alcance real, CI en verde.
+**Cómo sé que funciona:** push exitoso, CI verde sobre el head final de la PR.
 
-**Archivos que toco:** ninguno nuevo — es una operación de release. La siguiente pieza de código (F8, o un tramo de BLOQUE E, según lo que se decida al reanudar) se registrará aquí cuando arranque.
+**Archivos que toco:** ninguno nuevo.
