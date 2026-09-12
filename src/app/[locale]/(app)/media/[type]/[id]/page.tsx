@@ -26,6 +26,7 @@ import {
 import { MediaDetail } from "@/components/media/MediaDetail";
 import { createClient } from "@/lib/supabase/server";
 import { getMediaEntry } from "@/lib/library/queries";
+import { computeMatchScores } from "@/lib/recommendations/match-score";
 import type { LibraryEntry } from "@/types/library";
 
 // ── Constants ─────────────────────────────────────────────────────────────────
@@ -238,6 +239,15 @@ export default async function MediaDetailPage({ params }: Props) {
 
   if (!item) notFound();
 
+  // Match score real (F3a) para este único título — mismo gate de señal
+  // mínima que el resto de superficies (Discover/Home): sin biblioteca
+  // suficiente, computeMatchScores devuelve un Map vacío y no se pinta badge.
+  let matchScore: number | undefined;
+  if (user) {
+    const scores = await computeMatchScores(user.id, [item], supabase).catch(() => new Map<string, number>());
+    matchScore = scores.get(item.id);
+  }
+
   return (
     <MediaDetail
       item={item}
@@ -245,6 +255,7 @@ export default async function MediaDetailPage({ params }: Props) {
       providers={providers}
       initialEntry={initialEntry}
       isAuthenticated={isAuthenticated}
+      matchScore={matchScore}
     />
   );
 }

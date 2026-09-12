@@ -689,9 +689,12 @@ No bloqueantes. Atacar solo después de A–D.
   Hecho cuando: en una vista filtrada por un solo tipo, el badge de match varía entre items reales de forma coherente con su género/señal social (o se omite si no hay ninguna señal discriminante, en vez de mostrar una constante); +tests que cubran el caso "filtro de tipo único" además de los ya existentes; tsc/lint/vitest en verde; verificado con datos reales o un fixture equivalente al escenario observado.
   Depende de: F3a (cerrada). Prioridad alta — bug visible en producción sobre una feature recién entregada.
 
-- [ ] **F4. Rediseño de ficha de Media (`/media/[type]/[id]`)**
-  Aplicar la maquetación tipo "reportaje/portada" aprobada en F0 a la página de detalle (hero, sinopsis, metadata, trailer).
-  Depende de: F0, F1, F1b, F2.
+- [x] **F4. Rediseño de ficha de Media (`/media/[type]/[id]`)** — _cerrada 2026-09-12_
+  El canvas de Claude Design donde vivía el mockup original de esta pantalla (F0) no era accesible desde esta sesión (vivía en un canvas de una sesión anterior, no en el repo) — rediseñado directamente coherente con el lenguaje visual ya construido y aprobado (F1 tipografía, F1b iconos, F2 color, F3a/F3b bento+match score), con autonomía de diseño delegada explícitamente por el usuario del proyecto (ver actualización de `CLAUDE.md` del mismo día).
+  Hero cinematográfico a sangre (antes: banda borrosa pequeña) con scrim de legibilidad, poster grande superpuesto (`rounded-bento`), título en `font-display` a mayor escala. Nuevo: badge real de match score (reusa `computeMatchScores` de F3a para el item individual — mismo gate de señal mínima, nunca decorativo) en la esquina del hero, igual que en las cards de Discover/Home. "Detalles" pasa de tabla de texto plano a tiles con icono propio (F1b: `IconCalendar`/`IconFormat`/`IconStar`/`IconClock`/`IconLayers`) en vez de solo texto. Synopsis/streaming/tráiler conservan su lógica intacta, solo tipografía/radios (`rounded-bento-lg`) actualizados al nuevo lenguaje visual.
+  Verificación visual real: harness temporal (no commiteado) que renderiza `MediaDetail` con datos reales de fixture contra el CSS de Tailwind realmente compilado (`next build`), capturado con Chromium headless en mobile (390px) y desktop (1440px) — confirma layout, iconos, radios y jerarquía tipográfica correctos. Las imágenes de TMDB salen rotas en la captura por falta de red de TMDB en este entorno (limitación del sandbox, no del código — `next/image` sigue intacto).
+  +2 tests (badge de match presente/ausente). tsc 0, lint 0, vitest **1311 passed**, build OK.
+  Depende de: F0, F1, F1b, F2, F3a.
 
 - [ ] **F5. Auditoría de accesibilidad post-rediseño**
   Contraste (WCAG AA mínimo), tamaños táctiles mobile-first (regla 7 de CLAUDE.md), `prefers-reduced-motion` si F0 introduce motion. Con el grid bento de F3b, auditar además: orden de lectura/tabulación (el layout visual variable no debe romper el orden DOM lógico) y paginación/filtros siguen operables. No cerrar el bloque sin esto.
