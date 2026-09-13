@@ -33,7 +33,9 @@
     "continueWithGoogle": "Continuar con Google",
     "checkEmail": "Revisa tu correo",
     "resetLinkSent": "Te hemos enviado un enlace para restablecer tu contraseña. Revisa tu bandeja de entrada.",
-    "tagline": "Descubre tu cultura"
+    "tagline": "Descubre tu cultura",
+    "chooseCharacter": "Elige tu personaje",
+    "chooseCharacterNone": "Sin personaje (iniciales)"
   },
   "media": {
     "movie": "Película",
@@ -462,7 +464,9 @@
     "inviteFriends": "Invitar amigos",
     "noInvitableFriends": "No tienes amigos para invitar a este grupo",
     "inviteSent": "Invitación enviada",
-    "inviteError": "No se pudo enviar la invitación. Inténtalo de nuevo."
+    "inviteError": "No se pudo enviar la invitación. Inténtalo de nuevo.",
+    "groupIcon": "Icono del grupo",
+    "groupIconNone": "Sin icono (inicial)"
   },
   "chat": {
     "title": "Mensajes",
@@ -515,7 +519,9 @@
     "importData": "Importar datos",
     "importDataHint": "Recupera tu biblioteca y tus listas desde un fichero exportado. No duplica lo que ya tengas.",
     "importDataSuccess": "{count} títulos y {lists} listas importados",
-    "importDataError": "No se pudieron importar los datos. Comprueba que el fichero es un export de Kultura."
+    "importDataError": "No se pudieron importar los datos. Comprueba que el fichero es un export de Kultura.",
+    "avatarIcon": "Personaje",
+    "avatarIconNone": "Sin personaje (iniciales)"
   },
   "report": {
     "label": "Reportar",

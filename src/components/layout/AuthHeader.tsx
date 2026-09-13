@@ -10,6 +10,7 @@ interface UserProfile {
   username: string
   avatar_color: string
   avatar_initials: string
+  avatar_icon?: string | null
 }
 
 interface AuthHeaderProps {
@@ -59,6 +60,7 @@ export async function AuthHeader({ profile, unreadCount }: AuthHeaderProps) {
             username={profile.username}
             avatarColor={profile.avatar_color}
             avatarInitials={profile.avatar_initials}
+            avatarIcon={profile.avatar_icon ?? null}
           />
         </div>
       </div>

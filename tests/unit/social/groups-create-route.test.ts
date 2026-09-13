@@ -100,6 +100,8 @@ describe('POST /api/groups', () => {
     expect(mockInsert).toHaveBeenCalledWith({
       owner_id: AUTH_USER.id,
       name: 'Cinéfilos',
+      // E-AVATAR-ICONS: sin icono elegido se guarda null (el grupo usa su inicial).
+      icon: null,
       description: null,
       cover_color: '#E82020',
       is_public: true,

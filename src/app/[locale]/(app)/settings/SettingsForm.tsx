@@ -8,6 +8,7 @@ import { KInput } from '@/components/ui/KInput'
 import { ConfirmModal } from '@/components/ui/ConfirmModal'
 import { useToastContext } from '@/components/ui/ToastProvider'
 import { AVATAR_COLORS, isValidAvatarColor } from '@/lib/constants/avatarColors'
+import { AvatarIconPicker } from '@/components/ui/AvatarIconPicker'
 import type { AvatarColorName } from '@/lib/constants/avatarColors'
 import { cn } from '@/lib/utils/index'
 import { createClient } from '@/lib/supabase/client'
@@ -16,6 +17,7 @@ import Link from 'next/link'
 interface SettingsFormProps {
   initialUsername: string
   initialAvatarColor: string
+  initialAvatarIcon: string | null
   initialLocale: string | null
   userEmail: string
 }
@@ -25,6 +27,7 @@ const USERNAME_REGEX = /^[a-zA-Z0-9_]+$/
 export function SettingsForm({
   initialUsername,
   initialAvatarColor,
+  initialAvatarIcon,
   initialLocale,
   userEmail,
 }: SettingsFormProps) {
@@ -40,6 +43,7 @@ export function SettingsForm({
 
   const [username, setUsername] = useState(initialUsername)
   const [avatarColor, setAvatarColor] = useState<AvatarColorName>(safeInitialColor)
+  const [avatarIcon, setAvatarIcon] = useState<string | null>(initialAvatarIcon)
   const [locale, setLocale] = useState(initialLocale ?? currentLocale)
   const [saving, setSaving] = useState(false)
   const [usernameError, setUsernameError] = useState('')
@@ -74,7 +78,12 @@ export function SettingsForm({
       const res = await fetch('/api/settings', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ username, avatar_color: avatarColor, preferred_locale: locale }),
+        body: JSON.stringify({
+          username,
+          avatar_color: avatarColor,
+          preferred_locale: locale,
+          avatar_icon: avatarIcon,
+        }),
       })
 
       if (res.status === 409) {
@@ -233,6 +242,18 @@ export function SettingsForm({
                 />
               ))}
             </div>
+          </div>
+
+          {/* Personaje del avatar (E-AVATAR-ICONS) */}
+          <div className={cn(row, 'flex flex-col gap-3')}>
+            <label className="text-sm font-body text-text-secondary">{t('avatarIcon')}</label>
+            <AvatarIconPicker
+              value={avatarIcon}
+              onChange={setAvatarIcon}
+              color={AVATAR_COLORS.find((c) => c.name === avatarColor)?.hex}
+              label={t('avatarIcon')}
+              noneLabel={t('avatarIconNone')}
+            />
           </div>
 
           {/* Cambiar contraseña */}

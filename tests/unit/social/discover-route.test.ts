@@ -147,7 +147,7 @@ describe('GET /api/groups/discover', () => {
     expect(res.status).toBe(200)
     expect(mockFrom).toHaveBeenCalledWith('groups')
     expect(mockSelect).toHaveBeenCalledWith(
-      'id, owner_id, name, description, cover_color, is_public, created_at, group_members(user_id)'
+      'id, owner_id, name, description, cover_color, icon, is_public, created_at, group_members(user_id)'
     )
     // Filtro explícito de visibilidad: solo grupos públicos (E45-c).
     expect(mockEq).toHaveBeenCalledWith('is_public', true)
@@ -202,6 +202,8 @@ describe('GET /api/groups/discover', () => {
       name: 'Cinéfilos',
       description: 'Grupo de cine',
       coverColor: 'var(--accent-pink)',
+      // E-AVATAR-ICONS: grupos sin icono elegido.
+      icon: null,
       createdAt: '2026-01-01T00:00:00Z',
       memberCount: 2,
       isMember: false,
