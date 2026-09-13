@@ -355,7 +355,7 @@ export async function getAiRecommendations(
 
   // El match es el criterio de la recomendación: sin él (gate de señal mínima de
   // computeMatchScores) no hay nada por lo que ordenar ni que mostrar en el badge.
-  const scores = await computeMatchScores(userId, candidates, supabase)
+  const scores = await computeMatchScores(userId, candidates, supabase, locale)
   if (scores.size === 0) return []
 
   const shortlist = shortlistByType(pools, scores)
