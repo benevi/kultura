@@ -9,14 +9,16 @@ import Anthropic from '@anthropic-ai/sdk'
 import { env } from '@/lib/env'
 import { createClient } from '@/lib/supabase/server'
 import type { SupabaseClient } from '@supabase/supabase-js'
-import type { MediaType } from '@/types/media'
+import type { MediaItem, MediaType } from '@/types/media'
 import { searchByType } from '@/lib/api/search'
 import { createLogger } from '@/lib/logger'
 
 const log = createLogger('claude/recommendations')
 
 // v3: AiRec resuelve id/posterUrl/mediaUrl server-side (E66) — invalida cache v2.
-const PROMPT_VERSION = 'v3'
+// v4: prompt ya no traduce searchQuery/title + pickBestMatch valida año — invalida
+// cachés v3 que pudieran tener recs mal resueltas (título traducido → match erróneo).
+const PROMPT_VERSION = 'v4'
 
 export interface AiRec {
   title: string
@@ -135,6 +137,15 @@ export function buildPrompt(items: LibraryItem[], topGenres: string[], locale: s
 
   return `${langInstruction}
 
+IMPORTANTE — excepción al idioma: el campo "searchQuery" (y el "title" que lo
+acompaña) debe ir SIEMPRE en el título original/internacional tal y como
+aparece catalogado en la fuente real (inglés o título romanizado en la
+inmensa mayoría de casos: TMDB, AniList, RAWG, ComicVine y Google Books no
+indexan títulos traducidos al español). NUNCA traduzcas ni localices estos
+dos campos aunque el resto de la respuesta deba ir en español — una
+traducción rompe la búsqueda contra el catálogo real y produce coincidencias
+erróneas. Solo "reason" sigue el idioma de respuesta indicado arriba.
+
 Biblioteca del usuario (completados o mejor valorados):
 ${libraryLines}
 
@@ -172,9 +183,28 @@ Responde ÚNICAMENTE con JSON válido. Sin markdown, sin texto adicional. Ejempl
 const DETAIL_TYPES: MediaType[] = ['movie', 'tv', 'anime', 'book', 'manga', 'game']
 
 /**
+ * Elige el resultado de búsqueda fiable para una recomendación: si Claude dio
+ * un año, exige que el candidato lo tenga a ±1 (tolera desfases de estreno
+ * regional/reedición) antes de aceptarlo. Sin ese filtro, una searchQuery mal
+ * traducida o ambigua puede devolver como único resultado un título sin
+ * ninguna relación (p.ej. RAWG cayendo en un juego cualquiera) que aun así
+ * tiene póster y se aceptaba ciegamente como "el" resultado — de ahí fichas
+ * de detalle que no correspondían con la card mostrada.
+ * Sin año de referencia, o si ningún resultado trae año (el proveedor no lo
+ * expone para este ítem), se mantiene el comportamiento previo (primer
+ * resultado) porque no hay señal con la que descartar falsos positivos.
+ */
+function pickBestMatch(results: MediaItem[], year?: number): MediaItem | undefined {
+  if (year == null) return results[0]
+  const withYear = results.filter((r) => r.year != null)
+  if (withYear.length === 0) return results[0]
+  return withYear.find((r) => Math.abs(r.year! - year) <= 1)
+}
+
+/**
  * Resuelve id/posterUrl/mediaUrl de cada rec llamando a searchByType.
- * Si una búsqueda falla o no devuelve resultados, los campos quedan undefined
- * y el componente cae al fallback /search. Un fallo no tumba el resto.
+ * Si una búsqueda falla o no devuelve un candidato fiable, los campos quedan
+ * undefined y la rec se descarta (ver pickBestMatch). Un fallo no tumba el resto.
  */
 async function resolveMediaRefs(
   recs: AiRec[],
@@ -186,7 +216,7 @@ async function resolveMediaRefs(
         // E-TMDB-LOCALE: resolver la referencia con el idioma activo → el
         // título/póster que enlaza la recomendación coincide con el de la ficha.
         const results = await searchByType(rec.searchQuery, rec.type, locale)
-        const top = results[0]
+        const top = pickBestMatch(results, rec.year)
         if (!top || !top.poster) return null
         return {
           ...rec,
@@ -202,7 +232,8 @@ async function resolveMediaRefs(
       }
     })
   )
-  // Sin portada no hay card que mostrar: se descarta en vez de caer a /search.
+  // Sin portada o sin candidato fiable no hay card que mostrar: se descarta en
+  // vez de caer a /search o mostrar contenido no relacionado.
   return resolved.filter((rec): rec is AiRec => rec !== null)
 }
 

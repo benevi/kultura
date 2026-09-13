@@ -253,6 +253,77 @@ describe('getAiRecommendations — resolves media refs via searchByType', () => 
     expect(recs).toEqual([])
   })
 
+  it('discards the match when the resolved year is far from the rec year (bad searchQuery false positive)', async () => {
+    // Reproduce el bug real: la IA recomienda "Kirby y la Tierra Olvidada"
+    // (2022) pero una searchQuery mal traducida hace que RAWG devuelva como
+    // único resultado un juego sin relación de 2016 — no debe aceptarse solo
+    // porque tiene póster.
+    const createMock = vi.fn().mockResolvedValue({
+      content: [{ type: 'text', text: JSON.stringify({
+        recommendations: [
+          { title: 'Kirby and the Forgotten Land', type: 'game', year: 2022, reason: 'x', searchQuery: 'Kirby y la Tierra Olvidada' },
+        ],
+      }) }],
+    })
+    searchByTypeMock.mockResolvedValue([
+      { id: 'game_242708', type: 'game', title: 'NaN', year: 2016, poster: 'https://rawg/nan.jpg' },
+    ])
+
+    vi.doMock('@anthropic-ai/sdk', () => makeAnthropicMock(createMock))
+    vi.doMock('@/lib/supabase/server', () => makeSupabaseMock())
+
+    const { getAiRecommendations } = await import('@/lib/claude/recommendations')
+    const recs = await getAiRecommendations('u-badmatch', [], 'es')
+
+    expect(recs).toEqual([])
+  })
+
+  it('accepts the match when the resolved year is within ±1 of the rec year', async () => {
+    const createMock = vi.fn().mockResolvedValue({
+      content: [{ type: 'text', text: JSON.stringify({
+        recommendations: [
+          { title: 'Kirby and the Forgotten Land', type: 'game', year: 2022, reason: 'x', searchQuery: 'Kirby and the Forgotten Land' },
+        ],
+      }) }],
+    })
+    searchByTypeMock.mockResolvedValue([
+      { id: 'game_509903', type: 'game', title: 'Kirby and the Forgotten Land', year: 2022, poster: 'https://rawg/kirby.jpg' },
+    ])
+
+    vi.doMock('@anthropic-ai/sdk', () => makeAnthropicMock(createMock))
+    vi.doMock('@/lib/supabase/server', () => makeSupabaseMock())
+
+    const { getAiRecommendations } = await import('@/lib/claude/recommendations')
+    const recs = await getAiRecommendations('u-goodmatch', [], 'es')
+
+    expect(recs[0].id).toBe('game_509903')
+    expect(recs[0].title).toBe('Kirby and the Forgotten Land')
+    expect(recs[0].mediaUrl).toBe('/media/game/game_509903')
+  })
+
+  it('picks a later result whose year matches when the top result year does not', async () => {
+    const createMock = vi.fn().mockResolvedValue({
+      content: [{ type: 'text', text: JSON.stringify({
+        recommendations: [
+          { title: 'Severance', type: 'tv', year: 2022, reason: 'x', searchQuery: 'Severance' },
+        ],
+      }) }],
+    })
+    searchByTypeMock.mockResolvedValue([
+      { id: 'tv_1', type: 'tv', title: 'Severance (unrelated)', year: 1998, poster: 'https://img/wrong.jpg' },
+      { id: 'tv_95396', type: 'tv', title: 'Severance', year: 2022, poster: 'https://img/right.jpg' },
+    ])
+
+    vi.doMock('@anthropic-ai/sdk', () => makeAnthropicMock(createMock))
+    vi.doMock('@/lib/supabase/server', () => makeSupabaseMock())
+
+    const { getAiRecommendations } = await import('@/lib/claude/recommendations')
+    const recs = await getAiRecommendations('u-secondmatch', [], 'es')
+
+    expect(recs[0].id).toBe('tv_95396')
+    expect(recs[0].posterUrl).toBe('https://img/right.jpg')
+  })
+
   it('does not set mediaUrl for comic (ficha not supported yet)', async () => {
     const createMock = vi.fn().mockResolvedValue({
       content: [{ type: 'text', text: JSON.stringify({
