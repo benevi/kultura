@@ -23,7 +23,11 @@ const mockGetUserMedia = vi.fn()
 vi.mock('@/lib/library/queries', () => ({ getUserMedia: (...a: unknown[]) => mockGetUserMedia(...a) }))
 
 const mockGetUserLists = vi.fn()
-vi.mock('@/lib/social/lists', () => ({ getUserLists: (...a: unknown[]) => mockGetUserLists(...a) }))
+const mockGetListDetail = vi.fn()
+vi.mock('@/lib/social/lists', () => ({
+  getUserLists: (...a: unknown[]) => mockGetUserLists(...a),
+  getListDetail: (...a: unknown[]) => mockGetListDetail(...a),
+}))
 
 const mockGetFriends = vi.fn()
 vi.mock('@/lib/social/friends', () => ({ getFriends: (...a: unknown[]) => mockGetFriends(...a) }))
@@ -83,12 +87,53 @@ describe('GET /api/account/export', () => {
     expect(body.profile.username).toBe('alice')
     expect(body.profile.email).toBe(AUTH_USER.email)
     expect(body.library).toEqual([{ id: 'um-1' }])
-    expect(body.lists).toEqual([{ id: 'list-1' }])
+    // `items` se añade siempre: una lista ajena (sin owner propio) va vacía.
+    expect(body.lists).toEqual([{ id: 'list-1', items: [] }])
     expect(body.friendships).toEqual([{ friendshipId: 'f-1' }])
     expect(typeof body.exportedAt).toBe('string')
     expect(mockGetUserMedia).toHaveBeenCalledWith(AUTH_USER.id)
     expect(mockGetUserLists).toHaveBeenCalledWith(AUTH_USER.id)
     expect(mockGetFriends).toHaveBeenCalledWith(AUTH_USER.id)
+  })
+
+  // Sin esto el export guardaba listas VACÍAS y reimportarlas no reconstruía
+  // nada (ver /api/account/import).
+  it('incluye el contenido de las listas propias', async () => {
+    mockGetUser.mockResolvedValue({ data: { user: AUTH_USER }, error: null })
+    mockProfileSingle.mockResolvedValue({ data: PROFILE_ROW, error: null })
+    mockGetUserMedia.mockResolvedValue([])
+    mockGetUserLists.mockResolvedValue([
+      { id: 'list-1', name: 'Pendientes', owner: { id: AUTH_USER.id } },
+      { id: 'list-2', name: 'De otro', owner: { id: 'user-999' } },
+    ])
+    mockGetFriends.mockResolvedValue([])
+    mockGetListDetail.mockResolvedValue({
+      items: [{ mediaId: 'movie_550' }, { mediaId: 'game_1' }],
+    })
+
+    const { GET } = await import('@/app/api/account/export/route')
+    const body = await (await GET()).json()
+
+    expect(body.lists[0].items).toEqual(['movie_550', 'game_1'])
+    // La lista ajena no se recorre: no es del usuario y no le toca recuperarla.
+    expect(body.lists[1].items).toEqual([])
+    expect(mockGetListDetail).toHaveBeenCalledTimes(1)
+  })
+
+  it('si falla el detalle de una lista, el export sigue adelante sin su contenido', async () => {
+    mockGetUser.mockResolvedValue({ data: { user: AUTH_USER }, error: null })
+    mockProfileSingle.mockResolvedValue({ data: PROFILE_ROW, error: null })
+    mockGetUserMedia.mockResolvedValue([])
+    mockGetUserLists.mockResolvedValue([
+      { id: 'list-1', name: 'Pendientes', owner: { id: AUTH_USER.id } },
+    ])
+    mockGetFriends.mockResolvedValue([])
+    mockGetListDetail.mockRejectedValue(new Error('boom'))
+
+    const res = await (await import('@/app/api/account/export/route')).GET()
+
+    expect(res.status).toBe(200)
+    expect((await res.json()).lists[0].items).toEqual([])
   })
 
   it('returns 500 if the profile lookup fails', async () => {

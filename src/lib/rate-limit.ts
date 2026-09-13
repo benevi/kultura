@@ -110,4 +110,6 @@ export const LIMITS = {
   account_delete: { windowMs: 60 * 60_000, max: 3 },
   /** GET /api/account/export — exportación de datos (D3), 5/hora por usuario */
   account_export: { windowMs: 60 * 60_000, max: 5 },
+  /** POST /api/account/import — 5 req/hora por usuario (escribe en lote). */
+  account_import: { windowMs: 60 * 60_000, max: 5 },
 } as const

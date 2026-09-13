@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { useTranslations, useLocale } from 'next-intl'
 import { useRouter, usePathname } from 'next/navigation'
 import { KButton } from '@/components/ui/KButton'
@@ -44,6 +44,8 @@ export function SettingsForm({
   const [saving, setSaving] = useState(false)
   const [usernameError, setUsernameError] = useState('')
   const [exporting, setExporting] = useState(false)
+  const [importing, setImporting] = useState(false)
+  const importInputRef = useRef<HTMLInputElement>(null)
   const [deleteModalOpen, setDeleteModalOpen] = useState(false)
   const [deleting, setDeleting] = useState(false)
 
@@ -120,6 +122,42 @@ export function SettingsForm({
       toast.show({ message: t('exportDataError'), type: 'error' })
     } finally {
       setExporting(false)
+    }
+  }
+
+  async function handleImportData(event: React.ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0]
+    // El input se resetea siempre: si no, reimportar el MISMO fichero tras un
+    // fallo no dispararía el change y parecería que el botón no hace nada.
+    event.target.value = ''
+    if (!file) return
+
+    setImporting(true)
+    try {
+      const payload = JSON.parse(await file.text())
+      const res = await fetch('/api/account/import', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      })
+      if (!res.ok) {
+        toast.show({ message: t('importDataError'), type: 'error' })
+        return
+      }
+      const result: { libraryImported: number; listsImported: number } = await res.json()
+      toast.show({
+        message: t('importDataSuccess', {
+          count: result.libraryImported,
+          lists: result.listsImported,
+        }),
+        type: 'success',
+      })
+      router.refresh()
+    } catch {
+      // Cubre tanto un JSON corrupto como un fallo de red.
+      toast.show({ message: t('importDataError'), type: 'error' })
+    } finally {
+      setImporting(false)
     }
   }
 
@@ -251,6 +289,29 @@ export function SettingsForm({
               loading={exporting}
             >
               {t('exportData')}
+            </KButton>
+          </div>
+
+          <div className={cn(row, 'flex items-center justify-between gap-4 flex-wrap')}>
+            <p className="text-sm font-body text-text-tertiary max-w-xs">{t('importDataHint')}</p>
+            {/* El input va oculto y lo dispara el botón: así el control mantiene
+                el estilo de KButton (incluido su spinner) en vez del selector de
+                archivo del navegador. */}
+            <input
+              ref={importInputRef}
+              type="file"
+              accept="application/json,.json"
+              className="sr-only"
+              onChange={handleImportData}
+            />
+            <KButton
+              variant="secondary"
+              size="sm"
+              className="flex-shrink-0"
+              onClick={() => importInputRef.current?.click()}
+              loading={importing}
+            >
+              {t('importData')}
             </KButton>
           </div>
 

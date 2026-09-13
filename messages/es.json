@@ -511,7 +511,11 @@
     "deleteAccountConfirmMessage": "Esta acción no se puede deshacer. Se eliminarán tu perfil, tu biblioteca, tus listas, tus amistades y todos tus datos.",
     "deleteAccountConfirmButton": "Sí, eliminar mi cuenta",
     "deleteAccountCancel": "Cancelar",
-    "deleteAccountError": "Error al eliminar la cuenta. Inténtalo de nuevo."
+    "deleteAccountError": "Error al eliminar la cuenta. Inténtalo de nuevo.",
+    "importData": "Importar datos",
+    "importDataHint": "Recupera tu biblioteca y tus listas desde un fichero exportado. No duplica lo que ya tengas.",
+    "importDataSuccess": "{count} títulos y {lists} listas importados",
+    "importDataError": "No se pudieron importar los datos. Comprueba que el fichero es un export de Kultura."
   },
   "report": {
     "label": "Reportar",
