@@ -7,12 +7,14 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 
 const mockSignInWithPassword = vi.fn();
 const mockGetSession = vi.fn().mockResolvedValue({ data: { session: null } });
+const mockSignInWithOAuth = vi.fn().mockResolvedValue({ error: null });
 const mockRouterPush = vi.fn();
 
 vi.mock("@/lib/supabase/client", () => ({
   createClient: () => ({
     auth: {
       signInWithPassword: mockSignInWithPassword,
+      signInWithOAuth: mockSignInWithOAuth,
       getSession: mockGetSession,
     },
   }),
@@ -177,5 +179,27 @@ describe("LoginPage — modo login", () => {
     expect(
       screen.getByRole("button", { name: "forgotPassword" })
     ).toBeInTheDocument();
+  });
+
+  // Regresión: se priorizaba NEXT_PUBLIC_SITE_URL (dominio canónico de
+  // producción) sobre el origen real, así que iniciar sesión desde un preview
+  // de Vercel o desde localhost terminaba autenticando en producción y la
+  // sesión nunca volvía al despliegue que se estaba probando.
+  it("OAuth vuelve al origen REAL del navegador, no al dominio canónico", async () => {
+    vi.stubEnv("NEXT_PUBLIC_SITE_URL", "https://kultura-six.vercel.app");
+
+    render(<LoginPage locale="es" />);
+    fireEvent.click(screen.getByRole("button", { name: /google/i }));
+
+    await waitFor(() => {
+      expect(mockSignInWithOAuth).toHaveBeenCalledWith({
+        provider: "google",
+        options: {
+          redirectTo: `${window.location.origin}/api/auth/callback?next=/es/home`,
+        },
+      });
+    });
+
+    vi.unstubAllEnvs();
   });
 });
