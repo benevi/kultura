@@ -11,7 +11,8 @@ import type { MediaType, StreamingProvider } from "@/types/media";
 import { getMovie, getMovieVideos, getMovieProviders, getTVVideos, getTVProviders, getTV } from "@/lib/api/tmdb";
 import type { TmdbProvidersResponse } from "@/lib/api/tmdb";
 import { tmdbRegion } from "@/lib/api/locale";
-import { getAnime, getAnimeVideos, getManga } from "@/lib/api/jikan";
+import { getAnime, getAnimeVideos, getManga as getMangaJikan } from "@/lib/api/jikan";
+import { getManga as getMangaDex, isMangaDexId } from "@/lib/api/mangadex";
 import { getBookDetail } from "@/lib/api/openlibrary";
 import {
   getGoogleBookDetail,
@@ -25,6 +26,7 @@ import {
   normalizeTV,
   normalizeAnime,
   normalizeMangaJikan,
+  normalizeMangaDex,
   normalizeBookGoogle,
   normalizeBookOpenLibrary,
   normalizeGame,
@@ -101,6 +103,25 @@ async function resolveBookItem(id: string) {
   return volume ? normalizeBookGoogle(volume) : null;
 }
 
+// ── Helper: manga (MangaDex + fallback legacy Jikan) ──────────────────────────
+
+/**
+ * Resuelve la ficha de un manga (E-MANGA-SOURCE).
+ *
+ * Fuente actual: MangaDex (`manga_{uuid}`). Las bibliotecas guardadas mientras
+ * manga venía de Jikan tienen `manga_{mal_id}` (numérico) — pedirle ese id a
+ * MangaDex sería un 404, así que se enruta por la forma del id (mismo patrón
+ * que `resolveBookItem` con Open Library legacy).
+ */
+async function resolveMangaItem(id: string, locale?: string) {
+  if (isMangaDexId(id)) {
+    const detail = await getMangaDex(id).catch(() => null);
+    return detail ? normalizeMangaDex(detail.data, locale) : null;
+  }
+  const legacy = await getMangaJikan(Number(id)).catch(() => null);
+  return legacy ? normalizeMangaJikan(legacy.data) : null;
+}
+
 // ── Metadata ──────────────────────────────────────────────────────────────────
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
@@ -129,10 +150,12 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       description = resp.data.synopsis ?? undefined;
       image = resp.data.images?.jpg?.large_image_url ?? undefined;
     } else if (type === "manga") {
-      const resp = await getManga(Number(id));
-      title = resp.data.title;
-      description = resp.data.synopsis ?? undefined;
-      image = resp.data.images?.jpg?.large_image_url ?? undefined;
+      const item = await resolveMangaItem(id, locale);
+      if (item) {
+        title = item.title;
+        description = item.synopsis;
+        image = item.poster;
+      }
     } else if (type === "book") {
       const item = await resolveBookItem(id);
       if (item) {
@@ -258,9 +281,9 @@ export default async function MediaDetailPage({ params }: Props) {
         trailerKey = promo ?? undefined;
       }
     } else if (mediaType === "manga") {
-      const detail = await getManga(Number(id)).catch(() => null);
-      if (!detail) notFound();
-      item = normalizeMangaJikan(detail.data);
+      const manga = await resolveMangaItem(id, locale);
+      if (!manga) notFound();
+      item = manga;
     } else if (mediaType === "book") {
       const book = await resolveBookItem(id);
       if (!book) notFound();

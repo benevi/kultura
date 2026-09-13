@@ -227,8 +227,18 @@ export function normalizeMangaDex(
       status: attrs.status,
       lastChapter: attrs.lastChapter ?? undefined,
       lastVolume: attrs.lastVolume ?? undefined,
+      // `volumes` numérico (mismo campo que normalizeMangaJikan) para que el
+      // post-filtro compartido `filterByMinVolumes` (jikan-maps.ts) funcione
+      // igual sea cual sea la fuente. MangaDex entrega `lastVolume` como
+      // STRING (o null) — se parsea, y se descarta si no es un número real.
+      volumes: attrs.lastVolume ? parseVolumeNumber(attrs.lastVolume) : undefined,
     },
   };
+}
+
+function parseVolumeNumber(raw: string): number | undefined {
+  const n = parseInt(raw, 10);
+  return Number.isFinite(n) ? n : undefined;
 }
 
 /**
