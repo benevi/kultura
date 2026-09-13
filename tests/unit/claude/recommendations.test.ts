@@ -1,99 +1,168 @@
 // ============================================================
-// KULTURA — buildPrompt + cache key unit tests (SPEC-040)
+// KULTURA — Recomendaciones IA sobre catálogo real (E-AIREC-CATALOG)
+//
+// La función ya no inventa títulos: toma candidatos del MISMO pipeline que
+// Descubrir (`fetchDiscoverData`), los ordena por match real
+// (`computeMatchScores`) y deja que Claude elija uno por tipo. Estos tests
+// cubren ese contrato: un ítem real por tipo, ids intactos (la ficha se enlaza
+// con `externalId`) y degradación por match cuando el modelo no responde.
 // ============================================================
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
+import type { MediaItem, MediaType } from '@/types/media'
 
-// Mock de dependencias del módulo para que el import no falle en jsdom
-vi.mock('@/lib/supabase/server', () => ({
-  createClient: vi.fn(),
+// Mocks hoisted para sobrevivir a vi.resetModules() en cada beforeEach.
+const { fetchDiscoverDataMock, computeMatchScoresMock } = vi.hoisted(() => ({
+  fetchDiscoverDataMock: vi.fn(),
+  computeMatchScoresMock: vi.fn(),
 }))
 
-vi.mock('@anthropic-ai/sdk', () => ({
-  default: vi.fn(),
+vi.mock('@/lib/api/discover', () => ({ fetchDiscoverData: fetchDiscoverDataMock }))
+vi.mock('@/lib/recommendations/match-score', () => ({
+  computeMatchScores: computeMatchScoresMock,
 }))
 
-// searchByType se mockea a nivel de módulo (hoisted) para que sobreviva a
-// vi.resetModules() en los beforeEach. Cada test ajusta su valor de retorno.
-const { searchByTypeMock } = vi.hoisted(() => ({ searchByTypeMock: vi.fn() }))
-vi.mock('@/lib/api/search', () => ({ searchByType: searchByTypeMock }))
+// ── Fixtures ──────────────────────────────────────────────────────────────────
 
-// ── buildPrompt ───────────────────────────────────────────────────────────────
+const ALL_TYPES: MediaType[] = ['movie', 'tv', 'anime', 'book', 'manga', 'comic', 'game']
 
-describe('buildPrompt', () => {
-  const mockItems = [
-    { title: 'Inception', type: 'movie', year: 2010, score: 5, status: 'completed' },
-    { title: 'Attack on Titan', type: 'anime', year: 2013, score: 4, status: 'completed' },
-    { title: 'The Witcher 3', type: 'game', year: 2015, score: null, status: 'completed' },
-  ]
-  const mockGenres = ['Action', 'Fantasy']
+function makeItem(type: MediaType, externalId: string, over: Partial<MediaItem> = {}): MediaItem {
+  return {
+    id: `${type}_${externalId}`,
+    externalId,
+    type,
+    title: `${type} ${externalId}`,
+    poster: `https://img/${type}-${externalId}.jpg`,
+    year: 2024,
+    genres: ['Action'],
+    ...over,
+  }
+}
 
-  it('contains Spanish language instruction when locale is es', async () => {
-    const { buildPrompt } = await import('@/lib/claude/recommendations')
-    const prompt = buildPrompt(mockItems, mockGenres, 'es')
-    expect(prompt).toContain('Responde SIEMPRE en español')
+/** Biblioteca con señal suficiente (>= 3 items) para pasar el gate. */
+const LIBRARY_ROWS = Array.from({ length: 5 }, (_, i) => ({
+  status: 'completed',
+  score: 4,
+  media: { title: `Film ${i}`, type: 'movie', year: 2020 },
+}))
+
+/**
+ * Supabase mock que atiende las DOS consultas del módulo, distinguiéndolas por
+ * las columnas pedidas: `media_id` → ids en biblioteca (getOwnedMediaIds);
+ * el resto → contexto de biblioteca (getLibraryContext, cadena .eq/.or/.order/.limit).
+ */
+function makeSupabaseMock(
+  libraryRows: unknown[] = LIBRARY_ROWS,
+  ownedRows: Array<{ media_id: string }> = []
+) {
+  return {
+    createClient: () => ({
+      auth: { getUser: vi.fn() },
+      from: vi.fn(() => ({
+        select: vi.fn((columns: string) => {
+          if (columns === 'media_id') {
+            return { eq: vi.fn().mockResolvedValue({ data: ownedRows, error: null }) }
+          }
+          const chain: Record<string, unknown> = {}
+          chain.eq = vi.fn(() => chain)
+          chain.or = vi.fn(() => chain)
+          chain.order = vi.fn(() => chain)
+          chain.limit = vi.fn().mockResolvedValue({ data: libraryRows, error: null })
+          return chain
+        }),
+      })),
+    }),
+  }
+}
+
+function makeAnthropicMock(createFn: ReturnType<typeof vi.fn>) {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const Ctor = vi.fn().mockImplementation(function (this: any) {
+    this.messages = { create: createFn }
+  })
+  return { default: Ctor }
+}
+
+function claudeReturning(text: string) {
+  return vi.fn().mockResolvedValue({ content: [{ type: 'text', text }] })
+}
+
+/** `fetchDiscoverData` devuelve los candidatos de cada tipo según el mapa dado. */
+function withPools(pools: Partial<Record<MediaType, MediaItem[]>>) {
+  fetchDiscoverDataMock.mockImplementation(async (type: string) => ({
+    items: pools[type as MediaType] ?? [],
+    totalPages: 1,
+    hasMore: false,
+    fetchErrorKind: null,
+  }))
+}
+
+/** Un candidato por tipo, todos con el mismo match. */
+function onePerType(): Partial<Record<MediaType, MediaItem[]>> {
+  return Object.fromEntries(ALL_TYPES.map((type) => [type, [makeItem(type, '1')]]))
+}
+
+/** Match score derivado del id, vía tabla; por defecto 50. */
+function withScores(byId: Record<string, number> = {}) {
+  computeMatchScoresMock.mockImplementation(async (_userId: string, items: MediaItem[]) =>
+    new Map(items.map((item) => [item.id, byId[item.id] ?? 50]))
+  )
+}
+
+// ── buildPickPrompt ───────────────────────────────────────────────────────────
+
+describe('buildPickPrompt', () => {
+  const library = [{ title: 'Inception', type: 'movie', year: 2010, score: 5, status: 'completed' }]
+
+  async function build(locale: string) {
+    const { buildPickPrompt } = await import('@/lib/claude/recommendations')
+    const shortlist = new Map<MediaType, MediaItem[]>([
+      ['movie', [makeItem('movie', '550'), makeItem('movie', '551')]],
+      ['game', [makeItem('game', '667657')]],
+    ])
+    const scores = new Map([
+      ['movie_550', 82],
+      ['movie_551', 40],
+      ['game_667657', 71],
+    ])
+    return buildPickPrompt(shortlist, scores, library, ['Action'], locale)
+  }
+
+  it('instrucción de idioma según locale', async () => {
+    expect(await build('es')).toContain('Responde SIEMPRE en español')
+    expect(await build('en')).toContain('Always respond in English')
   })
 
-  it('contains English language instruction when locale is en', async () => {
-    const { buildPrompt } = await import('@/lib/claude/recommendations')
-    const prompt = buildPrompt(mockItems, mockGenres, 'en')
-    expect(prompt).toContain('Always respond in English')
+  it('lista cada candidato con su id exacto y su match', async () => {
+    const prompt = await build('es')
+    expect(prompt).toContain('id: movie_550')
+    expect(prompt).toContain('match 82%')
+    expect(prompt).toContain('id: game_667657')
+    expect(prompt).toContain('match 71%')
   })
 
-  it('contains diversity instruction limiting same type to 2', async () => {
-    const { buildPrompt } = await import('@/lib/claude/recommendations')
-    const prompt = buildPrompt(mockItems, mockGenres, 'es')
-    expect(prompt).toContain('máximo 2 recomendaciones del mismo tipo')
+  it('pide exactamente uno de cada tipo y prohíbe inventar ids', async () => {
+    const prompt = await build('es')
+    expect(prompt).toContain('UN título de CADA tipo')
+    expect(prompt).toContain('No inventes')
   })
 
-  it('contains few-shot example with searchQuery field', async () => {
-    const { buildPrompt } = await import('@/lib/claude/recommendations')
-    const prompt = buildPrompt(mockItems, mockGenres, 'es')
-    expect(prompt).toContain('searchQuery')
-    expect(prompt).toContain('"recommendations"')
+  it('incluye el contexto de biblioteca y los géneros favoritos', async () => {
+    const prompt = await build('es')
+    expect(prompt).toContain('Inception')
+    expect(prompt).toContain('Géneros favoritos: Action')
   })
 })
 
-// ── Cache key: locale y versión ───────────────────────────────────────────────
+// ── getAiRecommendations ──────────────────────────────────────────────────────
 
-describe('getAiRecommendations — cache key includes locale and version', () => {
-  const LIBRARY_ITEMS = Array.from({ length: 5 }, (_, i) => ({
-    status: 'completed',
-    score: 4,
-    media: { title: `Film ${i}`, type: 'movie', year: 2020 },
-  }))
-
-  const VALID_RESPONSE = JSON.stringify({
-    recommendations: [
-      { title: 'Severance', type: 'tv', year: 2022, reason: 'Great show' },
-    ],
-  })
-
-  function makeSupabaseMock() {
-    return {
-      createClient: () => ({
-        auth: { getUser: vi.fn() },
-        from: vi.fn().mockReturnValue({
-          select: vi.fn().mockReturnThis(),
-          eq: vi.fn().mockReturnThis(),
-          or: vi.fn().mockReturnThis(),
-          order: vi.fn().mockReturnThis(),
-          limit: vi.fn().mockResolvedValue({ data: LIBRARY_ITEMS, error: null }),
-        }),
-      }),
-    }
-  }
-
-  function makeAnthropicMock(createFn: ReturnType<typeof vi.fn>) {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const Ctor = vi.fn().mockImplementation(function(this: any) {
-      this.messages = { create: createFn }
-    })
-    return { default: Ctor }
-  }
-
+describe('getAiRecommendations', () => {
   beforeEach(() => {
     vi.resetModules()
+    fetchDiscoverDataMock.mockReset()
+    computeMatchScoresMock.mockReset()
+    withPools(onePerType())
+    withScores()
     vi.stubEnv('ANTHROPIC_API_KEY', 'sk-ant-test-key')
   })
 
@@ -103,274 +172,245 @@ describe('getAiRecommendations — cache key includes locale and version', () =>
     vi.unstubAllEnvs()
   })
 
-  it('different locales produce different cache keys (en → calls Anthropic again)', async () => {
-    const createMock = vi.fn().mockResolvedValue({
-      content: [{ type: 'text', text: VALID_RESPONSE }],
-    })
+  it('devuelve una recomendación de CADA tipo (movie, tv, anime, book, manga, comic, game)', async () => {
+    vi.doMock('@anthropic-ai/sdk', () => makeAnthropicMock(claudeReturning('{"picks":[]}')))
+    vi.doMock('@/lib/supabase/server', () => makeSupabaseMock())
 
-    searchByTypeMock.mockResolvedValue([])
+    const { getAiRecommendations } = await import('@/lib/claude/recommendations')
+    const recs = await getAiRecommendations('u-all-types', [], 'es')
+
+    expect(recs.map((r) => r.item.type)).toEqual(ALL_TYPES)
+  })
+
+  it('la card lleva el ítem real: externalId SIN prefijo (la ficha hace Number(id) sobre él)', async () => {
+    withPools({ ...onePerType(), game: [makeItem('game', '667657')] })
+    vi.doMock('@anthropic-ai/sdk', () => makeAnthropicMock(claudeReturning('{"picks":[]}')))
+    vi.doMock('@/lib/supabase/server', () => makeSupabaseMock())
+
+    const { getAiRecommendations } = await import('@/lib/claude/recommendations')
+    const recs = await getAiRecommendations('u-extid', [], 'es')
+
+    const game = recs.find((r) => r.item.type === 'game')!
+    // El id prefijado era justo el bug: /media/game/game_667657 → Number(...) = NaN.
+    expect(game.item.externalId).toBe('667657')
+    expect(game.item.id).toBe('game_667657')
+  })
+
+  it('expone el match real de cada pick', async () => {
+    withPools({ movie: [makeItem('movie', '550')] })
+    withScores({ movie_550: 91 })
+    vi.doMock('@anthropic-ai/sdk', () => makeAnthropicMock(claudeReturning('{"picks":[]}')))
+    vi.doMock('@/lib/supabase/server', () => makeSupabaseMock())
+
+    const { getAiRecommendations } = await import('@/lib/claude/recommendations')
+    const recs = await getAiRecommendations('u-score', [], 'es')
+
+    expect(recs[0].matchScore).toBe(91)
+  })
+
+  it('respeta la elección de Claude y su explicación cuando el id es de esa shortlist', async () => {
+    withPools({ movie: [makeItem('movie', 'a'), makeItem('movie', 'b')] })
+    withScores({ movie_a: 80, movie_b: 60 })
+    const createMock = claudeReturning(JSON.stringify({
+      picks: [{ id: 'movie_b', reason: 'Encaja mejor con tus thrillers recientes.' }],
+    }))
     vi.doMock('@anthropic-ai/sdk', () => makeAnthropicMock(createMock))
     vi.doMock('@/lib/supabase/server', () => makeSupabaseMock())
 
     const { getAiRecommendations } = await import('@/lib/claude/recommendations')
+    const recs = await getAiRecommendations('u-pick', [], 'es')
 
-    await getAiRecommendations('u1', [], 'es')
+    // Elige el de match menor porque lo justifica — esa es la aportación del modelo.
+    expect(recs[0].item.id).toBe('movie_b')
+    expect(recs[0].reason).toBe('Encaja mejor con tus thrillers recientes.')
+  })
+
+  it('un id alucinado por Claude se descarta y cae al de mayor match del tipo', async () => {
+    withPools({ movie: [makeItem('movie', 'a'), makeItem('movie', 'b')] })
+    withScores({ movie_a: 80, movie_b: 60 })
+    const createMock = claudeReturning(JSON.stringify({
+      picks: [{ id: 'movie_inventado', reason: 'no existe' }],
+    }))
+    vi.doMock('@anthropic-ai/sdk', () => makeAnthropicMock(createMock))
+    vi.doMock('@/lib/supabase/server', () => makeSupabaseMock())
+
+    const { getAiRecommendations } = await import('@/lib/claude/recommendations')
+    const recs = await getAiRecommendations('u-halluc', [], 'es')
+
+    expect(recs[0].item.id).toBe('movie_a')
+    expect(recs[0].reason).toBeUndefined()
+  })
+
+  it('ordena los candidatos de cada tipo por match antes de elegir', async () => {
+    withPools({ movie: [makeItem('movie', 'low'), makeItem('movie', 'high')] })
+    withScores({ movie_low: 12, movie_high: 88 })
+    vi.doMock('@anthropic-ai/sdk', () => makeAnthropicMock(claudeReturning('{"picks":[]}')))
+    vi.doMock('@/lib/supabase/server', () => makeSupabaseMock())
+
+    const { getAiRecommendations } = await import('@/lib/claude/recommendations')
+    const recs = await getAiRecommendations('u-rank', [], 'es')
+
+    expect(recs[0].item.id).toBe('movie_high')
+  })
+
+  it('sin ANTHROPIC_API_KEY sigue recomendando por match (sin explicación), no vacío', async () => {
+    vi.stubEnv('ANTHROPIC_API_KEY', '')
+    withPools({ movie: [makeItem('movie', 'a')] })
+    vi.doMock('@/lib/supabase/server', () => makeSupabaseMock())
+
+    const { getAiRecommendations } = await import('@/lib/claude/recommendations')
+    const recs = await getAiRecommendations('u-nokey', [], 'es')
+
+    expect(recs).toHaveLength(1)
+    expect(recs[0].item.id).toBe('movie_a')
+    expect(recs[0].reason).toBeUndefined()
+  })
+
+  it('si la API de Claude falla sigue recomendando por match', async () => {
+    withPools({ movie: [makeItem('movie', 'a')] })
+    const createMock = vi.fn().mockRejectedValue(new Error('503 overloaded'))
+    vi.doMock('@anthropic-ai/sdk', () => makeAnthropicMock(createMock))
+    vi.doMock('@/lib/supabase/server', () => makeSupabaseMock())
+
+    const { getAiRecommendations } = await import('@/lib/claude/recommendations')
+    const recs = await getAiRecommendations('u-apifail', [], 'es')
+
+    expect(recs).toHaveLength(1)
+    expect(recs[0].reason).toBeUndefined()
+  })
+
+  it('excluye lo que el usuario ya tiene en biblioteca', async () => {
+    withPools({ movie: [makeItem('movie', 'owned'), makeItem('movie', 'new')] })
+    vi.doMock('@anthropic-ai/sdk', () => makeAnthropicMock(claudeReturning('{"picks":[]}')))
+    vi.doMock('@/lib/supabase/server', () =>
+      makeSupabaseMock(LIBRARY_ROWS, [{ media_id: 'movie_owned' }])
+    )
+
+    const { getAiRecommendations } = await import('@/lib/claude/recommendations')
+    const recs = await getAiRecommendations('u-owned', [], 'es')
+
+    expect(recs.map((r) => r.item.id)).toEqual(['movie_new'])
+  })
+
+  it('descarta candidatos sin portada (no hay card que pintar)', async () => {
+    withPools({
+      movie: [makeItem('movie', 'sinposter', { poster: undefined }), makeItem('movie', 'conposter')],
+    })
+    vi.doMock('@anthropic-ai/sdk', () => makeAnthropicMock(claudeReturning('{"picks":[]}')))
+    vi.doMock('@/lib/supabase/server', () => makeSupabaseMock())
+
+    const { getAiRecommendations } = await import('@/lib/claude/recommendations')
+    const recs = await getAiRecommendations('u-poster', [], 'es')
+
+    expect(recs.map((r) => r.item.id)).toEqual(['movie_conposter'])
+  })
+
+  it('un proveedor caído deja su tipo sin card, no tumba el resto', async () => {
+    fetchDiscoverDataMock.mockImplementation(async (type: string) =>
+      type === 'game'
+        ? { items: [], totalPages: 1, hasMore: false, fetchErrorKind: 'generic' }
+        : { items: [makeItem(type as MediaType, '1')], totalPages: 1, hasMore: false, fetchErrorKind: null }
+    )
+    vi.doMock('@anthropic-ai/sdk', () => makeAnthropicMock(claudeReturning('{"picks":[]}')))
+    vi.doMock('@/lib/supabase/server', () => makeSupabaseMock())
+
+    const { getAiRecommendations } = await import('@/lib/claude/recommendations')
+    const recs = await getAiRecommendations('u-provider-down', [], 'es')
+
+    expect(recs.map((r) => r.item.type)).toEqual(['movie', 'tv', 'anime', 'book', 'manga', 'comic'])
+  })
+
+  it('biblioteca con menos de 3 items → [] (sin perfil de gustos fiable)', async () => {
+    vi.doMock('@anthropic-ai/sdk', () => makeAnthropicMock(claudeReturning('{"picks":[]}')))
+    vi.doMock('@/lib/supabase/server', () => makeSupabaseMock(LIBRARY_ROWS.slice(0, 2)))
+
+    const { getAiRecommendations } = await import('@/lib/claude/recommendations')
+    expect(await getAiRecommendations('u-small', [], 'es')).toEqual([])
+  })
+
+  it('sin match calculable (gate de señal de computeMatchScores) → []', async () => {
+    computeMatchScoresMock.mockResolvedValue(new Map())
+    vi.doMock('@anthropic-ai/sdk', () => makeAnthropicMock(claudeReturning('{"picks":[]}')))
+    vi.doMock('@/lib/supabase/server', () => makeSupabaseMock())
+
+    const { getAiRecommendations } = await import('@/lib/claude/recommendations')
+    expect(await getAiRecommendations('u-nosignal', [], 'es')).toEqual([])
+  })
+
+  it('ningún proveedor con candidatos → [] sin llamar a Claude', async () => {
+    withPools({})
+    const createMock = claudeReturning('{"picks":[]}')
+    vi.doMock('@anthropic-ai/sdk', () => makeAnthropicMock(createMock))
+    vi.doMock('@/lib/supabase/server', () => makeSupabaseMock())
+
+    const { getAiRecommendations } = await import('@/lib/claude/recommendations')
+    expect(await getAiRecommendations('u-nocandidates', [], 'es')).toEqual([])
+    expect(createMock).not.toHaveBeenCalled()
+  })
+
+  it('los candidatos se piden con el locale activo (catálogo localizado)', async () => {
+    vi.doMock('@anthropic-ai/sdk', () => makeAnthropicMock(claudeReturning('{"picks":[]}')))
+    vi.doMock('@/lib/supabase/server', () => makeSupabaseMock())
+
+    const { getAiRecommendations } = await import('@/lib/claude/recommendations')
+    await getAiRecommendations('u-locale', [], 'en')
+
+    expect(fetchDiscoverDataMock).toHaveBeenCalledWith('movie', 1, {}, 'en')
+  })
+})
+
+// ── Cache ─────────────────────────────────────────────────────────────────────
+
+describe('getAiRecommendations — cache por usuario/locale/versión', () => {
+  beforeEach(() => {
+    vi.resetModules()
+    fetchDiscoverDataMock.mockReset()
+    computeMatchScoresMock.mockReset()
+    withPools(onePerType())
+    withScores()
+    vi.stubEnv('ANTHROPIC_API_KEY', 'sk-ant-test-key')
+  })
+
+  afterEach(() => {
+    vi.doUnmock('@anthropic-ai/sdk')
+    vi.doUnmock('@/lib/supabase/server')
+    vi.unstubAllEnvs()
+  })
+
+  it('mismo locale → cache hit (sin segunda llamada a Claude)', async () => {
+    const createMock = claudeReturning('{"picks":[]}')
+    vi.doMock('@anthropic-ai/sdk', () => makeAnthropicMock(createMock))
+    vi.doMock('@/lib/supabase/server', () => makeSupabaseMock())
+
+    const { getAiRecommendations } = await import('@/lib/claude/recommendations')
+    await getAiRecommendations('u-cache', [], 'es')
+    await getAiRecommendations('u-cache', [], 'es')
+
     expect(createMock).toHaveBeenCalledTimes(1)
+  })
 
-    await getAiRecommendations('u1', [], 'en')
-    // Different locale = different cache key = new Anthropic call
+  it('locale distinto → clave distinta → se vuelve a generar', async () => {
+    const createMock = claudeReturning('{"picks":[]}')
+    vi.doMock('@anthropic-ai/sdk', () => makeAnthropicMock(createMock))
+    vi.doMock('@/lib/supabase/server', () => makeSupabaseMock())
+
+    const { getAiRecommendations } = await import('@/lib/claude/recommendations')
+    await getAiRecommendations('u-cache2', [], 'es')
+    await getAiRecommendations('u-cache2', [], 'en')
+
     expect(createMock).toHaveBeenCalledTimes(2)
   })
 
-  it('same locale hits cache on second call (no extra Anthropic call)', async () => {
-    const createMock = vi.fn().mockResolvedValue({
-      content: [{ type: 'text', text: VALID_RESPONSE }],
-    })
-
-    searchByTypeMock.mockResolvedValue([])
+  it('invalidateRecCache borra las entradas del usuario', async () => {
+    const createMock = claudeReturning('{"picks":[]}')
     vi.doMock('@anthropic-ai/sdk', () => makeAnthropicMock(createMock))
     vi.doMock('@/lib/supabase/server', () => makeSupabaseMock())
 
-    const { getAiRecommendations } = await import('@/lib/claude/recommendations')
+    const { getAiRecommendations, invalidateRecCache } = await import('@/lib/claude/recommendations')
+    await getAiRecommendations('u-inv', [], 'es')
+    invalidateRecCache('u-inv')
+    await getAiRecommendations('u-inv', [], 'es')
 
-    await getAiRecommendations('u2', [], 'es')
-    expect(createMock).toHaveBeenCalledTimes(1)
-
-    await getAiRecommendations('u2', [], 'es')
-    // Same key → cache hit → no second Anthropic call
-    expect(createMock).toHaveBeenCalledTimes(1)
-  })
-})
-
-// ── resolveMediaRefs: id/posterUrl/mediaUrl (E66) ─────────────────────────────
-
-describe('getAiRecommendations — resolves media refs via searchByType', () => {
-  const LIBRARY_ITEMS = Array.from({ length: 5 }, (_, i) => ({
-    status: 'completed',
-    score: 4,
-    media: { title: `Film ${i}`, type: 'movie', year: 2020 },
-  }))
-
-  function makeSupabaseMock() {
-    return {
-      createClient: () => ({
-        auth: { getUser: vi.fn() },
-        from: vi.fn().mockReturnValue({
-          select: vi.fn().mockReturnThis(),
-          eq: vi.fn().mockReturnThis(),
-          or: vi.fn().mockReturnThis(),
-          order: vi.fn().mockReturnThis(),
-          limit: vi.fn().mockResolvedValue({ data: LIBRARY_ITEMS, error: null }),
-        }),
-      }),
-    }
-  }
-
-  function makeAnthropicMock(createFn: ReturnType<typeof vi.fn>) {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const Ctor = vi.fn().mockImplementation(function(this: any) {
-      this.messages = { create: createFn }
-    })
-    return { default: Ctor }
-  }
-
-  beforeEach(() => {
-    vi.resetModules()
-    searchByTypeMock.mockReset()
-    searchByTypeMock.mockResolvedValue([])
-    vi.stubEnv('ANTHROPIC_API_KEY', 'sk-ant-test-key')
-  })
-
-  afterEach(() => {
-    vi.doUnmock('@anthropic-ai/sdk')
-    vi.doUnmock('@/lib/supabase/server')
-    vi.unstubAllEnvs()
-  })
-
-  it('sets id/posterUrl/mediaUrl when searchByType resolves', async () => {
-    const createMock = vi.fn().mockResolvedValue({
-      content: [{ type: 'text', text: JSON.stringify({
-        recommendations: [
-          { title: 'Severance', type: 'tv', year: 2022, reason: 'Great', searchQuery: 'Severance TV' },
-        ],
-      }) }],
-    })
-    searchByTypeMock.mockResolvedValue([
-      { id: 'tv_95396', type: 'tv', title: 'Severance', year: 2022, poster: 'https://img/poster.jpg' },
-    ])
-
-    vi.doMock('@anthropic-ai/sdk', () => makeAnthropicMock(createMock))
-    vi.doMock('@/lib/supabase/server', () => makeSupabaseMock())
-
-    const { getAiRecommendations } = await import('@/lib/claude/recommendations')
-    const recs = await getAiRecommendations('u-resolve', [], 'es')
-
-    // E-TMDB-LOCALE: la resolución de la referencia usa el locale activo.
-    expect(searchByTypeMock).toHaveBeenCalledWith('Severance TV', 'tv', 'es')
-    expect(recs[0].id).toBe('tv_95396')
-    expect(recs[0].posterUrl).toBe('https://img/poster.jpg')
-    expect(recs[0].mediaUrl).toBe('/media/tv/tv_95396')
-  })
-
-  it('discards the match when the candidate has a poster but no year at all (RAWG omite `released` para entradas poco indexadas)', async () => {
-    // Reproduce el bug real visto en producción tras el primer fix: la
-    // searchQuery ya iba en inglés correcto ("Kirby and the Forgotten Land"),
-    // pero RAWG devolvió como único resultado un juego de jam sin relación
-    // ("NaN") cuyo `released` viene vacío en la respuesta de BÚSQUEDA (aunque
-    // su propia ficha de detalle sí tenga año) — sin año no hay señal para
-    // confirmar el match, así que no debe aceptarse solo por tener póster.
-    const createMock = vi.fn().mockResolvedValue({
-      content: [{ type: 'text', text: JSON.stringify({
-        recommendations: [
-          { title: 'Kirby and the Forgotten Land', type: 'game', year: 2022, reason: 'x', searchQuery: 'Kirby and the Forgotten Land' },
-        ],
-      }) }],
-    })
-    searchByTypeMock.mockResolvedValue([
-      { id: 'game_667657', type: 'game', title: 'NaN', year: undefined, poster: 'https://rawg/nan.jpg' },
-    ])
-
-    vi.doMock('@anthropic-ai/sdk', () => makeAnthropicMock(createMock))
-    vi.doMock('@/lib/supabase/server', () => makeSupabaseMock())
-
-    const { getAiRecommendations } = await import('@/lib/claude/recommendations')
-    const recs = await getAiRecommendations('u-noyear-badmatch', [], 'es')
-
-    expect(recs).toEqual([])
-  })
-
-  it('discards the recommendation entirely when searchByType returns no match (sin portada, sin card)', async () => {
-    const createMock = vi.fn().mockResolvedValue({
-      content: [{ type: 'text', text: JSON.stringify({
-        recommendations: [
-          { title: 'Obscure', type: 'book', reason: 'x', searchQuery: 'Obscure book' },
-        ],
-      }) }],
-    })
-    searchByTypeMock.mockResolvedValue([])
-
-    vi.doMock('@anthropic-ai/sdk', () => makeAnthropicMock(createMock))
-    vi.doMock('@/lib/supabase/server', () => makeSupabaseMock())
-
-    const { getAiRecommendations } = await import('@/lib/claude/recommendations')
-    const recs = await getAiRecommendations('u-nomatch', [], 'es')
-
-    // Sin match no hay portada que mostrar → se descarta, no cae a un card "vacío".
-    expect(recs).toEqual([])
-  })
-
-  it('discards the recommendation when searchByType resolves a match without poster', async () => {
-    const createMock = vi.fn().mockResolvedValue({
-      content: [{ type: 'text', text: JSON.stringify({
-        recommendations: [
-          { title: 'Obscure', type: 'book', reason: 'x', searchQuery: 'Obscure book' },
-        ],
-      }) }],
-    })
-    searchByTypeMock.mockResolvedValue([
-      { id: 'book_1', type: 'book', title: 'Obscure', poster: undefined },
-    ])
-
-    vi.doMock('@anthropic-ai/sdk', () => makeAnthropicMock(createMock))
-    vi.doMock('@/lib/supabase/server', () => makeSupabaseMock())
-
-    const { getAiRecommendations } = await import('@/lib/claude/recommendations')
-    const recs = await getAiRecommendations('u-noposter', [], 'es')
-
-    expect(recs).toEqual([])
-  })
-
-  it('discards the match when the resolved year is far from the rec year (bad searchQuery false positive)', async () => {
-    // Reproduce el bug real: la IA recomienda "Kirby y la Tierra Olvidada"
-    // (2022) pero una searchQuery mal traducida hace que RAWG devuelva como
-    // único resultado un juego sin relación de 2016 — no debe aceptarse solo
-    // porque tiene póster.
-    const createMock = vi.fn().mockResolvedValue({
-      content: [{ type: 'text', text: JSON.stringify({
-        recommendations: [
-          { title: 'Kirby and the Forgotten Land', type: 'game', year: 2022, reason: 'x', searchQuery: 'Kirby y la Tierra Olvidada' },
-        ],
-      }) }],
-    })
-    searchByTypeMock.mockResolvedValue([
-      { id: 'game_242708', type: 'game', title: 'NaN', year: 2016, poster: 'https://rawg/nan.jpg' },
-    ])
-
-    vi.doMock('@anthropic-ai/sdk', () => makeAnthropicMock(createMock))
-    vi.doMock('@/lib/supabase/server', () => makeSupabaseMock())
-
-    const { getAiRecommendations } = await import('@/lib/claude/recommendations')
-    const recs = await getAiRecommendations('u-badmatch', [], 'es')
-
-    expect(recs).toEqual([])
-  })
-
-  it('accepts the match when the resolved year is within ±1 of the rec year', async () => {
-    const createMock = vi.fn().mockResolvedValue({
-      content: [{ type: 'text', text: JSON.stringify({
-        recommendations: [
-          { title: 'Kirby and the Forgotten Land', type: 'game', year: 2022, reason: 'x', searchQuery: 'Kirby and the Forgotten Land' },
-        ],
-      }) }],
-    })
-    searchByTypeMock.mockResolvedValue([
-      { id: 'game_509903', type: 'game', title: 'Kirby and the Forgotten Land', year: 2022, poster: 'https://rawg/kirby.jpg' },
-    ])
-
-    vi.doMock('@anthropic-ai/sdk', () => makeAnthropicMock(createMock))
-    vi.doMock('@/lib/supabase/server', () => makeSupabaseMock())
-
-    const { getAiRecommendations } = await import('@/lib/claude/recommendations')
-    const recs = await getAiRecommendations('u-goodmatch', [], 'es')
-
-    expect(recs[0].id).toBe('game_509903')
-    expect(recs[0].title).toBe('Kirby and the Forgotten Land')
-    expect(recs[0].mediaUrl).toBe('/media/game/game_509903')
-  })
-
-  it('picks a later result whose year matches when the top result year does not', async () => {
-    const createMock = vi.fn().mockResolvedValue({
-      content: [{ type: 'text', text: JSON.stringify({
-        recommendations: [
-          { title: 'Severance', type: 'tv', year: 2022, reason: 'x', searchQuery: 'Severance' },
-        ],
-      }) }],
-    })
-    searchByTypeMock.mockResolvedValue([
-      { id: 'tv_1', type: 'tv', title: 'Severance (unrelated)', year: 1998, poster: 'https://img/wrong.jpg' },
-      { id: 'tv_95396', type: 'tv', title: 'Severance', year: 2022, poster: 'https://img/right.jpg' },
-    ])
-
-    vi.doMock('@anthropic-ai/sdk', () => makeAnthropicMock(createMock))
-    vi.doMock('@/lib/supabase/server', () => makeSupabaseMock())
-
-    const { getAiRecommendations } = await import('@/lib/claude/recommendations')
-    const recs = await getAiRecommendations('u-secondmatch', [], 'es')
-
-    expect(recs[0].id).toBe('tv_95396')
-    expect(recs[0].posterUrl).toBe('https://img/right.jpg')
-  })
-
-  it('does not set mediaUrl for comic (ficha not supported yet)', async () => {
-    const createMock = vi.fn().mockResolvedValue({
-      content: [{ type: 'text', text: JSON.stringify({
-        recommendations: [
-          { title: 'Saga', type: 'comic', reason: 'x', searchQuery: 'Saga comic' },
-        ],
-      }) }],
-    })
-    searchByTypeMock.mockResolvedValue([
-      { id: 'comic_123', type: 'comic', title: 'Saga', poster: 'https://cv/saga.jpg' },
-    ])
-
-    vi.doMock('@anthropic-ai/sdk', () => makeAnthropicMock(createMock))
-    vi.doMock('@/lib/supabase/server', () => makeSupabaseMock())
-
-    const { getAiRecommendations } = await import('@/lib/claude/recommendations')
-    const recs = await getAiRecommendations('u-comic', [], 'es')
-
-    expect(recs[0].posterUrl).toBe('https://cv/saga.jpg')
-    expect(recs[0].id).toBe('comic_123')
-    expect(recs[0].mediaUrl).toBeUndefined()
+    expect(createMock).toHaveBeenCalledTimes(2)
   })
 })

@@ -1,7 +1,27 @@
 // ============================================================
-// KULTURA — Claude AI Recommendations
-// Genera recomendaciones personalizadas usando la biblioteca
-// del usuario y sus géneros favoritos.
+// KULTURA — Recomendaciones IA (E-AIREC-CATALOG)
+//
+// Arquitectura (reescrita 2026-09-13): los títulos NO los inventa el modelo.
+//
+// Antes se le pedían títulos libres a Claude y luego se intentaba "resolverlos"
+// con `searchByType`. Eso fallaba por dos sitios a la vez:
+//   - Resolución: cualquier búsqueda sin resultado dejaba la rec fuera, así que
+//     de 5 recomendaciones se pintaba una sola card.
+//   - Enlace: se construía `/media/{type}/{item.id}` con el id PREFIJADO
+//     (`game_667657`), pero la ficha hace `Number(id)` → NaN → RAWG resolvía el
+//     slug "nan" y servía SIEMPRE el mismo juego, fuese cual fuese la card.
+//     La convención correcta es `externalId` (la que usa `MediaCard`).
+//
+// Ahora el flujo va al revés y se apoya en lo que ya funciona:
+//   1. Candidatos REALES del catálogo vía `fetchDiscoverData` — el mismo
+//      pipeline que alimenta Descubrir → ids válidos, portadas reales y ficha
+//      garantizada, sin búsquedas intermedias que puedan fallar.
+//   2. Se puntúan con el match real (`computeMatchScores`, F3a).
+//   3. Claude elige UNO POR TIPO entre los mejores y escribe el porqué.
+//
+// Si Claude falla, va sin clave o alucina un id, se sirve el de mayor match de
+// ese tipo: la sección nunca se queda vacía por un fallo del modelo.
+//
 // Solo para uso server-side — ANTHROPIC_API_KEY nunca al cliente.
 // ============================================================
 
@@ -10,32 +30,46 @@ import { env } from '@/lib/env'
 import { createClient } from '@/lib/supabase/server'
 import type { SupabaseClient } from '@supabase/supabase-js'
 import type { MediaItem, MediaType } from '@/types/media'
-import { searchByType } from '@/lib/api/search'
+import { fetchDiscoverData } from '@/lib/api/discover'
+import { computeMatchScores } from '@/lib/recommendations/match-score'
 import { createLogger } from '@/lib/logger'
 
 const log = createLogger('claude/recommendations')
 
-// v3: AiRec resuelve id/posterUrl/mediaUrl server-side (E66) — invalida cache v2.
-// v4: prompt ya no traduce searchQuery/title + pickBestMatch valida año — invalida
-// cachés v3 que pudieran tener recs mal resueltas (título traducido → match erróneo).
-// v5: pickBestMatch ya no acepta un candidato sin año como comodín cuando SÍ hay
-// año de referencia — cerraba un hueco real (RAWG omitiendo `released` en la
-// respuesta de búsqueda) que seguía colando matches sin relación con póster.
-const PROMPT_VERSION = 'v5'
+// v6: reescritura a catálogo real + match (E-AIREC-CATALOG). Invalida v5, cuyas
+// entradas guardaban la forma vieja de AiRec (title/searchQuery/mediaUrl).
+const PROMPT_VERSION = 'v6'
 
+/** Una card de "Para ti": ítem real del catálogo, su match y el porqué. */
 export interface AiRec {
-  title: string
-  type: MediaType
-  year?: number
-  reason: string
-  searchQuery: string
-  /** id normalizado del item resuelto ("{type}_{externalId}"), si searchByType encontró match. */
-  id?: string
-  /** carátula del item resuelto. */
-  posterUrl?: string
-  /** ruta a la ficha del item ("/media/{type}/{externalId}"), si se resolvió. */
-  mediaUrl?: string
+  /** Ítem tal cual lo sirve el catálogo: la ficha se enlaza con su `externalId`. */
+  item: MediaItem
+  /** Match real 0-100 (`computeMatchScores`) — el criterio de la recomendación. */
+  matchScore: number
+  /**
+   * Explicación escrita por Claude en el idioma activo. Ausente cuando el modelo
+   * no pudo responder: la UI pinta entonces el porqué localizado a partir del
+   * match y los géneros, así que la card sigue siendo útil.
+   */
+  reason?: string
 }
+
+/** Un título de cada tipo, en este orden de presentación. */
+const RECOMMENDABLE_TYPES: MediaType[] = [
+  'movie',
+  'tv',
+  'anime',
+  'book',
+  'manga',
+  'comic',
+  'game',
+]
+
+/** Candidatos por tipo que se le ofrecen a Claude para que elija. */
+const CANDIDATES_PER_TYPE = 5
+
+/** Mínimo de items con señal en biblioteca (mismo gate que computeMatchScores). */
+const MIN_LIBRARY_ITEMS = 3
 
 interface LibraryItem {
   title: string
@@ -79,12 +113,6 @@ export function invalidateRecCache(userId: string): void {
   })
 }
 
-const VALID_TYPES: MediaType[] = ['movie', 'tv', 'anime', 'book', 'comic', 'manga', 'game']
-
-function isValidType(t: unknown): t is MediaType {
-  return typeof t === 'string' && (VALID_TYPES as string[]).includes(t)
-}
-
 /**
  * Obtiene los items relevantes de la biblioteca para el prompt:
  * completados o con score >= 4, ordenados por updated_at DESC, máx 15.
@@ -117,15 +145,75 @@ export async function getLibraryContext(userId: string, supabaseClient?: Supabas
     }))
 }
 
+/** Ids (`{type}_{externalId}`) que el usuario ya tiene en biblioteca. */
+async function getOwnedMediaIds(userId: string, supabase: SupabaseClient): Promise<Set<string>> {
+  const { data } = await supabase
+    .from('user_media')
+    .select('media_id')
+    .eq('user_id', userId)
+
+  return new Set(((data ?? []) as Array<{ media_id: string }>).map((row) => row.media_id))
+}
+
 /**
- * Construye el prompt para Claude con el historial del usuario.
+ * Candidatos por tipo desde el MISMO pipeline que Descubrir.
+ *
+ * `fetchDiscoverData` no lanza (captura y devuelve `fetchErrorKind`), así que un
+ * proveedor caído deja su tipo sin card en lugar de tumbar la sección entera.
+ * Se descartan los que ya están en biblioteca (no se recomienda lo que ya tiene)
+ * y los que no traen portada (misma regla que el resto de superficies).
  */
-export function buildPrompt(items: LibraryItem[], topGenres: string[], locale: string): string {
+async function fetchCandidatePools(
+  locale: string,
+  owned: Set<string>
+): Promise<Map<MediaType, MediaItem[]>> {
+  const entries = await Promise.all(
+    RECOMMENDABLE_TYPES.map(async (type) => {
+      const res = await fetchDiscoverData(type, 1, {}, locale)
+      if (res.fetchErrorKind) {
+        log.warn('candidatos vacíos por fallo de proveedor', { type, kind: res.fetchErrorKind })
+      }
+      const items = res.items.filter((item) => Boolean(item.poster) && !owned.has(item.id))
+      return [type, items] as const
+    })
+  )
+
+  const pools = new Map<MediaType, MediaItem[]>()
+  for (const [type, items] of entries) {
+    if (items.length > 0) pools.set(type, items)
+  }
+  return pools
+}
+
+/** Top `CANDIDATES_PER_TYPE` de cada tipo ordenados por match descendente. */
+function shortlistByType(
+  pools: Map<MediaType, MediaItem[]>,
+  scores: Map<string, number>
+): Map<MediaType, MediaItem[]> {
+  const shortlist = new Map<MediaType, MediaItem[]>()
+  Array.from(pools.entries()).forEach(([type, items]) => {
+    const ranked = [...items].sort((a, b) => (scores.get(b.id) ?? 0) - (scores.get(a.id) ?? 0))
+    shortlist.set(type, ranked.slice(0, CANDIDATES_PER_TYPE))
+  })
+  return shortlist
+}
+
+/**
+ * Prompt de ELECCIÓN (no de invención): Claude solo puede escoger entre ids que
+ * ya existen en el catálogo, con su match real delante. Exportada para tests.
+ */
+export function buildPickPrompt(
+  shortlist: Map<MediaType, MediaItem[]>,
+  scores: Map<string, number>,
+  library: LibraryItem[],
+  topGenres: string[],
+  locale: string
+): string {
   const langInstruction = locale === 'es'
     ? 'Responde SIEMPRE en español.'
     : 'Always respond in English.'
 
-  const libraryLines = items
+  const libraryLines = library
     .map((item) => {
       const parts = [`"${item.title}" (${item.type}${item.year ? `, ${item.year}` : ''})`]
       if (item.score) parts.push(`★${item.score}`)
@@ -138,115 +226,106 @@ export function buildPrompt(items: LibraryItem[], topGenres: string[], locale: s
     ? `Géneros favoritos: ${topGenres.join(', ')}`
     : 'Sin géneros definidos aún.'
 
-  return `${langInstruction}
+  const candidateBlocks = Array.from(shortlist.entries())
+    .map(([type, items]) => {
+      const lines = items
+        .map((item) => {
+          const year = item.year ? `, ${item.year}` : ''
+          const genres = item.genres?.length ? item.genres.join(', ') : 'sin géneros'
+          return `  - id: ${item.id} | "${item.title}"${year} | ${genres} | match ${scores.get(item.id) ?? 0}%`
+        })
+        .join('\n')
+      return `${type}:\n${lines}`
+    })
+    .join('\n\n')
 
-IMPORTANTE — excepción al idioma: el campo "searchQuery" (y el "title" que lo
-acompaña) debe ir SIEMPRE en el título original/internacional tal y como
-aparece catalogado en la fuente real (inglés o título romanizado en la
-inmensa mayoría de casos: TMDB, AniList, RAWG, ComicVine y Google Books no
-indexan títulos traducidos al español). NUNCA traduzcas ni localices estos
-dos campos aunque el resto de la respuesta deba ir en español — una
-traducción rompe la búsqueda contra el catálogo real y produce coincidencias
-erróneas. Solo "reason" sigue el idioma de respuesta indicado arriba.
+  return `${langInstruction}
 
 Biblioteca del usuario (completados o mejor valorados):
 ${libraryLines}
 
 ${genresLine}
 
-Recomienda exactamente 5 títulos que NO estén en la lista anterior y que el usuario probablemente disfrutaría.
-Puedes recomendar películas, series, anime, libros, manga, cómics o videojuegos.
-Incluye como máximo 2 recomendaciones del mismo tipo (movie, tv, anime, book, comic, manga, game).
-Prioriza variedad: si el usuario solo ha consumido películas, recomiéndale también series, anime o libros.
+Candidatos disponibles, agrupados por tipo. El "match" es la afinidad YA
+calculada entre ese título y la biblioteca del usuario:
 
-Responde ÚNICAMENTE con JSON válido. Sin markdown, sin texto adicional. Ejemplo del formato exacto:
+${candidateBlocks}
+
+Elige EXACTAMENTE UN título de CADA tipo listado arriba.
+
+Reglas:
+- Solo puedes elegir ids que aparezcan en la lista de candidatos. No inventes
+  títulos ni ids: cualquier id que no esté en la lista se descarta.
+- El % de match es el criterio PRINCIPAL: prioriza los valores altos. Puedes
+  preferir uno de match algo menor solo si encaja claramente mejor con lo que
+  el usuario ya disfruta, y en ese caso explícalo en "reason".
+- "reason" es una frase corta (máx. 140 caracteres) dirigida al usuario,
+  explicando por qué le va a gustar ESE título en concreto conectándolo con su
+  biblioteca o sus géneros favoritos. Va en el idioma indicado arriba.
+
+Responde ÚNICAMENTE con JSON válido. Sin markdown, sin texto adicional:
 {
-  "recommendations": [
-    {
-      "title": "Severance",
-      "type": "tv",
-      "year": 2022,
-      "reason": "Comparte la atmósfera kafkiana y la crítica corporativa de las películas que te han gustado.",
-      "searchQuery": "Severance TV series 2022"
-    },
-    {
-      "title": "The Name of the Rose",
-      "type": "book",
-      "year": 1980,
-      "reason": "Si disfrutaste El Nombre de la Rosa en película, la novela original profundiza mucho más.",
-      "searchQuery": "The Name of the Rose Umberto Eco book"
-    }
+  "picks": [
+    { "id": "movie_550", "reason": "Comparte la crítica corporativa y el tono kafkiano de lo que más puntúas." }
   ]
 }`
 }
 
-// Tipos cuya ficha (/media/{type}/{id}) puede renderizarse hoy. Comic resuelve
-// carátula vía ComicVine pero getMediaDetail aún no soporta comic (ver BACKLOG
-// E66-COMIC-FICHA), así que no enlazamos su ficha: el componente cae a /search.
-const DETAIL_TYPES: MediaType[] = ['movie', 'tv', 'anime', 'book', 'manga', 'game']
+/** `id` → `reason` de la respuesta del modelo. Vacío si la respuesta no es usable. */
+function parsePicks(rawText: string): Map<string, string> {
+  const chosen = new Map<string, string>()
 
-/**
- * Elige el resultado de búsqueda fiable para una recomendación: si Claude dio
- * un año, exige que el candidato lo tenga a ±1 (tolera desfases de estreno
- * regional/reedición) antes de aceptarlo. Sin ese filtro, una searchQuery mal
- * traducida o ambigua puede devolver como único resultado un título sin
- * ninguna relación (p.ej. RAWG cayendo en un juego cualquiera) que aun así
- * tiene póster y se aceptaba ciegamente como "el" resultado — de ahí fichas
- * de detalle que no correspondían con la card mostrada.
- *
- * IMPORTANTE: si el candidato no trae año en el resultado de BÚSQUEDA (RAWG a
- * veces omite `released` en `/games?search=` para entradas poco indexadas
- * aunque su propia ficha de detalle sí lo tenga), NO se acepta como comodín —
- * eso fue justo el agujero que dejaba pasar el falso positivo "NaN" (2016)
- * para una searchQuery de un juego de 2022, con póster real pero año ausente
- * en el resultado de búsqueda. Sin año de referencia (`year` undefined en la
- * rec), se mantiene el comportamiento previo (primer resultado) porque no hay
- * señal alguna con la que descartar falsos positivos.
- */
-function pickBestMatch(results: MediaItem[], year?: number): MediaItem | undefined {
-  if (year == null) return results[0]
-  return results.find((r) => r.year != null && Math.abs(r.year - year) <= 1)
-}
+  // El regex extrae el primer bloque {...}; el schema del prompt siempre pide un
+  // objeto raíz, así que una respuesta con array raíz se descarta (→ fallback).
+  const jsonMatch = rawText.match(/\{[\s\S]*\}/)
+  if (!jsonMatch) return chosen
 
-/**
- * Resuelve id/posterUrl/mediaUrl de cada rec llamando a searchByType.
- * Si una búsqueda falla o no devuelve un candidato fiable, los campos quedan
- * undefined y la rec se descarta (ver pickBestMatch). Un fallo no tumba el resto.
- */
-async function resolveMediaRefs(
-  recs: AiRec[],
-  locale?: string | null
-): Promise<AiRec[]> {
-  const resolved = await Promise.all(
-    recs.map(async (rec): Promise<AiRec | null> => {
-      try {
-        // E-TMDB-LOCALE: resolver la referencia con el idioma activo → el
-        // título/póster que enlaza la recomendación coincide con el de la ficha.
-        const results = await searchByType(rec.searchQuery, rec.type, locale)
-        const top = pickBestMatch(results, rec.year)
-        if (!top || !top.poster) return null
-        return {
-          ...rec,
-          id: top.id,
-          posterUrl: top.poster,
-          mediaUrl: DETAIL_TYPES.includes(rec.type)
-            ? `/media/${rec.type}/${top.id}`
-            : undefined,
-        }
-      } catch (err) {
-        log.error('resolveMediaRefs failed', { searchQuery: rec.searchQuery, type: rec.type, err })
-        return null
+  try {
+    const parsed = JSON.parse(jsonMatch[0]) as { picks?: unknown }
+    if (!Array.isArray(parsed.picks)) return chosen
+
+    for (const pick of parsed.picks) {
+      if (typeof pick !== 'object' || pick === null) continue
+      const { id, reason } = pick as { id?: unknown; reason?: unknown }
+      if (typeof id === 'string' && typeof reason === 'string' && reason.trim() !== '') {
+        chosen.set(id, reason.trim())
       }
-    })
-  )
-  // Sin portada o sin candidato fiable no hay card que mostrar: se descarta en
-  // vez de caer a /search o mostrar contenido no relacionado.
-  return resolved.filter((rec): rec is AiRec => rec !== null)
+    }
+  } catch (err) {
+    log.error('Failed to parse Claude picks', { err })
+  }
+
+  return chosen
 }
 
 /**
- * Llama al modelo de IA y devuelve recomendaciones parseadas.
- * Devuelve [] si la respuesta es inválida o la API falla.
+ * Combina la elección del modelo con la shortlist real: por cada tipo se toma el
+ * candidato que Claude eligió (validado contra ESA shortlist, así que un id
+ * alucinado o de otro tipo no cuela) y, si no hay elección válida, el de mayor
+ * match. Nunca devuelve un tipo con candidatos sin card.
+ */
+function resolvePicks(
+  shortlist: Map<MediaType, MediaItem[]>,
+  scores: Map<string, number>,
+  chosen: Map<string, string>
+): AiRec[] {
+  const picks: AiRec[] = []
+  Array.from(shortlist.values()).forEach((items) => {
+    const picked = items.find((item) => chosen.has(item.id)) ?? items[0]
+    if (!picked) return
+    picks.push({
+      item: picked,
+      matchScore: scores.get(picked.id) ?? 0,
+      reason: chosen.get(picked.id),
+    })
+  })
+  return picks
+}
+
+/**
+ * Recomendaciones de "Para ti": un título real de cada tipo, elegido por match y
+ * explicado por Claude. Devuelve [] solo cuando no hay señal suficiente en la
+ * biblioteca o ningún proveedor dio candidatos — nunca por un fallo del modelo.
  */
 export async function getAiRecommendations(
   userId: string,
@@ -256,84 +335,70 @@ export async function getAiRecommendations(
 ): Promise<AiRec[]> {
   const cacheKey = `${userId}:${locale}:${PROMPT_VERSION}`
 
-  // Cache hit — evitar llamada a Claude si los datos son recientes
   const cached = getCached(cacheKey)
   if (cached) return cached
 
-  const items = await getLibraryContext(userId, supabaseClient)
+  const supabase = supabaseClient ?? createClient()
 
-  // Mínimo 3 items para contexto útil
-  if (items.length < 3) return []
+  const [library, owned] = await Promise.all([
+    getLibraryContext(userId, supabase),
+    getOwnedMediaIds(userId, supabase),
+  ])
 
-  // Opcional en el schema: graceful, degrada a [] si no está configurada.
+  // Sin contexto suficiente no hay perfil de gustos fiable: la UI pide al
+  // usuario que añada títulos en vez de enseñar recomendaciones al azar.
+  if (library.length < MIN_LIBRARY_ITEMS) return []
+
+  const pools = await fetchCandidatePools(locale, owned)
+  const candidates = Array.from(pools.values()).flat()
+  if (candidates.length === 0) return []
+
+  // El match es el criterio de la recomendación: sin él (gate de señal mínima de
+  // computeMatchScores) no hay nada por lo que ordenar ni que mostrar en el badge.
+  const scores = await computeMatchScores(userId, candidates, supabase)
+  if (scores.size === 0) return []
+
+  const shortlist = shortlistByType(pools, scores)
+  const picks = resolvePicks(shortlist, scores, await chooseWithClaude(shortlist, scores, library, topGenres, locale))
+
+  setCached(cacheKey, picks)
+  return picks
+}
+
+/**
+ * Pide a Claude que elija y explique. Cualquier fallo (sin clave, error de API,
+ * respuesta no parseable) devuelve un mapa vacío → `resolvePicks` cae al de
+ * mayor match de cada tipo y la sección sigue mostrando sus 7 cards.
+ */
+async function chooseWithClaude(
+  shortlist: Map<MediaType, MediaItem[]>,
+  scores: Map<string, number>,
+  library: LibraryItem[],
+  topGenres: string[],
+  locale: string
+): Promise<Map<string, string>> {
+  // Opcional en el schema: graceful, degrada al orden por match si no está.
   const apiKey = env.ANTHROPIC_API_KEY
   if (!apiKey) {
-    // Clave opcional ausente — degradación esperada, no un fallo. warn, no error
-    // (evita ruido en Sentry en despliegues sin recomendaciones IA configuradas).
-    log.warn('ANTHROPIC_API_KEY not set — recomendaciones IA deshabilitadas')
-    return []
+    log.warn('ANTHROPIC_API_KEY not set — se recomienda solo por match, sin explicación')
+    return new Map()
   }
 
-  const client = new Anthropic({ apiKey })
-
-  let rawText: string
   try {
+    const client = new Anthropic({ apiKey })
     const message = await client.messages.create({
       model: 'claude-haiku-4-5',
       max_tokens: 1024,
-      system: 'Eres un motor de recomendaciones de contenido cultural. Respondes ÚNICAMENTE con JSON válido, sin explicaciones ni texto adicional.',
+      system: 'Eres un motor de recomendaciones de contenido cultural. Eliges ÚNICAMENTE entre los candidatos que se te dan y respondes ÚNICAMENTE con JSON válido, sin explicaciones ni texto adicional.',
       messages: [
-        { role: 'user', content: buildPrompt(items, topGenres, locale) },
+        { role: 'user', content: buildPickPrompt(shortlist, scores, library, topGenres, locale) },
       ],
     })
     const block = message.content[0]
-    if (block.type !== 'text') return []
-    rawText = block.text
+    if (block.type !== 'text') return new Map()
+    return parsePicks(block.text)
   } catch (err) {
     log.error('Claude API error', { err })
-    return []
-  }
-
-  // Parsear y validar JSON
-  // Nota: el regex extrae el primer bloque {...}. Si el modelo responde con un array
-  // raíz ([{...}]) en lugar de un objeto, jsonMatch es null y se devuelve [].
-  // El schema del prompt pide siempre un objeto, así que es poco probable.
-  try {
-    const jsonMatch = rawText.match(/\{[\s\S]*\}/)
-    if (!jsonMatch) return []
-
-    const parsed = JSON.parse(jsonMatch[0]) as { recommendations?: unknown[] }
-
-    if (!Array.isArray(parsed.recommendations)) return []
-
-    const currentYear = new Date().getFullYear()
-    const recs: AiRec[] = parsed.recommendations
-      .filter((r): r is Record<string, unknown> => typeof r === 'object' && r !== null)
-      .filter((r) => {
-        return typeof r.title === 'string' && r.title.trim() !== '' &&
-          isValidType(r.type) &&
-          typeof r.reason === 'string' && r.reason.trim() !== ''
-      })
-      .slice(0, 5)
-      .map((r) => ({
-        title: (r.title as string).trim(),
-        type: r.type as MediaType,
-        year: typeof r.year === 'number' && r.year > 1800 && r.year <= currentYear + 5
-          ? r.year : undefined,
-        reason: (r.reason as string).trim(),
-        // searchQuery sin codificar: se usa tal cual para la búsqueda real, y el
-        // componente lo codifica al construir el href de fallback a /search.
-        searchQuery: typeof r.searchQuery === 'string' && (r.searchQuery as string).trim() !== ''
-          ? (r.searchQuery as string).trim()
-          : (r.title as string).trim(),
-      }))
-
-    const results = await resolveMediaRefs(recs, locale)
-
-    setCached(cacheKey, results)
-    return results
-  } catch (err) {
-    log.error('Failed to parse Claude response', { err })
-    return []
+    return new Map()
   }
 }
