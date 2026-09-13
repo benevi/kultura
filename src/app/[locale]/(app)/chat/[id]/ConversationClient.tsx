@@ -223,6 +223,13 @@ export function ConversationClient({ conversationId, otherUser, currentUserId }:
                 />
               )}
               <div className={`max-w-[75%] ${isMine ? 'items-end' : 'items-start'} flex flex-col gap-1`}>
+                {/* En los recibidos, el nombre de quien escribe acompaña al
+                    avatar: sin él solo se veían unas iniciales sueltas. */}
+                {!isMine && msg.users?.username && (
+                  <span className="text-xs font-semibold text-text-secondary px-1">
+                    {msg.users.username}
+                  </span>
+                )}
                 <div
                   className="px-3.5 py-2.5 text-sm leading-relaxed"
                   style={
