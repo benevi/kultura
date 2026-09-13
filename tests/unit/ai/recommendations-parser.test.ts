@@ -1,66 +1,106 @@
 // ============================================================
-// KULTURA — getAiRecommendations parser y validación (E67)
-// Carga el módulo REAL @/lib/claude/recommendations (sin mock del
-// módulo) para ejercer el parsing/validación de verdad. Solo se
-// mockean las dependencias externas: Anthropic SDK, Supabase y search.
+// KULTURA — Parseo de la respuesta del modelo (E-AIREC-CATALOG)
+//
+// Carga el módulo REAL @/lib/claude/recommendations para ejercer el parseo de
+// verdad; solo se mockean las dependencias externas (Anthropic SDK, Supabase,
+// catálogo y match).
+//
+// Invariante que cubre este archivo: una respuesta rota del modelo NUNCA deja la
+// sección vacía. Los candidatos son reales y ya vienen ordenados por match, así
+// que lo peor que puede pasar es servirlos sin explicación.
 // ============================================================
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
+import type { MediaItem, MediaType } from '@/types/media'
 
-// searchByType se mockea hoisted para sobrevivir a vi.resetModules().
-// Devuelve un match con poster por defecto — resolveMediaRefs descarta
-// cualquier recomendación sin portada (E-IA-POSTER), así que el resto de
-// estos tests (que ejercen el parsing de title/type/reason/year, no la
-// resolución de portada) necesitan un mock con poster para no ser filtrados.
-const { searchByTypeMock } = vi.hoisted(() => ({ searchByTypeMock: vi.fn() }))
-vi.mock('@/lib/api/search', () => ({ searchByType: searchByTypeMock }))
+const { fetchDiscoverDataMock, computeMatchScoresMock } = vi.hoisted(() => ({
+  fetchDiscoverDataMock: vi.fn(),
+  computeMatchScoresMock: vi.fn(),
+}))
 
-// year: 2020 para que coincida (±1) con los recs de tipo/título/reason de
-// abajo — desde que pickBestMatch exige año cuando la rec trae uno, un match
-// sin año no basta para que estos tests de parsing (ajenos a la lógica de
-// matching) sigan resolviendo con éxito.
-const MOCK_MATCH = { id: 'movie_1', poster: 'https://example.com/poster.jpg', year: 2020 }
+vi.mock('@/lib/api/discover', () => ({ fetchDiscoverData: fetchDiscoverDataMock }))
+vi.mock('@/lib/recommendations/match-score', () => ({
+  computeMatchScores: computeMatchScoresMock,
+}))
 
-// getLibraryContext espera filas anidadas { status, score, media: { title, type, year } }
-// (ver recommendations.ts:96-103), no la forma plana.
-const LIBRARY_ITEMS = Array.from({ length: 5 }, (_, i) => ({
+function makeItem(type: MediaType, externalId: string): MediaItem {
+  return {
+    id: `${type}_${externalId}`,
+    externalId,
+    type,
+    title: `${type} ${externalId}`,
+    poster: `https://img/${type}-${externalId}.jpg`,
+    year: 2024,
+    genres: ['Drama'],
+  }
+}
+
+const LIBRARY_ROWS = Array.from({ length: 5 }, (_, i) => ({
   status: 'completed',
   score: 4,
   media: { title: `Movie ${i}`, type: 'movie', year: 2020 },
 }))
 
-function makeSupabaseMock(data: unknown[]) {
+// Dos candidatos de un solo tipo: 'best' tiene más match que 'second', así que
+// el fallback por match es observable (siempre 'best').
+const POOL = [makeItem('movie', 'best'), makeItem('movie', 'second')]
+const SCORES: Record<string, number> = { movie_best: 90, movie_second: 30 }
+
+function makeSupabaseMock(libraryRows: unknown[] = LIBRARY_ROWS) {
   return {
     createClient: () => ({
       auth: { getUser: vi.fn() },
-      from: vi.fn().mockReturnValue({
-        select: vi.fn().mockReturnThis(),
-        eq: vi.fn().mockReturnThis(),
-        or: vi.fn().mockReturnThis(),
-        order: vi.fn().mockReturnThis(),
-        limit: vi.fn().mockResolvedValue({ data, error: null }),
-      }),
+      from: vi.fn(() => ({
+        select: vi.fn((columns: string) => {
+          if (columns === 'media_id') {
+            return { eq: vi.fn().mockResolvedValue({ data: [], error: null }) }
+          }
+          const chain: Record<string, unknown> = {}
+          chain.eq = vi.fn(() => chain)
+          chain.or = vi.fn(() => chain)
+          chain.order = vi.fn(() => chain)
+          chain.limit = vi.fn().mockResolvedValue({ data: libraryRows, error: null })
+          return chain
+        }),
+      })),
     }),
   }
 }
 
-function makeAnthropicMock(responseText: string) {
+function makeAnthropicMock(content: unknown[]) {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const Ctor = vi.fn().mockImplementation(function(this: any) {
-    this.messages = {
-      create: vi.fn().mockResolvedValue({
-        content: [{ type: 'text', text: responseText }],
-      }),
-    }
+  const Ctor = vi.fn().mockImplementation(function (this: any) {
+    this.messages = { create: vi.fn().mockResolvedValue({ content }) }
   })
   return { default: Ctor }
 }
 
-describe('getAiRecommendations — parser y validación', () => {
+function makeTextAnthropicMock(text: string) {
+  return makeAnthropicMock([{ type: 'text', text }])
+}
+
+/** Ejecuta getAiRecommendations con la respuesta de modelo dada. */
+async function runWithModelResponse(userId: string, text: string) {
+  vi.doMock('@anthropic-ai/sdk', () => makeTextAnthropicMock(text))
+  vi.doMock('@/lib/supabase/server', () => makeSupabaseMock())
+  const { getAiRecommendations } = await import('@/lib/claude/recommendations')
+  return getAiRecommendations(userId, ['Drama'], 'es')
+}
+
+describe('getAiRecommendations — parseo de la respuesta del modelo', () => {
   beforeEach(() => {
     vi.resetModules()
-    searchByTypeMock.mockReset()
-    searchByTypeMock.mockResolvedValue([MOCK_MATCH])
+    fetchDiscoverDataMock.mockReset()
+    fetchDiscoverDataMock.mockImplementation(async (type: string) => ({
+      items: type === 'movie' ? POOL : [],
+      totalPages: 1,
+      hasMore: false,
+      fetchErrorKind: null,
+    }))
+    computeMatchScoresMock.mockReset()
+    computeMatchScoresMock.mockImplementation(async (_userId: string, items: MediaItem[]) =>
+      new Map(items.map((item) => [item.id, SCORES[item.id] ?? 0]))
+    )
     vi.stubEnv('ANTHROPIC_API_KEY', 'sk-ant-test-key')
   })
 
@@ -70,105 +110,87 @@ describe('getAiRecommendations — parser y validación', () => {
     vi.unstubAllEnvs()
   })
 
-  it('returns [] if library has fewer than 3 items', async () => {
-    vi.doMock('@/lib/supabase/server', () => makeSupabaseMock(LIBRARY_ITEMS.slice(0, 2)))
+  it('respuesta válida → usa el pick y su explicación', async () => {
+    const recs = await runWithModelResponse('p-ok', JSON.stringify({
+      picks: [{ id: 'movie_second', reason: 'Más cercano a tus dramas favoritos.' }],
+    }))
 
-    const { getAiRecommendations } = await import('@/lib/claude/recommendations')
-    const result = await getAiRecommendations('user-001', ['Drama'])
-    expect(result).toEqual([])
+    expect(recs[0].item.id).toBe('movie_second')
+    expect(recs[0].reason).toBe('Más cercano a tus dramas favoritos.')
   })
 
-  it('filters recommendations with invalid type from Claude', async () => {
-    vi.doMock('@anthropic-ai/sdk', () => makeAnthropicMock(JSON.stringify({
-      recommendations: [
-        { title: 'Valid Movie', type: 'movie', year: 2020, reason: 'Great film' },
-        { title: 'Podcast Thing', type: 'podcast', year: 2021, reason: 'test' },
-        { title: 'Music Album', type: 'music', year: 2022, reason: 'test' },
-      ],
-    })))
-    vi.doMock('@/lib/supabase/server', () => makeSupabaseMock(LIBRARY_ITEMS))
+  it('JSON dentro de texto/markdown → se extrae el bloque igualmente', async () => {
+    const recs = await runWithModelResponse(
+      'p-markdown',
+      'Aquí tienes:\n```json\n{"picks":[{"id":"movie_second","reason":"Vale."}]}\n```'
+    )
 
-    const { getAiRecommendations } = await import('@/lib/claude/recommendations')
-    const result = await getAiRecommendations('user-001', ['Drama'])
-    // Solo 'movie' pasa el filtro — 'podcast' y 'music' son tipos inválidos
-    expect(result.map((r) => r.type)).toEqual(['movie'])
-    expect(result[0].title).toBe('Valid Movie')
+    expect(recs[0].item.id).toBe('movie_second')
+    expect(recs[0].reason).toBe('Vale.')
   })
 
-  it('filters recommendations with empty title or reason', async () => {
-    vi.doMock('@anthropic-ai/sdk', () => makeAnthropicMock(JSON.stringify({
-      recommendations: [
-        { title: 'Valid Movie', type: 'movie', year: 2020, reason: 'Great film' },
-        { title: '', type: 'movie', year: 2020, reason: 'Has empty title' },
-        { title: 'No reason movie', type: 'tv', year: 2020, reason: '' },
-      ],
-    })))
-    vi.doMock('@/lib/supabase/server', () => makeSupabaseMock(LIBRARY_ITEMS))
+  it('respuesta sin JSON → cae al de mayor match, sin explicación', async () => {
+    const recs = await runWithModelResponse('p-nojson', 'No puedo ayudarte con eso.')
 
-    const { getAiRecommendations } = await import('@/lib/claude/recommendations')
-    const result = await getAiRecommendations('user-001', ['Drama'])
-    // Solo el item con title y reason no vacíos pasa
-    expect(result).toHaveLength(1)
-    expect(result[0].title).toBe('Valid Movie')
+    expect(recs).toHaveLength(1)
+    expect(recs[0].item.id).toBe('movie_best')
+    expect(recs[0].reason).toBeUndefined()
   })
 
-  it('returns [] if Claude returns malformed JSON', async () => {
-    vi.doMock('@anthropic-ai/sdk', () => makeAnthropicMock('Aquí tienes mis recomendaciones: no es JSON'))
-    vi.doMock('@/lib/supabase/server', () => makeSupabaseMock(LIBRARY_ITEMS))
+  it('JSON malformado → cae al de mayor match', async () => {
+    const recs = await runWithModelResponse('p-broken', '{"picks":[{"id":"movie_second",}')
 
-    const { getAiRecommendations } = await import('@/lib/claude/recommendations')
-    const result = await getAiRecommendations('user-001', ['Drama'])
-    expect(result).toEqual([])
+    expect(recs[0].item.id).toBe('movie_best')
+    expect(recs[0].reason).toBeUndefined()
   })
 
-  it('clamps year to undefined if out of valid range', async () => {
-    vi.doMock('@anthropic-ai/sdk', () => makeAnthropicMock(JSON.stringify({
-      recommendations: [
-        { title: 'Ancient Recs', type: 'movie', year: 1700, reason: 'Too old year' },
-        { title: 'String Year', type: 'book', year: 'época medieval', reason: 'Non-numeric year' },
-        { title: 'Valid Year', type: 'anime', year: 2010, reason: 'Good year' },
-      ],
-    })))
-    vi.doMock('@/lib/supabase/server', () => makeSupabaseMock(LIBRARY_ITEMS))
+  it('"picks" que no es array → cae al de mayor match', async () => {
+    const recs = await runWithModelResponse('p-notarray', '{"picks":"movie_second"}')
 
-    // 'Valid Year' resuelve con year:2010 — el MOCK_MATCH por defecto (year:2020)
-    // no coincidiría (±1) con él, así que aquí necesita su propio año.
-    searchByTypeMock.mockResolvedValue([{ id: 'movie_1', poster: 'https://example.com/poster.jpg', year: 2010 }])
-
-    const { getAiRecommendations } = await import('@/lib/claude/recommendations')
-    const result = await getAiRecommendations('user-001', ['Drama'])
-    // Los 3 items pasan los filtros de type/title/reason; solo cambia el año.
-    expect(result).toHaveLength(3)
-    // 1700 (< 1800) → undefined
-    expect(result.find((r) => r.title === 'Ancient Recs')?.year).toBeUndefined()
-    // string no numérico → undefined
-    expect(result.find((r) => r.title === 'String Year')?.year).toBeUndefined()
-    // 2010 válido → se conserva
-    expect(result.find((r) => r.title === 'Valid Year')?.year).toBe(2010)
+    expect(recs[0].item.id).toBe('movie_best')
   })
 
-  it('discards recommendations resolved without poster (no card sin portada)', async () => {
-    vi.doMock('@anthropic-ai/sdk', () => makeAnthropicMock(JSON.stringify({
-      recommendations: [
-        { title: 'Has Poster', type: 'movie', year: 2020, reason: 'ok' },
-        { title: 'No Poster Match', type: 'movie', year: 2020, reason: 'ok' },
-        { title: 'No Match At All', type: 'movie', year: 2020, reason: 'ok' },
-      ],
-    })))
-    vi.doMock('@/lib/supabase/server', () => makeSupabaseMock(LIBRARY_ITEMS))
+  it('array raíz (sin objeto envolvente) → cae al de mayor match', async () => {
+    const recs = await runWithModelResponse('p-rootarray', '[{"id":"movie_second","reason":"x"}]')
 
-    searchByTypeMock.mockImplementation(async (query: string) => {
-      if (query === 'Has Poster') return [MOCK_MATCH]
-      if (query === 'No Poster Match') return [{ id: 'movie_2', poster: undefined }]
-      return []
-    })
+    expect(recs[0].item.id).toBe('movie_best')
+  })
+
+  it('pick con reason vacía se ignora → de mayor match y sin explicación', async () => {
+    const recs = await runWithModelResponse('p-emptyreason', JSON.stringify({
+      picks: [{ id: 'movie_second', reason: '   ' }],
+    }))
+
+    expect(recs[0].item.id).toBe('movie_best')
+    expect(recs[0].reason).toBeUndefined()
+  })
+
+  it('pick con id no-string o entradas basura se ignoran sin romper el resto', async () => {
+    const recs = await runWithModelResponse('p-garbage', JSON.stringify({
+      picks: [null, 42, { id: 123, reason: 'ignorada' }, { id: 'movie_second', reason: 'válida' }],
+    }))
+
+    expect(recs[0].item.id).toBe('movie_second')
+    expect(recs[0].reason).toBe('válida')
+  })
+
+  it('recorta los espacios de la explicación', async () => {
+    const recs = await runWithModelResponse('p-trim', JSON.stringify({
+      picks: [{ id: 'movie_second', reason: '  con espacios  ' }],
+    }))
+
+    expect(recs[0].reason).toBe('con espacios')
+  })
+
+  it('bloque de contenido no textual → cae al de mayor match', async () => {
+    vi.doMock('@anthropic-ai/sdk', () => makeAnthropicMock([{ type: 'tool_use', id: 'x', name: 'y', input: {} }]))
+    vi.doMock('@/lib/supabase/server', () => makeSupabaseMock())
 
     const { getAiRecommendations } = await import('@/lib/claude/recommendations')
-    const result = await getAiRecommendations('user-001', ['Drama'])
-    expect(result).toHaveLength(1)
-    expect(result[0].title).toBe('Has Poster')
-    expect(result[0].posterUrl).toBeTruthy()
-    // Ninguna rec sin portada debería tener mediaUrl (no se puede navegar a su ficha).
-    expect(result.every((r) => Boolean(r.posterUrl))).toBe(true)
+    const recs = await getAiRecommendations('p-nontext', ['Drama'], 'es')
+
+    expect(recs).toHaveLength(1)
+    expect(recs[0].item.id).toBe('movie_best')
+    expect(recs[0].reason).toBeUndefined()
   })
 })
