@@ -361,7 +361,7 @@ describe('getAiRecommendations', () => {
 
 // ── Cache ─────────────────────────────────────────────────────────────────────
 
-describe('getAiRecommendations — cache por usuario/locale/versión', () => {
+describe('getAiRecommendations — rotación y cache de la shortlist', () => {
   beforeEach(() => {
     vi.resetModules()
     fetchDiscoverDataMock.mockReset()
@@ -377,16 +377,45 @@ describe('getAiRecommendations — cache por usuario/locale/versión', () => {
     vi.unstubAllEnvs()
   })
 
-  it('mismo locale → cache hit (sin segunda llamada a Claude)', async () => {
+  // E-AIREC-ROTACION: la queja era que la sección enseñaba SIEMPRE lo mismo.
+  it('dos visitas seguidas recomiendan títulos distintos', async () => {
+    // Shortlist de 3 por tipo: la ventana rota y no repite en la visita siguiente.
+    withPools({
+      movie: [makeItem('movie', 'a'), makeItem('movie', 'b'), makeItem('movie', 'c')],
+    })
+    withScores({ movie_a: 90, movie_b: 80, movie_c: 70 })
+    vi.doMock('@anthropic-ai/sdk', () => makeAnthropicMock(claudeReturning('{"picks":[]}')))
+    vi.doMock('@/lib/supabase/server', () => makeSupabaseMock())
+
+    const { getAiRecommendations } = await import('@/lib/claude/recommendations')
+    const first = await getAiRecommendations('u-rotate', [], 'es')
+    const second = await getAiRecommendations('u-rotate', [], 'es')
+
+    expect(first[0].item.id).not.toBe(second[0].item.id)
+  })
+
+  it('la shortlist se cachea: la segunda visita no vuelve a barrer el catálogo', async () => {
+    vi.doMock('@anthropic-ai/sdk', () => makeAnthropicMock(claudeReturning('{"picks":[]}')))
+    vi.doMock('@/lib/supabase/server', () => makeSupabaseMock())
+
+    const { getAiRecommendations } = await import('@/lib/claude/recommendations')
+    await getAiRecommendations('u-pool', [], 'es')
+    const afterFirst = fetchDiscoverDataMock.mock.calls.length
+    await getAiRecommendations('u-pool', [], 'es')
+
+    expect(fetchDiscoverDataMock.mock.calls.length).toBe(afterFirst)
+  })
+
+  it('cada visita sí consulta a Claude: es lo que hace variar la elección', async () => {
     const createMock = claudeReturning('{"picks":[]}')
     vi.doMock('@anthropic-ai/sdk', () => makeAnthropicMock(createMock))
     vi.doMock('@/lib/supabase/server', () => makeSupabaseMock())
 
     const { getAiRecommendations } = await import('@/lib/claude/recommendations')
-    await getAiRecommendations('u-cache', [], 'es')
-    await getAiRecommendations('u-cache', [], 'es')
+    await getAiRecommendations('u-claude-each', [], 'es')
+    await getAiRecommendations('u-claude-each', [], 'es')
 
-    expect(createMock).toHaveBeenCalledTimes(1)
+    expect(createMock).toHaveBeenCalledTimes(2)
   })
 
   it('locale distinto → clave distinta → se vuelve a generar', async () => {

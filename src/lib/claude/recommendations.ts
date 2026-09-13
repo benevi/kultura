@@ -65,8 +65,25 @@ const RECOMMENDABLE_TYPES: MediaType[] = [
   'game',
 ]
 
-/** Candidatos por tipo que se le ofrecen a Claude para que elija. */
+/** Candidatos por tipo que se guardan en la shortlist cacheada, ordenados por match. */
 const CANDIDATES_PER_TYPE = 5
+
+/**
+ * Cuántos de esa shortlist se le ofrecen a Claude EN CADA VISITA (E-AIREC-ROTACION).
+ *
+ * La sección enseñaba siempre lo mismo: la shortlist se ordena por match, así
+ * que el mejor de cada tipo ganaba una y otra vez. Ahora la ventana rota en
+ * cada visita a Inicio, de modo que Claude elige entre candidatos distintos sin
+ * dejar de decidir por match — la alternativa (elegir al azar) habría roto
+ * justo el criterio que pediste.
+ */
+const WINDOW_PER_TYPE = 2
+
+/**
+ * Páginas de catálogo entre las que rota la shortlist al refrescarse. Sin esto
+ * los candidatos saldrían siempre del mismo puñado de títulos populares.
+ */
+const CATALOG_PAGES = 3
 
 /** Mínimo de items con señal en biblioteca (mismo gate que computeMatchScores). */
 const MIN_LIBRARY_ITEMS = 3
@@ -79,37 +96,47 @@ interface LibraryItem {
   status: string
 }
 
-// ── Cache TTL en memoria ──────────────────────────────────────────────────────
-// TTL: 1h. En multi-instancia de Vercel, migrar a KV/Redis.
+// ── Cache en memoria ──────────────────────────────────────────────────────────
+//
+// Lo que se cachea es la SHORTLIST (lo caro: 7 llamadas a proveedores + el
+// cálculo de match), NO el resultado final. Así cada visita puede enseñar una
+// recomendación distinta sin volver a barrer el catálogo.
+// En multi-instancia de Vercel, migrar a KV/Redis.
 
-const REC_CACHE_TTL_MS = 60 * 60 * 1000 // 1 hora
+const POOL_CACHE_TTL_MS = 30 * 60 * 1000 // 30 min
 
-interface CacheEntry {
-  data: AiRec[]
+interface ShortlistEntry {
+  shortlist: Map<MediaType, MediaItem[]>
+  scores: Map<string, number>
   expiresAt: number
 }
 
-const recCache = new Map<string, CacheEntry>()
+const poolCache = new Map<string, ShortlistEntry>()
 
-function getCached(key: string): AiRec[] | null {
-  const entry = recCache.get(key)
+/**
+ * Cuántas veces se ha servido ya la sección, por usuario e idioma: es lo que
+ * hace rotar la ventana de candidatos en cada visita (E-AIREC-ROTACION).
+ */
+const rotationCounter = new Map<string, number>()
+
+function getCachedPool(key: string): ShortlistEntry | null {
+  const entry = poolCache.get(key)
   if (!entry) return null
   if (Date.now() >= entry.expiresAt) {
-    recCache.delete(key)
+    poolCache.delete(key)
     return null
   }
-  return entry.data
-}
-
-function setCached(key: string, data: AiRec[]): void {
-  recCache.set(key, { data, expiresAt: Date.now() + REC_CACHE_TTL_MS })
+  return entry
 }
 
 /** Invalida todas las entradas de caché de un usuario (todas las variantes de locale/versión). */
 export function invalidateRecCache(userId: string): void {
   const prefix = `${userId}:`
-  Array.from(recCache.keys()).forEach((key) => {
-    if (key.startsWith(prefix)) recCache.delete(key)
+  Array.from(poolCache.keys()).forEach((key) => {
+    if (key.startsWith(prefix)) poolCache.delete(key)
+  })
+  Array.from(rotationCounter.keys()).forEach((key) => {
+    if (key.startsWith(prefix)) rotationCounter.delete(key)
   })
 }
 
@@ -165,11 +192,12 @@ async function getOwnedMediaIds(userId: string, supabase: SupabaseClient): Promi
  */
 async function fetchCandidatePools(
   locale: string,
-  owned: Set<string>
+  owned: Set<string>,
+  page = 1
 ): Promise<Map<MediaType, MediaItem[]>> {
   const entries = await Promise.all(
     RECOMMENDABLE_TYPES.map(async (type) => {
-      const res = await fetchDiscoverData(type, 1, {}, locale)
+      const res = await fetchDiscoverData(type, page, {}, locale)
       if (res.fetchErrorKind) {
         log.warn('candidatos vacíos por fallo de proveedor', { type, kind: res.fetchErrorKind })
       }
@@ -196,6 +224,29 @@ function shortlistByType(
     shortlist.set(type, ranked.slice(0, CANDIDATES_PER_TYPE))
   })
   return shortlist
+}
+
+/**
+ * Ventana rotada de candidatos para ESTA visita (E-AIREC-ROTACION).
+ *
+ * Cada tipo arranca en un punto distinto de su shortlist (`offset` + índice del
+ * tipo) y da la vuelta al llegar al final, así que dos visitas seguidas no
+ * ofrecen los mismos títulos aunque la shortlist esté cacheada. Se sigue
+ * eligiendo por match: la ventana solo decide entre CUÁLES se elige.
+ */
+function rotateWindow(
+  shortlist: Map<MediaType, MediaItem[]>,
+  offset: number
+): Map<MediaType, MediaItem[]> {
+  const windowed = new Map<MediaType, MediaItem[]>()
+  Array.from(shortlist.entries()).forEach(([type, items], typeIndex) => {
+    if (items.length === 0) return
+    const start = (offset + typeIndex) % items.length
+    const size = Math.min(WINDOW_PER_TYPE, items.length)
+    const picked = Array.from({ length: size }, (_, i) => items[(start + i) % items.length])
+    windowed.set(type, picked)
+  })
+  return windowed
 }
 
 /**
@@ -334,35 +385,45 @@ export async function getAiRecommendations(
   supabaseClient?: SupabaseClient
 ): Promise<AiRec[]> {
   const cacheKey = `${userId}:${locale}:${PROMPT_VERSION}`
-
-  const cached = getCached(cacheKey)
-  if (cached) return cached
-
   const supabase = supabaseClient ?? createClient()
 
-  const [library, owned] = await Promise.all([
-    getLibraryContext(userId, supabase),
-    getOwnedMediaIds(userId, supabase),
-  ])
+  const library = await getLibraryContext(userId, supabase)
 
   // Sin contexto suficiente no hay perfil de gustos fiable: la UI pide al
   // usuario que añada títulos en vez de enseñar recomendaciones al azar.
   if (library.length < MIN_LIBRARY_ITEMS) return []
 
-  const pools = await fetchCandidatePools(locale, owned)
-  const candidates = Array.from(pools.values()).flat()
-  if (candidates.length === 0) return []
+  const offset = rotationCounter.get(cacheKey) ?? 0
+  rotationCounter.set(cacheKey, offset + 1)
 
-  // El match es el criterio de la recomendación: sin él (gate de señal mínima de
-  // computeMatchScores) no hay nada por lo que ordenar ni que mostrar en el badge.
-  const scores = await computeMatchScores(userId, candidates, supabase, locale)
-  if (scores.size === 0) return []
+  // Lo caro (barrer 7 catálogos + calcular match) se cachea; lo que cambia en
+  // cada visita es QUÉ parte de esa shortlist se ofrece (E-AIREC-ROTACION).
+  let entry = getCachedPool(cacheKey)
+  if (!entry) {
+    const owned = await getOwnedMediaIds(userId, supabase)
+    // Al refrescar la shortlist se rota también la página del catálogo: si no,
+    // los candidatos saldrían siempre del mismo puñado de títulos populares.
+    const pools = await fetchCandidatePools(locale, owned, 1 + (offset % CATALOG_PAGES))
+    const candidates = Array.from(pools.values()).flat()
+    if (candidates.length === 0) return []
 
-  const shortlist = shortlistByType(pools, scores)
-  const picks = resolvePicks(shortlist, scores, await chooseWithClaude(shortlist, scores, library, topGenres, locale))
+    // El match es el criterio de la recomendación: sin él (gate de señal mínima
+    // de computeMatchScores) no hay nada por lo que ordenar ni que mostrar en
+    // el badge.
+    const scores = await computeMatchScores(userId, candidates, supabase, locale)
+    if (scores.size === 0) return []
 
-  setCached(cacheKey, picks)
-  return picks
+    entry = {
+      shortlist: shortlistByType(pools, scores),
+      scores,
+      expiresAt: Date.now() + POOL_CACHE_TTL_MS,
+    }
+    poolCache.set(cacheKey, entry)
+  }
+
+  const windowed = rotateWindow(entry.shortlist, offset)
+  const chosen = await chooseWithClaude(windowed, entry.scores, library, topGenres, locale)
+  return resolvePicks(windowed, entry.scores, chosen)
 }
 
 /**
