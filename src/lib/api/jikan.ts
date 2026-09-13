@@ -66,13 +66,28 @@ export class JikanError extends Error {
 
 // ── Helper ────────────────────────────────────────────────────────────────────
 
+/**
+ * Jikan está detrás de Cloudflare, y Cloudflare puede bloquear peticiones sin
+ * un `User-Agent` identificable como tráfico de bot (patrón típico de IPs de
+ * datacenter/serverless como las de Vercel, que llegan sin el header por
+ * defecto de `fetch`). Los propios docs de Jikan recomiendan identificar la
+ * app. No verificado en vivo desde este entorno (sandbox sin acceso de red a
+ * api.jikan.moe) — candidato principal al fallo de anime en producción
+ * reportado por el usuario (un bloqueo de Cloudflare da 403, que
+ * `fetchErrorKind` clasifica como 'generic', igual que el banner que se vio).
+ */
+const JIKAN_HEADERS = {
+  "User-Agent": "KulturaApp/1.0 (+https://kultura.app)",
+  Accept: "application/json",
+};
+
 async function jikanFetch<T>(
   path: string,
   params: Record<string, string> = {}
 ): Promise<T> {
   const url = new URL(`https://api.jikan.moe/v4${path}`);
   Object.entries(params).forEach(([k, v]) => url.searchParams.set(k, v));
-  const res = await fetch(url.toString());
+  const res = await fetch(url.toString(), { headers: JIKAN_HEADERS });
   if (!res.ok) throw new JikanError(path, res.status);
   return res.json() as Promise<T>;
 }
