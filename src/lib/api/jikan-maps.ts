@@ -151,8 +151,12 @@ function mapSlugs(
 /**
  * Construye los params nativos de /anime o /manga. order_by+sort siempre
  * presentes. genres (género + demografía) en un único CSV (OR). Vacío/inválido
- * se omite. Devuelve {} salvo order_by/sort si no hay filtros reales — el caller
- * decide si usar este builder o /top/* según hasJikanFilters.
+ * se omite. Devuelve {} salvo order_by/sort si no hay filtros reales.
+ *
+ * E-JIKAN-TOP-DOWN (2026-09-13): /top/anime devolvía 504 de forma persistente
+ * en producción (confirmado por logs reales) — anime ya NO usa /top/anime en
+ * ningún caso, siempre pasa por /anime (build de este builder), así que este
+ * builder ya no es condicional a si hay filtros o no.
  */
 export function buildJikanDiscoverParams(
   mediaType: JikanMediaType,
@@ -186,22 +190,6 @@ export function buildJikanDiscoverParams(
   if (minScore !== null) params.min_score = String(minScore);
 
   return params;
-}
-
-/**
- * True si los filtros implican usar el endpoint de búsqueda (/anime|/manga)
- * en vez de /top/*. Un sort distinto del default popularity también cuenta,
- * porque /top/* no admite order_by.
- */
-export function hasJikanFilters(filters: JikanFilters = {}): boolean {
-  return Boolean(
-    filters.genre?.length ||
-      filters.demografia ||
-      filters.year ||
-      filters.status ||
-      filters.valoracion ||
-      (filters.sort && filters.sort !== "popularity")
-  );
 }
 
 // ── Volúmenes (manga) — POST-filtro de mínimo ───────────────────────────────────

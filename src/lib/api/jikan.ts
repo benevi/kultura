@@ -121,21 +121,13 @@ export async function getAnime(id: number): Promise<{ data: JikanAnimeDetail }> 
   return jikanFetch<{ data: JikanAnimeDetail }>(`/anime/${id}/full`);
 }
 
-export async function getPopularAnime(
-  page = 1
-): Promise<JikanSearchResponse> {
-  // E86: sfw=true también en la rama sin filtros (cierra el hueco /top/anime).
-  return jikanFetch<JikanSearchResponse>("/top/anime", {
-    sfw: "true",
-    page: String(page),
-  });
-}
-
 /**
- * Descubre anime vía /anime (endpoint de búsqueda, que SÍ acepta filtros:
- * genres/status/order_by/start_date…). E59 F3b: se usa en lugar de /top/anime
- * cuando hay filtros activos; sin filtros se mantiene /top/anime (paridad).
- * `params` extra se pasan tal cual. sfw=true por defecto (catálogo familiar).
+ * Descubre anime vía /anime (endpoint de búsqueda, acepta filtros:
+ * genres/status/order_by/start_date…). E-JIKAN-TOP-DOWN (2026-09-13): es el
+ * ÚNICO endpoint que usa Descubrir para anime — `/top/anime` devolvía 504 de
+ * forma persistente en producción (confirmado por logs reales), así que se
+ * dejó de usar por completo, con o sin filtros. `params` extra se pasan tal
+ * cual. sfw=true por defecto (catálogo familiar).
  */
 export async function discoverAnime(
   page = 1,
@@ -152,43 +144,12 @@ export async function getAnimeVideos(id: number): Promise<JikanVideosResponse> {
   return jikanFetch<JikanVideosResponse>(`/anime/${id}/videos`);
 }
 
-// ── Manga ─────────────────────────────────────────────────────────────────────
-
-export async function searchManga(
-  query: string,
-  page = 1
-): Promise<JikanSearchResponse> {
-  return jikanFetch<JikanSearchResponse>("/manga", {
-    q: query,
-    page: String(page),
-  });
-}
+// ── Manga (solo lectura legacy) ──────────────────────────────────────────────
+// E-MANGA-SOURCE: manga se sirve con MangaDex (@/lib/api/mangadex). `getManga`
+// se conserva únicamente para resolver ids legacy de bibliotecas guardadas
+// cuando manga aún venía de Jikan (mal_id numérico, ver `resolveMangaItem` en
+// la ficha de detalle) — nunca se usa en Descubrir ni en búsqueda.
 
 export async function getManga(id: number): Promise<{ data: JikanMangaDetail }> {
   return jikanFetch<{ data: JikanMangaDetail }>(`/manga/${id}/full`);
-}
-
-export async function getPopularManga(
-  page = 1
-): Promise<JikanSearchResponse> {
-  // E86: sfw=true también en la rama sin filtros (cierra el hueco /top/manga).
-  return jikanFetch<JikanSearchResponse>("/top/manga", {
-    sfw: "true",
-    page: String(page),
-  });
-}
-
-/**
- * Descubre manga vía /manga (endpoint de búsqueda con filtros). E59 F3b:
- * análogo a discoverAnime — se usa cuando hay filtros, /top/manga sin ellos.
- */
-export async function discoverManga(
-  page = 1,
-  params: Record<string, string> = {}
-): Promise<JikanSearchResponse> {
-  return jikanFetch<JikanSearchResponse>("/manga", {
-    sfw: "true",
-    page: String(page),
-    ...params,
-  });
 }
