@@ -94,6 +94,14 @@ const nextConfig = {
         hostname: "cdn.myanimelist.net",
       },
       {
+        // E-ANIME-SOURCE: portadas de AniList (coverImage.extraLarge/large).
+        // `s4.anilist.co` es su CDN de medios; `myanimelist.net`/
+        // `cdn.myanimelist.net` arriba se conservan solo para fichas legacy
+        // de anime guardadas cuando la fuente era Jikan.
+        protocol: "https",
+        hostname: "s4.anilist.co",
+      },
+      {
         // ComicVine sirve imágenes desde su propio host (verificado: medium_url
         // = comicvine.gamespot.com/a/uploads/...). *.cbsistatic.com como respaldo
         // por si el CDN cambia.
