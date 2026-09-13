@@ -54,12 +54,13 @@ describe('buildTasteProfile', () => {
       { status: 'in_progress', score: null, media: { type: 'anime', metadata: { genres: ['Action'] } } },
     ])
     expect(profile.signalCount).toBe(3)
-    // Drama (peso 5) es el género dominante → normalizado a 1
-    expect(profile.genreWeights.get('Drama')).toBe(1)
+    // E-MATCH-VOCAB: el perfil se indexa por slug canónico, no por el nombre
+    // del proveedor. Drama (peso 5) es el género dominante → normalizado a 1
+    expect(profile.genreWeights.get('drama')).toBe(1)
     // Comedy (peso 3, status completed sin score) < Drama
-    expect(profile.genreWeights.get('Comedy')).toBeCloseTo(3 / 5)
+    expect(profile.genreWeights.get('comedia')).toBeCloseTo(3 / 5)
     // Action (peso 1, in_progress) es el más bajo
-    expect(profile.genreWeights.get('Action')).toBeCloseTo(1 / 5)
+    expect(profile.genreWeights.get('accion')).toBeCloseTo(1 / 5)
   })
 
   it('ignora filas sin media asociada (join nulo)', () => {
@@ -75,13 +76,40 @@ describe('buildTasteProfile', () => {
       { status: 'completed', score: 3, media: { type: 'tv', metadata: { genres: ['Drama'] } } },
     ])
     // Drama acumula 4+3=7, es el único género → normalizado a 1
-    expect(profile.genreWeights.get('Drama')).toBe(1)
+    expect(profile.genreWeights.get('drama')).toBe(1)
+  })
+
+  // E-MATCH-VOCAB — el motivo de existir del vocabulario canónico.
+  it('cruza proveedores e idiomas: "Acción" (TMDB es) y "Action" (AniList) son el mismo género', () => {
+    const profile = buildTasteProfile([
+      { status: 'completed', score: 5, media: { type: 'movie', metadata: { genres: ['Acción'] } } },
+      { status: 'completed', score: 5, media: { type: 'anime', metadata: { genres: ['Action'] } } },
+    ])
+    expect(profile.genreWeights.get('accion')).toBe(1)
+    expect(profile.genreWeights.size).toBe(1)
+  })
+
+  it('expande los géneros combinados de TMDB en televisión', () => {
+    const profile = buildTasteProfile([
+      { status: 'completed', score: 5, media: { type: 'tv', metadata: { genres: ['Sci-Fi & Fantasy'] } } },
+    ])
+    expect(profile.genreWeights.get('ciencia-ficcion')).toBe(1)
+    expect(profile.genreWeights.get('fantasia')).toBe(1)
+  })
+
+  it('ignora los géneros que el vocabulario canónico no cubre', () => {
+    const profile = buildTasteProfile([
+      { status: 'completed', score: 5, media: { type: 'anime', metadata: { genres: ['Mecha', 'Action'] } } },
+    ])
+    expect(profile.genreWeights.has('accion')).toBe(true)
+    expect(profile.genreWeights.size).toBe(1)
   })
 })
 
 describe('scoreItem', () => {
+  // Perfil ya en vocabulario canónico (así lo produce buildTasteProfile).
   const profile = {
-    genreWeights: new Map([['Drama', 1], ['Comedy', 0.5]]),
+    genreWeights: new Map([['drama', 1], ['comedia', 0.5]]),
     typeWeights: new Map([['movie', 1], ['tv', 0.4]]),
     signalCount: 5,
   }

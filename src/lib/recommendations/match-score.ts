@@ -12,6 +12,7 @@ import { createClient } from '@/lib/supabase/server'
 import type { SupabaseClient } from '@supabase/supabase-js'
 import type { MediaItem } from '@/types/media'
 import { backfillGenres } from '@/lib/library/backfill-genres'
+import { canonicalGenres } from '@/lib/recommendations/genre-canonical'
 import { createLogger } from '@/lib/logger'
 
 const log = createLogger('recommendations/match-score')
@@ -72,7 +73,11 @@ export function buildTasteProfile(rows: TasteSignalRow[]): TasteProfile {
     if (weight <= 0 || !row.media) continue
     signalCount++
 
-    const genres = (row.media.metadata?.genres as string[] | undefined) ?? []
+    // E-MATCH-VOCAB: el perfil se indexa por slug canónico, no por el nombre
+    // que puso el proveedor — así una biblioteca de cine en español puede
+    // puntuar un anime o un juego, y cambiar el idioma de la app no parte el
+    // perfil en dos ("Acción" vs "Action").
+    const genres = canonicalGenres(row.media.metadata?.genres as string[] | undefined)
     for (const genre of genres) {
       genreWeights.set(genre, (genreWeights.get(genre) ?? 0) + weight)
     }
@@ -105,7 +110,8 @@ export function scoreItem(
 ): number {
   const includeTypeAffinity = options.includeTypeAffinity ?? true
 
-  const genres = item.genres ?? []
+  // E-MATCH-VOCAB: mismo vocabulario que el perfil (ver buildTasteProfile).
+  const genres = canonicalGenres(item.genres)
   const genreScore =
     genres.length === 0
       ? 0
