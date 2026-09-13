@@ -10,11 +10,12 @@ import {
   filterTVByTemporadas,
   type TmdbFilters,
 } from "@/lib/api/tmdb-maps";
-import { discoverAnime, JikanError } from "@/lib/api/jikan";
+import { JikanError } from "@/lib/api/jikan";
+import { AniListError, discoverAnime } from "@/lib/api/anilist";
 import {
-  buildJikanDiscoverParams,
-  type JikanFilters,
-} from "@/lib/api/jikan-maps";
+  buildAniListDiscoverParams,
+  type AniListFilters,
+} from "@/lib/api/anilist-maps";
 import { getPopularManga, discoverManga } from "@/lib/api/mangadex";
 import {
   buildMangaDexDiscoverParams,
@@ -47,14 +48,13 @@ import {
 import {
   normalizeMovie,
   normalizeTV,
-  normalizeAnime,
+  normalizeAniListAnime,
   normalizeMangaDex,
   normalizeBookGoogle,
   normalizeGame,
 } from "@/lib/api/normalizer";
 import type { MediaItem, MediaType } from "@/types/media";
 import type { TmdbMovieDetail, TmdbTVDetail } from "@/lib/api/tmdb";
-import type { JikanAnime } from "@/lib/api/jikan";
 // Agregado modo "all" (R5a). Import diferido en uso (case "all") — el ciclo
 // discover↔aggregate se resuelve en runtime porque ninguno se invoca en módulo.
 import { fetchAggregateData, fetchAggregateSearch } from "@/lib/api/aggregate";
@@ -130,11 +130,11 @@ export interface DiscoverResult {
 
 /**
  * Filtros canónicos aplicables a la capa de fetch. Unión de los subconjuntos que
- * cada familia consume nativamente: TMDB (F3a), Jikan + RAWG (F3b). Cada builder
- * toma solo los campos que entiende; el resto los ignora.
+ * cada familia consume nativamente. Cada builder toma solo los campos que
+ * entiende; el resto los ignora.
  */
 export type DiscoverFilters = TmdbFilters &
-  JikanFilters &
+  AniListFilters &
   MangaDexFilters &
   RawgFilters &
   BooksFilters &
@@ -250,21 +250,17 @@ export async function fetchDiscoverData(
         break;
       }
       case "anime": {
-        // E-JIKAN-TOP-DOWN (2026-09-13): `/top/anime` devolvía 504 de forma
-        // persistente en producción (confirmado por logs reales, no un blip
-        // puntual — el usuario lo reportó repetido en el tiempo). Se deja de
-        // usar por completo: SIEMPRE se pasa por `/anime` (endpoint de
-        // búsqueda), con `order_by=popularity` como sort por defecto cuando
-        // no hay filtros — mismo resultado esperado, endpoint distinto.
+        // E-ANIME-SOURCE (2026-09-13): AniList reemplaza a Jikan/MAL — Jikan
+        // sufría 504 sostenidos en producción (confirmado por logs reales, en
+        // AMBOS endpoints probados, `/top/anime` y `/anime`), decisión
+        // explícita del usuario. AniList pagina por page/perPage nativo.
         const res = await discoverAnime(
           page,
-          buildJikanDiscoverParams("anime", filters)
+          buildAniListDiscoverParams(filters)
         );
-        const data = Array.isArray(res.data) ? (res.data as JikanAnime[]) : [];
-        items = data.map((a) => normalizeAnime(a));
-        // E79-s3: `last_visible_page` es el tope REAL de Jikan; se capa además
-        // al tope común para que todas las familias ofrezcan la misma profundidad.
-        const lastPage = res.pagination?.last_visible_page ?? 1;
+        const data = Array.isArray(res.media) ? res.media : [];
+        items = data.map((a) => normalizeAniListAnime(a));
+        const lastPage = res.pageInfo?.lastPage ?? 1;
         totalPages = Math.min(lastPage, DISCOVER_MAX_PAGES);
         hasMore = page < totalPages;
         break;
@@ -385,7 +381,9 @@ export async function fetchDiscoverData(
     }
   } catch (e) {
     log.error("API error", { type, page, err: e });
-    if (e instanceof JikanError && e.status === 429) {
+    const isRateLimited =
+      (e instanceof JikanError || e instanceof AniListError) && e.status === 429;
+    if (isRateLimited) {
       fetchErrorKind = "rate-limit";
     } else {
       fetchErrorKind = "generic";

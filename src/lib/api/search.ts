@@ -13,8 +13,7 @@
 
 import type { MediaItem, MediaType } from "@/types/media";
 import { searchMovies, searchTV } from "./tmdb";
-import { searchAnime } from "./jikan";
-import type { JikanAnime } from "./jikan";
+import { searchAnime } from "./anilist";
 import { searchManga } from "./mangadex";
 import { searchGoogleBooks, googleBooksTotalPages } from "./googlebooks";
 import { searchGames } from "./rawg";
@@ -22,14 +21,13 @@ import { searchComics } from "./comicvine";
 import {
   normalizeMovie,
   normalizeTV,
-  normalizeAnime,
+  normalizeAniListAnime,
   normalizeMangaDex,
   normalizeBookGoogle,
   normalizeGame,
   normalizeComic,
 } from "./normalizer";
 import type { TmdbMovieDetail, TmdbTVDetail } from "./tmdb";
-import type { JikanAnimeDetail } from "./jikan";
 
 /** Ítems por página (offset-based) de MangaDex — = page-size de Descubrir. */
 const MANGADEX_PAGE_SIZE = 20;
@@ -58,9 +56,7 @@ export async function searchByType(
       );
     case "anime":
       return searchAnime(query).then((r) =>
-        (r.data as JikanAnime[]).map((raw) =>
-          normalizeAnime(raw as JikanAnimeDetail)
-        )
+        r.media.map((raw) => normalizeAniListAnime(raw))
       );
     case "manga":
       return searchManga(query, 0, locale).then((r) =>
@@ -140,11 +136,9 @@ export async function searchByTypePaged(
     }
     case "anime": {
       const r = await searchAnime(query, page);
-      const totalPages = Math.max(r.pagination?.last_visible_page ?? 1, 1);
+      const totalPages = Math.max(r.pageInfo?.lastPage ?? 1, 1);
       return {
-        items: (r.data as JikanAnime[]).map((raw) =>
-          normalizeAnime(raw as JikanAnimeDetail)
-        ),
+        items: r.media.map((raw) => normalizeAniListAnime(raw)),
         totalPages,
         hasMore: page < totalPages,
       };

@@ -70,8 +70,12 @@ describe("TYPE_FILTERS — matriz por tipo en orden (spec V2)", () => {
     // Google Books/Jikan (ver type-filters.ts).
     movie: ["genre", "year", "valoracion", "duracion", "platform", "sort"],
     tv: ["genre", "year", "valoracion", "status", "temporadas", "platform", "sort"],
-    anime: ["genre", "year", "valoracion", "demografia", "status", "sort"],
-    manga: ["genre", "year", "valoracion", "demografia", "status", "volumenes", "sort"],
+    // `demografia` retirado de anime (2026-09-13, E-ANIME-SOURCE): AniList no
+    // tiene equivalente fiable a shonen/shoujo/seinen/josei.
+    anime: ["genre", "year", "valoracion", "status", "sort"],
+    // `valoracion` retirado de manga (2026-09-13, E-MANGA-SOURCE): MangaDex no
+    // expone rating filtrable en /manga (vive en /statistics/manga aparte).
+    manga: ["genre", "year", "demografia", "status", "volumenes", "sort"],
     // `editorial` retirado de book (2026-09-12, a petición del usuario) — se
     // mantiene en comic, donde sí es un post-filtro fiable.
     book: ["genre", "year", "formato", "sort"],
@@ -130,7 +134,7 @@ describe("TYPE_FILTERS — kinds correctos (FilterBar v3)", () => {
   it("platform, status, demografia, formato, modojuego, estado son multi", () => {
     expect(find("movie", "platform")?.kind).toBe("multi");
     expect(find("tv", "status")?.kind).toBe("multi");
-    expect(find("anime", "demografia")?.kind).toBe("multi");
+    expect(find("manga", "demografia")?.kind).toBe("multi");
     expect(find("book", "formato")?.kind).toBe("multi");
     expect(find("game", "modojuego")?.kind).toBe("multi");
     expect(find("game", "estado")?.kind).toBe("multi");
@@ -146,7 +150,7 @@ describe("TYPE_FILTERS — kinds correctos (FilterBar v3)", () => {
   });
 });
 
-describe("TYPE_FILTERS — 5 ocultos AUSENTES (política A)", () => {
+describe("TYPE_FILTERS — 7 ocultos AUSENTES (política A)", () => {
   it("book/comic no muestran valoracion ni estado", () => {
     expect(keysOf("book")).not.toContain("valoracion");
     expect(keysOf("book")).not.toContain("estado");
@@ -162,6 +166,14 @@ describe("TYPE_FILTERS — 5 ocultos AUSENTES (política A)", () => {
   it("anime no muestra temporadas", () => {
     expect(keysOf("anime")).not.toContain("temporadas");
   });
+
+  it("anime no muestra demografia (E-ANIME-SOURCE: sin equivalente en AniList)", () => {
+    expect(keysOf("anime")).not.toContain("demografia");
+  });
+
+  it("manga no muestra valoracion (E-MANGA-SOURCE: sin rating filtrable en MangaDex)", () => {
+    expect(keysOf("manga")).not.toContain("valoracion");
+  });
 });
 
 describe("TYPE_FILTERS — post-filters marcados (spec V2)", () => {
@@ -176,7 +188,7 @@ describe("TYPE_FILTERS — post-filters marcados (spec V2)", () => {
   });
 
   it("triggers nativos NO llevan postFilter", () => {
-    // valoracion es nativo en movie/tv/anime/manga (no game).
+    // valoracion es nativo en movie/tv/anime (no game, no manga desde E-MANGA-SOURCE).
     expect(find("movie", "valoracion")?.postFilter).toBeUndefined();
     expect(find("tv", "valoracion")?.postFilter).toBeUndefined();
     expect(find("movie", "genre")?.postFilter).toBeUndefined();

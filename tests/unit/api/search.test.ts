@@ -31,26 +31,27 @@ vi.mock("@/lib/api/tmdb", () => ({
   }),
 }));
 
-vi.mock("@/lib/api/jikan", () => ({
+// E-ANIME-SOURCE: anime se busca en AniList (no Jikan).
+vi.mock("@/lib/api/anilist", () => ({
   searchAnime: vi.fn().mockResolvedValue({
-    data: [
+    media: [
       {
-        mal_id: 1,
-        title: "Cowboy Bebop",
-        title_english: "Cowboy Bebop",
-        images: { jpg: { large_image_url: "https://example.com/cowboy.jpg" } },
-        synopsis: "Space bounty hunters.",
-        score: 8.9,
-        genres: [{ name: "Action" }],
-        year: 1998,
+        id: 1,
+        title: { romaji: "Cowboy Bebop", english: "Cowboy Bebop", native: null },
+        coverImage: { extraLarge: "https://example.com/cowboy.jpg", large: null },
+        description: "Space bounty hunters.",
+        genres: ["Action"],
+        averageScore: 89,
+        seasonYear: 1998,
+        startDate: { year: 1998 },
         episodes: 26,
-        status: "Finished Airing",
-        studios: [{ name: "Sunrise" }],
-        source: "Original",
-        trailer: { youtube_id: null },
+        status: "FINISHED",
+        studios: { nodes: [{ name: "Sunrise" }] },
+        trailer: null,
+        source: "ORIGINAL",
       },
     ],
-    pagination: { last_visible_page: 1 },
+    pageInfo: { currentPage: 1, lastPage: 1, hasNextPage: false, total: 1 },
   }),
 }));
 
@@ -138,12 +139,12 @@ vi.mock("@/lib/api/normalizer", () => ({
     type: "tv",
     title: raw.name,
   })),
-  normalizeAnime: vi.fn(
-    (raw: { mal_id: number; title_english: string; title: string }) => ({
-      id: `anime_${raw.mal_id}`,
-      externalId: String(raw.mal_id),
+  normalizeAniListAnime: vi.fn(
+    (raw: { id: number; title: { english: string | null; romaji: string | null } }) => ({
+      id: `anime_al-${raw.id}`,
+      externalId: `al-${raw.id}`,
       type: "anime",
-      title: raw.title_english ?? raw.title,
+      title: raw.title.english ?? raw.title.romaji,
     })
   ),
   normalizeMangaDex: vi.fn((raw: { id: string; title: string }) => ({
@@ -214,11 +215,11 @@ describe("searchByTypePaged", () => {
     expect(searchMovies).toHaveBeenCalledWith("fight", 4, "en");
   });
 
-  it("anime: totalPages desde last_visible_page (Jikan)", async () => {
-    const { searchAnime } = await import("@/lib/api/jikan");
+  it("anime: totalPages desde pageInfo.lastPage (AniList, E-ANIME-SOURCE)", async () => {
+    const { searchAnime } = await import("@/lib/api/anilist");
     vi.mocked(searchAnime).mockResolvedValueOnce({
-      data: [{ mal_id: 1, title: "Cowboy Bebop" }],
-      pagination: { last_visible_page: 7 },
+      media: [{ id: 1, title: { english: "Cowboy Bebop", romaji: null } }],
+      pageInfo: { currentPage: 2, lastPage: 7, hasNextPage: true, total: 140 },
     } as never);
 
     const res = await searchByTypePaged("cowboy", "anime", 2);

@@ -26,6 +26,7 @@ export type MediaStatus =
 export type RatingSource =
   | "TMDB"
   | "MAL"
+  | "AniList"
   | "Metacritic"
   | "ComicVine"
   | "Google Books"

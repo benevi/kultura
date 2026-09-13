@@ -82,8 +82,10 @@ const ESTADO_GAME: FilterTrigger = { key: "estado", kind: "multi", paramKey: "es
 /**
  * Triggers VISIBLES por tipo. Orden = orden de render (spec V2 §Matriz).
  * `sort` (align:'end') va en TODOS los tipos, empujado a la derecha.
- * Los 5 ocultos (política A) NO aparecen: valoracion×book, valoracion×comic,
- * estado×book, estado×comic, temporadas×anime.
+ * Los 7 ocultos (política A) NO aparecen: valoracion×book, valoracion×comic,
+ * estado×book, estado×comic, temporadas×anime, demografia×anime y
+ * valoracion×manga (estos dos últimos desde E-ANIME-SOURCE/E-MANGA-SOURCE,
+ * ver comentarios en `anime`/`manga` más abajo).
  */
 export const TYPE_FILTERS: Record<DiscoverType, FilterTrigger[]> = {
   // all: genero, anio, valoracion, plataforma.
@@ -96,10 +98,22 @@ export const TYPE_FILTERS: Record<DiscoverType, FilterTrigger[]> = {
   movie: [GENRE, YEAR, VALORACION, DURACION, PLATFORM, SORT],
   // tv: genero, anio, valoracion, estado, temporadas, plataforma.
   tv: [GENRE, YEAR, VALORACION, STATUS, TEMPORADAS, PLATFORM, SORT],
-  // anime: genero, anio, valoracion, demografia, estado.
-  anime: [GENRE, YEAR, VALORACION, DEMOGRAFIA, STATUS, SORT],
-  // manga: genero, anio, valoracion, demografia, estado, volumenes.
-  manga: [GENRE, YEAR, VALORACION, DEMOGRAFIA, STATUS, VOLUMENES, SORT],
+  // anime: genero, anio, valoracion, estado.
+  // `demografia` retirado (2026-09-13, E-ANIME-SOURCE): AniList (que
+  // reemplaza a Jikan) no tiene equivalente fiable para shonen/shojo/seinen/
+  // josei — su taxonomía de tags no distingue demografía (a diferencia de
+  // MangaDex, que sí expone `publicationDemographic` como campo real para
+  // manga). Política "nunca un trigger que mienta" → se oculta en vez de
+  // dejar un filtro que nunca filtra nada. manga conserva demografia (sigue
+  // siendo MangaDex).
+  anime: [GENRE, YEAR, VALORACION, STATUS, SORT],
+  // manga: genero, anio, demografia, estado, volumenes.
+  // `valoracion` retirado (2026-09-13, E-MANGA-SOURCE): MangaDex no expone
+  // rating en el propio `/manga` (vive en un endpoint de estadísticas aparte,
+  // `/statistics/manga`, no filtrable) — a diferencia de Jikan, que sí tenía
+  // `min_score` nativo para manga. Se oculta en vez de dejar un filtro que ya
+  // no filtra nada (mismo criterio que `demografia` en anime, arriba).
+  manga: [GENRE, YEAR, DEMOGRAFIA, STATUS, VOLUMENES, SORT],
   // book: genero, anio, formato. `editorial` retirado a petición del usuario
   // (2026-09-12) — se mantiene en `comic`, donde sí es un post-filtro fiable.
   book: [GENRE, YEAR, FORMATO, SORT],
