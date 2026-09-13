@@ -45,6 +45,25 @@ function isValidEmail(email: string): boolean {
   return email.includes("@") && email.includes(".");
 }
 
+/**
+ * Origen al que Supabase debe devolver al usuario tras OAuth o el correo de
+ * reseteo.
+ *
+ * Manda SIEMPRE el origen real del navegador: `NEXT_PUBLIC_SITE_URL` apunta al
+ * dominio canónico de producción, así que tenerlo por delante hacía que un
+ * login desde un preview de Vercel (o desde localhost) acabase autenticando en
+ * producción — la sesión nunca volvía al despliegue en el que estabas probando.
+ * El env var queda solo como red de seguridad para un render sin `window`.
+ *
+ * Recordatorio de configuración: cada origen desde el que se inicie sesión debe
+ * estar en la allowlist de "Redirect URLs" de Supabase Auth (los previews de
+ * Vercel admiten comodín).
+ */
+function authOrigin(): string {
+  if (typeof window !== "undefined") return window.location.origin;
+  return process.env.NEXT_PUBLIC_SITE_URL ?? "";
+}
+
 // Logo oficial de Google (multicolor) — marca de terceros, no forma parte
 // del set de iconos propio de Kultura: se mantiene tal cual exige su guía
 // de marca para botones "Continuar con Google".
@@ -211,7 +230,7 @@ export function LoginPage({ locale }: LoginPageProps) {
   async function handleGoogleLogin() {
     setForm((prev) => ({ ...prev, loading: true, error: null }));
     const supabase = createClient();
-    const origin = process.env.NEXT_PUBLIC_SITE_URL ?? window.location.origin;
+    const origin = authOrigin();
     const { error } = await supabase.auth.signInWithOAuth({
       provider: "google",
       options: {
@@ -232,7 +251,7 @@ export function LoginPage({ locale }: LoginPageProps) {
 
   async function handleReset() {
     const supabase = createClient();
-    const origin = process.env.NEXT_PUBLIC_SITE_URL ?? window.location.origin;
+    const origin = authOrigin();
     const callbackUrl = `${origin}/api/auth/callback?next=/${locale}/login?mode=reset`;
 
     const { error } = await supabase.auth.resetPasswordForEmail(form.email, {
