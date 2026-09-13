@@ -59,7 +59,10 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       description: parsed.data.description ?? null,
       cover_color: parsed.data.cover_color ?? '#E82020',
       is_public: parsed.data.is_public,
-      icon: parsed.data.icon ?? null,
+      // Solo se manda si el usuario eligió icono: así crear un grupo sigue
+      // funcionando aunque la migración de `groups.icon` no esté aplicada
+      // todavía (mandar una columna inexistente es un error duro, no un no-op).
+      ...(parsed.data.icon ? { icon: parsed.data.icon } : {}),
     })
     .select()
     .single()

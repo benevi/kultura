@@ -128,7 +128,7 @@ export async function getUserGroups(userId: string): Promise<Group[]> {
 
   const { data, error } = await supabase
     .from('group_members')
-    .select('group_id, role, groups(id, name, description, cover_color, icon, is_public, created_at, owner_id)')
+    .select('group_id, role, groups(*)')
     .eq('user_id', userId)
     .order('joined_at', { ascending: false })
 
@@ -151,7 +151,7 @@ export async function getGroupById(groupId: string): Promise<Group | null> {
 
   const { data, error } = await supabase
     .from('groups')
-    .select('id, name, description, cover_color, icon, is_public, created_at, owner_id')
+    .select('*')
     .eq('id', groupId)
     .maybeSingle()
 
@@ -264,7 +264,7 @@ export async function getDiscoverableGroups(
 
   let query = supabase
     .from('groups')
-    .select('id, owner_id, name, description, cover_color, icon, is_public, created_at, group_members(user_id)')
+    .select('*, group_members(user_id)')
     // La RLS ya oculta grupos privados a no-miembros; filtro explícito por claridad (E45-c).
     .eq('is_public', true)
     .order('created_at', { ascending: false })

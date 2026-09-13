@@ -82,7 +82,10 @@ export function SettingsForm({
           username,
           avatar_color: avatarColor,
           preferred_locale: locale,
-          avatar_icon: avatarIcon,
+          // Solo se envía si el usuario lo tocó: mandar la columna cuando su
+          // migración aún no está aplicada haría fallar TODO el guardado,
+          // incluidos nombre e idioma.
+          ...(avatarIcon !== initialAvatarIcon ? { avatar_icon: avatarIcon } : {}),
         }),
       })
 

@@ -46,7 +46,7 @@ export default async function ProfilePage({ params }: Props) {
   // Perfil del usuario visitado
   const { data: profileUser } = await supabase
     .from('users')
-    .select('id, username, avatar_color, avatar_initials, avatar_icon, created_at, bio')
+    .select('*')
     .eq('username', username)
     .single()
 
