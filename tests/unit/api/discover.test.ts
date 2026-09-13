@@ -18,8 +18,16 @@ vi.mock("@/lib/api/jikan", async (importOriginal) => {
   return {
     ...actual,
     getPopularAnime: vi.fn(),
-    getPopularManga: vi.fn(),
     discoverAnime: vi.fn(),
+  };
+});
+
+// E-MANGA-SOURCE: manga se sirve con MangaDex (no Jikan).
+vi.mock("@/lib/api/mangadex", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@/lib/api/mangadex")>();
+  return {
+    ...actual,
+    getPopularManga: vi.fn(),
     discoverManga: vi.fn(),
   };
 });
@@ -50,8 +58,8 @@ vi.mock("@/lib/api/normalizer", () => ({
   normalizeMovie: vi.fn((m) => ({ id: `movie_${m.id}`, title: m.title })),
   normalizeTV: vi.fn((tv) => ({ id: `tv_${tv.id}`, title: tv.name })),
   normalizeAnime: vi.fn((a) => ({ id: `anime_${a.mal_id}`, title: a.title })),
-  normalizeMangaJikan: vi.fn((m) => ({
-    id: `manga_${m.mal_id}`,
+  normalizeMangaDex: vi.fn((m) => ({
+    id: `manga_${m.id}`,
     title: m.title,
     metadata: { volumes: m.volumes ?? undefined },
   })),
@@ -69,7 +77,8 @@ vi.mock("@/lib/api/normalizer", () => ({
 
 import { fetchDiscoverData } from "@/lib/api/discover";
 import { discoverMovies, discoverTV } from "@/lib/api/tmdb";
-import { getPopularAnime, getPopularManga } from "@/lib/api/jikan";
+import { getPopularAnime } from "@/lib/api/jikan";
+import { getPopularManga } from "@/lib/api/mangadex";
 import { searchGoogleBooks } from "@/lib/api/googlebooks";
 import { searchByTypePaged } from "@/lib/api/search";
 import { DISCOVER_MAX_PAGES } from "@/lib/api/pagination";
@@ -142,7 +151,8 @@ describe("fetchDiscoverData — guard null-data (E29)", () => {
   it("manga: res.data = null → items=[], no lanza TypeError", async () => {
     vi.mocked(getPopularManga).mockResolvedValue({
       data: null as unknown as never[],
-      pagination: { last_visible_page: 1 },
+      total: 0,
+      offset: 0,
     });
 
     const result = await fetchDiscoverData("manga", 1);
@@ -151,10 +161,11 @@ describe("fetchDiscoverData — guard null-data (E29)", () => {
     expect(result.totalPages).toBe(1);
   });
 
-  it("manga: pagination undefined → totalPages=1 (optional chaining)", async () => {
+  it("manga: total undefined → totalPages=1 (optional chaining)", async () => {
     vi.mocked(getPopularManga).mockResolvedValue({
       data: [],
-      pagination: undefined as unknown as { last_visible_page: number },
+      total: undefined as unknown as number,
+      offset: 0,
     });
 
     const result = await fetchDiscoverData("manga", 1);
@@ -299,12 +310,13 @@ describe("fetchDiscoverData — manga volúmenes post-filtro (E59 F3c)", () => {
     // Lote con volumes variados, incluido null (sin resolver).
     vi.mocked(getPopularManga).mockResolvedValue({
       data: [
-        { mal_id: 1, title: "Corto", volumes: 3 },
-        { mal_id: 2, title: "Medio", volumes: 10 },
-        { mal_id: 3, title: "Largo", volumes: 30 },
-        { mal_id: 4, title: "Sin resolver", volumes: null },
+        { id: "1", title: "Corto", volumes: 3 },
+        { id: "2", title: "Medio", volumes: 10 },
+        { id: "3", title: "Largo", volumes: 30 },
+        { id: "4", title: "Sin resolver", volumes: null },
       ] as never[],
-      pagination: { last_visible_page: 1 },
+      total: 4,
+      offset: 0,
     });
   });
 
@@ -426,13 +438,15 @@ describe("fetchDiscoverData — catch tipado (E29)", () => {
     expect(result.fetchErrorKind).toBe("generic");
   });
 
-  it("JikanError(429) en manga → fetchErrorKind = 'rate-limit'", async () => {
+  it("error de red en manga (MangaDex) → fetchErrorKind = 'generic' (no es JikanError)", async () => {
+    // E-MANGA-SOURCE: manga ya no pasa por Jikan → sus fallos nunca son
+    // JikanError, así que nunca se clasifican como 'rate-limit'.
     vi.mocked(getPopularManga).mockRejectedValue(
-      new JikanError("/top/manga", 429)
+      new Error("MangaDex /manga → 429")
     );
 
     const result = await fetchDiscoverData("manga", 1);
-    expect(result.fetchErrorKind).toBe("rate-limit");
+    expect(result.fetchErrorKind).toBe("generic");
   });
 });
 
@@ -465,8 +479,9 @@ describe('fetchDiscoverData — modo "all" (R5a)', () => {
       items: [{ id: "b4", volumeInfo: { title: "Book D" } }],
     } as never);
     vi.mocked(getPopularManga).mockResolvedValue({
-      data: [{ mal_id: 5, title: "Manga E" }] as never[],
-      pagination: { last_visible_page: 1 },
+      data: [{ id: "5", title: "Manga E" }] as never[],
+      total: 1,
+      offset: 0,
     });
     // sort=popularity gatea hasRawgFilters → game usa discoverGames; mockeamos
     // ambas rutas por robustez (getPopularGames para el caso sin sort).
@@ -528,7 +543,8 @@ describe('fetchDiscoverData — modo "all" (R5a)', () => {
     } as never);
     vi.mocked(getPopularManga).mockResolvedValue({
       data: [] as never[],
-      pagination: { last_visible_page: 1 },
+      total: 0,
+      offset: 0,
     });
     vi.mocked(getPopularGames).mockResolvedValue({
       results: [],
@@ -586,10 +602,11 @@ describe("fetchDiscoverData — hasMore (E79 slice 1)", () => {
     expect((await fetchDiscoverData("anime", 4)).hasMore).toBe(false);
   });
 
-  it("manga: hasMore desde last_visible_page", async () => {
+  it("manga: hasMore desde ceil(total/20) (MangaDex)", async () => {
     vi.mocked(getPopularManga).mockResolvedValue({
-      data: [{ mal_id: 1, title: "M" }] as never[],
-      pagination: { last_visible_page: 2 },
+      data: [{ id: "1", title: "M" }] as never[],
+      total: 21, // ceil(21/20) = 2 páginas
+      offset: 0,
     });
 
     expect((await fetchDiscoverData("manga", 1)).hasMore).toBe(true);
@@ -723,8 +740,9 @@ describe("fetchDiscoverData — totalPages null con post-filtro activo (E79 slic
 
   it("manga+volumenes → totalPages null (post-filtro sobre metadata.volumes)", async () => {
     vi.mocked(getPopularManga).mockResolvedValue({
-      data: [{ mal_id: 1, title: "M", volumes: 10 }] as never[],
-      pagination: { last_visible_page: 50 },
+      data: [{ id: "1", title: "M", volumes: 10 }] as never[],
+      total: 1000,
+      offset: 0,
     });
 
     const result = await fetchDiscoverData("manga", 1, { volumenes: "6-20" });
@@ -768,8 +786,9 @@ describe('fetchDiscoverData — hasMore en "all" (E79 slice 1)', () => {
       items: five((i) => ({ id: `b${i}`, volumeInfo: { title: "B" } })),
     } as never);
     vi.mocked(getPopularManga).mockResolvedValue({
-      data: five((i) => ({ mal_id: `g${i}`, title: "G" })) as never[],
-      pagination: { last_visible_page: 1 },
+      data: five((i) => ({ id: `g${i}`, title: "G" })) as never[],
+      total: 5,
+      offset: 0,
     });
     const gameRes = {
       results: five((i) => ({ id: `v${i}`, name: "V" })),

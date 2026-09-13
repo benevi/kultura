@@ -12,17 +12,21 @@ import {
 } from "@/lib/api/tmdb-maps";
 import {
   getPopularAnime,
-  getPopularManga,
   discoverAnime,
-  discoverManga,
   JikanError,
 } from "@/lib/api/jikan";
 import {
   buildJikanDiscoverParams,
   hasJikanFilters,
-  filterByMinVolumes,
   type JikanFilters,
 } from "@/lib/api/jikan-maps";
+import { getPopularManga, discoverManga } from "@/lib/api/mangadex";
+import {
+  buildMangaDexDiscoverParams,
+  hasMangaDexFilters,
+  filterByMinVolumesDex,
+  type MangaDexFilters,
+} from "@/lib/api/mangadex-maps";
 import {
   searchGoogleBooks,
   googleBooksTotalPages,
@@ -49,13 +53,13 @@ import {
   normalizeMovie,
   normalizeTV,
   normalizeAnime,
-  normalizeMangaJikan,
+  normalizeMangaDex,
   normalizeBookGoogle,
   normalizeGame,
 } from "@/lib/api/normalizer";
 import type { MediaItem, MediaType } from "@/types/media";
 import type { TmdbMovieDetail, TmdbTVDetail } from "@/lib/api/tmdb";
-import type { JikanAnime, JikanManga } from "@/lib/api/jikan";
+import type { JikanAnime } from "@/lib/api/jikan";
 // Agregado modo "all" (R5a). Import diferido en uso (case "all") — el ciclo
 // discover↔aggregate se resuelve en runtime porque ninguno se invoca en módulo.
 import { fetchAggregateData, fetchAggregateSearch } from "@/lib/api/aggregate";
@@ -136,6 +140,7 @@ export interface DiscoverResult {
  */
 export type DiscoverFilters = TmdbFilters &
   JikanFilters &
+  MangaDexFilters &
   RawgFilters &
   BooksFilters &
   ComicFilters;
@@ -264,16 +269,27 @@ export async function fetchDiscoverData(
         break;
       }
       case "manga": {
-        const res = hasJikanFilters(filters)
-          ? await discoverManga(page, buildJikanDiscoverParams("manga", filters))
-          : await getPopularManga(page);
-        const data = Array.isArray(res.data) ? (res.data as JikanManga[]) : [];
-        items = data.map((m) => normalizeMangaJikan(m));
+        // E-MANGA-SOURCE: MangaDex (no Jikan) — único proveedor con catálogo
+        // realmente traducido. MangaDex pagina por offset/limit, no por page.
+        const offset = (page - 1) * 20;
+        const res = hasMangaDexFilters(filters)
+          ? await discoverManga(
+              offset,
+              buildMangaDexDiscoverParams(filters),
+              locale
+            )
+          : await getPopularManga(offset, locale);
+        // E29: mismo guard que anime — nunca confiar en que el proveedor
+        // devuelva `data` como array (null/undefined no debe lanzar TypeError).
+        const mangaData = Array.isArray(res.data) ? res.data : [];
+        items = mangaData.map((m) => normalizeMangaDex(m, locale));
         // POST-filtro de volúmenes (solo manga): umbral mínimo sobre metadata.volumes.
         // Vacío/desconocido → no filtra. anime no pasa por aquí (oculto).
-        items = filterByMinVolumes(items, filters.volumenes);
-        const lastPage = res.pagination?.last_visible_page ?? 1;
-        totalPages = Math.min(lastPage, DISCOVER_MAX_PAGES);
+        items = filterByMinVolumesDex(items, filters.volumenes);
+        totalPages = Math.min(
+          Math.max(Math.ceil((res.total ?? 0) / 20), 1),
+          DISCOVER_MAX_PAGES
+        );
         hasMore = page < totalPages;
         break;
       }

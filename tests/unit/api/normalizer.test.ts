@@ -404,6 +404,26 @@ describe("normalizeMangaDex", () => {
   it("year se extrae correctamente", () => {
     expect(result.year).toBe(1997);
   });
+
+  it("metadata.volumes: lastVolume null → undefined (sin resolver, no 0)", () => {
+    expect(result.metadata?.volumes).toBeUndefined();
+  });
+
+  it("metadata.volumes: parsea lastVolume string a número (post-filtro E-MANGA-SOURCE)", () => {
+    const r = normalizeMangaDex({
+      ...MANGADEX_FIXTURE,
+      attributes: { ...MANGADEX_FIXTURE.attributes, lastVolume: "104" },
+    });
+    expect(r.metadata?.volumes).toBe(104);
+  });
+
+  it("metadata.volumes: lastVolume no numérico → undefined (nunca NaN)", () => {
+    const r = normalizeMangaDex({
+      ...MANGADEX_FIXTURE,
+      attributes: { ...MANGADEX_FIXTURE.attributes, lastVolume: "n/a" },
+    });
+    expect(r.metadata?.volumes).toBeUndefined();
+  });
 });
 
 // ── normalizeBookGoogle (E-BOOKS-GOOGLE) ──────────────────────────────────────

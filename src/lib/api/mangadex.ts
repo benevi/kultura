@@ -3,16 +3,12 @@
 // Cliente de MangaDex API v5. No requiere API key.
 // Docs: https://api.mangadex.org/docs/
 //
-// ⚠️ ESTADO REAL (verificado 2026-09-12, E-MANGADEX-LOCALE): este cliente NO
-// está en el pipeline en vivo. La familia `manga` de Descubrir, de la búsqueda
-// y de la ficha de detalle se sirve HOY con **Jikan** (`getPopularManga` /
-// `searchManga` / `getManga` de `@/lib/api/jikan`, ver `discover.ts` case
-// "manga", `search.ts` y `media/[type]/[id]/page.tsx`). De este módulo solo se
-// consumen `MangaDexManga` + `extractMangaCover` desde `normalizer.ts`.
-// La migración de la familia manga a MangaDex (que es lo que desbloquearía de
-// verdad el catálogo en español) está registrada como **E-MANGA-SOURCE** en
-// `docs/BACKLOG.md`, con el mapeo de filtros y la compatibilidad de ids ya
-// especificados. Este módulo queda listo y localizado para ese cambio.
+// ESTADO REAL (E-MANGA-SOURCE, 2026-09-13): manga se sirve con MangaDex en
+// Descubrir, búsqueda y ficha de detalle (`discover.ts` case "manga",
+// `search.ts` y `media/[type]/[id]/page.tsx`). Jikan se conserva SOLO para
+// resolver ids legacy: bibliotecas guardadas mientras manga venía de Jikan
+// tienen `manga_{mal_id}` (numérico) — `isMangaDexId` distingue la forma del
+// id igual que `isOpenLibraryLegacyId` para libros.
 //
 // Idioma (E-MANGADEX-LOCALE): MangaDex es el único proveedor de manga con
 // traducciones reales. `availableTranslatedLanguage[]` acota el catálogo a los
@@ -100,6 +96,18 @@ function translatedLanguageParams(locale?: string | null): [string, string][] {
   );
 }
 
+/**
+ * true si `id` tiene forma de UUID de MangaDex (formato nativo de sus ids).
+ * Los ids legacy de Jikan (bibliotecas guardadas cuando manga venía de Jikan)
+ * son numéricos (`mal_id`) — nunca calzan este patrón. Mismo mecanismo que
+ * `isOpenLibraryLegacyId` en googlebooks.ts.
+ */
+export function isMangaDexId(id: string): boolean {
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
+    id
+  );
+}
+
 // ── Public API ────────────────────────────────────────────────────────────────
 
 export async function searchManga(
@@ -136,6 +144,28 @@ export async function getPopularManga(
     ["limit", "20"],
     ["order[followedCount]", "desc"],
     ["includes[]", "cover_art"],
+    ["contentRating[]", "safe"],
+    ["contentRating[]", "suggestive"],
+    ...translatedLanguageParams(locale),
+  ]);
+}
+
+/**
+ * Descubrir manga con filtros nativos (E-MANGA-SOURCE). `nativeParams` viene
+ * de `buildMangaDexDiscoverParams` (mangadex-maps.ts) — ya incluye
+ * `contentRating[]`, `order[...]` y los filtros traducidos a UUID/valor
+ * MangaDex. Aquí solo se añaden paginación, `includes[]=cover_art` e idioma.
+ */
+export async function discoverManga(
+  offset: number,
+  nativeParams: [string, string][],
+  locale?: string | null
+): Promise<MangaDexResponse> {
+  return mangaDexFetch<MangaDexResponse>("/manga", [
+    ["offset", String(offset)],
+    ["limit", "20"],
+    ["includes[]", "cover_art"],
+    ...nativeParams,
     ...translatedLanguageParams(locale),
   ]);
 }

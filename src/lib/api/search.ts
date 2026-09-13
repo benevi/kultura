@@ -13,8 +13,9 @@
 
 import type { MediaItem, MediaType } from "@/types/media";
 import { searchMovies, searchTV } from "./tmdb";
-import { searchAnime, searchManga } from "./jikan";
-import type { JikanAnime, JikanManga } from "./jikan";
+import { searchAnime } from "./jikan";
+import type { JikanAnime } from "./jikan";
+import { searchManga } from "./mangadex";
 import { searchGoogleBooks, googleBooksTotalPages } from "./googlebooks";
 import { searchGames } from "./rawg";
 import { searchComics } from "./comicvine";
@@ -22,13 +23,16 @@ import {
   normalizeMovie,
   normalizeTV,
   normalizeAnime,
-  normalizeMangaJikan,
+  normalizeMangaDex,
   normalizeBookGoogle,
   normalizeGame,
   normalizeComic,
 } from "./normalizer";
 import type { TmdbMovieDetail, TmdbTVDetail } from "./tmdb";
-import type { JikanAnimeDetail, JikanMangaDetail } from "./jikan";
+import type { JikanAnimeDetail } from "./jikan";
+
+/** Ítems por página (offset-based) de MangaDex — = page-size de Descubrir. */
+const MANGADEX_PAGE_SIZE = 20;
 
 /**
  * Busca solo en el tipo de contenido indicado (SIN paginar: primera página).
@@ -59,10 +63,8 @@ export async function searchByType(
         )
       );
     case "manga":
-      return searchManga(query).then((r) =>
-        (r.data as JikanManga[]).map((raw) =>
-          normalizeMangaJikan(raw as JikanMangaDetail)
-        )
+      return searchManga(query, 0, locale).then((r) =>
+        r.data.map((raw) => normalizeMangaDex(raw, locale))
       );
     case "book":
       return searchGoogleBooks(query, 1, {}, locale).then((r) =>
@@ -148,12 +150,15 @@ export async function searchByTypePaged(
       };
     }
     case "manga": {
-      const r = await searchManga(query, page);
-      const totalPages = Math.max(r.pagination?.last_visible_page ?? 1, 1);
+      // MangaDex pagina por offset/limit, no por page — se traduce aquí.
+      const offset = (page - 1) * MANGADEX_PAGE_SIZE;
+      const r = await searchManga(query, offset, locale);
+      const totalPages = Math.max(
+        Math.ceil((r.total ?? 0) / MANGADEX_PAGE_SIZE),
+        1
+      );
       return {
-        items: (r.data as JikanManga[]).map((raw) =>
-          normalizeMangaJikan(raw as JikanMangaDetail)
-        ),
+        items: r.data.map((raw) => normalizeMangaDex(raw, locale)),
         totalPages,
         hasMore: page < totalPages,
       };

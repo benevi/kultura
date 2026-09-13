@@ -52,9 +52,14 @@ vi.mock("@/lib/api/jikan", () => ({
     ],
     pagination: { last_visible_page: 1 },
   }),
+}));
+
+// E-MANGA-SOURCE: manga se busca en MangaDex (no Jikan).
+vi.mock("@/lib/api/mangadex", () => ({
   searchManga: vi.fn().mockResolvedValue({
     data: [],
-    pagination: { last_visible_page: 1 },
+    total: 0,
+    offset: 0,
   }),
 }));
 
@@ -141,9 +146,9 @@ vi.mock("@/lib/api/normalizer", () => ({
       title: raw.title_english ?? raw.title,
     })
   ),
-  normalizeMangaJikan: vi.fn((raw: { mal_id: number; title: string }) => ({
-    id: `manga_${raw.mal_id}`,
-    externalId: String(raw.mal_id),
+  normalizeMangaDex: vi.fn((raw: { id: string; title: string }) => ({
+    id: `manga_${raw.id}`,
+    externalId: raw.id,
     type: "manga",
     title: raw.title,
   })),
@@ -209,7 +214,7 @@ describe("searchByTypePaged", () => {
     expect(searchMovies).toHaveBeenCalledWith("fight", 4, "en");
   });
 
-  it("anime/manga: totalPages desde last_visible_page (Jikan)", async () => {
+  it("anime: totalPages desde last_visible_page (Jikan)", async () => {
     const { searchAnime } = await import("@/lib/api/jikan");
     vi.mocked(searchAnime).mockResolvedValueOnce({
       data: [{ mal_id: 1, title: "Cowboy Bebop" }],
@@ -220,6 +225,21 @@ describe("searchByTypePaged", () => {
     expect(res.totalPages).toBe(7);
     expect(res.hasMore).toBe(true);
     expect(searchAnime).toHaveBeenCalledWith("cowboy", 2);
+  });
+
+  it("manga: totalPages desde total de MangaDex, paginado por offset (E-MANGA-SOURCE)", async () => {
+    const { searchManga } = await import("@/lib/api/mangadex");
+    vi.mocked(searchManga).mockResolvedValueOnce({
+      data: [{ id: "uuid-1", title: "One Piece" }],
+      total: 45, // ceil(45/20) = 3
+      offset: 20,
+    } as never);
+
+    const res = await searchByTypePaged("one piece", "manga", 2, "es");
+    expect(res.totalPages).toBe(3);
+    expect(res.hasMore).toBe(true);
+    // page 2 → offset (2-1)*20 = 20.
+    expect(searchManga).toHaveBeenCalledWith("one piece", 20, "es");
   });
 
   it("book: totalPages desde totalItems de Google Books, con startIndex por página", async () => {
@@ -287,6 +307,20 @@ describe("searchByType", () => {
     const results = await searchByType("cowboy", "anime");
     expect(results).toHaveLength(1);
     expect(results[0].type).toBe("anime");
+  });
+
+  it("devuelve solo manga cuando type='manga' (MangaDex, E-MANGA-SOURCE)", async () => {
+    const { searchManga } = await import("@/lib/api/mangadex");
+    vi.mocked(searchManga).mockResolvedValueOnce({
+      data: [{ id: "uuid-1", title: "One Piece" }],
+      total: 1,
+      offset: 0,
+    } as never);
+
+    const results = await searchByType("one piece", "manga");
+    expect(searchManga).toHaveBeenCalledWith("one piece", 0, undefined);
+    expect(results).toHaveLength(1);
+    expect(results[0].type).toBe("manga");
   });
 
   it("devuelve solo libros cuando type='book'", async () => {
