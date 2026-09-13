@@ -8,6 +8,16 @@ vi.mock('@/lib/supabase/server', () => ({
   createClient: vi.fn(),
 }))
 
+// E-MATCH-GENRES: la reparación de géneros vive en su propio módulo (con sus
+// propios tests); aquí solo interesa que el perfil la use.
+const { backfillGenresMock } = vi.hoisted(() => ({ backfillGenresMock: vi.fn() }))
+vi.mock('@/lib/library/backfill-genres', () => ({ backfillGenres: backfillGenresMock }))
+
+beforeEach(() => {
+  backfillGenresMock.mockReset()
+  backfillGenresMock.mockResolvedValue(new Map())
+})
+
 import {
   buildTasteProfile,
   scoreItem,
@@ -287,5 +297,71 @@ describe('computeMatchScores — gate por señal insuficiente', () => {
     // Con más de un tipo en la vista, la afinidad de tipo sigue discriminando:
     // movie (tipo dominante) > tv (sin señal de tipo alguna).
     expect(scores.get('movie_1')).toBeGreaterThan(scores.get('tv_1') ?? -1)
+  })
+
+  // ── E-MATCH-GENRES ────────────────────────────────────────────────────────
+  // Bug real: las filas cacheadas antes de que se guardase el género no tenían
+  // ninguno, el perfil salía sin géneros y TODA card daba 0% MATCH.
+  describe('reparación de géneros que faltan en la biblioteca', () => {
+    const staleRows = [
+      { status: 'completed', score: 5, media: { id: 'movie_10', type: 'movie', external_id: '10', metadata: {} } },
+      { status: 'completed', score: 5, media: { id: 'movie_11', type: 'movie', external_id: '11', metadata: {} } },
+      { status: 'completed', score: 5, media: { id: 'movie_12', type: 'movie', external_id: '12', metadata: null } },
+    ]
+
+    it('los géneros reparados entran en el perfil: el score deja de ser 0', async () => {
+      backfillGenresMock.mockResolvedValue(
+        new Map([
+          ['movie_10', ['Drama']],
+          ['movie_11', ['Drama']],
+          ['movie_12', ['Comedy']],
+        ])
+      )
+
+      const scores = await computeMatchScores(
+        'user-1',
+        [
+          item({ id: 'movie_1', genres: ['Drama'], type: 'movie' }),
+          item({ id: 'movie_2', genres: ['Horror'], type: 'movie' }),
+        ],
+        makeSingleTypeSupabase(staleRows) as never
+      )
+
+      expect(scores.get('movie_1')).toBeGreaterThan(0)
+      expect(scores.get('movie_2')).toBe(0)
+    })
+
+    it('solo se intenta reparar lo que aporta señal (nada pendiente sin nota)', async () => {
+      await computeMatchScores(
+        'user-1',
+        [item()],
+        makeSingleTypeSupabase([
+          ...staleRows,
+          { status: 'pending', score: null, media: { id: 'movie_99', type: 'movie', external_id: '99', metadata: {} } },
+        ]) as never
+      )
+
+      const repaired = backfillGenresMock.mock.calls[0][0] as Array<{ id: string }>
+      expect(repaired.map((r) => r.id)).toEqual(['movie_10', 'movie_11', 'movie_12'])
+    })
+
+    it('si la reparación falla, el perfil se construye igual con lo que hay', async () => {
+      backfillGenresMock.mockRejectedValue(new Error('proveedor caído'))
+
+      const scores = await computeMatchScores(
+        'user-1',
+        [item({ id: 'movie_1', genres: ['Drama'], type: 'movie' })],
+        makeSingleTypeSupabase(staleRows) as never
+      )
+
+      // Sin géneros reparados el score es 0, pero la llamada no revienta.
+      expect(scores.get('movie_1')).toBe(0)
+    })
+
+    it('propaga el locale a la reparación (los nombres de género son localizados)', async () => {
+      await computeMatchScores('user-1', [item()], makeSingleTypeSupabase(staleRows) as never, 'en')
+
+      expect(backfillGenresMock).toHaveBeenCalledWith(expect.anything(), expect.anything(), 'en')
+    })
   })
 })

@@ -11,6 +11,10 @@
 import { createClient } from '@/lib/supabase/server'
 import type { SupabaseClient } from '@supabase/supabase-js'
 import type { MediaItem } from '@/types/media'
+import { backfillGenres } from '@/lib/library/backfill-genres'
+import { createLogger } from '@/lib/logger'
+
+const log = createLogger('recommendations/match-score')
 
 // Mismo umbral que getAiRecommendations (lib/claude/recommendations.ts):
 // por debajo de esto no hay señal suficiente para un perfil de gustos fiable.
@@ -27,10 +31,18 @@ export interface TasteProfile {
   signalCount: number
 }
 
-interface UserMediaRow {
+/** Lo ÚNICO que el perfil necesita de una fila: peso y géneros. */
+interface TasteSignalRow {
   status: string
   score: number | null
   media: { type: string; metadata: Record<string, unknown> | null } | null
+}
+
+/** La fila tal como se lee de Supabase: además identifica al título, para poder reparar sus géneros. */
+interface UserMediaRow extends TasteSignalRow {
+  media:
+    | { id: string; type: string; external_id: string; metadata: Record<string, unknown> | null }
+    | null
 }
 
 /** Peso de una fila de biblioteca como señal de gusto. 0 = sin señal (pending/abandoned sin score). */
@@ -50,7 +62,7 @@ function normalize(map: Map<string, number>): Map<string, number> {
 }
 
 /** Pura, testeable sin Supabase: construye el perfil de gustos a partir de filas ya leídas. */
-export function buildTasteProfile(rows: UserMediaRow[]): TasteProfile {
+export function buildTasteProfile(rows: TasteSignalRow[]): TasteProfile {
   const genreWeights = new Map<string, number>()
   const typeWeights = new Map<string, number>()
   let signalCount = 0
@@ -117,7 +129,8 @@ export function invalidateMatchScoreCache(userId: string): void {
 
 export async function getTasteProfile(
   userId: string,
-  supabaseClient?: SupabaseClient
+  supabaseClient?: SupabaseClient,
+  locale?: string | null
 ): Promise<TasteProfile> {
   const cached = profileCache.get(userId)
   if (cached && Date.now() < cached.expiresAt) return cached.data
@@ -125,10 +138,33 @@ export async function getTasteProfile(
   const supabase = supabaseClient ?? createClient()
   const { data } = await supabase
     .from('user_media')
-    .select('status, score, media(type, metadata)')
+    .select('status, score, media(id, type, external_id, metadata)')
     .eq('user_id', userId)
 
-  const profile = buildTasteProfile((data ?? []) as unknown as UserMediaRow[])
+  const rows = (data ?? []) as unknown as UserMediaRow[]
+
+  // E-MATCH-GENRES: las filas cacheadas antes de que se guardase el género
+  // (2026-09-12) no tienen ninguno, y sin géneros el perfil queda vacío y TODO
+  // da 0% MATCH. Se reparan aquí, y solo las que aportan señal: una entrada
+  // pendiente o abandonada sin nota no pinta en el perfil, así que no merece
+  // una llamada al proveedor.
+  const repairable = rows
+    .filter((row) => row.media !== null && rowWeight(row) > 0)
+    .map((row) => row.media!)
+  const healed = await backfillGenres(repairable, supabase, locale).catch((err) => {
+    log.warn('backfill de géneros omitido', { err })
+    return new Map<string, string[]>()
+  })
+
+  const profile = buildTasteProfile(
+    healed.size === 0
+      ? rows
+      : rows.map((row) => {
+          const genres = row.media ? healed.get(row.media.id) : undefined
+          if (!genres) return row
+          return { ...row, media: { ...row.media!, metadata: { ...(row.media!.metadata ?? {}), genres } } }
+        })
+  )
   profileCache.set(userId, { data: profile, expiresAt: Date.now() + PROFILE_CACHE_TTL_MS })
   return profile
 }
@@ -192,10 +228,14 @@ async function getSocialSignal(
 export async function computeMatchScores(
   userId: string,
   items: MediaItem[],
-  supabaseClient?: SupabaseClient
+  supabaseClient?: SupabaseClient,
+  locale?: string | null
 ): Promise<Map<string, number>> {
   const supabase = supabaseClient ?? createClient()
-  const profile = await getTasteProfile(userId, supabase)
+  // `locale` solo se usa al reparar géneros que falten (E-MATCH-GENRES): los
+  // nombres los sirve cada proveedor en el idioma pedido, así que conviene que
+  // coincida con el del catálogo que se está puntuando.
+  const profile = await getTasteProfile(userId, supabase, locale)
 
   if (profile.signalCount < MIN_LIBRARY_SIGNAL) return new Map()
 

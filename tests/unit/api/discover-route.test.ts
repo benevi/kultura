@@ -276,7 +276,9 @@ describe("GET /api/discover", () => {
 
     const res = await GET(req("?type=movie&page=1"));
     const body = await res.json();
-    expect(computeMatchScores).toHaveBeenCalledWith("user-1", body.items, expect.anything());
+    // El locale activo viaja como 4º argumento: lo usa la reparación de géneros
+    // (E-MATCH-GENRES) para pedirlos al proveedor en el idioma del catálogo.
+    expect(computeMatchScores).toHaveBeenCalledWith("user-1", body.items, expect.anything(), "es");
     expect(body.matchScores).toEqual({ movie_1: 88 });
   });
 

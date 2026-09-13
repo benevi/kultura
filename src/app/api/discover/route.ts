@@ -68,7 +68,7 @@ export async function GET(request: NextRequest) {
   // queda vacío — MediaCard no muestra badge, nunca uno decorativo.
   const supabase = createClient();
   const { data: { user } } = await supabase.auth.getUser();
-  const matchScores = user ? await computeMatchScores(user.id, result.items, supabase) : new Map<string, number>();
+  const matchScores = user ? await computeMatchScores(user.id, result.items, supabase, locale) : new Map<string, number>();
 
   return NextResponse.json({ ...result, matchScores: Object.fromEntries(matchScores) });
 }
