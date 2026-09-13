@@ -15,7 +15,11 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 const { searchByTypeMock } = vi.hoisted(() => ({ searchByTypeMock: vi.fn() }))
 vi.mock('@/lib/api/search', () => ({ searchByType: searchByTypeMock }))
 
-const MOCK_MATCH = { id: 'movie_1', poster: 'https://example.com/poster.jpg' }
+// year: 2020 para que coincida (±1) con los recs de tipo/título/reason de
+// abajo — desde que pickBestMatch exige año cuando la rec trae uno, un match
+// sin año no basta para que estos tests de parsing (ajenos a la lógica de
+// matching) sigan resolviendo con éxito.
+const MOCK_MATCH = { id: 'movie_1', poster: 'https://example.com/poster.jpg', year: 2020 }
 
 // getLibraryContext espera filas anidadas { status, score, media: { title, type, year } }
 // (ver recommendations.ts:96-103), no la forma plana.
@@ -126,6 +130,10 @@ describe('getAiRecommendations — parser y validación', () => {
       ],
     })))
     vi.doMock('@/lib/supabase/server', () => makeSupabaseMock(LIBRARY_ITEMS))
+
+    // 'Valid Year' resuelve con year:2010 — el MOCK_MATCH por defecto (year:2020)
+    // no coincidiría (±1) con él, así que aquí necesita su propio año.
+    searchByTypeMock.mockResolvedValue([{ id: 'movie_1', poster: 'https://example.com/poster.jpg', year: 2010 }])
 
     const { getAiRecommendations } = await import('@/lib/claude/recommendations')
     const result = await getAiRecommendations('user-001', ['Drama'])
