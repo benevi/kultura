@@ -18,7 +18,10 @@ const log = createLogger('claude/recommendations')
 // v3: AiRec resuelve id/posterUrl/mediaUrl server-side (E66) — invalida cache v2.
 // v4: prompt ya no traduce searchQuery/title + pickBestMatch valida año — invalida
 // cachés v3 que pudieran tener recs mal resueltas (título traducido → match erróneo).
-const PROMPT_VERSION = 'v4'
+// v5: pickBestMatch ya no acepta un candidato sin año como comodín cuando SÍ hay
+// año de referencia — cerraba un hueco real (RAWG omitiendo `released` en la
+// respuesta de búsqueda) que seguía colando matches sin relación con póster.
+const PROMPT_VERSION = 'v5'
 
 export interface AiRec {
   title: string
@@ -190,15 +193,19 @@ const DETAIL_TYPES: MediaType[] = ['movie', 'tv', 'anime', 'book', 'manga', 'gam
  * ninguna relación (p.ej. RAWG cayendo en un juego cualquiera) que aun así
  * tiene póster y se aceptaba ciegamente como "el" resultado — de ahí fichas
  * de detalle que no correspondían con la card mostrada.
- * Sin año de referencia, o si ningún resultado trae año (el proveedor no lo
- * expone para este ítem), se mantiene el comportamiento previo (primer
- * resultado) porque no hay señal con la que descartar falsos positivos.
+ *
+ * IMPORTANTE: si el candidato no trae año en el resultado de BÚSQUEDA (RAWG a
+ * veces omite `released` en `/games?search=` para entradas poco indexadas
+ * aunque su propia ficha de detalle sí lo tenga), NO se acepta como comodín —
+ * eso fue justo el agujero que dejaba pasar el falso positivo "NaN" (2016)
+ * para una searchQuery de un juego de 2022, con póster real pero año ausente
+ * en el resultado de búsqueda. Sin año de referencia (`year` undefined en la
+ * rec), se mantiene el comportamiento previo (primer resultado) porque no hay
+ * señal alguna con la que descartar falsos positivos.
  */
 function pickBestMatch(results: MediaItem[], year?: number): MediaItem | undefined {
   if (year == null) return results[0]
-  const withYear = results.filter((r) => r.year != null)
-  if (withYear.length === 0) return results[0]
-  return withYear.find((r) => Math.abs(r.year! - year) <= 1)
+  return results.find((r) => r.year != null && Math.abs(r.year - year) <= 1)
 }
 
 /**

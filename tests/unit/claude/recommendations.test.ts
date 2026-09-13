@@ -196,7 +196,7 @@ describe('getAiRecommendations — resolves media refs via searchByType', () => 
       }) }],
     })
     searchByTypeMock.mockResolvedValue([
-      { id: 'tv_95396', type: 'tv', title: 'Severance', poster: 'https://img/poster.jpg' },
+      { id: 'tv_95396', type: 'tv', title: 'Severance', year: 2022, poster: 'https://img/poster.jpg' },
     ])
 
     vi.doMock('@anthropic-ai/sdk', () => makeAnthropicMock(createMock))
@@ -210,6 +210,33 @@ describe('getAiRecommendations — resolves media refs via searchByType', () => 
     expect(recs[0].id).toBe('tv_95396')
     expect(recs[0].posterUrl).toBe('https://img/poster.jpg')
     expect(recs[0].mediaUrl).toBe('/media/tv/tv_95396')
+  })
+
+  it('discards the match when the candidate has a poster but no year at all (RAWG omite `released` para entradas poco indexadas)', async () => {
+    // Reproduce el bug real visto en producción tras el primer fix: la
+    // searchQuery ya iba en inglés correcto ("Kirby and the Forgotten Land"),
+    // pero RAWG devolvió como único resultado un juego de jam sin relación
+    // ("NaN") cuyo `released` viene vacío en la respuesta de BÚSQUEDA (aunque
+    // su propia ficha de detalle sí tenga año) — sin año no hay señal para
+    // confirmar el match, así que no debe aceptarse solo por tener póster.
+    const createMock = vi.fn().mockResolvedValue({
+      content: [{ type: 'text', text: JSON.stringify({
+        recommendations: [
+          { title: 'Kirby and the Forgotten Land', type: 'game', year: 2022, reason: 'x', searchQuery: 'Kirby and the Forgotten Land' },
+        ],
+      }) }],
+    })
+    searchByTypeMock.mockResolvedValue([
+      { id: 'game_667657', type: 'game', title: 'NaN', year: undefined, poster: 'https://rawg/nan.jpg' },
+    ])
+
+    vi.doMock('@anthropic-ai/sdk', () => makeAnthropicMock(createMock))
+    vi.doMock('@/lib/supabase/server', () => makeSupabaseMock())
+
+    const { getAiRecommendations } = await import('@/lib/claude/recommendations')
+    const recs = await getAiRecommendations('u-noyear-badmatch', [], 'es')
+
+    expect(recs).toEqual([])
   })
 
   it('discards the recommendation entirely when searchByType returns no match (sin portada, sin card)', async () => {
