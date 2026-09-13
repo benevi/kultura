@@ -46,7 +46,7 @@ export default async function ProfilePage({ params }: Props) {
   // Perfil del usuario visitado
   const { data: profileUser } = await supabase
     .from('users')
-    .select('id, username, avatar_color, avatar_initials, created_at, bio')
+    .select('id, username, avatar_color, avatar_initials, avatar_icon, created_at, bio')
     .eq('username', username)
     .single()
 
@@ -115,6 +115,7 @@ export default async function ProfilePage({ params }: Props) {
             username={profileUser.username}
             avatarColor={profileUser.avatar_color}
             avatarInitials={profileUser.avatar_initials}
+            avatarIcon={profileUser.avatar_icon ?? null}
             createdAt={profileUser.created_at}
             bio={(profileUser as { bio?: string | null }).bio ?? null}
             isOwner={isOwnProfile}

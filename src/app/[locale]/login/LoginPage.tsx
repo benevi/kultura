@@ -8,6 +8,7 @@ import { createClient } from "@/lib/supabase/client";
 import { getAuthErrorKey } from "@/lib/utils/auth-errors";
 import { KButton } from "@/components/ui/KButton";
 import { KInput } from "@/components/ui/KInput";
+import { AvatarIconPicker } from "@/components/ui/AvatarIconPicker";
 import { Logo } from "@/components/layout/Logo";
 import { cn } from "@/lib/utils/index";
 
@@ -26,6 +27,14 @@ const AUTH_CARD_BACKGROUND = {
 // ---------------------------------------------------------------------------
 
 type Mode = "login" | "register" | "reset";
+
+/**
+ * Dónde se aparca el personaje elegido al registrarse hasta que hay sesión
+ * (E-AVATAR-ICONS). La fila de `users` la crea un trigger de base de datos, y
+ * el alta puede quedar pendiente de confirmar el correo, así que la elección
+ * tiene que sobrevivir a ese hueco.
+ */
+const PENDING_AVATAR_ICON_KEY = "kultura:pending-avatar-icon";
 
 interface FormState {
   email: string;
@@ -118,6 +127,22 @@ export function LoginPage({ locale }: LoginPageProps) {
     success: false,
   });
 
+  // E-AVATAR-ICONS: el personaje elegido al registrarse. Se guarda también en el
+  // navegador porque el alta puede quedar pendiente de confirmar el correo y la
+  // elección tendría que sobrevivir hasta el primer inicio de sesión.
+  const [avatarIcon, setAvatarIcon] = useState<string | null>(null);
+
+  function handleAvatarIconChange(icon: string | null) {
+    setAvatarIcon(icon);
+    try {
+      if (icon) window.localStorage.setItem(PENDING_AVATAR_ICON_KEY, icon);
+      else window.localStorage.removeItem(PENDING_AVATAR_ICON_KEY);
+    } catch {
+      // Modo privado o almacenamiento bloqueado: se pierde solo si además hay
+      // confirmación por correo de por medio, y siempre queda Ajustes.
+    }
+  }
+
   // Redirect if already authenticated (only in login mode — register/reset allow new accounts)
   useEffect(() => {
     if (mode !== "login") return;
@@ -198,6 +223,7 @@ export function LoginPage({ locale }: LoginPageProps) {
       return;
     }
 
+    await applyPendingAvatarIcon();
     router.push("/home");
   }
 
@@ -220,10 +246,44 @@ export function LoginPage({ locale }: LoginPageProps) {
     }
 
     if (data.session) {
+      await applyPendingAvatarIcon();
       router.push("/home");
     } else {
       // Email confirmation required
       setForm((prev) => ({ ...prev, loading: false, success: true }));
+    }
+  }
+
+  /**
+   * Guarda el personaje elegido durante el registro (E-AVATAR-ICONS).
+   *
+   * La fila de `users` la crea un trigger de base de datos al dar de alta la
+   * cuenta, así que el personaje no puede viajar en el propio `signUp`: se
+   * escribe justo después, ya con sesión. Y como el alta puede exigir confirmar
+   * el correo (sin sesión todavía), la elección queda aparcada en el navegador
+   * y se aplica al primer inicio de sesión — si no, se perdería sin avisar.
+   */
+  async function applyPendingAvatarIcon() {
+    let pending: string | null = null;
+    try {
+      pending = avatarIcon ?? window.localStorage.getItem(PENDING_AVATAR_ICON_KEY);
+    } catch {
+      pending = avatarIcon;
+    }
+    if (!pending) return;
+
+    await fetch("/api/settings", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ avatar_icon: pending }),
+    }).catch(() => {
+      // Un fallo aquí no puede impedir entrar: el personaje se cambia en Ajustes.
+    });
+
+    try {
+      window.localStorage.removeItem(PENDING_AVATAR_ICON_KEY);
+    } catch {
+      // Modo privado o almacenamiento bloqueado: nada que limpiar.
     }
   }
 
@@ -442,6 +502,22 @@ export function LoginPage({ locale }: LoginPageProps) {
               error={form.fieldErrors.confirmPassword}
               placeholder="••••••••"
             />
+          )}
+
+          {/* Personaje del avatar (E-AVATAR-ICONS) — opcional: quien no elija
+              se queda con sus iniciales, igual que las cuentas de siempre. */}
+          {mode === "register" && (
+            <div className="flex flex-col gap-3">
+              <span className="text-sm font-body text-text-secondary">
+                {tAuth("chooseCharacter")}
+              </span>
+              <AvatarIconPicker
+                value={avatarIcon}
+                onChange={handleAvatarIconChange}
+                label={tAuth("chooseCharacter")}
+                noneLabel={tAuth("chooseCharacterNone")}
+              />
+            </div>
           )}
 
           {/* Global auth error — semantic danger red */}

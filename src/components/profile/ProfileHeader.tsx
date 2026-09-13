@@ -12,6 +12,7 @@ interface ProfileHeaderProps {
   username: string
   avatarColor: string
   avatarInitials: string
+  avatarIcon?: string | null
   createdAt: string
   bio: string | null
   isOwner: boolean
@@ -25,6 +26,7 @@ export async function ProfileHeader({
   username,
   avatarColor,
   avatarInitials,
+  avatarIcon,
   createdAt,
   bio,
   isOwner,
@@ -53,6 +55,7 @@ export async function ProfileHeader({
         <Avatar
           color={avatarColor}
           initials={avatarInitials}
+          icon={avatarIcon}
           size="lg"
           className="w-16 h-16 md:w-20 md:h-20 text-lg"
         />
