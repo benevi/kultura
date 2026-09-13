@@ -67,19 +67,25 @@ export class JikanError extends Error {
 // ── Helper ────────────────────────────────────────────────────────────────────
 
 /**
- * Jikan está detrás de Cloudflare, y Cloudflare puede bloquear peticiones sin
- * un `User-Agent` identificable como tráfico de bot (patrón típico de IPs de
- * datacenter/serverless como las de Vercel, que llegan sin el header por
- * defecto de `fetch`). Los propios docs de Jikan recomiendan identificar la
- * app. No verificado en vivo desde este entorno (sandbox sin acceso de red a
- * api.jikan.moe) — candidato principal al fallo de anime en producción
- * reportado por el usuario (un bloqueo de Cloudflare da 403, que
- * `fetchErrorKind` clasifica como 'generic', igual que el banner que se vio).
+ * Identificación de la app ante Jikan (recomendado por sus propios docs).
+ * No resolvió el fallo de anime en producción por sí solo — confirmado por
+ * logs reales de Vercel (2026-09-13): Jikan devolvió `504` (Gateway Timeout,
+ * su propio servidor, no un bloqueo de Cloudflare) en `/top/anime`. Se deja
+ * el header igualmente: es inocuo y sigue siendo buena práctica.
  */
 const JIKAN_HEADERS = {
   "User-Agent": "KulturaApp/1.0 (+https://kultura.app)",
   Accept: "application/json",
 };
+
+/** Códigos 5xx de Jikan que vale la pena reintentar una vez: fallos de SU
+ * servidor (timeout/sobrecarga), no del cliente — a diferencia de 429
+ * (límite de tasa: reintentar de inmediato solo lo empeora) o 4xx. */
+const JIKAN_RETRYABLE_STATUS = new Set([502, 503, 504]);
+
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
 
 async function jikanFetch<T>(
   path: string,
@@ -87,9 +93,16 @@ async function jikanFetch<T>(
 ): Promise<T> {
   const url = new URL(`https://api.jikan.moe/v4${path}`);
   Object.entries(params).forEach(([k, v]) => url.searchParams.set(k, v));
-  const res = await fetch(url.toString(), { headers: JIKAN_HEADERS });
-  if (!res.ok) throw new JikanError(path, res.status);
-  return res.json() as Promise<T>;
+
+  let lastStatus: number | undefined;
+  for (let attempt = 0; attempt < 2; attempt++) {
+    if (attempt > 0) await sleep(400);
+    const res = await fetch(url.toString(), { headers: JIKAN_HEADERS });
+    if (res.ok) return res.json() as Promise<T>;
+    lastStatus = res.status;
+    if (!JIKAN_RETRYABLE_STATUS.has(res.status)) break;
+  }
+  throw new JikanError(path, lastStatus!);
 }
 
 // ── Anime ─────────────────────────────────────────────────────────────────────
