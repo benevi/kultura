@@ -17,7 +17,6 @@ vi.mock("@/lib/api/jikan", async (importOriginal) => {
   const actual = await importOriginal<typeof import("@/lib/api/jikan")>();
   return {
     ...actual,
-    getPopularAnime: vi.fn(),
     discoverAnime: vi.fn(),
   };
 });
@@ -77,7 +76,7 @@ vi.mock("@/lib/api/normalizer", () => ({
 
 import { fetchDiscoverData } from "@/lib/api/discover";
 import { discoverMovies, discoverTV } from "@/lib/api/tmdb";
-import { getPopularAnime } from "@/lib/api/jikan";
+import { discoverAnime } from "@/lib/api/jikan";
 import { getPopularManga } from "@/lib/api/mangadex";
 import { searchGoogleBooks } from "@/lib/api/googlebooks";
 import { searchByTypePaged } from "@/lib/api/search";
@@ -112,7 +111,7 @@ describe("fetchDiscoverData — guard null-data (E29)", () => {
   });
 
   it("anime: res.data = null → items=[], totalPages=1, no lanza TypeError", async () => {
-    vi.mocked(getPopularAnime).mockResolvedValue({
+    vi.mocked(discoverAnime).mockResolvedValue({
       data: null as unknown as never[],
       pagination: { last_visible_page: 1 },
     });
@@ -124,7 +123,7 @@ describe("fetchDiscoverData — guard null-data (E29)", () => {
   });
 
   it("anime: res.data = undefined → items=[], no lanza TypeError", async () => {
-    vi.mocked(getPopularAnime).mockResolvedValue({
+    vi.mocked(discoverAnime).mockResolvedValue({
       data: undefined as unknown as never[],
       pagination: { last_visible_page: 1 },
     });
@@ -135,7 +134,7 @@ describe("fetchDiscoverData — guard null-data (E29)", () => {
   });
 
   it("anime: res.data = array válido → items mapeados correctamente", async () => {
-    vi.mocked(getPopularAnime).mockResolvedValue({
+    vi.mocked(discoverAnime).mockResolvedValue({
       data: [{ mal_id: 1, title: "Naruto" }] as never[],
       pagination: { last_visible_page: 5 },
     });
@@ -358,7 +357,7 @@ describe("fetchDiscoverData — manga volúmenes post-filtro (E59 F3c)", () => {
 describe("fetchDiscoverData — anime ignora volúmenes (E59 F3c)", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    vi.mocked(getPopularAnime).mockResolvedValue({
+    vi.mocked(discoverAnime).mockResolvedValue({
       data: [
         { mal_id: 1, title: "A" },
         { mal_id: 2, title: "B" },
@@ -412,7 +411,7 @@ describe("fetchDiscoverData — catch tipado (E29)", () => {
   });
 
   it("JikanError(429) → fetchErrorKind = 'rate-limit', items=[], totalPages=1", async () => {
-    vi.mocked(getPopularAnime).mockRejectedValue(
+    vi.mocked(discoverAnime).mockRejectedValue(
       new JikanError("/top/anime", 429)
     );
 
@@ -423,7 +422,7 @@ describe("fetchDiscoverData — catch tipado (E29)", () => {
   });
 
   it("JikanError(503) → fetchErrorKind = 'generic' (no 429)", async () => {
-    vi.mocked(getPopularAnime).mockRejectedValue(
+    vi.mocked(discoverAnime).mockRejectedValue(
       new JikanError("/top/anime", 503)
     );
 
@@ -432,7 +431,7 @@ describe("fetchDiscoverData — catch tipado (E29)", () => {
   });
 
   it("Error genérico (network) → fetchErrorKind = 'generic'", async () => {
-    vi.mocked(getPopularAnime).mockRejectedValue(new Error("fetch failed"));
+    vi.mocked(discoverAnime).mockRejectedValue(new Error("fetch failed"));
 
     const result = await fetchDiscoverData("anime", 1);
     expect(result.fetchErrorKind).toBe("generic");
@@ -470,7 +469,7 @@ describe('fetchDiscoverData — modo "all" (R5a)', () => {
       results: [{ id: 2, name: "TV B" }],
       total_pages: 1,
     } as never);
-    vi.mocked(getPopularAnime).mockResolvedValue({
+    vi.mocked(discoverAnime).mockResolvedValue({
       data: [{ mal_id: 3, title: "Anime C" }] as never[],
       pagination: { last_visible_page: 1 },
     });
@@ -535,7 +534,7 @@ describe('fetchDiscoverData — modo "all" (R5a)', () => {
       results: [],
       total_pages: 1,
     } as never);
-    vi.mocked(getPopularAnime).mockRejectedValue(
+    vi.mocked(discoverAnime).mockRejectedValue(
       new JikanError("/top/anime", 429)
     );
     vi.mocked(searchGoogleBooks).mockResolvedValue({
@@ -593,7 +592,7 @@ describe("fetchDiscoverData — hasMore (E79 slice 1)", () => {
   });
 
   it("anime: hasMore desde last_visible_page", async () => {
-    vi.mocked(getPopularAnime).mockResolvedValue({
+    vi.mocked(discoverAnime).mockResolvedValue({
       data: [{ mal_id: 1, title: "A" }] as never[],
       pagination: { last_visible_page: 4 },
     });
@@ -661,7 +660,7 @@ describe("fetchDiscoverData — hasMore (E79 slice 1)", () => {
   });
 
   it("error (catch) → hasMore false (no hay siguiente que ofrecer)", async () => {
-    vi.mocked(getPopularAnime).mockRejectedValue(new Error("boom"));
+    vi.mocked(discoverAnime).mockRejectedValue(new Error("boom"));
     const result = await fetchDiscoverData("anime", 1);
     expect(result.fetchErrorKind).toBe("generic");
     expect(result.hasMore).toBe(false);
@@ -777,7 +776,7 @@ describe('fetchDiscoverData — hasMore en "all" (E79 slice 1)', () => {
       results: five((i) => ({ id: `t${i}`, name: "T" })),
       total_pages: 1,
     } as never);
-    vi.mocked(getPopularAnime).mockResolvedValue({
+    vi.mocked(discoverAnime).mockResolvedValue({
       data: five((i) => ({ mal_id: `a${i}`, title: "A" })) as never[],
       pagination: { last_visible_page: 1 },
     });
@@ -882,7 +881,7 @@ describe("fetchDiscoverData — tope común de páginas (E79-s3, antes E89)", ()
       expect(result.totalPages).toBe(DISCOVER_MAX_PAGES);
     }
     expect(discoverTV).not.toHaveBeenCalled();
-    expect(getPopularAnime).not.toHaveBeenCalled();
+    expect(discoverAnime).not.toHaveBeenCalled();
     expect(getPopularManga).not.toHaveBeenCalled();
     expect(searchGoogleBooks).not.toHaveBeenCalled();
     expect(getRecentComics).not.toHaveBeenCalled();

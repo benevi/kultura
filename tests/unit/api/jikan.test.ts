@@ -6,7 +6,7 @@
 // ============================================================
 
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { getPopularAnime, JikanError } from "@/lib/api/jikan";
+import { discoverAnime, JikanError } from "@/lib/api/jikan";
 
 function jsonResponse(body: unknown, status = 200): Response {
   return new Response(JSON.stringify(body), {
@@ -34,7 +34,7 @@ describe("jikanFetch — retry en 5xx", () => {
         jsonResponse({ data: [], pagination: { last_visible_page: 1 } })
       );
 
-    const promise = getPopularAnime(1);
+    const promise = discoverAnime(1);
     await vi.runAllTimersAsync();
     const result = await promise;
 
@@ -46,7 +46,7 @@ describe("jikanFetch — retry en 5xx", () => {
     const fetchMock = vi.mocked(fetch);
     fetchMock.mockResolvedValue(jsonResponse(null, 504));
 
-    const promise = getPopularAnime(1).catch((e) => e);
+    const promise = discoverAnime(1).catch((e) => e);
     await vi.runAllTimersAsync();
     const err = await promise;
 
@@ -59,7 +59,7 @@ describe("jikanFetch — retry en 5xx", () => {
     const fetchMock = vi.mocked(fetch);
     fetchMock.mockResolvedValue(jsonResponse(null, 429));
 
-    const promise = getPopularAnime(1).catch((e) => e);
+    const promise = discoverAnime(1).catch((e) => e);
     await vi.runAllTimersAsync();
     const err = await promise;
 
@@ -72,7 +72,7 @@ describe("jikanFetch — retry en 5xx", () => {
     const fetchMock = vi.mocked(fetch);
     fetchMock.mockResolvedValue(jsonResponse(null, 404));
 
-    const promise = getPopularAnime(1).catch((e) => e);
+    const promise = discoverAnime(1).catch((e) => e);
     await vi.runAllTimersAsync();
     const err = await promise;
 
@@ -86,7 +86,7 @@ describe("jikanFetch — retry en 5xx", () => {
       jsonResponse({ data: [], pagination: { last_visible_page: 1 } })
     );
 
-    await getPopularAnime(1);
+    await discoverAnime(1);
     expect(fetchMock).toHaveBeenCalledTimes(1);
   });
 
@@ -96,7 +96,7 @@ describe("jikanFetch — retry en 5xx", () => {
       jsonResponse({ data: [], pagination: { last_visible_page: 1 } })
     );
 
-    await getPopularAnime(1);
+    await discoverAnime(1);
     const [, init] = fetchMock.mock.calls[0];
     expect((init?.headers as Record<string, string>)["User-Agent"]).toMatch(
       /Kultura/i

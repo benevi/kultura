@@ -1,7 +1,7 @@
 // ============================================================
 // KULTURA — Jikan filter translation tests (E59 F3b)
 // genre/demografia→genres (MAL IDs, OR), año→start/end_date, status por subtipo
-// (anime vs manga), sort→order_by+sort, guard de desconocidos, hasJikanFilters.
+// (anime vs manga), sort→order_by+sort, guard de desconocidos.
 // ============================================================
 
 import { describe, it, expect } from "vitest";
@@ -10,7 +10,6 @@ import {
   jikanStatus,
   jikanSort,
   jikanDateRange,
-  hasJikanFilters,
   volumenesMin,
   filterByMinVolumes,
 } from "@/lib/api/jikan-maps";
@@ -179,29 +178,6 @@ describe("buildJikanDiscoverParams", () => {
       buildJikanDiscoverParams("anime", { valoracion: "99" }).min_score
     ).toBeUndefined();
     expect(buildJikanDiscoverParams("anime").min_score).toBeUndefined();
-  });
-});
-
-// ── hasJikanFilters ────────────────────────────────────────────────────────────
-
-describe("hasJikanFilters", () => {
-  it("false sin filtros o con sort=popularity (default)", () => {
-    expect(hasJikanFilters({})).toBe(false);
-    expect(hasJikanFilters({ sort: "popularity" })).toBe(false);
-    expect(hasJikanFilters({ genre: [] })).toBe(false);
-  });
-
-  it("true con cualquier filtro real (incluido sort no-default)", () => {
-    expect(hasJikanFilters({ genre: ["accion"] })).toBe(true);
-    expect(hasJikanFilters({ demografia: "shonen" })).toBe(true);
-    expect(hasJikanFilters({ year: "2020s" })).toBe(true);
-    expect(hasJikanFilters({ status: "airing" })).toBe(true);
-    expect(hasJikanFilters({ sort: "rating" })).toBe(true);
-    expect(hasJikanFilters({ valoracion: "8" })).toBe(true);
-  });
-
-  it("volumenes NO dispara endpoint de búsqueda (es post-filtro)", () => {
-    expect(hasJikanFilters({ volumenes: "20plus" })).toBe(false);
   });
 });
 

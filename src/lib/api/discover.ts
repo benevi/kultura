@@ -10,14 +10,9 @@ import {
   filterTVByTemporadas,
   type TmdbFilters,
 } from "@/lib/api/tmdb-maps";
-import {
-  getPopularAnime,
-  discoverAnime,
-  JikanError,
-} from "@/lib/api/jikan";
+import { discoverAnime, JikanError } from "@/lib/api/jikan";
 import {
   buildJikanDiscoverParams,
-  hasJikanFilters,
   type JikanFilters,
 } from "@/lib/api/jikan-maps";
 import { getPopularManga, discoverManga } from "@/lib/api/mangadex";
@@ -255,10 +250,16 @@ export async function fetchDiscoverData(
         break;
       }
       case "anime": {
-        // Con filtros → /anime (búsqueda, acepta filtros); sin filtros → /top/anime.
-        const res = hasJikanFilters(filters)
-          ? await discoverAnime(page, buildJikanDiscoverParams("anime", filters))
-          : await getPopularAnime(page);
+        // E-JIKAN-TOP-DOWN (2026-09-13): `/top/anime` devolvía 504 de forma
+        // persistente en producción (confirmado por logs reales, no un blip
+        // puntual — el usuario lo reportó repetido en el tiempo). Se deja de
+        // usar por completo: SIEMPRE se pasa por `/anime` (endpoint de
+        // búsqueda), con `order_by=popularity` como sort por defecto cuando
+        // no hay filtros — mismo resultado esperado, endpoint distinto.
+        const res = await discoverAnime(
+          page,
+          buildJikanDiscoverParams("anime", filters)
+        );
         const data = Array.isArray(res.data) ? (res.data as JikanAnime[]) : [];
         items = data.map((a) => normalizeAnime(a));
         // E79-s3: `last_visible_page` es el tope REAL de Jikan; se capa además
