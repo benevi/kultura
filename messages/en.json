@@ -511,7 +511,11 @@
     "deleteAccountConfirmMessage": "This action cannot be undone. Your profile, library, lists, friendships and all your data will be deleted.",
     "deleteAccountConfirmButton": "Yes, delete my account",
     "deleteAccountCancel": "Cancel",
-    "deleteAccountError": "Failed to delete account. Please try again."
+    "deleteAccountError": "Failed to delete account. Please try again.",
+    "importData": "Import data",
+    "importDataHint": "Restore your library and lists from an exported file. It will not duplicate what you already have.",
+    "importDataSuccess": "{count} titles and {lists} lists imported",
+    "importDataError": "Could not import the data. Check that the file is a Kultura export."
   },
   "report": {
     "label": "Report",
