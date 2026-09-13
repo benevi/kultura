@@ -13,7 +13,7 @@
 //   - TMDB (movie/tv)      → `language=es-ES | en-US`          ✅ localizado
 //   - Google Books (book)  → `langRestrict=es | en`            ✅ localizado
 //   - MangaDex (manga)     → `availableTranslatedLanguage[]`   ✅ localizado
-//   - Jikan (anime/manga)  → inglés/japonés únicamente          ❌ limitación
+//   - AniList (anime)      → inglés/romaji/nativo únicamente     ❌ limitación
 //   - ComicVine (comic)    → inglés únicamente                  ❌ limitación
 //   - RAWG (game)          → inglés (Steam aporta el idioma en la ficha)
 // Las dos limitaciones son aceptadas a nivel de producto: no existe API gratuita

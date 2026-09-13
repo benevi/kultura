@@ -11,7 +11,8 @@ import type { MediaType, StreamingProvider } from "@/types/media";
 import { getMovie, getMovieVideos, getMovieProviders, getTVVideos, getTVProviders, getTV } from "@/lib/api/tmdb";
 import type { TmdbProvidersResponse } from "@/lib/api/tmdb";
 import { tmdbRegion } from "@/lib/api/locale";
-import { getAnime, getAnimeVideos, getManga as getMangaJikan } from "@/lib/api/jikan";
+import { getAnime as getAnimeJikan, getAnimeVideos, getManga as getMangaJikan } from "@/lib/api/jikan";
+import { getAnime as getAnimeAniList, isAniListId, fromAniListRef } from "@/lib/api/anilist";
 import { getManga as getMangaDex, isMangaDexId } from "@/lib/api/mangadex";
 import { getBookDetail } from "@/lib/api/openlibrary";
 import {
@@ -25,6 +26,7 @@ import {
   normalizeMovie,
   normalizeTV,
   normalizeAnime,
+  normalizeAniListAnime,
   normalizeMangaJikan,
   normalizeMangaDex,
   normalizeBookGoogle,
@@ -122,6 +124,44 @@ async function resolveMangaItem(id: string, locale?: string) {
   return legacy ? normalizeMangaJikan(legacy.data) : null;
 }
 
+// ── Helper: anime (AniList + fallback legacy Jikan) ───────────────────────────
+
+/**
+ * Resuelve la ficha de un anime (E-ANIME-SOURCE), incluido el trailer.
+ *
+ * Fuente actual: AniList (`anime_al-{id}`). Las bibliotecas guardadas mientras
+ * anime venía de Jikan tienen `anime_{mal_id}` (entero plano) — se enruta por
+ * la forma del id (mismo patrón que `resolveMangaItem`/`resolveBookItem`).
+ * AniList trae el trailer inline en la propia consulta; Jikan legacy necesita
+ * una segunda llamada (`getAnimeVideos`), de ahí que esta función devuelva
+ * `trailerKey` ya resuelto en vez de solo el item. Sin parámetro `locale`:
+ * AniList no ofrece títulos/sinopsis en español (solo romaji/inglés/nativo,
+ * ver `normalizeAniListAnime`), a diferencia de MangaDex/Google Books.
+ */
+async function resolveAnimeItem(
+  id: string
+): Promise<{ item: ReturnType<typeof normalizeAnime>; trailerKey?: string } | null> {
+  if (isAniListId(id)) {
+    const raw = await getAnimeAniList(fromAniListRef(id)).catch(() => null);
+    if (!raw) return null;
+    const item = normalizeAniListAnime(raw);
+    return { item, trailerKey: item.trailerKey };
+  }
+
+  const numId = Number(id);
+  const [detail, videos] = await Promise.allSettled([
+    getAnimeJikan(numId),
+    getAnimeVideos(numId),
+  ]);
+  if (detail.status === "rejected") return null;
+  const item = normalizeAnime(detail.value.data);
+  const trailerKey =
+    videos.status === "fulfilled"
+      ? (videos.value.data.promo?.[0]?.trailer?.youtube_id ?? undefined)
+      : undefined;
+  return { item, trailerKey };
+}
+
 // ── Metadata ──────────────────────────────────────────────────────────────────
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
@@ -145,10 +185,12 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       description = detail.overview || undefined;
       if (detail.poster_path) image = `https://image.tmdb.org/t/p/w500${detail.poster_path}`;
     } else if (type === "anime") {
-      const resp = await getAnime(Number(id));
-      title = resp.data.title_english ?? resp.data.title;
-      description = resp.data.synopsis ?? undefined;
-      image = resp.data.images?.jpg?.large_image_url ?? undefined;
+      const resolved = await resolveAnimeItem(id);
+      if (resolved) {
+        title = resolved.item.title;
+        description = resolved.item.synopsis;
+        image = resolved.item.poster;
+      }
     } else if (type === "manga") {
       const item = await resolveMangaItem(id, locale);
       if (item) {
@@ -269,17 +311,10 @@ export default async function MediaDetailPage({ params }: Props) {
         providers = extractProvidersForRegion(prov.value, providerRegion);
       }
     } else if (mediaType === "anime") {
-      const numId = Number(id);
-      const [detail, videos] = await Promise.allSettled([
-        getAnime(numId),
-        getAnimeVideos(numId),
-      ]);
-      if (detail.status === "rejected") notFound();
-      item = normalizeAnime(detail.value.data);
-      if (videos.status === "fulfilled") {
-        const promo = videos.value.data.promo?.[0]?.trailer?.youtube_id;
-        trailerKey = promo ?? undefined;
-      }
+      const resolved = await resolveAnimeItem(id);
+      if (!resolved) notFound();
+      item = resolved.item;
+      trailerKey = resolved.trailerKey;
     } else if (mediaType === "manga") {
       const manga = await resolveMangaItem(id, locale);
       if (!manga) notFound();

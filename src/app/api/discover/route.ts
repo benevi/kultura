@@ -29,9 +29,10 @@ export async function GET(request: NextRequest) {
   // la misma forma, así que el grid y la paginación del cliente no cambian.
 
   // F3a+F3b: se pasan los filtros que cada familia consume nativamente
-  // (TMDB: genre/year/platform/sort/status/duracion/idioma; Jikan: +demografia;
-  // RAWG: genre/platform/year/sort). Cada builder ignora los vacíos/desconocidos
-  // y los campos que no entiende. fetchDiscoverData nunca lanza → 200.
+  // (TMDB: genre/year/platform/sort/status/duracion/idioma; MangaDex:
+  // +demografia; RAWG: genre/platform/year/sort). Cada builder ignora los
+  // vacíos/desconocidos y los campos que no entiende. fetchDiscoverData nunca
+  // lanza → 200.
   //
   // E59 R4a — además se reenvían los campos que DiscoverFilters ya consume y que
   // antes se perdían: volumenes (manga/comic post-filtro), editorial (book/comic),

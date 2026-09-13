@@ -8,6 +8,7 @@ import {
   normalizeMovie,
   normalizeTV,
   normalizeAnime,
+  normalizeAniListAnime,
   normalizeMangaJikan,
   normalizeMangaDex,
   normalizeBookOpenLibrary,
@@ -16,6 +17,7 @@ import {
 } from "@/lib/api/normalizer";
 import type { TmdbMovieDetail, TmdbTVDetail, TmdbProvidersResponse } from "@/lib/api/tmdb";
 import type { JikanAnimeDetail, JikanMangaDetail } from "@/lib/api/jikan";
+import type { AniListMedia } from "@/lib/api/anilist";
 import type { MangaDexManga } from "@/lib/api/mangadex";
 import type { OpenLibraryDoc } from "@/lib/api/openlibrary";
 import type { RawgGame } from "@/lib/api/rawg";
@@ -95,6 +97,41 @@ const JIKAN_ANIME_MINIMAL: JikanAnimeDetail = {
   studios: [],
   source: "Unknown",
   trailer: { youtube_id: null },
+};
+
+const ANILIST_ANIME_FIXTURE: AniListMedia = {
+  id: 1535,
+  title: { romaji: "Death Note", english: "Death Note", native: "デスノート" },
+  coverImage: {
+    extraLarge: "https://s4.anilist.co/file/anilistcdn/media/anime/cover/large/bx1535.jpg",
+    large: null,
+  },
+  description: "Un cuaderno que permite matar.<br>\nSegunda línea.",
+  genres: ["Mystery", "Supernatural", "Thriller"],
+  averageScore: 86,
+  seasonYear: 2006,
+  startDate: { year: 2006 },
+  episodes: 37,
+  status: "FINISHED",
+  studios: { nodes: [{ name: "Madhouse" }] },
+  trailer: { id: "NlJZ-YgAt-c", site: "youtube" },
+  source: "MANGA",
+};
+
+const ANILIST_ANIME_MINIMAL: AniListMedia = {
+  id: 9999,
+  title: { romaji: "Unknown Anime", english: null, native: null },
+  coverImage: { extraLarge: null, large: null },
+  description: null,
+  genres: [],
+  averageScore: null,
+  seasonYear: null,
+  startDate: null,
+  episodes: null,
+  status: "NOT_YET_RELEASED",
+  studios: null,
+  trailer: null,
+  source: null,
 };
 
 const JIKAN_MANGA_FIXTURE: JikanMangaDetail = {
@@ -331,6 +368,80 @@ describe("normalizeAnime", () => {
 
   it("genres es array de strings", () => {
     expect(result.genres).toContain("Mystery");
+  });
+});
+
+// ── normalizeAniListAnime (E-ANIME-SOURCE) ────────────────────────────────────
+
+describe("normalizeAniListAnime", () => {
+  const result = normalizeAniListAnime(ANILIST_ANIME_FIXTURE);
+
+  it("produce id anime_al-{id} (prefijo al- para no colisionar con Jikan legacy)", () => {
+    expect(result.id).toBe("anime_al-1535");
+    expect(result.externalId).toBe("al-1535");
+  });
+
+  it("tipo es anime", () => {
+    expect(result.type).toBe("anime");
+  });
+
+  it("title prefiere inglés", () => {
+    expect(result.title).toBe("Death Note");
+  });
+
+  it("poster usa coverImage.extraLarge", () => {
+    expect(result.poster).toContain("anilistcdn");
+  });
+
+  it("rating: averageScore (0-100) / 10 → escala 0-10", () => {
+    expect(result.rating).toBe(8.6);
+  });
+
+  it("ratingSource es AniList", () => {
+    expect(result.ratingSource).toBe("AniList");
+  });
+
+  it("trailerKey solo si site es youtube", () => {
+    expect(result.trailerKey).toBe("NlJZ-YgAt-c");
+  });
+
+  it("synopsis limpia el HTML básico (<br> → salto de línea)", () => {
+    expect(result.synopsis).not.toContain("<br>");
+    expect(result.synopsis).toContain("Segunda línea");
+  });
+
+  it("genres es array de strings", () => {
+    expect(result.genres).toEqual(["Mystery", "Supernatural", "Thriller"]);
+  });
+
+  it("year: seasonYear", () => {
+    expect(result.year).toBe(2006);
+  });
+});
+
+describe("normalizeAniListAnime — campos opcionales ausentes", () => {
+  const result = normalizeAniListAnime(ANILIST_ANIME_MINIMAL);
+
+  it("campos opcionales ausentes → undefined, no error", () => {
+    expect(result.id).toBe("anime_al-9999");
+    expect(result.rating).toBeUndefined();
+    expect(result.trailerKey).toBeUndefined();
+    expect(result.synopsis).toBeUndefined();
+    expect(result.year).toBeUndefined();
+    expect(result.poster).toBeUndefined();
+    expect(result.genres).toBeUndefined();
+  });
+
+  it("title cae a romaji cuando no hay inglés", () => {
+    expect(result.title).toBe("Unknown Anime");
+  });
+
+  it("trailer null (site≠youtube o ausente) → trailerKey undefined", () => {
+    const noYoutube = normalizeAniListAnime({
+      ...ANILIST_ANIME_FIXTURE,
+      trailer: { id: "abc123", site: "dailymotion" },
+    });
+    expect(noYoutube.trailerKey).toBeUndefined();
   });
 });
 

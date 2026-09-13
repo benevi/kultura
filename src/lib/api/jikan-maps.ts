@@ -1,15 +1,17 @@
 // ============================================================
-// KULTURA — Jikan filter translation tables (E59 F3b)
-// Traduce el contrato canónico (docs/E59_FILTER_SPEC.md) a los params nativos
-// de /anime y /manga (endpoints de búsqueda, que aceptan filtros — /top/* no).
+// KULTURA — Catálogos de filtro heredados de Jikan (E59 F3b)
 //
-// Guard: vacío / desconocido se ignora. order_by/sort siempre presentes.
+// ESTADO REAL: anime se sirve con AniList (E-ANIME-SOURCE) y manga con
+// MangaDex (E-MANGA-SOURCE) — ninguno de los dos llama ya a la API de Jikan
+// para Descubrir/búsqueda. Las TABLAS de este módulo (slugs canónicos →
+// valor legible) se conservan porque `filter-options.ts` las sigue usando
+// como catálogo de OPCIONES de UI (mismos slugs, reusados por los builders
+// reales de AniList/MangaDex); los builders que traducían estos slugs a
+// params nativos de Jikan (`buildJikanDiscoverParams` y afines) se
+// eliminaron por no tener ya ningún caller.
 // ============================================================
 
 import type { MediaItem } from "@/types/media";
-import { valoracionThreshold } from "@/lib/api/valoracion";
-
-export type JikanMediaType = "anime" | "manga";
 
 // ── Géneros (MAL genre IDs) ─────────────────────────────────────────────────────
 // Mismos IDs para anime y manga en MyAnimeList. slug canónico Kultura → MAL ID.
@@ -65,132 +67,20 @@ export const MANGA_STATUS: Record<string, string> = {
   discontinued: "discontinued",
 };
 
-export function jikanStatus(
-  mediaType: JikanMediaType,
-  status: string | null | undefined
-): string | null {
-  if (!status) return null;
-  const table = mediaType === "anime" ? ANIME_STATUS : MANGA_STATUS;
-  return table[status] ?? null; // desconocido para el subtipo → descartado
-}
-
-// ── Sort → order_by + sort ──────────────────────────────────────────────────────
-// Jikan separa el campo (order_by) de la dirección (sort: asc|desc).
-
-interface JikanSort {
-  order_by: string;
-  sort: string;
-}
-
-export const JIKAN_SORT: Record<string, JikanSort> = {
-  popularity: { order_by: "popularity", sort: "asc" }, // rank 1 = más popular
-  rating: { order_by: "score", sort: "desc" },
-  release_desc: { order_by: "start_date", sort: "desc" },
-  release_asc: { order_by: "start_date", sort: "asc" },
-  title_az: { order_by: "title", sort: "asc" },
-  title_za: { order_by: "title", sort: "desc" },
+// ── Sort — catálogo de opciones de UI (order_by/sort ya no se traduce aquí) ───
+// Los VALORES (order_by/sort) eran específicos del builder de Jikan, ya
+// eliminado; se conservan solo las CLAVES (popularity/rating/…), que
+// `filter-options.ts` usa para listar las opciones del selector de sort de
+// anime (AniList) y manga (MangaDex) — cada builder real las traduce a su
+// propio formato nativo.
+export const JIKAN_SORT: Record<string, true> = {
+  popularity: true,
+  rating: true,
+  release_desc: true,
+  release_asc: true,
+  title_az: true,
+  title_za: true,
 };
-
-export function jikanSort(sort: string | null | undefined): JikanSort {
-  return (sort && JIKAN_SORT[sort]) || JIKAN_SORT.popularity;
-}
-
-// ── Año / década → start_date / end_date (YYYY-MM-DD) ───────────────────────────
-
-export interface JikanDateRange {
-  start_date: string;
-  end_date: string;
-}
-
-export function jikanDateRange(
-  year: string | null | undefined
-): JikanDateRange | null {
-  if (!year) return null;
-
-  const decade = /^(\d{4})s$/.exec(year);
-  if (decade) {
-    const start = parseInt(decade[1], 10);
-    return { start_date: `${start}-01-01`, end_date: `${start + 9}-12-31` };
-  }
-
-  if (year === "classic") {
-    return { start_date: "1900-01-01", end_date: "1999-12-31" };
-  }
-
-  if (/^\d{4}$/.test(year)) {
-    return { start_date: `${year}-01-01`, end_date: `${year}-12-31` };
-  }
-
-  return null;
-}
-
-// ── Filtros de entrada (subconjunto canónico relevante a Jikan) ──────────────────
-
-export interface JikanFilters {
-  genre?: string[];
-  demografia?: string | null;
-  year?: string | null;
-  status?: string | null;
-  sort?: string | null;
-  valoracion?: string | null;
-  // Solo manga, POST-filtro (no es param nativo de Jikan): se aplica sobre los
-  // items ya normalizados, no entra en buildJikanDiscoverParams. anime → oculto.
-  volumenes?: string | null;
-}
-
-function mapSlugs(
-  slugs: string[] | undefined,
-  table: Record<string, number>
-): number[] {
-  if (!slugs?.length) return [];
-  return slugs
-    .map((s) => table[s])
-    .filter((id): id is number => typeof id === "number");
-}
-
-/**
- * Construye los params nativos de /anime o /manga. order_by+sort siempre
- * presentes. genres (género + demografía) en un único CSV (OR). Vacío/inválido
- * se omite. Devuelve {} salvo order_by/sort si no hay filtros reales.
- *
- * E-JIKAN-TOP-DOWN (2026-09-13): /top/anime devolvía 504 de forma persistente
- * en producción (confirmado por logs reales) — anime ya NO usa /top/anime en
- * ningún caso, siempre pasa por /anime (build de este builder), así que este
- * builder ya no es condicional a si hay filtros o no.
- */
-export function buildJikanDiscoverParams(
-  mediaType: JikanMediaType,
-  filters: JikanFilters = {}
-): Record<string, string> {
-  const params: Record<string, string> = {};
-
-  const { order_by, sort } = jikanSort(filters.sort);
-  params.order_by = order_by;
-  params.sort = sort;
-
-  // Género + demografía van juntos en `genres` (ambos son genre IDs MAL).
-  const ids = mapSlugs(filters.genre, JIKAN_GENRE);
-  if (filters.demografia) {
-    const demoId = JIKAN_DEMOGRAPHIC[filters.demografia];
-    if (typeof demoId === "number") ids.push(demoId);
-  }
-  if (ids.length > 0) params.genres = ids.join(",");
-
-  const status = jikanStatus(mediaType, filters.status);
-  if (status) params.status = status;
-
-  const range = jikanDateRange(filters.year);
-  if (range) {
-    params.start_date = range.start_date;
-    params.end_date = range.end_date;
-  }
-
-  // Valoracion (nativo anime+manga): umbral mínimo → min_score (escala 0–10).
-  const minScore = valoracionThreshold(filters.valoracion);
-  if (minScore !== null) params.min_score = String(minScore);
-
-  return params;
-}
 
 // ── Volúmenes (manga) — POST-filtro de mínimo ───────────────────────────────────
 // Buckets canónicos (spec §1/§3): "1-5"/"6-20"/"20plus" → umbral mínimo de volumes.

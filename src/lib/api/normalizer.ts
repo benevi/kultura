@@ -13,6 +13,8 @@ import {
   type TmdbProvidersResponse,
 } from "./tmdb";
 import type { JikanAnimeDetail, JikanMangaDetail } from "./jikan";
+import type { AniListMedia } from "./anilist";
+import { toAniListRef } from "./anilist";
 import type { MangaDexManga } from "./mangadex";
 import { extractMangaCover } from "./mangadex";
 import { pickLocalizedText } from "./locale";
@@ -158,6 +160,56 @@ export function normalizeAnime(raw: JikanAnimeDetail): MediaItem {
       status: raw.status,
       studio: raw.studios?.[0]?.name ?? undefined,
       source: raw.source,
+    },
+  };
+}
+
+/** Limpia el HTML básico (`<br>`, entidades) que AniList puede dejar en
+ * `description` incluso pidiendo `asHtml: false`. `null`/vacío → undefined
+ * (nunca cadena vacía, para que el resto del código trate "sin sinopsis" de
+ * forma uniforme). */
+function stripAniListHtml(html: string | null): string | undefined {
+  if (!html) return undefined;
+  const text = html
+    .replace(/<br\s*\/?>/gi, "\n")
+    .replace(/<\/?[^>]+>/g, "")
+    .replace(/&nbsp;/g, " ")
+    .replace(/&amp;/g, "&")
+    .replace(/&#39;/g, "'")
+    .replace(/&quot;/g, '"')
+    .trim();
+  return text.length > 0 ? text : undefined;
+}
+
+/**
+ * AniList → MediaItem (E-ANIME-SOURCE). `externalId` lleva el prefijo `al-`
+ * (`toAniListRef`) para no colisionar con bibliotecas guardadas cuando anime
+ * venía de Jikan (`mal_id`, entero plano) — mismo mecanismo que
+ * `normalizeMangaDex` frente a los ids numéricos legacy de Jikan en manga.
+ */
+export function normalizeAniListAnime(raw: AniListMedia): MediaItem {
+  const externalId = toAniListRef(raw.id);
+  const title = raw.title.english ?? raw.title.romaji ?? raw.title.native ?? "Unknown";
+
+  return {
+    id: `anime_${externalId}`,
+    externalId,
+    type: "anime",
+    title,
+    originalTitle:
+      raw.title.romaji && raw.title.romaji !== title ? raw.title.romaji : undefined,
+    poster: raw.coverImage?.extraLarge || raw.coverImage?.large || undefined,
+    year: raw.seasonYear ?? raw.startDate?.year ?? undefined,
+    synopsis: stripAniListHtml(raw.description),
+    genres: raw.genres?.length ? raw.genres : undefined,
+    rating: raw.averageScore != null ? raw.averageScore / 10 : undefined,
+    ratingSource: "AniList",
+    trailerKey: raw.trailer?.site === "youtube" ? raw.trailer.id : undefined,
+    metadata: {
+      episodes: raw.episodes ?? undefined,
+      status: raw.status,
+      studio: raw.studios?.nodes?.[0]?.name ?? undefined,
+      source: raw.source ?? undefined,
     },
   };
 }
