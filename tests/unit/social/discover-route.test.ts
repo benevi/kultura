@@ -147,7 +147,7 @@ describe('GET /api/groups/discover', () => {
     expect(res.status).toBe(200)
     expect(mockFrom).toHaveBeenCalledWith('groups')
     expect(mockSelect).toHaveBeenCalledWith(
-      'id, owner_id, name, description, cover_color, icon, is_public, created_at, group_members(user_id)'
+      '*, group_members(user_id)'
     )
     // Filtro explícito de visibilidad: solo grupos públicos (E45-c).
     expect(mockEq).toHaveBeenCalledWith('is_public', true)

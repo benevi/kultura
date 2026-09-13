@@ -16,7 +16,7 @@ export default async function SettingsPage() {
 
   const { data: profile } = await supabase
     .from('users')
-    .select('username, avatar_color, preferred_locale, avatar_icon')
+    .select('*')
     .eq('id', user.id)
     .single()
 

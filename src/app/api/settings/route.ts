@@ -44,7 +44,7 @@ export async function GET(): Promise<NextResponse> {
 
   const { data, error } = await supabase
     .from('users')
-    .select('username, avatar_color, preferred_locale, avatar_icon')
+    .select('*')
     .eq('id', user.id)
     .single()
 
@@ -107,7 +107,7 @@ export async function PATCH(req: NextRequest): Promise<NextResponse> {
     .from('users')
     .update(updates)
     .eq('id', user.id)
-    .select('username, avatar_color, preferred_locale, avatar_icon')
+    .select('*')
     .single()
 
   if (updateError || !updated) {
