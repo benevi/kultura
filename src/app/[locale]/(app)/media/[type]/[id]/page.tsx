@@ -15,9 +15,10 @@ import { getAnime as getAnimeJikan, getAnimeVideos, getManga as getMangaJikan } 
 import { getAnime as getAnimeAniList, isAniListId, fromAniListRef } from "@/lib/api/anilist";
 import { getManga as getMangaDex, isMangaDexId } from "@/lib/api/mangadex";
 import { getBookDetail } from "@/lib/api/openlibrary";
+import { enrichBookWithGoogle } from "@/lib/api/books-enrich";
 import {
   getGoogleBookDetail,
-  isOpenLibraryLegacyId,
+  isOpenLibraryWorkId,
 } from "@/lib/api/googlebooks";
 import { getGame } from "@/lib/api/rawg";
 import { getSteamInfoForGame, type SteamInfo } from "@/lib/api/steam";
@@ -86,21 +87,24 @@ function extractProvidersForRegion(
 // ── Helper: libro (Google Books + fallback legacy Open Library) ───────────────
 
 /**
- * Resuelve la ficha de un libro (E-BOOKS-GOOGLE).
+ * Resuelve la ficha de un libro (E-BOOKS-HIBRIDO).
  *
- * Fuente actual: Google Books (`book_{volumeId}`). Pero las bibliotecas creadas
- * mientras los libros venían de Open Library (E84b/E84c) guardaron
- * `book_OL7353617W`; pedirle ese id a Google Books daría 404 y la ficha de un
- * libro YA GUARDADO se rompería. Por eso se enruta por la forma del id y Open
- * Library se conserva exclusivamente para ese caso legacy.
+ * Se enruta por la FORMA del id, porque conviven dos procedencias y las dos
+ * tienen que seguir abriendo:
+ *   - `book_OL7353617W` → Open Library, que es quien sirve el catálogo. Su
+ *     ficha se completa con Google Books (portada y sinopsis) vía ISBN.
+ *   - `book_{volumeId}` → Google Books directo. Son los títulos guardados
+ *     mientras el catálogo lo sirvió Google Books (E-BOOKS-GOOGLE); pedirle ese
+ *     id a Open Library daría 404 y rompería una ficha YA EN BIBLIOTECA.
  */
 async function resolveBookItem(id: string) {
-  if (isOpenLibraryLegacyId(id)) {
-    const legacy = await getBookDetail(id).catch(() => null);
-    if (!legacy) return null;
-    const item = normalizeBookOpenLibrary(legacy.doc);
-    if (legacy.description) item.synopsis = legacy.description;
-    return item;
+  if (isOpenLibraryWorkId(id)) {
+    const detail = await getBookDetail(id).catch(() => null);
+    if (!detail) return null;
+    const item = normalizeBookOpenLibrary(detail.doc);
+    if (detail.description) item.synopsis = detail.description;
+    // Best-effort: si Google no responde o no hay ISBN, se sirve tal cual.
+    return enrichBookWithGoogle(item).catch(() => item);
   }
   const volume = await getGoogleBookDetail(id).catch(() => null);
   return volume ? normalizeBookGoogle(volume) : null;

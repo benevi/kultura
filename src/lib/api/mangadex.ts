@@ -8,7 +8,7 @@
 // `search.ts` y `media/[type]/[id]/page.tsx`). Jikan se conserva SOLO para
 // resolver ids legacy: bibliotecas guardadas mientras manga venía de Jikan
 // tienen `manga_{mal_id}` (numérico) — `isMangaDexId` distingue la forma del
-// id igual que `isOpenLibraryLegacyId` para libros.
+// id igual que `isOpenLibraryWorkId` para libros.
 //
 // Idioma (E-MANGADEX-LOCALE): MangaDex es el único proveedor de manga con
 // traducciones reales. `availableTranslatedLanguage[]` acota el catálogo a los
@@ -100,7 +100,7 @@ function translatedLanguageParams(locale?: string | null): [string, string][] {
  * true si `id` tiene forma de UUID de MangaDex (formato nativo de sus ids).
  * Los ids legacy de Jikan (bibliotecas guardadas cuando manga venía de Jikan)
  * son numéricos (`mal_id`) — nunca calzan este patrón. Mismo mecanismo que
- * `isOpenLibraryLegacyId` en googlebooks.ts.
+ * `isOpenLibraryWorkId` en googlebooks.ts.
  */
 export function isMangaDexId(id: string): boolean {
   return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(

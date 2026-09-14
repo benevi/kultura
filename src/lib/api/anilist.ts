@@ -13,7 +13,7 @@
 // identifica de forma única la fuente. Las bibliotecas guardadas mientras
 // anime venía de Jikan tienen `anime_{mal_id}` (entero plano); los nuevos
 // items de AniList usan `anime_al-{id}` (prefijo `al-`, ver `isAniListId`),
-// exactamente el mismo mecanismo que `isMangaDexId`/`isOpenLibraryLegacyId`
+// exactamente el mismo mecanismo que `isMangaDexId`/`isOpenLibraryWorkId`
 // para manga/libros.
 // ============================================================
 
@@ -234,7 +234,7 @@ export async function getAnime(id: number): Promise<AniListMedia> {
  * true si `id` tiene forma de referencia AniList (`al-{entero}`). Los ids
  * legacy de Jikan (bibliotecas guardadas cuando anime venía de MAL) son
  * enteros planos — nunca calzan este patrón. Mismo mecanismo que
- * `isMangaDexId` (mangadex.ts) / `isOpenLibraryLegacyId` (googlebooks.ts).
+ * `isMangaDexId` (mangadex.ts) / `isOpenLibraryWorkId` (googlebooks.ts).
  */
 export function isAniListId(id: string): boolean {
   return /^al-\d+$/.test(id);

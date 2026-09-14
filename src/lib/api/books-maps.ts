@@ -1,4 +1,19 @@
 // ============================================================
+// ⚠️ E-BOOKS-HIBRIDO (2026-09-14): este módulo YA NO dirige el catálogo.
+//
+// Los filtros de libro los traduce ahora `openlibrary-maps.ts`, porque Open
+// Library aplica idioma y año como filtros de verdad y Google Books no. De
+// aquí solo siguen VIVOS los catálogos que alimentan las opciones de la UI:
+//   - `BOOKS_FORMATO`  → opciones del trigger "formato"
+//   - `BOOKS_PUBLISHER`→ opciones del trigger "editorial" (hoy solo en cómic)
+//
+// El resto (buildGoogleBooksQuery, hasBookFilters, bookYearMatcher,
+// preferBooksInLanguage, booksLangRestrictOverride, GOOGLE_BOOKS_BASE_QUERY,
+// BOOKS_GENRE) es código muerto: no lo importa nadie. Se conserva un ciclo por
+// si hay que revertir el híbrido, y está anotado como deuda en CLAUDE.md.
+// ============================================================
+
+// ============================================================
 // KULTURA — Google Books filter translation tables (E-BOOKS-GOOGLE)
 // Traduce el contrato canónico de filtros a la query de /volumes:
 //   género    → subject:"<BISAC>"        (en q, operador nativo)

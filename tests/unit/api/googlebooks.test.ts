@@ -12,7 +12,7 @@ import {
   googleBooksCover,
   googleBooksTotalPages,
   googleBooksStartIndex,
-  isOpenLibraryLegacyId,
+  isOpenLibraryWorkId,
   GOOGLE_BOOKS_PAGE_SIZE,
 } from "@/lib/api/googlebooks";
 
@@ -194,17 +194,17 @@ describe("googleBooksTotalPages / googleBooksStartIndex", () => {
   });
 });
 
-describe("isOpenLibraryLegacyId", () => {
+describe("isOpenLibraryWorkId", () => {
   it("reconoce los ids de obra/edición de Open Library", () => {
-    expect(isOpenLibraryLegacyId("OL7353617W")).toBe(true);
-    expect(isOpenLibraryLegacyId("/works/OL7353617W")).toBe(true);
-    expect(isOpenLibraryLegacyId("OL123M")).toBe(true);
+    expect(isOpenLibraryWorkId("OL7353617W")).toBe(true);
+    expect(isOpenLibraryWorkId("/works/OL7353617W")).toBe(true);
+    expect(isOpenLibraryWorkId("OL123M")).toBe(true);
   });
 
   it("no confunde un id de volumen de Google Books", () => {
-    expect(isOpenLibraryLegacyId("wrOQLV6xB-wC")).toBe(false);
-    expect(isOpenLibraryLegacyId("OLmalformado")).toBe(false);
-    expect(isOpenLibraryLegacyId("")).toBe(false);
+    expect(isOpenLibraryWorkId("wrOQLV6xB-wC")).toBe(false);
+    expect(isOpenLibraryWorkId("OLmalformado")).toBe(false);
+    expect(isOpenLibraryWorkId("")).toBe(false);
   });
 });
 

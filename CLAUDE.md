@@ -317,6 +317,12 @@ un agente por pantalla o grupo de pantallas afines, siguiendo las
 instrucciones operativas de la cabecera de este documento.
 
 **Deuda técnica por resolver:**
+- `books-maps.ts` quedó casi entero como código muerto tras el híbrido de
+  libros (E-BOOKS-HIBRIDO): solo siguen vivos `BOOKS_FORMATO` y
+  `BOOKS_PUBLISHER`, que alimentan opciones de la UI. El constructor de query
+  de Google Books y sus helpers ya no los importa nadie — se conservan un
+  ciclo por si hay que revertir, y hay que borrarlos (con sus tests) cuando el
+  híbrido esté validado en producción.
 - `KButton` y `button.tsx` (shadcn-style) conviven como dos sistemas de
   botón distintos — decidir cuál se queda antes de seguir migrando
   pantallas que usan el segundo.

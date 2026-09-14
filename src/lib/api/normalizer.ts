@@ -362,6 +362,10 @@ export function normalizeBookOpenLibrary(raw: OpenLibraryDoc): MediaItem {
       authors: raw.author_name ?? [],
       publisher: raw.publisher?.[0],
       language: raw.language?.[0],
+      // E-BOOKS-HIBRIDO: el ISBN viaja para poder puentear a Google Books en la
+      // ficha (portada y sinopsis) sin emparejar por título, que es ambiguo
+      // entre ediciones.
+      isbn: raw.isbn ?? [],
     },
   };
 }
