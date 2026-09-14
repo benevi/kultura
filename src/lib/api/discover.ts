@@ -185,6 +185,24 @@ export async function fetchDiscoverData(
   }
 
 /**
+ * Resume un error en UNA línea legible: nombre, status si lo trae y mensaje.
+ *
+ * Existe porque un `Error` serializado en el contexto del log no se lee sin
+ * desplegarlo, y un fallo de proveedor sin código HTTP no se puede
+ * diagnosticar: obliga a adivinar, que es justo lo que no queremos.
+ */
+function describeError(e: unknown): string {
+  if (e instanceof Error) {
+    const status = (e as { status?: unknown }).status;
+    const code = typeof status === "number" ? ` status=${status}` : "";
+    const cause =
+      e.cause instanceof Error ? ` cause=${e.cause.name}: ${e.cause.message}` : "";
+    return `${e.name}${code}: ${e.message}${cause}`;
+  }
+  return String(e);
+}
+
+/**
  * ¿El fallo es "el proveedor me está limitando" (429)?
  *
  * Importa porque la UI tiene un mensaje distinto para eso ("inténtalo en unos
@@ -220,7 +238,9 @@ function isRateLimitError(e: unknown): boolean {
         fetchErrorKind: null,
       };
     } catch (e) {
-      console.error(`[discover] search error (type=${type} page=${page}):`, e);
+      console.error(
+        `[discover] search error · type=${type} page=${page} · ${describeError(e)}`
+      );
       return {
         items: [],
         totalPages: 1,
@@ -386,7 +406,15 @@ function isRateLimitError(e: unknown): boolean {
       }
     }
   } catch (e) {
-    log.error("API error", { type, page, err: e });
+    // El error va DENTRO del mensaje, no solo en el contexto: en el visor de
+    // logs de Vercel `context` se pinta colapsado y hay que abrir cada línea
+    // para ver nada. Con el diagnóstico en `message` se lee de un vistazo en
+    // la lista, que es donde se mira cuando algo falla en producción.
+    log.error(`API error · type=${type} page=${page} · ${describeError(e)}`, {
+      type,
+      page,
+      err: e,
+    });
     if (isRateLimitError(e)) {
       fetchErrorKind = "rate-limit";
     } else {
