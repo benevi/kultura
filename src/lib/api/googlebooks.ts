@@ -31,6 +31,15 @@ const GOOGLE_BOOKS_BASE = "https://www.googleapis.com/books/v1";
 /** Resultados por página (= page-size del resto de familias de Descubrir). */
 export const GOOGLE_BOOKS_PAGE_SIZE = 20;
 
+/**
+ * Máximo que Google Books acepta en `maxResults` por petición.
+ *
+ * Se usa para PEDIR MÁS DE LO QUE SE ENSEÑA: el idioma y el año se aplican
+ * después de recibir la respuesta, así que con ventanas de 20 la rejilla se
+ * quedaba casi vacía en cuanto un filtro recortaba. Ver `collectBooksPage`.
+ */
+export const GOOGLE_BOOKS_MAX_RESULTS = 40;
+
 // ── Internal types ────────────────────────────────────────────────────────────
 
 export interface GoogleBooksImageLinks {
@@ -181,6 +190,32 @@ export async function searchGoogleBooks(
     q,
     startIndex: String(googleBooksStartIndex(page)),
     maxResults: String(GOOGLE_BOOKS_PAGE_SIZE),
+    langRestrict: googleBooksLangRestrict(locale),
+    printType: "books",
+    ...params,
+  });
+}
+
+/**
+ * Una VENTANA cruda del catálogo, direccionada por `startIndex` en vez de por
+ * página.
+ *
+ * Existe aparte de `searchGoogleBooks` porque el recolector de Descubrir
+ * (`collectBooksPage`) necesita avanzar por el catálogo a su ritmo: pide
+ * ventanas grandes, descarta lo que no cumple idioma/año y sigue pidiendo
+ * hasta llenar una página. Con el direccionamiento por página eso no se podía
+ * expresar.
+ */
+export async function fetchGoogleBooksWindow(
+  q: string,
+  startIndex: number,
+  params: Record<string, string> = {},
+  locale?: string | null
+): Promise<GoogleBooksResponse> {
+  return googleBooksFetch<GoogleBooksResponse>("/volumes", {
+    q,
+    startIndex: String(Math.max(0, startIndex)),
+    maxResults: String(GOOGLE_BOOKS_MAX_RESULTS),
     langRestrict: googleBooksLangRestrict(locale),
     printType: "books",
     ...params,

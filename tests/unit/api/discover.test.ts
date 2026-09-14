@@ -42,7 +42,9 @@ vi.mock("@/lib/api/googlebooks", async (importOriginal) => {
   // (totalPages/startIndex/cover) son los reales.
   const actual =
     await importOriginal<typeof import("@/lib/api/googlebooks")>();
-  return { ...actual, searchGoogleBooks: vi.fn() };
+  // El catálogo de Descubrir ya no pide "una página": barre ventanas crudas
+  // (E-BOOKS-LANG). La búsqueda por texto sigue usando searchGoogleBooks.
+  return { ...actual, searchGoogleBooks: vi.fn(), fetchGoogleBooksWindow: vi.fn() };
 });
 
 vi.mock("@/lib/api/rawg", () => ({
@@ -79,9 +81,13 @@ import { fetchDiscoverData } from "@/lib/api/discover";
 import { discoverMovies, discoverTV } from "@/lib/api/tmdb";
 import { discoverAnime, AniListError } from "@/lib/api/anilist";
 import { getPopularManga } from "@/lib/api/mangadex";
-import { searchGoogleBooks } from "@/lib/api/googlebooks";
+import {
+  searchGoogleBooks,
+  fetchGoogleBooksWindow,
+} from "@/lib/api/googlebooks";
 import { searchByTypePaged } from "@/lib/api/search";
 import { DISCOVER_MAX_PAGES } from "@/lib/api/pagination";
+import { BOOKS_MAX_PAGES } from "@/lib/api/books-catalog";
 import { getPopularGames, discoverGames } from "@/lib/api/rawg";
 import { getRecentComics } from "@/lib/api/comicvine";
 
@@ -181,7 +187,7 @@ describe("fetchDiscoverData — guard totalItems books (E-BOOKS-GOOGLE)", () => 
   });
 
   it("totalItems = 0 → totalPages = 1", async () => {
-    vi.mocked(searchGoogleBooks).mockResolvedValue({ totalItems: 0 });
+    vi.mocked(fetchGoogleBooksWindow).mockResolvedValue({ totalItems: 0 });
 
     const result = await fetchDiscoverData("book", 1);
     expect(result.totalPages).toBe(1);
@@ -189,7 +195,7 @@ describe("fetchDiscoverData — guard totalItems books (E-BOOKS-GOOGLE)", () => 
   });
 
   it("items ausente (Google omite el campo) → sin items, sin error", async () => {
-    vi.mocked(searchGoogleBooks).mockResolvedValue({ totalItems: 0 });
+    vi.mocked(fetchGoogleBooksWindow).mockResolvedValue({ totalItems: 0 });
 
     const result = await fetchDiscoverData("book", 1);
     expect(result.items).toEqual([]);
@@ -197,7 +203,7 @@ describe("fetchDiscoverData — guard totalItems books (E-BOOKS-GOOGLE)", () => 
   });
 
   it("totalItems = undefined → totalPages = 1", async () => {
-    vi.mocked(searchGoogleBooks).mockResolvedValue({
+    vi.mocked(fetchGoogleBooksWindow).mockResolvedValue({
       totalItems: undefined as unknown as number,
     });
 
@@ -205,25 +211,29 @@ describe("fetchDiscoverData — guard totalItems books (E-BOOKS-GOOGLE)", () => 
     expect(result.totalPages).toBe(1);
   });
 
-  it("totalItems = 100 → totalPages = 5", async () => {
-    vi.mocked(searchGoogleBooks).mockResolvedValue({
+  // E-BOOKS-LANG: cada página de la app barre 80 candidatos del proveedor para
+  // enseñar 20, así que el total se divide por el barrido, no por los visibles.
+  it("totalItems se traduce a páginas según el barrido, no según los 20 visibles", async () => {
+    vi.mocked(fetchGoogleBooksWindow).mockResolvedValue({
       totalItems: 100,
       items: [],
     });
 
     const result = await fetchDiscoverData("book", 1);
-    expect(result.totalPages).toBe(5);
+    expect(result.totalPages).toBe(2);
   });
 
-  it("totalItems enorme → totalPages capado al tope común (E79-s3)", async () => {
-    vi.mocked(searchGoogleBooks).mockResolvedValue({
+  it("totalItems enorme → capado a lo que Google sirve, no al tope común", async () => {
+    vi.mocked(fetchGoogleBooksWindow).mockResolvedValue({
       totalItems: 1_000_000,
       items: [],
     });
 
     const result = await fetchDiscoverData("book", 1);
-    // ceil(1000000/20) = 50000 → capado a DISCOVER_MAX_PAGES.
-    expect(result.totalPages).toBe(DISCOVER_MAX_PAGES);
+    // `totalItems` es una estimación y Google deja de servir mucho antes: no
+    // tiene sentido ofrecer páginas que el proveedor va a rechazar.
+    expect(result.totalPages).toBe(BOOKS_MAX_PAGES);
+    expect(result.totalPages).toBeLessThan(DISCOVER_MAX_PAGES);
   });
 });
 
@@ -232,14 +242,14 @@ describe("fetchDiscoverData — guard totalItems books (E-BOOKS-GOOGLE)", () => 
 describe("fetchDiscoverData — books filtros (E-BOOKS-GOOGLE)", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    vi.mocked(searchGoogleBooks).mockResolvedValue({ totalItems: 0 });
+    vi.mocked(fetchGoogleBooksWindow).mockResolvedValue({ totalItems: 0 });
   });
 
   it("sin filtros → query base (subject:fiction), sin params", async () => {
     await fetchDiscoverData("book", 1);
-    expect(searchGoogleBooks).toHaveBeenCalledWith(
+    expect(fetchGoogleBooksWindow).toHaveBeenCalledWith(
       "subject:fiction",
-      1,
+      0,
       {},
       undefined
     );
@@ -258,9 +268,10 @@ describe("fetchDiscoverData — books filtros (E-BOOKS-GOOGLE)", () => {
       },
       "en"
     );
-    expect(searchGoogleBooks).toHaveBeenCalledWith(
+    // Página 2 → arranca donde acabó el barrido de la 1, no en "page=2".
+    expect(fetchGoogleBooksWindow).toHaveBeenCalledWith(
       'subject:"Fantasy" inpublisher:"Planeta"',
-      2,
+      80,
       { orderBy: "newest", filter: "free-ebooks", langRestrict: "en" },
       "en"
     );
@@ -268,9 +279,9 @@ describe("fetchDiscoverData — books filtros (E-BOOKS-GOOGLE)", () => {
 
   it("solo editorial → rama nativa con inpublisher:", async () => {
     await fetchDiscoverData("book", 1, { editorial: ["planeta"] });
-    expect(searchGoogleBooks).toHaveBeenCalledWith(
+    expect(fetchGoogleBooksWindow).toHaveBeenCalledWith(
       'inpublisher:"Planeta"',
-      1,
+      0,
       {},
       undefined
     );
@@ -278,16 +289,16 @@ describe("fetchDiscoverData — books filtros (E-BOOKS-GOOGLE)", () => {
 
   it("el locale llega como langRestrict a través del cliente (es por defecto)", async () => {
     await fetchDiscoverData("book", 1, {}, "es");
-    expect(searchGoogleBooks).toHaveBeenCalledWith(
+    expect(fetchGoogleBooksWindow).toHaveBeenCalledWith(
       "subject:fiction",
-      1,
+      0,
       {},
       "es"
     );
   });
 
   it("año activo → post-filtro sobre el año normalizado y totalPages null", async () => {
-    vi.mocked(searchGoogleBooks).mockResolvedValue({
+    vi.mocked(fetchGoogleBooksWindow).mockResolvedValue({
       totalItems: 100,
       items: [
         { id: "a", volumeInfo: { title: "Del 2003", publishedDate: "2003-05-01" } },
@@ -474,7 +485,7 @@ describe('fetchDiscoverData — modo "all" (R5a)', () => {
       media: [{ id: 3, title: "Anime C" }] as never[],
       pageInfo: { lastPage: 1 } as never,
     });
-    vi.mocked(searchGoogleBooks).mockResolvedValue({
+    vi.mocked(fetchGoogleBooksWindow).mockResolvedValue({
       totalItems: 1,
       items: [{ id: "b4", volumeInfo: { title: "Book D" } }],
     } as never);
@@ -538,7 +549,7 @@ describe('fetchDiscoverData — modo "all" (R5a)', () => {
     vi.mocked(discoverAnime).mockRejectedValue(
       new AniListError("rate limited", 429)
     );
-    vi.mocked(searchGoogleBooks).mockResolvedValue({
+    vi.mocked(fetchGoogleBooksWindow).mockResolvedValue({
       totalItems: 0,
     } as never);
     vi.mocked(getPopularManga).mockResolvedValue({
@@ -613,14 +624,15 @@ describe("fetchDiscoverData — hasMore (E79 slice 1)", () => {
     expect((await fetchDiscoverData("manga", 2)).hasMore).toBe(false);
   });
 
-  it("book: hasMore desde ceil(totalItems/20)", async () => {
-    vi.mocked(searchGoogleBooks).mockResolvedValue({
-      totalItems: 60, // ceil(60/20)=3
-      items: [{ id: "1", volumeInfo: { title: "B" } }],
+  // E-BOOKS-LANG: `hasMore` ya no se cree la estimación del proveedor — lo
+  // decide el barrido real. Una ventana incompleta significa fin de catálogo.
+  it("book: una ventana incompleta cierra la paginación aunque el total prometa más", async () => {
+    vi.mocked(fetchGoogleBooksWindow).mockResolvedValue({
+      totalItems: 60_000,
+      items: [{ id: "1", volumeInfo: { title: "B", language: "es" } }],
     } as never);
 
-    expect((await fetchDiscoverData("book", 2)).hasMore).toBe(true);
-    expect((await fetchDiscoverData("book", 3)).hasMore).toBe(false);
+    expect((await fetchDiscoverData("book", 1)).hasMore).toBe(false);
   });
 
   it("comic: hasMore desde ceil(total/20)", async () => {
@@ -781,7 +793,7 @@ describe('fetchDiscoverData — hasMore en "all" (E79 slice 1)', () => {
       media: five((i) => ({ id: `a${i}`, title: "A" })) as never[],
       pageInfo: { lastPage: 1 } as never,
     });
-    vi.mocked(searchGoogleBooks).mockResolvedValue({
+    vi.mocked(fetchGoogleBooksWindow).mockResolvedValue({
       totalItems: 5,
       items: five((i) => ({ id: `b${i}`, volumeInfo: { title: "B" } })),
     } as never);
@@ -884,7 +896,7 @@ describe("fetchDiscoverData — tope común de páginas (E79-s3, antes E89)", ()
     expect(discoverTV).not.toHaveBeenCalled();
     expect(discoverAnime).not.toHaveBeenCalled();
     expect(getPopularManga).not.toHaveBeenCalled();
-    expect(searchGoogleBooks).not.toHaveBeenCalled();
+    expect(fetchGoogleBooksWindow).not.toHaveBeenCalled();
     expect(getRecentComics).not.toHaveBeenCalled();
     expect(getPopularGames).not.toHaveBeenCalled();
   });
