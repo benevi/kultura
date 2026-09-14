@@ -38,6 +38,7 @@ import { MediaDetail } from "@/components/media/MediaDetail";
 import { createClient } from "@/lib/supabase/server";
 import { getMediaEntry } from "@/lib/library/queries";
 import { computeMatchScores } from "@/lib/recommendations/match-score";
+import { translateSynopsis } from "@/lib/translate/synopsis";
 import type { LibraryEntry } from "@/types/library";
 
 // ── Constants ─────────────────────────────────────────────────────────────────
@@ -219,7 +220,20 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
     if (!title) return { title: "KULTURA" };
 
-    const truncatedDesc = description ? description.slice(0, 160) : undefined;
+    // E-SINOPSIS-I18N: `cacheOnly` a propósito. Los metadatos corren en el
+    // camino crítico de la respuesta y solo alimentan OG/SEO: si otro visitante
+    // ya pagó la traducción de este título se aprovecha, y si no, se sirve el
+    // original en vez de hacer esperar la página por 160 caracteres.
+    const localizedDesc = description
+      ? await translateSynopsis({
+          text: description,
+          locale,
+          mediaId: `${type}_${id}`,
+          cacheOnly: true,
+        })
+      : undefined;
+
+    const truncatedDesc = localizedDesc ? localizedDesc.slice(0, 160) : undefined;
 
     return {
       title: `${title} · KULTURA`,

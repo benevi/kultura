@@ -6,7 +6,20 @@ import type { MediaItem, StreamingProvider } from "@/types/media";
 
 vi.mock("next-intl/server", () => ({
   getTranslations: () => Promise.resolve((key: string) => key),
+  getLocale: () => Promise.resolve("es"),
 }));
+
+// E-SINOPSIS-I18N: la sinopsis va dentro de un <Suspense> con el texto
+// ORIGINAL como fallback. `TranslatedSynopsis` es un Server Component async y
+// react-dom no lo sabe renderizar aquí, así que se sustituye por su versión
+// sin traducción: lo que estos tests comprueban (truncado, "leer más") vive en
+// `SynopsisSection` y sigue ejercitándose igual.
+vi.mock("@/components/media/TranslatedSynopsis", async () => {
+  const { SynopsisSection } = await import("@/components/media/SynopsisSection");
+  return {
+    TranslatedSynopsis: ({ text }: { text: string }) => <SynopsisSection text={text} />,
+  };
+});
 
 vi.mock("next-intl", () => ({
   useTranslations: () => (key: string) => key,
