@@ -67,11 +67,23 @@ export function FilterBar({
   className,
 }: FilterBarProps) {
   return (
-    <div className={cn("flex flex-wrap items-center gap-2", className)}>
+    <div
+      className={cn(
+        // En móvil los triggers van en UNA fila con scroll horizontal: con
+        // `flex-wrap` seis filtros se partían en tres líneas ragged y el bloque
+        // crecía tanto que tapaba el catálogo. A partir de `sm` sí caben y se
+        // deja envolver como siempre.
+        "flex items-center gap-2 flex-nowrap overflow-x-auto scrollbar-hide",
+        "sm:flex-wrap sm:overflow-visible",
+        className
+      )}
+    >
       {groups.map((group) => {
         const kind = group.kind ?? "single"
         const raw = activeFilters[group.key]
-        const alignEnd = group.align === "end" ? "ml-auto" : undefined
+        // `ml-auto` solo desde `sm`: en la fila con scroll de móvil empujaría
+        // "Ordenar" fuera de la vista en vez de alinearlo a la derecha.
+        const alignEnd = group.align === "end" ? "sm:ml-auto" : undefined
 
         if (group.variant === "sort") {
           return (

@@ -297,7 +297,6 @@
   },
   "aiRecommendations": {
     "title": "Para ti",
-    "poweredBy": "Claude IA",
     "aiPickBadge": "TU IA CREE QUE ESTO TE FLIPA",
     "generating": "Generando recomendaciones personalizadas...",
     "needMoreItems": "Añade al menos 3 títulos completados o puntuados a tu biblioteca para recibir recomendaciones.",
@@ -369,9 +368,6 @@
     "addFriends": "Añadir amigos",
     "noRecommendations": "No hay recomendaciones disponibles",
     "continue": "Continuar",
-    "welcomeTitle": "¿Qué estás viendo?",
-    "welcomeSubtitle": "Añade títulos a tu biblioteca para ver tu progreso aquí",
-    "goDiscover": "Explorar contenido",
     "aiTitle": "Para ti",
     "genreNewsTitle": "Novedades en {genre}",
     "genreSeriesTitle": "Series en {genre}",

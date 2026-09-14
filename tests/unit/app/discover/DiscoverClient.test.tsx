@@ -333,11 +333,15 @@ describe("DiscoverClient — E59 F5e", () => {
     expect(movie).toHaveAttribute("aria-checked", "true");
   });
 
-  it("el trigger sort se empuja a la derecha (ml-auto)", () => {
+  // Desde `sm`: en móvil la fila de filtros scrollea en horizontal y `ml-auto`
+  // sacaría el trigger de la vista en vez de alinearlo a la derecha.
+  it("el trigger sort se empuja a la derecha a partir de sm", () => {
     mockFetchOk();
     current = new URLSearchParams("type=movie&page=1");
     render(<DiscoverClient currentType="movie" currentPage={1} />);
-    expect(screen.getByRole("button", { name: /sort:/i })).toHaveClass("ml-auto");
+    const sort = screen.getByRole("button", { name: /sort:/i });
+    expect(sort).toHaveClass("sm:ml-auto");
+    expect(sort).not.toHaveClass("ml-auto");
   });
 
   // ── E-DISCOVER-SEARCH-MERGE: buscador de texto dentro de Discover ───────────

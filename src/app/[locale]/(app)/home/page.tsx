@@ -92,8 +92,12 @@ export default async function HomePage() {
         />
       )}
 
-      <PopularInCircle />
+      {/* Orden tras retirar el hero vacío: primero lo propio (lo que sigues, lo
+          que la IA te elige por match), después lo social y por último las
+          novedades generales. Antes, una cuenta sin título en curso abría con
+          la tarjeta vacía de "Popular entre tus amigos". */}
       <AiRecommendations />
+      <PopularInCircle />
       <GenreNews />
     </main>
   )

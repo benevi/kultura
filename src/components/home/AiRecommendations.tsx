@@ -44,9 +44,22 @@ export function AiRecommendations() {
     return cleanup
   }, [fetchRecs])
 
+  // El cartel hace de título, así que acompaña a lo que de verdad es una
+  // recomendación (o está a punto de serlo), no a un error ni a un aviso.
+  const hasBadge = status === 'done' || status === 'loading'
+
   return (
-    <section className="relative">
-      {status === 'done' && (
+    // Sin <h2> la sección se quedaba sin nombre accesible (el cartel es un div
+    // decorativo con emoji), así que el título vive ahora aquí.
+    <section
+      className={`relative ${hasBadge ? 'pt-7 md:pt-8' : ''}`}
+      aria-label={t('title')}
+    >
+      {/* El cartel lima ES la cabecera de la sección: el par "Para ti · Claude
+          IA" que había debajo repetía lo mismo en plano y robaba altura. Se
+          pinta también durante la carga para que el esqueleto no aparezca
+          huérfano; en los estados vacío/error la tarjeta ya se explica sola. */}
+      {hasBadge && (
         <div
           className="inline-block absolute -top-3.5 left-0 z-10 rounded-2xl px-3.5 py-1.5 md:px-4 md:py-2 bg-accent-lime text-on-accent-lime font-display text-[10px] md:text-[11px] font-extrabold tracking-wide"
           style={{ transform: 'rotate(-4deg)', boxShadow: '4px 4px 0 rgba(0,0,0,0.35)' }}
@@ -54,11 +67,6 @@ export function AiRecommendations() {
           🤖 {t('aiPickBadge')}
         </div>
       )}
-
-      <div className={`flex items-baseline gap-2 mb-3 ${status === 'done' ? 'pt-4 md:pt-5' : ''}`}>
-        <h2 className="font-display text-xl text-text-primary">{t('title')}</h2>
-        <span className="font-body text-xs text-text-tertiary">{t('poweredBy')}</span>
-      </div>
 
       {status === 'loading' && (
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-5">

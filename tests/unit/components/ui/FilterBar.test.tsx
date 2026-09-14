@@ -170,9 +170,14 @@ describe('FilterBar — align end (sort a la derecha)', () => {
     ],
   }
 
-  it('trigger con align:end lleva ml-auto', () => {
+  // En móvil la barra es una fila con scroll horizontal: ahí `ml-auto` empujaría
+  // el trigger fuera de la vista en vez de alinearlo, así que la alineación a la
+  // derecha arranca en `sm`, donde los filtros ya envuelven.
+  it('trigger con align:end se alinea a la derecha desde sm', () => {
     render(<FilterBar groups={[sortGroup]} activeFilters={{}} onChange={vi.fn()} />)
-    expect(screen.getByRole('button', { name: /Ordenar/ })).toHaveClass('ml-auto')
+    const trigger = screen.getByRole('button', { name: /Ordenar/ })
+    expect(trigger).toHaveClass('sm:ml-auto')
+    expect(trigger).not.toHaveClass('ml-auto')
   })
 
   it('sin align no lleva ml-auto', () => {
