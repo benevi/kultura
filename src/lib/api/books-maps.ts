@@ -121,6 +121,56 @@ export function booksLangRestrictOverride(
   return /^[a-z]{2}$/.test(code) ? code : undefined;
 }
 
+// ── Idioma real del volumen → POST-filtro (E-BOOKS-LANG) ────────────────────
+// `langRestrict` es una PISTA de búsqueda, no una garantía: Google la aplica
+// sobre el índice, así que en la práctica se cuelan ediciones en inglés (u otro
+// idioma) y el usuario ve el título en un idioma que no es el suyo.
+//
+// El volumen sí trae su idioma real en `volumeInfo.language`, que el
+// normalizador guarda en `metadata.language`. Con eso se puede quedar en la
+// edición correcta.
+//
+// Por qué NO se traduce el título: el título de un libro no es texto, es el
+// nombre de una edición. "Persuasion" pasa a "Persuasión" solo porque existe
+// una edición española que se llama así; traducirlo a máquina inventaría
+// nombres que no se pueden buscar ni comprar. O hay edición en el idioma
+// activo, y entonces se enseña esa, o se enseña la que hay.
+//
+// Degradación: si en una página quedan muy pocas ediciones del idioma pedido,
+// se conservan las demás detrás en vez de servir una rejilla casi vacía —
+// preferir el idioma no debe vaciar el catálogo.
+
+/** Mínimo de resultados en el idioma pedido para poder descartar el resto. */
+const BOOKS_LANG_MIN_KEEP = 8;
+
+function volumeLanguage(item: { metadata?: Record<string, unknown> }): string {
+  const raw = item.metadata?.language;
+  return typeof raw === "string" ? raw.toLowerCase().split(/[-_]/)[0] : "";
+}
+
+/**
+ * Deja delante las ediciones en `lang` y descarta las demás cuando hay
+ * suficientes; si no las hay, las mantiene detrás como relleno.
+ */
+export function preferBooksInLanguage<T extends { metadata?: Record<string, unknown> }>(
+  items: T[],
+  lang: string
+): T[] {
+  const wanted = lang.toLowerCase().split(/[-_]/)[0];
+  if (!wanted) return items;
+
+  const matching: T[] = [];
+  const rest: T[] = [];
+  for (const item of items) {
+    (volumeLanguage(item) === wanted ? matching : rest).push(item);
+  }
+
+  if (matching.length === 0) return items;
+  return matching.length >= BOOKS_LANG_MIN_KEEP
+    ? matching
+    : [...matching, ...rest];
+}
+
 // ── Año → POST-filtro ────────────────────────────────────────────────────────
 // Google Books NO ofrece filtro de fecha de publicación en la query (ni en
 // params), a diferencia de Open Library (`first_publish_year:[Y TO Y]`). El año
