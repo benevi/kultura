@@ -9,7 +9,7 @@
 // `langRestrict` atado al locale activo — Open Library solo permite acotar por
 // `language:<ISO-639-3>` y su cobertura de sinopsis en español es marginal.
 // Reversión deliberada; `openlibrary.ts` se conserva SOLO como resolutor de los
-// ids legacy ya guardados en bibliotecas (ver `isOpenLibraryLegacyId`).
+// ids legacy ya guardados en bibliotecas (ver `isOpenLibraryWorkId`).
 //
 // AUTENTICACIÓN — `GOOGLE_BOOKS_KEY` es OPCIONAL en el esquema de env (mismo
 // patrón que `COMICVINE_KEY`) y el cliente funciona sin ella, pero:
@@ -116,13 +116,19 @@ export function googleBooksStartIndex(page: number): number {
 }
 
 /**
- * ¿Es un id legacy de Open Library (`OL7353617W` / `OL123M`)? Las bibliotecas
- * creadas mientras los libros venían de Open Library (E84b/E84c) guardaron
- * `book_OL…` en la tabla `media`; los ids de Google Books son alfanuméricos de
- * 12 caracteres (`wrOQLV6xB-wC`). La ficha enruta por esta forma para no
- * romper lo ya guardado — ver `media/[type]/[id]/page.tsx`.
+ * ¿Es un id de obra de Open Library (`OL7353617W` / `OL123M`)?
+ *
+ * E-BOOKS-HIBRIDO: desde que el catálogo lo sirve Open Library, esta es la
+ * forma PRINCIPAL de los ids de libro; los de Google Books (alfanuméricos de 12
+ * caracteres, `wrOQLV6xB-wC`) son los que quedaron guardados mientras el
+ * catálogo fue suyo. La ficha enruta por esta forma para que ambas sigan
+ * abriendo — ver `media/[type]/[id]/page.tsx`.
+ *
+ * Vive aquí, y no en `openlibrary.ts`, por el mismo motivo que `isMangaDexId` y
+ * `isAniListId` viven junto a su proveedor: es el discriminador que usa el
+ * enrutado, y moverlo ahora rompería los imports sin ganar nada.
  */
-export function isOpenLibraryLegacyId(id: string): boolean {
+export function isOpenLibraryWorkId(id: string): boolean {
   return /^(\/works\/)?OL\d+[WM]$/i.test(id);
 }
 

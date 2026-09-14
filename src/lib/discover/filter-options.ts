@@ -34,7 +34,11 @@ import {
   RAWG_MODOJUEGO_TAGS,
   DURACIONMEDIA_BUCKETS,
 } from "@/lib/api/rawg-maps";
-import { BOOKS_GENRE, BOOKS_FORMATO, BOOKS_PUBLISHER } from "@/lib/api/books-maps";
+import { BOOKS_FORMATO, BOOKS_PUBLISHER } from "@/lib/api/books-maps";
+// E-BOOKS-HIBRIDO: los géneros que se ofrecen en libros salen del mapa del
+// proveedor que sirve el CATÁLOGO (Open Library). Ofrecer un género que el
+// proveedor no entiende es ofrecer un filtro que no filtra.
+import { OPEN_LIBRARY_GENRE } from "@/lib/api/openlibrary-maps";
 import { COMIC_PUBLISHER } from "@/lib/api/comicvine-maps";
 import { VALORACION_SLUGS } from "@/lib/api/valoracion";
 
@@ -71,7 +75,7 @@ const GENRE_BY_TYPE: Partial<Record<DiscoverType, Record<string, unknown>>> = {
   tv: TMDB_GENRE_TV,
   anime: JIKAN_GENRE,
   manga: JIKAN_GENRE,
-  book: BOOKS_GENRE,
+  book: OPEN_LIBRARY_GENRE,
   game: RAWG_GENRE,
   // comic: sin género (ComicVine no tiene género en issues) → no listado.
 };

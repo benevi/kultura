@@ -37,6 +37,13 @@ vi.mock("@/lib/api/search", () => ({
   searchByTypePaged: vi.fn(),
 }));
 
+vi.mock("@/lib/api/openlibrary", async (importOriginal) => {
+  const actual =
+    await importOriginal<typeof import("@/lib/api/openlibrary")>();
+  // E-BOOKS-HIBRIDO: el catálogo de libros lo sirve Open Library.
+  return { ...actual, searchOpenLibrary: vi.fn() };
+});
+
 vi.mock("@/lib/api/googlebooks", async (importOriginal) => {
   // E-BOOKS-GOOGLE: solo se mockea la llamada de red; los helpers puros
   // (totalPages/startIndex/cover) son los reales.
@@ -63,14 +70,12 @@ vi.mock("@/lib/api/normalizer", () => ({
     title: m.title,
     metadata: { volumes: m.volumes ?? undefined },
   })),
-  // E-BOOKS-GOOGLE: los libros de Descubrir vienen de Google Books. Se mantiene
-  // el `year` en el mock porque el post-filtro de año opera sobre él.
-  normalizeBookGoogle: vi.fn((v) => ({
-    id: `book_${v.id}`,
-    title: v.volumeInfo?.title ?? "",
-    year: v.volumeInfo?.publishedDate
-      ? Number(String(v.volumeInfo.publishedDate).slice(0, 4))
-      : undefined,
+  // E-BOOKS-HIBRIDO: el catálogo de libros viene de Open Library; Google Books
+  // solo entra en la FICHA, así que su normalizador ya no se ejerce aquí.
+  normalizeBookOpenLibrary: vi.fn((d) => ({
+    id: `book_${String(d.key).replace(/^\/works\//, "")}`,
+    title: d.title ?? "",
+    year: d.first_publish_year,
   })),
   normalizeGame: vi.fn((g) => ({ id: `game_${g.id}`, title: g.name })),
 }));
@@ -80,6 +85,7 @@ import { discoverMovies, discoverTV } from "@/lib/api/tmdb";
 import { discoverAnime, AniListError } from "@/lib/api/anilist";
 import { getPopularManga } from "@/lib/api/mangadex";
 import { searchGoogleBooks } from "@/lib/api/googlebooks";
+import { searchOpenLibrary } from "@/lib/api/openlibrary";
 import { searchByTypePaged } from "@/lib/api/search";
 import { DISCOVER_MAX_PAGES } from "@/lib/api/pagination";
 import { getPopularGames, discoverGames } from "@/lib/api/rawg";
@@ -181,124 +187,144 @@ describe("fetchDiscoverData — guard totalItems books (E-BOOKS-GOOGLE)", () => 
   });
 
   it("totalItems = 0 → totalPages = 1", async () => {
-    vi.mocked(searchGoogleBooks).mockResolvedValue({ totalItems: 0 });
+    vi.mocked(searchOpenLibrary).mockResolvedValue({ numFound: 0, docs: [] });
 
     const result = await fetchDiscoverData("book", 1);
     expect(result.totalPages).toBe(1);
     expect(result.fetchErrorKind).toBeNull();
   });
 
-  it("items ausente (Google omite el campo) → sin items, sin error", async () => {
-    vi.mocked(searchGoogleBooks).mockResolvedValue({ totalItems: 0 });
+  it("docs ausente → sin items, sin error", async () => {
+    vi.mocked(searchOpenLibrary).mockResolvedValue({ numFound: 0, docs: [] });
 
     const result = await fetchDiscoverData("book", 1);
     expect(result.items).toEqual([]);
     expect(result.fetchErrorKind).toBeNull();
   });
 
-  it("totalItems = undefined → totalPages = 1", async () => {
-    vi.mocked(searchGoogleBooks).mockResolvedValue({
-      totalItems: undefined as unknown as number,
+  it("numFound = undefined → totalPages = 1", async () => {
+    vi.mocked(searchOpenLibrary).mockResolvedValue({
+      numFound: undefined as unknown as number,
+      docs: [],
     });
 
     const result = await fetchDiscoverData("book", 1);
     expect(result.totalPages).toBe(1);
   });
 
-  it("totalItems = 100 → totalPages = 5", async () => {
-    vi.mocked(searchGoogleBooks).mockResolvedValue({
-      totalItems: 100,
-      items: [],
+  it("numFound = 100 → totalPages = 5", async () => {
+    vi.mocked(searchOpenLibrary).mockResolvedValue({
+      numFound: 100,
+      docs: [],
     });
 
     const result = await fetchDiscoverData("book", 1);
     expect(result.totalPages).toBe(5);
   });
 
-  it("totalItems enorme → totalPages capado al tope común (E79-s3)", async () => {
-    vi.mocked(searchGoogleBooks).mockResolvedValue({
-      totalItems: 1_000_000,
-      items: [],
+  it("numFound enorme → totalPages capado al tope común (E79-s3)", async () => {
+    vi.mocked(searchOpenLibrary).mockResolvedValue({
+      numFound: 1_000_000,
+      docs: [],
     });
 
     const result = await fetchDiscoverData("book", 1);
-    // ceil(1000000/20) = 50000 → capado a DISCOVER_MAX_PAGES.
     expect(result.totalPages).toBe(DISCOVER_MAX_PAGES);
   });
 });
 
 // ── Books: rama con filtros vs. sin filtros (E-BOOKS-GOOGLE) ─────────────────
 
-describe("fetchDiscoverData — books filtros (E-BOOKS-GOOGLE)", () => {
+describe("fetchDiscoverData — books filtros (E-BOOKS-HIBRIDO)", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    vi.mocked(searchGoogleBooks).mockResolvedValue({ totalItems: 0 });
+    vi.mocked(searchOpenLibrary).mockResolvedValue({ numFound: 0, docs: [] });
   });
 
-  it("sin filtros → query base (subject:fiction), sin params", async () => {
+  it("sin filtros → semilla amplia y el idioma del locale", async () => {
     await fetchDiscoverData("book", 1);
-    expect(searchGoogleBooks).toHaveBeenCalledWith(
-      "subject:fiction",
-      1,
-      {},
-      undefined
-    );
+    expect(searchOpenLibrary).toHaveBeenCalledWith('subject:"fiction"', 1, {
+      language: "spa",
+    });
   });
 
-  it("con filtros → buildGoogleBooksQuery (q + params) y el locale activo", async () => {
+  // Lo que Google Books no sabía hacer: género, año y orden en la propia
+  // consulta, aplicados por el proveedor y no a mano sobre lo ya recibido.
+  it("género, año y orden viajan en la consulta, no como post-filtro", async () => {
     await fetchDiscoverData(
       "book",
       2,
-      {
-        genre: ["fantasia"],
-        editorial: ["planeta"],
-        formato: "free",
-        idioma: "en",
-        sort: "release_desc",
-      },
+      { genre: ["fantasia"], year: "2024", sort: "release_desc" },
       "en"
     );
-    expect(searchGoogleBooks).toHaveBeenCalledWith(
-      'subject:"Fantasy" inpublisher:"Planeta"',
+    expect(searchOpenLibrary).toHaveBeenCalledWith(
+      'subject:"fantasy" first_publish_year:[2024 TO 2024]',
       2,
-      { orderBy: "newest", filter: "free-ebooks", langRestrict: "en" },
-      "en"
+      { language: "eng", sort: "new" }
     );
   });
 
-  it("solo editorial → rama nativa con inpublisher:", async () => {
-    await fetchDiscoverData("book", 1, { editorial: ["planeta"] });
-    expect(searchGoogleBooks).toHaveBeenCalledWith(
-      'inpublisher:"Planeta"',
+  it("una década es un rango, no un año suelto ignorado", async () => {
+    await fetchDiscoverData("book", 1, { year: "2000s" });
+    expect(searchOpenLibrary).toHaveBeenCalledWith(
+      "first_publish_year:[2000 TO 2009]",
       1,
-      {},
-      undefined
+      { language: "spa" }
     );
   });
 
-  it("el locale llega como langRestrict a través del cliente (es por defecto)", async () => {
+  it("classic cubre 1900-1999, igual que en el resto de familias", async () => {
+    await fetchDiscoverData("book", 1, { year: "classic" });
+    expect(searchOpenLibrary).toHaveBeenCalledWith(
+      "first_publish_year:[1900 TO 1999]",
+      1,
+      { language: "spa" }
+    );
+  });
+
+  it("el idioma del locale viaja SIEMPRE: es lo que fija el título que se lee", async () => {
     await fetchDiscoverData("book", 1, {}, "es");
-    expect(searchGoogleBooks).toHaveBeenCalledWith(
-      "subject:fiction",
+    expect(searchOpenLibrary).toHaveBeenCalledWith(
+      'subject:"fiction"',
       1,
-      {},
-      "es"
+      expect.objectContaining({ language: "spa" })
     );
   });
 
-  it("año activo → post-filtro sobre el año normalizado y totalPages null", async () => {
-    vi.mocked(searchGoogleBooks).mockResolvedValue({
-      totalItems: 100,
-      items: [
-        { id: "a", volumeInfo: { title: "Del 2003", publishedDate: "2003-05-01" } },
-        { id: "b", volumeInfo: { title: "Del 2010", publishedDate: "2010" } },
+  it('formato "libre" acota a texto completo; el resto no finge precisión', async () => {
+    await fetchDiscoverData("book", 1, { formato: "free" });
+    expect(searchOpenLibrary).toHaveBeenCalledWith(
+      'subject:"fiction"',
+      1,
+      expect.objectContaining({ has_fulltext: "true" })
+    );
+
+    vi.mocked(searchOpenLibrary).mockClear();
+    await fetchDiscoverData("book", 1, { formato: "physical" });
+    expect(searchOpenLibrary).toHaveBeenCalledWith(
+      'subject:"fiction"',
+      1,
+      expect.not.objectContaining({ has_fulltext: expect.anything() })
+    );
+  });
+
+  // Con Google Books el año era post-filtro y obligaba a ocultar la última
+  // página porque el conteo mentía. Open Library lo aplica de verdad.
+  it("año activo → el conteo sigue siendo fiable, totalPages NO es null", async () => {
+    vi.mocked(searchOpenLibrary).mockResolvedValue({
+      numFound: 60,
+      docs: [
+        {
+          key: "/works/OL1W",
+          title: "Del 2003",
+          first_publish_year: 2003,
+        },
       ],
-    });
+    } as never);
 
     const result = await fetchDiscoverData("book", 1, { year: "2003" });
     expect(result.items.map((i) => i.title)).toEqual(["Del 2003"]);
-    // Google Books no tiene operador de fecha → el conteo crudo ya no es fiable.
-    expect(result.totalPages).toBeNull();
+    expect(result.totalPages).toBe(3);
   });
 });
 
@@ -474,9 +500,9 @@ describe('fetchDiscoverData — modo "all" (R5a)', () => {
       media: [{ id: 3, title: "Anime C" }] as never[],
       pageInfo: { lastPage: 1 } as never,
     });
-    vi.mocked(searchGoogleBooks).mockResolvedValue({
-      totalItems: 1,
-      items: [{ id: "b4", volumeInfo: { title: "Book D" } }],
+    vi.mocked(searchOpenLibrary).mockResolvedValue({
+      numFound: 1,
+      docs: [{ key: "/works/OL4W", title: "Book D" }],
     } as never);
     vi.mocked(getPopularManga).mockResolvedValue({
       data: [{ id: "5", title: "Manga E" }] as never[],
@@ -505,7 +531,7 @@ describe('fetchDiscoverData — modo "all" (R5a)', () => {
       "movie_1",
       "tv_2",
       "anime_3",
-      "book_b4",
+      "book_OL4W",
       "manga_5",
       "game_6",
       "comic_7",
@@ -538,7 +564,7 @@ describe('fetchDiscoverData — modo "all" (R5a)', () => {
     vi.mocked(discoverAnime).mockRejectedValue(
       new AniListError("rate limited", 429)
     );
-    vi.mocked(searchGoogleBooks).mockResolvedValue({
+    vi.mocked(searchOpenLibrary).mockResolvedValue({
       totalItems: 0,
     } as never);
     vi.mocked(getPopularManga).mockResolvedValue({
@@ -613,10 +639,10 @@ describe("fetchDiscoverData — hasMore (E79 slice 1)", () => {
     expect((await fetchDiscoverData("manga", 2)).hasMore).toBe(false);
   });
 
-  it("book: hasMore desde ceil(totalItems/20)", async () => {
-    vi.mocked(searchGoogleBooks).mockResolvedValue({
-      totalItems: 60, // ceil(60/20)=3
-      items: [{ id: "1", volumeInfo: { title: "B" } }],
+  it("book: hasMore desde ceil(numFound/20)", async () => {
+    vi.mocked(searchOpenLibrary).mockResolvedValue({
+      numFound: 60, // ceil(60/20)=3
+      docs: [{ key: "/works/OL1W", title: "B" }],
     } as never);
 
     expect((await fetchDiscoverData("book", 2)).hasMore).toBe(true);
@@ -781,9 +807,9 @@ describe('fetchDiscoverData — hasMore en "all" (E79 slice 1)', () => {
       media: five((i) => ({ id: `a${i}`, title: "A" })) as never[],
       pageInfo: { lastPage: 1 } as never,
     });
-    vi.mocked(searchGoogleBooks).mockResolvedValue({
-      totalItems: 5,
-      items: five((i) => ({ id: `b${i}`, volumeInfo: { title: "B" } })),
+    vi.mocked(searchOpenLibrary).mockResolvedValue({
+      numFound: 5,
+      docs: five((i) => ({ key: `/works/OL${i}W`, title: "B" })),
     } as never);
     vi.mocked(getPopularManga).mockResolvedValue({
       data: five((i) => ({ id: `g${i}`, title: "G" })) as never[],
@@ -884,7 +910,7 @@ describe("fetchDiscoverData — tope común de páginas (E79-s3, antes E89)", ()
     expect(discoverTV).not.toHaveBeenCalled();
     expect(discoverAnime).not.toHaveBeenCalled();
     expect(getPopularManga).not.toHaveBeenCalled();
-    expect(searchGoogleBooks).not.toHaveBeenCalled();
+    expect(searchOpenLibrary).not.toHaveBeenCalled();
     expect(getRecentComics).not.toHaveBeenCalled();
     expect(getPopularGames).not.toHaveBeenCalled();
   });

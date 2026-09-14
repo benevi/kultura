@@ -23,7 +23,7 @@ import { getMovie, getTV } from '@/lib/api/tmdb'
 import { getAnime as getAnimeAniList, isAniListId, fromAniListRef } from '@/lib/api/anilist'
 import { getAnime as getAnimeJikan, getManga as getMangaJikan } from '@/lib/api/jikan'
 import { getManga as getMangaDex, isMangaDexId } from '@/lib/api/mangadex'
-import { getGoogleBookDetail, isOpenLibraryLegacyId } from '@/lib/api/googlebooks'
+import { getGoogleBookDetail, isOpenLibraryWorkId } from '@/lib/api/googlebooks'
 import { getBookDetail } from '@/lib/api/openlibrary'
 import { getGame } from '@/lib/api/rawg'
 import {
@@ -103,7 +103,7 @@ export async function fetchGenresForMedia(
         return normalizeMangaJikan(legacy.data).genres ?? []
       }
       case 'book': {
-        if (isOpenLibraryLegacyId(externalId)) {
+        if (isOpenLibraryWorkId(externalId)) {
           const legacy = await getBookDetail(externalId)
           return legacy ? (normalizeBookOpenLibrary(legacy.doc).genres ?? []) : null
         }

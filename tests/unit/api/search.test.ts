@@ -64,26 +64,25 @@ vi.mock("@/lib/api/mangadex", () => ({
   }),
 }));
 
-// E-BOOKS-GOOGLE: la búsqueda de libros pasa de Open Library a Google Books.
-// Solo se mockea la llamada de red; `googleBooksTotalPages` (helper puro que
-// usa searchByTypePaged) es el real.
-vi.mock("@/lib/api/googlebooks", async (importOriginal) => {
-  const actual = await importOriginal<typeof import("@/lib/api/googlebooks")>();
+// E-BOOKS-HIBRIDO: el buscador de libros va contra el MISMO proveedor que el
+// catálogo (Open Library), para que buscar y navegar no sean dos mundos
+// distintos. Solo se mockea la llamada de red; `openLibraryTotalPages` (helper
+// puro que usa searchByTypePaged) es el real.
+vi.mock("@/lib/api/openlibrary", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@/lib/api/openlibrary")>();
   return {
-  ...actual,
-  searchGoogleBooks: vi.fn().mockResolvedValue({
-    totalItems: 1,
-    items: [
-      {
-        id: "wrOQLV6xB-wC",
-        volumeInfo: {
+    ...actual,
+    searchOpenLibrary: vi.fn().mockResolvedValue({
+      numFound: 1,
+      docs: [
+        {
+          key: "/works/OL82563W",
           title: "Harry Potter",
-          authors: ["J.K. Rowling"],
-          publishedDate: "1997",
+          author_name: ["J.K. Rowling"],
+          first_publish_year: 1997,
         },
-      },
-    ],
-  }),
+      ],
+    }),
   };
 });
 
@@ -153,15 +152,17 @@ vi.mock("@/lib/api/normalizer", () => ({
     type: "manga",
     title: raw.title,
   })),
-  // E-BOOKS-GOOGLE: la búsqueda de libros usa Google Books.
-  normalizeBookGoogle: vi.fn(
-    (raw: { id: string; volumeInfo?: { title?: string } }) => ({
-      id: `book_${raw.id}`,
-      externalId: raw.id,
+  // E-BOOKS-HIBRIDO: la búsqueda de libros usa Open Library, igual que el
+  // catálogo. Google Books solo entra en la ficha.
+  normalizeBookOpenLibrary: vi.fn((raw: { key: string; title?: string }) => {
+    const externalId = raw.key.replace(/^\/works\//, "");
+    return {
+      id: `book_${externalId}`,
+      externalId,
       type: "book",
-      title: raw.volumeInfo?.title ?? "",
-    })
-  ),
+      title: raw.title ?? "",
+    };
+  }),
   normalizeGame: vi.fn((raw: { id: number; name: string }) => ({
     id: `game_${raw.id}`,
     externalId: String(raw.id),
@@ -243,17 +244,19 @@ describe("searchByTypePaged", () => {
     expect(searchManga).toHaveBeenCalledWith("one piece", 20, "es");
   });
 
-  it("book: totalPages desde totalItems de Google Books, con startIndex por página", async () => {
-    const { searchGoogleBooks } = await import("@/lib/api/googlebooks");
-    vi.mocked(searchGoogleBooks).mockResolvedValueOnce({
-      totalItems: 45,
-      items: [{ id: "gb1", volumeInfo: { title: "Harry Potter" } }],
+  it("book: totalPages desde el numFound REAL de Open Library", async () => {
+    const { searchOpenLibrary } = await import("@/lib/api/openlibrary");
+    vi.mocked(searchOpenLibrary).mockResolvedValueOnce({
+      numFound: 45,
+      docs: [{ key: "/works/OL1W", title: "Harry Potter" }],
     } as never);
 
     const res = await searchByTypePaged("harry", "book", 2, "es");
     expect(res.totalPages).toBe(3); // ceil(45/20)
     expect(res.hasMore).toBe(true);
-    expect(searchGoogleBooks).toHaveBeenCalledWith("harry", 2, {}, "es");
+    // El buscador NO acota por idioma: un título concreto debe encontrarse
+    // aunque solo exista la edición original.
+    expect(searchOpenLibrary).toHaveBeenCalledWith("harry", 2);
   });
 
   it("game: totalPages desde count de RAWG", async () => {
@@ -283,8 +286,11 @@ describe("searchByTypePaged", () => {
   });
 
   it("respuesta sin resultados → items vacío, 1 página, sin siguiente", async () => {
-    const { searchGoogleBooks } = await import("@/lib/api/googlebooks");
-    vi.mocked(searchGoogleBooks).mockResolvedValueOnce({ totalItems: 0 } as never);
+    const { searchOpenLibrary } = await import("@/lib/api/openlibrary");
+    vi.mocked(searchOpenLibrary).mockResolvedValueOnce({
+      numFound: 0,
+      docs: [],
+    } as never);
 
     const res = await searchByTypePaged("zzzz", "book", 1);
     expect(res.items).toEqual([]);

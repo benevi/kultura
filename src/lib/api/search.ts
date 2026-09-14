@@ -15,9 +15,7 @@ import type { MediaItem, MediaType } from "@/types/media";
 import { searchMovies, searchTV } from "./tmdb";
 import { searchAnime } from "./anilist";
 import { searchManga } from "./mangadex";
-import { searchGoogleBooks, googleBooksTotalPages } from "./googlebooks";
-import { preferBooksInLanguage } from "./books-maps";
-import { googleBooksLangRestrict } from "./locale";
+import { searchOpenLibrary, openLibraryTotalPages } from "./openlibrary";
 import { searchGames } from "./rawg";
 import { searchComics } from "./comicvine";
 import {
@@ -25,7 +23,7 @@ import {
   normalizeTV,
   normalizeAniListAnime,
   normalizeMangaDex,
-  normalizeBookGoogle,
+  normalizeBookOpenLibrary,
   normalizeGame,
   normalizeComic,
 } from "./normalizer";
@@ -65,13 +63,13 @@ export async function searchByType(
         r.data.map((raw) => normalizeMangaDex(raw, locale))
       );
     case "book":
-      // E-BOOKS-LANG: la edición del idioma activo primero (y sola cuando hay
-      // suficientes), para que el título que se lee sea el de esa edición.
-      return searchGoogleBooks(query, 1, {}, locale).then((r) =>
-        preferBooksInLanguage(
-          (r.items ?? []).map((raw) => normalizeBookGoogle(raw)),
-          googleBooksLangRestrict(locale)
-        )
+      // E-BOOKS-HIBRIDO: el buscador va contra el MISMO proveedor que el
+      // catálogo. Si fuese contra otro, buscar y navegar serían dos mundos
+      // distintos, y un fallo de cuota de Google rompería el buscador mientras
+      // el catálogo sigue funcionando. Sin acotar por idioma: quien busca un
+      // título concreto debe encontrarlo aunque solo exista el original.
+      return searchOpenLibrary(query, 1).then((r) =>
+        (r.docs ?? []).map((doc) => normalizeBookOpenLibrary(doc))
       );
     case "game":
       return searchGames(query).then((r) =>
@@ -165,14 +163,13 @@ export async function searchByTypePaged(
       };
     }
     case "book": {
-      const r = await searchGoogleBooks(query, page, {}, locale);
-      const totalPages = googleBooksTotalPages(r.totalItems);
+      // E-BOOKS-HIBRIDO: ver nota en `searchByType`. `numFound` es un total
+      // real, así que la paginación del buscador deja de prometer páginas que
+      // el proveedor no sirve.
+      const r = await searchOpenLibrary(query, page);
+      const totalPages = openLibraryTotalPages(r.numFound);
       return {
-        // E-BOOKS-LANG: ver nota en `searchByType`.
-        items: preferBooksInLanguage(
-          (r.items ?? []).map((raw) => normalizeBookGoogle(raw)),
-          googleBooksLangRestrict(locale)
-        ),
+        items: (r.docs ?? []).map((doc) => normalizeBookOpenLibrary(doc)),
         totalPages,
         hasMore: page < totalPages,
       };

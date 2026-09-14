@@ -23,20 +23,15 @@ import {
   filterByMinVolumesDex,
   type MangaDexFilters,
 } from "@/lib/api/mangadex-maps";
+import { GoogleBooksError } from "@/lib/api/googlebooks";
 import {
-  searchGoogleBooks,
-  googleBooksTotalPages,
-  GoogleBooksError,
-} from "@/lib/api/googlebooks";
+  searchOpenLibrary,
+  openLibraryTotalPages,
+} from "@/lib/api/openlibrary";
 import {
-  buildGoogleBooksQuery,
-  bookYearMatcher,
-  hasBookFilters,
-  preferBooksInLanguage,
-  GOOGLE_BOOKS_BASE_QUERY,
-  type BooksFilters,
-} from "@/lib/api/books-maps";
-import { googleBooksLangRestrict } from "@/lib/api/locale";
+  buildOpenLibraryQuery,
+  type OpenLibraryBookFilters,
+} from "@/lib/api/openlibrary-maps";
 import { getPopularGames, discoverGames } from "@/lib/api/rawg";
 import {
   buildRawgDiscoverParams,
@@ -53,8 +48,8 @@ import {
   normalizeTV,
   normalizeAniListAnime,
   normalizeMangaDex,
-  normalizeBookGoogle,
   normalizeGame,
+  normalizeBookOpenLibrary,
 } from "@/lib/api/normalizer";
 import type { MediaItem, MediaType } from "@/types/media";
 import type { TmdbMovieDetail, TmdbTVDetail } from "@/lib/api/tmdb";
@@ -92,9 +87,11 @@ function hasActivePostFilter(
     case "manga":
       return Boolean(filters.volumenes);
     case "book":
-      // E-BOOKS-GOOGLE: el año es post-filtro en Google Books (no hay operador
-      // de fecha en la query) → el conteo crudo del proveedor deja de ser fiable.
-      return Boolean(bookYearMatcher(filters.year));
+      // E-BOOKS-HIBRIDO: ya NO hay post-filtro en libros. Open Library aplica
+      // el año como rango (`first_publish_year:[a TO b]`) y devuelve un
+      // `numFound` que ya lo refleja, así que el conteo vuelve a ser fiable y
+      // la UI puede volver a ofrecer la última página.
+      return false;
     case "game":
       return Boolean(
         filters.valoracion ||
@@ -140,15 +137,15 @@ export type DiscoverFilters = TmdbFilters &
   AniListFilters &
   MangaDexFilters &
   RawgFilters &
-  BooksFilters &
+  OpenLibraryBookFilters &
   ComicFilters;
 
 /**
  * Resuelve una página de catálogo para una familia (o el agregado `all`).
  *
  * `locale` (E-TMDB-LOCALE): idioma activo de la app. Se propaga a los
- * proveedores que lo soportan — TMDB (`language`), Google Books
- * (`langRestrict`) y MangaDex (`availableTranslatedLanguage[]`). Jikan,
+ * proveedores que lo soportan — TMDB (`language`), Open Library (`language`,
+ * E-BOOKS-HIBRIDO) y MangaDex (`availableTranslatedLanguage[]`). Jikan,
  * ComicVine y RAWG no ofrecen catálogo en español: limitación aceptada,
  * documentada en `src/lib/api/locale.ts`. Omitirlo equivale a `es`.
  *
@@ -309,33 +306,16 @@ function isRateLimitError(e: unknown): boolean {
         break;
       }
       case "book": {
-        // E-BOOKS-GOOGLE: Google Books /volumes. Con filtros (género/editorial/
-        // formato/idioma/sort) → query construida; sin filtros, query base
-        // (Google Books exige `q` no vacío). El IDIOMA del catálogo lo fija
-        // `langRestrict` con el locale activo dentro de `searchGoogleBooks`; el
-        // trigger `idioma` de la UI actúa como override explícito.
-        const { q, params } = hasBookFilters(filters)
-          ? buildGoogleBooksQuery(filters)
-          : { q: GOOGLE_BOOKS_BASE_QUERY, params: {} };
-        const res = await searchGoogleBooks(q, page, params, locale);
-        items = (res.items ?? []).map((v) => normalizeBookGoogle(v));
-        // E-BOOKS-LANG: `langRestrict` solo es una pista y deja pasar ediciones
-        // en otro idioma, así que se filtra por el idioma REAL del volumen. Se
-        // compara contra el mismo código que se pidió: el override explícito de
-        // la UI manda sobre el locale activo.
-        items = preferBooksInLanguage(
-          items,
-          params.langRestrict ?? googleBooksLangRestrict(locale)
-        );
-        // POST-filtro de año: Google Books no tiene operador de fecha en la
-        // query (Open Library sí lo tenía) → se filtra sobre el año ya
-        // normalizado. `hasActivePostFilter('book', …)` marca totalPages como
-        // no fiable cuando está activo.
-        const yearMatcher = bookYearMatcher(filters.year);
-        if (yearMatcher) items = items.filter((i) => yearMatcher(i.year));
-        // E79-s3: cap COMÚN (antes 50, heredado de la etapa Open Library).
+        // E-BOOKS-HIBRIDO: el CATÁLOGO lo sirve Open Library. A diferencia de
+        // Google Books, aquí el idioma es un facet real, el año es un rango
+        // real y `numFound` es un total real — los tres motivos por los que la
+        // pestaña de libros daba títulos en inglés, filtros vacíos y errores al
+        // paginar. La ficha sigue enriqueciéndose con Google Books.
+        const { q, params } = buildOpenLibraryQuery(filters, locale);
+        const res = await searchOpenLibrary(q, page, params);
+        items = (res.docs ?? []).map((doc) => normalizeBookOpenLibrary(doc));
         totalPages = Math.min(
-          googleBooksTotalPages(res.totalItems),
+          openLibraryTotalPages(res.numFound),
           DISCOVER_MAX_PAGES
         );
         hasMore = page < totalPages;
