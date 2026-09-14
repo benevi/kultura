@@ -16,6 +16,8 @@ import { searchMovies, searchTV } from "./tmdb";
 import { searchAnime } from "./anilist";
 import { searchManga } from "./mangadex";
 import { searchGoogleBooks, googleBooksTotalPages } from "./googlebooks";
+import { preferBooksInLanguage } from "./books-maps";
+import { googleBooksLangRestrict } from "./locale";
 import { searchGames } from "./rawg";
 import { searchComics } from "./comicvine";
 import {
@@ -63,8 +65,13 @@ export async function searchByType(
         r.data.map((raw) => normalizeMangaDex(raw, locale))
       );
     case "book":
+      // E-BOOKS-LANG: la edición del idioma activo primero (y sola cuando hay
+      // suficientes), para que el título que se lee sea el de esa edición.
       return searchGoogleBooks(query, 1, {}, locale).then((r) =>
-        (r.items ?? []).map((raw) => normalizeBookGoogle(raw))
+        preferBooksInLanguage(
+          (r.items ?? []).map((raw) => normalizeBookGoogle(raw)),
+          googleBooksLangRestrict(locale)
+        )
       );
     case "game":
       return searchGames(query).then((r) =>
@@ -161,7 +168,11 @@ export async function searchByTypePaged(
       const r = await searchGoogleBooks(query, page, {}, locale);
       const totalPages = googleBooksTotalPages(r.totalItems);
       return {
-        items: (r.items ?? []).map((raw) => normalizeBookGoogle(raw)),
+        // E-BOOKS-LANG: ver nota en `searchByType`.
+        items: preferBooksInLanguage(
+          (r.items ?? []).map((raw) => normalizeBookGoogle(raw)),
+          googleBooksLangRestrict(locale)
+        ),
         totalPages,
         hasMore: page < totalPages,
       };

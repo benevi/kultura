@@ -19,6 +19,7 @@ import {
   bookYearMatcher,
   hasBookFilters,
   buildGoogleBooksQuery,
+  preferBooksInLanguage,
 } from "@/lib/api/books-maps";
 
 // ── Tablas ───────────────────────────────────────────────────────────────────
@@ -199,3 +200,59 @@ describe("buildGoogleBooksQuery", () => {
     expect(params).toEqual({});
   });
 });
+
+// ============================================================
+// E-BOOKS-LANG — preferir la edición del idioma activo
+//
+// `langRestrict` es una pista para Google, no una garantía: se cuelan
+// ediciones en otro idioma y el usuario ve el título en un idioma que no es el
+// suyo. Lo que se protege aquí es la regla completa, degradación incluida:
+// preferir español NO puede dejar la rejilla vacía.
+// ============================================================
+
+describe('preferBooksInLanguage (E-BOOKS-LANG)', () => {
+  const book = (id: string, language?: string) => ({
+    id: `book_${id}`,
+    metadata: language === undefined ? {} : { language },
+  })
+
+  /** n ediciones en `lang`, suficientes para poder descartar el resto. */
+  const many = (lang: string, n: number) =>
+    Array.from({ length: n }, (_, i) => book(`${lang}${i}`, lang))
+
+  it('con suficientes ediciones en el idioma pedido, descarta las demás', () => {
+    const items = [...many('es', 8), book('en1', 'en'), book('fr1', 'fr')]
+    const out = preferBooksInLanguage(items, 'es')
+    expect(out).toHaveLength(8)
+    expect(out.every((i) => i.metadata.language === 'es')).toBe(true)
+  })
+
+  it('con pocas, las pone delante pero conserva el resto: no vaciar el catálogo', () => {
+    const items = [book('en1', 'en'), book('es1', 'es'), book('en2', 'en')]
+    const out = preferBooksInLanguage(items, 'es')
+    expect(out).toHaveLength(3)
+    expect(out[0].id).toBe('book_es1')
+  })
+
+  it('sin ninguna edición en ese idioma devuelve la lista intacta', () => {
+    const items = [book('en1', 'en'), book('ja1', 'ja')]
+    expect(preferBooksInLanguage(items, 'es')).toEqual(items)
+  })
+
+  it('acepta variantes regionales a ambos lados (es-ES vs es)', () => {
+    const items = [...many('es-419', 8).map((b) => ({ ...b })), book('en1', 'en')]
+    const out = preferBooksInLanguage(items, 'es-ES')
+    expect(out).toHaveLength(8)
+  })
+
+  it('un volumen sin idioma declarado nunca se toma por el idioma pedido', () => {
+    const items = [book('sin'), book('es1', 'es')]
+    const out = preferBooksInLanguage(items, 'es')
+    expect(out[0].id).toBe('book_es1')
+  })
+
+  it('idioma vacío → no toca nada (no hay preferencia que aplicar)', () => {
+    const items = [book('en1', 'en'), book('es1', 'es')]
+    expect(preferBooksInLanguage(items, '')).toEqual(items)
+  })
+})
