@@ -15,8 +15,6 @@ interface AvatarIconPickerProps {
   /** Clave seleccionada, o `null` para "sin personaje" (iniciales). */
   value: string | null
   onChange: (icon: string | null) => void
-  /** Color de fondo de las opciones — el mismo que tendrá el avatar real. */
-  color?: string
   /** Etiqueta accesible del grupo de opciones. */
   label: string
   /** Texto de la opción "sin personaje". */
@@ -27,7 +25,6 @@ interface AvatarIconPickerProps {
 export function AvatarIconPicker({
   value,
   onChange,
-  color = 'var(--surface-elevated)',
   label,
   noneLabel,
   disabled = false,
@@ -67,13 +64,13 @@ export function AvatarIconPicker({
             disabled={disabled}
             onClick={() => onChange(key)}
             className={cn(
-              'w-11 h-11 rounded-full flex items-center justify-center text-white',
-              'transition-transform hover:scale-105 disabled:opacity-50',
+              'rounded-full transition-transform hover:scale-105 disabled:opacity-50',
               selected ? 'ring-2 ring-accent-positive ring-offset-2 ring-offset-surface-default' : ''
             )}
-            style={{ backgroundColor: color }}
           >
-            <Icon className="w-6 h-6" aria-hidden="true" />
+            {/* El personaje trae su propio disco: pintarlo sobre un fondo de
+                color lo aplanaba y hacía que los doce parecieran el mismo. */}
+            <Icon className="w-11 h-11 rounded-full" aria-hidden="true" />
           </button>
         )
       })}

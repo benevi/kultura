@@ -27,12 +27,6 @@ const sizePixels: Record<NonNullable<AvatarProps["size"]>, number> = {
   lg: 56,
 };
 
-/** El personaje ocupa ~60% del círculo: deja aire suficiente para leerse a 32px. */
-const iconSizeClasses: Record<NonNullable<AvatarProps["size"]>, string> = {
-  sm: "w-5 h-5",
-  md: "w-6 h-6",
-  lg: "w-8 h-8",
-};
 
 const LEGACY_RED = "#E82020";
 
@@ -68,11 +62,23 @@ export function Avatar({
     );
   }
 
-  // E-AVATAR-ICONS: el personaje se pinta en `currentColor` sobre el mismo
-  // fondo de siempre, así que el color elegido por el usuario sigue mandando.
-  // Sin icono (o con una clave que ya no exista en el catálogo) se cae a las
-  // iniciales: las cuentas anteriores a esta función no cambian.
+  // E-AVATAR-ICONS: cada personaje trae su propio disco con color y volumen, así
+  // que ocupa el avatar entero y NO se tiñe con `avatar_color` — teñirlo era lo
+  // que dejaba doce círculos iguales donde no se distinguía ninguno. El color
+  // sigue mandando en la opción de iniciales, que es la otra mitad de la
+  // elección. Una clave desconocida cae a las iniciales, así que retirar un
+  // personaje del catálogo nunca deja el avatar vacío.
   const IconComponent = icon ? AVATAR_ICONS[icon] : undefined;
+
+  if (IconComponent) {
+    return (
+      <IconComponent
+        className={cn("rounded-full flex-shrink-0 select-none", sizeClasses[size], className)}
+        role="img"
+        aria-label={initials}
+      />
+    );
+  }
 
   return (
     <div
@@ -83,11 +89,7 @@ export function Avatar({
       )}
       style={{ backgroundColor: resolvedColor }}
     >
-      {IconComponent ? (
-        <IconComponent className={iconSizeClasses[size]} aria-hidden="true" />
-      ) : (
-        initials
-      )}
+      {initials}
     </div>
   );
 }

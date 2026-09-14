@@ -105,7 +105,6 @@ export function CreateGroupForm({ onCreated, onCancel }: CreateGroupFormProps) {
         <AvatarIconPicker
           value={icon}
           onChange={setIcon}
-          color={F0.pink}
           label={tG('groupIcon')}
           noneLabel={tG('groupIconNone')}
         />
