@@ -26,6 +26,7 @@ import {
 import {
   searchGoogleBooks,
   googleBooksTotalPages,
+  GoogleBooksError,
 } from "@/lib/api/googlebooks";
 import {
   buildGoogleBooksQuery,
@@ -186,6 +187,23 @@ export async function fetchDiscoverData(
     };
   }
 
+/**
+ * ¿El fallo es "el proveedor me está limitando" (429)?
+ *
+ * Importa porque la UI tiene un mensaje distinto para eso ("inténtalo en unos
+ * segundos") que para un fallo genérico. Antes solo se reconocía a Jikan y
+ * AniList, así que una cuota agotada de Google Books se presentaba como un
+ * error indeterminado y no había forma de saber desde la pantalla qué pasaba.
+ */
+function isRateLimitError(e: unknown): boolean {
+  return (
+    (e instanceof JikanError ||
+      e instanceof AniListError ||
+      e instanceof GoogleBooksError) &&
+    e.status === 429
+  );
+}
+
   // ── Modo BÚSQUEDA (E-DISCOVER-SEARCH-MERGE) ───────────────────────────────
   if (query) {
     try {
@@ -210,9 +228,7 @@ export async function fetchDiscoverData(
         items: [],
         totalPages: 1,
         hasMore: false,
-        fetchErrorKind: e instanceof JikanError && e.status === 429
-          ? "rate-limit"
-          : "generic",
+        fetchErrorKind: isRateLimitError(e) ? "rate-limit" : "generic",
       };
     }
   }
@@ -391,9 +407,7 @@ export async function fetchDiscoverData(
     }
   } catch (e) {
     log.error("API error", { type, page, err: e });
-    const isRateLimited =
-      (e instanceof JikanError || e instanceof AniListError) && e.status === 429;
-    if (isRateLimited) {
+    if (isRateLimitError(e)) {
       fetchErrorKind = "rate-limit";
     } else {
       fetchErrorKind = "generic";
