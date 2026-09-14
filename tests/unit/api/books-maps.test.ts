@@ -19,8 +19,7 @@ import {
   bookYearMatcher,
   hasBookFilters,
   buildGoogleBooksQuery,
-  filterBooksByLanguage,
-  sortBooksByLanguage,
+  preferBooksInLanguage,
 } from "@/lib/api/books-maps";
 
 // ── Tablas ───────────────────────────────────────────────────────────────────
@@ -210,52 +209,50 @@ describe("buildGoogleBooksQuery", () => {
 // suyo. Lo que se protege aquí es la regla completa, degradación incluida:
 // preferir español NO puede dejar la rejilla vacía.
 // ============================================================
-// E-BOOKS-LANG — idioma real de la edición
-//
-// `langRestrict` es una pista para Google, no una garantía: se cuelan
-// ediciones en otro idioma y el usuario ve el título en un idioma que no es el
-// suyo. Son dos reglas distintas a propósito:
-//   - Catálogo (Descubrir) → recorta: allí manda el idioma de la app.
-//   - Búsqueda por texto   → solo ordena: quien busca un título concreto tiene
-//     que encontrarlo aunque solo exista en su idioma original.
-// ============================================================
 
-describe('filterBooksByLanguage / sortBooksByLanguage (E-BOOKS-LANG)', () => {
+describe('preferBooksInLanguage (E-BOOKS-LANG)', () => {
   const book = (id: string, language?: string) => ({
     id: `book_${id}`,
     metadata: language === undefined ? {} : { language },
   })
 
-  it('el catálogo descarta lo que no sea del idioma pedido', () => {
-    const items = [book('es1', 'es'), book('en1', 'en'), book('fr1', 'fr')]
-    const out = filterBooksByLanguage(items, 'es')
-    expect(out).toHaveLength(1)
-    expect(out[0].id).toBe('book_es1')
+  /** n ediciones en `lang`, suficientes para poder descartar el resto. */
+  const many = (lang: string, n: number) =>
+    Array.from({ length: n }, (_, i) => book(`${lang}${i}`, lang))
+
+  it('con suficientes ediciones en el idioma pedido, descarta las demás', () => {
+    const items = [...many('es', 8), book('en1', 'en'), book('fr1', 'fr')]
+    const out = preferBooksInLanguage(items, 'es')
+    expect(out).toHaveLength(8)
+    expect(out.every((i) => i.metadata.language === 'es')).toBe(true)
   })
 
-  it('acepta variantes regionales a ambos lados (es-419 vs es-ES)', () => {
-    const items = [book('la1', 'es-419'), book('en1', 'en')]
-    expect(filterBooksByLanguage(items, 'es-ES')).toHaveLength(1)
-  })
-
-  it('un volumen sin idioma declarado nunca cuenta como del idioma pedido', () => {
-    expect(filterBooksByLanguage([book('sin')], 'es')).toHaveLength(0)
-  })
-
-  it('idioma vacío → no hay preferencia que aplicar, pasa todo', () => {
-    const items = [book('en1', 'en'), book('es1', 'es')]
-    expect(filterBooksByLanguage(items, '')).toEqual(items)
-  })
-
-  it('la búsqueda ordena pero NO descarta', () => {
+  it('con pocas, las pone delante pero conserva el resto: no vaciar el catálogo', () => {
     const items = [book('en1', 'en'), book('es1', 'es'), book('en2', 'en')]
-    const out = sortBooksByLanguage(items, 'es')
+    const out = preferBooksInLanguage(items, 'es')
     expect(out).toHaveLength(3)
     expect(out[0].id).toBe('book_es1')
   })
 
-  it('la búsqueda sin ninguna edición del idioma deja la lista intacta', () => {
+  it('sin ninguna edición en ese idioma devuelve la lista intacta', () => {
     const items = [book('en1', 'en'), book('ja1', 'ja')]
-    expect(sortBooksByLanguage(items, 'es')).toEqual(items)
+    expect(preferBooksInLanguage(items, 'es')).toEqual(items)
+  })
+
+  it('acepta variantes regionales a ambos lados (es-ES vs es)', () => {
+    const items = [...many('es-419', 8).map((b) => ({ ...b })), book('en1', 'en')]
+    const out = preferBooksInLanguage(items, 'es-ES')
+    expect(out).toHaveLength(8)
+  })
+
+  it('un volumen sin idioma declarado nunca se toma por el idioma pedido', () => {
+    const items = [book('sin'), book('es1', 'es')]
+    const out = preferBooksInLanguage(items, 'es')
+    expect(out[0].id).toBe('book_es1')
+  })
+
+  it('idioma vacío → no toca nada (no hay preferencia que aplicar)', () => {
+    const items = [book('en1', 'en'), book('es1', 'es')]
+    expect(preferBooksInLanguage(items, '')).toEqual(items)
   })
 })

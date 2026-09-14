@@ -121,10 +121,10 @@ export function booksLangRestrictOverride(
   return /^[a-z]{2}$/.test(code) ? code : undefined;
 }
 
-// ── Idioma real del volumen → filtro (E-BOOKS-LANG) ─────────────────────────
+// ── Idioma real del volumen → POST-filtro (E-BOOKS-LANG) ────────────────────
 // `langRestrict` es una PISTA de búsqueda, no una garantía: Google la aplica
-// sobre el índice, así que se cuelan ediciones en inglés y el usuario ve el
-// título en un idioma que no es el suyo.
+// sobre el índice, así que en la práctica se cuelan ediciones en inglés (u otro
+// idioma) y el usuario ve el título en un idioma que no es el suyo.
 //
 // El volumen sí trae su idioma real en `volumeInfo.language`, que el
 // normalizador guarda en `metadata.language`. Con eso se puede quedar en la
@@ -136,41 +136,39 @@ export function booksLangRestrictOverride(
 // nombres que no se pueden buscar ni comprar. O hay edición en el idioma
 // activo, y entonces se enseña esa, o se enseña la que hay.
 //
-// Este filtro es DURO: descarta todo lo que no sea del idioma pedido. Puede
-// hacerlo porque el recolector (`collectBooksPage`) pide al proveedor mucho
-// más de lo que enseña, así que recortar ya no vacía la rejilla. La red de
-// seguridad de "no dejar la página en blanco" vive allí, no aquí.
+// Degradación: si en una página quedan muy pocas ediciones del idioma pedido,
+// se conservan las demás detrás en vez de servir una rejilla casi vacía —
+// preferir el idioma no debe vaciar el catálogo.
+
+/** Mínimo de resultados en el idioma pedido para poder descartar el resto. */
+const BOOKS_LANG_MIN_KEEP = 8;
 
 function volumeLanguage(item: { metadata?: Record<string, unknown> }): string {
   const raw = item.metadata?.language;
   return typeof raw === "string" ? raw.toLowerCase().split(/[-_]/)[0] : "";
 }
 
-/** Se queda solo con las ediciones cuyo idioma REAL es `lang`. */
-export function filterBooksByLanguage<
-  T extends { metadata?: Record<string, unknown> },
->(items: T[], lang: string): T[] {
-  const wanted = lang.toLowerCase().split(/[-_]/)[0];
-  if (!wanted) return items;
-  return items.filter((item) => volumeLanguage(item) === wanted);
-}
-
 /**
- * Ordena dejando delante las ediciones en `lang`, SIN descartar ninguna.
- *
- * Es lo que quiere la búsqueda por texto: quien busca "Persuasion" tiene que
- * encontrarlo aunque solo exista la edición inglesa. En el catálogo de
- * Descubrir sí se recorta (`filterBooksByLanguage`), porque allí no hay una
- * intención concreta del usuario que respetar y sí un idioma que cumplir.
+ * Deja delante las ediciones en `lang` y descarta las demás cuando hay
+ * suficientes; si no las hay, las mantiene detrás como relleno.
  */
-export function sortBooksByLanguage<
-  T extends { metadata?: Record<string, unknown> },
->(items: T[], lang: string): T[] {
+export function preferBooksInLanguage<T extends { metadata?: Record<string, unknown> }>(
+  items: T[],
+  lang: string
+): T[] {
   const wanted = lang.toLowerCase().split(/[-_]/)[0];
   if (!wanted) return items;
-  const matching = items.filter((i) => volumeLanguage(i) === wanted);
+
+  const matching: T[] = [];
+  const rest: T[] = [];
+  for (const item of items) {
+    (volumeLanguage(item) === wanted ? matching : rest).push(item);
+  }
+
   if (matching.length === 0) return items;
-  return [...matching, ...items.filter((i) => volumeLanguage(i) !== wanted)];
+  return matching.length >= BOOKS_LANG_MIN_KEEP
+    ? matching
+    : [...matching, ...rest];
 }
 
 // ── Año → POST-filtro ────────────────────────────────────────────────────────

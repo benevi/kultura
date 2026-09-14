@@ -24,16 +24,15 @@ import {
   type MangaDexFilters,
 } from "@/lib/api/mangadex-maps";
 import {
+  searchGoogleBooks,
+  googleBooksTotalPages,
   GoogleBooksError,
 } from "@/lib/api/googlebooks";
-import {
-  collectBooksPage,
-  booksTotalPages,
-} from "@/lib/api/books-catalog";
 import {
   buildGoogleBooksQuery,
   bookYearMatcher,
   hasBookFilters,
+  preferBooksInLanguage,
   GOOGLE_BOOKS_BASE_QUERY,
   type BooksFilters,
 } from "@/lib/api/books-maps";
@@ -54,6 +53,7 @@ import {
   normalizeTV,
   normalizeAniListAnime,
   normalizeMangaDex,
+  normalizeBookGoogle,
   normalizeGame,
 } from "@/lib/api/normalizer";
 import type { MediaItem, MediaType } from "@/types/media";
@@ -317,26 +317,28 @@ function isRateLimitError(e: unknown): boolean {
         const { q, params } = hasBookFilters(filters)
           ? buildGoogleBooksQuery(filters)
           : { q: GOOGLE_BOOKS_BASE_QUERY, params: {} };
-        // E-BOOKS-LANG: idioma real y año no caben en la consulta de Google
-        // Books, así que el recolector pide varias ventanas de 40, filtra y se
-        // queda con las 20 primeras que sobreviven. Con una sola ventana de 20
-        // el idioma no se podía exigir de verdad y el año devolvía páginas en
-        // blanco. Ver la cabecera de `books-catalog.ts`.
-        const collected = await collectBooksPage({
-          q,
-          params,
-          page,
-          locale,
-          // El override explícito de la UI manda sobre el locale activo.
-          lang: params.langRestrict ?? googleBooksLangRestrict(locale),
-          yearMatcher: bookYearMatcher(filters.year),
-        });
-        items = collected.items;
+        const res = await searchGoogleBooks(q, page, params, locale);
+        items = (res.items ?? []).map((v) => normalizeBookGoogle(v));
+        // E-BOOKS-LANG: `langRestrict` solo es una pista y deja pasar ediciones
+        // en otro idioma, así que se filtra por el idioma REAL del volumen. Se
+        // compara contra el mismo código que se pidió: el override explícito de
+        // la UI manda sobre el locale activo.
+        items = preferBooksInLanguage(
+          items,
+          params.langRestrict ?? googleBooksLangRestrict(locale)
+        );
+        // POST-filtro de año: Google Books no tiene operador de fecha en la
+        // query (Open Library sí lo tenía) → se filtra sobre el año ya
+        // normalizado. `hasActivePostFilter('book', …)` marca totalPages como
+        // no fiable cuando está activo.
+        const yearMatcher = bookYearMatcher(filters.year);
+        if (yearMatcher) items = items.filter((i) => yearMatcher(i.year));
+        // E79-s3: cap COMÚN (antes 50, heredado de la etapa Open Library).
         totalPages = Math.min(
-          booksTotalPages(collected.totalItems),
+          googleBooksTotalPages(res.totalItems),
           DISCOVER_MAX_PAGES
         );
-        hasMore = collected.hasMore;
+        hasMore = page < totalPages;
         break;
       }
       case "comic": {
