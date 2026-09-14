@@ -101,6 +101,10 @@ export function SettingsForm({
 
       toast.show({ message: t('saved'), type: 'success' })
 
+      // El header lo pinta el layout en el SERVIDOR: sin refrescarlo, el avatar
+      // seguía mostrando las iniciales viejas hasta recargar a mano.
+      router.refresh()
+
       if (locale !== currentLocale) {
         const newPath = pathname.replace(`/${currentLocale}/`, `/${locale}/`)
         router.push(newPath)
@@ -253,7 +257,6 @@ export function SettingsForm({
             <AvatarIconPicker
               value={avatarIcon}
               onChange={setAvatarIcon}
-              color={AVATAR_COLORS.find((c) => c.name === avatarColor)?.hex}
               label={t('avatarIcon')}
               noneLabel={t('avatarIconNone')}
             />
