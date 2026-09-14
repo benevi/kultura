@@ -413,8 +413,14 @@ export function DiscoverClient({
       )}
 
       {/* Barra Descubrir (R3): 2 filas etiquetadas (TIPO / FILTROS) + separador.
-          Sticky bajo el header de app (h-14). El grid fluye debajo sin solapar. */}
-      <div className="sticky top-14 z-30 bg-bg/95 backdrop-blur-sm border-b border-border py-3 px-4 -mx-4 mb-6 flex flex-col gap-3">
+          Sticky bajo el header de app (h-14). El grid fluye debajo sin solapar.
+
+          Móvil: las etiquetas TIPO/FILTROS se ocultan (como ya hacía BUSCAR) y
+          cada fila scrollea en horizontal, así los chips no se cortan a media
+          palabra ni se parten en varias líneas. Y el fondo es OPACO: con la
+          barra translúcida se veían las portadas por detrás, que era la mitad
+          de la sensación de desorden. */}
+      <div className="sticky top-14 z-30 bg-bg border-b border-border py-3 px-4 -mx-4 mb-6 flex flex-col gap-2.5 md:gap-3">
         {/* FILA 0 — BUSCAR (E-DISCOVER-SEARCH-MERGE): el buscador de texto vive
             aquí desde que /search se fusionó en /discover. En móvil el input
             ocupa la fila y el botón de aleatorio queda a su lado. */}
@@ -476,7 +482,7 @@ export function DiscoverClient({
 
         {/* FILA 1 — TIPO: label tenue + pills separadas (radiogroup). */}
         <div className="flex items-center gap-3">
-          <span className="shrink-0 font-mono uppercase text-xs tracking-widest text-muted">
+          <span className="shrink-0 hidden sm:inline-flex font-mono uppercase text-xs tracking-widest text-muted">
             {tF("type")}
           </span>
           <div
@@ -520,7 +526,7 @@ export function DiscoverClient({
           <>
             <div className="border-t border-border" />
             <div className="flex items-center gap-3">
-              <span className="shrink-0 inline-flex items-center gap-1.5 font-mono uppercase text-xs tracking-widest text-muted">
+              <span className="shrink-0 hidden sm:inline-flex items-center gap-1.5 font-mono uppercase text-xs tracking-widest text-muted">
                 <IconGrid className="h-3.5 w-3.5" aria-hidden="true" />
                 {tF("filters")}
               </span>

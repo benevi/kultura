@@ -59,24 +59,12 @@ export function HeroSection({ item }: HeroSectionProps) {
   const t = useTranslations('home')
   const tMedia = useTranslations('media')
 
-  if (!item?.media) {
-    return (
-      <section
-        className="relative overflow-hidden rounded-bento-lg p-6 md:p-10 flex flex-col gap-3 max-w-md"
-        style={{ background: HERO_GRADIENT, boxShadow: HARD_SHADOW }}
-      >
-        <div className="absolute inset-0 pointer-events-none" style={{ background: MEDIA_BLOCK_ACCENT }} />
-        <IconFilm className="relative z-10 w-8 h-8 text-text-primary" />
-        <div className="relative z-10">
-          <p className="font-display text-lg md:text-xl font-extrabold text-text-primary">{t('welcomeTitle')}</p>
-          <p className="font-body text-sm text-text-secondary mt-1">{t('welcomeSubtitle')}</p>
-        </div>
-        <KButton asChild size="md" className="relative z-10 w-fit mt-1">
-          <Link href="/discover">{t('goDiscover')}</Link>
-        </KButton>
-      </section>
-    )
-  }
+  // Sin título en curso NO hay hero. Antes se pintaba una tarjeta "¿Qué estás
+  // viendo?" que ocupaba media pantalla para decir que no había nada: el resto
+  // de secciones (continuar, círculo, recomendaciones, novedades) llenan mejor
+  // ese espacio, y la llamada a explorar sigue disponible en las tarjetas
+  // vacías de esas mismas secciones.
+  if (!item?.media) return null
 
   const { media, episode_progress } = item
   const externalId = media.id.split('_').slice(1).join('_')
