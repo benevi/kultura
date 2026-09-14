@@ -16,8 +16,14 @@
 //   - AniList (anime)      → inglés/romaji/nativo únicamente     ❌ limitación
 //   - ComicVine (comic)    → inglés únicamente                  ❌ limitación
 //   - RAWG (game)          → inglés (Steam aporta el idioma en la ficha)
-// Las dos limitaciones son aceptadas a nivel de producto: no existe API gratuita
-// equivalente con catálogo traducido a ES. Documentado en CLAUDE.md.
+// No existe API gratuita equivalente con catálogo traducido a ES, así que esas
+// tres limitaciones son de origen y aquí no se pueden resolver.
+//
+// E-SINOPSIS-I18N: lo que sí se resuelve es la SINOPSIS, una capa más arriba —
+// `src/lib/translate/synopsis.ts` la traduce al idioma activo y guarda el
+// resultado en caché compartida, de modo que cada título se traduce una sola
+// vez para todos los usuarios. Títulos, géneros y demás metadatos siguen
+// llegando como los sirva el proveedor.
 // ============================================================
 
 /** Locales soportados por la app (= `routing.locales`). */
