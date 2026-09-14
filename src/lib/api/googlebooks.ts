@@ -126,6 +126,24 @@ export function isOpenLibraryLegacyId(id: string): boolean {
   return /^(\/works\/)?OL\d+[WM]$/i.test(id);
 }
 
+/**
+ * Error de Google Books con el STATUS accesible.
+ *
+ * Antes se lanzaba un `Error` plano con el código solo dentro del mensaje, así
+ * que quien lo capturaba no podía distinguir un 429 (cuota agotada: transitorio
+ * y con mensaje propio para el usuario) de un 400 o un 503. Mismo patrón que
+ * `JikanError` y `AniListError`.
+ */
+export class GoogleBooksError extends Error {
+  readonly status: number;
+
+  constructor(path: string, status: number) {
+    super(`Google Books ${path} → ${status}`);
+    this.name = "GoogleBooksError";
+    this.status = status;
+  }
+}
+
 async function googleBooksFetch<T>(
   path: string,
   params: Record<string, string> = {}
@@ -141,7 +159,7 @@ async function googleBooksFetch<T>(
 
   const res = await fetch(url.toString());
   if (!res.ok) {
-    throw new Error(`Google Books ${path} → ${res.status}`);
+    throw new GoogleBooksError(path, res.status);
   }
   return res.json() as Promise<T>;
 }
@@ -181,7 +199,7 @@ export async function getGoogleBookDetail(
   try {
     return await googleBooksFetch<GoogleBooksVolume>(`/volumes/${id}`);
   } catch (e) {
-    if (e instanceof Error && /→ 404$/.test(e.message)) return null;
+    if (e instanceof GoogleBooksError && e.status === 404) return null;
     throw e;
   }
 }

@@ -207,3 +207,42 @@ describe("isOpenLibraryLegacyId", () => {
     expect(isOpenLibraryLegacyId("")).toBe(false);
   });
 });
+
+// ============================================================
+// GoogleBooksError — el status tiene que viajar, no solo el mensaje
+//
+// Un 429 (cuota agotada) es transitorio y la UI tiene un mensaje propio para
+// él; un 400 o un 503 no. Con el status solo dentro del texto del error, quien
+// lo capturaba no podía distinguirlos y todo acababa en "no se pudo cargar".
+// ============================================================
+
+describe('GoogleBooksError', () => {
+  const failWith = (status: number) => {
+    vi.spyOn(global, 'fetch').mockResolvedValue({
+      ok: false,
+      status,
+    } as Response)
+  }
+
+  afterEach(() => {
+    vi.restoreAllMocks()
+  })
+
+  it('un fallo HTTP expone el status como campo', async () => {
+    failWith(429)
+    await expect(searchGoogleBooks('test')).rejects.toMatchObject({
+      name: 'GoogleBooksError',
+      status: 429,
+    })
+  })
+
+  it('el 404 del detalle sigue devolviendo null, no lanza', async () => {
+    failWith(404)
+    await expect(getGoogleBookDetail('noexiste')).resolves.toBeNull()
+  })
+
+  it('un fallo que no es 404 sí se propaga desde el detalle', async () => {
+    failWith(500)
+    await expect(getGoogleBookDetail('x')).rejects.toMatchObject({ status: 500 })
+  })
+})
