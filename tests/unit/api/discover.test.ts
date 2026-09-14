@@ -1012,3 +1012,49 @@ describe("fetchDiscoverData — modo búsqueda (query)", () => {
     expect(searchByTypePaged).not.toHaveBeenCalled();
   });
 });
+
+// ============================================================
+// Diagnóstico legible del fallo de proveedor
+//
+// El visor de logs de Vercel pinta `context` colapsado, así que un error
+// serializado ahí dentro no se lee sin abrir cada línea. Lo que se protege
+// aquí es que el mensaje VISIBLE baste para diagnosticar: qué familia, qué
+// página y qué error exacto (con status o con causa de red).
+// ============================================================
+
+describe("fetchDiscoverData — el error se lee en el mensaje del log", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it("un error con status lo pone en la línea visible", async () => {
+    const spy = vi.spyOn(console, "error").mockImplementation(() => {});
+    const err = Object.assign(new Error("Open Library /search.json → 503"), {
+      name: "OpenLibraryError",
+      status: 503,
+    });
+    vi.mocked(searchOpenLibrary).mockRejectedValueOnce(err);
+
+    const res = await fetchDiscoverData("book", 1);
+
+    expect(res.fetchErrorKind).toBe("generic");
+    const line = spy.mock.calls.map((c) => c.map(String).join(" ")).join(" ");
+    expect(line).toContain("type=book");
+    expect(line).toContain("status=503");
+    spy.mockRestore();
+  });
+
+  it("un fallo de red expone la causa, que es lo que distingue timeout de bloqueo", async () => {
+    const spy = vi.spyOn(console, "error").mockImplementation(() => {});
+    const err = new TypeError("fetch failed");
+    err.cause = new Error("ConnectTimeoutError");
+    vi.mocked(searchOpenLibrary).mockRejectedValueOnce(err);
+
+    await fetchDiscoverData("book", 1);
+
+    const line = spy.mock.calls.map((c) => c.map(String).join(" ")).join(" ");
+    expect(line).toContain("fetch failed");
+    expect(line).toContain("ConnectTimeoutError");
+    spy.mockRestore();
+  });
+});

@@ -60,6 +60,24 @@ export function openLibraryCover(coverId: number): string {
   return `https://covers.openlibrary.org/b/id/${coverId}-L.jpg`;
 }
 
+/**
+ * Error de Open Library con el STATUS accesible, igual que `JikanError`,
+ * `AniListError` y `GoogleBooksError`.
+ *
+ * Un `Error` plano con el código dentro del texto obliga a leer el mensaje con
+ * una regex para saber si fue cuota, consulta inválida o caída — y en un log de
+ * producción eso se traduce en no saberlo.
+ */
+export class OpenLibraryError extends Error {
+  readonly status: number;
+
+  constructor(path: string, status: number) {
+    super(`Open Library ${path} → ${status}`);
+    this.name = "OpenLibraryError";
+    this.status = status;
+  }
+}
+
 async function openLibraryFetch<T>(
   path: string,
   params: Record<string, string> = {}
@@ -69,7 +87,7 @@ async function openLibraryFetch<T>(
   const res = await fetch(url.toString(), {
     headers: { "User-Agent": "KULTURA/1.0 (kultura app)" },
   });
-  if (!res.ok) throw new Error(`Open Library ${path} → ${res.status}`);
+  if (!res.ok) throw new OpenLibraryError(path, res.status);
   return res.json() as Promise<T>;
 }
 
