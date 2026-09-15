@@ -85,30 +85,42 @@ export function openLibraryYearRange(
 }
 
 // ── Sort → params.sort ───────────────────────────────────────────────────────
-// Open Library admite `new`, `old`, `rating` y `editions`. Los sorts sin
-// equivalente nativo devuelven undefined en vez de inventar un orden que la API
-// no garantiza — misma política que el resto de proveedores.
+// Open Library NO ordena por título. Ofrecer "Título A–Z" era un control que
+// no hacía nada: el usuario lo cambiaba y le salían exactamente los mismos
+// libros, porque sin `sort` reconocible la API devuelve su orden por
+// relevancia. Misma política que ya se aplica en otros tipos ("nunca un
+// trigger que mienta", ver `type-filters.ts`): lo que el proveedor no sabe
+// hacer no se ofrece.
+//
+// Este catálogo es además el que alimenta las OPCIONES del desplegable para
+// libros, de modo que la lista visible y lo que la API entiende no se puedan
+// separar.
+
+export const OPEN_LIBRARY_SORT: Record<string, string> = {
+  // Cuánta gente lo tiene en su registro de lectura: la señal de popularidad
+  // real que ofrece Open Library.
+  popularity: "readinglog",
+  rating: "rating",
+  release_desc: "new",
+  release_asc: "old",
+};
 
 export function openLibrarySort(
   sort: string | null | undefined
 ): string | undefined {
-  switch (sort) {
-    case "recientes":
-    case "newest":
-    case "release_desc":
-    case "recent":
-      return "new";
-    case "antiguos":
-    case "oldest":
-    case "release_asc":
-      return "old";
-    case "valoracion":
-    case "rating":
-      return "rating";
-    default:
-      // relevancia / popularidad / título / vacío / desconocido → sin sort.
-      return undefined;
-  }
+  if (!sort) return undefined;
+  // Alias históricos que llegan desde otros catálogos de sort.
+  const key =
+    sort === "recientes" || sort === "newest" || sort === "recent"
+      ? "release_desc"
+      : sort === "antiguos" || sort === "oldest"
+        ? "release_asc"
+        : sort === "valoracion"
+          ? "rating"
+          : sort === "popularidad"
+            ? "popularity"
+            : sort;
+  return OPEN_LIBRARY_SORT[key];
 }
 
 /**

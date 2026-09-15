@@ -333,7 +333,15 @@ function isRateLimitError(e: unknown): boolean {
         // paginar. La ficha sigue enriqueciéndose con Google Books.
         const { q, params } = buildOpenLibraryQuery(filters, locale);
         const res = await searchOpenLibrary(q, page, params);
-        items = (res.docs ?? []).map((doc) => normalizeBookOpenLibrary(doc));
+        // E-BOOKS-PORTADA: fuera los libros sin portada en Open Library. En un
+        // catálogo visual una card sin imagen es un hueco, y aquí además
+        // coincide casi siempre con autopublicaciones de relleno. Es la misma
+        // regla que ya se aplica a las recomendaciones IA (E66-POSTER-GATE).
+        // NO se aplica al buscador ni a la ficha: si buscas un título concreto
+        // debe salir aunque no tenga portada, y si ya lo has abierto, más aún.
+        items = (res.docs ?? [])
+          .filter((doc) => Boolean(doc.cover_i))
+          .map((doc) => normalizeBookOpenLibrary(doc));
         totalPages = Math.min(
           openLibraryTotalPages(res.numFound),
           DISCOVER_MAX_PAGES
