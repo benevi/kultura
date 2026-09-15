@@ -318,6 +318,7 @@ describe("fetchDiscoverData — books filtros (E-BOOKS-HIBRIDO)", () => {
           key: "/works/OL1W",
           title: "Del 2003",
           first_publish_year: 2003,
+          cover_i: 1,
         },
       ],
     } as never);
@@ -502,7 +503,7 @@ describe('fetchDiscoverData — modo "all" (R5a)', () => {
     });
     vi.mocked(searchOpenLibrary).mockResolvedValue({
       numFound: 1,
-      docs: [{ key: "/works/OL4W", title: "Book D" }],
+      docs: [{ key: "/works/OL4W", title: "Book D", cover_i: 4 }],
     } as never);
     vi.mocked(getPopularManga).mockResolvedValue({
       data: [{ id: "5", title: "Manga E" }] as never[],
@@ -642,7 +643,7 @@ describe("fetchDiscoverData — hasMore (E79 slice 1)", () => {
   it("book: hasMore desde ceil(numFound/20)", async () => {
     vi.mocked(searchOpenLibrary).mockResolvedValue({
       numFound: 60, // ceil(60/20)=3
-      docs: [{ key: "/works/OL1W", title: "B" }],
+      docs: [{ key: "/works/OL1W", title: "B", cover_i: 1 }],
     } as never);
 
     expect((await fetchDiscoverData("book", 2)).hasMore).toBe(true);
@@ -809,7 +810,7 @@ describe('fetchDiscoverData — hasMore en "all" (E79 slice 1)', () => {
     });
     vi.mocked(searchOpenLibrary).mockResolvedValue({
       numFound: 5,
-      docs: five((i) => ({ key: `/works/OL${i}W`, title: "B" })),
+      docs: five((i) => ({ key: `/works/OL${i}W`, title: "B", cover_i: i + 1 })),
     } as never);
     vi.mocked(getPopularManga).mockResolvedValue({
       data: five((i) => ({ id: `g${i}`, title: "G" })) as never[],
@@ -1056,5 +1057,52 @@ describe("fetchDiscoverData — el error se lee en el mensaje del log", () => {
     expect(line).toContain("fetch failed");
     expect(line).toContain("ConnectTimeoutError");
     spy.mockRestore();
+  });
+});
+
+// ============================================================
+// E-BOOKS-PORTADA — el catálogo de libros no pinta huecos
+//
+// En Descubrir se veían cards sin imagen (gradiente con iniciales) cuyo
+// detalle SÍ tenía portada, porque la ficha la recupera de Google Books por
+// ISBN y el listado no. En un catálogo visual eso es un hueco, y coincide casi
+// siempre con autopublicaciones de relleno.
+// ============================================================
+
+describe("fetchDiscoverData — libros sin portada (E-BOOKS-PORTADA)", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it("descarta del catálogo los libros que Open Library sirve sin portada", async () => {
+    vi.mocked(searchOpenLibrary).mockResolvedValue({
+      numFound: 3,
+      docs: [
+        { key: "/works/OL1W", title: "Con portada", cover_i: 123 },
+        { key: "/works/OL2W", title: "Sin portada" },
+        { key: "/works/OL3W", title: "Otra con portada", cover_i: 456 },
+      ],
+    } as never);
+
+    const res = await fetchDiscoverData("book", 1);
+
+    expect(res.items.map((i) => i.title)).toEqual([
+      "Con portada",
+      "Otra con portada",
+    ]);
+  });
+
+  it("si ninguno tiene portada la rejilla queda vacía, no con huecos", async () => {
+    vi.mocked(searchOpenLibrary).mockResolvedValue({
+      numFound: 2,
+      docs: [
+        { key: "/works/OL1W", title: "A" },
+        { key: "/works/OL2W", title: "B" },
+      ],
+    } as never);
+
+    const res = await fetchDiscoverData("book", 1);
+    expect(res.items).toEqual([]);
+    expect(res.fetchErrorKind).toBeNull();
   });
 });

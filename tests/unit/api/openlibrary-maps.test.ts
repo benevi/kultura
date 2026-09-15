@@ -15,6 +15,7 @@ import {
   openLibraryLanguage,
   openLibraryFulltext,
   OPEN_LIBRARY_BASE_QUERY,
+  OPEN_LIBRARY_SORT,
 } from "@/lib/api/openlibrary-maps";
 
 describe("openLibraryLanguage", () => {
@@ -61,9 +62,11 @@ describe("openLibrarySort", () => {
     expect(openLibrarySort("rating")).toBe("rating");
   });
 
+  // "popularidad" YA NO cae aquí: desde E-BOOKS-SORT se mapea a `readinglog`,
+  // que es la señal de popularidad real de Open Library.
   it("sin equivalente nativo no inventa un orden", () => {
-    expect(openLibrarySort("popularidad")).toBeUndefined();
     expect(openLibrarySort("titulo")).toBeUndefined();
+    expect(openLibrarySort("title_az")).toBeUndefined();
     expect(openLibrarySort(null)).toBeUndefined();
   });
 });
@@ -125,5 +128,41 @@ describe("buildOpenLibraryQuery", () => {
     expect(
       buildOpenLibraryQuery({ idioma: "castellano" }, "es").params.language
     ).toBe("spa");
+  });
+});
+
+// ============================================================
+// E-BOOKS-SORT — el desplegable de orden no puede mentir
+//
+// El catálogo de libros ofrecía las mismas opciones que TMDB, incluidas
+// "Título A–Z" y "Título Z–A", que Open Library no sabe hacer. El resultado:
+// se cambiaba el orden y salían exactamente los mismos libros.
+// ============================================================
+
+describe("OPEN_LIBRARY_SORT (E-BOOKS-SORT)", () => {
+  it("no ofrece ordenar por título: Open Library no sabe hacerlo", () => {
+    expect(OPEN_LIBRARY_SORT.title_az).toBeUndefined();
+    expect(OPEN_LIBRARY_SORT.title_za).toBeUndefined();
+  });
+
+  it("toda opción ofrecida se traduce a un sort real del proveedor", () => {
+    for (const key of Object.keys(OPEN_LIBRARY_SORT)) {
+      expect(openLibrarySort(key)).toBeTruthy();
+    }
+  });
+
+  it("popularidad usa el registro de lectura, que es señal real", () => {
+    expect(openLibrarySort("popularity")).toBe("readinglog");
+  });
+
+  it("sigue entendiendo los alias que llegan de otros catálogos", () => {
+    expect(openLibrarySort("recientes")).toBe("new");
+    expect(openLibrarySort("valoracion")).toBe("rating");
+    expect(openLibrarySort("popularidad")).toBe("readinglog");
+  });
+
+  it("un sort desconocido no inventa orden", () => {
+    expect(openLibrarySort("title_az")).toBeUndefined();
+    expect(openLibrarySort("loquesea")).toBeUndefined();
   });
 });

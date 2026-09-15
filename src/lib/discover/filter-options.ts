@@ -38,7 +38,10 @@ import { BOOKS_FORMATO, BOOKS_PUBLISHER } from "@/lib/api/books-maps";
 // E-BOOKS-HIBRIDO: los géneros que se ofrecen en libros salen del mapa del
 // proveedor que sirve el CATÁLOGO (Open Library). Ofrecer un género que el
 // proveedor no entiende es ofrecer un filtro que no filtra.
-import { OPEN_LIBRARY_GENRE } from "@/lib/api/openlibrary-maps";
+import {
+  OPEN_LIBRARY_GENRE,
+  OPEN_LIBRARY_SORT,
+} from "@/lib/api/openlibrary-maps";
 import { COMIC_PUBLISHER } from "@/lib/api/comicvine-maps";
 import { VALORACION_SLUGS } from "@/lib/api/valoracion";
 
@@ -88,7 +91,11 @@ const SORT_BY_TYPE: Record<DiscoverType, Record<string, unknown>> = {
   tv: TMDB_SORT_TV,
   anime: JIKAN_SORT,
   manga: JIKAN_SORT,
-  book: TMDB_SORT_MOVIE, // Books no expone sort nativo rico; claves canónicas base.
+  // E-BOOKS-SORT: Open Library no ordena por título, así que "Título A–Z" y
+  // "Título Z–A" eran controles que no hacían nada — se cambiaban y salían los
+  // mismos libros. El catálogo de libros ofrece solo lo que el proveedor sabe
+  // honrar (misma política que el resto de triggers: nunca uno que mienta).
+  book: OPEN_LIBRARY_SORT,
   comic: TMDB_SORT_MOVIE, // idem comic.
   game: RAWG_ORDERING,
 };
