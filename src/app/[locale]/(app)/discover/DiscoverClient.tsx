@@ -7,9 +7,9 @@ import { useSearchParams } from "next/navigation";
 import type { MediaItem } from "@/types/media";
 import type { DiscoverResult } from "@/lib/api/discover";
 import { MediaGrid, BENTO_CELL_CLASSES } from "@/components/media/MediaGrid";
+import { SearchBar } from "@/components/search/SearchBar";
 import { Pagination } from "@/components/ui/Pagination";
 import { FilterBar, type FilterGroup } from "@/components/ui/FilterBar";
-import { SearchBar } from "@/components/search/SearchBar";
 import {
   TYPE_ORDER,
   TYPE_FILTERS,
@@ -37,21 +37,32 @@ import {
   IconGamepad,
   IconTimer,
   IconSort,
+  IconSearch,
+  IconDice,
+  IconClose,
+  IconFilm,
+  IconTv,
+  IconAnime,
+  IconLibrary,
+  IconManga,
+  IconComic,
 } from "@/components/icons";
 
-// G1: emoji distintivo por pill de tipo (peso visual Gen-Z, mockup F0). Puramente
-// decorativo — aria-hidden en el render, nunca forma parte del nombre accesible
-// del radio (que sigue siendo la etiqueta i18n). No toca el acento de color
-// (sigue siendo accent-positive único — decisión F2, ver docs/BACKLOG.md).
-const TYPE_EMOJI: Record<DiscoverType, string> = {
-  all: "✨",
-  movie: "🎬",
-  tv: "📺",
-  anime: "⛩️",
-  book: "📚",
-  manga: "🈷️",
-  game: "🎮",
-  comic: "💬",
+// Icono distintivo por pill de tipo (peso visual, mismo lenguaje que el
+// resto del sistema propio F1b/E78) — sustituye el emoji genérico que traía
+// el mockup F0 (decisión: iconos propios > emoji suelto). Puramente
+// decorativo — aria-hidden en el render, nunca forma parte del nombre
+// accesible del radio (que sigue siendo la etiqueta i18n). No toca el
+// acento de color (sigue siendo accent-positive único — decisión F2).
+const TYPE_ICONS: Record<DiscoverType, KIcon> = {
+  all: IconGrid,
+  movie: IconFilm,
+  tv: IconTv,
+  anime: IconAnime,
+  book: IconLibrary,
+  manga: IconManga,
+  game: IconGamepad,
+  comic: IconComic,
 };
 
 // Icono propio por key de filtro (spec V2 §Barra). Mapea claves lógicas de
@@ -85,6 +96,12 @@ const DISCOVER_SKELETON_CELLS = Array.from(
 export interface DiscoverClientProps {
   currentType: string;
   currentPage: number;
+  /**
+   * E-DISCOVER-SEARCH-MERGE: query de texto activa (viene del param `q`).
+   * Con query, la página la sirve el BUSCADOR del proveedor en vez del catálogo
+   * de descubrir — misma forma de respuesta, mismo grid, misma paginación.
+   */
+  currentQuery?: string;
 }
 
 // Triggers cuyo valor en URL es CSV (string[]). El resto es single (string).
@@ -144,9 +161,11 @@ function isDiscoverType(t: string): t is DiscoverType {
 export function DiscoverClient({
   currentType,
   currentPage,
+  currentQuery = "",
 }: DiscoverClientProps) {
   const t = useTranslations("discover");
   const tF = useTranslations("filters");
+  const tS = useTranslations("search");
   const tDF = useTranslations("discoverFilters");
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -177,6 +196,16 @@ export function DiscoverClient({
   const [fetchErrorKind, setFetchErrorKind] =
     useState<DiscoverResult["fetchErrorKind"]>(null);
   const [loading, setLoading] = useState(true);
+  // E-DISCOVER-SEARCH-MERGE: "Sorpréndeme" — un ítem al azar de la página
+  // actual. Venía de /search (que se fusiona aquí) y se conserva para no perder
+  // la función; a diferencia de allí, el botón está SIEMPRE visible y solo se
+  // deshabilita cuando no hay resultados.
+  const [randomItem, setRandomItem] = useState<MediaItem | null>(null);
+
+  // Hay búsqueda activa: la barra de filtros de catálogo se oculta (ningún
+  // buscador de los proveedores acepta esos filtros) y el grid muestra
+  // resultados de búsqueda.
+  const isSearching = currentQuery.trim().length > 0;
 
   // Cadena estable de los params de filtro presentes en la URL → dependencia
   // del fetch (re-pide cuando cambia cualquier filtro, no solo type/page).
@@ -197,6 +226,7 @@ export function DiscoverClient({
     const params = new URLSearchParams(filterQuery);
     params.set("type", type);
     params.set("page", String(currentPage));
+    if (currentQuery.trim()) params.set("q", currentQuery.trim());
     fetch(`/api/discover?${params.toString()}`)
       .then((res) => res.json() as Promise<DiscoverResult & { matchScores?: Record<string, number> }>)
       .then((data) => {
@@ -218,12 +248,16 @@ export function DiscoverClient({
         setMatchScores(new Map());
       })
       .finally(() => {
-        if (!cancelled) setLoading(false);
+        if (!cancelled) {
+          setLoading(false);
+          // El aleatorio pertenece a la página que se estaba viendo.
+          setRandomItem(null);
+        }
       });
     return () => {
       cancelled = true;
     };
-  }, [type, currentPage, filterQuery]);
+  }, [type, currentPage, filterQuery, currentQuery]);
 
   // SegmentedControl de tipo: options derivadas de TYPE_ORDER.
   const typeOptions = useMemo(
@@ -298,9 +332,34 @@ export function DiscoverClient({
   }, [type, searchParams]);
 
   // Cambio de tipo: navega a ?type=X&page=1 y BORRA el resto de filtros
-  // (los triggers difieren por tipo, sus valores no son portables).
+  // (los triggers difieren por tipo, sus valores no son portables). La query de
+  // búsqueda SÍ se conserva: cambiar de tipo con una búsqueda activa es
+  // "búscame esto mismo en series", no "olvida lo que buscaba".
   function handleTypeChange(newType: string) {
-    router.push(`/discover?type=${newType}&page=1`);
+    const params = new URLSearchParams();
+    params.set("type", newType);
+    params.set("page", "1");
+    if (isSearching) params.set("q", currentQuery.trim());
+    router.push(`/discover?${params.toString()}`);
+  }
+
+  /** Busca dentro de /discover: escribe `q`, resetea página, conserva tipo. */
+  function handleSearchSubmit(query: string) {
+    const params = new URLSearchParams();
+    params.set("type", type);
+    params.set("page", "1");
+    params.set("q", query);
+    router.push(`/discover?${params.toString()}`);
+  }
+
+  /** Limpia la búsqueda y vuelve al catálogo del tipo activo. */
+  function clearSearch() {
+    router.push(`/discover?type=${type}&page=1`);
+  }
+
+  function pickRandom() {
+    if (items.length === 0) return;
+    setRandomItem(items[Math.floor(Math.random() * items.length)]);
   }
 
   // Cambio de un filtro: muta los searchParams actuales, siempre page=1.
@@ -344,16 +403,6 @@ export function DiscoverClient({
         </h1>
       </div>
 
-      {/* G1: barra de búsqueda prominente (mockup F0). Reusa SearchBar (mismo
-          /api/search + normalizer + navegación a /search ya existentes) — no
-          se duplica lógica de búsqueda (regla técnica 2/3 de CLAUDE.md). */}
-      <div className="mb-6">
-        <SearchBar
-          placeholder={t("searchPlaceholder")}
-          className="w-full [&_input]:py-3 [&_input]:text-base [&_input]:rounded-bento [&_input]:border-2"
-        />
-      </div>
-
       {/* Fetch error banner */}
       {fetchErrorKind !== null && (
         <div className="mb-6 rounded-xl border border-accent-danger/30 bg-accent-danger/10 px-4 py-3 text-sm text-accent-danger">
@@ -364,11 +413,76 @@ export function DiscoverClient({
       )}
 
       {/* Barra Descubrir (R3): 2 filas etiquetadas (TIPO / FILTROS) + separador.
-          Sticky bajo el header de app (h-14). El grid fluye debajo sin solapar. */}
-      <div className="sticky top-14 z-30 bg-bg/95 backdrop-blur-sm border-b border-border py-3 px-4 -mx-4 mb-6 flex flex-col gap-3">
+          Sticky bajo el header de app (h-14). El grid fluye debajo sin solapar.
+
+          Móvil: las etiquetas TIPO/FILTROS se ocultan (como ya hacía BUSCAR) y
+          cada fila scrollea en horizontal, así los chips no se cortan a media
+          palabra ni se parten en varias líneas. Y el fondo es OPACO: con la
+          barra translúcida se veían las portadas por detrás, que era la mitad
+          de la sensación de desorden. */}
+      <div className="sticky top-14 z-30 bg-bg border-b border-border py-3 px-4 -mx-4 mb-6 flex flex-col gap-2.5 md:gap-3">
+        {/* FILA 0 — BUSCAR (E-DISCOVER-SEARCH-MERGE): el buscador de texto vive
+            aquí desde que /search se fusionó en /discover. En móvil el input
+            ocupa la fila y el botón de aleatorio queda a su lado. */}
+        <div className="flex items-center gap-2">
+          <span className="shrink-0 hidden sm:inline-flex items-center gap-1.5 font-mono uppercase text-xs tracking-widest text-muted">
+            <IconSearch className="h-3.5 w-3.5" aria-hidden="true" />
+            {tS("title")}
+          </span>
+          <SearchBar
+            key={currentQuery}
+            mode="inline"
+            defaultValue={currentQuery}
+            onSubmit={handleSearchSubmit}
+            onClear={clearSearch}
+            className="flex-1 min-w-0"
+          />
+          {/* "Sorpréndeme": SIEMPRE visible, solo deshabilitado sin resultados. */}
+          <button
+            type="button"
+            onClick={pickRandom}
+            disabled={items.length === 0}
+            aria-label={tS("randomize")}
+            title={tS("randomize")}
+            className={cn(
+              "shrink-0 inline-flex items-center justify-center gap-1.5 rounded-button border px-3 py-2",
+              "text-sm font-body font-medium whitespace-nowrap",
+              "transition-all duration-150 ease-out",
+              "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-positive focus-visible:ring-offset-2 focus-visible:ring-offset-surface-base",
+              items.length === 0
+                ? "bg-surface-elevated text-text-tertiary border-surface-border cursor-not-allowed opacity-60"
+                : "bg-surface-elevated text-text-secondary border-surface-border hover:text-text-primary hover:border-text-tertiary active:scale-[0.97] cursor-pointer"
+            )}
+          >
+            <IconDice className="h-4 w-4" aria-hidden="true" />
+            <span className="hidden md:inline">{tS("randomize")}</span>
+          </button>
+        </div>
+
+        {/* Chip de búsqueda activa, con salida rápida al catálogo. */}
+        {isSearching && (
+          <div className="flex items-center gap-2">
+            <span className="inline-flex items-center gap-2 rounded-full bg-accent-positive/10 border border-accent-positive/30 px-3 py-1 text-xs text-text-primary">
+              <span className="text-muted">{tS("resultsFor")}</span>
+              <span className="font-medium">{currentQuery}</span>
+              <button
+                type="button"
+                onClick={clearSearch}
+                aria-label={tF("reset")}
+                className="text-muted hover:text-text-primary transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-positive rounded-full"
+              >
+                <IconClose className="h-3.5 w-3.5" aria-hidden="true" />
+              </button>
+            </span>
+          </div>
+        )}
+
+        {/* SEPARADOR entre BUSCAR y TIPO. */}
+        <div className="border-t border-border" />
+
         {/* FILA 1 — TIPO: label tenue + pills separadas (radiogroup). */}
         <div className="flex items-center gap-3">
-          <span className="shrink-0 font-mono uppercase text-xs tracking-widest text-muted">
+          <span className="shrink-0 hidden sm:inline-flex font-mono uppercase text-xs tracking-widest text-muted">
             {tF("type")}
           </span>
           <div
@@ -378,6 +492,7 @@ export function DiscoverClient({
           >
             {typeOptions.map((option) => {
               const active = option.value === type;
+              const TypeIcon = TYPE_ICONS[option.value];
               return (
                 <button
                   key={option.value}
@@ -386,7 +501,7 @@ export function DiscoverClient({
                   aria-checked={active}
                   onClick={() => handleTypeChange(option.value)}
                   className={cn(
-                    "inline-flex items-center justify-center px-4 py-2 rounded-full",
+                    "inline-flex items-center justify-center gap-1.5 px-4 py-2 rounded-full",
                     "text-sm font-body font-medium whitespace-nowrap cursor-pointer border",
                     "transition-all duration-150 ease-out active:scale-[0.97]",
                     "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-positive focus-visible:ring-offset-2 focus-visible:ring-offset-surface-base",
@@ -395,9 +510,7 @@ export function DiscoverClient({
                       : "bg-surface-elevated text-text-secondary border-surface-border hover:text-text-primary hover:border-text-tertiary"
                   )}
                 >
-                  <span aria-hidden="true" className="mr-1.5">
-                    {TYPE_EMOJI[option.value]}
-                  </span>
+                  <TypeIcon className="w-4 h-4" aria-hidden="true" />
                   {option.label}
                 </button>
               );
@@ -405,22 +518,27 @@ export function DiscoverClient({
           </div>
         </div>
 
-        {/* SEPARADOR sutil entre filas. */}
-        <div className="border-t border-border" />
-
-        {/* FILA 2 — FILTROS: label con icono grid + triggers (sort a la derecha). */}
-        <div className="flex items-center gap-3">
-          <span className="shrink-0 inline-flex items-center gap-1.5 font-mono uppercase text-xs tracking-widest text-muted">
-            <IconGrid className="h-3.5 w-3.5" aria-hidden="true" />
-            {tF("filters")}
-          </span>
-          <FilterBar
-            className="flex-1"
-            groups={filterGroups}
-            activeFilters={activeFilters}
-            onChange={handleFilterChange}
-          />
-        </div>
+        {/* FILA 2 — FILTROS: label con icono grid + triggers (sort a la derecha).
+            Oculta en modo búsqueda: los buscadores de los proveedores no
+            aceptan estos filtros, así que mostrarlos sugeriría un efecto que
+            no existe (el tipo sí aplica, y sigue arriba). */}
+        {!isSearching && (
+          <>
+            <div className="border-t border-border" />
+            <div className="flex items-center gap-3">
+              <span className="shrink-0 hidden sm:inline-flex items-center gap-1.5 font-mono uppercase text-xs tracking-widest text-muted">
+                <IconGrid className="h-3.5 w-3.5" aria-hidden="true" />
+                {tF("filters")}
+              </span>
+              <FilterBar
+                className="flex-1"
+                groups={filterGroups}
+                activeFilters={activeFilters}
+                onChange={handleFilterChange}
+              />
+            </div>
+          </>
+        )}
       </div>
 
       {loading ? (
@@ -430,15 +548,54 @@ export function DiscoverClient({
           ))}
         </div>
       ) : items.length > 0 ? (
-        <MediaGrid
-          items={items}
-          showType={isAggregate}
-          layout="bento"
-          matchScores={matchScores}
-        />
+        <>
+          {randomItem && (
+            <div className="mb-4 flex flex-wrap items-center gap-3 rounded-card border border-accent-positive/30 bg-accent-positive/10 px-3 py-2 text-sm">
+              <span className="inline-flex items-center gap-1.5 text-text-primary">
+                <IconDice className="h-4 w-4 text-accent-positive" aria-hidden="true" />
+                {tS("showingRandom", { count: items.length })}
+              </span>
+              <div className="ml-auto flex items-center gap-3">
+                <button
+                  type="button"
+                  onClick={pickRandom}
+                  className="text-accent-info hover:text-accent-info/80 transition-colors"
+                >
+                  {tS("randomizeAgain")}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setRandomItem(null)}
+                  aria-label={tF("reset")}
+                  className="text-muted hover:text-text-primary transition-colors"
+                >
+                  <IconClose className="h-4 w-4" aria-hidden="true" />
+                </button>
+              </div>
+            </div>
+          )}
+          <MediaGrid
+            items={randomItem ? [randomItem] : items}
+            showType={isAggregate}
+            layout="bento"
+            matchScores={matchScores}
+          />
+        </>
       ) : (
         <div className="text-center py-16">
-          {hasActiveFilters ? (
+          {isSearching ? (
+            <>
+              <p data-testid="discover-empty" className="text-muted">
+                {tS("noResults")} &ldquo;{currentQuery}&rdquo;
+              </p>
+              <button
+                onClick={clearSearch}
+                className="text-accent-info text-sm mt-2 hover:text-accent-info/80 transition-colors"
+              >
+                {tF("reset")}
+              </button>
+            </>
+          ) : hasActiveFilters ? (
             <>
               {/* 0 resultados CON filtros: ofrecer limpiar.
                   Mensaje y label reusan claves existentes (noResults ya está
@@ -473,6 +630,7 @@ export function DiscoverClient({
               const params = new URLSearchParams(searchParams.toString());
               params.set("type", type);
               params.set("page", String(page));
+              // `q` ya viaja en searchParams; no hace falta reponerla.
               router.push(`/discover?${params.toString()}`);
             }}
           />

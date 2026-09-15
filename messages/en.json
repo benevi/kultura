@@ -30,9 +30,12 @@
     "dontHaveAccount": "Don't have an account?",
     "createAccount": "Create account",
     "or": "or",
+    "continueWithGoogle": "Continue with Google",
     "checkEmail": "Check your email",
     "resetLinkSent": "We've sent you a link to reset your password. Check your inbox.",
-    "tagline": "Discover your culture"
+    "tagline": "Discover your culture",
+    "chooseCharacter": "Choose your character",
+    "chooseCharacterNone": "No character (initials)"
   },
   "media": {
     "movie": "Movie",
@@ -134,26 +137,7 @@
     "noResults": "No results for",
     "resultsFor": "Results for",
     "all": "All",
-    "searching": "Searching...",
     "filters": "Filters",
-    "sortBy": "Sort by",
-    "sortRelevance": "Relevance",
-    "sortAZ": "A → Z",
-    "sortZA": "Z → A",
-    "sortRatingDesc": "Best rated",
-    "sortRatingAsc": "Lowest rated",
-    "sortYearDesc": "Most recent",
-    "sortYearAsc": "Oldest first",
-    "minRating": "Minimum rating",
-    "decade": "Decade",
-    "decadeClassic": "Classics",
-    "decade80s": "80s",
-    "decade90s": "90s",
-    "decade00s": "00s",
-    "decade10s": "10s",
-    "decade20s": "2020+",
-    "genres": "Genres",
-    "clearFilters": "Clear filters",
     "randomize": "Surprise me",
     "randomizeAgain": "Another one",
     "showingRandom": "1 random result from {count}"
@@ -174,6 +158,12 @@
     "rating": "Rating",
     "episodes": "Episodes",
     "duration": "Duration",
+    "steamTitle": "On Steam",
+    "steamViewOnStore": "View on Steam",
+    "steamFree": "Free",
+    "steamNoPrice": "Price unavailable",
+    "steamLanguages": "Languages",
+    "steamScreenshots": "Screenshots",
     "whyRecommended": "Why we recommend it",
     "whyRecommendedText": "It matches genres you already enjoy — {genres} — with a {score}% affinity to your library."
   },
@@ -307,7 +297,6 @@
   },
   "aiRecommendations": {
     "title": "For you",
-    "poweredBy": "Claude AI",
     "aiPickBadge": "YOUR AI THINKS YOU'LL LOVE THIS",
     "generating": "Generating personalized recommendations...",
     "needMoreItems": "Add at least 3 completed or rated titles to your library to receive recommendations.",
@@ -379,9 +368,6 @@
     "addFriends": "Add friends",
     "noRecommendations": "No recommendations available",
     "continue": "Continue",
-    "welcomeTitle": "What are you watching?",
-    "welcomeSubtitle": "Add titles to your library to see your progress here",
-    "goDiscover": "Explore content",
     "aiTitle": "For you",
     "genreNewsTitle": "New in {genre}",
     "genreSeriesTitle": "Series in {genre}",
@@ -474,7 +460,9 @@
     "inviteFriends": "Invite friends",
     "noInvitableFriends": "You have no friends to invite to this group",
     "inviteSent": "Invitation sent",
-    "inviteError": "Could not send the invitation. Please try again."
+    "inviteError": "Could not send the invitation. Please try again.",
+    "groupIcon": "Group icon",
+    "groupIconNone": "No icon (initial)"
   },
   "chat": {
     "title": "Messages",
@@ -523,7 +511,13 @@
     "deleteAccountConfirmMessage": "This action cannot be undone. Your profile, library, lists, friendships and all your data will be deleted.",
     "deleteAccountConfirmButton": "Yes, delete my account",
     "deleteAccountCancel": "Cancel",
-    "deleteAccountError": "Failed to delete account. Please try again."
+    "deleteAccountError": "Failed to delete account. Please try again.",
+    "importData": "Import data",
+    "importDataHint": "Restore your library and lists from an exported file. It will not duplicate what you already have.",
+    "importDataSuccess": "{count} titles and {lists} lists imported",
+    "importDataError": "Could not import the data. Check that the file is a Kultura export.",
+    "avatarIcon": "Character",
+    "avatarIconNone": "No character (initials)"
   },
   "report": {
     "label": "Report",

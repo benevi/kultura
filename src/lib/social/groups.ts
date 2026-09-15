@@ -28,6 +28,7 @@ export interface Group {
   name: string
   description: string | null
   coverColor: string
+  icon: string | null
   isPublic: boolean
   createdAt: string
   memberRole?: string
@@ -53,6 +54,7 @@ export interface DiscoverGroup {
   name: string
   description: string | null
   coverColor: string
+  icon: string | null
   createdAt: string
   memberCount: number
   isMember: boolean
@@ -91,6 +93,7 @@ function mapGroup(row: GroupRow): Group {
     name: row.name,
     description: row.description,
     coverColor: resolveCoverColor(row.cover_color),
+    icon: row.icon ?? null,
     isPublic: row.is_public,
     createdAt: row.created_at,
     memberRole: row.memberRole,
@@ -125,7 +128,7 @@ export async function getUserGroups(userId: string): Promise<Group[]> {
 
   const { data, error } = await supabase
     .from('group_members')
-    .select('group_id, role, groups(id, name, description, cover_color, is_public, created_at, owner_id)')
+    .select('group_id, role, groups(*)')
     .eq('user_id', userId)
     .order('joined_at', { ascending: false })
 
@@ -148,7 +151,7 @@ export async function getGroupById(groupId: string): Promise<Group | null> {
 
   const { data, error } = await supabase
     .from('groups')
-    .select('id, name, description, cover_color, is_public, created_at, owner_id')
+    .select('*')
     .eq('id', groupId)
     .maybeSingle()
 
@@ -218,6 +221,7 @@ interface DiscoverGroupQueryRow {
   name: string
   description: string | null
   cover_color: string
+  icon: string | null
   is_public: boolean
   created_at: string
   group_members: { user_id: string }[] | null
@@ -260,7 +264,7 @@ export async function getDiscoverableGroups(
 
   let query = supabase
     .from('groups')
-    .select('id, owner_id, name, description, cover_color, is_public, created_at, group_members(user_id)')
+    .select('*, group_members(user_id)')
     // La RLS ya oculta grupos privados a no-miembros; filtro explícito por claridad (E45-c).
     .eq('is_public', true)
     .order('created_at', { ascending: false })
@@ -280,6 +284,7 @@ export async function getDiscoverableGroups(
         name: row.name,
         description: row.description,
         coverColor: resolveCoverColor(row.cover_color),
+        icon: row.icon ?? null,
         createdAt: row.created_at,
         memberCount: members.length,
         isMember: members.some((m) => m.user_id === user.id),

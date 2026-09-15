@@ -295,3 +295,75 @@ export const IconChevronUp: KIcon = (props) => (
     <polygon points="4 16 20 16 12 7" />
   </svg>
 )
+
+/** Dado — cara "5": cuerpo redondeado + 5 pips (círculos huecos vía evenodd). */
+export const IconDice: KIcon = (props) => (
+  <svg {...base(props)}>
+    <path
+      fillRule="evenodd"
+      d="M5.5,3 H18.5 A2.5,2.5 0 0 1 21,5.5 V18.5 A2.5,2.5 0 0 1 18.5,21 H5.5 A2.5,2.5 0 0 1 3,18.5 V5.5 A2.5,2.5 0 0 1 5.5,3 Z
+         M7.1,5.7 A1.6,1.6 0 1 0 7.1,8.9 A1.6,1.6 0 1 0 7.1,5.7 Z
+         M16.9,5.7 A1.6,1.6 0 1 0 16.9,8.9 A1.6,1.6 0 1 0 16.9,5.7 Z
+         M7.1,15.1 A1.6,1.6 0 1 0 7.1,18.3 A1.6,1.6 0 1 0 7.1,15.1 Z
+         M16.9,15.1 A1.6,1.6 0 1 0 16.9,18.3 A1.6,1.6 0 1 0 16.9,15.1 Z
+         M12,10.4 A1.6,1.6 0 1 0 12,13.6 A1.6,1.6 0 1 0 12,10.4 Z"
+    />
+  </svg>
+)
+
+/** Película — claqueta: barra superior a rayas + cuerpo. */
+export const IconFilm: KIcon = (props) => (
+  <svg {...base(props)}>
+    <path d="M3 8.3l1-3.6a1.2 1.2 0 0 1 1.47-.85l13 3.5a1.2 1.2 0 0 1 .85 1.47L18.8 10 3 8.3z" />
+    <path
+      d="M6.3 4.2l3 3.4-2 .5-3-3.3z M11 5.5l3 3.4-2 .5-3-3.4z M15.7 6.7l3 3.4-2 .5-3-3.4z"
+      opacity="0.55"
+    />
+    <rect x="3" y="10" width="18" height="10.5" rx="2.2" />
+  </svg>
+)
+
+/** Serie/TV — pantalla con antenas diagonales. */
+export const IconTv: KIcon = (props) => (
+  <svg {...base(props)}>
+    <path d="M7.8 4.3l3.7 3.2h1l3.7-3.2c.4-.4 1-.4 1.4.1.3.4.3.9-.1 1.3l-2.2 1.9h3.2A2.5 2.5 0 0 1 21 10.1v7.4a2.5 2.5 0 0 1-2.5 2.5H5.5A2.5 2.5 0 0 1 3 17.5v-7.4a2.5 2.5 0 0 1 2.5-2.5h3.2L6.5 5.7c-.4-.4-.4-.9-.1-1.3.4-.5 1-.5 1.4-.1z" />
+  </svg>
+)
+
+/** Anime — torii chunky (pilares + dinteles curvados). */
+export const IconAnime: KIcon = (props) => (
+  <svg {...base(props)}>
+    <path d="M2.3 6.6c0-.8.6-1.3 1.4-1.1 5.6 1.2 10.9 1.2 16.5 0 .8-.2 1.5.3 1.5 1.1 0 .7-.4 1.2-1.1 1.4-.5.1-1 .2-1.5.3v1.3c0 .8-.6 1.4-1.4 1.4S16.3 10.3 16.3 9.5V8.6c-2.9.4-5.7.4-8.6 0v.9c0 .8-.6 1.4-1.4 1.4S5 10.1 5 9.3V8c-.5-.1-1-.2-1.5-.3-.7-.2-1.2-.7-1.2-1.1z" />
+    <rect x="5" y="11.2" width="2.6" height="9.3" rx="1.3" />
+    <rect x="16.4" y="11.2" width="2.6" height="9.3" rx="1.3" />
+    <rect x="4.2" y="13.6" width="15.6" height="2.2" rx="1.1" opacity="0.6" />
+  </svg>
+)
+
+/** Cómic — estallido de acción (burst) en vez de estrella de 5 puntas. */
+export const IconComic: KIcon = (props) => (
+  <svg {...base(props)}>
+    <path d="M12 1.5l1.8 4.6 4.3-2.6-1.2 4.8 4.9-.6-3.4 3.6 4.4 2.4-4.8.9 2.4 4.3-4.7-1.7.3 4.9-3.6-3.4-2.2 4.4-1.3-4.8-4.1 2.9.9-4.9-4.9.2 3.1-3.9-4.6-2 4.4-2.6L2 8.8l4.9.4-.9-4.8 4.2 2.7z" />
+  </svg>
+)
+
+/** Manga — tomo con lomo a la derecha (lectura JP) y solapa de cubierta hueca. */
+export const IconManga: KIcon = (props) => (
+  <svg {...base(props)}>
+    <path
+      fillRule="evenodd"
+      d="M4.5,3 H15.5 A1.5,1.5 0 0 1 17,4.5 V19.5 A1.5,1.5 0 0 1 15.5,21 H4.5 A1.5,1.5 0 0 1 3,19.5 V4.5 A1.5,1.5 0 0 1 4.5,3 Z
+         M6.5,6.2 H13.5 V7.6 H6.5 Z
+         M6.5,9.4 H11.5 V10.8 H6.5 Z"
+    />
+    <rect x="18" y="3" width="3" height="18" rx="1.4" opacity="0.55" />
+  </svg>
+)
+
+/** Cerrar/limpiar — aspa chunky (dos barras cruzadas redondeadas). */
+export const IconClose: KIcon = (props) => (
+  <svg {...base(props)}>
+    <rect x="4.5" y="10.5" width="15" height="3" rx="1.5" transform="rotate(45 12 12)" />
+    <rect x="4.5" y="10.5" width="15" height="3" rx="1.5" transform="rotate(-45 12 12)" />
+  </svg>
+)

@@ -16,7 +16,7 @@ export default async function SettingsPage() {
 
   const { data: profile } = await supabase
     .from('users')
-    .select('username, avatar_color, preferred_locale')
+    .select('*')
     .eq('id', user.id)
     .single()
 
@@ -25,6 +25,7 @@ export default async function SettingsPage() {
       <SettingsForm
         initialUsername={profile?.username ?? ''}
         initialAvatarColor={profile?.avatar_color ?? 'blue'}
+        initialAvatarIcon={profile?.avatar_icon ?? null}
         initialLocale={profile?.preferred_locale ?? null}
         userEmail={user.email ?? ''}
       />

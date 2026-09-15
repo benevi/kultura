@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { useTranslations, useLocale } from 'next-intl'
 import { useRouter, usePathname } from 'next/navigation'
 import { KButton } from '@/components/ui/KButton'
@@ -8,6 +8,7 @@ import { KInput } from '@/components/ui/KInput'
 import { ConfirmModal } from '@/components/ui/ConfirmModal'
 import { useToastContext } from '@/components/ui/ToastProvider'
 import { AVATAR_COLORS, isValidAvatarColor } from '@/lib/constants/avatarColors'
+import { AvatarIconPicker } from '@/components/ui/AvatarIconPicker'
 import type { AvatarColorName } from '@/lib/constants/avatarColors'
 import { cn } from '@/lib/utils/index'
 import { createClient } from '@/lib/supabase/client'
@@ -16,6 +17,7 @@ import Link from 'next/link'
 interface SettingsFormProps {
   initialUsername: string
   initialAvatarColor: string
+  initialAvatarIcon: string | null
   initialLocale: string | null
   userEmail: string
 }
@@ -25,6 +27,7 @@ const USERNAME_REGEX = /^[a-zA-Z0-9_]+$/
 export function SettingsForm({
   initialUsername,
   initialAvatarColor,
+  initialAvatarIcon,
   initialLocale,
   userEmail,
 }: SettingsFormProps) {
@@ -40,10 +43,13 @@ export function SettingsForm({
 
   const [username, setUsername] = useState(initialUsername)
   const [avatarColor, setAvatarColor] = useState<AvatarColorName>(safeInitialColor)
+  const [avatarIcon, setAvatarIcon] = useState<string | null>(initialAvatarIcon)
   const [locale, setLocale] = useState(initialLocale ?? currentLocale)
   const [saving, setSaving] = useState(false)
   const [usernameError, setUsernameError] = useState('')
   const [exporting, setExporting] = useState(false)
+  const [importing, setImporting] = useState(false)
+  const importInputRef = useRef<HTMLInputElement>(null)
   const [deleteModalOpen, setDeleteModalOpen] = useState(false)
   const [deleting, setDeleting] = useState(false)
 
@@ -72,7 +78,15 @@ export function SettingsForm({
       const res = await fetch('/api/settings', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ username, avatar_color: avatarColor, preferred_locale: locale }),
+        body: JSON.stringify({
+          username,
+          avatar_color: avatarColor,
+          preferred_locale: locale,
+          // Solo se envía si el usuario lo tocó: mandar la columna cuando su
+          // migración aún no está aplicada haría fallar TODO el guardado,
+          // incluidos nombre e idioma.
+          ...(avatarIcon !== initialAvatarIcon ? { avatar_icon: avatarIcon } : {}),
+        }),
       })
 
       if (res.status === 409) {
@@ -86,6 +100,10 @@ export function SettingsForm({
       }
 
       toast.show({ message: t('saved'), type: 'success' })
+
+      // El header lo pinta el layout en el SERVIDOR: sin refrescarlo, el avatar
+      // seguía mostrando las iniciales viejas hasta recargar a mano.
+      router.refresh()
 
       if (locale !== currentLocale) {
         const newPath = pathname.replace(`/${currentLocale}/`, `/${locale}/`)
@@ -120,6 +138,42 @@ export function SettingsForm({
       toast.show({ message: t('exportDataError'), type: 'error' })
     } finally {
       setExporting(false)
+    }
+  }
+
+  async function handleImportData(event: React.ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0]
+    // El input se resetea siempre: si no, reimportar el MISMO fichero tras un
+    // fallo no dispararía el change y parecería que el botón no hace nada.
+    event.target.value = ''
+    if (!file) return
+
+    setImporting(true)
+    try {
+      const payload = JSON.parse(await file.text())
+      const res = await fetch('/api/account/import', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      })
+      if (!res.ok) {
+        toast.show({ message: t('importDataError'), type: 'error' })
+        return
+      }
+      const result: { libraryImported: number; listsImported: number } = await res.json()
+      toast.show({
+        message: t('importDataSuccess', {
+          count: result.libraryImported,
+          lists: result.listsImported,
+        }),
+        type: 'success',
+      })
+      router.refresh()
+    } catch {
+      // Cubre tanto un JSON corrupto como un fallo de red.
+      toast.show({ message: t('importDataError'), type: 'error' })
+    } finally {
+      setImporting(false)
     }
   }
 
@@ -197,6 +251,17 @@ export function SettingsForm({
             </div>
           </div>
 
+          {/* Personaje del avatar (E-AVATAR-ICONS) */}
+          <div className={cn(row, 'flex flex-col gap-3')}>
+            <label className="text-sm font-body text-text-secondary">{t('avatarIcon')}</label>
+            <AvatarIconPicker
+              value={avatarIcon}
+              onChange={setAvatarIcon}
+              label={t('avatarIcon')}
+              noneLabel={t('avatarIconNone')}
+            />
+          </div>
+
           {/* Cambiar contraseña */}
           <div className={cn(row, 'flex items-center justify-between gap-4 flex-wrap')}>
             <p className="text-sm font-body text-text-tertiary max-w-xs">
@@ -251,6 +316,29 @@ export function SettingsForm({
               loading={exporting}
             >
               {t('exportData')}
+            </KButton>
+          </div>
+
+          <div className={cn(row, 'flex items-center justify-between gap-4 flex-wrap')}>
+            <p className="text-sm font-body text-text-tertiary max-w-xs">{t('importDataHint')}</p>
+            {/* El input va oculto y lo dispara el botón: así el control mantiene
+                el estilo de KButton (incluido su spinner) en vez del selector de
+                archivo del navegador. */}
+            <input
+              ref={importInputRef}
+              type="file"
+              accept="application/json,.json"
+              className="sr-only"
+              onChange={handleImportData}
+            />
+            <KButton
+              variant="secondary"
+              size="sm"
+              className="flex-shrink-0"
+              onClick={() => importInputRef.current?.click()}
+              loading={importing}
+            >
+              {t('importData')}
             </KButton>
           </div>
 

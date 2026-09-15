@@ -4,15 +4,17 @@ import { useState, useEffect, useCallback } from 'react'
 import { Link } from '@/i18n/navigation'
 import { useTranslations } from 'next-intl'
 import { KButton } from '@/components/ui/KButton'
+import { MediaCard } from '@/components/media/MediaCard'
 import type { AiRec } from '@/lib/claude/recommendations'
 
 type Status = 'loading' | 'done' | 'empty' | 'error' | 'rate_limited'
 
-const SKELETON_KEYS = [0, 1, 2, 3, 4, 5]
+// Un esqueleto por tipo recomendable (movie, tv, anime, book, manga, comic, game).
+const SKELETON_KEYS = [0, 1, 2, 3, 4, 5, 6]
 
 export function AiRecommendations() {
   const t = useTranslations('aiRecommendations')
-  const tMedia = useTranslations('media')
+  const tDetail = useTranslations('mediaDetail')
   const [recs, setRecs] = useState<AiRec[]>([])
   const [status, setStatus] = useState<Status>('loading')
 
@@ -42,9 +44,22 @@ export function AiRecommendations() {
     return cleanup
   }, [fetchRecs])
 
+  // El cartel hace de título, así que acompaña a lo que de verdad es una
+  // recomendación (o está a punto de serlo), no a un error ni a un aviso.
+  const hasBadge = status === 'done' || status === 'loading'
+
   return (
-    <section className="relative">
-      {status === 'done' && (
+    // Sin <h2> la sección se quedaba sin nombre accesible (el cartel es un div
+    // decorativo con emoji), así que el título vive ahora aquí.
+    <section
+      className={`relative ${hasBadge ? 'pt-7 md:pt-8' : ''}`}
+      aria-label={t('title')}
+    >
+      {/* El cartel lima ES la cabecera de la sección: el par "Para ti · Claude
+          IA" que había debajo repetía lo mismo en plano y robaba altura. Se
+          pinta también durante la carga para que el esqueleto no aparezca
+          huérfano; en los estados vacío/error la tarjeta ya se explica sola. */}
+      {hasBadge && (
         <div
           className="inline-block absolute -top-3.5 left-0 z-10 rounded-2xl px-3.5 py-1.5 md:px-4 md:py-2 bg-accent-lime text-on-accent-lime font-display text-[10px] md:text-[11px] font-extrabold tracking-wide"
           style={{ transform: 'rotate(-4deg)', boxShadow: '4px 4px 0 rgba(0,0,0,0.35)' }}
@@ -53,13 +68,8 @@ export function AiRecommendations() {
         </div>
       )}
 
-      <div className={`flex items-baseline gap-2 mb-3 ${status === 'done' ? 'pt-4 md:pt-5' : ''}`}>
-        <h2 className="font-display text-xl text-text-primary">{t('title')}</h2>
-        <span className="font-body text-xs text-text-tertiary">{t('poweredBy')}</span>
-      </div>
-
       {status === 'loading' && (
-        <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-5">
           {SKELETON_KEYS.map((i) => (
             <div key={i} className="animate-pulse bg-surface-elevated rounded-card aspect-[2/3]" />
           ))}
@@ -94,47 +104,33 @@ export function AiRecommendations() {
       )}
 
       {status === 'done' && (
-        <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-          {recs.map((rec, i) => (
-            <Link
-              key={i}
-              href={rec.mediaUrl ?? `/search?q=${encodeURIComponent(rec.searchQuery)}`}
-              className="bg-surface-default border border-surface-border rounded-card overflow-hidden hover:border-accent-positive/50 transition-colors relative group"
-            >
-              <div className="aspect-[2/3] bg-surface-elevated flex items-center justify-center relative">
-                {rec.posterUrl ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img
-                    src={rec.posterUrl}
-                    alt={rec.title}
-                    loading="lazy"
-                    className="absolute inset-0 w-full h-full object-cover"
-                  />
-                ) : (
-                  <span className="font-display text-3xl font-bold text-text-tertiary select-none">
-                    {rec.title.slice(0, 2).toUpperCase()}
-                  </span>
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-5">
+          {recs.map((rec) => {
+            // Sin explicación del modelo se pinta el porqué localizado a partir
+            // de datos reales (géneros del ítem + match), igual que la ficha; sin
+            // géneros no hay frase honesta que construir → solo la card.
+            const genres = (rec.item.genres ?? []).slice(0, 2)
+            const why = rec.reason ??
+              (genres.length > 0
+                ? tDetail('whyRecommendedText', {
+                    genres: genres.join(', '),
+                    score: rec.matchScore,
+                  })
+                : null)
+
+            return (
+              <div key={rec.item.id} className="flex flex-col gap-2">
+                {/* Misma card que Descubrir/Biblioteca: enlaza a la ficha real por
+                    externalId y pinta el badge de match que guía la recomendación. */}
+                <MediaCard item={rec.item} matchScore={rec.matchScore} showType />
+                {why && (
+                  <p className="font-body text-xs text-text-secondary line-clamp-3 leading-relaxed">
+                    {why}
+                  </p>
                 )}
-                <span
-                  className="absolute top-1.5 right-1.5 font-body text-[10px] px-1.5 py-0.5 rounded text-text-secondary"
-                  style={{ background: 'rgba(10,12,14,0.85)' }}
-                >
-                  {tMedia(rec.type as Parameters<typeof tMedia>[0]) ?? rec.type}
-                </span>
               </div>
-              <div className="p-2">
-                <p className="font-body text-sm font-medium text-text-primary line-clamp-2 leading-tight">
-                  {rec.title}
-                </p>
-                {rec.year && (
-                  <p className="font-body text-xs text-text-tertiary mt-0.5">{rec.year}</p>
-                )}
-                <p className="font-body text-xs text-text-secondary line-clamp-2 mt-1 leading-relaxed">
-                  {rec.reason}
-                </p>
-              </div>
-            </Link>
-          ))}
+            )
+          })}
         </div>
       )}
     </section>

@@ -8,6 +8,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { z } from 'zod'
 import { checkRateLimit, LIMITS } from '@/lib/rate-limit'
+import { isValidAvatarIcon } from '@/components/icons/avatars'
 import { getUserGroups } from '@/lib/social/groups'
 import { createLogger } from '@/lib/logger'
 
@@ -18,6 +19,9 @@ const CreateGroupSchema = z.object({
   description: z.string().max(200).optional(),
   cover_color: z.string().regex(/^#[0-9a-fA-F]{6}$/).optional(),
   is_public: z.boolean().optional().default(true),
+  // E-AVATAR-ICONS: mismo catálogo que los avatares de usuario; null/ausente →
+  // el grupo se sigue identificando por su inicial.
+  icon: z.string().refine(isValidAvatarIcon, { message: 'invalid_icon' }).nullable().optional(),
 })
 
 export async function GET(): Promise<NextResponse> {
@@ -55,6 +59,10 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       description: parsed.data.description ?? null,
       cover_color: parsed.data.cover_color ?? '#E82020',
       is_public: parsed.data.is_public,
+      // Solo se manda si el usuario eligió icono: así crear un grupo sigue
+      // funcionando aunque la migración de `groups.icon` no esté aplicada
+      // todavía (mandar una columna inexistente es un error duro, no un no-op).
+      ...(parsed.data.icon ? { icon: parsed.data.icon } : {}),
     })
     .select()
     .single()

@@ -1,14 +1,28 @@
 // ============================================================
-// KULTURA — Open Library API Integration
-// Libros (fuente principal) via Open Library Search API
-// Docs: https://openlibrary.org/developers/api
-// No requiere API key.
+// KULTURA — Open Library API Integration (E-BOOKS-HIBRIDO)
+// CATÁLOGO de libros (Descubrir) via Open Library Search API.
+// Docs: https://openlibrary.org/developers/api — no requiere API key.
+//
+// Reparto de papeles (decisión de producto, 2026-09-14): cada proveedor donde
+// es bueno.
+//   - Open Library → CATÁLOGO. Es el único de los dos con filtros de verdad:
+//     `language` como facet, `first_publish_year:[a TO b]` como rango, `sort`
+//     nativo y un `numFound` fiable del que sí se puede derivar la paginación.
+//     Y sin clave ni cuota, que es lo que dejaba el catálogo caído en Vercel.
+//   - Google Books → FICHA. Mejores portadas y sinopsis; se consulta solo al
+//     abrir un título, no al listar (ver `enrichBookWithGoogle`).
+//
+// Historia: los libros vivieron aquí (E84c), se migraron a Google Books
+// (E-BOOKS-GOOGLE, 2026-09-12) porque su cobertura de sinopsis en español es
+// marginal, y vuelven al catálogo ahora que existe la capa de traducción
+// (`media_translations`) — ese motivo ya no obliga a renunciar a los filtros.
 // ============================================================
 
 // ── Internal types ────────────────────────────────────────────────────────────
 
 export interface OpenLibraryDoc {
   key: string; // "/works/OL7353617W"
+  isbn?: string[];
   title: string;
   author_name?: string[];
   first_publish_year?: number;
@@ -21,6 +35,11 @@ export interface OpenLibraryDoc {
 
 export interface OpenLibraryResponse {
   docs: OpenLibraryDoc[];
+  /**
+   * Total REAL de resultados, no una estimación. Es la diferencia práctica con
+   * `totalItems` de Google Books, que anunciaba cientos de páginas que luego el
+   * proveedor rechazaba.
+   */
   numFound: number;
 }
 
@@ -30,13 +49,33 @@ export interface OpenLibraryWork {
   description?: string | { value: string };
 }
 
+// `isbn` viaja para poder puentear a Google Books en la ficha sin adivinar por
+// título+autor, que es ambiguo entre ediciones.
 const SEARCH_FIELDS =
-  "key,title,author_name,first_publish_year,cover_i,language,publisher,subject,ebook_access";
+  "key,title,author_name,first_publish_year,cover_i,language,publisher,subject,ebook_access,isbn";
 
 // ── Helper ────────────────────────────────────────────────────────────────────
 
 export function openLibraryCover(coverId: number): string {
   return `https://covers.openlibrary.org/b/id/${coverId}-L.jpg`;
+}
+
+/**
+ * Error de Open Library con el STATUS accesible, igual que `JikanError`,
+ * `AniListError` y `GoogleBooksError`.
+ *
+ * Un `Error` plano con el código dentro del texto obliga a leer el mensaje con
+ * una regex para saber si fue cuota, consulta inválida o caída — y en un log de
+ * producción eso se traduce en no saberlo.
+ */
+export class OpenLibraryError extends Error {
+  readonly status: number;
+
+  constructor(path: string, status: number) {
+    super(`Open Library ${path} → ${status}`);
+    this.name = "OpenLibraryError";
+    this.status = status;
+  }
 }
 
 async function openLibraryFetch<T>(
@@ -48,24 +87,66 @@ async function openLibraryFetch<T>(
   const res = await fetch(url.toString(), {
     headers: { "User-Agent": "KULTURA/1.0 (kultura app)" },
   });
-  if (!res.ok) throw new Error(`Open Library ${path} → ${res.status}`);
+  if (!res.ok) throw new OpenLibraryError(path, res.status);
   return res.json() as Promise<T>;
 }
 
 // ── Public API ────────────────────────────────────────────────────────────────
 
+/** Resultados por página del BUSCADOR (= page-size del resto de familias). */
+export const OPEN_LIBRARY_PAGE_SIZE = 20;
+
+/**
+ * Cuántos registros pide cada página del CATÁLOGO de Descubrir
+ * (E-BOOKS-VENTANA).
+ *
+ * Más de los que se enseñan, a propósito. El catálogo descarta los libros sin
+ * portada (E-BOOKS-PORTADA) y ese recorte no es uniforme: ordenando por "Más
+ * recientes", lo más nuevo de Open Library son autopublicaciones sin portada,
+ * así que de 20 registros llegaba a sobrevivir UNO y la página quedaba
+ * prácticamente vacía.
+ *
+ * Con una ventana más ancha el recorte deja material suficiente, y sigue
+ * costando UNA sola petición: lo que cambia es el tamaño de la respuesta, no
+ * el número de llamadas. Open Library admite `limit` hasta 100; 60 da margen
+ * de sobra sin traer payloads innecesarios.
+ */
+export const OPEN_LIBRARY_CATALOG_WINDOW = 60;
+
+/**
+ * Busca en el catálogo. `params` admite los filtros nativos de Open Library
+ * (`language`, `sort`, `has_fulltext`…), que a diferencia de Google Books son
+ * filtros de verdad y no pistas para el índice.
+ *
+ * `limit` permite pedir una ventana más ancha que la que se va a enseñar,
+ * para que un post-filtro no deje la rejilla vacía.
+ */
 export async function searchOpenLibrary(
   q: string,
   page = 1,
-  params: Record<string, string> = {}
+  params: Record<string, string> = {},
+  limit = OPEN_LIBRARY_PAGE_SIZE
 ): Promise<OpenLibraryResponse> {
   return openLibraryFetch<OpenLibraryResponse>("/search.json", {
     q,
-    page: String(page),
-    limit: "20",
+    page: String(Math.max(1, page)),
+    limit: String(limit),
     fields: SEARCH_FIELDS,
     ...params,
   });
+}
+
+/**
+ * `numFound` → páginas navegables. El total es real, así que el cálculo sirve;
+ * `pageSize` debe ser la VENTANA que consume cada página, no lo que se enseña,
+ * porque es lo que determina por dónde empieza la siguiente.
+ */
+export function openLibraryTotalPages(
+  numFound: number | undefined,
+  pageSize = OPEN_LIBRARY_PAGE_SIZE
+): number {
+  if (!numFound || numFound <= 0) return 1;
+  return Math.max(Math.ceil(numFound / pageSize), 1);
 }
 
 /** Normaliza la description de un work: OL la devuelve como string o { value }. */
