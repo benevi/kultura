@@ -27,6 +27,7 @@ import { GoogleBooksError } from "@/lib/api/googlebooks";
 import {
   searchOpenLibrary,
   openLibraryTotalPages,
+  OPEN_LIBRARY_CATALOG_WINDOW,
 } from "@/lib/api/openlibrary";
 import {
   buildOpenLibraryQuery,
@@ -332,7 +333,18 @@ function isRateLimitError(e: unknown): boolean {
         // pestaña de libros daba títulos en inglés, filtros vacíos y errores al
         // paginar. La ficha sigue enriqueciéndose con Google Books.
         const { q, params } = buildOpenLibraryQuery(filters, locale);
-        const res = await searchOpenLibrary(q, page, params);
+        // E-BOOKS-VENTANA: se pide una ventana MÁS ANCHA de la que se enseña,
+        // porque justo debajo se descartan los libros sin portada y ese
+        // recorte no es uniforme — ordenando por "Más recientes" llegaba a
+        // sobrevivir 1 de 20 y la página quedaba casi vacía. Sigue siendo una
+        // sola petición: cambia el tamaño de la respuesta, no el número de
+        // llamadas.
+        const res = await searchOpenLibrary(
+          q,
+          page,
+          params,
+          OPEN_LIBRARY_CATALOG_WINDOW
+        );
         // E-BOOKS-PORTADA: fuera los libros sin portada en Open Library. En un
         // catálogo visual una card sin imagen es un hueco, y aquí además
         // coincide casi siempre con autopublicaciones de relleno. Es la misma
@@ -342,8 +354,11 @@ function isRateLimitError(e: unknown): boolean {
         items = (res.docs ?? [])
           .filter((doc) => Boolean(doc.cover_i))
           .map((doc) => normalizeBookOpenLibrary(doc));
+        // El total se divide por la VENTANA, no por lo que se enseña: es lo
+        // que determina dónde empieza la página siguiente. Así no se ofrecen
+        // páginas que en realidad ya se han recorrido.
         totalPages = Math.min(
-          openLibraryTotalPages(res.numFound),
+          openLibraryTotalPages(res.numFound, OPEN_LIBRARY_CATALOG_WINDOW),
           DISCOVER_MAX_PAGES
         );
         hasMore = page < totalPages;

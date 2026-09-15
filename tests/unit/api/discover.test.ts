@@ -85,7 +85,10 @@ import { discoverMovies, discoverTV } from "@/lib/api/tmdb";
 import { discoverAnime, AniListError } from "@/lib/api/anilist";
 import { getPopularManga } from "@/lib/api/mangadex";
 import { searchGoogleBooks } from "@/lib/api/googlebooks";
-import { searchOpenLibrary } from "@/lib/api/openlibrary";
+import {
+  searchOpenLibrary,
+  OPEN_LIBRARY_CATALOG_WINDOW,
+} from "@/lib/api/openlibrary";
 import { searchByTypePaged } from "@/lib/api/search";
 import { DISCOVER_MAX_PAGES } from "@/lib/api/pagination";
 import { getPopularGames, discoverGames } from "@/lib/api/rawg";
@@ -212,14 +215,16 @@ describe("fetchDiscoverData — guard totalItems books (E-BOOKS-GOOGLE)", () => 
     expect(result.totalPages).toBe(1);
   });
 
-  it("numFound = 100 → totalPages = 5", async () => {
+  // E-BOOKS-VENTANA: cada página recorre 60 registros del proveedor, así que
+  // el total se divide por 60 y no por los 20 que se enseñan.
+  it("numFound = 100 → 2 páginas de ventana", async () => {
     vi.mocked(searchOpenLibrary).mockResolvedValue({
       numFound: 100,
       docs: [],
     });
 
     const result = await fetchDiscoverData("book", 1);
-    expect(result.totalPages).toBe(5);
+    expect(result.totalPages).toBe(2);
   });
 
   it("numFound enorme → totalPages capado al tope común (E79-s3)", async () => {
@@ -243,9 +248,12 @@ describe("fetchDiscoverData — books filtros (E-BOOKS-HIBRIDO)", () => {
 
   it("sin filtros → semilla amplia y el idioma del locale", async () => {
     await fetchDiscoverData("book", 1);
-    expect(searchOpenLibrary).toHaveBeenCalledWith('subject:"fiction"', 1, {
-      language: "spa",
-    });
+    expect(searchOpenLibrary).toHaveBeenCalledWith(
+      'subject:"fiction"',
+      1,
+      { language: "spa" },
+      OPEN_LIBRARY_CATALOG_WINDOW
+    );
   });
 
   // Lo que Google Books no sabía hacer: género, año y orden en la propia
@@ -260,7 +268,8 @@ describe("fetchDiscoverData — books filtros (E-BOOKS-HIBRIDO)", () => {
     expect(searchOpenLibrary).toHaveBeenCalledWith(
       'subject:"fantasy" first_publish_year:[2024 TO 2024]',
       2,
-      { language: "eng", sort: "new" }
+      { language: "eng", sort: "new" },
+      OPEN_LIBRARY_CATALOG_WINDOW
     );
   });
 
@@ -269,7 +278,8 @@ describe("fetchDiscoverData — books filtros (E-BOOKS-HIBRIDO)", () => {
     expect(searchOpenLibrary).toHaveBeenCalledWith(
       "first_publish_year:[2000 TO 2009]",
       1,
-      { language: "spa" }
+      { language: "spa" },
+      OPEN_LIBRARY_CATALOG_WINDOW
     );
   });
 
@@ -278,7 +288,8 @@ describe("fetchDiscoverData — books filtros (E-BOOKS-HIBRIDO)", () => {
     expect(searchOpenLibrary).toHaveBeenCalledWith(
       "first_publish_year:[1900 TO 1999]",
       1,
-      { language: "spa" }
+      { language: "spa" },
+      OPEN_LIBRARY_CATALOG_WINDOW
     );
   });
 
@@ -287,7 +298,8 @@ describe("fetchDiscoverData — books filtros (E-BOOKS-HIBRIDO)", () => {
     expect(searchOpenLibrary).toHaveBeenCalledWith(
       'subject:"fiction"',
       1,
-      expect.objectContaining({ language: "spa" })
+      expect.objectContaining({ language: "spa" }),
+      OPEN_LIBRARY_CATALOG_WINDOW
     );
   });
 
@@ -296,7 +308,8 @@ describe("fetchDiscoverData — books filtros (E-BOOKS-HIBRIDO)", () => {
     expect(searchOpenLibrary).toHaveBeenCalledWith(
       'subject:"fiction"',
       1,
-      expect.objectContaining({ has_fulltext: "true" })
+      expect.objectContaining({ has_fulltext: "true" }),
+      OPEN_LIBRARY_CATALOG_WINDOW
     );
 
     vi.mocked(searchOpenLibrary).mockClear();
@@ -304,7 +317,8 @@ describe("fetchDiscoverData — books filtros (E-BOOKS-HIBRIDO)", () => {
     expect(searchOpenLibrary).toHaveBeenCalledWith(
       'subject:"fiction"',
       1,
-      expect.not.objectContaining({ has_fulltext: expect.anything() })
+      expect.not.objectContaining({ has_fulltext: expect.anything() }),
+      OPEN_LIBRARY_CATALOG_WINDOW
     );
   });
 
@@ -325,7 +339,8 @@ describe("fetchDiscoverData — books filtros (E-BOOKS-HIBRIDO)", () => {
 
     const result = await fetchDiscoverData("book", 1, { year: "2003" });
     expect(result.items.map((i) => i.title)).toEqual(["Del 2003"]);
-    expect(result.totalPages).toBe(3);
+    // 60 registros por ventana → ceil(60/60) = 1.
+    expect(result.totalPages).toBe(1);
   });
 });
 
@@ -640,9 +655,9 @@ describe("fetchDiscoverData — hasMore (E79 slice 1)", () => {
     expect((await fetchDiscoverData("manga", 2)).hasMore).toBe(false);
   });
 
-  it("book: hasMore desde ceil(numFound/20)", async () => {
+  it("book: hasMore desde ceil(numFound/ventana)", async () => {
     vi.mocked(searchOpenLibrary).mockResolvedValue({
-      numFound: 60, // ceil(60/20)=3
+      numFound: 180, // ceil(180/60) = 3
       docs: [{ key: "/works/OL1W", title: "B", cover_i: 1 }],
     } as never);
 
@@ -1104,5 +1119,63 @@ describe("fetchDiscoverData — libros sin portada (E-BOOKS-PORTADA)", () => {
     const res = await fetchDiscoverData("book", 1);
     expect(res.items).toEqual([]);
     expect(res.fetchErrorKind).toBeNull();
+  });
+});
+
+// ============================================================
+// E-BOOKS-VENTANA — el recorte por portada no puede vaciar la página
+//
+// Con "Más recientes" se llegó a ver UN solo libro en toda la página: lo más
+// nuevo de Open Library son autopublicaciones sin portada, así que de los 20
+// registros que se pedían sobrevivía uno. Se pide una ventana más ancha para
+// que el recorte deje material, sin aumentar el número de peticiones.
+// ============================================================
+
+describe("fetchDiscoverData — ventana ancha de libros (E-BOOKS-VENTANA)", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it("pide al proveedor más registros de los que se enseñan", async () => {
+    vi.mocked(searchOpenLibrary).mockResolvedValue({
+      numFound: 1000,
+      docs: [],
+    } as never);
+
+    await fetchDiscoverData("book", 1);
+
+    const limit = vi.mocked(searchOpenLibrary).mock.calls[0][3];
+    expect(limit).toBeGreaterThan(20);
+  });
+
+  it("una ventana ancha deja página utilizable aunque casi todo se descarte", async () => {
+    // 60 registros, solo 1 de cada 4 con portada → 15 supervivientes, que es
+    // una página de verdad. Con la ventana de 20 habrían sido 5.
+    const docs = Array.from({ length: 60 }, (_, i) => ({
+      key: `/works/OL${i}W`,
+      title: `Libro ${i}`,
+      ...(i % 4 === 0 ? { cover_i: i + 1 } : {}),
+    }));
+    vi.mocked(searchOpenLibrary).mockResolvedValue({
+      numFound: 1000,
+      docs,
+    } as never);
+
+    const res = await fetchDiscoverData("book", 1);
+
+    expect(res.items.length).toBe(15);
+  });
+
+  it("las páginas se cuentan por la ventana consumida, no por lo que se enseña", async () => {
+    vi.mocked(searchOpenLibrary).mockResolvedValue({
+      numFound: 600,
+      docs: [],
+    } as never);
+
+    const res = await fetchDiscoverData("book", 1);
+
+    // 600 registros recorridos de 60 en 60 → 10 páginas. Contarlo de 20 en 20
+    // ofrecería 30 páginas, dos tercios de las cuales ya se han recorrido.
+    expect(res.totalPages).toBe(10);
   });
 });
