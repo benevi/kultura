@@ -93,32 +93,60 @@ async function openLibraryFetch<T>(
 
 // ── Public API ────────────────────────────────────────────────────────────────
 
-/** Resultados por página (= page-size del resto de familias de Descubrir). */
+/** Resultados por página del BUSCADOR (= page-size del resto de familias). */
 export const OPEN_LIBRARY_PAGE_SIZE = 20;
+
+/**
+ * Cuántos registros pide cada página del CATÁLOGO de Descubrir
+ * (E-BOOKS-VENTANA).
+ *
+ * Más de los que se enseñan, a propósito. El catálogo descarta los libros sin
+ * portada (E-BOOKS-PORTADA) y ese recorte no es uniforme: ordenando por "Más
+ * recientes", lo más nuevo de Open Library son autopublicaciones sin portada,
+ * así que de 20 registros llegaba a sobrevivir UNO y la página quedaba
+ * prácticamente vacía.
+ *
+ * Con una ventana más ancha el recorte deja material suficiente, y sigue
+ * costando UNA sola petición: lo que cambia es el tamaño de la respuesta, no
+ * el número de llamadas. Open Library admite `limit` hasta 100; 60 da margen
+ * de sobra sin traer payloads innecesarios.
+ */
+export const OPEN_LIBRARY_CATALOG_WINDOW = 60;
 
 /**
  * Busca en el catálogo. `params` admite los filtros nativos de Open Library
  * (`language`, `sort`, `has_fulltext`…), que a diferencia de Google Books son
  * filtros de verdad y no pistas para el índice.
+ *
+ * `limit` permite pedir una ventana más ancha que la que se va a enseñar,
+ * para que un post-filtro no deje la rejilla vacía.
  */
 export async function searchOpenLibrary(
   q: string,
   page = 1,
-  params: Record<string, string> = {}
+  params: Record<string, string> = {},
+  limit = OPEN_LIBRARY_PAGE_SIZE
 ): Promise<OpenLibraryResponse> {
   return openLibraryFetch<OpenLibraryResponse>("/search.json", {
     q,
     page: String(Math.max(1, page)),
-    limit: String(OPEN_LIBRARY_PAGE_SIZE),
+    limit: String(limit),
     fields: SEARCH_FIELDS,
     ...params,
   });
 }
 
-/** `numFound` → páginas navegables. El total es real, así que el cálculo sirve. */
-export function openLibraryTotalPages(numFound: number | undefined): number {
+/**
+ * `numFound` → páginas navegables. El total es real, así que el cálculo sirve;
+ * `pageSize` debe ser la VENTANA que consume cada página, no lo que se enseña,
+ * porque es lo que determina por dónde empieza la siguiente.
+ */
+export function openLibraryTotalPages(
+  numFound: number | undefined,
+  pageSize = OPEN_LIBRARY_PAGE_SIZE
+): number {
   if (!numFound || numFound <= 0) return 1;
-  return Math.max(Math.ceil(numFound / OPEN_LIBRARY_PAGE_SIZE), 1);
+  return Math.max(Math.ceil(numFound / pageSize), 1);
 }
 
 /** Normaliza la description de un work: OL la devuelve como string o { value }. */
