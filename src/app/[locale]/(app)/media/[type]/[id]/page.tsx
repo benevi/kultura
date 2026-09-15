@@ -16,6 +16,7 @@ import { getAnime as getAnimeAniList, isAniListId, fromAniListRef } from "@/lib/
 import { getManga as getMangaDex, isMangaDexId } from "@/lib/api/mangadex";
 import { getBookDetail } from "@/lib/api/openlibrary";
 import { enrichBookWithGoogle } from "@/lib/api/books-enrich";
+import { cleanOpenLibraryDescription } from "@/lib/api/openlibrary-subjects";
 import {
   getGoogleBookDetail,
   isOpenLibraryWorkId,
@@ -102,7 +103,11 @@ async function resolveBookItem(id: string) {
     const detail = await getBookDetail(id).catch(() => null);
     if (!detail) return null;
     const item = normalizeBookOpenLibrary(detail.doc);
-    if (detail.description) item.synopsis = detail.description;
+    // E-BOOKS-SUBJ: las descripciones de Open Library llegan con Markdown
+    // escapado (`\*\*Title:\*\*`) porque el campo es texto plano y la gente
+    // pega Markdown igualmente.
+    const description = cleanOpenLibraryDescription(detail.description);
+    if (description) item.synopsis = description;
     // Best-effort: si Google no responde o no hay ISBN, se sirve tal cual.
     return enrichBookWithGoogle(item).catch(() => item);
   }

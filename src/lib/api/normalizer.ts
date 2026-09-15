@@ -20,6 +20,7 @@ import { extractMangaCover } from "./mangadex";
 import { pickLocalizedText } from "./locale";
 import type { OpenLibraryDoc } from "./openlibrary";
 import { openLibraryCover } from "./openlibrary";
+import { pickBookSubjects } from "./openlibrary-subjects";
 import type { GoogleBooksVolume } from "./googlebooks";
 import { googleBooksCover } from "./googlebooks";
 import type { RawgGame } from "./rawg";
@@ -338,10 +339,10 @@ export function normalizeBookGoogle(raw: GoogleBooksVolume): MediaItem {
 }
 
 /**
- * Open Library → MediaItem. LEGACY (E-BOOKS-GOOGLE): los libros se sirven con
- * Google Books; esto solo resuelve las fichas de ids `book_OL…` ya guardados en
- * bibliotecas mientras Open Library fue la fuente (E84b/E84c). No se usa en
- * Descubrir ni en la búsqueda.
+ * Open Library → MediaItem (E-BOOKS-HIBRIDO).
+ *
+ * Fuente del CATÁLOGO de libros y del buscador. La ficha se completa después
+ * con Google Books (`enrichBookWithGoogle`), que gana en portada y sinopsis.
  */
 export function normalizeBookOpenLibrary(raw: OpenLibraryDoc): MediaItem {
   // key is "/works/OL7353617W" — use the path as externalId
@@ -356,7 +357,11 @@ export function normalizeBookOpenLibrary(raw: OpenLibraryDoc): MediaItem {
     title: raw.title,
     poster,
     year: raw.first_publish_year,
-    genres: raw.subject?.slice(0, 5),
+    // E-BOOKS-SUBJ: `subject` es texto libre y mezcla géneros con lugares y
+    // metadatos de archivo. Quedarse con los cinco PRIMEROS dejaba fuera los
+    // géneros de verdad → match 0% en todos los libros y chips como "Beaches"
+    // en una novela romántica.
+    genres: pickBookSubjects(raw.subject),
     // rating: undefined (valoración de libros oculta)
     metadata: {
       authors: raw.author_name ?? [],
