@@ -81,16 +81,6 @@ export default async function HomePage() {
           </div>
         </section>
 
-        {/* What */}
-        <section className="px-4 md:px-8 py-16 text-center max-w-3xl mx-auto">
-          <h2 className="font-display text-3xl md:text-4xl font-bold tracking-tight text-text-primary mb-6 text-balance">
-            {t("what.title")}
-          </h2>
-          <p className="text-text-secondary text-lg leading-relaxed">
-            {t("what.description")}
-          </p>
-        </section>
-
         {/* Features */}
         <section id="features" className="px-4 md:px-8 py-16 max-w-6xl mx-auto">
           <h2 className="font-display text-3xl md:text-4xl font-bold tracking-tight text-text-primary text-center mb-12">
