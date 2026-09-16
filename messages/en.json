@@ -544,12 +544,8 @@
       "lists": "Collaborative lists",
       "listsDesc": "Create lists with friends and discover things together",
       "ai": "AI recommendations",
-      "aiDesc": "Discover your next favourite with the help of artificial intelligence"
-    },
-    "cta": {
-      "title": "Join KULTURA",
-      "subtitle": "Start for free. No credit card required.",
-      "button": "Create free account"
+      "aiDesc": "Discover your next favourite with the help of artificial intelligence",
+      "aiBadge": "For you"
     }
   },
   "discoverFilters": {
