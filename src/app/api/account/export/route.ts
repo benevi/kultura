@@ -7,7 +7,7 @@ import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { checkRateLimit, LIMITS } from '@/lib/rate-limit'
 import { getUserMedia } from '@/lib/library/queries'
-import { getUserLists } from '@/lib/social/lists'
+import { getUserLists, getListDetail } from '@/lib/social/lists'
 import { getFriends } from '@/lib/social/friends'
 import { createLogger } from '@/lib/logger'
 
@@ -52,11 +52,24 @@ export async function GET(): Promise<NextResponse> {
       getFriends(user.id),
     ])
 
+    // `getUserLists` no trae el CONTENIDO de cada lista, así que un export sin
+    // esto devolvía listas vacías y la reimportación no podía reconstruirlas
+    // (ver /api/account/import). Solo las propias: las de otros no son del
+    // usuario y volverían a estar ahí al recuperar su cuenta.
+    const ownedLists = lists.filter((list) => list.owner?.id === user.id)
+    const listItems = await Promise.all(
+      ownedLists.map(async (list) => {
+        const detail = await getListDetail(list.id).catch(() => null)
+        return [list.id, detail?.items.map((item) => item.mediaId) ?? []] as const
+      })
+    )
+    const itemsByList = new Map(listItems)
+
     return NextResponse.json({
       exportedAt: new Date().toISOString(),
       profile: { email: user.email, ...profile },
       library,
-      lists,
+      lists: lists.map((list) => ({ ...list, items: itemsByList.get(list.id) ?? [] })),
       friendships,
     })
   } catch (err) {

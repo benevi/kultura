@@ -91,6 +91,24 @@ describe('POST /api/groups', () => {
     expect(mockInsert).not.toHaveBeenCalled()
   })
 
+  // Regresión E-AVATAR-ICONS: mandar una columna que todavía no existe en la
+  // base de datos es un error DURO en PostgREST, no un campo ignorado. Con la
+  // migración de `groups.icon` sin aplicar, incluirla habría roto la creación
+  // de grupos entera.
+  it('omite icon cuando no se eligió ninguno', async () => {
+    const { POST } = await import('@/app/api/groups/route')
+    const res = await POST(makeRequest({ name: 'Sin icono' }))
+    expect(res.status).toBe(201)
+    expect(mockInsert.mock.calls[0][0]).not.toHaveProperty('icon')
+  })
+
+  it('incluye icon solo cuando el usuario eligió uno', async () => {
+    const { POST } = await import('@/app/api/groups/route')
+    const res = await POST(makeRequest({ name: 'Con icono', icon: 'robot' }))
+    expect(res.status).toBe(201)
+    expect(mockInsert.mock.calls[0][0]).toMatchObject({ icon: 'robot' })
+  })
+
   it('defaults is_public to true when omitted', async () => {
     mockGetUser.mockResolvedValue({ data: { user: AUTH_USER }, error: null })
 

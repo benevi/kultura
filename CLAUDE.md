@@ -306,8 +306,36 @@ con una paleta hex antigua.
 - **Home, Discover y MediaDetail** ya tienen el acabado visual literal de
   F0 (hero con badge colgante, bento con rotación + acento radial, layout
   de dos columnas con badge colgante en MediaDetail).
+- **Landing**: reducida a DOS bloques (hero + features) y con PORTADAS
+  REALES del catálogo en vez de bloques de color
+  (E-LANDING-SHOWCASE). Patrón nuevo, reutilizable en cualquier pantalla
+  pública que quiera enseñar catálogo:
+  - `src/lib/landing/showcase.ts` resuelve la muestra reusando
+    `fetchAggregateData` (el modo "all" de Descubrir: fan-out a las 7
+    familias, normalizado, NSFW filtrado, tolerante a que una familia
+    falle). `pickShowcase` pone primero un item de cada tipo para que el
+    collage no salga con tres películas.
+  - `/[locale]` se renderiza on-demand, así que la muestra va envuelta en
+    `unstable_cache` (un día) con presupuesto de tiempo duro. Una muestra
+    corta LANZA a propósito: `unstable_cache` no guarda rechazos, así un
+    hipo de un proveedor no congela la landing sin imágenes 24 h.
+  - `src/components/landing/PosterTile.tsx` es el primitivo de portada
+    (imagen con respaldo de gradiente DETRÁS, así que un 404 deja color y
+    no un hueco). **Ninguna pantalla debe depender de que haya
+    portadas**: sin muestra, cada pieza cae a su versión de gradiente,
+    y por eso los huecos van dentro de `<Suspense>` con esa versión como
+    fallback (`ShowcaseSlots`) — el primer pintado no espera a ningún
+    proveedor.
+  - Las portadas se enseñan SOLO en el hero (collage en escritorio, tira
+    en móvil). Las tarjetas de features llevan únicamente su icono
+    centrado: las miniaturas que hubo ahí competían con el collage y
+    dejaban la tarjeta abarrotada.
+  - El hero tiene UN solo CTA. El secundario era un ancla a `#features`
+    que, con la landing en dos bloques, movía la página unos píxeles; y
+    el catálogo no vale de destino porque todo `(app)` redirige a login
+    sin sesión.
 
-**Pendiente:** las 14 pantallas restantes (Landing, Login, Library,
+**Pendiente:** las 13 pantallas restantes (Login, Library,
 Search, Friends, Groups, GroupDetail, Chat, Notifications, Profile,
 Lists, ListDetail, Settings, Suggestions) heredan bien los colores vía
 custom properties pero no tienen todavía el acabado F0 específico de
@@ -317,6 +345,12 @@ un agente por pantalla o grupo de pantallas afines, siguiendo las
 instrucciones operativas de la cabecera de este documento.
 
 **Deuda técnica por resolver:**
+- `books-maps.ts` quedó casi entero como código muerto tras el híbrido de
+  libros (E-BOOKS-HIBRIDO): solo siguen vivos `BOOKS_FORMATO` y
+  `BOOKS_PUBLISHER`, que alimentan opciones de la UI. El constructor de query
+  de Google Books y sus helpers ya no los importa nadie — se conservan un
+  ciclo por si hay que revertir, y hay que borrarlos (con sus tests) cuando el
+  híbrido esté validado en producción.
 - `KButton` y `button.tsx` (shadcn-style) conviven como dos sistemas de
   botón distintos — decidir cuál se queda antes de seguir migrando
   pantallas que usan el segundo.

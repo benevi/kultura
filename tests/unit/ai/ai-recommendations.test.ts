@@ -47,8 +47,20 @@ describe('GET /api/ai-recommendations', () => {
 
   it('returns recommendations array on success', async () => {
     mockGetUser.mockResolvedValue({ data: { user: AUTH_USER }, error: null })
+    // E-AIREC-CATALOG: cada rec lleva el MediaItem real del catálogo + su match.
     mockGetAiRecommendations.mockResolvedValue([
-      { title: 'Pulp Fiction', type: 'movie', year: 1994, reason: 'Similar estilo a Fight Club', searchQuery: 'Pulp%20Fiction' },
+      {
+        item: {
+          id: 'movie_680',
+          externalId: '680',
+          type: 'movie',
+          title: 'Pulp Fiction',
+          year: 1994,
+          poster: 'https://image.tmdb.org/t/p/w500/pulp.jpg',
+        },
+        matchScore: 87,
+        reason: 'Similar estilo a Fight Club',
+      },
     ])
 
     const { GET } = await import('@/app/api/ai-recommendations/route')
@@ -56,7 +68,10 @@ describe('GET /api/ai-recommendations', () => {
     expect(res.status).toBe(200)
     const body = await res.json()
     expect(body.recommendations).toHaveLength(1)
-    expect(body.recommendations[0].title).toBe('Pulp Fiction')
+    expect(body.recommendations[0].item.title).toBe('Pulp Fiction')
+    // La ficha se enlaza con externalId (sin prefijo) — ver MediaCard.
+    expect(body.recommendations[0].item.externalId).toBe('680')
+    expect(body.recommendations[0].matchScore).toBe(87)
   })
 
   it('returns empty array if library too small', async () => {

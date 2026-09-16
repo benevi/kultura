@@ -8,6 +8,7 @@ import { createClient } from "@/lib/supabase/client";
 import { getAuthErrorKey } from "@/lib/utils/auth-errors";
 import { KButton } from "@/components/ui/KButton";
 import { KInput } from "@/components/ui/KInput";
+import { AvatarIconPicker } from "@/components/ui/AvatarIconPicker";
 import { Logo } from "@/components/layout/Logo";
 import { cn } from "@/lib/utils/index";
 
@@ -27,6 +28,14 @@ const AUTH_CARD_BACKGROUND = {
 
 type Mode = "login" | "register" | "reset";
 
+/**
+ * Dónde se aparca el personaje elegido al registrarse hasta que hay sesión
+ * (E-AVATAR-ICONS). La fila de `users` la crea un trigger de base de datos, y
+ * el alta puede quedar pendiente de confirmar el correo, así que la elección
+ * tiene que sobrevivir a ese hueco.
+ */
+const PENDING_AVATAR_ICON_KEY = "kultura:pending-avatar-icon";
+
 interface FormState {
   email: string;
   password: string;
@@ -43,6 +52,51 @@ interface FormState {
 
 function isValidEmail(email: string): boolean {
   return email.includes("@") && email.includes(".");
+}
+
+/**
+ * Origen al que Supabase debe devolver al usuario tras OAuth o el correo de
+ * reseteo.
+ *
+ * Manda SIEMPRE el origen real del navegador: `NEXT_PUBLIC_SITE_URL` apunta al
+ * dominio canónico de producción, así que tenerlo por delante hacía que un
+ * login desde un preview de Vercel (o desde localhost) acabase autenticando en
+ * producción — la sesión nunca volvía al despliegue en el que estabas probando.
+ * El env var queda solo como red de seguridad para un render sin `window`.
+ *
+ * Recordatorio de configuración: cada origen desde el que se inicie sesión debe
+ * estar en la allowlist de "Redirect URLs" de Supabase Auth (los previews de
+ * Vercel admiten comodín).
+ */
+function authOrigin(): string {
+  if (typeof window !== "undefined") return window.location.origin;
+  return process.env.NEXT_PUBLIC_SITE_URL ?? "";
+}
+
+// Logo oficial de Google (multicolor) — marca de terceros, no forma parte
+// del set de iconos propio de Kultura: se mantiene tal cual exige su guía
+// de marca para botones "Continuar con Google".
+function GoogleIcon({ className }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 48 48" className={className} aria-hidden="true">
+      <path
+        fill="#FFC107"
+        d="M43.611,20.083H42V20H24v8h11.303c-1.649,4.657-6.08,8-11.303,8c-6.627,0-12-5.373-12-12c0-6.627,5.373-12,12-12c3.059,0,5.842,1.154,7.961,3.039l5.657-5.657C34.046,6.053,29.268,4,24,4C12.955,4,4,12.955,4,24c0,11.045,8.955,20,20,20c11.045,0,20-8.955,20-20C44,22.659,43.862,21.35,43.611,20.083z"
+      />
+      <path
+        fill="#FF3D00"
+        d="M6.306,14.691l6.571,4.819C14.655,15.108,18.961,12,24,12c3.059,0,5.842,1.154,7.961,3.039l5.657-5.657C34.046,6.053,29.268,4,24,4C16.318,4,9.656,8.337,6.306,14.691z"
+      />
+      <path
+        fill="#4CAF50"
+        d="M24,44c5.166,0,9.86-1.977,13.409-5.192l-6.19-5.238C29.211,35.091,26.715,36,24,36c-5.202,0-9.619-3.317-11.283-7.946l-6.522,5.025C9.505,39.556,16.227,44,24,44z"
+      />
+      <path
+        fill="#1976D2"
+        d="M43.611,20.083H42V20H24v8h11.303c-0.792,2.237-2.231,4.166-4.087,5.571c0.001-0.001,0.002-0.001,0.003-0.002l6.19,5.238C36.971,39.205,44,34,44,24C44,22.659,43.862,21.35,43.611,20.083z"
+      />
+    </svg>
+  );
 }
 
 // ---------------------------------------------------------------------------
@@ -72,6 +126,22 @@ export function LoginPage({ locale }: LoginPageProps) {
     loading: false,
     success: false,
   });
+
+  // E-AVATAR-ICONS: el personaje elegido al registrarse. Se guarda también en el
+  // navegador porque el alta puede quedar pendiente de confirmar el correo y la
+  // elección tendría que sobrevivir hasta el primer inicio de sesión.
+  const [avatarIcon, setAvatarIcon] = useState<string | null>(null);
+
+  function handleAvatarIconChange(icon: string | null) {
+    setAvatarIcon(icon);
+    try {
+      if (icon) window.localStorage.setItem(PENDING_AVATAR_ICON_KEY, icon);
+      else window.localStorage.removeItem(PENDING_AVATAR_ICON_KEY);
+    } catch {
+      // Modo privado o almacenamiento bloqueado: se pierde solo si además hay
+      // confirmación por correo de por medio, y siempre queda Ajustes.
+    }
+  }
 
   // Redirect if already authenticated (only in login mode — register/reset allow new accounts)
   useEffect(() => {
@@ -153,6 +223,7 @@ export function LoginPage({ locale }: LoginPageProps) {
       return;
     }
 
+    await applyPendingAvatarIcon();
     router.push("/home");
   }
 
@@ -175,6 +246,7 @@ export function LoginPage({ locale }: LoginPageProps) {
     }
 
     if (data.session) {
+      await applyPendingAvatarIcon();
       router.push("/home");
     } else {
       // Email confirmation required
@@ -182,9 +254,64 @@ export function LoginPage({ locale }: LoginPageProps) {
     }
   }
 
+  /**
+   * Guarda el personaje elegido durante el registro (E-AVATAR-ICONS).
+   *
+   * La fila de `users` la crea un trigger de base de datos al dar de alta la
+   * cuenta, así que el personaje no puede viajar en el propio `signUp`: se
+   * escribe justo después, ya con sesión. Y como el alta puede exigir confirmar
+   * el correo (sin sesión todavía), la elección queda aparcada en el navegador
+   * y se aplica al primer inicio de sesión — si no, se perdería sin avisar.
+   */
+  async function applyPendingAvatarIcon() {
+    let pending: string | null = null;
+    try {
+      pending = avatarIcon ?? window.localStorage.getItem(PENDING_AVATAR_ICON_KEY);
+    } catch {
+      pending = avatarIcon;
+    }
+    if (!pending) return;
+
+    await fetch("/api/settings", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ avatar_icon: pending }),
+    }).catch(() => {
+      // Un fallo aquí no puede impedir entrar: el personaje se cambia en Ajustes.
+    });
+
+    try {
+      window.localStorage.removeItem(PENDING_AVATAR_ICON_KEY);
+    } catch {
+      // Modo privado o almacenamiento bloqueado: nada que limpiar.
+    }
+  }
+
+  async function handleGoogleLogin() {
+    setForm((prev) => ({ ...prev, loading: true, error: null }));
+    const supabase = createClient();
+    const origin = authOrigin();
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: "google",
+      options: {
+        redirectTo: `${origin}/api/auth/callback?next=/${locale}/home`,
+      },
+    });
+
+    // Éxito → el navegador redirige a Google, no hay nada más que hacer aquí.
+    if (error) {
+      const key = getAuthErrorKey(error.message);
+      setForm((prev) => ({
+        ...prev,
+        loading: false,
+        error: tErrors(key),
+      }));
+    }
+  }
+
   async function handleReset() {
     const supabase = createClient();
-    const origin = process.env.NEXT_PUBLIC_SITE_URL ?? window.location.origin;
+    const origin = authOrigin();
     const callbackUrl = `${origin}/api/auth/callback?next=/${locale}/login?mode=reset`;
 
     const { error } = await supabase.auth.resetPasswordForEmail(form.email, {
@@ -312,6 +439,29 @@ export function LoginPage({ locale }: LoginPageProps) {
           </div>
         )}
 
+        {/* Google OAuth (oculto en reset — solo aplica a login/registro) */}
+        {mode !== "reset" && (
+          <>
+            <button
+              type="button"
+              onClick={handleGoogleLogin}
+              disabled={form.loading}
+              className="flex w-full items-center justify-center gap-2 rounded-button border border-surface-border bg-surface-base py-2.5 text-sm font-medium text-text-primary transition-colors hover:bg-surface-elevated disabled:opacity-50"
+            >
+              <GoogleIcon className="h-4 w-4 shrink-0" />
+              {tAuth("continueWithGoogle")}
+            </button>
+
+            <div className="my-5 flex items-center gap-3">
+              <div className="h-px flex-1 bg-surface-border" />
+              <span className="text-xs uppercase tracking-wider text-text-tertiary">
+                {tAuth("or")}
+              </span>
+              <div className="h-px flex-1 bg-surface-border" />
+            </div>
+          </>
+        )}
+
         {/* Form */}
         <form onSubmit={handleSubmit} noValidate className="space-y-4">
           {/* Email */}
@@ -352,6 +502,22 @@ export function LoginPage({ locale }: LoginPageProps) {
               error={form.fieldErrors.confirmPassword}
               placeholder="••••••••"
             />
+          )}
+
+          {/* Personaje del avatar (E-AVATAR-ICONS) — opcional: quien no elija
+              se queda con sus iniciales, igual que las cuentas de siempre. */}
+          {mode === "register" && (
+            <div className="flex flex-col gap-3">
+              <span className="text-sm font-body text-text-secondary">
+                {tAuth("chooseCharacter")}
+              </span>
+              <AvatarIconPicker
+                value={avatarIcon}
+                onChange={handleAvatarIconChange}
+                label={tAuth("chooseCharacter")}
+                noneLabel={tAuth("chooseCharacterNone")}
+              />
+            </div>
           )}
 
           {/* Global auth error — semantic danger red */}

@@ -41,6 +41,33 @@ vi.mock("@/components/ui/Pagination", () => ({
   Pagination: () => <div data-testid="pagination" />,
 }));
 
+// E-DISCOVER-SEARCH-MERGE: SearchBar real hace su propio fetch de autocompletado
+// (/api/search) — stub ligero que solo expone un input controlado y dispara
+// onSubmit/onClear, igual que MediaGrid/Pagination arriba aíslan su lógica.
+vi.mock("@/components/search/SearchBar", () => ({
+  SearchBar: ({
+    defaultValue,
+    onSubmit,
+    onClear,
+  }: {
+    defaultValue?: string;
+    onSubmit?: (q: string) => void;
+    onClear?: () => void;
+  }) => (
+    <input
+      type="search"
+      data-testid="discover-searchbar"
+      defaultValue={defaultValue}
+      onKeyDown={(e) => {
+        if (e.key === "Enter") onSubmit?.((e.target as HTMLInputElement).value);
+      }}
+      onChange={(e) => {
+        if (e.target.value.trim() === "") onClear?.();
+      }}
+    />
+  ),
+}));
+
 // Radix Popover (FilterBar v3 = TODO popover, incl. single) toca APIs jsdom no trae.
 beforeAll(() => {
   if (!Element.prototype.hasPointerCapture)
@@ -306,34 +333,136 @@ describe("DiscoverClient — E59 F5e", () => {
     expect(movie).toHaveAttribute("aria-checked", "true");
   });
 
-  it("el trigger sort se empuja a la derecha (ml-auto)", () => {
+  // Desde `sm`: en móvil la fila de filtros scrollea en horizontal y `ml-auto`
+  // sacaría el trigger de la vista en vez de alinearlo a la derecha.
+  it("el trigger sort se empuja a la derecha a partir de sm", () => {
     mockFetchOk();
     current = new URLSearchParams("type=movie&page=1");
     render(<DiscoverClient currentType="movie" currentPage={1} />);
-    expect(screen.getByRole("button", { name: /sort:/i })).toHaveClass("ml-auto");
+    const sort = screen.getByRole("button", { name: /sort:/i });
+    expect(sort).toHaveClass("sm:ml-auto");
+    expect(sort).not.toHaveClass("ml-auto");
   });
 
-  // ── G1: barra de búsqueda + emoji por tipo ──────────────────────────────
+  // ── E-DISCOVER-SEARCH-MERGE: buscador de texto dentro de Discover ───────────
 
-  it("renderiza una barra de búsqueda que navega a /search (reusa /api/search)", () => {
+  it("renderiza el SearchBar dentro de Discover", () => {
     mockFetchOk();
     current = new URLSearchParams("type=movie&page=1");
     render(<DiscoverClient currentType="movie" currentPage={1} />);
-
-    // SearchBar real (no stub): input type=search visible bajo la cabecera.
-    const input = screen.getByPlaceholderText("searchPlaceholder");
-    expect(input).toHaveAttribute("type", "search");
+    expect(screen.getByTestId("discover-searchbar")).toBeInTheDocument();
   });
 
-  it("las pills de tipo llevan un emoji decorativo sin alterar el nombre accesible", () => {
+  it("buscar escribe q en la URL con page=1, conservando el type activo", async () => {
+    mockFetchOk();
+    current = new URLSearchParams("type=tv&page=3");
+    render(<DiscoverClient currentType="tv" currentPage={3} />);
+
+    fireEvent.change(screen.getByTestId("discover-searchbar"), {
+      target: { value: "dune" },
+    });
+    fireEvent.keyDown(screen.getByTestId("discover-searchbar"), { key: "Enter" });
+
+    expect(mockRouterPush).toHaveBeenCalledWith("/discover?type=tv&page=1&q=dune");
+  });
+
+  it("con q activa (currentQuery), el fetch a /api/discover incluye q y se oculta la barra de filtros", async () => {
+    const fetchFn = mockFetchOk([{ id: "a" }], 1);
+    current = new URLSearchParams("type=movie&page=1&q=dune");
+    render(<DiscoverClient currentType="movie" currentPage={1} currentQuery="dune" />);
+
+    await waitFor(() => expect(fetchFn).toHaveBeenCalled());
+    expect(lastFetchParams(fetchFn).get("q")).toBe("dune");
+    // FilterBar (fila FILTROS) no se renderiza en modo búsqueda.
+    expect(screen.queryByText("filters")).not.toBeInTheDocument();
+    // Chip con la query activa.
+    expect(screen.getByText("dune")).toBeInTheDocument();
+  });
+
+  it("limpiar la búsqueda (chip X) navega a /discover?type=X&page=1 sin q", async () => {
+    mockFetchOk([{ id: "a" }], 1);
+    current = new URLSearchParams("type=movie&page=1&q=dune");
+    render(<DiscoverClient currentType="movie" currentPage={1} currentQuery="dune" />);
+
+    fireEvent.click(await screen.findByLabelText("reset"));
+    expect(mockRouterPush).toHaveBeenCalledWith("/discover?type=movie&page=1");
+  });
+
+  it("cambiar de tipo con búsqueda activa conserva la query", () => {
+    mockFetchOk();
+    current = new URLSearchParams("type=movie&page=1&q=dune");
+    render(<DiscoverClient currentType="movie" currentPage={1} currentQuery="dune" />);
+
+    fireEvent.click(screen.getByText("tv"));
+    expect(mockRouterPush).toHaveBeenCalledWith("/discover?type=tv&page=1&q=dune");
+  });
+
+  it("sin filtros ni búsqueda, sin resultados: no aparece la barra de filtros pero sí el catálogo vacío estándar", async () => {
+    mockFetchOk([], 1);
+    current = new URLSearchParams("type=movie&page=1");
+    render(<DiscoverClient currentType="movie" currentPage={1} />);
+    await waitFor(() => expect(screen.getByText("noResults")).toBeInTheDocument());
+    // Sin búsqueda activa: la barra de filtros SÍ se muestra.
+    expect(screen.getByText("filters")).toBeInTheDocument();
+  });
+
+  // ── E-RANDOMIZE-ALWAYS: "Sorpréndeme" siempre presente ──────────────────────
+
+  it("el botón Sorpréndeme está presente y deshabilitado con 0 resultados (nunca oculto)", async () => {
+    mockFetchOk([], 1);
+    current = new URLSearchParams("type=movie&page=1");
+    render(<DiscoverClient currentType="movie" currentPage={1} />);
+
+    const btn = await screen.findByRole("button", { name: "randomize" });
+    await waitFor(() => expect(btn).toBeDisabled());
+  });
+
+  it("con resultados, Sorpréndeme está habilitado y al pulsarlo muestra un único item con banner", async () => {
+    mockFetchOk([{ id: "a" }, { id: "b" }, { id: "c" }], 1);
+    current = new URLSearchParams("type=movie&page=1");
+    render(<DiscoverClient currentType="movie" currentPage={1} />);
+
+    const btn = await screen.findByRole("button", { name: "randomize" });
+    await waitFor(() => expect(btn).toBeEnabled());
+
+    fireEvent.click(btn);
+
+    // El grid pasa a mostrar solo 1 item (el aleatorio elegido).
+    await waitFor(() =>
+      expect(screen.getByTestId("media-grid")).toHaveTextContent("1")
+    );
+    expect(screen.getByText("randomizeAgain")).toBeInTheDocument();
+  });
+
+  it("quitar el aleatorio (X del banner) vuelve a mostrar el grid completo", async () => {
+    mockFetchOk([{ id: "a" }, { id: "b" }], 1);
+    current = new URLSearchParams("type=movie&page=1");
+    render(<DiscoverClient currentType="movie" currentPage={1} />);
+
+    const btn = await screen.findByRole("button", { name: "randomize" });
+    await waitFor(() => expect(btn).toBeEnabled());
+    fireEvent.click(btn);
+    await waitFor(() =>
+      expect(screen.getByTestId("media-grid")).toHaveTextContent("1")
+    );
+
+    fireEvent.click(screen.getByLabelText("reset"));
+    await waitFor(() =>
+      expect(screen.getByTestId("media-grid")).toHaveTextContent("2")
+    );
+  });
+
+  // ── E78: pills de tipo llevan icono propio, no emoji ────────────────────
+
+  it("las pills de tipo llevan un icono propio sin alterar el nombre accesible", () => {
     mockFetchOk();
     current = new URLSearchParams("type=movie&page=1");
     render(<DiscoverClient currentType="movie" currentPage={1} />);
 
-    // El emoji es aria-hidden: el nombre accesible del radio sigue siendo
-    // exactamente la etiqueta i18n (mock identidad), no "🎬 movie".
+    // El icono es aria-hidden (svg): el nombre accesible del radio sigue
+    // siendo exactamente la etiqueta i18n (mock identidad), no el icono.
     const movie = screen.getByRole("radio", { name: "movie" });
-    expect(movie).toHaveTextContent("🎬");
-    expect(movie.querySelector('[aria-hidden="true"]')).toHaveTextContent("🎬");
+    expect(movie.querySelector('svg[aria-hidden="true"]')).toBeInTheDocument();
+    expect(movie).not.toHaveTextContent("🎬");
   });
 });

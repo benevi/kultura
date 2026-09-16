@@ -9,12 +9,16 @@
 // ============================================================
 
 import Image from "next/image";
+import { Suspense } from "react";
 import { getTranslations } from "next-intl/server";
 import type { MediaItem, StreamingProvider } from "@/types/media";
 import type { LibraryEntry } from "@/types/library";
+import type { SteamInfo } from "@/lib/api/steam";
 import { TrailerEmbed } from "./TrailerEmbed";
 import { StreamingProviders } from "./StreamingProviders";
 import { SynopsisSection } from "./SynopsisSection";
+import { TranslatedSynopsis } from "./TranslatedSynopsis";
+import { SteamSection } from "./SteamSection";
 import { LibraryAction } from "@/components/library/LibraryAction";
 import { RecommendButton } from "@/components/social/RecommendButton";
 import { AddToListButton } from "@/components/social/AddToListButton";
@@ -40,6 +44,12 @@ interface MediaDetailProps {
    * hay señal suficiente en la biblioteca del usuario para calcularlo.
    */
   matchScore?: number;
+  /**
+   * E-GAMES-STEAM: datos de tienda de Steam para la ficha de un juego. Opcional
+   * a propósito — si no se pudo resolver el `appid` con confianza llega
+   * `undefined`/`null` y la ficha se pinta sin la sección.
+   */
+  steam?: SteamInfo | null;
 }
 
 interface DetailTile {
@@ -96,6 +106,7 @@ export async function MediaDetail({
   initialEntry,
   isAuthenticated,
   matchScore,
+  steam,
 }: MediaDetailProps) {
   const t = await getTranslations("media_detail");
   const tMedia = await getTranslations("media");
@@ -283,9 +294,18 @@ export async function MediaDetail({
                 <h2 className="font-display text-xl font-bold text-text-primary mb-3">
                   {t("synopsis")}
                 </h2>
-                <SynopsisSection text={item.synopsis} />
+                {/* E-SINOPSIS-I18N: AniList, RAWG y ComicVine solo publican
+                    inglés. La traducción se resuelve fuera del render crítico
+                    — el fallback es el texto original, así que la ficha nunca
+                    espera y nunca se queda sin sinopsis. */}
+                <Suspense fallback={<SynopsisSection text={item.synopsis} />}>
+                  <TranslatedSynopsis text={item.synopsis} mediaId={item.id} />
+                </Suspense>
               </section>
             )}
+
+            {/* Steam (solo juegos, y solo si se resolvió la ficha de tienda) */}
+            {steam && <SteamSection steam={steam} />}
 
             {/* Streaming providers */}
             {providers && providers.length > 0 && (

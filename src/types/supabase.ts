@@ -14,6 +14,8 @@ export interface DbUser {
   username: string;
   avatar_color: string;
   avatar_initials: string;
+  /** E-AVATAR-ICONS: clave del catálogo de personajes. null = iniciales. */
+  avatar_icon: string | null;
   created_at: string; // timestamptz
   preferred_locale: string | null;
 }
@@ -150,6 +152,8 @@ export interface DbGroup {
   name: string;
   description: string | null;
   cover_color: string; // hex '#RRGGBB' — default '#E82020'
+  /** E-AVATAR-ICONS: mismo catálogo que los avatares. null = inicial del nombre. */
+  icon: string | null;
   is_public: boolean; // default true — grupos privados invisibles a no-miembros (E45-c)
   created_at: string; // timestamptz
 }

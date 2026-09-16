@@ -4,6 +4,8 @@ import { DiscoverClient } from "./DiscoverClient";
 interface SearchParams {
   type?: string;
   page?: string;
+  /** E-DISCOVER-SEARCH-MERGE: búsqueda de texto dentro de Descubrir. */
+  q?: string;
 }
 
 interface Props {
@@ -29,10 +31,11 @@ export default async function DiscoverPage({ searchParams }: Props) {
   const resolvedSearchParams = await searchParams;
   const type = resolvedSearchParams.type ?? "movie";
   const page = Math.max(1, parseInt(resolvedSearchParams.page ?? "1", 10) || 1);
+  const q = resolvedSearchParams.q?.trim() ?? "";
 
   return (
     <main className="max-w-6xl mx-auto px-4 md:px-8 py-8">
-      <DiscoverClient currentType={type} currentPage={page} />
+      <DiscoverClient currentType={type} currentPage={page} currentQuery={q} />
     </main>
   );
 }

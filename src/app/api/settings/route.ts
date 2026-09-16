@@ -8,6 +8,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { z } from 'zod'
 import { isValidAvatarColor, isValidLocale } from '@/lib/constants/avatarColors'
+import { isValidAvatarIcon } from '@/components/icons/avatars'
 import { checkRateLimit, LIMITS } from '@/lib/rate-limit'
 
 const PatchSchema = z.object({
@@ -25,6 +26,13 @@ const PatchSchema = z.object({
     .string()
     .refine(isValidLocale, { message: 'invalid_locale' })
     .optional(),
+  // E-AVATAR-ICONS: `null` es un valor VÁLIDO, no "no enviado" — es como se
+  // vuelve a las iniciales tras haber elegido personaje.
+  avatar_icon: z
+    .string()
+    .refine(isValidAvatarIcon, { message: 'invalid_avatar_icon' })
+    .nullable()
+    .optional(),
 })
 
 export async function GET(): Promise<NextResponse> {
@@ -36,7 +44,7 @@ export async function GET(): Promise<NextResponse> {
 
   const { data, error } = await supabase
     .from('users')
-    .select('username, avatar_color, preferred_locale')
+    .select('*')
     .eq('id', user.id)
     .single()
 
@@ -68,7 +76,7 @@ export async function PATCH(req: NextRequest): Promise<NextResponse> {
     return NextResponse.json({ error: 'Invalid data', details: parsed.error.flatten() }, { status: 400 })
   }
 
-  const { username, avatar_color, preferred_locale } = parsed.data
+  const { username, avatar_color, preferred_locale, avatar_icon } = parsed.data
 
   if (username) {
     const { data: existing } = await supabase
@@ -83,10 +91,13 @@ export async function PATCH(req: NextRequest): Promise<NextResponse> {
     }
   }
 
-  const updates: Record<string, string> = {}
+  const updates: Record<string, string | null> = {}
   if (username !== undefined) updates.username = username
   if (avatar_color !== undefined) updates.avatar_color = avatar_color
   if (preferred_locale !== undefined) updates.preferred_locale = preferred_locale
+  // `null` limpia el personaje y devuelve las iniciales — de ahí el check
+  // contra `undefined` y no la comprobación de veracidad.
+  if (avatar_icon !== undefined) updates.avatar_icon = avatar_icon
 
   if (Object.keys(updates).length === 0) {
     return NextResponse.json({ success: true, updated: {} })
@@ -96,7 +107,7 @@ export async function PATCH(req: NextRequest): Promise<NextResponse> {
     .from('users')
     .update(updates)
     .eq('id', user.id)
-    .select('username, avatar_color, preferred_locale')
+    .select('*')
     .single()
 
   if (updateError || !updated) {

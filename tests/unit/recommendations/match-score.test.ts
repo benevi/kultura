@@ -8,6 +8,16 @@ vi.mock('@/lib/supabase/server', () => ({
   createClient: vi.fn(),
 }))
 
+// E-MATCH-GENRES: la reparación de géneros vive en su propio módulo (con sus
+// propios tests); aquí solo interesa que el perfil la use.
+const { backfillGenresMock } = vi.hoisted(() => ({ backfillGenresMock: vi.fn() }))
+vi.mock('@/lib/library/backfill-genres', () => ({ backfillGenres: backfillGenresMock }))
+
+beforeEach(() => {
+  backfillGenresMock.mockReset()
+  backfillGenresMock.mockResolvedValue(new Map())
+})
+
 import {
   buildTasteProfile,
   scoreItem,
@@ -44,12 +54,13 @@ describe('buildTasteProfile', () => {
       { status: 'in_progress', score: null, media: { type: 'anime', metadata: { genres: ['Action'] } } },
     ])
     expect(profile.signalCount).toBe(3)
-    // Drama (peso 5) es el género dominante → normalizado a 1
-    expect(profile.genreWeights.get('Drama')).toBe(1)
+    // E-MATCH-VOCAB: el perfil se indexa por slug canónico, no por el nombre
+    // del proveedor. Drama (peso 5) es el género dominante → normalizado a 1
+    expect(profile.genreWeights.get('drama')).toBe(1)
     // Comedy (peso 3, status completed sin score) < Drama
-    expect(profile.genreWeights.get('Comedy')).toBeCloseTo(3 / 5)
+    expect(profile.genreWeights.get('comedia')).toBeCloseTo(3 / 5)
     // Action (peso 1, in_progress) es el más bajo
-    expect(profile.genreWeights.get('Action')).toBeCloseTo(1 / 5)
+    expect(profile.genreWeights.get('accion')).toBeCloseTo(1 / 5)
   })
 
   it('ignora filas sin media asociada (join nulo)', () => {
@@ -65,13 +76,40 @@ describe('buildTasteProfile', () => {
       { status: 'completed', score: 3, media: { type: 'tv', metadata: { genres: ['Drama'] } } },
     ])
     // Drama acumula 4+3=7, es el único género → normalizado a 1
-    expect(profile.genreWeights.get('Drama')).toBe(1)
+    expect(profile.genreWeights.get('drama')).toBe(1)
+  })
+
+  // E-MATCH-VOCAB — el motivo de existir del vocabulario canónico.
+  it('cruza proveedores e idiomas: "Acción" (TMDB es) y "Action" (AniList) son el mismo género', () => {
+    const profile = buildTasteProfile([
+      { status: 'completed', score: 5, media: { type: 'movie', metadata: { genres: ['Acción'] } } },
+      { status: 'completed', score: 5, media: { type: 'anime', metadata: { genres: ['Action'] } } },
+    ])
+    expect(profile.genreWeights.get('accion')).toBe(1)
+    expect(profile.genreWeights.size).toBe(1)
+  })
+
+  it('expande los géneros combinados de TMDB en televisión', () => {
+    const profile = buildTasteProfile([
+      { status: 'completed', score: 5, media: { type: 'tv', metadata: { genres: ['Sci-Fi & Fantasy'] } } },
+    ])
+    expect(profile.genreWeights.get('ciencia-ficcion')).toBe(1)
+    expect(profile.genreWeights.get('fantasia')).toBe(1)
+  })
+
+  it('ignora los géneros que el vocabulario canónico no cubre', () => {
+    const profile = buildTasteProfile([
+      { status: 'completed', score: 5, media: { type: 'anime', metadata: { genres: ['Mecha', 'Action'] } } },
+    ])
+    expect(profile.genreWeights.has('accion')).toBe(true)
+    expect(profile.genreWeights.size).toBe(1)
   })
 })
 
 describe('scoreItem', () => {
+  // Perfil ya en vocabulario canónico (así lo produce buildTasteProfile).
   const profile = {
-    genreWeights: new Map([['Drama', 1], ['Comedy', 0.5]]),
+    genreWeights: new Map([['drama', 1], ['comedia', 0.5]]),
     typeWeights: new Map([['movie', 1], ['tv', 0.4]]),
     signalCount: 5,
   }
@@ -287,5 +325,71 @@ describe('computeMatchScores — gate por señal insuficiente', () => {
     // Con más de un tipo en la vista, la afinidad de tipo sigue discriminando:
     // movie (tipo dominante) > tv (sin señal de tipo alguna).
     expect(scores.get('movie_1')).toBeGreaterThan(scores.get('tv_1') ?? -1)
+  })
+
+  // ── E-MATCH-GENRES ────────────────────────────────────────────────────────
+  // Bug real: las filas cacheadas antes de que se guardase el género no tenían
+  // ninguno, el perfil salía sin géneros y TODA card daba 0% MATCH.
+  describe('reparación de géneros que faltan en la biblioteca', () => {
+    const staleRows = [
+      { status: 'completed', score: 5, media: { id: 'movie_10', type: 'movie', external_id: '10', metadata: {} } },
+      { status: 'completed', score: 5, media: { id: 'movie_11', type: 'movie', external_id: '11', metadata: {} } },
+      { status: 'completed', score: 5, media: { id: 'movie_12', type: 'movie', external_id: '12', metadata: null } },
+    ]
+
+    it('los géneros reparados entran en el perfil: el score deja de ser 0', async () => {
+      backfillGenresMock.mockResolvedValue(
+        new Map([
+          ['movie_10', ['Drama']],
+          ['movie_11', ['Drama']],
+          ['movie_12', ['Comedy']],
+        ])
+      )
+
+      const scores = await computeMatchScores(
+        'user-1',
+        [
+          item({ id: 'movie_1', genres: ['Drama'], type: 'movie' }),
+          item({ id: 'movie_2', genres: ['Horror'], type: 'movie' }),
+        ],
+        makeSingleTypeSupabase(staleRows) as never
+      )
+
+      expect(scores.get('movie_1')).toBeGreaterThan(0)
+      expect(scores.get('movie_2')).toBe(0)
+    })
+
+    it('solo se intenta reparar lo que aporta señal (nada pendiente sin nota)', async () => {
+      await computeMatchScores(
+        'user-1',
+        [item()],
+        makeSingleTypeSupabase([
+          ...staleRows,
+          { status: 'pending', score: null, media: { id: 'movie_99', type: 'movie', external_id: '99', metadata: {} } },
+        ]) as never
+      )
+
+      const repaired = backfillGenresMock.mock.calls[0][0] as Array<{ id: string }>
+      expect(repaired.map((r) => r.id)).toEqual(['movie_10', 'movie_11', 'movie_12'])
+    })
+
+    it('si la reparación falla, el perfil se construye igual con lo que hay', async () => {
+      backfillGenresMock.mockRejectedValue(new Error('proveedor caído'))
+
+      const scores = await computeMatchScores(
+        'user-1',
+        [item({ id: 'movie_1', genres: ['Drama'], type: 'movie' })],
+        makeSingleTypeSupabase(staleRows) as never
+      )
+
+      // Sin géneros reparados el score es 0, pero la llamada no revienta.
+      expect(scores.get('movie_1')).toBe(0)
+    })
+
+    it('propaga el locale a la reparación (los nombres de género son localizados)', async () => {
+      await computeMatchScores('user-1', [item()], makeSingleTypeSupabase(staleRows) as never, 'en')
+
+      expect(backfillGenresMock).toHaveBeenCalledWith(expect.anything(), expect.anything(), 'en')
+    })
   })
 })
