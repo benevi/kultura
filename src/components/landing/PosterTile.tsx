@@ -1,7 +1,7 @@
 // ============================================================
-// KULTURA — Piezas de portada de la landing (E-LANDING-SHOWCASE)
+// KULTURA — Pieza de portada de la landing (E-LANDING-SHOWCASE)
 //
-// Primitivos compartidos por el hero y las tarjetas de features. Todo sale del
+// Primitivo del collage y de la tira móvil del hero. Todo sale del
 // vocabulario ya en uso (CLAUDE.md): radio `rounded-bento`/`rounded-card`,
 // sombra dura de pegatina `4px 4px 0 rgba(0,0,0,.35)`, gradiente de dos
 // paradas del mismo matiz cuando no hay imagen real, rotaciones sutiles.
@@ -33,7 +33,7 @@ function fallbackGradient(seed: string): string {
 
 export interface PosterTileProps {
   item: ShowcaseItem;
-  /** Radio: `bento` (22px) para el hero, `card` (12px) para las miniaturas. */
+  /** Radio: `bento` (22px) para el hero, `card` (12px) para piezas pequeñas. */
   radius?: "bento" | "card";
   /** `sizes` de next/image — cada sitio sabe cuánto ocupa la pieza. */
   sizes: string;
@@ -84,82 +84,6 @@ export function PosterTile({
         className="object-cover"
       />
       {children}
-    </div>
-  );
-}
-
-/**
- * Pila de portadas solapadas (estante en miniatura). Misma idea que los
- * avatares apilados de F0 — solapado con margen negativo y borde del color del
- * fondo para separar las piezas — aplicada a portadas.
- */
-export function PosterStack({ items }: { items: ShowcaseItem[] }) {
-  return (
-    <div className="flex items-end" aria-hidden="true">
-      {items.map((item, i) => (
-        <PosterTile
-          key={item.id}
-          item={item}
-          radius="card"
-          sizes="72px"
-          className={cn(
-            "w-[54px] shrink-0 ring-2 ring-surface-default",
-            i > 0 && "-ml-5"
-          )}
-          style={{
-            transform: `rotate(${i % 2 === 0 ? -4 : 3}deg)`,
-            zIndex: items.length - i,
-          }}
-        />
-      ))}
-    </div>
-  );
-}
-
-/** Fila de portadas pequeñas, sin solapar (gap del set: 8px). */
-export function PosterRow({ items }: { items: ShowcaseItem[] }) {
-  return (
-    <div className="flex items-end gap-2" aria-hidden="true">
-      {items.map((item) => (
-        <PosterTile
-          key={item.id}
-          item={item}
-          radius="card"
-          sizes="72px"
-          className="w-[48px] shrink-0"
-        />
-      ))}
-    </div>
-  );
-}
-
-/**
- * Avatares apilados (F0 §Avatares apilados): círculo con gradiente lineal de
- * dos acentos, borde del color del fondo y solapado negativo. Decorativos: no
- * representan usuarios reales, así que van sin iniciales inventadas.
- */
-const AVATAR_PAIRS = [
-  ["var(--accent-pink)", "var(--accent-purple)"],
-  ["var(--accent-lime)", "var(--accent-blue)"],
-  ["var(--accent-orange)", "var(--accent-pink)"],
-];
-
-export function StackedAvatars() {
-  return (
-    <div className="flex items-center" aria-hidden="true">
-      {AVATAR_PAIRS.map(([from, to], i) => (
-        <div
-          key={i}
-          className={cn(
-            "w-10 h-10 rounded-full border-2 border-surface-default",
-            i > 0 && "-ml-3"
-          )}
-          style={{
-            background: `linear-gradient(135deg, ${from}, ${to})`,
-            zIndex: AVATAR_PAIRS.length - i,
-          }}
-        />
-      ))}
     </div>
   );
 }

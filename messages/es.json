@@ -532,7 +532,6 @@
     "hero": {
       "tagline": "Descubre, registra y comparte tu cultura",
       "cta": "Empieza gratis",
-      "ctaSecondary": "Ver más",
       "badge": "7 formatos culturales"
     },
     "features": {
@@ -544,8 +543,7 @@
       "lists": "Listas colaborativas",
       "listsDesc": "Crea listas con amigos y descubrid cosas juntos",
       "ai": "Recomendaciones IA",
-      "aiDesc": "Descubre tu próximo favorito con ayuda de inteligencia artificial",
-      "aiBadge": "Para ti"
+      "aiDesc": "Descubre tu próximo favorito con ayuda de inteligencia artificial"
     }
   },
   "discoverFilters": {

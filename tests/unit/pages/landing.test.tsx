@@ -35,24 +35,32 @@ vi.mock("next-intl/server", () => ({
         "features.listsDesc": "Crea listas con amigos",
         "features.ai": "Recomendaciones IA",
         "features.aiDesc": "Descubre tu próximo favorito",
-        "features.aiBadge": "Para ti",
       },
     };
     return (key: string) => messages[namespace]?.[key] ?? key;
   }),
 }));
 
-// E-LANDING-SHOWCASE: la landing pide portadas reales al catálogo. En test se
-// inyectan (o se vacían, para comprobar el respaldo de gradientes).
-const { getLandingShowcase } = vi.hoisted(() => ({
-  getLandingShowcase: vi.fn(),
+// E-LANDING-SHOWCASE: los huecos de portadas son Server Components ASÍNCRONOS
+// dentro de <Suspense>, y react-dom no sabe renderizarlos en jsdom (mismo caso
+// que TranslatedSynopsis en MediaDetail). Se mockean por sus versiones
+// síncronas, con el MISMO reparto de la muestra que hacen de verdad, y el test
+// inyecta las portadas ahí.
+const { showcase } = vi.hoisted(() => ({
+  showcase: { items: [] as ShowcaseItem[] },
 }));
 
-vi.mock("@/lib/landing/showcase", () => ({
-  getLandingShowcase,
-  LANDING_SHOWCASE_SIZE: 10,
-  LANDING_SHOWCASE_MIN: 4,
-}));
+vi.mock("@/components/landing/ShowcaseSlots", async () => {
+  const { HeroCollage, HeroStrip, HERO_COLLAGE_SLOTS } = await import(
+    "@/components/landing/HeroCollage"
+  );
+  return {
+    HeroCollageSlot: ({ badge }: { badge: string }) => (
+      <HeroCollage items={showcase.items.slice(0, HERO_COLLAGE_SLOTS)} badge={badge} />
+    ),
+    HeroStripSlot: () => <HeroStrip items={showcase.items} />,
+  };
+});
 
 // Mock @/i18n/navigation
 vi.mock("@/i18n/navigation", () => ({
@@ -87,7 +95,7 @@ vi.mock("@/components/ui/Button", () => ({
 import HomePage from "@/app/[locale]/page";
 
 /** Muestra de portadas: 10 items, una por familia primero (como pickShowcase). */
-function showcase(n = 10): ShowcaseItem[] {
+function showcaseItems(n = 10): ShowcaseItem[] {
   const types = ["movie", "tv", "anime", "book", "manga", "game", "comic"] as const;
   return Array.from({ length: n }, (_, i) => ({
     id: `${types[i % types.length]}_${i}`,
@@ -99,7 +107,7 @@ function showcase(n = 10): ShowcaseItem[] {
 
 describe("Landing page", () => {
   beforeEach(() => {
-    vi.mocked(getLandingShowcase).mockResolvedValue(showcase());
+    showcase.items = showcaseItems();
   });
 
   it("renderiza sin lanzar errores", async () => {
@@ -154,6 +162,16 @@ describe("Landing page", () => {
     expect(screen.getByTestId("mock-footer")).toBeInTheDocument();
   });
 
+  // El CTA secundario ("Ver más") era un ancla a #features: con la landing en
+  // dos bloques movía la página unos píxeles. Se retiró junto con su clave.
+  it("no hay CTA secundario ni ancla a #features", async () => {
+    const PageResolved = await HomePage();
+    render(PageResolved);
+    const hrefs = screen.getAllByRole("link").map((a) => a.getAttribute("href"));
+    expect(hrefs).not.toContain("#features");
+    expect(screen.queryByText("hero.ctaSecondary")).not.toBeInTheDocument();
+  });
+
   it("los botones CTA apuntan a /login?mode=register", async () => {
     const PageResolved = await HomePage();
     render(PageResolved);
@@ -167,23 +185,22 @@ describe("Landing page", () => {
 // ── E-LANDING-SHOWCASE: portadas reales ──────────────────────────────────────
 
 describe("Landing · portadas reales", () => {
-  it("pinta portadas del catálogo en el hero y en las features", async () => {
-    vi.mocked(getLandingShowcase).mockResolvedValue(showcase());
+  it("pinta portadas del catálogo en el hero (collage + tira móvil)", async () => {
+    showcase.items = showcaseItems();
     const PageResolved = await HomePage();
     const { container } = render(PageResolved);
 
     const imgs = Array.from(container.querySelectorAll("img"));
-    // 3 del collage + 4 de la tira móvil + 3 biblioteca + 3 listas + 1 IA.
-    expect(imgs.length).toBe(14);
+    // 3 del collage de escritorio + 4 de la tira de móvil. Las tarjetas de
+    // features ya NO llevan miniaturas (solo icono centrado).
+    expect(imgs.length).toBe(7);
     expect(imgs.every((img) => img.getAttribute("src")?.includes("image.tmdb.org"))).toBe(true);
-    // Decorativas: alt vacío para no dictar 14 títulos a un lector de pantalla.
+    // Decorativas: alt vacío para no dictar siete títulos a un lector de pantalla.
     expect(imgs.every((img) => img.getAttribute("alt") === "")).toBe(true);
-    // El pill de la card de IA lleva texto real, nunca un % de match inventado.
-    expect(screen.getByText("Para ti")).toBeInTheDocument();
   });
 
   it("sin portadas se sigue renderizando (respaldo de gradientes, cero imágenes)", async () => {
-    vi.mocked(getLandingShowcase).mockResolvedValue([]);
+    showcase.items = [];
     const PageResolved = await HomePage();
     const { container } = render(PageResolved);
 
@@ -194,12 +211,11 @@ describe("Landing · portadas reales", () => {
   });
 
   it("con muestra corta, el hero cae a gradientes pero no rompe", async () => {
-    vi.mocked(getLandingShowcase).mockResolvedValue(showcase(2));
+    showcase.items = showcaseItems(2);
     const PageResolved = await HomePage();
     const { container } = render(PageResolved);
 
-    // 2 portadas no llenan ni el collage (3) ni la tira móvil (4) ni ninguna
-    // ilustración de feature (3/3/1 tras el reparto) → gradientes en todo.
+    // 2 portadas no llenan ni el collage (3) ni la tira de móvil (4).
     expect(container.querySelectorAll("img").length).toBe(0);
     expect(screen.getByText("Biblioteca personal")).toBeInTheDocument();
   });

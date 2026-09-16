@@ -319,12 +319,21 @@ con una paleta hex antigua.
     `unstable_cache` (un día) con presupuesto de tiempo duro. Una muestra
     corta LANZA a propósito: `unstable_cache` no guarda rechazos, así un
     hipo de un proveedor no congela la landing sin imágenes 24 h.
-  - `src/components/landing/PosterTile.tsx` tiene los primitivos
-    (portada con respaldo de gradiente detrás, pila solapada, fila,
-    avatares apilados). **Ninguna pantalla debe depender de que haya
-    portadas**: sin muestra, cada pieza cae a su versión de gradiente.
-  - Los badges sobre portada llevan texto real ("Para ti"), nunca un
-    porcentaje de match inventado — no hay biblioteca detrás en público.
+  - `src/components/landing/PosterTile.tsx` es el primitivo de portada
+    (imagen con respaldo de gradiente DETRÁS, así que un 404 deja color y
+    no un hueco). **Ninguna pantalla debe depender de que haya
+    portadas**: sin muestra, cada pieza cae a su versión de gradiente,
+    y por eso los huecos van dentro de `<Suspense>` con esa versión como
+    fallback (`ShowcaseSlots`) — el primer pintado no espera a ningún
+    proveedor.
+  - Las portadas se enseñan SOLO en el hero (collage en escritorio, tira
+    en móvil). Las tarjetas de features llevan únicamente su icono
+    centrado: las miniaturas que hubo ahí competían con el collage y
+    dejaban la tarjeta abarrotada.
+  - El hero tiene UN solo CTA. El secundario era un ancla a `#features`
+    que, con la landing en dos bloques, movía la página unos píxeles; y
+    el catálogo no vale de destino porque todo `(app)` redirige a login
+    sin sesión.
 
 **Pendiente:** las 13 pantallas restantes (Login, Library,
 Search, Friends, Groups, GroupDetail, Chat, Notifications, Profile,
