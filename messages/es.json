@@ -544,12 +544,8 @@
       "lists": "Listas colaborativas",
       "listsDesc": "Crea listas con amigos y descubrid cosas juntos",
       "ai": "Recomendaciones IA",
-      "aiDesc": "Descubre tu próximo favorito con ayuda de inteligencia artificial"
-    },
-    "cta": {
-      "title": "Únete a KULTURA",
-      "subtitle": "Empieza gratis. Sin tarjeta de crédito.",
-      "button": "Crear cuenta gratis"
+      "aiDesc": "Descubre tu próximo favorito con ayuda de inteligencia artificial",
+      "aiBadge": "Para ti"
     }
   },
   "discoverFilters": {
