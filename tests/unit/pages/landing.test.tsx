@@ -8,8 +8,6 @@ vi.mock("next-intl/server", () => ({
       landing: {
         "hero.tagline": "Descubre, registra y comparte tu cultura",
         "hero.cta": "Empieza gratis",
-        "what.title": "Todo tu universo cultural, en un solo lugar",
-        "what.description": "Lleva el registro de las películas que has visto",
         "features.title": "Todo lo que necesitas",
         "features.library": "Biblioteca personal",
         "features.libraryDesc": "Registra lo que has visto",
@@ -74,12 +72,16 @@ describe("Landing page", () => {
     ).toBeInTheDocument();
   });
 
-  it("muestra el título de la sección what", async () => {
+  // E-LANDING-TRIM: la sección "what" era una reformulación del tagline del
+  // hero y de las propias features — se eliminó, y sus claves de mensaje con
+  // ella. Si vuelve a aparecer, es que se ha reintroducido texto redundante.
+  it("ya no renderiza la sección what", async () => {
     const PageResolved = await HomePage();
     render(PageResolved);
+    expect(screen.queryByText("what.title")).not.toBeInTheDocument();
     expect(
-      screen.getByText("Todo tu universo cultural, en un solo lugar")
-    ).toBeInTheDocument();
+      screen.queryByText("Todo tu universo cultural, en un solo lugar")
+    ).not.toBeInTheDocument();
   });
 
   it("muestra el título de la sección features", async () => {
