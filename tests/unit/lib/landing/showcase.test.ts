@@ -34,13 +34,18 @@ describe("pickShowcase", () => {
   it("pone primero un item de cada tipo (el hero no sale con 3 películas)", () => {
     // Entrada dominada por movie: sin el reparto por tipo, el collage del hero
     // (3 piezas) se llevaría tres películas seguidas.
-    const picked = pickShowcase([
-      item("m1", "movie"),
-      item("m2", "movie"),
-      item("m3", "movie"),
-      item("b1", "book"),
-      item("g1", "game"),
-    ]);
+    // Tamaño explícito: aquí se comprueba el ORDEN, no el tope (que por
+    // defecto es LANDING_SHOWCASE_SIZE = lo que consume el hero).
+    const picked = pickShowcase(
+      [
+        item("m1", "movie"),
+        item("m2", "movie"),
+        item("m3", "movie"),
+        item("b1", "book"),
+        item("g1", "game"),
+      ],
+      5
+    );
     expect(picked.slice(0, 3).map((p) => p.type)).toEqual([
       "movie",
       "book",
