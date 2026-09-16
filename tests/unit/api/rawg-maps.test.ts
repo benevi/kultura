@@ -9,6 +9,9 @@ import {
   buildRawgDiscoverParams,
   rawgOrdering,
   rawgDates,
+  rawgDatesWindow,
+  rawgIsoDay,
+  RAWG_CATALOG_START,
   filterGamesByValoracion,
   filterGamesByEstado,
   filterGamesByModojuego,
@@ -48,6 +51,44 @@ describe("rawgOrdering", () => {
   });
 });
 
+// ── rawgDatesWindow (E-GAMES-FUTURO) ─────────────────────────────────────────
+//
+// El bug: "Más recientes" en juegos listaba fichas de 2027-2033 (RAWG acepta
+// fechas de lanzamiento inventadas de la comunidad) porque `ordering=-released`
+// sin `dates` las pone justo en la primera página. La ventana acota por arriba.
+
+describe("rawgDatesWindow", () => {
+  const today = new Date("2026-09-16T10:00:00Z");
+
+  it("sin año → desde el inicio del catálogo hasta hoy", () => {
+    expect(rawgDatesWindow(null, today)).toBe("1970-01-01,2026-09-16");
+  });
+
+  it("año en curso → se recorta a hoy (no trae el resto del año)", () => {
+    expect(rawgDatesWindow("2026", today)).toBe("2026-01-01,2026-09-16");
+  });
+
+  it("año ya cerrado → rango íntegro, sin tocar", () => {
+    expect(rawgDatesWindow("2024", today)).toBe("2024-01-01,2024-12-31");
+    expect(rawgDatesWindow("classic", today)).toBe("1900-01-01,1999-12-31");
+  });
+
+  it("década en curso → recortada a hoy; década cerrada → íntegra", () => {
+    expect(rawgDatesWindow("2020s", today)).toBe("2020-01-01,2026-09-16");
+    expect(rawgDatesWindow("2000s", today)).toBe("2000-01-01,2009-12-31");
+  });
+
+  it("año inválido → misma ventana que sin año (nunca lanza)", () => {
+    expect(rawgDatesWindow("abc", today)).toBe("1970-01-01,2026-09-16");
+  });
+
+  it("rango enteramente futuro → se respeta (no se invierte la ventana)", () => {
+    // La UI no ofrece años futuros, pero si algún día los ofreciera, devolver
+    // `2030-01-01,2026-09-16` sería un catálogo vacío en vez de un filtro.
+    expect(rawgDatesWindow("2030", today)).toBe("2030-01-01,2030-12-31");
+  });
+});
+
 // ── dates ────────────────────────────────────────────────────────────────────
 
 describe("rawgDates", () => {
@@ -66,10 +107,13 @@ describe("rawgDates", () => {
 // ── buildRawgDiscoverParams ──────────────────────────────────────────────────
 
 describe("buildRawgDiscoverParams", () => {
-  it("sin filtros → ordering default + exclude_tags NSFW (E86)", () => {
+  it("sin filtros → ordering default + exclude_tags NSFW (E86) + ventana de fechas", () => {
     expect(buildRawgDiscoverParams()).toEqual({
       ordering: "-added",
       exclude_tags: "nsfw,adult,hentai,sexual-content,porn",
+      // E-GAMES-FUTURO: `dates` pasa a ser incondicional (antes solo aparecía
+      // con filtro de año) para que el catálogo nunca llegue al futuro.
+      dates: `${RAWG_CATALOG_START},${rawgIsoDay(new Date())}`,
     });
   });
 
@@ -93,9 +137,23 @@ describe("buildRawgDiscoverParams", () => {
     expect(p.platforms).toBe("4,187,7");
   });
 
-  it("año → dates rango", () => {
+  // E-GAMES-FUTURO: el builder ya no copia el rango del año tal cual — lo pasa
+  // por rawgDatesWindow, que recorta el extremo superior a hoy. La década en
+  // curso (2020s → 2029-12-31) es justo el caso donde se nota.
+  it("año → dates rango, recortado a hoy si el rango llega al futuro", () => {
     const p = buildRawgDiscoverParams({ year: "2020s" });
-    expect(p.dates).toBe("2020-01-01,2029-12-31");
+    const today = rawgIsoDay(new Date());
+    expect(p.dates).toBe(`2020-01-01,${today}`);
+  });
+
+  it("año pasado → dates rango íntegro", () => {
+    const p = buildRawgDiscoverParams({ year: "2010s" });
+    expect(p.dates).toBe("2010-01-01,2019-12-31");
+  });
+
+  it("sin filtro de año → ventana [inicio de catálogo, hoy]", () => {
+    const p = buildRawgDiscoverParams({ sort: "release_desc" });
+    expect(p.dates).toBe(`${RAWG_CATALOG_START},${rawgIsoDay(new Date())}`);
   });
 
   it("sort → ordering", () => {
@@ -115,8 +173,9 @@ describe("buildRawgDiscoverParams", () => {
     expect(p.genres).toBe("action");
     expect(p.status).toBeUndefined();
     expect(p.horas).toBeUndefined();
-    // Solo ordering + genres + exclude_tags (E86), nada más.
+    // Solo ordering + genres + exclude_tags (E86) + dates (E-GAMES-FUTURO).
     expect(Object.keys(p).sort()).toEqual([
+      "dates",
       "exclude_tags",
       "genres",
       "ordering",
@@ -141,6 +200,7 @@ describe("buildRawgDiscoverParams", () => {
       valoracion: "8",
     });
     expect(Object.keys(p).sort()).toEqual([
+      "dates",
       "exclude_tags",
       "genres",
       "ordering",
