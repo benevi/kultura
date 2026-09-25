@@ -59,6 +59,9 @@ vi.mock("@/lib/api/rawg", () => ({
 
 vi.mock("@/lib/api/comicvine", () => ({
   getRecentComics: vi.fn(),
+  // E-COMIC-VENTANA: `discover` divide el total por lo que cada página CONSUME
+  // del proveedor (3 ventanas de 100), no por lo que enseña.
+  COMIC_PAGE_STRIDE: 300,
 }));
 
 vi.mock("@/lib/api/normalizer", () => ({
@@ -689,10 +692,13 @@ describe("fetchDiscoverData — hasMore (E79 slice 1)", () => {
     expect((await fetchDiscoverData("book", 3)).hasMore).toBe(false);
   });
 
-  it("comic: hasMore desde ceil(total/20)", async () => {
+  // E-COMIC-VENTANA: cada página consume 300 issues del proveedor, así que el
+  // conteo de páginas divide por 300. Dividir por 20 anunciaba 15 veces más
+  // páginas de las que existen, y las de más salían vacías.
+  it("comic: hasMore desde ceil(total/zancada)", async () => {
     vi.mocked(getRecentComics).mockResolvedValue({
       items: [{ id: "comic_1", title: "C" }] as never[],
-      total: 50, // ceil(50/20)=3
+      total: 750, // ceil(750/300) = 3 páginas
     } as never);
 
     expect((await fetchDiscoverData("comic", 2)).hasMore).toBe(true);

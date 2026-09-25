@@ -402,6 +402,19 @@ instrucciones operativas de la cabecera de este documento.
     igualdad, sin rango, así que ahí el tope es un post-filtro
     (`dropFutureYears`) de tipo marginal — como el NSFW global, no cuenta
     en `hasActivePostFilter`.
+  - **Cómic necesitó ventana ampliada** (E-COMIC-VENTANA). El tope no
+    rompió nada, pero DESTAPÓ que el filtro de editoriales se come el
+    grueso de lo reciente: sin tope, los 100 primeros por `cover_date:desc`
+    eran solicitaciones futuras de grandes editoriales americanas (que
+    sobreviven bien); con tope pasaron a ser los 100 más recientes ya
+    publicados, donde ComicVine está lleno de manga que el filtro descarta
+    → la página 1 se quedó en CINCO cómics. Ahora cada página mira hasta
+    3 ventanas de 100 y para en cuanto junta 20. Dos cosas que van juntas:
+    el presupuesto está acotado a propósito (ComicVine limita a ~200
+    peticiones/hora, y cada ventana cuesta 2: issues + volúmenes), y el
+    conteo de páginas divide por lo que la página CONSUME (300), no por lo
+    que enseña (20) — dividir por 20 anunciaba 15 veces más páginas de las
+    que existen.
 
 - **Keep-alive de Supabase** (E-KEEPALIVE). `/api/health` hace una consulta
   real a la base (`profiles`, `head:true`) y `vercel.json` la llama con un

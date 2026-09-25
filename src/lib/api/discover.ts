@@ -40,7 +40,7 @@ import {
   applyGamePostFilters,
   type RawgFilters,
 } from "@/lib/api/rawg-maps";
-import { getRecentComics } from "@/lib/api/comicvine";
+import { getRecentComics, COMIC_PAGE_STRIDE } from "@/lib/api/comicvine";
 import {
   hasComicFilters,
   type ComicFilters,
@@ -382,8 +382,13 @@ function isRateLimitError(e: unknown): boolean {
         items = res.items;
         // E79-s3: antes SIN cap (se exponían todas las páginas que reporta
         // ComicVine; en offsets muy altos la API devuelve vacío). Ahora cap común.
+        //
+        // E-COMIC-VENTANA: se divide por lo que cada página CONSUME del
+        // proveedor (300 issues), no por lo que enseña (20). Dividir por 20
+        // anunciaba 15 veces más páginas de las que existen, y las de más
+        // salían vacías.
         totalPages = Math.min(
-          Math.max(Math.ceil(res.total / 20), 1),
+          Math.max(Math.ceil(res.total / COMIC_PAGE_STRIDE), 1),
           DISCOVER_MAX_PAGES
         );
         hasMore = page < totalPages;
