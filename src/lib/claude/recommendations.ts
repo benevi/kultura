@@ -313,6 +313,10 @@ Reglas:
 - "reason" es una frase corta (máx. 140 caracteres) dirigida al usuario,
   explicando por qué le va a gustar ESE título en concreto conectándolo con su
   biblioteca o sus géneros favoritos. Va en el idioma indicado arriba.
+- NUNCA menciones el % de match ni ningún número de afinidad en "reason"
+  (E-MATCH-SIN-BADGE): ese porcentaje es un criterio INTERNO y se retiró de
+  toda la interfaz. Di QUÉ comparte con lo que ya disfruta ("misma comedia
+  coral que X"), no cuánto puntúa.
 
 Responde ÚNICAMENTE con JSON válido. Sin markdown, sin texto adicional:
 {
