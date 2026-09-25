@@ -43,6 +43,14 @@ memoria de una conversación concreta y saber en todo momento cómo actuar.
 - **No fusionar/mergear la PR sin autorización explícita y fresca del
   usuario** para esa PR en concreto — una aprobación anterior no vale
   automáticamente para el siguiente push.
+- **Documentación del proyecto** (`docs/`): el plan, las reglas y el
+  estado por fases viven en `docs/README.md`. Lector objetivo: el usuario,
+  programador júnior que quiere entender todo lo hecho → tono didáctico,
+  cada concepto explicado. Manda el código; cada afirmación cita su fuente
+  (fichero:línea, commit, migración o `git show ab8eb4e^:<doc antiguo>`).
+  `docs/_trazabilidad.md` es generado (`python3
+  scripts/docs/build-trazabilidad.py`), no se edita a mano. Un capítulo
+  por commit, prefijo `[docs]`.
 
 ---
 
