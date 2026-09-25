@@ -9,7 +9,7 @@ import { normalizeComic } from "@/lib/api/normalizer";
 import { env } from "@/lib/env";
 import {
   comicSort,
-  comicCoverDateRange,
+  comicCoverDateWindow,
   mapPublisherSubstrings,
   type ComicFilters,
 } from "@/lib/api/comicvine-maps";
@@ -214,10 +214,16 @@ async function comicVineFetch<T>(
  * Busca issues de cómic. Usa el endpoint /issues con filtro por nombre,
  * que devuelve la carátula (image) directamente, a diferencia de /search.
  */
-export async function searchComics(query: string): Promise<ComicVineSearchResponse> {
+export async function searchComics(
+  query: string,
+  page = 1
+): Promise<ComicVineSearchResponse> {
   return comicVineFetch<ComicVineSearchResponse>("/issues/", {
     filter: `name:${query}`,
     limit: "20",
+    // E-DISCOVER-SEARCH-MERGE: paginación por offset, el mismo mecanismo que ya
+    // usa `getRecentComics`. Antes solo servía la primera página.
+    offset: String((page - 1) * 20),
     sort: "cover_date:desc",
     field_list: "id,name,issue_number,cover_date,store_date,deck,description,image,volume",
   });
@@ -290,30 +296,89 @@ function getVolumeCounts(volumeIds: number[]): Map<number, number> {
   return result;
 }
 
+/** Tope de resultados por petición de ComicVine. */
+export const COMIC_WINDOW = 100;
+
+/**
+ * Ventanas de 100 que puede mirar UNA página antes de rendirse
+ * (E-COMIC-VENTANA). Cada página cubre por tanto `COMIC_WINDOW *
+ * COMIC_WINDOWS_PER_PAGE` issues del proveedor.
+ */
+export const COMIC_WINDOWS_PER_PAGE = 3;
+
+/** Issues que se enseñan por página. */
+export const COMIC_PAGE_SIZE = 20;
+
+/** Issues del proveedor que consume cada página (= su zancada de offset). */
+export const COMIC_PAGE_STRIDE = COMIC_WINDOW * COMIC_WINDOWS_PER_PAGE;
+
 /**
  * Issues recientes ordenados por fecha de portada descendente, excluyendo manga
  * y sellos adultos/eróticos (catálogo mundial de cómic: US + BD europea + UK + ES
- * + clásicos). Fetchea limit=100 para compensar el filtrado y normaliza hasta 20
- * issues. Issues sin publisher resuelto se descartan (la mayoría del manga llega así).
- * Paginado vía offset (page-1)*100.
+ * + clásicos). Issues sin publisher resuelto se descartan (la mayoría del manga
+ * llega así).
+ *
+ * E-COMIC-VENTANA: una página mira hasta TRES ventanas de 100 y para en cuanto
+ * junta 20 items. Antes miraba una sola, y con el tope de fechas
+ * (E-CATALOGO-FUTURO) eso dejó la página 1 en CINCO cómics: sin tope, los 100
+ * primeros por `cover_date:desc` eran solicitaciones futuras de las grandes
+ * editoriales americanas —que sobreviven bien al filtro—, y con tope pasaron a
+ * ser los 100 más recientes ya publicados, donde ComicVine está lleno de
+ * volúmenes de manga que el filtro descarta. El tope no rompió nada: destapó
+ * que el filtro se come el grueso de lo que de verdad es reciente.
+ *
+ * El coste está acotado a propósito (ComicVine limita a ~200 peticiones/hora):
+ * como mucho 3 peticiones de issues + 3 de volúmenes por página, y se corta en
+ * cuanto hay suficiente o el proveedor se queda sin resultados.
  */
 export async function getRecentComics(
   page: number = 1,
   filters: ComicFilters = {}
 ): Promise<{ items: MediaItem[]; total: number }> {
+  const baseOffset = (page - 1) * COMIC_PAGE_STRIDE;
+  const collected: MediaItem[] = [];
+  let total = 0;
+
+  for (let window = 0; window < COMIC_WINDOWS_PER_PAGE; window++) {
+    const batch = await fetchComicWindow(
+      baseOffset + window * COMIC_WINDOW,
+      filters
+    );
+    total = batch.total || total;
+    collected.push(...batch.items);
+
+    // Suficiente para llenar la página, o el proveedor ya no tiene más que dar.
+    if (collected.length >= COMIC_PAGE_SIZE || !batch.hasMore) break;
+  }
+
+  return { items: collected.slice(0, COMIC_PAGE_SIZE), total };
+}
+
+/**
+ * Una ventana de `COMIC_WINDOW` issues ya post-filtrados. `hasMore` dice si el
+ * proveedor devolvió la ventana COMPLETA (y por tanto puede quedar más detrás),
+ * no si sobrevivió algo — son cosas distintas y confundirlas era lo que dejaba
+ * la paginación mintiendo.
+ */
+async function fetchComicWindow(
+  offset: number,
+  filters: ComicFilters
+): Promise<{ items: MediaItem[]; total: number; hasMore: boolean }> {
   // Con filtros → sort dinámico + filter cover_date si year. Sin filtros →
   // params idénticos a hoy (paridad). genre sigue oculto para comic.
   const params: Record<string, string> = {
     sort: comicSort(filters.sort),
-    limit: "100",
-    offset: String((page - 1) * 100),
+    limit: String(COMIC_WINDOW),
+    offset: String(offset),
     field_list: "id,name,issue_number,cover_date,store_date,deck,image,volume",
   };
-  const coverDate = comicCoverDateRange(filters.year);
-  if (coverDate) params.filter = coverDate;
+  // E-CATALOGO-FUTURO: `filter` de fecha SIEMPRE presente (antes solo con año).
+  // Las portadas se fechan con meses de adelanto, así que sin tope la primera
+  // página de "Más recientes" son números que aún no han salido.
+  params.filter = comicCoverDateWindow(filters.year);
 
   const resp = await comicVineFetch<ComicVineSearchResponse>("/issues/", params);
-  if (!resp.results) return { items: [], total: 0 };
+  if (!resp.results) return { items: [], total: 0, hasMore: false };
 
   const volumeIds = resp.results
     .map((issue) => issue.volume?.id)
@@ -355,7 +420,8 @@ export async function getRecentComics(
   });
 
   return {
-    items: nonManga.slice(0, 20).map(normalizeComic),
+    items: nonManga.map(normalizeComic),
     total: resp.number_of_total_results ?? 0,
+    hasMore: resp.results.length >= COMIC_WINDOW,
   };
 }

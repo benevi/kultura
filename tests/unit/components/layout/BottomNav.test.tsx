@@ -91,7 +91,9 @@ describe('BottomNav', () => {
     expect(discoverLink?.className).toContain('text-text-secondary')
   })
 
-  it('click en "Más" abre el sheet (muestra friends, groups, lists, suggestions, search)', () => {
+  // E-DISCOVER-SEARCH-MERGE: el sheet ya no lleva "Buscar" (el buscador vive
+  // dentro de /discover, que es una de las 5 celdas de la barra).
+  it('click en "Más" abre el sheet (muestra friends, groups, lists, suggestions)', () => {
     render(<BottomNav />)
     expect(screen.queryByTestId('more-sheet-panel')).not.toBeInTheDocument()
     fireEvent.click(screen.getByText('Más'))
@@ -100,7 +102,7 @@ describe('BottomNav', () => {
     expect(screen.getByText('Grupos')).toBeInTheDocument()
     expect(screen.getByText('Listas')).toBeInTheDocument()
     expect(screen.getByText('Sugerencias')).toBeInTheDocument()
-    expect(screen.getByText('Buscar')).toBeInTheDocument()
+    expect(screen.queryByText('Buscar')).not.toBeInTheDocument()
   })
 
   it('"Más" se marca activo (accent) mientras el sheet está abierto', () => {

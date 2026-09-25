@@ -113,6 +113,29 @@ describe("MangaDex contract — /manga?title=", () => {
   });
 });
 
+// E-MANGADEX-LOCALE: contrato del filtro de idioma que usa `mangadex.ts`.
+// (No ejecutable en el entorno de agente de 2026-09-12: la política de egress
+// bloquea api.mangadex.org. Se ejecuta donde haya salida a internet.)
+describe("MangaDex contract — availableTranslatedLanguage[]", () => {
+  it("acepta varios códigos de idioma (OR) y devuelve resultados", async () => {
+    const data = await mangadexFetch(
+      "/manga?limit=5&includes[]=cover_art&order[followedCount]=desc" +
+        "&availableTranslatedLanguage[]=es&availableTranslatedLanguage[]=es-la"
+    );
+    const result = MangaSearchResponseSchema.safeParse(data);
+    expect(result.success, result.error?.message).toBe(true);
+    if (result.success) expect(result.data.data.length).toBeGreaterThan(0);
+  });
+
+  it("order[followedCount]=desc es la sintaxis válida de orden (v5)", async () => {
+    const data = await mangadexFetch(
+      "/manga?limit=3&order[followedCount]=desc"
+    );
+    const result = MangaSearchResponseSchema.safeParse(data);
+    expect(result.success, result.error?.message).toBe(true);
+  });
+});
+
 describe("MangaDex contract — /manga/{id} (detalle)", () => {
   // One Piece — id estable en MangaDex
   const MANGA_ID = "a1c7c817-4e59-43b7-9365-09675a149a6f";

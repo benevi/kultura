@@ -7,6 +7,7 @@ import { useRouter, Link } from '@/i18n/navigation'
 import { FilterChip } from '@/components/ui/FilterChip'
 import { KButton } from '@/components/ui/KButton'
 import { MediaGrid } from '@/components/media/MediaGrid'
+import { IconLibrary } from '@/components/icons'
 import type { LibraryEntry } from '@/types/library'
 import type { MediaItem, MediaType } from '@/types/media'
 
@@ -62,10 +63,10 @@ function EmptyLibrary({ t }: { t: ReturnType<typeof useTranslations<'library'>> 
   return (
     <div className="flex flex-col items-center justify-center py-20 px-4 text-center gap-5">
       <div
-        className="w-20 h-20 rounded-bento bg-surface-elevated flex items-center justify-center text-4xl select-none"
+        className="w-20 h-20 rounded-bento bg-surface-elevated flex items-center justify-center"
         aria-hidden="true"
       >
-        📚
+        <IconLibrary className="w-9 h-9 text-text-tertiary" />
       </div>
       <div className="flex flex-col gap-2 max-w-sm">
         <h2 className="font-display text-xl font-semibold text-text-primary">

@@ -4,12 +4,13 @@ import { NavLinks } from '@/components/layout/NavLinks'
 import { AvatarDropdown } from '@/components/layout/AvatarDropdown'
 import { LanguageSwitcher } from '@/components/layout/LanguageSwitcher'
 import { Logo } from '@/components/layout/Logo'
-import { IconSearch, IconBell } from '@/components/icons'
+import { IconBell } from '@/components/icons'
 
 interface UserProfile {
   username: string
   avatar_color: string
   avatar_initials: string
+  avatar_icon?: string | null
 }
 
 interface AuthHeaderProps {
@@ -33,14 +34,9 @@ export async function AuthHeader({ profile, unreadCount }: AuthHeaderProps) {
 
         {/* Right icons */}
         <div className="flex items-center gap-1.5 ml-auto">
-          {/* Search — desktop only */}
-          <Link
-            href="/search"
-            aria-label={t('search')}
-            className="hidden md:flex items-center justify-center w-8 h-8 text-muted hover:text-text hover:bg-surface2 rounded-md transition-colors"
-          >
-            <IconSearch className="w-[18px] h-[18px]" />
-          </Link>
+          {/* E-DISCOVER-SEARCH-MERGE: el icono de lupa se retiró del header —
+              el buscador vive dentro de /discover (entrada "Descubrir" de la
+              nav), así que un acceso aparte duplicaba el mismo destino. */}
 
           {/* Notifications bell — visible on all viewports */}
           <Link
@@ -64,6 +60,7 @@ export async function AuthHeader({ profile, unreadCount }: AuthHeaderProps) {
             username={profile.username}
             avatarColor={profile.avatar_color}
             avatarInitials={profile.avatar_initials}
+            avatarIcon={profile.avatar_icon ?? null}
           />
         </div>
       </div>

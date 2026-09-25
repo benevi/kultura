@@ -13,12 +13,28 @@ export interface SearchBarProps {
   defaultValue?: string;
   placeholder?: string;
   className?: string;
+  /**
+   * E-DISCOVER-SEARCH-MERGE: qué hace el submit (Enter o clic en una sugerencia).
+   *  - `"navigate"` (default): navega a `/search?q=…` — comportamiento histórico,
+   *    que hoy usa `/discover` como destino vía el redirect de `/search`.
+   *  - `"inline"`: NO navega; delega en `onSubmit` para que el consumidor
+   *    actualice sus propios query params. Es el modo que usa Descubrir, donde
+   *    buscar debe quedarse en la misma pantalla (mismo grid, misma paginación).
+   */
+  mode?: "navigate" | "inline";
+  /** Requerido en `mode="inline"`. Recibe la query ya trimeada. */
+  onSubmit?: (query: string) => void;
+  /** Se llama al vaciar el input en `mode="inline"` (volver al catálogo). */
+  onClear?: () => void;
 }
 
 export function SearchBar({
   defaultValue = "",
   placeholder,
   className,
+  mode = "navigate",
+  onSubmit,
+  onClear,
 }: SearchBarProps) {
   const t = useTranslations("search");
   const router = useRouter();
@@ -30,10 +46,18 @@ export function SearchBar({
 
   const containerRef = useRef<HTMLDivElement>(null);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // ¿Ha escrito el usuario en ESTA instancia? Con `defaultValue` (Descubrir
+  // rellena el input con la query activa de la URL), el efecto de debounce se
+  // disparaba al montar y el desplegable de sugerencias aparecía solo, tapando
+  // la barra al entrar en /discover?q=…  Solo se piden sugerencias cuando hay
+  // escritura real.
+  const hasTypedRef = useRef(false);
 
   // Debounce: fetch suggestions 400ms after user stops typing
   useEffect(() => {
     if (debounceRef.current) clearTimeout(debounceRef.current);
+
+    if (!hasTypedRef.current) return;
 
     if (inputValue.length < 2) {
       setSuggestions([]);
@@ -79,20 +103,39 @@ export function SearchBar({
     return () => document.removeEventListener("mousedown", handleMouseDown);
   }, []);
 
+  /** Submit unificado: en `inline` delega; en `navigate` sigue empujando ruta. */
+  function submit(query: string, type?: MediaItem["type"]) {
+    const trimmed = query.trim();
+    if (trimmed.length === 0) return;
+    setOpen(false);
+    if (mode === "inline") {
+      onSubmit?.(trimmed);
+      return;
+    }
+    router.push(
+      `/search?q=${encodeURIComponent(trimmed)}&type=${type ?? "all"}`
+    );
+  }
+
   function handleKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
     if (e.key === "Escape") {
       setOpen(false);
-    } else if (e.key === "Enter" && inputValue.trim().length > 0) {
-      setOpen(false);
-      router.push(`/search?q=${encodeURIComponent(inputValue.trim())}&type=all`);
+    } else if (e.key === "Enter") {
+      submit(inputValue);
     }
   }
 
   function handleSelectSuggestion(item: MediaItem) {
-    setOpen(false);
-    router.push(
-      `/search?q=${encodeURIComponent(item.title)}&type=${item.type}`
-    );
+    // En inline se busca por el TÍTULO de la sugerencia (el tipo lo gobierna el
+    // selector de tipo de Descubrir, que el usuario ya tiene a la vista).
+    setInputValue(item.title);
+    submit(item.title, item.type);
+  }
+
+  function handleChange(value: string) {
+    setInputValue(value);
+    // Vaciar el input en inline = volver al catálogo, sin tener que pulsar Enter.
+    if (mode === "inline" && value.trim().length === 0) onClear?.();
   }
 
   const resolvedPlaceholder = placeholder ?? t("placeholder");
@@ -107,7 +150,7 @@ export function SearchBar({
         <input
           type="search"
           value={inputValue}
-          onChange={(e) => setInputValue(e.target.value)}
+          onChange={(e) => handleChange(e.target.value)}
           onKeyDown={handleKeyDown}
           placeholder={resolvedPlaceholder}
           aria-label={resolvedPlaceholder}

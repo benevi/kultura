@@ -74,13 +74,10 @@ describe("MediaGrid", () => {
     expect(screen.getByText("Movie 2")).toBeInTheDocument();
   });
 
-  // F3a→F3b: matchScores se propaga a cada MediaCard por id.
-  it("propaga matchScores a cada MediaCard por id", () => {
-    const items = [makeItem(1), makeItem(2)];
-    const matchScores = new Map([["movie_1", 92]]);
-    render(<MediaGrid items={items} matchScores={matchScores} />);
-    const badges = screen.getAllByTestId("media-match-badge");
-    expect(badges).toHaveLength(1);
-    expect(badges[0]).toHaveTextContent("92% MATCH");
+  // E-MATCH-SIN-BADGE: el grid ya no recibe ni propaga puntuaciones de match;
+  // ninguna card pinta el porcentaje.
+  it("no pinta badges de match en ninguna card", () => {
+    render(<MediaGrid items={[makeItem(1), makeItem(2)]} />);
+    expect(screen.queryAllByTestId("media-match-badge")).toHaveLength(0);
   });
 });

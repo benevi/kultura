@@ -25,11 +25,6 @@ export interface MediaCardProps {
   showType?: boolean;
   priority?: boolean;
   className?: string;
-  /**
-   * Match score real 0-100 (F3a, `computeMatchScores`). Ausente = sin badge —
-   * nunca un número decorativo cuando no hay señal suficiente para calcularlo.
-   */
-  matchScore?: number;
   /** 'fill' para grid bento (la imagen ocupa el alto que le da la celda del grid). Default '2/3'. */
   aspect?: "2/3" | "fill";
   /**
@@ -46,7 +41,6 @@ export function MediaCard({
   showType = false,
   priority = false,
   className,
-  matchScore,
   aspect = "2/3",
   accentHue,
 }: MediaCardProps) {
@@ -98,27 +92,19 @@ export function MediaCard({
             />
           )}
 
-          {/* Scrim para que título/badges se lean sobre cualquier poster */}
-          <div className="absolute inset-x-0 bottom-0 h-2/3 bg-gradient-to-t from-black/85 via-black/25 to-transparent pointer-events-none" />
+          {/* E-MATCH-SIN-BADGE: el porcentaje de afinidad ya no se pinta en
+              ninguna superficie. El match SIGUE calculándose y es el criterio
+              con el que la IA elige las recomendaciones (`recommendations.ts`);
+              lo que se retira es la etiqueta, no el motor.
 
-          {/* Badge de match real (F3a) — solo si hay score calculado */}
-          {matchScore !== undefined && (
-            <div
-              data-testid="media-match-badge"
-              className="absolute top-2 left-2 rounded-full bg-accent-positive text-on-accent-positive text-[11px] font-display font-extrabold px-2.5 py-1 leading-none shadow-md"
-            >
-              {matchScore}% MATCH
-            </div>
-          )}
+              Scrim para que título/badges se lean sobre cualquier poster */}
+          <div className="absolute inset-x-0 bottom-0 h-2/3 bg-gradient-to-t from-black/85 via-black/25 to-transparent pointer-events-none" />
 
           {/* Type badge overlay (modo "all", R5b) */}
           {showType && (
             <div
               data-testid="media-type-badge"
-              className={cn(
-                "absolute left-2 rounded-full bg-surface-base/80 backdrop-blur-sm text-text-primary text-[10px] font-semibold px-2 py-1 leading-none",
-                matchScore !== undefined ? "top-9" : "top-2"
-              )}
+              className="absolute top-2 left-2 rounded-full bg-surface-base/80 backdrop-blur-sm text-text-primary text-[10px] font-semibold px-2 py-1 leading-none"
             >
               {tBadge(item.type)}
             </div>

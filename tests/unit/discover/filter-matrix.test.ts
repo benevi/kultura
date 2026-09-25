@@ -5,10 +5,10 @@
 //   1) Catálogo correcto por par (getFilterOptions usa el map del tipo, no otro).
 //   2) Cableado por par: nativos → el builder emite el param real; post-filtros →
 //      existe la fn y filtra (keep/drop con item mock).
-//   3) Negativos política A: los 6 pares ocultos NO están en TYPE_FILTERS.
+//   3) Negativos política A: los 8 pares ocultos NO están en TYPE_FILTERS.
 //   4) Bridges naming resueltos en parseDiscoverParams.
 //
-// Cualquier par recorrido sin catálogo o sin cableado que NO esté en los 6 ocultos
+// Cualquier par recorrido sin catálogo o sin cableado que NO esté en los 8 ocultos
 // es un agujero real → el test FALLA (no se silencia con skip).
 // ============================================================
 
@@ -25,11 +25,9 @@ import {
   TMDB_GENRE_MOVIE,
   TMDB_GENRE_TV,
   TMDB_PROVIDER,
-  TMDB_LANGUAGE,
   TMDB_DURACION,
 } from "@/lib/api/tmdb-maps";
 import {
-  buildJikanDiscoverParams,
   filterByMinVolumes,
   VOLUMENES_MIN,
   JIKAN_GENRE,
@@ -37,6 +35,8 @@ import {
   ANIME_STATUS,
   MANGA_STATUS,
 } from "@/lib/api/jikan-maps";
+import { buildAniListDiscoverParams } from "@/lib/api/anilist-maps";
+import { buildMangaDexDiscoverParams } from "@/lib/api/mangadex-maps";
 import {
   buildRawgDiscoverParams,
   filterGamesByValoracion,
@@ -49,7 +49,7 @@ import {
   DURACIONMEDIA_BUCKETS,
 } from "@/lib/api/rawg-maps";
 import {
-  buildOpenLibraryQuery,
+  buildGoogleBooksQuery,
   BOOKS_GENRE,
   BOOKS_FORMATO,
   BOOKS_PUBLISHER,
@@ -74,7 +74,7 @@ function item(type: MediaItem["type"], metadata: Record<string, unknown>): Media
   return { id: `${type}_x`, externalId: "x", type, title: "x", metadata };
 }
 
-// Los 6 pares OCULTOS (política A). Fuente única para los bloques 1/2/3.
+// Los 8 pares OCULTOS (política A). Fuente única para los bloques 1/2/3.
 const HIDDEN_PAIRS = new Set([
   "valoracion@book",
   "valoracion@comic",
@@ -82,6 +82,8 @@ const HIDDEN_PAIRS = new Set([
   "estado@comic",
   "temporadas@anime",
   "genre@comic",
+  "demografia@anime", // E-ANIME-SOURCE: AniList sin equivalente
+  "valoracion@manga", // E-MANGA-SOURCE: MangaDex sin rating filtrable
 ]);
 
 // ════════════════════════════════════════════════════════════════════════════
@@ -103,12 +105,13 @@ const EXPECTED_CATALOG: Record<string, Record<string, string[]>> = {
     anime: Object.keys(JIKAN_GENRE),
     manga: Object.keys(JIKAN_GENRE),
   },
+  // manga ya no tiene valoracion (E-MANGA-SOURCE: MangaDex no expone rating
+  // filtrable en /manga).
   valoracion: {
     all: [...VALORACION_SLUGS],
     movie: [...VALORACION_SLUGS],
     tv: [...VALORACION_SLUGS],
     anime: [...VALORACION_SLUGS],
-    manga: [...VALORACION_SLUGS],
     game: [...VALORACION_SLUGS],
   },
   temporadas: { tv: Object.keys(TEMPORADAS_BUCKETS) },
@@ -124,17 +127,9 @@ const EXPECTED_CATALOG: Record<string, Record<string, string[]>> = {
     tv: Object.keys(TMDB_PROVIDER),
     all: Object.keys(TMDB_PROVIDER),
   },
-  idioma: {
-    movie: Object.keys(TMDB_LANGUAGE),
-    tv: Object.keys(TMDB_LANGUAGE),
-    anime: Object.keys(TMDB_LANGUAGE),
-    manga: Object.keys(TMDB_LANGUAGE),
-    book: Object.keys(TMDB_LANGUAGE),
-    comic: Object.keys(TMDB_LANGUAGE),
-  },
   duracion: { movie: Object.keys(TMDB_DURACION) },
+  // anime ya no tiene demografia (E-ANIME-SOURCE: AniList sin equivalente).
   demografia: {
-    anime: Object.keys(JIKAN_DEMOGRAPHIC),
     manga: Object.keys(JIKAN_DEMOGRAPHIC),
   },
   status: {
@@ -195,23 +190,23 @@ describe("Matriz — catálogo correcto por par (tipo,filtro)", () => {
 // ════════════════════════════════════════════════════════════════════════════
 
 describe("Matriz — cableado nativo (builder emite param real)", () => {
-  it("genero: tmdb→with_genres, jikan→genres, rawg→genres", () => {
+  it("genero: tmdb→with_genres, anilist→genre_in, rawg→genres", () => {
     expect(
       buildTmdbDiscoverParams("movie", {
         genre: [valuesOf("movie", "genre")[0]],
       }).with_genres
     ).toBeDefined();
     expect(
-      buildJikanDiscoverParams("anime", {
+      buildAniListDiscoverParams({
         genre: [valuesOf("anime", "genre")[0]],
-      }).genres
+      }).genre_in
     ).toBeDefined();
     expect(
       buildRawgDiscoverParams({ genre: [valuesOf("game", "genre")[0]] }).genres
     ).toBeDefined();
   });
 
-  it("anio: tmdb movie→primary_release_date, tv→first_air_date, jikan→start_date, rawg→dates", () => {
+  it("anio: tmdb movie→primary_release_date, tv→first_air_date, anilist→startDate range, rawg→dates", () => {
     expect(
       buildTmdbDiscoverParams("movie", { year: "2024" })[
         "primary_release_date.gte"
@@ -220,15 +215,17 @@ describe("Matriz — cableado nativo (builder emite param real)", () => {
     expect(
       buildTmdbDiscoverParams("tv", { year: "2024" })["first_air_date.gte"]
     ).toBe("2024-01-01");
-    expect(buildJikanDiscoverParams("anime", { year: "2024" }).start_date).toBe(
-      "2024-01-01"
-    );
+    // AniList no tiene un "año exacto" nativo — un rango de 1 año (FuzzyDateInt
+    // YYYYMMDD) cubre año exacto/década/"classic" con la misma fórmula.
+    const anilistYear = buildAniListDiscoverParams({ year: "2024" });
+    expect(anilistYear.startDate_greater).toBe(20231231);
+    expect(anilistYear.startDate_lesser).toBe(20250101);
     expect(buildRawgDiscoverParams({ year: "2024" }).dates).toBe(
       "2024-01-01,2024-12-31"
     );
   });
 
-  it("valoracion nativo: tmdb→vote_average.gte, jikan→min_score", () => {
+  it("valoracion nativo: tmdb→vote_average.gte, anilist→averageScore_greater", () => {
     const v = VALORACION_SLUGS[1]; // "8"
     expect(
       buildTmdbDiscoverParams("movie", { valoracion: v })["vote_average.gte"]
@@ -236,12 +233,11 @@ describe("Matriz — cableado nativo (builder emite param real)", () => {
     expect(
       buildTmdbDiscoverParams("tv", { valoracion: v })["vote_average.gte"]
     ).toBe(v);
-    expect(
-      buildJikanDiscoverParams("anime", { valoracion: v }).min_score
-    ).toBe(v);
-    expect(
-      buildJikanDiscoverParams("manga", { valoracion: v }).min_score
-    ).toBe(v);
+    // AniList es 0-100 y solo ofrece "_greater" (estrictamente mayor que) →
+    // umbral*10 - 1 aproxima "≥ umbral" (ver anilist-maps.ts).
+    expect(buildAniListDiscoverParams({ valoracion: v }).averageScore_greater).toBe(
+      79
+    );
   });
 
   it("plataforma: tmdb→with_watch_providers, rawg→platforms", () => {
@@ -256,10 +252,14 @@ describe("Matriz — cableado nativo (builder emite param real)", () => {
     ).toBeDefined();
   });
 
-  it("idioma: tmdb→with_original_language", () => {
+  // El trigger `idioma` se retiró de la UI de Descubrir (2026-09-12, a
+  // petición del usuario): el catálogo ya sigue el locale activo de la app.
+  // El builder conserva la capacidad de aceptar un override explícito (por
+  // si algún caller server-side lo necesita) — se verifica directo, sin
+  // pasar por `valuesOf` (que ya no tiene catálogo, al no ser visible).
+  it("idioma (capacidad retenida en el builder, sin trigger de UI): tmdb→with_original_language", () => {
     expect(
-      buildTmdbDiscoverParams("movie", { idioma: valuesOf("movie", "idioma")[0] })
-        .with_original_language
+      buildTmdbDiscoverParams("movie", { idioma: "es" }).with_original_language
     ).toBeDefined();
   });
 
@@ -275,26 +275,29 @@ describe("Matriz — cableado nativo (builder emite param real)", () => {
     ).toBeDefined();
   });
 
-  it("demografia (anime/manga): jikan→genres (CSV de IDs)", () => {
-    expect(
-      buildJikanDiscoverParams("anime", {
-        demografia: valuesOf("anime", "demografia")[0],
-      }).genres
-    ).toBeDefined();
+  // demografia solo sobrevive en manga (MangaDex) tras E-ANIME-SOURCE — anime
+  // ya no tiene este trigger (AniList sin equivalente, ver type-filters.ts).
+  it("demografia (manga): mangadex→publicationDemographic[]", () => {
+    const params = buildMangaDexDiscoverParams({
+      demografia: valuesOf("manga", "demografia")[0],
+    });
+    expect(params.some(([k]) => k === "publicationDemographic[]")).toBe(true);
   });
 
-  it("formato (book): buildOpenLibraryQuery→q ebook_access (free/ebook)", () => {
-    expect(buildOpenLibraryQuery({ formato: "free" }).q).toContain(
-      "ebook_access:public"
+  // E-BOOKS-GOOGLE: formato pasa de fragmento en q (ebook_access de Open
+  // Library) a `params.filter` nativo de Google Books.
+  it("formato (book): buildGoogleBooksQuery→params.filter (free/ebook)", () => {
+    expect(buildGoogleBooksQuery({ formato: "free" }).params.filter).toBe(
+      "free-ebooks"
     );
-    expect(buildOpenLibraryQuery({ formato: "ebook" }).q).toContain(
-      "ebook_access:borrowable"
+    expect(buildGoogleBooksQuery({ formato: "ebook" }).params.filter).toBe(
+      "ebooks"
     );
   });
 
-  it("editorial (book): buildOpenLibraryQuery→q publisher: (nativo E84b)", () => {
-    expect(buildOpenLibraryQuery({ editorial: ["planeta"] }).q).toContain(
-      "publisher:Planeta"
+  it("editorial (book): buildGoogleBooksQuery→q inpublisher: (nativo)", () => {
+    expect(buildGoogleBooksQuery({ editorial: ["planeta"] }).q).toContain(
+      'inpublisher:"Planeta"'
     );
   });
 });
@@ -402,7 +405,7 @@ describe("Matriz — sin agujeros (todo par visible está contemplado)", () => {
 // 3) NEGATIVOS política A — los 6 pares ocultos NO están en TYPE_FILTERS
 // ════════════════════════════════════════════════════════════════════════════
 
-describe("Política A — los 6 pares ocultos NO aparecen en TYPE_FILTERS", () => {
+describe("Política A — los 8 pares ocultos NO aparecen en TYPE_FILTERS", () => {
   const CASES: Array<[DiscoverType, string]> = [
     ["book", "valoracion"],
     ["comic", "valoracion"],
@@ -410,6 +413,8 @@ describe("Política A — los 6 pares ocultos NO aparecen en TYPE_FILTERS", () =
     ["comic", "estado"],
     ["anime", "temporadas"],
     ["comic", "genre"],
+    ["anime", "demografia"],
+    ["manga", "valoracion"],
   ];
 
   for (const [type, key] of CASES) {

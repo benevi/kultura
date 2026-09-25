@@ -4,6 +4,16 @@ import Image from 'next/image'
 import { Link } from '@/i18n/navigation'
 import { useTranslations } from 'next-intl'
 import { KButton } from '@/components/ui/KButton'
+import {
+  type KIcon,
+  IconFilm,
+  IconTv,
+  IconAnime,
+  IconLibrary,
+  IconComic,
+  IconManga,
+  IconGamepad,
+} from '@/components/icons'
 
 export interface HeroItem {
   media_id: string
@@ -22,16 +32,16 @@ interface HeroSectionProps {
   item: HeroItem | null
 }
 
-/* Mismo set de emoji por tipo que ProfileStats (F0 usa emoji liberalmente
-   como sustituto de icono en chips — ver CLAUDE.md). */
-const TYPE_EMOJI: Record<string, string> = {
-  movie: '🎬',
-  tv: '📺',
-  anime: '⛩️',
-  book: '📚',
-  comic: '🦸',
-  manga: '🖊️',
-  game: '🎮',
+/* Mismo mapa de iconos propios que ProfileStats — icono coherente por tipo
+   de media en vez de emoji suelto (E78). */
+const TYPE_ICONS: Record<string, KIcon> = {
+  movie: IconFilm,
+  tv: IconTv,
+  anime: IconAnime,
+  book: IconLibrary,
+  comic: IconComic,
+  manga: IconManga,
+  game: IconGamepad,
 }
 
 /* Fórmula F0 del hero (canvas "Kultura Editorial"): gradiente lineal de dos
@@ -49,29 +59,17 @@ export function HeroSection({ item }: HeroSectionProps) {
   const t = useTranslations('home')
   const tMedia = useTranslations('media')
 
-  if (!item?.media) {
-    return (
-      <section
-        className="relative overflow-hidden rounded-bento-lg p-6 md:p-10 flex flex-col gap-3 max-w-md"
-        style={{ background: HERO_GRADIENT, boxShadow: HARD_SHADOW }}
-      >
-        <div className="absolute inset-0 pointer-events-none" style={{ background: MEDIA_BLOCK_ACCENT }} />
-        <span className="relative z-10 text-3xl">🎬</span>
-        <div className="relative z-10">
-          <p className="font-display text-lg md:text-xl font-extrabold text-text-primary">{t('welcomeTitle')}</p>
-          <p className="font-body text-sm text-text-secondary mt-1">{t('welcomeSubtitle')}</p>
-        </div>
-        <KButton asChild size="md" className="relative z-10 w-fit mt-1">
-          <Link href="/discover">{t('goDiscover')}</Link>
-        </KButton>
-      </section>
-    )
-  }
+  // Sin título en curso NO hay hero. Antes se pintaba una tarjeta "¿Qué estás
+  // viendo?" que ocupaba media pantalla para decir que no había nada: el resto
+  // de secciones (continuar, círculo, recomendaciones, novedades) llenan mejor
+  // ese espacio, y la llamada a explorar sigue disponible en las tarjetas
+  // vacías de esas mismas secciones.
+  if (!item?.media) return null
 
   const { media, episode_progress } = item
   const externalId = media.id.split('_').slice(1).join('_')
   const href = `/media/${media.type}/${externalId}`
-  const typeEmoji = TYPE_EMOJI[media.type] ?? '🎬'
+  const TypeIcon = TYPE_ICONS[media.type] ?? IconFilm
 
   const progress = episode_progress?.current != null && episode_progress?.total != null
     ? Math.round((episode_progress.current / episode_progress.total) * 100)
@@ -113,8 +111,9 @@ export function HeroSection({ item }: HeroSectionProps) {
 
         <div className="relative flex-1 p-6 md:p-9 flex flex-col justify-center gap-3 min-w-0">
           <div className="flex items-center gap-2 flex-wrap">
-            <span className="inline-flex items-center gap-1 rounded-full bg-surface-elevated text-text-primary font-body font-bold text-xs px-3 py-1.5">
-              {typeEmoji} {tMedia(media.type as Parameters<typeof tMedia>[0])}
+            <span className="inline-flex items-center gap-1.5 rounded-full bg-surface-elevated text-text-primary font-body font-bold text-xs px-3 py-1.5">
+              <TypeIcon className="w-3.5 h-3.5" />
+              {tMedia(media.type as Parameters<typeof tMedia>[0])}
             </span>
             {media.year && (
               <span className="inline-flex items-center rounded-full bg-surface-elevated text-text-primary font-body font-bold text-xs px-3 py-1.5">

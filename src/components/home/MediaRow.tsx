@@ -11,7 +11,6 @@ export interface MediaRowItem {
   type: string
   year?: number
   /** Match score real (F3a). Ausente = sin badge — nunca decorativo. */
-  matchScore?: number
 }
 
 interface MediaRowProps {
@@ -80,14 +79,6 @@ export function MediaRow({ items, title, emptyIcon, emptyMessage, emptyHint, emp
                   ) : (
                     <div className="w-full h-full flex items-center justify-center">
                       <span className="text-2xl text-text-tertiary">◻</span>
-                    </div>
-                  )}
-                  {item.matchScore !== undefined && (
-                    <div
-                      data-testid="media-row-match-badge"
-                      className="absolute top-2 left-2 rounded-full bg-accent-positive text-on-accent-positive text-[10px] font-display font-extrabold px-2 py-0.5 leading-none shadow-md"
-                    >
-                      {item.matchScore}%
                     </div>
                   )}
                 </div>

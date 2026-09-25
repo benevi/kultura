@@ -8,13 +8,16 @@ import {
   normalizeMovie,
   normalizeTV,
   normalizeAnime,
+  normalizeAniListAnime,
   normalizeMangaJikan,
   normalizeMangaDex,
   normalizeBookOpenLibrary,
+  normalizeBookGoogle,
   normalizeGame,
 } from "@/lib/api/normalizer";
 import type { TmdbMovieDetail, TmdbTVDetail, TmdbProvidersResponse } from "@/lib/api/tmdb";
 import type { JikanAnimeDetail, JikanMangaDetail } from "@/lib/api/jikan";
+import type { AniListMedia } from "@/lib/api/anilist";
 import type { MangaDexManga } from "@/lib/api/mangadex";
 import type { OpenLibraryDoc } from "@/lib/api/openlibrary";
 import type { RawgGame } from "@/lib/api/rawg";
@@ -94,6 +97,41 @@ const JIKAN_ANIME_MINIMAL: JikanAnimeDetail = {
   studios: [],
   source: "Unknown",
   trailer: { youtube_id: null },
+};
+
+const ANILIST_ANIME_FIXTURE: AniListMedia = {
+  id: 1535,
+  title: { romaji: "Death Note", english: "Death Note", native: "デスノート" },
+  coverImage: {
+    extraLarge: "https://s4.anilist.co/file/anilistcdn/media/anime/cover/large/bx1535.jpg",
+    large: null,
+  },
+  description: "Un cuaderno que permite matar.<br>\nSegunda línea.",
+  genres: ["Mystery", "Supernatural", "Thriller"],
+  averageScore: 86,
+  seasonYear: 2006,
+  startDate: { year: 2006 },
+  episodes: 37,
+  status: "FINISHED",
+  studios: { nodes: [{ name: "Madhouse" }] },
+  trailer: { id: "NlJZ-YgAt-c", site: "youtube" },
+  source: "MANGA",
+};
+
+const ANILIST_ANIME_MINIMAL: AniListMedia = {
+  id: 9999,
+  title: { romaji: "Unknown Anime", english: null, native: null },
+  coverImage: { extraLarge: null, large: null },
+  description: null,
+  genres: [],
+  averageScore: null,
+  seasonYear: null,
+  startDate: null,
+  episodes: null,
+  status: "NOT_YET_RELEASED",
+  studios: null,
+  trailer: null,
+  source: null,
 };
 
 const JIKAN_MANGA_FIXTURE: JikanMangaDetail = {
@@ -333,6 +371,80 @@ describe("normalizeAnime", () => {
   });
 });
 
+// ── normalizeAniListAnime (E-ANIME-SOURCE) ────────────────────────────────────
+
+describe("normalizeAniListAnime", () => {
+  const result = normalizeAniListAnime(ANILIST_ANIME_FIXTURE);
+
+  it("produce id anime_al-{id} (prefijo al- para no colisionar con Jikan legacy)", () => {
+    expect(result.id).toBe("anime_al-1535");
+    expect(result.externalId).toBe("al-1535");
+  });
+
+  it("tipo es anime", () => {
+    expect(result.type).toBe("anime");
+  });
+
+  it("title prefiere inglés", () => {
+    expect(result.title).toBe("Death Note");
+  });
+
+  it("poster usa coverImage.extraLarge", () => {
+    expect(result.poster).toContain("anilistcdn");
+  });
+
+  it("rating: averageScore (0-100) / 10 → escala 0-10", () => {
+    expect(result.rating).toBe(8.6);
+  });
+
+  it("ratingSource es AniList", () => {
+    expect(result.ratingSource).toBe("AniList");
+  });
+
+  it("trailerKey solo si site es youtube", () => {
+    expect(result.trailerKey).toBe("NlJZ-YgAt-c");
+  });
+
+  it("synopsis limpia el HTML básico (<br> → salto de línea)", () => {
+    expect(result.synopsis).not.toContain("<br>");
+    expect(result.synopsis).toContain("Segunda línea");
+  });
+
+  it("genres es array de strings", () => {
+    expect(result.genres).toEqual(["Mystery", "Supernatural", "Thriller"]);
+  });
+
+  it("year: seasonYear", () => {
+    expect(result.year).toBe(2006);
+  });
+});
+
+describe("normalizeAniListAnime — campos opcionales ausentes", () => {
+  const result = normalizeAniListAnime(ANILIST_ANIME_MINIMAL);
+
+  it("campos opcionales ausentes → undefined, no error", () => {
+    expect(result.id).toBe("anime_al-9999");
+    expect(result.rating).toBeUndefined();
+    expect(result.trailerKey).toBeUndefined();
+    expect(result.synopsis).toBeUndefined();
+    expect(result.year).toBeUndefined();
+    expect(result.poster).toBeUndefined();
+    expect(result.genres).toBeUndefined();
+  });
+
+  it("title cae a romaji cuando no hay inglés", () => {
+    expect(result.title).toBe("Unknown Anime");
+  });
+
+  it("trailer null (site≠youtube o ausente) → trailerKey undefined", () => {
+    const noYoutube = normalizeAniListAnime({
+      ...ANILIST_ANIME_FIXTURE,
+      trailer: { id: "abc123", site: "dailymotion" },
+    });
+    expect(noYoutube.trailerKey).toBeUndefined();
+  });
+});
+
 describe("normalizeAnime — campos opcionales ausentes", () => {
   it("campos opcionales ausentes → undefined, no error", () => {
     const result = normalizeAnime(JIKAN_ANIME_MINIMAL);
@@ -402,6 +514,112 @@ describe("normalizeMangaDex", () => {
 
   it("year se extrae correctamente", () => {
     expect(result.year).toBe(1997);
+  });
+
+  it("metadata.volumes: lastVolume null → undefined (sin resolver, no 0)", () => {
+    expect(result.metadata?.volumes).toBeUndefined();
+  });
+
+  it("metadata.volumes: parsea lastVolume string a número (post-filtro E-MANGA-SOURCE)", () => {
+    const r = normalizeMangaDex({
+      ...MANGADEX_FIXTURE,
+      attributes: { ...MANGADEX_FIXTURE.attributes, lastVolume: "104" },
+    });
+    expect(r.metadata?.volumes).toBe(104);
+  });
+
+  it("metadata.volumes: lastVolume no numérico → undefined (nunca NaN)", () => {
+    const r = normalizeMangaDex({
+      ...MANGADEX_FIXTURE,
+      attributes: { ...MANGADEX_FIXTURE.attributes, lastVolume: "n/a" },
+    });
+    expect(r.metadata?.volumes).toBeUndefined();
+  });
+});
+
+// ── normalizeBookGoogle (E-BOOKS-GOOGLE) ──────────────────────────────────────
+
+const GOOGLE_BOOKS_FIXTURE = {
+  id: "wrOQLV6xB-wC",
+  volumeInfo: {
+    title: "El nombre de la rosa",
+    subtitle: "Edición conmemorativa",
+    authors: ["Umberto Eco"],
+    publisher: "Lumen",
+    publishedDate: "2003-05-01",
+    description: "En el año 1327…",
+    pageCount: 620,
+    categories: ["Fiction", "Historical", "Mystery", "Thriller", "Drama", "Extra"],
+    averageRating: 4.5,
+    ratingsCount: 120,
+    language: "es",
+    imageLinks: {
+      thumbnail: "http://books.google.com/books/content?id=wrOQ&zoom=5",
+    },
+  },
+};
+
+describe("normalizeBookGoogle", () => {
+  const result = normalizeBookGoogle(GOOGLE_BOOKS_FIXTURE);
+
+  it("id = book_{volumeId} y externalId es el id del volumen", () => {
+    expect(result.id).toBe("book_wrOQLV6xB-wC");
+    expect(result.externalId).toBe("wrOQLV6xB-wC");
+    expect(result.type).toBe("book");
+  });
+
+  it("extrae el año de publishedDate (YYYY-MM-DD y YYYY)", () => {
+    expect(result.year).toBe(2003);
+    expect(
+      normalizeBookGoogle({ id: "x", volumeInfo: { publishedDate: "1997" } }).year
+    ).toBe(1997);
+  });
+
+  it("sinopsis desde description (Google Books SÍ la trae en el listado)", () => {
+    expect(result.synopsis).toBe("En el año 1327…");
+  });
+
+  it("portada https con zoom=1 desde imageLinks", () => {
+    expect(result.poster).toBe(
+      "https://books.google.com/books/content?id=wrOQ&zoom=1"
+    );
+  });
+
+  it("averageRating 0-5 → rating 0-10 con ratingSource", () => {
+    expect(result.rating).toBe(9);
+    expect(result.ratingSource).toBe("Google Books");
+  });
+
+  it("categories recortadas a 5 géneros", () => {
+    expect(result.genres).toHaveLength(5);
+    expect(result.genres).not.toContain("Extra");
+  });
+
+  it("metadata lleva autores, editorial, idioma, páginas y subtítulo", () => {
+    expect(result.metadata?.authors).toEqual(["Umberto Eco"]);
+    expect(result.metadata?.publisher).toBe("Lumen");
+    expect(result.metadata?.language).toBe("es");
+    expect(result.metadata?.pageCount).toBe(620);
+    expect(result.metadata?.subtitle).toBe("Edición conmemorativa");
+  });
+
+  it("volumen mínimo (sin volumeInfo) no rompe: título Unknown, campos undefined", () => {
+    const minimal = normalizeBookGoogle({ id: "min" });
+    expect(minimal.title).toBe("Unknown");
+    expect(minimal.poster).toBeUndefined();
+    expect(minimal.year).toBeUndefined();
+    expect(minimal.rating).toBeUndefined();
+    expect(minimal.ratingSource).toBeUndefined();
+    expect(minimal.genres).toBeUndefined();
+  });
+
+  it("averageRating ausente → sin rating ni ratingSource (valoración no inventada)", () => {
+    const noRating = normalizeBookGoogle({
+      id: "nr",
+      volumeInfo: { title: "T" },
+    });
+    expect(noRating.rating).toBeUndefined();
+    expect(noRating.ratingSource).toBeUndefined();
   });
 });
 

@@ -13,6 +13,7 @@
 
 import type { MediaItem } from "@/types/media";
 import { valoracionThreshold } from "@/lib/api/valoracion";
+import { clampRangeToToday, todayIso } from "@/lib/api/catalog-window";
 
 // ── Géneros (RAWG acepta slugs directamente) ────────────────────────────────────
 // slug canónico Kultura → slug RAWG. Coma = OR (RAWG une con coma).
@@ -84,6 +85,57 @@ export function rawgDates(year: string | null | undefined): string | null {
   return null;
 }
 
+// ── Ventana de catálogo: nada por delante de hoy (E-GAMES-FUTURO) ───────────────
+//
+// RAWG es una base comunitaria y acepta fichas con fecha de lanzamiento futura
+// o directamente inventada (2030, 2033…). Con `ordering=-released` y sin `dates`
+// esas fichas son exactamente las que ocupan la primera página, así que "Más
+// recientes" acababa listando juegos que no existen todavía — y, de paso, la
+// basura del catálogo (entradas de prueba sin portada), que es donde más abundan
+// las fechas absurdas.
+//
+// Regla: el catálogo de juegos nunca muestra fechas por delante de HOY. Se
+// implementa acotando siempre `dates` por arriba:
+//   - sin filtro de año → [RAWG_CATALOG_START, hoy]
+//   - con filtro de año → el rango del año, con el extremo superior recortado a
+//     hoy (elegir 2026 no debe traer el resto de 2026 sin publicar)
+// El catálogo de años de la UI (`buildYearBuckets`) llega como máximo al año
+// actual, así que no hay ningún caso legítimo en el que el usuario pida futuro.
+// Si algún día se ofreciera (un filtro "próximos lanzamientos"), un rango que
+// empiece después de hoy se respeta tal cual en vez de devolver una ventana
+// vacía.
+//
+// No aplica al resto de familias: `tv` y `anime` SÍ ofrecen `estado=upcoming`,
+// donde el futuro es justo lo que se pide.
+
+/** Primer día del catálogo de juegos (RAWG no tiene fichas fiables antes). */
+export const RAWG_CATALOG_START = "1970-01-01";
+
+/**
+ * `Date` → `YYYY-MM-DD` en UTC (mismo formato que espera `dates` de RAWG).
+ * Alias del helper compartido (`catalog-window.ts`), que es donde vive la regla
+ * desde que se extendió al resto de familias (E-CATALOGO-FUTURO).
+ */
+export const rawgIsoDay = todayIso;
+
+/**
+ * Ventana `dates` efectiva: como `rawgDates`, pero nunca devuelve null y nunca
+ * deja pasar fechas posteriores a `today`. `today` es inyectable para poder
+ * testearla sin depender del reloj.
+ */
+export function rawgDatesWindow(
+  year: string | null | undefined,
+  today: Date = new Date()
+): string {
+  const iso = todayIso(today);
+  const range = rawgDates(year);
+  if (!range) return `${RAWG_CATALOG_START},${iso}`;
+
+  const [start, end] = range.split(",");
+  const clamped = clampRangeToToday(start, end, today);
+  return `${clamped.start},${clamped.end}`;
+}
+
 // ── Filtros de entrada (subconjunto canónico relevante a RAWG) ───────────────────
 // Nota: status/horas se aceptan en el tipo pero se IGNORAN (oculto para game).
 
@@ -142,8 +194,8 @@ export function buildRawgDiscoverParams(
   const platforms = mapPlatformIds(filters.platform);
   if (platforms.length > 0) params.platforms = platforms.join(",");
 
-  const dates = rawgDates(filters.year);
-  if (dates) params.dates = dates;
+  // Siempre presente: acota el catálogo a lo ya publicado (E-GAMES-FUTURO).
+  params.dates = rawgDatesWindow(filters.year);
 
   return params;
 }

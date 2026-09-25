@@ -4,39 +4,43 @@
 // ============================================================
 
 import { createLogger } from "@/lib/logger";
+import { dropFutureYears } from "@/lib/api/catalog-window";
 import { discoverMovies, discoverTV } from "@/lib/api/tmdb";
 import {
   buildTmdbDiscoverParams,
   filterTVByTemporadas,
   type TmdbFilters,
 } from "@/lib/api/tmdb-maps";
+import { JikanError } from "@/lib/api/jikan";
+import { AniListError, discoverAnime } from "@/lib/api/anilist";
 import {
-  getPopularAnime,
-  getPopularManga,
-  discoverAnime,
-  discoverManga,
-  JikanError,
-} from "@/lib/api/jikan";
+  buildAniListDiscoverParams,
+  type AniListFilters,
+} from "@/lib/api/anilist-maps";
+import { getPopularManga, discoverManga } from "@/lib/api/mangadex";
 import {
-  buildJikanDiscoverParams,
-  hasJikanFilters,
-  filterByMinVolumes,
-  type JikanFilters,
-} from "@/lib/api/jikan-maps";
-import { searchOpenLibrary } from "@/lib/api/openlibrary";
+  buildMangaDexDiscoverParams,
+  hasMangaDexFilters,
+  filterByMinVolumesDex,
+  type MangaDexFilters,
+} from "@/lib/api/mangadex-maps";
+import { GoogleBooksError } from "@/lib/api/googlebooks";
+import {
+  searchOpenLibrary,
+  openLibraryTotalPages,
+  OPEN_LIBRARY_CATALOG_WINDOW,
+} from "@/lib/api/openlibrary";
 import {
   buildOpenLibraryQuery,
-  hasBookFilters,
-  OPEN_LIBRARY_BASE_QUERY,
-  type BooksFilters,
-} from "@/lib/api/books-maps";
+  type OpenLibraryBookFilters,
+} from "@/lib/api/openlibrary-maps";
 import { getPopularGames, discoverGames } from "@/lib/api/rawg";
 import {
   buildRawgDiscoverParams,
   applyGamePostFilters,
   type RawgFilters,
 } from "@/lib/api/rawg-maps";
-import { getRecentComics } from "@/lib/api/comicvine";
+import { getRecentComics, COMIC_PAGE_STRIDE } from "@/lib/api/comicvine";
 import {
   hasComicFilters,
   type ComicFilters,
@@ -44,35 +48,25 @@ import {
 import {
   normalizeMovie,
   normalizeTV,
-  normalizeAnime,
-  normalizeMangaJikan,
-  normalizeBookOpenLibrary,
+  normalizeAniListAnime,
+  normalizeMangaDex,
   normalizeGame,
+  normalizeBookOpenLibrary,
 } from "@/lib/api/normalizer";
-import type { MediaItem } from "@/types/media";
+import type { MediaItem, MediaType } from "@/types/media";
 import type { TmdbMovieDetail, TmdbTVDetail } from "@/lib/api/tmdb";
-import type { JikanAnime, JikanManga } from "@/lib/api/jikan";
 // Agregado modo "all" (R5a). Import diferido en uso (case "all") — el ciclo
 // discover↔aggregate se resuelve en runtime porque ninguno se invoca en módulo.
-import { fetchAggregateData } from "@/lib/api/aggregate";
+import { fetchAggregateData, fetchAggregateSearch } from "@/lib/api/aggregate";
+import { searchByTypePaged } from "@/lib/api/search";
 import { filterNSFW } from "@/lib/api/nsfw-filter";
+import { DISCOVER_MAX_PAGES } from "@/lib/api/pagination";
 
 const log = createLogger("discover");
 
 export type FetchErrorKind = "rate-limit" | "generic" | null;
 
-// E89: tope real de páginas por proveedor. La UI numerada (slice 1b) ofrece
-// "última página" = totalPages; si totalPages refleja el conteo crudo del
-// proveedor (TMDB reporta total_pages hasta 57464) pero la API solo SIRVE hasta
-// 500, saltar a la última página devuelve un error 4xx → banner rojo falso.
-// Capamos totalPages al tope servible para que la última página sea navegable.
-//   - TMDB (movie/tv): hard cap documentado de 500.
-//   - book: ya capado a 50 (Open Library) en su rama.
-//   - RAWG (game): sin tope duro documentado; deep pages devuelven vacío pero no
-//     hay constante fiable que capar → sin cambio (anotado en E89).
-//   - Jikan (anime/manga): last_visible_page YA es el tope real del proveedor.
-//   - comic: ceil(total/20) es el total real navegable.
-const TMDB_MAX_PAGES = 500;
+// Tope COMÚN de páginas para todas las familias (E79-s3) → lib/api/pagination.ts.
 
 // E79 slice 2 — ¿hay un post-filtro ACTIVO que recorte items tras el fetch sin
 // recomputar el conteo del proveedor? Si lo hay, totalPages crudo miente y se
@@ -80,7 +74,11 @@ const TMDB_MAX_PAGES = 500;
 // NSFW global (siempre activo, recorte marginal) se excluye a propósito.
 //   - tv    → temporadas
 //   - manga → volumenes
+//   - book  → anio (post-filtro desde E-BOOKS-GOOGLE)
 //   - game  → valoracion | estado | modojuego | duracionmedia
+//   - comic → editorial | volumenes (post-filtro sobre publisher/volumen
+//     resuelto vía /volumes tras el fetch de /issues — `total` de ComicVine
+//     NUNCA refleja este recorte, ver getRecentComics en comicvine.ts)
 function hasActivePostFilter(
   type: string,
   filters: DiscoverFilters
@@ -90,6 +88,12 @@ function hasActivePostFilter(
       return Boolean(filters.temporadas);
     case "manga":
       return Boolean(filters.volumenes);
+    case "book":
+      // E-BOOKS-HIBRIDO: ya NO hay post-filtro en libros. Open Library aplica
+      // el año como rango (`first_publish_year:[a TO b]`) y devuelve un
+      // `numFound` que ya lo refleja, así que el conteo vuelve a ser fiable y
+      // la UI puede volver a ofrecer la última página.
+      return false;
     case "game":
       return Boolean(
         filters.valoracion ||
@@ -97,6 +101,8 @@ function hasActivePostFilter(
           filters.modojuego?.length ||
           filters.duracionmedia
       );
+    case "comic":
+      return Boolean(filters.editorial?.length || filters.volumenes);
     default:
       return false;
   }
@@ -126,19 +132,39 @@ export interface DiscoverResult {
 
 /**
  * Filtros canónicos aplicables a la capa de fetch. Unión de los subconjuntos que
- * cada familia consume nativamente: TMDB (F3a), Jikan + RAWG (F3b). Cada builder
- * toma solo los campos que entiende; el resto los ignora.
+ * cada familia consume nativamente. Cada builder toma solo los campos que
+ * entiende; el resto los ignora.
  */
 export type DiscoverFilters = TmdbFilters &
-  JikanFilters &
+  AniListFilters &
+  MangaDexFilters &
   RawgFilters &
-  BooksFilters &
+  OpenLibraryBookFilters &
   ComicFilters;
 
+/**
+ * Resuelve una página de catálogo para una familia (o el agregado `all`).
+ *
+ * `locale` (E-TMDB-LOCALE): idioma activo de la app. Se propaga a los
+ * proveedores que lo soportan — TMDB (`language`), Open Library (`language`,
+ * E-BOOKS-HIBRIDO) y MangaDex (`availableTranslatedLanguage[]`). Jikan,
+ * ComicVine y RAWG no ofrecen catálogo en español: limitación aceptada,
+ * documentada en `src/lib/api/locale.ts`. Omitirlo equivale a `es`.
+ *
+ * `query` (E-DISCOVER-SEARCH-MERGE): cuando llega, la página NO viene del
+ * catálogo de descubrir sino del buscador del proveedor para ese tipo, con la
+ * MISMA forma de respuesta (`items`/`totalPages`/`hasMore`) para que el grid y
+ * la paginación de Descubrir funcionen sin cambios. Los filtros de catálogo no
+ * se aplican en modo búsqueda: ningún buscador de los proveedores acepta esos
+ * parámetros, y aplicarlos client-side daría páginas cortas (por eso la UI
+ * oculta la barra de filtros mientras hay query).
+ */
 export async function fetchDiscoverData(
   type: string,
   page: number,
-  filters: DiscoverFilters = {}
+  filters: DiscoverFilters = {},
+  locale?: string | null,
+  query?: string | null
 ): Promise<DiscoverResult> {
   let items: MediaItem[] = [];
   let totalPages = 1;
@@ -147,36 +173,107 @@ export async function fetchDiscoverData(
   let hasMore = false;
   let fetchErrorKind: FetchErrorKind = null;
 
+  // E79-s3: página fuera del tope común (URL escrita a mano o salto de la UI
+  // numerada) → página vacía SIN llamar a ningún proveedor y SIN banner de
+  // error (`fetchErrorKind: null`), que es distinto de un fallo de red real.
+  // Antes este guard existía solo para TMDB (E89) y solo a 500.
+  if (page > DISCOVER_MAX_PAGES) {
+    return {
+      items: [],
+      totalPages: DISCOVER_MAX_PAGES,
+      hasMore: false,
+      fetchErrorKind: null,
+    };
+  }
+
+/**
+ * Resume un error en UNA línea legible: nombre, status si lo trae y mensaje.
+ *
+ * Existe porque un `Error` serializado en el contexto del log no se lee sin
+ * desplegarlo, y un fallo de proveedor sin código HTTP no se puede
+ * diagnosticar: obliga a adivinar, que es justo lo que no queremos.
+ */
+function describeError(e: unknown): string {
+  if (e instanceof Error) {
+    const status = (e as { status?: unknown }).status;
+    const code = typeof status === "number" ? ` status=${status}` : "";
+    const cause =
+      e.cause instanceof Error ? ` cause=${e.cause.name}: ${e.cause.message}` : "";
+    return `${e.name}${code}: ${e.message}${cause}`;
+  }
+  return String(e);
+}
+
+/**
+ * ¿El fallo es "el proveedor me está limitando" (429)?
+ *
+ * Importa porque la UI tiene un mensaje distinto para eso ("inténtalo en unos
+ * segundos") que para un fallo genérico. Antes solo se reconocía a Jikan y
+ * AniList, así que una cuota agotada de Google Books se presentaba como un
+ * error indeterminado y no había forma de saber desde la pantalla qué pasaba.
+ */
+function isRateLimitError(e: unknown): boolean {
+  return (
+    (e instanceof JikanError ||
+      e instanceof AniListError ||
+      e instanceof GoogleBooksError) &&
+    e.status === 429
+  );
+}
+
+  // ── Modo BÚSQUEDA (E-DISCOVER-SEARCH-MERGE) ───────────────────────────────
+  if (query) {
+    try {
+      const res =
+        type === "all"
+          ? await fetchAggregateSearch(query, page, locale)
+          : await searchByTypePaged(query, type as MediaType, page, locale);
+      // El tope común también manda en búsqueda.
+      const totalPages =
+        res.totalPages === null
+          ? null
+          : Math.min(res.totalPages, DISCOVER_MAX_PAGES);
+      return {
+        items: filterNSFW(res.items),
+        totalPages,
+        hasMore: res.hasMore && page < DISCOVER_MAX_PAGES,
+        fetchErrorKind: null,
+      };
+    } catch (e) {
+      console.error(
+        `[discover] search error · type=${type} page=${page} · ${describeError(e)}`
+      );
+      return {
+        items: [],
+        totalPages: 1,
+        hasMore: false,
+        fetchErrorKind: isRateLimitError(e) ? "rate-limit" : "generic",
+      };
+    }
+  }
+
   try {
     switch (type) {
       case "movie": {
-        // E89: page > tope servible → página fuera de rango (escrita a mano / salto
-        // de la UI). NO llamamos a TMDB (devolvería 4xx → banner rojo falso):
-        // página vacía sin error, distinta de un fallo de red real.
-        if (page > TMDB_MAX_PAGES) {
-          return { items: [], totalPages: TMDB_MAX_PAGES, hasMore: false, fetchErrorKind: null };
-        }
         const res = await discoverMovies(
           page,
-          buildTmdbDiscoverParams("movie", filters)
+          buildTmdbDiscoverParams("movie", filters),
+          locale
         );
         items = res.results.map((m) =>
           normalizeMovie(m as unknown as TmdbMovieDetail)
         );
-        // E89: cap al tope servible. hasMore se gobierna contra el cap también
-        // (page 500 ya no ofrece "siguiente" aunque total_pages crudo sea mayor).
-        totalPages = Math.min(res.total_pages, TMDB_MAX_PAGES);
+        // E79-s3: cap COMÚN. hasMore se gobierna contra el cap también (la última
+        // página no ofrece "siguiente" aunque total_pages crudo sea mayor).
+        totalPages = Math.min(res.total_pages, DISCOVER_MAX_PAGES);
         hasMore = page < totalPages;
         break;
       }
       case "tv": {
-        // E89: ver case "movie" — fuera de rango → vacío sin error, sin llamada.
-        if (page > TMDB_MAX_PAGES) {
-          return { items: [], totalPages: TMDB_MAX_PAGES, hasMore: false, fetchErrorKind: null };
-        }
         const res = await discoverTV(
           page,
-          buildTmdbDiscoverParams("tv", filters)
+          buildTmdbDiscoverParams("tv", filters),
+          locale
         );
         items = res.results.map((tv) =>
           normalizeTV(tv as unknown as TmdbTVDetail)
@@ -184,53 +281,95 @@ export async function fetchDiscoverData(
         // POST-filtro temporadas (R4c-2): bucket sobre metadata.seasons. NO gatea
         // el fetch nativo (no está en el builder). Vacío → no filtra.
         items = filterTVByTemporadas(items, filters.temporadas);
-        // E89: cap al tope servible (igual que movie).
-        totalPages = Math.min(res.total_pages, TMDB_MAX_PAGES);
+        // E79-s3: cap COMÚN (igual que movie).
+        totalPages = Math.min(res.total_pages, DISCOVER_MAX_PAGES);
         hasMore = page < totalPages;
         break;
       }
       case "anime": {
-        // Con filtros → /anime (búsqueda, acepta filtros); sin filtros → /top/anime.
-        const res = hasJikanFilters(filters)
-          ? await discoverAnime(page, buildJikanDiscoverParams("anime", filters))
-          : await getPopularAnime(page);
-        const data = Array.isArray(res.data) ? (res.data as JikanAnime[]) : [];
-        items = data.map((a) => normalizeAnime(a));
-        const lastPage = res.pagination?.last_visible_page ?? 1;
-        totalPages = lastPage;
-        hasMore = page < lastPage;
+        // E-ANIME-SOURCE (2026-09-13): AniList reemplaza a Jikan/MAL — Jikan
+        // sufría 504 sostenidos en producción (confirmado por logs reales, en
+        // AMBOS endpoints probados, `/top/anime` y `/anime`), decisión
+        // explícita del usuario. AniList pagina por page/perPage nativo.
+        const res = await discoverAnime(
+          page,
+          buildAniListDiscoverParams(filters)
+        );
+        const data = Array.isArray(res.media) ? res.media : [];
+        items = data.map((a) => normalizeAniListAnime(a));
+        const lastPage = res.pageInfo?.lastPage ?? 1;
+        totalPages = Math.min(lastPage, DISCOVER_MAX_PAGES);
+        hasMore = page < totalPages;
         break;
       }
       case "manga": {
-        const res = hasJikanFilters(filters)
-          ? await discoverManga(page, buildJikanDiscoverParams("manga", filters))
-          : await getPopularManga(page);
-        const data = Array.isArray(res.data) ? (res.data as JikanManga[]) : [];
-        items = data.map((m) => normalizeMangaJikan(m));
+        // E-MANGA-SOURCE: MangaDex (no Jikan) — único proveedor con catálogo
+        // realmente traducido. MangaDex pagina por offset/limit, no por page.
+        const offset = (page - 1) * 20;
+        const res = hasMangaDexFilters(filters)
+          ? await discoverManga(
+              offset,
+              buildMangaDexDiscoverParams(filters),
+              locale
+            )
+          : await getPopularManga(offset, locale);
+        // E29: mismo guard que anime — nunca confiar en que el proveedor
+        // devuelva `data` como array (null/undefined no debe lanzar TypeError).
+        const mangaData = Array.isArray(res.data) ? res.data : [];
+        items = mangaData.map((m) => normalizeMangaDex(m, locale));
+        // E-CATALOGO-FUTURO: manga es la ÚNICA familia sin rango de fecha en su
+        // proveedor — MangaDex solo acepta `year` como igualdad exacta, no un
+        // rango. Así que aquí el tope se aplica después de normalizar, como
+        // recorte marginal (mismo tipo que el filtro NSFW global: incondicional
+        // y no atado a ningún filtro del usuario, por eso NO cuenta como
+        // post-filtro activo en `hasActivePostFilter`). Los manga sin año se
+        // conservan: no sabemos que mientan.
+        items = dropFutureYears(items);
         // POST-filtro de volúmenes (solo manga): umbral mínimo sobre metadata.volumes.
         // Vacío/desconocido → no filtra. anime no pasa por aquí (oculto).
-        items = filterByMinVolumes(items, filters.volumenes);
-        const lastPage = res.pagination?.last_visible_page ?? 1;
-        totalPages = lastPage;
-        hasMore = page < lastPage;
+        items = filterByMinVolumesDex(items, filters.volumenes);
+        totalPages = Math.min(
+          Math.max(Math.ceil((res.total ?? 0) / 20), 1),
+          DISCOVER_MAX_PAGES
+        );
+        hasMore = page < totalPages;
         break;
       }
       case "book": {
-        // E84b: Open Library /search.json. Con filtros (género/editorial/idioma/
-        // formato/año/sort) → query construida; sin filtros, query base poblada.
-        // editorial ahora es NATIVO (publisher: en q) → ya no hay post-filtro.
-        let res;
-        if (hasBookFilters(filters)) {
-          const { q, params } = buildOpenLibraryQuery(filters);
-          res = await searchOpenLibrary(q, page, params);
-        } else {
-          res = await searchOpenLibrary(OPEN_LIBRARY_BASE_QUERY, page);
-        }
-        items = (res.docs ?? []).map((d) => normalizeBookOpenLibrary(d));
-        totalPages =
-          res.numFound && res.numFound > 0
-            ? Math.min(Math.ceil(res.numFound / 20), 50)
-            : 1;
+        // E-BOOKS-HIBRIDO: el CATÁLOGO lo sirve Open Library. A diferencia de
+        // Google Books, aquí el idioma es un facet real, el año es un rango
+        // real y `numFound` es un total real — los tres motivos por los que la
+        // pestaña de libros daba títulos en inglés, filtros vacíos y errores al
+        // paginar. La ficha sigue enriqueciéndose con Google Books.
+        const { q, params } = buildOpenLibraryQuery(filters, locale);
+        // E-BOOKS-VENTANA: se pide una ventana MÁS ANCHA de la que se enseña,
+        // porque justo debajo se descartan los libros sin portada y ese
+        // recorte no es uniforme — ordenando por "Más recientes" llegaba a
+        // sobrevivir 1 de 20 y la página quedaba casi vacía. Sigue siendo una
+        // sola petición: cambia el tamaño de la respuesta, no el número de
+        // llamadas.
+        const res = await searchOpenLibrary(
+          q,
+          page,
+          params,
+          OPEN_LIBRARY_CATALOG_WINDOW
+        );
+        // E-BOOKS-PORTADA: fuera los libros sin portada en Open Library. En un
+        // catálogo visual una card sin imagen es un hueco, y aquí además
+        // coincide casi siempre con autopublicaciones de relleno. Es la misma
+        // regla que ya se aplica a las recomendaciones IA (E66-POSTER-GATE).
+        // NO se aplica al buscador ni a la ficha: si buscas un título concreto
+        // debe salir aunque no tenga portada, y si ya lo has abierto, más aún.
+        items = (res.docs ?? [])
+          .filter((doc) => Boolean(doc.cover_i))
+          .map((doc) => normalizeBookOpenLibrary(doc));
+        // El total se divide por la VENTANA, no por lo que se enseña: es lo
+        // que determina dónde empieza la página siguiente. Así no se ofrecen
+        // páginas que en realidad ya se han recorrido.
+        totalPages = Math.min(
+          openLibraryTotalPages(res.numFound, OPEN_LIBRARY_CATALOG_WINDOW),
+          DISCOVER_MAX_PAGES
+        );
         hasMore = page < totalPages;
         break;
       }
@@ -241,11 +380,17 @@ export async function fetchDiscoverData(
           ? await getRecentComics(page, filters)
           : await getRecentComics(page);
         items = res.items;
-        // Sin cap: exponemos todas las páginas que reporta ComicVine. res.total es
-        // el total bruto de issues; ceil(total/20) da el nº de páginas navegables.
-        // Si la API corta el offset en páginas muy altas, devolverán vacío, pero no
-        // imponemos tope artificial.
-        totalPages = Math.max(Math.ceil(res.total / 20), 1);
+        // E79-s3: antes SIN cap (se exponían todas las páginas que reporta
+        // ComicVine; en offsets muy altos la API devuelve vacío). Ahora cap común.
+        //
+        // E-COMIC-VENTANA: se divide por lo que cada página CONSUME del
+        // proveedor (300 issues), no por lo que enseña (20). Dividir por 20
+        // anunciaba 15 veces más páginas de las que existen, y las de más
+        // salían vacías.
+        totalPages = Math.min(
+          Math.max(Math.ceil(res.total / COMIC_PAGE_STRIDE), 1),
+          DISCOVER_MAX_PAGES
+        );
         hasMore = page < totalPages;
         break;
       }
@@ -267,7 +412,11 @@ export async function fetchDiscoverData(
         // aplican tras normalizar, mismo patrón que volumenes×manga. Caveat
         // paginación E79 conocido (overfetch sin recomputar totalPages).
         items = applyGamePostFilters(items, filters);
-        totalPages = Math.ceil(res.count / 20);
+        // E79-s3: antes SIN cap → RAWG count=900360 daba 45018 páginas fantasma.
+        totalPages = Math.min(
+          Math.max(Math.ceil(res.count / 20), 1),
+          DISCOVER_MAX_PAGES
+        );
         hasMore = page < totalPages;
         break;
       }
@@ -276,28 +425,34 @@ export async function fetchDiscoverData(
         // Delega en aggregate.ts (reusa este mismo pipeline por familia). Devuelve
         // ya su propio DiscoverResult → retorno directo (no pasa por el merge de
         // items/totalPages locales de esta función).
-        return fetchAggregateData(page, filters);
+        return fetchAggregateData(page, filters, locale);
       }
       default: {
-        // E89: fallback = TMDB movies → mismo cap/guard que case "movie".
-        if (page > TMDB_MAX_PAGES) {
-          return { items: [], totalPages: TMDB_MAX_PAGES, hasMore: false, fetchErrorKind: null };
-        }
+        // Fallback = TMDB movies → mismo cap que case "movie".
         const res = await discoverMovies(
           page,
-          buildTmdbDiscoverParams("movie", filters)
+          buildTmdbDiscoverParams("movie", filters),
+          locale
         );
         items = res.results.map((m) =>
           normalizeMovie(m as unknown as TmdbMovieDetail)
         );
-        totalPages = Math.min(res.total_pages, TMDB_MAX_PAGES);
+        totalPages = Math.min(res.total_pages, DISCOVER_MAX_PAGES);
         hasMore = page < totalPages;
         break;
       }
     }
   } catch (e) {
-    log.error("API error", { type, page, err: e });
-    if (e instanceof JikanError && e.status === 429) {
+    // El error va DENTRO del mensaje, no solo en el contexto: en el visor de
+    // logs de Vercel `context` se pinta colapsado y hay que abrir cada línea
+    // para ver nada. Con el diagnóstico en `message` se lee de un vistazo en
+    // la lista, que es donde se mira cuando algo falla en producción.
+    log.error(`API error · type=${type} page=${page} · ${describeError(e)}`, {
+      type,
+      page,
+      err: e,
+    });
+    if (isRateLimitError(e)) {
       fetchErrorKind = "rate-limit";
     } else {
       fetchErrorKind = "generic";

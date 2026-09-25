@@ -10,9 +10,10 @@ interface AvatarDropdownProps {
   username: string
   avatarColor: string
   avatarInitials: string
+  avatarIcon?: string | null
 }
 
-export function AvatarDropdown({ username, avatarColor, avatarInitials }: AvatarDropdownProps) {
+export function AvatarDropdown({ username, avatarColor, avatarInitials, avatarIcon }: AvatarDropdownProps) {
   const t = useTranslations('nav')
   const tAuth = useTranslations('auth')
   const router = useRouter()
@@ -44,7 +45,7 @@ export function AvatarDropdown({ username, avatarColor, avatarInitials }: Avatar
         aria-expanded={open}
         aria-haspopup="menu"
       >
-        <Avatar initials={avatarInitials} color={avatarColor} size="sm" />
+        <Avatar initials={avatarInitials} color={avatarColor} size="sm" icon={avatarIcon} />
       </button>
 
       {open && (

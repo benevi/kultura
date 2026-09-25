@@ -43,6 +43,14 @@ memoria de una conversación concreta y saber en todo momento cómo actuar.
 - **No fusionar/mergear la PR sin autorización explícita y fresca del
   usuario** para esa PR en concreto — una aprobación anterior no vale
   automáticamente para el siguiente push.
+- **Si la app cae entera con `ERR_NAME_NOT_RESOLVED` contra
+  `*.supabase.co`, sospechar PRIMERO del proyecto pausado**, no del código.
+  El plan gratuito de Supabase pausa el proyecto tras unos días sin
+  actividad y deja de publicar su DNS; el síntoma es exactamente ese y no
+  lo provoca ningún despliegue. Se resuelve con *Restore* en el panel.
+  Mitigación en el repo: cron diario a `/api/health` (E-KEEPALIVE, ver
+  abajo). Mitigación de verdad para producción: plan de pago, que no
+  auto-pausa.
 
 ---
 
@@ -119,11 +127,15 @@ Colores "on-color" (texto sobre fondo sólido vivo, no blanco/negro puro):
   `radial-gradient` de acento en la esquina superior-izquierda
   (`120% 100% at 20% 10%`, color al 55-60% de opacidad, difuminando a
   transparente a 55%).
-- **Badge de match**: pill `--lime` + texto on-lime, `font-weight:800`.
-  Versión "colgante" (esquina de poster, MediaDetail): offset
+- **Badge colgante (pegatina)**: pill `--lime` + texto on-lime,
+  `font-weight:800`. Versión "colgante" (esquina de poster): offset
   `top:-14px; left:-14px`, `rotate(-8deg)`,
   `box-shadow:4px 4px 0 rgba(0,0,0,.4)` — sombra dura tipo pegatina, no
-  blur.
+  blur. **E-MATCH-SIN-BADGE:** nació como "badge de match" y ya NO se usa
+  para porcentajes de afinidad (retirados de toda la UI a petición del
+  usuario). El primitivo sigue vivo para etiquetas de texto real
+  ("Continuando" en el hero de Inicio, "7 formatos culturales" en la
+  landing). No reintroducir un `%` aquí sin decisión expresa.
 - **Rotación de cards**: en grids tipo bento, las cards destacadas llevan
   una rotación sutil (`-1.2deg` / `1deg`) — no todo el grid, solo las
   piezas grandes, y alternando signo.
@@ -306,8 +318,36 @@ con una paleta hex antigua.
 - **Home, Discover y MediaDetail** ya tienen el acabado visual literal de
   F0 (hero con badge colgante, bento con rotación + acento radial, layout
   de dos columnas con badge colgante en MediaDetail).
+- **Landing**: reducida a DOS bloques (hero + features) y con PORTADAS
+  REALES del catálogo en vez de bloques de color
+  (E-LANDING-SHOWCASE). Patrón nuevo, reutilizable en cualquier pantalla
+  pública que quiera enseñar catálogo:
+  - `src/lib/landing/showcase.ts` resuelve la muestra reusando
+    `fetchAggregateData` (el modo "all" de Descubrir: fan-out a las 7
+    familias, normalizado, NSFW filtrado, tolerante a que una familia
+    falle). `pickShowcase` pone primero un item de cada tipo para que el
+    collage no salga con tres películas.
+  - `/[locale]` se renderiza on-demand, así que la muestra va envuelta en
+    `unstable_cache` (un día) con presupuesto de tiempo duro. Una muestra
+    corta LANZA a propósito: `unstable_cache` no guarda rechazos, así un
+    hipo de un proveedor no congela la landing sin imágenes 24 h.
+  - `src/components/landing/PosterTile.tsx` es el primitivo de portada
+    (imagen con respaldo de gradiente DETRÁS, así que un 404 deja color y
+    no un hueco). **Ninguna pantalla debe depender de que haya
+    portadas**: sin muestra, cada pieza cae a su versión de gradiente,
+    y por eso los huecos van dentro de `<Suspense>` con esa versión como
+    fallback (`ShowcaseSlots`) — el primer pintado no espera a ningún
+    proveedor.
+  - Las portadas se enseñan SOLO en el hero (collage en escritorio, tira
+    en móvil). Las tarjetas de features llevan únicamente su icono
+    centrado: las miniaturas que hubo ahí competían con el collage y
+    dejaban la tarjeta abarrotada.
+  - El hero tiene UN solo CTA. El secundario era un ancla a `#features`
+    que, con la landing en dos bloques, movía la página unos píxeles; y
+    el catálogo no vale de destino porque todo `(app)` redirige a login
+    sin sesión.
 
-**Pendiente:** las 14 pantallas restantes (Landing, Login, Library,
+**Pendiente:** las 13 pantallas restantes (Login, Library,
 Search, Friends, Groups, GroupDetail, Chat, Notifications, Profile,
 Lists, ListDetail, Settings, Suggestions) heredan bien los colores vía
 custom properties pero no tienen todavía el acabado F0 específico de
@@ -316,7 +356,89 @@ de extensión a pantallas nuevas" arriba). Migrar con el mismo patrón:
 un agente por pantalla o grupo de pantallas afines, siguiendo las
 instrucciones operativas de la cabecera de este documento.
 
+- **Porcentaje de match retirado de la UI** (E-MATCH-SIN-BADGE). Ya no se
+  pinta en Descubrir, ficha, recomendaciones IA ni novedades de Inicio. Lo
+  que se quitó es la ETIQUETA, no el motor: `computeMatchScores` sigue
+  siendo el criterio con el que la IA elige cada recomendación
+  (`lib/claude/recommendations.ts`). Consecuencias a tener presentes:
+  - `/api/discover` y `/api/genre-news` ya NO calculan match: lo hacían
+    solo para el badge, y era una lectura de biblioteca + scoring en cada
+    petición de catálogo.
+  - La ficha SÍ sigue recibiendo `matchScore`, pero solo como compuerta de
+    "Por qué te lo recomendamos": sin él, esa sección le diría "coincide
+    con géneros que ya te gustan" a alguien de cuyos gustos no sabemos
+    nada. El texto ya no cita ningún porcentaje.
+  - **El prompt de las recomendaciones prohíbe citar el % en la frase.**
+    Quitar los badges no bastó: el modelo seguía escribiendo "match de
+    73%" en el `reason`, que es la misma cifra por la puerta de atrás. El
+    match sigue viajando en el prompt como criterio de elección; lo que no
+    puede es salir en el texto.
+
+- **El catálogo no muestra fechas futuras** (E-CATALOGO-FUTURO). Regla
+  común a las 7 familias; la referencia vive en
+  `src/lib/api/catalog-window.ts` y cada proveedor la aplica con SU
+  operador nativo (`.lte` en TMDB, `startDate_lesser` en AniList, `dates`
+  en RAWG, `cover_date` en ComicVine, `first_publish_year` en Open
+  Library). Tres cosas que hay que respetar al tocarlo:
+  - **Excepción `estado=upcoming`** en series y anime: ahí el futuro es
+    justo lo que se pide. En `tv` la regla se INVIERTE — el límite va abajo
+    (`first_air_date.gte = hoy`), no arriba. Tres cosas se juntaron aquí y
+    conviene no deshacer ninguna por separado:
+    1. El tope superior no se aplica (con él, cero resultados siempre).
+    2. **Tampoco el suelo de votos** (E94) — E-UPCOMING-SIN-VOTOS: una
+       serie sin emitir no la ha votado nadie, así que exigirle 50 votos la
+       vaciaba igual. El filtro llevaba vacío desde julio de 2026 por esto,
+       no por el tope. Si se añade otro umbral de calidad a TMDB,
+       comprobar antes qué hace con `upcoming`.
+    3. **Hace falta el límite inferior de fecha** — E-UPCOMING-FECHA:
+       `with_status=1|2` es el estado de PRODUCCIÓN (Planned | In
+       Production), NO "aún no estrenada". Una serie de 1989 que sigue
+       rodándose lo cumple, y sin el `.gte` la primera página de
+       "Próximamente" salía con estrenos de 1989, 2021 y 2024. Contrapartida
+       asumida: las series anunciadas SIN fecha quedan fuera.
+  - **Rango que empieza en el futuro se respeta** sin recortar: recortarlo
+    daría una ventana invertida = catálogo vacío.
+  - **Manga es la excepción técnica**: MangaDex solo acepta `year` como
+    igualdad, sin rango, así que ahí el tope es un post-filtro
+    (`dropFutureYears`) de tipo marginal — como el NSFW global, no cuenta
+    en `hasActivePostFilter`.
+  - **Cómic necesitó ventana ampliada** (E-COMIC-VENTANA). El tope no
+    rompió nada, pero DESTAPÓ que el filtro de editoriales se come el
+    grueso de lo reciente: sin tope, los 100 primeros por `cover_date:desc`
+    eran solicitaciones futuras de grandes editoriales americanas (que
+    sobreviven bien); con tope pasaron a ser los 100 más recientes ya
+    publicados, donde ComicVine está lleno de manga que el filtro descarta
+    → la página 1 se quedó en CINCO cómics. Ahora cada página mira hasta
+    3 ventanas de 100 y para en cuanto junta 20. Dos cosas que van juntas:
+    el presupuesto está acotado a propósito (ComicVine limita a ~200
+    peticiones/hora, y cada ventana cuesta 2: issues + volúmenes), y el
+    conteo de páginas divide por lo que la página CONSUME (300), no por lo
+    que enseña (20) — dividir por 20 anunciaba 15 veces más páginas de las
+    que existen.
+
+- **Keep-alive de Supabase** (E-KEEPALIVE). `/api/health` hace una consulta
+  real a la base (`profiles`, `head:true`) y `vercel.json` la llama con un
+  cron diario. Sirve además de endpoint para un monitor de caídas externo.
+  Tres cosas que NO hay que romper:
+  - `export const dynamic = "force-dynamic"` + `Cache-Control: no-store`.
+    Si la respuesta se cachea, el cron deja de tocar la base y el
+    keep-alive pasa a ser un placebo que devuelve 200 mientras el proyecto
+    se pausa igual. Hay un test que lo fija.
+  - Usa el cliente **admin**: así el chequeo no depende de RLS ni de que
+    haya sesión, y "hay error" significa de verdad "la base no responde".
+  - El detalle del error va al log, NUNCA a la respuesta pública.
+  - **Los crons de Vercel solo corren en producción**, no en preview.
+  - Esto MITIGA la pausa, no la garantiza: depende de que Supabase cuente
+    la petición como actividad (no documentado). Para producción, plan de
+    pago.
+
 **Deuda técnica por resolver:**
+- `books-maps.ts` quedó casi entero como código muerto tras el híbrido de
+  libros (E-BOOKS-HIBRIDO): solo siguen vivos `BOOKS_FORMATO` y
+  `BOOKS_PUBLISHER`, que alimentan opciones de la UI. El constructor de query
+  de Google Books y sus helpers ya no los importa nadie — se conservan un
+  ciclo por si hay que revertir, y hay que borrarlos (con sus tests) cuando el
+  híbrido esté validado en producción.
 - `KButton` y `button.tsx` (shadcn-style) conviven como dos sistemas de
   botón distintos — decidir cuál se queda antes de seguir migrando
   pantallas que usan el segundo.

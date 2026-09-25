@@ -9,12 +9,16 @@
 // ============================================================
 
 import Image from "next/image";
+import { Suspense } from "react";
 import { getTranslations } from "next-intl/server";
 import type { MediaItem, StreamingProvider } from "@/types/media";
 import type { LibraryEntry } from "@/types/library";
+import type { SteamInfo } from "@/lib/api/steam";
 import { TrailerEmbed } from "./TrailerEmbed";
 import { StreamingProviders } from "./StreamingProviders";
 import { SynopsisSection } from "./SynopsisSection";
+import { TranslatedSynopsis } from "./TranslatedSynopsis";
+import { SteamSection } from "./SteamSection";
 import { LibraryAction } from "@/components/library/LibraryAction";
 import { RecommendButton } from "@/components/social/RecommendButton";
 import { AddToListButton } from "@/components/social/AddToListButton";
@@ -35,11 +39,20 @@ interface MediaDetailProps {
   initialEntry: LibraryEntry | null;
   isAuthenticated: boolean;
   /**
-   * Match score real 0-100 (F3a, `computeMatchScores`) calculado para este
-   * único item. Ausente = sin badge — nunca un número decorativo cuando no
-   * hay señal suficiente en la biblioteca del usuario para calcularlo.
+   * Match score real 0-100 (`computeMatchScores`) calculado para este único
+   * item. E-MATCH-SIN-BADGE: YA NO SE PINTA. Se sigue recibiendo porque es la
+   * señal de que hay afinidad calculable para este usuario (biblioteca con
+   * géneros suficientes): sin él, "Por qué te lo recomendamos" le diría
+   * "coincide con géneros que ya te gustan" a alguien de cuyos gustos no
+   * sabemos nada. Actúa de compuerta, no de dato visible.
    */
   matchScore?: number;
+  /**
+   * E-GAMES-STEAM: datos de tienda de Steam para la ficha de un juego. Opcional
+   * a propósito — si no se pudo resolver el `appid` con confianza llega
+   * `undefined`/`null` y la ficha se pinta sin la sección.
+   */
+  steam?: SteamInfo | null;
 }
 
 interface DetailTile {
@@ -96,6 +109,7 @@ export async function MediaDetail({
   initialEntry,
   isAuthenticated,
   matchScore,
+  steam,
 }: MediaDetailProps) {
   const t = await getTranslations("media_detail");
   const tMedia = await getTranslations("media");
@@ -129,8 +143,10 @@ export async function MediaDetail({
   // tiene hoy una explicación por-item generada por Claude (eso solo existe
   // como feed agregado en /home vía getAiRecommendations, que no toma un
   // item concreto como entrada). Esta sección se construye únicamente con
-  // datos reales ya presentes en esta página — géneros del item + el mismo
-  // match score real (F3a) — y se oculta por completo si no hay señal.
+  // datos reales ya presentes en esta página (los géneros del item) y se
+  // oculta por completo si no hay señal: `matchScore` es la compuerta que
+  // dice que SÍ hay afinidad calculada para este usuario, aunque su valor ya
+  // no se enseñe.
   const topGenres = item.genres?.slice(0, 3) ?? [];
   const showWhyRecommended = matchScore !== undefined && topGenres.length > 0;
 
@@ -141,24 +157,6 @@ export async function MediaDetail({
           {/* ── Columna izquierda: poster ── */}
           <div className="w-full md:w-[420px] flex-shrink-0">
             <div className="relative">
-              {/* Badge de match real (F3a) — versión "colgante" (CLAUDE.md) */}
-              {matchScore !== undefined && (
-                <div
-                  data-testid="media-match-badge"
-                  className="absolute z-10 rounded-full font-display font-extrabold text-[15px] leading-none px-[18px] py-2.5"
-                  style={{
-                    top: "-14px",
-                    left: "-14px",
-                    transform: "rotate(-8deg)",
-                    background: "oklch(83% 0.24 130)",
-                    color: "oklch(18% 0.02 130)",
-                    boxShadow: "4px 4px 0 rgba(0,0,0,0.4)",
-                  }}
-                >
-                  {matchScore}% MATCH
-                </div>
-              )}
-
               <div
                 className="relative w-full aspect-[3/4] rounded-[32px] overflow-hidden flex items-end p-6 md:p-8"
                 style={{ boxShadow: "12px 12px 0 oklch(26% 0.025 280)" }}
@@ -269,10 +267,7 @@ export async function MediaDetail({
                   🤖 {t("whyRecommended")}
                 </span>
                 <p className="text-sm text-text-secondary leading-relaxed">
-                  {t("whyRecommendedText", {
-                    genres: topGenres.join(", "),
-                    score: matchScore,
-                  })}
+                  {t("whyRecommendedText", { genres: topGenres.join(", ") })}
                 </p>
               </section>
             )}
@@ -283,9 +278,18 @@ export async function MediaDetail({
                 <h2 className="font-display text-xl font-bold text-text-primary mb-3">
                   {t("synopsis")}
                 </h2>
-                <SynopsisSection text={item.synopsis} />
+                {/* E-SINOPSIS-I18N: AniList, RAWG y ComicVine solo publican
+                    inglés. La traducción se resuelve fuera del render crítico
+                    — el fallback es el texto original, así que la ficha nunca
+                    espera y nunca se queda sin sinopsis. */}
+                <Suspense fallback={<SynopsisSection text={item.synopsis} />}>
+                  <TranslatedSynopsis text={item.synopsis} mediaId={item.id} />
+                </Suspense>
               </section>
             )}
+
+            {/* Steam (solo juegos, y solo si se resolvió la ficha de tienda) */}
+            {steam && <SteamSection steam={steam} />}
 
             {/* Streaming providers */}
             {providers && providers.length > 0 && (

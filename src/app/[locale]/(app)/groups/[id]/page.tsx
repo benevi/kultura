@@ -6,6 +6,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { redirect, notFound } from 'next/navigation'
 import { getTranslations } from 'next-intl/server'
+import { AVATAR_ICONS } from '@/components/icons/avatars'
 import { Avatar } from '@/components/ui/Avatar'
 import { Badge } from '@/components/ui/Badge'
 import { GroupFeed } from './GroupFeed'
@@ -43,12 +44,15 @@ export default async function GroupPage({ params }: Props) {
   // Privado no auto-unible: ocultar el botón a quien no es miembro ni owner (evita 403/RLS confuso).
   const showJoin = isMember || isOwner || group.isPublic
 
-  const t = await getTranslations('friends')
   const tG = await getTranslations('groups')
 
   // Preview "apilado" (CLAUDE.md — avatares apilados): primeros miembros de
   // la lista ya cargada, mismo dato que el sidebar, solo tratamiento visual.
   const stackPreview = members.slice(0, 5)
+
+  // E-AVATAR-ICONS: sin icono elegido, el grupo sigue identificándose por la
+  // inicial de su nombre, como hasta ahora.
+  const GroupIcon = group.icon ? AVATAR_ICONS[group.icon] : undefined
 
   return (
     <main className="max-w-3xl mx-auto px-4 md:px-8 py-8 flex flex-col gap-8">
@@ -67,7 +71,11 @@ export default async function GroupPage({ params }: Props) {
           className="relative z-10 w-14 h-14 rounded-[16px_16px_16px_4px] flex-shrink-0 flex items-center justify-center font-display font-extrabold text-xl"
           style={{ background: group.coverColor, color: F0.onPink }}
         >
-          {group.name.slice(0, 1).toUpperCase()}
+          {GroupIcon ? (
+            <GroupIcon className="w-7 h-7" aria-hidden="true" />
+          ) : (
+            group.name.slice(0, 1).toUpperCase()
+          )}
         </div>
         <div className="relative z-10 flex-1 min-w-0">
           <div className="flex items-center gap-2 min-w-0 flex-wrap">
@@ -108,7 +116,11 @@ export default async function GroupPage({ params }: Props) {
               </div>
             )}
             <p className="text-xs" style={{ color: F0.muted }}>
-              {members.length} {t('membersCount', { count: members.length })}
+              {/* La clave i18n ya incluye el número: pintarlo también aquí fuera
+                  daba el "1 1 miembros" visto en producción. Se usa la del
+                  namespace `groups`, que además tiene singular ("1 miembro"),
+                  en vez de la de `friends`, que siempre decía "miembros". */}
+              {tG('membersCount', { count: members.length })}
             </p>
           </div>
         </div>
