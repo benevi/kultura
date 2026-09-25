@@ -290,11 +290,27 @@ export function buildTmdbDiscoverParams(
   // que todavía no existe. Se acota SIEMPRE por arriba, haya o no filtro de año
   // (elegir el año en curso no debe arrastrar los meses que faltan).
   //
-  // EXCEPCIÓN: `tv` ofrece `estado=upcoming` (with_status=Planned|In Production).
-  // Ahí el futuro es justo lo que se pide, así que el tope no se aplica — con él
-  // ese filtro devolvería siempre cero.
-  if (!wantsUpcoming) {
-    const iso = todayIso();
+  const iso = todayIso();
+
+  if (wantsUpcoming) {
+    // `estado=upcoming` le da la vuelta a la regla: aquí lo único que vale ES
+    // el futuro, así que el límite va ABAJO, no arriba.
+    //
+    // E-UPCOMING-FECHA: no basta con `with_status=1|2`. Ese campo es el estado
+    // de PRODUCCIÓN de TMDB (Planned | In Production), NO "todavía no se ha
+    // estrenado": una serie de 1989 que sigue rodándose —o con los metadatos
+    // flojos, que abunda— lo cumple igual. Verificado en preview: la primera
+    // página de "Próximamente" salía con estrenos de 1989, 2021 y 2024. Exigir
+    // que la fecha de estreno sea de HOY en adelante es lo que hace que la
+    // etiqueta diga la verdad.
+    //
+    // Contrapartida: las series anunciadas SIN fecha quedan fuera (un filtro de
+    // rango en TMDB no devuelve nulos). Es el precio de que la lista cumpla lo
+    // que promete — una serie sin fecha tampoco se puede anunciar como
+    // "próximamente" con honestidad.
+    const gte = params[gteKey];
+    params[gteKey] = !gte || gte < iso ? iso : gte;
+  } else {
     // Rango que EMPIEZA en el futuro: se respeta (recortarlo daría una ventana
     // invertida = catálogo vacío). Hoy la UI no ofrece años futuros.
     const startsInFuture = Boolean(params[gteKey] && params[gteKey] > iso);

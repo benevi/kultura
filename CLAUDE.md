@@ -381,14 +381,21 @@ instrucciones operativas de la cabecera de este documento.
   en RAWG, `cover_date` en ComicVine, `first_publish_year` en Open
   Library). Tres cosas que hay que respetar al tocarlo:
   - **Excepción `estado=upcoming`** en series y anime: ahí el futuro es
-    justo lo que se pide, así que el tope NO se aplica. Con tope, ese
-    filtro devolvería siempre cero — la otra forma de mentir. **Y por el
-    mismo motivo tampoco se aplica el suelo de votos** (E94) en ese caso
-    (E-UPCOMING-SIN-VOTOS): una serie sin emitir no la ha votado nadie, así
-    que exigirle 50 votos la vaciaba igual. Verificado en preview: el
-    filtro llevaba vacío desde julio de 2026 por esta causa, no por el
-    tope. Si se añade cualquier otro umbral de calidad a TMDB, comprobar
-    antes qué hace con `upcoming`.
+    justo lo que se pide. En `tv` la regla se INVIERTE — el límite va abajo
+    (`first_air_date.gte = hoy`), no arriba. Tres cosas se juntaron aquí y
+    conviene no deshacer ninguna por separado:
+    1. El tope superior no se aplica (con él, cero resultados siempre).
+    2. **Tampoco el suelo de votos** (E94) — E-UPCOMING-SIN-VOTOS: una
+       serie sin emitir no la ha votado nadie, así que exigirle 50 votos la
+       vaciaba igual. El filtro llevaba vacío desde julio de 2026 por esto,
+       no por el tope. Si se añade otro umbral de calidad a TMDB,
+       comprobar antes qué hace con `upcoming`.
+    3. **Hace falta el límite inferior de fecha** — E-UPCOMING-FECHA:
+       `with_status=1|2` es el estado de PRODUCCIÓN (Planned | In
+       Production), NO "aún no estrenada". Una serie de 1989 que sigue
+       rodándose lo cumple, y sin el `.gte` la primera página de
+       "Próximamente" salía con estrenos de 1989, 2021 y 2024. Contrapartida
+       asumida: las series anunciadas SIN fecha quedan fuera.
   - **Rango que empieza en el futuro se respeta** sin recortar: recortarlo
     daría una ventana invertida = catálogo vacío.
   - **Manga es la excepción técnica**: MangaDex solo acepta `year` como
