@@ -68,6 +68,8 @@ vi.mock("@/lib/api/normalizer", () => ({
   normalizeMangaDex: vi.fn((m) => ({
     id: `manga_${m.id}`,
     title: m.title,
+    // E-CATALOGO-FUTURO: el año viaja para poder ejercer el tope de manga.
+    year: m.year,
     metadata: { volumes: m.volumes ?? undefined },
   })),
   // E-BOOKS-HIBRIDO: el catálogo de libros viene de Open Library; Google Books
@@ -90,6 +92,7 @@ import {
   OPEN_LIBRARY_CATALOG_WINDOW,
 } from "@/lib/api/openlibrary";
 import { searchByTypePaged } from "@/lib/api/search";
+import { todayYear } from "@/lib/api/catalog-window";
 import { DISCOVER_MAX_PAGES } from "@/lib/api/pagination";
 import { getPopularGames, discoverGames } from "@/lib/api/rawg";
 import { getRecentComics } from "@/lib/api/comicvine";
@@ -180,6 +183,26 @@ describe("fetchDiscoverData — guard null-data (E29)", () => {
     const result = await fetchDiscoverData("manga", 1);
     expect(result.totalPages).toBe(1);
   });
+
+  // E-CATALOGO-FUTURO: manga es la única familia sin rango de fecha nativo
+  // (MangaDex solo acepta `year` como igualdad), así que el tope se aplica
+  // sobre los items ya normalizados.
+  it("manga: descarta lo fechado por delante del año en curso", async () => {
+    const futuro = new Date().getUTCFullYear() + 4;
+    vi.mocked(getPopularManga).mockResolvedValue({
+      data: [
+        { id: "ok", title: "Publicado", year: 2019 },
+        { id: "futuro", title: "Inventado", year: futuro },
+        { id: "sin-año", title: "Sin año" },
+      ] as unknown as never[],
+      total: 3,
+      offset: 0,
+    });
+
+    const result = await fetchDiscoverData("manga", 1);
+    // El que no tiene año se conserva: no sabemos que mienta.
+    expect(result.items.map((i) => i.id)).toEqual(["manga_ok", "manga_sin-año"]);
+  });
 });
 
 // ── Guard: totalItems books (E-BOOKS-GOOGLE — Google Books) ──────────────────
@@ -248,8 +271,9 @@ describe("fetchDiscoverData — books filtros (E-BOOKS-HIBRIDO)", () => {
 
   it("sin filtros → semilla amplia y el idioma del locale", async () => {
     await fetchDiscoverData("book", 1);
+    // E-CATALOGO-FUTURO: toda consulta de libros lleva tope de año.
     expect(searchOpenLibrary).toHaveBeenCalledWith(
-      'subject:"fiction"',
+      `subject:"fiction" first_publish_year:[* TO ${todayYear()}]`,
       1,
       { language: "spa" },
       OPEN_LIBRARY_CATALOG_WINDOW
@@ -276,7 +300,7 @@ describe("fetchDiscoverData — books filtros (E-BOOKS-HIBRIDO)", () => {
   it("una década es un rango, no un año suelto ignorado", async () => {
     await fetchDiscoverData("book", 1, { year: "2000s" });
     expect(searchOpenLibrary).toHaveBeenCalledWith(
-      "first_publish_year:[2000 TO 2009]",
+      `${'subject:"fiction"'} first_publish_year:[2000 TO 2009]`,
       1,
       { language: "spa" },
       OPEN_LIBRARY_CATALOG_WINDOW
@@ -286,7 +310,7 @@ describe("fetchDiscoverData — books filtros (E-BOOKS-HIBRIDO)", () => {
   it("classic cubre 1900-1999, igual que en el resto de familias", async () => {
     await fetchDiscoverData("book", 1, { year: "classic" });
     expect(searchOpenLibrary).toHaveBeenCalledWith(
-      "first_publish_year:[1900 TO 1999]",
+      `${'subject:"fiction"'} first_publish_year:[1900 TO 1999]`,
       1,
       { language: "spa" },
       OPEN_LIBRARY_CATALOG_WINDOW
@@ -296,7 +320,7 @@ describe("fetchDiscoverData — books filtros (E-BOOKS-HIBRIDO)", () => {
   it("el idioma del locale viaja SIEMPRE: es lo que fija el título que se lee", async () => {
     await fetchDiscoverData("book", 1, {}, "es");
     expect(searchOpenLibrary).toHaveBeenCalledWith(
-      'subject:"fiction"',
+      `subject:"fiction" first_publish_year:[* TO ${todayYear()}]`,
       1,
       expect.objectContaining({ language: "spa" }),
       OPEN_LIBRARY_CATALOG_WINDOW
@@ -306,7 +330,7 @@ describe("fetchDiscoverData — books filtros (E-BOOKS-HIBRIDO)", () => {
   it('formato "libre" acota a texto completo; el resto no finge precisión', async () => {
     await fetchDiscoverData("book", 1, { formato: "free" });
     expect(searchOpenLibrary).toHaveBeenCalledWith(
-      'subject:"fiction"',
+      `subject:"fiction" first_publish_year:[* TO ${todayYear()}]`,
       1,
       expect.objectContaining({ has_fulltext: "true" }),
       OPEN_LIBRARY_CATALOG_WINDOW
@@ -315,7 +339,7 @@ describe("fetchDiscoverData — books filtros (E-BOOKS-HIBRIDO)", () => {
     vi.mocked(searchOpenLibrary).mockClear();
     await fetchDiscoverData("book", 1, { formato: "physical" });
     expect(searchOpenLibrary).toHaveBeenCalledWith(
-      'subject:"fiction"',
+      `subject:"fiction" first_publish_year:[* TO ${todayYear()}]`,
       1,
       expect.not.objectContaining({ has_fulltext: expect.anything() }),
       OPEN_LIBRARY_CATALOG_WINDOW

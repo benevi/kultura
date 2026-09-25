@@ -8,6 +8,7 @@ import { describe, it, expect } from "vitest";
 import {
   comicSort,
   comicCoverDateRange,
+  comicCoverDateWindow,
   COMIC_PUBLISHER,
   mapPublisherSubstrings,
   hasComicFilters,
@@ -108,5 +109,53 @@ describe("hasComicFilters", () => {
 
   it("editorial vacío no cuenta", () => {
     expect(hasComicFilters({ editorial: [] })).toBe(false);
+  });
+});
+
+// ── E-CATALOGO-FUTURO: ventana de cover_date ─────────────────────────────────
+
+describe("comicCoverDateWindow", () => {
+  const today = new Date("2026-09-25T10:00:00Z");
+
+  it("sin año → desde el inicio del catálogo hasta hoy", () => {
+    expect(comicCoverDateWindow(null, today)).toBe(
+      "cover_date:1900-01-01|2026-09-25"
+    );
+  });
+
+  it("año en curso → recortado a hoy (no trae portadas sin publicar)", () => {
+    expect(comicCoverDateWindow("2026", today)).toBe(
+      "cover_date:2026-01-01|2026-09-25"
+    );
+  });
+
+  it("año ya cerrado → rango íntegro", () => {
+    expect(comicCoverDateWindow("2024", today)).toBe(
+      "cover_date:2024-01-01|2024-12-31"
+    );
+    expect(comicCoverDateWindow("classic", today)).toBe(
+      "cover_date:1900-01-01|1999-12-31"
+    );
+  });
+
+  it("década en curso → recortada; década cerrada → íntegra", () => {
+    expect(comicCoverDateWindow("2020s", today)).toBe(
+      "cover_date:2020-01-01|2026-09-25"
+    );
+    expect(comicCoverDateWindow("2000s", today)).toBe(
+      "cover_date:2000-01-01|2009-12-31"
+    );
+  });
+
+  it("año inválido → misma ventana que sin año (nunca lanza)", () => {
+    expect(comicCoverDateWindow("nope", today)).toBe(
+      "cover_date:1900-01-01|2026-09-25"
+    );
+  });
+
+  it("rango enteramente futuro → se respeta (no se invierte la ventana)", () => {
+    expect(comicCoverDateWindow("2099", today)).toBe(
+      "cover_date:2099-01-01|2099-12-31"
+    );
   });
 });

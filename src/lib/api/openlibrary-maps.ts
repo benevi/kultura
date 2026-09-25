@@ -16,6 +16,8 @@
 // páginas medio vacías y los títulos en un idioma que no era el pedido.
 // ============================================================
 
+import { todayYear } from "@/lib/api/catalog-window";
+
 import { resolveApiLocale } from "@/lib/api/locale";
 
 // ── Géneros (slug canónico Kultura → término subject: de Open Library) ───────
@@ -182,12 +184,31 @@ export function buildOpenLibraryQuery(
     .filter((v): v is string => Boolean(v));
   for (const subject of subjects) fragments.push(`subject:"${subject}"`);
 
-  const range = openLibraryYearRange(filters.year);
-  if (range) {
-    fragments.push(`first_publish_year:[${range.from} TO ${range.to}]`);
-  }
+  // La base (`subject:"fiction"`) solo entra si el usuario no ha puesto ningún
+  // fragmento propio: es lo que da un catálogo con sentido cuando no hay
+  // filtros. El tope de fecha se añade DESPUÉS, para no desplazarla nunca.
+  const base = fragments.length > 0 ? fragments.join(" ") : OPEN_LIBRARY_BASE_QUERY;
 
-  const q = fragments.length > 0 ? fragments.join(" ") : OPEN_LIBRARY_BASE_QUERY;
+  // E-CATALOGO-FUTURO: el catálogo no muestra libros con año de publicación
+  // posterior al actual. Sin tope, `sort=new` ("Más recientes") abre por
+  // ediciones anunciadas —y por erratas de catalogación—, igual que pasaba en
+  // juegos. Open Library trabaja con grano de AÑO, así que el tope es el año en
+  // curso; `libros` no ofrece filtro de estado, así que no hay excepción.
+  //
+  // Contrapartida asumida: `[* TO año]` descarta también las obras SIN
+  // `first_publish_year`. Es el precio de que "Más recientes" signifique algo
+  // — ese orden ya exige el campo — y el catálogo ya venía exigiendo portada.
+  const range = openLibraryYearRange(filters.year);
+  const currentYear = todayYear();
+  const from = range ? String(range.from) : "*";
+  // Rango que EMPIEZA en el futuro: se respeta (recortarlo daría una ventana
+  // invertida = catálogo vacío).
+  const to =
+    range && range.from > currentYear
+      ? range.to
+      : Math.min(range?.to ?? currentYear, currentYear);
+
+  const q = `${base} first_publish_year:[${from} TO ${to}]`;
 
   const params: Record<string, string> = {
     language: languageOverride(filters.idioma) ?? openLibraryLanguage(locale),

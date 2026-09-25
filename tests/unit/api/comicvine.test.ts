@@ -547,6 +547,12 @@ describe("getRecentComics", () => {
       (c[0] as string).includes("/issues/")
     )![0] as string;
     expect(issuesUrl).toContain("sort=cover_date%3Adesc");
-    expect(issuesUrl).not.toContain("filter=");
+    // E-CATALOGO-FUTURO: el `filter` de fecha pasa a ser incondicional (antes
+    // solo aparecía con filtro de año). Las portadas se fechan con meses de
+    // adelanto: sin tope, "Más recientes" abre por números sin publicar.
+    const hoy = new Date().toISOString().slice(0, 10);
+    expect(issuesUrl).toContain(
+      `filter=cover_date%3A1900-01-01%7C${hoy}`
+    );
   });
 });

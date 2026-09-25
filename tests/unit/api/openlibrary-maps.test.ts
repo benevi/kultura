@@ -8,6 +8,7 @@
 // ============================================================
 
 import { describe, it, expect } from "vitest";
+import { todayYear } from "@/lib/api/catalog-window";
 import {
   buildOpenLibraryQuery,
   openLibraryYearRange,
@@ -82,7 +83,7 @@ describe("openLibraryFulltext", () => {
 describe("buildOpenLibraryQuery", () => {
   it("sin filtros → semilla amplia y el idioma del locale", () => {
     expect(buildOpenLibraryQuery({}, "es")).toEqual({
-      q: OPEN_LIBRARY_BASE_QUERY,
+      q: `${OPEN_LIBRARY_BASE_QUERY} first_publish_year:[* TO ${todayYear()}]`,
       params: { language: "spa" },
     });
   });
@@ -92,24 +93,46 @@ describe("buildOpenLibraryQuery", () => {
     expect(params.language).toBe("eng");
   });
 
-  it("género y año se combinan en la consulta", () => {
+  // E-CATALOGO-FUTURO: toda consulta lleva un tope de año, así que la década en
+  // curso se recorta al año actual (2020s ya no llega a 2029).
+  it("género y año se combinan en la consulta, con el tope de hoy", () => {
     const { q } = buildOpenLibraryQuery({
       genre: ["ciencia-ficcion"],
       year: "2020s",
     });
     expect(q).toBe(
-      'subject:"science fiction" first_publish_year:[2020 TO 2029]'
+      `subject:"science fiction" first_publish_year:[2020 TO ${todayYear()}]`
+    );
+  });
+
+  it("década ya cerrada → rango íntegro", () => {
+    const { q } = buildOpenLibraryQuery({ year: "2000s" });
+    expect(q).toBe(
+      `${OPEN_LIBRARY_BASE_QUERY} first_publish_year:[2000 TO 2009]`
     );
   });
 
   it("varios géneros producen un fragmento cada uno", () => {
     const { q } = buildOpenLibraryQuery({ genre: ["fantasia", "terror"] });
-    expect(q).toBe('subject:"fantasy" subject:"horror"');
+    expect(q).toBe(
+      `subject:"fantasy" subject:"horror" first_publish_year:[* TO ${todayYear()}]`
+    );
   });
 
   it("un género desconocido se ignora en vez de romper la consulta", () => {
     const { q } = buildOpenLibraryQuery({ genre: ["noexiste"] });
-    expect(q).toBe(OPEN_LIBRARY_BASE_QUERY);
+    // La base sigue siendo la que manda cuando no queda ningún fragmento del
+    // usuario: el tope se añade DESPUÉS, nunca la desplaza.
+    expect(q).toBe(
+      `${OPEN_LIBRARY_BASE_QUERY} first_publish_year:[* TO ${todayYear()}]`
+    );
+  });
+
+  it("año futuro explícito se respeta sin recortar", () => {
+    const { q } = buildOpenLibraryQuery({ year: "2099" });
+    expect(q).toBe(
+      `${OPEN_LIBRARY_BASE_QUERY} first_publish_year:[2099 TO 2099]`
+    );
   });
 
   it("el override de idioma manda sobre el locale activo", () => {

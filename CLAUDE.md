@@ -361,6 +361,22 @@ instrucciones operativas de la cabecera de este documento.
     con géneros que ya te gustan" a alguien de cuyos gustos no sabemos
     nada. El texto ya no cita ningún porcentaje.
 
+- **El catálogo no muestra fechas futuras** (E-CATALOGO-FUTURO). Regla
+  común a las 7 familias; la referencia vive en
+  `src/lib/api/catalog-window.ts` y cada proveedor la aplica con SU
+  operador nativo (`.lte` en TMDB, `startDate_lesser` en AniList, `dates`
+  en RAWG, `cover_date` en ComicVine, `first_publish_year` en Open
+  Library). Tres cosas que hay que respetar al tocarlo:
+  - **Excepción `estado=upcoming`** en series y anime: ahí el futuro es
+    justo lo que se pide, así que el tope NO se aplica. Con tope, ese
+    filtro devolvería siempre cero — la otra forma de mentir.
+  - **Rango que empieza en el futuro se respeta** sin recortar: recortarlo
+    daría una ventana invertida = catálogo vacío.
+  - **Manga es la excepción técnica**: MangaDex solo acepta `year` como
+    igualdad, sin rango, así que ahí el tope es un post-filtro
+    (`dropFutureYears`) de tipo marginal — como el NSFW global, no cuenta
+    en `hasActivePostFilter`.
+
 **Deuda técnica por resolver:**
 - `books-maps.ts` quedó casi entero como código muerto tras el híbrido de
   libros (E-BOOKS-HIBRIDO): solo siguen vivos `BOOKS_FORMATO` y

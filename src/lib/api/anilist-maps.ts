@@ -13,6 +13,7 @@
 // ============================================================
 
 import { valoracionThreshold } from "@/lib/api/valoracion";
+import { todayIso } from "@/lib/api/catalog-window";
 import type { AniListDiscoverParams } from "@/lib/api/anilist";
 
 export interface AniListFilters {
@@ -85,6 +86,18 @@ function rangeBounds(startYear: number, endYear: number): AniListDateRange {
   };
 }
 
+/**
+ * Cota superior EXCLUSIVA en FuzzyDateInt para "no más tarde que hoy".
+ * `startDate_lesser` es estrictamente menor-que (por eso los rangos usan
+ * `(endYear + 1) * 10000 + 101`), así que hoy se expresa como el entero de hoy
+ * + 1. Puede dar un día inexistente (20260931) y da igual: AniList compara
+ * FuzzyDateInt como NÚMERO, y ese valor queda entre el 30 de septiembre y el 1
+ * de octubre, que es exactamente la frontera buscada.
+ */
+export function aniListTodayBound(today: Date = new Date()): number {
+  return parseInt(todayIso(today).replace(/-/g, ""), 10) + 1;
+}
+
 export function aniListDateRange(
   year: string | null | undefined
 ): AniListDateRange | null {
@@ -122,6 +135,24 @@ export function buildAniListDiscoverParams(
 
   const range = aniListDateRange(filters.year);
 
+  // E-CATALOGO-FUTURO: el catálogo no muestra anime que aún no ha empezado a
+  // emitirse. Sin tope, `START_DATE_DESC` ("Más recientes") abre justo por lo
+  // que no existe todavía.
+  //
+  // EXCEPCIÓN: `estado=upcoming` (NOT_YET_RELEASED) pide precisamente eso, así
+  // que ahí no se acota — con tope, ese filtro devolvería siempre cero.
+  //
+  // Rango que EMPIEZA en el futuro: se respeta (recortarlo daría una ventana
+  // invertida = catálogo vacío).
+  const todayBound = aniListTodayBound();
+  const wantsUpcoming = filters.status === "upcoming";
+  const startsInFuture = Boolean(
+    range && range.startDate_greater >= todayBound
+  );
+  const startDate_lesser = wantsUpcoming || startsInFuture
+    ? range?.startDate_lesser
+    : Math.min(range?.startDate_lesser ?? todayBound, todayBound);
+
   // Valoracion (nativo, 0-10 canónico → 0-100 de AniList): AniList solo
   // ofrece "_greater" (estrictamente mayor que), no un "_greater_or_equal" →
   // se resta 1 al umbral*10 para aproximar "≥ umbral" con "> umbral*10 - 1".
@@ -131,7 +162,7 @@ export function buildAniListDiscoverParams(
     genre_in: genre_in.length > 0 ? genre_in : undefined,
     status,
     startDate_greater: range?.startDate_greater,
-    startDate_lesser: range?.startDate_lesser,
+    startDate_lesser,
     sort: [anilistSort(filters.sort)],
     averageScore_greater: minScore !== null ? minScore * 10 - 1 : undefined,
   };
