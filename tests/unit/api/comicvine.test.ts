@@ -245,7 +245,9 @@ describe("getRecentComics", () => {
     )![0] as string;
     expect(issuesUrl).toContain("sort=cover_date%3Adesc");
     expect(issuesUrl).toContain("limit=100");
-    expect(issuesUrl).toContain("offset=100");
+    // E-COMIC-VENTANA: cada página consume 300 issues del proveedor (3 ventanas
+    // de 100), así que la página 2 arranca en 300, no en 100.
+    expect(issuesUrl).toContain("offset=300");
   });
 
   it("descarta issues sin publisher resuelto (el manga llega así y se colaba)", async () => {
@@ -554,5 +556,88 @@ describe("getRecentComics", () => {
     expect(issuesUrl).toContain(
       `filter=cover_date%3A1900-01-01%7C${hoy}`
     );
+  });
+  // ── E-COMIC-VENTANA ─────────────────────────────────────────────────────────
+  // El tope de fechas (E-CATALOGO-FUTURO) dejó la página 1 en CINCO cómics: con
+  // tope, los 100 más recientes YA PUBLICADOS están llenos de manga, que el
+  // filtro de editoriales descarta. Una página mira ahora hasta 3 ventanas y
+  // para en cuanto junta 20.
+
+  it("si la primera ventana no llena la página, mira la siguiente", async () => {
+    // Ventana llena (100 issues) pero solo 1 sobrevive al filtro → sigue.
+    const lleno = Array.from({ length: 100 }, (_, i) => ({
+      ...ISSUE,
+      id: 1000 + i,
+      // Solo el primero tiene volumen resoluble; el resto se descarta.
+      volume: i === 0 ? ISSUE.volume : undefined,
+    }));
+    const fetchMock = mockFetchByPath(
+      { status_code: 1, error: "OK", number_of_total_results: 5000, results: lleno },
+      {
+        status_code: 1,
+        error: "OK",
+        results: [{ id: 796, publisher: { id: 10, name: "DC Comics" } }],
+      }
+    );
+    vi.stubGlobal("fetch", fetchMock);
+
+    await getRecentComics(1);
+
+    const offsets = fetchMock.mock.calls
+      .map((c) => String(c[0]))
+      .filter((u) => u.includes("/issues/"))
+      .map((u) => new URL(u).searchParams.get("offset"));
+    // Tres ventanas: nunca junta 20, así que agota el presupuesto.
+    expect(offsets).toEqual(["0", "100", "200"]);
+  });
+
+  it("para en cuanto la primera ventana ya llena la página", async () => {
+    const lleno = Array.from({ length: 100 }, (_, i) => ({
+      ...ISSUE,
+      id: 2000 + i,
+    }));
+    const fetchMock = mockFetchByPath(
+      { status_code: 1, error: "OK", number_of_total_results: 5000, results: lleno },
+      {
+        status_code: 1,
+        error: "OK",
+        results: [{ id: 796, publisher: { id: 10, name: "DC Comics" } }],
+      }
+    );
+    vi.stubGlobal("fetch", fetchMock);
+
+    const result = await getRecentComics(1);
+
+    const issueCalls = fetchMock.mock.calls
+      .map((c) => String(c[0]))
+      .filter((u) => u.includes("/issues/"));
+    // Una sola petición de issues: no se gasta cuota de ComicVine de más.
+    expect(issueCalls).toHaveLength(1);
+    expect(result.items).toHaveLength(20);
+  });
+
+  it("no insiste si el proveedor devuelve una ventana incompleta (se acabó)", async () => {
+    const fetchMock = mockFetchByPath(
+      {
+        status_code: 1,
+        error: "OK",
+        number_of_total_results: 3,
+        results: [ISSUE],
+      },
+      {
+        status_code: 1,
+        error: "OK",
+        results: [{ id: 796, publisher: { id: 10, name: "DC Comics" } }],
+      }
+    );
+    vi.stubGlobal("fetch", fetchMock);
+
+    const result = await getRecentComics(1);
+
+    const issueCalls = fetchMock.mock.calls
+      .map((c) => String(c[0]))
+      .filter((u) => u.includes("/issues/"));
+    expect(issueCalls).toHaveLength(1);
+    expect(result.items).toHaveLength(1);
   });
 });
