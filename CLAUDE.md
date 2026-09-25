@@ -43,6 +43,14 @@ memoria de una conversación concreta y saber en todo momento cómo actuar.
 - **No fusionar/mergear la PR sin autorización explícita y fresca del
   usuario** para esa PR en concreto — una aprobación anterior no vale
   automáticamente para el siguiente push.
+- **Si la app cae entera con `ERR_NAME_NOT_RESOLVED` contra
+  `*.supabase.co`, sospechar PRIMERO del proyecto pausado**, no del código.
+  El plan gratuito de Supabase pausa el proyecto tras unos días sin
+  actividad y deja de publicar su DNS; el síntoma es exactamente ese y no
+  lo provoca ningún despliegue. Se resuelve con *Restore* en el panel.
+  Mitigación en el repo: cron diario a `/api/health` (E-KEEPALIVE, ver
+  abajo). Mitigación de verdad para producción: plan de pago, que no
+  auto-pausa.
 
 ---
 
@@ -376,6 +384,22 @@ instrucciones operativas de la cabecera de este documento.
     igualdad, sin rango, así que ahí el tope es un post-filtro
     (`dropFutureYears`) de tipo marginal — como el NSFW global, no cuenta
     en `hasActivePostFilter`.
+
+- **Keep-alive de Supabase** (E-KEEPALIVE). `/api/health` hace una consulta
+  real a la base (`profiles`, `head:true`) y `vercel.json` la llama con un
+  cron diario. Sirve además de endpoint para un monitor de caídas externo.
+  Tres cosas que NO hay que romper:
+  - `export const dynamic = "force-dynamic"` + `Cache-Control: no-store`.
+    Si la respuesta se cachea, el cron deja de tocar la base y el
+    keep-alive pasa a ser un placebo que devuelve 200 mientras el proyecto
+    se pausa igual. Hay un test que lo fija.
+  - Usa el cliente **admin**: así el chequeo no depende de RLS ni de que
+    haya sesión, y "hay error" significa de verdad "la base no responde".
+  - El detalle del error va al log, NUNCA a la respuesta pública.
+  - **Los crons de Vercel solo corren en producción**, no en preview.
+  - Esto MITIGA la pausa, no la garantiza: depende de que Supabase cuente
+    la petición como actividad (no documentado). Para producción, plan de
+    pago.
 
 **Deuda técnica por resolver:**
 - `books-maps.ts` quedó casi entero como código muerto tras el híbrido de
