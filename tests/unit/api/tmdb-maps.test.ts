@@ -272,10 +272,26 @@ describe("buildTmdbDiscoverParams — tv", () => {
     expect(buildTmdbDiscoverParams("tv")["first_air_date.lte"]).toBe(todayIso());
   });
 
-  it("estado=upcoming (tv) NO lleva tope: el futuro es lo que se pide", () => {
+  // E-UPCOMING-FECHA: `with_status=1|2` es el estado de PRODUCCIÓN de TMDB, no
+  // "aún no estrenada" — una serie de 1989 que sigue rodándose lo cumple. Por
+  // eso `upcoming` invierte la regla: el límite va ABAJO (estrenos de hoy en
+  // adelante), no arriba.
+  it("estado=upcoming (tv) invierte el límite: solo estrenos de hoy en adelante", () => {
     const p = buildTmdbDiscoverParams("tv", { status: "upcoming" });
+    expect(p["first_air_date.gte"]).toBe(todayIso());
     expect(p["first_air_date.lte"]).toBeUndefined();
     expect(p.with_status).toBe("1|2");
+  });
+
+  it("upcoming + año: se queda con la parte del año que aún no ha llegado", () => {
+    const yearNow = new Date().getUTCFullYear();
+    const p = buildTmdbDiscoverParams("tv", {
+      status: "upcoming",
+      year: String(yearNow),
+    });
+    // El inicio del año ya pasó: el límite inferior sube a hoy.
+    expect(p["first_air_date.gte"]).toBe(todayIso());
+    expect(p["first_air_date.lte"]).toBe(`${yearNow}-12-31`);
   });
 
   // E-UPCOMING-SIN-VOTOS: el filtro devolvía SIEMPRE cero desde julio de 2026.
