@@ -107,22 +107,21 @@ export function AiRecommendations() {
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-5">
           {recs.map((rec) => {
             // Sin explicación del modelo se pinta el porqué localizado a partir
-            // de datos reales (géneros del ítem + match), igual que la ficha; sin
+            // de datos reales (los géneros del ítem), igual que la ficha; sin
             // géneros no hay frase honesta que construir → solo la card.
             const genres = (rec.item.genres ?? []).slice(0, 2)
             const why = rec.reason ??
               (genres.length > 0
-                ? tDetail('whyRecommendedText', {
-                    genres: genres.join(', '),
-                    score: rec.matchScore,
-                  })
+                ? tDetail('whyRecommendedText', { genres: genres.join(', ') })
                 : null)
 
             return (
               <div key={rec.item.id} className="flex flex-col gap-2">
-                {/* Misma card que Descubrir/Biblioteca: enlaza a la ficha real por
-                    externalId y pinta el badge de match que guía la recomendación. */}
-                <MediaCard item={rec.item} matchScore={rec.matchScore} showType />
+                {/* Misma card que Descubrir/Biblioteca: enlaza a la ficha real
+                    por externalId. E-MATCH-SIN-BADGE: el match sigue siendo el
+                    criterio con el que se elige cada recomendación, pero ya no
+                    se pinta como etiqueta. */}
+                <MediaCard item={rec.item} showType />
                 {why && (
                   <p className="font-body text-xs text-text-secondary line-clamp-3 leading-relaxed">
                     {why}

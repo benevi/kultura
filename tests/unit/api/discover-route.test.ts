@@ -253,33 +253,19 @@ describe("GET /api/discover", () => {
     expect(body.fetchErrorKind).toBe("rate-limit");
   });
 
-  // F3a/F3b: badge de match real adjunto a la respuesta.
-  it("sin sesión: matchScores viaja vacío y no se llama a computeMatchScores", async () => {
-    const res = await GET(req("?type=movie&page=1"));
-    const body = await res.json();
-    expect(body.matchScores).toEqual({});
-    expect(computeMatchScores).not.toHaveBeenCalled();
-  });
-
-  it("con sesión: matchScores viaja con los scores calculados por item", async () => {
+  // E-MATCH-SIN-BADGE: el catálogo ya no puntúa la afinidad de cada item. Se
+  // calculaba SOLO para el badge del grid; retirado el badge, era una lectura
+  // de biblioteca + scoring en cada petición para un dato que no ve nadie.
+  it("no calcula match ni lo adjunta a la respuesta", async () => {
     const { createClient } = await import("@/lib/supabase/server");
     vi.mocked(createClient).mockReturnValue({
       auth: { getUser: vi.fn().mockResolvedValue({ data: { user: { id: "user-1" } } }) },
     } as never);
-    vi.mocked(computeMatchScores).mockResolvedValue(new Map([["movie_1", 88]]));
-    vi.mocked(fetchDiscoverData).mockResolvedValue({
-      items: [{ id: "movie_1", title: "X" } as never],
-      totalPages: 1,
-      hasMore: false,
-      fetchErrorKind: null,
-    });
 
     const res = await GET(req("?type=movie&page=1"));
     const body = await res.json();
-    // El locale activo viaja como 4º argumento: lo usa la reparación de géneros
-    // (E-MATCH-GENRES) para pedirlos al proveedor en el idioma del catálogo.
-    expect(computeMatchScores).toHaveBeenCalledWith("user-1", body.items, expect.anything(), "es");
-    expect(body.matchScores).toEqual({ movie_1: 88 });
+    expect(body.matchScores).toBeUndefined();
+    expect(computeMatchScores).not.toHaveBeenCalled();
   });
 
   // ── E-DISCOVER-SEARCH-MERGE ────────────────────────────────────────────────

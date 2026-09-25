@@ -9,7 +9,6 @@ import { getUserStats } from '@/lib/library/stats'
 import { getLocale } from 'next-intl/server'
 import { getGenreNews } from '@/lib/api/genre-news'
 import { checkRateLimit } from '@/lib/rate-limit'
-import { computeMatchScores } from '@/lib/recommendations/match-score'
 
 const GENRE_NEWS_LIMIT = { windowMs: 60_000, max: 20 }
 
@@ -37,10 +36,7 @@ export async function GET(): Promise<NextResponse> {
   const locale = await getLocale()
   const result = await getGenreNews(topGenres, 5, locale)
 
-  // F3b: badge de match real (F3a) para la fila "trending" de Home — la más
-  // análoga a las filas del mockup F0. Vacío si no hay señal suficiente
-  // (gate de computeMatchScores), nunca un número decorativo.
-  const matchScores = await computeMatchScores(user.id, [...result.movies, ...result.tv])
-
-  return NextResponse.json({ ...result, matchScores: Object.fromEntries(matchScores) })
+  // E-MATCH-SIN-BADGE: el match se calculaba aquí solo para el badge de la
+  // fila de novedades, que ya no se pinta.
+  return NextResponse.json(result)
 }

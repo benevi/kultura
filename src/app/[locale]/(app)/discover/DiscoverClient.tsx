@@ -185,7 +185,6 @@ export function DiscoverClient({
   const [items, setItems] = useState<MediaItem[]>([]);
   // F3a/F3b: match score real por item (id → 0-100). Vacío = ningún item recibe
   // badge (sin sesión, o sin señal suficiente — gate de computeMatchScores).
-  const [matchScores, setMatchScores] = useState<Map<string, number>>(new Map());
   // E79 slice 1: el gate de "next" usa hasMore (fuente cruda), no totalPages.
   const [hasMore, setHasMore] = useState(false);
   // E79 slice 1b: totalPages del proveedor (DiscoverResult) → ventana numerada.
@@ -228,7 +227,7 @@ export function DiscoverClient({
     params.set("page", String(currentPage));
     if (currentQuery.trim()) params.set("q", currentQuery.trim());
     fetch(`/api/discover?${params.toString()}`)
-      .then((res) => res.json() as Promise<DiscoverResult & { matchScores?: Record<string, number> }>)
+      .then((res) => res.json() as Promise<DiscoverResult>)
       .then((data) => {
         if (cancelled) return;
         setItems(data.items ?? []);
@@ -237,7 +236,6 @@ export function DiscoverClient({
         // a 1 con `??`. Solo el campo ausente (undefined) cae al default 1.
         setTotalPages(data.totalPages === undefined ? 1 : data.totalPages);
         setFetchErrorKind(data.fetchErrorKind ?? null);
-        setMatchScores(new Map(Object.entries(data.matchScores ?? {})));
       })
       .catch(() => {
         if (cancelled) return;
@@ -245,7 +243,6 @@ export function DiscoverClient({
         setHasMore(false);
         setTotalPages(1);
         setFetchErrorKind("generic");
-        setMatchScores(new Map());
       })
       .finally(() => {
         if (!cancelled) {
@@ -578,7 +575,6 @@ export function DiscoverClient({
             items={randomItem ? [randomItem] : items}
             showType={isAggregate}
             layout="bento"
-            matchScores={matchScores}
           />
         </>
       ) : (

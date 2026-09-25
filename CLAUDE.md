@@ -119,11 +119,15 @@ Colores "on-color" (texto sobre fondo sólido vivo, no blanco/negro puro):
   `radial-gradient` de acento en la esquina superior-izquierda
   (`120% 100% at 20% 10%`, color al 55-60% de opacidad, difuminando a
   transparente a 55%).
-- **Badge de match**: pill `--lime` + texto on-lime, `font-weight:800`.
-  Versión "colgante" (esquina de poster, MediaDetail): offset
+- **Badge colgante (pegatina)**: pill `--lime` + texto on-lime,
+  `font-weight:800`. Versión "colgante" (esquina de poster): offset
   `top:-14px; left:-14px`, `rotate(-8deg)`,
   `box-shadow:4px 4px 0 rgba(0,0,0,.4)` — sombra dura tipo pegatina, no
-  blur.
+  blur. **E-MATCH-SIN-BADGE:** nació como "badge de match" y ya NO se usa
+  para porcentajes de afinidad (retirados de toda la UI a petición del
+  usuario). El primitivo sigue vivo para etiquetas de texto real
+  ("Continuando" en el hero de Inicio, "7 formatos culturales" en la
+  landing). No reintroducir un `%` aquí sin decisión expresa.
 - **Rotación de cards**: en grids tipo bento, las cards destacadas llevan
   una rotación sutil (`-1.2deg` / `1deg`) — no todo el grid, solo las
   piezas grandes, y alternando signo.
@@ -343,6 +347,19 @@ cada una (formas, sombras duras, chips colgantes, etc. — ver "Principio
 de extensión a pantallas nuevas" arriba). Migrar con el mismo patrón:
 un agente por pantalla o grupo de pantallas afines, siguiendo las
 instrucciones operativas de la cabecera de este documento.
+
+- **Porcentaje de match retirado de la UI** (E-MATCH-SIN-BADGE). Ya no se
+  pinta en Descubrir, ficha, recomendaciones IA ni novedades de Inicio. Lo
+  que se quitó es la ETIQUETA, no el motor: `computeMatchScores` sigue
+  siendo el criterio con el que la IA elige cada recomendación
+  (`lib/claude/recommendations.ts`). Consecuencias a tener presentes:
+  - `/api/discover` y `/api/genre-news` ya NO calculan match: lo hacían
+    solo para el badge, y era una lectura de biblioteca + scoring en cada
+    petición de catálogo.
+  - La ficha SÍ sigue recibiendo `matchScore`, pero solo como compuerta de
+    "Por qué te lo recomendamos": sin él, esa sección le diría "coincide
+    con géneros que ya te gustan" a alguien de cuyos gustos no sabemos
+    nada. El texto ya no cita ningún porcentaje.
 
 **Deuda técnica por resolver:**
 - `books-maps.ts` quedó casi entero como código muerto tras el híbrido de

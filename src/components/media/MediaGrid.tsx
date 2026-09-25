@@ -14,8 +14,6 @@ export interface MediaGridProps {
    * de los consumidores existentes (Library, Lists, Profile) fuera del alcance de F3b.
    */
   layout?: "uniform" | "bento";
-  /** Match score real por item (F3a). Ausente = MediaCard no muestra badge para ese item. */
-  matchScores?: Map<string, number>;
 }
 
 // Patrón bento F0 (CLAUDE.md §Rotación de cards): ciclo de 6 celdas, fila alta
@@ -66,7 +64,6 @@ export function MediaGrid({
   showType = false,
   className,
   layout = "uniform",
-  matchScores,
 }: MediaGridProps) {
   const gridClasses = cn(
     layout === "bento"
@@ -116,7 +113,6 @@ export function MediaGrid({
             <MediaCard
               item={item}
               showType={showType}
-              matchScore={matchScores?.get(item.id)}
               aspect={layout === "bento" ? "fill" : "2/3"}
               accentHue={
                 isFeature

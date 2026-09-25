@@ -101,10 +101,6 @@ describe('GET /api/genre-news', () => {
     vi.doMock('@/lib/api/genre-news', () => ({
       getGenreNews: vi.fn().mockResolvedValue({ movies: [], tv: [], genres: ['Drama'] }),
     }))
-    // F3b: la ruta adjunta matchScores (F3a) — mockeado para no ejercitar Supabase real aquí.
-    vi.doMock('@/lib/recommendations/match-score', () => ({
-      computeMatchScores: vi.fn().mockResolvedValue(new Map()),
-    }))
   })
 
   it('returns 401 if not authenticated', async () => {
@@ -127,8 +123,9 @@ describe('GET /api/genre-news', () => {
     expect(Array.isArray(body.movies)).toBe(true)
     expect(Array.isArray(body.tv)).toBe(true)
     expect(Array.isArray(body.genres)).toBe(true)
-    // F3a/F3b: matchScores viaja en el payload (vacío en este mock, sin señal).
-    expect(body.matchScores).toEqual({})
+    // E-MATCH-SIN-BADGE: la ruta ya no calcula ni devuelve puntuaciones de
+    // match — se retiró el badge que era su único consumidor.
+    expect(body.matchScores).toBeUndefined()
 
     vi.doUnmock('@/lib/supabase/server')
     vi.doUnmock('@/lib/rate-limit')

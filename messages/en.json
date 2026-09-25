@@ -165,7 +165,7 @@
     "steamLanguages": "Languages",
     "steamScreenshots": "Screenshots",
     "whyRecommended": "Why we recommend it",
-    "whyRecommendedText": "It matches genres you already enjoy — {genres} — with a {score}% affinity to your library."
+    "whyRecommendedText": "It matches genres you already enjoy — {genres} — based on what is in your library."
   },
   "library": {
     "status": {
