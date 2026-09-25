@@ -6,17 +6,20 @@ import { describe, it, expect } from "vitest";
 import {
   buildAniListDiscoverParams,
   aniListDateRange,
+  aniListTodayBound,
   ANILIST_GENRE,
   ANILIST_STATUS,
 } from "@/lib/api/anilist-maps";
 
 describe("buildAniListDiscoverParams", () => {
-  it("sin filtros → sort default popularity", () => {
+  it("sin filtros → sort default popularity + tope de hoy", () => {
     expect(buildAniListDiscoverParams({})).toEqual({
       genre_in: undefined,
       status: undefined,
       startDate_greater: undefined,
-      startDate_lesser: undefined,
+      // E-CATALOGO-FUTURO: tope incondicional — sin él, START_DATE_DESC abre
+      // por anime que aún no ha empezado a emitirse.
+      startDate_lesser: aniListTodayBound(),
       sort: ["POPULARITY_DESC"],
       averageScore_greater: undefined,
     });
@@ -108,10 +111,43 @@ describe("buildAniListDiscoverParams", () => {
     expect(p.startDate_lesser).toBe(20000101);
   });
 
-  it("year inválido → se omite", () => {
+  it("year inválido → sin rango, pero con el tope de hoy", () => {
     const p = buildAniListDiscoverParams({ year: "nope" });
     expect(p.startDate_greater).toBeUndefined();
+    expect(p.startDate_lesser).toBe(aniListTodayBound());
+  });
+
+  // ── E-CATALOGO-FUTURO ──────────────────────────────────────────────────────
+
+  it("año en curso → el tope superior se recorta a hoy", () => {
+    const yearNow = new Date().getUTCFullYear();
+    const p = buildAniListDiscoverParams({ year: String(yearNow) });
+    expect(p.startDate_greater).toBe((yearNow - 1) * 10000 + 1231);
+    expect(p.startDate_lesser).toBe(aniListTodayBound());
+  });
+
+  it("estado=upcoming NO lleva tope: el futuro es lo que se pide", () => {
+    const p = buildAniListDiscoverParams({ status: "upcoming" });
+    expect(p.status).toBe("NOT_YET_RELEASED");
     expect(p.startDate_lesser).toBeUndefined();
+  });
+
+  it("otros estados sí llevan tope", () => {
+    const p = buildAniListDiscoverParams({ status: "airing" });
+    expect(p.startDate_lesser).toBe(aniListTodayBound());
+  });
+
+  it("año futuro explícito se respeta sin recortar", () => {
+    const p = buildAniListDiscoverParams({ year: "2099" });
+    expect(p.startDate_greater).toBe(20981231);
+    expect(p.startDate_lesser).toBe(21000101);
+  });
+
+  it("aniListTodayBound: entero de hoy + 1 (cota exclusiva)", () => {
+    expect(aniListTodayBound(new Date("2026-09-25T10:00:00Z"))).toBe(20260926);
+    // Fin de mes: el día inexistente es intencionado — AniList compara el
+    // FuzzyDateInt como número, y 20260931 cae entre el 30/09 y el 01/10.
+    expect(aniListTodayBound(new Date("2026-09-30T10:00:00Z"))).toBe(20260931);
   });
 });
 

@@ -6,6 +6,7 @@
 // ============================================================
 
 import { describe, it, expect } from "vitest";
+import { todayIso } from "@/lib/api/catalog-window";
 import {
   buildTmdbDiscoverParams,
   tmdbSortBy,
@@ -101,10 +102,13 @@ describe("tmdbRuntimeRange", () => {
 // ── buildTmdbDiscoverParams ─────────────────────────────────────────────────
 
 describe("buildTmdbDiscoverParams — movie", () => {
-  it("sin filtros → sort_by default + suelo de votos (E94)", () => {
+  it("sin filtros → sort_by default + suelo de votos (E94) + tope de hoy", () => {
     expect(buildTmdbDiscoverParams("movie")).toEqual({
       sort_by: "popularity.desc",
       "vote_count.gte": "50",
+      // E-CATALOGO-FUTURO: el tope superior es incondicional — sin él,
+      // "Más recientes" abre por estrenos que aún no han ocurrido.
+      "primary_release_date.lte": todayIso(),
     });
   });
 
@@ -153,10 +157,17 @@ describe("buildTmdbDiscoverParams — movie", () => {
     ).toBe("ja");
   });
 
-  it("década → primary_release_date.gte/lte", () => {
+  it("década → primary_release_date.gte/lte, con el tope recortado a hoy", () => {
+    // La década en curso llega a 2029-12-31, que es futuro: se recorta.
     const p = buildTmdbDiscoverParams("movie", { year: "2020s" });
     expect(p["primary_release_date.gte"]).toBe("2020-01-01");
-    expect(p["primary_release_date.lte"]).toBe("2029-12-31");
+    expect(p["primary_release_date.lte"]).toBe(todayIso());
+  });
+
+  it("década ya cerrada → rango íntegro (no hay nada que recortar)", () => {
+    const p = buildTmdbDiscoverParams("movie", { year: "2000s" });
+    expect(p["primary_release_date.gte"]).toBe("2000-01-01");
+    expect(p["primary_release_date.lte"]).toBe("2009-12-31");
   });
 
   it("duración → with_runtime.gte/lte", () => {
@@ -247,7 +258,38 @@ describe("buildTmdbDiscoverParams — tv", () => {
 
   it("temporadas NO entra en el builder nativo (es post-filtro R4c-2)", () => {
     const p = buildTmdbDiscoverParams("tv", { temporadas: "2-3" });
-    expect(Object.keys(p).sort()).toEqual(["sort_by", "vote_count.gte"]);
+    expect(Object.keys(p).sort()).toEqual([
+      "first_air_date.lte",
+      "sort_by",
+      "vote_count.gte",
+    ]);
+    expect(p.temporadas).toBeUndefined();
+  });
+
+  // ── E-CATALOGO-FUTURO ──────────────────────────────────────────────────────
+
+  it("tv sin filtros → tope en first_air_date.lte", () => {
+    expect(buildTmdbDiscoverParams("tv")["first_air_date.lte"]).toBe(todayIso());
+  });
+
+  it("estado=upcoming (tv) NO lleva tope: el futuro es lo que se pide", () => {
+    const p = buildTmdbDiscoverParams("tv", { status: "upcoming" });
+    expect(p["first_air_date.lte"]).toBeUndefined();
+    expect(p.with_status).toBe("1|2");
+  });
+
+  it("otros estados de tv sí llevan tope", () => {
+    expect(
+      buildTmdbDiscoverParams("tv", { status: "airing" })["first_air_date.lte"]
+    ).toBe(todayIso());
+  });
+
+  it("año futuro explícito se respeta sin recortar (ventana invertida = vacío)", () => {
+    // La UI no ofrece años futuros; si algún día lo hiciera, recortar el rango
+    // daría inicio > fin y ningún resultado.
+    const p = buildTmdbDiscoverParams("movie", { year: "2099" });
+    expect(p["primary_release_date.gte"]).toBe("2099-01-01");
+    expect(p["primary_release_date.lte"]).toBe("2099-12-31");
   });
 
   it("suelo de votos vote_count.gte=50 también en tv (E94)", () => {

@@ -13,6 +13,7 @@
 
 import type { MediaItem } from "@/types/media";
 import { valoracionThreshold } from "@/lib/api/valoracion";
+import { clampRangeToToday, todayIso } from "@/lib/api/catalog-window";
 
 // ── Géneros (RAWG acepta slugs directamente) ────────────────────────────────────
 // slug canónico Kultura → slug RAWG. Coma = OR (RAWG une con coma).
@@ -110,10 +111,12 @@ export function rawgDates(year: string | null | undefined): string | null {
 /** Primer día del catálogo de juegos (RAWG no tiene fichas fiables antes). */
 export const RAWG_CATALOG_START = "1970-01-01";
 
-/** `Date` → `YYYY-MM-DD` en UTC (mismo formato que espera `dates` de RAWG). */
-export function rawgIsoDay(d: Date): string {
-  return d.toISOString().slice(0, 10);
-}
+/**
+ * `Date` → `YYYY-MM-DD` en UTC (mismo formato que espera `dates` de RAWG).
+ * Alias del helper compartido (`catalog-window.ts`), que es donde vive la regla
+ * desde que se extendió al resto de familias (E-CATALOGO-FUTURO).
+ */
+export const rawgIsoDay = todayIso;
 
 /**
  * Ventana `dates` efectiva: como `rawgDates`, pero nunca devuelve null y nunca
@@ -124,15 +127,13 @@ export function rawgDatesWindow(
   year: string | null | undefined,
   today: Date = new Date()
 ): string {
-  const todayIso = rawgIsoDay(today);
+  const iso = todayIso(today);
   const range = rawgDates(year);
-  if (!range) return `${RAWG_CATALOG_START},${todayIso}`;
+  if (!range) return `${RAWG_CATALOG_START},${iso}`;
 
   const [start, end] = range.split(",");
-  // Rango enteramente futuro (hoy no lo genera la UI): se respeta sin recortar,
-  // porque recortarlo daría una ventana invertida = catálogo vacío.
-  if (start > todayIso) return range;
-  return end > todayIso ? `${start},${todayIso}` : range;
+  const clamped = clampRangeToToday(start, end, today);
+  return `${clamped.start},${clamped.end}`;
 }
 
 // ── Filtros de entrada (subconjunto canónico relevante a RAWG) ───────────────────

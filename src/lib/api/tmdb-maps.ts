@@ -10,6 +10,7 @@
 // ============================================================
 
 import { valoracionThreshold } from "@/lib/api/valoracion";
+import { todayIso } from "@/lib/api/catalog-window";
 import type { MediaItem } from "@/types/media";
 
 export type TmdbMediaType = "movie" | "tv";
@@ -264,14 +265,30 @@ export function buildTmdbDiscoverParams(
   }
 
   // Año / década → rango de fechas (campo según tipo).
+  const gteKey = mediaType === "movie" ? "primary_release_date.gte" : "first_air_date.gte";
+  const lteKey = mediaType === "movie" ? "primary_release_date.lte" : "first_air_date.lte";
   const yr = tmdbYearRange(filters.year);
   if (yr) {
-    if (mediaType === "movie") {
-      params["primary_release_date.gte"] = yr.gte;
-      params["primary_release_date.lte"] = yr.lte;
-    } else {
-      params["first_air_date.gte"] = yr.gte;
-      params["first_air_date.lte"] = yr.lte;
+    params[gteKey] = yr.gte;
+    params[lteKey] = yr.lte;
+  }
+
+  // E-CATALOGO-FUTURO: el catálogo no muestra estrenos que aún no han ocurrido.
+  // Sin tope, `sort_by=primary_release_date.desc` ("Más recientes") abre por lo
+  // que todavía no existe. Se acota SIEMPRE por arriba, haya o no filtro de año
+  // (elegir el año en curso no debe arrastrar los meses que faltan).
+  //
+  // EXCEPCIÓN: `tv` ofrece `estado=upcoming` (with_status=Planned|In Production).
+  // Ahí el futuro es justo lo que se pide, así que el tope no se aplica — con él
+  // ese filtro devolvería siempre cero.
+  const wantsUpcoming = mediaType === "tv" && filters.status === "upcoming";
+  if (!wantsUpcoming) {
+    const iso = todayIso();
+    // Rango que EMPIEZA en el futuro: se respeta (recortarlo daría una ventana
+    // invertida = catálogo vacío). Hoy la UI no ofrece años futuros.
+    const startsInFuture = Boolean(params[gteKey] && params[gteKey] > iso);
+    if (!startsInFuture && (!params[lteKey] || params[lteKey] > iso)) {
+      params[lteKey] = iso;
     }
   }
 

@@ -4,6 +4,7 @@
 // ============================================================
 
 import { createLogger } from "@/lib/logger";
+import { dropFutureYears } from "@/lib/api/catalog-window";
 import { discoverMovies, discoverTV } from "@/lib/api/tmdb";
 import {
   buildTmdbDiscoverParams,
@@ -316,6 +317,14 @@ function isRateLimitError(e: unknown): boolean {
         // devuelva `data` como array (null/undefined no debe lanzar TypeError).
         const mangaData = Array.isArray(res.data) ? res.data : [];
         items = mangaData.map((m) => normalizeMangaDex(m, locale));
+        // E-CATALOGO-FUTURO: manga es la ÚNICA familia sin rango de fecha en su
+        // proveedor — MangaDex solo acepta `year` como igualdad exacta, no un
+        // rango. Así que aquí el tope se aplica después de normalizar, como
+        // recorte marginal (mismo tipo que el filtro NSFW global: incondicional
+        // y no atado a ningún filtro del usuario, por eso NO cuenta como
+        // post-filtro activo en `hasActivePostFilter`). Los manga sin año se
+        // conservan: no sabemos que mientan.
+        items = dropFutureYears(items);
         // POST-filtro de volúmenes (solo manga): umbral mínimo sobre metadata.volumes.
         // Vacío/desconocido → no filtra. anime no pasa por aquí (oculto).
         items = filterByMinVolumesDex(items, filters.volumenes);

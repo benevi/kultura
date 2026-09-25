@@ -9,7 +9,7 @@ import { normalizeComic } from "@/lib/api/normalizer";
 import { env } from "@/lib/env";
 import {
   comicSort,
-  comicCoverDateRange,
+  comicCoverDateWindow,
   mapPublisherSubstrings,
   type ComicFilters,
 } from "@/lib/api/comicvine-maps";
@@ -315,8 +315,10 @@ export async function getRecentComics(
     offset: String((page - 1) * 100),
     field_list: "id,name,issue_number,cover_date,store_date,deck,image,volume",
   };
-  const coverDate = comicCoverDateRange(filters.year);
-  if (coverDate) params.filter = coverDate;
+  // E-CATALOGO-FUTURO: `filter` de fecha SIEMPRE presente (antes solo con año).
+  // Las portadas se fechan con meses de adelanto, así que sin tope la primera
+  // página de "Más recientes" son números que aún no han salido.
+  params.filter = comicCoverDateWindow(filters.year);
 
   const resp = await comicVineFetch<ComicVineSearchResponse>("/issues/", params);
   if (!resp.results) return { items: [], total: 0 };
