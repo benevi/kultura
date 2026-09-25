@@ -278,6 +278,28 @@ describe("buildTmdbDiscoverParams — tv", () => {
     expect(p.with_status).toBe("1|2");
   });
 
+  // E-UPCOMING-SIN-VOTOS: el filtro devolvía SIEMPRE cero desde julio de 2026.
+  // Una serie "Planned"/"In Production" no se ha emitido, así que nadie la ha
+  // votado: exigirle 50 votos vacía el filtro entero.
+  it("estado=upcoming (tv) tampoco lleva suelo de votos", () => {
+    const p = buildTmdbDiscoverParams("tv", { status: "upcoming" });
+    expect(p["vote_count.gte"]).toBeUndefined();
+    // El orden por popularidad sigue vivo: TMDB la calcula con visitas, no con
+    // votos, así que la primera página son estrenos esperados, no ruido.
+    expect(p.sort_by).toBe("popularity.desc");
+  });
+
+  it("el suelo de votos sigue en pie para todo lo demás", () => {
+    expect(buildTmdbDiscoverParams("tv", { status: "airing" })["vote_count.gte"]).toBe("50");
+    expect(buildTmdbDiscoverParams("tv")["vote_count.gte"]).toBe("50");
+    expect(buildTmdbDiscoverParams("movie")["vote_count.gte"]).toBe("50");
+    // `upcoming` no existe para movie (no se ofrece el filtro): si llegara por
+    // URL manipulada, no debe abrir un agujero en el suelo de votos.
+    expect(
+      buildTmdbDiscoverParams("movie", { status: "upcoming" })["vote_count.gte"]
+    ).toBe("50");
+  });
+
   it("otros estados de tv sí llevan tope", () => {
     expect(
       buildTmdbDiscoverParams("tv", { status: "airing" })["first_air_date.lte"]

@@ -239,12 +239,24 @@ export function buildTmdbDiscoverParams(
   mediaType: TmdbMediaType,
   filters: TmdbFilters = {}
 ): Record<string, string> {
+  // `estado=upcoming` (solo tv) pide justo lo que AÚN NO ha salido, y eso
+  // cambia DOS reglas del builder: el tope de fecha y el suelo de votos.
+  const wantsUpcoming = mediaType === "tv" && filters.status === "upcoming";
+
   const params: Record<string, string> = {
     sort_by: tmdbSortBy(mediaType, filters.sort),
-    // Suelo de votos (E94): descarta contenido con muy pocos votos. Mismo umbral
-    // ya validado en discoverByGenre (genre-news). Aplica a movie y tv.
-    "vote_count.gte": "50",
   };
+
+  // Suelo de votos (E94): descarta contenido con muy pocos votos. Mismo umbral
+  // ya validado en discoverByGenre (genre-news). Aplica a movie y tv.
+  //
+  // E-UPCOMING-SIN-VOTOS: NO para `estado=upcoming`. Una serie en "Planned" o
+  // "In Production" no se ha emitido, así que nadie la ha votado: exigirle 50
+  // votos deja el filtro SIEMPRE vacío, que es justo lo que pasaba desde que
+  // se añadió el suelo (E94, julio 2026). El orden por popularidad sigue
+  // funcionando ahí — TMDB la calcula con visitas, no con votos —, así que la
+  // primera página son los estrenos esperados de verdad, no ruido.
+  if (!wantsUpcoming) params["vote_count.gte"] = "50";
 
   // Género (listas distintas movie/tv; OR con coma).
   const genreTable = mediaType === "movie" ? TMDB_GENRE_MOVIE : TMDB_GENRE_TV;
@@ -281,7 +293,6 @@ export function buildTmdbDiscoverParams(
   // EXCEPCIÓN: `tv` ofrece `estado=upcoming` (with_status=Planned|In Production).
   // Ahí el futuro es justo lo que se pide, así que el tope no se aplica — con él
   // ese filtro devolvería siempre cero.
-  const wantsUpcoming = mediaType === "tv" && filters.status === "upcoming";
   if (!wantsUpcoming) {
     const iso = todayIso();
     // Rango que EMPIEZA en el futuro: se respeta (recortarlo daría una ventana

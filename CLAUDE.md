@@ -368,6 +368,11 @@ instrucciones operativas de la cabecera de este documento.
     "Por qué te lo recomendamos": sin él, esa sección le diría "coincide
     con géneros que ya te gustan" a alguien de cuyos gustos no sabemos
     nada. El texto ya no cita ningún porcentaje.
+  - **El prompt de las recomendaciones prohíbe citar el % en la frase.**
+    Quitar los badges no bastó: el modelo seguía escribiendo "match de
+    73%" en el `reason`, que es la misma cifra por la puerta de atrás. El
+    match sigue viajando en el prompt como criterio de elección; lo que no
+    puede es salir en el texto.
 
 - **El catálogo no muestra fechas futuras** (E-CATALOGO-FUTURO). Regla
   común a las 7 familias; la referencia vive en
@@ -377,7 +382,13 @@ instrucciones operativas de la cabecera de este documento.
   Library). Tres cosas que hay que respetar al tocarlo:
   - **Excepción `estado=upcoming`** en series y anime: ahí el futuro es
     justo lo que se pide, así que el tope NO se aplica. Con tope, ese
-    filtro devolvería siempre cero — la otra forma de mentir.
+    filtro devolvería siempre cero — la otra forma de mentir. **Y por el
+    mismo motivo tampoco se aplica el suelo de votos** (E94) en ese caso
+    (E-UPCOMING-SIN-VOTOS): una serie sin emitir no la ha votado nadie, así
+    que exigirle 50 votos la vaciaba igual. Verificado en preview: el
+    filtro llevaba vacío desde julio de 2026 por esta causa, no por el
+    tope. Si se añade cualquier otro umbral de calidad a TMDB, comprobar
+    antes qué hace con `upcoming`.
   - **Rango que empieza en el futuro se respeta** sin recortar: recortarlo
     daría una ventana invertida = catálogo vacío.
   - **Manga es la excepción técnica**: MangaDex solo acepta `year` como

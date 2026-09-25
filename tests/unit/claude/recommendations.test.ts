@@ -147,6 +147,17 @@ describe('buildPickPrompt', () => {
     expect(prompt).toContain('No inventes')
   })
 
+  // E-MATCH-SIN-BADGE: el match sigue SIENDO el criterio (va en el prompt como
+  // dato de entrada), pero se retiró de toda la interfaz — y el modelo lo
+  // estaba citando en las frases ("match de 73%"), que es la misma cifra por
+  // la puerta de atrás.
+  it('prohíbe citar el % de match en la frase que ve el usuario', async () => {
+    const prompt = await build('es')
+    expect(prompt).toContain('NUNCA menciones el % de match')
+    // El match sigue viajando como criterio de elección, no desaparece.
+    expect(prompt).toContain('match 82%')
+  })
+
   it('incluye el contexto de biblioteca y los géneros favoritos', async () => {
     const prompt = await build('es')
     expect(prompt).toContain('Inception')
