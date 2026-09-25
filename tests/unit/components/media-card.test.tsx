@@ -84,14 +84,12 @@ describe("MediaCard", () => {
     expect(screen.queryByText("Película")).not.toBeInTheDocument();
   });
 
-  // F3a/F3b: badge de match real — nunca decorativo, solo si hay score calculado.
-  it("muestra el badge de match cuando matchScore está definido", () => {
-    render(<MediaCard item={baseItem} matchScore={87} />);
-    expect(screen.getByTestId("media-match-badge")).toHaveTextContent("87% MATCH");
-  });
-
-  it("no muestra badge de match cuando matchScore es undefined (sin señal, F3a gate)", () => {
+  // E-MATCH-SIN-BADGE: el porcentaje de afinidad se retiró de la UI. El match
+  // se sigue calculando (es el criterio de las recomendaciones IA), pero la
+  // card no lo pinta en ninguna superficie.
+  it("no pinta badge de match", () => {
     render(<MediaCard item={baseItem} />);
     expect(screen.queryByTestId("media-match-badge")).not.toBeInTheDocument();
+    expect(screen.queryByText(/MATCH/i)).not.toBeInTheDocument();
   });
 });

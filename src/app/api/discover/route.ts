@@ -11,8 +11,6 @@ import { NextRequest, NextResponse } from "next/server";
 import { getLocale } from "next-intl/server";
 import { fetchDiscoverData } from "@/lib/api/discover";
 import { parseDiscoverParams } from "@/lib/api/discover-params";
-import { createClient } from "@/lib/supabase/server";
-import { computeMatchScores } from "@/lib/recommendations/match-score";
 
 export async function GET(request: NextRequest) {
   const parsed = parseDiscoverParams(request.nextUrl.searchParams);
@@ -63,12 +61,10 @@ export async function GET(request: NextRequest) {
     estado: parsed.estado,
   }, locale, parsed.q);
 
-  // F3b: badge de match real (F3a) sobre los items devueltos. Sin sesión, o sin
-  // señal suficiente en la biblioteca (gate de computeMatchScores), matchScores
-  // queda vacío — MediaCard no muestra badge, nunca uno decorativo.
-  const supabase = createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  const matchScores = user ? await computeMatchScores(user.id, result.items, supabase, locale) : new Map<string, number>();
-
-  return NextResponse.json({ ...result, matchScores: Object.fromEntries(matchScores) });
+  // E-MATCH-SIN-BADGE: aquí se calculaba el match de cada item SOLO para pintar
+  // el badge del grid. Retirado el badge, calcularlo era una lectura de
+  // biblioteca + scoring en cada petición de catálogo para un dato que ya no
+  // ve nadie. El match sigue vivo donde decide algo: la elección de las
+  // recomendaciones IA (`lib/claude/recommendations.ts`).
+  return NextResponse.json(result);
 }
