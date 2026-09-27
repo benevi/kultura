@@ -5,7 +5,7 @@
 // ============================================================
 
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { searchOpenLibrary } from "@/lib/api/openlibrary";
+import { searchOpenLibrary, getBookDetail } from "@/lib/api/openlibrary";
 
 const OK_RESPONSE = {
   ok: true,
@@ -44,6 +44,32 @@ describe("searchOpenLibrary", () => {
     expect(fields).toContain("cover_i");
     expect(fields).toContain("author_name");
     expect(fields).toContain("ebook_access");
+  });
+
+  // E-BOOKS-ISBN — regresión, medida contra la API viva. Open Library devuelve
+  // TODOS los ISBN de TODAS las ediciones de una obra, y la consulta ancha del
+  // catálogo abre por clásicos con miles de ediciones. Pedir `isbn` para 20-60
+  // obras hace que el proveedor corte la conexión (`SocketError: other side
+  // closed`), con limit 60 Y con limit 20. Sin `isbn` responde con 60 aunque
+  // lleve `subject` y `publisher`, que también son arrays grandes.
+  it("el LISTADO no pide isbn: es lo que tumbaba el catálogo", async () => {
+    await searchOpenLibrary("dune");
+    const fields = lastCall().url.searchParams.get("fields") ?? "";
+    expect(fields.split(",")).not.toContain("isbn");
+    // …pero sí lo que el listado necesita de verdad.
+    expect(fields).toContain("subject");
+    expect(fields).toContain("cover_i");
+  });
+
+  it("la FICHA sí pide isbn: es un solo doc y lo necesita para Google Books", async () => {
+    await getBookDetail("OL7353617W");
+    const fields = lastCall().url.searchParams.get("fields") ?? "";
+    expect(fields.split(",")).toContain("isbn");
+  });
+
+  it("aborta si el proveedor no responde a tiempo", async () => {
+    await searchOpenLibrary("dune");
+    expect(lastCall().init?.signal).toBeInstanceOf(AbortSignal);
   });
 
   it("page por defecto = 1", async () => {

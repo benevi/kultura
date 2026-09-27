@@ -25,14 +25,19 @@ memoria de una conversación concreta y saber en todo momento cómo actuar.
   valor), decirlo explícitamente al pedir la verificación en preview, en vez
   de dar el tema por cerrado con los tests en verde.
 - **Antes de dar un fallo por diagnosticado, mirar el LOG, no solo el
-  síntoma.** En E-BOOKS-RANGO deduje la causa de una correlación ("falla sin
-  filtro de año, funciona con década") y pusheé un arreglo que no arreglaba
-  nada: la correlación era buena pero el mecanismo no era el que supuse. El
-  log lo decía en una línea (`SocketError: other side closed` = conexión
-  cerrada, no query rechazada). El visor de Vercel está en
-  `vercel.com/<team>/<proyecto>/logs`, y el diagnóstico útil va dentro de
-  `message` desde `1fd9606`. Si no tengo acceso al log, decir que el
-  diagnóstico es una hipótesis, no un hecho.
+  síntoma.** El visor de Vercel está en `vercel.com/<team>/<proyecto>/logs`, y
+  el diagnóstico útil va dentro de `message` desde `1fd9606`. Si no tengo
+  acceso al log, decir que el diagnóstico es una hipótesis, no un hecho.
+- **Una correlación no es un mecanismo. Aislar la variable ANTES de pushear.**
+  Con el catálogo de libros caído encadené DOS arreglos equivocados: deduje la
+  causa de "falla sin filtro de año, funciona con década" y pusheé; falló; volví
+  a deducir y volví a pushear; falló otra vez. La correlación era correcta las
+  dos veces, el mecanismo no. Lo resolvió una tabla de seis peticiones a la API
+  viva cambiando UN parámetro cada vez, que reveló que el culpable era un campo
+  (`isbn`) que no aparecía en ninguna de mis dos teorías.
+  **El proxy de estas sesiones bloquea a los proveedores, pero el usuario tiene
+  navegador**: construir las URLs exactas, pedirle que las abra y decir qué
+  significa cada resultado. Cuesta una ronda y ahorra varios pushes a ciegas.
 - **Un test de regresión que no se ha visto FALLAR no prueba nada.** Comentar
   el arreglo, comprobar que el test se pone rojo, restaurarlo. Son treinta
   segundos y es la diferencia entre fijar el bug y fijar la suposición.
@@ -418,19 +423,39 @@ instrucciones operativas de la cabecera de este documento.
        asumida: las series anunciadas SIN fecha quedan fuera.
   - **Rango que empieza en el futuro se respeta** sin recortar: recortarlo
     daría una ventana invertida = catálogo vacío.
-  - **Libros: el rango SOLO viaja si el usuario filtró por año**
-    (E-BOOKS-RANGO). Un rango que abarca el corpus entero (`[* TO 2026]`, y lo
-    mismo con un suelo numérico) no es un filtro: es pedirle a Open Library un
-    escaneo completo de su índice, y el proveedor responde **cerrando la
-    conexión** — en el log sale como `TypeError: terminated · cause=SocketError:
-    other side closed`, NO como un 4xx. Un rango selectivo (`[2010 TO 2019]`)
-    es barato y se sirve sin problema, y por eso el síntoma iba al revés de lo
-    esperable: la pestaña fallaba SIN filtro de año y funcionaba al elegir una
-    década. Sin filtro de año, el tope de futuro se aplica como **post-filtro**
-    (`dropFutureYears`), igual que en manga; la ventana de 60 absorbe el
-    recorte. Con filtro de año el rango viaja en la consulta y ya trae el tope
-    puesto, así que no se post-filtra — post-filtrar además vaciaría el caso de
-    un año futuro explícito, que se respeta a propósito.
+  - **Libros: el rango solo viaja si el usuario filtró por año**
+    (E-BOOKS-RANGO). Sin filtro de año, un rango que abarca el corpus entero no
+    filtra nada, así que no se manda y el tope de futuro se aplica como
+    **post-filtro** (`dropFutureYears`), igual que en manga; la ventana de 60
+    absorbe el recorte. Con filtro de año el rango viaja en la consulta —ahí es
+    selectivo y mantiene las páginas llenas— y ya trae el tope puesto, así que
+    no se post-filtra: hacerlo vaciaría además el caso de un año futuro
+    explícito, que se respeta a propósito.
+
+    **Aviso: el rango NO era la causa del catálogo caído.** Lo diagnostiqué así
+    dos veces seguidas (primero el comodín `*`, luego el coste del rango ancho)
+    y las dos veces pusheé un arreglo que no arreglaba nada. La causa real está
+    en el punto siguiente.
+  - **Libros: el LISTADO nunca pide `isbn`** (E-BOOKS-ISBN). **Esta era la
+    causa real** de que Descubrir → Libros devolviera "No se pudo cargar el
+    contenido". Open Library sirve TODOS los ISBN de TODAS las ediciones de una
+    obra, y la consulta ancha del catálogo (`subject:"fiction"`) abre por los
+    clásicos — Frankenstein, Drácula, Dorian Gray — que acumulan miles de
+    ediciones. Pedir ese campo para 20-60 obras genera una respuesta que el
+    proveedor no llega a servir: corta la conexión, y en el log sale como
+    `TypeError: terminated · cause=SocketError: other side closed`, **no** como
+    un 4xx (por eso parecía una query rechazada y no lo era).
+
+    Medido contra la API viva, misma consulta y mismo `limit`: con `isbn` falla
+    con 60 **y con 20**; sin `isbn` responde con 60 aunque lleve `subject` y
+    `publisher`, que también son arrays grandes. Es ese campo, no el tamaño de
+    página ni el rango de años.
+
+    `LIST_FIELDS` (catálogo y buscador) va sin `isbn`; `DETAIL_FIELDS` (ficha)
+    lo lleva, y ahí es seguro porque se pide para UN solo documento. El ISBN
+    sigue haciendo falta para puentear a Google Books sin emparejar por título.
+    `openLibraryFetch` tiene además un timeout de 8 s: sin él, una conexión
+    cortada dejaba la función esperando y el log no decía nada útil.
   - **Manga es la excepción técnica**: MangaDex solo acepta `year` como
     igualdad, sin rango, así que ahí el tope es un post-filtro
     (`dropFutureYears`) de tipo marginal — como el NSFW global, no cuenta

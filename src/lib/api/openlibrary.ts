@@ -49,10 +49,27 @@ export interface OpenLibraryWork {
   description?: string | { value: string };
 }
 
-// `isbn` viaja para poder puentear a Google Books en la ficha sin adivinar por
-// título+autor, que es ambiguo entre ediciones.
-const SEARCH_FIELDS =
-  "key,title,author_name,first_publish_year,cover_i,language,publisher,subject,ebook_access,isbn";
+// ── Campos: el LISTADO no pide `isbn`, la FICHA sí (E-BOOKS-ISBN) ────────────
+//
+// `isbn` es lo que tumbaba el catálogo. Open Library devuelve TODOS los ISBN de
+// TODAS las ediciones de una obra, y la consulta ancha del catálogo
+// (`subject:"fiction"`) abre por los clásicos — Frankenstein, Drácula, Dorian
+// Gray — que acumulan miles de ediciones. Pedir ese campo para 20-60 obras a la
+// vez genera una respuesta que el proveedor no llega a servir: corta la
+// conexión, y en el log sale como `TypeError: terminated · cause=SocketError:
+// other side closed`, no como un 4xx.
+//
+// Medido contra la API viva, misma consulta y mismo `limit`: con `isbn` falla
+// con limit 60 y con limit 20; sin `isbn` responde con 60 aunque se pidan
+// `subject` y `publisher`, que también son arrays grandes. Es ese campo, no el
+// tamaño de página ni el rango de años.
+//
+// El ISBN se sigue necesitando para puentear a Google Books en la ficha
+// (emparejar por título+autor es ambiguo entre ediciones), pero ahí se pide
+// para UN solo documento, donde no hay problema de tamaño.
+const LIST_FIELDS =
+  "key,title,author_name,first_publish_year,cover_i,language,publisher,subject,ebook_access";
+const DETAIL_FIELDS = `${LIST_FIELDS},isbn`;
 
 // ── Helper ────────────────────────────────────────────────────────────────────
 
@@ -78,6 +95,13 @@ export class OpenLibraryError extends Error {
   }
 }
 
+/**
+ * Plazo máximo por petición. Sin él, una conexión que se queda a medias deja la
+ * función serverless esperando hasta que Vercel la mata, y el log no dice nada
+ * útil. Con él, el fallo es rápido y nombra la causa.
+ */
+export const OPEN_LIBRARY_TIMEOUT_MS = 8000;
+
 async function openLibraryFetch<T>(
   path: string,
   params: Record<string, string> = {}
@@ -86,6 +110,7 @@ async function openLibraryFetch<T>(
   Object.entries(params).forEach(([k, v]) => url.searchParams.set(k, v));
   const res = await fetch(url.toString(), {
     headers: { "User-Agent": "KULTURA/1.0 (kultura app)" },
+    signal: AbortSignal.timeout(OPEN_LIBRARY_TIMEOUT_MS),
   });
   if (!res.ok) throw new OpenLibraryError(path, res.status);
   return res.json() as Promise<T>;
@@ -125,13 +150,18 @@ export async function searchOpenLibrary(
   q: string,
   page = 1,
   params: Record<string, string> = {},
-  limit = OPEN_LIBRARY_PAGE_SIZE
+  limit = OPEN_LIBRARY_PAGE_SIZE,
+  /**
+   * E-BOOKS-ISBN: por defecto SIN `isbn`. Solo la ficha lo pide, y lo hace
+   * para un único documento.
+   */
+  fields: string = LIST_FIELDS
 ): Promise<OpenLibraryResponse> {
   return openLibraryFetch<OpenLibraryResponse>("/search.json", {
     q,
     page: String(Math.max(1, page)),
     limit: String(limit),
-    fields: SEARCH_FIELDS,
+    fields,
     ...params,
   });
 }
@@ -174,7 +204,15 @@ export async function getBookDetail(
   id: string
 ): Promise<OpenLibraryBookDetail | null> {
   const workKey = id.startsWith("/works/") ? id : `/works/${id}`;
-  const res = await searchOpenLibrary(`key:${workKey}`);
+  // E-BOOKS-ISBN: la ficha SÍ pide `isbn` — es lo que permite puentear a Google
+  // Books sin emparejar por título — y aquí es seguro: un solo documento.
+  const res = await searchOpenLibrary(
+    `key:${workKey}`,
+    1,
+    {},
+    OPEN_LIBRARY_PAGE_SIZE,
+    DETAIL_FIELDS
+  );
   const doc = res.docs?.[0];
   if (!doc) return null;
 
