@@ -52,6 +52,18 @@ export const OPEN_LIBRARY_GENRE: Record<string, string> = {
  */
 export const OPEN_LIBRARY_BASE_QUERY = 'subject:"fiction"';
 
+/**
+ * Suelo del rango de años cuando el usuario no ha filtrado por año
+ * (E-BOOKS-RANGO).
+ *
+ * Existe porque Open Library NO admite `*` como límite inferior del rango: la
+ * petición falla entera, no devuelve menos resultados. Se usa un año anterior a
+ * cualquier `first_publish_year` real del catálogo, de modo que acotar por abajo
+ * no descarta nada y el tope superior (E-CATALOGO-FUTURO) sigue haciendo su
+ * trabajo.
+ */
+export const OPEN_LIBRARY_MIN_YEAR = 1;
+
 /** Locale de la app → código de idioma de Open Library (ISO-639-2/B). */
 export function openLibraryLanguage(locale?: string | null): "spa" | "eng" {
   return resolveApiLocale(locale) === "en" ? "eng" : "spa";
@@ -195,12 +207,20 @@ export function buildOpenLibraryQuery(
   // juegos. Open Library trabaja con grano de AÑO, así que el tope es el año en
   // curso; `libros` no ofrece filtro de estado, así que no hay excepción.
   //
-  // Contrapartida asumida: `[* TO año]` descarta también las obras SIN
+  // Contrapartida asumida: el rango descarta también las obras SIN
   // `first_publish_year`. Es el precio de que "Más recientes" signifique algo
   // — ese orden ya exige el campo — y el catálogo ya venía exigiendo portada.
   const range = openLibraryYearRange(filters.year);
   const currentYear = todayYear();
-  const from = range ? String(range.from) : "*";
+  // E-BOOKS-RANGO: el límite inferior va SIEMPRE como número, nunca como `*`.
+  // Open Library acepta el rango acotado (`[2010 TO 2019]` sirve el catálogo
+  // sin problema) pero rechaza el comodín: `[* TO 2026]` tumbaba la petición
+  // entera, así que la pestaña de libros SIN filtro de año quedó en error
+  // mientras que con una década seleccionada funcionaba. Un suelo numérico es
+  // equivalente en la práctica — `OPEN_LIBRARY_MIN_YEAR` es anterior a
+  // cualquier `first_publish_year` del catálogo — y es la forma que el
+  // proveedor sí entiende.
+  const from = range ? String(range.from) : String(OPEN_LIBRARY_MIN_YEAR);
   // Rango que EMPIEZA en el futuro: se respeta (recortarlo daría una ventana
   // invertida = catálogo vacío).
   const to =

@@ -96,6 +96,7 @@ import {
 } from "@/lib/api/openlibrary";
 import { searchByTypePaged } from "@/lib/api/search";
 import { todayYear } from "@/lib/api/catalog-window";
+import { OPEN_LIBRARY_MIN_YEAR } from "@/lib/api/openlibrary-maps";
 import { DISCOVER_MAX_PAGES } from "@/lib/api/pagination";
 import { getPopularGames, discoverGames } from "@/lib/api/rawg";
 import { getRecentComics } from "@/lib/api/comicvine";
@@ -276,7 +277,7 @@ describe("fetchDiscoverData — books filtros (E-BOOKS-HIBRIDO)", () => {
     await fetchDiscoverData("book", 1);
     // E-CATALOGO-FUTURO: toda consulta de libros lleva tope de año.
     expect(searchOpenLibrary).toHaveBeenCalledWith(
-      `subject:"fiction" first_publish_year:[* TO ${todayYear()}]`,
+      `subject:"fiction" first_publish_year:[${OPEN_LIBRARY_MIN_YEAR} TO ${todayYear()}]`,
       1,
       { language: "spa" },
       OPEN_LIBRARY_CATALOG_WINDOW
@@ -323,7 +324,7 @@ describe("fetchDiscoverData — books filtros (E-BOOKS-HIBRIDO)", () => {
   it("el idioma del locale viaja SIEMPRE: es lo que fija el título que se lee", async () => {
     await fetchDiscoverData("book", 1, {}, "es");
     expect(searchOpenLibrary).toHaveBeenCalledWith(
-      `subject:"fiction" first_publish_year:[* TO ${todayYear()}]`,
+      `subject:"fiction" first_publish_year:[${OPEN_LIBRARY_MIN_YEAR} TO ${todayYear()}]`,
       1,
       expect.objectContaining({ language: "spa" }),
       OPEN_LIBRARY_CATALOG_WINDOW
@@ -333,7 +334,7 @@ describe("fetchDiscoverData — books filtros (E-BOOKS-HIBRIDO)", () => {
   it('formato "libre" acota a texto completo; el resto no finge precisión', async () => {
     await fetchDiscoverData("book", 1, { formato: "free" });
     expect(searchOpenLibrary).toHaveBeenCalledWith(
-      `subject:"fiction" first_publish_year:[* TO ${todayYear()}]`,
+      `subject:"fiction" first_publish_year:[${OPEN_LIBRARY_MIN_YEAR} TO ${todayYear()}]`,
       1,
       expect.objectContaining({ has_fulltext: "true" }),
       OPEN_LIBRARY_CATALOG_WINDOW
@@ -342,7 +343,7 @@ describe("fetchDiscoverData — books filtros (E-BOOKS-HIBRIDO)", () => {
     vi.mocked(searchOpenLibrary).mockClear();
     await fetchDiscoverData("book", 1, { formato: "physical" });
     expect(searchOpenLibrary).toHaveBeenCalledWith(
-      `subject:"fiction" first_publish_year:[* TO ${todayYear()}]`,
+      `subject:"fiction" first_publish_year:[${OPEN_LIBRARY_MIN_YEAR} TO ${todayYear()}]`,
       1,
       expect.not.objectContaining({ has_fulltext: expect.anything() }),
       OPEN_LIBRARY_CATALOG_WINDOW
