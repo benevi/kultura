@@ -16,7 +16,7 @@ import {
   openLibraryLanguage,
   openLibraryFulltext,
   OPEN_LIBRARY_BASE_QUERY,
-  OPEN_LIBRARY_MIN_YEAR,
+  openLibraryTrimsFutureAfterFetch,
   OPEN_LIBRARY_SORT,
 } from "@/lib/api/openlibrary-maps";
 
@@ -84,29 +84,38 @@ describe("openLibraryFulltext", () => {
 describe("buildOpenLibraryQuery", () => {
   it("sin filtros → semilla amplia y el idioma del locale", () => {
     expect(buildOpenLibraryQuery({}, "es")).toEqual({
-      q: `${OPEN_LIBRARY_BASE_QUERY} first_publish_year:[${OPEN_LIBRARY_MIN_YEAR} TO ${todayYear()}]`,
+      q: OPEN_LIBRARY_BASE_QUERY,
       params: { language: "spa" },
     });
   });
 
-  // E-BOOKS-RANGO — regresión. Open Library sirve el rango acotado
-  // (`[2010 TO 2019]`) pero RECHAZA el comodín: `[* TO 2026]` no devolvía menos
-  // resultados, tumbaba la petición entera, y la pestaña de libros sin filtro de
-  // año quedaba en "No se pudo cargar el contenido" mientras que con una década
-  // seleccionada funcionaba. El límite inferior va siempre como número.
-  it("el rango NUNCA lleva comodín: Open Library no lo admite", () => {
-    const combos: Parameters<typeof buildOpenLibraryQuery>[0][] = [
+  // E-BOOKS-RANGO — regresión. Un rango que abarca el corpus entero no es un
+  // filtro: es un escaneo completo del índice, y Open Library responde
+  // cerrando la conexión (`TypeError: terminated · cause=SocketError: other
+  // side closed`), no con un 4xx. Sin filtro de año la consulta NO lleva rango;
+  // el tope de futuro se aplica después, sobre lo ya recibido.
+  it("sin filtro de año la consulta NO lleva rango de años", () => {
+    const combos: NonNullable<Parameters<typeof buildOpenLibraryQuery>[0]>[] = [
       {},
       { genre: ["fantasia"] },
       { genre: ["noexiste"] },
-      { year: "2000s" },
-      { year: "classic" },
       { sort: "popularity", formato: "free" },
+      { idioma: "fre" },
     ];
     for (const filters of combos) {
       const { q } = buildOpenLibraryQuery(filters, "es");
-      expect(q).not.toContain("*");
+      expect(q).not.toContain("first_publish_year");
+      expect(openLibraryTrimsFutureAfterFetch(filters.year)).toBe(true);
+    }
+  });
+
+  // …y con filtro de año sí viaja, porque ahí es selectivo y barato.
+  it("con filtro de año el rango viaja en la consulta y no se post-filtra", () => {
+    for (const year of ["2000s", "classic", "1998"]) {
+      const { q } = buildOpenLibraryQuery({ year }, "es");
       expect(q).toMatch(/first_publish_year:\[\d+ TO \d+\]/);
+      expect(q).not.toContain("*");
+      expect(openLibraryTrimsFutureAfterFetch(year)).toBe(false);
     }
   });
 
@@ -137,7 +146,7 @@ describe("buildOpenLibraryQuery", () => {
   it("varios géneros producen un fragmento cada uno", () => {
     const { q } = buildOpenLibraryQuery({ genre: ["fantasia", "terror"] });
     expect(q).toBe(
-      `subject:"fantasy" subject:"horror" first_publish_year:[${OPEN_LIBRARY_MIN_YEAR} TO ${todayYear()}]`
+      'subject:"fantasy" subject:"horror"'
     );
   });
 
@@ -146,7 +155,7 @@ describe("buildOpenLibraryQuery", () => {
     // La base sigue siendo la que manda cuando no queda ningún fragmento del
     // usuario: el tope se añade DESPUÉS, nunca la desplaza.
     expect(q).toBe(
-      `${OPEN_LIBRARY_BASE_QUERY} first_publish_year:[${OPEN_LIBRARY_MIN_YEAR} TO ${todayYear()}]`
+      OPEN_LIBRARY_BASE_QUERY
     );
   });
 

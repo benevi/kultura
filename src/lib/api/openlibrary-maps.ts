@@ -53,16 +53,21 @@ export const OPEN_LIBRARY_GENRE: Record<string, string> = {
 export const OPEN_LIBRARY_BASE_QUERY = 'subject:"fiction"';
 
 /**
- * Suelo del rango de años cuando el usuario no ha filtrado por año
- * (E-BOOKS-RANGO).
+ * ¿Hay que recortar el futuro DESPUÉS de traer, en vez de en la consulta?
+ * (E-BOOKS-RANGO)
  *
- * Existe porque Open Library NO admite `*` como límite inferior del rango: la
- * petición falla entera, no devuelve menos resultados. Se usa un año anterior a
- * cualquier `first_publish_year` real del catálogo, de modo que acotar por abajo
- * no descarta nada y el tope superior (E-CATALOGO-FUTURO) sigue haciendo su
- * trabajo.
+ * Sí cuando el usuario no ha filtrado por año: ahí la consulta no lleva rango
+ * —un rango que abarca todo el corpus hace que Open Library cierre la
+ * conexión— y el tope de E-CATALOGO-FUTURO se aplica sobre lo ya recibido.
+ * Cuando sí hay filtro de año el rango es selectivo, viaja en la consulta y ya
+ * lleva el tope incorporado, así que post-filtrar sería redundante — y además
+ * rompería el caso de un año futuro explícito, que se respeta a propósito.
  */
-export const OPEN_LIBRARY_MIN_YEAR = 1;
+export function openLibraryTrimsFutureAfterFetch(
+  year: string | null | undefined
+): boolean {
+  return openLibraryYearRange(year) === undefined;
+}
 
 /** Locale de la app → código de idioma de Open Library (ISO-639-2/B). */
 export function openLibraryLanguage(locale?: string | null): "spa" | "eng" {
@@ -210,25 +215,33 @@ export function buildOpenLibraryQuery(
   // Contrapartida asumida: el rango descarta también las obras SIN
   // `first_publish_year`. Es el precio de que "Más recientes" signifique algo
   // — ese orden ya exige el campo — y el catálogo ya venía exigiendo portada.
+  // E-BOOKS-RANGO: el rango SOLO viaja si el usuario ha filtrado por año.
+  //
+  // Un rango que abarca el corpus entero (`[* TO 2026]`, y lo mismo con un
+  // suelo numérico) no es un filtro: es pedirle a Open Library que escanee todo
+  // su índice. El proveedor no lo rechaza con un 4xx — cierra la conexión, y en
+  // el log aparece como `TypeError: terminated · cause=SocketError: other side
+  // closed`. Un rango SELECTIVO (`[2010 TO 2019]`) es barato y se sirve sin
+  // problema, que es justo por qué la pestaña fallaba sin filtro de año y
+  // funcionaba al elegir una década.
+  //
+  // Así que cuando no hay filtro de año el tope de futuro (E-CATALOGO-FUTURO)
+  // se aplica como POST-FILTRO sobre lo ya recibido (`dropFutureYears`, en la
+  // rama `book` de `fetchDiscoverData`), igual que en manga. Es un recorte
+  // marginal y la ventana de 60 lo absorbe.
   const range = openLibraryYearRange(filters.year);
   const currentYear = todayYear();
-  // E-BOOKS-RANGO: el límite inferior va SIEMPRE como número, nunca como `*`.
-  // Open Library acepta el rango acotado (`[2010 TO 2019]` sirve el catálogo
-  // sin problema) pero rechaza el comodín: `[* TO 2026]` tumbaba la petición
-  // entera, así que la pestaña de libros SIN filtro de año quedó en error
-  // mientras que con una década seleccionada funcionaba. Un suelo numérico es
-  // equivalente en la práctica — `OPEN_LIBRARY_MIN_YEAR` es anterior a
-  // cualquier `first_publish_year` del catálogo — y es la forma que el
-  // proveedor sí entiende.
-  const from = range ? String(range.from) : String(OPEN_LIBRARY_MIN_YEAR);
   // Rango que EMPIEZA en el futuro: se respeta (recortarlo daría una ventana
-  // invertida = catálogo vacío).
-  const to =
-    range && range.from > currentYear
+  // invertida = catálogo vacío). El resto se acota al año en curso.
+  const to = range
+    ? range.from > currentYear
       ? range.to
-      : Math.min(range?.to ?? currentYear, currentYear);
+      : Math.min(range.to, currentYear)
+    : undefined;
 
-  const q = `${base} first_publish_year:[${from} TO ${to}]`;
+  const q = range
+    ? `${base} first_publish_year:[${range.from} TO ${to}]`
+    : base;
 
   const params: Record<string, string> = {
     language: languageOverride(filters.idioma) ?? openLibraryLanguage(locale),

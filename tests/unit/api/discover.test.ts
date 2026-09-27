@@ -96,7 +96,6 @@ import {
 } from "@/lib/api/openlibrary";
 import { searchByTypePaged } from "@/lib/api/search";
 import { todayYear } from "@/lib/api/catalog-window";
-import { OPEN_LIBRARY_MIN_YEAR } from "@/lib/api/openlibrary-maps";
 import { DISCOVER_MAX_PAGES } from "@/lib/api/pagination";
 import { getPopularGames, discoverGames } from "@/lib/api/rawg";
 import { getRecentComics } from "@/lib/api/comicvine";
@@ -275,13 +274,59 @@ describe("fetchDiscoverData — books filtros (E-BOOKS-HIBRIDO)", () => {
 
   it("sin filtros → semilla amplia y el idioma del locale", async () => {
     await fetchDiscoverData("book", 1);
-    // E-CATALOGO-FUTURO: toda consulta de libros lleva tope de año.
+    // E-BOOKS-RANGO: sin filtro de año la consulta NO lleva rango — uno que
+    // abarque todo el corpus hace que Open Library cierre la conexión.
     expect(searchOpenLibrary).toHaveBeenCalledWith(
-      `subject:"fiction" first_publish_year:[${OPEN_LIBRARY_MIN_YEAR} TO ${todayYear()}]`,
+      'subject:"fiction"',
       1,
       { language: "spa" },
       OPEN_LIBRARY_CATALOG_WINDOW
     );
+  });
+
+  // E-BOOKS-RANGO + E-CATALOGO-FUTURO: el tope no desaparece, cambia de sitio.
+  it("sin filtro de año, el futuro se recorta DESPUÉS de traer", async () => {
+    const future = todayYear() + 3;
+    vi.mocked(searchOpenLibrary).mockResolvedValue({
+      numFound: 2,
+      docs: [
+        {
+          key: "/works/OL1W",
+          title: "Ya publicado",
+          cover_i: 111,
+          first_publish_year: 2001,
+        },
+        {
+          key: "/works/OL2W",
+          title: "Anunciado",
+          cover_i: 222,
+          first_publish_year: future,
+        },
+      ],
+    } as never);
+
+    const res = await fetchDiscoverData("book", 1);
+    expect(res.items.map((i) => i.title)).toEqual(["Ya publicado"]);
+  });
+
+  // …pero un año futuro pedido a propósito se respeta: ahí el rango viaja en
+  // la consulta y post-filtrar lo vaciaría.
+  it("año futuro explícito no se recorta", async () => {
+    const future = todayYear() + 3;
+    vi.mocked(searchOpenLibrary).mockResolvedValue({
+      numFound: 1,
+      docs: [
+        {
+          key: "/works/OL3W",
+          title: "Anunciado",
+          cover_i: 333,
+          first_publish_year: future,
+        },
+      ],
+    } as never);
+
+    const res = await fetchDiscoverData("book", 1, { year: String(future) });
+    expect(res.items.map((i) => i.title)).toEqual(["Anunciado"]);
   });
 
   // Lo que Google Books no sabía hacer: género, año y orden en la propia
@@ -324,7 +369,7 @@ describe("fetchDiscoverData — books filtros (E-BOOKS-HIBRIDO)", () => {
   it("el idioma del locale viaja SIEMPRE: es lo que fija el título que se lee", async () => {
     await fetchDiscoverData("book", 1, {}, "es");
     expect(searchOpenLibrary).toHaveBeenCalledWith(
-      `subject:"fiction" first_publish_year:[${OPEN_LIBRARY_MIN_YEAR} TO ${todayYear()}]`,
+      'subject:"fiction"',
       1,
       expect.objectContaining({ language: "spa" }),
       OPEN_LIBRARY_CATALOG_WINDOW
@@ -334,7 +379,7 @@ describe("fetchDiscoverData — books filtros (E-BOOKS-HIBRIDO)", () => {
   it('formato "libre" acota a texto completo; el resto no finge precisión', async () => {
     await fetchDiscoverData("book", 1, { formato: "free" });
     expect(searchOpenLibrary).toHaveBeenCalledWith(
-      `subject:"fiction" first_publish_year:[${OPEN_LIBRARY_MIN_YEAR} TO ${todayYear()}]`,
+      'subject:"fiction"',
       1,
       expect.objectContaining({ has_fulltext: "true" }),
       OPEN_LIBRARY_CATALOG_WINDOW
@@ -343,7 +388,7 @@ describe("fetchDiscoverData — books filtros (E-BOOKS-HIBRIDO)", () => {
     vi.mocked(searchOpenLibrary).mockClear();
     await fetchDiscoverData("book", 1, { formato: "physical" });
     expect(searchOpenLibrary).toHaveBeenCalledWith(
-      `subject:"fiction" first_publish_year:[${OPEN_LIBRARY_MIN_YEAR} TO ${todayYear()}]`,
+      'subject:"fiction"',
       1,
       expect.not.objectContaining({ has_fulltext: expect.anything() }),
       OPEN_LIBRARY_CATALOG_WINDOW

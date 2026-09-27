@@ -32,6 +32,7 @@ import {
 } from "@/lib/api/openlibrary";
 import {
   buildOpenLibraryQuery,
+  openLibraryTrimsFutureAfterFetch,
   type OpenLibraryBookFilters,
 } from "@/lib/api/openlibrary-maps";
 import { getPopularGames, discoverGames } from "@/lib/api/rawg";
@@ -363,6 +364,14 @@ function isRateLimitError(e: unknown): boolean {
         items = (res.docs ?? [])
           .filter((doc) => Boolean(doc.cover_i))
           .map((doc) => normalizeBookOpenLibrary(doc));
+        // E-BOOKS-RANGO: sin filtro de año la consulta NO lleva rango (un rango
+        // que abarca el corpus entero hace que Open Library cierre la conexión),
+        // así que el tope de E-CATALOGO-FUTURO se aplica aquí, sobre lo ya
+        // recibido — igual que en manga. Con filtro de año el rango es
+        // selectivo, viaja en la consulta y ya trae el tope puesto.
+        if (openLibraryTrimsFutureAfterFetch(filters.year)) {
+          items = dropFutureYears(items);
+        }
         // El total se divide por la VENTANA, no por lo que se enseña: es lo
         // que determina dónde empieza la página siguiente. Así no se ofrecen
         // páginas que en realidad ya se han recorrido.

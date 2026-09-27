@@ -20,10 +20,22 @@ memoria de una conversación concreta y saber en todo momento cómo actuar.
   el código construye lo que yo supuse, no que la API lo acepte — y el proxy
   de estas sesiones bloquea casi todos los proveedores, así que esa mitad no
   se puede comprobar desde aquí. Pasó con E-BOOKS-RANGO: los tests fijaban
-  `first_publish_year:[* TO 2026]` en verde mientras Open Library rechazaba
-  esa query en producción. Cuando se cambia la FORMA de una query (no solo un
+  `first_publish_year:[* TO 2026]` en verde mientras Open Library tumbaba esa
+  query en producción. Cuando se cambia la FORMA de una query (no solo un
   valor), decirlo explícitamente al pedir la verificación en preview, en vez
   de dar el tema por cerrado con los tests en verde.
+- **Antes de dar un fallo por diagnosticado, mirar el LOG, no solo el
+  síntoma.** En E-BOOKS-RANGO deduje la causa de una correlación ("falla sin
+  filtro de año, funciona con década") y pusheé un arreglo que no arreglaba
+  nada: la correlación era buena pero el mecanismo no era el que supuse. El
+  log lo decía en una línea (`SocketError: other side closed` = conexión
+  cerrada, no query rechazada). El visor de Vercel está en
+  `vercel.com/<team>/<proyecto>/logs`, y el diagnóstico útil va dentro de
+  `message` desde `1fd9606`. Si no tengo acceso al log, decir que el
+  diagnóstico es una hipótesis, no un hecho.
+- **Un test de regresión que no se ha visto FALLAR no prueba nada.** Comentar
+  el arreglo, comprobar que el test se pone rojo, restaurarlo. Son treinta
+  segundos y es la diferencia entre fijar el bug y fijar la suposición.
 - **Máximo paralelismo cuando se pida** ("usa agentes en paralelo", "usa
   todo lo que tengas a tu disposición", etc.): lanzar varios `Agent` en
   paralelo con `isolation: "worktree"`, uno por área de trabajo
@@ -406,15 +418,19 @@ instrucciones operativas de la cabecera de este documento.
        asumida: las series anunciadas SIN fecha quedan fuera.
   - **Rango que empieza en el futuro se respeta** sin recortar: recortarlo
     daría una ventana invertida = catálogo vacío.
-  - **Libros: el límite inferior va SIEMPRE como número, nunca `*`**
-    (E-BOOKS-RANGO). Open Library sirve el rango acotado (`[2010 TO 2019]`
-    funciona) pero **rechaza el comodín**: `[* TO 2026]` no devolvía menos
-    resultados, tumbaba la petición entera. El síntoma fue desconcertante
-    porque la pestaña de libros fallaba SIN filtro de año y funcionaba al
-    elegir una década — justo al revés de lo que uno espera de un filtro. El
-    suelo es `OPEN_LIBRARY_MIN_YEAR`, anterior a cualquier `first_publish_year`
-    real, así que acotar por abajo no descarta nada. Hay un test de regresión
-    que prohíbe el `*` en la query.
+  - **Libros: el rango SOLO viaja si el usuario filtró por año**
+    (E-BOOKS-RANGO). Un rango que abarca el corpus entero (`[* TO 2026]`, y lo
+    mismo con un suelo numérico) no es un filtro: es pedirle a Open Library un
+    escaneo completo de su índice, y el proveedor responde **cerrando la
+    conexión** — en el log sale como `TypeError: terminated · cause=SocketError:
+    other side closed`, NO como un 4xx. Un rango selectivo (`[2010 TO 2019]`)
+    es barato y se sirve sin problema, y por eso el síntoma iba al revés de lo
+    esperable: la pestaña fallaba SIN filtro de año y funcionaba al elegir una
+    década. Sin filtro de año, el tope de futuro se aplica como **post-filtro**
+    (`dropFutureYears`), igual que en manga; la ventana de 60 absorbe el
+    recorte. Con filtro de año el rango viaja en la consulta y ya trae el tope
+    puesto, así que no se post-filtra — post-filtrar además vaciaría el caso de
+    un año futuro explícito, que se respeta a propósito.
   - **Manga es la excepción técnica**: MangaDex solo acepta `year` como
     igualdad, sin rango, así que ahí el tope es un post-filtro
     (`dropFutureYears`) de tipo marginal — como el NSFW global, no cuenta
