@@ -16,6 +16,14 @@ memoria de una conversación concreta y saber en todo momento cómo actuar.
 - **Verificación mínima antes de cada push**: `npx tsc --noEmit` limpio +
   los tests unitarios directamente relacionados con los archivos tocados
   en verde. No hace falta más para cada commit intermedio.
+- **Un test unitario sobre la query de un proveedor NO la valida.** Fija que
+  el código construye lo que yo supuse, no que la API lo acepte — y el proxy
+  de estas sesiones bloquea casi todos los proveedores, así que esa mitad no
+  se puede comprobar desde aquí. Pasó con E-BOOKS-RANGO: los tests fijaban
+  `first_publish_year:[* TO 2026]` en verde mientras Open Library rechazaba
+  esa query en producción. Cuando se cambia la FORMA de una query (no solo un
+  valor), decirlo explícitamente al pedir la verificación en preview, en vez
+  de dar el tema por cerrado con los tests en verde.
 - **Máximo paralelismo cuando se pida** ("usa agentes en paralelo", "usa
   todo lo que tengas a tu disposición", etc.): lanzar varios `Agent` en
   paralelo con `isolation: "worktree"`, uno por área de trabajo
@@ -398,6 +406,15 @@ instrucciones operativas de la cabecera de este documento.
        asumida: las series anunciadas SIN fecha quedan fuera.
   - **Rango que empieza en el futuro se respeta** sin recortar: recortarlo
     daría una ventana invertida = catálogo vacío.
+  - **Libros: el límite inferior va SIEMPRE como número, nunca `*`**
+    (E-BOOKS-RANGO). Open Library sirve el rango acotado (`[2010 TO 2019]`
+    funciona) pero **rechaza el comodín**: `[* TO 2026]` no devolvía menos
+    resultados, tumbaba la petición entera. El síntoma fue desconcertante
+    porque la pestaña de libros fallaba SIN filtro de año y funcionaba al
+    elegir una década — justo al revés de lo que uno espera de un filtro. El
+    suelo es `OPEN_LIBRARY_MIN_YEAR`, anterior a cualquier `first_publish_year`
+    real, así que acotar por abajo no descarta nada. Hay un test de regresión
+    que prohíbe el `*` en la query.
   - **Manga es la excepción técnica**: MangaDex solo acepta `year` como
     igualdad, sin rango, así que ahí el tope es un post-filtro
     (`dropFutureYears`) de tipo marginal — como el NSFW global, no cuenta

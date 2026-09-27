@@ -16,6 +16,7 @@ import {
   openLibraryLanguage,
   openLibraryFulltext,
   OPEN_LIBRARY_BASE_QUERY,
+  OPEN_LIBRARY_MIN_YEAR,
   OPEN_LIBRARY_SORT,
 } from "@/lib/api/openlibrary-maps";
 
@@ -83,9 +84,30 @@ describe("openLibraryFulltext", () => {
 describe("buildOpenLibraryQuery", () => {
   it("sin filtros → semilla amplia y el idioma del locale", () => {
     expect(buildOpenLibraryQuery({}, "es")).toEqual({
-      q: `${OPEN_LIBRARY_BASE_QUERY} first_publish_year:[* TO ${todayYear()}]`,
+      q: `${OPEN_LIBRARY_BASE_QUERY} first_publish_year:[${OPEN_LIBRARY_MIN_YEAR} TO ${todayYear()}]`,
       params: { language: "spa" },
     });
+  });
+
+  // E-BOOKS-RANGO — regresión. Open Library sirve el rango acotado
+  // (`[2010 TO 2019]`) pero RECHAZA el comodín: `[* TO 2026]` no devolvía menos
+  // resultados, tumbaba la petición entera, y la pestaña de libros sin filtro de
+  // año quedaba en "No se pudo cargar el contenido" mientras que con una década
+  // seleccionada funcionaba. El límite inferior va siempre como número.
+  it("el rango NUNCA lleva comodín: Open Library no lo admite", () => {
+    const combos: Parameters<typeof buildOpenLibraryQuery>[0][] = [
+      {},
+      { genre: ["fantasia"] },
+      { genre: ["noexiste"] },
+      { year: "2000s" },
+      { year: "classic" },
+      { sort: "popularity", formato: "free" },
+    ];
+    for (const filters of combos) {
+      const { q } = buildOpenLibraryQuery(filters, "es");
+      expect(q).not.toContain("*");
+      expect(q).toMatch(/first_publish_year:\[\d+ TO \d+\]/);
+    }
   });
 
   it("el idioma viaja SIEMPRE: es lo que fija el título que se lee", () => {
@@ -115,7 +137,7 @@ describe("buildOpenLibraryQuery", () => {
   it("varios géneros producen un fragmento cada uno", () => {
     const { q } = buildOpenLibraryQuery({ genre: ["fantasia", "terror"] });
     expect(q).toBe(
-      `subject:"fantasy" subject:"horror" first_publish_year:[* TO ${todayYear()}]`
+      `subject:"fantasy" subject:"horror" first_publish_year:[${OPEN_LIBRARY_MIN_YEAR} TO ${todayYear()}]`
     );
   });
 
@@ -124,7 +146,7 @@ describe("buildOpenLibraryQuery", () => {
     // La base sigue siendo la que manda cuando no queda ningún fragmento del
     // usuario: el tope se añade DESPUÉS, nunca la desplaza.
     expect(q).toBe(
-      `${OPEN_LIBRARY_BASE_QUERY} first_publish_year:[* TO ${todayYear()}]`
+      `${OPEN_LIBRARY_BASE_QUERY} first_publish_year:[${OPEN_LIBRARY_MIN_YEAR} TO ${todayYear()}]`
     );
   });
 
