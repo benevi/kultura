@@ -34,7 +34,7 @@ export function SearchClient({
 
   return (
     <div className="flex flex-col gap-6">
-      <SearchBar defaultValue={query} className="w-full max-w-2xl" />
+      <SearchBar defaultValue={query} className="w-full max-w-[720px]" />
       <SearchResults
         results={results}
         activeType={activeType}

@@ -21,14 +21,14 @@ export default async function SuggestionsPage() {
   const t = await getTranslations('suggestions')
 
   return (
-    <main className="max-w-xl mx-auto px-4 md:px-8 py-10">
-      <div className="mb-8">
-        <h1 className="font-display text-3xl font-extrabold text-text-primary mb-2">
+    <main className="max-w-6xl mx-auto px-4 md:px-14 pt-2 pb-14">
+      <div className="mb-7">
+        <h1 className="font-display text-[34px] md:text-[42px] font-bold text-text-primary mb-2">
           {t('title')} <span aria-hidden="true">💡</span>
         </h1>
         <p className="text-text-tertiary text-sm">{t('subtitle')}</p>
       </div>
-      <div className="bg-surface-default rounded-3xl p-6 sm:p-7">
+      <div className="max-w-[640px] bg-surface-default rounded-[20px] p-6 sm:p-7">
         <SuggestionsForm />
       </div>
     </main>

@@ -35,13 +35,22 @@ function entryToMediaItem(entry: LibraryEntry): MediaItem {
 }
 
 const TYPE_OPTIONS = [
-  { value: 'movie' as const, labelKey: 'movie' as const },
-  { value: 'tv' as const, labelKey: 'tv' as const },
-  { value: 'anime' as const, labelKey: 'anime' as const },
-  { value: 'book' as const, labelKey: 'book' as const },
-  { value: 'comic' as const, labelKey: 'comic' as const },
-  { value: 'manga' as const, labelKey: 'manga' as const },
-  { value: 'game' as const, labelKey: 'game' as const },
+  { value: 'movie' as const, labelKey: 'movie' as const, emoji: '🎬' },
+  { value: 'tv' as const, labelKey: 'tv' as const, emoji: '📺' },
+  { value: 'anime' as const, labelKey: 'anime' as const, emoji: '🍥' },
+  { value: 'book' as const, labelKey: 'book' as const, emoji: '📚' },
+  { value: 'comic' as const, labelKey: 'comic' as const, emoji: '💥' },
+  { value: 'manga' as const, labelKey: 'manga' as const, emoji: '🀄' },
+  { value: 'game' as const, labelKey: 'game' as const, emoji: '🎮' },
+]
+
+// Tarjetas de recuento (F0 Library): número display en un color vivo por
+// estado, etiqueta muted debajo. Mismo orden que el mockup.
+const STAT_CARDS = [
+  { status: 'completed' as const, labelKey: 'completed' as const, color: 'text-accent-lime' },
+  { status: 'in_progress' as const, labelKey: 'inProgress' as const, color: 'text-accent-blue' },
+  { status: 'pending' as const, labelKey: 'pending' as const, color: 'text-accent-yellow' },
+  { status: 'abandoned' as const, labelKey: 'dropped' as const, color: 'text-text-tertiary' },
 ]
 
 const STATUS_OPTIONS = [
@@ -62,7 +71,7 @@ function EmptyLibrary({ t }: { t: ReturnType<typeof useTranslations<'library'>> 
   return (
     <div className="flex flex-col items-center justify-center py-20 px-4 text-center gap-5">
       <div
-        className="w-20 h-20 rounded-bento bg-surface-elevated flex items-center justify-center text-4xl select-none"
+        className="w-20 h-20 rounded-[20px] bg-surface-elevated flex items-center justify-center text-4xl select-none"
         aria-hidden="true"
       >
         📚
@@ -94,7 +103,7 @@ function EmptyFiltered({
   return (
     <div className="flex flex-col items-center justify-center py-16 px-4 text-center gap-4">
       <div
-        className="w-16 h-16 rounded-bento bg-surface-elevated flex items-center justify-center text-3xl select-none"
+        className="w-16 h-16 rounded-[20px] bg-surface-elevated flex items-center justify-center text-3xl select-none"
         aria-hidden="true"
       >
         🔍
@@ -160,10 +169,22 @@ export function LibraryClient({ entries }: LibraryClientProps) {
 
   const hasActiveFilters = currentType !== 'all' || currentStatus !== 'all' || currentScore !== 'all'
 
+  const statusCounts = useMemo(() => {
+    const counts: Record<string, number> = {}
+    for (const e of entries) counts[e.status] = (counts[e.status] ?? 0) + 1
+    return counts
+  }, [entries])
+
+  const title = (
+    <h1 className="font-display text-[34px] md:text-[42px] font-bold text-text-primary mb-[22px]">
+      {t('title')} <span aria-hidden="true">📚</span>
+    </h1>
+  )
+
   if (entries.length === 0) {
     return (
       <div>
-        <h1 className="font-display text-4xl tracking-wide text-text-primary mb-8">{t('title')}</h1>
+        {title}
         <EmptyLibrary t={t} />
       </div>
     )
@@ -171,90 +192,89 @@ export function LibraryClient({ entries }: LibraryClientProps) {
 
   return (
     <div>
-      {/* Header */}
-      <div className="flex items-center justify-between gap-3 py-4 mb-2">
-        <h1 className="font-display text-4xl tracking-wide text-text-primary">{t('title')}</h1>
-        <span className="shrink-0 rounded-pill bg-surface-elevated px-3 py-1 text-xs font-body font-semibold text-text-secondary">
-          {filtered.length} {t('items')}
-        </span>
-      </div>
+      {/* Header — título display + tarjetas de recuento por estado (F0) */}
+      <section className="pb-6">
+        {title}
+        <div className="flex gap-4 overflow-x-auto scrollbar-hide md:flex-wrap">
+          {STAT_CARDS.map(({ status, labelKey, color }) => (
+            <div
+              key={status}
+              className="shrink-0 min-w-[150px] rounded-[20px] bg-surface-default px-[26px] py-[18px]"
+            >
+              <div className={`font-display text-[30px] font-extrabold leading-none ${color}`}>
+                {statusCounts[status] ?? 0}
+              </div>
+              <div className="mt-2 text-[13px] font-semibold text-text-tertiary">
+                {tF(labelKey)}
+              </div>
+            </div>
+          ))}
+        </div>
+      </section>
 
-      {/* Filters */}
-      <div className="flex flex-col gap-4 mb-8 pb-6 border-b border-border">
-        {/* Tipo */}
-        <div>
-          <p className="font-mono uppercase text-xs tracking-widest text-muted mb-2">
-            {tF('type')}
-          </p>
-          <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide flex-nowrap">
+      {/* Filtros — estado (chips sólidos), tipo y puntuación (chips outline) */}
+      <div className="flex flex-col gap-3.5 mb-8">
+        <div
+          role="group"
+          aria-label={tF('status')}
+          className="flex gap-3 overflow-x-auto pb-1 scrollbar-hide flex-nowrap"
+        >
+          <FilterChip
+            label={tF('all')}
+            active={currentStatus === 'all'}
+            onClick={() => handleFilterChange('status', 'all')}
+          />
+          {STATUS_OPTIONS.map((opt) => (
             <FilterChip
-              label={tF('all')}
-              active={currentType === 'all'}
-              onClick={() => handleFilterChange('type', 'all')}
+              key={opt.value}
+              label={tF(opt.labelKey)}
+              active={currentStatus === opt.value}
+              onClick={() => handleFilterChange('status', currentStatus === opt.value ? 'all' : opt.value)}
             />
-            {TYPE_OPTIONS.map((opt) => (
-              <FilterChip
-                key={opt.value}
-                label={tF(opt.labelKey)}
-                active={currentType === opt.value}
-                onClick={() => handleFilterChange('type', currentType === opt.value ? 'all' : opt.value)}
-              />
-            ))}
-          </div>
+          ))}
         </div>
 
-        {/* Estado */}
-        <div>
-          <p className="font-mono uppercase text-xs tracking-widest text-muted mb-2">
-            {tF('status')}
-          </p>
-          <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide flex-nowrap">
+        <div
+          role="group"
+          aria-label={tF('type')}
+          className="flex gap-2.5 overflow-x-auto pb-1 scrollbar-hide flex-nowrap"
+        >
+          {TYPE_OPTIONS.map((opt) => (
             <FilterChip
-              label={tF('all')}
-              active={currentStatus === 'all'}
-              onClick={() => handleFilterChange('status', 'all')}
+              key={opt.value}
+              variant="outline"
+              emoji={opt.emoji}
+              label={tF(opt.labelKey)}
+              active={currentType === opt.value}
+              onClick={() => handleFilterChange('type', currentType === opt.value ? 'all' : opt.value)}
             />
-            {STATUS_OPTIONS.map((opt) => (
-              <FilterChip
-                key={opt.value}
-                label={tF(opt.labelKey)}
-                active={currentStatus === opt.value}
-                onClick={() => handleFilterChange('status', currentStatus === opt.value ? 'all' : opt.value)}
-              />
-            ))}
-          </div>
+          ))}
         </div>
 
-        {/* Puntuación */}
-        <div>
-          <p className="font-mono uppercase text-xs tracking-widest text-muted mb-2">
-            {tF('minScore')}
-          </p>
-          <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide flex-nowrap">
+        <div
+          role="group"
+          aria-label={tF('minScore')}
+          className="flex gap-2.5 overflow-x-auto pb-1 scrollbar-hide flex-nowrap items-center"
+        >
+          {SCORE_OPTIONS.map((opt) => (
             <FilterChip
-              label={tF('all')}
-              active={currentScore === 'all'}
-              onClick={() => handleFilterChange('score', 'all')}
+              key={opt.value}
+              variant="outline"
+              label={opt.label}
+              active={currentScore === opt.value}
+              onClick={() => handleFilterChange('score', currentScore === opt.value ? 'all' : opt.value)}
             />
-            {SCORE_OPTIONS.map((opt) => (
-              <FilterChip
-                key={opt.value}
-                label={opt.label}
-                active={currentScore === opt.value}
-                onClick={() => handleFilterChange('score', currentScore === opt.value ? 'all' : opt.value)}
-              />
-            ))}
-          </div>
-        </div>
-
-        {/* Reset rápido si hay filtros activos */}
-        {hasActiveFilters && (
-          <div className="flex">
-            <KButton variant="secondary" size="sm" onClick={resetFilters}>
+          ))}
+          {hasActiveFilters && (
+            <KButton variant="secondary" size="sm" onClick={resetFilters} className="ml-auto shrink-0">
               {tF('reset')}
             </KButton>
-          </div>
-        )}
+          )}
+        </div>
+
+        <p className="text-[13px] font-semibold text-text-tertiary">
+          {filtered.length} {t('items')}
+        </p>
       </div>
 
       {/* Empty filtered */}

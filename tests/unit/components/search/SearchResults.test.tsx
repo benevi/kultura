@@ -289,7 +289,7 @@ describe("SearchResults", () => {
       />
     );
     const allTab = screen.getByText("Todos").closest("button");
-    expect(allTab?.className).toContain("border-accent-positive");
+    expect(allTab?.className).toContain("border-accent-pink");
   });
 
   it("muestra el recuento de resultados en los tabs", () => {
