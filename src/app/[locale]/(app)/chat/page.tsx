@@ -34,8 +34,10 @@ export default async function ChatPage() {
     }))
 
   return (
-    <main className="max-w-2xl mx-auto px-4 md:px-8 py-8">
-      <h1 className="font-display text-3xl font-bold text-text-primary mb-6">{t('title')}</h1>
+    <main className="max-w-3xl mx-auto px-4 md:px-14 pt-2 pb-14">
+      <h1 className="font-display text-[34px] md:text-[42px] font-bold text-text-primary mb-6">
+        {t('title')} <span aria-hidden="true">💬</span>
+      </h1>
       <ChatClient friends={friends} />
     </main>
   )
