@@ -110,11 +110,11 @@ export function SearchFilters({
         <button
           onClick={onToggle}
           className={cn(
-            "inline-flex items-center gap-1.5 px-3 py-1.5 rounded-pill text-xs font-body font-medium whitespace-nowrap cursor-pointer",
-            "border transition-all duration-150 ease-out active:scale-[0.97]",
+            "inline-flex items-center gap-1.5 px-4 py-1.5 rounded-pill text-xs font-body font-bold whitespace-nowrap cursor-pointer",
+            "border-2 transition-all duration-150 ease-out active:scale-[0.97]",
             isOpen || activeCount > 0
-              ? "bg-accent-positive/15 border-accent-positive text-text-primary"
-              : "bg-transparent border-surface-border text-text-secondary hover:text-text-primary hover:border-text-tertiary"
+              ? "bg-surface-elevated border-accent-pink text-text-primary"
+              : "bg-transparent border-surface-border text-text-primary hover:bg-surface-elevated"
           )}
         >
           <svg
@@ -132,7 +132,7 @@ export function SearchFilters({
           </svg>
           {t("filters" as SearchTranslationKey)}
           {activeCount > 0 && (
-            <span className="inline-flex items-center justify-center min-w-4 h-4 px-1 rounded-full bg-accent-positive text-on-accent-positive text-[10px] font-semibold leading-none">
+            <span className="inline-flex items-center justify-center min-w-4 h-4 px-1 rounded-full bg-accent-pink text-on-accent-pink text-[10px] font-extrabold leading-none">
               {activeCount}
             </span>
           )}
@@ -142,7 +142,7 @@ export function SearchFilters({
         <select
           value={filters.sortBy}
           onChange={(e) => update({ sortBy: e.target.value })}
-          className="px-3 py-1.5 rounded-pill border border-surface-border bg-surface-elevated text-xs font-body font-medium text-text-secondary focus:outline-none focus:border-accent-positive cursor-pointer"
+          className="px-4 py-1.5 rounded-pill border-2 border-surface-border bg-transparent text-xs font-body font-bold text-text-primary focus:outline-none focus:border-accent-pink cursor-pointer"
         >
           {SORT_OPTIONS.map((opt) => (
             <option key={opt.value} value={opt.value}>
@@ -166,7 +166,7 @@ export function SearchFilters({
 
       {/* Expanded panel */}
       {isOpen && (
-        <div className="mt-3 border border-border rounded-card shadow-xl p-4 bg-surface space-y-5">
+        <div className="mt-3 rounded-[20px] p-5 bg-surface-default space-y-5">
           {/* Rating slider */}
           <div>
             <div className="flex justify-between items-center mb-2">

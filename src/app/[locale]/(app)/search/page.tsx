@@ -37,11 +37,11 @@ export default async function SearchPage({ searchParams }: Props) {
   if (!q || q.trim().length < 2) {
     const t = await getTranslations("search");
     return (
-      <main className="max-w-2xl mx-auto px-4 py-24 flex flex-col items-center text-center gap-6">
-        <h1 className="font-display text-4xl tracking-wide text-text-primary">
-          {t("title")}
+      <main className="max-w-6xl mx-auto px-4 md:px-14 pt-2 pb-14">
+        <h1 className="font-display text-[34px] md:text-[42px] font-bold text-text-primary mb-5">
+          {t("title")} <span aria-hidden="true">🔎</span>
         </h1>
-        <SearchBar className="w-full" />
+        <SearchBar className="w-full max-w-[720px]" />
       </main>
     );
   }
@@ -64,7 +64,7 @@ export default async function SearchPage({ searchParams }: Props) {
   }
 
   return (
-    <main className="max-w-6xl mx-auto px-4 md:px-8 py-8">
+    <main className="max-w-6xl mx-auto px-4 md:px-14 pt-2 pb-14">
       <SearchClient results={results} query={q} initialType={type} />
     </main>
   );
