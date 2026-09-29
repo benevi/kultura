@@ -143,18 +143,18 @@ export function SettingsForm({
   }
 
   const eyebrow = 'text-[13px] font-extrabold uppercase tracking-wide text-text-tertiary mb-3'
-  const row = 'px-5 py-4 sm:px-6 sm:py-5'
+  const row = 'px-5 py-4 sm:px-[22px] sm:py-[18px]'
 
   return (
     <div className="flex flex-col gap-8">
-      <h1 className="font-display text-2xl md:text-3xl font-extrabold text-text-primary">
+      <h1 className="font-display text-[34px] md:text-[42px] font-bold text-text-primary">
         {t('title')} <span aria-hidden="true">⚙️</span>
       </h1>
 
       {/* Sección Perfil */}
       <section>
         <p className={eyebrow}>{t('profile')}</p>
-        <div className="flex flex-col rounded-3xl bg-surface-default divide-y divide-surface-border overflow-hidden">
+        <div className="flex flex-col rounded-[20px] bg-surface-default divide-y divide-surface-border overflow-hidden">
           {/* Email (solo lectura) */}
           <div className={cn(row, 'flex items-center justify-between gap-4 flex-wrap')}>
             <span className="text-sm font-semibold text-text-primary">{t('email')}</span>
@@ -177,7 +177,7 @@ export function SettingsForm({
 
           {/* Color de avatar */}
           <div className={cn(row, 'flex flex-col gap-3')}>
-            <label className="text-sm font-body text-text-secondary">{t('avatarColor')}</label>
+            <label className="text-sm font-semibold text-text-primary">{t('avatarColor')}</label>
             <div className="grid grid-cols-8 gap-2">
               {AVATAR_COLORS.map(color => (
                 <button
@@ -188,7 +188,7 @@ export function SettingsForm({
                   className={cn(
                     'h-8 w-8 rounded-full transition-transform hover:scale-110',
                     avatarColor === color.name
-                      ? 'scale-110 ring-2 ring-accent-positive ring-offset-2 ring-offset-surface-default'
+                      ? 'scale-110 ring-2 ring-accent-pink ring-offset-2 ring-offset-surface-default'
                       : ''
                   )}
                   style={{ backgroundColor: color.hex }}
@@ -212,7 +212,7 @@ export function SettingsForm({
       {/* Sección Preferencias */}
       <section>
         <p className={eyebrow}>{t('preferences')}</p>
-        <div className="flex flex-col rounded-3xl bg-surface-default overflow-hidden">
+        <div className="flex flex-col rounded-[20px] bg-surface-default overflow-hidden">
           {/* Idioma */}
           <div className={cn(row, 'flex items-center justify-between gap-4 flex-wrap')}>
             <label className="text-sm font-semibold text-text-primary">{t('language')}</label>
@@ -223,10 +223,10 @@ export function SettingsForm({
                   type="button"
                   onClick={() => setLocale(loc)}
                   className={cn(
-                    'rounded-pill px-4 py-2 text-sm font-bold font-body transition-colors',
+                    'rounded-pill px-4 py-[9px] text-[13px] font-bold font-body transition-colors',
                     locale === loc
-                      ? 'bg-accent-positive text-on-accent-positive'
-                      : 'bg-surface-elevated text-text-secondary hover:text-text-primary'
+                      ? 'bg-accent-pink text-on-accent-pink'
+                      : 'bg-surface-elevated text-text-primary hover:brightness-110'
                   )}
                 >
                   {loc === 'es' ? 'Español' : 'English'}
@@ -240,7 +240,7 @@ export function SettingsForm({
       {/* Sección Zona de peligro (D2/D3) */}
       <section>
         <p className={cn(eyebrow, 'text-accent-danger')}>{t('dangerZone')}</p>
-        <div className="flex flex-col rounded-3xl bg-surface-default divide-y divide-surface-border overflow-hidden">
+        <div className="flex flex-col rounded-[20px] bg-surface-default divide-y divide-surface-border overflow-hidden">
           <div className={cn(row, 'flex items-center justify-between gap-4 flex-wrap')}>
             <p className="text-sm font-body text-text-tertiary max-w-xs">{t('exportDataHint')}</p>
             <KButton

@@ -16,23 +16,23 @@ export function ListsClient({ lists }: Props) {
   const [showModal, setShowModal] = useState(false)
 
   return (
-    <main className="max-w-5xl mx-auto px-4 md:px-8 py-8">
-      <div className="flex items-center justify-between gap-3 mb-8 flex-wrap">
-        <h1 className="font-display text-3xl font-extrabold text-text-primary">
+    <main className="max-w-6xl mx-auto px-4 md:px-14 pt-2 pb-14">
+      <div className="flex items-center justify-between gap-3 mb-7 flex-wrap">
+        <h1 className="font-display text-[34px] md:text-[42px] font-bold text-text-primary">
           {t('title')} <span aria-hidden="true">📋</span>
         </h1>
-        <KButton variant="primary" size="sm" onClick={() => setShowModal(true)}>
+        <KButton variant="primary" size="lg" onClick={() => setShowModal(true)}>
           {t('newList')}
         </KButton>
       </div>
 
       {lists.length === 0 ? (
-        <div className="bg-surface-default rounded-3xl p-10 text-center flex flex-col gap-2">
-          <p className="font-medium text-text-primary">{t('noLists')}</p>
+        <div className="bg-surface-default rounded-[20px] p-10 text-center flex flex-col gap-2">
+          <p className="font-bold text-text-primary">{t('noLists')}</p>
           <p className="text-sm text-text-tertiary">{t('noListsHint')}</p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-5">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-5">
           {lists.map((list) => (
             <ListCard key={list.id} list={list} />
           ))}

@@ -105,9 +105,9 @@ export default async function ProfilePage({ params }: Props) {
   const hasAnyContent = completedItems.length > 0 || inProgressItems.length > 0 || pendingItems.length > 0
 
   return (
-    <main className="max-w-4xl mx-auto px-4 md:px-8 py-8 flex flex-col gap-10">
+    <main className="max-w-6xl mx-auto px-4 md:px-14 pt-2 pb-14 flex flex-col gap-10">
       {/* Header de perfil */}
-      <div className="flex flex-col md:flex-row md:items-start gap-4">
+      <div className="relative flex flex-col gap-4">
         <div className="flex-1">
           <ProfileHeader
             userId={profileUser.id}
@@ -123,7 +123,7 @@ export default async function ProfilePage({ params }: Props) {
           />
         </div>
         {currentUser && !isOwnProfile && (
-          <div className="flex-shrink-0 flex flex-col items-end gap-2 md:mt-0 mt-0">
+          <div className="flex-shrink-0 flex flex-col items-start md:items-end gap-2 md:absolute md:right-6 md:top-[176px]">
             <FriendshipButton
               initialStatus={friendshipStatus}
               targetUserId={profileUser.id}
@@ -133,7 +133,7 @@ export default async function ProfilePage({ params }: Props) {
           </div>
         )}
         {isOwnProfile && (
-          <KButton asChild variant="secondary" size="sm" className="flex-shrink-0">
+          <KButton asChild variant="secondary" size="sm" className="flex-shrink-0 self-start md:absolute md:right-6 md:top-[176px]">
             <Link href="/settings">{t('editProfile')}</Link>
           </KButton>
         )}
@@ -157,13 +157,13 @@ export default async function ProfilePage({ params }: Props) {
       {/* Empty state cuando la biblioteca está vacía */}
       {!hasAnyContent && (
         <div className="flex flex-col items-center gap-3 py-16 text-center">
-          <span className="text-5xl">📚</span>
-          <p className="font-bold" style={{ color: 'var(--text-primary)' }}>
+          <span className="text-5xl" aria-hidden="true">📚</span>
+          <p className="font-bold text-text-primary">
             {isOwnProfile
               ? t('emptyOwn')
               : t('emptyOther', { username: profileUser.username })}
           </p>
-          <p className="text-sm" style={{ color: 'var(--text-tertiary)' }}>
+          <p className="text-sm text-text-tertiary">
             {isOwnProfile ? t('emptyOwnHint') : t('emptyOtherHint')}
           </p>
         </div>

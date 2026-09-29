@@ -29,3 +29,9 @@ export function cardGradient(hue: number): string {
 export function heroGradient(hue: number): string {
   return `radial-gradient(120% 100% at 20% 10%, oklch(55% 0.2 ${hue} / 0.6) 0%, transparent 55%), linear-gradient(160deg, oklch(30% 0.1 ${hue}), oklch(16% 0.06 280))`
 }
+
+/** Gradiente de poster sin imagen real (MediaCard/mockups: 50%/0.15 → 28%/0.08). */
+export function posterGradient(seed: string): string {
+  const hue = hueFromSeed(seed)
+  return `linear-gradient(155deg, oklch(50% 0.15 ${hue}), oklch(28% 0.08 ${hue}))`
+}
