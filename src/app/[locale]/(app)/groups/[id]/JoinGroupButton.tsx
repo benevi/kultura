@@ -5,7 +5,6 @@ import { useRouter } from 'next/navigation'
 import { useTranslations } from 'next-intl'
 import { KButton } from '@/components/ui/KButton'
 import { useToastContext } from '@/components/ui/ToastProvider'
-import { F0 } from '@/lib/design/f0-tokens'
 
 interface Props {
   groupId: string
@@ -44,8 +43,7 @@ export function JoinGroupButton({ groupId, isMember, isOwner }: Props) {
         size="sm"
         onClick={handleClick}
         disabled={loading}
-        className="flex-shrink-0 rounded-full font-bold border-2"
-        style={{ borderColor: F0.stroke, color: F0.textSecondary }}
+        className="flex-shrink-0"
       >
         {loading ? '…' : t('leaveGroup')}
       </KButton>
@@ -59,7 +57,6 @@ export function JoinGroupButton({ groupId, isMember, isOwner }: Props) {
       onClick={handleClick}
       disabled={loading}
       className="flex-shrink-0 rounded-full font-extrabold"
-      style={{ background: F0.pink, color: F0.onPink }}
     >
       {loading ? '…' : t('joinGroup')}
     </KButton>
