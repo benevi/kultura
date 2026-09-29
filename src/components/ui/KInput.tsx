@@ -11,9 +11,9 @@ export const KInput = React.forwardRef<HTMLInputElement, KInputProps>(
   ({ className, type, label, error, hint, id, ...props }, ref) => {
     const inputId = id ?? label?.toLowerCase().replace(/\s+/g, "-");
     return (
-      <div className="flex flex-col gap-1 w-full">
+      <div className="flex flex-col gap-2 w-full">
         {label && (
-          <label htmlFor={inputId} className="text-sm font-body font-medium text-text-secondary">
+          <label htmlFor={inputId} className="text-[13px] font-body font-bold text-text-tertiary">
             {label}
           </label>
         )}
@@ -21,15 +21,16 @@ export const KInput = React.forwardRef<HTMLInputElement, KInputProps>(
           id={inputId}
           type={type}
           className={cn(
-            "flex h-10 w-full rounded-button border bg-surface-base px-3 py-2",
-            "text-sm font-body text-text-primary",
-            "border-surface-border",
+            /* F0 (Login/Settings): bloque surface-2 sin borde visible,
+               radio 14px, padding 15×18, texto 15px. */
+            "flex w-full rounded-[14px] border-2 bg-surface-elevated px-[18px] py-[13px]",
+            "text-[15px] font-body text-text-primary",
+            "border-transparent",
             "placeholder:text-text-tertiary",
             "transition-colors duration-150",
             /* Focus: green, not red */
             "focus-visible:outline-none focus-visible:border-accent-positive",
-            "focus-visible:ring-1 focus-visible:ring-accent-positive/40",
-            "disabled:cursor-not-allowed disabled:opacity-50",
+                        "disabled:cursor-not-allowed disabled:opacity-50",
             error && "border-accent-danger focus-visible:border-accent-danger focus-visible:ring-accent-danger/40",
             className
           )}

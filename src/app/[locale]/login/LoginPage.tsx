@@ -11,15 +11,11 @@ import { KInput } from "@/components/ui/KInput";
 import { Logo } from "@/components/layout/Logo";
 import { cn } from "@/lib/utils/index";
 
-// Misma "card feature grande" que la CTA final de Landing: superficie sólida
-// + gradiente radial de acento en la esquina superior-izquierda (F0 §Cards
-// feature grandes). Un solo acento decorativo (purple) para la tarjeta de
-// auth, sin desenfoque.
-const AUTH_CARD_BACKGROUND = {
-  backgroundColor: "var(--surface-default)",
-  backgroundImage:
-    "radial-gradient(120% 100% at 20% 10%, rgba(155,107,255,0.3), transparent 55%)",
-};
+// Card de auth — F0 Login: superficie sólida, radio 32px y la sombra dura
+// de las hero cards (`10px 10px 0 var(--surface-2)`), sin borde ni blur.
+const AUTH_CARD_CLASS =
+  "w-full max-w-[440px] rounded-[32px] bg-surface-default p-7 md:p-11";
+const AUTH_CARD_STYLE = { boxShadow: "10px 10px 0 var(--surface-elevated)" };
 
 // ---------------------------------------------------------------------------
 // Types
@@ -231,11 +227,11 @@ export function LoginPage({ locale }: LoginPageProps) {
     return (
       <main className="flex min-h-screen flex-col items-center justify-center bg-surface-base px-4">
         <div
-          className="w-full max-w-md rounded-bento-lg border border-surface-border p-8 text-center"
-          style={AUTH_CARD_BACKGROUND}
+          className={cn(AUTH_CARD_CLASS, "text-center")}
+          style={AUTH_CARD_STYLE}
         >
           <Logo size={32} className="justify-center" />
-          <p className="mt-6 text-sm text-text-secondary">{tAuth("resetLinkSent")}</p>
+          <p className="mt-6 text-sm text-text-tertiary">{tAuth("resetLinkSent")}</p>
         </div>
       </main>
     );
@@ -245,11 +241,11 @@ export function LoginPage({ locale }: LoginPageProps) {
     return (
       <main className="flex min-h-screen flex-col items-center justify-center bg-surface-base px-4">
         <div
-          className="w-full max-w-md rounded-bento-lg border border-surface-border p-8 text-center"
-          style={AUTH_CARD_BACKGROUND}
+          className={cn(AUTH_CARD_CLASS, "text-center")}
+          style={AUTH_CARD_STYLE}
         >
           <Logo size={32} className="justify-center" />
-          <p className="mt-6 text-sm text-text-secondary">{tAuth("checkEmail")}</p>
+          <p className="mt-6 text-sm text-text-tertiary">{tAuth("checkEmail")}</p>
         </div>
       </main>
     );
@@ -262,18 +258,23 @@ export function LoginPage({ locale }: LoginPageProps) {
   return (
     <main className="flex min-h-screen flex-col items-center justify-center bg-surface-base px-4 py-10">
       <div
-        className="w-full max-w-sm overflow-hidden rounded-bento-lg border border-surface-border p-6 md:p-8"
-        style={AUTH_CARD_BACKGROUND}
+        className={AUTH_CARD_CLASS}
+        style={AUTH_CARD_STYLE}
       >
         {/* Wordmark — mismo Logo de marca que el header autenticado, no un
             texto ad-hoc (F0 §Logo). */}
         <div className="mb-8 flex flex-col items-center text-center">
-          <Logo size={32} />
-          <p className="mt-3 text-sm text-text-tertiary">
-            {mode === "reset"
-              ? tAuth("resetPassword")
-              : tAuth("tagline")}
-          </p>
+          <Logo size={32} className="mb-7" />
+          <h1 className="font-display text-[26px] font-extrabold text-text-primary mb-2">
+            {mode === "login"
+              ? tAuth("welcomeTitle")
+              : mode === "register"
+                ? tAuth("createAccount")
+                : tAuth("resetPassword")}
+          </h1>
+          {mode !== "reset" && (
+            <p className="text-sm text-text-tertiary">{tAuth("tagline")}</p>
+          )}
         </div>
 
         {/* Tabs (hidden in reset mode) — chip pill sólido, mismo patrón que el
@@ -289,8 +290,8 @@ export function LoginPage({ locale }: LoginPageProps) {
               className={cn(
                 "flex-1 rounded-full py-2.5 text-sm font-body font-bold border transition-all duration-base ease-standard active:scale-[0.98]",
                 mode === "login"
-                  ? "bg-accent-positive text-on-accent-positive border-accent-positive"
-                  : "bg-surface-elevated text-text-secondary border-surface-border hover:text-text-primary hover:border-text-tertiary"
+                  ? "bg-accent-pink text-on-accent-pink border-accent-pink"
+                  : "bg-surface-elevated text-text-primary border-surface-elevated hover:border-surface-border"
               )}
             >
               {tAuth("signIn")}
@@ -303,8 +304,8 @@ export function LoginPage({ locale }: LoginPageProps) {
               className={cn(
                 "flex-1 rounded-full py-2.5 text-sm font-body font-bold border transition-all duration-base ease-standard active:scale-[0.98]",
                 mode === "register"
-                  ? "bg-accent-positive text-on-accent-positive border-accent-positive"
-                  : "bg-surface-elevated text-text-secondary border-surface-border hover:text-text-primary hover:border-text-tertiary"
+                  ? "bg-accent-pink text-on-accent-pink border-accent-pink"
+                  : "bg-surface-elevated text-text-primary border-surface-elevated hover:border-surface-border"
               )}
             >
               {tAuth("signUp")}
@@ -313,7 +314,7 @@ export function LoginPage({ locale }: LoginPageProps) {
         )}
 
         {/* Form */}
-        <form onSubmit={handleSubmit} noValidate className="space-y-4">
+        <form onSubmit={handleSubmit} noValidate className="space-y-[18px]">
           {/* Email */}
           <KInput
             id="email"
@@ -356,7 +357,7 @@ export function LoginPage({ locale }: LoginPageProps) {
 
           {/* Global auth error — semantic danger red */}
           {form.error && (
-            <p className="rounded-button bg-accent-danger/10 px-3 py-2 text-sm text-accent-danger">
+            <p className="rounded-[14px] bg-accent-danger/10 px-[18px] py-3 text-sm text-accent-danger">
               {form.error}
             </p>
           )}
@@ -365,7 +366,8 @@ export function LoginPage({ locale }: LoginPageProps) {
           <KButton
             type="submit"
             loading={form.loading}
-            className="w-full"
+            size="lg"
+            className="w-full !mt-7"
           >
             {mode === "login"
               ? tAuth("signIn")
