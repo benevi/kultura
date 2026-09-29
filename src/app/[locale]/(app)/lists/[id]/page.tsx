@@ -42,7 +42,7 @@ export default async function ListDetailPage({ params }: Props) {
   }
 
   return (
-    <main className="max-w-4xl mx-auto px-4 md:px-8 py-8">
+    <main className="max-w-6xl mx-auto px-4 md:px-14 pt-2 pb-14">
       <ListDetail
         list={list}
         items={items}
