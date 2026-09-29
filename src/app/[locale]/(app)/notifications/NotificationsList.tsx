@@ -62,14 +62,14 @@ function InviteActions({ invitationId }: { invitationId: string }) {
       <button
         onClick={() => respond('accept')}
         disabled={loading}
-        className="px-3 py-1 text-xs font-semibold bg-accent-positive text-on-accent-positive rounded-full hover:brightness-110 transition-all disabled:opacity-50"
+        className="px-4 py-1.5 text-xs font-extrabold bg-accent-pink text-on-accent-pink rounded-full hover:brightness-110 transition-all disabled:opacity-50"
       >
         {t('accept')}
       </button>
       <button
         onClick={() => respond('reject')}
         disabled={loading}
-        className="px-3 py-1 text-xs font-semibold bg-surface2 text-muted rounded-full hover:bg-accent-danger/10 hover:text-accent-danger transition-colors disabled:opacity-50"
+        className="px-4 py-1.5 text-xs font-bold bg-surface-elevated text-text-primary rounded-full hover:bg-accent-danger/10 hover:text-accent-danger transition-colors disabled:opacity-50"
       >
         {t('reject')}
       </button>
@@ -102,15 +102,15 @@ function NotificationItem({ notif }: { notif: AppNotification }) {
     const mediaExternalId = mediaId?.split('_').slice(1).join('_') ?? null
     content = (
       <div className="flex-1 min-w-0">
-        <p className="text-sm text-text-primary">
+        <p className="text-sm leading-snug text-text-primary">
           {fromUsername ? (
-            <Link href={`/profile/${fromUsername}`} className="font-medium hover:text-accent-info transition-colors">
+            <Link href={`/profile/${fromUsername}`} className="font-bold hover:text-accent-pink transition-colors">
               {fromUsername}
             </Link>
           ) : null}
           {' '}{t('recommendedYou')}{' '}
           {mediaType && mediaExternalId && mediaTitle ? (
-            <Link href={`/media/${mediaType}/${mediaExternalId}`} className="font-medium hover:text-accent-info transition-colors">
+            <Link href={`/media/${mediaType}/${mediaExternalId}`} className="font-bold hover:text-accent-pink transition-colors">
               {mediaTitle}
             </Link>
           ) : (mediaTitle ?? null)}
@@ -126,15 +126,15 @@ function NotificationItem({ notif }: { notif: AppNotification }) {
     const listId = p.listId as string | undefined
     content = (
       <div className="flex-1 min-w-0">
-        <p className="text-sm text-text-primary">
+        <p className="text-sm leading-snug text-text-primary">
           {fromUsername ? (
-            <Link href={`/profile/${fromUsername}`} className="font-medium hover:text-accent-info transition-colors">
+            <Link href={`/profile/${fromUsername}`} className="font-bold hover:text-accent-pink transition-colors">
               {fromUsername}
             </Link>
           ) : null}
           {' '}{t('invitedYou')}{' '}
           {listId && listName ? (
-            <Link href={`/lists/${listId}`} className="font-medium hover:text-accent-info transition-colors">
+            <Link href={`/lists/${listId}`} className="font-bold hover:text-accent-pink transition-colors">
               {listName}
             </Link>
           ) : (listName ?? null)}
@@ -148,15 +148,15 @@ function NotificationItem({ notif }: { notif: AppNotification }) {
     const invitationId = p.invitationId as string | undefined
     content = (
       <div className="flex-1 min-w-0">
-        <p className="text-sm text-text-primary">
+        <p className="text-sm leading-snug text-text-primary">
           {fromUsername ? (
-            <Link href={`/profile/${fromUsername}`} className="font-medium hover:text-accent-info transition-colors">
+            <Link href={`/profile/${fromUsername}`} className="font-bold hover:text-accent-pink transition-colors">
               {fromUsername}
             </Link>
           ) : null}
           {' '}{t('groupInvite')}{' '}
           {groupId && groupName ? (
-            <Link href={`/groups/${groupId}`} className="font-medium hover:text-accent-info transition-colors">
+            <Link href={`/groups/${groupId}`} className="font-bold hover:text-accent-pink transition-colors">
               {groupName}
             </Link>
           ) : (groupName ?? null)}
@@ -167,9 +167,11 @@ function NotificationItem({ notif }: { notif: AppNotification }) {
   }
 
   return (
-    <div className={`flex items-start gap-3 p-4 ${!notif.readAt ? 'bg-accent-positive/5' : ''}`}>
+    <div
+      className={`flex items-center gap-4 rounded-[20px] px-5 py-4 ${!notif.readAt ? 'bg-surface-default' : 'bg-transparent'}`}
+    >
       <div
-        className="flex-shrink-0 mt-0.5 w-9 h-9 rounded-full flex items-center justify-center"
+        className="flex-shrink-0 w-[42px] h-[42px] rounded-[14px] flex items-center justify-center"
         style={{ background: accent.bg, color: accent.fg }}
       >
         {notif.type === 'recommendation' ? (
@@ -183,7 +185,10 @@ function NotificationItem({ notif }: { notif: AppNotification }) {
         )}
       </div>
       {content}
-      <span className="text-xs text-text-tertiary flex-shrink-0 mt-0.5">{relativeDate(notif.createdAt, locale)}</span>
+      <span className="text-xs text-text-tertiary flex-shrink-0 whitespace-nowrap">{relativeDate(notif.createdAt, locale)}</span>
+      {!notif.readAt && (
+        <span aria-hidden="true" className="w-2 h-2 rounded-full bg-accent-pink flex-shrink-0" />
+      )}
     </div>
   )
 }
@@ -193,7 +198,7 @@ export function NotificationsList({ notifications }: Props) {
 
   if (notifications.length === 0) {
     return (
-      <div className="bg-surface-default border border-surface-border rounded-bento p-10 text-center flex flex-col items-center gap-3">
+      <div className="bg-surface-default rounded-[20px] p-10 text-center flex flex-col items-center gap-3">
         <IconBell className="w-8 h-8 text-text-tertiary" />
         <p className="font-bold text-text-primary">{t('noNotifications')}</p>
         <p className="text-sm text-text-tertiary">{t('noNotificationsHint')}</p>
@@ -202,7 +207,7 @@ export function NotificationsList({ notifications }: Props) {
   }
 
   return (
-    <div className="bg-surface-default border border-surface-border rounded-bento divide-y divide-surface-border overflow-hidden">
+    <div className="flex flex-col gap-2.5">
       {notifications.map((n) => (
         <NotificationItem key={n.id} notif={n} />
       ))}
