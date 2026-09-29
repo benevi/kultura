@@ -18,77 +18,90 @@ const FEATURE_ACCENTS: { icon: KIcon; bg: string; text: string }[] = [
 
 const FEATURE_KEYS = ["library", "friends", "lists", "ai"] as const;
 
+// Matices de la tira de posters decorativa (F0 Landing).
+const POSTER_HUES = [300, 55, 320, 220, 160, 40] as const;
+
+const MEDIA_CHIPS = [
+  { key: "movies", emoji: "🎬" },
+  { key: "tvs", emoji: "📺" },
+  { key: "animes", emoji: "⛩️" },
+  { key: "books", emoji: "📚" },
+  { key: "comics", emoji: "💥" },
+  { key: "mangas", emoji: "🀄" },
+  { key: "games", emoji: "🎮" },
+] as const;
+
 export default async function HomePage() {
   const t = await getTranslations("landing");
+  const tMedia = await getTranslations("media");
 
   return (
     <div className="min-h-screen flex flex-col">
       <Header />
       <main className="flex-1">
-        {/* Hero */}
-        <section className="px-4 md:px-8 pt-14 md:pt-20 pb-16 md:pb-24">
-          <div className="max-w-6xl mx-auto grid md:grid-cols-2 gap-10 md:gap-16 items-center">
-            <div className="text-center md:text-left">
-              <h1 className="font-display text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-extrabold tracking-tight text-text-primary leading-[1.05] mb-8 text-balance">
-                {t("hero.tagline")}
-              </h1>
-              <div className="flex flex-col sm:flex-row gap-3 justify-center md:justify-start">
-                <KButton variant="primary" size="lg" asChild>
-                  <Link href="/login?mode=register">{t("hero.cta")}</Link>
-                </KButton>
-                <KButton variant="secondary" size="lg" asChild>
-                  <Link href="#features">{t("hero.ctaSecondary")}</Link>
-                </KButton>
-              </div>
-            </div>
-
-            {/* Collage decorativo — mismo primitivo de "poster sin imagen real"
-                (gradiente de dos paradas, mismo matiz, segunda parada más
-                oscura vía el token on-accent-*) + rotación de cards + badge
-                colgante con sombra dura, sin desenfoque (F0). */}
-            <div
-              className="relative h-64 sm:h-80 md:h-96 mx-auto w-full max-w-xs hidden sm:block"
+        {/* Hero — F0 Landing: centrado, chip de contexto, titular display con
+            pegatina lima rotada, subtítulo muted y dos pills. */}
+        <section className="px-4 md:px-14 pt-10 md:pt-10 pb-12 flex flex-col items-center text-center">
+          <span className="inline-flex items-center gap-1.5 rounded-full bg-surface-default px-4 py-[9px] text-[13px] font-bold text-text-primary mb-6">
+            <span aria-hidden="true">🔮</span>
+            {t("hero.chip")}
+          </span>
+          <h1 className="font-display text-4xl sm:text-5xl md:text-[58px] font-extrabold tracking-tight text-text-primary leading-[1.05] mb-5 max-w-[820px] text-balance">
+            {t("hero.tagline")}{" "}
+            <span
               aria-hidden="true"
+              className="inline-block rotate-[-4deg] rounded-[8px] bg-accent-lime text-on-accent-lime px-3.5 py-0.5"
             >
-              <div
-                className="absolute left-0 top-8 w-28 md:w-36 aspect-[2/3] rounded-bento rotate-[-6deg] flex items-center justify-center"
-                style={{ background: "linear-gradient(155deg, var(--accent-pink), var(--on-accent-pink))" }}
-              >
-                <IconLibrary className="w-9 h-9 md:w-10 md:h-10 text-on-accent-pink opacity-70" />
-              </div>
-              <div
-                className="absolute right-2 top-0 w-28 md:w-36 aspect-[2/3] rounded-bento rotate-[5deg] flex items-center justify-center"
-                style={{ background: "linear-gradient(155deg, var(--accent-purple), var(--on-accent-purple))" }}
-              >
-                <IconSparkles className="w-9 h-9 md:w-10 md:h-10 text-on-accent-purple opacity-70" />
-              </div>
-              <div
-                className="absolute left-1/2 -translate-x-1/2 bottom-0 w-28 md:w-36 aspect-[2/3] rounded-bento rotate-[-2deg] flex items-center justify-center"
-                style={{ background: "linear-gradient(155deg, var(--accent-lime), var(--on-accent-lime))" }}
-              >
-                <IconLists className="w-9 h-9 md:w-10 md:h-10 text-on-accent-lime opacity-70" />
-              </div>
-
-              {/* Badge colgante (mismo patrón que el badge de match de MediaCard/
-                  MediaDetail): pill de color vivo + sombra dura tipo pegatina. */}
-              <div
-                className="absolute top-1/3 right-0 translate-x-1/4 rotate-[-8deg] rounded-full bg-accent-lime text-on-accent-lime text-xs font-display font-extrabold px-3 py-1.5 leading-none whitespace-nowrap"
-                style={{ boxShadow: "4px 4px 0 rgba(0,0,0,.4)" }}
-              >
-                {t("hero.badge")}
-              </div>
-            </div>
+              ✨
+            </span>
+          </h1>
+          <p className="text-lg leading-relaxed text-text-tertiary max-w-[560px] mb-8">
+            {t("what.description")}
+          </p>
+          <div className="flex flex-col sm:flex-row gap-4">
+            <KButton variant="primary" size="lg" asChild className="px-8">
+              <Link href="/login?mode=register">{t("hero.cta")}</Link>
+            </KButton>
+            <KButton variant="secondary" size="lg" asChild className="px-8">
+              <Link href="#features">{t("hero.ctaSecondary")}</Link>
+            </KButton>
           </div>
         </section>
 
-        {/* What */}
-        <section className="px-4 md:px-8 py-16 text-center max-w-3xl mx-auto">
-          <h2 className="font-display text-3xl md:text-4xl font-bold tracking-tight text-text-primary mb-6 text-balance">
+        {/* Tira de posters — "poster sin imagen real": gradiente de dos
+            paradas con el mismo matiz, rotación alterna ±1.2–1.4deg (F0). */}
+        <section aria-hidden="true" className="px-4 md:px-14 pb-12 flex gap-5">
+          {POSTER_HUES.map((hue, i) => (
+            <div
+              key={hue}
+              className={cn(
+                "flex-1 h-40 md:h-[260px] rounded-[20px]",
+                i >= 3 && "hidden md:block",
+                i % 2 === 0 ? "rotate-[-1.4deg]" : "rotate-[1.2deg]"
+              )}
+              style={{
+                background: `linear-gradient(155deg, oklch(50% 0.15 ${hue}), oklch(28% 0.08 ${hue}))`,
+              }}
+            />
+          ))}
+        </section>
+
+        {/* Formatos — chips surface con emoji, uno por tipo de contenido */}
+        <section className="px-4 md:px-14 pb-16">
+          <h2 className="font-display text-2xl md:text-[28px] font-extrabold tracking-tight text-text-primary text-center mb-8 text-balance">
             {t("what.title")}
           </h2>
-          <p className="text-text-secondary text-lg leading-relaxed">
-            {t("what.description")}
-          </p>
+          <div className="flex gap-4 justify-center flex-wrap">
+            {MEDIA_CHIPS.map(({ key, emoji }) => (
+              <span
+                key={key}
+                className="inline-flex items-center gap-1.5 rounded-full bg-surface-default px-6 py-3.5 text-[15px] font-bold text-text-primary whitespace-nowrap"
+              >
+                <span aria-hidden="true">{emoji}</span>
+                {tMedia(key)}
+              </span>
+            ))}
+          </div>
         </section>
 
         {/* Features */}
@@ -106,12 +119,12 @@ export default async function HomePage() {
                 <div
                   key={key}
                   className={cn(
-                    "bg-surface-default border border-surface-border rounded-bento p-5 md:p-6 flex flex-col gap-4",
+                    "bg-surface-default rounded-[20px] p-5 md:p-6 flex flex-col gap-4",
                     "transition-transform duration-base ease-standard hover:rotate-0",
                     rotate
                   )}
                 >
-                  <div className={cn("w-11 h-11 md:w-12 md:h-12 rounded-2xl flex items-center justify-center shrink-0", bg)}>
+                  <div className={cn("w-11 h-11 md:w-12 md:h-12 rounded-[14px] flex items-center justify-center shrink-0", bg)}>
                     <Icon className={cn("w-5 h-5 md:w-6 md:h-6", text)} />
                   </div>
                   <div>
@@ -133,11 +146,11 @@ export default async function HomePage() {
             que las cards destacadas del bento). */}
         <section className="px-4 md:px-8 py-10 md:py-16">
           <div
-            className="relative overflow-hidden rounded-bento-lg max-w-4xl mx-auto px-6 md:px-16 py-16 md:py-20 text-center border border-surface-border"
+            className="relative overflow-hidden rounded-[32px] max-w-4xl mx-auto px-6 md:px-16 py-16 md:py-20 text-center"
             style={{
               backgroundColor: "var(--surface-elevated)",
               backgroundImage:
-                "radial-gradient(120% 100% at 20% 10%, rgba(255,79,163,0.35), transparent 55%)",
+                "radial-gradient(120% 100% at 20% 10%, oklch(68% 0.24 350 / 0.55), transparent 55%)",
             }}
           >
             <h2 className="relative font-display text-3xl md:text-5xl font-extrabold tracking-tight text-text-primary mb-4 text-balance">

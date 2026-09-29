@@ -32,7 +32,8 @@
     "or": "or",
     "checkEmail": "Check your email",
     "resetLinkSent": "We've sent you a link to reset your password. Check your inbox.",
-    "tagline": "Discover your culture"
+    "tagline": "Discover your culture",
+    "welcomeTitle": "Hey, great to see you! 👋"
   },
   "media": {
     "movie": "Movie",
@@ -539,7 +540,8 @@
       "tagline": "Discover, track and share your culture",
       "cta": "Get started for free",
       "ctaSecondary": "Learn more",
-      "badge": "7 cultural formats"
+      "badge": "7 cultural formats",
+      "chip": "AI-powered cultural discovery"
     },
     "what": {
       "title": "Your entire cultural universe, in one place",
