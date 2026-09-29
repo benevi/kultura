@@ -316,13 +316,12 @@ de extensión a pantallas nuevas" arriba). Migrar con el mismo patrón:
 un agente por pantalla o grupo de pantallas afines, siguiendo las
 instrucciones operativas de la cabecera de este documento.
 
-**Deuda técnica por resolver:**
-- `KButton` y `button.tsx` (shadcn-style) conviven como dos sistemas de
-  botón distintos — decidir cuál se queda antes de seguir migrando
-  pantallas que usan el segundo.
-- Revisar si el rojo legado de shadcn (`--primary: 0 79% 51%` en
-  `globals.css`) sigue siendo visible en algún componente real; no se ha
-  tocado en este pase.
+**Deuda técnica resuelta:**
+- Sistema de botón único: **`KButton`** (primario/secundario). El
+  `button.tsx` de shadcn se eliminó (solo lo usaban `RecommendButton` y
+  `RecommendModal`, ya migrados). No reintroducir otro componente de botón.
+- Eliminado el bloque de variables HSL de shadcn (incluido el rojo
+  `--primary: 0 79% 51%`) de `globals.css`: no lo referenciaba nada.
 
 ## Flujo de trabajo recomendado para un nuevo sprint de diseño
 
