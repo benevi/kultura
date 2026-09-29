@@ -32,7 +32,8 @@
     "or": "o",
     "checkEmail": "Revisa tu correo",
     "resetLinkSent": "Te hemos enviado un enlace para restablecer tu contraseña. Revisa tu bandeja de entrada.",
-    "tagline": "Descubre tu cultura"
+    "tagline": "Descubre tu cultura",
+    "welcomeTitle": "Ey, ¡qué bien verte! 👋"
   },
   "media": {
     "movie": "Película",
@@ -539,7 +540,8 @@
       "tagline": "Descubre, registra y comparte tu cultura",
       "cta": "Empieza gratis",
       "ctaSecondary": "Ver más",
-      "badge": "7 formatos culturales"
+      "badge": "7 formatos culturales",
+      "chip": "Descubrimiento cultural con IA"
     },
     "what": {
       "title": "Todo tu universo cultural, en un solo lugar",

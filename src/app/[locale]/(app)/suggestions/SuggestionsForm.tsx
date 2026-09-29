@@ -48,7 +48,7 @@ export function SuggestionsForm() {
         <p className="text-sm text-text-tertiary">{t('successHint')}</p>
         <button
           onClick={() => { setStatus('idle'); setSubject(''); setDescription('') }}
-          className="rounded-pill bg-surface-elevated px-4 py-2 text-sm font-bold text-accent-positive mt-2 hover:brightness-110 transition-all"
+          className="rounded-pill bg-surface-elevated px-4 py-2 text-sm font-bold text-accent-pink mt-2 hover:brightness-110 transition-all"
         >
           {t('newFeedback')}
         </button>
@@ -56,30 +56,33 @@ export function SuggestionsForm() {
     )
   }
 
-  const typeOptions: Array<{ value: typeof type; label: string }> = [
-    { value: 'feature', label: t('typeFeature') },
-    { value: 'improvement', label: t('typeImprovement') },
-    { value: 'bug', label: t('typeBug') },
-    { value: 'other', label: t('typeOther') },
+  // Mismo orden y emojis que el mockup F0 de Sugerencias.
+  const typeOptions: Array<{ value: typeof type; label: string; emoji: string }> = [
+    { value: 'bug', label: t('typeBug'), emoji: '🐛' },
+    { value: 'feature', label: t('typeFeature'), emoji: '✨' },
+    { value: 'improvement', label: t('typeImprovement'), emoji: '🔧' },
+    { value: 'other', label: t('typeOther'), emoji: '💬' },
   ]
 
   return (
     <form onSubmit={handleSubmit} className="flex flex-col gap-5">
       {/* Type */}
       <div>
-        <label className="block text-sm font-semibold text-text-primary mb-2">{t('typeLabel')}</label>
-        <div className="flex flex-wrap gap-2">
+        <label className="block text-[13px] font-bold text-text-tertiary mb-2">{t('typeLabel')}</label>
+        <div className="flex flex-wrap gap-2.5">
           {typeOptions.map(opt => (
             <button
               key={opt.value}
               type="button"
               onClick={() => setType(opt.value)}
-              className={`px-4 py-2 rounded-pill text-sm font-bold transition-all ${
+              aria-pressed={type === opt.value}
+              className={`inline-flex items-center gap-1.5 px-4 py-[9px] rounded-pill text-[13px] font-bold transition-all ${
                 type === opt.value
-                  ? 'bg-accent-positive text-on-accent-positive'
-                  : 'bg-surface-elevated text-text-tertiary hover:text-text-primary'
+                  ? 'bg-accent-pink text-on-accent-pink'
+                  : 'bg-surface-elevated text-text-primary hover:brightness-110'
               }`}
             >
+              <span aria-hidden="true">{opt.emoji}</span>
               {opt.label}
             </button>
           ))}
@@ -88,7 +91,7 @@ export function SuggestionsForm() {
 
       {/* Subject */}
       <div>
-        <label className="block text-sm font-semibold text-text-primary mb-2">
+        <label className="block text-[13px] font-bold text-text-tertiary mb-2">
           {t('subjectLabel')}
         </label>
         <input
@@ -98,13 +101,13 @@ export function SuggestionsForm() {
           placeholder={t('subjectPlaceholder')}
           maxLength={120}
           required
-          className="w-full bg-surface-elevated rounded-2xl px-4 py-3 text-sm text-text-primary placeholder-text-tertiary focus:outline-none focus:ring-2 focus:ring-accent-positive"
+          className="w-full bg-surface-elevated rounded-[14px] px-[18px] py-[15px] text-sm text-text-primary placeholder-text-tertiary focus:outline-none focus:ring-2 focus:ring-accent-pink"
         />
       </div>
 
       {/* Description */}
       <div>
-        <label className="block text-sm font-semibold text-text-primary mb-2">
+        <label className="block text-[13px] font-bold text-text-tertiary mb-2">
           {t('descriptionLabel')}
         </label>
         <textarea
@@ -114,7 +117,7 @@ export function SuggestionsForm() {
           maxLength={2000}
           rows={5}
           required
-          className="w-full bg-surface-elevated rounded-2xl px-4 py-3 text-sm text-text-primary placeholder-text-tertiary resize-none focus:outline-none focus:ring-2 focus:ring-accent-positive"
+          className="w-full bg-surface-elevated rounded-[14px] px-[18px] py-[15px] text-sm text-text-primary placeholder-text-tertiary resize-none focus:outline-none focus:ring-2 focus:ring-accent-pink"
         />
         <p className="text-xs text-text-tertiary mt-1 text-right">{description.length}/2000</p>
       </div>
@@ -128,7 +131,7 @@ export function SuggestionsForm() {
         variant="primary"
         size="lg"
         loading={status === 'sending'}
-        className="w-full"
+        className="self-start"
       >
         {status === 'sending' ? t('submitting') : t('submit')}
       </KButton>

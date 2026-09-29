@@ -31,15 +31,15 @@ export async function ProfileStats({ byType, totalItems }: ProfileStatsProps) {
 
   return (
     <section>
-      <h2 className="font-display text-xl font-bold text-text-primary mb-4">{t('stats')}</h2>
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+      <h2 className="font-display text-xl font-bold text-text-primary mb-[18px]">{t('stats')}</h2>
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         {byType.filter(s => s.total > 0).map(s => (
           <div
             key={s.type}
-            className="bg-surface-elevated rounded-2xl p-4 text-center border border-surface-border"
+            className="bg-surface-default rounded-[20px] p-5 text-center"
           >
             <span className="text-2xl" aria-hidden>{TYPE_ICONS[s.type] ?? '✦'}</span>
-            <p className="text-2xl font-bold text-text-primary leading-none mt-2">{s.total}</p>
+            <p className="font-display text-2xl font-extrabold text-text-primary leading-none mt-2">{s.total}</p>
             <p className="text-xs text-text-secondary mt-1">
               {tMedia(s.type as Parameters<typeof tMedia>[0])}
             </p>

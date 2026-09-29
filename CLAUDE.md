@@ -307,22 +307,29 @@ con una paleta hex antigua.
   F0 (hero con badge colgante, bento con rotación + acento radial, layout
   de dos columnas con badge colgante en MediaDetail).
 
-**Pendiente:** las 14 pantallas restantes (Landing, Login, Library,
-Search, Friends, Groups, GroupDetail, Chat, Notifications, Profile,
-Lists, ListDetail, Settings, Suggestions) heredan bien los colores vía
-custom properties pero no tienen todavía el acabado F0 específico de
-cada una (formas, sombras duras, chips colgantes, etc. — ver "Principio
-de extensión a pantallas nuevas" arriba). Migrar con el mismo patrón:
-un agente por pantalla o grupo de pantallas afines, siguiendo las
-instrucciones operativas de la cabecera de este documento.
+- **Las 14 pantallas restantes** (Landing, Login, Library, Search,
+  Friends, Groups, GroupDetail, Chat, Notifications, Profile, Lists,
+  ListDetail, Settings, Suggestions) ya tienen el acabado F0 de su mockup
+  en el canvas derivado.
+- `KButton` primario = pink/on-pink (como F0); `FilterChip` = chip F0 con
+  variante `outline`; `KInput` = bloque surface-2 sin borde, radio 14px.
+- Gradientes deterministas (posters, cards de grupo/lista, heros) en
+  `src/lib/design/gradient.ts` — usar esos helpers, no reimplementarlos.
+- Eliminado el apaño `src/lib/design/f0-tokens.ts`: los colores salen
+  siempre de las custom properties / clases de Tailwind.
 
-**Deuda técnica por resolver:**
-- `KButton` y `button.tsx` (shadcn-style) conviven como dos sistemas de
-  botón distintos — decidir cuál se queda antes de seguir migrando
-  pantallas que usan el segundo.
-- Revisar si el rojo legado de shadcn (`--primary: 0 79% 51%` en
-  `globals.css`) sigue siendo visible en algún componente real; no se ha
-  tocado en este pase.
+**Convenciones de pantalla** (derivadas de los mockups): contenedor
+`max-w-6xl mx-auto px-4 md:px-14 pt-2 pb-14` (o `max-w-3xl` en pantallas
+de lista estrecha), título `font-display text-[34px] md:text-[42px]
+font-bold` con emoji `aria-hidden`, cards `rounded-[20px] bg-surface-default`
+sin borde, heros/modales `rounded-[32px]`.
+
+**Deuda técnica resuelta:**
+- Sistema de botón único: **`KButton`** (primario/secundario). El
+  `button.tsx` de shadcn se eliminó (solo lo usaban `RecommendButton` y
+  `RecommendModal`, ya migrados). No reintroducir otro componente de botón.
+- Eliminado el bloque de variables HSL de shadcn (incluido el rojo
+  `--primary: 0 79% 51%`) de `globals.css`: no lo referenciaba nada.
 
 ## Flujo de trabajo recomendado para un nuevo sprint de diseño
 

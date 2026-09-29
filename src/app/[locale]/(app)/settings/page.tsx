@@ -21,13 +21,15 @@ export default async function SettingsPage() {
     .single()
 
   return (
-    <main className="max-w-xl mx-auto px-4 md:px-8 py-8">
-      <SettingsForm
-        initialUsername={profile?.username ?? ''}
-        initialAvatarColor={profile?.avatar_color ?? 'blue'}
-        initialLocale={profile?.preferred_locale ?? null}
-        userEmail={user.email ?? ''}
-      />
+    <main className="max-w-6xl mx-auto px-4 md:px-14 pt-2 pb-14">
+      <div className="max-w-[640px]">
+        <SettingsForm
+          initialUsername={profile?.username ?? ''}
+          initialAvatarColor={profile?.avatar_color ?? 'blue'}
+          initialLocale={profile?.preferred_locale ?? null}
+          userEmail={user.email ?? ''}
+        />
+      </div>
     </main>
   )
 }

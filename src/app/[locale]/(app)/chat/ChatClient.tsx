@@ -104,8 +104,8 @@ export function ChatClient({ friends }: Props) {
 
       {/* New chat: select a friend */}
       {showNewChat && (
-        <div className="bg-surface-default border border-surface-border rounded-bento p-4 flex flex-col gap-2">
-          <p className="text-sm font-bold text-text-primary mb-1">{t('selectFriend')}</p>
+        <div className="bg-surface-default rounded-[20px] p-5 flex flex-col gap-1.5">
+          <p className="font-display text-lg font-extrabold text-text-primary mb-2">{t('selectFriend')}</p>
           {friends.length === 0 ? (
             <p className="text-sm text-text-secondary">{t('noFriendsToChat')}</p>
           ) : (
@@ -115,10 +115,10 @@ export function ChatClient({ friends }: Props) {
                 data-testid="friend-picker-item"
                 onClick={() => startConversation(f.id)}
                 disabled={startingChat === f.id}
-                className="flex items-center gap-3 p-2 rounded-2xl hover:bg-surface-elevated transition-colors text-left disabled:opacity-50"
+                className="flex items-center gap-3 p-3 rounded-[16px] hover:bg-surface-elevated transition-colors text-left disabled:opacity-50"
               >
                 <Avatar initials={f.avatar_initials} color={f.avatar_color} size="sm" />
-                <span className="text-sm text-text-primary">{f.username}</span>
+                <span className="text-sm font-bold text-text-primary">{f.username}</span>
                 {startingChat === f.id && <span className="ml-auto text-xs text-text-secondary">...</span>}
               </button>
             ))
@@ -135,7 +135,7 @@ export function ChatClient({ friends }: Props) {
       {loading ? (
         <div className="text-center py-12 text-text-secondary text-sm">...</div>
       ) : loadError ? (
-        <div className="bg-surface-default border border-surface-border rounded-bento p-10 text-center flex flex-col gap-3">
+        <div className="bg-surface-default rounded-[20px] p-10 text-center flex flex-col gap-3">
           <p className="text-sm text-text-secondary">{t('loadError')}</p>
           <div>
             <KButton variant="secondary" size="sm" onClick={loadConversations}>
@@ -144,18 +144,18 @@ export function ChatClient({ friends }: Props) {
           </div>
         </div>
       ) : conversations.length === 0 ? (
-        <div className="bg-surface-default border border-surface-border rounded-bento p-10 text-center flex flex-col gap-2">
-          <div className="text-4xl">💬</div>
+        <div className="bg-surface-default rounded-[20px] p-10 text-center flex flex-col gap-2">
+          <div className="text-4xl" aria-hidden="true">💬</div>
           <p className="font-bold text-text-primary">{t('noConversations')}</p>
           <p className="text-sm text-text-secondary">{t('noConversationsHint')}</p>
         </div>
       ) : (
-        <div className="bg-surface-default border border-surface-border rounded-bento overflow-hidden divide-y divide-surface-border">
+        <div className="bg-surface-default rounded-[32px] p-3 md:p-5 flex flex-col gap-1.5">
           {conversations.map(conv => (
             <Link
               key={conv.id}
               href={`/chat/${conv.id}`}
-              className="flex items-center gap-3 px-4 py-3 hover:bg-surface-elevated transition-colors"
+              className={`flex items-center gap-3 p-3 rounded-[16px] hover:bg-surface-elevated transition-colors ${conv.unread ? 'bg-surface-elevated' : ''}`}
             >
               {conv.otherUser ? (
                 <Avatar
@@ -168,23 +168,23 @@ export function ChatClient({ friends }: Props) {
               )}
               <div className="flex-1 min-w-0">
                 <div className="flex items-center justify-between gap-2">
-                  <span className={`text-sm font-semibold ${conv.unread ? 'text-text-primary' : 'text-text-secondary'}`}>
+                  <span className="text-sm font-bold text-text-primary">
                     {conv.otherUser?.username ?? '?'}
                   </span>
                   {conv.lastMessageAt && (
-                    <span className="text-xs text-text-secondary flex-shrink-0">
+                    <span className="text-xs text-text-tertiary flex-shrink-0">
                       {relativeDate(conv.lastMessageAt, locale)}
                     </span>
                   )}
                 </div>
                 {conv.lastMessage && (
-                  <p className={`text-xs truncate mt-0.5 ${conv.unread ? 'text-text-primary' : 'text-text-secondary'}`}>
+                  <p className={`text-xs truncate mt-0.5 ${conv.unread ? 'text-text-primary font-semibold' : 'text-text-tertiary'}`}>
                     {conv.lastMessage.isMine ? `${t('you')}: ` : ''}{conv.lastMessage.content}
                   </p>
                 )}
               </div>
               {conv.unread && (
-                <div className="w-2 h-2 rounded-full bg-accent-positive flex-shrink-0" />
+                <div className="w-2 h-2 rounded-full bg-accent-pink flex-shrink-0" />
               )}
             </Link>
           ))}

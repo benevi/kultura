@@ -39,10 +39,12 @@ export default async function NotificationsPage() {
   }
 
   return (
-    <main className="max-w-2xl mx-auto px-4 md:px-8 py-8">
-      <h1 className="font-display text-3xl font-bold text-text-primary mb-8">{t('title')}</h1>
+    <main className="max-w-3xl mx-auto px-4 md:px-14 pt-2 pb-14">
+      <h1 className="font-display text-[34px] md:text-[42px] font-bold text-text-primary mb-7">
+        {t('title')} <span aria-hidden="true">🔔</span>
+      </h1>
       {fetchError ? (
-        <div className="bg-surface-default border border-surface-border rounded-bento p-10 text-center text-sm text-text-tertiary">
+        <div className="bg-surface-default rounded-[20px] p-10 text-center text-sm text-text-tertiary">
           {t('loadError')}
         </div>
       ) : (

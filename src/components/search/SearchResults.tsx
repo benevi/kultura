@@ -175,7 +175,7 @@ export function SearchResults({
       {/* Tabs */}
       <div
         role="tablist"
-        className="flex items-center gap-2 overflow-x-auto scrollbar-hide flex-nowrap mb-4"
+        className="flex items-center gap-2.5 overflow-x-auto scrollbar-hide flex-nowrap mb-4"
       >
         {availableTabs.map((tab) => (
           <button
@@ -187,10 +187,10 @@ export function SearchResults({
               setRandomItem(null);
             }}
             className={cn(
-              "inline-flex items-center px-4 py-2 rounded-pill text-sm font-body font-semibold whitespace-nowrap border transition-all duration-150 ease-out active:scale-[0.97]",
+              "inline-flex items-center px-4 py-[7px] rounded-pill text-[13px] font-body font-bold whitespace-nowrap border-2 transition-all duration-150 ease-out active:scale-[0.97]",
               activeType === tab.value
-                ? "bg-accent-positive text-on-accent-positive border-accent-positive"
-                : "bg-surface-elevated text-text-secondary border-transparent hover:text-text-primary"
+                ? "bg-accent-pink text-on-accent-pink border-accent-pink"
+                : "bg-surface-elevated text-text-primary border-surface-elevated hover:border-surface-border"
             )}
           >
             {tab.label}
@@ -198,7 +198,7 @@ export function SearchResults({
               <span
                 className={cn(
                   "text-xs ml-1",
-                  activeType === tab.value ? "text-on-accent-positive/70" : "text-text-tertiary"
+                  activeType === tab.value ? "text-on-accent-pink/70" : "text-text-tertiary"
                 )}
               >
                 ({tab.count})
@@ -224,8 +224,8 @@ export function SearchResults({
 
       {/* Random mode banner */}
       {randomItem && (
-        <div className="flex items-center gap-3 mb-4 px-4 py-2.5 rounded-card bg-accent-positive/10 border border-accent-positive/30 text-sm">
-          <span className="text-accent-positive">
+        <div className="flex items-center gap-3 mb-4 px-4 py-2.5 rounded-[14px] bg-surface-default text-sm">
+          <span className="text-accent-lime font-semibold">
             🎲{" "}
             {t("showingRandom", {
               count: filteredItems.length,
@@ -234,7 +234,7 @@ export function SearchResults({
           <div className="flex gap-2 ml-auto">
             <button
               onClick={handleRandomize}
-              className="text-accent-positive hover:underline"
+              className="text-accent-pink font-bold hover:underline"
             >
               {t("randomizeAgain" as Parameters<typeof t>[0])}
             </button>
@@ -249,7 +249,7 @@ export function SearchResults({
       {displayItems.length > 0 ? (
         <MediaGrid items={displayItems} showType={activeType === "all"} />
       ) : (
-        <p className="text-muted text-center py-16">
+        <p className="text-text-tertiary text-center py-16">
           {t("noResults")} &ldquo;{query}&rdquo;
         </p>
       )}

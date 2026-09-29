@@ -3,7 +3,6 @@
 import { useState } from 'react'
 import { useTranslations } from 'next-intl'
 import { KButton } from '@/components/ui/KButton'
-import { F0 } from '@/lib/design/f0-tokens'
 
 export interface CreatedGroup {
   id: string
@@ -21,8 +20,7 @@ interface CreateGroupFormProps {
 }
 
 const FIELD_CLASS =
-  'w-full rounded-2xl border-2 px-3 py-2.5 text-sm placeholder:opacity-60 resize-none focus:outline-none focus:ring-2 focus-visible:ring-[oklch(68%_0.24_350)]'
-const FIELD_STYLE = { background: F0.surface2, borderColor: F0.stroke, color: F0.text }
+  'w-full rounded-[14px] border-2 border-transparent bg-surface-elevated px-[18px] py-[13px] text-[15px] text-text-primary placeholder:text-text-tertiary resize-none focus:outline-none focus:border-accent-pink'
 
 /**
  * Form de creación de grupo. Reutilizado por FriendsClient (tab grupos, temporal)
@@ -71,8 +69,7 @@ export function CreateGroupForm({ onCreated, onCancel }: CreateGroupFormProps) {
   return (
     <form
       onSubmit={handleSubmit}
-      className="rounded-bento border p-4 flex flex-col gap-3"
-      style={{ background: F0.surface, borderColor: F0.stroke }}
+      className="rounded-[20px] bg-surface-default p-6 flex flex-col gap-3.5"
     >
       <input
         type="text"
@@ -82,7 +79,6 @@ export function CreateGroupForm({ onCreated, onCancel }: CreateGroupFormProps) {
         maxLength={60}
         required
         className={FIELD_CLASS}
-        style={FIELD_STYLE}
       />
       <textarea
         value={groupDesc}
@@ -91,22 +87,20 @@ export function CreateGroupForm({ onCreated, onCancel }: CreateGroupFormProps) {
         maxLength={200}
         rows={2}
         className={FIELD_CLASS}
-        style={FIELD_STYLE}
       />
       <div className="flex flex-col gap-1.5">
-        <span className="text-xs font-bold" style={{ color: F0.textSecondary }}>{tG('visibility')}</span>
+        <span className="text-xs font-bold" style={{ color: 'var(--text-secondary)' }}>{tG('visibility')}</span>
         <div
           role="group"
           aria-label={tG('visibility')}
-          className="flex gap-1 rounded-2xl border-2 p-1"
-          style={{ background: F0.surface2, borderColor: F0.stroke }}
+          className="flex gap-1 rounded-full bg-surface-elevated p-1"
         >
           <button
             type="button"
             aria-pressed={isPublic}
             onClick={() => setIsPublic(true)}
             className="flex-1 rounded-full px-3 py-1.5 text-sm font-bold transition-colors"
-            style={isPublic ? { background: F0.pink, color: F0.onPink } : { color: F0.muted }}
+            style={isPublic ? { background: 'var(--accent-pink)', color: 'var(--on-accent-pink)' } : { color: 'var(--text-tertiary)' }}
           >
             {tG('public')}
           </button>
@@ -115,17 +109,17 @@ export function CreateGroupForm({ onCreated, onCancel }: CreateGroupFormProps) {
             aria-pressed={!isPublic}
             onClick={() => setIsPublic(false)}
             className="flex-1 rounded-full px-3 py-1.5 text-sm font-bold transition-colors"
-            style={!isPublic ? { background: F0.pink, color: F0.onPink } : { color: F0.muted }}
+            style={!isPublic ? { background: 'var(--accent-pink)', color: 'var(--on-accent-pink)' } : { color: 'var(--text-tertiary)' }}
           >
             {tG('private')}
           </button>
         </div>
         {!isPublic && (
-          <p className="text-xs" style={{ color: F0.muted }}>{tG('privateHint')}</p>
+          <p className="text-xs" style={{ color: 'var(--text-tertiary)' }}>{tG('privateHint')}</p>
         )}
       </div>
       {error && (
-        <p role="alert" className="text-xs" style={{ color: F0.orange }}>{t('groupError')}</p>
+        <p role="alert" className="text-xs" style={{ color: 'var(--accent-orange)' }}>{t('groupError')}</p>
       )}
       <div className="flex gap-2">
         <KButton
@@ -134,8 +128,6 @@ export function CreateGroupForm({ onCreated, onCancel }: CreateGroupFormProps) {
           variant="primary"
           loading={creating}
           disabled={creating}
-          className="rounded-full font-extrabold"
-          style={{ background: F0.pink, color: F0.onPink }}
         >
           {creating ? '...' : t('createGroup')}
         </KButton>
@@ -144,8 +136,6 @@ export function CreateGroupForm({ onCreated, onCancel }: CreateGroupFormProps) {
           size="sm"
           variant="secondary"
           onClick={onCancel}
-          className="rounded-full font-bold border-2"
-          style={{ borderColor: F0.stroke, color: F0.textSecondary }}
         >
           ✕
         </KButton>

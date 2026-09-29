@@ -101,7 +101,7 @@ export function SearchBar({
     <div className={cn("relative", className)} ref={containerRef}>
       <div className="relative">
         <IconSearch
-          className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-text-tertiary"
+          className="pointer-events-none absolute left-[22px] top-1/2 -translate-y-1/2 w-[19px] h-[19px] text-text-tertiary"
           aria-hidden="true"
         />
         <input
@@ -111,18 +111,18 @@ export function SearchBar({
           onKeyDown={handleKeyDown}
           placeholder={resolvedPlaceholder}
           aria-label={resolvedPlaceholder}
-          className="w-full bg-surface-elevated border border-transparent rounded-pill pl-11 pr-11 py-3 text-sm font-body text-text-primary placeholder:text-text-tertiary focus:outline-none focus:ring-2 focus:ring-accent-positive transition-colors"
+          className="w-full bg-surface-default border-2 border-transparent rounded-[20px] pl-[53px] pr-12 py-4 text-base font-body text-text-primary placeholder:text-text-tertiary focus:outline-none focus:border-accent-pink transition-colors"
         />
         {loading && (
           <Spinner
             size="sm"
-            className="absolute right-4 top-1/2 -translate-y-1/2"
+            className="absolute right-[22px] top-1/2 -translate-y-1/2"
           />
         )}
       </div>
 
       {open && suggestions.length > 0 && (
-        <ul className="absolute top-full mt-2 w-full bg-surface-elevated border border-border rounded-card shadow-xl z-50 overflow-hidden py-1">
+        <ul className="absolute top-full mt-2 w-full bg-surface-elevated rounded-[20px] shadow-xl z-50 overflow-hidden py-2">
           {suggestions.map((item) => (
             <li key={item.id}>
               <button
@@ -135,7 +135,7 @@ export function SearchBar({
                   <img
                     src={item.poster}
                     alt=""
-                    className="w-9 h-12 object-cover rounded-md flex-shrink-0"
+                    className="w-9 h-12 object-cover rounded-[6px] flex-shrink-0"
                   />
                 )}
                 <div className="flex-1 min-w-0">
