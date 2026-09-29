@@ -51,7 +51,7 @@ export function ReportButton({ targetType, targetId }: Props) {
   }
 
   return (
-    <div className="flex flex-col gap-2 p-3 bg-surface-default border border-surface-border rounded-card text-sm">
+    <div className="flex flex-col gap-2 p-3 bg-surface-default rounded-[14px] text-sm">
       <p className="font-medium text-text-primary text-xs">{t('prompt')}</p>
       <textarea
         value={reason}

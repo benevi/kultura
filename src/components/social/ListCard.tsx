@@ -33,7 +33,7 @@ export function ListCard({ list }: ListCardProps) {
   return (
     <Link href={`/lists/${list.id}`} className="group block">
       <div
-        className="relative h-[150px] rounded-bento overflow-hidden p-5 flex flex-col justify-between transition-transform duration-200 ease-standard group-hover:-translate-y-1"
+        className="relative h-[150px] rounded-[20px] overflow-hidden p-5 flex flex-col justify-between transition-transform duration-200 ease-standard group-hover:-translate-y-1"
         style={{ background: listCoverBackground(list.id) }}
       >
         <h3 className="font-display text-base font-extrabold leading-tight text-white line-clamp-2">

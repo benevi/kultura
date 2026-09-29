@@ -40,8 +40,18 @@ export default async function FriendsPage() {
     : baseUrl
 
   return (
-    <main className="max-w-2xl mx-auto px-4 md:px-8 py-8">
-      <h1 className="font-display text-3xl font-extrabold mb-8">{t('title')}</h1>
+    <main className="max-w-3xl mx-auto px-4 md:px-14 pt-2 pb-14">
+      <div className="flex items-center justify-between gap-4 mb-7">
+        <h1 className="font-display text-[34px] md:text-[42px] font-bold text-text-primary">
+          {t('title')} <span aria-hidden="true">👥</span>
+        </h1>
+        <a
+          href="#buscar"
+          className="hidden sm:inline-flex items-center rounded-pill bg-accent-pink text-on-accent-pink font-extrabold text-sm px-6 py-3.5 hover:brightness-110 transition-all"
+        >
+          + {t('addFriend')}
+        </a>
+      </div>
       <FriendsClient
         friends={friends}
         pendingRequests={pendingRequests}

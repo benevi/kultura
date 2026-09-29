@@ -1,6 +1,5 @@
 'use client'
 
-import { F0 } from '@/lib/design/f0-tokens'
 
 interface TabButtonProps {
   active: boolean
@@ -18,14 +17,13 @@ export function TabButton({ active, onClick, children }: TabButtonProps) {
   return (
     <button
       onClick={onClick}
-      className={`flex-1 px-4 py-2.5 text-sm rounded-full transition-colors ${
-        active ? 'font-extrabold' : 'font-bold'
-      }`}
-      style={
+      type="button"
+      aria-pressed={active}
+      className={`flex-1 inline-flex items-center justify-center px-4 py-2.5 text-[13px] rounded-full transition-colors ${
         active
-          ? { background: F0.pink, color: F0.onPink }
-          : { background: F0.surface2, color: F0.text }
-      }
+          ? 'font-extrabold bg-accent-pink text-on-accent-pink'
+          : 'font-bold bg-surface-elevated text-text-primary hover:brightness-110'
+      }`}
     >
       {children}
     </button>

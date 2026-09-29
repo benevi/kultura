@@ -5,7 +5,6 @@ import { useTranslations } from 'next-intl'
 import { FilterBar, type FilterGroup } from '@/components/ui/FilterBar'
 import { GroupCard, type GroupCardData } from '@/components/social/GroupCard'
 import { KButton } from '@/components/ui/KButton'
-import { F0 } from '@/lib/design/f0-tokens'
 
 const PAGE_SIZE = 50
 
@@ -112,14 +111,13 @@ export function DiscoverGroupsClient() {
         onChange={e => setQuery(e.target.value)}
         placeholder={t('searchPlaceholder')}
         aria-label={t('searchPlaceholder')}
-        className="w-full rounded-2xl border-2 px-4 py-2.5 text-sm placeholder:opacity-60 focus:outline-none focus:ring-2 focus-visible:ring-[oklch(68%_0.24_350)]"
-        style={{ background: F0.surface2, borderColor: F0.stroke, color: F0.text }}
+        className="w-full rounded-[20px] border-2 border-transparent bg-surface-default px-[22px] py-4 text-base text-text-primary placeholder:text-text-tertiary focus:outline-none focus:border-accent-pink"
       />
 
       {/* Filtros sticky bajo el header de la app (h-14), como DiscoverClient */}
       <div
-        className="sticky top-14 z-30 backdrop-blur-sm border-b py-3 px-4 -mx-4"
-        style={{ background: `color-mix(in oklch, ${F0.bg} 95%, transparent)`, borderColor: F0.stroke }}
+        className="sticky top-14 z-30 backdrop-blur-sm border-b border-surface-border py-3 px-4 -mx-4"
+        style={{ background: 'color-mix(in oklch, var(--surface-base) 95%, transparent)' }}
       >
         <FilterBar
           groups={filterGroups}
@@ -129,12 +127,12 @@ export function DiscoverGroupsClient() {
       </div>
 
       {loaded && groups.length === 0 ? (
-        <div className="rounded-bento border p-8 text-center" style={{ background: F0.surface, borderColor: F0.stroke }}>
-          <div className="text-3xl mb-3">🔍</div>
-          <p className="text-sm" style={{ color: F0.textSecondary }}>{t('noGroupsFound')}</p>
+        <div className="rounded-[20px] bg-surface-default p-8 text-center">
+          <div className="text-3xl mb-3" aria-hidden="true">🔍</div>
+          <p className="text-sm text-text-secondary">{t('noGroupsFound')}</p>
         </div>
       ) : (
-        <div className="grid gap-3 sm:grid-cols-2">
+        <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
           {groups.map(g => (
             <GroupCard key={g.id} group={g} />
           ))}
@@ -149,8 +147,6 @@ export function DiscoverGroupsClient() {
             loading={loading}
             disabled={loading}
             onClick={handleLoadMore}
-            className="rounded-full font-bold border-2"
-            style={{ borderColor: F0.stroke, color: F0.textSecondary }}
           >
             {loading ? '...' : t('loadMore')}
           </KButton>
