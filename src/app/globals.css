@@ -79,28 +79,6 @@
   --warning: var(--accent-highlight);
   --info: var(--accent-info);
   --danger: var(--accent-danger);
-
-  /* shadcn/ui CSS variables — mapeadas a tokens KULTURA */
-  --background: 220 15% 5%;
-  --foreground: 213 28% 83%;
-  --card: 220 15% 8%;
-  --card-foreground: 213 28% 83%;
-  --popover: 220 15% 8%;
-  --popover-foreground: 213 28% 83%;
-  --primary: 0 79% 51%;
-  --primary-foreground: 0 0% 100%;
-  --secondary: 215 23% 12%;
-  --secondary-foreground: 213 28% 83%;
-  --muted: 215 23% 12%;
-  --muted-foreground: 208 19% 40%;
-  --accent: 215 23% 12%;
-  --accent-foreground: 213 28% 83%;
-  --destructive: 0 72% 51%;
-  --destructive-foreground: 0 0% 100%;
-  --border: 211 22% 15%;
-  --input: 211 22% 15%;
-  --ring: 0 79% 51%;
-  --radius: 0.5rem;
 }
 
 @layer base {

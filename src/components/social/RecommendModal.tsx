@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useTranslations } from 'next-intl'
 import { Avatar } from '@/components/ui/Avatar'
-import { Button } from '@/components/ui/button'
+import { KButton } from '@/components/ui/KButton'
 
 interface Friend {
   friendshipId: string
@@ -138,11 +138,11 @@ export function RecommendModal({ mediaId, mediaCache, onClose }: RecommendModalP
 
         {/* Actions */}
         <div className="flex gap-2 justify-end">
-          <Button variant="ghost" size="sm" onClick={onClose}>
+          <KButton variant="secondary" size="sm" onClick={onClose}>
             Cancelar
-          </Button>
+          </KButton>
           {friends.length > 0 && status !== 'sent' && (
-            <Button
+            <KButton
               variant="primary"
               size="sm"
               loading={status === 'sending'}
@@ -150,7 +150,7 @@ export function RecommendModal({ mediaId, mediaCache, onClose }: RecommendModalP
               onClick={handleSend}
             >
               {t('send')}
-            </Button>
+            </KButton>
           )}
           {status === 'sent' && (
             <span className="text-sm text-success self-center">{t('sent')}</span>
