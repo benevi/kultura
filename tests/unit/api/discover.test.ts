@@ -62,6 +62,8 @@ vi.mock("@/lib/api/comicvine", () => ({
   // E-COMIC-VENTANA: `discover` divide el total por lo que cada página CONSUME
   // del proveedor (3 ventanas de 100), no por lo que enseña.
   COMIC_PAGE_STRIDE: 300,
+  // E-COMIC-PROFUNDIDAD: techo propio del cómic, por debajo del común.
+  COMIC_MAX_PAGES: 20,
 }));
 
 vi.mock("@/lib/api/normalizer", () => ({
@@ -98,7 +100,7 @@ import { searchByTypePaged } from "@/lib/api/search";
 import { todayYear } from "@/lib/api/catalog-window";
 import { DISCOVER_MAX_PAGES } from "@/lib/api/pagination";
 import { getPopularGames, discoverGames } from "@/lib/api/rawg";
-import { getRecentComics } from "@/lib/api/comicvine";
+import { getRecentComics, COMIC_MAX_PAGES } from "@/lib/api/comicvine";
 
 // ── JikanError ────────────────────────────────────────────────────────────────
 
@@ -997,7 +999,10 @@ describe("fetchDiscoverData — tope común de páginas (E79-s3, antes E89)", ()
       expect(result.items).toEqual([]);
       expect(result.fetchErrorKind).toBeNull();
       expect(result.hasMore).toBe(false);
-      expect(result.totalPages).toBe(DISCOVER_MAX_PAGES);
+      // E-COMIC-PROFUNDIDAD: el cómic devuelve SU techo, no el común.
+      expect(result.totalPages).toBe(
+        type === "comic" ? COMIC_MAX_PAGES : DISCOVER_MAX_PAGES
+      );
     }
     expect(discoverTV).not.toHaveBeenCalled();
     expect(discoverAnime).not.toHaveBeenCalled();
@@ -1013,7 +1018,9 @@ describe("fetchDiscoverData — tope común de páginas (E79-s3, antes E89)", ()
       total: 200_000,
     } as never);
     const comic = await fetchDiscoverData("comic", 1);
-    expect(comic.totalPages).toBe(DISCOVER_MAX_PAGES);
+    // E-COMIC-PROFUNDIDAD: el cómic se capa a su propio techo, más bajo que el
+    // común, porque su página N lee el offset (N-1)×300 del proveedor.
+    expect(comic.totalPages).toBe(COMIC_MAX_PAGES);
 
     vi.mocked(getPopularGames).mockResolvedValue({
       results: [{ id: 1, name: "G", rating: 4 }],
@@ -1253,5 +1260,70 @@ describe("fetchDiscoverData — ventana ancha de libros (E-BOOKS-VENTANA)", () =
     // 600 registros recorridos de 60 en 60 → 10 páginas. Contarlo de 20 en 20
     // ofrecería 30 páginas, dos tercios de las cuales ya se han recorrido.
     expect(res.totalPages).toBe(10);
+  });
+});
+
+// ── Cómic: techo de profundidad propio (E-COMIC-PROFUNDIDAD) ─────────────────
+//
+// El cómic es la única familia cuya página N lee el offset (N-1)×300 del
+// proveedor. Con el tope común, la página 100 pedía a partir del issue 29.700
+// ordenado por `cover_date:desc`: allí ya no hay catálogo occidental y era
+// donde salía la página entera en manga y hentai.
+
+describe("fetchDiscoverData — cómic: techo de profundidad", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    vi.mocked(getRecentComics).mockResolvedValue({ items: [], total: 900_000 });
+  });
+
+  it("un total enorme NO ofrece las 100 páginas del tope común", async () => {
+    const res = await fetchDiscoverData("comic", 1);
+
+    expect(res.totalPages).toBe(COMIC_MAX_PAGES);
+    expect(res.totalPages).toBeLessThan(DISCOVER_MAX_PAGES);
+  });
+
+  it("más allá del techo del cómic no se llama al proveedor", async () => {
+    const res = await fetchDiscoverData("comic", COMIC_MAX_PAGES + 1);
+
+    // Ni cuota de ComicVine gastada, ni banner de error: no es un fallo de red.
+    expect(getRecentComics).not.toHaveBeenCalled();
+    expect(res.items).toEqual([]);
+    expect(res.totalPages).toBe(COMIC_MAX_PAGES);
+    expect(res.hasMore).toBe(false);
+    expect(res.fetchErrorKind).toBeNull();
+  });
+
+  it("la última página dentro del techo sí se sirve", async () => {
+    const res = await fetchDiscoverData("comic", COMIC_MAX_PAGES);
+
+    expect(getRecentComics).toHaveBeenCalledWith(COMIC_MAX_PAGES);
+    expect(res.hasMore).toBe(false);
+  });
+
+  it("el techo del cómic NO recorta a las demás familias", async () => {
+    vi.mocked(searchOpenLibrary).mockResolvedValue({
+      numFound: 1_000_000,
+      docs: [],
+    } as never);
+
+    const res = await fetchDiscoverData("book", 1);
+
+    expect(res.totalPages).toBe(DISCOVER_MAX_PAGES);
+  });
+
+  // El techo es del CATÁLOGO. En el buscador la página N es el offset (N-1)×20,
+  // la zancada normal, así que buscar un cómic por su nombre no se recorta.
+  it("el buscador de cómic sigue con el tope común", async () => {
+    vi.mocked(searchByTypePaged).mockResolvedValue({
+      items: [],
+      totalPages: 400,
+      hasMore: true,
+    } as never);
+
+    const res = await fetchDiscoverData("comic", COMIC_MAX_PAGES + 5, {}, "es", "hellboy");
+
+    expect(searchByTypePaged).toHaveBeenCalled();
+    expect(res.totalPages).toBe(DISCOVER_MAX_PAGES);
   });
 });

@@ -41,7 +41,11 @@ import {
   applyGamePostFilters,
   type RawgFilters,
 } from "@/lib/api/rawg-maps";
-import { getRecentComics, COMIC_PAGE_STRIDE } from "@/lib/api/comicvine";
+import {
+  getRecentComics,
+  COMIC_PAGE_STRIDE,
+  COMIC_MAX_PAGES,
+} from "@/lib/api/comicvine";
 import {
   hasComicFilters,
   type ComicFilters,
@@ -144,6 +148,23 @@ export type DiscoverFilters = TmdbFilters &
   ComicFilters;
 
 /**
+ * Techo de páginas de una familia. Todas comparten `DISCOVER_MAX_PAGES` menos
+ * el CATÁLOGO de cómic, que tiene el suyo más bajo (E-COMIC-PROFUNDIDAD): su
+ * página N lee el offset `(N-1) × COMIC_PAGE_STRIDE` del proveedor, así que el
+ * tope común la mandaba al issue 29.700, donde ya no queda nada que enseñar.
+ *
+ * `isSearch` existe porque el techo del cómic NO vale para el buscador: ahí la
+ * página N es el offset `(N-1) × 20`, la zancada normal, y el argumento de la
+ * profundidad no aplica. Es la misma política que con el tope de fechas: buscar
+ * un cómic por su nombre y no encontrarlo sería peor que el problema.
+ */
+export function maxPagesForType(type: string, isSearch = false): number {
+  return type === "comic" && !isSearch
+    ? Math.min(COMIC_MAX_PAGES, DISCOVER_MAX_PAGES)
+    : DISCOVER_MAX_PAGES;
+}
+
+/**
  * Resuelve una página de catálogo para una familia (o el agregado `all`).
  *
  * `locale` (E-TMDB-LOCALE): idioma activo de la app. Se propaga a los
@@ -178,10 +199,15 @@ export async function fetchDiscoverData(
   // numerada) → página vacía SIN llamar a ningún proveedor y SIN banner de
   // error (`fetchErrorKind: null`), que es distinto de un fallo de red real.
   // Antes este guard existía solo para TMDB (E89) y solo a 500.
-  if (page > DISCOVER_MAX_PAGES) {
+  //
+  // E-COMIC-PROFUNDIDAD: el cómic tiene su propio techo, más bajo, porque su
+  // página N lee el offset (N-1)×300 del proveedor y no la página N. El guard
+  // lo respeta para no gastar cuota de ComicVine en offsets que no traen nada.
+  const maxPages = maxPagesForType(type, Boolean(query));
+  if (page > maxPages) {
     return {
       items: [],
-      totalPages: DISCOVER_MAX_PAGES,
+      totalPages: maxPages,
       hasMore: false,
       fetchErrorKind: null,
     };
@@ -390,15 +416,19 @@ function isRateLimitError(e: unknown): boolean {
           : await getRecentComics(page);
         items = res.items;
         // E79-s3: antes SIN cap (se exponían todas las páginas que reporta
-        // ComicVine; en offsets muy altos la API devuelve vacío). Ahora cap común.
+        // ComicVine; en offsets muy altos la API devuelve vacío).
         //
         // E-COMIC-VENTANA: se divide por lo que cada página CONSUME del
         // proveedor (300 issues), no por lo que enseña (20). Dividir por 20
         // anunciaba 15 veces más páginas de las que existen, y las de más
         // salían vacías.
+        //
+        // E-COMIC-PROFUNDIDAD: y el techo es el del cómic, no el común — a
+        // partir de ahí el offset se va al fondo del catálogo, donde no queda
+        // nada que la lista blanca acepte.
         totalPages = Math.min(
           Math.max(Math.ceil(res.total / COMIC_PAGE_STRIDE), 1),
-          DISCOVER_MAX_PAGES
+          maxPagesForType("comic")
         );
         hasMore = page < totalPages;
         break;
