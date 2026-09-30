@@ -641,3 +641,82 @@ describe("getRecentComics", () => {
     expect(result.items).toHaveLength(1);
   });
 });
+
+// ── Lista blanca de editoriales, extremo a extremo (E-COMIC-ALLOWLIST) ───────
+//
+// La regresión de verdad: un publisher que NO está en ninguna lista negra tiene
+// que caer igual. Con las dos listas negras pasaba, y así llegaba a la rejilla
+// lo que ninguna enumeraba — que es como acabó saliendo hentai explícito en la
+// página 100 de Descubrir → Cómics.
+
+describe("getRecentComics — puerta de editoriales", () => {
+  // Ojo con los volumeId: `volumePublisherCache` es de módulo y NO se resetea
+  // entre tests, así que reusar un id que ya apareció arriba se resuelve desde
+  // la cache y el mock de /volumes/ de este test no llega a ejecutarse. De ahí
+  // los ids de la serie 9xxx, que no colisionan con ninguno anterior.
+  beforeEach(() => {
+    process.env.COMICVINE_KEY = "test-key";
+  });
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
+    vi.clearAllMocks();
+  });
+
+  it("descarta la editorial desconocida y conserva la de la lista blanca", async () => {
+    const fetchMock = mockFetchByPath(
+      {
+        status_code: 1,
+        error: "OK",
+        number_of_total_results: 2,
+        results: [
+          { ...ISSUE, id: 40, volume: { id: 9400, name: "Saga" } },
+          { ...ISSUE, id: 41, volume: { id: 9401, name: "Algo Raro" } },
+        ],
+      },
+      {
+        status_code: 1,
+        error: "OK",
+        results: [
+          { id: 9400, publisher: { id: 3, name: "Image Comics" } },
+          // Ni manga ni sello adulto enumerado: simplemente no está permitida.
+          { id: 9401, publisher: { id: 9, name: "Editorial Desconocida" } },
+        ],
+      }
+    );
+    vi.stubGlobal("fetch", fetchMock);
+
+    const result = await getRecentComics(1);
+
+    expect(result.items).toHaveLength(1);
+    expect(result.items[0].id).toBe("comic_40");
+  });
+
+  it("descarta el sello de manga que hereda un nombre permitido", async () => {
+    const fetchMock = mockFetchByPath(
+      {
+        status_code: 1,
+        error: "OK",
+        number_of_total_results: 2,
+        results: [
+          { ...ISSUE, id: 50, volume: { id: 9500, name: "Hellboy" } },
+          { ...ISSUE, id: 51, volume: { id: 9501, name: "Berserk" } },
+        ],
+      },
+      {
+        status_code: 1,
+        error: "OK",
+        results: [
+          { id: 9500, publisher: { id: 5, name: "Dark Horse Comics" } },
+          { id: 9501, publisher: { id: 6, name: "Dark Horse Manga" } },
+        ],
+      }
+    );
+    vi.stubGlobal("fetch", fetchMock);
+
+    const result = await getRecentComics(1);
+
+    expect(result.items).toHaveLength(1);
+    expect(result.items[0].id).toBe("comic_50");
+  });
+});
