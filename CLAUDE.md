@@ -474,6 +474,49 @@ instrucciones operativas de la cabecera de este documento.
     que enseña (20) — dividir por 20 anunciaba 15 veces más páginas de las
     que existen.
 
+- **El catálogo de cómic es una LISTA BLANCA de editoriales**
+  (E-COMIC-ALLOWLIST). Vive en `src/lib/api/comic-publishers.ts`, no en
+  `comicvine.ts`. Antes eran dos listas NEGRAS (manga + adulto) y el
+  problema no era su contenido sino su forma: **por defecto aceptaban**,
+  así que una editorial no enumerada pasaba. La página 100 de Descubrir →
+  Cómics salía entera en manga, con hentai explícito ("ANGEL Club MEGA").
+  Cuatro cosas que hay que respetar:
+  - **La puerta deniega por defecto.** Solo entra el publisher que está en
+    `COMIC_PUBLISHERS`. Añadir el sello que se acaba de colar a una lista
+    negra es el patrón que falló: cada hueco se descubría en pantalla.
+    Contrapartida asumida: una editorial legítima que falte queda fuera
+    del catálogo — es el lado correcto en el que fallar.
+  - **Las listas negras siguen vivas como VETO posterior, y no es
+    redundancia.** Resuelven los sellos que heredan el nombre de una
+    editorial permitida: "Dark Horse Manga" dentro de "Dark Horse",
+    "Glénat Manga" dentro de "Glénat", "Fantagraphics Eros" dentro de
+    "Fantagraphics". El orden es lista blanca → veto; invertirlo los deja
+    pasar.
+  - **El match es por PALABRAS COMPLETAS, no por substring.** Con
+    substring crudo la entrada "DC" casa con "Hardcover" ("har-DC-over") y
+    abre la lista blanca de par en par. Se normaliza (minúsculas, sin
+    diacríticos, puntuación a espacios) y se compara con espacios a los
+    lados. Misma política anti-falsos-positivos que el filtro NSFW.
+  - **El filtro NSFW global NO cubre al cómic.** `normalizeComic` no
+    asigna `genres`, así que de ese filtro solo aplica la rama de
+    texto ES/EN sobre el título. La puerta de editoriales es la defensa
+    real; no contar con la otra.
+
+- **El cómic tiene su propio techo de páginas** (E-COMIC-PROFUNDIDAD):
+  `COMIC_MAX_PAGES = 20`, por debajo del común `DISCOVER_MAX_PAGES = 100`.
+  Es la única familia cuya página N no lee la página N del proveedor sino
+  el offset `(N-1) × 300`, así que con el tope común la página 100 pedía a
+  partir del issue 29.700 por `cover_date:desc` — donde ya no hay catálogo
+  occidental y solo queda el fondo que la lista blanca descarta. Dos
+  matices:
+  - **El techo es del CATÁLOGO, no del buscador.** En búsqueda la página N
+    es el offset `(N-1) × 20`, la zancada normal, y el argumento de la
+    profundidad no aplica: buscar un cómic por su nombre y no encontrarlo
+    sería peor que el problema. Mismo criterio que el tope de fechas.
+  - **20 es un número estimado, no medido** contra la API viva (el proxy
+    de estas sesiones bloquea `comicvine.gamespot.com`). Si en preview la
+    página 20 sigue llegando llena, subirlo; si se vacía antes, bajarlo.
+
 - **Keep-alive de Supabase** (E-KEEPALIVE). `/api/health` hace una consulta
   real a la base (`profiles`, `head:true`) y `vercel.json` la llama con un
   cron diario. Sirve además de endpoint para un monitor de caídas externo.
