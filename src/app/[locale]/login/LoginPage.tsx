@@ -494,15 +494,13 @@ export function LoginPage({ locale }: LoginPageProps) {
             </p>
           )}
 
-          {/* Submit — PINK, no el lime por defecto de KButton: el mockup lo pinta
-              así y CLAUDE.md dice "primario = fondo pink + texto on-pink". El
-              color por defecto del componente no se toca aquí: repintaría toda
-              la app y esa decisión es del usuario (ver la nota en CLAUDE.md). */}
+          {/* Submit — pink, que desde E-BOTON-PINK es el defecto del primario;
+              ya no hace falta forzarlo aquí. */}
           <KButton
             type="submit"
             loading={form.loading}
             size="lg"
-            className="mt-2 w-full bg-accent-pink text-on-accent-pink"
+            className="mt-2 w-full"
           >
             {mode === "login"
               ? tAuth("signIn")

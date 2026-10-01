@@ -29,6 +29,9 @@ import {
   searchOpenLibrary,
   openLibraryTotalPages,
   OPEN_LIBRARY_CATALOG_WINDOW,
+  OPEN_LIBRARY_WINDOWS_PER_PAGE,
+  OPEN_LIBRARY_PAGE_STRIDE,
+  OPEN_LIBRARY_PAGE_SIZE,
 } from "@/lib/api/openlibrary";
 import {
   buildOpenLibraryQuery,
@@ -375,34 +378,59 @@ function isRateLimitError(e: unknown): boolean {
         // sobrevivir 1 de 20 y la página quedaba casi vacía. Sigue siendo una
         // sola petición: cambia el tamaño de la respuesta, no el número de
         // llamadas.
-        const res = await searchOpenLibrary(
-          q,
-          page,
-          params,
-          OPEN_LIBRARY_CATALOG_WINDOW
-        );
-        // E-BOOKS-PORTADA: fuera los libros sin portada en Open Library. En un
-        // catálogo visual una card sin imagen es un hueco, y aquí además
-        // coincide casi siempre con autopublicaciones de relleno. Es la misma
-        // regla que ya se aplica a las recomendaciones IA (E66-POSTER-GATE).
-        // NO se aplica al buscador ni a la ficha: si buscas un título concreto
-        // debe salir aunque no tenga portada, y si ya lo has abierto, más aún.
-        items = (res.docs ?? [])
-          .filter((doc) => Boolean(doc.cover_i))
-          .map((doc) => normalizeBookOpenLibrary(doc));
-        // E-BOOKS-RANGO: sin filtro de año la consulta NO lleva rango (un rango
-        // que abarca el corpus entero hace que Open Library cierre la conexión),
-        // así que el tope de E-CATALOGO-FUTURO se aplica aquí, sobre lo ya
-        // recibido — igual que en manga. Con filtro de año el rango es
-        // selectivo, viaja en la consulta y ya trae el tope puesto.
-        if (openLibraryTrimsFutureAfterFetch(filters.year)) {
-          items = dropFutureYears(items);
+        // E-BOOKS-PAGINA-FIJA: una página mira hasta
+        // OPEN_LIBRARY_WINDOWS_PER_PAGE ventanas y para en cuanto junta
+        // OPEN_LIBRARY_PAGE_SIZE. Con UNA sola ventana la página enseñaba "lo
+        // que sobreviviera" al filtro de portada, y según la ordenación eso
+        // iba de CINCO libros a la rejilla llena. Mismo patrón que el cómic.
+        const baseWindow = (page - 1) * OPEN_LIBRARY_WINDOWS_PER_PAGE;
+        const collected: MediaItem[] = [];
+        let numFound: number | undefined;
+
+        for (let w = 0; w < OPEN_LIBRARY_WINDOWS_PER_PAGE; w++) {
+          const res = await searchOpenLibrary(
+            q,
+            baseWindow + w + 1,
+            params,
+            OPEN_LIBRARY_CATALOG_WINDOW
+          );
+          numFound = res.numFound ?? numFound;
+          const docs = res.docs ?? [];
+          // E-BOOKS-PORTADA: fuera los libros sin portada en Open Library. En
+          // un catálogo visual una card sin imagen es un hueco, y aquí además
+          // coincide casi siempre con autopublicaciones de relleno. Es la misma
+          // regla que ya se aplica a las recomendaciones IA (E66-POSTER-GATE).
+          // NO se aplica al buscador ni a la ficha: si buscas un título
+          // concreto debe salir aunque no tenga portada, y más aún si ya lo
+          // has abierto.
+          let batch = docs
+            .filter((doc) => Boolean(doc.cover_i))
+            .map((doc) => normalizeBookOpenLibrary(doc));
+          // E-BOOKS-RANGO: sin filtro de año la consulta NO lleva rango (un
+          // rango que abarca el corpus entero hace que Open Library cierre la
+          // conexión), así que el tope de E-CATALOGO-FUTURO se aplica aquí,
+          // sobre lo ya recibido — igual que en manga. Con filtro de año el
+          // rango es selectivo, viaja en la consulta y ya trae el tope puesto.
+          if (openLibraryTrimsFutureAfterFetch(filters.year)) {
+            batch = dropFutureYears(batch);
+          }
+          collected.push(...batch);
+
+          // Suficiente para llenar la página, o el proveedor ya no da más.
+          if (
+            collected.length >= OPEN_LIBRARY_PAGE_SIZE ||
+            docs.length < OPEN_LIBRARY_CATALOG_WINDOW
+          ) {
+            break;
+          }
         }
-        // El total se divide por la VENTANA, no por lo que se enseña: es lo
-        // que determina dónde empieza la página siguiente. Así no se ofrecen
-        // páginas que en realidad ya se han recorrido.
+
+        items = collected.slice(0, OPEN_LIBRARY_PAGE_SIZE);
+        // El total se divide por lo que la página CONSUME (la zancada), no por
+        // lo que enseña: es lo que determina dónde empieza la siguiente. Así no
+        // se ofrecen páginas que en realidad ya se han recorrido.
         totalPages = Math.min(
-          openLibraryTotalPages(res.numFound, OPEN_LIBRARY_CATALOG_WINDOW),
+          openLibraryTotalPages(numFound, OPEN_LIBRARY_PAGE_STRIDE),
           DISCOVER_MAX_PAGES
         );
         hasMore = page < totalPages;

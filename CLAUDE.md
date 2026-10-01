@@ -143,7 +143,11 @@ Colores "on-color" (texto sobre fondo sólido vivo, no blanco/negro puro):
   "outline" = transparente + `border:2px solid var(--stroke)`.
 - **Botones pill**: primario = fondo pink + texto on-pink, `font-weight:800`.
   Secundario = borde `2px solid var(--stroke)`, `font-weight:700`,
-  transparente.
+  transparente. **El canvas lo confirma sin ambigüedad** (E-BOTON-PINK): los
+  13 pills de ACCIÓN de las 17 pantallas son pink, sin excepción. Los pills
+  lime que hay en el canvas NO son botones: son los badges de match, retirados
+  de la UI (E-MATCH-SIN-BADGE). Contarlos como botones hacía parecer que el
+  criterio estaba empatado 14-13 y no lo está.
 - **Posters / cards sin imagen real**: gradiente de dos paradas
   `linear-gradient(150–160deg, oklch(L1% C1 H), oklch(L2% C2 H))` con el
   mismo matiz (H) en ambas paradas y L2/C2 más bajos (más oscuro/apagado).
@@ -511,6 +515,41 @@ instrucciones operativas de la cabecera de este documento.
     Todas usan ya un ternario. **Al pintar un número, nunca `&&`** — con
     cadenas da igual, con números pinta el cero.
 
+- **El botón primario es PINK** (E-BOTON-PINK). `KButton` lo pintaba en
+  `accent-positive` (lime). Parecía una duda legítima —de los 27 pills del
+  canvas, 14 son lime— y **el recuento estaba mal**: todos los lime son badges
+  de match ("98% MATCH", "91%", "60%"…), que además ya no existen en la UI. De
+  los pills de ACCIÓN los 13 son pink: Enviar, Crear grupo, Empezar gratis,
+  Añadir título, Nueva lista, Entrar, Guardar, Enviar sugerencia. Dos cosas:
+  - **`accent-positive` NO desaparece**: sigue siendo el verde semántico de
+    ESTADOS (nav activa, chip de filtro activo, badge de biblioteca). Lo que
+    deja de ser es el color del botón.
+  - **Lección de método**: la pregunta parecía irresoluble por una categoría
+    mal trazada —contar como "botón" todo lo que tuviera forma de píldora—.
+    Antes de declarar que el canvas no zanja algo, mirar QUÉ es cada pieza.
+
+- **La página de libros tiene TAMAÑO, no "lo que quede"**
+  (E-BOOKS-PAGINA-FIJA). Visto en pantalla: una página de Descubrir → Libros
+  con CINCO libros y otra con la rejilla llena, con los mismos filtros. La
+  causa no era el filtro de portada: era que la ventana de 60 (E-BOOKS-VENTANA)
+  es un presupuesto FIJO con rendimiento VARIABLE, y la página enseñaba lo que
+  sobreviviera. Según la ordenación eso va de 5 a 40.
+  - **Se resuelve como el cómic** (E-COMIC-VENTANA), que es el mismo problema:
+    la página pide ventanas hasta juntar `OPEN_LIBRARY_PAGE_SIZE` (20) y para
+    en cuanto las tiene, con el presupuesto acotado a
+    `OPEN_LIBRARY_WINDOWS_PER_PAGE` (3). Con buen rendimiento gasta UNA
+    petición, igual que antes.
+  - **El conteo de páginas divide por la ZANCADA** (`OPEN_LIBRARY_PAGE_STRIDE`
+    = 60 × 3 = 180), no por la ventana ni por lo que se enseña: es lo que
+    determina dónde empieza la siguiente. La página N arranca en la ventana
+    `(N-1)×3+1`.
+  - **Para en seco con una ventana incompleta**: si el proveedor devuelve menos
+    de 60 docs no hay más detrás, y seguir pidiendo sería gastar peticiones en
+    vacío.
+  - Contrapartida asumida: una consulta con rendimiento malísimo gasta 3
+    peticiones y aun así puede quedarse corta. Es el lado correcto: el tope
+    existe para no encadenar peticiones sin fin.
+
 - **El catálogo no muestra fechas futuras** (E-CATALOGO-FUTURO). Regla
   común a las 7 familias; la referencia vive en
   `src/lib/api/catalog-window.ts` y cada proveedor la aplica con SU
@@ -716,13 +755,6 @@ instrucciones operativas de la cabecera de este documento.
   de Google Books y sus helpers ya no los importa nadie — se conservan un
   ciclo por si hay que revertir, y hay que borrarlos (con sus tests) cuando el
   híbrido esté validado en producción.
-- **Patrón por resolver: ¿de qué color es el botón primario?** CLAUDE.md dice
-  "primario = fondo pink + texto on-pink", pero `KButton` lo pinta en
-  `accent-positive` (lime). Y el canvas no lo zanja: de los 27 pills de las 17
-  pantallas, 14 son lime y 13 pink, según el contexto. En Login se ha aplicado
-  pink EN LA LLAMADA (el mockup lo pinta así) sin tocar el componente: cambiar
-  el defecto repintaría toda la app y esa decisión es del usuario. Decidirlo
-  antes de migrar más pantallas, o el criterio se fijará por acumulación.
 - `KButton` y `button.tsx` (shadcn-style) conviven como dos sistemas de
   botón distintos — decidir cuál se queda antes de seguir migrando
   pantallas que usan el segundo.
