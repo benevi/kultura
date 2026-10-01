@@ -12,15 +12,18 @@ import { AvatarIconPicker } from "@/components/ui/AvatarIconPicker";
 import { Logo } from "@/components/layout/Logo";
 import { cn } from "@/lib/utils/index";
 
-// Misma "card feature grande" que la CTA final de Landing: superficie sólida
-// + gradiente radial de acento en la esquina superior-izquierda (F0 §Cards
-// feature grandes). Un solo acento decorativo (purple) para la tarjeta de
-// auth, sin desenfoque.
-const AUTH_CARD_BACKGROUND = {
-  backgroundColor: "var(--surface-default)",
-  backgroundImage:
-    "radial-gradient(120% 100% at 20% 10%, rgba(155,107,255,0.3), transparent 55%)",
-};
+/**
+ * La tarjeta de auth, literal del artboard Login del canvas "Kultura — Diseño
+ * completo": `--surface` sólido, radio 32px, padding 44px y la SOMBRA DURA
+ * `10px 10px 0 var(--surface-2)` — la misma de las hero cards de F0.
+ *
+ * Antes llevaba un gradiente radial purple y un borde. Ninguna de las dos cosas
+ * está en el mockup: el acento radial es de las cards "feature" del bento, y la
+ * separación aquí la da la sombra dura, no un `border`.
+ */
+const AUTH_CARD =
+  "w-full max-w-[440px] rounded-bento-xl bg-surface-default p-7 md:p-11 " +
+  "shadow-[10px_10px_0_var(--surface-elevated)]";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -354,29 +357,14 @@ export function LoginPage({ locale }: LoginPageProps) {
   // Render: success states
   // -------------------------------------------------------------------------
 
-  if (form.success && mode === "reset") {
+  if (form.success && (mode === "reset" || mode === "register")) {
     return (
-      <main className="flex min-h-screen flex-col items-center justify-center bg-surface-base px-4">
-        <div
-          className="w-full max-w-md rounded-bento-lg border border-surface-border p-8 text-center"
-          style={AUTH_CARD_BACKGROUND}
-        >
+      <main className="flex min-h-screen flex-col items-center justify-center bg-surface-base px-4 py-10">
+        <div className={cn(AUTH_CARD, "text-center")}>
           <Logo size={32} className="justify-center" />
-          <p className="mt-6 text-sm text-text-secondary">{tAuth("resetLinkSent")}</p>
-        </div>
-      </main>
-    );
-  }
-
-  if (form.success && mode === "register") {
-    return (
-      <main className="flex min-h-screen flex-col items-center justify-center bg-surface-base px-4">
-        <div
-          className="w-full max-w-md rounded-bento-lg border border-surface-border p-8 text-center"
-          style={AUTH_CARD_BACKGROUND}
-        >
-          <Logo size={32} className="justify-center" />
-          <p className="mt-6 text-sm text-text-secondary">{tAuth("checkEmail")}</p>
+          <p className="mt-7 font-body text-sm text-text-tertiary">
+            {mode === "reset" ? tAuth("resetLinkSent") : tAuth("checkEmail")}
+          </p>
         </div>
       </main>
     );
@@ -386,67 +374,48 @@ export function LoginPage({ locale }: LoginPageProps) {
   // Render: main form
   // -------------------------------------------------------------------------
 
+  // El encabezado del mockup cambia con el modo; el saludo literal del canvas
+  // ("Ey, ¡qué bien verte! 👋") es el de entrar.
+  const heading =
+    mode === "login"
+      ? tAuth("welcomeBack")
+      : mode === "register"
+        ? tAuth("createAccount")
+        : tAuth("resetPassword");
+  const subtitle =
+    mode === "login"
+      ? tAuth("signInSubtitle")
+      : mode === "register"
+        ? tAuth("signUpSubtitle")
+        : tAuth("resetSubtitle");
+
   return (
     <main className="flex min-h-screen flex-col items-center justify-center bg-surface-base px-4 py-10">
-      <div
-        className="w-full max-w-sm overflow-hidden rounded-bento-lg border border-surface-border p-6 md:p-8"
-        style={AUTH_CARD_BACKGROUND}
-      >
-        {/* Wordmark — mismo Logo de marca que el header autenticado, no un
-            texto ad-hoc (F0 §Logo). */}
-        <div className="mb-8 flex flex-col items-center text-center">
+      <div className={AUTH_CARD}>
+        {/* Logo de marca centrado, 28px por debajo del encabezado (F0 §Logo). */}
+        <div className="mb-7 flex justify-center">
           <Logo size={32} />
-          <p className="mt-3 text-sm text-text-tertiary">
-            {mode === "reset"
-              ? tAuth("resetPassword")
-              : tAuth("tagline")}
-          </p>
         </div>
 
-        {/* Tabs (hidden in reset mode) — chip pill sólido, mismo patrón que el
-            radiogroup de tipo en Discover (F0 §Chips): activo = fondo de color
-            vivo + texto on-color, inactivo = surface-elevated + borde. */}
-        {mode !== "reset" && (
-          <div role="tablist" className="mb-6 flex items-center gap-2">
-            <button
-              type="button"
-              role="tab"
-              aria-selected={mode === "login"}
-              onClick={() => switchMode("login")}
-              className={cn(
-                "flex-1 rounded-full py-2.5 text-sm font-body font-bold border transition-all duration-base ease-standard active:scale-[0.98]",
-                mode === "login"
-                  ? "bg-accent-positive text-on-accent-positive border-accent-positive"
-                  : "bg-surface-elevated text-text-secondary border-surface-border hover:text-text-primary hover:border-text-tertiary"
-              )}
-            >
-              {tAuth("signIn")}
-            </button>
-            <button
-              type="button"
-              role="tab"
-              aria-selected={mode === "register"}
-              onClick={() => switchMode("register")}
-              className={cn(
-                "flex-1 rounded-full py-2.5 text-sm font-body font-bold border transition-all duration-base ease-standard active:scale-[0.98]",
-                mode === "register"
-                  ? "bg-accent-positive text-on-accent-positive border-accent-positive"
-                  : "bg-surface-elevated text-text-secondary border-surface-border hover:text-text-primary hover:border-text-tertiary"
-              )}
-            >
-              {tAuth("signUp")}
-            </button>
-          </div>
-        )}
+        {/* Encabezado display 800 + subtítulo muted: en el mockup la tarjeta
+            SE PRESENTA, no empieza en frío con los campos. */}
+        <h1 className="mb-2 text-center font-display text-[26px] font-extrabold leading-tight tracking-tight text-text-primary">
+          {heading}
+        </h1>
+        <p className="mb-8 text-center font-body text-sm text-text-tertiary">
+          {subtitle}
+        </p>
 
-        {/* Google OAuth (oculto en reset — solo aplica a login/registro) */}
+        {/* Google OAuth (oculto en reset — solo aplica a login/registro).
+            El canvas no dibuja este botón, así que se usa el primitivo que sí
+            existe: pill secundario (borde 2px, peso 700) de F0. */}
         {mode !== "reset" && (
           <>
             <button
               type="button"
               onClick={handleGoogleLogin}
               disabled={form.loading}
-              className="flex w-full items-center justify-center gap-2 rounded-button border border-surface-border bg-surface-base py-2.5 text-sm font-medium text-text-primary transition-colors hover:bg-surface-elevated disabled:opacity-50"
+              className="flex w-full items-center justify-center gap-2 rounded-pill border-2 border-surface-border py-[13px] font-body text-sm font-bold text-text-secondary transition-colors duration-base ease-standard hover:bg-surface-elevated hover:text-text-primary disabled:opacity-50"
             >
               <GoogleIcon className="h-4 w-4 shrink-0" />
               {tAuth("continueWithGoogle")}
@@ -454,7 +423,7 @@ export function LoginPage({ locale }: LoginPageProps) {
 
             <div className="my-5 flex items-center gap-3">
               <div className="h-px flex-1 bg-surface-border" />
-              <span className="text-xs uppercase tracking-wider text-text-tertiary">
+              <span className="font-body text-xs font-bold uppercase tracking-wider text-text-tertiary">
                 {tAuth("or")}
               </span>
               <div className="h-px flex-1 bg-surface-border" />
@@ -462,9 +431,8 @@ export function LoginPage({ locale }: LoginPageProps) {
           </>
         )}
 
-        {/* Form */}
-        <form onSubmit={handleSubmit} noValidate className="space-y-4">
-          {/* Email */}
+        {/* Form — gap 18px entre campos, literal del mockup. */}
+        <form onSubmit={handleSubmit} noValidate className="flex flex-col gap-[18px]">
           <KInput
             id="email"
             type="email"
@@ -473,10 +441,9 @@ export function LoginPage({ locale }: LoginPageProps) {
             value={form.email}
             onChange={(e) => setField("email", e.target.value)}
             error={form.fieldErrors.email}
-            placeholder="you@example.com"
+            placeholder="tucorreo@ejemplo.com"
           />
 
-          {/* Password (hidden in reset mode) */}
           {mode !== "reset" && (
             <KInput
               id="password"
@@ -490,7 +457,6 @@ export function LoginPage({ locale }: LoginPageProps) {
             />
           )}
 
-          {/* Confirm Password (register only) */}
           {mode === "register" && (
             <KInput
               id="confirmPassword"
@@ -507,8 +473,8 @@ export function LoginPage({ locale }: LoginPageProps) {
           {/* Personaje del avatar (E-AVATAR-ICONS) — opcional: quien no elija
               se queda con sus iniciales, igual que las cuentas de siempre. */}
           {mode === "register" && (
-            <div className="flex flex-col gap-3">
-              <span className="text-sm font-body text-text-secondary">
+            <div className="flex flex-col gap-2">
+              <span className="font-body text-[13px] font-bold text-text-tertiary">
                 {tAuth("chooseCharacter")}
               </span>
               <AvatarIconPicker
@@ -520,18 +486,23 @@ export function LoginPage({ locale }: LoginPageProps) {
             </div>
           )}
 
-          {/* Global auth error — semantic danger red */}
+          {/* Error global — rojo semántico, radio de campo (14px) para que no
+              parezca un chip. */}
           {form.error && (
-            <p className="rounded-button bg-accent-danger/10 px-3 py-2 text-sm text-accent-danger">
+            <p className="rounded-[14px] bg-accent-danger/10 px-[18px] py-3 font-body text-sm text-accent-danger">
               {form.error}
             </p>
           )}
 
-          {/* Submit */}
+          {/* Submit — PINK, no el lime por defecto de KButton: el mockup lo pinta
+              así y CLAUDE.md dice "primario = fondo pink + texto on-pink". El
+              color por defecto del componente no se toca aquí: repintaría toda
+              la app y esa decisión es del usuario (ver la nota en CLAUDE.md). */}
           <KButton
             type="submit"
             loading={form.loading}
-            className="w-full"
+            size="lg"
+            className="mt-2 w-full bg-accent-pink text-on-accent-pink"
           >
             {mode === "login"
               ? tAuth("signIn")
@@ -539,33 +510,35 @@ export function LoginPage({ locale }: LoginPageProps) {
                 ? tAuth("signUp")
                 : tAuth("sendResetLink")}
           </KButton>
-
-          {/* Forgot password link (login mode only) */}
-          {mode === "login" && (
-            <div className="text-center">
-              <button
-                type="button"
-                onClick={() => switchMode("reset")}
-                className="text-sm text-text-secondary underline-offset-4 hover:text-text-primary hover:underline"
-              >
-                {tAuth("forgotPassword")}
-              </button>
-            </div>
-          )}
-
-          {/* Back to login link (reset mode) */}
-          {mode === "reset" && (
-            <div className="text-center">
-              <button
-                type="button"
-                onClick={() => switchMode("login")}
-                className="text-sm text-text-tertiary underline-offset-4 hover:text-text-primary hover:underline"
-              >
-                {tAuth("alreadyHaveAccount")} {tAuth("signIn")}
-              </button>
-            </div>
-          )}
         </form>
+
+        {/* Enlace a contraseña olvidada (solo al entrar) */}
+        {mode === "login" && (
+          <div className="mt-5 text-center">
+            <button
+              type="button"
+              onClick={() => switchMode("reset")}
+              className="font-body text-[13px] text-text-tertiary underline-offset-4 hover:text-text-primary hover:underline"
+            >
+              {tAuth("forgotPassword")}
+            </button>
+          </div>
+        )}
+
+        {/* Cambio de modo al PIE, como el mockup ("¿No tienes cuenta?
+            Regístrate"). Sustituye a las dos pestañas que había arriba: el
+            artboard de Login no las tiene, y con el encabezado nuevo competían
+            por el mismo sitio. */}
+        <p className="mt-5 text-center font-body text-[13px] text-text-tertiary">
+          {mode === "login" ? tAuth("dontHaveAccount") : tAuth("alreadyHaveAccount")}{" "}
+          <button
+            type="button"
+            onClick={() => switchMode(mode === "login" ? "register" : "login")}
+            className="font-bold text-accent-pink underline-offset-4 hover:underline"
+          >
+            {mode === "login" ? tAuth("signUp") : tAuth("signIn")}
+          </button>
+        </p>
       </div>
     </main>
   );

@@ -35,7 +35,11 @@
     "resetLinkSent": "Te hemos enviado un enlace para restablecer tu contraseña. Revisa tu bandeja de entrada.",
     "tagline": "Descubre tu cultura",
     "chooseCharacter": "Elige tu personaje",
-    "chooseCharacterNone": "Sin personaje (iniciales)"
+    "chooseCharacterNone": "Sin personaje (iniciales)",
+    "welcomeBack": "Ey, ¡qué bien verte! 👋",
+    "signInSubtitle": "Entra para seguir descubriendo",
+    "signUpSubtitle": "Crea tu cuenta y empieza a descubrir",
+    "resetSubtitle": "Te enviamos un enlace para volver a entrar"
   },
   "media": {
     "movie": "Película",

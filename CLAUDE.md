@@ -199,8 +199,15 @@ inventar uno.
   vive fuera del repo, en el scratchpad de la sesión que lo creó. Si se
   necesita regenerar o ampliar el set de pantallas, reconstruir el
   generador a partir de este documento y de los tres `.dc.html` de F0
-  (extraerlos del canvas "Kultura Editorial" con el helper del skill de
-  diseño), no desde memoria.
+  (extraerlos del canvas "Kultura Editorial"), no desde memoria.
+- **Cómo sacar el HTML literal de un artboard** (no hace falta ningún
+  helper ni mirar el canvas a ojo): leer el artefacto con la herramienta de
+  Artifact —que lo guarda entero en disco—, y de ese archivo extraer el
+  `<script id="appifact-doc">`, que es un JSON con
+  `content.files["<Pantalla>.dc.html"]`. Ahí está el mockup con sus valores
+  exactos (radios, OKLCH, sombras, paddings). Son 17 artboards + `canvas.json`.
+  Vale la pena: el artboard de Login traía tres cosas que el código no tenía y
+  que no se habrían adivinado (sombra dura, encabezado, cambio de modo al pie).
 
 ## Arbol de decisión: "¿Dudo de cómo diseñar/codificar algo?"
 
@@ -372,7 +379,26 @@ con una paleta hex antigua.
     el catálogo no vale de destino porque todo `(app)` redirige a login
     sin sesión.
 
-**Pendiente:** las 13 pantallas restantes (Login, Library,
+- **Login** con el acabado literal de su artboard (E-LOGIN-F0). Cuatro
+  cosas que vinieron del mockup y no estaban:
+  - **Tarjeta**: `--surface` sólido, radio 32px (`rounded-bento-xl`, token
+    nuevo: el canvas usa 32px cuatro veces) y la SOMBRA DURA
+    `10px 10px 0 var(--surface-2)`. Antes tenía gradiente radial purple +
+    borde: el acento radial es de las cards "feature" del bento, y aquí la
+    separación la da la sombra, no un `border`.
+  - **Encabezado display 800 + subtítulo muted** antes de los campos. La
+    tarjeta se presenta; no empieza en frío con el formulario.
+  - **El cambio de modo va AL PIE** ("¿No tienes cuenta? Regístrate"), no en
+    dos pestañas arriba — el artboard no tiene pestañas, y con el encabezado
+    nuevo competían por el mismo sitio. Hay un test que fija que registrarse
+    sigue siendo alcanzable desde la pantalla de entrar.
+  - **`KInput` es ahora el campo de F0** y eso migra de paso Ajustes y el modal
+    de biblioteca: caja rellena de `--surface-2` SIN borde, radio 14px,
+    padding 15/18, 15px; etiqueta 13px/700 muted; foco con el anillo pink del
+    canvas. Antes era una píldora (999px) con borde: el radio de píldora es de
+    botones y chips, en F0 ningún input lo lleva.
+
+**Pendiente:** las 12 pantallas restantes (Library,
 Search, Friends, Groups, GroupDetail, Chat, Notifications, Profile,
 Lists, ListDetail, Settings, Suggestions) heredan bien los colores vía
 custom properties pero no tienen todavía el acabado F0 específico de
@@ -661,6 +687,13 @@ instrucciones operativas de la cabecera de este documento.
   de Google Books y sus helpers ya no los importa nadie — se conservan un
   ciclo por si hay que revertir, y hay que borrarlos (con sus tests) cuando el
   híbrido esté validado en producción.
+- **Patrón por resolver: ¿de qué color es el botón primario?** CLAUDE.md dice
+  "primario = fondo pink + texto on-pink", pero `KButton` lo pinta en
+  `accent-positive` (lime). Y el canvas no lo zanja: de los 27 pills de las 17
+  pantallas, 14 son lime y 13 pink, según el contexto. En Login se ha aplicado
+  pink EN LA LLAMADA (el mockup lo pinta así) sin tocar el componente: cambiar
+  el defecto repintaría toda la app y esa decisión es del usuario. Decidirlo
+  antes de migrar más pantallas, o el criterio se fijará por acumulación.
 - `KButton` y `button.tsx` (shadcn-style) conviven como dos sistemas de
   botón distintos — decidir cuál se queda antes de seguir migrando
   pantallas que usan el segundo.
