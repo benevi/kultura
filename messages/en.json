@@ -35,7 +35,11 @@
     "resetLinkSent": "We've sent you a link to reset your password. Check your inbox.",
     "tagline": "Discover your culture",
     "chooseCharacter": "Choose your character",
-    "chooseCharacterNone": "No character (initials)"
+    "chooseCharacterNone": "No character (initials)",
+    "welcomeBack": "Hey, good to see you! 👋",
+    "signInSubtitle": "Sign in to keep discovering",
+    "signUpSubtitle": "Create your account and start discovering",
+    "resetSubtitle": "We'll email you a link to get back in"
   },
   "media": {
     "movie": "Movie",

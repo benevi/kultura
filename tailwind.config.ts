@@ -78,6 +78,9 @@ const config: Config = {
            migradas). Nombre propio para no cambiar `card` a medio migrar. */
         bento: "22px",
         "bento-lg": "28px",
+        /* La tarjeta de auth del canvas usa 32px literal, y es de los radios
+           del set cerrado de DISENO.md. Aparece 4 veces en las 17 pantallas. */
+        "bento-xl": "32px",
       },
       transitionDuration: {
         fast: "var(--duration-fast)",   /* 100ms */
