@@ -376,25 +376,39 @@ export function isBlockedComicVolume(name: string): boolean {
   return BLOCKED_COMIC_VOLUMES.some((v) => matchesEntry(name, v));
 }
 
-// ── Veto por CONCEPTO (E-COMIC-CONCEPTO) ────────────────────────────────────
+// ── Veto por CONCEPTO — NO FUNCIONA HOY (E-COMIC-CONCEPTO) ──────────────────
 //
-// La señal por ÍTEM que faltaba, y la única que distingue dos libros de la
-// MISMA editorial. Comprobado en ComicVine: el volumen alemán de "I Wanna Be
-// Your Girl" (Splitter) lleva el concepto "Manga", y la portada hasta lo
-// imprime en el lomo ("SPLITTER MANGA+"). La lista blanca no puede separarlo de
-// "Der tönerne Thron" porque la editorial es la misma, y vetar la serie no
-// escala: la línea de manga de una editorial es una categoría, no una serie.
+// ⚠️ ESTO NO ES UNA DEFENSA. Está verificado en preview que NO filtra nada: los
+// cuatro mangas de Splitter (I Wanna Be Your Girl, Is He the One?, Ascendance
+// of a Bookworm, Hana Ne Peut Pas Vivre Sans Moi) siguieron saliendo en
+// Descubrir → Cómics después de desplegarlo. `concepts` no llega en el batch a
+// `/volumes/`. Si lees este código buscando qué protege el catálogo del manga:
+// nada lo protege. Son la lista blanca y el veto por serie los que trabajan.
 //
-// Vale para TODAS las casas europeas que mezclan, que son casi todas las de la
-// lista: Dargaud→Kana, Delcourt→Tonkam, Soleil→Soleil Manga, Casterman→Sakka,
-// Panini y Egmont. Por eso sustituye al parche por serie en este frente.
+// La idea era buena y sigue siendo la única que puede funcionar: el volumen
+// alemán de "I Wanna Be Your Girl" SÍ lleva el concepto "Manga" en la web de
+// ComicVine, y la portada hasta lo imprime en el lomo ("SPLITTER MANGA+"). Es
+// la única señal capaz de separar dos libros de la MISMA editorial, que es el
+// caso que ni la lista blanca ni el veto por serie pueden resolver (la línea de
+// manga de una editorial es una categoría, no una serie: enumerarla no escala).
+// Cubriría de golpe a todas las casas europeas que mezclan — Dargaud→Kana,
+// Delcourt→Tonkam, Soleil→Soleil Manga, Casterman→Sakka, Panini, Egmont.
 //
-// **Falla ABIERTO a propósito.** Si `concepts` llega vacío o no llega —porque
-// ComicVine no lo puebla en ese volumen, o porque el nombre del campo no es el
-// que supongo— el issue pasa, que es el comportamiento de hoy. Al revés
-// (denegar sin concepto) un campo mal pedido vaciaría el catálogo entero, y eso
-// es justo el fallo que no se puede permitir. Lo que hay que mirar en preview
-// es si el manga DESAPARECE; si sigue saliendo, el campo no está llegando.
+// Hipótesis de por qué no llega, SIN CONFIRMAR: los endpoints de LISTA de
+// ComicVine no pueblan los campos agregados (`concepts`, `characters`,
+// `people`), que solo existen en el de DETALLE (`/volume/4050-{id}/`). Si es
+// así, la vía se cae por coste: una petición de detalle por volumen (20-60 por
+// página) contra un presupuesto de ~200/hora. Medirlo requiere una línea de log
+// temporal y leer el visor de Vercel; la API exige clave, así que el truco de
+// pasarle URLs al usuario no sirve aquí.
+//
+// **Se queda porque falla ABIERTO y no cuesta nada**: sin conceptos el issue
+// pasa, `concepts` viaja en un batch que ya se hacía, y el día que el campo
+// llegue empieza a trabajar solo. Pero mientras tanto es un placebo, y la
+// contrapartida está ACEPTADA a propósito: sale manga europeo en Cómics. Es un
+// fallo de categorización (el manga tiene su propia sección), no de contenido:
+// lo adulto sí está cubierto. Pagar el catálogo europeo entero por una cuestión
+// de estantería era mal cambio.
 
 /** Conceptos de ComicVine que sacan un ítem del catálogo de cómic. */
 export const EXCLUDED_COMIC_CONCEPTS: string[] = ["Manga", "Manhwa", "Manhua"];
