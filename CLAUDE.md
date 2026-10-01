@@ -414,9 +414,9 @@ con una paleta hex antigua.
     decoración, no contenido. Así no ensucia el nombre accesible de la pantalla
     ni hay que repetirlo en cada idioma. Hay test.
   - **No lo usan las fichas de detalle** (ListDetail, GroupDetail): ahí el
-    título es el nombre del grupo o de la lista y vive dentro de una portada
-    con icono, avatares y chips, no en una fila de título + acción. Se les ha
-    puesto el tipo del canvas, pero la portada en sí sigue pendiente.
+    título es el nombre del grupo o de la lista, y cada una lo encabeza a su
+    manera — ver E-DETALLE-ARTBOARD, que corrige lo que esta nota daba por
+    hecho (que las dos llevaban portada).
 
 - **`f0-tokens.ts` apunta a las custom properties, no a literales**
   (E-F0-TOKENS-VAR). Nació como workaround en un worktree anterior al re-skin
@@ -429,10 +429,55 @@ con una paleta hex antigua.
   existen. En el mismo pase se cambiaron los cinco `[oklch(...)]` clavados en
   `className` por sus tokens (`focus-visible:ring-accent-pink`, etc.).
 
-**Pendiente:** el acabado F0 específico de cada pantalla (portadas de las
-fichas de detalle, sombras duras, chips colgantes, rotaciones de card — ver
-"Principio de extensión a pantallas nuevas"). Ya comparten encabezado,
-campos (`KInput`), botones (`KButton`) y tokens, que era lo transversal.
+- **El foco es pink y los pills de acción también, hasta el último rincón**
+  (E-ACCION-PINK-RESTOS). Dos decisiones ya tomadas no habían llegado a toda
+  la app, y por el mismo motivo: el pase que las tomó cambió UN componente, y
+  los sitios que faltaban no pasaban por él.
+  - **El anillo de foco** se fijó en pink al migrar `KInput`
+    (E-LOGIN-F0: "la única sombra de foco que existe en las 17 pantallas"),
+    pero otros 24 sitios seguían enfocando en el verde de estados.
+  - **Tres pills de ACCIÓN escritos a mano** seguían en lime, porque
+    E-BOTON-PINK cambió `KButton` y estos no lo usan: "Aceptar" de una
+    invitación (Notificaciones), el botón de enviar del chat y el CTA del
+    estado vacío de una lista. El artboard de Chat zanja el que podía parecer
+    dudoso: su acción de enviar es un pill PINK, y el único lime de esa
+    pantalla es el gradiente de un avatar.
+  - **`accent-positive` sigue siendo el verde de ESTADOS**, así que los tres
+    `ring-2 ring-accent-positive` de "seleccionado" (AvatarIconPicker,
+    SettingsForm) se quedan: no son foco.
+  - **El guard es de FUENTE a propósito** (`tests/unit/design/focus-ring.test.ts`):
+    el modo de fallo es que alguien vuelva a escribir
+    `focus:ring-accent-positive` en un componente nuevo, y eso no lo caza un
+    test de render porque jsdom no aplica la hoja de Tailwind.
+  - **Lección de método, la misma dos veces:** migrar el componente
+    compartido NO termina la migración. Al tomar una decisión de este tipo,
+    grepear el token viejo en todo el árbol antes de darla por aplicada.
+
+- **Las dos fichas de detalle NO se parecen, y una no lleva portada**
+  (E-DETALLE-ARTBOARD). Deducir un artboard del otro fue exactamente el error
+  de la nota anterior de E-PAGE-HEADING.
+  - **GroupDetail SÍ tiene portada**: radio 28px, SIN borde, y el fondo en DOS
+    capas — acento radial al 60 % en `120% 100% at 20% 10%` sobre un lineal de
+    `160deg` que baja al fondo de página. El matiz sale del `coverColor` del
+    grupo (el artboard lo clava en purple porque solo dibuja un grupo); así dos
+    grupos no salen iguales. Padding 36/40, h1 peso **800**, meta 14px, pila de
+    miembros a 40px con solape -12px y borde contra `--bg`, no contra
+    `--surface`: la portada ya no es superficie plana.
+  - **ListDetail NO tiene portada**: es una cabecera limpia con h1 a **38px**
+    (los 42 son de `PageHeading`, donde el título va solo en su fila; aquí
+    convive con los avatares y la acción), pila a -10px, meta 13px y gap de
+    20px entre cards.
+  - **La acción primaria de ListDetail no existía.** El artboard pinta
+    "+ Añadir título" a la derecha del título; en el código solo se llegaba a
+    ella desde el estado vacío, así que con la lista ya con títulos no había
+    forma de añadir otro desde esa pantalla. Reusa la clave `addItem`, que ya
+    decía eso. El "+" va `aria-hidden`, igual que el emoji de `PageHeading`.
+
+**Pendiente:** el acabado F0 de las pantallas que aún no se han mirado contra
+su artboard una a una (sombras duras, chips colgantes, rotaciones de card —
+ver "Principio de extensión a pantallas nuevas"). Ya comparten encabezado,
+campos (`KInput`), botones (`KButton`), foco, tokens y las dos fichas de
+detalle, que era lo transversal.
 **`Search` no cuenta**: desde E-DISCOVER-SEARCH-MERGE no tiene UI propia,
 es un redirect a Descubrir; la lista de 12 que había aquí la incluía por
 inercia.
