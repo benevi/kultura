@@ -15,26 +15,32 @@ import {
 } from "@/lib/api/comicvine-maps";
 import { volumenesMin } from "@/lib/api/jikan-maps";
 import {
+  acceptsComicIssue,
   acceptsComicPublisher,
   COMIC_PUBLISHERS,
   MANGA_PUBLISHERS,
   ADULT_PUBLISHERS,
   isAllowedComicPublisher,
+  isBlockedComicVolume,
   isMangaPublisher,
   isAdultPublisher,
+  BLOCKED_COMIC_VOLUMES,
 } from "@/lib/api/comic-publishers";
 
 // E-COMIC-ALLOWLIST: la decisión de qué editorial entra en el catálogo vive en
 // `comic-publishers.ts`. Se re-exporta desde aquí porque este módulo era su
 // sitio histórico y varios consumidores (y sus tests) la importan de él.
 export {
+  acceptsComicIssue,
   acceptsComicPublisher,
   COMIC_PUBLISHERS,
   MANGA_PUBLISHERS,
   ADULT_PUBLISHERS,
   isAllowedComicPublisher,
+  isBlockedComicVolume,
   isMangaPublisher,
   isAdultPublisher,
+  BLOCKED_COMIC_VOLUMES,
 };
 
 /** Respuesta del endpoint de detalle /issue/4000-{id}/ (un único result objeto). */
@@ -316,8 +322,12 @@ async function fetchComicWindow(
     // (`comic-publishers.ts`), y de ahí caen los sellos de manga o adultos que
     // hereden un nombre permitido. Los issues sin publisher resuelto se
     // descartan igual que antes: en ComicVine el grueso del manga llega así.
+    //
+    // E-COMIC-SERIE-ADULTA: y además el veto por SERIE, que es lo único que
+    // separa un álbum erótico del resto del catálogo de su misma editorial.
+    // `volume.name` ya viene en el field_list, así que no cuesta una petición.
     if (!publisher) return false;
-    if (!acceptsComicPublisher(publisher)) return false;
+    if (!acceptsComicIssue({ publisher, volume: issue.volume?.name })) return false;
     // Editorial (si se pidió): mantener solo si el publisher incluye algún substring.
     if (publisherSubstrings.length > 0) {
       const lc = publisher.toLowerCase();
