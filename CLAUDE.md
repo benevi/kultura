@@ -797,11 +797,10 @@ pantalla, el valor bueno es el del artboard.
 - `books-maps.ts` quedó casi entero como código muerto tras el híbrido de
   libros (E-BOOKS-HIBRIDO): solo siguen vivos `BOOKS_FORMATO` y
   `BOOKS_PUBLISHER`, que alimentan opciones de la UI. El constructor de query
-  de Google Books y sus helpers ya no los importa nadie.
-- `books-maps.ts` **sigue aquí a propósito**: la condición para borrarlo es
-  "cuando el híbrido esté validado EN PRODUCCIÓN", y esta rama aún no se ha
-  fusionado. Borrarlo antes quitaría la vía de vuelta de código que todavía no
-  ha corrido en producción.
+  de Google Books y sus helpers ya no los importa nadie. **Sigue aquí a
+  propósito**: la condición para borrarlo es "cuando el híbrido esté validado
+  EN PRODUCCIÓN", y esta rama aún no se ha fusionado. Borrarlo antes quitaría
+  la vía de vuelta de código que todavía no ha corrido en producción.
 
 ## Flujo de trabajo recomendado para un nuevo sprint de diseño
 
