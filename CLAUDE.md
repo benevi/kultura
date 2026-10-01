@@ -524,10 +524,10 @@ instrucciones operativas de la cabecera de este documento.
     exactamente lo que tumbó el catálogo de libros (E-BOOKS-ISBN). Ojo: la
     API de ComicVine exige clave, así que el truco de pasarle URLs al
     usuario para medir desde su navegador NO sirve aquí.
-  - **Pendiente**: en la misma página salían cuatro mangas en edición
-    europea (*I Wanna Be Your Girl*, *Is He the One?*, *Hana Ne Peut Pas
-    Vivre Sans Moi*, *Ascendance of a Bookworm*). Falta saber su publisher
-    para decidir si es el mismo agujero u otro distinto.
+  - El manga de esa misma página resultó ser **también de Splitter**, así
+    que era el mismo agujero. Lo resuelve el punto siguiente, no el veto por
+    serie: una línea de manga es una categoría, no una serie, y enumerarla
+    no escala.
 
 - **El cómic tiene su propio techo de páginas** (E-COMIC-PROFUNDIDAD):
   `COMIC_MAX_PAGES = 20`, por debajo del común `DISCOVER_MAX_PAGES = 100`.
@@ -543,6 +543,33 @@ instrucciones operativas de la cabecera de este documento.
   - **20 es un número estimado, no medido** contra la API viva (el proxy
     de estas sesiones bloquea `comicvine.gamespot.com`). Si en preview la
     página 20 sigue llegando llena, subirlo; si se vacía antes, bajarlo.
+
+- **El concepto de ComicVine es la señal por ÍTEM** (E-COMIC-CONCEPTO).
+  Comprobado en la ficha: el volumen alemán de *I Wanna Be Your Girl*
+  (Splitter) lleva el concepto **"Manga"**, y la portada lo imprime en el
+  lomo ("SPLITTER MANGA+"). Es lo único que separa dos libros de la MISMA
+  editorial, y por eso resuelve de golpe lo que ninguna lista podía:
+  Dargaud→Kana, Delcourt→Tonkam, Soleil→Soleil Manga, Casterman→Sakka,
+  Panini, Egmont… casi todas las casas europeas de la lista blanca mezclan.
+  Cuatro cosas:
+  - **No cuesta ni una petición.** `concepts` viaja en el batch a `/volumes/`
+    que cada página ya hacía para resolver la editorial, junto a
+    `count_of_issues`. Si algún día hay que quitar algo de ese `field_list`,
+    tener presente que son tres cosas distintas viajando en una llamada.
+  - **FALLA ABIERTO a propósito.** Sin conceptos (campo ausente, volumen sin
+    etiquetar) el issue PASA. Denegar sin dato vaciaría el catálogo entero si
+    el campo dejara de llegar, y ese es el fallo que no se puede permitir.
+    Hay un test que lo fija. La contrapartida: si el campo no llega, el filtro
+    es un placebo silencioso — **lo que se mira en preview es si el manga
+    DESAPARECE**, no si la página carga.
+  - **Las tres puertas se quedan**, cada una cubre lo que las otras no:
+    editorial (deniega por defecto, cierra lo desconocido), concepto (manga
+    vs. BD dentro de la misma casa) y serie (un álbum erótico de una casa
+    legítima, que es un cómic como cualquier otro salvo por su contenido).
+  - El nombre del campo (`concepts` en `/volumes/`) está puesto a partir de
+    la web de ComicVine, **no medido contra la API** — el proxy la bloquea y
+    además exige clave, así que no vale el truco de pasarle URLs al usuario.
+    Un test unitario fija que lo pedimos, no que el proveedor lo devuelva.
 
 - **Keep-alive de Supabase** (E-KEEPALIVE). `/api/health` hace una consulta
   real a la base (`profiles`, `head:true`) y `vercel.json` la llama con un

@@ -376,17 +376,55 @@ export function isBlockedComicVolume(name: string): boolean {
   return BLOCKED_COMIC_VOLUMES.some((v) => matchesEntry(name, v));
 }
 
+// ── Veto por CONCEPTO (E-COMIC-CONCEPTO) ────────────────────────────────────
+//
+// La señal por ÍTEM que faltaba, y la única que distingue dos libros de la
+// MISMA editorial. Comprobado en ComicVine: el volumen alemán de "I Wanna Be
+// Your Girl" (Splitter) lleva el concepto "Manga", y la portada hasta lo
+// imprime en el lomo ("SPLITTER MANGA+"). La lista blanca no puede separarlo de
+// "Der tönerne Thron" porque la editorial es la misma, y vetar la serie no
+// escala: la línea de manga de una editorial es una categoría, no una serie.
+//
+// Vale para TODAS las casas europeas que mezclan, que son casi todas las de la
+// lista: Dargaud→Kana, Delcourt→Tonkam, Soleil→Soleil Manga, Casterman→Sakka,
+// Panini y Egmont. Por eso sustituye al parche por serie en este frente.
+//
+// **Falla ABIERTO a propósito.** Si `concepts` llega vacío o no llega —porque
+// ComicVine no lo puebla en ese volumen, o porque el nombre del campo no es el
+// que supongo— el issue pasa, que es el comportamiento de hoy. Al revés
+// (denegar sin concepto) un campo mal pedido vaciaría el catálogo entero, y eso
+// es justo el fallo que no se puede permitir. Lo que hay que mirar en preview
+// es si el manga DESAPARECE; si sigue saliendo, el campo no está llegando.
+
+/** Conceptos de ComicVine que sacan un ítem del catálogo de cómic. */
+export const EXCLUDED_COMIC_CONCEPTS: string[] = ["Manga", "Manhwa", "Manhua"];
+
+/** True si alguno de los conceptos del volumen lo saca del catálogo. */
+export function hasExcludedComicConcept(
+  concepts: readonly string[] | null | undefined
+): boolean {
+  if (!concepts?.length) return false; // sin dato → pasa (falla abierto)
+  return concepts.some((c) =>
+    EXCLUDED_COMIC_CONCEPTS.some((excluded) => matchesEntry(c, excluded))
+  );
+}
+
 /**
  * La decisión completa: ¿entra este issue en el catálogo de cómic?
  *
- * Dos puertas con granos distintos, y las dos hacen falta: la editorial
- * (deniega por defecto, cierra el paso a lo desconocido) y la serie (lo que la
- * editorial no puede distinguir porque es suya).
+ * Tres puertas con granos distintos, y cada una cubre lo que las otras no:
+ *  - EDITORIAL: deniega por defecto, cierra el paso a lo desconocido.
+ *  - CONCEPTO: separa dos libros de la MISMA editorial (manga vs. BD).
+ *  - SERIE: el caso que ni la editorial ni el concepto distinguen — un álbum
+ *    erótico de una casa legítima, que es un cómic como cualquier otro salvo
+ *    por su contenido.
  */
 export function acceptsComicIssue(issue: {
   publisher: string;
   volume?: string | null;
+  concepts?: readonly string[] | null;
 }): boolean {
   if (!acceptsComicPublisher(issue.publisher)) return false;
+  if (hasExcludedComicConcept(issue.concepts)) return false;
   return !(issue.volume && isBlockedComicVolume(issue.volume));
 }
