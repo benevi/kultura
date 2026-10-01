@@ -79,13 +79,16 @@ export default async function GroupPage({ params }: Props) {
         </div>
         <div className="relative z-10 flex-1 min-w-0">
           <div className="flex items-center gap-2 min-w-0 flex-wrap">
-            <h1 className="font-display text-2xl font-extrabold truncate" style={{ color: F0.text }}>
+            {/* Mismo criterio que ListDetail: el nombre del grupo es el
+                título de la pantalla y va al tipo del canvas, pero vive dentro
+                de la portada con el icono, no en una fila de título. */}
+            <h1 className="font-display text-[26px] md:text-[34px] font-bold tracking-tight truncate" style={{ color: F0.text }}>
               {group.name}
             </h1>
             {!group.isPublic && (
               <Badge
                 variant="muted"
-                className="flex-shrink-0 bg-transparent border-2 font-bold border-[oklch(32%_0.025_280)] text-[oklch(76%_0.02_280)]"
+                className="flex-shrink-0 bg-transparent border-2 font-bold border-surface-border text-text-secondary"
               >
                 {tG('privateBadge')}
               </Badge>

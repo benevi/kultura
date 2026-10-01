@@ -97,7 +97,7 @@ export function GroupFeed({ groupId, currentUserId }: Props) {
           placeholder={t('postPlaceholder')}
           rows={3}
           maxLength={1000}
-          className="w-full rounded-bento border-2 px-3 py-2.5 text-sm placeholder:opacity-60 resize-none focus:outline-none focus:ring-2 focus-visible:ring-[oklch(68%_0.24_350)]"
+          className="w-full rounded-bento border-2 px-3 py-2.5 text-sm placeholder:opacity-60 resize-none focus:outline-none focus:ring-2 focus-visible:ring-accent-pink"
           style={{ background: F0.surface2, borderColor: F0.stroke, color: F0.text }}
         />
         {postError && (

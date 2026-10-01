@@ -150,7 +150,11 @@ export function ListDetail({
       {/* Header */}
       <header className="flex items-start justify-between gap-3 flex-wrap">
         <div>
-          <h1 className="font-display text-3xl md:text-4xl font-extrabold text-text-primary leading-tight">
+          {/* El nombre de la lista ES el título de la pantalla, así que va
+              al tipo del canvas (display 42px/700) — pero NO usa `PageHeading`:
+              el artboard lo mete en una cabecera con avatares y chips debajo,
+              no en la fila de título + acción. */}
+          <h1 className="font-display text-[30px] md:text-[42px] font-bold tracking-tight text-text-primary leading-tight">
             {list.name}
           </h1>
           <div className="flex items-center gap-3 mt-3 flex-wrap">
