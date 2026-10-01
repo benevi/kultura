@@ -39,7 +39,9 @@
     "welcomeBack": "Hey, good to see you! 👋",
     "signInSubtitle": "Sign in to keep discovering",
     "signUpSubtitle": "Create your account and start discovering",
-    "resetSubtitle": "We'll email you a link to get back in"
+    "resetSubtitle": "We'll email you a link to get back in",
+    "signUpAction": "Sign up",
+    "signInAction": "Sign in"
   },
   "media": {
     "movie": "Movie",
