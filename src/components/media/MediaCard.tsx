@@ -25,11 +25,6 @@ export interface MediaCardProps {
   showType?: boolean;
   priority?: boolean;
   className?: string;
-  /**
-   * Match score real 0-100 (F3a, `computeMatchScores`). Ausente = sin badge —
-   * nunca un número decorativo cuando no hay señal suficiente para calcularlo.
-   */
-  matchScore?: number;
   /** 'fill' para grid bento (la imagen ocupa el alto que le da la celda del grid). Default '2/3'. */
   aspect?: "2/3" | "fill";
   /**
@@ -46,7 +41,6 @@ export function MediaCard({
   showType = false,
   priority = false,
   className,
-  matchScore,
   aspect = "2/3",
   accentHue,
 }: MediaCardProps) {
@@ -64,25 +58,37 @@ export function MediaCard({
             aspect === "2/3" ? "aspect-[2/3]" : "h-full min-h-[110px]"
           )}
         >
-          {item.poster ? (
+          {/* El gradiente va SIEMPRE y va PRIMERO (E-CARD-PORTADA-404). Una
+              portada que da 404 —Open Library las sirve rotas a menudo— dejaba
+              el icono de imagen rota del navegador con el título en texto
+              crudo, encima del título de verdad que la card ya pinta debajo.
+              Con el respaldo detrás, un 404 deja color de la paleta. Es el
+              mismo patrón que `PosterTile` de la landing. */}
+          <div
+            data-placeholder
+            className="absolute inset-0 flex items-center justify-center"
+            style={{ background: posterGradient(item.id || item.title) }}
+          >
+            {!item.poster && (
+              <span className="text-white/90 text-xs font-display font-bold line-clamp-2 px-2 text-center">
+                {item.title.slice(0, 2).toUpperCase()}
+              </span>
+            )}
+          </div>
+          {item.poster && (
+            /* `alt` vacío a propósito: la imagen es DECORATIVA porque el título
+               va como texto justo debajo, en el <h3>. Con un alt real, una
+               portada rota lo escupía en pantalla y además lo duplicaba para
+               quien usa lector. */
             <Image
               src={item.poster}
-              alt={item.title}
+              alt=""
+              aria-hidden="true"
               fill
               sizes="(max-width: 640px) 45vw, (max-width: 1024px) 30vw, 20vw"
               className="object-cover transition-transform duration-300 group-hover:scale-105"
               priority={priority}
             />
-          ) : (
-            <div
-              data-placeholder
-              className="absolute inset-0 flex items-center justify-center"
-              style={{ background: posterGradient(item.id || item.title) }}
-            >
-              <span className="text-white/90 text-xs font-display font-bold line-clamp-2 px-2 text-center">
-                {item.title.slice(0, 2).toUpperCase()}
-              </span>
-            </div>
           )}
 
           {/* Acento radial de esquina (F0 §Cards feature grandes): solo en las
@@ -98,27 +104,19 @@ export function MediaCard({
             />
           )}
 
-          {/* Scrim para que título/badges se lean sobre cualquier poster */}
-          <div className="absolute inset-x-0 bottom-0 h-2/3 bg-gradient-to-t from-black/85 via-black/25 to-transparent pointer-events-none" />
+          {/* E-MATCH-SIN-BADGE: el porcentaje de afinidad ya no se pinta en
+              ninguna superficie. El match SIGUE calculándose y es el criterio
+              con el que la IA elige las recomendaciones (`recommendations.ts`);
+              lo que se retira es la etiqueta, no el motor.
 
-          {/* Badge de match real (F3a) — solo si hay score calculado */}
-          {matchScore !== undefined && (
-            <div
-              data-testid="media-match-badge"
-              className="absolute top-2 left-2 rounded-full bg-accent-positive text-on-accent-positive text-[11px] font-display font-extrabold px-2.5 py-1 leading-none shadow-md"
-            >
-              {matchScore}% MATCH
-            </div>
-          )}
+              Scrim para que título/badges se lean sobre cualquier poster */}
+          <div className="absolute inset-x-0 bottom-0 h-2/3 bg-gradient-to-t from-black/85 via-black/25 to-transparent pointer-events-none" />
 
           {/* Type badge overlay (modo "all", R5b) */}
           {showType && (
             <div
               data-testid="media-type-badge"
-              className={cn(
-                "absolute left-2 rounded-full bg-surface-base/80 backdrop-blur-sm text-text-primary text-[10px] font-semibold px-2 py-1 leading-none",
-                matchScore !== undefined ? "top-9" : "top-2"
-              )}
+              className="absolute top-2 left-2 rounded-full bg-surface-base/80 backdrop-blur-sm text-text-primary text-[10px] font-semibold px-2 py-1 leading-none"
             >
               {tBadge(item.type)}
             </div>
@@ -139,9 +137,9 @@ export function MediaCard({
             >
               {item.title}
             </h3>
-            {item.year && (
+            {item.year ? (
               <p className="text-[11px] text-white/75 font-medium mt-0.5">{item.year}</p>
-            )}
+            ) : null}
           </div>
         </div>
       </article>

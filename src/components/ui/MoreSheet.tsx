@@ -3,19 +3,22 @@
 import { useEffect, useRef } from 'react'
 import { useTranslations } from 'next-intl'
 import { Link } from '@/i18n/navigation'
-import { IconFriends, IconGroups, IconLists, IconIdea, IconSearch, type KIcon } from '@/components/icons'
+import { IconFriends, IconGroups, IconLists, IconIdea, type KIcon } from '@/components/icons'
 
 interface MoreSheetProps {
   isOpen: boolean
   onClose: () => void
 }
 
+// E-DISCOVER-SEARCH-MERGE: la entrada "Buscar" (que apuntaba a /search) se
+// retira. El buscador vive dentro de /discover, que YA es una de las 5 celdas
+// del BottomNav, así que el acceso móvil a la búsqueda se mantiene (motivo de
+// E91) sin una entrada que solo llevaba a un redirect.
 const ITEMS: { key: string; href: string; icon: KIcon }[] = [
   { key: 'friends', href: '/friends', icon: IconFriends },
   { key: 'groups', href: '/groups', icon: IconGroups },
   { key: 'lists', href: '/lists', icon: IconLists },
   { key: 'suggestions', href: '/suggestions', icon: IconIdea },
-  { key: 'search', href: '/search', icon: IconSearch },
 ]
 
 /**

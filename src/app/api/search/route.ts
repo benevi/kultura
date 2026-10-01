@@ -4,6 +4,7 @@
 // ============================================================
 
 import { NextRequest, NextResponse } from "next/server";
+import { getLocale } from "next-intl/server";
 import { searchMovies, searchTV } from "@/lib/api/tmdb";
 import type { TmdbMovieDetail, TmdbTVDetail } from "@/lib/api/tmdb";
 import { normalizeMovie, normalizeTV } from "@/lib/api/normalizer";
@@ -26,14 +27,17 @@ export async function GET(request: NextRequest) {
     );
   }
 
+  // E-TMDB-LOCALE: sugerencias de autocompletado en el idioma activo.
+  const locale = await getLocale();
+
   try {
     const [movies, tv] = await Promise.allSettled([
-      searchMovies(q, 1).then((r) =>
+      searchMovies(q, 1, locale).then((r) =>
         r.results
           .slice(0, 3)
           .map((raw) => normalizeMovie(raw as TmdbMovieDetail))
       ),
-      searchTV(q, 1).then((r) =>
+      searchTV(q, 1, locale).then((r) =>
         r.results
           .slice(0, 2)
           .map((raw) => normalizeTV(raw as TmdbTVDetail))

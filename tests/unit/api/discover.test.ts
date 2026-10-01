@@ -13,20 +13,44 @@ vi.mock("@/lib/api/tmdb", () => ({
   discoverTV: vi.fn(),
 }));
 
-vi.mock("@/lib/api/jikan", async (importOriginal) => {
-  const actual = await importOriginal<typeof import("@/lib/api/jikan")>();
+// E-ANIME-SOURCE: anime se sirve con AniList (no Jikan).
+vi.mock("@/lib/api/anilist", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@/lib/api/anilist")>();
   return {
     ...actual,
-    getPopularAnime: vi.fn(),
-    getPopularManga: vi.fn(),
     discoverAnime: vi.fn(),
+  };
+});
+
+// E-MANGA-SOURCE: manga se sirve con MangaDex (no Jikan).
+vi.mock("@/lib/api/mangadex", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@/lib/api/mangadex")>();
+  return {
+    ...actual,
+    getPopularManga: vi.fn(),
     discoverManga: vi.fn(),
   };
 });
 
-vi.mock("@/lib/api/openlibrary", () => ({
-  searchOpenLibrary: vi.fn(),
+// E-DISCOVER-SEARCH-MERGE: la rama de búsqueda delega en el buscador por familia.
+vi.mock("@/lib/api/search", () => ({
+  searchByTypePaged: vi.fn(),
 }));
+
+vi.mock("@/lib/api/openlibrary", async (importOriginal) => {
+  const actual =
+    await importOriginal<typeof import("@/lib/api/openlibrary")>();
+  // E-BOOKS-HIBRIDO: el catálogo de libros lo sirve Open Library.
+  return { ...actual, searchOpenLibrary: vi.fn() };
+});
+
+vi.mock("@/lib/api/googlebooks", async (importOriginal) => {
+  // E-BOOKS-GOOGLE: solo se mockea la llamada de red; los helpers puros
+  // (totalPages/startIndex/cover) son los reales.
+  const actual =
+    await importOriginal<typeof import("@/lib/api/googlebooks")>();
+  return { ...actual, searchGoogleBooks: vi.fn() };
+});
 
 vi.mock("@/lib/api/rawg", () => ({
   getPopularGames: vi.fn(),
@@ -35,30 +59,48 @@ vi.mock("@/lib/api/rawg", () => ({
 
 vi.mock("@/lib/api/comicvine", () => ({
   getRecentComics: vi.fn(),
+  // E-COMIC-VENTANA: `discover` divide el total por lo que cada página CONSUME
+  // del proveedor (3 ventanas de 100), no por lo que enseña.
+  COMIC_PAGE_STRIDE: 300,
+  // E-COMIC-PROFUNDIDAD: techo propio del cómic, por debajo del común.
+  COMIC_MAX_PAGES: 20,
 }));
 
 vi.mock("@/lib/api/normalizer", () => ({
   normalizeMovie: vi.fn((m) => ({ id: `movie_${m.id}`, title: m.title })),
   normalizeTV: vi.fn((tv) => ({ id: `tv_${tv.id}`, title: tv.name })),
-  normalizeAnime: vi.fn((a) => ({ id: `anime_${a.mal_id}`, title: a.title })),
-  normalizeMangaJikan: vi.fn((m) => ({
-    id: `manga_${m.mal_id}`,
+  normalizeAniListAnime: vi.fn((a) => ({ id: `anime_${a.id}`, title: a.title })),
+  normalizeMangaDex: vi.fn((m) => ({
+    id: `manga_${m.id}`,
     title: m.title,
+    // E-CATALOGO-FUTURO: el año viaja para poder ejercer el tope de manga.
+    year: m.year,
     metadata: { volumes: m.volumes ?? undefined },
   })),
+  // E-BOOKS-HIBRIDO: el catálogo de libros viene de Open Library; Google Books
+  // solo entra en la FICHA, así que su normalizador ya no se ejerce aquí.
   normalizeBookOpenLibrary: vi.fn((d) => ({
     id: `book_${String(d.key).replace(/^\/works\//, "")}`,
     title: d.title ?? "",
+    year: d.first_publish_year,
   })),
   normalizeGame: vi.fn((g) => ({ id: `game_${g.id}`, title: g.name })),
 }));
 
 import { fetchDiscoverData } from "@/lib/api/discover";
 import { discoverMovies, discoverTV } from "@/lib/api/tmdb";
-import { getPopularAnime, getPopularManga } from "@/lib/api/jikan";
-import { searchOpenLibrary } from "@/lib/api/openlibrary";
+import { discoverAnime, AniListError } from "@/lib/api/anilist";
+import { getPopularManga } from "@/lib/api/mangadex";
+import { searchGoogleBooks } from "@/lib/api/googlebooks";
+import {
+  searchOpenLibrary,
+  OPEN_LIBRARY_CATALOG_WINDOW,
+} from "@/lib/api/openlibrary";
+import { searchByTypePaged } from "@/lib/api/search";
+import { todayYear } from "@/lib/api/catalog-window";
+import { DISCOVER_MAX_PAGES } from "@/lib/api/pagination";
 import { getPopularGames, discoverGames } from "@/lib/api/rawg";
-import { getRecentComics } from "@/lib/api/comicvine";
+import { getRecentComics, COMIC_MAX_PAGES } from "@/lib/api/comicvine";
 
 // ── JikanError ────────────────────────────────────────────────────────────────
 
@@ -86,10 +128,10 @@ describe("fetchDiscoverData — guard null-data (E29)", () => {
     vi.clearAllMocks();
   });
 
-  it("anime: res.data = null → items=[], totalPages=1, no lanza TypeError", async () => {
-    vi.mocked(getPopularAnime).mockResolvedValue({
-      data: null as unknown as never[],
-      pagination: { last_visible_page: 1 },
+  it("anime: res.media = null → items=[], totalPages=1, no lanza TypeError", async () => {
+    vi.mocked(discoverAnime).mockResolvedValue({
+      media: null as unknown as never[],
+      pageInfo: { lastPage: 1 } as never,
     });
 
     const result = await fetchDiscoverData("anime", 1);
@@ -98,10 +140,10 @@ describe("fetchDiscoverData — guard null-data (E29)", () => {
     expect(result.totalPages).toBe(1);
   });
 
-  it("anime: res.data = undefined → items=[], no lanza TypeError", async () => {
-    vi.mocked(getPopularAnime).mockResolvedValue({
-      data: undefined as unknown as never[],
-      pagination: { last_visible_page: 1 },
+  it("anime: res.media = undefined → items=[], no lanza TypeError", async () => {
+    vi.mocked(discoverAnime).mockResolvedValue({
+      media: undefined as unknown as never[],
+      pageInfo: { lastPage: 1 } as never,
     });
 
     const result = await fetchDiscoverData("anime", 1);
@@ -109,24 +151,25 @@ describe("fetchDiscoverData — guard null-data (E29)", () => {
     expect(result.items).toEqual([]);
   });
 
-  it("anime: res.data = array válido → items mapeados correctamente", async () => {
-    vi.mocked(getPopularAnime).mockResolvedValue({
-      data: [{ mal_id: 1, title: "Naruto" }] as never[],
-      pagination: { last_visible_page: 5 },
+  it("anime: res.media = array válido → items mapeados correctamente", async () => {
+    vi.mocked(discoverAnime).mockResolvedValue({
+      media: [{ id: 1, title: "Naruto" }] as never[],
+      pageInfo: { lastPage: 5 } as never,
     });
 
     const result = await fetchDiscoverData("anime", 1);
     expect(result.fetchErrorKind).toBeNull();
     expect(result.items).toHaveLength(1);
     expect(result.totalPages).toBe(5);
-    // page 1 < last_visible_page 5 → hay más.
+    // page 1 < lastPage 5 → hay más.
     expect(result.hasMore).toBe(true);
   });
 
   it("manga: res.data = null → items=[], no lanza TypeError", async () => {
     vi.mocked(getPopularManga).mockResolvedValue({
       data: null as unknown as never[],
-      pagination: { last_visible_page: 1 },
+      total: 0,
+      offset: 0,
     });
 
     const result = await fetchDiscoverData("manga", 1);
@@ -135,101 +178,247 @@ describe("fetchDiscoverData — guard null-data (E29)", () => {
     expect(result.totalPages).toBe(1);
   });
 
-  it("manga: pagination undefined → totalPages=1 (optional chaining)", async () => {
+  it("manga: total undefined → totalPages=1 (optional chaining)", async () => {
     vi.mocked(getPopularManga).mockResolvedValue({
       data: [],
-      pagination: undefined as unknown as { last_visible_page: number },
+      total: undefined as unknown as number,
+      offset: 0,
     });
 
     const result = await fetchDiscoverData("manga", 1);
     expect(result.totalPages).toBe(1);
   });
+
+  // E-CATALOGO-FUTURO: manga es la única familia sin rango de fecha nativo
+  // (MangaDex solo acepta `year` como igualdad), así que el tope se aplica
+  // sobre los items ya normalizados.
+  it("manga: descarta lo fechado por delante del año en curso", async () => {
+    const futuro = new Date().getUTCFullYear() + 4;
+    vi.mocked(getPopularManga).mockResolvedValue({
+      data: [
+        { id: "ok", title: "Publicado", year: 2019 },
+        { id: "futuro", title: "Inventado", year: futuro },
+        { id: "sin-año", title: "Sin año" },
+      ] as unknown as never[],
+      total: 3,
+      offset: 0,
+    });
+
+    const result = await fetchDiscoverData("manga", 1);
+    // El que no tiene año se conserva: no sabemos que mienta.
+    expect(result.items.map((i) => i.id)).toEqual(["manga_ok", "manga_sin-año"]);
+  });
 });
 
-// ── Guard: numFound books (E84b — Open Library) ───────────────────────────────
+// ── Guard: totalItems books (E-BOOKS-GOOGLE — Google Books) ──────────────────
 
-describe("fetchDiscoverData — guard numFound books (E84b)", () => {
+describe("fetchDiscoverData — guard totalItems books (E-BOOKS-GOOGLE)", () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });
 
-  it("numFound = 0 → totalPages = 1", async () => {
-    vi.mocked(searchOpenLibrary).mockResolvedValue({
-      docs: [],
-      numFound: 0,
-    });
+  it("totalItems = 0 → totalPages = 1", async () => {
+    vi.mocked(searchOpenLibrary).mockResolvedValue({ numFound: 0, docs: [] });
 
     const result = await fetchDiscoverData("book", 1);
     expect(result.totalPages).toBe(1);
     expect(result.fetchErrorKind).toBeNull();
   });
 
+  it("docs ausente → sin items, sin error", async () => {
+    vi.mocked(searchOpenLibrary).mockResolvedValue({ numFound: 0, docs: [] });
+
+    const result = await fetchDiscoverData("book", 1);
+    expect(result.items).toEqual([]);
+    expect(result.fetchErrorKind).toBeNull();
+  });
+
   it("numFound = undefined → totalPages = 1", async () => {
     vi.mocked(searchOpenLibrary).mockResolvedValue({
-      docs: [],
       numFound: undefined as unknown as number,
+      docs: [],
     });
 
     const result = await fetchDiscoverData("book", 1);
     expect(result.totalPages).toBe(1);
   });
 
-  it("numFound = 100 → totalPages = 5", async () => {
+  // E-BOOKS-PAGINA-FIJA: cada página recorre hasta 3 ventanas de 60 = 180
+  // registros del proveedor, así que el total se divide por 180 y no por los
+  // 20 que se enseñan.
+  it("numFound = 200 → 2 páginas de zancada", async () => {
     vi.mocked(searchOpenLibrary).mockResolvedValue({
+      numFound: 200,
       docs: [],
-      numFound: 100,
     });
 
     const result = await fetchDiscoverData("book", 1);
-    // ceil(100/20) = 5, min(5, 50) = 5
-    expect(result.totalPages).toBe(5);
+    expect(result.totalPages).toBe(2);
   });
 
-  it("numFound = 1200 → totalPages capped a 50", async () => {
+  it("numFound enorme → totalPages capado al tope común (E79-s3)", async () => {
     vi.mocked(searchOpenLibrary).mockResolvedValue({
+      numFound: 1_000_000,
       docs: [],
-      numFound: 1200,
     });
 
     const result = await fetchDiscoverData("book", 1);
-    // ceil(1200/20) = 60, min(60, 50) = 50
-    expect(result.totalPages).toBe(50);
+    expect(result.totalPages).toBe(DISCOVER_MAX_PAGES);
   });
 });
 
-// ── Books: rama con filtros vs. sin filtros (E84b — Open Library) ──────────────
+// ── Books: rama con filtros vs. sin filtros (E-BOOKS-GOOGLE) ─────────────────
 
-describe("fetchDiscoverData — books filtros (E84b)", () => {
+describe("fetchDiscoverData — books filtros (E-BOOKS-HIBRIDO)", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    vi.mocked(searchOpenLibrary).mockResolvedValue({ docs: [], numFound: 0 });
+    vi.mocked(searchOpenLibrary).mockResolvedValue({ numFound: 0, docs: [] });
   });
 
-  it("sin filtros → query base (subject:fiction), sin params (paridad)", async () => {
+  it("sin filtros → semilla amplia y el idioma del locale", async () => {
     await fetchDiscoverData("book", 1);
-    expect(searchOpenLibrary).toHaveBeenCalledWith("subject:fiction", 1);
-  });
-
-  it("con filtros → buildOpenLibraryQuery (q + params.sort), page nativa", async () => {
-    await fetchDiscoverData("book", 2, {
-      genre: ["fantasia"],
-      editorial: ["planeta"],
-      formato: "free",
-      idioma: "en",
-      year: "2020",
-      sort: "release_desc",
-    });
-    // Open Library pagina por page (1-based), no startIndex.
+    // E-BOOKS-RANGO: sin filtro de año la consulta NO lleva rango — uno que
+    // abarque todo el corpus hace que Open Library cierre la conexión.
     expect(searchOpenLibrary).toHaveBeenCalledWith(
-      "subject:Fantasy publisher:Planeta language:eng first_publish_year:[2020 TO 2020] ebook_access:public",
-      2,
-      { sort: "new" }
+      'subject:"fiction"',
+      1,
+      { language: "spa" },
+      OPEN_LIBRARY_CATALOG_WINDOW
     );
   });
 
-  it("solo editorial → dispara rama nativa (ya no es post-filtro)", async () => {
-    await fetchDiscoverData("book", 1, { editorial: ["planeta"] });
-    expect(searchOpenLibrary).toHaveBeenCalledWith("publisher:Planeta", 1, {});
+  // E-BOOKS-RANGO + E-CATALOGO-FUTURO: el tope no desaparece, cambia de sitio.
+  it("sin filtro de año, el futuro se recorta DESPUÉS de traer", async () => {
+    const future = todayYear() + 3;
+    vi.mocked(searchOpenLibrary).mockResolvedValue({
+      numFound: 2,
+      docs: [
+        {
+          key: "/works/OL1W",
+          title: "Ya publicado",
+          cover_i: 111,
+          first_publish_year: 2001,
+        },
+        {
+          key: "/works/OL2W",
+          title: "Anunciado",
+          cover_i: 222,
+          first_publish_year: future,
+        },
+      ],
+    } as never);
+
+    const res = await fetchDiscoverData("book", 1);
+    expect(res.items.map((i) => i.title)).toEqual(["Ya publicado"]);
+  });
+
+  // …pero un año futuro pedido a propósito se respeta: ahí el rango viaja en
+  // la consulta y post-filtrar lo vaciaría.
+  it("año futuro explícito no se recorta", async () => {
+    const future = todayYear() + 3;
+    vi.mocked(searchOpenLibrary).mockResolvedValue({
+      numFound: 1,
+      docs: [
+        {
+          key: "/works/OL3W",
+          title: "Anunciado",
+          cover_i: 333,
+          first_publish_year: future,
+        },
+      ],
+    } as never);
+
+    const res = await fetchDiscoverData("book", 1, { year: String(future) });
+    expect(res.items.map((i) => i.title)).toEqual(["Anunciado"]);
+  });
+
+  // Lo que Google Books no sabía hacer: género, año y orden en la propia
+  // consulta, aplicados por el proveedor y no a mano sobre lo ya recibido.
+  it("género, año y orden viajan en la consulta, no como post-filtro", async () => {
+    await fetchDiscoverData(
+      "book",
+      2,
+      { genre: ["fantasia"], year: "2024", sort: "release_desc" },
+      "en"
+    );
+    expect(searchOpenLibrary).toHaveBeenCalledWith(
+      'subject:"fantasy" first_publish_year:[2024 TO 2024]',
+      // E-BOOKS-PAGINA-FIJA: la página 2 arranca en la ventana 4, no en la 2
+      // — cada página consume hasta tres ventanas.
+      4,
+      { language: "eng", sort: "new" },
+      OPEN_LIBRARY_CATALOG_WINDOW
+    );
+  });
+
+  it("una década es un rango, no un año suelto ignorado", async () => {
+    await fetchDiscoverData("book", 1, { year: "2000s" });
+    expect(searchOpenLibrary).toHaveBeenCalledWith(
+      `${'subject:"fiction"'} first_publish_year:[2000 TO 2009]`,
+      1,
+      { language: "spa" },
+      OPEN_LIBRARY_CATALOG_WINDOW
+    );
+  });
+
+  it("classic cubre 1900-1999, igual que en el resto de familias", async () => {
+    await fetchDiscoverData("book", 1, { year: "classic" });
+    expect(searchOpenLibrary).toHaveBeenCalledWith(
+      `${'subject:"fiction"'} first_publish_year:[1900 TO 1999]`,
+      1,
+      { language: "spa" },
+      OPEN_LIBRARY_CATALOG_WINDOW
+    );
+  });
+
+  it("el idioma del locale viaja SIEMPRE: es lo que fija el título que se lee", async () => {
+    await fetchDiscoverData("book", 1, {}, "es");
+    expect(searchOpenLibrary).toHaveBeenCalledWith(
+      'subject:"fiction"',
+      1,
+      expect.objectContaining({ language: "spa" }),
+      OPEN_LIBRARY_CATALOG_WINDOW
+    );
+  });
+
+  it('formato "libre" acota a texto completo; el resto no finge precisión', async () => {
+    await fetchDiscoverData("book", 1, { formato: "free" });
+    expect(searchOpenLibrary).toHaveBeenCalledWith(
+      'subject:"fiction"',
+      1,
+      expect.objectContaining({ has_fulltext: "true" }),
+      OPEN_LIBRARY_CATALOG_WINDOW
+    );
+
+    vi.mocked(searchOpenLibrary).mockClear();
+    await fetchDiscoverData("book", 1, { formato: "physical" });
+    expect(searchOpenLibrary).toHaveBeenCalledWith(
+      'subject:"fiction"',
+      1,
+      expect.not.objectContaining({ has_fulltext: expect.anything() }),
+      OPEN_LIBRARY_CATALOG_WINDOW
+    );
+  });
+
+  // Con Google Books el año era post-filtro y obligaba a ocultar la última
+  // página porque el conteo mentía. Open Library lo aplica de verdad.
+  it("año activo → el conteo sigue siendo fiable, totalPages NO es null", async () => {
+    vi.mocked(searchOpenLibrary).mockResolvedValue({
+      numFound: 60,
+      docs: [
+        {
+          key: "/works/OL1W",
+          title: "Del 2003",
+          first_publish_year: 2003,
+          cover_i: 1,
+        },
+      ],
+    } as never);
+
+    const result = await fetchDiscoverData("book", 1, { year: "2003" });
+    expect(result.items.map((i) => i.title)).toEqual(["Del 2003"]);
+    // 60 registros por ventana → ceil(60/60) = 1.
+    expect(result.totalPages).toBe(1);
   });
 });
 
@@ -241,12 +430,13 @@ describe("fetchDiscoverData — manga volúmenes post-filtro (E59 F3c)", () => {
     // Lote con volumes variados, incluido null (sin resolver).
     vi.mocked(getPopularManga).mockResolvedValue({
       data: [
-        { mal_id: 1, title: "Corto", volumes: 3 },
-        { mal_id: 2, title: "Medio", volumes: 10 },
-        { mal_id: 3, title: "Largo", volumes: 30 },
-        { mal_id: 4, title: "Sin resolver", volumes: null },
+        { id: "1", title: "Corto", volumes: 3 },
+        { id: "2", title: "Medio", volumes: 10 },
+        { id: "3", title: "Largo", volumes: 30 },
+        { id: "4", title: "Sin resolver", volumes: null },
       ] as never[],
-      pagination: { last_visible_page: 1 },
+      total: 4,
+      offset: 0,
     });
   });
 
@@ -288,12 +478,12 @@ describe("fetchDiscoverData — manga volúmenes post-filtro (E59 F3c)", () => {
 describe("fetchDiscoverData — anime ignora volúmenes (E59 F3c)", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    vi.mocked(getPopularAnime).mockResolvedValue({
-      data: [
-        { mal_id: 1, title: "A" },
-        { mal_id: 2, title: "B" },
+    vi.mocked(discoverAnime).mockResolvedValue({
+      media: [
+        { id: 1, title: "A" },
+        { id: 2, title: "B" },
       ] as never[],
-      pagination: { last_visible_page: 1 },
+      pageInfo: { lastPage: 1 } as never,
     });
   });
 
@@ -334,16 +524,16 @@ describe("fetchDiscoverData — comic filtros (E59 F3c)", () => {
   });
 });
 
-// ── Catch tipado: JikanError 429 vs genérico ──────────────────────────────────
+// ── Catch tipado: AniListError/JikanError 429 vs genérico ─────────────────────
 
 describe("fetchDiscoverData — catch tipado (E29)", () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });
 
-  it("JikanError(429) → fetchErrorKind = 'rate-limit', items=[], totalPages=1", async () => {
-    vi.mocked(getPopularAnime).mockRejectedValue(
-      new JikanError("/top/anime", 429)
+  it("AniListError(429) → fetchErrorKind = 'rate-limit', items=[], totalPages=1", async () => {
+    vi.mocked(discoverAnime).mockRejectedValue(
+      new AniListError("rate limited", 429)
     );
 
     const result = await fetchDiscoverData("anime", 1);
@@ -352,9 +542,9 @@ describe("fetchDiscoverData — catch tipado (E29)", () => {
     expect(result.totalPages).toBe(1);
   });
 
-  it("JikanError(503) → fetchErrorKind = 'generic' (no 429)", async () => {
-    vi.mocked(getPopularAnime).mockRejectedValue(
-      new JikanError("/top/anime", 503)
+  it("AniListError(503) → fetchErrorKind = 'generic' (no 429)", async () => {
+    vi.mocked(discoverAnime).mockRejectedValue(
+      new AniListError("down", 503)
     );
 
     const result = await fetchDiscoverData("anime", 1);
@@ -362,19 +552,21 @@ describe("fetchDiscoverData — catch tipado (E29)", () => {
   });
 
   it("Error genérico (network) → fetchErrorKind = 'generic'", async () => {
-    vi.mocked(getPopularAnime).mockRejectedValue(new Error("fetch failed"));
+    vi.mocked(discoverAnime).mockRejectedValue(new Error("fetch failed"));
 
     const result = await fetchDiscoverData("anime", 1);
     expect(result.fetchErrorKind).toBe("generic");
   });
 
-  it("JikanError(429) en manga → fetchErrorKind = 'rate-limit'", async () => {
+  it("error de red en manga (MangaDex) → fetchErrorKind = 'generic' (no es JikanError)", async () => {
+    // E-MANGA-SOURCE: manga ya no pasa por Jikan → sus fallos nunca son
+    // JikanError, así que nunca se clasifican como 'rate-limit'.
     vi.mocked(getPopularManga).mockRejectedValue(
-      new JikanError("/top/manga", 429)
+      new Error("MangaDex /manga → 429")
     );
 
     const result = await fetchDiscoverData("manga", 1);
-    expect(result.fetchErrorKind).toBe("rate-limit");
+    expect(result.fetchErrorKind).toBe("generic");
   });
 });
 
@@ -398,17 +590,18 @@ describe('fetchDiscoverData — modo "all" (R5a)', () => {
       results: [{ id: 2, name: "TV B" }],
       total_pages: 1,
     } as never);
-    vi.mocked(getPopularAnime).mockResolvedValue({
-      data: [{ mal_id: 3, title: "Anime C" }] as never[],
-      pagination: { last_visible_page: 1 },
+    vi.mocked(discoverAnime).mockResolvedValue({
+      media: [{ id: 3, title: "Anime C" }] as never[],
+      pageInfo: { lastPage: 1 } as never,
     });
     vi.mocked(searchOpenLibrary).mockResolvedValue({
-      docs: [{ key: "/works/b4", title: "Book D" }],
       numFound: 1,
+      docs: [{ key: "/works/OL4W", title: "Book D", cover_i: 4 }],
     } as never);
     vi.mocked(getPopularManga).mockResolvedValue({
-      data: [{ mal_id: 5, title: "Manga E" }] as never[],
-      pagination: { last_visible_page: 1 },
+      data: [{ id: "5", title: "Manga E" }] as never[],
+      total: 1,
+      offset: 0,
     });
     // sort=popularity gatea hasRawgFilters → game usa discoverGames; mockeamos
     // ambas rutas por robustez (getPopularGames para el caso sin sort).
@@ -432,7 +625,7 @@ describe('fetchDiscoverData — modo "all" (R5a)', () => {
       "movie_1",
       "tv_2",
       "anime_3",
-      "book_b4",
+      "book_OL4W",
       "manga_5",
       "game_6",
       "comic_7",
@@ -453,7 +646,7 @@ describe('fetchDiscoverData — modo "all" (R5a)', () => {
   });
 
   it("0 items + rate-limit en una familia → fetchErrorKind 'rate-limit'", async () => {
-    // Todas vacías; anime rate-limit (JikanError 429).
+    // Todas vacías; anime rate-limit (AniListError 429).
     vi.mocked(discoverMovies).mockResolvedValue({
       results: [],
       total_pages: 1,
@@ -462,16 +655,16 @@ describe('fetchDiscoverData — modo "all" (R5a)', () => {
       results: [],
       total_pages: 1,
     } as never);
-    vi.mocked(getPopularAnime).mockRejectedValue(
-      new JikanError("/top/anime", 429)
+    vi.mocked(discoverAnime).mockRejectedValue(
+      new AniListError("rate limited", 429)
     );
     vi.mocked(searchOpenLibrary).mockResolvedValue({
-      docs: [],
-      numFound: 0,
+      totalItems: 0,
     } as never);
     vi.mocked(getPopularManga).mockResolvedValue({
       data: [] as never[],
-      pagination: { last_visible_page: 1 },
+      total: 0,
+      offset: 0,
     });
     vi.mocked(getPopularGames).mockResolvedValue({
       results: [],
@@ -519,40 +712,44 @@ describe("fetchDiscoverData — hasMore (E79 slice 1)", () => {
     expect((await fetchDiscoverData("tv", 2)).hasMore).toBe(false);
   });
 
-  it("anime: hasMore desde last_visible_page", async () => {
-    vi.mocked(getPopularAnime).mockResolvedValue({
-      data: [{ mal_id: 1, title: "A" }] as never[],
-      pagination: { last_visible_page: 4 },
+  it("anime: hasMore desde pageInfo.lastPage (AniList)", async () => {
+    vi.mocked(discoverAnime).mockResolvedValue({
+      media: [{ id: 1, title: "A" }] as never[],
+      pageInfo: { lastPage: 4 } as never,
     });
 
     expect((await fetchDiscoverData("anime", 3)).hasMore).toBe(true);
     expect((await fetchDiscoverData("anime", 4)).hasMore).toBe(false);
   });
 
-  it("manga: hasMore desde last_visible_page", async () => {
+  it("manga: hasMore desde ceil(total/20) (MangaDex)", async () => {
     vi.mocked(getPopularManga).mockResolvedValue({
-      data: [{ mal_id: 1, title: "M" }] as never[],
-      pagination: { last_visible_page: 2 },
+      data: [{ id: "1", title: "M" }] as never[],
+      total: 21, // ceil(21/20) = 2 páginas
+      offset: 0,
     });
 
     expect((await fetchDiscoverData("manga", 1)).hasMore).toBe(true);
     expect((await fetchDiscoverData("manga", 2)).hasMore).toBe(false);
   });
 
-  it("book: hasMore desde ceil(numFound/20) capado a 50", async () => {
+  it("book: hasMore desde ceil(numFound/zancada)", async () => {
     vi.mocked(searchOpenLibrary).mockResolvedValue({
-      docs: [{ key: "/works/1", title: "B" }],
-      numFound: 60, // ceil(60/20)=3
+      numFound: 540, // ceil(540/180) = 3
+      docs: [{ key: "/works/OL1W", title: "B", cover_i: 1 }],
     } as never);
 
     expect((await fetchDiscoverData("book", 2)).hasMore).toBe(true);
     expect((await fetchDiscoverData("book", 3)).hasMore).toBe(false);
   });
 
-  it("comic: hasMore desde ceil(total/20)", async () => {
+  // E-COMIC-VENTANA: cada página consume 300 issues del proveedor, así que el
+  // conteo de páginas divide por 300. Dividir por 20 anunciaba 15 veces más
+  // páginas de las que existen, y las de más salían vacías.
+  it("comic: hasMore desde ceil(total/zancada)", async () => {
     vi.mocked(getRecentComics).mockResolvedValue({
       items: [{ id: "comic_1", title: "C" }] as never[],
-      total: 50, // ceil(50/20)=3
+      total: 750, // ceil(750/300) = 3 páginas
     } as never);
 
     expect((await fetchDiscoverData("comic", 2)).hasMore).toBe(true);
@@ -587,7 +784,7 @@ describe("fetchDiscoverData — hasMore (E79 slice 1)", () => {
   });
 
   it("error (catch) → hasMore false (no hay siguiente que ofrecer)", async () => {
-    vi.mocked(getPopularAnime).mockRejectedValue(new Error("boom"));
+    vi.mocked(discoverAnime).mockRejectedValue(new Error("boom"));
     const result = await fetchDiscoverData("anime", 1);
     expect(result.fetchErrorKind).toBe("generic");
     expect(result.hasMore).toBe(false);
@@ -654,20 +851,21 @@ describe("fetchDiscoverData — totalPages null con post-filtro activo (E79 slic
     expect(result.totalPages).toBeNull();
   });
 
-  it("tv sin temporadas → totalPages numérico", async () => {
+  it("tv sin temporadas → totalPages numérico (capado al tope común)", async () => {
     vi.mocked(discoverTV).mockResolvedValue({
       results: [{ id: 1, name: "T" }],
       total_pages: 200,
     } as never);
 
     const result = await fetchDiscoverData("tv", 1, {});
-    expect(result.totalPages).toBe(200);
+    expect(result.totalPages).toBe(DISCOVER_MAX_PAGES);
   });
 
   it("manga+volumenes → totalPages null (post-filtro sobre metadata.volumes)", async () => {
     vi.mocked(getPopularManga).mockResolvedValue({
-      data: [{ mal_id: 1, title: "M", volumes: 10 }] as never[],
-      pagination: { last_visible_page: 50 },
+      data: [{ id: "1", title: "M", volumes: 10 }] as never[],
+      total: 1000,
+      offset: 0,
     });
 
     const result = await fetchDiscoverData("manga", 1, { volumenes: "6-20" });
@@ -702,17 +900,18 @@ describe('fetchDiscoverData — hasMore en "all" (E79 slice 1)', () => {
       results: five((i) => ({ id: `t${i}`, name: "T" })),
       total_pages: 1,
     } as never);
-    vi.mocked(getPopularAnime).mockResolvedValue({
-      data: five((i) => ({ mal_id: `a${i}`, title: "A" })) as never[],
-      pagination: { last_visible_page: 1 },
+    vi.mocked(discoverAnime).mockResolvedValue({
+      media: five((i) => ({ id: `a${i}`, title: "A" })) as never[],
+      pageInfo: { lastPage: 1 } as never,
     });
     vi.mocked(searchOpenLibrary).mockResolvedValue({
-      docs: five((i) => ({ key: `/works/b${i}`, title: "B" })),
       numFound: 5,
+      docs: five((i) => ({ key: `/works/OL${i}W`, title: "B", cover_i: i + 1 })),
     } as never);
     vi.mocked(getPopularManga).mockResolvedValue({
-      data: five((i) => ({ mal_id: `g${i}`, title: "G" })) as never[],
-      pagination: { last_visible_page: 1 },
+      data: five((i) => ({ id: `g${i}`, title: "G" })) as never[],
+      total: 5,
+      offset: 0,
     });
     const gameRes = {
       results: five((i) => ({ id: `v${i}`, name: "V" })),
@@ -740,33 +939,33 @@ describe('fetchDiscoverData — hasMore en "all" (E79 slice 1)', () => {
 // cap, la UI numerada ofrece una "última página" que devuelve 4xx → banner rojo
 // falso. Capamos a 500 y distinguimos página fuera de rango (vacío, sin error).
 
-describe("fetchDiscoverData — cap TMDB 500 (E89)", () => {
+describe("fetchDiscoverData — tope común de páginas (E79-s3, antes E89)", () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });
 
-  it("movie: total_pages enorme → totalPages capado a 500", async () => {
+  it("movie: total_pages enorme → totalPages capado al tope común", async () => {
     vi.mocked(discoverMovies).mockResolvedValue({
       results: [{ id: 1, title: "M" }],
       total_pages: 57464,
     } as never);
 
     const result = await fetchDiscoverData("movie", 1);
-    expect(result.totalPages).toBe(500);
-    expect(result.hasMore).toBe(true); // page 1 < 500
+    expect(result.totalPages).toBe(DISCOVER_MAX_PAGES);
+    expect(result.hasMore).toBe(true); // page 1 < tope
   });
 
-  it("tv: total_pages enorme → totalPages capado a 500", async () => {
+  it("tv: total_pages enorme → totalPages capado al tope común", async () => {
     vi.mocked(discoverTV).mockResolvedValue({
       results: [{ id: 2, name: "T" }],
       total_pages: 30000,
     } as never);
 
     const result = await fetchDiscoverData("tv", 1);
-    expect(result.totalPages).toBe(500);
+    expect(result.totalPages).toBe(DISCOVER_MAX_PAGES);
   });
 
-  it("movie: total_pages < 500 → sin cambio (no infla)", async () => {
+  it("movie: total_pages < tope → sin cambio (no infla)", async () => {
     vi.mocked(discoverMovies).mockResolvedValue({
       results: [{ id: 1, title: "M" }],
       total_pages: 42,
@@ -776,30 +975,440 @@ describe("fetchDiscoverData — cap TMDB 500 (E89)", () => {
     expect(result.totalPages).toBe(42);
   });
 
-  it("movie: page 500 (tope) → hasMore false (no ofrece siguiente)", async () => {
+  it("movie: última página del tope → hasMore false (no ofrece siguiente)", async () => {
     vi.mocked(discoverMovies).mockResolvedValue({
       results: [{ id: 1, title: "M" }],
       total_pages: 57464,
     } as never);
 
-    const result = await fetchDiscoverData("movie", 500);
-    expect(result.hasMore).toBe(false); // 500 < 500 es false
+    const result = await fetchDiscoverData("movie", DISCOVER_MAX_PAGES);
+    expect(result.hasMore).toBe(false);
   });
 
-  it("movie: page > 500 (fuera de rango) → vacío, SIN banner de error, sin llamada API", async () => {
-    const result = await fetchDiscoverData("movie", 600);
+  it("page > tope (fuera de rango) → vacío, SIN banner de error, sin llamada API", async () => {
+    const result = await fetchDiscoverData("movie", DISCOVER_MAX_PAGES + 1);
     expect(result.items).toEqual([]);
     expect(result.fetchErrorKind).toBeNull(); // NO "generic" → sin banner rojo
     expect(result.hasMore).toBe(false);
-    expect(result.totalPages).toBe(500);
-    // no se llama a TMDB (evita el 4xx que dispararía el banner).
+    expect(result.totalPages).toBe(DISCOVER_MAX_PAGES);
     expect(discoverMovies).not.toHaveBeenCalled();
   });
 
-  it("tv: page > 500 (fuera de rango) → vacío, SIN error, sin llamada API", async () => {
-    const result = await fetchDiscoverData("tv", 9999);
+  // E79-s3: el guard es ahora COMÚN — antes solo existía para movie/tv (E89), y
+  // anime/manga/book/comic/game llamaban al proveedor con una página imposible.
+  it("el guard de fuera de rango aplica a TODAS las familias, sin llamar al proveedor", async () => {
+    for (const type of ["tv", "anime", "manga", "book", "comic", "game"]) {
+      const result = await fetchDiscoverData(type, 9999);
+      expect(result.items).toEqual([]);
+      expect(result.fetchErrorKind).toBeNull();
+      expect(result.hasMore).toBe(false);
+      // E-COMIC-PROFUNDIDAD: el cómic devuelve SU techo, no el común.
+      expect(result.totalPages).toBe(
+        type === "comic" ? COMIC_MAX_PAGES : DISCOVER_MAX_PAGES
+      );
+    }
+    expect(discoverTV).not.toHaveBeenCalled();
+    expect(discoverAnime).not.toHaveBeenCalled();
+    expect(getPopularManga).not.toHaveBeenCalled();
+    expect(searchOpenLibrary).not.toHaveBeenCalled();
+    expect(getRecentComics).not.toHaveBeenCalled();
+    expect(getPopularGames).not.toHaveBeenCalled();
+  });
+
+  it("comic y game: el conteo crudo del proveedor ya no se expone sin tope", async () => {
+    vi.mocked(getRecentComics).mockResolvedValue({
+      items: [{ id: "comic_1", title: "C" }],
+      total: 200_000,
+    } as never);
+    const comic = await fetchDiscoverData("comic", 1);
+    // E-COMIC-PROFUNDIDAD: el cómic se capa a su propio techo, más bajo que el
+    // común, porque su página N lee el offset (N-1)×300 del proveedor.
+    expect(comic.totalPages).toBe(COMIC_MAX_PAGES);
+
+    vi.mocked(getPopularGames).mockResolvedValue({
+      results: [{ id: 1, name: "G", rating: 4 }],
+      count: 900_360, // el caso real de RAWG: 45018 páginas fantasma
+    } as never);
+    const game = await fetchDiscoverData("game", 1);
+    expect(game.totalPages).toBe(DISCOVER_MAX_PAGES);
+  });
+});
+
+// ── Rama de BÚSQUEDA (E-DISCOVER-SEARCH-MERGE) ───────────────────────────────
+
+describe("fetchDiscoverData — modo búsqueda (query)", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    vi.mocked(searchByTypePaged).mockResolvedValue({
+      items: [{ id: "movie_1", title: "Dune" } as never],
+      totalPages: 12,
+      hasMore: true,
+    });
+  });
+
+  it("con query delega en searchByTypePaged (NO en el catálogo de descubrir)", async () => {
+    const result = await fetchDiscoverData("movie", 2, {}, "en", "dune");
+    expect(searchByTypePaged).toHaveBeenCalledWith("dune", "movie", 2, "en");
+    expect(discoverMovies).not.toHaveBeenCalled();
+    expect(result.items).toHaveLength(1);
+    expect(result.totalPages).toBe(12);
+    expect(result.hasMore).toBe(true);
+    expect(result.fetchErrorKind).toBeNull();
+  });
+
+  it("sin query NO toca el buscador (catálogo normal)", async () => {
+    vi.mocked(discoverMovies).mockResolvedValue({
+      results: [{ id: 1, title: "M" }],
+      total_pages: 3,
+    } as never);
+    await fetchDiscoverData("movie", 1, {});
+    expect(searchByTypePaged).not.toHaveBeenCalled();
+  });
+
+  it("respeta el tope común de páginas también en búsqueda", async () => {
+    vi.mocked(searchByTypePaged).mockResolvedValue({
+      items: [],
+      totalPages: 50_000,
+      hasMore: true,
+    });
+    const result = await fetchDiscoverData("movie", 1, {}, "es", "dune");
+    expect(result.totalPages).toBe(DISCOVER_MAX_PAGES);
+  });
+
+  it("totalPages null del buscador se conserva (ventana abierta)", async () => {
+    vi.mocked(searchByTypePaged).mockResolvedValue({
+      items: [],
+      totalPages: null,
+      hasMore: true,
+    });
+    const result = await fetchDiscoverData("all", 1, {}, "es", "dune");
+    expect(result.totalPages).toBeNull();
+  });
+
+  it("un fallo del buscador devuelve fetchErrorKind sin lanzar", async () => {
+    vi.mocked(searchByTypePaged).mockRejectedValue(new Error("boom"));
+    const result = await fetchDiscoverData("movie", 1, {}, "es", "dune");
+    expect(result.items).toEqual([]);
+    expect(result.fetchErrorKind).toBe("generic");
+    expect(result.hasMore).toBe(false);
+  });
+
+  it("429 de Jikan en búsqueda → fetchErrorKind rate-limit", async () => {
+    vi.mocked(searchByTypePaged).mockRejectedValue(
+      new JikanError("/anime", 429)
+    );
+    const result = await fetchDiscoverData("anime", 1, {}, "es", "cowboy");
+    expect(result.fetchErrorKind).toBe("rate-limit");
+  });
+
+  it("página fuera del tope → vacío sin error y sin buscar", async () => {
+    const result = await fetchDiscoverData(
+      "movie",
+      DISCOVER_MAX_PAGES + 5,
+      {},
+      "es",
+      "dune"
+    );
     expect(result.items).toEqual([]);
     expect(result.fetchErrorKind).toBeNull();
-    expect(discoverTV).not.toHaveBeenCalled();
+    expect(searchByTypePaged).not.toHaveBeenCalled();
+  });
+});
+
+// ============================================================
+// Diagnóstico legible del fallo de proveedor
+//
+// El visor de logs de Vercel pinta `context` colapsado, así que un error
+// serializado ahí dentro no se lee sin abrir cada línea. Lo que se protege
+// aquí es que el mensaje VISIBLE baste para diagnosticar: qué familia, qué
+// página y qué error exacto (con status o con causa de red).
+// ============================================================
+
+describe("fetchDiscoverData — el error se lee en el mensaje del log", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it("un error con status lo pone en la línea visible", async () => {
+    const spy = vi.spyOn(console, "error").mockImplementation(() => {});
+    const err = Object.assign(new Error("Open Library /search.json → 503"), {
+      name: "OpenLibraryError",
+      status: 503,
+    });
+    vi.mocked(searchOpenLibrary).mockRejectedValueOnce(err);
+
+    const res = await fetchDiscoverData("book", 1);
+
+    expect(res.fetchErrorKind).toBe("generic");
+    const line = spy.mock.calls.map((c) => c.map(String).join(" ")).join(" ");
+    expect(line).toContain("type=book");
+    expect(line).toContain("status=503");
+    spy.mockRestore();
+  });
+
+  it("un fallo de red expone la causa, que es lo que distingue timeout de bloqueo", async () => {
+    const spy = vi.spyOn(console, "error").mockImplementation(() => {});
+    const err = new TypeError("fetch failed");
+    err.cause = new Error("ConnectTimeoutError");
+    vi.mocked(searchOpenLibrary).mockRejectedValueOnce(err);
+
+    await fetchDiscoverData("book", 1);
+
+    const line = spy.mock.calls.map((c) => c.map(String).join(" ")).join(" ");
+    expect(line).toContain("fetch failed");
+    expect(line).toContain("ConnectTimeoutError");
+    spy.mockRestore();
+  });
+});
+
+// ============================================================
+// E-BOOKS-PORTADA — el catálogo de libros no pinta huecos
+//
+// En Descubrir se veían cards sin imagen (gradiente con iniciales) cuyo
+// detalle SÍ tenía portada, porque la ficha la recupera de Google Books por
+// ISBN y el listado no. En un catálogo visual eso es un hueco, y coincide casi
+// siempre con autopublicaciones de relleno.
+// ============================================================
+
+describe("fetchDiscoverData — libros sin portada (E-BOOKS-PORTADA)", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it("descarta del catálogo los libros que Open Library sirve sin portada", async () => {
+    vi.mocked(searchOpenLibrary).mockResolvedValue({
+      numFound: 3,
+      docs: [
+        { key: "/works/OL1W", title: "Con portada", cover_i: 123 },
+        { key: "/works/OL2W", title: "Sin portada" },
+        { key: "/works/OL3W", title: "Otra con portada", cover_i: 456 },
+      ],
+    } as never);
+
+    const res = await fetchDiscoverData("book", 1);
+
+    expect(res.items.map((i) => i.title)).toEqual([
+      "Con portada",
+      "Otra con portada",
+    ]);
+  });
+
+  it("si ninguno tiene portada la rejilla queda vacía, no con huecos", async () => {
+    vi.mocked(searchOpenLibrary).mockResolvedValue({
+      numFound: 2,
+      docs: [
+        { key: "/works/OL1W", title: "A" },
+        { key: "/works/OL2W", title: "B" },
+      ],
+    } as never);
+
+    const res = await fetchDiscoverData("book", 1);
+    expect(res.items).toEqual([]);
+    expect(res.fetchErrorKind).toBeNull();
+  });
+});
+
+// ============================================================
+// E-BOOKS-VENTANA — el recorte por portada no puede vaciar la página
+//
+// Con "Más recientes" se llegó a ver UN solo libro en toda la página: lo más
+// nuevo de Open Library son autopublicaciones sin portada, así que de los 20
+// registros que se pedían sobrevivía uno. Se pide una ventana más ancha para
+// que el recorte deje material, sin aumentar el número de peticiones.
+// ============================================================
+
+describe("fetchDiscoverData — ventana ancha de libros (E-BOOKS-VENTANA)", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it("pide al proveedor más registros de los que se enseñan", async () => {
+    vi.mocked(searchOpenLibrary).mockResolvedValue({
+      numFound: 1000,
+      docs: [],
+    } as never);
+
+    await fetchDiscoverData("book", 1);
+
+    const limit = vi.mocked(searchOpenLibrary).mock.calls[0][3];
+    expect(limit).toBeGreaterThan(20);
+  });
+
+  it("las páginas se cuentan por la zancada consumida, no por lo que se enseña", async () => {
+    vi.mocked(searchOpenLibrary).mockResolvedValue({
+      numFound: 1800,
+      docs: [],
+    } as never);
+
+    const res = await fetchDiscoverData("book", 1);
+
+    // 1800 registros recorridos de 180 en 180 → 10 páginas. Contarlo de 20 en
+    // 20 ofrecería 90 páginas, casi todas ya recorridas.
+    expect(res.totalPages).toBe(10);
+  });
+});
+
+// ============================================================
+// E-BOOKS-PAGINA-FIJA — la página de libros tiene TAMAÑO, no "lo que quede"
+//
+// Con una sola ventana la página enseñaba lo que sobreviviera al filtro de
+// portada, y eso depende de la ordenación: visto en pantalla, una página con
+// CINCO libros y otra con la rejilla llena, con los mismos filtros. Ahora pide
+// ventanas hasta juntar 20, como ya hacía el cómic (E-COMIC-VENTANA).
+// ============================================================
+
+describe("fetchDiscoverData — página de libros de tamaño fijo (E-BOOKS-PAGINA-FIJA)", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  /** Ventana de 60 docs con 1 de cada `every` con portada. */
+  function windowDocs(every: number, offset = 0) {
+    return Array.from({ length: 60 }, (_, i) => ({
+      key: `/works/OL${offset + i}W`,
+      title: `Libro ${offset + i}`,
+      ...((offset + i) % every === 0 ? { cover_i: offset + i + 1 } : {}),
+    }));
+  }
+
+  it("con rendimiento malo encadena ventanas hasta llenar la página", async () => {
+    // 1 de cada 8 sobrevive → ~7 u 8 por ventana. Con UNA ventana la página
+    // habría salido con 8 libros; es el caso que se vio en pantalla.
+    vi.mocked(searchOpenLibrary).mockImplementation((async (
+      _q: string,
+      page: number
+    ) => ({
+      numFound: 10_000,
+      docs: windowDocs(8, (page - 1) * 60),
+    })) as never);
+
+    const res = await fetchDiscoverData("book", 1);
+
+    expect(res.items.length).toBe(20);
+    expect(vi.mocked(searchOpenLibrary).mock.calls.length).toBe(3);
+  });
+
+  it("con rendimiento bueno no gasta ventanas de más", async () => {
+    vi.mocked(searchOpenLibrary).mockImplementation((async (
+      _q: string,
+      page: number
+    ) => ({
+      numFound: 10_000,
+      docs: windowDocs(1, (page - 1) * 60),
+    })) as never);
+
+    const res = await fetchDiscoverData("book", 1);
+
+    expect(res.items.length).toBe(20);
+    // La primera ventana ya da de sobra: una sola petición.
+    expect(vi.mocked(searchOpenLibrary).mock.calls.length).toBe(1);
+  });
+
+  // El presupuesto está acotado: si la consulta rinde fatal se enseña lo que
+  // haya, pero no se encadenan peticiones sin fin.
+  it("el presupuesto está acotado a 3 ventanas", async () => {
+    vi.mocked(searchOpenLibrary).mockImplementation((async () => ({
+      numFound: 10_000,
+      docs: Array.from({ length: 60 }, (_, i) => ({
+        key: `/works/OLx${i}W`,
+        title: `Sin portada ${i}`,
+      })),
+    })) as never);
+
+    const res = await fetchDiscoverData("book", 1);
+
+    expect(res.items.length).toBe(0);
+    expect(vi.mocked(searchOpenLibrary).mock.calls.length).toBe(3);
+  });
+
+  // Si el proveedor devuelve una ventana INCOMPLETA es que no hay más detrás:
+  // seguir pidiendo sería gastar peticiones en vacío.
+  it("para en seco cuando el proveedor se queda sin resultados", async () => {
+    vi.mocked(searchOpenLibrary).mockResolvedValue({
+      numFound: 30,
+      docs: [{ key: "/works/OL1W", title: "Único", cover_i: 1 }],
+    } as never);
+
+    await fetchDiscoverData("book", 1);
+
+    expect(vi.mocked(searchOpenLibrary).mock.calls.length).toBe(1);
+  });
+
+  // Cada página arranca donde acabó la anterior: página 2 empieza en la
+  // ventana 4 (zancada de 3 ventanas), no en la 2.
+  it("la página N arranca en la ventana (N-1)*3+1", async () => {
+    vi.mocked(searchOpenLibrary).mockResolvedValue({
+      numFound: 10_000,
+      docs: [{ key: "/works/OL1W", title: "B", cover_i: 1 }],
+    } as never);
+
+    await fetchDiscoverData("book", 2);
+
+    expect(vi.mocked(searchOpenLibrary).mock.calls[0][1]).toBe(4);
+  });
+});
+
+// ── Cómic: techo de profundidad propio (E-COMIC-PROFUNDIDAD) ─────────────────
+//
+// El cómic es la única familia cuya página N lee el offset (N-1)×300 del
+// proveedor. Con el tope común, la página 100 pedía a partir del issue 29.700
+// ordenado por `cover_date:desc`: allí ya no hay catálogo occidental y era
+// donde salía la página entera en manga y hentai.
+
+describe("fetchDiscoverData — cómic: techo de profundidad", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    vi.mocked(getRecentComics).mockResolvedValue({ items: [], total: 900_000 });
+  });
+
+  it("un total enorme NO ofrece las 100 páginas del tope común", async () => {
+    const res = await fetchDiscoverData("comic", 1);
+
+    expect(res.totalPages).toBe(COMIC_MAX_PAGES);
+    expect(res.totalPages).toBeLessThan(DISCOVER_MAX_PAGES);
+  });
+
+  it("más allá del techo del cómic no se llama al proveedor", async () => {
+    const res = await fetchDiscoverData("comic", COMIC_MAX_PAGES + 1);
+
+    // Ni cuota de ComicVine gastada, ni banner de error: no es un fallo de red.
+    expect(getRecentComics).not.toHaveBeenCalled();
+    expect(res.items).toEqual([]);
+    expect(res.totalPages).toBe(COMIC_MAX_PAGES);
+    expect(res.hasMore).toBe(false);
+    expect(res.fetchErrorKind).toBeNull();
+  });
+
+  it("la última página dentro del techo sí se sirve", async () => {
+    const res = await fetchDiscoverData("comic", COMIC_MAX_PAGES);
+
+    expect(getRecentComics).toHaveBeenCalledWith(COMIC_MAX_PAGES);
+    expect(res.hasMore).toBe(false);
+  });
+
+  it("el techo del cómic NO recorta a las demás familias", async () => {
+    vi.mocked(searchOpenLibrary).mockResolvedValue({
+      numFound: 1_000_000,
+      docs: [],
+    } as never);
+
+    const res = await fetchDiscoverData("book", 1);
+
+    expect(res.totalPages).toBe(DISCOVER_MAX_PAGES);
+  });
+
+  // El techo es del CATÁLOGO. En el buscador la página N es el offset (N-1)×20,
+  // la zancada normal, así que buscar un cómic por su nombre no se recorta.
+  it("el buscador de cómic sigue con el tope común", async () => {
+    vi.mocked(searchByTypePaged).mockResolvedValue({
+      items: [],
+      totalPages: 400,
+      hasMore: true,
+    } as never);
+
+    const res = await fetchDiscoverData("comic", COMIC_MAX_PAGES + 5, {}, "es", "hellboy");
+
+    expect(searchByTypePaged).toHaveBeenCalled();
+    expect(res.totalPages).toBe(DISCOVER_MAX_PAGES);
   });
 });

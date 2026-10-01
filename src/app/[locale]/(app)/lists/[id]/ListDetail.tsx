@@ -150,7 +150,11 @@ export function ListDetail({
       {/* Header */}
       <header className="flex items-start justify-between gap-3 flex-wrap">
         <div>
-          <h1 className="font-display text-3xl md:text-4xl font-extrabold text-text-primary leading-tight">
+          {/* El nombre de la lista ES el título de la pantalla, así que va
+              al tipo del canvas (display 42px/700) — pero NO usa `PageHeading`:
+              el artboard lo mete en una cabecera con avatares y chips debajo,
+              no en la fila de título + acción. */}
+          <h1 className="font-display text-[30px] md:text-[38px] font-bold tracking-tight text-text-primary leading-tight">
             {list.name}
           </h1>
           <div className="flex items-center gap-3 mt-3 flex-wrap">
@@ -171,13 +175,13 @@ export function ListDetail({
                       initials={m.user.avatarInitials}
                       color={m.user.avatarColor}
                       size="sm"
-                      className={i === 0 && !list.owner ? 'ring-2 ring-surface-base' : '-ml-3 ring-2 ring-surface-base'}
+                      className={i === 0 && !list.owner ? 'ring-2 ring-surface-base' : '-ml-[10px] ring-2 ring-surface-base'}
                     />
                   )
                 ))}
               </div>
             )}
-            <span className="text-sm text-text-secondary">
+            <span className="text-[13px] text-text-tertiary">
               {list.isCollaborative && (
                 <span className="font-semibold text-text-primary">{t('collaborative')}</span>
               )}
@@ -186,16 +190,28 @@ export function ListDetail({
             </span>
           </div>
         </div>
-        {isOwner && (
-          <KButton
-            variant="secondary"
-            size="sm"
-            onClick={() => setConfirmDelete(true)}
-            className="text-text-secondary hover:text-accent-danger flex-shrink-0"
-          >
-            {t('deleteList')}
-          </KButton>
-        )}
+        <div className="flex items-center gap-3 flex-shrink-0">
+          {isOwner && (
+            <KButton
+              variant="secondary"
+              size="sm"
+              onClick={() => setConfirmDelete(true)}
+              className="text-text-secondary hover:text-accent-danger"
+            >
+              {t('deleteList')}
+            </KButton>
+          )}
+          {canEdit && (
+            <KButton asChild>
+              <Link href="/discover">
+                {/* El "+" es decoración, igual que el emoji de `PageHeading`:
+                    fuera del nombre accesible y sin repetirlo por idioma. */}
+                <span aria-hidden="true" className="mr-1">+</span>
+                {t('addItem')}
+              </Link>
+            </KButton>
+          )}
+        </div>
       </header>
 
       {deleteError && <p className="text-xs text-accent-danger">{deleteError}</p>}
@@ -226,13 +242,13 @@ export function ListDetail({
             <p className="text-text-secondary text-sm">{t('noItemsHint')}</p>
             <Link
               href="/discover"
-              className="inline-flex items-center justify-center h-8 px-4 mt-1 text-xs rounded-pill font-body font-bold bg-accent-positive text-on-accent-positive hover:brightness-110 transition-all"
+              className="inline-flex items-center justify-center h-8 px-4 mt-1 text-xs rounded-pill font-body font-bold bg-accent-pink text-on-accent-pink hover:brightness-110 transition-all"
             >
               {t('noItemsDiscover')}
             </Link>
           </div>
         ) : (
-          <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-3">
+          <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-5">
             {items.map((item) => (
               <div key={item.id} className="relative group">
                 {item.media ? (
@@ -308,7 +324,7 @@ export function ListDetail({
               <select
                 value={inviteUserId}
                 onChange={(e) => setInviteUserId(e.target.value)}
-                className="flex-1 bg-surface-base border border-surface-border rounded-button px-3 py-2 text-sm text-text-primary focus:outline-none focus:ring-1 focus:ring-accent-positive"
+                className="flex-1 bg-surface-base border border-surface-border rounded-button px-3 py-2 text-sm text-text-primary focus:outline-none focus:ring-1 focus:ring-accent-pink"
               >
                 <option value="">{t('selectFriend')}</option>
                 {invitableFriends.map((f) => (

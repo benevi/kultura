@@ -10,15 +10,28 @@ import type { Metadata } from "next";
 import type { MediaType, StreamingProvider } from "@/types/media";
 import { getMovie, getMovieVideos, getMovieProviders, getTVVideos, getTVProviders, getTV } from "@/lib/api/tmdb";
 import type { TmdbProvidersResponse } from "@/lib/api/tmdb";
-import { getAnime, getAnimeVideos, getManga } from "@/lib/api/jikan";
+import { tmdbRegion } from "@/lib/api/locale";
+import { getAnime as getAnimeJikan, getAnimeVideos, getManga as getMangaJikan } from "@/lib/api/jikan";
+import { getAnime as getAnimeAniList, isAniListId, fromAniListRef } from "@/lib/api/anilist";
+import { getManga as getMangaDex, isMangaDexId } from "@/lib/api/mangadex";
 import { getBookDetail } from "@/lib/api/openlibrary";
+import { enrichBookWithGoogle } from "@/lib/api/books-enrich";
+import { cleanOpenLibraryDescription } from "@/lib/api/openlibrary-subjects";
+import {
+  getGoogleBookDetail,
+  isOpenLibraryWorkId,
+} from "@/lib/api/googlebooks";
 import { getGame } from "@/lib/api/rawg";
+import { getSteamInfoForGame, type SteamInfo } from "@/lib/api/steam";
 import { getComic } from "@/lib/api/comicvine";
 import {
   normalizeMovie,
   normalizeTV,
   normalizeAnime,
+  normalizeAniListAnime,
   normalizeMangaJikan,
+  normalizeMangaDex,
+  normalizeBookGoogle,
   normalizeBookOpenLibrary,
   normalizeGame,
   normalizeComic,
@@ -27,6 +40,7 @@ import { MediaDetail } from "@/components/media/MediaDetail";
 import { createClient } from "@/lib/supabase/server";
 import { getMediaEntry } from "@/lib/library/queries";
 import { computeMatchScores } from "@/lib/recommendations/match-score";
+import { translateSynopsis } from "@/lib/translate/synopsis";
 import type { LibraryEntry } from "@/types/library";
 
 // ── Constants ─────────────────────────────────────────────────────────────────
@@ -49,12 +63,18 @@ interface Props {
 
 // ── Helper: extractors ────────────────────────────────────────────────────────
 
-function extractProvidersES(resp: TmdbProvidersResponse): StreamingProvider[] {
-  const es = resp.results?.["ES"];
-  if (!es) return [];
+// E-TMDB-LOCALE: la oferta de streaming es POR PAÍS. Antes se leía siempre
+// `results["ES"]`, así que al pedir la región del locale `en` (US) la sección
+// quedaba vacía. Ahora el extractor recibe la misma región que se pidió a TMDB.
+function extractProvidersForRegion(
+  resp: TmdbProvidersResponse,
+  region: string
+): StreamingProvider[] {
+  const forRegion = resp.results?.[region];
+  if (!forRegion) return [];
   const all: StreamingProvider[] = [];
   (["flatrate", "rent", "buy"] as const).forEach((type) => {
-    es[type]?.forEach((p) =>
+    forRegion[type]?.forEach((p) =>
       all.push({
         name: p.provider_name,
         logoPath: `https://image.tmdb.org/t/p/original${p.logo_path}`,
@@ -65,10 +85,97 @@ function extractProvidersES(resp: TmdbProvidersResponse): StreamingProvider[] {
   return all;
 }
 
+// ── Helper: libro (Google Books + fallback legacy Open Library) ───────────────
+
+/**
+ * Resuelve la ficha de un libro (E-BOOKS-HIBRIDO).
+ *
+ * Se enruta por la FORMA del id, porque conviven dos procedencias y las dos
+ * tienen que seguir abriendo:
+ *   - `book_OL7353617W` → Open Library, que es quien sirve el catálogo. Su
+ *     ficha se completa con Google Books (portada y sinopsis) vía ISBN.
+ *   - `book_{volumeId}` → Google Books directo. Son los títulos guardados
+ *     mientras el catálogo lo sirvió Google Books (E-BOOKS-GOOGLE); pedirle ese
+ *     id a Open Library daría 404 y rompería una ficha YA EN BIBLIOTECA.
+ */
+async function resolveBookItem(id: string) {
+  if (isOpenLibraryWorkId(id)) {
+    const detail = await getBookDetail(id).catch(() => null);
+    if (!detail) return null;
+    const item = normalizeBookOpenLibrary(detail.doc);
+    // E-BOOKS-SUBJ: las descripciones de Open Library llegan con Markdown
+    // escapado (`\*\*Title:\*\*`) porque el campo es texto plano y la gente
+    // pega Markdown igualmente.
+    const description = cleanOpenLibraryDescription(detail.description);
+    if (description) item.synopsis = description;
+    // Best-effort: si Google no responde o no hay ISBN, se sirve tal cual.
+    return enrichBookWithGoogle(item).catch(() => item);
+  }
+  const volume = await getGoogleBookDetail(id).catch(() => null);
+  return volume ? normalizeBookGoogle(volume) : null;
+}
+
+// ── Helper: manga (MangaDex + fallback legacy Jikan) ──────────────────────────
+
+/**
+ * Resuelve la ficha de un manga (E-MANGA-SOURCE).
+ *
+ * Fuente actual: MangaDex (`manga_{uuid}`). Las bibliotecas guardadas mientras
+ * manga venía de Jikan tienen `manga_{mal_id}` (numérico) — pedirle ese id a
+ * MangaDex sería un 404, así que se enruta por la forma del id (mismo patrón
+ * que `resolveBookItem` con Open Library legacy).
+ */
+async function resolveMangaItem(id: string, locale?: string) {
+  if (isMangaDexId(id)) {
+    const detail = await getMangaDex(id).catch(() => null);
+    return detail ? normalizeMangaDex(detail.data, locale) : null;
+  }
+  const legacy = await getMangaJikan(Number(id)).catch(() => null);
+  return legacy ? normalizeMangaJikan(legacy.data) : null;
+}
+
+// ── Helper: anime (AniList + fallback legacy Jikan) ───────────────────────────
+
+/**
+ * Resuelve la ficha de un anime (E-ANIME-SOURCE), incluido el trailer.
+ *
+ * Fuente actual: AniList (`anime_al-{id}`). Las bibliotecas guardadas mientras
+ * anime venía de Jikan tienen `anime_{mal_id}` (entero plano) — se enruta por
+ * la forma del id (mismo patrón que `resolveMangaItem`/`resolveBookItem`).
+ * AniList trae el trailer inline en la propia consulta; Jikan legacy necesita
+ * una segunda llamada (`getAnimeVideos`), de ahí que esta función devuelva
+ * `trailerKey` ya resuelto en vez de solo el item. Sin parámetro `locale`:
+ * AniList no ofrece títulos/sinopsis en español (solo romaji/inglés/nativo,
+ * ver `normalizeAniListAnime`), a diferencia de MangaDex/Google Books.
+ */
+async function resolveAnimeItem(
+  id: string
+): Promise<{ item: ReturnType<typeof normalizeAnime>; trailerKey?: string } | null> {
+  if (isAniListId(id)) {
+    const raw = await getAnimeAniList(fromAniListRef(id)).catch(() => null);
+    if (!raw) return null;
+    const item = normalizeAniListAnime(raw);
+    return { item, trailerKey: item.trailerKey };
+  }
+
+  const numId = Number(id);
+  const [detail, videos] = await Promise.allSettled([
+    getAnimeJikan(numId),
+    getAnimeVideos(numId),
+  ]);
+  if (detail.status === "rejected") return null;
+  const item = normalizeAnime(detail.value.data);
+  const trailerKey =
+    videos.status === "fulfilled"
+      ? (videos.value.data.promo?.[0]?.trailer?.youtube_id ?? undefined)
+      : undefined;
+  return { item, trailerKey };
+}
+
 // ── Metadata ──────────────────────────────────────────────────────────────────
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
-  const { type, id } = await params;
+  const { locale, type, id } = await params;
 
   if (!VALID_TYPES.includes(type as MediaType)) return { title: "KULTURA" };
 
@@ -78,31 +185,34 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     let image: string | undefined;
 
     if (type === "movie") {
-      const detail = await getMovie(Number(id));
+      const detail = await getMovie(Number(id), locale);
       title = detail.title;
       description = detail.overview || undefined;
       if (detail.poster_path) image = `https://image.tmdb.org/t/p/w500${detail.poster_path}`;
     } else if (type === "tv") {
-      const detail = await getTV(Number(id));
+      const detail = await getTV(Number(id), locale);
       title = detail.name;
       description = detail.overview || undefined;
       if (detail.poster_path) image = `https://image.tmdb.org/t/p/w500${detail.poster_path}`;
     } else if (type === "anime") {
-      const resp = await getAnime(Number(id));
-      title = resp.data.title_english ?? resp.data.title;
-      description = resp.data.synopsis ?? undefined;
-      image = resp.data.images?.jpg?.large_image_url ?? undefined;
+      const resolved = await resolveAnimeItem(id);
+      if (resolved) {
+        title = resolved.item.title;
+        description = resolved.item.synopsis;
+        image = resolved.item.poster;
+      }
     } else if (type === "manga") {
-      const resp = await getManga(Number(id));
-      title = resp.data.title;
-      description = resp.data.synopsis ?? undefined;
-      image = resp.data.images?.jpg?.large_image_url ?? undefined;
-    } else if (type === "book") {
-      const detail = await getBookDetail(id);
-      if (detail) {
-        const item = normalizeBookOpenLibrary(detail.doc);
+      const item = await resolveMangaItem(id, locale);
+      if (item) {
         title = item.title;
-        description = detail.description;
+        description = item.synopsis;
+        image = item.poster;
+      }
+    } else if (type === "book") {
+      const item = await resolveBookItem(id);
+      if (item) {
+        title = item.title;
+        description = item.synopsis;
         image = item.poster;
       }
     } else if (type === "game") {
@@ -119,7 +229,20 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
     if (!title) return { title: "KULTURA" };
 
-    const truncatedDesc = description ? description.slice(0, 160) : undefined;
+    // E-SINOPSIS-I18N: `cacheOnly` a propósito. Los metadatos corren en el
+    // camino crítico de la respuesta y solo alimentan OG/SEO: si otro visitante
+    // ya pagó la traducción de este título se aprovecha, y si no, se sirve el
+    // original en vez de hacer esperar la página por 160 caracteres.
+    const localizedDesc = description
+      ? await translateSynopsis({
+          text: description,
+          locale,
+          mediaId: `${type}_${id}`,
+          cacheOnly: true,
+        })
+      : undefined;
+
+    const truncatedDesc = localizedDesc ? localizedDesc.slice(0, 160) : undefined;
 
     return {
       title: `${title} · KULTURA`,
@@ -145,7 +268,11 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 // ── Page ──────────────────────────────────────────────────────────────────────
 
 export default async function MediaDetailPage({ params }: Props) {
-  const { type, id } = await params;
+  const { locale, type, id } = await params;
+  // E-TMDB-LOCALE: `locale` ya viaja en la ruta (`/[locale]/media/...`) → se
+  // pasa a cada cliente de API que localiza contenido. La ficha deja de estar
+  // fijada a español.
+  const providerRegion = tmdbRegion(locale);
 
   if (!VALID_TYPES.includes(type as MediaType)) notFound();
 
@@ -165,14 +292,17 @@ export default async function MediaDetailPage({ params }: Props) {
   let item: ReturnType<typeof normalizeMovie> | undefined;
   let trailerKey: string | undefined;
   let providers: StreamingProvider[] | undefined;
+  // E-GAMES-STEAM: enriquecimiento de la ficha de juego. `null` = no se pudo
+  // resolver el appid con confianza (o Steam no respondió) → sin sección.
+  let steam: SteamInfo | null = null;
 
   try {
     if (mediaType === "movie") {
       const numId = Number(id);
       const [detail, videos, prov] = await Promise.allSettled([
-        getMovie(numId),
-        getMovieVideos(numId),
-        getMovieProviders(numId),
+        getMovie(numId, locale),
+        getMovieVideos(numId, locale),
+        getMovieProviders(numId, providerRegion, locale),
       ]);
       if (detail.status === "rejected") notFound();
       item = normalizeMovie(detail.value);
@@ -183,14 +313,14 @@ export default async function MediaDetailPage({ params }: Props) {
         trailerKey = trailer?.key;
       }
       if (prov.status === "fulfilled") {
-        providers = extractProvidersES(prov.value);
+        providers = extractProvidersForRegion(prov.value, providerRegion);
       }
     } else if (mediaType === "tv") {
       const numId = Number(id);
       const [detail, videos, prov] = await Promise.allSettled([
-        getTV(numId),
-        getTVVideos(numId),
-        getTVProviders(numId),
+        getTV(numId, locale),
+        getTVVideos(numId, locale),
+        getTVProviders(numId, providerRegion, locale),
       ]);
       if (detail.status === "rejected") notFound();
       item = normalizeTV(detail.value);
@@ -201,33 +331,27 @@ export default async function MediaDetailPage({ params }: Props) {
         trailerKey = trailer?.key;
       }
       if (prov.status === "fulfilled") {
-        providers = extractProvidersES(prov.value);
+        providers = extractProvidersForRegion(prov.value, providerRegion);
       }
     } else if (mediaType === "anime") {
-      const numId = Number(id);
-      const [detail, videos] = await Promise.allSettled([
-        getAnime(numId),
-        getAnimeVideos(numId),
-      ]);
-      if (detail.status === "rejected") notFound();
-      item = normalizeAnime(detail.value.data);
-      if (videos.status === "fulfilled") {
-        const promo = videos.value.data.promo?.[0]?.trailer?.youtube_id;
-        trailerKey = promo ?? undefined;
-      }
+      const resolved = await resolveAnimeItem(id);
+      if (!resolved) notFound();
+      item = resolved.item;
+      trailerKey = resolved.trailerKey;
     } else if (mediaType === "manga") {
-      const detail = await getManga(Number(id)).catch(() => null);
-      if (!detail) notFound();
-      item = normalizeMangaJikan(detail.data);
+      const manga = await resolveMangaItem(id, locale);
+      if (!manga) notFound();
+      item = manga;
     } else if (mediaType === "book") {
-      const detail = await getBookDetail(id).catch(() => null);
-      if (!detail) notFound();
-      item = normalizeBookOpenLibrary(detail.doc);
-      if (detail.description) item.synopsis = detail.description;
+      const book = await resolveBookItem(id);
+      if (!book) notFound();
+      item = book;
     } else if (mediaType === "game") {
       const detail = await getGame(Number(id)).catch(() => null);
       if (!detail) notFound();
       item = normalizeGame(detail);
+      // Nunca lanza: `getSteamInfoForGame` captura todo y devuelve null.
+      steam = await getSteamInfoForGame(detail, locale);
     } else if (mediaType === "comic") {
       const detail = await getComic(id).catch(() => null);
       if (!detail) notFound();
@@ -256,6 +380,7 @@ export default async function MediaDetailPage({ params }: Props) {
       initialEntry={initialEntry}
       isAuthenticated={isAuthenticated}
       matchScore={matchScore}
+      steam={steam}
     />
   );
 }

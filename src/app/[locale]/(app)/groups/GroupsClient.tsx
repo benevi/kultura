@@ -7,6 +7,7 @@ import { KButton } from '@/components/ui/KButton'
 import { TabButton } from '@/components/ui/TabButton'
 import { CreateGroupForm, type CreatedGroup } from '@/components/social/CreateGroupForm'
 import { DiscoverGroupsClient } from './DiscoverGroupsClient'
+import { IconGroups } from '@/components/icons'
 import { F0 } from '@/lib/design/f0-tokens'
 
 export interface MyGroup {
@@ -91,7 +92,7 @@ export function GroupsClient({ myGroups: initialGroups }: GroupsClientProps) {
 
           {groups.length === 0 ? (
             <div className="rounded-bento border p-8 text-center" style={{ background: F0.surface, borderColor: F0.stroke }}>
-              <div className="text-3xl mb-3">💬</div>
+              <IconGroups className="w-9 h-9 mx-auto mb-3" style={{ color: F0.muted }} />
               <p className="text-sm" style={{ color: F0.textSecondary }}>{tFriends('noGroups')}</p>
               <p className="text-xs mt-1" style={{ color: F0.muted }}>{tFriends('noGroupsHint')}</p>
             </div>

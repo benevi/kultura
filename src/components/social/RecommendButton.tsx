@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { useTranslations } from 'next-intl'
-import { Button } from '@/components/ui/button'
+import { KButton } from '@/components/ui/KButton'
 import { RecommendModal } from './RecommendModal'
 import type { MediaItem } from '@/types/media'
 
@@ -27,9 +27,9 @@ export function RecommendButton({ item }: RecommendButtonProps) {
 
   return (
     <>
-      <Button variant="ghost" size="sm" onClick={() => setOpen(true)}>
+      <KButton variant="secondary" size="sm" onClick={() => setOpen(true)}>
         {t('recommend')}
-      </Button>
+      </KButton>
       {open && (
         <RecommendModal
           mediaId={item.id}

@@ -38,6 +38,8 @@ import { SettingsForm } from '@/app/[locale]/(app)/settings/SettingsForm'
 const DEFAULT_PROPS = {
   initialUsername: 'testuser',
   initialAvatarColor: 'blue',
+  // E-AVATAR-ICONS: null = cuenta sin personaje elegido → iniciales.
+  initialAvatarIcon: null,
   initialLocale: 'es',
   userEmail: 'test@example.com',
 }
@@ -57,7 +59,8 @@ describe('SettingsForm', () => {
   })
 
   it('click en color de avatar lo selecciona (ring visible)', () => {
-    render(<SettingsForm {...DEFAULT_PROPS} initialAvatarColor="blue" />)
+    render(<SettingsForm {...DEFAULT_PROPS} initialAvatarColor="blue"
+ />)
     const redButton = screen.getByLabelText('red')
     fireEvent.click(redButton)
     expect(redButton.className).toContain('ring-2')

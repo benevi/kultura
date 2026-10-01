@@ -6,7 +6,20 @@ import type { MediaItem, StreamingProvider } from "@/types/media";
 
 vi.mock("next-intl/server", () => ({
   getTranslations: () => Promise.resolve((key: string) => key),
+  getLocale: () => Promise.resolve("es"),
 }));
+
+// E-SINOPSIS-I18N: la sinopsis va dentro de un <Suspense> con el texto
+// ORIGINAL como fallback. `TranslatedSynopsis` es un Server Component async y
+// react-dom no lo sabe renderizar aquí, así que se sustituye por su versión
+// sin traducción: lo que estos tests comprueban (truncado, "leer más") vive en
+// `SynopsisSection` y sigue ejercitándose igual.
+vi.mock("@/components/media/TranslatedSynopsis", async () => {
+  const { SynopsisSection } = await import("@/components/media/SynopsisSection");
+  return {
+    TranslatedSynopsis: ({ text }: { text: string }) => <SynopsisSection text={text} />,
+  };
+});
 
 vi.mock("next-intl", () => ({
   useTranslations: () => (key: string) => key,
@@ -236,16 +249,26 @@ describe("MediaDetail", () => {
     expect(screen.getByText("Fight Club")).toBeInTheDocument();
   });
 
-  it("muestra el badge de match cuando se pasa matchScore (F4)", async () => {
+  // E-MATCH-SIN-BADGE: el badge colgante con el porcentaje se retiró. El
+  // `matchScore` sigue llegando, pero solo como compuerta de la sección "Por
+  // qué te lo recomendamos" — su valor no se enseña en ninguna parte.
+  it("no pinta el badge de match aunque llegue matchScore", async () => {
     render(
       await MediaDetail({ item: mockItem, initialEntry: null, isAuthenticated: false, matchScore: 82 })
     );
-    const badge = screen.getByTestId("media-match-badge");
-    expect(badge).toHaveTextContent("82% MATCH");
+    expect(screen.queryByTestId("media-match-badge")).not.toBeInTheDocument();
+    expect(screen.queryByText(/82\s*%/)).not.toBeInTheDocument();
   });
 
-  it("no muestra el badge de match cuando matchScore es undefined (F4)", async () => {
+  it("con matchScore y géneros, explica el porqué sin dar un porcentaje", async () => {
+    render(
+      await MediaDetail({ item: mockItem, initialEntry: null, isAuthenticated: false, matchScore: 82 })
+    );
+    expect(screen.getByText(/whyRecommended$/)).toBeInTheDocument();
+  });
+
+  it("sin matchScore no hay sección de porqué (no sabemos nada de sus gustos)", async () => {
     render(await MediaDetail({ item: mockItem, initialEntry: null, isAuthenticated: false }));
-    expect(screen.queryByTestId("media-match-badge")).not.toBeInTheDocument();
+    expect(screen.queryByText(/whyRecommended$/)).not.toBeInTheDocument();
   });
 });

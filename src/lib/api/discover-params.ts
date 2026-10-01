@@ -26,6 +26,14 @@ export type MediaType = (typeof VALID_TYPES)[number];
 export interface DiscoverParams {
   type: MediaType;
   page: number;
+  /**
+   * E-DISCOVER-SEARCH-MERGE: búsqueda de texto DENTRO de Descubrir (el buscador
+   * de `/search` se fusionó aquí). Cuando llega, la fuente de la página pasa a
+   * ser el buscador del proveedor en vez del catálogo de descubrir.
+   * `null` si no hay query o tiene menos de 2 caracteres (el mismo umbral que
+   * usa el autocompletado de `/api/search`), para no lanzar búsquedas de 1 letra.
+   */
+  q: string | null;
   // Reservados (parseados, aún no aplicados server-side en F2):
   genre: string[];
   year: string | null;
@@ -69,9 +77,15 @@ export function parseDiscoverParams(
 
   const page = Math.max(1, parseInt(searchParams.get("page") ?? "1", 10) || 1);
 
+  // q: se normaliza aquí (trim + umbral de 2 chars) para que el resto del
+  // pipeline no tenga que repetir la comprobación.
+  const rawQ = searchParams.get("q")?.trim() ?? "";
+  const q = rawQ.length >= 2 ? rawQ : null;
+
   return {
     type,
     page,
+    q,
     genre: parseMulti(searchParams.get("genre")),
     year: searchParams.get("year"),
     platform: parseMulti(searchParams.get("platform")),

@@ -8,19 +8,29 @@
 // ============================================================
 
 import { NextRequest, NextResponse } from "next/server";
+import { getLocale } from "next-intl/server";
 import { fetchDiscoverData } from "@/lib/api/discover";
 import { parseDiscoverParams } from "@/lib/api/discover-params";
-import { createClient } from "@/lib/supabase/server";
-import { computeMatchScores } from "@/lib/recommendations/match-score";
 
 export async function GET(request: NextRequest) {
   const parsed = parseDiscoverParams(request.nextUrl.searchParams);
   const { type, page } = parsed;
 
+  // E-TMDB-LOCALE: locale ACTIVO de la petición (mismo patrón que
+  // /api/ai-recommendations). Se propaga a los proveedores que localizan
+  // catálogo (TMDB, Google Books, MangaDex) para que títulos y sinopsis salgan
+  // en el idioma elegido en la app, no siempre en español.
+  const locale = await getLocale();
+
+  // E-DISCOVER-SEARCH-MERGE: `q` convierte la petición en una BÚSQUEDA (el
+  // buscador de /search vive ahora dentro de /discover). La respuesta mantiene
+  // la misma forma, así que el grid y la paginación del cliente no cambian.
+
   // F3a+F3b: se pasan los filtros que cada familia consume nativamente
-  // (TMDB: genre/year/platform/sort/status/duracion/idioma; Jikan: +demografia;
-  // RAWG: genre/platform/year/sort). Cada builder ignora los vacíos/desconocidos
-  // y los campos que no entiende. fetchDiscoverData nunca lanza → 200.
+  // (TMDB: genre/year/platform/sort/status/duracion/idioma; MangaDex:
+  // +demografia; RAWG: genre/platform/year/sort). Cada builder ignora los
+  // vacíos/desconocidos y los campos que no entiende. fetchDiscoverData nunca
+  // lanza → 200.
   //
   // E59 R4a — además se reenvían los campos que DiscoverFilters ya consume y que
   // antes se perdían: volumenes (manga/comic post-filtro), editorial (book/comic),
@@ -49,14 +59,12 @@ export async function GET(request: NextRequest) {
     modojuego: parsed.modojuego,
     duracionmedia: parsed.duracionmedia,
     estado: parsed.estado,
-  });
+  }, locale, parsed.q);
 
-  // F3b: badge de match real (F3a) sobre los items devueltos. Sin sesión, o sin
-  // señal suficiente en la biblioteca (gate de computeMatchScores), matchScores
-  // queda vacío — MediaCard no muestra badge, nunca uno decorativo.
-  const supabase = createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  const matchScores = user ? await computeMatchScores(user.id, result.items, supabase) : new Map<string, number>();
-
-  return NextResponse.json({ ...result, matchScores: Object.fromEntries(matchScores) });
+  // E-MATCH-SIN-BADGE: aquí se calculaba el match de cada item SOLO para pintar
+  // el badge del grid. Retirado el badge, calcularlo era una lectura de
+  // biblioteca + scoring en cada petición de catálogo para un dato que ya no
+  // ve nadie. El match sigue vivo donde decide algo: la elección de las
+  // recomendaciones IA (`lib/claude/recommendations.ts`).
+  return NextResponse.json(result);
 }

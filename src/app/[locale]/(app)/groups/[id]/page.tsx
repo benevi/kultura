@@ -6,6 +6,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { redirect, notFound } from 'next/navigation'
 import { getTranslations } from 'next-intl/server'
+import { AVATAR_ICONS } from '@/components/icons/avatars'
 import { Avatar } from '@/components/ui/Avatar'
 import { Badge } from '@/components/ui/Badge'
 import { GroupFeed } from './GroupFeed'
@@ -43,41 +44,52 @@ export default async function GroupPage({ params }: Props) {
   // Privado no auto-unible: ocultar el botón a quien no es miembro ni owner (evita 403/RLS confuso).
   const showJoin = isMember || isOwner || group.isPublic
 
-  const t = await getTranslations('friends')
   const tG = await getTranslations('groups')
 
   // Preview "apilado" (CLAUDE.md — avatares apilados): primeros miembros de
   // la lista ya cargada, mismo dato que el sidebar, solo tratamiento visual.
   const stackPreview = members.slice(0, 5)
 
+  // E-AVATAR-ICONS: sin icono elegido, el grupo sigue identificándose por la
+  // inicial de su nombre, como hasta ahora.
+  const GroupIcon = group.icon ? AVATAR_ICONS[group.icon] : undefined
+
   return (
     <main className="max-w-3xl mx-auto px-4 md:px-8 py-8 flex flex-col gap-8">
       {/* Group header — card "feature" (CLAUDE.md: gradiente + acento radial) */}
       <div
-        className="relative overflow-hidden rounded-bento-lg border p-5 flex items-start gap-4"
-        style={{ background: F0.surface, borderColor: F0.stroke }}
+        className="relative overflow-hidden rounded-bento-lg p-6 md:py-9 md:px-10 flex items-start gap-4"
+        style={{
+          // Fórmula literal del artboard: acento radial al 60 % en la esquina
+          // superior-izquierda (`120% 100% at 20% 10%`) sobre un lineal de
+          // 160deg que baja al fondo de página. El matiz sale del `coverColor`
+          // del grupo en vez de estar clavado en purple, que es lo que hace
+          // que dos grupos no salgan iguales.
+          background: `radial-gradient(120% 100% at 20% 10%, color-mix(in oklch, ${group.coverColor} 60%, transparent) 0%, transparent 55%), linear-gradient(160deg, color-mix(in oklch, ${group.coverColor} 35%, var(--surface-base)), var(--surface-base))`,
+        }}
       >
-        <div
-          className="absolute inset-0 pointer-events-none"
-          style={{
-            background: `radial-gradient(120% 100% at 15% 0%, color-mix(in oklch, ${group.coverColor} 60%, transparent) 0%, transparent 55%)`,
-          }}
-        />
         <div
           className="relative z-10 w-14 h-14 rounded-[16px_16px_16px_4px] flex-shrink-0 flex items-center justify-center font-display font-extrabold text-xl"
           style={{ background: group.coverColor, color: F0.onPink }}
         >
-          {group.name.slice(0, 1).toUpperCase()}
+          {GroupIcon ? (
+            <GroupIcon className="w-7 h-7" aria-hidden="true" />
+          ) : (
+            group.name.slice(0, 1).toUpperCase()
+          )}
         </div>
         <div className="relative z-10 flex-1 min-w-0">
           <div className="flex items-center gap-2 min-w-0 flex-wrap">
-            <h1 className="font-display text-2xl font-extrabold truncate" style={{ color: F0.text }}>
+            {/* Mismo criterio que ListDetail: el nombre del grupo es el
+                título de la pantalla y va al tipo del canvas, pero vive dentro
+                de la portada con el icono, no en una fila de título. */}
+            <h1 className="font-display text-[26px] md:text-[34px] font-extrabold tracking-tight truncate" style={{ color: F0.text }}>
               {group.name}
             </h1>
             {!group.isPublic && (
               <Badge
                 variant="muted"
-                className="flex-shrink-0 bg-transparent border-2 font-bold border-[oklch(32%_0.025_280)] text-[oklch(76%_0.02_280)]"
+                className="flex-shrink-0 bg-transparent border-2 font-bold border-surface-border text-text-secondary"
               >
                 {tG('privateBadge')}
               </Badge>
@@ -94,11 +106,11 @@ export default async function GroupPage({ params }: Props) {
                 {stackPreview.map((m, i) => m.user && (
                   <div
                     key={m.user.id}
-                    className="w-7 h-7 rounded-full flex items-center justify-center text-[10px] font-extrabold text-white"
+                    className="w-10 h-10 rounded-full flex items-center justify-center text-[11px] font-extrabold text-white"
                     style={{
                       background: `linear-gradient(135deg, ${m.user.avatarColor}, color-mix(in srgb, ${m.user.avatarColor} 55%, black))`,
-                      border: `2px solid ${F0.surface}`,
-                      marginLeft: i === 0 ? 0 : '-10px',
+                      border: `2px solid ${F0.bg}`,
+                      marginLeft: i === 0 ? 0 : '-12px',
                       zIndex: stackPreview.length - i,
                     }}
                   >
@@ -107,8 +119,12 @@ export default async function GroupPage({ params }: Props) {
                 ))}
               </div>
             )}
-            <p className="text-xs" style={{ color: F0.muted }}>
-              {members.length} {t('membersCount', { count: members.length })}
+            <p className="text-sm" style={{ color: F0.muted }}>
+              {/* La clave i18n ya incluye el número: pintarlo también aquí fuera
+                  daba el "1 1 miembros" visto en producción. Se usa la del
+                  namespace `groups`, que además tiene singular ("1 miembro"),
+                  en vez de la de `friends`, que siempre decía "miembros". */}
+              {tG('membersCount', { count: members.length })}
             </p>
           </div>
         </div>

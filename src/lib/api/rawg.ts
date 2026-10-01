@@ -4,7 +4,7 @@
 // Docs: https://api.rawg.io/docs/
 // ============================================================
 
-import { RAWG_EXCLUDE_NSFW_TAGS } from "@/lib/api/rawg-maps";
+import { RAWG_EXCLUDE_NSFW_TAGS, rawgDatesWindow } from "@/lib/api/rawg-maps";
 import { env } from "@/lib/env";
 
 // ── Internal types ────────────────────────────────────────────────────────────
@@ -23,6 +23,14 @@ export interface RawgGame {
   platforms?: { platform: { name: string } }[];
   developers?: { name: string }[];
   publishers?: { name: string }[];
+  // E-GAMES-STEAM: solo en el DETALLE (`/games/{id}`). Es la vía fiable para
+  // resolver el `appid` de Steam de un juego (enlace curado por RAWG) antes de
+  // caer al best-effort por nombre. Ver `steamAppIdFromRawgGame`.
+  stores?: {
+    id?: number;
+    url?: string;
+    store?: { id?: number; name?: string; slug?: string; domain?: string };
+  }[];
 }
 
 export interface RawgResponse {
@@ -67,6 +75,10 @@ export async function getPopularGames(page = 1): Promise<RawgResponse> {
     // E86: excluir tags NSFW también en la rama sin filtros (closes el hueco que
     // mostraba "...mega porn pack" en /discover games sin filtrar).
     exclude_tags: RAWG_EXCLUDE_NSFW_TAGS,
+    // E-GAMES-FUTURO: misma ventana que la rama con filtros — el catálogo de
+    // juegos no muestra fichas con fecha posterior a hoy, en ninguna de las dos
+    // rutas (si no, "sin filtros" y "con filtros" contarían catálogos distintos).
+    dates: rawgDatesWindow(null),
     page: String(page),
   });
 }

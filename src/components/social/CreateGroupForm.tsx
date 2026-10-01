@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { AvatarIconPicker } from '@/components/ui/AvatarIconPicker'
 import { useTranslations } from 'next-intl'
 import { KButton } from '@/components/ui/KButton'
 import { F0 } from '@/lib/design/f0-tokens'
@@ -21,7 +22,7 @@ interface CreateGroupFormProps {
 }
 
 const FIELD_CLASS =
-  'w-full rounded-2xl border-2 px-3 py-2.5 text-sm placeholder:opacity-60 resize-none focus:outline-none focus:ring-2 focus-visible:ring-[oklch(68%_0.24_350)]'
+  'w-full rounded-2xl border-2 px-3 py-2.5 text-sm placeholder:opacity-60 resize-none focus:outline-none focus:ring-2 focus-visible:ring-accent-pink'
 const FIELD_STYLE = { background: F0.surface2, borderColor: F0.stroke, color: F0.text }
 
 /**
@@ -34,6 +35,8 @@ export function CreateGroupForm({ onCreated, onCancel }: CreateGroupFormProps) {
   const [groupName, setGroupName] = useState('')
   const [groupDesc, setGroupDesc] = useState('')
   const [isPublic, setIsPublic] = useState(true)
+  // E-AVATAR-ICONS: icono del grupo, opcional (null → inicial del nombre).
+  const [icon, setIcon] = useState<string | null>(null)
   const [creating, setCreating] = useState(false)
   const [error, setError] = useState(false)
 
@@ -50,6 +53,7 @@ export function CreateGroupForm({ onCreated, onCancel }: CreateGroupFormProps) {
           name: groupName.trim(),
           description: groupDesc.trim() || undefined,
           is_public: isPublic,
+          icon,
         }),
       })
       const data = await res.json().catch(() => null)
@@ -61,6 +65,7 @@ export function CreateGroupForm({ onCreated, onCancel }: CreateGroupFormProps) {
       setGroupName('')
       setGroupDesc('')
       setIsPublic(true)
+      setIcon(null)
     } catch {
       setError(true)
     } finally {
@@ -93,6 +98,18 @@ export function CreateGroupForm({ onCreated, onCancel }: CreateGroupFormProps) {
         className={FIELD_CLASS}
         style={FIELD_STYLE}
       />
+      {/* Icono del grupo (E-AVATAR-ICONS) — opcional: sin elegir, el grupo se
+          identifica por la inicial de su nombre, como hasta ahora. */}
+      <div className="flex flex-col gap-1.5">
+        <span className="text-xs font-bold" style={{ color: F0.textSecondary }}>{tG('groupIcon')}</span>
+        <AvatarIconPicker
+          value={icon}
+          onChange={setIcon}
+          label={tG('groupIcon')}
+          noneLabel={tG('groupIconNone')}
+        />
+      </div>
+
       <div className="flex flex-col gap-1.5">
         <span className="text-xs font-bold" style={{ color: F0.textSecondary }}>{tG('visibility')}</span>
         <div

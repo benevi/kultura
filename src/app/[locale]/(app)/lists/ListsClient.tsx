@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { PageHeading } from '@/components/layout/PageHeading'
 import { useTranslations } from 'next-intl'
 import { ListCard } from '@/components/social/ListCard'
 import { CreateListModal } from '@/components/social/CreateListModal'
@@ -17,14 +18,16 @@ export function ListsClient({ lists }: Props) {
 
   return (
     <main className="max-w-5xl mx-auto px-4 md:px-8 py-8">
-      <div className="flex items-center justify-between gap-3 mb-8 flex-wrap">
-        <h1 className="font-display text-3xl font-extrabold text-text-primary">
-          {t('title')} <span aria-hidden="true">📋</span>
-        </h1>
-        <KButton variant="primary" size="sm" onClick={() => setShowModal(true)}>
-          {t('newList')}
-        </KButton>
-      </div>
+      <PageHeading
+        emoji="📋"
+        action={
+          <KButton variant="primary" size="sm" onClick={() => setShowModal(true)}>
+            {t('newList')}
+          </KButton>
+        }
+      >
+        {t('title')}
+      </PageHeading>
 
       {lists.length === 0 ? (
         <div className="bg-surface-default rounded-3xl p-10 text-center flex flex-col gap-2">

@@ -18,6 +18,7 @@ import { ReportButton } from '@/components/social/ReportButton'
 import { MediaRow } from '@/components/home/MediaRow'
 import { KButton } from '@/components/ui/KButton'
 import { Link } from '@/i18n/navigation'
+import { IconLibrary } from '@/components/icons'
 import type { DbFriendship } from '@/types/supabase'
 import { getTranslations } from 'next-intl/server'
 
@@ -45,7 +46,7 @@ export default async function ProfilePage({ params }: Props) {
   // Perfil del usuario visitado
   const { data: profileUser } = await supabase
     .from('users')
-    .select('id, username, avatar_color, avatar_initials, created_at, bio')
+    .select('*')
     .eq('username', username)
     .single()
 
@@ -114,6 +115,7 @@ export default async function ProfilePage({ params }: Props) {
             username={profileUser.username}
             avatarColor={profileUser.avatar_color}
             avatarInitials={profileUser.avatar_initials}
+            avatarIcon={profileUser.avatar_icon ?? null}
             createdAt={profileUser.created_at}
             bio={(profileUser as { bio?: string | null }).bio ?? null}
             isOwner={isOwnProfile}
@@ -157,7 +159,7 @@ export default async function ProfilePage({ params }: Props) {
       {/* Empty state cuando la biblioteca está vacía */}
       {!hasAnyContent && (
         <div className="flex flex-col items-center gap-3 py-16 text-center">
-          <span className="text-5xl">📚</span>
+          <IconLibrary className="w-12 h-12 text-text-tertiary" />
           <p className="font-bold" style={{ color: 'var(--text-primary)' }}>
             {isOwnProfile
               ? t('emptyOwn')

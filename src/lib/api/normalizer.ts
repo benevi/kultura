@@ -13,19 +13,26 @@ import {
   type TmdbProvidersResponse,
 } from "./tmdb";
 import type { JikanAnimeDetail, JikanMangaDetail } from "./jikan";
+import type { AniListMedia } from "./anilist";
+import { toAniListRef } from "./anilist";
 import type { MangaDexManga } from "./mangadex";
 import { extractMangaCover } from "./mangadex";
+import { pickLocalizedText } from "./locale";
 import type { OpenLibraryDoc } from "./openlibrary";
 import { openLibraryCover } from "./openlibrary";
+import { pickBookSubjects } from "./openlibrary-subjects";
+import type { GoogleBooksVolume } from "./googlebooks";
+import { googleBooksCover } from "./googlebooks";
 import type { RawgGame } from "./rawg";
 import type { ComicVineIssue } from "@/types/media";
 
 // ── Provider helper ───────────────────────────────────────────────────────────
 
 function extractProviders(
-  providersResp: TmdbProvidersResponse | undefined
+  providersResp: TmdbProvidersResponse | undefined,
+  region = "ES"
 ): StreamingProvider[] | undefined {
-  const es = providersResp?.results?.["ES"];
+  const es = providersResp?.results?.[region];
   if (!es) return undefined;
   const all: StreamingProvider[] = [];
   (["flatrate", "rent", "buy"] as const).forEach((type) => {
@@ -45,7 +52,32 @@ function extractProviders(
 function extractYear(dateStr: string | null | undefined): number | undefined {
   if (!dateStr) return undefined;
   const match = dateStr.match(/^(\d{4})/);
-  return match ? parseInt(match[1], 10) : undefined;
+  return sanitizeYear(match ? parseInt(match[1], 10) : undefined);
+}
+
+/**
+ * Un año que no es un año se descarta aquí, en el borde (E-CARD-ANO-CERO).
+ *
+ * Visto en Descubrir → Libros: *The War of the Worlds* y *The Invisible Man*
+ * salían fechadas en **0**. Open Library sirve `first_publish_year: 0` en
+ * fichas con el dato sin rellenar, y ese cero viajaba intacto hasta la card.
+ *
+ * El cero es además el peor valor posible para React: `{item.year && <p/>}`
+ * evalúa a `0`, y React pinta el número suelto como texto —fuera del `<p>`, sin
+ * sus estilos—. Por eso no basta con blindar la vista: el dato se limpia en el
+ * origen y las vistas se blindan igual (ternario en vez de `&&`), que es
+ * defensa en profundidad y no redundancia.
+ *
+ * La ventana es deliberadamente ancha: el catálogo tiene obras del siglo I
+ * a. C. en adelante, así que solo se descarta lo que no puede ser una fecha de
+ * publicación — 0, negativos y lo que caiga más allá del año que viene.
+ */
+export function sanitizeYear(year: number | null | undefined): number | undefined {
+  if (year === null || year === undefined) return undefined;
+  if (!Number.isFinite(year)) return undefined;
+  if (year <= 0) return undefined;
+  if (year > new Date().getUTCFullYear() + 1) return undefined;
+  return year;
 }
 
 // ── Normalizers ───────────────────────────────────────────────────────────────
@@ -143,7 +175,7 @@ export function normalizeAnime(raw: JikanAnimeDetail): MediaItem {
         ? raw.title
         : undefined,
     poster: raw.images?.jpg?.large_image_url || undefined,
-    year: raw.year ?? undefined,
+    year: sanitizeYear(raw.year),
     synopsis: raw.synopsis ?? undefined,
     genres: raw.genres?.map((g) => g.name),
     rating: raw.score ?? undefined,
@@ -158,6 +190,56 @@ export function normalizeAnime(raw: JikanAnimeDetail): MediaItem {
   };
 }
 
+/** Limpia el HTML básico (`<br>`, entidades) que AniList puede dejar en
+ * `description` incluso pidiendo `asHtml: false`. `null`/vacío → undefined
+ * (nunca cadena vacía, para que el resto del código trate "sin sinopsis" de
+ * forma uniforme). */
+function stripAniListHtml(html: string | null): string | undefined {
+  if (!html) return undefined;
+  const text = html
+    .replace(/<br\s*\/?>/gi, "\n")
+    .replace(/<\/?[^>]+>/g, "")
+    .replace(/&nbsp;/g, " ")
+    .replace(/&amp;/g, "&")
+    .replace(/&#39;/g, "'")
+    .replace(/&quot;/g, '"')
+    .trim();
+  return text.length > 0 ? text : undefined;
+}
+
+/**
+ * AniList → MediaItem (E-ANIME-SOURCE). `externalId` lleva el prefijo `al-`
+ * (`toAniListRef`) para no colisionar con bibliotecas guardadas cuando anime
+ * venía de Jikan (`mal_id`, entero plano) — mismo mecanismo que
+ * `normalizeMangaDex` frente a los ids numéricos legacy de Jikan en manga.
+ */
+export function normalizeAniListAnime(raw: AniListMedia): MediaItem {
+  const externalId = toAniListRef(raw.id);
+  const title = raw.title.english ?? raw.title.romaji ?? raw.title.native ?? "Unknown";
+
+  return {
+    id: `anime_${externalId}`,
+    externalId,
+    type: "anime",
+    title,
+    originalTitle:
+      raw.title.romaji && raw.title.romaji !== title ? raw.title.romaji : undefined,
+    poster: raw.coverImage?.extraLarge || raw.coverImage?.large || undefined,
+    year: sanitizeYear(raw.seasonYear ?? raw.startDate?.year),
+    synopsis: stripAniListHtml(raw.description),
+    genres: raw.genres?.length ? raw.genres : undefined,
+    rating: raw.averageScore != null ? raw.averageScore / 10 : undefined,
+    ratingSource: "AniList",
+    trailerKey: raw.trailer?.site === "youtube" ? raw.trailer.id : undefined,
+    metadata: {
+      episodes: raw.episodes ?? undefined,
+      status: raw.status,
+      studio: raw.studios?.nodes?.[0]?.name ?? undefined,
+      source: raw.source ?? undefined,
+    },
+  };
+}
+
 export function normalizeMangaJikan(raw: JikanMangaDetail): MediaItem {
   const externalId = String(raw.mal_id);
 
@@ -167,7 +249,7 @@ export function normalizeMangaJikan(raw: JikanMangaDetail): MediaItem {
     type: "manga",
     title: raw.title,
     poster: raw.images?.jpg?.large_image_url || undefined,
-    year: raw.published?.prop?.from?.year ?? undefined,
+    year: sanitizeYear(raw.published?.prop?.from?.year),
     synopsis: raw.synopsis ?? undefined,
     genres: raw.genres?.map((g) => g.name),
     rating: raw.score ?? undefined,
@@ -181,27 +263,31 @@ export function normalizeMangaJikan(raw: JikanMangaDetail): MediaItem {
   };
 }
 
-export function normalizeMangaDex(raw: MangaDexManga): MediaItem {
+/**
+ * MangaDex → MediaItem. `locale` (E-MANGADEX-LOCALE): idioma activo de la app.
+ *
+ * MangaDex entrega `title`, `description` y los nombres de tag como
+ * diccionarios `{ código: texto }`. Antes se leía SIEMPRE `["en"]`, así que un
+ * usuario en español veía título y sinopsis en inglés incluso cuando había
+ * versión española. Ahora se resuelven con `pickLocalizedText`, cuya cadena de
+ * fallback (idioma activo → inglés → romanización → primer valor) garantiza que
+ * nunca se pierde el dato por falta de traducción.
+ */
+export function normalizeMangaDex(
+  raw: MangaDexManga,
+  locale?: string | null
+): MediaItem {
   const externalId = raw.id;
   const attrs = raw.attributes;
 
-  // Title: prefer English, then romanized, then first available
-  const title =
-    attrs.title["en"] ??
-    attrs.title["ja-ro"] ??
-    Object.values(attrs.title)[0] ??
-    "Unknown";
+  const title = pickLocalizedText(attrs.title, locale) ?? "Unknown";
 
-  // Synopsis: prefer English
-  const synopsis =
-    attrs.description["en"] ??
-    Object.values(attrs.description)[0] ??
-    undefined;
+  const synopsis = pickLocalizedText(attrs.description, locale);
 
-  // Tags that are genre group
+  // Tags del grupo "genre", con el nombre en el idioma activo si existe.
   const genres = attrs.tags
     .filter((t) => t.attributes.group === "genre")
-    .map((t) => t.attributes.name["en"] ?? Object.values(t.attributes.name)[0])
+    .map((t) => pickLocalizedText(t.attributes.name, locale))
     .filter((name): name is string => Boolean(name));
 
   const poster = extractMangaCover(raw);
@@ -212,17 +298,77 @@ export function normalizeMangaDex(raw: MangaDexManga): MediaItem {
     type: "manga",
     title,
     poster,
-    year: attrs.year ?? undefined,
+    year: sanitizeYear(attrs.year),
     synopsis,
     genres: genres.length > 0 ? genres : undefined,
     metadata: {
       status: attrs.status,
       lastChapter: attrs.lastChapter ?? undefined,
       lastVolume: attrs.lastVolume ?? undefined,
+      // `volumes` numérico (mismo campo que normalizeMangaJikan) para que el
+      // post-filtro compartido `filterByMinVolumes` (jikan-maps.ts) funcione
+      // igual sea cual sea la fuente. MangaDex entrega `lastVolume` como
+      // STRING (o null) — se parsea, y se descarta si no es un número real.
+      volumes: attrs.lastVolume ? parseVolumeNumber(attrs.lastVolume) : undefined,
     },
   };
 }
 
+function parseVolumeNumber(raw: string): number | undefined {
+  const n = parseInt(raw, 10);
+  return Number.isFinite(n) ? n : undefined;
+}
+
+/**
+ * Google Books → MediaItem (E-BOOKS-GOOGLE). Fuente principal de libros.
+ *
+ * Notas de shape (todos los campos de `volumeInfo` son opcionales en la API):
+ *  - `title` puede faltar en volúmenes basura → "Unknown" (el grid nunca pinta
+ *    una card sin título).
+ *  - `publishedDate` viene como "2003" o "2003-05-01" → se extrae el año.
+ *  - `averageRating` es 0-5 → se normaliza a 0-10 como el resto de MediaItem
+ *    (RAWG hace lo mismo). `ratingsCount` viaja en metadata.
+ *  - `description` es la sinopsis (Open Library no la traía en el listado: esto
+ *    es parte del motivo de la vuelta a Google Books).
+ */
+export function normalizeBookGoogle(raw: GoogleBooksVolume): MediaItem {
+  const externalId = raw.id;
+  const info = raw.volumeInfo ?? {};
+
+  const year = extractYear(info.publishedDate);
+  const rating =
+    typeof info.averageRating === "number" && info.averageRating > 0
+      ? info.averageRating * 2
+      : undefined;
+
+  return {
+    id: `book_${externalId}`,
+    externalId,
+    type: "book",
+    title: info.title ?? "Unknown",
+    poster: googleBooksCover(info.imageLinks),
+    year,
+    synopsis: info.description ?? undefined,
+    genres: info.categories?.slice(0, 5),
+    rating,
+    ratingSource: rating !== undefined ? "Google Books" : undefined,
+    metadata: {
+      authors: info.authors ?? [],
+      publisher: info.publisher,
+      language: info.language,
+      pageCount: info.pageCount,
+      ratingsCount: info.ratingsCount,
+      subtitle: info.subtitle,
+    },
+  };
+}
+
+/**
+ * Open Library → MediaItem (E-BOOKS-HIBRIDO).
+ *
+ * Fuente del CATÁLOGO de libros y del buscador. La ficha se completa después
+ * con Google Books (`enrichBookWithGoogle`), que gana en portada y sinopsis.
+ */
 export function normalizeBookOpenLibrary(raw: OpenLibraryDoc): MediaItem {
   // key is "/works/OL7353617W" — use the path as externalId
   const externalId = raw.key.replace(/^\/works\//, "");
@@ -235,13 +381,21 @@ export function normalizeBookOpenLibrary(raw: OpenLibraryDoc): MediaItem {
     type: "book",
     title: raw.title,
     poster,
-    year: raw.first_publish_year,
-    genres: raw.subject?.slice(0, 5),
+    year: sanitizeYear(raw.first_publish_year),
+    // E-BOOKS-SUBJ: `subject` es texto libre y mezcla géneros con lugares y
+    // metadatos de archivo. Quedarse con los cinco PRIMEROS dejaba fuera los
+    // géneros de verdad → match 0% en todos los libros y chips como "Beaches"
+    // en una novela romántica.
+    genres: pickBookSubjects(raw.subject),
     // rating: undefined (valoración de libros oculta)
     metadata: {
       authors: raw.author_name ?? [],
       publisher: raw.publisher?.[0],
       language: raw.language?.[0],
+      // E-BOOKS-HIBRIDO: el ISBN viaja para poder puentear a Google Books en la
+      // ficha (portada y sinopsis) sin emparejar por título, que es ambiguo
+      // entre ediciones.
+      isbn: raw.isbn ?? [],
     },
   };
 }

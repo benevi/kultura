@@ -9,7 +9,6 @@ interface GenreNewsData {
   movies: MediaItem[]
   tv: MediaItem[]
   genres: string[]
-  matchScores?: Record<string, number>
 }
 
 export function GenreNews() {
@@ -49,17 +48,13 @@ export function GenreNews() {
 
   const genres = data.genres.slice(0, 3)
   const noGenres = genres.length === 0
-  const matchScores = data.matchScores ?? {}
 
-  // F3a/F3b: badge de match real — ausente en el Map/objeto = sin badge, no un
-  // número decorativo. `matchScores[item.id]` es undefined cuando no hay señal.
   const toRowItem = (item: MediaItem) => ({
     mediaId: item.id,
     title: item.title,
     poster: item.poster,
     type: item.type,
     year: item.year,
-    matchScore: matchScores[item.id],
   })
 
   if (noGenres) {

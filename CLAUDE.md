@@ -16,6 +16,31 @@ memoria de una conversación concreta y saber en todo momento cómo actuar.
 - **Verificación mínima antes de cada push**: `npx tsc --noEmit` limpio +
   los tests unitarios directamente relacionados con los archivos tocados
   en verde. No hace falta más para cada commit intermedio.
+- **Un test unitario sobre la query de un proveedor NO la valida.** Fija que
+  el código construye lo que yo supuse, no que la API lo acepte — y el proxy
+  de estas sesiones bloquea casi todos los proveedores, así que esa mitad no
+  se puede comprobar desde aquí. Pasó con E-BOOKS-RANGO: los tests fijaban
+  `first_publish_year:[* TO 2026]` en verde mientras Open Library tumbaba esa
+  query en producción. Cuando se cambia la FORMA de una query (no solo un
+  valor), decirlo explícitamente al pedir la verificación en preview, en vez
+  de dar el tema por cerrado con los tests en verde.
+- **Antes de dar un fallo por diagnosticado, mirar el LOG, no solo el
+  síntoma.** El visor de Vercel está en `vercel.com/<team>/<proyecto>/logs`, y
+  el diagnóstico útil va dentro de `message` desde `1fd9606`. Si no tengo
+  acceso al log, decir que el diagnóstico es una hipótesis, no un hecho.
+- **Una correlación no es un mecanismo. Aislar la variable ANTES de pushear.**
+  Con el catálogo de libros caído encadené DOS arreglos equivocados: deduje la
+  causa de "falla sin filtro de año, funciona con década" y pusheé; falló; volví
+  a deducir y volví a pushear; falló otra vez. La correlación era correcta las
+  dos veces, el mecanismo no. Lo resolvió una tabla de seis peticiones a la API
+  viva cambiando UN parámetro cada vez, que reveló que el culpable era un campo
+  (`isbn`) que no aparecía en ninguna de mis dos teorías.
+  **El proxy de estas sesiones bloquea a los proveedores, pero el usuario tiene
+  navegador**: construir las URLs exactas, pedirle que las abra y decir qué
+  significa cada resultado. Cuesta una ronda y ahorra varios pushes a ciegas.
+- **Un test de regresión que no se ha visto FALLAR no prueba nada.** Comentar
+  el arreglo, comprobar que el test se pone rojo, restaurarlo. Son treinta
+  segundos y es la diferencia entre fijar el bug y fijar la suposición.
 - **Máximo paralelismo cuando se pida** ("usa agentes en paralelo", "usa
   todo lo que tengas a tu disposición", etc.): lanzar varios `Agent` en
   paralelo con `isolation: "worktree"`, uno por área de trabajo
@@ -43,6 +68,14 @@ memoria de una conversación concreta y saber en todo momento cómo actuar.
 - **No fusionar/mergear la PR sin autorización explícita y fresca del
   usuario** para esa PR en concreto — una aprobación anterior no vale
   automáticamente para el siguiente push.
+- **Si la app cae entera con `ERR_NAME_NOT_RESOLVED` contra
+  `*.supabase.co`, sospechar PRIMERO del proyecto pausado**, no del código.
+  El plan gratuito de Supabase pausa el proyecto tras unos días sin
+  actividad y deja de publicar su DNS; el síntoma es exactamente ese y no
+  lo provoca ningún despliegue. Se resuelve con *Restore* en el panel.
+  Mitigación en el repo: cron diario a `/api/health` (E-KEEPALIVE, ver
+  abajo). Mitigación de verdad para producción: plan de pago, que no
+  auto-pausa.
 
 ---
 
@@ -110,7 +143,11 @@ Colores "on-color" (texto sobre fondo sólido vivo, no blanco/negro puro):
   "outline" = transparente + `border:2px solid var(--stroke)`.
 - **Botones pill**: primario = fondo pink + texto on-pink, `font-weight:800`.
   Secundario = borde `2px solid var(--stroke)`, `font-weight:700`,
-  transparente.
+  transparente. **El canvas lo confirma sin ambigüedad** (E-BOTON-PINK): los
+  13 pills de ACCIÓN de las 17 pantallas son pink, sin excepción. Los pills
+  lime que hay en el canvas NO son botones: son los badges de match, retirados
+  de la UI (E-MATCH-SIN-BADGE). Contarlos como botones hacía parecer que el
+  criterio estaba empatado 14-13 y no lo está.
 - **Posters / cards sin imagen real**: gradiente de dos paradas
   `linear-gradient(150–160deg, oklch(L1% C1 H), oklch(L2% C2 H))` con el
   mismo matiz (H) en ambas paradas y L2/C2 más bajos (más oscuro/apagado).
@@ -119,11 +156,15 @@ Colores "on-color" (texto sobre fondo sólido vivo, no blanco/negro puro):
   `radial-gradient` de acento en la esquina superior-izquierda
   (`120% 100% at 20% 10%`, color al 55-60% de opacidad, difuminando a
   transparente a 55%).
-- **Badge de match**: pill `--lime` + texto on-lime, `font-weight:800`.
-  Versión "colgante" (esquina de poster, MediaDetail): offset
+- **Badge colgante (pegatina)**: pill `--lime` + texto on-lime,
+  `font-weight:800`. Versión "colgante" (esquina de poster): offset
   `top:-14px; left:-14px`, `rotate(-8deg)`,
   `box-shadow:4px 4px 0 rgba(0,0,0,.4)` — sombra dura tipo pegatina, no
-  blur.
+  blur. **E-MATCH-SIN-BADGE:** nació como "badge de match" y ya NO se usa
+  para porcentajes de afinidad (retirados de toda la UI a petición del
+  usuario). El primitivo sigue vivo para etiquetas de texto real
+  ("Continuando" en el hero de Inicio, "7 formatos culturales" en la
+  landing). No reintroducir un `%` aquí sin decisión expresa.
 - **Rotación de cards**: en grids tipo bento, las cards destacadas llevan
   una rotación sutil (`-1.2deg` / `1deg`) — no todo el grid, solo las
   piezas grandes, y alternando signo.
@@ -162,8 +203,15 @@ inventar uno.
   vive fuera del repo, en el scratchpad de la sesión que lo creó. Si se
   necesita regenerar o ampliar el set de pantallas, reconstruir el
   generador a partir de este documento y de los tres `.dc.html` de F0
-  (extraerlos del canvas "Kultura Editorial" con el helper del skill de
-  diseño), no desde memoria.
+  (extraerlos del canvas "Kultura Editorial"), no desde memoria.
+- **Cómo sacar el HTML literal de un artboard** (no hace falta ningún
+  helper ni mirar el canvas a ojo): leer el artefacto con la herramienta de
+  Artifact —que lo guarda entero en disco—, y de ese archivo extraer el
+  `<script id="appifact-doc">`, que es un JSON con
+  `content.files["<Pantalla>.dc.html"]`. Ahí está el mockup con sus valores
+  exactos (radios, OKLCH, sombras, paddings). Son 17 artboards + `canvas.json`.
+  Vale la pena: el artboard de Login traía tres cosas que el código no tenía y
+  que no se habrían adivinado (sombra dura, encabezado, cambio de modo al pie).
 
 ## Arbol de decisión: "¿Dudo de cómo diseñar/codificar algo?"
 
@@ -306,23 +354,498 @@ con una paleta hex antigua.
 - **Home, Discover y MediaDetail** ya tienen el acabado visual literal de
   F0 (hero con badge colgante, bento con rotación + acento radial, layout
   de dos columnas con badge colgante en MediaDetail).
+- **Landing**: reducida a DOS bloques (hero + features) y con PORTADAS
+  REALES del catálogo en vez de bloques de color
+  (E-LANDING-SHOWCASE). Patrón nuevo, reutilizable en cualquier pantalla
+  pública que quiera enseñar catálogo:
+  - `src/lib/landing/showcase.ts` resuelve la muestra reusando
+    `fetchAggregateData` (el modo "all" de Descubrir: fan-out a las 7
+    familias, normalizado, NSFW filtrado, tolerante a que una familia
+    falle). `pickShowcase` pone primero un item de cada tipo para que el
+    collage no salga con tres películas.
+  - `/[locale]` se renderiza on-demand, así que la muestra va envuelta en
+    `unstable_cache` (un día) con presupuesto de tiempo duro. Una muestra
+    corta LANZA a propósito: `unstable_cache` no guarda rechazos, así un
+    hipo de un proveedor no congela la landing sin imágenes 24 h.
+  - `src/components/landing/PosterTile.tsx` es el primitivo de portada
+    (imagen con respaldo de gradiente DETRÁS, así que un 404 deja color y
+    no un hueco). **Ninguna pantalla debe depender de que haya
+    portadas**: sin muestra, cada pieza cae a su versión de gradiente,
+    y por eso los huecos van dentro de `<Suspense>` con esa versión como
+    fallback (`ShowcaseSlots`) — el primer pintado no espera a ningún
+    proveedor.
+  - Las portadas se enseñan SOLO en el hero (collage en escritorio, tira
+    en móvil). Las tarjetas de features llevan únicamente su icono
+    centrado: las miniaturas que hubo ahí competían con el collage y
+    dejaban la tarjeta abarrotada.
+  - El hero tiene UN solo CTA. El secundario era un ancla a `#features`
+    que, con la landing en dos bloques, movía la página unos píxeles; y
+    el catálogo no vale de destino porque todo `(app)` redirige a login
+    sin sesión.
 
-**Pendiente:** las 14 pantallas restantes (Landing, Login, Library,
-Search, Friends, Groups, GroupDetail, Chat, Notifications, Profile,
-Lists, ListDetail, Settings, Suggestions) heredan bien los colores vía
-custom properties pero no tienen todavía el acabado F0 específico de
-cada una (formas, sombras duras, chips colgantes, etc. — ver "Principio
-de extensión a pantallas nuevas" arriba). Migrar con el mismo patrón:
-un agente por pantalla o grupo de pantallas afines, siguiendo las
-instrucciones operativas de la cabecera de este documento.
+- **Login** con el acabado literal de su artboard (E-LOGIN-F0). Cuatro
+  cosas que vinieron del mockup y no estaban:
+  - **Tarjeta**: `--surface` sólido, radio 32px (`rounded-bento-xl`, token
+    nuevo: el canvas usa 32px cuatro veces) y la SOMBRA DURA
+    `10px 10px 0 var(--surface-2)`. Antes tenía gradiente radial purple +
+    borde: el acento radial es de las cards "feature" del bento, y aquí la
+    separación la da la sombra, no un `border`.
+  - **Encabezado display 800 + subtítulo muted** antes de los campos. La
+    tarjeta se presenta; no empieza en frío con el formulario.
+  - **El cambio de modo va AL PIE** ("¿No tienes cuenta? Regístrate"), no en
+    dos pestañas arriba — el artboard no tiene pestañas, y con el encabezado
+    nuevo competían por el mismo sitio. Hay un test que fija que registrarse
+    sigue siendo alcanzable desde la pantalla de entrar.
+  - **`KInput` es ahora el campo de F0** y eso migra de paso Ajustes y el modal
+    de biblioteca: caja rellena de `--surface-2` SIN borde, radio 14px,
+    padding 15/18, 15px; etiqueta 13px/700 muted; foco con el anillo pink del
+    canvas. Antes era una píldora (999px) con borde: el radio de píldora es de
+    botones y chips, en F0 ningún input lo lleva.
+
+- **Encabezado de página unificado** (E-PAGE-HEADING). El canvas encabeza
+  TODAS las pantallas autenticadas igual: `<h1>` display **42px peso 700** con
+  un emoji al final ("Tus listas 📋", "Grupos 🎉", "Ajustes ⚙️") y, opcional, la
+  acción primaria como pill pink a su derecha. En el código cada pantalla se lo
+  montaba por su cuenta y **ninguna coincidía**: `text-4xl tracking-wide`,
+  `text-3xl font-extrabold`, `text-2xl md:text-3xl`… nueve tamaños para el
+  mismo elemento. `src/components/layout/PageHeading.tsx` es ahora el único
+  sitio donde se decide. Dos cosas:
+  - **El emoji va APARTE del texto traducido**, con `aria-hidden`: es
+    decoración, no contenido. Así no ensucia el nombre accesible de la pantalla
+    ni hay que repetirlo en cada idioma. Hay test.
+  - **No lo usan las fichas de detalle** (ListDetail, GroupDetail): ahí el
+    título es el nombre del grupo o de la lista, y cada una lo encabeza a su
+    manera — ver E-DETALLE-ARTBOARD, que corrige lo que esta nota daba por
+    hecho (que las dos llevaban portada).
+
+- **`f0-tokens.ts` apunta a las custom properties, no a literales**
+  (E-F0-TOKENS-VAR). Nació como workaround en un worktree anterior al re-skin
+  OKLCH, cuando `globals.css` seguía en hex y no se podía tocar; su propia
+  cabecera decía que debía sustituirse cuando esa migración llegara. Llegó, y
+  tardó: trece archivos pintaban con literales clavados, inmunes a cualquier
+  cambio de token — la mezcla de paletas que este documento prohíbe. La
+  sustitución fue 1:1, así que no cambió un píxel. Para código NUEVO, preferir
+  las clases de Tailwind; este objeto es para los estilos en línea que ya
+  existen. En el mismo pase se cambiaron los cinco `[oklch(...)]` clavados en
+  `className` por sus tokens (`focus-visible:ring-accent-pink`, etc.).
+
+- **El foco es pink y los pills de acción también, hasta el último rincón**
+  (E-ACCION-PINK-RESTOS). Dos decisiones ya tomadas no habían llegado a toda
+  la app, y por el mismo motivo: el pase que las tomó cambió UN componente, y
+  los sitios que faltaban no pasaban por él.
+  - **El anillo de foco** se fijó en pink al migrar `KInput`
+    (E-LOGIN-F0: "la única sombra de foco que existe en las 17 pantallas"),
+    pero otros 24 sitios seguían enfocando en el verde de estados.
+  - **Tres pills de ACCIÓN escritos a mano** seguían en lime, porque
+    E-BOTON-PINK cambió `KButton` y estos no lo usan: "Aceptar" de una
+    invitación (Notificaciones), el botón de enviar del chat y el CTA del
+    estado vacío de una lista. El artboard de Chat zanja el que podía parecer
+    dudoso: su acción de enviar es un pill PINK, y el único lime de esa
+    pantalla es el gradiente de un avatar.
+  - **`accent-positive` sigue siendo el verde de ESTADOS**, así que los tres
+    `ring-2 ring-accent-positive` de "seleccionado" (AvatarIconPicker,
+    SettingsForm) se quedan: no son foco.
+  - **El guard es de FUENTE a propósito** (`tests/unit/design/focus-ring.test.ts`):
+    el modo de fallo es que alguien vuelva a escribir
+    `focus:ring-accent-positive` en un componente nuevo, y eso no lo caza un
+    test de render porque jsdom no aplica la hoja de Tailwind.
+  - **Lección de método, la misma dos veces:** migrar el componente
+    compartido NO termina la migración. Al tomar una decisión de este tipo,
+    grepear el token viejo en todo el árbol antes de darla por aplicada.
+
+- **Las dos fichas de detalle NO se parecen, y una no lleva portada**
+  (E-DETALLE-ARTBOARD). Deducir un artboard del otro fue exactamente el error
+  de la nota anterior de E-PAGE-HEADING.
+  - **GroupDetail SÍ tiene portada**: radio 28px, SIN borde, y el fondo en DOS
+    capas — acento radial al 60 % en `120% 100% at 20% 10%` sobre un lineal de
+    `160deg` que baja al fondo de página. El matiz sale del `coverColor` del
+    grupo (el artboard lo clava en purple porque solo dibuja un grupo); así dos
+    grupos no salen iguales. Padding 36/40, h1 peso **800**, meta 14px, pila de
+    miembros a 40px con solape -12px y borde contra `--bg`, no contra
+    `--surface`: la portada ya no es superficie plana.
+  - **ListDetail NO tiene portada**: es una cabecera limpia con h1 a **38px**
+    (los 42 son de `PageHeading`, donde el título va solo en su fila; aquí
+    convive con los avatares y la acción), pila a -10px, meta 13px y gap de
+    20px entre cards.
+  - **La acción primaria de ListDetail no existía.** El artboard pinta
+    "+ Añadir título" a la derecha del título; en el código solo se llegaba a
+    ella desde el estado vacío, así que con la lista ya con títulos no había
+    forma de añadir otro desde esa pantalla. Reusa la clave `addItem`, que ya
+    decía eso. El "+" va `aria-hidden`, igual que el emoji de `PageHeading`.
+
+**Pendiente:** el acabado F0 de las pantallas que aún no se han mirado contra
+su artboard una a una (sombras duras, chips colgantes, rotaciones de card —
+ver "Principio de extensión a pantallas nuevas"). Ya comparten encabezado,
+campos (`KInput`), botones (`KButton`), foco, tokens y las dos fichas de
+detalle, que era lo transversal.
+**`Search` no cuenta**: desde E-DISCOVER-SEARCH-MERGE no tiene UI propia,
+es un redirect a Descubrir; la lista de 12 que había aquí la incluía por
+inercia.
+
+**Ojo con el set cerrado de radios de este documento:** los artboards usan
+18, 22, 24 y 28px, que NO están en él, y `tailwind.config.ts` ya tenía
+`bento` (22px) y `bento-lg` (28px) fuera de la lista. El canvas manda sobre
+el documento, así que el set de aquí arriba está desfasado — al migrar una
+pantalla, el valor bueno es el del artboard.
+
+- **Porcentaje de match retirado de la UI** (E-MATCH-SIN-BADGE). Ya no se
+  pinta en Descubrir, ficha, recomendaciones IA ni novedades de Inicio. Lo
+  que se quitó es la ETIQUETA, no el motor: `computeMatchScores` sigue
+  siendo el criterio con el que la IA elige cada recomendación
+  (`lib/claude/recommendations.ts`). Consecuencias a tener presentes:
+  - `/api/discover` y `/api/genre-news` ya NO calculan match: lo hacían
+    solo para el badge, y era una lectura de biblioteca + scoring en cada
+    petición de catálogo.
+  - La ficha SÍ sigue recibiendo `matchScore`, pero solo como compuerta de
+    "Por qué te lo recomendamos": sin él, esa sección le diría "coincide
+    con géneros que ya te gustan" a alguien de cuyos gustos no sabemos
+    nada. El texto ya no cita ningún porcentaje.
+  - **El prompt de las recomendaciones prohíbe citar el % en la frase.**
+    Quitar los badges no bastó: el modelo seguía escribiendo "match de
+    73%" en el `reason`, que es la misma cifra por la puerta de atrás. El
+    match sigue viajando en el prompt como criterio de elección; lo que no
+    puede es salir en el texto. **Desde E-AIREC-SIN-PROCESO hay además una
+    comprobación en código** (`reasonLeaksProcess`), porque la regla sola
+    no bastaba — ver el punto siguiente.
+
+- **La frase de la IA no puede delatar el proceso** (E-AIREC-SIN-PROCESO).
+  Visto en Inicio: *"Único cómic disponible en la selección actual."* y
+  *"Único juego disponible en la selección actual."*. El usuario no ve los
+  candidatos ni sabe que existe una shortlist; para él eso es la IA
+  confesando que no tenía nada mejor que ofrecer. La cadena NO estaba en el
+  código: la escribía el modelo. Cuatro cosas:
+  - **Regla en el prompt Y comprobación en código.** El prompt solo es una
+    petición, y ya sabíamos que no basta: con E-MATCH-SIN-BADGE se le
+    prohibió el `%` y siguió escribiéndolo. `reasonLeaksProcess` es la red,
+    y cubre las dos cosas (proceso y cifra).
+  - **Cae la FRASE, no la elección.** Un `reason` delator se descarta
+    poniendo `undefined`, y la card conserva el título que el modelo
+    eligió; la UI pinta entonces el porqué localizado, que es el camino que
+    ya existía para cuando el modelo no responde. Si cayera la pick entera,
+    el fallback serviría otro título y se perdería el criterio.
+  - **Se buscan FRASES, no palabras sueltas**, misma política
+    anti-falsos-positivos que el filtro NSFW: "disponible" a secas es
+    legítima ("disponible en streaming") y no dispara nada.
+  - **`\b` de JavaScript es ASCII.** `/\búnic[oa]\b/` sobre "única" NO casa
+    nunca, así que ese patrón nació muerto y habría sido otro placebo
+    silencioso. Lo cazó un test. Por eso el texto se normaliza (minúsculas,
+    sin diacríticos) ANTES de comparar, igual que en `comic-publishers.ts`.
+    Si se añade un patrón nuevo, escribirlo contra el texto YA normalizado.
+
+- **La frase de la IA va en español, sin anglicismos ni jerga del
+  mecanismo** (E-AIREC-SIN-JERGA). Visto en Inicio: *"...matching tu
+  perfil."* — dos fallos en tres palabras. Es E-MATCH-SIN-BADGE por otra
+  puerta: el modelo describiendo su cálculo en vez del título. Vive en el
+  mismo sitio que el punto anterior (`reasonLeaksProcess` +
+  regla de prompt) y hereda su mecánica: cae la frase, no la elección.
+  Tres cosas propias:
+  - **Las listas de jerga van POR IDIOMA, y no es simetría decorativa.** En
+    inglés *"it matches genres you already enjoy"* es la frase CORRECTA — la
+    que usa el propio respaldo localizado de la UI
+    (`mediaDetail.whyRecommendedText`) —, así que vetar "match" en EN
+    descartaría frases buenas. En español sí es anglicismo y se veta. Lo que
+    no cambia de idioma es nombrar el mecanismo: perfil, afinidad,
+    algoritmo, scoring.
+  - **"Puntuación" se queda SOLO en el prompt, sin patrón.** *"Con la mejor
+    puntuación de la crítica"* es una frase legítima sobre el título; un
+    patrón ahí descartaría frases buenas. Misma política
+    anti-falsos-positivos.
+  - **El tope del `reason` bajó a 100 caracteres** (era 140) y la UI dejó de
+    recortar — ver el punto siguiente.
+
+- **La frase de la IA en Inicio NO se recorta** (E-AIREC-SIN-RECORTE). El
+  `line-clamp-3` de `AiRecommendations` cortaba la tercera línea por la
+  MITAD de los glifos (visto en pantalla, no deducido: el preview no es
+  accesible desde estas sesiones y la utilidad de Tailwind SÍ se genera, así
+  que la causa exacta quedó sin aislar). En vez de adivinarla se eliminó el
+  modo de fallo: sin recorte, y el largo se controla en ORIGEN (el prompt
+  pide máx. 100 caracteres). Contrapartida asumida: una frase larga hace la
+  card algo más alta — preferible a una frase cortada a medio carácter. Si
+  se vuelve a meter un `line-clamp` aquí, vuelve el bug.
+
+- **Una portada rota deja COLOR, nunca el icono del navegador**
+  (E-CARD-PORTADA-404). Visto en Descubrir → Libros: las portadas de Open
+  Library dan 404 a menudo y `MediaCard` enseñaba el icono de imagen rota
+  **con el título en texto crudo**, justo encima del título de verdad que la
+  card ya pinta debajo. Dos cosas, y las dos hacen falta:
+  - **El gradiente va SIEMPRE y va PRIMERO en el DOM**, con la portada encima.
+    Es el mismo patrón que `PosterTile` ya usaba en la landing; `MediaCard` se
+    había quedado con el `poster ? <Image> : <gradiente>`, que no cubre el 404.
+  - **El `alt` de la portada va VACÍO** (`aria-hidden`), porque la imagen es
+    decorativa: el título va como texto en el `<h3>` de al lado. Con un `alt`
+    real, una portada rota lo escupía en pantalla y además lo duplicaba para
+    quien usa lector. Hay un test de que el título sigue siendo accesible.
+
+- **El cero no es un año, y React lo pinta** (E-CARD-ANO-CERO). Visto en
+  Descubrir → Libros: *The War of the Worlds* y *The Invisible Man* salían
+  fechadas en **0**. Open Library sirve `first_publish_year: 0` cuando el dato
+  está sin rellenar. Dos capas, y la segunda es una clase de bug, no un caso:
+  - **`sanitizeYear` en el normalizador** descarta 0, negativos, no-números y
+    lo que caiga más allá del año que viene. Se aplica a las cinco familias que
+    reciben el año como número crudo del proveedor (Open Library, MangaDex,
+    AniList y las dos de Jikan) y a `extractYear`. La ventana es ancha a
+    propósito: el catálogo tiene obras muy antiguas y recortarlas sería peor
+    que el bug.
+  - **`{año && <p/>}` evalúa a `0` y React pinta ese número suelto**, fuera del
+    `<p>` y sin sus estilos. No es un despiste de una pantalla: estaba en las
+    CUATRO que pintan año (`MediaCard`, `MediaRow`, `HeroSection`, `SearchBar`).
+    Todas usan ya un ternario. **Al pintar un número, nunca `&&`** — con
+    cadenas da igual, con números pinta el cero.
+
+- **El botón primario es PINK** (E-BOTON-PINK). `KButton` lo pintaba en
+  `accent-positive` (lime). Parecía una duda legítima —de los 27 pills del
+  canvas, 14 son lime— y **el recuento estaba mal**: todos los lime son badges
+  de match ("98% MATCH", "91%", "60%"…), que además ya no existen en la UI. De
+  los pills de ACCIÓN los 13 son pink: Enviar, Crear grupo, Empezar gratis,
+  Añadir título, Nueva lista, Entrar, Guardar, Enviar sugerencia. Dos cosas:
+  - **`accent-positive` NO desaparece**: sigue siendo el verde semántico de
+    ESTADOS (nav activa, chip de filtro activo, badge de biblioteca). Lo que
+    deja de ser es el color del botón.
+  - **Lección de método**: la pregunta parecía irresoluble por una categoría
+    mal trazada —contar como "botón" todo lo que tuviera forma de píldora—.
+    Antes de declarar que el canvas no zanja algo, mirar QUÉ es cada pieza.
+
+- **La página de libros tiene TAMAÑO, no "lo que quede"**
+  (E-BOOKS-PAGINA-FIJA). Visto en pantalla: una página de Descubrir → Libros
+  con CINCO libros y otra con la rejilla llena, con los mismos filtros. La
+  causa no era el filtro de portada: era que la ventana de 60 (E-BOOKS-VENTANA)
+  es un presupuesto FIJO con rendimiento VARIABLE, y la página enseñaba lo que
+  sobreviviera. Según la ordenación eso va de 5 a 40.
+  - **Se resuelve como el cómic** (E-COMIC-VENTANA), que es el mismo problema:
+    la página pide ventanas hasta juntar `OPEN_LIBRARY_PAGE_SIZE` (20) y para
+    en cuanto las tiene, con el presupuesto acotado a
+    `OPEN_LIBRARY_WINDOWS_PER_PAGE` (3). Con buen rendimiento gasta UNA
+    petición, igual que antes.
+  - **El conteo de páginas divide por la ZANCADA** (`OPEN_LIBRARY_PAGE_STRIDE`
+    = 60 × 3 = 180), no por la ventana ni por lo que se enseña: es lo que
+    determina dónde empieza la siguiente. La página N arranca en la ventana
+    `(N-1)×3+1`.
+  - **Para en seco con una ventana incompleta**: si el proveedor devuelve menos
+    de 60 docs no hay más detrás, y seguir pidiendo sería gastar peticiones en
+    vacío.
+  - Contrapartida asumida: una consulta con rendimiento malísimo gasta 3
+    peticiones y aun así puede quedarse corta. Es el lado correcto: el tope
+    existe para no encadenar peticiones sin fin.
+
+- **Un solo sistema de botón** (E-BOTON-UNICO). Convivían `KButton` y
+  `button.tsx` (shadcn). Lo decidieron los números, no el gusto: 33 archivos
+  usaban `KButton` y **dos** el shadcn, y de sus siete variantes solo se
+  usaban `ghost` y `primary`. Los dos archivos (`RecommendButton`,
+  `RecommendModal`) pasan a `KButton` —`ghost` → `secondary`, que es el pill
+  de borde de F0— y `button.tsx` se borra con su test.
+  - Eso deja sin consumidores el **rojo legado de shadcn**
+    (`--primary: 0 79% 51%`), que era el otro punto de deuda: solo lo usaba la
+    variante `default` de ese componente, que no usaba nadie. Fuera de
+    `globals.css`.
+  - El resto del bloque de variables shadcn (`--card`, `--popover`, `--border`…)
+    se queda: no estorba y no es este el pase para auditarlo entero.
+
+- **El catálogo no muestra fechas futuras** (E-CATALOGO-FUTURO). Regla
+  común a las 7 familias; la referencia vive en
+  `src/lib/api/catalog-window.ts` y cada proveedor la aplica con SU
+  operador nativo (`.lte` en TMDB, `startDate_lesser` en AniList, `dates`
+  en RAWG, `cover_date` en ComicVine, `first_publish_year` en Open
+  Library). Tres cosas que hay que respetar al tocarlo:
+  - **Excepción `estado=upcoming`** en series y anime: ahí el futuro es
+    justo lo que se pide. En `tv` la regla se INVIERTE — el límite va abajo
+    (`first_air_date.gte = hoy`), no arriba. Tres cosas se juntaron aquí y
+    conviene no deshacer ninguna por separado:
+    1. El tope superior no se aplica (con él, cero resultados siempre).
+    2. **Tampoco el suelo de votos** (E94) — E-UPCOMING-SIN-VOTOS: una
+       serie sin emitir no la ha votado nadie, así que exigirle 50 votos la
+       vaciaba igual. El filtro llevaba vacío desde julio de 2026 por esto,
+       no por el tope. Si se añade otro umbral de calidad a TMDB,
+       comprobar antes qué hace con `upcoming`.
+    3. **Hace falta el límite inferior de fecha** — E-UPCOMING-FECHA:
+       `with_status=1|2` es el estado de PRODUCCIÓN (Planned | In
+       Production), NO "aún no estrenada". Una serie de 1989 que sigue
+       rodándose lo cumple, y sin el `.gte` la primera página de
+       "Próximamente" salía con estrenos de 1989, 2021 y 2024. Contrapartida
+       asumida: las series anunciadas SIN fecha quedan fuera.
+  - **Rango que empieza en el futuro se respeta** sin recortar: recortarlo
+    daría una ventana invertida = catálogo vacío.
+  - **Libros: el rango solo viaja si el usuario filtró por año**
+    (E-BOOKS-RANGO). Sin filtro de año, un rango que abarca el corpus entero no
+    filtra nada, así que no se manda y el tope de futuro se aplica como
+    **post-filtro** (`dropFutureYears`), igual que en manga; la ventana de 60
+    absorbe el recorte. Con filtro de año el rango viaja en la consulta —ahí es
+    selectivo y mantiene las páginas llenas— y ya trae el tope puesto, así que
+    no se post-filtra: hacerlo vaciaría además el caso de un año futuro
+    explícito, que se respeta a propósito.
+
+    **Aviso: el rango NO era la causa del catálogo caído.** Lo diagnostiqué así
+    dos veces seguidas (primero el comodín `*`, luego el coste del rango ancho)
+    y las dos veces pusheé un arreglo que no arreglaba nada. La causa real está
+    en el punto siguiente.
+  - **Libros: el LISTADO nunca pide `isbn`** (E-BOOKS-ISBN). **Esta era la
+    causa real** de que Descubrir → Libros devolviera "No se pudo cargar el
+    contenido". Open Library sirve TODOS los ISBN de TODAS las ediciones de una
+    obra, y la consulta ancha del catálogo (`subject:"fiction"`) abre por los
+    clásicos — Frankenstein, Drácula, Dorian Gray — que acumulan miles de
+    ediciones. Pedir ese campo para 20-60 obras genera una respuesta que el
+    proveedor no llega a servir: corta la conexión, y en el log sale como
+    `TypeError: terminated · cause=SocketError: other side closed`, **no** como
+    un 4xx (por eso parecía una query rechazada y no lo era).
+
+    Medido contra la API viva, misma consulta y mismo `limit`: con `isbn` falla
+    con 60 **y con 20**; sin `isbn` responde con 60 aunque lleve `subject` y
+    `publisher`, que también son arrays grandes. Es ese campo, no el tamaño de
+    página ni el rango de años.
+
+    `LIST_FIELDS` (catálogo y buscador) va sin `isbn`; `DETAIL_FIELDS` (ficha)
+    lo lleva, y ahí es seguro porque se pide para UN solo documento. El ISBN
+    sigue haciendo falta para puentear a Google Books sin emparejar por título.
+    `openLibraryFetch` tiene además un timeout de 8 s: sin él, una conexión
+    cortada dejaba la función esperando y el log no decía nada útil.
+  - **Manga es la excepción técnica**: MangaDex solo acepta `year` como
+    igualdad, sin rango, así que ahí el tope es un post-filtro
+    (`dropFutureYears`) de tipo marginal — como el NSFW global, no cuenta
+    en `hasActivePostFilter`.
+  - **Cómic necesitó ventana ampliada** (E-COMIC-VENTANA). El tope no
+    rompió nada, pero DESTAPÓ que el filtro de editoriales se come el
+    grueso de lo reciente: sin tope, los 100 primeros por `cover_date:desc`
+    eran solicitaciones futuras de grandes editoriales americanas (que
+    sobreviven bien); con tope pasaron a ser los 100 más recientes ya
+    publicados, donde ComicVine está lleno de manga que el filtro descarta
+    → la página 1 se quedó en CINCO cómics. Ahora cada página mira hasta
+    3 ventanas de 100 y para en cuanto junta 20. Dos cosas que van juntas:
+    el presupuesto está acotado a propósito (ComicVine limita a ~200
+    peticiones/hora, y cada ventana cuesta 2: issues + volúmenes), y el
+    conteo de páginas divide por lo que la página CONSUME (300), no por lo
+    que enseña (20) — dividir por 20 anunciaba 15 veces más páginas de las
+    que existen.
+
+- **El catálogo de cómic es una LISTA BLANCA de editoriales**
+  (E-COMIC-ALLOWLIST). Vive en `src/lib/api/comic-publishers.ts`, no en
+  `comicvine.ts`. Antes eran dos listas NEGRAS (manga + adulto) y el
+  problema no era su contenido sino su forma: **por defecto aceptaban**,
+  así que una editorial no enumerada pasaba. La página 100 de Descubrir →
+  Cómics salía entera en manga, con hentai explícito ("ANGEL Club MEGA").
+  Cuatro cosas que hay que respetar:
+  - **La puerta deniega por defecto.** Solo entra el publisher que está en
+    `COMIC_PUBLISHERS`. Añadir el sello que se acaba de colar a una lista
+    negra es el patrón que falló: cada hueco se descubría en pantalla.
+    Contrapartida asumida: una editorial legítima que falte queda fuera
+    del catálogo — es el lado correcto en el que fallar.
+  - **Las listas negras siguen vivas como VETO posterior, y no es
+    redundancia.** Resuelven los sellos que heredan el nombre de una
+    editorial permitida: "Dark Horse Manga" dentro de "Dark Horse",
+    "Glénat Manga" dentro de "Glénat", "Fantagraphics Eros" dentro de
+    "Fantagraphics". El orden es lista blanca → veto; invertirlo los deja
+    pasar.
+  - **El match es por PALABRAS COMPLETAS, no por substring.** Con
+    substring crudo la entrada "DC" casa con "Hardcover" ("har-DC-over") y
+    abre la lista blanca de par en par. Se normaliza (minúsculas, sin
+    diacríticos, puntuación a espacios) y se compara con espacios a los
+    lados. Misma política anti-falsos-positivos que el filtro NSFW.
+  - **El filtro NSFW global NO cubre al cómic.** `normalizeComic` no
+    asigna `genres`, así que de ese filtro solo aplica la rama de
+    texto ES/EN sobre el título. La puerta de editoriales es la defensa
+    real; no contar con la otra.
+
+- **La editorial NO basta: hace falta un veto por SERIE**
+  (E-COMIC-SERIE-ADULTA). Medido en pantalla, no deducido: *Swinging Island
+  — A Taste of Freedom* es un álbum erótico que sale con el logo de
+  **Splitter** en la portada, la misma casa que publica *Der tönerne
+  Thron*, *Bob Morane* y *Rick Master*. Una editorial legítima publicando
+  una serie adulta bajo su propio nombre es un caso que **ninguna lista de
+  editoriales puede resolver**, porque la editorial es la misma a los dos
+  lados. Tres cosas:
+  - `BLOCKED_COMIC_VOLUMES` veta por nombre de SERIE, y `acceptsComicIssue`
+    aplica las dos puertas: editorial primero, serie después. El nombre sale
+    de `volume.name`, que ya viene en el `field_list`, así que no cuesta
+    una petición más.
+  - **Quitar la editorial era la alternativa y es peor**: se habría llevado
+    por delante la BD alemana legítima, y la siguiente editorial europea
+    haría lo mismo. Lo adulto aquí es la serie, no la casa.
+  - **Esta lista es enumerativa y no lo disimula.** Es el grano correcto,
+    no la solución estructural. La estructural sería pasarle el filtro NSFW
+    a la sinopsis larga (`description`) de ComicVine; está **pendiente de
+    medir el coste del campo**, porque pedirlo para 300 issues por página es
+    exactamente lo que tumbó el catálogo de libros (E-BOOKS-ISBN). Ojo: la
+    API de ComicVine exige clave, así que el truco de pasarle URLs al
+    usuario para medir desde su navegador NO sirve aquí.
+  - El manga de esa misma página resultó ser **también de Splitter**, así
+    que era el mismo agujero. Lo resuelve el punto siguiente, no el veto por
+    serie: una línea de manga es una categoría, no una serie, y enumerarla
+    no escala.
+
+- **El cómic tiene su propio techo de páginas** (E-COMIC-PROFUNDIDAD):
+  `COMIC_MAX_PAGES = 20`, por debajo del común `DISCOVER_MAX_PAGES = 100`.
+  Es la única familia cuya página N no lee la página N del proveedor sino
+  el offset `(N-1) × 300`, así que con el tope común la página 100 pedía a
+  partir del issue 29.700 por `cover_date:desc` — donde ya no hay catálogo
+  occidental y solo queda el fondo que la lista blanca descarta. Dos
+  matices:
+  - **El techo es del CATÁLOGO, no del buscador.** En búsqueda la página N
+    es el offset `(N-1) × 20`, la zancada normal, y el argumento de la
+    profundidad no aplica: buscar un cómic por su nombre y no encontrarlo
+    sería peor que el problema. Mismo criterio que el tope de fechas.
+  - **20 es un número estimado, no medido** contra la API viva (el proxy
+    de estas sesiones bloquea `comicvine.gamespot.com`). Si en preview la
+    página 20 sigue llegando llena, subirlo; si se vacía antes, bajarlo.
+
+- **El veto por concepto NO FUNCIONA, y sale manga en Cómics a propósito**
+  (E-COMIC-CONCEPTO). Verificado en preview: tras desplegarlo, los cuatro
+  mangas de Splitter (*I Wanna Be Your Girl*, *Is He the One?*, *Ascendance
+  of a Bookworm*, *Hana Ne Peut Pas Vivre Sans Moi*) **seguían saliendo**.
+  `concepts` no llega en el batch a `/volumes/`. Si alguien lee ese código
+  buscando qué protege el catálogo del manga: **nada lo protege**; trabajan
+  la lista blanca y el veto por serie.
+  - **La contrapartida está ACEPTADA, no pendiente** (decisión del usuario,
+    01/10/2026): sale manga europeo en Cómics y se queda así. Es un fallo de
+    categorización —el manga tiene su propia sección—, no de contenido: lo
+    adulto sí está cubierto. La alternativa era una lista blanca estricta que
+    se llevaba por delante a Splitter, Dargaud, Delcourt, Casterman, Soleil,
+    Panini y Egmont, o sea la BD europea entera. Pagar el catálogo por una
+    cuestión de estantería era mal cambio.
+  - **El código se queda porque falla ABIERTO y no cuesta nada**: sin
+    conceptos el issue pasa, el campo viaja en un batch que ya se hacía, y el
+    día que llegue empieza a trabajar solo. Hay un test que fija el
+    fallo-abierto: denegar sin dato vaciaría el catálogo entero.
+  - **Hipótesis de por qué no llega, SIN CONFIRMAR**: los endpoints de LISTA
+    de ComicVine no pueblan los campos agregados (`concepts`, `characters`,
+    `people`), que solo existen en el de DETALLE (`/volume/4050-{id}/`). Si
+    es así la vía se cae por coste: una petición de detalle por volumen
+    (20-60 por página) contra ~200/hora.
+  - **Cómo medirlo si se retoma**: una línea de log temporal en
+    `resolveVolumePublishers` y el visor de Vercel. El truco de construir
+    URLs y pedirle al usuario que las abra NO sirve aquí: la API exige clave.
+    Se intentó y se gastaron tres rondas en 404s y claves inválidas.
+  - **Lección que vale más que el filtro**: un filtro que falla abierto y no
+    funciona es indistinguible de uno que funciona si solo miras si la página
+    carga. Lo que hay que mirar es si el contenido DESAPARECE. Mismo patrón
+    que el keep-alive cacheado (E-KEEPALIVE): un placebo que devuelve 200.
+
+- **Keep-alive de Supabase** (E-KEEPALIVE). `/api/health` hace una consulta
+  real a la base (`profiles`, `head:true`) y `vercel.json` la llama con un
+  cron diario. Sirve además de endpoint para un monitor de caídas externo.
+  Tres cosas que NO hay que romper:
+  - `export const dynamic = "force-dynamic"` + `Cache-Control: no-store`.
+    Si la respuesta se cachea, el cron deja de tocar la base y el
+    keep-alive pasa a ser un placebo que devuelve 200 mientras el proyecto
+    se pausa igual. Hay un test que lo fija.
+  - Usa el cliente **admin**: así el chequeo no depende de RLS ni de que
+    haya sesión, y "hay error" significa de verdad "la base no responde".
+  - El detalle del error va al log, NUNCA a la respuesta pública.
+  - **Los crons de Vercel solo corren en producción**, no en preview.
+  - Esto MITIGA la pausa, no la garantiza: depende de que Supabase cuente
+    la petición como actividad (no documentado). Para producción, plan de
+    pago.
 
 **Deuda técnica por resolver:**
-- `KButton` y `button.tsx` (shadcn-style) conviven como dos sistemas de
-  botón distintos — decidir cuál se queda antes de seguir migrando
-  pantallas que usan el segundo.
-- Revisar si el rojo legado de shadcn (`--primary: 0 79% 51%` en
-  `globals.css`) sigue siendo visible en algún componente real; no se ha
-  tocado en este pase.
+- **`EXCLUDED_COMIC_CONCEPTS` es un placebo verificado** (E-COMIC-CONCEPTO):
+  el filtro está, los tests están, y no filtra nada porque el campo no llega.
+  Se conserva porque falla abierto y es gratis, pero NO contarlo como defensa
+  al razonar sobre el catálogo de cómics. Resolver o borrar cuando se mida de
+  verdad por qué `concepts` no viaja.
+- `books-maps.ts` quedó casi entero como código muerto tras el híbrido de
+  libros (E-BOOKS-HIBRIDO): solo siguen vivos `BOOKS_FORMATO` y
+  `BOOKS_PUBLISHER`, que alimentan opciones de la UI. El constructor de query
+  de Google Books y sus helpers ya no los importa nadie. **Sigue aquí a
+  propósito**: la condición para borrarlo es "cuando el híbrido esté validado
+  EN PRODUCCIÓN", y esta rama aún no se ha fusionado. Borrarlo antes quitaría
+  la vía de vuelta de código que todavía no ha corrido en producción.
 
 ## Flujo de trabajo recomendado para un nuevo sprint de diseño
 

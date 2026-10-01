@@ -10,6 +10,7 @@
 // ============================================================
 
 import { valoracionThreshold } from "@/lib/api/valoracion";
+import { todayIso } from "@/lib/api/catalog-window";
 import type { MediaItem } from "@/types/media";
 
 export type TmdbMediaType = "movie" | "tv";
@@ -238,12 +239,24 @@ export function buildTmdbDiscoverParams(
   mediaType: TmdbMediaType,
   filters: TmdbFilters = {}
 ): Record<string, string> {
+  // `estado=upcoming` (solo tv) pide justo lo que AÚN NO ha salido, y eso
+  // cambia DOS reglas del builder: el tope de fecha y el suelo de votos.
+  const wantsUpcoming = mediaType === "tv" && filters.status === "upcoming";
+
   const params: Record<string, string> = {
     sort_by: tmdbSortBy(mediaType, filters.sort),
-    // Suelo de votos (E94): descarta contenido con muy pocos votos. Mismo umbral
-    // ya validado en discoverByGenre (genre-news). Aplica a movie y tv.
-    "vote_count.gte": "50",
   };
+
+  // Suelo de votos (E94): descarta contenido con muy pocos votos. Mismo umbral
+  // ya validado en discoverByGenre (genre-news). Aplica a movie y tv.
+  //
+  // E-UPCOMING-SIN-VOTOS: NO para `estado=upcoming`. Una serie en "Planned" o
+  // "In Production" no se ha emitido, así que nadie la ha votado: exigirle 50
+  // votos deja el filtro SIEMPRE vacío, que es justo lo que pasaba desde que
+  // se añadió el suelo (E94, julio 2026). El orden por popularidad sigue
+  // funcionando ahí — TMDB la calcula con visitas, no con votos —, así que la
+  // primera página son los estrenos esperados de verdad, no ruido.
+  if (!wantsUpcoming) params["vote_count.gte"] = "50";
 
   // Género (listas distintas movie/tv; OR con coma).
   const genreTable = mediaType === "movie" ? TMDB_GENRE_MOVIE : TMDB_GENRE_TV;
@@ -264,14 +277,45 @@ export function buildTmdbDiscoverParams(
   }
 
   // Año / década → rango de fechas (campo según tipo).
+  const gteKey = mediaType === "movie" ? "primary_release_date.gte" : "first_air_date.gte";
+  const lteKey = mediaType === "movie" ? "primary_release_date.lte" : "first_air_date.lte";
   const yr = tmdbYearRange(filters.year);
   if (yr) {
-    if (mediaType === "movie") {
-      params["primary_release_date.gte"] = yr.gte;
-      params["primary_release_date.lte"] = yr.lte;
-    } else {
-      params["first_air_date.gte"] = yr.gte;
-      params["first_air_date.lte"] = yr.lte;
+    params[gteKey] = yr.gte;
+    params[lteKey] = yr.lte;
+  }
+
+  // E-CATALOGO-FUTURO: el catálogo no muestra estrenos que aún no han ocurrido.
+  // Sin tope, `sort_by=primary_release_date.desc` ("Más recientes") abre por lo
+  // que todavía no existe. Se acota SIEMPRE por arriba, haya o no filtro de año
+  // (elegir el año en curso no debe arrastrar los meses que faltan).
+  //
+  const iso = todayIso();
+
+  if (wantsUpcoming) {
+    // `estado=upcoming` le da la vuelta a la regla: aquí lo único que vale ES
+    // el futuro, así que el límite va ABAJO, no arriba.
+    //
+    // E-UPCOMING-FECHA: no basta con `with_status=1|2`. Ese campo es el estado
+    // de PRODUCCIÓN de TMDB (Planned | In Production), NO "todavía no se ha
+    // estrenado": una serie de 1989 que sigue rodándose —o con los metadatos
+    // flojos, que abunda— lo cumple igual. Verificado en preview: la primera
+    // página de "Próximamente" salía con estrenos de 1989, 2021 y 2024. Exigir
+    // que la fecha de estreno sea de HOY en adelante es lo que hace que la
+    // etiqueta diga la verdad.
+    //
+    // Contrapartida: las series anunciadas SIN fecha quedan fuera (un filtro de
+    // rango en TMDB no devuelve nulos). Es el precio de que la lista cumpla lo
+    // que promete — una serie sin fecha tampoco se puede anunciar como
+    // "próximamente" con honestidad.
+    const gte = params[gteKey];
+    params[gteKey] = !gte || gte < iso ? iso : gte;
+  } else {
+    // Rango que EMPIEZA en el futuro: se respeta (recortarlo daría una ventana
+    // invertida = catálogo vacío). Hoy la UI no ofrece años futuros.
+    const startsInFuture = Boolean(params[gteKey] && params[gteKey] > iso);
+    if (!startsInFuture && (!params[lteKey] || params[lteKey] > iso)) {
+      params[lteKey] = iso;
     }
   }
 

@@ -11,13 +11,21 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import type { MediaItem } from "@/types/media";
 import type { DiscoverResult, FetchErrorKind } from "@/lib/api/discover";
+import { DISCOVER_MAX_PAGES } from "@/lib/api/pagination";
 
 vi.mock("@/lib/api/discover", () => ({
   fetchDiscoverData: vi.fn(),
 }));
 
 import { fetchDiscoverData } from "@/lib/api/discover";
-import { fetchAggregateData, FAMILIES, PAGE_SIZE } from "@/lib/api/aggregate";
+import {
+  fetchAggregateData,
+  FAMILIES,
+  PAGE_SIZE,
+  PAGES_PER_ROUND,
+  roundForPage,
+  offsetInRound,
+} from "@/lib/api/aggregate";
 
 const mockFetch = vi.mocked(fetchDiscoverData);
 
@@ -39,11 +47,13 @@ function item(
 
 function result(
   items: MediaItem[],
-  fetchErrorKind: FetchErrorKind = null
+  fetchErrorKind: FetchErrorKind = null,
+  hasMore = false
 ): DiscoverResult {
-  // hasMore por familia es irrelevante aquí: el agregado recomputa el suyo sobre
-  // el pool merged (no propaga el de las familias). false fijo.
-  return { items, totalPages: 1, hasMore: false, fetchErrorKind };
+  // E79-s3: `hasMore` por familia SÍ importa ahora — indica si existe una ronda
+  // nativa siguiente. Por defecto false (pool agotado) para que los tests de
+  // merge/orden vean un total exacto.
+  return { items, totalPages: 1, hasMore, fetchErrorKind };
 }
 
 /**
@@ -63,14 +73,23 @@ beforeEach(() => {
 // ── Fan-out ─────────────────────────────────────────────────────────────────
 
 describe("fan-out", () => {
-  it("llama fetchDiscoverData una vez por familia, siempre page=1", async () => {
+  it("llama fetchDiscoverData una vez por familia, con la página de la ronda", async () => {
     setupByFamily({});
     const filters = { sort: "popularity" };
     await fetchAggregateData(1, filters);
 
     expect(mockFetch).toHaveBeenCalledTimes(FAMILIES.length);
     for (const fam of FAMILIES) {
-      expect(mockFetch).toHaveBeenCalledWith(fam, 1, filters);
+      expect(mockFetch).toHaveBeenCalledWith(fam, 1, filters, undefined);
+    }
+  });
+
+  // E-TMDB-LOCALE: el locale del agregado se reenvía a cada familia.
+  it("propaga el locale activo a cada familia", async () => {
+    setupByFamily({});
+    await fetchAggregateData(1, {}, "en");
+    for (const fam of FAMILIES) {
+      expect(mockFetch).toHaveBeenCalledWith(fam, 1, {}, "en");
     }
   });
 });
@@ -189,6 +208,86 @@ describe("paginación", () => {
     expect(items).toEqual([]);
     expect(totalPages).toBe(1);
     expect(hasMore).toBe(false);
+  });
+});
+
+// ── Profundidad por rondas (E79-s3) ───────────────────────────────────────────
+
+describe("profundidad por rondas (E79-s3)", () => {
+  it("roundForPage / offsetInRound: PAGES_PER_ROUND páginas por ronda", () => {
+    expect(PAGES_PER_ROUND).toBeGreaterThan(1);
+    // primera ronda
+    expect(roundForPage(1)).toBe(1);
+    expect(offsetInRound(1)).toBe(0);
+    expect(roundForPage(PAGES_PER_ROUND)).toBe(1);
+    expect(offsetInRound(PAGES_PER_ROUND)).toBe((PAGES_PER_ROUND - 1) * PAGE_SIZE);
+    // segunda ronda arranca justo después
+    expect(roundForPage(PAGES_PER_ROUND + 1)).toBe(2);
+    expect(offsetInRound(PAGES_PER_ROUND + 1)).toBe(0);
+    // página muy avanzada
+    expect(roundForPage(PAGES_PER_ROUND * 5 + 1)).toBe(6);
+  });
+
+  it("la página global pide a cada familia la PÁGINA NATIVA de su ronda (antes: siempre 1)", async () => {
+    setupByFamily({});
+    await fetchAggregateData(PAGES_PER_ROUND + 1, {});
+    for (const fam of FAMILIES) {
+      expect(mockFetch).toHaveBeenCalledWith(fam, 2, {}, undefined);
+    }
+  });
+
+  it("páginas de la misma ronda reusan la misma ronda nativa con offsets distintos", async () => {
+    const many = Array.from({ length: PAGE_SIZE * PAGES_PER_ROUND }, (_, i) =>
+      item("movie", String(i), { rating: 10_000 - i })
+    );
+    setupByFamily({ movie: result(many) });
+
+    const first = await fetchAggregateData(1, { sort: "rating" });
+    const second = await fetchAggregateData(2, { sort: "rating" });
+
+    expect(mockFetch).toHaveBeenCalledWith("movie", 1, { sort: "rating" }, undefined);
+    expect(first.items).toHaveLength(PAGE_SIZE);
+    expect(second.items).toHaveLength(PAGE_SIZE);
+    // sin solapamiento: la página 2 sigue justo donde acabó la 1.
+    expect(second.items[0].id).toBe(`movie_${PAGE_SIZE}`);
+  });
+
+  it("si alguna familia tiene más páginas nativas → hasMore true y totalPages null (ventana abierta)", async () => {
+    setupByFamily({
+      movie: result([item("movie", "1")], null, true), // hasMore de la familia
+    });
+    const { hasMore, totalPages } = await fetchAggregateData(1, {});
+    expect(hasMore).toBe(true);
+    // No se puede conocer el total sin recorrerlo → null (patrón E79-s2).
+    expect(totalPages).toBeNull();
+  });
+
+  it("pool agotado en todas las familias → totalPages exacto contando rondas anteriores", async () => {
+    setupByFamily({ movie: result([item("movie", "1")], null, false) });
+    const r2 = await fetchAggregateData(PAGES_PER_ROUND + 1, {});
+    // 1 ronda entera atrás + 1 página que llena ésta.
+    expect(r2.totalPages).toBe(PAGES_PER_ROUND + 1);
+    expect(r2.hasMore).toBe(false);
+  });
+
+  it("respeta el tope común: en la última página no ofrece siguiente", async () => {
+    setupByFamily({
+      movie: result([item("movie", "1")], null, true),
+    });
+    const last = await fetchAggregateData(DISCOVER_MAX_PAGES, {});
+    expect(last.hasMore).toBe(false);
+  });
+
+  it("página global fuera del tope → vacío sin error y SIN llamar a las familias", async () => {
+    // El guard de `fetchDiscoverData` mira la página NATIVA (la de la ronda),
+    // que aquí seguiría siendo baja → el agregado necesita su propio guard.
+    setupByFamily({ movie: result([item("movie", "1")], null, true) });
+    const out = await fetchAggregateData(DISCOVER_MAX_PAGES + 1, {});
+    expect(out.items).toEqual([]);
+    expect(out.hasMore).toBe(false);
+    expect(out.totalPages).toBe(DISCOVER_MAX_PAGES);
+    expect(out.fetchErrorKind).toBeNull();
+    expect(mockFetch).not.toHaveBeenCalled();
   });
 });
 

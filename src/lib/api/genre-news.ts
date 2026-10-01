@@ -36,7 +36,8 @@ export interface GenreNewsResult {
  */
 export async function getGenreNews(
   topGenres: string[],
-  limit = 5
+  limit = 5,
+  locale?: string | null
 ): Promise<GenreNewsResult> {
   const genreNames = topGenres.slice(0, 3)
   const genreIds = genreNamesToIds(genreNames)
@@ -45,9 +46,11 @@ export async function getGenreNews(
     return { movies: [], tv: [], genres: genreNames }
   }
 
+  // E-TMDB-LOCALE: el locale activo llega desde el route handler → los títulos
+  // y sinopsis de "novedades" respetan el idioma de la app.
   const [moviesResult, tvResult] = await Promise.allSettled([
-    discoverByGenre('movie', genreIds, limit),
-    discoverByGenre('tv', genreIds, limit),
+    discoverByGenre('movie', genreIds, limit, locale),
+    discoverByGenre('tv', genreIds, limit, locale),
   ])
 
   const movies: MediaItem[] =

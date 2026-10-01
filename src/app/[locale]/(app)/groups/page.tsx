@@ -4,6 +4,7 @@
 // ============================================================
 
 import { createClient } from '@/lib/supabase/server'
+import { PageHeading } from '@/components/layout/PageHeading'
 import { redirect } from 'next/navigation'
 import { getTranslations } from 'next-intl/server'
 import { getUserGroups } from '@/lib/social/groups'
@@ -32,7 +33,7 @@ export default async function GroupsPage() {
 
   return (
     <main className="max-w-2xl mx-auto px-4 md:px-8 py-8">
-      <h1 className="font-display text-3xl font-extrabold mb-8">{t('pageTitle')}</h1>
+      <PageHeading emoji="🎉">{t('pageTitle')}</PageHeading>
       <GroupsClient myGroups={myGroups} />
     </main>
   )

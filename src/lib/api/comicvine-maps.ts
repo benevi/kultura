@@ -9,6 +9,8 @@
 // sorts sin equivalente (popularity/rating) caen al default cover_date:desc.
 // ============================================================
 
+import { clampRangeToToday, todayIso } from "@/lib/api/catalog-window";
+
 // ── Sort → sort param de ComicVine ──────────────────────────────────────────────
 // Acepta tanto el vocab canónico (release_desc/release_asc/title_az/title_za) como
 // alias coloquiales (recientes/newest/antiguos/alfabetico). ComicVine no expone
@@ -55,6 +57,32 @@ export function comicCoverDateRange(
   if (/^\d{4}$/.test(year)) return `cover_date:${year}-01-01|${year}-12-31`;
 
   return null;
+}
+
+/** Primer día del catálogo de cómic (ComicVine no tiene nada fiable antes). */
+export const COMIC_CATALOG_START = "1900-01-01";
+
+/**
+ * E-CATALOGO-FUTURO: ventana `cover_date` efectiva — como
+ * `comicCoverDateRange`, pero nunca devuelve null y nunca deja pasar fechas
+ * posteriores a hoy.
+ *
+ * El cómic es la familia donde más se nota: la industria fecha las portadas con
+ * MESES de adelanto sobre la venta real, así que `sort=cover_date:desc` sin
+ * tope abre siempre por números que todavía no están en la calle. `comic` no
+ * ofrece filtro de estado, así que aquí no hay excepción que hacer.
+ */
+export function comicCoverDateWindow(
+  year: string | null | undefined,
+  today: Date = new Date()
+): string {
+  const iso = todayIso(today);
+  const range = comicCoverDateRange(year);
+  if (!range) return `cover_date:${COMIC_CATALOG_START}|${iso}`;
+
+  const [start, end] = range.replace("cover_date:", "").split("|");
+  const clamped = clampRangeToToday(start, end, today);
+  return `cover_date:${clamped.start}|${clamped.end}`;
 }
 
 // ── Editorial (slug canónico → substring del publisher resuelto) ────────────────

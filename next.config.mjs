@@ -47,6 +47,23 @@ const nextConfig = {
         pathname: "/t/p/**",
       },
       {
+        // E-BOOKS-GOOGLE: portadas de Google Books. `books.google.com/books/
+        // content?id=…` es el host habitual; `books.googleusercontent.com` y
+        // `lh*.googleusercontent.com` aparecen en parte del catálogo.
+        protocol: "https",
+        hostname: "books.google.com",
+      },
+      {
+        protocol: "https",
+        hostname: "books.googleusercontent.com",
+      },
+      {
+        protocol: "https",
+        hostname: "*.googleusercontent.com",
+      },
+      {
+        // Open Library: LEGACY desde E-BOOKS-GOOGLE — solo fichas de ids
+        // `book_OL…` ya guardados en bibliotecas (ver resolveBookItem).
         protocol: "https",
         hostname: "covers.openlibrary.org",
       },
@@ -59,12 +76,30 @@ const nextConfig = {
         hostname: "media.rawg.io",
       },
       {
+        // E-GAMES-STEAM: capturas de la ficha de tienda. Steam las sirve desde
+        // varios CDNs según la región/antigüedad del juego.
+        protocol: "https",
+        hostname: "*.steamstatic.com",
+      },
+      {
+        protocol: "https",
+        hostname: "shared.akamaihd.net",
+      },
+      {
         protocol: "https",
         hostname: "myanimelist.net",
       },
       {
         protocol: "https",
         hostname: "cdn.myanimelist.net",
+      },
+      {
+        // E-ANIME-SOURCE: portadas de AniList (coverImage.extraLarge/large).
+        // `s4.anilist.co` es su CDN de medios; `myanimelist.net`/
+        // `cdn.myanimelist.net` arriba se conservan solo para fichas legacy
+        // de anime guardadas cuando la fuente era Jikan.
+        protocol: "https",
+        hostname: "s4.anilist.co",
       },
       {
         // ComicVine sirve imágenes desde su propio host (verificado: medium_url

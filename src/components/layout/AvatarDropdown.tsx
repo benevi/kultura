@@ -10,9 +10,10 @@ interface AvatarDropdownProps {
   username: string
   avatarColor: string
   avatarInitials: string
+  avatarIcon?: string | null
 }
 
-export function AvatarDropdown({ username, avatarColor, avatarInitials }: AvatarDropdownProps) {
+export function AvatarDropdown({ username, avatarColor, avatarInitials, avatarIcon }: AvatarDropdownProps) {
   const t = useTranslations('nav')
   const tAuth = useTranslations('auth')
   const router = useRouter()
@@ -39,12 +40,12 @@ export function AvatarDropdown({ username, avatarColor, avatarInitials }: Avatar
     <div ref={ref} className="relative ml-1">
       <button
         onClick={() => setOpen(v => !v)}
-        className="rounded-full focus:outline-none focus:ring-2 focus:ring-accent-positive"
+        className="rounded-full focus:outline-none focus:ring-2 focus:ring-accent-pink"
         aria-label={username}
         aria-expanded={open}
         aria-haspopup="menu"
       >
-        <Avatar initials={avatarInitials} color={avatarColor} size="sm" />
+        <Avatar initials={avatarInitials} color={avatarColor} size="sm" icon={avatarIcon} />
       </button>
 
       {open && (

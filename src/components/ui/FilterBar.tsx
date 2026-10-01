@@ -45,7 +45,7 @@ function triggerPillClass(active: boolean, open: boolean) {
   return cn(
     "inline-flex items-center gap-1.5 px-3 py-1.5 rounded-pill text-xs font-body font-medium whitespace-nowrap cursor-pointer",
     "border transition-all duration-150 ease-out active:scale-[0.97]",
-    "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-positive focus-visible:ring-offset-2 focus-visible:ring-offset-surface-base",
+    "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-pink focus-visible:ring-offset-2 focus-visible:ring-offset-surface-base",
     active
       ? "bg-accent-positive/15 border-accent-positive text-text-primary"
       : open
@@ -67,11 +67,23 @@ export function FilterBar({
   className,
 }: FilterBarProps) {
   return (
-    <div className={cn("flex flex-wrap items-center gap-2", className)}>
+    <div
+      className={cn(
+        // En móvil los triggers van en UNA fila con scroll horizontal: con
+        // `flex-wrap` seis filtros se partían en tres líneas ragged y el bloque
+        // crecía tanto que tapaba el catálogo. A partir de `sm` sí caben y se
+        // deja envolver como siempre.
+        "flex items-center gap-2 flex-nowrap overflow-x-auto scrollbar-hide",
+        "sm:flex-wrap sm:overflow-visible",
+        className
+      )}
+    >
       {groups.map((group) => {
         const kind = group.kind ?? "single"
         const raw = activeFilters[group.key]
-        const alignEnd = group.align === "end" ? "ml-auto" : undefined
+        // `ml-auto` solo desde `sm`: en la fila con scroll de móvil empujaría
+        // "Ordenar" fuera de la vista en vez de alinearlo a la derecha.
+        const alignEnd = group.align === "end" ? "sm:ml-auto" : undefined
 
         if (group.variant === "sort") {
           return (
@@ -333,7 +345,7 @@ function MultiGroup({
             onChange={(e) => setQuery(e.target.value)}
             placeholder={group.label}
             aria-label={group.label}
-            className="mb-1.5 w-full bg-surface-elevated border border-surface-border rounded-lg px-2 py-1 text-xs text-text-primary focus:outline-none focus:ring-1 focus:ring-accent-positive"
+            className="mb-1.5 w-full bg-surface-elevated border border-surface-border rounded-lg px-2 py-1 text-xs text-text-primary focus:outline-none focus:ring-1 focus:ring-accent-pink"
           />
         )}
         <div className="flex flex-col gap-0.5">

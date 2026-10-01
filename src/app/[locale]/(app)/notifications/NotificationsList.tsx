@@ -62,7 +62,7 @@ function InviteActions({ invitationId }: { invitationId: string }) {
       <button
         onClick={() => respond('accept')}
         disabled={loading}
-        className="px-3 py-1 text-xs font-semibold bg-accent-positive text-on-accent-positive rounded-full hover:brightness-110 transition-all disabled:opacity-50"
+        className="px-3 py-1 text-xs font-semibold bg-accent-pink text-on-accent-pink rounded-full hover:brightness-110 transition-all disabled:opacity-50"
       >
         {t('accept')}
       </button>

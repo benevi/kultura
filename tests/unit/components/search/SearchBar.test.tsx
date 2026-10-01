@@ -82,7 +82,7 @@ describe("SearchBar", () => {
     expect(global.fetch).not.toHaveBeenCalled();
   });
 
-  it("Enter navega a /search con el query cuando hay texto suficiente", () => {
+  it("modo navigate (default): Enter navega a /search con el query", () => {
     render(<SearchBar defaultValue="inception" />);
     const input = screen.getByRole("searchbox");
     fireEvent.keyDown(input, { key: "Enter" });
@@ -109,5 +109,65 @@ describe("SearchBar", () => {
     const { container } = render(<SearchBar className="w-full" />);
     const div = container.firstChild as HTMLElement;
     expect(div.className).toContain("w-full");
+  });
+});
+
+// ── modo inline (E-DISCOVER-SEARCH-MERGE) ─────────────────────────────────────
+// En Descubrir, buscar NO debe navegar a otra pantalla: el consumidor actualiza
+// sus propios query params y el grid se re-pide en la misma página.
+
+describe("SearchBar — mode=inline", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it("Enter llama a onSubmit con el query trimeado y NO navega", () => {
+    const onSubmit = vi.fn();
+    render(
+      <SearchBar mode="inline" defaultValue="  dune  " onSubmit={onSubmit} />
+    );
+    fireEvent.keyDown(screen.getByRole("searchbox"), { key: "Enter" });
+    expect(onSubmit).toHaveBeenCalledWith("dune");
+    expect(mockPush).not.toHaveBeenCalled();
+  });
+
+  it("Enter con el input vacío no llama a onSubmit", () => {
+    const onSubmit = vi.fn();
+    render(<SearchBar mode="inline" defaultValue="   " onSubmit={onSubmit} />);
+    fireEvent.keyDown(screen.getByRole("searchbox"), { key: "Enter" });
+    expect(onSubmit).not.toHaveBeenCalled();
+  });
+
+  it("vaciar el input llama a onClear (volver al catálogo sin pulsar Enter)", () => {
+    const onClear = vi.fn();
+    const onSubmit = vi.fn();
+    render(
+      <SearchBar
+        mode="inline"
+        defaultValue="dune"
+        onSubmit={onSubmit}
+        onClear={onClear}
+      />
+    );
+    fireEvent.change(screen.getByRole("searchbox"), { target: { value: "" } });
+    expect(onClear).toHaveBeenCalled();
+    expect(onSubmit).not.toHaveBeenCalled();
+  });
+
+  it("escribir texto no dispara onClear", () => {
+    const onClear = vi.fn();
+    render(
+      <SearchBar mode="inline" onSubmit={vi.fn()} onClear={onClear} />
+    );
+    fireEvent.change(screen.getByRole("searchbox"), { target: { value: "du" } });
+    expect(onClear).not.toHaveBeenCalled();
+  });
+
+  it("Escape no envía ni navega", () => {
+    const onSubmit = vi.fn();
+    render(<SearchBar mode="inline" defaultValue="dune" onSubmit={onSubmit} />);
+    fireEvent.keyDown(screen.getByRole("searchbox"), { key: "Escape" });
+    expect(onSubmit).not.toHaveBeenCalled();
+    expect(mockPush).not.toHaveBeenCalled();
   });
 });

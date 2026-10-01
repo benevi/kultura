@@ -1,71 +1,39 @@
 // ============================================================
-// KULTURA — Search page
-// Server Component: busca en todas las APIs y pasa resultados
-// al Client Component para manejar tabs y navegación.
+// KULTURA — /search → redirect a /discover (E-DISCOVER-SEARCH-MERGE)
+//
+// El buscador de texto vive ahora DENTRO de Descubrir (misma barra, mismo grid,
+// misma paginación), así que esta ruta ya no tiene UI propia: se conserva solo
+// como redirect permanente para no romper enlaces guardados, historiales ni el
+// acceso "Buscar" del bottom-sheet móvil.
+//
+// `q` y `type` se trasladan tal cual: `/search?q=dune&type=movie` →
+// `/discover?type=movie&page=1&q=dune`.
 // ============================================================
 
-import type { Metadata } from "next";
-import { getTranslations } from "next-intl/server";
-import { searchAll } from "@/lib/api/search";
-import type { SearchResults } from "@/lib/api/search";
-import { SearchBar } from "@/components/search/SearchBar";
-import { SearchClient } from "./SearchClient";
+// `redirect` de @/i18n/navigation (no el de next/navigation): conserva el
+// prefijo de locale de la URL actual.
+import { redirect } from "@/i18n/navigation";
+import { getLocale } from "next-intl/server";
+import { VALID_TYPES } from "@/lib/api/discover-params";
 
 interface Props {
-  params: Promise<{ locale: string }>;
   searchParams: Promise<{ q?: string; type?: string }>;
 }
 
-export async function generateMetadata({
-  params,
-  searchParams,
-}: Props): Promise<Metadata> {
-  const { locale } = await params;
-  const { q } = await searchParams;
-  const title = q
-    ? `${locale === "es" ? "Buscar" : "Search"}: ${q}`
-    : locale === "es"
-      ? "Buscar"
-      : "Search";
-  return { title };
-}
+export default async function SearchRedirectPage({ searchParams }: Props) {
+  const { q, type } = await searchParams;
+  const locale = await getLocale();
 
-export default async function SearchPage({ searchParams }: Props) {
-  const { q, type = "all" } = await searchParams;
-
-  // No query → show only the centered search bar
-  if (!q || q.trim().length < 2) {
-    const t = await getTranslations("search");
-    return (
-      <main className="max-w-2xl mx-auto px-4 py-24 flex flex-col items-center text-center gap-6">
-        <h1 className="font-display text-4xl tracking-wide text-text-primary">
-          {t("title")}
-        </h1>
-        <SearchBar className="w-full" />
-      </main>
-    );
-  }
-
-  // With query → search all APIs
-  const emptyResults: SearchResults = {
-    movies: [],
-    tv: [],
-    anime: [],
-    manga: [],
-    books: [],
-    games: [],
-  };
-
-  let results: SearchResults = emptyResults;
-  try {
-    results = await searchAll(q);
-  } catch {
-    // Silently fall back to empty results
-  }
-
-  return (
-    <main className="max-w-6xl mx-auto px-4 md:px-8 py-8">
-      <SearchClient results={results} query={q} initialType={type} />
-    </main>
+  const params = new URLSearchParams();
+  // `type` solo se traslada si es uno de los tipos válidos de Descubrir; el
+  // `type=all` que emitía la SearchBar antigua ES válido (agregado).
+  params.set(
+    "type",
+    type && (VALID_TYPES as readonly string[]).includes(type) ? type : "all"
   );
+  params.set("page", "1");
+  const query = q?.trim();
+  if (query) params.set("q", query);
+
+  redirect({ href: `/discover?${params.toString()}`, locale });
 }

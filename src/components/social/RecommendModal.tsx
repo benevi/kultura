@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useTranslations } from 'next-intl'
 import { Avatar } from '@/components/ui/Avatar'
-import { Button } from '@/components/ui/button'
+import { KButton } from '@/components/ui/KButton'
 
 interface Friend {
   friendshipId: string
@@ -132,25 +132,24 @@ export function RecommendModal({ mediaId, mediaCache, onClose }: RecommendModalP
             placeholder={t('messagePlaceholder')}
             rows={2}
             maxLength={500}
-            className="w-full bg-bg border border-border rounded-md px-3 py-2 text-sm text-text placeholder:text-muted resize-none focus:outline-none focus:ring-1 focus:ring-accent-positive"
+            className="w-full bg-bg border border-border rounded-md px-3 py-2 text-sm text-text placeholder:text-muted resize-none focus:outline-none focus:ring-1 focus:ring-accent-pink"
           />
         )}
 
         {/* Actions */}
         <div className="flex gap-2 justify-end">
-          <Button variant="ghost" size="sm" onClick={onClose}>
+          <KButton variant="secondary" size="sm" onClick={onClose}>
             Cancelar
-          </Button>
+          </KButton>
           {friends.length > 0 && status !== 'sent' && (
-            <Button
-              variant="primary"
+            <KButton
               size="sm"
               loading={status === 'sending'}
               disabled={selected.size === 0}
               onClick={handleSend}
             >
               {t('send')}
-            </Button>
+            </KButton>
           )}
           {status === 'sent' && (
             <span className="text-sm text-success self-center">{t('sent')}</span>

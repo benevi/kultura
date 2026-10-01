@@ -62,16 +62,10 @@ describe('MediaRow', () => {
     expect(screen.queryByText('Fight Club')).not.toBeInTheDocument()
   })
 
-  // F3a/F3b: badge de match real por item — nunca decorativo.
-  it('muestra el badge de match solo en el item que tiene matchScore', () => {
-    const items = [
-      { ...sampleItems[0], matchScore: 91 },
-      sampleItems[1],
-    ]
-    render(<MediaRow title="Recientes" items={items} />)
-    const badges = screen.getAllByTestId('media-row-match-badge')
-    expect(badges).toHaveLength(1)
-    expect(badges[0]).toHaveTextContent('91%')
+  // E-MATCH-SIN-BADGE: las filas de Inicio ya no pintan porcentaje de afinidad.
+  it('no pinta badges de match', () => {
+    render(<MediaRow title="Recientes" items={sampleItems} />)
+    expect(screen.queryAllByTestId('media-row-match-badge')).toHaveLength(0)
   })
 
   it('muestra el año cuando el item lo trae', () => {

@@ -31,7 +31,7 @@ export function ContentCard({
       className={cn(
         "relative flex flex-col rounded-card overflow-hidden cursor-pointer",
         "bg-surface-default border border-surface-border",
-        "border-[0.5px] transition-transform hover:scale-[1.02] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-positive focus-visible:ring-offset-2 focus-visible:ring-offset-surface-base",
+        "border-[0.5px] transition-transform hover:scale-[1.02] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-pink focus-visible:ring-offset-2 focus-visible:ring-offset-surface-base",
         onClick && "cursor-pointer",
         className
       )}

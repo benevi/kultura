@@ -54,12 +54,14 @@ describe('HeroSection', () => {
     expect(screen.getByTestId('progress-fill')).toBeInTheDocument()
   })
 
-  it('sin item muestra texto bienvenida y botón Explorar contenido', () => {
-    render(<HeroSection item={null} />)
-    expect(screen.getByText('welcomeTitle')).toBeInTheDocument()
-    expect(screen.getByText('welcomeSubtitle')).toBeInTheDocument()
-    const link = screen.getByText('goDiscover').closest('a')
-    expect(link).toHaveAttribute('href', '/discover')
+  it('sin item no pinta nada: el hueco lo ocupan las secciones de abajo', () => {
+    const { container } = render(<HeroSection item={null} />)
+    expect(container).toBeEmptyDOMElement()
+  })
+
+  it('con item pero sin media tampoco pinta nada', () => {
+    render(<HeroSection item={{ ...baseItem, media: null }} />)
+    expect(screen.queryByRole('link')).not.toBeInTheDocument()
   })
 
   it('con item sin synopsis no crashea', () => {

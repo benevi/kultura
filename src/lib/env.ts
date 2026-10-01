@@ -32,6 +32,11 @@ const serverSchema = z.object({
     z.string().startsWith("sk-ant-").optional()
   ),
   COMICVINE_KEY: z.preprocess(emptyToUndefined, z.string().min(1).optional()),
+  // E-BOOKS-GOOGLE: reactivada (estuvo retirada entre E84c y 2026-09-12, cuando
+  // los libros pasaron a Open Library y de vuelta a Google Books). OPCIONAL —
+  // la API pública responde sin key, pero con cuota compartida por IP que puede
+  // estar a cero; ver la nota en `src/lib/api/googlebooks.ts`.
+  GOOGLE_BOOKS_KEY: z.preprocess(emptyToUndefined, z.string().min(1).optional()),
 });
 
 export type PublicEnv = z.infer<typeof publicSchema>;
@@ -70,6 +75,7 @@ export function parseServerEnv(): ServerEnv {
     RAWG_API_KEY: process.env.RAWG_API_KEY,
     ANTHROPIC_API_KEY: process.env.ANTHROPIC_API_KEY,
     COMICVINE_KEY: process.env.COMICVINE_KEY,
+    GOOGLE_BOOKS_KEY: process.env.GOOGLE_BOOKS_KEY,
   });
   if (!result.success) {
     throw new Error(

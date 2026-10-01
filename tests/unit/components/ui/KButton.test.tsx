@@ -41,4 +41,16 @@ describe('KButton', () => {
     const btn = screen.getByRole('button', { name: 'Cancel' })
     expect(btn.className).toContain('border-surface-border')
   })
+
+  // E-BOTON-PINK: el primario es pink, no el lime semántico. Parecía que el
+  // canvas no lo zanjaba (14 pills lime vs. 13 pink), pero TODOS los lime son
+  // badges de match —retirados de la UI—; de los pills de ACCIÓN, los 13 son
+  // pink. Coincide con CLAUDE.md: "primario = fondo pink + texto on-pink".
+  it('variant primary es pink, no accent-positive', () => {
+    render(<KButton>Guardar</KButton>)
+    const btn = screen.getByRole('button', { name: 'Guardar' })
+    expect(btn.className).toContain('bg-accent-pink')
+    expect(btn.className).toContain('text-on-accent-pink')
+    expect(btn.className).not.toContain('bg-accent-positive')
+  })
 })
