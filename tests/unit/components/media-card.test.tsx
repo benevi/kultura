@@ -69,8 +69,56 @@ describe("MediaCard", () => {
       poster: "https://image.tmdb.org/t/p/w500/poster.jpg",
     };
     render(<MediaCard item={itemWithPoster} />);
-    const img = screen.getByRole("img");
-    expect(img).toBeInTheDocument();
+    // La portada es decorativa (`aria-hidden`), así que NO tiene rol `img`:
+    // se busca por etiqueta. Ver el bloque E-CARD-PORTADA-404 de abajo.
+    expect(document.querySelector("img")).toBeInTheDocument();
+  });
+
+  // ── Una portada rota deja color, no el icono del navegador ───────────────
+  //
+  // Visto en Descubrir → Libros: las portadas de Open Library dan 404 a
+  // menudo, y la card enseñaba el icono de imagen rota CON el título en texto
+  // crudo —encima del título de verdad que la card ya pinta debajo—. Mismo
+  // patrón que ya resolvía `PosterTile` en la landing: el gradiente va detrás.
+  it("el respaldo de gradiente está SIEMPRE, también con poster", () => {
+    const itemWithPoster: MediaItem = {
+      ...baseItem,
+      poster: "https://covers.openlibrary.org/b/id/123-L.jpg",
+    };
+    render(<MediaCard item={itemWithPoster} />);
+    const placeholder = document.querySelector("[data-placeholder]");
+    const img = document.querySelector("img");
+    expect(placeholder).toBeInTheDocument();
+    expect(placeholder).toHaveClass("absolute", "inset-0");
+    // Y va ANTES que la imagen en el DOM: así la portada se pinta encima y,
+    // si da 404, lo que queda debajo es el color.
+    expect(
+      placeholder!.compareDocumentPosition(img!) & Node.DOCUMENT_POSITION_FOLLOWING
+    ).toBeTruthy();
+  });
+
+  it("la portada es decorativa: alt vacío, para que un 404 no escupa el título", () => {
+    const itemWithPoster: MediaItem = {
+      ...baseItem,
+      poster: "https://covers.openlibrary.org/b/id/123-L.jpg",
+    };
+    render(<MediaCard item={itemWithPoster} />);
+    const img = document.querySelector("img");
+    expect(img).toHaveAttribute("alt", "");
+    expect(img).toHaveAttribute("aria-hidden", "true");
+    // El título sigue siendo accesible: va como texto en el <h3>.
+    expect(screen.getByText("Fight Club")).toBeInTheDocument();
+  });
+
+  // ── El cero no es un año (E-CARD-ANO-CERO) ───────────────────────────────
+  //
+  // `{item.year && <p/>}` evalúa a 0 cuando el año es 0, y React pinta ese
+  // número suelto como texto — fuera del <p> y sin sus estilos. Salió en
+  // pantalla con "The War of the Worlds" y "The Invisible Man".
+  it("un año de 0 no pinta un '0' suelto", () => {
+    const itemZeroYear: MediaItem = { ...baseItem, year: 0 };
+    render(<MediaCard item={itemZeroYear} />);
+    expect(screen.queryByText("0")).not.toBeInTheDocument();
   });
 
   it("muestra badge de tipo (label localizado) cuando showType=true", () => {

@@ -115,11 +115,11 @@ export function HeroSection({ item }: HeroSectionProps) {
               <TypeIcon className="w-3.5 h-3.5" />
               {tMedia(media.type as Parameters<typeof tMedia>[0])}
             </span>
-            {media.year && (
+            {media.year ? (
               <span className="inline-flex items-center rounded-full bg-surface-elevated text-text-primary font-body font-bold text-xs px-3 py-1.5">
                 {media.year}
               </span>
-            )}
+            ) : null}
           </div>
 
           <h2 className="font-display text-xl md:text-3xl font-extrabold text-text-primary leading-tight">

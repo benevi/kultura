@@ -183,9 +183,9 @@ export function SearchBar({
                 )}
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-body font-medium text-text-primary truncate">{item.title}</p>
-                  {item.year && (
+                  {item.year ? (
                     <p className="text-xs text-text-tertiary">{item.year}</p>
-                  )}
+                  ) : null}
                 </div>
                 <Badge variant="default">{item.type}</Badge>
               </button>

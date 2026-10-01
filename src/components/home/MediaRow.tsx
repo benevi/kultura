@@ -88,9 +88,9 @@ export function MediaRow({ items, title, emptyIcon, emptyMessage, emptyHint, emp
                 >
                   {item.title}
                 </p>
-                {item.year && (
+                {item.year ? (
                   <p className="font-body text-xs text-text-tertiary mt-0.5">{item.year}</p>
-                )}
+                ) : null}
               </Link>
             )
           })}

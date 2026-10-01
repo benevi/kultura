@@ -52,7 +52,32 @@ function extractProviders(
 function extractYear(dateStr: string | null | undefined): number | undefined {
   if (!dateStr) return undefined;
   const match = dateStr.match(/^(\d{4})/);
-  return match ? parseInt(match[1], 10) : undefined;
+  return sanitizeYear(match ? parseInt(match[1], 10) : undefined);
+}
+
+/**
+ * Un año que no es un año se descarta aquí, en el borde (E-CARD-ANO-CERO).
+ *
+ * Visto en Descubrir → Libros: *The War of the Worlds* y *The Invisible Man*
+ * salían fechadas en **0**. Open Library sirve `first_publish_year: 0` en
+ * fichas con el dato sin rellenar, y ese cero viajaba intacto hasta la card.
+ *
+ * El cero es además el peor valor posible para React: `{item.year && <p/>}`
+ * evalúa a `0`, y React pinta el número suelto como texto —fuera del `<p>`, sin
+ * sus estilos—. Por eso no basta con blindar la vista: el dato se limpia en el
+ * origen y las vistas se blindan igual (ternario en vez de `&&`), que es
+ * defensa en profundidad y no redundancia.
+ *
+ * La ventana es deliberadamente ancha: el catálogo tiene obras del siglo I
+ * a. C. en adelante, así que solo se descarta lo que no puede ser una fecha de
+ * publicación — 0, negativos y lo que caiga más allá del año que viene.
+ */
+export function sanitizeYear(year: number | null | undefined): number | undefined {
+  if (year === null || year === undefined) return undefined;
+  if (!Number.isFinite(year)) return undefined;
+  if (year <= 0) return undefined;
+  if (year > new Date().getUTCFullYear() + 1) return undefined;
+  return year;
 }
 
 // ── Normalizers ───────────────────────────────────────────────────────────────
@@ -150,7 +175,7 @@ export function normalizeAnime(raw: JikanAnimeDetail): MediaItem {
         ? raw.title
         : undefined,
     poster: raw.images?.jpg?.large_image_url || undefined,
-    year: raw.year ?? undefined,
+    year: sanitizeYear(raw.year),
     synopsis: raw.synopsis ?? undefined,
     genres: raw.genres?.map((g) => g.name),
     rating: raw.score ?? undefined,
@@ -200,7 +225,7 @@ export function normalizeAniListAnime(raw: AniListMedia): MediaItem {
     originalTitle:
       raw.title.romaji && raw.title.romaji !== title ? raw.title.romaji : undefined,
     poster: raw.coverImage?.extraLarge || raw.coverImage?.large || undefined,
-    year: raw.seasonYear ?? raw.startDate?.year ?? undefined,
+    year: sanitizeYear(raw.seasonYear ?? raw.startDate?.year),
     synopsis: stripAniListHtml(raw.description),
     genres: raw.genres?.length ? raw.genres : undefined,
     rating: raw.averageScore != null ? raw.averageScore / 10 : undefined,
@@ -224,7 +249,7 @@ export function normalizeMangaJikan(raw: JikanMangaDetail): MediaItem {
     type: "manga",
     title: raw.title,
     poster: raw.images?.jpg?.large_image_url || undefined,
-    year: raw.published?.prop?.from?.year ?? undefined,
+    year: sanitizeYear(raw.published?.prop?.from?.year),
     synopsis: raw.synopsis ?? undefined,
     genres: raw.genres?.map((g) => g.name),
     rating: raw.score ?? undefined,
@@ -273,7 +298,7 @@ export function normalizeMangaDex(
     type: "manga",
     title,
     poster,
-    year: attrs.year ?? undefined,
+    year: sanitizeYear(attrs.year),
     synopsis,
     genres: genres.length > 0 ? genres : undefined,
     metadata: {
@@ -356,7 +381,7 @@ export function normalizeBookOpenLibrary(raw: OpenLibraryDoc): MediaItem {
     type: "book",
     title: raw.title,
     poster,
-    year: raw.first_publish_year,
+    year: sanitizeYear(raw.first_publish_year),
     // E-BOOKS-SUBJ: `subject` es texto libre y mezcla géneros con lugares y
     // metadatos de archivo. Quedarse con los cinco PRIMEROS dejaba fuera los
     // géneros de verdad → match 0% en todos los libros y chips como "Beaches"
