@@ -190,7 +190,7 @@ describe("LoginPage — modo login", () => {
     render(<LoginPage locale="es" />);
     expect(screen.getByText("dontHaveAccount")).toBeInTheDocument();
 
-    fireEvent.click(screen.getByRole("button", { name: "signUp" }));
+    fireEvent.click(screen.getByRole("button", { name: "signUpAction" }));
     expect(mockRouterPush).toHaveBeenCalledWith("/login?mode=register");
   });
 

@@ -531,12 +531,16 @@ export function LoginPage({ locale }: LoginPageProps) {
             por el mismo sitio. */}
         <p className="mt-5 text-center font-body text-[13px] text-text-tertiary">
           {mode === "login" ? tAuth("dontHaveAccount") : tAuth("alreadyHaveAccount")}{" "}
+          {/* Imperativo, no infinitivo: el artboard pone "Regístrate", y dentro de
+              la frase "¿No tienes cuenta? Registrarse" chirría. Clave propia
+              para no tocar `signUp`/`signIn`, que son etiquetas de botón en
+              media app. */}
           <button
             type="button"
             onClick={() => switchMode(mode === "login" ? "register" : "login")}
             className="font-bold text-accent-pink underline-offset-4 hover:underline"
           >
-            {mode === "login" ? tAuth("signUp") : tAuth("signIn")}
+            {mode === "login" ? tAuth("signUpAction") : tAuth("signInAction")}
           </button>
         </p>
       </div>
