@@ -482,6 +482,35 @@ instrucciones operativas de la cabecera de este documento.
   card algo más alta — preferible a una frase cortada a medio carácter. Si
   se vuelve a meter un `line-clamp` aquí, vuelve el bug.
 
+- **Una portada rota deja COLOR, nunca el icono del navegador**
+  (E-CARD-PORTADA-404). Visto en Descubrir → Libros: las portadas de Open
+  Library dan 404 a menudo y `MediaCard` enseñaba el icono de imagen rota
+  **con el título en texto crudo**, justo encima del título de verdad que la
+  card ya pinta debajo. Dos cosas, y las dos hacen falta:
+  - **El gradiente va SIEMPRE y va PRIMERO en el DOM**, con la portada encima.
+    Es el mismo patrón que `PosterTile` ya usaba en la landing; `MediaCard` se
+    había quedado con el `poster ? <Image> : <gradiente>`, que no cubre el 404.
+  - **El `alt` de la portada va VACÍO** (`aria-hidden`), porque la imagen es
+    decorativa: el título va como texto en el `<h3>` de al lado. Con un `alt`
+    real, una portada rota lo escupía en pantalla y además lo duplicaba para
+    quien usa lector. Hay un test de que el título sigue siendo accesible.
+
+- **El cero no es un año, y React lo pinta** (E-CARD-ANO-CERO). Visto en
+  Descubrir → Libros: *The War of the Worlds* y *The Invisible Man* salían
+  fechadas en **0**. Open Library sirve `first_publish_year: 0` cuando el dato
+  está sin rellenar. Dos capas, y la segunda es una clase de bug, no un caso:
+  - **`sanitizeYear` en el normalizador** descarta 0, negativos, no-números y
+    lo que caiga más allá del año que viene. Se aplica a las cinco familias que
+    reciben el año como número crudo del proveedor (Open Library, MangaDex,
+    AniList y las dos de Jikan) y a `extractYear`. La ventana es ancha a
+    propósito: el catálogo tiene obras muy antiguas y recortarlas sería peor
+    que el bug.
+  - **`{año && <p/>}` evalúa a `0` y React pinta ese número suelto**, fuera del
+    `<p>` y sin sus estilos. No es un despiste de una pantalla: estaba en las
+    CUATRO que pintan año (`MediaCard`, `MediaRow`, `HeroSection`, `SearchBar`).
+    Todas usan ya un ternario. **Al pintar un número, nunca `&&`** — con
+    cadenas da igual, con números pinta el cero.
+
 - **El catálogo no muestra fechas futuras** (E-CATALOGO-FUTURO). Regla
   común a las 7 familias; la referencia vive en
   `src/lib/api/catalog-window.ts` y cada proveedor la aplica con SU

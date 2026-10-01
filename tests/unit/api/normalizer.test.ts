@@ -14,6 +14,7 @@ import {
   normalizeBookOpenLibrary,
   normalizeBookGoogle,
   normalizeGame,
+  sanitizeYear,
 } from "@/lib/api/normalizer";
 import type { TmdbMovieDetail, TmdbTVDetail, TmdbProvidersResponse } from "@/lib/api/tmdb";
 import type { JikanAnimeDetail, JikanMangaDetail } from "@/lib/api/jikan";
@@ -685,6 +686,48 @@ describe("normalizeBookOpenLibrary — doc mínimo", () => {
   });
 
   it("year undefined sin first_publish_year", () => {
+    expect(result.year).toBeUndefined();
+  });
+});
+
+// ── Un año que no es un año (E-CARD-ANO-CERO) ────────────────────────────────
+//
+// Visto en Descubrir → Libros: "The War of the Worlds" y "The Invisible Man"
+// salían fechadas en 0. Open Library sirve `first_publish_year: 0` cuando el
+// dato está sin rellenar, y ese cero llegaba intacto a la card — donde además
+// React lo pinta como texto suelto, porque `{year && <p/>}` evalúa a 0.
+
+describe("sanitizeYear", () => {
+  it("descarta el cero, que es el caso que salió en pantalla", () => {
+    expect(sanitizeYear(0)).toBeUndefined();
+  });
+
+  it("descarta negativos y no-números", () => {
+    expect(sanitizeYear(-500)).toBeUndefined();
+    expect(sanitizeYear(Number.NaN)).toBeUndefined();
+    expect(sanitizeYear(null)).toBeUndefined();
+    expect(sanitizeYear(undefined)).toBeUndefined();
+  });
+
+  // La ventana es ancha a propósito: el catálogo tiene obras muy antiguas y
+  // recortarlas sería peor que el bug.
+  it("deja pasar los años plausibles, por viejos que sean", () => {
+    expect(sanitizeYear(1)).toBe(1);
+    expect(sanitizeYear(1605)).toBe(1605);
+    expect(sanitizeYear(new Date().getUTCFullYear())).toBe(new Date().getUTCFullYear());
+  });
+
+  it("descarta lo que cae más allá del año que viene", () => {
+    expect(sanitizeYear(new Date().getUTCFullYear() + 50)).toBeUndefined();
+  });
+});
+
+describe("normalizeBookOpenLibrary — año cero", () => {
+  it("un first_publish_year de 0 no llega a la card", () => {
+    const result = normalizeBookOpenLibrary({
+      ...OPEN_LIBRARY_FIXTURE,
+      first_publish_year: 0,
+    });
     expect(result.year).toBeUndefined();
   });
 });

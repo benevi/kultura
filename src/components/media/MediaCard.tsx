@@ -58,25 +58,37 @@ export function MediaCard({
             aspect === "2/3" ? "aspect-[2/3]" : "h-full min-h-[110px]"
           )}
         >
-          {item.poster ? (
+          {/* El gradiente va SIEMPRE y va PRIMERO (E-CARD-PORTADA-404). Una
+              portada que da 404 —Open Library las sirve rotas a menudo— dejaba
+              el icono de imagen rota del navegador con el título en texto
+              crudo, encima del título de verdad que la card ya pinta debajo.
+              Con el respaldo detrás, un 404 deja color de la paleta. Es el
+              mismo patrón que `PosterTile` de la landing. */}
+          <div
+            data-placeholder
+            className="absolute inset-0 flex items-center justify-center"
+            style={{ background: posterGradient(item.id || item.title) }}
+          >
+            {!item.poster && (
+              <span className="text-white/90 text-xs font-display font-bold line-clamp-2 px-2 text-center">
+                {item.title.slice(0, 2).toUpperCase()}
+              </span>
+            )}
+          </div>
+          {item.poster && (
+            /* `alt` vacío a propósito: la imagen es DECORATIVA porque el título
+               va como texto justo debajo, en el <h3>. Con un alt real, una
+               portada rota lo escupía en pantalla y además lo duplicaba para
+               quien usa lector. */
             <Image
               src={item.poster}
-              alt={item.title}
+              alt=""
+              aria-hidden="true"
               fill
               sizes="(max-width: 640px) 45vw, (max-width: 1024px) 30vw, 20vw"
               className="object-cover transition-transform duration-300 group-hover:scale-105"
               priority={priority}
             />
-          ) : (
-            <div
-              data-placeholder
-              className="absolute inset-0 flex items-center justify-center"
-              style={{ background: posterGradient(item.id || item.title) }}
-            >
-              <span className="text-white/90 text-xs font-display font-bold line-clamp-2 px-2 text-center">
-                {item.title.slice(0, 2).toUpperCase()}
-              </span>
-            </div>
           )}
 
           {/* Acento radial de esquina (F0 §Cards feature grandes): solo en las
@@ -125,9 +137,9 @@ export function MediaCard({
             >
               {item.title}
             </h3>
-            {item.year && (
+            {item.year ? (
               <p className="text-[11px] text-white/75 font-medium mt-0.5">{item.year}</p>
-            )}
+            ) : null}
           </div>
         </div>
       </article>
