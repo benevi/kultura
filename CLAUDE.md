@@ -397,7 +397,33 @@ instrucciones operativas de la cabecera de este documento.
     Quitar los badges no bastó: el modelo seguía escribiendo "match de
     73%" en el `reason`, que es la misma cifra por la puerta de atrás. El
     match sigue viajando en el prompt como criterio de elección; lo que no
-    puede es salir en el texto.
+    puede es salir en el texto. **Desde E-AIREC-SIN-PROCESO hay además una
+    comprobación en código** (`reasonLeaksProcess`), porque la regla sola
+    no bastaba — ver el punto siguiente.
+
+- **La frase de la IA no puede delatar el proceso** (E-AIREC-SIN-PROCESO).
+  Visto en Inicio: *"Único cómic disponible en la selección actual."* y
+  *"Único juego disponible en la selección actual."*. El usuario no ve los
+  candidatos ni sabe que existe una shortlist; para él eso es la IA
+  confesando que no tenía nada mejor que ofrecer. La cadena NO estaba en el
+  código: la escribía el modelo. Cuatro cosas:
+  - **Regla en el prompt Y comprobación en código.** El prompt solo es una
+    petición, y ya sabíamos que no basta: con E-MATCH-SIN-BADGE se le
+    prohibió el `%` y siguió escribiéndolo. `reasonLeaksProcess` es la red,
+    y cubre las dos cosas (proceso y cifra).
+  - **Cae la FRASE, no la elección.** Un `reason` delator se descarta
+    poniendo `undefined`, y la card conserva el título que el modelo
+    eligió; la UI pinta entonces el porqué localizado, que es el camino que
+    ya existía para cuando el modelo no responde. Si cayera la pick entera,
+    el fallback serviría otro título y se perdería el criterio.
+  - **Se buscan FRASES, no palabras sueltas**, misma política
+    anti-falsos-positivos que el filtro NSFW: "disponible" a secas es
+    legítima ("disponible en streaming") y no dispara nada.
+  - **`\b` de JavaScript es ASCII.** `/\búnic[oa]\b/` sobre "única" NO casa
+    nunca, así que ese patrón nació muerto y habría sido otro placebo
+    silencioso. Lo cazó un test. Por eso el texto se normaliza (minúsculas,
+    sin diacríticos) ANTES de comparar, igual que en `comic-publishers.ts`.
+    Si se añade un patrón nuevo, escribirlo contra el texto YA normalizado.
 
 - **El catálogo no muestra fechas futuras** (E-CATALOGO-FUTURO). Regla
   común a las 7 familias; la referencia vive en

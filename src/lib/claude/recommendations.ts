@@ -317,6 +317,12 @@ Reglas:
   (E-MATCH-SIN-BADGE): ese porcentaje es un criterio INTERNO y se retiró de
   toda la interfaz. Di QUÉ comparte con lo que ya disfruta ("misma comedia
   coral que X"), no cuánto puntúa.
+- NUNCA hables de ESTA lista ni de cómo has elegido (E-AIREC-SIN-PROCESO). El
+  usuario no ve los candidatos ni sabe que existe una selección: para él solo
+  hay una recomendación. Prohibido "único disponible en la selección actual",
+  "la única opción de este tipo", "el mejor de la lista" y cualquier variante.
+  Si de un tipo solo hay un candidato, NO lo digas: habla del título en sí —su
+  género, su tono, lo que ofrece— como si lo hubieras elegido entre mil.
 
 Responde ÚNICAMENTE con JSON válido. Sin markdown, sin texto adicional:
 {
@@ -326,9 +332,63 @@ Responde ÚNICAMENTE con JSON válido. Sin markdown, sin texto adicional:
 }`
 }
 
-/** `id` → `reason` de la respuesta del modelo. Vacío si la respuesta no es usable. */
-function parsePicks(rawText: string): Map<string, string> {
-  const chosen = new Map<string, string>()
+// ── La frase no puede delatar el proceso (E-AIREC-SIN-PROCESO) ──────────────
+//
+// Visto en Inicio: "Único cómic disponible en la selección actual." y "Único
+// juego disponible en la selección actual.". El usuario no ve los candidatos ni
+// sabe que hay una shortlist; para él eso es la IA confesando que no tenía nada
+// mejor que ofrecer.
+//
+// La regla está en el prompt, pero el prompt NO BASTA y esto ya lo sabíamos:
+// con E-MATCH-SIN-BADGE se le prohibió citar el % y el modelo siguió
+// escribiendo "match de 73%". Una instrucción es una petición; esto es la
+// comprobación. Misma política anti-falsos-positivos que el filtro NSFW: se
+// buscan FRASES inequívocas, nunca palabras sueltas — "disponible" a secas es
+// legítima ("disponible en streaming") y no dispara nada.
+//
+// Al detectarlo se cae SOLO la frase, no la elección: la card se queda con el
+// título que el modelo eligió y la UI pinta el porqué localizado, que es el
+// mismo camino que ya se usa cuando el modelo no responde.
+// Los patrones se comparan contra el texto NORMALIZADO (minúsculas y sin
+// diacríticos) porque `\b` de JavaScript es ASCII: `\bú` no casa NUNCA, así que
+// un patrón como /\búnic[oa]\b/ sobre "única" está muerto y no se nota. Lo cazó
+// un test; sin él habría sido otro placebo silencioso.
+const REASON_LEAK_PATTERNS: RegExp[] = [
+  // Cifras de afinidad (E-MATCH-SIN-BADGE), el caso que ya se escapó una vez.
+  /\d\s*%/,
+  // El proceso de selección, ES y EN.
+  /seleccion actual/,
+  /current selection/,
+  /\bcandidat[oa]s?\b/,
+  /\bunic[oa]\b[^.]{0,40}\bdisponible\b/,
+  /\bonly\b[^.]{0,40}\bavailable\b/,
+  /opciones disponibles/,
+  /available options/,
+  /\ben (?:la|esta) lista\b/,
+  /\bin (?:the|this) list\b/,
+]
+
+/** Minúsculas y sin diacríticos, para que `\b` funcione sobre palabras acentuadas. */
+function normalizeReason(reason: string): string {
+  return reason
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+}
+
+/** True si la frase habla del proceso o cita una cifra, en vez de hablar del título. */
+export function reasonLeaksProcess(reason: string): boolean {
+  const text = normalizeReason(reason)
+  return REASON_LEAK_PATTERNS.some((re) => re.test(text))
+}
+
+/**
+ * `id` → `reason` de la respuesta del modelo. Vacío si la respuesta no es
+ * usable. Un id con `undefined` significa "el modelo lo eligió, pero su frase
+ * delataba el proceso y se descartó": la elección se respeta, el texto no.
+ */
+function parsePicks(rawText: string): Map<string, string | undefined> {
+  const chosen = new Map<string, string | undefined>()
 
   // El regex extrae el primer bloque {...}; el schema del prompt siempre pide un
   // objeto raíz, así que una respuesta con array raíz se descarta (→ fallback).
@@ -343,7 +403,13 @@ function parsePicks(rawText: string): Map<string, string> {
       if (typeof pick !== 'object' || pick === null) continue
       const { id, reason } = pick as { id?: unknown; reason?: unknown }
       if (typeof id === 'string' && typeof reason === 'string' && reason.trim() !== '') {
-        chosen.set(id, reason.trim())
+        const text = reason.trim()
+        if (reasonLeaksProcess(text)) {
+          log.warn('Reason descartada: delataba el proceso', { id, reason: text })
+          chosen.set(id, undefined)
+        } else {
+          chosen.set(id, text)
+        }
       }
     }
   } catch (err) {
@@ -362,7 +428,7 @@ function parsePicks(rawText: string): Map<string, string> {
 function resolvePicks(
   shortlist: Map<MediaType, MediaItem[]>,
   scores: Map<string, number>,
-  chosen: Map<string, string>
+  chosen: Map<string, string | undefined>
 ): AiRec[] {
   const picks: AiRec[] = []
   Array.from(shortlist.values()).forEach((items) => {
@@ -441,7 +507,7 @@ async function chooseWithClaude(
   library: LibraryItem[],
   topGenres: string[],
   locale: string
-): Promise<Map<string, string>> {
+): Promise<Map<string, string | undefined>> {
   // Opcional en el schema: graceful, degrada al orden por match si no está.
   const apiKey = env.ANTHROPIC_API_KEY
   if (!apiKey) {

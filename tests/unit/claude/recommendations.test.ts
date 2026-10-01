@@ -454,3 +454,134 @@ describe('getAiRecommendations — rotación y cache de la shortlist', () => {
     expect(createMock).toHaveBeenCalledTimes(2)
   })
 })
+
+// ── La frase no delata el proceso (E-AIREC-SIN-PROCESO) ─────────────────────
+//
+// Visto en Inicio: "Único cómic disponible en la selección actual." El usuario
+// no ve los candidatos ni sabe que hay una shortlist; eso es la IA confesando
+// que no tenía nada mejor. La regla vive en el prompt, pero el prompt NO basta
+// —con E-MATCH-SIN-BADGE se le prohibió el % y siguió escribiéndolo—, así que
+// lo que se protege aquí es la COMPROBACIÓN en código.
+
+describe('reasonLeaksProcess (E-AIREC-SIN-PROCESO)', () => {
+  it('caza las frases exactas que salieron en pantalla', async () => {
+    const { reasonLeaksProcess } = await import('@/lib/claude/recommendations')
+    expect(reasonLeaksProcess('Único cómic disponible en la selección actual.')).toBe(true)
+    expect(reasonLeaksProcess('Único juego disponible en la selección actual.')).toBe(true)
+  })
+
+  it('caza las variantes del mismo vicio, en ES y EN', async () => {
+    const { reasonLeaksProcess } = await import('@/lib/claude/recommendations')
+    for (const reason of [
+      'La única opción disponible de este tipo.',
+      'El mejor candidato de los que me has dado.',
+      'Only comic available in the current selection.',
+      'The best of the available options.',
+      'Es el que más encaja en la lista.',
+    ]) {
+      expect(reasonLeaksProcess(reason), reason).toBe(true)
+    }
+  })
+
+  // E-MATCH-SIN-BADGE: la cifra ya se escapó una vez con el prompt como única
+  // defensa. Ahora hay red.
+  it('caza el porcentaje de afinidad', async () => {
+    const { reasonLeaksProcess } = await import('@/lib/claude/recommendations')
+    expect(reasonLeaksProcess('Match de 73% con tus géneros favoritos.')).toBe(true)
+    expect(reasonLeaksProcess('Tiene un 91 % de afinidad contigo.')).toBe(true)
+  })
+
+  // Anti-falsos-positivos: una frase legítima no puede caerse por una palabra
+  // suelta. "disponible" a secas es correcta.
+  it('deja pasar las frases buenas', async () => {
+    const { reasonLeaksProcess } = await import('@/lib/claude/recommendations')
+    for (const reason of [
+      'Comparte la crítica corporativa y el tono kafkiano de lo que más puntúas.',
+      'Misma comedia coral que Arrested Development, que tienes completada.',
+      'Disponible en streaming y con el humor negro de tus favoritas.',
+      'Ciencia ficción dura, como Dune y Hyperion en tu biblioteca.',
+    ]) {
+      expect(reasonLeaksProcess(reason), reason).toBe(false)
+    }
+  })
+})
+
+// ── La frase delatora se cae, la ELECCIÓN no (E-AIREC-SIN-PROCESO) ──────────
+
+describe('getAiRecommendations — reason que delata el proceso', () => {
+  beforeEach(() => {
+    vi.resetModules()
+    fetchDiscoverDataMock.mockReset()
+    computeMatchScoresMock.mockReset()
+    withPools(onePerType())
+    withScores()
+    vi.stubEnv('ANTHROPIC_API_KEY', 'sk-ant-test-key')
+  })
+
+  afterEach(() => {
+    vi.doUnmock('@anthropic-ai/sdk')
+    vi.doUnmock('@/lib/supabase/server')
+    vi.unstubAllEnvs()
+  })
+
+  it('descarta la frase pero respeta el título que eligió el modelo', async () => {
+    withPools({
+      comic: [makeItem('comic', 'bueno'), makeItem('comic', 'otro')],
+    })
+    withScores({ comic_bueno: 10, comic_otro: 90 })
+    vi.doMock('@anthropic-ai/sdk', () =>
+      makeAnthropicMock(
+        claudeReturning(
+          '{"picks":[{"id":"comic_bueno","reason":"Único cómic disponible en la selección actual."}]}'
+        )
+      )
+    )
+    vi.doMock('@/lib/supabase/server', () => makeSupabaseMock())
+
+    const { getAiRecommendations } = await import('@/lib/claude/recommendations')
+    const recs = await getAiRecommendations('u-leak', [], 'es')
+
+    expect(recs).toHaveLength(1)
+    // La elección del modelo se respeta aunque su match sea PEOR: si cayera la
+    // pick entera, el fallback habría servido comic_otro (match 90).
+    expect(recs[0].item.id).toBe('comic_bueno')
+    // Y la frase no llega a la UI: pinta el porqué localizado.
+    expect(recs[0].reason).toBeUndefined()
+  })
+
+  it('una frase legítima sí llega a la card', async () => {
+    withPools({ comic: [makeItem('comic', 'bueno')] })
+    withScores({ comic_bueno: 70 })
+    vi.doMock('@anthropic-ai/sdk', () =>
+      makeAnthropicMock(
+        claudeReturning(
+          '{"picks":[{"id":"comic_bueno","reason":"Mismo tono noir que lo que más puntúas."}]}'
+        )
+      )
+    )
+    vi.doMock('@/lib/supabase/server', () => makeSupabaseMock())
+
+    const { getAiRecommendations } = await import('@/lib/claude/recommendations')
+    const recs = await getAiRecommendations('u-ok', [], 'es')
+
+    expect(recs[0].reason).toBe('Mismo tono noir que lo que más puntúas.')
+  })
+})
+
+// ── La regla vive también en el prompt (defensa en profundidad) ─────────────
+
+describe('buildPickPrompt — prohibición de hablar del proceso', () => {
+  it('el prompt prohíbe citar la selección y el %', async () => {
+    const { buildPickPrompt } = await import('@/lib/claude/recommendations')
+    const prompt = buildPickPrompt(
+      new Map<MediaType, MediaItem[]>([['movie', [makeItem('movie', '550')]]]),
+      new Map([['movie_550', 80]]),
+      [{ title: 'Inception', type: 'movie', year: 2010, score: 5, status: 'completed' }],
+      ['Action'],
+      'es'
+    )
+    expect(prompt).toContain('E-AIREC-SIN-PROCESO')
+    expect(prompt).toContain('selección actual')
+    expect(prompt).toContain('E-MATCH-SIN-BADGE')
+  })
+})
