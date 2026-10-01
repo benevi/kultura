@@ -582,6 +582,19 @@ pantalla, el valor bueno es el del artboard.
     peticiones y aun así puede quedarse corta. Es el lado correcto: el tope
     existe para no encadenar peticiones sin fin.
 
+- **Un solo sistema de botón** (E-BOTON-UNICO). Convivían `KButton` y
+  `button.tsx` (shadcn). Lo decidieron los números, no el gusto: 33 archivos
+  usaban `KButton` y **dos** el shadcn, y de sus siete variantes solo se
+  usaban `ghost` y `primary`. Los dos archivos (`RecommendButton`,
+  `RecommendModal`) pasan a `KButton` —`ghost` → `secondary`, que es el pill
+  de borde de F0— y `button.tsx` se borra con su test.
+  - Eso deja sin consumidores el **rojo legado de shadcn**
+    (`--primary: 0 79% 51%`), que era el otro punto de deuda: solo lo usaba la
+    variante `default` de ese componente, que no usaba nadie. Fuera de
+    `globals.css`.
+  - El resto del bloque de variables shadcn (`--card`, `--popover`, `--border`…)
+    se queda: no estorba y no es este el pase para auditarlo entero.
+
 - **El catálogo no muestra fechas futuras** (E-CATALOGO-FUTURO). Regla
   común a las 7 familias; la referencia vive en
   `src/lib/api/catalog-window.ts` y cada proveedor la aplica con SU
@@ -784,15 +797,11 @@ pantalla, el valor bueno es el del artboard.
 - `books-maps.ts` quedó casi entero como código muerto tras el híbrido de
   libros (E-BOOKS-HIBRIDO): solo siguen vivos `BOOKS_FORMATO` y
   `BOOKS_PUBLISHER`, que alimentan opciones de la UI. El constructor de query
-  de Google Books y sus helpers ya no los importa nadie — se conservan un
-  ciclo por si hay que revertir, y hay que borrarlos (con sus tests) cuando el
-  híbrido esté validado en producción.
-- `KButton` y `button.tsx` (shadcn-style) conviven como dos sistemas de
-  botón distintos — decidir cuál se queda antes de seguir migrando
-  pantallas que usan el segundo.
-- Revisar si el rojo legado de shadcn (`--primary: 0 79% 51%` en
-  `globals.css`) sigue siendo visible en algún componente real; no se ha
-  tocado en este pase.
+  de Google Books y sus helpers ya no los importa nadie.
+- `books-maps.ts` **sigue aquí a propósito**: la condición para borrarlo es
+  "cuando el híbrido esté validado EN PRODUCCIÓN", y esta rama aún no se ha
+  fusionado. Borrarlo antes quitaría la vía de vuelta de código que todavía no
+  ha corrido en producción.
 
 ## Flujo de trabajo recomendado para un nuevo sprint de diseño
 
