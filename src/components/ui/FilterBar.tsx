@@ -45,7 +45,7 @@ function triggerPillClass(active: boolean, open: boolean) {
   return cn(
     "inline-flex items-center gap-1.5 px-3 py-1.5 rounded-pill text-xs font-body font-medium whitespace-nowrap cursor-pointer",
     "border transition-all duration-150 ease-out active:scale-[0.97]",
-    "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-positive focus-visible:ring-offset-2 focus-visible:ring-offset-surface-base",
+    "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-pink focus-visible:ring-offset-2 focus-visible:ring-offset-surface-base",
     active
       ? "bg-accent-positive/15 border-accent-positive text-text-primary"
       : open
@@ -345,7 +345,7 @@ function MultiGroup({
             onChange={(e) => setQuery(e.target.value)}
             placeholder={group.label}
             aria-label={group.label}
-            className="mb-1.5 w-full bg-surface-elevated border border-surface-border rounded-lg px-2 py-1 text-xs text-text-primary focus:outline-none focus:ring-1 focus:ring-accent-positive"
+            className="mb-1.5 w-full bg-surface-elevated border border-surface-border rounded-lg px-2 py-1 text-xs text-text-primary focus:outline-none focus:ring-1 focus:ring-accent-pink"
           />
         )}
         <div className="flex flex-col gap-0.5">

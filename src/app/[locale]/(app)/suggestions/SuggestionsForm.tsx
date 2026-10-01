@@ -98,7 +98,7 @@ export function SuggestionsForm() {
           placeholder={t('subjectPlaceholder')}
           maxLength={120}
           required
-          className="w-full bg-surface-elevated rounded-2xl px-4 py-3 text-sm text-text-primary placeholder-text-tertiary focus:outline-none focus:ring-2 focus:ring-accent-positive"
+          className="w-full bg-surface-elevated rounded-2xl px-4 py-3 text-sm text-text-primary placeholder-text-tertiary focus:outline-none focus:ring-2 focus:ring-accent-pink"
         />
       </div>
 
@@ -114,7 +114,7 @@ export function SuggestionsForm() {
           maxLength={2000}
           rows={5}
           required
-          className="w-full bg-surface-elevated rounded-2xl px-4 py-3 text-sm text-text-primary placeholder-text-tertiary resize-none focus:outline-none focus:ring-2 focus:ring-accent-positive"
+          className="w-full bg-surface-elevated rounded-2xl px-4 py-3 text-sm text-text-primary placeholder-text-tertiary resize-none focus:outline-none focus:ring-2 focus:ring-accent-pink"
         />
         <p className="text-xs text-text-tertiary mt-1 text-right">{description.length}/2000</p>
       </div>

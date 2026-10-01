@@ -230,7 +230,7 @@ export function ListDetail({
             <p className="text-text-secondary text-sm">{t('noItemsHint')}</p>
             <Link
               href="/discover"
-              className="inline-flex items-center justify-center h-8 px-4 mt-1 text-xs rounded-pill font-body font-bold bg-accent-positive text-on-accent-positive hover:brightness-110 transition-all"
+              className="inline-flex items-center justify-center h-8 px-4 mt-1 text-xs rounded-pill font-body font-bold bg-accent-pink text-on-accent-pink hover:brightness-110 transition-all"
             >
               {t('noItemsDiscover')}
             </Link>
@@ -312,7 +312,7 @@ export function ListDetail({
               <select
                 value={inviteUserId}
                 onChange={(e) => setInviteUserId(e.target.value)}
-                className="flex-1 bg-surface-base border border-surface-border rounded-button px-3 py-2 text-sm text-text-primary focus:outline-none focus:ring-1 focus:ring-accent-positive"
+                className="flex-1 bg-surface-base border border-surface-border rounded-button px-3 py-2 text-sm text-text-primary focus:outline-none focus:ring-1 focus:ring-accent-pink"
               >
                 <option value="">{t('selectFriend')}</option>
                 {invitableFriends.map((f) => (

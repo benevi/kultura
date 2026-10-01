@@ -36,7 +36,7 @@ export function ProfileBio({ bio, isOwner, userId }: Props) {
           maxLength={200}
           rows={3}
           placeholder={t('bioPlaceholder')}
-          className="w-full bg-surface-elevated border border-surface-border rounded-button px-3 py-2 text-sm text-text-primary placeholder:text-text-tertiary resize-none focus:outline-none focus:ring-1 focus:ring-accent-positive"
+          className="w-full bg-surface-elevated border border-surface-border rounded-button px-3 py-2 text-sm text-text-primary placeholder:text-text-tertiary resize-none focus:outline-none focus:ring-1 focus:ring-accent-pink"
           autoFocus
         />
         <div className="flex items-center gap-2">

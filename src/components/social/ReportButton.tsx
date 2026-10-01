@@ -58,7 +58,7 @@ export function ReportButton({ targetType, targetId }: Props) {
         onChange={(e) => setReason(e.target.value)}
         placeholder={t('placeholder')}
         rows={2}
-        className="w-full bg-surface-base border border-surface-border rounded-button px-2 py-1.5 text-xs text-text-primary placeholder:text-text-tertiary resize-none focus:outline-none focus:ring-1 focus:ring-accent-positive"
+        className="w-full bg-surface-base border border-surface-border rounded-button px-2 py-1.5 text-xs text-text-primary placeholder:text-text-tertiary resize-none focus:outline-none focus:ring-1 focus:ring-accent-pink"
       />
       {status === 'error' && (
         <p className="text-xs text-accent-danger">{t('error')}</p>

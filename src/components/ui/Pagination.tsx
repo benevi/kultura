@@ -79,7 +79,7 @@ export function Pagination({
   const baseBtn =
     "inline-flex items-center justify-center min-w-10 h-10 px-3 rounded-md " +
     "text-sm font-medium transition-colors cursor-pointer " +
-    "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-positive " +
+    "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-pink " +
     "focus-visible:ring-offset-2 focus-visible:ring-offset-bg " +
     "disabled:pointer-events-none disabled:opacity-50";
   // Botón inactivo: superficie/borde del DS, hover visible.

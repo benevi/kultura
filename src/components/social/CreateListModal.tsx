@@ -67,7 +67,7 @@ export function CreateListModal({ onClose }: CreateListModalProps) {
               value={name}
               onChange={(e) => setName(e.target.value)}
               placeholder="Mi lista de películas..."
-              className="w-full bg-surface-base border border-surface-border rounded-button px-3 py-2 text-sm text-text-primary placeholder:text-text-tertiary focus:outline-none focus:ring-1 focus:ring-accent-positive"
+              className="w-full bg-surface-base border border-surface-border rounded-button px-3 py-2 text-sm text-text-primary placeholder:text-text-tertiary focus:outline-none focus:ring-1 focus:ring-accent-pink"
             />
           </div>
 
@@ -77,7 +77,7 @@ export function CreateListModal({ onClose }: CreateListModalProps) {
             <select
               value={mediaType}
               onChange={(e) => setMediaType(e.target.value as MediaTypeKey)}
-              className="w-full bg-surface-base border border-surface-border rounded-button px-3 py-2 text-sm text-text-primary focus:outline-none focus:ring-1 focus:ring-accent-positive"
+              className="w-full bg-surface-base border border-surface-border rounded-button px-3 py-2 text-sm text-text-primary focus:outline-none focus:ring-1 focus:ring-accent-pink"
             >
               {MEDIA_TYPE_KEYS.map((key) => (
                 <option key={key} value={key}>{tf(key)}</option>
