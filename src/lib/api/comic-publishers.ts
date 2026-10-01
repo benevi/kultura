@@ -22,7 +22,8 @@
 // ============================================================
 
 /**
- * Normaliza un nombre de editorial a "palabras separadas por un espacio":
+ * Normaliza un nombre (de editorial o de serie) a "palabras separadas por un
+ * espacio":
  * minúsculas, sin diacríticos, y cualquier tirada de caracteres no
  * alfanuméricos convertida en UN espacio.
  *
@@ -31,7 +32,7 @@
  * puntuación se colapsa porque "BOOM! Studios" y "Boom Studios" son la misma
  * editorial.
  */
-function normalizePublisher(name: string): string {
+function normalizeName(name: string): string {
   return name
     .normalize("NFD")
     .replace(/[̀-ͯ]/g, "")
@@ -42,6 +43,7 @@ function normalizePublisher(name: string): string {
 
 /**
  * ¿Aparece `entry` como secuencia COMPLETA de palabras dentro de `name`?
+ * Se usa tanto para editoriales como para nombres de serie.
  *
  * No es substring crudo, y la diferencia importa: con substring, la entrada
  * "DC" casa con "Hardcover" ("har-DC-over") y colaría cualquier editorial con
@@ -49,8 +51,8 @@ function normalizePublisher(name: string): string {
  * "DC Comics" y no con "Hardcover". Es la misma política anti-falsos-positivos
  * que ya usa el filtro NSFW con sus `\b`.
  */
-function matchesPublisherEntry(name: string, entry: string): boolean {
-  return ` ${normalizePublisher(name)} `.includes(` ${normalizePublisher(entry)} `);
+function matchesEntry(name: string, entry: string): boolean {
+  return ` ${normalizeName(name)} `.includes(` ${normalizeName(entry)} `);
 }
 
 /**
@@ -59,7 +61,7 @@ function matchesPublisherEntry(name: string, entry: string): boolean {
  * apartado (MangaDex) y no entra aquí.
  *
  * Cada entrada se compara como secuencia de palabras (ver
- * `matchesPublisherEntry`), así que "Marvel" cubre "Marvel Comics", "Marvel
+ * `matchesEntry`), así que "Marvel" cubre "Marvel Comics", "Marvel
  * UK" y "Marvel Knights" sin tener que enumerarlos.
  */
 export const COMIC_PUBLISHERS: string[] = [
@@ -317,23 +319,23 @@ export const ADULT_PUBLISHERS: string[] = [
 /** True si la editorial figura en la lista blanca del catálogo de cómic. */
 export function isAllowedComicPublisher(name: string): boolean {
   if (!name) return false;
-  return COMIC_PUBLISHERS.some((p) => matchesPublisherEntry(name, p));
+  return COMIC_PUBLISHERS.some((p) => matchesEntry(name, p));
 }
 
 /** True si el nombre de editorial corresponde a una casa de manga/manhwa/manhua. */
 export function isMangaPublisher(name: string): boolean {
   if (!name) return false;
-  return MANGA_PUBLISHERS.some((p) => matchesPublisherEntry(name, p));
+  return MANGA_PUBLISHERS.some((p) => matchesEntry(name, p));
 }
 
 /** True si el nombre de editorial corresponde a un sello adulto/erótico. */
 export function isAdultPublisher(name: string): boolean {
   if (!name) return false;
-  return ADULT_PUBLISHERS.some((p) => matchesPublisherEntry(name, p));
+  return ADULT_PUBLISHERS.some((p) => matchesEntry(name, p));
 }
 
 /**
- * La decisión completa: ¿entra este publisher en el catálogo de cómic?
+ * ¿Entra este publisher en el catálogo de cómic?
  *
  * Lista blanca primero (por defecto deniega), veto después. El orden es lo que
  * resuelve "Dark Horse Manga": pasa la lista blanca y lo tumba el veto.
@@ -341,4 +343,50 @@ export function isAdultPublisher(name: string): boolean {
 export function acceptsComicPublisher(name: string): boolean {
   if (!isAllowedComicPublisher(name)) return false;
   return !isMangaPublisher(name) && !isAdultPublisher(name);
+}
+
+// ── Veto por SERIE (E-COMIC-SERIE-ADULTA) ────────────────────────────────────
+//
+// Una editorial legítima puede publicar una serie adulta con su propio nombre,
+// y entonces NINGUNA lista de editoriales puede separarlas. El caso medido:
+// "Swinging Island - A Taste of Freedom" sale con el logo de **Splitter** en la
+// portada, la misma casa que publica "Der tönerne Thron", "Bob Morane" y "Rick
+// Master". Quitar Splitter se llevaría por delante la BD alemana legítima; es
+// la SERIE la que es adulta, no la casa.
+//
+// El filtro NSFW global tampoco llega: "Swinging Island: A Taste of Freedom" no
+// contiene ningún término de `NSFW_TERMS_LC`, y meter "swinging" ahí sería una
+// fábrica de falsos positivos (swing, the swinging sixties).
+//
+// Esta lista es enumerativa y no lo disimula: cada entrada es una serie vista
+// en pantalla, no una categoría. Es el grano correcto —acota sin romper el
+// catálogo de su editorial— pero NO es la solución estructural. Esa sería
+// pasarle el filtro NSFW a la sinopsis larga (`description`) de ComicVine, y
+// está pendiente de medir el coste del campo: pedirlo para 300 issues por
+// página es exactamente lo que tumbó el catálogo de libros (E-BOOKS-ISBN).
+
+/** Series que no entran en el catálogo, sea cual sea su editorial. */
+export const BLOCKED_COMIC_VOLUMES: string[] = [
+  "Swinging Island", // Splitter — álbum erótico (visto en Descubrir → Cómics)
+];
+
+/** True si el nombre de la serie figura en el veto de series adultas. */
+export function isBlockedComicVolume(name: string): boolean {
+  if (!name) return false;
+  return BLOCKED_COMIC_VOLUMES.some((v) => matchesEntry(name, v));
+}
+
+/**
+ * La decisión completa: ¿entra este issue en el catálogo de cómic?
+ *
+ * Dos puertas con granos distintos, y las dos hacen falta: la editorial
+ * (deniega por defecto, cierra el paso a lo desconocido) y la serie (lo que la
+ * editorial no puede distinguir porque es suya).
+ */
+export function acceptsComicIssue(issue: {
+  publisher: string;
+  volume?: string | null;
+}): boolean {
+  if (!acceptsComicPublisher(issue.publisher)) return false;
+  return !(issue.volume && isBlockedComicVolume(issue.volume));
 }

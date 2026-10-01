@@ -720,3 +720,54 @@ describe("getRecentComics — puerta de editoriales", () => {
     expect(result.items[0].id).toBe("comic_50");
   });
 });
+
+// ── Veto por serie, extremo a extremo (E-COMIC-SERIE-ADULTA) ────────────────
+
+describe("getRecentComics — veto por serie adulta", () => {
+  beforeEach(() => {
+    process.env.COMICVINE_KEY = "test-key";
+  });
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
+    vi.clearAllMocks();
+  });
+
+  it("descarta la serie adulta y conserva el resto de SU MISMA editorial", async () => {
+    const fetchMock = mockFetchByPath(
+      {
+        status_code: 1,
+        error: "OK",
+        number_of_total_results: 2,
+        results: [
+          {
+            ...ISSUE,
+            id: 60,
+            volume: { id: 9600, name: "Der tönerne Thron" },
+          },
+          {
+            ...ISSUE,
+            id: 61,
+            volume: { id: 9601, name: "Swinging Island" },
+          },
+        ],
+      },
+      {
+        status_code: 1,
+        error: "OK",
+        // La MISMA editorial para los dos: es justo lo que el filtro por
+        // publisher no puede separar.
+        results: [
+          { id: 9600, publisher: { id: 7, name: "Splitter" } },
+          { id: 9601, publisher: { id: 7, name: "Splitter" } },
+        ],
+      }
+    );
+    vi.stubGlobal("fetch", fetchMock);
+
+    const result = await getRecentComics(1);
+
+    expect(result.items).toHaveLength(1);
+    expect(result.items[0].id).toBe("comic_60");
+  });
+});

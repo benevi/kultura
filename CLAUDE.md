@@ -502,6 +502,33 @@ instrucciones operativas de la cabecera de este documento.
     texto ES/EN sobre el título. La puerta de editoriales es la defensa
     real; no contar con la otra.
 
+- **La editorial NO basta: hace falta un veto por SERIE**
+  (E-COMIC-SERIE-ADULTA). Medido en pantalla, no deducido: *Swinging Island
+  — A Taste of Freedom* es un álbum erótico que sale con el logo de
+  **Splitter** en la portada, la misma casa que publica *Der tönerne
+  Thron*, *Bob Morane* y *Rick Master*. Una editorial legítima publicando
+  una serie adulta bajo su propio nombre es un caso que **ninguna lista de
+  editoriales puede resolver**, porque la editorial es la misma a los dos
+  lados. Tres cosas:
+  - `BLOCKED_COMIC_VOLUMES` veta por nombre de SERIE, y `acceptsComicIssue`
+    aplica las dos puertas: editorial primero, serie después. El nombre sale
+    de `volume.name`, que ya viene en el `field_list`, así que no cuesta
+    una petición más.
+  - **Quitar la editorial era la alternativa y es peor**: se habría llevado
+    por delante la BD alemana legítima, y la siguiente editorial europea
+    haría lo mismo. Lo adulto aquí es la serie, no la casa.
+  - **Esta lista es enumerativa y no lo disimula.** Es el grano correcto,
+    no la solución estructural. La estructural sería pasarle el filtro NSFW
+    a la sinopsis larga (`description`) de ComicVine; está **pendiente de
+    medir el coste del campo**, porque pedirlo para 300 issues por página es
+    exactamente lo que tumbó el catálogo de libros (E-BOOKS-ISBN). Ojo: la
+    API de ComicVine exige clave, así que el truco de pasarle URLs al
+    usuario para medir desde su navegador NO sirve aquí.
+  - **Pendiente**: en la misma página salían cuatro mangas en edición
+    europea (*I Wanna Be Your Girl*, *Is He the One?*, *Hana Ne Peut Pas
+    Vivre Sans Moi*, *Ascendance of a Bookworm*). Falta saber su publisher
+    para decidir si es el mismo agujero u otro distinto.
+
 - **El cómic tiene su propio techo de páginas** (E-COMIC-PROFUNDIDAD):
   `COMIC_MAX_PAGES = 20`, por debajo del común `DISCOVER_MAX_PAGES = 100`.
   Es la única familia cuya página N no lee la página N del proveedor sino

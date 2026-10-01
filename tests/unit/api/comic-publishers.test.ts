@@ -10,11 +10,14 @@
 
 import { describe, it, expect } from "vitest";
 import {
+  acceptsComicIssue,
   acceptsComicPublisher,
   isAllowedComicPublisher,
+  isBlockedComicVolume,
   isMangaPublisher,
   isAdultPublisher,
   COMIC_PUBLISHERS,
+  BLOCKED_COMIC_VOLUMES,
 } from "@/lib/api/comic-publishers";
 
 describe("acceptsComicPublisher (por defecto DENIEGA)", () => {
@@ -102,6 +105,67 @@ describe("coherencia de las listas", () => {
   it("ninguna entrada de la lista blanca está vetada por sí misma", () => {
     for (const name of COMIC_PUBLISHERS) {
       expect(acceptsComicPublisher(name), name).toBe(true);
+    }
+  });
+});
+
+// ── Veto por serie (E-COMIC-SERIE-ADULTA) ────────────────────────────────────
+//
+// El caso medido en pantalla: "Swinging Island - A Taste of Freedom" lleva el
+// logo de Splitter, la misma casa de "Der tönerne Thron" y "Bob Morane". El
+// filtro por editorial NO puede separarlos, porque la editorial es la misma.
+
+describe("acceptsComicIssue — veto por serie", () => {
+  it("la serie adulta cae aunque su editorial esté permitida", () => {
+    expect(acceptsComicPublisher("Splitter")).toBe(true);
+    expect(
+      acceptsComicIssue({ publisher: "Splitter", volume: "Swinging Island" })
+    ).toBe(false);
+  });
+
+  // Lo que hace que esto sea la opción B y no "quitar Splitter": el resto del
+  // catálogo de esa editorial tiene que seguir entrando.
+  it("el resto del catálogo de esa misma editorial sigue entrando", () => {
+    for (const volume of [
+      "Der tönerne Thron",
+      "Bob Morane",
+      "Die neuen Fälle des Rick Master",
+      "Elfies Zauberbuch",
+    ]) {
+      expect(
+        acceptsComicIssue({ publisher: "Splitter", volume }),
+        volume
+      ).toBe(true);
+    }
+  });
+
+  it("un issue sin serie resuelta no se bloquea por ello", () => {
+    expect(acceptsComicIssue({ publisher: "Marvel Comics" })).toBe(true);
+    expect(
+      acceptsComicIssue({ publisher: "Marvel Comics", volume: null })
+    ).toBe(true);
+  });
+
+  it("la editorial sigue mandando primero: serie limpia no salva a una editorial vetada", () => {
+    expect(
+      acceptsComicIssue({ publisher: "Shueisha", volume: "Cualquier Cosa" })
+    ).toBe(false);
+    expect(
+      acceptsComicIssue({ publisher: "Editorial Desconocida", volume: "X-Men" })
+    ).toBe(false);
+  });
+
+  it("el match de serie es por palabras completas y tolera mayúsculas", () => {
+    expect(isBlockedComicVolume("swinging island")).toBe(true);
+    expect(isBlockedComicVolume("Swinging Island Vol. 2")).toBe(true);
+    // No basta con compartir una palabra suelta.
+    expect(isBlockedComicVolume("Treasure Island")).toBe(false);
+    expect(isBlockedComicVolume("Swinging Sixties")).toBe(false);
+  });
+
+  it("toda entrada del veto bloquea de verdad", () => {
+    for (const volume of BLOCKED_COMIC_VOLUMES) {
+      expect(isBlockedComicVolume(volume), volume).toBe(true);
     }
   });
 });
