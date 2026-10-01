@@ -425,6 +425,37 @@ instrucciones operativas de la cabecera de este documento.
     sin diacríticos) ANTES de comparar, igual que en `comic-publishers.ts`.
     Si se añade un patrón nuevo, escribirlo contra el texto YA normalizado.
 
+- **La frase de la IA va en español, sin anglicismos ni jerga del
+  mecanismo** (E-AIREC-SIN-JERGA). Visto en Inicio: *"...matching tu
+  perfil."* — dos fallos en tres palabras. Es E-MATCH-SIN-BADGE por otra
+  puerta: el modelo describiendo su cálculo en vez del título. Vive en el
+  mismo sitio que el punto anterior (`reasonLeaksProcess` +
+  regla de prompt) y hereda su mecánica: cae la frase, no la elección.
+  Tres cosas propias:
+  - **Las listas de jerga van POR IDIOMA, y no es simetría decorativa.** En
+    inglés *"it matches genres you already enjoy"* es la frase CORRECTA — la
+    que usa el propio respaldo localizado de la UI
+    (`mediaDetail.whyRecommendedText`) —, así que vetar "match" en EN
+    descartaría frases buenas. En español sí es anglicismo y se veta. Lo que
+    no cambia de idioma es nombrar el mecanismo: perfil, afinidad,
+    algoritmo, scoring.
+  - **"Puntuación" se queda SOLO en el prompt, sin patrón.** *"Con la mejor
+    puntuación de la crítica"* es una frase legítima sobre el título; un
+    patrón ahí descartaría frases buenas. Misma política
+    anti-falsos-positivos.
+  - **El tope del `reason` bajó a 100 caracteres** (era 140) y la UI dejó de
+    recortar — ver el punto siguiente.
+
+- **La frase de la IA en Inicio NO se recorta** (E-AIREC-SIN-RECORTE). El
+  `line-clamp-3` de `AiRecommendations` cortaba la tercera línea por la
+  MITAD de los glifos (visto en pantalla, no deducido: el preview no es
+  accesible desde estas sesiones y la utilidad de Tailwind SÍ se genera, así
+  que la causa exacta quedó sin aislar). En vez de adivinarla se eliminó el
+  modo de fallo: sin recorte, y el largo se controla en ORIGEN (el prompt
+  pide máx. 100 caracteres). Contrapartida asumida: una frase larga hace la
+  card algo más alta — preferible a una frase cortada a medio carácter. Si
+  se vuelve a meter un `line-clamp` aquí, vuelve el bug.
+
 - **El catálogo no muestra fechas futuras** (E-CATALOGO-FUTURO). Regla
   común a las 7 familias; la referencia vive en
   `src/lib/api/catalog-window.ts` y cada proveedor la aplica con SU

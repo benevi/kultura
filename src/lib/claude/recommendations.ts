@@ -38,7 +38,7 @@ const log = createLogger('claude/recommendations')
 
 // v6: reescritura a catálogo real + match (E-AIREC-CATALOG). Invalida v5, cuyas
 // entradas guardaban la forma vieja de AiRec (title/searchQuery/mediaUrl).
-const PROMPT_VERSION = 'v6'
+const PROMPT_VERSION = 'v7'
 
 /** Una card de "Para ti": ítem real del catálogo, su match y el porqué. */
 export interface AiRec {
@@ -310,7 +310,7 @@ Reglas:
 - El % de match es el criterio PRINCIPAL: prioriza los valores altos. Puedes
   preferir uno de match algo menor solo si encaja claramente mejor con lo que
   el usuario ya disfruta, y en ese caso explícalo en "reason".
-- "reason" es una frase corta (máx. 140 caracteres) dirigida al usuario,
+- "reason" es una frase corta (máx. 100 caracteres) dirigida al usuario,
   explicando por qué le va a gustar ESE título en concreto conectándolo con su
   biblioteca o sus géneros favoritos. Va en el idioma indicado arriba.
 - NUNCA menciones el % de match ni ningún número de afinidad en "reason"
@@ -323,6 +323,12 @@ Reglas:
   "la única opción de este tipo", "el mejor de la lista" y cualquier variante.
   Si de un tipo solo hay un candidato, NO lo digas: habla del título en sí —su
   género, su tono, lo que ofrece— como si lo hubieras elegido entre mil.
+- ESCRIBE EN EL IDIOMA INDICADO, SIN ANGLICISMOS (E-AIREC-SIN-JERGA). En
+  español no existe "matching", ni "match", ni "scoring": se dice "comparte",
+  "coincide con", "en la línea de". Visto en Inicio: "...matching tu perfil".
+- NO NOMBRES EL MECANISMO. Nada de "perfil", "afinidad", "algoritmo",
+  "puntuación" ni "recomendador": el usuario no ve ninguna de esas piezas. Cita
+  lo concreto —un título suyo, un género, un tono— no el sistema que lo calcula.
 
 Responde ÚNICAMENTE con JSON válido. Sin markdown, sin texto adicional:
 {
@@ -368,6 +374,39 @@ const REASON_LEAK_PATTERNS: RegExp[] = [
   /\bin (?:the|this) list\b/,
 ]
 
+// ── Ni anglicismos ni jerga del mecanismo (E-AIREC-SIN-JERGA) ──────────────
+//
+// Visto en Inicio: "...matching tu perfil." Dos fallos en tres palabras:
+// "matching" no es español, y "perfil" es una pieza interna —el usuario no ve
+// ningún perfil con el que casar nada—. Es el mismo error que E-MATCH-SIN-BADGE
+// por otra puerta: el modelo describiendo su cálculo en vez del título.
+//
+// Las listas van POR IDIOMA, y no es simetría decorativa: en inglés "it matches
+// genres you enjoy" es la frase correcta (la que usa el propio fallback de la
+// UI), así que vetar "match" en EN descartaría frases buenas. En español sí es
+// anglicismo y se veta. Lo que se veta en los dos idiomas es nombrar el
+// mecanismo (perfil, afinidad, algoritmo).
+//
+// "Puntuación" se queda SOLO en el prompt, sin patrón: "con la mejor
+// puntuación de la crítica" es una frase legítima sobre el título, así que un
+// patrón aquí descartaría frases buenas — misma política anti-falsos-positivos
+// que arriba.
+const REASON_JARGON_ES: RegExp[] = [
+  /\bmatch(?:ing|es|ea|eando)?\b/,
+  /\bscor(?:e|ing)\b/,
+  /\btu perfil\b/,
+  /\bafinidad\b/,
+  /\balgoritmo\b/,
+]
+
+const REASON_JARGON_EN: RegExp[] = [
+  /\byour profile\b/,
+  /\baffinity\b/,
+  /\balgorithm\b/,
+  /\bscoring\b/,
+  /\bmatch score\b/,
+]
+
 /** Minúsculas y sin diacríticos, para que `\b` funcione sobre palabras acentuadas. */
 function normalizeReason(reason: string): string {
   return reason
@@ -376,10 +415,16 @@ function normalizeReason(reason: string): string {
     .toLowerCase()
 }
 
-/** True si la frase habla del proceso o cita una cifra, en vez de hablar del título. */
-export function reasonLeaksProcess(reason: string): boolean {
+/**
+ * True si la frase habla del proceso, cita una cifra o usa jerga/anglicismos
+ * del mecanismo en vez de hablar del título. El `locale` importa: hay
+ * vocabulario legítimo en un idioma que es anglicismo en el otro (ver
+ * `REASON_JARGON_ES`).
+ */
+export function reasonLeaksProcess(reason: string, locale: string = 'es'): boolean {
   const text = normalizeReason(reason)
-  return REASON_LEAK_PATTERNS.some((re) => re.test(text))
+  const jargon = locale === 'es' ? REASON_JARGON_ES : REASON_JARGON_EN
+  return [...REASON_LEAK_PATTERNS, ...jargon].some((re) => re.test(text))
 }
 
 /**
@@ -387,7 +432,7 @@ export function reasonLeaksProcess(reason: string): boolean {
  * usable. Un id con `undefined` significa "el modelo lo eligió, pero su frase
  * delataba el proceso y se descartó": la elección se respeta, el texto no.
  */
-function parsePicks(rawText: string): Map<string, string | undefined> {
+function parsePicks(rawText: string, locale: string = 'es'): Map<string, string | undefined> {
   const chosen = new Map<string, string | undefined>()
 
   // El regex extrae el primer bloque {...}; el schema del prompt siempre pide un
@@ -404,7 +449,7 @@ function parsePicks(rawText: string): Map<string, string | undefined> {
       const { id, reason } = pick as { id?: unknown; reason?: unknown }
       if (typeof id === 'string' && typeof reason === 'string' && reason.trim() !== '') {
         const text = reason.trim()
-        if (reasonLeaksProcess(text)) {
+        if (reasonLeaksProcess(text, locale)) {
           log.warn('Reason descartada: delataba el proceso', { id, reason: text })
           chosen.set(id, undefined)
         } else {
@@ -527,7 +572,7 @@ async function chooseWithClaude(
     })
     const block = message.content[0]
     if (block.type !== 'text') return new Map()
-    return parsePicks(block.text)
+    return parsePicks(block.text, locale)
   } catch (err) {
     log.error('Claude API error', { err })
     return new Map()
