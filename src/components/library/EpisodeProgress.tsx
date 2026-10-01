@@ -36,7 +36,7 @@ export function EpisodeProgress({ value, onChange, showSeason }: EpisodeProgress
   }
 
   const inputClass =
-    'bg-surface-base border border-surface-border rounded-button px-3 py-2 text-sm font-body text-text-primary placeholder:text-text-tertiary focus-visible:outline-none focus-visible:border-accent-positive focus-visible:ring-1 focus-visible:ring-accent-positive/40 transition-colors'
+    'bg-surface-base border border-surface-border rounded-button px-3 py-2 text-sm font-body text-text-primary placeholder:text-text-tertiary focus-visible:outline-none focus-visible:border-accent-pink focus-visible:ring-1 focus-visible:ring-accent-pink/40 transition-colors'
 
   return (
     <div className="flex items-end gap-4">

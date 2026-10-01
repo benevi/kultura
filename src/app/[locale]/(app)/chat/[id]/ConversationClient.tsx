@@ -269,12 +269,12 @@ export function ConversationClient({ conversationId, otherUser, currentUserId }:
           value={text}
           onChange={e => setText(e.target.value)}
           placeholder={t('messagePlaceholder')}
-          className="flex-1 bg-surface-elevated border border-surface-border rounded-full px-4 py-2 text-sm text-text-primary placeholder-text-tertiary focus:outline-none focus:ring-1 focus:ring-accent-positive"
+          className="flex-1 bg-surface-elevated border border-surface-border rounded-full px-4 py-2 text-sm text-text-primary placeholder-text-tertiary focus:outline-none focus:ring-1 focus:ring-accent-pink"
         />
         <button
           type="submit"
           disabled={!text.trim() || sending}
-          className="w-9 h-9 rounded-full bg-accent-positive text-on-accent-positive flex items-center justify-center hover:opacity-90 disabled:opacity-50 transition-colors flex-shrink-0"
+          className="w-9 h-9 rounded-full bg-accent-pink text-on-accent-pink flex items-center justify-center hover:opacity-90 disabled:opacity-50 transition-colors flex-shrink-0"
           aria-label={t('send')}
         >
           <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>

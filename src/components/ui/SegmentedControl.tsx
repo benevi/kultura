@@ -60,7 +60,7 @@ export function SegmentedControl({
               "inline-flex items-center justify-center px-3 py-1.5 rounded-lg",
               "text-xs font-body font-medium whitespace-nowrap cursor-pointer",
               "transition-all duration-150 ease-out",
-              "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-positive focus-visible:ring-offset-2 focus-visible:ring-offset-surface-base",
+              "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-pink focus-visible:ring-offset-2 focus-visible:ring-offset-surface-base",
               active
                 ? "bg-accent-positive text-on-accent-positive"
                 : "text-text-secondary hover:text-text-primary"

@@ -154,7 +154,7 @@ export function SearchBar({
           onKeyDown={handleKeyDown}
           placeholder={resolvedPlaceholder}
           aria-label={resolvedPlaceholder}
-          className="w-full bg-surface-elevated border border-transparent rounded-pill pl-11 pr-11 py-3 text-sm font-body text-text-primary placeholder:text-text-tertiary focus:outline-none focus:ring-2 focus:ring-accent-positive transition-colors"
+          className="w-full bg-surface-elevated border border-transparent rounded-pill pl-11 pr-11 py-3 text-sm font-body text-text-primary placeholder:text-text-tertiary focus:outline-none focus:ring-2 focus:ring-accent-pink transition-colors"
         />
         {loading && (
           <Spinner

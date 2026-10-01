@@ -445,7 +445,7 @@ export function DiscoverClient({
               "shrink-0 inline-flex items-center justify-center gap-1.5 rounded-button border px-3 py-2",
               "text-sm font-body font-medium whitespace-nowrap",
               "transition-all duration-150 ease-out",
-              "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-positive focus-visible:ring-offset-2 focus-visible:ring-offset-surface-base",
+              "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-pink focus-visible:ring-offset-2 focus-visible:ring-offset-surface-base",
               items.length === 0
                 ? "bg-surface-elevated text-text-tertiary border-surface-border cursor-not-allowed opacity-60"
                 : "bg-surface-elevated text-text-secondary border-surface-border hover:text-text-primary hover:border-text-tertiary active:scale-[0.97] cursor-pointer"
@@ -466,7 +466,7 @@ export function DiscoverClient({
                 type="button"
                 onClick={clearSearch}
                 aria-label={tF("reset")}
-                className="text-muted hover:text-text-primary transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-positive rounded-full"
+                className="text-muted hover:text-text-primary transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-pink rounded-full"
               >
                 <IconClose className="h-3.5 w-3.5" aria-hidden="true" />
               </button>
@@ -501,7 +501,7 @@ export function DiscoverClient({
                     "inline-flex items-center justify-center gap-1.5 px-4 py-2 rounded-full",
                     "text-sm font-body font-medium whitespace-nowrap cursor-pointer border",
                     "transition-all duration-150 ease-out active:scale-[0.97]",
-                    "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-positive focus-visible:ring-offset-2 focus-visible:ring-offset-surface-base",
+                    "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-pink focus-visible:ring-offset-2 focus-visible:ring-offset-surface-base",
                     active
                       ? "bg-accent-positive text-on-accent-positive border-accent-positive"
                       : "bg-surface-elevated text-text-secondary border-surface-border hover:text-text-primary hover:border-text-tertiary"
