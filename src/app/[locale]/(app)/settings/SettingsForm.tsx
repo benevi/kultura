@@ -1,6 +1,7 @@
 'use client'
 
 import { useRef, useState } from 'react'
+import { PageHeading } from '@/components/layout/PageHeading'
 import { useTranslations, useLocale } from 'next-intl'
 import { useRouter, usePathname } from 'next/navigation'
 import { KButton } from '@/components/ui/KButton'
@@ -201,9 +202,7 @@ export function SettingsForm({
 
   return (
     <div className="flex flex-col gap-8">
-      <h1 className="font-display text-2xl md:text-3xl font-extrabold text-text-primary">
-        {t('title')} <span aria-hidden="true">⚙️</span>
-      </h1>
+      <PageHeading emoji="⚙️" className="mb-0">{t('title')}</PageHeading>
 
       {/* Sección Perfil */}
       <section>

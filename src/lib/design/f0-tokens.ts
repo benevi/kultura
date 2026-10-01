@@ -1,42 +1,48 @@
 // ============================================================
-// KULTURA — Tokens F0 (OKLCH), valores literales
+// KULTURA — Tokens F0 para estilos en línea
 // ------------------------------------------------------------
-// Copiados 1:1 de CLAUDE.md ("Sistema de diseño — fuente de verdad").
-// Este worktree se creó antes de que el commit de re-skin de tokens
-// (`[design] Re-skin de tokens a la paleta OKLCH real de F0 v2`,
-// rama claude/revision-exhaustiva-proyecto-4mcw94) llegara a esta base —
-// `globals.css`/`tailwind.config.ts` siguen en la paleta antigua (hex) y
-// no deben tocarse desde esta tarea. Estas constantes son el workaround
-// documentado para poder aplicar el criterio visual F0 real (colores
-// vivos correctos, no una aproximación) sin migrar esos dos archivos.
+// Apuntan a las custom properties REALES de `globals.css`, no a literales
+// OKLCH (E-F0-TOKENS-VAR).
 //
-// Cuando esta rama incorpore esa migración, estas literales deberían
-// sustituirse por las custom properties reales (`var(--pink)`, etc.) —
-// ver la nota en CLAUDE.md "Cuando esto pase a código".
+// Nacieron como literales clavados: este módulo se creó en un worktree
+// anterior al re-skin de tokens, cuando `globals.css` y `tailwind.config.ts`
+// seguían en la paleta hex antigua y no podían tocarse desde aquella tarea.
+// Su propia cabecera decía que, cuando esa migración llegara, las literales
+// debían sustituirse por `var(--…)`. Llegó, y durante un tiempo no se hizo:
+// trece archivos pintaban con valores clavados, inmunes a cualquier cambio
+// de token — exactamente la mezcla de paletas que CLAUDE.md prohíbe.
+//
+// La sustitución es 1:1 (los literales coincidían exactamente con los valores
+// de `globals.css`), así que no cambia un píxel; lo que cambia es que a partir
+// de ahora estos trece archivos SIGUEN al sistema de diseño en vez de
+// congelar una copia suya.
+//
+// Son valores CSS, así que `var(--x)` sirve en cualquier sitio donde servía la
+// literal: `style={{ background: F0.pink }}`, dentro de un `linear-gradient()`
+// interpolado, etc.
+//
+// Para código NUEVO, preferir las clases de Tailwind (`bg-accent-pink`,
+// `text-text-secondary`…). Este objeto es para los estilos en línea que ya
+// existen y para los casos en que Tailwind no puede generar la clase.
 // ============================================================
 
 export const F0 = {
-  bg: 'oklch(16% 0.015 280)',
-  surface: 'oklch(21% 0.02 280)',
-  surface2: 'oklch(26% 0.025 280)',
-  stroke: 'oklch(32% 0.025 280)',
-  text: 'oklch(97% 0.004 280)',
-  // Intermedio entre `text` y `muted` para jerarquía de dos niveles
-  // (mismo criterio que usa el re-skin real en la otra rama).
-  textSecondary: 'oklch(76% 0.02 280)',
-  muted: 'oklch(68% 0.02 280)',
+  bg: 'var(--surface-base)',
+  surface: 'var(--surface-default)',
+  surface2: 'var(--surface-elevated)',
+  stroke: 'var(--surface-border)',
+  text: 'var(--text-primary)',
+  textSecondary: 'var(--text-secondary)',
+  muted: 'var(--text-tertiary)',
 
-  pink: 'oklch(68% 0.24 350)',
-  lime: 'oklch(83% 0.24 130)',
-  orange: 'oklch(72% 0.19 55)',
-  purple: 'oklch(62% 0.19 300)',
-  blue: 'oklch(68% 0.16 250)',
-  yellow: 'oklch(85% 0.17 95)',
+  pink: 'var(--accent-pink)',
+  lime: 'var(--accent-lime)',
+  orange: 'var(--accent-orange)',
+  purple: 'var(--accent-purple)',
+  blue: 'var(--accent-blue)',
+  yellow: 'var(--accent-yellow)',
 
-  onPink: 'oklch(15% 0.02 350)',
-  onLime: 'oklch(18% 0.02 130)',
-  onPurple: 'oklch(15% 0.02 300)',
+  onPink: 'var(--on-accent-pink)',
+  onLime: 'var(--on-accent-lime)',
+  onPurple: 'var(--on-accent-purple)',
 } as const
-
-/** Sombra "pegatina" dura (CLAUDE.md — badge de match, cards feature). */
-export const F0_STICKER_SHADOW = '4px 4px 0 rgba(0,0,0,.4)'

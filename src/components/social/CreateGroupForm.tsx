@@ -22,7 +22,7 @@ interface CreateGroupFormProps {
 }
 
 const FIELD_CLASS =
-  'w-full rounded-2xl border-2 px-3 py-2.5 text-sm placeholder:opacity-60 resize-none focus:outline-none focus:ring-2 focus-visible:ring-[oklch(68%_0.24_350)]'
+  'w-full rounded-2xl border-2 px-3 py-2.5 text-sm placeholder:opacity-60 resize-none focus:outline-none focus:ring-2 focus-visible:ring-accent-pink'
 const FIELD_STYLE = { background: F0.surface2, borderColor: F0.stroke, color: F0.text }
 
 /**

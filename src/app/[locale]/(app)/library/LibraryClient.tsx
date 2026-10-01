@@ -1,6 +1,7 @@
 'use client'
 
 import { useMemo } from 'react'
+import { PageHeading } from '@/components/layout/PageHeading'
 import { useSearchParams } from 'next/navigation'
 import { useTranslations } from 'next-intl'
 import { useRouter, Link } from '@/i18n/navigation'
@@ -164,7 +165,7 @@ export function LibraryClient({ entries }: LibraryClientProps) {
   if (entries.length === 0) {
     return (
       <div>
-        <h1 className="font-display text-4xl tracking-wide text-text-primary mb-8">{t('title')}</h1>
+        <PageHeading emoji="📚">{t('title')}</PageHeading>
         <EmptyLibrary t={t} />
       </div>
     )
@@ -173,12 +174,16 @@ export function LibraryClient({ entries }: LibraryClientProps) {
   return (
     <div>
       {/* Header */}
-      <div className="flex items-center justify-between gap-3 py-4 mb-2">
-        <h1 className="font-display text-4xl tracking-wide text-text-primary">{t('title')}</h1>
-        <span className="shrink-0 rounded-pill bg-surface-elevated px-3 py-1 text-xs font-body font-semibold text-text-secondary">
-          {filtered.length} {t('items')}
-        </span>
-      </div>
+      <PageHeading
+        emoji="📚"
+        action={
+          <span className="shrink-0 rounded-pill bg-surface-elevated px-3 py-1 text-xs font-body font-semibold text-text-secondary">
+            {filtered.length} {t('items')}
+          </span>
+        }
+      >
+        {t('title')}
+      </PageHeading>
 
       {/* Filters */}
       <div className="flex flex-col gap-4 mb-8 pb-6 border-b border-border">

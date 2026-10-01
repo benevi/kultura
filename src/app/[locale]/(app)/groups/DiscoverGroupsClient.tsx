@@ -112,7 +112,7 @@ export function DiscoverGroupsClient() {
         onChange={e => setQuery(e.target.value)}
         placeholder={t('searchPlaceholder')}
         aria-label={t('searchPlaceholder')}
-        className="w-full rounded-2xl border-2 px-4 py-2.5 text-sm placeholder:opacity-60 focus:outline-none focus:ring-2 focus-visible:ring-[oklch(68%_0.24_350)]"
+        className="w-full rounded-2xl border-2 px-4 py-2.5 text-sm placeholder:opacity-60 focus:outline-none focus:ring-2 focus-visible:ring-accent-pink"
         style={{ background: F0.surface2, borderColor: F0.stroke, color: F0.text }}
       />
 

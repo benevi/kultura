@@ -142,7 +142,7 @@ export function FriendsClient({
               value={searchQuery}
               onChange={e => setSearchQuery(e.target.value)}
               placeholder={t('searchPlaceholder')}
-              className="flex-1 rounded-2xl border-2 focus-visible:ring-[oklch(68%_0.24_350)]"
+              className="flex-1 rounded-2xl border-2 focus-visible:ring-accent-pink"
               style={{ background: F0.surface2, borderColor: F0.stroke, color: F0.text }}
             />
             <KButton

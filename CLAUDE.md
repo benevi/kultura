@@ -402,14 +402,46 @@ con una paleta hex antigua.
     canvas. Antes era una píldora (999px) con borde: el radio de píldora es de
     botones y chips, en F0 ningún input lo lleva.
 
-**Pendiente:** las 12 pantallas restantes (Library,
-Search, Friends, Groups, GroupDetail, Chat, Notifications, Profile,
-Lists, ListDetail, Settings, Suggestions) heredan bien los colores vía
-custom properties pero no tienen todavía el acabado F0 específico de
-cada una (formas, sombras duras, chips colgantes, etc. — ver "Principio
-de extensión a pantallas nuevas" arriba). Migrar con el mismo patrón:
-un agente por pantalla o grupo de pantallas afines, siguiendo las
-instrucciones operativas de la cabecera de este documento.
+- **Encabezado de página unificado** (E-PAGE-HEADING). El canvas encabeza
+  TODAS las pantallas autenticadas igual: `<h1>` display **42px peso 700** con
+  un emoji al final ("Tus listas 📋", "Grupos 🎉", "Ajustes ⚙️") y, opcional, la
+  acción primaria como pill pink a su derecha. En el código cada pantalla se lo
+  montaba por su cuenta y **ninguna coincidía**: `text-4xl tracking-wide`,
+  `text-3xl font-extrabold`, `text-2xl md:text-3xl`… nueve tamaños para el
+  mismo elemento. `src/components/layout/PageHeading.tsx` es ahora el único
+  sitio donde se decide. Dos cosas:
+  - **El emoji va APARTE del texto traducido**, con `aria-hidden`: es
+    decoración, no contenido. Así no ensucia el nombre accesible de la pantalla
+    ni hay que repetirlo en cada idioma. Hay test.
+  - **No lo usan las fichas de detalle** (ListDetail, GroupDetail): ahí el
+    título es el nombre del grupo o de la lista y vive dentro de una portada
+    con icono, avatares y chips, no en una fila de título + acción. Se les ha
+    puesto el tipo del canvas, pero la portada en sí sigue pendiente.
+
+- **`f0-tokens.ts` apunta a las custom properties, no a literales**
+  (E-F0-TOKENS-VAR). Nació como workaround en un worktree anterior al re-skin
+  OKLCH, cuando `globals.css` seguía en hex y no se podía tocar; su propia
+  cabecera decía que debía sustituirse cuando esa migración llegara. Llegó, y
+  tardó: trece archivos pintaban con literales clavados, inmunes a cualquier
+  cambio de token — la mezcla de paletas que este documento prohíbe. La
+  sustitución fue 1:1, así que no cambió un píxel. Para código NUEVO, preferir
+  las clases de Tailwind; este objeto es para los estilos en línea que ya
+  existen. En el mismo pase se cambiaron los cinco `[oklch(...)]` clavados en
+  `className` por sus tokens (`focus-visible:ring-accent-pink`, etc.).
+
+**Pendiente:** el acabado F0 específico de cada pantalla (portadas de las
+fichas de detalle, sombras duras, chips colgantes, rotaciones de card — ver
+"Principio de extensión a pantallas nuevas"). Ya comparten encabezado,
+campos (`KInput`), botones (`KButton`) y tokens, que era lo transversal.
+**`Search` no cuenta**: desde E-DISCOVER-SEARCH-MERGE no tiene UI propia,
+es un redirect a Descubrir; la lista de 12 que había aquí la incluía por
+inercia.
+
+**Ojo con el set cerrado de radios de este documento:** los artboards usan
+18, 22, 24 y 28px, que NO están en él, y `tailwind.config.ts` ya tenía
+`bento` (22px) y `bento-lg` (28px) fuera de la lista. El canvas manda sobre
+el documento, así que el set de aquí arriba está desfasado — al migrar una
+pantalla, el valor bueno es el del artboard.
 
 - **Porcentaje de match retirado de la UI** (E-MATCH-SIN-BADGE). Ya no se
   pinta en Descubrir, ficha, recomendaciones IA ni novedades de Inicio. Lo
