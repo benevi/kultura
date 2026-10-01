@@ -122,8 +122,13 @@ export function AiRecommendations() {
                     criterio con el que se elige cada recomendación, pero ya no
                     se pinta como etiqueta. */}
                 <MediaCard item={rec.item} showType />
+                {/* Sin recorte a propósito: con `line-clamp-3` la tercera
+                    línea se cortaba por la MITAD de los glifos (visto en
+                    Inicio), y una frase truncada a medio carácter es peor que
+                    una card un poco más alta. El largo se controla en origen
+                    —el prompt pide máx. 100 caracteres— no aquí. */}
                 {why && (
-                  <p className="font-body text-xs text-text-secondary line-clamp-3 leading-relaxed">
+                  <p className="font-body text-xs text-text-secondary leading-relaxed">
                     {why}
                   </p>
                 )}

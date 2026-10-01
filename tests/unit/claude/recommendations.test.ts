@@ -568,6 +568,63 @@ describe('getAiRecommendations — reason que delata el proceso', () => {
   })
 })
 
+// ── Ni anglicismos ni jerga del mecanismo (E-AIREC-SIN-JERGA) ──────────────
+//
+// Visto en Inicio: "...matching tu perfil." "matching" no es español y "perfil"
+// es una pieza interna que el usuario no ve. Es E-MATCH-SIN-BADGE por otra
+// puerta: el modelo describiendo su cálculo en vez del título.
+
+describe('reasonLeaksProcess (E-AIREC-SIN-JERGA)', () => {
+  it('caza la frase exacta que salió en pantalla', async () => {
+    const { reasonLeaksProcess } = await import('@/lib/claude/recommendations')
+    expect(reasonLeaksProcess('Thriller psicológico matching tu perfil.', 'es')).toBe(true)
+  })
+
+  it('caza los anglicismos y la jerga del mecanismo en español', async () => {
+    const { reasonLeaksProcess } = await import('@/lib/claude/recommendations')
+    for (const reason of [
+      'Hace match con tus géneros favoritos.',
+      'Un score alto para lo que sueles ver.',
+      'Encaja con tu perfil de lector.',
+      'Alta afinidad con tu biblioteca.',
+      'El algoritmo lo ha elegido por tus series.',
+    ]) {
+      expect(reasonLeaksProcess(reason, 'es'), reason).toBe(true)
+    }
+  })
+
+  // No es simetría decorativa: en inglés "matches genres you enjoy" es la frase
+  // CORRECTA —la que usa el propio fallback de la UI—, así que vetar "match" en
+  // EN descartaría frases buenas. Lo que no cambia de idioma es el mecanismo.
+  it('no veta "match" en inglés, pero sí el mecanismo', async () => {
+    const { reasonLeaksProcess } = await import('@/lib/claude/recommendations')
+    expect(reasonLeaksProcess('It matches genres you already enjoy.', 'en')).toBe(false)
+    expect(reasonLeaksProcess('High affinity with your profile.', 'en')).toBe(true)
+    expect(reasonLeaksProcess('Picked by our scoring algorithm.', 'en')).toBe(true)
+  })
+
+  // Anti-falsos-positivos: la jerga es un puñado de palabras concretas, no
+  // cualquier frase que hable de gustos o de notas.
+  it('deja pasar las frases buenas en español', async () => {
+    const { reasonLeaksProcess } = await import('@/lib/claude/recommendations')
+    for (const reason of [
+      'Coincide con el humor negro de lo que más puntúas.',
+      'Con la mejor puntuación de la crítica en su género.',
+      'En la línea de Dune, que tienes completado.',
+      'Comparte el tono noir de tus favoritas.',
+    ]) {
+      expect(reasonLeaksProcess(reason, 'es'), reason).toBe(false)
+    }
+  })
+
+  // El locale por defecto es 'es': las llamadas sin él no pueden quedarse sin
+  // red, que es justo el idioma en que se vio el fallo.
+  it('sin locale aplica las reglas de español', async () => {
+    const { reasonLeaksProcess } = await import('@/lib/claude/recommendations')
+    expect(reasonLeaksProcess('Thriller psicológico matching tu perfil.')).toBe(true)
+  })
+})
+
 // ── La regla vive también en el prompt (defensa en profundidad) ─────────────
 
 describe('buildPickPrompt — prohibición de hablar del proceso', () => {
@@ -583,5 +640,21 @@ describe('buildPickPrompt — prohibición de hablar del proceso', () => {
     expect(prompt).toContain('E-AIREC-SIN-PROCESO')
     expect(prompt).toContain('selección actual')
     expect(prompt).toContain('E-MATCH-SIN-BADGE')
+  })
+
+  // E-AIREC-SIN-JERGA: el guard descarta la frase, pero una frase descartada es
+  // una card sin explicación propia. El prompt es el que evita llegar ahí.
+  it('el prompt prohíbe los anglicismos y nombrar el mecanismo', async () => {
+    const { buildPickPrompt } = await import('@/lib/claude/recommendations')
+    const prompt = buildPickPrompt(
+      new Map<MediaType, MediaItem[]>([['movie', [makeItem('movie', '550')]]]),
+      new Map([['movie_550', 80]]),
+      [{ title: 'Inception', type: 'movie', year: 2010, score: 5, status: 'completed' }],
+      ['Action'],
+      'es'
+    )
+    expect(prompt).toContain('E-AIREC-SIN-JERGA')
+    expect(prompt).toContain('matching')
+    expect(prompt).toContain('NO NOMBRES EL MECANISMO')
   })
 })
