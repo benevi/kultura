@@ -13,6 +13,7 @@ import {
   acceptsComicIssue,
   acceptsComicPublisher,
   isAllowedComicPublisher,
+  hasExcludedComicConcept,
   isBlockedComicVolume,
   isMangaPublisher,
   isAdultPublisher,
@@ -167,5 +168,85 @@ describe("acceptsComicIssue — veto por serie", () => {
     for (const volume of BLOCKED_COMIC_VOLUMES) {
       expect(isBlockedComicVolume(volume), volume).toBe(true);
     }
+  });
+});
+
+// ── Veto por concepto (E-COMIC-CONCEPTO) ─────────────────────────────────────
+//
+// La señal por ÍTEM, comprobada en ComicVine: el volumen alemán de "I Wanna Be
+// Your Girl" (Splitter) lleva el concepto "Manga". Es lo único que lo separa de
+// "Der tönerne Thron", que es de la MISMA editorial.
+
+describe("acceptsComicIssue — veto por concepto", () => {
+  it("el manga cae aunque su editorial esté permitida", () => {
+    expect(
+      acceptsComicIssue({
+        publisher: "Splitter",
+        volume: "I Wanna Be Your Girl",
+        concepts: ["Manga", "Romance"],
+      })
+    ).toBe(false);
+  });
+
+  it("la BD de esa misma editorial sigue entrando", () => {
+    expect(
+      acceptsComicIssue({
+        publisher: "Splitter",
+        volume: "Der tönerne Thron",
+        concepts: ["Fantasy", "Medieval"],
+      })
+    ).toBe(true);
+  });
+
+  it("cubre las casas europeas que mezclan, no solo Splitter", () => {
+    for (const publisher of ["Dargaud", "Delcourt", "Soleil", "Casterman", "Panini"]) {
+      expect(
+        acceptsComicIssue({ publisher, concepts: ["Manga"] }),
+        publisher
+      ).toBe(false);
+      expect(
+        acceptsComicIssue({ publisher, concepts: ["Science Fiction"] }),
+        publisher
+      ).toBe(true);
+    }
+  });
+
+  it("también manhwa y manhua", () => {
+    expect(hasExcludedComicConcept(["Manhwa"])).toBe(true);
+    expect(hasExcludedComicConcept(["Manhua"])).toBe(true);
+  });
+
+  // Lo más importante del diseño: SIN dato, el issue PASA. Si el campo no
+  // llegara (nombre equivocado, volumen sin conceptos), denegar vaciaría el
+  // catálogo entero; dejar pasar devuelve el comportamiento de antes.
+  it("sin conceptos FALLA ABIERTO: el issue pasa, no se vacía el catálogo", () => {
+    expect(hasExcludedComicConcept(undefined)).toBe(false);
+    expect(hasExcludedComicConcept(null)).toBe(false);
+    expect(hasExcludedComicConcept([])).toBe(false);
+    expect(acceptsComicIssue({ publisher: "Splitter" })).toBe(true);
+    expect(
+      acceptsComicIssue({ publisher: "Marvel Comics", concepts: [] })
+    ).toBe(true);
+  });
+
+  it("no confunde un concepto que solo CONTIENE la palabra", () => {
+    // Palabra completa, igual que el resto del módulo.
+    expect(hasExcludedComicConcept(["Mangaka"])).toBe(false);
+    expect(hasExcludedComicConcept(["Manga Studio"])).toBe(true); // sí la contiene como palabra
+  });
+
+  it("las otras dos puertas siguen mandando", () => {
+    // Editorial vetada: ningún concepto limpio la salva.
+    expect(
+      acceptsComicIssue({ publisher: "Shueisha", concepts: ["Superhero"] })
+    ).toBe(false);
+    // Serie vetada: ningún concepto limpio la salva.
+    expect(
+      acceptsComicIssue({
+        publisher: "Splitter",
+        volume: "Swinging Island",
+        concepts: ["Romance"],
+      })
+    ).toBe(false);
   });
 });

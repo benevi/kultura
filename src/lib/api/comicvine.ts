@@ -20,11 +20,13 @@ import {
   COMIC_PUBLISHERS,
   MANGA_PUBLISHERS,
   ADULT_PUBLISHERS,
+  hasExcludedComicConcept,
   isAllowedComicPublisher,
   isBlockedComicVolume,
   isMangaPublisher,
   isAdultPublisher,
   BLOCKED_COMIC_VOLUMES,
+  EXCLUDED_COMIC_CONCEPTS,
 } from "@/lib/api/comic-publishers";
 
 // E-COMIC-ALLOWLIST: la decisión de qué editorial entra en el catálogo vive en
@@ -36,11 +38,13 @@ export {
   COMIC_PUBLISHERS,
   MANGA_PUBLISHERS,
   ADULT_PUBLISHERS,
+  hasExcludedComicConcept,
   isAllowedComicPublisher,
   isBlockedComicVolume,
   isMangaPublisher,
   isAdultPublisher,
   BLOCKED_COMIC_VOLUMES,
+  EXCLUDED_COMIC_CONCEPTS,
 };
 
 /** Respuesta del endpoint de detalle /issue/4000-{id}/ (un único result objeto). */
@@ -66,6 +70,13 @@ const volumePublisherCache = new Map<number, string>();
  */
 const volumeCountCache = new Map<number, number>();
 
+/**
+ * Cache module-level volumeId → conceptos (E-COMIC-CONCEPTO). Se resuelve en el
+ * MISMO batch que publisher y count, así que la señal por ítem no cuesta ni una
+ * petición extra. Lista vacía = sin dato, y sin dato el issue PASA.
+ */
+const volumeConceptsCache = new Map<number, string[]>();
+
 /** Respuesta del endpoint /volumes/ (lista de volúmenes con publisher + count). */
 interface ComicVineVolumesResponse {
   status_code: number;
@@ -75,6 +86,7 @@ interface ComicVineVolumesResponse {
         id: number;
         publisher?: { id: number; name: string } | null;
         count_of_issues?: number;
+        concepts?: Array<{ id: number; name: string }> | null;
       }>
     | null;
 }
@@ -153,8 +165,10 @@ export async function resolveVolumePublishers(
   if (missing.length > 0) {
     const resp = await comicVineFetch<ComicVineVolumesResponse>("/volumes/", {
       filter: `id:${missing.join("|")}`,
-      // R4c-2: count_of_issues se pide en el MISMO batch (sin fetch extra por item).
-      field_list: "id,publisher,count_of_issues",
+      // R4c-2: count_of_issues se pide en el MISMO batch (sin fetch extra por
+      // item). E-COMIC-CONCEPTO: `concepts` viaja en esa misma petición — es la
+      // señal que separa el manga de la BD dentro de una misma editorial.
+      field_list: "id,publisher,count_of_issues,concepts",
       limit: "100",
     });
     for (const vol of resp.results ?? []) {
@@ -163,17 +177,34 @@ export async function resolveVolumePublishers(
         vol.id,
         typeof vol.count_of_issues === "number" ? vol.count_of_issues : 0
       );
+      volumeConceptsCache.set(
+        vol.id,
+        (vol.concepts ?? []).map((c) => c.name).filter(Boolean)
+      );
     }
     // Marca como vacíos los ids que la API no devolvió, para no re-pedirlos.
     for (const id of missing) {
       if (!volumePublisherCache.has(id)) volumePublisherCache.set(id, "");
       if (!volumeCountCache.has(id)) volumeCountCache.set(id, 0);
+      if (!volumeConceptsCache.has(id)) volumeConceptsCache.set(id, []);
     }
   }
 
   const result = new Map<number, string>();
   for (const id of unique) {
     result.set(id, volumePublisherCache.get(id) ?? "");
+  }
+  return result;
+}
+
+/**
+ * Map volumeId → conceptos, leyendo de la cache que llena
+ * resolveVolumePublishers. Debe llamarse DESPUÉS de aquél (mismo batch).
+ */
+function getVolumeConcepts(volumeIds: number[]): Map<number, string[]> {
+  const result = new Map<number, string[]>();
+  for (const id of volumeIds) {
+    result.set(id, volumeConceptsCache.get(id) ?? []);
   }
   return result;
 }
@@ -305,6 +336,8 @@ async function fetchComicWindow(
   // count_of_issues sale de la cache que llena resolveVolumePublishers (mismo
   // batch, sin fetch extra). Solo se usa si se pidió el filtro volumenes.
   const volumeCounts = getVolumeCounts(volumeIds);
+  // E-COMIC-CONCEPTO: misma cache, mismo batch.
+  const volumeConcepts = getVolumeConcepts(volumeIds);
 
   // Editorial = post-filtro sobre el publisher resuelto (substring, case-insensitive).
   const publisherSubstrings = mapPublisherSubstrings(filters.editorial).map((p) =>
@@ -327,7 +360,16 @@ async function fetchComicWindow(
     // separa un álbum erótico del resto del catálogo de su misma editorial.
     // `volume.name` ya viene en el field_list, así que no cuesta una petición.
     if (!publisher) return false;
-    if (!acceptsComicIssue({ publisher, volume: issue.volume?.name })) return false;
+    if (
+      !acceptsComicIssue({
+        publisher,
+        volume: issue.volume?.name,
+        concepts: issue.volume?.id
+          ? volumeConcepts.get(issue.volume.id)
+          : undefined,
+      })
+    )
+      return false;
     // Editorial (si se pidió): mantener solo si el publisher incluye algún substring.
     if (publisherSubstrings.length > 0) {
       const lc = publisher.toLowerCase();

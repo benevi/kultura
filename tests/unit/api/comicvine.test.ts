@@ -771,3 +771,102 @@ describe("getRecentComics — veto por serie adulta", () => {
     expect(result.items[0].id).toBe("comic_60");
   });
 });
+
+// ── Veto por concepto, extremo a extremo (E-COMIC-CONCEPTO) ─────────────────
+
+describe("getRecentComics — veto por concepto", () => {
+  beforeEach(() => {
+    process.env.COMICVINE_KEY = "test-key";
+  });
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
+    vi.clearAllMocks();
+  });
+
+  it("pide `concepts` en el MISMO batch de /volumes/ (sin petición extra)", async () => {
+    const fetchMock = mockFetchByPath(
+      {
+        status_code: 1,
+        error: "OK",
+        number_of_total_results: 1,
+        results: [{ ...ISSUE, id: 70, volume: { id: 9700, name: "Hellboy" } }],
+      },
+      {
+        status_code: 1,
+        error: "OK",
+        results: [
+          { id: 9700, publisher: { id: 5, name: "Dark Horse Comics" }, concepts: [] },
+        ],
+      }
+    );
+    vi.stubGlobal("fetch", fetchMock);
+
+    await getRecentComics(1);
+
+    const calls = fetchMock.mock.calls.map((c) => String(c[0]));
+    const volumesCalls = calls.filter((u) => u.includes("/volumes/"));
+    expect(volumesCalls).toHaveLength(1);
+    expect(volumesCalls[0]).toContain("concepts");
+  });
+
+  it("descarta el manga y conserva la BD de la MISMA editorial", async () => {
+    const fetchMock = mockFetchByPath(
+      {
+        status_code: 1,
+        error: "OK",
+        number_of_total_results: 2,
+        results: [
+          { ...ISSUE, id: 71, volume: { id: 9701, name: "Der tönerne Thron" } },
+          { ...ISSUE, id: 72, volume: { id: 9702, name: "I Wanna Be Your Girl" } },
+        ],
+      },
+      {
+        status_code: 1,
+        error: "OK",
+        results: [
+          {
+            id: 9701,
+            publisher: { id: 7, name: "Splitter" },
+            concepts: [{ id: 1, name: "Fantasy" }],
+          },
+          {
+            id: 9702,
+            publisher: { id: 7, name: "Splitter" },
+            concepts: [{ id: 2, name: "Manga" }],
+          },
+        ],
+      }
+    );
+    vi.stubGlobal("fetch", fetchMock);
+
+    const result = await getRecentComics(1);
+
+    expect(result.items).toHaveLength(1);
+    expect(result.items[0].id).toBe("comic_71");
+  });
+
+  // Si el proveedor no devuelve el campo, el catálogo NO se queda vacío.
+  it("sin `concepts` en la respuesta, el catálogo sigue llegando", async () => {
+    const fetchMock = mockFetchByPath(
+      {
+        status_code: 1,
+        error: "OK",
+        number_of_total_results: 1,
+        results: [{ ...ISSUE, id: 73, volume: { id: 9703, name: "Saga" } }],
+      },
+      {
+        status_code: 1,
+        error: "OK",
+        // Ni rastro de `concepts`: es el caso "el campo no llega".
+        results: [{ id: 9703, publisher: { id: 3, name: "Image Comics" } }],
+      }
+    );
+    vi.stubGlobal("fetch", fetchMock);
+
+    const result = await getRecentComics(1);
+
+    expect(result.items).toHaveLength(1);
+    expect(result.items[0].id).toBe("comic_73");
+  });
+});
