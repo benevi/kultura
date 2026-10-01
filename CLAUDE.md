@@ -544,32 +544,37 @@ instrucciones operativas de la cabecera de este documento.
     de estas sesiones bloquea `comicvine.gamespot.com`). Si en preview la
     página 20 sigue llegando llena, subirlo; si se vacía antes, bajarlo.
 
-- **El concepto de ComicVine es la señal por ÍTEM** (E-COMIC-CONCEPTO).
-  Comprobado en la ficha: el volumen alemán de *I Wanna Be Your Girl*
-  (Splitter) lleva el concepto **"Manga"**, y la portada lo imprime en el
-  lomo ("SPLITTER MANGA+"). Es lo único que separa dos libros de la MISMA
-  editorial, y por eso resuelve de golpe lo que ninguna lista podía:
-  Dargaud→Kana, Delcourt→Tonkam, Soleil→Soleil Manga, Casterman→Sakka,
-  Panini, Egmont… casi todas las casas europeas de la lista blanca mezclan.
-  Cuatro cosas:
-  - **No cuesta ni una petición.** `concepts` viaja en el batch a `/volumes/`
-    que cada página ya hacía para resolver la editorial, junto a
-    `count_of_issues`. Si algún día hay que quitar algo de ese `field_list`,
-    tener presente que son tres cosas distintas viajando en una llamada.
-  - **FALLA ABIERTO a propósito.** Sin conceptos (campo ausente, volumen sin
-    etiquetar) el issue PASA. Denegar sin dato vaciaría el catálogo entero si
-    el campo dejara de llegar, y ese es el fallo que no se puede permitir.
-    Hay un test que lo fija. La contrapartida: si el campo no llega, el filtro
-    es un placebo silencioso — **lo que se mira en preview es si el manga
-    DESAPARECE**, no si la página carga.
-  - **Las tres puertas se quedan**, cada una cubre lo que las otras no:
-    editorial (deniega por defecto, cierra lo desconocido), concepto (manga
-    vs. BD dentro de la misma casa) y serie (un álbum erótico de una casa
-    legítima, que es un cómic como cualquier otro salvo por su contenido).
-  - El nombre del campo (`concepts` en `/volumes/`) está puesto a partir de
-    la web de ComicVine, **no medido contra la API** — el proxy la bloquea y
-    además exige clave, así que no vale el truco de pasarle URLs al usuario.
-    Un test unitario fija que lo pedimos, no que el proveedor lo devuelva.
+- **El veto por concepto NO FUNCIONA, y sale manga en Cómics a propósito**
+  (E-COMIC-CONCEPTO). Verificado en preview: tras desplegarlo, los cuatro
+  mangas de Splitter (*I Wanna Be Your Girl*, *Is He the One?*, *Ascendance
+  of a Bookworm*, *Hana Ne Peut Pas Vivre Sans Moi*) **seguían saliendo**.
+  `concepts` no llega en el batch a `/volumes/`. Si alguien lee ese código
+  buscando qué protege el catálogo del manga: **nada lo protege**; trabajan
+  la lista blanca y el veto por serie.
+  - **La contrapartida está ACEPTADA, no pendiente** (decisión del usuario,
+    01/10/2026): sale manga europeo en Cómics y se queda así. Es un fallo de
+    categorización —el manga tiene su propia sección—, no de contenido: lo
+    adulto sí está cubierto. La alternativa era una lista blanca estricta que
+    se llevaba por delante a Splitter, Dargaud, Delcourt, Casterman, Soleil,
+    Panini y Egmont, o sea la BD europea entera. Pagar el catálogo por una
+    cuestión de estantería era mal cambio.
+  - **El código se queda porque falla ABIERTO y no cuesta nada**: sin
+    conceptos el issue pasa, el campo viaja en un batch que ya se hacía, y el
+    día que llegue empieza a trabajar solo. Hay un test que fija el
+    fallo-abierto: denegar sin dato vaciaría el catálogo entero.
+  - **Hipótesis de por qué no llega, SIN CONFIRMAR**: los endpoints de LISTA
+    de ComicVine no pueblan los campos agregados (`concepts`, `characters`,
+    `people`), que solo existen en el de DETALLE (`/volume/4050-{id}/`). Si
+    es así la vía se cae por coste: una petición de detalle por volumen
+    (20-60 por página) contra ~200/hora.
+  - **Cómo medirlo si se retoma**: una línea de log temporal en
+    `resolveVolumePublishers` y el visor de Vercel. El truco de construir
+    URLs y pedirle al usuario que las abra NO sirve aquí: la API exige clave.
+    Se intentó y se gastaron tres rondas en 404s y claves inválidas.
+  - **Lección que vale más que el filtro**: un filtro que falla abierto y no
+    funciona es indistinguible de uno que funciona si solo miras si la página
+    carga. Lo que hay que mirar es si el contenido DESAPARECE. Mismo patrón
+    que el keep-alive cacheado (E-KEEPALIVE): un placebo que devuelve 200.
 
 - **Keep-alive de Supabase** (E-KEEPALIVE). `/api/health` hace una consulta
   real a la base (`profiles`, `head:true`) y `vercel.json` la llama con un
@@ -588,6 +593,11 @@ instrucciones operativas de la cabecera de este documento.
     pago.
 
 **Deuda técnica por resolver:**
+- **`EXCLUDED_COMIC_CONCEPTS` es un placebo verificado** (E-COMIC-CONCEPTO):
+  el filtro está, los tests están, y no filtra nada porque el campo no llega.
+  Se conserva porque falla abierto y es gratis, pero NO contarlo como defensa
+  al razonar sobre el catálogo de cómics. Resolver o borrar cuando se mida de
+  verdad por qué `concepts` no viaja.
 - `books-maps.ts` quedó casi entero como código muerto tras el híbrido de
   libros (E-BOOKS-HIBRIDO): solo siguen vivos `BOOKS_FORMATO` y
   `BOOKS_PUBLISHER`, que alimentan opciones de la UI. El constructor de query
