@@ -139,6 +139,32 @@ export const OPEN_LIBRARY_PAGE_SIZE = 20;
 export const OPEN_LIBRARY_CATALOG_WINDOW = 60;
 
 /**
+ * Cuántas ventanas puede mirar UNA página del catálogo antes de rendirse
+ * (E-BOOKS-PAGINA-FIJA).
+ *
+ * La ventana de 60 era un presupuesto fijo con rendimiento VARIABLE: la página
+ * enseñaba "lo que sobreviviera", y según la ordenación eso iban de 5 libros a
+ * 40. Visto en pantalla: una página con CINCO y otra con la rejilla llena, con
+ * los mismos filtros.
+ *
+ * Es el mismo problema que el cómic ya resolvió (E-COMIC-VENTANA) y se resuelve
+ * igual: pedir ventanas hasta juntar una página, con el presupuesto acotado.
+ * Open Library no exige clave ni documenta un límite por hora como el de
+ * ComicVine, así que 3 ventanas son baratas; el corte es por si una consulta
+ * tiene un rendimiento malísimo, para no encadenar peticiones sin fin.
+ */
+export const OPEN_LIBRARY_WINDOWS_PER_PAGE = 3;
+
+/**
+ * Lo que CONSUME una página del catálogo, se enseñe lo que se enseñe. Es lo que
+ * determina dónde empieza la siguiente, así que es el divisor del conteo de
+ * páginas — igual que `COMIC_PAGE_STRIDE`. Dividir por lo que se ENSEÑA
+ * anunciaría páginas que ya se han recorrido.
+ */
+export const OPEN_LIBRARY_PAGE_STRIDE =
+  OPEN_LIBRARY_CATALOG_WINDOW * OPEN_LIBRARY_WINDOWS_PER_PAGE;
+
+/**
  * Busca en el catálogo. `params` admite los filtros nativos de Open Library
  * (`language`, `sort`, `has_fulltext`…), que a diferencia de Google Books son
  * filtros de verdad y no pistas para el índice.

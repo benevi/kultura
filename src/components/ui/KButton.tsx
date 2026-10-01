@@ -34,15 +34,28 @@ export const KButton = React.forwardRef<HTMLButtonElement, KButtonProps>(
              lo recorta a un estadio perfecto — el "botón pill" de DISENO.md. */
           "inline-flex items-center justify-center gap-2 rounded-pill font-body whitespace-nowrap",
           "transition-all duration-150 ease-out",
-          "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-positive focus-visible:ring-offset-2 focus-visible:ring-offset-surface-base",
+          "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-pink focus-visible:ring-offset-2 focus-visible:ring-offset-surface-base",
           "disabled:pointer-events-none disabled:opacity-40",
           /* Size */
           sizeClasses[size],
-          /* Variant — pesos de DISENO.md: primario 800, secundario 700 */
+          /* Variant — pesos de DISENO.md: primario 800, secundario 700.
+
+             El primario es PINK (E-BOTON-PINK). Lo pintaba en
+             `accent-positive` (lime), y parecía que el canvas no lo zanjaba:
+             de los 27 pills de las 17 pantallas, 14 eran lime. Contados mal:
+             TODOS los lime son badges de match ("98% MATCH", "91%", "60%"…),
+             que además ya están retirados de la UI (E-MATCH-SIN-BADGE). De
+             los pills de ACCIÓN, los 13 son pink, sin excepción — Enviar,
+             Crear grupo, Empezar gratis, Añadir título, Nueva lista, Entrar,
+             Guardar, Enviar sugerencia. Coincide con DISENO.md.
+
+             `accent-positive` sigue siendo el verde semántico de estados
+             (nav activa, chip de filtro activo, badge de biblioteca); lo que
+             deja de ser es el color del botón primario. */
           variant === "primary" && [
             "font-extrabold",
-            "text-on-accent-positive",
-            "bg-accent-positive",
+            "text-on-accent-pink",
+            "bg-accent-pink",
             "hover:brightness-110",
             "active:scale-[0.98]",
           ],

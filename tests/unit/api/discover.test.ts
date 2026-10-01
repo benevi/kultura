@@ -243,11 +243,12 @@ describe("fetchDiscoverData — guard totalItems books (E-BOOKS-GOOGLE)", () => 
     expect(result.totalPages).toBe(1);
   });
 
-  // E-BOOKS-VENTANA: cada página recorre 60 registros del proveedor, así que
-  // el total se divide por 60 y no por los 20 que se enseñan.
-  it("numFound = 100 → 2 páginas de ventana", async () => {
+  // E-BOOKS-PAGINA-FIJA: cada página recorre hasta 3 ventanas de 60 = 180
+  // registros del proveedor, así que el total se divide por 180 y no por los
+  // 20 que se enseñan.
+  it("numFound = 200 → 2 páginas de zancada", async () => {
     vi.mocked(searchOpenLibrary).mockResolvedValue({
-      numFound: 100,
+      numFound: 200,
       docs: [],
     });
 
@@ -342,7 +343,9 @@ describe("fetchDiscoverData — books filtros (E-BOOKS-HIBRIDO)", () => {
     );
     expect(searchOpenLibrary).toHaveBeenCalledWith(
       'subject:"fantasy" first_publish_year:[2024 TO 2024]',
-      2,
+      // E-BOOKS-PAGINA-FIJA: la página 2 arranca en la ventana 4, no en la 2
+      // — cada página consume hasta tres ventanas.
+      4,
       { language: "eng", sort: "new" },
       OPEN_LIBRARY_CATALOG_WINDOW
     );
@@ -730,9 +733,9 @@ describe("fetchDiscoverData — hasMore (E79 slice 1)", () => {
     expect((await fetchDiscoverData("manga", 2)).hasMore).toBe(false);
   });
 
-  it("book: hasMore desde ceil(numFound/ventana)", async () => {
+  it("book: hasMore desde ceil(numFound/zancada)", async () => {
     vi.mocked(searchOpenLibrary).mockResolvedValue({
-      numFound: 180, // ceil(180/60) = 3
+      numFound: 540, // ceil(540/180) = 3
       docs: [{ key: "/works/OL1W", title: "B", cover_i: 1 }],
     } as never);
 
@@ -1231,35 +1234,117 @@ describe("fetchDiscoverData — ventana ancha de libros (E-BOOKS-VENTANA)", () =
     expect(limit).toBeGreaterThan(20);
   });
 
-  it("una ventana ancha deja página utilizable aunque casi todo se descarte", async () => {
-    // 60 registros, solo 1 de cada 4 con portada → 15 supervivientes, que es
-    // una página de verdad. Con la ventana de 20 habrían sido 5.
-    const docs = Array.from({ length: 60 }, (_, i) => ({
-      key: `/works/OL${i}W`,
-      title: `Libro ${i}`,
-      ...(i % 4 === 0 ? { cover_i: i + 1 } : {}),
-    }));
+  it("las páginas se cuentan por la zancada consumida, no por lo que se enseña", async () => {
     vi.mocked(searchOpenLibrary).mockResolvedValue({
-      numFound: 1000,
-      docs,
-    } as never);
-
-    const res = await fetchDiscoverData("book", 1);
-
-    expect(res.items.length).toBe(15);
-  });
-
-  it("las páginas se cuentan por la ventana consumida, no por lo que se enseña", async () => {
-    vi.mocked(searchOpenLibrary).mockResolvedValue({
-      numFound: 600,
+      numFound: 1800,
       docs: [],
     } as never);
 
     const res = await fetchDiscoverData("book", 1);
 
-    // 600 registros recorridos de 60 en 60 → 10 páginas. Contarlo de 20 en 20
-    // ofrecería 30 páginas, dos tercios de las cuales ya se han recorrido.
+    // 1800 registros recorridos de 180 en 180 → 10 páginas. Contarlo de 20 en
+    // 20 ofrecería 90 páginas, casi todas ya recorridas.
     expect(res.totalPages).toBe(10);
+  });
+});
+
+// ============================================================
+// E-BOOKS-PAGINA-FIJA — la página de libros tiene TAMAÑO, no "lo que quede"
+//
+// Con una sola ventana la página enseñaba lo que sobreviviera al filtro de
+// portada, y eso depende de la ordenación: visto en pantalla, una página con
+// CINCO libros y otra con la rejilla llena, con los mismos filtros. Ahora pide
+// ventanas hasta juntar 20, como ya hacía el cómic (E-COMIC-VENTANA).
+// ============================================================
+
+describe("fetchDiscoverData — página de libros de tamaño fijo (E-BOOKS-PAGINA-FIJA)", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  /** Ventana de 60 docs con 1 de cada `every` con portada. */
+  function windowDocs(every: number, offset = 0) {
+    return Array.from({ length: 60 }, (_, i) => ({
+      key: `/works/OL${offset + i}W`,
+      title: `Libro ${offset + i}`,
+      ...((offset + i) % every === 0 ? { cover_i: offset + i + 1 } : {}),
+    }));
+  }
+
+  it("con rendimiento malo encadena ventanas hasta llenar la página", async () => {
+    // 1 de cada 8 sobrevive → ~7 u 8 por ventana. Con UNA ventana la página
+    // habría salido con 8 libros; es el caso que se vio en pantalla.
+    vi.mocked(searchOpenLibrary).mockImplementation((async (
+      _q: string,
+      page: number
+    ) => ({
+      numFound: 10_000,
+      docs: windowDocs(8, (page - 1) * 60),
+    })) as never);
+
+    const res = await fetchDiscoverData("book", 1);
+
+    expect(res.items.length).toBe(20);
+    expect(vi.mocked(searchOpenLibrary).mock.calls.length).toBe(3);
+  });
+
+  it("con rendimiento bueno no gasta ventanas de más", async () => {
+    vi.mocked(searchOpenLibrary).mockImplementation((async (
+      _q: string,
+      page: number
+    ) => ({
+      numFound: 10_000,
+      docs: windowDocs(1, (page - 1) * 60),
+    })) as never);
+
+    const res = await fetchDiscoverData("book", 1);
+
+    expect(res.items.length).toBe(20);
+    // La primera ventana ya da de sobra: una sola petición.
+    expect(vi.mocked(searchOpenLibrary).mock.calls.length).toBe(1);
+  });
+
+  // El presupuesto está acotado: si la consulta rinde fatal se enseña lo que
+  // haya, pero no se encadenan peticiones sin fin.
+  it("el presupuesto está acotado a 3 ventanas", async () => {
+    vi.mocked(searchOpenLibrary).mockImplementation((async () => ({
+      numFound: 10_000,
+      docs: Array.from({ length: 60 }, (_, i) => ({
+        key: `/works/OLx${i}W`,
+        title: `Sin portada ${i}`,
+      })),
+    })) as never);
+
+    const res = await fetchDiscoverData("book", 1);
+
+    expect(res.items.length).toBe(0);
+    expect(vi.mocked(searchOpenLibrary).mock.calls.length).toBe(3);
+  });
+
+  // Si el proveedor devuelve una ventana INCOMPLETA es que no hay más detrás:
+  // seguir pidiendo sería gastar peticiones en vacío.
+  it("para en seco cuando el proveedor se queda sin resultados", async () => {
+    vi.mocked(searchOpenLibrary).mockResolvedValue({
+      numFound: 30,
+      docs: [{ key: "/works/OL1W", title: "Único", cover_i: 1 }],
+    } as never);
+
+    await fetchDiscoverData("book", 1);
+
+    expect(vi.mocked(searchOpenLibrary).mock.calls.length).toBe(1);
+  });
+
+  // Cada página arranca donde acabó la anterior: página 2 empieza en la
+  // ventana 4 (zancada de 3 ventanas), no en la 2.
+  it("la página N arranca en la ventana (N-1)*3+1", async () => {
+    vi.mocked(searchOpenLibrary).mockResolvedValue({
+      numFound: 10_000,
+      docs: [{ key: "/works/OL1W", title: "B", cover_i: 1 }],
+    } as never);
+
+    await fetchDiscoverData("book", 2);
+
+    expect(vi.mocked(searchOpenLibrary).mock.calls[0][1]).toBe(4);
   });
 });
 
