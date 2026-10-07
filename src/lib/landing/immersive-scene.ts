@@ -1,7 +1,7 @@
 // ============================================================
 // KULTURA — Escena 3D de la landing (E-LANDING-INMERSIVA)
 //
-// Un túnel en hélice de portadas REALES del catálogo (la misma muestra de
+// Una galería flotante de portadas REALES del catálogo (la misma muestra de
 // `showcase.ts`) que la cámara recorre al hacer scroll, y que al final se
 // recoloca en un muro plano detrás del CTA.
 //
@@ -41,6 +41,8 @@ export interface ImmersiveScene {
 }
 
 const PER_TURN = 9;
+const GOLDEN_ANGLE = Math.PI * (3 - Math.sqrt(5));
+const frac = (x: number) => x - Math.floor(x);
 const POSTER_W = 1.25;
 const POSTER_H = 1.875;
 
@@ -119,9 +121,10 @@ export function createImmersiveScene(
 
   const camera = new THREE.PerspectiveCamera(opts.mobile ? 70 : 58, 1, 0.1, 60);
 
-  const radius = opts.mobile ? 2.4 : 3.4;
-  const pitch = opts.mobile ? 0.5 : 0.6;
-  // Las portadas se repiten para que el túnel sea una pared continua, no unas
+  const rMin = opts.mobile ? 1.5 : 2.3;
+  const rMax = opts.mobile ? 3.2 : 5.2;
+  const pitch = opts.mobile ? 0.55 : 0.65;
+  // Las portadas se repiten para que la galería no se quede vacía a mitad, no unas
   // piezas sueltas flotando: con 21 portadas reales salen cuatro vueltas.
   const cols = opts.mobile ? 4 : 8;
   // Múltiplo de las columnas del muro final: sin una última fila a medias.
@@ -137,7 +140,7 @@ export function createImmersiveScene(
   const owned: THREE.Texture[] = [alpha];
   const materials: THREE.MeshBasicMaterial[] = [];
 
-  // Muro final: rejilla de PER_TURN columnas, centrada, al fondo del túnel.
+  // Muro final: rejilla de PER_TURN columnas, centrada, al fondo de la galería.
   const rows = Math.ceil(count / cols);
   const gapX = POSTER_W * 1.22;
   const gapY = POSTER_H * 1.14;
@@ -174,13 +177,16 @@ export function createImmersiveScene(
     }
 
     const mesh = new THREE.Mesh(geometry, material);
-    const a = i * ((Math.PI * 2) / PER_TURN) + (i % 2) * 0.18;
-    const z = -i * pitch;
-    const helixPos = new THREE.Vector3(Math.cos(a) * radius, Math.sin(a) * radius, z);
+    // Galería flotante: reparto por ángulo áureo (sin patrón visible) en un
+    // anillo que deja libre el centro, por donde viaja la cámara y va el texto.
+    // Determinista: la misma muestra produce siempre la misma composición.
+    const a = i * GOLDEN_ANGLE;
+    const r = rMin + (rMax - rMin) * frac(i * 0.618 + 0.13);
+    const z = -i * pitch + (frac(i * 0.37) - 0.5) * pitch;
+    const helixPos = new THREE.Vector3(Math.cos(a) * r * 1.55, Math.sin(a) * r * 0.85, z);
     mesh.position.copy(helixPos);
-    // La cara de un plano es +z: lookAt la orienta hacia el eje del túnel.
-    mesh.lookAt(0, 0, z);
-    mesh.rotateZ((Math.random() - 0.5) * 0.25);
+    // Casi de frente a la cámara, con un giro leve y propio de cada pieza.
+    mesh.rotation.set((frac(i * 0.71) - 0.5) * 0.22, -helixPos.x * 0.05, (frac(i * 0.53) - 0.5) * 0.16);
     const helixQuat = mesh.quaternion.clone();
 
     const col = i % cols;
@@ -216,18 +222,21 @@ export function createImmersiveScene(
     progress += (target - progress) * (1 - Math.exp(-dt * 4.5));
     pointerSmooth.lerp(pointer, 1 - Math.exp(-dt * 3));
 
-    const travel = smooth(0, 0.72, progress);
+    // Lineal, no en S: con una curva la cámara corre en el tramo central y deja
+    // los últimos formatos con la galería ya vacía.
+    const travel = Math.min(1, progress / 0.72);
     const wall = smooth(0.7, 0.9, progress);
-    const camZ = THREE.MathUtils.lerp(6.5, zEnd + 1.5, travel);
+    const camZ = THREE.MathUtils.lerp(6.5, zEnd + 4, travel);
 
-    tunnel.rotation.z = (t * 0.04 + progress * Math.PI * 1.4) * (1 - wall);
+    // Deriva lenta, sin girar como un túnel: la galería "respira".
+    tunnel.rotation.z = Math.sin(t * 0.12) * 0.04 * (1 - wall);
     // Al llegar al muro la niebla se abre: el muro tiene que leerse detrás del CTA.
     fog.near = THREE.MathUtils.lerp(5, 12, wall);
     fog.far = THREE.MathUtils.lerp(fogFar, 40, wall);
 
     for (const p of pieces) {
       p.mesh.position.lerpVectors(p.helixPos, p.wallPos, wall);
-      p.mesh.position.z += Math.sin(t * 0.8 + p.phase) * 0.06 * (1 - wall);
+      p.mesh.position.y += Math.sin(t * 0.6 + p.phase) * 0.08 * (1 - wall);
       tmpQ.copy(p.helixQuat).slerp(identity, wall);
       p.mesh.quaternion.copy(tmpQ);
     }

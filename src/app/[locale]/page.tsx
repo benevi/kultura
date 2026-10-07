@@ -42,7 +42,7 @@ export default async function HomePage() {
       <Header />
       <main className="flex-1">
         {/* Hero inmersivo (E-LANDING-INMERSIVA). El fallback es el MISMO hero
-            sin portadas (túnel de gradientes F0), así que la landing pinta
+            sin portadas (galería de gradientes F0), así que la landing pinta
             entera sin esperar a ningún proveedor. */}
         <Suspense fallback={<ImmersiveHero items={[]} copy={immersive} />}>
           <ImmersiveHeroSlot locale={locale} copy={immersive} />

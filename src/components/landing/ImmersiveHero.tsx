@@ -4,7 +4,7 @@
 // KULTURA — Hero inmersivo de la landing (E-LANDING-INMERSIVA)
 //
 // Sección fijada (sticky) de varias pantallas de alto: un lienzo WebGL con el
-// túnel de portadas reales detrás y tres capítulos de texto encima que se
+// galería de portadas reales detrás y tres capítulos de texto encima que se
 // cruzan con el scroll (titular → los siete formatos → CTA).
 //
 // Decisiones (y por qué):

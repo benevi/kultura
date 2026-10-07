@@ -3,7 +3,7 @@
 //
 // Componente ASÍNCRONO: resuelve la muestra y pinta el hero inmersivo con las
 // portadas reales (E-LANDING-INMERSIVA). Va dentro de un `<Suspense>` cuyo
-// fallback es EL MISMO hero con `items={[]}` (túnel de gradientes F0), así que:
+// fallback es EL MISMO hero con `items={[]}` (galería de gradientes F0), así que:
 //   - el primer pintado de la landing no espera a ningún proveedor;
 //   - cuando la muestra llega (o no), el hueco se rellena solo;
 //   - con la caché caliente (un día) el HTML ya sale con las portadas.
