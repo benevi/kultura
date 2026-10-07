@@ -222,3 +222,12 @@
     opacity: 0.03;
   }
 }
+
+/* E-LANDING-INMERSIVA: entrada del nombre de formato en el hero inmersivo. */
+@keyframes k-word {
+  from { opacity: 0; transform: translateY(0.25em) skewY(4deg); filter: blur(8px); }
+  to { opacity: 1; transform: none; filter: none; }
+}
+@media (prefers-reduced-motion: reduce) {
+  [class*="animate-[k-word"] { animation: none !important; }
+}

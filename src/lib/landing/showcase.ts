@@ -47,11 +47,12 @@ export interface ShowcaseItem {
 }
 
 /**
- * Cuántas portadas pide la landing: collage del hero (3) y tira de móvil (4),
- * que arrancan las dos en el mismo punto de la lista. Las tarjetas de features
- * ya no llevan miniaturas, así que no consumen muestra.
+ * Cuántas portadas pide la landing. La escena inmersiva del hero
+ * (E-LANDING-INMERSIVA) monta un túnel de tres vueltas de siete portadas, así
+ * que pide 21; el hero estático de respaldo (collage de 3 y tira de móvil de 4)
+ * toma las primeras de la MISMA lista, que ya arranca con un tipo de cada.
  */
-export const LANDING_SHOWCASE_SIZE = 4;
+export const LANDING_SHOWCASE_SIZE = 21;
 
 /** Mínimo para que merezca la pena pintar portadas en vez de gradientes. */
 export const LANDING_SHOWCASE_MIN = 4;
@@ -191,7 +192,9 @@ async function loadShowcase(locale: string): Promise<ShowcaseItem[]> {
   return picked;
 }
 
-const cachedShowcase = unstable_cache(loadShowcase, ["landing-showcase"], {
+// La clave lleva versión: al pasar de 4 a 21 portadas, una entrada antigua de
+// la caché (un día) serviría la muestra corta y el túnel saldría con huecos.
+const cachedShowcase = unstable_cache(loadShowcase, ["landing-showcase-v2"], {
   revalidate: SHOWCASE_TTL_SECONDS,
   tags: ["landing-showcase"],
 });
