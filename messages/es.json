@@ -344,7 +344,8 @@
     "inviteRejected": "Invitación rechazada",
     "inviteActionError": "No se pudo procesar la invitación. Inténtalo de nuevo.",
     "markAllRead": "Marcar todo como leído",
-    "loadError": "No se pudieron cargar las notificaciones. Inténtalo de nuevo."
+    "loadError": "No se pudieron cargar las notificaciones. Inténtalo de nuevo.",
+    "unread": "Sin leer"
   },
   "recommendations": {
     "recommend": "Recomendar",

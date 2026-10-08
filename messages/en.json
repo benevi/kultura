@@ -344,7 +344,8 @@
     "inviteRejected": "Invitation rejected",
     "inviteActionError": "Could not process the invitation. Please try again.",
     "markAllRead": "Mark all as read",
-    "loadError": "Could not load notifications. Please try again."
+    "loadError": "Could not load notifications. Please try again.",
+    "unread": "Unread"
   },
   "recommendations": {
     "recommend": "Recommend",

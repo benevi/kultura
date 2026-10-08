@@ -77,12 +77,12 @@ function InviteActions({ invitationId }: { invitationId: string }) {
   )
 }
 
-/** Colores decorativos F0 por tipo de notificación — literales OKLCH (ver DISENO.md). */
-const TYPE_ACCENT: Record<string, { fg: string; bg: string }> = {
-  recommendation: { fg: 'oklch(68% 0.16 250)', bg: 'oklch(68% 0.16 250 / 0.16)' }, // blue
-  list_invite: { fg: 'oklch(83% 0.24 130)', bg: 'oklch(83% 0.24 130 / 0.16)' }, // lime
-  group_invite: { fg: 'oklch(72% 0.19 55)', bg: 'oklch(72% 0.19 55 / 0.16)' }, // orange
-  friend_request: { fg: 'oklch(62% 0.19 300)', bg: 'oklch(62% 0.19 300 / 0.16)' }, // purple
+/** Color del icono por tipo: acentos decorativos de la paleta F0 (tokens). */
+const TYPE_ACCENT: Record<string, { fg: string }> = {
+  recommendation: { fg: 'var(--accent-blue)' },
+  list_invite: { fg: 'var(--accent-lime)' },
+  group_invite: { fg: 'var(--accent-orange)' },
+  friend_request: { fg: 'var(--accent-purple)' },
 }
 
 function NotificationItem({ notif }: { notif: AppNotification }) {
@@ -166,11 +166,18 @@ function NotificationItem({ notif }: { notif: AppNotification }) {
     )
   }
 
+  const unread = !notif.readAt
+
+  // Artboard: filas SUELTAS (gap 10, radio 18), fondo --surface si NO está
+  // leída y transparente si lo está, punto pink de 8px a la derecha. Antes era
+  // una tarjeta única con divide-y y el "no leída" en tinte verde.
   return (
-    <div className={`flex items-start gap-3 p-4 ${!notif.readAt ? 'bg-accent-positive/5' : ''}`}>
+    <li
+      className={`flex items-center gap-4 rounded-18 px-5 py-4 ${unread ? 'bg-surface-default' : 'bg-transparent'}`}
+    >
       <div
-        className="flex-shrink-0 mt-0.5 w-9 h-9 rounded-full flex items-center justify-center"
-        style={{ background: accent.bg, color: accent.fg }}
+        className="flex-shrink-0 w-[42px] h-[42px] rounded-[14px] bg-surface-elevated flex items-center justify-center"
+        style={{ color: accent.fg }}
       >
         {notif.type === 'recommendation' ? (
           <IconSparkles className="w-5 h-5" />
@@ -183,8 +190,13 @@ function NotificationItem({ notif }: { notif: AppNotification }) {
         )}
       </div>
       {content}
-      <span className="text-xs text-text-tertiary flex-shrink-0 mt-0.5">{relativeDate(notif.createdAt, locale)}</span>
-    </div>
+      <span className="text-xs text-text-tertiary flex-shrink-0 whitespace-nowrap">{relativeDate(notif.createdAt, locale)}</span>
+      {unread && (
+        <span className="flex-shrink-0 w-2 h-2 rounded-full bg-accent-pink">
+          <span className="sr-only">{t('unread')}</span>
+        </span>
+      )}
+    </li>
   )
 }
 
@@ -193,7 +205,7 @@ export function NotificationsList({ notifications }: Props) {
 
   if (notifications.length === 0) {
     return (
-      <div className="bg-surface-default border border-surface-border rounded-bento p-10 text-center flex flex-col items-center gap-3">
+      <div className="bg-surface-default rounded-18 p-10 text-center flex flex-col items-center gap-3 max-w-[720px]">
         <IconBell className="w-8 h-8 text-text-tertiary" />
         <p className="font-bold text-text-primary">{t('noNotifications')}</p>
         <p className="text-sm text-text-tertiary">{t('noNotificationsHint')}</p>
@@ -202,10 +214,10 @@ export function NotificationsList({ notifications }: Props) {
   }
 
   return (
-    <div className="bg-surface-default border border-surface-border rounded-bento divide-y divide-surface-border overflow-hidden">
+    <ul className="flex flex-col gap-2.5 max-w-[720px]">
       {notifications.map((n) => (
         <NotificationItem key={n.id} notif={n} />
       ))}
-    </div>
+    </ul>
   )
 }

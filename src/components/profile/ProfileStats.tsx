@@ -49,7 +49,7 @@ export async function ProfileStats({ byType, totalItems }: ProfileStatsProps) {
           return (
           <div
             key={s.type}
-            className="bg-surface-elevated rounded-2xl p-4 text-center border border-surface-border"
+            className="bg-surface-default rounded-20 p-4 text-center"
           >
             <Icon className="w-6 h-6 mx-auto text-text-secondary" />
             <p className="text-2xl font-bold text-text-primary leading-none mt-2">{s.total}</p>

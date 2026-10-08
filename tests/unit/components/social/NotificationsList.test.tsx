@@ -124,3 +124,24 @@ describe('NotificationsList — group_invite', () => {
     })
   })
 })
+
+// Artboard de Notificaciones: filas sueltas; la NO leída lleva fondo de
+// superficie y punto pink, la leída va transparente y sin punto.
+describe('NotificationsList — leída vs no leída (artboard)', () => {
+  it('la no leída lleva superficie y el aviso "unread"; la leída, ni una cosa ni otra', () => {
+    render(
+      <NotificationsList
+        notifications={[
+          groupInvite({ id: 'n-unread' }),
+          groupInvite({ id: 'n-read', readAt: '2026-01-02T00:00:00Z' }),
+        ]}
+      />
+    )
+    const rows = screen.getAllByRole('listitem')
+    expect(rows).toHaveLength(2)
+    expect(rows[0].className).toContain('bg-surface-default')
+    expect(rows[0].textContent).toContain('unread')
+    expect(rows[1].className).toContain('bg-transparent')
+    expect(rows[1].textContent).not.toContain('unread')
+  })
+})
