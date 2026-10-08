@@ -41,7 +41,6 @@ export interface ImmersiveScene {
   dispose(): void;
 }
 
-const PER_TURN = 9;
 const GOLDEN_ANGLE = Math.PI * (3 - Math.sqrt(5));
 const frac = (x: number) => x - Math.floor(x);
 const POSTER_W = 1.25;
