@@ -9,8 +9,9 @@
 // Decisiones (y por qué):
 //   - Es una INTRO AUTOMÁTICA (E-LANDING-INTRO), no un recorrido atado al
 //     scroll: la rueda del ratón avanza a saltos y la escena iba a tirones.
-//     Arranca cuando han llegado las portadas, dura `INTRO_MS`, y el scroll, el
-//     teclado o el botón la saltan al final; después la página baja normal.
+//     Arranca cuando han llegado las portadas, dura `INTRO_MS` y SIEMPRE se ve
+//     entera: no hay botón de saltar y la rueda no la acelera (decisión del
+//     usuario). El scroll de la página sigue libre mientras tanto.
 //   - El progreso viaja como custom property `--p` en el elemento, y las
 //     opacidades de los capítulos se calculan en CSS con `clamp()`: avanzar NO
 //     re-renderiza React. Solo cambia estado cuando cambia el formato
@@ -64,8 +65,6 @@ export function ImmersiveHero({ items, copy }: { items: ShowcaseItem[]; copy: Im
   const [mode, setMode] = React.useState<"immersive" | "static">("immersive");
   const [formatIdx, setFormatIdx] = React.useState(0);
   const [isFinal, setIsFinal] = React.useState(false);
-  const [playing, setPlaying] = React.useState(true);
-  const skipRef = React.useRef<(() => void) | null>(null);
   const sectionRef = React.useRef<HTMLElement>(null);
   const canvasRef = React.useRef<HTMLCanvasElement>(null);
 
@@ -93,7 +92,6 @@ export function ImmersiveHero({ items, copy }: { items: ShowcaseItem[]; copy: Im
     // ya cargadas), no al montar — si no, los primeros segundos se gastarían
     // sobre un lienzo todavía oculto.
     let startedAt = -1;
-    let skip: { at: number; from: number } | null = null;
     let p = 0;
     let done = false;
 
@@ -116,11 +114,10 @@ export function ImmersiveHero({ items, copy }: { items: ShowcaseItem[]; copy: Im
       raf = 0;
       if (cancelled || done) return;
       if (startedAt < 0) startedAt = now;
-      p = introProgress(now - startedAt, skip);
+      p = introProgress(now - startedAt);
       apply(p);
       if (p >= 1) {
         done = true;
-        setPlaying(false);
         return;
       }
       raf = requestAnimationFrame(tick);
@@ -132,39 +129,6 @@ export function ImmersiveHero({ items, copy }: { items: ShowcaseItem[]; copy: Im
       if (!raf && !done) raf = requestAnimationFrame(tick);
     };
     const revealTimer = window.setTimeout(reveal, items.length > 0 ? REVEAL_MAX_MS : EMPTY_REVEAL_MS);
-
-    // Saltar: el scroll, el teclado o el botón llevan la intro al final con una
-    // transición corta. Mientras dura, la rueda y el gesto NO mueven la página:
-    // el primer gesto es "sáltala", no "bájame a las features a medias".
-    const skipNow = () => {
-      if (done || skip) return;
-      if (startedAt < 0) {
-        // Aún sin enseñar: se enseña ya y la transición sale desde el principio.
-        reveal();
-        skip = { at: 0, from: 0 };
-        startedAt = performance.now();
-        return;
-      }
-      skip = { at: performance.now() - startedAt, from: p };
-    };
-    skipRef.current = skipNow;
-    const onWheel = (e: WheelEvent) => {
-      if (done) return;
-      e.preventDefault();
-      skipNow();
-    };
-    const onTouch = (e: TouchEvent) => {
-      if (done) return;
-      e.preventDefault();
-      skipNow();
-    };
-    const SKIP_KEYS = new Set(["ArrowDown", "PageDown", " ", "End", "Enter", "Escape"]);
-    const onKey = (e: KeyboardEvent) => {
-      if (done || !SKIP_KEYS.has(e.key)) return;
-      // Enter sobre el botón de saltar ya lo gestiona el propio botón.
-      if (e.key !== "Enter") e.preventDefault();
-      skipNow();
-    };
 
     const onPointer = (e: PointerEvent) => {
       scene?.setPointer((e.clientX / window.innerWidth) * 2 - 1, -((e.clientY / window.innerHeight) * 2 - 1));
@@ -196,22 +160,15 @@ export function ImmersiveHero({ items, copy }: { items: ShowcaseItem[]; copy: Im
         if (!cancelled) setMode("static");
       });
 
-    window.addEventListener("wheel", onWheel, { passive: false });
-    window.addEventListener("touchmove", onTouch, { passive: false });
-    window.addEventListener("keydown", onKey);
     window.addEventListener("resize", onResize);
     window.addEventListener("pointermove", onPointer, { passive: true });
     apply(0);
 
     return () => {
       cancelled = true;
-      skipRef.current = null;
       window.clearTimeout(revealTimer);
       cancelAnimationFrame(raf);
       io.disconnect();
-      window.removeEventListener("wheel", onWheel);
-      window.removeEventListener("touchmove", onTouch);
-      window.removeEventListener("keydown", onKey);
       window.removeEventListener("resize", onResize);
       window.removeEventListener("pointermove", onPointer);
       scene?.dispose();
@@ -308,14 +265,6 @@ export function ImmersiveHero({ items, copy }: { items: ShowcaseItem[]; copy: Im
             </KButton>
           </div>
         </div>
-
-        {playing && !isFinal && (
-          <div className="absolute right-6 top-6 md:right-14 md:top-auto md:bottom-10">
-            <KButton variant="secondary" size="sm" onClick={() => skipRef.current?.()}>
-              {copy.skip}
-            </KButton>
-          </div>
-        )}
 
         {/* Grano: rompe la planitud digital del fondo (ruido SVG en data URI,
             permitido por img-src). Fijo y sin eventos. SIN mix-blend-mode: un

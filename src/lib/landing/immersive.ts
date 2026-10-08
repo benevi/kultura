@@ -28,18 +28,8 @@ export const IMMERSIVE_FORMATS: MediaType[] = ["movie", "tv", "anime", "manga", 
  * escena atada a él avanzaba a tirones por mucho que se suavizara.
  */
 export const INTRO_MS = 12000;
-/** Lo que tarda en llegar al final cuando el usuario salta la intro. */
-export const SKIP_MS = 900;
-
-/**
- * Progreso de la intro (0-1). Lineal durante `INTRO_MS`; si se salta, va del
- * punto en que estaba a 1 en `SKIP_MS` con salida suave, sin cortes.
- */
-export function introProgress(elapsed: number, skip: { at: number; from: number } | null): number {
-  if (skip) {
-    const t = Math.min(1, Math.max(0, (elapsed - skip.at) / SKIP_MS));
-    return skip.from + (1 - skip.from) * (1 - (1 - t) ** 3);
-  }
+/** Progreso de la intro (0-1): lineal durante `INTRO_MS`. */
+export function introProgress(elapsed: number): number {
   return Math.min(1, Math.max(0, elapsed / INTRO_MS));
 }
 
@@ -55,8 +45,6 @@ export interface ImmersiveCopy {
   badge: string;
   finalTitle: string;
   finalSub: string;
-  /** Botón para saltar la intro (también la salta el scroll o el teclado). */
-  skip: string;
   cta: string;
   /** Respaldo estático: titular y CTA del hero de siempre. */
   staticTagline: string;
