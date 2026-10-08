@@ -23,6 +23,7 @@
 // ============================================================
 
 import * as THREE from "three";
+import { IMMERSIVE_READY_AT } from "@/lib/landing/immersive";
 
 export interface SceneItem {
   /** URL ya resuelta (mismo origen) o null para quedarse con el gradiente. */
@@ -45,6 +46,7 @@ const GOLDEN_ANGLE = Math.PI * (3 - Math.sqrt(5));
 const frac = (x: number) => x - Math.floor(x);
 const POSTER_W = 1.25;
 const POSTER_H = 1.875;
+
 
 /** Resuelve cualquier color CSS (incl. `oklch()` y `var()`) a RGB lineal 0-1. */
 function cssColor(css: string): THREE.Color {
@@ -106,7 +108,7 @@ const smooth = (a: number, b: number, x: number) => {
 export function createImmersiveScene(
   canvas: HTMLCanvasElement,
   items: SceneItem[],
-  opts: { mobile: boolean; bgCss: string }
+  opts: { mobile: boolean; bgCss: string; onReady?: () => void }
 ): ImmersiveScene {
   const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, powerPreference: "high-performance" });
   renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, opts.mobile ? 1.5 : 1.75));
@@ -155,6 +157,16 @@ export function createImmersiveScene(
   }
   const pieces: Piece[] = [];
 
+  // Cada portada se pide UNA vez y su textura la comparten todas las piezas que
+  // la repiten: con 21 portadas para 40 piezas, pedirla por pieza duplicaba
+  // descargas y subidas a la GPU justo cuando más prisa hay.
+  const byUrl = new Map<string, THREE.MeshBasicMaterial[]>();
+  const assign = (src: string, material: THREE.MeshBasicMaterial) => {
+    const list = byUrl.get(src);
+    if (list) list.push(material);
+    else byUrl.set(src, [material]);
+  };
+
   for (let i = 0; i < count; i++) {
     const item = items[i % Math.max(items.length, 1)] ?? { src: null, hue: [350, 300, 130, 55, 250, 95, 20][i % 7] };
     const fallback = gradientTexture(item.hue);
@@ -166,15 +178,7 @@ export function createImmersiveScene(
       side: THREE.DoubleSide,
     });
     materials.push(material);
-    if (item.src) {
-      loader.load(item.src, (tex) => {
-        tex.colorSpace = THREE.SRGBColorSpace;
-        tex.anisotropy = 4;
-        owned.push(tex);
-        material.map = tex;
-        material.needsUpdate = true;
-      });
-    }
+    if (item.src) assign(item.src, material);
 
     const mesh = new THREE.Mesh(geometry, material);
     // Galería flotante: reparto por ángulo áureo (sin patrón visible) en un
@@ -200,6 +204,39 @@ export function createImmersiveScene(
     tunnel.add(mesh);
     pieces.push({ mesh, helixPos, helixQuat, wallPos, phase: Math.random() * Math.PI * 2 });
   }
+
+  // La galería no se enseña hasta que han llegado las portadas de las primeras
+  // piezas (el orden de `byUrl` es el de profundidad: delante primero). Una
+  // galería de gradientes que se van rellenando a saltos es justo lo que no tiene
+  // que verse al entrar. El componente pone además un tope de tiempo: si un
+  // proveedor va lento, se enseña igual y lo que falte queda con su gradiente.
+  const need = Math.min(byUrl.size, IMMERSIVE_READY_AT);
+  let settled = 0;
+  let readyFired = false;
+  const settle = () => {
+    settled++;
+    if (!readyFired && settled >= need) {
+      readyFired = true;
+      opts.onReady?.();
+    }
+  };
+  byUrl.forEach((mats, src) => {
+    loader.load(
+      src,
+      (tex) => {
+        tex.colorSpace = THREE.SRGBColorSpace;
+        tex.anisotropy = 4;
+        owned.push(tex);
+        for (const m of mats) {
+          m.map = tex;
+          m.needsUpdate = true;
+        }
+        settle();
+      },
+      undefined,
+      settle
+    );
+  });
 
   let target = 0;
   let progress = 0;

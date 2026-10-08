@@ -41,9 +41,22 @@ export interface ImmersiveCopy {
   formats: Record<MediaType, string>;
 }
 
+/**
+ * Ancho ÚNICO de textura, también en móvil: la misma URL la precarga el servidor
+ * (`ImmersiveHeroSlot`) antes de que exista la escena, y con dos tamaños la
+ * precarga no sabría cuál pedir y el móvil descargaría la imagen dos veces.
+ */
+export const TEXTURE_WIDTH = 384;
+
+/**
+ * Portadas distintas que tienen que haber llegado para enseñar la galería, y
+ * las que el servidor precarga: son las de las piezas más cercanas a la cámara.
+ */
+export const IMMERSIVE_READY_AT = 12;
+
 /** URL de mismo origen y tamaño acotado: WebGL necesita CORS (ver la escena). */
-export function textureUrl(poster: string, mobile: boolean): string {
-  return `/_next/image?url=${encodeURIComponent(poster)}&w=${mobile ? 256 : 384}&q=70`;
+export function textureUrl(poster: string): string {
+  return `/_next/image?url=${encodeURIComponent(poster)}&w=${TEXTURE_WIDTH}&q=70`;
 }
 
 /** Índice del formato en pantalla para un progreso dado (capítulo 2). */

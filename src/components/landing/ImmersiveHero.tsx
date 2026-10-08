@@ -39,6 +39,14 @@ import {
 const GRAIN =
   "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E\")";
 
+/** Tope para enseñar la galería aunque falten portadas. */
+const REVEAL_MAX_MS = 3500;
+/**
+ * Sin muestra todavía (fallback del Suspense) se espera algo más antes de
+ * enseñar gradientes: lo normal es que la muestra llegue y sustituya al hero.
+ */
+const EMPTY_REVEAL_MS = 4000;
+
 function canUseWebGL(): boolean {
   try {
     const c = document.createElement("canvas");
@@ -74,6 +82,14 @@ export function ImmersiveHero({ items, copy }: { items: ShowcaseItem[]; copy: Im
     let lastIdx = -1;
     let lastFinal = false;
     const mobile = !!mm && mm("(max-width: 767px)").matches;
+
+    // La galería se enseña cuando han llegado las primeras portadas (lo avisa
+    // la escena) o, como tarde, al cumplirse el tope: un proveedor lento no puede
+    // dejar la landing sin fondo. Mientras, el titular ya se lee sobre `--bg`.
+    const reveal = () => {
+      if (!cancelled) canvas.dataset.ready = "true";
+    };
+    const revealTimer = window.setTimeout(reveal, items.length > 0 ? REVEAL_MAX_MS : EMPTY_REVEAL_MS);
 
     const readProgress = () => {
       const rect = section.getBoundingClientRect();
@@ -122,12 +138,13 @@ export function ImmersiveHero({ items, copy }: { items: ShowcaseItem[]; copy: Im
         const bgCss = getComputedStyle(document.documentElement).getPropertyValue("--bg").trim() || "black";
         scene = createImmersiveScene(
           canvas,
-          items.map((it) => ({ src: textureUrl(it.poster, mobile), hue: TYPE_HUE[it.type] ?? 300 })),
-          { mobile, bgCss }
+          items.map((it) => ({ src: textureUrl(it.poster), hue: TYPE_HUE[it.type] ?? 300 })),
+          // Sin muestra (el fallback del Suspense, o un catálogo caído) no hay
+          // nada que esperar: el tope de abajo enseña la galería de gradientes.
+          { mobile, bgCss, onReady: items.length > 0 ? reveal : undefined }
         );
         scene.setProgress(readProgress());
         if (visible) scene.start();
-        canvas.dataset.ready = "true";
       })
       .catch(() => {
         if (!cancelled) setMode("static");
@@ -140,6 +157,7 @@ export function ImmersiveHero({ items, copy }: { items: ShowcaseItem[]; copy: Im
 
     return () => {
       cancelled = true;
+      window.clearTimeout(revealTimer);
       cancelAnimationFrame(raf);
       io.disconnect();
       window.removeEventListener("scroll", onScroll);

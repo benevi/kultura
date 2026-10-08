@@ -27,10 +27,9 @@ describe("hero inmersivo · helpers", () => {
   // optimizador de Next (MISMO origen), nunca al CDN del proveedor.
   it("la textura sale del mismo origen, con la URL del proveedor codificada", () => {
     const src = "https://image.tmdb.org/t/p/w500/a b.jpg";
-    const url = textureUrl(src, false);
+    const url = textureUrl(src);
     expect(url.startsWith("/_next/image?url=")).toBe(true);
     expect(url).toContain(encodeURIComponent(src));
     expect(url).toContain("w=384");
-    expect(textureUrl(src, true)).toContain("w=256");
   });
 });

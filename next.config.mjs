@@ -40,6 +40,10 @@ const nextConfig = {
     ];
   },
   images: {
+    // Las portadas no cambian: sin esto el optimizador de imágenes vuelve a
+    // pedir y recomprimir cada una al minuto de caducar (TTL por defecto: 60 s),
+    // y la galería de la landing paga ese coste en frío en cada visita.
+    minimumCacheTTL: 60 * 60 * 24 * 7,
     remotePatterns: [
       {
         protocol: "https",
