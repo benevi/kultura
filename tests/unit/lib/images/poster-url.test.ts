@@ -27,10 +27,14 @@ describe("posterLoader", () => {
     );
   });
 
-  it("AniList y Open Library: cambian el sufijo de tamaño", () => {
-    expect(L("https://s4.anilist.co/file/anilistcdn/media/anime/cover/extraLarge/bx1.jpg", 200)).toBe(
-      "https://s4.anilist.co/file/anilistcdn/media/anime/cover/large/bx1.jpg"
-    );
+  // Regresión: reescribir la carpeta de tamaño de AniList pedía
+  // `/cover/extraLarge/`, que no existe → Anime entero en 404.
+  it("AniList: la URL se sirve tal cual, sin tocar la carpeta de tamaño", () => {
+    const src = "https://s4.anilist.co/file/anilistcdn/media/anime/cover/large/bx1.jpg";
+    for (const w of [96, 200, 384, 828]) expect(L(src, w)).toBe(src);
+  });
+
+  it("Open Library: cambia el sufijo de tamaño", () => {
     expect(L("https://covers.openlibrary.org/b/id/42-L.jpg", 150)).toBe("https://covers.openlibrary.org/b/id/42-M.jpg");
     expect(L("https://covers.openlibrary.org/b/id/42-L.jpg", 400)).toBe("https://covers.openlibrary.org/b/id/42-L.jpg");
   });

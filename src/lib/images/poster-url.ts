@@ -65,10 +65,13 @@ export function posterLoader({ src, width, quality }: { src: string; width: numb
     return src;
   }
 
-  // AniList: /…/cover/{small|medium|large|extraLarge}/… (≈ 50/100/230/460 px)
+  // AniList: SE SIRVE TAL CUAL. Sus carpetas de tamaño van desplazadas
+  // respecto a los nombres de la API (`extraLarge` vive en `/cover/large/`,
+  // `large` en `/cover/medium/`…) y `/cover/extraLarge/` NO existe: reescribir
+  // el segmento dejó Descubrir → Anime vacío (todas las portadas en 404 y las
+  // cards retiradas). La que llega ya es la grande del CDN, directa y caliente.
   if (host === "s4.anilist.co") {
-    const size = width <= 100 ? "medium" : width <= 230 ? "large" : "extraLarge";
-    return src.replace(/\/cover\/(small|medium|large|extraLarge)\//, `/cover/${size}/`);
+    return src;
   }
 
   // Open Library: /b/id/{id}-{S|M|L}.jpg (M ≈ 180 px, L ≈ 500 px)
