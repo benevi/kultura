@@ -51,14 +51,11 @@ const { showcase } = vi.hoisted(() => ({
 }));
 
 vi.mock("@/components/landing/ShowcaseSlots", async () => {
-  const { HeroCollage, HeroStrip, HERO_COLLAGE_SLOTS } = await import(
-    "@/components/landing/HeroCollage"
-  );
+  const { ImmersiveHero } = await import("@/components/landing/ImmersiveHero");
   return {
-    HeroCollageSlot: ({ badge }: { badge: string }) => (
-      <HeroCollage items={showcase.items.slice(0, HERO_COLLAGE_SLOTS)} badge={badge} />
+    ImmersiveHeroSlot: ({ copy }: { copy: React.ComponentProps<typeof ImmersiveHero>["copy"] }) => (
+      <ImmersiveHero items={showcase.items} copy={copy} />
     ),
-    HeroStripSlot: () => <HeroStrip items={showcase.items} />,
   };
 });
 
