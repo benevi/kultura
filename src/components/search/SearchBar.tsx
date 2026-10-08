@@ -8,6 +8,8 @@ import { Spinner } from "@/components/ui/Spinner";
 import { Badge } from "@/components/ui/Badge";
 import { IconSearch } from "@/components/icons";
 import type { MediaItem } from "@/types/media";
+import { posterLoader } from "@/lib/images/poster-url";
+import { posterGradient } from "@/lib/images/poster-gradient";
 
 export interface SearchBarProps {
   defaultValue?: string;
@@ -173,14 +175,26 @@ export function SearchBar({
                 onClick={() => handleSelectSuggestion(item)}
                 className="flex items-center gap-3 px-4 py-2.5 hover:bg-surface2 w-full text-left transition-colors"
               >
-                {item.poster && (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img
-                    src={item.poster}
-                    alt=""
-                    className="w-9 h-12 object-cover rounded-md flex-shrink-0"
-                  />
-                )}
+                {/* Miniatura de 36×48: se pide al CDN a ese tamaño
+                    (E-PORTADAS-RAPIDAS); antes bajaba la portada original —
+                    con RAWG, una captura de 1920 px por sugerencia. Gradiente
+                    detrás por si no hay portada o no carga. */}
+                <span
+                  aria-hidden="true"
+                  className="relative w-9 h-12 rounded-md overflow-hidden flex-shrink-0"
+                  style={{ background: posterGradient(item.id || item.title) }}
+                >
+                  {item.poster && (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                      src={posterLoader({ src: item.poster, width: 96 })}
+                      alt=""
+                      loading="lazy"
+                      decoding="async"
+                      className="absolute inset-0 w-full h-full object-cover"
+                    />
+                  )}
+                </span>
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-body font-medium text-text-primary truncate">{item.title}</p>
                   {item.year ? (

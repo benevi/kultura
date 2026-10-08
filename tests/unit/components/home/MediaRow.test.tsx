@@ -24,7 +24,7 @@ const sampleItems = [
 
 describe('MediaRow', () => {
   it('con 3 items renderiza 3 links con href correctos', () => {
-    render(<MediaRow title="Recientes" items={sampleItems} />)
+    render(<MediaRow title="Recientes" items={sampleItems} requirePoster={false} />)
     const links = screen.getAllByRole('link')
     expect(links).toHaveLength(3)
     expect(links[0]).toHaveAttribute('href', '/media/movie/550')
@@ -64,12 +64,25 @@ describe('MediaRow', () => {
 
   // E-MATCH-SIN-BADGE: las filas de Inicio ya no pintan porcentaje de afinidad.
   it('no pinta badges de match', () => {
-    render(<MediaRow title="Recientes" items={sampleItems} />)
+    render(<MediaRow title="Recientes" items={sampleItems} requirePoster={false} />)
     expect(screen.queryAllByTestId('media-row-match-badge')).toHaveLength(0)
   })
 
   it('muestra el año cuando el item lo trae', () => {
-    render(<MediaRow title="Recientes" items={[{ ...sampleItems[0], year: 1999 }]} />)
+    render(<MediaRow title="Recientes" items={[{ ...sampleItems[0], year: 1999 }]} requirePoster={false} />)
     expect(screen.getByText('1999')).toBeInTheDocument()
+  })
+
+  // E-SIN-CARDS-VACIAS: por defecto la fila no enseña huecos sin portada.
+  it('no pinta los items sin portada por defecto', () => {
+    const conPortada = { ...sampleItems[0], mediaId: 'movie_1', title: 'Con portada', poster: 'https://image.tmdb.org/t/p/w500/x.jpg' }
+    render(<MediaRow title="Recientes" items={[conPortada, ...sampleItems]} />)
+    expect(screen.getByText('Con portada')).toBeInTheDocument()
+    expect(screen.queryByText('Fight Club')).toBeNull()
+  })
+
+  it('una fila que se queda sin items con portada no se pinta', () => {
+    const { container } = render(<MediaRow title="Recientes" items={sampleItems} />)
+    expect(container.firstChild).toBeNull()
   })
 })

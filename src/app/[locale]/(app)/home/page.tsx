@@ -89,6 +89,7 @@ export default async function HomePage() {
         <MediaRow
           title={t('continueWatching')}
           items={filteredRecent}
+          requirePoster={false}
         />
       )}
 

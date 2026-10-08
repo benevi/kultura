@@ -20,6 +20,8 @@
 
 // ── Internal types ────────────────────────────────────────────────────────────
 
+import { PROVIDER_CACHE } from "@/lib/api/fetch-cache";
+
 export interface OpenLibraryDoc {
   key: string; // "/works/OL7353617W"
   isbn?: string[];
@@ -111,6 +113,7 @@ async function openLibraryFetch<T>(
   const res = await fetch(url.toString(), {
     headers: { "User-Agent": "KULTURA/1.0 (kultura app)" },
     signal: AbortSignal.timeout(OPEN_LIBRARY_TIMEOUT_MS),
+    ...PROVIDER_CACHE,
   });
   if (!res.ok) throw new OpenLibraryError(path, res.status);
   return res.json() as Promise<T>;

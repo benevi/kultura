@@ -1,6 +1,8 @@
 'use client'
 
-import Image from 'next/image'
+import * as React from 'react'
+import { PosterImage } from '@/components/media/PosterImage'
+import { posterGradient } from '@/lib/images/poster-gradient'
 import { Link } from '@/i18n/navigation'
 import { KButton } from '@/components/ui/KButton'
 
@@ -21,11 +23,28 @@ interface MediaRowProps {
   emptyHint?: string
   emptyAction?: { label: string; href: string }
   isLoading?: boolean
+  /**
+   * E-SIN-CARDS-VACIAS: sin portada (o si falla al cargar) la card no se
+   * enseña. Por defecto SÍ; las filas de la biblioteca del usuario (seguir
+   * viendo, perfil) pasan `false` y se quedan con gradiente + título.
+   */
+  requirePoster?: boolean
 }
 
 const SKELETONS = [0, 1, 2, 3, 4]
 
-export function MediaRow({ items, title, emptyIcon, emptyMessage, emptyHint, emptyAction, isLoading }: MediaRowProps) {
+export function MediaRow({
+  items: allItems,
+  title,
+  emptyIcon,
+  emptyMessage,
+  emptyHint,
+  emptyAction,
+  isLoading,
+  requirePoster = true,
+}: MediaRowProps) {
+  const [failed, setFailed] = React.useState<ReadonlySet<string>>(() => new Set())
+  const items = requirePoster ? allItems.filter((i) => i.poster && !failed.has(i.mediaId)) : allItems
   if (!isLoading && items.length === 0 && !emptyMessage) return null
 
   return (
@@ -68,18 +87,27 @@ export function MediaRow({ items, title, emptyIcon, emptyMessage, emptyHint, emp
                 className="w-28 md:w-36 flex-shrink-0 cursor-pointer group"
               >
                 <div className="relative aspect-[2/3] rounded-bento overflow-hidden bg-surface-elevated">
-                  {item.poster ? (
-                    <Image
+                  {/* Respaldo F0 SIEMPRE detrás: un título sin portada o con
+                      portada rota se ve como bloque de color con sus
+                      iniciales, nunca como un hueco con "◻". */}
+                  <div
+                    aria-hidden="true"
+                    className="absolute inset-0 flex items-center justify-center"
+                    style={{ background: posterGradient(item.mediaId || item.title) }}
+                  >
+                    <span className="font-display text-lg font-extrabold text-white/90">
+                      {item.title.slice(0, 2).toUpperCase()}
+                    </span>
+                  </div>
+                  {item.poster && (
+                    <PosterImage
                       src={item.poster}
-                      alt={item.title}
-                      fill
-                      className="object-cover group-hover:scale-105 transition-transform duration-300"
                       sizes="(max-width: 768px) 112px, 144px"
+                      className="object-cover group-hover:scale-105 transition-transform duration-300"
+                      onFail={() =>
+                        setFailed((prev) => (prev.has(item.mediaId) ? prev : new Set(prev).add(item.mediaId)))
+                      }
                     />
-                  ) : (
-                    <div className="w-full h-full flex items-center justify-center">
-                      <span className="text-2xl text-text-tertiary">◻</span>
-                    </div>
                   )}
                 </div>
                 <p

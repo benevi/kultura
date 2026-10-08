@@ -6,6 +6,7 @@
 
 import { RAWG_EXCLUDE_NSFW_TAGS, rawgDatesWindow } from "@/lib/api/rawg-maps";
 import { env } from "@/lib/env";
+import { PROVIDER_CACHE } from "@/lib/api/fetch-cache";
 
 // ── Internal types ────────────────────────────────────────────────────────────
 
@@ -48,7 +49,7 @@ async function rawgFetch<T>(
   const url = new URL(`https://api.rawg.io/api${path}`);
   url.searchParams.set("key", env.RAWG_API_KEY);
   Object.entries(params).forEach(([k, v]) => url.searchParams.set(k, v));
-  const res = await fetch(url.toString());
+  const res = await fetch(url.toString(), PROVIDER_CACHE);
   if (!res.ok) throw new Error(`RAWG ${path} → ${res.status}`);
   return res.json() as Promise<T>;
 }

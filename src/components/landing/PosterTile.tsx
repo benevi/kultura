@@ -8,7 +8,7 @@
 // No se inventa ninguna forma, radio ni sombra nueva.
 // ============================================================
 
-import Image from "next/image";
+import { PosterImage } from "@/components/media/PosterImage";
 import { cn } from "@/lib/utils/index";
 import type { ShowcaseItem } from "@/lib/landing/showcase";
 
@@ -74,15 +74,7 @@ export function PosterTile({
         className="absolute inset-0"
         style={{ background: fallbackGradient(item.id) }}
       />
-      <Image
-        src={item.poster}
-        alt=""
-        aria-hidden="true"
-        fill
-        sizes={sizes}
-        priority={priority}
-        className="object-cover"
-      />
+      <PosterImage src={item.poster} sizes={sizes} priority={priority} className="object-cover" />
       {children}
     </div>
   );

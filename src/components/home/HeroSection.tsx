@@ -1,6 +1,6 @@
 'use client'
 
-import Image from 'next/image'
+import { PosterImage } from '@/components/media/PosterImage'
 import { Link } from '@/i18n/navigation'
 import { useTranslations } from 'next-intl'
 import { KButton } from '@/components/ui/KButton'
@@ -91,20 +91,18 @@ export function HeroSection({ item }: HeroSectionProps) {
         style={{ background: HERO_GRADIENT }}
       >
         <div className="relative w-full md:w-64 lg:w-80 aspect-[16/9] md:aspect-auto md:self-stretch flex-shrink-0 overflow-hidden rounded-t-bento-lg md:rounded-l-bento-lg md:rounded-tr-none">
-          {media.poster ? (
+          {/* Respaldo SIEMPRE detrás: si la portada falla queda color, no hueco. */}
+          <div className="absolute inset-0" style={{ background: MEDIA_BLOCK_FALLBACK }} />
+          {media.poster && (
             <>
-              <Image
+              <PosterImage
                 src={media.poster}
-                alt={media.title}
-                fill
                 className="object-cover"
                 sizes="(max-width: 768px) 100vw, 320px"
                 priority
               />
               <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/10 to-transparent" />
             </>
-          ) : (
-            <div className="absolute inset-0" style={{ background: MEDIA_BLOCK_FALLBACK }} />
           )}
           <div className="absolute inset-0 pointer-events-none" style={{ background: MEDIA_BLOCK_ACCENT }} />
         </div>

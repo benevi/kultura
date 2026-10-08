@@ -6,6 +6,7 @@
 
 import { env } from "@/lib/env";
 import { tmdbLanguage, tmdbRegion } from "@/lib/api/locale";
+import { PROVIDER_CACHE } from "@/lib/api/fetch-cache";
 
 export const TMDB_IMG_BASE = "https://image.tmdb.org/t/p";
 
@@ -119,7 +120,7 @@ async function tmdbFetch<T>(
   // con el comportamiento anterior para llamadas sin contexto de request).
   url.searchParams.set("language", tmdbLanguage(locale));
   Object.entries(params).forEach(([k, v]) => url.searchParams.set(k, v));
-  const res = await fetch(url.toString());
+  const res = await fetch(url.toString(), PROVIDER_CACHE);
   if (!res.ok) throw new Error(`TMDB ${path} → ${res.status}`);
   return res.json() as Promise<T>;
 }

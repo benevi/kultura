@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { fireEvent, render, screen } from "@testing-library/react";
 import { describe, it, expect, vi } from "vitest";
 import type { MediaItem } from "@/types/media";
 
@@ -31,6 +31,7 @@ const makeItem = (n: number): MediaItem => ({
   type: "movie",
   title: `Movie ${n}`,
   year: 2000 + n,
+  poster: `https://image.tmdb.org/t/p/w500/p${n}.jpg`,
 });
 
 describe("MediaGrid", () => {
@@ -79,5 +80,24 @@ describe("MediaGrid", () => {
   it("no pinta badges de match en ninguna card", () => {
     render(<MediaGrid items={[makeItem(1), makeItem(2)]} />);
     expect(screen.queryAllByTestId("media-match-badge")).toHaveLength(0);
+  });
+
+  // E-SIN-CARDS-VACIAS: el catálogo no enseña cards sin portada.
+  it("no pinta los items sin portada (salvo con requirePoster=false)", () => {
+    const sinPortada = { ...makeItem(9), poster: undefined };
+    const { unmount } = render(<MediaGrid items={[makeItem(1), sinPortada]} />);
+    expect(screen.getByText("Movie 1")).toBeInTheDocument();
+    expect(screen.queryByText("Movie 9")).toBeNull();
+    unmount();
+    render(<MediaGrid items={[makeItem(1), sinPortada]} requirePoster={false} />);
+    expect(screen.getByText("Movie 9")).toBeInTheDocument();
+  });
+
+  it("saca de la rejilla la card cuya portada no carga", () => {
+    const { container } = render(<MediaGrid items={[makeItem(1), makeItem(2)]} />);
+    const img = container.querySelector('img[src*="p2.jpg"]') as HTMLImageElement;
+    fireEvent.error(img);
+    expect(screen.queryByText("Movie 2")).toBeNull();
+    expect(screen.getByText("Movie 1")).toBeInTheDocument();
   });
 });

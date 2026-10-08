@@ -293,7 +293,7 @@ export function LibraryClient({ entries }: LibraryClientProps) {
 
       {/* Grid */}
       {filtered.length > 0 && (
-        <MediaGrid items={mediaItems} showType />
+        <MediaGrid items={mediaItems} showType requirePoster={false} />
       )}
     </div>
   )

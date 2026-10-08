@@ -19,6 +19,7 @@
 // ============================================================
 
 import { mangaDexLanguages } from "@/lib/api/locale";
+import { PROVIDER_CACHE } from "@/lib/api/fetch-cache";
 
 // ── Internal types ────────────────────────────────────────────────────────────
 
@@ -79,7 +80,7 @@ async function mangaDexFetch<T>(
 ): Promise<T> {
   const url = new URL(`https://api.mangadex.org${path}`);
   for (const [k, v] of params) url.searchParams.append(k, v);
-  const res = await fetch(url.toString());
+  const res = await fetch(url.toString(), PROVIDER_CACHE);
   if (!res.ok) throw new Error(`MangaDex ${path} → ${res.status}`);
   return res.json() as Promise<T>;
 }

@@ -13,6 +13,8 @@
 
 // ── Internal types ────────────────────────────────────────────────────────────
 
+import { PROVIDER_CACHE } from "@/lib/api/fetch-cache";
+
 export interface JikanAnime {
   mal_id: number;
   title: string;
@@ -98,7 +100,7 @@ async function jikanFetch<T>(
   let lastStatus: number | undefined;
   for (let attempt = 0; attempt < 2; attempt++) {
     if (attempt > 0) await sleep(400);
-    const res = await fetch(url.toString(), { headers: JIKAN_HEADERS });
+    const res = await fetch(url.toString(), { headers: JIKAN_HEADERS, ...PROVIDER_CACHE });
     if (res.ok) return res.json() as Promise<T>;
     lastStatus = res.status;
     if (!JIKAN_RETRYABLE_STATUS.has(res.status)) break;

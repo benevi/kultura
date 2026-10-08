@@ -25,6 +25,7 @@
 
 import { env } from "@/lib/env";
 import { googleBooksLangRestrict } from "@/lib/api/locale";
+import { PROVIDER_CACHE } from "@/lib/api/fetch-cache";
 
 const GOOGLE_BOOKS_BASE = "https://www.googleapis.com/books/v1";
 
@@ -163,7 +164,7 @@ async function googleBooksFetch<T>(
   const key = env.GOOGLE_BOOKS_KEY;
   if (key) url.searchParams.set("key", key);
 
-  const res = await fetch(url.toString());
+  const res = await fetch(url.toString(), PROVIDER_CACHE);
   if (!res.ok) {
     throw new GoogleBooksError(path, res.status);
   }

@@ -17,6 +17,8 @@
 // para manga/libros.
 // ============================================================
 
+import { PROVIDER_CACHE } from "@/lib/api/fetch-cache";
+
 const ANILIST_ENDPOINT = "https://graphql.anilist.co";
 
 // ── Internal types ────────────────────────────────────────────────────────────
@@ -100,6 +102,8 @@ async function anilistFetch<T>(
         "User-Agent": "KulturaApp/1.0 (+https://kultura.app)",
       },
       body: JSON.stringify({ query, variables }),
+      // POST de GraphQL: se cachea por cuerpo (consulta + variables).
+      ...PROVIDER_CACHE,
     });
 
     if (res.ok) {

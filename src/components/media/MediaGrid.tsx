@@ -1,3 +1,6 @@
+"use client";
+
+import * as React from "react";
 import { cn } from "@/lib/utils/index";
 import type { MediaItem } from "@/types/media";
 import { MediaCard } from "./MediaCard";
@@ -14,7 +17,18 @@ export interface MediaGridProps {
    * de los consumidores existentes (Library, Lists, Profile) fuera del alcance de F3b.
    */
   layout?: "uniform" | "bento";
+  /**
+   * E-SIN-CARDS-VACIAS: en el catálogo no se enseña ninguna card sin portada —
+   * ni las que llegan sin ella ni las que fallan al cargar (se sacan de la
+   * rejilla, que se recoloca). Por defecto SÍ. La biblioteca pasa `false`:
+   * ahí son títulos del propio usuario y esconderlos sería perderlos; se quedan
+   * con su gradiente y su título.
+   */
+  requirePoster?: boolean;
 }
+
+/** Cards que se cargan con prioridad: lo que se ve sin hacer scroll. */
+const PRIORITY_CARDS = 6;
 
 // Patrón bento F0 (DISENO.md §Rotación de cards): ciclo de 6 celdas, fila alta
 // de 3 (5/4/3 columnas × row-span-3) + fila baja de 3 (4/4/4 columnas ×
@@ -64,7 +78,14 @@ export function MediaGrid({
   showType = false,
   className,
   layout = "uniform",
+  requirePoster = true,
 }: MediaGridProps) {
+  const [failed, setFailed] = React.useState<ReadonlySet<string>>(() => new Set());
+  const onPosterError = React.useCallback(
+    (id: string) => setFailed((prev) => (prev.has(id) ? prev : new Set(prev).add(id))),
+    []
+  );
+  const visible = requirePoster ? items.filter((i) => i.poster && !failed.has(i.id)) : items;
   const gridClasses = cn(
     layout === "bento"
       ? // gap-5 (20px): mismo espaciado entre cards de fila que fija DISENO.md
@@ -85,7 +106,7 @@ export function MediaGrid({
     );
   }
 
-  if (items.length === 0) {
+  if (visible.length === 0) {
     return (
       <div data-empty className="flex items-center justify-center py-16">
         <p className="text-muted text-sm">
@@ -97,7 +118,7 @@ export function MediaGrid({
 
   return (
     <div className={gridClasses}>
-      {items.map((item, index) => {
+      {visible.map((item, index) => {
         const cyclePos = index % BENTO_CELL_CLASSES.length;
         const cycleIndex = Math.floor(index / BENTO_CELL_CLASSES.length);
         // Solo las dos primeras posiciones del ciclo son "feature" (F0).
@@ -113,6 +134,8 @@ export function MediaGrid({
             <MediaCard
               item={item}
               showType={showType}
+              priority={index < PRIORITY_CARDS}
+              onPosterError={requirePoster ? onPosterError : undefined}
               aspect={layout === "bento" ? "fill" : "2/3"}
               accentHue={
                 isFeature

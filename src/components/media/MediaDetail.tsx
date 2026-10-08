@@ -8,7 +8,7 @@
 // Server Component async (usa getTranslations).
 // ============================================================
 
-import Image from "next/image";
+import { PosterImage } from "@/components/media/PosterImage";
 import { Suspense } from "react";
 import { getTranslations } from "next-intl/server";
 import type { MediaItem, StreamingProvider } from "@/types/media";
@@ -161,24 +161,26 @@ export async function MediaDetail({
                 className="relative w-full aspect-[3/4] rounded-[32px] overflow-hidden flex items-end p-6 md:p-8"
                 style={{ boxShadow: "12px 12px 0 oklch(26% 0.025 280)" }}
               >
-                {item.poster ? (
-                  <Image
+                {/* Gradiente SIEMPRE detrás (E-CARD-PORTADA-404): con
+                    `poster ? imagen : gradiente`, una portada que da 404
+                    dejaba la ficha con un hueco del color de fondo. */}
+                <div
+                  className="absolute inset-0 flex items-center justify-center"
+                  style={{ background: posterGradient(item.id) }}
+                >
+                  {!item.poster && (
+                    <span className="text-white/90 font-display font-extrabold text-3xl">
+                      {item.title.slice(0, 2).toUpperCase()}
+                    </span>
+                  )}
+                </div>
+                {item.poster && (
+                  <PosterImage
                     src={item.poster}
-                    alt={item.title}
-                    fill
                     sizes="(max-width: 768px) 90vw, 420px"
                     className="object-cover"
                     priority
                   />
-                ) : (
-                  <div
-                    className="absolute inset-0 flex items-center justify-center"
-                    style={{ background: posterGradient(item.id) }}
-                  >
-                    <span className="text-white/90 font-display font-extrabold text-3xl">
-                      {item.title.slice(0, 2).toUpperCase()}
-                    </span>
-                  </div>
                 )}
 
                 {/* Scrim inferior — legibilidad del título superpuesto */}

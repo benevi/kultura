@@ -1,24 +1,11 @@
 "use client";
 
-import Image from "next/image";
+import { PosterImage } from "@/components/media/PosterImage";
+import { posterGradient } from "@/lib/images/poster-gradient";
 import { useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
 import { cn } from "@/lib/utils/index";
 import type { MediaItem } from "@/types/media";
-
-// Matices reutilizados literalmente del canvas F0 v2 para posters sin imagen
-// real — nunca gris plano: siempre un gradiente de dos paradas del mismo
-// matiz (ver DISENO.md → "Posters / cards sin imagen real").
-const POSTER_HUES = [300, 55, 320, 220, 160, 40, 150, 260, 95, 350, 130, 25, 45, 250];
-
-function posterGradient(seed: string): string {
-  let hash = 0;
-  for (let i = 0; i < seed.length; i++) {
-    hash = (hash * 31 + seed.charCodeAt(i)) >>> 0;
-  }
-  const hue = POSTER_HUES[hash % POSTER_HUES.length];
-  return `linear-gradient(155deg, oklch(50% 0.15 ${hue}), oklch(28% 0.08 ${hue}))`;
-}
 
 export interface MediaCardProps {
   item: MediaItem;
@@ -34,6 +21,8 @@ export interface MediaCardProps {
    * todos los consumidores fuera de MediaGrid layout="bento").
    */
   accentHue?: number;
+  /** La portada no ha cargado: la rejilla puede sacar la card (E-SIN-CARDS-VACIAS). */
+  onPosterError?: (id: string) => void;
 }
 
 export function MediaCard({
@@ -43,6 +32,7 @@ export function MediaCard({
   className,
   aspect = "2/3",
   accentHue,
+  onPosterError,
 }: MediaCardProps) {
   const href = `/media/${item.type}/${item.externalId}` as const;
   // Badge de tipo (modo "all", R5b): label localizado vía discoverFilters.typeBadge
@@ -80,14 +70,12 @@ export function MediaCard({
                va como texto justo debajo, en el <h3>. Con un alt real, una
                portada rota lo escupía en pantalla y además lo duplicaba para
                quien usa lector. */
-            <Image
+            <PosterImage
               src={item.poster}
-              alt=""
-              aria-hidden="true"
-              fill
               sizes="(max-width: 640px) 45vw, (max-width: 1024px) 30vw, 20vw"
               className="object-cover transition-transform duration-300 group-hover:scale-105"
               priority={priority}
+              onFail={onPosterError ? () => onPosterError(item.id) : undefined}
             />
           )}
 

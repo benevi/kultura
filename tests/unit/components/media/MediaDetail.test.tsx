@@ -127,7 +127,7 @@ describe("MediaDetail", () => {
 
   it("Hero renderiza el poster cuando existe", async () => {
     render(await MediaDetail({ item: mockItem, initialEntry: null, isAuthenticated: false }));
-    const images = screen.getAllByAltText("Fight Club");
+    const images = Array.from(document.querySelectorAll("img"));
     const posterImg = images.find((img) =>
       img.getAttribute("src")?.includes("poster.jpg")
     );
@@ -148,7 +148,7 @@ describe("MediaDetail", () => {
   // y sigue mostrando su poster real con normalidad.
   it("Un item con backdrop sigue mostrando su poster real con normalidad", async () => {
     render(await MediaDetail({ item: mockItem, initialEntry: null, isAuthenticated: false }));
-    const images = screen.getAllByAltText("Fight Club");
+    const images = Array.from(document.querySelectorAll("img"));
     const posterImg = images.find((img) => img.getAttribute("src")?.includes("poster.jpg"));
     const backdropImg = images.find((img) => img.getAttribute("src")?.includes("backdrop.jpg"));
     expect(posterImg).toBeInTheDocument();

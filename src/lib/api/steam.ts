@@ -21,6 +21,7 @@
 
 import type { RawgGame } from "@/lib/api/rawg";
 import { resolveApiLocale } from "@/lib/api/locale";
+import { PROVIDER_CACHE } from "@/lib/api/fetch-cache";
 
 /** Locale → parámetro `l` de Steam (idioma de textos y de `supported_languages`). */
 export function steamLanguage(locale?: string | null): "spanish" | "english" {
@@ -159,7 +160,7 @@ export async function searchSteamAppId(
   url.searchParams.set("cc", steamCountry(locale));
   url.searchParams.set("l", steamLanguage(locale));
 
-  const res = await fetch(url.toString());
+  const res = await fetch(url.toString(), PROVIDER_CACHE);
   if (!res.ok) return null;
   const json = (await res.json()) as SteamStoreSearchResponse;
 
@@ -190,7 +191,7 @@ export async function getSteamAppDetails(
   url.searchParams.set("l", steamLanguage(locale));
   url.searchParams.set("cc", steamCountry(locale));
 
-  const res = await fetch(url.toString());
+  const res = await fetch(url.toString(), PROVIDER_CACHE);
   if (!res.ok) return null;
   const json = (await res.json()) as SteamAppDetailsResponse;
   const entry = json?.[String(appId)];
