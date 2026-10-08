@@ -180,10 +180,13 @@ export function ImmersiveHero({ items, copy }: { items: ShowcaseItem[]; copy: Im
   const format = IMMERSIVE_FORMATS[formatIdx];
 
   return (
+    // Alto = pantalla MENOS la cabecera pública (`Header`: py-4 + botón h-10 +
+    // borde = 73 px). Con 100svh el hero quedaba debajo de la cabecera y el
+    // capítulo de formatos, pegado abajo, salía cortado.
     <section
       ref={sectionRef}
       aria-label={copy.title}
-      className="relative h-[100svh]"
+      className="relative h-[calc(100svh-73px)]"
       style={{ ["--p" as string]: 0 }}
     >
       <div className="relative h-full overflow-hidden">

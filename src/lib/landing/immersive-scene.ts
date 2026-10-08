@@ -129,13 +129,21 @@ export function createImmersiveScene(
 
   const rMin = opts.mobile ? 1.5 : 2.3;
   const rMax = opts.mobile ? 3.2 : 5.2;
-  const pitch = opts.mobile ? 0.55 : 0.65;
   // Las portadas se repiten para que la galería no se quede vacía a mitad, no unas
-  // piezas sueltas flotando: con 21 portadas reales salen cuatro vueltas.
-  const cols = opts.mobile ? 4 : 8;
-  // Múltiplo de las columnas del muro final: sin una última fila a medias.
-  const count = Math.ceil(Math.max(items.length, PER_TURN * 4) / cols) * cols;
-  const zEnd = -(count - 1) * pitch;
+  // piezas sueltas flotando.
+  // El muro final tiene que CUBRIR la pantalla (como un `background-size:
+  // cover`), no quedarse como una rejilla pequeña en el centro: más columnas que
+  // filas en escritorio, al revés en móvil. El encuadre exacto se calcula en
+  // cada frame con el aspecto real (ver `wallCamZ`).
+  const cols = opts.mobile ? 4 : 10;
+  const minRows = opts.mobile ? 7 : 6;
+  const count = Math.max(Math.ceil(items.length / cols), minRows) * cols;
+  // Profundidad FIJA del recorrido, repartida entre las piezas: más piezas (las
+  // que pide el muro) hacen la galería más densa, no el viaje más largo — si
+  // no, la cámara tendría que correr más en el mismo tiempo de intro.
+  const depth = opts.mobile ? 20 : 26;
+  const pitch = depth / (count - 1);
+  const zEnd = -depth;
 
   const tunnel = new THREE.Group();
   scene.add(tunnel);
@@ -151,6 +159,14 @@ export function createImmersiveScene(
   const gapX = POSTER_W * 1.22;
   const gapY = POSTER_H * 1.14;
   const wallZ = zEnd - (opts.mobile ? 8 : 9);
+  const wallW = cols * gapX;
+  const wallH = rows * gapY;
+  const halfTan = Math.tan(THREE.MathUtils.degToRad((opts.mobile ? 70 : 58) / 2));
+  /** Z de cámara a la que el muro llena la pantalla, con margen para el paralaje. */
+  const wallCamZ = () => {
+    const halfH = Math.min(wallH / 2, wallW / 2 / camera.aspect) * 0.88;
+    return wallZ + halfH / halfTan;
+  };
 
   interface Piece {
     mesh: THREE.Mesh;
@@ -267,7 +283,9 @@ export function createImmersiveScene(
     // los últimos formatos con la galería ya vacía.
     const travel = Math.min(1, progress / 0.72);
     const wall = smooth(0.7, 0.9, progress);
-    const camZ = THREE.MathUtils.lerp(6.5, zEnd + 4, travel);
+    // Al recolocarse en el muro, la cámara se ajusta a la distancia que lo hace
+    // llenar la pantalla (puede acercarse o alejarse según el aspecto).
+    const camZ = THREE.MathUtils.lerp(THREE.MathUtils.lerp(6.5, zEnd + 4, travel), wallCamZ(), wall);
 
     // Deriva lenta, sin girar como un túnel: la galería "respira".
     tunnel.rotation.z = Math.sin(t * 0.12) * 0.04 * (1 - wall);
@@ -285,8 +303,10 @@ export function createImmersiveScene(
     const dim = 1 - 0.68 * wall;
     for (const m of materials) m.color.setScalar(dim);
 
-    camera.position.set(pointerSmooth.x * 0.5, pointerSmooth.y * 0.35, camZ);
-    look.set(pointerSmooth.x * -0.6, pointerSmooth.y * -0.4, camZ - 10);
+    // Paralaje con el ratón, más corto en el muro para no destapar sus bordes.
+    const sway = 1 - 0.6 * wall;
+    camera.position.set(pointerSmooth.x * 0.5 * sway, pointerSmooth.y * 0.35 * sway, camZ);
+    look.set(pointerSmooth.x * -0.6 * sway, pointerSmooth.y * -0.4 * sway, camZ - 10);
     camera.lookAt(look);
 
     renderer.render(scene, camera);
