@@ -175,9 +175,9 @@ describe("LoginPage — modo login", () => {
 
   // ── Acabado F0 del artboard Login (canvas "Kultura — Diseño completo") ──
   //
-  // La tarjeta se PRESENTA con un encabezado display antes de los campos: el
-  // mockup no empieza en frío con el formulario.
-  it("encabeza la tarjeta con el saludo, no solo con el eslogan", () => {
+  // El encabezado visible se quitó (decisión del usuario), pero la página sigue
+  // teniendo un <h1> para lectores de pantalla.
+  it("conserva un h1 accesible aunque el encabezado no se vea", () => {
     render(<LoginPage locale="es" />);
     const heading = screen.getByRole("heading", { level: 1 });
     expect(heading.textContent).toBe("welcomeBack");

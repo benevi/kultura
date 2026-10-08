@@ -37,9 +37,6 @@
     "chooseCharacter": "Choose your character",
     "chooseCharacterNone": "No character (initials)",
     "welcomeBack": "Hey, good to see you! 👋",
-    "signInSubtitle": "Sign in to keep discovering",
-    "signUpSubtitle": "Create your account and start discovering",
-    "resetSubtitle": "We'll email you a link to get back in",
     "signUpAction": "Sign up",
     "signInAction": "Sign in",
     "demoUnavailable": "The demo isn't available right now. Try again in a bit or create your account."

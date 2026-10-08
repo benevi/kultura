@@ -385,37 +385,25 @@ export function LoginPage({ locale }: LoginPageProps) {
   // Render: main form
   // -------------------------------------------------------------------------
 
-  // El encabezado del mockup cambia con el modo; el saludo literal del canvas
-  // ("Ey, ¡qué bien verte! 👋") es el de entrar.
+  // El encabezado visible del artboard se quitó a petición del usuario
+  // (08/10/2026): la tarjeta va del logo a los campos. Se conserva SOLO para
+  // lectores de pantalla, porque la página necesita un <h1> que diga qué es.
   const heading =
     mode === "login"
       ? tAuth("welcomeBack")
       : mode === "register"
         ? tAuth("createAccount")
         : tAuth("resetPassword");
-  const subtitle =
-    mode === "login"
-      ? tAuth("signInSubtitle")
-      : mode === "register"
-        ? tAuth("signUpSubtitle")
-        : tAuth("resetSubtitle");
 
   return (
     <main className="flex min-h-screen flex-col items-center justify-center bg-surface-base px-4 py-10">
       <div className={AUTH_CARD}>
-        {/* Logo de marca centrado, 28px por debajo del encabezado (F0 §Logo). */}
-        <div className="mb-7 flex justify-center">
+        {/* Logo de marca centrado, encima de los campos (F0 §Logo). */}
+        <div className="mb-8 flex justify-center">
           <Logo size={32} />
         </div>
 
-        {/* Encabezado display 800 + subtítulo muted: en el mockup la tarjeta
-            SE PRESENTA, no empieza en frío con los campos. */}
-        <h1 className="mb-2 text-center font-display text-[26px] font-extrabold leading-tight tracking-tight text-text-primary">
-          {heading}
-        </h1>
-        <p className="mb-8 text-center font-body text-sm text-text-tertiary">
-          {subtitle}
-        </p>
+        <h1 className="sr-only">{heading}</h1>
 
         {/* Google OAuth (oculto en reset — solo aplica a login/registro).
             El canvas no dibuja este botón, así que se usa el primitivo que sí
