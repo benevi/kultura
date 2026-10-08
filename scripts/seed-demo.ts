@@ -45,7 +45,7 @@ interface Person {
 
 const DEMO: Person = {
   email: DEMO_EMAIL,
-  username: "demo",
+  username: "kultura_demo",
   color: "#ef4444",
   bio: "Cuenta de ejemplo de Kultura. Mira todo lo que quieras 👀",
 };
@@ -257,13 +257,12 @@ async function main() {
       ])
       .select("id")
   );
+  // El dueño ya lo mete el trigger `handle_new_group`; aquí solo los miembros.
   check(
     "group_members",
     await admin.from("group_members").insert([
-      { group_id: groups[0].id, user_id: friendIds[0], role: "owner" },
       { group_id: groups[0].id, user_id: demoId, role: "member" },
       { group_id: groups[0].id, user_id: friendIds[1], role: "member" },
-      { group_id: groups[1].id, user_id: friendIds[2], role: "owner" },
       { group_id: groups[1].id, user_id: demoId, role: "member" },
     ])
   );
