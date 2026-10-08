@@ -105,7 +105,7 @@ export function ChatClient({ friends }: Props) {
 
       {/* New chat: select a friend */}
       {showNewChat && (
-        <div className="bg-surface-default border border-surface-border rounded-bento p-4 flex flex-col gap-2">
+        <div className="bg-surface-default rounded-bento-lg p-4 flex flex-col gap-2">
           <p className="text-sm font-bold text-text-primary mb-1">{t('selectFriend')}</p>
           {friends.length === 0 ? (
             <p className="text-sm text-text-secondary">{t('noFriendsToChat')}</p>
@@ -136,7 +136,7 @@ export function ChatClient({ friends }: Props) {
       {loading ? (
         <div className="text-center py-12 text-text-secondary text-sm">...</div>
       ) : loadError ? (
-        <div className="bg-surface-default border border-surface-border rounded-bento p-10 text-center flex flex-col gap-3">
+        <div className="bg-surface-default rounded-bento-lg p-10 text-center flex flex-col gap-3">
           <p className="text-sm text-text-secondary">{t('loadError')}</p>
           <div>
             <KButton variant="secondary" size="sm" onClick={loadConversations}>
@@ -145,13 +145,13 @@ export function ChatClient({ friends }: Props) {
           </div>
         </div>
       ) : conversations.length === 0 ? (
-        <div className="bg-surface-default border border-surface-border rounded-bento p-10 text-center flex flex-col gap-2">
+        <div className="bg-surface-default rounded-bento-lg p-10 text-center flex flex-col gap-2">
           <IconChat className="w-10 h-10 mx-auto text-text-tertiary" />
           <p className="font-bold text-text-primary">{t('noConversations')}</p>
           <p className="text-sm text-text-secondary">{t('noConversationsHint')}</p>
         </div>
       ) : (
-        <div className="bg-surface-default border border-surface-border rounded-bento overflow-hidden divide-y divide-surface-border">
+        <div className="bg-surface-default rounded-bento-lg overflow-hidden divide-y divide-surface-border">
           {conversations.map(conv => (
             <Link
               key={conv.id}

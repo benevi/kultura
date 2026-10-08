@@ -97,12 +97,12 @@ export function GroupsClient({ myGroups: initialGroups }: GroupsClientProps) {
               <p className="text-xs mt-1" style={{ color: F0.muted }}>{tFriends('noGroupsHint')}</p>
             </div>
           ) : (
-            <div className="grid gap-3 sm:grid-cols-2">
+            <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
               {groups.map(g => (
                 <Link
                   key={g.id}
                   href={`/groups/${g.id}`}
-                  className="rounded-bento border p-4 hover:brightness-110 transition-all flex flex-col gap-2"
+                  className="rounded-24 border p-4 hover:brightness-110 transition-all flex flex-col gap-2"
                   style={{ background: F0.surface, borderColor: F0.stroke }}
                 >
                   <div className="flex items-center gap-2.5">

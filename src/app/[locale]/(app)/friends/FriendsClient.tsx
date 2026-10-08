@@ -125,7 +125,7 @@ export function FriendsClient({
       {/* Link a grupos (los grupos ahora viven en /groups) */}
       <Link
         href="/groups"
-        className="rounded-bento border p-4 flex items-center justify-between gap-4 transition-colors hover:brightness-110"
+        className="rounded-20 border p-4 flex items-center justify-between gap-4 transition-colors hover:brightness-110"
         style={CARD_STYLE}
       >
         <span className="text-sm font-bold" style={{ color: F0.text }}>{t('groups')}</span>
@@ -167,7 +167,7 @@ export function FriendsClient({
           )}
 
           {searchResults.length > 0 && (
-            <div className="mt-3 rounded-bento border overflow-hidden" style={CARD_STYLE}>
+            <div className="mt-3 rounded-20 border overflow-hidden" style={CARD_STYLE}>
               {searchResults.map(u => (
                 <div
                   key={u.id}
@@ -205,7 +205,7 @@ export function FriendsClient({
                 {pending.length}
               </span>
             </h2>
-            <div className="rounded-bento border px-4" style={CARD_STYLE}>
+            <div className="rounded-20 border px-4" style={CARD_STYLE}>
               {pending.map(friendship => (
                 <FriendCard
                   key={friendship.id}
@@ -222,13 +222,13 @@ export function FriendsClient({
         <section>
           <h2 className="font-display text-xl font-bold mb-3" style={{ color: F0.text }}>{t('myFriends')}</h2>
           {friends.length === 0 ? (
-            <div className="rounded-bento border p-8 text-center" style={CARD_STYLE}>
+            <div className="rounded-20 border p-8 text-center" style={CARD_STYLE}>
               <div className="text-3xl mb-3">👥</div>
               <p className="text-sm" style={{ color: F0.textSecondary }}>{t('noFriends')}</p>
               <p className="text-xs mt-1" style={{ color: F0.muted }}>{t('noFriendsHint')}</p>
             </div>
           ) : (
-            <div className="rounded-bento border px-4" style={CARD_STYLE}>
+            <div className="rounded-20 border px-4" style={CARD_STYLE}>
               {friends.map(friendship => (
                 <FriendCard
                   key={friendship.id}

@@ -22,12 +22,12 @@ export default async function SuggestionsPage() {
   const t = await getTranslations('suggestions')
 
   return (
-    <main className="max-w-xl mx-auto px-4 md:px-8 py-10">
+    <main className="max-w-[640px] mx-auto px-4 md:px-8 py-10">
       <div className="mb-8">
         <PageHeading emoji="💡" className="mb-2">{t('title')}</PageHeading>
         <p className="text-text-tertiary text-sm">{t('subtitle')}</p>
       </div>
-      <div className="bg-surface-default rounded-3xl p-6 sm:p-7">
+      <div className="bg-surface-default rounded-24 p-6 sm:p-7">
         <SuggestionsForm />
       </div>
     </main>

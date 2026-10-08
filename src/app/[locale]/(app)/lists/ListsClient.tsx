@@ -30,12 +30,12 @@ export function ListsClient({ lists }: Props) {
       </PageHeading>
 
       {lists.length === 0 ? (
-        <div className="bg-surface-default rounded-3xl p-10 text-center flex flex-col gap-2">
+        <div className="bg-surface-default rounded-bento p-10 text-center flex flex-col gap-2">
           <p className="font-medium text-text-primary">{t('noLists')}</p>
           <p className="text-sm text-text-tertiary">{t('noListsHint')}</p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-5">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-5">
           {lists.map((list) => (
             <ListCard key={list.id} list={list} />
           ))}

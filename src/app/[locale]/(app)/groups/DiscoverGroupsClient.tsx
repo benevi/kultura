@@ -134,7 +134,7 @@ export function DiscoverGroupsClient() {
           <p className="text-sm" style={{ color: F0.textSecondary }}>{t('noGroupsFound')}</p>
         </div>
       ) : (
-        <div className="grid gap-3 sm:grid-cols-2">
+        <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
           {groups.map(g => (
             <GroupCard key={g.id} group={g} />
           ))}

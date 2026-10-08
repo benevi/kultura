@@ -201,13 +201,13 @@ export function SettingsForm({
   const row = 'px-5 py-4 sm:px-6 sm:py-5'
 
   return (
-    <div className="flex flex-col gap-8">
+    <div className="flex flex-col gap-7">
       <PageHeading emoji="⚙️" className="mb-0">{t('title')}</PageHeading>
 
       {/* Sección Perfil */}
       <section>
         <p className={eyebrow}>{t('profile')}</p>
-        <div className="flex flex-col rounded-3xl bg-surface-default divide-y divide-surface-border overflow-hidden">
+        <div className="flex flex-col rounded-20 bg-surface-default divide-y divide-surface-border overflow-hidden">
           {/* Email (solo lectura) */}
           <div className={cn(row, 'flex items-center justify-between gap-4 flex-wrap')}>
             <span className="text-sm font-semibold text-text-primary">{t('email')}</span>
@@ -276,7 +276,7 @@ export function SettingsForm({
       {/* Sección Preferencias */}
       <section>
         <p className={eyebrow}>{t('preferences')}</p>
-        <div className="flex flex-col rounded-3xl bg-surface-default overflow-hidden">
+        <div className="flex flex-col rounded-20 bg-surface-default overflow-hidden">
           {/* Idioma */}
           <div className={cn(row, 'flex items-center justify-between gap-4 flex-wrap')}>
             <label className="text-sm font-semibold text-text-primary">{t('language')}</label>
@@ -304,7 +304,7 @@ export function SettingsForm({
       {/* Sección Zona de peligro (D2/D3) */}
       <section>
         <p className={cn(eyebrow, 'text-accent-danger')}>{t('dangerZone')}</p>
-        <div className="flex flex-col rounded-3xl bg-surface-default divide-y divide-surface-border overflow-hidden">
+        <div className="flex flex-col rounded-20 bg-surface-default divide-y divide-surface-border overflow-hidden">
           <div className={cn(row, 'flex items-center justify-between gap-4 flex-wrap')}>
             <p className="text-sm font-body text-text-tertiary max-w-xs">{t('exportDataHint')}</p>
             <KButton

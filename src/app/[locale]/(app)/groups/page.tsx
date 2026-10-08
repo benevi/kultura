@@ -32,7 +32,7 @@ export default async function GroupsPage() {
   }))
 
   return (
-    <main className="max-w-2xl mx-auto px-4 md:px-8 py-8">
+    <main className="max-w-5xl mx-auto px-4 md:px-8 py-8">
       <PageHeading emoji="🎉">{t('pageTitle')}</PageHeading>
       <GroupsClient myGroups={myGroups} />
     </main>
