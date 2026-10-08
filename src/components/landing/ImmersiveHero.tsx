@@ -91,11 +91,17 @@ export function ImmersiveHero({ items, copy }: { items: ShowcaseItem[]; copy: Im
     };
     const revealTimer = window.setTimeout(reveal, items.length > 0 ? REVEAL_MAX_MS : EMPTY_REVEAL_MS);
 
-    const readProgress = () => {
-      const rect = section.getBoundingClientRect();
-      const total = section.offsetHeight - window.innerHeight;
-      return total > 0 ? Math.min(1, Math.max(0, -rect.top / total)) : 0;
+    // Geometría de la sección cacheada (se recalcula al redimensionar): leer
+    // `getBoundingClientRect` en cada frame de scroll fuerza un layout síncrono
+    // justo después de haber escrito `--p`, y eso se nota como tirones.
+    let top = 0;
+    let total = 0;
+    const measure = () => {
+      top = section.getBoundingClientRect().top + window.scrollY;
+      total = section.offsetHeight - window.innerHeight;
     };
+    measure();
+    const readProgress = () => (total > 0 ? Math.min(1, Math.max(0, (window.scrollY - top) / total)) : 0);
 
     const onScroll = () => {
       if (raf) return;
@@ -121,6 +127,7 @@ export function ImmersiveHero({ items, copy }: { items: ShowcaseItem[]; copy: Im
       scene?.setPointer((e.clientX / window.innerWidth) * 2 - 1, -((e.clientY / window.innerHeight) * 2 - 1));
     };
     const onResize = () => {
+      measure();
       scene?.resize();
       onScroll();
     };
@@ -187,7 +194,7 @@ export function ImmersiveHero({ items, copy }: { items: ShowcaseItem[]; copy: Im
         {/* Viñeta: el texto siempre se lee, pase la portada que pase detrás. */}
         <div
           aria-hidden="true"
-          className="pointer-events-none absolute inset-0"
+          className="pointer-events-none absolute inset-0 will-change-[opacity]"
           style={{
             background:
               // Pesa a la izquierda y abajo, donde va el texto: el centro y la
@@ -201,7 +208,7 @@ export function ImmersiveHero({ items, copy }: { items: ShowcaseItem[]; copy: Im
 
         {/* Capítulo 1 — titular */}
         <div
-          className="absolute inset-0 flex flex-col justify-end px-6 pb-16 md:px-14 md:pb-24"
+          className="absolute inset-0 flex flex-col justify-end px-6 pb-16 md:px-14 md:pb-24 will-change-[opacity,transform]"
           style={{ opacity: "clamp(0, calc((0.15 - var(--p)) * 9), 1)", transform: "translateY(calc(var(--p) * -60vh))" }}
         >
           <div className="relative self-start">
@@ -221,7 +228,7 @@ export function ImmersiveHero({ items, copy }: { items: ShowcaseItem[]; copy: Im
         {/* Capítulo 2 — los siete formatos */}
         <div
           aria-live="polite"
-          className="absolute inset-x-0 bottom-0 px-6 pb-14 md:px-14 md:pb-16"
+          className="absolute inset-x-0 bottom-0 px-6 pb-14 md:px-14 md:pb-16 will-change-[opacity]"
           style={{
             opacity: "min(clamp(0, calc((var(--p) - 0.16) * 14), 1), clamp(0, calc((0.72 - var(--p)) * 14), 1))",
           }}
@@ -239,7 +246,7 @@ export function ImmersiveHero({ items, copy }: { items: ShowcaseItem[]; copy: Im
 
         {/* Capítulo 3 — CTA sobre el muro de portadas */}
         <div
-          className="absolute inset-0 flex flex-col items-center justify-center px-6 text-center"
+          className="absolute inset-0 flex flex-col items-center justify-center px-6 text-center will-change-[opacity]"
           style={{
             opacity: "clamp(0, calc((var(--p) - 0.84) * 10), 1)",
             pointerEvents: isFinal ? "auto" : "none",
@@ -260,15 +267,18 @@ export function ImmersiveHero({ items, copy }: { items: ShowcaseItem[]; copy: Im
 
         {/* Hilo de progreso */}
         {/* Grano: rompe la planitud digital del fondo (ruido SVG en data URI,
-            permitido por img-src). Fijo y sin eventos. */}
+            permitido por img-src). Fijo y sin eventos. SIN mix-blend-mode: un
+            modo de fusión sobre un lienzo que cambia en cada frame obliga a
+            recomponer la pantalla entera cada frame, y era lo que más pesaba
+            al hacer scroll. Opacidad simple, en su propia capa. */}
         <div
           aria-hidden="true"
-          className="pointer-events-none absolute inset-0 opacity-[0.07] mix-blend-overlay"
+          className="pointer-events-none absolute inset-0 opacity-[0.035] [transform:translateZ(0)]"
           style={{ backgroundImage: GRAIN }}
         />
 
         <div aria-hidden="true" className="absolute inset-x-0 bottom-0 h-1">
-          <div className="h-full bg-accent-pink origin-left" style={{ transform: "scaleX(var(--p))" }} />
+          <div className="h-full bg-accent-pink origin-left will-change-transform" style={{ transform: "scaleX(var(--p))" }} />
         </div>
       </div>
     </section>

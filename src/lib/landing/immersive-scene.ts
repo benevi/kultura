@@ -110,8 +110,12 @@ export function createImmersiveScene(
   items: SceneItem[],
   opts: { mobile: boolean; bgCss: string; onReady?: () => void }
 ): ImmersiveScene {
+  // Resolución acotada a 1,5×: el lienzo ocupa la pantalla entera y se repinta
+  // en cada frame, así que a 1,75× (o 2× en portátiles con escalado) la GPU
+  // integrada se queda sin margen y el scroll da tirones. Con piezas en
+  // movimiento y niebla, la diferencia de nitidez no se aprecia.
   const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, powerPreference: "high-performance" });
-  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, opts.mobile ? 1.5 : 1.75));
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, opts.mobile ? 1.25 : 1.5));
   renderer.outputColorSpace = THREE.SRGBColorSpace;
 
   const bg = cssColor(opts.bgCss);
@@ -256,7 +260,7 @@ export function createImmersiveScene(
     // mismo en alcanzar al scroll.
     const dt = Math.min(0.1, t - last);
     last = t;
-    progress += (target - progress) * (1 - Math.exp(-dt * 4.5));
+    progress += (target - progress) * (1 - Math.exp(-dt * 6));
     pointerSmooth.lerp(pointer, 1 - Math.exp(-dt * 3));
 
     // Lineal, no en S: con una curva la cámara corre en el tramo central y deja
