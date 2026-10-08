@@ -4,6 +4,7 @@ import createIntlMiddleware from "next-intl/middleware";
 import { routing } from "./i18n/routing";
 import { publicEnv } from "@/lib/env";
 import { buildCsp } from "@/lib/csp";
+import { DEMO_READ_ONLY_ERROR, isBlockedForDemo, isDemoUser } from "@/lib/demo";
 
 const intlMiddleware = createIntlMiddleware(routing);
 
@@ -51,16 +52,28 @@ export async function middleware(request: NextRequest) {
   // rutas protegidas hacen su propio check de auth y redirigen a login si
   // hace falta — preferible a un 504 global.
   const AUTH_CHECK_TIMEOUT_MS = 4000;
+  let user: Awaited<ReturnType<typeof supabase.auth.getUser>>["data"]["user"] = null;
   try {
-    await Promise.race([
+    const result = await Promise.race([
       supabase.auth.getUser(),
-      new Promise((_, reject) =>
+      new Promise<never>((_, reject) =>
         setTimeout(() => reject(new Error("auth check timed out")), AUTH_CHECK_TIMEOUT_MS)
       ),
     ]);
+    user = result.data.user;
   } catch {
     // Timeout o error del auth server: seguimos sin sesión refrescada en vez
     // de bloquear la respuesta indefinidamente.
+  }
+
+  // E-DEMO: la cuenta demo es de solo lectura. Aquí se cortan las rutas que
+  // escriben con el cliente ADMIN (ignoran RLS); lo que va directo a la base lo
+  // corta la migración `demo_read_only`. Ver `src/lib/demo.ts`.
+  if (isDemoUser(user) && isBlockedForDemo(request.method, request.nextUrl.pathname)) {
+    const blocked = NextResponse.json({ error: DEMO_READ_ONLY_ERROR }, { status: 403 });
+    supabaseResponse.cookies.getAll().forEach((cookie) => blocked.cookies.set(cookie));
+    blocked.headers.set("Content-Security-Policy", csp);
+    return blocked;
   }
 
   // For API routes: return the Supabase response (carries refreshed session).

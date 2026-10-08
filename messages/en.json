@@ -41,7 +41,8 @@
     "signUpSubtitle": "Create your account and start discovering",
     "resetSubtitle": "We'll email you a link to get back in",
     "signUpAction": "Sign up",
-    "signInAction": "Sign in"
+    "signInAction": "Sign in",
+    "demoUnavailable": "The demo isn't available right now. Try again in a bit or create your account."
   },
   "media": {
     "movie": "Movie",
@@ -564,6 +565,7 @@
       "sub": "Movies, TV, anime, manga, games, books and comics. One log, your people inside.",
       "finalTitle": "Your culture, in one place.",
       "finalSub": "Log what moves you, share it with your circle and find what's next.",
+      "demo": "Try the demo",
       "formats": {
         "movie": "Movies",
         "tv": "TV",
@@ -779,5 +781,11 @@
       "s11Title": "11. Changes",
       "s11Body": "We may update these terms. Material changes will be announced inside the app."
     }
+  },
+  "demo": {
+    "title": "You're in the demo.",
+    "body": "Look around as much as you like, but nothing is saved here.",
+    "cta": "Create my account",
+    "readOnly": "This is a demo, so nothing is saved. Create your account to use it for real."
   }
 }

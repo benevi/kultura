@@ -37,6 +37,10 @@ const serverSchema = z.object({
   // la API pública responde sin key, pero con cuota compartida por IP que puede
   // estar a cero; ver la nota en `src/lib/api/googlebooks.ts`.
   GOOGLE_BOOKS_KEY: z.preprocess(emptyToUndefined, z.string().min(1).optional()),
+  // E-DEMO: email de la cuenta demo de solo lectura (la crea
+  // `scripts/seed-demo.ts`). OPCIONAL: sin ella, el botón "Ver la demo" no se
+  // pinta y `/api/auth/demo` redirige al login.
+  DEMO_USER_EMAIL: z.preprocess(emptyToUndefined, z.string().email().optional()),
 });
 
 export type PublicEnv = z.infer<typeof publicSchema>;
@@ -76,6 +80,7 @@ export function parseServerEnv(): ServerEnv {
     ANTHROPIC_API_KEY: process.env.ANTHROPIC_API_KEY,
     COMICVINE_KEY: process.env.COMICVINE_KEY,
     GOOGLE_BOOKS_KEY: process.env.GOOGLE_BOOKS_KEY,
+    DEMO_USER_EMAIL: process.env.DEMO_USER_EMAIL,
   });
   if (!result.success) {
     throw new Error(

@@ -45,6 +45,10 @@ export interface ImmersiveCopy {
   badge: string;
   finalTitle: string;
   finalSub: string;
+  /** Idioma, para el formulario de la demo. */
+  locale: string;
+  /** Botón "Ver la demo" (E-DEMO); sin él no se pinta (demo sin configurar). */
+  demo?: string;
   cta: string;
   /** Respaldo estático: titular y CTA del hero de siempre. */
   staticTagline: string;

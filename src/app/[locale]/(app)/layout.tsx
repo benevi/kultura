@@ -6,6 +6,8 @@ import { BottomNav } from '@/components/layout/BottomNav'
 import { AppFooter } from '@/components/layout/AppFooter'
 import { ToastProvider } from '@/components/ui/ToastProvider'
 import { UnreadChatProvider } from '@/components/layout/UnreadChatProvider'
+import { DemoBanner } from '@/components/layout/DemoBanner'
+import { isDemoUser } from '@/lib/demo'
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   const supabase = createClient()
@@ -28,6 +30,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
       <UnreadChatProvider userId={user.id}>
         <div className="min-h-screen flex flex-col">
           <AuthHeader profile={profile} unreadCount={unreadCount} />
+          {isDemoUser(user) && <DemoBanner />}
           <div className="flex-1 pb-16 md:pb-0">{children}</div>
           <AppFooter />
           <BottomNav />

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useSearchParams } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { useRouter } from "@/i18n/navigation";
@@ -119,12 +119,17 @@ export function LoginPage({ locale }: LoginPageProps) {
   const rawMode = searchParams.get("mode");
   const mode: Mode =
     rawMode === "register" || rawMode === "reset" ? rawMode : "login";
+  // E-DEMO: `/api/auth/demo` vuelve aquí si la demo no está disponible (sin
+  // configurar, o el límite por IP); se dice en vez de dejar al usuario en un
+  // login en blanco sin saber por qué.
+  const initialError =
+    searchParams.get("error") === "demo_unavailable" ? tAuth("demoUnavailable") : null;
 
   const [form, setForm] = useState<FormState>({
     email: "",
     password: "",
     confirmPassword: "",
-    error: null,
+    error: initialError,
     fieldErrors: {},
     loading: false,
     success: false,
@@ -156,8 +161,14 @@ export function LoginPage({ locale }: LoginPageProps) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [mode]);
 
-  // Reset state when mode changes
+  // Reset state when mode changes — solo cuando CAMBIA, no en el montaje: ahí
+  // borraría el aviso de `initialError` (E-DEMO) antes de que se llegue a ver.
+  // Se compara con el modo anterior y no con un "ya montado" porque el modo
+  // estricto de React ejecuta los efectos dos veces al montar.
+  const prevMode = useRef(mode);
   useEffect(() => {
+    if (prevMode.current === mode) return;
+    prevMode.current = mode;
     setForm({
       email: "",
       password: "",

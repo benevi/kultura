@@ -41,7 +41,8 @@
     "signUpSubtitle": "Crea tu cuenta y empieza a descubrir",
     "resetSubtitle": "Te enviamos un enlace para volver a entrar",
     "signUpAction": "Regístrate",
-    "signInAction": "Entra"
+    "signInAction": "Entra",
+    "demoUnavailable": "La demo no está disponible ahora mismo. Prueba en un rato o crea tu cuenta."
   },
   "media": {
     "movie": "Película",
@@ -564,6 +565,7 @@
       "sub": "Cine, series, anime, manga, videojuegos, libros y cómics. Un solo registro, tu gente dentro.",
       "finalTitle": "Tu cultura, en un solo sitio.",
       "finalSub": "Registra lo que te mueve, compártelo con tu círculo y descubre lo siguiente.",
+      "demo": "Ver la demo",
       "formats": {
         "movie": "Cine",
         "tv": "Series",
@@ -779,5 +781,11 @@
       "s11Title": "11. Cambios",
       "s11Body": "Podemos actualizar estos términos. Los cambios relevantes se anunciarán dentro de la aplicación."
     }
+  },
+  "demo": {
+    "title": "Estás en la demo.",
+    "body": "Puedes mirarlo todo, pero aquí no se guarda nada.",
+    "cta": "Crear mi cuenta",
+    "readOnly": "Es una demo: esto no se guarda. Crea tu cuenta para usarlo de verdad."
   }
 }

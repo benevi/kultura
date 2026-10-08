@@ -224,3 +224,18 @@ describe("LoginPage — modo login", () => {
     vi.unstubAllEnvs();
   });
 });
+
+describe("LoginPage — vuelta desde la demo (E-DEMO)", () => {
+  beforeEach(() => {
+    mockGetSession.mockResolvedValue({ data: { session: null } });
+  });
+
+  // `/api/auth/demo` redirige aquí con ?error=demo_unavailable si la demo no
+  // está configurada o se pasa del límite: el aviso tiene que verse, y no
+  // borrarlo el reseteo de formulario que corre al montar.
+  it("enseña el aviso de demo no disponible", async () => {
+    mockGet.mockImplementation((key: string) => (key === "error" ? "demo_unavailable" : "login"));
+    render(<LoginPage locale="es" />);
+    await waitFor(() => expect(screen.getByText("demoUnavailable")).toBeInTheDocument());
+  });
+});

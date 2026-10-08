@@ -6,6 +6,7 @@ import { FeatureGrid, FEATURE_KEYS } from "@/components/landing/FeatureGrid";
 import { ImmersiveHero } from "@/components/landing/ImmersiveHero";
 import { IMMERSIVE_FORMATS, type ImmersiveCopy } from "@/lib/landing/immersive";
 import { ImmersiveHeroSlot } from "@/components/landing/ShowcaseSlots";
+import { env } from "@/lib/env";
 
 export default async function HomePage() {
   const t = await getTranslations("landing");
@@ -27,6 +28,9 @@ export default async function HomePage() {
     badge: t("hero.badge"),
     finalTitle: t("immersive.finalTitle"),
     finalSub: t("immersive.finalSub"),
+    locale,
+    // E-DEMO: el botón solo existe si la cuenta demo está configurada.
+    demo: env.DEMO_USER_EMAIL ? t("immersive.demo") : undefined,
     cta: t("hero.cta"),
     staticTagline: t("hero.tagline"),
     staticCta: t("hero.cta"),

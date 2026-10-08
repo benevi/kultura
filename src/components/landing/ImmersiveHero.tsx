@@ -28,6 +28,7 @@
 import * as React from "react";
 import { Link } from "@/i18n/navigation";
 import { KButton } from "@/components/ui/KButton";
+import { DemoButton } from "@/components/landing/DemoButton";
 import { HeroCollage, HeroStrip, HERO_COLLAGE_SLOTS } from "@/components/landing/HeroCollage";
 import type { ShowcaseItem } from "@/lib/landing/showcase";
 import type { ImmersiveScene } from "@/lib/landing/immersive-scene";
@@ -262,10 +263,11 @@ export function ImmersiveHero({ items, copy }: { items: ShowcaseItem[]; copy: Im
             {copy.finalTitle}
           </h2>
           <p className="mt-6 max-w-lg text-lg text-text-secondary">{copy.finalSub}</p>
-          <div className="mt-9">
+          <div className="mt-9 flex flex-wrap items-center justify-center gap-3">
             <KButton variant="primary" size="lg" asChild>
               <Link href="/login?mode=register">{copy.cta}</Link>
             </KButton>
+            {copy.demo && <DemoButton label={copy.demo} locale={copy.locale} />}
           </div>
         </div>
 
@@ -298,10 +300,11 @@ function StaticHero({ items, copy }: { items: ShowcaseItem[]; copy: ImmersiveCop
           <h1 className="font-display text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-extrabold tracking-tight text-text-primary leading-[1.05] mb-8 text-balance">
             {copy.staticTagline}
           </h1>
-          <div className="flex justify-center md:justify-start">
+          <div className="flex flex-wrap justify-center md:justify-start gap-3">
             <KButton variant="primary" size="lg" asChild>
               <Link href="/login?mode=register">{copy.staticCta}</Link>
             </KButton>
+            {copy.demo && <DemoButton label={copy.demo} locale={copy.locale} />}
           </div>
           <HeroStrip items={items} />
         </div>
