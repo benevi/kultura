@@ -55,8 +55,8 @@ export function AiRecommendations() {
       className={`relative ${hasBadge ? 'pt-7 md:pt-8' : ''}`}
       aria-label={t('title')}
     >
-      {/* El cartel lima ES la cabecera de la sección: el par "Para ti · Claude
-          IA" que había debajo repetía lo mismo en plano y robaba altura. Se
+      {/* El cartel lima ES la cabecera de la sección: el par "Para ti · IA"
+          que había debajo repetía lo mismo en plano y robaba altura. Se
           pinta también durante la carga para que el esqueleto no aparezca
           huérfano; en los estados vacío/error la tarjeta ya se explica sola. */}
       {hasBadge && (

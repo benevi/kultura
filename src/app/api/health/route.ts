@@ -14,7 +14,7 @@
 // AVISO, para no confiarse: esto MITIGA la pausa, no la garantiza — depende de
 // que Supabase cuente esta petición como actividad, que es comportamiento no
 // documentado. La única garantía real para producción es un plan de pago, que
-// no auto-pausa. Ver DISENO.md.
+// no auto-pausa.
 //
 // Decisiones:
 //  - `force-dynamic`: si Next cachease la respuesta, el cron dejaría de tocar

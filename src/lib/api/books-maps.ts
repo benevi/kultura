@@ -10,7 +10,7 @@
 // El resto (buildGoogleBooksQuery, hasBookFilters, bookYearMatcher,
 // preferBooksInLanguage, booksLangRestrictOverride, GOOGLE_BOOKS_BASE_QUERY,
 // BOOKS_GENRE) es código muerto: no lo importa nadie. Se conserva un ciclo por
-// si hay que revertir el híbrido, y está anotado como deuda en DISENO.md.
+// si hay que revertir el híbrido (deuda conocida).
 // ============================================================
 
 // ============================================================

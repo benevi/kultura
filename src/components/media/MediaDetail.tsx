@@ -140,7 +140,7 @@ export async function MediaDetail({
   }
 
   // "Por qué te lo recomendamos" — nunca texto de IA fabricado: MediaDetail no
-  // tiene hoy una explicación por-item generada por Claude (eso solo existe
+  // tiene hoy una explicación por-item generada por el modelo (eso solo existe
   // como feed agregado en /home vía getAiRecommendations, que no toma un
   // item concreto como entrada). Esta sección se construye únicamente con
   // datos reales ya presentes en esta página (los géneros del item) y se

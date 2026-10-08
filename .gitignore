@@ -58,3 +58,6 @@ e2e_after_fix.txt
 e2e_baseline.txt
 *.e2e.txt
 .env*
+
+# Notas de trabajo locales (no versionadas)
+DISENO.md
