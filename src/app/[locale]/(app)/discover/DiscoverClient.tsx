@@ -37,7 +37,6 @@ import {
   IconGamepad,
   IconTimer,
   IconSort,
-  IconSearch,
   IconDice,
   IconClose,
   IconFilm,
@@ -422,10 +421,6 @@ export function DiscoverClient({
             aquí desde que /search se fusionó en /discover. En móvil el input
             ocupa la fila y el botón de aleatorio queda a su lado. */}
         <div className="flex items-center gap-2">
-          <span className="shrink-0 hidden sm:inline-flex items-center gap-1.5 font-mono uppercase text-xs tracking-widest text-muted">
-            <IconSearch className="h-3.5 w-3.5" aria-hidden="true" />
-            {tS("title")}
-          </span>
           <SearchBar
             key={currentQuery}
             mode="inline"
@@ -479,9 +474,6 @@ export function DiscoverClient({
 
         {/* FILA 1 — TIPO: label tenue + pills separadas (radiogroup). */}
         <div className="flex items-center gap-3">
-          <span className="shrink-0 hidden sm:inline-flex font-mono uppercase text-xs tracking-widest text-muted">
-            {tF("type")}
-          </span>
           <div
             role="radiogroup"
             aria-label={tF("type")}
@@ -522,11 +514,9 @@ export function DiscoverClient({
         {!isSearching && (
           <>
             <div className="border-t border-border" />
-            <div className="flex items-center gap-3">
-              <span className="shrink-0 hidden sm:inline-flex items-center gap-1.5 font-mono uppercase text-xs tracking-widest text-muted">
-                <IconGrid className="h-3.5 w-3.5" aria-hidden="true" />
-                {tF("filters")}
-              </span>
+            {/* Sin etiqueta visible (E-SIN-MONO: el artboard no la lleva); el
+                nombre de la fila lo dice el grupo a quien usa lector. */}
+            <div role="group" aria-label={tF("filters")} className="flex items-center gap-3">
               <FilterBar
                 className="flex-1"
                 groups={filterGroups}

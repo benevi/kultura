@@ -53,6 +53,18 @@ const STATUS_OPTIONS = [
   { value: 'abandoned' as const, labelKey: 'dropped' as const },
 ]
 
+/**
+ * Fila de contadores con la que abre el artboard de Biblioteca: tarjetas
+ * sueltas, cifra display en el color de su estado. Cuentan la biblioteca
+ * ENTERA, no la vista filtrada: son el resumen, no el resultado.
+ */
+const COUNTERS = [
+  { status: 'completed' as const, labelKey: 'completed' as const, tone: 'text-accent-lime' },
+  { status: 'in_progress' as const, labelKey: 'inProgress' as const, tone: 'text-accent-blue' },
+  { status: 'pending' as const, labelKey: 'pending' as const, tone: 'text-accent-yellow' },
+  { status: 'abandoned' as const, labelKey: 'dropped' as const, tone: 'text-text-tertiary' },
+]
+
 const SCORE_OPTIONS = [
   { value: '5', label: '★★★★★ 5' },
   { value: '4', label: '★★★★ 4+' },
@@ -160,6 +172,12 @@ export function LibraryClient({ entries }: LibraryClientProps) {
     [filtered]
   )
 
+  const counts = useMemo(() => {
+    const byStatus: Record<string, number> = {}
+    for (const e of entries) byStatus[e.status] = (byStatus[e.status] ?? 0) + 1
+    return byStatus
+  }, [entries])
+
   const hasActiveFilters = currentType !== 'all' || currentStatus !== 'all' || currentScore !== 'all'
 
   if (entries.length === 0) {
@@ -185,13 +203,24 @@ export function LibraryClient({ entries }: LibraryClientProps) {
         {t('title')}
       </PageHeading>
 
+      {/* Contadores (artboard): tarjetas sueltas, radio 20, cifra en color. */}
+      <ul className="flex flex-wrap gap-4 mb-8" aria-label={t('title')}>
+        {COUNTERS.map((c) => (
+          <li key={c.status} className="bg-surface-default rounded-20 px-[26px] py-[18px] min-w-[150px]">
+            <span className={`block font-display text-[30px] font-extrabold leading-none tabular-nums ${c.tone}`}>
+              {counts[c.status] ?? 0}
+            </span>
+            <span className="block mt-2 text-[13px] font-semibold text-text-tertiary">
+              {t(`counters.${c.labelKey}`)}
+            </span>
+          </li>
+        ))}
+      </ul>
+
       {/* Filters */}
       <div className="flex flex-col gap-4 mb-8 pb-6 border-b border-border">
         {/* Tipo */}
-        <div>
-          <p className="font-mono uppercase text-xs tracking-widest text-muted mb-2">
-            {tF('type')}
-          </p>
+        <div role="group" aria-label={tF('type')}>
           <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide flex-nowrap">
             <FilterChip
               label={tF('all')}
@@ -210,10 +239,7 @@ export function LibraryClient({ entries }: LibraryClientProps) {
         </div>
 
         {/* Estado */}
-        <div>
-          <p className="font-mono uppercase text-xs tracking-widest text-muted mb-2">
-            {tF('status')}
-          </p>
+        <div role="group" aria-label={tF('status')}>
           <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide flex-nowrap">
             <FilterChip
               label={tF('all')}
@@ -232,10 +258,7 @@ export function LibraryClient({ entries }: LibraryClientProps) {
         </div>
 
         {/* Puntuación */}
-        <div>
-          <p className="font-mono uppercase text-xs tracking-widest text-muted mb-2">
-            {tF('minScore')}
-          </p>
+        <div role="group" aria-label={tF('minScore')}>
           <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide flex-nowrap">
             <FilterChip
               label={tF('all')}

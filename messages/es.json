@@ -221,7 +221,13 @@
     "emptyTitle": "Tu biblioteca está vacía",
     "emptyHint": "Añade títulos desde Descubrir o desde la página de cualquier título",
     "goDiscover": "Explorar contenido",
-    "noResults": "Ningún título coincide con los filtros aplicados"
+    "noResults": "Ningún título coincide con los filtros aplicados",
+    "counters": {
+      "completed": "Completados",
+      "inProgress": "En progreso",
+      "pending": "Pendientes",
+      "dropped": "Abandonados"
+    }
   },
   "profile": {
     "memberSince": "Miembro desde",

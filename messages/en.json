@@ -221,7 +221,13 @@
     "emptyTitle": "Your library is empty",
     "emptyHint": "Add titles from Discover or from any title's page",
     "goDiscover": "Explore content",
-    "noResults": "No titles match the applied filters"
+    "noResults": "No titles match the applied filters",
+    "counters": {
+      "completed": "Completed",
+      "inProgress": "In progress",
+      "pending": "Pending",
+      "dropped": "Dropped"
+    }
   },
   "profile": {
     "memberSince": "Member since",

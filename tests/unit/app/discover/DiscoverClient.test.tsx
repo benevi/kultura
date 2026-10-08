@@ -313,13 +313,17 @@ describe("DiscoverClient — E59 F5e", () => {
 
   // ── R3: barra de 2 filas etiquetadas (TIPO / FILTROS) ───────────────────────
 
-  it("la barra muestra las etiquetas de fila TIPO y FILTROS", () => {
+  // E-SIN-MONO: las filas ya no llevan etiqueta VISIBLE (el artboard no la
+  // tiene y era la única tipografía mono de la app), pero siguen nombradas
+  // para lector de pantalla.
+  it("las filas TIPO y FILTROS se nombran sin etiqueta visible", () => {
     mockFetchOk();
     current = new URLSearchParams("type=movie&page=1");
     render(<DiscoverClient currentType="movie" currentPage={1} />);
     // mock i18n = identidad: "type" (TIPO) y "filters" (FILTROS).
-    expect(screen.getByText("type")).toBeInTheDocument();
-    expect(screen.getByText("filters")).toBeInTheDocument();
+    expect(screen.getByRole("radiogroup", { name: "type" })).toBeInTheDocument();
+    expect(screen.getByRole("group", { name: "filters" })).toBeInTheDocument();
+    expect(screen.queryByText("filters")).not.toBeInTheDocument();
   });
 
   it("la fila TIPO es un radiogroup con pills (radio) por tipo", () => {
@@ -403,7 +407,7 @@ describe("DiscoverClient — E59 F5e", () => {
     render(<DiscoverClient currentType="movie" currentPage={1} />);
     await waitFor(() => expect(screen.getByText("noResults")).toBeInTheDocument());
     // Sin búsqueda activa: la barra de filtros SÍ se muestra.
-    expect(screen.getByText("filters")).toBeInTheDocument();
+    expect(screen.getByRole("group", { name: "filters" })).toBeInTheDocument();
   });
 
   // ── E-RANDOMIZE-ALWAYS: "Sorpréndeme" siempre presente ──────────────────────

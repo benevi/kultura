@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Bricolage_Grotesque, Figtree, JetBrains_Mono } from "next/font/google";
+import { Bricolage_Grotesque, Figtree } from "next/font/google";
 import { NextIntlClientProvider } from "next-intl";
 import { getMessages } from "next-intl/server";
 import { notFound } from "next/navigation";
@@ -20,11 +20,6 @@ const figtree = Figtree({
   display: "swap",
 });
 
-const jetbrainsMono = JetBrains_Mono({
-  subsets: ["latin"],
-  variable: "--font-mono",
-  display: "swap",
-});
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://kultura.app'
 
@@ -68,7 +63,7 @@ export default async function LocaleLayout({
   return (
     <html lang={locale}>
       <body
-        className={`${bricolageGrotesque.variable} ${figtree.variable} ${jetbrainsMono.variable} font-body bg-surface-base text-text-primary antialiased grain`}
+        className={`${bricolageGrotesque.variable} ${figtree.variable} font-body bg-surface-base text-text-primary antialiased grain`}
       >
         <NextIntlClientProvider messages={messages}>
           {children}
