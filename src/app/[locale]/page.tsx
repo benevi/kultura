@@ -27,6 +27,7 @@ export default async function HomePage() {
     badge: t("hero.badge"),
     finalTitle: t("immersive.finalTitle"),
     finalSub: t("immersive.finalSub"),
+    skip: t("immersive.skip"),
     cta: t("hero.cta"),
     staticTagline: t("hero.tagline"),
     staticCta: t("hero.cta"),

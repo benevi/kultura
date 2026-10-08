@@ -564,6 +564,7 @@
       "sub": "Cine, series, anime, manga, videojuegos, libros y cómics. Un solo registro, tu gente dentro.",
       "finalTitle": "Tu cultura, en un solo sitio.",
       "finalSub": "Registra lo que te mueve, compártelo con tu círculo y descubre lo siguiente.",
+      "skip": "Saltar intro",
       "formats": {
         "movie": "Cine",
         "tv": "Series",

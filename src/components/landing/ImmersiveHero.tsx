@@ -3,14 +3,17 @@
 // ============================================================
 // KULTURA — Hero inmersivo de la landing (E-LANDING-INMERSIVA)
 //
-// Sección fijada (sticky) de varias pantallas de alto: un lienzo WebGL con el
-// galería de portadas reales detrás y tres capítulos de texto encima que se
-// cruzan con el scroll (titular → los siete formatos → CTA).
+// Una pantalla: un lienzo WebGL con la galería de portadas reales detrás y tres
+// capítulos de texto encima (titular → los siete formatos → CTA).
 //
 // Decisiones (y por qué):
-//   - El progreso del scroll viaja como custom property `--p` en el elemento,
-//     y las opacidades de los capítulos se calculan en CSS con `clamp()`: el
-//     scroll NO re-renderiza React. Solo cambia estado cuando cambia el formato
+//   - Es una INTRO AUTOMÁTICA (E-LANDING-INTRO), no un recorrido atado al
+//     scroll: la rueda del ratón avanza a saltos y la escena iba a tirones.
+//     Arranca cuando han llegado las portadas, dura `INTRO_MS`, y el scroll, el
+//     teclado o el botón la saltan al final; después la página baja normal.
+//   - El progreso viaja como custom property `--p` en el elemento, y las
+//     opacidades de los capítulos se calculan en CSS con `clamp()`: avanzar NO
+//     re-renderiza React. Solo cambia estado cuando cambia el formato
 //     en pantalla o se entra/sale del capítulo final (que tiene que volverse
 //     clicable).
 //   - three.js se carga con `import()` al montar: ni el bundle inicial ni el
@@ -32,6 +35,7 @@ import {
   IMMERSIVE_FORMATS,
   TYPE_HUE,
   formatIndexAt,
+  introProgress,
   textureUrl,
   type ImmersiveCopy,
 } from "@/lib/landing/immersive";
@@ -60,6 +64,8 @@ export function ImmersiveHero({ items, copy }: { items: ShowcaseItem[]; copy: Im
   const [mode, setMode] = React.useState<"immersive" | "static">("immersive");
   const [formatIdx, setFormatIdx] = React.useState(0);
   const [isFinal, setIsFinal] = React.useState(false);
+  const [playing, setPlaying] = React.useState(true);
+  const skipRef = React.useRef<(() => void) | null>(null);
   const sectionRef = React.useRef<HTMLElement>(null);
   const canvasRef = React.useRef<HTMLCanvasElement>(null);
 
@@ -83,54 +89,87 @@ export function ImmersiveHero({ items, copy }: { items: ShowcaseItem[]; copy: Im
     let lastFinal = false;
     const mobile = !!mm && mm("(max-width: 767px)").matches;
 
-    // La galería se enseña cuando han llegado las primeras portadas (lo avisa
-    // la escena) o, como tarde, al cumplirse el tope: un proveedor lento no puede
-    // dejar la landing sin fondo. Mientras, el titular ya se lee sobre `--bg`.
+    // Reloj de la intro: arranca cuando la galería se enseña (con las portadas
+    // ya cargadas), no al montar — si no, los primeros segundos se gastarían
+    // sobre un lienzo todavía oculto.
+    let startedAt = -1;
+    let skip: { at: number; from: number } | null = null;
+    let p = 0;
+    let done = false;
+
+    const apply = (value: number) => {
+      section.style.setProperty("--p", value.toFixed(4));
+      scene?.setProgress(value);
+      const idx = formatIndexAt(value);
+      if (idx !== lastIdx) {
+        lastIdx = idx;
+        setFormatIdx(idx);
+      }
+      const fin = value >= FINAL_FROM;
+      if (fin !== lastFinal) {
+        lastFinal = fin;
+        setIsFinal(fin);
+      }
+    };
+
+    const tick = (now: number) => {
+      raf = 0;
+      if (cancelled || done) return;
+      if (startedAt < 0) startedAt = now;
+      p = introProgress(now - startedAt, skip);
+      apply(p);
+      if (p >= 1) {
+        done = true;
+        setPlaying(false);
+        return;
+      }
+      raf = requestAnimationFrame(tick);
+    };
+
     const reveal = () => {
-      if (!cancelled) canvas.dataset.ready = "true";
+      if (cancelled || canvas.dataset.ready === "true") return;
+      canvas.dataset.ready = "true";
+      if (!raf && !done) raf = requestAnimationFrame(tick);
     };
     const revealTimer = window.setTimeout(reveal, items.length > 0 ? REVEAL_MAX_MS : EMPTY_REVEAL_MS);
 
-    // Geometría de la sección cacheada (se recalcula al redimensionar): leer
-    // `getBoundingClientRect` en cada frame de scroll fuerza un layout síncrono
-    // justo después de haber escrito `--p`, y eso se nota como tirones.
-    let top = 0;
-    let total = 0;
-    const measure = () => {
-      top = section.getBoundingClientRect().top + window.scrollY;
-      total = section.offsetHeight - window.innerHeight;
+    // Saltar: el scroll, el teclado o el botón llevan la intro al final con una
+    // transición corta. Mientras dura, la rueda y el gesto NO mueven la página:
+    // el primer gesto es "sáltala", no "bájame a las features a medias".
+    const skipNow = () => {
+      if (done || skip) return;
+      if (startedAt < 0) {
+        // Aún sin enseñar: se enseña ya y la transición sale desde el principio.
+        reveal();
+        skip = { at: 0, from: 0 };
+        startedAt = performance.now();
+        return;
+      }
+      skip = { at: performance.now() - startedAt, from: p };
     };
-    measure();
-    const readProgress = () => (total > 0 ? Math.min(1, Math.max(0, (window.scrollY - top) / total)) : 0);
-
-    const onScroll = () => {
-      if (raf) return;
-      raf = requestAnimationFrame(() => {
-        raf = 0;
-        const p = readProgress();
-        section.style.setProperty("--p", p.toFixed(4));
-        scene?.setProgress(p);
-        const idx = formatIndexAt(p);
-        if (idx !== lastIdx) {
-          lastIdx = idx;
-          setFormatIdx(idx);
-        }
-        const fin = p >= FINAL_FROM;
-        if (fin !== lastFinal) {
-          lastFinal = fin;
-          setIsFinal(fin);
-        }
-      });
+    skipRef.current = skipNow;
+    const onWheel = (e: WheelEvent) => {
+      if (done) return;
+      e.preventDefault();
+      skipNow();
+    };
+    const onTouch = (e: TouchEvent) => {
+      if (done) return;
+      e.preventDefault();
+      skipNow();
+    };
+    const SKIP_KEYS = new Set(["ArrowDown", "PageDown", " ", "End", "Enter", "Escape"]);
+    const onKey = (e: KeyboardEvent) => {
+      if (done || !SKIP_KEYS.has(e.key)) return;
+      // Enter sobre el botón de saltar ya lo gestiona el propio botón.
+      if (e.key !== "Enter") e.preventDefault();
+      skipNow();
     };
 
     const onPointer = (e: PointerEvent) => {
       scene?.setPointer((e.clientX / window.innerWidth) * 2 - 1, -((e.clientY / window.innerHeight) * 2 - 1));
     };
-    const onResize = () => {
-      measure();
-      scene?.resize();
-      onScroll();
-    };
+    const onResize = () => scene?.resize();
 
     const io = new IntersectionObserver(([entry]) => {
       visible = entry.isIntersecting;
@@ -147,27 +186,32 @@ export function ImmersiveHero({ items, copy }: { items: ShowcaseItem[]; copy: Im
           canvas,
           items.map((it) => ({ src: textureUrl(it.poster), hue: TYPE_HUE[it.type] ?? 300 })),
           // Sin muestra (el fallback del Suspense, o un catálogo caído) no hay
-          // nada que esperar: el tope de abajo enseña la galería de gradientes.
+          // nada que esperar: el tope enseña la galería de gradientes.
           { mobile, bgCss, onReady: items.length > 0 ? reveal : undefined }
         );
-        scene.setProgress(readProgress());
+        scene.setProgress(p);
         if (visible) scene.start();
       })
       .catch(() => {
         if (!cancelled) setMode("static");
       });
 
-    window.addEventListener("scroll", onScroll, { passive: true });
+    window.addEventListener("wheel", onWheel, { passive: false });
+    window.addEventListener("touchmove", onTouch, { passive: false });
+    window.addEventListener("keydown", onKey);
     window.addEventListener("resize", onResize);
     window.addEventListener("pointermove", onPointer, { passive: true });
-    onScroll();
+    apply(0);
 
     return () => {
       cancelled = true;
+      skipRef.current = null;
       window.clearTimeout(revealTimer);
       cancelAnimationFrame(raf);
       io.disconnect();
-      window.removeEventListener("scroll", onScroll);
+      window.removeEventListener("wheel", onWheel);
+      window.removeEventListener("touchmove", onTouch);
+      window.removeEventListener("keydown", onKey);
       window.removeEventListener("resize", onResize);
       window.removeEventListener("pointermove", onPointer);
       scene?.dispose();
@@ -182,10 +226,10 @@ export function ImmersiveHero({ items, copy }: { items: ShowcaseItem[]; copy: Im
     <section
       ref={sectionRef}
       aria-label={copy.title}
-      className="relative h-[340vh] md:h-[420vh]"
+      className="relative h-[100svh]"
       style={{ ["--p" as string]: 0 }}
     >
-      <div className="sticky top-0 h-[100svh] overflow-hidden">
+      <div className="relative h-full overflow-hidden">
         <canvas
           ref={canvasRef}
           aria-hidden="true"
@@ -265,7 +309,14 @@ export function ImmersiveHero({ items, copy }: { items: ShowcaseItem[]; copy: Im
           </div>
         </div>
 
-        {/* Hilo de progreso */}
+        {playing && !isFinal && (
+          <div className="absolute right-6 top-6 md:right-14 md:top-auto md:bottom-10">
+            <KButton variant="secondary" size="sm" onClick={() => skipRef.current?.()}>
+              {copy.skip}
+            </KButton>
+          </div>
+        )}
+
         {/* Grano: rompe la planitud digital del fondo (ruido SVG en data URI,
             permitido por img-src). Fijo y sin eventos. SIN mix-blend-mode: un
             modo de fusión sobre un lienzo que cambia en cada frame obliga a
@@ -277,6 +328,7 @@ export function ImmersiveHero({ items, copy }: { items: ShowcaseItem[]; copy: Im
           style={{ backgroundImage: GRAIN }}
         />
 
+        {/* Hilo de progreso de la intro */}
         <div aria-hidden="true" className="absolute inset-x-0 bottom-0 h-1">
           <div className="h-full bg-accent-pink origin-left will-change-transform" style={{ transform: "scaleX(var(--p))" }} />
         </div>

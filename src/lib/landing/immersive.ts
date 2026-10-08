@@ -22,7 +22,28 @@ export const TYPE_HUE: Record<MediaType, number> = {
 /** Orden en que la cámara "presenta" los formatos. */
 export const IMMERSIVE_FORMATS: MediaType[] = ["movie", "tv", "anime", "manga", "game", "book", "comic"];
 
-/** Tramos del scroll: capítulo de formatos y capítulo final (CTA). */
+/**
+ * Intro automática (E-LANDING-INTRO): el recorrido lo marca el TIEMPO, no el
+ * scroll. Con la rueda del ratón el scroll avanza a saltos de ~100 px, y una
+ * escena atada a él avanzaba a tirones por mucho que se suavizara.
+ */
+export const INTRO_MS = 12000;
+/** Lo que tarda en llegar al final cuando el usuario salta la intro. */
+export const SKIP_MS = 900;
+
+/**
+ * Progreso de la intro (0-1). Lineal durante `INTRO_MS`; si se salta, va del
+ * punto en que estaba a 1 en `SKIP_MS` con salida suave, sin cortes.
+ */
+export function introProgress(elapsed: number, skip: { at: number; from: number } | null): number {
+  if (skip) {
+    const t = Math.min(1, Math.max(0, (elapsed - skip.at) / SKIP_MS));
+    return skip.from + (1 - skip.from) * (1 - (1 - t) ** 3);
+  }
+  return Math.min(1, Math.max(0, elapsed / INTRO_MS));
+}
+
+/** Tramos del recorrido: capítulo de formatos y capítulo final (CTA). */
 export const FORMAT_FROM = 0.18;
 export const FORMAT_TO = 0.68;
 export const FINAL_FROM = 0.86;
@@ -34,6 +55,8 @@ export interface ImmersiveCopy {
   badge: string;
   finalTitle: string;
   finalSub: string;
+  /** Botón para saltar la intro (también la salta el scroll o el teclado). */
+  skip: string;
   cta: string;
   /** Respaldo estático: titular y CTA del hero de siempre. */
   staticTagline: string;
