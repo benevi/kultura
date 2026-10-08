@@ -25,8 +25,6 @@ export default async function HomePage() {
     titleAccent: t("immersive.titleAccent"),
     sub: t("immersive.sub"),
     badge: t("hero.badge"),
-    scrollHint: t("immersive.scrollHint"),
-    kicker: t("immersive.kicker"),
     finalTitle: t("immersive.finalTitle"),
     finalSub: t("immersive.finalSub"),
     cta: t("hero.cta"),
@@ -50,7 +48,7 @@ export default async function HomePage() {
 
         {/* Features */}
         <section className="px-4 md:px-8 pt-20 md:pt-28 pb-20 md:pb-28 max-w-6xl mx-auto">
-          <h2 className="font-display text-3xl md:text-4xl font-bold tracking-tight text-text-primary text-center mb-12">
+          <h2 className="font-display text-4xl md:text-6xl font-extrabold tracking-[-0.03em] text-text-primary mb-12 max-w-[14ch]">
             {t("features.title")}
           </h2>
           <FeatureGrid features={features} />

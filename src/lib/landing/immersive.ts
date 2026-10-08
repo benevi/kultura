@@ -32,8 +32,6 @@ export interface ImmersiveCopy {
   titleAccent: string;
   sub: string;
   badge: string;
-  scrollHint: string;
-  kicker: string;
   finalTitle: string;
   finalSub: string;
   cta: string;

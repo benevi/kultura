@@ -541,7 +541,7 @@
       "badge": "7 formatos culturales"
     },
     "features": {
-      "title": "Todo lo que necesitas",
+      "title": "Lo que hay dentro.",
       "library": "Biblioteca personal",
       "libraryDesc": "Registra lo que has visto, lees o juegas con puntuaciones y progreso",
       "friends": "Conecta con amigos",
@@ -555,8 +555,6 @@
       "title": "Todo lo que ves, lees y",
       "titleAccent": "juegas.",
       "sub": "Cine, series, anime, manga, videojuegos, libros y cómics. Un solo registro, tu gente dentro.",
-      "scrollHint": "Desliza",
-      "kicker": "Siete formatos, un solo registro",
       "finalTitle": "Tu cultura, en un solo sitio.",
       "finalSub": "Registra lo que te mueve, compártelo con tu círculo y descubre lo siguiente.",
       "formats": {

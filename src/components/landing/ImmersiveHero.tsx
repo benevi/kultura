@@ -36,6 +36,9 @@ import {
   type ImmersiveCopy,
 } from "@/lib/landing/immersive";
 
+const GRAIN =
+  "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E\")";
+
 function canUseWebGL(): boolean {
   try {
     const c = document.createElement("canvas");
@@ -169,7 +172,9 @@ export function ImmersiveHero({ items, copy }: { items: ShowcaseItem[]; copy: Im
           className="pointer-events-none absolute inset-0"
           style={{
             background:
-              "radial-gradient(ellipse 60% 55% at 50% 45%, var(--bg) 0%, transparent 70%), linear-gradient(to top, var(--bg) 0%, transparent 30%)",
+              // Pesa a la izquierda y abajo, donde va el texto: el centro y la
+              // derecha quedan para la galería (composición asimétrica).
+              "linear-gradient(100deg, var(--bg) 0%, transparent 62%), linear-gradient(to top, var(--bg) 0%, transparent 38%)",
             // La viñeta se retira en el capítulo final: ahí el protagonista es
             // el muro de portadas, y el CTA lleva su propio velo.
             opacity: "clamp(0, calc(0.7 - (var(--p) - 0.7) * 4), 0.7)",
@@ -178,24 +183,21 @@ export function ImmersiveHero({ items, copy }: { items: ShowcaseItem[]; copy: Im
 
         {/* Capítulo 1 — titular */}
         <div
-          className="absolute inset-0 flex flex-col items-center justify-center px-6 text-center"
+          className="absolute inset-0 flex flex-col justify-end px-6 pb-16 md:px-14 md:pb-24"
           style={{ opacity: "clamp(0, calc((0.15 - var(--p)) * 9), 1)", transform: "translateY(calc(var(--p) * -60vh))" }}
         >
-          <div className="relative">
+          <div className="relative self-start">
             <span
-              className="absolute -left-2 -top-9 md:-left-6 md:-top-8 rotate-[-8deg] rounded-full bg-accent-lime px-4 py-2 font-display text-sm font-extrabold leading-none text-on-accent-lime whitespace-nowrap"
+              className="absolute -left-1 -top-9 md:-left-3 md:-top-10 rotate-[-8deg] rounded-full bg-accent-lime px-4 py-2 font-display text-sm font-extrabold leading-none text-on-accent-lime whitespace-nowrap"
               style={{ boxShadow: "4px 4px 0 rgba(0,0,0,.4)" }}
             >
               {copy.badge}
             </span>
-            <h1 className="font-display text-[clamp(3rem,9vw,8.75rem)] font-extrabold leading-[0.92] tracking-[-0.035em] text-text-primary text-balance max-w-[14ch]">
+            <h1 className="font-display text-[clamp(3rem,8vw,8rem)] font-extrabold leading-[0.92] tracking-[-0.035em] text-text-primary text-balance max-w-[12ch]">
               {copy.title} <span className="text-accent-lime">{copy.titleAccent}</span>
             </h1>
           </div>
-          <p className="mt-7 max-w-xl text-lg md:text-xl text-text-secondary">{copy.sub}</p>
-          <span className="absolute bottom-10 text-xs font-bold tracking-[0.25em] text-text-secondary uppercase">
-            {copy.scrollHint} ↓
-          </span>
+          <p className="mt-7 max-w-[42ch] text-lg md:text-xl text-text-secondary text-pretty">{copy.sub}</p>
         </div>
 
         {/* Capítulo 2 — los siete formatos */}
@@ -206,10 +208,7 @@ export function ImmersiveHero({ items, copy }: { items: ShowcaseItem[]; copy: Im
             opacity: "min(clamp(0, calc((var(--p) - 0.16) * 14), 1), clamp(0, calc((0.72 - var(--p)) * 14), 1))",
           }}
         >
-          <span className="inline-block rounded-full bg-surface-elevated px-4 py-2 text-sm font-bold text-text-primary">
-            {copy.kicker}
-          </span>
-          <div className="mt-4 flex items-end justify-between gap-6">
+          <div>
             <p
               key={format}
               className="font-display font-extrabold leading-[0.85] tracking-[-0.04em] text-[clamp(4rem,15vw,13rem)] animate-[k-word_700ms_cubic-bezier(.2,.8,.2,1)_both]"
@@ -217,9 +216,6 @@ export function ImmersiveHero({ items, copy }: { items: ShowcaseItem[]; copy: Im
             >
               {copy.formats[format]}
             </p>
-            <span className="hidden md:block font-display text-2xl font-extrabold text-text-secondary tabular-nums">
-              0{formatIdx + 1} / 0{IMMERSIVE_FORMATS.length}
-            </span>
           </div>
         </div>
 
@@ -245,7 +241,15 @@ export function ImmersiveHero({ items, copy }: { items: ShowcaseItem[]; copy: Im
         </div>
 
         {/* Hilo de progreso */}
-        <div aria-hidden="true" className="absolute inset-x-0 bottom-0 h-1 bg-surface-elevated">
+        {/* Grano: rompe la planitud digital del fondo (ruido SVG en data URI,
+            permitido por img-src). Fijo y sin eventos. */}
+        <div
+          aria-hidden="true"
+          className="pointer-events-none absolute inset-0 opacity-[0.07] mix-blend-overlay"
+          style={{ backgroundImage: GRAIN }}
+        />
+
+        <div aria-hidden="true" className="absolute inset-x-0 bottom-0 h-1">
           <div className="h-full bg-accent-pink origin-left" style={{ transform: "scaleX(var(--p))" }} />
         </div>
       </div>
