@@ -167,12 +167,12 @@ export function FriendsClient({
           )}
 
           {searchResults.length > 0 && (
-            <div className="mt-3 rounded-20 border overflow-hidden" style={CARD_STYLE}>
+            <div className="mt-3 flex flex-col gap-3">
               {searchResults.map(u => (
                 <div
                   key={u.id}
-                  className="flex items-center gap-3 px-4 py-3 border-t first:border-t-0"
-                  style={{ borderColor: F0.stroke }}
+                  className="flex items-center gap-4 rounded-20 px-[22px] py-4"
+                  style={{ background: F0.surface }}
                 >
                   <Avatar initials={u.avatar_initials} color={u.avatar_color} size="sm" />
                   <Link
@@ -205,7 +205,8 @@ export function FriendsClient({
                 {pending.length}
               </span>
             </h2>
-            <div className="rounded-20 border px-4" style={CARD_STYLE}>
+            {/* Filas sueltas del artboard (radio 20, gap 12), no un bloque. */}
+            <div className="flex flex-col gap-3">
               {pending.map(friendship => (
                 <FriendCard
                   key={friendship.id}
@@ -228,7 +229,7 @@ export function FriendsClient({
               <p className="text-xs mt-1" style={{ color: F0.muted }}>{t('noFriendsHint')}</p>
             </div>
           ) : (
-            <div className="rounded-20 border px-4" style={CARD_STYLE}>
+            <div className="flex flex-col gap-3">
               {friends.map(friendship => (
                 <FriendCard
                   key={friendship.id}

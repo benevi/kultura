@@ -143,17 +143,17 @@ export default async function ProfilePage({ params }: Props) {
 
       {/* Viendo ahora */}
       {inProgressItems.length > 0 && (
-        <MediaRow title={t('watchingNow')} items={inProgressItems} requirePoster={false} />
+        <MediaRow title={t('watchingNow')} items={inProgressItems} requirePoster={false} cardRadius="18" />
       )}
 
       {/* Últimos completados */}
       {completedItems.length > 0 && (
-        <MediaRow title={t('lastCompleted')} items={completedItems} requirePoster={false} />
+        <MediaRow title={t('lastCompleted')} items={completedItems} requirePoster={false} cardRadius="18" />
       )}
 
       {/* Pendientes */}
       {pendingItems.length > 0 && (
-        <MediaRow title={t('pendingRow')} items={pendingItems} requirePoster={false} />
+        <MediaRow title={t('pendingRow')} items={pendingItems} requirePoster={false} cardRadius="18" />
       )}
 
       {/* Empty state cuando la biblioteca está vacía */}

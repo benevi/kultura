@@ -81,9 +81,11 @@ export function FriendCard({ friendship, variant, onAction }: FriendCardProps) {
   const avatar = <Avatar initials={otherUser.avatarInitials} color={otherUser.avatarColor} size="md" />
 
   return (
+    // Fila suelta del artboard de Amigos: superficie propia, radio 20,
+    // padding 16/22 y gap 16 — sin borde ni separadores.
     <div
-      className="flex items-center gap-3 py-3 border-b last:border-0"
-      style={{ borderColor: F0.stroke }}
+      className="flex items-center gap-4 rounded-20 px-[22px] py-4"
+      style={{ background: F0.surface }}
     >
       <Link href={`/profile/${otherUser.username}`}>
         {variant === 'pending' ? <AttentionRing>{avatar}</AttentionRing> : avatar}

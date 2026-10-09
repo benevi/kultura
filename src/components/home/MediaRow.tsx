@@ -29,6 +29,8 @@ interface MediaRowProps {
    * viendo, perfil) pasan `false` y se quedan con gradiente + título.
    */
   requirePoster?: boolean
+  /** Radio de las cards. Inicio usa el de bento; el artboard de Perfil, 18. */
+  cardRadius?: 'bento' | '18'
 }
 
 const SKELETONS = [0, 1, 2, 3, 4]
@@ -42,7 +44,9 @@ export function MediaRow({
   emptyAction,
   isLoading,
   requirePoster = true,
+  cardRadius = 'bento',
 }: MediaRowProps) {
+  const radiusClass = cardRadius === '18' ? 'rounded-18' : 'rounded-bento'
   const [failed, setFailed] = React.useState<ReadonlySet<string>>(() => new Set())
   const items = requirePoster ? allItems.filter((i) => i.poster && !failed.has(i.mediaId)) : allItems
   if (!isLoading && items.length === 0 && !emptyMessage) return null
@@ -86,7 +90,7 @@ export function MediaRow({
                 href={href}
                 className="w-28 md:w-36 flex-shrink-0 cursor-pointer group"
               >
-                <div className="relative aspect-[2/3] rounded-bento overflow-hidden bg-surface-elevated">
+                <div className={`relative aspect-[2/3] ${radiusClass} overflow-hidden bg-surface-elevated`}>
                   {/* Respaldo F0 SIEMPRE detrás: un título sin portada o con
                       portada rota se ve como bloque de color con sus
                       iniciales, nunca como un hueco con "◻". */}
