@@ -5,12 +5,16 @@
 // ============================================================
 
 import { NextResponse } from 'next/server'
+import { getLandingShowcase, showcaseToMediaItem } from '@/lib/landing/showcase'
 import { getLocale } from 'next-intl/server'
 import { createClient } from '@/lib/supabase/server'
 import { getAiRecommendations } from '@/lib/claude/recommendations'
 import { getUserStats } from '@/lib/library/stats'
 import { checkRateLimit } from '@/lib/rate-limit'
 import { isDemoUser } from '@/lib/demo'
+
+/** Un título por formato: la muestra arranca con uno de cada tipo. */
+const STARTER_SIZE = 7
 
 // 5 req/min — AI calls are expensive
 const AI_LIMIT = { windowMs: 60_000, max: 5 }
@@ -56,6 +60,16 @@ export async function GET(): Promise<NextResponse> {
   const recommendations = await getAiRecommendations(user.id, topGenres, locale, supabase)
 
   if (demo && recommendations.length > 0) demoCache.set(demoKey, { at: Date.now(), body: { recommendations } })
+
+  // Sin recomendaciones (biblioteca corta o la IA no respondió) Inicio no se
+  // queda vacío: lo más popular ahora mismo, un título de cada formato. Sale de
+  // la misma muestra cacheada de la landing, así que no cuesta peticiones.
+  if (recommendations.length === 0) {
+    const starter = (await getLandingShowcase(locale))
+      .slice(0, STARTER_SIZE)
+      .map(showcaseToMediaItem)
+    return NextResponse.json({ recommendations, starter })
+  }
 
   return NextResponse.json({ recommendations })
 }

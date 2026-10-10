@@ -6,8 +6,9 @@ import { useTranslations } from 'next-intl'
 import { KButton } from '@/components/ui/KButton'
 import { MediaCard } from '@/components/media/MediaCard'
 import type { AiRec } from '@/lib/claude/recommendations'
+import type { MediaItem } from '@/types/media'
 
-type Status = 'loading' | 'done' | 'empty' | 'error' | 'rate_limited'
+type Status = 'loading' | 'done' | 'starter' | 'empty' | 'error' | 'rate_limited'
 
 // Un esqueleto por tipo recomendable (movie, tv, anime, book, manga, comic, game).
 const SKELETON_KEYS = [0, 1, 2, 3, 4, 5, 6]
@@ -16,6 +17,7 @@ export function AiRecommendations() {
   const t = useTranslations('aiRecommendations')
   const tDetail = useTranslations('mediaDetail')
   const [recs, setRecs] = useState<AiRec[]>([])
+  const [starter, setStarter] = useState<MediaItem[]>([])
   const [status, setStatus] = useState<Status>('loading')
 
   const fetchRecs = useCallback(() => {
@@ -26,10 +28,14 @@ export function AiRecommendations() {
       .then(async (r) => {
         if (r.status === 429) { setStatus('rate_limited'); return }
         if (!r.ok) { setStatus('error'); return }
-        const data: { recommendations?: AiRec[] } = await r.json()
+        const data: { recommendations?: AiRec[]; starter?: MediaItem[] } = await r.json()
         const list = data.recommendations ?? []
+        const popular = data.starter ?? []
         setRecs(list)
-        setStatus(list.length === 0 ? 'empty' : 'done')
+        setStarter(popular)
+        // Sin recomendaciones propias se enseña lo popular, y solo si tampoco
+        // hay eso queda la tarjeta de "añade títulos" sola.
+        setStatus(list.length > 0 ? 'done' : popular.length > 0 ? 'starter' : 'empty')
       })
       .catch((err) => {
         if (err instanceof DOMException && err.name === 'AbortError') return
@@ -46,7 +52,7 @@ export function AiRecommendations() {
 
   // El cartel hace de título, así que acompaña a lo que de verdad es una
   // recomendación (o está a punto de serlo), no a un error ni a un aviso.
-  const hasBadge = status === 'done' || status === 'loading'
+  const hasBadge = status === 'done' || status === 'loading' || status === 'starter'
 
   return (
     // Sin <h2> la sección se quedaba sin nombre accesible (el cartel es un div
@@ -64,7 +70,7 @@ export function AiRecommendations() {
           className="inline-block absolute -top-3.5 left-0 z-10 rounded-2xl px-3.5 py-1.5 md:px-4 md:py-2 bg-accent-lime text-on-accent-lime font-display text-[10px] md:text-[11px] font-extrabold tracking-wide"
           style={{ transform: 'rotate(-4deg)', boxShadow: '4px 4px 0 rgba(0,0,0,0.35)' }}
         >
-          🤖 {t('aiPickBadge')}
+          {status === 'starter' ? `🔥 ${t('starterBadge')}` : `🤖 ${t('aiPickBadge')}`}
         </div>
       )}
 
@@ -86,6 +92,26 @@ export function AiRecommendations() {
           <KButton asChild size="sm">
             <Link href="/discover">{t('exploreContent')}</Link>
           </KButton>
+        </div>
+      )}
+
+      {/* Primera impresión de una cuenta nueva (E-INICIO-ARRANQUE): lo popular
+          ahora mismo, un título de cada formato, con el cartel diciendo lo que
+          es —no lo elige la IA para ti— y una línea que explica cómo llegar a
+          las recomendaciones de verdad. */}
+      {status === 'starter' && (
+        <div className="flex flex-col gap-4">
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-5">
+            {starter.map((item) => (
+              <MediaCard key={item.id} item={item} showType />
+            ))}
+          </div>
+          <p className="font-body text-sm text-text-secondary">
+            {t('starterHint')}{' '}
+            <Link href="/discover" className="font-bold text-accent-pink hover:underline">
+              {t('exploreContent')}
+            </Link>
+          </p>
         </div>
       )}
 

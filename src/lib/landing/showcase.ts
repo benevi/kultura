@@ -128,6 +128,20 @@ export function pickShowcase(
 }
 
 /**
+ * Vuelve a MediaItem una portada de la muestra (su `id` es "{type}_{externalId}"),
+ * lo justo para pintarla con `MediaCard` y enlazar a la ficha.
+ */
+export function showcaseToMediaItem(item: ShowcaseItem): MediaItem {
+  return {
+    id: item.id,
+    externalId: item.id.slice(item.type.length + 1),
+    type: item.type,
+    title: item.title,
+    poster: item.poster,
+  };
+}
+
+/**
  * Round-robin entre listas: 1º de cada una, luego 2º… Preserva el orden nativo
  * de cada familia y alterna tipos (mismo criterio que el interleave del
  * agregado, reimplementado aquí porque allí es privado y esto son 8 líneas).

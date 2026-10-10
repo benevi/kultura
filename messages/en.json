@@ -308,6 +308,8 @@
   "aiRecommendations": {
     "title": "For you",
     "aiPickBadge": "YOUR AI THINKS YOU'LL LOVE THIS",
+    "starterBadge": "POPULAR RIGHT NOW",
+    "starterHint": "Rate or complete 3 titles and your AI will start recommending just for you.",
     "generating": "Generating personalized recommendations...",
     "needMoreItems": "Add at least 3 completed or rated titles to your library to receive recommendations.",
     "search": "Search",

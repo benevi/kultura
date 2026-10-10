@@ -308,6 +308,8 @@
   "aiRecommendations": {
     "title": "Para ti",
     "aiPickBadge": "TU IA CREE QUE ESTO TE FLIPA",
+    "starterBadge": "LO MÁS POPULAR AHORA",
+    "starterHint": "Puntúa o completa 3 títulos y tu IA empezará a recomendarte a tu medida.",
     "generating": "Generando recomendaciones personalizadas...",
     "needMoreItems": "Añade al menos 3 títulos completados o puntuados a tu biblioteca para recibir recomendaciones.",
     "search": "Buscar",

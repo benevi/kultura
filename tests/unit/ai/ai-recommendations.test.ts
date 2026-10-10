@@ -33,10 +33,35 @@ vi.mock('@/lib/claude/recommendations', () => ({
   getLibraryContext: vi.fn(),
 }))
 
+const mockShowcase = vi.fn()
+
+vi.mock('@/lib/landing/showcase', async (orig) => ({
+  ...(await orig<typeof import('@/lib/landing/showcase')>()),
+  getLandingShowcase: mockShowcase,
+}))
+
 // ── GET /api/ai-recommendations ───────────────────────────────────────────────
 
 describe('GET /api/ai-recommendations', () => {
-  beforeEach(() => vi.clearAllMocks())
+  beforeEach(() => {
+    vi.clearAllMocks()
+    mockShowcase.mockResolvedValue([
+      { id: 'movie_550', title: 'Fight Club', type: 'movie', poster: 'https://p/1.jpg' },
+      { id: 'anime_21', title: 'One Piece', type: 'anime', poster: 'https://p/2.jpg' },
+    ])
+  })
+
+  it('sin recomendaciones propias manda lo popular para que Inicio no salga vacío', async () => {
+    mockGetUser.mockResolvedValue({ data: { user: AUTH_USER }, error: null })
+    mockGetAiRecommendations.mockResolvedValue([])
+
+    const { GET } = await import('@/app/api/ai-recommendations/route')
+    const body = await (await GET()).json()
+    expect(body.starter).toEqual([
+      expect.objectContaining({ id: 'movie_550', externalId: '550', type: 'movie', poster: 'https://p/1.jpg' }),
+      expect.objectContaining({ id: 'anime_21', externalId: '21', type: 'anime' }),
+    ])
+  })
 
   it('returns 401 if not authenticated', async () => {
     mockGetUser.mockResolvedValue({ data: { user: null }, error: null })
@@ -72,6 +97,9 @@ describe('GET /api/ai-recommendations', () => {
     // La ficha se enlaza con externalId (sin prefijo) — ver MediaCard.
     expect(body.recommendations[0].item.externalId).toBe('680')
     expect(body.recommendations[0].matchScore).toBe(87)
+    // Con recomendaciones de verdad no se gasta la muestra popular.
+    expect(body.starter).toBeUndefined()
+    expect(mockShowcase).not.toHaveBeenCalled()
   })
 
   it('returns empty array if library too small', async () => {
