@@ -48,12 +48,8 @@ import {
   RAWG_MODOJUEGO_TAGS,
   DURACIONMEDIA_BUCKETS,
 } from "@/lib/api/rawg-maps";
-import {
-  buildGoogleBooksQuery,
-  BOOKS_GENRE,
-  BOOKS_FORMATO,
-  BOOKS_PUBLISHER,
-} from "@/lib/api/books-maps";
+import { BOOKS_FORMATO, BOOKS_PUBLISHER } from "@/lib/api/books-maps";
+import { OPEN_LIBRARY_GENRE, openLibraryFulltext } from "@/lib/api/openlibrary-maps";
 import { COMIC_PUBLISHER } from "@/lib/api/comicvine-maps";
 import { VALORACION_SLUGS } from "@/lib/api/valoracion";
 import { parseDiscoverParams } from "@/lib/api/discover-params";
@@ -98,7 +94,7 @@ const EXPECTED_CATALOG: Record<string, Record<string, string[]>> = {
     comic: Object.keys(COMIC_PUBLISHER),
   },
   genre: {
-    book: Object.keys(BOOKS_GENRE),
+    book: Object.keys(OPEN_LIBRARY_GENRE),
     game: Object.keys(RAWG_GENRE),
     movie: Object.keys(TMDB_GENRE_MOVIE),
     tv: Object.keys(TMDB_GENRE_TV),
@@ -284,21 +280,11 @@ describe("Matriz — cableado nativo (builder emite param real)", () => {
     expect(params.some(([k]) => k === "publicationDemographic[]")).toBe(true);
   });
 
-  // E-BOOKS-GOOGLE: formato pasa de fragmento en q (ebook_access de Open
-  // Library) a `params.filter` nativo de Google Books.
-  it("formato (book): buildGoogleBooksQuery→params.filter (free/ebook)", () => {
-    expect(buildGoogleBooksQuery({ formato: "free" }).params.filter).toBe(
-      "free-ebooks"
-    );
-    expect(buildGoogleBooksQuery({ formato: "ebook" }).params.filter).toBe(
-      "ebooks"
-    );
-  });
-
-  it("editorial (book): buildGoogleBooksQuery→q inpublisher: (nativo)", () => {
-    expect(buildGoogleBooksQuery({ editorial: ["planeta"] }).q).toContain(
-      'inpublisher:"Planeta"'
-    );
+  // E-BOOKS-HIBRIDO: el formato de libro lo traduce Open Library; solo
+  // "libre" tiene equivalente nativo (has_fulltext).
+  it("formato (book): openLibraryFulltext→has_fulltext solo para libre", () => {
+    expect(openLibraryFulltext("free")).toBe("true");
+    expect(openLibraryFulltext("ebook")).toBeUndefined();
   });
 });
 
