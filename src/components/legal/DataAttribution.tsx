@@ -8,16 +8,19 @@ import { getTranslations } from "next-intl/server";
  */
 export async function renderDataAttribution(className = "") {
   const t = await getTranslations("legal");
-  const link = (href: string) => (chunks: React.ReactNode) => (
-    <a
-      href={href}
-      target="_blank"
-      rel="noopener noreferrer"
-      className="underline underline-offset-2 hover:text-accent-pink transition-colors"
-    >
-      {chunks}
-    </a>
-  );
+  const link = (href: string) =>
+    function SourceLink(chunks: React.ReactNode) {
+      return (
+        <a
+          href={href}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="underline underline-offset-2 hover:text-accent-pink transition-colors"
+        >
+          {chunks}
+        </a>
+      );
+    };
 
   return (
     <p className={`text-xs text-muted ${className}`}>
