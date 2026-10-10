@@ -4,7 +4,9 @@ import { NextIntlClientProvider } from "next-intl";
 import { getMessages } from "next-intl/server";
 import { notFound } from "next/navigation";
 import { preconnect } from "react-dom";
+import { Analytics } from "@vercel/analytics/next";
 import { routing } from "@/i18n/routing";
+import { siteUrl } from "@/lib/site-url";
 import "../globals.css";
 
 const bricolageGrotesque = Bricolage_Grotesque({
@@ -22,7 +24,7 @@ const figtree = Figtree({
 });
 
 
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://kultura.app'
+const SITE_URL = siteUrl()
 
 export const metadata: Metadata = {
   title: {
@@ -85,6 +87,7 @@ export default async function LocaleLayout({
         <NextIntlClientProvider messages={messages}>
           {children}
         </NextIntlClientProvider>
+        <Analytics />
       </body>
     </html>
   );

@@ -1,5 +1,6 @@
 import { getTranslations } from 'next-intl/server'
 import { Link } from '@/i18n/navigation'
+import { renderDataAttribution } from '@/components/legal/DataAttribution'
 
 export async function AppFooter() {
   const t = await getTranslations('nav')
@@ -30,6 +31,7 @@ export async function AppFooter() {
           </Link>
         </div>
       </div>
+      {await renderDataAttribution('max-w-6xl mx-auto px-4 md:px-8 pb-4')}
     </footer>
   )
 }

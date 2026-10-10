@@ -1,5 +1,6 @@
 import { getTranslations } from "next-intl/server";
 import { Link } from "@/i18n/navigation";
+import { renderDataAttribution } from "@/components/legal/DataAttribution";
 
 export async function Footer() {
   const t = await getTranslations("legal");
@@ -15,6 +16,7 @@ export async function Footer() {
         </Link>
       </div>
       <span>© {new Date().getFullYear()} KULTURA</span>
+      {await renderDataAttribution("max-w-xl px-4")}
     </footer>
   );
 }

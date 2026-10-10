@@ -726,6 +726,8 @@
   "legal": {
     "footerPrivacy": "Privacy",
     "footerTerms": "Terms",
+    "dataSources": "Data from <tmdb>TMDB</tmdb>, <rawg>RAWG</rawg>, AniList, MyAnimeList, MangaDex, Open Library and Comic Vine.",
+    "tmdbNotice": "This product uses the TMDB API but is not endorsed or certified by TMDB.",
     "privacy": {
       "title": "Privacy Policy",
       "updated": "Last updated: September 2026",
@@ -745,7 +747,7 @@
       "s7Title": "7. Your rights",
       "s7Body": "You have the right to access, rectify, delete and export your data, and to object to its processing. You can delete your account and export your data directly from Settings; for any other request, use the suggestions form.",
       "s8Title": "8. Cookies",
-      "s8Body": "We only use the cookies strictly necessary to keep you signed in (managed by Supabase Auth). We do not use third-party advertising or tracking cookies.",
+      "s8Body": "We only use the cookies strictly necessary to keep you signed in (managed by Supabase Auth). We do not use third-party advertising or tracking cookies. We count visits with Vercel Web Analytics, which is anonymous, uses no cookies and identifies no one.",
       "s9Title": "9. Minors",
       "s9Body": "The service is not directed at children under 16. If we become aware of an account belonging to a child under that age, we will delete it.",
       "s10Title": "10. Changes to this policy",
