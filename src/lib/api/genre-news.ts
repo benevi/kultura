@@ -22,6 +22,39 @@ function genreNamesToIds(names: string[]): number[] {
   return ids
 }
 
+/**
+ * Nombre visible de cada género TMDB por idioma. El perfil guarda los géneros
+ * tal como los sirvió cada proveedor ("Action" de AniList o RAWG, "Acción" de
+ * TMDB en español), y el título de la fila los pintaba crudos: "Novedades en
+ * Action" en la interfaz en español.
+ */
+const GENRE_LABELS: Record<'es' | 'en', Record<number, string>> = {
+  es: {
+    28: 'Acción', 12: 'Aventura', 16: 'Animación', 35: 'Comedia', 80: 'Crimen',
+    99: 'Documental', 18: 'Drama', 10751: 'Familia', 14: 'Fantasía', 36: 'Historia',
+    27: 'Terror', 10402: 'Música', 9648: 'Misterio', 10749: 'Romance',
+    878: 'Ciencia ficción', 53: 'Suspense', 10752: 'Bélica', 37: 'Western',
+  },
+  en: {
+    28: 'Action', 12: 'Adventure', 16: 'Animation', 35: 'Comedy', 80: 'Crime',
+    99: 'Documentary', 18: 'Drama', 10751: 'Family', 14: 'Fantasy', 36: 'History',
+    27: 'Horror', 10402: 'Music', 9648: 'Mystery', 10749: 'Romance',
+    878: 'Science Fiction', 53: 'Thriller', 10752: 'War', 37: 'Western',
+  },
+}
+
+/** Etiquetas en el idioma de la app, sin repetir el mismo género dos veces. */
+export function localizeGenreNames(names: string[], locale?: string | null): string[] {
+  const labels = GENRE_LABELS[locale === 'en' ? 'en' : 'es']
+  const out: string[] = []
+  for (const name of names) {
+    const id = TMDB_GENRE_MAP[name]
+    const label = id !== undefined ? labels[id] ?? name : name
+    if (!out.includes(label)) out.push(label)
+  }
+  return out
+}
+
 export interface GenreNewsResult {
   movies: MediaItem[]
   tv: MediaItem[]
@@ -39,8 +72,9 @@ export async function getGenreNews(
   limit = 5,
   locale?: string | null
 ): Promise<GenreNewsResult> {
-  const genreNames = topGenres.slice(0, 3)
-  const genreIds = genreNamesToIds(genreNames)
+  const rawNames = topGenres.slice(0, 3)
+  const genreIds = genreNamesToIds(rawNames)
+  const genreNames = localizeGenreNames(rawNames, locale)
 
   if (genreIds.length === 0) {
     return { movies: [], tv: [], genres: genreNames }

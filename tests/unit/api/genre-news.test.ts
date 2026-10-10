@@ -135,3 +135,21 @@ describe('GET /api/genre-news', () => {
   })
 
 })
+
+describe('localizeGenreNames', () => {
+  it('traduce al idioma de la app los géneros guardados en otro idioma', async () => {
+    const { localizeGenreNames } = await import('@/lib/api/genre-news')
+    expect(localizeGenreNames(['Action', 'Aventura'], 'es')).toEqual(['Acción', 'Aventura'])
+    expect(localizeGenreNames(['Acción', 'Comedy'], 'en')).toEqual(['Action', 'Comedy'])
+  })
+
+  it('no repite un género que llega en los dos idiomas', async () => {
+    const { localizeGenreNames } = await import('@/lib/api/genre-news')
+    expect(localizeGenreNames(['Action', 'Acción'], 'es')).toEqual(['Acción'])
+  })
+
+  it('deja tal cual lo que no conoce', async () => {
+    const { localizeGenreNames } = await import('@/lib/api/genre-news')
+    expect(localizeGenreNames(['Mecha'], 'es')).toEqual(['Mecha'])
+  })
+})
