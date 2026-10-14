@@ -33,6 +33,7 @@ function mapList(row: ListRow): List {
     name: row.name,
     mediaType: row.media_type as MediaType,
     isCollaborative: row.is_collaborative,
+    isPublic: row.is_public ?? false,
     createdAt: row.created_at,
     owner: row.owner
       ? {
@@ -95,7 +96,7 @@ export async function getUserLists(userId: string): Promise<List[]> {
   // Listas propias
   const { data: ownedRaw, error: ownedErr } = await supabase
     .from('lists')
-    .select('id, owner_id, name, media_type, is_collaborative, created_at, owner:owner_id(id, username, avatar_color, avatar_initials)')
+    .select('id, owner_id, name, media_type, is_collaborative, is_public, created_at, owner:owner_id(id, username, avatar_color, avatar_initials)')
     .eq('owner_id', userId)
     .order('created_at', { ascending: false })
 
@@ -104,7 +105,7 @@ export async function getUserLists(userId: string): Promise<List[]> {
   // Listas donde es miembro (no owner)
   const { data: memberRaw, error: memberErr } = await supabase
     .from('list_members')
-    .select('list_id, list:list_id(id, owner_id, name, media_type, is_collaborative, created_at, owner:owner_id(id, username, avatar_color, avatar_initials))')
+    .select('list_id, list:list_id(id, owner_id, name, media_type, is_collaborative, is_public, created_at, owner:owner_id(id, username, avatar_color, avatar_initials))')
     .eq('user_id', userId)
 
   if (memberErr) throw new Error(`Failed to fetch member lists: ${memberErr.message}`)
@@ -153,7 +154,7 @@ export async function getListDetail(listId: string): Promise<{
 
   const { data: listRaw, error: listErr } = await supabase
     .from('lists')
-    .select('id, owner_id, name, media_type, is_collaborative, created_at, owner:owner_id(id, username, avatar_color, avatar_initials)')
+    .select('id, owner_id, name, media_type, is_collaborative, is_public, created_at, owner:owner_id(id, username, avatar_color, avatar_initials)')
     .eq('id', listId)
     .maybeSingle()
 

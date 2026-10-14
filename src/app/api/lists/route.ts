@@ -25,7 +25,7 @@ export async function GET(request: Request): Promise<NextResponse> {
 
   let query = supabase
     .from('lists')
-    .select('id, owner_id, name, media_type, is_collaborative, created_at')
+    .select('id, owner_id, name, media_type, is_collaborative, is_public, created_at')
     .eq('owner_id', user.id)
     .order('created_at', { ascending: false })
 
@@ -84,7 +84,7 @@ export async function POST(request: Request): Promise<NextResponse> {
       media_type: body.mediaType,
       is_collaborative: body.isCollaborative ?? false,
     })
-    .select('id, owner_id, name, media_type, is_collaborative, created_at')
+    .select('id, owner_id, name, media_type, is_collaborative, is_public, created_at')
     .single()
 
   if (error || !data) {

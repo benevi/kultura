@@ -788,5 +788,29 @@
     "body": "Look around as much as you like, but nothing is saved here.",
     "cta": "Create my account",
     "readOnly": "This is a demo, so nothing is saved. Create your account to use it for real."
+  },
+  "collection": {
+    "visibility": "List visibility",
+    "private": "Private",
+    "public": "Public",
+    "share": "Share",
+    "shareCollection": "Share my collection",
+    "publicHint": "Anyone with the link can see it, even without an account.",
+    "privateHint": "Only you and the list's members can see it.",
+    "visibilityError": "Couldn't change the visibility",
+    "linkCopied": "Link copied",
+    "linkCopyError": "Couldn't copy the link",
+    "heading": "{username}'s collection",
+    "metaTitle": "{username}'s collection · KULTURA",
+    "metaDescription": "{username}'s lists on KULTURA: movies, series, anime, books, comics, manga and video games.",
+    "listMetaDescription": "A list by {username} on KULTURA.",
+    "items": "{count, plural, one {# title} other {# titles}}",
+    "viewList": "View list",
+    "backToCollection": "See the whole collection",
+    "ctaTitle": "What about yours?",
+    "ctaText": "Keep everything you watch, read and play in one place, and share it with a link.",
+    "ctaButton": "Create your collection",
+    "empty": "{username} hasn't shared any lists yet",
+    "emptyHint": "When they publish one, it will show up here."
   }
 }

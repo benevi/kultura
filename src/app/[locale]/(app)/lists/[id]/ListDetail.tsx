@@ -6,6 +6,8 @@ import { Link, useRouter } from '@/i18n/navigation'
 import { Avatar } from '@/components/ui/Avatar'
 import { KButton } from '@/components/ui/KButton'
 import { ConfirmModal } from '@/components/ui/ConfirmModal'
+import { SegmentedControl } from '@/components/ui/SegmentedControl'
+import { ShareLinkButton } from '@/components/social/ShareLinkButton'
 import { MediaCard } from '@/components/media/MediaCard'
 import { createLogger } from '@/lib/logger'
 import type { List, ListItem, ListMember } from '@/types/list'
@@ -31,6 +33,7 @@ export function ListDetail({
 }: ListDetailProps) {
   const t = useTranslations('lists')
   const tc = useTranslations('common')
+  const tcol = useTranslations('collection')
   const router = useRouter()
   const [items, setItems] = useState<ListItem[]>(initialItems)
   const [members, setMembers] = useState<ListMember[]>(initialMembers)
@@ -41,8 +44,33 @@ export function ListDetail({
   const [deleting, setDeleting] = useState(false)
   const [deleteError, setDeleteError] = useState<string | null>(null)
   const [actionError, setActionError] = useState<string | null>(null)
+  const [isPublic, setIsPublic] = useState(list.isPublic)
+  const [savingVisibility, setSavingVisibility] = useState(false)
 
   const isOwner = list.ownerId === currentUserId
+  const publicPath = list.owner ? `/u/${list.owner.username}/l/${list.id}` : null
+
+  async function handleVisibilityChange(value: string) {
+    const next = value === 'public'
+    if (next === isPublic || savingVisibility) return
+    setSavingVisibility(true)
+    setActionError(null)
+    setIsPublic(next) // optimista: se revierte si falla
+    try {
+      const res = await fetch(`/api/lists/${list.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ isPublic: next }),
+      })
+      if (!res.ok) throw new Error(`HTTP ${res.status}`)
+    } catch (err) {
+      log.error('visibility change failed', { message: err instanceof Error ? err.message : String(err) })
+      setIsPublic(!next)
+      setActionError(tcol('visibilityError'))
+    } finally {
+      setSavingVisibility(false)
+    }
+  }
 
   async function handleDeleteList() {
     setDeleting(true)
@@ -189,6 +217,27 @@ export function ListDetail({
               {items.length} {t('items')}
             </span>
           </div>
+          {isOwner && (
+            <div className="flex items-center gap-3 mt-4 flex-wrap">
+              <SegmentedControl
+                ariaLabel={tcol('visibility')}
+                value={isPublic ? 'public' : 'private'}
+                onChange={handleVisibilityChange}
+                options={[
+                  { value: 'private', label: tcol('private') },
+                  { value: 'public', label: tcol('public') },
+                ]}
+              />
+              {isPublic && publicPath && (
+                <ShareLinkButton path={publicPath} title={list.name} label={tcol('share')} />
+              )}
+            </div>
+          )}
+          {isOwner && (
+            <p className="text-[13px] text-text-tertiary mt-2">
+              {isPublic ? tcol('publicHint') : tcol('privateHint')}
+            </p>
+          )}
         </div>
         <div className="flex items-center gap-3 flex-shrink-0">
           {isOwner && (
