@@ -17,6 +17,8 @@ export interface List {
   /** Un solo tipo de contenido por lista — DEC-008 */
   mediaType: MediaType;
   isCollaborative: boolean;
+  /** Visible sin sesión en la colección pública del dueño */
+  isPublic: boolean;
   createdAt: string;
   /** Datos embebidos */
   owner?: UserProfile;
