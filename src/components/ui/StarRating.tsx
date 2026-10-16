@@ -1,4 +1,7 @@
+"use client";
+
 import { useState } from "react";
+import { useTranslations } from "next-intl";
 import { cn } from "@/lib/utils/index";
 
 export interface StarRatingProps {
@@ -41,6 +44,7 @@ export function StarRating({
   size = "md",
   className,
 }: StarRatingProps) {
+  const t = useTranslations("common");
   const [hovered, setHovered] = useState<number | null>(null);
 
   const isInteractive = onChange !== undefined;
@@ -48,9 +52,13 @@ export function StarRating({
 
   if (!isInteractive) {
     return (
-      <div className={cn("flex items-center gap-0.5", className)}>
+      <div
+        role="img"
+        aria-label={t("starsValue", { value })}
+        className={cn("flex items-center gap-0.5", className)}
+      >
         {Array.from({ length: 5 }, (_, i) => (
-          <span key={i} data-star={i + 1}>
+          <span key={i} data-star={i + 1} aria-hidden="true">
             <StarIcon
               filled={i < value}
               className={cn(
@@ -78,8 +86,8 @@ export function StarRating({
             data-star={starValue}
             onClick={() => onChange(starValue)}
             onMouseEnter={() => setHovered(starValue)}
-            aria-label={`${starValue} estrella${starValue !== 1 ? "s" : ""}`}
-            className="focus:outline-none"
+            aria-label={t("starsLabel", { count: starValue })}
+            className="rounded-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-accent-pink"
           >
             <StarIcon
               filled={i < displayValue}

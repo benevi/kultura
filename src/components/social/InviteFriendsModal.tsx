@@ -6,6 +6,7 @@ import { useToastContext } from '@/components/ui/ToastProvider'
 import { Avatar } from '@/components/ui/Avatar'
 import { Spinner } from '@/components/ui/Spinner'
 import { F0 } from '@/lib/design/f0-tokens'
+import { useEscapeKey } from '@/hooks/useEscapeKey'
 
 interface InvitableFriend {
   id: string
@@ -28,6 +29,8 @@ export function InviteFriendsModal({ groupId, onClose }: InviteFriendsModalProps
   const [loading, setLoading] = useState(true)
   const [loadError, setLoadError] = useState(false)
   const [invitingId, setInvitingId] = useState<string | null>(null)
+
+  useEscapeKey(onClose)
 
   useEffect(() => {
     let active = true

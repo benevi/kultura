@@ -134,4 +134,14 @@ describe('LibraryStatusModal', () => {
     rerender(<LibraryStatusModal {...defaultProps} mediaType="anime" />)
     expect(screen.queryByTestId('input-season')).not.toBeInTheDocument()
   })
+
+  it('Escape llama a onClose (y no mientras guarda)', () => {
+    const onClose = vi.fn()
+    const { rerender } = render(<LibraryStatusModal {...defaultProps} onClose={onClose} loading />)
+    fireEvent.keyDown(document, { key: 'Escape' })
+    expect(onClose).not.toHaveBeenCalled()
+    rerender(<LibraryStatusModal {...defaultProps} onClose={onClose} />)
+    fireEvent.keyDown(document, { key: 'Escape' })
+    expect(onClose).toHaveBeenCalledTimes(1)
+  })
 })

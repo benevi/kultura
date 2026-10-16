@@ -2,6 +2,11 @@ import { render, screen, fireEvent } from "@testing-library/react";
 import { describe, it, expect, vi } from "vitest";
 import { StarRating } from "@/components/ui/StarRating";
 
+vi.mock("next-intl", () => ({
+  useTranslations: () => (key: string, values?: Record<string, unknown>) =>
+    values ? `${key}:${JSON.stringify(values)}` : key,
+}));
+
 describe("StarRating", () => {
   it("renderiza 5 estrellas en modo interactivo", () => {
     const handleChange = vi.fn();
@@ -37,5 +42,23 @@ describe("StarRating", () => {
     // In readonly mode there are no buttons to click
     const buttons = screen.queryAllByRole("button");
     expect(buttons).toHaveLength(0);
+  });
+
+  it("cada estrella tiene etiqueta traducida con su número", () => {
+    render(<StarRating value={0} onChange={vi.fn()} />);
+    expect(screen.getByRole("button", { name: 'starsLabel:{"count":1}' })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: 'starsLabel:{"count":5}' })).toBeInTheDocument();
+  });
+
+  it("el foco de teclado es visible (no se anula sin sustituto)", () => {
+    render(<StarRating value={0} onChange={vi.fn()} />);
+    for (const b of screen.getAllByRole("button")) {
+      expect(b.className).toContain("focus-visible:ring-2");
+    }
+  });
+
+  it("modo lectura expone la puntuación a lectores de pantalla", () => {
+    render(<StarRating value={4} />);
+    expect(screen.getByRole("img", { name: 'starsValue:{"value":4}' })).toBeInTheDocument();
   });
 });

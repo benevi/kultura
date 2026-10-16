@@ -12,6 +12,7 @@ import { StarRating } from '@/components/ui/StarRating'
 import { KButton } from '@/components/ui/KButton'
 import { KInput } from '@/components/ui/KInput'
 import { EpisodeProgress } from '@/components/library/EpisodeProgress'
+import { useEscapeKey } from '@/hooks/useEscapeKey'
 import type { LibraryEntry, LibraryStatus, EpisodeProgress as EpisodeProgressType } from '@/types/library'
 
 interface LibraryStatusModalProps {
@@ -42,6 +43,8 @@ export function LibraryStatusModal({
   const [episodeProgress, setEpisodeProgress] = useState<EpisodeProgressType | null>(
     current?.episodeProgress ?? null
   )
+
+  useEscapeKey(onClose, !loading)
 
   const showEpisodeProgress = mediaType === 'tv' || mediaType === 'anime'
   const showSeason = mediaType === 'tv'

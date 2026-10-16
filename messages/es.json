@@ -89,7 +89,9 @@
     "back": "Volver",
     "seeAll": "Ver todo",
     "addToLibrary": "Añadir a biblioteca",
-    "share": "Compartir"
+    "share": "Compartir",
+    "starsLabel": "{count, plural, one {# estrella} other {# estrellas}}",
+    "starsValue": "{value} de 5 estrellas"
   },
   "filters": {
     "type": "Tipo",

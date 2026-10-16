@@ -1,6 +1,7 @@
 'use client'
 
 import { KButton } from '@/components/ui/KButton'
+import { useEscapeKey } from '@/hooks/useEscapeKey'
 
 interface ConfirmModalProps {
   isOpen: boolean
@@ -27,6 +28,8 @@ export function ConfirmModal({
   isDestructive = false,
   loading = false,
 }: ConfirmModalProps) {
+  useEscapeKey(onCancel, isOpen && !loading)
+
   if (!isOpen) return null
 
   return (

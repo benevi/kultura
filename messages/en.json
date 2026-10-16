@@ -89,7 +89,9 @@
     "back": "Back",
     "seeAll": "See all",
     "addToLibrary": "Add to library",
-    "share": "Share"
+    "share": "Share",
+    "starsLabel": "{count, plural, one {# star} other {# stars}}",
+    "starsValue": "{value} out of 5 stars"
   },
   "filters": {
     "type": "Type",

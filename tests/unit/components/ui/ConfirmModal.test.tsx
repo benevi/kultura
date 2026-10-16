@@ -67,4 +67,20 @@ describe('ConfirmModal', () => {
     render(<ConfirmModal {...defaultProps} isDestructive />)
     expect(screen.getByText('Confirm').closest('button')).toHaveClass('bg-accent-danger')
   })
+
+  it('Escape llama a onCancel', () => {
+    const onCancel = vi.fn()
+    render(<ConfirmModal {...defaultProps} onCancel={onCancel} />)
+    fireEvent.keyDown(document, { key: 'Escape' })
+    expect(onCancel).toHaveBeenCalledTimes(1)
+  })
+
+  it('Escape no cierra mientras loading ni cuando está cerrado', () => {
+    const onCancel = vi.fn()
+    const { rerender } = render(<ConfirmModal {...defaultProps} onCancel={onCancel} loading />)
+    fireEvent.keyDown(document, { key: 'Escape' })
+    rerender(<ConfirmModal {...defaultProps} onCancel={onCancel} isOpen={false} />)
+    fireEvent.keyDown(document, { key: 'Escape' })
+    expect(onCancel).not.toHaveBeenCalled()
+  })
 })
