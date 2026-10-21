@@ -788,5 +788,29 @@
     "body": "Puedes mirarlo todo, pero aquí no se guarda nada.",
     "cta": "Crear mi cuenta",
     "readOnly": "Es una demo: esto no se guarda. Crea tu cuenta para usarlo de verdad."
+  },
+  "collection": {
+    "visibility": "Visibilidad de la lista",
+    "private": "Privada",
+    "public": "Pública",
+    "share": "Compartir",
+    "shareCollection": "Compartir mi colección",
+    "publicHint": "Cualquiera con el enlace puede verla, aunque no tenga cuenta.",
+    "privateHint": "Solo la ves tú y los miembros de la lista.",
+    "visibilityError": "No se pudo cambiar la visibilidad",
+    "linkCopied": "Enlace copiado",
+    "linkCopyError": "No se pudo copiar el enlace",
+    "heading": "La colección de {username}",
+    "metaTitle": "La colección de {username} · KULTURA",
+    "metaDescription": "Las listas de {username} en KULTURA: películas, series, anime, libros, cómics, manga y videojuegos.",
+    "listMetaDescription": "Una lista de {username} en KULTURA.",
+    "items": "{count, plural, one {# título} other {# títulos}}",
+    "viewList": "Ver lista",
+    "backToCollection": "Ver toda la colección",
+    "ctaTitle": "¿Y la tuya?",
+    "ctaText": "Guarda todo lo que ves, lees y juegas en un solo sitio, y compártelo con un enlace.",
+    "ctaButton": "Crea tu colección",
+    "empty": "{username} aún no ha compartido ninguna lista",
+    "emptyHint": "Cuando publique alguna, aparecerá aquí."
   }
 }
