@@ -7,6 +7,42 @@ import { ImmersiveHero } from "@/components/landing/ImmersiveHero";
 import { IMMERSIVE_FORMATS, type ImmersiveCopy } from "@/lib/landing/immersive";
 import { ImmersiveHeroSlot } from "@/components/landing/ShowcaseSlots";
 import { env } from "@/lib/env";
+import { siteUrl } from "@/lib/site-url";
+import type { Metadata } from "next";
+
+const SEO = {
+  es: {
+    title: "KULTURA — Registra películas, series, anime, manga, juegos y libros",
+    description:
+      "Tu watchlist de películas, series, anime, manga, videojuegos, libros y cómics en un solo sitio. Puntúa, comparte listas con amigos y recibe recomendaciones con IA. Gratis.",
+  },
+  en: {
+    title: "KULTURA — Track movies, TV, anime, manga, games and books",
+    description:
+      "One watchlist for movies, TV, anime, manga, video games, books and comics. Rate, share lists with friends and get AI recommendations. Free.",
+  },
+} as const;
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ locale: string }>;
+}): Promise<Metadata> {
+  const { locale } = await params;
+  const l = locale === "en" ? "en" : "es";
+  const { title, description } = SEO[l];
+  const base = siteUrl();
+  return {
+    title: { absolute: title },
+    description,
+    alternates: {
+      canonical: `${base}/${l}`,
+      languages: { es: `${base}/es`, en: `${base}/en`, "x-default": `${base}/es` },
+    },
+    openGraph: { title, description, locale: l === "en" ? "en_US" : "es_ES" },
+    twitter: { title, description },
+  };
+}
 
 export default async function HomePage() {
   const t = await getTranslations("landing");
@@ -59,6 +95,21 @@ export default async function HomePage() {
         </section>
       </main>
       <Footer />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify({
+            "@context": "https://schema.org",
+            "@type": "WebApplication",
+            name: "KULTURA",
+            url: `${siteUrl()}/${locale}`,
+            applicationCategory: "EntertainmentApplication",
+            operatingSystem: "Web",
+            inLanguage: locale,
+            offers: { "@type": "Offer", price: "0", priceCurrency: "EUR" },
+          }).replace(/</g, "\\u003c"),
+        }}
+      />
     </div>
   );
 }
