@@ -15,6 +15,8 @@ import { ProfileStats } from '@/components/profile/ProfileStats'
 import { ProfileGenres } from '@/components/profile/ProfileGenres'
 import { FriendshipButton } from '@/components/social/FriendshipButton'
 import { ReportButton } from '@/components/social/ReportButton'
+import { ShareLinkButton } from '@/components/social/ShareLinkButton'
+import { hasPublicLists } from '@/lib/social/public-collection'
 import { MediaRow } from '@/components/home/MediaRow'
 import { KButton } from '@/components/ui/KButton'
 import { Link } from '@/i18n/navigation'
@@ -42,6 +44,7 @@ export default async function ProfilePage({ params }: Props) {
   const { username } = await params
   const supabase = createClient()
   const t = await getTranslations('profile')
+  const tc = await getTranslations('collection')
 
   // Perfil del usuario visitado
   const { data: profileUser } = await supabase
@@ -75,11 +78,13 @@ export default async function ProfilePage({ params }: Props) {
     }
   }
 
-  const [stats, recentCompleted, recentInProgress, recentPending] = await Promise.all([
+  const [stats, recentCompleted, recentInProgress, recentPending, canShareCollection] = await Promise.all([
     getUserStats(profileUser.id),
     getRecentLibraryByStatus(profileUser.id, 'completed', 8),
     getRecentLibraryByStatus(profileUser.id, 'in_progress', 8),
     getRecentLibraryByStatus(profileUser.id, 'pending', 8),
+    // Solo el dueño ve el botón; para el resto ni se consulta.
+    isOwnProfile ? hasPublicLists(profileUser.id) : Promise.resolve(false),
   ])
 
   const completedItems = recentCompleted.map(entry => ({
@@ -135,9 +140,18 @@ export default async function ProfilePage({ params }: Props) {
           </div>
         )}
         {isOwnProfile && (
-          <KButton asChild variant="secondary" size="sm" className="flex-shrink-0">
-            <Link href="/settings">{t('editProfile')}</Link>
-          </KButton>
+          <div className="flex-shrink-0 flex items-center gap-3 flex-wrap">
+            {canShareCollection && (
+              <ShareLinkButton
+                path={`/u/${profileUser.username}`}
+                title={tc('heading', { username: profileUser.username })}
+                label={tc('shareCollection')}
+              />
+            )}
+            <KButton asChild variant="secondary" size="sm">
+              <Link href="/settings">{t('editProfile')}</Link>
+            </KButton>
+          </div>
         )}
       </div>
 

@@ -74,6 +74,8 @@ export interface DbList {
   name: string;
   media_type: "movie" | "tv" | "anime" | "book" | "comic" | "manga" | "game";
   is_collaborative: boolean;
+  /** Visible sin sesión en /u/{username}. Por defecto privada. */
+  is_public: boolean;
   created_at: string; // timestamptz
 }
 

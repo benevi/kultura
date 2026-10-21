@@ -6,6 +6,7 @@
 // POST   body { userId }  x-action: invite       → añadir miembro
 // DELETE body { itemId }                         → eliminar item
 // DELETE body { userId }  x-action: remove-member → eliminar miembro
+// PATCH  body { isPublic }                       → publicar / despublicar (solo owner)
 // ============================================================
 
 import { NextResponse } from 'next/server'
@@ -237,4 +238,59 @@ export async function DELETE(request: Request, { params }: Params): Promise<Next
   }
 
   return NextResponse.json({ ok: true })
+}
+
+/** PATCH /api/lists/[id] — publicar o despublicar la lista (solo el dueño) */
+export async function PATCH(request: Request, { params }: Params): Promise<NextResponse> {
+  const supabase = createClient()
+  const { id: listId } = await params
+
+  const { data: { user }, error: authError } = await supabase.auth.getUser()
+  if (authError || !user) {
+    return NextResponse.json({ error: 'Not authenticated' }, { status: 401 })
+  }
+
+  const rl = checkRateLimit(`${user.id}:lists`, LIMITS.lists)
+  if (!rl.allowed) {
+    return NextResponse.json(
+      { error: 'Too many requests' },
+      { status: 429, headers: { 'Retry-After': String(rl.retryAfterSeconds) } }
+    )
+  }
+
+  let body: Record<string, unknown>
+  try {
+    body = await request.json()
+  } catch {
+    return NextResponse.json({ error: 'Invalid JSON body' }, { status: 400 })
+  }
+
+  if (typeof body.isPublic !== 'boolean') {
+    return NextResponse.json({ error: 'isPublic must be a boolean' }, { status: 400 })
+  }
+
+  const { data: list } = await supabase
+    .from('lists')
+    .select('owner_id')
+    .eq('id', listId)
+    .maybeSingle()
+
+  if (!list) return NextResponse.json({ error: 'List not found' }, { status: 404 })
+  // Un miembro de una colaborativa puede editar títulos, pero publicar es del dueño
+  if (list.owner_id !== user.id) {
+    return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+  }
+
+  const { error: updateErr } = await supabase
+    .from('lists')
+    .update({ is_public: body.isPublic })
+    .eq('id', listId)
+    .eq('owner_id', user.id)
+
+  if (updateErr) {
+    log.error('PATCH visibility failed', { listId, message: updateErr.message })
+    return NextResponse.json({ error: 'Failed to update list' }, { status: 500 })
+  }
+
+  return NextResponse.json({ ok: true, isPublic: body.isPublic })
 }
