@@ -2,15 +2,13 @@
 // KULTURA — Rankings "Lo mejor de {año}" en la landing
 //
 // Entrada a /best/[formato]/[año]. Cada card enseña el CONTENIDO del ranking:
-// las tres primeras portadas reales en abanico, con la pegatina "#1" colgante
-// (badge de F0) y la nota. Sin datos, las portadas caen a gradiente del mismo
+// las tres primeras portadas reales en abanico, con la nota y el título del primero. Sin datos, las portadas caen a gradiente del mismo
 // matiz: la landing nunca depende de un proveedor. Mismos primitivos de F0
 // (card bento, gradiente + acento radial, sombra dura de pegatina).
 // ============================================================
 
 import { Link } from "@/i18n/navigation";
 import { ArtPoster } from "@/components/landing/ArtPoster";
-import { STICKER_SHADOW } from "@/components/landing/PosterTile";
 import { BEST_FORMATS, type BestFormat, type BestItem } from "@/lib/best/best-of";
 import { cn } from "@/lib/utils/index";
 
@@ -77,14 +75,6 @@ export function BestRankings({ year, heading, sub, cta, copy, tops = {} }: BestR
                       <ArtPoster item={top[n] ?? null} seed={`${format}-${n}`} sizes="140px" />
                     </div>
                   ))}
-                  {first ? (
-                    <span
-                      className="absolute z-10 rounded-full bg-accent-lime px-3 py-1 text-[13px] font-extrabold text-on-accent-lime"
-                      style={{ left: "24%", top: "-2%", rotate: "-8deg", boxShadow: STICKER_SHADOW }}
-                    >
-                      #1
-                    </span>
-                  ) : null}
                 </div>
 
                 <span className="relative z-10 max-w-[50%]">
