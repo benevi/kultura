@@ -19,8 +19,10 @@ describe("robots y sitemap", () => {
   it("solo lista páginas públicas, en los dos idiomas", () => {
     vi.stubEnv("NEXT_PUBLIC_SITE_URL", "https://x.app");
     const urls = sitemap().map((e) => e.url);
-    expect(urls).toHaveLength(8);
+    // 4 páginas fijas + 4 formatos × 3 años de rankings, por 2 idiomas.
+    expect(urls).toHaveLength((4 + 4 * 3) * 2);
     expect(urls).toContain("https://x.app/en/privacy");
+    expect(urls.filter((u) => u.includes("/best/"))).toHaveLength(24);
     expect(urls.some((u) => /library|discover|settings/.test(u))).toBe(false);
   });
 });

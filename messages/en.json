@@ -789,6 +789,28 @@
     "cta": "Create my account",
     "readOnly": "This is a demo, so nothing is saved. Create your account to use it for real."
   },
+  "best": {
+    "title": {
+      "anime": "Best anime of {year}",
+      "movie": "Best movies of {year}",
+      "tv": "Best TV series of {year}",
+      "game": "Best video games of {year}"
+    },
+    "description": {
+      "anime": "Ranking of the highest-rated anime of {year}, with genres and synopses. Save the ones you want to watch to your KULTURA list.",
+      "movie": "Ranking of the highest-rated movies of {year}, with genres and synopses. Save the ones you want to watch to your KULTURA list.",
+      "tv": "Ranking of the highest-rated TV series of {year}, with genres and synopses. Save the ones you want to watch to your KULTURA list.",
+      "game": "Ranking of the highest-rated video games of {year}, with genres and release dates. Save the ones you want to play to your KULTURA list."
+    },
+    "intro": {
+      "anime": "The best-scoring anime of {year}, sorted from highest to lowest rating.",
+      "movie": "The best-scoring movies of {year}, sorted from highest to lowest rating.",
+      "tv": "The best-scoring TV series of {year}, sorted from highest to lowest rating.",
+      "game": "The best-scoring video games of {year}, sorted from highest to lowest rating."
+    },
+    "chip": { "anime": "Anime", "movie": "Movies", "tv": "TV series", "game": "Video games" },
+    "otherLabel": "Other rankings"
+  },
   "collection": {
     "visibility": "List visibility",
     "private": "Private",
