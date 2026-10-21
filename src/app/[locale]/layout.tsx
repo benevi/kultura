@@ -34,6 +34,9 @@ export const metadata: Metadata = {
   description:
     "Descubre, registra y comparte películas, series, anime, libros, cómics, manga y videojuegos.",
   metadataBase: new URL(SITE_URL),
+  verification: {
+    google: "KE2RH_Qf5CXAs5mCSDvB_c_4T5C6B1KvHW2Rwb7q3aA",
+  },
   openGraph: {
     siteName: 'KULTURA',
     type: 'website',
