@@ -97,7 +97,7 @@ export default async function HomePage() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col">
+    <div className="min-h-screen flex flex-col isolate">
       <Header />
       <main className="flex-1">
         {/* Hero inmersivo (E-LANDING-INMERSIVA). El fallback es el MISMO hero
