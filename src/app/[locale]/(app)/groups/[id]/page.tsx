@@ -21,7 +21,7 @@ interface Props {
 }
 
 export async function generateMetadata(): Promise<Metadata> {
-  return { title: 'Grupo · KULTURA' }
+  return { title: 'Grupo' }
 }
 
 export default async function GroupPage({ params }: Props) {

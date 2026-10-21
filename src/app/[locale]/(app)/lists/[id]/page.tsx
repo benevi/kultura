@@ -17,7 +17,7 @@ interface Props {
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { id } = await params
   const detail = await getListDetail(id).catch(() => null)
-  return { title: detail ? `${detail.list.name} · KULTURA` : 'Lista · KULTURA' }
+  return { title: detail ? `${detail.list.name}` : 'Lista' }
 }
 
 export default async function ListDetailPage({ params }: Props) {

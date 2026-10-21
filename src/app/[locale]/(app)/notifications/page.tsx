@@ -16,7 +16,7 @@ const log = createLogger('notifications')
 
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getTranslations('notifications')
-  return { title: `${t('title')} · KULTURA` }
+  return { title: `${t('title')}` }
 }
 
 export default async function NotificationsPage() {
