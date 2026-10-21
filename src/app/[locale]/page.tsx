@@ -3,6 +3,8 @@ import { getLocale, getTranslations } from "next-intl/server";
 import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/layout/Footer";
 import { FeatureGrid, FEATURE_KEYS } from "@/components/landing/FeatureGrid";
+import { BestRankings } from "@/components/landing/BestRankings";
+import { BEST_FORMATS } from "@/lib/best/best-of";
 import { ImmersiveHero } from "@/components/landing/ImmersiveHero";
 import { IMMERSIVE_FORMATS, type ImmersiveCopy } from "@/lib/landing/immersive";
 import { ImmersiveHeroSlot } from "@/components/landing/ShowcaseSlots";
@@ -57,6 +59,12 @@ export default async function HomePage() {
     ])
   ) as Parameters<typeof FeatureGrid>[0]["features"];
 
+  const tb = await getTranslations("best");
+  const year = new Date().getFullYear();
+  const bestCopy = Object.fromEntries(
+    BEST_FORMATS.map((f) => [f, { label: tb(`chip.${f}`), title: tb(`title.${f}`, { year }) }])
+  ) as Parameters<typeof BestRankings>[0]["copy"];
+
   const immersive: ImmersiveCopy = {
     title: t("immersive.title"),
     titleAccent: t("immersive.titleAccent"),
@@ -93,6 +101,15 @@ export default async function HomePage() {
           </h2>
           <FeatureGrid features={features} />
         </section>
+
+        {/* Rankings públicos: entrada a /best/[formato]/[año] */}
+        <BestRankings
+          year={year}
+          heading={t("rankings.title", { year })}
+          sub={t("rankings.sub")}
+          cta={t("rankings.cta")}
+          copy={bestCopy}
+        />
       </main>
       <Footer />
       <script

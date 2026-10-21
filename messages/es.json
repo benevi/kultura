@@ -542,6 +542,7 @@
     "sent": "Reporte enviado"
   },
   "landing": {
+    "rankings": { "title": "Lo mejor de {year}", "sub": "Rankings con las mejores valoraciones de cada formato, actualizados a diario.", "cta": "Ver ranking" },
     "hero": {
       "tagline": "Descubre, registra y comparte tu cultura",
       "cta": "Empieza gratis",

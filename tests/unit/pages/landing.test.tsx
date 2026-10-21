@@ -112,6 +112,16 @@ describe("Landing page", () => {
     expect(() => render(PageResolved)).not.toThrow();
   });
 
+  // Entrada a los rankings públicos: cuatro enlaces enteros, uno por formato.
+  it("enlaza a los cuatro rankings del año actual", async () => {
+    const PageResolved = await HomePage();
+    const { container } = render(PageResolved);
+    const year = new Date().getFullYear();
+    for (const f of ["anime", "movie", "tv", "game"]) {
+      expect(container.querySelector(`a[href="/best/${f}/${year}"]`)).not.toBeNull();
+    }
+  });
+
   it("muestra el tagline del hero", async () => {
     const PageResolved = await HomePage();
     render(PageResolved);

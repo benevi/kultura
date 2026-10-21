@@ -542,6 +542,7 @@
     "sent": "Report sent"
   },
   "landing": {
+    "rankings": { "title": "The best of {year}", "sub": "Top-rated rankings for every format, updated daily.", "cta": "See ranking" },
     "hero": {
       "tagline": "Discover, track and share your culture",
       "cta": "Get started for free",
