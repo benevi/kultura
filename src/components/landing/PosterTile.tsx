@@ -22,7 +22,7 @@ export const STICKER_SHADOW = "4px 4px 0 rgba(0,0,0,0.35)";
  */
 const FALLBACK_HUES = [350, 300, 130, 55, 250, 95, 320];
 
-function fallbackGradient(seed: string): string {
+export function fallbackGradient(seed: string): string {
   let hash = 0;
   for (let i = 0; i < seed.length; i++) {
     hash = (hash * 31 + seed.charCodeAt(i)) >>> 0;

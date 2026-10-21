@@ -66,6 +66,8 @@ export function ImmersiveHero({ items, copy }: { items: ShowcaseItem[]; copy: Im
   const [mode, setMode] = React.useState<"immersive" | "static">("immersive");
   const [formatIdx, setFormatIdx] = React.useState(0);
   const [isFinal, setIsFinal] = React.useState(false);
+  // El hero ya casi no se ve: el muro de portadas pasa a ser fondo de la página.
+  const [past, setPast] = React.useState(false);
   const sectionRef = React.useRef<HTMLElement>(null);
   const canvasRef = React.useRef<HTMLCanvasElement>(null);
 
@@ -134,13 +136,30 @@ export function ImmersiveHero({ items, copy }: { items: ShowcaseItem[]; copy: Im
     const onPointer = (e: PointerEvent) => {
       scene?.setPointer((e.clientX / window.innerWidth) * 2 - 1, -((e.clientY / window.innerHeight) * 2 - 1));
     };
-    const onResize = () => scene?.resize();
+    const onResize = () => {
+      scene?.resize();
+      // `setSize` borra el lienzo: con la escena parada (hero fuera de vista) se
+      // pinta un fotograma para que el muro de fondo no se quede en blanco.
+      if (scene && !visible) {
+        scene.start();
+        window.setTimeout(() => {
+          if (!visible) scene?.stop();
+        }, 120);
+      }
+    };
 
-    const io = new IntersectionObserver(([entry]) => {
-      visible = entry.isIntersecting;
-      if (visible) scene?.start();
-      else scene?.stop();
-    });
+    const io = new IntersectionObserver(
+      ([entry]) => {
+        visible = entry.isIntersecting;
+        setPast(entry.intersectionRatio < 0.35);
+        // Hasta que acaba la intro la escena sigue pintando aunque el hero se
+        // salga de vista: el muro es ahora el fondo de TODA la página y no puede
+        // quedarse congelado a medias.
+        if (visible || !done) scene?.start();
+        else scene?.stop();
+      },
+      { threshold: [0, 0.35] }
+    );
     io.observe(section);
 
     import("@/lib/landing/immersive-scene")
@@ -191,10 +210,19 @@ export function ImmersiveHero({ items, copy }: { items: ShowcaseItem[]; copy: Im
       style={{ ["--p" as string]: 0 }}
     >
       <div className="relative h-full overflow-hidden">
+        {/* Fondo de TODA la página: el lienzo va fijo detrás del contenido (z
+            negativo, sobre el fondo del body) y el muro de portadas se queda
+            ahí al acabar la intro. */}
         <canvas
           ref={canvasRef}
           aria-hidden="true"
-          className="absolute inset-0 h-full w-full opacity-0 transition-opacity duration-1000 data-[ready=true]:opacity-100"
+          className="fixed inset-0 -z-10 h-full w-full opacity-0 transition-opacity duration-1000 data-[ready=true]:opacity-100"
+        />
+        {/* Velo: al salir el hero, el muro se atenúa para que las secciones se lean. */}
+        <div
+          aria-hidden="true"
+          className="pointer-events-none fixed inset-0 -z-10 bg-surface-base transition-opacity duration-700"
+          style={{ opacity: past ? 0.84 : 0 }}
         />
         {/* Viñeta: el texto siempre se lee, pase la portada que pase detrás. */}
         <div
@@ -281,11 +309,6 @@ export function ImmersiveHero({ items, copy }: { items: ShowcaseItem[]; copy: Im
           className="pointer-events-none absolute inset-0 opacity-[0.035] [transform:translateZ(0)]"
           style={{ backgroundImage: GRAIN }}
         />
-
-        {/* Hilo de progreso de la intro */}
-        <div aria-hidden="true" className="absolute inset-x-0 bottom-0 h-1">
-          <div className="h-full bg-accent-pink origin-left will-change-transform" style={{ transform: "scaleX(var(--p))" }} />
-        </div>
       </div>
     </section>
   );
