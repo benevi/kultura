@@ -801,7 +801,7 @@
     "linkCopied": "Link copied",
     "linkCopyError": "Couldn't copy the link",
     "heading": "{username}'s collection",
-    "metaTitle": "{username}'s collection · KULTURA",
+    "metaTitle": "{username}'s collection",
     "metaDescription": "{username}'s lists on KULTURA: movies, series, anime, books, comics, manga and video games.",
     "listMetaDescription": "A list by {username} on KULTURA.",
     "items": "{count, plural, one {# title} other {# titles}}",

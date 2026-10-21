@@ -801,7 +801,7 @@
     "linkCopied": "Enlace copiado",
     "linkCopyError": "No se pudo copiar el enlace",
     "heading": "La colección de {username}",
-    "metaTitle": "La colección de {username} · KULTURA",
+    "metaTitle": "La colección de {username}",
     "metaDescription": "Las listas de {username} en KULTURA: películas, series, anime, libros, cómics, manga y videojuegos.",
     "listMetaDescription": "Una lista de {username} en KULTURA.",
     "items": "{count, plural, one {# título} other {# títulos}}",

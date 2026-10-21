@@ -14,7 +14,7 @@ import type { Metadata } from 'next'
 import type { HeroItem } from '@/components/home/HeroSection'
 
 export async function generateMetadata(): Promise<Metadata> {
-  return { title: 'Inicio · KULTURA' }
+  return { title: 'Inicio' }
 }
 
 export default async function HomePage() {

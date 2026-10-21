@@ -30,13 +30,14 @@ interface Props {
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { username } = await params
-  const title = `${username} · KULTURA`
+  const title = username
+  const ogTitle = `${username} · KULTURA`
   const description = `Perfil de ${username} en KULTURA — biblioteca personal de películas, series, libros y más.`
   return {
     title,
     description,
-    openGraph: { title, description, type: 'profile' },
-    twitter: { card: 'summary', title, description },
+    openGraph: { title: ogTitle, description, type: 'profile' },
+    twitter: { card: 'summary', title: ogTitle, description },
   }
 }
 
