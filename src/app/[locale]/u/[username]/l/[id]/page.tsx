@@ -30,13 +30,14 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const name = decodeURIComponent(username)
   const t = await getTranslations('collection')
   const data = await getPublicList(name, id).catch(() => null)
-  const title = data ? `${data.list.name} · ${name} · KULTURA` : t('metaTitle', { username: name })
+  const title = data ? `${data.list.name} · ${name}` : t('metaTitle', { username: name })
+  const ogTitle = `${title} · KULTURA`
   const description = t('listMetaDescription', { username: name })
   return {
     title,
     description,
-    openGraph: { title, description },
-    twitter: { card: 'summary_large_image', title, description },
+    openGraph: { title: ogTitle, description },
+    twitter: { card: 'summary_large_image', title: ogTitle, description },
   }
 }
 

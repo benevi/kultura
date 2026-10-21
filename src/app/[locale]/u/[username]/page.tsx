@@ -33,12 +33,13 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const username = decodeURIComponent((await params).username)
   const t = await getTranslations('collection')
   const title = t('metaTitle', { username })
+  const ogTitle = `${title} · KULTURA`
   const description = t('metaDescription', { username })
   return {
     title,
     description,
-    openGraph: { title, description, type: 'profile' },
-    twitter: { card: 'summary_large_image', title, description },
+    openGraph: { title: ogTitle, description, type: 'profile' },
+    twitter: { card: 'summary_large_image', title: ogTitle, description },
   }
 }
 

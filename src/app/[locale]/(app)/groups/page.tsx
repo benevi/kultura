@@ -12,7 +12,7 @@ import { GroupsClient, type MyGroup } from './GroupsClient'
 import type { Metadata } from 'next'
 
 export async function generateMetadata(): Promise<Metadata> {
-  return { title: 'Grupos · KULTURA' }
+  return { title: 'Grupos' }
 }
 
 export default async function GroupsPage() {
