@@ -4,7 +4,7 @@ import { LegalDocument } from '@/components/legal/LegalDocument'
 
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getTranslations('legal.terms')
-  return { title: `${t('title')} · KULTURA` }
+  return { title: `${t('title')}` }
 }
 
 export default function TermsPage() {

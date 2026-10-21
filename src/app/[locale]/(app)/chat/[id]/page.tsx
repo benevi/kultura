@@ -13,7 +13,7 @@ interface Props {
 }
 
 export async function generateMetadata(): Promise<Metadata> {
-  return { title: 'Chat · KULTURA' }
+  return { title: 'Chat' }
 }
 
 export default async function ConversationPage({ params }: Props) {

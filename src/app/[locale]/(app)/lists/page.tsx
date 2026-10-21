@@ -10,7 +10,7 @@ import { ListsClient } from './ListsClient'
 import type { Metadata } from 'next'
 
 export async function generateMetadata(): Promise<Metadata> {
-  return { title: 'Mis listas · KULTURA' }
+  return { title: 'Mis listas' }
 }
 
 export default async function ListsPage() {

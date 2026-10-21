@@ -245,7 +245,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     const truncatedDesc = localizedDesc ? localizedDesc.slice(0, 160) : undefined;
 
     return {
-      title: `${title} · KULTURA`,
+      title,
       description: truncatedDesc,
       openGraph: {
         title: `${title} · KULTURA`,

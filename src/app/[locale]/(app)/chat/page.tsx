@@ -13,7 +13,7 @@ import type { Metadata } from 'next'
 
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getTranslations('chat')
-  return { title: `${t('title')} · KULTURA` }
+  return { title: `${t('title')}` }
 }
 
 export default async function ChatPage() {
