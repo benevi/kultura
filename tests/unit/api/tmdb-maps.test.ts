@@ -384,3 +384,10 @@ describe("filterTVByTemporadas", () => {
     expect(filterTVByTemporadas(items, "zzz")).toHaveLength(5);
   });
 });
+
+describe("buildTmdbDiscoverParams — suelo de votos propio (E-BEST-VOTOS)", () => {
+  it("minVotes sustituye al 50 general", () => {
+    expect(buildTmdbDiscoverParams("movie", { minVotes: 400 })["vote_count.gte"]).toBe("400");
+    expect(buildTmdbDiscoverParams("tv", {})["vote_count.gte"]).toBe("50");
+  });
+});
