@@ -17,6 +17,9 @@
 
 import { preload } from "react-dom";
 import { ImmersiveHero } from "@/components/landing/ImmersiveHero";
+import { FeatureGrid, type FeatureGridProps } from "@/components/landing/FeatureGrid";
+import { BestRankings, type BestRankingsProps } from "@/components/landing/BestRankings";
+import { BEST_FORMATS, getBestOf, type BestFormat, type BestItem } from "@/lib/best/best-of";
 import { IMMERSIVE_READY_AT, textureUrl, type ImmersiveCopy } from "@/lib/landing/immersive";
 import { getLandingShowcase } from "@/lib/landing/showcase";
 
@@ -32,4 +35,31 @@ export async function ImmersiveHeroSlot({
     preload(textureUrl(item.poster), { as: "image", crossOrigin: "anonymous", fetchPriority: "high" });
   }
   return <ImmersiveHero items={showcase} copy={copy} />;
+}
+
+/** Features con portadas reales; el fallback del Suspense es la misma rejilla sin ellas. */
+export async function FeatureGridSlot({
+  locale,
+  features,
+}: {
+  locale: string;
+  features: FeatureGridProps["features"];
+}) {
+  const showcase = await getLandingShowcase(locale);
+  return <FeatureGrid features={features} posters={showcase} />;
+}
+
+/** Rankings con las tres primeras portadas de cada uno. Un ranking caído = su card en gradiente. */
+export async function BestRankingsSlot({
+  locale,
+  ...props
+}: { locale: string } & Omit<BestRankingsProps, "tops">) {
+  const entries = await Promise.all(
+    BEST_FORMATS.map(async (f) => {
+      const items = await getBestOf(f, props.year, locale).catch(() => [] as BestItem[]);
+      return [f, items.slice(0, 3)] as const;
+    })
+  );
+  const tops = Object.fromEntries(entries) as Partial<Record<BestFormat, BestItem[]>>;
+  return <BestRankings {...props} tops={tops} />;
 }

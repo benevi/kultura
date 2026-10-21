@@ -52,7 +52,15 @@ const { showcase } = vi.hoisted(() => ({
 
 vi.mock("@/components/landing/ShowcaseSlots", async () => {
   const { ImmersiveHero } = await import("@/components/landing/ImmersiveHero");
+  const { FeatureGrid } = await import("@/components/landing/FeatureGrid");
+  const { BestRankings } = await import("@/components/landing/BestRankings");
   return {
+    FeatureGridSlot: ({ features }: { features: React.ComponentProps<typeof FeatureGrid>["features"] }) => (
+      <FeatureGrid features={features} posters={showcase.items} />
+    ),
+    BestRankingsSlot: ({ locale: _l, ...props }: { locale: string } & React.ComponentProps<typeof BestRankings>) => (
+      <BestRankings {...props} />
+    ),
     ImmersiveHeroSlot: ({ copy }: { copy: React.ComponentProps<typeof ImmersiveHero>["copy"] }) => (
       <ImmersiveHero items={showcase.items} copy={copy} />
     ),
@@ -110,6 +118,16 @@ describe("Landing page", () => {
   it("renderiza sin lanzar errores", async () => {
     const PageResolved = await HomePage();
     expect(() => render(PageResolved)).not.toThrow();
+  });
+
+  // Entrada a los rankings públicos: cuatro enlaces enteros, uno por formato.
+  it("enlaza a los cuatro rankings del año actual", async () => {
+    const PageResolved = await HomePage();
+    const { container } = render(PageResolved);
+    const year = new Date().getFullYear();
+    for (const f of ["anime", "movie", "tv", "game"]) {
+      expect(container.querySelector(`a[href="/best/${f}/${year}"]`)).not.toBeNull();
+    }
   });
 
   it("muestra el tagline del hero", async () => {
@@ -188,9 +206,11 @@ describe("Landing · portadas reales", () => {
     const { container } = render(PageResolved);
 
     const imgs = Array.from(container.querySelectorAll("img"));
-    // 3 del collage de escritorio + 4 de la tira de móvil. Las tarjetas de
-    // features ya NO llevan miniaturas (solo icono centrado).
-    expect(imgs.length).toBe(7);
+    // Hero: 3 del collage de escritorio + 4 de la tira de móvil.
+    expect(imgs.filter((img) => !img.closest("article")).length).toBe(7);
+    // Cada card de features lleva su composición con portadas reales:
+    // estantería 4 + recomendación 1 + amigos 2 + lista 3.
+    expect(imgs.filter((img) => img.closest("article")).length).toBe(10);
     expect(imgs.every((img) => img.getAttribute("src")?.includes("image.tmdb.org"))).toBe(true);
     // Decorativas: alt vacío para no dictar siete títulos a un lector de pantalla.
     expect(imgs.every((img) => img.getAttribute("alt") === "")).toBe(true);
@@ -212,8 +232,10 @@ describe("Landing · portadas reales", () => {
     const PageResolved = await HomePage();
     const { container } = render(PageResolved);
 
-    // 2 portadas no llenan ni el collage (3) ni la tira de móvil (4).
-    expect(container.querySelectorAll("img").length).toBe(0);
+    // 2 portadas no llenan ni el collage (3) ni la tira de móvil (4); las
+    // composiciones de las cards usan las que haya y el resto va en gradiente.
+    const imgs = Array.from(container.querySelectorAll("img"));
+    expect(imgs.filter((img) => !img.closest("article")).length).toBe(0);
     expect(screen.getByText("Biblioteca personal")).toBeInTheDocument();
   });
 });

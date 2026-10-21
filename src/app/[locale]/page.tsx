@@ -2,10 +2,17 @@ import { Suspense } from "react";
 import { getLocale, getTranslations } from "next-intl/server";
 import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/layout/Footer";
-import { FeatureGrid, FEATURE_KEYS } from "@/components/landing/FeatureGrid";
+import { FEATURE_KEYS } from "@/components/landing/FeatureGrid";
+import { BestRankings } from "@/components/landing/BestRankings";
+import { BEST_FORMATS } from "@/lib/best/best-of";
 import { ImmersiveHero } from "@/components/landing/ImmersiveHero";
 import { IMMERSIVE_FORMATS, type ImmersiveCopy } from "@/lib/landing/immersive";
-import { ImmersiveHeroSlot } from "@/components/landing/ShowcaseSlots";
+import { FeatureGrid } from "@/components/landing/FeatureGrid";
+import {
+  BestRankingsSlot,
+  FeatureGridSlot,
+  ImmersiveHeroSlot,
+} from "@/components/landing/ShowcaseSlots";
 import { env } from "@/lib/env";
 import { siteUrl } from "@/lib/site-url";
 import type { Metadata } from "next";
@@ -57,6 +64,20 @@ export default async function HomePage() {
     ])
   ) as Parameters<typeof FeatureGrid>[0]["features"];
 
+  const tb = await getTranslations("best");
+  const year = new Date().getFullYear();
+  const bestCopy = Object.fromEntries(
+    BEST_FORMATS.map((f) => [f, { label: tb(`chip.${f}`), title: tb(`title.${f}`, { year }) }])
+  ) as Parameters<typeof BestRankings>[0]["copy"];
+
+  const rankingsProps = {
+    year,
+    heading: t("rankings.title", { year }),
+    sub: t("rankings.sub"),
+    cta: t("rankings.cta"),
+    copy: bestCopy,
+  };
+
   const immersive: ImmersiveCopy = {
     title: t("immersive.title"),
     titleAccent: t("immersive.titleAccent"),
@@ -76,7 +97,7 @@ export default async function HomePage() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col">
+    <div className="min-h-screen flex flex-col isolate">
       <Header />
       <main className="flex-1">
         {/* Hero inmersivo (E-LANDING-INMERSIVA). El fallback es el MISMO hero
@@ -91,8 +112,15 @@ export default async function HomePage() {
           <h2 className="font-display text-4xl md:text-6xl font-extrabold tracking-[-0.03em] text-text-primary mb-12 max-w-[14ch]">
             {t("features.title")}
           </h2>
-          <FeatureGrid features={features} />
+          <Suspense fallback={<FeatureGrid features={features} />}>
+            <FeatureGridSlot locale={locale} features={features} />
+          </Suspense>
         </section>
+
+        {/* Rankings públicos: entrada a /best/[formato]/[año] */}
+        <Suspense fallback={<BestRankings {...rankingsProps} />}>
+          <BestRankingsSlot locale={locale} {...rankingsProps} />
+        </Suspense>
       </main>
       <Footer />
       <script

@@ -542,6 +542,7 @@
     "sent": "Reporte enviado"
   },
   "landing": {
+    "rankings": { "title": "Lo mejor de {year}", "sub": "Rankings con las mejores valoraciones de cada formato, actualizados a diario.", "cta": "Ver ranking" },
     "hero": {
       "tagline": "Descubre, registra y comparte tu cultura",
       "cta": "Empieza gratis",
@@ -788,6 +789,28 @@
     "body": "Puedes mirarlo todo, pero aquí no se guarda nada.",
     "cta": "Crear mi cuenta",
     "readOnly": "Es una demo: esto no se guarda. Crea tu cuenta para usarlo de verdad."
+  },
+  "best": {
+    "title": {
+      "anime": "Los mejores animes de {year}",
+      "movie": "Las mejores películas de {year}",
+      "tv": "Las mejores series de {year}",
+      "game": "Los mejores videojuegos de {year}"
+    },
+    "description": {
+      "anime": "Ranking de los animes mejor valorados de {year}, con géneros y sinopsis. Guarda los que quieras ver en tu lista de KULTURA.",
+      "movie": "Ranking de las películas mejor valoradas de {year}, con géneros y sinopsis. Guarda las que quieras ver en tu lista de KULTURA.",
+      "tv": "Ranking de las series mejor valoradas de {year}, con géneros y sinopsis. Guarda las que quieras ver en tu lista de KULTURA.",
+      "game": "Ranking de los videojuegos mejor valorados de {year}, con géneros y fecha. Guarda los que quieras jugar en tu lista de KULTURA."
+    },
+    "intro": {
+      "anime": "Los animes de {year} con mejor puntuación, ordenados de mayor a menor valoración.",
+      "movie": "Las películas de {year} con mejor puntuación, ordenadas de mayor a menor valoración.",
+      "tv": "Las series de {year} con mejor puntuación, ordenadas de mayor a menor valoración.",
+      "game": "Los videojuegos de {year} con mejor puntuación, ordenados de mayor a menor valoración."
+    },
+    "chip": { "anime": "Animes", "movie": "Películas", "tv": "Series", "game": "Videojuegos" },
+    "otherLabel": "Otros rankings"
   },
   "collection": {
     "visibility": "Visibilidad de la lista",
