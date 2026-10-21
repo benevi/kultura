@@ -344,3 +344,25 @@ describe("searchByType", () => {
     expect(results[0].type).toBe("comic");
   });
 });
+
+// ── E-ANIME-RESPALDO: AniList caído → buscador de anime en TMDB ──────────────
+
+describe("searchByTypePaged — respaldo de anime (E-ANIME-RESPALDO)", () => {
+  it("si AniList falla, devuelve solo animación japonesa de TMDB", async () => {
+    const { searchAnime } = await import("@/lib/api/anilist");
+    const { searchTV } = await import("@/lib/api/tmdb");
+    vi.mocked(searchAnime).mockRejectedValueOnce(new Error("AniList → 403"));
+    vi.mocked(searchTV).mockResolvedValueOnce({
+      results: [
+        { id: 5, name: "Bebop", genre_ids: [16], origin_country: ["JP"], poster_path: null, first_air_date: "1998-04-03", overview: "", vote_average: 8.8, original_name: "Bebop", backdrop_path: null },
+        { id: 6, name: "Drama US", genre_ids: [18], origin_country: ["US"], poster_path: null, first_air_date: "2020-01-01", overview: "", vote_average: 7, original_name: "Drama US", backdrop_path: null },
+      ],
+      total_pages: 1,
+      total_results: 2,
+    } as never);
+
+    const r = await searchByTypePaged("bebop", "anime", 1, "es");
+    expect(r.items.map((i) => i.id)).toEqual(["anime_tmdb-5"]);
+    expect(r.items[0].type).toBe("anime");
+  });
+});

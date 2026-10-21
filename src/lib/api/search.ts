@@ -14,6 +14,7 @@
 import type { MediaItem, MediaType } from "@/types/media";
 import { searchMovies, searchTV } from "./tmdb";
 import { searchAnime } from "./anilist";
+import { searchAnimeTmdb } from "./anime-tmdb";
 import { searchManga } from "./mangadex";
 import { searchOpenLibrary, openLibraryTotalPages } from "./openlibrary";
 import { searchGames } from "./rawg";
@@ -55,9 +56,14 @@ export async function searchByType(
         r.results.map((raw) => normalizeTV(raw as TmdbTVDetail))
       );
     case "anime":
-      return searchAnime(query).then((r) =>
-        r.media.map((raw) => normalizeAniListAnime(raw))
-      );
+      // E-ANIME-RESPALDO: si AniList cae, se busca en TMDB (animación japonesa).
+      return searchAnime(query)
+        .then((r) => r.media.map((raw) => normalizeAniListAnime(raw)))
+        .catch(async (e) => {
+          const alt = await searchAnimeTmdb(query, 1, locale).catch(() => null);
+          if (!alt) throw e;
+          return alt.items;
+        });
     case "manga":
       return searchManga(query, 0, locale).then((r) =>
         r.data.map((raw) => normalizeMangaDex(raw, locale))
@@ -140,7 +146,15 @@ export async function searchByTypePaged(
       };
     }
     case "anime": {
-      const r = await searchAnime(query, page);
+      // E-ANIME-RESPALDO: mismo respaldo que Descubrir.
+      const r = await searchAnime(query, page).catch(async (e) => {
+        const alt = await searchAnimeTmdb(query, page, locale).catch(() => null);
+        if (!alt) throw e;
+        return alt;
+      });
+      if ("items" in r) {
+        return { items: r.items, totalPages: r.totalPages, hasMore: page < r.totalPages };
+      }
       const totalPages = Math.max(r.pageInfo?.lastPage ?? 1, 1);
       return {
         items: r.media.map((raw) => normalizeAniListAnime(raw)),
