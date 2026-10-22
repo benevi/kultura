@@ -810,7 +810,11 @@
       "game": "The best-scoring video games of {year}, sorted from highest to lowest rating."
     },
     "chip": { "anime": "Anime", "movie": "Movies", "tv": "TV series", "game": "Video games" },
-    "otherLabel": "Other rankings"
+    "otherLabel": "Other rankings",
+    "share": "Share",
+    "shareLabel": "Share this ranking",
+    "copied": "Link copied!",
+    "shareText": "{title}: the ranking on KULTURA"
   },
   "collection": {
     "visibility": "List visibility",

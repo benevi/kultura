@@ -12,6 +12,7 @@ import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/layout/Footer";
 import { BestOfList } from "@/components/best/BestOfList";
 import { SignUpCta } from "@/components/collection/PublicCollection";
+import { ShareRanking } from "@/components/best/ShareRanking";
 import { Link } from "@/i18n/navigation";
 import { getBestOf, parseBestParams, bestYears, BEST_FORMATS } from "@/lib/best/best-of";
 import { siteUrl } from "@/lib/site-url";
@@ -93,6 +94,7 @@ export default async function BestOfPage({ params }: Props) {
           </nav>
         </header>
 
+        <ShareRanking path={`/${locale}/best/${parsed.format}/${parsed.year}`} title={title} />
         <BestOfList items={items} label={title} />
         <SignUpCta />
       </main>

@@ -217,6 +217,8 @@ export interface TmdbFilters {
   // R4c-2: temporadas×tv POST-filtro (no nativo en /discover/tv). No entra en el
   // builder ni gatea el fetch; se aplica sobre los MediaItem ya normalizados.
   temporadas?: string | null;
+  // E-BEST-VOTOS: suelo de votos propio (rankings públicos). Sin él, 50.
+  minVotes?: number | null;
 }
 
 /** Traduce una lista de slugs a IDs vía `table`, descartando los desconocidos. */
@@ -256,7 +258,7 @@ export function buildTmdbDiscoverParams(
   // se añadió el suelo (E94, julio 2026). El orden por popularidad sigue
   // funcionando ahí — TMDB la calcula con visitas, no con votos —, así que la
   // primera página son los estrenos esperados de verdad, no ruido.
-  if (!wantsUpcoming) params["vote_count.gte"] = "50";
+  if (!wantsUpcoming) params["vote_count.gte"] = String(filters.minVotes ?? 50);
 
   // Género (listas distintas movie/tv; OR con coma).
   const genreTable = mediaType === "movie" ? TMDB_GENRE_MOVIE : TMDB_GENRE_TV;

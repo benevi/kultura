@@ -810,7 +810,11 @@
       "game": "Los videojuegos de {year} con mejor puntuación, ordenados de mayor a menor valoración."
     },
     "chip": { "anime": "Animes", "movie": "Películas", "tv": "Series", "game": "Videojuegos" },
-    "otherLabel": "Otros rankings"
+    "otherLabel": "Otros rankings",
+    "share": "Compartir",
+    "shareLabel": "Compartir este ranking",
+    "copied": "¡Enlace copiado!",
+    "shareText": "{title}: el ranking en KULTURA"
   },
   "collection": {
     "visibility": "Visibilidad de la lista",

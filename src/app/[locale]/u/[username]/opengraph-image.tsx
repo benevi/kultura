@@ -1,6 +1,6 @@
 import { ImageResponse } from "next/og";
 import { C, loadFont } from "@/lib/og/brand";
-import { posterLoader } from "@/lib/images/poster-url";
+import { posterDataUri } from "@/lib/og/poster";
 import { getPublicCollection } from "@/lib/social/public-collection";
 
 /**
@@ -15,7 +15,6 @@ export const contentType = "image/png";
 
 const POSTER_W = 220;
 const POSTER_H = 330;
-const POSTER_TIMEOUT_MS = 2500;
 /** Gradientes de respaldo: mismo matiz en las dos paradas, la segunda más oscura. */
 const FALLBACKS = [
   "linear-gradient(155deg, #e63b7d, #6e1f42)",
@@ -29,24 +28,6 @@ const COPY = {
   es: { heading: "La colección de", lists: (n: number) => (n === 1 ? "1 lista" : `${n} listas`) },
   en: { heading: "The collection of", lists: (n: number) => (n === 1 ? "1 list" : `${n} lists`) },
 };
-
-/** Descarga una portada pequeña como data URI. `null` si tarda, falla o no es JPEG/PNG. */
-async function posterDataUri(src: string): Promise<string | null> {
-  const small = posterLoader({ src, width: 342 });
-  // El optimizador de Next es relativo: aquí no hay origen, se pide el original.
-  const url = small.startsWith("/") ? src : small;
-  try {
-    const res = await fetch(url, { signal: AbortSignal.timeout(POSTER_TIMEOUT_MS) });
-    if (!res.ok) return null;
-    const type = res.headers.get("content-type") ?? "";
-    // satori solo pinta JPEG/PNG de forma fiable.
-    if (!/image\/(jpeg|png)/.test(type)) return null;
-    const buf = Buffer.from(await res.arrayBuffer());
-    return `data:${type.split(";")[0]};base64,${buf.toString("base64")}`;
-  } catch {
-    return null;
-  }
-}
 
 export default async function Image({
   params,

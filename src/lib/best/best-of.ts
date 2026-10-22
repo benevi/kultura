@@ -73,15 +73,36 @@ export function pickBest(items: MediaItem[], size = BEST_SIZE): BestItem[] {
   return out;
 }
 
+/**
+ * Suelo de votos de los rankings de TMDB (E-BEST-VOTOS). Con el general de
+ * Descubrir (50) el "mejor valorado" lo copaban títulos casi desconocidos con
+ * pocos votos muy altos (conciertos, estrenos sin traducir). Más exigente con
+ * los años cerrados, que ya han acumulado votos. Anime (AniList) y juegos
+ * (RAWG) no lo usan.
+ */
+export function bestMinVotes(
+  format: BestFormat,
+  year: number,
+  today: Date = new Date()
+): number | undefined {
+  const current = year >= today.getFullYear();
+  if (format === "movie") return current ? 400 : 1500;
+  if (format === "tv") return current ? 200 : 500;
+  return undefined;
+}
+
 const load = unstable_cache(
   async (format: BestFormat, year: number, locale: string) => {
-    const res = await fetchDiscoverData(
-      format,
-      1,
-      { year: String(year), sort: "rating" },
-      locale
-    );
-    const items = pickBest(res.items);
+    const base = { year: String(year), sort: "rating" };
+    const minVotes = bestMinVotes(format, year);
+    let res = await fetchDiscoverData(format, 1, { ...base, minVotes }, locale);
+    let items = pickBest(res.items);
+    // Si el suelo deja la lista corta (p. ej. a principios de año), se relaja
+    // al general antes que dejar la página sin ranking.
+    if (minVotes && items.length < BEST_MIN_ITEMS) {
+      res = await fetchDiscoverData(format, 1, base, locale);
+      items = pickBest(res.items);
+    }
     // Una carga corta LANZA: `unstable_cache` no guarda rechazos, así un hipo
     // de proveedor no congela la página vacía 24 h.
     if (items.length < BEST_MIN_ITEMS) {
@@ -89,7 +110,7 @@ const load = unstable_cache(
     }
     return items;
   },
-  ["best-of-v1"],
+  ["best-of-v2"],
   { revalidate: TTL_SECONDS }
 );
 
