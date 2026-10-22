@@ -45,6 +45,13 @@ vi.mock('@/lib/social/lists', async (importOriginal) => {
   return { ...actual, canEditList: vi.fn().mockResolvedValue(true) }
 })
 
+// La fila de `media` la garantiza el servidor (SEG-2); se prueba en
+// tests/unit/media. Aquí basta con que exista.
+vi.mock('@/lib/media/upsert-from-provider', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@/lib/media/upsert-from-provider')>()),
+  upsertMediaFromProvider: vi.fn(async (id: string) => ({ ok: true, id, title: 'Fight Club', created: false })),
+}))
+
 function makeGetRequest(search = ''): Request {
   return new Request(`http://localhost/api/lists${search}`, { method: 'GET' })
 }

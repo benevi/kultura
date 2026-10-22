@@ -1,7 +1,8 @@
 // ============================================================
 // KULTURA — Route Handler: /api/library
 // Gestiona la biblioteca personal del usuario autenticado.
-// POST: upsert de una entrada (status, score, progress)
+// POST: upsert de una entrada (status, score, progress). La fila de `media`
+//       la garantiza el servidor desde el proveedor (lib/media).
 // DELETE: eliminar una entrada
 // ============================================================
 
@@ -13,6 +14,8 @@ import { invalidateMatchScoreCache } from '@/lib/recommendations/match-score'
 import type { DbUserMedia } from '@/types/supabase'
 import type { LibraryEntry, LibraryPayload, LibraryStatus } from '@/types/library'
 import { isLibraryStatus } from '@/types/library'
+import { upsertMediaFromProvider, mediaFailureStatus } from '@/lib/media/upsert-from-provider'
+import { localeFromRequest } from '@/lib/media/request-locale'
 
 /** Mapea una fila de user_media a LibraryEntry */
 function mapEntry(row: DbUserMedia): LibraryEntry {
@@ -85,31 +88,17 @@ export async function POST(request: Request): Promise<NextResponse> {
     }
   }
 
-  // 3. Si viene mediaCache, upsert en tabla media (insert if not exists)
-  if (body.mediaCache) {
-    const { error: mediaError } = await supabase.from('media').upsert(
-      {
-        id: body.mediaId,
-        external_id: body.mediaCache.externalId,
-        type: body.mediaCache.type,
-        title: body.mediaCache.title,
-        poster: body.mediaCache.poster ?? null,
-        backdrop: body.mediaCache.backdrop ?? null,
-        year: body.mediaCache.year ?? null,
-        synopsis: body.mediaCache.synopsis ?? null,
-        // Bug real detectado en producción (2026-09-12): metadata.genres nunca
-        // se cacheaba aquí, así que match-score.ts (buildTasteProfile) nunca
-        // tenía señal de género → match score siempre 0% para cualquier
-        // usuario. onConflict SIN ignoreDuplicates para que además autocure
-        // (backfill) las filas ya cacheadas antes de este fix.
-        metadata: { genres: body.mediaCache.genres ?? [] },
-      },
-      { onConflict: 'id' }
-    )
-
-    if (mediaError) {
-      return NextResponse.json({ error: 'Failed to cache media' }, { status: 500 })
-    }
+  // 3. La fila del catálogo compartido `media` (FK de user_media). La escribe
+  //    el servidor con la ficha del proveedor; `mediaCache` se ignora a
+  //    propósito (SEG-2): con él cualquiera renombraba un título para todos.
+  //    Si la fila ya existe no se reescribe; solo se completan sus géneros si
+  //    faltan, que es lo que necesita el match score.
+  const media = await upsertMediaFromProvider(body.mediaId, {
+    locale: localeFromRequest(request),
+  })
+  if (!media.ok) {
+    const failure = mediaFailureStatus(media.reason)
+    return NextResponse.json({ error: failure.error }, { status: failure.status })
   }
 
   // 4. Upsert en user_media

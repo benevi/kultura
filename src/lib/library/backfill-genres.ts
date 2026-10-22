@@ -38,6 +38,7 @@ import {
   normalizeBookOpenLibrary,
   normalizeGame,
 } from '@/lib/api/normalizer'
+import { createAdminClient } from '@/lib/supabase/admin'
 import { createLogger } from '@/lib/logger'
 
 const log = createLogger('library/backfill-genres')
@@ -135,10 +136,16 @@ export async function fetchGenresForMedia(
  * siguiente carga.
  *
  * Nunca lanza: un proveedor caído deja esa fila sin curar y el resto sigue.
+ *
+ * `_reader` es el cliente del llamador (el del usuario) y se conserva por
+ * compatibilidad de firma: la ESCRITURA va siempre con el cliente admin,
+ * porque `media` es un catálogo compartido que solo escribe el servidor
+ * (SEG-2, migración `20261023030001_media_server_only.sql`). Lo que se escribe
+ * sale del proveedor, no del usuario.
  */
 export async function backfillGenres(
   rows: MediaGenreRow[],
-  supabase: SupabaseClient,
+  _reader: SupabaseClient,
   locale?: string | null
 ): Promise<Map<string, string[]>> {
   const pending = rows
@@ -147,6 +154,8 @@ export async function backfillGenres(
 
   const resolved = new Map<string, string[]>()
   if (pending.length === 0) return resolved
+
+  const writer = createAdminClient()
 
   const results = await Promise.allSettled(
     pending.map(async (row) => {
@@ -160,7 +169,7 @@ export async function backfillGenres(
         genres,
         genresSyncedAt: new Date().toISOString(),
       }
-      const { error } = await supabase.from('media').update({ metadata }).eq('id', row.id)
+      const { error } = await writer.from('media').update({ metadata }).eq('id', row.id)
       if (error) {
         log.warn('no se pudo escribir los géneros reparados', { id: row.id, error })
         // Se devuelven igualmente: el perfil de ESTA carga ya puede usarlos.
