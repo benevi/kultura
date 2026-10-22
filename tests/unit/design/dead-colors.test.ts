@@ -38,6 +38,11 @@ beforeAll(async () => {
 }, 60_000);
 
 describe("clases de color sin regla", () => {
+  it("un border sin color usa el borde del sistema, no el gris #e5e7eb de Tailwind", () => {
+    expect(css).not.toMatch(/#e5e7eb/i);
+    expect(css).toMatch(/border-color: color-mix\(in oklch, var\(--surface-border\)/);
+  });
+
   it("toda clase border/bg/ring/outline/divide con nombre de color usada en src genera regla", () => {
     // Solo dentro de atributos className/class y de cadenas de clases: se
     // buscan tokens sueltos entre comillas, espacios o backticks.

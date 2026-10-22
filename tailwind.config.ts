@@ -93,6 +93,12 @@ const config: Config = {
         "accent-danger": token("--accent-danger-text"),
         danger: token("--accent-danger-text"),
       },
+      /* Color de un `border` sin color explícito. El de Tailwind es gris
+         claro (#e5e7eb), ajeno a la paleta oscura: cualquier borde que se
+         quedara sin clase de color (o con una que no existía) salía así. */
+      borderColor: {
+        DEFAULT: token("--surface-border"),
+      },
       fontFamily: {
         /* Design system fonts (F1 — Bricolage Grotesque + Figtree) */
         display: ["var(--font-display)", "system-ui", "sans-serif"],
