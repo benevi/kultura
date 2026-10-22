@@ -1,39 +1,28 @@
 import { render, screen } from '@testing-library/react'
 import { describe, it, expect, vi } from 'vitest'
 
-vi.mock('next-intl/server', () => ({
-  getTranslations: vi.fn(async (ns: string) => (key: string) => {
-    const maps: Record<string, Record<string, string>> = {
-      nav: {
-        search: 'Buscar',
-        notifications: 'Notificaciones',
-        profile: 'Mi perfil',
-        settings: 'Ajustes',
-      },
-      auth: { signOut: 'Cerrar sesión' },
-    }
-    return maps[ns]?.[key] ?? key
-  }),
-}))
-
 vi.mock('@/i18n/navigation', () => ({
-  Link: ({ href, children, className, 'aria-label': ariaLabel }: { href: string; children?: React.ReactNode; className?: string; 'aria-label'?: string }) => (
-    <a href={href} className={className} aria-label={ariaLabel}>{children}</a>
+  Link: ({ href, children, className, ...rest }: { href: string; children?: React.ReactNode; className?: string }) => (
+    <a href={href} className={className} {...rest}>{children}</a>
   ),
 }))
 
 vi.mock('@/components/layout/NavLinks', () => ({
-  NavLinks: () => <nav data-testid="nav-links" />,
+  NavLinks: ({ username }: { username: string }) => <nav data-testid="nav-links" data-username={username} />,
+}))
+
+vi.mock('@/components/layout/SocialMenu', () => ({
+  SocialMenu: () => <div data-testid="social-menu" />,
+}))
+
+vi.mock('@/components/layout/NotificationsBell', () => ({
+  NotificationsBell: ({ unreadCount }: { unreadCount: number }) => <div data-testid="bell" data-count={unreadCount} />,
 }))
 
 vi.mock('@/components/layout/AvatarDropdown', () => ({
   AvatarDropdown: ({ username, avatarInitials }: { username: string; avatarColor: string; avatarInitials: string }) => (
     <div data-testid="avatar-dropdown" data-username={username}>{avatarInitials}</div>
   ),
-}))
-
-vi.mock('@/components/layout/LanguageSwitcher', () => ({
-  LanguageSwitcher: () => <div data-testid="lang-switcher" />,
 }))
 
 import { AuthHeader } from '@/components/layout/AuthHeader'
@@ -45,34 +34,23 @@ const baseProfile = {
 }
 
 describe('AuthHeader', () => {
-  it('logo apunta a /home', async () => {
-    const el = await AuthHeader({ profile: baseProfile, unreadCount: 0 })
-    render(el)
+  it('logo apunta a /home y su nombre es el texto visible', () => {
+    render(<AuthHeader profile={baseProfile} unreadCount={0} />)
     const logo = screen.getByText('kultura').closest('a')
     expect(logo).toHaveAttribute('href', '/home')
+    expect(logo).not.toHaveAttribute('aria-label')
   })
 
-  it('sin notificaciones no muestra badge', async () => {
-    const el = await AuthHeader({ profile: baseProfile, unreadCount: 0 })
-    render(el)
-    expect(screen.queryByText(/^\d+$/)).toBeNull()
+  it('pasa el contador de notificaciones a la campana', () => {
+    render(<AuthHeader profile={baseProfile} unreadCount={7} />)
+    expect(screen.getByTestId('bell')).toHaveAttribute('data-count', '7')
   })
 
-  it('con 3 notificaciones muestra badge "3"', async () => {
-    const el = await AuthHeader({ profile: baseProfile, unreadCount: 3 })
-    render(el)
-    expect(screen.getByText('3')).toBeInTheDocument()
-  })
-
-  it('con 100 notificaciones muestra "99+"', async () => {
-    const el = await AuthHeader({ profile: baseProfile, unreadCount: 100 })
-    render(el)
-    expect(screen.getByText('99+')).toBeInTheDocument()
-  })
-
-  it('avatar dropdown recibe el username', async () => {
-    const el = await AuthHeader({ profile: baseProfile, unreadCount: 0 })
-    render(el)
+  it('lleva Social, campana y avatar; el idioma ya no está en la barra', () => {
+    render(<AuthHeader profile={baseProfile} unreadCount={0} />)
+    expect(screen.getByTestId('social-menu')).toBeInTheDocument()
     expect(screen.getByTestId('avatar-dropdown')).toHaveAttribute('data-username', 'testuser')
+    expect(screen.getByTestId('nav-links')).toHaveAttribute('data-username', 'testuser')
+    expect(screen.queryByRole('group')).toBeNull()
   })
 })

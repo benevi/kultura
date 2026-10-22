@@ -19,9 +19,14 @@
 // fuera y todos los campos del shape son opcionales.
 // ============================================================
 
+import type { ZodType } from "zod";
 import type { RawgGame } from "@/lib/api/rawg";
 import { resolveApiLocale } from "@/lib/api/locale";
-import { PROVIDER_CACHE } from "@/lib/api/fetch-cache";
+import { ProviderError, providerFetch } from "@/lib/api/http";
+import {
+  steamAppDetailsSchema,
+  steamStoreSearchSchema,
+} from "@/lib/api/schemas/steam";
 
 /** Locale → parámetro `l` de Steam (idioma de textos y de `supported_languages`). */
 export function steamLanguage(locale?: string | null): "spanish" | "english" {
@@ -160,9 +165,12 @@ export async function searchSteamAppId(
   url.searchParams.set("cc", steamCountry(locale));
   url.searchParams.set("l", steamLanguage(locale));
 
-  const res = await fetch(url.toString(), PROVIDER_CACHE);
-  if (!res.ok) return null;
-  const json = (await res.json()) as SteamStoreSearchResponse;
+  const json = await steamFetch<SteamStoreSearchResponse>(
+    url.toString(),
+    "/api/storesearch",
+    steamStoreSearchSchema
+  );
+  if (!json) return null;
 
   const target = normalizeGameName(name);
   for (const candidate of json.items ?? []) {
@@ -170,6 +178,39 @@ export async function searchSteamAppId(
     if (normalizeGameName(candidate.name) === target) return candidate.id;
   }
   return null;
+}
+
+/**
+ * Petición a la tienda. Un HTTP no-ok devuelve `null` (como antes: Steam no
+ * está obligado a servirnos); el resto de fallos (red, plazo, contrato en modo
+ * `enforce`) se lanza y lo recoge `getSteamInfoForGame`, que nunca lanza.
+ */
+async function steamFetch<T>(
+  url: string,
+  label: string,
+  schema: ZodType
+): Promise<T | null> {
+  try {
+    return await providerFetch<T>("steam", url, { schema, label });
+  } catch (e) {
+    if (e instanceof ProviderError && e.kind === "http") return null;
+    throw e;
+  }
+}
+
+/**
+ * Sonda barata para `/api/health?deep=1`: ficha básica de un juego fijo
+ * (Hades), sin caché. Lanza si Steam no responde.
+ */
+export async function probeSteam(): Promise<void> {
+  const url = new URL(`${STEAM_STORE_BASE}/api/appdetails`);
+  url.searchParams.set("appids", "1145360");
+  url.searchParams.set("filters", "basic");
+  await providerFetch("steam", url.toString(), {
+    schema: steamAppDetailsSchema,
+    label: "/api/appdetails probe",
+    cache: false,
+  });
 }
 
 /** Normaliza un nombre para comparar: sin acentos, sin signos, minúsculas. */
@@ -191,9 +232,11 @@ export async function getSteamAppDetails(
   url.searchParams.set("l", steamLanguage(locale));
   url.searchParams.set("cc", steamCountry(locale));
 
-  const res = await fetch(url.toString(), PROVIDER_CACHE);
-  if (!res.ok) return null;
-  const json = (await res.json()) as SteamAppDetailsResponse;
+  const json = await steamFetch<SteamAppDetailsResponse | null>(
+    url.toString(),
+    "/api/appdetails",
+    steamAppDetailsSchema
+  );
   const entry = json?.[String(appId)];
   // `success: false` es la respuesta normal para un appid que no existe o no
   // está disponible en ese país — no es un error de red.

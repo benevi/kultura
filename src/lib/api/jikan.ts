@@ -13,7 +13,9 @@
 
 // ── Internal types ────────────────────────────────────────────────────────────
 
-import { PROVIDER_CACHE } from "@/lib/api/fetch-cache";
+import type { ZodType } from "zod";
+import { providerFetch } from "@/lib/api/http";
+import { jikanDetailSchema, jikanVideosSchema } from "@/lib/api/schemas/jikan";
 
 export interface JikanAnime {
   mal_id: number;
@@ -69,57 +71,53 @@ export class JikanError extends Error {
 
 // ── Helper ────────────────────────────────────────────────────────────────────
 
-/**
- * Identificación de la app ante Jikan (recomendado por sus propios docs).
- * No resolvió el fallo de anime en producción por sí solo — confirmado por
- * logs reales de Vercel (2026-09-13): Jikan devolvió `504` (Gateway Timeout,
- * su propio servidor, no un bloqueo de Cloudflare) en `/top/anime`. Se deja
- * el header igualmente: es inocuo y sigue siendo buena práctica.
- */
-const JIKAN_HEADERS = {
-  "User-Agent": "KulturaApp/1.0 (+https://kultura.app)",
-  Accept: "application/json",
-};
-
 /** Códigos 5xx de Jikan que vale la pena reintentar una vez: fallos de SU
  * servidor (timeout/sobrecarga), no del cliente — a diferencia de 429
- * (límite de tasa: reintentar de inmediato solo lo empeora) o 4xx. */
+ * (límite de tasa: reintentar de inmediato solo lo empeora) o 4xx.
+ * (Confirmado por logs reales de Vercel, 2026-09-13: Jikan devolvió `504` en
+ * `/top/anime`.) El User-Agent identificable lo pone `providerFetch`. */
 const JIKAN_RETRYABLE_STATUS = new Set([502, 503, 504]);
-
-function sleep(ms: number): Promise<void> {
-  return new Promise((resolve) => setTimeout(resolve, ms));
-}
 
 async function jikanFetch<T>(
   path: string,
-  params: Record<string, string> = {}
+  params: Record<string, string> = {},
+  schema?: ZodType
 ): Promise<T> {
   const url = new URL(`https://api.jikan.moe/v4${path}`);
   Object.entries(params).forEach(([k, v]) => url.searchParams.set(k, v));
-
-  let lastStatus: number | undefined;
-  for (let attempt = 0; attempt < 2; attempt++) {
-    if (attempt > 0) await sleep(400);
-    const res = await fetch(url.toString(), { headers: JIKAN_HEADERS, ...PROVIDER_CACHE });
-    if (res.ok) return res.json() as Promise<T>;
-    lastStatus = res.status;
-    if (!JIKAN_RETRYABLE_STATUS.has(res.status)) break;
-  }
-  throw new JikanError(path, lastStatus!);
+  return providerFetch<T>("jikan", url.toString(), {
+    schema,
+    label: path,
+    retries: 1,
+    retryOn: JIKAN_RETRYABLE_STATUS,
+    httpError: (status) => new JikanError(path, status),
+  });
 }
 
 // ── Anime (solo lectura legacy) ──────────────────────────────────────────────
 
 export async function getAnime(id: number): Promise<{ data: JikanAnimeDetail }> {
-  return jikanFetch<{ data: JikanAnimeDetail }>(`/anime/${id}/full`);
+  return jikanFetch<{ data: JikanAnimeDetail }>(
+    `/anime/${id}/full`,
+    {},
+    jikanDetailSchema
+  );
 }
 
 export async function getAnimeVideos(id: number): Promise<JikanVideosResponse> {
-  return jikanFetch<JikanVideosResponse>(`/anime/${id}/videos`);
+  return jikanFetch<JikanVideosResponse>(
+    `/anime/${id}/videos`,
+    {},
+    jikanVideosSchema
+  );
 }
 
 // ── Manga (solo lectura legacy) ──────────────────────────────────────────────
 
 export async function getManga(id: number): Promise<{ data: JikanMangaDetail }> {
-  return jikanFetch<{ data: JikanMangaDetail }>(`/manga/${id}/full`);
+  return jikanFetch<{ data: JikanMangaDetail }>(
+    `/manga/${id}/full`,
+    {},
+    jikanDetailSchema
+  );
 }

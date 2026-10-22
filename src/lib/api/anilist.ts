@@ -17,7 +17,9 @@
 // para manga/libros.
 // ============================================================
 
-import { PROVIDER_CACHE } from "@/lib/api/fetch-cache";
+import type { ZodType } from "zod";
+import { providerFetch } from "@/lib/api/http";
+import { anilistMediaSchema, anilistPageSchema } from "@/lib/api/schemas/anilist";
 
 const ANILIST_ENDPOINT = "https://graphql.anilist.co";
 
@@ -76,51 +78,42 @@ export class AniListError extends Error {
  * lo empeora — mismo criterio que `JIKAN_RETRYABLE_STATUS` en jikan.ts). */
 const ANILIST_RETRYABLE_STATUS = new Set([500, 502, 503, 504]);
 
-function sleep(ms: number): Promise<void> {
-  return new Promise((resolve) => setTimeout(resolve, ms));
-}
-
 interface GraphQLResponse<T> {
   data?: T;
   errors?: { message: string; status?: number }[];
 }
 
+/**
+ * Error a nivel de query (GraphQL), no de transporte: llega con HTTP 200 y no
+ * es transitorio, así que no se reintenta (p. ej. variable inválida, id
+ * inexistente → 404 real). Se lanza dentro de `providerFetch`, así que esa
+ * respuesta tampoco se guarda en caché.
+ */
+function checkGraphQLErrors(json: unknown): void {
+  const errors = (json as GraphQLResponse<unknown> | null)?.errors;
+  if (Array.isArray(errors) && errors.length > 0) {
+    throw new AniListError(errors[0]?.message ?? "error", errors[0]?.status ?? 200);
+  }
+}
+
 async function anilistFetch<T>(
   query: string,
-  variables: Record<string, unknown>
+  variables: Record<string, unknown>,
+  schema?: ZodType
 ): Promise<T> {
-  let lastStatus: number | undefined;
-
-  for (let attempt = 0; attempt < 2; attempt++) {
-    if (attempt > 0) await sleep(400);
-
-    const res = await fetch(ANILIST_ENDPOINT, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Accept: "application/json",
-        "User-Agent": "KulturaApp/1.0 (+https://kultura.app)",
-      },
-      body: JSON.stringify({ query, variables }),
-      // POST de GraphQL: se cachea por cuerpo (consulta + variables).
-      ...PROVIDER_CACHE,
-    });
-
-    if (res.ok) {
-      const json = (await res.json()) as GraphQLResponse<T>;
-      if (json.errors?.length) {
-        // Error a nivel de query (GraphQL), no de transporte: no es transitorio,
-        // no se reintenta (p.ej. variable inválida, id inexistente → 404 real).
-        throw new AniListError(json.errors[0].message, json.errors[0].status ?? res.status);
-      }
-      return json.data as T;
-    }
-
-    lastStatus = res.status;
-    if (!ANILIST_RETRYABLE_STATUS.has(res.status)) break;
-  }
-
-  throw new AniListError("request failed", lastStatus!);
+  const json = await providerFetch<GraphQLResponse<T>>("anilist", ANILIST_ENDPOINT, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    // POST de GraphQL: se cachea por cuerpo (consulta + variables).
+    body: JSON.stringify({ query, variables }),
+    label: "graphql",
+    schema,
+    retries: 1,
+    retryOn: ANILIST_RETRYABLE_STATUS,
+    checkBody: checkGraphQLErrors,
+    httpError: (status) => new AniListError("request failed", status),
+  });
+  return json.data as T;
 }
 
 // ── Query fragments ───────────────────────────────────────────────────────────
@@ -208,11 +201,11 @@ export async function discoverAnime(
   page: number,
   params: AniListDiscoverParams
 ): Promise<AniListPage> {
-  const data = await anilistFetch<{ Page: AniListPage }>(DISCOVER_QUERY, {
-    page,
-    perPage: ANILIST_PAGE_SIZE,
-    ...params,
-  });
+  const data = await anilistFetch<{ Page: AniListPage }>(
+    DISCOVER_QUERY,
+    { page, perPage: ANILIST_PAGE_SIZE, ...params },
+    anilistPageSchema
+  );
   return data.Page;
 }
 
@@ -220,17 +213,20 @@ export async function searchAnime(
   query: string,
   page = 1
 ): Promise<AniListPage> {
-  const data = await anilistFetch<{ Page: AniListPage }>(DISCOVER_QUERY, {
-    page,
-    perPage: ANILIST_PAGE_SIZE,
-    search: query,
-    sort: ["SEARCH_MATCH"],
-  });
+  const data = await anilistFetch<{ Page: AniListPage }>(
+    DISCOVER_QUERY,
+    { page, perPage: ANILIST_PAGE_SIZE, search: query, sort: ["SEARCH_MATCH"] },
+    anilistPageSchema
+  );
   return data.Page;
 }
 
 export async function getAnime(id: number): Promise<AniListMedia> {
-  const data = await anilistFetch<{ Media: AniListMedia }>(DETAIL_QUERY, { id });
+  const data = await anilistFetch<{ Media: AniListMedia }>(
+    DETAIL_QUERY,
+    { id },
+    anilistMediaSchema
+  );
   return data.Media;
 }
 
@@ -240,6 +236,23 @@ export async function getAnime(id: number): Promise<AniListMedia> {
  * enteros planos — nunca calzan este patrón. Mismo mecanismo que
  * `isMangaDexId` (mangadex.ts) / `isOpenLibraryWorkId` (googlebooks.ts).
  */
+/**
+ * Sonda barata para `/api/health?deep=1`: un único campo de un título fijo
+ * (Cowboy Bebop, id 1), sin caché.
+ */
+export async function probeAniList(): Promise<void> {
+  await providerFetch("anilist", ANILIST_ENDPOINT, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ query: "query { Media(id: 1, type: ANIME) { id } }" }),
+    label: "graphql probe",
+    schema: anilistMediaSchema,
+    checkBody: checkGraphQLErrors,
+    httpError: (status) => new AniListError("request failed", status),
+    cache: false,
+  });
+}
+
 export function isAniListId(id: string): boolean {
   return /^al-\d+$/.test(id);
 }

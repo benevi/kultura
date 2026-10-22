@@ -72,6 +72,18 @@ describe("(app)/layout sin sesión", () => {
     expect(await redirectOf("es")).toBe("/es/login");
   });
 
+  it("conserva la query de la página de origen en el next", async () => {
+    mockHeaders.set("x-pathname", "/es/library?status=watching");
+    expect(await redirectOf("es")).toBe("/es/login?next=%2Fes%2Flibrary%3Fstatus%3Dwatching");
+  });
+
+  it("ignora variantes de ruta externa (barra invertida, URL absoluta)", async () => {
+    for (const bad of ["/\\evil.com", "https://evil.com/x", "/\t/evil.com"]) {
+      mockHeaders.set("x-pathname", bad);
+      expect(await redirectOf("es")).toBe("/es/login");
+    }
+  });
+
   it("sesión sin perfil → login con locale", async () => {
     mockGetUser.mockResolvedValue({ data: { user: { id: "u1" } } });
     expect(await redirectOf("es")).toBe("/es/login");

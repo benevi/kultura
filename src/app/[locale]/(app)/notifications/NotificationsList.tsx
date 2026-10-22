@@ -6,6 +6,7 @@ import { Link, useRouter } from '@/i18n/navigation'
 import { IconSparkles, IconLists, IconUserPlus, IconGroups, IconBell } from '@/components/icons'
 import { useToastContext } from '@/components/ui/ToastProvider'
 import type { AppNotification } from '@/lib/social/notifications'
+import { FOCUS_RING as FOCUS } from '@/components/layout/nav-shared'
 
 interface Props {
   notifications: AppNotification[]
@@ -25,7 +26,7 @@ function relativeDate(iso: string, locale: string): string {
   return rtf.format(-Math.floor(months / 12), 'year')
 }
 
-function InviteActions({ invitationId }: { invitationId: string }) {
+function InviteActions({ invitationId, groupName }: { invitationId: string; groupName?: string }) {
   const t = useTranslations('notifications')
   const router = useRouter()
   const { show } = useToastContext()
@@ -58,24 +59,38 @@ function InviteActions({ invitationId }: { invitationId: string }) {
   if (done) return null
 
   return (
-    <div className="flex gap-2 mt-2">
+    <div className="flex flex-wrap gap-2 mt-2">
+      {/* 44 px de alto (MOV-4, ACC-12) y nombre con el grupo: fuera de
+          contexto, un lector oiría solo «Aceptar». */}
       <button
+        type="button"
         onClick={() => respond('accept')}
         disabled={loading}
-        className="px-3 py-1 text-xs font-semibold bg-accent-pink text-on-accent-pink rounded-full hover:brightness-110 transition-all disabled:opacity-50"
+        aria-label={groupName ? t('acceptInvite', { group: groupName }) : undefined}
+        className={`min-h-11 px-5 text-sm font-extrabold bg-accent-pink text-on-accent-pink rounded-full hover:brightness-110 transition-all disabled:opacity-50 ${FOCUS}`}
       >
         {t('accept')}
       </button>
       <button
+        type="button"
         onClick={() => respond('reject')}
         disabled={loading}
-        className="px-3 py-1 text-xs font-semibold bg-surface2 text-muted rounded-full hover:bg-accent-danger/10 hover:text-accent-danger transition-colors disabled:opacity-50"
+        aria-label={groupName ? t('rejectInvite', { group: groupName }) : undefined}
+        className={`min-h-11 px-5 text-sm font-bold bg-surface-elevated text-text-secondary rounded-full hover:bg-accent-danger/10 hover:text-accent-danger transition-colors disabled:opacity-50 ${FOCUS}`}
       >
         {t('reject')}
       </button>
     </div>
   )
 }
+
+/**
+ * Enlaces dentro de la frase de cada aviso. Son `inline-flex` de 44×44 como
+ * mínimo (ACC-12): la línea que los contiene crece hasta 44 px, así que la
+ * zona táctil es real y no se solapa con las líneas vecinas (un relleno en
+ * línea sí lo hacía). `align-middle` mantiene el texto alineado con la frase.
+ */
+const INLINE_LINK = `inline-flex items-center justify-center min-h-11 min-w-11 align-middle font-semibold rounded-[14px] hover:text-accent-info transition-colors ${FOCUS}`
 
 /** Color del icono por tipo: acentos decorativos de la paleta F0 (tokens). */
 const TYPE_ACCENT: Record<string, { fg: string }> = {
@@ -104,13 +119,13 @@ function NotificationItem({ notif }: { notif: AppNotification }) {
       <div className="flex-1 min-w-0">
         <p className="text-sm text-text-primary">
           {fromUsername ? (
-            <Link href={`/profile/${fromUsername}`} className="font-medium hover:text-accent-info transition-colors">
+            <Link href={`/profile/${fromUsername}`} className={INLINE_LINK}>
               {fromUsername}
             </Link>
           ) : null}
           {' '}{t('recommendedYou')}{' '}
           {mediaType && mediaExternalId && mediaTitle ? (
-            <Link href={`/media/${mediaType}/${mediaExternalId}`} className="font-medium hover:text-accent-info transition-colors">
+            <Link href={`/media/${mediaType}/${mediaExternalId}`} className={INLINE_LINK}>
               {mediaTitle}
             </Link>
           ) : (mediaTitle ?? null)}
@@ -128,13 +143,13 @@ function NotificationItem({ notif }: { notif: AppNotification }) {
       <div className="flex-1 min-w-0">
         <p className="text-sm text-text-primary">
           {fromUsername ? (
-            <Link href={`/profile/${fromUsername}`} className="font-medium hover:text-accent-info transition-colors">
+            <Link href={`/profile/${fromUsername}`} className={INLINE_LINK}>
               {fromUsername}
             </Link>
           ) : null}
           {' '}{t('invitedYou')}{' '}
           {listId && listName ? (
-            <Link href={`/lists/${listId}`} className="font-medium hover:text-accent-info transition-colors">
+            <Link href={`/lists/${listId}`} className={INLINE_LINK}>
               {listName}
             </Link>
           ) : (listName ?? null)}
@@ -150,18 +165,18 @@ function NotificationItem({ notif }: { notif: AppNotification }) {
       <div className="flex-1 min-w-0">
         <p className="text-sm text-text-primary">
           {fromUsername ? (
-            <Link href={`/profile/${fromUsername}`} className="font-medium hover:text-accent-info transition-colors">
+            <Link href={`/profile/${fromUsername}`} className={INLINE_LINK}>
               {fromUsername}
             </Link>
           ) : null}
           {' '}{t('groupInvite')}{' '}
           {groupId && groupName ? (
-            <Link href={`/groups/${groupId}`} className="font-medium hover:text-accent-info transition-colors">
+            <Link href={`/groups/${groupId}`} className={INLINE_LINK}>
               {groupName}
             </Link>
           ) : (groupName ?? null)}
         </p>
-        {invitationId && !notif.readAt && <InviteActions invitationId={invitationId} />}
+        {invitationId && !notif.readAt && <InviteActions invitationId={invitationId} groupName={groupName} />}
       </div>
     )
   }
