@@ -72,7 +72,8 @@ describe('POST /api/reports', () => {
       }),
     })
     const { POST } = await import('@/app/api/reports/route')
-    const res = await POST(makeRequest({ targetType: 'user', targetId: 'user-999' }))
+    // F-11: los ids de usuario son uuid; uno con otra forma es 400 sin consultar.
+    const res = await POST(makeRequest({ targetType: 'user', targetId: '99999999-0000-4000-8000-000000000999' }))
     expect(res.status).toBe(404)
   })
 
@@ -86,17 +87,14 @@ describe('POST /api/reports', () => {
         }),
       }),
     })
-    mockFromReports.mockReturnValue({
-      insert: vi.fn().mockReturnValue({
-        select: vi.fn().mockReturnValue({
-          single: vi.fn().mockResolvedValue({ data: { id: 'report-001' }, error: null }),
-        }),
-      }),
-    })
+    // F-11: INSERT sin RETURNING (el id lo genera la ruta).
+    const insert = vi.fn().mockResolvedValue({ data: null, error: null })
+    mockFromReports.mockReturnValue({ insert })
     const { POST } = await import('@/app/api/reports/route')
     const res = await POST(makeRequest({ targetType: 'media', targetId: 'movie_550', reason: 'Spam' }))
     expect(res.status).toBe(201)
     const body = await res.json()
-    expect(body.reportId).toBe('report-001')
+    expect(body.reportId).toBe(insert.mock.calls[0][0].id)
+    expect(body.reference).toMatch(/^KR-/)
   })
 })

@@ -50,6 +50,9 @@ export async function POST(_req: NextRequest, { params }: Props): Promise<NextRe
     .from('group_members')
     .insert({ group_id: id, user_id: user.id, role: 'member' })
 
+  // F-11: la RLS rechaza la entrada (vetado por el dueño, o grupo privado):
+  // es un "no puedes", no un fallo del servidor.
+  if (error?.code === '42501') return NextResponse.json({ error: 'join_not_allowed' }, { status: 403 })
   if (error) return NextResponse.json({ error: 'Failed to join group' }, { status: 500 })
   return NextResponse.json({ joined: true }, { status: 201 })
 }

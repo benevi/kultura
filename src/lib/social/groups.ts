@@ -212,6 +212,46 @@ export async function isGroupOwner(groupId: string, userId: string): Promise<boo
   return (await getMemberRole(groupId, userId)) === 'owner'
 }
 
+// ── Crear ───────────────────────────────────────────────────────────────────
+
+export interface NewGroupInput {
+  owner_id: string
+  name: string
+  description: string | null
+  cover_color: string
+  is_public: boolean
+  icon?: string
+}
+
+/**
+ * Crea un grupo y devuelve su fila.
+ *
+ * NO usa `.insert().select()`: un INSERT … RETURNING exige que la fila nueva
+ * pase la RLS de SELECT de `groups` (`is_public OR is_group_member(...)`), y
+ * el dueño entra en `group_members` por el disparador `on_group_created`, que
+ * se ejecuta después de esa comprobación. Con RETURNING, un grupo PRIVADO
+ * fallaba siempre con 42501. Se genera el id aquí, se inserta sin RETURNING y
+ * se lee después (ya como miembro).
+ */
+export async function createGroupRow(
+  input: NewGroupInput
+): Promise<{ group: DbGroup | null; error: { code?: string; message: string } | null }> {
+  const supabase = createClient()
+  const id = crypto.randomUUID()
+
+  const { error } = await supabase.from('groups').insert({ id, ...input })
+  if (error) return { group: null, error }
+
+  const { data } = await supabase.from('groups').select('*').eq('id', id).maybeSingle()
+  if (data) return { group: data as DbGroup, error: null }
+
+  // Insertado pero no legible (no debería pasar): se devuelve lo que se mandó.
+  return {
+    group: { ...input, id, icon: input.icon ?? null, created_at: new Date().toISOString() } as DbGroup,
+    error: null,
+  }
+}
+
 // ── Discover ────────────────────────────────────────────────────────────────
 
 /** Fila de groups con join anidado a group_members (solo user_id). */

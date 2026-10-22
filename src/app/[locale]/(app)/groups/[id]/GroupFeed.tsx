@@ -4,6 +4,8 @@ import { useState, useEffect } from 'react'
 import { useLocale, useTranslations } from 'next-intl'
 import { Avatar } from '@/components/ui/Avatar'
 import { KButton } from '@/components/ui/KButton'
+import { InlineConfirm, ReportButton, useRestoreFocus } from '@/components/social/ReportButton'
+import { deleteGroupPost } from '@/lib/social/actions'
 import { createClient } from '@/lib/supabase/client'
 import { F0 } from '@/lib/design/f0-tokens'
 
@@ -18,6 +20,101 @@ interface Post {
 interface Props {
   groupId: string
   currentUserId: string
+  /** F-11: el dueño puede borrar posts ajenos (con MODERATION_V2). */
+  isOwner?: boolean
+  /** F-11 (MODERATION_V2): denunciar posts y moderación del dueño. */
+  moderation?: boolean
+}
+
+/** Papelera rellena (borrar un post). */
+function TrashIcon({ className }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" className={className}>
+      <rect x="3" y="4.5" width="18" height="3" rx="1.5" />
+      <rect x="9" y="2" width="6" height="3" rx="1.5" />
+      <path d="M5.5 9h13l-1.1 11.1A2 2 0 0 1 15.4 22H8.6a2 2 0 0 1-2-1.9z" />
+    </svg>
+  )
+}
+
+/**
+ * Acciones de un post: el autor lo borra (ya lo permitía la base); con
+ * MODERATION_V2, el resto lo denuncia y el dueño del grupo lo borra.
+ */
+function PostActions({
+  groupId,
+  post,
+  isMine,
+  isOwner,
+  moderation,
+  onDeleted,
+}: {
+  groupId: string
+  post: Post
+  isMine: boolean
+  isOwner: boolean
+  moderation: boolean
+  onDeleted: (id: string) => void
+}) {
+  const t = useTranslations('moderation')
+  const [confirming, setConfirming] = useState(false)
+  const [busy, setBusy] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const { ref: triggerRef, restore } = useRestoreFocus()
+
+  const canDelete = isMine || (moderation && isOwner)
+  const author = post.users?.username ?? ''
+
+  async function handleDelete() {
+    setBusy(true)
+    setError(null)
+    try {
+      await deleteGroupPost(groupId, post.id)
+      onDeleted(post.id)
+    } catch {
+      setError(t('deletePostError'))
+      setBusy(false)
+    }
+  }
+
+  if (confirming) {
+    return (
+      <InlineConfirm
+        className="mt-2"
+        title={isMine ? t('deletePostConfirmTitle') : t('deleteOthersPostConfirmTitle', { username: author })}
+        body={isMine ? t('deletePostConfirmBody') : t('deleteOthersPostConfirmBody')}
+        confirmLabel={t('delete')}
+        cancelLabel={t('cancel')}
+        loading={busy}
+        error={error}
+        onConfirm={handleDelete}
+        onCancel={() => {
+          setConfirming(false)
+          setError(null)
+          restore()
+        }}
+      />
+    )
+  }
+
+  return (
+    <div className="flex items-start gap-0.5 flex-shrink-0 -mr-2 -mt-2">
+      {moderation && !isMine && (
+        <ReportButton variant="icon" targetType="group_post" targetId={post.id} contextLabel={author} />
+      )}
+      {canDelete && (
+        <button
+          ref={triggerRef}
+          type="button"
+          aria-label={isMine ? t('deletePost') : t('deleteOthersPost', { username: author })}
+          onClick={() => setConfirming(true)}
+          className="inline-flex items-center justify-center w-11 h-11 rounded-full text-text-tertiary hover:text-accent-danger hover:bg-surface-elevated transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-pink"
+        >
+          <TrashIcon className="w-4 h-4" />
+        </button>
+      )}
+    </div>
+  )
 }
 
 function relativeDate(iso: string, locale: string): string {
@@ -30,7 +127,7 @@ function relativeDate(iso: string, locale: string): string {
   return rtf.format(-Math.floor(hours / 24), 'day')
 }
 
-export function GroupFeed({ groupId, currentUserId }: Props) {
+export function GroupFeed({ groupId, currentUserId, isOwner = false, moderation = false }: Props) {
   const locale = useLocale()
   const t = useTranslations('groups')
   const [posts, setPosts] = useState<Post[]>([])
@@ -95,13 +192,14 @@ export function GroupFeed({ groupId, currentUserId }: Props) {
           value={text}
           onChange={e => setText(e.target.value)}
           placeholder={t('postPlaceholder')}
+          aria-label={t('postPlaceholder')}
           rows={3}
           maxLength={1000}
           className="w-full rounded-bento border-2 px-3 py-2.5 text-sm placeholder:opacity-60 resize-none focus:outline-none focus:ring-2 focus-visible:ring-accent-pink"
           style={{ background: F0.surface2, borderColor: F0.stroke, color: F0.text }}
         />
         {postError && (
-          <p className="text-xs" style={{ color: F0.orange }}>{postError}</p>
+          <p role="alert" className="text-xs" style={{ color: F0.orange }}>{postError}</p>
         )}
         <div className="flex justify-end">
           <KButton
@@ -131,7 +229,7 @@ export function GroupFeed({ groupId, currentUserId }: Props) {
           {posts.map(post => (
             <div
               key={post.id}
-              className="rounded-bento border p-4 flex gap-3"
+              className="rounded-bento border p-4 flex flex-wrap gap-3"
               style={{ background: F0.surface, borderColor: F0.stroke }}
             >
               {post.users && (
@@ -144,6 +242,14 @@ export function GroupFeed({ groupId, currentUserId }: Props) {
                 </div>
                 <p className="text-sm leading-relaxed whitespace-pre-wrap" style={{ color: F0.text }}>{post.content}</p>
               </div>
+              <PostActions
+                groupId={groupId}
+                post={post}
+                isMine={post.user_id === currentUserId}
+                isOwner={isOwner}
+                moderation={moderation}
+                onDeleted={(id) => setPosts(prev => prev.filter(p => p.id !== id))}
+              />
             </div>
           ))}
         </div>

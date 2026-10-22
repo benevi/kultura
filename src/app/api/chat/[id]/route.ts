@@ -7,6 +7,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { checkRateLimit, LIMITS } from '@/lib/rate-limit'
+import { isModerationV2, isRlsDenied } from '@/lib/social/friends'
 
 interface RouteParams {
   params: Promise<{ id: string }>
@@ -93,7 +94,42 @@ export async function POST(req: NextRequest, { params }: RouteParams): Promise<N
     .select('id, content, sender_id, created_at')
     .single()
 
+  // F-11: la política de messages exige amistad vigente y ningún bloqueo con
+  // el resto de miembros. Un rechazo de RLS es "ya no podéis escribiros", no
+  // un fallo del servidor.
+  if (isRlsDenied(error)) return NextResponse.json({ error: 'cannot_message' }, { status: 403 })
   if (error) return NextResponse.json({ error: 'Failed to send' }, { status: 500 })
 
   return NextResponse.json({ message: msg }, { status: 201 })
+}
+
+/** DELETE /api/chat/[id] — salir de la conversación (F-11, con MODERATION_V2). */
+export async function DELETE(_req: NextRequest, { params }: RouteParams): Promise<NextResponse> {
+  const { id } = await params
+  const supabase = createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return NextResponse.json({ error: 'Not authenticated' }, { status: 401 })
+  if (!isModerationV2()) return NextResponse.json({ error: 'moderation_disabled' }, { status: 404 })
+
+  const rl = checkRateLimit(`chat_leave:${user.id}`, LIMITS.chat_create)
+  if (!rl.allowed) {
+    return NextResponse.json(
+      { error: 'Too many requests' },
+      { status: 429, headers: { 'Retry-After': String(rl.retryAfterSeconds) } }
+    )
+  }
+
+  // DELETE … RETURNING: si la política aún no existe (sin migración) o no es
+  // miembro, no se borra nada y se sabe por el array vacío.
+  const { data, error } = await supabase
+    .from('conversation_members')
+    .delete()
+    .eq('conversation_id', id)
+    .eq('user_id', user.id)
+    .select('conversation_id')
+
+  if (error) return NextResponse.json({ error: 'leave_failed' }, { status: 500 })
+  if (!data || data.length === 0) return NextResponse.json({ error: 'Not a member' }, { status: 403 })
+
+  return NextResponse.json({ ok: true })
 }
