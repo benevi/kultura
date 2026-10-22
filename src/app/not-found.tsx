@@ -1,19 +1,7 @@
-import { Bricolage_Grotesque, Figtree } from 'next/font/google'
+import { bricolageGrotesque, figtree } from '@/app/fonts'
 import { NotFoundContent } from '@/components/ui/NotFoundContent'
 
-const bricolageGrotesque = Bricolage_Grotesque({
-  subsets: ['latin'],
-  weight: ['500', '600', '700', '800'],
-  variable: '--font-display',
-  display: 'swap',
-})
 
-const figtree = Figtree({
-  subsets: ['latin'],
-  weight: ['400', '500', '600', '700', '800'],
-  variable: '--font-body',
-  display: 'swap',
-})
 
 export default function RootNotFound() {
   return (

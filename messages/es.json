@@ -320,7 +320,16 @@
     "needMoreItemsHint": "Cuanto más añadas a tu biblioteca, mejores serán tus recomendaciones.",
     "exploreContent": "Explorar contenido",
     "tryAgainLater": "El servicio no está disponible en este momento.",
-    "viewAll": "Ver todo"
+    "viewAll": "Ver todo",
+    "askTitle": "Recomendaciones a tu medida",
+    "askHint": "Elegimos un título de cada formato según lo que has puntuado y completado. Se renuevan cada día.",
+    "askButton": "Recomiéndame",
+    "askPrivacy": "Al pulsar, enviamos a Anthropic (Claude) los títulos y notas de tu biblioteca para elegir y explicar cada recomendación.",
+    "privacyLink": "Más información",
+    "matchBadge": "SEGÚN TU BIBLIOTECA",
+    "dailyNote": "Son tus recomendaciones de hoy. Mañana tendrás otras nuevas.",
+    "cappedNote": "Hoy se han agotado las recomendaciones con IA, así que te enseñamos las que mejor encajan con tu biblioteca. Mañana vuelven las explicaciones.",
+    "whyRecommendedText": "Coincide con géneros que ya te gustan — {genres} — según lo que tienes en tu biblioteca."
   },
   "popularInCircle": {
     "title": "Popular en tu círculo",
