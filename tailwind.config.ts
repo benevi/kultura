@@ -110,9 +110,9 @@ const config: Config = {
         /* La tarjeta de auth del canvas usa 32px literal, y es de los radios
            del set cerrado de DISENO.md. Aparece 4 veces en las 17 pantallas. */
         "bento-xl": "32px",
-        /* Radios de los artboards que faltaban (DISENO.md: "el canvas manda
-           sobre el set cerrado"). Nombre = valor, para que no haya que
-           traducir "panel" o "tile" a píxeles al leer un artboard. */
+        /* Radios de los artboards que faltaban; están en el set de radios de
+           DISENO.md ("Nunca, bajo ninguna circunstancia"). Nombre = valor,
+           para que no haya que traducir "panel" o "tile" a píxeles. */
         "18": "18px",
         "20": "20px",
         "24": "24px",

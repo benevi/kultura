@@ -16,44 +16,144 @@ mismos gradientes, mismos pesos), no con valores nuevos.
 
 ## Tokens (OKLCH, literales, no aproximar a hex)
 
+Los tokens viven en `src/app/globals.css` (`:root`) con estos nombres. Son los
+que hay que usar en código; en Tailwind cada uno es una clase
+(`bg-surface-default`, `text-accent-pink`…).
+
 ```css
---bg: oklch(16% 0.015 280);
---surface: oklch(21% 0.02 280);
---surface-2: oklch(26% 0.025 280);
---stroke: oklch(32% 0.025 280);
---text: oklch(97% 0.004 280);
---muted: oklch(68% 0.02 280);
---pink: oklch(68% 0.24 350);
---lime: oklch(83% 0.24 130);
---orange: oklch(72% 0.19 55);
---purple: oklch(62% 0.19 300);
---blue: oklch(68% 0.16 250);
---yellow: oklch(85% 0.17 95);
+/* Superficies y texto */
+--surface-base: oklch(16% 0.015 280);
+--surface-default: oklch(21% 0.02 280);
+--surface-elevated: oklch(26% 0.025 280);
+--surface-border: oklch(32% 0.025 280);
+--text-primary: oklch(97% 0.004 280);
+--text-secondary: oklch(76% 0.02 280);
+--text-tertiary: oklch(68% 0.02 280);
+
+/* Acentos decorativos */
+--accent-pink: oklch(68% 0.24 350);
+--accent-lime: oklch(83% 0.24 130);
+--accent-orange: oklch(72% 0.19 55);
+--accent-purple: oklch(62% 0.19 300);
+--accent-blue: oklch(68% 0.16 250);
+--accent-yellow: oklch(85% 0.17 95);
+
+/* Acentos con rol (reutilizan los matices de arriba) */
+--accent-positive: oklch(83% 0.24 130);
+--accent-highlight: oklch(85% 0.17 95);
+--accent-info: oklch(68% 0.16 250);
+--accent-danger: oklch(60% 0.21 25);
+
+/* Rojo accesible, campos y foco (ver "Formularios y foco") */
+--accent-danger-text: oklch(70% 0.17 25);
+--accent-danger-solid: oklch(55% 0.21 25);
+--field-border: oklch(55% 0.02 280);
+--focus-ring: var(--accent-pink);
+
+/* Texto sobre acentos ("on-color": oscuro del mismo matiz, no negro puro) */
+--on-accent-pink: oklch(15% 0.02 350);
+--on-accent-lime: oklch(18% 0.02 130);
+--on-accent-orange: oklch(16% 0.03 55);
+--on-accent-purple: oklch(15% 0.02 300);
+--on-accent-blue: oklch(14% 0.03 250);
+--on-accent-yellow: oklch(18% 0.03 95);
+--on-accent-positive: oklch(18% 0.02 130);
+--on-accent-danger: oklch(97% 0.01 25);
+
+/* Alias con los nombres del canvas F0: existen para que copiar del canvas
+   funcione, pero en código nuevo se usan los nombres de arriba. */
+--bg: var(--surface-base);
+--surface: var(--surface-default);
+--surface-2: var(--surface-elevated);
+--stroke: var(--surface-border);
+--text: var(--text-primary);
+--muted: var(--text-tertiary);
+--pink: var(--accent-pink);
+--lime: var(--accent-lime);
+--orange: var(--accent-orange);
+--purple: var(--accent-purple);
+--blue: var(--accent-blue);
+--yellow: var(--accent-yellow);
 ```
 
-Colores "on-color" (texto sobre fondo sólido vivo, no blanco/negro puro):
-`oklch(15% 0.02 350)` sobre pink, `oklch(18% 0.02 130)` sobre lime,
-`oklch(15% 0.02 300)` sobre purple.
+`tests/unit/design/diseno-doc.test.ts` comprueba que este bloque y la tabla
+del final coinciden con `globals.css`, y que ningún `var(--x)` de `src`
+apunta a un token inexistente (así se rompieron los avatares de la landing:
+`var(--pink)` no existía).
+
+### Opacidad
+
+Los colores del tema admiten modificador de opacidad: `bg-surface-default/80`,
+`border-accent-danger/30`, `ring-accent-pink/40`. Tailwind los genera con
+`color-mix(in oklch, var(--token) 80%, transparent)`. Antes los colores eran
+`var(--x)` a secas y esas clases **no generaban regla** (bordes gris claro,
+anillos azules por defecto). `tests/unit/design/tailwind-alpha.test.ts` compila
+Tailwind y falla si una clase `/<alfa>` usada en `src` no genera regla.
+
+En estilos en línea se usa `src/lib/design/f0-tokens.ts` (`F0.pink`…), que
+apunta a los mismos tokens.
 
 ## Tipografía
 
-- Display / títulos: **Bricolage Grotesque** (pesos 500–800).
+- Display / títulos: **Bricolage Grotesque** (pesos 500–800; es lo único que
+  se carga, así que un título sin peso explícito se pinta a 500).
 - Cuerpo / UI: **Figtree** (pesos 400–800).
-- Google Fonts: `family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&family=Figtree:wght@400;500;600;700;800`.
+- Carga con `next/font` en `src/app/[locale]/layout.tsx` (variables
+  `--font-display` y `--font-body`).
+
+## Formularios y foco (accesibilidad, WCAG 2.1 AA)
+
+El canvas F0 no dibuja campos con error ni foco de teclado legible, así que
+aquí se apartan de él a propósito. Valores comprobados en
+`tests/unit/design/contrast.test.ts`:
+
+- **Campo** (`KInput`, `Select`, `Input`): relleno `--surface-elevated` y
+  **borde de 1 px `--field-border`** (3,65:1 contra la tarjeta, 3,20:1 contra
+  el relleno). Sin borde el campo daba 1,14:1 y en alto contraste de Windows
+  desaparecía.
+- **Foco**: contorno (`outline`) de 2 px `--focus-ring` con 2 px de
+  separación (5,45:1 sobre la tarjeta). No el halo `pink/25 %` del canvas
+  (1,39:1). Contorno y no `box-shadow` porque la sombra se borra en
+  `forced-colors`. Los botones (`KButton`) mantienen su anillo pink de 2 px.
+- **Texto de campo**: 16 px en móvil (`text-base`) y 15 px desde `md`. Con
+  menos de 16 px, Safari de iOS hace zoom al enfocar.
+- **Texto rojo**: siempre `--accent-danger-text` (6,74 / 6,16 / 5,41:1 sobre
+  fondo / tarjeta / campo). `text-accent-danger` y `text-danger` ya apuntan a
+  él desde `tailwind.config.ts`; el rojo base `--accent-danger` (4,05:1 sobre
+  la tarjeta) queda para fondos y bordes.
+- **Botón destructivo**: `bg-accent-danger-solid text-on-accent-danger`
+  (4,94:1).
+- **Error de campo**: borde `--accent-danger`, mensaje con `role="alert"` y
+  el campo con `aria-invalid` + `aria-describedby`.
+- **Avatares de iniciales**: paleta en OKLCH en
+  `src/lib/constants/avatarColors.ts`, cada color con su texto "on-color"
+  (≥ 4,99:1). Nada de iniciales en blanco sobre colores claros.
+- **Selección de texto**: `--accent-pink` al 30 %.
 
 ## Componentes base (no reinventar)
 
-- **Logo**: badge cuadrado `38×38` `border-radius:13px` fondo `--surface-2`,
-  con 3 rectángulos `19×13` `border-radius:6px` rotados (pink `-10deg`,
-  lime `6deg`, purple `-4deg`) posicionados en cascada dentro del badge.
-  Wordmark "kultura" en display 800, con un cuadrado pink `7×7`
-  `rotate(14deg)` colgando al final.
-- **Header** (todas las pantallas autenticadas): logo a la izquierda
-  (+ chip opcional, p. ej. racha), y a la derecha SOLO icono de búsqueda
-  (caja `44×44` `border-radius:16px` fondo `--surface-2`) + avatar
-  cuadrado `44×44` `border-radius:16px 16px 16px 4px` gradiente
-  `135deg` pink→purple con iniciales. **No hay barra de enlaces de
-  navegación en el header**, F0 no la tiene; no inventarla.
+- **Logo** (`src/components/layout/Logo.tsx`, es el que manda): icono SVG de
+  24×24 de diseño, escalado al `size` pedido: badge `--surface-elevated` con
+  radio 7,5/24 y 3 rectángulos redondeados rotados en cascada (pink `-10deg`,
+  lime `6deg`, purple `-4deg`). Wordmark "kultura" en display **700**
+  (`font-bold`), `tracking-tight`, a `0,78 × size`, que no se parte nunca
+  (`whitespace-nowrap`), con un cuadradito **lime** de `0,15 × size` rotado
+  `14deg` al final. El canvas F0 tenía el wordmark a 800 y el cuadrado pink;
+  la versión del código es la decidida (D-19) y solo cambia si Víctor lo pide.
+- **Cabecera pública** (`Header.tsx`: landing, rankings, perfil público,
+  legales): opaca `--surface-default` con borde inferior `--surface-border`,
+  56 px de alto, logo de 24 px y los botones "Iniciar sesión" (secundario) +
+  "Registrarse" (primario). En móvil los botones son compactos (36 px) y por
+  debajo de 360 px "Iniciar sesión" se acorta a "Entra" para que quepa en
+  320 px sin scroll horizontal.
+- **Header** (todas las pantallas autenticadas, `AuthHeader.tsx`): mismo
+  fondo opaco y 56 px. **Canvas F0**: logo a la izquierda (+ chip opcional,
+  p. ej. racha), y a la derecha SOLO icono de búsqueda (caja `44×44`
+  `border-radius:16px` fondo `--surface-2`) + avatar cuadrado `44×44`
+  `border-radius:16px 16px 16px 4px` gradiente `135deg` pink→purple con
+  iniciales, sin barra de enlaces. **Estado actual del código**: lleva 8
+  enlaces de navegación (`NavLinks`), campana de 32 px y no tiene caja de
+  búsqueda; es deuda conocida (frente de navegación), no un patrón a copiar.
 - **Chips**: `border-radius:999px`, `font-weight:700`, `padding` variable
   (8–20px según contexto). Activo = fondo de color vivo + texto "on-color"
   correspondiente. Inactivo = fondo `--surface-2` + texto `--text`. Chip
@@ -126,8 +226,12 @@ inventar uno.
    F0 contemple aún, y así lo anotamos para futuras iteraciones.
 
 **Nunca, bajo ninguna circunstancia:**
-- Usar un radio que no esté en {0, 4px, 6px, 8px, 13px, 14px, 16px, 20px, 32px}
-  (o 999px para píldoras). Redondear a la que esté ya en uso.
+- Usar un radio que no esté en el set. El set real (canvas + lo que ya usa el
+  código, `tailwind.config.ts`) es {0, 4px, 6px, 8px, 12px (`rounded-card`),
+  13px, 14px, 16px, 18px (`rounded-18`), 20px (`rounded-20`), 22px
+  (`rounded-bento`), 24px (`rounded-24`), 28px (`rounded-bento-lg`), 32px
+  (`rounded-bento-xl`)} y 999px para píldoras. Redondear a la que esté ya en
+  uso; un radio nuevo se añade aquí antes que en el código.
 - Crear una sombra nueva. Las válidas son: sin sombra, `10px 10px 0 var(--surface-2)`
   (hero cards), `4px 4px 0 rgba(0,0,0,.35/0.4)` (badges colgantes), soft blur como
   `0 2px 8px rgba(0,0,0,0.15)` (solo si F0 ya la usa).
@@ -207,25 +311,59 @@ Si el componente no existe:
 4. Corre tests de la pantalla + `npx tsc --noEmit`.
 5. Push cuando esté verde.
 
-## Referencia rápida: tokens OKLCH → aproximación visual (para debug)
+## Referencia: tokens OKLCH → hex sRGB
 
-Los valores OKLCH son autoridad. Esta tabla es SOLO para debug visual rápido:
+Los valores OKLCH son autoridad: en código se usa siempre el token. El hex es
+la conversión **exacta** a sRGB (la misma que pinta Chrome, recortando al gamut
+sRGB), para lo que no entiende OKLCH: `theme_color` del manifest, imágenes OG,
+correos, herramientas de contraste. No es una aproximación: si cambia un token,
+esta tabla se actualiza (`tests/unit/design/diseno-doc.test.ts` falla si no
+coincide). La conversión está en `src/lib/design/color.ts`.
 
-| Nombre | OKLCH | Hex aprox. | Uso |
-|--------|-------|-----------|-----|
-| `--bg` | oklch(16% 0.015 280) | #1a1620 | Fondo página |
-| `--surface` | oklch(21% 0.02 280) | #262230 | Card bg |
-| `--surface-2` | oklch(26% 0.025 280) | #312c3c | Chip inactivo, icono box |
-| `--stroke` | oklch(32% 0.025 280) | #464254 | Borde |
-| `--text` | oklch(97% 0.004 280) | #f8f7fa | Texto principal |
-| `--muted` | oklch(68% 0.02 280) | #a9a5b5 | Texto secundario |
-| `--pink` | oklch(68% 0.24 350) | #e63b7d | Accento primario |
-| `--lime` | oklch(83% 0.24 130) | #c4f037 | Accento complementario |
-| `--orange` | oklch(72% 0.19 55) | #e8933c | Warm accent |
-| `--purple` | oklch(62% 0.19 300) | #b83cc8 | Accent alternativo |
-| `--blue` | oklch(68% 0.16 250) | #4a7dd8 | Info/secondary |
-| `--yellow` | oklch(85% 0.17 95) | #d4e03c | Alert/warning |
+| Token | Alias F0 | OKLCH | Hex sRGB | Uso |
+|-------|----------|-------|----------|-----|
+slate #9aa5b8 ingamut True text 7.83 vs white 2.48
+red #f66d67 ingamut True text 6.77 vs white 2.88
+orange #fb7c00 ingamut False text 7.42 vs white 2.62
+amber #f9ad26 ingamut True text 9.86 vs white 1.91
+green #4fce74 ingamut True text 9.29 vs white 2.01
+teal #35c9c2 ingamut True text 9.16 vs white 2.04
+blue #3b9cf6 ingamut True text 6.93 vs white 2.87
+purple #9964e5 ingamut True text 4.99 vs white 3.95
+lime/on-lime 11.81
+destructive 4.94
+danger-text [6.74, 6.16, 5.41]
+field [3.99, 3.65, 3.2]
+pink [5.96, 5.45, 4.79]
+sel #fb40ad
+| `--surface-base` | `--bg` | `oklch(16% 0.015 280)` | `#0c0d14` | Fondo de página |
+| `--surface-default` | `--surface` | `oklch(21% 0.02 280)` | `#161721` | Tarjetas, cabeceras |
+| `--surface-elevated` | `--surface-2` | `oklch(26% 0.025 280)` | `#212330` | Chip inactivo, relleno de campo, caja de icono |
+| `--surface-border` | `--stroke` | `oklch(32% 0.025 280)` | `#303240` | Borde decorativo, botón secundario |
+| `--text-primary` | `--text` | `oklch(97% 0.004 280)` | `#f4f5f8` | Texto principal |
+| `--text-secondary` | — | `oklch(76% 0.02 280)` | `#aeb0be` | Texto secundario |
+| `--text-tertiary` | `--muted` | `oklch(68% 0.02 280)` | `#9597a5` | Texto terciario, etiquetas |
+| `--accent-pink` | `--pink` | `oklch(68% 0.24 350)` | `#fb40ad` | Acento primario, botón primario, foco |
+| `--accent-lime` | `--lime` | `oklch(83% 0.24 130)` | `#91e300` | Pegatinas, logotipo |
+| `--accent-orange` | `--orange` | `oklch(72% 0.19 55)` | `#fb7c00` | Acento cálido |
+| `--accent-purple` | `--purple` | `oklch(62% 0.19 300)` | `#9964e5` | Acento alternativo |
+| `--accent-blue` | `--blue` | `oklch(68% 0.16 250)` | `#3b9cf6` | Acento frío |
+| `--accent-yellow` | `--yellow` | `oklch(85% 0.17 95)` | `#f1cb1c` | Acento de alerta |
+| `--accent-positive` | — | `oklch(83% 0.24 130)` | `#91e300` | Estado positivo (= lime) |
+| `--accent-highlight` | — | `oklch(85% 0.17 95)` | `#f1cb1c` | Nota, destacado (= yellow) |
+| `--accent-info` | — | `oklch(68% 0.16 250)` | `#3b9cf6` | Información, enlaces (= blue) |
+| `--accent-danger` | — | `oklch(60% 0.21 25)` | `#e23439` | Rojo: fondos y bordes de error |
+| `--accent-danger-text` | — | `oklch(70% 0.17 25)` | `#f66d67` | Rojo: TODO texto de error (`text-accent-danger`) |
+| `--accent-danger-solid` | — | `oklch(55% 0.21 25)` | `#d01c29` | Rojo: botón destructivo |
+| `--field-border` | — | `oklch(55% 0.02 280)` | `#6f717d` | Borde de campo de formulario |
+| `--focus-ring` | — | `oklch(68% 0.24 350)` | `#fb40ad` | Contorno de foco (= pink) |
+| `--on-accent-pink` | — | `oklch(15% 0.02 350)` | `#12080c` | Texto sobre pink |
+| `--on-accent-lime` | — | `oklch(18% 0.02 130)` | `#0f130a` | Texto sobre lime |
+| `--on-accent-purple` | — | `oklch(15% 0.02 300)` | `#0c0912` | Texto sobre purple |
+| `--on-accent-orange` | — | `oklch(16% 0.03 55)` | `#170902` | Texto sobre orange |
+| `--on-accent-blue` | — | `oklch(14% 0.03 250)` | `#020a15` | Texto sobre blue |
+| `--on-accent-yellow` | — | `oklch(18% 0.03 95)` | `#161103` | Texto sobre yellow |
+| `--on-accent-danger` | — | `oklch(97% 0.01 25)` | `#fcf3f2` | Texto sobre rojo sólido |
 
-**Importante:** los valores hex son solo referencia visual; el código debe
-usar OKLCH. Si necesitas debug en navegador y Tailwind no genera la clase,
-usa directamente `background: oklch(...)` en `<style>`.
+`--accent-orange` cae un poco fuera de sRGB; el hex es el recortado, que es lo
+que se ve en pantallas sRGB.
