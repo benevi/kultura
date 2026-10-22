@@ -31,7 +31,7 @@
 --  10. Funciones SECURITY DEFINER con `search_path = public, pg_temp`; anon ya
 --      no ejecuta is_group_owner / is_group_member / is_conversation_member /
 --      create_conversation_with_members ni las funciones de disparador; las
---      funciones nuevas ya no nacen ejecutables por anon ni PUBLIC.
+--      funciones nuevas ya no reciben el GRANT explícito a anon.
 --  11. public.rls_audit(): informe por tabla (solo service_role) que usa la
 --      suite de integración.
 --  12. Vuelve a ejecutar el bloque demo_no_* de 20261008000001 al final.
@@ -600,10 +600,13 @@ revoke all on function public.handle_new_group() from public, anon, authenticate
 revoke all on function public.handle_new_message() from public, anon, authenticated;
 revoke all on function public.handle_invitation_accepted() from public, anon, authenticated;
 
--- Las funciones que se creen a partir de ahora no nacen ejecutables por anon
--- ni por PUBLIC: quien necesite que anon la llame, que lo conceda explícitamente
--- (como hace can_read_list).
-alter default privileges for role postgres in schema public revoke execute on functions from public;
+-- Las funciones que se creen a partir de ahora ya no reciben el GRANT explícito
+-- a anon que dejaba remote_schema.sql. OJO: el EXECUTE para PUBLIC es un
+-- privilegio por defecto GLOBAL de Postgres y no se puede quitar por esquema
+-- (quitarlo para todo el servidor afectaría a las extensiones), así que toda
+-- función SECURITY DEFINER nueva tiene que hacer su propio
+-- `revoke all on function … from public, anon` (lo exige
+-- tests/unit/rls/migrations-lint.test.ts).
 alter default privileges for role postgres in schema public revoke execute on functions from anon;
 
 
