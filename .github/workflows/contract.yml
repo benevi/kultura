@@ -1,0 +1,70 @@
+name: Contrato de proveedores
+
+# Cada semana (y a mano desde Actions → "Run workflow") llama a las APIs reales
+# con los clientes de la app en modo `PROVIDER_CONTRACT_MODE=enforce`. Si un
+# proveedor cambia la forma de sus respuestas, falla y abre (o actualiza) un
+# issue. Gasta unas pocas peticiones de cada cupo (RAWG 4, ComicVine 4).
+#
+# Secretos necesarios (Settings → Secrets and variables → Actions):
+#   TMDB_API_KEY, RAWG_API_KEY, COMICVINE_KEY, GOOGLE_BOOKS_KEY
+# Opcional: PROVIDER_CONTACT (email del User-Agent).
+
+on:
+  schedule:
+    - cron: "17 6 * * 1" # lunes, 06:17 UTC
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+
+concurrency:
+  group: provider-contract
+  cancel-in-progress: false
+
+jobs:
+  contract:
+    name: Contrato de proveedores
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    env:
+      TMDB_API_KEY: ${{ secrets.TMDB_API_KEY }}
+      RAWG_API_KEY: ${{ secrets.RAWG_API_KEY }}
+      COMICVINE_KEY: ${{ secrets.COMICVINE_KEY }}
+      GOOGLE_BOOKS_KEY: ${{ secrets.GOOGLE_BOOKS_KEY }}
+      PROVIDER_CONTACT: ${{ secrets.PROVIDER_CONTACT }}
+      PROVIDER_CONTRACT_MODE: enforce
+      # Un secreto que falta hace fallar el contrato (no lo salta).
+      CONTRACT_REQUIRE_KEYS: "1"
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Tests de contrato
+        run: npm run test:contract
+
+      - name: Abrir o actualizar issue si falla
+        if: failure()
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          title="Contrato de proveedores roto"
+          body="El contrato semanal de proveedores ha fallado: ${RUN_URL}"
+          number=$(gh issue list --state open --search "\"${title}\" in:title" --json number --jq '.[0].number')
+          if [ -n "$number" ]; then
+            gh issue comment "$number" --body "$body"
+          else
+            gh issue create --title "$title" --body "$body"
+          fi

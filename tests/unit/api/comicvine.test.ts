@@ -73,11 +73,12 @@ describe("getComic", () => {
     expect(calledUrl).toContain("api_key=test-key");
     expect(calledUrl).toContain("format=json");
 
-    // User-Agent identificable obligatorio para ComicVine.
+    // User-Agent identificable obligatorio para ComicVine: el común de
+    // `providerFetch`, con la URL real (nunca `kultura.app`, que es ajeno).
     const init = fetchMock.mock.calls[0][1] as RequestInit;
-    expect((init.headers as Record<string, string>)["User-Agent"]).toBe(
-      "KulturaApp/1.0"
-    );
+    const ua = (init.headers as Record<string, string>)["User-Agent"];
+    expect(ua).toMatch(/^KULTURA\/1\.0 \(\+https:\/\//);
+    expect(ua).not.toContain("kultura.app");
   });
 
   it("lanza si results es null", async () => {
