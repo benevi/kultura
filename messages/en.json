@@ -322,7 +322,16 @@
     "needMoreItemsHint": "The more you add to your library, the better your recommendations will be.",
     "exploreContent": "Explore content",
     "tryAgainLater": "This service is temporarily unavailable.",
-    "viewAll": "View all"
+    "viewAll": "View all",
+    "askTitle": "Recommendations made for you",
+    "askHint": "We pick one title per format based on what you've rated and completed. New picks every day.",
+    "askButton": "Recommend me something",
+    "askPrivacy": "When you tap, the titles and ratings in your library are sent to Anthropic (Claude) to choose and explain each pick.",
+    "privacyLink": "Learn more",
+    "matchBadge": "BASED ON YOUR LIBRARY",
+    "dailyNote": "These are today's picks. You'll get new ones tomorrow.",
+    "cappedNote": "AI picks have run out for today, so these are the best matches for your library. Explanations are back tomorrow.",
+    "whyRecommendedText": "It matches genres you already enjoy — {genres} — based on what is in your library."
   },
   "popularInCircle": {
     "title": "Popular in your circle",

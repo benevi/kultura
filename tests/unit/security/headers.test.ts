@@ -96,6 +96,26 @@ describe("src/lib/csp.ts — buildCsp() (C7: nonce por request)", () => {
     expect(cspA).not.toEqual(cspB);
   });
 
+  it.each(["frame-ancestors 'self'", "form-action 'self'"])(
+    "SEG-10: prod y dev incluyen %s",
+    (directive) => {
+      expect(buildCsp({ nonce: NONCE, isDev: false })).toContain(directive);
+      expect(buildCsp({ nonce: NONCE, isDev: true })).toContain(directive);
+    }
+  );
+
+  it("SEG-10: upgrade-insecure-requests solo en prod (en dev rompería http://localhost)", () => {
+    expect(buildCsp({ nonce: NONCE, isDev: false })).toContain("upgrade-insecure-requests");
+    expect(buildCsp({ nonce: NONCE, isDev: true })).not.toContain("upgrade-insecure-requests");
+  });
+
+  it("no hay directivas vacías ni separadores duplicados", () => {
+    for (const isDev of [true, false]) {
+      const parts = buildCsp({ nonce: NONCE, isDev }).split("; ");
+      expect(parts.every((d) => d.trim().length > 0)).toBe(true);
+    }
+  });
+
   it("style-src conserva 'unsafe-inline' (Radix posiciona vía style=\"\" inline, fuera de alcance de C7)", () => {
     const csp = buildCsp({ nonce: NONCE, isDev: false });
     const styleSrc = csp.split(";").find((d) => d.trim().startsWith("style-src"));

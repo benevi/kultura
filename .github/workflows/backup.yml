@@ -1,0 +1,96 @@
+name: Backup BD
+
+# Copia de seguridad semanal de la base de producción (Supabase Free no hace
+# backups). Vuelca roles, esquema y datos, los cifra con `age` para la clave
+# pública de BACKUP_AGE_RECIPIENT y sube SOLO el archivo cifrado como artefacto
+# privado durante 90 días. En un repositorio público cualquier usuario de
+# GitHub puede descargar los artefactos: por eso nunca se sube nada en claro.
+# Restauración y prueba trimestral: ver supabase/README.md.
+#
+# Secretos (Settings → Secrets and variables → Actions):
+#   SUPABASE_DB_URL       cadena "Session pooler" (IPv4) de Supabase, con la
+#                         contraseña de la base: postgresql://postgres.<ref>:<pass>@aws-0-eu-central-1.pooler.supabase.com:5432/postgres
+#   BACKUP_AGE_RECIPIENT  clave pública age (age1…). La privada NO va a GitHub.
+
+on:
+  schedule:
+    # Lunes 03:17 UTC (fuera de la hora en punto, que GitHub retrasa).
+    - cron: "17 3 * * 1"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: backup-db
+  cancel-in-progress: false
+
+jobs:
+  dump:
+    name: Volcado cifrado
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    # Los secretos se pasan SOLO a los pasos que los usan (nunca al job entero),
+    # para que no lleguen a las acciones de terceros.
+    steps:
+      - name: Comprobar secretos
+        env:
+          SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+          BACKUP_AGE_RECIPIENT: ${{ secrets.BACKUP_AGE_RECIPIENT }}
+        run: |
+          missing=0
+          [ -n "$SUPABASE_DB_URL" ] || { echo "::error::Falta el secreto SUPABASE_DB_URL"; missing=1; }
+          case "$BACKUP_AGE_RECIPIENT" in
+            age1*) ;;
+            *) echo "::error::BACKUP_AGE_RECIPIENT falta o no es una clave pública age (age1…)"; missing=1 ;;
+          esac
+          exit $missing
+
+      - name: Instalar Supabase CLI
+        uses: supabase/setup-cli@v1
+        with:
+          version: latest
+
+      - name: Instalar age
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq age
+
+      - name: Volcar roles, esquema y datos
+        env:
+          SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/dump"
+          cd "$RUNNER_TEMP/dump"
+          supabase db dump --db-url "$SUPABASE_DB_URL" --role-only -f roles.sql
+          supabase db dump --db-url "$SUPABASE_DB_URL" -f schema.sql
+          supabase db dump --db-url "$SUPABASE_DB_URL" --data-only --use-copy -f data.sql
+          # Un volcado vacío es un fallo, no un backup.
+          for f in roles.sql schema.sql data.sql; do
+            [ -s "$f" ] || { echo "::error::$f está vacío"; exit 1; }
+          done
+          sha256sum roles.sql schema.sql data.sql > SHA256SUMS
+          wc -c roles.sql schema.sql data.sql
+
+      - name: Cifrar con age y borrar lo que está en claro
+        id: cifrar
+        env:
+          BACKUP_AGE_RECIPIENT: ${{ secrets.BACKUP_AGE_RECIPIENT }}
+        run: |
+          set -euo pipefail
+          name="kultura-db-$(date -u +%Y%m%dT%H%MZ).tar.gz.age"
+          mkdir -p "$RUNNER_TEMP/out"
+          tar -C "$RUNNER_TEMP/dump" -czf - roles.sql schema.sql data.sql SHA256SUMS \
+            | age --recipient "$BACKUP_AGE_RECIPIENT" -o "$RUNNER_TEMP/out/$name"
+          rm -rf "$RUNNER_TEMP/dump"
+          ls -l "$RUNNER_TEMP/out"
+          echo "name=$name" >> "$GITHUB_OUTPUT"
+
+      - name: Subir artefacto cifrado (90 días)
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ steps.cifrar.outputs.name }}
+          path: ${{ runner.temp }}/out/*.age
+          if-no-files-found: error
+          retention-days: 90
+          compression-level: 0
