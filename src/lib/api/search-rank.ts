@@ -148,6 +148,26 @@ function popularity(item: MediaItem): number {
   return 0;
 }
 
+const SEQUEL_WORDS = new Set([
+  "season", "temporada", "part", "parte", "second", "third", "final", "segunda", "tercera",
+  "2nd", "3rd", "4th", "5th",
+]);
+
+/**
+ * ¿El título es una continuación que la consulta no pide? Palabra de
+ * temporada o de parte, o un número (romanos ya pasados a arábigos) que la
+ * consulta no lleva. Si la consulta lleva números ("portal 2"), no se
+ * penaliza nada: quien escribe el número sabe cuál quiere.
+ */
+export function isSequelFor(query: string, title: string | undefined | null): boolean {
+  const q = titleWords(query);
+  if (q.some((w) => /\d/.test(w))) return false;
+  const qs = new Set(q);
+  return titleWords(title).some(
+    (w) => !qs.has(w) && (SEQUEL_WORDS.has(w) || /^(?:[2-9]|[1-9]\d)$/.test(w))
+  );
+}
+
 /** Posiciones sobre las que se reparte el desempate por orden del proveedor. */
 const POSITION_SCALE = 20;
 
@@ -161,6 +181,9 @@ export function relevanceScore(
   const meta = item.metadata ?? {};
   // Coloreados y similares: detrás de la obra original, por encima del resto.
   if (meta.variant === true && tier > MATCH_TIER.none) tier -= 15;
+  // Secuelas y temporadas ("Frieren … Season 2", "Hades II") detrás de la
+  // primera cuando la consulta no pide ninguna: sin bajar de escalón entero.
+  if (tier > MATCH_TIER.none && isSequelFor(query, item.title)) tier -= 5;
   // Sin portada no se pinta en el catálogo (`requirePoster`): al final.
   if (!item.poster) tier -= 200;
   // Consulta en letras latinas y título solo en otra escritura ("ベルセルク 1"

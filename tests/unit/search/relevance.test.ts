@@ -181,36 +181,5 @@ describe("mergeByRelevance (type=all)", () => {
   });
 });
 
-describe("banco de relevancia (fixtures en el orden del proveedor)", () => {
-  // [consulta, lista en el orden del proveedor, título esperado arriba]
-  const BANK: [string, MediaItem[], string][] = [
-    ["dark", [it_("tv", "Dark Shadows"), it_("tv", "Dark")], "Dark"],
-    ["friends", [it_("tv", "Friends with Benefits"), it_("tv", "Friends")], "Friends"],
-    ["the bear", [it_("tv", "The Bear"), it_("tv", "The Bear Grylls Show")], "The Bear"],
-    ["avatar", [it_("movie", "Avatar: El sentido del agua"), it_("movie", "Avatar")], "Avatar"],
-    ["coco", [it_("movie", "Coco Before Chanel"), it_("movie", "Coco")], "Coco"],
-    ["el padrino", [it_("movie", "El padrino"), it_("movie", "El padrino. Parte II")], "El padrino"],
-    ["spiderman", [it_("movie", "Spider-Man: No Way Home"), it_("movie", "Spider-Man")], "Spider-Man"],
-    ["matrix", [it_("movie", "The Matrix Resurrections"), it_("movie", "Matrix")], "Matrix"],
-    ["bleach", [it_("anime", "Bleach: Thousand-Year Blood War"), it_("anime", "Bleach")], "Bleach"],
-    ["frieren", [it_("anime", "Frieren: Beyond Journey's End")], "Frieren: Beyond Journey's End"],
-    ["minecraft", [it_("game", "Minecraft Dungeons"), it_("game", "Minecraft")], "Minecraft"],
-    ["hades", [it_("game", "Hades II"), it_("game", "Hades")], "Hades"],
-    ["celeste", [it_("game", "Celeste Classic"), it_("game", "Celeste")], "Celeste"],
-    ["portal 2", [it_("game", "Portal"), it_("game", "Portal 2")], "Portal 2"],
-    ["1984", [it_("book", "1984: Edición conmemorativa"), it_("book", "1984")], "1984"],
-    ["dune", [it_("book", "Dune Messiah"), it_("book", "Dune")], "Dune"],
-    ["rayuela", [it_("book", "Rayuela")], "Rayuela"],
-    ["el hobbit", [it_("book", "The Hobbit"), it_("book", "El hobbit")], "El hobbit"],
-    ["fahrenheit 451", [it_("book", "Fahrenheit 9/11"), it_("book", "Fahrenheit 451")], "Fahrenheit 451"],
-    ["sapiens", [it_("book", "Sapiens: De animales a dioses")], "Sapiens: De animales a dioses"],
-  ];
-
-  it("top-1 correcto en ≥ 95 %", () => {
-    const misses = BANK.filter(([q, list, want]) => rankSearchResults(q, list)[0]?.title !== want).map(
-      ([q, list]) => `${q} → ${rankSearchResults(q, list)[0]?.title}`
-    );
-    expect(misses.length / BANK.length).toBeLessThanOrEqual(0.05);
-    expect(misses).toEqual([]);
-  });
-});
+// El banco de relevancia con respuestas realistas (10-14 candidatos por
+// consulta) está en `relevance-providers.test.ts`.
