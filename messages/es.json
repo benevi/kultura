@@ -121,7 +121,14 @@
     "sessionExpired": "Tu sesión ha caducado. Pide un enlace nuevo o vuelve a entrar.",
     "authCallbackError": "No hemos podido completar el acceso. Vuelve a intentarlo.",
     "authLinkOtherBrowser": "Has abierto el enlace en un navegador distinto del que lo pidió. Si estabas confirmando tu correo, ya está confirmado: entra con tu contraseña. Si querías cambiar la contraseña, pide otro enlace y ábrelo en este mismo navegador.",
-    "authLinkExpired": "El enlace ha caducado o ya se usó. Pide uno nuevo."
+    "authLinkExpired": "El enlace ha caducado o ya se usó. Pide uno nuevo.",
+    "unexpectedDescription": "Ha ocurrido un error inesperado al cargar la página. Vuelve a intentarlo; si sigue pasando, prueba dentro de unos minutos."
+  },
+  "meta": {
+    "siteName": "KULTURA",
+    "defaultTitle": "KULTURA — Tu watchlist de cine, series, anime, manga, juegos, libros y cómics",
+    "description": "Apunta lo que quieres ver, leer y jugar, puntúa lo que ya viste y compártelo con tus amigos. Gratis y sin anuncios.",
+    "skipToContent": "Saltar al contenido"
   },
   "common": {
     "loading": "Cargando...",

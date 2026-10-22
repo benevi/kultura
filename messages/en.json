@@ -121,7 +121,14 @@
     "sessionExpired": "Your session has expired. Request a new link or sign in again.",
     "authCallbackError": "We couldn't finish signing you in. Please try again.",
     "authLinkOtherBrowser": "You opened the link in a different browser from the one that requested it. If you were confirming your email, it's already confirmed: sign in with your password. If you wanted to change your password, request a new link and open it in this same browser.",
-    "authLinkExpired": "The link has expired or was already used. Request a new one."
+    "authLinkExpired": "The link has expired or was already used. Request a new one.",
+    "unexpectedDescription": "Something unexpected happened while loading the page. Try again; if it keeps happening, try again in a few minutes."
+  },
+  "meta": {
+    "siteName": "KULTURA",
+    "defaultTitle": "KULTURA — Your watchlist for movies, TV, anime, manga, games, books and comics",
+    "description": "Track what you want to watch, read and play, rate what you've already seen and share it with your friends. Free and ad-free.",
+    "skipToContent": "Skip to content"
   },
   "common": {
     "loading": "Loading...",
