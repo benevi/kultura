@@ -59,6 +59,9 @@ describe("KInput — errores anunciados y foco visible (ACC-3, ACC-4, MOV-5)", (
     expect(cls).toMatch(/\bborder-field-border\b/);
     expect(cls).toMatch(/focus-visible:outline-focus-ring/);
     expect(cls).toMatch(/focus-visible:outline-2\b/);
+    // `focus-visible:outline` a secas lo borra tailwind-merge al verlo junto a
+    // `outline-2`, y el estilo caía al `auto` del navegador.
+    expect(cls).toContain("focus-visible:[outline-style:solid]");
     expect(cls).not.toMatch(/0_0_0_6px/);
   });
 

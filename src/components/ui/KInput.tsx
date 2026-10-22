@@ -76,7 +76,7 @@ export const KInput = React.forwardRef<HTMLInputElement, KInputProps>(
             "font-body text-base md:text-[15px] text-text-primary",
             "placeholder:text-text-tertiary",
             "transition-colors duration-base ease-standard",
-            "focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus-ring",
+            "focus-visible:[outline-style:solid] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus-ring",
             "disabled:cursor-not-allowed disabled:opacity-50",
             error && "border-accent-danger",
             className

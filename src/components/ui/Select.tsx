@@ -35,7 +35,7 @@ export function Select({ value, onChange, options, label, className }: SelectPro
         onChange={(e) => onChange(e.target.value)}
         className={cn(
           "bg-surface border border-field-border rounded-md px-3 py-2 text-base md:text-sm text-text",
-          "focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus-ring cursor-pointer",
+          "focus-visible:[outline-style:solid] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus-ring cursor-pointer",
           className
         )}
       >
