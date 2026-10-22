@@ -29,7 +29,7 @@ vi.mock('@/i18n/navigation', () => ({
 }))
 
 import { NavLinks } from '@/components/layout/NavLinks'
-import { isNavActive, primaryNavItems, stripLocale } from '@/components/layout/nav-shared'
+import { isNavActive, primaryNavItems } from '@/components/layout/nav-shared'
 
 describe('NavLinks', () => {
   beforeEach(() => {
@@ -99,14 +99,5 @@ describe('isNavActive', () => {
 describe('primaryNavItems', () => {
   it('codifica el nombre de usuario en la URL del perfil', () => {
     expect(primaryNavItems('a b').at(-1)?.href).toBe('/profile/a%20b')
-  })
-})
-
-describe('stripLocale', () => {
-  it('quita solo el prefijo de idioma', () => {
-    expect(stripLocale('/es/chat/1')).toBe('/chat/1')
-    expect(stripLocale('/en')).toBe('/')
-    expect(stripLocale('/es?x=1')).toBe('?x=1')
-    expect(stripLocale('/estrenos')).toBe('/estrenos')
   })
 })

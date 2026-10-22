@@ -44,7 +44,9 @@ export function HeaderMenu({ label, trigger, triggerClassName, current, panelCla
 
   useEffect(() => {
     if (!open) return
-    function onPointerDown(e: PointerEvent | MouseEvent) {
+    // `pointerdown` y no `mousedown`: en iOS un toque fuera no siempre genera
+    // eventos de ratón y el menú se quedaba abierto.
+    function onPointerDown(e: PointerEvent) {
       if (rootRef.current && !rootRef.current.contains(e.target as Node)) setOpen(false)
     }
     function onKeyDown(e: KeyboardEvent) {
@@ -52,10 +54,10 @@ export function HeaderMenu({ label, trigger, triggerClassName, current, panelCla
       setOpen(false)
       buttonRef.current?.focus()
     }
-    document.addEventListener('mousedown', onPointerDown)
+    document.addEventListener('pointerdown', onPointerDown)
     document.addEventListener('keydown', onKeyDown)
     return () => {
-      document.removeEventListener('mousedown', onPointerDown)
+      document.removeEventListener('pointerdown', onPointerDown)
       document.removeEventListener('keydown', onKeyDown)
     }
   }, [open])

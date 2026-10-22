@@ -1,19 +1,10 @@
-import { headers } from 'next/headers'
-import { getTranslations } from 'next-intl/server'
 import { Link } from '@/i18n/navigation'
 import { NavLinks } from '@/components/layout/NavLinks'
 import { AvatarDropdown } from '@/components/layout/AvatarDropdown'
 import { SocialMenu } from '@/components/layout/SocialMenu'
-import {
-  FOCUS_RING,
-  HEADER_ICON_BOX,
-  HEADER_ICON_CURRENT,
-  CountBadge,
-  isNavActive,
-  stripLocale,
-} from '@/components/layout/nav-shared'
+import { NotificationsBell } from '@/components/layout/NotificationsBell'
+import { FOCUS_RING } from '@/components/layout/nav-shared'
 import { Logo } from '@/components/layout/Logo'
-import { IconBell } from '@/components/icons'
 
 interface UserProfile {
   username: string
@@ -34,13 +25,7 @@ interface AuthHeaderProps {
  * caben logo + 3 cajas sin scroll horizontal (el idioma va en el menú del
  * avatar).
  */
-export async function AuthHeader({ profile, unreadCount }: AuthHeaderProps) {
-  const t = await getTranslations('nav')
-  // Ruta actual sin locale (la deja el middleware en `x-pathname`), para marcar
-  // la campana con `aria-current` cuando estás en Notificaciones (ACC-7).
-  const path = stripLocale(headers().get('x-pathname') ?? '/')
-  const onNotifications = isNavActive(path, '/notifications')
-
+export function AuthHeader({ profile, unreadCount }: AuthHeaderProps) {
   return (
     <header className="sticky top-0 z-40 bg-surface-default border-b border-surface-border">
       <div className="relative flex items-center gap-2 h-14 max-w-6xl mx-auto px-4 md:px-8">
@@ -56,15 +41,7 @@ export async function AuthHeader({ profile, unreadCount }: AuthHeaderProps) {
         <div className="flex items-center gap-2 ml-auto">
           <SocialMenu />
 
-          <Link
-            href="/notifications"
-            aria-label={t('notificationsLabel', { count: unreadCount })}
-            aria-current={onNotifications ? 'page' : undefined}
-            className={`${HEADER_ICON_BOX} ${onNotifications ? HEADER_ICON_CURRENT : ''}`}
-          >
-            <IconBell className="w-5 h-5" />
-            <CountBadge count={unreadCount} />
-          </Link>
+          <NotificationsBell unreadCount={unreadCount} />
 
           <AvatarDropdown
             username={profile.username}

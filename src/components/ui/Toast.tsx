@@ -61,7 +61,8 @@ interface SingleToastProps {
 }
 
 function SingleToast({ toast, onDismiss }: SingleToastProps) {
-  const t = useTranslations('notifications')
+  // `nav`: es de los namespaces que el shell entrega siempre al cliente.
+  const t = useTranslations('nav')
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const remainingRef = useRef(toastDuration(toast))
   const startedAtRef = useRef(0)

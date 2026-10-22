@@ -16,8 +16,8 @@ vi.mock('next-intl', () => ({
 
 const mockRefresh = vi.fn()
 vi.mock('@/i18n/navigation', () => ({
-  Link: ({ children, href }: { children: React.ReactNode; href: string }) => (
-    <a href={href}>{children}</a>
+  Link: ({ children, href, className }: { children: React.ReactNode; href: string; className?: string }) => (
+    <a href={href} className={className}>{children}</a>
   ),
   useRouter: () => ({ refresh: mockRefresh }),
 }))
@@ -77,6 +77,18 @@ describe('NotificationsList — group_invite', () => {
     expect(reject).toHaveAttribute('aria-label', 'rejectInvite')
     expect(accept.className).toContain('min-h-11')
     expect(reject.className).toContain('min-h-11')
+  })
+
+  // Revisión: el `py-3.5` en línea solapaba la zona táctil con las líneas vecinas.
+  it('los enlaces de la frase son inline-flex de 44×44, sin relleno en línea', () => {
+    render(<NotificationsList notifications={[groupInvite()]} />)
+    for (const name of ['ada', 'Cinéfilos']) {
+      const a = screen.getByText(name).closest('a')!
+      expect(a.className).toMatch(/inline-flex/)
+      expect(a.className).toContain('min-h-11')
+      expect(a.className).toContain('min-w-11')
+      expect(a.className).not.toMatch(/py-3\.5/)
+    }
   })
 
   it('no muestra botones si la invitación ya está leída', () => {

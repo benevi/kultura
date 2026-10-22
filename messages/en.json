@@ -11,9 +11,7 @@
     "chat": "Messages",
     "lists": "Lists",
     "suggestions": "Feedback",
-    "profile": "My profile",
     "signOut": "Sign out",
-    "more": "More",
     "unreadMessages": "{count, plural, one {# unread message} other {# unread messages}}",
     "primaryNav": "Main navigation",
     "libraryTab": "Library",
@@ -25,6 +23,7 @@
     "accountNav": "Account",
     "language": "Language",
     "footerNav": "Information",
+    "dismiss": "Dismiss notice",
     "oops": "Oops!"
   },
   "auth": {
@@ -415,8 +414,7 @@
     "loadError": "Could not load notifications. Please try again.",
     "unread": "Unread",
     "acceptInvite": "Accept the invitation to {group}",
-    "rejectInvite": "Reject the invitation to {group}",
-    "dismiss": "Dismiss notice"
+    "rejectInvite": "Reject the invitation to {group}"
   },
   "recommendations": {
     "recommend": "Recommend",

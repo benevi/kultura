@@ -114,7 +114,7 @@ describe('SocialMenu', () => {
     render(<div><SocialMenu /><p>fuera</p></div>)
     const btn = screen.getByRole('button')
     fireEvent.click(btn)
-    fireEvent.mouseDown(screen.getByText('fuera'))
+    fireEvent.pointerDown(screen.getByText('fuera'))
     expect(btn).toHaveAttribute('aria-expanded', 'false')
   })
 

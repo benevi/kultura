@@ -85,11 +85,12 @@ function InviteActions({ invitationId, groupName }: { invitationId: string; grou
 }
 
 /**
- * Enlaces dentro de la frase de cada aviso. Son enlaces en línea, pero el
- * relleno vertical (que en línea no mueve el texto) lleva la zona táctil a
- * ≥ 44 px en móvil (ACC-12).
+ * Enlaces dentro de la frase de cada aviso. Son `inline-flex` de 44×44 como
+ * mínimo (ACC-12): la línea que los contiene crece hasta 44 px, así que la
+ * zona táctil es real y no se solapa con las líneas vecinas (un relleno en
+ * línea sí lo hacía). `align-middle` mantiene el texto alineado con la frase.
  */
-const INLINE_LINK = `py-3.5 font-semibold rounded-[4px] hover:text-accent-info transition-colors ${FOCUS}`
+const INLINE_LINK = `inline-flex items-center justify-center min-h-11 min-w-11 align-middle font-semibold rounded-[14px] hover:text-accent-info transition-colors ${FOCUS}`
 
 /** Color del icono por tipo: acentos decorativos de la paleta F0 (tokens). */
 const TYPE_ACCENT: Record<string, { fg: string }> = {

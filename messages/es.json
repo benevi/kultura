@@ -11,9 +11,7 @@
     "chat": "Mensajes",
     "lists": "Listas",
     "suggestions": "Sugerencias",
-    "profile": "Mi perfil",
     "signOut": "Cerrar sesión",
-    "more": "Más",
     "unreadMessages": "{count, plural, one {# mensaje sin leer} other {# mensajes sin leer}}",
     "primaryNav": "Navegación principal",
     "libraryTab": "Biblioteca",
@@ -25,6 +23,7 @@
     "accountNav": "Cuenta",
     "language": "Idioma",
     "footerNav": "Información",
+    "dismiss": "Cerrar aviso",
     "oops": "¡Ups!"
   },
   "auth": {
@@ -415,8 +414,7 @@
     "loadError": "No se pudieron cargar las notificaciones. Inténtalo de nuevo.",
     "unread": "Sin leer",
     "acceptInvite": "Aceptar la invitación a {group}",
-    "rejectInvite": "Rechazar la invitación a {group}",
-    "dismiss": "Cerrar aviso"
+    "rejectInvite": "Rechazar la invitación a {group}"
   },
   "recommendations": {
     "recommend": "Recomendar",

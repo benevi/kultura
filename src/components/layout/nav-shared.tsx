@@ -52,11 +52,6 @@ export function isNavActive(pathname: string, href: string): boolean {
   return path === base || path.startsWith(`${base}/`)
 }
 
-/** Ruta sin el prefijo de locale (`/es/chat/1` → `/chat/1`). */
-export function stripLocale(path: string): string {
-  return path.replace(/^\/[a-z]{2}(?=\/|\?|#|$)/, '') || '/'
-}
-
 /** Foco visible común (DISENO.md: contorno de 2 px `--focus-ring`, no sombra). */
 export const FOCUS_RING =
   'focus-visible:[outline-style:solid] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus-ring'
