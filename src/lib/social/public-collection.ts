@@ -185,6 +185,19 @@ export async function getPublicList(
   }
 }
 
+/**
+ * Nombre actual de quien se llamaba `oldUsername` (R11 / ROJO-6), o `null`.
+ * Lo resuelve `public.username_redirect` (SECURITY DEFINER), así la tabla del
+ * historial no se puede listar. Sin la migración de F-12 la función no existe
+ * y devuelve `null` (un 404 de los de siempre).
+ */
+export async function resolveRenamedUsername(oldUsername: string): Promise<string | null> {
+  const supabase = createClient()
+  const { data, error } = await supabase.rpc('username_redirect', { p_username: oldUsername })
+  if (error || typeof data !== 'string' || !data || data === oldUsername) return null
+  return data
+}
+
 /** ¿Tiene el usuario al menos una lista pública? (para enseñar "Compartir colección") */
 export async function hasPublicLists(userId: string): Promise<boolean> {
   const supabase = createClient()

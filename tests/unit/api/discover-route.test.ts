@@ -8,6 +8,9 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { NextRequest } from "next/server";
 
 // Mock de la capa de fetch — el handler solo debe orquestar, no tocar APIs.
+vi.mock("@/lib/api/aggregate", () => ({
+  fetchAggregateResult: vi.fn(),
+}));
 vi.mock("@/lib/api/discover", () => ({
   fetchDiscoverData: vi.fn(),
 }));
@@ -33,6 +36,7 @@ import { getLocale } from "next-intl/server";
 import { GET } from "@/app/api/discover/route";
 import { parseDiscoverParams } from "@/lib/api/discover-params";
 import { fetchDiscoverData } from "@/lib/api/discover";
+import { fetchAggregateResult } from "@/lib/api/aggregate";
 import { computeMatchScores } from "@/lib/recommendations/match-score";
 import { _resetStoreForTests } from "@/lib/rate-limit";
 
@@ -329,15 +333,40 @@ describe("GET /api/discover", () => {
     );
   });
 
-  it("type=all (agregado, puede venir cojo sin avisar) → caché corta de 5 min", async () => {
+  it("F-13: type=all completo → caché de borde normal; va al agregado, no a fetchDiscoverData", async () => {
+    vi.mocked(fetchAggregateResult).mockResolvedValue({
+      items: [],
+      totalPages: 1,
+      hasMore: false,
+      fetchErrorKind: null,
+      partial: false,
+    });
     const res = await GET(req("?type=all&page=1&locale=es"));
     expect(res.headers.get("Cache-Control")).toBe(
-      "public, s-maxage=300, stale-while-revalidate=600"
+      "public, s-maxage=3600, stale-while-revalidate=86400"
     );
+    expect(fetchAggregateResult).toHaveBeenCalledWith(1, expect.any(Object), "es", null);
+    expect(fetchDiscoverData).not.toHaveBeenCalled();
     const search = await GET(req("?type=all&q=batman&locale=es"));
     expect(search.headers.get("Cache-Control")).toBe(
-      "public, s-maxage=300, stale-while-revalidate=600"
+      "public, s-maxage=3600, stale-while-revalidate=86400"
     );
+    expect(fetchAggregateResult).toHaveBeenLastCalledWith(1, expect.any(Object), "es", "batman");
+  });
+
+  it("F-13: type=all PARCIAL (falla una familia) → no-store, y el aviso no viaja en el cuerpo", async () => {
+    vi.mocked(fetchAggregateResult).mockResolvedValue({
+      items: [{ id: "movie_1", externalId: "1", type: "movie", title: "Dune" }],
+      totalPages: 1,
+      hasMore: false,
+      fetchErrorKind: null,
+      partial: true,
+    });
+    const res = await GET(req("?type=all&q=dune&locale=es"));
+    expect(res.headers.get("Cache-Control")).toBe("no-store");
+    const body = await res.json();
+    expect(body.items).toHaveLength(1);
+    expect(body).not.toHaveProperty("partial");
   });
 
   it("respuesta con error del proveedor → no-store (no se congela un fallo 1 h)", async () => {

@@ -57,14 +57,12 @@ describe("availableTranslatedLanguage[] derivado del locale", () => {
     expect(langs).toEqual(["en"]);
   });
 
-  it("searchManga también acota por idioma y conserva title/offset", async () => {
+  it("F-13 (DAT-7): searchManga NO acota por idioma (un título concreto se encuentra aunque no esté traducido) y conserva title/offset", async () => {
     await searchManga("one piece", 40, "en");
     const url = lastUrl(fetchSpy);
     expect(url.searchParams.get("title")).toBe("one piece");
     expect(url.searchParams.get("offset")).toBe("40");
-    expect(url.searchParams.getAll("availableTranslatedLanguage[]")).toEqual([
-      "en",
-    ]);
+    expect(url.searchParams.getAll("availableTranslatedLanguage[]")).toEqual([]);
   });
 
   it("los params array se ACUMULAN en vez de pisarse (includes[] sobrevive)", async () => {

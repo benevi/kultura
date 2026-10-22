@@ -18,6 +18,8 @@ import { Logo } from "@/components/layout/Logo";
 import { AuthShell } from "./AuthShell";
 import { getSupabase } from "./supabase-lazy";
 import { PasswordField } from "./PasswordField";
+import { TermsCheckbox } from "./TermsCheckbox";
+import { TERMS_VERSION } from "@/app/api/settings/identity";
 import { chromeIntentUrl, detectInAppBrowser, type InAppBrowser } from "./in-app-browser";
 
 // ---------------------------------------------------------------------------
@@ -45,7 +47,7 @@ interface FormState {
   password: string;
   error: string | null;
   errorKey: AuthErrorKey | null;
-  fieldErrors: { email?: string; password?: string };
+  fieldErrors: { email?: string; password?: string; terms?: string };
   loading: boolean;
 }
 
@@ -88,6 +90,20 @@ function authOrigin(): string {
 /** URL del callback con el destino final ya saneado. */
 function callbackUrl(next: string): string {
   return `${authOrigin()}/api/auth/callback?next=${encodeURIComponent(next)}`;
+}
+
+/** Onboarding (CRE-6) con el destino final como `next`. */
+export function welcomeHref(locale: string, dest: string): string {
+  return `/${locale}/welcome?next=${encodeURIComponent(dest)}`;
+}
+
+/** "9 de noviembre de 2026" / "November 9, 2026". */
+function formatDay(iso: string, locale: string): string {
+  return new Intl.DateTimeFormat(locale === "en" ? "en-GB" : "es-ES", {
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+  }).format(new Date(iso));
 }
 
 /** Ejecuta tras el primer pintado sin competir con él (REN-9). */
@@ -158,6 +174,16 @@ export function LoginPage({ locale }: LoginPageProps) {
   // caso no se mostraba y el fallo era invisible.
   const errorParam = searchParams.get("error");
   const callbackKey = callbackErrorKey(errorParam);
+  // ROJO-7: vuelta de Ajustes tras borrar la cuenta (o programar el borrado).
+  const accountParam = searchParams.get("account");
+  const purgeAt = searchParams.get("purge_at");
+  const accountNotice =
+    accountParam === "deletion_scheduled" && purgeAt && !Number.isNaN(Date.parse(purgeAt))
+      ? tAuth("deletionScheduled", { date: formatDay(purgeAt, locale) })
+      : accountParam === "deleted"
+        ? tAuth("accountDeleted")
+        : null;
+
   const initialError =
     errorParam === "demo_unavailable"
       ? tAuth("demoUnavailable")
@@ -180,6 +206,10 @@ export function LoginPage({ locale }: LoginPageProps) {
 
   const emailRef = useRef<HTMLInputElement>(null);
   const passwordRef = useRef<HTMLInputElement>(null);
+  const termsRef = useRef<HTMLInputElement>(null);
+
+  // SEG-7: casilla obligatoria de edad y términos en el registro por email.
+  const [termsAccepted, setTermsAccepted] = useState(false);
   const sentHeadingRef = useRef<HTMLHeadingElement>(null);
 
   // E-AVATAR-ICONS: el personaje elegido al registrarse. Se guarda también en el
@@ -300,11 +330,16 @@ export function LoginPage({ locale }: LoginPageProps) {
       fieldErrors.password = tErrors("passwordTooShort");
     }
 
+    if (mode === "register" && !termsAccepted) {
+      fieldErrors.terms = tAuth("termsRequired");
+    }
+
     setForm((prev) => ({ ...prev, fieldErrors, error: null, errorKey: null }));
 
     // ACC-3: el foco va al primer campo con error.
     if (fieldErrors.email) emailRef.current?.focus();
     else if (fieldErrors.password) passwordRef.current?.focus();
+    else if (fieldErrors.terms) termsRef.current?.focus();
 
     return Object.keys(fieldErrors).length === 0;
   }
@@ -340,16 +375,24 @@ export function LoginPage({ locale }: LoginPageProps) {
         emailRedirectTo: callbackUrl(dest),
         // El personaje también viaja aquí: si se confirma desde otro
         // navegador, el callback lo aplica (el `localStorage` no está allí).
-        data: { locale, ...(avatarIcon ? { avatar_icon: avatarIcon } : {}) },
+        // SEG-7: la aceptación la convierte en `terms_accepted_at` el
+        // disparador `handle_new_user` (con la hora del servidor).
+        data: {
+          locale,
+          terms_accepted: true,
+          terms_version: TERMS_VERSION,
+          ...(avatarIcon ? { avatar_icon: avatarIcon } : {}),
+        },
       },
     });
 
     if (error) return fail(error);
 
     if (data.session) {
-      // Confirmación desactivada (D-08): alta inmediata.
+      // Confirmación desactivada (D-08): alta inmediata, y al onboarding
+      // (CRE-6), que termina en el destino original.
       await applyPendingAvatarIcon();
-      router.replace(dest);
+      router.replace(welcomeHref(locale, dest));
     } else {
       showSent("signup");
     }
@@ -559,6 +602,15 @@ export function LoginPage({ locale }: LoginPageProps) {
 
       <h1 className="sr-only">{heading}</h1>
 
+      {accountNotice && (
+        <p
+          role="status"
+          className="mb-5 rounded-[14px] bg-surface-elevated px-[18px] py-3 font-body text-sm text-text-secondary"
+        >
+          {accountNotice}
+        </p>
+      )}
+
       {/* MOV-11: Google no deja entrar desde el navegador integrado de las
           apps sociales. Se avisa ANTES de que el botón lleve a un error. */}
       {mode !== "reset" && inApp && (
@@ -671,6 +723,21 @@ export function LoginPage({ locale }: LoginPageProps) {
           </div>
         )}
 
+        {mode === "register" && (
+          <TermsCheckbox
+            ref={termsRef}
+            id="terms"
+            checked={termsAccepted}
+            onChange={(checked) => {
+              setTermsAccepted(checked);
+              if (checked && form.fieldErrors.terms) {
+                setForm((prev) => ({ ...prev, fieldErrors: { ...prev.fieldErrors, terms: undefined } }));
+              }
+            }}
+            error={form.fieldErrors.terms}
+          />
+        )}
+
         {/* Error global — rojo semántico, radio de campo (14px) para que no
             parezca un chip. `role="alert"` para que se anuncie (ACC-3). */}
         {form.error && (
@@ -707,20 +774,6 @@ export function LoginPage({ locale }: LoginPageProps) {
               : tAuth("sendResetLink")}
         </KButton>
 
-        {mode === "register" && (
-          <p className="text-center font-body text-xs text-text-tertiary">
-            {tAuth.rich("privacyNotice", {
-              link: (chunks) => (
-                <Link
-                  href="/privacy"
-                  className="font-bold text-text-secondary underline underline-offset-4 hover:text-text-primary"
-                >
-                  {chunks}
-                </Link>
-              ),
-            })}
-          </p>
-        )}
       </form>
 
       {/* Enlace a contraseña olvidada (solo al entrar) */}

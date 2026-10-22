@@ -236,3 +236,29 @@ export async function getGoogleBookDetail(
     throw e;
   }
 }
+
+/**
+ * Respaldo de la búsqueda de cómic (F-13): si ComicVine no responde (sin
+ * clave, cupo de 200/h agotado, caído), novelas gráficas de Google Books por
+ * título dentro de la categoría "comics". Son LIBROS de Google (se abren con
+ * la ficha de libro, que ya resuelve ids de Google): mejor encontrar "Maus"
+ * como libro que una rejilla vacía. Sin `langRestrict`: se busca un título
+ * concreto.
+ */
+export async function searchComicsGoogleBooks(
+  query: string,
+  page = 1
+): Promise<GoogleBooksResponse> {
+  const clean = query.replace(/"/g, " ").trim();
+  return googleBooksFetch<GoogleBooksResponse>(
+    "/volumes",
+    {
+      q: `intitle:"${clean}" subject:comics`,
+      startIndex: String(googleBooksStartIndex(page)),
+      maxResults: String(GOOGLE_BOOKS_PAGE_SIZE),
+      printType: "books",
+      orderBy: "relevance",
+    },
+    googleBooksSearchSchema
+  );
+}

@@ -28,6 +28,12 @@ export interface SearchBarProps {
   onSubmit?: (query: string) => void;
   /** Se llama al vaciar el input en `mode="inline"` (volver al catálogo). */
   onClear?: () => void;
+  /**
+   * F-13 (DAT-8): familia activa en Descubrir (`movie`, `manga`…). Con ella
+   * las sugerencias salen de ESA familia; sin ella (o con `all`), de cine y
+   * series.
+   */
+  type?: string;
 }
 
 export function SearchBar({
@@ -37,8 +43,10 @@ export function SearchBar({
   mode = "navigate",
   onSubmit,
   onClear,
+  type,
 }: SearchBarProps) {
   const t = useTranslations("search");
+  const tMedia = useTranslations("media");
   const locale = useLocale();
   const router = useRouter();
 
@@ -49,6 +57,9 @@ export function SearchBar({
 
   const containerRef = useRef<HTMLDivElement>(null);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // Petición de sugerencias en curso: se cancela al seguir escribiendo, para
+  // que una respuesta lenta de "nar" no pise a la de "naruto".
+  const abortRef = useRef<AbortController | null>(null);
   // ¿Ha escrito el usuario en ESTA instancia? Con `defaultValue` (Descubrir
   // rellena el input con la query activa de la URL), el efecto de debounce se
   // disparaba al montar y el desplegable de sugerencias aparecía solo, tapando
@@ -69,30 +80,40 @@ export function SearchBar({
     }
 
     debounceRef.current = setTimeout(async () => {
+      abortRef.current?.abort();
+      const controller = new AbortController();
+      abortRef.current = controller;
       setLoading(true);
       try {
         // F-06 (DAT-1): idioma en la URL (la ruta no puede deducirlo y la
-        // caché de borde no debe mezclar idiomas).
-        const res = await fetch(
-          `/api/search?q=${encodeURIComponent(inputValue)}&locale=${locale}`
-        );
+        // caché de borde no debe mezclar idiomas). F-13 (DAT-8): y la familia.
+        const params = new URLSearchParams({ q: inputValue, locale });
+        if (type && type !== "all") params.set("type", type);
+        const res = await fetch(`/api/search?${params.toString()}`, {
+          signal: controller.signal,
+        });
         if (res.ok) {
           const data: MediaItem[] = await res.json();
+          if (controller.signal.aborted) return;
           setSuggestions(data);
           setOpen(data.length > 0);
         }
       } catch {
+        if (controller.signal.aborted) return;
         setSuggestions([]);
         setOpen(false);
       } finally {
-        setLoading(false);
+        if (abortRef.current === controller) setLoading(false);
       }
     }, 400);
 
     return () => {
       if (debounceRef.current) clearTimeout(debounceRef.current);
     };
-  }, [inputValue, locale]);
+  }, [inputValue, locale, type]);
+
+  // Al desmontar, ninguna petición queda viva.
+  useEffect(() => () => abortRef.current?.abort(), []);
 
   // Click outside → close dropdown
   useEffect(() => {
@@ -208,7 +229,7 @@ export function SearchBar({
                     <p className="text-xs text-text-tertiary">{item.year}</p>
                   ) : null}
                 </div>
-                <Badge variant="default">{item.type}</Badge>
+                <Badge variant="default">{tMedia(item.type)}</Badge>
               </button>
             </li>
           ))}

@@ -5,8 +5,11 @@
 /** Etiqueta de todas las cachés de /best. `POST /api/revalidate` la vacía. */
 export const BEST_CACHE_TAG = "best-of";
 
-/** Súbela al cambiar la forma de lo cacheado (antes `best-of-v5`). */
-export const BEST_CACHE_VERSION = "best-of-v6";
+/**
+ * Súbela al cambiar la forma o el ORDEN de lo cacheado (v7: media ponderada,
+ * DAT-4; antes `best-of-v6`).
+ */
+export const BEST_CACHE_VERSION = "best-of-v7";
 
 /** Etiqueta de las portadas de la landing (la aplica `lib/landing/showcase.ts`). */
 export const SHOWCASE_CACHE_TAG = "showcase";

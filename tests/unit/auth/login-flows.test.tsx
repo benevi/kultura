@@ -92,6 +92,7 @@ describe("Revisa tu correo: reenviar (ROJO-2)", () => {
     render(<LoginPage locale="es" />);
     type("email", "new@example.com");
     type("password", "password123");
+    fireEvent.click(screen.getByRole("checkbox")); // SEG-7: edad y términos
     submit();
     await screen.findByText("checkEmail");
 

@@ -23,7 +23,7 @@ const movie = (id: number, title: string) => ({
   id,
   title,
   original_title: title,
-  poster_path: null,
+  poster_path: `/p${id}.jpg`,
   backdrop_path: null,
   release_date: "2010-07-16",
   overview: "",

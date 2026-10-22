@@ -4,7 +4,7 @@
 // secciones de biblioteca reciente y estadísticas detalladas.
 // ============================================================
 
-import { notFound } from 'next/navigation'
+import { notFound, permanentRedirect } from 'next/navigation'
 import type { Metadata } from 'next'
 import { createClient } from '@/lib/supabase/server'
 import { getUserStats } from '@/lib/library/stats'
@@ -16,11 +16,12 @@ import { ProfileGenres } from '@/components/profile/ProfileGenres'
 import { FriendshipButton } from '@/components/social/FriendshipButton'
 import { ReportButton } from '@/components/social/ReportButton'
 import { ShareLinkButton } from '@/components/social/ShareLinkButton'
-import { hasPublicLists } from '@/lib/social/public-collection'
+import { hasPublicLists, resolveRenamedUsername } from '@/lib/social/public-collection'
 import { MediaRow } from '@/components/home/MediaRow'
 import { KButton } from '@/components/ui/KButton'
 import { Link } from '@/i18n/navigation'
 import { IconLibrary } from '@/components/icons'
+import { isNotMigrated } from '@/app/api/settings/account-state'
 import type { DbFriendship } from '@/types/supabase'
 import { getTranslations } from 'next-intl/server'
 
@@ -29,10 +30,12 @@ interface Props {
 }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
-  const { username } = await params
+  const { locale, username: raw } = await params
+  const username = decodeURIComponent(raw)
+  const t = await getTranslations({ locale, namespace: 'profile' })
   const title = username
   const ogTitle = `${username} · KULTURA`
-  const description = `Perfil de ${username} en KULTURA — biblioteca personal de películas, series, libros y más.`
+  const description = t('metaDescription', { username })
   return {
     title,
     description,
@@ -41,8 +44,24 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   }
 }
 
+/**
+ * ¿Puede el visitante ver la biblioteca de `ownerId`? (D-04b). La base ya lo
+ * impone con RLS; esto es para enseñar "biblioteca privada" en vez de un
+ * "aún no tiene actividad" que sería mentira. Sin la migración, sí (rige la
+ * política de W1: cualquiera con sesión).
+ */
+async function canReadLibrary(
+  supabase: ReturnType<typeof createClient>,
+  ownerId: string,
+): Promise<boolean> {
+  const { data, error } = await supabase.rpc('can_read_library', { p_owner: ownerId })
+  if (error) return isNotMigrated(error) ? true : false
+  return data === true
+}
+
 export default async function ProfilePage({ params }: Props) {
-  const { username } = await params
+  const { locale, username: raw } = await params
+  const username = decodeURIComponent(raw)
   const supabase = createClient()
   const t = await getTranslations('profile')
   const tc = await getTranslations('collection')
@@ -52,9 +71,15 @@ export default async function ProfilePage({ params }: Props) {
     .from('users')
     .select('*')
     .eq('username', username)
-    .single()
+    .maybeSingle()
 
-  if (!profileUser) notFound()
+  if (!profileUser) {
+    // R11: un nombre antiguo redirige (308) al actual. Sin la migración, la
+    // función no existe y es un 404 normal.
+    const current = await resolveRenamedUsername(username)
+    if (current) permanentRedirect(`/${locale}/profile/${encodeURIComponent(current)}`)
+    notFound()
+  }
 
   // Usuario autenticado (puede ser null si no hay sesión)
   const { data: { user: currentUser } } = await supabase.auth.getUser()
@@ -79,11 +104,16 @@ export default async function ProfilePage({ params }: Props) {
     }
   }
 
+  const libraryVisible = isOwnProfile || (await canReadLibrary(supabase, profileUser.id))
+  const visibility = (profileUser as { library_visibility?: string }).library_visibility
+
+  const EMPTY_STATS = { totalItems: 0, totalCompleted: 0, totalInProgress: 0, byType: [], topGenres: [] }
   const [stats, recentCompleted, recentInProgress, recentPending, canShareCollection] = await Promise.all([
-    getUserStats(profileUser.id),
-    getRecentLibraryByStatus(profileUser.id, 'completed', 8),
-    getRecentLibraryByStatus(profileUser.id, 'in_progress', 8),
-    getRecentLibraryByStatus(profileUser.id, 'pending', 8),
+    // Biblioteca oculta (D-04b): ni se consulta (la RLS devolvería 0 filas).
+    libraryVisible ? getUserStats(profileUser.id) : Promise.resolve(EMPTY_STATS),
+    libraryVisible ? getRecentLibraryByStatus(profileUser.id, 'completed', 8) : Promise.resolve([]),
+    libraryVisible ? getRecentLibraryByStatus(profileUser.id, 'in_progress', 8) : Promise.resolve([]),
+    libraryVisible ? getRecentLibraryByStatus(profileUser.id, 'pending', 8) : Promise.resolve([]),
     // Solo el dueño ve el botón; para el resto ni se consulta.
     isOwnProfile ? hasPublicLists(profileUser.id) : Promise.resolve(false),
   ])
@@ -171,8 +201,21 @@ export default async function ProfilePage({ params }: Props) {
         <MediaRow title={t('pendingRow')} items={pendingItems} requirePoster={false} cardRadius="18" />
       )}
 
+      {/* Biblioteca oculta por su dueño (D-04b) */}
+      {!libraryVisible && (
+        <div className="flex flex-col items-center gap-3 rounded-20 bg-surface-default px-6 py-14 text-center">
+          <IconLibrary className="w-12 h-12 text-text-tertiary" />
+          <p className="font-bold text-text-primary">
+            {t('libraryHidden', { username: profileUser.username })}
+          </p>
+          <p className="max-w-sm text-sm text-text-tertiary">
+            {visibility === 'friends' ? t('libraryHiddenFriends') : t('libraryHiddenPrivate')}
+          </p>
+        </div>
+      )}
+
       {/* Empty state cuando la biblioteca está vacía */}
-      {!hasAnyContent && (
+      {libraryVisible && !hasAnyContent && (
         <div className="flex flex-col items-center gap-3 py-16 text-center">
           <IconLibrary className="w-12 h-12 text-text-tertiary" />
           <p className="font-bold" style={{ color: 'var(--text-primary)' }}>
@@ -186,11 +229,15 @@ export default async function ProfilePage({ params }: Props) {
         </div>
       )}
 
-      {/* Estadísticas detalladas */}
-      <ProfileStats byType={stats.byType} totalItems={stats.totalItems} />
+      {libraryVisible && (
+        <>
+          {/* Estadísticas detalladas */}
+          <ProfileStats byType={stats.byType} totalItems={stats.totalItems} />
 
-      {/* Géneros favoritos */}
-      <ProfileGenres topGenres={stats.topGenres} />
+          {/* Géneros favoritos */}
+          <ProfileGenres topGenres={stats.topGenres} />
+        </>
+      )}
     </main>
   )
 }
