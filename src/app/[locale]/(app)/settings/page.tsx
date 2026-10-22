@@ -1,5 +1,6 @@
 import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
+import { isDemoUser } from '@/lib/demo'
 import { getTranslations } from 'next-intl/server'
 import { SettingsForm } from './SettingsForm'
 import type { Metadata } from 'next'
@@ -9,10 +10,16 @@ export async function generateMetadata(): Promise<Metadata> {
   return { title: t('title') }
 }
 
-export default async function SettingsPage() {
+interface SettingsPageProps {
+  params: Promise<{ locale: string }>
+  searchParams?: { email?: string }
+}
+
+export default async function SettingsPage({ params, searchParams }: SettingsPageProps) {
+  const { locale } = await params
   const supabase = createClient()
   const { data: { user } } = await supabase.auth.getUser()
-  if (!user) redirect('/login')
+  if (!user) redirect(`/${locale}/login?next=${encodeURIComponent(`/${locale}/settings`)}`)
 
   const { data: profile } = await supabase
     .from('users')
@@ -28,6 +35,9 @@ export default async function SettingsPage() {
         initialAvatarIcon={profile?.avatar_icon ?? null}
         initialLocale={profile?.preferred_locale ?? null}
         userEmail={user.email ?? ''}
+        isDemo={isDemoUser(user)}
+        // Vuelta del enlace de cambio de email (`/api/auth/callback`).
+        emailConfirmed={searchParams?.email === 'confirmed'}
       />
     </main>
   )

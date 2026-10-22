@@ -71,6 +71,17 @@ vi.mock('@/lib/recommendations/match-score', () => ({
   invalidateMatchScoreCache: mockInvalidateMatch,
 }))
 
+// El catálogo `media` lo garantiza el servidor (SEG-2); su lógica se prueba
+// en tests/unit/media. Por defecto, todo título del fichero está disponible.
+const mockEnsureMediaRows = vi.fn(async (ids: string[]) => ({
+  available: new Set(ids),
+  unresolved: [] as string[],
+}))
+vi.mock('@/lib/media/upsert-from-provider', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@/lib/media/upsert-from-provider')>()),
+  ensureMediaRows: (ids: string[]) => mockEnsureMediaRows(ids),
+}))
+
 const AUTH_USER = { id: 'user-001', email: 'user@example.com' }
 
 function req(body: unknown): Request {
@@ -127,23 +138,15 @@ describe('POST /api/account/import', () => {
     expect((await res.json()).error).toContain('library')
   })
 
-  it('reconstruye la ficha del título y la entrada de biblioteca', async () => {
+  it('garantiza la ficha en el servidor y reconstruye la entrada de biblioteca', async () => {
     const res = await post({ library: [ENTRY] })
 
     expect(res.status).toBe(200)
     expect((await res.json()).libraryImported).toBe(1)
 
-    // media: el tipo y el id externo salen del propio mediaId.
-    expect(writes['media.upsert'][0][0]).toEqual([
-      {
-        id: 'movie_550',
-        external_id: '550',
-        type: 'movie',
-        title: 'Fight Club',
-        poster: 'https://img/fc.jpg',
-        year: 1999,
-      },
-    ])
+    // media: nunca con el cliente del usuario ni con el título del fichero.
+    expect(mockEnsureMediaRows).toHaveBeenCalledWith(['movie_550'])
+    expect(writes['media.upsert']).toBeUndefined()
     expect(writes['user_media.upsert'][0][0]).toEqual([
       {
         user_id: AUTH_USER.id,
@@ -184,6 +187,24 @@ describe('POST /api/account/import', () => {
     await post({ library: [{ ...ENTRY, score: 99 }] })
     const rows = writes['user_media.upsert'][0][0] as Array<{ score: number | null }>
     expect(rows[0].score).toBeNull()
+  })
+
+  it('una entrada repetida en el fichero se importa una sola vez', async () => {
+    await post({ library: [ENTRY, { ...ENTRY, status: 'pending' }] })
+    const rows = writes['user_media.upsert'][0][0] as Array<{ media_id: string; status: string }>
+    // Postgres rechaza un upsert que toca dos veces la misma fila.
+    expect(rows).toEqual([expect.objectContaining({ media_id: 'movie_550', status: 'pending' })])
+  })
+
+  it('las entradas cuyo título no se pudo resolver se omiten y se cuentan', async () => {
+    mockEnsureMediaRows.mockResolvedValueOnce({ available: new Set(['movie_550']), unresolved: ['game_7'] })
+    const res = await post({ library: [ENTRY, { mediaId: 'game_7', status: 'pending' }] })
+    const body = await res.json()
+
+    expect(body.libraryImported).toBe(1)
+    expect(body.libraryUnresolved).toBe(1)
+    const rows = writes['user_media.upsert'][0][0] as Array<{ media_id: string }>
+    expect(rows.map((r) => r.media_id)).toEqual(['movie_550'])
   })
 
   it('no recrea una lista que ya existe con ese nombre (idempotente)', async () => {

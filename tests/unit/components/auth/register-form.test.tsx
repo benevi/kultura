@@ -1,41 +1,32 @@
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import { describe, it, expect, vi, beforeEach } from "vitest";
+import { createFakeAuth } from "../../auth/fake-auth";
 
 // ---------------------------------------------------------------------------
 // Mocks
 // ---------------------------------------------------------------------------
 
-const mockSignUp = vi.fn();
-const mockSignOut = vi.fn().mockResolvedValue({});
-const mockGetSession = vi.fn().mockResolvedValue({ data: { session: null } });
-const mockRouterPush = vi.fn();
-
-vi.mock("@/lib/supabase/client", () => ({
-  createClient: () => ({
-    auth: {
-      signUp: mockSignUp,
-      signOut: mockSignOut,
-      getSession: mockGetSession,
-    },
-  }),
+const h = vi.hoisted(() => ({
+  fake: null as unknown as ReturnType<typeof import("../../auth/fake-auth").createFakeAuth>,
+  replace: vi.fn(),
+  params: new URLSearchParams(),
 }));
 
-// useTranslations returns the key directly:
-// useTranslations("auth")("confirmPassword") → "confirmPassword"
-// useTranslations("errors")("passwordMismatch") → "passwordMismatch"
-vi.mock("next-intl", () => ({
-  useTranslations: () => (key: string) => key,
-}));
+vi.mock("@/lib/supabase/client", () => ({ createClient: () => h.fake.client }));
 
-vi.mock("@/i18n/navigation", () => ({
-  useRouter: () => ({ push: mockRouterPush }),
-  usePathname: () => "/es/login",
-}));
+vi.mock("next-intl", async () => {
+  const m = await import("../../auth/fake-auth");
+  return { useTranslations: () => m.fakeT };
+});
 
-// useSearchParams mock — mode=register
-const mockGet = vi.fn().mockReturnValue("register");
+vi.mock("@/i18n/navigation", async () => {
+  const m = await import("../../auth/fake-auth");
+  return { Link: m.FakeLink };
+});
+
 vi.mock("next/navigation", () => ({
-  useSearchParams: () => ({ get: mockGet }),
+  useRouter: () => ({ replace: h.replace, push: vi.fn(), refresh: vi.fn() }),
+  useSearchParams: () => h.params,
 }));
 
 // ---------------------------------------------------------------------------
@@ -44,177 +35,112 @@ vi.mock("next/navigation", () => ({
 
 import { LoginPage } from "@/app/[locale]/login/LoginPage";
 
+function fillAndSubmit(email: string, password: string) {
+  fireEvent.change(screen.getByLabelText("email"), { target: { value: email } });
+  fireEvent.change(screen.getByLabelText("password"), { target: { value: password } });
+  fireEvent.click(document.querySelector('button[type="submit"]')!);
+}
+
 // ---------------------------------------------------------------------------
 // Tests
 // ---------------------------------------------------------------------------
 
 describe("LoginPage — modo register", () => {
   beforeEach(() => {
-    vi.clearAllMocks();
-    mockGet.mockReturnValue("register");
-    mockGetSession.mockResolvedValue({ data: { session: null } });
-    mockSignUp.mockReset();
+    h.fake = createFakeAuth();
+    h.replace.mockReset();
+    h.params = new URLSearchParams("mode=register");
   });
 
-  it("renderiza campo de confirmación de contraseña", () => {
+  // CRE-5: un solo campo de contraseña, con mostrar/ocultar.
+  it("no pide confirmar la contraseña y permite mostrarla", () => {
     render(<LoginPage locale="es" />);
-    // label text = tAuth("confirmPassword") → "confirmPassword"
-    expect(screen.getByLabelText("confirmPassword")).toBeInTheDocument();
+    expect(screen.queryByLabelText("confirmPassword")).not.toBeInTheDocument();
+    const input = screen.getByLabelText("password");
+    expect(input).toHaveAttribute("type", "password");
+    fireEvent.click(screen.getByRole("button", { name: "showPasswordLabel" }));
+    expect(input).toHaveAttribute("type", "text");
+    expect(screen.getByRole("button", { name: "hidePasswordLabel" })).toHaveAttribute(
+      "aria-pressed",
+      "true"
+    );
   });
 
-  it("renderiza los tres campos: email, password y confirmPassword", () => {
+  it("lleva línea de valor y enlace a la privacidad", () => {
     render(<LoginPage locale="es" />);
-    expect(screen.getByLabelText("email")).toBeInTheDocument();
-    expect(screen.getByLabelText("password")).toBeInTheDocument();
-    expect(screen.getByLabelText("confirmPassword")).toBeInTheDocument();
+    expect(screen.getByText("valueLine")).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "link" })).toHaveAttribute("href", "/privacy");
   });
 
-  it("muestra error de validación si passwords no coinciden", async () => {
+  it("Google va antes que el formulario", () => {
     render(<LoginPage locale="es" />);
-    const submitBtn = document.querySelector('button[type="submit"]')!;
-
-    fireEvent.change(screen.getByLabelText("email"), {
-      target: { value: "user@example.com" },
-    });
-    fireEvent.change(screen.getByLabelText("password"), {
-      target: { value: "password123" },
-    });
-    fireEvent.change(screen.getByLabelText("confirmPassword"), {
-      target: { value: "differentpass" },
-    });
-    fireEvent.click(submitBtn);
-
-    await waitFor(() => {
-      // tErrors("passwordMismatch") → "passwordMismatch"
-      expect(screen.getByText("passwordMismatch")).toBeInTheDocument();
-    });
-    expect(mockSignUp).not.toHaveBeenCalled();
+    const google = screen.getByRole("button", { name: /continueWithGoogle/ });
+    const email = screen.getByLabelText("email");
+    expect(google.compareDocumentPosition(email) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
   });
 
   it("no llama a signUp cuando el email es inválido", async () => {
     render(<LoginPage locale="es" />);
-    const submitBtn = document.querySelector('button[type="submit"]')!;
-
-    fireEvent.change(screen.getByLabelText("email"), {
-      target: { value: "invalidemail" },
-    });
-    fireEvent.change(screen.getByLabelText("password"), {
-      target: { value: "password123" },
-    });
-    fireEvent.change(screen.getByLabelText("confirmPassword"), {
-      target: { value: "password123" },
-    });
-    fireEvent.click(submitBtn);
-
-    await waitFor(() => {
-      // tErrors("invalidEmail") → "invalidEmail"
-      expect(screen.getByText("invalidEmail")).toBeInTheDocument();
-    });
-    expect(mockSignUp).not.toHaveBeenCalled();
+    fillAndSubmit("invalidemail", "password123");
+    await waitFor(() => expect(screen.getByText("invalidEmail")).toBeInTheDocument());
+    expect(h.fake.auth.signUp).not.toHaveBeenCalled();
   });
 
-  it("llama a signUp con email y password correctos cuando las validaciones pasan", async () => {
-    mockSignUp.mockResolvedValue({
-      error: null,
-      data: { session: null, user: { id: "123" } },
-    });
-
-    render(<LoginPage locale="es" />);
-    const submitBtn = document.querySelector('button[type="submit"]')!;
-
-    fireEvent.change(screen.getByLabelText("email"), {
-      target: { value: "user@example.com" },
-    });
-    fireEvent.change(screen.getByLabelText("password"), {
-      target: { value: "password123" },
-    });
-    fireEvent.change(screen.getByLabelText("confirmPassword"), {
-      target: { value: "password123" },
-    });
-    fireEvent.click(submitBtn);
-
+  // Regresión R2: `signUp` no pasaba `emailRedirectTo` y el enlace de
+  // confirmación volvía a la Site URL sin canjear el código.
+  it("llama a signUp con emailRedirectTo al callback y el idioma en los metadatos", async () => {
+    render(<LoginPage locale="en" />);
+    fillAndSubmit("user@example.com", "password123");
     await waitFor(() => {
-      expect(mockSignUp).toHaveBeenCalledWith({
+      expect(h.fake.auth.signUp).toHaveBeenCalledWith({
         email: "user@example.com",
         password: "password123",
+        options: {
+          emailRedirectTo: `${window.location.origin}/api/auth/callback?next=%2Fen%2Fhome`,
+          data: { locale: "en" },
+        },
       });
     });
   });
 
-  it("muestra mensaje de verificación de email si no hay sesión después del registro", async () => {
-    mockSignUp.mockResolvedValue({
-      error: null,
-      data: { session: null, user: { id: "123" } },
-    });
-
+  // El personaje viaja en los metadatos: si la confirmación se abre en otro
+  // navegador, el callback lo aplica (el localStorage no está allí).
+  it("el personaje elegido va en options.data del signUp", async () => {
     render(<LoginPage locale="es" />);
-    const submitBtn = document.querySelector('button[type="submit"]')!;
-
-    fireEvent.change(screen.getByLabelText("email"), {
-      target: { value: "user@example.com" },
-    });
-    fireEvent.change(screen.getByLabelText("password"), {
-      target: { value: "password123" },
-    });
-    fireEvent.change(screen.getByLabelText("confirmPassword"), {
-      target: { value: "password123" },
-    });
-    fireEvent.click(submitBtn);
-
-    await waitFor(() => {
-      // tAuth("checkEmail") → "checkEmail"
-      expect(screen.getByText("checkEmail")).toBeInTheDocument();
-    });
+    fireEvent.click(screen.getByRole("radio", { name: "panda" }));
+    fillAndSubmit("user@example.com", "password123");
+    await waitFor(() =>
+      expect(h.fake.auth.signUp).toHaveBeenCalledWith(
+        expect.objectContaining({
+          options: expect.objectContaining({ data: { locale: "es", avatar_icon: "panda" } }),
+        })
+      )
+    );
   });
 
-  it("redirige a /home si hay sesión tras registro (auto-confirm)", async () => {
-    mockSignUp.mockResolvedValue({
-      error: null,
-      data: { session: { access_token: "tok" }, user: { id: "123" } },
-    });
-
+  it("sin sesión tras el registro → 'Revisa tu correo' con el email y reenviar", async () => {
+    h.fake.requireEmailConfirmation(true);
     render(<LoginPage locale="es" />);
-    const submitBtn = document.querySelector('button[type="submit"]')!;
+    fillAndSubmit("user@example.com", "password123");
 
-    fireEvent.change(screen.getByLabelText("email"), {
-      target: { value: "user@example.com" },
-    });
-    fireEvent.change(screen.getByLabelText("password"), {
-      target: { value: "password123" },
-    });
-    fireEvent.change(screen.getByLabelText("confirmPassword"), {
-      target: { value: "password123" },
-    });
-    fireEvent.click(submitBtn);
+    await waitFor(() => expect(screen.getByText("checkEmail")).toBeInTheDocument());
+    expect(screen.getByText("checkEmailBody:user@example.com")).toBeInTheDocument();
+    expect(screen.getByText("checkSpam")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /resendIn:60/ })).toBeDisabled();
+    expect(h.replace).not.toHaveBeenCalled();
+  });
 
-    await waitFor(() => {
-      expect(mockRouterPush).toHaveBeenCalledWith("/home");
-    });
+  it("con sesión tras el registro (confirmación desactivada) → entra al destino", async () => {
+    h.params = new URLSearchParams("mode=register&next=%2Fes%2Fu%2Fbenevi%2Fl%2F3");
+    render(<LoginPage locale="es" />);
+    fillAndSubmit("user@example.com", "password123");
+    await waitFor(() => expect(h.replace).toHaveBeenCalledWith("/es/u/benevi/l/3"));
   });
 
   it("muestra error cuando signUp falla (usuario ya existente)", async () => {
-    mockSignUp.mockResolvedValue({
-      error: { message: "User already registered" },
-      data: null,
-    });
-
+    h.fake.addAccount("existing@example.com", "password123");
     render(<LoginPage locale="es" />);
-    const submitBtn = document.querySelector('button[type="submit"]')!;
-
-    fireEvent.change(screen.getByLabelText("email"), {
-      target: { value: "existing@example.com" },
-    });
-    fireEvent.change(screen.getByLabelText("password"), {
-      target: { value: "password123" },
-    });
-    fireEvent.change(screen.getByLabelText("confirmPassword"), {
-      target: { value: "password123" },
-    });
-    fireEvent.click(submitBtn);
-
-    await waitFor(() => {
-      // tErrors("userAlreadyExists") → "userAlreadyExists"
-      expect(screen.getByText("userAlreadyExists")).toBeInTheDocument();
-    });
+    fillAndSubmit("existing@example.com", "password123");
+    await waitFor(() => expect(screen.getByText("userAlreadyExists")).toBeInTheDocument());
   });
 });

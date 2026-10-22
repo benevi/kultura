@@ -3,11 +3,8 @@ import { test, expect } from "@playwright/test";
 const TEST_EMAIL = `test_${Date.now()}@example.com`;
 const TEST_PASSWORD = "Test1234!";
 
-// Tab buttons live in the toggle container (not inside <form>)
-const tabLogin = (page: any) =>
-  page.locator("div.mb-6 button", { hasText: "Iniciar sesión" });
-const tabRegister = (page: any) =>
-  page.locator("div.mb-6 button", { hasText: "Registrarse" });
+// `exact`: el botón "Mostrar contraseña" también contiene "contraseña".
+const passwordField = (page: any) => page.getByLabel("Contraseña", { exact: true });
 
 test.describe("Auth flow", () => {
   test("landing page loads and CTAs visible", async ({ page }) => {
@@ -17,57 +14,47 @@ test.describe("Auth flow", () => {
     await expect(page.getByRole("link", { name: "Registrarse" })).toBeVisible();
   });
 
-  test("login page renders both tabs and form fields", async ({ page }) => {
+  test("login page renders form fields and the sign-up link", async ({ page }) => {
     await page.goto(`/es/login`);
-    await expect(tabLogin(page)).toBeVisible();
-    await expect(tabRegister(page)).toBeVisible();
     await expect(page.getByLabel("Correo electrónico")).toBeVisible();
-    await expect(page.getByLabel("Contraseña")).toBeVisible();
+    await expect(passwordField(page)).toBeVisible();
+    await expect(page.getByRole("link", { name: "Regístrate" })).toBeVisible();
   });
 
-  test("register tab switches correctly and shows confirm password", async ({ page }) => {
-    await page.goto(`/es/login?mode=register`);
-    await tabRegister(page).click();
-    await expect(page.getByLabel("Confirmar contraseña")).toBeVisible();
+  test("sign-up link switches to register without confirm password", async ({ page }) => {
+    await page.goto(`/es/login`);
+    await page.getByRole("link", { name: "Regístrate" }).click();
+    await expect(page).toHaveURL(/mode=register/);
+    await expect(page.getByLabel("Confirmar contraseña")).toHaveCount(0);
+    await page.getByRole("button", { name: "Mostrar contraseña" }).click();
+    await expect(passwordField(page)).toHaveAttribute("type", "text");
   });
 
   test("login with invalid credentials shows error", async ({ page }) => {
     await page.goto(`/es/login`);
     await page.getByLabel("Correo electrónico").fill("nobody@nowhere.com");
-    await page.getByLabel("Contraseña").fill("wrongpassword");
+    await passwordField(page).fill("wrongpassword");
     await page.locator("form button[type=submit]").click();
     await expect(page.locator("text=/incorrecto|inválido|error/i")).toBeVisible({ timeout: 10000 });
   });
 
-  test("register with mismatched passwords shows error", async ({ page }) => {
-    await page.goto(`/es/login?mode=register`);
-    await tabRegister(page).click();
-    await page.getByLabel("Correo electrónico").fill(TEST_EMAIL);
-    await page.locator("#password").fill("Test1234!");
-    await page.locator("#confirmPassword").fill("Different1!");
-    await page.locator("form button[type=submit]").click();
-    await expect(page.locator("text=/contraseñas no coinciden/i")).toBeVisible({ timeout: 5000 });
-  });
-
   test("register with short password shows error", async ({ page }) => {
     await page.goto(`/es/login?mode=register`);
-    await tabRegister(page).click();
     await page.getByLabel("Correo electrónico").fill(TEST_EMAIL);
     await page.locator("#password").fill("abc");
-    await page.locator("#confirmPassword").fill("abc");
     await page.locator("form button[type=submit]").click();
     await expect(page.locator("text=/al menos 8/i")).toBeVisible({ timeout: 5000 });
   });
 
   test("forgot password link shows reset form", async ({ page }) => {
     await page.goto(`/es/login`);
-    await page.getByRole("button", { name: /Olvidaste/ }).click();
+    await page.getByRole("link", { name: /Olvidaste/ }).click();
     await expect(page.getByRole("button", { name: /Enviar enlace/ })).toBeVisible();
   });
 
   test("unauthenticated access to library redirects to login", async ({ page }) => {
     await page.goto(`/es/library`);
-    await expect(page).toHaveURL(/\/login/);
+    await expect(page).toHaveURL(/\/es\/login/);
   });
 
   test("successful registration flow", async ({ page }) => {
@@ -76,10 +63,8 @@ test.describe("Auth flow", () => {
     // acumular intentos fallidos con ese email antes de que llegue este test.
     const regEmail = `test_reg_${Date.now()}_${Math.random().toString(36).slice(2, 6)}@example.com`;
     await page.goto(`/es/login?mode=register`);
-    await tabRegister(page).click();
     await page.getByLabel("Correo electrónico").fill(regEmail);
     await page.locator("#password").fill(TEST_PASSWORD);
-    await page.locator("#confirmPassword").fill(TEST_PASSWORD);
     await page.locator("form button[type=submit]").click();
     // Two exclusive success states — neither exists in the initial form DOM:
     // (a) Email confirmation required → "Revisa tu correo" replaces the form entirely

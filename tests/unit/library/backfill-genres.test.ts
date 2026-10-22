@@ -15,11 +15,17 @@ import {
   type MediaGenreRow,
 } from '@/lib/library/backfill-genres'
 
-const { getMovieMock, getGameMock, getAnimeAniListMock } = vi.hoisted(() => ({
+const { getMovieMock, getGameMock, getAnimeAniListMock, adminRef } = vi.hoisted(() => ({
   getMovieMock: vi.fn(),
   getGameMock: vi.fn(),
   getAnimeAniListMock: vi.fn(),
+  adminRef: { current: null as unknown },
 }))
+
+// SEG-2: `media` solo la escribe el servidor con el cliente admin. El cliente
+// que recibe `backfillGenres` es el del usuario (lee su biblioteca) y, tras la
+// migración `media_server_only`, ya no puede hacer UPDATE en `media`.
+vi.mock('@/lib/supabase/admin', () => ({ createAdminClient: () => adminRef.current }))
 
 // Mocks PARCIALES: los normalizadores usan otros exports de estos módulos
 // (tmdbPoster, toAniListRef…), así que sustituir el módulo entero los rompería.
@@ -36,7 +42,11 @@ vi.mock('@/lib/api/anilist', async (importOriginal) => ({
   getAnime: getAnimeAniListMock,
 }))
 
-/** Supabase mock que registra los update() sobre `media`. */
+/**
+ * Supabase mock que registra los update() sobre `media` hechos con el cliente
+ * ADMIN. Devuelve como `client` el del usuario, que rechaza cualquier UPDATE
+ * de `media` como hará la base tras la migración.
+ */
 function makeSupabase(options: { updateFails?: boolean } = {}) {
   const updates: Array<{ id: string; metadata: Record<string, unknown> }> = []
   const client = {
@@ -49,8 +59,20 @@ function makeSupabase(options: { updateFails?: boolean } = {}) {
       })),
     })),
   }
+  adminRef.current = client
+  const userUpdates: unknown[] = []
+  const userClient = {
+    from: vi.fn(() => ({
+      update: vi.fn((payload: unknown) => ({
+        eq: vi.fn(async () => {
+          userUpdates.push(payload)
+          return { error: { code: '42501', message: 'permission denied for table media' } }
+        }),
+      })),
+    })),
+  }
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  return { client: client as any, updates }
+  return { client: userClient as any, updates, userUpdates }
 }
 
 function row(over: Partial<MediaGenreRow> = {}): MediaGenreRow {
@@ -114,11 +136,13 @@ describe('fetchGenresForMedia', () => {
 describe('backfillGenres', () => {
   it('repara la fila y la persiste con marca de sincronización', async () => {
     getMovieMock.mockResolvedValue({ id: 1, title: 'X', genres: [{ id: 18, name: 'Drama' }], vote_average: 7 })
-    const { client, updates } = makeSupabase()
+    const { client, updates, userUpdates } = makeSupabase()
 
     const healed = await backfillGenres([row()], client, 'es')
 
     expect(healed.get('movie_1')).toEqual(['Drama'])
+    // Se escribe con el admin, nunca con el cliente del usuario.
+    expect(userUpdates).toHaveLength(0)
     expect(updates).toHaveLength(1)
     expect(updates[0].metadata.genres).toEqual(['Drama'])
     expect(updates[0].metadata.genresSyncedAt).toBeTruthy()

@@ -61,6 +61,29 @@ export const TMDB_GENRE_TV: Record<string, number> = {
   western: 37,
 };
 
+// ── Nombre de género que pinta TMDB → slug de etiqueta (F-06, DAT-2) ──────────
+// TMDB traduce los géneros de cine, pero los COMBINADOS de televisión llegan en
+// inglés también con `language=es-ES` ("Action & Adventure", "Sci-Fi &
+// Fantasy", "Kids", "Soap"…). Claves normalizadas (minúsculas, sin acentos);
+// el texto lo pone `discoverFilters.options.genre.<slug>` en cada idioma.
+export const TMDB_GENRE_LABEL: Record<string, string> = {
+  "action & adventure": "accion-aventura",
+  "sci-fi & fantasy": "ciencia-ficcion-fantasia",
+  "war & politics": "guerra-politica",
+  kids: "infantil",
+  soap: "telenovela",
+  news: "noticias",
+  reality: "reality",
+  talk: "talk",
+  // Los mismos en español, por si TMDB los traduce algún día (o en /en).
+  "accion y aventura": "accion-aventura",
+  "ciencia ficcion y fantasia": "ciencia-ficcion-fantasia",
+  "sci-fi y fantasia": "ciencia-ficcion-fantasia",
+  "guerra y politica": "guerra-politica",
+  "pelicula de tv": "pelicula-tv",
+  "tv movie": "pelicula-tv",
+};
+
 // ── Plataformas (watch providers, región ES) ───────────────────────────────────
 // slug canónico → provider_id TMDB. Mismos ids para movie y tv. Requiere
 // watch_region=ES junto a with_watch_providers.

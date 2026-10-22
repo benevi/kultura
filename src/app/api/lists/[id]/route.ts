@@ -2,7 +2,7 @@
 // KULTURA — Route Handler: /api/lists/[id]
 // Gestiona items y miembros de una lista.
 //
-// POST   body { mediaId, mediaCache? }           → añadir item
+// POST   body { mediaId }                        → añadir item (mediaCache se ignora)
 // POST   body { userId }  x-action: invite       → añadir miembro
 // DELETE body { itemId }                         → eliminar item
 // DELETE body { userId }  x-action: remove-member → eliminar miembro
@@ -15,6 +15,8 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { canEditList } from '@/lib/social/lists'
 import { checkRateLimit, LIMITS } from '@/lib/rate-limit'
 import { createLogger } from '@/lib/logger'
+import { upsertMediaFromProvider, mediaFailureStatus } from '@/lib/media/upsert-from-provider'
+import { localeFromRequest } from '@/lib/media/request-locale'
 
 const log = createLogger('api/lists')
 
@@ -109,28 +111,6 @@ export async function POST(request: Request, { params }: Params): Promise<NextRe
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
   }
 
-  // Upsert media cache si viene
-  const mediaCache = body.mediaCache as Record<string, unknown> | undefined
-  if (mediaCache) {
-    await supabase.from('media').upsert(
-      {
-        id: mediaId,
-        external_id: mediaCache.externalId,
-        type: mediaCache.type,
-        title: mediaCache.title,
-        poster: mediaCache.poster ?? null,
-        backdrop: mediaCache.backdrop ?? null,
-        year: mediaCache.year ?? null,
-        synopsis: mediaCache.synopsis ?? null,
-        // Ver nota en /api/library: metadata.genres es la fuente real del
-        // perfil de gustos de match-score.ts — sin onConflict real (antes
-        // ignoreDuplicates) nunca se rellenaba/autocuraba.
-        metadata: { genres: (mediaCache.genres as string[] | undefined) ?? [] },
-      },
-      { onConflict: 'id' }
-    )
-  }
-
   // Evitar duplicados en la lista
   const { data: existing } = await supabase
     .from('list_items')
@@ -141,6 +121,14 @@ export async function POST(request: Request, { params }: Params): Promise<NextRe
 
   if (existing) {
     return NextResponse.json({ error: 'Item already in list' }, { status: 409 })
+  }
+
+  // La fila de `media` (FK de list_items) la garantiza el servidor con la
+  // ficha del proveedor; `mediaCache` se ignora (SEG-2).
+  const media = await upsertMediaFromProvider(mediaId, { locale: localeFromRequest(request) })
+  if (!media.ok) {
+    const failure = mediaFailureStatus(media.reason)
+    return NextResponse.json({ error: failure.error }, { status: failure.status })
   }
 
   const { data: item, error: itemErr } = await supabase

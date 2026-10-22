@@ -44,3 +44,24 @@ describe("Select", () => {
     expect(screen.queryByText("Tipo de contenido")).not.toBeInTheDocument();
   });
 });
+
+describe("Select — etiqueta asociada, borde visible y 16 px en móvil", () => {
+  it("la etiqueta nombra al select (htmlFor/id)", () => {
+    render(<Select value="movie" onChange={vi.fn()} options={options} label="Estado" />);
+    expect(screen.getByLabelText("Estado").tagName).toBe("SELECT");
+  });
+
+  it("16 px en móvil y 14 px desde md", () => {
+    render(<Select value="movie" onChange={vi.fn()} options={options} />);
+    const cls = screen.getByRole("combobox").className;
+    expect(cls).toMatch(/\btext-base\b/);
+    expect(cls).toMatch(/\bmd:text-sm\b/);
+  });
+
+  it("borde con contraste de campo y foco visible", () => {
+    render(<Select value="movie" onChange={vi.fn()} options={options} />);
+    const cls = screen.getByRole("combobox").className;
+    expect(cls).toMatch(/\bborder-field-border\b/);
+    expect(cls).toMatch(/focus-visible:outline-focus-ring/);
+  });
+});

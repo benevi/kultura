@@ -44,6 +44,31 @@ export const ANILIST_GENRE: Record<string, string> = {
   suspense: "Thriller", // AniList no distingue "Suspense" de "Thriller"
 };
 
+// ── Nombre de género de AniList → slug de etiqueta (F-06, DAT-2) ───────────────
+// AniList solo nombra sus géneros en inglés (los 18 de su esquema; `Hentai` no
+// llega porque las consultas piden `isAdult: false`). Claves normalizadas; el
+// texto lo pone `discoverFilters.options.genre.<slug>` en cada idioma.
+export const ANILIST_GENRE_LABEL: Record<string, string> = {
+  action: "accion",
+  adventure: "aventura",
+  comedy: "comedia",
+  drama: "drama",
+  ecchi: "ecchi",
+  fantasy: "fantasia",
+  horror: "terror",
+  "mahou shoujo": "mahou-shoujo",
+  mecha: "mecha",
+  music: "musica",
+  mystery: "misterio",
+  psychological: "psicologico",
+  romance: "romance",
+  "sci-fi": "ciencia-ficcion",
+  "slice of life": "recuentos-de-la-vida",
+  sports: "deportes",
+  supernatural: "sobrenatural",
+  thriller: "suspense",
+};
+
 // canónico (ANIME_STATUS de jikan-maps, reusado por STATUS_BY_TYPE.anime) →
 // MediaStatus de AniList. Cobertura completa (a diferencia de MangaDex, los
 // 3 valores canónicos de anime tienen equivalente exacto).

@@ -9,6 +9,7 @@ import { describe, it, expect, beforeAll, afterAll } from "vitest";
 
 const TEST_URL = process.env.SUPABASE_TEST_URL ?? "";
 const TEST_ANON_KEY = process.env.SUPABASE_TEST_ANON_KEY ?? "";
+const TEST_SERVICE_KEY = process.env.SUPABASE_TEST_SERVICE_ROLE_KEY ?? "";
 
 const USER_EMAIL = "test-user-a@kultura.test";
 const USER_PASSWORD = "TestPassword123!";
@@ -30,8 +31,12 @@ describe("Library upsert — flujo completo", () => {
     const { data } = await client.auth.getUser();
     userId = data.user!.id;
 
-    // Asegurar que existe la fila en media (cache)
-    await client.from("media").upsert({
+    // Asegurar que existe la fila en media (cache). El catálogo lo escribe el
+    // servidor (F-03): con la clave de servicio si está disponible.
+    const writer = TEST_SERVICE_KEY
+      ? createClient(TEST_URL, TEST_SERVICE_KEY, { auth: { persistSession: false } })
+      : client;
+    await writer.from("media").upsert({
       id: TEST_MEDIA_ID,
       external_id: "integration_upsert_test",
       type: "movie",

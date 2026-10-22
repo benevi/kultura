@@ -34,6 +34,7 @@ import { GET } from "@/app/api/discover/route";
 import { parseDiscoverParams } from "@/lib/api/discover-params";
 import { fetchDiscoverData } from "@/lib/api/discover";
 import { computeMatchScores } from "@/lib/recommendations/match-score";
+import { _resetStoreForTests } from "@/lib/rate-limit";
 
 function req(query: string): NextRequest {
   return new NextRequest(`http://localhost/api/discover${query}`);
@@ -41,6 +42,7 @@ function req(query: string): NextRequest {
 
 beforeEach(() => {
   vi.clearAllMocks();
+  _resetStoreForTests();
   vi.mocked(fetchDiscoverData).mockResolvedValue({
     items: [],
     totalPages: 1,
@@ -291,16 +293,87 @@ describe("GET /api/discover", () => {
     );
   });
 
-  // ── E-TMDB-LOCALE ───────────────────────────────────────────────────────────
-  it("propaga el locale activo como 4º argumento de fetchDiscoverData", async () => {
-    vi.mocked(getLocale).mockResolvedValueOnce("en");
-    await GET(req("?type=movie&page=1"));
+  // ── F-06 · DAT-1: el idioma viaja en la URL ──────────────────────────────────
+  // El middleware sale antes de next-intl en /api/*, así que `getLocale()`
+  // siempre daba "es" y la interfaz inglesa recibía catálogo en español.
+  it("?locale=en llega como 4º argumento de fetchDiscoverData", async () => {
+    await GET(req("?type=movie&page=1&q=inception&locale=en"));
     expect(fetchDiscoverData).toHaveBeenCalledWith(
       "movie",
       1,
       expect.any(Object),
       "en",
-      null
+      "inception"
     );
+  });
+
+  it("no depende de getLocale(): sin ?locale= es español aunque getLocale diga otra cosa", async () => {
+    vi.mocked(getLocale).mockResolvedValue("en");
+    await GET(req("?type=movie&page=1"));
+    expect(fetchDiscoverData).toHaveBeenCalledWith("movie", 1, expect.any(Object), "es", null);
+    vi.mocked(getLocale).mockResolvedValue("es");
+  });
+
+  it("acepta variantes regionales y cae a es ante valores raros", async () => {
+    await GET(req("?type=movie&locale=en-US"));
+    await GET(req("?type=movie&locale=xx"));
+    const locales = vi.mocked(fetchDiscoverData).mock.calls.map((c) => c[3]);
+    expect(locales).toEqual(["en", "es"]);
+  });
+
+  // ── F-06 · DAT-11: caché de borde ───────────────────────────────────────────
+  it("respuesta buena → Cache-Control cacheable en el CDN", async () => {
+    const res = await GET(req("?type=movie&page=1&locale=es"));
+    expect(res.headers.get("Cache-Control")).toBe(
+      "public, s-maxage=3600, stale-while-revalidate=86400"
+    );
+  });
+
+  it("type=all (agregado, puede venir cojo sin avisar) → caché corta de 5 min", async () => {
+    const res = await GET(req("?type=all&page=1&locale=es"));
+    expect(res.headers.get("Cache-Control")).toBe(
+      "public, s-maxage=300, stale-while-revalidate=600"
+    );
+    const search = await GET(req("?type=all&q=batman&locale=es"));
+    expect(search.headers.get("Cache-Control")).toBe(
+      "public, s-maxage=300, stale-while-revalidate=600"
+    );
+  });
+
+  it("respuesta con error del proveedor → no-store (no se congela un fallo 1 h)", async () => {
+    vi.mocked(fetchDiscoverData).mockResolvedValueOnce({
+      items: [],
+      totalPages: 1,
+      hasMore: false,
+      fetchErrorKind: "generic",
+    });
+    const res = await GET(req("?type=anime"));
+    expect(res.headers.get("Cache-Control")).toBe("no-store");
+  });
+
+  // ── F-06 · COD-6: límite por IP ─────────────────────────────────────────────
+  it("121 peticiones en 60 s desde la misma IP → la 121.ª es 429 (holgura para CGNAT) y no llama al proveedor", async () => {
+    const ipReq = () =>
+      new NextRequest("http://localhost/api/discover?type=movie", {
+        headers: { "x-forwarded-for": "203.0.113.7" },
+      });
+    for (let i = 0; i < 120; i++) {
+      expect((await GET(ipReq())).status).toBe(200);
+    }
+    const blocked = await GET(ipReq());
+    expect(blocked.status).toBe(429);
+    expect(blocked.headers.get("Retry-After")).toBeTruthy();
+    expect(blocked.headers.get("Cache-Control")).toBe("no-store");
+    const body = await blocked.json();
+    expect(body.fetchErrorKind).toBe("rate-limit");
+    expect(body.items).toEqual([]);
+    expect(fetchDiscoverData).toHaveBeenCalledTimes(120);
+    // Otra IP sigue pudiendo.
+    const other = await GET(
+      new NextRequest("http://localhost/api/discover?type=movie", {
+        headers: { "x-forwarded-for": "203.0.113.8" },
+      })
+    );
+    expect(other.status).toBe(200);
   });
 });

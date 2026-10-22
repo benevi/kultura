@@ -70,4 +70,22 @@ describe("Header", () => {
     expect(signUpLink).toBeInTheDocument();
     expect(signUpLink).toHaveAttribute("href", "/login?mode=register");
   });
+
+  it("la cabecera es opaca, como la de la app (antes bg-surface/80 no generaba regla y era transparente)", async () => {
+    const HeaderResolved = await Header();
+    const { container } = render(HeaderResolved);
+    const header = container.querySelector("header")!;
+    expect(header).toHaveClass("bg-surface-default");
+    expect(header.className).not.toMatch(/bg-surface\/80|backdrop-blur/);
+  });
+
+  it("cabe en 320 px: botones compactos en móvil y etiqueta corta de entrar por debajo de 360 px", async () => {
+    const HeaderResolved = await Header();
+    render(HeaderResolved);
+    const signIn = screen.getByRole("link", { name: /iniciar sesión/i });
+    expect(signIn.className).toMatch(/\bh-9\b/);
+    expect(signIn.className).toMatch(/\bsm:h-10\b/);
+    expect(screen.getByText("Iniciar sesión")).toHaveClass("max-[359px]:hidden");
+    expect(screen.getByText("signInAction")).toHaveClass("min-[360px]:hidden");
+  });
 });

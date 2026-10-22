@@ -1,40 +1,33 @@
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import { describe, it, expect, vi, beforeEach } from "vitest";
+import { createFakeAuth } from "../../auth/fake-auth";
 
 // ---------------------------------------------------------------------------
 // Mocks
 // ---------------------------------------------------------------------------
 
-const mockSignInWithPassword = vi.fn();
-const mockGetSession = vi.fn().mockResolvedValue({ data: { session: null } });
-const mockSignInWithOAuth = vi.fn().mockResolvedValue({ error: null });
-const mockRouterPush = vi.fn();
-
-vi.mock("@/lib/supabase/client", () => ({
-  createClient: () => ({
-    auth: {
-      signInWithPassword: mockSignInWithPassword,
-      signInWithOAuth: mockSignInWithOAuth,
-      getSession: mockGetSession,
-    },
-  }),
+const h = vi.hoisted(() => ({
+  fake: null as unknown as ReturnType<typeof import("../../auth/fake-auth").createFakeAuth>,
+  replace: vi.fn(),
+  params: new URLSearchParams(),
 }));
 
-// useTranslations("auth") returns (key) => key  →  label text = "email", "password", etc.
-// useTranslations("errors") returns (key) => key → error text = "invalidEmail", etc.
-vi.mock("next-intl", () => ({
-  useTranslations: () => (key: string) => key,
-}));
+vi.mock("@/lib/supabase/client", () => ({ createClient: () => h.fake.client }));
 
-vi.mock("@/i18n/navigation", () => ({
-  useRouter: () => ({ push: mockRouterPush }),
-  usePathname: () => "/es/login",
-}));
+// useTranslations(...) devuelve la clave → texto de la etiqueta = "email", etc.
+vi.mock("next-intl", async () => {
+  const m = await import("../../auth/fake-auth");
+  return { useTranslations: () => m.fakeT };
+});
 
-// useSearchParams mock — default to mode=login
-const mockGet = vi.fn().mockReturnValue("login");
+vi.mock("@/i18n/navigation", async () => {
+  const m = await import("../../auth/fake-auth");
+  return { Link: m.FakeLink };
+});
+
 vi.mock("next/navigation", () => ({
-  useSearchParams: () => ({ get: mockGet }),
+  useRouter: () => ({ replace: h.replace, push: vi.fn(), refresh: vi.fn() }),
+  useSearchParams: () => h.params,
 }));
 
 // ---------------------------------------------------------------------------
@@ -43,29 +36,32 @@ vi.mock("next/navigation", () => ({
 
 import { LoginPage } from "@/app/[locale]/login/LoginPage";
 
+function fillAndSubmit(email: string, password: string) {
+  fireEvent.change(screen.getByLabelText("email"), { target: { value: email } });
+  fireEvent.change(screen.getByLabelText("password"), { target: { value: password } });
+  fireEvent.click(document.querySelector('button[type="submit"]')!);
+}
+
 // ---------------------------------------------------------------------------
 // Tests
 // ---------------------------------------------------------------------------
 
 describe("LoginPage — modo login", () => {
   beforeEach(() => {
-    vi.clearAllMocks();
-    mockGet.mockReturnValue("login");
-    mockGetSession.mockResolvedValue({ data: { session: null } });
-    mockSignInWithPassword.mockReset();
+    h.fake = createFakeAuth();
+    h.fake.addAccount("user@example.com", "password123");
+    h.replace.mockReset();
+    h.params = new URLSearchParams();
   });
 
   it("renderiza campos de email y password", () => {
     render(<LoginPage locale="es" />);
-    // useTranslations returns key directly → label text = "email", "password"
     expect(screen.getByLabelText("email")).toBeInTheDocument();
     expect(screen.getByLabelText("password")).toBeInTheDocument();
   });
 
   it("renderiza el botón de submit", () => {
     render(<LoginPage locale="es" />);
-    // The submit button has type="submit"; tab buttons have type="button"
-    // Use querySelector to avoid ambiguity with tab button that also says "signIn"
     const submitBtn = document.querySelector('button[type="submit"]');
     expect(submitBtn).toBeInTheDocument();
     expect(submitBtn?.textContent).toBe("signIn");
@@ -73,104 +69,39 @@ describe("LoginPage — modo login", () => {
 
   it("muestra error de validación cuando el email es inválido", async () => {
     render(<LoginPage locale="es" />);
-    const submitBtn = document.querySelector('button[type="submit"]')!;
-
-    fireEvent.change(screen.getByLabelText("email"), {
-      target: { value: "notanemail" },
-    });
-    fireEvent.change(screen.getByLabelText("password"), {
-      target: { value: "password123" },
-    });
-    fireEvent.click(submitBtn);
-
-    await waitFor(() => {
-      // tErrors("invalidEmail") → "invalidEmail"
-      expect(screen.getByText("invalidEmail")).toBeInTheDocument();
-    });
-    expect(mockSignInWithPassword).not.toHaveBeenCalled();
+    fillAndSubmit("notanemail", "password123");
+    await waitFor(() => expect(screen.getByText("invalidEmail")).toBeInTheDocument());
+    expect(h.fake.auth.signInWithPassword).not.toHaveBeenCalled();
   });
 
   it("muestra error de validación cuando la contraseña es muy corta", async () => {
     render(<LoginPage locale="es" />);
-    const submitBtn = document.querySelector('button[type="submit"]')!;
-
-    fireEvent.change(screen.getByLabelText("email"), {
-      target: { value: "user@example.com" },
-    });
-    fireEvent.change(screen.getByLabelText("password"), {
-      target: { value: "abc" },
-    });
-    fireEvent.click(submitBtn);
-
-    await waitFor(() => {
-      // tErrors("passwordTooShort") → "passwordTooShort"
-      expect(screen.getByText("passwordTooShort")).toBeInTheDocument();
-    });
-    expect(mockSignInWithPassword).not.toHaveBeenCalled();
+    fillAndSubmit("user@example.com", "abc");
+    await waitFor(() => expect(screen.getByText("passwordTooShort")).toBeInTheDocument());
+    expect(h.fake.auth.signInWithPassword).not.toHaveBeenCalled();
   });
 
   it("muestra error cuando signInWithPassword falla", async () => {
-    mockSignInWithPassword.mockResolvedValue({
-      error: { message: "Invalid login credentials" },
-    });
-
     render(<LoginPage locale="es" />);
-    const submitBtn = document.querySelector('button[type="submit"]')!;
-
-    fireEvent.change(screen.getByLabelText("email"), {
-      target: { value: "user@example.com" },
-    });
-    fireEvent.change(screen.getByLabelText("password"), {
-      target: { value: "password123" },
-    });
-    fireEvent.click(submitBtn);
-
-    await waitFor(() => {
-      // tErrors("invalidCredentials") → "invalidCredentials"
-      expect(screen.getByText("invalidCredentials")).toBeInTheDocument();
-    });
+    fillAndSubmit("user@example.com", "wrongpass1");
+    await waitFor(() => expect(screen.getByText("invalidCredentials")).toBeInTheDocument());
   });
 
   it("llama a signInWithPassword con email y password correctos", async () => {
-    mockSignInWithPassword.mockResolvedValue({ error: null, data: {} });
-    mockRouterPush.mockReturnValue(undefined);
-
     render(<LoginPage locale="es" />);
-    const submitBtn = document.querySelector('button[type="submit"]')!;
-
-    fireEvent.change(screen.getByLabelText("email"), {
-      target: { value: "user@example.com" },
-    });
-    fireEvent.change(screen.getByLabelText("password"), {
-      target: { value: "password123" },
-    });
-    fireEvent.click(submitBtn);
-
+    fillAndSubmit("user@example.com", "password123");
     await waitFor(() => {
-      expect(mockSignInWithPassword).toHaveBeenCalledWith({
+      expect(h.fake.auth.signInWithPassword).toHaveBeenCalledWith({
         email: "user@example.com",
         password: "password123",
       });
     });
   });
 
-  it("redirige a /home tras login exitoso", async () => {
-    mockSignInWithPassword.mockResolvedValue({ error: null, data: {} });
-
+  it("redirige al inicio con locale tras login exitoso", async () => {
     render(<LoginPage locale="es" />);
-    const submitBtn = document.querySelector('button[type="submit"]')!;
-
-    fireEvent.change(screen.getByLabelText("email"), {
-      target: { value: "user@example.com" },
-    });
-    fireEvent.change(screen.getByLabelText("password"), {
-      target: { value: "password123" },
-    });
-    fireEvent.click(submitBtn);
-
-    await waitFor(() => {
-      expect(mockRouterPush).toHaveBeenCalledWith("/home");
-    });
+    fillAndSubmit("user@example.com", "password123");
+    await waitFor(() => expect(h.replace).toHaveBeenCalledWith("/es/home"));
   });
 
   // ── Acabado F0 del artboard Login (canvas "Kultura — Diseño completo") ──
@@ -184,22 +115,22 @@ describe("LoginPage — modo login", () => {
   });
 
   // El artboard pone el cambio de modo AL PIE ("¿No tienes cuenta?
-  // Regístrate"), no en dos pestañas arriba. Lo que se protege aquí es que
-  // registrarse siga siendo alcanzable desde la pantalla de entrar.
-  it("ofrece el registro al pie y lleva a mode=register", () => {
+  // Regístrate"). Ahora es un enlace de verdad (ROJO-10).
+  it("ofrece el registro al pie como enlace a mode=register", () => {
     render(<LoginPage locale="es" />);
     expect(screen.getByText("dontHaveAccount")).toBeInTheDocument();
-
-    fireEvent.click(screen.getByRole("button", { name: "signUpAction" }));
-    expect(mockRouterPush).toHaveBeenCalledWith("/login?mode=register");
+    expect(screen.getByRole("link", { name: "signUpAction" })).toHaveAttribute(
+      "href",
+      "/login?mode=register"
+    );
   });
 
   it("muestra el enlace de olvidaste contraseña", () => {
     render(<LoginPage locale="es" />);
-    // tAuth("forgotPassword") → "forgotPassword"
-    expect(
-      screen.getByRole("button", { name: "forgotPassword" })
-    ).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "forgotPassword" })).toHaveAttribute(
+      "href",
+      "/login?mode=reset"
+    );
   });
 
   // Regresión: se priorizaba NEXT_PUBLIC_SITE_URL (dominio canónico de
@@ -213,10 +144,10 @@ describe("LoginPage — modo login", () => {
     fireEvent.click(screen.getByRole("button", { name: /google/i }));
 
     await waitFor(() => {
-      expect(mockSignInWithOAuth).toHaveBeenCalledWith({
+      expect(h.fake.auth.signInWithOAuth).toHaveBeenCalledWith({
         provider: "google",
         options: {
-          redirectTo: `${window.location.origin}/api/auth/callback?next=/es/home`,
+          redirectTo: `${window.location.origin}/api/auth/callback?next=%2Fes%2Fhome`,
         },
       });
     });
@@ -227,14 +158,14 @@ describe("LoginPage — modo login", () => {
 
 describe("LoginPage — vuelta desde la demo (E-DEMO)", () => {
   beforeEach(() => {
-    mockGetSession.mockResolvedValue({ data: { session: null } });
+    h.fake = createFakeAuth();
+    h.params = new URLSearchParams("error=demo_unavailable");
   });
 
   // `/api/auth/demo` redirige aquí con ?error=demo_unavailable si la demo no
   // está configurada o se pasa del límite: el aviso tiene que verse, y no
   // borrarlo el reseteo de formulario que corre al montar.
   it("enseña el aviso de demo no disponible", async () => {
-    mockGet.mockImplementation((key: string) => (key === "error" ? "demo_unavailable" : "login"));
     render(<LoginPage locale="es" />);
     await waitFor(() => expect(screen.getByText("demoUnavailable")).toBeInTheDocument());
   });

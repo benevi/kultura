@@ -15,6 +15,11 @@
 //   - Las amistades NO se importan: una amistad necesita a la otra parte y no
 //     puede recrearse unilateralmente desde un fichero. Se informa en la
 //     respuesta en vez de ignorarlas en silencio.
+//   - El catálogo compartido `media` NUNCA se escribe con el contenido del
+//     fichero (SEG-2): editar el JSON renombraba títulos para todos. Las filas
+//     que ya existen se usan tal cual y las que faltan se piden al proveedor
+//     (lib/media). Lo que no se pueda resolver ahora se omite y se cuenta en
+//     `libraryUnresolved`; reimportar el mismo fichero lo completa.
 // ============================================================
 
 import { NextRequest, NextResponse } from 'next/server'
@@ -23,6 +28,8 @@ import { checkRateLimit, LIMITS } from '@/lib/rate-limit'
 import { invalidateRecCache } from '@/lib/claude/recommendations'
 import { invalidateMatchScoreCache } from '@/lib/recommendations/match-score'
 import { createLogger } from '@/lib/logger'
+import { ensureMediaRows } from '@/lib/media/upsert-from-provider'
+import { localeFromRequest } from '@/lib/media/request-locale'
 
 const log = createLogger('api/account/import')
 
@@ -31,14 +38,9 @@ const LIBRARY_STATUSES = ['completed', 'in_progress', 'pending', 'abandoned']
 /** Entrada de biblioteca del fichero, ya validada. */
 interface ImportableEntry {
   mediaId: string
-  type: string
-  externalId: string
   status: string
   score: number | null
   watchedAt: string | null
-  title: string
-  poster: string | null
-  year: number | null
 }
 
 /**
@@ -46,8 +48,8 @@ interface ImportableEntry {
  * utilizable — un fichero a medias no debe tumbar la importación entera.
  *
  * `mediaId` tiene el formato "{type}_{externalId}" (misma convención que el
- * resto de la app), así que de ahí salen el tipo y el id externo que necesita
- * la tabla `media`.
+ * resto de la app). El título, la portada y el año del fichero se ignoran: la
+ * ficha la pone el servidor.
  */
 function parseEntry(raw: unknown): ImportableEntry | null {
   if (typeof raw !== 'object' || raw === null) return null
@@ -58,20 +60,13 @@ function parseEntry(raw: unknown): ImportableEntry | null {
   if (typeof mediaId !== 'string' || !/^[a-z]+_.+$/.test(mediaId)) return null
   if (typeof status !== 'string' || !LIBRARY_STATUSES.includes(status)) return null
 
-  const separator = mediaId.indexOf('_')
   const score = entry.score
-  const year = entry.year
 
   return {
     mediaId,
-    type: mediaId.slice(0, separator),
-    externalId: mediaId.slice(separator + 1),
     status,
-    score: typeof score === 'number' && score >= 1 && score <= 5 ? score : null,
+    score: typeof score === 'number' && Number.isInteger(score) && score >= 1 && score <= 5 ? score : null,
     watchedAt: typeof entry.watchedAt === 'string' ? entry.watchedAt : null,
-    title: typeof entry.title === 'string' && entry.title.trim() !== '' ? entry.title : mediaId,
-    poster: typeof entry.poster === 'string' ? entry.poster : null,
-    year: typeof year === 'number' ? year : null,
   }
 }
 
@@ -112,44 +107,45 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     )
   }
 
-  const entries = payload.library
+  const valid = payload.library
     .map(parseEntry)
     .filter((entry): entry is ImportableEntry => entry !== null)
+  // Una misma entrada repetida en el fichero se queda con la última: Postgres
+  // rechaza un upsert que toca dos veces la misma fila en una sola sentencia.
+  const entries = Array.from(new Map(valid.map((entry) => [entry.mediaId, entry])).values())
 
   let libraryImported = 0
+  let libraryUnresolved = 0
   try {
     if (entries.length > 0) {
       // 1. La ficha del título: `user_media.media_id` es FK contra `media`, así
-      //    que sin esto la importación fallaría entera en una cuenta nueva.
-      //    Los géneros no viajan en el export; los repone el autocurado al
-      //    construir el perfil de gustos (lib/library/backfill-genres).
-      const { error: mediaError } = await supabase.from('media').upsert(
-        entries.map((entry) => ({
-          id: entry.mediaId,
-          external_id: entry.externalId,
-          type: entry.type,
-          title: entry.title,
-          poster: entry.poster,
-          year: entry.year,
-        })),
-        { onConflict: 'id' }
+      //    que solo se importan las entradas cuyo título ya está en el catálogo
+      //    o ha podido pedirse ahora al proveedor. Las filas existentes no se
+      //    tocan; los géneros que les falten los repone el autocurado del perfil
+      //    de gustos (lib/library/backfill-genres).
+      const { available, unresolved } = await ensureMediaRows(
+        entries.map((entry) => entry.mediaId),
+        { locale: localeFromRequest(request) }
       )
-      if (mediaError) throw new Error(`media: ${mediaError.message}`)
+      libraryUnresolved = unresolved.length
+      const importable = entries.filter((entry) => available.has(entry.mediaId))
 
       // 2. La entrada de biblioteca, SIEMPRE para el usuario autenticado.
-      const { error: libraryError } = await supabase.from('user_media').upsert(
-        entries.map((entry) => ({
-          user_id: user.id,
-          media_id: entry.mediaId,
-          status: entry.status,
-          score: entry.score,
-          watched_at: entry.watchedAt,
-        })),
-        { onConflict: 'user_id,media_id' }
-      )
-      if (libraryError) throw new Error(`user_media: ${libraryError.message}`)
+      if (importable.length > 0) {
+        const { error: libraryError } = await supabase.from('user_media').upsert(
+          importable.map((entry) => ({
+            user_id: user.id,
+            media_id: entry.mediaId,
+            status: entry.status,
+            score: entry.score,
+            watched_at: entry.watchedAt,
+          })),
+          { onConflict: 'user_id,media_id' }
+        )
+        if (libraryError) throw new Error(`user_media: ${libraryError.message}`)
+      }
 
-      libraryImported = entries.length
+      libraryImported = importable.length
     }
   } catch (err) {
     log.error('Failed to import library', { err, userId: user.id })
@@ -170,7 +166,10 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
 
   return NextResponse.json({
     libraryImported,
-    librarySkipped: payload.library.length - entries.length,
+    librarySkipped: payload.library.length - valid.length,
+    // Títulos válidos cuyo proveedor no respondió (o fuera del tope por
+    // petición): reimportar el mismo fichero los completa.
+    libraryUnresolved,
     listsImported,
     // Explícito, no silencioso: el usuario debe saber que esto no vuelve solo.
     friendshipsImported: 0,

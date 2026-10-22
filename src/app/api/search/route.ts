@@ -4,10 +4,11 @@
 // ============================================================
 
 import { NextRequest, NextResponse } from "next/server";
-import { getLocale } from "next-intl/server";
 import { searchMovies, searchTV } from "@/lib/api/tmdb";
 import type { TmdbMovieDetail, TmdbTVDetail } from "@/lib/api/tmdb";
 import { normalizeMovie, normalizeTV } from "@/lib/api/normalizer";
+import { resolveApiLocale } from "@/lib/api/locale";
+import { CATALOG_EDGE_CACHE, NO_STORE, clientIp } from "@/lib/api/discover-params";
 import { checkRateLimit, LIMITS } from "@/lib/rate-limit";
 
 export async function GET(request: NextRequest) {
@@ -15,20 +16,24 @@ export async function GET(request: NextRequest) {
   if (q.length < 2) return NextResponse.json([]);
 
   // Rate limiting — 60 req/min por IP
-  const ip =
-    request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ??
-    request.headers.get("x-real-ip") ??
-    "unknown";
-  const rl = checkRateLimit(`${ip}:search`, LIMITS.search);
+  const rl = checkRateLimit(`${clientIp(request.headers)}:search`, LIMITS.search);
   if (!rl.allowed) {
     return NextResponse.json(
       { error: "Too many requests" },
-      { status: 429, headers: { "Retry-After": String(rl.retryAfterSeconds) } }
+      {
+        status: 429,
+        headers: {
+          "Retry-After": String(rl.retryAfterSeconds),
+          "Cache-Control": NO_STORE,
+        },
+      }
     );
   }
 
-  // E-TMDB-LOCALE: sugerencias de autocompletado en el idioma activo.
-  const locale = await getLocale();
+  // F-06 (DAT-1): idioma de `?locale=` (lo manda SearchBar con `useLocale()`).
+  // `getLocale()` daba siempre "es" en /api/* porque el middleware sale antes
+  // de next-intl; en la URL, además, la caché de borde no mezcla idiomas.
+  const locale = resolveApiLocale(request.nextUrl.searchParams.get("locale"));
 
   try {
     const [movies, tv] = await Promise.allSettled([
@@ -49,8 +54,13 @@ export async function GET(request: NextRequest) {
       ...(tv.status === "fulfilled" ? tv.value : []),
     ].slice(0, 5);
 
-    return NextResponse.json(results);
+    // DAT-11: solo se cachea en el borde la respuesta completa; una con un
+    // proveedor caído quedaría coja una hora para todos.
+    const complete = movies.status === "fulfilled" && tv.status === "fulfilled";
+    return NextResponse.json(results, {
+      headers: { "Cache-Control": complete ? CATALOG_EDGE_CACHE : NO_STORE },
+    });
   } catch {
-    return NextResponse.json([]);
+    return NextResponse.json([], { headers: { "Cache-Control": NO_STORE } });
   }
 }
