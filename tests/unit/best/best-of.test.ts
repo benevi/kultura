@@ -53,13 +53,13 @@ describe("best-of", () => {
 });
 
 describe("best-of — suelo de votos (E-BEST-VOTOS)", () => {
-  it("más exigente en años cerrados; anime y juegos no lo usan", () => {
+  it("más exigente en años cerrados; anime no lo usa", () => {
     expect(bestMinVotes("movie", 2026, today)).toBe(400);
     expect(bestMinVotes("movie", 2025, today)).toBe(1500);
     expect(bestMinVotes("tv", 2026, today)).toBe(200);
     expect(bestMinVotes("anime", 2026, today)).toBeUndefined();
-    expect(bestMinVotes("game", 2026, today)).toBe(60);
-    expect(bestMinVotes("game", 2025, today)).toBe(70);
+    expect(bestMinVotes("game", 2026, today)).toBe(25);
+    expect(bestMinVotes("game", 2025, today)).toBe(60);
   });
 
   it("si el suelo deja menos de 5, repite sin él", async () => {
@@ -76,9 +76,13 @@ describe("best-of — suelo de votos (E-BEST-VOTOS)", () => {
     expect(calls[1][2]).not.toHaveProperty("minVotes");
   });
 
-  it("juegos: filtra por Metacritic y ordena por valoración", async () => {
+  it("juegos: filtra por nº de valoraciones y ordena por valoración", async () => {
     const g = (id: string, mc: number | undefined, rating: number) =>
-      item(id, { type: "game", rating, metadata: { metacritic: mc } } as never);
+      item(id, {
+        type: "game",
+        rating,
+        metadata: { ratingsCount: mc },
+      } as never);
     vi.mocked(fetchDiscoverData).mockReset();
     vi.mocked(fetchDiscoverData)
       .mockResolvedValueOnce({
@@ -92,7 +96,7 @@ describe("best-of — suelo de votos (E-BEST-VOTOS)", () => {
       .mockResolvedValueOnce({
         items: [g("e", 75, 8.5), g("f", 71, 7.0), g("h", 88, 8.8)],
       } as never)
-      .mockResolvedValueOnce({ items: [] } as never);
+      .mockResolvedValue({ items: [] } as never);
     const out = await getBestOf("game", 2024, "es");
     expect(out.map((i) => i.id)).toEqual(["d", "h", "e", "a", "f"]);
   });
