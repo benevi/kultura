@@ -27,6 +27,7 @@ import { resolveApiLocale, type ApiLocale } from "@/lib/api/locale";
 import { translateSynopsis } from "@/lib/translate/synopsis";
 import { needsTranslation } from "@/lib/translate/language";
 import { cleanSynopsis, isCjkOnly } from "@/lib/best/quality";
+import { BEST_CACHE_TAG, BEST_CACHE_VERSION } from "@/lib/best/cache-tags";
 import type { MediaType } from "@/types/media";
 
 /** Lo que pinta la card de un ranking. */
@@ -48,8 +49,7 @@ export interface BestSource extends BestItem {
   nativeTitle?: string;
 }
 
-export const BEST_CACHE_TAG = "best-of";
-export const BEST_CACHE_VERSION = "best-of-v6";
+export { BEST_CACHE_TAG, BEST_CACHE_VERSION } from "@/lib/best/cache-tags";
 
 /** Llamadas al modelo de traducción por cálculo de un ranking (D-06). */
 export const BEST_TRANSLATE_BUDGET = 2;
