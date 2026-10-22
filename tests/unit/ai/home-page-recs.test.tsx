@@ -8,7 +8,7 @@
 // ============================================================
 
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import type { ReactElement, ReactNode } from 'react'
+import { Suspense, type ReactElement, type ReactNode } from 'react'
 
 const { readTodayMock, starterMock, getDailyMock, signal } = vi.hoisted(() => ({
   readTodayMock: vi.fn(),
@@ -77,9 +77,28 @@ function findProps(node: ReactNode): Record<string, unknown> | null {
   return findProps(el.props?.children)
 }
 
-async function renderPage() {
+/** Primer <Suspense> del árbol (o null). */
+function findSuspense(node: ReactNode): ReactElement<{ fallback: ReactNode; children: ReactNode }> | null {
+  if (!node || typeof node !== 'object') return null
+  if (Array.isArray(node)) {
+    for (const child of node) {
+      const found = findSuspense(child)
+      if (found) return found
+    }
+    return null
+  }
+  const el = node as ReactElement<{ children?: ReactNode }>
+  if (el.type === Suspense) return el as ReactElement<{ fallback: ReactNode; children: ReactNode }>
+  return findSuspense(el.props?.children)
+}
+
+async function loadPage() {
   const { default: HomePage } = await import('@/app/[locale]/(app)/home/page')
-  return findProps(await HomePage())
+  return HomePage
+}
+
+async function renderPage() {
+  return findProps(await (await loadPage())())
 }
 
 beforeEach(() => {
@@ -103,16 +122,51 @@ describe('Inicio — "Para ti" sin coste', () => {
     expect(getDailyMock).not.toHaveBeenCalled()
   })
 
-  it('cuenta sin señal (menos de 3 títulos) → lo popular, sin botón', async () => {
+  it('cuenta sin señal: la página NO espera a lo popular (Suspense con esqueleto)', async () => {
+    readTodayMock.mockResolvedValue(null)
+    signal.count = 2
+    // Una muestra fría que no llega nunca: si la página la esperase, colgaría.
+    starterMock.mockReturnValue(new Promise(() => {}))
+
+    const HomePage = await loadPage()
+    const tree = await Promise.race([
+      HomePage(),
+      new Promise((_, reject) => setTimeout(() => reject(new Error('la página esperó a getStarterItems')), 500)),
+    ])
+
+    const suspense = findSuspense(tree as ReactNode)
+    expect(suspense).not.toBeNull()
+    // El fallback es el esqueleto del propio componente, sin pedir nada.
+    expect(findProps(suspense!.props.fallback)).toEqual({ pending: true })
+    expect(getDailyMock).not.toHaveBeenCalled()
+  })
+
+  it('cuenta sin señal: dentro del Suspense, lo popular llega al componente', async () => {
     readTodayMock.mockResolvedValue(null)
     signal.count = 2
     starterMock.mockResolvedValue([{ id: 'movie_9' }])
 
-    const props = await renderPage()
+    const suspense = findSuspense((await (await loadPage())()) as ReactNode)
+    const child = suspense!.props.children as ReactElement<Record<string, unknown>>
+    const render = child.type as (props: Record<string, unknown>) => Promise<ReactNode>
+    const props = findProps(await render(child.props))
 
-    expect(props?.initial).toBeNull()
+    expect(starterMock).toHaveBeenCalledWith('es')
     expect(props?.starter).toEqual([{ id: 'movie_9' }])
-    expect(getDailyMock).not.toHaveBeenCalled()
+  })
+
+  it('cuenta sin señal y muestra vacía o caída → el botón de siempre', async () => {
+    readTodayMock.mockResolvedValue(null)
+    signal.count = 0
+    starterMock.mockRejectedValue(new Error('showcase incompleta'))
+
+    const suspense = findSuspense((await (await loadPage())()) as ReactNode)
+    const child = suspense!.props.children as ReactElement<Record<string, unknown>>
+    const render = child.type as (props: Record<string, unknown>) => Promise<ReactNode>
+    const props = findProps(await render(child.props))
+
+    expect(props?.starter).toBeUndefined()
+    expect(props?.pending).toBeUndefined()
   })
 
   it('con señal y sin nada hoy → ni initial ni starter (el componente enseña el botón)', async () => {

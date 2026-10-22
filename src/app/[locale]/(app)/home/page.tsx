@@ -2,6 +2,7 @@
 // KULTURA — /home (Server Component)
 // ============================================================
 
+import { Suspense } from 'react'
 import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import { HeroSection } from '@/components/home/HeroSection'
@@ -12,12 +13,23 @@ import { GenreNews } from '@/components/home/GenreNews'
 import { getLocale, getTranslations } from 'next-intl/server'
 import { MIN_LIBRARY_ITEMS, readTodayAiRecommendations } from '@/lib/claude/recommendations'
 import { getStarterItems } from '@/lib/recommendations/starter'
-import type { MediaItem } from '@/types/media'
 import type { Metadata } from 'next'
 import type { HeroItem } from '@/components/home/HeroSection'
 
 export async function generateMetadata(): Promise<Metadata> {
   return { title: 'Inicio' }
+}
+
+/**
+ * Lo popular para una cuenta sin señal (E-INICIO-ARRANQUE). Va en su propio
+ * componente de servidor dentro de <Suspense>: con la caché de la muestra fría
+ * (o una muestra incompleta, que no se guarda) puede tardar varios segundos y
+ * Inicio no debe esperarla. Mientras, el esqueleto. No gasta IA.
+ */
+async function StarterForYou({ locale }: { locale: string }) {
+  const starter = await getStarterItems(locale).catch(() => [])
+  // Sin muestra, el botón de siempre: la ruta también sabe devolver lo popular.
+  return <AiRecommendations starter={starter.length > 0 ? starter : undefined} />
 }
 
 export default async function HomePage() {
@@ -80,10 +92,7 @@ export default async function HomePage() {
   // enseña directamente lo popular (E-INICIO-ARRANQUE) en vez de un botón que
   // solo podría devolver eso. Si el recuento falla, se deja el botón.
   const signalCount = signalResult.error ? null : signalResult.count
-  let starter: MediaItem[] | undefined
-  if (!todayRecs && signalCount !== null && signalCount < MIN_LIBRARY_ITEMS) {
-    starter = await getStarterItems(locale).catch(() => undefined)
-  }
+  const showStarter = !todayRecs && signalCount !== null && signalCount < MIN_LIBRARY_ITEMS
 
   const inProgress = inProgressResult.data as HeroItem | null
   const heroMediaId = inProgress?.media_id
@@ -120,7 +129,13 @@ export default async function HomePage() {
           que la IA te elige por match), después lo social y por último las
           novedades generales. Antes, una cuenta sin título en curso abría con
           la tarjeta vacía de "Popular entre tus amigos". */}
-      <AiRecommendations initial={todayRecs} starter={starter} />
+      {showStarter ? (
+        <Suspense fallback={<AiRecommendations pending />}>
+          <StarterForYou locale={locale} />
+        </Suspense>
+      ) : (
+        <AiRecommendations initial={todayRecs} />
+      )}
       <PopularInCircle />
       <GenreNews />
     </main>
