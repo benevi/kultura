@@ -35,6 +35,38 @@ describe("Avatar", () => {
     expect(avatar).toHaveStyle({ backgroundColor: "var(--accent-positive)" });
   });
 
+  it("un nombre de la paleta pinta su color OKLCH, no el color CSS homónimo", () => {
+    render(<Avatar initials="SL" color="slate" />);
+    const avatar = screen.getByText("SL").closest("div");
+    // `slate` no es un color CSS: antes el círculo salía transparente.
+    expect(avatar?.getAttribute("style")).toContain("background-color: oklch(0.72 0.03 260)");
+    expect(avatar?.getAttribute("style")).toContain("; color: oklch(0.16 0.02 260)");
+  });
+
+  it("'blue' usa el azul de la paleta y no el azul puro de CSS", () => {
+    render(<Avatar initials="BL" color="blue" />);
+    const style = screen.getByText("BL").closest("div")?.getAttribute("style") ?? "";
+    expect(style).toContain("background-color: oklch(0.68 0.16 250)");
+    expect(style).not.toMatch(/background-color:\s*blue/);
+  });
+
+  it("las iniciales ya no van siempre en blanco: hex claro → texto oscuro", () => {
+    render(<Avatar initials="GR" color="#6FCF97" />);
+    const avatar = screen.getByText("GR").closest("div");
+    expect(avatar).not.toHaveClass("text-white");
+    expect(avatar?.getAttribute("style")).toContain("color: var(--surface-base)");
+  });
+
+  it("hex oscuro → texto claro del sistema", () => {
+    render(<Avatar initials="DK" color="#123456" />);
+    expect(screen.getByText("DK").closest("div")?.getAttribute("style")).toContain("color: var(--text-primary)");
+  });
+
+  it("el rojo legacy lleva el texto on-positive", () => {
+    render(<Avatar initials="LR" color="#E82020" />);
+    expect(screen.getByText("LR").closest("div")?.getAttribute("style")).toContain("color: var(--on-accent-positive)");
+  });
+
   it("renderiza image cuando hay src", () => {
     render(<Avatar initials="JD" src="https://example.com/avatar.jpg" />);
     const img = screen.getByRole("img");

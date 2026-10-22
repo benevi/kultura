@@ -1,6 +1,22 @@
 import type { Config } from "tailwindcss";
 import plugin from "tailwindcss/plugin";
 
+/**
+ * Color del tema a partir de una custom property, con canal alfa.
+ *
+ * Con `"var(--x)"` a secas Tailwind 3 no sabe aplicar opacidad: `bg-surface/80`,
+ * `border-accent-danger/30` o `ring-accent-pink/40` NO generaban regla, y el
+ * preflight dejaba bordes gris claro y anillos azules (DIS-1). `color-mix` en
+ * OKLCH sí admite el `<alpha-value>` de Tailwind y, sin modificador, devuelve
+ * el color exacto (100 % del token). Soporte: Chrome/Edge 111, Safari 16.2,
+ * Firefox 113 — el mismo nivel que ya exige `oklch()` en los tokens.
+ * `tests/unit/design/tailwind-alpha.test.ts` compila el config y falla si una
+ * clase con `/<alfa>` usada en `src` no genera regla.
+ */
+function token(name: string): string {
+  return `color-mix(in oklch, var(${name}) calc(<alpha-value> * 100%), transparent)`;
+}
+
 const config: Config = {
   content: [
     "./src/pages/**/*.{js,ts,jsx,tsx,mdx}",
@@ -11,53 +27,67 @@ const config: Config = {
     extend: {
       colors: {
         /* ─── Design System tokens — modo oscuro ─── */
-        "surface-base": "var(--surface-base)",
-        "surface-default": "var(--surface-default)",
-        "surface-elevated": "var(--surface-elevated)",
-        "surface-border": "var(--surface-border)",
+        "surface-base": token("--surface-base"),
+        "surface-default": token("--surface-default"),
+        "surface-elevated": token("--surface-elevated"),
+        "surface-border": token("--surface-border"),
 
-        "text-primary": "var(--text-primary)",
-        "text-secondary": "var(--text-secondary)",
-        "text-tertiary": "var(--text-tertiary)",
+        "text-primary": token("--text-primary"),
+        "text-secondary": token("--text-secondary"),
+        "text-tertiary": token("--text-tertiary"),
 
-        "accent-positive": "var(--accent-positive)",
-        "accent-highlight": "var(--accent-highlight)",
-        "accent-info": "var(--accent-info)",
-        "accent-danger": "var(--accent-danger)",
+        "accent-positive": token("--accent-positive"),
+        "accent-highlight": token("--accent-highlight"),
+        "accent-info": token("--accent-info"),
+        "accent-danger": token("--accent-danger"),
 
-        "on-accent-positive": "var(--on-accent-positive)",
-        "on-accent-highlight": "var(--on-accent-highlight)",
-        "on-accent-info": "var(--on-accent-info)",
+        "on-accent-positive": token("--on-accent-positive"),
+        "on-accent-highlight": token("--on-accent-highlight"),
+        "on-accent-info": token("--on-accent-info"),
 
         /* ─── Acentos decorativos (F7) — variedad visual, sin rol semántico ─── */
-        "accent-pink": "var(--accent-pink)",
-        "accent-lime": "var(--accent-lime)",
-        "accent-orange": "var(--accent-orange)",
-        "accent-purple": "var(--accent-purple)",
+        "accent-pink": token("--accent-pink"),
+        "accent-lime": token("--accent-lime"),
+        "accent-orange": token("--accent-orange"),
+        "accent-purple": token("--accent-purple"),
 
-        "on-accent-pink": "var(--on-accent-pink)",
-        "on-accent-lime": "var(--on-accent-lime)",
-        "on-accent-orange": "var(--on-accent-orange)",
-        "on-accent-purple": "var(--on-accent-purple)",
+        "on-accent-pink": token("--on-accent-pink"),
+        "on-accent-lime": token("--on-accent-lime"),
+        "on-accent-orange": token("--on-accent-orange"),
+        "on-accent-purple": token("--on-accent-purple"),
 
-        "accent-blue": "var(--accent-blue)",
-        "accent-yellow": "var(--accent-yellow)",
-        "on-accent-blue": "var(--on-accent-blue)",
-        "on-accent-yellow": "var(--on-accent-yellow)",
+        "accent-blue": token("--accent-blue"),
+        "accent-yellow": token("--accent-yellow"),
+        "on-accent-blue": token("--on-accent-blue"),
+        "on-accent-yellow": token("--on-accent-yellow"),
+
+        /* ─── Rojo accesible, campos y foco (ACC-4) ─── */
+        "accent-danger-solid": token("--accent-danger-solid"),
+        "on-accent-danger": token("--on-accent-danger"),
+        "field-border": token("--field-border"),
+        "focus-ring": token("--focus-ring"),
 
         /* ─── Legacy aliases (compatibilidad componentes existentes) ─── */
-        bg: "var(--surface-base)",
-        surface: "var(--surface-default)",
-        surface2: "var(--surface-elevated)",
-        surface3: "#1c2430",
-        border: "var(--surface-border)",
-        text: "var(--text-primary)",
-        muted: "var(--text-tertiary)",
-        "muted-light": "var(--text-secondary)",
-        success: "var(--accent-positive)",
-        warning: "var(--accent-highlight)",
-        info: "var(--accent-info)",
-        danger: "var(--accent-danger)",
+        bg: token("--surface-base"),
+        surface: token("--surface-default"),
+        surface2: token("--surface-elevated"),
+        surface3: token("--surface3"),
+        border: token("--surface-border"),
+        text: token("--text-primary"),
+        muted: token("--text-tertiary"),
+        "muted-light": token("--text-secondary"),
+        success: token("--accent-positive"),
+        warning: token("--accent-highlight"),
+        info: token("--accent-info"),
+        danger: token("--accent-danger"),
+      },
+      /* ACC-4: TODO texto rojo usa la variante accesible (6,16:1 sobre la
+         tarjeta en vez de 4,05:1). Se hace aquí y no en cada pantalla, así que
+         `text-accent-danger` / `text-danger` ya pasan en todo el sitio. Los
+         fondos y bordes siguen con el rojo base (≥ 3:1 como no-texto). */
+      textColor: {
+        "accent-danger": token("--accent-danger-text"),
+        danger: token("--accent-danger-text"),
       },
       fontFamily: {
         /* Design system fonts (F1 — Bricolage Grotesque + Figtree) */

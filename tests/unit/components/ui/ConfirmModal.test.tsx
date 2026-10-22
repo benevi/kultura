@@ -65,6 +65,6 @@ describe('ConfirmModal', () => {
 
   it('isDestructive aplica estilo de peligro al botón de confirmar', () => {
     render(<ConfirmModal {...defaultProps} isDestructive />)
-    expect(screen.getByText('Confirm').closest('button')).toHaveClass('bg-accent-danger')
+    expect(screen.getByText('Confirm').closest('button')).toHaveClass('bg-accent-danger-solid', 'text-on-accent-danger')
   })
 })

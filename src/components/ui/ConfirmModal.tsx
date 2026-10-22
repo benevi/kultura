@@ -66,7 +66,9 @@ export function ConfirmModal({
             onClick={onConfirm}
             className={
               isDestructive
-                ? 'bg-accent-danger text-on-accent-positive hover:brightness-110'
+                ? // ACC-4: rojo más oscuro + su texto claro = 4,94:1. El rojo base
+                  // con el texto oscuro de "positivo" daba 4,28:1.
+                  'bg-accent-danger-solid text-on-accent-danger hover:brightness-110'
                 : undefined
             }
           >

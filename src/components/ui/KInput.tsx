@@ -9,24 +9,50 @@ export interface KInputProps extends React.ComponentProps<"input"> {
 
 /**
  * Campo de formulario con el acabado F0 (canvas "Kultura — Diseño completo",
- * artboard Login). Valores literales del mockup, no aproximados:
+ * artboard Login):
  *
- * - Etiqueta encima, 13px peso 700 en `--muted` (= `text-tertiary`). Antes era
- *   14px peso 500 en `text-secondary`.
- * - Caja rellena de `--surface-2` SIN borde, radio 14px, padding 15/18, 15px.
- *   Antes era una píldora (999px) con borde sobre `surface-base`: el radio de
- *   píldora es de botones y chips, no de campos — en F0 ningún input lo lleva.
- * - El foco va con el anillo pink del canvas (`0 0 0 6px pink/0.25`), que es la
- *   única sombra de foco que existe en las 17 pantallas; el verde de antes no
- *   salía de ningún sitio.
+ * - Etiqueta encima, 13px peso 700 en `--muted` (= `text-tertiary`).
+ * - Caja rellena de `--surface-2`, radio 14px, padding 15/18.
  *
- * El estado de error mantiene el rojo semántico: el canvas no dibuja ningún
- * campo con error, así que se conserva el patrón que ya había en vez de
- * inventar uno.
+ * Excepciones al canvas por accesibilidad (documentadas en DISENO.md):
+ * - Borde de 1 px `--field-border` (ACC-4, WCAG 1.4.11). Sin él, el relleno
+ *   `surface-2` sobre la tarjeta `surface` daba 1,14:1 y el campo no se veía;
+ *   en alto contraste de Windows desaparecía del todo.
+ * - Foco = contorno pink de 2 px con separación (5,45:1), no el halo
+ *   `0 0 0 6px pink/0.25` del canvas (1,39:1). Es `outline` y no `box-shadow`
+ *   para que siga visible en `forced-colors`.
+ * - 16 px en móvil (MOV-5): con menos, Safari de iOS hace zoom al enfocar.
+ *   Desde `md` vuelve a los 15 px del canvas.
+ *
+ * Errores (ACC-3): el `<p>` del error lleva `role="alert"` y el campo
+ * `aria-invalid` + `aria-describedby`, así el lector de pantalla lo anuncia y
+ * lo vuelve a leer al llegar al campo. El id se genera con `useId` si no llega
+ * uno, para que dos campos con la misma etiqueta no compartan id.
  */
 export const KInput = React.forwardRef<HTMLInputElement, KInputProps>(
-  ({ className, type, label, error, hint, id, ...props }, ref) => {
-    const inputId = id ?? label?.toLowerCase().replace(/\s+/g, "-");
+  (
+    {
+      className,
+      type,
+      label,
+      error,
+      hint,
+      id,
+      "aria-describedby": describedByProp,
+      autoCapitalize,
+      spellCheck,
+      ...props
+    },
+    ref
+  ) => {
+    const autoId = React.useId();
+    const inputId = id ?? `kinput-${autoId}`;
+    const messageId = `${inputId}-msg`;
+    const message = error || hint;
+    const describedBy =
+      [describedByProp, message ? messageId : undefined].filter(Boolean).join(" ") || undefined;
+    const isEmail = type === "email";
+
     return (
       <div className="flex w-full flex-col gap-2">
         {label && (
@@ -40,25 +66,33 @@ export const KInput = React.forwardRef<HTMLInputElement, KInputProps>(
         <input
           id={inputId}
           type={type}
+          aria-invalid={error ? true : undefined}
+          aria-describedby={describedBy}
+          autoCapitalize={autoCapitalize ?? (isEmail ? "none" : undefined)}
+          spellCheck={spellCheck ?? (isEmail ? false : undefined)}
           className={cn(
             "w-full rounded-[14px] bg-surface-elevated px-[18px] py-[15px]",
-            "font-body text-[15px] text-text-primary",
+            "border border-field-border",
+            "font-body text-base md:text-[15px] text-text-primary",
             "placeholder:text-text-tertiary",
-            "transition-shadow duration-base ease-standard",
-            "focus-visible:outline-none focus-visible:shadow-[0_0_0_6px_oklch(68%_0.24_350_/_0.25)]",
+            "transition-colors duration-base ease-standard",
+            "focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus-ring",
             "disabled:cursor-not-allowed disabled:opacity-50",
-            error && "shadow-[0_0_0_2px_var(--accent-danger)]",
+            error && "border-accent-danger",
             className
           )}
           ref={ref}
           {...props}
         />
-        {error && (
-          <p className="font-body text-xs text-accent-danger">{error}</p>
-        )}
-        {hint && !error && (
-          <p className="font-body text-xs text-text-tertiary">{hint}</p>
-        )}
+        {error ? (
+          <p id={messageId} role="alert" className="font-body text-xs text-accent-danger">
+            {error}
+          </p>
+        ) : hint ? (
+          <p id={messageId} className="font-body text-xs text-text-tertiary">
+            {hint}
+          </p>
+        ) : null}
       </div>
     );
   }
