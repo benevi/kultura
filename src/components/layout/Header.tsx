@@ -22,13 +22,7 @@ export async function Header() {
     <header className="sticky top-0 z-50 bg-surface-default border-b border-surface-border">
       <div className="flex h-14 justify-between items-center gap-2 max-w-6xl mx-auto px-4 md:px-8">
         <Link href="/" className="shrink-0">
-          {/* 24 px solo en móvil estrecho (cabe a 320 px); 28 px desde `sm`. */}
-          <span className="sm:hidden">
-            <Logo size={24} />
-          </span>
-          <span className="hidden sm:inline-flex">
-            <Logo size={28} />
-          </span>
+          <Logo size={24} />
         </Link>
         <nav className="flex items-center gap-1.5 sm:gap-2">
           <KButton variant="secondary" size="md" className={compact} asChild>
