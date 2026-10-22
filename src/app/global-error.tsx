@@ -91,14 +91,14 @@ export default function GlobalError({
           id="main"
           tabIndex={-1}
           style={{
-            minHeight: '100vh',
+            // 100vh menos el relleno vertical (sin cambiar box-sizing): sin barra de desplazamiento.
+            minHeight: 'calc(100vh - 64px)',
             display: 'flex',
             flexDirection: 'column',
             alignItems: 'center',
             justifyContent: 'center',
             gap: 24,
             padding: 32,
-            boxSizing: 'border-box',
             textAlign: 'center',
             outline: 'none',
           }}
