@@ -62,6 +62,10 @@ describe('migración de moderación', () => {
     expect(remove).toContain('user_id <> auth.uid()')
     expect(remove).toContain("role <> 'owner'")
     expect(policy('Users can join groups')).toContain('not public.is_banned_from_group(group_id)')
+    // El dueño no "sale" borrando su fila: el grupo quedaría sin dueño.
+    expect(policy('Users can leave groups')).toBe(
+      "for delete to authenticated using (user_id = auth.uid() and role <> 'owner')",
+    )
   })
 
   it('reports: tipos ampliados, reporter_id nulo, contacto y resolución; anon fuera', () => {

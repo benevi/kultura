@@ -17,7 +17,8 @@
 --   5. create_conversation_with_members: no abre conversación nueva si hay
 --      bloqueo (mismo error 'not_friends', para no revelar el bloqueo).
 --   6. Grupos: el dueño borra posts ajenos y expulsa miembros (nunca a sí
---      mismo ni a un 'owner'). group_bans: un expulsado no vuelve a entrar
+--      mismo ni a un 'owner'); el dueño tampoco puede "salir" borrando su
+--      propia fila (el grupo quedaría sin dueño). group_bans: un expulsado no vuelve a entrar
 --      por su cuenta en un grupo público (el dueño puede volver a invitarlo).
 --   7. reports: target_type user|media|message|group_post|group|list,
 --      reporter_id NULL permitido (formulario público, lo inserta el servidor
@@ -175,7 +176,12 @@ create policy "blocks_delete_own" on public.blocks
   using (blocker_id = auth.uid());
 
 -- ¿Hay un bloqueo entre quien pregunta y p_other, en cualquier sentido?
--- Solo sobre auth.uid(): no sirve para mirar bloqueos entre terceros.
+-- Solo compara auth.uid() con p_other: por RPC no sirve para mirar bloqueos
+-- entre terceros. No se le puede quitar EXECUTE a authenticated porque las
+-- políticas se evalúan con los privilegios de quien consulta. Consecuencia
+-- asumida: un usuario PUEDE deducir si hay un bloqueo entre él y otro (por
+-- esta RPC o porque su solicitud de amistad se rechaza), pero no quién bloqueó
+-- a quién ni nada sobre terceros.
 create or replace function public.has_block_with(p_other uuid)
 returns boolean language sql security definer stable
 set search_path = public, pg_temp
@@ -388,6 +394,13 @@ create policy "Group owners can remove members" on public.group_members
     and user_id <> auth.uid()
     and role <> 'owner'
   );
+
+-- Salir del grupo: el dueño no puede borrar su propia fila (el grupo se
+-- quedaría sin dueño). El traspaso al borrar la cuenta va por service role.
+drop policy if exists "Users can leave groups" on public.group_members;
+create policy "Users can leave groups" on public.group_members
+  for delete to authenticated
+  using (user_id = auth.uid() and role <> 'owner');
 
 create table if not exists public.group_bans (
   group_id uuid not null references public.groups(id) on delete cascade,

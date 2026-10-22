@@ -78,6 +78,30 @@ describe.skipIf(!configured)("Moderación (F-11)", () => {
     expect(seen).toEqual([]);
   });
 
+  it("SOLO BLOQUEO: aunque el servidor recree la amistad, ni messages ni el RPC de conversación pasan", async () => {
+    const eva = await createUser("f11-eva");
+    const fran = await createUser("f11-fran");
+    const gema = await createUser("f11-gema");
+    await makeFriends(eva, fran);
+    await makeFriends(eva, gema);
+    const conv = await openChat(eva, fran);
+
+    expect((await eva.client.from("blocks").insert([
+      { blocker_id: eva.id, blocked_id: fran.id },
+      { blocker_id: eva.id, blocked_id: gema.id },
+    ])).error).toBeNull();
+    // El disparador borró las amistades; se recrean con el servidor.
+    await makeFriends(eva, fran);
+    await makeFriends(gema, eva);
+
+    expect((await send(fran, conv)).error).not.toBeNull();
+    expect((await send(eva, conv)).error).not.toBeNull();
+    const a = await eva.client.rpc("create_conversation_with_members", { target_user_id: gema.id });
+    const b = await gema.client.rpc("create_conversation_with_members", { target_user_id: eva.id });
+    expect(a.error?.message).toBe("not_friends");
+    expect(b.error?.message).toBe("not_friends");
+  });
+
   it("tras DEJAR DE SER AMIGOS, el INSERT de messages del otro falla", async () => {
     const conv = await openChat(ana, carla);
     expect((await send(carla, conv)).error).toBeNull();
@@ -134,8 +158,11 @@ describe.skipIf(!configured)("Moderación (F-11)", () => {
     // Vetado: no vuelve a entrar solo en el grupo público.
     expect((await dani.client.from("group_members").insert({ group_id: group, user_id: dani.id, role: "member" })).error).not.toBeNull();
 
-    // La dueña no se expulsa a sí misma.
+    // La dueña no se expulsa a sí misma ni "sale" dejando el grupo sin dueño.
     expect(blocked(await ana.client.from("group_members").delete().eq("group_id", group).eq("user_id", ana.id).select("user_id"))).toBe(true);
+    expect(await isMember(group, ana.id)).toBe(true);
+    // Un miembro normal sí puede salir.
+    expect(blocked(await carla.client.from("group_members").delete().eq("group_id", group).eq("user_id", carla.id).select("user_id"))).toBe(false);
   });
 
   it("anon no lee reports; con sesión solo las propias; sin cuenta inserta el servidor con resolved_at nulo", async () => {
