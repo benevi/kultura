@@ -136,11 +136,15 @@ function checkComicVineStatus(json: unknown): void {
   );
 }
 
+/**
+ * `cache`: `false` = sin caché (sondas); `{ revalidate }` = caché propia (la
+ * búsqueda de series, 24 h); sin indicar, la hora por defecto de `providerFetch`.
+ */
 async function comicVineFetch<T>(
   path: string,
   params: Record<string, string> = {},
   schema?: ZodType,
-  cache?: false
+  cache?: false | { revalidate: number }
 ): Promise<T> {
   const url = new URL(`${COMICVINE_BASE}${path}`);
   url.searchParams.set("api_key", getKey());
@@ -155,7 +159,7 @@ async function comicVineFetch<T>(
     checkBody: checkComicVineStatus,
     httpError: (status) =>
       new ProviderError("comicvine", "http", `ComicVine ${status}`, { status }),
-    ...(cache === false ? { cache: false as const } : {}),
+    ...(cache !== undefined ? { cache } : {}),
   });
 }
 
@@ -190,6 +194,122 @@ export async function searchComics(
     },
     comicVineIssuesSchema
   );
+}
+
+// ── Búsqueda por SERIE (DAT-6) ───────────────────────────────────────────────
+//
+// `searchComics` busca ISSUES por el nombre del número y los ordena por fecha:
+// "sandman" daba "PanelxPanel #25 Sandman" y "batman" un especial de Zatanna
+// (VERIF-D: 0/10 consultas con la serie arriba). Quien busca "sandman" busca
+// la serie. `searchComicVolumes` pregunta al buscador de ComicVine por
+// VOLÚMENES (series), que ordena por relevancia, y cada resultado se presenta
+// con su portada y se abre por su PRIMER número (la ficha de cómic es por
+// issue: `getComic`). El orden final lo pone `rankSearchResults` (search.ts):
+// título exacto primero y, a igualdad, la serie con más números.
+//
+// Coste: UNA petición por página al recurso `search` (cupo propio de 200/h,
+// distinto de `issues` y `volumes`), cacheada 24 h por consulta (D-17). Antes
+// eran dos (`/issues/` + `/volumes/`) cacheadas 1 h.
+
+/** Resultados por página del buscador de ComicVine (su máximo en `/search/`). */
+export const COMIC_SEARCH_PAGE_SIZE = 10;
+
+/** Caché de una búsqueda de series: 24 h (D-17). */
+export const COMIC_SEARCH_REVALIDATE_SECONDS = 24 * 60 * 60;
+
+/** Volumen tal como llega de `/search/?resources=volume`. */
+export interface ComicVineVolumeResult {
+  id: number;
+  name: string | null;
+  start_year?: string | number | null;
+  count_of_issues?: number | null;
+  deck?: string | null;
+  publisher?: { id?: number; name?: string | null } | null;
+  image?: {
+    medium_url?: string | null;
+    small_url?: string | null;
+    original_url?: string | null;
+  } | null;
+  first_issue?: { id?: number; name?: string | null; issue_number?: string | null } | null;
+}
+
+export interface ComicVineVolumeSearchResponse {
+  status_code: number;
+  error: string;
+  number_of_total_results?: number;
+  results: ComicVineVolumeResult[] | null;
+}
+
+function volumeYear(raw: ComicVineVolumeResult["start_year"]): number | undefined {
+  const n = typeof raw === "number" ? raw : parseInt(String(raw ?? ""), 10);
+  return Number.isFinite(n) && n >= 1800 && n <= 2100 ? n : undefined;
+}
+
+/**
+ * Volumen → MediaItem. `null` si no se puede abrir (sin primer número) o si
+ * su editorial o su serie están vetadas (adultos, lista negra): la búsqueda
+ * no aplica la lista BLANCA del catálogo (un "Maus" de Pantheon tiene que
+ * salir), pero los vetos sí.
+ */
+export function normalizeComicVolume(raw: ComicVineVolumeResult): MediaItem | null {
+  const firstIssueId = raw.first_issue?.id;
+  if (typeof firstIssueId !== "number" || !raw.name) return null;
+  const publisher = raw.publisher?.name?.trim() || undefined;
+  if (publisher && isAdultPublisher(publisher)) return null;
+  if (isBlockedComicVolume(raw.name)) return null;
+
+  const externalId = String(firstIssueId);
+  const issues = typeof raw.count_of_issues === "number" ? raw.count_of_issues : undefined;
+  return {
+    id: `comic_${externalId}`,
+    externalId,
+    type: "comic",
+    title: raw.name,
+    poster:
+      raw.image?.medium_url ?? raw.image?.original_url ?? raw.image?.small_url ?? undefined,
+    year: volumeYear(raw.start_year),
+    synopsis: raw.deck?.trim() || undefined,
+    genres: [],
+    ratingSource: "ComicVine",
+    metadata: {
+      volumeId: raw.id,
+      publisher,
+      issues,
+      // Señal para el orden: editorial del catálogo (no manga) frente a
+      // reediciones extranjeras ("tintin" daba ediciones suecas).
+      catalogPublisher: publisher
+        ? isAllowedComicPublisher(publisher) && !isMangaPublisher(publisher)
+        : false,
+    },
+  };
+}
+
+/**
+ * Busca SERIES de cómic (volúmenes) por nombre. Devuelve los ítems ya
+ * normalizados y el total que da ComicVine. Lanza ante cualquier fallo del
+ * proveedor (sin clave, cupo, caído): el que llama decide el respaldo.
+ */
+export async function searchComicVolumes(
+  query: string,
+  page = 1
+): Promise<{ items: MediaItem[]; total: number }> {
+  const resp = await comicVineFetch<ComicVineVolumeSearchResponse>(
+    "/search/",
+    {
+      query,
+      resources: "volume",
+      limit: String(COMIC_SEARCH_PAGE_SIZE),
+      page: String(Math.max(1, page)),
+      field_list:
+        "id,name,start_year,count_of_issues,deck,publisher,image,first_issue",
+    },
+    comicVineVolumesSchema,
+    { revalidate: COMIC_SEARCH_REVALIDATE_SECONDS }
+  );
+  const items = (resp.results ?? [])
+    .map(normalizeComicVolume)
+    .filter((i): i is MediaItem => i !== null);
+  return { items, total: resp.number_of_total_results ?? items.length };
 }
 
 /**

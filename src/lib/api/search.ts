@@ -1,7 +1,7 @@
 // ============================================================
 // KULTURA — Búsqueda por familia
 // Traduce una query de texto a la búsqueda nativa de cada proveedor y devuelve
-// resultados ya normalizados a MediaItem.
+// resultados ya normalizados a MediaItem, ordenados por relevancia.
 //
 // E-DISCOVER-SEARCH-MERGE: `searchAll` (que agregaba las 6 familias en una sola
 // respuesta con forma `{movies, tv, anime, …}`) se ELIMINÓ al fusionar /search
@@ -9,33 +9,223 @@
 // un redirect. El agregado de búsqueda vive en `fetchAggregateSearch`
 // (aggregate.ts), que reusa `searchByTypePaged` y devuelve la misma forma
 // paginada que el resto de Descubrir.
+//
+// F-13 (DAT-6/7/9):
+//   - Relevancia común (`rankSearchResults`): el título que coincide con la
+//     consulta va primero en todas las familias y, en `type=all`, entre
+//     familias. Antes cada proveedor imponía su orden ("dark" → Dark Shadows,
+//     "inception" → "Bikini Inception" en el autocompletado) y `type=all`
+//     intercalaba sin comparar.
+//   - Cómic por SERIES (ComicVine `/search/` de volúmenes) y no por issues.
+//   - Manga por relevancia, sin doujinshi, con nota y con el título oficial.
+//   - Respaldo por familia: manga → MyAnimeList (Jikan); cómic → Google Books
+//     (novela gráfica). Juegos sin respaldo: la ficha de juego solo abre ids de
+//     RAWG (pendiente de la ficha pública, F-15).
 // ============================================================
 
 import type { MediaItem, MediaType } from "@/types/media";
 import { searchMovies, searchTV } from "./tmdb";
 import { searchAnime } from "./anilist";
 import { searchAnimeTmdb } from "./anime-tmdb";
-import { searchManga } from "./mangadex";
+import {
+  getMangaStatistics,
+  isMangaVariant,
+  mangaAltTitles,
+  mangaDisplayTitle,
+  searchManga,
+  type MangaDexManga,
+  type MangaDexStats,
+} from "./mangadex";
+import { JIKAN_SUPPLEMENT_TIMEOUT_MS, searchMangaJikan } from "./jikan";
 import { searchOpenLibrary, openLibraryTotalPages } from "./openlibrary";
 import { searchGames } from "./rawg";
-import { searchComics } from "./comicvine";
+import { COMIC_SEARCH_PAGE_SIZE, searchComicVolumes } from "./comicvine";
+import { searchComicsGoogleBooks } from "./googlebooks";
 import {
   normalizeMovie,
   normalizeTV,
   normalizeAniListAnime,
   normalizeMangaDex,
+  normalizeMangaJikan,
   normalizeBookOpenLibrary,
+  normalizeBookGoogle,
   normalizeGame,
-  normalizeComic,
 } from "./normalizer";
 import type { TmdbMovieDetail, TmdbTVDetail } from "./tmdb";
+import { isExactTitleMatch, rankSearchResults, titleIdentity } from "./search-rank";
+
+// La relevancia vive en `search-rank.ts` (funciones puras); se re-exporta
+// aquí porque es la API pública de la búsqueda.
+export {
+  isExactTitleMatch,
+  isNonLatinTitle,
+  MATCH_TIER,
+  mergeByRelevance,
+  rankSearchResults,
+  relevanceScore,
+  titleMatchTier,
+  titleWords,
+} from "./search-rank";
 
 /** Ítems por página (offset-based) de MangaDex — = page-size de Descubrir. */
 const MANGADEX_PAGE_SIZE = 20;
 
+// ── Manga (DAT-7) ─────────────────────────────────────────────────────────────
+
+/** MangaDex → MediaItem con título oficial, títulos alternativos y nota. */
+export function enrichMangaDexItem(
+  raw: MangaDexManga,
+  locale: string | null | undefined,
+  stats?: MangaDexStats
+): MediaItem {
+  const base = normalizeMangaDex(raw, locale);
+  const { title, original } = mangaDisplayTitle(raw);
+  return {
+    ...base,
+    title: title ?? base.title,
+    originalTitle: original ?? base.originalTitle,
+    rating: stats?.rating ?? base.rating,
+    metadata: {
+      ...base.metadata,
+      altTitles: mangaAltTitles(raw),
+      follows: stats?.follows,
+      variant: isMangaVariant(raw) || undefined,
+    },
+  };
+}
+
+/** Clave para no repetir la misma obra que llega por dos proveedores. */
+function workKey(item: MediaItem): string {
+  return `${titleIdentity(item.title)}|${item.year ?? ""}`;
+}
+
+// ── Complemento de MyAnimeList: memoria de fallos ──────────────────────────
+//
+// Lo que Jikan RESPONDE ya se cachea 24 h (`searchMangaJikan`), pero un fallo
+// (plazo agotado, 429, caído) no se cachea en ningún sitio: cada búsqueda de
+// la misma consulta volvería a esperar hasta 2,5 s. Se recuerda aquí unos
+// minutos por consulta, y mientras tanto la búsqueda sale solo con MangaDex.
+
+/** Minutos que un fallo del complemento evita volver a preguntar por esa consulta. */
+export const JIKAN_SUPPLEMENT_FAILURE_TTL_MS = 10 * 60_000;
+const JIKAN_SUPPLEMENT_FAILURES_MAX = 500;
+const jikanSupplementFailures = new Map<string, number>();
+
+function supplementKey(query: string): string {
+  return titleIdentity(query);
+}
+
+function supplementRecentlyFailed(query: string, now = Date.now()): boolean {
+  const until = jikanSupplementFailures.get(supplementKey(query));
+  if (until === undefined) return false;
+  if (until > now) return true;
+  jikanSupplementFailures.delete(supplementKey(query));
+  return false;
+}
+
+function rememberSupplementFailure(query: string, now = Date.now()): void {
+  if (jikanSupplementFailures.size >= JIKAN_SUPPLEMENT_FAILURES_MAX) jikanSupplementFailures.clear();
+  jikanSupplementFailures.set(supplementKey(query), now + JIKAN_SUPPLEMENT_FAILURE_TTL_MS);
+}
+
+/** Olvida los fallos recordados. Pensado para los tests. */
+export function resetMangaSupplementFailures(): void {
+  jikanSupplementFailures.clear();
+}
+
+/** Opciones de la búsqueda por familia. */
+export interface SearchOptions {
+  /**
+   * Manga: completar con MyAnimeList cuando MangaDex no tiene la obra
+   * (por defecto, sí). `type=all` lo apaga: ahí la obra suele ser de otra
+   * familia ("dune", "interstellar") y la espera no compensa.
+   */
+  supplement?: boolean;
+}
+
+async function searchMangaJikanItems(
+  query: string,
+  page: number,
+  timeoutMs?: number
+): Promise<{ items: MediaItem[]; totalPages: number }> {
+  const r = await searchMangaJikan(query, page, timeoutMs);
+  return {
+    items: (r.data ?? []).map((raw) => normalizeMangaJikan(raw)),
+    totalPages: Math.max(r.pagination?.last_visible_page ?? 1, 1),
+  };
+}
+
 /**
- * Busca solo en el tipo de contenido indicado (SIN paginar: primera página).
- * La usan las recomendaciones IA para resolver la referencia de cada título.
+ * Búsqueda de manga: MangaDex por relevancia + nota (`/statistics/manga`).
+ *   - Si MangaDex falla, MyAnimeList (Jikan) como respaldo.
+ *   - Si en la primera página ninguna obra se llama como la consulta (obras
+ *     retiradas de MangaDex por licencia: "Berserk", "Vagabond"), se añaden
+ *     las coincidencias exactas de MyAnimeList.
+ */
+async function searchMangaPage(
+  query: string,
+  page: number,
+  locale?: string | null,
+  opts: SearchOptions = {}
+): Promise<SearchPage> {
+  let r;
+  try {
+    r = await searchManga(query, (page - 1) * MANGADEX_PAGE_SIZE, locale);
+  } catch (e) {
+    const alt = await searchMangaJikanItems(query, page).catch(() => null);
+    if (!alt) throw e;
+    return {
+      items: rankSearchResults(query, alt.items),
+      totalPages: alt.totalPages,
+      hasMore: page < alt.totalPages,
+    };
+  }
+  const stats = await getMangaStatistics(r.data.map((m) => m.id));
+  let items = r.data.map((raw) => enrichMangaDexItem(raw, locale, stats.get(raw.id)));
+
+  if (
+    opts.supplement !== false &&
+    page === 1 &&
+    query.trim().length >= 3 &&
+    !items.some((i) => isExactTitleMatch(query, i)) &&
+    !supplementRecentlyFailed(query)
+  ) {
+    const extra = await searchMangaJikanItems(query, 1, JIKAN_SUPPLEMENT_TIMEOUT_MS).catch(() => {
+      rememberSupplementFailure(query);
+      return null;
+    });
+    const exact = (extra?.items ?? []).filter((i) => isExactTitleMatch(query, i));
+    const seen = new Set(items.map(workKey));
+    items = [...exact.filter((i) => !seen.has(workKey(i))), ...items];
+  }
+
+  const totalPages = Math.max(Math.ceil((r.total ?? 0) / MANGADEX_PAGE_SIZE), 1);
+  return { items: rankSearchResults(query, items), totalPages, hasMore: page < totalPages };
+}
+
+// ── Cómic (DAT-6) ─────────────────────────────────────────────────────────────
+
+/**
+ * Búsqueda de cómic por SERIE (ComicVine). Si ComicVine no responde, novela
+ * gráfica de Google Books (se abre como libro).
+ */
+async function searchComicPage(query: string, page: number): Promise<SearchPage> {
+  try {
+    const r = await searchComicVolumes(query, page);
+    const totalPages = Math.max(Math.ceil(r.total / COMIC_SEARCH_PAGE_SIZE), 1);
+    return { items: rankSearchResults(query, r.items), totalPages, hasMore: page < totalPages };
+  } catch (e) {
+    const alt = await searchComicsGoogleBooks(query, page).catch(() => null);
+    if (!alt) throw e;
+    const items = (alt.items ?? []).map((raw) => normalizeBookGoogle(raw));
+    const totalPages = Math.max(Math.ceil((alt.totalItems ?? 0) / MANGADEX_PAGE_SIZE), 1);
+    return { items: rankSearchResults(query, items), totalPages, hasMore: page < totalPages };
+  }
+}
+
+/**
+ * Busca solo en el tipo de contenido indicado (SIN paginar: primera página),
+ * ya ordenado por relevancia. La usa el autocompletado (`/api/search?type=`).
  *
  * `locale`: idioma activo de la app. Se propaga a los proveedores que lo
  * soportan (TMDB, Google Books); Jikan, ComicVine y RAWG lo ignoran (limitación
@@ -46,50 +236,7 @@ export async function searchByType(
   type: MediaType,
   locale?: string | null
 ): Promise<MediaItem[]> {
-  switch (type) {
-    case "movie":
-      return searchMovies(query, 1, locale).then((r) =>
-        r.results.map((raw) => normalizeMovie(raw as TmdbMovieDetail))
-      );
-    case "tv":
-      return searchTV(query, 1, locale).then((r) =>
-        r.results.map((raw) => normalizeTV(raw as TmdbTVDetail))
-      );
-    case "anime":
-      // E-ANIME-RESPALDO: si AniList cae, se busca en TMDB (animación japonesa).
-      return searchAnime(query)
-        .then((r) => r.media.map((raw) => normalizeAniListAnime(raw)))
-        .catch(async (e) => {
-          const alt = await searchAnimeTmdb(query, 1, locale).catch(() => null);
-          if (!alt) throw e;
-          return alt.items;
-        });
-    case "manga":
-      return searchManga(query, 0, locale).then((r) =>
-        r.data.map((raw) => normalizeMangaDex(raw, locale))
-      );
-    case "book":
-      // E-BOOKS-HIBRIDO: el buscador va contra el MISMO proveedor que el
-      // catálogo. Si fuese contra otro, buscar y navegar serían dos mundos
-      // distintos, y un fallo de cuota de Google rompería el buscador mientras
-      // el catálogo sigue funcionando. Sin acotar por idioma: quien busca un
-      // título concreto debe encontrarlo aunque solo exista el original.
-      return searchOpenLibrary(query, 1).then((r) =>
-        (r.docs ?? []).map((doc) => normalizeBookOpenLibrary(doc))
-      );
-    case "game":
-      return searchGames(query).then((r) =>
-        r.results.map((raw) => normalizeGame(raw))
-      );
-    case "comic":
-      // ComicVine es server-only (COMICVINE_KEY). searchByType solo se llama
-      // desde código server-side (recomendaciones IA, route handlers).
-      return searchComics(query).then((r) =>
-        (r.results ?? []).map((raw) => normalizeComic(raw))
-      );
-    default:
-      return [];
-  }
+  return (await searchByTypePaged(query, type, 1, locale)).items;
 }
 
 // ── Búsqueda PAGINADA por familia (E-DISCOVER-SEARCH-MERGE) ──────────────────
@@ -113,25 +260,30 @@ const SEARCH_PAGE_SIZE = 20;
 /**
  * Busca en una familia con paginación real donde el proveedor la soporta:
  *   - movie/tv (TMDB `/search/*`): `page` + `total_pages`.
- *   - anime/manga (Jikan `/anime`,`/manga`): `page` + `last_visible_page`.
- *   - book (Google Books): `startIndex` + `totalItems`.
+ *   - anime (AniList): `page` + `lastPage`.
+ *   - manga (MangaDex): `offset` + `total`.
+ *   - book (Open Library): `page` + `numFound`.
  *   - game (RAWG `/games?search=`): `page` + `count`.
- *   - comic (ComicVine `/issues/`): `offset` + `number_of_total_results`.
- * Todos paginan, así que no hay familia degradada a "solo página 1"; el tope
+ *   - comic (ComicVine `/search/` de volúmenes): `page` + total, 10 por página.
+ * Cada página sale ordenada por relevancia (`rankSearchResults`). El tope
  * común de páginas lo aplica el llamador (`fetchDiscoverData`).
  */
 export async function searchByTypePaged(
   query: string,
   type: MediaType,
   page = 1,
-  locale?: string | null
+  locale?: string | null,
+  opts: SearchOptions = {}
 ): Promise<SearchPage> {
   switch (type) {
     case "movie": {
       const r = await searchMovies(query, page, locale);
       const totalPages = Math.max(r.total_pages ?? 1, 1);
       return {
-        items: r.results.map((raw) => normalizeMovie(raw as TmdbMovieDetail)),
+        items: rankSearchResults(
+          query,
+          r.results.map((raw) => normalizeMovie(raw as TmdbMovieDetail))
+        ),
         totalPages,
         hasMore: page < totalPages,
       };
@@ -140,7 +292,10 @@ export async function searchByTypePaged(
       const r = await searchTV(query, page, locale);
       const totalPages = Math.max(r.total_pages ?? 1, 1);
       return {
-        items: r.results.map((raw) => normalizeTV(raw as TmdbTVDetail)),
+        items: rankSearchResults(
+          query,
+          r.results.map((raw) => normalizeTV(raw as TmdbTVDetail))
+        ),
         totalPages,
         hasMore: page < totalPages,
       };
@@ -153,37 +308,39 @@ export async function searchByTypePaged(
         return alt;
       });
       if ("items" in r) {
-        return { items: r.items, totalPages: r.totalPages, hasMore: page < r.totalPages };
+        return {
+          items: rankSearchResults(query, r.items),
+          totalPages: r.totalPages,
+          hasMore: page < r.totalPages,
+        };
       }
       const totalPages = Math.max(r.pageInfo?.lastPage ?? 1, 1);
       return {
-        items: r.media.map((raw) => normalizeAniListAnime(raw)),
+        items: rankSearchResults(
+          query,
+          r.media.map((raw) => normalizeAniListAnime(raw))
+        ),
         totalPages,
         hasMore: page < totalPages,
       };
     }
-    case "manga": {
-      // MangaDex pagina por offset/limit, no por page — se traduce aquí.
-      const offset = (page - 1) * MANGADEX_PAGE_SIZE;
-      const r = await searchManga(query, offset, locale);
-      const totalPages = Math.max(
-        Math.ceil((r.total ?? 0) / MANGADEX_PAGE_SIZE),
-        1
-      );
-      return {
-        items: r.data.map((raw) => normalizeMangaDex(raw, locale)),
-        totalPages,
-        hasMore: page < totalPages,
-      };
-    }
+    case "manga":
+      return searchMangaPage(query, page, locale, opts);
     case "book": {
-      // E-BOOKS-HIBRIDO: ver nota en `searchByType`. `numFound` es un total
-      // real, así que la paginación del buscador deja de prometer páginas que
-      // el proveedor no sirve.
+      // E-BOOKS-HIBRIDO: el buscador va contra el MISMO proveedor que el
+      // catálogo. Si fuese contra otro, buscar y navegar serían dos mundos
+      // distintos, y un fallo de cuota de Google rompería el buscador mientras
+      // el catálogo sigue funcionando. Sin acotar por idioma: quien busca un
+      // título concreto debe encontrarlo aunque solo exista el original.
+      // `numFound` es un total real, así que la paginación no promete páginas
+      // que el proveedor no sirve.
       const r = await searchOpenLibrary(query, page);
       const totalPages = openLibraryTotalPages(r.numFound);
       return {
-        items: (r.docs ?? []).map((doc) => normalizeBookOpenLibrary(doc)),
+        items: rankSearchResults(
+          query,
+          (r.docs ?? []).map((doc) => normalizeBookOpenLibrary(doc))
+        ),
         totalPages,
         hasMore: page < totalPages,
       };
@@ -195,23 +352,17 @@ export async function searchByTypePaged(
         1
       );
       return {
-        items: r.results.map((raw) => normalizeGame(raw)),
+        items: rankSearchResults(
+          query,
+          r.results.map((raw) => normalizeGame(raw))
+        ),
         totalPages,
         hasMore: page < totalPages,
       };
     }
-    case "comic": {
-      const r = await searchComics(query, page);
-      const totalPages = Math.max(
-        Math.ceil((r.number_of_total_results ?? 0) / SEARCH_PAGE_SIZE),
-        1
-      );
-      return {
-        items: (r.results ?? []).map((raw) => normalizeComic(raw)),
-        totalPages,
-        hasMore: page < totalPages,
-      };
-    }
+    case "comic":
+      // ComicVine es server-only (COMICVINE_KEY): solo route handlers.
+      return searchComicPage(query, page);
     default:
       return { items: [], totalPages: 1, hasMore: false };
   }

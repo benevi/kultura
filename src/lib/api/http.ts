@@ -39,6 +39,9 @@
 //      caché incremental y se llama directamente.
 //   7. User-Agent único con la URL real del proyecto y, si existe,
 //      `PROVIDER_CONTACT` (D-18). Nunca un dominio ajeno.
+//   8. Cupos (ROJO-9): cada petición real suma en un contador por proveedor
+//      (RAWG 20.000/mes, ComicVine 200/h por recurso), compartido entre
+//      instancias si hay Upstash, y se avisa a Sentry al 80 % y al 100 %.
 //
 // El estado del breaker vive en memoria de cada instancia. En Vercel una
 // instancia caliente atiende muchas peticiones seguidas, que es justo el caso
@@ -50,6 +53,7 @@ import { unstable_cache } from "next/cache";
 import type { ZodType } from "zod";
 import { createLogger } from "@/lib/logger";
 import { PROVIDER_REVALIDATE_SECONDS } from "@/lib/api/fetch-cache";
+import { isNextDynamicUsage, markRedisDown, redisAvailable, redisExec } from "@/lib/rate-limit";
 
 const log = createLogger("providers");
 
@@ -363,6 +367,204 @@ function open(
   );
 }
 
+// ── Cupos de los proveedores (ROJO-9, D-17) ───────────────────────────────────
+//
+// Cada petición REAL (las que sirve la caché no llegan aquí) suma en un
+// contador por proveedor y periodo. Al cruzar el 80 % del cupo se avisa a
+// Sentry (etiqueta `provider`, incidente `quota`) y al agotarlo otra vez con
+// nivel error. Nunca se bloquea una petición: el cupo lo hace cumplir el
+// proveedor (429); esto existe para enterarse ANTES.
+//
+// El contador vive en Upstash Redis si está configurado (el mismo que el
+// límite de peticiones, `rate-limit.ts`), así que suma todas las instancias
+// de Vercel; sin Redis, cuenta en memoria de la instancia (orientativo: una
+// instancia nueva empieza de cero). Contar nunca retrasa la petición: la
+// escritura en Redis va en paralelo y sus fallos se ignoran.
+
+export type QuotaPeriod = "hour" | "month";
+
+export interface ProviderQuota {
+  /** Peticiones permitidas por periodo (y por recurso si `perResource`). */
+  limit: number;
+  period: QuotaPeriod;
+  /** ComicVine limita POR RECURSO (`issues`, `volumes`, `search`…). */
+  perResource?: boolean;
+}
+
+/**
+ * Cupos conocidos de los planes gratuitos (ROJO §3):
+ *   - RAWG: 20.000 peticiones al mes.
+ *   - ComicVine: 200 peticiones por recurso y hora.
+ * El resto no publica un cupo fijo (o es por segundo y lo cubre el breaker).
+ */
+export const PROVIDER_QUOTAS: Partial<Record<ProviderId, ProviderQuota>> = {
+  rawg: { limit: 20_000, period: "month" },
+  comicvine: { limit: 200, period: "hour", perResource: true },
+};
+
+/** Fracción del cupo a partir de la que se avisa. */
+export const QUOTA_ALERT_RATIO = 0.8;
+
+/** Clave del periodo en UTC: `2026-10` (mes) o `2026-10-22T14` (hora). */
+export function quotaPeriodKey(period: QuotaPeriod, now = Date.now()): string {
+  const iso = new Date(now).toISOString();
+  return period === "month" ? iso.slice(0, 7) : iso.slice(0, 13);
+}
+
+/** Segundos que una clave de periodo debe vivir en Redis (con margen). */
+function quotaTtlSeconds(period: QuotaPeriod): number {
+  return period === "month" ? 32 * 24 * 3600 : 2 * 3600;
+}
+
+/**
+ * Recurso de ComicVine a partir de la URL: `/api/issues/` → `issues`,
+ * `/api/issue/4000-1/` → `issue`, `/api/search/` → `search`.
+ */
+export function quotaResource(provider: ProviderId, url: string): string {
+  if (!PROVIDER_QUOTAS[provider]?.perResource) return "all";
+  try {
+    const parts = new URL(url).pathname.split("/").filter(Boolean);
+    const i = parts.indexOf("api");
+    return (i >= 0 ? parts[i + 1] : parts[0]) || "all";
+  } catch {
+    return "all";
+  }
+}
+
+/** Uso conocido por clave `proveedor:recurso:periodo` (memoria o último valor de Redis). */
+const quotaUsage = new Map<string, number>();
+/** Umbrales ya avisados en esta instancia (`clave|80` / `clave|100`). */
+const quotaAlerted = new Set<string>();
+/** Escrituras en Redis en curso (los tests las esperan con `flushProviderQuota`). */
+const quotaTasks = new Set<Promise<void>>();
+
+function quotaKey(provider: ProviderId, resource: string, period: QuotaPeriod, now: number): string {
+  return `${provider}:${resource}:${quotaPeriodKey(period, now)}`;
+}
+
+/** Avisa al cruzar el 80 % y el 100 %, una sola vez por umbral y periodo. */
+function checkQuotaThresholds(
+  provider: ProviderId,
+  resource: string,
+  key: string,
+  quota: ProviderQuota,
+  before: number,
+  after: number
+): void {
+  const thresholds: [number, string][] = [
+    [Math.ceil(quota.limit * QUOTA_ALERT_RATIO), "80"],
+    [quota.limit, "100"],
+  ];
+  for (const [value, name] of thresholds) {
+    if (before >= value || after < value) continue;
+    const memo = `${key}|${name}`;
+    if (quotaAlerted.has(memo)) continue;
+    quotaAlerted.add(memo);
+    const where = resource === "all" ? "" : ` (recurso ${resource})`;
+    const per = quota.period === "month" ? "este mes" : "esta hora";
+    reportIncident(
+      provider,
+      "quota",
+      `proveedor ${provider}${where}: ${after} de ${quota.limit} peticiones ${per} (${name} % del cupo)`,
+      { resource, used: after, limit: quota.limit, period: quotaPeriodKey(quota.period) }
+    );
+  }
+}
+
+/**
+ * Suma una petición real al contador del proveedor. Síncrono en memoria; si
+ * hay Redis, además suma allí en segundo plano y toma su cuenta (la de todas
+ * las instancias) como la buena.
+ */
+export function recordProviderCall(provider: ProviderId, url: string, now = Date.now()): void {
+  const quota = PROVIDER_QUOTAS[provider];
+  if (!quota) return;
+  const resource = quotaResource(provider, url);
+  const key = quotaKey(provider, resource, quota.period, now);
+
+  // Durante `next build` no se escribe en Redis: una petición `no-store`
+  // dentro de un render estático no debe decidir nada de la página.
+  const redis = process.env.NEXT_PHASE === "phase-production-build" ? null : redisAvailable(now);
+  if (!redis) {
+    const before = quotaUsage.get(key) ?? 0;
+    quotaUsage.set(key, before + 1);
+    checkQuotaThresholds(provider, resource, key, quota, before, before + 1);
+    return;
+  }
+
+  const task = redisExec(
+    [
+      ["INCR", `kultura:quota:${key}`],
+      ["EXPIRE", `kultura:quota:${key}`, quotaTtlSeconds(quota.period)],
+    ],
+    redis
+  )
+    .then(([count]) => {
+      const after = Number(count);
+      if (!Number.isFinite(after)) return;
+      quotaUsage.set(key, after);
+      // INCR devuelve valores consecutivos: solo UNA instancia ve el cruce.
+      checkQuotaThresholds(provider, resource, key, quota, after - 1, after);
+    })
+    .catch((e) => {
+      // Redis caído: se cuenta en memoria para no perder la señal del todo.
+      // La señal de render dinámico de Next no es un Redis caído: no apaga el
+      // límite distribuido (ver `rawFetch` en rate-limit.ts).
+      if (!isNextDynamicUsage(e)) markRedisDown();
+      const before = quotaUsage.get(key) ?? 0;
+      quotaUsage.set(key, before + 1);
+      checkQuotaThresholds(provider, resource, key, quota, before, before + 1);
+    })
+    .finally(() => {
+      quotaTasks.delete(task);
+    });
+  quotaTasks.add(task);
+}
+
+/**
+ * Fracción del cupo usada en el periodo actual (0 si no hay cupo o no se ha
+ * contado nada). Es lo que sabe ESTA instancia: con Redis, la última cuenta
+ * global que vio; sin él, la suya.
+ */
+export function providerQuotaUsage(
+  provider: ProviderId,
+  resource = "all",
+  now = Date.now()
+): number {
+  const quota = PROVIDER_QUOTAS[provider];
+  if (!quota) return 0;
+  const used = quotaUsage.get(quotaKey(provider, resource, quota.period, now)) ?? 0;
+  return used / quota.limit;
+}
+
+/** ¿Ha pasado el proveedor (o su recurso) del 80 % del cupo en este periodo? */
+export function isProviderQuotaHot(provider: ProviderId, resource = "all", now = Date.now()): boolean {
+  return providerQuotaUsage(provider, resource, now) >= QUOTA_ALERT_RATIO;
+}
+
+/** Espera a las escrituras pendientes en Redis. Pensado para los tests. */
+export async function flushProviderQuota(): Promise<void> {
+  await Promise.all(Array.from(quotaTasks));
+}
+
+/** Fija el uso de un periodo (simular un mes ya gastado). Solo para tests. */
+export function _setProviderQuotaUsageForTests(
+  provider: ProviderId,
+  used: number,
+  resource = "all",
+  now = Date.now()
+): void {
+  const quota = PROVIDER_QUOTAS[provider];
+  if (!quota) return;
+  quotaUsage.set(quotaKey(provider, resource, quota.period, now), used);
+}
+
+/** Vacía contadores y avisos de cupo. Pensado para los tests. */
+export function resetProviderQuota(): void {
+  quotaUsage.clear();
+  quotaAlerted.clear();
+}
+
 // ── providerFetch ─────────────────────────────────────────────────────────────
 
 export interface ProviderFetchOptions {
@@ -440,6 +642,9 @@ async function attemptOnce(
       init.next = { revalidate: opts.cache?.revalidate ?? PROVIDER_REVALIDATE_SECONDS };
     }
     let res: Response;
+    // ROJO-9: cada intento real gasta cupo del proveedor (también el que
+    // falla o se agota el plazo), así que se cuenta antes de salir.
+    recordProviderCall(provider, url);
     try {
       res = await fetch(url, init);
     } catch (e) {

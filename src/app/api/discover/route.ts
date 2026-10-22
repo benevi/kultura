@@ -9,25 +9,22 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { fetchDiscoverData, type DiscoverResult } from "@/lib/api/discover";
+import { fetchAggregateResult } from "@/lib/api/aggregate";
 import {
   CATALOG_EDGE_CACHE,
-  CATALOG_EDGE_CACHE_AGGREGATE,
   NO_STORE,
   clientIp,
   parseDiscoverParams,
 } from "@/lib/api/discover-params";
-import { checkRateLimit } from "@/lib/rate-limit";
-
-/**
- * F-06 (COD-6): 120 peticiones por minuto e IP. Holgado para varias personas
- * detrás de la misma IP (CGNAT de operadoras móviles, redes de oficina o de
- * universidad) paginando y filtrando a la vez; frena a un script que vacía los
- * cupos de RAWG o ComicVine. Lo que sirve la caché de borde ni llega aquí.
- */
-const DISCOVER_LIMIT = { windowMs: 60_000, max: 120 };
+import { checkRateLimitDistributed, LIMITS } from "@/lib/rate-limit";
 
 export async function GET(request: NextRequest) {
-  const rl = checkRateLimit(`${clientIp(request.headers)}:discover`, DISCOVER_LIMIT);
+  // F-06 (COD-6) + F-13 (D-21): 120 peticiones por minuto e IP, compartidas
+  // entre instancias si hay Upstash. Lo que sirve la caché de borde ni llega.
+  const rl = await checkRateLimitDistributed(
+    `${clientIp(request.headers)}:discover`,
+    LIMITS.discover
+  );
   if (!rl.allowed) {
     // Misma forma que una respuesta normal: el cliente pinta su aviso de
     // "inténtalo en unos segundos" en vez de una rejilla vacía sin explicación.
@@ -75,7 +72,7 @@ export async function GET(request: NextRequest) {
   // parseDiscoverParams.
   // E59 R4c-2 — post-filtros sueltos: temporadas×tv (puente seasons→temporadas),
   // editorial×book (degradado), volumenes×comic. Todos post-fetch, ninguno gatea.
-  const result = await fetchDiscoverData(type, page, {
+  const filters = {
     genre: parsed.genre,
     year: parsed.year,
     platform: parsed.platform,
@@ -92,20 +89,31 @@ export async function GET(request: NextRequest) {
     modojuego: parsed.modojuego,
     duracionmedia: parsed.duracionmedia,
     estado: parsed.estado,
-  }, locale, parsed.q);
+  };
+
+  // F-13: `type=all` va directo al agregado para saber si la respuesta es
+  // PARCIAL (alguna familia falló). Una parcial no se cachea en el borde; una
+  // completa, como cualquier otra (antes se cacheaba 5 min a ciegas).
+  const result =
+    type === "all"
+      ? await fetchAggregateResult(page, filters, locale, parsed.q)
+      : await fetchDiscoverData(type, page, filters, locale, parsed.q);
+  const partial = "partial" in result && result.partial === true;
 
   // E-MATCH-SIN-BADGE: aquí se calculaba el match de cada item SOLO para pintar
   // el badge del grid. Retirado el badge, calcularlo era una lectura de
   // biblioteca + scoring en cada petición de catálogo para un dato que ya no
   // ve nadie. El match sigue vivo donde decide algo: la elección de las
   // recomendaciones IA (`lib/claude/recommendations.ts`).
-  return NextResponse.json(result, {
+  const body: DiscoverResult = {
+    items: result.items,
+    totalPages: result.totalPages,
+    hasMore: result.hasMore,
+    fetchErrorKind: result.fetchErrorKind,
+  };
+  return NextResponse.json(body, {
     headers: {
-      "Cache-Control": result.fetchErrorKind
-        ? NO_STORE
-        : type === "all"
-          ? CATALOG_EDGE_CACHE_AGGREGATE
-          : CATALOG_EDGE_CACHE,
+      "Cache-Control": result.fetchErrorKind || partial ? NO_STORE : CATALOG_EDGE_CACHE,
     },
   });
 }

@@ -55,13 +55,29 @@ vi.mock("@/lib/api/anilist", () => ({
   }),
 }));
 
-// E-MANGA-SOURCE: manga se busca en MangaDex (no Jikan).
-vi.mock("@/lib/api/mangadex", () => ({
-  searchManga: vi.fn().mockResolvedValue({
-    data: [],
-    total: 0,
-    offset: 0,
-  }),
+// E-MANGA-SOURCE: manga se busca en MangaDex (no Jikan). F-13: con nota de
+// `/statistics/manga` y título oficial (helpers puros: los reales).
+vi.mock("@/lib/api/mangadex", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@/lib/api/mangadex")>();
+  return {
+    ...actual,
+    searchManga: vi.fn().mockResolvedValue({
+      data: [],
+      total: 0,
+      offset: 0,
+    }),
+    getMangaStatistics: vi.fn().mockResolvedValue(new Map()),
+  };
+});
+
+// F-13: respaldo de manga (MyAnimeList vía Jikan).
+vi.mock("@/lib/api/jikan", () => ({
+  searchMangaJikan: vi.fn().mockResolvedValue({ data: [] }),
+}));
+
+// F-13: respaldo de cómic (novela gráfica de Google Books).
+vi.mock("@/lib/api/googlebooks", () => ({
+  searchComicsGoogleBooks: vi.fn().mockResolvedValue({ totalItems: 0, items: [] }),
 }));
 
 // E-BOOKS-HIBRIDO: el buscador de libros va contra el MISMO proveedor que el
@@ -104,22 +120,20 @@ vi.mock("@/lib/api/rawg", () => ({
   }),
 }));
 
+// F-13 (DAT-6): el cómic se busca por SERIES (`searchComicVolumes`), ya
+// normalizadas por comicvine.ts.
 vi.mock("@/lib/api/comicvine", () => ({
-  searchComics: vi.fn().mockResolvedValue({
-    status_code: 1,
-    error: "OK",
-    number_of_total_results: 1,
-    results: [
+  COMIC_SEARCH_PAGE_SIZE: 10,
+  searchComicVolumes: vi.fn().mockResolvedValue({
+    total: 1,
+    items: [
       {
-        id: 42,
-        name: "Year One",
-        issue_number: "1",
-        cover_date: "1987-02-01",
-        store_date: null,
-        deck: "Origin story",
-        description: null,
-        image: { medium_url: "https://example.com/cv.jpg" },
-        volume: { name: "Batman" },
+        id: "comic_6036",
+        externalId: "6036",
+        type: "comic",
+        title: "Batman",
+        poster: "https://example.com/cv.jpg",
+        metadata: { issues: 713 },
       },
     ],
   }),
@@ -151,6 +165,18 @@ vi.mock("@/lib/api/normalizer", () => ({
     externalId: raw.id,
     type: "manga",
     title: raw.title,
+  })),
+  normalizeMangaJikan: vi.fn((raw: { mal_id: number; title: string }) => ({
+    id: `manga_${raw.mal_id}`,
+    externalId: String(raw.mal_id),
+    type: "manga",
+    title: raw.title,
+  })),
+  normalizeBookGoogle: vi.fn((raw: { id: string; volumeInfo?: { title?: string } }) => ({
+    id: `book_${raw.id}`,
+    externalId: raw.id,
+    type: "book",
+    title: raw.volumeInfo?.title ?? "",
   })),
   // E-BOOKS-HIBRIDO: la búsqueda de libros usa Open Library, igual que el
   // catálogo. Google Books solo entra en la ficha.
@@ -232,7 +258,7 @@ describe("searchByTypePaged", () => {
   it("manga: totalPages desde total de MangaDex, paginado por offset (E-MANGA-SOURCE)", async () => {
     const { searchManga } = await import("@/lib/api/mangadex");
     vi.mocked(searchManga).mockResolvedValueOnce({
-      data: [{ id: "uuid-1", title: "One Piece" }],
+      data: [{ id: "uuid-1", title: "One Piece", attributes: { title: { en: "One Piece" }, altTitles: [], tags: [] } }],
       total: 45, // ceil(45/20) = 3
       offset: 20,
     } as never);
@@ -272,17 +298,17 @@ describe("searchByTypePaged", () => {
     expect(searchGames).toHaveBeenCalledWith("gta", 1);
   });
 
-  it("comic: pagina por offset y usa number_of_total_results", async () => {
-    const { searchComics } = await import("@/lib/api/comicvine");
-    vi.mocked(searchComics).mockResolvedValueOnce({
-      results: [{ id: 1, name: "Batman" }],
-      number_of_total_results: 40,
+  it("comic: busca SERIES, 10 por página, con el total de ComicVine (DAT-6)", async () => {
+    const { searchComicVolumes } = await import("@/lib/api/comicvine");
+    vi.mocked(searchComicVolumes).mockResolvedValueOnce({
+      items: [{ id: "comic_1", externalId: "1", type: "comic", title: "Batman", poster: "p" }],
+      total: 40,
     } as never);
 
     const res = await searchByTypePaged("batman", "comic", 2);
-    expect(res.totalPages).toBe(2);
-    expect(res.hasMore).toBe(false);
-    expect(searchComics).toHaveBeenCalledWith("batman", 2);
+    expect(res.totalPages).toBe(4);
+    expect(res.hasMore).toBe(true);
+    expect(searchComicVolumes).toHaveBeenCalledWith("batman", 2);
   });
 
   it("respuesta sin resultados → items vacío, 1 página, sin siguiente", async () => {
@@ -319,7 +345,7 @@ describe("searchByType", () => {
   it("devuelve solo manga cuando type='manga' (MangaDex, E-MANGA-SOURCE)", async () => {
     const { searchManga } = await import("@/lib/api/mangadex");
     vi.mocked(searchManga).mockResolvedValueOnce({
-      data: [{ id: "uuid-1", title: "One Piece" }],
+      data: [{ id: "uuid-1", title: "One Piece", attributes: { title: { en: "One Piece" }, altTitles: [], tags: [] } }],
       total: 1,
       offset: 0,
     } as never);
@@ -336,10 +362,10 @@ describe("searchByType", () => {
     expect(results[0].type).toBe("book");
   });
 
-  it("type='comic' → delega en searchComics (ComicVine, server-only)", async () => {
-    const { searchComics } = await import("@/lib/api/comicvine");
+  it("type='comic' → delega en searchComicVolumes (ComicVine, server-only)", async () => {
+    const { searchComicVolumes } = await import("@/lib/api/comicvine");
     const results = await searchByType("batman", "comic");
-    expect(searchComics).toHaveBeenCalledWith("batman");
+    expect(searchComicVolumes).toHaveBeenCalledWith("batman", 1);
     expect(results).toHaveLength(1);
     expect(results[0].type).toBe("comic");
   });
