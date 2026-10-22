@@ -33,6 +33,10 @@ import type { MediaItem, MediaType } from '@/types/media'
 import { fetchDiscoverData } from '@/lib/api/discover'
 import { computeMatchScores } from '@/lib/recommendations/match-score'
 import { createLogger } from '@/lib/logger'
+import { aiDay, reserveAiCall } from '@/lib/claude/budget'
+import { readDailyRecs, writeDailyRecs, type AiRecsResult } from '@/lib/claude/daily-recs'
+
+export type { AiRecsResult } from '@/lib/claude/daily-recs'
 
 const log = createLogger('claude/recommendations')
 
@@ -76,6 +80,9 @@ const CANDIDATES_PER_TYPE = 5
  * cada visita a Inicio, de modo que Claude elige entre candidatos distintos sin
  * dejar de decidir por match — la alternativa (elegir al azar) habría roto
  * justo el criterio que pediste.
+ *
+ * Desde D-06 Inicio genera una vez al día (`getDailyAiRecommendations`), así
+ * que allí la ventana rota POR DÍA: mañana se ofrecen candidatos distintos.
  */
 const WINDOW_PER_TYPE = 2
 
@@ -85,8 +92,12 @@ const WINDOW_PER_TYPE = 2
  */
 const CATALOG_PAGES = 3
 
-/** Mínimo de items con señal en biblioteca (mismo gate que computeMatchScores). */
-const MIN_LIBRARY_ITEMS = 3
+/**
+ * Mínimo de items con señal en biblioteca (mismo gate que computeMatchScores).
+ * Exportado para que Inicio sepa, sin llamar a nada caro, si enseñar el botón
+ * "Recomiéndame" o directamente lo popular.
+ */
+export const MIN_LIBRARY_ITEMS = 3
 
 interface LibraryItem {
   title: string
@@ -489,27 +500,45 @@ function resolvePicks(
 }
 
 /**
- * Recomendaciones de "Para ti": un título real de cada tipo, elegido por match y
- * explicado por Claude. Devuelve [] solo cuando no hay señal suficiente en la
- * biblioteca o ningún proveedor dio candidatos — nunca por un fallo del modelo.
+ * Qué pasó con el modelo en una generación:
+ * - `ai`: se le llamó y respondió (aunque alguna frase se descartase).
+ * - `no_key`: sin `ANTHROPIC_API_KEY` (desarrollo); no gasta cupo.
+ * - `capped`: tope diario alcanzado (D-06); no se le llamó.
+ * - `error`: se le llamó y falló; el cupo ya está gastado.
+ * - `skipped`: no hubo nada que elegir (biblioteca corta o sin candidatos).
  */
-export async function getAiRecommendations(
+type ModelOutcome = 'ai' | 'no_key' | 'capped' | 'error' | 'skipped'
+
+interface Generation {
+  recs: AiRec[]
+  outcome: ModelOutcome
+}
+
+/**
+ * El trabajo de verdad: candidatos, match y, si hay cupo, UNA llamada al
+ * modelo. `offset` decide la ventana de candidatos; sin él se usa el contador
+ * de visitas de la instancia (comportamiento histórico de `getAiRecommendations`).
+ */
+async function generateRecommendations(
   userId: string,
   topGenres: string[],
-  locale: string = 'es',
-  supabaseClient?: SupabaseClient
-): Promise<AiRec[]> {
+  locale: string,
+  supabase: SupabaseClient,
+  fixedOffset?: number
+): Promise<Generation> {
   const cacheKey = `${userId}:${locale}:${PROMPT_VERSION}`
-  const supabase = supabaseClient ?? createClient()
 
   const library = await getLibraryContext(userId, supabase)
 
   // Sin contexto suficiente no hay perfil de gustos fiable: la UI pide al
   // usuario que añada títulos en vez de enseñar recomendaciones al azar.
-  if (library.length < MIN_LIBRARY_ITEMS) return []
+  if (library.length < MIN_LIBRARY_ITEMS) return { recs: [], outcome: 'skipped' }
 
-  const offset = rotationCounter.get(cacheKey) ?? 0
-  rotationCounter.set(cacheKey, offset + 1)
+  let offset = fixedOffset
+  if (offset === undefined) {
+    offset = rotationCounter.get(cacheKey) ?? 0
+    rotationCounter.set(cacheKey, offset + 1)
+  }
 
   // Lo caro (barrer 7 catálogos + calcular match) se cachea; lo que cambia en
   // cada visita es QUÉ parte de esa shortlist se ofrece (E-AIREC-ROTACION).
@@ -520,13 +549,13 @@ export async function getAiRecommendations(
     // los candidatos saldrían siempre del mismo puñado de títulos populares.
     const pools = await fetchCandidatePools(locale, owned, 1 + (offset % CATALOG_PAGES))
     const candidates = Array.from(pools.values()).flat()
-    if (candidates.length === 0) return []
+    if (candidates.length === 0) return { recs: [], outcome: 'skipped' }
 
     // El match es el criterio de la recomendación: sin él (gate de señal mínima
     // de computeMatchScores) no hay nada por lo que ordenar ni que mostrar en
     // el badge.
     const scores = await computeMatchScores(userId, candidates, supabase, locale)
-    if (scores.size === 0) return []
+    if (scores.size === 0) return { recs: [], outcome: 'skipped' }
 
     entry = {
       shortlist: shortlistByType(pools, scores),
@@ -537,13 +566,102 @@ export async function getAiRecommendations(
   }
 
   const windowed = rotateWindow(entry.shortlist, offset)
-  const chosen = await chooseWithClaude(windowed, entry.scores, library, topGenres, locale)
-  return resolvePicks(windowed, entry.scores, chosen)
+  const { chosen, outcome } = await chooseWithClaude(windowed, entry.scores, library, topGenres, locale)
+  return { recs: resolvePicks(windowed, entry.scores, chosen), outcome }
 }
 
 /**
- * Pide a Claude que elija y explique. Cualquier fallo (sin clave, error de API,
- * respuesta no parseable) devuelve un mapa vacío → `resolvePicks` cae al de
+ * Recomendaciones de "Para ti": un título real de cada tipo, elegido por match y
+ * explicado por Claude. Devuelve [] solo cuando no hay señal suficiente en la
+ * biblioteca o ningún proveedor dio candidatos — nunca por un fallo del modelo.
+ *
+ * Cada invocación puede gastar UNA llamada del cupo diario (D-06). Para Inicio
+ * se usa `getDailyAiRecommendations`, que además la reutiliza todo el día.
+ */
+export async function getAiRecommendations(
+  userId: string,
+  topGenres: string[],
+  locale: string = 'es',
+  supabaseClient?: SupabaseClient
+): Promise<AiRec[]> {
+  const supabase = supabaseClient ?? createClient()
+  return (await generateRecommendations(userId, topGenres, locale, supabase)).recs
+}
+
+/** Número de día desde 1970: hace rotar la ventana de candidatos cada día. */
+function dayIndex(day: string): number {
+  const ms = Date.parse(`${day}T00:00:00Z`)
+  return Number.isFinite(ms) ? Math.floor(ms / 86_400_000) : 0
+}
+
+/** Generaciones en curso por usuario/día/idioma: dos clics a la vez pagan una vez. */
+const inflight = new Map<string, Promise<AiRecsResult>>()
+
+function toResult({ recs, outcome }: Generation): AiRecsResult {
+  if (outcome === 'ai') return { recommendations: recs, source: 'ai' }
+  if (outcome === 'capped') return { recommendations: recs, source: 'match', capped: true }
+  return { recommendations: recs, source: 'match' }
+}
+
+/**
+ * "Para ti" con coste acotado (D-06 / ROJO-4): como mucho UNA llamada al modelo
+ * por usuario, día e idioma. La primera petición del día genera y guarda; las
+ * siguientes —en esta instancia o en cualquier otra— leen lo guardado.
+ *
+ * Qué NO se guarda, para que el usuario pueda volver a pedirlo ese mismo día:
+ * - una biblioteca demasiado corta (al llegar a 3 títulos ya puede recibirlas);
+ * - un fallo del modelo (el reintento gasta otra llamada, pero del mismo tope
+ *   global, así que el gasto sigue acotado).
+ *
+ * Cambiar la biblioteca no regenera las de hoy: lo contrario dejaría convertir
+ * cada "añadir y quitar" en una llamada.
+ */
+export async function getDailyAiRecommendations(
+  userId: string,
+  topGenres: string[],
+  locale: string = 'es',
+  supabaseClient?: SupabaseClient
+): Promise<AiRecsResult> {
+  const day = aiDay()
+  const cached = await readDailyRecs(userId, locale, day)
+  if (cached) return cached
+
+  const key = `${userId}|${day}|${locale}`
+  const running = inflight.get(key)
+  if (running) return running
+
+  const job = (async () => {
+    const supabase = supabaseClient ?? createClient()
+    const generation = await generateRecommendations(userId, topGenres, locale, supabase, dayIndex(day))
+    const result = toResult(generation)
+    if (generation.recs.length > 0 && generation.outcome !== 'error') {
+      await writeDailyRecs(userId, locale, result, day)
+    }
+    return result
+  })()
+
+  inflight.set(key, job)
+  try {
+    return await job
+  } finally {
+    inflight.delete(key)
+  }
+}
+
+/**
+ * Las recomendaciones de hoy si ya se generaron, o `null`. No llama a
+ * proveedores ni al modelo: Inicio la usa para pintarlas sin esperar al clic.
+ */
+export async function readTodayAiRecommendations(
+  userId: string,
+  locale: string
+): Promise<AiRecsResult | null> {
+  return readDailyRecs(userId, locale)
+}
+
+/**
+ * Pide a Claude que elija y explique. Cualquier fallo (sin clave, sin cupo,
+ * error de API, respuesta no parseable) devuelve un mapa vacío → `resolvePicks` cae al de
  * mayor match de cada tipo y la sección sigue mostrando sus 7 cards.
  */
 async function chooseWithClaude(
@@ -552,12 +670,19 @@ async function chooseWithClaude(
   library: LibraryItem[],
   topGenres: string[],
   locale: string
-): Promise<Map<string, string | undefined>> {
+): Promise<{ chosen: Map<string, string | undefined>; outcome: ModelOutcome }> {
   // Opcional en el schema: graceful, degrada al orden por match si no está.
   const apiKey = env.ANTHROPIC_API_KEY
   if (!apiKey) {
     log.warn('ANTHROPIC_API_KEY not set — se recomienda solo por match, sin explicación')
-    return new Map()
+    return { chosen: new Map(), outcome: 'no_key' }
+  }
+
+  // D-06: sin cupo hoy no hay llamada. La sección sigue con sus 7 cards por
+  // match y la UI explica que mañana vuelven las frases.
+  if (!(await reserveAiCall('recs'))) {
+    log.warn('Tope diario de IA alcanzado — se recomienda solo por match')
+    return { chosen: new Map(), outcome: 'capped' }
   }
 
   try {
@@ -571,10 +696,10 @@ async function chooseWithClaude(
       ],
     })
     const block = message.content[0]
-    if (block.type !== 'text') return new Map()
-    return parsePicks(block.text, locale)
+    if (!block || block.type !== 'text') return { chosen: new Map(), outcome: 'ai' }
+    return { chosen: parsePicks(block.text, locale), outcome: 'ai' }
   } catch (err) {
     log.error('Claude API error', { err })
-    return new Map()
+    return { chosen: new Map(), outcome: 'error' }
   }
 }
