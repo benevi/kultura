@@ -1,36 +1,75 @@
 import { ImageResponse } from "next/og";
-import { C, loadFont } from "@/lib/og/brand";
+import { getTranslations } from "next-intl/server";
+import { C, FORMAT_HEX, loadFont } from "@/lib/og/brand";
+import { parseTitle } from "@/lib/landing/immersive";
 
 /**
  * Tarjeta que se ve al compartir el enlace (WhatsApp, X, Discord...).
- * El rasterizador de next/og no entiende OKLCH, así que aquí van las
- * aproximaciones hex de la tabla de tokens; es la única excepción.
+ * D-11: la misma promesa que el h1 de la landing, con cada formato en su color
+ * (como se ilumina en el hero) y "Gratis y sin anuncios" debajo. El
+ * rasterizador de next/og no entiende OKLCH, así que los colores salen de la
+ * tabla hex exacta de DISENO.md (`lib/og/brand`).
  */
-export const alt = "KULTURA";
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
 
-const COPY = {
-  es: {
-    tagline: "Todo lo que ves, lees y juegas, en un solo sitio.",
-    formats: ["Películas", "Series", "Anime", "Libros", "Cómics", "Manga", "Juegos"],
-  },
-  en: {
-    tagline: "Everything you watch, read and play, in one place.",
-    formats: ["Movies", "Series", "Anime", "Books", "Comics", "Manga", "Games"],
-  },
-};
+/** `alt` traducido (SEO-6): con un `alt` estático salía "KULTURA" en los dos idiomas. */
+export async function generateImageMetadata({ params }: { params: { locale: string } }) {
+  const locale = params.locale === "en" ? "en" : "es";
+  const t = await getTranslations({ locale, namespace: "landing" });
+  return [{ id: "card", alt: t("seo.title"), size, contentType }];
+}
 
-const CHIP_COLORS = [C.pink, C.lime, C.purple, C.orange, C.blue, C.yellow, C.pink];
-const ON_DARK = "#1c1622";
+type Segment = { text: string; color: string };
+
+/**
+ * Palabra a palabra: satori parte las líneas por elemento, así el titular
+ * envuelve como un texto normal y cada formato conserva su color. La
+ * puntuación pegada a un formato ("cine,") va en la misma palabra, en blanco.
+ */
+function titleWords(title: ReturnType<typeof parseTitle>): Segment[][] {
+  const words: Segment[][] = [];
+  let glued = false; // el trozo anterior terminó sin espacio
+  for (const part of title) {
+    if (typeof part !== "string") {
+      const seg = { text: part.text, color: FORMAT_HEX[part.type] };
+      if (glued && words.length) words[words.length - 1].push(seg);
+      else words.push([seg]);
+      glued = true;
+      continue;
+    }
+    const pieces = part.split(/(\s+)/).filter(Boolean);
+    for (const piece of pieces) {
+      if (/^\s+$/.test(piece)) {
+        glued = false;
+        continue;
+      }
+      const seg = { text: piece, color: C.text };
+      if (glued && words.length) words[words.length - 1].push(seg);
+      else words.push([seg]);
+      glued = true;
+    }
+  }
+  return words;
+}
+
+/** Lema corto bajo el titular: la última frase del subtítulo ("Gratis y sin anuncios."). */
+function tail(sub: string): string {
+  const parts = sub.split(". ").filter(Boolean);
+  return parts[parts.length - 1] ?? sub;
+}
 
 export default async function Image({ params }: { params: { locale: string } }) {
-  const copy = COPY[params.locale === "en" ? "en" : "es"];
-  const body = [copy.tagline, ...copy.formats].join("");
+  const locale = params.locale === "en" ? "en" : "es";
+  const t = await getTranslations({ locale, namespace: "landing" });
+  const title = parseTitle(t.raw("hero.title") as string);
+  const lema = tail(t("hero.sub"));
+  const words = titleWords(title);
+  const glyphs = words.flatMap((w) => w.map((seg) => seg.text)).join("") + lema;
   const fonts = (
     await Promise.all([
-      loadFont("Bricolage+Grotesque", 800, "kultura"),
-      loadFont("Figtree", 700, body),
+      loadFont("Bricolage+Grotesque", 800, `kultura${glyphs}`),
+      loadFont("Figtree", 700, lema),
     ])
   ).filter((f) => f !== null);
 
@@ -43,27 +82,27 @@ export default async function Image({ params }: { params: { locale: string } }) 
           display: "flex",
           flexDirection: "column",
           justifyContent: "center",
-          padding: "0 90px",
-          background: `radial-gradient(120% 100% at 20% 10%, rgba(184,60,200,0.35), ${C.bg} 55%)`,
+          padding: "0 84px",
+          background: `radial-gradient(120% 100% at 20% 10%, ${C.purpleGlow}, ${C.bg} 55%)`,
           color: C.text,
           fontFamily: "Figtree",
         }}
       >
-        <div style={{ display: "flex", alignItems: "center", gap: 32 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 20 }}>
           <div
             style={{
-              width: 120,
-              height: 120,
-              borderRadius: 40,
+              width: 64,
+              height: 64,
+              borderRadius: 20,
               background: C.surface2,
               display: "flex",
               position: "relative",
             }}
           >
             {[
-              { c: C.pink, r: -10, t: 22, l: 18 },
-              { c: C.lime, r: 6, t: 46, l: 42 },
-              { c: C.purple, r: -4, t: 70, l: 26 },
+              { c: C.pink, r: -10, t: 12, l: 9 },
+              { c: C.lime, r: 6, t: 25, l: 22 },
+              { c: C.purple, r: -4, t: 38, l: 14 },
             ].map((p) => (
               <div
                 key={p.c}
@@ -71,50 +110,45 @@ export default async function Image({ params }: { params: { locale: string } }) 
                   position: "absolute",
                   top: p.t,
                   left: p.l,
-                  width: 60,
-                  height: 40,
-                  borderRadius: 18,
+                  width: 32,
+                  height: 21,
+                  borderRadius: 9,
                   background: p.c,
                   transform: `rotate(${p.r}deg)`,
                 }}
               />
             ))}
           </div>
-          <div style={{ display: "flex", alignItems: "flex-end", fontSize: 150, fontWeight: 800, letterSpacing: -4, fontFamily: "Bricolage Grotesque" }}>
+          <div style={{ display: "flex", alignItems: "flex-end", fontSize: 64, fontWeight: 800, letterSpacing: -2, fontFamily: "Bricolage Grotesque" }}>
             kultura
-            <div
-              style={{
-                width: 22,
-                height: 22,
-                background: C.pink,
-                transform: "rotate(14deg)",
-                marginLeft: 8,
-                marginBottom: 34,
-              }}
-            />
+            <div style={{ width: 10, height: 10, background: C.lime, transform: "rotate(14deg)", marginLeft: 4, marginBottom: 16 }} />
           </div>
         </div>
-        <div style={{ display: "flex", fontSize: 44, fontWeight: 700, marginTop: 28, color: C.text }}>
-          {copy.tagline}
-        </div>
-        <div style={{ display: "flex", flexWrap: "wrap", gap: 14, marginTop: 44 }}>
-          {copy.formats.map((f, i) => (
-            <div
-              key={f}
-              style={{
-                display: "flex",
-                padding: "10px 20px",
-                borderRadius: 999,
-                background: CHIP_COLORS[i],
-                color: ON_DARK,
-                fontSize: 26,
-                fontWeight: 700,
-              }}
-            >
-              {f}
+        <div
+          style={{
+            display: "flex",
+            flexWrap: "wrap",
+            columnGap: 22,
+            marginTop: 36,
+            fontSize: 76,
+            lineHeight: 1,
+            fontWeight: 800,
+            letterSpacing: -2.5,
+            fontFamily: "Bricolage Grotesque",
+            maxWidth: 1032,
+          }}
+        >
+          {words.map((word, i) => (
+            <div key={i} style={{ display: "flex", marginBottom: 8 }}>
+              {word.map((seg, j) => (
+                <span key={j} style={{ color: seg.color }}>
+                  {seg.text}
+                </span>
+              ))}
             </div>
           ))}
         </div>
+        <div style={{ display: "flex", fontSize: 34, fontWeight: 700, marginTop: 30, color: C.muted }}>{lema}</div>
       </div>
     ),
     { ...size, fonts },

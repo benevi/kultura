@@ -64,6 +64,8 @@ export const FEATURE_KEYS: FeatureKey[] = ["library", "ai", "friends", "lists"];
 export interface FeatureGridProps {
   /** Título + descripción por feature, ya traducidos. */
   features: Record<FeatureKey, { title: string; desc: string }>;
+  /** Texto de la pegatina de la card de IA ("IA" / "AI"), traducido (TXT-4). */
+  aiChip: string;
   /** Portadas reales de la muestra de la landing; vacío = gradientes. */
   posters?: Poster[];
 }
@@ -97,7 +99,7 @@ function LibraryArt({ p }: { p: (i: number) => Poster | null }) {
 }
 
 /** Recomendación: una portada grande con la pegatina de IA colgando. */
-function AiArt({ p }: { p: (i: number) => Poster | null }) {
+function AiArt({ p, chip }: { p: (i: number) => Poster | null; chip: string }) {
   return (
     <div aria-hidden="true" className="relative h-56 lg:h-72 flex justify-center">
       <div className="relative h-full transition-transform duration-base ease-standard group-hover:rotate-0" style={{ rotate: "4deg" }}>
@@ -106,7 +108,7 @@ function AiArt({ p }: { p: (i: number) => Poster | null }) {
           className="absolute -top-3 -left-4 rounded-full bg-accent-lime px-3 py-1 text-[13px] font-extrabold text-on-accent-lime"
           style={{ rotate: "-8deg", boxShadow: STICKER_SHADOW }}
         >
-          ✦ IA
+          ✦ {chip}
         </span>
       </div>
     </div>
@@ -152,12 +154,12 @@ function featureBackground(hue: number): string {
   return `radial-gradient(120% 100% at 20% 10%, oklch(68% 0.2 ${hue} / 0.58), transparent 55%), linear-gradient(160deg, oklch(42% 0.15 ${hue}), oklch(22% 0.06 ${hue}))`;
 }
 
-export function FeatureGrid({ features, posters = [] }: FeatureGridProps) {
+export function FeatureGrid({ features, aiChip, posters = [] }: FeatureGridProps) {
   // Cada card toma portadas DISTINTAS de la muestra (que ya empieza variada).
   const pick = (offset: number) => (i: number): Poster | null => posters[offset + i] ?? null;
   const ART: Record<FeatureKey, React.ReactNode> = {
     library: <LibraryArt p={pick(0)} />,
-    ai: <AiArt p={pick(4)} />,
+    ai: <AiArt p={pick(4)} chip={aiChip} />,
     friends: <FriendsArt p={pick(5)} />,
     lists: <ListsArt p={pick(7)} />,
   };

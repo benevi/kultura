@@ -605,39 +605,103 @@
     "sent": "Reporte enviado"
   },
   "landing": {
-    "rankings": { "title": "Lo mejor de {year}", "sub": "Rankings con las mejores valoraciones de cada formato, actualizados a diario.", "cta": "Ver ranking" },
+    "seo": {
+      "title": "KULTURA — Tu watchlist de cine, series, anime, manga, juegos, libros y cómics",
+      "description": "Apunta lo que quieres ver, leer y jugar, puntúa lo que ya viste y compártelo con tus amigos. Gratis y sin anuncios."
+    },
     "hero": {
-      "tagline": "Descubre, registra y comparte tu cultura",
-      "cta": "Empieza gratis",
-      "badge": "7 formatos culturales"
+      "title": "Tu watchlist de <movie>cine</movie>, <tv>series</tv>, <anime>anime</anime>, <manga>manga</manga>, <game>juegos</game>, <book>libros</book> y <comic>cómics</comic>",
+      "sub": "Apunta lo que quieres ver, leer y jugar, puntúa lo que ya viste y compártelo con tus amigos. Gratis y sin anuncios.",
+      "cta": "Crear mi cuenta gratis",
+      "demo": "Ver la demo",
+      "badge": "7 formatos, 1 sola lista"
+    },
+    "motion": {
+      "pause": "Pausar la animación de fondo",
+      "region": "Animación de fondo"
+    },
+    "formats": {
+      "movie": "Cine",
+      "tv": "Series",
+      "anime": "Anime",
+      "manga": "Manga",
+      "game": "Juegos",
+      "book": "Libros",
+      "comic": "Cómics"
     },
     "features": {
       "title": "Lo que hay dentro.",
       "library": "Biblioteca personal",
-      "libraryDesc": "Registra lo que has visto, lees o juegas con puntuaciones y progreso",
+      "libraryDesc": "Registra lo que has visto, lees o juegas con puntuaciones y progreso.",
       "friends": "Conecta con amigos",
-      "friendsDesc": "Ve qué están disfrutando las personas que te importan",
+      "friendsDesc": "Ve qué están disfrutando las personas que te importan.",
       "lists": "Listas colaborativas",
-      "listsDesc": "Crea listas con amigos y descubrid cosas juntos",
+      "listsDesc": "Montad listas entre todos: la del finde, la de pelis de miedo, la de manga por empezar.",
       "ai": "Recomendaciones IA",
-      "aiDesc": "Descubre tu próximo favorito con ayuda de inteligencia artificial"
+      "aiDesc": "Te sugerimos qué ver, leer o jugar según lo que ya has puntuado.",
+      "aiChip": "IA"
     },
-    "immersive": {
-      "title": "Todo lo que ves, lees y",
-      "titleAccent": "juegas.",
-      "sub": "Cine, series, anime, manga, videojuegos, libros y cómics. Un solo registro, tu gente dentro.",
-      "finalTitle": "Tu cultura, en un solo sitio.",
-      "finalSub": "Registra lo que te mueve, compártelo con tu círculo y descubre lo siguiente.",
-      "demo": "Ver la demo",
-      "formats": {
-        "movie": "Cine",
-        "tv": "Series",
-        "anime": "Anime",
-        "manga": "Manga",
-        "game": "Juegos",
-        "book": "Libros",
-        "comic": "Cómics"
+    "how": {
+      "title": "Así funciona",
+      "steps": {
+        "find": {
+          "title": "Búscalo",
+          "desc": "Películas, series, anime, manga, juegos, libros y cómics desde el mismo buscador."
+        },
+        "track": {
+          "title": "Apúntalo y puntúalo",
+          "desc": "Márcalo como pendiente, en progreso o completado y ponle nota cuando lo termines."
+        },
+        "share": {
+          "title": "Compártelo",
+          "desc": "Crea listas con tus amigos y mira qué están viendo, leyendo y jugando."
+        }
       }
+    },
+    "rankings": {
+      "title": "Lo mejor de {year}",
+      "sub": "Rankings con las mejores valoraciones de cada formato, actualizados a diario.",
+      "cta": "Ver ranking",
+      "previous": "Rankings de otros años"
+    },
+    "compare": {
+      "title": "La alternativa a Letterboxd, Trakt y MyAnimeList",
+      "sub": "Cada app lleva lo suyo: las pelis en una, el anime en otra, los libros en una tercera. En KULTURA está todo junto y lo compartes con la misma gente.",
+      "appHeader": "App",
+      "formatsHeader": "En qué se centra",
+      "kultura": "Los siete formatos, en una sola biblioteca",
+      "note": "Letterboxd, Trakt, MyAnimeList, Goodreads y Backloggd son marcas de sus respectivos propietarios. KULTURA no está afiliada a ninguna de ellas."
+    },
+    "faq": {
+      "title": "Preguntas frecuentes",
+      "free": {
+        "q": "¿Cuánto cuesta?",
+        "a": "Nada. KULTURA es gratis y sin anuncios, y no tiene funciones de pago escondidas."
+      },
+      "what": {
+        "q": "¿Qué puedo apuntar?",
+        "a": "Películas, series, anime, manga, videojuegos, libros y cómics. Buscas el título, le pones un estado (pendiente, en progreso, completado o abandonado) y, si quieres, una nota."
+      },
+      "demo": {
+        "q": "¿Puedo probarla sin registrarme?",
+        "a": "Sí. «Ver la demo» abre una cuenta de ejemplo, de solo lectura, para que veas cómo es por dentro."
+      },
+      "privacy": {
+        "q": "¿Quién ve lo que apunto?",
+        "a": "Tu biblioteca no es pública: nadie sin cuenta puede verla. Las listas nacen privadas y solo aparecen en tu perfil si decides hacerlas públicas."
+      },
+      "data": {
+        "q": "¿Puedo llevarme mis datos?",
+        "a": "Sí. Desde Ajustes descargas tu biblioteca, tus listas y tus amistades en un archivo JSON, y puedes volver a importarlo cuando quieras."
+      },
+      "ai": {
+        "q": "¿Cómo funcionan las recomendaciones?",
+        "a": "Cuando pulsas «Recomiéndame», Claude, el modelo de IA de Anthropic, mira lo que has puntuado y te sugiere qué ver, leer o jugar. Solo se usa cuando tú lo pides."
+      }
+    },
+    "final": {
+      "title": "Tu cultura, en un solo sitio.",
+      "sub": "Lleva la cuenta de lo que ves, lees y juegas. Lo demás, lo descubrimos juntos."
     }
   },
   "discoverFilters": {

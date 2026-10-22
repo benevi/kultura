@@ -1,13 +1,14 @@
 // ============================================================
-// KULTURA — Collage del hero de la landing (E-LANDING-SHOWCASE)
+// KULTURA — Fondo quieto del hero de la landing (E-LANDING-SHOWCASE, D-11)
 //
-// Antes: tres bloques de gradiente con un icono dentro. Ahora: tres portadas
-// REALES del catálogo (tipos distintos, ver `pickShowcase`) en la misma
-// disposición, con las mismas rotaciones y el mismo badge colgante lime que
-// ya tenía — solo cambia el relleno de las piezas.
+// Cuando no hay galería WebGL (reducir movimiento, ahorro de datos, equipo
+// modesto, sin WebGL) el hero se queda con:
+//   - escritorio (≥ lg): collage de tres portadas REALES rotadas, a la derecha;
+//   - móvil (< md): una tira de cuatro portadas bajo los botones.
+// Mismo radio, misma sombra de pegatina y rotaciones del set (DISENO.md).
 //
-// Si no hay portadas (proveedor caído, primera carga sin caché) se pinta la
-// versión de gradientes: el diseño no depende de una API para sostenerse.
+// Sin portadas (proveedor caído, primera carga sin caché) el collage se pinta
+// con gradientes y la tira no se pinta: el diseño no depende de una API.
 // ============================================================
 
 import {
@@ -22,21 +23,21 @@ import type { ShowcaseItem } from "@/lib/landing/showcase";
 /** Posición, rotación y tamaño de cada pieza — idénticos en las dos versiones. */
 const SLOTS = [
   {
-    position: "left-0 top-12 w-40 md:w-52",
+    position: "left-0 top-12 w-52",
     rotation: "rotate-[-6deg]",
     gradient: "linear-gradient(155deg, var(--accent-pink), var(--on-accent-pink))",
     icon: IconLibrary as KIcon,
     iconTone: "text-on-accent-pink",
   },
   {
-    position: "right-0 top-0 w-40 md:w-52",
+    position: "right-0 top-0 w-52",
     rotation: "rotate-[5deg]",
     gradient: "linear-gradient(155deg, var(--accent-purple), var(--on-accent-purple))",
     icon: IconSparkles as KIcon,
     iconTone: "text-on-accent-purple",
   },
   {
-    position: "left-1/2 -translate-x-1/2 bottom-0 w-40 md:w-52",
+    position: "left-1/2 -translate-x-1/2 bottom-0 w-52",
     rotation: "rotate-[-2deg]",
     gradient: "linear-gradient(155deg, var(--accent-lime), var(--on-accent-lime))",
     icon: IconLists as KIcon,
@@ -47,28 +48,19 @@ const SLOTS = [
 /** Nº de portadas que consume el collage. */
 export const HERO_COLLAGE_SLOTS = SLOTS.length;
 
-export interface HeroCollageProps {
-  items: ShowcaseItem[];
-  /** Texto del badge colgante ("7 formatos culturales"). */
-  badge: string;
-}
-
-export function HeroCollage({ items, badge }: HeroCollageProps) {
+/** Collage de escritorio (decorativo). */
+export function HeroCollage({ items }: { items: ShowcaseItem[] }) {
   const posters = items.slice(0, HERO_COLLAGE_SLOTS);
   const hasPosters = posters.length === HERO_COLLAGE_SLOTS;
 
   return (
-    <div
-      className="relative h-[400px] sm:h-[460px] md:h-[540px] mx-auto w-full max-w-[360px] md:max-w-md hidden sm:block"
-      aria-hidden="true"
-    >
+    <div className="relative h-[540px] w-[28rem]" aria-hidden="true">
       {SLOTS.map((slot, i) =>
         hasPosters ? (
           <PosterTile
             key={slot.position}
             item={posters[i]}
-            sizes="(max-width: 768px) 160px, 208px"
-            priority={i === 2}
+            sizes="208px"
             className={`absolute ${slot.position} ${slot.rotation}`}
             style={{ boxShadow: STICKER_SHADOW }}
           />
@@ -78,29 +70,18 @@ export function HeroCollage({ items, badge }: HeroCollageProps) {
             className={`absolute ${slot.position} aspect-[2/3] rounded-bento ${slot.rotation} flex items-center justify-center`}
             style={{ background: slot.gradient }}
           >
-            <slot.icon
-              className={`w-9 h-9 md:w-10 md:h-10 ${slot.iconTone} opacity-70`}
-            />
+            <slot.icon className={`w-10 h-10 ${slot.iconTone} opacity-70`} />
           </div>
         )
       )}
-
-      {/* Badge colgante: pill de color vivo + sombra dura tipo pegatina, el
-          mismo patrón que el badge de match de MediaCard/MediaDetail. */}
-      <div
-        className="absolute top-[22%] right-0 translate-x-1/4 rotate-[-8deg] rounded-full bg-accent-lime text-on-accent-lime text-sm font-display font-extrabold px-3.5 py-2 leading-none whitespace-nowrap"
-        style={{ boxShadow: "4px 4px 0 rgba(0,0,0,.4)" }}
-      >
-        {badge}
-      </div>
     </div>
   );
 }
 
 /**
- * Tira de portadas para móvil, donde el collage no cabe (y antes no había NADA:
- * el hero móvil era solo texto). Misma proporción y radio que el collage, en
- * fila y con rotación alterna del set (±1-1.2deg).
+ * Tira de portadas para móvil. Las cuatro piezas reparten el ancho disponible
+ * (rejilla de 4 columnas, como mucho 76 px cada una): a 320 px caben sin
+ * desbordar la página, que con piezas fijas de 72 px se salía 15 px.
  */
 export function HeroStrip({ items }: { items: ShowcaseItem[] }) {
   const posters = items.slice(0, 4);
@@ -108,15 +89,16 @@ export function HeroStrip({ items }: { items: ShowcaseItem[] }) {
 
   return (
     <div
-      className="sm:hidden flex items-center justify-center gap-2.5 pt-10"
+      className="mt-10 grid max-w-[22rem] grid-cols-4 gap-2.5 px-1 md:hidden"
       aria-hidden="true"
     >
       {posters.map((item, i) => (
         <PosterTile
           key={item.id}
           item={item}
-          sizes="72px"
-          className={`w-[72px] shrink-0 ${i % 2 === 0 ? "rotate-[-1.2deg]" : "rotate-[1deg]"}`}
+          radius="card"
+          sizes="80px"
+          className={i % 2 === 0 ? "rotate-[-1.2deg]" : "rotate-[1deg]"}
           style={{ boxShadow: STICKER_SHADOW }}
         />
       ))}

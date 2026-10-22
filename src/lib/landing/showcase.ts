@@ -24,6 +24,11 @@
 //   - El plazo por familia es HOLGADO porque la espera NO está en el camino
 //     crítico: la landing pinta su versión de gradientes y las portadas entran
 //     por `<Suspense>` cuando estén (ver `ShowcaseSlots`).
+//   - Videojuegos (DIS-4): RAWG no tiene carátula vertical, su `background_image`
+//     es una captura apaisada que recortada a 2:3 no se entiende. Los juegos
+//     del muro salen de una LISTA BLANCA revisada a mano (`CURATED_GAMES`) con
+//     la carátula vertical de Steam (`library_600x900`), y cualquier portada de
+//     RAWG que se cuele se descarta. De paso, la landing ya no gasta cupo de RAWG.
 //
 // La landing NUNCA depende de esto para ser usable: sin muestra, los
 // componentes caen a su versión de gradiente (ver `HeroCollage`).
@@ -34,6 +39,7 @@ import { unstable_cache } from "next/cache";
 import { FAMILIES } from "@/lib/api/aggregate";
 import { fetchDiscoverData } from "@/lib/api/discover";
 import { createLogger } from "@/lib/logger";
+import { SHOWCASE_CACHE_TAG } from "@/lib/best/cache-tags";
 import type { MediaItem, MediaType } from "@/types/media";
 
 const log = createLogger("landing-showcase");
@@ -53,6 +59,72 @@ export interface ShowcaseItem {
  * toma las primeras de la MISMA lista, que ya arranca con un tipo de cada.
  */
 export const LANDING_SHOWCASE_SIZE = 21;
+
+/**
+ * Juegos del muro (DIS-4): icónicos y recientes, con su id de RAWG (la ficha
+ * enlaza a `/media/game/{rawg}`) y su `appid` de Steam (carátula vertical).
+ * Ids comprobados a mano el 2026-10-22 contra la búsqueda de la app y la API
+ * de Steam; todos con carátula 600×900. Sin títulos para adultos.
+ */
+export const CURATED_GAMES: ReadonlyArray<{ rawg: number; steam: number; title: string }> = [
+  { rawg: 983210, steam: 1903340, title: "Clair Obscur: Expedition 33" },
+  { rawg: 292844, steam: 1030300, title: "Hollow Knight: Silksong" },
+  { rawg: 994603, steam: 2001120, title: "Split Fiction" },
+  { rawg: 891238, steam: 1145350, title: "Hades II" },
+  { rawg: 324997, steam: 1086940, title: "Baldur's Gate 3" },
+  { rawg: 326243, steam: 1245620, title: "Elden Ring" },
+  { rawg: 3328, steam: 292030, title: "The Witcher 3: Wild Hunt" },
+  { rawg: 28, steam: 1174180, title: "Red Dead Redemption 2" },
+  { rawg: 41494, steam: 1091500, title: "Cyberpunk 2077" },
+  { rawg: 274755, steam: 1145360, title: "Hades" },
+  { rawg: 9767, steam: 367520, title: "Hollow Knight" },
+  { rawg: 262382, steam: 632470, title: "Disco Elysium" },
+  { rawg: 654, steam: 413150, title: "Stardew Valley" },
+  { rawg: 22121, steam: 504230, title: "Celeste" },
+  { rawg: 4200, steam: 620, title: "Portal 2" },
+  { rawg: 58175, steam: 1593500, title: "God of War" },
+  { rawg: 50734, steam: 814380, title: "Sekiro: Shadows Die Twice" },
+];
+
+/** Juegos de la lista blanca que entran cada día en la muestra. */
+const CURATED_PER_DAY = 6;
+
+/** Carátula vertical de Steam (600×900; el host está en `images.remotePatterns`). */
+export function steamCover(appid: number): string {
+  return `https://cdn.steamstatic.com/steam/apps/${appid}/library_600x900_2x.jpg`;
+}
+
+/**
+ * Portada apaisada (captura de RAWG): no sirve como carátula 2:3. La usan el
+ * muro y los abanicos de rankings de la landing para no recortar capturas.
+ */
+export function isLandscapePoster(poster: string | null | undefined): boolean {
+  if (!poster) return false;
+  try {
+    return new URL(poster).hostname === "media.rawg.io";
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Los juegos del día, como items de catálogo. Rotan por día (la muestra se
+ * cachea un día) para que el muro no sea siempre el mismo.
+ */
+export function curatedGames(today: Date = new Date(), size = CURATED_PER_DAY): MediaItem[] {
+  const day = Math.floor(today.getTime() / 86_400_000);
+  const n = CURATED_GAMES.length;
+  return Array.from({ length: Math.min(size, n) }, (_, i) => {
+    const g = CURATED_GAMES[(day + i) % n];
+    return {
+      id: `game_${g.rawg}`,
+      externalId: String(g.rawg),
+      type: "game" as const,
+      title: g.title,
+      poster: steamCover(g.steam),
+    };
+  });
+}
 
 /** Mínimo para que merezca la pena pintar portadas en vez de gradientes. */
 export const LANDING_SHOWCASE_MIN = 4;
@@ -97,7 +169,8 @@ const SHOWCASE_FAMILIES = [...FAMILIES].sort(
  *
  * Descarta lo que no tenga portada real: el objetivo del bloque es justo esa
  * imagen, y una card sin ella desluce la fila entera (mismo criterio que el
- * gate de portada de las recomendaciones IA).
+ * gate de portada de las recomendaciones IA). Tampoco entran capturas
+ * apaisadas (DIS-4).
  */
 export function pickShowcase(
   items: MediaItem[],
@@ -105,7 +178,7 @@ export function pickShowcase(
 ): ShowcaseItem[] {
   const withPoster = items.filter(
     (item): item is MediaItem & { poster: string } =>
-      typeof item.poster === "string" && item.poster.length > 0
+      typeof item.poster === "string" && item.poster.length > 0 && !isLandscapePoster(item.poster)
   );
 
   const firstOfType: (MediaItem & { poster: string })[] = [];
@@ -180,11 +253,13 @@ function withTimeout<T>(promise: Promise<T>, ms: number, fallback: T): Promise<T
 async function loadShowcase(locale: string): Promise<ShowcaseItem[]> {
   const lists = await Promise.all(
     SHOWCASE_FAMILIES.map((type) =>
-      withTimeout(
-        fetchDiscoverData(type, 1, {}, locale).then((res) => res.items),
-        FAMILY_TIMEOUT_MS,
-        []
-      )
+      type === "game"
+        ? Promise.resolve(curatedGames())
+        : withTimeout(
+            fetchDiscoverData(type, 1, {}, locale).then((res) => res.items),
+            FAMILY_TIMEOUT_MS,
+            []
+          )
     )
   );
 
@@ -206,11 +281,12 @@ async function loadShowcase(locale: string): Promise<ShowcaseItem[]> {
   return picked;
 }
 
-// La clave lleva versión: al pasar de 4 a 21 portadas, una entrada antigua de
-// la caché (un día) serviría la muestra corta y el túnel saldría con huecos.
-const cachedShowcase = unstable_cache(loadShowcase, ["landing-showcase-v2"], {
+// La clave lleva versión: una entrada antigua de la caché (un día) serviría la
+// muestra anterior (v2: con capturas de RAWG). La etiqueta es la que acepta
+// `POST /api/revalidate` para vaciarla sin desplegar.
+const cachedShowcase = unstable_cache(loadShowcase, ["landing-showcase-v3"], {
   revalidate: SHOWCASE_TTL_SECONDS,
-  tags: ["landing-showcase"],
+  tags: [SHOWCASE_CACHE_TAG],
 });
 
 /**
