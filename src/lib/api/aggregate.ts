@@ -192,7 +192,9 @@ export async function fetchAggregateSearch(
   const families = activeFamilies("search");
   const settled = await Promise.allSettled(
     families.map((type) =>
-      searchByTypePaged(query, type as MediaType, round, locale)
+      // Sin complemento de MyAnimeList: en "todos" esperaría en serie hasta
+      // 2,5 s por una obra que casi siempre es de otra familia.
+      searchByTypePaged(query, type as MediaType, round, locale, { supplement: false })
     )
   );
 

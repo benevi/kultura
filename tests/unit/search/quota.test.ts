@@ -214,7 +214,7 @@ describe("con Upstash (cuenta compartida entre instancias)", () => {
   it("el contador usa el fetch original de Node, no el parcheado por Next", async () => {
     const { spy: original } = fakeRedis(0);
     const patched = Object.assign(
-      vi.fn(async () => json({ results: [] })),
+      vi.fn(async (_input: string | URL) => json({ results: [] })),
       { _nextOriginalFetch: original }
     );
     vi.stubGlobal("fetch", patched);

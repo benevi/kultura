@@ -99,6 +99,50 @@ function workKey(item: MediaItem): string {
   return `${titleIdentity(item.title)}|${item.year ?? ""}`;
 }
 
+// ── Complemento de MyAnimeList: memoria de fallos ──────────────────────────
+//
+// Lo que Jikan RESPONDE ya se cachea 24 h (`searchMangaJikan`), pero un fallo
+// (plazo agotado, 429, caído) no se cachea en ningún sitio: cada búsqueda de
+// la misma consulta volvería a esperar hasta 2,5 s. Se recuerda aquí unos
+// minutos por consulta, y mientras tanto la búsqueda sale solo con MangaDex.
+
+/** Minutos que un fallo del complemento evita volver a preguntar por esa consulta. */
+export const JIKAN_SUPPLEMENT_FAILURE_TTL_MS = 10 * 60_000;
+const JIKAN_SUPPLEMENT_FAILURES_MAX = 500;
+const jikanSupplementFailures = new Map<string, number>();
+
+function supplementKey(query: string): string {
+  return titleIdentity(query);
+}
+
+function supplementRecentlyFailed(query: string, now = Date.now()): boolean {
+  const until = jikanSupplementFailures.get(supplementKey(query));
+  if (until === undefined) return false;
+  if (until > now) return true;
+  jikanSupplementFailures.delete(supplementKey(query));
+  return false;
+}
+
+function rememberSupplementFailure(query: string, now = Date.now()): void {
+  if (jikanSupplementFailures.size >= JIKAN_SUPPLEMENT_FAILURES_MAX) jikanSupplementFailures.clear();
+  jikanSupplementFailures.set(supplementKey(query), now + JIKAN_SUPPLEMENT_FAILURE_TTL_MS);
+}
+
+/** Olvida los fallos recordados. Pensado para los tests. */
+export function resetMangaSupplementFailures(): void {
+  jikanSupplementFailures.clear();
+}
+
+/** Opciones de la búsqueda por familia. */
+export interface SearchOptions {
+  /**
+   * Manga: completar con MyAnimeList cuando MangaDex no tiene la obra
+   * (por defecto, sí). `type=all` lo apaga: ahí la obra suele ser de otra
+   * familia ("dune", "interstellar") y la espera no compensa.
+   */
+  supplement?: boolean;
+}
+
 async function searchMangaJikanItems(
   query: string,
   page: number,
@@ -118,7 +162,12 @@ async function searchMangaJikanItems(
  *     retiradas de MangaDex por licencia: "Berserk", "Vagabond"), se añaden
  *     las coincidencias exactas de MyAnimeList.
  */
-async function searchMangaPage(query: string, page: number, locale?: string | null): Promise<SearchPage> {
+async function searchMangaPage(
+  query: string,
+  page: number,
+  locale?: string | null,
+  opts: SearchOptions = {}
+): Promise<SearchPage> {
   let r;
   try {
     r = await searchManga(query, (page - 1) * MANGADEX_PAGE_SIZE, locale);
@@ -134,8 +183,17 @@ async function searchMangaPage(query: string, page: number, locale?: string | nu
   const stats = await getMangaStatistics(r.data.map((m) => m.id));
   let items = r.data.map((raw) => enrichMangaDexItem(raw, locale, stats.get(raw.id)));
 
-  if (page === 1 && query.trim().length >= 3 && !items.some((i) => isExactTitleMatch(query, i))) {
-    const extra = await searchMangaJikanItems(query, 1, JIKAN_SUPPLEMENT_TIMEOUT_MS).catch(() => null);
+  if (
+    opts.supplement !== false &&
+    page === 1 &&
+    query.trim().length >= 3 &&
+    !items.some((i) => isExactTitleMatch(query, i)) &&
+    !supplementRecentlyFailed(query)
+  ) {
+    const extra = await searchMangaJikanItems(query, 1, JIKAN_SUPPLEMENT_TIMEOUT_MS).catch(() => {
+      rememberSupplementFailure(query);
+      return null;
+    });
     const exact = (extra?.items ?? []).filter((i) => isExactTitleMatch(query, i));
     const seen = new Set(items.map(workKey));
     items = [...exact.filter((i) => !seen.has(workKey(i))), ...items];
@@ -214,7 +272,8 @@ export async function searchByTypePaged(
   query: string,
   type: MediaType,
   page = 1,
-  locale?: string | null
+  locale?: string | null,
+  opts: SearchOptions = {}
 ): Promise<SearchPage> {
   switch (type) {
     case "movie": {
@@ -266,7 +325,7 @@ export async function searchByTypePaged(
       };
     }
     case "manga":
-      return searchMangaPage(query, page, locale);
+      return searchMangaPage(query, page, locale, opts);
     case "book": {
       // E-BOOKS-HIBRIDO: el buscador va contra el MISMO proveedor que el
       // catálogo. Si fuese contra otro, buscar y navegar serían dos mundos
