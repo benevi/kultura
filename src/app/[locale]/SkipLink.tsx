@@ -3,39 +3,70 @@
 import { useEffect, type MouseEvent } from "react";
 import { usePathname } from "next/navigation";
 
-/** El `<main>` de la página: el que ya tenga `id="main"` o, si no, el primero. */
-function findMain(): HTMLElement | null {
-  return document.getElementById("main") ?? document.querySelector("main");
-}
+/** Marca de los destinos a los que el propio enlace ha puesto `id="main"`. */
+const MARK = "data-skip-target";
 
-/** Destino enfocable por código (no entra en el orden de Tab). */
-function prepareTarget(main: HTMLElement) {
-  if (!main.id) main.id = "main";
-  if (!main.hasAttribute("tabindex")) main.setAttribute("tabindex", "-1");
+/** Lo primero que sigue a la cabecera del sitio (sin contar navegaciones). */
+function afterSiteHeader(): HTMLElement | null {
+  let el = document.querySelector("body header")?.nextElementSibling ?? null;
+  while (el && (el.tagName === "NAV" || el.tagName === "SCRIPT" || el.getAttribute("role") === "navigation")) {
+    el = el.nextElementSibling;
+  }
+  return el instanceof HTMLElement ? el : null;
 }
 
 /**
- * ACC-13: primer elemento enfocable de cada página. Sin JS salta a `#main`
- * (las 404 y el error global ya lo llevan); con JS, en cada cambio de ruta
- * marca como destino el `<main>` que pinte la pantalla, aunque no traiga el
- * id, así el ancla existe y el lector de pantalla y el siguiente Tab empiezan
- * en el contenido y no en la cabecera.
+ * Destino del salto: el `<main>` de la pantalla; si la pantalla no tiene
+ * (ficha, búsqueda, restablecer contraseña…), lo que sigue a la cabecera del
+ * sitio; y si tampoco hay cabecera, el h1. Nunca la cabecera.
+ */
+export function findSkipTarget(): HTMLElement | null {
+  return (
+    document.querySelector<HTMLElement>("main") ??
+    afterSiteHeader() ??
+    document.querySelector<HTMLElement>("h1")
+  );
+}
+
+/**
+ * Deja el destino con `id="main"` (el ancla existe aunque la pantalla no lo
+ * ponga) y enfocable por código. Al cambiar de pantalla quita el id que puso
+ * en el destino anterior, para no dejar el ancla en un sitio viejo.
+ */
+function markTarget(): HTMLElement | null {
+  const target = findSkipTarget();
+  document.querySelectorAll<HTMLElement>(`[${MARK}]`).forEach((el) => {
+    if (el === target) return;
+    el.removeAttribute(MARK);
+    if (el.id === "main") el.removeAttribute("id");
+  });
+  if (!target) return null;
+  if (!target.id && !document.getElementById("main")) {
+    target.id = "main";
+    target.setAttribute(MARK, "");
+  }
+  if (!target.hasAttribute("tabindex")) target.setAttribute("tabindex", "-1");
+  return target;
+}
+
+/**
+ * ACC-13: primer elemento enfocable de cada página. Con JS enfoca el destino
+ * de `findSkipTarget`; sin JS salta a `#main` (las 404 y el error global lo
+ * llevan de serie).
  */
 export function SkipLink({ label }: { label: string }) {
   const pathname = usePathname();
 
   useEffect(() => {
-    const main = findMain();
-    if (main) prepareTarget(main);
+    markTarget();
   }, [pathname]);
 
   function onClick(event: MouseEvent<HTMLAnchorElement>) {
-    const main = findMain();
-    if (!main) return;
+    const target = markTarget();
+    if (!target) return;
     event.preventDefault();
-    prepareTarget(main);
-    main.focus({ preventScroll: true });
-    main.scrollIntoView({ block: "start" });
+    target.focus({ preventScroll: true });
+    target.scrollIntoView({ block: "start" });
   }
 
   return (
