@@ -329,6 +329,17 @@ describe("GET /api/discover", () => {
     );
   });
 
+  it("type=all (agregado, puede venir cojo sin avisar) → caché corta de 5 min", async () => {
+    const res = await GET(req("?type=all&page=1&locale=es"));
+    expect(res.headers.get("Cache-Control")).toBe(
+      "public, s-maxage=300, stale-while-revalidate=600"
+    );
+    const search = await GET(req("?type=all&q=batman&locale=es"));
+    expect(search.headers.get("Cache-Control")).toBe(
+      "public, s-maxage=300, stale-while-revalidate=600"
+    );
+  });
+
   it("respuesta con error del proveedor → no-store (no se congela un fallo 1 h)", async () => {
     vi.mocked(fetchDiscoverData).mockResolvedValueOnce({
       items: [],
@@ -341,12 +352,12 @@ describe("GET /api/discover", () => {
   });
 
   // ── F-06 · COD-6: límite por IP ─────────────────────────────────────────────
-  it("31 peticiones en 60 s desde la misma IP → la 31.ª es 429 y no llama al proveedor", async () => {
+  it("121 peticiones en 60 s desde la misma IP → la 121.ª es 429 (holgura para CGNAT) y no llama al proveedor", async () => {
     const ipReq = () =>
       new NextRequest("http://localhost/api/discover?type=movie", {
         headers: { "x-forwarded-for": "203.0.113.7" },
       });
-    for (let i = 0; i < 30; i++) {
+    for (let i = 0; i < 120; i++) {
       expect((await GET(ipReq())).status).toBe(200);
     }
     const blocked = await GET(ipReq());
@@ -356,7 +367,7 @@ describe("GET /api/discover", () => {
     const body = await blocked.json();
     expect(body.fetchErrorKind).toBe("rate-limit");
     expect(body.items).toEqual([]);
-    expect(fetchDiscoverData).toHaveBeenCalledTimes(30);
+    expect(fetchDiscoverData).toHaveBeenCalledTimes(120);
     // Otra IP sigue pudiendo.
     const other = await GET(
       new NextRequest("http://localhost/api/discover?type=movie", {

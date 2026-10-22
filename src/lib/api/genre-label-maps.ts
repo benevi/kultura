@@ -18,16 +18,23 @@
 // inventar una traducción.
 // ============================================================
 
-import es from "../../../messages/es.json";
-import en from "../../../messages/en.json";
+// SOLO SERVIDOR: importa los JSON de textos completos para leer un subárbol.
+// En un componente de cliente inflaría el bundle con todos los mensajes, así
+// que no se importa desde archivos "use client" (lo comprueba
+// `tests/unit/api/genre-label-maps.test.ts`). En el cliente, los textos de
+// género salen de `useTranslations("discoverFilters")`. Cuando el proyecto
+// tenga la dependencia `server-only`, añadir aquí `import "server-only"`.
+import esMessages from "../../../messages/es.json";
+import enMessages from "../../../messages/en.json";
 import { resolveApiLocale } from "@/lib/api/locale";
 import { TMDB_GENRE_LABEL } from "@/lib/api/tmdb-maps";
 import { RAWG_GENRE_LABEL } from "@/lib/api/rawg-maps";
 import { ANILIST_GENRE_LABEL } from "@/lib/api/anilist-maps";
 
+/** Solo el subárbol `discoverFilters.options.genre` de cada idioma. */
 const LABELS: Record<"es" | "en", Record<string, string>> = {
-  es: es.discoverFilters.options.genre,
-  en: en.discoverFilters.options.genre,
+  es: { ...esMessages.discoverFilters.options.genre },
+  en: { ...enMessages.discoverFilters.options.genre },
 };
 
 /** minúsculas, sin acentos ni espacios de sobra: la forma de las claves. */

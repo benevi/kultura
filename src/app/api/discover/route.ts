@@ -11,6 +11,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { fetchDiscoverData, type DiscoverResult } from "@/lib/api/discover";
 import {
   CATALOG_EDGE_CACHE,
+  CATALOG_EDGE_CACHE_AGGREGATE,
   NO_STORE,
   clientIp,
   parseDiscoverParams,
@@ -18,11 +19,12 @@ import {
 import { checkRateLimit } from "@/lib/rate-limit";
 
 /**
- * F-06 (COD-6): 30 peticiones por minuto e IP. Un humano paginando y filtrando
- * no llega; un script que vacía los cupos de RAWG o ComicVine sí. Lo que sirve
- * la caché de borde ni siquiera llega aquí.
+ * F-06 (COD-6): 120 peticiones por minuto e IP. Holgado para varias personas
+ * detrás de la misma IP (CGNAT de operadoras móviles, redes de oficina o de
+ * universidad) paginando y filtrando a la vez; frena a un script que vacía los
+ * cupos de RAWG o ComicVine. Lo que sirve la caché de borde ni llega aquí.
  */
-const DISCOVER_LIMIT = { windowMs: 60_000, max: 30 };
+const DISCOVER_LIMIT = { windowMs: 60_000, max: 120 };
 
 export async function GET(request: NextRequest) {
   const rl = checkRateLimit(`${clientIp(request.headers)}:discover`, DISCOVER_LIMIT);
@@ -99,7 +101,11 @@ export async function GET(request: NextRequest) {
   // recomendaciones IA (`lib/claude/recommendations.ts`).
   return NextResponse.json(result, {
     headers: {
-      "Cache-Control": result.fetchErrorKind ? NO_STORE : CATALOG_EDGE_CACHE,
+      "Cache-Control": result.fetchErrorKind
+        ? NO_STORE
+        : type === "all"
+          ? CATALOG_EDGE_CACHE_AGGREGATE
+          : CATALOG_EDGE_CACHE,
     },
   });
 }

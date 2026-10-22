@@ -118,6 +118,22 @@ describe("localizeRanking — presupuesto de traducción (D-06)", () => {
   });
 });
 
+describe("localizeRanking — misma caché de traducción que la ficha", () => {
+  it("traduce el texto COMPLETO con el id de la ficha y recorta después", async () => {
+    const long = `${EN} `.repeat(12).trim() + "\n\n(Source: Crunchyroll)";
+    expect(long.length).toBeGreaterThan(480);
+    vi.mocked(translateSynopsis).mockImplementation(async ({ text, cacheOnly }) =>
+      cacheOnly ? (text ?? "") : `${ES} `.repeat(12).trim() + "\n\n(Fuente: Crunchyroll)"
+    );
+    const [out] = await localizeRanking([src({ synopsis: long, nativeTitle: undefined })], "es");
+    const calls = vi.mocked(translateSynopsis).mock.calls.map((c) => c[0]);
+    expect(calls.every((c) => c.text === long && c.mediaId === "anime_al-1")).toBe(true);
+    expect(out.synopsis!.length).toBeLessThanOrEqual(480);
+    expect(out.synopsis).not.toMatch(/Fuente|Source/);
+    expect(out.synopsis!.startsWith("Los héroes")).toBe(true);
+  });
+});
+
 describe("localizeRanking — sinopsis de juegos", () => {
   const game = src({
     id: "game_58175",

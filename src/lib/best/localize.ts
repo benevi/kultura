@@ -11,7 +11,8 @@
 //   - Juegos: RAWG no da sinopsis en los listados. Se toma la descripción
 //     corta de Steam en el idioma pedido y, si no hay, la de RAWG.
 //   - Lo que siga en otro idioma se traduce con `translateSynopsis` (caché
-//     compartida en `media_translations`), con un máximo de llamadas al modelo
+//     compartida en `media_translations`, con el texto completo para reusar la
+//     traducción de la ficha), con un máximo de llamadas al modelo
 //     por cálculo: la cola se completa en las horas siguientes sin disparar el
 //     gasto ni la latencia de la página.
 //
@@ -218,10 +219,13 @@ export async function localizeRanking(
     } catch {
       // Proveedor caído: se pinta lo que había.
     }
-    return { id: src.id, title, synopsis: cleanSynopsis(synopsis) };
+    // Texto COMPLETO tal cual lo sirve el proveedor: es el mismo texto y el
+    // mismo `mediaId` que traduce la ficha, así comparten la entrada de
+    // `media_translations` (mismo hash). Se limpia y recorta después.
+    return { id: src.id, title, synopsis: synopsis?.trim() || undefined };
   });
 
-  const synopses = await translateAll(enriched, locale, budget);
+  const synopses = (await translateAll(enriched, locale, budget)).map((s) => cleanSynopsis(s));
 
   return sources.map((src, i) => {
     const out: BestItem = {

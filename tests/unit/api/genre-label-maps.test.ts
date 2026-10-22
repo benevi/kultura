@@ -1,4 +1,6 @@
 import { describe, it, expect } from "vitest";
+import fs from "node:fs";
+import path from "node:path";
 import es from "../../../messages/es.json";
 import en from "../../../messages/en.json";
 import {
@@ -42,6 +44,26 @@ describe("genre-label-maps (DAT-2)", () => {
     expect(localizeGenreLabel("Kaiju", "es")).toBe("Kaiju");
     expect(genreLabelSlug("Kaiju")).toBeNull();
     expect(localizeGenreLabels(["Action", "Acción", "", "Action"], "es")).toEqual(["Acción"]);
+  });
+
+  it("es solo de servidor: ningún archivo 'use client' lo importa (ni los rankings)", () => {
+    const root = path.resolve(__dirname, "../../../src");
+    const offenders: string[] = [];
+    const walk = (dir: string) => {
+      for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+        const full = path.join(dir, entry.name);
+        if (entry.isDirectory()) walk(full);
+        else if (/\.(tsx?|jsx?)$/.test(entry.name)) {
+          const src = fs.readFileSync(full, "utf8");
+          const isClient = /^\s*["']use client["']/.test(src);
+          if (isClient && /@\/lib\/(api\/genre-label-maps|best\/(localize|best-of))["']/.test(src)) {
+            offenders.push(path.relative(root, full));
+          }
+        }
+      }
+    };
+    walk(root);
+    expect(offenders).toEqual([]);
   });
 
   it("cada slug de las tablas tiene texto en los dos idiomas", () => {
