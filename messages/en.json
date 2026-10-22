@@ -242,6 +242,7 @@
     "saveBio": "Save",
     "cancelBio": "Cancel",
     "bioPlaceholder": "Tell people about yourself...",
+    "bioSaveError": "Couldn't save your bio. Please try again.",
     "editAvatar": "Change avatar",
     "colorLabel": "Avatar color",
     "inProgress": "in progress",

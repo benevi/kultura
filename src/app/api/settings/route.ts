@@ -2,14 +2,25 @@
 // KULTURA — Route Handler: /api/settings
 // GET:   devuelve username, avatar_color, preferred_locale del usuario
 // PATCH: actualiza los campos enviados (validación Zod)
+//
+// La base solo deja actualizar con el JWT del usuario bio, avatar_icon,
+// avatar_color y preferred_locale (migración 20261023020001_harden_rls). El
+// nombre de usuario se cambia con el cliente admin, después de validar sesión,
+// formato y que no esté cogido; por eso aquí se corta a mano la cuenta demo,
+// que el admin no frena.
 // ============================================================
 
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/admin'
 import { z } from 'zod'
 import { isValidAvatarColor, isValidLocale } from '@/lib/constants/avatarColors'
 import { isValidAvatarIcon } from '@/components/icons/avatars'
 import { checkRateLimit, LIMITS } from '@/lib/rate-limit'
+import { DEMO_READ_ONLY_ERROR, isDemoUser } from '@/lib/demo'
+
+/** Tope de la bio: el mismo que el `maxLength` del editor (`ProfileBio`). */
+const BIO_MAX_LENGTH = 200
 
 const PatchSchema = z.object({
   username: z
@@ -31,6 +42,13 @@ const PatchSchema = z.object({
   avatar_icon: z
     .string()
     .refine(isValidAvatarIcon, { message: 'invalid_avatar_icon' })
+    .nullable()
+    .optional(),
+  // Vacía o solo espacios = sin bio (`null`).
+  bio: z
+    .string()
+    .transform((v) => v.trim())
+    .pipe(z.string().max(BIO_MAX_LENGTH))
     .nullable()
     .optional(),
 })
@@ -76,7 +94,11 @@ export async function PATCH(req: NextRequest): Promise<NextResponse> {
     return NextResponse.json({ error: 'Invalid data', details: parsed.error.flatten() }, { status: 400 })
   }
 
-  const { username, avatar_color, preferred_locale, avatar_icon } = parsed.data
+  if (isDemoUser(user)) {
+    return NextResponse.json({ error: DEMO_READ_ONLY_ERROR }, { status: 403 })
+  }
+
+  const { username, avatar_color, preferred_locale, avatar_icon, bio } = parsed.data
 
   if (username) {
     const { data: existing } = await supabase
@@ -98,18 +120,26 @@ export async function PATCH(req: NextRequest): Promise<NextResponse> {
   // `null` limpia el personaje y devuelve las iniciales — de ahí el check
   // contra `undefined` y no la comprobación de veracidad.
   if (avatar_icon !== undefined) updates.avatar_icon = avatar_icon
+  if (bio !== undefined) updates.bio = bio ? bio : null
 
   if (Object.keys(updates).length === 0) {
     return NextResponse.json({ success: true, updated: {} })
   }
 
-  const { data: updated, error: updateError } = await supabase
+  // Con username, todo el cambio va en una sola escritura admin (atómica); sin
+  // él, con el JWT del usuario, que sigue pasando por RLS y por demo_no_update.
+  const writer = updates.username !== undefined ? createAdminClient() : supabase
+  const { data: updated, error: updateError } = await writer
     .from('users')
     .update(updates)
     .eq('id', user.id)
     .select('*')
     .single()
 
+  // 23505: otro usuario se quedó el nombre entre la comprobación y la escritura.
+  if (updateError?.code === '23505') {
+    return NextResponse.json({ error: 'username_taken' }, { status: 409 })
+  }
   if (updateError || !updated) {
     return NextResponse.json({ error: 'Failed to update' }, { status: 500 })
   }
