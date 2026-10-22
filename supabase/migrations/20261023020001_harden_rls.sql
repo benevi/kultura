@@ -38,6 +38,13 @@
 --
 -- IDEMPOTENTE: se puede ejecutar dos veces seguidas sin error ni cambios.
 --
+-- Contrastada con el volcado de pg_policies de producción del 2026-10-22:
+-- las 110 políticas de `public` coinciden con las migraciones del repo en
+-- nombre, comando, roles ({public} en friendships, group_invitations, lists,
+-- list_items, list_members, media, notifications, recommendations, user_media
+-- y users), USING y WITH CHECK; 19 tablas (no existe `profiles`) y las 11
+-- funciones esperadas. La comprobación previa debe dar 0 filas.
+--
 -- ANTES DE APLICAR (Víctor, SQL Editor, primero en el proyecto de TEST):
 --   1. Copia y ejecuta la COMPROBACIÓN PREVIA de abajo (solo lo que hay entre
 --      /* y */). Debe devolver 0 filas. Las filas `dato_a_revisar` son solo
