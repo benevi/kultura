@@ -69,7 +69,7 @@ let css = "";
 let themeColors: string[] = [];
 
 beforeAll(async () => {
-  const sourceClasses = PREVIOUSLY_DEAD.join(" ");
+  const sourceClasses = [...PREVIOUSLY_DEAD, "border-stroke"].join(" ");
   const result = await postcss([
     tailwindcss({
       ...config,
@@ -111,6 +111,13 @@ describe("DIS-1 — los colores del tema admiten modificador de opacidad", () =>
     expect(used.size).toBeGreaterThan(10);
     const missing = Array.from(used).filter((cls) => !css.includes(`.${escapeClass(cls)}`));
     expect(missing).toEqual([]);
+  });
+
+  it("border-stroke (nombre del canvas, usado en /best) genera regla con el token del borde", () => {
+    // Sin la clave `stroke` en el tema, la clase no existía y el botón
+    // "Ver más" de los rankings salía con el gris #e5e7eb del preflight.
+    const rule = css.split(`.${escapeClass("border-stroke")} {`)[1]?.split("}")[0] ?? "";
+    expect(rule).toContain("var(--surface-border)");
   });
 
   it("text-accent-danger usa el rojo de texto accesible", () => {

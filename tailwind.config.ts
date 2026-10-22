@@ -73,6 +73,10 @@ const config: Config = {
         surface2: token("--surface-elevated"),
         surface3: token("--surface3"),
         border: token("--surface-border"),
+        /* Nombre del canvas F0 para el borde; lo usa `best/[format]/[year]`.
+           Solo se añade este alias: `pink`, `blue`… chocarían con las
+           paletas por defecto de Tailwind. */
+        stroke: token("--surface-border"),
         text: token("--text-primary"),
         muted: token("--text-tertiary"),
         "muted-light": token("--text-secondary"),
