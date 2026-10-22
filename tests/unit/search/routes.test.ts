@@ -162,7 +162,7 @@ describe("GET /api/users/search", () => {
     expect(blocked.headers.get("Retry-After")).toBeTruthy();
   });
 
-  it("sin sesión → 401 sin consultar", async () => {
+  it("sin usuario autenticado → 401 sin consultar", async () => {
     getUser.mockResolvedValue({ data: { user: null } });
     const res = await usersGET(new NextRequest("http://localhost/api/users/search?q=ab"));
     expect(res.status).toBe(401);
