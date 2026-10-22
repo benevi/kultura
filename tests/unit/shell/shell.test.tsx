@@ -154,6 +154,68 @@ describe("ACC-13 — Saltar al contenido", () => {
     expect(main).toHaveAttribute("tabindex", "-1");
   });
 
+  it("sin <main> (ficha, búsqueda) salta a lo que sigue a la cabecera, nunca a la cabecera", () => {
+    render(
+      <>
+        <SkipLink label="Saltar al contenido" />
+        <header>
+          <a href="/es/home">Inicio</a>
+        </header>
+        <div data-testid="contenido">
+          <h1>Dune</h1>
+        </div>
+        <nav aria-label="inferior">
+          <a href="/es/library">Biblioteca</a>
+        </nav>
+      </>,
+    );
+    const content = screen.getByTestId("contenido");
+    content.scrollIntoView = vi.fn();
+    expect(content).toHaveAttribute("id", "main");
+    fireEvent.click(screen.getByRole("link", { name: "Saltar al contenido" }));
+    expect(document.activeElement).toBe(content);
+  });
+
+  it("sin <main> ni cabecera (restablecer contraseña) salta al h1", () => {
+    render(
+      <>
+        <SkipLink label="Saltar al contenido" />
+        <div>
+          <h1>Nueva contraseña</h1>
+          <input aria-label="Contraseña" />
+        </div>
+      </>,
+    );
+    const h1 = screen.getByRole("heading", { level: 1 });
+    h1.scrollIntoView = vi.fn();
+    fireEvent.click(screen.getByRole("link", { name: "Saltar al contenido" }));
+    expect(document.activeElement).toBe(h1);
+    expect(h1).toHaveAttribute("tabindex", "-1");
+  });
+
+  it("al cambiar de pantalla quita el ancla del destino anterior y la pone en el nuevo <main>", () => {
+    const { rerender } = render(
+      <>
+        <SkipLink label="Saltar al contenido" />
+        <header />
+        <div data-testid="viejo">ficha</div>
+      </>,
+    );
+    expect(screen.getByTestId("viejo")).toHaveAttribute("id", "main");
+    state.pathname = "/es/library";
+    rerender(
+      <>
+        <SkipLink label="Saltar al contenido" />
+        <header />
+        <div data-testid="viejo">
+          <main data-testid="nuevo">biblioteca</main>
+        </div>
+      </>,
+    );
+    expect(screen.getByTestId("viejo")).not.toHaveAttribute("id");
+    expect(screen.getByTestId("nuevo")).toHaveAttribute("id", "main");
+  });
+
   it("globals.css deja 5rem arriba y abajo al desplazar a un ancla", () => {
     const css = fs.readFileSync(path.join(ROOT, "src/app/globals.css"), "utf8");
     expect(css).toMatch(/scroll-padding-top:\s*5rem/);
@@ -196,10 +258,14 @@ describe("TXT-2/TXT-5/SEO-6 — metadatos por defecto traducidos", () => {
       locale: locale === "es" ? "es_ES" : "en_US",
       alternateLocale: [locale === "es" ? "en_US" : "es_ES"],
       url: `${siteUrl()}/${locale}/privacy`,
-      title: messages.meta.defaultTitle,
-      description: messages.meta.description,
     });
-    expect(meta.twitter).toMatchObject({ card: "summary_large_image", title: messages.meta.defaultTitle });
+    // Título, descripción e imagen de OG y X los rellena Next con los de cada
+    // página y la tarjeta del sitio: fijarlos aquí haría que una página con
+    // título propio heredara el de la portada en OG y en X.
+    expect(meta.openGraph).not.toHaveProperty("title");
+    expect(meta.openGraph).not.toHaveProperty("description");
+    expect(meta.openGraph).not.toHaveProperty("images");
+    expect(meta.twitter).toEqual({ card: "summary_large_image" });
     expect(meta.appleWebApp).toMatchObject({ capable: true, title: "KULTURA" });
     // Heredado por una página sin canonical propio la marcaría como copia de la portada.
     expect(meta.alternates).toBeUndefined();
@@ -298,19 +364,34 @@ describe("ACC-7/TXT-4 — 404 y error global", () => {
     expect((await rootNotFoundMetadata()).title).toBe(title);
   });
 
-  it.each([
-    ["/en/library", "en", en.errors],
-    ["/es/home", "es", es.errors],
-    [null, "es", es.errors],
-  ])("error global en %s: idioma, <main> y h1", (pathname, lang, copy) => {
-    state.pathname = pathname;
-    const markup = renderToStaticMarkup(<GlobalError error={new Error("x")} reset={() => {}} />);
-    expect(markup).toContain(`<html lang="${lang}">`);
-    expect(markup).toContain(`<title>${copy.somethingWentWrong} · KULTURA</title>`);
-    expect(markup).toMatch(new RegExp(`<main id="main"[^>]*>.*<h1[^>]*>${copy.somethingWentWrong}</h1>`));
-    expect(markup).toContain(`>${copy.tryAgain}</button>`);
-    expect(markup).toContain(`href="/${lang}"`);
-    expect(markup).toContain("font-var-body");
+  describe("error global", () => {
+    afterEach(() => window.history.replaceState(null, "", "/"));
+
+    it.each([
+      ["/en/library", "en", en.errors],
+      ["/en", "en", en.errors],
+      ["/es/home", "es", es.errors],
+      ["/", "es", es.errors],
+    ])("en %s: idioma de la URL, <main>, h1 y vuelta a su portada", (url, lang, copy) => {
+      // Si lo que cae es el router, `usePathname` no tiene contexto: no se usa.
+      state.pathname = null;
+      window.history.replaceState(null, "", url);
+      const markup = renderToStaticMarkup(<GlobalError error={new Error("x")} reset={() => {}} />);
+      expect(markup).toMatch(new RegExp(`^<html lang="${lang}"`));
+      expect(markup).toContain(`<title>${copy.somethingWentWrong} · KULTURA</title>`);
+      expect(markup).toMatch(new RegExp(`<main id="main"[^>]*>.*<h1[^>]*>${copy.somethingWentWrong}</h1>`));
+      expect(markup).toContain(`>${copy.tryAgain}</button>`);
+      expect(markup).toContain(`href="/${lang}"`);
+    });
+
+    it("no depende de hojas de estilo: estilos en línea con los hex de los tokens y fuente del sistema", () => {
+      const markup = renderToStaticMarkup(<GlobalError error={new Error("x")} reset={() => {}} />);
+      expect(markup).not.toContain("class=");
+      expect(markup).toMatch(/<body style="[^"]*background-color:#0c0d14[^"]*color:#f4f5f8[^"]*font-family:system-ui/);
+      expect(markup).toMatch(/<button[^>]*background-color:#fb40ad;color:#12080c/);
+      const source = fs.readFileSync(path.join(ROOT, "src/app/global-error.tsx"), "utf8");
+      expect(source).not.toMatch(/\.css['"]|@\/app\/fonts|usePathname\(/);
+    });
   });
 });
 
