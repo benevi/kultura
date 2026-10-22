@@ -47,10 +47,14 @@
 --
 -- ANTES DE APLICAR (Víctor, SQL Editor, primero en el proyecto de TEST):
 --   1. Copia y ejecuta la COMPROBACIÓN PREVIA de abajo (solo lo que hay entre
---      /* y */). Debe devolver 0 filas. Las filas `dato_a_revisar` son solo
---      informativas; cualquier otra (`politica_desconocida`,
---      `politica_que_falta`, `columna_que_falta`, `funcion_que_falta`): para y
---      pásaselas al frente F-02.
+--      /* y */). Debe devolver 0 filas. Cualquier fila
+--      (`politica_desconocida`, `politica_que_falta`, `columna_que_falta`,
+--      `funcion_que_falta`): para y pásasela al frente F-02.
+--      Las filas `dato_a_revisar` son datos viejos que incumplen los nuevos
+--      CHECK: la migración se aplica igual (se crean NOT VALID), pero esas
+--      filas ya no se podrán EDITAR hasta corregirlas, así que corrígelas antes.
+--      Si la migración YA estaba aplicada, la comprobación sale con filas
+--      `politica_que_falta` (las viejas ya no existen): es lo esperado.
 --   2. Pega ESTE archivo entero y pulsa Run. Si en producción hay políticas
 --      que no salen en las migraciones del repo, el bloque de guarda aborta
 --      TODO (no se aplica nada) y dice cuáles son.
