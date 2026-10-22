@@ -122,7 +122,7 @@ const load = unstable_cache(
     }
     return items;
   },
-  ["best-of-v2"],
+  ["best-of-v3"],
   { revalidate: TTL_SECONDS },
 );
 
