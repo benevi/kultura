@@ -34,7 +34,7 @@ export function isBestFormat(value: string): value is BestFormat {
 export function parseBestParams(
   format: string,
   year: string,
-  today: Date = new Date()
+  today: Date = new Date(),
 ): { format: BestFormat; year: number } | null {
   if (!isBestFormat(format) || !/^\d{4}$/.test(year)) return null;
   const y = Number(year);
@@ -77,17 +77,18 @@ export function pickBest(items: MediaItem[], size = BEST_SIZE): BestItem[] {
  * Suelo de votos de los rankings de TMDB (E-BEST-VOTOS). Con el general de
  * Descubrir (50) el "mejor valorado" lo copaban títulos casi desconocidos con
  * pocos votos muy altos (conciertos, estrenos sin traducir). Más exigente con
- * los años cerrados, que ya han acumulado votos. Anime (AniList) y juegos
- * (RAWG) no lo usan.
+ * los años cerrados, que ya han acumulado votos. En juegos es un mínimo de Metacritic (60/70). Anime no lo usa.
  */
 export function bestMinVotes(
   format: BestFormat,
   year: number,
-  today: Date = new Date()
+  today: Date = new Date(),
 ): number | undefined {
   const current = year >= today.getFullYear();
   if (format === "movie") return current ? 400 : 1500;
   if (format === "tv") return current ? 200 : 500;
+  // Juegos: RAWG no filtra por nº de votos; el suelo es de Metacritic.
+  if (format === "game") return current ? 60 : 70;
   return undefined;
 }
 
@@ -95,7 +96,16 @@ const load = unstable_cache(
   async (format: BestFormat, year: number, locale: string) => {
     const base = { year: String(year), sort: "rating" };
     const minVotes = bestMinVotes(format, year);
-    let res = await fetchDiscoverData(format, 1, { ...base, minVotes }, locale);
+    let res = await fetchDiscoverData(
+      format,
+      1,
+      {
+        ...base,
+        minVotes,
+        minMetacritic: format === "game" ? minVotes : undefined,
+      },
+      locale,
+    );
     let items = pickBest(res.items);
     // Si el suelo deja la lista corta (p. ej. a principios de año), se relaja
     // al general antes que dejar la página sin ranking.
@@ -106,18 +116,20 @@ const load = unstable_cache(
     // Una carga corta LANZA: `unstable_cache` no guarda rechazos, así un hipo
     // de proveedor no congela la página vacía 24 h.
     if (items.length < BEST_MIN_ITEMS) {
-      throw new Error(`best-of ${format} ${year}: solo ${items.length} títulos`);
+      throw new Error(
+        `best-of ${format} ${year}: solo ${items.length} títulos`,
+      );
     }
     return items;
   },
   ["best-of-v2"],
-  { revalidate: TTL_SECONDS }
+  { revalidate: TTL_SECONDS },
 );
 
 export function getBestOf(
   format: BestFormat,
   year: number,
-  locale: string
+  locale: string,
 ): Promise<BestItem[]> {
   return load(format, year, locale);
 }

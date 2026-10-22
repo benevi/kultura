@@ -150,6 +150,8 @@ export interface RawgFilters {
   estado?: string | null;
   modojuego?: string[];
   duracionmedia?: string | null;
+  // E-BEST-VOTOS: suelo de Metacritic nativo (rankings públicos).
+  minMetacritic?: number | null;
 }
 
 function mapGenreSlugs(slugs: string[] | undefined): string[] {
@@ -196,6 +198,8 @@ export function buildRawgDiscoverParams(
 
   // Siempre presente: acota el catálogo a lo ya publicado (E-GAMES-FUTURO).
   params.dates = rawgDatesWindow(filters.year);
+
+  if (filters.minMetacritic) params.metacritic = `${filters.minMetacritic},100`;
 
   return params;
 }

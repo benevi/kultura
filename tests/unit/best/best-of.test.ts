@@ -44,7 +44,8 @@ describe("best-of — suelo de votos (E-BEST-VOTOS)", () => {
     expect(bestMinVotes("movie", 2025, today)).toBe(1500);
     expect(bestMinVotes("tv", 2026, today)).toBe(200);
     expect(bestMinVotes("anime", 2026, today)).toBeUndefined();
-    expect(bestMinVotes("game", 2026, today)).toBeUndefined();
+    expect(bestMinVotes("game", 2026, today)).toBe(60);
+    expect(bestMinVotes("game", 2025, today)).toBe(70);
   });
 
   it("si el suelo deja menos de 5, repite sin él", async () => {
