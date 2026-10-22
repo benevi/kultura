@@ -29,6 +29,14 @@ export const SHELL_CLIENT_NAMESPACES = [
   "nav",
 ] as const;
 
+/**
+ * `/[locale]/report` (denuncia pública sin cuenta): su formulario necesita
+ * `report` (~4 KB), que no merece ir en todas las páginas públicas. Lo pone
+ * `report/layout.tsx` con su propio proveedor, que sustituye al del shell, así
+ * que lleva también lo que usen la cabecera y el pie de esa página.
+ */
+export const REPORT_CLIENT_NAMESPACES = ["report"] as const;
+
 export const APP_CLIENT_NAMESPACES = [
   "aiRecommendations",
   "auth",
@@ -48,6 +56,7 @@ export const APP_CLIENT_NAMESPACES = [
   "lists",
   "media",
   "media_detail",
+  "moderation",
   "nav",
   "notifications",
   "profile",

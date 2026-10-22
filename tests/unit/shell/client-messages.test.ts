@@ -18,6 +18,7 @@ import es from "../../../messages/es.json";
 import en from "../../../messages/en.json";
 import {
   APP_CLIENT_NAMESPACES,
+  REPORT_CLIENT_NAMESPACES,
   SHELL_CLIENT_NAMESPACES,
   pickMessages,
 } from "@/i18n/client-messages";
@@ -26,6 +27,8 @@ const ROOT = path.resolve(__dirname, "../../..");
 const SRC = path.join(ROOT, "src");
 const APP_GROUP = path.join(SRC, "app", "[locale]", "(app)") + path.sep;
 const APP_GROUP_SHELL = ["layout.tsx", "template.tsx"].map((f) => APP_GROUP + f);
+// Zona con proveedor propio (sustituye al del shell desde su layout).
+const REPORT_DIR = path.join(SRC, "app", "[locale]", "report") + path.sep;
 
 function walk(dir: string): string[] {
   return fs.readdirSync(dir, { withFileTypes: true }).flatMap((entry) => {
@@ -77,8 +80,14 @@ const clientGraph = reachable(
     .map(([f]) => f),
 );
 const shellEntries = Array.from(FILES.keys()).filter(
-  (f) => f.startsWith(path.join(SRC, "app") + path.sep) && (!f.startsWith(APP_GROUP) || APP_GROUP_SHELL.includes(f)),
+  (f) =>
+    f.startsWith(path.join(SRC, "app") + path.sep) &&
+    (!f.startsWith(APP_GROUP) || APP_GROUP_SHELL.includes(f)) &&
+    !f.startsWith(REPORT_DIR),
 );
+const reportClientGraph = Array.from(
+  reachable(Array.from(FILES.keys()).filter((f) => f.startsWith(REPORT_DIR))),
+).filter((f) => clientGraph.has(f));
 const shellClientGraph = Array.from(reachable(shellEntries)).filter((f) => clientGraph.has(f));
 
 type Use = { file: string; ns: string };
@@ -105,6 +114,7 @@ const covers = (picked: readonly string[], ns: string) =>
 
 const appUses = translationUses(Array.from(clientGraph));
 const shellUses = translationUses(shellClientGraph);
+const reportUses = translationUses(reportClientGraph);
 
 describe("REN-5 — textos del navegador por namespaces", () => {
   it("el grafo encuentra componentes cliente con textos (sanidad del análisis)", () => {
@@ -128,11 +138,18 @@ describe("REN-5 — textos del navegador por namespaces", () => {
     expect(missing).toEqual([]);
   });
 
+  it("todo namespace usado en /report está en REPORT_CLIENT_NAMESPACES (su proveedor sustituye al del shell)", () => {
+    expect(reportUses.uses.map((u) => u.file)).toContain("src/app/[locale]/report/PublicReportForm.tsx");
+    const missing = reportUses.uses.filter((u) => !covers(REPORT_CLIENT_NAMESPACES, u.ns));
+    expect(missing).toEqual([]);
+  });
+
   it("no sobra ningún namespace en las listas", () => {
     const unused = (picked: readonly string[], uses: Use[]) =>
       picked.filter((p) => !uses.some((u) => covers([p], u.ns)));
     expect(unused(APP_CLIENT_NAMESPACES, appUses.uses)).toEqual([]);
     expect(unused(SHELL_CLIENT_NAMESPACES, shellUses.uses)).toEqual([]);
+    expect(unused(REPORT_CLIENT_NAMESPACES, reportUses.uses)).toEqual([]);
   });
 
   it("la capa de la zona con sesión incluye todo lo del shell (el proveedor anidado sustituye)", () => {
@@ -144,7 +161,7 @@ describe("REN-5 — textos del navegador por namespaces", () => {
     ["es", es],
     ["en", en],
   ])("todas las rutas existen en %s.json", (_locale, messages) => {
-    for (const ns of [...APP_CLIENT_NAMESPACES, ...SHELL_CLIENT_NAMESPACES]) {
+    for (const ns of [...APP_CLIENT_NAMESPACES, ...SHELL_CLIENT_NAMESPACES, ...REPORT_CLIENT_NAMESPACES]) {
       const picked = pickMessages(messages, [ns]);
       expect(Object.keys(picked), ns).toHaveLength(1);
     }
