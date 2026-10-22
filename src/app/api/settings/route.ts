@@ -23,7 +23,13 @@ import { isValidAvatarIcon } from '@/components/icons/avatars'
 import { checkRateLimit, LIMITS } from '@/lib/rate-limit'
 import { DEMO_READ_ONLY_ERROR, isDemoUser } from '@/lib/demo'
 import { LIBRARY_VISIBILITIES, USERNAME_REGEX, initialsFor, isReservedUsername } from './identity'
-import { isNotMigrated, markOnboarded, recordTermsAcceptance } from './account-state'
+import {
+  hasAcceptedTerms,
+  isNotMigrated,
+  markOnboarded,
+  readAccountState,
+  recordTermsAcceptance,
+} from './account-state'
 
 /** Tope de la bio: el mismo que el `maxLength` del editor (`ProfileBio`). */
 const BIO_MAX_LENGTH = 200
@@ -150,6 +156,16 @@ export async function PATCH(req: NextRequest): Promise<NextResponse> {
   if (avatar_icon !== undefined) updates.avatar_icon = avatar_icon
   if (bio !== undefined) updates.bio = bio ? bio : null
   if (library_visibility !== undefined) updates.library_visibility = library_visibility
+
+  // SEG-7: el onboarding no se da por terminado (ni "saltado") sin haber
+  // aceptado los términos, en esta misma petición o antes. Si no, quien entra
+  // con Google se saltaría la casilla con "Saltar todo".
+  if (onboarding_done && !accept_terms) {
+    const { state } = await readAccountState(supabase, user.id)
+    if (!hasAcceptedTerms(state, user)) {
+      return NextResponse.json({ error: 'terms_required' }, { status: 409 })
+    }
+  }
 
   const needsAdmin = updates.username !== undefined || accept_terms || onboarding_done
   const admin = needsAdmin ? createAdminClient() : null

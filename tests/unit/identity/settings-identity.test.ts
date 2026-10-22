@@ -161,6 +161,40 @@ describe('PATCH /api/settings — identidad (F-12)', () => {
     })
   })
 
+  // SEG-7: "Saltar todo" no puede terminar el onboarding sin aceptar.
+  it('onboarding_done sin términos aceptados → 409 terms_required y no marca nada', async () => {
+    h.userTables.account_state = table({ lookup: { data: { terms_accepted_at: null, onboarded_at: null }, error: null } })
+    const state = table()
+    h.adminTables.account_state = state
+    const res = await run({ onboarding_done: true })
+    expect(res.status).toBe(409)
+    expect((await res.json()).error).toBe('terms_required')
+    expect(state.upsert).not.toHaveBeenCalled()
+  })
+
+  it('onboarding_done con los términos ya aceptados (alta por email) → 200', async () => {
+    h.userTables.account_state = table({
+      lookup: { data: { terms_accepted_at: '2026-10-22T10:00:00Z', onboarded_at: null }, error: null },
+    })
+    const state = table()
+    h.adminTables.account_state = state
+    const res = await run({ onboarding_done: true })
+    expect(res.status).toBe(200)
+    expect(state.upsert).toHaveBeenCalledWith(expect.objectContaining({ onboarded_at: expect.any(String) }), {
+      onConflict: 'user_id',
+    })
+  })
+
+  it('accept_terms + onboarding_done en la misma petición → 200 (acepta primero)', async () => {
+    h.userTables.account_state = table({ lookup: { data: { terms_accepted_at: null }, error: null } })
+    const state = table()
+    h.adminTables.account_state = state
+    const res = await run({ accept_terms: true, onboarding_done: true })
+    expect(res.status).toBe(200)
+    expect(state.upsert.mock.calls[0][0]).toHaveProperty('terms_accepted_at')
+    expect(state.upsert.mock.calls[1][0]).toHaveProperty('onboarded_at')
+  })
+
   it('accept_terms solo admite true', async () => {
     const res = await run({ accept_terms: false })
     expect(res.status).toBe(400)

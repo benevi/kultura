@@ -7,9 +7,10 @@
 //      base (el proyecto gratuito se pausa por inactividad);
 //   2. purga de las cuentas cuyo borrado venció (ROJO-7, 7 días de gracia).
 //
-// Protegido con CRON_SECRET: Vercel manda `Authorization: Bearer <secreto>`
-// en cada ejecución. Sin la variable, no hace nada (503) en vez de quedar
-// abierto a cualquiera.
+// El keep-alive se hace siempre (es inocuo y no puede depender de una
+// variable mal puesta). La purga exige CRON_SECRET: Vercel manda
+// `Authorization: Bearer <secreto>` en cada ejecución; sin la variable o con
+// otro valor, la purga no se ejecuta (`purge.status` lo dice).
 // ============================================================
 
 import { timingSafeEqual } from 'node:crypto'
@@ -32,19 +33,26 @@ function authorized(req: NextRequest, secret: string): boolean {
 
 export async function GET(req: NextRequest): Promise<NextResponse> {
   const noStore = { 'Cache-Control': 'no-store' }
-  const secret = process.env.CRON_SECRET
-  if (!secret) {
-    return NextResponse.json({ ok: false, error: 'cron_not_configured' }, { status: 503, headers: noStore })
-  }
-  if (!authorized(req, secret)) {
-    return NextResponse.json({ ok: false, error: 'unauthorized' }, { status: 401, headers: noStore })
-  }
 
-  // 1. Keep-alive (misma ruta que vigila el monitor externo).
+  // 1. Keep-alive, SIEMPRE: aunque falte o no coincida el secreto, la base
+  //    tiene que recibir su consulta diaria (si no, Supabase Free se pausa).
+  //    Es inocuo: lo mismo que ya hace /api/health, pública y con su propio
+  //    límite por IP (aquí la "IP" es fija, así que un abuso de esta ruta
+  //    agota ese cupo y no llega a la base más de 30 veces por minuto).
   const healthResponse = await healthCheck(
     new NextRequest(new URL('/api/health', req.url), { headers: { 'x-forwarded-for': 'cron-daily' } })
   )
   const health = (await healthResponse.json().catch(() => ({ ok: false }))) as { ok?: boolean }
+
+  // Lo que borra datos exige el secreto. Sin él, solo el keep-alive.
+  const secret = process.env.CRON_SECRET
+  if (!secret || !authorized(req, secret)) {
+    const purge = { status: secret ? 'unauthorized' : 'not_configured' } as const
+    return NextResponse.json(
+      { ok: health.ok === true, health, purge },
+      { status: healthResponse.status, headers: noStore }
+    )
+  }
 
   // 2. Purga de cuentas.
   const purge = await purgeExpiredAccounts(createAdminClient()).catch((e: unknown) => {

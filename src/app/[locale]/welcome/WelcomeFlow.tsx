@@ -211,15 +211,31 @@ export function WelcomeFlow({ locale, next, currentUsername, suggestChange, need
   // -------------------------------------------------------------------------
 
   async function finish() {
+    // SEG-7: todo se puede saltar MENOS la casilla de edad y términos (alta
+    // con Google). Sin marcarla, "Saltar" se queda en el paso 1 y lo explica.
+    if (termsPending && !termsChecked) {
+      setStep('name')
+      setTermsError(tAuth('termsRequired'))
+      requestAnimationFrame(() => termsRef.current?.focus())
+      return
+    }
     setFinishing(true)
     await flushRatings()
-    await fetch('/api/settings', {
+    const res = await fetch('/api/settings', {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ onboarding_done: true }),
-    }).catch(() => {
-      // Si no se guarda, la próxima vez vuelve a ofrecerse: no impide entrar.
-    })
+      // Casilla marcada pero aún sin guardar (salta desde el paso 1): va junta.
+      body: JSON.stringify(termsPending ? { accept_terms: true, onboarding_done: true } : { onboarding_done: true }),
+    }).catch(() => null)
+    if (res?.status === 409) {
+      // El servidor no tiene la aceptación: de vuelta a la casilla.
+      setFinishing(false)
+      setTermsPending(true)
+      setStep('name')
+      setTermsError(tAuth('termsRequired'))
+      return
+    }
+    // Cualquier otro fallo: la próxima vez vuelve a ofrecerse; no impide entrar.
     router.replace(next)
   }
 

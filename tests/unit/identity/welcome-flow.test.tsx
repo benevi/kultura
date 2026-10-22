@@ -133,11 +133,43 @@ describe('WelcomeFlow', () => {
     expect(global.fetch).not.toHaveBeenCalled()
   })
 
-  it('saltar todo desde el primer paso marca el onboarding y va al destino', async () => {
+  // SEG-7: todo se puede saltar menos la casilla de edad y términos.
+  it('saltar todo SIN marcar la casilla (alta con Google) no salta: pide la casilla', async () => {
     renderFlow({ next: '/es/u/benevi' })
+    fireEvent.click(screen.getByRole('button', { name: 'skipAll' }))
+    expect(await screen.findByText('termsRequired')).toBeInTheDocument()
+    expect(global.fetch).not.toHaveBeenCalled()
+    expect(h.replace).not.toHaveBeenCalled()
+  })
+
+  it('al intentar saltar, la casilla queda marcada como inválida en el paso 1', async () => {
+    renderFlow({ needsTerms: true })
+    fireEvent.click(screen.getByRole('button', { name: 'skipAll' }))
+    expect(await screen.findByRole('heading', { name: 'nameTitle' })).toBeInTheDocument()
+    expect(screen.getByRole('checkbox')).toHaveAttribute('aria-invalid', 'true')
+  })
+
+  it('con la casilla marcada, saltar todo acepta y termina en la misma petición', async () => {
+    renderFlow({ next: '/es/u/benevi' })
+    fireEvent.click(screen.getByRole('checkbox'))
+    fireEvent.click(screen.getByRole('button', { name: 'skipAll' }))
+    await waitFor(() => expect(h.replace).toHaveBeenCalledWith('/es/u/benevi'))
+    expect(calls('/api/settings')).toEqual([{ accept_terms: true, onboarding_done: true }])
+  })
+
+  it('con los términos ya aceptados, saltar todo solo termina', async () => {
+    renderFlow({ next: '/es/u/benevi', needsTerms: false })
     fireEvent.click(screen.getByRole('button', { name: 'skipAll' }))
     await waitFor(() => expect(h.replace).toHaveBeenCalledWith('/es/u/benevi'))
     expect(calls('/api/settings')).toEqual([{ onboarding_done: true }])
+  })
+
+  it('si el servidor responde terms_required (409), no entra y pide la casilla', async () => {
+    global.fetch = vi.fn().mockResolvedValue(new Response(JSON.stringify({ error: 'terms_required' }), { status: 409 }))
+    renderFlow({ needsTerms: false })
+    fireEvent.click(screen.getByRole('button', { name: 'skipAll' }))
+    expect(await screen.findByText('termsRequired')).toBeInTheDocument()
+    expect(h.replace).not.toHaveBeenCalled()
   })
 
   it('una nota que no se guarda se descuenta y se avisa', async () => {

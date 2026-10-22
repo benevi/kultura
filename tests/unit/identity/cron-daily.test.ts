@@ -51,18 +51,34 @@ describe('GET /api/cron/daily', () => {
     expect(dynamic).toBe('force-dynamic')
   })
 
-  it('sin CRON_SECRET no hace nada (503), ni siquiera el keep-alive', async () => {
+  it('sin CRON_SECRET hace el keep-alive igual, pero no purga', async () => {
     delete process.env.CRON_SECRET
+    h.rows = { data: [{ user_id: 'a' }], error: null }
     const res = await call(`Bearer ${SECRET}`)
-    expect(res.status).toBe(503)
-    expect(h.health).not.toHaveBeenCalled()
+    expect(res.status).toBe(200)
+    expect(h.health).toHaveBeenCalledOnce()
+    expect((await res.json()).purge).toEqual({ status: 'not_configured' })
+    expect(h.rpc).not.toHaveBeenCalled()
+    expect(h.deleteUser).not.toHaveBeenCalled()
   })
 
-  it.each([undefined, 'Bearer otro', `Bearer ${SECRET}x`, SECRET])('401 con autorización %s', async (auth) => {
-    const res = await call(auth)
-    expect(res.status).toBe(401)
-    expect(h.health).not.toHaveBeenCalled()
-    expect(h.deleteUser).not.toHaveBeenCalled()
+  it.each([undefined, 'Bearer otro', `Bearer ${SECRET}x`, SECRET])(
+    'con autorización %s: keep-alive sí, purga no',
+    async (auth) => {
+      h.rows = { data: [{ user_id: 'a' }], error: null }
+      const res = await call(auth)
+      expect(res.status).toBe(200)
+      expect(h.health).toHaveBeenCalledOnce()
+      expect((await res.json()).purge).toEqual({ status: 'unauthorized' })
+      expect(h.rpc).not.toHaveBeenCalled()
+      expect(h.deleteUser).not.toHaveBeenCalled()
+    }
+  )
+
+  it('sin secreto y con la base caída, el código refleja la base (503)', async () => {
+    h.health.mockResolvedValue(Response.json({ ok: false, db: 'down' }, { status: 503 }))
+    const res = await call()
+    expect(res.status).toBe(503)
   })
 
   it('llama por dentro a /api/health (keep-alive de Supabase)', async () => {

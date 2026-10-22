@@ -4,8 +4,11 @@
 -- QUÉ HACE (el código funciona antes y después de aplicarla):
 --   1. users.library_visibility ('public' | 'friends' | 'private', por defecto
 --      'friends' para TODOS, D-04b) y el usuario puede cambiarla con su JWT.
---      CHECK de formato del nombre de usuario (3-20, letras, números y _) y de
---      nombres reservados; índice único sin distinguir mayúsculas.
+--      Formato del nombre de usuario (3-20, letras, números y _) y nombres
+--      reservados con un DISPARADOR que solo mira el nombre cuando se crea o
+--      CAMBIA (un CHECK, aunque sea NOT VALID, se evalúa en cada UPDATE de la
+--      fila: un usuario antiguo "jo" no podría guardar ni su bio); índice
+--      único sin distinguir mayúsculas.
 --   2. public.account_state (una fila por usuario, solo la lee su dueño y solo
 --      la escribe el servidor): terms_accepted_at / terms_version (SEG-7),
 --      onboarded_at (CRE-6) y deletion_requested_at (ROJO-7, 7 días de
@@ -29,7 +32,9 @@
 --      colaborador que antes aportó; lo demás se borra en cascada como antes.
 --   7. ROJO-8: la cuenta demo no puede cambiar email, contraseña ni teléfono
 --      por la API de Auth (disparador en auth.users) ni dar de alta MFA (si
---      el proyecto permite el disparador en auth.mfa_factors).
+--      el proyecto permite el disparador en auth.mfa_factors). El service role
+--      SÍ puede (ver la sección 7 para cómo, y por qué no basta con mirar el
+--      rol: GoTrue entra en la base con el mismo rol para todo el mundo).
 --   8. Vuelve a ejecutar el bloque demo_no_* al final (tablas nuevas).
 --
 -- IDEMPOTENTE: se puede ejecutar dos veces seguidas sin error ni cambios.
@@ -49,13 +54,20 @@
 --     left join public.account_state a on a.user_id = u.id
 --    where a.user_id is null;                                      -- 0
 --   select policyname from pg_policies where tablename='user_media'
---      and cmd='SELECT';                         -- user_media_select_visible
+--      and cmd='SELECT';                  -- SOLO user_media_select_visible
 --   select * from public.rls_audit() where not ok;                 -- 0 filas
---   -- ROJO-8 (debe FALLAR con "demo_auth_locked" y no cambia nada):
+--   -- Un usuario antiguo con nombre que hoy no valdría sigue guardando su bio:
+--   begin; update public.users set bio = bio where char_length(username) < 3;
+--   rollback;                                                      -- sin error
+--   -- ROJO-8 (debe FALLAR con "demo_auth_locked" y no cambia nada). Se
+--   -- simula el rol con el que entra la API de Auth:
 --   begin;
+--   set local role supabase_auth_admin;
 --   update auth.users set encrypted_password = 'x'
 --    where raw_app_meta_data->>'demo' = 'true';
 --   rollback;
+--   -- Y el service role sí puede (la misma prueba sin `set local role`, o
+--   -- con `set local role service_role`, NO falla; ver la sección 7).
 --   -- Nombre generado (debe dar 0 filas con nombres nuevos tipo email):
 --   select username from public.users
 --    where created_at > now() - interval '1 day' and username !~ '^u_[a-z0-9]{6}$'
@@ -74,40 +86,47 @@ begin
     alter table public.users add constraint users_library_visibility_check
       check (library_visibility in ('public', 'friends', 'private'));
   end if;
-  if not exists (select 1 from pg_constraint
-                  where conname = 'users_username_format' and conrelid = 'public.users'::regclass) then
-    alter table public.users add constraint users_username_format
-      check (username ~ '^[A-Za-z0-9_]{3,20}$') not valid;
+end $$;
+
+-- Una versión anterior de esta migración los creaba como CHECK NOT VALID, que
+-- se evalúa en CADA update de la fila: fuera (no hacen nada si no existen).
+alter table public.users drop constraint if exists users_username_format;
+alter table public.users drop constraint if exists users_username_not_reserved;
+
+-- Solo al crear el usuario o al CAMBIAR el nombre: un nombre antiguo que hoy
+-- no valdría ("jo", "admin") no impide guardar la bio ni la visibilidad.
+-- Misma lista que RESERVED_USERNAMES en src/app/api/settings/identity.ts (lo
+-- comprueba tests/unit/identity/reserved.test.ts). Error 23514 (check_violation),
+-- el mismo que daría un CHECK, para que la API lo traduzca igual.
+create or replace function public.validate_username()
+returns trigger language plpgsql
+set search_path = public, pg_temp
+as $$
+begin
+  if tg_op = 'UPDATE' and new.username is not distinct from old.username then
+    return new;
   end if;
-  -- Misma lista que RESERVED_USERNAMES en src/app/api/settings/identity.ts
-  -- (lo comprueba tests/unit/identity/reserved.test.ts).
-  if not exists (select 1 from pg_constraint
-                  where conname = 'users_username_not_reserved' and conrelid = 'public.users'::regclass) then
-    alter table public.users add constraint users_username_not_reserved
-      check (lower(username) <> all (array[
+  if new.username !~ '^[A-Za-z0-9_]{3,20}$' then
+    raise exception 'username_invalid' using errcode = '23514';
+  end if;
+  if lower(new.username) = any (array[
         'admin','administrator','administrador','root','kultura','kulturaapp','support','soporte',
         'help','ayuda','moderator','moderador','mod','staff','team','equipo','official','oficial',
         'api','login','logout','settings','ajustes','welcome','home','system','sistema','null',
         'undefined','anonymous','anonimo','me','demo','security','seguridad','privacy','terms',
         'legal','report','u','profile','www'
-      ])) not valid;
+      ]) then
+    raise exception 'username_reserved' using errcode = '23514';
   end if;
-end $$;
+  return new;
+end;
+$$;
+revoke all on function public.validate_username() from public, anon, authenticated;
 
-do $$
-declare
-  c text;
-begin
-  foreach c in array array['users_username_format', 'users_username_not_reserved'] loop
-    begin
-      if exists (select 1 from pg_constraint where conname = c and not convalidated) then
-        execute format('alter table public.users validate constraint %I', c);
-      end if;
-    exception when check_violation then
-      raise notice 'F-12: % se queda NOT VALID: hay nombres antiguos que no la cumplen', c;
-    end;
-  end loop;
-end $$;
+drop trigger if exists validate_username on public.users;
+create trigger validate_username
+  before insert or update of username on public.users
+  for each row execute function public.validate_username();
 
 -- Único sin distinguir mayúsculas (/u/Pepe y /u/pepe no pueden ser dos
 -- personas). Si ya hay duplicados, se avisa y no se crea.
@@ -144,9 +163,10 @@ create policy "account_state_select_own" on public.account_state
   for select to authenticated
   using (user_id = auth.uid());
 
--- Solo el servidor escribe (cliente admin): ni anon ni authenticated.
-revoke insert, update, delete on public.account_state from anon, authenticated;
-revoke all on public.account_state from anon;
+-- Solo el servidor escribe (cliente admin, service_role). anon nada;
+-- authenticated solo SELECT (y la política lo limita a su fila).
+revoke all on public.account_state from anon, authenticated;
+grant select on public.account_state to authenticated;
 
 create index if not exists account_state_deletion_idx
   on public.account_state (deletion_requested_at)
@@ -288,7 +308,27 @@ $$;
 revoke all on function public.can_read_library(uuid) from public, anon;
 grant execute on function public.can_read_library(uuid) to authenticated, service_role;
 
+-- Fuera TODA política SELECT permisiva anterior: la de W1
+-- ("user_media_select_authenticated") y la original ("user_media_select_public",
+-- USING true para el rol public, que sigue en producción si F-02 no se aplicó:
+-- volcado W0). Si quedara alguna, por OR con la nueva, la privacidad no
+-- serviría de nada. El bucle cubre también cualquier otra con otro nombre.
 drop policy if exists "user_media_select_authenticated" on public.user_media;
+drop policy if exists "user_media_select_public" on public.user_media;
+do $$
+declare
+  p record;
+begin
+  for p in
+    select policyname from pg_policies
+     where schemaname = 'public' and tablename = 'user_media'
+       and cmd in ('SELECT', 'ALL') and permissive = 'PERMISSIVE'
+       and policyname <> 'user_media_select_visible'
+  loop
+    execute format('drop policy %I on public.user_media', p.policyname);
+    raise notice 'F-12: quitada la política % de user_media', p.policyname;
+  end loop;
+end $$;
 drop policy if exists "user_media_select_visible" on public.user_media;
 create policy "user_media_select_visible" on public.user_media
   for select to authenticated
@@ -397,25 +437,86 @@ grant execute on function public.transfer_owned_content(uuid) to service_role;
 
 
 -- ── 7. ROJO-8: la demo no cambia credenciales por la API de Auth ─────────
--- GoTrue entra en la base con su propio rol tanto para el usuario como para
--- el service role, así que no se puede distinguir quién llama: se bloquea
--- siempre. Para cambiarlas a propósito (SQL Editor, en una transacción):
---   begin; set local kultura.allow_demo_auth_change = 'on'; update …; commit;
+-- Problema: la API de Auth (GoTrue) entra en la base SIEMPRE con su rol
+-- `supabase_auth_admin`, tanto si la llamada viene de un visitante de la demo
+-- (`updateUser`, JWT authenticated) como del service role
+-- (`auth.admin.updateUserById`): el rol no distingue a uno de otro y GoTrue no
+-- publica el JWT en `request.jwt.claims`. Así que se decide así:
+--   · SE PERMITE si quien escribe es `postgres` o `service_role` (SQL Editor,
+--     scripts con conexión directa), si `request.jwt.claims` trae
+--     role = service_role (por si una versión de GoTrue lo publica), o si
+--     `app_metadata.demo_auth_unlock_until` es una fecha FUTURA. Ese campo
+--     solo lo puede escribir el service role (un usuario no puede tocar su
+--     app_metadata), así que es la llave del service role a través de la API:
+--       await admin.auth.admin.updateUserById(id, { app_metadata:
+--         { demo_auth_unlock_until: new Date(Date.now() + 120_000).toISOString() } })
+--       await admin.auth.admin.updateUserById(id, { password: '…' })   // OK
+--     La llave caduca sola (2 minutos en el ejemplo).
+--   · SE BLOQUEA todo lo demás: un visitante de la demo (rol supabase_auth_admin
+--     sin llave) no cambia email, contraseña ni teléfono.
+-- La función es SECURITY INVOKER a propósito: así `current_user` es el rol
+-- real que escribe (en una SECURITY DEFINER siempre sería el dueño).
+--
+-- CÓMO COMPROBARLO (SQL Editor; cada bloque se deshace con rollback):
+--   -- 1) Visitante de la demo vía API de Auth → ERROR demo_auth_locked
+--   begin; set local role supabase_auth_admin;
+--   update auth.users set encrypted_password = 'x' where raw_app_meta_data->>'demo' = 'true';
+--   rollback;
+--   -- 2) Service role por la API (con la llave) → sin error
+--   begin;
+--   update auth.users set raw_app_meta_data = raw_app_meta_data ||
+--     jsonb_build_object('demo_auth_unlock_until', now() + interval '2 minutes')
+--    where raw_app_meta_data->>'demo' = 'true';
+--   set local role supabase_auth_admin;
+--   update auth.users set encrypted_password = 'x' where raw_app_meta_data->>'demo' = 'true';
+--   rollback;
+--   -- 3) SQL Editor (postgres) → sin error
+--   begin; update auth.users set encrypted_password = 'x'
+--    where raw_app_meta_data->>'demo' = 'true'; rollback;
+-- En la app: `updateUser({ password })` con la sesión de la demo responde con
+-- error (GoTrue devuelve "Database error updating user").
 create or replace function public.guard_demo_auth_identity()
-returns trigger language plpgsql security definer
+returns trigger language plpgsql security invoker
 set search_path = public, pg_temp
 as $$
+declare
+  claims_role text;
+  unlock_until timestamptz;
 begin
-  if coalesce(old.raw_app_meta_data ->> 'demo', '') = 'true'
-     and coalesce(current_setting('kultura.allow_demo_auth_change', true), '') <> 'on'
-     and (coalesce(new.email, '') is distinct from coalesce(old.email, '')
-       or coalesce(new.encrypted_password, '') is distinct from coalesce(old.encrypted_password, '')
-       or coalesce(new.email_change, '') is distinct from coalesce(old.email_change, '')
-       or coalesce(new.phone, '') is distinct from coalesce(old.phone, '')
-       or coalesce(new.phone_change, '') is distinct from coalesce(old.phone_change, '')) then
-    raise exception 'demo_auth_locked' using errcode = '42501';
+  if coalesce(old.raw_app_meta_data ->> 'demo', '') <> 'true' then
+    return new;
   end if;
-  return new;
+  if coalesce(new.email, '') is not distinct from coalesce(old.email, '')
+     and coalesce(new.encrypted_password, '') is not distinct from coalesce(old.encrypted_password, '')
+     and coalesce(new.email_change, '') is not distinct from coalesce(old.email_change, '')
+     and coalesce(new.phone, '') is not distinct from coalesce(old.phone, '')
+     and coalesce(new.phone_change, '') is not distinct from coalesce(old.phone_change, '') then
+    return new;  -- inicio de sesión, metadatos… nada de credenciales
+  end if;
+
+  if current_user in ('postgres', 'service_role') then
+    return new;
+  end if;
+
+  begin
+    claims_role := nullif(current_setting('request.jwt.claims', true), '')::jsonb ->> 'role';
+  exception when others then
+    claims_role := null;
+  end;
+  if claims_role = 'service_role' then
+    return new;
+  end if;
+
+  begin
+    unlock_until := (new.raw_app_meta_data ->> 'demo_auth_unlock_until')::timestamptz;
+  exception when others then
+    unlock_until := null;
+  end;
+  if unlock_until is not null and unlock_until > now() then
+    return new;
+  end if;
+
+  raise exception 'demo_auth_locked' using errcode = '42501';
 end;
 $$;
 revoke all on function public.guard_demo_auth_identity() from public, anon, authenticated;

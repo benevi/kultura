@@ -35,10 +35,21 @@ function fnBody(name: string): string {
 }
 
 describe('nombres reservados', () => {
-  it('la lista del CHECK de la base es la misma que la de la API', () => {
-    const block = /users_username_not_reserved[\s\S]*?array\[([\s\S]*?)\]/i.exec(SQL)?.[1] ?? ''
+  it('la lista del disparador de la base es la misma que la de la API', () => {
+    const block = /lower\(new\.username\) = any \(array\[([\s\S]*?)\]/i.exec(fnBody('validate_username'))?.[1] ?? ''
     const sqlNames = Array.from(block.matchAll(/'([^']+)'/g), (m) => m[1]).sort()
     expect(sqlNames).toEqual([...RESERVED_USERNAMES].sort())
+  })
+
+  // Un CHECK (aunque sea NOT VALID) se evalúa en CADA update de la fila: un
+  // usuario antiguo "jo" no podría guardar ni la bio. Por eso es un disparador
+  // que solo mira el nombre al crearlo o cambiarlo.
+  it('sin CHECK de nombre: disparador solo en INSERT o UPDATE OF username', () => {
+    expect(SQL).not.toMatch(/add constraint users_username_(format|not_reserved)/i)
+    expect(SQL).toMatch(/drop constraint if exists users_username_format/)
+    expect(SQL).toMatch(/drop constraint if exists users_username_not_reserved/)
+    expect(SQL).toMatch(/before insert or update of username on public\.users/)
+    expect(fnBody('validate_username')).toMatch(/tg_op = 'UPDATE' and new\.username is not distinct from old\.username/)
   })
 
   it('reservado sin distinguir mayúsculas, y nada que empiece por "kultura"', () => {
@@ -48,7 +59,7 @@ describe('nombres reservados', () => {
     expect(isReservedUsername('lucia_lee')).toBe(false)
   })
 
-  it('el formato de la API es el del CHECK users_username_format', () => {
+  it('el formato de la API es el del disparador validate_username', () => {
     expect(SQL).toContain(`'^[A-Za-z0-9_]{3,20}$'`)
     expect(USERNAME_REGEX.source).toBe('^[A-Za-z0-9_]{3,20}$')
   })
@@ -81,6 +92,11 @@ describe('nombre generado (R4)', () => {
 })
 
 describe('política de user_media (D-04b)', () => {
+  it('quita la política original (USING true) y cualquier otra SELECT permisiva', () => {
+    expect(SQL).toMatch(/drop policy if exists "user_media_select_public" on public\.user_media/)
+    expect(SQL).toMatch(/cmd in \('SELECT', 'ALL'\) and permissive = 'PERMISSIVE'/)
+  })
+
   it('solo authenticated, y el dueño o can_read_library', () => {
     expect(SQL).toMatch(
       /create policy "user_media_select_visible" on public\.user_media\s+for select to authenticated\s+using \(user_id = auth\.uid\(\) or public\.can_read_library\(user_id\)\)/
@@ -113,11 +129,25 @@ describe('ROJO-8: la demo no cambia credenciales por la API de Auth', () => {
     expect(body).toContain('demo_auth_locked')
   })
 
+  it('el service role sí puede: rol directo, claims o llave temporal en app_metadata', () => {
+    const body = fnBody('guard_demo_auth_identity')
+    expect(SQL).toMatch(/function public\.guard_demo_auth_identity\(\)\s+returns trigger language plpgsql security invoker/)
+    expect(body).toContain(`current_user in ('postgres', 'service_role')`)
+    expect(body).toContain(`claims_role = 'service_role'`)
+    expect(body).toMatch(/demo_auth_unlock_until[\s\S]*unlock_until > now\(\)/)
+  })
+
   it('las funciones de servicio no las ejecuta un usuario', () => {
     for (const fn of ['transfer_owned_content', 'deletion_preview', 'group_successor', 'list_successor']) {
       expect(SQL).toMatch(new RegExp(`revoke all on function public\\.${fn}\\([^)]*\\) from public, anon, authenticated;`))
       expect(SQL).toMatch(new RegExp(`grant execute on function public\\.${fn}\\([^)]*\\) to service_role;`))
     }
+  })
+})
+
+describe('account_state', () => {
+  it('anon nada; authenticated solo SELECT', () => {
+    expect(SQL).toMatch(/revoke all on public\.account_state from anon, authenticated;\s*grant select on public\.account_state to authenticated;/)
   })
 })
 
