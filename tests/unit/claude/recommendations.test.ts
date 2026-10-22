@@ -21,6 +21,13 @@ vi.mock('@/lib/api/discover', () => ({ fetchDiscoverData: fetchDiscoverDataMock 
 vi.mock('@/lib/recommendations/match-score', () => ({
   computeMatchScores: computeMatchScoresMock,
 }))
+// Tope diario (D-06) sin migrar: el contador va en memoria y no sale a la red.
+// Los casos del tope y de la caché diaria están en tests/unit/ai/daily-recs.test.ts.
+vi.mock('@/lib/supabase/admin', () => ({
+  createAdminClient: () => ({
+    rpc: async () => ({ data: null, error: { code: 'PGRST202', message: 'not migrated' } }),
+  }),
+}))
 
 // ── Fixtures ──────────────────────────────────────────────────────────────────
 

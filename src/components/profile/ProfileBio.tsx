@@ -2,29 +2,46 @@
 
 import { useState } from 'react'
 import { useTranslations } from 'next-intl'
-import { createClient } from '@/lib/supabase/client'
 import { KButton } from '@/components/ui/KButton'
+
+/** Mismo tope que valida `PATCH /api/settings`. */
+const BIO_MAX_LENGTH = 200
 
 interface Props {
   bio: string | null
   isOwner: boolean
+  /** Se mantiene por compatibilidad con `ProfileHeader`; la API usa la sesión. */
   userId: string
 }
 
-export function ProfileBio({ bio, isOwner, userId }: Props) {
+export function ProfileBio({ bio, isOwner }: Props) {
   const t = useTranslations('profile')
   const [currentBio, setCurrentBio] = useState(bio ?? '')
   const [editing, setEditing] = useState(false)
   const [draft, setDraft] = useState(bio ?? '')
   const [saving, setSaving] = useState(false)
+  const [saveError, setSaveError] = useState(false)
 
+  // La bio pasa por la API (validación, límite de peticiones y bloqueo de la
+  // demo) en vez de escribirse con el cliente de Supabase desde el navegador.
   const handleSave = async () => {
     setSaving(true)
-    const supabase = createClient()
-    await supabase.from('users').update({ bio: draft.trim() || null }).eq('id', userId)
-    setCurrentBio(draft.trim())
-    setEditing(false)
-    setSaving(false)
+    setSaveError(false)
+    const next = draft.trim()
+    try {
+      const res = await fetch('/api/settings', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ bio: next || null }),
+      })
+      if (!res.ok) throw new Error(`HTTP ${res.status}`)
+      setCurrentBio(next)
+      setEditing(false)
+    } catch {
+      setSaveError(true)
+    } finally {
+      setSaving(false)
+    }
   }
 
   if (editing) {
@@ -33,9 +50,11 @@ export function ProfileBio({ bio, isOwner, userId }: Props) {
         <textarea
           value={draft}
           onChange={(e) => setDraft(e.target.value)}
-          maxLength={200}
+          maxLength={BIO_MAX_LENGTH}
           rows={3}
           placeholder={t('bioPlaceholder')}
+          aria-label={t('bio')}
+          aria-invalid={saveError || undefined}
           className="w-full bg-surface-elevated border border-surface-border rounded-button px-3 py-2 text-sm text-text-primary placeholder:text-text-tertiary resize-none focus:outline-none focus:ring-1 focus:ring-accent-pink"
           autoFocus
         />
@@ -51,12 +70,15 @@ export function ProfileBio({ bio, isOwner, userId }: Props) {
           <KButton
             size="sm"
             variant="secondary"
-            onClick={() => { setEditing(false); setDraft(currentBio) }}
+            onClick={() => { setEditing(false); setDraft(currentBio); setSaveError(false) }}
           >
             {t('cancelBio')}
           </KButton>
-          <span className="ml-auto text-xs text-text-tertiary">{draft.length}/200</span>
+          <span className="ml-auto text-xs text-text-tertiary">{draft.length}/{BIO_MAX_LENGTH}</span>
         </div>
+        {saveError ? (
+          <p role="alert" className="text-xs text-accent-danger">{t('bioSaveError')}</p>
+        ) : null}
       </div>
     )
   }
