@@ -9,11 +9,31 @@ import { DEMO_READ_ONLY_ERROR, isBlockedForDemo, isDemoUser } from "@/lib/demo";
 const intlMiddleware = createIntlMiddleware(routing);
 
 export async function middleware(request: NextRequest) {
+  // SEG-4a: la app no usa Server Actions. Next 14 procesa cualquier POST con
+  // `Next-Action` aunque no exista la acción (vía de DoS de la rama 14), así
+  // que se corta aquí, antes de gastar una llamada a Supabase. Al migrar a
+  // Next 15 y si algún día se usan Server Actions, quitar este bloque.
+  if (request.headers.has("next-action")) {
+    return new NextResponse(null, { status: 400 });
+  }
+
   // C7: nonce único por request — habilita script-src sin 'unsafe-inline' en
   // producción. crypto.randomUUID() está disponible en el runtime Edge.
   const nonce = crypto.randomUUID();
   const isDev = process.env.NODE_ENV === "development";
   const csp = buildCsp({ nonce, isDev });
+
+  // Cabeceras para el render, en la PETICIÓN (nunca en la respuesta, SEG-10):
+  // - `content-security-policy`: de aquí saca Next el nonce que pone en sus
+  //   <script> (patrón documentado; Next 14 además copia las de la respuesta).
+  // - `x-nonce`: para los Server Components que necesiten firmar un <script>.
+  // - `x-pathname`: ruta + query originales, para construir el `next` de las
+  //   redirecciones a /login. Se sobrescribe siempre: lo que mande el cliente
+  //   no vale. `NextResponse.next({ request })` y next-intl reenvían estas
+  //   cabeceras tal cual.
+  request.headers.set("content-security-policy", csp);
+  request.headers.set("x-nonce", nonce);
+  request.headers.set("x-pathname", request.nextUrl.pathname + request.nextUrl.search);
 
   // Start with a response that forwards the request as-is.
   // We'll replace it if the session gets refreshed.
@@ -79,7 +99,6 @@ export async function middleware(request: NextRequest) {
   // For API routes: return the Supabase response (carries refreshed session).
   if (request.nextUrl.pathname.startsWith("/api/")) {
     supabaseResponse.headers.set("Content-Security-Policy", csp);
-    supabaseResponse.headers.set("x-nonce", nonce);
     return supabaseResponse;
   }
 
@@ -91,7 +110,6 @@ export async function middleware(request: NextRequest) {
   });
 
   intlResponse.headers.set("Content-Security-Policy", csp);
-  intlResponse.headers.set("x-nonce", nonce);
 
   return intlResponse;
 }

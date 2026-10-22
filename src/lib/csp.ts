@@ -34,7 +34,14 @@ export function buildCsp({ nonce, isDev }: { nonce: string; isDev: boolean }): s
     "media-src 'self'",
     "object-src 'none'",
     "base-uri 'self'",
+    // SEG-10: nadie de fuera puede enmarcar la app (equivale a X-Frame-Options
+    // SAMEORIGIN, que se mantiene para navegadores viejos) ni recibir sus
+    // formularios (los de la demo envían a /api/auth/demo y redirigen dentro).
+    "frame-ancestors 'self'",
+    "form-action 'self'",
+    // Solo en prod: en dev forzaría https://localhost y rompería los recursos.
+    isDev ? null : "upgrade-insecure-requests",
   ];
 
-  return directives.join("; ");
+  return directives.filter(Boolean).join("; ");
 }
