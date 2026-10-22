@@ -103,6 +103,21 @@ describe("LoginPage — modo register", () => {
     });
   });
 
+  // El personaje viaja en los metadatos: si la confirmación se abre en otro
+  // navegador, el callback lo aplica (el localStorage no está allí).
+  it("el personaje elegido va en options.data del signUp", async () => {
+    render(<LoginPage locale="es" />);
+    fireEvent.click(screen.getByRole("radio", { name: "panda" }));
+    fillAndSubmit("user@example.com", "password123");
+    await waitFor(() =>
+      expect(h.fake.auth.signUp).toHaveBeenCalledWith(
+        expect.objectContaining({
+          options: expect.objectContaining({ data: { locale: "es", avatar_icon: "panda" } }),
+        })
+      )
+    );
+  });
+
   it("sin sesión tras el registro → 'Revisa tu correo' con el email y reenviar", async () => {
     h.fake.requireEmailConfirmation(true);
     render(<LoginPage locale="es" />);
