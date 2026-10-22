@@ -19,6 +19,9 @@ import {
 } from "@/lib/api/pagination";
 import type { MediaItem, MediaType } from "@/types/media";
 import { searchByTypePaged, type SearchPage } from "@/lib/api/search";
+import { mergeByRelevance } from "@/lib/api/search-rank";
+import { filterNSFW } from "@/lib/api/nsfw-filter";
+import { isProviderQuotaHot } from "@/lib/api/http";
 
 /** Familias agregadas, en orden canónico (= orden de interleave popularity). */
 export const FAMILIES = [
@@ -30,6 +33,32 @@ export const FAMILIES = [
   "game",
   "comic",
 ] as const;
+
+type Family = (typeof FAMILIES)[number];
+
+/**
+ * Familias que entran en esta petición. D-17: si ComicVine pasa del 80 % de
+ * su cupo horario en el recurso que se va a usar (`issues` en el catálogo,
+ * `search` en la búsqueda), el cómic sale de `type=all` hasta la hora
+ * siguiente; quien entra en la pestaña Cómics lo sigue teniendo. Así el
+ * agregado, que hace siete llamadas por petición, no agota el cupo de todos.
+ */
+export function activeFamilies(mode: "catalog" | "search"): Family[] {
+  const resource = mode === "search" ? "search" : "issues";
+  return isProviderQuotaHot("comicvine", resource)
+    ? FAMILIES.filter((f) => f !== "comic")
+    : [...FAMILIES];
+}
+
+/**
+ * Resultado del agregado con el aviso de respuesta PARCIAL: alguna familia
+ * falló (rechazo o error del proveedor). La ruta no cachea en el borde una
+ * respuesta parcial: con RAWG caído, "todos" saldría sin juegos una hora para
+ * todo el mundo.
+ */
+export interface AggregateResult extends DiscoverResult {
+  partial: boolean;
+}
 
 /** Tamaño de página del agregado (= el de cada familia, fuente: pagination.ts). */
 export const PAGE_SIZE = DISCOVER_PAGE_SIZE;
@@ -119,44 +148,71 @@ export function offsetInRound(page: number): number {
   return ((Math.max(1, page) - 1) % PAGES_PER_ROUND) * PAGE_SIZE;
 }
 
+/** Búsqueda agregada con el detalle de qué familias fallaron. */
+export interface AggregateSearchPage extends SearchPage {
+  /** Alguna familia falló: la página no tiene todo lo que debería. */
+  partial: boolean;
+  /** TODAS las familias fallaron (la página vacía no es "sin resultados"). */
+  allFailed: boolean;
+  /** Alguna familia falló por cupo o límite del proveedor (429). */
+  rateLimited: boolean;
+}
+
+function isRateLimited(reason: unknown): boolean {
+  return (reason as { status?: unknown } | null)?.status === 429;
+}
+
 /**
  * Modo "all" + BÚSQUEDA de texto (E-DISCOVER-SEARCH-MERGE).
  *
  * Mismo esquema de rondas que `fetchAggregateData`, pero la fuente de cada
- * familia es su BUSCADOR (`searchByTypePaged`) en vez del catálogo. El orden es
- * siempre interleave round-robin: en búsqueda manda la relevancia que devuelve
- * cada proveedor, y no existe una clave global comparable entre familias.
+ * familia es su BUSCADOR (`searchByTypePaged`) en vez del catálogo.
  *
- * Devuelve `SearchPage` (no `DiscoverResult`) porque en búsqueda no hay
- * `fetchErrorKind` por familia: `fetchDiscoverData` envuelve el error.
+ * F-13 (DAT-9): las familias se mezclan por RELEVANCIA (`mergeByRelevance`)
+ * y no por turnos: antes el primer cómic de "dune" pesaba lo mismo que la
+ * película "Dune". A igualdad de coincidencia se mantiene el orden por turnos.
  */
 export async function fetchAggregateSearch(
   query: string,
   page: number,
   locale?: string | null
-): Promise<SearchPage> {
+): Promise<AggregateSearchPage> {
   if (page > DISCOVER_MAX_PAGES) {
-    return { items: [], totalPages: DISCOVER_MAX_PAGES, hasMore: false };
+    return {
+      items: [],
+      totalPages: DISCOVER_MAX_PAGES,
+      hasMore: false,
+      partial: false,
+      allFailed: false,
+      rateLimited: false,
+    };
   }
 
   const round = roundForPage(page);
+  const families = activeFamilies("search");
   const settled = await Promise.allSettled(
-    FAMILIES.map((type) =>
+    families.map((type) =>
       searchByTypePaged(query, type as MediaType, round, locale)
     )
   );
 
   const lists: MediaItem[][] = [];
   let anyFamilyHasMore = false;
+  let failed = 0;
+  let rateLimited = false;
   for (const result of settled) {
     // Una familia que falla (sin key, rate-limit, red) no rompe la búsqueda
-    // agregada: simplemente no aporta resultados.
-    if (result.status !== "fulfilled") continue;
+    // agregada: no aporta resultados y la respuesta queda marcada parcial.
+    if (result.status !== "fulfilled") {
+      failed++;
+      if (isRateLimited(result.reason)) rateLimited = true;
+      continue;
+    }
     lists.push(result.value.items);
     if (result.value.hasMore) anyFamilyHasMore = true;
   }
 
-  const merged = interleave(lists);
+  const merged = mergeByRelevance(query, lists);
   const start = offsetInRound(page);
   const items = merged.slice(start, start + PAGE_SIZE);
 
@@ -178,6 +234,9 @@ export async function fetchAggregateSearch(
           DISCOVER_MAX_PAGES
         ),
     hasMore: (poolHasMore || nextRoundExists) && page < DISCOVER_MAX_PAGES,
+    partial: failed > 0,
+    allFailed: failed === settled.length,
+    rateLimited,
   };
 }
 
@@ -213,7 +272,7 @@ export async function fetchAggregateData(
   page: number,
   filters: DiscoverFilters = {},
   locale?: string | null
-): Promise<DiscoverResult> {
+): Promise<AggregateResult> {
   // E79-s3: el tope común se aplica a la página GLOBAL. El guard de
   // `fetchDiscoverData` mira la página NATIVA (la de la ronda, mucho más baja),
   // así que sin esto el agregado seguiría sirviendo contenido más allá del tope
@@ -224,6 +283,7 @@ export async function fetchAggregateData(
       totalPages: DISCOVER_MAX_PAGES,
       hasMore: false,
       fetchErrorKind: null,
+      partial: false,
     };
   }
 
@@ -234,21 +294,28 @@ export async function fetchAggregateData(
   // cada familia a DISCOVER_MAX_PAGES y devuelve vacío (sin error) si la ronda
   // supera su profundidad, así que una familia corta no rompe el agregado.
   const settled = await Promise.allSettled(
-    FAMILIES.map((type) => fetchDiscoverData(type, round, filters, locale))
+    activeFamilies("catalog").map((type) =>
+      fetchDiscoverData(type, round, filters, locale)
+    )
   );
 
   const lists: MediaItem[][] = [];
   let anyItems = false;
   let anyRateLimit = false;
   let anyFamilyHasMore = false;
+  // F-13: una familia que falla (rechazo o `fetchErrorKind`) deja la página
+  // coja; la ruta lo necesita saber para no cachearla en el borde.
+  let partial = false;
 
   for (const result of settled) {
     if (result.status !== "fulfilled") {
       // Familia rechazada: no debería ocurrir (fetchDiscoverData captura), pero
       // si pasa no rompe el agregado.
+      partial = true;
       continue;
     }
     const { items, fetchErrorKind, hasMore } = result.value;
+    if (fetchErrorKind) partial = true;
     lists.push(items);
     if (items.length > 0) anyItems = true;
     if (fetchErrorKind === "rate-limit") anyRateLimit = true;
@@ -288,5 +355,29 @@ export async function fetchAggregateData(
     fetchErrorKind = anyRateLimit ? "rate-limit" : "generic";
   }
 
-  return { items, totalPages, hasMore, fetchErrorKind };
+  return { items, totalPages, hasMore, fetchErrorKind, partial };
+}
+
+/**
+ * Punto de entrada de la ruta para `type=all` (catálogo o búsqueda) con el
+ * aviso de parcial. En búsqueda aplica lo mismo que `fetchDiscoverData`: el
+ * filtro NSFW, el tope común de páginas y un `fetchErrorKind` si no respondió
+ * ninguna familia (antes salía una rejilla vacía como "sin resultados").
+ */
+export async function fetchAggregateResult(
+  page: number,
+  filters: DiscoverFilters = {},
+  locale?: string | null,
+  query?: string | null
+): Promise<AggregateResult> {
+  if (!query) return fetchAggregateData(page, filters, locale);
+  const res = await fetchAggregateSearch(query, page, locale);
+  return {
+    items: filterNSFW(res.items),
+    totalPages:
+      res.totalPages === null ? null : Math.min(res.totalPages, DISCOVER_MAX_PAGES),
+    hasMore: res.hasMore && page < DISCOVER_MAX_PAGES,
+    fetchErrorKind: res.allFailed ? (res.rateLimited ? "rate-limit" : "generic") : null,
+    partial: res.partial,
+  };
 }

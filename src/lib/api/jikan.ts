@@ -7,13 +7,14 @@
 // sufría 504 sostenidos en producción, confirmado por logs reales) y manga
 // con MangaDex (E-MANGA-SOURCE). Este módulo se conserva SOLO para resolver
 // ids legacy de bibliotecas guardadas cuando anime/manga aún venían de
-// Jikan — nunca se usa en Descubrir ni en búsqueda. Ver `resolveAnimeItem` /
-// `resolveMangaItem` en la ficha de detalle.
+// Jikan (ver `resolveAnimeItem` / `resolveMangaItem` en la ficha de detalle)
+// y, desde F-13, como RESPALDO de la búsqueda de manga (`searchMangaJikan`):
+// nunca en el catálogo de Descubrir.
 // ============================================================
 
 // ── Internal types ────────────────────────────────────────────────────────────
 
-import type { ZodType } from "zod";
+import { z, type ZodType } from "zod";
 import { providerFetch } from "@/lib/api/http";
 import { jikanDetailSchema, jikanVideosSchema } from "@/lib/api/schemas/jikan";
 
@@ -81,7 +82,9 @@ const JIKAN_RETRYABLE_STATUS = new Set([502, 503, 504]);
 async function jikanFetch<T>(
   path: string,
   params: Record<string, string> = {},
-  schema?: ZodType
+  schema?: ZodType,
+  cache?: { revalidate: number },
+  timeoutMs?: number
 ): Promise<T> {
   const url = new URL(`https://api.jikan.moe/v4${path}`);
   Object.entries(params).forEach(([k, v]) => url.searchParams.set(k, v));
@@ -91,6 +94,8 @@ async function jikanFetch<T>(
     retries: 1,
     retryOn: JIKAN_RETRYABLE_STATUS,
     httpError: (status) => new JikanError(path, status),
+    ...(cache ? { cache } : {}),
+    ...(timeoutMs ? { timeoutMs } : {}),
   });
 }
 
@@ -119,5 +124,58 @@ export async function getManga(id: number): Promise<{ data: JikanMangaDetail }> 
     `/manga/${id}/full`,
     {},
     jikanDetailSchema
+  );
+}
+
+// ── Respaldo de la búsqueda de manga (F-13) ──────────────────────────────────
+//
+// MangaDex no tiene algunas obras (retiradas por licencia: "Berserk",
+// "Vagabond") y puede caerse. La búsqueda de manga usa entonces MyAnimeList
+// vía Jikan: ids numéricos, que la ficha ya resuelve por el camino legacy
+// (`resolve-item.ts`). Se cachea 24 h por consulta: Jikan es lento y su cupo
+// es por segundo.
+
+export interface JikanMangaSearchResponse {
+  data: JikanManga[];
+  pagination?: { last_visible_page?: number; has_next_page?: boolean };
+}
+
+const jikanMangaSearchSchema = z.looseObject({
+  data: z.array(z.looseObject({ mal_id: z.number() })),
+});
+
+/** Caché de una búsqueda de respaldo en Jikan: 24 h. */
+export const JIKAN_SEARCH_REVALIDATE_SECONDS = 24 * 60 * 60;
+
+/**
+ * Busca manga en MyAnimeList (Jikan `/manga?q=`), sin contenido adulto y por
+ * número de miembros: entre los que contienen la consulta, la obra conocida
+ * va antes que el spin-off.
+ */
+/**
+ * Plazo cuando Jikan solo COMPLETA una búsqueda que MangaDex ya respondió:
+ * más corto que el normal, para que una consulta que no es un título
+ * ("romance") no espere seis segundos a MyAnimeList.
+ */
+export const JIKAN_SUPPLEMENT_TIMEOUT_MS = 2500;
+
+export async function searchMangaJikan(
+  query: string,
+  page = 1,
+  timeoutMs?: number
+): Promise<JikanMangaSearchResponse> {
+  return jikanFetch<JikanMangaSearchResponse>(
+    "/manga",
+    {
+      q: query,
+      sfw: "true",
+      limit: "20",
+      page: String(Math.max(1, page)),
+      order_by: "members",
+      sort: "desc",
+    },
+    jikanMangaSearchSchema,
+    { revalidate: JIKAN_SEARCH_REVALIDATE_SECONDS },
+    timeoutMs
   );
 }

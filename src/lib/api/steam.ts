@@ -6,7 +6,8 @@
 // Alcance deliberado (decisión de producto, no reabrir): Steam **no tiene**
 // endpoint público de búsqueda/catálogo paginado, solo detalle por `appid`, así
 // que Descubrir, los listados y la paginación siguen siendo de RAWG
-// (`src/lib/api/rawg.ts`). Steam entra SOLO en `/media/game/{id}`.
+// (`src/lib/api/rawg.ts`). Steam entra en `/media/game/{id}` y, desde F-13,
+// en las SUGERENCIAS del buscador (`searchSteamSuggestions`, sin cupo).
 //
 // Endpoints usados (no oficiales pero estables y públicos):
 //   - store.steampowered.com/api/appdetails?appids={id}&l={idioma}&cc={país}
@@ -20,6 +21,7 @@
 // ============================================================
 
 import type { ZodType } from "zod";
+import type { MediaItem } from "@/types/media";
 import type { RawgGame } from "@/lib/api/rawg";
 import { resolveApiLocale } from "@/lib/api/locale";
 import { ProviderError, providerFetch } from "@/lib/api/http";
@@ -83,7 +85,7 @@ interface SteamAppDetailsResponse {
 
 interface SteamStoreSearchResponse {
   total?: number;
-  items?: { id?: number; name?: string; type?: string }[];
+  items?: { id?: number; name?: string; type?: string; tiny_image?: string }[];
 }
 
 const STEAM_STORE_BASE = "https://store.steampowered.com";
@@ -300,5 +302,48 @@ export async function getSteamInfoForGame(
   } catch (e) {
     console.error(`[steam] enriquecimiento omitido para "${game.name}":`, e);
     return null;
+  }
+}
+
+// ── Sugerencias del buscador (F-13, DAT-8) ───────────────────────────────────
+
+/** Lo que no es el juego: bandas sonoras, demos, artbooks, paquetes. */
+const NOT_A_GAME = /\b(soundtrack|ost|demo|artbook|art book|playtest|dlc|season pass|bundle)\b/i;
+
+/**
+ * Sugerencias de JUEGOS para el autocompletado, con el buscador de la tienda
+ * de Steam: sin clave y sin cupo mensual. Con RAWG (20.000 peticiones al mes)
+ * cada tecla de cada usuario gastaría cupo del catálogo.
+ *
+ * Las sugerencias solo rellenan el buscador (al elegir una se busca su título
+ * en Descubrir, que sí va a RAWG), así que el id de Steam no se usa para abrir
+ * ninguna ficha. Nunca lanza: sin Steam, sin sugerencias.
+ */
+export async function searchSteamSuggestions(
+  term: string,
+  locale?: string | null
+): Promise<MediaItem[]> {
+  if (!term.trim()) return [];
+  const url = new URL(`${STEAM_STORE_BASE}/api/storesearch/`);
+  url.searchParams.set("term", term);
+  url.searchParams.set("cc", steamCountry(locale));
+  url.searchParams.set("l", steamLanguage(locale));
+  try {
+    const json = await steamFetch<SteamStoreSearchResponse>(
+      url.toString(),
+      "/api/storesearch",
+      steamStoreSearchSchema
+    );
+    return (json?.items ?? [])
+      .filter((i) => typeof i.id === "number" && i.name && (i.type ?? "app") === "app" && !NOT_A_GAME.test(i.name))
+      .map((i) => ({
+        id: `game_steam-${i.id}`,
+        externalId: `steam-${i.id}`,
+        type: "game" as const,
+        title: i.name as string,
+        poster: i.tiny_image || undefined,
+      }));
+  } catch {
+    return [];
   }
 }

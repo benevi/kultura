@@ -431,6 +431,7 @@ export function DiscoverClient({
             defaultValue={currentQuery}
             onSubmit={handleSearchSubmit}
             onClear={clearSearch}
+            type={type}
             className="flex-1 min-w-0"
           />
           {/* "Sorpréndeme": SIEMPRE visible, solo deshabilitado sin resultados. */}

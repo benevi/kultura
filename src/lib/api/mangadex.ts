@@ -19,7 +19,7 @@
 // ============================================================
 
 import { mangaDexLanguages } from "@/lib/api/locale";
-import type { ZodType } from "zod";
+import { z, type ZodType } from "zod";
 import { ProviderError, providerFetch } from "@/lib/api/http";
 import { mangaDexDetailSchema, mangaDexListSchema } from "@/lib/api/schemas/mangadex";
 
@@ -33,6 +33,8 @@ export interface MangaDexManga {
     year: number | null;
     status: string;
     tags: {
+      /** Id de la etiqueta: el formato (Official Colored…) se reconoce por él. */
+      id?: string;
       attributes: {
         name: Record<string, string>;
         group: string;
@@ -40,6 +42,8 @@ export interface MangaDexManga {
     }[];
     lastChapter: string | null;
     lastVolume: string | null;
+    /** Títulos alternativos, cada uno `{ código: texto }` (DAT-7). */
+    altTitles?: Record<string, string>[];
   };
   relationships: {
     type: string;
@@ -131,18 +135,164 @@ export function isMangaDexId(id: string): boolean {
 
 // ── Public API ────────────────────────────────────────────────────────────────
 
+/**
+ * Etiquetas de formato que se excluyen de la BÚSQUEDA (DAT-7). Ids comprobados
+ * contra `GET /manga/tag` (2026-10-22). Doujinshi: obras de fans que copaban
+ * el top ("attack on titan" daba tres antes que la obra).
+ */
+export const MANGADEX_DOUJINSHI_TAG = "b13b2a48-c720-44a9-9c77-39c9979373fb";
+/** "Official Colored" y "Fan Colored": se dejan, pero detrás de la obra (ver `isMangaVariant`). */
+export const MANGADEX_COLORED_TAGS = [
+  "320831a8-4026-470b-94f6-8353740e6f04", // Official Colored
+  "7b2ce280-79ef-4c09-9b58-12b7c23a9b78", // Fan Colored
+] as const;
+
+/**
+ * Búsqueda por título (DAT-7):
+ *   - `order[relevance]=desc`: sin orden explícito MangaDex devuelve por
+ *     última subida de capítulo ("naruto" daba "Renge to Naruto!" primero).
+ *   - `excludedTags[]` Doujinshi.
+ *   - `contentRating[]` safe + suggestive, como el catálogo (antes la
+ *     búsqueda heredaba el defecto de MangaDex, que incluye erotica).
+ *   - SIN `availableTranslatedLanguage[]`: quien busca un título concreto
+ *     tiene que encontrarlo aunque no tenga traducción al idioma activo (con
+ *     el filtro, "akira" y "berserk" no salían). `locale` se conserva en la
+ *     firma: el normalizer elige el texto con él.
+ */
 export async function searchManga(
   query: string,
   offset = 0,
-  locale?: string | null
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  _locale?: string | null
 ): Promise<MangaDexResponse> {
   return mangaDexFetch<MangaDexResponse>("/manga", [
     ["title", query],
     ["offset", String(offset)],
     ["limit", "20"],
     ["includes[]", "cover_art"],
-    ...translatedLanguageParams(locale),
+    ["order[relevance]", "desc"],
+    ["excludedTags[]", MANGADEX_DOUJINSHI_TAG],
+    ["excludedTagsMode", "OR"],
+    ["contentRating[]", "safe"],
+    ["contentRating[]", "suggestive"],
   ]);
+}
+
+// ── Estadísticas: nota y seguidores (DAT-7) ──────────────────────────────────
+
+export interface MangaDexStats {
+  /** Nota bayesiana 0-10 (la que MangaDex usa para ordenar); `undefined` sin votos. */
+  rating?: number;
+  follows?: number;
+}
+
+interface MangaDexStatisticsResponse {
+  statistics?: Record<
+    string,
+    {
+      follows?: number | null;
+      rating?: { average?: number | null; bayesian?: number | null } | null;
+    }
+  >;
+}
+
+const mangaDexStatisticsSchema = z.looseObject({
+  statistics: z.record(z.string(), z.looseObject({})).optional(),
+});
+
+/** Las estadísticas cambian despacio: 6 h de caché por lote de ids. */
+export const MANGADEX_STATS_REVALIDATE_SECONDS = 6 * 60 * 60;
+
+/**
+ * Nota y seguidores de varios mangas en UNA petición (`/statistics/manga`).
+ * El listado de `/manga` no trae nota, así que ningún manga la tenía. Un fallo
+ * devuelve un mapa vacío: la nota es un extra, no puede tumbar la búsqueda.
+ */
+export async function getMangaStatistics(
+  ids: string[]
+): Promise<Map<string, MangaDexStats>> {
+  const out = new Map<string, MangaDexStats>();
+  const unique = Array.from(new Set(ids.filter(isMangaDexId))).sort();
+  if (unique.length === 0) return out;
+  const url = new URL("https://api.mangadex.org/statistics/manga");
+  for (const id of unique) url.searchParams.append("manga[]", id);
+  try {
+    const json = await providerFetch<MangaDexStatisticsResponse>("mangadex", url.toString(), {
+      schema: mangaDexStatisticsSchema,
+      label: "/statistics/manga",
+      cache: { revalidate: MANGADEX_STATS_REVALIDATE_SECONDS },
+      httpError: (status) =>
+        new ProviderError("mangadex", "http", `MangaDex /statistics/manga → ${status}`, { status }),
+    });
+    for (const [id, stat] of Object.entries(json.statistics ?? {})) {
+      const bayesian = stat?.rating?.bayesian;
+      const average = stat?.rating?.average;
+      // Sin votos MangaDex da `average: null` y una bayesiana que no dice nada.
+      const rating =
+        typeof average === "number" && average > 0 && typeof bayesian === "number" && bayesian > 0
+          ? Math.round(bayesian * 100) / 100
+          : undefined;
+      out.set(id, {
+        rating,
+        follows: typeof stat?.follows === "number" ? stat.follows : undefined,
+      });
+    }
+  } catch {
+    // Sin estadísticas: se pinta sin nota.
+  }
+  return out;
+}
+
+// ── Títulos (DAT-7) ───────────────────────────────────────────────────────────
+
+/** Todos los títulos alternativos en un solo array (para la relevancia). */
+export function mangaAltTitles(raw: MangaDexManga): string[] {
+  const out: string[] = [];
+  for (const entry of raw.attributes.altTitles ?? []) {
+    for (const value of Object.values(entry ?? {})) {
+      if (typeof value === "string" && value.trim()) out.push(value.trim());
+    }
+  }
+  return out;
+}
+
+function firstAlt(raw: MangaDexManga, codes: string[]): string | undefined {
+  for (const code of codes) {
+    for (const entry of raw.attributes.altTitles ?? []) {
+      const v = entry?.[code];
+      if (typeof v === "string" && v.trim()) return v.trim();
+    }
+  }
+  return undefined;
+}
+
+/**
+ * Título que se ENSEÑA. MangaDex guarda como título principal la romanización
+ * ("Shingeki no Kyojin", "Toukyou Ghoul") y el oficial en `altTitles`. Se
+ * prefiere el inglés oficial (el que usan las ediciones de España y de
+ * Latinoamérica para la mayoría: Attack on Titan, Death Note, Witch Hat
+ * Atelier); los `altTitles` en español de MangaDex son casi siempre
+ * traducciones de fans ("Cuaderno de la Muerte") y no se usan para pintar,
+ * solo para que la búsqueda en español encuentre la obra.
+ *
+ * Devuelve también el original si es distinto, para `originalTitle`.
+ */
+export function mangaDisplayTitle(
+  raw: MangaDexManga
+): { title?: string; original?: string } {
+  const titles = raw.attributes.title ?? {};
+  const romaji = titles["ja-ro"] ?? titles["ko-ro"] ?? titles["zh-ro"];
+  const main = titles.en ?? romaji ?? Object.values(titles)[0];
+  // Solo se cambia cuando el principal es una romanización y hay inglés.
+  const english = titles.en ?? (romaji ? firstAlt(raw, ["en"]) : undefined);
+  const title = english ?? main;
+  const original = romaji && romaji !== title ? romaji : undefined;
+  return { title, original };
+}
+
+/** Coloreados (oficiales o de fans): la obra en color va detrás de la original. */
+export function isMangaVariant(raw: MangaDexManga): boolean {
+  return raw.attributes.tags.some((t) => typeof t.id === "string" && (MANGADEX_COLORED_TAGS as readonly string[]).includes(t.id));
 }
 
 /**
