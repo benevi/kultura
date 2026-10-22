@@ -70,13 +70,15 @@ export async function shellMetadata(locale: AppLocale, pathname?: string | null)
       locale: OG_LOCALE[locale],
       alternateLocale: routing.locales.filter((l) => l !== locale).map((l) => OG_LOCALE[l]),
       ...(path ? { url: `${base}${path}` } : {}),
-      title,
-      description,
+      // Sin title/description/images a propósito: Next los rellena con el
+      // título y la descripción de cada página y con la tarjeta de
+      // `[locale]/opengraph-image`, así OG, la tarjeta de X y el <title>
+      // nunca se contradicen (antes una página con título propio heredaba
+      // el de la portada en OG y en X).
     },
+    // Solo el formato: título, descripción e imagen salen del OG resuelto.
     twitter: {
       card: "summary_large_image",
-      title,
-      description,
     },
   };
 }
