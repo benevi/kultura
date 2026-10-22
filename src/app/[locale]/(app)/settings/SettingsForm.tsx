@@ -13,6 +13,7 @@ import { AvatarIconPicker } from '@/components/ui/AvatarIconPicker'
 import type { AvatarColorName } from '@/lib/constants/avatarColors'
 import { cn } from '@/lib/utils/index'
 import { createClient } from '@/lib/supabase/client'
+import { getAuthErrorKeyFromError } from '@/lib/utils/auth-errors'
 import Link from 'next/link'
 
 interface SettingsFormProps {
@@ -21,6 +22,10 @@ interface SettingsFormProps {
   initialAvatarIcon: string | null
   initialLocale: string | null
   userEmail: string
+  /** Cuenta demo: no puede cambiar email ni contraseña (la comparte todo el mundo). */
+  isDemo?: boolean
+  /** Se vuelve del enlace de cambio de email. */
+  emailConfirmed?: boolean
 }
 
 const USERNAME_REGEX = /^[a-zA-Z0-9_]+$/
@@ -31,8 +36,11 @@ export function SettingsForm({
   initialAvatarIcon,
   initialLocale,
   userEmail,
+  isDemo = false,
+  emailConfirmed = false,
 }: SettingsFormProps) {
   const t = useTranslations('settings')
+  const tErrors = useTranslations('errors')
   const currentLocale = useLocale()
   const router = useRouter()
   const pathname = usePathname()
@@ -53,6 +61,14 @@ export function SettingsForm({
   const importInputRef = useRef<HTMLInputElement>(null)
   const [deleteModalOpen, setDeleteModalOpen] = useState(false)
   const [deleting, setDeleting] = useState(false)
+
+  // Cambio de email (R1 / art. 16 RGPD): formulario en línea.
+  const [emailFormOpen, setEmailFormOpen] = useState(false)
+  const [newEmail, setNewEmail] = useState('')
+  const [emailError, setEmailError] = useState('')
+  const [emailSending, setEmailSending] = useState(false)
+  const [emailSentTo, setEmailSentTo] = useState<string | null>(null)
+  const newEmailRef = useRef<HTMLInputElement>(null)
 
   function validateUsername(value: string): string {
     if (value.length < 3) return t('errorInvalidUsername')
@@ -114,6 +130,43 @@ export function SettingsForm({
       toast.show({ message: t('errorSave') ?? 'Error al guardar', type: 'error' })
     } finally {
       setSaving(false)
+    }
+  }
+
+  async function handleChangeEmail(e: React.FormEvent) {
+    e.preventDefault()
+    const value = newEmail.trim()
+    let error = ''
+    if (!value.includes('@') || !value.includes('.')) error = tErrors('invalidEmail')
+    else if (value.toLowerCase() === userEmail.toLowerCase()) error = t('changeEmailSame')
+    setEmailError(error)
+    if (error) {
+      newEmailRef.current?.focus()
+      return
+    }
+
+    setEmailSending(true)
+    try {
+      const supabase = createClient()
+      const next = `/${currentLocale}/settings?email=confirmed`
+      const { error: updateError } = await supabase.auth.updateUser(
+        { email: value },
+        {
+          emailRedirectTo: `${window.location.origin}/api/auth/callback?next=${encodeURIComponent(next)}`,
+        }
+      )
+      if (updateError) {
+        setEmailError(tErrors(getAuthErrorKeyFromError(updateError)))
+        newEmailRef.current?.focus()
+        return
+      }
+      setEmailSentTo(value)
+      setEmailFormOpen(false)
+      setNewEmail('')
+    } catch {
+      setEmailError(tErrors('somethingWentWrong'))
+    } finally {
+      setEmailSending(false)
     }
   }
 
@@ -188,7 +241,7 @@ export function SettingsForm({
       }
       const supabase = createClient()
       await supabase.auth.signOut()
-      router.push('/login')
+      router.push(`/${currentLocale}/login`)
     } catch {
       toast.show({ message: t('deleteAccountError'), type: 'error' })
     } finally {
@@ -208,10 +261,72 @@ export function SettingsForm({
       <section>
         <p className={eyebrow}>{t('profile')}</p>
         <div className="flex flex-col rounded-20 bg-surface-default divide-y divide-surface-border overflow-hidden">
-          {/* Email (solo lectura) */}
-          <div className={cn(row, 'flex items-center justify-between gap-4 flex-wrap')}>
-            <span className="text-sm font-semibold text-text-primary">{t('email')}</span>
-            <span className="select-all text-sm text-text-tertiary">{userEmail}</span>
+          {/* Email + cambio en línea */}
+          <div className={cn(row, 'flex flex-col gap-4')}>
+            <div className="flex items-center justify-between gap-4 flex-wrap">
+              <div className="flex flex-col gap-1 min-w-0">
+                <span className="text-sm font-semibold text-text-primary">{t('email')}</span>
+                <span className="select-all break-all text-sm text-text-tertiary">{userEmail}</span>
+              </div>
+              {!isDemo && !emailFormOpen && (
+                <KButton
+                  variant="secondary"
+                  size="sm"
+                  className="flex-shrink-0"
+                  onClick={() => {
+                    setEmailFormOpen(true)
+                    setEmailSentTo(null)
+                    setEmailError('')
+                  }}
+                >
+                  {t('changeEmail')}
+                </KButton>
+              )}
+            </div>
+
+            {(emailSentTo || emailConfirmed) && (
+              <p role="status" className="text-sm font-body text-text-secondary">
+                {emailSentTo ? t('changeEmailSent', { email: emailSentTo }) : t('emailConfirmed')}
+              </p>
+            )}
+
+            {emailFormOpen && (
+              <form onSubmit={handleChangeEmail} noValidate className="flex flex-col gap-3">
+                <KInput
+                  ref={newEmailRef}
+                  id="new-email"
+                  name="email"
+                  type="email"
+                  inputMode="email"
+                  autoComplete="email"
+                  label={t('newEmail')}
+                  value={newEmail}
+                  onChange={e => setNewEmail(e.target.value)}
+                  error={emailError}
+                  hint={t('changeEmailHint')}
+                  aria-required="true"
+                  aria-invalid={emailError ? true : undefined}
+                  autoFocus
+                />
+                <div className="flex gap-2 flex-wrap">
+                  <KButton type="submit" size="sm" loading={emailSending}>
+                    {t('changeEmailSubmit')}
+                  </KButton>
+                  <KButton
+                    type="button"
+                    variant="secondary"
+                    size="sm"
+                    onClick={() => {
+                      setEmailFormOpen(false)
+                      setNewEmail('')
+                      setEmailError('')
+                    }}
+                  >
+                    {t('changeEmailCancel')}
+                  </KButton>
+                </div>
+              </form>
+            )}
           </div>
 
           {/* Username */}
@@ -261,14 +376,24 @@ export function SettingsForm({
             />
           </div>
 
-          {/* Cambiar contraseña */}
+          {/* Cambiar contraseña: directo a la pantalla de contraseña nueva,
+              que funciona con la sesión abierta (R1). Antes llevaba al
+              formulario de "enviar enlace", que no cambiaba nada. */}
           <div className={cn(row, 'flex items-center justify-between gap-4 flex-wrap')}>
-            <p className="text-sm font-body text-text-tertiary max-w-xs">
-              {t('changePasswordHint') ?? 'Te enviaremos un email con el enlace de restablecimiento'}
-            </p>
-            <KButton variant="secondary" size="sm" className="flex-shrink-0" asChild>
-              <Link href={`/${currentLocale}/login?mode=reset`}>{t('changePassword')}</Link>
-            </KButton>
+            {isDemo ? (
+              <p className="text-sm font-body text-text-tertiary">{t('demoCredentialsLocked')}</p>
+            ) : (
+              <>
+                <p className="text-sm font-body text-text-tertiary max-w-xs">{t('changePasswordHint')}</p>
+                <KButton variant="secondary" size="sm" className="flex-shrink-0" asChild>
+                  <Link
+                    href={`/${currentLocale}/reset-password?next=${encodeURIComponent(`/${currentLocale}/settings`)}`}
+                  >
+                    {t('changePassword')}
+                  </Link>
+                </KButton>
+              </>
+            )}
           </div>
         </div>
       </section>

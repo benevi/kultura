@@ -1,4 +1,6 @@
 import { redirect } from 'next/navigation'
+import { headers } from 'next/headers'
+import { loginRedirectPath } from '@/lib/utils/safe-redirect'
 import { createClient } from '@/lib/supabase/server'
 import { getUnreadCount } from '@/lib/social/notifications'
 import { AuthHeader } from '@/components/layout/AuthHeader'
@@ -9,11 +11,20 @@ import { UnreadChatProvider } from '@/components/layout/UnreadChatProvider'
 import { DemoBanner } from '@/components/layout/DemoBanner'
 import { isDemoUser } from '@/lib/demo'
 
-export default async function AppLayout({ children }: { children: React.ReactNode }) {
+export default async function AppLayout({
+  children,
+  params,
+}: {
+  children: React.ReactNode
+  params: Promise<{ locale: string }>
+}) {
+  const { locale } = await params
   const supabase = createClient()
   const { data: { user } } = await supabase.auth.getUser()
 
-  if (!user) redirect('/login')
+  // Un solo salto y ya con locale (SEO-13). La página de origen viaja como
+  // `next` si el middleware la ha dejado en `x-pathname`; si no, sin `next`.
+  if (!user) redirect(loginRedirectPath(locale, headers().get('x-pathname')))
 
   const { data: profile } = await supabase
     .from('users')
@@ -21,7 +32,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
     .eq('id', user.id)
     .maybeSingle()
 
-  if (!profile) redirect('/login')
+  if (!profile) redirect(`/${locale}/login`)
 
   const unreadCount = await getUnreadCount(user.id)
 
