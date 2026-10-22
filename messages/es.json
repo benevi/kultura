@@ -532,7 +532,8 @@
     "inviteSent": "Invitación enviada",
     "inviteError": "No se pudo enviar la invitación. Inténtalo de nuevo.",
     "groupIcon": "Icono del grupo",
-    "groupIconNone": "Sin icono (inicial)"
+    "groupIconNone": "Sin icono (inicial)",
+    "joinNotAllowed": "No puedes unirte a este grupo. Si crees que es un error, habla con quien lo creó."
   },
   "chat": {
     "title": "Mensajes",

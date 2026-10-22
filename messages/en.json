@@ -532,7 +532,8 @@
     "inviteSent": "Invitation sent",
     "inviteError": "Could not send the invitation. Please try again.",
     "groupIcon": "Group icon",
-    "groupIconNone": "No icon (initial)"
+    "groupIconNone": "No icon (initial)",
+    "joinNotAllowed": "You can't join this group. If you think this is a mistake, talk to its creator."
   },
   "chat": {
     "title": "Messages",

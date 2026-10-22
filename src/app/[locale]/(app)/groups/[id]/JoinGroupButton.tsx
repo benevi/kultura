@@ -17,6 +17,7 @@ export function JoinGroupButton({ groupId, isMember, isOwner }: Props) {
   const [loading, setLoading] = useState(false)
   const router = useRouter()
   const t = useTranslations('friends')
+  const tGroups = useTranslations('groups')
   const { show } = useToastContext()
 
   if (isOwner) return null
@@ -28,7 +29,8 @@ export function JoinGroupButton({ groupId, isMember, isOwner }: Props) {
       if (res.ok) {
         router.refresh()
       } else {
-        show({ message: t('joinGroupError'), type: 'error' })
+        // F-11: 403 = vetado por el dueño (o grupo privado): mensaje propio.
+        show({ message: res.status === 403 ? tGroups('joinNotAllowed') : t('joinGroupError'), type: 'error' })
       }
     } catch {
       show({ message: t('joinGroupError'), type: 'error' })
