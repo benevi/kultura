@@ -34,10 +34,13 @@ vi.mock("next/navigation", () => ({
 // ---------------------------------------------------------------------------
 
 import { LoginPage } from "@/app/[locale]/login/LoginPage";
+import { TERMS_VERSION } from "@/app/api/settings/identity";
 
-function fillAndSubmit(email: string, password: string) {
+function fillAndSubmit(email: string, password: string, { terms = true } = {}) {
   fireEvent.change(screen.getByLabelText("email"), { target: { value: email } });
   fireEvent.change(screen.getByLabelText("password"), { target: { value: password } });
+  // SEG-7: casilla obligatoria de edad y términos.
+  if (terms) fireEvent.click(screen.getByRole("checkbox"));
   fireEvent.click(document.querySelector('button[type="submit"]')!);
 }
 
@@ -66,10 +69,36 @@ describe("LoginPage — modo register", () => {
     );
   });
 
-  it("lleva línea de valor y enlace a la privacidad", () => {
+  it("lleva línea de valor y enlaces a términos y privacidad en la casilla", () => {
     render(<LoginPage locale="es" />);
     expect(screen.getByText("valueLine")).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "link" })).toHaveAttribute("href", "/privacy");
+    expect(screen.getByRole("link", { name: "terms" })).toHaveAttribute("href", "/terms");
+    expect(screen.getByRole("link", { name: "privacy" })).toHaveAttribute("href", "/privacy");
+  });
+
+  // SEG-7: sin la casilla no hay alta, y el error lleva el foco a la casilla.
+  it("no se puede registrar sin marcar la casilla de edad y términos", async () => {
+    render(<LoginPage locale="es" />);
+    fillAndSubmit("user@example.com", "password123", { terms: false });
+    await waitFor(() => expect(screen.getByText("termsRequired")).toBeInTheDocument());
+    const box = screen.getByRole("checkbox");
+    expect(box).toHaveAttribute("aria-invalid", "true");
+    expect(box).toHaveFocus();
+    expect(h.fake.auth.signUp).not.toHaveBeenCalled();
+  });
+
+  it("marcar la casilla quita el error", async () => {
+    render(<LoginPage locale="es" />);
+    fillAndSubmit("user@example.com", "password123", { terms: false });
+    await screen.findByText("termsRequired");
+    fireEvent.click(screen.getByRole("checkbox"));
+    expect(screen.queryByText("termsRequired")).not.toBeInTheDocument();
+  });
+
+  it("en el modo entrar no hay casilla", () => {
+    h.params = new URLSearchParams();
+    render(<LoginPage locale="es" />);
+    expect(screen.queryByRole("checkbox")).not.toBeInTheDocument();
   });
 
   it("Google va antes que el formulario", () => {
@@ -97,7 +126,8 @@ describe("LoginPage — modo register", () => {
         password: "password123",
         options: {
           emailRedirectTo: `${window.location.origin}/api/auth/callback?next=%2Fen%2Fhome`,
-          data: { locale: "en" },
+          // SEG-7: el disparador convierte esto en terms_accepted_at.
+          data: { locale: "en", terms_accepted: true, terms_version: TERMS_VERSION },
         },
       });
     });
@@ -112,7 +142,9 @@ describe("LoginPage — modo register", () => {
     await waitFor(() =>
       expect(h.fake.auth.signUp).toHaveBeenCalledWith(
         expect.objectContaining({
-          options: expect.objectContaining({ data: { locale: "es", avatar_icon: "panda" } }),
+          options: expect.objectContaining({
+            data: { locale: "es", terms_accepted: true, terms_version: TERMS_VERSION, avatar_icon: "panda" },
+          }),
         })
       )
     );
@@ -130,11 +162,14 @@ describe("LoginPage — modo register", () => {
     expect(h.replace).not.toHaveBeenCalled();
   });
 
-  it("con sesión tras el registro (confirmación desactivada) → entra al destino", async () => {
+  // CRE-6: el alta inmediata pasa por el onboarding, que termina en el destino.
+  it("con sesión tras el registro (confirmación desactivada) → onboarding con el destino", async () => {
     h.params = new URLSearchParams("mode=register&next=%2Fes%2Fu%2Fbenevi%2Fl%2F3");
     render(<LoginPage locale="es" />);
     fillAndSubmit("user@example.com", "password123");
-    await waitFor(() => expect(h.replace).toHaveBeenCalledWith("/es/u/benevi/l/3"));
+    await waitFor(() =>
+      expect(h.replace).toHaveBeenCalledWith("/es/welcome?next=%2Fes%2Fu%2Fbenevi%2Fl%2F3")
+    );
   });
 
   it("muestra error cuando signUp falla (usuario ya existente)", async () => {

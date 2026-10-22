@@ -18,6 +18,23 @@ export interface CircleMediaItem {
   friendNames: string[]
 }
 
+async function withoutPrivateLibraries(
+  supabase: ReturnType<typeof createClient>,
+  ids: string[],
+): Promise<string[]> {
+  const { data, error } = await supabase
+    .from('users')
+    .select('id, library_visibility')
+    .in('id', ids)
+  if (error || !data) return ids
+  const hidden = new Set(
+    (data as Array<{ id: string; library_visibility?: string | null }>)
+      .filter((u) => u.library_visibility === 'private')
+      .map((u) => u.id)
+  )
+  return ids.filter((id) => !hidden.has(id))
+}
+
 /**
  * Devuelve los títulos más populares entre los amigos del usuario.
  * - Solo cuenta entradas con status 'completed' o 'in_progress'.
@@ -39,9 +56,16 @@ export async function getPopularInCircle(
 
   if (friendError || !friendships || friendships.length === 0) return []
 
-  const friendIds = friendships.map((f) =>
+  const allFriendIds = friendships.map((f) =>
     f.requester_id === userId ? f.receiver_id : f.requester_id
   )
+
+  // D-04b: un amigo con la biblioteca en "solo yo" no cuenta. La RLS ya le
+  // devuelve 0 filas (`can_read_library`); filtrarlo aquí también evita
+  // pedirlas y deja la regla escrita donde se usa. Sin la columna (migración
+  // de F-12 sin aplicar) se cuentan todos, como antes.
+  const friendIds = await withoutPrivateLibraries(supabase, allFriendIds)
+  if (friendIds.length === 0) return []
 
   // 2. Biblioteca del propio usuario (para excluir)
   const { data: ownMedia } = await supabase

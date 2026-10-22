@@ -14,6 +14,13 @@ import type { AvatarColorName } from '@/lib/constants/avatarColors'
 import { cn } from '@/lib/utils/index'
 import { createClient } from '@/lib/supabase/client'
 import { getAuthErrorKeyFromError } from '@/lib/utils/auth-errors'
+import {
+  LIBRARY_VISIBILITIES,
+  USERNAME_REGEX,
+  isReservedUsername,
+  purgeDate,
+  type LibraryVisibility,
+} from '@/app/api/settings/identity'
 import Link from 'next/link'
 
 interface SettingsFormProps {
@@ -26,9 +33,36 @@ interface SettingsFormProps {
   isDemo?: boolean
   /** Se vuelve del enlace de cambio de email. */
   emailConfirmed?: boolean
+  /**
+   * Quién ve la biblioteca (D-04b). `null` = la columna aún no existe o la
+   * bandera LIBRARY_VISIBILITY está apagada: el selector no se enseña.
+   */
+  initialLibraryVisibility?: LibraryVisibility | null
+  /** Borrado programado (ROJO-7): fecha ISO en que se pidió. */
+  deletionRequestedAt?: string | null
 }
 
-const USERNAME_REGEX = /^[a-zA-Z0-9_]+$/
+/** Resumen de GET /api/account para el modal de borrado. */
+interface DeletionSummary {
+  library: number
+  lists: number
+  messages: number
+  friends: number
+  groups: Array<{ name: string; successor: string | null }> | null
+  sharedLists: Array<{ name: string; successor: string | null }> | null
+  graceDays: number
+}
+
+/** Cuántos grupos/listas se nombran en el modal antes de "y N más". */
+const SUMMARY_MAX_NAMED = 4
+
+function formatDay(date: Date, locale: string): string {
+  return new Intl.DateTimeFormat(locale === 'en' ? 'en-GB' : 'es-ES', {
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric',
+  }).format(date)
+}
 
 export function SettingsForm({
   initialUsername,
@@ -38,6 +72,8 @@ export function SettingsForm({
   userEmail,
   isDemo = false,
   emailConfirmed = false,
+  initialLibraryVisibility = null,
+  deletionRequestedAt = null,
 }: SettingsFormProps) {
   const t = useTranslations('settings')
   const tErrors = useTranslations('errors')
@@ -61,6 +97,13 @@ export function SettingsForm({
   const importInputRef = useRef<HTMLInputElement>(null)
   const [deleteModalOpen, setDeleteModalOpen] = useState(false)
   const [deleting, setDeleting] = useState(false)
+  const [deletionSummary, setDeletionSummary] = useState<DeletionSummary | null>(null)
+  const [summaryLoading, setSummaryLoading] = useState(false)
+  const [pendingDeletion, setPendingDeletion] = useState<string | null>(deletionRequestedAt)
+  const [cancellingDeletion, setCancellingDeletion] = useState(false)
+  const [libraryVisibility, setLibraryVisibility] = useState<LibraryVisibility | null>(initialLibraryVisibility)
+  // F-03: títulos del fichero que no se encontraron en el proveedor.
+  const [importUnresolved, setImportUnresolved] = useState(0)
 
   // Cambio de email (R1 / art. 16 RGPD): formulario en línea.
   const [emailFormOpen, setEmailFormOpen] = useState(false)
@@ -71,9 +114,9 @@ export function SettingsForm({
   const newEmailRef = useRef<HTMLInputElement>(null)
 
   function validateUsername(value: string): string {
-    if (value.length < 3) return t('errorInvalidUsername')
-    if (value.length > 20) return t('errorInvalidUsername')
     if (!USERNAME_REGEX.test(value)) return t('errorInvalidUsername')
+    // El nombre que ya tiene no se revalida (puede ser anterior a la lista).
+    if (value !== initialUsername && isReservedUsername(value)) return t('errorUsernameReserved')
     return ''
   }
 
@@ -96,9 +139,14 @@ export function SettingsForm({
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          username,
+          // Solo si cambió: así un nombre antiguo nunca bloquea guardar el
+          // resto (y no se gasta una escritura admin en cada guardado).
+          ...(username !== initialUsername ? { username } : {}),
           avatar_color: avatarColor,
           preferred_locale: locale,
+          ...(libraryVisibility !== null && libraryVisibility !== initialLibraryVisibility
+            ? { library_visibility: libraryVisibility }
+            : {}),
           // Solo se envía si el usuario lo tocó: mandar la columna cuando su
           // migración aún no está aplicada haría fallar TODO el guardado,
           // incluidos nombre e idioma.
@@ -107,7 +155,10 @@ export function SettingsForm({
       })
 
       if (res.status === 409) {
-        setUsernameError(t('errorUsernameExists'))
+        const data = (await res.json().catch(() => ({}))) as { error?: string }
+        setUsernameError(
+          data.error === 'username_reserved' ? t('errorUsernameReserved') : t('errorUsernameExists')
+        )
         return
       }
 
@@ -214,7 +265,8 @@ export function SettingsForm({
         toast.show({ message: t('importDataError'), type: 'error' })
         return
       }
-      const result: { libraryImported: number; listsImported: number } = await res.json()
+      const result: { libraryImported: number; listsImported: number; libraryUnresolved?: number } =
+        await res.json()
       toast.show({
         message: t('importDataSuccess', {
           count: result.libraryImported,
@@ -222,12 +274,80 @@ export function SettingsForm({
         }),
         type: 'success',
       })
+      setImportUnresolved(result.libraryUnresolved ?? 0)
       router.refresh()
     } catch {
       // Cubre tanto un JSON corrupto como un fallo de red.
       toast.show({ message: t('importDataError'), type: 'error' })
     } finally {
       setImporting(false)
+    }
+  }
+
+  /** Abre el modal y pide el resumen de lo que se perdería (ROJO-7). */
+  async function openDeleteModal() {
+    setDeleteModalOpen(true)
+    setDeletionSummary(null)
+    setSummaryLoading(true)
+    try {
+      const res = await fetch('/api/account')
+      if (res.ok) setDeletionSummary((await res.json()) as DeletionSummary)
+    } catch {
+      // Sin resumen se enseña el texto genérico: borrar sigue siendo posible.
+    } finally {
+      setSummaryLoading(false)
+    }
+  }
+
+  /** "Se borrarán 34 títulos… Tu grupo «Club» pasará a lucia_lee…" */
+  function deletionMessage(summary: DeletionSummary | null): string {
+    if (!summary) return summaryLoading ? t('deleteSummaryLoading') : t('deleteAccountConfirmMessage')
+    const parts = [
+      t('deleteSummaryLoses', {
+        library: summary.library,
+        lists: summary.lists,
+        messages: summary.messages,
+        friends: summary.friends,
+      }),
+    ]
+    const named = (items: Array<{ name: string; successor: string | null }>, moved: string, gone?: string) => {
+      for (const item of items.slice(0, SUMMARY_MAX_NAMED)) {
+        if (item.successor) parts.push(t(moved, { name: item.name, user: item.successor }))
+        else if (gone) parts.push(t(gone, { name: item.name }))
+      }
+      if (items.length > SUMMARY_MAX_NAMED) {
+        parts.push(t('deleteSummaryMore', { count: items.length - SUMMARY_MAX_NAMED }))
+      }
+    }
+    named(summary.groups ?? [], 'deleteSummaryGroupMoves', 'deleteSummaryGroupGone')
+    named(summary.sharedLists ?? [], 'deleteSummaryListMoves')
+    parts.push(
+      summary.graceDays > 0
+        ? t('deleteSummaryGrace', { days: summary.graceDays })
+        : t('deleteSummaryNow')
+    )
+    return parts.join(' ')
+  }
+
+  async function handleCancelDeletion() {
+    setCancellingDeletion(true)
+    try {
+      const res = await fetch('/api/account', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ cancel_deletion: true }),
+      })
+      if (!res.ok) {
+        toast.show({ message: t('errorSave'), type: 'error' })
+        return
+      }
+      setPendingDeletion(null)
+      toast.show({ message: t('deletionCancelled'), type: 'success' })
+      router.refresh()
+    } catch {
+      toast.show({ message: t('errorSave'), type: 'error' })
+    } finally {
+      setCancellingDeletion(false)
     }
   }
 
@@ -239,9 +359,14 @@ export function SettingsForm({
         toast.show({ message: t('deleteAccountError'), type: 'error' })
         return
       }
+      const result = (await res.json().catch(() => ({}))) as { scheduled?: boolean; purgeAt?: string }
       const supabase = createClient()
       await supabase.auth.signOut()
-      router.push(`/${currentLocale}/login`)
+      router.push(
+        result.scheduled && result.purgeAt
+          ? `/${currentLocale}/login?account=deletion_scheduled&purge_at=${encodeURIComponent(result.purgeAt)}`
+          : `/${currentLocale}/login?account=deleted`
+      )
     } catch {
       toast.show({ message: t('deleteAccountError'), type: 'error' })
     } finally {
@@ -256,6 +381,27 @@ export function SettingsForm({
   return (
     <div className="flex flex-col gap-7">
       <PageHeading emoji="⚙️" className="mb-0">{t('title')}</PageHeading>
+
+      {/* ROJO-7: borrado programado; mientras no venza, se puede deshacer. */}
+      {pendingDeletion && (
+        <div
+          role="status"
+          className="flex flex-wrap items-center justify-between gap-4 rounded-20 border-2 border-accent-danger/50 bg-surface-default px-5 py-4 sm:px-6"
+        >
+          <p className="text-sm font-body text-text-primary">
+            {t('deletionPending', { date: formatDay(purgeDate(pendingDeletion), currentLocale) })}
+          </p>
+          <KButton
+            variant="secondary"
+            size="sm"
+            className="flex-shrink-0"
+            onClick={handleCancelDeletion}
+            loading={cancellingDeletion}
+          >
+            {t('cancelDeletion')}
+          </KButton>
+        </div>
+      )}
 
       {/* Sección Perfil */}
       <section>
@@ -359,7 +505,7 @@ export function SettingsForm({
                       ? 'scale-110 ring-2 ring-accent-positive ring-offset-2 ring-offset-surface-default'
                       : ''
                   )}
-                  style={{ backgroundColor: color.hex }}
+                  style={{ backgroundColor: color.value }}
                 />
               ))}
             </div>
@@ -426,6 +572,49 @@ export function SettingsForm({
         </div>
       </section>
 
+      {/* Privacidad (D-04b): quién ve la biblioteca. Sin la migración o con la
+          bandera apagada, no se enseña y rige "cualquiera con cuenta". */}
+      {libraryVisibility !== null && (
+        <section>
+          <p className={eyebrow}>{t('privacy')}</p>
+          <div className={cn(row, 'flex flex-col gap-4 rounded-20 bg-surface-default')}>
+            <div className="flex flex-col gap-1">
+              <span id="library-visibility-label" className="text-sm font-semibold text-text-primary">
+                {t('libraryVisibility')}
+              </span>
+              <span className="text-sm font-body text-text-tertiary">{t('libraryVisibilityHint')}</span>
+            </div>
+            <div role="radiogroup" aria-labelledby="library-visibility-label" className="flex flex-col gap-2">
+              {LIBRARY_VISIBILITIES.map((option) => {
+                const checked = libraryVisibility === option
+                return (
+                  <label
+                    key={option}
+                    className={cn(
+                      'flex min-h-[44px] cursor-pointer items-start gap-3 rounded-[14px] bg-surface-elevated px-4 py-3 transition-colors',
+                      checked && 'ring-2 ring-accent-pink'
+                    )}
+                  >
+                    <input
+                      type="radio"
+                      name="library-visibility"
+                      value={option}
+                      checked={checked}
+                      onChange={() => setLibraryVisibility(option)}
+                      className="mt-0.5 h-5 w-5 flex-shrink-0 cursor-pointer accent-accent-pink"
+                    />
+                    <span className="flex flex-col">
+                      <span className="text-sm font-bold text-text-primary">{t(`visibility.${option}`)}</span>
+                      <span className="text-xs font-body text-text-tertiary">{t(`visibility.${option}Hint`)}</span>
+                    </span>
+                  </label>
+                )
+              })}
+            </div>
+          </div>
+        </section>
+      )}
+
       {/* Sección Zona de peligro (D2/D3) */}
       <section>
         <p className={cn(eyebrow, 'text-accent-danger')}>{t('dangerZone')}</p>
@@ -464,6 +653,11 @@ export function SettingsForm({
             >
               {t('importData')}
             </KButton>
+            {importUnresolved > 0 && (
+              <p role="status" className="basis-full text-sm font-body text-text-secondary">
+                {t('importUnresolved', { count: importUnresolved })}
+              </p>
+            )}
           </div>
 
           <div className={cn(row, 'flex items-center justify-between gap-4 flex-wrap')}>
@@ -472,7 +666,7 @@ export function SettingsForm({
               variant="secondary"
               size="sm"
               className="flex-shrink-0 border-2 border-accent-danger/50 text-accent-danger hover:bg-accent-danger/10"
-              onClick={() => setDeleteModalOpen(true)}
+              onClick={openDeleteModal}
             >
               {t('deleteAccount')}
             </KButton>
@@ -488,7 +682,7 @@ export function SettingsForm({
       <ConfirmModal
         isOpen={deleteModalOpen}
         title={t('deleteAccountConfirmTitle')}
-        message={t('deleteAccountConfirmMessage')}
+        message={deletionMessage(deletionSummary)}
         confirmLabel={t('deleteAccountConfirmButton')}
         cancelLabel={t('deleteAccountCancel')}
         onConfirm={handleDeleteAccount}

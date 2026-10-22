@@ -18,6 +18,8 @@ const { readTodayMock, starterMock, getDailyMock, signal } = vi.hoisted(() => ({
 }))
 
 vi.mock('next/navigation', () => ({ redirect: vi.fn() }))
+// Aviso de borrado programado (F-12): enlace a Ajustes.
+vi.mock('@/i18n/navigation', () => ({ Link: () => null }))
 vi.mock('next-intl/server', () => ({
   getLocale: vi.fn().mockResolvedValue('es'),
   getTranslations: vi.fn().mockResolvedValue((k: string) => k),
