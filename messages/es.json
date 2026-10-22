@@ -150,6 +150,9 @@
     "trailer": "Tráiler",
     "whereToWatch": "Dónde ver",
     "streamingOn": "Disponible en",
+    "justwatchAttribution": "Datos de disponibilidad:",
+    "justwatchLinkLabel": "JustWatch (se abre en una pestaña nueva)",
+    "providerLinkLabel": "{name}: dónde verlo, en TMDB (se abre en una pestaña nueva)",
     "genres": "Géneros",
     "notFound": "Título no encontrado",
     "synopsis": "Sinopsis",
@@ -731,6 +734,7 @@
     "footerTerms": "Términos",
     "dataSources": "Datos de <tmdb>TMDB</tmdb>, <rawg>RAWG</rawg>, AniList, MyAnimeList, MangaDex, Open Library y Comic Vine.",
     "tmdbNotice": "Este producto usa la API de TMDB, pero TMDB no lo respalda ni lo certifica.",
+    "justwatchSource": "Datos de disponibilidad en plataformas:",
     "privacy": {
       "title": "Política de privacidad",
       "updated": "Última actualización: septiembre de 2026",
