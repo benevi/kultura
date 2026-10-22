@@ -594,19 +594,22 @@ function dayIndex(day: string): number {
   return Number.isFinite(ms) ? Math.floor(ms / 86_400_000) : 0
 }
 
-/** Generaciones en curso por usuario/día/idioma: dos clics a la vez pagan una vez. */
+/** Generaciones en curso por usuario y día: dos clics a la vez pagan una vez. */
 const inflight = new Map<string, Promise<AiRecsResult>>()
 
 function toResult({ recs, outcome }: Generation): AiRecsResult {
   if (outcome === 'ai') return { recommendations: recs, source: 'ai' }
   if (outcome === 'capped') return { recommendations: recs, source: 'match', capped: true }
+  // Fallo del modelo: no se guarda, así que no es "la de hoy" (D-06).
+  if (outcome === 'error') return { recommendations: recs, source: 'match', saved: false }
   return { recommendations: recs, source: 'match' }
 }
 
 /**
  * "Para ti" con coste acotado (D-06 / ROJO-4): como mucho UNA llamada al modelo
- * por usuario, día e idioma. La primera petición del día genera y guarda; las
- * siguientes —en esta instancia o en cualquier otra— leen lo guardado.
+ * por usuario y día. La primera petición del día genera y guarda; las
+ * siguientes —en esta instancia o en cualquier otra, y en cualquier idioma—
+ * leen lo guardado (en otro idioma, sin las frases del modelo).
  *
  * Qué NO se guarda, para que el usuario pueda volver a pedirlo ese mismo día:
  * - una biblioteca demasiado corta (al llegar a 3 títulos ya puede recibirlas);
@@ -626,7 +629,8 @@ export async function getDailyAiRecommendations(
   const cached = await readDailyRecs(userId, locale, day)
   if (cached) return cached
 
-  const key = `${userId}|${day}|${locale}`
+  // Sin el idioma en la clave: una sola generación por usuario y día (D-06).
+  const key = `${userId}|${day}`
   const running = inflight.get(key)
   if (running) return running
 

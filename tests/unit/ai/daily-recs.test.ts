@@ -77,7 +77,8 @@ const MISSING_FN = { code: 'PGRST202', message: 'Could not find the function' }
  * emulada con un Map y `increment_ai_usage` con un contador y su tope.
  */
 function adminDb({ migrated, usage = 0 }: { migrated: boolean; usage?: number }) {
-  const rows = new Map<string, unknown>()
+  /** Clave `user|day` (PK de ai_recs) → { locale, payload }. */
+  const rows = new Map<string, { locale: string; payload: unknown }>()
   let calls = usage
   const upserts: unknown[] = []
   const client = {
@@ -97,8 +98,8 @@ function adminDb({ migrated, usage = 0 }: { migrated: boolean; usage?: number })
         }),
         maybeSingle: vi.fn(async () => {
           if (!migrated) return { data: null, error: MISSING_TABLE }
-          const key = `${filters.user_id}|${filters.day}|${filters.locale}`
-          return { data: rows.has(key) ? { payload: rows.get(key) } : null, error: null }
+          const key = `${filters.user_id}|${filters.day}`
+          return { data: rows.get(key) ?? null, error: null }
         }),
         delete: vi.fn(() => chain),
         lt: vi.fn(async (col: string, val: string) => {
@@ -112,7 +113,7 @@ function adminDb({ migrated, usage = 0 }: { migrated: boolean; usage?: number })
         upsert: vi.fn(async (row: { user_id: string; day: string; locale: string; payload: unknown }) => {
           upserts.push(row)
           if (!migrated) return { data: null, error: MISSING_TABLE }
-          rows.set(`${row.user_id}|${row.day}|${row.locale}`, row.payload)
+          rows.set(`${row.user_id}|${row.day}`, { locale: row.locale, payload: row.payload })
           return { data: null, error: null }
         }),
       }
@@ -198,6 +199,35 @@ describe('getDailyAiRecommendations — una llamada por usuario y día', () => {
     expect(second).toEqual(first)
   })
 
+  it('cambiar de idioma no abre otra llamada: en otro idioma, las mismas elecciones sin la frase', async () => {
+    adminDb({ migrated: true })
+    const { getDailyAiRecommendations } = await load()
+
+    const es = await getDailyAiRecommendations('u-lang', [], 'es', userClient())
+    const en = await getDailyAiRecommendations('u-lang', [], 'en', userClient())
+    const esAgain = await getDailyAiRecommendations('u-lang', [], 'es', userClient())
+
+    expect(createMock).toHaveBeenCalledTimes(1)
+    expect(en.recommendations.map((r) => r.item.id)).toEqual(es.recommendations.map((r) => r.item.id))
+    expect(en.recommendations.every((r) => r.reason === undefined)).toBe(true)
+    expect(en.source).toBe('ai')
+    // En el idioma en que se generó, la frase sigue ahí.
+    expect(esAgain).toEqual(es)
+  })
+
+  it('lo mismo sin migrar y entre idiomas en paralelo: una sola llamada', async () => {
+    adminDb({ migrated: false })
+    const { getDailyAiRecommendations } = await load()
+
+    await Promise.all([
+      getDailyAiRecommendations('u-lang2', [], 'es', userClient()),
+      getDailyAiRecommendations('u-lang2', [], 'en', userClient()),
+    ])
+    await getDailyAiRecommendations('u-lang2', [], 'en', userClient())
+
+    expect(createMock).toHaveBeenCalledTimes(1)
+  })
+
   it('dos clics simultáneos comparten la misma llamada', async () => {
     adminDb({ migrated: true })
     const { getDailyAiRecommendations } = await load()
@@ -235,7 +265,7 @@ describe('getDailyAiRecommendations — una llamada por usuario y día', () => {
     vi.setSystemTime(new Date('2026-10-23T10:00:00Z'))
     await getDailyAiRecommendations('u-min', [], 'es', userClient())
 
-    expect(Array.from(db.rows.keys())).toEqual(['u-min|2026-10-23|es'])
+    expect(Array.from(db.rows.keys())).toEqual(['u-min|2026-10-23'])
   })
 
   it('cambiar la biblioteca (invalidateRecCache) no abre una segunda llamada el mismo día', async () => {
@@ -281,11 +311,14 @@ describe('getDailyAiRecommendations — una llamada por usuario y día', () => {
 
     const first = await getDailyAiRecommendations('u-err', [], 'es', userClient())
     expect(first.source).toBe('match')
+    // La UI no debe presentarla como "las de hoy".
+    expect(first.saved).toBe(false)
     expect(first.recommendations).toHaveLength(7)
     expect(db.rows.size).toBe(0)
 
     const second = await getDailyAiRecommendations('u-err', [], 'es', userClient())
     expect(second.source).toBe('ai')
+    expect(second.saved).toBeUndefined()
     expect(createMock).toHaveBeenCalledTimes(2)
     expect(db.usage()).toBe(2)
   })
@@ -351,7 +384,9 @@ describe('readTodayAiRecommendations — lectura sin coste para pintar Inicio', 
     expect(await readTodayAiRecommendations('u-read', 'es')).toBeNull()
     const made = await getDailyAiRecommendations('u-read', [], 'es', userClient())
     expect(await readTodayAiRecommendations('u-read', 'es')).toEqual(made)
-    expect(await readTodayAiRecommendations('u-read', 'en')).toBeNull()
+    // Otro idioma: lo mismo sin la frase del modelo (no cuenta como otra llamada).
+    expect((await readTodayAiRecommendations('u-read', 'en'))?.recommendations[0].reason).toBeUndefined()
+    expect(await readTodayAiRecommendations('u-other', 'es')).toBeNull()
     expect(createMock).toHaveBeenCalledTimes(1)
   })
 
@@ -365,7 +400,7 @@ describe('readTodayAiRecommendations — lectura sin coste para pintar Inicio', 
     const db = adminDb({ migrated: true })
     const { readTodayAiRecommendations } = await load()
     const { aiDay } = await import('@/lib/claude/budget')
-    db.rows.set(`u-bad|${aiDay()}|es`, { recommendations: 'no' })
+    db.rows.set(`u-bad|${aiDay()}`, { locale: 'es', payload: { recommendations: 'no' } })
     expect(await readTodayAiRecommendations('u-bad', 'es')).toBeNull()
   })
 })

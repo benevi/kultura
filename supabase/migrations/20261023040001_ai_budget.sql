@@ -2,10 +2,11 @@
 -- KULTURA — IA con coste acotado (D-06 / ROJO-4 / SEG-5)
 --
 -- Qué hace:
---   1. `ai_recs`: las recomendaciones de "Para ti" de cada usuario, día e
---      idioma. La app genera como mucho una por usuario, día e idioma y la
---      reutiliza el resto del día (`src/lib/claude/daily-recs.ts`). Solo se
---      guarda la del día: al escribir la nueva se borran las anteriores.
+--   1. `ai_recs`: las recomendaciones de "Para ti" de cada usuario y día (una
+--      fila; `locale` guarda el idioma en que se generaron). La app genera
+--      como mucho una por usuario y día y la reutiliza el resto del día en
+--      cualquier idioma (`src/lib/claude/daily-recs.ts`). Solo se guarda la del
+--      día: al escribir la nueva se borran las anteriores.
 --   2. `ai_usage`: contador de llamadas al modelo por día (hora de Madrid) y
 --      tipo (`recs`, `translate`).
 --   3. `increment_ai_usage(kind, cap)`: reserva UNA llamada si el total del día
@@ -60,7 +61,7 @@ create table if not exists public.ai_recs (
   locale     text        not null,
   payload    jsonb       not null,
   created_at timestamptz not null default now(),
-  constraint ai_recs_pkey primary key (user_id, day, locale),
+  constraint ai_recs_pkey primary key (user_id, day),
   constraint ai_recs_locale_check check (char_length(locale) between 2 and 10)
 );
 

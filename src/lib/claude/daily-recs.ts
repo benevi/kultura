@@ -1,8 +1,11 @@
 // ============================================================
 // KULTURA — Recomendaciones del día guardadas (D-06 / ROJO-4)
 //
-// "Para ti" se genera como mucho una vez por usuario, día e idioma y se
-// reutiliza hasta el día siguiente. La respuesta se guarda en `ai_recs`
+// "Para ti" se genera como mucho una vez por usuario y día y se reutiliza hasta
+// el día siguiente. El idioma NO cuenta para ese límite: si el usuario cambia
+// de idioma a mitad del día se le sirve lo guardado sin las frases del modelo
+// (estaban en el otro idioma) y la UI pinta el porqué localizado a partir de
+// los géneros, igual que cuando el modelo no responde. La respuesta se guarda en `ai_recs`
 // (migración `20261023040001_ai_budget.sql`), que solo lee y escribe el
 // servidor con la service-role key: RLS activa y ninguna política para
 // usuarios, así que nadie puede leer las de otro ni fabricarse las suyas.
@@ -28,16 +31,27 @@ export interface AiRecsResult {
   source: 'ai' | 'match'
   /** Solo presente (y `true`) cuando no se llamó al modelo por el tope diario. */
   capped?: true
+  /**
+   * Solo presente (y `false`) cuando la respuesta NO se guardó (el modelo
+   * falló): no es "la de hoy" y el usuario puede volver a pedirla.
+   */
+  saved?: false
 }
 
-const memory = new Map<string, AiRecsResult>()
+/** Lo guardado: el resultado y el idioma en que se generó. */
+interface StoredRecs {
+  locale: string
+  result: AiRecsResult
+}
+
+const memory = new Map<string, StoredRecs>()
 const MEMORY_MAX = 1000
 
-function memoryKey(userId: string, day: string, locale: string) {
-  return `${userId}|${day}|${locale}`
+function memoryKey(userId: string, day: string) {
+  return `${userId}|${day}`
 }
 
-function remember(key: string, value: AiRecsResult) {
+function remember(key: string, value: StoredRecs) {
   if (memory.size >= MEMORY_MAX) {
     const oldest = memory.keys().next().value
     if (oldest !== undefined) memory.delete(oldest)
@@ -65,28 +79,49 @@ function asResult(payload: unknown): AiRecsResult | null {
     : { recommendations: recommendations as AiRec[], source }
 }
 
-/** Las recomendaciones de hoy, si ya existen. Nunca lanza. */
+/**
+ * Adapta lo guardado al idioma pedido. Mismo idioma → tal cual. Otro idioma →
+ * las mismas elecciones sin `reason` (la frase del modelo estaba en el otro
+ * idioma); la UI pinta entonces el porqué localizado.
+ */
+function forLocale(stored: StoredRecs, locale: string): AiRecsResult {
+  if (stored.locale === locale) return stored.result
+  return {
+    ...stored.result,
+    recommendations: stored.result.recommendations.map((rec) => ({
+      item: rec.item,
+      matchScore: rec.matchScore,
+    })),
+  }
+}
+
+/**
+ * Las recomendaciones de hoy del usuario, en cualquier idioma, adaptadas al
+ * pedido (ver `forLocale`). Nunca lanza.
+ */
 export async function readDailyRecs(
   userId: string,
   locale: string,
   day: string = aiDay()
 ): Promise<AiRecsResult | null> {
-  const key = memoryKey(userId, day, locale)
+  const key = memoryKey(userId, day)
   const inMemory = memory.get(key)
-  if (inMemory) return inMemory
+  if (inMemory) return forLocale(inMemory, locale)
 
   try {
     const { data, error } = await createAdminClient()
       .from('ai_recs')
-      .select('payload')
+      .select('locale, payload')
       .eq('user_id', userId)
       .eq('day', day)
-      .eq('locale', locale)
       .maybeSingle()
     if (error || !data) return null
-    const result = asResult((data as { payload?: unknown }).payload)
-    if (result) remember(key, result)
-    return result
+    const row = data as { locale?: unknown; payload?: unknown }
+    const result = asResult(row.payload)
+    if (!result || typeof row.locale !== 'string') return null
+    const stored = { locale: row.locale, result }
+    remember(key, stored)
+    return forLocale(stored, locale)
   } catch {
     return null
   }
@@ -101,13 +136,13 @@ export async function writeDailyRecs(
 ): Promise<void> {
   // La memoria se escribe siempre y primero: aunque la tabla no exista, esta
   // instancia no vuelve a pagar hoy por el mismo usuario.
-  remember(memoryKey(userId, day, locale), result)
+  remember(memoryKey(userId, day), { locale, result })
   try {
     const { error } = await createAdminClient()
       .from('ai_recs')
       .upsert(
         { user_id: userId, day, locale, payload: result },
-        { onConflict: 'user_id,day,locale' }
+        { onConflict: 'user_id,day' }
       )
     if (error) {
       if (error.code !== '42P01' && error.code !== 'PGRST205') {

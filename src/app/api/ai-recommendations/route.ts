@@ -3,8 +3,8 @@
 // GET: recomendaciones de "Para ti" del día (D-06).
 //
 // Solo se llama cuando el usuario pulsa "Recomiéndame": el componente ya no
-// pide nada al montarse. Como mucho UNA llamada al modelo por usuario, día e
-// idioma (`getDailyAiRecommendations`, guardada en `ai_recs`) y un tope global
+// pide nada al montarse. Como mucho UNA llamada al modelo por usuario y día,
+// sea cual sea el idioma (`getDailyAiRecommendations`, guardada en `ai_recs`) y un tope global
 // diario compartido con las traducciones (`AI_DAILY_CALL_CAP`). Al llegar al
 // tope se responde `{ source: 'match', capped: true }` con el orden por match.
 //
@@ -38,7 +38,7 @@ export async function GET(): Promise<NextResponse> {
   // lectura sin coste y, sobre todo, la cuenta demo (E-DEMO) la comparten
   // todos los visitantes, que con el límite delante se pisarían en cuanto
   // pulsaran cinco a la vez. Su biblioteca no cambia: una generación al día
-  // por idioma les vale a todos.
+  // les vale a todos.
   const today = await readTodayAiRecommendations(user.id, locale)
   if (today) return NextResponse.json(today)
 
