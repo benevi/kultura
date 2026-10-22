@@ -57,10 +57,12 @@ export function Logo({ size = 26, variant = 'full', className = '' }: LogoProps)
   }
 
   return (
-    <span className={`inline-flex items-center gap-2 ${className}`}>
+    <span className={`inline-flex shrink-0 items-center gap-2 ${className}`}>
       <Mark size={size} />
+      {/* `whitespace-nowrap`: sin él, en una fila estrecha (cabecera a 320 px)
+          el cuadradito final caía a una segunda línea. */}
       <span
-        className="font-display font-bold tracking-tight text-text-primary leading-none"
+        className="font-display font-bold tracking-tight text-text-primary leading-none whitespace-nowrap"
         style={{ fontSize: size * 0.78 }}
       >
         kultura
