@@ -32,6 +32,13 @@
   --accent-highlight: oklch(85% 0.17 95); /* yellow F0 — rating/premium, antes ámbar */
   --accent-info: oklch(68% 0.16 250);     /* blue F0 — información/enlaces */
   --accent-danger: oklch(60% 0.21 25);    /* rojo derivado (mismo matiz que los posters "Past Lives" de F0), F0 no define un rojo propio — SOLO destructivo */
+  /* Variantes accesibles del rojo (ACC-4), mismo matiz 25:
+     - texto rojo: 6,74 / 6,16 / 5,41:1 sobre fondo / tarjeta / campo
+       (el rojo base da 4,43 / 4,05 / 3,56 y no llega a 4,5). Tailwind lo usa
+       para TODO `text-accent-danger`, así que no hay que tocar cada pantalla.
+     - fondo de botón destructivo: 4,94:1 con `--on-accent-danger`. */
+  --accent-danger-text: oklch(70% 0.17 25);
+  --accent-danger-solid: oklch(55% 0.21 25);
 
   /* Texto sobre acentos — mismo patrón que usa F0 (texto oscuro/saturado a
      juego con el matiz de fondo, no blanco/negro puro) */
@@ -59,15 +66,41 @@
   --on-accent-blue: oklch(14% 0.03 250);
   --on-accent-yellow: oklch(18% 0.03 95);
 
+  /* ─── Campos de formulario y foco (ACC-3/ACC-4, WCAG 1.4.11) ───
+     El canvas F0 dibuja los campos sin borde, pero un relleno `surface-2`
+     sobre la tarjeta `surface` solo da 1,14:1: el campo no se distingue. El
+     borde de 1 px da 3,65:1 contra la tarjeta y 3,20:1 contra el relleno.
+     El foco es el pink del sistema como contorno de 2 px (5,45 / 4,79:1),
+     no el halo pink al 25 % (1,39:1). */
+  --field-border: oklch(55% 0.02 280);
+  --focus-ring: var(--accent-pink);
+
   /* ─── Tokens de movimiento ─── */
   --duration-fast: 100ms;
   --duration-base: 150ms;
   --duration-slow: 250ms;
   --ease-standard: cubic-bezier(0, 0, 0.2, 1); /* ease-out con suavidad material */
 
-  /* ─── Legacy tokens (conservados para compatibilidad con componentes existentes) ─── */
+  /* ─── Alias con los nombres del canvas F0 (DIS-2, D-19) ───
+     `DISENO.md` y el canvas hablan de `--pink`, `--surface-2`, `--stroke`…
+     Estos alias hacen que copiar un valor del documento funcione en vez de
+     pintar vacío (los avatares de "Conecta con amigos" salían sin color
+     por `var(--pink)`). En código nuevo, preferir los nombres `--accent-*` /
+     `--surface-*` o las clases de Tailwind. */
   --bg: var(--surface-base);
   --surface: var(--surface-default);
+  --surface-2: var(--surface-elevated);
+  --stroke: var(--surface-border);
+  --text: var(--text-primary);
+  --muted: var(--text-tertiary);
+  --pink: var(--accent-pink);
+  --lime: var(--accent-lime);
+  --orange: var(--accent-orange);
+  --purple: var(--accent-purple);
+  --blue: var(--accent-blue);
+  --yellow: var(--accent-yellow);
+
+  /* ─── Legacy tokens (conservados para compatibilidad con componentes existentes) ─── */
   --surface2: var(--surface-elevated);
   --surface3: var(--surface-elevated);
   --border-color: var(--surface-border);
@@ -79,26 +112,6 @@
   --warning: var(--accent-highlight);
   --info: var(--accent-info);
   --danger: var(--accent-danger);
-
-  /* shadcn/ui CSS variables — mapeadas a tokens KULTURA */
-  --background: 220 15% 5%;
-  --foreground: 213 28% 83%;
-  --card: 220 15% 8%;
-  --card-foreground: 213 28% 83%;
-  --popover: 220 15% 8%;
-  --popover-foreground: 213 28% 83%;
-  --secondary: 215 23% 12%;
-  --secondary-foreground: 213 28% 83%;
-  --muted: 215 23% 12%;
-  --muted-foreground: 208 19% 40%;
-  --accent: 215 23% 12%;
-  --accent-foreground: 213 28% 83%;
-  --destructive: 0 72% 51%;
-  --destructive-foreground: 0 0% 100%;
-  --border: 211 22% 15%;
-  --input: 211 22% 15%;
-  --ring: 0 79% 51%;
-  --radius: 0.5rem;
 }
 
 @layer base {
@@ -133,7 +146,7 @@
 
   /* Selection */
   ::selection {
-    background: rgba(111, 207, 151, 0.25);
+    background: oklch(68% 0.24 350 / 0.3); /* --accent-pink al 30 %, era un verde hex ajeno a la paleta */
     color: var(--text-primary);
   }
 }

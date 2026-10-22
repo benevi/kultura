@@ -1,6 +1,8 @@
 import Image from "next/image";
 import { cn } from "@/lib/utils/index";
 import { AVATAR_ICONS } from "@/components/icons/avatars";
+import { getAvatarColor } from "@/lib/constants/avatarColors";
+import { readableTextOn } from "@/lib/design/color";
 
 export interface AvatarProps {
   initials: string;
@@ -29,18 +31,41 @@ const sizePixels: Record<NonNullable<AvatarProps["size"]>, number> = {
 
 
 const LEGACY_RED = "#E82020";
+const DEFAULT_BG = "var(--surface-elevated)";
+
+/**
+ * Fondo y color de las iniciales para lo que haya guardado en `avatar_color`.
+ *
+ * La columna mezcla tres formatos según la época de la cuenta: un nombre de la
+ * paleta (`'blue'`, lo que guarda Ajustes), un hex suelto (`'#6FCF97'`, el alta
+ * antigua) o el rojo por defecto de la tabla (`#E82020`). Antes el nombre se
+ * pasaba tal cual a `background-color`: `'blue'` pintaba el azul puro de CSS y
+ * `'slate'` / `'amber'` no son colores CSS, así que el círculo salía vacío. Y
+ * las iniciales iban siempre en blanco (1 de 8 colores pasaba 4,5:1, ACC-9).
+ */
+function resolveColors(color: string): { background: string; text: string } {
+  const palette = getAvatarColor(color);
+  if (palette) return { background: palette.value, text: palette.on };
+  if (color === LEGACY_RED) {
+    return { background: "var(--accent-positive)", text: "var(--on-accent-positive)" };
+  }
+  const readable = readableTextOn(color);
+  return {
+    background: color,
+    text: readable === "dark" ? "var(--surface-base)" : "var(--text-primary)",
+  };
+}
 
 export function Avatar({
   initials,
-  color = "var(--surface-elevated)",
+  color = DEFAULT_BG,
   size = "md",
   src,
   className,
   icon,
 }: AvatarProps) {
   const px = sizePixels[size];
-  const resolvedColor =
-    color === LEGACY_RED ? "var(--accent-positive)" : color;
+  const colors = resolveColors(color);
 
   if (src) {
     return (
@@ -83,11 +108,11 @@ export function Avatar({
   return (
     <div
       className={cn(
-        "rounded-full flex items-center justify-center flex-shrink-0 font-medium text-white select-none",
+        "rounded-full flex items-center justify-center flex-shrink-0 font-medium select-none",
         sizeClasses[size],
         className
       )}
-      style={{ backgroundColor: resolvedColor }}
+      style={{ backgroundColor: colors.background, color: colors.text }}
     >
       {initials}
     </div>

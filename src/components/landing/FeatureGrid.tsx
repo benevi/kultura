@@ -11,6 +11,7 @@ import { IconLibrary, IconFriends, IconLists, IconSparkles, type KIcon } from "@
 import { ArtPoster } from "@/components/landing/ArtPoster";
 import { STICKER_SHADOW, type PosterTileProps } from "@/components/landing/PosterTile";
 import { cn } from "@/lib/utils/index";
+import { F0 } from "@/lib/design/f0-tokens";
 
 type Poster = PosterTileProps["item"];
 
@@ -67,11 +68,14 @@ export interface FeatureGridProps {
   posters?: Poster[];
 }
 
+/* Tokens reales (`--accent-*` vía F0). Con `var(--pink)` a secas, nombre del
+   canvas que `globals.css` no definía, los cuatro avatares salían vacíos
+   (DIS-2). `globals.css` ya tiene esos alias, pero aquí se usa el nombre real. */
 const AVATARS: Array<[string, string]> = [
-  ["var(--pink)", "var(--purple)"],
-  ["var(--lime)", "var(--blue)"],
-  ["var(--orange)", "var(--pink)"],
-  ["var(--purple)", "var(--blue)"],
+  [F0.pink, F0.purple],
+  [F0.lime, F0.blue],
+  [F0.orange, F0.pink],
+  [F0.purple, F0.blue],
 ];
 
 /** Estantería: cuatro portadas escalonadas. */
@@ -118,7 +122,7 @@ function FriendsArt({ p }: { p: (i: number) => Poster | null }) {
           <span
             key={i}
             className="w-9 h-9 rounded-full"
-            style={{ background: `linear-gradient(135deg, ${a}, ${b})`, border: "2px solid var(--bg)", marginLeft: i ? -12 : 0 }}
+            style={{ background: `linear-gradient(135deg, ${a}, ${b})`, border: `2px solid ${F0.bg}`, marginLeft: i ? -12 : 0 }}
           />
         ))}
       </div>
