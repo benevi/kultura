@@ -10,6 +10,7 @@ import { describe, it, expect, beforeAll, afterAll } from "vitest";
 
 const TEST_URL = process.env.SUPABASE_TEST_URL ?? "";
 const TEST_ANON_KEY = process.env.SUPABASE_TEST_ANON_KEY ?? "";
+const TEST_SERVICE_KEY = process.env.SUPABASE_TEST_SERVICE_ROLE_KEY ?? "";
 
 // Credenciales de dos usuarios de test (deben existir en el proyecto de test)
 const USER_A_EMAIL = "test-user-a@kultura.test";
@@ -64,9 +65,12 @@ describe("RLS — user_media table", () => {
   let mediaId: string;
 
   beforeAll(async () => {
-    // Asegurar que existe un media de test
-    const clientA = await clientAs(USER_A_EMAIL, USER_A_PASSWORD);
-    const { error } = await clientA.from("media").upsert({
+    // Asegurar que existe un media de test. El catálogo lo escribe el servidor
+    // (F-03); con la clave de servicio, si está, para no depender de la RLS de media.
+    const writer = TEST_SERVICE_KEY
+      ? createClient(TEST_URL, TEST_SERVICE_KEY, { auth: { persistSession: false } })
+      : await clientAs(USER_A_EMAIL, USER_A_PASSWORD);
+    const { error } = await writer.from("media").upsert({
       id: "movie_test_rls",
       external_id: "test_rls",
       type: "movie",
@@ -108,8 +112,17 @@ describe("RLS — friendships table", () => {
     const { data: userA } = await clientA.auth.getUser();
     const { data: userB } = await clientB.auth.getUser();
 
-    // Insertar con requester_id = propio uid — OK
-    const { error: ok } = await clientA.from("friendships").upsert({
+    // Limpiar cualquier relación previa entre A y B (deja el test repetible).
+    await clientA
+      .from("friendships")
+      .delete()
+      .or(
+        `and(requester_id.eq.${userA.user!.id},receiver_id.eq.${userB.user!.id}),and(requester_id.eq.${userB.user!.id},receiver_id.eq.${userA.user!.id})`
+      );
+
+    // Insertar con requester_id = propio uid — OK. INSERT y no upsert: el
+    // upsert pide UPDATE de requester_id/receiver_id, que la base ya no concede.
+    const { error: ok } = await clientA.from("friendships").insert({
       requester_id: userA.user!.id,
       receiver_id: userB.user!.id,
       status: "pending",
@@ -127,11 +140,12 @@ describe("RLS — friendships table", () => {
 });
 
 describe("RLS — lists table", () => {
-  it("listas son públicas para SELECT (anónimo)", async () => {
+  // Desde 20261014000001 las listas son privadas salvo que el dueño las publique.
+  it("sin sesión solo se leen listas públicas", async () => {
     const anon = clientAnon();
-    const { data, error } = await anon.from("lists").select("id, name").limit(5);
+    const { data, error } = await anon.from("lists").select("id, is_public").limit(50);
     expect(error).toBeNull();
-    expect(Array.isArray(data)).toBe(true);
+    expect((data ?? []).every((l) => l.is_public === true)).toBe(true);
   });
 });
 

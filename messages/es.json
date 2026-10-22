@@ -243,6 +243,7 @@
     "saveBio": "Guardar",
     "cancelBio": "Cancelar",
     "bioPlaceholder": "Cuéntale a la gente sobre ti...",
+    "bioSaveError": "No se pudo guardar la biografía. Inténtalo de nuevo.",
     "editAvatar": "Cambiar avatar",
     "colorLabel": "Color del avatar",
     "lastCompleted": "Últimos completados",

@@ -5,10 +5,18 @@ on:
     branches: [master]
   pull_request:
     branches: [master]
+  # Integración contra el proyecto Supabase de TEST: a mano (Actions → CI →
+  # Run workflow) después de aplicar una migración allí, y cada lunes para
+  # detectar deriva.
+  workflow_dispatch:
+  schedule:
+    - cron: "17 6 * * 1"
 
 jobs:
   build:
     name: Lint, typecheck, test, build
+    # El cron semanal solo existe para la suite de integración.
+    if: github.event_name != 'schedule'
     runs-on: ubuntu-latest
 
     env:
@@ -47,3 +55,53 @@ jobs:
 
       - name: Build
         run: npm run build
+
+  integration:
+    name: Integración (RLS y base) contra el proyecto de test
+    # No en los PR: una migración nueva todavía no está aplicada en test y la
+    # suite fallaría por eso, no por el código. Se lanza a mano tras aplicarla.
+    if: github.event_name == 'workflow_dispatch' || github.event_name == 'schedule'
+    runs-on: ubuntu-latest
+
+    env:
+      SUPABASE_TEST_URL: ${{ secrets.TEST_SUPABASE_URL }}
+      SUPABASE_TEST_ANON_KEY: ${{ secrets.TEST_SUPABASE_ANON_KEY }}
+      SUPABASE_TEST_SERVICE_ROLE_KEY: ${{ secrets.TEST_SUPABASE_SERVICE_ROLE_KEY }}
+
+    steps:
+      - name: Comprobar secretos del proyecto de test
+        id: secrets
+        run: |
+          if [ -z "$SUPABASE_TEST_URL" ] || [ -z "$SUPABASE_TEST_ANON_KEY" ] || [ -z "$SUPABASE_TEST_SERVICE_ROLE_KEY" ]; then
+            echo "::notice::Faltan TEST_SUPABASE_URL / TEST_SUPABASE_ANON_KEY / TEST_SUPABASE_SERVICE_ROLE_KEY: se omite la integración."
+            echo "run=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "run=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Checkout
+        if: steps.secrets.outputs.run == 'true'
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        if: steps.secrets.outputs.run == 'true'
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Install dependencies
+        if: steps.secrets.outputs.run == 'true'
+        run: npm ci
+
+      - name: Usuarios fijos de los tests antiguos
+        if: steps.secrets.outputs.run == 'true'
+        run: node tests/integration/seed-test-users.mjs
+
+      - name: Suite RLS (ataques, caminos felices, auditoría)
+        if: steps.secrets.outputs.run == 'true'
+        run: npx vitest run --config vitest.integration.config.ts tests/integration/rls
+
+      - name: Resto de la integración
+        if: steps.secrets.outputs.run == 'true'
+        run: npx vitest run --config vitest.integration.config.ts tests/integration/db tests/integration/auth
