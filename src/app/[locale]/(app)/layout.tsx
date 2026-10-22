@@ -39,12 +39,17 @@ export default async function AppLayout({
   return (
     <ToastProvider>
       <UnreadChatProvider userId={user.id}>
-        <div className="min-h-screen flex flex-col">
+        <div className="min-h-dvh flex flex-col">
           <AuthHeader profile={profile} unreadCount={unreadCount} />
           {isDemoUser(user) && <DemoBanner />}
-          <div className="flex-1 pb-16 md:pb-0">{children}</div>
-          <AppFooter />
-          <BottomNav />
+          {/* El relleno inferior va en el envoltorio que INCLUYE el pie: así
+              la BottomNav fija (64 px + zona segura) no tapa ni el último
+              contenido ni la atribución a TMDB/RAWG (MOV-6, V8, ROJO-11). */}
+          <div className="flex-1 flex flex-col pb-[calc(4rem+env(safe-area-inset-bottom))] md:pb-0">
+            <div className="flex-1">{children}</div>
+            <AppFooter />
+          </div>
+          <BottomNav username={profile.username} />
         </div>
       </UnreadChatProvider>
     </ToastProvider>

@@ -43,6 +43,21 @@ describe('AppFooter (D1)', () => {
     expect(screen.getByRole('link', { name: 'Sugerencias' })).toHaveAttribute('href', '/suggestions')
   })
 
+  it('los enlaces van en una nav con nombre y miden 44 px de alto (MOV-4, ACC-12)', async () => {
+    render(await AppFooter())
+    const nav = screen.getByRole('navigation')
+    expect(nav).toHaveAttribute('aria-label')
+    for (const a of Array.from(nav.querySelectorAll('a'))) expect(a.className).toContain('min-h-11')
+  })
+
+  // Regresión (V8/D1): `border-border/40` no generaba regla y el borde salía gris.
+  it('usa un borde que existe (border-surface-border)', async () => {
+    const { container } = render(await AppFooter())
+    const footer = container.querySelector('footer')!
+    expect(footer.className).toContain('border-surface-border')
+    expect(footer.className).not.toContain('border-border/40')
+  })
+
   it('atribuye los datos a TMDB y RAWG con enlace, como exigen', async () => {
     render(await AppFooter())
     expect(screen.getByRole('link', { name: 'TMDB' })).toHaveAttribute('href', 'https://www.themoviedb.org')

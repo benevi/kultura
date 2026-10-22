@@ -1,8 +1,17 @@
+import { headers } from 'next/headers'
 import { getTranslations } from 'next-intl/server'
 import { Link } from '@/i18n/navigation'
 import { NavLinks } from '@/components/layout/NavLinks'
 import { AvatarDropdown } from '@/components/layout/AvatarDropdown'
-import { LanguageSwitcher } from '@/components/layout/LanguageSwitcher'
+import { SocialMenu } from '@/components/layout/SocialMenu'
+import {
+  FOCUS_RING,
+  HEADER_ICON_BOX,
+  HEADER_ICON_CURRENT,
+  CountBadge,
+  isNavActive,
+  stripLocale,
+} from '@/components/layout/nav-shared'
 import { Logo } from '@/components/layout/Logo'
 import { IconBell } from '@/components/icons'
 
@@ -18,44 +27,45 @@ interface AuthHeaderProps {
   unreadCount: number
 }
 
+/**
+ * Cabecera con sesión (DISENO.md): 56 px, opaca. Logo a la izquierda, los 5
+ * destinos en el centro (solo escritorio; en móvil van en `BottomNav`) y a la
+ * derecha tres cajas de 44×44: Social, notificaciones y avatar. A 320 px
+ * caben logo + 3 cajas sin scroll horizontal (el idioma va en el menú del
+ * avatar).
+ */
 export async function AuthHeader({ profile, unreadCount }: AuthHeaderProps) {
   const t = await getTranslations('nav')
+  // Ruta actual sin locale (la deja el middleware en `x-pathname`), para marcar
+  // la campana con `aria-current` cuando estás en Notificaciones (ACC-7).
+  const path = stripLocale(headers().get('x-pathname') ?? '/')
+  const onNotifications = isNavActive(path, '/notifications')
 
   return (
     <header className="sticky top-0 z-40 bg-surface-default border-b border-surface-border">
-      <div className="flex items-center h-14 max-w-6xl mx-auto px-4 md:px-8">
-        {/* Logo */}
-        <Link href="/home" className="flex-shrink-0 hover:opacity-80 transition-opacity">
+      <div className="relative flex items-center gap-2 h-14 max-w-6xl mx-auto px-4 md:px-8">
+        <Link
+          href="/home"
+          className={`flex items-center min-h-11 flex-shrink-0 rounded-[14px] hover:opacity-80 transition-opacity ${FOCUS_RING}`}
+        >
           <Logo size={24} />
         </Link>
 
-        {/* Desktop nav (centered) */}
-        <NavLinks />
+        <NavLinks username={profile.username} />
 
-        {/* Right icons */}
-        <div className="flex items-center gap-1.5 ml-auto">
-          {/* E-DISCOVER-SEARCH-MERGE: el icono de lupa se retiró del header —
-              el buscador vive dentro de /discover (entrada "Descubrir" de la
-              nav), así que un acceso aparte duplicaba el mismo destino. */}
+        <div className="flex items-center gap-2 ml-auto">
+          <SocialMenu />
 
-          {/* Notifications bell — visible on all viewports */}
           <Link
             href="/notifications"
-            aria-label={t('notifications')}
-            className="relative flex items-center justify-center w-8 h-8 text-muted hover:text-text hover:bg-surface2 rounded-md transition-colors"
+            aria-label={t('notificationsLabel', { count: unreadCount })}
+            aria-current={onNotifications ? 'page' : undefined}
+            className={`${HEADER_ICON_BOX} ${onNotifications ? HEADER_ICON_CURRENT : ''}`}
           >
-            <IconBell className="w-[18px] h-[18px]" />
-            {unreadCount > 0 && (
-              <span className="absolute -top-0.5 -right-0.5 min-w-[16px] h-4 bg-accent-positive text-on-accent-positive text-[10px] font-bold rounded-full flex items-center justify-center px-0.5 leading-none">
-                {unreadCount > 99 ? '99+' : unreadCount}
-              </span>
-            )}
+            <IconBell className="w-5 h-5" />
+            <CountBadge count={unreadCount} />
           </Link>
 
-          {/* Language switcher */}
-          <LanguageSwitcher />
-
-          {/* Avatar dropdown */}
           <AvatarDropdown
             username={profile.username}
             avatarColor={profile.avatar_color}

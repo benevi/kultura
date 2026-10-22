@@ -1,10 +1,9 @@
 // ============================================================
-// KULTURA — NavLinks unit tests (E96, actualizado en G2)
-// Badge de mensajes no leídos en el link de chat (nav desktop) +
-// icono/pill de estado activo introducidos en G2.
+// KULTURA — NavLinks (navegación de escritorio, DIS-9)
+// Los 5 destinos comunes, activo por prefijo y marcado accesible.
 // ============================================================
 
-import { render, screen } from '@testing-library/react'
+import { render, screen, within } from '@testing-library/react'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 
 vi.mock('next-intl', () => ({
@@ -12,12 +11,10 @@ vi.mock('next-intl', () => ({
     const map: Record<string, string> = {
       home: 'Inicio',
       discover: 'Descubrir',
-      library: 'Mi biblioteca',
+      libraryTab: 'Biblioteca',
       lists: 'Listas',
-      chat: 'Mensajes',
-      friends: 'Amigos',
-      groups: 'Grupos',
-      suggestions: 'Sugerencias',
+      profileTab: 'Perfil',
+      primaryNav: 'Navegación principal',
     }
     return map[key] ?? key
   }),
@@ -25,69 +22,91 @@ vi.mock('next-intl', () => ({
 
 const mockPathname = vi.hoisted(() => ({ value: '/home' }))
 vi.mock('@/i18n/navigation', () => ({
-  Link: ({ href, children, className }: { href: string; children: React.ReactNode; className?: string }) => (
-    <a href={href} className={className}>{children}</a>
+  Link: ({ href, children, className, ...rest }: { href: string; children: React.ReactNode; className?: string }) => (
+    <a href={href} className={className} {...rest}>{children}</a>
   ),
   usePathname: vi.fn(() => mockPathname.value),
 }))
 
-const unreadState = vi.hoisted(() => ({ count: 0 }))
-vi.mock('@/components/layout/UnreadChatProvider', () => ({
-  useUnreadChat: () => ({
-    unreadCount: unreadState.count,
-    refreshUnread: vi.fn(),
-    markConversationRead: vi.fn(),
-  }),
-}))
-
 import { NavLinks } from '@/components/layout/NavLinks'
+import { isNavActive, primaryNavItems, stripLocale } from '@/components/layout/nav-shared'
 
 describe('NavLinks', () => {
   beforeEach(() => {
-    unreadState.count = 0
     mockPathname.value = '/home'
   })
 
-  it('renderiza los 8 links de navegación', () => {
-    render(<NavLinks />)
-    for (const label of ['Inicio', 'Descubrir', 'Mi biblioteca', 'Listas', 'Mensajes', 'Amigos', 'Grupos', 'Sugerencias']) {
-      expect(screen.getByText(label)).toBeInTheDocument()
+  it('pinta los 5 destinos en orden: Inicio, Descubrir, Biblioteca, Listas, Perfil', () => {
+    render(<NavLinks username="ana" />)
+    const nav = screen.getByRole('navigation', { name: 'Navegación principal' })
+    const links = within(nav).getAllByRole('link')
+    expect(links.map((a) => a.textContent)).toEqual(['Inicio', 'Descubrir', 'Biblioteca', 'Listas', 'Perfil'])
+    expect(links.map((a) => a.getAttribute('href'))).toEqual(['/home', '/discover', '/library', '/lists', '/profile/ana'])
+  })
+
+  it('ya no mete chat, amigos, grupos ni sugerencias en la barra (van en Social y en el avatar)', () => {
+    render(<NavLinks username="ana" />)
+    for (const href of ['/chat', '/friends', '/groups', '/suggestions']) {
+      expect(document.querySelector(`a[href="${href}"]`)).toBeNull()
     }
   })
 
-  it('cada link tiene un icono (svg) junto a la etiqueta', () => {
-    render(<NavLinks />)
-    const link = screen.getByText('Inicio').closest('a')
-    expect(link?.querySelector('svg')).toBeInTheDocument()
-  })
-
-  it('la ruta activa recibe el tratamiento de pill (fondo accent-positive)', () => {
+  it('el activo lleva aria-current="page" y pastilla neutra (no el acento)', () => {
     mockPathname.value = '/discover'
-    render(<NavLinks />)
-    const activeLink = screen.getByText('Descubrir').closest('a')
-    const inactiveLink = screen.getByText('Inicio').closest('a')
-    expect(activeLink?.className).toContain('bg-accent-positive')
-    expect(activeLink?.className).toContain('text-on-accent-positive')
-    expect(inactiveLink?.className).not.toContain('bg-accent-positive')
-    expect(inactiveLink?.className).toContain('text-text-secondary')
+    render(<NavLinks username="ana" />)
+    const active = screen.getByRole('link', { name: 'Descubrir' })
+    const inactive = screen.getByRole('link', { name: 'Inicio' })
+    expect(active).toHaveAttribute('aria-current', 'page')
+    expect(inactive).not.toHaveAttribute('aria-current')
+    expect(active.className).toContain('bg-surface-elevated')
+    expect(active.className).not.toContain('bg-accent')
   })
 
-  it('sin no-leídos no muestra badge', () => {
-    render(<NavLinks />)
-    expect(screen.queryByText(/^\d+$/)).toBeNull()
+  // Regresión (V10/MOV-7): el activo era `pathname === href`, así que en una
+  // subpágina no se marcaba ninguna pestaña.
+  it('se marca por prefijo: /lists/abc → Listas, /profile/ana/x → Perfil', () => {
+    mockPathname.value = '/lists/abc'
+    const { unmount } = render(<NavLinks username="ana" />)
+    expect(screen.getByRole('link', { name: 'Listas' })).toHaveAttribute('aria-current', 'page')
+    unmount()
+    mockPathname.value = '/profile/ana'
+    render(<NavLinks username="ana" />)
+    expect(screen.getByRole('link', { name: 'Perfil' })).toHaveAttribute('aria-current', 'page')
   })
 
-  it('con 5 no-leídos muestra badge "5" en el link de chat', () => {
-    unreadState.count = 5
-    render(<NavLinks />)
-    const badge = screen.getByText('5')
-    expect(badge).toBeInTheDocument()
-    expect(badge.closest('a')).toHaveAttribute('href', '/chat')
+  it('el perfil de OTRA persona no marca «Perfil»', () => {
+    mockPathname.value = '/profile/benevi'
+    render(<NavLinks username="ana" />)
+    expect(screen.getByRole('link', { name: 'Perfil' })).not.toHaveAttribute('aria-current')
   })
 
-  it('con más de 99 muestra "99+"', () => {
-    unreadState.count = 150
-    render(<NavLinks />)
-    expect(screen.getByText('99+')).toBeInTheDocument()
+  it('cada enlace mide al menos 44 px de alto', () => {
+    render(<NavLinks username="ana" />)
+    for (const a of screen.getAllByRole('link')) expect(a.className).toContain('min-h-11')
+  })
+})
+
+describe('isNavActive', () => {
+  it('compara por segmentos, no por texto', () => {
+    expect(isNavActive('/chat/123', '/chat')).toBe(true)
+    expect(isNavActive('/chat', '/chat')).toBe(true)
+    expect(isNavActive('/chat/', '/chat')).toBe(true)
+    expect(isNavActive('/chatroom', '/chat')).toBe(false)
+    expect(isNavActive('/home', '/chat')).toBe(false)
+  })
+})
+
+describe('primaryNavItems', () => {
+  it('codifica el nombre de usuario en la URL del perfil', () => {
+    expect(primaryNavItems('a b').at(-1)?.href).toBe('/profile/a%20b')
+  })
+})
+
+describe('stripLocale', () => {
+  it('quita solo el prefijo de idioma', () => {
+    expect(stripLocale('/es/chat/1')).toBe('/chat/1')
+    expect(stripLocale('/en')).toBe('/')
+    expect(stripLocale('/es?x=1')).toBe('?x=1')
+    expect(stripLocale('/estrenos')).toBe('/estrenos')
   })
 })
