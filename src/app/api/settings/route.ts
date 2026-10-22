@@ -1,13 +1,17 @@
 // ============================================================
 // KULTURA — Route Handler: /api/settings
-// GET:   devuelve username, avatar_color, preferred_locale del usuario
+// GET:   devuelve el perfil del usuario (fila de `users`)
 // PATCH: actualiza los campos enviados (validación Zod)
 //
 // La base solo deja actualizar con el JWT del usuario bio, avatar_icon,
-// avatar_color y preferred_locale (migración 20261023020001_harden_rls). El
-// nombre de usuario se cambia con el cliente admin, después de validar sesión,
-// formato y que no esté cogido; por eso aquí se corta a mano la cuenta demo,
-// que el admin no frena.
+// avatar_color, preferred_locale y (desde F-12) library_visibility. El nombre
+// de usuario se cambia con el cliente admin, después de validar sesión,
+// formato, nombres reservados y que no esté cogido (ni como nombre antiguo de
+// otra persona, que sigue redirigiendo a ella); por eso aquí se corta a mano la
+// cuenta demo, que el admin no frena.
+//
+// F-12 (onboarding): `accept_terms` y `onboarding_done` los guarda el servidor
+// en `account_state` (o en `app_metadata` si la migración aún no está).
 // ============================================================
 
 import { NextRequest, NextResponse } from 'next/server'
@@ -18,17 +22,14 @@ import { isValidAvatarColor, isValidLocale } from '@/lib/constants/avatarColors'
 import { isValidAvatarIcon } from '@/components/icons/avatars'
 import { checkRateLimit, LIMITS } from '@/lib/rate-limit'
 import { DEMO_READ_ONLY_ERROR, isDemoUser } from '@/lib/demo'
+import { LIBRARY_VISIBILITIES, USERNAME_REGEX, initialsFor, isReservedUsername } from './identity'
+import { isNotMigrated, markOnboarded, recordTermsAcceptance } from './account-state'
 
 /** Tope de la bio: el mismo que el `maxLength` del editor (`ProfileBio`). */
 const BIO_MAX_LENGTH = 200
 
 const PatchSchema = z.object({
-  username: z
-    .string()
-    .min(3)
-    .max(20)
-    .regex(/^[a-zA-Z0-9_]+$/)
-    .optional(),
+  username: z.string().regex(USERNAME_REGEX).optional(),
   avatar_color: z
     .string()
     .refine(isValidAvatarColor, { message: 'invalid_avatar_color' })
@@ -51,7 +52,15 @@ const PatchSchema = z.object({
     .pipe(z.string().max(BIO_MAX_LENGTH))
     .nullable()
     .optional(),
+  library_visibility: z.enum(LIBRARY_VISIBILITIES).optional(),
+  /** Paso 1 de /welcome (alta con Google): "tengo 14 años o más y acepto". */
+  accept_terms: z.literal(true).optional(),
+  /** Fin (o salto) del onboarding. */
+  onboarding_done: z.literal(true).optional(),
 })
+
+/** Columnas que pueden no existir todavía (migración de F-12 sin aplicar). */
+const OPTIONAL_COLUMNS = ['library_visibility'] as const
 
 export async function GET(): Promise<NextResponse> {
   const supabase = createClient()
@@ -98,9 +107,28 @@ export async function PATCH(req: NextRequest): Promise<NextResponse> {
     return NextResponse.json({ error: DEMO_READ_ONLY_ERROR }, { status: 403 })
   }
 
-  const { username, avatar_color, preferred_locale, avatar_icon, bio } = parsed.data
+  const {
+    avatar_color, preferred_locale, avatar_icon, bio, library_visibility,
+    accept_terms, onboarding_done,
+  } = parsed.data
+  let { username } = parsed.data
+
+  // El nombre que ya tiene no se revalida: un nombre antiguo que hoy estaría
+  // reservado no puede impedir guardar el color o el idioma.
+  if (username) {
+    const { data: me } = await supabase
+      .from('users')
+      .select('username')
+      .eq('id', user.id)
+      .maybeSingle()
+    if ((me as { username?: string } | null)?.username === username) username = undefined
+  }
 
   if (username) {
+    if (isReservedUsername(username)) {
+      return NextResponse.json({ error: 'username_reserved' }, { status: 409 })
+    }
+
     const { data: existing } = await supabase
       .from('users')
       .select('id')
@@ -121,28 +149,82 @@ export async function PATCH(req: NextRequest): Promise<NextResponse> {
   // contra `undefined` y no la comprobación de veracidad.
   if (avatar_icon !== undefined) updates.avatar_icon = avatar_icon
   if (bio !== undefined) updates.bio = bio ? bio : null
+  if (library_visibility !== undefined) updates.library_visibility = library_visibility
 
-  if (Object.keys(updates).length === 0) {
-    return NextResponse.json({ success: true, updated: {} })
+  const needsAdmin = updates.username !== undefined || accept_terms || onboarding_done
+  const admin = needsAdmin ? createAdminClient() : null
+
+  // Un nombre antiguo de OTRA persona sigue redirigiendo a ella (308 desde
+  // /u/<antiguo>): quedárselo secuestraría sus enlaces compartidos.
+  if (admin && username) {
+    const { data: previous, error: historyError } = await admin
+      .from('username_history')
+      .select('user_id')
+      .eq('old_username', username)
+      .maybeSingle()
+    if (!historyError && previous && (previous as { user_id: string }).user_id !== user.id) {
+      return NextResponse.json({ error: 'username_taken' }, { status: 409 })
+    }
+    updates.avatar_initials = initialsFor(username)
   }
 
-  // Con username, todo el cambio va en una sola escritura admin (atómica); sin
-  // él, con el JWT del usuario, que sigue pasando por RLS y por demo_no_update.
-  const writer = updates.username !== undefined ? createAdminClient() : supabase
-  const { data: updated, error: updateError } = await writer
-    .from('users')
-    .update(updates)
-    .eq('id', user.id)
-    .select('*')
-    .single()
+  let updated: Record<string, unknown> | null = null
+  const ignored: string[] = []
 
-  // 23505: otro usuario se quedó el nombre entre la comprobación y la escritura.
-  if (updateError?.code === '23505') {
-    return NextResponse.json({ error: 'username_taken' }, { status: 409 })
-  }
-  if (updateError || !updated) {
-    return NextResponse.json({ error: 'Failed to update' }, { status: 500 })
+  if (Object.keys(updates).length > 0) {
+    // Con username, todo el cambio va en una sola escritura admin (atómica);
+    // sin él, con el JWT del usuario, que sigue pasando por RLS y por
+    // demo_no_update.
+    const writer = updates.username !== undefined && admin ? admin : supabase
+    const write = (fields: Record<string, string | null>) =>
+      writer.from('users').update(fields).eq('id', user.id).select('*').single()
+
+    let { data, error: updateError } = await write(updates)
+
+    // Migración de F-12 sin aplicar: la columna nueva no existe. Se guarda el
+    // resto y se avisa de lo que no se pudo (el selector ni se enseña).
+    if (updateError && isNotMigrated(updateError)) {
+      const rest = { ...updates }
+      for (const column of OPTIONAL_COLUMNS) {
+        if (column in rest) {
+          delete rest[column]
+          ignored.push(column)
+        }
+      }
+      if (Object.keys(rest).length > 0 && ignored.length > 0) {
+        ;({ data, error: updateError } = await write(rest))
+      } else if (ignored.length > 0) {
+        data = {}
+        updateError = null
+      }
+    }
+
+    // 23505: otro usuario se quedó el nombre entre la comprobación y la
+    // escritura (o solo difiere en mayúsculas). 23514: CHECK de la base.
+    if (updateError?.code === '23505') {
+      return NextResponse.json({ error: 'username_taken' }, { status: 409 })
+    }
+    if (updateError?.code === '23514') {
+      return NextResponse.json({ error: 'username_reserved' }, { status: 409 })
+    }
+    if (updateError || !data) {
+      return NextResponse.json({ error: 'Failed to update' }, { status: 500 })
+    }
+    updated = data as Record<string, unknown>
   }
 
-  return NextResponse.json({ success: true, updated })
+  if (admin && accept_terms) {
+    const ok = await recordTermsAcceptance(admin, user)
+    if (!ok) return NextResponse.json({ error: 'Failed to update' }, { status: 500 })
+  }
+  if (admin && onboarding_done) {
+    const ok = await markOnboarded(admin, user)
+    if (!ok) return NextResponse.json({ error: 'Failed to update' }, { status: 500 })
+  }
+
+  return NextResponse.json({
+    success: true,
+    updated: updated ?? {},
+    ...(ignored.length > 0 ? { ignored } : {}),
+  })
 }

@@ -99,8 +99,9 @@ describe('PATCH /api/settings', () => {
     expect(res.status).toBe(200)
     const body = await res.json()
     expect(body.success).toBe(true)
-    // La base ya no deja cambiar `username` con el JWT del usuario.
-    expect(admin.update).toHaveBeenCalledWith({ username: 'newname' })
+    // La base ya no deja cambiar `username` con el JWT del usuario. Las
+    // iniciales siguen al nombre nuevo (antes se quedaban las del email).
+    expect(admin.update).toHaveBeenCalledWith({ username: 'newname', avatar_initials: 'NE' })
     expect(user.update).not.toHaveBeenCalled()
   })
 

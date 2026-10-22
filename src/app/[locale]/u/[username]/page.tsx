@@ -5,7 +5,7 @@
 // propósito: ese grupo redirige a login a quien no tiene sesión.
 // ============================================================
 
-import { notFound } from 'next/navigation'
+import { notFound, permanentRedirect } from 'next/navigation'
 import type { Metadata } from 'next'
 import { getTranslations } from 'next-intl/server'
 import { Header } from '@/components/layout/Header'
@@ -16,7 +16,11 @@ import {
   PublicListRow,
   SignUpCta,
 } from '@/components/collection/PublicCollection'
-import { getPublicCollection, type PublicList } from '@/lib/social/public-collection'
+import {
+  getPublicCollection,
+  resolveRenamedUsername,
+  type PublicList,
+} from '@/lib/social/public-collection'
 import type { MediaType } from '@/types/media'
 
 interface Props {
@@ -55,9 +59,16 @@ function groupByFormat(lists: PublicList[]): Array<[MediaType, PublicList[]]> {
 }
 
 export default async function PublicCollectionPage({ params }: Props) {
-  const { username } = await params
-  const collection = await getPublicCollection(decodeURIComponent(username))
-  if (!collection) notFound()
+  const { locale, username } = await params
+  const name = decodeURIComponent(username)
+  const collection = await getPublicCollection(name)
+  if (!collection) {
+    // R11 / ROJO-6: un nombre antiguo redirige (308) al actual, así los
+    // enlaces ya compartidos no se rompen al cambiar de nombre.
+    const current = await resolveRenamedUsername(name)
+    if (current) permanentRedirect(`/${locale}/u/${encodeURIComponent(current)}`)
+    notFound()
+  }
 
   const t = await getTranslations('collection')
   const tm = await getTranslations('media')

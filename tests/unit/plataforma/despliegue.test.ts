@@ -1,7 +1,8 @@
 /**
  * Tests unitarios — configuración de despliegue y operaciones.
  * - D-09/COD-8: funciones de Vercel en Frankfurt (`fra1`), junto a Supabase
- *   (Central EU). El cron de /api/health se mantiene.
+ *   (Central EU). Un solo cron diario, /api/cron/daily (F-12), que hace el
+ *   keep-alive de /api/health y la purga de cuentas.
  * - `.nvmrc` = misma versión mayor de Node que CI y que el proyecto en Vercel
  *   (24.x), y compatible con `engines`.
  * - D-20: el workflow de backup existe, está cifrado y no sube nada en claro.
@@ -20,8 +21,8 @@ describe("vercel.json", () => {
     expect(vercel.regions).toEqual(["fra1"]);
   });
 
-  it("conserva el cron diario de /api/health", () => {
-    expect(vercel.crons).toContainEqual({ path: "/api/health", schedule: "0 6 * * *" });
+  it("un único cron diario (/api/cron/daily llama a /api/health por dentro; plan Hobby)", () => {
+    expect(vercel.crons).toEqual([{ path: "/api/cron/daily", schedule: "0 6 * * *" }]);
   });
 });
 

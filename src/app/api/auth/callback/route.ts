@@ -6,6 +6,7 @@ import { routing } from "@/i18n/routing";
 import { isValidAvatarIcon } from "@/components/icons/avatars";
 import { isDemoUser } from "@/lib/demo";
 import { localeFromPath, resolveAuthNext } from "@/lib/utils/safe-redirect";
+import { needsOnboarding } from "@/app/api/settings/account-state";
 import {
   getCallbackErrorCode,
   getProviderErrorCode,
@@ -50,6 +51,19 @@ async function applySignupAvatar(supabase: ServerClient): Promise<void> {
   }
 }
 
+/**
+ * ¿Cuenta sin onboarding? (F-12). Cualquier fallo → no: entrar nunca depende
+ * de esto, y el onboarding se puede saltar.
+ */
+async function shouldWelcome(supabase: ServerClient): Promise<boolean> {
+  try {
+    const { data } = await supabase.auth.getUser();
+    return data.user ? await needsOnboarding(supabase, data.user) : false;
+  } catch {
+    return false;
+  }
+}
+
 /** Locale de la vuelta: el del `next`, si no el de la cookie de next-intl. */
 function pickLocale(request: NextRequest, rawNext: string | null): string {
   const fromNext = localeFromPath(rawNext);
@@ -88,12 +102,20 @@ export async function GET(request: NextRequest) {
   const fail = (code: CallbackErrorCode) =>
     NextResponse.redirect(`${origin}/${locale}/login?error=${code}`);
   const done = async (supabase?: ServerClient) => {
+    let welcome = false;
     if (supabase && type !== "recovery" && type !== "email_change") {
       await applySignupAvatar(supabase);
+      welcome = await shouldWelcome(supabase);
     }
     const next =
       type === "recovery" ? `/${locale}/reset-password` : resolveAuthNext(rawNext, locale);
-    return NextResponse.redirect(`${origin}${next}`);
+    // CRE-6: las cuentas nuevas (correo confirmado o primera vez con Google)
+    // pasan por el onboarding, que termina en el destino original.
+    const target =
+      welcome && !next.startsWith(`/${locale}/welcome`)
+        ? `/${locale}/welcome?next=${encodeURIComponent(next)}`
+        : next;
+    return NextResponse.redirect(`${origin}${target}`);
   };
 
   // Supabase devuelve aquí los errores del enlace (caducado, ya usado…).
