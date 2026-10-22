@@ -19,7 +19,9 @@
 // ============================================================
 
 import { mangaDexLanguages } from "@/lib/api/locale";
-import { PROVIDER_CACHE } from "@/lib/api/fetch-cache";
+import type { ZodType } from "zod";
+import { ProviderError, providerFetch } from "@/lib/api/http";
+import { mangaDexDetailSchema, mangaDexListSchema } from "@/lib/api/schemas/mangadex";
 
 // ── Internal types ────────────────────────────────────────────────────────────
 
@@ -74,15 +76,33 @@ export function extractMangaCover(manga: MangaDexManga): string | undefined {
  * puede usar un `Record<string,string>` con `set()` — el segundo valor pisaría
  * al primero. Aquí cada entrada es un par y se usa `append`.
  */
+/** Contrato mínimo según el endpoint (COD-1); una ruta desconocida no se valida. */
+function mangaDexSchemaFor(path: string): ZodType | undefined {
+  if (path === "/manga") return mangaDexListSchema;
+  if (/^\/manga\/[0-9a-f-]+$/i.test(path)) return mangaDexDetailSchema;
+  return undefined;
+}
+
 async function mangaDexFetch<T>(
   path: string,
-  params: [string, string][] = []
+  params: [string, string][] = [],
+  schema: ZodType | undefined = mangaDexSchemaFor(path),
+  cache?: false
 ): Promise<T> {
   const url = new URL(`https://api.mangadex.org${path}`);
   for (const [k, v] of params) url.searchParams.append(k, v);
-  const res = await fetch(url.toString(), PROVIDER_CACHE);
-  if (!res.ok) throw new Error(`MangaDex ${path} → ${res.status}`);
-  return res.json() as Promise<T>;
+  return providerFetch<T>("mangadex", url.toString(), {
+    schema,
+    label: path.startsWith("/manga/") ? "/manga/{id}" : path,
+    httpError: (status) =>
+      new ProviderError("mangadex", "http", `MangaDex ${path} → ${status}`, { status }),
+    ...(cache === false ? { cache: false as const } : {}),
+  });
+}
+
+/** Sonda barata para `/api/health?deep=1`: un solo título, sin caché. */
+export async function probeMangaDex(): Promise<void> {
+  await mangaDexFetch("/manga", [["limit", "1"]], mangaDexListSchema, false);
 }
 
 /**

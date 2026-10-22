@@ -6,7 +6,12 @@
 
 import { RAWG_EXCLUDE_NSFW_TAGS, rawgDatesWindow } from "@/lib/api/rawg-maps";
 import { env } from "@/lib/env";
-import { PROVIDER_CACHE } from "@/lib/api/fetch-cache";
+import { ProviderError, providerFetch } from "@/lib/api/http";
+import {
+  rawgDetailSchema,
+  rawgGenresSchema,
+  rawgListSchema,
+} from "@/lib/api/schemas/rawg";
 
 // ── Internal types ────────────────────────────────────────────────────────────
 
@@ -50,9 +55,29 @@ async function rawgFetch<T>(
   const url = new URL(`https://api.rawg.io/api${path}`);
   url.searchParams.set("key", env.RAWG_API_KEY);
   Object.entries(params).forEach(([k, v]) => url.searchParams.set(k, v));
-  const res = await fetch(url.toString(), PROVIDER_CACHE);
-  if (!res.ok) throw new Error(`RAWG ${path} → ${res.status}`);
-  return res.json() as Promise<T>;
+  return providerFetch<T>("rawg", url.toString(), {
+    schema:
+      path === "/games"
+        ? rawgListSchema
+        : /^\/games\/[^/]+$/.test(path)
+          ? rawgDetailSchema
+          : undefined,
+    label: path,
+    httpError: (status) =>
+      new ProviderError("rawg", "http", `RAWG ${path} → ${status}`, { status }),
+  });
+}
+
+/** Sonda barata para `/api/health?deep=1` (un género, sin juegos). */
+export async function probeRawg(): Promise<void> {
+  const url = new URL("https://api.rawg.io/api/genres");
+  url.searchParams.set("key", env.RAWG_API_KEY);
+  url.searchParams.set("page_size", "1");
+  await providerFetch("rawg", url.toString(), {
+    schema: rawgGenresSchema,
+    label: "/genres",
+    cache: false,
+  });
 }
 
 // ── Public API ────────────────────────────────────────────────────────────────

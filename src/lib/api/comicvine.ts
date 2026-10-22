@@ -14,6 +14,14 @@ import {
   type ComicFilters,
 } from "@/lib/api/comicvine-maps";
 import { volumenesMin } from "@/lib/api/jikan-maps";
+import type { ZodType } from "zod";
+import { ProviderError, providerFetch } from "@/lib/api/http";
+import {
+  comicVineIssueSchema,
+  comicVineIssuesSchema,
+  comicVineTypesSchema,
+  comicVineVolumesSchema,
+} from "@/lib/api/schemas/comicvine";
 import {
   acceptsComicIssue,
   acceptsComicPublisher,
@@ -98,22 +106,66 @@ function getKey(): string {
   return key;
 }
 
+/**
+ * `status_code` de ComicVine → status HTTP equivalente (COD-B3). ComicVine
+ * avisa de sus errores DENTRO del cuerpo (1 = OK); sin esta comprobación una
+ * clave inválida o el límite de peticiones se tomaban por "sin resultados" y
+ * se guardaban una hora en caché.
+ *   100 clave inválida → 401 · 101 objeto inexistente → 404
+ *   107 límite de peticiones → 429 · el resto (URL, filtro, formato) → 502
+ */
+export function comicVineStatusToHttp(code: number): number {
+  if (code === 100) return 401;
+  if (code === 101) return 404;
+  if (code === 107) return 429;
+  return 502;
+}
+
+function checkComicVineStatus(json: unknown): void {
+  const body = json as { status_code?: unknown; error?: unknown } | null;
+  const code = body?.status_code;
+  // Sin `status_code` no se puede afirmar nada: se deja pasar (el contrato
+  // vigila la forma de `results`).
+  if (typeof code !== "number" || code === 1) return;
+  const detail = typeof body?.error === "string" ? body.error : "error";
+  throw new ProviderError(
+    "comicvine",
+    "upstream",
+    `ComicVine status_code ${code}: ${detail}`,
+    { status: comicVineStatusToHttp(code) }
+  );
+}
+
 async function comicVineFetch<T>(
   path: string,
-  params: Record<string, string> = {}
+  params: Record<string, string> = {},
+  schema?: ZodType,
+  cache?: false
 ): Promise<T> {
   const url = new URL(`${COMICVINE_BASE}${path}`);
   url.searchParams.set("api_key", getKey());
   url.searchParams.set("format", "json");
   Object.entries(params).forEach(([k, v]) => url.searchParams.set(k, v));
 
-  // ComicVine rechaza peticiones sin User-Agent identificable.
-  const res = await fetch(url.toString(), {
-    headers: { "User-Agent": "KulturaApp/1.0" },
-    next: { revalidate: 3600 },
+  // ComicVine rechaza peticiones sin User-Agent identificable: lo pone
+  // `providerFetch` (el mismo para todos los proveedores).
+  return providerFetch<T>("comicvine", url.toString(), {
+    schema,
+    label: path,
+    checkBody: checkComicVineStatus,
+    httpError: (status) =>
+      new ProviderError("comicvine", "http", `ComicVine ${status}`, { status }),
+    ...(cache === false ? { cache: false as const } : {}),
   });
-  if (!res.ok) throw new Error(`ComicVine ${res.status}`);
-  return res.json() as Promise<T>;
+}
+
+/**
+ * Sonda barata para `/api/health?deep=1`: `/types/` no toca los recursos
+ * `issues`/`volumes`, que son los que tienen el límite de 200 peticiones/hora
+ * que usa el catálogo.
+ */
+export async function probeComicVine(): Promise<void> {
+  await comicVineFetch("/types/", {}, comicVineTypesSchema, false);
 }
 
 /**
@@ -124,15 +176,20 @@ export async function searchComics(
   query: string,
   page = 1
 ): Promise<ComicVineSearchResponse> {
-  return comicVineFetch<ComicVineSearchResponse>("/issues/", {
-    filter: `name:${query}`,
-    limit: "20",
-    // E-DISCOVER-SEARCH-MERGE: paginación por offset, el mismo mecanismo que ya
-    // usa `getRecentComics`. Antes solo servía la primera página.
-    offset: String((page - 1) * 20),
-    sort: "cover_date:desc",
-    field_list: "id,name,issue_number,cover_date,store_date,deck,description,image,volume",
-  });
+  return comicVineFetch<ComicVineSearchResponse>(
+    "/issues/",
+    {
+      filter: `name:${query}`,
+      limit: "20",
+      // E-DISCOVER-SEARCH-MERGE: paginación por offset, el mismo mecanismo que
+      // ya usa `getRecentComics`. Antes solo servía la primera página.
+      offset: String((page - 1) * 20),
+      sort: "cover_date:desc",
+      field_list:
+        "id,name,issue_number,cover_date,store_date,deck,description,image,volume",
+    },
+    comicVineIssuesSchema
+  );
 }
 
 /**
@@ -144,7 +201,8 @@ export async function getComic(externalId: string): Promise<ComicVineIssue> {
     `/issue/4000-${externalId}/`,
     {
       field_list: "id,name,issue_number,cover_date,store_date,deck,image,volume",
-    }
+    },
+    comicVineIssueSchema
   );
   if (!resp.results) throw new Error(`ComicVine issue ${externalId} sin results`);
   return resp.results;
@@ -163,14 +221,18 @@ export async function resolveVolumePublishers(
   const missing = unique.filter((id) => !volumePublisherCache.has(id));
 
   if (missing.length > 0) {
-    const resp = await comicVineFetch<ComicVineVolumesResponse>("/volumes/", {
-      filter: `id:${missing.join("|")}`,
-      // R4c-2: count_of_issues se pide en el MISMO batch (sin fetch extra por
-      // item). E-COMIC-CONCEPTO: `concepts` viaja en esa misma petición — es la
-      // señal que separa el manga de la BD dentro de una misma editorial.
-      field_list: "id,publisher,count_of_issues,concepts",
-      limit: "100",
-    });
+    const resp = await comicVineFetch<ComicVineVolumesResponse>(
+      "/volumes/",
+      {
+        filter: `id:${missing.join("|")}`,
+        // R4c-2: count_of_issues se pide en el MISMO batch (sin fetch extra por
+        // item). E-COMIC-CONCEPTO: `concepts` viaja en esa misma petición — es la
+        // señal que separa el manga de la BD dentro de una misma editorial.
+        field_list: "id,publisher,count_of_issues,concepts",
+        limit: "100",
+      },
+      comicVineVolumesSchema
+    );
     for (const vol of resp.results ?? []) {
       volumePublisherCache.set(vol.id, vol.publisher?.name ?? "");
       volumeCountCache.set(
@@ -326,7 +388,11 @@ async function fetchComicWindow(
   // página de "Más recientes" son números que aún no han salido.
   params.filter = comicCoverDateWindow(filters.year);
 
-  const resp = await comicVineFetch<ComicVineSearchResponse>("/issues/", params);
+  const resp = await comicVineFetch<ComicVineSearchResponse>(
+    "/issues/",
+    params,
+    comicVineIssuesSchema
+  );
   if (!resp.results) return { items: [], total: 0, hasMore: false };
 
   const volumeIds = resp.results

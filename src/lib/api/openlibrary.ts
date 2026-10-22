@@ -20,7 +20,12 @@
 
 // ── Internal types ────────────────────────────────────────────────────────────
 
-import { PROVIDER_CACHE } from "@/lib/api/fetch-cache";
+import type { ZodType } from "zod";
+import { providerFetch, PROVIDER_TIMEOUT_MS } from "@/lib/api/http";
+import {
+  openLibrarySearchSchema,
+  openLibraryWorkSchema,
+} from "@/lib/api/schemas/openlibrary";
 
 export interface OpenLibraryDoc {
   key: string; // "/works/OL7353617W"
@@ -100,23 +105,37 @@ export class OpenLibraryError extends Error {
 /**
  * Plazo máximo por petición. Sin él, una conexión que se queda a medias deja la
  * función serverless esperando hasta que Vercel la mata, y el log no dice nada
- * útil. Con él, el fallo es rápido y nombra la causa.
+ * útil. Con él, el fallo es rápido y nombra la causa. Es el plazo común de
+ * todos los proveedores (`PROVIDER_TIMEOUT_MS`, 6 s; antes aquí eran 8 s).
  */
-export const OPEN_LIBRARY_TIMEOUT_MS = 8000;
+export const OPEN_LIBRARY_TIMEOUT_MS = PROVIDER_TIMEOUT_MS;
 
 async function openLibraryFetch<T>(
   path: string,
-  params: Record<string, string> = {}
+  params: Record<string, string> = {},
+  schema?: ZodType,
+  cache?: false
 ): Promise<T> {
   const url = new URL(`https://openlibrary.org${path}`);
   Object.entries(params).forEach(([k, v]) => url.searchParams.set(k, v));
-  const res = await fetch(url.toString(), {
-    headers: { "User-Agent": "KULTURA/1.0 (kultura app)" },
-    signal: AbortSignal.timeout(OPEN_LIBRARY_TIMEOUT_MS),
-    ...PROVIDER_CACHE,
+  // Open Library pide un User-Agent identificable: lo pone `providerFetch`.
+  return providerFetch<T>("openlibrary", url.toString(), {
+    schema,
+    label: path.startsWith("/works/") ? "/works/{id}.json" : path,
+    timeoutMs: OPEN_LIBRARY_TIMEOUT_MS,
+    httpError: (status) => new OpenLibraryError(path, status),
+    ...(cache === false ? { cache: false as const } : {}),
   });
-  if (!res.ok) throw new OpenLibraryError(path, res.status);
-  return res.json() as Promise<T>;
+}
+
+/** Sonda barata para `/api/health?deep=1`: un resultado y un solo campo. */
+export async function probeOpenLibrary(): Promise<void> {
+  await openLibraryFetch(
+    "/search.json",
+    { q: "dune", limit: "1", fields: "key" },
+    openLibrarySearchSchema,
+    false
+  );
 }
 
 // ── Public API ────────────────────────────────────────────────────────────────
@@ -186,13 +205,17 @@ export async function searchOpenLibrary(
    */
   fields: string = LIST_FIELDS
 ): Promise<OpenLibraryResponse> {
-  return openLibraryFetch<OpenLibraryResponse>("/search.json", {
-    q,
-    page: String(Math.max(1, page)),
-    limit: String(limit),
-    fields,
-    ...params,
-  });
+  return openLibraryFetch<OpenLibraryResponse>(
+    "/search.json",
+    {
+      q,
+      page: String(Math.max(1, page)),
+      limit: String(limit),
+      fields,
+      ...params,
+    },
+    openLibrarySearchSchema
+  );
 }
 
 /**
@@ -247,7 +270,11 @@ export async function getBookDetail(
 
   let description: string | undefined;
   try {
-    const work = await openLibraryFetch<OpenLibraryWork>(`${workKey}.json`);
+    const work = await openLibraryFetch<OpenLibraryWork>(
+      `${workKey}.json`,
+      {},
+      openLibraryWorkSchema
+    );
     description = workDescription(work.description);
   } catch {
     // best-effort: sin description si /works falla
