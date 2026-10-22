@@ -9,6 +9,8 @@ import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { checkRateLimit, LIMITS } from '@/lib/rate-limit'
 import { createLogger } from '@/lib/logger'
+import { upsertMediaFromProvider, mediaFailureStatus } from '@/lib/media/upsert-from-provider'
+import { localeFromRequest } from '@/lib/media/request-locale'
 
 const log = createLogger('api/recommendations')
 
@@ -16,16 +18,8 @@ interface RecommendPayload {
   toUserId: string
   mediaId: string
   message?: string
-  mediaCache?: {
-    externalId: string
-    type: string
-    title: string
-    poster?: string
-    backdrop?: string
-    year?: number
-    synopsis?: string
-    genres?: string[]
-  }
+  /** Lo sigue mandando el cliente, pero se ignora: `media` la escribe el servidor (SEG-2). */
+  mediaCache?: unknown
 }
 
 /** POST /api/recommendations */
@@ -100,28 +94,12 @@ export async function POST(request: Request): Promise<NextResponse> {
     .eq('id', user.id)
     .maybeSingle()
 
-  // Upsert media cache si viene
-  if (body.mediaCache) {
-    const { error: mediaError } = await supabase.from('media').upsert(
-      {
-        id: body.mediaId,
-        external_id: body.mediaCache.externalId,
-        type: body.mediaCache.type,
-        title: body.mediaCache.title,
-        poster: body.mediaCache.poster ?? null,
-        backdrop: body.mediaCache.backdrop ?? null,
-        year: body.mediaCache.year ?? null,
-        synopsis: body.mediaCache.synopsis ?? null,
-        // Ver nota en /api/library: metadata.genres es la fuente real del
-        // perfil de gustos de match-score.ts — sin onConflict real (antes
-        // ignoreDuplicates) nunca se rellenaba/autocuraba.
-        metadata: { genres: body.mediaCache.genres ?? [] },
-      },
-      { onConflict: 'id' }
-    )
-    if (mediaError) {
-      return NextResponse.json({ error: 'Failed to cache media' }, { status: 500 })
-    }
+  // La fila de `media` (FK de recommendations) la garantiza el servidor con la
+  // ficha del proveedor; `mediaCache` se ignora (SEG-2).
+  const media = await upsertMediaFromProvider(body.mediaId, { locale: localeFromRequest(request) })
+  if (!media.ok) {
+    const failure = mediaFailureStatus(media.reason)
+    return NextResponse.json({ error: failure.error }, { status: failure.status })
   }
 
   // Insertar recomendación
@@ -151,7 +129,8 @@ export async function POST(request: Request): Promise<NextResponse> {
       fromUserId: user.id,
       fromUsername: senderProfile?.username ?? '',
       mediaId: body.mediaId,
-      mediaTitle: body.mediaCache?.title ?? '',
+      // Del catálogo, no del remitente: la notificación la lee otra persona.
+      mediaTitle: media.title,
       message: body.message ?? null,
     },
   })

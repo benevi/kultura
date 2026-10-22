@@ -46,10 +46,19 @@ vi.mock('@/lib/supabase/admin', () => ({
   }),
 }))
 
+// La fila de `media` la garantiza el servidor (SEG-2); se prueba en
+// tests/unit/media. Aquí solo importa cómo la usa la ruta.
+const mockEnsureMedia = vi.fn()
+vi.mock('@/lib/media/upsert-from-provider', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@/lib/media/upsert-from-provider')>()),
+  upsertMediaFromProvider: (...a: unknown[]) => mockEnsureMedia(...a),
+}))
+
 describe('POST /api/recommendations', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     mockAdminNotifInsert.mockResolvedValue({ error: null })
+    mockEnsureMedia.mockResolvedValue({ ok: true, id: MEDIA_ID, title: 'Fight Club', created: false })
   })
 
   it('returns 401 if not authenticated', async () => {
@@ -158,7 +167,7 @@ describe('POST /api/recommendations', () => {
     )
   })
 
-  it('upserts media cache when mediaCache is provided', async () => {
+  it('garantiza la fila de media en el servidor e ignora mediaCache (SEG-2)', async () => {
     mockGetUser.mockResolvedValue({ data: { user: AUTH_USER }, error: null })
     mockFromUsers.mockReturnValue({
       select: vi.fn().mockReturnValue({
@@ -180,11 +189,32 @@ describe('POST /api/recommendations', () => {
     const res = await POST(makeRequest({
       toUserId: RECEIVER_ID,
       mediaId: MEDIA_ID,
-      mediaCache: { externalId: '550', type: 'movie', title: 'Fight Club' },
+      mediaCache: { externalId: '550', type: 'movie', title: 'Otro título' },
     }))
 
     expect(res.status).toBe(201)
-    expect(mockUpsert).toHaveBeenCalledOnce()
+    expect(mockEnsureMedia).toHaveBeenCalledWith(MEDIA_ID, { locale: 'es' })
+    expect(mockUpsert).not.toHaveBeenCalled()
+    expect(mockAdminNotifInsert).toHaveBeenCalledWith(
+      expect.objectContaining({ payload: expect.objectContaining({ mediaTitle: 'Fight Club' }) })
+    )
+  })
+
+  it('si el proveedor no da la ficha de un título nuevo → 502 sin recomendación', async () => {
+    mockGetUser.mockResolvedValue({ data: { user: AUTH_USER }, error: null })
+    mockFromUsers.mockReturnValue({
+      select: vi.fn().mockReturnValue({
+        eq: vi.fn().mockReturnValue({
+          maybeSingle: vi.fn().mockResolvedValue({ data: { id: RECEIVER_ID }, error: null }),
+        }),
+      }),
+    })
+    mockEnsureMedia.mockResolvedValue({ ok: false, id: MEDIA_ID, reason: 'unavailable' })
+    const { POST } = await import('@/app/api/recommendations/route')
+    const res = await POST(makeRequest({ toUserId: RECEIVER_ID, mediaId: MEDIA_ID }))
+
+    expect(res.status).toBe(502)
+    expect(mockFromRecommendations).not.toHaveBeenCalled()
   })
 
   it('E83: notif insert failure is logged but recommendation still returns 201', async () => {

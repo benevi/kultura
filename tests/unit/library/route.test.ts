@@ -45,6 +45,14 @@ vi.mock('@/lib/supabase/server', () => ({
   createClient: () => buildSupabaseMock(),
 }))
 
+// La fila de `media` la garantiza el servidor (SEG-2); su lógica se prueba en
+// tests/unit/media. Aquí solo importa cómo la usa la ruta.
+const mockEnsureMedia = vi.fn()
+vi.mock('@/lib/media/upsert-from-provider', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@/lib/media/upsert-from-provider')>()),
+  upsertMediaFromProvider: (...a: unknown[]) => mockEnsureMedia(...a),
+}))
+
 const mockCheckRateLimit = vi.fn<() => { allowed: boolean; retryAfterSeconds: number }>(() => ({
   allowed: true,
   retryAfterSeconds: 0,
@@ -73,6 +81,7 @@ describe('POST /api/library', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     mockCheckRateLimit.mockReturnValue({ allowed: true, retryAfterSeconds: 0 })
+    mockEnsureMedia.mockResolvedValue({ ok: true, id: 'movie_550', title: 'Fight Club', created: false })
   })
 
   it('devuelve 401 si el usuario no está autenticado', async () => {
@@ -123,7 +132,6 @@ describe('POST /api/library', () => {
 
   it('devuelve 200 y la entrada mapeada con upsert correcto', async () => {
     mockGetUser.mockResolvedValueOnce({ data: { user: { id: 'user-uuid-001' } }, error: null })
-    // No mediaCache — skip media upsert
     mockUserMediaUpsert.mockReturnValueOnce({
       select: vi.fn(() => ({
         single: vi.fn().mockResolvedValueOnce({ data: DB_ROW, error: null }),
@@ -141,9 +149,8 @@ describe('POST /api/library', () => {
     expect(body.entry.status).toBe('completed')
   })
 
-  it('upserta en media cuando viene mediaCache', async () => {
+  it('garantiza la fila de media desde el servidor y nunca la escribe con el cliente del usuario', async () => {
     mockGetUser.mockResolvedValueOnce({ data: { user: { id: 'user-uuid-001' } }, error: null })
-    mockMediaUpsert.mockResolvedValueOnce({ error: null })
     mockUserMediaUpsert.mockReturnValueOnce({
       select: vi.fn(() => ({
         single: vi.fn().mockResolvedValueOnce({ data: DB_ROW, error: null }),
@@ -155,18 +162,35 @@ describe('POST /api/library', () => {
       makeRequest({
         mediaId: 'movie_550',
         status: 'completed',
-        mediaCache: {
-          externalId: '550',
-          type: 'movie',
-          title: 'Fight Club',
-          poster: '/poster.jpg',
-          year: 1999,
-        },
+        mediaCache: { externalId: '550', type: 'movie', title: 'Otro título', year: 1999 },
       })
     )
 
     expect(response.status).toBe(200)
-    expect(mockMediaUpsert).toHaveBeenCalledOnce()
+    expect(mockEnsureMedia).toHaveBeenCalledWith('movie_550', { locale: 'es' })
+    expect(mockMediaUpsert).not.toHaveBeenCalled()
+  })
+
+  it('si el proveedor no da la ficha de un título nuevo → 502 y no se toca user_media', async () => {
+    mockGetUser.mockResolvedValueOnce({ data: { user: { id: 'user-uuid-001' } }, error: null })
+    mockEnsureMedia.mockResolvedValueOnce({ ok: false, id: 'movie_550', reason: 'unavailable' })
+
+    const { POST } = await import('@/app/api/library/route')
+    const response = await POST(makeRequest({ mediaId: 'movie_550', status: 'pending' }))
+
+    expect(response.status).toBe(502)
+    expect(mockUserMediaUpsert).not.toHaveBeenCalled()
+  })
+
+  it('un id que ningún proveedor puede resolver → 400', async () => {
+    mockGetUser.mockResolvedValueOnce({ data: { user: { id: 'user-uuid-001' } }, error: null })
+    mockEnsureMedia.mockResolvedValueOnce({ ok: false, id: 'movie_x', reason: 'invalid_id' })
+
+    const { POST } = await import('@/app/api/library/route')
+    const response = await POST(makeRequest({ mediaId: 'movie_x', status: 'pending' }))
+
+    expect(response.status).toBe(400)
+    expect(mockUserMediaUpsert).not.toHaveBeenCalled()
   })
 })
 
