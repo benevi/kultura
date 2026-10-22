@@ -831,3 +831,48 @@ describe("formato de ID — todos los normalizadores", () => {
     expect(r.id).toBe(`${r.type}_${r.externalId}`);
   });
 });
+
+// ── F-06: datos que necesitan los rankings ────────────────────────────────────
+
+describe("F-06 · normalizeAniListAnime (portada ligera y título nativo)", () => {
+  it("prefiere coverImage.large sobre extraLarge (D-10: sin optimizador en catálogo)", () => {
+    const r = normalizeAniListAnime({
+      ...ANILIST_ANIME_FIXTURE,
+      coverImage: { extraLarge: "https://x/xl.jpg", large: "https://x/l.jpg" },
+    });
+    expect(r.poster).toBe("https://x/l.jpg");
+  });
+
+  it("sin large cae a extraLarge", () => {
+    const r = normalizeAniListAnime({
+      ...ANILIST_ANIME_FIXTURE,
+      coverImage: { extraLarge: "https://x/xl.jpg", large: null },
+    });
+    expect(r.poster).toBe("https://x/xl.jpg");
+  });
+
+  it("guarda el título nativo para cruzarlo con TMDB", () => {
+    expect(normalizeAniListAnime(ANILIST_ANIME_FIXTURE).metadata?.nativeTitle).toBe("デスノート");
+    expect(normalizeAniListAnime(ANILIST_ANIME_MINIMAL).metadata?.nativeTitle).toBeUndefined();
+  });
+});
+
+describe("F-06 · normalizeTV (origen para separar anime de series)", () => {
+  it("conserva país de origen, idioma original y nº de votos", () => {
+    const r = normalizeTV({
+      ...TMDB_TV_FIXTURE,
+      origin_country: ["JP"],
+      original_language: "ja",
+      vote_count: 321,
+    } as TmdbTVDetail);
+    expect(r.metadata?.originCountry).toEqual(["JP"]);
+    expect(r.metadata?.originalLanguage).toBe("ja");
+    expect(r.metadata?.voteCount).toBe(321);
+  });
+
+  it("sin esos campos no inventa nada", () => {
+    const r = normalizeTV(TMDB_TV_FIXTURE);
+    expect(r.metadata?.originCountry).toBeUndefined();
+    expect(r.metadata?.originalLanguage).toBeUndefined();
+  });
+});

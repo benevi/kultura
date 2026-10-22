@@ -8,6 +8,7 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 // ── Mocks ─────────────────────────────────────────────────────────────────────
 
 vi.mock("next-intl", () => ({
+  useLocale: () => "en",
   useTranslations: vi.fn(
     () => (key: string) =>
       ({
@@ -80,6 +81,16 @@ describe("SearchBar", () => {
     fireEvent.change(input, { target: { value: "a" } });
     // No fetch should be called synchronously
     expect(global.fetch).not.toHaveBeenCalled();
+  });
+
+  it("F-06 (DAT-1): las sugerencias se piden con el idioma de la interfaz en la URL", async () => {
+    vi.useFakeTimers();
+    vi.mocked(global.fetch).mockResolvedValue({ ok: true, json: async () => [] } as Response);
+    render(<SearchBar />);
+    fireEvent.change(screen.getByRole("searchbox"), { target: { value: "inception" } });
+    await vi.advanceTimersByTimeAsync(450);
+    expect(global.fetch).toHaveBeenCalledWith("/api/search?q=inception&locale=en");
+    vi.useRealTimers();
   });
 
   it("modo navigate (default): Enter navega a /search con el query", () => {

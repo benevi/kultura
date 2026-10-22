@@ -723,7 +723,19 @@
         "lucha": "Lucha",
         "poesia": "Poesía",
         "biografia": "Biografía",
-        "ensayo": "Ensayo"
+        "ensayo": "Ensayo",
+        "accion-aventura": "Acción y aventura",
+        "ciencia-ficcion-fantasia": "Ciencia ficción y fantasía",
+        "guerra-politica": "Bélica y política",
+        "pelicula-tv": "Película de TV",
+        "psicologico": "Psicológico",
+        "mecha": "Mecha",
+        "mahou-shoujo": "Chicas mágicas",
+        "ecchi": "Ecchi",
+        "mmo": "Multijugador masivo",
+        "juegos-de-mesa": "Juegos de mesa",
+        "educativo": "Educativo",
+        "cartas": "Cartas"
       }
     },
     "typeBadge": {

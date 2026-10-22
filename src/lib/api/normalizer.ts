@@ -135,6 +135,14 @@ export function normalizeTV(
 
   const cast = raw.credits?.cast.slice(0, 5).map((c) => c.name) ?? [];
   const networks = raw.networks?.map((n) => n.name) ?? [];
+  // F-06: origen y votos. Los listados de /discover/tv los traen y el tipo no
+  // los declara; sirven para sacar el anime japonés de los rankings de series
+  // (que tiene el suyo) sin quitar la animación occidental.
+  const extra = raw as TmdbTVDetail & {
+    origin_country?: string[];
+    original_language?: string;
+    vote_count?: number;
+  };
 
   return {
     id: `tv_${externalId}`,
@@ -153,6 +161,9 @@ export function normalizeTV(
     streamingProviders:
       extractProviders(providers ?? raw["watch/providers"]),
     metadata: {
+      originCountry: extra.origin_country?.length ? extra.origin_country : undefined,
+      originalLanguage: extra.original_language || undefined,
+      voteCount: typeof extra.vote_count === "number" ? extra.vote_count : undefined,
       episodes: raw.number_of_episodes,
       seasons: raw.number_of_seasons,
       status: raw.status,
@@ -224,7 +235,10 @@ export function normalizeAniListAnime(raw: AniListMedia): MediaItem {
     title,
     originalTitle:
       raw.title.romaji && raw.title.romaji !== title ? raw.title.romaji : undefined,
-    poster: raw.coverImage?.extraLarge || raw.coverImage?.large || undefined,
+    // D-10: `large` (~230 px) basta para la card y pesa varias veces menos que
+    // `extraLarge`; las portadas de AniList no pasan por el optimizador de
+    // Vercel (cupo de 5.000 transformaciones al mes en Hobby).
+    poster: raw.coverImage?.large || raw.coverImage?.extraLarge || undefined,
     year: sanitizeYear(raw.seasonYear ?? raw.startDate?.year),
     synopsis: stripAniListHtml(raw.description),
     genres: raw.genres?.length ? raw.genres : undefined,
@@ -232,6 +246,9 @@ export function normalizeAniListAnime(raw: AniListMedia): MediaItem {
     ratingSource: "AniList",
     trailerKey: raw.trailer?.site === "youtube" ? raw.trailer.id : undefined,
     metadata: {
+      // F-06: el título japonés permite cruzar con TMDB (título y sinopsis en
+      // español) solo cuando coincide exacto, nunca por parecido.
+      nativeTitle: raw.title.native ?? undefined,
       episodes: raw.episodes ?? undefined,
       status: raw.status,
       studio: raw.studios?.nodes?.[0]?.name ?? undefined,

@@ -36,6 +36,32 @@ export const RAWG_GENRE: Record<string, string> = {
   familia: "family",
 };
 
+// ── Nombre de género de RAWG → slug de etiqueta (F-06, DAT-2) ──────────────────
+// RAWG solo sirve los nombres en inglés. Claves normalizadas (minúsculas, sin
+// acentos); el texto lo pone `discoverFilters.options.genre.<slug>`.
+export const RAWG_GENRE_LABEL: Record<string, string> = {
+  action: "accion",
+  adventure: "aventura",
+  rpg: "rpg",
+  "role-playing games (rpg)": "rpg",
+  strategy: "estrategia",
+  shooter: "shooter",
+  indie: "indie",
+  casual: "casual",
+  simulation: "simulacion",
+  puzzle: "puzzle",
+  arcade: "arcade",
+  platformer: "plataformas",
+  "massively multiplayer": "mmo",
+  racing: "carreras",
+  sports: "deportes",
+  fighting: "lucha",
+  family: "familia",
+  "board games": "juegos-de-mesa",
+  educational: "educativo",
+  card: "cartas",
+};
+
 // ── Plataformas (RAWG platform IDs) ─────────────────────────────────────────────
 // slug canónico → platform_id RAWG. Coma = OR.
 

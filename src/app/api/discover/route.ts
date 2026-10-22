@@ -8,19 +8,52 @@
 // ============================================================
 
 import { NextRequest, NextResponse } from "next/server";
-import { getLocale } from "next-intl/server";
-import { fetchDiscoverData } from "@/lib/api/discover";
-import { parseDiscoverParams } from "@/lib/api/discover-params";
+import { fetchDiscoverData, type DiscoverResult } from "@/lib/api/discover";
+import {
+  CATALOG_EDGE_CACHE,
+  CATALOG_EDGE_CACHE_AGGREGATE,
+  NO_STORE,
+  clientIp,
+  parseDiscoverParams,
+} from "@/lib/api/discover-params";
+import { checkRateLimit } from "@/lib/rate-limit";
+
+/**
+ * F-06 (COD-6): 120 peticiones por minuto e IP. Holgado para varias personas
+ * detrás de la misma IP (CGNAT de operadoras móviles, redes de oficina o de
+ * universidad) paginando y filtrando a la vez; frena a un script que vacía los
+ * cupos de RAWG o ComicVine. Lo que sirve la caché de borde ni llega aquí.
+ */
+const DISCOVER_LIMIT = { windowMs: 60_000, max: 120 };
 
 export async function GET(request: NextRequest) {
+  const rl = checkRateLimit(`${clientIp(request.headers)}:discover`, DISCOVER_LIMIT);
+  if (!rl.allowed) {
+    // Misma forma que una respuesta normal: el cliente pinta su aviso de
+    // "inténtalo en unos segundos" en vez de una rejilla vacía sin explicación.
+    const body: DiscoverResult = {
+      items: [],
+      totalPages: 1,
+      hasMore: false,
+      fetchErrorKind: "rate-limit",
+    };
+    return NextResponse.json(body, {
+      status: 429,
+      headers: {
+        "Retry-After": String(rl.retryAfterSeconds),
+        "Cache-Control": NO_STORE,
+      },
+    });
+  }
+
   const parsed = parseDiscoverParams(request.nextUrl.searchParams);
   const { type, page } = parsed;
 
-  // E-TMDB-LOCALE: locale ACTIVO de la petición (mismo patrón que
-  // /api/ai-recommendations). Se propaga a los proveedores que localizan
-  // catálogo (TMDB, Google Books, MangaDex) para que títulos y sinopsis salgan
-  // en el idioma elegido en la app, no siempre en español.
-  const locale = await getLocale();
+  // F-06 (DAT-1): el idioma llega en `?locale=` (lo manda DiscoverClient con
+  // `useLocale()`). `getLocale()` no sirve aquí: el middleware sale antes de
+  // next-intl en /api/*, así que siempre devolvía "es" y la interfaz inglesa
+  // recibía títulos y sinopsis en español.
+  const { locale } = parsed;
 
   // E-DISCOVER-SEARCH-MERGE: `q` convierte la petición en una BÚSQUEDA (el
   // buscador de /search vive ahora dentro de /discover). La respuesta mantiene
@@ -66,5 +99,13 @@ export async function GET(request: NextRequest) {
   // biblioteca + scoring en cada petición de catálogo para un dato que ya no
   // ve nadie. El match sigue vivo donde decide algo: la elección de las
   // recomendaciones IA (`lib/claude/recommendations.ts`).
-  return NextResponse.json(result);
+  return NextResponse.json(result, {
+    headers: {
+      "Cache-Control": result.fetchErrorKind
+        ? NO_STORE
+        : type === "all"
+          ? CATALOG_EDGE_CACHE_AGGREGATE
+          : CATALOG_EDGE_CACHE,
+    },
+  });
 }

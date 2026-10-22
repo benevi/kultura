@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useMemo, useEffect } from "react";
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import { useRouter } from "@/i18n/navigation";
 import { useSearchParams } from "next/navigation";
 import type { MediaItem } from "@/types/media";
@@ -166,6 +166,9 @@ export function DiscoverClient({
   const tF = useTranslations("filters");
   const tS = useTranslations("search");
   const tDF = useTranslations("discoverFilters");
+  // F-06 (DAT-1): el idioma viaja en la URL de /api/discover (la ruta no puede
+  // deducirlo y la caché de borde no debe mezclar idiomas).
+  const locale = useLocale();
   const router = useRouter();
   const searchParams = useSearchParams();
 
@@ -225,6 +228,7 @@ export function DiscoverClient({
     params.set("type", type);
     params.set("page", String(currentPage));
     if (currentQuery.trim()) params.set("q", currentQuery.trim());
+    params.set("locale", locale);
     fetch(`/api/discover?${params.toString()}`)
       .then((res) => res.json() as Promise<DiscoverResult>)
       .then((data) => {
@@ -253,7 +257,7 @@ export function DiscoverClient({
     return () => {
       cancelled = true;
     };
-  }, [type, currentPage, filterQuery, currentQuery]);
+  }, [type, currentPage, filterQuery, currentQuery, locale]);
 
   // SegmentedControl de tipo: options derivadas de TYPE_ORDER.
   const typeOptions = useMemo(
