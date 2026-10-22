@@ -44,12 +44,17 @@ describe("SEG-10 — cabeceras", () => {
   });
 });
 
-describe("REN-10 — favicon cacheable", () => {
-  it("favicon.ico con Cache-Control público de al menos un día", () => {
-    const cc = value("/favicon.ico", "Cache-Control") ?? "";
-    expect(cc).toContain("public");
-    const maxAge = Number(/max-age=(\d+)/.exec(cc)?.[1] ?? 0);
-    expect(maxAge).toBeGreaterThanOrEqual(86400);
+describe("REN-10 — favicon", () => {
+  it("sin regla de Cache-Control mientras el icono esté en src/app (Next ya fija la suya)", async () => {
+    const { existsSync } = await import("fs");
+    const { resolve } = await import("path");
+    if (existsSync(resolve(process.cwd(), "src/app/favicon.ico"))) {
+      expect(value("/favicon.ico", "Cache-Control")).toBeUndefined();
+    } else {
+      // Ya movido a public/: entonces sí, cacheable al menos un día.
+      const cc = value("/favicon.ico", "Cache-Control") ?? "";
+      expect(Number(/max-age=(\d+)/.exec(cc)?.[1] ?? 0)).toBeGreaterThanOrEqual(86400);
+    }
   });
 });
 

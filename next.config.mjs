@@ -37,12 +37,11 @@ const nextConfig = {
   },
   async headers() {
     return [
-      {
-        // REN-10: el favicon casi nunca cambia; sin esto Next lo sirve con
-        // max-age=0 y cada visita lo revalida.
-        source: "/favicon.ico",
-        headers: [{ key: "Cache-Control", value: "public, max-age=86400" }],
-      },
+      // REN-10 (favicon cacheable) NO va aquí mientras el icono viva en
+      // `src/app/favicon.ico`: Next le fija `Cache-Control: public, max-age=0,
+      // must-revalidate` en la propia ruta y una regla aquí produce DOS
+      // cabeceras Cache-Control contradictorias (comprobado con next start).
+      // Se hace moviéndolo a `public/favicon.ico` y añadiendo entonces la regla.
       {
         source: "/(.*)",
         headers: [
