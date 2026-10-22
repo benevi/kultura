@@ -1,12 +1,25 @@
 'use client'
 
-import { createContext, useContext } from 'react'
+import { createContext, useCallback, useContext, useMemo } from 'react'
 import { useToast } from '@/hooks/useToast'
 import { ToastContainer } from './Toast'
 import type { ToastType } from './Toast'
 
+interface ErrorOptions {
+  /** `true`: no se cierra solo, hasta que la persona lo cierre. */
+  persistent?: boolean
+  /** Milisegundos (mínimo 6000 para errores, lo aplica `Toast`). */
+  duration?: number
+}
+
 interface ToastContextValue {
   show: (payload: { message: string; type?: ToastType; duration?: number }) => void
+  /**
+   * Aviso de error accesible: región `assertive`, ≥ 6 s (8 s por defecto),
+   * pausa con el ratón o el foco encima y, con `persistent`, sin cierre solo.
+   * Para errores de acciones (p. ej. un 502 al guardar en la biblioteca).
+   */
+  showError: (message: string, options?: ErrorOptions) => void
   dismiss: (id: string) => void
 }
 
@@ -21,8 +34,21 @@ export function useToastContext(): ToastContextValue {
 export function ToastProvider({ children }: { children: React.ReactNode }) {
   const { toasts, show, dismiss } = useToast()
 
+  const showError = useCallback(
+    (message: string, options: ErrorOptions = {}) => {
+      show({
+        message,
+        type: 'error',
+        duration: options.persistent ? Infinity : options.duration,
+      })
+    },
+    [show]
+  )
+
+  const value = useMemo(() => ({ show, showError, dismiss }), [show, showError, dismiss])
+
   return (
-    <ToastContext.Provider value={{ show, dismiss }}>
+    <ToastContext.Provider value={value}>
       {children}
       <ToastContainer toasts={toasts} onDismiss={dismiss} />
     </ToastContext.Provider>
