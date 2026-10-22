@@ -16,23 +16,30 @@
 import { useLocale, useTranslations } from "next-intl";
 import type { StreamingProvider } from "@/types/media";
 
-/** Logo oficial de JustWatch, servido por JustWatch (amarillo: se lee en claro y oscuro). */
-export const JUSTWATCH_LOGO_URL =
-  "https://www.justwatch.com/appassets/img/logo/JustWatch-logo-large.webp";
+/**
+ * Logo oficial de JustWatch (amarillo: se lee en claro y oscuro), servido
+ * desde `public/` y no desde justwatch.com: una URL de terceros puede cambiar
+ * o caerse y dejar la cita sin logo, y además filtraría la visita.
+ */
+export const JUSTWATCH_LOGO_URL = "/brands/justwatch.webp";
 
 /** Portada de JustWatch del país que corresponde a la oferta mostrada. */
 export function justWatchUrl(locale: string): string {
   return locale === "en" ? "https://www.justwatch.com/us" : "https://www.justwatch.com/es";
 }
 
-/** Solo se enlaza a TMDB por https (el `link` llega de una respuesta externa). */
-function safeTmdbHref(href: string | undefined): string | undefined {
+/**
+ * Solo se enlaza a TMDB por https (el `link` llega de una respuesta externa).
+ * El host tiene que ser `themoviedb.org` o un subdominio suyo: un
+ * `endsWith("themoviedb.org")` sin punto aceptaría `evilthemoviedb.org`.
+ */
+export function safeTmdbHref(href: string | undefined): string | undefined {
   if (!href) return undefined;
   try {
     const url = new URL(href);
-    return url.protocol === "https:" && url.hostname.endsWith("themoviedb.org")
-      ? url.toString()
-      : undefined;
+    const host = url.hostname.toLowerCase();
+    const isTmdb = host === "themoviedb.org" || host.endsWith(".themoviedb.org");
+    return url.protocol === "https:" && isTmdb ? url.toString() : undefined;
   } catch {
     return undefined;
   }

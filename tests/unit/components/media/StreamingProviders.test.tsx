@@ -9,7 +9,7 @@ vi.mock("next-intl", () => ({
   useLocale: () => localeRef.current,
 }));
 
-import { StreamingProviders } from "@/components/media/StreamingProviders";
+import { StreamingProviders, safeTmdbHref } from "@/components/media/StreamingProviders";
 
 const flatrateProviders: StreamingProvider[] = [
   { name: "Netflix", logoPath: "https://image.tmdb.org/t/p/original/netflix.png", type: "flatrate" },
@@ -89,7 +89,8 @@ describe("StreamingProviders", () => {
       render(<StreamingProviders providers={flatrateProviders} title="Dónde ver" />);
       expect(screen.getByText("justwatchAttribution")).toBeInTheDocument();
       const logo = screen.getByAltText("JustWatch");
-      expect(logo.getAttribute("src")).toContain("justwatch.com");
+      // Servido desde public/, no desde justwatch.com.
+      expect(logo.getAttribute("src")).toBe("/brands/justwatch.webp");
       const a = logo.closest("a");
       expect(a?.getAttribute("href")).toBe("https://www.justwatch.com/es");
       expect(a?.getAttribute("rel")).toContain("noopener");
@@ -144,6 +145,23 @@ describe("StreamingProviders", () => {
         />
       );
       expect(screen.getByAltText("Netflix").closest("a")).toBeNull();
+    });
+
+    it.each([
+      "https://evilthemoviedb.org/movie/550/watch",
+      "https://themoviedb.org.evil.test/movie/550/watch",
+      "http://www.themoviedb.org/movie/550/watch",
+    ])("rechaza un host que solo se parece a TMDB: %s", (bad) => {
+      render(<StreamingProviders providers={flatrateProviders} title="x" link={bad} />);
+      expect(screen.getByAltText("Netflix").closest("a")).toBeNull();
+    });
+
+    it("acepta themoviedb.org y sus subdominios", () => {
+      expect(safeTmdbHref("https://www.themoviedb.org/tv/1/watch")).toBe(
+        "https://www.themoviedb.org/tv/1/watch"
+      );
+      expect(safeTmdbHref("https://themoviedb.org/tv/1/watch")).toBeDefined();
+      expect(safeTmdbHref("https://evilthemoviedb.org/x")).toBeUndefined();
     });
 
     it("sin enlace, el logo se pinta sin <a>", () => {
