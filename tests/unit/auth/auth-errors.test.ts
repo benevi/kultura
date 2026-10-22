@@ -61,7 +61,8 @@ describe("getAuthErrorKeyFromError — el `code` manda sobre el texto", () => {
 
 describe("callback de auth", () => {
   it("PKCE sin verificador (enlace abierto en otro navegador)", () => {
-    expect(getCallbackErrorCode({ message: "x", code: "bad_code_verifier" })).toBe("auth_link_other_browser");
+    // Código real de supabase-js 2.103 (AuthPKCECodeVerifierMissingError).
+    expect(getCallbackErrorCode({ message: "x", code: "pkce_code_verifier_not_found" })).toBe("auth_link_other_browser");
     expect(getCallbackErrorCode({ message: "x", code: "flow_state_not_found" })).toBe("auth_link_other_browser");
     expect(
       getCallbackErrorCode({ message: "invalid request: both auth code and code verifier should be non-empty" })

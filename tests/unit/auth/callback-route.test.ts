@@ -6,10 +6,23 @@ import { NextRequest } from "next/server";
 
 const mockExchange = vi.fn();
 const mockVerifyOtp = vi.fn();
+const mockGetUser = vi.fn();
+const mockUpdateUser = vi.fn();
+const mockUsersUpdate = vi.fn();
+const usersUpdateChain = { eq: vi.fn(), is: vi.fn() };
 
 vi.mock("@/lib/supabase/server", () => ({
   createClient: () => ({
-    auth: { exchangeCodeForSession: mockExchange, verifyOtp: mockVerifyOtp },
+    auth: {
+      exchangeCodeForSession: mockExchange,
+      verifyOtp: mockVerifyOtp,
+      getUser: mockGetUser,
+      updateUser: mockUpdateUser,
+    },
+    from: (table: string) => {
+      if (table !== "users") throw new Error(`tabla inesperada ${table}`);
+      return { update: mockUsersUpdate };
+    },
   }),
 }));
 
@@ -24,6 +37,11 @@ describe("callback de auth", () => {
   beforeEach(() => {
     mockExchange.mockReset();
     mockVerifyOtp.mockReset();
+    mockGetUser.mockReset().mockResolvedValue({ data: { user: { id: "u1", user_metadata: {} } } });
+    mockUpdateUser.mockReset().mockResolvedValue({ data: {}, error: null });
+    usersUpdateChain.eq.mockReset().mockReturnValue(usersUpdateChain);
+    usersUpdateChain.is.mockReset().mockResolvedValue({ error: null });
+    mockUsersUpdate.mockReset().mockReturnValue(usersUpdateChain);
   });
 
   it("canje correcto → destino saneado", async () => {
@@ -53,7 +71,8 @@ describe("callback de auth", () => {
   });
 
   it("PKCE sin verificador → aviso de otro navegador", async () => {
-    mockExchange.mockResolvedValue({ error: { message: "x", code: "bad_code_verifier" } });
+    // Código real de supabase-js (AuthPKCECodeVerifierMissingError).
+    mockExchange.mockResolvedValue({ error: { message: "PKCE code verifier not found in storage.", code: "pkce_code_verifier_not_found" } });
     const res = await call("?code=abc&next=%2Fes%2Fhome");
     expect(res.headers.get("location")).toBe("https://k.test/es/login?error=auth_link_other_browser");
   });
@@ -93,5 +112,74 @@ describe("callback de auth", () => {
     mockVerifyOtp.mockResolvedValue({ error: { message: "Token has expired or is invalid", code: "otp_expired" } });
     const res = await call("?token_hash=th&type=recovery&next=%2Fes%2Freset-password");
     expect(res.headers.get("location")).toBe("https://k.test/es/login?error=auth_link_expired");
+  });
+
+  // Con "Secure email change", el primer enlace vuelve sin código y con un
+  // `message`: no es un error.
+  it("?message= sin código ni error → destino (cambio de email en dos pasos)", async () => {
+    const res = await call(
+      "?next=%2Fes%2Fsettings%3Femail%3Dconfirmed&message=Confirmation+link+accepted.+Please+proceed+to+confirm+link+sent+to+the+other+email"
+    );
+    expect(res.headers.get("location")).toBe("https://k.test/es/settings?email=confirmed");
+    expect(mockExchange).not.toHaveBeenCalled();
+  });
+
+  // Forma de las plantillas propias: `{{ .RedirectTo }}&token_hash=…&type=email`,
+  // donde RedirectTo ya trae `?next=…`.
+  it("plantilla de alta con RedirectTo + token_hash → verifyOtp(email) y next", async () => {
+    mockVerifyOtp.mockResolvedValue({ error: null });
+    const res = await call("?next=%2Fen%2Fu%2Fbenevi&token_hash=th&type=email");
+    expect(mockVerifyOtp).toHaveBeenCalledWith({ type: "email", token_hash: "th" });
+    expect(res.headers.get("location")).toBe("https://k.test/en/u/benevi");
+  });
+
+  it("si Supabase lanza en vez de devolver el error, también vuelve al login", async () => {
+    mockExchange.mockRejectedValue({ message: "PKCE code verifier not found in storage.", code: "pkce_code_verifier_not_found" });
+    const res = await call("?code=abc&next=%2Fes%2Fhome");
+    expect(res.headers.get("location")).toBe("https://k.test/es/login?error=auth_link_other_browser");
+  });
+
+  describe("personaje elegido en el alta", () => {
+    it("se aplica al perfil sin personaje y se borra de los metadatos", async () => {
+      mockVerifyOtp.mockResolvedValue({ error: null });
+      mockGetUser.mockResolvedValue({ data: { user: { id: "u1", user_metadata: { avatar_icon: "panda" } } } });
+      const res = await call("?next=%2Fes%2Fhome&token_hash=th&type=email");
+      expect(mockUsersUpdate).toHaveBeenCalledWith({ avatar_icon: "panda" });
+      expect(usersUpdateChain.eq).toHaveBeenCalledWith("id", "u1");
+      expect(usersUpdateChain.is).toHaveBeenCalledWith("avatar_icon", null);
+      expect(mockUpdateUser).toHaveBeenCalledWith({ data: { avatar_icon: null } });
+      expect(res.headers.get("location")).toBe("https://k.test/es/home");
+    });
+
+    it("un personaje inválido no se escribe (pero se limpia)", async () => {
+      mockExchange.mockResolvedValue({ error: null });
+      mockGetUser.mockResolvedValue({ data: { user: { id: "u1", user_metadata: { avatar_icon: "<script>" } } } });
+      await call("?code=abc");
+      expect(mockUsersUpdate).not.toHaveBeenCalled();
+      expect(mockUpdateUser).toHaveBeenCalledWith({ data: { avatar_icon: null } });
+    });
+
+    it("sin personaje en los metadatos no toca nada", async () => {
+      mockExchange.mockResolvedValue({ error: null });
+      await call("?code=abc");
+      expect(mockUsersUpdate).not.toHaveBeenCalled();
+      expect(mockUpdateUser).not.toHaveBeenCalled();
+    });
+
+    it("la cuenta demo no escribe", async () => {
+      mockExchange.mockResolvedValue({ error: null });
+      mockGetUser.mockResolvedValue({
+        data: { user: { id: "d", app_metadata: { demo: true }, user_metadata: { avatar_icon: "panda" } } },
+      });
+      await call("?code=abc");
+      expect(mockUsersUpdate).not.toHaveBeenCalled();
+    });
+
+    it("un fallo al aplicarlo no impide entrar", async () => {
+      mockVerifyOtp.mockResolvedValue({ error: null });
+      mockGetUser.mockRejectedValue(new Error("red"));
+      const res = await call("?next=%2Fes%2Fhome&token_hash=th&type=email");
+      expect(res.headers.get("location")).toBe("https://k.test/es/home");
+    });
   });
 });

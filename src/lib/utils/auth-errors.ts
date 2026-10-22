@@ -157,7 +157,12 @@ const CALLBACK_ERROR_KEYS: Record<CallbackErrorCode, string> = {
 export function getCallbackErrorCode(error: AuthErrorLike | null | undefined): CallbackErrorCode {
   const code = error?.code ?? "";
   const lower = (error?.message ?? "").toLowerCase();
-  if (code === "bad_code_verifier" || code === "flow_state_not_found" || lower.includes("code verifier")) {
+  if (
+    code === "pkce_code_verifier_not_found" ||
+    code === "bad_code_verifier" ||
+    code === "flow_state_not_found" ||
+    lower.includes("code verifier")
+  ) {
     return "auth_link_other_browser";
   }
   if (

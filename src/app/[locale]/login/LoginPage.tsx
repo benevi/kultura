@@ -338,7 +338,9 @@ export function LoginPage({ locale }: LoginPageProps) {
         // canjear el código. El idioma viaja a los metadatos para que las
         // plantillas del correo salgan en el idioma del alta.
         emailRedirectTo: callbackUrl(dest),
-        data: { locale },
+        // El personaje también viaja aquí: si se confirma desde otro
+        // navegador, el callback lo aplica (el `localStorage` no está allí).
+        data: { locale, ...(avatarIcon ? { avatar_icon: avatarIcon } : {}) },
       },
     });
 
