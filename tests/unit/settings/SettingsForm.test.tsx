@@ -149,7 +149,7 @@ describe('SettingsForm', () => {
     expect(global.fetch).not.toHaveBeenCalled()
   })
 
-  it('confirmar en el modal llama DELETE /api/account, hace signOut y redirige a /login', async () => {
+  it('confirmar en el modal llama DELETE /api/account, hace signOut y redirige a /es/login', async () => {
     global.fetch = vi.fn().mockResolvedValue(new Response(JSON.stringify({ ok: true }), { status: 200 }))
 
     render(<SettingsForm {...DEFAULT_PROPS} />)
@@ -159,7 +159,7 @@ describe('SettingsForm', () => {
     await waitFor(() => {
       expect(global.fetch).toHaveBeenCalledWith('/api/account', { method: 'DELETE' })
       expect(mockSignOut).toHaveBeenCalledOnce()
-      expect(mockRouterPush).toHaveBeenCalledWith('/login')
+      expect(mockRouterPush).toHaveBeenCalledWith('/es/login')
     })
   })
 
