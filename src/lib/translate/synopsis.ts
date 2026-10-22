@@ -27,10 +27,12 @@
 //   1. Detección de idioma  → coste 0, evita la llamada entera.
 //   2. Memoria del proceso  → coste 0, sirve las visitas seguidas.
 //   3. Tabla Supabase       → una lectura indexada, compartida y permanente.
-//   4. Claude Haiku         → solo lo que no cayó en ninguna de las anteriores.
+//   4. Claude Haiku         → solo lo que no cayó en ninguna de las anteriores,
+//                             y solo si queda cupo en el tope diario compartido
+//                             con las recomendaciones (`AI_DAILY_CALL_CAP`, D-06).
 //
-// Degradación: sin clave, con la tabla sin migrar o con el modelo caído se
-// devuelve el texto ORIGINAL. Una sinopsis en inglés es peor que en español,
+// Degradación: sin clave, sin cupo, con la tabla sin migrar o con el modelo
+// caído se devuelve el texto ORIGINAL. Una sinopsis en inglés es peor que en español,
 // pero infinitamente mejor que una ficha rota.
 //
 // Server-only: importa `env` (ANTHROPIC_API_KEY) y la service-role key.
@@ -43,6 +45,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { resolveApiLocale, type ApiLocale } from "@/lib/api/locale";
 import { needsTranslation } from "@/lib/translate/language";
 import { createLogger } from "@/lib/logger";
+import { reserveAiCall } from "@/lib/claude/budget";
 
 const log = createLogger("translate/synopsis");
 
@@ -141,10 +144,14 @@ async function writeCache(params: {
   }
 }
 
-/** Llama al modelo. Devuelve null ante cualquier problema (sin clave incluido). */
+/** Llama al modelo. Devuelve null ante cualquier problema (sin clave o sin cupo incluidos). */
 async function callModel(text: string, target: ApiLocale): Promise<string | null> {
   const apiKey = env.ANTHROPIC_API_KEY;
   if (!apiKey) return null;
+
+  // D-06: el cupo se reserva justo antes de pagar, después de todas las
+  // cachés, así que lo ya traducido nunca consume. Sin cupo, original.
+  if (!(await reserveAiCall("translate"))) return null;
 
   try {
     const client = new Anthropic({ apiKey });
