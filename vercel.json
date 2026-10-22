@@ -3,7 +3,7 @@
   "buildCommand": "npm run build",
   "installCommand": "npm install",
   "regions": [
-    "iad1"
+    "fra1"
   ],
   "crons": [
     {
