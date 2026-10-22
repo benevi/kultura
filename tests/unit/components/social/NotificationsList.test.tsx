@@ -68,6 +68,17 @@ describe('NotificationsList — group_invite', () => {
     expect(screen.getByText('reject')).toBeInTheDocument()
   })
 
+  // ACC-12/MOV-4: eran `px-3 py-1 text-xs` (~24 px) y se llamaban solo «Aceptar».
+  it('Aceptar y Rechazar miden 44 px y su nombre incluye el grupo', () => {
+    render(<NotificationsList notifications={[groupInvite()]} />)
+    const accept = screen.getByText('accept').closest('button')!
+    const reject = screen.getByText('reject').closest('button')!
+    expect(accept).toHaveAttribute('aria-label', 'acceptInvite')
+    expect(reject).toHaveAttribute('aria-label', 'rejectInvite')
+    expect(accept.className).toContain('min-h-11')
+    expect(reject.className).toContain('min-h-11')
+  })
+
   it('no muestra botones si la invitación ya está leída', () => {
     render(<NotificationsList notifications={[groupInvite({ readAt: '2026-06-04T11:00:00Z' })]} />)
     expect(screen.queryByText('accept')).not.toBeInTheDocument()
