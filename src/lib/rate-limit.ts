@@ -139,19 +139,44 @@ export function redisRestConfig(): RedisRestConfig | null {
 export type RedisCommand = (string | number)[]
 
 /**
- * Ejecuta varios comandos en una sola petición (`/pipeline` de Upstash) y
- * devuelve sus resultados en orden. Lanza si Redis no responde a tiempo, si
- * la respuesta no es la esperada o si algún comando da error.
- *
- * POST con `cache: "no-store"`: la caché de datos de Next no debe guardar
- * nunca un contador.
+ * `fetch` SIN el parche de Next. Next envuelve `globalThis.fetch` para su
+ * caché de datos y para detectar renderizado dinámico: una petición
+ * `no-store` dentro de `unstable_cache` o de una página estática (al
+ * regenerar `/best`) lanza `DynamicServerError`. Un contador de Redis no es
+ * un dato de la página, así que va por el `fetch` original, fuera de esa
+ * maquinaria. Fuera de Next (tests, scripts) es el `fetch` global.
  */
-export async function redisPipeline(
+function rawFetch(): typeof fetch {
+  const patched = globalThis.fetch as typeof fetch & { _nextOriginalFetch?: typeof fetch }
+  return patched._nextOriginalFetch ?? patched
+}
+
+/**
+ * ¿Es la señal de Next de "esta página es dinámica" (y no un fallo de
+ * Redis)? Next la lanza con `digest`/`message` `DYNAMIC_SERVER_USAGE`. No
+ * debería llegar aquí (ver `rawFetch`), pero si llega no puede apagar el
+ * límite distribuido.
+ */
+export function isNextDynamicUsage(e: unknown): boolean {
+  const err = e as { digest?: unknown; message?: unknown } | null
+  return (
+    (typeof err?.digest === "string" && err.digest.includes("DYNAMIC_SERVER_USAGE")) ||
+    (typeof err?.message === "string" && err.message.includes("DYNAMIC_SERVER_USAGE"))
+  )
+}
+
+/**
+ * Ejecuta varios comandos como UNA transacción (`/multi-exec` de Upstash:
+ * MULTI … EXEC, atómica; con `/pipeline` un INCR podía quedar sin su
+ * EXPIRE) y devuelve sus resultados en orden. Lanza si Redis no responde a
+ * tiempo, si la respuesta no es la esperada o si algún comando da error.
+ */
+export async function redisExec(
   commands: RedisCommand[],
   cfg: RedisRestConfig | null = redisRestConfig()
 ): Promise<unknown[]> {
   if (!cfg) throw new Error("Redis no configurado")
-  const res = await fetch(`${cfg.url}/pipeline`, {
+  const res = await rawFetch()(`${cfg.url}/multi-exec`, {
     method: "POST",
     headers: {
       Authorization: `Bearer ${cfg.token}`,
@@ -232,7 +257,7 @@ export async function checkRateLimitDistributed(
     const id = await hashKey(key)
     const current = `kultura:rl:${id}:${opts.windowMs}:${bucket}`
     const previous = `kultura:rl:${id}:${opts.windowMs}:${bucket - 1}`
-    const [count, , prev] = await redisPipeline(
+    const [count, , prev] = await redisExec(
       [
         ["INCR", current],
         ["PEXPIRE", current, opts.windowMs * 2],
@@ -266,8 +291,10 @@ export async function checkRateLimitDistributed(
       remaining: Math.max(0, Math.floor(opts.max - estimate)),
     }
   } catch (e) {
-    markRedisDown()
-    warnRedisOnce(e)
+    if (!isNextDynamicUsage(e)) {
+      markRedisDown()
+      warnRedisOnce(e)
+    }
     return checkRateLimit(key, opts)
   }
 }

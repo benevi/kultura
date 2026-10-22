@@ -53,7 +53,7 @@ import { unstable_cache } from "next/cache";
 import type { ZodType } from "zod";
 import { createLogger } from "@/lib/logger";
 import { PROVIDER_REVALIDATE_SECONDS } from "@/lib/api/fetch-cache";
-import { markRedisDown, redisAvailable, redisPipeline } from "@/lib/rate-limit";
+import { isNextDynamicUsage, markRedisDown, redisAvailable, redisExec } from "@/lib/rate-limit";
 
 const log = createLogger("providers");
 
@@ -492,7 +492,7 @@ export function recordProviderCall(provider: ProviderId, url: string, now = Date
     return;
   }
 
-  const task = redisPipeline(
+  const task = redisExec(
     [
       ["INCR", `kultura:quota:${key}`],
       ["EXPIRE", `kultura:quota:${key}`, quotaTtlSeconds(quota.period)],
@@ -506,9 +506,11 @@ export function recordProviderCall(provider: ProviderId, url: string, now = Date
       // INCR devuelve valores consecutivos: solo UNA instancia ve el cruce.
       checkQuotaThresholds(provider, resource, key, quota, after - 1, after);
     })
-    .catch(() => {
+    .catch((e) => {
       // Redis caído: se cuenta en memoria para no perder la señal del todo.
-      markRedisDown();
+      // La señal de render dinámico de Next no es un Redis caído: no apaga el
+      // límite distribuido (ver `rawFetch` en rate-limit.ts).
+      if (!isNextDynamicUsage(e)) markRedisDown();
       const before = quotaUsage.get(key) ?? 0;
       quotaUsage.set(key, before + 1);
       checkQuotaThresholds(provider, resource, key, quota, before, before + 1);

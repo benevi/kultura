@@ -186,7 +186,7 @@ describe("con Upstash (cuenta compartida entre instancias)", () => {
     await providerFetch("rawg", "https://api.rawg.io/api/games?search=g", { cache: false });
     await flushProviderQuota();
     await tick();
-    const call = spy.mock.calls.find((c) => String(c[0]) === "https://redis.example/pipeline");
+    const call = spy.mock.calls.find((c) => String(c[0]) === "https://redis.example/multi-exec");
     const cmds = JSON.parse(String((call?.[1] as RequestInit).body));
     expect(cmds[0][0]).toBe("INCR");
     expect(cmds[0][1]).toMatch(/^kultura:quota:rawg:all:\d{4}-\d{2}$/);
@@ -194,6 +194,34 @@ describe("con Upstash (cuenta compartida entre instancias)", () => {
     expect(Array.from(store.values())).toEqual([16_000]);
     expect(quotaEvents()).toHaveLength(1);
     expect(isProviderQuotaHot("rawg")).toBe(true);
+  });
+
+  it("dentro de un contexto cacheado de Next (DYNAMIC_SERVER_USAGE): cuenta en memoria y NO marca Redis caído", async () => {
+    const { redisAvailable } = await import("@/lib/rate-limit");
+    const spy = vi.fn(async (input: string | URL) => {
+      if (String(input).startsWith("https://redis.example")) {
+        throw Object.assign(new Error("Dynamic server usage"), { digest: "DYNAMIC_SERVER_USAGE" });
+      }
+      return json({ results: [] });
+    });
+    vi.stubGlobal("fetch", spy);
+    await providerFetch("rawg", "https://api.rawg.io/api/games?search=dyn", { cache: false });
+    await flushProviderQuota();
+    expect(providerQuotaUsage("rawg") * 20_000).toBeCloseTo(1);
+    expect(redisAvailable()).not.toBeNull();
+  });
+
+  it("el contador usa el fetch original de Node, no el parcheado por Next", async () => {
+    const { spy: original } = fakeRedis(0);
+    const patched = Object.assign(
+      vi.fn(async () => json({ results: [] })),
+      { _nextOriginalFetch: original }
+    );
+    vi.stubGlobal("fetch", patched);
+    await providerFetch("rawg", "https://api.rawg.io/api/games?search=orig", { cache: false });
+    await flushProviderQuota();
+    expect(original.mock.calls.some((c) => String(c[0]) === "https://redis.example/multi-exec")).toBe(true);
+    expect(patched.mock.calls.some((c) => String(c[0]).startsWith("https://redis.example"))).toBe(false);
   });
 
   it("Redis caído: la petición al proveedor no se resiente y se cuenta en memoria", async () => {

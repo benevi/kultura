@@ -12,12 +12,12 @@ import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 
 type RateLimitModule = typeof import("@/lib/rate-limit");
 
-/** Redis REST falso de Upstash: `/pipeline` con INCR, PEXPIRE, GET. */
+/** Redis REST falso de Upstash: `/multi-exec` (transacción) con INCR, PEXPIRE, GET. */
 function fakeUpstash() {
   const store = new Map<string, number>();
   const commands: (string | number)[][] = [];
   const fetchSpy = vi.fn(async (input: string | URL, init?: RequestInit) => {
-    expect(String(input)).toBe("https://eu1-kultura.upstash.io/pipeline");
+    expect(String(input)).toBe("https://eu1-kultura.upstash.io/multi-exec");
     expect((init?.headers as Record<string, string>).Authorization).toBe("Bearer secret-token");
     const cmds = JSON.parse(String(init?.body)) as (string | number)[][];
     commands.push(...cmds);
@@ -136,6 +136,37 @@ describe("checkRateLimitDistributed", () => {
     vi.setSystemTime(new Date(Date.UTC(2026, 9, 22, 12, 0, 31)));
     await rl.checkRateLimitDistributed("ip:w", OPTS);
     expect(spy).toHaveBeenCalledTimes(2);
+  });
+
+  it("va por el fetch ORIGINAL, no por el parcheado de Next (no toca la caché ni el render)", async () => {
+    const redis = fakeUpstash();
+    const patched = Object.assign(vi.fn(), { _nextOriginalFetch: redis.fetchSpy });
+    vi.stubGlobal("fetch", patched);
+    const rl = await freshInstance();
+    expect((await rl.checkRateLimitDistributed("ip:o", OPTS)).allowed).toBe(true);
+    expect(redis.fetchSpy).toHaveBeenCalledTimes(1);
+    expect(patched).not.toHaveBeenCalled();
+  });
+
+  it("la señal DYNAMIC_SERVER_USAGE de Next no apaga el límite distribuido", async () => {
+    const redis = fakeUpstash();
+    let first = true;
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (input: string | URL, init?: RequestInit) => {
+        if (first) {
+          first = false;
+          throw Object.assign(new Error("Dynamic server usage: no-store fetch"), { digest: "DYNAMIC_SERVER_USAGE" });
+        }
+        return redis.fetchSpy(input, init);
+      })
+    );
+    const rl = await freshInstance();
+    await rl.checkRateLimitDistributed("ip:d", OPTS); // cae a memoria esta vez
+    await rl.checkRateLimitDistributed("ip:d", OPTS); // y la siguiente vuelve a Redis
+    expect(redis.fetchSpy).toHaveBeenCalledTimes(1);
+    expect(rl.isNextDynamicUsage({ message: "x DYNAMIC_SERVER_USAGE" })).toBe(true);
+    expect(rl.isNextDynamicUsage(new Error("Redis REST 503"))).toBe(false);
   });
 
   it("acepta también las variables de Vercel KV", async () => {
