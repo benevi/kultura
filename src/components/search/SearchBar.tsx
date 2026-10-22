@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import { useRouter } from "@/i18n/navigation";
 import { cn } from "@/lib/utils/index";
 import { Spinner } from "@/components/ui/Spinner";
@@ -39,6 +39,7 @@ export function SearchBar({
   onClear,
 }: SearchBarProps) {
   const t = useTranslations("search");
+  const locale = useLocale();
   const router = useRouter();
 
   const [inputValue, setInputValue] = useState(defaultValue);
@@ -70,8 +71,10 @@ export function SearchBar({
     debounceRef.current = setTimeout(async () => {
       setLoading(true);
       try {
+        // F-06 (DAT-1): idioma en la URL (la ruta no puede deducirlo y la
+        // caché de borde no debe mezclar idiomas).
         const res = await fetch(
-          `/api/search?q=${encodeURIComponent(inputValue)}`
+          `/api/search?q=${encodeURIComponent(inputValue)}&locale=${locale}`
         );
         if (res.ok) {
           const data: MediaItem[] = await res.json();
@@ -89,7 +92,7 @@ export function SearchBar({
     return () => {
       if (debounceRef.current) clearTimeout(debounceRef.current);
     };
-  }, [inputValue]);
+  }, [inputValue, locale]);
 
   // Click outside → close dropdown
   useEffect(() => {
@@ -135,6 +138,10 @@ export function SearchBar({
   }
 
   function handleChange(value: string) {
+    // Escritura real: a partir de aquí sí se piden sugerencias. Sin esta línea
+    // el efecto de debounce salía siempre y el autocompletado no llamaba nunca
+    // a /api/search.
+    hasTypedRef.current = true;
     setInputValue(value);
     // Vaciar el input en inline = volver al catálogo, sin tener que pulsar Enter.
     if (mode === "inline" && value.trim().length === 0) onClear?.();

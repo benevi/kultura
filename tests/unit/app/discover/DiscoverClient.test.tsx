@@ -13,7 +13,7 @@ import { describe, it, expect, vi, beforeAll, beforeEach } from "vitest";
 vi.mock("next-intl", () => {
   const t = (key: string) => key;
   t.has = () => true;
-  return { useTranslations: () => t };
+  return { useTranslations: () => t, useLocale: () => "en" };
 });
 
 const mockRouterPush = vi.fn();
@@ -377,6 +377,8 @@ describe("DiscoverClient — E59 F5e", () => {
 
     await waitFor(() => expect(fetchFn).toHaveBeenCalled());
     expect(lastFetchParams(fetchFn).get("q")).toBe("dune");
+    // F-06 (DAT-1): el idioma de la interfaz viaja en la URL de la API.
+    expect(lastFetchParams(fetchFn).get("locale")).toBe("en");
     // FilterBar (fila FILTROS) no se renderiza en modo búsqueda.
     expect(screen.queryByText("filters")).not.toBeInTheDocument();
     // Chip con la query activa.

@@ -45,11 +45,11 @@ describe("genre-label-maps (DAT-2)", () => {
   });
 
   it("cada slug de las tablas tiene texto en los dos idiomas", () => {
-    const slugs = new Set([
+    const slugs = [
       ...Object.values(TMDB_GENRE_LABEL),
       ...Object.values(RAWG_GENRE_LABEL),
       ...Object.values(ANILIST_GENRE_LABEL),
-    ]);
+    ];
     const esGenre = es.discoverFilters.options.genre as Record<string, string>;
     const enGenre = en.discoverFilters.options.genre as Record<string, string>;
     for (const slug of slugs) {
