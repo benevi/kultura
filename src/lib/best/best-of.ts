@@ -77,7 +77,7 @@ export function pickBest(items: MediaItem[], size = BEST_SIZE): BestItem[] {
  * Suelo de votos de los rankings de TMDB (E-BEST-VOTOS). Con el general de
  * Descubrir (50) el "mejor valorado" lo copaban títulos casi desconocidos con
  * pocos votos muy altos (conciertos, estrenos sin traducir). Más exigente con
- * los años cerrados, que ya han acumulado votos. En juegos es un mínimo de Metacritic (60/70). Anime no lo usa.
+ * los años cerrados, que ya han acumulado votos. En juegos es un mínimo de valoraciones RAWG (25/60). Anime no lo usa.
  */
 export function bestMinVotes(
   format: BestFormat,
@@ -87,14 +87,14 @@ export function bestMinVotes(
   const current = year >= today.getFullYear();
   if (format === "movie") return current ? 400 : 1500;
   if (format === "tv") return current ? 200 : 500;
-  // Juegos: RAWG no filtra por nº de votos; el suelo es de Metacritic.
-  if (format === "game") return current ? 60 : 70;
+  // Juegos: suelo de valoraciones en RAWG (se filtra en código).
+  if (format === "game") return current ? 25 : 60;
   return undefined;
 }
 
 /**
  * Juegos: RAWG ordena por su "rating" propio, que premia títulos con cuatro
- * votos. Se piden las páginas mejor puntuadas por Metacritic, se descartan las
+ * votos. Se piden las páginas mejor puntuadas por popularidad, se descartan las
  * que no llegan al suelo y se reordenan por valoración.
  */
 async function loadGames(
@@ -103,11 +103,11 @@ async function loadGames(
   min: number,
 ): Promise<MediaItem[]> {
   const pages = await Promise.all(
-    [1, 2, 3].map((page) =>
+    [1, 2, 3, 4, 5].map((page) =>
       fetchDiscoverData(
         "game",
         page,
-        { year: String(year), sort: "metacritic" },
+        { year: String(year), sort: "popularity" },
         locale,
       )
         .then((r) => r.items)
@@ -118,8 +118,8 @@ async function loadGames(
     .flat()
     .filter(
       (i) =>
-        typeof i.metadata?.metacritic === "number" &&
-        i.metadata.metacritic >= min,
+        typeof i.metadata?.ratingsCount === "number" &&
+        i.metadata.ratingsCount >= min,
     )
     .sort((a, b) => (b.rating ?? 0) - (a.rating ?? 0));
 }
@@ -160,7 +160,7 @@ const load = unstable_cache(
     }
     return items;
   },
-  ["best-of-v4"],
+  ["best-of-v5"],
   { revalidate: TTL_SECONDS },
 );
 

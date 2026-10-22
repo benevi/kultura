@@ -17,6 +17,7 @@ export interface RawgGame {
   released: string | null; // "YYYY-MM-DD"
   rating: number; // 0-5 → normalizar a 0-10
   metacritic: number | null; // 0-100
+  ratings_count?: number; // nº de valoraciones en RAWG
   playtime?: number; // horas medias de juego (RAWG `playtime`)
   genres: { name: string }[];
   tags?: { name: string; slug: string }[]; // tags RAWG (modo de juego, early-access…)

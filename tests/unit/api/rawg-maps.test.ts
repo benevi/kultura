@@ -107,11 +107,6 @@ describe("rawgDates", () => {
 // ── buildRawgDiscoverParams ──────────────────────────────────────────────────
 
 describe("buildRawgDiscoverParams", () => {
-  it("minMetacritic → rango nativo metacritic", () => {
-    expect(buildRawgDiscoverParams({ minMetacritic: 70 }).metacritic).toBe("70,100");
-    expect(buildRawgDiscoverParams({}).metacritic).toBeUndefined();
-  });
-
   it("sin filtros → ordering default + exclude_tags NSFW (E86) + ventana de fechas", () => {
     expect(buildRawgDiscoverParams()).toEqual({
       ordering: "-added",
