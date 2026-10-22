@@ -13,6 +13,7 @@ import type { TmdbProvidersResponse } from "@/lib/api/tmdb";
 import { tmdbRegion } from "@/lib/api/locale";
 import { getAnime as getAnimeJikan, getAnimeVideos, getManga as getMangaJikan } from "@/lib/api/jikan";
 import { getAnime as getAnimeAniList, isAniListId, fromAniListRef } from "@/lib/api/anilist";
+import { getAnimeTmdb, isTmdbAnimeId } from "@/lib/api/anime-tmdb";
 import { getManga as getMangaDex, isMangaDexId } from "@/lib/api/mangadex";
 import { getBookDetail } from "@/lib/api/openlibrary";
 import { enrichBookWithGoogle } from "@/lib/api/books-enrich";
@@ -149,8 +150,11 @@ async function resolveMangaItem(id: string, locale?: string) {
  * ver `normalizeAniListAnime`), a diferencia de MangaDex/Google Books.
  */
 async function resolveAnimeItem(
-  id: string
+  id: string,
+  locale?: string | null
 ): Promise<{ item: ReturnType<typeof normalizeAnime>; trailerKey?: string } | null> {
+  // E-ANIME-RESPALDO: anime servido por TMDB mientras AniList no respondía.
+  if (isTmdbAnimeId(id)) return getAnimeTmdb(id, locale);
   if (isAniListId(id)) {
     const raw = await getAnimeAniList(fromAniListRef(id)).catch(() => null);
     if (!raw) return null;
@@ -195,7 +199,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       description = detail.overview || undefined;
       if (detail.poster_path) image = `https://image.tmdb.org/t/p/w500${detail.poster_path}`;
     } else if (type === "anime") {
-      const resolved = await resolveAnimeItem(id);
+      const resolved = await resolveAnimeItem(id, locale);
       if (resolved) {
         title = resolved.item.title;
         description = resolved.item.synopsis;
@@ -334,7 +338,7 @@ export default async function MediaDetailPage({ params }: Props) {
         providers = extractProvidersForRegion(prov.value, providerRegion);
       }
     } else if (mediaType === "anime") {
-      const resolved = await resolveAnimeItem(id);
+      const resolved = await resolveAnimeItem(id, locale);
       if (!resolved) notFound();
       item = resolved.item;
       trailerKey = resolved.trailerKey;

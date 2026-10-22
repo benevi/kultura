@@ -21,6 +21,7 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { getMovie, getTV } from '@/lib/api/tmdb'
 import { getAnime as getAnimeAniList, isAniListId, fromAniListRef } from '@/lib/api/anilist'
+import { getAnimeTmdb, isTmdbAnimeId } from '@/lib/api/anime-tmdb'
 import { getAnime as getAnimeJikan, getManga as getMangaJikan } from '@/lib/api/jikan'
 import { getManga as getMangaDex, isMangaDexId } from '@/lib/api/mangadex'
 import { getGoogleBookDetail, isOpenLibraryWorkId } from '@/lib/api/googlebooks'
@@ -88,6 +89,9 @@ export async function fetchGenresForMedia(
       case 'tv':
         return normalizeTV(await getTV(Number(externalId), locale)).genres ?? []
       case 'anime': {
+        if (isTmdbAnimeId(externalId)) {
+          return (await getAnimeTmdb(externalId, locale))?.item.genres ?? null
+        }
         if (isAniListId(externalId)) {
           return normalizeAniListAnime(await getAnimeAniList(fromAniListRef(externalId))).genres ?? []
         }

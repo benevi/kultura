@@ -13,6 +13,7 @@ import {
 } from "@/lib/api/tmdb-maps";
 import { JikanError } from "@/lib/api/jikan";
 import { AniListError, discoverAnime } from "@/lib/api/anilist";
+import { discoverAnimeTmdb } from "@/lib/api/anime-tmdb";
 import {
   buildAniListDiscoverParams,
   type AniListFilters,
@@ -321,10 +322,20 @@ function isRateLimitError(e: unknown): boolean {
         // sufría 504 sostenidos en producción (confirmado por logs reales, en
         // AMBOS endpoints probados, `/top/anime` y `/anime`), decisión
         // explícita del usuario. AniList pagina por page/perPage nativo.
-        const res = await discoverAnime(
-          page,
-          buildAniListDiscoverParams(filters)
-        );
+        let res: Awaited<ReturnType<typeof discoverAnime>>;
+        try {
+          res = await discoverAnime(page, buildAniListDiscoverParams(filters));
+        } catch (e) {
+          // E-ANIME-RESPALDO: si AniList cae, el anime sale de TMDB. Si el
+          // respaldo tampoco da nada, se propaga el error ORIGINAL (así un
+          // 429 de AniList se sigue presentando como rate-limit).
+          const alt = await discoverAnimeTmdb(page, filters, locale).catch(() => null);
+          if (!alt || alt.items.length === 0) throw e;
+          items = alt.items;
+          totalPages = Math.min(alt.totalPages, DISCOVER_MAX_PAGES);
+          hasMore = page < totalPages;
+          break;
+        }
         const data = Array.isArray(res.media) ? res.media : [];
         items = data.map((a) => normalizeAniListAnime(a));
         const lastPage = res.pageInfo?.lastPage ?? 1;

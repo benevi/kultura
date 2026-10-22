@@ -785,6 +785,8 @@ describe("fetchDiscoverData — hasMore (E79 slice 1)", () => {
 
   it("error (catch) → hasMore false (no hay siguiente que ofrecer)", async () => {
     vi.mocked(discoverAnime).mockRejectedValue(new Error("boom"));
+    // E-ANIME-RESPALDO: el respaldo (TMDB) también cae → camino de error.
+    vi.mocked(discoverTV).mockRejectedValue(new Error("boom"));
     const result = await fetchDiscoverData("anime", 1);
     expect(result.fetchErrorKind).toBe("generic");
     expect(result.hasMore).toBe(false);
@@ -1410,5 +1412,40 @@ describe("fetchDiscoverData — cómic: techo de profundidad", () => {
 
     expect(searchByTypePaged).toHaveBeenCalled();
     expect(res.totalPages).toBe(DISCOVER_MAX_PAGES);
+  });
+});
+
+// ── E-ANIME-RESPALDO: AniList caído → anime desde TMDB ───────────────────────
+
+describe("fetchDiscoverData — respaldo de anime (E-ANIME-RESPALDO)", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it("AniList 403 + TMDB con resultados → items de anime, sin error", async () => {
+    vi.mocked(discoverAnime).mockRejectedValue(
+      new AniListError("temporarily disabled", 403)
+    );
+    vi.mocked(discoverTV).mockResolvedValue({
+      results: [{ id: 7, name: "Frieren" }],
+      total_pages: 3,
+    } as never);
+
+    const result = await fetchDiscoverData("anime", 1, { year: "2026", sort: "rating" });
+    expect(result.fetchErrorKind).toBeNull();
+    expect(result.items.map((i) => [i.id, i.type])).toEqual([["anime_tmdb-7", "anime"]]);
+    expect(result.hasMore).toBe(true);
+    const params = vi.mocked(discoverTV).mock.calls[0][1] as Record<string, string>;
+    expect(params.with_genres).toBe("16");
+    expect(params.with_origin_country).toBe("JP");
+  });
+
+  it("AniList 429 + respaldo vacío → se mantiene el error original (rate-limit)", async () => {
+    vi.mocked(discoverAnime).mockRejectedValue(new AniListError("rate limited", 429));
+    vi.mocked(discoverTV).mockResolvedValue({ results: [], total_pages: 1 } as never);
+
+    const result = await fetchDiscoverData("anime", 1);
+    expect(result.fetchErrorKind).toBe("rate-limit");
+    expect(result.items).toEqual([]);
   });
 });
