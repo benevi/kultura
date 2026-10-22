@@ -92,26 +92,64 @@ export function bestMinVotes(
   return undefined;
 }
 
+/**
+ * Juegos: RAWG ordena por su "rating" propio, que premia títulos con cuatro
+ * votos. Se piden las páginas mejor puntuadas por Metacritic, se descartan las
+ * que no llegan al suelo y se reordenan por valoración.
+ */
+async function loadGames(
+  year: number,
+  locale: string,
+  min: number,
+): Promise<MediaItem[]> {
+  const pages = await Promise.all(
+    [1, 2, 3].map((page) =>
+      fetchDiscoverData(
+        "game",
+        page,
+        { year: String(year), sort: "metacritic" },
+        locale,
+      )
+        .then((r) => r.items)
+        .catch(() => [] as MediaItem[]),
+    ),
+  );
+  return pages
+    .flat()
+    .filter(
+      (i) =>
+        typeof i.metadata?.metacritic === "number" &&
+        i.metadata.metacritic >= min,
+    )
+    .sort((a, b) => (b.rating ?? 0) - (a.rating ?? 0));
+}
+
 const load = unstable_cache(
   async (format: BestFormat, year: number, locale: string) => {
     const base = { year: String(year), sort: "rating" };
     const minVotes = bestMinVotes(format, year);
-    let res = await fetchDiscoverData(
-      format,
-      1,
-      {
-        ...base,
-        minVotes,
-        minMetacritic: format === "game" ? minVotes : undefined,
-      },
-      locale,
-    );
-    let items = pickBest(res.items);
-    // Si el suelo deja la lista corta (p. ej. a principios de año), se relaja
-    // al general antes que dejar la página sin ranking.
-    if (minVotes && items.length < BEST_MIN_ITEMS) {
-      res = await fetchDiscoverData(format, 1, base, locale);
+    let items: BestItem[];
+    if (format === "game" && minVotes) {
+      items = pickBest(await loadGames(year, locale, minVotes));
+      if (items.length < BEST_MIN_ITEMS) {
+        items = pickBest(
+          (await fetchDiscoverData(format, 1, base, locale)).items,
+        );
+      }
+    } else {
+      let res = await fetchDiscoverData(
+        format,
+        1,
+        { ...base, minVotes },
+        locale,
+      );
       items = pickBest(res.items);
+      // Si el suelo deja la lista corta (p. ej. a principios de año), se relaja
+      // al general antes que dejar la página sin ranking.
+      if (minVotes && items.length < BEST_MIN_ITEMS) {
+        res = await fetchDiscoverData(format, 1, base, locale);
+        items = pickBest(res.items);
+      }
     }
     // Una carga corta LANZA: `unstable_cache` no guarda rechazos, así un hipo
     // de proveedor no congela la página vacía 24 h.
@@ -122,7 +160,7 @@ const load = unstable_cache(
     }
     return items;
   },
-  ["best-of-v3"],
+  ["best-of-v4"],
   { revalidate: TTL_SECONDS },
 );
 

@@ -57,6 +57,7 @@ export const RAWG_PLATFORM: Record<string, number> = {
 export const RAWG_ORDERING: Record<string, string> = {
   popularity: "-added",
   rating: "-rating",
+  metacritic: "-metacritic",
   release_desc: "-released",
   release_asc: "released",
   title_az: "name",

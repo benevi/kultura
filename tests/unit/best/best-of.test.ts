@@ -1,15 +1,26 @@
 import { describe, it, expect, vi } from "vitest";
 
-vi.mock("next/cache", () => ({ unstable_cache: <T,>(fn: T) => fn }));
+vi.mock("next/cache", () => ({ unstable_cache: <T>(fn: T) => fn }));
 vi.mock("@/lib/api/discover", () => ({ fetchDiscoverData: vi.fn() }));
 
-import { bestMinVotes, bestYears, getBestOf, parseBestParams, pickBest } from "@/lib/best/best-of";
+import {
+  bestMinVotes,
+  bestYears,
+  getBestOf,
+  parseBestParams,
+  pickBest,
+} from "@/lib/best/best-of";
 import { fetchDiscoverData } from "@/lib/api/discover";
 import type { MediaItem } from "@/types/media";
 
 const today = new Date("2026-10-21");
 const item = (id: string, over: Partial<MediaItem> = {}): MediaItem => ({
-  id, externalId: id, type: "anime", title: id, poster: "https://x/p.jpg", ...over,
+  id,
+  externalId: id,
+  type: "anime",
+  title: id,
+  poster: "https://x/p.jpg",
+  ...over,
 });
 
 describe("best-of", () => {
@@ -18,7 +29,10 @@ describe("best-of", () => {
   });
 
   it("valida formato y año; lo demás es 404", () => {
-    expect(parseBestParams("anime", "2026", today)).toEqual({ format: "anime", year: 2026 });
+    expect(parseBestParams("anime", "2026", today)).toEqual({
+      format: "anime",
+      year: 2026,
+    });
     expect(parseBestParams("book", "2026", today)).toBeNull();
     expect(parseBestParams("anime", "2019", today)).toBeNull();
     expect(parseBestParams("anime", "2027", today)).toBeNull();
@@ -49,7 +63,9 @@ describe("best-of — suelo de votos (E-BEST-VOTOS)", () => {
   });
 
   it("si el suelo deja menos de 5, repite sin él", async () => {
-    const many = Array.from({ length: 6 }, (_, i) => item(`m${i}`, { type: "movie" }));
+    const many = Array.from({ length: 6 }, (_, i) =>
+      item(`m${i}`, { type: "movie" }),
+    );
     vi.mocked(fetchDiscoverData)
       .mockResolvedValueOnce({ items: many.slice(0, 2) } as never)
       .mockResolvedValueOnce({ items: many } as never);
@@ -58,5 +74,26 @@ describe("best-of — suelo de votos (E-BEST-VOTOS)", () => {
     const calls = vi.mocked(fetchDiscoverData).mock.calls;
     expect(calls[0][2]).toMatchObject({ minVotes: 1500 });
     expect(calls[1][2]).not.toHaveProperty("minVotes");
+  });
+
+  it("juegos: filtra por Metacritic y ordena por valoración", async () => {
+    const g = (id: string, mc: number | undefined, rating: number) =>
+      item(id, { type: "game", rating, metadata: { metacritic: mc } } as never);
+    vi.mocked(fetchDiscoverData).mockReset();
+    vi.mocked(fetchDiscoverData)
+      .mockResolvedValueOnce({
+        items: [
+          g("a", 90, 8.1),
+          g("b", 50, 9.9),
+          g("c", undefined, 9.8),
+          g("d", 80, 9.0),
+        ],
+      } as never)
+      .mockResolvedValueOnce({
+        items: [g("e", 75, 8.5), g("f", 71, 7.0), g("h", 88, 8.8)],
+      } as never)
+      .mockResolvedValueOnce({ items: [] } as never);
+    const out = await getBestOf("game", 2024, "es");
+    expect(out.map((i) => i.id)).toEqual(["d", "h", "e", "a", "f"]);
   });
 });
