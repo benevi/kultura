@@ -14,13 +14,16 @@ const mockInsert = vi.fn()
 const mockSelect = vi.fn()
 const mockSingle = vi.fn()
 
-// Cadena .insert().select().single(): insert y select devuelven el builder,
-// single resuelve { data, error }.
+// F-11: el INSERT va sin RETURNING (await directo del builder, que aquí no es
+// thenable → sin error) y la fila se lee después con
+// .select().eq().maybeSingle(), que resuelve { data, error }.
 function buildSupabaseMock() {
   const builder: Record<string, unknown> = {}
   builder.insert = mockInsert.mockReturnValue(builder)
   builder.select = mockSelect.mockReturnValue(builder)
+  builder.eq = vi.fn().mockReturnValue(builder)
   builder.single = mockSingle
+  builder.maybeSingle = mockSingle
   return {
     auth: { getUser: mockGetUser },
     from: vi.fn(() => builder),
@@ -116,6 +119,7 @@ describe('POST /api/groups', () => {
     const res = await POST(makeRequest({ name: 'Cinéfilos' }))
     expect(res.status).toBe(201)
     expect(mockInsert).toHaveBeenCalledWith({
+      id: expect.any(String),
       owner_id: AUTH_USER.id,
       name: 'Cinéfilos',
       description: null,
