@@ -30,6 +30,7 @@ import {
   isCjkOnly,
   isJapaneseAnimation,
   meetsMinRating,
+  rankingScore,
   titleKey,
 } from "@/lib/best/quality";
 import { resolveApiLocale } from "@/lib/api/locale";
@@ -186,13 +187,18 @@ async function fetchPages(
 
 const byRatingDesc = (a: MediaItem, b: MediaItem) => (b.rating ?? 0) - (a.rating ?? 0);
 
-/** Filtros de calidad comunes y selección final. */
+/**
+ * Filtros de calidad comunes, orden por media ponderada (DAT-4) y selección
+ * final. La nota mínima se mira sobre la nota PROPIA (la que se pinta); la
+ * ponderada solo decide el orden. Orden estable: a igualdad, el del proveedor.
+ */
 function rank(format: BestFormat, items: MediaItem[]): BestSource[] {
-  return selectBest(
-    items.filter(
-      (i) => meetsMinRating(i) && !(format === "tv" && isJapaneseAnimation(i)),
-    ),
-  );
+  const eligible = items
+    .filter((i) => meetsMinRating(i) && !(format === "tv" && isJapaneseAnimation(i)))
+    .map((item, i) => ({ item, i, score: rankingScore(format, item) }))
+    .sort((a, b) => b.score - a.score || a.i - b.i)
+    .map((x) => x.item);
+  return selectBest(eligible);
 }
 
 interface Selection {
@@ -269,7 +275,7 @@ async function selectAnime(year: number): Promise<Selection> {
 /**
  * Juegos: RAWG ordena por su "rating" propio, que premia títulos con cuatro
  * votos. Se piden las páginas más populares del año, se descartan las que no
- * llegan al suelo de valoraciones y se reordenan por nota.
+ * llegan al suelo de valoraciones y se reordenan por media ponderada (DAT-4).
  */
 async function selectGames(year: number, today: Date): Promise<Selection> {
   const min = bestMinVotes("game", year, today)!;
