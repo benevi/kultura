@@ -4,6 +4,18 @@ import { getTranslations } from "next-intl/server";
 const JUSTWATCH_HOME = "https://www.justwatch.com";
 
 /**
+ * Enlace de la atribución. Va dentro de una frase, así que es un enlace en
+ * línea (exento de 2.5.8), pero en móvil se toca con el dedo: el relleno
+ * vertical amplía la zona táctil a ≥ 44 px sin mover el texto (en un elemento
+ * en línea no cambia la altura de la línea) y el horizontal se compensa con
+ * margen negativo (MOV-4, ACC-12). El contorno de foco se mete hacia dentro
+ * para que rodee la palabra y no la zona táctil entera.
+ */
+export const SOURCE_LINK_CLASS =
+  "py-4 px-2 -mx-2 rounded-[4px] underline underline-offset-2 hover:text-accent-pink transition-colors " +
+  "focus-visible:[outline-style:solid] focus-visible:outline-2 focus-visible:outline-offset-[-12px] focus-visible:outline-focus-ring";
+
+/**
  * Atribución que exigen los proveedores del catálogo: TMDB pide su aviso de
  * "no respaldado", RAWG un enlace visible en las páginas que usan sus datos y
  * los datos de "dónde ver" (que TMDB sirve) son de JustWatch, que hay que
@@ -16,19 +28,14 @@ export async function renderDataAttribution(className = "") {
   const link = (href: string) =>
     function SourceLink(chunks: React.ReactNode) {
       return (
-        <a
-          href={href}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="underline underline-offset-2 hover:text-accent-pink transition-colors"
-        >
+        <a href={href} target="_blank" rel="noopener noreferrer" className={SOURCE_LINK_CLASS}>
           {chunks}
         </a>
       );
     };
 
   return (
-    <p className={`text-xs text-muted ${className}`}>
+    <p className={`text-xs leading-relaxed text-muted ${className}`}>
       {t.rich("dataSources", {
         tmdb: link("https://www.themoviedb.org"),
         rawg: link("https://rawg.io"),

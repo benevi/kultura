@@ -11,10 +11,20 @@
     "chat": "Mensajes",
     "lists": "Listas",
     "suggestions": "Sugerencias",
-    "profile": "Mi perfil",
     "signOut": "Cerrar sesión",
-    "more": "Más",
-    "unreadMessages": "{count, plural, one {# mensaje sin leer} other {# mensajes sin leer}}"
+    "unreadMessages": "{count, plural, one {# mensaje sin leer} other {# mensajes sin leer}}",
+    "primaryNav": "Navegación principal",
+    "libraryTab": "Biblioteca",
+    "profileTab": "Perfil",
+    "social": "Social",
+    "socialLabel": "{count, plural, =0 {Social: mensajes, amigos y grupos} one {Social: mensajes, amigos y grupos. # mensaje sin leer} other {Social: mensajes, amigos y grupos. # mensajes sin leer}}",
+    "notificationsLabel": "{count, plural, =0 {Notificaciones} one {Notificaciones. # sin leer} other {Notificaciones. # sin leer}}",
+    "accountMenu": "Menú de la cuenta de {username}",
+    "accountNav": "Cuenta",
+    "language": "Idioma",
+    "footerNav": "Información",
+    "dismiss": "Cerrar aviso",
+    "oops": "¡Ups!"
   },
   "auth": {
     "signIn": "Iniciar sesión",
@@ -402,7 +412,9 @@
     "inviteActionError": "No se pudo procesar la invitación. Inténtalo de nuevo.",
     "markAllRead": "Marcar todo como leído",
     "loadError": "No se pudieron cargar las notificaciones. Inténtalo de nuevo.",
-    "unread": "Sin leer"
+    "unread": "Sin leer",
+    "acceptInvite": "Aceptar la invitación a {group}",
+    "rejectInvite": "Rechazar la invitación a {group}"
   },
   "recommendations": {
     "recommend": "Recomendar",

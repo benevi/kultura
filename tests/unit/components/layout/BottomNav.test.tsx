@@ -1,142 +1,112 @@
-import { render, screen, fireEvent } from '@testing-library/react'
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+// ============================================================
+// KULTURA — BottomNav (móvil): mismos 5 destinos que NavLinks (DIS-9),
+// activo por prefijo y re-toque que sube al principio (MOV-7).
+// ============================================================
 
-// E96: badge de mensajes no leídos — count controlable por test
-const unreadState = vi.hoisted(() => ({ count: 0 }))
-vi.mock('@/components/layout/UnreadChatProvider', () => ({
-  useUnreadChat: () => ({
-    unreadCount: unreadState.count,
-    refreshUnread: vi.fn(),
-    markConversationRead: vi.fn(),
-  }),
-}))
+import { render, screen, fireEvent, within } from '@testing-library/react'
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 
 vi.mock('next-intl', () => ({
   useTranslations: vi.fn(() => (key: string) => {
     const map: Record<string, string> = {
       home: 'Inicio',
       discover: 'Descubrir',
-      chat: 'Mensajes',
-      library: 'Mi biblioteca',
-      friends: 'Amigos',
-      groups: 'Grupos',
+      libraryTab: 'Biblioteca',
       lists: 'Listas',
-      suggestions: 'Sugerencias',
-      search: 'Buscar',
-      more: 'Más',
+      profileTab: 'Perfil',
+      primaryNav: 'Navegación principal',
     }
     return map[key] ?? key
   }),
 }))
 
+const mockPathname = vi.hoisted(() => ({ value: '/home' }))
 vi.mock('@/i18n/navigation', () => ({
-  Link: ({ href, children, className, onClick }: { href: string; children: React.ReactNode; className?: string; onClick?: () => void }) => (
-    <a href={href} className={className} onClick={onClick}>{children}</a>
+  Link: ({ href, children, className, onClick, ...rest }: { href: string; children: React.ReactNode; className?: string; onClick?: (e: React.MouseEvent) => void }) => (
+    <a href={href} className={className} onClick={onClick} {...rest}>{children}</a>
   ),
-  usePathname: vi.fn(() => '/home'),
-}))
-
-vi.mock('lucide-react', () => ({
-  Home: () => <svg data-testid="icon-home" />,
-  Compass: () => <svg data-testid="icon-compass" />,
-  MessageCircle: () => <svg data-testid="icon-messagecircle" />,
-  BookOpen: () => <svg data-testid="icon-bookopen" />,
-  MoreHorizontal: () => <svg data-testid="icon-more" />,
-  Users: () => <svg data-testid="icon-users" />,
-  Users2: () => <svg data-testid="icon-users2" />,
-  ListChecks: () => <svg data-testid="icon-lists" />,
-  Lightbulb: () => <svg data-testid="icon-suggestions" />,
-  Search: () => <svg data-testid="icon-search" />,
+  usePathname: vi.fn(() => mockPathname.value),
 }))
 
 import { BottomNav } from '@/components/layout/BottomNav'
+import { NavLinks } from '@/components/layout/NavLinks'
+
+function hrefsOf(container: HTMLElement): string[] {
+  return within(container).getAllByRole('link').map((a) => a.getAttribute('href') ?? '')
+}
 
 describe('BottomNav', () => {
+  const scrollTo = vi.fn()
   beforeEach(() => {
-    unreadState.count = 0
+    mockPathname.value = '/home'
+    scrollTo.mockReset()
+    vi.stubGlobal('scrollTo', scrollTo)
+  })
+  afterEach(() => {
+    vi.unstubAllGlobals()
   })
 
-  it('renderiza 5 items: home·discover·chat·library·Más', () => {
-    render(<BottomNav />)
-    expect(screen.getByText('Inicio')).toBeInTheDocument()
-    expect(screen.getByText('Descubrir')).toBeInTheDocument()
-    expect(screen.getByText('Mensajes')).toBeInTheDocument()
-    expect(screen.getByText('Mi biblioteca')).toBeInTheDocument()
-    expect(screen.getByText('Más')).toBeInTheDocument()
+  it('tiene exactamente los mismos 5 destinos y en el mismo orden que NavLinks', () => {
+    const { container: bottom } = render(<BottomNav username="ana" />)
+    const bottomHrefs = hrefsOf(bottom)
+    const { container: top } = render(<NavLinks username="ana" />)
+    expect(bottomHrefs).toEqual(['/home', '/discover', '/library', '/lists', '/profile/ana'])
+    expect(hrefsOf(top)).toEqual(bottomHrefs)
   })
 
-  it('no incluye friends ni groups directamente en la barra', () => {
-    render(<BottomNav />)
-    // Solo aparecen tras abrir el sheet, no en la barra inicial
-    expect(screen.queryByText('Amigos')).not.toBeInTheDocument()
-    expect(screen.queryByText('Grupos')).not.toBeInTheDocument()
+  it('es una navegación con nombre y sin botón «Más»', () => {
+    render(<BottomNav username="ana" />)
+    expect(screen.getByRole('navigation', { name: 'Navegación principal' })).toBeInTheDocument()
+    expect(screen.queryByRole('button')).toBeNull()
   })
 
-  it('"Más" es un button, no un link', () => {
-    render(<BottomNav />)
-    const more = screen.getByText('Más').closest('button')
-    expect(more).toBeInTheDocument()
-    expect(more).toHaveAttribute('aria-haspopup', 'dialog')
+  it('el activo lleva aria-current="page"', () => {
+    render(<BottomNav username="ana" />)
+    expect(screen.getByRole('link', { name: 'Inicio' })).toHaveAttribute('aria-current', 'page')
+    expect(screen.getByRole('link', { name: 'Descubrir' })).not.toHaveAttribute('aria-current')
   })
 
-  it('item activo tiene clase text-accent-positive', () => {
-    render(<BottomNav />)
-    const homeLink = screen.getByText('Inicio').closest('a')
-    expect(homeLink?.className).toContain('text-accent-positive')
+  // Regresión (V10): con `pathname === href` en /lists/abc no se marcaba nada.
+  it('en una subpágina (/lists/abc) la pestaña Listas sigue activa', () => {
+    mockPathname.value = '/lists/abc'
+    render(<BottomNav username="ana" />)
+    expect(screen.getByRole('link', { name: 'Listas' })).toHaveAttribute('aria-current', 'page')
   })
 
-  it('item inactivo tiene clase text-text-secondary', () => {
-    render(<BottomNav />)
-    const discoverLink = screen.getByText('Descubrir').closest('a')
-    expect(discoverLink?.className).toContain('text-text-secondary')
+  it('etiquetas de 11 px (antes 10 px)', () => {
+    render(<BottomNav username="ana" />)
+    expect(screen.getByText('Inicio').className).toContain('text-[11px]')
   })
 
-  // E-DISCOVER-SEARCH-MERGE: el sheet ya no lleva "Buscar" (el buscador vive
-  // dentro de /discover, que es una de las 5 celdas de la barra).
-  it('click en "Más" abre el sheet (muestra friends, groups, lists, suggestions)', () => {
-    render(<BottomNav />)
-    expect(screen.queryByTestId('more-sheet-panel')).not.toBeInTheDocument()
-    fireEvent.click(screen.getByText('Más'))
-    expect(screen.getByTestId('more-sheet-panel')).toBeInTheDocument()
-    expect(screen.getByText('Amigos')).toBeInTheDocument()
-    expect(screen.getByText('Grupos')).toBeInTheDocument()
-    expect(screen.getByText('Listas')).toBeInTheDocument()
-    expect(screen.getByText('Sugerencias')).toBeInTheDocument()
-    expect(screen.queryByText('Buscar')).not.toBeInTheDocument()
+  it('re-tocar la pestaña en la que estás sube al principio y no navega', () => {
+    render(<BottomNav username="ana" />)
+    const link = screen.getByRole('link', { name: 'Inicio' })
+    const ev = new MouseEvent('click', { bubbles: true, cancelable: true })
+    link.dispatchEvent(ev)
+    expect(ev.defaultPrevented).toBe(true)
+    expect(scrollTo).toHaveBeenCalledWith(expect.objectContaining({ top: 0 }))
   })
 
-  it('"Más" se marca activo (accent) mientras el sheet está abierto', () => {
-    render(<BottomNav />)
-    const more = screen.getByText('Más').closest('button')
-    expect(more?.className).toContain('text-text-secondary')
-    fireEvent.click(screen.getByText('Más'))
-    expect(more?.className).toContain('text-accent-positive')
+  it('desde una subpágina, tocar la pestaña vuelve a su raíz (navega)', () => {
+    mockPathname.value = '/lists/abc'
+    render(<BottomNav username="ana" />)
+    const link = screen.getByRole('link', { name: 'Listas' })
+    const ev = new MouseEvent('click', { bubbles: true, cancelable: true })
+    link.dispatchEvent(ev)
+    expect(ev.defaultPrevented).toBe(false)
+    expect(scrollTo).not.toHaveBeenCalled()
   })
 
-  it('click en overlay cierra el sheet', () => {
-    render(<BottomNav />)
-    fireEvent.click(screen.getByText('Más'))
-    fireEvent.click(screen.getByTestId('more-sheet-overlay'))
-    expect(screen.queryByTestId('more-sheet-panel')).not.toBeInTheDocument()
+  it('tocar otra pestaña navega con normalidad', () => {
+    render(<BottomNav username="ana" />)
+    fireEvent.click(screen.getByRole('link', { name: 'Descubrir' }))
+    expect(scrollTo).not.toHaveBeenCalled()
   })
 
-  // E96: badge de no-leídos en el item chat
-  it('sin no-leídos no muestra badge', () => {
-    render(<BottomNav />)
-    expect(screen.queryByText(/^\d+$/)).toBeNull()
-  })
-
-  it('con 3 no-leídos muestra badge "3" dentro del link de chat', () => {
-    unreadState.count = 3
-    render(<BottomNav />)
-    const badge = screen.getByText('3')
-    expect(badge).toBeInTheDocument()
-    expect(badge.closest('a')).toHaveAttribute('href', '/chat')
-  })
-
-  it('con más de 99 muestra "99+"', () => {
-    unreadState.count = 120
-    render(<BottomNav />)
-    expect(screen.getByText('99+')).toBeInTheDocument()
+  it('respeta la zona segura inferior', () => {
+    render(<BottomNav username="ana" />)
+    const nav = screen.getByRole('navigation')
+    expect(nav.className).toContain('pb-[env(safe-area-inset-bottom)]')
+    expect(nav.className).toContain('md:hidden')
   })
 })
