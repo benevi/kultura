@@ -32,9 +32,8 @@
 --      colaborador que antes aportó; lo demás se borra en cascada como antes.
 --   7. ROJO-8: la cuenta demo no puede cambiar email, contraseña ni teléfono
 --      por la API de Auth (disparador en auth.users) ni dar de alta MFA (si
---      el proyecto permite el disparador en auth.mfa_factors). El service role
---      SÍ puede (ver la sección 7 para cómo, y por qué no basta con mirar el
---      rol: GoTrue entra en la base con el mismo rol para todo el mundo).
+--      el proyecto permite el disparador en auth.mfa_factors). Solo se pueden
+--      cambiar desde el SQL Editor (sentencia exacta en la sección 7).
 --   8. Vuelve a ejecutar el bloque demo_no_* al final (tablas nuevas).
 --
 -- IDEMPOTENTE: se puede ejecutar dos veces seguidas sin error ni cambios.
@@ -66,8 +65,8 @@
 --   update auth.users set encrypted_password = 'x'
 --    where raw_app_meta_data->>'demo' = 'true';
 --   rollback;
---   -- Y el service role sí puede (la misma prueba sin `set local role`, o
---   -- con `set local role service_role`, NO falla; ver la sección 7).
+--   -- Desde el SQL Editor (postgres, sin claims) la misma prueba sin
+--   -- `set local role` NO falla: es la vía para resetear la demo (sección 7).
 --   -- Nombre generado (debe dar 0 filas con nombres nuevos tipo email):
 --   select username from public.users
 --    where created_at > now() - interval '1 day' and username !~ '^u_[a-z0-9]{6}$'
@@ -437,40 +436,42 @@ grant execute on function public.transfer_owned_content(uuid) to service_role;
 
 
 -- ── 7. ROJO-8: la demo no cambia credenciales por la API de Auth ─────────
--- Problema: la API de Auth (GoTrue) entra en la base SIEMPRE con su rol
--- `supabase_auth_admin`, tanto si la llamada viene de un visitante de la demo
--- (`updateUser`, JWT authenticated) como del service role
--- (`auth.admin.updateUserById`): el rol no distingue a uno de otro y GoTrue no
--- publica el JWT en `request.jwt.claims`. Así que se decide así:
---   · SE PERMITE si quien escribe es `postgres` o `service_role` (SQL Editor,
---     scripts con conexión directa), si `request.jwt.claims` trae
---     role = service_role (por si una versión de GoTrue lo publica), o si
---     `app_metadata.demo_auth_unlock_until` es una fecha FUTURA. Ese campo
---     solo lo puede escribir el service role (un usuario no puede tocar su
---     app_metadata), así que es la llave del service role a través de la API:
---       await admin.auth.admin.updateUserById(id, { app_metadata:
---         { demo_auth_unlock_until: new Date(Date.now() + 120_000).toISOString() } })
---       await admin.auth.admin.updateUserById(id, { password: '…' })   // OK
---     La llave caduca sola (2 minutos en el ejemplo).
---   · SE BLOQUEA todo lo demás: un visitante de la demo (rol supabase_auth_admin
---     sin llave) no cambia email, contraseña ni teléfono.
--- La función es SECURITY INVOKER a propósito: así `current_user` es el rol
--- real que escribe (en una SECURITY DEFINER siempre sería el dueño).
+-- La API de Auth (GoTrue) entra en la base SIEMPRE con su rol
+-- `supabase_auth_admin`, tanto si llama un visitante de la demo (`updateUser`)
+-- como el service role (`auth.admin.updateUserById`), y no publica quién llama.
+-- Lo único fiable es QUIÉN CONECTA, así que solo se deja pasar:
+--   · una conexión directa por SQL como `postgres` o `service_role` SIN claims
+--     de JWT (`request.jwt.claims` vacío o sin poner): el SQL Editor;
+--   · un claim `role = service_role` (si alguna vía lo publica).
+-- Todo lo demás se bloquea, incluido `auth.admin.updateUserById` sobre la
+-- demo: la API de Auth no permite distinguirlo de un visitante. Nada de la
+-- fila (p. ej. app_metadata) cuenta como permiso: lo que viaja en la fila no
+-- dice quién llama.
+-- La función es SECURITY INVOKER a propósito: `current_user` es el rol real
+-- que escribe (en una SECURITY DEFINER sería siempre el dueño).
+--
+-- RESETEAR LA DEMO (solo así, en el SQL Editor; DEMO_USER_EMAIL de Vercel):
+--   update auth.users
+--      set encrypted_password = extensions.crypt('<contraseña nueva>', extensions.gen_salt('bf'))
+--    where email = '<DEMO_USER_EMAIL>' and raw_app_meta_data->>'demo' = 'true';
+--   -- y si alguien hubiera dejado un cambio de email a medias:
+--   update auth.users set email_change = '', email_change_token_new = '',
+--          email_change_token_current = '', email_change_confirm_status = 0
+--    where email = '<DEMO_USER_EMAIL>' and raw_app_meta_data->>'demo' = 'true';
+-- (La demo entra por enlace mágico desde /api/auth/demo: no necesita contraseña.)
 --
 -- CÓMO COMPROBARLO (SQL Editor; cada bloque se deshace con rollback):
 --   -- 1) Visitante de la demo vía API de Auth → ERROR demo_auth_locked
 --   begin; set local role supabase_auth_admin;
+--   select set_config('request.jwt.claims',
+--     '{"role":"authenticated","sub":"<id de la demo>"}', true);
 --   update auth.users set encrypted_password = 'x' where raw_app_meta_data->>'demo' = 'true';
 --   rollback;
---   -- 2) Service role por la API (con la llave) → sin error
---   begin;
---   update auth.users set raw_app_meta_data = raw_app_meta_data ||
---     jsonb_build_object('demo_auth_unlock_until', now() + interval '2 minutes')
---    where raw_app_meta_data->>'demo' = 'true';
---   set local role supabase_auth_admin;
+--   -- 2) Lo mismo sin claims (como entra GoTrue) → ERROR demo_auth_locked
+--   begin; set local role supabase_auth_admin;
 --   update auth.users set encrypted_password = 'x' where raw_app_meta_data->>'demo' = 'true';
 --   rollback;
---   -- 3) SQL Editor (postgres) → sin error
+--   -- 3) SQL Editor (postgres, sin claims) → sin error
 --   begin; update auth.users set encrypted_password = 'x'
 --    where raw_app_meta_data->>'demo' = 'true'; rollback;
 -- En la app: `updateUser({ password })` con la sesión de la demo responde con
@@ -480,8 +481,8 @@ returns trigger language plpgsql security invoker
 set search_path = public, pg_temp
 as $$
 declare
+  raw_claims text;
   claims_role text;
-  unlock_until timestamptz;
 begin
   if coalesce(old.raw_app_meta_data ->> 'demo', '') <> 'true' then
     return new;
@@ -494,25 +495,19 @@ begin
     return new;  -- inicio de sesión, metadatos… nada de credenciales
   end if;
 
-  if current_user in ('postgres', 'service_role') then
-    return new;
-  end if;
-
+  raw_claims := nullif(current_setting('request.jwt.claims', true), '');
   begin
-    claims_role := nullif(current_setting('request.jwt.claims', true), '')::jsonb ->> 'role';
+    claims_role := raw_claims::jsonb ->> 'role';
   exception when others then
     claims_role := null;
   end;
+
+  -- Claim explícito de service role.
   if claims_role = 'service_role' then
     return new;
   end if;
-
-  begin
-    unlock_until := (new.raw_app_meta_data ->> 'demo_auth_unlock_until')::timestamptz;
-  exception when others then
-    unlock_until := null;
-  end;
-  if unlock_until is not null and unlock_until > now() then
+  -- Conexión directa por SQL (SQL Editor), sin ningún JWT de por medio.
+  if raw_claims is null and current_user in ('postgres', 'service_role') then
     return new;
   end if;
 

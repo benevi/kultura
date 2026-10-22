@@ -129,12 +129,23 @@ describe('ROJO-8: la demo no cambia credenciales por la API de Auth', () => {
     expect(body).toContain('demo_auth_locked')
   })
 
-  it('el service role sí puede: rol directo, claims o llave temporal en app_metadata', () => {
+  // Lo que viaja en la fila no dice quién llama: ninguna "llave" en app_metadata
+  // puede abrir la demo (un visitante podría aprovechar la ventana).
+  it('solo pasan SQL directo sin claims (postgres/service_role) o el claim service_role', () => {
     const body = fnBody('guard_demo_auth_identity')
     expect(SQL).toMatch(/function public\.guard_demo_auth_identity\(\)\s+returns trigger language plpgsql security invoker/)
-    expect(body).toContain(`current_user in ('postgres', 'service_role')`)
     expect(body).toContain(`claims_role = 'service_role'`)
-    expect(body).toMatch(/demo_auth_unlock_until[\s\S]*unlock_until > now\(\)/)
+    expect(body).toContain(`raw_claims is null and current_user in ('postgres', 'service_role')`)
+    expect(body).not.toMatch(/new\.raw_app_meta_data/)
+    expect(SQL).not.toContain('demo_auth_unlock_until')
+  })
+
+  it('documenta el reset de la demo desde el SQL Editor con la sentencia exacta', () => {
+    const raw = readFileSync(
+      path.resolve(__dirname, '../../../supabase/migrations/20261101120001_identity_privacy.sql'),
+      'utf8'
+    )
+    expect(raw).toMatch(/set encrypted_password = extensions\.crypt\('<contraseña nueva>', extensions\.gen_salt\('bf'\)\)/)
   })
 
   it('las funciones de servicio no las ejecuta un usuario', () => {
