@@ -9,7 +9,9 @@ import plugin from "tailwindcss/plugin";
  * preflight dejaba bordes gris claro y anillos azules (DIS-1). `color-mix` en
  * OKLCH sí admite el `<alpha-value>` de Tailwind y, sin modificador, devuelve
  * el color exacto (100 % del token). Soporte: Chrome/Edge 111, Safari 16.2,
- * Firefox 113 — el mismo nivel que ya exige `oklch()` en los tokens.
+ * Firefox 113. Es algo MÁS exigente que `oklch()` (Safari 15.4): en iOS
+ * 15.4-16.1 las clases de color del tema no se pintan. Asumido a propósito
+ * (cuota residual en 2026); si hiciera falta, la salida es un `@supports`.
  * `tests/unit/design/tailwind-alpha.test.ts` compila el config y falla si una
  * clase con `/<alfa>` usada en `src` no genera regla.
  */

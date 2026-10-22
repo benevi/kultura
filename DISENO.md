@@ -85,7 +85,8 @@ apunta a un token inexistente (así se rompieron los avatares de la landing:
 
 Los colores del tema admiten modificador de opacidad: `bg-surface-default/80`,
 `border-accent-danger/30`, `ring-accent-pink/40`. Tailwind los genera con
-`color-mix(in oklch, var(--token) 80%, transparent)`. Antes los colores eran
+`color-mix(in oklch, var(--token) 80%, transparent)` (Chrome 111, Safari 16.2,
+Firefox 113: en iOS 15.4-16.1 esas clases no se pintan; asumido). Antes los colores eran
 `var(--x)` a secas y esas clases **no generaban regla** (bordes gris claro,
 anillos azules por defecto). `tests/unit/design/tailwind-alpha.test.ts` compila
 Tailwind y falla si una clase `/<alfa>` usada en `src` no genera regla.
