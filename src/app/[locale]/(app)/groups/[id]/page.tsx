@@ -12,6 +12,9 @@ import { Badge } from '@/components/ui/Badge'
 import { GroupFeed } from './GroupFeed'
 import { JoinGroupButton } from './JoinGroupButton'
 import { InviteButton } from './InviteButton'
+import { MemberRemoveButton } from './MemberRemoveButton'
+import { ReportButton } from '@/components/social/ReportButton'
+import { isModerationV2 } from '@/lib/social/friends'
 import { getGroupById, getMemberRole, getGroupMembers } from '@/lib/social/groups'
 import { F0 } from '@/lib/design/f0-tokens'
 import type { Metadata } from 'next'
@@ -41,6 +44,7 @@ export default async function GroupPage({ params }: Props) {
 
   const isMember = memberRole !== null
   const isOwner = group.ownerId === user.id
+  const moderation = isModerationV2()
   // Privado no auto-unible: ocultar el botón a quien no es miembro ni owner (evita 403/RLS confuso).
   const showJoin = isMember || isOwner || group.isPublic
 
@@ -140,11 +144,18 @@ export default async function GroupPage({ params }: Props) {
         </div>
       </div>
 
+      {/* F-11: denunciar el grupo (nombre, descripción o lo que se publica). */}
+      {moderation && !isOwner && (
+        <div className="-mt-4 flex justify-end">
+          <ReportButton targetType="group" targetId={id} contextLabel={group.name} />
+        </div>
+      )}
+
       <div className="grid md:grid-cols-3 gap-6">
         {/* Feed */}
         <div className="md:col-span-2">
           {isMember ? (
-            <GroupFeed groupId={id} currentUserId={user.id} />
+            <GroupFeed groupId={id} currentUserId={user.id} isOwner={isOwner} moderation={moderation} />
           ) : (
             <div
               className="rounded-bento border p-8 text-center text-sm"
@@ -163,7 +174,7 @@ export default async function GroupPage({ params }: Props) {
               m.user && (
                 <div
                   key={m.user.id}
-                  className="flex items-center gap-3 px-3 py-2.5 border-t first:border-t-0"
+                  className="flex flex-wrap items-center gap-3 px-3 py-2.5 border-t first:border-t-0"
                   style={{ borderColor: F0.stroke }}
                 >
                   {m.role === 'owner' ? (
@@ -179,6 +190,9 @@ export default async function GroupPage({ params }: Props) {
                   <span className="text-sm flex-1 truncate font-medium" style={{ color: F0.text }}>{m.user.username}</span>
                   {m.role === 'owner' && (
                     <span className="text-xs flex-shrink-0" style={{ color: F0.yellow }} aria-label={tG('members')}>👑</span>
+                  )}
+                  {moderation && isOwner && m.role !== 'owner' && (
+                    <MemberRemoveButton groupId={id} userId={m.user.id} username={m.user.username} />
                   )}
                 </div>
               )

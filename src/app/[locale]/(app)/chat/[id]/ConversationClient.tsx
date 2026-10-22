@@ -1,9 +1,12 @@
 'use client'
 
-import { useState, useEffect, useRef, useCallback } from 'react'
+import { useState, useEffect, useRef, useCallback, useId } from 'react'
 import { useTranslations, useLocale } from 'next-intl'
-import { Link } from '@/i18n/navigation'
+import { Link, useRouter } from '@/i18n/navigation'
 import { Avatar } from '@/components/ui/Avatar'
+import { KButton } from '@/components/ui/KButton'
+import { InlineConfirm, ReportButton, useRestoreFocus } from '@/components/social/ReportButton'
+import { blockUser, deleteMessage, leaveConversation } from '@/lib/social/actions'
 import { createClient } from '@/lib/supabase/client'
 import { useToastContext } from '@/components/ui/ToastProvider'
 import { useUnreadChat } from '@/components/layout/UnreadChatProvider'
@@ -31,15 +34,250 @@ interface Props {
   conversationId: string
   otherUser: OtherUser | null
   currentUserId: string
+  /** F-11 (MODERATION_V2): denunciar mensajes, borrar los propios, bloquear y salir. */
+  moderation?: boolean
+  /**
+   * F-11: false si ya no se puede escribir (no sois amigos, hay un bloqueo o
+   * el otro salió). La base lo hace cumplir igualmente; esto solo lo explica.
+   */
+  canSend?: boolean
+}
+
+/** Papelera rellena (borrar un mensaje propio). */
+function TrashIcon({ className }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" className={className}>
+      <rect x="3" y="4.5" width="18" height="3" rx="1.5" />
+      <rect x="9" y="2" width="6" height="3" rx="1.5" />
+      <path d="M5.5 9h13l-1.1 11.1A2 2 0 0 1 15.4 22H8.6a2 2 0 0 1-2-1.9z" />
+    </svg>
+  )
+}
+
+/** Opciones de la conversación: denunciar y bloquear al otro, salir del chat. */
+function ConversationOptions({
+  conversationId,
+  otherUser,
+  onBlocked,
+}: {
+  conversationId: string
+  otherUser: OtherUser | null
+  onBlocked: () => void
+}) {
+  const t = useTranslations('moderation')
+  const router = useRouter()
+  const [open, setOpen] = useState(false)
+  const [confirm, setConfirm] = useState<'block' | 'leave' | null>(null)
+  const [busy, setBusy] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const [blocked, setBlocked] = useState(false)
+  const { ref: toggleRef, restore } = useRestoreFocus()
+  const panelId = useId()
+
+  function cancel() {
+    setConfirm(null)
+    setError(null)
+    restore()
+  }
+
+  async function handleBlock() {
+    if (!otherUser) return
+    setBusy(true)
+    setError(null)
+    try {
+      await blockUser(otherUser.id)
+      setBlocked(true)
+      setConfirm(null)
+      onBlocked()
+    } catch {
+      setError(t('blockError'))
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  async function handleLeave() {
+    setBusy(true)
+    setError(null)
+    try {
+      await leaveConversation(conversationId)
+      router.push('/chat')
+    } catch {
+      setError(t('leaveError'))
+      setBusy(false)
+    }
+  }
+
+  return (
+    <div className="ml-auto relative">
+      <button
+        ref={toggleRef}
+        type="button"
+        aria-expanded={open}
+        aria-controls={panelId}
+        onClick={() => { setOpen((v) => !v); setConfirm(null); setError(null) }}
+        className="inline-flex items-center justify-center w-11 h-11 rounded-full text-text-secondary hover:text-text-primary hover:bg-surface-elevated transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-pink"
+      >
+        <span className="sr-only">{t('conversationOptions')}</span>
+        <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" className="w-5 h-5">
+          <circle cx="5" cy="12" r="2.2" /><circle cx="12" cy="12" r="2.2" /><circle cx="19" cy="12" r="2.2" />
+        </svg>
+      </button>
+      {open && (
+        <div
+          id={panelId}
+          onKeyDown={(e) => {
+            if (e.key === 'Escape' && !confirm) {
+              setOpen(false)
+              toggleRef.current?.focus()
+            }
+          }}
+          className="absolute right-0 top-12 z-20 w-72 max-w-[calc(100vw-2rem)] flex flex-col gap-2 p-3 bg-surface-elevated border border-surface-border rounded-card shadow-lg"
+        >
+          {confirm === 'block' ? (
+            <InlineConfirm
+              title={t('blockConfirmTitle')}
+              body={t('blockConfirmBody')}
+              confirmLabel={t('block')}
+              cancelLabel={t('cancel')}
+              loading={busy}
+              error={error}
+              onConfirm={handleBlock}
+              onCancel={cancel}
+            />
+          ) : confirm === 'leave' ? (
+            <InlineConfirm
+              title={t('leaveConfirmTitle')}
+              body={t('leaveConfirmBody')}
+              confirmLabel={t('leave')}
+              cancelLabel={t('cancel')}
+              loading={busy}
+              error={error}
+              onConfirm={handleLeave}
+              onCancel={cancel}
+            />
+          ) : (
+            <>
+              {otherUser && (
+                <ReportButton targetType="user" targetId={otherUser.id} contextLabel={otherUser.username} />
+              )}
+              {otherUser && !blocked && (
+                <KButton
+                  variant="secondary"
+                  size="sm"
+                  className="justify-start text-xs text-text-tertiary hover:text-accent-danger hover:border-accent-danger"
+                  onClick={() => setConfirm('block')}
+                >
+                  {t('blockUser', { username: otherUser.username })}
+                </KButton>
+              )}
+              {blocked && <p role="status" className="text-xs text-text-secondary">{t('blockedNotice')}</p>}
+              <KButton
+                variant="secondary"
+                size="sm"
+                className="justify-start text-xs text-text-tertiary hover:text-accent-danger hover:border-accent-danger"
+                onClick={() => setConfirm('leave')}
+              >
+                {t('leave')}
+              </KButton>
+            </>
+          )}
+        </div>
+      )}
+    </div>
+  )
+}
+
+/** Acción por mensaje: denunciar (ajeno) o borrar (propio, con confirmación). */
+function MessageActions({
+  conversationId,
+  message,
+  isMine,
+  onDeleted,
+}: {
+  conversationId: string
+  message: Message
+  isMine: boolean
+  onDeleted: (id: string) => void
+}) {
+  const t = useTranslations('moderation')
+  const [confirming, setConfirming] = useState(false)
+  const [busy, setBusy] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const { ref: triggerRef, restore } = useRestoreFocus()
+
+  if (message.id.startsWith('temp-')) return null
+
+  if (!isMine) {
+    return (
+      <ReportButton
+        variant="icon"
+        targetType="message"
+        targetId={message.id}
+        contextLabel={message.users?.username}
+      />
+    )
+  }
+
+  async function handleDelete() {
+    setBusy(true)
+    setError(null)
+    try {
+      await deleteMessage(conversationId, message.id)
+      onDeleted(message.id)
+    } catch {
+      setError(t('deleteMessageError'))
+      setBusy(false)
+    }
+  }
+
+  if (confirming) {
+    return (
+      <InlineConfirm
+        title={t('deleteMessageConfirmTitle')}
+        body={t('deleteMessageConfirmBody')}
+        confirmLabel={t('delete')}
+        cancelLabel={t('cancel')}
+        loading={busy}
+        error={error}
+        onConfirm={handleDelete}
+        onCancel={() => {
+          setConfirming(false)
+          setError(null)
+          restore()
+        }}
+      />
+    )
+  }
+
+  return (
+    <button
+      ref={triggerRef}
+      type="button"
+      aria-label={t('deleteMessage')}
+      onClick={() => setConfirming(true)}
+      className="inline-flex items-center justify-center w-11 h-11 rounded-full text-text-tertiary hover:text-accent-danger hover:bg-surface-elevated transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-pink"
+    >
+      <TrashIcon className="w-4 h-4" />
+    </button>
+  )
 }
 
 function timeLabel(iso: string, locale: string): string {
   return new Intl.DateTimeFormat(locale, { hour: '2-digit', minute: '2-digit' }).format(new Date(iso))
 }
 
-export function ConversationClient({ conversationId, otherUser, currentUserId }: Props) {
+export function ConversationClient({
+  conversationId,
+  otherUser,
+  currentUserId,
+  moderation = false,
+  canSend: initialCanSend = true,
+}: Props) {
   const t = useTranslations('chat')
+  const tm = useTranslations('moderation')
   const locale = useLocale()
+  const [canSend, setCanSend] = useState(initialCanSend)
   const { show } = useToastContext()
   const { markConversationRead } = useUnreadChat()
   const [messages, setMessages] = useState<Message[]>([])
@@ -154,7 +392,13 @@ export function ConversationClient({ conversationId, otherUser, currentUserId }:
     if (!res.ok) {
       setMessages(prev => prev.filter(m => m.id !== tempId))
       setText(content)
-      show({ message: t('sendError'), type: 'error' })
+      const err = await res.json().catch(() => ({})) as { error?: string }
+      if (res.status === 403 && err.error === 'cannot_message') {
+        // F-11: ya no sois amigos o hay un bloqueo; se explica en lugar del campo.
+        setCanSend(false)
+      } else {
+        show({ message: t('sendError'), type: 'error' })
+      }
     } else {
       // Reconcile: replace the optimistic temp message with the real one (id UUID from server)
       const { message: real } = await res.json().catch(() => ({ message: null }))
@@ -185,7 +429,14 @@ export function ConversationClient({ conversationId, otherUser, currentUserId }:
             </Link>
           </>
         ) : (
-          <span className="text-sm text-text-secondary">...</span>
+          <span className="text-sm text-text-secondary">{moderation ? t('otherLeft') : '...'}</span>
+        )}
+        {moderation && (
+          <ConversationOptions
+            conversationId={conversationId}
+            otherUser={otherUser}
+            onBlocked={() => setCanSend(false)}
+          />
         )}
       </div>
 
@@ -249,9 +500,19 @@ export function ConversationClient({ conversationId, otherUser, currentUserId }:
                 >
                   {msg.content}
                 </div>
-                <span className="text-xs text-text-secondary px-1">
-                  {timeLabel(msg.created_at, locale)}
-                </span>
+                <div className={`flex items-center gap-1 ${isMine ? 'flex-row-reverse' : 'flex-row'}`}>
+                  <span className="text-xs text-text-secondary px-1">
+                    {timeLabel(msg.created_at, locale)}
+                  </span>
+                  {moderation && (
+                    <MessageActions
+                      conversationId={conversationId}
+                      message={msg}
+                      isMine={isMine}
+                      onDeleted={(id) => setMessages(prev => prev.filter(m => m.id !== id))}
+                    />
+                  )}
+                </div>
               </div>
             </div>
           )
@@ -259,7 +520,15 @@ export function ConversationClient({ conversationId, otherUser, currentUserId }:
         <div ref={bottomRef} />
       </div>
 
-      {/* Input */}
+      {/* Input — F-11: si ya no se puede escribir, se explica por qué. */}
+      {!canSend ? (
+        <p
+          role="status"
+          className="px-4 py-4 border-t border-surface-border bg-surface-default text-sm text-text-secondary text-center"
+        >
+          {tm('cannotMessage')}
+        </p>
+      ) : (
       <form
         onSubmit={handleSend}
         className="flex items-center gap-2 px-4 py-3 border-t border-surface-border bg-surface-default"
@@ -269,6 +538,8 @@ export function ConversationClient({ conversationId, otherUser, currentUserId }:
           value={text}
           onChange={e => setText(e.target.value)}
           placeholder={t('messagePlaceholder')}
+          aria-label={t('messagePlaceholder')}
+          maxLength={2000}
           className="flex-1 bg-surface-elevated border border-surface-border rounded-full px-4 py-2 text-sm text-text-primary placeholder-text-tertiary focus:outline-none focus:ring-1 focus:ring-accent-pink"
         />
         <button
@@ -282,6 +553,7 @@ export function ConversationClient({ conversationId, otherUser, currentUserId }:
           </svg>
         </button>
       </form>
+      )}
     </div>
   )
 }

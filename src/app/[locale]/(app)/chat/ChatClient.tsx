@@ -170,7 +170,7 @@ export function ChatClient({ friends }: Props) {
               <div className="flex-1 min-w-0">
                 <div className="flex items-center justify-between gap-2">
                   <span className={`text-sm font-semibold ${conv.unread ? 'text-text-primary' : 'text-text-secondary'}`}>
-                    {conv.otherUser?.username ?? '?'}
+                    {conv.otherUser?.username ?? t('otherLeft')}
                   </span>
                   {conv.lastMessageAt && (
                     <span className="text-xs text-text-secondary flex-shrink-0">

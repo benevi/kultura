@@ -10,6 +10,7 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { checkRateLimit, LIMITS } from '@/lib/rate-limit'
+import { isRlsDenied } from '@/lib/social/friends'
 
 /** GET /api/friends — lista de amigos aceptados del usuario autenticado */
 export async function GET(): Promise<NextResponse> {
@@ -124,6 +125,12 @@ export async function POST(request: Request): Promise<NextResponse> {
     })
     .select('id, requester_id, receiver_id, status, created_at')
     .single()
+
+  // F-11: con bloqueo en cualquier sentido la RLS rechaza la solicitud. Se
+  // responde 403 genérico, sin decir que hay un bloqueo.
+  if (isRlsDenied(insertError)) {
+    return NextResponse.json({ error: 'not_allowed' }, { status: 403 })
+  }
 
   if (insertError || !data) {
     return NextResponse.json({ error: 'Failed to send friend request' }, { status: 500 })

@@ -9,7 +9,7 @@ import { createClient } from '@/lib/supabase/server'
 import { z } from 'zod'
 import { checkRateLimit, LIMITS } from '@/lib/rate-limit'
 import { isValidAvatarIcon } from '@/components/icons/avatars'
-import { getUserGroups } from '@/lib/social/groups'
+import { createGroupRow, getUserGroups } from '@/lib/social/groups'
 import { createLogger } from '@/lib/logger'
 
 const log = createLogger('api/groups')
@@ -51,23 +51,20 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
   const parsed = CreateGroupSchema.safeParse(body)
   if (!parsed.success) return NextResponse.json({ error: 'Invalid data' }, { status: 400 })
 
-  const { data: group, error } = await supabase
-    .from('groups')
-    .insert({
-      owner_id: user.id,
-      name: parsed.data.name,
-      description: parsed.data.description ?? null,
-      cover_color: parsed.data.cover_color ?? '#E82020',
-      is_public: parsed.data.is_public,
-      // Solo se manda si el usuario eligió icono: así crear un grupo sigue
-      // funcionando aunque la migración de `groups.icon` no esté aplicada
-      // todavía (mandar una columna inexistente es un error duro, no un no-op).
-      ...(parsed.data.icon ? { icon: parsed.data.icon } : {}),
-    })
-    .select()
-    .single()
+  // Sin `.select()` en el INSERT: ver createGroupRow (grupos privados).
+  const { group, error } = await createGroupRow({
+    owner_id: user.id,
+    name: parsed.data.name,
+    description: parsed.data.description ?? null,
+    cover_color: parsed.data.cover_color ?? '#E82020',
+    is_public: parsed.data.is_public,
+    // Solo se manda si el usuario eligió icono: así crear un grupo sigue
+    // funcionando aunque la migración de `groups.icon` no esté aplicada
+    // todavía (mandar una columna inexistente es un error duro, no un no-op).
+    ...(parsed.data.icon ? { icon: parsed.data.icon } : {}),
+  })
 
-  if (error) {
+  if (error || !group) {
     log.error('group create error', { err: error })
     return NextResponse.json({ error: 'Failed to create group' }, { status: 500 })
   }
