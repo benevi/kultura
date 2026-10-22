@@ -29,6 +29,8 @@ import {
   ProviderError,
   ProviderUnavailableError,
   PROVIDER_TIMEOUT_MS,
+  PROVIDER_MAX_TIMEOUT_MS,
+  PROVIDER_TOTAL_BUDGET_MS,
   CIRCUIT_OPEN_MS,
 } from "@/lib/api/http";
 
@@ -98,14 +100,61 @@ describe("providerFetch", () => {
     expect(((await p) as ProviderError).kind).toBe("timeout");
   });
 
-  it("un timeoutMs mayor que 6 s se recorta a 6 s", async () => {
+  it("un cliente puede pedir hasta 8 s (Open Library), pero no más", async () => {
     vi.useFakeTimers();
     vi.stubGlobal("fetch", hangingFetch());
     const p = providerFetch("openlibrary", "https://openlibrary.org/search.json", {
       timeoutMs: 20_000,
     }).catch((e) => e);
+    let settled = false;
+    void p.then(() => (settled = true));
     await vi.advanceTimersByTimeAsync(PROVIDER_TIMEOUT_MS);
-    expect(((await p) as ProviderError).kind).toBe("timeout");
+    expect(settled).toBe(false); // a los 6 s aún espera…
+    await vi.advanceTimersByTimeAsync(PROVIDER_MAX_TIMEOUT_MS - PROVIDER_TIMEOUT_MS);
+    expect(((await p) as ProviderError).kind).toBe("timeout"); // …a los 8 s corta
+  });
+
+  it("con reintento, la llamada entera no pasa de 8 s", async () => {
+    vi.useFakeTimers();
+    const fetchMock = vi.fn(
+      (_url: string, init?: RequestInit) =>
+        new Promise<Response>((resolve, reject) => {
+          // 1.er intento: 503 a los 5 s. 2.º: colgado.
+          if (fetchMock.mock.calls.length === 1) {
+            setTimeout(() => resolve(json({}, 503)), 5000);
+          }
+          init?.signal?.addEventListener("abort", () =>
+            reject(new DOMException("aborted", "AbortError"))
+          );
+        })
+    );
+    vi.stubGlobal("fetch", fetchMock);
+    const started = Date.now();
+    const p = providerFetch("anilist", "https://graphql.anilist.co", {
+      method: "POST",
+      retries: 1,
+    }).catch((e) => e);
+    await vi.advanceTimersByTimeAsync(PROVIDER_TOTAL_BUDGET_MS);
+    const err = (await p) as ProviderError;
+    expect(err.kind).toBe("timeout");
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+    expect(Date.now() - started).toBeLessThanOrEqual(PROVIDER_TOTAL_BUDGET_MS);
+  });
+
+  it("si no queda presupuesto para un intento útil, no reintenta", async () => {
+    vi.useFakeTimers();
+    const fetchMock = vi.fn(
+      () => new Promise<Response>((resolve) => setTimeout(() => resolve(json({}, 503)), 7000))
+    );
+    vi.stubGlobal("fetch", fetchMock);
+    const p = providerFetch("jikan", "https://api.jikan.moe/v4/x", {
+      retries: 1,
+      timeoutMs: 8000,
+    }).catch((e) => e);
+    await vi.advanceTimersByTimeAsync(PROVIDER_TOTAL_BUDGET_MS);
+    expect(((await p) as ProviderError).status).toBe(503);
+    // 8 s − 7 s − 0,4 s de espera < 1 s: el segundo intento no sale.
+    expect(fetchMock).toHaveBeenCalledTimes(1);
   });
 
   // ── Reintentos ─────────────────────────────────────────────────────────────
@@ -289,6 +338,35 @@ describe("providerFetch", () => {
     vi.mocked(fetch).mockImplementation(async () => json({ ok: 1 }));
     await expect(providerFetch("comicvine", "https://cv.test/probe")).resolves.toEqual({ ok: 1 });
     expect(providerCircuitState("comicvine")).toBe("closed");
+  });
+
+  it("en half-open solo UNA petición concurrente llega al proveedor", async () => {
+    vi.useFakeTimers();
+    vi.mocked(fetch).mockImplementation(async () => json({}, 503));
+    for (let i = 0; i < 5; i++) {
+      await providerFetch("rawg", `https://api.rawg.io/api/${i}`).catch(() => {});
+    }
+    vi.setSystemTime(Date.now() + CIRCUIT_OPEN_MS + 1);
+    vi.mocked(fetch).mockClear();
+
+    // La prueba tarda: mientras está en vuelo llegan otras cuatro.
+    let release!: (r: Response) => void;
+    vi.mocked(fetch).mockImplementation(
+      () => new Promise<Response>((resolve) => (release = resolve))
+    );
+    const calls = [0, 1, 2, 3, 4].map((i) =>
+      providerFetch("rawg", `https://api.rawg.io/api/probe${i}`).then(
+        () => "ok",
+        (e) => e
+      )
+    );
+    await vi.advanceTimersByTimeAsync(0);
+    expect(fetch).toHaveBeenCalledTimes(1);
+    release(json({ results: [] }));
+    const results = await Promise.all(calls);
+    expect(results.filter((r) => r === "ok")).toHaveLength(1);
+    expect(results.filter((r) => r instanceof ProviderUnavailableError)).toHaveLength(4);
+    expect(providerCircuitState("rawg")).toBe("closed");
   });
 
   it("si la prueba vuelve a fallar, se reabre 10 min más", async () => {

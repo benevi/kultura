@@ -13,9 +13,11 @@
 //     petición de anime lo volvía a intentar antes de ir al respaldo.
 //
 // `providerFetch` concentra todo eso en un sitio:
-//   1. Plazo de 6 s por intento (`AbortController` + carrera con un
+//   1. Plazo de 6 s por intento (8 s como máximo, Open Library) y 8 s en total
+//      por llamada contando el reintento (`AbortController` + carrera con un
 //      temporizador: aunque el proveedor ignore la señal, la petición termina).
-//   2. Reintento SOLO ante 5xx y solo si el cliente lo pide (`retries`).
+//   2. Reintento SOLO ante 5xx, solo si el cliente lo pide (`retries`) y solo
+//      si queda presupuesto.
 //   3. Contrato con Zod (`schema`, siempre permisivo: `looseObject` y casi todo
 //      opcional). Modo `PROVIDER_CONTRACT_MODE`:
 //        - `log` (por defecto): si la respuesta no cumple, se avisa (log +
@@ -69,8 +71,25 @@ export type ProviderId = (typeof PROVIDER_IDS)[number];
 
 // ── Parámetros ────────────────────────────────────────────────────────────────
 
-/** Plazo máximo de cada intento. Ninguna petición a un proveedor pasa de aquí. */
+/** Plazo por defecto de cada intento. */
 export const PROVIDER_TIMEOUT_MS = 6000;
+
+/**
+ * Plazo máximo que un cliente puede pedir para un intento (Open Library usa
+ * 8 s: su búsqueda de catálogo es la más pesada y con 6 s sus picos lentos
+ * abrirían el circuito sin estar caído).
+ */
+export const PROVIDER_MAX_TIMEOUT_MS = 8000;
+
+/**
+ * Presupuesto TOTAL de una llamada, reintento y espera incluidos. Sin él, un
+ * cliente con reintento (AniList, Jikan) podía tardar 6 s + 0,4 s + 6 s. Con
+ * él: el segundo intento solo usa lo que quede, y si queda menos de
+ * `MIN_RETRY_BUDGET_MS` no se reintenta (un intento de medio segundo solo
+ * gastaría cupo).
+ */
+export const PROVIDER_TOTAL_BUDGET_MS = 8000;
+const MIN_RETRY_BUDGET_MS = 1000;
 
 /** Fallos dentro de la ventana que abren el circuito. */
 export const CIRCUIT_FAILURE_THRESHOLD = 5;
@@ -349,7 +368,7 @@ function open(
 export interface ProviderFetchOptions {
   /** Contrato mínimo de la respuesta (permisivo: `looseObject`, casi todo opcional). */
   schema?: ZodType;
-  /** Plazo por intento. Por defecto y como máximo, `PROVIDER_TIMEOUT_MS`. */
+  /** Plazo por intento: por defecto `PROVIDER_TIMEOUT_MS`, como máximo `PROVIDER_MAX_TIMEOUT_MS`. */
   timeoutMs?: number;
   /** Reintentos ante 5xx (por defecto 0). */
   retries?: number;
@@ -454,14 +473,20 @@ async function fetchAndValidate<T>(
   opts: ProviderFetchOptions
 ): Promise<T> {
   const label = labelFor(url, opts);
-  const timeoutMs = Math.min(opts.timeoutMs ?? PROVIDER_TIMEOUT_MS, PROVIDER_TIMEOUT_MS);
+  const timeoutMs = Math.min(opts.timeoutMs ?? PROVIDER_TIMEOUT_MS, PROVIDER_MAX_TIMEOUT_MS);
+  const deadline = Date.now() + PROVIDER_TOTAL_BUDGET_MS;
   const retries = Math.max(0, opts.retries ?? 0);
   const retryOn = opts.retryOn ?? DEFAULT_RETRY_ON;
 
   let lastStatus = 0;
   for (let attempt = 0; attempt <= retries; attempt++) {
-    if (attempt > 0) await sleep(opts.retryDelayMs ?? DEFAULT_RETRY_DELAY_MS);
-    const result = await attemptOnce(provider, url, label, opts, timeoutMs);
+    if (attempt > 0) {
+      const delay = opts.retryDelayMs ?? DEFAULT_RETRY_DELAY_MS;
+      if (deadline - Date.now() - delay < MIN_RETRY_BUDGET_MS) break;
+      await sleep(delay);
+    }
+    const budget = Math.min(timeoutMs, deadline - Date.now());
+    const result = await attemptOnce(provider, url, label, opts, budget);
     if (result.ok) {
       opts.checkBody?.(result.json);
       if (opts.schema) {

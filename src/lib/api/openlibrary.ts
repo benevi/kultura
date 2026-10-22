@@ -21,7 +21,7 @@
 // ── Internal types ────────────────────────────────────────────────────────────
 
 import type { ZodType } from "zod";
-import { providerFetch, PROVIDER_TIMEOUT_MS } from "@/lib/api/http";
+import { providerFetch, PROVIDER_MAX_TIMEOUT_MS } from "@/lib/api/http";
 import {
   openLibrarySearchSchema,
   openLibraryWorkSchema,
@@ -105,10 +105,13 @@ export class OpenLibraryError extends Error {
 /**
  * Plazo máximo por petición. Sin él, una conexión que se queda a medias deja la
  * función serverless esperando hasta que Vercel la mata, y el log no dice nada
- * útil. Con él, el fallo es rápido y nombra la causa. Es el plazo común de
- * todos los proveedores (`PROVIDER_TIMEOUT_MS`, 6 s; antes aquí eran 8 s).
+ * útil. Con él, el fallo es rápido y nombra la causa. Son 8 s y no los 6 s
+ * comunes: la ventana del catálogo (60 obras) es la respuesta más pesada de
+ * todos los proveedores y, como un plazo agotado cuenta para el circuit
+ * breaker, 6 s abrirían el circuito con picos lentos de un servicio que está
+ * vivo.
  */
-export const OPEN_LIBRARY_TIMEOUT_MS = PROVIDER_TIMEOUT_MS;
+export const OPEN_LIBRARY_TIMEOUT_MS = PROVIDER_MAX_TIMEOUT_MS;
 
 async function openLibraryFetch<T>(
   path: string,
