@@ -5,18 +5,22 @@
 
 import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/admin'
 import { checkRateLimit, LIMITS } from '@/lib/rate-limit'
 import { getUserMedia } from '@/lib/library/queries'
 import { getUserLists, getListDetail } from '@/lib/social/lists'
 import { getFriends } from '@/lib/social/friends'
 import { createLogger } from '@/lib/logger'
+import { collectExportSections } from './collect'
 
 const log = createLogger('api/account/export')
 
 /**
- * GET /api/account/export — exporta biblioteca + listas + amistades del
- * usuario autenticado. Reusa las mismas queries que ya sirven a las
- * pantallas de biblioteca/listas/amigos — sin lógica de lectura duplicada.
+ * GET /api/account/export — exporta TODOS los datos del usuario autenticado
+ * (arts. 15 y 20 RGPD): perfil, biblioteca, listas, amistades y, desde SEG-8,
+ * mensajes enviados, conversaciones, posts, grupos, invitaciones,
+ * recomendaciones, sugerencias, notificaciones y denuncias (ver `collect.ts`).
+ * Biblioteca, listas y amistades reusan las queries de sus pantallas.
  */
 export async function GET(): Promise<NextResponse> {
   const supabase = createClient()
@@ -36,7 +40,7 @@ export async function GET(): Promise<NextResponse> {
 
   const { data: profile, error: profileError } = await supabase
     .from('users')
-    .select('username, bio, avatar_color, avatar_initials, preferred_locale, created_at')
+    .select('username, bio, avatar_color, avatar_icon, avatar_initials, preferred_locale, created_at')
     .eq('id', user.id)
     .single()
 
@@ -46,10 +50,11 @@ export async function GET(): Promise<NextResponse> {
   }
 
   try {
-    const [library, lists, friendships] = await Promise.all([
+    const [library, lists, friendships, sections] = await Promise.all([
       getUserMedia(user.id),
       getUserLists(user.id),
       getFriends(user.id),
+      collectExportSections(createAdminClient(), user.id),
     ])
 
     // `getUserLists` no trae el CONTENIDO de cada lista, así que un export sin
@@ -71,6 +76,7 @@ export async function GET(): Promise<NextResponse> {
       library,
       lists: lists.map((list) => ({ ...list, items: itemsByList.get(list.id) ?? [] })),
       friendships,
+      ...sections,
     })
   } catch (err) {
     log.error('Failed to export account data', { err, userId: user.id })
