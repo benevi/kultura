@@ -9,17 +9,13 @@
 
 import * as Sentry from "@sentry/nextjs";
 
+// REN-2: solo captura de errores (excepciones globales, promesas rechazadas y
+// `Sentry.captureException` de global-error.tsx y logger.ts). Fuera:
+// - Session Replay: ≈ 38 KB gz y, con `replaysOnErrorSampleRate`, rrweb
+//   grabando en búfer (MutationObserver) en cada página aunque no haya error.
+// - Trazas del navegador: el código se elimina en el build (ver
+//   `clientSentryDefines` en next.config.mjs) y sin `tracesSampleRate` el SDK
+//   no intenta muestrear. Las trazas de servidor y edge se mantienen.
 Sentry.init({
   dsn: process.env.NEXT_PUBLIC_SENTRY_DSN,
-
-  // Trazas de rendimiento: 10% del tráfico. Suficiente para detectar
-  // regresiones sin disparar el volumen (y el coste) del plan gratuito.
-  tracesSampleRate: 0.1,
-
-  // Replay de sesión: solo en las sesiones donde ya ocurrió un error, nunca
-  // en tráfico normal — evita capturar interacciones de usuarios reales
-  // (chat, biblioteca) salvo cuando hay algo que depurar.
-  replaysSessionSampleRate: 0,
-  replaysOnErrorSampleRate: 1.0,
-  integrations: [Sentry.replayIntegration()],
 });
