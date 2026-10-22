@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useTranslations } from 'next-intl'
 import { Link } from '@/i18n/navigation'
 import { Avatar } from '@/components/ui/Avatar'
@@ -9,6 +9,7 @@ import { KButton } from '@/components/ui/KButton'
 import { FriendCard } from '@/components/social/FriendCard'
 import { FriendshipButton } from '@/components/social/FriendshipButton'
 import { F0 } from '@/lib/design/f0-tokens'
+import { getBlockedUsers, unblockUser, type BlockedUser } from '@/lib/social/actions'
 import type { Friendship } from '@/types/user'
 
 interface SearchUser {
@@ -186,6 +187,7 @@ export function FriendsClient({
                     initialStatus="none"
                     targetUserId={u.id}
                     friendshipId={undefined}
+                    allowBlock={false}
                   />
                 </div>
               ))}
@@ -241,7 +243,92 @@ export function FriendsClient({
             </div>
           )}
         </section>
+
+        <BlockedUsersSection />
       </div>
     </div>
+  )
+}
+
+/**
+ * F-11: usuarios bloqueados, con "Desbloquear". Solo aparece si la moderación
+ * está activa (MODERATION_V2 + migración) y hay alguien bloqueado.
+ */
+function BlockedUsersSection() {
+  const t = useTranslations('moderation')
+  const [users, setUsers] = useState<BlockedUser[]>([])
+  const [busyId, setBusyId] = useState<string | null>(null)
+  const [error, setError] = useState(false)
+  const [announce, setAnnounce] = useState('')
+  const headingRef = useRef<HTMLHeadingElement>(null)
+
+  useEffect(() => {
+    let alive = true
+    getBlockedUsers()
+      .then((res) => { if (alive && res.enabled) setUsers(res.users) })
+      .catch(() => { /* sin moderación disponible: no se pinta */ })
+    return () => { alive = false }
+  }, [])
+
+  async function handleUnblock(user: BlockedUser) {
+    setBusyId(user.id)
+    setError(false)
+    try {
+      await unblockUser(user.id)
+      setUsers((prev) => prev.filter((u) => u.id !== user.id))
+      setAnnounce(t('unblockedUser', { username: user.username }))
+      // La fila desaparece: el foco no se pierde, vuelve al título de la sección.
+      requestAnimationFrame(() => headingRef.current?.focus())
+    } catch {
+      setError(true)
+    } finally {
+      setBusyId(null)
+    }
+  }
+
+  return (
+    <>
+      <p role="status" className="sr-only">{announce}</p>
+      {users.length > 0 && (
+        <section aria-labelledby="blocked-users-heading">
+          <h2
+            id="blocked-users-heading"
+            ref={headingRef}
+            tabIndex={-1}
+            className="font-display text-xl font-bold mb-1 focus:outline-none"
+            style={{ color: F0.text }}
+          >
+            {t('blockedListTitle')}
+          </h2>
+          <p className="text-xs mb-3" style={{ color: F0.textSecondary }}>{t('blockedListHint')}</p>
+          {error && <p role="alert" className="text-xs mb-2 text-accent-danger">{t('unblockError')}</p>}
+          <ul className="flex flex-col gap-3">
+            {users.map((u) => (
+              <li key={u.id} className="flex items-center gap-4 rounded-20 px-[22px] py-4" style={{ background: F0.surface }}>
+                <Avatar initials={u.avatarInitials} color={u.avatarColor} size="sm" />
+                <Link
+                  href={`/profile/${u.username}`}
+                  className="flex-1 text-sm font-bold hover:opacity-80 transition-opacity"
+                  style={{ color: F0.text }}
+                >
+                  {u.username}
+                </Link>
+                <KButton
+                  variant="secondary"
+                  size="sm"
+                  loading={busyId === u.id}
+                  onClick={() => handleUnblock(u)}
+                  aria-label={t('unblockUser', { username: u.username })}
+                  className="rounded-full font-bold border-2"
+                  style={{ borderColor: F0.stroke, color: F0.textSecondary }}
+                >
+                  {t('unblock')}
+                </KButton>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
+    </>
   )
 }
