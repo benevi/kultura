@@ -24,9 +24,19 @@ interface AiRecommendationsProps {
    * enseña directamente, sin botón, porque no hay nada que pedirle a la IA.
    */
   starter?: MediaItem[]
+  /**
+   * Esqueleto mientras el servidor prepara lo popular (fallback de Suspense en
+   * Inicio). No pide nada: solo pinta la espera.
+   */
+  pending?: boolean
 }
 
-function initialStatus(initial: AiRecsResult | null | undefined, starter: MediaItem[] | undefined): Status {
+function initialStatus(
+  initial: AiRecsResult | null | undefined,
+  starter: MediaItem[] | undefined,
+  pending: boolean
+): Status {
+  if (pending) return 'loading'
   if (initial && initial.recommendations.length > 0) return 'done'
   if (starter && starter.length > 0) return 'starter'
   return 'idle'
@@ -38,13 +48,19 @@ function initialStatus(initial: AiRecsResult | null | undefined, starter: MediaI
  * promete la política de privacidad (se le dice qué se envía y a quién). La
  * respuesta vale para todo el día.
  */
-export function AiRecommendations({ initial = null, starter: initialStarter }: AiRecommendationsProps = {}) {
+export function AiRecommendations({
+  initial = null,
+  starter: initialStarter,
+  pending = false,
+}: AiRecommendationsProps = {}) {
   const t = useTranslations('aiRecommendations')
   const [recs, setRecs] = useState<AiRec[]>(initial?.recommendations ?? [])
   const [source, setSource] = useState<AiRecsResult['source']>(initial?.source ?? 'ai')
   const [capped, setCapped] = useState(initial?.capped === true)
+  // `saved: false` → el modelo falló y no se guardó: no son "las de hoy".
+  const [saved, setSaved] = useState(initial?.saved !== false)
   const [starter, setStarter] = useState<MediaItem[]>(initialStarter ?? [])
-  const [status, setStatus] = useState<Status>(() => initialStatus(initial, initialStarter))
+  const [status, setStatus] = useState<Status>(() => initialStatus(initial, initialStarter, pending))
   const sectionRef = useRef<HTMLElement>(null)
   const controllerRef = useRef<AbortController | null>(null)
   // Solo se mueve el foco cuando el resultado llega por un clic: el botón que
@@ -76,6 +92,7 @@ export function AiRecommendations({ initial = null, starter: initialStarter }: A
         setRecs(list)
         setSource(data.source ?? 'ai')
         setCapped(data.capped === true)
+        setSaved(data.saved !== false)
         setStarter(popular)
         // Sin recomendaciones propias se enseña lo popular, y solo si tampoco
         // hay eso queda la tarjeta de "añade títulos" sola.
@@ -97,7 +114,9 @@ export function AiRecommendations({ initial = null, starter: initialStarter }: A
     <section
       ref={sectionRef}
       tabIndex={-1}
-      className={`relative outline-none ${hasBadge ? 'pt-7 md:pt-8' : ''}`}
+      // Recibe el foco tras el clic (el botón desaparece): anillo visible con
+      // teclado, el mismo patrón de foco que el resto de controles.
+      className={`relative rounded-card focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-pink focus-visible:ring-offset-2 focus-visible:ring-offset-surface-base ${hasBadge ? 'pt-7 md:pt-8' : ''}`}
       aria-label={t('title')}
       aria-busy={status === 'loading'}
     >
@@ -139,15 +158,18 @@ export function AiRecommendations({ initial = null, starter: initialStarter }: A
         </div>
       )}
 
+      {/* Región viva SIEMPRE montada: los lectores de pantalla solo anuncian
+          cambios de texto en una región que ya existía, no una que aparece. */}
+      <p role="status" className="sr-only">
+        {status === 'loading' ? t('generating') : ''}
+      </p>
+
       {status === 'loading' && (
-        <>
-          <p role="status" className="sr-only">{t('generating')}</p>
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-5" aria-hidden="true">
-            {SKELETON_KEYS.map((i) => (
-              <div key={i} className="animate-pulse bg-surface-elevated rounded-card aspect-[2/3]" />
-            ))}
-          </div>
-        </>
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-5" aria-hidden="true">
+          {SKELETON_KEYS.map((i) => (
+            <div key={i} className="animate-pulse bg-surface-elevated rounded-card aspect-[2/3]" />
+          ))}
+        </div>
       )}
 
       {status === 'empty' && (
@@ -232,10 +254,13 @@ export function AiRecommendations({ initial = null, starter: initialStarter }: A
             })}
           </div>
           {/* Por qué no cambian al volver: valen para todo el día. Con el tope
-              diario alcanzado se dice que hoy van sin explicación de la IA. */}
-          <p className="font-body text-xs text-text-tertiary">
-            {capped ? t('cappedNote') : t('dailyNote')}
-          </p>
+              diario alcanzado se dice que hoy van sin explicación de la IA.
+              Si el modelo falló no se guardaron: no se promete nada. */}
+          {(capped || saved) && (
+            <p className="font-body text-xs text-text-tertiary">
+              {capped ? t('cappedNote') : t('dailyNote')}
+            </p>
+          )}
         </div>
       )}
     </section>

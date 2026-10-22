@@ -90,6 +90,61 @@ describe('AiRecommendations — sin llamada al montar (D-06)', () => {
   })
 })
 
+describe('AiRecommendations — revisión (guardado, foco y región viva)', () => {
+  it('si el modelo falló (saved:false) no dice "son tus recomendaciones de hoy"', async () => {
+    mockFetch({ recommendations: [{ ...REC, reason: undefined }], source: 'match', saved: false })
+    render(<AiRecommendations />)
+    fireEvent.click(screen.getByRole('button', { name: 'askButton' }))
+
+    expect(await screen.findAllByTestId('card')).toHaveLength(1)
+    expect(screen.queryByText('dailyNote')).not.toBeInTheDocument()
+    expect(screen.queryByText('cappedNote')).not.toBeInTheDocument()
+  })
+
+  it('lo guardado (sin saved:false) sí lo dice', () => {
+    render(<AiRecommendations initial={{ recommendations: [REC as never], source: 'ai' }} />)
+    expect(screen.getByText('dailyNote')).toBeInTheDocument()
+  })
+
+  it('la región role=status existe antes del clic y solo cambia su texto', async () => {
+    let resolve: (v: unknown) => void = () => {}
+    vi.stubGlobal('fetch', vi.fn(() => new Promise((r) => { resolve = r })))
+    render(<AiRecommendations />)
+
+    const region = screen.getByRole('status')
+    expect(region).toHaveTextContent('')
+
+    fireEvent.click(screen.getByRole('button', { name: 'askButton' }))
+    expect(screen.getByRole('status')).toBe(region)
+    expect(region).toHaveTextContent('generating')
+
+    resolve({ ok: true, status: 200, json: async () => ({ recommendations: [REC], source: 'ai' }) })
+    expect(await screen.findAllByTestId('card')).toHaveLength(1)
+    expect(screen.getByRole('status')).toBe(region)
+    expect(region).toHaveTextContent('')
+  })
+
+  it('la sección que recibe el foco tiene anillo visible (sin outline-none a secas)', async () => {
+    mockFetch({ recommendations: [REC], source: 'ai' })
+    render(<AiRecommendations />)
+    fireEvent.click(screen.getByRole('button', { name: 'askButton' }))
+    await screen.findAllByTestId('card')
+
+    const section = screen.getByRole('region', { name: 'title' })
+    expect(section).toHaveFocus()
+    expect(section.className.split(/\s+/)).not.toContain('outline-none')
+    expect(section.className).toContain('focus-visible:ring-2')
+  })
+
+  it('pending pinta el esqueleto sin pedir nada ni enseñar el botón', () => {
+    const fetchMock = mockFetch({})
+    render(<AiRecommendations pending />)
+    expect(screen.getByRole('status')).toHaveTextContent('generating')
+    expect(screen.queryByRole('button')).not.toBeInTheDocument()
+    expect(fetchMock).not.toHaveBeenCalled()
+  })
+})
+
 describe('AiRecommendations — cuenta nueva', () => {
   it('con lo popular del servidor lo enseña directamente, sin botón ni fetch', () => {
     const fetchMock = mockFetch({})
