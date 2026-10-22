@@ -9,7 +9,10 @@ import { MediaRow } from '@/components/home/MediaRow'
 import { AiRecommendations } from '@/components/home/AiRecommendations'
 import { PopularInCircle } from '@/components/home/PopularInCircle'
 import { GenreNews } from '@/components/home/GenreNews'
-import { getTranslations } from 'next-intl/server'
+import { getLocale, getTranslations } from 'next-intl/server'
+import { MIN_LIBRARY_ITEMS, readTodayAiRecommendations } from '@/lib/claude/recommendations'
+import { getStarterItems } from '@/lib/recommendations/starter'
+import type { MediaItem } from '@/types/media'
 import type { Metadata } from 'next'
 import type { HeroItem } from '@/components/home/HeroSection'
 
@@ -43,8 +46,12 @@ export default async function HomePage() {
     }
   }
 
-  // Fetches paralelos: in_progress hero + recientes
-  const [inProgressResult, recentResult] = await Promise.all([
+  const locale = await getLocale()
+
+  // Fetches paralelos: in_progress hero + recientes + lo necesario para "Para
+  // ti" SIN llamar a la IA (D-06): las recomendaciones de hoy si ya existen y
+  // cuántos títulos con señal tiene la biblioteca.
+  const [inProgressResult, recentResult, todayRecs, signalResult] = await Promise.all([
     supabase
       .from('user_media')
       .select('media_id, episode_progress, media(id, title, poster, year, type, synopsis)')
@@ -60,7 +67,23 @@ export default async function HomePage() {
       .in('status', ['in_progress', 'pending'])
       .order('updated_at', { ascending: false })
       .limit(9),
+    readTodayAiRecommendations(user.id, locale),
+    // Mismo criterio que getLibraryContext: completados o puntuados con ≥ 4.
+    supabase
+      .from('user_media')
+      .select('media_id', { count: 'exact', head: true })
+      .eq('user_id', user.id)
+      .or('status.eq.completed,score.gte.4'),
   ])
+
+  // Una cuenta sin señal suficiente no tiene nada que pedirle a la IA: se le
+  // enseña directamente lo popular (E-INICIO-ARRANQUE) en vez de un botón que
+  // solo podría devolver eso. Si el recuento falla, se deja el botón.
+  const signalCount = signalResult.error ? null : signalResult.count
+  let starter: MediaItem[] | undefined
+  if (!todayRecs && signalCount !== null && signalCount < MIN_LIBRARY_ITEMS) {
+    starter = await getStarterItems(locale).catch(() => undefined)
+  }
 
   const inProgress = inProgressResult.data as HeroItem | null
   const heroMediaId = inProgress?.media_id
@@ -97,7 +120,7 @@ export default async function HomePage() {
           que la IA te elige por match), después lo social y por último las
           novedades generales. Antes, una cuenta sin título en curso abría con
           la tarjeta vacía de "Popular entre tus amigos". */}
-      <AiRecommendations />
+      <AiRecommendations initial={todayRecs} starter={starter} />
       <PopularInCircle />
       <GenreNews />
     </main>
