@@ -1,14 +1,26 @@
 // ============================================================
 // KULTURA — Route Handler: /api/reports
-// POST: crear reporte de usuario o título
+// POST: denuncia con sesión de un usuario, título, mensaje, post de grupo,
+// grupo o lista (los cuatro últimos con MODERATION_V2). Cada denuncia avisa
+// por email al creador y devuelve un número de referencia.
 // ============================================================
 
 import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { checkRateLimit, LIMITS } from '@/lib/rate-limit'
+import { createLogger } from '@/lib/logger'
+import { notifyReport } from '@/lib/email/moderation'
+import { isModerationV2 } from '@/lib/social/friends'
+import { reportReference, type ReportTargetType } from '@/lib/social/actions'
+import {
+  AppReportSchema,
+  allowedTargetTypes,
+  checkTargetAsUser,
+  normalizeReason,
+  storedReason,
+} from './shared'
 
-const VALID_TARGET_TYPES = ['user', 'media'] as const
-type TargetType = typeof VALID_TARGET_TYPES[number]
+const log = createLogger('api/reports')
 
 /** POST /api/reports */
 export async function POST(request: Request): Promise<NextResponse> {
@@ -28,63 +40,61 @@ export async function POST(request: Request): Promise<NextResponse> {
     )
   }
 
-  let body: { targetType?: string; targetId?: string; reason?: string }
-  try {
-    body = await request.json()
-  } catch {
-    return NextResponse.json({ error: 'Invalid JSON body' }, { status: 400 })
+  const body = await request.json().catch(() => null)
+  const parsed = AppReportSchema.safeParse(body)
+  if (!parsed.success) {
+    return NextResponse.json({ error: 'invalid_body' }, { status: 400 })
   }
 
-  if (!body.targetType || !(VALID_TARGET_TYPES as readonly string[]).includes(body.targetType)) {
-    return NextResponse.json(
-      { error: 'targetType must be "user" or "media"' },
-      { status: 400 }
-    )
+  const allowed = allowedTargetTypes(isModerationV2(), 'app')
+  if (!(allowed as readonly string[]).includes(parsed.data.targetType)) {
+    return NextResponse.json({ error: 'invalid_target_type' }, { status: 400 })
   }
-  if (!body.targetId || body.targetId.trim().length === 0) {
-    return NextResponse.json({ error: 'targetId is required' }, { status: 400 })
-  }
+  const targetType = parsed.data.targetType as ReportTargetType
+  const targetId = parsed.data.targetId
 
-  // No reportarse a sí mismo
-  if (body.targetType === 'user' && body.targetId === user.id) {
-    return NextResponse.json({ error: 'Cannot report yourself' }, { status: 400 })
+  // No denunciarse a sí mismo
+  if (targetType === 'user' && targetId === user.id) {
+    return NextResponse.json({ error: 'cannot_report_self' }, { status: 400 })
   }
 
-  // Verificar que el target existe
-  if (body.targetType === 'user') {
-    const { data: target } = await supabase
-      .from('users')
-      .select('id')
-      .eq('id', body.targetId.trim())
-      .maybeSingle()
-    if (!target) {
-      return NextResponse.json({ error: 'User not found' }, { status: 404 })
-    }
-  } else {
-    const { data: target } = await supabase
-      .from('media')
-      .select('id')
-      .eq('id', body.targetId.trim())
-      .maybeSingle()
-    if (!target) {
-      return NextResponse.json({ error: 'Media not found' }, { status: 404 })
-    }
+  const target = await checkTargetAsUser(supabase, targetType, targetId)
+  if (!target.ok) {
+    return NextResponse.json({ error: target.error }, { status: target.status })
   }
 
-  const { data, error } = await supabase
-    .from('reports')
-    .insert({
-      reporter_id: user.id,
-      target_type: body.targetType as TargetType,
-      target_id: body.targetId.trim(),
-      reason: body.reason?.trim() ?? null,
-    })
-    .select('id')
-    .single()
+  const { reason, details } = normalizeReason(parsed.data.reason, parsed.data.details)
 
-  if (error || !data) {
-    return NextResponse.json({ error: 'Failed to create report' }, { status: 500 })
+  // El id se genera aquí y se inserta SIN `.select()`: `reports` no tenía
+  // política SELECT, y un INSERT … RETURNING exige que la fila nueva pase la
+  // RLS de SELECT. Con `.select('id')` la denuncia fallaba siempre (42501).
+  const reportId = crypto.randomUUID()
+  const { error } = await supabase.from('reports').insert({
+    id: reportId,
+    reporter_id: user.id,
+    target_type: targetType,
+    target_id: target.targetId,
+    reason: storedReason(reason, details),
+  })
+
+  if (error) {
+    log.error('report insert failed', { err: error, targetType })
+    return NextResponse.json({ error: 'report_failed' }, { status: 500 })
   }
 
-  return NextResponse.json({ reportId: data.id }, { status: 201 })
+  const reference = reportReference(reportId)
+  await notifyReport({
+    reportId,
+    reference,
+    targetType,
+    targetId: target.targetId,
+    reason,
+    details,
+    reporterId: user.id,
+    contactEmail: null,
+    stored: true,
+    origin: 'app',
+  })
+
+  return NextResponse.json({ reportId, reference }, { status: 201 })
 }

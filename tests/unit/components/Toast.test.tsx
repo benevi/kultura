@@ -1,5 +1,9 @@
 import { render, screen, fireEvent, act } from '@testing-library/react'
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
+vi.mock('next-intl', () => ({
+  useTranslations: () => (key: string) => (key === 'dismiss' ? 'Cerrar aviso' : key),
+}))
+
 import { ToastContainer } from '@/components/ui/Toast'
 import type { ToastItem } from '@/components/ui/Toast'
 
@@ -29,7 +33,8 @@ describe('ToastContainer', () => {
         onDismiss={dismiss}
       />
     )
-    expect(screen.getByRole('alert')).toBeInTheDocument()
+    // ACC-11: sin role="alert" por aviso; va a la región assertive persistente.
+    expect(document.querySelector('[aria-live="assertive"]')).toHaveTextContent('Algo falló')
     expect(screen.getByText('Algo falló')).toBeInTheDocument()
   })
 
