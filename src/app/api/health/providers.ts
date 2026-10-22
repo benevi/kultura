@@ -3,9 +3,13 @@
 //
 // Una llamada BARATA por proveedor (configuración, un género, un tipo…), en
 // paralelo, sin caché de datos y con el plazo común de 6 s. El resultado
-// completo se guarda 5 min (`unstable_cache`): por mucho que se llame a la
-// ruta, como mucho sale una ronda de sondas cada 5 min, así que no sirve para
-// gastar el cupo de RAWG o ComicVine.
+// completo se guarda 1 HORA (`unstable_cache`): por mucho que se llame a la
+// ruta, como mucho sale una ronda de sondas por hora y región de caché.
+// Con 5 min salían 288 rondas al día: ≈ 43 % del cupo mensual de RAWG y
+// ≈ 29 % del diario de Google Books solo en sondas. Con 1 h son 24 al día
+// (≈ 3,6 % y ≈ 2,4 %); a ComicVine le cuesta 1 de sus 200 peticiones/hora,
+// y en un recurso (`types`) que el catálogo no usa. El monitor de caídas rápido es
+// `/api/health` sin `deep` (cada 5 min); este, cada 60 min.
 //
 // Ocho entradas: los proveedores que sirven catálogo o ficha. Jikan queda
 // fuera a propósito: solo resuelve ids antiguos de bibliotecas (ver
@@ -27,8 +31,8 @@ import { probeOpenLibrary } from "@/lib/api/openlibrary";
 import { probeGoogleBooks } from "@/lib/api/googlebooks";
 import { probeSteam } from "@/lib/api/steam";
 
-/** Resultado de las sondas: 5 min. */
-export const DEEP_HEALTH_TTL_SECONDS = 300;
+/** Resultado de las sondas: 1 h (ver el cálculo de cupo de la cabecera). */
+export const DEEP_HEALTH_TTL_SECONDS = 3600;
 
 export const PROBES: ReadonlyArray<[ProviderId, () => Promise<void>]> = [
   ["tmdb", probeTmdb],
@@ -97,12 +101,12 @@ export async function runProviderProbes(): Promise<ProvidersReport> {
   };
 }
 
-const cachedProbes = unstable_cache(runProviderProbes, ["health-deep-v1"], {
+const cachedProbes = unstable_cache(runProviderProbes, ["health-deep-v2"], {
   revalidate: DEEP_HEALTH_TTL_SECONDS,
   tags: ["health-deep"],
 });
 
-/** Sondas con el resultado cacheado 5 min (sin caché fuera de Next). */
+/** Sondas con el resultado cacheado 1 h (sin caché fuera de Next). */
 export async function getProvidersReport(): Promise<ProvidersReport> {
   try {
     return await cachedProbes();

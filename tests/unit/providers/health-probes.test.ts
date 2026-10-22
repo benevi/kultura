@@ -10,7 +10,12 @@ import { cacheStore, fakeUnstableCache } from "./cache-mock";
 
 vi.mock("next/cache", () => ({ unstable_cache: fakeUnstableCache }));
 
-import { getProvidersReport, PROBES, runProviderProbes } from "@/app/api/health/providers";
+import {
+  DEEP_HEALTH_TTL_SECONDS,
+  getProvidersReport,
+  PROBES,
+  runProviderProbes,
+} from "@/app/api/health/providers";
 import { resetProviderCircuits } from "@/lib/api/http";
 
 /** Respuesta mínima válida para la sonda de cada proveedor, según la URL. */
@@ -73,6 +78,10 @@ describe("sondas de proveedores", () => {
     const text = JSON.stringify(report);
     expect(text).not.toContain("api_key");
     expect(text).not.toContain("https://");
+  });
+
+  it("el informe dura al menos 1 h (288 rondas al día se comían el cupo de RAWG)", () => {
+    expect(DEEP_HEALTH_TTL_SECONDS).toBeGreaterThanOrEqual(3600);
   });
 
   it("el informe se cachea: la segunda consulta no vuelve a llamar a nadie", async () => {

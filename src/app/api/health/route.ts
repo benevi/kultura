@@ -30,10 +30,10 @@
 //  - El detalle del error NO se devuelve al cliente (puede filtrar esquema o
 //    infraestructura): va al log del servidor.
 //  - `?deep=1` (COD-2) añade una sonda barata por proveedor de catálogo, con el
-//    resultado cacheado 5 min (ver `providers.ts`). La respuesta sigue siendo
-//    200 mientras la base responda; `ok` solo es `true` si además responden
-//    todos los proveedores, para que un monitor de palabra clave (UptimeRobot:
-//    "ok":true) avise de cualquiera de las dos cosas.
+//    resultado cacheado 1 h para no gastar cupo (ver `providers.ts`). La
+//    respuesta sigue siendo 200 mientras la base responda; `ok` solo es `true`
+//    si además responden todos los proveedores. Monitores: `/api/health` cada
+//    5 min (base) y `?deep=1` cada 60 min con palabra clave `"ok":true`.
 // ============================================================
 
 import { NextResponse, type NextRequest } from "next/server";
