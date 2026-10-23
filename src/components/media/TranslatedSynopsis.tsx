@@ -10,6 +10,11 @@
 //
 // A partir de la segunda visita (de cualquier usuario) la traducción está en
 // caché y esto resuelve en una lectura, sin fallback visible.
+//
+// `cacheOnly` (ficha pública sin sesión): solo se aprovecha una traducción ya
+// pagada. Los rastreadores abren cientos de fichas al día y cada traducción
+// nueva gasta del tope diario de IA que comparten las recomendaciones (D-06);
+// la paga la primera persona con cuenta que abre el título.
 // ============================================================
 
 import { getLocale } from "next-intl/server";
@@ -21,10 +26,12 @@ interface Props {
   text: string;
   /** Id prefijado del ítem (`game_667657`) — clave de la caché de traducción. */
   mediaId: string;
+  /** `true` = no llamar al modelo, solo leer la caché de traducciones. */
+  cacheOnly?: boolean;
 }
 
-export async function TranslatedSynopsis({ text, mediaId }: Props) {
+export async function TranslatedSynopsis({ text, mediaId, cacheOnly = false }: Props) {
   const locale = await getLocale();
-  const translated = await translateSynopsis({ text, locale, mediaId });
+  const translated = await translateSynopsis({ text, locale, mediaId, cacheOnly });
   return <SynopsisSection text={translated} />;
 }

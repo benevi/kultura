@@ -154,7 +154,8 @@
     "manga": "Manga",
     "mangas": "Manga",
     "game": "Game",
-    "games": "Games"
+    "games": "Games",
+    "noContent": "Nothing to show yet"
   },
   "status": {
     "completed": "Completed",
@@ -287,7 +288,39 @@
     "steamLanguages": "Languages",
     "steamScreenshots": "Screenshots",
     "whyRecommended": "Why we recommend it",
-    "whyRecommendedText": "It matches genres you already enjoy — {genres} — based on what is in your library."
+    "whyRecommendedText": "It matches genres you already enjoy — {genres} — based on what is in your library.",
+    "breadcrumbLabel": "You are here",
+    "breadcrumbHome": "Home",
+    "ctaAdd": "Add to my library",
+    "ctaHint": "Free and ad-free. Once you sign up you come back to this page.",
+    "ctaLogin": "Already have an account? Sign in",
+    "reportPublic": "Report this title",
+    "metaFallback": "{title} on KULTURA: track what you want to watch, read and play, rate what you've finished and share it with your friends.",
+    "kulturaRatingLabel": "KULTURA average rating",
+    "kulturaRatingHint": "KULTURA · {count, plural, one {# rating} other {# ratings}}",
+    "chapters": "Chapters",
+    "pages": "Pages",
+    "durationValue": "{minutes} min",
+    "credits": {
+      "director": "Director",
+      "cast": "Cast",
+      "studio": "Studio",
+      "authors": "Author",
+      "publisher": "Publisher",
+      "platforms": "Platforms",
+      "developers": "Developer",
+      "seasons": "Seasons"
+    },
+    "trailerTitle": "{title} trailer",
+    "sourceLabel": "Title data:",
+    "sourceLinkLabel": "{name}: title page (opens in a new tab)",
+    "watchType": {
+      "flatrate": "Subscription",
+      "free": "Free",
+      "ads": "Free with ads",
+      "rent": "Rent",
+      "buy": "Buy"
+    }
   },
   "library": {
     "status": {
@@ -1170,7 +1203,12 @@
       "tv": "The best-scoring TV series of {year}, sorted from highest to lowest rating.",
       "game": "The best-scoring video games of {year}, sorted from highest to lowest rating."
     },
-    "chip": { "anime": "Anime", "movie": "Movies", "tv": "TV series", "game": "Video games" },
+    "chip": {
+      "anime": "Anime",
+      "movie": "Movies",
+      "tv": "TV series",
+      "game": "Video games"
+    },
     "otherLabel": "Other rankings",
     "share": "Share",
     "shareLabel": "Share this ranking",

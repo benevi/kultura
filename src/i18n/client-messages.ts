@@ -27,6 +27,7 @@ export const SHELL_CLIENT_NAMESPACES = [
   "demo",
   "discoverFilters.typeBadge",
   "errors",
+  "media",
   "nav",
 ] as const;
 
@@ -50,6 +51,22 @@ export const WELCOME_CLIENT_NAMESPACES = [
   "onboarding",
 ] as const;
 
+/**
+ * `/[locale]/media/…` (ficha pública, D-01, fuera de `(app)`): biblioteca,
+ * listas, recomendar y denunciar. Mismo patrón que `/report`, con
+ * `media/layout.tsx`; ahí la cabecera y la barra con sesión quedan FUERA de
+ * este proveedor (usan las del shell), como en `(app)`.
+ */
+export const MEDIA_CLIENT_NAMESPACES = [
+  "errors",
+  "library",
+  "lists",
+  "media_detail",
+  "nav",
+  "recommendations",
+  "report",
+] as const;
+
 export const APP_CLIENT_NAMESPACES = [
   "aiRecommendations",
   "auth",
@@ -67,12 +84,10 @@ export const APP_CLIENT_NAMESPACES = [
   "library",
   "lists",
   "media",
-  "media_detail",
   "moderation",
   "nav",
   "notifications",
   "profile",
-  "recommendations",
   "report",
   "search",
   "settings",

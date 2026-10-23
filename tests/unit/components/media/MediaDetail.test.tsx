@@ -5,8 +5,20 @@ import type { MediaItem, StreamingProvider } from "@/types/media";
 // ── Mocks ─────────────────────────────────────────────────────────────────────
 
 vi.mock("next-intl/server", () => ({
-  getTranslations: () => Promise.resolve((key: string) => key),
+  getTranslations: () =>
+    Promise.resolve((key: string, values?: Record<string, unknown>) =>
+      values ? `${key}:${JSON.stringify(values)}` : key
+    ),
   getLocale: () => Promise.resolve("es"),
+}));
+
+// `Link` de next-intl: en la app antepone el idioma; aquí basta un <a>.
+vi.mock("@/i18n/navigation", () => ({
+  Link: ({ href, children, ...rest }: { href: string; children: React.ReactNode }) => (
+    <a href={`/es${href}`} {...rest}>
+      {children}
+    </a>
+  ),
 }));
 
 // E-SINOPSIS-I18N: la sinopsis va dentro de un <Suspense> con el texto
@@ -69,11 +81,13 @@ vi.mock("@/components/media/StreamingProviders", () => ({
   StreamingProviders: ({
     providers,
     title,
+    link,
   }: {
     providers: StreamingProvider[];
     title: string;
+    link?: string;
   }) => (
-    <div data-testid="streaming-providers" data-count={providers.length}>
+    <div data-testid="streaming-providers" data-count={providers.length} data-link={link ?? ""}>
       {title}
     </div>
   ),
@@ -270,5 +284,128 @@ describe("MediaDetail", () => {
   it("sin matchScore no hay sección de porqué (no sabemos nada de sus gustos)", async () => {
     render(await MediaDetail({ item: mockItem, initialEntry: null, isAuthenticated: false }));
     expect(screen.queryByText(/whyRecommended$/)).not.toBeInTheDocument();
+  });
+
+  // ── D-01: ficha pública ─────────────────────────────────────────────────────
+
+  it("es la región principal de la página (un <main> con id para saltar)", async () => {
+    render(await MediaDetail({ item: mockItem, initialEntry: null, isAuthenticated: false }));
+    expect(screen.getByRole("main")).toHaveAttribute("id", "main");
+  });
+
+  it("sin sesión: CTA al registro con `next` de vuelta a la ficha, sin biblioteca", async () => {
+    render(await MediaDetail({ item: mockItem, initialEntry: null, isAuthenticated: false }));
+    const cta = screen.getByRole("link", { name: /ctaAdd/ });
+    expect(cta).toHaveAttribute("href", "/es/login?mode=register&next=%2Fes%2Fmedia%2Fmovie%2F550");
+    expect(cta).toHaveAttribute("rel", "nofollow");
+    expect(screen.getByRole("link", { name: "ctaLogin" })).toHaveAttribute(
+      "href",
+      "/es/login?mode=login&next=%2Fes%2Fmedia%2Fmovie%2F550"
+    );
+    expect(screen.queryByTestId("library-action")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("add-to-list-button")).not.toBeInTheDocument();
+  });
+
+  it("sin sesión: la denuncia enlaza al formulario público con el título ya puesto", async () => {
+    render(await MediaDetail({ item: mockItem, initialEntry: null, isAuthenticated: false }));
+    expect(screen.getByRole("link", { name: "reportPublic" })).toHaveAttribute(
+      "href",
+      "/es/report?target=media&id=movie_550"
+    );
+    expect(screen.queryByTestId("report-button")).not.toBeInTheDocument();
+  });
+
+  it("con sesión: biblioteca, listas, recomendar y denunciar; sin CTA de registro", async () => {
+    render(await MediaDetail({ item: mockItem, initialEntry: null, isAuthenticated: true }));
+    for (const id of ["library-action", "add-to-list-button", "recommend-button", "report-button"]) {
+      expect(screen.getByTestId(id)).toBeInTheDocument();
+    }
+    expect(screen.queryByRole("link", { name: /ctaAdd/ })).not.toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: "reportPublic" })).not.toBeInTheDocument();
+  });
+
+  it("pinta los géneros en el idioma de la página si llegan (F-06)", async () => {
+    render(
+      await MediaDetail({
+        item: mockItem,
+        genreLabels: ["Drama", "Suspense"],
+        initialEntry: null,
+        isAuthenticated: false,
+      })
+    );
+    expect(screen.getByText("Suspense")).toBeInTheDocument();
+    expect(screen.queryByText("Thriller")).not.toBeInTheDocument();
+  });
+
+  it("pasa el enlace 'dónde ver' de TMDB a StreamingProviders (F-07)", async () => {
+    const link = "https://www.themoviedb.org/movie/550/watch?locale=ES";
+    const providers: StreamingProvider[] = [{ name: "Netflix", logoPath: "https://img", type: "flatrate" }];
+    render(
+      await MediaDetail({ item: mockItem, providers, watchLink: link, initialEntry: null, isAuthenticated: false })
+    );
+    expect(screen.getByTestId("streaming-providers")).toHaveAttribute("data-link", link);
+  });
+
+  it("cita la fuente con un enlace activo a la ficha del proveedor (RAWG la exige)", async () => {
+    const game: MediaItem = { id: "game_3498", externalId: "3498", type: "game", title: "GTA V" };
+    render(
+      await MediaDetail({
+        item: game,
+        source: { name: "RAWG", url: "https://rawg.io/games/grand-theft-auto-v" },
+        initialEntry: null,
+        isAuthenticated: false,
+      })
+    );
+    const a = screen.getByRole("link", { name: /sourceLinkLabel/ });
+    expect(a).toHaveAttribute("href", "https://rawg.io/games/grand-theft-auto-v");
+    expect(a).toHaveTextContent("RAWG");
+    expect(a).toHaveAttribute("rel", "noopener noreferrer");
+  });
+
+  it("con nota media de KULTURA la enseña con su número de notas", async () => {
+    render(
+      await MediaDetail({
+        item: mockItem,
+        kulturaRating: { value: 4.2, count: 7 },
+        initialEntry: null,
+        isAuthenticated: false,
+      })
+    );
+    expect(screen.getByText("4.2/5")).toBeInTheDocument();
+    expect(screen.getByText('kulturaRatingHint:{"count":7}')).toBeInTheDocument();
+  });
+
+  it("las etiquetas de los chips se leen como texto (no `aria-label` en un span)", async () => {
+    const { container } = render(
+      await MediaDetail({ item: mockItem, initialEntry: null, isAuthenticated: false })
+    );
+    expect(container.querySelector("span[aria-label]")).toBeNull();
+    expect(screen.getByText("year:", { exact: false })).toHaveClass("sr-only");
+  });
+
+  it("un libro dice páginas, no episodios", async () => {
+    const book: MediaItem = { ...mockItemMinimal, metadata: { pageCount: 320, authors: ["Cervantes"] } };
+    render(await MediaDetail({ item: book, initialEntry: null, isAuthenticated: false }));
+    expect(screen.getByText("pages:", { exact: false })).toBeInTheDocument();
+    expect(screen.queryByText("episodes:", { exact: false })).not.toBeInTheDocument();
+    expect(screen.getByText("credits.authors")).toBeInTheDocument();
+    expect(screen.getByText("Cervantes")).toBeInTheDocument();
+  });
+
+  it("miga de pan con el título como página actual", async () => {
+    render(
+      await MediaDetail({
+        item: mockItem,
+        breadcrumbs: [
+          { name: "Inicio", href: "/" },
+          { name: "Películas", href: "/best/movie/2026" },
+        ],
+        initialEntry: null,
+        isAuthenticated: false,
+      })
+    );
+    const nav = screen.getByRole("navigation", { name: "breadcrumbLabel" });
+    expect(nav.querySelector('a[href="/es/best/movie/2026"]')).toHaveTextContent("Películas");
+    expect(nav.querySelector('[aria-current="page"]')).toHaveTextContent("Fight Club");
   });
 });

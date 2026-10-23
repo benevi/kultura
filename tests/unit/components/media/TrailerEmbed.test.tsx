@@ -9,11 +9,12 @@ describe("TrailerEmbed", () => {
     expect(iframe).toBeInTheDocument();
   });
 
-  it("el src del iframe contiene el youtubeKey", () => {
+  // Ficha pública: modo de privacidad mejorada (sin cookies hasta "play").
+  it("el src del iframe es el de youtube-nocookie con el youtubeKey", () => {
     const key = "dQw4w9WgXcQ";
     render(<TrailerEmbed youtubeKey={key} title="Test trailer" />);
     const iframe = document.querySelector("iframe");
-    expect(iframe).toHaveAttribute("src", `https://www.youtube.com/embed/${key}`);
+    expect(iframe).toHaveAttribute("src", `https://www.youtube-nocookie.com/embed/${key}`);
   });
 
   it("el iframe tiene allowFullScreen", () => {

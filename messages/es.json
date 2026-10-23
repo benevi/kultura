@@ -154,7 +154,8 @@
     "manga": "Manga",
     "mangas": "Mangas",
     "game": "Videojuego",
-    "games": "Videojuegos"
+    "games": "Videojuegos",
+    "noContent": "No hay contenido disponible"
   },
   "status": {
     "completed": "Completado",
@@ -287,7 +288,39 @@
     "steamLanguages": "Idiomas",
     "steamScreenshots": "Capturas",
     "whyRecommended": "Por qué te lo recomendamos",
-    "whyRecommendedText": "Coincide con géneros que ya te gustan — {genres} — según lo que tienes en tu biblioteca."
+    "whyRecommendedText": "Coincide con géneros que ya te gustan — {genres} — según lo que tienes en tu biblioteca.",
+    "breadcrumbLabel": "Estás en",
+    "breadcrumbHome": "Inicio",
+    "ctaAdd": "Añadir a mi biblioteca",
+    "ctaHint": "Gratis y sin anuncios. Al crear tu cuenta vuelves a esta ficha.",
+    "ctaLogin": "¿Ya tienes cuenta? Entra",
+    "reportPublic": "Denunciar este título",
+    "metaFallback": "{title} en KULTURA: apunta lo que quieres ver, leer y jugar, puntúa lo que ya viste y compártelo con tus amigos.",
+    "kulturaRatingLabel": "Nota media en KULTURA",
+    "kulturaRatingHint": "KULTURA · {count, plural, one {# nota} other {# notas}}",
+    "chapters": "Capítulos",
+    "pages": "Páginas",
+    "durationValue": "{minutes} min",
+    "credits": {
+      "director": "Dirección",
+      "cast": "Reparto",
+      "studio": "Estudio",
+      "authors": "Autoría",
+      "publisher": "Editorial",
+      "platforms": "Plataformas",
+      "developers": "Desarrollo",
+      "seasons": "Temporadas"
+    },
+    "trailerTitle": "Tráiler de {title}",
+    "sourceLabel": "Datos del título:",
+    "sourceLinkLabel": "{name}: ficha del título (se abre en una pestaña nueva)",
+    "watchType": {
+      "flatrate": "Suscripción",
+      "free": "Gratis",
+      "ads": "Gratis con anuncios",
+      "rent": "Alquiler",
+      "buy": "Compra"
+    }
   },
   "library": {
     "status": {
@@ -1170,7 +1203,12 @@
       "tv": "Las series de {year} con mejor puntuación, ordenadas de mayor a menor valoración.",
       "game": "Los videojuegos de {year} con mejor puntuación, ordenados de mayor a menor valoración."
     },
-    "chip": { "anime": "Animes", "movie": "Películas", "tv": "Series", "game": "Videojuegos" },
+    "chip": {
+      "anime": "Animes",
+      "movie": "Películas",
+      "tv": "Series",
+      "game": "Videojuegos"
+    },
     "otherLabel": "Otros rankings",
     "share": "Compartir",
     "shareLabel": "Compartir este ranking",
