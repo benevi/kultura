@@ -1,6 +1,16 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 
-vi.mock("next/cache", () => ({ unstable_cache: <T>(fn: T) => fn }));
+// Caché de datos simulada: misma clave (argumentos) → mismo valor, como `unstable_cache`.
+vi.mock("next/cache", () => ({
+  unstable_cache: (fn: (...a: unknown[]) => Promise<unknown>) => {
+    const memo = new Map<string, unknown>();
+    return async (...args: unknown[]) => {
+      const key = JSON.stringify(args);
+      if (!memo.has(key)) memo.set(key, await fn(...args));
+      return memo.get(key);
+    };
+  },
+}));
 vi.mock("@/lib/best/best-of", async (importOriginal) => {
   const real = await importOriginal<typeof import("@/lib/best/best-of")>();
   return { ...real, getBestSelection: vi.fn() };
@@ -13,6 +23,8 @@ vi.mock("@/lib/env", () => ({
 
 import {
   COLLECTION_MIN_TITLES,
+  IN_BATCH,
+  PAGE_SIZE,
   collectionsFromRows,
   collectionsSitemap,
   loadRankings,
@@ -59,13 +71,13 @@ describe("sitemap — páginas fijas", () => {
 
 describe("sitemap — rankings y hubs (D-16)", () => {
   const snapshots: RankingSnapshot[] = [
-    { format: "anime", year: 2026, selection: selection("anime", 20, "2026-10-22T05:00:00.000Z") },
-    { format: "anime", year: 2025, selection: selection("anime", 20, "2026-10-21T05:00:00.000Z", 100) },
-    { format: "movie", year: 2026, selection: selection("movie", 5) }, // corta → noindex
+    { format: "anime", year: 2026, selection: selection("anime", 20), changedAt: "2026-10-22T05:00:00.000Z" },
+    { format: "anime", year: 2025, selection: selection("anime", 20, undefined, 100), changedAt: "2026-03-01T05:00:00.000Z" },
+    { format: "movie", year: 2026, selection: selection("movie", 5), changedAt: "2026-10-23T00:00:00.000Z" }, // corta → noindex
     { format: "game", year: 2026, selection: null }, // proveedor caído
   ];
 
-  it("hubs siempre; rankings solo los indexables, con la fecha real de su selección", () => {
+  it("hubs siempre; rankings solo los indexables, fechados el día en que cambió su lista", () => {
     const urls = rankingsSitemap(snapshots).map((e) => e.url);
     expect(urls).toContain("https://x.app/es/best");
     for (const f of BEST_FORMATS) expect(urls).toContain(`https://x.app/en/best/${f}`);
@@ -73,25 +85,50 @@ describe("sitemap — rankings y hubs (D-16)", () => {
     expect(urls).not.toContain("https://x.app/es/best/movie/2026");
     expect(urls).not.toContain("https://x.app/es/best/game/2026");
     const anime = rankingsSitemap(snapshots).find((e) => e.url === "https://x.app/es/best/anime/2025");
-    expect(anime?.lastModified).toBe("2026-10-21T05:00:00.000Z");
+    expect(anime?.lastModified).toBe("2026-03-01T05:00:00.000Z");
     const hub = rankingsSitemap(snapshots).find((e) => e.url === "https://x.app/es/best/anime");
     expect(hub?.lastModified).toBe("2026-10-22T05:00:00.000Z");
+    // Un ranking corto no fecha el hub.
+    expect(rankingsSitemap(snapshots).find((e) => e.url === "https://x.app/es/best/movie")?.lastModified).toBeUndefined();
   });
 
-  it("fichas: los títulos de los rankings indexables, sin repetir, con el formato de id de MediaCard", () => {
+  it("la fecha de un ranking NO cambia con el recálculo diario si la lista es la misma", async () => {
+    vi.useFakeTimers();
+    try {
+      vi.setSystemTime(new Date("2026-10-20T03:00:00Z"));
+      vi.mocked(getBestSelection).mockImplementation(async (format, year) =>
+        selection(format, 20, new Date().toISOString(), year * 10),
+      );
+      const day1 = await loadRankings(new Date("2026-10-23"));
+      vi.setSystemTime(new Date("2026-10-21T03:00:00Z"));
+      const day2 = await loadRankings(new Date("2026-10-23"));
+      expect(day2.map((s) => s.changedAt)).toEqual(day1.map((s) => s.changedAt));
+      expect(day1[0].changedAt).toBe("2026-10-20T03:00:00.000Z");
+      // Cambia un título del anime de 2026 → nueva fecha solo para ese ranking.
+      vi.setSystemTime(new Date("2026-10-22T03:00:00Z"));
+      vi.mocked(getBestSelection).mockImplementation(async (format, year) =>
+        selection(format, 20, new Date().toISOString(), format === "anime" && year === 2026 ? 1 : year * 10),
+      );
+      const day3 = await loadRankings(new Date("2026-10-23"));
+      expect(day3[0]).toMatchObject({ format: "anime", year: 2026, changedAt: "2026-10-22T03:00:00.000Z" });
+      expect(day3[1].changedAt).toBe("2026-10-20T03:00:00.000Z");
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("fichas: los títulos de los rankings indexables, sin repetir, sin lastModified", () => {
     const dup: RankingSnapshot[] = [
       ...snapshots,
-      { format: "anime", year: 2024, selection: selection("anime", 10, "2026-10-23T00:00:00.000Z") },
+      { format: "anime", year: 2024, selection: selection("anime", 10) },
     ];
-    const urls = titlesSitemap(dup).map((e) => e.url);
+    const entries = titlesSitemap(dup);
+    const urls = entries.map((e) => e.url);
     expect(urls).toContain("https://x.app/es/media/anime/0");
     expect(urls).toContain("https://x.app/en/media/anime/100");
     expect(urls.some((u) => u.includes("/media/movie/"))).toBe(false); // ranking corto
     expect(new Set(urls).size).toBe(urls.length);
-    // Título en dos rankings: la fecha más reciente.
-    expect(titlesSitemap(dup).find((e) => e.url === "https://x.app/es/media/anime/0")?.lastModified).toBe(
-      "2026-10-23T00:00:00.000Z",
-    );
+    expect(entries.every((e) => e.lastModified === undefined)).toBe(true);
   });
 
   it("con los 12 rankings llenos el sitemap suma ≥ 300 URL (aceptación de F-16)", async () => {
@@ -148,17 +185,62 @@ describe("sitemap — perfiles y listas públicos", () => {
     expect(await collectionsSitemap()).toEqual([]);
   });
 
-  it("consulta solo listas públicas", async () => {
-    const eq = vi.fn().mockReturnThis();
-    const chain = {
-      select: vi.fn().mockReturnThis(),
-      eq,
-      order: vi.fn().mockReturnThis(),
-      limit: vi.fn(async () => ({ data: [], error: null })),
+  /** Supabase simulado: tablas en memoria con select/eq/in/order/range. */
+  function fakeSupabase(tables: Record<string, Array<Record<string, unknown>>>) {
+    const calls = { inSizes: [] as number[], ranges: [] as Array<[string, number, number]>, eq: [] as unknown[][] };
+    const from = (table: string) => {
+      let rows = [...(tables[table] ?? [])];
+      const q = {
+        select: () => q,
+        eq: (col: string, v: unknown) => {
+          calls.eq.push([col, v]);
+          rows = rows.filter((r) => r[col] === v);
+          return q;
+        },
+        in: (col: string, vs: unknown[]) => {
+          calls.inSizes.push(vs.length);
+          rows = rows.filter((r) => vs.includes(r[col]));
+          return q;
+        },
+        order: () => q,
+        range: async (a: number, b: number) => {
+          calls.ranges.push([table, a, b]);
+          // PostgREST: como mucho PAGE_SIZE filas aunque se pidan más.
+          return { data: rows.slice(a, Math.min(b + 1, a + PAGE_SIZE)), error: null };
+        },
+      };
+      return q;
     };
-    supabase.createClient.mockReturnValue({ from: vi.fn(() => chain) });
+    supabase.createClient.mockReturnValue({ from });
+    return calls;
+  }
+
+  it("consulta solo listas públicas, con la clave anónima", async () => {
+    const calls = fakeSupabase({ lists: [] });
     expect(await collectionsSitemap()).toEqual([]);
-    expect(eq).toHaveBeenCalledWith("is_public", true);
+    expect(calls.eq).toContainEqual(["is_public", true]);
     expect(supabase.createClient).toHaveBeenCalledWith("https://sb.example", "anon", expect.anything());
+  });
+
+  it("muchas listas: .in() en lotes de 100 y list_items paginado (más de 1000 filas)", async () => {
+    const nLists = 250;
+    const lists = Array.from({ length: nLists }, (_, i) => ({
+      id: `l${i}`,
+      owner_id: `u${i % 3}`,
+      created_at: "2026-09-01T00:00:00Z",
+      is_public: true,
+    }));
+    // 12 títulos por lista → 3.000 filas, más que una página de PostgREST.
+    const items = lists.flatMap((l) =>
+      Array.from({ length: 12 }, (_, j) => ({ list_id: l.id, added_at: `2026-10-${String(1 + (j % 9)).padStart(2, "0")}T00:00:00Z` })),
+    );
+    const users = [0, 1, 2].map((i) => ({ id: `u${i}`, username: `user${i}` }));
+    const calls = fakeSupabase({ lists, list_items: items, users });
+    const entries = await collectionsSitemap();
+    expect(Math.max(...calls.inSizes)).toBeLessThanOrEqual(IN_BATCH);
+    // Lote de 100 listas = 1.200 filas → dos páginas.
+    expect(calls.ranges.filter(([t]) => t === "list_items").length).toBeGreaterThan(Math.ceil(nLists / IN_BATCH));
+    // Todas las listas (12 ≥ 5 títulos) y los 3 perfiles, en dos idiomas.
+    expect(entries).toHaveLength((nLists + 3) * 2);
   });
 });

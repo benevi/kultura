@@ -11,14 +11,25 @@
 //   - titles:      la ficha pública de cada título de esos rankings.
 //   - collections: perfiles /u con ≥ 5 títulos en listas públicas y esas
 //                  listas públicas con ≥ 5 títulos (lo que se lee sin cuenta).
-// `lastModified` solo cuando hay una fecha real (la de la selección o la del
-// último título añadido); nunca la hora de generar el XML.
+// `lastModified` solo cuando hay una fecha real; nunca la hora de generar el
+// XML ni la del recálculo diario de un ranking (que no cambia nada si salen
+// los mismos títulos):
+//   - ranking: el día en que su lista de títulos cambió por última vez. Se
+//     guarda la primera vez que se ve cada huella de la lista (ids en orden)
+//     en la caché de datos, sin caducidad: mientras la lista no cambie, la
+//     fecha se conserva. Si la caché se vacía, la fecha se adelanta (nunca
+//     se inventa una anterior).
+//   - hubs: la más reciente de sus rankings.
+//   - fichas: sin fecha (su contenido no depende del ranking).
+//   - perfiles y listas: el último título añadido.
 //
 // Nada lanza: un proveedor o Supabase caídos dejan su sección más corta, no
 // el sitemap entero en error.
 // ============================================================
 
 import type { MetadataRoute } from "next";
+import { createHash } from "node:crypto";
+import { unstable_cache } from "next/cache";
 import { createClient } from "@supabase/supabase-js";
 import { routing } from "@/i18n/routing";
 import { siteUrl } from "@/lib/site-url";
@@ -46,6 +57,10 @@ export const COLLECTION_MIN_TITLES = 5;
 const SUPABASE_TIMEOUT_MS = 5000;
 /** Tope de listas públicas leídas (el sitemap admite 50.000; esto es holgura). */
 const MAX_PUBLIC_LISTS = 2000;
+/** Ids por consulta `.in()`: 100 UUID ≈ 3,7 KB de URL, lejos del límite de PostgREST. */
+export const IN_BATCH = 100;
+/** Filas por página (PostgREST corta en 1000 por defecto). */
+export const PAGE_SIZE = 1000;
 
 type Entry = MetadataRoute.Sitemap[number];
 
@@ -84,17 +99,38 @@ export interface RankingSnapshot {
   format: BestFormat;
   year: number;
   selection: BestSelection | null;
+  /** Día en que cambió por última vez la lista de títulos (ISO). */
+  changedAt?: string;
 }
+
+/** Huella de una lista: sus ids en orden. Cambia si entra, sale o se mueve un título. */
+export function listFingerprint(items: Array<{ id: string }>): string {
+  return createHash("sha256").update(items.map((i) => i.id).join("\n")).digest("hex").slice(0, 24);
+}
+
+/**
+ * Primera vez que se vio esta huella de este ranking. Sin `revalidate` ni
+ * etiqueta: ni el paso del tiempo ni `/api/revalidate` la mueven; una lista
+ * nueva tiene huella nueva y, por tanto, fecha nueva.
+ */
+const firstSeen = unstable_cache(
+  // Los argumentos solo forman la clave de la caché (`unstable_cache` los incluye).
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  async (format: string, year: number, fingerprint: string) => new Date().toISOString(),
+  ["best-list-first-seen-v1"],
+  { revalidate: false },
+);
 
 /** Selección de cada ranking publicado; `null` si su proveedor no respondió. */
 export async function loadRankings(today: Date = new Date()): Promise<RankingSnapshot[]> {
   const jobs = BEST_FORMATS.flatMap((format) => bestYears(today).map((year) => ({ format, year })));
   return Promise.all(
-    jobs.map(async ({ format, year }) => ({
-      format,
-      year,
-      selection: await getBestSelection(format, year).catch(() => null),
-    })),
+    jobs.map(async ({ format, year }): Promise<RankingSnapshot> => {
+      const selection = await getBestSelection(format, year).catch(() => null);
+      if (!selection) return { format, year, selection };
+      const changedAt = await firstSeen(format, year, listFingerprint(selection.items)).catch(() => undefined);
+      return { format, year, selection, changedAt };
+    }),
   );
 }
 
@@ -102,23 +138,25 @@ export async function loadRankings(today: Date = new Date()): Promise<RankingSna
 const latest = (dates: Array<string | undefined>): string | undefined =>
   dates.filter((d): d is string => Boolean(d)).sort().pop();
 
+const isIndexable = (s: RankingSnapshot) => Boolean(s.selection && isIndexableRanking(s.selection.items.length));
+
 export function rankingsSitemap(snapshots: RankingSnapshot[]): Entry[] {
-  const indexable = snapshots.filter((s) => s.selection && isIndexableRanking(s.selection.items.length));
+  const indexable = snapshots.filter(isIndexable);
   const hub = localizedEntries("/best", {
-    lastModified: latest(indexable.map((s) => s.selection?.updatedAt)),
+    lastModified: latest(indexable.map((s) => s.changedAt)),
     changeFrequency: "daily",
     priority: 0.8,
   });
   const formatHubs = BEST_FORMATS.flatMap((format) =>
     localizedEntries(`/best/${format}`, {
-      lastModified: latest(indexable.filter((s) => s.format === format).map((s) => s.selection?.updatedAt)),
+      lastModified: latest(indexable.filter((s) => s.format === format).map((s) => s.changedAt)),
       changeFrequency: "daily",
       priority: 0.7,
     }),
   );
   const rankings = indexable.flatMap((s) =>
     localizedEntries(`/best/${s.format}/${s.year}`, {
-      lastModified: s.selection!.updatedAt,
+      lastModified: s.changedAt,
       changeFrequency: "daily",
       priority: 0.7,
     }),
@@ -126,19 +164,14 @@ export function rankingsSitemap(snapshots: RankingSnapshot[]): Entry[] {
   return [...hub, ...formatHubs, ...rankings];
 }
 
-/** Fichas de los títulos de los rankings indexables, sin repetir. */
+/** Fichas de los títulos de los rankings indexables, sin repetir y sin fecha. */
 export function titlesSitemap(snapshots: RankingSnapshot[]): Entry[] {
-  const seen = new Map<string, string | undefined>();
+  const paths = new Set<string>();
   for (const s of snapshots) {
-    if (!s.selection || !isIndexableRanking(s.selection.items.length)) continue;
-    for (const item of s.selection.items) {
-      const path = bestItemPath(item);
-      seen.set(path, latest([seen.get(path), s.selection.updatedAt]));
-    }
+    if (!isIndexable(s)) continue;
+    for (const item of s.selection!.items) paths.add(bestItemPath(item));
   }
-  return Array.from(seen.entries()).flatMap(([path, lastModified]) =>
-    localizedEntries(path, { lastModified, changeFrequency: "weekly", priority: 0.6 }),
-  );
+  return Array.from(paths).flatMap((path) => localizedEntries(path, { changeFrequency: "weekly", priority: 0.6 }));
 }
 
 // ── Colecciones públicas (lectura anónima: lo mismo que ve un visitante) ─────
@@ -208,29 +241,73 @@ function anonClient() {
   });
 }
 
-/** Perfiles y listas públicos. `[]` si Supabase no responde. */
+function chunk<T>(items: T[], size = IN_BATCH): T[][] {
+  const out: T[][] = [];
+  for (let i = 0; i < items.length; i += size) out.push(items.slice(i, i + size));
+  return out;
+}
+
+type Page<T> = { data: T[] | null; error: unknown };
+
+/** Todas las filas de una consulta, de PAGE_SIZE en PAGE_SIZE. Lanza si una página falla. */
+async function allPages<T>(query: (from: number, to: number) => PromiseLike<Page<T>>): Promise<T[]> {
+  const out: T[] = [];
+  for (let from = 0; ; from += PAGE_SIZE) {
+    const { data, error } = await query(from, from + PAGE_SIZE - 1);
+    if (error) throw error;
+    const rows = data ?? [];
+    out.push(...rows);
+    if (rows.length < PAGE_SIZE) return out;
+  }
+}
+
+/**
+ * Perfiles y listas públicos. `[]` si Supabase no responde. Los `.in()` van
+ * en lotes de IN_BATCH ids (una URL con 2.000 UUID no la acepta el servidor)
+ * y cada lote se pagina (PostgREST devuelve como mucho 1.000 filas).
+ */
 export async function collectionsSitemap(): Promise<Entry[]> {
   try {
     const supabase = anonClient();
-    const { data: lists, error } = await supabase
-      .from("lists")
-      .select("id, owner_id, created_at")
-      .eq("is_public", true)
-      .order("created_at", { ascending: false })
-      .limit(MAX_PUBLIC_LISTS);
-    if (error || !lists?.length) return [];
-    const listIds = (lists as PublicListRow[]).map((l) => l.id);
-    const ownerIds = Array.from(new Set((lists as PublicListRow[]).map((l) => l.owner_id)));
-    const [itemsRes, ownersRes] = await Promise.all([
-      supabase.from("list_items").select("list_id, added_at").in("list_id", listIds),
-      supabase.from("users").select("id, username").in("id", ownerIds),
+    const lists = await allPages<PublicListRow>((from, to) =>
+      supabase
+        .from("lists")
+        .select("id, owner_id, created_at")
+        .eq("is_public", true)
+        .order("created_at", { ascending: false })
+        .order("id", { ascending: true })
+        .range(from, Math.min(to, MAX_PUBLIC_LISTS - 1)) as unknown as PromiseLike<Page<PublicListRow>>,
+    ).then((rows) => rows.slice(0, MAX_PUBLIC_LISTS));
+    if (lists.length === 0) return [];
+    const listIds = lists.map((l) => l.id);
+    const ownerIds = Array.from(new Set(lists.map((l) => l.owner_id)));
+    const [items, owners] = await Promise.all([
+      Promise.all(
+        chunk(listIds).map((ids) =>
+          allPages<ListItemRow>((from, to) =>
+            supabase
+              .from("list_items")
+              .select("list_id, added_at")
+              .in("list_id", ids)
+              .order("id", { ascending: true })
+              .range(from, to) as unknown as PromiseLike<Page<ListItemRow>>,
+          ),
+        ),
+      ).then((pages) => pages.flat()),
+      Promise.all(
+        chunk(ownerIds).map((ids) =>
+          allPages<OwnerRow>((from, to) =>
+            supabase
+              .from("users")
+              .select("id, username")
+              .in("id", ids)
+              .order("id", { ascending: true })
+              .range(from, to) as unknown as PromiseLike<Page<OwnerRow>>,
+          ),
+        ),
+      ).then((pages) => pages.flat()),
     ]);
-    if (itemsRes.error || ownersRes.error) return [];
-    return collectionsFromRows(
-      lists as PublicListRow[],
-      (itemsRes.data ?? []) as ListItemRow[],
-      (ownersRes.data ?? []) as OwnerRow[],
-    );
+    return collectionsFromRows(lists, items, owners);
   } catch {
     return [];
   }
