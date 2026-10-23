@@ -93,6 +93,35 @@ describe('conmutadores con estado', () => {
 })
 
 describe('FilterBar', () => {
+  it('radiogroup con una parada de Tab y flechas/Inicio/Fin (revisión #41)', async () => {
+    const onChange = vi.fn()
+    render(
+      <FilterBar
+        groups={[{ key: 'type', label: 'Tipo', options: [
+          { value: 'movie', label: 'Cine' },
+          { value: 'tv', label: 'Series' },
+          { value: 'anime', label: 'Anime' },
+        ] }]}
+        activeFilters={{ type: 'tv' }}
+        onChange={onChange}
+      />
+    )
+    fireEvent.click(screen.getByTestId('filter-trigger-type'))
+    const group = await screen.findByRole('radiogroup', { name: 'Tipo' })
+    const radios = Array.from(group.querySelectorAll<HTMLElement>('[role=radio]'))
+    expect(radios.map((r) => r.getAttribute('tabindex'))).toEqual(['-1', '0', '-1'])
+    radios[1].focus()
+    fireEvent.keyDown(radios[1], { key: 'ArrowRight' })
+    expect(onChange).toHaveBeenLastCalledWith('type', 'anime')
+    expect(document.activeElement).toBe(radios[2])
+    fireEvent.keyDown(radios[1], { key: 'Home' })
+    expect(onChange).toHaveBeenLastCalledWith('type', 'movie')
+    fireEvent.keyDown(radios[1], { key: 'End' })
+    expect(onChange).toHaveBeenLastCalledWith('type', 'anime')
+    // Las flechas no cierran el desplegable.
+    expect(screen.getByRole('radiogroup', { name: 'Tipo' })).toBeInTheDocument()
+  })
+
   it('las opciones `radio` van dentro de un radiogroup con el nombre del filtro (axe aria-required-parent)', async () => {
     render(
       <FilterBar
@@ -169,6 +198,18 @@ describe('SearchBar (combobox, ACC-14)', () => {
     expect(input).toHaveAttribute('aria-activedescendant', options[1].id)
     fireEvent.keyDown(input, { key: 'ArrowUp' })
     expect(input).toHaveAttribute('aria-activedescendant', options[0].id)
+  })
+
+  it('la opción activa se distingue: fondo distinto del listbox y contorno de foco (2.4.7)', async () => {
+    render(<SearchBar />)
+    const input = await typeAndWait('dune')
+    const listbox = screen.getByRole('listbox')
+    fireEvent.keyDown(input, { key: 'ArrowDown' })
+    const [active, idle] = screen.getAllByRole('option')
+    expect(active.className).toContain('outline-focus-ring')
+    expect(active.className).toContain('bg-surface-default')
+    expect(listbox.className).toContain('bg-surface-elevated')
+    expect(idle.className).not.toContain('outline-focus-ring')
   })
 
   it('Enter con una sugerencia resaltada la elige; Esc cierra', async () => {

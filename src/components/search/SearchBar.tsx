@@ -258,7 +258,12 @@ export function SearchBar({
               onMouseEnter={() => setActiveIndex(index)}
               className={cn(
                 "flex items-center gap-3 px-4 py-2.5 min-h-11 w-full text-left cursor-pointer transition-colors",
-                index === activeIndex ? "bg-surface2" : "hover:bg-surface2"
+                // Opción activa (WCAG 2.4.7): `surface2` era el mismo fondo del
+                // listbox y no se veía. Fondo más oscuro + contorno del anillo
+                // de foco del sistema (pink, ≥ 5:1 contra la lista).
+                index === activeIndex
+                  ? "bg-surface-default [outline-style:solid] outline-2 -outline-offset-2 outline-focus-ring"
+                  : "hover:bg-surface-default"
               )}
             >
                 {/* Miniatura de 36×48: se pide al CDN a ese tamaño
