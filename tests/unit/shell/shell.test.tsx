@@ -79,6 +79,8 @@ import RootLayout from "@/app/layout";
 import LocaleLayout, { generateMetadata, viewport } from "@/app/[locale]/layout";
 import AppTemplate from "@/app/[locale]/(app)/template";
 import ReportLayout from "@/app/[locale]/report/layout";
+import WelcomeLayout from "@/app/[locale]/welcome/layout";
+import { ClientMessages } from "@/i18n/ClientMessages";
 import LocaleNotFound, { generateMetadata as notFoundMetadata } from "@/app/[locale]/not-found";
 import RootNotFound, { generateMetadata as rootNotFoundMetadata } from "@/app/not-found";
 import GlobalError from "@/app/global-error";
@@ -86,7 +88,12 @@ import CatchAllPage, { generateMetadata as catchAllMetadata } from "@/app/[local
 import { SkipLink } from "@/app/[locale]/SkipLink";
 import { routing } from "@/i18n/routing";
 import { localeFromAcceptLanguage, localeFromPathname } from "@/i18n/detect";
-import { APP_CLIENT_NAMESPACES, REPORT_CLIENT_NAMESPACES, SHELL_CLIENT_NAMESPACES } from "@/i18n/client-messages";
+import {
+  APP_CLIENT_NAMESPACES,
+  REPORT_CLIENT_NAMESPACES,
+  SHELL_CLIENT_NAMESPACES,
+  WELCOME_CLIENT_NAMESPACES,
+} from "@/i18n/client-messages";
 import { siteUrl } from "@/lib/site-url";
 
 const ROOT = path.resolve(__dirname, "../../..");
@@ -237,15 +244,18 @@ describe("REN-5 — textos del navegador", () => {
     expect(Object.keys((messages.discoverFilters as object) ?? {})).toEqual(["typeBadge"]);
   });
 
-  it("/report lleva su propio proveedor solo con los textos de la denuncia", async () => {
-    const provider = (await ReportLayout({ children: <p /> })) as El;
-    expect(Object.keys(provider.props.messages as object)).toEqual([...REPORT_CLIENT_NAMESPACES]);
-  });
-
-  it("el template de la zona con sesión manda todos los de los componentes cliente", async () => {
-    const provider = (await AppTemplate({ children: <p /> })) as El;
-    const messages = provider.props.messages as Record<string, unknown>;
-    expect(Object.keys(messages).sort()).toEqual([...APP_CLIENT_NAMESPACES].sort());
+  it.each([
+    ["(app)/template", AppTemplate, APP_CLIENT_NAMESPACES],
+    ["report/layout", ReportLayout, REPORT_CLIENT_NAMESPACES],
+    ["welcome/layout", WelcomeLayout, WELCOME_CLIENT_NAMESPACES],
+  ] as const)("%s pone su proveedor con su lista", async (_name, Zone, list) => {
+    const zone = Zone({ children: <p /> }) as El;
+    expect(zone.type).toBe(ClientMessages);
+    expect(zone.props.namespaces).toBe(list);
+    const provider = (await ClientMessages({ namespaces: list, children: <p /> })) as El;
+    expect(Object.keys(provider.props.messages as object).sort()).toEqual(
+      Array.from(new Set(list.map((ns) => ns.split(".")[0]))).sort(),
+    );
   });
 });
 

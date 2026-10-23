@@ -4,10 +4,14 @@
  * cada archivo "use client" (todo lo que importa un componente cliente también
  * se ejecuta en el navegador) y comprueba que cada `useTranslations("ns")`
  * queda cubierto:
- * - por `APP_CLIENT_NAMESPACES` (proveedor de `(app)/template.tsx`), siempre;
- * - por `SHELL_CLIENT_NAMESPACES` (proveedor de `[locale]/layout.tsx`) si el
- *   componente se alcanza desde algo que se pinta fuera de la zona con sesión
- *   o desde el propio layout de `(app)`, que queda por encima del template.
+ * - por `APP_CLIENT_NAMESPACES` (proveedor de `(app)/template.tsx`) si se
+ *   alcanza desde un archivo de `(app)`;
+ * - por la lista de su zona (`report/`, `welcome/`, con proveedor en su
+ *   layout) si se alcanza desde ella;
+ * - por `SHELL_CLIENT_NAMESPACES` (proveedor de `[locale]/layout.tsx`) si se
+ *   alcanza desde el resto de páginas públicas o desde el propio layout de
+ *   `(app)`, que queda por encima del template.
+ * Un proveedor anidado sustituye al de fuera, así que cada lista es completa.
  * También falla si sobra un namespace (peso inútil en cada página) o si se
  * usa un namespace no literal, que no se puede comprobar.
  */
@@ -19,6 +23,7 @@ import en from "../../../messages/en.json";
 import {
   APP_CLIENT_NAMESPACES,
   REPORT_CLIENT_NAMESPACES,
+  WELCOME_CLIENT_NAMESPACES,
   SHELL_CLIENT_NAMESPACES,
   pickMessages,
 } from "@/i18n/client-messages";
@@ -27,8 +32,11 @@ const ROOT = path.resolve(__dirname, "../../..");
 const SRC = path.join(ROOT, "src");
 const APP_GROUP = path.join(SRC, "app", "[locale]", "(app)") + path.sep;
 const APP_GROUP_SHELL = ["layout.tsx", "template.tsx"].map((f) => APP_GROUP + f);
-// Zona con proveedor propio (sustituye al del shell desde su layout).
-const REPORT_DIR = path.join(SRC, "app", "[locale]", "report") + path.sep;
+// Zonas públicas con proveedor propio en su layout (sustituye al del shell).
+const ZONES = [
+  { dir: "report", list: REPORT_CLIENT_NAMESPACES, file: "src/app/[locale]/report/PublicReportForm.tsx" },
+  { dir: "welcome", list: WELCOME_CLIENT_NAMESPACES, file: "src/app/[locale]/welcome/WelcomeFlow.tsx" },
+].map((z) => ({ ...z, path: path.join(SRC, "app", "[locale]", z.dir) + path.sep }));
 
 function walk(dir: string): string[] {
   return fs.readdirSync(dir, { withFileTypes: true }).flatMap((entry) => {
@@ -83,11 +91,16 @@ const shellEntries = Array.from(FILES.keys()).filter(
   (f) =>
     f.startsWith(path.join(SRC, "app") + path.sep) &&
     (!f.startsWith(APP_GROUP) || APP_GROUP_SHELL.includes(f)) &&
-    !f.startsWith(REPORT_DIR),
+    !ZONES.some((z) => f.startsWith(z.path)),
 );
-const reportClientGraph = Array.from(
-  reachable(Array.from(FILES.keys()).filter((f) => f.startsWith(REPORT_DIR))),
-).filter((f) => clientGraph.has(f));
+const zoneUses = ZONES.map((z) => ({
+  ...z,
+  ...translationUses(
+    Array.from(reachable(Array.from(FILES.keys()).filter((f) => f.startsWith(z.path)))).filter((f) =>
+      clientGraph.has(f),
+    ),
+  ),
+}));
 const shellClientGraph = Array.from(reachable(shellEntries)).filter((f) => clientGraph.has(f));
 
 type Use = { file: string; ns: string };
@@ -112,20 +125,35 @@ function translationUses(files: string[]): { uses: Use[]; dynamic: Use[] } {
 const covers = (picked: readonly string[], ns: string) =>
   picked.some((p) => ns === p || ns.startsWith(`${p}.`));
 
-const appUses = translationUses(Array.from(clientGraph));
+const allUses = translationUses(Array.from(clientGraph));
+// Lo que se pinta dentro del template de (app): sus archivos y lo que importan.
+const appUses = translationUses(
+  Array.from(reachable(Array.from(FILES.keys()).filter((f) => f.startsWith(APP_GROUP)))).filter((f) =>
+    clientGraph.has(f),
+  ),
+);
 const shellUses = translationUses(shellClientGraph);
-const reportUses = translationUses(reportClientGraph);
 
 describe("REN-5 — textos del navegador por namespaces", () => {
   it("el grafo encuentra componentes cliente con textos (sanidad del análisis)", () => {
     expect(appUses.uses.length).toBeGreaterThan(40);
+    // Ningún componente cliente que se use queda fuera de todas las zonas
+    // (los que no importa nadie no se pintan: código muerto).
+    const imported = new Set(
+      Array.from(FILES.keys()).flatMap((f) =>
+        Array.from(FILES.get(f)!.matchAll(IMPORT_RE)).map((m) => resolveImport(f, m[1] ?? m[2] ?? m[3])),
+      ),
+    );
+    const zoned = new Set([...appUses.uses, ...shellUses.uses, ...zoneUses.flatMap((z) => z.uses)].map((u) => u.file));
+    const orphanFree = allUses.uses.filter((u) => imported.has(path.join(ROOT, u.file)) && !zoned.has(u.file));
+    expect(orphanFree).toEqual([]);
     expect(shellUses.uses.map((u) => u.file)).toContain("src/app/[locale]/login/LoginPage.tsx");
     // Cabecera y barra del layout de (app) quedan por encima del template.
     expect(shellUses.uses.map((u) => u.file)).toContain("src/components/layout/BottomNav.tsx");
   });
 
   it("ningún componente cliente pide un namespace no literal o todos los mensajes", () => {
-    expect(appUses.dynamic).toEqual([]);
+    expect(allUses.dynamic).toEqual([]);
   });
 
   it("todo namespace usado en el navegador está en APP_CLIENT_NAMESPACES", () => {
@@ -138,9 +166,10 @@ describe("REN-5 — textos del navegador por namespaces", () => {
     expect(missing).toEqual([]);
   });
 
-  it("todo namespace usado en /report está en REPORT_CLIENT_NAMESPACES (su proveedor sustituye al del shell)", () => {
-    expect(reportUses.uses.map((u) => u.file)).toContain("src/app/[locale]/report/PublicReportForm.tsx");
-    const missing = reportUses.uses.filter((u) => !covers(REPORT_CLIENT_NAMESPACES, u.ns));
+  it.each(zoneUses)("todo namespace usado en /$dir está en su lista (su proveedor sustituye al del shell)", (zone) => {
+    expect(zone.uses.map((u) => u.file)).toContain(zone.file);
+    expect(zone.dynamic).toEqual([]);
+    const missing = zone.uses.filter((u) => !covers(zone.list, u.ns));
     expect(missing).toEqual([]);
   });
 
@@ -149,19 +178,14 @@ describe("REN-5 — textos del navegador por namespaces", () => {
       picked.filter((p) => !uses.some((u) => covers([p], u.ns)));
     expect(unused(APP_CLIENT_NAMESPACES, appUses.uses)).toEqual([]);
     expect(unused(SHELL_CLIENT_NAMESPACES, shellUses.uses)).toEqual([]);
-    expect(unused(REPORT_CLIENT_NAMESPACES, reportUses.uses)).toEqual([]);
-  });
-
-  it("la capa de la zona con sesión incluye todo lo del shell (el proveedor anidado sustituye)", () => {
-    const notInApp = SHELL_CLIENT_NAMESPACES.filter((ns) => !covers(APP_CLIENT_NAMESPACES, ns));
-    expect(notInApp).toEqual([]);
+    for (const zone of zoneUses) expect(unused(zone.list, zone.uses), zone.dir).toEqual([]);
   });
 
   it.each([
     ["es", es],
     ["en", en],
   ])("todas las rutas existen en %s.json", (_locale, messages) => {
-    for (const ns of [...APP_CLIENT_NAMESPACES, ...SHELL_CLIENT_NAMESPACES, ...REPORT_CLIENT_NAMESPACES]) {
+    for (const ns of [...APP_CLIENT_NAMESPACES, ...SHELL_CLIENT_NAMESPACES, ...REPORT_CLIENT_NAMESPACES, ...WELCOME_CLIENT_NAMESPACES]) {
       const picked = pickMessages(messages, [ns]);
       expect(Object.keys(picked), ns).toHaveLength(1);
     }

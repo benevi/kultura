@@ -10,7 +10,8 @@
  *   públicos, legales, 404, error) y los de la cabecera y la barra del layout
  *   de `(app)`, que quedan por encima del proveedor de la zona con sesión. Lo
  *   pone `[locale]/layout.tsx` y sobrevive a la navegación entre páginas.
- * - `APP_CLIENT_NAMESPACES`: todo lo que usa cualquier componente cliente.
+ * - `APP_CLIENT_NAMESPACES`: todo lo que usan los componentes cliente de la
+ *   zona con sesión.
  *   Lo pone `(app)/template.tsx` alrededor de cada página con sesión (un
  *   proveedor anidado SUSTITUYE los mensajes del de fuera, no los mezcla).
  *
@@ -37,10 +38,21 @@ export const SHELL_CLIENT_NAMESPACES = [
  */
 export const REPORT_CLIENT_NAMESPACES = ["report"] as const;
 
+/**
+ * `/[locale]/welcome` (onboarding tras el alta, fuera de `(app)`): pasos y
+ * primeras recomendaciones. Mismo patrón que `/report`, con
+ * `welcome/layout.tsx`, para no cargar `onboarding` en todas las públicas.
+ */
+export const WELCOME_CLIENT_NAMESPACES = [
+  "aiRecommendations",
+  "auth",
+  "discoverFilters.typeBadge",
+  "onboarding",
+] as const;
+
 export const APP_CLIENT_NAMESPACES = [
   "aiRecommendations",
   "auth",
-  "best",
   "chat",
   "collection",
   "common",
@@ -64,7 +76,6 @@ export const APP_CLIENT_NAMESPACES = [
   "report",
   "search",
   "settings",
-  "status",
   "suggestions",
 ] as const;
 
