@@ -1089,60 +1089,321 @@
   "legal": {
     "footerPrivacy": "Privacidad",
     "footerTerms": "Términos",
-    "dataSources": "Datos de <tmdb>TMDB</tmdb>, <rawg>RAWG</rawg>, AniList, MyAnimeList, MangaDex, Open Library y Comic Vine.",
+    "dataSources": "Datos de <tmdb>TMDB</tmdb>, <rawg>RAWG</rawg>, Steam, AniList, MyAnimeList, MangaDex, Open Library, Google Books y Comic Vine.",
     "tmdbNotice": "Este producto usa la API de TMDB, pero TMDB no lo respalda ni lo certifica.",
     "justwatchSource": "Datos de disponibilidad en plataformas:",
+    "nav": {
+      "label": "Documentos legales",
+      "privacy": "Privacidad",
+      "terms": "Términos",
+      "notice": "Aviso legal",
+      "accessibility": "Accesibilidad"
+    },
+    "doc": {
+      "summaryTitle": "Lo importante",
+      "tocLabel": "En esta página"
+    },
     "privacy": {
       "title": "Política de privacidad",
-      "updated": "Última actualización: septiembre de 2026",
-      "intro": "En KULTURA nos tomamos en serio la privacidad de tus datos. Esta política explica qué información recogemos, para qué la usamos y qué derechos tienes sobre ella.",
-      "s1Title": "1. Responsable del tratamiento",
-      "s1Body": "KULTURA es un proyecto personal en desarrollo. Puedes ejercer cualquiera de los derechos descritos en esta política escribiendo desde el formulario de sugerencias de la propia aplicación.",
-      "s2Title": "2. Qué datos recogemos",
-      "s2Body": "Datos de cuenta (email, nombre de usuario, avatar, biografía opcional, idioma preferido); tu biblioteca personal (títulos guardados, valoraciones, progreso); actividad social (amistades, mensajes privados, listas compartidas, grupos y publicaciones dentro de ellos); y metadatos técnicos necesarios para el funcionamiento del servicio (dirección IP, usada solo para limitar el abuso de la API — rate limiting — nunca para perfilado).",
-      "s3Title": "3. Para qué usamos tus datos",
-      "s3Body": "Para prestar el servicio (biblioteca, funciones sociales, recomendaciones), para generar recomendaciones personalizadas mediante inteligencia artificial a partir de tu biblioteca, y para mantener la seguridad y estabilidad de la aplicación.",
-      "s4Title": "4. Base legal",
-      "s4Body": "Tratamos tus datos para ejecutar el contrato de uso del servicio que aceptas al registrarte, y en algunos casos por consentimiento explícito (por ejemplo, al pedir una recomendación de IA) o por interés legítimo en mantener la seguridad de la plataforma.",
-      "s5Title": "5. Con quién compartimos datos",
-      "s5Body": "Usamos proveedores de infraestructura (Supabase para base de datos y autenticación, Vercel para el alojamiento, opcionalmente Sentry para el diagnóstico de errores) y un proveedor de inteligencia artificial (Anthropic Claude) para generar recomendaciones a partir de tu biblioteca. Consultamos catálogos públicos de terceros (TMDB, Jikan, RAWG, Open Library, ComicVine, MangaDex) para mostrar información de películas, series, libros, cómics, manga y videojuegos — estas consultas son de contenido público, no envían tus datos personales. Ninguno de estos proveedores recibe datos con fines publicitarios.",
-      "s6Title": "6. Cuánto tiempo conservamos tus datos",
-      "s6Body": "Mientras tu cuenta esté activa. Si eliminas tu cuenta, tus datos personales y tu biblioteca se borran de forma permanente (ver el apartado de ajustes de tu perfil).",
-      "s7Title": "7. Tus derechos",
-      "s7Body": "Tienes derecho a acceder, rectificar, eliminar y exportar tus datos, y a oponerte a su tratamiento. Puedes eliminar tu cuenta y exportar tus datos directamente desde Ajustes; para cualquier otra solicitud, usa el formulario de sugerencias.",
-      "s8Title": "8. Cookies",
-      "s8Body": "Usamos únicamente las cookies estrictamente necesarias para mantener tu sesión iniciada (gestionadas por Supabase Auth). No usamos cookies de publicidad ni de rastreo de terceros. Medimos las visitas con Vercel Web Analytics, que es anónimo y no usa cookies ni identifica a nadie.",
-      "s9Title": "9. Menores de edad",
-      "s9Body": "El servicio no está dirigido a menores de 16 años. Si detectamos una cuenta de un menor de esa edad, la eliminaremos.",
-      "s10Title": "10. Cambios en esta política",
-      "s10Body": "Podemos actualizar esta política a medida que el servicio evolucione. Los cambios relevantes se anunciarán dentro de la aplicación."
+      "metaDescription": "Qué datos trata KULTURA, para qué, con qué proveedores, cuánto tiempo y cómo ejercer tus derechos, explicado sin rodeos.",
+      "updated": "Última actualización: 23 de octubre de 2026",
+      "version": "Versión 2026-10",
+      "summary": {
+        "s1": "KULTURA la hago yo, Víctor Franco, como proyecto personal gratuito y sin anuncios. Para cualquier cosa sobre tus datos, escríbeme a <mail>{email}</mail>.",
+        "s2": "Solo trato lo necesario para que la app funcione: tu email, tu nombre de usuario y lo que guardas y compartes. No vendo datos ni hago publicidad.",
+        "s3": "Tu biblioteca la ven por defecto solo tus amigos y lo puedes cambiar en <settings>Ajustes</settings>. Sin cuenta, nadie la ve.",
+        "s4": "La IA de Anthropic solo recibe una lista corta de títulos y notas cuando pulsas «Recomiéndame», nunca tu nombre ni tu email.",
+        "s5": "Puedes descargar tus datos y borrar tu cuenta desde Ajustes. Si mi respuesta no te convence, puedes reclamar ante la <aepd>AEPD</aepd>."
+      },
+      "intro": "Esta política explica qué datos personales trata KULTURA ({site}), para qué, durante cuánto tiempo, con qué proveedores y qué derechos tienes. Vale para la web y para la app instalable.",
+      "sections": {
+        "controller": {
+          "title": "Quién es el responsable",
+          "p1": "El responsable del tratamiento es Víctor Franco, persona física residente en España, que desarrolla y mantiene KULTURA. Contacto para cualquier asunto de privacidad: <mail>{email}</mail>. No hace falta tener cuenta para escribir.",
+          "p2": "No hay delegado de protección de datos porque, por su tamaño y su actividad, KULTURA no está obligada a tenerlo. Los datos del titular están en el <legal>aviso legal</legal>."
+        },
+        "data": {
+          "title": "Qué datos trato",
+          "p1": "Depende de lo que uses:",
+          "list": {
+            "account": "<b>Cuenta</b>: email y contraseña (la guarda cifrada Supabase; yo no puedo verla) o, si entras con Google, tu email y los datos básicos de perfil que comparte Google (nombre y foto, que KULTURA no muestra). También tu nombre de usuario, avatar, biografía opcional, idioma y la fecha y versión de los términos que aceptaste.",
+            "library": "<b>Biblioteca</b>: títulos guardados, estado, notas, progreso y fechas.",
+            "social": "<b>Actividad social</b>: amistades y solicitudes, bloqueos, mensajes privados, listas, grupos y sus publicaciones, recomendaciones entre amigos y notificaciones.",
+            "sent": "<b>Lo que me envías</b>: sugerencias y denuncias. En el <report>formulario de denuncia sin cuenta</report>, también el email de contacto si decides dejarlo.",
+            "technical": "<b>Datos técnicos</b>: dirección IP y datos del navegador para servir la web, frenar abusos y limitar peticiones; informes de errores, y datos de uso agregados (ver «Analítica y cookies»)."
+          },
+          "p2": "No pido categorías especiales de datos. Aun así, lo que ves, lees o juegas puede decir cosas de ti: por eso tu biblioteca no es pública por defecto."
+        },
+        "purposes": {
+          "title": "Para qué y con qué base legal",
+          "list": {
+            "service": "<b>Prestarte el servicio</b> (cuenta, biblioteca, listas, amigos, chat y grupos): ejecución del contrato que aceptas al registrarte (art. 6.1.b RGPD).",
+            "ai": "<b>Recomendaciones con IA</b>, solo cuando pulsas el botón: es una función que pides tú, dentro del mismo contrato. Si no lo pulsas, no se envía nada.",
+            "security": "<b>Seguridad</b> (límite de peticiones, prevención de abusos, diagnóstico de errores y copias de seguridad): interés legítimo en que el servicio funcione y sea seguro (art. 6.1.f RGPD).",
+            "moderation": "<b>Denuncias y moderación</b>: cumplir el Reglamento de Servicios Digitales (art. 6.1.c RGPD) e interés legítimo en proteger a quienes usan KULTURA.",
+            "stats": "<b>Estadísticas de uso agregadas</b> (cuánta gente se registra o usa cada función): interés legítimo en mejorar el producto, sin cookies y sin seguirte por otras webs.",
+            "emails": "<b>Correos de la cuenta</b> (confirmación y cambio de contraseña): ejecución del contrato. No envío boletines ni publicidad."
+          },
+          "p1": "No tomo decisiones automatizadas con efectos jurídicos sobre ti: las recomendaciones son solo sugerencias."
+        },
+        "ai": {
+          "title": "Inteligencia artificial",
+          "p1": "Las recomendaciones de «Para ti» las genera Claude, un modelo de Anthropic, solo cuando pulsas «Recomiéndame». Se envían hasta 15 títulos de tu biblioteca que has terminado o puntuado alto (título, tipo, año y nota), tus géneros favoritos y el idioma de la app. No se envían tu nombre, tu email ni tu identificador de usuario.",
+          "p2": "Se hace como mucho una petición por persona y día. La respuesta se guarda ese día para no repetirla y se borra al generar la siguiente. Según las condiciones comerciales de Anthropic, lo que recibe por su API no se usa para entrenar sus modelos.",
+          "p3": "También uso IA para traducir algunas sinopsis del catálogo. Ahí solo viaja el texto de la sinopsis, sin ningún dato tuyo."
+        },
+        "visibility": {
+          "title": "Quién ve lo que compartes",
+          "list": {
+            "library": "<b>Tu biblioteca</b> (títulos, notas y estadísticas): por defecto, solo tus amigos. En <settings>Ajustes</settings> eliges entre «Cualquiera con cuenta», «Solo mis amigos» y «Solo yo». Sin sesión no la ve nadie.",
+            "profile": "<b>Tu perfil público</b> ({site}/u/tu-usuario): nombre de usuario, avatar, biografía y las listas que marques como públicas. Lo puede ver cualquiera, también sin cuenta.",
+            "lists": "<b>Listas</b>: privadas salvo que elijas hacerlas públicas. Las compartidas las ven también sus miembros.",
+            "messages": "<b>Mensajes privados</b>: solo las personas de esa conversación. Solo puedes escribir a tus amigos, y quien hayas bloqueado no puede escribirte.",
+            "groups": "<b>Grupos</b>: las publicaciones solo las ven sus miembros; el nombre y la descripción de un grupo público, cualquiera con cuenta."
+          },
+          "p1": "Tu nombre de usuario no se saca de tu email y tu email no se muestra a nadie."
+        },
+        "providers": {
+          "title": "Proveedores y transferencias internacionales",
+          "p1": "Para que KULTURA funcione uso estos proveedores, que tratan datos por encargo mío y con un contrato de tratamiento de datos:",
+          "list": {
+            "vercel": "<b>Vercel</b> (Vercel Inc., EE. UU.): alojamiento de la web, con el servidor en Fráncfort (UE), y medición de visitas.",
+            "supabase": "<b>Supabase</b> (Supabase Inc., EE. UU.): base de datos e inicio de sesión, alojados en la UE (Fráncfort).",
+            "anthropic": "<b>Anthropic</b> (Anthropic PBC, EE. UU.): recomendaciones con IA, solo al pulsar el botón.",
+            "sentry": "<b>Sentry</b> (Functional Software Inc., EE. UU.): informes de errores, alojados en la UE (Alemania).",
+            "resend": "<b>Resend</b> (EE. UU.): me envía por correo el aviso de cada denuncia, con su contenido y, si lo dejaste, tu email de contacto.",
+            "upstash": "<b>Upstash</b> (Upstash Inc., EE. UU.): contador para limitar peticiones. Solo recibe una huella cifrada (hash) de la IP o del identificador, que caduca en minutos.",
+            "google": "<b>Google</b> (Google Ireland Ltd.): inicio de sesión, solo si eliges entrar con Google.",
+            "github": "<b>GitHub</b> (GitHub Inc., EE. UU.): guarda las copias de seguridad, que se cifran antes de salir, así que GitHub no puede leerlas."
+          },
+          "p2": "Varios son empresas de EE. UU. o pueden acceder desde allí para dar soporte. Esas <b>transferencias internacionales</b> se amparan en el Marco de Privacidad de Datos UE-EE. UU. cuando la empresa está adherida y, en todo caso, en las cláusulas contractuales tipo de la Comisión Europea incluidas en sus condiciones de tratamiento (arts. 45 y 46 RGPD).",
+          "p3": "La información de los títulos sale de catálogos públicos: TMDB (con datos de JustWatch para «Dónde ver»), RAWG, Steam, AniList, MyAnimeList (a través de Jikan), MangaDex, Open Library, Google Books y Comic Vine. Las consultas las hace el servidor de KULTURA con el texto de la búsqueda, sin tu IP ni tu cuenta. Algunas portadas se cargan directamente desde los servidores de imágenes de esos catálogos, que reciben tu IP como al visitar cualquier web.",
+          "p4": "Los tráileres de algunas fichas se insertan desde YouTube (Google). Al cargarse el reproductor, YouTube recibe tu IP y puede usar sus propias cookies según su política de privacidad.",
+          "p5": "Ningún proveedor recibe datos para publicidad, y no vendo ni cedo datos a nadie salvo obligación legal."
+        },
+        "analytics": {
+          "title": "Analítica y cookies",
+          "p1": "No hay banner de cookies porque KULTURA no usa cookies que necesiten tu consentimiento:",
+          "list": {
+            "session": "<b>Sesión</b> (Supabase): cookies estrictamente necesarias para mantenerte conectado.",
+            "locale": "<b>Idioma</b> (NEXT_LOCALE): recuerda el idioma que eliges.",
+            "storage": "<b>Almacenamiento local</b>: durante el registro, el navegador guarda un momento el personaje que eliges y lo borra al terminar el alta."
+          },
+          "p2": "Las visitas se cuentan con Vercel Web Analytics, que no usa cookies: cuenta páginas vistas con una huella temporal que se descarta en 24 horas y no permite identificarte.",
+          "p3": "Además, KULTURA puede registrar eventos de uso de las personas registradas (por ejemplo, el alta, el primer título guardado o una invitación aceptada) y por dónde llegaste al registrarte (un enlace de invitación o de una campaña), para estudiarlos de forma agregada, sin cookies y sin rastreo entre webs."
+        },
+        "retention": {
+          "title": "Cuánto tiempo guardo los datos",
+          "list": {
+            "account": "Tus datos de cuenta, biblioteca y actividad: mientras tengas la cuenta.",
+            "deletion": "Al pedir el borrado, la cuenta queda programada 7 días; si vuelves a entrar, puedes cancelarlo. Pasado ese plazo se borran tu perfil, tu biblioteca, tus listas, tus amistades, los mensajes y publicaciones que enviaste, tus recomendaciones, notificaciones y denuncias.",
+            "transfer": "Los grupos que creaste y tus listas compartidas pasan a otro miembro para que los demás no pierdan su contenido; si no queda nadie, se borran. Los títulos que añadiste a listas de otras personas se quedan en ellas, sin tu nombre.",
+            "suggestions": "Las sugerencias que enviaste se conservan sin vínculo con tu cuenta. Si quieres que las borre, pídemelo.",
+            "ai": "Las recomendaciones de IA: hasta que se generan las del día siguiente.",
+            "logs": "Registros del servidor: se borran solos en menos de un día. Informes de errores (Sentry): 30 días. Huellas del límite de peticiones: unos minutos.",
+            "backups": "Copias de seguridad semanales cifradas: 90 días. Lo que borras desaparece de ellas cuando caducan.",
+            "reports": "Denuncias y su resolución: el tiempo necesario para resolver el caso y atender una posible reclamación."
+          }
+        },
+        "rights": {
+          "title": "Tus derechos",
+          "p1": "Puedes pedir acceso, rectificación, supresión, oposición, limitación del tratamiento y portabilidad de tus datos. Muchas cosas las haces tú desde <settings>Ajustes</settings>: editar tu perfil, cambiar quién ve tu biblioteca, exportar tus datos y borrar tu cuenta. Para lo demás, escríbeme a <mail>{email}</mail>; respondo en un mes como máximo.",
+          "p2": "La exportación es un archivo JSON con tu perfil, biblioteca, listas, amistades, los mensajes que has enviado, tus conversaciones (fechas y participantes), publicaciones, grupos, invitaciones, recomendaciones enviadas y recibidas, sugerencias, notificaciones y denuncias. No incluye los mensajes que te han escrito otras personas: puedes leerlos en la app mientras sigas en la conversación y, si quieres una copia, pídemela por email y te la envío.",
+          "p3": "Si crees que no he atendido bien tu solicitud, puedes reclamar ante la Agencia Española de Protección de Datos (<aepd>aepd.es</aepd>)."
+        },
+        "minors": {
+          "title": "Edad mínima",
+          "p1": "Para usar KULTURA tienes que tener al menos 14 años, la edad a partir de la cual en España puedes consentir el tratamiento de tus datos (art. 7 LOPDGDD); lo declaras al registrarte. Si sé que una cuenta es de alguien menor de 14 años, la borraré. Si eres madre, padre o tutor y crees que es el caso, escríbeme."
+        },
+        "security": {
+          "title": "Seguridad",
+          "p1": "Todo viaja cifrado (HTTPS). La base de datos aplica permisos fila a fila para que cada persona solo lea y cambie lo que le corresponde, las contraseñas se guardan cifradas y las copias de seguridad se cifran antes de salir. Si encuentras una vulnerabilidad, escríbeme a <mail>{email}</mail>; tienes los detalles en el <legal>aviso legal</legal>."
+        },
+        "changes": {
+          "title": "Cambios en esta política",
+          "p1": "Si cambio algo importante, lo avisaré dentro de la app antes de que se aplique y actualizaré la versión y la fecha de arriba."
+        }
+      }
     },
     "terms": {
-      "title": "Términos de servicio",
-      "updated": "Última actualización: septiembre de 2026",
-      "intro": "Al crear una cuenta en KULTURA aceptas estos términos. Léelos con atención.",
-      "s1Title": "1. Aceptación",
-      "s1Body": "El uso de KULTURA implica la aceptación de estos términos y de la política de privacidad. Si no estás de acuerdo, no debes usar el servicio.",
-      "s2Title": "2. Descripción del servicio",
-      "s2Body": "KULTURA es una aplicación para descubrir, registrar y compartir contenido cultural (películas, series, anime, libros, cómics, manga y videojuegos), con funciones sociales (amigos, listas, grupos, chat) y recomendaciones generadas por inteligencia artificial.",
-      "s3Title": "3. Tu cuenta",
-      "s3Body": "Eres responsable de mantener la confidencialidad de tus credenciales y de toda la actividad que ocurra bajo tu cuenta. Debes proporcionar información veraz al registrarte.",
-      "s4Title": "4. Uso aceptable",
-      "s4Body": "No está permitido usar el servicio para acosar a otros usuarios, publicar contenido ilegal, hacer spam, intentar vulnerar la seguridad de la plataforma, ni automatizar el acceso al servicio de forma que perjudique a otros usuarios.",
-      "s5Title": "5. Tu contenido",
-      "s5Body": "Mantienes la titularidad de lo que publicas (mensajes, listas, comentarios). Al publicarlo, nos concedes la licencia mínima necesaria para almacenarlo y mostrarlo dentro del servicio a quien corresponda según la configuración de privacidad de cada función.",
-      "s6Title": "6. Contenido de terceros",
-      "s6Body": "La información de títulos (sinopsis, carátulas, valoraciones) proviene de catálogos públicos de terceros (TMDB, Jikan, RAWG, Open Library, ComicVine, MangaDex) y pertenece a sus respectivos titulares. KULTURA no reclama derechos sobre ese contenido.",
-      "s7Title": "7. Recomendaciones de IA",
-      "s7Body": "Las recomendaciones generadas por inteligencia artificial son sugerencias automáticas basadas en tu biblioteca y pueden contener errores o inexactitudes. No sustituyen tu propio criterio.",
-      "s8Title": "8. Terminación",
-      "s8Body": "Puedes eliminar tu cuenta en cualquier momento desde Ajustes. Podemos suspender o eliminar cuentas que incumplan estos términos.",
-      "s9Title": "9. Limitación de responsabilidad",
-      "s9Body": "El servicio se ofrece \"tal cual\", sin garantías de disponibilidad continua. En la medida permitida por la ley, no somos responsables de daños indirectos derivados del uso del servicio.",
-      "s10Title": "10. Ley aplicable",
-      "s10Body": "Estos términos se rigen por la legislación española, sin perjuicio de los derechos que la normativa de protección de consumidores de tu país de residencia pueda reconocerte.",
-      "s11Title": "11. Cambios",
-      "s11Body": "Podemos actualizar estos términos. Los cambios relevantes se anunciarán dentro de la aplicación."
+      "title": "Términos de uso",
+      "metaDescription": "Las normas de KULTURA: qué ofrece, qué se puede y qué no se puede hacer, cómo se moderan las denuncias y cómo darte de baja.",
+      "updated": "Última actualización: 23 de octubre de 2026",
+      "version": "Versión 2026-10",
+      "summary": {
+        "s1": "KULTURA es gratuita y sin anuncios, y la mantiene una persona: Víctor Franco.",
+        "s2": "Necesitas tener al menos 14 años y respetar a los demás: nada de acoso, odio, spam ni contenido ilegal.",
+        "s3": "Lo que publicas sigue siendo tuyo; solo me das permiso para guardarlo y mostrarlo a quien tú elijas.",
+        "s4": "Cualquiera puede denunciar contenido, incluso sin cuenta, en el <report>formulario de denuncia</report>. Cada denuncia la revisa una persona y las decisiones se explican.",
+        "s5": "Puedes irte cuando quieras: exporta tus datos y borra tu cuenta desde Ajustes."
+      },
+      "intro": "Estos términos regulan el uso de KULTURA ({site}). Al crear una cuenta los aceptas, junto con la <privacy>política de privacidad</privacy>. Si no estás de acuerdo, no uses el servicio.",
+      "sections": {
+        "provider": {
+          "title": "Quién presta el servicio",
+          "p1": "KULTURA la desarrolla y la presta Víctor Franco, persona física residente en España, como proyecto personal sin actividad económica. Contacto: <mail>{email}</mail>. Más datos en el <legal>aviso legal</legal>."
+        },
+        "service": {
+          "title": "Qué es KULTURA",
+          "p1": "Una aplicación para apuntar, puntuar y compartir películas, series, anime, manga, videojuegos, libros y cómics, con funciones sociales (amigos, listas, grupos y chat) y recomendaciones opcionales con IA. Es gratuita y no tiene anuncios.",
+          "p2": "Es un proyecto en desarrollo: puede cambiar, tener fallos o no estar disponible a ratos. Si algún día cierra, lo avisaré con al menos 30 días de antelación para que puedas exportar tus datos."
+        },
+        "age": {
+          "title": "Edad mínima",
+          "p1": "Tienes que tener al menos 14 años. Al registrarte declaras que los tienes."
+        },
+        "account": {
+          "title": "Tu cuenta",
+          "p1": "Da datos veraces, guarda bien tu contraseña y avísame si crees que alguien ha entrado en tu cuenta. Eres responsable de lo que se haga desde ella. La cuenta de demostración es de solo lectura: no sirve para publicar ni para escribir a nadie."
+        },
+        "rules": {
+          "title": "Normas de convivencia",
+          "p1": "En KULTURA no está permitido:",
+          "list": {
+            "harassment": "acosar, amenazar o intimidar a otras personas;",
+            "hate": "publicar contenido de odio o discriminatorio, violento o sexual no apropiado;",
+            "illegal": "publicar contenido ilegal, enlaces a copias piratas o datos personales de otras personas sin su permiso;",
+            "impersonation": "hacerse pasar por otra persona;",
+            "spam": "hacer spam, estafas o publicidad no pedida;",
+            "abuse": "intentar saltarse la seguridad, automatizar el acceso o sobrecargar el servicio."
+          }
+        },
+        "content": {
+          "title": "Tu contenido",
+          "p1": "Lo que publicas (notas, listas, mensajes, publicaciones y biografía) sigue siendo tuyo. Me das una licencia gratuita, no exclusiva y limitada a lo necesario para guardarlo y mostrarlo dentro de KULTURA a quien corresponda según tu configuración de privacidad, mientras no lo borres."
+        },
+        "moderation": {
+          "title": "Denuncias y moderación",
+          "p1": "Puedes denunciar perfiles, títulos, mensajes, publicaciones, grupos y listas con el botón «Denunciar» de cada sitio o, sin cuenta, en el <report>formulario de denuncia</report>. Cada denuncia la revisa una persona. Además, puedes bloquear a quien quieras y salir de una conversación, y el dueño de un grupo puede borrar publicaciones y expulsar a miembros de su grupo.",
+          "p2": "Si algo incumple estos términos o la ley, puedo retirar el contenido, limitar funciones, o suspender o eliminar la cuenta, de forma proporcionada a la gravedad y a si se repite. Salvo en casos de spam masivo o si la ley me lo impide, te escribiré al email de tu cuenta explicando qué he hecho, por qué y cómo reclamar.",
+          "p3": "Si no estás de acuerdo con una decisión, responde a ese correo o escríbeme a <mail>{email}</mail> en los 6 meses siguientes y la revisaré. También puedes acudir a los tribunales."
+        },
+        "thirdparty": {
+          "title": "Contenido de terceros",
+          "p1": "La información de los títulos (sinopsis, portadas, notas y disponibilidad) viene de catálogos públicos: TMDB, JustWatch, RAWG, Steam, AniList, MyAnimeList, MangaDex, Open Library, Google Books y Comic Vine. Pertenece a sus titulares y puede contener errores. Este producto usa la API de TMDB, pero TMDB no lo respalda ni lo certifica.",
+          "p2": "Si crees que algo infringe tus derechos de autor, usa el <report>formulario de denuncia</report> o escríbeme."
+        },
+        "ai": {
+          "title": "Recomendaciones con IA",
+          "p1": "Las recomendaciones son sugerencias automáticas a partir de tu biblioteca y pueden equivocarse. Solo se generan cuando las pides."
+        },
+        "termination": {
+          "title": "Baja",
+          "p1": "Puedes borrar tu cuenta cuando quieras desde Ajustes. Queda programada 7 días por si te arrepientes y después se borra como explica la <privacy>política de privacidad</privacy>."
+        },
+        "liability": {
+          "title": "Responsabilidad",
+          "p1": "KULTURA se ofrece gratis y tal cual. Pongo cuidado en que funcione, pero no puedo garantizar que esté siempre disponible ni libre de errores. No respondo de daños indirectos salvo dolo o negligencia grave, y nada de esto limita los derechos que te reconoce la ley como consumidor."
+        },
+        "law": {
+          "title": "Ley aplicable",
+          "p1": "Estos términos se rigen por la ley española. Si actúas como consumidor, puedes acudir a los tribunales de tu domicilio y conservas la protección de las normas imperativas de tu país de residencia."
+        },
+        "changes": {
+          "title": "Cambios",
+          "p1": "Si cambio algo importante, lo avisaré dentro de la app al menos 15 días antes de que se aplique. Si después sigues usando KULTURA, aceptas la nueva versión; si no, puedes borrar tu cuenta."
+        }
+      }
+    },
+    "notice": {
+      "title": "Aviso legal",
+      "metaDescription": "Quién está detrás de KULTURA, cómo contactar, el punto de contacto del Reglamento de Servicios Digitales y cómo denunciar contenido.",
+      "updated": "Última actualización: 23 de octubre de 2026",
+      "version": "Versión 2026-10",
+      "summary": {
+        "s1": "Responsable: Víctor Franco. Contacto: <mail>{email}</mail>.",
+        "s2": "Para denunciar contenido, incluso sin cuenta, usa el <report>formulario de denuncia</report>.",
+        "s3": "Autoridades y usuarios tienen el mismo punto de contacto: ese email, en español o en inglés."
+      },
+      "intro": "Información sobre el titular de {site} (art. 10 de la Ley 34/2002, de servicios de la sociedad de la información) y puntos de contacto del Reglamento (UE) 2022/2065 de Servicios Digitales.",
+      "sections": {
+        "owner": {
+          "title": "Titular",
+          "list": {
+            "name": "<b>Responsable</b>: Víctor Franco, persona física residente en España.",
+            "email": "<b>Email</b>: <mail>{email}</mail>",
+            "site": "<b>Sitio web</b>: {site}",
+            "activity": "<b>Actividad</b>: KULTURA es un proyecto personal gratuito, sin anuncios ni actividad económica."
+          },
+          "p1": "El NIF y la dirección postal no se publican. Se facilitan a las autoridades, o a cualquier persona con un interés legítimo, que los pidan por email."
+        },
+        "contact": {
+          "title": "Punto de contacto (Reglamento de Servicios Digitales)",
+          "p1": "El punto de contacto único para las autoridades de los Estados miembros, la Comisión Europea y la Junta Europea de Servicios Digitales (art. 11) y para quienes usan el servicio (art. 12) es <mail>{email}</mail>. Se atiende en español y en inglés."
+        },
+        "reports": {
+          "title": "Denunciar contenido ilegal",
+          "p1": "Cualquier persona, con o sin cuenta, puede avisar de contenido que crea ilegal o contrario a los <terms>términos</terms> en el <report>formulario de denuncia</report> o con el botón «Denunciar» dentro de la app. Ayuda indicar qué contenido es (su enlace), por qué crees que es ilegal y, si quieres respuesta, un email.",
+          "p2": "Cada aviso lo revisa una persona y recibe una referencia. Si actúo sobre un contenido o una cuenta, explico la decisión a la persona afectada y cómo reclamar. Si alguien está en peligro, llama al 112: el formulario no es un servicio de emergencias."
+        },
+        "ip": {
+          "title": "Propiedad intelectual",
+          "p1": "El código, el diseño y la marca KULTURA son de su responsable. La información de los títulos, las portadas y los logotipos de terceros pertenecen a sus titulares (ver la atribución al pie de cada página). Para avisar de una infracción, usa el <report>formulario de denuncia</report> o el email de contacto."
+        },
+        "security": {
+          "title": "Seguridad y avisos de vulnerabilidades",
+          "p1": "Si encuentras un fallo de seguridad, escríbeme a <mail>{email}</mail> con los pasos para reproducirlo. Te responderé y lo arreglaré lo antes posible. No emprenderé acciones contra quien investigue de buena fe sin acceder a datos de otras personas ni degradar el servicio. Este contacto también está en {site}/.well-known/security.txt."
+        },
+        "law": {
+          "title": "Ley aplicable",
+          "p1": "Este sitio se rige por la ley española. Las condiciones de uso están en los <terms>términos</terms> y el tratamiento de datos, en la <privacy>política de privacidad</privacy>."
+        }
+      }
+    }
+  },
+  "accessibility": {
+    "title": "Declaración de accesibilidad",
+    "metaDescription": "Cómo de accesible es KULTURA, qué queda por arreglar y cómo avisar de una barrera.",
+    "updated": "Última revisión: 23 de octubre de 2026",
+    "version": "Versión 2026-10",
+    "summary": {
+      "s1": "Objetivo: cumplir las WCAG 2.2 nivel AA (norma europea EN 301 549).",
+      "s2": "Estado: parcialmente conforme. Las páginas públicas pasan las pruebas automáticas; dentro de la app quedan fallos conocidos, ya en arreglo.",
+      "s3": "Si algo no puedes usar, escríbeme a <mail>{email}</mail> y te doy una alternativa."
+    },
+    "intro": "Quiero que KULTURA ({site}) se pueda usar con teclado, lector de pantalla, ampliación o cualquier otra forma de acceso. Esta declaración explica en qué punto está.",
+    "sections": {
+      "status": {
+        "title": "Situación de cumplimiento",
+        "p1": "KULTURA es <b>parcialmente conforme</b> con las Pautas de Accesibilidad para el Contenido Web (WCAG) 2.2, nivel AA, que recoge la norma europea EN 301 549, por los fallos que se indican a continuación."
+      },
+      "known": {
+        "title": "Contenido que aún no es accesible",
+        "p1": "Fallos conocidos de la app con sesión iniciada:",
+        "list": {
+          "dialogs": "Algunas ventanas emergentes (crear lista, cambiar estado, invitar amigos, recomendar) aún no mantienen el foco del teclado dentro ni lo devuelven al cerrarse (WCAG 2.4.3 y 4.1.2).",
+          "forms": "Algunos campos de formulario no tienen etiqueta asociada o no anuncian sus errores al lector de pantalla (1.3.1, 3.3.1 y 4.1.2).",
+          "rating": "La valoración con estrellas no se maneja con las flechas del teclado ni muestra siempre el foco (2.1.1 y 2.4.7).",
+          "search": "Las sugerencias del buscador no se anuncian como una lista de opciones (4.1.2).",
+          "targets": "Algunos botones de cerrar (×) miden menos de 24 × 24 píxeles (2.5.8)."
+        },
+        "p2": "Fuera de mi control: las sinopsis y portadas vienen de catálogos de terceros y a veces solo están en su idioma original; cada portada se describe con el título. Los tráileres usan el reproductor de YouTube, con sus propios subtítulos y controles."
+      },
+      "features": {
+        "title": "Lo que ya funciona",
+        "list": {
+          "skip": "Enlace «Saltar al contenido» y estructura de encabezados y regiones en todas las páginas.",
+          "motion": "La animación de la portada se puede pausar y no se reproduce si tu sistema pide reducir el movimiento.",
+          "lang": "Toda la interfaz en español y en inglés, con el idioma de cada página declarado.",
+          "public": "Portada, rankings, perfiles públicos, acceso y páginas legales sin errores en las pruebas automáticas."
+        }
+      },
+      "method": {
+        "title": "Cómo se ha evaluado",
+        "p1": "Autoevaluación del responsable el 22 de octubre de 2026: pruebas automáticas con axe-core 4.10 a 390 y 1440 píxeles de ancho sobre la portada, los rankings, el perfil público, el acceso y las páginas legales, y revisión manual del código de la app con sesión. Todavía no se ha probado con personas que usan lector de pantalla; está previsto."
+      },
+      "contact": {
+        "title": "Avisos y peticiones",
+        "p1": "Si encuentras una barrera o necesitas un contenido en otro formato, escríbeme a <mail>{email}</mail> indicando la página y qué ha pasado. Respondo en 20 días hábiles como máximo."
+      },
+      "complaint": {
+        "title": "Si no quedas satisfecho",
+        "p1": "Si mi respuesta no te convence, puedes dirigirte a la Oficina de Atención a la Discapacidad (OADIS) del Ministerio de Derechos Sociales, que atiende consultas y quejas sobre igualdad de oportunidades y accesibilidad."
+      },
+      "review": {
+        "title": "Elaboración de esta declaración",
+        "p1": "Declaración elaborada el 23 de octubre de 2026. La actualizo cada vez que se arregla un fallo de la lista y, como mínimo, una vez al año."
+      }
     }
   },
   "demo": {
