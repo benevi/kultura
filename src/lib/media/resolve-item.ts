@@ -15,7 +15,13 @@
 
 import type { MediaItem } from '@/types/media'
 import { getMovie, getTV } from '@/lib/api/tmdb'
-import { getAnime as getAnimeAniList, isAniListId, fromAniListRef } from '@/lib/api/anilist'
+import {
+  getAnime as getAnimeAniList,
+  getMangaAniList,
+  isAniListId,
+  fromAniListRef,
+  normalizeAniListManga,
+} from '@/lib/api/anilist'
 import { getAnimeTmdb, isTmdbAnimeId } from '@/lib/api/anime-tmdb'
 import { getAnime as getAnimeJikan, getManga as getMangaJikan } from '@/lib/api/jikan'
 import { getManga as getMangaDex, isMangaDexId } from '@/lib/api/mangadex'
@@ -75,6 +81,10 @@ async function resolveUnsafe(
     case 'manga': {
       if (isMangaDexId(externalId)) {
         return normalizeMangaDex((await getMangaDex(externalId)).data, locale)
+      }
+      // F-13: obras que MangaDex no tiene llegan de AniList (`al-{id}`).
+      if (isAniListId(externalId)) {
+        return normalizeAniListManga(await getMangaAniList(fromAniListRef(externalId)))
       }
       return normalizeMangaJikan((await getMangaJikan(Number(externalId))).data)
     }

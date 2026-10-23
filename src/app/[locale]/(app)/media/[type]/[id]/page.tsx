@@ -12,7 +12,13 @@ import { getMovie, getMovieVideos, getMovieProviders, getTVVideos, getTVProvider
 import type { TmdbProvidersResponse } from "@/lib/api/tmdb";
 import { tmdbRegion } from "@/lib/api/locale";
 import { getAnime as getAnimeJikan, getAnimeVideos, getManga as getMangaJikan } from "@/lib/api/jikan";
-import { getAnime as getAnimeAniList, isAniListId, fromAniListRef } from "@/lib/api/anilist";
+import {
+  getAnime as getAnimeAniList,
+  getMangaAniList,
+  isAniListId,
+  fromAniListRef,
+  normalizeAniListManga,
+} from "@/lib/api/anilist";
 import { getAnimeTmdb, isTmdbAnimeId } from "@/lib/api/anime-tmdb";
 import { getManga as getMangaDex, isMangaDexId } from "@/lib/api/mangadex";
 import { getBookDetail } from "@/lib/api/openlibrary";
@@ -130,6 +136,11 @@ async function resolveMangaItem(id: string, locale?: string) {
   if (isMangaDexId(id)) {
     const detail = await getMangaDex(id).catch(() => null);
     return detail ? normalizeMangaDex(detail.data, locale) : null;
+  }
+  // F-13: obras que MangaDex no tiene llegan de AniList (`al-{id}`).
+  if (isAniListId(id)) {
+    const ani = await getMangaAniList(fromAniListRef(id)).catch(() => null);
+    return ani ? normalizeAniListManga(ani) : null;
   }
   const legacy = await getMangaJikan(Number(id)).catch(() => null);
   return legacy ? normalizeMangaJikan(legacy.data) : null;

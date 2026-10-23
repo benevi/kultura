@@ -8,12 +8,13 @@
 //   - la obra va primera en ≥ 95 % de las consultas del banco;
 //   - ≥ 90 % de los resultados llevan nota (`/statistics/manga`);
 //   - sin doujinshi y con los coloreados detrás de la obra;
-//   - obra retirada de MangaDex ("berserk") → la de MyAnimeList arriba;
-//   - MangaDex caído → MyAnimeList como respaldo.
+//   - obra retirada de MangaDex ("berserk") → la de AniList arriba;
+//   - MangaDex caído → AniList y, si también cae, MyAnimeList.
 // ============================================================
 
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import fixtures from "./fixtures/mangadex-search.json";
+import aniBerserk from "./fixtures/anilist-manga-berserk.json";
 import { cacheStore, fakeUnstableCache } from "../providers/cache-mock";
 
 vi.mock("next/cache", () => ({ unstable_cache: fakeUnstableCache }));
@@ -69,9 +70,14 @@ const json = (body: unknown, status = 200) =>
   new Response(JSON.stringify(body), { status, headers: { "Content-Type": "application/json" } });
 
 /** fetch falso: MangaDex según la consulta del fixture, Jikan con su respuesta. */
-function fakeProviders(opts: { mangadexDown?: boolean; jikan?: unknown } = {}) {
-  return vi.fn(async (input: string | URL) => {
+function fakeProviders(opts: { mangadexDown?: boolean; anilistDown?: boolean; jikan?: unknown } = {}) {
+  return vi.fn(async (input: string | URL, init?: RequestInit) => {
     const url = new URL(String(input));
+    if (url.hostname === "graphql.anilist.co") {
+      if (opts.anilistDown) return json({}, 503);
+      const body = JSON.parse(String(init?.body ?? "{}")) as { variables?: { search?: string } };
+      return json(body.variables?.search === "berserk" ? aniBerserk : { data: { Page: { media: [] } } });
+    }
     if (url.hostname === "api.mangadex.org") {
       if (opts.mangadexDown) return json({ result: "error" }, 503);
       if (url.pathname === "/manga") {
@@ -125,6 +131,8 @@ beforeEach(() => {
 
 const jikanCalls = (spy: ReturnType<typeof vi.fn>) =>
   spy.mock.calls.filter((c) => String(c[0]).includes("api.jikan.moe")).length;
+const anilistCalls = (spy: ReturnType<typeof vi.fn>) =>
+  spy.mock.calls.filter((c) => String(c[0]).includes("graphql.anilist.co")).length;
 
 afterEach(() => {
   vi.unstubAllGlobals();
@@ -245,14 +253,13 @@ describe("searchByTypePaged('manga') con respuestas reales", () => {
     }
   });
 
-  it("obra retirada de MangaDex (berserk): se completa con MyAnimeList y va primera", async () => {
+  it("obra retirada de MangaDex (berserk): se completa con AniList y va primera", async () => {
     const spy = fakeProviders({ jikan: JIKAN_BERSERK });
     vi.stubGlobal("fetch", spy);
     const res = await searchByTypePaged("berserk", "manga", 1, "es");
-    expect(res.items[0]).toMatchObject({ title: "Berserk", externalId: "2", rating: 9.47 });
-    // Solo se añaden coincidencias exactas: "Boushoku no Berserk" no se duplica.
-    expect(res.items.filter((i) => i.externalId === "113138")).toHaveLength(0);
-    expect(spy.mock.calls.some((c) => String(c[0]).includes("api.jikan.moe"))).toBe(true);
+    expect(res.items[0]).toMatchObject({ title: "Berserk", externalId: "al-30002" });
+    expect(anilistCalls(spy)).toBe(1);
+    expect(jikanCalls(spy)).toBe(0);
   });
 
   it("type=all NO espera a MyAnimeList aunque MangaDex no tenga la obra («berserk», «dune»)", async () => {
@@ -264,40 +271,38 @@ describe("searchByTypePaged('manga') con respuestas reales", () => {
     expect(jikanCalls(spy)).toBe(0);
   });
 
-  it("un fallo del complemento se recuerda: la misma consulta no vuelve a esperar a Jikan en 10 min", async () => {
+  it("un fallo del complemento se recuerda: la misma consulta no vuelve a esperarlo en 10 min", async () => {
     vi.useFakeTimers({ toFake: ["Date"] });
-    const ok = fakeProviders();
-    const spy = vi.fn(async (input: string | URL) =>
-      String(input).includes("api.jikan.moe") ? json({}, 503) : ok(input)
-    );
+    const spy = fakeProviders({ anilistDown: true });
     vi.stubGlobal("fetch", spy);
     await searchByTypePaged("berserk", "manga", 1, "es");
-    const afterFirst = jikanCalls(spy);
+    const afterFirst = anilistCalls(spy);
     expect(afterFirst).toBeGreaterThan(0);
     await searchByTypePaged("berserk", "manga", 1, "es");
     await searchByTypePaged("Berserk", "manga", 1, "es");
-    expect(jikanCalls(spy)).toBe(afterFirst);
+    expect(anilistCalls(spy)).toBe(afterFirst);
     vi.setSystemTime(Date.now() + 11 * 60_000);
     await searchByTypePaged("berserk", "manga", 1, "es");
-    expect(jikanCalls(spy)).toBeGreaterThan(afterFirst);
+    expect(anilistCalls(spy)).toBeGreaterThan(afterFirst);
     vi.useRealTimers();
   });
 
-  it("con coincidencia exacta en MangaDex no se pregunta a MyAnimeList", async () => {
+  it("con coincidencia exacta en MangaDex no se pregunta a nadie más", async () => {
     const spy = fakeProviders();
     vi.stubGlobal("fetch", spy);
     await searchByTypePaged("naruto", "manga", 1, "es");
-    expect(spy.mock.calls.some((c) => String(c[0]).includes("api.jikan.moe"))).toBe(false);
+    expect(jikanCalls(spy) + anilistCalls(spy)).toBe(0);
   });
 
-  it("MangaDex caído → respaldo de MyAnimeList (ids numéricos, que la ficha ya abre)", async () => {
-    vi.stubGlobal("fetch", fakeProviders({ mangadexDown: true, jikan: JIKAN_BERSERK }));
-    const res = await searchByTypePaged("berserk", "manga", 1, "es");
-    expect(res.items.map((i) => i.externalId)).toEqual(["2", "113138"]);
-    expect(res.items[0].rating).toBe(9.47);
+  it("MangaDex y AniList caídos → lanza sin pasar por MyAnimeList (en serie solo añadía espera)", async () => {
+    const spy = fakeProviders({ mangadexDown: true, anilistDown: true, jikan: JIKAN_BERSERK });
+    vi.stubGlobal("fetch", spy);
+    await expect(searchByTypePaged("berserk", "manga", 1, "es")).rejects.toBeTruthy();
+    expect(jikanCalls(spy)).toBe(0);
+    expect(anilistCalls(spy)).toBe(1);
   });
 
-  it("MangaDex y MyAnimeList caídos → lanza (la ruta pinta su aviso de error)", async () => {
+  it("todo caído → lanza (la ruta pinta su aviso de error)", async () => {
     vi.stubGlobal(
       "fetch",
       vi.fn(async () => json({}, 503))
