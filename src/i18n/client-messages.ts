@@ -25,9 +25,7 @@ export const SHELL_CLIENT_NAMESPACES = [
   "auth",
   "best",
   "demo",
-  "discoverFilters.typeBadge",
   "errors",
-  "media",
   "nav",
 ] as const;
 
@@ -50,6 +48,16 @@ export const WELCOME_CLIENT_NAMESPACES = [
   "discoverFilters.typeBadge",
   "onboarding",
 ] as const;
+
+/**
+ * `/[locale]/u/**` (perfil y listas públicas, F-17): "Invitar amigos" del
+ * dueño, la denuncia con sesión (`ReportButton`) y la etiqueta de formato de
+ * `MediaCard` y el estado vacío de `MediaGrid` (`media`) en las listas
+ * públicas (era la única página del shell que los
+ * usaba). Mismo patrón que `/report`,
+ * con `u/layout.tsx`, para no cargar `report` ni `invite` en todas las públicas.
+ */
+export const PUBLIC_PROFILE_CLIENT_NAMESPACES = ["discoverFilters.typeBadge", "invite", "media", "report"] as const;
 
 /**
  * `/[locale]/media/…` (ficha pública, D-01, fuera de `(app)`): biblioteca,

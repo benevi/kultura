@@ -413,7 +413,8 @@
     "metaDescription": "Perfil de {username} en KULTURA: lo que ve, lee y juega.",
     "libraryHidden": "La biblioteca de {username} no es pública",
     "libraryHiddenFriends": "Solo la ven sus amigos. Envíale una solicitud de amistad para verla.",
-    "libraryHiddenPrivate": "Ha decidido no enseñarla a nadie."
+    "libraryHiddenPrivate": "Ha decidido no enseñarla a nadie.",
+    "genreCount": "{count, plural, one {# título} other {# títulos}}"
   },
   "lists": {
     "title": "Mis listas",
@@ -568,10 +569,10 @@
     "decline": "Rechazar",
     "removeFriend": "Eliminar amigo",
     "friends": "Amigos",
-    "shareProfile": "Compartir mi perfil",
+    "shareProfile": "Tu enlace de invitación",
     "profileLinkCopied": "¡Enlace copiado!",
     "noFriends": "Aún no tienes amigos en KULTURA",
-    "noFriendsHint": "Comparte tu perfil para que te encuentren",
+    "noFriendsHint": "Comparte tu enlace de invitación: quien se registre con él será tu amigo en KULTURA",
     "noPendingRequests": "Sin solicitudes pendientes",
     "viewProfile": "Ver perfil",
     "sendingRequest": "Enviando...",
@@ -596,6 +597,18 @@
     "groupCreated": "¡Grupo creado!",
     "groupError": "Error al crear el grupo",
     "joinGroupError": "No se pudo unir al grupo"
+  },
+  "invite": {
+    "bannerTitle": "{username} te invita a KULTURA",
+    "bannerFriends": "Crea tu cuenta gratis y seréis amigos al momento, para ver lo que guarda cada uno.",
+    "bannerText": "Tu watchlist de cine, series, anime, manga, juegos, libros y cómics. Gratis y sin anuncios.",
+    "bannerCta": "Aceptar la invitación",
+    "share": "Invitar amigos",
+    "shareTitle": "Únete a KULTURA conmigo",
+    "shareText": "Apunto aquí lo que veo, leo y juego. Si te registras con este enlace, seremos amigos en KULTURA.",
+    "copied": "Enlace de invitación copiado",
+    "copyError": "No se pudo copiar. Copia el enlace a mano:",
+    "ownerHint": "Quien se registre con tu enlace será tu amigo en KULTURA."
   },
   "suggestions": {
     "title": "Sugerencias y comentarios",
@@ -1241,6 +1254,29 @@
     "ctaText": "Guarda todo lo que ves, lees y juegas en un solo sitio, y compártelo con un enlace.",
     "ctaButton": "Crea tu colección",
     "empty": "{username} aún no ha compartido ninguna lista",
-    "emptyHint": "Cuando publique alguna, aparecerá aquí."
+    "emptyHint": "Cuando publique alguna, aparecerá aquí.",
+    "eyebrow": "Perfil en KULTURA",
+    "memberSince": "En KULTURA desde {date}",
+    "statsLabel": "Su biblioteca en números",
+    "completedCount": "{count, plural, one {# completado} other {# completados}}",
+    "favorites": "Favoritos",
+    "favoritesHint": "Puntúa títulos y los mejores saldrán aquí",
+    "favoritesEmpty": "Puntúa los títulos de tu biblioteca y tus cuatro mejores saldrán aquí, uno por formato.",
+    "favoritesEmptyAction": "Puntuar títulos",
+    "favoriteScore": "{score, number} de 5",
+    "watching": "En curso",
+    "publicLists": "Listas públicas",
+    "lockedTitle": "Entra para ver la biblioteca de {username}",
+    "lockedText": "Sus favoritos, lo que tiene en curso y sus números solo se ven con cuenta, y su dueño decide si los ve cualquiera o solo sus amigos. Crear la tuya es gratis.",
+    "openProfile": "Ver su perfil y añadirle",
+    "signIn": "Ya tengo cuenta",
+    "ownerNote": "Tus listas públicas las ve cualquiera, con o sin cuenta. Tu biblioteca: {visibility}.",
+    "ownerNoteNoAccount": "Sin cuenta solo se ven tus listas públicas.",
+    "ownerSettings": "Cambiar en Ajustes",
+    "emptyOwn": "Aún no has publicado ninguna lista",
+    "emptyOwnHint": "Haz pública una lista desde Listas y aparecerá aquí, con su enlace para compartir.",
+    "emptyOwnAction": "Ir a mis listas",
+    "reportProfile": "Denunciar este perfil",
+    "reportList": "Denunciar esta lista"
   }
 }

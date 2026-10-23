@@ -413,7 +413,8 @@
     "metaDescription": "{username}'s profile on KULTURA: what they watch, read and play.",
     "libraryHidden": "{username}'s library isn't public",
     "libraryHiddenFriends": "Only their friends can see it. Send a friend request to see it.",
-    "libraryHiddenPrivate": "They've chosen to keep it to themselves."
+    "libraryHiddenPrivate": "They've chosen to keep it to themselves.",
+    "genreCount": "{count, plural, one {# title} other {# titles}}"
   },
   "lists": {
     "title": "My lists",
@@ -568,10 +569,10 @@
     "decline": "Decline",
     "removeFriend": "Remove friend",
     "friends": "Friends",
-    "shareProfile": "Share my profile",
+    "shareProfile": "Your invite link",
     "profileLinkCopied": "Link copied!",
     "noFriends": "You don't have any friends on KULTURA yet",
-    "noFriendsHint": "Share your profile so people can find you",
+    "noFriendsHint": "Share your invite link: anyone who signs up with it becomes your friend on KULTURA",
     "noPendingRequests": "No pending requests",
     "viewProfile": "View profile",
     "sendingRequest": "Sending...",
@@ -596,6 +597,18 @@
     "groupCreated": "Group created!",
     "groupError": "Failed to create group",
     "joinGroupError": "Could not join the group"
+  },
+  "invite": {
+    "bannerTitle": "{username} invites you to KULTURA",
+    "bannerFriends": "Create a free account and you'll be friends right away, so you can see each other's library.",
+    "bannerText": "Your watchlist for movies, TV, anime, manga, games, books and comics. Free and ad-free.",
+    "bannerCta": "Accept the invite",
+    "share": "Invite friends",
+    "shareTitle": "Join me on KULTURA",
+    "shareText": "This is where I keep what I watch, read and play. Sign up with this link and we'll be friends on KULTURA.",
+    "copied": "Invite link copied",
+    "copyError": "Couldn't copy it. Copy the link by hand:",
+    "ownerHint": "Anyone who signs up with your link becomes your friend on KULTURA."
   },
   "suggestions": {
     "title": "Suggestions & Feedback",
@@ -1241,6 +1254,29 @@
     "ctaText": "Keep everything you watch, read and play in one place, and share it with a link.",
     "ctaButton": "Create your collection",
     "empty": "{username} hasn't shared any lists yet",
-    "emptyHint": "When they publish one, it will show up here."
+    "emptyHint": "When they publish one, it will show up here.",
+    "eyebrow": "Profile on KULTURA",
+    "memberSince": "On KULTURA since {date}",
+    "statsLabel": "Their library in numbers",
+    "completedCount": "{count, plural, one {# completed} other {# completed}}",
+    "favorites": "Favorites",
+    "favoritesHint": "Rate titles and the best ones will show up here",
+    "favoritesEmpty": "Rate the titles in your library and your top four will show up here, one per format.",
+    "favoritesEmptyAction": "Rate titles",
+    "favoriteScore": "{score, number} out of 5",
+    "watching": "In progress",
+    "publicLists": "Public lists",
+    "lockedTitle": "Sign in to see {username}'s library",
+    "lockedText": "Their favorites, what they're into right now and their numbers are only visible with an account, and they decide whether anyone or only their friends can see them. Creating yours is free.",
+    "openProfile": "See their profile and add them",
+    "signIn": "I already have an account",
+    "ownerNote": "Anyone can see your public lists, with or without an account. Your library: {visibility}.",
+    "ownerNoteNoAccount": "Without an account, people only see your public lists.",
+    "ownerSettings": "Change it in Settings",
+    "emptyOwn": "You haven't published any lists yet",
+    "emptyOwnHint": "Make a list public from Lists and it will show up here, with a link to share it.",
+    "emptyOwnAction": "Go to my lists",
+    "reportProfile": "Report this profile",
+    "reportList": "Report this list"
   }
 }

@@ -16,6 +16,7 @@ import type { LibraryEntry, LibraryPayload, LibraryStatus } from '@/types/librar
 import { isLibraryStatus } from '@/types/library'
 import { upsertMediaFromProvider, mediaFailureStatus } from '@/lib/media/upsert-from-provider'
 import { localeFromRequest } from '@/lib/media/request-locale'
+import { track } from '@/lib/analytics/track'
 
 /** Mapea una fila de user_media a LibraryEntry */
 function mapEntry(row: DbUserMedia): LibraryEntry {
@@ -125,6 +126,20 @@ export async function POST(request: Request): Promise<NextResponse> {
   // 5. Invalidar caches de recomendaciones — biblioteca cambió
   invalidateRecCache(user.id)
   invalidateMatchScoreCache(user.id)
+
+  // 6. D-12: embudo (1.ª acción, 3 títulos). Una vez por título y por usuario;
+  //    nunca bloquea ni falla la respuesta.
+  const mediaType = body.mediaId.split('_')[0]
+  await Promise.all([
+    track(user, 'library_add', { media_type: mediaType, status: body.status }, {
+      dedupeKey: `library_add:${user.id}:${body.mediaId}`,
+    }),
+    typeof body.score === 'number'
+      ? track(user, 'rating_set', { media_type: mediaType, score: body.score }, {
+          dedupeKey: `rating_set:${user.id}:${body.mediaId}`,
+        })
+      : null,
+  ])
 
   const entry = mapEntry(data as DbUserMedia)
   return NextResponse.json({ entry })

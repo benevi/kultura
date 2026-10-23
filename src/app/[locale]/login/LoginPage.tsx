@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
@@ -21,6 +21,12 @@ import { PasswordField } from "./PasswordField";
 import { TermsCheckbox } from "./TermsCheckbox";
 import { TERMS_VERSION } from "@/app/api/settings/identity";
 import { chromeIntentUrl, detectInAppBrowser, type InAppBrowser } from "./in-app-browser";
+import {
+  attributionEntries,
+  parseAttribution,
+  toStoredAttribution,
+  type AttributionParams,
+} from "@/lib/analytics/attribution";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -87,9 +93,45 @@ function authOrigin(): string {
   return process.env.NEXT_PUBLIC_SITE_URL ?? "";
 }
 
-/** URL del callback con el destino final ya saneado. */
-function callbackUrl(next: string): string {
-  return `${authOrigin()}/api/auth/callback?next=${encodeURIComponent(next)}`;
+/**
+ * URL del callback con el destino final ya saneado. D-12: la atribución del
+ * alta (`utm_*`, `ref`, `inv`) viaja también aquí, para Google y para el
+ * enlace del correo, sin guardar nada en el navegador.
+ */
+function callbackUrl(next: string, attribution?: AttributionParams, flow?: "signup"): string {
+  const params = new URLSearchParams({ next });
+  if (attribution) for (const [key, value] of attributionEntries(attribution)) params.set(key, value);
+  if (flow) params.set("flow", flow);
+  return `${authOrigin()}/api/auth/callback?${params.toString()}`;
+}
+
+/** Tope de espera para registrar el alta antes de ir al onboarding. */
+const SIGNUP_RECORD_TIMEOUT_MS = 3500;
+
+/**
+ * Alta inmediata (D-08): avisa al callback, con la sesión recién abierta, para
+ * que guarde la atribución, registre `signup_completed` y aplique la
+ * invitación. No cambia la navegación (sigue yendo a /welcome) y un fallo o
+ * una espera larga nunca la frenan.
+ */
+async function recordImmediateSignup(next: string, attribution: AttributionParams): Promise<void> {
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  try {
+    await Promise.race([
+      fetch(callbackUrl(next, attribution, "signup"), {
+        credentials: "same-origin",
+        redirect: "manual",
+        keepalive: true,
+      }),
+      new Promise<void>((resolve) => {
+        timer = setTimeout(resolve, SIGNUP_RECORD_TIMEOUT_MS);
+      }),
+    ]);
+  } catch {
+    // Sin red o bloqueado: el alta ya está hecha; solo se pierde la medida.
+  } finally {
+    clearTimeout(timer);
+  }
 }
 
 /** Onboarding (CRE-6) con el destino final como `next`. */
@@ -168,6 +210,8 @@ export function LoginPage({ locale }: LoginPageProps) {
   const rawNext = searchParams.get("next");
   const safeNext = safeInternalPath(rawNext, "");
   const dest = resolveAuthNext(rawNext, locale);
+  // D-12: de dónde viene el alta (por la URL; nada en cookies ni almacenamiento).
+  const attribution = useMemo(() => parseAttribution(searchParams), [searchParams]);
 
   // E-DEMO: `/api/auth/demo` vuelve aquí si la demo no está disponible; el
   // callback de auth, con su propio código de error (R1a). Antes el segundo
@@ -372,7 +416,7 @@ export function LoginPage({ locale }: LoginPageProps) {
         // R2: sin esto el enlace de confirmación volvía a la Site URL sin
         // canjear el código. El idioma viaja a los metadatos para que las
         // plantillas del correo salgan en el idioma del alta.
-        emailRedirectTo: callbackUrl(dest),
+        emailRedirectTo: callbackUrl(dest, attribution),
         // El personaje también viaja aquí: si se confirma desde otro
         // navegador, el callback lo aplica (el `localStorage` no está allí).
         // SEG-7: la aceptación la convierte en `terms_accepted_at` el
@@ -381,6 +425,8 @@ export function LoginPage({ locale }: LoginPageProps) {
           locale,
           terms_accepted: true,
           terms_version: TERMS_VERSION,
+          // D-12: canal del alta (utm, ref o direct), sin la firma `inv`.
+          attribution: toStoredAttribution(attribution),
           ...(avatarIcon ? { avatar_icon: avatarIcon } : {}),
         },
       },
@@ -392,6 +438,7 @@ export function LoginPage({ locale }: LoginPageProps) {
       // Confirmación desactivada (D-08): alta inmediata, y al onboarding
       // (CRE-6), que termina en el destino original.
       await applyPendingAvatarIcon();
+      await recordImmediateSignup(dest, attribution);
       router.replace(welcomeHref(locale, dest));
     } else {
       showSent("signup");
@@ -436,7 +483,7 @@ export function LoginPage({ locale }: LoginPageProps) {
     const supabase = await getSupabase();
     const { error } = await supabase.auth.signInWithOAuth({
       provider: "google",
-      options: { redirectTo: callbackUrl(dest) },
+      options: { redirectTo: callbackUrl(dest, attribution) },
     });
 
     // Éxito → el navegador redirige a Google, no hay nada más que hacer aquí.
@@ -465,7 +512,7 @@ export function LoginPage({ locale }: LoginPageProps) {
         ? await supabase.auth.resend({
             type: "signup",
             email: form.email,
-            options: { emailRedirectTo: callbackUrl(dest) },
+            options: { emailRedirectTo: callbackUrl(dest, attribution) },
           })
         : await supabase.auth.resetPasswordForEmail(form.email, {
             redirectTo: callbackUrl(`/${locale}/reset-password`),
@@ -506,6 +553,7 @@ export function LoginPage({ locale }: LoginPageProps) {
     const params = new URLSearchParams();
     if (nextMode !== "login") params.set("mode", nextMode);
     if (safeNext) params.set("next", safeNext);
+    for (const [key, value] of attributionEntries(attribution)) params.set(key, value);
     const query = params.toString();
     return query ? `/login?${query}` : "/login";
   }

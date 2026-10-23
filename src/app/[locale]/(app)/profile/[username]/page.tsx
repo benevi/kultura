@@ -158,6 +158,7 @@ export default async function ProfilePage({ params }: Props) {
             totalItems={stats.totalItems}
             totalCompleted={stats.totalCompleted}
             totalInProgress={stats.totalInProgress}
+            showCounters={libraryVisible}
           />
         </div>
         {currentUser && !isOwnProfile && (
