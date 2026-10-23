@@ -4,7 +4,8 @@
 // `src/app/sitemap.ts` publica una sección por id (`/sitemap/{id}.xml`) y
 // `src/app/sitemap.xml/route.ts` el índice que las enumera. Aquí se decide
 // qué entra en cada una:
-//   - pages:       portada y legales (sin /login: es noindex desde F-01).
+//   - pages:       portada, privacidad, términos, aviso legal y accesibilidad
+//                  (sin /login: es noindex desde F-01).
 //   - rankings:    hubs (/best y /best/{formato}) y los rankings con al menos
 //                  BEST_INDEX_MIN_ITEMS títulos (los cortos son noindex).
 //   - titles:      la ficha pública de cada título de esos rankings.
@@ -35,8 +36,8 @@ import {
 export const SITEMAP_SECTIONS = ["pages", "rankings", "titles", "collections"] as const;
 export type SitemapSection = (typeof SITEMAP_SECTIONS)[number];
 
-/** Páginas fijas públicas e indexables (sin /login, noindex). */
-export const STATIC_PATHS = ["/", "/privacy", "/terms"] as const;
+/** Páginas fijas públicas e indexables (sin /login, noindex). Aviso legal y accesibilidad: F-19. */
+export const STATIC_PATHS = ["/", "/privacy", "/terms", "/legal", "/accessibility"] as const;
 
 /** Títulos mínimos en listas públicas para que un perfil o una lista entren. */
 export const COLLECTION_MIN_TITLES = 5;

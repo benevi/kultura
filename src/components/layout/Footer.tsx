@@ -15,22 +15,35 @@ const FOOTER_LINK =
  * servidor no carga nada; entre páginas públicas no hay estado que conservar.
  */
 export async function Footer() {
-  const [t, tNav, locale] = await Promise.all([getTranslations("legal"), getTranslations("nav"), getLocale()]);
+  const [t, tNav, tBest, locale] = await Promise.all([
+    getTranslations("legal"),
+    getTranslations("nav"),
+    getTranslations("best"),
+    getLocale(),
+  ]);
+  // Aviso legal y accesibilidad (F-19): sus rótulos viven en `legal.nav`. Hasta
+  // que esas claves estén en master se usa el respaldo de `best.footer`; cuando
+  // lo estén, el respaldo sobra y se puede quitar.
+  const label = (key: "notice" | "accessibility") =>
+    typeof t.has === "function" && t.has(`nav.${key}`) ? t(`nav.${key}`) : tBest(`footer.${key}`);
+  const links = [
+    { href: "/privacy", text: t("footerPrivacy") },
+    { href: "/terms", text: t("footerTerms") },
+    { href: "/legal", text: label("notice") },
+    { href: "/accessibility", text: label("accessibility") },
+  ];
 
   return (
     <footer className="border-t border-surface-border pt-6 pb-8 text-text-tertiary text-sm text-center flex flex-col items-center gap-2">
       <nav aria-label={tNav("footerNav")}>
         <ul className="flex flex-wrap items-center justify-center">
-          <li>
-            <a href={`/${locale}/privacy`} className={FOOTER_LINK}>
-              {t("footerPrivacy")}
-            </a>
-          </li>
-          <li>
-            <a href={`/${locale}/terms`} className={FOOTER_LINK}>
-              {t("footerTerms")}
-            </a>
-          </li>
+          {links.map((l) => (
+            <li key={l.href}>
+              <a href={`/${locale}${l.href}`} className={FOOTER_LINK}>
+                {l.text}
+              </a>
+            </li>
+          ))}
         </ul>
       </nav>
       <span>© {new Date().getFullYear()} KULTURA</span>

@@ -9,6 +9,8 @@ vi.mock('next-intl/server', () => ({
       footerTerms: 'Términos',
       'attribution.steam': 'Carátulas y descripciones de videojuegos:',
       'attribution.steamTrademark': 'Steam y el logotipo de Steam son marcas de Valve Corporation.',
+      'footer.notice': 'Aviso legal',
+      'footer.accessibility': 'Accesibilidad',
     }
     return map[key] ?? key
   }, {
@@ -32,6 +34,30 @@ describe('Footer (D1)', () => {
     render(await Footer())
     const link = screen.getByRole('link', { name: 'Términos' })
     expect(link).toHaveAttribute('href', '/es/terms')
+  })
+
+  it('enlaza también al aviso legal y a la declaración de accesibilidad (F-19)', async () => {
+    render(await Footer())
+    expect(screen.getByRole('link', { name: 'Aviso legal' })).toHaveAttribute('href', '/es/legal')
+    expect(screen.getByRole('link', { name: 'Accesibilidad' })).toHaveAttribute('href', '/es/accessibility')
+    expect(screen.getAllByRole('link').slice(0, 4).map((a) => a.getAttribute('href'))).toEqual([
+      '/es/privacy',
+      '/es/terms',
+      '/es/legal',
+      '/es/accessibility',
+    ])
+  })
+
+  it('con las claves de F-19 en legal.nav usa esos rótulos', async () => {
+    const { getTranslations } = await import('next-intl/server')
+    vi.mocked(getTranslations).mockImplementationOnce((async () =>
+      Object.assign((key: string) => ({ 'nav.notice': 'Aviso legal (F-19)', 'nav.accessibility': 'Accesibilidad (F-19)' })[key] ?? key, {
+        has: (key: string) => key.startsWith('nav.'),
+        rich: (_k: string, tags: Record<string, (c: string) => React.ReactNode>) => [tags.tmdb('TMDB'), tags.rawg('RAWG')],
+      })) as never)
+    render(await Footer())
+    expect(screen.getByRole('link', { name: 'Aviso legal (F-19)' })).toHaveAttribute('href', '/es/legal')
+    expect(screen.getByRole('link', { name: 'Accesibilidad (F-19)' })).toHaveAttribute('href', '/es/accessibility')
   })
 
   it('muestra el copyright', async () => {

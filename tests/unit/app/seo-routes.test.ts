@@ -34,7 +34,7 @@ describe("robots y sitemap", () => {
     for (const id of ids) expect(xml).toContain(`<loc>https://x.app/sitemap/${id}.xml</loc>`);
   });
 
-  it("páginas fijas: portada y legales en los dos idiomas, sin /login (noindex)", async () => {
+  it("páginas fijas: portada y las cuatro legales en los dos idiomas, sin /login (noindex)", async () => {
     vi.stubEnv("NEXT_PUBLIC_SITE_URL", "https://x.app");
     const urls = (await sitemap({ id: "pages" })).map((e) => e.url);
     expect(urls).toEqual([
@@ -44,6 +44,10 @@ describe("robots y sitemap", () => {
       "https://x.app/en/privacy",
       "https://x.app/es/terms",
       "https://x.app/en/terms",
+      "https://x.app/es/legal",
+      "https://x.app/en/legal",
+      "https://x.app/es/accessibility",
+      "https://x.app/en/accessibility",
     ]);
     expect(urls.some((u) => u.includes("/login"))).toBe(false);
     expect(urls.some((u) => /library|discover|settings/.test(u))).toBe(false);

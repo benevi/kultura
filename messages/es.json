@@ -1256,6 +1256,10 @@
       "onWhatsApp": "Compartir en WhatsApp",
       "text": "{title}: el ranking en KULTURA"
     },
+    "footer": {
+      "notice": "Aviso legal",
+      "accessibility": "Accesibilidad"
+    },
     "attribution": {
       "steam": "Carátulas y descripciones de videojuegos:",
       "steamTrademark": "Steam y el logotipo de Steam son marcas de Valve Corporation; KULTURA no está afiliada a Valve."
