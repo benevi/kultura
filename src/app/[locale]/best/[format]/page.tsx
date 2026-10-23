@@ -46,7 +46,9 @@ export default async function BestFormatHubPage({ params }: Props) {
   const locale = bestLocale(rawLocale);
   const t = await getTranslations({ locale, namespace: "best" });
   const years = bestYears();
-  const rankings = await Promise.all(years.map((y) => getBestRanking(format, y, locale).catch(() => null)));
+  // Sin `catch`: si un proveedor falla, la página da error y se mantiene la
+  // última versión buena, en vez de guardar un hub con huecos.
+  const rankings = await Promise.all(years.map((y) => getBestRanking(format, y, locale)));
   const title = t(`formatHub.title.${format}`);
   const crumbs: Crumb[] = [
     { name: t("breadcrumb.home"), path: "/" },
@@ -72,7 +74,7 @@ export default async function BestFormatHubPage({ params }: Props) {
 
         {years.map((year, i) => {
           const ranking = rankings[i];
-          const show = ranking && isIndexableRanking(ranking.items.length);
+          const show = isIndexableRanking(ranking.items.length);
           const yearTitle = t(`title.${format}`, { year });
           return (
             <section key={year} aria-labelledby={`year-${year}`} className="flex flex-col gap-4">
@@ -94,12 +96,10 @@ export default async function BestFormatHubPage({ params }: Props) {
               </div>
               {show ? (
                 <BestTopRow items={ranking.items} locale={locale} label={t("hub.top", { year })} />
-              ) : ranking ? (
+              ) : (
                 <p className="text-[14px] text-text-tertiary">
                   {t("provisional", { count: ranking.items.length })}
                 </p>
-              ) : (
-                <p className="text-[14px] text-text-tertiary">{t("hub.unavailable")}</p>
               )}
             </section>
           );

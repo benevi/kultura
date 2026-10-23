@@ -449,7 +449,9 @@ export function getBestRanking(format: BestFormat, year: number, locale: string)
 /**
  * Ranking que enseñan los hubs para un formato: el del año más reciente con
  * lista indexable (a primeros de año el del año en curso aún es corto).
- * `null` si ninguno respondió.
+ * `null` si ninguno llega al mínimo. Si un proveedor falla, LANZA: la página
+ * da error y se sigue sirviendo la última versión buena en vez de fijar un
+ * hub a medias.
  */
 export async function getFeaturedRanking(
   format: BestFormat,
@@ -457,8 +459,8 @@ export async function getFeaturedRanking(
   today: Date = new Date(),
 ): Promise<{ year: number; ranking: BestRanking } | null> {
   for (const year of bestYears(today)) {
-    const ranking = await getBestRanking(format, year, locale).catch(() => null);
-    if (ranking && isIndexableRanking(ranking.items.length)) return { year, ranking };
+    const ranking = await getBestRanking(format, year, locale);
+    if (isIndexableRanking(ranking.items.length)) return { year, ranking };
   }
   return null;
 }

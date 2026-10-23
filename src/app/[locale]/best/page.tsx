@@ -31,6 +31,7 @@ export default async function BestHubPage({ params }: Props) {
   const locale = bestLocale((await params).locale);
   const t = await getTranslations({ locale, namespace: "best" });
   const years = bestYears();
+  // Si un proveedor falla, `getFeaturedRanking` lanza: error y versión anterior.
   const featured = await Promise.all(BEST_FORMATS.map((f) => getFeaturedRanking(f, locale)));
   const crumbs: Crumb[] = [
     { name: t("breadcrumb.home"), path: "/" },
@@ -74,9 +75,7 @@ export default async function BestHubPage({ params }: Props) {
                   locale={locale}
                   label={`${t("hub.top", { year: f.year })} · ${t(`chip.${format}`)}`}
                 />
-              ) : (
-                <p className="text-[14px] text-text-tertiary">{t("hub.unavailable")}</p>
-              )}
+              ) : null}
               <BestYearNav
                 locale={locale}
                 format={format}

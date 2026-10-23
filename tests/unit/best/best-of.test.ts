@@ -291,4 +291,9 @@ describe("best-of — getBestRanking (F-16: criterio y fecha visibles)", () => {
     expect(f?.year).toBe(2025);
     expect(f?.ranking.items).toHaveLength(12);
   });
+
+  it("hubs: si el proveedor falla, lanza en vez de devolver un hueco", async () => {
+    vi.mocked(fetchDiscoverData).mockResolvedValue(failed as never);
+    await expect(getFeaturedRanking("anime", "es", today)).rejects.toThrow();
+  });
 });
