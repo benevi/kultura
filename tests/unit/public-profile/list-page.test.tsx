@@ -29,6 +29,7 @@ const h = vi.hoisted(() => {
       MediaGrid: marker('MediaGrid'),
       Avatar: marker('Avatar'),
       Header: marker('Header'),
+      SignedInBar: marker('SignedInBar'),
       Footer: marker('Footer'),
     },
   }
@@ -46,7 +47,11 @@ vi.mock('@/lib/social/public-collection', () => ({
 }))
 vi.mock('@/lib/social/friends', () => ({ isModerationV2: () => h.v2 }))
 vi.mock('@/components/social/ReportButton', () => ({ ReportButton: h.M.ReportButton }))
-vi.mock('@/components/collection/PublicCollection', () => ({ SignUpCta: h.M.SignUpCta, FormatLabel: h.M.FormatLabel }))
+vi.mock('@/components/collection/PublicCollection', () => ({
+  SignUpCta: h.M.SignUpCta,
+  FormatLabel: h.M.FormatLabel,
+  SignedInBar: h.M.SignedInBar,
+}))
 vi.mock('@/components/media/MediaGrid', () => ({ MediaGrid: h.M.MediaGrid }))
 vi.mock('@/components/ui/Avatar', () => ({ Avatar: h.M.Avatar }))
 vi.mock('@/components/layout/Header', () => ({ Header: h.M.Header }))
@@ -108,6 +113,9 @@ describe('/u/[username]/l/[id]', () => {
     const tree = await page()
     expect(all(tree, h.M.ReportButton)[0]).toMatchObject({ targetType: 'list', targetId: LIST.list.id })
     expect(all(tree, h.M.SignUpCta)).toHaveLength(0)
+    // Con sesión, sin la cabecera pública de «Registrarse».
+    expect(all(tree, h.M.Header)).toHaveLength(0)
+    expect(all(tree, h.M.SignedInBar)).toHaveLength(1)
     h.v2 = false
     expect(all(await page(), h.M.ReportButton)).toHaveLength(0)
   })

@@ -14,6 +14,7 @@ import { posterGradient } from '@/lib/images/poster-gradient'
 import { formatColor } from '@/lib/landing/immersive'
 import { Link } from '@/i18n/navigation'
 import { IconLibrary } from '@/components/icons'
+import { Logo } from '@/components/layout/Logo'
 import type {
   FavoriteItem,
   LibraryShowcase,
@@ -112,6 +113,29 @@ export async function CollectionOwner({
   )
 }
 
+// ── Cabecera de página con sesión ───────────────────────────────────────
+
+/**
+ * Con sesión, la cabecera pública (Entrar / Registrarse) no tiene sentido:
+ * logotipo y vuelta a Inicio, con el mismo alto y fondo que `Header`. Sin
+ * componentes cliente, así no carga textos de navegación en esta zona.
+ */
+export async function SignedInBar() {
+  const t = await getTranslations('nav')
+  return (
+    <header className="sticky top-0 z-50 bg-surface-default border-b border-surface-border">
+      <div className="flex h-14 justify-between items-center gap-2 max-w-6xl mx-auto px-4 md:px-8">
+        <Link href="/home" className="shrink-0 inline-flex items-center min-h-11" aria-label="KULTURA">
+          <Logo size={24} />
+        </Link>
+        <KButton asChild variant="secondary" size="md" className="h-9 px-3 text-xs sm:h-10 sm:px-4 sm:text-sm">
+          <Link href="/home">{t('home')}</Link>
+        </KButton>
+      </div>
+    </header>
+  )
+}
+
 // ── Invitación ──────────────────────────────────────────────────────────
 
 /** "{username} te invita a KULTURA" (CRE-7), para quien llega sin cuenta con `?ref=`. */
@@ -127,7 +151,7 @@ export async function InviteBanner({
 }) {
   const t = await getTranslations('invite')
   return (
-    <section
+    <aside
       aria-labelledby="invite-title"
       className="relative rounded-bento-xl bg-surface-default p-6 md:p-8 flex flex-col md:flex-row md:items-center gap-5 justify-between"
       style={{
@@ -136,9 +160,10 @@ export async function InviteBanner({
       }}
     >
       <div>
-        <h2 id="invite-title" className="font-display text-2xl md:text-3xl font-extrabold text-text-primary">
+        {/* No es un encabezado: el banner va antes del h1 de la página. */}
+        <p id="invite-title" className="font-display text-2xl md:text-3xl font-extrabold text-text-primary">
           {t('bannerTitle', { username })}
-        </h2>
+        </p>
         <p className="text-[15px] text-text-secondary mt-2 max-w-prose">
           {friendsOnSignup ? t('bannerFriends') : t('bannerText')}
         </p>
@@ -146,7 +171,7 @@ export async function InviteBanner({
       <KButton asChild size="lg" className="flex-shrink-0 self-start md:self-auto">
         <Link href={registerHref}>{t('bannerCta')}</Link>
       </KButton>
-    </section>
+    </aside>
   )
 }
 
@@ -191,6 +216,22 @@ export async function FavoritesGrid({
   if (favorites.length === 0 && !isOwner) return null
   const t = await getTranslations('collection')
   const tm = await getTranslations('media')
+
+  // Dueño sin ninguna nota: una tarjeta compacta, no cuatro huecos 2:3 vacíos.
+  if (favorites.length === 0) {
+    return (
+      <section aria-labelledby="favorites-title" className="flex flex-col gap-4">
+        <h2 id="favorites-title" className={SECTION_TITLE}>{t('favorites')}</h2>
+        <div className="flex flex-col gap-3 rounded-20 bg-surface-default px-6 py-5 sm:flex-row sm:items-center sm:justify-between">
+          <p className="text-sm text-text-secondary">{t('favoritesEmpty')}</p>
+          <KButton asChild size="sm" className="self-start sm:self-auto flex-shrink-0">
+            <Link href="/library">{t('favoritesEmptyAction')}</Link>
+          </KButton>
+        </div>
+      </section>
+    )
+  }
+
   // Estado vacío diseñado: el dueño ve los huecos que le faltan y qué hacer.
   const placeholders = isOwner ? Math.max(0, 4 - favorites.length) : 0
 

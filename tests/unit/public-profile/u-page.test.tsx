@@ -8,6 +8,9 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { isValidElement, type ReactElement, type ReactNode } from 'react'
 
+const GOOD = '1790000000.' + 'a'.repeat(32)
+const BAD = '1790000000.' + 'b'.repeat(32)
+
 const h = vi.hoisted(() => {
   const marker = (name: string) => {
     const fn = (props: Record<string, unknown>) => ({ marker: name, props })
@@ -44,6 +47,7 @@ const h = vi.hoisted(() => {
       Link: marker('Link'),
       KButton: marker('KButton'),
       Header: marker('Header'),
+      SignedInBar: marker('SignedInBar'),
       Footer: marker('Footer'),
     },
   }
@@ -66,7 +70,7 @@ vi.mock('@/lib/social/public-collection', () => ({
 }))
 vi.mock('@/lib/analytics/invite', () => ({
   invitePath: (locale: string, u: { username: string }) => `/${locale}/u/${u.username}?ref=${u.username}&inv=firma`,
-  isValidInviteSignature: (_id: string, sig?: string) => sig === 'a'.repeat(20),
+  isValidInviteSignature: (_id: string, ref?: string, sig?: string) => ref === 'ana' && sig === '1790000000.' + 'a'.repeat(32),
 }))
 vi.mock('@/components/collection/PublicCollection', () => ({
   ...h.M,
@@ -141,6 +145,7 @@ beforeEach(() => {
 describe('/u sin sesión', () => {
   it('nunca consulta la biblioteca ni las columnas privadas del dueño, y explica que hace falta cuenta', async () => {
     const tree = await render()
+    expect(all(tree, h.M.Header)).toHaveLength(1)
     expect(h.canRead).not.toHaveBeenCalled()
     expect(h.getShowcase).not.toHaveBeenCalled()
     expect(h.details).not.toHaveBeenCalled()
@@ -153,7 +158,7 @@ describe('/u sin sesión', () => {
   })
 
   it('invitación firmada: banner "te invita" con amistad y el registro lleva ref + inv', async () => {
-    const inv = 'a'.repeat(20)
+    const inv = GOOD
     const tree = await render({ ref: 'ana', inv, utm_source: 'Reddit' })
     const [banner] = all(tree, h.M.InviteBanner)
     expect(banner.friendsOnSignup).toBe(true)
@@ -162,7 +167,7 @@ describe('/u sin sesión', () => {
   })
 
   it('firma que no cuadra: banner sin prometer amistad (y la firma no viaja si no tiene formato)', async () => {
-    const tree = await render({ ref: 'ana', inv: 'b'.repeat(20) })
+    const tree = await render({ ref: 'ana', inv: BAD })
     const [banner] = all(tree, h.M.InviteBanner)
     expect(banner.friendsOnSignup).toBe(false)
     const bad = all(await render({ ref: 'ana', inv: 'nope' }), h.M.InviteBanner)[0]
@@ -190,6 +195,12 @@ describe('/u sin sesión', () => {
 describe('/u con sesión', () => {
   beforeEach(() => {
     h.user = { id: 'visitor' }
+  })
+
+  it('con sesión, la cabecera no ofrece «Registrarse» (barra con sesión)', async () => {
+    const tree = await render()
+    expect(all(tree, h.M.Header)).toHaveLength(0)
+    expect(all(tree, h.M.SignedInBar)).toHaveLength(1)
   })
 
   it('con permiso: contadores, favoritos (con prioridad) y denuncia con el botón de F-11', async () => {
@@ -226,6 +237,9 @@ describe('/u con sesión', () => {
     expect(all(tree, h.M.FavoritesGrid)).toHaveLength(0)
     const [locked] = all(tree, h.M.LockedLibrary)
     expect(locked.text).toBe('libraryHiddenFriends')
+    // «Ver su perfil y añadirle» una sola vez (en la cabecera), no también aquí.
+    expect(locked.children).toBeUndefined()
+    expect(all(tree, h.M.Link).filter((l) => l.href === '/profile/ana')).toHaveLength(1)
     expect(all(tree, h.M.InviteBanner)).toHaveLength(0)
   })
 
@@ -235,7 +249,10 @@ describe('/u con sesión', () => {
     expect(h.canRead).not.toHaveBeenCalled()
     expect(all(tree, h.M.InviteLinkButton)[0].path).toBe('/es/u/ana?ref=ana&inv=firma')
     expect(all(tree, h.M.FavoritesGrid)[0].isOwner).toBe(true)
-    expect(all(tree, h.M.Link).map((l) => l.href)).toContain('/settings')
+    const note = all(tree, h.M.Link).find((l) => l.href === '/settings' && typeof l.className === 'string')
+    // Enlace en línea de la nota: área táctil sin abrir hueco entre líneas.
+    expect(String(note?.className)).toMatch(/\bpy-3\b.*-my-3|-my-3.*\bpy-3\b/)
+    expect(String(note?.className)).not.toContain('min-h-11')
     expect(all(tree, h.M.ReportButton)).toHaveLength(0)
   })
 })
@@ -244,8 +261,8 @@ describe('/u: nombres antiguos y metadatos', () => {
   it('un nombre antiguo redirige (308) conservando la invitación', async () => {
     h.collection = null
     h.renamed.mockResolvedValue('ana_nueva')
-    await expect(render({ ref: 'ana_vieja', inv: 'a'.repeat(20) }, 'ana_vieja')).rejects.toThrow(
-      `308 /es/u/ana_nueva?ref=ana_vieja&inv=${'a'.repeat(20)}`,
+    await expect(render({ ref: 'ana_vieja', inv: GOOD }, 'ana_vieja')).rejects.toThrow(
+      `308 /es/u/ana_nueva?ref=ana_vieja&inv=${GOOD}`,
     )
   })
 

@@ -13,7 +13,7 @@ import { Header } from '@/components/layout/Header'
 import { Footer } from '@/components/layout/Footer'
 import { Avatar } from '@/components/ui/Avatar'
 import { MediaGrid } from '@/components/media/MediaGrid'
-import { FormatLabel, SignUpCta } from '@/components/collection/PublicCollection'
+import { FormatLabel, SignedInBar, SignUpCta } from '@/components/collection/PublicCollection'
 import { ReportButton } from '@/components/social/ReportButton'
 import { Link } from '@/i18n/navigation'
 import { createClient } from '@/lib/supabase/server'
@@ -92,7 +92,7 @@ export default async function PublicListPage({ params }: Props) {
 
   return (
     <div className="min-h-screen flex flex-col">
-      <Header />
+      {signedIn ? <SignedInBar /> : <Header />}
       <main id="main" className="flex-1 w-full max-w-4xl mx-auto px-4 md:px-8 py-10 flex flex-col gap-10">
         <header className="flex flex-col gap-3">
           <div>

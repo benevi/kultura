@@ -390,9 +390,11 @@ type ScoredRow = { media_id: string; score: number | null; updated_at?: string |
 export function pickFavorites(candidates: FavoriteItem[], count = FAVORITES_COUNT): FavoriteItem[] {
   const ranked = [...candidates].sort((a, b) => b.score - a.score)
   const withPoster = ranked.filter((c) => c.poster)
+  // Uno sin portada solo entra si no hay `count` con portada.
+  const pools = withPoster.length >= count ? [withPoster] : [withPoster, ranked]
   const picked: FavoriteItem[] = []
   const formats = new Set<string>()
-  for (const pool of [withPoster, ranked]) {
+  for (const pool of pools) {
     for (const c of pool) {
       if (picked.length >= count) break
       if (formats.has(c.type) || picked.includes(c)) continue
@@ -400,7 +402,7 @@ export function pickFavorites(candidates: FavoriteItem[], count = FAVORITES_COUN
       formats.add(c.type)
     }
   }
-  for (const pool of [withPoster, ranked]) {
+  for (const pool of pools) {
     for (const c of pool) {
       if (picked.length >= count) break
       if (!picked.includes(c)) picked.push(c)
