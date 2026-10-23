@@ -65,7 +65,7 @@ function FindArt({ p, placeholder }: { p: (i: number) => Poster | null; placehol
 
 function TrackArt({ p, status }: { p: (i: number) => Poster | null; status: string }) {
   return (
-    <div aria-hidden="true" className="flex items-end gap-4">
+    <div aria-hidden="true" className="flex flex-wrap items-end gap-4">
       <div className="w-24 shrink-0" style={{ rotate: "-3deg" }}>
         <ArtPoster item={p(3)} seed="track-0" sizes="96px" />
       </div>
@@ -83,9 +83,14 @@ function TrackArt({ p, status }: { p: (i: number) => Poster | null; status: stri
   );
 }
 
+/**
+ * Avatares + lista. A 768 px la card de tres columnas mide ~165 px por dentro
+ * y la composición (~230 px) desbordaba la PÁGINA 8 px: ahora la lista baja a
+ * otra línea y la card recorta lo que sobre (`overflow-hidden`).
+ */
 function ShareArt({ p }: { p: (i: number) => Poster | null }) {
   return (
-    <div aria-hidden="true" className="flex items-center gap-5">
+    <div aria-hidden="true" className="flex flex-wrap items-center gap-x-5 gap-y-3">
       <div className="flex">
         {AVATARS.map(([a, b], i) => (
           <span
@@ -127,7 +132,7 @@ export function HowItWorks({ heading, steps, statusLabel, searchPlaceholder, pos
       </h2>
       <ol className="grid grid-cols-1 gap-5 md:grid-cols-3">
         {STEP_KEYS.map((key, i) => (
-          <li key={key} className="flex flex-col gap-6 rounded-bento bg-surface-default p-7">
+          <li key={key} className="flex min-w-0 flex-col gap-6 overflow-hidden rounded-bento bg-surface-default p-7">
             <span
               aria-hidden="true"
               className={cn(

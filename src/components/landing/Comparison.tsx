@@ -173,7 +173,7 @@ export function Comparison({
               </th>
               <th scope="col" className="bg-surface-elevated px-1 py-3 text-center">
                 <span
-                  className="inline-block rotate-[-4deg] rounded-full bg-accent-lime px-2 py-1 font-display text-xs font-extrabold leading-none text-on-accent-lime"
+                  className="inline-block rotate-[-4deg] rounded-full bg-accent-lime px-1.5 py-1 font-display text-[11px] font-extrabold leading-none text-on-accent-lime"
                   style={STICKER_SHADOW}
                 >
                   KULTURA
