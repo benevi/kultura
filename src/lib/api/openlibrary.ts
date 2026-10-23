@@ -222,6 +222,29 @@ export async function searchOpenLibrary(
 }
 
 /**
+ * Búsqueda por TÍTULO (`title=`) en vez de general (`q=`). Medido el
+ * 2026-10-23: 0,1-0,9 s cuando `q=` tarda 4-8 s en sus picos (la general
+ * busca también en autores, temas y texto). Es el respaldo de la búsqueda
+ * de libros cuando `q=` no responde a tiempo (`search.ts`).
+ */
+export async function searchOpenLibraryByTitle(
+  title: string,
+  page = 1,
+  limit = OPEN_LIBRARY_PAGE_SIZE
+): Promise<OpenLibraryResponse> {
+  return openLibraryFetch<OpenLibraryResponse>(
+    "/search.json",
+    {
+      title,
+      page: String(Math.max(1, page)),
+      limit: String(limit),
+      fields: LIST_FIELDS,
+    },
+    openLibrarySearchSchema
+  );
+}
+
+/**
  * `numFound` → páginas navegables. El total es real, así que el cálculo sirve;
  * `pageSize` debe ser la VENTANA que consume cada página, no lo que se enseña,
  * porque es lo que determina por dónde empieza la siguiente.

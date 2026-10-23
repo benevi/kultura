@@ -37,10 +37,15 @@ import {
   type MangaDexStats,
 } from "./mangadex";
 import { searchMangaJikan } from "./jikan";
-import { searchOpenLibrary, openLibraryTotalPages } from "./openlibrary";
+import {
+  openLibraryTotalPages,
+  searchOpenLibrary,
+  searchOpenLibraryByTitle,
+  type OpenLibraryResponse,
+} from "./openlibrary";
 import { searchGames } from "./rawg";
 import { COMIC_SEARCH_PAGE_SIZE, searchComicVolumes } from "./comicvine";
-import { searchComicsGoogleBooks } from "./googlebooks";
+import { searchComicsGoogleBooks, searchGoogleBooks } from "./googlebooks";
 import {
   normalizeMovie,
   normalizeTV,
@@ -217,6 +222,86 @@ async function searchMangaPage(
   return { items: rankSearchResults(query, items), totalPages, hasMore: page < totalPages };
 }
 
+// ── Libros: respaldo cuando Open Library va lenta ────────────────────────────
+
+/**
+ * Si la búsqueda general de Open Library (`q=`) no ha respondido en este
+ * tiempo, se lanza en paralelo la búsqueda por título (`title=`) y gana la
+ * primera que responda. `rel.py` contra producción dio `don quijote` → error
+ * a los 8,2 s (plazo agotado de `q=`).
+ */
+export const BOOK_HEDGE_MS = 2500;
+
+/**
+ * La primera promesa que se cumpla de `primary` y de `fallback()`, que se
+ * lanza al vencer `delayMs` o en cuanto `primary` falla. Si fallan las dos,
+ * rechaza con el error de `primary`.
+ */
+function hedged<T>(primary: Promise<T>, fallback: () => Promise<T>, delayMs: number): Promise<T> {
+  return new Promise<T>((resolve, reject) => {
+    let done = false;
+    let primaryError: unknown;
+    let primaryFailed = false;
+    let fallbackStarted = false;
+    let fallbackFailed = false;
+    const finish = (value: T) => {
+      if (done) return;
+      done = true;
+      clearTimeout(timer);
+      resolve(value);
+    };
+    const maybeReject = () => {
+      if (!done && primaryFailed && fallbackStarted && fallbackFailed) {
+        done = true;
+        reject(primaryError);
+      }
+    };
+    const startFallback = () => {
+      if (fallbackStarted || done) return;
+      fallbackStarted = true;
+      fallback().then(finish, () => {
+        fallbackFailed = true;
+        maybeReject();
+      });
+    };
+    const timer = setTimeout(startFallback, delayMs);
+    primary.then(finish, (e) => {
+      primaryFailed = true;
+      primaryError = e;
+      clearTimeout(timer);
+      startFallback();
+      maybeReject();
+    });
+  });
+}
+
+function openLibraryPage(query: string, page: number, r: OpenLibraryResponse): SearchPage {
+  const totalPages = openLibraryTotalPages(r.numFound);
+  return {
+    items: rankSearchResults(query, (r.docs ?? []).map((doc) => normalizeBookOpenLibrary(doc))),
+    totalPages,
+    hasMore: page < totalPages,
+  };
+}
+
+/**
+ * Libros: Open Library (`q=`); si tarda, por título; si Open Library entera
+ * falla, Google Books (que desde Vercel responde 503 sin clave propia).
+ */
+async function searchBookPage(query: string, page: number, locale?: string | null): Promise<SearchPage> {
+  const primary = searchOpenLibrary(query, page).then((r) => openLibraryPage(query, page, r));
+  const fallback = () =>
+    searchOpenLibraryByTitle(query, page)
+      .then((r) => openLibraryPage(query, page, r))
+      .catch(async () => {
+        const g = await searchGoogleBooks(query, page, {}, locale);
+        const items = (g.items ?? []).map((raw) => normalizeBookGoogle(raw));
+        const totalPages = Math.max(Math.ceil((g.totalItems ?? 0) / SEARCH_PAGE_SIZE), 1);
+        return { items: rankSearchResults(query, items), totalPages, hasMore: page < totalPages };
+      });
+  return hedged(primary, fallback, BOOK_HEDGE_MS);
+}
+
 // ── Cómic (DAT-6) ─────────────────────────────────────────────────────────────
 
 /**
@@ -340,25 +425,12 @@ export async function searchByTypePaged(
     }
     case "manga":
       return searchMangaPage(query, page, locale, opts);
-    case "book": {
+    case "book":
       // E-BOOKS-HIBRIDO: el buscador va contra el MISMO proveedor que el
-      // catálogo. Si fuese contra otro, buscar y navegar serían dos mundos
-      // distintos, y un fallo de cuota de Google rompería el buscador mientras
-      // el catálogo sigue funcionando. Sin acotar por idioma: quien busca un
-      // título concreto debe encontrarlo aunque solo exista el original.
-      // `numFound` es un total real, así que la paginación no promete páginas
-      // que el proveedor no sirve.
-      const r = await searchOpenLibrary(query, page);
-      const totalPages = openLibraryTotalPages(r.numFound);
-      return {
-        items: rankSearchResults(
-          query,
-          (r.docs ?? []).map((doc) => normalizeBookOpenLibrary(doc))
-        ),
-        totalPages,
-        hasMore: page < totalPages,
-      };
-    }
+      // catálogo (Open Library), sin acotar por idioma: quien busca un título
+      // concreto debe encontrarlo aunque solo exista el original. `numFound`
+      // es un total real. F-13: con respaldo si Open Library tarda o cae.
+      return searchBookPage(query, page, locale);
     case "game": {
       const r = await searchGames(query, page);
       const totalPages = Math.max(
