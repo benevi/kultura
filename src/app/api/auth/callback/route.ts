@@ -7,6 +7,8 @@ import { isValidAvatarIcon } from "@/components/icons/avatars";
 import { isDemoUser } from "@/lib/demo";
 import { localeFromPath, resolveAuthNext } from "@/lib/utils/safe-redirect";
 import { needsOnboarding } from "@/app/api/settings/account-state";
+import { parseAttribution, type AttributionParams } from "@/lib/analytics/attribution";
+import { recordSignup } from "@/lib/analytics/signup";
 import {
   getCallbackErrorCode,
   getProviderErrorCode,
@@ -32,10 +34,10 @@ type ServerClient = ReturnType<typeof createClient>;
  * después (p. ej. si el usuario lo quita en Ajustes). Un fallo nunca impide
  * entrar: el personaje se puede cambiar en Ajustes.
  */
-async function applySignupAvatar(supabase: ServerClient): Promise<void> {
+type SessionUser = NonNullable<Awaited<ReturnType<ServerClient["auth"]["getUser"]>>["data"]["user"]>;
+
+async function applySignupAvatar(supabase: ServerClient, user: SessionUser | null): Promise<void> {
   try {
-    const { data } = await supabase.auth.getUser();
-    const user = data.user;
     const icon = user?.user_metadata?.avatar_icon;
     if (!user || icon === undefined || icon === null) return;
     if (isValidAvatarIcon(icon) && !isDemoUser(user)) {
@@ -55,10 +57,70 @@ async function applySignupAvatar(supabase: ServerClient): Promise<void> {
  * ¿Cuenta sin onboarding? (F-12). Cualquier fallo → no: entrar nunca depende
  * de esto, y el onboarding se puede saltar.
  */
-async function shouldWelcome(supabase: ServerClient): Promise<boolean> {
+async function shouldWelcome(supabase: ServerClient, user: SessionUser | null): Promise<boolean> {
+  try {
+    return user ? await needsOnboarding(supabase, user) : false;
+  } catch {
+    return false;
+  }
+}
+
+async function sessionUser(supabase: ServerClient): Promise<SessionUser | null> {
   try {
     const { data } = await supabase.auth.getUser();
-    return data.user ? await needsOnboarding(supabase, data.user) : false;
+    return data.user ?? null;
+  } catch {
+    return null;
+  }
+}
+
+/** `flow=signup` solo vale para una cuenta recién creada (no para reabrir el alta). */
+const FRESH_ACCOUNT_MS = 15 * 60 * 1000;
+
+function isFreshAccount(user: SessionUser): boolean {
+  const created = Date.parse(user.created_at ?? "");
+  return Number.isFinite(created) && Date.now() - created < FRESH_ACCOUNT_MS;
+}
+
+/** Lo más que espera el alta por la atribución y la invitación (nunca bloquea entrar). */
+const SIGNUP_BUDGET_MS = 3000;
+
+/**
+ * D-12 / CRE-7: primera entrada de una cuenta nueva → atribución (`utm_*`,
+ * `ref`), evento `signup_completed` y amistad con quien invitó (si el enlace
+ * venía firmado). Con un tope de tiempo y sin lanzar: entrar va primero.
+ */
+async function recordNewAccount(
+  supabase: ServerClient,
+  user: SessionUser,
+  attribution: AttributionParams,
+): Promise<void> {
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  try {
+    await Promise.race([
+      recordSignup(supabase, user, attribution),
+      new Promise<void>((resolve) => {
+        timer = setTimeout(resolve, SIGNUP_BUDGET_MS);
+      }),
+    ]);
+  } catch {
+    // Medir nunca impide entrar.
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+/**
+ * ¿Lo pide la propia web? `Sec-Fetch-Site` (todos los navegadores actuales);
+ * si no viene, el `Referer` tiene que ser de este mismo origen.
+ */
+function isSameOriginRequest(request: NextRequest, origin: string): boolean {
+  const site = request.headers.get("sec-fetch-site");
+  if (site) return site === "same-origin";
+  const referer = request.headers.get("referer");
+  if (!referer) return false;
+  try {
+    return new URL(referer).origin === origin;
   } catch {
     return false;
   }
@@ -98,14 +160,27 @@ export async function GET(request: NextRequest) {
   const rawNext = searchParams.get("next");
   const locale = pickLocale(request, rawNext);
   const type = searchParams.get("type");
+  // D-12: `utm_*`, `ref` e `inv` llegan como parámetros de esta URL, que
+  // arma el login (vuelta de Google, enlace del correo y alta inmediata).
+  const attribution = parseAttribution(searchParams);
+  // `flow=signup` solo desde la propia web: una imagen o un enlace de otro
+  // sitio no puede "aceptar" una invitación en nombre de una cuenta recién
+  // creada (CSRF).
+  const signupFlow = searchParams.get("flow") === "signup" && isSameOriginRequest(request, origin);
 
   const fail = (code: CallbackErrorCode) =>
     NextResponse.redirect(`${origin}/${locale}/login?error=${code}`);
   const done = async (supabase?: ServerClient) => {
     let welcome = false;
     if (supabase && type !== "recovery" && type !== "email_change") {
-      await applySignupAvatar(supabase);
-      welcome = await shouldWelcome(supabase);
+      const user = await sessionUser(supabase);
+      await applySignupAvatar(supabase, user);
+      welcome = await shouldWelcome(supabase, user);
+      // El alta inmediata por correo (D-08) llega aquí desde el login justo
+      // después de `signUp`: es una cuenta nueva aunque falle la lectura del
+      // estado de onboarding, y sigue yendo a /welcome como antes.
+      if (signupFlow && user && !isDemoUser(user) && isFreshAccount(user)) welcome = true;
+      if (welcome && user) await recordNewAccount(supabase, user, attribution);
     }
     const next =
       type === "recovery" ? `/${locale}/reset-password` : resolveAuthNext(rawNext, locale);
@@ -129,6 +204,11 @@ export async function GET(request: NextRequest) {
   const tokenHash = searchParams.get("token_hash");
 
   if (!code && !tokenHash && searchParams.get("message")) return done();
+
+  // Alta inmediata (confirmación desactivada, D-08): `signUp` ya abrió la
+  // sesión en el navegador; aquí solo se registra el alta y se va a /welcome.
+  // Sin sesión, al destino como cualquier otra vuelta (que pedirá entrar).
+  if (!code && !tokenHash && signupFlow) return done(createClient());
 
   if (tokenHash) {
     if (!isOtpType(type)) return fail("auth_callback_error");

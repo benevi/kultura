@@ -127,7 +127,8 @@ describe("LoginPage — modo register", () => {
         options: {
           emailRedirectTo: `${window.location.origin}/api/auth/callback?next=%2Fen%2Fhome`,
           // SEG-7: el disparador convierte esto en terms_accepted_at.
-          data: { locale: "en", terms_accepted: true, terms_version: TERMS_VERSION },
+          // D-12: canal del alta (sin utm ni ref → direct).
+          data: { locale: "en", terms_accepted: true, terms_version: TERMS_VERSION, attribution: { channel: "direct" } },
         },
       });
     });
@@ -143,7 +144,13 @@ describe("LoginPage — modo register", () => {
       expect(h.fake.auth.signUp).toHaveBeenCalledWith(
         expect.objectContaining({
           options: expect.objectContaining({
-            data: { locale: "es", terms_accepted: true, terms_version: TERMS_VERSION, avatar_icon: "panda" },
+            data: {
+              locale: "es",
+              terms_accepted: true,
+              terms_version: TERMS_VERSION,
+              attribution: { channel: "direct" },
+              avatar_icon: "panda",
+            },
           }),
         })
       )
