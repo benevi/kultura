@@ -24,6 +24,7 @@ vi.mock("@/lib/env", () => ({
 import {
   COLLECTION_MIN_TITLES,
   IN_BATCH,
+  MAX_PUBLIC_LISTS,
   PAGE_SIZE,
   collectionsFromRows,
   collectionsSitemap,
@@ -205,6 +206,8 @@ describe("sitemap — perfiles y listas públicos", () => {
         order: () => q,
         range: async (a: number, b: number) => {
           calls.ranges.push([table, a, b]);
+          // PostgREST rechaza un rango vacío o invertido (416).
+          if (a > b) return { data: null, error: { code: "PGRST103", message: "Requested range not satisfiable" } };
           // PostgREST: como mucho PAGE_SIZE filas aunque se pidan más.
           return { data: rows.slice(a, Math.min(b + 1, a + PAGE_SIZE)), error: null };
         },
@@ -220,6 +223,22 @@ describe("sitemap — perfiles y listas públicos", () => {
     expect(await collectionsSitemap()).toEqual([]);
     expect(calls.eq).toContainEqual(["is_public", true]);
     expect(supabase.createClient).toHaveBeenCalledWith("https://sb.example", "anon", expect.anything());
+  });
+
+  it("2001 listas o más: se leen las primeras 2000, sin pedir un rango inválido", async () => {
+    const n = MAX_PUBLIC_LISTS + 5;
+    const lists = Array.from({ length: n }, (_, i) => ({ id: `l${i}`, owner_id: "u0", created_at: "2026-09-01T00:00:00Z", is_public: true }));
+    const items = lists.flatMap((l) => Array.from({ length: 5 }, () => ({ list_id: l.id, added_at: "2026-10-01T00:00:00Z" })));
+    const calls = fakeSupabase({ lists, list_items: items, users: [{ id: "u0", username: "benevi" }] });
+    const entries = await collectionsSitemap();
+    const listRanges = calls.ranges.filter(([t]) => t === "lists");
+    expect(listRanges.every(([, a, b]) => a <= b)).toBe(true);
+    expect(listRanges).toEqual([
+      ["lists", 0, 999],
+      ["lists", 1000, 1999],
+    ]);
+    // 2000 listas + 1 perfil, en dos idiomas.
+    expect(entries).toHaveLength((MAX_PUBLIC_LISTS + 1) * 2);
   });
 
   it("muchas listas: .in() en lotes de 100 y list_items paginado (más de 1000 filas)", async () => {

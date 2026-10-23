@@ -56,7 +56,7 @@ export const COLLECTION_MIN_TITLES = 5;
 /** Plazo para Supabase: pausado por inactividad no debe colgar el sitemap. */
 const SUPABASE_TIMEOUT_MS = 5000;
 /** Tope de listas públicas leídas (el sitemap admite 50.000; esto es holgura). */
-const MAX_PUBLIC_LISTS = 2000;
+export const MAX_PUBLIC_LISTS = 2000;
 /** Ids por consulta `.in()`: 100 UUID ≈ 3,7 KB de URL, lejos del límite de PostgREST. */
 export const IN_BATCH = 100;
 /** Filas por página (PostgREST corta en 1000 por defecto). */
@@ -249,16 +249,25 @@ function chunk<T>(items: T[], size = IN_BATCH): T[][] {
 
 type Page<T> = { data: T[] | null; error: unknown };
 
-/** Todas las filas de una consulta, de PAGE_SIZE en PAGE_SIZE. Lanza si una página falla. */
-async function allPages<T>(query: (from: number, to: number) => PromiseLike<Page<T>>): Promise<T[]> {
+/**
+ * Filas de una consulta, de PAGE_SIZE en PAGE_SIZE, hasta `max` como mucho.
+ * Cada rango pedido es válido (`from ≤ to`): nunca se pide más allá del tope.
+ * Lanza si una página falla.
+ */
+export async function allPages<T>(
+  query: (from: number, to: number) => PromiseLike<Page<T>>,
+  max = Number.POSITIVE_INFINITY,
+): Promise<T[]> {
   const out: T[] = [];
-  for (let from = 0; ; from += PAGE_SIZE) {
-    const { data, error } = await query(from, from + PAGE_SIZE - 1);
+  for (let from = 0; from < max; from += PAGE_SIZE) {
+    const to = Math.min(from + PAGE_SIZE, max) - 1;
+    const { data, error } = await query(from, to);
     if (error) throw error;
     const rows = data ?? [];
     out.push(...rows);
-    if (rows.length < PAGE_SIZE) return out;
+    if (rows.length < to - from + 1) break;
   }
+  return out.slice(0, max);
 }
 
 /**
@@ -276,8 +285,9 @@ export async function collectionsSitemap(): Promise<Entry[]> {
         .eq("is_public", true)
         .order("created_at", { ascending: false })
         .order("id", { ascending: true })
-        .range(from, Math.min(to, MAX_PUBLIC_LISTS - 1)) as unknown as PromiseLike<Page<PublicListRow>>,
-    ).then((rows) => rows.slice(0, MAX_PUBLIC_LISTS));
+        .range(from, to) as unknown as PromiseLike<Page<PublicListRow>>,
+      MAX_PUBLIC_LISTS,
+    );
     if (lists.length === 0) return [];
     const listIds = lists.map((l) => l.id);
     const ownerIds = Array.from(new Set(lists.map((l) => l.owner_id)));
