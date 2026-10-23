@@ -17,8 +17,8 @@ vi.mock('next-intl', () => ({
 }))
 
 vi.mock('@/i18n/navigation', () => ({
-  Link: ({ href, children }: { href: string; children: React.ReactNode }) => (
-    <a href={href}>{children}</a>
+  Link: ({ href, children, ...rest }: { href: string; children: React.ReactNode }) => (
+    <a href={href} {...rest}>{children}</a>
   ),
 }))
 
@@ -123,5 +123,58 @@ describe('ConversationClient — marcado de leído (E96)', () => {
 
     expect(screen.getByText('mío')).toBeInTheDocument()
     expect(mockMarkConversationRead).toHaveBeenCalledTimes(1)
+  })
+})
+
+describe('ConversationClient — accesibilidad (ACC-11, ACC-19)', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    capturedHandler = null
+    Element.prototype.scrollIntoView = vi.fn()
+    mockFetch.mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        messages: [
+          { id: 'old-1', content: 'historial', sender_id: 'other-user', created_at: '2026-07-16T09:00:00Z', users: null },
+        ],
+      }),
+    })
+    vi.stubGlobal('fetch', mockFetch)
+  })
+
+  it('los mensajes van en un role="log" con nombre; el historial entra callado y lo nuevo se anuncia', async () => {
+    renderConversation()
+    const log = screen.getByRole('log', { name: 'logLabel' })
+    expect(log).toHaveAttribute('aria-live', 'off')
+    await waitFor(() => expect(screen.getByText('historial')).toBeInTheDocument())
+    expect(log).toContainElement(screen.getByText('historial'))
+    await waitFor(() => expect(log).toHaveAttribute('aria-live', 'polite'))
+    expect(log).toHaveAttribute('aria-relevant', 'additions')
+
+    await act(async () => {
+      await capturedHandler!({
+        new: { id: 'msg-9', content: 'nuevo', sender_id: 'other-user', created_at: '2026-07-16T10:00:00Z' },
+      })
+    })
+    expect(log).toContainElement(screen.getByText('nuevo'))
+  })
+
+  it('la carga se anuncia con texto (no "…") y el volver tiene nombre', async () => {
+    mockFetch.mockReturnValue(new Promise(() => {}))
+    renderConversation()
+    expect(screen.getByRole('status')).toHaveTextContent('loadingMessages')
+    expect(screen.getByRole('link', { name: 'backToChats' })).toHaveAttribute('href', '/chat')
+  })
+
+  it('con prefers-reduced-motion el scroll al último mensaje no anima', async () => {
+    const original = window.matchMedia
+    window.matchMedia = vi.fn().mockReturnValue({ matches: true }) as unknown as typeof window.matchMedia
+    try {
+      renderConversation()
+      await waitFor(() => expect(Element.prototype.scrollIntoView).toHaveBeenCalled())
+      expect(Element.prototype.scrollIntoView).toHaveBeenCalledWith({ behavior: 'auto' })
+    } finally {
+      window.matchMedia = original
+    }
   })
 })

@@ -1,6 +1,6 @@
 "use client";
 
-import { useId } from "react";
+import { forwardRef, useId } from "react";
 import { cn } from "@/lib/utils/index";
 
 export interface SelectOption {
@@ -8,10 +8,12 @@ export interface SelectOption {
   label: string;
 }
 
-export interface SelectProps {
+export interface SelectProps
+  extends Omit<React.SelectHTMLAttributes<HTMLSelectElement>, "value" | "onChange"> {
   value: string;
   onChange: (value: string) => void;
   options: SelectOption[];
+  /** Etiqueta visible asociada con `htmlFor`. Sin ella, pasa `aria-label`. */
   label?: string;
   className?: string;
 }
@@ -20,24 +22,31 @@ export interface SelectProps {
  * Desplegable nativo. La etiqueta se asocia con `htmlFor` (antes era un
  * `<label>` suelto y el select no tenía nombre accesible), el borde usa
  * `--field-border` (3,65:1 contra la tarjeta, ACC-4) y la letra es de 16 px en
- * móvil para que iOS no haga zoom al enfocar (MOV-5).
+ * móvil para que iOS no haga zoom al enfocar (MOV-5). El resto de atributos
+ * (`aria-*`, `data-*`, `name`…) llega tal cual al `<select>`.
  */
-export function Select({ value, onChange, options, label, className }: SelectProps) {
-  const id = useId();
+export const Select = forwardRef<HTMLSelectElement, SelectProps>(function Select(
+  { value, onChange, options, label, className, id: idProp, ...rest },
+  ref
+) {
+  const autoId = useId();
+  const id = idProp ?? autoId;
   return (
     <div className="flex flex-col gap-1">
       {label && (
         <label htmlFor={id} className="text-sm text-muted">{label}</label>
       )}
       <select
+        ref={ref}
         id={id}
         value={value}
         onChange={(e) => onChange(e.target.value)}
         className={cn(
-          "bg-surface border border-field-border rounded-md px-3 py-2 text-base md:text-sm text-text",
+          "bg-surface border border-field-border rounded-md px-3 py-2 min-h-11 text-base md:text-sm text-text",
           "focus-visible:[outline-style:solid] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus-ring cursor-pointer",
           className
         )}
+        {...rest}
       >
         {options.map((opt) => (
           <option key={opt.value} value={opt.value}>
@@ -47,4 +56,4 @@ export function Select({ value, onChange, options, label, className }: SelectPro
       </select>
     </div>
   );
-}
+});

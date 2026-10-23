@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import { useRouter } from "@/i18n/navigation";
 import { cn } from "@/lib/utils/index";
@@ -54,6 +54,11 @@ export function SearchBar({
   const [suggestions, setSuggestions] = useState<MediaItem[]>([]);
   const [loading, setLoading] = useState(false);
   const [open, setOpen] = useState(false);
+  // ACC-14: opción resaltada con las flechas (-1 = ninguna, el foco sigue en
+  // el campo y Enter busca lo escrito).
+  const [activeIndex, setActiveIndex] = useState(-1);
+  const listboxId = useId();
+  const optionId = (index: number) => `${listboxId}-opt-${index}`;
 
   const containerRef = useRef<HTMLDivElement>(null);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -96,6 +101,7 @@ export function SearchBar({
           const data: MediaItem[] = await res.json();
           if (controller.signal.aborted) return;
           setSuggestions(data);
+          setActiveIndex(-1);
           setOpen(data.length > 0);
         }
       } catch {
@@ -143,10 +149,34 @@ export function SearchBar({
     );
   }
 
+  const expanded = open && suggestions.length > 0;
+
   function handleKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
-    if (e.key === "Escape") {
+    if (e.key === "ArrowDown" || e.key === "ArrowUp") {
+      if (suggestions.length === 0) return;
+      e.preventDefault();
+      const step = e.key === "ArrowDown" ? 1 : -1;
+      if (!expanded) {
+        setOpen(true);
+        setActiveIndex(step === 1 ? 0 : suggestions.length - 1);
+        return;
+      }
+      // Recorrido circular; pasar del último vuelve al campo (-1).
+      setActiveIndex((i) => {
+        const next = i + step;
+        if (next < -1) return suggestions.length - 1;
+        if (next >= suggestions.length) return -1;
+        return next;
+      });
+    } else if (e.key === "Escape") {
       setOpen(false);
+      setActiveIndex(-1);
     } else if (e.key === "Enter") {
+      if (expanded && activeIndex >= 0 && suggestions[activeIndex]) {
+        e.preventDefault();
+        handleSelectSuggestion(suggestions[activeIndex]);
+        return;
+      }
       submit(inputValue);
     }
   }
@@ -164,6 +194,7 @@ export function SearchBar({
     // a /api/search.
     hasTypedRef.current = true;
     setInputValue(value);
+    setActiveIndex(-1);
     // Vaciar el input en inline = volver al catálogo, sin tener que pulsar Enter.
     if (mode === "inline" && value.trim().length === 0) onClear?.();
   }
@@ -177,14 +208,22 @@ export function SearchBar({
           className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-text-tertiary"
           aria-hidden="true"
         />
+        {/* ACC-14: patrón ARIA combobox con lista de sugerencias. */}
         <input
           type="search"
+          role="combobox"
+          aria-expanded={expanded}
+          aria-controls={listboxId}
+          aria-autocomplete="list"
+          aria-activedescendant={expanded && activeIndex >= 0 ? optionId(activeIndex) : undefined}
           value={inputValue}
           onChange={(e) => handleChange(e.target.value)}
           onKeyDown={handleKeyDown}
           placeholder={resolvedPlaceholder}
           aria-label={resolvedPlaceholder}
-          className="w-full bg-surface-elevated border border-transparent rounded-pill pl-11 pr-11 py-3 text-sm font-body text-text-primary placeholder:text-text-tertiary focus:outline-none focus:ring-2 focus:ring-accent-pink transition-colors"
+          enterKeyHint="search"
+          autoComplete="off"
+          className="w-full bg-surface-elevated border border-field-border rounded-pill pl-11 pr-11 py-3 text-base md:text-sm font-body text-text-primary placeholder:text-text-tertiary focus-visible:[outline-style:solid] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus-ring transition-colors"
         />
         {loading && (
           <Spinner
@@ -194,15 +233,34 @@ export function SearchBar({
         )}
       </div>
 
-      {open && suggestions.length > 0 && (
-        <ul className="absolute top-full mt-2 w-full bg-surface-elevated border border-border rounded-card shadow-xl z-50 overflow-hidden py-1">
-          {suggestions.map((item) => (
-            <li key={item.id}>
-              <button
-                type="button"
-                onClick={() => handleSelectSuggestion(item)}
-                className="flex items-center gap-3 px-4 py-2.5 hover:bg-surface2 w-full text-left transition-colors"
-              >
+      {/* Recuento anunciado al aparecer las sugerencias (región que existe
+          siempre: un lector no anuncia la que nace ya con texto). */}
+      <p role="status" aria-live="polite" className="sr-only">
+        {expanded ? t("suggestionsCount", { count: suggestions.length }) : ""}
+      </p>
+
+      <ul
+        id={listboxId}
+        role="listbox"
+        aria-label={t("suggestionsLabel")}
+        hidden={!expanded}
+        className="absolute top-full mt-2 w-full bg-surface-elevated border border-border rounded-card shadow-xl z-50 overflow-hidden py-1"
+      >
+          {expanded && suggestions.map((item, index) => (
+            <li
+              key={item.id}
+              id={optionId(index)}
+              role="option"
+              aria-selected={index === activeIndex}
+              // El foco se queda en el campo: el ratón no debe robárselo.
+              onMouseDown={(e) => e.preventDefault()}
+              onClick={() => handleSelectSuggestion(item)}
+              onMouseEnter={() => setActiveIndex(index)}
+              className={cn(
+                "flex items-center gap-3 px-4 py-2.5 min-h-11 w-full text-left cursor-pointer transition-colors",
+                index === activeIndex ? "bg-surface2" : "hover:bg-surface2"
+              )}
+            >
                 {/* Miniatura de 36×48: se pide al CDN a ese tamaño
                     (E-PORTADAS-RAPIDAS); antes bajaba la portada original —
                     con RAWG, una captura de 1920 px por sugerencia. Gradiente
@@ -230,11 +288,9 @@ export function SearchBar({
                   ) : null}
                 </div>
                 <Badge variant="default">{tMedia(item.type)}</Badge>
-              </button>
             </li>
           ))}
-        </ul>
-      )}
+      </ul>
     </div>
   );
 }

@@ -1,6 +1,8 @@
 'use client'
 
+import type { RefObject } from 'react'
 import { KButton } from '@/components/ui/KButton'
+import { Modal } from '@/components/ui/Modal'
 
 interface ConfirmModalProps {
   isOpen: boolean
@@ -14,8 +16,16 @@ interface ConfirmModalProps {
   isDestructive?: boolean
   /** Estado de carga: deshabilita y muestra spinner en el botón de confirmar. */
   loading?: boolean
+  /** Dónde vuelve el foco si el botón que lo abrió desaparece al confirmar. */
+  finalFocusRef?: RefObject<HTMLElement>
 }
 
+/**
+ * Confirmación sobre `Modal` (ACC-1): `alertdialog` con el título y el mensaje
+ * enlazados (el lector lee las dos cosas al abrir), foco inicial en el botón
+ * de cancelar —lo seguro en una acción destructiva—, Esc y fondo cierran
+ * salvo mientras se confirma, y el foco vuelve al botón que lo abrió.
+ */
 export function ConfirmModal({
   isOpen,
   title,
@@ -26,56 +36,45 @@ export function ConfirmModal({
   onCancel,
   isDestructive = false,
   loading = false,
+  finalFocusRef,
 }: ConfirmModalProps) {
-  if (!isOpen) return null
-
   return (
-    <div
-      data-testid="modal-overlay"
-      onClick={onCancel}
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 animate-backdrop-in"
+    <Modal
+      open={isOpen}
+      onClose={onCancel}
+      title={title}
+      description={message}
+      role="alertdialog"
+      closeLabel={cancelLabel}
+      dismissible={!loading}
+      finalFocusRef={finalFocusRef}
     >
-      <div
-        data-testid="modal-panel"
-        role="dialog"
-        aria-modal="true"
-        onClick={(e) => e.stopPropagation()}
-        className="bg-surface-elevated border border-surface-border rounded-xl w-full max-w-sm flex flex-col gap-4 p-5 animate-modal-in"
-      >
-        <div className="flex items-center justify-between">
-          <h2 className="font-display text-xl text-text-primary">{title}</h2>
-          <button
-            onClick={onCancel}
-            aria-label={cancelLabel}
-            className="text-text-secondary hover:text-text-primary text-xl leading-none"
-          >
-            ×
-          </button>
-        </div>
-
-        <p className="text-sm text-text-secondary">{message}</p>
-
-        <div className="flex gap-2 justify-end">
-          <KButton variant="secondary" size="sm" onClick={onCancel} disabled={loading}>
-            {cancelLabel}
-          </KButton>
-          <KButton
-            variant="primary"
-            size="sm"
-            loading={loading}
-            onClick={onConfirm}
-            className={
-              isDestructive
-                ? // ACC-4: rojo más oscuro + su texto claro = 4,94:1. El rojo base
-                  // con el texto oscuro de "positivo" daba 4,28:1.
-                  'bg-accent-danger-solid text-on-accent-danger hover:brightness-110'
-                : undefined
-            }
-          >
-            {confirmLabel}
-          </KButton>
-        </div>
+      <div className="flex flex-wrap justify-end gap-2">
+        <KButton
+          variant="secondary"
+          size="md"
+          onClick={onCancel}
+          disabled={loading}
+          data-autofocus
+        >
+          {cancelLabel}
+        </KButton>
+        <KButton
+          variant="primary"
+          size="md"
+          loading={loading}
+          onClick={onConfirm}
+          className={
+            isDestructive
+              ? // ACC-4: rojo más oscuro + su texto claro = 4,94:1. El rojo base
+                // con el texto oscuro de "positivo" daba 4,28:1.
+                'bg-accent-danger-solid text-on-accent-danger hover:brightness-110'
+              : undefined
+          }
+        >
+          {confirmLabel}
+        </KButton>
       </div>
-    </div>
+    </Modal>
   )
 }

@@ -84,6 +84,8 @@ export function CreateGroupForm({ onCreated, onCancel }: CreateGroupFormProps) {
         value={groupName}
         onChange={e => setGroupName(e.target.value)}
         placeholder={t('groupNamePlaceholder')}
+        // ACC-2: solo tenía placeholder; el nombre accesible es la etiqueta.
+        aria-label={t('groupName')}
         maxLength={60}
         required
         className={FIELD_CLASS}
@@ -93,6 +95,7 @@ export function CreateGroupForm({ onCreated, onCancel }: CreateGroupFormProps) {
         value={groupDesc}
         onChange={e => setGroupDesc(e.target.value)}
         placeholder={t('groupDescPlaceholder')}
+        aria-label={t('groupDescription')}
         maxLength={200}
         rows={2}
         className={FIELD_CLASS}

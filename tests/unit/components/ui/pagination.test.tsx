@@ -2,6 +2,11 @@ import { render, screen, fireEvent } from "@testing-library/react";
 import { describe, it, expect, vi } from "vitest";
 import { Pagination } from "@/components/ui/Pagination";
 
+// Consultas por `aria-label` (getByLabelText con selector "button") en vez de
+// getByRole({ name }): calcular el nombre accesible de todo el árbol es lo que
+// hacía que este archivo pasara el límite de 5 s con la suite completa en
+// marcha. Comprueban lo mismo: botones con ese nombre.
+//
 // useTranslations: (key, params) => interpola {n} para distinguir aria-labels
 // por número de página ("Page 1", "Page 2", …). Sin params devuelve la clave.
 vi.mock("next-intl", () => ({
@@ -41,15 +46,15 @@ describe("Pagination — E79 slice 1b (numerada)", () => {
     // ventana: 1 … 4 5 6 … 10
     for (const n of [1, 4, 5, 6, 10]) {
       expect(
-        screen.getByRole("button", { name: `Page ${n}` })
+        screen.getByLabelText(`Page ${n}`, { selector: "button" })
       ).toBeInTheDocument();
     }
     // 2, 3, 7, 8, 9 quedan colapsados por la elipsis.
     expect(
-      screen.queryByRole("button", { name: "Page 3" })
+      screen.queryByLabelText("Page 3", { selector: "button" })
     ).not.toBeInTheDocument();
     expect(
-      screen.queryByRole("button", { name: "Page 8" })
+      screen.queryByLabelText("Page 8", { selector: "button" })
     ).not.toBeInTheDocument();
   });
 
@@ -78,7 +83,7 @@ describe("Pagination — E79 slice 1b (numerada)", () => {
     expect(screen.queryByText("…")).not.toBeInTheDocument();
     for (const n of [1, 2, 3]) {
       expect(
-        screen.getByRole("button", { name: `Page ${n}` })
+        screen.getByLabelText(`Page ${n}`, { selector: "button" })
       ).toBeInTheDocument();
     }
   });
@@ -92,10 +97,10 @@ describe("Pagination — E79 slice 1b (numerada)", () => {
         onPageChange={vi.fn()}
       />
     );
-    const active = screen.getByRole("button", { name: "Page 3" });
+    const active = screen.getByLabelText("Page 3", { selector: "button" });
     expect(active).toHaveAttribute("aria-current", "page");
     // Las demás no son current.
-    const other = screen.getByRole("button", { name: "Page 2" });
+    const other = screen.getByLabelText("Page 2", { selector: "button" });
     expect(other).not.toHaveAttribute("aria-current");
   });
 
@@ -108,7 +113,7 @@ describe("Pagination — E79 slice 1b (numerada)", () => {
         onPageChange={vi.fn()}
       />
     );
-    expect(screen.getByRole("button", { name: /previous/i })).toBeDisabled();
+    expect(screen.getByLabelText(/previous/i, { selector: "button" })).toBeDisabled();
   });
 
   it("el botón Anterior está habilitado en páginas > 1", () => {
@@ -121,7 +126,7 @@ describe("Pagination — E79 slice 1b (numerada)", () => {
       />
     );
     expect(
-      screen.getByRole("button", { name: /previous/i })
+      screen.getByLabelText(/previous/i, { selector: "button" })
     ).not.toBeDisabled();
   });
 
@@ -134,7 +139,7 @@ describe("Pagination — E79 slice 1b (numerada)", () => {
         onPageChange={vi.fn()}
       />
     );
-    expect(screen.getByRole("button", { name: /next/i })).toBeDisabled();
+    expect(screen.getByLabelText(/next/i, { selector: "button" })).toBeDisabled();
   });
 
   it("el botón Siguiente está habilitado cuando hay más (hasMore=true)", () => {
@@ -146,7 +151,7 @@ describe("Pagination — E79 slice 1b (numerada)", () => {
         onPageChange={vi.fn()}
       />
     );
-    expect(screen.getByRole("button", { name: /next/i })).not.toBeDisabled();
+    expect(screen.getByLabelText(/next/i, { selector: "button" })).not.toBeDisabled();
   });
 
   it("click en un número llama onPageChange(n)", () => {
@@ -159,7 +164,7 @@ describe("Pagination — E79 slice 1b (numerada)", () => {
         onPageChange={onPageChange}
       />
     );
-    fireEvent.click(screen.getByRole("button", { name: "Page 1" }));
+    fireEvent.click(screen.getByLabelText("Page 1", { selector: "button" }));
     expect(onPageChange).toHaveBeenCalledTimes(1);
     expect(onPageChange).toHaveBeenCalledWith(1);
   });
@@ -174,7 +179,7 @@ describe("Pagination — E79 slice 1b (numerada)", () => {
         onPageChange={onPageChange}
       />
     );
-    fireEvent.click(screen.getByRole("button", { name: /next/i }));
+    fireEvent.click(screen.getByLabelText(/next/i, { selector: "button" }));
     expect(onPageChange).toHaveBeenCalledWith(2);
   });
 
@@ -188,7 +193,7 @@ describe("Pagination — E79 slice 1b (numerada)", () => {
         onPageChange={onPageChange}
       />
     );
-    fireEvent.click(screen.getByRole("button", { name: /previous/i }));
+    fireEvent.click(screen.getByLabelText(/previous/i, { selector: "button" }));
     expect(onPageChange).toHaveBeenCalledWith(1);
   });
 
@@ -204,10 +209,10 @@ describe("Pagination — E79 slice 1b (numerada)", () => {
         onPageChange={vi.fn()}
       />
     );
-    expect(screen.getByRole("button", { name: /next/i })).toBeDisabled();
+    expect(screen.getByLabelText(/next/i, { selector: "button" })).toBeDisabled();
     // Anterior sigue disponible para retroceder desde una última corta.
     expect(
-      screen.getByRole("button", { name: /previous/i })
+      screen.getByLabelText(/previous/i, { selector: "button" })
     ).not.toBeDisabled();
   });
 
@@ -226,14 +231,14 @@ describe("Pagination — E79 slice 1b (numerada)", () => {
         />
       );
       expect(
-        screen.queryByRole("button", { name: "Page 45018" })
+        screen.queryByLabelText("Page 45018", { selector: "button" })
       ).not.toBeInTheDocument();
       // Ventana anclada en [1] con vecinos de la actual: [1][2] (current=1).
       expect(
-        screen.getByRole("button", { name: "Page 1" })
+        screen.getByLabelText("Page 1", { selector: "button" })
       ).toBeInTheDocument();
       expect(
-        screen.getByRole("button", { name: "Page 2" })
+        screen.getByLabelText("Page 2", { selector: "button" })
       ).toBeInTheDocument();
     });
 
@@ -250,7 +255,7 @@ describe("Pagination — E79 slice 1b (numerada)", () => {
       expect(screen.getAllByText("…")).toHaveLength(2);
       for (const n of [1, 3, 4, 5]) {
         expect(
-          screen.getByRole("button", { name: `Page ${n}` })
+          screen.getByLabelText(`Page ${n}`, { selector: "button" })
         ).toBeInTheDocument();
       }
     });
@@ -265,7 +270,7 @@ describe("Pagination — E79 slice 1b (numerada)", () => {
         />
       );
       expect(
-        screen.getByRole("button", { name: /next/i })
+        screen.getByLabelText(/next/i, { selector: "button" })
       ).not.toBeDisabled();
     });
   });

@@ -12,7 +12,7 @@ vi.mock('next-intl', () => ({
 
 const mockShow = vi.fn()
 vi.mock('@/components/ui/ToastProvider', () => ({
-  useToastContext: () => ({ show: mockShow, dismiss: vi.fn() }),
+  useToastContext: () => ({ show: mockShow, showError: (message: string) => mockShow({ message, type: 'error' }), dismiss: vi.fn() }),
 }))
 
 vi.mock('@/i18n/navigation', () => ({

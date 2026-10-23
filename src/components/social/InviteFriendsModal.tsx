@@ -5,6 +5,8 @@ import { useTranslations } from 'next-intl'
 import { useToastContext } from '@/components/ui/ToastProvider'
 import { Avatar } from '@/components/ui/Avatar'
 import { Spinner } from '@/components/ui/Spinner'
+import { KButton } from '@/components/ui/KButton'
+import { Modal } from '@/components/ui/Modal'
 import { F0 } from '@/lib/design/f0-tokens'
 
 interface InvitableFriend {
@@ -78,62 +80,39 @@ export function InviteFriendsModal({ groupId, onClose }: InviteFriendsModalProps
   }
 
   return (
-    <div
-      data-testid="modal-overlay"
-      onClick={onClose}
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 animate-backdrop-in"
-    >
-      <div
-        data-testid="modal-panel"
-        role="dialog"
-        aria-modal="true"
-        onClick={(e) => e.stopPropagation()}
-        className="rounded-bento-lg border w-full max-w-sm flex flex-col gap-4 p-5 animate-modal-in"
-        style={{ background: F0.surface2, borderColor: F0.stroke }}
-      >
-        <div className="flex items-center justify-between">
-          <h2 className="font-display text-xl font-extrabold" style={{ color: F0.text }}>{t('inviteFriends')}</h2>
-          <button
-            onClick={onClose}
-            aria-label={tc('cancel')}
-            className="text-xl leading-none hover:opacity-80 transition-opacity"
-            style={{ color: F0.textSecondary }}
-          >
-            ×
-          </button>
+    <Modal open onClose={onClose} title={t('inviteFriends')} closeLabel={tc('close')}>
+      {loading ? (
+        <div className="flex justify-center py-8">
+          <Spinner size="md" label={tc('loading')} />
         </div>
-
-        {loading ? (
-          <div className="flex justify-center py-8">
-            <Spinner size="md" />
-          </div>
-        ) : loadError ? (
-          <p className="text-sm py-4 text-center" style={{ color: F0.orange }}>{t('inviteError')}</p>
-        ) : friends.length === 0 ? (
-          <p className="text-sm py-8 text-center" style={{ color: F0.muted }}>{t('noInvitableFriends')}</p>
-        ) : (
-          <ul className="flex flex-col max-h-72 overflow-y-auto">
-            {friends.map((f) => (
-              <li
-                key={f.id}
-                className="flex items-center gap-3 py-2.5 border-t first:border-t-0"
-                style={{ borderColor: F0.stroke }}
+      ) : loadError ? (
+        <p role="alert" className="text-sm py-4 text-center" style={{ color: F0.orange }}>{t('inviteError')}</p>
+      ) : friends.length === 0 ? (
+        <p className="text-sm py-8 text-center" style={{ color: F0.muted }}>{t('noInvitableFriends')}</p>
+      ) : (
+        <ul className="flex flex-col max-h-72 overflow-y-auto">
+          {friends.map((f) => (
+            <li
+              key={f.id}
+              className="flex items-center gap-3 py-2.5 border-t first:border-t-0"
+              style={{ borderColor: F0.stroke }}
+            >
+              <Avatar initials={f.avatarInitials} color={f.avatarColor} size="sm" />
+              <span id={`invite-${groupId}-${f.id}`} className="text-sm flex-1 truncate font-medium" style={{ color: F0.text }}>{f.username}</span>
+              <KButton
+                size="sm"
+                onClick={() => handleInvite(f.id)}
+                loading={invitingId === f.id}
+                // "Invitar" + nombre: en la lista del lector cada botón dice a quién.
+                aria-describedby={`invite-${groupId}-${f.id}`}
+                className="min-h-11 px-4"
               >
-                <Avatar initials={f.avatarInitials} color={f.avatarColor} size="sm" />
-                <span className="text-sm flex-1 truncate font-medium" style={{ color: F0.text }}>{f.username}</span>
-                <button
-                  onClick={() => handleInvite(f.id)}
-                  disabled={invitingId === f.id}
-                  className="flex-shrink-0 px-3.5 py-1.5 text-xs font-extrabold rounded-full hover:brightness-110 transition-all disabled:opacity-50"
-                  style={{ background: F0.pink, color: F0.onPink }}
-                >
-                  {invitingId === f.id ? '…' : t('invite')}
-                </button>
-              </li>
-            ))}
-          </ul>
-        )}
-      </div>
-    </div>
+                {t('invite')}
+              </KButton>
+            </li>
+          ))}
+        </ul>
+      )}
+    </Modal>
   )
 }

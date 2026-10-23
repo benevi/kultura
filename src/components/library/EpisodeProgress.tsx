@@ -6,7 +6,9 @@
 // showSeason=true solo para tv (anime numera globalmente).
 // ============================================================
 
+import { useId } from 'react'
 import { useTranslations } from 'next-intl'
+import { CloseButton } from '@/components/ui/CloseButton'
 import type { EpisodeProgress as EpisodeProgressType } from '@/types/library'
 
 interface EpisodeProgressProps {
@@ -17,6 +19,9 @@ interface EpisodeProgressProps {
 
 export function EpisodeProgress({ value, onChange, showSeason }: EpisodeProgressProps) {
   const t = useTranslations('library')
+  const id = useId()
+  const seasonId = `${id}-season`
+  const episodeId = `${id}-episode`
 
   function handleEpisodeChange(e: React.ChangeEvent<HTMLInputElement>) {
     const episode = parseInt(e.target.value, 10)
@@ -35,18 +40,22 @@ export function EpisodeProgress({ value, onChange, showSeason }: EpisodeProgress
     }
   }
 
+  // Borde `--field-border` y anillo de 2 px del sistema (ACC-4); 16 px en
+  // móvil para que iOS no haga zoom al enfocar (MOV-5).
   const inputClass =
-    'bg-surface-base border border-surface-border rounded-button px-3 py-2 text-sm font-body text-text-primary placeholder:text-text-tertiary focus-visible:outline-none focus-visible:border-accent-pink focus-visible:ring-1 focus-visible:ring-accent-pink/40 transition-colors'
+    'min-h-11 bg-surface-base border border-field-border rounded-button px-3 py-2 text-base md:text-sm font-body text-text-primary placeholder:text-text-tertiary focus-visible:[outline-style:solid] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus-ring transition-colors'
 
   return (
     <div className="flex items-end gap-4">
       {showSeason && (
         <div className="flex flex-col">
-          <label className="block text-xs font-body font-medium text-text-secondary mb-1">
+          <label htmlFor={seasonId} className="block text-xs font-body font-medium text-text-secondary mb-1">
             {t('season')}
           </label>
           <input
+            id={seasonId}
             type="number"
+            inputMode="numeric"
             min={1}
             max={99}
             value={value?.season ?? ''}
@@ -58,11 +67,13 @@ export function EpisodeProgress({ value, onChange, showSeason }: EpisodeProgress
       )}
 
       <div className="flex flex-col">
-        <label className="block text-xs font-body font-medium text-text-secondary mb-1">
+        <label htmlFor={episodeId} className="block text-xs font-body font-medium text-text-secondary mb-1">
           {t('episode')}
         </label>
         <input
+          id={episodeId}
           type="number"
+          inputMode="numeric"
           min={1}
           max={9999}
           value={value?.episode ?? ''}
@@ -73,15 +84,11 @@ export function EpisodeProgress({ value, onChange, showSeason }: EpisodeProgress
       </div>
 
       {value !== null && (
-        <button
-          type="button"
+        <CloseButton
           onClick={() => onChange(null)}
-          className="text-text-tertiary hover:text-text-primary text-sm pb-2 self-end leading-none transition-colors"
-          aria-label={t('clearProgress')}
+          label={t('clearProgress')}
           data-testid="clear-progress"
-        >
-          ×
-        </button>
+        />
       )}
     </div>
   )

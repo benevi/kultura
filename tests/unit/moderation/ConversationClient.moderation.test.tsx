@@ -113,7 +113,7 @@ describe('ConversationClient con MODERATION_V2', () => {
       fireEvent.click(within(screen.getByRole('group', { name: '¿Bloquear a este usuario?' })).getByRole('button', { name: 'Bloquear' }))
     })
     expect(await screen.findByText(/Ya no podéis escribiros/)).toBeInTheDocument()
-    expect(screen.queryByRole('textbox', { name: 'Escribe un mensaje...' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('textbox', { name: 'Mensaje' })).not.toBeInTheDocument()
     expect(JSON.parse(mockFetch.mock.calls.find((c) => c[0] === '/api/friends/blocks')![1].body)).toEqual({ userId: 'other-user' })
   })
 
@@ -146,7 +146,7 @@ describe('ConversationClient con MODERATION_V2', () => {
       'POST /api/chat/conv-1': () => ({ ok: false, status: 403, json: async () => ({ error: 'cannot_message' }) }),
     })
     renderEs(<ConversationClient conversationId="conv-1" otherUser={otherUser} currentUserId="me" />)
-    const input = await screen.findByRole('textbox', { name: 'Escribe un mensaje...' })
+    const input = await screen.findByRole('textbox', { name: 'Mensaje' })
     fireEvent.change(input, { target: { value: 'hola' } })
     await act(async () => {
       fireEvent.click(screen.getByRole('button', { name: 'Enviar' }))

@@ -179,7 +179,9 @@ function SingleGroup({
       </PopoverTrigger>
       <PopoverContent className="min-w-44 max-h-72 overflow-y-auto rounded-card shadow-xl">
         <PopoverHeader group={group} />
-        <div className="flex flex-wrap gap-1.5">
+        {/* ACC-10: los `role="radio"` necesitan su `radiogroup` (axe
+            aria-required-parent), con el nombre del filtro. */}
+        <div role="radiogroup" aria-label={group.label} className="flex flex-wrap gap-1.5">
           {group.options.map((option) => {
             const selected = option.value === value
             return (
@@ -191,13 +193,15 @@ function SingleGroup({
                 data-testid={`filter-opt-${group.key}-${option.value}`}
                 onClick={() => select(option.value)}
                 className={cn(
-                  "px-2.5 py-1 rounded-pill text-xs cursor-pointer border transition-colors",
+                  "min-h-8 px-2.5 py-1 rounded-pill text-xs cursor-pointer border transition-colors",
+                  "focus-visible:[outline-style:solid] focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-focus-ring",
                   selected
                     ? "bg-accent-positive text-on-accent-positive border-accent-positive font-semibold"
                     : "bg-surface-elevated text-text-secondary border-surface-border hover:text-text-primary"
                 )}
               >
-                {option.icon ? `${option.icon} ${option.label}` : option.label}
+                {option.icon && <span aria-hidden="true">{option.icon} </span>}
+                {option.label}
               </button>
             )
           })}
@@ -256,7 +260,7 @@ function SortGroup({
       </PopoverTrigger>
       <PopoverContent className="min-w-44 max-h-72 overflow-y-auto rounded-card shadow-xl">
         <PopoverHeader group={group} />
-        <div className="flex flex-col gap-0.5">
+        <div role="radiogroup" aria-label={prefix} className="flex flex-col gap-0.5">
           {group.options.map((option) => (
             <button
               key={option.value}
@@ -266,7 +270,8 @@ function SortGroup({
               data-testid={`filter-opt-${group.key}-${option.value}`}
               onClick={() => select(option.value)}
               className={cn(
-                "text-left px-2 py-1.5 rounded-lg text-xs cursor-pointer hover:bg-surface-elevated",
+                "text-left min-h-8 px-2 py-1.5 rounded-lg text-xs cursor-pointer hover:bg-surface-elevated",
+                "focus-visible:[outline-style:solid] focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-focus-ring",
                 option.value === value && "text-accent-positive font-semibold"
               )}
             >
@@ -345,17 +350,17 @@ function MultiGroup({
             onChange={(e) => setQuery(e.target.value)}
             placeholder={group.label}
             aria-label={group.label}
-            className="mb-1.5 w-full bg-surface-elevated border border-surface-border rounded-lg px-2 py-1 text-xs text-text-primary focus:outline-none focus:ring-1 focus:ring-accent-pink"
+            className="mb-1.5 w-full bg-surface-elevated border border-field-border rounded-lg px-2 py-1.5 text-base md:text-xs text-text-primary focus-visible:[outline-style:solid] focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-focus-ring"
           />
         )}
-        <div className="flex flex-col gap-0.5">
+        <div role="group" aria-label={group.label} className="flex flex-col gap-0.5">
           {visible.map((option) => {
             const checked = value.includes(option.value)
             return (
               <label
                 key={option.value}
                 data-testid={`filter-opt-${group.key}-${option.value}`}
-                className="flex items-center gap-2 px-2 py-1.5 rounded-lg cursor-pointer hover:bg-surface-elevated text-xs"
+                className="flex min-h-8 items-center gap-2 px-2 py-1.5 rounded-lg cursor-pointer hover:bg-surface-elevated text-xs"
               >
                 <input
                   type="checkbox"
@@ -363,7 +368,7 @@ function MultiGroup({
                   onChange={() => toggle(option.value)}
                   className="accent-accent-positive"
                 />
-                {option.icon && <span>{option.icon}</span>}
+                {option.icon && <span aria-hidden="true">{option.icon}</span>}
                 <span>{option.label}</span>
               </label>
             )
