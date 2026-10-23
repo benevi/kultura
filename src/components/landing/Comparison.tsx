@@ -48,6 +48,8 @@ export interface ComparisonProps {
   no: string;
   /** Qué se marca y aviso de marcas. */
   note: string;
+  /** Nombre de la caja desplazable (distinto del de la sección: axe landmark-unique). */
+  tableLabel: string;
 }
 
 function Mark({ on, yes, no }: { on: boolean; yes: string; no: string }) {
@@ -84,6 +86,7 @@ export function Comparison({
   yes,
   no,
   note,
+  tableLabel,
 }: ComparisonProps) {
   const cell = "px-2 py-3 align-middle";
   return (
@@ -98,9 +101,12 @@ export function Comparison({
 
       <div
         role="region"
-        aria-labelledby="compare-title"
+        aria-label={tableLabel}
         tabIndex={0}
-        className="overflow-x-auto rounded-bento bg-surface-default focus-visible:[outline-style:solid] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus-ring"
+        // `relative`: los textos `sr-only` son absolutos; sin un ancestro
+        // posicionado dentro de la caja, escapaban del recorte y la PÁGINA se
+        // desbordaba 374 px a 320 de ancho.
+        className="relative overflow-x-auto rounded-bento bg-surface-default focus-visible:[outline-style:solid] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus-ring"
       >
         <table className="w-full min-w-[46rem] border-separate border-spacing-0 text-sm">
           <thead>

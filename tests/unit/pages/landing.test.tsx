@@ -266,9 +266,11 @@ describe("Landing · secciones", () => {
     // Letterboxd: solo cine, más las funciones comunes.
     expect(marks("Letterboxd")).toEqual(["Sí", "No", "No", "No", "No", "No", "No", "Sí", "Sí", "Sí"]);
     // Se desplaza dentro de su caja (región con foco), no la página.
-    const region = within(section).getByRole("region");
+    const region = within(section).getByRole("region", { name: "Tabla: formatos y funciones de cada app" });
     expect(region).toHaveAttribute("tabindex", "0");
     expect(region.className).toContain("overflow-x-auto");
+    // Posicionada: los `sr-only` (absolutos) se recortan dentro y no desbordan la página.
+    expect(region.className.split(" ")).toContain("relative");
   });
 
   it("contiene Header y Footer", async () => {

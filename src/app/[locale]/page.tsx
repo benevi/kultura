@@ -205,6 +205,7 @@ export default async function HomePage() {
           yes={t("compare.yes")}
           no={t("compare.no")}
           note={t("compare.note")}
+          tableLabel={t("compare.tableLabel")}
         />
 
         <Faq heading={t("faq.title")} items={faq} />

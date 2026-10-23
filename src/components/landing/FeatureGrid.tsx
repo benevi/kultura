@@ -118,7 +118,8 @@ function AiArt({ p, chip }: { p: (i: number) => Poster | null; chip: string }) {
 /** Amigos: pila de avatares y dos portadas de lo que están viendo. */
 function FriendsArt({ p }: { p: (i: number) => Poster | null }) {
   return (
-    <div aria-hidden="true" className="flex items-center gap-3">
+    // `flex-wrap`: a 320 px las dos portadas se salían 3 px de la card.
+    <div aria-hidden="true" className="flex flex-wrap items-center justify-end gap-3">
       <div className="flex">
         {AVATARS.map(([a, b], i) => (
           <span

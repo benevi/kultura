@@ -677,6 +677,7 @@
       },
       "yes": "Sí",
       "no": "No",
+      "tableLabel": "Tabla: formatos y funciones de cada app",
       "note": "De cada app se marca el formato en el que se centra; algunas permiten apuntar otros de forma parcial. Letterboxd, Trakt, MyAnimeList, Goodreads y Backloggd son marcas de sus respectivos propietarios. KULTURA no está afiliada a ninguna de ellas."
     },
     "faq": {
