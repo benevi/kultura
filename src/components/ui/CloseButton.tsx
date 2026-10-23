@@ -21,8 +21,8 @@ export const CloseButton = forwardRef<HTMLButtonElement, CloseButtonProps>(
     <button
       ref={ref}
       type={type}
-      aria-label={label}
-      title={label}
+      data-label={label}
+      data-title={label}
       className={cn(
         'relative inline-flex flex-shrink-0 items-center justify-center rounded-full',
         'text-text-secondary hover:text-text-primary hover:bg-surface-default transition-colors',
