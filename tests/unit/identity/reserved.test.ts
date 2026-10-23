@@ -165,8 +165,11 @@ describe('account_state', () => {
 describe('varios', () => {
   it('la versión de términos es la fecha de los términos publicados', () => {
     const es = JSON.parse(readFileSync(path.resolve(__dirname, '../../../messages/es.json'), 'utf8'))
-    expect(es.legal.terms.updated).toContain('septiembre de 2026')
-    expect(TERMS_VERSION).toBe('2026-09')
+    const en = JSON.parse(readFileSync(path.resolve(__dirname, '../../../messages/en.json'), 'utf8'))
+    expect(es.legal.terms.version).toBe(`Versión ${TERMS_VERSION}`)
+    expect(en.legal.terms.version).toBe(`Version ${TERMS_VERSION}`)
+    expect(es.legal.terms.updated).toContain('octubre de 2026')
+    expect(TERMS_VERSION).toBe('2026-10')
   })
 
   it('el borrado se cumple a los 7 días', () => {
