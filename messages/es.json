@@ -312,6 +312,8 @@
       "seasons": "Temporadas"
     },
     "trailerTitle": "Tráiler de {title}",
+    "trailerPlay": "Reproducir el tráiler",
+    "trailerNotice": "El vídeo se carga desde YouTube al pulsar.",
     "sourceLabel": "Datos del título:",
     "sourceLinkLabel": "{name}: ficha del título (se abre en una pestaña nueva)",
     "watchType": {

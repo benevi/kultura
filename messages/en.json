@@ -312,6 +312,8 @@
       "seasons": "Seasons"
     },
     "trailerTitle": "{title} trailer",
+    "trailerPlay": "Play the trailer",
+    "trailerNotice": "The video loads from YouTube when you press play.",
     "sourceLabel": "Title data:",
     "sourceLinkLabel": "{name}: title page (opens in a new tab)",
     "watchType": {
