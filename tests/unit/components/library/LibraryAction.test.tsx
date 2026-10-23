@@ -257,27 +257,32 @@ describe('LibraryAction', () => {
 
   // ── ACC-11: los fallos se avisan (antes solo iban al log) ──────────────────
 
-  it('error 502 del proveedor → aviso persistente con texto propio', async () => {
+  // Revisión #41: el error va DENTRO del diálogo abierto (role="alert"): un
+  // toast quedaba debajo de la hoja y fuera del árbol accesible.
+  it('error 502 del proveedor → aviso dentro del diálogo, que sigue abierto', async () => {
     mockAddToLibrary.mockRejectedValue(new Error('Media provider unavailable'))
     render(
       <LibraryAction mediaId="movie_550" mediaCache={mediaCache} initialEntry={null} isAuthenticated={true} />
     )
     fireEvent.click(screen.getByText(/addToLibrary/))
     fireEvent.submit(screen.getByRole('dialog').querySelector('form')!)
+    const dialog = screen.getByRole('dialog')
     await waitFor(() => {
-      expect(mockShowError).toHaveBeenCalledWith('errors.providerUnavailable', { persistent: true })
+      expect(dialog.querySelector('[role="alert"]')).toHaveTextContent('errors.providerUnavailable')
     })
+    expect(mockShowError).not.toHaveBeenCalled()
   })
 
-  it('otro error al guardar → aviso de error genérico', async () => {
+  it('otro error al guardar → aviso genérico dentro del diálogo', async () => {
     mockAddToLibrary.mockRejectedValue(new Error('Failed to save library entry'))
     render(
       <LibraryAction mediaId="movie_550" mediaCache={mediaCache} initialEntry={null} isAuthenticated={true} />
     )
     fireEvent.click(screen.getByText(/addToLibrary/))
     fireEvent.submit(screen.getByRole('dialog').querySelector('form')!)
+    const dialog = screen.getByRole('dialog')
     await waitFor(() => {
-      expect(mockShowError).toHaveBeenCalledWith('errors.saveFailed')
+      expect(dialog.querySelector('[role="alert"]')).toHaveTextContent('errors.saveFailed')
     })
   })
 
@@ -288,8 +293,9 @@ describe('LibraryAction', () => {
     )
     fireEvent.click(screen.getByText('remove'))
     fireEvent.click(screen.getByRole('button', { name: 'removeConfirm' }))
+    const dialog = screen.getByRole('alertdialog')
     await waitFor(() => {
-      expect(mockShowError).toHaveBeenCalledWith('errors.removeFailed')
+      expect(dialog.querySelector('[role="alert"]')).toHaveTextContent('errors.removeFailed')
     })
     expect(screen.getByText('status.completed')).toBeInTheDocument()
   })

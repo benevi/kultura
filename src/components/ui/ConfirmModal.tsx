@@ -18,6 +18,8 @@ interface ConfirmModalProps {
   loading?: boolean
   /** Dónde vuelve el foco si el botón que lo abrió desaparece al confirmar. */
   finalFocusRef?: RefObject<HTMLElement>
+  /** Error al confirmar: se anuncia dentro del diálogo. */
+  error?: string | null
 }
 
 /**
@@ -37,6 +39,7 @@ export function ConfirmModal({
   isDestructive = false,
   loading = false,
   finalFocusRef,
+  error = null,
 }: ConfirmModalProps) {
   return (
     <Modal
@@ -45,9 +48,11 @@ export function ConfirmModal({
       title={title}
       description={message}
       role="alertdialog"
-      closeLabel={cancelLabel}
+      // Sin ×: duplicaba "Cancelar", que ya está a la vista y es el foco inicial.
+      showClose={false}
       dismissible={!loading}
       finalFocusRef={finalFocusRef}
+      error={error}
     >
       <div className="flex flex-wrap justify-end gap-2">
         <KButton

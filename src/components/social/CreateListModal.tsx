@@ -64,17 +64,21 @@ export function CreateListModal({ onClose }: CreateListModalProps) {
       }
       // La lista nace privada (`is_public default false`); hacerla pública es
       // el mismo PATCH que el selector de la propia lista.
+      let publishFailed = false
       if (visibility === 'public') {
         const patch = await fetch(`/api/lists/${data.list.id}`, {
           method: 'PATCH',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ isPublic: true }),
         }).catch(() => null)
-        if (!patch?.ok) showError(t('visibilityAfterCreateError'))
+        publishFailed = !patch?.ok
       }
       router.push(`/lists/${data.list.id}`)
       router.refresh()
       onClose()
+      // El aviso va al toast DESPUÉS de cerrar: con el diálogo abierto, la
+      // región de avisos está `aria-hidden` y el lector no lo leería.
+      if (publishFailed) setTimeout(() => showError(t('visibilityAfterCreateError')), 0)
     } catch {
       setError(t('errorCreate'))
       setLoading(false)

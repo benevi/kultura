@@ -113,6 +113,54 @@ for (const c of DIALOGS) {
   });
 }
 
+/**
+ * Revisión #41: un fallo con el diálogo abierto tiene que verse (encima de
+ * todo, no debajo de la hoja ni del fondo) y anunciarse (fuera de cualquier
+ * `aria-hidden`/`inert`). Se simula el 502 del catálogo y un 500 de listas.
+ */
+async function expectAnnouncedAlert(page: Page, dialog: Locator, text: string) {
+  const alert = dialog.getByRole("alert").filter({ hasText: text });
+  await expect(alert).toBeVisible();
+  const state = await alert.evaluate((el) => {
+    const r = el.getBoundingClientRect();
+    const onTop = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2);
+    return {
+      onTop: !!onTop && (onTop === el || el.contains(onTop)),
+      hidden: !!el.closest('[aria-hidden="true"], [inert]'),
+    };
+  });
+  expect(state.onTop, "el aviso está encima, no tapado").toBe(true);
+  expect(state.hidden, "el aviso no está en una zona aria-hidden/inert").toBe(false);
+}
+
+test("502 del catálogo al guardar: el aviso se ve y se anuncia con el diálogo abierto", async ({ page }) => {
+  await page.route("**/api/library", (route) =>
+    route.request().method() === "POST"
+      ? route.fulfill({ status: 502, contentType: "application/json", body: JSON.stringify({ error: "Media provider unavailable" }) })
+      : route.continue()
+  );
+  await open(page, "/es/media/movie/550");
+  await page.getByRole("button", { name: "Añadir a biblioteca", exact: true }).click();
+  const dialog = page.getByRole("dialog", { name: "Añadir a biblioteca" });
+  await dialog.getByRole("button", { name: "Guardar", exact: true }).click();
+  await expectAnnouncedAlert(page, dialog, "el catálogo no responde");
+  await expect(dialog).toBeVisible();
+});
+
+test("error al añadir a una lista: el aviso se ve y se anuncia con el diálogo abierto", async ({ page }) => {
+  await page.route(`**/api/lists/${LIST_ID}`, (route) =>
+    route.request().method() === "POST"
+      ? route.fulfill({ status: 500, contentType: "application/json", body: "{}" })
+      : route.continue()
+  );
+  await open(page, "/es/media/movie/550");
+  await page.getByRole("button", { name: "Añadir a lista", exact: true }).click();
+  const dialog = page.getByRole("dialog", { name: "Añadir a una lista" });
+  await dialog.getByRole("radio", { name: "Pelis para el finde" }).check();
+  await dialog.getByRole("button", { name: "Añadir", exact: true }).click();
+  await expectAnnouncedAlert(page, dialog, "Error al añadir el título");
+});
+
 test("StarRating: flechas cambian la nota y el foco se ve (ACC-8)", async ({ page }) => {
   await open(page, "/es/media/movie/550");
   await page.getByRole("button", { name: "Añadir a biblioteca", exact: true }).click();

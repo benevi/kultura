@@ -58,6 +58,12 @@ export interface ModalProps {
   className?: string
   /** Visualmente oculto (sigue nombrando al diálogo). */
   hideTitle?: boolean
+  /**
+   * Error de la acción del diálogo (p. ej. un 502 al guardar). Se pinta y se
+   * anuncia DENTRO del diálogo (`role="alert"`): con el diálogo abierto, el
+   * resto de la página —los toasts incluidos— queda `aria-hidden` y debajo.
+   */
+  error?: string | null
 }
 
 function TranslatedClose(props: { onClick: () => void; disabled?: boolean }) {
@@ -80,6 +86,7 @@ export function Modal({
   finalFocusRef,
   className,
   hideTitle = false,
+  error = null,
 }: ModalProps) {
   // Elemento con el foco justo antes de abrir: Radix solo lo devuelve si hay
   // `Dialog.Trigger`, y aquí cada pantalla tiene su propio botón.
@@ -210,6 +217,11 @@ export function Modal({
               <Dialog.Description className="text-sm text-text-secondary">{description}</Dialog.Description>
             )}
             {children}
+            {/* Región que existe desde que abre el diálogo: un lector no
+                anuncia la que nace ya con texto. */}
+            <p role="alert" data-testid="modal-error" className={error ? 'text-sm text-accent-danger' : 'sr-only'}>
+              {error ?? ''}
+            </p>
           </Dialog.Content>
         </Dialog.Overlay>
       </Dialog.Portal>

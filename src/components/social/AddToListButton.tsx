@@ -23,7 +23,7 @@ interface AddToListButtonProps {
 export function AddToListButton({ item }: AddToListButtonProps) {
   const t = useTranslations('lists')
   const tc = useTranslations('common')
-  const { show, showError } = useToastContext()
+  const { show } = useToastContext()
 
   const [open, setOpen] = useState(false)
   const [lists, setLists] = useState<RawList[]>([])
@@ -31,6 +31,8 @@ export function AddToListButton({ item }: AddToListButtonProps) {
   const [fetchError, setFetchError] = useState(false)
   const [selectedListId, setSelectedListId] = useState('')
   const [adding, setAdding] = useState(false)
+  // El fallo se anuncia dentro del diálogo, que sigue abierto (ver Modal).
+  const [addError, setAddError] = useState<string | null>(null)
 
   useEffect(() => {
     if (!open) return
@@ -52,6 +54,7 @@ export function AddToListButton({ item }: AddToListButtonProps) {
   async function handleAdd() {
     if (!selectedListId || adding) return
     setAdding(true)
+    setAddError(null)
     try {
       const res = await fetch(`/api/lists/${selectedListId}`, {
         method: 'POST',
@@ -80,10 +83,10 @@ export function AddToListButton({ item }: AddToListButtonProps) {
         show({ message: t('alreadyIn', { name: selectedName }), type: 'info' })
         setOpen(false)
       } else {
-        showError(t('errorAdding'))
+        setAddError(t('errorAdding'))
       }
     } catch {
-      showError(t('errorAdding'))
+      setAddError(t('errorAdding'))
     } finally {
       setAdding(false)
     }
@@ -99,11 +102,12 @@ export function AddToListButton({ item }: AddToListButtonProps) {
 
       <Modal
         open={open}
-        onClose={() => setOpen(false)}
+        onClose={() => { setOpen(false); setAddError(null) }}
         variant="sheet"
         title={t('addToListTitle')}
         closeLabel={tc('close')}
         dismissible={!adding}
+        error={addError}
       >
         {loadingLists && (
           <div className="flex justify-center py-6">

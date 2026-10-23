@@ -54,12 +54,16 @@ export function LibraryAction({
 }: LibraryActionProps) {
   const t = useTranslations('library')
   const tc = useTranslations('common')
-  const { show, showError } = useToastContext()
+  const { show } = useToastContext()
 
   const [entry, setEntry] = useState<LibraryEntry | null>(initialEntry)
   const [modalOpen, setModalOpen] = useState(false)
   const [confirmRemove, setConfirmRemove] = useState(false)
   const [loading, setLoading] = useState(false)
+  // ACC-11: los fallos se dicen DENTRO del diálogo que sigue abierto (un
+  // toast quedaría debajo y fuera del árbol accesible mientras dure).
+  const [saveError, setSaveError] = useState<string | null>(null)
+  const [removeError, setRemoveError] = useState<string | null>(null)
   // Al guardar o quitar, el botón que abrió el diálogo desaparece ("Añadir"
   // pasa a "Actualizar" y al revés): el foco va al que lo sustituye.
   const addRef = useRef<HTMLButtonElement>(null)
@@ -72,6 +76,7 @@ export function LibraryAction({
     episodeProgress: EpisodeProgress | null
   }) {
     setLoading(true)
+    setSaveError(null)
     try {
       const payload: LibraryPayload = {
         mediaId,
@@ -90,13 +95,12 @@ export function LibraryAction({
     } catch (err) {
       log.error('Failed to save library entry', { err })
       // ACC-11: antes el fallo solo iba al log y la persona no se enteraba.
-      // Un 502 (catálogo caído) se queda hasta que lo cierre: el diálogo sigue
-      // abierto con sus datos para reintentar.
-      if (err instanceof Error && err.message === PROVIDER_UNAVAILABLE) {
-        showError(t('errors.providerUnavailable'), { persistent: true })
-      } else {
-        showError(t('errors.saveFailed'))
-      }
+      // El diálogo sigue abierto con sus datos para reintentar.
+      setSaveError(
+        err instanceof Error && err.message === PROVIDER_UNAVAILABLE
+          ? t('errors.providerUnavailable')
+          : t('errors.saveFailed')
+      )
     } finally {
       setLoading(false)
     }
@@ -104,6 +108,7 @@ export function LibraryAction({
 
   async function handleRemove() {
     setLoading(true)
+    setRemoveError(null)
     try {
       await removeFromLibrary(mediaId)
       setEntry(null)
@@ -111,7 +116,7 @@ export function LibraryAction({
       show({ message: t('removed'), type: 'success' })
     } catch (err) {
       log.error('Failed to remove library entry', { err })
-      showError(t('errors.removeFailed'))
+      setRemoveError(t('errors.removeFailed'))
     } finally {
       setLoading(false)
     }
@@ -137,9 +142,10 @@ export function LibraryAction({
             current={null}
             mediaType={mediaCache.type}
             onSave={handleSave}
-            onClose={() => setModalOpen(false)}
+            onClose={() => { setModalOpen(false); setSaveError(null) }}
             loading={loading}
             finalFocusRef={updateRef}
+            error={saveError}
           />
         )}
       </>
@@ -176,8 +182,9 @@ export function LibraryAction({
           current={entry}
           mediaType={mediaCache.type}
           onSave={handleSave}
-          onClose={() => setModalOpen(false)}
+          onClose={() => { setModalOpen(false); setSaveError(null) }}
           loading={loading}
+          error={saveError}
         />
       )}
 
@@ -191,8 +198,9 @@ export function LibraryAction({
         isDestructive
         loading={loading}
         onConfirm={handleRemove}
-        onCancel={() => setConfirmRemove(false)}
+        onCancel={() => { setConfirmRemove(false); setRemoveError(null) }}
         finalFocusRef={addRef}
+        error={removeError}
       />
     </>
   )

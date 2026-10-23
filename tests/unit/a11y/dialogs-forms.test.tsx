@@ -70,7 +70,7 @@ describe('CreateListModal', () => {
     render(<CreateListModal onClose={vi.fn()} />)
     fireEvent.click(screen.getByRole('button', { name: 'lists.create' }))
     const field = screen.getByRole('textbox', { name: 'lists.listName' })
-    expect(screen.getByRole('alert')).toHaveTextContent('lists.nameRequired')
+    expect(screen.getAllByRole('alert').some((a) => a.textContent === 'lists.nameRequired')).toBe(true)
     expect(field).toHaveAttribute('aria-invalid', 'true')
     expect(field).toHaveAccessibleDescription('lists.nameRequired')
     expect(document.activeElement).toBe(field)
@@ -96,7 +96,7 @@ describe('CreateListModal', () => {
     )
   })
 
-  it('si el PATCH falla, se avisa (la lista queda privada)', async () => {
+  it('si el PATCH falla, se avisa al cerrar (la lista queda privada)', async () => {
     fetchMock
       .mockResolvedValueOnce({ ok: true, json: async () => ({ list: { id: 'l2' } }) })
       .mockResolvedValueOnce({ ok: false, json: async () => ({}) })
@@ -105,6 +105,8 @@ describe('CreateListModal', () => {
     fireEvent.click(screen.getByRole('radio', { name: /lists\.visibilityPublic/ }))
     fireEvent.click(screen.getByRole('button', { name: 'lists.create' }))
     await waitFor(() => expect(mockShowError).toHaveBeenCalledWith('lists.visibilityAfterCreateError'))
+    // Después de cerrar: con el diálogo abierto el toast no se leería.
+    expect(mockPush).toHaveBeenCalled()
   })
 })
 
@@ -189,6 +191,15 @@ describe('LibraryStatusModal', () => {
 })
 
 describe('ConfirmModal', () => {
+  it('sin × (duplicaba Cancelar) y con el error dentro del diálogo', () => {
+    render(
+      <ConfirmModal isOpen title="T" message="M" confirmLabel="Borrar" cancelLabel="Cancelar" onConfirm={vi.fn()} onCancel={vi.fn()} error="Ha fallado" />
+    )
+    const dialog = screen.getByRole('alertdialog')
+    expect(screen.getAllByRole('button').map((b) => b.textContent)).toEqual(['Cancelar', 'Borrar'])
+    expect(dialog.querySelector('[role="alert"]')).toHaveTextContent('Ha fallado')
+  })
+
   it('alertdialog con título y mensaje; el foco empieza en Cancelar (lo seguro)', async () => {
     render(
       <ConfirmModal isOpen title="¿Borrar?" message="No se puede deshacer" confirmLabel="Borrar" cancelLabel="Cancelar" onConfirm={vi.fn()} onCancel={vi.fn()} isDestructive />

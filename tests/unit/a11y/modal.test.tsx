@@ -121,6 +121,15 @@ describe('Modal', () => {
     expect(screen.queryByRole('button', { name: 'Abrir' })).not.toBeInTheDocument()
   })
 
+  it('error: región role="alert" dentro del diálogo, vacía hasta que hay error', () => {
+    const { rerender } = render(<Modal open onClose={vi.fn()} title="T" closeLabel="Cerrar" />)
+    const dialog = screen.getByRole('dialog')
+    const region = dialog.querySelector('[role="alert"]')!
+    expect(region).toHaveTextContent('')
+    rerender(<Modal open onClose={vi.fn()} title="T" closeLabel="Cerrar" error="El catálogo no responde" />)
+    expect(dialog.querySelector('[role="alert"]')).toHaveTextContent('El catálogo no responde')
+  })
+
   it('hoja (sheet): asa decorativa; arrastrar más del umbral cierra, menos no', async () => {
     render(<Harness variant="sheet" />)
     openWithKeyboard()

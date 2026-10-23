@@ -30,6 +30,8 @@ interface LibraryStatusModalProps {
   loading: boolean
   /** Dónde vuelve el foco si el botón que lo abrió ya no existe al cerrar. */
   finalFocusRef?: RefObject<HTMLElement>
+  /** Error al guardar (502 del catálogo…): se anuncia dentro del diálogo. */
+  error?: string | null
 }
 
 export function LibraryStatusModal({
@@ -39,6 +41,7 @@ export function LibraryStatusModal({
   onClose,
   loading,
   finalFocusRef,
+  error = null,
 }: LibraryStatusModalProps) {
   const t = useTranslations('library')
   const scoreLabelId = useId()
@@ -78,6 +81,7 @@ export function LibraryStatusModal({
       title={current ? t('updateEntry') : t('addToLibrary')}
       dismissible={!loading}
       finalFocusRef={finalFocusRef}
+      error={error}
     >
       <form onSubmit={handleSubmit} className="flex flex-col gap-5">
         {/* Estado: primer control, recibe el foco al abrir. */}
