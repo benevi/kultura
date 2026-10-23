@@ -1,7 +1,7 @@
 import { ImageResponse } from "next/og";
 import { C, loadFont } from "@/lib/og/brand";
 import { posterDataUri } from "@/lib/og/poster";
-import { getPublicCollection } from "@/lib/social/public-collection";
+import { getPublicCollection, resolveRenamedUsername } from "@/lib/social/public-collection";
 
 /**
  * Tarjeta al compartir /u/{username}: nombre + collage de hasta cuatro
@@ -35,10 +35,22 @@ export default async function Image({
   params: { locale: string; username: string } | Promise<{ locale: string; username: string }>;
 }) {
   const { locale, username: rawUsername } = await params;
-  const username = decodeURIComponent(rawUsername);
+  let username = rawUsername;
+  try {
+    username = decodeURIComponent(rawUsername);
+  } catch {
+    // `%` suelto: se usa tal cual (dará la tarjeta genérica).
+  }
   const copy = COPY[locale === "en" ? "en" : "es"];
 
-  const collection = await getPublicCollection(username).catch(() => null);
+  // R11: con un nombre antiguo, la tarjeta es la del nombre actual (la página
+  // ya redirige con 308; la imagen se pide a veces por la URL vieja). Solo
+  // listas públicas: la tarjeta la ve cualquiera, la biblioteca nunca.
+  let collection = await getPublicCollection(username).catch(() => null);
+  if (!collection) {
+    const current = await resolveRenamedUsername(username).catch(() => null);
+    if (current) collection = await getPublicCollection(current).catch(() => null);
+  }
   const lists = collection?.lists ?? [];
   const sources = lists
     .flatMap((l) => l.items)

@@ -24,6 +24,7 @@ import {
   APP_CLIENT_NAMESPACES,
   REPORT_CLIENT_NAMESPACES,
   WELCOME_CLIENT_NAMESPACES,
+  PUBLIC_PROFILE_CLIENT_NAMESPACES,
   SHELL_CLIENT_NAMESPACES,
   pickMessages,
 } from "@/i18n/client-messages";
@@ -36,6 +37,7 @@ const APP_GROUP_SHELL = ["layout.tsx", "template.tsx"].map((f) => APP_GROUP + f)
 const ZONES = [
   { dir: "report", list: REPORT_CLIENT_NAMESPACES, file: "src/app/[locale]/report/PublicReportForm.tsx" },
   { dir: "welcome", list: WELCOME_CLIENT_NAMESPACES, file: "src/app/[locale]/welcome/WelcomeFlow.tsx" },
+  { dir: "u", list: PUBLIC_PROFILE_CLIENT_NAMESPACES, file: "src/components/collection/InviteLinkButton.tsx" },
 ].map((z) => ({ ...z, path: path.join(SRC, "app", "[locale]", z.dir) + path.sep }));
 
 function walk(dir: string): string[] {
@@ -185,7 +187,7 @@ describe("REN-5 — textos del navegador por namespaces", () => {
     ["es", es],
     ["en", en],
   ])("todas las rutas existen en %s.json", (_locale, messages) => {
-    for (const ns of [...APP_CLIENT_NAMESPACES, ...SHELL_CLIENT_NAMESPACES, ...REPORT_CLIENT_NAMESPACES, ...WELCOME_CLIENT_NAMESPACES]) {
+    for (const ns of [...APP_CLIENT_NAMESPACES, ...SHELL_CLIENT_NAMESPACES, ...REPORT_CLIENT_NAMESPACES, ...WELCOME_CLIENT_NAMESPACES, ...PUBLIC_PROFILE_CLIENT_NAMESPACES]) {
       const picked = pickMessages(messages, [ns]);
       expect(Object.keys(picked), ns).toHaveLength(1);
     }

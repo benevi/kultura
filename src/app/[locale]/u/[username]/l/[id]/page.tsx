@@ -1,10 +1,12 @@
 // ============================================================
 // KULTURA — /u/[username]/l/[id] (Server Component, PÚBLICA)
 // Una lista pública en solo lectura. 404 si no es pública o no es de
-// `username` (así un enlace no sirve para adivinar listas privadas).
+// `username` (así un enlace no sirve para adivinar listas privadas). Un
+// nombre antiguo redirige (308) al actual (R11), y se puede denunciar
+// (D-13): con sesión, el botón de F-11; sin ella, el formulario público.
 // ============================================================
 
-import { notFound } from 'next/navigation'
+import { notFound, permanentRedirect } from 'next/navigation'
 import type { Metadata } from 'next'
 import { getTranslations } from 'next-intl/server'
 import { Header } from '@/components/layout/Header'
@@ -12,8 +14,12 @@ import { Footer } from '@/components/layout/Footer'
 import { Avatar } from '@/components/ui/Avatar'
 import { MediaGrid } from '@/components/media/MediaGrid'
 import { FormatLabel, SignUpCta } from '@/components/collection/PublicCollection'
+import { ReportButton } from '@/components/social/ReportButton'
 import { Link } from '@/i18n/navigation'
-import { getPublicList } from '@/lib/social/public-collection'
+import { createClient } from '@/lib/supabase/server'
+import { isModerationV2 } from '@/lib/social/friends'
+import { siteUrl } from '@/lib/site-url'
+import { getPublicList, resolveRenamedUsername, usernameExists } from '@/lib/social/public-collection'
 import type { MediaItem, MediaType } from '@/types/media'
 
 interface Props {
@@ -25,26 +31,52 @@ const SINGULAR_KEY = {
   book: 'book', comic: 'comic', game: 'game',
 } as const
 
+function decodeName(raw: string): string {
+  try {
+    return decodeURIComponent(raw)
+  } catch {
+    return raw
+  }
+}
+
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
-  const { username, id } = await params
-  const name = decodeURIComponent(username)
-  const t = await getTranslations('collection')
+  const { locale, username, id } = await params
+  const name = decodeName(username)
+  const t = await getTranslations({ locale, namespace: 'collection' })
   const data = await getPublicList(name, id).catch(() => null)
   const title = data ? `${data.list.name} · ${name}` : t('metaTitle', { username: name })
   const ogTitle = `${title} · KULTURA`
   const description = t('listMetaDescription', { username: name })
+  const path = `/${locale}/u/${encodeURIComponent(name)}/l/${encodeURIComponent(id)}`
   return {
     title,
     description,
-    openGraph: { title: ogTitle, description },
+    alternates: { canonical: path },
+    // Una lista con menos de 5 títulos es contenido fino (SEO-3).
+    robots: data && data.list.items.length >= 5 ? undefined : { index: false, follow: true },
+    openGraph: { title: ogTitle, description, url: `${siteUrl()}${path}`, siteName: 'KULTURA' },
     twitter: { card: 'summary_large_image', title: ogTitle, description },
   }
 }
 
 export default async function PublicListPage({ params }: Props) {
-  const { username, id } = await params
-  const data = await getPublicList(decodeURIComponent(username), id)
-  if (!data) notFound()
+  const { locale, username, id } = await params
+  const name = decodeName(username)
+  const data = await getPublicList(name, id)
+  if (!data) {
+    // R11: el enlace se compartió con un nombre que ya no existe → al actual.
+    if (!(await usernameExists(name))) {
+      const current = await resolveRenamedUsername(name)
+      if (current) permanentRedirect(`/${locale}/u/${encodeURIComponent(current)}/l/${encodeURIComponent(id)}`)
+    }
+    notFound()
+  }
+
+  const supabase = createClient()
+  const signedIn = await supabase.auth
+    .getUser()
+    .then(({ data: auth }) => Boolean(auth.user))
+    .catch(() => false)
 
   const t = await getTranslations('collection')
   const tm = await getTranslations('media')
@@ -61,7 +93,7 @@ export default async function PublicListPage({ params }: Props) {
   return (
     <div className="min-h-screen flex flex-col">
       <Header />
-      <main className="flex-1 w-full max-w-4xl mx-auto px-4 md:px-8 py-10 flex flex-col gap-10">
+      <main id="main" className="flex-1 w-full max-w-4xl mx-auto px-4 md:px-8 py-10 flex flex-col gap-10">
         <header className="flex flex-col gap-3">
           <div>
             <FormatLabel>{tm(SINGULAR_KEY[list.mediaType])}</FormatLabel>
@@ -86,7 +118,21 @@ export default async function PublicListPage({ params }: Props) {
 
         <MediaGrid items={gridItems} requirePoster={false} />
 
-        <SignUpCta />
+        {signedIn ? null : <SignUpCta href={`/login?mode=register&ref=${encodeURIComponent(owner.username)}`} />}
+
+        {/* D-13: denunciar la lista (con sesión, el botón; sin ella, el formulario público) */}
+        <div className="flex justify-center">
+          {signedIn ? (
+            isModerationV2() ? <ReportButton targetType="list" targetId={list.id} /> : null
+          ) : (
+            <Link
+              href={`/report?target=list&id=${encodeURIComponent(list.id)}`}
+              className="inline-flex items-center min-h-11 text-[13px] text-text-tertiary underline-offset-4 hover:underline hover:text-text-primary"
+            >
+              {t('reportList')}
+            </Link>
+          )}
+        </div>
       </main>
       <Footer />
     </div>
