@@ -133,6 +133,10 @@ async function load() {
 }
 
 beforeEach(() => {
+  // La ventana de candidatos rota con el día (`dayIndex`): sin fecha fija, las
+  // aserciones sobre el elegido `movie_1` dependen del día en que corre la CI.
+  vi.useFakeTimers({ toFake: ['Date'] })
+  vi.setSystemTime(new Date('2026-10-22T10:00:00Z'))
   vi.resetModules()
   fetchDiscoverDataMock.mockReset()
   computeMatchScoresMock.mockReset()
