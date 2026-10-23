@@ -19,6 +19,11 @@ interface ProfileHeaderProps {
   totalItems: number
   totalCompleted: number
   totalInProgress: number
+  /**
+   * D-04b: con la biblioteca oculta para quien mira, los contadores no se
+   * pintan (antes enseñaban "0 títulos", que era falso). Por defecto, sí.
+   */
+  showCounters?: boolean
 }
 
 export async function ProfileHeader({
@@ -33,6 +38,7 @@ export async function ProfileHeader({
   totalItems,
   totalCompleted,
   totalInProgress,
+  showCounters = true,
 }: ProfileHeaderProps) {
   const t = await getTranslations('profile')
   const locale = await getLocale()
@@ -88,6 +94,7 @@ export async function ProfileHeader({
       </div>
 
       {/* Contadores: tarjetas SUELTAS (radio 20, padding 16/26, gap 16) */}
+      {showCounters ? (
       <ul className="flex flex-wrap gap-4 mt-7">
         {stats.map((s) => (
           <li key={s.label} className="bg-surface-default rounded-20 px-[26px] py-4">
@@ -96,6 +103,7 @@ export async function ProfileHeader({
           </li>
         ))}
       </ul>
+      ) : null}
     </section>
   )
 }

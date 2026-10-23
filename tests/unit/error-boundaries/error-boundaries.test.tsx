@@ -22,7 +22,7 @@ import NotificationsError from '@/app/[locale]/(app)/notifications/error'
 import FriendsError from '@/app/[locale]/(app)/friends/error'
 import DiscoverError from '@/app/[locale]/(app)/discover/error'
 import SearchError from '@/app/[locale]/(app)/search/error'
-import MediaDetailError from '@/app/[locale]/(app)/media/[type]/[id]/error'
+import MediaDetailError from '@/app/[locale]/media/[type]/[id]/error'
 
 const TEST_ERROR = new Error('Test error') as Error & { digest?: string }
 

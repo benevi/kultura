@@ -23,7 +23,7 @@ export async function ProfileGenres({ topGenres }: ProfileGenresProps) {
           <span
             key={genre}
             className="bg-surface-elevated border border-surface-border text-xs font-bold px-3.5 py-2 rounded-full text-text-primary"
-            title={`${count} títulos`}
+            title={t('genreCount', { count })}
           >
             {genre}
           </span>

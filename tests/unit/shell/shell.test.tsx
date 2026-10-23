@@ -79,6 +79,7 @@ import RootLayout from "@/app/layout";
 import LocaleLayout, { generateMetadata, viewport } from "@/app/[locale]/layout";
 import AppTemplate from "@/app/[locale]/(app)/template";
 import ReportLayout from "@/app/[locale]/report/layout";
+import PublicProfileLayout from "@/app/[locale]/u/layout";
 import WelcomeLayout from "@/app/[locale]/welcome/layout";
 import { ClientMessages } from "@/i18n/ClientMessages";
 import LocaleNotFound, { generateMetadata as notFoundMetadata } from "@/app/[locale]/not-found";
@@ -91,6 +92,7 @@ import { localeFromAcceptLanguage, localeFromPathname } from "@/i18n/detect";
 import {
   APP_CLIENT_NAMESPACES,
   REPORT_CLIENT_NAMESPACES,
+  PUBLIC_PROFILE_CLIENT_NAMESPACES,
   SHELL_CLIENT_NAMESPACES,
   WELCOME_CLIENT_NAMESPACES,
 } from "@/i18n/client-messages";
@@ -241,12 +243,16 @@ describe("REN-5 — textos del navegador", () => {
     );
     expect(messages).not.toHaveProperty("legal");
     expect(messages).not.toHaveProperty("landing");
-    expect(Object.keys((messages.discoverFilters as object) ?? {})).toEqual(["typeBadge"]);
+    // F-17: la etiqueta de formato de MediaCard solo la usaban las listas de
+    // /u, que ya llevan su propio proveedor.
+    expect(messages).not.toHaveProperty("discoverFilters");
+    expect(messages).not.toHaveProperty("report");
   });
 
   it.each([
     ["(app)/template", AppTemplate, APP_CLIENT_NAMESPACES],
     ["report/layout", ReportLayout, REPORT_CLIENT_NAMESPACES],
+    ["u/layout", PublicProfileLayout, PUBLIC_PROFILE_CLIENT_NAMESPACES],
     ["welcome/layout", WelcomeLayout, WELCOME_CLIENT_NAMESPACES],
   ] as const)("%s pone su proveedor con su lista", async (_name, Zone, list) => {
     const zone = Zone({ children: <p /> }) as El;
