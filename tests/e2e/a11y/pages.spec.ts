@@ -24,14 +24,9 @@ const PUBLIC_PAGES: Array<{ path: string; status?: number }> = [
   { path: "/es/privacy" },
   { path: "/es/terms" },
   { path: "/es/esta-pagina-no-existe", status: 404 },
+  // Ficha pública (D-01, F-15): sin sesión, con cabecera pública.
+  { path: "/es/media/movie/550" },
 ];
-
-/**
- * Ficha pública (D-01). Hoy vive en `(app)` y sin sesión redirige al login;
- * cuando F-15 la saque a `src/app/[locale]/media/` (misma URL) esta prueba
- * deja de saltarse sola. Con sesión se prueba ya abajo.
- */
-const PUBLIC_MEDIA = "/es/media/movie/550";
 
 const APP_PAGES = [
   "/es/home",
@@ -64,17 +59,6 @@ test.describe("públicas sin sesión", () => {
     });
   }
 
-  test(`axe ${PUBLIC_MEDIA} (ficha pública)`, async ({ page }) => {
-    const response = await page.goto(PUBLIC_MEDIA, { waitUntil: "domcontentloaded" });
-    test.skip(
-      new URL(page.url()).pathname.includes("/login"),
-      "La ficha aún exige sesión: se activa sola cuando F-15 la haga pública."
-    );
-    expect(response?.status()).toBe(200);
-    await page.waitForLoadState("load");
-    await expectNoBlockingViolations(page, PUBLIC_MEDIA);
-  });
-
   test("reflow a 320 px sin scroll horizontal (WCAG 1.4.10)", async ({ page }) => {
     await page.setViewportSize({ width: 320, height: 640 });
     for (const { path, status = 200 } of PUBLIC_PAGES) {
@@ -104,13 +88,7 @@ test.describe("app con sesión (Supabase simulado)", () => {
       await open(page, path);
       // Comprobación de que la sesión simulada funciona (no es el login).
       await expect(page).not.toHaveURL(/\/login/);
-      if (path.startsWith("/es/media/")) {
-        // ACC-7: el `<main>` de la ficha lo pone F-15 al moverla (no es de
-        // este frente). axe ya lo vigila como `landmark-one-main` (moderate).
-        test.info().annotations.push({ type: "pendiente", description: "<main> en la ficha: F-15" });
-      } else {
-        await expect(page.locator("main")).toHaveCount(1);
-      }
+      await expect(page.locator("main")).toHaveCount(1);
       await expectNoBlockingViolations(page, path);
     });
   }
