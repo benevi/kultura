@@ -52,11 +52,28 @@ export const WELCOME_CLIENT_NAMESPACES = [
 /**
  * `/[locale]/u/**` (perfil y listas públicas, F-17): "Invitar amigos" del
  * dueño, la denuncia con sesión (`ReportButton`) y la etiqueta de formato de
- * `MediaCard` en las listas públicas (era la única página del shell que la
+ * `MediaCard` y el estado vacío de `MediaGrid` (`media`) en las listas
+ * públicas (era la única página del shell que los
  * usaba). Mismo patrón que `/report`,
  * con `u/layout.tsx`, para no cargar `report` ni `invite` en todas las públicas.
  */
-export const PUBLIC_PROFILE_CLIENT_NAMESPACES = ["discoverFilters.typeBadge", "invite", "report"] as const;
+export const PUBLIC_PROFILE_CLIENT_NAMESPACES = ["discoverFilters.typeBadge", "invite", "media", "report"] as const;
+
+/**
+ * `/[locale]/media/…` (ficha pública, D-01, fuera de `(app)`): biblioteca,
+ * listas, recomendar y denunciar. Mismo patrón que `/report`, con
+ * `media/layout.tsx`; ahí la cabecera y la barra con sesión quedan FUERA de
+ * este proveedor (usan las del shell), como en `(app)`.
+ */
+export const MEDIA_CLIENT_NAMESPACES = [
+  "errors",
+  "library",
+  "lists",
+  "media_detail",
+  "nav",
+  "recommendations",
+  "report",
+] as const;
 
 export const APP_CLIENT_NAMESPACES = [
   "aiRecommendations",
@@ -75,12 +92,10 @@ export const APP_CLIENT_NAMESPACES = [
   "library",
   "lists",
   "media",
-  "media_detail",
   "moderation",
   "nav",
   "notifications",
   "profile",
-  "recommendations",
   "report",
   "search",
   "settings",

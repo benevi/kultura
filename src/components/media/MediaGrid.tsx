@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import { useTranslations } from "next-intl";
 import { cn } from "@/lib/utils/index";
 import type { MediaItem } from "@/types/media";
 import { MediaCard } from "./MediaCard";
@@ -25,6 +26,8 @@ export interface MediaGridProps {
    * con su gradiente y su título.
    */
   requirePoster?: boolean;
+  /** Nivel del título de cada card (ACC-7, ver `MediaCard`). */
+  headingLevel?: 2 | 3 | 4;
 }
 
 /** Cards que se cargan con prioridad: lo que se ve sin hacer scroll. */
@@ -61,11 +64,14 @@ const BENTO_ACCENT_HUE_PAIRS: [number, number][] = [
 
 function ShimmerCard() {
   return (
-    <div className="flex flex-col rounded-lg overflow-hidden bg-surface2 border border-border animate-pulse">
-      <div className="aspect-[2/3] w-full bg-surface" />
+    <div
+      aria-hidden="true"
+      className="flex flex-col rounded-lg overflow-hidden bg-surface-elevated border border-surface-border animate-pulse"
+    >
+      <div className="aspect-[2/3] w-full bg-surface-default" />
       <div className="p-2 flex flex-col gap-2">
-        <div className="h-3 bg-surface rounded w-3/4" />
-        <div className="h-2 bg-surface rounded w-1/3" />
+        <div className="h-3 bg-surface-default rounded w-3/4" />
+        <div className="h-2 bg-surface-default rounded w-1/3" />
       </div>
     </div>
   );
@@ -79,7 +85,9 @@ export function MediaGrid({
   className,
   layout = "uniform",
   requirePoster = true,
+  headingLevel,
 }: MediaGridProps) {
+  const t = useTranslations("media");
   const [failed, setFailed] = React.useState<ReadonlySet<string>>(() => new Set());
   const onPosterError = React.useCallback(
     (id: string) => setFailed((prev) => (prev.has(id) ? prev : new Set(prev).add(id))),
@@ -98,7 +106,7 @@ export function MediaGrid({
 
   if (loading) {
     return (
-      <div data-loading className={gridClasses}>
+      <div data-loading aria-busy="true" className={gridClasses}>
         {Array.from({ length: 8 }, (_, i) => (
           <ShimmerCard key={i} />
         ))}
@@ -109,9 +117,7 @@ export function MediaGrid({
   if (visible.length === 0) {
     return (
       <div data-empty className="flex items-center justify-center py-16">
-        <p className="text-muted text-sm">
-          {emptyMessage ?? "No hay contenido disponible"}
-        </p>
+        <p className="text-text-tertiary text-sm">{emptyMessage ?? t("noContent")}</p>
       </div>
     );
   }
@@ -137,6 +143,7 @@ export function MediaGrid({
               priority={index < PRIORITY_CARDS}
               onPosterError={requirePoster ? onPosterError : undefined}
               aspect={layout === "bento" ? "fill" : "2/3"}
+              headingLevel={headingLevel}
               accentHue={
                 isFeature
                   ? BENTO_ACCENT_HUE_PAIRS[cycleIndex % BENTO_ACCENT_HUE_PAIRS.length][cyclePos]
