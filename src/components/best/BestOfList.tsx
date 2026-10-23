@@ -4,8 +4,8 @@
 //
 // Cada título enlaza a su ficha pública (PRO-8, CRE-11) con un enlace
 // "estirado" que cubre la card entera (una sola parada de teclado y un solo
-// nombre accesible, el título), y tiene su "Guardar" aparte: alta con vuelta
-// a la ficha. Primitivos de DISENO.md: card `rounded-20` sobre
+// nombre accesible, el título), y tiene su "Guardar" aparte, que lleva a la
+// misma ficha: allí está el botón de añadir (o el alta, sin cuenta). Primitivos de DISENO.md: card `rounded-20` sobre
 // `--surface-default`, portada `rounded-card` con el gradiente DETRÁS,
 // pegatina lima colgante para el #1, números en display.
 //
@@ -64,7 +64,7 @@ function Meta({ item, locale, t }: { item: BestItem; locale: string; t: T }) {
 
 function SaveLink({ item, locale, t }: { item: BestItem; locale: string; t: T }) {
   return (
-    <a href={saveHref(locale, item)} rel="nofollow" className={SAVE_LINK}>
+    <a href={saveHref(locale, item)} className={SAVE_LINK}>
       {t.rich("save", {
         title: item.title,
         hidden: (chunks) => <span className="sr-only">{chunks}</span>,
@@ -87,62 +87,102 @@ function Genres({ genres }: { genres: string[] }) {
 }
 
 /**
- * Puestos 1-3: pósteres grandes con el número en display (96 px en
- * escritorio). En móvil el #1 ocupa la fila entera (póster a la izquierda)
- * y el #2 y el #3 van a dos columnas: tres columnas no caben a 320 px.
+ * Fondo "card feature" (DISENO.md) del #1, solo desde `md`: radial pink al
+ * 55 % en la esquina superior izquierda, que allí queda detrás del póster.
+ * En móvil (fila con el número arriba a la derecha) teñiría el número pink.
+ */
+const FEATURE_BG =
+  "md:bg-[radial-gradient(120%_100%_at_20%_10%,color-mix(in_oklch,var(--accent-pink)_55%,transparent),transparent_55%)]";
+
+/**
+ * Jerarquía del podio desde `md` (DIS-10): el #1 es la columna más ancha, con
+ * el número en display de 96 px y el fondo de "card feature" de DISENO.md
+ * (radial pink en la esquina superior izquierda); el #2 y el #3 son más
+ * estrechos, con números menores, y bajan en escalera. El orden visual sigue
+ * siendo 1-2-3 de izquierda a derecha, el mismo que el del documento.
+ */
+const PODIUM = [
+  {
+    li: `col-span-2 flex-row md:col-span-1 md:flex-col ${FEATURE_BG}`,
+    number: "text-[56px] md:text-[96px]",
+    title: "text-lg md:text-2xl",
+    sizes: "(min-width: 896px) 300px, (min-width: 768px) 36vw, 40vw",
+    poster: "w-2/5 md:w-full",
+    extra: "flex",
+  },
+  {
+    li: "flex-col md:mt-12",
+    number: "text-[48px] md:text-[72px]",
+    title: "text-base md:text-lg",
+    sizes: "(min-width: 896px) 250px, (min-width: 768px) 30vw, 50vw",
+    poster: "w-full",
+    extra: "hidden md:flex",
+  },
+  {
+    li: "flex-col md:mt-24",
+    number: "text-[48px] md:text-[60px]",
+    title: "text-base md:text-lg",
+    sizes: "(min-width: 896px) 210px, (min-width: 768px) 26vw, 50vw",
+    poster: "w-full",
+    extra: "hidden md:flex",
+  },
+] as const;
+
+/**
+ * Puestos 1-3: pósteres grandes con el número en display. En móvil el #1
+ * ocupa la fila entera (póster a la izquierda) y el #2 y el #3 van a dos
+ * columnas: tres columnas no caben a 320 px.
  */
 export async function BestPodium({ items, locale }: { items: BestItem[]; locale: string }) {
   if (items.length === 0) return null;
   const t = await getTranslations({ locale, namespace: "best" });
   return (
-    <ol aria-label={t("podium")} className="grid grid-cols-2 gap-3 md:grid-cols-3 md:gap-5">
+    <ol
+      aria-label={t("podium")}
+      className="grid grid-cols-2 items-start gap-3 md:grid-cols-[6fr_5fr_4fr] md:gap-5"
+    >
       {items.slice(0, 3).map((item, i) => {
         const first = i === 0;
+        const look = PODIUM[i];
         return (
           <li
             key={item.id}
-            className={
-              "relative flex gap-3 rounded-20 bg-surface-default p-3 md:flex-col md:p-4 " +
-              (first ? "col-span-2 flex-row md:col-span-1" : "flex-col")
-            }
+            className={`relative flex gap-3 rounded-20 bg-surface-default p-3 md:p-4 ${look.li}`}
           >
             {first ? (
               <span
                 aria-hidden="true"
-                className="absolute -left-2 -top-3 z-10 rotate-[-8deg] rounded-full bg-accent-lime px-3 py-1 text-sm font-extrabold text-on-accent-lime shadow-[4px_4px_0_rgba(0,0,0,.4)] md:-left-3.5 md:-top-3.5"
+                className="absolute -left-2 -top-3 z-10 rotate-[-8deg] rounded-full bg-accent-lime px-3 py-1 text-sm font-extrabold text-on-accent-lime shadow-[4px_4px_0_rgba(0,0,0,.4)] md:-left-3.5 md:-top-3.5 md:text-base"
               >
                 {t("sticker")}
               </span>
             ) : null}
             <div
               aria-hidden="true"
-              className={
-                "relative aspect-[2/3] shrink-0 overflow-hidden rounded-card md:w-full " + (first ? "w-2/5" : "w-full")
-              }
+              className={`relative aspect-[2/3] shrink-0 overflow-hidden rounded-card ${look.poster}`}
               style={{ background: posterGradient(item.id) }}
             >
-              <BestPoster
-                src={item.poster}
-                alt={item.title}
-                sizes={first ? "(min-width: 896px) 260px, (min-width: 768px) 30vw, 40vw" : "(min-width: 896px) 260px, (min-width: 768px) 30vw, 50vw"}
-                priority
-              />
+              <BestPoster src={item.poster} alt={item.title} sizes={look.sizes} priority />
             </div>
             <div className="flex min-w-0 flex-1 flex-col gap-2 md:gap-3">
-              <span aria-hidden="true" className="font-display text-[56px] font-extrabold leading-none text-accent-pink md:text-[96px]">
+              <span aria-hidden="true" className={`font-display font-extrabold leading-none text-accent-pink ${look.number}`}>
                 {i + 1}
               </span>
-              <h2 className="font-display text-base font-extrabold leading-tight text-text-primary md:text-xl">
+              <h2 className={`font-display font-extrabold leading-tight text-text-primary ${look.title}`}>
                 <a href={localeHref(locale, bestItemPath(item))} className={STRETCHED_LINK}>
                   <span className="sr-only">{t("position", { n: i + 1 })}</span>{" "}
                   {item.title}
                 </a>
               </h2>
               <Meta item={item} locale={locale} t={t} />
-              <div className={(first ? "flex" : "hidden md:flex") + " flex-col gap-2 md:gap-3"}>
+              <div className={`${look.extra} flex-col gap-2 md:gap-3`}>
                 <Genres genres={item.genres} />
                 {item.synopsis ? (
-                  <p className="text-[13px] text-text-secondary line-clamp-3 md:text-[14px] md:line-clamp-4">{item.synopsis}</p>
+                  <p
+                    className={`text-[13px] text-text-secondary md:text-[14px] ${first ? "line-clamp-3 md:line-clamp-5" : "line-clamp-3"}`}
+                  >
+                    {item.synopsis}
+                  </p>
                 ) : null}
               </div>
               <div className="mt-auto pt-1">

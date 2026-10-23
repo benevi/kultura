@@ -41,8 +41,8 @@ vi.mock("@/lib/best/best-of", async (importOriginal) => {
   // Mismo algoritmo que el real (probado en best-of.test.ts) sobre el simulado.
   const getFeaturedRanking = async (format: string, locale: string) => {
     for (const year of real.bestYears()) {
-      const ranking = await getBestRanking(format, year, locale).catch(() => null);
-      if (ranking && real.isIndexableRanking(ranking.items.length)) return { year, ranking };
+      const ranking = await getBestRanking(format, year, locale);
+      if (real.isIndexableRanking(ranking.items.length)) return { year, ranking };
     }
     return null;
   };
@@ -95,14 +95,28 @@ beforeEach(() => {
 afterEach(() => vi.unstubAllEnvs());
 
 describe("ranking de un año", () => {
-  it("cada título enlaza a su ficha pública y tiene Guardar (alta con vuelta a la ficha)", async () => {
+  it("cada título enlaza a su ficha pública y su Guardar lleva a esa ficha, no a /login", async () => {
     const { container } = await show(BestOfPage(params("anime")));
     const first = screen.getByRole("link", { name: "Puesto 1: Título 1" });
     expect(first).toHaveAttribute("href", "/es/media/anime/al-1");
     const save = screen.getByRole("link", { name: "Guardar Título 1" });
-    expect(save).toHaveAttribute("rel", "nofollow");
-    expect(save.getAttribute("href")).toBe(`/es/login?mode=register&next=${encodeURIComponent("/es/media/anime/al-1")}`);
-    expect(container.querySelectorAll('a[href^="/es/media/"]')).toHaveLength(20);
+    expect(save).toHaveAttribute("href", "/es/media/anime/al-1");
+    expect(container.querySelectorAll('a[href^="/es/media/"]')).toHaveLength(40);
+    // Ni el podio ni la lista enlazan al login (criterio de F-15).
+    for (const list of screen.getAllByRole("list", { name: /Podio|Del puesto/ })) {
+      expect(list.querySelectorAll('a[href*="/login"]')).toHaveLength(0);
+    }
+  });
+
+  it("podio con jerarquía: #1 en la columna ancha y #2/#3 escalonados", async () => {
+    await show(BestOfPage(params("anime")));
+    const podium = screen.getByRole("list", { name: "Podio: los tres primeros" });
+    expect(podium.className).toContain("md:grid-cols-[6fr_5fr_4fr]");
+    const [one, two, three] = Array.from(podium.querySelectorAll(":scope > li"));
+    expect(one.className).toContain("md:bg-[radial-gradient(");
+    expect(two.className).toContain("md:mt-12");
+    expect(three.className).toContain("md:mt-24");
+    expect(one.textContent).toContain("#1");
   });
 
   it("0 imágenes con alt vacío: el póster lleva el título", async () => {
@@ -247,6 +261,17 @@ describe("hubs (SEO-7, D-16)", () => {
     expect(screen.getByRole("list", { name: `Top 5 de ${YEAR - 1}` })).toBeInTheDocument();
     const formats = screen.getByRole("navigation", { name: "Formato" });
     expect(within(formats).getByRole("link", { name: "Animes" })).toHaveAttribute("aria-current", "page");
+  });
+
+  it("si un proveedor falla, los hubs lanzan (se mantiene la versión anterior, no se cachea el hueco)", async () => {
+    vi.mocked(getBestRanking).mockImplementation(async (format) => {
+      if (format === "game") throw new Error("RAWG caído");
+      return ranking(20);
+    });
+    await expect(BestHubPage({ params: Promise.resolve({ locale: "es" }) })).rejects.toThrow("RAWG caído");
+    await expect(
+      BestFormatHubPage({ params: Promise.resolve({ locale: "es", format: "game" }) }),
+    ).rejects.toThrow("RAWG caído");
   });
 
   it("/best/libros → 404", async () => {

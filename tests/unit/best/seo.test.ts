@@ -107,9 +107,10 @@ describe("portadas de /best (D-10)", () => {
 });
 
 describe("enlaces de /best", () => {
-  it("la ficha usa el id de MediaCard y Guardar vuelve a ella tras el alta", () => {
+  it("la ficha usa el id de MediaCard y Guardar lleva a ella", () => {
     expect(bestItemPath(items[0])).toBe("/media/anime/al-1");
-    expect(saveHref("es", items[0])).toBe(`/es/login?mode=register&next=${encodeURIComponent("/es/media/anime/al-1")}`);
+    // Guardar lleva a la ficha (allí está el botón o el alta), nunca a /login.
+    expect(saveHref("es", items[0])).toBe("/es/media/anime/al-1");
     expect(signUpHref("en", "/en/best")).toBe("/en/login?mode=register&next=%2Fen%2Fbest");
   });
 });

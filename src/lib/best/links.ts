@@ -26,9 +26,10 @@ export function loginHref(locale: string, next: string): string {
 }
 
 /**
- * "Guardar" de un título: alta y vuelta a SU ficha, donde está el botón de
- * añadir a la biblioteca. Con sesión, el login redirige solo a `next`.
+ * "Guardar" de un título: su ficha pública, que es donde está el botón de
+ * añadir a la biblioteca (con la cuenta abierta) o el alta (sin ella). No va
+ * a /login: el ranking no debe sembrar 20 enlaces públicos al login (F-15).
  */
 export function saveHref(locale: string, item: { id: string; type: string; externalId?: string }): string {
-  return signUpHref(locale, localeHref(locale, bestItemPath(item)));
+  return localeHref(locale, bestItemPath(item));
 }
