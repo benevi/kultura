@@ -1,26 +1,18 @@
 import type { MetadataRoute } from "next";
-import { routing } from "@/i18n/routing";
-import { siteUrl } from "@/lib/site-url";
-import { BEST_FORMATS, bestYears } from "@/lib/best/best-of";
+import { SITEMAP_SECTIONS, sectionSitemap } from "@/lib/best/sitemap";
 
-/** Páginas públicas, una entrada por idioma con sus alternativas. */
-const STATIC_PATHS = ["", "/login", "/privacy", "/terms"];
+/**
+ * Sitemap por secciones (SEO-3): `/sitemap/{pages,rankings,titles,collections}.xml`,
+ * enumeradas por el índice `/sitemap.xml` (`sitemap.xml/route.ts`). Se
+ * regenera cada 6 h; los rankings salen de su propia caché de 24 h, así que
+ * regenerarlo no llama a los proveedores ni al modelo de traducción.
+ */
+export const revalidate = 21600;
 
-/** Rankings públicos "Mejores X de {año}" (formatos × años publicados). */
-const BEST_PATHS = BEST_FORMATS.flatMap((format) =>
-  bestYears().map((year) => `/best/${format}/${year}`)
-);
+export async function generateSitemaps() {
+  return SITEMAP_SECTIONS.map((id) => ({ id }));
+}
 
-export default function sitemap(): MetadataRoute.Sitemap {
-  const base = siteUrl();
-  return [...STATIC_PATHS, ...BEST_PATHS].flatMap((path) =>
-    routing.locales.map((locale) => ({
-      url: `${base}/${locale}${path}`,
-      changeFrequency: path === "" || path.startsWith("/best/") ? ("weekly" as const) : ("yearly" as const),
-      priority: path === "" ? 1 : 0.5,
-      alternates: {
-        languages: Object.fromEntries(routing.locales.map((l) => [l, `${base}/${l}${path}`])),
-      },
-    })),
-  );
+export default async function sitemap({ id }: { id: string }): Promise<MetadataRoute.Sitemap> {
+  return sectionSitemap(id);
 }

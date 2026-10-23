@@ -21,6 +21,7 @@ vi.mock('next-intl', () => ({
   useLocale: () => 'es',
 }))
 vi.mock('next-intl/server', () => ({
+  getLocale: async () => 'es',
   getTranslations: async (ns: string) =>
     Object.assign(tr(ns), {
       rich: (_k: string, tags: Record<string, (c: string) => React.ReactNode>) => [tags.tmdb('TMDB'), tags.rawg('RAWG')],

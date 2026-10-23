@@ -6,10 +6,11 @@
 export const BEST_CACHE_TAG = "best-of";
 
 /**
- * Súbela al cambiar la forma o el ORDEN de lo cacheado (v7: media ponderada,
- * DAT-4; antes `best-of-v6`).
+ * Súbela al cambiar la forma o el ORDEN de lo cacheado (v8: la selección
+ * guarda su fecha y el suelo de votos aplicado, y cada título su
+ * `externalId`, F-16; v7: media ponderada, DAT-4).
  */
-export const BEST_CACHE_VERSION = "best-of-v7";
+export const BEST_CACHE_VERSION = "best-of-v8";
 
 /** Etiqueta de las portadas de la landing (la aplica `lib/landing/showcase.ts`). */
 export const SHOWCASE_CACHE_TAG = "showcase";

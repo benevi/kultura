@@ -1209,16 +1209,16 @@
       "game": "Best video games of {year}"
     },
     "description": {
-      "anime": "Ranking of the highest-rated anime of {year}, with genres and synopses. Save the ones you want to watch to your KULTURA list.",
-      "movie": "Ranking of the highest-rated movies of {year}, with genres and synopses. Save the ones you want to watch to your KULTURA list.",
-      "tv": "Ranking of the highest-rated TV series of {year}, with genres and synopses. Save the ones you want to watch to your KULTURA list.",
-      "game": "Ranking of the highest-rated video games of {year}, with genres and release dates. Save the ones you want to play to your KULTURA list."
+      "anime": "The highest-rated anime of {year} on AniList, with a synopsis and page for each one. Save the ones you have not seen to your KULTURA list.",
+      "movie": "The highest-rated movies of {year} with a minimum number of TMDB votes, with synopses and where to watch. Save the ones you missed on KULTURA.",
+      "tv": "The highest-rated TV series of {year} with a minimum number of TMDB votes, with synopses and where to watch. Save the ones you missed on KULTURA.",
+      "game": "The highest-rated video games of {year} with a minimum number of RAWG ratings, with synopses and pages. Save the ones you want to play on KULTURA."
     },
     "intro": {
-      "anime": "The best-scoring anime of {year}, sorted from highest to lowest rating.",
-      "movie": "The best-scoring movies of {year}, sorted from highest to lowest rating.",
-      "tv": "The best-scoring TV series of {year}, sorted from highest to lowest rating.",
-      "game": "The best-scoring video games of {year}, sorted from highest to lowest rating."
+      "anime": "The best-rated anime of {year}, in order. Tap any of them to open its page and save it to your list.",
+      "movie": "The best-rated movies of {year}, in order. Tap any of them to open its page and see where to watch it.",
+      "tv": "The best-rated TV series of {year}, in order. Tap any of them to open its page and see where to watch it.",
+      "game": "The best-rated video games of {year}, in order. Tap any of them to open its page and save it to your list."
     },
     "chip": {
       "anime": "Anime",
@@ -1226,11 +1226,94 @@
       "tv": "TV series",
       "game": "Video games"
     },
-    "otherLabel": "Other rankings",
-    "share": "Share",
-    "shareLabel": "Share this ranking",
-    "copied": "Link copied!",
-    "shareText": "{title}: the ranking on KULTURA"
+    "noun": {
+      "anime": "anime",
+      "movie": "movies",
+      "tv": "TV series",
+      "game": "video games"
+    },
+    "criteria": {
+      "anime": "How it works: the 60 most popular anime of {year} on AniList, sorted by average score. Only titles rated 7 or higher make the list.",
+      "movie": "How it works: average TMDB user score weighted by the number of votes. Only movies with at least {min, number} votes and a 7 or higher make the list.",
+      "tv": "How it works: average TMDB user score weighted by the number of votes. Only series with at least {min, number} votes and a 7 or higher make the list; Japanese animation is in the anime ranking.",
+      "game": "How it works: RAWG player score weighted by the number of ratings. Only games with at least {min, number} ratings and a 7 out of 10 or higher make the list."
+    },
+    "updated": "Updated on <time>{date}</time>",
+    "provisional": "Provisional ranking: so far {count, plural, one {only # title meets} other {only # titles meet}} the criteria. It will fill up as votes come in.",
+    "empty": {
+      "title": "No ranking for {year} yet",
+      "body": "There are still too few {noun} from {year} with enough votes for a reliable ranking. Check back in a few weeks.",
+      "previous": "See the {year} ranking"
+    },
+    "nav": {
+      "format": "Format",
+      "year": "Year"
+    },
+    "breadcrumb": {
+      "label": "Breadcrumb",
+      "home": "Home",
+      "rankings": "Rankings"
+    },
+    "podium": "Podium: the top three",
+    "rest": "Places 4 to {last}",
+    "position": "Number {n}:",
+    "sticker": "#1",
+    "rating": "rated {rating} out of 10",
+    "save": "Save <hidden>{title}</hidden>",
+    "cta": {
+      "title": "Save the ones you missed",
+      "body": "Mark the ones you already know, add the rest and rate them your way: your own {year} ranking. Free and ad-free.",
+      "action": "Create my free account",
+      "login": "I already have an account"
+    },
+    "hub": {
+      "title": "Movie, TV, anime and video game rankings",
+      "description": "The best titles of each year in movies, TV, anime and video games, with public criteria and minimum votes. Save the ones you missed on KULTURA.",
+      "intro": "Each ranking sorts a year of titles by their community score (TMDB, AniList or RAWG) and requires a minimum number of votes, so nothing climbs on four fan ratings. They are checked every day.",
+      "years": "All years",
+      "top": "{year} top 5",
+      "seeRanking": "See the full {year} ranking",
+      "unavailable": "This ranking is not available right now. Please try again in a while."
+    },
+    "formatHub": {
+      "title": {
+        "anime": "Best anime by year",
+        "movie": "Best movies by year",
+        "tv": "Best TV series by year",
+        "game": "Best video games by year"
+      },
+      "description": {
+        "anime": "Yearly anime rankings since {first}: the highest-rated titles of each year on AniList, with synopses and pages.",
+        "movie": "Yearly movie rankings since {first}: the highest-rated movies of each year on TMDB, with a minimum number of votes.",
+        "tv": "Yearly TV rankings since {first}: the highest-rated series of each year on TMDB, with a minimum number of votes.",
+        "game": "Yearly video game rankings since {first}: the highest-rated games of each year on RAWG, with a minimum number of ratings."
+      },
+      "intro": "Pick a year to see its full ranking, with a synopsis and page for every title.",
+      "criteria": {
+        "anime": "How it works: the 60 most popular anime of each year on AniList, sorted by average score; only titles rated 7 or higher make the list.",
+        "movie": "How it works: TMDB average score weighted by the number of votes, with a minimum number of votes (higher for past years) and a 7 or higher.",
+        "tv": "How it works: TMDB average score weighted by the number of votes, with a minimum number of votes (higher for past years) and a 7 or higher. Japanese animation is in anime.",
+        "game": "How it works: RAWG score weighted by the number of ratings, with a minimum number of ratings (higher for past years) and a 7 out of 10 or higher."
+      }
+    },
+    "share": {
+      "action": "Share",
+      "label": "Share this ranking",
+      "menu": "Sharing options",
+      "copy": "Copy link",
+      "copied": "Link copied!",
+      "onX": "Share on X",
+      "onWhatsApp": "Share on WhatsApp",
+      "text": "{title}: the ranking on KULTURA"
+    },
+    "footer": {
+      "notice": "Legal notice",
+      "accessibility": "Accessibility"
+    },
+    "attribution": {
+      "steam": "Video game artwork and descriptions:",
+      "steamTrademark": "Steam and the Steam logo are trademarks of Valve Corporation; KULTURA is not affiliated with Valve."
+    }
   },
   "collection": {
     "visibility": "List visibility",

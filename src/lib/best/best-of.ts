@@ -40,6 +40,22 @@ export type { BestItem } from "@/lib/best/localize";
 export { BEST_CACHE_TAG } from "@/lib/best/localize";
 export { BEST_MIN_RATING } from "@/lib/best/quality";
 
+/** Un ranking listo para pintar, con los datos de su criterio (SEO-10). */
+export interface BestRanking {
+  items: BestItem[];
+  /** Cuándo se decidió esta selección (ISO). Es el "actualizado el …" real. */
+  updatedAt: string;
+  /** Suelo de votos que se aplicó de verdad (el relajado si hizo falta). Anime: sin suelo numérico. */
+  minVotes?: number;
+}
+
+/** Selección cacheada (sin localizar): lo que usan la página, los hubs y el sitemap. */
+export interface BestSelection {
+  items: BestSource[];
+  updatedAt: string;
+  minVotes?: number;
+}
+
 /** Formatos con ranking público. Los demás no tienen valoración fiable por año. */
 export const BEST_FORMATS = ["anime", "movie", "tv", "game"] as const;
 export type BestFormat = (typeof BEST_FORMATS)[number];
@@ -58,6 +74,29 @@ export const BEST_FIRST_YEAR = 2024;
  */
 export const BEST_MIN_ITEMS = 3;
 export const BEST_SIZE = 20;
+
+/**
+ * Por debajo de esto un ranking se publica (con su aviso) pero NO se indexa
+ * ni entra en el sitemap: una lista de 5 títulos es contenido escaso (D-16,
+ * el mismo suelo que el plan pone a las facetas).
+ */
+export const BEST_INDEX_MIN_ITEMS = 8;
+
+export function isIndexableRanking(count: number): boolean {
+  return count >= BEST_INDEX_MIN_ITEMS;
+}
+
+/**
+ * Ruta (sin idioma) de la ficha pública de un título del ranking (D-01,
+ * `/[locale]/media/[type]/[id]`, el mismo id que usa `MediaCard`). Las
+ * entradas cacheadas antes de `externalId` lo sacan del id (`anime_al-1`).
+ */
+export function bestItemPath(item: { id: string; type: string; externalId?: string }): string {
+  const prefix = `${item.type}_`;
+  const externalId =
+    item.externalId ?? (item.id.startsWith(prefix) ? item.id.slice(prefix.length) : item.id);
+  return `/media/${item.type}/${encodeURIComponent(externalId)}`;
+}
 
 const DAY_SECONDS = 60 * 60 * 24;
 const HOUR_SECONDS = 60 * 60;
@@ -122,6 +161,7 @@ function selectBest(items: MediaItem[], size = BEST_SIZE): BestSource[] {
 export function pickBest(items: MediaItem[], size = BEST_SIZE): BestItem[] {
   return selectBest(items, size).map((s) => ({
     id: s.id,
+    externalId: s.externalId,
     type: s.type,
     title: s.title,
     poster: s.poster,
@@ -204,6 +244,8 @@ function rank(format: BestFormat, items: MediaItem[]): BestSource[] {
 interface Selection {
   items: BestSource[];
   degraded: boolean;
+  /** Suelo de votos aplicado (cine, series y juegos). */
+  minVotes?: number;
 }
 
 /** Una carga en la que TODO falló lanza: `unstable_cache` no guarda rechazos. */
@@ -221,19 +263,22 @@ async function selectTmdb(
 ): Promise<Selection> {
   const base: DiscoverFilters = { year: String(year), sort: "rating" };
   const min = bestMinVotes(format, year, today)!;
-  let filters: DiscoverFilters = { ...base, minVotes: min };
+  let floor = min;
+  let filters: DiscoverFilters = { ...base, minVotes: floor };
   let fetched = await fetchPages(format, filters, locale, [1, 2]);
   assertSomeData(fetched, format, year);
   let items = rank(format, fetched.items);
 
   if (year >= today.getFullYear() && items.length < BEST_MIN_ITEMS) {
-    const relaxed: DiscoverFilters = { ...base, minVotes: relaxedMinVotes(min) };
+    const relaxedFloor = relaxedMinVotes(min);
+    const relaxed: DiscoverFilters = { ...base, minVotes: relaxedFloor };
     const again = await fetchPages(format, relaxed, locale, [1, 2]);
     const more = rank(format, again.items);
     if (more.length > items.length) {
       items = more;
       fetched = again;
       filters = relaxed;
+      floor = relaxedFloor;
     }
   }
 
@@ -254,7 +299,7 @@ async function selectTmdb(
     });
   }
 
-  return { items, degraded: fetched.failed > 0 || items.length === 0 };
+  return { items, degraded: fetched.failed > 0 || items.length === 0, minVotes: floor };
 }
 
 /**
@@ -288,11 +333,13 @@ async function selectGames(year: number, today: Date): Promise<Selection> {
         .filter((i) => typeof i.metadata?.ratingsCount === "number" && i.metadata.ratingsCount >= floor)
         .sort(byRatingDesc),
     );
-  let items = withFloor(min);
+  let floor = min;
+  let items = withFloor(floor);
   if (year >= today.getFullYear() && items.length < BEST_MIN_ITEMS) {
-    items = withFloor(relaxedMinVotes(min));
+    floor = relaxedMinVotes(min);
+    items = withFloor(floor);
   }
-  return { items, degraded: fetched.failed > 0 || items.length === 0 };
+  return { items, degraded: fetched.failed > 0 || items.length === 0, minVotes: floor };
 }
 
 /** Selección sin caché. Exportada para los tests. */
@@ -314,41 +361,48 @@ function selectionLocale(format: BestFormat, locale: string): string {
 
 class DegradedSelection extends Error {
   readonly degradedSelection = true;
-  constructor(readonly items: BestSource[]) {
+  constructor(readonly selection: BestSelection) {
     super("best-of: selección degradada, no se fija 24 h");
   }
+}
+
+function toCached(s: Selection): BestSelection {
+  const out: BestSelection = { items: s.items, updatedAt: new Date().toISOString() };
+  if (s.minVotes !== undefined) out.minVotes = s.minVotes;
+  return out;
 }
 
 /**
  * Última selección degradada calculada en este proceso. Evita repetir las
  * llamadas al pasar de la caché larga (que la rechaza) a la corta.
  */
-const recentDegraded = new Map<string, { at: number; items: BestSource[] }>();
+const recentDegraded = new Map<string, { at: number; selection: BestSelection }>();
 
 const selectionLong = unstable_cache(
-  async (format: BestFormat, year: number, locale: string) => {
+  async (format: BestFormat, year: number, locale: string): Promise<BestSelection> => {
     const s = await computeSelection(format, year, locale);
+    const cached = toCached(s);
     if (s.degraded) {
-      recentDegraded.set(`${format}|${year}|${locale}`, { at: Date.now(), items: s.items });
-      throw new DegradedSelection(s.items);
+      recentDegraded.set(`${format}|${year}|${locale}`, { at: Date.now(), selection: cached });
+      throw new DegradedSelection(cached);
     }
-    return s.items;
+    return cached;
   },
   [BEST_CACHE_VERSION, "selection"],
   { revalidate: DAY_SECONDS, tags: [BEST_CACHE_TAG] },
 );
 
 const selectionShort = unstable_cache(
-  async (format: BestFormat, year: number, locale: string) => {
+  async (format: BestFormat, year: number, locale: string): Promise<BestSelection> => {
     const memo = recentDegraded.get(`${format}|${year}|${locale}`);
-    if (memo && Date.now() - memo.at < 60_000) return memo.items;
-    return (await computeSelection(format, year, locale)).items;
+    if (memo && Date.now() - memo.at < 60_000) return memo.selection;
+    return toCached(await computeSelection(format, year, locale));
   },
   [BEST_CACHE_VERSION, "selection-short"],
   { revalidate: HOUR_SECONDS, tags: [BEST_CACHE_TAG] },
 );
 
-async function getSelection(format: BestFormat, year: number, locale: string): Promise<BestSource[]> {
+async function getSelection(format: BestFormat, year: number, locale: string): Promise<BestSelection> {
   const key = selectionLocale(format, locale);
   try {
     return await selectionLong(format, year, key);
@@ -360,22 +414,61 @@ async function getSelection(format: BestFormat, year: number, locale: string): P
   }
 }
 
+/**
+ * Selección de un ranking SIN localizar (sin traducciones ni llamadas al
+ * modelo): para el sitemap y los recuentos. Cine y series se miran en `es`,
+ * la misma clave de caché que la página en español.
+ */
+export function getBestSelection(format: BestFormat, year: number): Promise<BestSelection> {
+  return getSelection(format, year, "es");
+}
+
 const localized = unstable_cache(
-  async (format: BestFormat, year: number, locale: string) =>
-    localizeRanking(await getSelection(format, year, locale), locale),
+  async (format: BestFormat, year: number, locale: string): Promise<BestRanking> => {
+    const selection = await getSelection(format, year, locale);
+    const ranking: BestRanking = {
+      items: await localizeRanking(selection.items, locale),
+      updatedAt: selection.updatedAt,
+    };
+    if (selection.minVotes !== undefined) ranking.minVotes = selection.minVotes;
+    return ranking;
+  },
   [BEST_CACHE_VERSION, "localized"],
   { revalidate: HOUR_SECONDS, tags: [BEST_CACHE_TAG] },
 );
 
 /**
- * Ranking listo para pintar. Lanza solo si el proveedor no respondió y no
- * hay ninguna versión anterior; una lista corta (incluso vacía a primeros de
- * año) se devuelve tal cual.
+ * Ranking listo para pintar, con fecha y criterio. Lanza solo si el
+ * proveedor no respondió y no hay ninguna versión anterior; una lista corta
+ * (incluso vacía a primeros de año) se devuelve tal cual.
  */
-export function getBestOf(
+export function getBestRanking(format: BestFormat, year: number, locale: string): Promise<BestRanking> {
+  return localized(format, year, resolveApiLocale(locale));
+}
+
+/**
+ * Ranking que enseñan los hubs para un formato: el del año más reciente con
+ * lista indexable (a primeros de año el del año en curso aún es corto).
+ * `null` si ninguno llega al mínimo. Si un proveedor falla, lanza: el hub
+ * distingue "no disponible" (aviso en esa sección) de "aún no hay ranking".
+ */
+export async function getFeaturedRanking(
+  format: BestFormat,
+  locale: string,
+  today: Date = new Date(),
+): Promise<{ year: number; ranking: BestRanking } | null> {
+  for (const year of bestYears(today)) {
+    const ranking = await getBestRanking(format, year, locale);
+    if (isIndexableRanking(ranking.items.length)) return { year, ranking };
+  }
+  return null;
+}
+
+/** Solo los títulos de `getBestRanking` (landing e imagen OG). */
+export async function getBestOf(
   format: BestFormat,
   year: number,
   locale: string,
 ): Promise<BestItem[]> {
-  return localized(format, year, resolveApiLocale(locale));
+  return (await getBestRanking(format, year, locale)).items;
 }

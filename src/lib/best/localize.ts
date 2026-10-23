@@ -34,6 +34,8 @@ import type { MediaType } from "@/types/media";
 /** Lo que pinta la card de un ranking. */
 export interface BestItem {
   id: string;
+  /** Id del proveedor, el de la URL de la ficha (`/media/{type}/{externalId}`). */
+  externalId?: string;
   type: MediaType;
   title: string;
   poster: string;
@@ -230,6 +232,7 @@ export async function localizeRanking(
   return sources.map((src, i) => {
     const out: BestItem = {
       id: src.id,
+      externalId: src.externalId,
       type: src.type,
       title: enriched[i].title,
       poster: src.poster,
