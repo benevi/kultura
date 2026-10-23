@@ -18,6 +18,7 @@
 // ============================================================
 
 import type { ZodType } from "zod";
+import type { MediaItem } from "@/types/media";
 import { providerFetch } from "@/lib/api/http";
 import { anilistMediaSchema, anilistPageSchema } from "@/lib/api/schemas/anilist";
 
@@ -99,7 +100,8 @@ function checkGraphQLErrors(json: unknown): void {
 async function anilistFetch<T>(
   query: string,
   variables: Record<string, unknown>,
-  schema?: ZodType
+  schema?: ZodType,
+  cache?: { revalidate: number }
 ): Promise<T> {
   const json = await providerFetch<GraphQLResponse<T>>("anilist", ANILIST_ENDPOINT, {
     method: "POST",
@@ -112,6 +114,7 @@ async function anilistFetch<T>(
     retryOn: ANILIST_RETRYABLE_STATUS,
     checkBody: checkGraphQLErrors,
     httpError: (status) => new AniListError("request failed", status),
+    ...(cache ? { cache } : {}),
   });
   return json.data as T;
 }
@@ -265,4 +268,134 @@ export function toAniListRef(id: number): string {
 /** Extrae el id numérico de AniList de una referencia `al-{id}`. */
 export function fromAniListRef(ref: string): number {
   return Number(ref.slice(3));
+}
+
+// ── Manga (F-13): complemento y respaldo de la búsqueda ──────────────────────
+//
+// MangaDex no tiene las obras retiradas por licencia ("Berserk", "Vagabond").
+// El complemento era MyAnimeList (Jikan), pero desde Vercel Jikan no responde
+// a tiempo (la ficha de un manga legacy tarda ~7 s en caer) y la búsqueda se
+// quedaba con el spin-off arriba. AniList responde en ~150 ms y tiene esas
+// obras con nota y portada. Ids `al-{id}` (como el anime), que la ficha y la
+// biblioteca resuelven con `getMangaAniList`.
+
+const MANGA_FIELDS = `
+  id
+  idMal
+  title { romaji english native }
+  synonyms
+  coverImage { extraLarge large }
+  description(asHtml: false)
+  genres
+  averageScore
+  popularity
+  startDate { year }
+  chapters
+  volumes
+  status
+  format
+`;
+
+const MANGA_SEARCH_QUERY = `
+  query ($search: String, $perPage: Int) {
+    Page(page: 1, perPage: $perPage) {
+      pageInfo { currentPage lastPage hasNextPage total }
+      media(type: MANGA, isAdult: false, search: $search, sort: [SEARCH_MATCH, POPULARITY_DESC]) {
+        ${MANGA_FIELDS}
+      }
+    }
+  }
+`;
+
+const MANGA_DETAIL_QUERY = `
+  query ($id: Int) {
+    Media(id: $id, type: MANGA) {
+      ${MANGA_FIELDS}
+    }
+  }
+`;
+
+export interface AniListManga {
+  id: number;
+  idMal?: number | null;
+  title: AniListTitle;
+  synonyms?: string[] | null;
+  coverImage?: { extraLarge?: string | null; large?: string | null } | null;
+  description?: string | null;
+  genres?: string[] | null;
+  averageScore?: number | null;
+  popularity?: number | null;
+  startDate?: { year?: number | null } | null;
+  chapters?: number | null;
+  volumes?: number | null;
+  status?: string | null;
+  format?: string | null;
+}
+
+/** Una búsqueda de complemento se cachea 24 h: las obras no cambian de nombre. */
+export const ANILIST_MANGA_SEARCH_REVALIDATE_SECONDS = 24 * 60 * 60;
+
+/** Busca manga en AniList (primeros 10, por coincidencia y popularidad). */
+export async function searchMangaAniList(query: string, perPage = 10): Promise<AniListManga[]> {
+  const data = await anilistFetch<{ Page: { media: AniListManga[] } }>(
+    MANGA_SEARCH_QUERY,
+    { search: query, perPage },
+    anilistPageSchema,
+    { revalidate: ANILIST_MANGA_SEARCH_REVALIDATE_SECONDS }
+  );
+  return data.Page?.media ?? [];
+}
+
+/** Detalle de un manga de AniList (ficha y biblioteca de ids `al-{id}`). */
+export async function getMangaAniList(id: number): Promise<AniListManga> {
+  const data = await anilistFetch<{ Media: AniListManga }>(MANGA_DETAIL_QUERY, { id }, anilistMediaSchema);
+  return data.Media;
+}
+
+function plainDescription(text: string | null | undefined): string | undefined {
+  if (!text) return undefined;
+  const plain = text
+    .replace(/<br\s*\/?>/gi, "\n")
+    .replace(/<\/?[^>]+>/g, "")
+    .replace(/&nbsp;/g, " ")
+    .replace(/&amp;/g, "&")
+    .replace(/&#39;/g, "'")
+    .replace(/&quot;/g, '"')
+    .trim();
+  return plain || undefined;
+}
+
+/**
+ * AniList (manga) → MediaItem. Aquí y no en `normalizer.ts` porque este
+ * módulo es el único que lo usa y `normalizer.ts` ya importa de él.
+ */
+export function normalizeAniListManga(raw: AniListManga): MediaItem {
+  const externalId = toAniListRef(raw.id);
+  const title = raw.title.english ?? raw.title.romaji ?? raw.title.native ?? "Unknown";
+  const year = raw.startDate?.year ?? undefined;
+  return {
+    id: `manga_${externalId}`,
+    externalId,
+    type: "manga",
+    title,
+    originalTitle: raw.title.romaji && raw.title.romaji !== title ? raw.title.romaji : undefined,
+    poster: raw.coverImage?.large || raw.coverImage?.extraLarge || undefined,
+    year: typeof year === "number" && year > 1800 ? year : undefined,
+    synopsis: plainDescription(raw.description),
+    genres: raw.genres?.length ? raw.genres : undefined,
+    rating: typeof raw.averageScore === "number" ? raw.averageScore / 10 : undefined,
+    ratingSource: "AniList",
+    metadata: {
+      nativeTitle: raw.title.native ?? undefined,
+      altTitles: [raw.title.romaji, raw.title.english, ...(raw.synonyms ?? [])].filter(
+        (t): t is string => typeof t === "string" && t.length > 0
+      ),
+      follows: typeof raw.popularity === "number" ? raw.popularity : undefined,
+      chapters: raw.chapters ?? undefined,
+      volumes: raw.volumes ?? undefined,
+      status: raw.status ?? undefined,
+      format: raw.format ?? undefined,
+      malId: raw.idMal ?? undefined,
+    },
+  };
 }

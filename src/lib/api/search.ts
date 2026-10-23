@@ -18,14 +18,14 @@
 //     intercalaba sin comparar.
 //   - Cómic por SERIES (ComicVine `/search/` de volúmenes) y no por issues.
 //   - Manga por relevancia, sin doujinshi, con nota y con el título oficial.
-//   - Respaldo por familia: manga → MyAnimeList (Jikan); cómic → Google Books
+//   - Respaldo por familia: manga → AniList (y MyAnimeList); cómic → Google Books
 //     (novela gráfica). Juegos sin respaldo: la ficha de juego solo abre ids de
 //     RAWG (pendiente de la ficha pública, F-15).
 // ============================================================
 
 import type { MediaItem, MediaType } from "@/types/media";
 import { searchMovies, searchTV } from "./tmdb";
-import { searchAnime } from "./anilist";
+import { normalizeAniListManga, searchAnime, searchMangaAniList } from "./anilist";
 import { searchAnimeTmdb } from "./anime-tmdb";
 import {
   getMangaStatistics,
@@ -36,7 +36,7 @@ import {
   type MangaDexManga,
   type MangaDexStats,
 } from "./mangadex";
-import { JIKAN_SUPPLEMENT_TIMEOUT_MS, searchMangaJikan } from "./jikan";
+import { searchMangaJikan } from "./jikan";
 import { searchOpenLibrary, openLibraryTotalPages } from "./openlibrary";
 import { searchGames } from "./rawg";
 import { COMIC_SEARCH_PAGE_SIZE, searchComicVolumes } from "./comicvine";
@@ -99,48 +99,53 @@ function workKey(item: MediaItem): string {
   return `${titleIdentity(item.title)}|${item.year ?? ""}`;
 }
 
-// ── Complemento de MyAnimeList: memoria de fallos ──────────────────────────
+// ── Complemento de manga: memoria de fallos ────────────────────────────────
 //
-// Lo que Jikan RESPONDE ya se cachea 24 h (`searchMangaJikan`), pero un fallo
-// (plazo agotado, 429, caído) no se cachea en ningún sitio: cada búsqueda de
-// la misma consulta volvería a esperar hasta 2,5 s. Se recuerda aquí unos
-// minutos por consulta, y mientras tanto la búsqueda sale solo con MangaDex.
+// El complemento (AniList) cachea 24 h lo que RESPONDE, pero un fallo (plazo
+// agotado, 429, caído) no se cachea en ningún sitio: cada búsqueda de la misma
+// consulta volvería a esperarlo. Se recuerda aquí unos minutos por consulta, y
+// mientras tanto la búsqueda sale solo con MangaDex.
 
 /** Minutos que un fallo del complemento evita volver a preguntar por esa consulta. */
-export const JIKAN_SUPPLEMENT_FAILURE_TTL_MS = 10 * 60_000;
-const JIKAN_SUPPLEMENT_FAILURES_MAX = 500;
-const jikanSupplementFailures = new Map<string, number>();
+export const MANGA_SUPPLEMENT_FAILURE_TTL_MS = 10 * 60_000;
+const SUPPLEMENT_FAILURES_MAX = 500;
+const supplementFailures = new Map<string, number>();
 
 function supplementKey(query: string): string {
   return titleIdentity(query);
 }
 
 function supplementRecentlyFailed(query: string, now = Date.now()): boolean {
-  const until = jikanSupplementFailures.get(supplementKey(query));
+  const until = supplementFailures.get(supplementKey(query));
   if (until === undefined) return false;
   if (until > now) return true;
-  jikanSupplementFailures.delete(supplementKey(query));
+  supplementFailures.delete(supplementKey(query));
   return false;
 }
 
 function rememberSupplementFailure(query: string, now = Date.now()): void {
-  if (jikanSupplementFailures.size >= JIKAN_SUPPLEMENT_FAILURES_MAX) jikanSupplementFailures.clear();
-  jikanSupplementFailures.set(supplementKey(query), now + JIKAN_SUPPLEMENT_FAILURE_TTL_MS);
+  if (supplementFailures.size >= SUPPLEMENT_FAILURES_MAX) supplementFailures.clear();
+  supplementFailures.set(supplementKey(query), now + MANGA_SUPPLEMENT_FAILURE_TTL_MS);
 }
 
 /** Olvida los fallos recordados. Pensado para los tests. */
 export function resetMangaSupplementFailures(): void {
-  jikanSupplementFailures.clear();
+  supplementFailures.clear();
 }
 
 /** Opciones de la búsqueda por familia. */
 export interface SearchOptions {
   /**
-   * Manga: completar con MyAnimeList cuando MangaDex no tiene la obra
+   * Manga: completar con AniList cuando MangaDex no tiene la obra
    * (por defecto, sí). `type=all` lo apaga: ahí la obra suele ser de otra
    * familia ("dune", "interstellar") y la espera no compensa.
    */
   supplement?: boolean;
+}
+
+/** Manga de AniList (`al-{id}`): la ficha y la biblioteca los resuelven. */
+async function searchMangaAniListItems(query: string): Promise<MediaItem[]> {
+  return (await searchMangaAniList(query)).map((raw) => normalizeAniListManga(raw));
 }
 
 async function searchMangaJikanItems(
@@ -157,10 +162,13 @@ async function searchMangaJikanItems(
 
 /**
  * Búsqueda de manga: MangaDex por relevancia + nota (`/statistics/manga`).
- *   - Si MangaDex falla, MyAnimeList (Jikan) como respaldo.
+ *   - Si MangaDex falla, AniList como respaldo y, si también falla,
+ *     MyAnimeList (Jikan).
  *   - Si en la primera página ninguna obra se llama como la consulta (obras
  *     retiradas de MangaDex por licencia: "Berserk", "Vagabond"), se añaden
- *     las coincidencias exactas de MyAnimeList.
+ *     las coincidencias exactas de AniList. Antes era MyAnimeList, pero desde
+ *     Vercel Jikan no responde a tiempo y el spin-off se quedaba arriba
+ *     («Berserk - The Prototype» en `rel.py` contra producción).
  */
 async function searchMangaPage(
   query: string,
@@ -172,6 +180,12 @@ async function searchMangaPage(
   try {
     r = await searchManga(query, (page - 1) * MANGADEX_PAGE_SIZE, locale);
   } catch (e) {
+    if (page === 1) {
+      const ani = await searchMangaAniListItems(query).catch(() => null);
+      if (ani && ani.length > 0) {
+        return { items: rankSearchResults(query, ani), totalPages: 1, hasMore: false };
+      }
+    }
     const alt = await searchMangaJikanItems(query, page).catch(() => null);
     if (!alt) throw e;
     return {
@@ -190,11 +204,11 @@ async function searchMangaPage(
     !items.some((i) => isExactTitleMatch(query, i)) &&
     !supplementRecentlyFailed(query)
   ) {
-    const extra = await searchMangaJikanItems(query, 1, JIKAN_SUPPLEMENT_TIMEOUT_MS).catch(() => {
+    const extra = await searchMangaAniListItems(query).catch(() => {
       rememberSupplementFailure(query);
       return null;
     });
-    const exact = (extra?.items ?? []).filter((i) => isExactTitleMatch(query, i));
+    const exact = (extra ?? []).filter((i) => isExactTitleMatch(query, i));
     const seen = new Set(items.map(workKey));
     items = [...exact.filter((i) => !seen.has(workKey(i))), ...items];
   }
