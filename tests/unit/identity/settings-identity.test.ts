@@ -143,7 +143,7 @@ describe('PATCH /api/settings — identidad (F-12)', () => {
       expect.objectContaining({
         user_id: AUTH_USER.id,
         terms_accepted_at: expect.any(String),
-        terms_version: '2026-09',
+        terms_version: '2026-10',
       }),
       { onConflict: 'user_id' }
     )

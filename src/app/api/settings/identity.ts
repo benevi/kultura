@@ -7,8 +7,8 @@
 // lista de reservados es la misma en los dos sitios.
 // ============================================================
 
-/** Versión de los términos que se aceptan al registrarse (fecha de `legal.terms.updated`). */
-export const TERMS_VERSION = '2026-09'
+/** Versión de los términos que se aceptan al registrarse (`legal.terms.version`). */
+export const TERMS_VERSION = '2026-10'
 
 /** Formato de nombre de usuario: el de la API y el CHECK `users_username_format`. */
 export const USERNAME_REGEX = /^[A-Za-z0-9_]{3,20}$/
