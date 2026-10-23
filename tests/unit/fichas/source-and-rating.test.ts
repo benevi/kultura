@@ -4,21 +4,54 @@
 
 import { describe, it, expect, vi, beforeEach } from "vitest";
 
-const { rows, adminError } = vi.hoisted(() => ({
-  rows: { current: [] as { score: unknown }[] },
-  adminError: { current: null as null | { message: string } },
+type Row = { score: unknown; user_id: string; users: { library_visibility: string } };
+
+const db = vi.hoisted(() => ({
+  rows: [] as Row[],
+  error: null as null | { code?: string; message: string },
+  demoUsers: [] as string[],
+  filters: [] as [string, unknown][],
+  listUsersCalls: 0,
 }));
 
 vi.mock("next/cache", () => ({ unstable_cache: <T>(fn: T) => fn }));
+// Imita a PostgREST: aplica los `eq` (también el del embebido `users.…`).
 vi.mock("@/lib/supabase/admin", () => ({
   createAdminClient: () => ({
+    auth: {
+      admin: {
+        listUsers: async () => {
+          db.listUsersCalls++;
+          return {
+            data: {
+              users: [
+                ...db.demoUsers.map((id) => ({ id, app_metadata: { demo: true } })),
+                { id: "normal", app_metadata: {} },
+              ],
+            },
+            error: null,
+          };
+        },
+      },
+    },
     from: (table: string) => {
       if (table !== "user_media") throw new Error(`tabla inesperada ${table}`);
       const chain = {
         select: () => chain,
-        eq: () => chain,
+        eq: (col: string, value: unknown) => {
+          db.filters.push([col, value]);
+          return chain;
+        },
         not: () => chain,
-        limit: async () => ({ data: adminError.current ? null : rows.current, error: adminError.current }),
+        limit: async () => {
+          if (db.error) return { data: null, error: db.error };
+          const data = db.rows.filter((r) =>
+            db.filters.every(([col, value]) =>
+              col === "users.library_visibility" ? r.users.library_visibility === value : true
+            )
+          );
+          return { data, error: null };
+        },
       };
       return chain;
     },
@@ -27,6 +60,13 @@ vi.mock("@/lib/supabase/admin", () => ({
 
 import { sourceLinkFor } from "@/lib/media/source-link";
 import { KULTURA_RATING_MIN_VOTES, getKulturaRating, summarizeScores } from "@/lib/media/kultura-rating";
+
+const row = (user_id: string, score: number, library_visibility = "public"): Row => ({
+  score,
+  user_id,
+  users: { library_visibility },
+});
+
 
 describe("sourceLinkFor", () => {
   it.each([
@@ -63,27 +103,70 @@ describe("sourceLinkFor", () => {
   });
 });
 
+
 describe("nota media de KULTURA", () => {
   beforeEach(() => {
-    rows.current = [];
-    adminError.current = null;
+    db.rows = [];
+    db.error = null;
+    db.demoUsers = [];
+    db.filters = [];
+    db.listUsersCalls = 0;
   });
 
-  it("por debajo del mínimo de notas no se publica (no es la nota de una persona)", () => {
-    expect(summarizeScores(Array(KULTURA_RATING_MIN_VOTES - 1).fill(5))).toBeNull();
+  it("el mínimo es de 5 notas", () => {
+    expect(KULTURA_RATING_MIN_VOTES).toBe(5);
+    expect(summarizeScores([5, 5, 5, 5])).toBeNull();
   });
 
   it("media con un decimal, ignorando valores fuera de 1-5", () => {
-    expect(summarizeScores([5, 4, 4, null, 9, 0, "3"])).toEqual({ value: 4.3, count: 3 });
+    expect(summarizeScores([5, 4, 4, 4, 4, null, 9, 0, "3"])).toEqual({ value: 4.2, count: 5 });
   });
 
-  it("lee las notas de user_media y devuelve solo el agregado", async () => {
-    rows.current = [{ score: 5 }, { score: 4 }, { score: 3 }, { score: 4 }];
-    expect(await getKulturaRating("movie_550")).toEqual({ value: 4, count: 4 });
+  it("solo cuentan las bibliotecas públicas: la consulta filtra por library_visibility = 'public'", async () => {
+    db.rows = ["a", "b", "c", "d", "e"].map((u) => row(u, 4));
+    expect(await getKulturaRating("movie_550")).toEqual({ value: 4, count: 5 });
+    expect(db.filters).toContainEqual(["users.library_visibility", "public"]);
+    expect(db.filters).toContainEqual(["media_id", "movie_550"]);
+  });
+
+  // Regresión (revisión del PR #40): antes contaban todas las bibliotecas.
+  it("las bibliotecas private y friends no cuentan aunque sumen notas de sobra", async () => {
+    db.rows = [
+      ...["a", "b", "c", "d"].map((u) => row(u, 5)),
+      row("priv1", 1, "private"),
+      row("priv2", 1, "private"),
+      row("fr1", 1, "friends"),
+      row("fr2", 1, "friends"),
+    ];
+    // 4 públicas: no llega al mínimo; nunca se completa con las privadas.
+    expect(await getKulturaRating("movie_550")).toBeNull();
+    db.filters = [];
+    db.rows.push(row("e", 5));
+    expect(await getKulturaRating("movie_550")).toEqual({ value: 5, count: 5 });
+  });
+
+  it("excluye las cuentas de la demo", async () => {
+    db.demoUsers = ["demo", "lucia"];
+    db.rows = [...["a", "b", "c", "d"].map((u) => row(u, 3)), row("demo", 5), row("lucia", 5)];
+    expect(await getKulturaRating("movie_550")).toBeNull();
+    db.filters = [];
+    db.rows.push(row("e", 3));
+    expect(await getKulturaRating("movie_550")).toEqual({ value: 3, count: 5 });
+  });
+
+  it("con pocas filas ni siquiera pregunta a Auth por la demo", async () => {
+    db.rows = [row("a", 4)];
+    expect(await getKulturaRating("movie_550")).toBeNull();
+    expect(db.listUsersCalls).toBe(0);
+  });
+
+  it("sin la columna (migración de F-12 sin aplicar) no hay nota", async () => {
+    db.error = { code: "42703", message: "column users_1.library_visibility does not exist" };
+    expect(await getKulturaRating("movie_550")).toBeNull();
   });
 
   it("si la base falla, sin nota (nunca lanza)", async () => {
-    adminError.current = { message: "boom" };
+    db.error = { message: "boom" };
     expect(await getKulturaRating("movie_550")).toBeNull();
   });
 });

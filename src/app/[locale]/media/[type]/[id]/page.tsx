@@ -168,7 +168,6 @@ export default async function MediaDetailPage({ params }: Props) {
     description: synopsis,
     url,
     locale,
-    kulturaRating,
     sameAs: data.source?.url,
     breadcrumbs: [
       ...crumbs.map((c) => ({ name: c.name, url: `${base}/${locale}${c.href === "/" ? "" : c.href}` })),

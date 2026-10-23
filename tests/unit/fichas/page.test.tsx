@@ -243,11 +243,11 @@ describe("página de la ficha", () => {
     ]);
   });
 
-  it("con nota de KULTURA, el JSON-LD la publica y la ficha la enseña", async () => {
+  it("con nota de KULTURA, la ficha la enseña pero el JSON-LD no la marca", async () => {
     mocks.getKulturaRating.mockResolvedValue({ value: 4.5, count: 6 });
     const { container } = render(await MediaDetailPage(params()));
-    const ld = JSON.parse(container.querySelector('script[type="application/ld+json"]')!.innerHTML);
-    expect(ld["@graph"][0].aggregateRating).toMatchObject({ ratingValue: 4.5, ratingCount: 6 });
+    const ld = container.querySelector('script[type="application/ld+json"]')!.innerHTML;
+    expect(ld).not.toContain("aggregateRating");
     expect(mocks.mediaDetailProps.current?.kulturaRating).toEqual({ value: 4.5, count: 6 });
   });
 });

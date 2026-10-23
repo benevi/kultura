@@ -40,7 +40,6 @@ function graph(item: MediaItem, extra: Partial<Parameters<typeof buildMediaJsonL
     genreLabels: ["Drama"],
     url: URL_ES,
     locale: "es",
-    kulturaRating: null,
     breadcrumbs: crumbs,
     ...extra,
   }) as { "@context": string; "@graph": Record<string, unknown>[] };
@@ -104,22 +103,16 @@ describe("buildMediaJsonLd", () => {
     expect(work.actor).toHaveLength(2);
   });
 
-  // VERIF-C: la nota del proveedor no es nuestra; marcarla es engañoso.
-  it("sin nota de KULTURA no hay aggregateRating, aunque el proveedor tenga nota", () => {
-    expect(graph(movie).work.aggregateRating).toBeUndefined();
-    expect(JSON.stringify(graph(movie).ld)).not.toContain("8.4");
-  });
-
-  it("con nota de KULTURA, aggregateRating en escala 1-5 con su número de notas", () => {
-    const { work } = graph(movie, { kulturaRating: { value: 4.3, count: 12 } });
-    expect(work.aggregateRating).toEqual({
-      "@type": "AggregateRating",
-      ratingValue: 4.3,
-      ratingCount: 12,
-      bestRating: 5,
-      worstRating: 1,
-    });
-  });
+  // VERIF-C y revisión del PR #40: ninguna nota se marca (ni la del
+  // proveedor ni la de KULTURA), en ninguna familia.
+  it.each(["movie", "tv", "anime", "game", "book", "manga", "comic"] as const)(
+    "%s: sin aggregateRating ni la nota del proveedor",
+    (type) => {
+      const { ld } = graph({ ...movie, type });
+      expect(JSON.stringify(ld)).not.toContain("aggregateRating");
+      expect(JSON.stringify(ld)).not.toContain("8.4");
+    }
+  );
 
   it("BreadcrumbList con posiciones y URL absolutas", () => {
     const { breadcrumb } = graph(movie);

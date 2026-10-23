@@ -8,14 +8,15 @@
 //   - `noindex` si el título es adulto (`nsfw-filter`) o si le falta portada o
 //     sinopsis: una ficha sin las dos es contenido fino ("Rastreada, sin
 //     indexar") y no aporta nada a quien llega desde un buscador.
-//   - JSON-LD con el tipo de schema.org de cada formato. `aggregateRating`
-//     SOLO con la nota media de KULTURA (y solo cuando la hay): la nota del
-//     proveedor no es nuestra y Google la trata como marcado engañoso.
+//   - JSON-LD con el tipo de schema.org de cada formato y SIN
+//     `aggregateRating` en ninguna familia: la nota del proveedor no es
+//     nuestra (marcado engañoso, VERIF-C), el plan no lo pide y en
+//     `VideoGame` sin `offers` Google lo da por error. La nota de KULTURA se
+//     enseña en la ficha, no se marca.
 //   - `BreadcrumbList` con lo mismo que la miga de pan visible de la ficha.
 // ============================================================
 
 import type { MediaItem, MediaType } from "@/types/media";
-import type { KulturaRating } from "./kultura-rating";
 
 /** Tipo de schema.org de cada formato (el anime es una serie; el manga, una serie de cómic). */
 export const SCHEMA_TYPE: Record<MediaType, string> = {
@@ -73,7 +74,6 @@ export interface MediaJsonLdInput {
   /** URL canónica absoluta de la ficha. */
   url: string;
   locale: string;
-  kulturaRating: KulturaRating | null;
   /** Página del título en el proveedor. */
   sameAs?: string;
   breadcrumbs: Crumb[];
@@ -139,7 +139,7 @@ function compact(obj: Record<string, unknown>): Record<string, unknown> {
 
 /** `@graph` con la obra y su miga de pan. */
 export function buildMediaJsonLd(input: MediaJsonLdInput): Record<string, unknown> {
-  const { item, url, kulturaRating } = input;
+  const { item, url } = input;
   const work = compact({
     "@type": SCHEMA_TYPE[item.type],
     "@id": `${url}#work`,
@@ -151,15 +151,6 @@ export function buildMediaJsonLd(input: MediaJsonLdInput): Record<string, unknow
     genre: oneOrMany(input.genreLabels.slice(0, 5)),
     sameAs: input.sameAs,
     ...typeSpecific(item),
-    aggregateRating: kulturaRating
-      ? {
-          "@type": "AggregateRating",
-          ratingValue: kulturaRating.value,
-          ratingCount: kulturaRating.count,
-          bestRating: 5,
-          worstRating: 1,
-        }
-      : undefined,
   });
   const breadcrumb = {
     "@type": "BreadcrumbList",
