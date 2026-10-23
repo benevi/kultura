@@ -124,6 +124,27 @@
     min-height: 100vh;
   }
 
+  /* ACC-13: un ancla o un foco por teclado no queda tapado por la cabecera
+     fija (arriba) ni por la barra inferior del móvil (abajo). */
+  html {
+    scroll-padding-top: 5rem;
+    scroll-padding-bottom: 5rem;
+  }
+
+  /* MOV-1: con `viewport-fit=cover` el contenido llega bajo la muesca en
+     horizontal; los márgenes laterales seguros lo devuelven a la zona visible
+     (en vertical valen 0). */
+  body {
+    padding-left: env(safe-area-inset-left, 0px);
+    padding-right: env(safe-area-inset-right, 0px);
+  }
+
+  /* Destino de "Saltar al contenido": recibe el foco por código, no es un
+     control, así que no lleva anillo. */
+  main:focus {
+    outline: none;
+  }
+
   * {
     box-sizing: border-box;
   }

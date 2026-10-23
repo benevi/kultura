@@ -37,11 +37,18 @@ const nextConfig = {
   },
   async headers() {
     return [
-      // REN-10 (favicon cacheable) NO va aquí mientras el icono viva en
-      // `src/app/favicon.ico`: Next le fija `Cache-Control: public, max-age=0,
-      // must-revalidate` en la propia ruta y una regla aquí produce DOS
-      // cabeceras Cache-Control contradictorias (comprobado con next start).
-      // Se hace moviéndolo a `public/favicon.ico` y añadiendo entonces la regla.
+      // REN-10: el favicon vive en `public/` (en `src/app/` Next le fijaba su
+      // propio `max-age=0` y esta regla producía dos Cache-Control
+      // contradictorios). Los iconos de la PWA, igual: no cambian sin cambiar
+      // de nombre.
+      {
+        source: "/favicon.ico",
+        headers: [{ key: "Cache-Control", value: "public, max-age=86400, stale-while-revalidate=604800" }],
+      },
+      {
+        source: "/icons/:file*",
+        headers: [{ key: "Cache-Control", value: "public, max-age=604800, stale-while-revalidate=86400" }],
+      },
       {
         source: "/(.*)",
         headers: [
