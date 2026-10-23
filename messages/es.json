@@ -1222,7 +1222,8 @@
       "intro": "Cada ranking ordena los títulos de un año por la nota de su comunidad (TMDB, AniList o RAWG) y exige un mínimo de votos, para que nada suba con cuatro notas de fans. Se revisan cada día.",
       "years": "Todos los años",
       "top": "Top 5 de {year}",
-      "seeRanking": "Ver el ranking completo de {year}"
+      "seeRanking": "Ver el ranking completo de {year}",
+      "unavailable": "Este ranking no está disponible ahora mismo. Vuelve a intentarlo en un rato."
     },
     "formatHub": {
       "title": {

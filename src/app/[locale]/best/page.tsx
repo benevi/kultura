@@ -31,8 +31,11 @@ export default async function BestHubPage({ params }: Props) {
   const locale = bestLocale((await params).locale);
   const t = await getTranslations({ locale, namespace: "best" });
   const years = bestYears();
-  // Si un proveedor falla, `getFeaturedRanking` lanza: error y versión anterior.
-  const featured = await Promise.all(BEST_FORMATS.map((f) => getFeaturedRanking(f, locale)));
+  // Un proveedor caído deja SU sección con un aviso; el resto del hub se pinta
+  // (la página es dinámica: no hay versión anterior que conservar).
+  const featured = await Promise.all(
+    BEST_FORMATS.map((f) => getFeaturedRanking(f, locale).catch(() => "unavailable" as const)),
+  );
   const crumbs: Crumb[] = [
     { name: t("breadcrumb.home"), path: "/" },
     { name: t("breadcrumb.rankings"), path: "/best" },
@@ -51,7 +54,9 @@ export default async function BestHubPage({ params }: Props) {
         </header>
 
         {BEST_FORMATS.map((format, i) => {
-          const f = featured[i];
+          const result = featured[i];
+          const unavailable = result === "unavailable";
+          const f = unavailable ? null : result;
           return (
             <section key={format} aria-labelledby={`hub-${format}`} className="flex flex-col gap-4">
               <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
@@ -75,6 +80,8 @@ export default async function BestHubPage({ params }: Props) {
                   locale={locale}
                   label={`${t("hub.top", { year: f.year })} · ${t(`chip.${format}`)}`}
                 />
+              ) : unavailable ? (
+                <p className="text-[14px] text-text-tertiary">{t("hub.unavailable")}</p>
               ) : null}
               <BestYearNav
                 locale={locale}

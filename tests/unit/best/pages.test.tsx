@@ -263,15 +263,29 @@ describe("hubs (SEO-7, D-16)", () => {
     expect(within(formats).getByRole("link", { name: "Animes" })).toHaveAttribute("aria-current", "page");
   });
 
-  it("si un proveedor falla, los hubs lanzan (se mantiene la versión anterior, no se cachea el hueco)", async () => {
+  it("proveedor caído: el hub se pinta (sin error) con un aviso solo en esa sección", async () => {
     vi.mocked(getBestRanking).mockImplementation(async (format) => {
       if (format === "game") throw new Error("RAWG caído");
       return ranking(20);
     });
-    await expect(BestHubPage({ params: Promise.resolve({ locale: "es" }) })).rejects.toThrow("RAWG caído");
-    await expect(
-      BestFormatHubPage({ params: Promise.resolve({ locale: "es", format: "game" }) }),
-    ).rejects.toThrow("RAWG caído");
+    await show(BestHubPage({ params: Promise.resolve({ locale: "es" }) }));
+    const games = screen.getByRole("region", { name: "Los mejores videojuegos por año" });
+    expect(within(games).getByText(/no está disponible ahora mismo/)).toBeInTheDocument();
+    expect(within(games).getByRole("navigation", { name: "Todos los años · Videojuegos" })).toBeInTheDocument();
+    const anime = screen.getByRole("region", { name: "Los mejores animes por año" });
+    expect(within(anime).getByRole("list", { name: /Top 5/ })).toBeInTheDocument();
+    expect(within(anime).queryByText(/no está disponible/)).toBeNull();
+  });
+
+  it("proveedor caído en un año: el hub del formato avisa en ese año y pinta los demás", async () => {
+    vi.mocked(getBestRanking).mockImplementation(async (_f, year) => {
+      if (year === YEAR - 1) throw new Error("caído");
+      return ranking(20);
+    });
+    await show(BestFormatHubPage({ params: Promise.resolve({ locale: "es", format: "game" }) }));
+    const broken = screen.getByRole("region", { name: `Los mejores videojuegos de ${YEAR - 1}` });
+    expect(within(broken).getByText(/no está disponible ahora mismo/)).toBeInTheDocument();
+    expect(screen.getByRole("list", { name: `Top 5 de ${YEAR}` })).toBeInTheDocument();
   });
 
   it("/best/libros → 404", async () => {
