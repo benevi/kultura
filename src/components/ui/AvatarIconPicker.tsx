@@ -10,6 +10,10 @@
 
 import { AVATAR_ICONS, AVATAR_ICON_KEYS } from '@/components/icons/avatars'
 import { cn } from '@/lib/utils/index'
+import { useRadioGroupKeys } from '@/components/ui/useRadioGroupKeys'
+
+/** Valor de la opción "sin personaje" dentro del grupo de radios. */
+const NONE = '__none__'
 
 interface AvatarIconPickerProps {
   /** Clave seleccionada, o `null` para "sin personaje" (iniciales). */
@@ -20,6 +24,11 @@ interface AvatarIconPickerProps {
   /** Texto de la opción "sin personaje". */
   noneLabel: string
   disabled?: boolean
+  /**
+   * Nombre accesible traducido de cada personaje (`settings.avatarIcons.*`).
+   * Sin él se usa la clave interna ("fox"), que no está traducida.
+   */
+  iconLabel?: (key: string) => string
 }
 
 export function AvatarIconPicker({
@@ -28,15 +37,22 @@ export function AvatarIconPicker({
   label,
   noneLabel,
   disabled = false,
+  iconLabel = (key) => key,
 }: AvatarIconPickerProps) {
+  // ACC-10: radiogroup con una sola parada de Tab y flechas.
+  const { getItemProps } = useRadioGroupKeys(
+    [NONE, ...AVATAR_ICON_KEYS],
+    value ?? NONE,
+    (v) => onChange(v === NONE ? null : v),
+    { disabled }
+  )
   return (
     <div role="radiogroup" aria-label={label} className="flex flex-wrap gap-2.5">
       {/* "Sin personaje" es una opción explícita, no la ausencia de elección:
           quien ya tiene iniciales debe poder volver a ellas. */}
       <button
         type="button"
-        role="radio"
-        aria-checked={value === null}
+        {...getItemProps(NONE, 0)}
         aria-label={noneLabel}
         title={noneLabel}
         disabled={disabled}
@@ -44,27 +60,28 @@ export function AvatarIconPicker({
         className={cn(
           'w-11 h-11 rounded-full flex items-center justify-center text-xs font-bold text-text-secondary',
           'bg-surface-elevated transition-transform hover:scale-105 disabled:opacity-50',
+          'focus-visible:[outline-style:solid] focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-focus-ring',
           value === null ? 'ring-2 ring-accent-positive ring-offset-2 ring-offset-surface-default' : ''
         )}
       >
         Aa
       </button>
 
-      {AVATAR_ICON_KEYS.map((key) => {
+      {AVATAR_ICON_KEYS.map((key, i) => {
         const Icon = AVATAR_ICONS[key]
         const selected = value === key
         return (
           <button
             key={key}
             type="button"
-            role="radio"
-            aria-checked={selected}
-            aria-label={key}
-            title={key}
+            {...getItemProps(key, i + 1)}
+            aria-label={iconLabel(key)}
+            title={iconLabel(key)}
             disabled={disabled}
             onClick={() => onChange(key)}
             className={cn(
               'rounded-full transition-transform hover:scale-105 disabled:opacity-50',
+              'focus-visible:[outline-style:solid] focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-focus-ring',
               selected ? 'ring-2 ring-accent-positive ring-offset-2 ring-offset-surface-default' : ''
             )}
           >

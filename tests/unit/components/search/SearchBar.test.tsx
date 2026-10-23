@@ -51,12 +51,12 @@ describe("SearchBar", () => {
 
   it("renderiza el input", () => {
     render(<SearchBar />);
-    expect(screen.getByRole("searchbox")).toBeInTheDocument();
+    expect(screen.getByRole("combobox")).toBeInTheDocument();
   });
 
   it("muestra el defaultValue si se pasa", () => {
     render(<SearchBar defaultValue="inception" />);
-    expect(screen.getByRole("searchbox")).toHaveValue("inception");
+    expect(screen.getByRole("combobox")).toHaveValue("inception");
   });
 
   it("muestra el placeholder por defecto de i18n", () => {
@@ -77,7 +77,7 @@ describe("SearchBar", () => {
 
   it("con < 2 chars no hace fetch", () => {
     render(<SearchBar />);
-    const input = screen.getByRole("searchbox");
+    const input = screen.getByRole("combobox");
     fireEvent.change(input, { target: { value: "a" } });
     // No fetch should be called synchronously
     expect(global.fetch).not.toHaveBeenCalled();
@@ -87,7 +87,7 @@ describe("SearchBar", () => {
     vi.useFakeTimers();
     vi.mocked(global.fetch).mockResolvedValue({ ok: true, json: async () => [] } as Response);
     render(<SearchBar />);
-    fireEvent.change(screen.getByRole("searchbox"), { target: { value: "inception" } });
+    fireEvent.change(screen.getByRole("combobox"), { target: { value: "inception" } });
     await vi.advanceTimersByTimeAsync(450);
     expect(vi.mocked(global.fetch).mock.calls[0][0]).toBe("/api/search?q=inception&locale=en");
     vi.useRealTimers();
@@ -97,7 +97,7 @@ describe("SearchBar", () => {
     vi.useFakeTimers();
     vi.mocked(global.fetch).mockResolvedValue({ ok: true, json: async () => [] } as Response);
     render(<SearchBar type="manga" />);
-    fireEvent.change(screen.getByRole("searchbox"), { target: { value: "naruto" } });
+    fireEvent.change(screen.getByRole("combobox"), { target: { value: "naruto" } });
     await vi.advanceTimersByTimeAsync(450);
     expect(vi.mocked(global.fetch).mock.calls[0][0]).toBe(
       "/api/search?q=naruto&locale=en&type=manga"
@@ -109,7 +109,7 @@ describe("SearchBar", () => {
     vi.useFakeTimers();
     vi.mocked(global.fetch).mockResolvedValue({ ok: true, json: async () => [] } as Response);
     render(<SearchBar type="all" />);
-    fireEvent.change(screen.getByRole("searchbox"), { target: { value: "dune" } });
+    fireEvent.change(screen.getByRole("combobox"), { target: { value: "dune" } });
     await vi.advanceTimersByTimeAsync(450);
     expect(vi.mocked(global.fetch).mock.calls[0][0]).toBe("/api/search?q=dune&locale=en");
     vi.useRealTimers();
@@ -123,7 +123,7 @@ describe("SearchBar", () => {
       return new Promise<Response>(() => {});
     });
     render(<SearchBar />);
-    const input = screen.getByRole("searchbox");
+    const input = screen.getByRole("combobox");
     fireEvent.change(input, { target: { value: "nar" } });
     await vi.advanceTimersByTimeAsync(450);
     fireEvent.change(input, { target: { value: "naruto" } });
@@ -136,7 +136,7 @@ describe("SearchBar", () => {
 
   it("modo navigate (default): Enter navega a /search con el query", () => {
     render(<SearchBar defaultValue="inception" />);
-    const input = screen.getByRole("searchbox");
+    const input = screen.getByRole("combobox");
     fireEvent.keyDown(input, { key: "Enter" });
     expect(mockPush).toHaveBeenCalledWith(
       "/search?q=inception&type=all"
@@ -145,14 +145,14 @@ describe("SearchBar", () => {
 
   it("Enter no navega si el valor está vacío", () => {
     render(<SearchBar defaultValue="" />);
-    const input = screen.getByRole("searchbox");
+    const input = screen.getByRole("combobox");
     fireEvent.keyDown(input, { key: "Enter" });
     expect(mockPush).not.toHaveBeenCalled();
   });
 
   it("Escape no navega a ningún lado", () => {
     render(<SearchBar defaultValue="test" />);
-    const input = screen.getByRole("searchbox");
+    const input = screen.getByRole("combobox");
     fireEvent.keyDown(input, { key: "Escape" });
     expect(mockPush).not.toHaveBeenCalled();
   });
@@ -178,7 +178,7 @@ describe("SearchBar — mode=inline", () => {
     render(
       <SearchBar mode="inline" defaultValue="  dune  " onSubmit={onSubmit} />
     );
-    fireEvent.keyDown(screen.getByRole("searchbox"), { key: "Enter" });
+    fireEvent.keyDown(screen.getByRole("combobox"), { key: "Enter" });
     expect(onSubmit).toHaveBeenCalledWith("dune");
     expect(mockPush).not.toHaveBeenCalled();
   });
@@ -186,7 +186,7 @@ describe("SearchBar — mode=inline", () => {
   it("Enter con el input vacío no llama a onSubmit", () => {
     const onSubmit = vi.fn();
     render(<SearchBar mode="inline" defaultValue="   " onSubmit={onSubmit} />);
-    fireEvent.keyDown(screen.getByRole("searchbox"), { key: "Enter" });
+    fireEvent.keyDown(screen.getByRole("combobox"), { key: "Enter" });
     expect(onSubmit).not.toHaveBeenCalled();
   });
 
@@ -201,7 +201,7 @@ describe("SearchBar — mode=inline", () => {
         onClear={onClear}
       />
     );
-    fireEvent.change(screen.getByRole("searchbox"), { target: { value: "" } });
+    fireEvent.change(screen.getByRole("combobox"), { target: { value: "" } });
     expect(onClear).toHaveBeenCalled();
     expect(onSubmit).not.toHaveBeenCalled();
   });
@@ -211,14 +211,14 @@ describe("SearchBar — mode=inline", () => {
     render(
       <SearchBar mode="inline" onSubmit={vi.fn()} onClear={onClear} />
     );
-    fireEvent.change(screen.getByRole("searchbox"), { target: { value: "du" } });
+    fireEvent.change(screen.getByRole("combobox"), { target: { value: "du" } });
     expect(onClear).not.toHaveBeenCalled();
   });
 
   it("Escape no envía ni navega", () => {
     const onSubmit = vi.fn();
     render(<SearchBar mode="inline" defaultValue="dune" onSubmit={onSubmit} />);
-    fireEvent.keyDown(screen.getByRole("searchbox"), { key: "Escape" });
+    fireEvent.keyDown(screen.getByRole("combobox"), { key: "Escape" });
     expect(onSubmit).not.toHaveBeenCalled();
     expect(mockPush).not.toHaveBeenCalled();
   });

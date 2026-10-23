@@ -6,17 +6,22 @@
 // biblioteca personal del usuario desde la página de detalle.
 // ============================================================
 
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { useTranslations } from 'next-intl'
 import { Link } from '@/i18n/navigation'
 import { KButton } from '@/components/ui/KButton'
 import { LibraryStatusModal } from '@/components/library/LibraryStatusModal'
+import { ConfirmModal } from '@/components/ui/ConfirmModal'
+import { useToastContext } from '@/components/ui/ToastProvider'
 import { addToLibrary, updateLibrary, removeFromLibrary } from '@/lib/library/actions'
 import { cn } from '@/lib/utils/index'
 import { createLogger } from '@/lib/logger'
 import type { LibraryEntry, LibraryStatus, LibraryPayload, EpisodeProgress } from '@/types/library'
 
 const log = createLogger('LibraryAction')
+
+/** Mensaje de `/api/library` cuando el proveedor no responde (502). */
+const PROVIDER_UNAVAILABLE = 'Media provider unavailable'
 
 interface LibraryActionProps {
   mediaId: string
@@ -48,10 +53,21 @@ export function LibraryAction({
   isAuthenticated,
 }: LibraryActionProps) {
   const t = useTranslations('library')
+  const tc = useTranslations('common')
+  const { show } = useToastContext()
 
   const [entry, setEntry] = useState<LibraryEntry | null>(initialEntry)
   const [modalOpen, setModalOpen] = useState(false)
+  const [confirmRemove, setConfirmRemove] = useState(false)
   const [loading, setLoading] = useState(false)
+  // ACC-11: los fallos se dicen DENTRO del diálogo que sigue abierto (un
+  // toast quedaría debajo y fuera del árbol accesible mientras dure).
+  const [saveError, setSaveError] = useState<string | null>(null)
+  const [removeError, setRemoveError] = useState<string | null>(null)
+  // Al guardar o quitar, el botón que abrió el diálogo desaparece ("Añadir"
+  // pasa a "Actualizar" y al revés): el foco va al que lo sustituye.
+  const addRef = useRef<HTMLButtonElement>(null)
+  const updateRef = useRef<HTMLButtonElement>(null)
 
   async function handleSave(data: {
     status: LibraryStatus
@@ -60,6 +76,7 @@ export function LibraryAction({
     episodeProgress: EpisodeProgress | null
   }) {
     setLoading(true)
+    setSaveError(null)
     try {
       const payload: LibraryPayload = {
         mediaId,
@@ -74,8 +91,16 @@ export function LibraryAction({
         : await addToLibrary(payload)
       setEntry(saved)
       setModalOpen(false)
+      show({ message: t('saved'), type: 'success' })
     } catch (err) {
       log.error('Failed to save library entry', { err })
+      // ACC-11: antes el fallo solo iba al log y la persona no se enteraba.
+      // El diálogo sigue abierto con sus datos para reintentar.
+      setSaveError(
+        err instanceof Error && err.message === PROVIDER_UNAVAILABLE
+          ? t('errors.providerUnavailable')
+          : t('errors.saveFailed')
+      )
     } finally {
       setLoading(false)
     }
@@ -83,11 +108,15 @@ export function LibraryAction({
 
   async function handleRemove() {
     setLoading(true)
+    setRemoveError(null)
     try {
       await removeFromLibrary(mediaId)
       setEntry(null)
+      setConfirmRemove(false)
+      show({ message: t('removed'), type: 'success' })
     } catch (err) {
       log.error('Failed to remove library entry', { err })
+      setRemoveError(t('errors.removeFailed'))
     } finally {
       setLoading(false)
     }
@@ -104,8 +133,8 @@ export function LibraryAction({
   if (!entry) {
     return (
       <>
-        <KButton variant="primary" onClick={() => setModalOpen(true)}>
-          + {t('addToLibrary')}
+        <KButton ref={addRef} variant="primary" onClick={() => setModalOpen(true)}>
+          <span aria-hidden="true">+</span> {t('addToLibrary')}
         </KButton>
 
         {modalOpen && (
@@ -113,8 +142,10 @@ export function LibraryAction({
             current={null}
             mediaType={mediaCache.type}
             onSave={handleSave}
-            onClose={() => setModalOpen(false)}
+            onClose={() => { setModalOpen(false); setSaveError(null) }}
             loading={loading}
+            finalFocusRef={updateRef}
+            error={saveError}
           />
         )}
       </>
@@ -132,13 +163,13 @@ export function LibraryAction({
         >
           {t(`status.${entry.status}`)}
         </span>
-        <KButton variant="secondary" size="sm" onClick={() => setModalOpen(true)}>
+        <KButton ref={updateRef} variant="secondary" size="sm" onClick={() => setModalOpen(true)}>
           {t('updateEntry')}
         </KButton>
         <KButton
           variant="secondary"
           size="sm"
-          onClick={handleRemove}
+          onClick={() => setConfirmRemove(true)}
           disabled={loading}
           className="text-accent-danger hover:text-accent-danger border-accent-danger/30 hover:border-accent-danger/60"
         >
@@ -151,10 +182,26 @@ export function LibraryAction({
           current={entry}
           mediaType={mediaCache.type}
           onSave={handleSave}
-          onClose={() => setModalOpen(false)}
+          onClose={() => { setModalOpen(false); setSaveError(null) }}
           loading={loading}
+          error={saveError}
         />
       )}
+
+      {/* ACC-11: quitar borra estado, nota y progreso; se confirma antes. */}
+      <ConfirmModal
+        isOpen={confirmRemove}
+        title={t('removeConfirmTitle')}
+        message={t('removeConfirmBody', { title: mediaCache.title })}
+        confirmLabel={t('removeConfirm')}
+        cancelLabel={tc('cancel')}
+        isDestructive
+        loading={loading}
+        onConfirm={handleRemove}
+        onCancel={() => { setConfirmRemove(false); setRemoveError(null) }}
+        finalFocusRef={addRef}
+        error={removeError}
+      />
     </>
   )
 }

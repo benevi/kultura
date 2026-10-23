@@ -6,6 +6,7 @@ import { Link, useRouter } from '@/i18n/navigation'
 import { Avatar } from '@/components/ui/Avatar'
 import { KButton } from '@/components/ui/KButton'
 import { ConfirmModal } from '@/components/ui/ConfirmModal'
+import { CloseButton } from '@/components/ui/CloseButton'
 import { SegmentedControl } from '@/components/ui/SegmentedControl'
 import { ShareLinkButton } from '@/components/social/ShareLinkButton'
 import { MediaCard } from '@/components/media/MediaCard'
@@ -214,7 +215,7 @@ export function ListDetail({
                 <span className="font-semibold text-text-primary">{t('collaborative')}</span>
               )}
               {list.isCollaborative && ' · '}
-              {items.length} {t('items')}
+              {t('itemCount', { count: items.length })}
             </span>
           </div>
           {isOwner && (
@@ -263,8 +264,9 @@ export function ListDetail({
         </div>
       </header>
 
-      {deleteError && <p className="text-xs text-accent-danger">{deleteError}</p>}
-      {actionError && <p className="text-xs text-accent-danger">{actionError}</p>}
+      {/* ACC-3: los fallos se anuncian. */}
+      {deleteError && <p role="alert" className="text-sm text-accent-danger">{deleteError}</p>}
+      {actionError && <p role="alert" className="text-sm text-accent-danger">{actionError}</p>}
 
       <ConfirmModal
         isOpen={confirmDelete}
@@ -286,7 +288,7 @@ export function ListDetail({
         </h2>
         {items.length === 0 ? (
           <div className="bg-surface-default rounded-3xl p-10 text-center flex flex-col items-center gap-3">
-            <span className="text-3xl">📋</span>
+            <span aria-hidden="true" className="text-3xl">📋</span>
             <p className="text-text-primary text-sm font-medium">{t('noItems')}</p>
             <p className="text-text-secondary text-sm">{t('noItemsHint')}</p>
             <Link
@@ -311,14 +313,14 @@ export function ListDetail({
                   </div>
                 )}
                 {canEdit && (
-                  <button
+                  // Visible también al enfocarlo con el teclado y en pantallas
+                  // táctiles (sin hover no se veía nunca); 44 px de zona táctil.
+                  <CloseButton
                     onClick={() => handleRemoveItem(item.id)}
                     disabled={removingItem === item.id}
-                    className="absolute top-1 right-1 w-6 h-6 rounded-full bg-surface-base/80 text-text-secondary hover:text-accent-danger flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity text-xs disabled:opacity-50"
-                    aria-label={t('removeItem')}
-                  >
-                    ✕
-                  </button>
+                    label={t('removeItemNamed', { title: item.media?.title ?? item.mediaId })}
+                    className="absolute top-0 right-0 bg-surface-base/80 hover:text-accent-danger md:opacity-0 md:group-hover:opacity-100 md:focus-visible:opacity-100 transition-opacity"
+                  />
                 )}
               </div>
             ))}
@@ -370,10 +372,12 @@ export function ListDetail({
           {/* Invitar */}
           {isOwner && invitableFriends.length > 0 && (
             <div className="mt-3 flex gap-2">
+              <label htmlFor={`invite-${list.id}`} className="sr-only">{t('inviteMember')}</label>
               <select
+                id={`invite-${list.id}`}
                 value={inviteUserId}
                 onChange={(e) => setInviteUserId(e.target.value)}
-                className="flex-1 bg-surface-base border border-surface-border rounded-button px-3 py-2 text-sm text-text-primary focus:outline-none focus:ring-1 focus:ring-accent-pink"
+                className="flex-1 min-h-11 bg-surface-base border border-field-border rounded-button px-3 py-2 text-base md:text-sm text-text-primary focus-visible:[outline-style:solid] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus-ring"
               >
                 <option value="">{t('selectFriend')}</option>
                 {invitableFriends.map((f) => (

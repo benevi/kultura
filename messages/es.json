@@ -196,7 +196,7 @@
     "skipToContent": "Saltar al contenido"
   },
   "common": {
-    "loading": "Cargando...",
+    "loading": "Cargando…",
     "save": "Guardar",
     "cancel": "Cancelar",
     "delete": "Eliminar",
@@ -205,7 +205,11 @@
     "back": "Volver",
     "seeAll": "Ver todo",
     "addToLibrary": "Añadir a biblioteca",
-    "share": "Compartir"
+    "share": "Compartir",
+    "close": "Cerrar",
+    "stars": "{count, plural, one {# estrella} other {# estrellas}}",
+    "ratingOf": "{value} de {max}",
+    "notRated": "Sin puntuar"
   },
   "filters": {
     "type": "Tipo",
@@ -260,7 +264,9 @@
     "filters": "Filtros",
     "randomize": "Sorpréndeme",
     "randomizeAgain": "Otra vez",
-    "showingRandom": "1 resultado aleatorio de {count}"
+    "showingRandom": "1 resultado aleatorio de {count}",
+    "suggestionsLabel": "Sugerencias",
+    "suggestionsCount": "{count, plural, =0 {Sin sugerencias} one {# sugerencia: usa las flechas para recorrerla} other {# sugerencias: usa las flechas para recorrerlas}}"
   },
   "media_detail": {
     "trailer": "Tráiler",
@@ -342,11 +348,12 @@
     "season": "Temporada",
     "errors": {
       "notAuthenticated": "Debes iniciar sesión",
-      "saveFailed": "Error al guardar"
+      "saveFailed": "No se ha podido guardar. Revisa la conexión e inténtalo de nuevo.",
+      "providerUnavailable": "No hemos podido guardar el cambio: el catálogo no responde. Inténtalo en un momento.",
+      "removeFailed": "No se ha podido quitar de tu biblioteca. Inténtalo de nuevo."
     },
     "title": "Mi biblioteca",
     "filterByType": "Filtrar por tipo",
-    "filterByStatus": "Filtrar por estado",
     "filterByScore": "Puntuación mín.",
     "allTypes": "Todos los tipos",
     "allStatuses": "Todos los estados",
@@ -380,7 +387,14 @@
       "inProgress": "En progreso",
       "pending": "Pendientes",
       "dropped": "Abandonados"
-    }
+    },
+    "statusLabel": "Estado",
+    "saving": "Guardando…",
+    "removeConfirmTitle": "¿Quitar de tu biblioteca?",
+    "removeConfirmBody": "Se borrarán el estado, la nota y el progreso de «{title}».",
+    "removeConfirm": "Quitar",
+    "removed": "Quitado de tu biblioteca",
+    "saved": "Guardado en tu biblioteca"
   },
   "profile": {
     "memberSince": "Miembro desde",
@@ -427,14 +441,12 @@
     "create": "Crear",
     "noLists": "Aún no tienes listas",
     "noListsHint": "Crea tu primera lista para organizar títulos",
-    "items": "títulos",
     "members": "miembros",
     "addItem": "Añadir título",
     "addItemPlaceholder": "Buscar título...",
     "inviteMember": "Invitar amigo",
     "selectFriend": "Selecciona un amigo",
     "invite": "Invitar",
-    "removeItem": "Eliminar",
     "removeMember": "Eliminar miembro",
     "deleteList": "Eliminar lista",
     "deleteListTitle": "Eliminar lista",
@@ -464,7 +476,18 @@
     "removeError": "Error al eliminar el título",
     "inviteError": "Error al invitar al miembro",
     "removeMemberError": "Error al eliminar al miembro",
-    "notAllowed": "No tienes permiso para editar esta lista"
+    "notAllowed": "No tienes permiso para editar esta lista",
+    "namePlaceholder": "Ej.: Pelis para ver en Navidad",
+    "nameRequired": "Ponle un nombre a la lista.",
+    "visibilityLabel": "¿Quién puede verla?",
+    "visibilityPrivate": "Privada",
+    "visibilityPrivateHint": "Solo tú y las personas que invites.",
+    "visibilityPublic": "Pública",
+    "visibilityPublicHint": "Cualquiera con el enlace, también sin cuenta.",
+    "visibilityAfterCreateError": "La lista se ha creado como privada: no se ha podido hacer pública. Puedes cambiarlo desde la propia lista.",
+    "itemCount": "{count, plural, one {# título} other {# títulos}}",
+    "removeItemNamed": "Quitar «{title}» de la lista",
+    "metaFallback": "Lista"
   },
   "aiRecommendations": {
     "title": "Para ti",
@@ -529,7 +552,9 @@
     "sending": "Enviando...",
     "sent": "¡Recomendación enviada!",
     "noFriends": "Aún no tienes amigos. Añade amigos para poder recomendar.",
-    "error": "Error al enviar la recomendación"
+    "error": "Error al enviar la recomendación",
+    "loadingFriends": "Cargando tus amigos…",
+    "cancel": "Cancelar"
   },
   "home": {
     "title": "Inicio",
@@ -627,9 +652,11 @@
     "success": "¡Gracias por tu comentario!",
     "successHint": "Leemos todas las sugerencias y las usamos para mejorar KULTURA.",
     "error": "Error al enviar. Inténtalo de nuevo.",
-    "errorTooShort": "Revisa: el asunto necesita 3 caracteres mínimo y la descripción 10.",
     "errorRateLimit": "Demasiados envíos. Espera un momento e inténtalo de nuevo.",
-    "newFeedback": "Enviar otro"
+    "newFeedback": "Enviar otro",
+    "errorSubjectShort": "El asunto necesita al menos 3 caracteres.",
+    "errorDescriptionShort": "La descripción necesita al menos 10 caracteres.",
+    "charCount": "{count} de {max} caracteres"
   },
   "groups": {
     "title": "Grupo",
@@ -681,7 +708,12 @@
     "loadError": "No se pudieron cargar los datos.",
     "retry": "Reintentar",
     "conversationCount": "{count, plural, =0 {Sin conversaciones} one {# conversación} other {# conversaciones}}",
-    "otherLeft": "Ya no está en el chat"
+    "otherLeft": "Ya no está en el chat",
+    "loadingMessages": "Cargando mensajes…",
+    "logLabel": "Mensajes con {username}",
+    "logLabelFallback": "Mensajes de la conversación",
+    "backToChats": "Volver a mensajes",
+    "messageLabel": "Mensaje"
   },
   "settings": {
     "title": "Configuración",
@@ -702,12 +734,12 @@
     "changePasswordHint": "Elige una contraseña nueva para entrar con tu correo.",
     "dangerZone": "Zona de peligro",
     "exportData": "Exportar mis datos",
-    "exportDataHint": "Descarga un archivo JSON con tu biblioteca, tus listas y tus amistades.",
+    "exportDataHint": "Descarga un archivo JSON con tu perfil, tu biblioteca, tus listas, tus amistades y los mensajes que has enviado. No incluye los que te han escrito otras personas: si quieres una copia, pídela en {email}.",
     "exportDataError": "Error al exportar los datos",
     "deleteAccount": "Eliminar cuenta",
-    "deleteAccountHint": "Esta acción es permanente: se borran tu perfil, tu biblioteca, tus listas y tu actividad social.",
+    "deleteAccountHint": "Se borran al momento tu perfil, tu biblioteca, tus listas, tus amistades y lo que enviaste. Los grupos que creaste y tus listas compartidas pasan a otro miembro.",
     "deleteAccountConfirmTitle": "¿Eliminar tu cuenta?",
-    "deleteAccountConfirmMessage": "Esta acción no se puede deshacer. Se eliminarán tu perfil, tu biblioteca, tus listas, tus amistades y todos tus datos.",
+    "deleteAccountConfirmMessage": "Se borrarán tu perfil, tu biblioteca, tus listas, tus amistades y lo que enviaste. Los grupos que creaste y tus listas compartidas pasan a otro miembro; si no queda nadie, se borran.",
     "deleteAccountConfirmButton": "Sí, eliminar mi cuenta",
     "deleteAccountCancel": "Cancelar",
     "deleteAccountError": "Error al eliminar la cuenta. Inténtalo de nuevo.",
@@ -749,7 +781,32 @@
     "deleteSummaryNow": "No se puede deshacer.",
     "deletionPending": "Tu cuenta se borrará el {date}.",
     "cancelDeletion": "Cancelar el borrado",
-    "deletionCancelled": "Borrado cancelado: tu cuenta sigue aquí."
+    "deletionCancelled": "Borrado cancelado: tu cuenta sigue aquí.",
+    "avatarColors": {
+      "slate": "Pizarra",
+      "red": "Rojo",
+      "orange": "Naranja",
+      "amber": "Ámbar",
+      "green": "Verde",
+      "teal": "Turquesa",
+      "blue": "Azul",
+      "purple": "Morado"
+    },
+    "avatarIcons": {
+      "astronaut": "Astronauta",
+      "robot": "Robot",
+      "cat": "Gato",
+      "ninja": "Ninja",
+      "alien": "Alienígena",
+      "ghost": "Fantasma",
+      "owl": "Búho",
+      "fox": "Zorro",
+      "dragon": "Dragón",
+      "octopus": "Pulpo",
+      "panda": "Panda",
+      "wizard": "Mago"
+    },
+    "deleteAccountHintGrace": "Tu cuenta queda programada {days, plural, one {# día} other {# días}} por si te arrepientes; después se borran tu perfil, tu biblioteca, tus listas, tus amistades y lo que enviaste. Los grupos que creaste y tus listas compartidas pasan a otro miembro."
   },
   "report": {
     "label": "Denunciar",

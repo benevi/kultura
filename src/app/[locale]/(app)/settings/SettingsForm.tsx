@@ -10,6 +10,7 @@ import { ConfirmModal } from '@/components/ui/ConfirmModal'
 import { useToastContext } from '@/components/ui/ToastProvider'
 import { AVATAR_COLORS, isValidAvatarColor } from '@/lib/constants/avatarColors'
 import { AvatarIconPicker } from '@/components/ui/AvatarIconPicker'
+import { useRadioGroupKeys } from '@/components/ui/useRadioGroupKeys'
 import type { AvatarColorName } from '@/lib/constants/avatarColors'
 import { cn } from '@/lib/utils/index'
 import { createClient } from '@/lib/supabase/client'
@@ -40,6 +41,11 @@ interface SettingsFormProps {
   initialLibraryVisibility?: LibraryVisibility | null
   /** Borrado programado (ROJO-7): fecha ISO en que se pidió. */
   deletionRequestedAt?: string | null
+  /**
+   * Días de gracia del borrado (0 = inmediato: bandera ACCOUNT_GRACE apagada
+   * o migración sin aplicar). El texto de ayuda dice lo que de verdad pasará.
+   */
+  graceDays?: number
 }
 
 /** Resumen de GET /api/account para el modal de borrado. */
@@ -52,6 +58,13 @@ interface DeletionSummary {
   sharedLists: Array<{ name: string; successor: string | null }> | null
   graceDays: number
 }
+
+/**
+ * Contacto para pedir lo que la exportación no incluye (mensajes recibidos),
+ * el mismo que publica la política de privacidad. Cuando entre `LEGAL_CONTACT_EMAIL`
+ * (src/app/.well-known/contact.ts, F-19) conviene importarlo de allí.
+ */
+const PRIVACY_CONTACT_EMAIL = 'kultura.app.contacto@gmail.com'
 
 /** Cuántos grupos/listas se nombran en el modal antes de "y N más". */
 const SUMMARY_MAX_NAMED = 4
@@ -74,6 +87,7 @@ export function SettingsForm({
   emailConfirmed = false,
   initialLibraryVisibility = null,
   deletionRequestedAt = null,
+  graceDays = 0,
 }: SettingsFormProps) {
   const t = useTranslations('settings')
   const tErrors = useTranslations('errors')
@@ -112,6 +126,16 @@ export function SettingsForm({
   const [emailSending, setEmailSending] = useState(false)
   const [emailSentTo, setEmailSentTo] = useState<string | null>(null)
   const newEmailRef = useRef<HTMLInputElement>(null)
+  // ACC-3: con un error, el foco vuelve al campo de usuario (su mensaje ya
+  // va enlazado y con role="alert" desde KInput).
+  const usernameRef = useRef<HTMLInputElement>(null)
+
+  // ACC-10: color de avatar como radiogroup (una parada de Tab, flechas).
+  const { getItemProps: getColorProps } = useRadioGroupKeys(
+    AVATAR_COLORS.map((c) => c.name),
+    avatarColor,
+    setAvatarColor
+  )
 
   function validateUsername(value: string): string {
     if (!USERNAME_REGEX.test(value)) return t('errorInvalidUsername')
@@ -129,6 +153,7 @@ export function SettingsForm({
     const validationError = validateUsername(username)
     if (validationError) {
       setUsernameError(validationError)
+      usernameRef.current?.focus()
       return
     }
     setUsernameError('')
@@ -159,11 +184,12 @@ export function SettingsForm({
         setUsernameError(
           data.error === 'username_reserved' ? t('errorUsernameReserved') : t('errorUsernameExists')
         )
+        usernameRef.current?.focus()
         return
       }
 
       if (!res.ok) {
-        toast.show({ message: t('errorSave') ?? 'Error al guardar', type: 'error' })
+        toast.show({ message: t('errorSave'), type: 'error' })
         return
       }
 
@@ -178,7 +204,7 @@ export function SettingsForm({
         router.push(newPath)
       }
     } catch {
-      toast.show({ message: t('errorSave') ?? 'Error al guardar', type: 'error' })
+      toast.show({ message: t('errorSave'), type: 'error' })
     } finally {
       setSaving(false)
     }
@@ -478,6 +504,7 @@ export function SettingsForm({
           {/* Username */}
           <div className={row}>
             <KInput
+              ref={usernameRef}
               id="username"
               label={t('username')}
               value={username}
@@ -489,36 +516,47 @@ export function SettingsForm({
             />
           </div>
 
-          {/* Color de avatar */}
+          {/* Color de avatar — ACC-2/ACC-10: grupo con nombre (antes un
+              <label> huérfano), radios con flechas y nombres traducidos (antes
+              "slate", "amber"…). */}
           <div className={cn(row, 'flex flex-col gap-3')}>
-            <label className="text-sm font-body text-text-secondary">{t('avatarColor')}</label>
-            <div className="grid grid-cols-8 gap-2">
-              {AVATAR_COLORS.map(color => (
+            <span id="avatar-color-label" className="text-sm font-body text-text-secondary">{t('avatarColor')}</span>
+            <div role="radiogroup" aria-labelledby="avatar-color-label" className="grid grid-cols-8 gap-1">
+              {AVATAR_COLORS.map((color, index) => (
                 <button
                   key={color.name}
                   type="button"
-                  aria-label={color.name}
+                  {...getColorProps(color.name, index)}
+                  aria-label={t(`avatarColors.${color.name}`)}
+                  title={t(`avatarColors.${color.name}`)}
                   onClick={() => setAvatarColor(color.name)}
-                  className={cn(
-                    'h-8 w-8 rounded-full transition-transform hover:scale-110',
-                    avatarColor === color.name
-                      ? 'scale-110 ring-2 ring-accent-positive ring-offset-2 ring-offset-surface-default'
-                      : ''
-                  )}
-                  style={{ backgroundColor: color.value }}
-                />
+                  className="group flex h-11 w-11 items-center justify-center rounded-full focus-visible:[outline-style:solid] focus-visible:outline-2 focus-visible:outline-offset-0 focus-visible:outline-focus-ring"
+                >
+                  <span
+                    aria-hidden="true"
+                    className={cn(
+                      'h-8 w-8 rounded-full transition-transform group-hover:scale-110',
+                      avatarColor === color.name
+                        ? 'scale-110 ring-2 ring-accent-positive ring-offset-2 ring-offset-surface-default'
+                        : ''
+                    )}
+                    style={{ backgroundColor: color.value }}
+                  />
+                </button>
               ))}
             </div>
           </div>
 
-          {/* Personaje del avatar (E-AVATAR-ICONS) */}
+          {/* Personaje del avatar (E-AVATAR-ICONS) — el propio selector es el
+              radiogroup con nombre; aquí solo el rótulo visible. */}
           <div className={cn(row, 'flex flex-col gap-3')}>
-            <label className="text-sm font-body text-text-secondary">{t('avatarIcon')}</label>
+            <span aria-hidden="true" className="text-sm font-body text-text-secondary">{t('avatarIcon')}</span>
             <AvatarIconPicker
               value={avatarIcon}
               onChange={setAvatarIcon}
               label={t('avatarIcon')}
               noneLabel={t('avatarIconNone')}
+              iconLabel={(key) => t(`avatarIcons.${key}`)}
             />
           </div>
 
@@ -549,16 +587,21 @@ export function SettingsForm({
         <p className={eyebrow}>{t('preferences')}</p>
         <div className="flex flex-col rounded-20 bg-surface-default overflow-hidden">
           {/* Idioma */}
-          <div className={cn(row, 'flex items-center justify-between gap-4 flex-wrap')}>
-            <label className="text-sm font-semibold text-text-primary">{t('language')}</label>
+          <div role="group" aria-labelledby="settings-language-label" className={cn(row, 'flex items-center justify-between gap-4 flex-wrap')}>
+            <span id="settings-language-label" className="text-sm font-semibold text-text-primary">{t('language')}</span>
             <div className="flex gap-2">
               {(['es', 'en'] as const).map(loc => (
                 <button
                   key={loc}
                   type="button"
+                  // ACC-10: conmutador con estado; el nombre del idioma en su
+                  // propio idioma se pronuncia bien (WCAG 3.1.2).
+                  aria-pressed={locale === loc}
+                  lang={loc}
                   onClick={() => setLocale(loc)}
                   className={cn(
-                    'rounded-pill px-4 py-2 text-sm font-bold font-body transition-colors',
+                    'min-h-11 rounded-pill px-4 py-2 text-sm font-bold font-body transition-colors',
+                    'focus-visible:[outline-style:solid] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus-ring',
                     locale === loc
                       ? 'bg-accent-positive text-on-accent-positive'
                       : 'bg-surface-elevated text-text-secondary hover:text-text-primary'
@@ -620,7 +663,7 @@ export function SettingsForm({
         <p className={cn(eyebrow, 'text-accent-danger')}>{t('dangerZone')}</p>
         <div className="flex flex-col rounded-20 bg-surface-default divide-y divide-surface-border overflow-hidden">
           <div className={cn(row, 'flex items-center justify-between gap-4 flex-wrap')}>
-            <p className="text-sm font-body text-text-tertiary max-w-xs">{t('exportDataHint')}</p>
+            <p className="text-sm font-body text-text-tertiary max-w-xs">{t('exportDataHint', { email: PRIVACY_CONTACT_EMAIL })}</p>
             <KButton
               variant="secondary"
               size="sm"
@@ -637,11 +680,15 @@ export function SettingsForm({
             {/* El input va oculto y lo dispara el botón: así el control mantiene
                 el estilo de KButton (incluido su spinner) en vez del selector de
                 archivo del navegador. */}
+            {/* Fuera del orden de Tab y del árbol accesible: lo maneja el
+                botón visible (antes era una parada de Tab invisible). */}
             <input
               ref={importInputRef}
               type="file"
               accept="application/json,.json"
               className="sr-only"
+              tabIndex={-1}
+              aria-hidden="true"
               onChange={handleImportData}
             />
             <KButton
@@ -661,7 +708,7 @@ export function SettingsForm({
           </div>
 
           <div className={cn(row, 'flex items-center justify-between gap-4 flex-wrap')}>
-            <p className="text-sm font-body text-text-tertiary max-w-xs">{t('deleteAccountHint')}</p>
+            <p className="text-sm font-body text-text-tertiary max-w-xs">{graceDays > 0 ? t('deleteAccountHintGrace', { days: graceDays }) : t('deleteAccountHint')}</p>
             <KButton
               variant="secondary"
               size="sm"

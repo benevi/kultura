@@ -3,6 +3,12 @@ import { cn } from "@/lib/utils/index";
 interface SpinnerProps {
   size?: "sm" | "md" | "lg";
   className?: string;
+  /**
+   * Texto que anuncia el lector ("Cargando…", traducido por quien lo usa).
+   * Sin él el spinner es decorativo (`aria-hidden`): p. ej. dentro de un
+   * `KButton` con `loading`, que ya marca `aria-busy` y conserva su texto.
+   */
+  label?: string;
 }
 
 const sizeClasses: Record<NonNullable<SpinnerProps["size"]>, string> = {
@@ -11,11 +17,10 @@ const sizeClasses: Record<NonNullable<SpinnerProps["size"]>, string> = {
   lg: "w-8 h-8",
 };
 
-export function Spinner({ size = "md", className }: SpinnerProps) {
+export function Spinner({ size = "md", className, label }: SpinnerProps) {
   return (
     <svg
-      role="status"
-      aria-label="Cargando"
+      {...(label ? { role: "status", "aria-label": label } : { "aria-hidden": true })}
       className={cn("animate-spin text-accent-positive", sizeClasses[size], className)}
       xmlns="http://www.w3.org/2000/svg"
       fill="none"

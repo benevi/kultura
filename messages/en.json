@@ -196,7 +196,7 @@
     "skipToContent": "Skip to content"
   },
   "common": {
-    "loading": "Loading...",
+    "loading": "Loading…",
     "save": "Save",
     "cancel": "Cancel",
     "delete": "Delete",
@@ -205,7 +205,11 @@
     "back": "Back",
     "seeAll": "See all",
     "addToLibrary": "Add to library",
-    "share": "Share"
+    "share": "Share",
+    "close": "Close",
+    "stars": "{count, plural, one {# star} other {# stars}}",
+    "ratingOf": "{value} out of {max}",
+    "notRated": "Not rated"
   },
   "filters": {
     "type": "Type",
@@ -260,7 +264,9 @@
     "filters": "Filters",
     "randomize": "Surprise me",
     "randomizeAgain": "Another one",
-    "showingRandom": "1 random result from {count}"
+    "showingRandom": "1 random result from {count}",
+    "suggestionsLabel": "Suggestions",
+    "suggestionsCount": "{count, plural, =0 {No suggestions} one {# suggestion: use the arrow keys to browse it} other {# suggestions: use the arrow keys to browse them}}"
   },
   "media_detail": {
     "trailer": "Trailer",
@@ -342,11 +348,12 @@
     "season": "Season",
     "errors": {
       "notAuthenticated": "Sign in required",
-      "saveFailed": "Failed to save"
+      "saveFailed": "We couldn't save it. Check your connection and try again.",
+      "providerUnavailable": "We couldn't save the change: the catalog isn't responding. Try again in a moment.",
+      "removeFailed": "We couldn't remove it from your library. Try again."
     },
     "title": "My library",
     "filterByType": "Filter by type",
-    "filterByStatus": "Filter by status",
     "filterByScore": "Min. score",
     "allTypes": "All types",
     "allStatuses": "All statuses",
@@ -380,7 +387,14 @@
       "inProgress": "In progress",
       "pending": "Pending",
       "dropped": "Dropped"
-    }
+    },
+    "statusLabel": "Status",
+    "saving": "Saving…",
+    "removeConfirmTitle": "Remove from your library?",
+    "removeConfirmBody": "The status, rating and progress of “{title}” will be deleted.",
+    "removeConfirm": "Remove",
+    "removed": "Removed from your library",
+    "saved": "Saved to your library"
   },
   "profile": {
     "memberSince": "Member since",
@@ -427,14 +441,12 @@
     "create": "Create",
     "noLists": "You don't have any lists yet",
     "noListsHint": "Create your first list to organize titles",
-    "items": "titles",
     "members": "members",
     "addItem": "Add title",
     "addItemPlaceholder": "Search title...",
     "inviteMember": "Invite friend",
     "selectFriend": "Select a friend",
     "invite": "Invite",
-    "removeItem": "Remove",
     "removeMember": "Remove member",
     "deleteList": "Delete list",
     "deleteListTitle": "Delete list",
@@ -464,7 +476,18 @@
     "removeError": "Failed to remove title",
     "inviteError": "Failed to invite member",
     "removeMemberError": "Failed to remove member",
-    "notAllowed": "You don't have permission to edit this list"
+    "notAllowed": "You don't have permission to edit this list",
+    "namePlaceholder": "E.g. Movies to watch at Christmas",
+    "nameRequired": "Give the list a name.",
+    "visibilityLabel": "Who can see it?",
+    "visibilityPrivate": "Private",
+    "visibilityPrivateHint": "Only you and the people you invite.",
+    "visibilityPublic": "Public",
+    "visibilityPublicHint": "Anyone with the link, even without an account.",
+    "visibilityAfterCreateError": "The list was created as private: we couldn't make it public. You can change it from the list itself.",
+    "itemCount": "{count, plural, one {# title} other {# titles}}",
+    "removeItemNamed": "Remove “{title}” from the list",
+    "metaFallback": "List"
   },
   "aiRecommendations": {
     "title": "For you",
@@ -529,7 +552,9 @@
     "sending": "Sending...",
     "sent": "Recommendation sent!",
     "noFriends": "You don't have any friends yet. Add friends to send recommendations.",
-    "error": "Failed to send recommendation"
+    "error": "Failed to send recommendation",
+    "loadingFriends": "Loading your friends…",
+    "cancel": "Cancel"
   },
   "home": {
     "title": "Home",
@@ -627,9 +652,11 @@
     "success": "Thanks for your feedback!",
     "successHint": "We read every suggestion and use them to improve KULTURA.",
     "error": "Failed to send. Please try again.",
-    "errorTooShort": "Check: subject needs at least 3 characters, description at least 10.",
     "errorRateLimit": "Too many submissions. Please wait a moment and try again.",
-    "newFeedback": "Submit another"
+    "newFeedback": "Submit another",
+    "errorSubjectShort": "The subject needs at least 3 characters.",
+    "errorDescriptionShort": "The description needs at least 10 characters.",
+    "charCount": "{count} of {max} characters"
   },
   "groups": {
     "title": "Group",
@@ -681,7 +708,12 @@
     "loadError": "Couldn't load the data.",
     "retry": "Retry",
     "conversationCount": "{count, plural, =0 {No conversations} one {# conversation} other {# conversations}}",
-    "otherLeft": "No longer in this chat"
+    "otherLeft": "No longer in this chat",
+    "loadingMessages": "Loading messages…",
+    "logLabel": "Messages with {username}",
+    "logLabelFallback": "Conversation messages",
+    "backToChats": "Back to messages",
+    "messageLabel": "Message"
   },
   "settings": {
     "title": "Settings",
@@ -702,12 +734,12 @@
     "changePasswordHint": "Choose a new password to sign in with your email.",
     "dangerZone": "Danger zone",
     "exportData": "Export my data",
-    "exportDataHint": "Download a JSON file with your library, your lists and your friendships.",
+    "exportDataHint": "Download a JSON file with your profile, library, lists, friendships and the messages you sent. It doesn't include messages other people wrote to you: if you want a copy, ask for it at {email}.",
     "exportDataError": "Failed to export data",
     "deleteAccount": "Delete account",
-    "deleteAccountHint": "This action is permanent: your profile, library, lists and social activity will be deleted.",
+    "deleteAccountHint": "Your profile, library, lists, friendships and everything you sent are deleted right away. Groups you created and your shared lists pass to another member.",
     "deleteAccountConfirmTitle": "Delete your account?",
-    "deleteAccountConfirmMessage": "This action cannot be undone. Your profile, library, lists, friendships and all your data will be deleted.",
+    "deleteAccountConfirmMessage": "Your profile, library, lists, friendships and everything you sent will be deleted. Groups you created and your shared lists pass to another member; if nobody is left, they are deleted.",
     "deleteAccountConfirmButton": "Yes, delete my account",
     "deleteAccountCancel": "Cancel",
     "deleteAccountError": "Failed to delete account. Please try again.",
@@ -749,7 +781,32 @@
     "deleteSummaryNow": "This can't be undone.",
     "deletionPending": "Your account will be deleted on {date}.",
     "cancelDeletion": "Cancel deletion",
-    "deletionCancelled": "Deletion cancelled: your account is staying."
+    "deletionCancelled": "Deletion cancelled: your account is staying.",
+    "avatarColors": {
+      "slate": "Slate",
+      "red": "Red",
+      "orange": "Orange",
+      "amber": "Amber",
+      "green": "Green",
+      "teal": "Teal",
+      "blue": "Blue",
+      "purple": "Purple"
+    },
+    "avatarIcons": {
+      "astronaut": "Astronaut",
+      "robot": "Robot",
+      "cat": "Cat",
+      "ninja": "Ninja",
+      "alien": "Alien",
+      "ghost": "Ghost",
+      "owl": "Owl",
+      "fox": "Fox",
+      "dragon": "Dragon",
+      "octopus": "Octopus",
+      "panda": "Panda",
+      "wizard": "Wizard"
+    },
+    "deleteAccountHintGrace": "Your account is scheduled for {days, plural, one {# day} other {# days}} in case you change your mind; after that your profile, library, lists, friendships and everything you sent are deleted. Groups you created and your shared lists pass to another member."
   },
   "report": {
     "label": "Report",

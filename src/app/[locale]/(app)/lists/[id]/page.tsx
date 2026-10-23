@@ -8,6 +8,7 @@ import { createClient } from '@/lib/supabase/server'
 import { getListDetail, canEditList } from '@/lib/social/lists'
 import { getFriends } from '@/lib/social/friends'
 import { ListDetail } from './ListDetail'
+import { getTranslations } from 'next-intl/server'
 import type { Metadata } from 'next'
 
 interface Props {
@@ -17,7 +18,9 @@ interface Props {
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { id } = await params
   const detail = await getListDetail(id).catch(() => null)
-  return { title: detail ? `${detail.list.name}` : 'Lista' }
+  if (detail) return { title: detail.list.name }
+  const t = await getTranslations('lists')
+  return { title: t('metaFallback') }
 }
 
 export default async function ListDetailPage({ params }: Props) {
