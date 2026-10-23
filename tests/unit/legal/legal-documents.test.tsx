@@ -135,6 +135,24 @@ describe.each(['es', 'en'] as const)('documentos legales (%s)', (locale) => {
     expect(container.querySelector('a[href="/settings"]')).not.toBeNull()
   })
 
+  it('privacidad: datos obligatorios (art. 13.2.e), reintento de la IA y tráiler sin cookies', async () => {
+    const { container } = await renderDoc('privacy', locale)
+    const text = container.textContent ?? ''
+    expect(text).toMatch(locale === 'es' ? /art\. 13\.2\.e RGPD/ : /Art\. 13\(2\)\(e\) GDPR/)
+    expect(text).toMatch(locale === 'es' ? /no se puede crear la cuenta/ : /the account can't be created/)
+    expect(text).toMatch(locale === 'es' ? /Todo lo demás es opcional/ : /Everything else is optional/)
+    expect(text).toContain(
+      locale === 'es'
+        ? 'como mucho una petición al día, salvo un reintento si falla'
+        : 'at most one request per person per day, except for one retry if it fails'
+    )
+    expect(text).toContain(
+      locale === 'es'
+        ? 'el tráiler se carga desde youtube-nocookie.com solo cuando pulsas reproducir; a partir de ese momento se aplica la política de Google'
+        : "the trailer loads from youtube-nocookie.com only when you press play; from that moment, Google's policy applies"
+    )
+  })
+
   it('términos: moderación real, denuncia sin cuenta y edad 14', async () => {
     const { container } = await renderDoc('terms', locale)
     const text = container.textContent ?? ''
@@ -151,6 +169,17 @@ describe.each(['es', 'en'] as const)('documentos legales (%s)', (locale) => {
     expect(text).toContain('Víctor Franco')
     expect(text).toContain(LEGAL_CONTACT_EMAIL)
     expect(text).toMatch(/NIF/)
+    // Identificación voluntaria (sin actividad económica) y NIF/domicilio solo
+    // a autoridades competentes o a quien acredite interés legítimo.
+    if (locale === 'es') {
+      expect(text).toMatch(/se dan de forma voluntaria: KULTURA no tiene actividad económica/)
+      expect(text).toMatch(/autoridades competentes o a quien acredite un interés legítimo y los pida por email/)
+      expect(text).not.toMatch(/cualquier persona con (un )?interés legítimo/)
+    } else {
+      expect(text).toMatch(/given voluntarily: KULTURA has no economic activity/)
+      expect(text).toMatch(/competent authorities or to whoever proves a legitimate interest and requests them by email/)
+      expect(text).not.toMatch(/anyone with a legitimate interest/)
+    }
     expect(text).toMatch(/2022\/2065/)
     expect(text).toMatch(/art\. 11|Art\. 11/)
     expect(text).toMatch(/art\. 12|Art\. 12/)

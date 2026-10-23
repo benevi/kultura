@@ -1132,7 +1132,8 @@
             "sent": "<b>Lo que me envías</b>: sugerencias y denuncias. En el <report>formulario de denuncia sin cuenta</report>, también el email de contacto si decides dejarlo.",
             "technical": "<b>Datos técnicos</b>: dirección IP y datos del navegador para servir la web, frenar abusos y limitar peticiones; informes de errores, y datos de uso agregados (ver «Analítica y cookies»)."
           },
-          "p2": "No pido categorías especiales de datos. Aun así, lo que ves, lees o juegas puede decir cosas de ti: por eso tu biblioteca no es pública por defecto."
+          "p2": "Para crear la cuenta son obligatorios el email y la contraseña, o entrar con Google; sin ellos no se puede crear la cuenta (art. 13.2.e RGPD). Todo lo demás es opcional: biografía, avatar, lo que guardes o compartas y el email del formulario de denuncia.",
+          "p3": "No pido categorías especiales de datos. Aun así, lo que ves, lees o juegas puede decir cosas de ti: por eso tu biblioteca no es pública por defecto."
         },
         "purposes": {
           "title": "Para qué y con qué base legal",
@@ -1149,7 +1150,7 @@
         "ai": {
           "title": "Inteligencia artificial",
           "p1": "Las recomendaciones de «Para ti» las genera Claude, un modelo de Anthropic, solo cuando pulsas «Recomiéndame». Se envían hasta 15 títulos de tu biblioteca que has terminado o puntuado alto (título, tipo, año y nota), tus géneros favoritos y el idioma de la app. No se envían tu nombre, tu email ni tu identificador de usuario.",
-          "p2": "Se hace como mucho una petición por persona y día. La respuesta se guarda ese día para no repetirla y se borra al generar la siguiente. Según las condiciones comerciales de Anthropic, lo que recibe por su API no se usa para entrenar sus modelos.",
+          "p2": "Por persona se hace como mucho una petición al día, salvo un reintento si falla. La respuesta se guarda ese día para no repetirla y se borra al generar la siguiente. Según las condiciones comerciales de Anthropic, lo que recibe por su API no se usa para entrenar sus modelos.",
           "p3": "También uso IA para traducir algunas sinopsis del catálogo. Ahí solo viaja el texto de la sinopsis, sin ningún dato tuyo."
         },
         "visibility": {
@@ -1178,7 +1179,7 @@
           },
           "p2": "Varios son empresas de EE. UU. o pueden acceder desde allí para dar soporte. Esas <b>transferencias internacionales</b> se amparan en el Marco de Privacidad de Datos UE-EE. UU. cuando la empresa está adherida y, en todo caso, en las cláusulas contractuales tipo de la Comisión Europea incluidas en sus condiciones de tratamiento (arts. 45 y 46 RGPD).",
           "p3": "La información de los títulos sale de catálogos públicos: TMDB (con datos de JustWatch para «Dónde ver»), RAWG, Steam, AniList, MyAnimeList (a través de Jikan), MangaDex, Open Library, Google Books y Comic Vine. Las consultas las hace el servidor de KULTURA con el texto de la búsqueda, sin tu IP ni tu cuenta. Algunas portadas se cargan directamente desde los servidores de imágenes de esos catálogos, que reciben tu IP como al visitar cualquier web.",
-          "p4": "Los tráileres de algunas fichas se insertan desde YouTube (Google). Al cargarse el reproductor, YouTube recibe tu IP y puede usar sus propias cookies según su política de privacidad.",
+          "p4": "Los tráileres de algunas fichas son de YouTube (Google): el tráiler se carga desde youtube-nocookie.com solo cuando pulsas reproducir; a partir de ese momento se aplica la política de Google.",
           "p5": "Ningún proveedor recibe datos para publicidad, y no vendo ni cedo datos a nadie salvo obligación legal."
         },
         "analytics": {
@@ -1200,6 +1201,7 @@
             "transfer": "Los grupos que creaste y tus listas compartidas pasan a otro miembro para que los demás no pierdan su contenido; si no queda nadie, se borran. Los títulos que añadiste a listas de otras personas se quedan en ellas, sin tu nombre.",
             "suggestions": "Las sugerencias que enviaste se conservan sin vínculo con tu cuenta. Si quieres que las borre, pídemelo.",
             "ai": "Las recomendaciones de IA: hasta que se generan las del día siguiente.",
+            "events": "Eventos de uso: mientras tengas la cuenta; se borran con ella.",
             "logs": "Registros del servidor: se borran solos en menos de un día. Informes de errores (Sentry): 30 días. Huellas del límite de peticiones: unos minutos.",
             "backups": "Copias de seguridad semanales cifradas: 90 días. Lo que borras desaparece de ellas cuando caducan.",
             "reports": "Denuncias y su resolución: el tiempo necesario para resolver el caso y atender una posible reclamación."
@@ -1325,7 +1327,7 @@
             "site": "<b>Sitio web</b>: {site}",
             "activity": "<b>Actividad</b>: KULTURA es un proyecto personal gratuito, sin anuncios ni actividad económica."
           },
-          "p1": "El NIF y la dirección postal no se publican. Se facilitan a las autoridades, o a cualquier persona con un interés legítimo, que los pidan por email."
+          "p1": "Estos datos de identificación se dan de forma voluntaria: KULTURA no tiene actividad económica (ni ingresos, ni publicidad, ni contraprestación de ningún tipo). El NIF y el domicilio no se publican; se facilitan a las autoridades competentes o a quien acredite un interés legítimo y los pida por email."
         },
         "contact": {
           "title": "Punto de contacto (Reglamento de Servicios Digitales)",
