@@ -97,11 +97,19 @@ function checkGraphQLErrors(json: unknown): void {
   }
 }
 
+interface AniListCallOptions {
+  cache?: { revalidate: number };
+  /** Plazo por intento (por defecto el general de `providerFetch`, 6 s). */
+  timeoutMs?: number;
+  /** Reintentos ante 5xx (por defecto 1). */
+  retries?: number;
+}
+
 async function anilistFetch<T>(
   query: string,
   variables: Record<string, unknown>,
   schema?: ZodType,
-  cache?: { revalidate: number }
+  opts: AniListCallOptions = {}
 ): Promise<T> {
   const json = await providerFetch<GraphQLResponse<T>>("anilist", ANILIST_ENDPOINT, {
     method: "POST",
@@ -110,11 +118,12 @@ async function anilistFetch<T>(
     body: JSON.stringify({ query, variables }),
     label: "graphql",
     schema,
-    retries: 1,
+    retries: opts.retries ?? 1,
     retryOn: ANILIST_RETRYABLE_STATUS,
+    ...(opts.timeoutMs ? { timeoutMs: opts.timeoutMs } : {}),
     checkBody: checkGraphQLErrors,
     httpError: (status) => new AniListError("request failed", status),
-    ...(cache ? { cache } : {}),
+    ...(opts.cache ? { cache: opts.cache } : {}),
   });
   return json.data as T;
 }
@@ -335,13 +344,24 @@ export interface AniListManga {
 /** Una búsqueda de complemento se cachea 24 h: las obras no cambian de nombre. */
 export const ANILIST_MANGA_SEARCH_REVALIDATE_SECONDS = 24 * 60 * 60;
 
+/**
+ * Plazo de la búsqueda de manga en AniList, SIN reintento: va en serie
+ * después de MangaDex y no puede alargar la búsqueda más de esto (con el
+ * general serían 6 s + reintento, hasta 8 s). AniList suele tardar ~150 ms.
+ */
+export const ANILIST_MANGA_SEARCH_TIMEOUT_MS = 2500;
+
 /** Busca manga en AniList (primeros 10, por coincidencia y popularidad). */
 export async function searchMangaAniList(query: string, perPage = 10): Promise<AniListManga[]> {
   const data = await anilistFetch<{ Page: { media: AniListManga[] } }>(
     MANGA_SEARCH_QUERY,
     { search: query, perPage },
     anilistPageSchema,
-    { revalidate: ANILIST_MANGA_SEARCH_REVALIDATE_SECONDS }
+    {
+      cache: { revalidate: ANILIST_MANGA_SEARCH_REVALIDATE_SECONDS },
+      timeoutMs: ANILIST_MANGA_SEARCH_TIMEOUT_MS,
+      retries: 0,
+    }
   );
   return data.Page?.media ?? [];
 }

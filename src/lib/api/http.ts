@@ -120,7 +120,9 @@ export type ProviderErrorKind =
   | "timeout"
   | "contract"
   | "upstream"
-  | "circuit_open";
+  | "circuit_open"
+  /** Lo canceló quien llamaba (`signal`): no dice nada de la salud del proveedor. */
+  | "aborted";
 
 /**
  * Fallo de un proveedor con el `status` accesible (mismo patrón que
@@ -292,6 +294,7 @@ export function resetProviderCircuits(): void {
  */
 export function isProviderHealthFailure(e: unknown): boolean {
   if (e instanceof ProviderUnavailableError) return false;
+  if (e instanceof ProviderError && e.kind === "aborted") return false;
   if (e instanceof ProviderError && e.kind !== "http" && e.kind !== "upstream") {
     return true; // network, timeout, contract
   }
@@ -587,6 +590,12 @@ export interface ProviderFetchOptions {
   checkBody?: (json: unknown) => void;
   /** Nombre del endpoint para logs (nunca la URL: lleva claves). */
   label?: string;
+  /**
+   * Cancelación desde quien llama (p. ej. la petición que pierde una carrera
+   * de respaldo). Una cancelación lanza `kind: "aborted"`, que no cuenta para
+   * el circuit breaker ni se cachea.
+   */
+  signal?: AbortSignal;
 }
 
 function sleep(ms: number): Promise<void> {
@@ -620,6 +629,18 @@ async function attemptOnce(
 ): Promise<{ ok: true; json: unknown } | { ok: false; status: number }> {
   const controller = new AbortController();
   let timer: ReturnType<typeof setTimeout> | undefined;
+  let onCallerAbort: (() => void) | undefined;
+  const cancelled = new Promise<never>((_, reject) => {
+    const external = opts.signal;
+    if (!external) return;
+    onCallerAbort = () => {
+      controller.abort();
+      reject(new ProviderError(provider, "aborted", `${provider} ${label} → cancelada`));
+    };
+    if (external.aborted) onCallerAbort();
+    else external.addEventListener("abort", onCallerAbort, { once: true });
+  });
+  cancelled.catch(() => {});
   const timeout = new Promise<never>((_, reject) => {
     timer = setTimeout(() => {
       controller.abort();
@@ -663,9 +684,10 @@ async function attemptOnce(
   })();
 
   try {
-    return await Promise.race([request, timeout]);
+    return await Promise.race([request, timeout, cancelled]);
   } finally {
     clearTimeout(timer);
+    if (onCallerAbort) opts.signal?.removeEventListener("abort", onCallerAbort);
     // Si ganó el plazo, el fetch abortado rechazará más tarde: que no quede
     // como rechazo sin capturar.
     request.catch(() => {});
@@ -686,6 +708,7 @@ async function fetchAndValidate<T>(
   let lastStatus = 0;
   for (let attempt = 0; attempt <= retries; attempt++) {
     if (attempt > 0) {
+      if (opts.signal?.aborted) break;
       const delay = opts.retryDelayMs ?? DEFAULT_RETRY_DELAY_MS;
       if (deadline - Date.now() - delay < MIN_RETRY_BUDGET_MS) break;
       await sleep(delay);

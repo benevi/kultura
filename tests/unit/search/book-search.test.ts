@@ -17,7 +17,7 @@ import { cacheStore, fakeUnstableCache } from "../providers/cache-mock";
 vi.mock("next/cache", () => ({ unstable_cache: fakeUnstableCache }));
 
 import { BOOK_HEDGE_MS, searchByTypePaged } from "@/lib/api/search";
-import { resetProviderCircuits } from "@/lib/api/http";
+import { providerCircuitState, resetProviderCircuits } from "@/lib/api/http";
 
 const json = (body: unknown, status = 200) =>
   new Response(JSON.stringify(body), { status, headers: { "Content-Type": "application/json" } });
@@ -85,6 +85,36 @@ describe("libros: respaldo cuando Open Library tarda o falla", () => {
     expect(BOOK_HEDGE_MS + 500).toBeLessThan(4000);
     expect(res.items[0].title).toBe("Don Quijote de la Mancha");
     expect(used(spy, (u) => u.searchParams.has("title"))).toBe(1);
+    // La petición perdedora (`q=`) se cancela, y cancelarla no es un fallo
+    // del proveedor: el circuito de Open Library sigue cerrado.
+    const loser = spy.mock.calls.find((c) => new URL(String(c[0])).searchParams.has("q"));
+    expect((loser?.[1] as RequestInit).signal?.aborted).toBe(true);
+    await vi.advanceTimersByTimeAsync(10_000);
+    expect(providerCircuitState("openlibrary")).toBe("closed");
+  });
+
+  it("si `q=` gana después de lanzar el respaldo, se cancela `title=`", async () => {
+    vi.useFakeTimers();
+    let resolveQ: (r: Response) => void = () => {};
+    const spy = vi.fn((input: string | URL, init?: RequestInit) => {
+      const url = new URL(String(input));
+      if (url.searchParams.has("title")) {
+        return new Promise<Response>((_, reject) =>
+          init?.signal?.addEventListener("abort", () => reject(new DOMException("aborted", "AbortError")))
+        );
+      }
+      return new Promise<Response>((resolve) => {
+        resolveQ = resolve;
+      });
+    });
+    vi.stubGlobal("fetch", spy);
+    const p = searchByTypePaged("don quijote", "book", 1, "es");
+    await vi.advanceTimersByTimeAsync(BOOK_HEDGE_MS + 10);
+    resolveQ(json(OL_DOCS));
+    const res = await p;
+    expect(res.items).toHaveLength(3);
+    const titleCall = spy.mock.calls.find((c) => new URL(String(c[0])).searchParams.has("title"));
+    expect((titleCall?.[1] as RequestInit).signal?.aborted).toBe(true);
   });
 
   it("`q=` responde rápido: no se gasta la segunda petición", async () => {

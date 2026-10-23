@@ -294,14 +294,15 @@ describe("searchByTypePaged('manga') con respuestas reales", () => {
     expect(jikanCalls(spy) + anilistCalls(spy)).toBe(0);
   });
 
-  it("MangaDex y AniList caídos → respaldo de MyAnimeList (ids numéricos, que la ficha ya abre)", async () => {
-    vi.stubGlobal("fetch", fakeProviders({ mangadexDown: true, anilistDown: true, jikan: JIKAN_BERSERK }));
-    const res = await searchByTypePaged("berserk", "manga", 1, "es");
-    expect(res.items.map((i) => i.externalId)).toEqual(["2", "113138"]);
-    expect(res.items[0].rating).toBe(9.47);
+  it("MangaDex y AniList caídos → lanza sin pasar por MyAnimeList (en serie solo añadía espera)", async () => {
+    const spy = fakeProviders({ mangadexDown: true, anilistDown: true, jikan: JIKAN_BERSERK });
+    vi.stubGlobal("fetch", spy);
+    await expect(searchByTypePaged("berserk", "manga", 1, "es")).rejects.toBeTruthy();
+    expect(jikanCalls(spy)).toBe(0);
+    expect(anilistCalls(spy)).toBe(1);
   });
 
-  it("MangaDex y MyAnimeList caídos → lanza (la ruta pinta su aviso de error)", async () => {
+  it("todo caído → lanza (la ruta pinta su aviso de error)", async () => {
     vi.stubGlobal(
       "fetch",
       vi.fn(async () => json({}, 503))

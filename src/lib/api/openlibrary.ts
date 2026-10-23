@@ -117,7 +117,8 @@ async function openLibraryFetch<T>(
   path: string,
   params: Record<string, string> = {},
   schema?: ZodType,
-  cache?: false
+  cache?: false,
+  signal?: AbortSignal
 ): Promise<T> {
   const url = new URL(`https://openlibrary.org${path}`);
   Object.entries(params).forEach(([k, v]) => url.searchParams.set(k, v));
@@ -128,6 +129,7 @@ async function openLibraryFetch<T>(
     timeoutMs: OPEN_LIBRARY_TIMEOUT_MS,
     httpError: (status) => new OpenLibraryError(path, status),
     ...(cache === false ? { cache: false as const } : {}),
+    ...(signal ? { signal } : {}),
   });
 }
 
@@ -206,7 +208,9 @@ export async function searchOpenLibrary(
    * E-BOOKS-ISBN: por defecto SIN `isbn`. Solo la ficha lo pide, y lo hace
    * para un único documento.
    */
-  fields: string = LIST_FIELDS
+  fields: string = LIST_FIELDS,
+  /** F-13: cancela la petición (la que pierde la carrera con `title=`). */
+  signal?: AbortSignal
 ): Promise<OpenLibraryResponse> {
   return openLibraryFetch<OpenLibraryResponse>(
     "/search.json",
@@ -217,7 +221,9 @@ export async function searchOpenLibrary(
       fields,
       ...params,
     },
-    openLibrarySearchSchema
+    openLibrarySearchSchema,
+    undefined,
+    signal
   );
 }
 
@@ -230,7 +236,8 @@ export async function searchOpenLibrary(
 export async function searchOpenLibraryByTitle(
   title: string,
   page = 1,
-  limit = OPEN_LIBRARY_PAGE_SIZE
+  limit = OPEN_LIBRARY_PAGE_SIZE,
+  signal?: AbortSignal
 ): Promise<OpenLibraryResponse> {
   return openLibraryFetch<OpenLibraryResponse>(
     "/search.json",
@@ -240,7 +247,9 @@ export async function searchOpenLibraryByTitle(
       limit: String(limit),
       fields: LIST_FIELDS,
     },
-    openLibrarySearchSchema
+    openLibrarySearchSchema,
+    undefined,
+    signal
   );
 }
 

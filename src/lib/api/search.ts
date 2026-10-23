@@ -36,7 +36,6 @@ import {
   type MangaDexManga,
   type MangaDexStats,
 } from "./mangadex";
-import { searchMangaJikan } from "./jikan";
 import {
   openLibraryTotalPages,
   searchOpenLibrary,
@@ -51,7 +50,6 @@ import {
   normalizeTV,
   normalizeAniListAnime,
   normalizeMangaDex,
-  normalizeMangaJikan,
   normalizeBookOpenLibrary,
   normalizeBookGoogle,
   normalizeGame,
@@ -153,22 +151,12 @@ async function searchMangaAniListItems(query: string): Promise<MediaItem[]> {
   return (await searchMangaAniList(query)).map((raw) => normalizeAniListManga(raw));
 }
 
-async function searchMangaJikanItems(
-  query: string,
-  page: number,
-  timeoutMs?: number
-): Promise<{ items: MediaItem[]; totalPages: number }> {
-  const r = await searchMangaJikan(query, page, timeoutMs);
-  return {
-    items: (r.data ?? []).map((raw) => normalizeMangaJikan(raw)),
-    totalPages: Math.max(r.pagination?.last_visible_page ?? 1, 1),
-  };
-}
 
 /**
  * Búsqueda de manga: MangaDex por relevancia + nota (`/statistics/manga`).
- *   - Si MangaDex falla, AniList como respaldo y, si también falla,
- *     MyAnimeList (Jikan).
+ *   - Si MangaDex falla, AniList como respaldo (una sola llamada, 2,5 s y sin
+ *     reintento). MyAnimeList ya no entra en la búsqueda: desde Vercel no
+ *     responde a tiempo y en serie solo añadía espera.
  *   - Si en la primera página ninguna obra se llama como la consulta (obras
  *     retiradas de MangaDex por licencia: "Berserk", "Vagabond"), se añaden
  *     las coincidencias exactas de AniList. Antes era MyAnimeList, pero desde
@@ -185,19 +173,11 @@ async function searchMangaPage(
   try {
     r = await searchManga(query, (page - 1) * MANGADEX_PAGE_SIZE, locale);
   } catch (e) {
-    if (page === 1) {
-      const ani = await searchMangaAniListItems(query).catch(() => null);
-      if (ani && ani.length > 0) {
-        return { items: rankSearchResults(query, ani), totalPages: 1, hasMore: false };
-      }
-    }
-    const alt = await searchMangaJikanItems(query, page).catch(() => null);
-    if (!alt) throw e;
-    return {
-      items: rankSearchResults(query, alt.items),
-      totalPages: alt.totalPages,
-      hasMore: page < alt.totalPages,
-    };
+    // AniList no pagina aquí: el respaldo es la primera página y nada más.
+    if (page !== 1) throw e;
+    const ani = await searchMangaAniListItems(query).catch(() => null);
+    if (!ani || ani.length === 0) throw e;
+    return { items: rankSearchResults(query, ani), totalPages: 1, hasMore: false };
   }
   const stats = await getMangaStatistics(r.data.map((m) => m.id));
   let items = r.data.map((raw) => enrichMangaDexItem(raw, locale, stats.get(raw.id)));
@@ -289,10 +269,22 @@ function openLibraryPage(query: string, page: number, r: OpenLibraryResponse): S
  * falla, Google Books (que desde Vercel responde 503 sin clave propia).
  */
 async function searchBookPage(query: string, page: number, locale?: string | null): Promise<SearchPage> {
-  const primary = searchOpenLibrary(query, page).then((r) => openLibraryPage(query, page, r));
+  // La que pierde la carrera se cancela: no sigue ocupando la función ni
+  // gastando una petición a Open Library hasta su plazo de 8 s.
+  const primaryCtl = new AbortController();
+  const fallbackCtl = new AbortController();
+  const primary = searchOpenLibrary(query, page, {}, undefined, undefined, primaryCtl.signal)
+    .then((r) => openLibraryPage(query, page, r))
+    .then((res) => {
+      fallbackCtl.abort();
+      return res;
+    });
   const fallback = () =>
-    searchOpenLibraryByTitle(query, page)
-      .then((r) => openLibraryPage(query, page, r))
+    searchOpenLibraryByTitle(query, page, undefined, fallbackCtl.signal)
+      .then((r) => {
+        primaryCtl.abort();
+        return openLibraryPage(query, page, r);
+      })
       .catch(async () => {
         const g = await searchGoogleBooks(query, page, {}, locale);
         const items = (g.items ?? []).map((raw) => normalizeBookGoogle(raw));
@@ -324,7 +316,10 @@ async function searchComicPage(query: string, page: number): Promise<SearchPage>
 
 /**
  * Busca solo en el tipo de contenido indicado (SIN paginar: primera página),
- * ya ordenado por relevancia. La usa el autocompletado (`/api/search?type=`).
+ * ya ordenado por relevancia. La usa el autocompletado (`/api/search?type=`),
+ * así que va SIN complemento de manga: cada tecla sería una llamada a
+ * AniList, y un 429 abriría su circuito y dejaría sin anime toda la app
+ * durante 10 min.
  *
  * `locale`: idioma activo de la app. Se propaga a los proveedores que lo
  * soportan (TMDB, Google Books); Jikan, ComicVine y RAWG lo ignoran (limitación
@@ -335,7 +330,7 @@ export async function searchByType(
   type: MediaType,
   locale?: string | null
 ): Promise<MediaItem[]> {
-  return (await searchByTypePaged(query, type, 1, locale)).items;
+  return (await searchByTypePaged(query, type, 1, locale, { supplement: false })).items;
 }
 
 // ── Búsqueda PAGINADA por familia (E-DISCOVER-SEARCH-MERGE) ──────────────────

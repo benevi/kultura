@@ -17,7 +17,8 @@ import { cacheStore, fakeUnstableCache } from "../providers/cache-mock";
 
 vi.mock("next/cache", () => ({ unstable_cache: fakeUnstableCache }));
 
-import { resetMangaSupplementFailures, searchByTypePaged } from "@/lib/api/search";
+import { resetMangaSupplementFailures, searchByType, searchByTypePaged } from "@/lib/api/search";
+import { ANILIST_MANGA_SEARCH_TIMEOUT_MS } from "@/lib/api/anilist";
 import { fetchAggregateSearch } from "@/lib/api/aggregate";
 import { resetProviderCircuits } from "@/lib/api/http";
 import { parseMediaId } from "@/lib/media/media-id";
@@ -30,9 +31,14 @@ const ANI: Record<string, unknown> = { berserk: aniBerserk, vagabond: aniVagabon
 const json = (body: unknown, status = 200) =>
   new Response(JSON.stringify(body), { status, headers: { "Content-Type": "application/json" } });
 
-function providers(opts: { anilistDown?: boolean; mangadexDown?: boolean } = {}) {
+function providers(opts: { anilistDown?: boolean; anilistHang?: boolean; mangadexDown?: boolean } = {}) {
   return vi.fn(async (input: string | URL, init?: RequestInit) => {
     const url = new URL(String(input));
+    if (url.hostname === "graphql.anilist.co" && opts.anilistHang) {
+      return new Promise<Response>((_, reject) =>
+        init?.signal?.addEventListener("abort", () => reject(new DOMException("aborted", "AbortError")))
+      );
+    }
     if (url.hostname === "api.mangadex.org") {
       if (opts.mangadexDown) return json({}, 503);
       if (url.pathname === "/manga") {
@@ -104,6 +110,30 @@ describe("manga que MangaDex no tiene: complemento de AniList", () => {
     vi.stubGlobal("fetch", spy);
     await fetchAggregateSearch("berserk", 1, "es");
     expect(spy.mock.calls.some((c) => /type: MANGA/.test(String((c[1] as RequestInit | undefined)?.body ?? "")))).toBe(false);
+  });
+
+  it("AniList colgado: el complemento corta a los 2,5 s, sin reintento, y sale MangaDex", async () => {
+    vi.useFakeTimers();
+    const spy = providers({ anilistHang: true });
+    vi.stubGlobal("fetch", spy);
+    let settled = false;
+    const p = searchByTypePaged("berserk", "manga", 1, "es").finally(() => {
+      settled = true;
+    });
+    await vi.advanceTimersByTimeAsync(ANILIST_MANGA_SEARCH_TIMEOUT_MS + 100);
+    expect(settled).toBe(true);
+    const res = await p;
+    expect(res.items[0].title).toBe("Berserk - The Prototype");
+    expect(calls(spy, "graphql.anilist.co")).toBe(1);
+    expect(ANILIST_MANGA_SEARCH_TIMEOUT_MS).toBe(2500);
+    vi.useRealTimers();
+  });
+
+  it("el autocompletado (`searchByType`) no llama al complemento: una tecla no puede tumbar AniList", async () => {
+    const spy = providers();
+    vi.stubGlobal("fetch", spy);
+    for (const q of ["ber", "bers", "berserk"]) await searchByType(q, "manga", "es");
+    expect(calls(spy, "graphql.anilist.co")).toBe(0);
   });
 
   it("AniList caído: la búsqueda sale con MangaDex, sin error", async () => {

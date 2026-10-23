@@ -282,7 +282,9 @@ describe("searchByTypePaged", () => {
     expect(res.hasMore).toBe(true);
     // El buscador NO acota por idioma: un título concreto debe encontrarse
     // aunque solo exista la edición original.
-    expect(searchOpenLibrary).toHaveBeenCalledWith("harry", 2);
+    // (los demás argumentos son los de por defecto y la señal de cancelación)
+    expect(vi.mocked(searchOpenLibrary).mock.calls[0].slice(0, 2)).toEqual(["harry", 2]);
+    expect(vi.mocked(searchOpenLibrary).mock.calls[0][5]).toBeInstanceOf(AbortSignal);
   });
 
   it("game: totalPages desde count de RAWG", async () => {
