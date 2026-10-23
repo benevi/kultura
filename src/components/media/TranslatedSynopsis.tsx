@@ -20,6 +20,7 @@
 import { getLocale } from "next-intl/server";
 import { SynopsisSection } from "./SynopsisSection";
 import { translateSynopsis } from "@/lib/translate/synopsis";
+import { synopsisLang } from "@/lib/media/synopsis-lang";
 
 interface Props {
   /** Sinopsis tal cual la sirve el proveedor. */
@@ -33,5 +34,5 @@ interface Props {
 export async function TranslatedSynopsis({ text, mediaId, cacheOnly = false }: Props) {
   const locale = await getLocale();
   const translated = await translateSynopsis({ text, locale, mediaId, cacheOnly });
-  return <SynopsisSection text={translated} />;
+  return <SynopsisSection text={translated} lang={synopsisLang(translated, locale)} />;
 }

@@ -20,6 +20,7 @@ import type { SteamInfo } from "@/lib/api/steam";
 import type { SourceLink } from "@/lib/media/source-link";
 import type { KulturaRating } from "@/lib/media/kultura-rating";
 import { mediaPath } from "@/lib/media/seo";
+import { synopsisLang } from "@/lib/media/synopsis-lang";
 import { Link } from "@/i18n/navigation";
 import { KButton } from "@/components/ui/KButton";
 import { SOURCE_LINK_CLASS } from "@/components/legal/DataAttribution";
@@ -195,22 +196,25 @@ export async function MediaDetail({
     tiles.push({ key: "year", icon: IconCalendar, label: t("year"), value: String(item.year) });
   }
   tiles.push({ key: "type", icon: IconFormat, label: t("type"), value: typeLabel });
+  // Notas aparte de los datos y cada una con su escala (revisión del PR #40):
+  // la de KULTURA es 1-5 y la del proveedor 0-10; juntas y sin escala
+  // parecían la misma cosa.
+  const decimal = new Intl.NumberFormat(locale, { minimumFractionDigits: 1, maximumFractionDigits: 1 });
+  const ratings: { key: string; label: string; srLabel?: string; value: string; hint?: string }[] = [];
   if (kulturaRating) {
-    tiles.push({
+    ratings.push({
       key: "kultura",
-      icon: IconStar,
       label: t("kulturaRatingLabel"),
-      value: `${kulturaRating.value.toFixed(1)}/5`,
+      value: `${decimal.format(kulturaRating.value)}/5`,
       hint: t("kulturaRatingHint", { count: kulturaRating.count }),
     });
   }
-  if (item.rating !== undefined) {
-    tiles.push({
-      key: "rating",
-      icon: IconStar,
-      label: t("rating"),
-      value: item.rating.toFixed(1),
-      hint: item.ratingSource,
+  if (item.rating !== undefined && item.ratingSource) {
+    ratings.push({
+      key: "provider",
+      label: item.ratingSource,
+      srLabel: t("providerRatingLabel", { source: item.ratingSource }),
+      value: `${decimal.format(item.rating)}/10`,
     });
   }
   if (extraDetail) {
@@ -238,7 +242,7 @@ export async function MediaDetail({
 
   return (
     <main id="main" className="min-h-screen">
-      <div className="max-w-6xl mx-auto px-4 md:px-14 pt-1 pb-14">
+      <div className="max-w-6xl mx-auto px-4 md:px-14 pt-1 pb-[calc(3.5rem+env(safe-area-inset-bottom))] md:pb-14">
         {breadcrumbs.length > 0 && (
           <nav aria-label={t("breadcrumbLabel")} className="mb-2">
             <ol className="flex flex-wrap items-center gap-x-1.5 text-xs text-text-tertiary">
@@ -264,7 +268,7 @@ export async function MediaDetail({
           <div className="w-full md:w-[420px] flex-shrink-0">
             <div className="relative">
               <div
-                className="relative w-full aspect-[3/4] rounded-[32px] overflow-hidden flex items-end p-6 md:p-8"
+                className="relative w-full h-[260px] sm:h-auto sm:aspect-[3/4] rounded-[32px] overflow-hidden flex items-end p-6 md:p-8"
                 style={{ boxShadow: "12px 12px 0 oklch(26% 0.025 280)" }}
               >
                 {/* Gradiente SIEMPRE detrás (E-CARD-PORTADA-404): con
@@ -284,7 +288,7 @@ export async function MediaDetail({
                   <PosterImage
                     src={item.poster}
                     sizes="(max-width: 768px) 90vw, 420px"
-                    className="object-cover"
+                    className="object-cover object-[center_25%] sm:object-center"
                     priority
                   />
                 )}
@@ -305,7 +309,7 @@ export async function MediaDetail({
               </div>
             </div>
 
-            {/* Chips: tipo / año / notas / episodios (DISENO.md — chip inactivo).
+            {/* Chips: año / tipo / duración o episodios (DISENO.md — chip inactivo).
                 La etiqueta va como texto para lector (un `aria-label` en un
                 <span> sin rol no se anuncia). */}
             {tiles.length > 0 && (
@@ -319,6 +323,34 @@ export async function MediaDetail({
                     <span className="sr-only">{label}: </span>
                     {value}
                     {hint && <span className="text-text-tertiary font-medium">{hint}</span>}
+                  </li>
+                ))}
+              </ul>
+            )}
+
+            {/* Notas: KULTURA (1-5) y proveedor (0-10), con su etiqueta visible. */}
+            {ratings.length > 0 && (
+              <ul aria-label={t("ratingsLabel")} className="flex flex-wrap gap-2 mt-2">
+                {ratings.map(({ key, label, srLabel, value, hint }) => (
+                  <li
+                    key={key}
+                    className="inline-flex items-center gap-1.5 rounded-full bg-surface-elevated text-text-primary text-xs px-4 py-2"
+                  >
+                    <IconStar
+                      className={`w-3.5 h-3.5 ${key === "kultura" ? "text-accent-highlight" : "text-text-tertiary"}`}
+                    />
+                    {srLabel ? (
+                      <>
+                        <span className="sr-only">{srLabel}: </span>
+                        <span aria-hidden="true" className="font-medium text-text-secondary">
+                          {label}
+                        </span>
+                      </>
+                    ) : (
+                      <span className="font-medium text-text-secondary">{label}</span>
+                    )}
+                    <span className="font-bold">{value}</span>
+                    {hint && <span className="text-text-tertiary font-medium">· {hint}</span>}
                   </li>
                 ))}
               </ul>
@@ -413,7 +445,9 @@ export async function MediaDetail({
                     — el fallback es el texto original, así que la ficha nunca
                     espera y nunca se queda sin sinopsis. Sin sesión solo se
                     usa una traducción ya hecha (tope de IA, D-06). */}
-                <Suspense fallback={<SynopsisSection text={item.synopsis} />}>
+                <Suspense
+                  fallback={<SynopsisSection text={item.synopsis} lang={synopsisLang(item.synopsis, locale)} />}
+                >
                   <TranslatedSynopsis
                     text={item.synopsis}
                     mediaId={item.id}

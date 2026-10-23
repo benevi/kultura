@@ -5,11 +5,13 @@ import { useTranslations } from 'next-intl'
 
 interface Props {
   text: string
+  /** Idioma del texto si no es el de la página (`synopsisLang`, WCAG 3.1.2). */
+  lang?: string
 }
 
 const CHAR_LIMIT = 280
 
-export function SynopsisSection({ text }: Props) {
+export function SynopsisSection({ text, lang }: Props) {
   const t = useTranslations('media_detail')
   const [expanded, setExpanded] = useState(false)
   const textId = useId()
@@ -18,7 +20,7 @@ export function SynopsisSection({ text }: Props) {
 
   return (
     <div>
-      <p id={textId} className="text-sm text-text-secondary leading-relaxed whitespace-pre-line">{displayed}</p>
+      <p id={textId} lang={lang} className="text-sm text-text-secondary leading-relaxed whitespace-pre-line">{displayed}</p>
       {/* Zona táctil de 44 px (2.5.8 / ACC-12) y estado para lector. */}
       {isLong && (
         <button

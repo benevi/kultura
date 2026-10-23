@@ -28,8 +28,12 @@ vi.mock("@/i18n/navigation", () => ({
 // `SynopsisSection` y sigue ejercitándose igual.
 vi.mock("@/components/media/TranslatedSynopsis", async () => {
   const { SynopsisSection } = await import("@/components/media/SynopsisSection");
+  const { synopsisLang } = await import("@/lib/media/synopsis-lang");
   return {
-    TranslatedSynopsis: ({ text }: { text: string }) => <SynopsisSection text={text} />,
+    // Igual que el real cuando no hay traducción: el original con su `lang`.
+    TranslatedSynopsis: ({ text }: { text: string }) => (
+      <SynopsisSection text={text} lang={synopsisLang(text, "es")} />
+    ),
   };
 });
 
@@ -196,10 +200,11 @@ describe("MediaDetail", () => {
     expect(screen.getByText("Thriller")).toBeInTheDocument();
   });
 
-  it("renderiza el rating con la fuente en el hero y en detalles", async () => {
+  it("renderiza la nota del proveedor con su fuente y su escala (/10), en formato del idioma", async () => {
     render(await MediaDetail({ item: mockItem, initialEntry: null, isAuthenticated: false }));
-    expect(screen.getAllByText("8.4").length).toBeGreaterThan(0);
-    expect(screen.getAllByText("TMDB").length).toBeGreaterThan(0);
+    expect(screen.getByText("8,4/10")).toBeInTheDocument();
+    expect(screen.getByText("TMDB")).toBeInTheDocument();
+    expect(screen.getByText('providerRatingLabel:{"source":"TMDB"}:', { exact: false })).toHaveClass("sr-only");
   });
 
   it("Streaming providers se renderizan cuando existen", async () => {
@@ -362,17 +367,61 @@ describe("MediaDetail", () => {
     expect(a).toHaveAttribute("rel", "noopener noreferrer");
   });
 
-  it("con nota media de KULTURA la enseña con su número de notas", async () => {
+  // Revisión del PR #40: 4,0 (KULTURA, 1-5) y 8,4 (TMDB, 0-10) salían juntas
+  // con los datos y sin escala.
+  it("las dos notas van en su propia fila, separadas de los datos y cada una con su etiqueta y escala", async () => {
     render(
       await MediaDetail({
         item: mockItem,
-        kulturaRating: { value: 4.2, count: 7 },
+        kulturaRating: { value: 4, count: 7 },
         initialEntry: null,
         isAuthenticated: false,
       })
     );
-    expect(screen.getByText("4.2/5")).toBeInTheDocument();
-    expect(screen.getByText('kulturaRatingHint:{"count":7}')).toBeInTheDocument();
+    const ratings = screen.getByRole("list", { name: "ratingsLabel" });
+    const items = Array.from(ratings.querySelectorAll("li")).map((li) => li.textContent);
+    expect(items[0]).toContain("kulturaRatingLabel");
+    expect(items[0]).toContain("4,0/5");
+    expect(items[0]).toContain('kulturaRatingHint:{"count":7}');
+    expect(items[1]).toContain("TMDB");
+    expect(items[1]).toContain("8,4/10");
+    // La fila de datos (año, tipo, duración) no lleva notas.
+    const facts = screen.getByText("1999").closest("ul")!;
+    expect(facts).not.toBe(ratings);
+    expect(facts.textContent).not.toContain("/10");
+  });
+
+  it("sin notas no hay fila de notas", async () => {
+    render(await MediaDetail({ item: mockItemMinimal, initialEntry: null, isAuthenticated: false }));
+    expect(screen.queryByRole("list", { name: "ratingsLabel" })).not.toBeInTheDocument();
+  });
+
+  // Revisión del PR #40: a 390 px el CTA caía hacia 805 px (bajo la BottomNav).
+  it("en móvil el póster es una banda de 260 px (3:4 desde sm) y el final respeta el área segura", async () => {
+    const { container } = render(
+      await MediaDetail({ item: mockItem, initialEntry: null, isAuthenticated: false })
+    );
+    const poster = screen.getByRole("heading", { level: 1 }).closest("div[class*='rounded-[32px]']")!;
+    expect(poster.className).toContain("h-[260px]");
+    expect(poster.className).toContain("sm:aspect-[3/4]");
+    expect(poster.className).not.toMatch(/(^| )aspect-\[3\/4\]/);
+    expect(container.querySelector("main > div")!.className).toContain(
+      "pb-[calc(3.5rem+env(safe-area-inset-bottom))]"
+    );
+  });
+
+  it("una sinopsis en otro idioma que la página lleva `lang` (WCAG 3.1.2)", async () => {
+    const english = {
+      ...mockItem,
+      synopsis: "A depressed man and a soap salesman build an underground fight club with the help of the others.",
+    };
+    render(await MediaDetail({ item: english, initialEntry: null, isAuthenticated: false }));
+    expect(screen.getByText(english.synopsis)).toHaveAttribute("lang", "en");
+  });
+
+  it("una sinopsis en el idioma de la página no lleva `lang`", async () => {
+    render(await MediaDetail({ item: mockItem, initialEntry: null, isAuthenticated: false }));
+    expect(screen.getByText(mockItem.synopsis!)).not.toHaveAttribute("lang");
   });
 
   it("las etiquetas de los chips se leen como texto (no `aria-label` en un span)", async () => {

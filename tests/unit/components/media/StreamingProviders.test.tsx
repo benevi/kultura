@@ -59,6 +59,15 @@ describe("StreamingProviders", () => {
     expect(rentList).not.toContainElement(screen.getByAltText("Netflix"));
   });
 
+  // Revisión del PR #40: con un logo por grupo salía uno por fila.
+  it("los grupos van en línea con salto, no uno por fila", () => {
+    render(<StreamingProviders providers={[...flatrateProviders, ...rentProviders]} title="Dónde ver" />);
+    const groups = screen.getByText("watchType.flatrate").parentElement!.parentElement!;
+    expect(groups.className).toContain("flex-wrap");
+    expect(groups.className).not.toContain("flex-col");
+    expect(groups.children).toHaveLength(2);
+  });
+
   it("una plataforma en dos modalidades sale en las dos (alquilar y comprar)", () => {
     render(
       <StreamingProviders

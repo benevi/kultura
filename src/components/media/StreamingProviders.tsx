@@ -79,7 +79,8 @@ export function StreamingProviders({
   return (
     <section>
       <h2 className="font-display text-xl font-bold text-text-primary mb-3">{title}</h2>
-      <div className="flex flex-col gap-4">
+      {/* Grupos en línea (con salto si no caben), no uno por fila. */}
+      <div className="flex flex-wrap gap-x-8 gap-y-4">
         {groups.map((group) => (
           <div key={group.type}>
             <h3 className="text-xs font-bold uppercase tracking-wide text-text-tertiary mb-2">
