@@ -23,6 +23,9 @@ if (fs.existsSync(testEnvPath)) {
 
 export default defineConfig({
   testDir: "./tests/e2e",
+  // La red de seguridad de accesibilidad tiene su propio config (servidor
+  // construido con Supabase simulado y sin red): tests/e2e/a11y/.
+  testIgnore: ["a11y/**"],
   fullyParallel: false,
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 2 : 0,

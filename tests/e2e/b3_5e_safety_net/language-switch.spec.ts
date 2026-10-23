@@ -28,7 +28,12 @@ test.describe('LanguageSwitcher [B3.5e]', () => {
       await page.goto(`${BASE}/es/home`)
     }
 
-    const switcher = page.locator('button[aria-label*="Switch"]')
+    // F-14 movió el selector de idioma al menú de la cuenta (disclosure):
+    // botón "Menú de la cuenta de …" y dentro, el botón "English".
+    const accountMenu = page.getByRole('button', { name: /Menú de la cuenta de/ })
+    await expect(accountMenu).toBeVisible({ timeout: 5_000 })
+    await accountMenu.click()
+    const switcher = page.getByRole('button', { name: 'English' })
     await expect(switcher).toBeVisible({ timeout: 5_000 })
     await switcher.click()
 
