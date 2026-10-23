@@ -19,6 +19,10 @@ import {
   bestYears,
   computeSelection,
   getBestOf,
+  getBestRanking,
+  getFeaturedRanking,
+  isIndexableRanking,
+  BEST_INDEX_MIN_ITEMS,
   parseBestParams,
   pickBest,
 } from "@/lib/best/best-of";
@@ -236,5 +240,55 @@ describe("best-of — getBestOf", () => {
       .mockResolvedValue(ok([]) as never);
     const [first] = await getBestOf("anime", 2025, "es");
     expect(first.genres).toEqual(["Acción", "Recuentos de la vida", "Sobrenatural"]);
+  });
+});
+
+describe("best-of — getBestRanking (F-16: criterio y fecha visibles)", () => {
+  const movies = (n: number) =>
+    Array.from({ length: n }, (_, i) =>
+      item(`m${i}`, { externalId: String(550 + i), type: "movie", rating: 9 - i * 0.05, synopsis: "s" }),
+    );
+
+  it("devuelve la fecha real de la selección, el suelo aplicado y el id de la ficha", async () => {
+    vi.mocked(fetchDiscoverData).mockResolvedValueOnce(ok(movies(10)) as never).mockResolvedValue(ok([]) as never);
+    const before = Date.now();
+    const r = await getBestRanking("movie", 2024, "es");
+    expect(r.minVotes).toBe(1500);
+    expect(Date.parse(r.updatedAt)).toBeGreaterThanOrEqual(before);
+    expect(r.items[0].externalId).toBe("550");
+  });
+
+  it("año en curso relajado: el criterio publica el suelo que se usó de verdad", async () => {
+    const year = new Date().getFullYear();
+    vi.mocked(fetchDiscoverData)
+      .mockResolvedValueOnce(ok(movies(1)) as never)
+      .mockResolvedValueOnce(ok([]) as never)
+      .mockResolvedValueOnce(ok(movies(5)) as never)
+      .mockResolvedValue(ok([]) as never);
+    const r = await getBestRanking("movie", year, "es");
+    expect(r.items).toHaveLength(5);
+    expect(r.minVotes).toBe(125);
+  });
+
+  it("anime no tiene suelo numérico", async () => {
+    vi.mocked(fetchDiscoverData).mockResolvedValueOnce(ok([item("al-1", { rating: 8 })]) as never).mockResolvedValue(ok([]) as never);
+    expect((await getBestRanking("anime", 2024, "en")).minVotes).toBeUndefined();
+  });
+
+  it("una lista de menos de 8 títulos no se indexa (D-16)", () => {
+    expect(BEST_INDEX_MIN_ITEMS).toBe(8);
+    expect(isIndexableRanking(7)).toBe(false);
+    expect(isIndexableRanking(8)).toBe(true);
+  });
+
+  it("hubs: si el año en curso aún es corto, enseñan el anterior", async () => {
+    vi.mocked(fetchDiscoverData).mockImplementation(async (_t, page, filters) => {
+      if (page !== 1) return ok([]) as never;
+      const year = Number((filters as { year?: string }).year);
+      return ok(year === 2026 ? movies(3) : movies(12)) as never;
+    });
+    const f = await getFeaturedRanking("movie", "es", today);
+    expect(f?.year).toBe(2025);
+    expect(f?.ranking.items).toHaveLength(12);
   });
 });
