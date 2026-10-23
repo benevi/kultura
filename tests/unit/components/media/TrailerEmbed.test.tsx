@@ -36,6 +36,15 @@ describe("TrailerEmbed (fachada)", () => {
     expect(container.innerHTML).not.toContain("www.youtube.com");
   });
 
+  // Regresión: AniList manda "LHtdKWJdif4\t" y la ficha se quedaba sin tráiler.
+  it("acepta el id con espacios o tabuladores al final y los quita de la URL", () => {
+    render(<TrailerEmbed youtubeKey={"LHtdKWJdif4\t"} title="x" />);
+    expect(screen.getByRole("button").querySelector("img")).toHaveAttribute(
+      "src",
+      "https://i.ytimg.com/vi/LHtdKWJdif4/hqdefault.jpg"
+    );
+  });
+
   it("un id que no es de YouTube no se pinta", () => {
     const { container } = render(<TrailerEmbed youtubeKey={'x"><script>'} title="x" />);
     expect(container.innerHTML).toBe("");

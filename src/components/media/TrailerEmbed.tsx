@@ -32,7 +32,9 @@ export function trailerThumbnailUrl(youtubeKey: string): string {
   return `https://i.ytimg.com/vi/${encodeURIComponent(youtubeKey)}/hqdefault.jpg`;
 }
 
-export function TrailerEmbed({ youtubeKey, title }: TrailerEmbedProps) {
+export function TrailerEmbed({ youtubeKey: rawKey, title }: TrailerEmbedProps) {
+  // AniList manda ids con espacios o tabuladores al final ("LHtdKWJdif4\t").
+  const youtubeKey = rawKey.trim();
   const t = useTranslations("media_detail");
   const [playing, setPlaying] = useState(false);
   const iframeRef = useRef<HTMLIFrameElement>(null);
