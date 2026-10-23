@@ -154,7 +154,8 @@
     "manga": "Manga",
     "mangas": "Mangas",
     "game": "Videojuego",
-    "games": "Videojuegos"
+    "games": "Videojuegos",
+    "noContent": "No hay contenido disponible"
   },
   "status": {
     "completed": "Completado",
@@ -195,7 +196,7 @@
     "skipToContent": "Saltar al contenido"
   },
   "common": {
-    "loading": "Cargando...",
+    "loading": "Cargando…",
     "save": "Guardar",
     "cancel": "Cancelar",
     "delete": "Eliminar",
@@ -204,7 +205,11 @@
     "back": "Volver",
     "seeAll": "Ver todo",
     "addToLibrary": "Añadir a biblioteca",
-    "share": "Compartir"
+    "share": "Compartir",
+    "close": "Cerrar",
+    "stars": "{count, plural, one {# estrella} other {# estrellas}}",
+    "ratingOf": "{value} de {max}",
+    "notRated": "Sin puntuar"
   },
   "filters": {
     "type": "Tipo",
@@ -259,7 +264,9 @@
     "filters": "Filtros",
     "randomize": "Sorpréndeme",
     "randomizeAgain": "Otra vez",
-    "showingRandom": "1 resultado aleatorio de {count}"
+    "showingRandom": "1 resultado aleatorio de {count}",
+    "suggestionsLabel": "Sugerencias",
+    "suggestionsCount": "{count, plural, =0 {Sin sugerencias} one {# sugerencia: usa las flechas para recorrerla} other {# sugerencias: usa las flechas para recorrerlas}}"
   },
   "media_detail": {
     "trailer": "Tráiler",
@@ -287,7 +294,43 @@
     "steamLanguages": "Idiomas",
     "steamScreenshots": "Capturas",
     "whyRecommended": "Por qué te lo recomendamos",
-    "whyRecommendedText": "Coincide con géneros que ya te gustan — {genres} — según lo que tienes en tu biblioteca."
+    "whyRecommendedText": "Coincide con géneros que ya te gustan — {genres} — según lo que tienes en tu biblioteca.",
+    "breadcrumbLabel": "Estás en",
+    "breadcrumbHome": "Inicio",
+    "ctaAdd": "Añadir a mi biblioteca",
+    "ctaHint": "Gratis y sin anuncios. Al crear tu cuenta vuelves a esta ficha.",
+    "ctaLogin": "¿Ya tienes cuenta? Entra",
+    "reportPublic": "Denunciar este título",
+    "metaFallback": "{title} en KULTURA: apunta lo que quieres ver, leer y jugar, puntúa lo que ya viste y compártelo con tus amigos.",
+    "kulturaRatingLabel": "Nota KULTURA",
+    "kulturaRatingHint": "{count, plural, one {# nota} other {# notas}}",
+    "ratingsLabel": "Notas",
+    "providerRatingLabel": "Nota en {source}",
+    "chapters": "Capítulos",
+    "pages": "Páginas",
+    "durationValue": "{minutes} min",
+    "credits": {
+      "director": "Dirección",
+      "cast": "Reparto",
+      "studio": "Estudio",
+      "authors": "Autoría",
+      "publisher": "Editorial",
+      "platforms": "Plataformas",
+      "developers": "Desarrollo",
+      "seasons": "Temporadas"
+    },
+    "trailerTitle": "Tráiler de {title}",
+    "trailerPlay": "Reproducir el tráiler",
+    "trailerNotice": "El vídeo se carga desde YouTube al pulsar.",
+    "sourceLabel": "Datos del título:",
+    "sourceLinkLabel": "{name}: ficha del título (se abre en una pestaña nueva)",
+    "watchType": {
+      "flatrate": "Suscripción",
+      "free": "Gratis",
+      "ads": "Gratis con anuncios",
+      "rent": "Alquiler",
+      "buy": "Compra"
+    }
   },
   "library": {
     "status": {
@@ -305,11 +348,12 @@
     "season": "Temporada",
     "errors": {
       "notAuthenticated": "Debes iniciar sesión",
-      "saveFailed": "Error al guardar"
+      "saveFailed": "No se ha podido guardar. Revisa la conexión e inténtalo de nuevo.",
+      "providerUnavailable": "No hemos podido guardar el cambio: el catálogo no responde. Inténtalo en un momento.",
+      "removeFailed": "No se ha podido quitar de tu biblioteca. Inténtalo de nuevo."
     },
     "title": "Mi biblioteca",
     "filterByType": "Filtrar por tipo",
-    "filterByStatus": "Filtrar por estado",
     "filterByScore": "Puntuación mín.",
     "allTypes": "Todos los tipos",
     "allStatuses": "Todos los estados",
@@ -343,7 +387,14 @@
       "inProgress": "En progreso",
       "pending": "Pendientes",
       "dropped": "Abandonados"
-    }
+    },
+    "statusLabel": "Estado",
+    "saving": "Guardando…",
+    "removeConfirmTitle": "¿Quitar de tu biblioteca?",
+    "removeConfirmBody": "Se borrarán el estado, la nota y el progreso de «{title}».",
+    "removeConfirm": "Quitar",
+    "removed": "Quitado de tu biblioteca",
+    "saved": "Guardado en tu biblioteca"
   },
   "profile": {
     "memberSince": "Miembro desde",
@@ -376,7 +427,8 @@
     "metaDescription": "Perfil de {username} en KULTURA: lo que ve, lee y juega.",
     "libraryHidden": "La biblioteca de {username} no es pública",
     "libraryHiddenFriends": "Solo la ven sus amigos. Envíale una solicitud de amistad para verla.",
-    "libraryHiddenPrivate": "Ha decidido no enseñarla a nadie."
+    "libraryHiddenPrivate": "Ha decidido no enseñarla a nadie.",
+    "genreCount": "{count, plural, one {# título} other {# títulos}}"
   },
   "lists": {
     "title": "Mis listas",
@@ -389,14 +441,12 @@
     "create": "Crear",
     "noLists": "Aún no tienes listas",
     "noListsHint": "Crea tu primera lista para organizar títulos",
-    "items": "títulos",
     "members": "miembros",
     "addItem": "Añadir título",
     "addItemPlaceholder": "Buscar título...",
     "inviteMember": "Invitar amigo",
     "selectFriend": "Selecciona un amigo",
     "invite": "Invitar",
-    "removeItem": "Eliminar",
     "removeMember": "Eliminar miembro",
     "deleteList": "Eliminar lista",
     "deleteListTitle": "Eliminar lista",
@@ -426,7 +476,18 @@
     "removeError": "Error al eliminar el título",
     "inviteError": "Error al invitar al miembro",
     "removeMemberError": "Error al eliminar al miembro",
-    "notAllowed": "No tienes permiso para editar esta lista"
+    "notAllowed": "No tienes permiso para editar esta lista",
+    "namePlaceholder": "Ej.: Pelis para ver en Navidad",
+    "nameRequired": "Ponle un nombre a la lista.",
+    "visibilityLabel": "¿Quién puede verla?",
+    "visibilityPrivate": "Privada",
+    "visibilityPrivateHint": "Solo tú y las personas que invites.",
+    "visibilityPublic": "Pública",
+    "visibilityPublicHint": "Cualquiera con el enlace, también sin cuenta.",
+    "visibilityAfterCreateError": "La lista se ha creado como privada: no se ha podido hacer pública. Puedes cambiarlo desde la propia lista.",
+    "itemCount": "{count, plural, one {# título} other {# títulos}}",
+    "removeItemNamed": "Quitar «{title}» de la lista",
+    "metaFallback": "Lista"
   },
   "aiRecommendations": {
     "title": "Para ti",
@@ -491,7 +552,9 @@
     "sending": "Enviando...",
     "sent": "¡Recomendación enviada!",
     "noFriends": "Aún no tienes amigos. Añade amigos para poder recomendar.",
-    "error": "Error al enviar la recomendación"
+    "error": "Error al enviar la recomendación",
+    "loadingFriends": "Cargando tus amigos…",
+    "cancel": "Cancelar"
   },
   "home": {
     "title": "Inicio",
@@ -531,10 +594,10 @@
     "decline": "Rechazar",
     "removeFriend": "Eliminar amigo",
     "friends": "Amigos",
-    "shareProfile": "Compartir mi perfil",
+    "shareProfile": "Tu enlace de invitación",
     "profileLinkCopied": "¡Enlace copiado!",
     "noFriends": "Aún no tienes amigos en KULTURA",
-    "noFriendsHint": "Comparte tu perfil para que te encuentren",
+    "noFriendsHint": "Comparte tu enlace de invitación: quien se registre con él será tu amigo en KULTURA",
     "noPendingRequests": "Sin solicitudes pendientes",
     "viewProfile": "Ver perfil",
     "sendingRequest": "Enviando...",
@@ -560,6 +623,18 @@
     "groupError": "Error al crear el grupo",
     "joinGroupError": "No se pudo unir al grupo"
   },
+  "invite": {
+    "bannerTitle": "{username} te invita a KULTURA",
+    "bannerFriends": "Crea tu cuenta gratis y seréis amigos al momento, para ver lo que guarda cada uno.",
+    "bannerText": "Tu watchlist de cine, series, anime, manga, juegos, libros y cómics. Gratis y sin anuncios.",
+    "bannerCta": "Aceptar la invitación",
+    "share": "Invitar amigos",
+    "shareTitle": "Únete a KULTURA conmigo",
+    "shareText": "Apunto aquí lo que veo, leo y juego. Si te registras con este enlace, seremos amigos en KULTURA.",
+    "copied": "Enlace de invitación copiado",
+    "copyError": "No se pudo copiar. Copia el enlace a mano:",
+    "ownerHint": "Quien se registre con tu enlace será tu amigo en KULTURA."
+  },
   "suggestions": {
     "title": "Sugerencias y comentarios",
     "subtitle": "Ayúdanos a mejorar KULTURA",
@@ -577,9 +652,11 @@
     "success": "¡Gracias por tu comentario!",
     "successHint": "Leemos todas las sugerencias y las usamos para mejorar KULTURA.",
     "error": "Error al enviar. Inténtalo de nuevo.",
-    "errorTooShort": "Revisa: el asunto necesita 3 caracteres mínimo y la descripción 10.",
     "errorRateLimit": "Demasiados envíos. Espera un momento e inténtalo de nuevo.",
-    "newFeedback": "Enviar otro"
+    "newFeedback": "Enviar otro",
+    "errorSubjectShort": "El asunto necesita al menos 3 caracteres.",
+    "errorDescriptionShort": "La descripción necesita al menos 10 caracteres.",
+    "charCount": "{count} de {max} caracteres"
   },
   "groups": {
     "title": "Grupo",
@@ -631,7 +708,12 @@
     "loadError": "No se pudieron cargar los datos.",
     "retry": "Reintentar",
     "conversationCount": "{count, plural, =0 {Sin conversaciones} one {# conversación} other {# conversaciones}}",
-    "otherLeft": "Ya no está en el chat"
+    "otherLeft": "Ya no está en el chat",
+    "loadingMessages": "Cargando mensajes…",
+    "logLabel": "Mensajes con {username}",
+    "logLabelFallback": "Mensajes de la conversación",
+    "backToChats": "Volver a mensajes",
+    "messageLabel": "Mensaje"
   },
   "settings": {
     "title": "Configuración",
@@ -652,12 +734,12 @@
     "changePasswordHint": "Elige una contraseña nueva para entrar con tu correo.",
     "dangerZone": "Zona de peligro",
     "exportData": "Exportar mis datos",
-    "exportDataHint": "Descarga un archivo JSON con tu biblioteca, tus listas y tus amistades.",
+    "exportDataHint": "Descarga un archivo JSON con tu perfil, tu biblioteca, tus listas, tus amistades y los mensajes que has enviado. No incluye los que te han escrito otras personas: si quieres una copia, pídela en {email}.",
     "exportDataError": "Error al exportar los datos",
     "deleteAccount": "Eliminar cuenta",
-    "deleteAccountHint": "Esta acción es permanente: se borran tu perfil, tu biblioteca, tus listas y tu actividad social.",
+    "deleteAccountHint": "Se borran al momento tu perfil, tu biblioteca, tus listas, tus amistades y lo que enviaste. Los grupos que creaste y tus listas compartidas pasan a otro miembro.",
     "deleteAccountConfirmTitle": "¿Eliminar tu cuenta?",
-    "deleteAccountConfirmMessage": "Esta acción no se puede deshacer. Se eliminarán tu perfil, tu biblioteca, tus listas, tus amistades y todos tus datos.",
+    "deleteAccountConfirmMessage": "Se borrarán tu perfil, tu biblioteca, tus listas, tus amistades y lo que enviaste. Los grupos que creaste y tus listas compartidas pasan a otro miembro; si no queda nadie, se borran.",
     "deleteAccountConfirmButton": "Sí, eliminar mi cuenta",
     "deleteAccountCancel": "Cancelar",
     "deleteAccountError": "Error al eliminar la cuenta. Inténtalo de nuevo.",
@@ -699,7 +781,32 @@
     "deleteSummaryNow": "No se puede deshacer.",
     "deletionPending": "Tu cuenta se borrará el {date}.",
     "cancelDeletion": "Cancelar el borrado",
-    "deletionCancelled": "Borrado cancelado: tu cuenta sigue aquí."
+    "deletionCancelled": "Borrado cancelado: tu cuenta sigue aquí.",
+    "avatarColors": {
+      "slate": "Pizarra",
+      "red": "Rojo",
+      "orange": "Naranja",
+      "amber": "Ámbar",
+      "green": "Verde",
+      "teal": "Turquesa",
+      "blue": "Azul",
+      "purple": "Morado"
+    },
+    "avatarIcons": {
+      "astronaut": "Astronauta",
+      "robot": "Robot",
+      "cat": "Gato",
+      "ninja": "Ninja",
+      "alien": "Alienígena",
+      "ghost": "Fantasma",
+      "owl": "Búho",
+      "fox": "Zorro",
+      "dragon": "Dragón",
+      "octopus": "Pulpo",
+      "panda": "Panda",
+      "wizard": "Mago"
+    },
+    "deleteAccountHintGrace": "Tu cuenta queda programada {days, plural, one {# día} other {# días}} por si te arrepientes; después se borran tu perfil, tu biblioteca, tus listas, tus amistades y lo que enviaste. Los grupos que creaste y tus listas compartidas pasan a otro miembro."
   },
   "report": {
     "label": "Denunciar",
@@ -1422,23 +1529,111 @@
       "game": "Los mejores videojuegos de {year}"
     },
     "description": {
-      "anime": "Ranking de los animes mejor valorados de {year}, con géneros y sinopsis. Guarda los que quieras ver en tu lista de KULTURA.",
-      "movie": "Ranking de las películas mejor valoradas de {year}, con géneros y sinopsis. Guarda las que quieras ver en tu lista de KULTURA.",
-      "tv": "Ranking de las series mejor valoradas de {year}, con géneros y sinopsis. Guarda las que quieras ver en tu lista de KULTURA.",
-      "game": "Ranking de los videojuegos mejor valorados de {year}, con géneros y fecha. Guarda los que quieras jugar en tu lista de KULTURA."
+      "anime": "Los animes mejor valorados de {year} según AniList, con sinopsis y ficha de cada uno. Guarda los que te faltan en tu lista de KULTURA.",
+      "movie": "Las películas mejor valoradas de {year} con un mínimo de votos en TMDB, con sinopsis y dónde verlas. Guarda las que te faltan en KULTURA.",
+      "tv": "Las series mejor valoradas de {year} con un mínimo de votos en TMDB, con sinopsis y dónde verlas. Guarda las que te faltan en KULTURA.",
+      "game": "Los videojuegos mejor valorados de {year} con un mínimo de valoraciones en RAWG, con sinopsis y ficha. Guarda los que quieras jugar en KULTURA."
     },
     "intro": {
-      "anime": "Los animes de {year} con mejor puntuación, ordenados de mayor a menor valoración.",
-      "movie": "Las películas de {year} con mejor puntuación, ordenadas de mayor a menor valoración.",
-      "tv": "Las series de {year} con mejor puntuación, ordenadas de mayor a menor valoración.",
-      "game": "Los videojuegos de {year} con mejor puntuación, ordenados de mayor a menor valoración."
+      "anime": "Los animes de {year} con mejor nota, en orden. Toca cualquiera para ver su ficha y guardarlo en tu lista.",
+      "movie": "Las películas de {year} con mejor nota, en orden. Toca cualquiera para ver su ficha y dónde verla.",
+      "tv": "Las series de {year} con mejor nota, en orden. Toca cualquiera para ver su ficha y dónde verla.",
+      "game": "Los videojuegos de {year} con mejor nota, en orden. Toca cualquiera para ver su ficha y guardarlo en tu lista."
     },
-    "chip": { "anime": "Animes", "movie": "Películas", "tv": "Series", "game": "Videojuegos" },
-    "otherLabel": "Otros rankings",
-    "share": "Compartir",
-    "shareLabel": "Compartir este ranking",
-    "copied": "¡Enlace copiado!",
-    "shareText": "{title}: el ranking en KULTURA"
+    "chip": {
+      "anime": "Animes",
+      "movie": "Películas",
+      "tv": "Series",
+      "game": "Videojuegos"
+    },
+    "noun": {
+      "anime": "animes",
+      "movie": "películas",
+      "tv": "series",
+      "game": "videojuegos"
+    },
+    "criteria": {
+      "anime": "Criterio: los 60 animes más populares de {year} en AniList, ordenados por su nota media. Solo entran los que tienen un 7 o más.",
+      "movie": "Criterio: nota media de los usuarios de TMDB ponderada por el número de votos. Solo entran películas con al menos {min, number} votos y un 7 o más.",
+      "tv": "Criterio: nota media de los usuarios de TMDB ponderada por el número de votos. Solo entran series con al menos {min, number} votos y un 7 o más; la animación japonesa va en el ranking de anime.",
+      "game": "Criterio: nota de los jugadores de RAWG ponderada por el número de valoraciones. Solo entran juegos con al menos {min, number} valoraciones y un 7 sobre 10 o más."
+    },
+    "updated": "Actualizado el <time>{date}</time>",
+    "provisional": "Ranking provisional: por ahora {count, plural, one {solo # título llega} other {solo # títulos llegan}} al criterio. Se completará a medida que lleguen votos.",
+    "empty": {
+      "title": "Todavía no hay ranking de {year}",
+      "body": "Aún hay muy pocos {noun} de {year} con votos suficientes para un ranking fiable. Vuelve dentro de unas semanas.",
+      "previous": "Ver el ranking de {year}"
+    },
+    "nav": {
+      "format": "Formato",
+      "year": "Año"
+    },
+    "breadcrumb": {
+      "label": "Ruta de navegación",
+      "home": "Inicio",
+      "rankings": "Rankings"
+    },
+    "podium": "Podio: los tres primeros",
+    "rest": "Del puesto 4 al {last}",
+    "position": "Puesto {n}:",
+    "sticker": "#1",
+    "rating": "nota {rating} de 10",
+    "save": "Guardar <hidden>{title}</hidden>",
+    "cta": {
+      "title": "Guarda los que te faltan",
+      "body": "Marca los que ya conoces, apunta el resto y puntúalos a tu manera: tu propio ranking de {year}. Gratis y sin anuncios.",
+      "action": "Crear mi cuenta gratis",
+      "login": "Ya tengo cuenta"
+    },
+    "hub": {
+      "title": "Rankings de cine, series, anime y videojuegos",
+      "description": "Los mejores títulos de cada año en cine, series, anime y videojuegos, con un criterio público de votos mínimos. Guarda los que te faltan en KULTURA.",
+      "intro": "Cada ranking ordena los títulos de un año por la nota de su comunidad (TMDB, AniList o RAWG) y exige un mínimo de votos, para que nada suba con cuatro notas de fans. Se revisan cada día.",
+      "years": "Todos los años",
+      "top": "Top 5 de {year}",
+      "seeRanking": "Ver el ranking completo de {year}",
+      "unavailable": "Este ranking no está disponible ahora mismo. Vuelve a intentarlo en un rato."
+    },
+    "formatHub": {
+      "title": {
+        "anime": "Los mejores animes por año",
+        "movie": "Las mejores películas por año",
+        "tv": "Las mejores series por año",
+        "game": "Los mejores videojuegos por año"
+      },
+      "description": {
+        "anime": "Rankings anuales de anime desde {first}: los mejor valorados de cada año según AniList, con sinopsis y ficha.",
+        "movie": "Rankings anuales de películas desde {first}: las mejor valoradas de cada año en TMDB, con un mínimo de votos.",
+        "tv": "Rankings anuales de series desde {first}: las mejor valoradas de cada año en TMDB, con un mínimo de votos.",
+        "game": "Rankings anuales de videojuegos desde {first}: los mejor valorados de cada año en RAWG, con un mínimo de valoraciones."
+      },
+      "intro": "Elige un año para ver su ranking completo, con la sinopsis y la ficha de cada título.",
+      "criteria": {
+        "anime": "Criterio: los 60 animes más populares de cada año en AniList, ordenados por su nota media; solo entran los que tienen un 7 o más.",
+        "movie": "Criterio: nota media de TMDB ponderada por el número de votos, con un mínimo de votos (más alto en los años ya cerrados) y un 7 o más.",
+        "tv": "Criterio: nota media de TMDB ponderada por el número de votos, con un mínimo de votos (más alto en los años ya cerrados) y un 7 o más. La animación japonesa va en anime.",
+        "game": "Criterio: nota de RAWG ponderada por el número de valoraciones, con un mínimo de valoraciones (más alto en los años ya cerrados) y un 7 sobre 10 o más."
+      }
+    },
+    "share": {
+      "action": "Compartir",
+      "label": "Compartir este ranking",
+      "menu": "Opciones para compartir",
+      "copy": "Copiar enlace",
+      "copied": "¡Enlace copiado!",
+      "onX": "Compartir en X",
+      "onWhatsApp": "Compartir en WhatsApp",
+      "text": "{title}: el ranking en KULTURA"
+    },
+    "footer": {
+      "notice": "Aviso legal",
+      "accessibility": "Accesibilidad"
+    },
+    "attribution": {
+      "steam": "Carátulas y descripciones de videojuegos:",
+      "steamTrademark": "Steam y el logotipo de Steam son marcas de Valve Corporation; KULTURA no está afiliada a Valve."
+    }
   },
   "collection": {
     "visibility": "Visibilidad de la lista",
@@ -1462,6 +1657,29 @@
     "ctaText": "Guarda todo lo que ves, lees y juegas en un solo sitio, y compártelo con un enlace.",
     "ctaButton": "Crea tu colección",
     "empty": "{username} aún no ha compartido ninguna lista",
-    "emptyHint": "Cuando publique alguna, aparecerá aquí."
+    "emptyHint": "Cuando publique alguna, aparecerá aquí.",
+    "eyebrow": "Perfil en KULTURA",
+    "memberSince": "En KULTURA desde {date}",
+    "statsLabel": "Su biblioteca en números",
+    "completedCount": "{count, plural, one {# completado} other {# completados}}",
+    "favorites": "Favoritos",
+    "favoritesHint": "Puntúa títulos y los mejores saldrán aquí",
+    "favoritesEmpty": "Puntúa los títulos de tu biblioteca y tus cuatro mejores saldrán aquí, uno por formato.",
+    "favoritesEmptyAction": "Puntuar títulos",
+    "favoriteScore": "{score, number} de 5",
+    "watching": "En curso",
+    "publicLists": "Listas públicas",
+    "lockedTitle": "Entra para ver la biblioteca de {username}",
+    "lockedText": "Sus favoritos, lo que tiene en curso y sus números solo se ven con cuenta, y su dueño decide si los ve cualquiera o solo sus amigos. Crear la tuya es gratis.",
+    "openProfile": "Ver su perfil y añadirle",
+    "signIn": "Ya tengo cuenta",
+    "ownerNote": "Tus listas públicas las ve cualquiera, con o sin cuenta. Tu biblioteca: {visibility}.",
+    "ownerNoteNoAccount": "Sin cuenta solo se ven tus listas públicas.",
+    "ownerSettings": "Cambiar en Ajustes",
+    "emptyOwn": "Aún no has publicado ninguna lista",
+    "emptyOwnHint": "Haz pública una lista desde Listas y aparecerá aquí, con su enlace para compartir.",
+    "emptyOwnAction": "Ir a mis listas",
+    "reportProfile": "Denunciar este perfil",
+    "reportList": "Denunciar esta lista"
   }
 }

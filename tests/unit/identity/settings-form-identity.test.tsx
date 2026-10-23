@@ -65,10 +65,21 @@ describe('SettingsForm — F-12', () => {
     global.fetch = vi.fn().mockResolvedValue(new Response(JSON.stringify({ success: true }), { status: 200 }))
   })
 
+  it('F-18/F-19: la exportación remite al email para los mensajes recibidos y el borrado dice el plazo real', () => {
+    const { rerender } = render(<SettingsForm {...PROPS} />)
+    expect(screen.getByText('exportDataHint:{"email":"kultura.app.contacto@gmail.com"}')).toBeInTheDocument()
+    // Sin gracia (bandera apagada o migración sin aplicar): borrado inmediato.
+    expect(screen.getByText('deleteAccountHint')).toBeInTheDocument()
+    rerender(<SettingsForm {...PROPS} graceDays={7} />)
+    expect(screen.getByText('deleteAccountHintGrace:{"days":7}')).toBeInTheDocument()
+  })
+
   it('las muestras de color pintan `color.value`, no el `.hex` obsoleto', () => {
     render(<SettingsForm {...PROPS} />)
-    expect(screen.getByLabelText('slate').style.backgroundColor).toBe('rgb(0, 1, 2)')
-    expect(screen.getByLabelText('blue').style.backgroundColor).toBe('rgb(6, 1, 2)')
+    // F-18: cada color es un radio con nombre traducido; la muestra es su span.
+    const swatch = (name: string) => screen.getByRole('radio', { name: `avatarColors.${name}` }).querySelector('span')!
+    expect(swatch('slate').style.backgroundColor).toBe('rgb(0, 1, 2)')
+    expect(swatch('blue').style.backgroundColor).toBe('rgb(6, 1, 2)')
   })
 
   it('guardar sin tocar el nombre no lo envía (un nombre antiguo nunca bloquea el resto)', async () => {

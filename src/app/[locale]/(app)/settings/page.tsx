@@ -4,7 +4,8 @@ import { isDemoUser } from '@/lib/demo'
 import { getTranslations } from 'next-intl/server'
 import { SettingsForm } from './SettingsForm'
 import { isLibraryVisibility } from '@/app/api/settings/identity'
-import { libraryVisibilityEnabled, readAccountState } from '@/app/api/settings/account-state'
+import { accountGraceEnabled, libraryVisibilityEnabled, readAccountState } from '@/app/api/settings/account-state'
+import { ACCOUNT_GRACE_DAYS } from '@/app/api/settings/identity'
 import type { Metadata } from 'next'
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -47,6 +48,8 @@ export default async function SettingsPage({ params, searchParams }: SettingsPag
         emailConfirmed={searchParams?.email === 'confirmed'}
         initialLibraryVisibility={isDemoUser(user) ? null : initialLibraryVisibility}
         deletionRequestedAt={account.state?.deletion_requested_at ?? null}
+        // Mismo cálculo que GET /api/account: con la bandera y la tabla, 7 días.
+        graceDays={accountGraceEnabled() && account.migrated ? ACCOUNT_GRACE_DAYS : 0}
       />
     </main>
   )

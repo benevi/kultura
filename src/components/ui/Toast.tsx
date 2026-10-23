@@ -166,6 +166,11 @@ interface ToastContainerProps {
  * `role="status"` (educada) para avisos y `aria-live="assertive"` solo para
  * errores (ACC-11). En móvil van centrados por encima de la `BottomNav` y de
  * la zona segura (MOV-6, V9); en escritorio, abajo a la derecha.
+ *
+ * `z-[60]`: por encima de `Modal` (z-50). Aun así, con un diálogo abierto
+ * Radix deja el resto de la página `aria-hidden`, este contenedor incluido:
+ * un error que ocurre DENTRO de un diálogo se pinta en el propio diálogo
+ * (`Modal` prop `error`, con `role="alert"`), no aquí.
  */
 export function ToastContainer({ toasts, onDismiss }: ToastContainerProps) {
   const [mounted, setMounted] = useState(false)
@@ -182,7 +187,7 @@ export function ToastContainer({ toasts, onDismiss }: ToastContainerProps) {
   return createPortal(
     <div
       data-testid="toast-viewport"
-      className="pointer-events-none fixed z-50 inset-x-4 bottom-[calc(4.5rem+env(safe-area-inset-bottom))] md:inset-x-auto md:right-4 md:bottom-4 flex flex-col items-center md:items-end gap-2"
+      className="pointer-events-none fixed z-[60] inset-x-4 bottom-[calc(4.5rem+env(safe-area-inset-bottom))] md:inset-x-auto md:right-4 md:bottom-4 flex flex-col items-center md:items-end gap-2"
     >
       <div aria-live="assertive" aria-relevant="additions text" className="flex flex-col gap-2 w-full max-w-sm md:w-80">
         {errors.map((x) => (

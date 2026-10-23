@@ -23,6 +23,13 @@ export interface MediaCardProps {
   accentHue?: number;
   /** La portada no ha cargado: la rejilla puede sacar la card (E-SIN-CARDS-VACIAS). */
   onPosterError?: (id: string) => void;
+  /**
+   * Nivel del título de la card (ACC-7): el que toca bajo el último
+   * encabezado de la página (`h2` justo bajo el h1, `h3` bajo un h2). Por
+   * defecto `h3`, el de siempre: las rejillas de Inicio y Descubrir van bajo
+   * un h2 de sección.
+   */
+  headingLevel?: 2 | 3 | 4;
 }
 
 export function MediaCard({
@@ -33,7 +40,9 @@ export function MediaCard({
   aspect = "2/3",
   accentHue,
   onPosterError,
+  headingLevel = 3,
 }: MediaCardProps) {
+  const Heading = `h${headingLevel}` as "h2" | "h3" | "h4";
   const href = `/media/${item.type}/${item.externalId}` as const;
   // Badge de tipo (modo "all", R5b): label localizado vía discoverFilters.typeBadge
   // (singular, ≠ filters.<type> que es plural). R6.
@@ -59,15 +68,19 @@ export function MediaCard({
             className="absolute inset-0 flex items-center justify-center"
             style={{ background: posterGradient(item.id || item.title) }}
           >
+            {/* Iniciales de relleno: decorativas (el título va debajo). */}
             {!item.poster && (
-              <span className="text-white/90 text-xs font-display font-bold line-clamp-2 px-2 text-center">
+              <span
+                aria-hidden="true"
+                className="text-white/90 text-xs font-display font-bold line-clamp-2 px-2 text-center"
+              >
                 {item.title.slice(0, 2).toUpperCase()}
               </span>
             )}
           </div>
           {item.poster && (
             /* `alt` vacío a propósito: la imagen es DECORATIVA porque el título
-               va como texto justo debajo, en el <h3>. Con un alt real, una
+               va como texto justo debajo, en el encabezado. Con un alt real, una
                portada rota lo escupía en pantalla y además lo duplicaba para
                quien usa lector. */
             <PosterImage
@@ -119,12 +132,12 @@ export function MediaCard({
 
           {/* Título + año, superpuestos sobre el scrim */}
           <div className="absolute inset-x-2 bottom-2">
-            <h3
+            <Heading
               className="font-display text-sm font-bold text-white line-clamp-2 leading-tight"
               title={item.title}
             >
               {item.title}
-            </h3>
+            </Heading>
             {item.year ? (
               <p className="text-[11px] text-white/75 font-medium mt-0.5">{item.year}</p>
             ) : null}

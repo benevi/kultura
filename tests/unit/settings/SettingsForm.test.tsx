@@ -61,9 +61,11 @@ describe('SettingsForm', () => {
   it('click en color de avatar lo selecciona (ring visible)', () => {
     render(<SettingsForm {...DEFAULT_PROPS} initialAvatarColor="blue"
  />)
-    const redButton = screen.getByLabelText('red')
+    // F-18 (ACC-10): radio con nombre traducido; estado en aria-checked.
+    const redButton = screen.getByRole('radio', { name: 'avatarColors.red' })
     fireEvent.click(redButton)
-    expect(redButton.className).toContain('ring-2')
+    expect(redButton).toHaveAttribute('aria-checked', 'true')
+    expect(redButton.querySelector('span')!.className).toContain('ring-2')
   })
 
   it('username con menos de 3 caracteres muestra error inline sin hacer fetch', () => {
@@ -74,6 +76,10 @@ describe('SettingsForm', () => {
     fireEvent.click(saveButton)
     expect(screen.getByText('errorInvalidUsername')).toBeInTheDocument()
     expect(global.fetch).not.toHaveBeenCalled()
+    // ACC-3: el error se anuncia, va enlazado al campo y el foco vuelve a él.
+    expect(screen.getByRole('alert')).toHaveTextContent('errorInvalidUsername')
+    expect(input).toHaveAccessibleDescription('errorInvalidUsername')
+    expect(document.activeElement).toBe(input)
   })
 
   it('username con caracteres especiales muestra error inline sin hacer fetch', () => {

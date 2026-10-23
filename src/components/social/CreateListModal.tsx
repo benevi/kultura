@@ -1,12 +1,21 @@
 'use client'
 
-import { useState } from 'react'
+import { useId, useRef, useState } from 'react'
 import { useTranslations } from 'next-intl'
 import { useRouter } from '@/i18n/navigation'
 import { KButton } from '@/components/ui/KButton'
+import { KInput } from '@/components/ui/KInput'
+import { Modal } from '@/components/ui/Modal'
+import { Select } from '@/components/ui/Select'
+import { useToastContext } from '@/components/ui/ToastProvider'
+import { cn } from '@/lib/utils/index'
 
 const MEDIA_TYPE_KEYS = ['movie', 'tv', 'anime', 'book', 'comic', 'manga', 'game'] as const
 type MediaTypeKey = typeof MEDIA_TYPE_KEYS[number]
+
+/** D-04c / X5: al crear se pregunta, y lo marcado de inicio es privada. */
+const VISIBILITIES = ['private', 'public'] as const
+type Visibility = typeof VISIBILITIES[number]
 
 interface CreateListModalProps {
   onClose: () => void
@@ -17,15 +26,27 @@ export function CreateListModal({ onClose }: CreateListModalProps) {
   const tf = useTranslations('filters')
   const tc = useTranslations('common')
   const router = useRouter()
+  const { showError } = useToastContext()
+  const nameRef = useRef<HTMLInputElement>(null)
+  const errorId = useId()
 
   const [name, setName] = useState('')
+  const [nameError, setNameError] = useState('')
   const [mediaType, setMediaType] = useState<MediaTypeKey>('movie')
   const [isCollaborative, setIsCollaborative] = useState(false)
+  const [visibility, setVisibility] = useState<Visibility>('private')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  async function handleCreate() {
-    if (!name.trim()) return
+  async function handleCreate(e: React.FormEvent) {
+    e.preventDefault()
+    if (!name.trim()) {
+      // ACC-3: el error se anuncia y el foco vuelve al campo.
+      setNameError(t('nameRequired'))
+      nameRef.current?.focus()
+      return
+    }
+    setNameError('')
     setLoading(true)
     setError(null)
 
@@ -41,9 +62,23 @@ export function CreateListModal({ onClose }: CreateListModalProps) {
         setLoading(false)
         return
       }
+      // La lista nace privada (`is_public default false`); hacerla pública es
+      // el mismo PATCH que el selector de la propia lista.
+      let publishFailed = false
+      if (visibility === 'public') {
+        const patch = await fetch(`/api/lists/${data.list.id}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ isPublic: true }),
+        }).catch(() => null)
+        publishFailed = !patch?.ok
+      }
       router.push(`/lists/${data.list.id}`)
       router.refresh()
       onClose()
+      // El aviso va al toast DESPUÉS de cerrar: con el diálogo abierto, la
+      // región de avisos está `aria-hidden` y el lector no lo leería.
+      if (publishFailed) setTimeout(() => showError(t('visibilityAfterCreateError')), 0)
     } catch {
       setError(t('errorCreate'))
       setLoading(false)
@@ -51,70 +86,106 @@ export function CreateListModal({ onClose }: CreateListModalProps) {
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 animate-backdrop-in">
-      <div className="bg-surface-elevated rounded-3xl w-full max-w-sm flex flex-col gap-4 p-6 animate-modal-in">
-        <div className="flex items-center justify-between">
-          <h2 className="font-display text-xl font-extrabold text-text-primary">{t('createList')}</h2>
-          <button onClick={onClose} className="text-text-secondary hover:text-text-primary text-xl leading-none">×</button>
-        </div>
+    <Modal
+      open
+      onClose={onClose}
+      variant="sheet"
+      title={t('createList')}
+      closeLabel={tc('close')}
+      initialFocusRef={nameRef}
+      dismissible={!loading}
+    >
+      <form onSubmit={handleCreate} noValidate className="flex flex-col gap-4">
+        <KInput
+          ref={nameRef}
+          label={t('listName')}
+          value={name}
+          onChange={(e) => {
+            setName(e.target.value)
+            if (nameError && e.target.value.trim()) setNameError('')
+          }}
+          placeholder={t('namePlaceholder')}
+          error={nameError}
+          maxLength={80}
+          aria-required="true"
+          autoComplete="off"
+        />
 
-        <div className="flex flex-col gap-4">
-          {/* Nombre */}
-          <div>
-            <label className="text-xs font-semibold text-text-secondary mb-1.5 block">{t('listName')}</label>
-            <input
-              type="text"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              placeholder="Mi lista de películas..."
-              className="w-full bg-surface-base border border-surface-border rounded-button px-3 py-2 text-sm text-text-primary placeholder:text-text-tertiary focus:outline-none focus:ring-1 focus:ring-accent-pink"
-            />
-          </div>
+        <Select
+          label={t('mediaType')}
+          value={mediaType}
+          onChange={(v) => setMediaType(v as MediaTypeKey)}
+          options={MEDIA_TYPE_KEYS.map((key) => ({ value: key, label: tf(key) }))}
+        />
 
-          {/* Tipo */}
-          <div>
-            <label className="text-xs font-semibold text-text-secondary mb-1.5 block">{t('mediaType')}</label>
-            <select
-              value={mediaType}
-              onChange={(e) => setMediaType(e.target.value as MediaTypeKey)}
-              className="w-full bg-surface-base border border-surface-border rounded-button px-3 py-2 text-sm text-text-primary focus:outline-none focus:ring-1 focus:ring-accent-pink"
-            >
-              {MEDIA_TYPE_KEYS.map((key) => (
-                <option key={key} value={key}>{tf(key)}</option>
-              ))}
-            </select>
-          </div>
+        {/* Visibilidad: radios nativos (flechas y lector gratis), privada marcada. */}
+        <fieldset className="flex flex-col gap-2">
+          <legend className="mb-1.5 text-sm text-muted">
+            {t('visibilityLabel')}
+          </legend>
+          {VISIBILITIES.map((option) => {
+            const checked = visibility === option
+            const label = option === 'private' ? t('visibilityPrivate') : t('visibilityPublic')
+            const hint = option === 'private' ? t('visibilityPrivateHint') : t('visibilityPublicHint')
+            return (
+              <label
+                key={option}
+                className={cn(
+                  'flex min-h-11 cursor-pointer items-start gap-3 rounded-[14px] bg-surface-default px-3 py-3 transition-colors',
+                  checked && 'ring-2 ring-accent-pink'
+                )}
+              >
+                <input
+                  type="radio"
+                  name="list-visibility"
+                  value={option}
+                  checked={checked}
+                  onChange={() => setVisibility(option)}
+                  className="mt-0.5 h-5 w-5 flex-shrink-0 cursor-pointer accent-accent-pink"
+                />
+                <span className="flex flex-col">
+                  <span className="text-sm font-bold text-text-primary">{label}</span>
+                  <span className="text-xs text-text-tertiary">{hint}</span>
+                </span>
+              </label>
+            )
+          })}
+        </fieldset>
 
-          {/* Colaborativa */}
-          <label className="flex items-center gap-3 cursor-pointer rounded-2xl bg-surface-base px-3 py-3">
-            <input
-              type="checkbox"
-              checked={isCollaborative}
-              onChange={(e) => setIsCollaborative(e.target.checked)}
-              className="accent-accent-positive w-4 h-4 flex-shrink-0"
-            />
-            <div>
-              <p className="text-sm font-medium text-text-primary">{t('collaborative')}</p>
-              <p className="text-xs text-text-tertiary">{t('collaborativeHint')}</p>
-            </div>
-          </label>
-        </div>
+        {/* Colaborativa */}
+        <label className="flex min-h-11 items-center gap-3 cursor-pointer rounded-[14px] bg-surface-default px-3 py-3">
+          <input
+            type="checkbox"
+            checked={isCollaborative}
+            onChange={(e) => setIsCollaborative(e.target.checked)}
+            className="accent-accent-positive w-5 h-5 flex-shrink-0"
+          />
+          <span className="flex flex-col">
+            <span className="text-sm font-medium text-text-primary">{t('collaborative')}</span>
+            <span className="text-xs text-text-tertiary">{t('collaborativeHint')}</span>
+          </span>
+        </label>
 
-        {error && <p className="text-xs text-accent-danger">{error}</p>}
+        {error && (
+          <p id={errorId} role="alert" className="text-sm text-accent-danger">
+            {error}
+          </p>
+        )}
 
         <div className="flex gap-2 justify-end">
-          <KButton variant="secondary" size="sm" onClick={onClose}>{tc('cancel')}</KButton>
+          <KButton type="button" variant="secondary" onClick={onClose} disabled={loading}>
+            {tc('cancel')}
+          </KButton>
           <KButton
+            type="submit"
             variant="primary"
-            size="sm"
             loading={loading}
-            disabled={!name.trim()}
-            onClick={handleCreate}
+            aria-describedby={error ? errorId : undefined}
           >
             {t('create')}
           </KButton>
         </div>
-      </div>
-    </div>
+      </form>
+    </Modal>
   )
 }

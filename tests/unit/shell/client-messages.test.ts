@@ -6,8 +6,10 @@
  * queda cubierto:
  * - por `APP_CLIENT_NAMESPACES` (proveedor de `(app)/template.tsx`) si se
  *   alcanza desde un archivo de `(app)`;
- * - por la lista de su zona (`report/`, `welcome/`, con proveedor en su
- *   layout) si se alcanza desde ella;
+ * - por la lista de su zona (`report/`, `welcome/`, `media/`, con proveedor
+ *   en su layout) si se alcanza desde ella; en `media/` el propio layout
+ *   pinta la cabecera y la barra FUERA de su proveedor, así que cuenta como
+ *   shell (igual que el layout de `(app)`);
  * - por `SHELL_CLIENT_NAMESPACES` (proveedor de `[locale]/layout.tsx`) si se
  *   alcanza desde el resto de páginas públicas o desde el propio layout de
  *   `(app)`, que queda por encima del template.
@@ -22,8 +24,10 @@ import es from "../../../messages/es.json";
 import en from "../../../messages/en.json";
 import {
   APP_CLIENT_NAMESPACES,
+  MEDIA_CLIENT_NAMESPACES,
   REPORT_CLIENT_NAMESPACES,
   WELCOME_CLIENT_NAMESPACES,
+  PUBLIC_PROFILE_CLIENT_NAMESPACES,
   SHELL_CLIENT_NAMESPACES,
   pickMessages,
 } from "@/i18n/client-messages";
@@ -33,10 +37,17 @@ const SRC = path.join(ROOT, "src");
 const APP_GROUP = path.join(SRC, "app", "[locale]", "(app)") + path.sep;
 const APP_GROUP_SHELL = ["layout.tsx", "template.tsx"].map((f) => APP_GROUP + f);
 // Zonas públicas con proveedor propio en su layout (sustituye al del shell).
+// `shell`: archivos de la zona que pintan por ENCIMA de su proveedor.
 const ZONES = [
-  { dir: "report", list: REPORT_CLIENT_NAMESPACES, file: "src/app/[locale]/report/PublicReportForm.tsx" },
-  { dir: "welcome", list: WELCOME_CLIENT_NAMESPACES, file: "src/app/[locale]/welcome/WelcomeFlow.tsx" },
-].map((z) => ({ ...z, path: path.join(SRC, "app", "[locale]", z.dir) + path.sep }));
+  { dir: "report", list: REPORT_CLIENT_NAMESPACES, file: "src/app/[locale]/report/PublicReportForm.tsx", shell: [] },
+  { dir: "welcome", list: WELCOME_CLIENT_NAMESPACES, file: "src/app/[locale]/welcome/WelcomeFlow.tsx", shell: [] },
+  { dir: "u", list: PUBLIC_PROFILE_CLIENT_NAMESPACES, file: "src/components/collection/InviteLinkButton.tsx", shell: [] },
+  { dir: "media", list: MEDIA_CLIENT_NAMESPACES, file: "src/components/library/LibraryAction.tsx", shell: ["layout.tsx"] },
+].map((z) => {
+  const dir = path.join(SRC, "app", "[locale]", z.dir) + path.sep;
+  return { ...z, path: dir, shellFiles: z.shell.map((f) => dir + f) };
+});
+const inZone = (z: (typeof ZONES)[number], f: string) => f.startsWith(z.path) && !z.shellFiles.includes(f);
 
 function walk(dir: string): string[] {
   return fs.readdirSync(dir, { withFileTypes: true }).flatMap((entry) => {
@@ -91,12 +102,12 @@ const shellEntries = Array.from(FILES.keys()).filter(
   (f) =>
     f.startsWith(path.join(SRC, "app") + path.sep) &&
     (!f.startsWith(APP_GROUP) || APP_GROUP_SHELL.includes(f)) &&
-    !ZONES.some((z) => f.startsWith(z.path)),
+    !ZONES.some((z) => inZone(z, f)),
 );
 const zoneUses = ZONES.map((z) => ({
   ...z,
   ...translationUses(
-    Array.from(reachable(Array.from(FILES.keys()).filter((f) => f.startsWith(z.path)))).filter((f) =>
+    Array.from(reachable(Array.from(FILES.keys()).filter((f) => inZone(z, f)))).filter((f) =>
       clientGraph.has(f),
     ),
   ),
@@ -185,7 +196,14 @@ describe("REN-5 — textos del navegador por namespaces", () => {
     ["es", es],
     ["en", en],
   ])("todas las rutas existen en %s.json", (_locale, messages) => {
-    for (const ns of [...APP_CLIENT_NAMESPACES, ...SHELL_CLIENT_NAMESPACES, ...REPORT_CLIENT_NAMESPACES, ...WELCOME_CLIENT_NAMESPACES]) {
+    for (const ns of [
+      ...APP_CLIENT_NAMESPACES,
+      ...SHELL_CLIENT_NAMESPACES,
+      ...REPORT_CLIENT_NAMESPACES,
+      ...WELCOME_CLIENT_NAMESPACES,
+      ...PUBLIC_PROFILE_CLIENT_NAMESPACES,
+      ...MEDIA_CLIENT_NAMESPACES,
+    ]) {
       const picked = pickMessages(messages, [ns]);
       expect(Object.keys(picked), ns).toHaveLength(1);
     }

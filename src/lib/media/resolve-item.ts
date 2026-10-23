@@ -5,7 +5,7 @@
 // manda el navegador (`mediaCache`) no se usa nunca para eso (SEG-2).
 //
 // El enrutado por forma de id replica el de la ficha de detalle
-// (`[locale]/(app)/media/[type]/[id]/page.tsx`): conviven ids de fuentes
+// (`[locale]/media/[type]/[id]/page.tsx`, vía `detail-data.ts`): conviven ids de fuentes
 // actuales y legacy (AniList/Jikan, MangaDex/Jikan, Open Library/Google Books)
 // y pedir uno a la fuente equivocada sería un 404 de un título que ya está en
 // bibliotecas. Las llamadas van por los clientes de `src/lib/api`, que cachean

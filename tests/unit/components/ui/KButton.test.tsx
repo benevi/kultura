@@ -12,7 +12,11 @@ describe('KButton', () => {
     render(<KButton loading>Save</KButton>)
     const btn = screen.getByRole('button', { name: /save/i })
     expect(btn).toBeDisabled()
-    expect(screen.getByRole('status')).toBeInTheDocument()
+    // El spinner es decorativo dentro del botón: el estado lo da `aria-busy`
+    // y el nombre sigue siendo el texto (antes se colaba "Cargando" en español).
+    expect(btn).toHaveAttribute('aria-busy', 'true')
+    expect(btn.querySelector('svg.animate-spin')).toHaveAttribute('aria-hidden', 'true')
+    expect(btn).toHaveAccessibleName('Save')
   })
 
   it('loading=true does not fire onClick', () => {

@@ -7,10 +7,13 @@ import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import { getUserLists } from '@/lib/social/lists'
 import { ListsClient } from './ListsClient'
+import { getTranslations } from 'next-intl/server'
 import type { Metadata } from 'next'
 
+// TXT-5: el título iba fijo en español también en /en.
 export async function generateMetadata(): Promise<Metadata> {
-  return { title: 'Mis listas' }
+  const t = await getTranslations('lists')
+  return { title: t('title') }
 }
 
 export default async function ListsPage() {

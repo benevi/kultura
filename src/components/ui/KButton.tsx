@@ -28,6 +28,7 @@ export const KButton = React.forwardRef<HTMLButtonElement, KButtonProps>(
       <Comp
         ref={ref}
         disabled={isDisabled}
+        aria-busy={loading || undefined}
         className={cn(
           /* Base — radio F0: `rounded-pill` (20px) excede la mitad de la altura
              de cualquier tamaño de botón (32/40/44px), por lo que el navegador
