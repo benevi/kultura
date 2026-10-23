@@ -243,8 +243,10 @@ export function createImmersiveScene(
 
   const program = gl.createProgram();
   if (!program) throw new Error("webgl: program");
-  gl.attachShader(program, compile(gl, gl.VERTEX_SHADER, VERT));
-  gl.attachShader(program, compile(gl, gl.FRAGMENT_SHADER, FRAG));
+  const vs = compile(gl, gl.VERTEX_SHADER, VERT);
+  const fs = compile(gl, gl.FRAGMENT_SHADER, FRAG);
+  gl.attachShader(program, vs);
+  gl.attachShader(program, fs);
   gl.linkProgram(program);
   if (!gl.getProgramParameter(program, gl.LINK_STATUS)) throw new Error("webgl: link");
   gl.useProgram(program);
@@ -407,6 +409,7 @@ export function createImmersiveScene(
       try {
         const tex = upload(img, true);
         for (const p of list) p.tex = tex;
+        wake();
       } catch {
         // Textura que no sube: la pieza se queda con su gradiente.
       }
@@ -429,14 +432,28 @@ export function createImmersiveScene(
   const pointerSmooth = [0, 0];
   let raf = 0;
   let running = false;
-  let lastT = -1;
-  const t0 = performance.now();
+  let lastNow = -1;
+  /**
+   * Reloj PROPIO de la deriva y el balanceo: solo avanza mientras se pinta.
+   * Con `performance.now()` la galería daba un salto al reanudar tras una pausa
+   * (el seno seguía corriendo con la escena parada).
+   */
+  let t = 0;
+
+  /** Vuelve a pintar si la escena está en marcha pero dormida (ver `frame`). */
+  function wake() {
+    if (running && !raf && !disposed) {
+      lastNow = -1;
+      raf = requestAnimationFrame(frame);
+    }
+  }
 
   function frame(now: number) {
-    const t = (now - t0) / 1000;
+    raf = 0;
     // Inercia por TIEMPO, no por frame: a 30 o a 120 fps tarda lo mismo.
-    const dt = lastT < 0 ? 0 : Math.min(0.1, t - lastT);
-    lastT = t;
+    const dt = lastNow < 0 ? 0 : Math.min(0.1, (now - lastNow) / 1000);
+    lastNow = now;
+    t += dt;
     progress += (target - progress) * (1 - Math.exp(-dt * 6));
     const k = 1 - Math.exp(-dt * 3);
     pointerSmooth[0] += (pointer[0] - pointerSmooth[0]) * k;
@@ -488,7 +505,16 @@ export function createImmersiveScene(
       gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
     }
 
-    if (running) raf = requestAnimationFrame(frame);
+    // Quieta = muro asentado (sin deriva ni balanceo), cámara en su sitio y
+    // ratón sin moverse: no hay nada que repintar. Se duerme hasta el próximo
+    // `setPointer`/`setProgress`/portada nueva (`wake`), en vez de pintar el
+    // mismo fotograma a 60 fps.
+    const still =
+      wall >= 1 &&
+      Math.abs(target - progress) < 1e-4 &&
+      Math.abs(pointer[0] - pointerSmooth[0]) < 1e-4 &&
+      Math.abs(pointer[1] - pointerSmooth[1]) < 1e-4;
+    if (running && !still) raf = requestAnimationFrame(frame);
   }
 
   // Resolución acotada (1,5× escritorio, 1,25× móvil): el lienzo ocupa la
@@ -509,6 +535,7 @@ export function createImmersiveScene(
 
   const onLost = (e: Event) => {
     e.preventDefault();
+    if (disposed) return; // el propio `dispose` pierde el contexto a propósito
     running = false;
     cancelAnimationFrame(raf);
     opts.onLost?.();
@@ -518,26 +545,30 @@ export function createImmersiveScene(
   return {
     setProgress(p) {
       target = Math.min(1, Math.max(0, p));
+      wake();
     },
     setPointer(x, y) {
       pointer[0] = x;
       pointer[1] = y;
+      wake();
     },
     resize() {
       resize();
       // Cambiar el tamaño borra el lienzo: con la escena parada se pinta un
       // fotograma para que el muro de fondo no se quede en blanco.
       if (!running) frame(performance.now());
+      else wake();
     },
     start() {
       if (running || disposed) return;
       running = true;
-      lastT = -1;
+      lastNow = -1;
       raf = requestAnimationFrame(frame);
     },
     stop() {
       running = false;
       cancelAnimationFrame(raf);
+      raf = 0;
     },
     dispose() {
       disposed = true;
@@ -548,9 +579,16 @@ export function createImmersiveScene(
         img.onload = null;
         img.onerror = null;
       }
-      textures.forEach((t) => gl.deleteTexture(t));
+      textures.forEach((tex) => gl.deleteTexture(tex));
       gl.deleteBuffer(quad);
+      gl.detachShader(program, vs);
+      gl.detachShader(program, fs);
+      gl.deleteShader(vs);
+      gl.deleteShader(fs);
       gl.deleteProgram(program);
+      // Devuelve el contexto al navegador ya: si no, queda vivo hasta que el
+      // recolector lo libere y los navegadores limitan los contextos abiertos.
+      gl.getExtension("WEBGL_lose_context")?.loseContext();
     },
   };
 }

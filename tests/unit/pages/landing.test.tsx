@@ -249,13 +249,26 @@ describe("Landing · secciones", () => {
   it("comparativa: cada app con su formato y KULTURA con los siete", async () => {
     const { container } = await renderPage();
     const section = container.querySelector("section[aria-labelledby='compare-title']") as HTMLElement;
-    const rows = within(section).getAllByRole("row");
-    expect(rows.map((r) => r.querySelector("th")?.textContent)).toEqual(
-      expect.arrayContaining(["Letterboxd", "Trakt", "MyAnimeList", "Goodreads", "Backloggd"])
+    // Matriz: cabecera con los 7 formatos y 3 funciones; una fila por app.
+    const headers = within(section).getAllByRole("columnheader").map((h) => h.textContent);
+    expect(headers).toEqual(
+      expect.arrayContaining(["Cine", "Series", "Anime", "Manga", "Juegos", "Libros", "Cómics", "Puntuar", "Listas", "Amigos"])
     );
-    for (const f of ["Cine", "Series", "Anime", "Manga", "Juegos", "Libros", "Cómics"]) {
-      expect(within(section).getAllByText(f).length).toBeGreaterThanOrEqual(1);
-    }
+    const rowHeaders = within(section).getAllByRole("rowheader").map((h) => h.textContent);
+    expect(rowHeaders).toEqual(["KULTURA", "Letterboxd", "Trakt", "MyAnimeList", "Goodreads", "Backloggd"]);
+    const marks = (name: string) => {
+      const row = within(section).getByRole("rowheader", { name }).closest("tr") as HTMLElement;
+      // Lo que oye un lector de pantalla (la marca visual es aria-hidden).
+      return Array.from(row.querySelectorAll("td")).map((td) => td.querySelector(".sr-only")?.textContent);
+    };
+    // KULTURA: los 7 formatos y las 3 funciones.
+    expect(marks("KULTURA")).toEqual(Array(10).fill("Sí"));
+    // Letterboxd: solo cine, más las funciones comunes.
+    expect(marks("Letterboxd")).toEqual(["Sí", "No", "No", "No", "No", "No", "No", "Sí", "Sí", "Sí"]);
+    // Se desplaza dentro de su caja (región con foco), no la página.
+    const region = within(section).getByRole("region");
+    expect(region).toHaveAttribute("tabindex", "0");
+    expect(region.className).toContain("overflow-x-auto");
   });
 
   it("contiene Header y Footer", async () => {

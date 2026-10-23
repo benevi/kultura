@@ -2,6 +2,7 @@ import { ImageResponse } from "next/og";
 import { getTranslations } from "next-intl/server";
 import { C, FORMAT_HEX, loadFont } from "@/lib/og/brand";
 import { parseTitle } from "@/lib/landing/immersive";
+import es from "../../../messages/es.json";
 
 /**
  * Tarjeta que se ve al compartir el enlace (WhatsApp, X, Discord...).
@@ -12,6 +13,13 @@ import { parseTitle } from "@/lib/landing/immersive";
  */
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
+
+/**
+ * `alt` estático, para los segmentos que REEXPORTAN esta tarjeta (p. ej.
+ * `login/opengraph-image.tsx`): la promesa en el idioma por defecto. En la
+ * landing manda `generateImageMetadata`, que lo da traducido.
+ */
+export const alt: string = es.landing.seo.title;
 
 /** `alt` traducido (SEO-6): con un `alt` estático salía "KULTURA" en los dos idiomas. */
 export async function generateImageMetadata({ params }: { params: { locale: string } }) {

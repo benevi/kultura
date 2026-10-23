@@ -1,55 +1,91 @@
 // ============================================================
 // KULTURA — "La alternativa a Letterboxd, Trakt y MyAnimeList" (SEO-9, CRE-10)
 //
-// Comparativa HONESTA: no se puntúa a nadie ni se afirman cosas que cambian
-// (precios, anuncios, funciones). Solo en qué se centra cada app, que es la
-// razón real para elegir KULTURA: hoy hacen falta cinco apps para lo que aquí
-// está en una. Tabla de dos columnas (app y en qué se centra), no una matriz
-// de 8 columnas: se lee igual a 320 px. Chips de formato con el patrón de
-// DISENO.md (activo = color vivo + texto on-color; inactivo = `--surface-2`).
+// Matriz: KULTURA frente a las apps de referencia, con los 7 formatos y las
+// funciones básicas que todas comparten. Comparativa PRUDENTE: de cada app se
+// marca solo el formato en el que se centra (lo que cualquiera puede comprobar
+// en su web) y las funciones que tienen sin discusión (puntuar, listas,
+// seguir a amigos). Nada de precios, anuncios ni funciones que cambian. La
+// nota al pie lo explica.
+//
+// A 320 px la tabla se desplaza en horizontal DENTRO de su caja (región con
+// foco, para teclado) con la columna de la app fija; la página no se desborda.
+// Tokens y radios de DISENO.md: superficie `--surface-default`, radio 22,
+// fila de KULTURA en `--surface-elevated` con la pegatina lime.
 // ============================================================
 
 import { cn } from "@/lib/utils/index";
 import type { MediaType } from "@/types/media";
 
-/** App de referencia y los formatos en los que se centra. */
-export const COMPARED_APPS: ReadonlyArray<{ name: string; formats: MediaType[] }> = [
-  { name: "Letterboxd", formats: ["movie"] },
-  { name: "Trakt", formats: ["movie", "tv"] },
-  { name: "MyAnimeList", formats: ["anime", "manga"] },
-  { name: "Goodreads", formats: ["book"] },
-  { name: "Backloggd", formats: ["game"] },
+export type CompareFeature = "rate" | "lists" | "friends";
+
+const FORMATS: MediaType[] = ["movie", "tv", "anime", "manga", "game", "book", "comic"];
+const FEATURES: CompareFeature[] = ["rate", "lists", "friends"];
+
+/** Filas: formatos en los que se centra cada app y funciones básicas. */
+export const COMPARED_APPS: ReadonlyArray<{ name: string; formats: MediaType[]; features: CompareFeature[] }> = [
+  { name: "KULTURA", formats: FORMATS, features: FEATURES },
+  { name: "Letterboxd", formats: ["movie"], features: FEATURES },
+  { name: "Trakt", formats: ["movie", "tv"], features: FEATURES },
+  { name: "MyAnimeList", formats: ["anime", "manga"], features: FEATURES },
+  { name: "Goodreads", formats: ["book"], features: FEATURES },
+  { name: "Backloggd", formats: ["game"], features: FEATURES },
 ];
-
-const ALL_FORMATS: MediaType[] = ["movie", "tv", "anime", "manga", "game", "book", "comic"];
-
-/** Chip activo por formato: acentos de la paleta con su texto on-color. */
-const CHIP: Record<MediaType, string> = {
-  movie: "bg-accent-pink text-on-accent-pink",
-  tv: "bg-accent-purple text-on-accent-purple",
-  anime: "bg-accent-lime text-on-accent-lime",
-  manga: "bg-accent-orange text-on-accent-orange",
-  game: "bg-accent-blue text-on-accent-blue",
-  book: "bg-accent-yellow text-on-accent-yellow",
-  comic: "bg-accent-pink text-on-accent-pink",
-};
 
 export interface ComparisonProps {
   heading: string;
   sub: string;
   /** Nombre de cada formato, traducido. */
   formats: Record<MediaType, string>;
-  /** Etiqueta de la fila de KULTURA. */
-  kulturaLabel: string;
-  /** Nombre de las columnas para lectores de pantalla. */
+  /** Nombre de cada función, traducido. */
+  features: Record<CompareFeature, string>;
+  /** Cabeceras de grupo y de la columna de apps. */
   appHeader: string;
   formatsHeader: string;
-  /** Aviso de marcas. */
+  featuresHeader: string;
+  /** Texto para lectores de pantalla en cada celda. */
+  yes: string;
+  no: string;
+  /** Qué se marca y aviso de marcas. */
   note: string;
 }
 
-export function Comparison({ heading, sub, formats, kulturaLabel, appHeader, formatsHeader, note }: ComparisonProps) {
-  const label = (list: MediaType[]) => list.map((f) => formats[f]);
+function Mark({ on, yes, no }: { on: boolean; yes: string; no: string }) {
+  return on ? (
+    <>
+      <span
+        aria-hidden="true"
+        className="mx-auto flex h-7 w-7 items-center justify-center rounded-full bg-accent-positive text-on-accent-positive"
+      >
+        <svg viewBox="0 0 24 24" fill="currentColor" className="h-4 w-4">
+          <path d="M9.6 17.2 4.8 12.4a1.5 1.5 0 1 1 2.1-2.1l2.7 2.7 7.5-7.5a1.5 1.5 0 1 1 2.1 2.1l-9.6 9.6Z" />
+        </svg>
+      </span>
+      <span className="sr-only">{yes}</span>
+    </>
+  ) : (
+    <>
+      <span aria-hidden="true" className="block text-center text-text-tertiary">
+        –
+      </span>
+      <span className="sr-only">{no}</span>
+    </>
+  );
+}
+
+export function Comparison({
+  heading,
+  sub,
+  formats,
+  features,
+  appHeader,
+  formatsHeader,
+  featuresHeader,
+  yes,
+  no,
+  note,
+}: ComparisonProps) {
+  const cell = "px-2 py-3 align-middle";
   return (
     <section aria-labelledby="compare-title" className="px-4 md:px-8 pb-20 md:pb-28 max-w-6xl mx-auto">
       <h2
@@ -60,53 +96,77 @@ export function Comparison({ heading, sub, formats, kulturaLabel, appHeader, for
       </h2>
       <p className="text-text-secondary text-base mb-12 max-w-[56ch]">{sub}</p>
 
-      <table className="w-full border-separate border-spacing-y-2.5">
-        <thead className="sr-only">
-          <tr>
-            <th scope="col">{appHeader}</th>
-            <th scope="col">{formatsHeader}</th>
-          </tr>
-        </thead>
-        <tbody>
-          {COMPARED_APPS.map((app) => (
-            <tr key={app.name}>
-              <th
-                scope="row"
-                className="w-[38%] rounded-l-20 bg-surface-default py-4 pl-5 pr-3 text-left align-middle font-display text-base font-extrabold text-text-primary sm:w-1/4 sm:text-lg"
-              >
-                {app.name}
+      <div
+        role="region"
+        aria-labelledby="compare-title"
+        tabIndex={0}
+        className="overflow-x-auto rounded-bento bg-surface-default focus-visible:[outline-style:solid] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus-ring"
+      >
+        <table className="w-full min-w-[46rem] border-separate border-spacing-0 text-sm">
+          <thead>
+            <tr>
+              <th scope="col" rowSpan={2} className="sticky left-0 z-10 bg-surface-default px-5 py-3 text-left align-bottom font-bold text-text-secondary">
+                {appHeader}
               </th>
-              <td className="rounded-r-20 bg-surface-default py-4 pl-2 pr-5 align-middle">
-                <span className="flex flex-wrap gap-1.5">
-                  {label(app.formats).map((name) => (
-                    <span key={name} className="rounded-full bg-surface-elevated px-3 py-1 text-[13px] font-bold text-text-primary">
-                      {name}
-                    </span>
-                  ))}
-                </span>
-              </td>
+              <th scope="colgroup" colSpan={FORMATS.length} className="px-2 pt-4 pb-1 text-center text-xs font-bold uppercase tracking-wide text-text-tertiary">
+                {formatsHeader}
+              </th>
+              <th scope="colgroup" colSpan={FEATURES.length} className="border-l border-surface-border px-2 pt-4 pb-1 text-center text-xs font-bold uppercase tracking-wide text-text-tertiary">
+                {featuresHeader}
+              </th>
             </tr>
-          ))}
-        </tbody>
-      </table>
-
-      {/* KULTURA: los siete formatos juntos. Card plana con la pegatina lime
-          colgante (DISENO.md) y cada formato en su color. */}
-      <div className="relative mt-8 rounded-bento bg-surface-default p-7 pt-9">
-        <span
-          className="absolute -left-2 -top-3.5 rotate-[-8deg] rounded-full bg-accent-lime px-3.5 py-2 font-display text-sm font-extrabold leading-none text-on-accent-lime"
-          style={{ boxShadow: "4px 4px 0 rgba(0,0,0,.4)" }}
-        >
-          KULTURA
-        </span>
-        <p className="mb-4 font-display text-2xl font-extrabold tracking-tight text-text-primary text-balance">{kulturaLabel}</p>
-        <ul className="flex flex-wrap gap-2">
-          {ALL_FORMATS.map((f) => (
-            <li key={f} className={cn("rounded-full px-3.5 py-1.5 text-sm font-bold", CHIP[f])}>
-              {formats[f]}
-            </li>
-          ))}
-        </ul>
+            <tr>
+              {FORMATS.map((f) => (
+                <th key={f} scope="col" className={cn(cell, "text-center font-bold text-text-primary")}>
+                  {formats[f]}
+                </th>
+              ))}
+              {FEATURES.map((f, i) => (
+                <th key={f} scope="col" className={cn(cell, "text-center font-bold text-text-primary", i === 0 && "border-l border-surface-border")}>
+                  {features[f]}
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {COMPARED_APPS.map((app, row) => {
+              const ours = row === 0;
+              const bg = ours ? "bg-surface-elevated" : "bg-surface-default";
+              return (
+                <tr key={app.name} className={bg}>
+                  <th
+                    scope="row"
+                    className={cn(
+                      "sticky left-0 z-10 whitespace-nowrap border-t border-surface-border px-5 py-3 text-left font-display text-base font-extrabold text-text-primary",
+                      bg
+                    )}
+                  >
+                    {ours ? (
+                      <span
+                        className="inline-block rotate-[-4deg] rounded-full bg-accent-lime px-3 py-1.5 text-sm leading-none text-on-accent-lime"
+                        style={{ boxShadow: "4px 4px 0 rgba(0,0,0,.4)" }}
+                      >
+                        {app.name}
+                      </span>
+                    ) : (
+                      app.name
+                    )}
+                  </th>
+                  {FORMATS.map((f) => (
+                    <td key={f} className={cn(cell, "border-t border-surface-border")}>
+                      <Mark on={app.formats.includes(f)} yes={yes} no={no} />
+                    </td>
+                  ))}
+                  {FEATURES.map((f, i) => (
+                    <td key={f} className={cn(cell, "border-t border-surface-border", i === 0 && "border-l")}>
+                      <Mark on={app.features.includes(f)} yes={yes} no={no} />
+                    </td>
+                  ))}
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
       </div>
       <p className="mt-4 text-xs text-text-tertiary max-w-[70ch]">{note}</p>
     </section>

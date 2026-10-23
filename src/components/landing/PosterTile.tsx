@@ -8,7 +8,7 @@
 // No se inventa ninguna forma, radio ni sombra nueva.
 // ============================================================
 
-import { PosterImage } from "@/components/media/PosterImage";
+import { LandingPosterImage } from "@/components/landing/LandingPosterImage";
 import { cn } from "@/lib/utils/index";
 import type { ShowcaseItem } from "@/lib/landing/showcase";
 
@@ -68,13 +68,14 @@ export function PosterTile({
       style={style}
     >
       {/* Respaldo PRIMERO en el DOM: la imagen se pinta encima, así que un 404
-          de portada deja color de la paleta y no un hueco. */}
+          de portada deja color de la paleta y no un hueco (y la imagen que
+          falla se retira: ni icono roto, ver LandingPosterImage). */}
       <div
         aria-hidden="true"
         className="absolute inset-0"
         style={{ background: fallbackGradient(item.id) }}
       />
-      <PosterImage src={item.poster} sizes={sizes} priority={priority} className="object-cover" />
+      <LandingPosterImage src={item.poster} sizes={sizes} priority={priority} className="object-cover" />
       {children}
     </div>
   );
