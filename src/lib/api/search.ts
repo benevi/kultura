@@ -18,14 +18,14 @@
 //     intercalaba sin comparar.
 //   - Cómic por SERIES (ComicVine `/search/` de volúmenes) y no por issues.
 //   - Manga por relevancia, sin doujinshi, con nota y con el título oficial.
-//   - Respaldo por familia: manga → MyAnimeList (Jikan); cómic → Google Books
+//   - Respaldo por familia: manga → AniList (y MyAnimeList); cómic → Google Books
 //     (novela gráfica). Juegos sin respaldo: la ficha de juego solo abre ids de
 //     RAWG (pendiente de la ficha pública, F-15).
 // ============================================================
 
 import type { MediaItem, MediaType } from "@/types/media";
 import { searchMovies, searchTV } from "./tmdb";
-import { searchAnime } from "./anilist";
+import { normalizeAniListManga, searchAnime, searchMangaAniList } from "./anilist";
 import { searchAnimeTmdb } from "./anime-tmdb";
 import {
   getMangaStatistics,
@@ -36,17 +36,20 @@ import {
   type MangaDexManga,
   type MangaDexStats,
 } from "./mangadex";
-import { JIKAN_SUPPLEMENT_TIMEOUT_MS, searchMangaJikan } from "./jikan";
-import { searchOpenLibrary, openLibraryTotalPages } from "./openlibrary";
+import {
+  openLibraryTotalPages,
+  searchOpenLibrary,
+  searchOpenLibraryByTitle,
+  type OpenLibraryResponse,
+} from "./openlibrary";
 import { searchGames } from "./rawg";
 import { COMIC_SEARCH_PAGE_SIZE, searchComicVolumes } from "./comicvine";
-import { searchComicsGoogleBooks } from "./googlebooks";
+import { searchComicsGoogleBooks, searchGoogleBooks } from "./googlebooks";
 import {
   normalizeMovie,
   normalizeTV,
   normalizeAniListAnime,
   normalizeMangaDex,
-  normalizeMangaJikan,
   normalizeBookOpenLibrary,
   normalizeBookGoogle,
   normalizeGame,
@@ -99,68 +102,66 @@ function workKey(item: MediaItem): string {
   return `${titleIdentity(item.title)}|${item.year ?? ""}`;
 }
 
-// ── Complemento de MyAnimeList: memoria de fallos ──────────────────────────
+// ── Complemento de manga: memoria de fallos ────────────────────────────────
 //
-// Lo que Jikan RESPONDE ya se cachea 24 h (`searchMangaJikan`), pero un fallo
-// (plazo agotado, 429, caído) no se cachea en ningún sitio: cada búsqueda de
-// la misma consulta volvería a esperar hasta 2,5 s. Se recuerda aquí unos
-// minutos por consulta, y mientras tanto la búsqueda sale solo con MangaDex.
+// El complemento (AniList) cachea 24 h lo que RESPONDE, pero un fallo (plazo
+// agotado, 429, caído) no se cachea en ningún sitio: cada búsqueda de la misma
+// consulta volvería a esperarlo. Se recuerda aquí unos minutos por consulta, y
+// mientras tanto la búsqueda sale solo con MangaDex.
 
 /** Minutos que un fallo del complemento evita volver a preguntar por esa consulta. */
-export const JIKAN_SUPPLEMENT_FAILURE_TTL_MS = 10 * 60_000;
-const JIKAN_SUPPLEMENT_FAILURES_MAX = 500;
-const jikanSupplementFailures = new Map<string, number>();
+export const MANGA_SUPPLEMENT_FAILURE_TTL_MS = 10 * 60_000;
+const SUPPLEMENT_FAILURES_MAX = 500;
+const supplementFailures = new Map<string, number>();
 
 function supplementKey(query: string): string {
   return titleIdentity(query);
 }
 
 function supplementRecentlyFailed(query: string, now = Date.now()): boolean {
-  const until = jikanSupplementFailures.get(supplementKey(query));
+  const until = supplementFailures.get(supplementKey(query));
   if (until === undefined) return false;
   if (until > now) return true;
-  jikanSupplementFailures.delete(supplementKey(query));
+  supplementFailures.delete(supplementKey(query));
   return false;
 }
 
 function rememberSupplementFailure(query: string, now = Date.now()): void {
-  if (jikanSupplementFailures.size >= JIKAN_SUPPLEMENT_FAILURES_MAX) jikanSupplementFailures.clear();
-  jikanSupplementFailures.set(supplementKey(query), now + JIKAN_SUPPLEMENT_FAILURE_TTL_MS);
+  if (supplementFailures.size >= SUPPLEMENT_FAILURES_MAX) supplementFailures.clear();
+  supplementFailures.set(supplementKey(query), now + MANGA_SUPPLEMENT_FAILURE_TTL_MS);
 }
 
 /** Olvida los fallos recordados. Pensado para los tests. */
 export function resetMangaSupplementFailures(): void {
-  jikanSupplementFailures.clear();
+  supplementFailures.clear();
 }
 
 /** Opciones de la búsqueda por familia. */
 export interface SearchOptions {
   /**
-   * Manga: completar con MyAnimeList cuando MangaDex no tiene la obra
+   * Manga: completar con AniList cuando MangaDex no tiene la obra
    * (por defecto, sí). `type=all` lo apaga: ahí la obra suele ser de otra
    * familia ("dune", "interstellar") y la espera no compensa.
    */
   supplement?: boolean;
 }
 
-async function searchMangaJikanItems(
-  query: string,
-  page: number,
-  timeoutMs?: number
-): Promise<{ items: MediaItem[]; totalPages: number }> {
-  const r = await searchMangaJikan(query, page, timeoutMs);
-  return {
-    items: (r.data ?? []).map((raw) => normalizeMangaJikan(raw)),
-    totalPages: Math.max(r.pagination?.last_visible_page ?? 1, 1),
-  };
+/** Manga de AniList (`al-{id}`): la ficha y la biblioteca los resuelven. */
+async function searchMangaAniListItems(query: string): Promise<MediaItem[]> {
+  return (await searchMangaAniList(query)).map((raw) => normalizeAniListManga(raw));
 }
+
 
 /**
  * Búsqueda de manga: MangaDex por relevancia + nota (`/statistics/manga`).
- *   - Si MangaDex falla, MyAnimeList (Jikan) como respaldo.
+ *   - Si MangaDex falla, AniList como respaldo (una sola llamada, 2,5 s y sin
+ *     reintento). MyAnimeList ya no entra en la búsqueda: desde Vercel no
+ *     responde a tiempo y en serie solo añadía espera.
  *   - Si en la primera página ninguna obra se llama como la consulta (obras
  *     retiradas de MangaDex por licencia: "Berserk", "Vagabond"), se añaden
- *     las coincidencias exactas de MyAnimeList.
+ *     las coincidencias exactas de AniList. Antes era MyAnimeList, pero desde
+ *     Vercel Jikan no responde a tiempo y el spin-off se quedaba arriba
+ *     («Berserk - The Prototype» en `rel.py` contra producción).
  */
 async function searchMangaPage(
   query: string,
@@ -172,13 +173,11 @@ async function searchMangaPage(
   try {
     r = await searchManga(query, (page - 1) * MANGADEX_PAGE_SIZE, locale);
   } catch (e) {
-    const alt = await searchMangaJikanItems(query, page).catch(() => null);
-    if (!alt) throw e;
-    return {
-      items: rankSearchResults(query, alt.items),
-      totalPages: alt.totalPages,
-      hasMore: page < alt.totalPages,
-    };
+    // AniList no pagina aquí: el respaldo es la primera página y nada más.
+    if (page !== 1) throw e;
+    const ani = await searchMangaAniListItems(query).catch(() => null);
+    if (!ani || ani.length === 0) throw e;
+    return { items: rankSearchResults(query, ani), totalPages: 1, hasMore: false };
   }
   const stats = await getMangaStatistics(r.data.map((m) => m.id));
   let items = r.data.map((raw) => enrichMangaDexItem(raw, locale, stats.get(raw.id)));
@@ -190,17 +189,109 @@ async function searchMangaPage(
     !items.some((i) => isExactTitleMatch(query, i)) &&
     !supplementRecentlyFailed(query)
   ) {
-    const extra = await searchMangaJikanItems(query, 1, JIKAN_SUPPLEMENT_TIMEOUT_MS).catch(() => {
+    const extra = await searchMangaAniListItems(query).catch(() => {
       rememberSupplementFailure(query);
       return null;
     });
-    const exact = (extra?.items ?? []).filter((i) => isExactTitleMatch(query, i));
+    const exact = (extra ?? []).filter((i) => isExactTitleMatch(query, i));
     const seen = new Set(items.map(workKey));
     items = [...exact.filter((i) => !seen.has(workKey(i))), ...items];
   }
 
   const totalPages = Math.max(Math.ceil((r.total ?? 0) / MANGADEX_PAGE_SIZE), 1);
   return { items: rankSearchResults(query, items), totalPages, hasMore: page < totalPages };
+}
+
+// ── Libros: respaldo cuando Open Library va lenta ────────────────────────────
+
+/**
+ * Si la búsqueda general de Open Library (`q=`) no ha respondido en este
+ * tiempo, se lanza en paralelo la búsqueda por título (`title=`) y gana la
+ * primera que responda. `rel.py` contra producción dio `don quijote` → error
+ * a los 8,2 s (plazo agotado de `q=`).
+ */
+export const BOOK_HEDGE_MS = 2500;
+
+/**
+ * La primera promesa que se cumpla de `primary` y de `fallback()`, que se
+ * lanza al vencer `delayMs` o en cuanto `primary` falla. Si fallan las dos,
+ * rechaza con el error de `primary`.
+ */
+function hedged<T>(primary: Promise<T>, fallback: () => Promise<T>, delayMs: number): Promise<T> {
+  return new Promise<T>((resolve, reject) => {
+    let done = false;
+    let primaryError: unknown;
+    let primaryFailed = false;
+    let fallbackStarted = false;
+    let fallbackFailed = false;
+    const finish = (value: T) => {
+      if (done) return;
+      done = true;
+      clearTimeout(timer);
+      resolve(value);
+    };
+    const maybeReject = () => {
+      if (!done && primaryFailed && fallbackStarted && fallbackFailed) {
+        done = true;
+        reject(primaryError);
+      }
+    };
+    const startFallback = () => {
+      if (fallbackStarted || done) return;
+      fallbackStarted = true;
+      fallback().then(finish, () => {
+        fallbackFailed = true;
+        maybeReject();
+      });
+    };
+    const timer = setTimeout(startFallback, delayMs);
+    primary.then(finish, (e) => {
+      primaryFailed = true;
+      primaryError = e;
+      clearTimeout(timer);
+      startFallback();
+      maybeReject();
+    });
+  });
+}
+
+function openLibraryPage(query: string, page: number, r: OpenLibraryResponse): SearchPage {
+  const totalPages = openLibraryTotalPages(r.numFound);
+  return {
+    items: rankSearchResults(query, (r.docs ?? []).map((doc) => normalizeBookOpenLibrary(doc))),
+    totalPages,
+    hasMore: page < totalPages,
+  };
+}
+
+/**
+ * Libros: Open Library (`q=`); si tarda, por título; si Open Library entera
+ * falla, Google Books (que desde Vercel responde 503 sin clave propia).
+ */
+async function searchBookPage(query: string, page: number, locale?: string | null): Promise<SearchPage> {
+  // La que pierde la carrera se cancela: no sigue ocupando la función ni
+  // gastando una petición a Open Library hasta su plazo de 8 s.
+  const primaryCtl = new AbortController();
+  const fallbackCtl = new AbortController();
+  const primary = searchOpenLibrary(query, page, {}, undefined, undefined, primaryCtl.signal)
+    .then((r) => openLibraryPage(query, page, r))
+    .then((res) => {
+      fallbackCtl.abort();
+      return res;
+    });
+  const fallback = () =>
+    searchOpenLibraryByTitle(query, page, undefined, fallbackCtl.signal)
+      .then((r) => {
+        primaryCtl.abort();
+        return openLibraryPage(query, page, r);
+      })
+      .catch(async () => {
+        const g = await searchGoogleBooks(query, page, {}, locale);
+        const items = (g.items ?? []).map((raw) => normalizeBookGoogle(raw));
+        const totalPages = Math.max(Math.ceil((g.totalItems ?? 0) / SEARCH_PAGE_SIZE), 1);
+        return { items: rankSearchResults(query, items), totalPages, hasMore: page < totalPages };
+      });
+  return hedged(primary, fallback, BOOK_HEDGE_MS);
 }
 
 // ── Cómic (DAT-6) ─────────────────────────────────────────────────────────────
@@ -225,7 +316,10 @@ async function searchComicPage(query: string, page: number): Promise<SearchPage>
 
 /**
  * Busca solo en el tipo de contenido indicado (SIN paginar: primera página),
- * ya ordenado por relevancia. La usa el autocompletado (`/api/search?type=`).
+ * ya ordenado por relevancia. La usa el autocompletado (`/api/search?type=`),
+ * así que va SIN complemento de manga: cada tecla sería una llamada a
+ * AniList, y un 429 abriría su circuito y dejaría sin anime toda la app
+ * durante 10 min.
  *
  * `locale`: idioma activo de la app. Se propaga a los proveedores que lo
  * soportan (TMDB, Google Books); Jikan, ComicVine y RAWG lo ignoran (limitación
@@ -236,7 +330,7 @@ export async function searchByType(
   type: MediaType,
   locale?: string | null
 ): Promise<MediaItem[]> {
-  return (await searchByTypePaged(query, type, 1, locale)).items;
+  return (await searchByTypePaged(query, type, 1, locale, { supplement: false })).items;
 }
 
 // ── Búsqueda PAGINADA por familia (E-DISCOVER-SEARCH-MERGE) ──────────────────
@@ -326,25 +420,12 @@ export async function searchByTypePaged(
     }
     case "manga":
       return searchMangaPage(query, page, locale, opts);
-    case "book": {
+    case "book":
       // E-BOOKS-HIBRIDO: el buscador va contra el MISMO proveedor que el
-      // catálogo. Si fuese contra otro, buscar y navegar serían dos mundos
-      // distintos, y un fallo de cuota de Google rompería el buscador mientras
-      // el catálogo sigue funcionando. Sin acotar por idioma: quien busca un
-      // título concreto debe encontrarlo aunque solo exista el original.
-      // `numFound` es un total real, así que la paginación no promete páginas
-      // que el proveedor no sirve.
-      const r = await searchOpenLibrary(query, page);
-      const totalPages = openLibraryTotalPages(r.numFound);
-      return {
-        items: rankSearchResults(
-          query,
-          (r.docs ?? []).map((doc) => normalizeBookOpenLibrary(doc))
-        ),
-        totalPages,
-        hasMore: page < totalPages,
-      };
-    }
+      // catálogo (Open Library), sin acotar por idioma: quien busca un título
+      // concreto debe encontrarlo aunque solo exista el original. `numFound`
+      // es un total real. F-13: con respaldo si Open Library tarda o cae.
+      return searchBookPage(query, page, locale);
     case "game": {
       const r = await searchGames(query, page);
       const totalPages = Math.max(
