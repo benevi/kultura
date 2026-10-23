@@ -49,10 +49,14 @@ describe("Trigger — handle_new_user()", () => {
     expect(typeof profile!.username).toBe("string");
     expect(profile!.username.length).toBeGreaterThan(0);
     expect(profile!.avatar_initials.length).toBeGreaterThan(0);
-    expect(profile!.avatar_color).toBe("#E82020");
+    // F-12: color de la paleta (antes, el rojo fijo #E82020).
+    expect(["slate", "red", "orange", "amber", "green", "teal", "blue", "purple"]).toContain(
+      profile!.avatar_color
+    );
   });
 
-  it("el username se deriva del email (parte antes del @)", async () => {
+  // F-12 (R4): el nombre público YA NO sale del email.
+  it("el username es u_ + 6 caracteres y no contiene nada del email", async () => {
     const uniqueEmail = `johndoe_${Date.now()}@example.com`;
     const client = createClient(TEST_URL, TEST_ANON_KEY);
 
@@ -69,8 +73,8 @@ describe("Trigger — handle_new_user()", () => {
       .eq("id", data.user!.id)
       .single();
 
-    // El username debe empezar con "johndoe" (caracteres válidos antes del @)
-    expect(profile?.username).toMatch(/^johndoe/);
+    expect(profile?.username).toMatch(/^u_[a-z0-9]{6}$/);
+    expect(profile?.username).not.toContain("johndoe");
   });
 
   it("no genera usernames duplicados si el email-prefix ya existe", async () => {

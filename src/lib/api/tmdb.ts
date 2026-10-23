@@ -6,7 +6,15 @@
 
 import { env } from "@/lib/env";
 import { tmdbLanguage, tmdbRegion } from "@/lib/api/locale";
-import { PROVIDER_CACHE } from "@/lib/api/fetch-cache";
+import { ProviderError, providerFetch } from "@/lib/api/http";
+import {
+  tmdbConfigurationSchema,
+  tmdbDetailSchema,
+  tmdbGenresSchema,
+  tmdbListSchema,
+  tmdbProvidersSchema,
+  tmdbVideosSchema,
+} from "@/lib/api/schemas/tmdb";
 
 export const TMDB_IMG_BASE = "https://image.tmdb.org/t/p";
 
@@ -98,11 +106,38 @@ export interface TmdbProvidersResponse {
   results: Record<
     string,
     {
+      /**
+       * Página "dónde ver" de TMDB para ese país. TMDB no da enlaces directos a
+       * cada plataforma y pide enlazar aquí (PRO-2).
+       */
+      link?: string;
       flatrate?: TmdbProvider[];
       rent?: TmdbProvider[];
       buy?: TmdbProvider[];
     }
   >;
+}
+
+/**
+ * Enlace a la página "dónde ver" de TMDB para un país, solo si es de TMDB
+ * (nunca se enlaza a un dominio que venga en la respuesta sin comprobarlo).
+ * Los datos de esa página son de JustWatch: quien lo pinte debe citarlo
+ * (`StreamingProviders`).
+ */
+export function tmdbWatchLink(
+  resp: TmdbProvidersResponse | undefined,
+  region: string
+): string | undefined {
+  const link = resp?.results?.[region]?.link;
+  if (!link) return undefined;
+  try {
+    const url = new URL(link);
+    return url.protocol === "https:" && url.hostname === "www.themoviedb.org"
+      ? url.toString()
+      : undefined;
+  } catch {
+    return undefined;
+  }
 }
 
 // ── Helper ────────────────────────────────────────────────────────────────────
@@ -120,9 +155,42 @@ async function tmdbFetch<T>(
   // con el comportamiento anterior para llamadas sin contexto de request).
   url.searchParams.set("language", tmdbLanguage(locale));
   Object.entries(params).forEach(([k, v]) => url.searchParams.set(k, v));
-  const res = await fetch(url.toString(), PROVIDER_CACHE);
-  if (!res.ok) throw new Error(`TMDB ${path} → ${res.status}`);
-  return res.json() as Promise<T>;
+  return providerFetch<T>("tmdb", url.toString(), {
+    schema: tmdbSchemaFor(path),
+    label: path,
+    httpError: (status) =>
+      new ProviderError("tmdb", "http", `TMDB ${path} → ${status}`, { status }),
+  });
+}
+
+/**
+ * Contrato mínimo según el endpoint (COD-1). Se decide por la ruta para no
+ * tocar cada llamada; una ruta desconocida no se valida.
+ */
+function tmdbSchemaFor(path: string) {
+  if (path.startsWith("/genre/")) return tmdbGenresSchema;
+  if (path.endsWith("/watch/providers")) return tmdbProvidersSchema;
+  if (path.endsWith("/videos")) return tmdbVideosSchema;
+  if (path === "/configuration") return tmdbConfigurationSchema;
+  if (/^\/(search|discover|trending)\//.test(path) || path.endsWith("/popular")) {
+    return tmdbListSchema;
+  }
+  if (/^\/(movie|tv)\/\d+$/.test(path)) return tmdbDetailSchema;
+  return undefined;
+}
+
+/**
+ * Sonda barata para `/api/health?deep=1`: `/configuration` no depende de
+ * ningún título y no cuenta para nada más que la cuota general.
+ */
+export async function probeTmdb(): Promise<void> {
+  const url = new URL("https://api.themoviedb.org/3/configuration");
+  url.searchParams.set("api_key", env.TMDB_API_KEY);
+  await providerFetch("tmdb", url.toString(), {
+    schema: tmdbConfigurationSchema,
+    label: "/configuration",
+    cache: false,
+  });
 }
 
 // ── Géneros de los endpoints de LISTADO (E-TMDB-GENRES) ──────────────────────

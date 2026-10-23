@@ -14,6 +14,14 @@ import {
   type ComicFilters,
 } from "@/lib/api/comicvine-maps";
 import { volumenesMin } from "@/lib/api/jikan-maps";
+import type { ZodType } from "zod";
+import { ProviderError, providerFetch } from "@/lib/api/http";
+import {
+  comicVineIssueSchema,
+  comicVineIssuesSchema,
+  comicVineTypesSchema,
+  comicVineVolumesSchema,
+} from "@/lib/api/schemas/comicvine";
 import {
   acceptsComicIssue,
   acceptsComicPublisher,
@@ -98,22 +106,70 @@ function getKey(): string {
   return key;
 }
 
+/**
+ * `status_code` de ComicVine → status HTTP equivalente (COD-B3). ComicVine
+ * avisa de sus errores DENTRO del cuerpo (1 = OK); sin esta comprobación una
+ * clave inválida o el límite de peticiones se tomaban por "sin resultados" y
+ * se guardaban una hora en caché.
+ *   100 clave inválida → 401 · 101 objeto inexistente → 404
+ *   107 límite de peticiones → 429 · el resto (URL, filtro, formato) → 502
+ */
+export function comicVineStatusToHttp(code: number): number {
+  if (code === 100) return 401;
+  if (code === 101) return 404;
+  if (code === 107) return 429;
+  return 502;
+}
+
+function checkComicVineStatus(json: unknown): void {
+  const body = json as { status_code?: unknown; error?: unknown } | null;
+  const code = body?.status_code;
+  // Sin `status_code` no se puede afirmar nada: se deja pasar (el contrato
+  // vigila la forma de `results`).
+  if (typeof code !== "number" || code === 1) return;
+  const detail = typeof body?.error === "string" ? body.error : "error";
+  throw new ProviderError(
+    "comicvine",
+    "upstream",
+    `ComicVine status_code ${code}: ${detail}`,
+    { status: comicVineStatusToHttp(code) }
+  );
+}
+
+/**
+ * `cache`: `false` = sin caché (sondas); `{ revalidate }` = caché propia (la
+ * búsqueda de series, 24 h); sin indicar, la hora por defecto de `providerFetch`.
+ */
 async function comicVineFetch<T>(
   path: string,
-  params: Record<string, string> = {}
+  params: Record<string, string> = {},
+  schema?: ZodType,
+  cache?: false | { revalidate: number }
 ): Promise<T> {
   const url = new URL(`${COMICVINE_BASE}${path}`);
   url.searchParams.set("api_key", getKey());
   url.searchParams.set("format", "json");
   Object.entries(params).forEach(([k, v]) => url.searchParams.set(k, v));
 
-  // ComicVine rechaza peticiones sin User-Agent identificable.
-  const res = await fetch(url.toString(), {
-    headers: { "User-Agent": "KulturaApp/1.0" },
-    next: { revalidate: 3600 },
+  // ComicVine rechaza peticiones sin User-Agent identificable: lo pone
+  // `providerFetch` (el mismo para todos los proveedores).
+  return providerFetch<T>("comicvine", url.toString(), {
+    schema,
+    label: path,
+    checkBody: checkComicVineStatus,
+    httpError: (status) =>
+      new ProviderError("comicvine", "http", `ComicVine ${status}`, { status }),
+    ...(cache !== undefined ? { cache } : {}),
   });
-  if (!res.ok) throw new Error(`ComicVine ${res.status}`);
-  return res.json() as Promise<T>;
+}
+
+/**
+ * Sonda barata para `/api/health?deep=1`: `/types/` no toca los recursos
+ * `issues`/`volumes`, que son los que tienen el límite de 200 peticiones/hora
+ * que usa el catálogo.
+ */
+export async function probeComicVine(): Promise<void> {
+  await comicVineFetch("/types/", {}, comicVineTypesSchema, false);
 }
 
 /**
@@ -124,15 +180,136 @@ export async function searchComics(
   query: string,
   page = 1
 ): Promise<ComicVineSearchResponse> {
-  return comicVineFetch<ComicVineSearchResponse>("/issues/", {
-    filter: `name:${query}`,
-    limit: "20",
-    // E-DISCOVER-SEARCH-MERGE: paginación por offset, el mismo mecanismo que ya
-    // usa `getRecentComics`. Antes solo servía la primera página.
-    offset: String((page - 1) * 20),
-    sort: "cover_date:desc",
-    field_list: "id,name,issue_number,cover_date,store_date,deck,description,image,volume",
-  });
+  return comicVineFetch<ComicVineSearchResponse>(
+    "/issues/",
+    {
+      filter: `name:${query}`,
+      limit: "20",
+      // E-DISCOVER-SEARCH-MERGE: paginación por offset, el mismo mecanismo que
+      // ya usa `getRecentComics`. Antes solo servía la primera página.
+      offset: String((page - 1) * 20),
+      sort: "cover_date:desc",
+      field_list:
+        "id,name,issue_number,cover_date,store_date,deck,description,image,volume",
+    },
+    comicVineIssuesSchema
+  );
+}
+
+// ── Búsqueda por SERIE (DAT-6) ───────────────────────────────────────────────
+//
+// `searchComics` busca ISSUES por el nombre del número y los ordena por fecha:
+// "sandman" daba "PanelxPanel #25 Sandman" y "batman" un especial de Zatanna
+// (VERIF-D: 0/10 consultas con la serie arriba). Quien busca "sandman" busca
+// la serie. `searchComicVolumes` pregunta al buscador de ComicVine por
+// VOLÚMENES (series), que ordena por relevancia, y cada resultado se presenta
+// con su portada y se abre por su PRIMER número (la ficha de cómic es por
+// issue: `getComic`). El orden final lo pone `rankSearchResults` (search.ts):
+// título exacto primero y, a igualdad, la serie con más números.
+//
+// Coste: UNA petición por página al recurso `search` (cupo propio de 200/h,
+// distinto de `issues` y `volumes`), cacheada 24 h por consulta (D-17). Antes
+// eran dos (`/issues/` + `/volumes/`) cacheadas 1 h.
+
+/** Resultados por página del buscador de ComicVine (su máximo en `/search/`). */
+export const COMIC_SEARCH_PAGE_SIZE = 10;
+
+/** Caché de una búsqueda de series: 24 h (D-17). */
+export const COMIC_SEARCH_REVALIDATE_SECONDS = 24 * 60 * 60;
+
+/** Volumen tal como llega de `/search/?resources=volume`. */
+export interface ComicVineVolumeResult {
+  id: number;
+  name: string | null;
+  start_year?: string | number | null;
+  count_of_issues?: number | null;
+  deck?: string | null;
+  publisher?: { id?: number; name?: string | null } | null;
+  image?: {
+    medium_url?: string | null;
+    small_url?: string | null;
+    original_url?: string | null;
+  } | null;
+  first_issue?: { id?: number; name?: string | null; issue_number?: string | null } | null;
+}
+
+export interface ComicVineVolumeSearchResponse {
+  status_code: number;
+  error: string;
+  number_of_total_results?: number;
+  results: ComicVineVolumeResult[] | null;
+}
+
+function volumeYear(raw: ComicVineVolumeResult["start_year"]): number | undefined {
+  const n = typeof raw === "number" ? raw : parseInt(String(raw ?? ""), 10);
+  return Number.isFinite(n) && n >= 1800 && n <= 2100 ? n : undefined;
+}
+
+/**
+ * Volumen → MediaItem. `null` si no se puede abrir (sin primer número) o si
+ * su editorial o su serie están vetadas (adultos, lista negra): la búsqueda
+ * no aplica la lista BLANCA del catálogo (un "Maus" de Pantheon tiene que
+ * salir), pero los vetos sí.
+ */
+export function normalizeComicVolume(raw: ComicVineVolumeResult): MediaItem | null {
+  const firstIssueId = raw.first_issue?.id;
+  if (typeof firstIssueId !== "number" || !raw.name) return null;
+  const publisher = raw.publisher?.name?.trim() || undefined;
+  if (publisher && isAdultPublisher(publisher)) return null;
+  if (isBlockedComicVolume(raw.name)) return null;
+
+  const externalId = String(firstIssueId);
+  const issues = typeof raw.count_of_issues === "number" ? raw.count_of_issues : undefined;
+  return {
+    id: `comic_${externalId}`,
+    externalId,
+    type: "comic",
+    title: raw.name,
+    poster:
+      raw.image?.medium_url ?? raw.image?.original_url ?? raw.image?.small_url ?? undefined,
+    year: volumeYear(raw.start_year),
+    synopsis: raw.deck?.trim() || undefined,
+    genres: [],
+    ratingSource: "ComicVine",
+    metadata: {
+      volumeId: raw.id,
+      publisher,
+      issues,
+      // Señal para el orden: editorial del catálogo (no manga) frente a
+      // reediciones extranjeras ("tintin" daba ediciones suecas).
+      catalogPublisher: publisher
+        ? isAllowedComicPublisher(publisher) && !isMangaPublisher(publisher)
+        : false,
+    },
+  };
+}
+
+/**
+ * Busca SERIES de cómic (volúmenes) por nombre. Devuelve los ítems ya
+ * normalizados y el total que da ComicVine. Lanza ante cualquier fallo del
+ * proveedor (sin clave, cupo, caído): el que llama decide el respaldo.
+ */
+export async function searchComicVolumes(
+  query: string,
+  page = 1
+): Promise<{ items: MediaItem[]; total: number }> {
+  const resp = await comicVineFetch<ComicVineVolumeSearchResponse>(
+    "/search/",
+    {
+      query,
+      resources: "volume",
+      limit: String(COMIC_SEARCH_PAGE_SIZE),
+      page: String(Math.max(1, page)),
+      field_list:
+        "id,name,start_year,count_of_issues,deck,publisher,image,first_issue",
+    },
+    comicVineVolumesSchema,
+    { revalidate: COMIC_SEARCH_REVALIDATE_SECONDS }
+  );
+  const items = (resp.results ?? [])
+    .map(normalizeComicVolume)
+    .filter((i): i is MediaItem => i !== null);
+  return { items, total: resp.number_of_total_results ?? items.length };
 }
 
 /**
@@ -144,7 +321,8 @@ export async function getComic(externalId: string): Promise<ComicVineIssue> {
     `/issue/4000-${externalId}/`,
     {
       field_list: "id,name,issue_number,cover_date,store_date,deck,image,volume",
-    }
+    },
+    comicVineIssueSchema
   );
   if (!resp.results) throw new Error(`ComicVine issue ${externalId} sin results`);
   return resp.results;
@@ -163,14 +341,18 @@ export async function resolveVolumePublishers(
   const missing = unique.filter((id) => !volumePublisherCache.has(id));
 
   if (missing.length > 0) {
-    const resp = await comicVineFetch<ComicVineVolumesResponse>("/volumes/", {
-      filter: `id:${missing.join("|")}`,
-      // R4c-2: count_of_issues se pide en el MISMO batch (sin fetch extra por
-      // item). E-COMIC-CONCEPTO: `concepts` viaja en esa misma petición — es la
-      // señal que separa el manga de la BD dentro de una misma editorial.
-      field_list: "id,publisher,count_of_issues,concepts",
-      limit: "100",
-    });
+    const resp = await comicVineFetch<ComicVineVolumesResponse>(
+      "/volumes/",
+      {
+        filter: `id:${missing.join("|")}`,
+        // R4c-2: count_of_issues se pide en el MISMO batch (sin fetch extra por
+        // item). E-COMIC-CONCEPTO: `concepts` viaja en esa misma petición — es la
+        // señal que separa el manga de la BD dentro de una misma editorial.
+        field_list: "id,publisher,count_of_issues,concepts",
+        limit: "100",
+      },
+      comicVineVolumesSchema
+    );
     for (const vol of resp.results ?? []) {
       volumePublisherCache.set(vol.id, vol.publisher?.name ?? "");
       volumeCountCache.set(
@@ -326,7 +508,11 @@ async function fetchComicWindow(
   // página de "Más recientes" son números que aún no han salido.
   params.filter = comicCoverDateWindow(filters.year);
 
-  const resp = await comicVineFetch<ComicVineSearchResponse>("/issues/", params);
+  const resp = await comicVineFetch<ComicVineSearchResponse>(
+    "/issues/",
+    params,
+    comicVineIssuesSchema
+  );
   if (!resp.results) return { items: [], total: 0, hasMore: false };
 
   const volumeIds = resp.results

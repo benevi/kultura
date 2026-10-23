@@ -80,9 +80,9 @@ describe("searchOpenLibrary", () => {
   it("manda header User-Agent KULTURA", async () => {
     await searchOpenLibrary("dune");
     const { init } = lastCall();
-    expect(
-      (init?.headers as Record<string, string>)["User-Agent"]
-    ).toBe("KULTURA/1.0 (kultura app)");
+    const ua = (init?.headers as Record<string, string>)["User-Agent"];
+    expect(ua).toMatch(/^KULTURA\/1\.0 \(\+https:\/\//);
+    expect(ua).not.toContain("kultura.app");
   });
 
   it("params extra se mergean en la query", async () => {

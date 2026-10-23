@@ -68,6 +68,53 @@ export function meetsMinRating(item: MediaItem, min = BEST_MIN_RATING): boolean 
   return typeof item.rating === "number" && item.rating >= min;
 }
 
+// ── Media ponderada (DAT-4) ───────────────────────────────────────────────────
+
+/**
+ * Parámetros de la media ponderada tipo IMDb por formato:
+ * `WR = v/(v+m)·R + m/(v+m)·C`, con `v` votos del título, `R` su nota, `m`
+ * los votos a partir de los que la nota propia pesa más que la media y `C`
+ * la nota media del proveedor. Un 9,7 con 300 votos de fans deja de ganar a
+ * un 8,6 con 3.000 (PRO-8: "Dragon Ball Super: Beerus" encabezaba series).
+ *   - TMDB (cine y series): m = 500, C = 6,5.
+ *   - RAWG (juegos, nota 0-5 pasada a 0-10): m = 100 (sus recuentos son
+ *     menores), C = 7,0.
+ * Anime no lo usa: AniList no da recuento en el listado y su suelo es estar
+ * entre los populares del año.
+ */
+export const WEIGHTED_PRIOR = {
+  movie: { m: 500, c: 6.5 },
+  tv: { m: 500, c: 6.5 },
+  game: { m: 100, c: 7.0 },
+} as const;
+
+export function weightedRating(rating: number, votes: number, m: number, c: number): number {
+  if (!(votes > 0)) return c;
+  return (votes / (votes + m)) * rating + (m / (votes + m)) * c;
+}
+
+/** Votos del título según su proveedor (`voteCount` TMDB, `ratingsCount` RAWG). */
+export function votesOf(item: MediaItem): number | undefined {
+  const meta = item.metadata ?? {};
+  for (const key of ["voteCount", "ratingsCount"]) {
+    const v = meta[key];
+    if (typeof v === "number" && v >= 0) return v;
+  }
+  return undefined;
+}
+
+/**
+ * Clave de orden de un ranking: la media ponderada si se conocen los votos;
+ * si no (cine hasta que el normalizador traiga `vote_count`, anime), la nota.
+ */
+export function rankingScore(format: string, item: MediaItem): number {
+  const rating = typeof item.rating === "number" ? item.rating : 0;
+  const prior = WEIGHTED_PRIOR[format as keyof typeof WEIGHTED_PRIOR];
+  const votes = votesOf(item);
+  if (!prior || votes === undefined) return rating;
+  return weightedRating(rating, votes, prior.m, prior.c);
+}
+
 /** Longitud máxima de la sinopsis de una card de ranking (se recorta a 3-4 líneas). */
 export const BEST_SYNOPSIS_MAX = 480;
 

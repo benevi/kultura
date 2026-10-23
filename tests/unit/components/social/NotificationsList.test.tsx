@@ -16,8 +16,8 @@ vi.mock('next-intl', () => ({
 
 const mockRefresh = vi.fn()
 vi.mock('@/i18n/navigation', () => ({
-  Link: ({ children, href }: { children: React.ReactNode; href: string }) => (
-    <a href={href}>{children}</a>
+  Link: ({ children, href, className }: { children: React.ReactNode; href: string; className?: string }) => (
+    <a href={href} className={className}>{children}</a>
   ),
   useRouter: () => ({ refresh: mockRefresh }),
 }))
@@ -66,6 +66,29 @@ describe('NotificationsList — group_invite', () => {
     render(<NotificationsList notifications={[groupInvite()]} />)
     expect(screen.getByText('accept')).toBeInTheDocument()
     expect(screen.getByText('reject')).toBeInTheDocument()
+  })
+
+  // ACC-12/MOV-4: eran `px-3 py-1 text-xs` (~24 px) y se llamaban solo «Aceptar».
+  it('Aceptar y Rechazar miden 44 px y su nombre incluye el grupo', () => {
+    render(<NotificationsList notifications={[groupInvite()]} />)
+    const accept = screen.getByText('accept').closest('button')!
+    const reject = screen.getByText('reject').closest('button')!
+    expect(accept).toHaveAttribute('aria-label', 'acceptInvite')
+    expect(reject).toHaveAttribute('aria-label', 'rejectInvite')
+    expect(accept.className).toContain('min-h-11')
+    expect(reject.className).toContain('min-h-11')
+  })
+
+  // Revisión: el `py-3.5` en línea solapaba la zona táctil con las líneas vecinas.
+  it('los enlaces de la frase son inline-flex de 44×44, sin relleno en línea', () => {
+    render(<NotificationsList notifications={[groupInvite()]} />)
+    for (const name of ['ada', 'Cinéfilos']) {
+      const a = screen.getByText(name).closest('a')!
+      expect(a.className).toMatch(/inline-flex/)
+      expect(a.className).toContain('min-h-11')
+      expect(a.className).toContain('min-w-11')
+      expect(a.className).not.toMatch(/py-3\.5/)
+    }
   })
 
   it('no muestra botones si la invitación ya está leída', () => {

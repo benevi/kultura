@@ -25,7 +25,12 @@
 
 import { env } from "@/lib/env";
 import { googleBooksLangRestrict } from "@/lib/api/locale";
-import { PROVIDER_CACHE } from "@/lib/api/fetch-cache";
+import type { ZodType } from "zod";
+import { providerFetch } from "@/lib/api/http";
+import {
+  googleBooksSearchSchema,
+  googleBooksVolumeSchema,
+} from "@/lib/api/schemas/googlebooks";
 
 const GOOGLE_BOOKS_BASE = "https://www.googleapis.com/books/v1";
 
@@ -153,7 +158,9 @@ export class GoogleBooksError extends Error {
 
 async function googleBooksFetch<T>(
   path: string,
-  params: Record<string, string> = {}
+  params: Record<string, string> = {},
+  schema?: ZodType,
+  cache?: false
 ): Promise<T> {
   const url = new URL(`${GOOGLE_BOOKS_BASE}${path}`);
   Object.entries(params).forEach(([k, v]) => url.searchParams.set(k, v));
@@ -164,11 +171,22 @@ async function googleBooksFetch<T>(
   const key = env.GOOGLE_BOOKS_KEY;
   if (key) url.searchParams.set("key", key);
 
-  const res = await fetch(url.toString(), PROVIDER_CACHE);
-  if (!res.ok) {
-    throw new GoogleBooksError(path, res.status);
-  }
-  return res.json() as Promise<T>;
+  return providerFetch<T>("googlebooks", url.toString(), {
+    schema,
+    label: path.startsWith("/volumes/") ? "/volumes/{id}" : path,
+    httpError: (status) => new GoogleBooksError(path, status),
+    ...(cache === false ? { cache: false as const } : {}),
+  });
+}
+
+/** Sonda barata para `/api/health?deep=1`: un ISBN fijo, un resultado. */
+export async function probeGoogleBooks(): Promise<void> {
+  await googleBooksFetch(
+    "/volumes",
+    { q: "isbn:9780441013593", maxResults: "1" },
+    googleBooksSearchSchema,
+    false
+  );
 }
 
 // ── Public API ────────────────────────────────────────────────────────────────
@@ -184,14 +202,18 @@ export async function searchGoogleBooks(
   params: Record<string, string> = {},
   locale?: string | null
 ): Promise<GoogleBooksResponse> {
-  return googleBooksFetch<GoogleBooksResponse>("/volumes", {
-    q,
-    startIndex: String(googleBooksStartIndex(page)),
-    maxResults: String(GOOGLE_BOOKS_PAGE_SIZE),
-    langRestrict: googleBooksLangRestrict(locale),
-    printType: "books",
-    ...params,
-  });
+  return googleBooksFetch<GoogleBooksResponse>(
+    "/volumes",
+    {
+      q,
+      startIndex: String(googleBooksStartIndex(page)),
+      maxResults: String(GOOGLE_BOOKS_PAGE_SIZE),
+      langRestrict: googleBooksLangRestrict(locale),
+      printType: "books",
+      ...params,
+    },
+    googleBooksSearchSchema
+  );
 }
 
 /**
@@ -204,9 +226,39 @@ export async function getGoogleBookDetail(
   id: string
 ): Promise<GoogleBooksVolume | null> {
   try {
-    return await googleBooksFetch<GoogleBooksVolume>(`/volumes/${id}`);
+    return await googleBooksFetch<GoogleBooksVolume>(
+      `/volumes/${id}`,
+      {},
+      googleBooksVolumeSchema
+    );
   } catch (e) {
     if (e instanceof GoogleBooksError && e.status === 404) return null;
     throw e;
   }
+}
+
+/**
+ * Respaldo de la búsqueda de cómic (F-13): si ComicVine no responde (sin
+ * clave, cupo de 200/h agotado, caído), novelas gráficas de Google Books por
+ * título dentro de la categoría "comics". Son LIBROS de Google (se abren con
+ * la ficha de libro, que ya resuelve ids de Google): mejor encontrar "Maus"
+ * como libro que una rejilla vacía. Sin `langRestrict`: se busca un título
+ * concreto.
+ */
+export async function searchComicsGoogleBooks(
+  query: string,
+  page = 1
+): Promise<GoogleBooksResponse> {
+  const clean = query.replace(/"/g, " ").trim();
+  return googleBooksFetch<GoogleBooksResponse>(
+    "/volumes",
+    {
+      q: `intitle:"${clean}" subject:comics`,
+      startIndex: String(googleBooksStartIndex(page)),
+      maxResults: String(GOOGLE_BOOKS_PAGE_SIZE),
+      printType: "books",
+      orderBy: "relevance",
+    },
+    googleBooksSearchSchema
+  );
 }

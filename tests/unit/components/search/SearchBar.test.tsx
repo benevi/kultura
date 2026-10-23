@@ -89,7 +89,48 @@ describe("SearchBar", () => {
     render(<SearchBar />);
     fireEvent.change(screen.getByRole("searchbox"), { target: { value: "inception" } });
     await vi.advanceTimersByTimeAsync(450);
-    expect(global.fetch).toHaveBeenCalledWith("/api/search?q=inception&locale=en");
+    expect(vi.mocked(global.fetch).mock.calls[0][0]).toBe("/api/search?q=inception&locale=en");
+    vi.useRealTimers();
+  });
+
+  it("F-13 (DAT-8): con la familia activa de Descubrir, las sugerencias se piden de esa familia", async () => {
+    vi.useFakeTimers();
+    vi.mocked(global.fetch).mockResolvedValue({ ok: true, json: async () => [] } as Response);
+    render(<SearchBar type="manga" />);
+    fireEvent.change(screen.getByRole("searchbox"), { target: { value: "naruto" } });
+    await vi.advanceTimersByTimeAsync(450);
+    expect(vi.mocked(global.fetch).mock.calls[0][0]).toBe(
+      "/api/search?q=naruto&locale=en&type=manga"
+    );
+    vi.useRealTimers();
+  });
+
+  it("F-13: con type=all no se manda tipo (cine y series)", async () => {
+    vi.useFakeTimers();
+    vi.mocked(global.fetch).mockResolvedValue({ ok: true, json: async () => [] } as Response);
+    render(<SearchBar type="all" />);
+    fireEvent.change(screen.getByRole("searchbox"), { target: { value: "dune" } });
+    await vi.advanceTimersByTimeAsync(450);
+    expect(vi.mocked(global.fetch).mock.calls[0][0]).toBe("/api/search?q=dune&locale=en");
+    vi.useRealTimers();
+  });
+
+  it("F-13: al seguir escribiendo se cancela la petición anterior (una respuesta lenta no pisa a la nueva)", async () => {
+    vi.useFakeTimers();
+    const signals: AbortSignal[] = [];
+    vi.mocked(global.fetch).mockImplementation((_url, init) => {
+      signals.push((init as RequestInit).signal as AbortSignal);
+      return new Promise<Response>(() => {});
+    });
+    render(<SearchBar />);
+    const input = screen.getByRole("searchbox");
+    fireEvent.change(input, { target: { value: "nar" } });
+    await vi.advanceTimersByTimeAsync(450);
+    fireEvent.change(input, { target: { value: "naruto" } });
+    await vi.advanceTimersByTimeAsync(450);
+    expect(signals).toHaveLength(2);
+    expect(signals[0].aborted).toBe(true);
+    expect(signals[1].aborted).toBe(false);
     vi.useRealTimers();
   });
 

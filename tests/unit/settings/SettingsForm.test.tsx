@@ -142,15 +142,22 @@ describe('SettingsForm', () => {
     vi.unstubAllGlobals()
   })
 
-  it('deleteAccount abre el modal de confirmación (no elimina de inmediato)', () => {
+  it('deleteAccount abre el modal de confirmación (no elimina de inmediato)', async () => {
+    global.fetch = vi.fn().mockResolvedValue(new Response(null, { status: 500 }))
     render(<SettingsForm {...DEFAULT_PROPS} />)
     fireEvent.click(screen.getByText('deleteAccount'))
     expect(screen.getByText('deleteAccountConfirmTitle')).toBeInTheDocument()
-    expect(global.fetch).not.toHaveBeenCalled()
+    // Solo pide el resumen (GET); nada de DELETE hasta confirmar.
+    await waitFor(() => expect(global.fetch).toHaveBeenCalledWith('/api/account'))
+    expect(global.fetch).not.toHaveBeenCalledWith('/api/account', { method: 'DELETE' })
+    // Sin resumen, el texto genérico.
+    await waitFor(() => expect(screen.getByText('deleteAccountConfirmMessage')).toBeInTheDocument())
   })
 
-  it('confirmar en el modal llama DELETE /api/account, hace signOut y redirige a /es/login', async () => {
-    global.fetch = vi.fn().mockResolvedValue(new Response(JSON.stringify({ ok: true }), { status: 200 }))
+  it('confirmar en el modal llama DELETE /api/account, hace signOut y redirige al login con aviso', async () => {
+    global.fetch = vi.fn().mockImplementation(async () =>
+      new Response(JSON.stringify({ ok: true, scheduled: false }), { status: 200 })
+    )
 
     render(<SettingsForm {...DEFAULT_PROPS} />)
     fireEvent.click(screen.getByText('deleteAccount'))
@@ -159,7 +166,7 @@ describe('SettingsForm', () => {
     await waitFor(() => {
       expect(global.fetch).toHaveBeenCalledWith('/api/account', { method: 'DELETE' })
       expect(mockSignOut).toHaveBeenCalledOnce()
-      expect(mockRouterPush).toHaveBeenCalledWith('/es/login')
+      expect(mockRouterPush).toHaveBeenCalledWith('/es/login?account=deleted')
     })
   })
 
