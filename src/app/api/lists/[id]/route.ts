@@ -11,6 +11,7 @@
 
 import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
+import { track } from '@/lib/analytics/track'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { canEditList } from '@/lib/social/lists'
 import { checkRateLimit, LIMITS } from '@/lib/rate-limit'
@@ -278,6 +279,11 @@ export async function PATCH(request: Request, { params }: Params): Promise<NextR
   if (updateErr) {
     log.error('PATCH visibility failed', { listId, message: updateErr.message })
     return NextResponse.json({ error: 'Failed to update list' }, { status: 500 })
+  }
+
+  // D-12: primera vez que esta lista se hace pública (una vez por lista).
+  if (body.isPublic === true) {
+    await track(user, 'list_made_public', {}, { dedupeKey: `list_made_public:${listId}` })
   }
 
   return NextResponse.json({ ok: true, isPublic: body.isPublic })

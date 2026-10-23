@@ -7,6 +7,7 @@
 
 import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
+import { track } from '@/lib/analytics/track'
 import { checkRateLimit, LIMITS } from '@/lib/rate-limit'
 
 const VALID_TYPES = ['movie', 'tv', 'anime', 'book', 'comic', 'manga', 'game']
@@ -89,6 +90,13 @@ export async function POST(request: Request): Promise<NextResponse> {
 
   if (error || !data) {
     return NextResponse.json({ error: 'Failed to create list' }, { status: 500 })
+  }
+
+  // D-12: una lista que nace pública cuenta como "lista pública" del embudo.
+  if ((data as { is_public?: boolean }).is_public === true) {
+    await track(user, 'list_made_public', { media_type: body.mediaType }, {
+      dedupeKey: `list_made_public:${(data as { id: string }).id}`,
+    })
   }
 
   return NextResponse.json({ list: data }, { status: 201 })

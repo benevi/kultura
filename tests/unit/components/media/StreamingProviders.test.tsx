@@ -44,13 +44,44 @@ describe("StreamingProviders", () => {
     expect(screen.getByText("Disney+")).toBeInTheDocument();
   });
 
-  it("prioriza flatrate sobre rent", () => {
-    const mixed: StreamingProvider[] = [...flatrateProviders, ...rentProviders];
+  // PRO-6: antes, con suscripción, el alquiler y la compra desaparecían.
+  it("enseña suscripción, alquiler y compra a la vez, cada una con su encabezado y en ese orden", () => {
+    const mixed: StreamingProvider[] = [...buyProviders, ...rentProviders, ...flatrateProviders];
     render(<StreamingProviders providers={mixed} title="Dónde ver" />);
-    // flatrate se muestra
     expect(screen.getByAltText("Netflix")).toBeInTheDocument();
-    // rent NO se muestra cuando hay flatrate
-    expect(screen.queryByAltText("Amazon Video")).not.toBeInTheDocument();
+    expect(screen.getByAltText("Amazon Video")).toBeInTheDocument();
+    expect(screen.getByAltText("Apple TV")).toBeInTheDocument();
+    const groups = screen.getAllByRole("heading", { level: 3 }).map((h) => h.textContent);
+    expect(groups).toEqual(["watchType.flatrate", "watchType.rent", "watchType.buy"]);
+    // Cada logo bajo el encabezado de su modalidad.
+    const rentList = screen.getByText("watchType.rent").nextElementSibling as HTMLElement;
+    expect(rentList).toContainElement(screen.getByAltText("Amazon Video"));
+    expect(rentList).not.toContainElement(screen.getByAltText("Netflix"));
+  });
+
+  // Revisión del PR #40: con un logo por grupo salía uno por fila.
+  it("los grupos van en línea con salto, no uno por fila", () => {
+    render(<StreamingProviders providers={[...flatrateProviders, ...rentProviders]} title="Dónde ver" />);
+    const groups = screen.getByText("watchType.flatrate").parentElement!.parentElement!;
+    expect(groups.className).toContain("flex-wrap");
+    expect(groups.className).not.toContain("flex-col");
+    expect(groups.children).toHaveLength(2);
+  });
+
+  it("una plataforma en dos modalidades sale en las dos (alquilar y comprar)", () => {
+    render(
+      <StreamingProviders
+        providers={[rentProviders[0], { ...rentProviders[0], type: "buy" }]}
+        title="Dónde ver"
+      />
+    );
+    expect(screen.getAllByAltText("Amazon Video")).toHaveLength(2);
+  });
+
+  it("el título es un h2 y el nombre de cada plataforma no se lee dos veces", () => {
+    render(<StreamingProviders providers={flatrateProviders} title="Dónde ver" />);
+    expect(screen.getByRole("heading", { level: 2, name: "Dónde ver" })).toBeInTheDocument();
+    expect(screen.getByText("Netflix")).toHaveAttribute("aria-hidden", "true");
   });
 
   it("muestra rent cuando no hay flatrate", () => {

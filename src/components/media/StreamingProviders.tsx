@@ -1,7 +1,8 @@
 // ============================================================
-// KULTURA — StreamingProviders
-// Lista de plataformas donde está disponible el título.
-// Prioriza flatrate > rent > buy. Elimina duplicados por nombre.
+// KULTURA — StreamingProviders ("Dónde ver")
+// Plataformas donde está el título en el país del idioma, agrupadas por
+// modalidad: suscripción, alquiler y compra (PRO-6; antes solo se enseñaba la
+// primera que hubiera). Sin repetidos por nombre dentro de cada grupo.
 // Server Component (sin "use client").
 //
 // ATRIBUCIÓN OBLIGATORIA (PRO-2): estos datos los sirve TMDB pero son de
@@ -55,6 +56,9 @@ interface StreamingProvidersProps {
 const focusRing =
   "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-pink";
 
+/** Modalidades en el orden en que se pintan (claves de `media_detail.watchType`). */
+const GROUPS = ["flatrate", "free", "ads", "rent", "buy"] as const;
+
 export function StreamingProviders({
   providers,
   title,
@@ -63,70 +67,76 @@ export function StreamingProviders({
   const t = useTranslations("media_detail");
   const locale = useLocale();
 
-  const flatrate = providers.filter((p) => p.type === "flatrate");
-  const toShow =
-    flatrate.length > 0
-      ? flatrate
-      : providers.filter((p) => p.type === "rent").length > 0
-        ? providers.filter((p) => p.type === "rent")
-        : providers.filter((p) => p.type === "buy");
+  const groups = GROUPS.map((type) => ({
+    type,
+    items: providers
+      .filter((p) => p.type === type)
+      .filter((p, i, arr) => arr.findIndex((x) => x.name === p.name) === i),
+  })).filter((g) => g.items.length > 0);
 
-  // Dedup por nombre
-  const unique = toShow.filter(
-    (p, i, arr) => arr.findIndex((x) => x.name === p.name) === i
-  );
-
-  if (unique.length === 0) return null;
+  if (groups.length === 0) return null;
 
   return (
-    <div>
-      <h2 className="font-display text-2xl tracking-wide text-text mb-3">
-        {title}
-      </h2>
-      <ul className="flex flex-wrap gap-3">
-        {unique.map((p) => {
-          const href = safeTmdbHref(p.url ?? link);
-          const tile = (
-            <>
-              {/* img nativo intencionado: logos pequeños, muchos providers */}
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src={p.logoPath}
-                alt={p.name}
-                width={48}
-                height={48}
-                className="w-12 h-12 rounded-lg object-contain bg-surface2"
-              />
-              <span className="text-xs text-muted">{p.name}</span>
-            </>
-          );
-          return (
-            <li key={p.name}>
-              {href ? (
-                <a
-                  href={href}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  aria-label={t("providerLinkLabel", { name: p.name })}
-                  className={`flex flex-col items-center gap-1 rounded-lg hover:opacity-80 transition-opacity ${focusRing}`}
-                >
-                  {tile}
-                </a>
-              ) : (
-                <div className="flex flex-col items-center gap-1">{tile}</div>
-              )}
-            </li>
-          );
-        })}
-      </ul>
-      <p className="mt-3 flex flex-wrap items-center gap-1.5 text-xs text-muted">
+    <section>
+      <h2 className="font-display text-xl font-bold text-text-primary mb-3">{title}</h2>
+      {/* Grupos en línea (con salto si no caben), no uno por fila. */}
+      <div className="flex flex-wrap gap-x-8 gap-y-4">
+        {groups.map((group) => (
+          <div key={group.type}>
+            <h3 className="text-xs font-bold uppercase tracking-wide text-text-tertiary mb-2">
+              {t(`watchType.${group.type}`)}
+            </h3>
+            <ul className="flex flex-wrap gap-3">
+              {group.items.map((p) => {
+                const href = safeTmdbHref(p.url ?? link);
+                const tile = (
+                  <>
+                    {/* img nativo intencionado: logos pequeños, muchos providers */}
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={p.logoPath}
+                      alt={p.name}
+                      width={48}
+                      height={48}
+                      loading="lazy"
+                      className="w-12 h-12 rounded-lg object-contain bg-surface-elevated"
+                    />
+                    {/* El nombre ya lo da el `alt`: no se lee dos veces. */}
+                    <span aria-hidden="true" className="max-w-[72px] truncate text-xs text-text-tertiary">
+                      {p.name}
+                    </span>
+                  </>
+                );
+                return (
+                  <li key={p.name}>
+                    {href ? (
+                      <a
+                        href={href}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        aria-label={t("providerLinkLabel", { name: p.name })}
+                        className={`flex flex-col items-center gap-1 rounded-lg hover:opacity-80 transition-opacity ${focusRing}`}
+                      >
+                        {tile}
+                      </a>
+                    ) : (
+                      <div className="flex flex-col items-center gap-1">{tile}</div>
+                    )}
+                  </li>
+                );
+              })}
+            </ul>
+          </div>
+        ))}
+      </div>
+      <p className="mt-3 flex flex-wrap items-center gap-1.5 text-xs text-text-tertiary">
         <span>{t("justwatchAttribution")}</span>
         <a
           href={justWatchUrl(locale)}
           target="_blank"
           rel="noopener noreferrer"
           aria-label={t("justwatchLinkLabel")}
-          className={`inline-flex items-center rounded hover:opacity-80 transition-opacity ${focusRing}`}
+          className={`inline-flex items-center min-h-11 rounded hover:opacity-80 transition-opacity ${focusRing}`}
         >
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
@@ -139,6 +149,6 @@ export function StreamingProviders({
           />
         </a>
       </p>
-    </div>
+    </section>
   );
 }
