@@ -194,18 +194,14 @@ export default async function HomePage() {
           heading={t("compare.title")}
           sub={t("compare.sub")}
           formats={formats}
-          features={{
-            rate: t("compare.features.rate"),
-            lists: t("compare.features.lists"),
-            friends: t("compare.features.friends"),
-          }}
           appHeader={t("compare.appHeader")}
           formatsHeader={t("compare.formatsHeader")}
-          featuresHeader={t("compare.featuresHeader")}
+          formatHeader={t("compare.formatHeader")}
+          specialistHeader={t("compare.specialistHeader")}
           yes={t("compare.yes")}
           no={t("compare.no")}
+          none={t("compare.none")}
           note={t("compare.note")}
-          tableLabel={t("compare.tableLabel")}
         />
 
         <Faq heading={t("faq.title")} items={faq} />

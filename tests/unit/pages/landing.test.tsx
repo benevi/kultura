@@ -246,31 +246,42 @@ describe("Landing · secciones", () => {
     expect(graph.some((n) => n["@type"] === "WebApplication")).toBe(true);
   });
 
-  it("comparativa: cada app con su formato y KULTURA con los siete", async () => {
+  it("comparativa: matriz en escritorio y una fila por formato en móvil", async () => {
     const { container } = await renderPage();
     const section = container.querySelector("section[aria-labelledby='compare-title']") as HTMLElement;
-    // Matriz: cabecera con los 7 formatos y 3 funciones; una fila por app.
-    const headers = within(section).getAllByRole("columnheader").map((h) => h.textContent);
-    expect(headers).toEqual(
-      expect.arrayContaining(["Cine", "Series", "Anime", "Manga", "Juegos", "Libros", "Cómics", "Puntuar", "Listas", "Amigos"])
-    );
-    const rowHeaders = within(section).getAllByRole("rowheader").map((h) => h.textContent);
-    expect(rowHeaders).toEqual(["KULTURA", "Letterboxd", "Trakt", "MyAnimeList", "Goodreads", "Backloggd"]);
-    const marks = (name: string) => {
-      const row = within(section).getByRole("rowheader", { name }).closest("tr") as HTMLElement;
+    const srText = (row: HTMLElement) =>
       // Lo que oye un lector de pantalla (la marca visual es aria-hidden).
-      return Array.from(row.querySelectorAll("td")).map((td) => td.querySelector(".sr-only")?.textContent);
-    };
-    // KULTURA: los 7 formatos y las 3 funciones.
-    expect(marks("KULTURA")).toEqual(Array(10).fill("Sí"));
-    // Letterboxd: solo cine, más las funciones comunes.
-    expect(marks("Letterboxd")).toEqual(["Sí", "No", "No", "No", "No", "No", "No", "Sí", "Sí", "Sí"]);
-    // Se desplaza dentro de su caja (región con foco), no la página.
-    const region = within(section).getByRole("region", { name: "Tabla: formatos y funciones de cada app" });
-    expect(region).toHaveAttribute("tabindex", "0");
-    expect(region.className).toContain("overflow-x-auto");
-    // Posicionada: los `sr-only` (absolutos) se recortan dentro y no desbordan la página.
-    expect(region.className.split(" ")).toContain("relative");
+      Array.from(row.querySelectorAll("td")).map((td) => td.querySelector(".sr-only")?.textContent ?? td.textContent);
+
+    // Escritorio (≥ md): 7 formatos en columnas, una fila por app. Sin
+    // columnas de funciones (todas las apps las tenían: no distinguían nada).
+    const matrix = within(section).getByTestId("compare-matrix");
+    expect(matrix.className).toContain("md:block");
+    expect(within(matrix).getAllByRole("columnheader").map((h) => h.textContent)).toEqual(
+      ["App", "Formatos", "Cine", "Series", "Anime", "Manga", "Juegos", "Libros", "Cómics"]
+    );
+    expect(within(matrix).getAllByRole("rowheader").map((h) => h.textContent)).toEqual(
+      ["KULTURA", "Letterboxd", "Trakt", "MyAnimeList", "Goodreads", "Backloggd"]
+    );
+    const row = (name: string) => within(matrix).getByRole("rowheader", { name }).closest("tr") as HTMLElement;
+    expect(srText(row("KULTURA"))).toEqual(Array(7).fill("Sí"));
+    expect(srText(row("Letterboxd"))).toEqual(["Sí", "No", "No", "No", "No", "No", "No"]);
+    expect(srText(row("Goodreads"))).toEqual(["No", "No", "No", "No", "No", "Sí", "No"]);
+
+    // Móvil (< md): traspuesta, tres columnas, una fila por formato.
+    const byFormat = within(section).getByTestId("compare-by-format");
+    expect(byFormat.className).toContain("md:hidden");
+    expect(within(byFormat).getAllByRole("columnheader").map((h) => h.textContent)).toEqual(
+      ["Formato", "KULTURA", "App especializada"]
+    );
+    expect(within(byFormat).getAllByRole("rowheader").map((h) => h.textContent)).toEqual(
+      ["Cine", "Series", "Anime", "Manga", "Juegos", "Libros", "Cómics"]
+    );
+    const fmt = (name: string) => srText(within(byFormat).getByRole("rowheader", { name }).closest("tr") as HTMLElement);
+    expect(fmt("Cine")).toEqual(["Sí", "LetterboxdTrakt"]);
+    expect(fmt("Libros")).toEqual(["Sí", "Goodreads"]);
+    expect(fmt("Juegos")).toEqual(["Sí", "Backloggd"]);
+    expect(fmt("Cómics")).toEqual(["Sí", "Ninguna de estas"]);
   });
 
   it("contiene Header y Footer", async () => {

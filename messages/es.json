@@ -886,15 +886,11 @@
       "sub": "Cada app lleva lo suyo: las pelis en una, el anime en otra, los libros en una tercera. En KULTURA está todo junto y lo compartes con la misma gente.",
       "appHeader": "App",
       "formatsHeader": "Formatos",
-      "featuresHeader": "Funciones",
-      "features": {
-        "rate": "Puntuar",
-        "lists": "Listas",
-        "friends": "Amigos"
-      },
+      "formatHeader": "Formato",
+      "specialistHeader": "App especializada",
       "yes": "Sí",
       "no": "No",
-      "tableLabel": "Tabla: formatos y funciones de cada app",
+      "none": "Ninguna de estas",
       "note": "De cada app se marca el formato en el que se centra; algunas permiten apuntar otros de forma parcial. Letterboxd, Trakt, MyAnimeList, Goodreads y Backloggd son marcas de sus respectivos propietarios. KULTURA no está afiliada a ninguna de ellas."
     },
     "faq": {

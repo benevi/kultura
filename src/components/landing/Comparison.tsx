@@ -1,56 +1,62 @@
 // ============================================================
 // KULTURA — "La alternativa a Letterboxd, Trakt y MyAnimeList" (SEO-9, CRE-10)
 //
-// Matriz: KULTURA frente a las apps de referencia, con los 7 formatos y las
-// funciones básicas que todas comparten. Comparativa PRUDENTE: de cada app se
-// marca solo el formato en el que se centra (lo que cualquiera puede comprobar
-// en su web) y las funciones que tienen sin discusión (puntuar, listas,
-// seguir a amigos). Nada de precios, anuncios ni funciones que cambian. La
-// nota al pie lo explica.
+// Comparativa PRUDENTE: de cada app de referencia se marca solo el formato en
+// el que se centra (lo que cualquiera puede comprobar en su web). Nada de
+// precios, anuncios ni funciones que cambian; la nota al pie lo explica. Las
+// funciones comunes (puntuar, listas, amigos) no se comparan: todas las tienen
+// y la tabla no distinguía nada.
 //
-// A 320 px la tabla se desplaza en horizontal DENTRO de su caja (región con
-// foco, para teclado) con la columna de la app fija; la página no se desborda.
+// Dos lecturas de los MISMOS datos:
+//   - ≥ 768 px: matriz app × formato (6 filas × 7 columnas), sin desplazarse.
+//   - < 768 px: la tabla traspuesta, una fila por formato con KULTURA ✓ y la
+//     app especializada que lo cubre. Tres columnas: se lee entera a 320 px
+//     sin desplazamiento horizontal.
 // Tokens y radios de DISENO.md: superficie `--surface-default`, radio 22,
-// fila de KULTURA en `--surface-elevated` con la pegatina lime.
+// KULTURA con la pegatina lime y su fila/columna en `--surface-elevated`.
 // ============================================================
 
 import { cn } from "@/lib/utils/index";
 import type { MediaType } from "@/types/media";
 
-export type CompareFeature = "rate" | "lists" | "friends";
-
 const FORMATS: MediaType[] = ["movie", "tv", "anime", "manga", "game", "book", "comic"];
-const FEATURES: CompareFeature[] = ["rate", "lists", "friends"];
 
-/** Filas: formatos en los que se centra cada app y funciones básicas. */
-export const COMPARED_APPS: ReadonlyArray<{ name: string; formats: MediaType[]; features: CompareFeature[] }> = [
-  { name: "KULTURA", formats: FORMATS, features: FEATURES },
-  { name: "Letterboxd", formats: ["movie"], features: FEATURES },
-  { name: "Trakt", formats: ["movie", "tv"], features: FEATURES },
-  { name: "MyAnimeList", formats: ["anime", "manga"], features: FEATURES },
-  { name: "Goodreads", formats: ["book"], features: FEATURES },
-  { name: "Backloggd", formats: ["game"], features: FEATURES },
+/** Apps de referencia y el formato (o formatos) en que se centra cada una. */
+export const COMPARED_APPS: ReadonlyArray<{ name: string; formats: MediaType[] }> = [
+  { name: "Letterboxd", formats: ["movie"] },
+  { name: "Trakt", formats: ["movie", "tv"] },
+  { name: "MyAnimeList", formats: ["anime", "manga"] },
+  { name: "Goodreads", formats: ["book"] },
+  { name: "Backloggd", formats: ["game"] },
 ];
+
+/** Apps especializadas en un formato (lectura móvil). */
+export function specialistsFor(format: MediaType): string[] {
+  return COMPARED_APPS.filter((a) => a.formats.includes(format)).map((a) => a.name);
+}
 
 export interface ComparisonProps {
   heading: string;
   sub: string;
   /** Nombre de cada formato, traducido. */
   formats: Record<MediaType, string>;
-  /** Nombre de cada función, traducido. */
-  features: Record<CompareFeature, string>;
-  /** Cabeceras de grupo y de la columna de apps. */
+  /** Cabeceras: columna de apps y grupo de formatos (escritorio). */
   appHeader: string;
   formatsHeader: string;
-  featuresHeader: string;
+  /** Cabeceras de la tabla traspuesta (móvil). */
+  formatHeader: string;
+  specialistHeader: string;
   /** Texto para lectores de pantalla en cada celda. */
   yes: string;
   no: string;
+  /** Formato sin app especializada en la lista. */
+  none: string;
   /** Qué se marca y aviso de marcas. */
   note: string;
-  /** Nombre de la caja desplazable (distinto del de la sección: axe landmark-unique). */
-  tableLabel: string;
 }
+
+const STICKER = "inline-block rotate-[-4deg] rounded-full bg-accent-lime px-3 py-1.5 font-display text-sm font-extrabold leading-none text-on-accent-lime";
+const STICKER_SHADOW = { boxShadow: "4px 4px 0 rgba(0,0,0,.4)" };
 
 function Mark({ on, yes, no }: { on: boolean; yes: string; no: string }) {
   return on ? (
@@ -79,14 +85,14 @@ export function Comparison({
   heading,
   sub,
   formats,
-  features,
   appHeader,
   formatsHeader,
-  featuresHeader,
+  formatHeader,
+  specialistHeader,
   yes,
   no,
+  none,
   note,
-  tableLabel,
 }: ComparisonProps) {
   const cell = "px-2 py-3 align-middle";
   return (
@@ -99,26 +105,16 @@ export function Comparison({
       </h2>
       <p className="text-text-secondary text-base mb-12 max-w-[56ch]">{sub}</p>
 
-      <div
-        role="region"
-        aria-label={tableLabel}
-        tabIndex={0}
-        // `relative`: los textos `sr-only` son absolutos; sin un ancestro
-        // posicionado dentro de la caja, escapaban del recorte y la PÁGINA se
-        // desbordaba 374 px a 320 de ancho.
-        className="relative overflow-x-auto rounded-bento bg-surface-default focus-visible:[outline-style:solid] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus-ring"
-      >
-        <table className="w-full min-w-[46rem] border-separate border-spacing-0 text-sm">
+      {/* Escritorio: matriz app × formato. */}
+      <div data-testid="compare-matrix" className="hidden overflow-hidden rounded-bento bg-surface-default md:block">
+        <table className="w-full border-separate border-spacing-0 text-sm">
           <thead>
             <tr>
-              <th scope="col" rowSpan={2} className="sticky left-0 z-10 bg-surface-default px-5 py-3 text-left align-bottom font-bold text-text-secondary">
+              <th scope="col" rowSpan={2} className="px-5 py-3 text-left align-bottom font-bold text-text-secondary">
                 {appHeader}
               </th>
               <th scope="colgroup" colSpan={FORMATS.length} className="px-2 pt-4 pb-1 text-center text-xs font-bold uppercase tracking-wide text-text-tertiary">
                 {formatsHeader}
-              </th>
-              <th scope="colgroup" colSpan={FEATURES.length} className="border-l border-surface-border px-2 pt-4 pb-1 text-center text-xs font-bold uppercase tracking-wide text-text-tertiary">
-                {featuresHeader}
               </th>
             </tr>
             <tr>
@@ -127,47 +123,91 @@ export function Comparison({
                   {formats[f]}
                 </th>
               ))}
-              {FEATURES.map((f, i) => (
-                <th key={f} scope="col" className={cn(cell, "text-center font-bold text-text-primary", i === 0 && "border-l border-surface-border")}>
-                  {features[f]}
-                </th>
-              ))}
             </tr>
           </thead>
           <tbody>
-            {COMPARED_APPS.map((app, row) => {
-              const ours = row === 0;
-              const bg = ours ? "bg-surface-elevated" : "bg-surface-default";
+            <tr className="bg-surface-elevated">
+              <th scope="row" className="whitespace-nowrap border-t border-surface-border px-5 py-3 text-left">
+                <span className={STICKER} style={STICKER_SHADOW}>
+                  KULTURA
+                </span>
+              </th>
+              {FORMATS.map((f) => (
+                <td key={f} className={cn(cell, "border-t border-surface-border")}>
+                  <Mark on yes={yes} no={no} />
+                </td>
+              ))}
+            </tr>
+            {COMPARED_APPS.map((app) => (
+              <tr key={app.name}>
+                <th
+                  scope="row"
+                  className="whitespace-nowrap border-t border-surface-border px-5 py-3 text-left font-display text-base font-extrabold text-text-primary"
+                >
+                  {app.name}
+                </th>
+                {FORMATS.map((f) => (
+                  <td key={f} className={cn(cell, "border-t border-surface-border")}>
+                    <Mark on={app.formats.includes(f)} yes={yes} no={no} />
+                  </td>
+                ))}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+
+      {/* Móvil: la misma información traspuesta, una fila por formato.
+          Anchos fijos (30/24/46 %): a 320 px las tres columnas caben enteras. */}
+      <div data-testid="compare-by-format" className="overflow-hidden rounded-bento bg-surface-default md:hidden">
+        <table className="w-full table-fixed border-separate border-spacing-0 text-sm">
+          <colgroup>
+            <col className="w-[30%]" />
+            <col className="w-[24%]" />
+            <col className="w-[46%]" />
+          </colgroup>
+          <thead>
+            <tr>
+              <th scope="col" className="px-3 py-3 text-left text-[13px] font-bold text-text-secondary">
+                {formatHeader}
+              </th>
+              <th scope="col" className="bg-surface-elevated px-1 py-3 text-center">
+                <span
+                  className="inline-block rotate-[-4deg] rounded-full bg-accent-lime px-2 py-1 font-display text-xs font-extrabold leading-none text-on-accent-lime"
+                  style={STICKER_SHADOW}
+                >
+                  KULTURA
+                </span>
+              </th>
+              <th scope="col" className="px-3 py-3 text-left text-[13px] font-bold leading-tight text-text-secondary">
+                {specialistHeader}
+              </th>
+            </tr>
+          </thead>
+          <tbody>
+            {FORMATS.map((f) => {
+              const apps = specialistsFor(f);
               return (
-                <tr key={app.name} className={bg}>
-                  <th
-                    scope="row"
-                    className={cn(
-                      "sticky left-0 z-10 whitespace-nowrap border-t border-surface-border px-5 py-3 text-left font-display text-base font-extrabold text-text-primary",
-                      bg
-                    )}
-                  >
-                    {ours ? (
-                      <span
-                        className="inline-block rotate-[-4deg] rounded-full bg-accent-lime px-3 py-1.5 text-sm leading-none text-on-accent-lime"
-                        style={{ boxShadow: "4px 4px 0 rgba(0,0,0,.4)" }}
-                      >
-                        {app.name}
+                <tr key={f}>
+                  <th scope="row" className="border-t border-surface-border px-3 py-3 text-left font-display text-base font-extrabold text-text-primary">
+                    {formats[f]}
+                  </th>
+                  <td className="border-t border-surface-border bg-surface-elevated px-1 py-3 align-middle">
+                    <Mark on yes={yes} no={no} />
+                  </td>
+                  <td className="border-t border-surface-border px-3 py-3 align-middle">
+                    {apps.length > 0 ? (
+                      <span className="flex flex-wrap gap-1.5">
+                        {apps.map((name) => (
+                          <span key={name} className="rounded-full bg-surface-elevated px-2.5 py-1 text-[12px] font-bold text-text-primary">
+                            {name}
+                          </span>
+                        ))}
                       </span>
                     ) : (
-                      app.name
+                      <span className="text-[13px] leading-tight text-text-tertiary">{none}</span>
                     )}
-                  </th>
-                  {FORMATS.map((f) => (
-                    <td key={f} className={cn(cell, "border-t border-surface-border")}>
-                      <Mark on={app.formats.includes(f)} yes={yes} no={no} />
-                    </td>
-                  ))}
-                  {FEATURES.map((f, i) => (
-                    <td key={f} className={cn(cell, "border-t border-surface-border", i === 0 && "border-l")}>
-                      <Mark on={app.features.includes(f)} yes={yes} no={no} />
-                    </td>
-                  ))}
+                  </td>
                 </tr>
               );
             })}
