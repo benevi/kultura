@@ -10,6 +10,10 @@
 --      `dedupe_key` única para los eventos que cuentan una vez (el alta, el
 --      primer guardado de cada título…). Se borran en cascada con la cuenta.
 --      Antes de aplicarla, `track()` ignora el error (42P01 / PGRST205).
+--      RETENCIÓN: 13 meses (un año completo de cohortes y su D7). La purga es
+--      public.purge_old_analytics_events() (solo service_role), que llama el
+--      cron diario /api/cron/daily; hasta que lo haga, a mano en el SQL Editor:
+--        select public.purge_old_analytics_events();
 --   2. public.funnel_weekly: vista (security_invoker) con el embudo semanal
 --      por cohorte de alta: registro → 1.ª acción (7 días) → 3 títulos
 --      (7 días) → D7 (alguna acción entre el día 7 y el 14), por canal
@@ -37,6 +41,7 @@
 --          has_table_privilege('anon', 'public.analytics_events', 'insert'),
 --          has_table_privilege('authenticated', 'public.funnel_weekly', 'select');        -- f, f, f
 --   select * from public.rls_audit() where not ok;                                        -- 0 filas
+--   select public.purge_old_analytics_events();          -- nº de filas de más de 13 meses (0 al principio)
 --   select pg_get_constraintdef(oid) from pg_constraint
 --    where conname = 'notifications_type_check';                       -- incluye 'invite_accepted'
 --   -- Tras unas altas reales:
@@ -89,7 +94,22 @@ revoke all on public.analytics_events from public, anon, authenticated;
 grant select, insert, update, delete on public.analytics_events to service_role;
 
 comment on table public.analytics_events is
-  'F-17 (D-12): eventos de producto de usuarios registrados. Solo los escribe el servidor (service role). Sin cookies ni identificadores de visitantes anónimos.';
+  'F-17 (D-12): eventos de producto de usuarios registrados. Solo los escribe el servidor (service role). Sin cookies ni identificadores de visitantes anónimos. Retención: 13 meses (purge_old_analytics_events).';
+
+-- Retención (13 meses): borra lo más antiguo y devuelve cuántas filas quitó.
+create or replace function public.purge_old_analytics_events(p_keep interval default interval '13 months')
+returns integer language sql security definer
+set search_path = public, pg_temp
+as $$
+  with gone as (
+    delete from public.analytics_events
+     where created_at < now() - greatest(p_keep, interval '1 month')
+    returning 1
+  )
+  select count(*)::integer from gone;
+$$;
+revoke all on function public.purge_old_analytics_events(interval) from public, anon, authenticated;
+grant execute on function public.purge_old_analytics_events(interval) to service_role;
 
 
 -- ── 2. Embudo semanal ────────────────────────────────────────────────────

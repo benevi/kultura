@@ -27,7 +27,7 @@ vi.mock('next/navigation', () => ({
 
 import { LoginPage } from '@/app/[locale]/login/LoginPage'
 
-const SIG = '0123456789abcdef0123'
+const SIG = '1790000000.0123456789abcdef0123456789abcdef'
 const fetchMock = vi.fn()
 
 function fillAndSubmit() {

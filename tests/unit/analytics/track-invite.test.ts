@@ -95,30 +95,50 @@ describe('track()', () => {
   })
 })
 
-describe('firma de la invitación', () => {
-  it('estable por usuario, distinta entre usuarios y verificable', () => {
-    const sig = inviteSignature('u1')!
-    expect(sig).toMatch(/^[0-9a-f]{20}$/)
-    expect(inviteSignature('u1')).toBe(sig)
-    expect(inviteSignature('u2')).not.toBe(sig)
-    expect(isValidInviteSignature('u1', sig)).toBe(true)
-    expect(isValidInviteSignature('u1', sig.toUpperCase())).toBe(true)
-    expect(isValidInviteSignature('u2', sig)).toBe(false)
-    expect(isValidInviteSignature('u1', undefined)).toBe(false)
-    expect(isValidInviteSignature('u1', 'corta')).toBe(false)
+describe('firma de la invitación (caduca a los 30 días)', () => {
+  const NOW = Date.UTC(2026, 10, 15)
+  const DAY = 86_400_000
+
+  it('formato <exp>.<hmac>, ligada a usuario y nombre, verificable', () => {
+    const sig = inviteSignature('u1', 'ana', NOW)!
+    expect(sig).toMatch(/^\d{10}\.[0-9a-f]{32}$/)
+    expect(Number(sig.split('.')[0])).toBe(NOW / 1000 + 30 * 86_400)
+    expect(isValidInviteSignature('u1', 'ana', sig, NOW)).toBe(true)
+    expect(isValidInviteSignature('u1', 'ANA', sig.toUpperCase(), NOW)).toBe(true)
+    expect(isValidInviteSignature('u2', 'ana', sig, NOW)).toBe(false)
+    expect(isValidInviteSignature('u1', 'otra', sig, NOW)).toBe(false)
+    expect(isValidInviteSignature('u1', 'ana', undefined, NOW)).toBe(false)
+    expect(isValidInviteSignature('u1', 'ana', 'corta', NOW)).toBe(false)
+  })
+
+  it('caduca: vale el día 29, no el 31', () => {
+    const sig = inviteSignature('u1', 'ana', NOW)!
+    expect(isValidInviteSignature('u1', 'ana', sig, NOW + 29 * DAY)).toBe(true)
+    expect(isValidInviteSignature('u1', 'ana', sig, NOW + 31 * DAY)).toBe(false)
+  })
+
+  it('cambiar la fecha de caducidad invalida la firma; una caducidad lejana se rechaza', () => {
+    const [exp, mac] = inviteSignature('u1', 'ana', NOW)!.split('.')
+    expect(isValidInviteSignature('u1', 'ana', `${Number(exp) + 86_400}.${mac}`, NOW)).toBe(false)
+    const far = inviteSignature('u1', 'ana', NOW + 365 * DAY)!
+    expect(isValidInviteSignature('u1', 'ana', far, NOW)).toBe(false)
+  })
+
+  it('la firma antigua (20 hex, sin caducidad) ya no vale', () => {
+    expect(isValidInviteSignature('u1', 'ana', '0123456789abcdef0123', NOW)).toBe(false)
   })
 
   it('el enlace va al perfil público con ref e inv', () => {
-    expect(invitePath('es', { id: 'u1', username: 'ana' })).toBe(`/es/u/ana?ref=ana&inv=${inviteSignature('u1')}`)
+    expect(invitePath('es', { id: 'u1', username: 'ana' }, NOW)).toBe(`/es/u/ana?ref=ana&inv=${inviteSignature('u1', 'ana', NOW)}`)
   })
 
   it('sin secreto no hay firma (y nada se acepta)', () => {
     delete process.env.INVITE_SECRET
     const prev = process.env.SUPABASE_SERVICE_ROLE_KEY
     delete process.env.SUPABASE_SERVICE_ROLE_KEY
-    expect(inviteSignature('u1')).toBeNull()
+    expect(inviteSignature('u1', 'ana')).toBeNull()
     expect(invitePath('en', { id: 'u1', username: 'ana' })).toBe('/en/u/ana?ref=ana')
-    expect(isValidInviteSignature('u1', 'a'.repeat(20))).toBe(false)
+    expect(isValidInviteSignature('u1', 'ana', '1790000000.' + 'a'.repeat(32))).toBe(false)
     if (prev !== undefined) process.env.SUPABASE_SERVICE_ROLE_KEY = prev
   })
 })
@@ -129,7 +149,7 @@ describe('acceptInvite()', () => {
   it('firma válida: amistad aceptada quien invita → cuenta nueva y evento invite_accepted', async () => {
     h.results.users = [{ data: { id: 'inv-1', username: 'ana' } }, { data: { username: 'u_abc123' } }]
     h.results.friendships = [{ data: [] }, { error: null }]
-    expect(await acceptInvite(NEW, 'ana', inviteSignature('inv-1')!)).toBe('accepted')
+    expect(await acceptInvite(NEW, 'ana', inviteSignature('inv-1', 'ana')!)).toBe('accepted')
     expect(h.ops).toContainEqual({
       table: 'friendships', op: 'insert', row: { requester_id: 'inv-1', receiver_id: 'new-1', status: 'accepted' },
     })
@@ -144,7 +164,7 @@ describe('acceptInvite()', () => {
     process.env.INVITE_NOTIFY = '1'
     h.results.users = [{ data: { id: 'inv-1', username: 'ana' } }, { data: { username: 'u_abc123' } }]
     h.results.friendships = [{ data: [] }, { error: null }]
-    await acceptInvite(NEW, 'ana', inviteSignature('inv-1')!)
+    await acceptInvite(NEW, 'ana', inviteSignature('inv-1', 'ana')!)
     expect(h.ops).toContainEqual({
       table: 'notifications', op: 'insert',
       row: { user_id: 'inv-1', type: 'invite_accepted', payload: { userId: 'new-1', fromUsername: 'u_abc123' } },
@@ -153,7 +173,7 @@ describe('acceptInvite()', () => {
 
   it('un ref sin firma válida (p. ej. ?ref=<víctima>) nunca crea amistad', async () => {
     h.results.users = [{ data: { id: 'victima', username: 'vic' } }, { data: { id: 'victima', username: 'vic' } }]
-    expect(await acceptInvite(NEW, 'vic', 'f'.repeat(20))).toBe('invalid')
+    expect(await acceptInvite(NEW, 'vic', '1790000000.' + 'f'.repeat(32))).toBe('invalid')
     expect(await acceptInvite(NEW, 'vic', undefined)).toBe('invalid')
     expect(h.ops.some((o) => o.op === 'insert')).toBe(false)
   })
@@ -162,21 +182,43 @@ describe('acceptInvite()', () => {
     h.results.users = [{ data: null }, { data: { id: 'inv-1', username: 'ana_nueva' } }, { data: { username: 'u_x' } }]
     h.rpc.mockResolvedValue({ data: 'ana_nueva', error: null })
     h.results.friendships = [{ data: [] }, { error: null }]
-    expect(await acceptInvite(NEW, 'ana_vieja', inviteSignature('inv-1')!)).toBe('accepted')
+    expect(await acceptInvite(NEW, 'ana_vieja', inviteSignature('inv-1', 'ana_vieja')!)).toBe('accepted')
     expect(h.rpc).toHaveBeenCalledWith('username_redirect', { p_username: 'ana_vieja' })
+  })
+
+  it('F-11: con un bloqueo en cualquier sentido no se crea nada (y no se revela)', async () => {
+    for (const block of [{ blocker_id: 'inv-1' }, { blocker_id: 'new-1' }]) {
+      h.ops.length = 0
+      h.results.users = [{ data: { id: 'inv-1', username: 'ana' } }]
+      h.results.blocks = [{ data: [block] }]
+      h.results.friendships = [{ data: [] }, { error: null }]
+      expect(await acceptInvite(NEW, 'ana', inviteSignature('inv-1', 'ana')!)).toBe('blocked')
+      expect(h.ops.some((o) => o.op === 'insert' || o.op === 'upsert')).toBe(false)
+      expect(h.ops).toContainEqual({ table: 'blocks', op: 'or', filter: expect.stringContaining('blocker_id.eq.new-1') })
+    }
+  })
+
+  it('sin la tabla de bloqueos (F-11 sin aplicar) sigue; con otro error, no crea nada', async () => {
+    h.results.users = [{ data: { id: 'inv-1', username: 'ana' } }, { data: { username: 'u_x' } }]
+    h.results.blocks = [{ data: null, error: { code: '42P01' } }]
+    h.results.friendships = [{ data: [] }, { error: null }]
+    expect(await acceptInvite(NEW, 'ana', inviteSignature('inv-1', 'ana')!)).toBe('accepted')
+    h.results.users = [{ data: { id: 'inv-1', username: 'ana' } }]
+    h.results.blocks = [{ data: null, error: { code: '57014' } }]
+    expect(await acceptInvite(NEW, 'ana', inviteSignature('inv-1', 'ana')!)).toBe('blocked')
   })
 
   it('ya eran amigos (o había solicitud): no se duplica', async () => {
     h.results.users = [{ data: { id: 'inv-1', username: 'ana' } }]
     h.results.friendships = [{ data: [{ id: 'f1', status: 'pending' }] }]
-    expect(await acceptInvite(NEW, 'ana', inviteSignature('inv-1')!)).toBe('already_friends')
+    expect(await acceptInvite(NEW, 'ana', inviteSignature('inv-1', 'ana')!)).toBe('already_friends')
     expect(h.ops.some((o) => o.op === 'insert')).toBe(false)
   })
 
   it('consigo mismo, no; y un fallo de la base no lanza', async () => {
     h.results.users = [{ data: { id: 'new-1', username: 'ana' } }]
-    expect(await acceptInvite(NEW, 'ana', inviteSignature('new-1')!)).toBe('self')
+    expect(await acceptInvite(NEW, 'ana', inviteSignature('new-1', 'ana')!)).toBe('self')
     h.throwOnCreate = true
-    expect(await acceptInvite(NEW, 'ana', inviteSignature('inv-1')!)).toBe('error')
+    expect(await acceptInvite(NEW, 'ana', inviteSignature('inv-1', 'ana')!)).toBe('error')
   })
 })

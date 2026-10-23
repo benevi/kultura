@@ -74,12 +74,24 @@ async function sessionUser(supabase: ServerClient): Promise<SessionUser | null> 
   }
 }
 
-/** `flow=signup` solo vale para una cuenta recién creada (no para reabrir el alta). */
-const FRESH_ACCOUNT_MS = 15 * 60 * 1000;
+/**
+ * Solo una cuenta creada en ESTA alta registra el alta y acepta invitaciones:
+ * creada hace menos de 10 minutos, o (enlace de confirmación del alta,
+ * `type=signup`) con el correo confirmado hace menos de 10 minutos. Una
+ * cuenta antigua que aún no terminó el onboarding no puede "reabrir" el alta
+ * con `?ref=X&inv=…` y hacerse amiga de X.
+ */
+const FRESH_ACCOUNT_MS = 10 * 60 * 1000;
 
-function isFreshAccount(user: SessionUser): boolean {
-  const created = Date.parse(user.created_at ?? "");
-  return Number.isFinite(created) && Date.now() - created < FRESH_ACCOUNT_MS;
+function isRecent(iso: string | null | undefined): boolean {
+  const t = Date.parse(iso ?? "");
+  const age = Date.now() - t;
+  // Un minuto de margen por si el reloj de Supabase va algo adelantado.
+  return Number.isFinite(t) && age > -60_000 && age < FRESH_ACCOUNT_MS;
+}
+
+function isFreshAccount(user: SessionUser, confirmedSignup = false): boolean {
+  return isRecent(user.created_at) || (confirmedSignup && isRecent(user.email_confirmed_at));
 }
 
 /** Lo más que espera el alta por la atribución y la invitación (nunca bloquea entrar). */
@@ -180,7 +192,9 @@ export async function GET(request: NextRequest) {
       // después de `signUp`: es una cuenta nueva aunque falle la lectura del
       // estado de onboarding, y sigue yendo a /welcome como antes.
       if (signupFlow && user && !isDemoUser(user) && isFreshAccount(user)) welcome = true;
-      if (welcome && user) await recordNewAccount(supabase, user, attribution);
+      if (welcome && user && isFreshAccount(user, type === "signup")) {
+        await recordNewAccount(supabase, user, attribution);
+      }
     }
     const next =
       type === "recovery" ? `/${locale}/reset-password` : resolveAuthNext(rawNext, locale);

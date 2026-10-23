@@ -24,6 +24,7 @@ import {
   FavoritesGrid,
   FormatCounters,
   FormatLabel,
+  SignedInBar,
   InviteBanner,
   LockedLibrary,
   PLURAL_KEY,
@@ -180,7 +181,7 @@ export default async function PublicCollectionPage({ params, searchParams }: Pro
   // `ref`, se atribuye a este perfil (sin firma: no crea amistad).
   const attribution = parseAttributionRecord(sp)
   const refIsOwner = attribution.ref?.toLowerCase() === owner.username.toLowerCase()
-  const friendsOnSignup = refIsOwner && isValidInviteSignature(owner.id, attribution.inv)
+  const friendsOnSignup = refIsOwner && isValidInviteSignature(owner.id, attribution.ref, attribution.inv)
   const signupAttribution: AttributionParams = attribution.ref
     ? attribution
     : { ...attribution, ref: owner.username, channel: attribution.utm_source ? 'utm' : 'ref' }
@@ -193,7 +194,7 @@ export default async function PublicCollectionPage({ params, searchParams }: Pro
 
   return (
     <div className="min-h-screen flex flex-col">
-      <Header />
+      {viewer ? <SignedInBar /> : <Header />}
       <main id="main" className="flex-1 w-full max-w-4xl mx-auto px-4 md:px-8 py-10 flex flex-col gap-10 md:gap-12">
         {!viewer && refIsOwner ? (
           <InviteBanner username={owner.username} friendsOnSignup={friendsOnSignup} registerHref={registerHref} />
@@ -287,9 +288,10 @@ async function OwnerNote({ owner }: { owner: PublicOwner }) {
     <p className="-mt-4 text-[13px] text-text-secondary">
       {t('ownerNote', { visibility: ts(`visibility.${visibility}`) })}{' '}
       {visibility === 'public' ? `${t('ownerNoteNoAccount')} ` : null}
+      {/* Área táctil de 44 px (py-3) sin abrir hueco entre líneas (-my-3). */}
       <Link
         href="/settings"
-        className="inline-flex items-center min-h-11 font-bold text-text-primary underline-offset-4 hover:underline"
+        className="inline-flex items-center py-3 -my-3 align-baseline font-bold text-text-primary underline-offset-4 hover:underline"
       >
         {t('ownerSettings')}
       </Link>
@@ -316,14 +318,9 @@ async function HiddenLibrary({
     return <LockedLibrary title={hiddenTitle} text={tp('libraryHiddenPrivate')} />
   }
   if (signedIn) {
-    // Con sesión y sin permiso: solo amigos (o la base no lo confirmó).
-    return (
-      <LockedLibrary title={hiddenTitle} text={tp('libraryHiddenFriends')}>
-        <KButton asChild variant="secondary" size="sm">
-          <Link href={`/profile/${encodeURIComponent(owner.username)}`}>{t('openProfile')}</Link>
-        </KButton>
-      </LockedLibrary>
-    )
+    // Con sesión y sin permiso: solo amigos (o la base no lo confirmó). El
+    // botón para ir a su perfil y añadirle ya está en la cabecera.
+    return <LockedLibrary title={hiddenTitle} text={tp('libraryHiddenFriends')} />
   }
   const ctas = (
     <>

@@ -37,7 +37,7 @@ vi.mock('@/lib/supabase/server', () => ({
 import { recordSignup, resolveSignupAttribution } from '@/lib/analytics/signup'
 import { GET } from '@/app/api/auth/callback/route'
 
-const SIG = 'abcdefabcdefabcdefab'
+const SIG = '1790000000.0123456789abcdef0123456789abcdef'
 const recent = () => new Date(Date.now() - 60_000).toISOString()
 const call = (query: string, headers: Record<string, string> = { 'sec-fetch-site': 'same-origin' }) =>
   GET(new NextRequest(`https://k.test/api/auth/callback${query}`, { headers }))
@@ -109,6 +109,23 @@ describe('callback (D-12)', () => {
       { dedupeKey: 'signup_completed:u1' },
     )
     expect(h.acceptInvite).toHaveBeenCalledWith(expect.objectContaining({ id: 'u1' }), 'ana', SIG)
+  })
+
+  it('cuenta ANTIGUA sin onboarding terminado: ni alta ni invitación (aunque venga con ref e inv)', async () => {
+    h.user = { ...h.user!, created_at: '2026-01-01T00:00:00Z', email_confirmed_at: '2026-01-01T00:05:00Z' }
+    h.account = { data: { onboarded_at: null }, error: null }
+    const res = await call(`?code=abc&next=%2Fes%2Fhome&ref=x&inv=${SIG}`)
+    // Sigue yendo al onboarding como hoy, pero sin medir ni hacerse amiga de X.
+    expect(res.headers.get('location')).toBe('https://k.test/es/welcome?next=%2Fes%2Fhome')
+    expect(h.track).not.toHaveBeenCalled()
+    expect(h.acceptInvite).not.toHaveBeenCalled()
+  })
+
+  it('enlace de confirmación del alta (type=signup): cuenta de ayer con el correo recién confirmado sí cuenta', async () => {
+    h.user = { ...h.user!, created_at: new Date(Date.now() - 86_400_000).toISOString(), email_confirmed_at: recent() }
+    await call(`?token_hash=t&type=signup&next=%2Fes%2Fhome&ref=ana&inv=${SIG}`)
+    expect(h.track).toHaveBeenCalled()
+    expect(h.acceptInvite).toHaveBeenCalled()
   })
 
   it('cuenta que ya hizo el onboarding: no se registra otra alta', async () => {

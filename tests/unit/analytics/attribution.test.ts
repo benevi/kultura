@@ -9,7 +9,8 @@ import {
 } from '@/lib/analytics/attribution'
 
 const qs = (s: string) => new URLSearchParams(s)
-const SIG = '0123456789abcdef0123'
+// Formato `<exp>.<hmac>` (caduca): el de 20 hex de antes ya no se acepta.
+const SIG = '1790000000.0123456789abcdef0123456789abcdef'
 
 describe('parseAttribution', () => {
   it('sin nada → direct', () => {
@@ -33,6 +34,7 @@ describe('parseAttribution', () => {
   it('ref → canal ref; inv solo si tiene formato y acompaña a un ref', () => {
     expect(parseAttribution(qs(`ref=ana.gil&inv=${SIG}`))).toEqual({ channel: 'ref', ref: 'ana.gil', inv: SIG })
     expect(parseAttribution(qs('ref=ana&inv=zzz'))).toEqual({ channel: 'ref', ref: 'ana' })
+    expect(parseAttribution(qs('ref=ana&inv=0123456789abcdef0123'))).toEqual({ channel: 'ref', ref: 'ana' })
     expect(parseAttribution(qs(`inv=${SIG}`))).toEqual({ channel: 'direct' })
     expect(parseAttribution(qs('ref=<b>'))).toEqual({ channel: 'direct' })
   })

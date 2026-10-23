@@ -31,13 +31,13 @@ export interface Attribution {
 
 /** Lo que viaja por la URL: la atribución más la firma de la invitación. */
 export interface AttributionParams extends Attribution {
-  /** Firma de `ref` (ver `lib/analytics/invite.ts`). Nunca se guarda. */
+  /** Firma `<exp>.<hmac>` de `ref` (ver `lib/analytics/invite.ts`). Nunca se guarda. */
   inv?: string
 }
 
 /** Los mismos caracteres que admiten los nombres antiguos (con punto y guion). */
 const REF_RE = /^[A-Za-z0-9_.-]{2,40}$/
-const INV_RE = /^[0-9a-f]{20}$/
+const INV_RE = /^\d{9,11}\.[0-9a-f]{32}$/
 const UTM_MAX = 100
 
 type ParamSource = { get(name: string): string | null }
