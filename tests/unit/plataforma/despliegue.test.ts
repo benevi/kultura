@@ -30,9 +30,13 @@ describe(".nvmrc", () => {
   const nvmrc = read(".nvmrc").trim();
   const major = Number(nvmrc.replace(/^v/, "").split(".")[0]);
 
-  it("misma versión mayor que CI", () => {
-    const ci = /node-version:\s*['"]?(\d+)/.exec(read(".github/workflows/ci.yml"))?.[1];
-    expect(major).toBe(Number(ci));
+  it("misma versión mayor que CI (todos los workflows leen .nvmrc)", () => {
+    for (const wf of [".github/workflows/ci.yml", ".github/workflows/contract.yml"]) {
+      const text = read(wf);
+      const fixed = /node-version:\s*['"]?(\d+)/.exec(text)?.[1];
+      if (fixed) expect(Number(fixed)).toBe(major);
+      else expect(text).toMatch(/node-version-file:\s*\.nvmrc/);
+    }
   });
 
   it("misma versión mayor que el proyecto de Vercel (24.x)", () => {
@@ -40,9 +44,9 @@ describe(".nvmrc", () => {
   });
 
   it("cumple engines.node de package.json", () => {
+    // COD-E: `engines` fija la misma mayor (Vercel la usa para elegir Node).
     const engines = JSON.parse(read("package.json")).engines.node as string;
-    const min = Number(/>=\s*(\d+)/.exec(engines)?.[1]);
-    expect(major).toBeGreaterThanOrEqual(min);
+    expect(engines).toBe(`${major}.x`);
   });
 });
 

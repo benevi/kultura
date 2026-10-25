@@ -21,7 +21,7 @@
     "verify": "npm run build && npm run test:all"
   },
   "engines": {
-    "node": ">=22"
+    "node": "24.x"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.133.0",

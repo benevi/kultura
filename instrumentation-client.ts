@@ -1,10 +1,14 @@
 // ============================================================
 // KULTURA — Sentry (C1), runtime cliente (navegador).
-// Cargado automáticamente por el plugin de @sentry/nextjs (ver
-// withSentryConfig en next.config.mjs) — no requiere import manual.
+// `instrumentation-client.ts` es la convención de Next 15 para el código que
+// corre en el navegador antes de hidratar; sustituye a `sentry.client.config.ts`
+// (que el plugin de @sentry/nextjs inyectaba y ya marca como obsoleto).
 //
 // Sin NEXT_PUBLIC_SENTRY_DSN el SDK queda inactivo: no hace red, no lanza.
-// Mismo patrón de degradación que ANTHROPIC_API_KEY/COMICVINE_KEY (env.ts).
+// Mismo patrón de degradación que ANTHROPIC_API_KEY/COMICVINE_KEY (env.server.ts).
+//
+// Sin `onRouterTransitionStart`: solo sirve para trazas de navegación y el
+// tracing del navegador está fuera (ver abajo).
 // ============================================================
 
 import * as Sentry from "@sentry/nextjs";
