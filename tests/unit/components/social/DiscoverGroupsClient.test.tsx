@@ -4,7 +4,7 @@
 // mapeo de filtro UI→API (scope) y paginación "cargar más".
 // ============================================================
 
-import { render, screen, fireEvent } from '@testing-library/react'
+import { act, render, screen, fireEvent } from '@testing-library/react'
 import { describe, it, expect, vi, beforeAll, beforeEach, afterEach } from 'vitest'
 
 // FilterBar v3 = TODO popover (incl. single como 'scope'). Radix Popover toca
@@ -74,7 +74,7 @@ describe('DiscoverGroupsClient', () => {
     render(<DiscoverGroupsClient />)
 
     // Debounce 400ms antes del primer fetch.
-    await vi.advanceTimersByTimeAsync(400)
+    await act(() => vi.advanceTimersByTimeAsync(400))
 
     expect(mockFetch).toHaveBeenCalledTimes(1)
     expect(screen.getByText('Group 1')).toBeInTheDocument()
@@ -87,7 +87,7 @@ describe('DiscoverGroupsClient', () => {
     mockFetch.mockResolvedValueOnce(okJson([]))
     render(<DiscoverGroupsClient />)
 
-    await vi.advanceTimersByTimeAsync(400)
+    await act(() => vi.advanceTimersByTimeAsync(400))
 
     expect(screen.getByText('noGroupsFound')).toBeInTheDocument()
   })
@@ -95,13 +95,13 @@ describe('DiscoverGroupsClient', () => {
   it('maps "I am a member" filter to scope=joined in the API call', async () => {
     mockFetch.mockResolvedValue(okJson([]))
     render(<DiscoverGroupsClient />)
-    await vi.advanceTimersByTimeAsync(400)
+    await act(() => vi.advanceTimersByTimeAsync(400))
 
     // FilterBar v3: scope (single) es popover. Abrir el trigger y luego clicar
     // la opción scopeMember (mapea a scope=joined).
     fireEvent.click(screen.getByRole('button', { name: 'scope' }))
     fireEvent.click(screen.getByText('scopeMember'))
-    await vi.advanceTimersByTimeAsync(400)
+    await act(() => vi.advanceTimersByTimeAsync(400))
 
     const lastUrl = mockFetch.mock.calls.at(-1)![0] as string
     expect(lastUrl).toContain('scope=joined')
@@ -111,7 +111,7 @@ describe('DiscoverGroupsClient', () => {
     const firstPage = Array.from({ length: 50 }, (_, i) => makeGroup(i + 1))
     mockFetch.mockResolvedValueOnce(okJson(firstPage))
     render(<DiscoverGroupsClient />)
-    await vi.advanceTimersByTimeAsync(400)
+    await act(() => vi.advanceTimersByTimeAsync(400))
 
     const loadMore = screen.getByText('loadMore')
     expect(loadMore).toBeInTheDocument()
@@ -119,7 +119,7 @@ describe('DiscoverGroupsClient', () => {
     mockFetch.mockResolvedValueOnce(okJson([makeGroup(51)]))
     fireEvent.click(loadMore)
     // Load-more no tiene debounce; flush microtasks de la promesa fetch.
-    await vi.advanceTimersByTimeAsync(0)
+    await act(() => vi.advanceTimersByTimeAsync(0))
     expect(screen.getByText('Group 51')).toBeInTheDocument()
 
     // offset=50 en la segunda llamada.

@@ -38,7 +38,7 @@ export async function getFriendsFeed(
   userId: string,
   limit = 30
 ): Promise<FeedEntry[]> {
-  const supabase = createClient()
+  const supabase = await createClient()
 
   // 1. IDs de amigos aceptados (ambas direcciones)
   const { data: friendships, error: friendError } = await supabase

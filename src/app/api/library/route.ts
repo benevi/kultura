@@ -34,7 +34,7 @@ function mapEntry(row: DbUserMedia): LibraryEntry {
 
 /** POST /api/library — upsert en user_media */
 export async function POST(request: Request): Promise<NextResponse> {
-  const supabase = createClient()
+  const supabase = await createClient()
 
   // 1. Autenticar
   const { data: { user }, error: authError } = await supabase.auth.getUser()
@@ -147,7 +147,7 @@ export async function POST(request: Request): Promise<NextResponse> {
 
 /** DELETE /api/library — eliminar entrada de user_media */
 export async function DELETE(request: Request): Promise<NextResponse> {
-  const supabase = createClient()
+  const supabase = await createClient()
 
   // 1. Autenticar
   const { data: { user }, error: authError } = await supabase.auth.getUser()

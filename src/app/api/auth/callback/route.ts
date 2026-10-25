@@ -23,7 +23,7 @@ function isOtpType(value: string | null): value is EmailOtpType {
   return value !== null && (OTP_TYPES as readonly string[]).includes(value);
 }
 
-type ServerClient = ReturnType<typeof createClient>;
+type ServerClient = Awaited<ReturnType<typeof createClient>>;
 
 /**
  * Personaje elegido en el alta (E-AVATAR-ICONS). Con confirmación por correo
@@ -222,11 +222,11 @@ export async function GET(request: NextRequest) {
   // Alta inmediata (confirmación desactivada, D-08): `signUp` ya abrió la
   // sesión en el navegador; aquí solo se registra el alta y se va a /welcome.
   // Sin sesión, al destino como cualquier otra vuelta (que pedirá entrar).
-  if (!code && !tokenHash && signupFlow) return done(createClient());
+  if (!code && !tokenHash && signupFlow) return done(await createClient());
 
   if (tokenHash) {
     if (!isOtpType(type)) return fail("auth_callback_error");
-    const supabase = createClient();
+    const supabase = await createClient();
     const { error } = await supabase.auth
       .verifyOtp({ type, token_hash: tokenHash })
       .catch((e: unknown) => ({ error: e as AuthErrorLike }));
@@ -234,7 +234,7 @@ export async function GET(request: NextRequest) {
   }
 
   if (code) {
-    const supabase = createClient();
+    const supabase = await createClient();
     const { error } = await supabase.auth
       .exchangeCodeForSession(code)
       .catch((e: unknown) => ({ error: e as AuthErrorLike }));

@@ -138,7 +138,7 @@ export default async function MediaDetailPage({ params }: Props) {
 
   const { item } = data;
   const { user } = await getViewer();
-  const supabase = user ? createClient() : null;
+  const supabase = user ? await createClient() : null;
 
   const [initialEntry, kulturaRating, matchScores, synopsis, t, tMedia] = await Promise.all([
     user ? getMediaEntry(user.id, item.id).catch(() => null) : Promise.resolve(null),

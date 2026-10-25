@@ -15,12 +15,13 @@ export async function generateMetadata(): Promise<Metadata> {
 
 interface SettingsPageProps {
   params: Promise<{ locale: string }>
-  searchParams?: { email?: string }
+  searchParams?: Promise<{ email?: string }>
 }
 
 export default async function SettingsPage({ params, searchParams }: SettingsPageProps) {
   const { locale } = await params
-  const supabase = createClient()
+  const query = (await searchParams) ?? {}
+  const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect(`/${locale}/login?next=${encodeURIComponent(`/${locale}/settings`)}`)
 
@@ -45,7 +46,7 @@ export default async function SettingsPage({ params, searchParams }: SettingsPag
         userEmail={user.email ?? ''}
         isDemo={isDemoUser(user)}
         // Vuelta del enlace de cambio de email (`/api/auth/callback`).
-        emailConfirmed={searchParams?.email === 'confirmed'}
+        emailConfirmed={query.email === 'confirmed'}
         initialLibraryVisibility={isDemoUser(user) ? null : initialLibraryVisibility}
         deletionRequestedAt={account.state?.deletion_requested_at ?? null}
         // Mismo cálculo que GET /api/account: con la bandera y la tabla, 7 días.

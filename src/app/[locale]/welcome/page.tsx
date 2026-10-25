@@ -23,7 +23,7 @@ import { WelcomeFlow } from './WelcomeFlow'
 
 interface WelcomeProps {
   params: Promise<{ locale: string }>
-  searchParams?: { next?: string }
+  searchParams?: Promise<{ next?: string }>
 }
 
 export async function generateMetadata({ params }: WelcomeProps): Promise<Metadata> {
@@ -40,11 +40,11 @@ const CLIENT_NAMESPACES = ['onboarding', 'auth', 'aiRecommendations', 'discoverF
 
 export default async function WelcomePage({ params, searchParams }: WelcomeProps) {
   const { locale } = await params
-  const next = resolveAuthNext(searchParams?.next ?? null, locale)
+  const next = resolveAuthNext((await searchParams)?.next ?? null, locale)
   // `next` nunca vuelve aquí: se cortaría el bucle al terminar.
   const finish = next.startsWith(`/${locale}/welcome`) ? `/${locale}/home` : next
 
-  const supabase = createClient()
+  const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) {
     redirect(`/${locale}/login?next=${encodeURIComponent(`/${locale}/welcome?next=${encodeURIComponent(finish)}`)}`)

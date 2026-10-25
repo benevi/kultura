@@ -49,7 +49,7 @@ vi.mock("next-intl/server", () => ({
 }));
 
 const { demo } = vi.hoisted(() => ({ demo: { email: "demo@example.com" as string | undefined } }));
-vi.mock("@/lib/env", () => ({
+vi.mock("@/lib/env.server", () => ({
   env: new Proxy({}, { get: (_t, prop) => (prop === "DEMO_USER_EMAIL" ? demo.email : undefined) }),
 }));
 

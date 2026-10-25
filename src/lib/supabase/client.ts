@@ -1,5 +1,5 @@
 import { createBrowserClient } from "@supabase/ssr";
-import { publicEnv } from "@/lib/env";
+import { publicEnv } from "@/lib/env.public";
 
 /**
  * Cliente Supabase para uso en Client Components.

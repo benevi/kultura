@@ -25,7 +25,7 @@ const AI_LIMIT = { windowMs: 60_000, max: 5 }
 
 /** GET /api/ai-recommendations */
 export async function GET(): Promise<NextResponse> {
-  const supabase = createClient()
+  const supabase = await createClient()
 
   const { data: { user }, error: authError } = await supabase.auth.getUser()
   if (authError || !user) {

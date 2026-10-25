@@ -124,7 +124,7 @@ function mapMember(row: GroupMemberRow): GroupMember {
  * Incluye el rol del usuario en cada grupo.
  */
 export async function getUserGroups(userId: string): Promise<Group[]> {
-  const supabase = createClient()
+  const supabase = await createClient()
 
   const { data, error } = await supabase
     .from('group_members')
@@ -147,7 +147,7 @@ export async function getUserGroups(userId: string): Promise<Group[]> {
  * Metadata de un grupo por su ID. Retorna null si no existe.
  */
 export async function getGroupById(groupId: string): Promise<Group | null> {
-  const supabase = createClient()
+  const supabase = await createClient()
 
   const { data, error } = await supabase
     .from('groups')
@@ -165,7 +165,7 @@ export async function getGroupById(groupId: string): Promise<Group | null> {
  * Miembros de un grupo con info de perfil. Máximo 20, ordenados por join date.
  */
 export async function getGroupMembers(groupId: string, limit = 20): Promise<GroupMember[]> {
-  const supabase = createClient()
+  const supabase = await createClient()
 
   const { data, error } = await supabase
     .from('group_members')
@@ -186,7 +186,7 @@ export async function getMemberRole(
   groupId: string,
   userId: string
 ): Promise<'owner' | 'member' | null> {
-  const supabase = createClient()
+  const supabase = await createClient()
 
   const { data } = await supabase
     .from('group_members')
@@ -236,7 +236,7 @@ export interface NewGroupInput {
 export async function createGroupRow(
   input: NewGroupInput
 ): Promise<{ group: DbGroup | null; error: { code?: string; message: string } | null }> {
-  const supabase = createClient()
+  const supabase = await createClient()
   const id = crypto.randomUUID()
 
   const { error } = await supabase.from('groups').insert({ id, ...input })
@@ -291,7 +291,7 @@ function inSizeBucket(count: number, size: DiscoverSize): boolean {
 export async function getDiscoverableGroups(
   params: DiscoverGroupsParams = {}
 ): Promise<DiscoverGroup[]> {
-  const supabase = createClient()
+  const supabase = await createClient()
 
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) throw new Error('Failed to fetch discoverable groups: not authenticated')
@@ -365,7 +365,7 @@ export async function getInvitableFriends(
   groupId: string,
   ownerId: string
 ): Promise<InvitableFriend[]> {
-  const supabase = createClient()
+  const supabase = await createClient()
 
   const [friendsRes, membersRes, pendingRes] = await Promise.all([
     supabase
@@ -442,7 +442,7 @@ function mapInvitation(row: DbGroupInvitation): GroupInvitation {
 
 /** Invitaciones pending enviadas para un grupo (visibles al inviter por RLS). */
 export async function getSentGroupInvitations(groupId: string): Promise<GroupInvitation[]> {
-  const supabase = createClient()
+  const supabase = await createClient()
 
   const { data, error } = await supabase
     .from('group_invitations')

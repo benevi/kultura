@@ -12,7 +12,12 @@ export async function posterDataUri(src: string): Promise<string | null> {
   // El optimizador de Next es relativo: aquí no hay origen, se pide el original.
   const url = small.startsWith("/") ? src : small;
   try {
-    const res = await fetch(url, { signal: AbortSignal.timeout(POSTER_TIMEOUT_MS) });
+    // Caché explícita (Next 15 no cachea `fetch` por defecto): una portada no
+    // cambia de un día para otro y la tarjeta se pide a menudo.
+    const res = await fetch(url, {
+      signal: AbortSignal.timeout(POSTER_TIMEOUT_MS),
+      next: { revalidate: 86400 },
+    });
     if (!res.ok) return null;
     const type = res.headers.get("content-type") ?? "";
     // satori solo pinta JPEG/PNG de forma fiable.

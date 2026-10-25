@@ -15,7 +15,7 @@ interface RouteParams {
 
 export async function GET(_req: NextRequest, { params }: RouteParams): Promise<NextResponse> {
   const { id } = await params
-  const supabase = createClient()
+  const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return NextResponse.json({ error: 'Not authenticated' }, { status: 401 })
 
@@ -58,7 +58,7 @@ export async function GET(_req: NextRequest, { params }: RouteParams): Promise<N
 
 export async function POST(req: NextRequest, { params }: RouteParams): Promise<NextResponse> {
   const { id } = await params
-  const supabase = createClient()
+  const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return NextResponse.json({ error: 'Not authenticated' }, { status: 401 })
 
@@ -106,7 +106,7 @@ export async function POST(req: NextRequest, { params }: RouteParams): Promise<N
 /** DELETE /api/chat/[id] — salir de la conversación (F-11, con MODERATION_V2). */
 export async function DELETE(_req: NextRequest, { params }: RouteParams): Promise<NextResponse> {
   const { id } = await params
-  const supabase = createClient()
+  const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return NextResponse.json({ error: 'Not authenticated' }, { status: 401 })
   if (!isModerationV2()) return NextResponse.json({ error: 'moderation_disabled' }, { status: 404 })

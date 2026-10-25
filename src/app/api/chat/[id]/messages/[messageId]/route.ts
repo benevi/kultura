@@ -15,7 +15,7 @@ interface RouteParams {
 
 export async function DELETE(_req: NextRequest, { params }: RouteParams): Promise<NextResponse> {
   const { id, messageId } = await params
-  const supabase = createClient()
+  const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return NextResponse.json({ error: 'Not authenticated' }, { status: 401 })
   if (!isModerationV2()) return NextResponse.json({ error: 'moderation_disabled' }, { status: 404 })

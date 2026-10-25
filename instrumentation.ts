@@ -12,7 +12,7 @@
  */
 export async function register() {
   if (process.env.NEXT_RUNTIME === "nodejs") {
-    const { parseServerEnv } = await import("./src/lib/env");
+    const { parseServerEnv } = await import("./src/lib/env.server");
     parseServerEnv();
     await import("./sentry.server.config");
   }

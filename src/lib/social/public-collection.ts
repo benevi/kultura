@@ -219,7 +219,7 @@ async function loadSequential(supabase: SupabaseClient, username: string): Promi
 }
 
 async function loadCollection(username: string): Promise<PublicCollection | null> {
-  const supabase = createClient()
+  const supabase = await createClient()
   const nested = await supabase
     .from('users')
     .select(NESTED_SELECT)
@@ -255,7 +255,7 @@ export async function getPublicList(
   username: string,
   listId: string,
 ): Promise<{ owner: PublicOwner; list: PublicList } | null> {
-  const supabase = createClient()
+  const supabase = await createClient()
   const ownerRow = await getOwner(supabase, username)
   if (!ownerRow) return null
 
@@ -291,7 +291,7 @@ export async function getPublicList(
 
 /** ¿Existe alguien con ese nombre? (para distinguir "lista privada" de "nombre antiguo"). */
 export async function usernameExists(username: string): Promise<boolean> {
-  const supabase = createClient()
+  const supabase = await createClient()
   const { data } = await supabase.from('users').select('id').eq('username', username).maybeSingle()
   return Boolean(data)
 }
@@ -303,7 +303,7 @@ export async function usernameExists(username: string): Promise<boolean> {
  * y devuelve `null` (un 404 de los de siempre).
  */
 export async function resolveRenamedUsername(oldUsername: string): Promise<string | null> {
-  const supabase = createClient()
+  const supabase = await createClient()
   const { data, error } = await supabase.rpc('username_redirect', { p_username: oldUsername })
   if (error || typeof data !== 'string' || !data || data === oldUsername) return null
   return data
@@ -311,7 +311,7 @@ export async function resolveRenamedUsername(oldUsername: string): Promise<strin
 
 /** ¿Tiene el usuario al menos una lista pública? (para enseñar "Compartir colección") */
 export async function hasPublicLists(userId: string): Promise<boolean> {
-  const supabase = createClient()
+  const supabase = await createClient()
   const { count } = await supabase
     .from('lists')
     .select('id', { count: 'exact', head: true })

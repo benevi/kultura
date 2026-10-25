@@ -72,7 +72,7 @@ export default async function PublicListPage({ params }: Props) {
     notFound()
   }
 
-  const supabase = createClient()
+  const supabase = await createClient()
   const signedIn = await supabase.auth
     .getUser()
     .then(({ data: auth }) => Boolean(auth.user))

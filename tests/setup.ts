@@ -1,7 +1,7 @@
 import "@testing-library/jest-dom";
 
 // Defaults de env para tests unitarios: cualquier módulo que importe
-// `@/lib/env` valida estos valores al cargar (E24). Valores dummy válidos
+// `@/lib/env.public` / `@/lib/env.server` validan estos valores al cargar (E24). Valores dummy válidos
 // según el schema Zod — los tests mockean fetch, así que no se usan de verdad.
 //
 // Vars con validación de FORMATO (.startsWith / .url) se SOBREESCRIBEN siempre

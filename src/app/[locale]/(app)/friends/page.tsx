@@ -31,7 +31,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
 export default async function FriendsPage({ params }: Props) {
   const { locale } = await params
-  const supabase = createClient()
+  const supabase = await createClient()
   const { data: { user }, error: authError } = await supabase.auth.getUser()
   if (authError || !user) redirect(`/${locale}/login?next=${encodeURIComponent(`/${locale}/friends`)}`)
 

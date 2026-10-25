@@ -33,6 +33,9 @@ export const FORMAT_HEX = Object.fromEntries(
   IMMERSIVE_FORMATS.map((type) => [type, toHex(oklchToSrgb({ l: 0.8, c: 0.2, h: TYPE_HUE[type] }))])
 ) as Record<MediaType, string>;
 
+/** Una semana en la caché de datos: la fuente recortada para un texto no cambia. */
+const FONT_CACHE = { next: { revalidate: 7 * 86400 } } as const;
+
 /**
  * Las tipografías de la app (Bricolage + Figtree), recortadas a los glifos
  * que se usan. Si Google Fonts no responde, la tarjeta sale con la fuente por
@@ -40,14 +43,30 @@ export const FORMAT_HEX = Object.fromEntries(
  */
 export async function loadFont(family: string, weight: number, text: string) {
   try {
+    // Next 15 no cachea `fetch` por defecto (en 14 sí): la hoja y el recorte
+    // de la fuente no cambian para un mismo texto, se guardan en la caché de
+    // datos en vez de pedirlos a Google Fonts en cada tarjeta.
     const css = await fetch(
       `https://fonts.googleapis.com/css2?family=${family}:wght@${weight}&text=${encodeURIComponent(text)}`,
+      FONT_CACHE,
     ).then((r) => r.text());
     const url = css.match(/src: url\((.+?)\) format/)?.[1];
     if (!url) return null;
-    const data = await fetch(url).then((r) => r.arrayBuffer());
+    const data = await fetch(url, FONT_CACHE).then((r) => r.arrayBuffer());
     return { name: family.replace(/\+/g, " "), data, weight: weight as 700 | 800, style: "normal" as const };
   } catch {
     return null;
   }
+}
+
+type LoadedFont = NonNullable<Awaited<ReturnType<typeof loadFont>>>;
+
+/**
+ * Opción `fonts` de `ImageResponse`. Con una lista VACÍA (Google Fonts no
+ * respondió) satori no usa su fuente por defecto y la tarjeta falla con "No
+ * fonts are loaded": sin fuentes cargadas se omite la opción para que salga
+ * con la fuente por defecto.
+ */
+export function fontsOption(fonts: LoadedFont[]): { fonts?: LoadedFont[] } {
+  return fonts.length > 0 ? { fonts } : {};
 }

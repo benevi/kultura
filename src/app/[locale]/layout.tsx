@@ -28,7 +28,7 @@ export async function generateMetadata({
   // el cliente); da el `og:url` de las páginas que no definen el suyo. Las
   // páginas ya son dinámicas por el nonce de la CSP: leer la cabecera no
   // cambia eso (si algún día se sirven estáticas, sale de aquí).
-  return shellMetadata(locale, headers().get("x-pathname"));
+  return shellMetadata(locale, (await headers()).get("x-pathname"));
 }
 
 /**

@@ -71,7 +71,7 @@ function parseEntry(raw: unknown): ImportableEntry | null {
 }
 
 export async function POST(request: NextRequest): Promise<NextResponse> {
-  const supabase = createClient()
+  const supabase = await createClient()
 
   const { data: { user }, error: authError } = await supabase.auth.getUser()
   if (authError || !user) {
@@ -184,7 +184,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
 async function importLists(
   raw: unknown,
   userId: string,
-  supabase: ReturnType<typeof createClient>
+  supabase: Awaited<ReturnType<typeof createClient>>
 ): Promise<number> {
   if (!Array.isArray(raw)) return 0
 

@@ -23,7 +23,7 @@ const log = createLogger('api/account/export')
  * Biblioteca, listas y amistades reusan las queries de sus pantallas.
  */
 export async function GET(): Promise<NextResponse> {
-  const supabase = createClient()
+  const supabase = await createClient()
 
   const { data: { user }, error: authError } = await supabase.auth.getUser()
   if (authError || !user) {

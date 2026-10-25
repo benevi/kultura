@@ -12,7 +12,7 @@ const CIRCLE_LIMIT = { windowMs: 60_000, max: 20 }
 
 /** GET /api/popular-in-circle */
 export async function GET(): Promise<NextResponse> {
-  const supabase = createClient()
+  const supabase = await createClient()
 
   const { data: { user }, error: authError } = await supabase.auth.getUser()
   if (authError || !user) {

@@ -18,7 +18,7 @@ export default async function AppLayout({
   // `next` si el middleware la ha dejado en `x-pathname`; si no, sin `next`.
   // Solo la zona con sesión redirige: la ficha (`/media`, D-01) es pública y
   // usa el mismo envoltorio sin esta comprobación.
-  if (!user) redirect(loginRedirectPath(locale, headers().get('x-pathname')))
+  if (!user) redirect(loginRedirectPath(locale, (await headers()).get('x-pathname')))
   if (!profile) redirect(`/${locale}/login`)
 
   const unreadCount = await getUnreadCount(user.id)

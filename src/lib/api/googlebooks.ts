@@ -23,7 +23,7 @@
 //   Descubrir lo convierte en `fetchErrorKind` (banner), no en pantalla roja.
 // ============================================================
 
-import { env } from "@/lib/env";
+import { env } from "@/lib/env.server";
 import { googleBooksLangRestrict } from "@/lib/api/locale";
 import type { ZodType } from "zod";
 import { providerFetch } from "@/lib/api/http";

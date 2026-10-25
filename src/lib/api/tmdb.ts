@@ -4,7 +4,7 @@
 // Docs: https://developer.themoviedb.org/reference/intro/getting-started
 // ============================================================
 
-import { env } from "@/lib/env";
+import { env } from "@/lib/env.server";
 import { tmdbLanguage, tmdbRegion } from "@/lib/api/locale";
 import { ProviderError, providerFetch } from "@/lib/api/http";
 import {

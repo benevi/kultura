@@ -17,7 +17,7 @@ export async function generateMetadata({
   params?: Promise<{ locale?: string }> | { locale?: string }
 }): Promise<Metadata> {
   const raw = (await params)?.locale
-  const locale = isAppLocale(raw) ? raw : localeFromAcceptLanguage(headers().get('accept-language'))
+  const locale = isAppLocale(raw) ? raw : localeFromAcceptLanguage((await headers()).get('accept-language'))
   const t = await getTranslations({ locale, namespace: 'errors' })
   return { title: { absolute: `${t('notFoundTitle')} · ${SITE_NAME}` }, robots: { index: false } }
 }

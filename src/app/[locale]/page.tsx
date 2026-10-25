@@ -21,7 +21,7 @@ import {
 import { BEST_FORMATS, bestYears } from "@/lib/best/best-of";
 import { IMMERSIVE_FORMATS, parseTitle, type HeroCopy } from "@/lib/landing/immersive";
 import { faqJsonLd, faqKeys, type FaqItem } from "@/lib/landing/faq";
-import { env } from "@/lib/env";
+import { env } from "@/lib/env.server";
 import { siteUrl } from "@/lib/site-url";
 import type { MediaType } from "@/types/media";
 import type { Metadata } from "next";

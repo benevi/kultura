@@ -19,11 +19,11 @@ let options: Record<string, unknown>;
 
 beforeAll(async () => {
   process.env.NEXT_PUBLIC_SENTRY_DSN = "https://key@o0.ingest.sentry.io/1";
-  await import("../../../sentry.client.config");
+  await import("../../../instrumentation-client");
   options = init.mock.calls[0]?.[0] as Record<string, unknown>;
 });
 
-describe("sentry.client.config.ts", () => {
+describe("instrumentation-client.ts (Sentry en el navegador)", () => {
   it("inicializa Sentry una vez con el DSN público (la captura de errores sigue)", () => {
     expect(init).toHaveBeenCalledTimes(1);
     expect(options.dsn).toBe("https://key@o0.ingest.sentry.io/1");

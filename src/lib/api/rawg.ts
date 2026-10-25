@@ -5,7 +5,7 @@
 // ============================================================
 
 import { RAWG_EXCLUDE_NSFW_TAGS, rawgDatesWindow } from "@/lib/api/rawg-maps";
-import { env } from "@/lib/env";
+import { env } from "@/lib/env.server";
 import { ProviderError, providerFetch } from "@/lib/api/http";
 import {
   rawgDetailSchema,

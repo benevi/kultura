@@ -19,7 +19,7 @@ export interface CircleMediaItem {
 }
 
 async function withoutPrivateLibraries(
-  supabase: ReturnType<typeof createClient>,
+  supabase: Awaited<ReturnType<typeof createClient>>,
   ids: string[],
 ): Promise<string[]> {
   const { data, error } = await supabase
@@ -45,7 +45,7 @@ export async function getPopularInCircle(
   userId: string,
   limit = 5
 ): Promise<CircleMediaItem[]> {
-  const supabase = createClient()
+  const supabase = await createClient()
 
   // 1. Obtener IDs de amigos aceptados
   const { data: friendships, error: friendError } = await supabase

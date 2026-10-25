@@ -31,7 +31,7 @@ interface UserMediaRow {
 }
 
 export async function getUserStats(userId: string): Promise<UserStats> {
-  const supabase = createClient()
+  const supabase = await createClient()
 
   const { data, error } = await supabase
     .from('user_media')

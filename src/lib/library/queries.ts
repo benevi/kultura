@@ -35,7 +35,7 @@ function mapEntry(row: UserMediaWithMedia): LibraryEntry {
  * Incluye datos de visualización de la tabla media (JOIN).
  */
 export async function getUserMedia(userId: string): Promise<LibraryEntry[]> {
-  const supabase = createClient()
+  const supabase = await createClient()
 
   const { data, error } = await supabase
     .from('user_media')
@@ -59,7 +59,7 @@ export async function getRecentLibraryByStatus(
   status: LibraryStatus,
   limit = 8
 ): Promise<LibraryEntry[]> {
-  const supabase = createClient()
+  const supabase = await createClient()
 
   const { data, error } = await supabase
     .from('user_media')
@@ -81,7 +81,7 @@ export async function getMediaEntry(
   userId: string,
   mediaId: string
 ): Promise<LibraryEntry | null> {
-  const supabase = createClient()
+  const supabase = await createClient()
 
   const { data, error } = await supabase
     .from('user_media')

@@ -60,7 +60,7 @@ async function ensureProfile(userId: string): Promise<boolean> {
 
 export default async function HomePage() {
   const t = await getTranslations('home')
-  const supabase = createClient()
+  const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/login')
 

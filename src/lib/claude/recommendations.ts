@@ -26,7 +26,7 @@
 // ============================================================
 
 import Anthropic from '@anthropic-ai/sdk'
-import { env } from '@/lib/env'
+import { env } from '@/lib/env.server'
 import { createClient } from '@/lib/supabase/server'
 import type { SupabaseClient } from '@supabase/supabase-js'
 import type { MediaItem, MediaType } from '@/types/media'
@@ -156,7 +156,7 @@ export function invalidateRecCache(userId: string): void {
  * completados o con score >= 4, ordenados por updated_at DESC, máx 15.
  */
 export async function getLibraryContext(userId: string, supabaseClient?: SupabaseClient): Promise<LibraryItem[]> {
-  const supabase = supabaseClient ?? createClient()
+  const supabase = supabaseClient ?? await createClient()
 
   const { data } = await supabase
     .from('user_media')
@@ -584,7 +584,7 @@ export async function getAiRecommendations(
   locale: string = 'es',
   supabaseClient?: SupabaseClient
 ): Promise<AiRec[]> {
-  const supabase = supabaseClient ?? createClient()
+  const supabase = supabaseClient ?? await createClient()
   return (await generateRecommendations(userId, topGenres, locale, supabase)).recs
 }
 
@@ -635,7 +635,7 @@ export async function getDailyAiRecommendations(
   if (running) return running
 
   const job = (async () => {
-    const supabase = supabaseClient ?? createClient()
+    const supabase = supabaseClient ?? await createClient()
     const generation = await generateRecommendations(userId, topGenres, locale, supabase, dayIndex(day))
     const result = toResult(generation)
     if (generation.recs.length > 0 && generation.outcome !== 'error') {

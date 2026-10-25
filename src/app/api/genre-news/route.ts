@@ -14,7 +14,7 @@ const GENRE_NEWS_LIMIT = { windowMs: 60_000, max: 20 }
 
 /** GET /api/genre-news */
 export async function GET(): Promise<NextResponse> {
-  const supabase = createClient()
+  const supabase = await createClient()
 
   const { data: { user }, error: authError } = await supabase.auth.getUser()
   if (authError || !user) {

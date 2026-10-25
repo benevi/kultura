@@ -26,7 +26,7 @@ interface Props {
 /** GET /api/groups/[id]/invitations → amigos invitables (owner-only). */
 export async function GET(_req: NextRequest, { params }: Props): Promise<NextResponse> {
   const { id: groupId } = await params
-  const supabase = createClient()
+  const supabase = await createClient()
 
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return NextResponse.json({ error: 'Not authenticated' }, { status: 401 })
@@ -42,7 +42,7 @@ export async function GET(_req: NextRequest, { params }: Props): Promise<NextRes
 /** POST /api/groups/[id]/invitations → invitar a un amigo (owner-only, friend-only). */
 export async function POST(req: NextRequest, { params }: Props): Promise<NextResponse> {
   const { id: groupId } = await params
-  const supabase = createClient()
+  const supabase = await createClient()
 
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return NextResponse.json({ error: 'Not authenticated' }, { status: 401 })

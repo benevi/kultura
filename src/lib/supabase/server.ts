@@ -1,6 +1,6 @@
 import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
-import { publicEnv } from "@/lib/env";
+import { publicEnv } from "@/lib/env.public";
 
 /**
  * Cliente Supabase para uso en Server Components, Route Handlers y Server Actions.
@@ -9,9 +9,12 @@ import { publicEnv } from "@/lib/env";
  * IMPORTANTE: El catch en setAll es necesario porque los Server Components
  * no pueden escribir cookies directamente — solo el middleware y los Route Handlers pueden.
  * La sesión se refresca correctamente via el middleware.
+ *
+ * Next 15: `cookies()` es asíncrono, así que la función también lo es y todos
+ * los usos llevan `await createClient()`.
  */
-export function createClient() {
-  const cookieStore = cookies();
+export async function createClient() {
+  const cookieStore = await cookies();
 
   return createServerClient(
     publicEnv.NEXT_PUBLIC_SUPABASE_URL,

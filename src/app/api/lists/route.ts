@@ -14,7 +14,7 @@ const VALID_TYPES = ['movie', 'tv', 'anime', 'book', 'comic', 'manga', 'game']
 
 /** GET /api/lists — listar listas propias, opcionalmente filtradas por ?mediaType= */
 export async function GET(request: Request): Promise<NextResponse> {
-  const supabase = createClient()
+  const supabase = await createClient()
 
   const { data: { user }, error: authError } = await supabase.auth.getUser()
   if (authError || !user) {
@@ -45,7 +45,7 @@ export async function GET(request: Request): Promise<NextResponse> {
 
 /** POST /api/lists — crear lista */
 export async function POST(request: Request): Promise<NextResponse> {
-  const supabase = createClient()
+  const supabase = await createClient()
 
   const { data: { user }, error: authError } = await supabase.auth.getUser()
   if (authError || !user) {
@@ -104,7 +104,7 @@ export async function POST(request: Request): Promise<NextResponse> {
 
 /** DELETE /api/lists — eliminar lista */
 export async function DELETE(request: Request): Promise<NextResponse> {
-  const supabase = createClient()
+  const supabase = await createClient()
 
   const { data: { user }, error: authError } = await supabase.auth.getUser()
   if (authError || !user) {

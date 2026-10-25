@@ -33,7 +33,7 @@ import { unstable_cache } from "next/cache";
 import { createClient } from "@supabase/supabase-js";
 import { routing } from "@/i18n/routing";
 import { siteUrl } from "@/lib/site-url";
-import { publicEnv } from "@/lib/env";
+import { publicEnv } from "@/lib/env.public";
 import {
   BEST_FORMATS,
   bestItemPath,

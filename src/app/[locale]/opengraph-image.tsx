@@ -1,8 +1,9 @@
 import { ImageResponse } from "next/og";
 import { getTranslations } from "next-intl/server";
-import { C, FORMAT_HEX, loadFont } from "@/lib/og/brand";
+import { C, FORMAT_HEX, loadFont, fontsOption } from "@/lib/og/brand";
 import { parseTitle } from "@/lib/landing/immersive";
 import es from "../../../messages/es.json";
+import en from "../../../messages/en.json";
 
 /**
  * Tarjeta que se ve al compartir el enlace (WhatsApp, X, Discord...).
@@ -21,11 +22,25 @@ export const contentType = "image/png";
  */
 export const alt: string = es.landing.seo.title;
 
-/** `alt` traducido (SEO-6): con un `alt` estático salía "KULTURA" en los dos idiomas. */
-export async function generateImageMetadata({ params }: { params: { locale: string } }) {
-  const locale = params.locale === "en" ? "en" : "es";
-  const t = await getTranslations({ locale, namespace: "landing" });
-  return [{ id: "card", alt: t("seo.title"), size, contentType }];
+type Params = { locale: string };
+
+/**
+ * `alt` traducido (SEO-6): con un `alt` estático salía "KULTURA" en los dos
+ * idiomas.
+ *
+ * Next 15 resuelve `generateImageMetadata` junto a los metadatos de CADA
+ * página del segmento, en una capa donde `next-intl/server` no está
+ * disponible ("getTranslations is not supported in Client Components"): el
+ * error rompía el render de todas las páginas con sesión. Por eso el texto se
+ * lee directamente de los mensajes, sin `getTranslations`.
+ *
+ * `params` llega como objeto en Next 15 y como Promise en 16: se acepta lo uno
+ * y lo otro (como en las demás tarjetas) para no depender de la versión.
+ */
+export async function generateImageMetadata({ params }: { params: Params | Promise<Params> }) {
+  const locale = (await params).locale === "en" ? "en" : "es";
+  const messages = locale === "en" ? en : es;
+  return [{ id: "card", alt: messages.landing.seo.title, size, contentType }];
 }
 
 type Segment = { text: string; color: string };
@@ -67,8 +82,8 @@ function tail(sub: string): string {
   return parts[parts.length - 1] ?? sub;
 }
 
-export default async function Image({ params }: { params: { locale: string } }) {
-  const locale = params.locale === "en" ? "en" : "es";
+export default async function Image({ params }: { params: Params | Promise<Params> }) {
+  const locale = (await params).locale === "en" ? "en" : "es";
   const t = await getTranslations({ locale, namespace: "landing" });
   const title = parseTitle(t.raw("hero.title") as string);
   const lema = tail(t("hero.sub"));
@@ -159,6 +174,6 @@ export default async function Image({ params }: { params: { locale: string } }) 
         <div style={{ display: "flex", fontSize: 34, fontWeight: 700, marginTop: 30, color: C.muted }}>{lema}</div>
       </div>
     ),
-    { ...size, fonts },
+    { ...size, ...fontsOption(fonts) },
   );
 }

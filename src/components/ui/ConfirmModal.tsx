@@ -17,7 +17,7 @@ interface ConfirmModalProps {
   /** Estado de carga: deshabilita y muestra spinner en el botón de confirmar. */
   loading?: boolean
   /** Dónde vuelve el foco si el botón que lo abrió desaparece al confirmar. */
-  finalFocusRef?: RefObject<HTMLElement>
+  finalFocusRef?: RefObject<HTMLElement | null>
   /** Error al confirmar: se anuncia dentro del diálogo. */
   error?: string | null
 }

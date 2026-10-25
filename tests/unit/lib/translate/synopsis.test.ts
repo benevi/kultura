@@ -24,7 +24,7 @@ vi.mock("@anthropic-ai/sdk", () => ({
 
 vi.mock("@/lib/supabase/admin", () => ({ createAdminClient: adminClientMock }));
 
-vi.mock("@/lib/env", () => ({
+vi.mock("@/lib/env.server", () => ({
   env: new Proxy({} as Record<string, string>, {
     get: (_t, prop: string) =>
       prop === "ANTHROPIC_API_KEY" ? process.env.__TEST_ANTHROPIC_KEY : undefined,

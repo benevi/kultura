@@ -25,7 +25,7 @@ function mapNotification(row: DbNotification): AppNotification {
 }
 
 export async function getNotifications(userId: string): Promise<AppNotification[]> {
-  const supabase = createClient()
+  const supabase = await createClient()
 
   const { data, error } = await supabase
     .from('notifications')
@@ -40,7 +40,7 @@ export async function getNotifications(userId: string): Promise<AppNotification[
 }
 
 export async function getUnreadCount(userId: string): Promise<number> {
-  const supabase = createClient()
+  const supabase = await createClient()
 
   const { count, error } = await supabase
     .from('notifications')
@@ -54,7 +54,7 @@ export async function getUnreadCount(userId: string): Promise<number> {
 }
 
 export async function markAllRead(userId: string): Promise<void> {
-  const supabase = createClient()
+  const supabase = await createClient()
 
   await supabase
     .from('notifications')
@@ -64,7 +64,7 @@ export async function markAllRead(userId: string): Promise<void> {
 }
 
 export async function markOneRead(notificationId: string, userId: string): Promise<void> {
-  const supabase = createClient()
+  const supabase = await createClient()
 
   await supabase
     .from('notifications')
