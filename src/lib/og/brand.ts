@@ -58,3 +58,15 @@ export async function loadFont(family: string, weight: number, text: string) {
     return null;
   }
 }
+
+type LoadedFont = NonNullable<Awaited<ReturnType<typeof loadFont>>>;
+
+/**
+ * Opción `fonts` de `ImageResponse`. Con una lista VACÍA (Google Fonts no
+ * respondió) satori no usa su fuente por defecto y la tarjeta falla con "No
+ * fonts are loaded": sin fuentes cargadas se omite la opción para que salga
+ * con la fuente por defecto.
+ */
+export function fontsOption(fonts: LoadedFont[]): { fonts?: LoadedFont[] } {
+  return fonts.length > 0 ? { fonts } : {};
+}

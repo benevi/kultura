@@ -1,5 +1,5 @@
 import { ImageResponse } from "next/og";
-import { C, loadFont } from "@/lib/og/brand";
+import { C, loadFont, fontsOption } from "@/lib/og/brand";
 import { posterDataUri } from "@/lib/og/poster";
 import { getBestOf, parseBestParams, type BestFormat } from "@/lib/best/best-of";
 
@@ -153,6 +153,6 @@ export default async function Image({ params }: { params: Params | Promise<Param
         </div>
       </div>
     ),
-    { ...size, fonts },
+    { ...size, ...fontsOption(fonts) },
   );
 }

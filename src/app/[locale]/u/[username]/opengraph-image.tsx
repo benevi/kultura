@@ -1,5 +1,5 @@
 import { ImageResponse } from "next/og";
-import { C, loadFont } from "@/lib/og/brand";
+import { C, loadFont, fontsOption } from "@/lib/og/brand";
 import { posterDataUri } from "@/lib/og/poster";
 import { getPublicCollection, resolveRenamedUsername } from "@/lib/social/public-collection";
 
@@ -149,6 +149,6 @@ export default async function Image({
         </div>
       </div>
     ),
-    { ...size, fonts },
+    { ...size, ...fontsOption(fonts) },
   );
 }
