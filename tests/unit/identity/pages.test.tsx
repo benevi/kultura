@@ -92,7 +92,7 @@ describe('/welcome', () => {
 
   async function page(next?: string) {
     const { default: WelcomePage } = await import('@/app/[locale]/welcome/page')
-    return WelcomePage({ params: Promise.resolve({ locale: 'es' }), searchParams: next ? { next } : {} })
+    return WelcomePage({ params: Promise.resolve({ locale: 'es' }), searchParams: Promise.resolve(next ? { next } : {}) })
   }
 
   it('sin sesión → login con vuelta al onboarding', async () => {

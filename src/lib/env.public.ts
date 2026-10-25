@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { emptyToUndefined, formatEnvIssues } from "@/lib/env-utils";
 
 /**
  * Variables de entorno PÚBLICAS validadas (E24, SEG-11).
@@ -13,16 +14,6 @@ import { z } from "zod";
  * Las vars de test (SUPABASE_TEST_*, TEST_USER_*) NO van aquí: solo viven en
  * scripts y tests, y no deben romper el build de la app si faltan.
  */
-
-/** Trata el string vacío como ausente para vars opcionales. */
-export const emptyToUndefined = (v: unknown) => (v === "" ? undefined : v);
-
-/** Lista qué vars fallan (con el motivo) para un error claro al arrancar. */
-export function formatEnvIssues(error: z.ZodError): string {
-  return error.issues
-    .map((i) => `  - ${i.path.join(".") || "(root)"}: ${i.message}`)
-    .join("\n");
-}
 
 const publicSchema = z.object({
   NEXT_PUBLIC_SUPABASE_URL: z.string().url(),

@@ -659,8 +659,12 @@ async function attemptOnce(
     if (opts.body !== undefined) init.body = opts.body;
     // Dentro de `unstable_cache` Next fuerza no-store en el fetch interno; el
     // `revalidate` solo evita que, fuera de él, el fetch se marque dinámico.
+    // Next 15 ya no cachea `fetch` por defecto: la caché va siempre explícita,
+    // también el "sin caché" de las sondas de salud.
     if (opts.cache !== false) {
       init.next = { revalidate: opts.cache?.revalidate ?? PROVIDER_REVALIDATE_SECONDS };
+    } else {
+      init.cache = "no-store";
     }
     let res: Response;
     // ROJO-9: cada intento real gasta cupo del proveedor (también el que

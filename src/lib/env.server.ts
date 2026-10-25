@@ -1,6 +1,6 @@
 import "server-only";
 import { z } from "zod";
-import { emptyToUndefined, formatEnvIssues } from "@/lib/env.public";
+import { emptyToUndefined, formatEnvIssues } from "@/lib/env-utils";
 
 /**
  * Secretos de SERVIDOR validados (E24, SEG-11).

@@ -98,9 +98,11 @@ describe("Revisa tu correo: reenviar (ROJO-2)", () => {
 
     const button = screen.getByRole("button", { name: `resendIn:${RESEND_COOLDOWN_SECONDS}` });
     expect(button).toBeDisabled();
+    // React 19: cada tic de la cuenta atrás es un efecto nuevo; el `act`
+    // asíncrono deja que React aplique el render y programe el siguiente.
     for (let i = 0; i < RESEND_COOLDOWN_SECONDS; i++) {
-      act(() => {
-        vi.advanceTimersByTime(1000);
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(1000);
       });
     }
     vi.useRealTimers();
