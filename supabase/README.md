@@ -159,11 +159,14 @@ un proyecto Supabase **separado** del de producción:
 ```
 SUPABASE_TEST_URL=
 SUPABASE_TEST_ANON_KEY=
+SUPABASE_TEST_SERVICE_ROLE_KEY=
 ```
 
-Ambas viven en `.env.local` (no commiteado) y en GitHub Secrets cuando
-CI ejecute la suite de integración (todavía no — el workflow actual
-solo corre unit tests).
+En local van en `.env.local` (no commiteado). En CI, el job *Integración*
+de `.github/workflows/ci.yml` las lee de los secretos `TEST_SUPABASE_URL`,
+`TEST_SUPABASE_ANON_KEY` y `TEST_SUPABASE_SERVICE_ROLE_KEY`; no corre en los
+PR (una migración nueva aún no está aplicada en test), solo a mano o
+programado, después de aplicarla.
 
 ## Copias de seguridad
 
