@@ -3,6 +3,9 @@ import { headers } from 'next/headers'
 import { loginRedirectPath } from '@/lib/utils/safe-redirect'
 import { getUnreadCount } from '@/lib/social/notifications'
 import { AppChrome, getChromeSession } from '@/components/layout/AppChrome'
+import { getTranslations } from 'next-intl/server'
+import { PwaShell } from '@/components/pwa/PwaShell'
+import type { InstallLabels } from '@/components/pwa/InstallPrompt'
 
 export default async function AppLayout({
   children,
@@ -21,11 +24,21 @@ export default async function AppLayout({
   if (!user) redirect(loginRedirectPath(locale, (await headers()).get('x-pathname')))
   if (!profile) redirect(`/${locale}/login`)
 
-  const unreadCount = await getUnreadCount(user.id)
+  const [unreadCount, t] = await Promise.all([
+    getUnreadCount(user.id),
+    getTranslations({ locale, namespace: 'pwa.install' }),
+  ])
 
   return (
     <AppChrome user={user} profile={profile} unreadCount={unreadCount}>
       {children}
+      {/* F-23: service worker y aviso de instalación (MOV-2, MOV-3). */}
+      <PwaShell installLabels={installLabels(t)} />
     </AppChrome>
   )
+}
+
+function installLabels(t: (key: keyof InstallLabels) => string): InstallLabels {
+  const keys = ['title', 'body', 'action', 'later', 'iosTitle', 'iosStepShare', 'iosStepAdd', 'iosDone'] as const
+  return Object.fromEntries(keys.map((key) => [key, t(key)])) as unknown as InstallLabels
 }

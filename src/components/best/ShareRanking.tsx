@@ -12,6 +12,7 @@
 
 import { useEffect, useId, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
+import { prepareShareImage, shareNative } from "@/components/pwa/share";
 
 interface ShareRankingProps {
   /** Ruta con locale, p. ej. "/es/best/anime/2026". */
@@ -61,15 +62,9 @@ export function ShareRanking({ path, title }: ShareRankingProps) {
       setOpen(false);
       return;
     }
-    if (typeof navigator.share === "function") {
-      try {
-        await navigator.share({ title, text, url: fullUrl() });
-        return;
-      } catch (err) {
-        if (err instanceof DOMException && err.name === "AbortError") return;
-        // Hoja nativa no disponible de verdad (p. ej. sin gesto): menú.
-      }
-    }
+    // Hoja nativa con la tarjeta del ranking (MOV-9); si no la hay de verdad
+    // (p. ej. sin gesto), menú.
+    if ((await shareNative({ title, text, url: fullUrl(), imagePath: path })) !== "unavailable") return;
     setOpen(true);
   }
 
@@ -96,6 +91,8 @@ export function ShareRanking({ path, title }: ShareRankingProps) {
         aria-expanded={open}
         aria-controls={menuId}
         onClick={share}
+        onPointerEnter={() => void prepareShareImage(path)}
+        onFocus={() => void prepareShareImage(path)}
       >
         <svg aria-hidden="true" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
           <path d="M12 3v12M7 8l5-5 5 5M5 13v6a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-6" />

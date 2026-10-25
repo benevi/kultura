@@ -1521,6 +1521,30 @@
     "cta": "Crear mi cuenta",
     "readOnly": "Es una demo: esto no se guarda. Crea tu cuenta para usarlo de verdad."
   },
+  "pwa": {
+    "offline": {
+      "metaTitle": "Sin conexión",
+      "title": "Sin conexión",
+      "body": "Ahora mismo no hay internet. En cuanto vuelva, KULTURA seguirá donde lo dejaste.",
+      "safe": "Tu biblioteca y tus listas no se pierden: se guardan en tu cuenta, no en este dispositivo.",
+      "retry": "Reintentar",
+      "home": "Ir a la portada"
+    },
+    "install": {
+      "title": "Instala KULTURA",
+      "body": "Ábrela desde la pantalla de inicio, a pantalla completa y sin buscar la pestaña.",
+      "action": "Instalar",
+      "later": "Ahora no",
+      "iosTitle": "Añade KULTURA a tu pantalla de inicio",
+      "iosStepShare": "Toca Compartir en la barra del navegador.",
+      "iosStepAdd": "Elige «Añadir a pantalla de inicio».",
+      "iosDone": "Entendido"
+    },
+    "loading": {
+      "chat": "Cargando conversaciones…",
+      "notifications": "Cargando avisos…"
+    }
+  },
   "best": {
     "title": {
       "anime": "Los mejores animes de {year}",

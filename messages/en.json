@@ -1521,6 +1521,30 @@
     "cta": "Create my account",
     "readOnly": "This is a demo, so nothing is saved. Create your account to use it for real."
   },
+  "pwa": {
+    "offline": {
+      "metaTitle": "You're offline",
+      "title": "You're offline",
+      "body": "There's no internet right now. As soon as it's back, KULTURA will pick up where you left off.",
+      "safe": "Your library and lists are safe: they're stored in your account, not on this device.",
+      "retry": "Try again",
+      "home": "Go to the home page"
+    },
+    "install": {
+      "title": "Install KULTURA",
+      "body": "Open it from your home screen, full screen, without hunting for the tab.",
+      "action": "Install",
+      "later": "Not now",
+      "iosTitle": "Add KULTURA to your home screen",
+      "iosStepShare": "Tap Share in the browser bar.",
+      "iosStepAdd": "Choose “Add to Home Screen”.",
+      "iosDone": "Got it"
+    },
+    "loading": {
+      "chat": "Loading conversations…",
+      "notifications": "Loading notifications…"
+    }
+  },
   "best": {
     "title": {
       "anime": "Best anime of {year}",

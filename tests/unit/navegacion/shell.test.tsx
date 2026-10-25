@@ -62,6 +62,8 @@ vi.mock('@/components/layout/UnreadChatProvider', () => ({
   UnreadChatProvider: ({ children }: { children: React.ReactNode }) => <>{children}</>,
 }))
 vi.mock('@/components/layout/DemoBanner', () => ({ DemoBanner: () => null }))
+// F-23: el service worker y el aviso de instalación tienen sus tests en tests/unit/pwa.
+vi.mock('@/components/pwa/PwaShell', () => ({ PwaShell: () => null }))
 vi.mock('@/lib/demo', () => ({ isDemoUser: () => false }))
 
 import AppLayout from '@/app/[locale]/(app)/layout'
