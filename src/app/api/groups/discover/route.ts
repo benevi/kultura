@@ -19,7 +19,7 @@ const QuerySchema = z.object({
 })
 
 export async function GET(req: NextRequest): Promise<NextResponse> {
-  const supabase = createClient()
+  const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return NextResponse.json({ error: 'Not authenticated' }, { status: 401 })
 

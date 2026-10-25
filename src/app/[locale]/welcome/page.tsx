@@ -44,7 +44,7 @@ export default async function WelcomePage({ params, searchParams }: WelcomeProps
   // `next` nunca vuelve aquí: se cortaría el bucle al terminar.
   const finish = next.startsWith(`/${locale}/welcome`) ? `/${locale}/home` : next
 
-  const supabase = createClient()
+  const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) {
     redirect(`/${locale}/login?next=${encodeURIComponent(`/${locale}/welcome?next=${encodeURIComponent(finish)}`)}`)

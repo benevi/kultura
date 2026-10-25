@@ -23,7 +23,7 @@ import { ACCOUNT_GRACE_DAYS, purgeDate } from '@/app/api/settings/identity'
 
 const log = createLogger('api/account')
 
-type ServerClient = ReturnType<typeof createClient>
+type ServerClient = Awaited<ReturnType<typeof createClient>>
 
 async function currentUser(supabase: ServerClient) {
   const { data: { user }, error } = await supabase.auth.getUser()
@@ -42,7 +42,7 @@ async function count(query: PromiseLike<{ count: number | null; error: unknown }
  * pasan a otra persona (y a quién) y si habrá días de gracia.
  */
 export async function GET(): Promise<NextResponse> {
-  const supabase = createClient()
+  const supabase = await createClient()
   const user = await currentUser(supabase)
   if (!user) return NextResponse.json({ error: 'Not authenticated' }, { status: 401 })
 
@@ -85,7 +85,7 @@ export async function GET(): Promise<NextResponse> {
  * quedan a NULL, conservando lo que aportó a listas ajenas sin su nombre).
  */
 export async function DELETE(): Promise<NextResponse> {
-  const supabase = createClient()
+  const supabase = await createClient()
   const user = await currentUser(supabase)
   if (!user) return NextResponse.json({ error: 'Not authenticated' }, { status: 401 })
 
@@ -126,7 +126,7 @@ export async function DELETE(): Promise<NextResponse> {
 
 /** PATCH /api/account — `{ cancel_deletion: true }`. */
 export async function PATCH(req: Request): Promise<NextResponse> {
-  const supabase = createClient()
+  const supabase = await createClient()
   const user = await currentUser(supabase)
   if (!user) return NextResponse.json({ error: 'Not authenticated' }, { status: 401 })
   if (isDemoUser(user)) return NextResponse.json({ error: DEMO_READ_ONLY_ERROR }, { status: 403 })

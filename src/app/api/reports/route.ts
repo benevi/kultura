@@ -24,7 +24,7 @@ const log = createLogger('api/reports')
 
 /** POST /api/reports */
 export async function POST(request: Request): Promise<NextResponse> {
-  const supabase = createClient()
+  const supabase = await createClient()
 
   const { data: { user }, error: authError } = await supabase.auth.getUser()
   if (authError || !user) {

@@ -27,7 +27,7 @@ interface Params {
 
 /** POST /api/lists/[id] */
 export async function POST(request: Request, { params }: Params): Promise<NextResponse> {
-  const supabase = createClient()
+  const supabase = await createClient()
   const { id: listId } = await params
 
   const { data: { user }, error: authError } = await supabase.auth.getUser()
@@ -147,7 +147,7 @@ export async function POST(request: Request, { params }: Params): Promise<NextRe
 
 /** DELETE /api/lists/[id] */
 export async function DELETE(request: Request, { params }: Params): Promise<NextResponse> {
-  const supabase = createClient()
+  const supabase = await createClient()
   const { id: listId } = await params
 
   const { data: { user }, error: authError } = await supabase.auth.getUser()
@@ -231,7 +231,7 @@ export async function DELETE(request: Request, { params }: Params): Promise<Next
 
 /** PATCH /api/lists/[id] — publicar o despublicar la lista (solo el dueño) */
 export async function PATCH(request: Request, { params }: Params): Promise<NextResponse> {
-  const supabase = createClient()
+  const supabase = await createClient()
   const { id: listId } = await params
 
   const { data: { user }, error: authError } = await supabase.auth.getUser()

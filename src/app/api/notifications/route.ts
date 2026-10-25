@@ -11,7 +11,7 @@ import { checkRateLimit, LIMITS } from '@/lib/rate-limit'
 
 /** GET /api/notifications */
 export async function GET(): Promise<NextResponse> {
-  const supabase = createClient()
+  const supabase = await createClient()
 
   const { data: { user }, error: authError } = await supabase.auth.getUser()
   if (authError || !user) {
@@ -28,7 +28,7 @@ export async function GET(): Promise<NextResponse> {
 
 /** PATCH /api/notifications — marcar leída/s */
 export async function PATCH(request: Request): Promise<NextResponse> {
-  const supabase = createClient()
+  const supabase = await createClient()
 
   const { data: { user }, error: authError } = await supabase.auth.getUser()
   if (authError || !user) {

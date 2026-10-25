@@ -19,7 +19,7 @@ const log = createLogger('api/friends/blocks')
 const BodySchema = z.object({ userId: z.string().uuid() })
 
 async function requireUser() {
-  const supabase = createClient()
+  const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   return { supabase, user }
 }

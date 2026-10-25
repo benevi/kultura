@@ -14,7 +14,7 @@ import { isRlsDenied } from '@/lib/social/friends'
 
 /** GET /api/friends — lista de amigos aceptados del usuario autenticado */
 export async function GET(): Promise<NextResponse> {
-  const supabase = createClient()
+  const supabase = await createClient()
 
   const { data: { user }, error: authError } = await supabase.auth.getUser()
   if (authError || !user) {
@@ -55,7 +55,7 @@ export async function GET(): Promise<NextResponse> {
 
 /** POST /api/friends — enviar solicitud de amistad */
 export async function POST(request: Request): Promise<NextResponse> {
-  const supabase = createClient()
+  const supabase = await createClient()
 
   const { data: { user }, error: authError } = await supabase.auth.getUser()
   if (authError || !user) {
@@ -141,7 +141,7 @@ export async function POST(request: Request): Promise<NextResponse> {
 
 /** PATCH /api/friends — aceptar o rechazar solicitud */
 export async function PATCH(request: Request): Promise<NextResponse> {
-  const supabase = createClient()
+  const supabase = await createClient()
 
   const { data: { user }, error: authError } = await supabase.auth.getUser()
   if (authError || !user) {
@@ -223,7 +223,7 @@ export async function PATCH(request: Request): Promise<NextResponse> {
 
 /** DELETE /api/friends — eliminar amistad */
 export async function DELETE(request: Request): Promise<NextResponse> {
-  const supabase = createClient()
+  const supabase = await createClient()
 
   const { data: { user }, error: authError } = await supabase.auth.getUser()
   if (authError || !user) {

@@ -91,7 +91,7 @@ function mapMember(row: ListMemberRow): ListMember {
  * Usa dos queries separadas y las combina (sin duplicados).
  */
 export async function getUserLists(userId: string): Promise<List[]> {
-  const supabase = createClient()
+  const supabase = await createClient()
 
   // Listas propias
   const { data: ownedRaw, error: ownedErr } = await supabase
@@ -150,7 +150,7 @@ export async function getListDetail(listId: string): Promise<{
   items: ListItem[]
   members: ListMember[]
 } | null> {
-  const supabase = createClient()
+  const supabase = await createClient()
 
   const { data: listRaw, error: listErr } = await supabase
     .from('lists')
@@ -191,7 +191,7 @@ export async function getListDetail(listId: string): Promise<{
  * Verifica si el usuario puede editar la lista (owner o miembro de colaborativa).
  */
 export async function canEditList(listId: string, userId: string): Promise<boolean> {
-  const supabase = createClient()
+  const supabase = await createClient()
 
   const { data: list } = await supabase
     .from('lists')

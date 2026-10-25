@@ -51,9 +51,9 @@ export interface ModalProps {
    * Control que recibe el foco al abrir. Sin él, el que lleve
    * `data-autofocus` y, si no hay, el primero del diálogo.
    */
-  initialFocusRef?: RefObject<HTMLElement>
+  initialFocusRef?: RefObject<HTMLElement | null>
   /** Dónde va el foco al cerrar si el disparador ya no está en la página. */
-  finalFocusRef?: RefObject<HTMLElement>
+  finalFocusRef?: RefObject<HTMLElement | null>
   /** Clases extra del panel (ancho, separación…). */
   className?: string
   /** Visualmente oculto (sigue nombrando al diálogo). */

@@ -16,7 +16,7 @@ interface RouteParams {
 
 export async function DELETE(_req: NextRequest, { params }: RouteParams): Promise<NextResponse> {
   const { id: groupId, postId } = await params
-  const supabase = createClient()
+  const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return NextResponse.json({ error: 'Not authenticated' }, { status: 401 })
 

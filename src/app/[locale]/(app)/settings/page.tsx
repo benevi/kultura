@@ -20,7 +20,7 @@ interface SettingsPageProps {
 
 export default async function SettingsPage({ params, searchParams }: SettingsPageProps) {
   const { locale } = await params
-  const supabase = createClient()
+  const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect(`/${locale}/login?next=${encodeURIComponent(`/${locale}/settings`)}`)
 

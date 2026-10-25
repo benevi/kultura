@@ -19,7 +19,7 @@ interface Props {
  * Best-effort: el payload jsonb guarda invitationId al crearla.
  */
 async function markInviteNotificationRead(
-  supabase: ReturnType<typeof createClient>,
+  supabase: Awaited<ReturnType<typeof createClient>>,
   userId: string,
   invitationId: string
 ): Promise<void> {
@@ -34,7 +34,7 @@ async function markInviteNotificationRead(
 /** PATCH /api/groups/invitations/[invitationId] → aceptar. */
 export async function PATCH(_req: NextRequest, { params }: Props): Promise<NextResponse> {
   const { invitationId } = await params
-  const supabase = createClient()
+  const supabase = await createClient()
 
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return NextResponse.json({ error: 'Not authenticated' }, { status: 401 })
@@ -84,7 +84,7 @@ export async function PATCH(_req: NextRequest, { params }: Props): Promise<NextR
 /** DELETE /api/groups/invitations/[invitationId] → rechazar (borra invitation + notificación). */
 export async function DELETE(_req: NextRequest, { params }: Props): Promise<NextResponse> {
   const { invitationId } = await params
-  const supabase = createClient()
+  const supabase = await createClient()
 
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return NextResponse.json({ error: 'Not authenticated' }, { status: 401 })

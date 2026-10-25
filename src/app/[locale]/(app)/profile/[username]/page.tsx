@@ -51,7 +51,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
  * política de W1: cualquiera con sesión).
  */
 async function canReadLibrary(
-  supabase: ReturnType<typeof createClient>,
+  supabase: Awaited<ReturnType<typeof createClient>>,
   ownerId: string,
 ): Promise<boolean> {
   const { data, error } = await supabase.rpc('can_read_library', { p_owner: ownerId })
@@ -62,7 +62,7 @@ async function canReadLibrary(
 export default async function ProfilePage({ params }: Props) {
   const { locale, username: raw } = await params
   const username = decodeURIComponent(raw)
-  const supabase = createClient()
+  const supabase = await createClient()
   const t = await getTranslations('profile')
   const tc = await getTranslations('collection')
 

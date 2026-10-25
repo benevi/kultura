@@ -22,8 +22,14 @@ export const contentType = "image/png";
 export const alt: string = es.landing.seo.title;
 
 /** `alt` traducido (SEO-6): con un `alt` estático salía "KULTURA" en los dos idiomas. */
-export async function generateImageMetadata({ params }: { params: { locale: string } }) {
-  const locale = params.locale === "en" ? "en" : "es";
+type Params = { locale: string };
+
+/**
+ * `params` llega como objeto en Next 15 y como Promise en 16: se acepta lo uno
+ * y lo otro (como en las demás tarjetas) para no depender de la versión.
+ */
+export async function generateImageMetadata({ params }: { params: Params | Promise<Params> }) {
+  const locale = (await params).locale === "en" ? "en" : "es";
   const t = await getTranslations({ locale, namespace: "landing" });
   return [{ id: "card", alt: t("seo.title"), size, contentType }];
 }
@@ -67,8 +73,8 @@ function tail(sub: string): string {
   return parts[parts.length - 1] ?? sub;
 }
 
-export default async function Image({ params }: { params: { locale: string } }) {
-  const locale = params.locale === "en" ? "en" : "es";
+export default async function Image({ params }: { params: Params | Promise<Params> }) {
+  const locale = (await params).locale === "en" ? "en" : "es";
   const t = await getTranslations({ locale, namespace: "landing" });
   const title = parseTitle(t.raw("hero.title") as string);
   const lema = tail(t("hero.sub"));

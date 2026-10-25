@@ -40,7 +40,7 @@
 
 import { createHash } from "crypto";
 import Anthropic from "@anthropic-ai/sdk";
-import { env } from "@/lib/env";
+import { env } from "@/lib/env.server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { resolveApiLocale, type ApiLocale } from "@/lib/api/locale";
 import { needsTranslation } from "@/lib/translate/language";

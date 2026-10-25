@@ -3,7 +3,7 @@
 // ============================================================
 
 import { describe, it, expect, afterEach, vi } from "vitest";
-import { parseServerEnv } from "@/lib/env";
+import { parseServerEnv } from "@/lib/env.server";
 
 // Valores válidos mínimos para que serverSchema pase.
 const VALID = {

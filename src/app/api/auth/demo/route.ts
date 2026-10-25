@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { env } from "@/lib/env";
+import { env } from "@/lib/env.server";
 import { checkRateLimit, LIMITS } from "@/lib/rate-limit";
 import { createLogger } from "@/lib/logger";
 import { routing } from "@/i18n/routing";
@@ -47,7 +47,7 @@ export async function POST(request: Request): Promise<NextResponse> {
     return fail();
   }
 
-  const supabase = createClient();
+  const supabase = await createClient();
   const { data: session, error: verifyError } = await supabase.auth.verifyOtp({
     type: "email",
     token_hash: tokenHash,

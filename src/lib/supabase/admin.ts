@@ -1,5 +1,6 @@
 import { createClient as createSupabaseClient } from '@supabase/supabase-js'
-import { env, publicEnv } from '@/lib/env'
+import { env } from '@/lib/env.server'
+import { publicEnv } from '@/lib/env.public'
 
 /**
  * Cliente Supabase con service-role key. BYPASSA RLS — solo para uso server-side

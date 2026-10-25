@@ -29,7 +29,7 @@ interface LibraryStatusModalProps {
   onClose: () => void
   loading: boolean
   /** Dónde vuelve el foco si el botón que lo abrió ya no existe al cerrar. */
-  finalFocusRef?: RefObject<HTMLElement>
+  finalFocusRef?: RefObject<HTMLElement | null>
   /** Error al guardar (502 del catálogo…): se anuncia dentro del diálogo. */
   error?: string | null
 }

@@ -37,7 +37,7 @@ const dedupe: <T extends (...args: never[]) => unknown>(fn: T) => T =
  * ficha no le cuesta nada.
  */
 export const getViewer = dedupe(async (): Promise<Viewer> => {
-  const supabase = createClient()
+  const supabase = await createClient()
   const {
     data: { user },
   } = await supabase.auth.getUser()

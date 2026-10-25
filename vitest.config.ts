@@ -18,6 +18,11 @@ export default defineConfig({
     },
   },
   resolve: {
-    alias: { "@": path.resolve(__dirname, "./src") },
+    alias: {
+      "@": path.resolve(__dirname, "./src"),
+      // `import "server-only"` (env.server.ts) solo es válido con la condición
+      // `react-server` que pone Next; fuera de Next se resuelve al módulo vacío.
+      "server-only": path.resolve(__dirname, "./node_modules/server-only/empty.js"),
+    },
   },
 });

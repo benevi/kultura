@@ -69,7 +69,7 @@ const PatchSchema = z.object({
 const OPTIONAL_COLUMNS = ['library_visibility'] as const
 
 export async function GET(): Promise<NextResponse> {
-  const supabase = createClient()
+  const supabase = await createClient()
   const { data: { user }, error: authError } = await supabase.auth.getUser()
   if (authError || !user) {
     return NextResponse.json({ error: 'Not authenticated' }, { status: 401 })
@@ -89,7 +89,7 @@ export async function GET(): Promise<NextResponse> {
 }
 
 export async function PATCH(req: NextRequest): Promise<NextResponse> {
-  const supabase = createClient()
+  const supabase = await createClient()
   const { data: { user }, error: authError } = await supabase.auth.getUser()
   if (authError || !user) {
     return NextResponse.json({ error: 'Not authenticated' }, { status: 401 })

@@ -42,7 +42,7 @@ function mapFriendship(row: FriendshipWithUser, currentUserId: string): Friendsh
  * Devuelve las amistades aceptadas del usuario (ambas direcciones).
  */
 export async function getFriends(userId: string): Promise<Friendship[]> {
-  const supabase = createClient()
+  const supabase = await createClient()
 
   const { data, error } = await supabase
     .from('friendships')
@@ -64,7 +64,7 @@ export async function getFriends(userId: string): Promise<Friendship[]> {
  * Devuelve las solicitudes de amistad entrantes pendientes del usuario.
  */
 export async function getPendingRequests(userId: string): Promise<Friendship[]> {
-  const supabase = createClient()
+  const supabase = await createClient()
 
   const { data, error } = await supabase
     .from('friendships')
@@ -96,7 +96,7 @@ export async function getFriendshipStatus(
   currentUserId: string,
   targetUserId: string
 ): Promise<FriendshipStatusResult> {
-  const supabase = createClient()
+  const supabase = await createClient()
 
   const { data, error } = await supabase
     .from('friendships')
@@ -151,7 +151,7 @@ export interface BlockedProfile {
  * de la migración): quien llama lo trata como "moderación no disponible".
  */
 export async function getBlockedUsers(userId: string): Promise<BlockedProfile[] | null> {
-  const supabase = createClient()
+  const supabase = await createClient()
   const { data, error } = await supabase
     .from('blocks')
     .select('blocked_id, created_at, blocked:blocked_id(id, username, avatar_color, avatar_initials)')
@@ -183,7 +183,7 @@ export async function getBlockedUsers(userId: string): Promise<BlockedProfile[] 
  * bloqueado no puede leer la fila.) `null` si la tabla aún no existe.
  */
 export async function hasBlocked(userId: string, otherId: string): Promise<boolean | null> {
-  const supabase = createClient()
+  const supabase = await createClient()
   const { data, error } = await supabase
     .from('blocks')
     .select('blocked_id')

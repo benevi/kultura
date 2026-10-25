@@ -129,7 +129,7 @@ function queryString(sp: SearchParams): string {
 
 type Viewer = { id: string } | null
 
-async function currentViewer(supabase: ReturnType<typeof createClient>): Promise<Viewer> {
+async function currentViewer(supabase: Awaited<ReturnType<typeof createClient>>): Promise<Viewer> {
   try {
     const { data } = await supabase.auth.getUser()
     return data.user ? { id: data.user.id } : null
@@ -153,7 +153,7 @@ export default async function PublicCollectionPage({ params, searchParams }: Pro
 
   const { lists } = collection
   let owner: PublicOwner = collection.owner
-  const supabase = createClient()
+  const supabase = await createClient()
   const viewer = await currentViewer(supabase)
   const isOwner = viewer?.id === owner.id
 

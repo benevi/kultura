@@ -17,7 +17,7 @@ vi.mock("@/lib/best/best-of", async (importOriginal) => {
 });
 const supabase = vi.hoisted(() => ({ createClient: vi.fn() }));
 vi.mock("@supabase/supabase-js", () => supabase);
-vi.mock("@/lib/env", () => ({
+vi.mock("@/lib/env.public", () => ({
   publicEnv: { NEXT_PUBLIC_SUPABASE_URL: "https://sb.example", NEXT_PUBLIC_SUPABASE_ANON_KEY: "anon" },
 }));
 

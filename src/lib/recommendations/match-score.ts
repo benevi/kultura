@@ -141,7 +141,7 @@ export async function getTasteProfile(
   const cached = profileCache.get(userId)
   if (cached && Date.now() < cached.expiresAt) return cached.data
 
-  const supabase = supabaseClient ?? createClient()
+  const supabase = supabaseClient ?? await createClient()
   const { data } = await supabase
     .from('user_media')
     .select('status, score, media(id, type, external_id, metadata)')
@@ -237,7 +237,7 @@ export async function computeMatchScores(
   supabaseClient?: SupabaseClient,
   locale?: string | null
 ): Promise<Map<string, number>> {
-  const supabase = supabaseClient ?? createClient()
+  const supabase = supabaseClient ?? await createClient()
   // `locale` solo se usa al reparar géneros que falten (E-MATCH-GENRES): los
   // nombres los sirve cada proveedor en el idioma pedido, así que conviene que
   // coincida con el del catálogo que se está puntuando.

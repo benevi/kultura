@@ -6,7 +6,7 @@
 import type { ComicVineIssue, ComicVineSearchResponse } from "@/types/media";
 import type { MediaItem } from "@/types/media";
 import { normalizeComic } from "@/lib/api/normalizer";
-import { env } from "@/lib/env";
+import { env } from "@/lib/env.server";
 import {
   comicSort,
   comicCoverDateWindow,

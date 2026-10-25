@@ -14,17 +14,17 @@ import { SHELL_VIEWPORT, SITE_NAME } from "@/i18n/metadata";
 
 export const viewport: Viewport = SHELL_VIEWPORT;
 
-function requestLocale() {
-  return localeFromAcceptLanguage(headers().get("accept-language"));
+async function requestLocale() {
+  return localeFromAcceptLanguage((await headers()).get("accept-language"));
 }
 
 export async function generateMetadata(): Promise<Metadata> {
-  const t = await getTranslations({ locale: requestLocale(), namespace: "errors" });
+  const t = await getTranslations({ locale: await requestLocale(), namespace: "errors" });
   return { title: `${t("notFoundTitle")} · ${SITE_NAME}`, robots: { index: false } };
 }
 
 export default async function RootNotFound() {
-  const locale = requestLocale();
+  const locale = await requestLocale();
   const t = await getTranslations({ locale, namespace: "errors" });
 
   return (

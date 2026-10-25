@@ -14,7 +14,7 @@ interface Props {
 
 export async function POST(_req: NextRequest, { params }: Props): Promise<NextResponse> {
   const { id } = await params
-  const supabase = createClient()
+  const supabase = await createClient()
 
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return NextResponse.json({ error: 'Not authenticated' }, { status: 401 })
