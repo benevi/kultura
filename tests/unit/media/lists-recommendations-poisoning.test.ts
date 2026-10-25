@@ -27,7 +27,10 @@ vi.mock('@/lib/rate-limit', async (importOriginal) => ({
   ...(await importOriginal<typeof import('@/lib/rate-limit')>()),
   checkRateLimit: () => ({ allowed: true, retryAfterSeconds: 0 }),
 }))
-vi.mock('@/lib/social/lists', () => ({ canEditList: vi.fn(async () => true) }))
+vi.mock('@/lib/social/lists', () => ({
+  canEditList: vi.fn(async () => true),
+  getListAccess: vi.fn(async () => ({ exists: true, canEdit: true, isOwner: true, mediaType: 'movie' })),
+}))
 vi.mock('@/lib/api/tmdb', async (importOriginal) => ({
   ...(await importOriginal<typeof import('@/lib/api/tmdb')>()),
   getMovie: getMovieMock,
