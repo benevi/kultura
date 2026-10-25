@@ -1028,6 +1028,13 @@ export type Database = {
             referencedRelation: "user_media"
             referencedColumns: ["user_id", "media_id"]
           },
+          {
+            foreignKeyName: "user_media_logs_media_id_fkey"
+            columns: ["media_id"]
+            isOneToOne: false
+            referencedRelation: "media"
+            referencedColumns: ["id"]
+          },
         ]
       }
       username_history: {
@@ -1356,7 +1363,7 @@ export interface DbUserMedia {
   updated_at: string; // timestamptz — set by trigger set_updated_at on UPDATE
 }
 
-/** Tabla: user_media_logs (diario, F-24; FK compuesta → user_media, on delete cascade) */
+/** Tabla: user_media_logs (diario, F-24; FK compuesta → user_media y media_id → media, on delete cascade) */
 export interface DbUserMediaLog {
   id: string; // uuid
   user_id: string; // uuid

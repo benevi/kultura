@@ -137,6 +137,9 @@ create table if not exists public.user_media_logs (
   updated_at   timestamptz not null default now(),
   constraint user_media_logs_entry_fkey foreign key (user_id, media_id)
     references public.user_media (user_id, media_id) on delete cascade,
+  -- Para que PostgREST pueda embeber el título (`media(title, poster, year)`).
+  constraint user_media_logs_media_id_fkey foreign key (media_id)
+    references public.media (id) on delete cascade,
   constraint user_media_logs_rating10_check
     check (rating10 is null or (rating10 between 0.5 and 10 and rating10 * 2 = trunc(rating10 * 2))),
   constraint user_media_logs_review_check
