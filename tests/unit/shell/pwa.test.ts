@@ -57,6 +57,21 @@ describe("MOV-1 — PWA instalable", () => {
     ]);
   });
 
+  it("MOV-9: share_target con la forma de la especificación y su receptor", () => {
+    expect(m.share_target).toEqual({
+      action: "/es/share",
+      method: "GET",
+      enctype: "application/x-www-form-urlencoded",
+      params: { title: "title", text: "text", url: "url" },
+    });
+    expect(fs.existsSync(path.join(ROOT, "src/app/[locale]/share/route.ts"))).toBe(true);
+  });
+
+  it("MOV-2: el service worker vive en la raíz (scope / sin Service-Worker-Allowed) y la página offline existe", () => {
+    expect(fs.existsSync(path.join(ROOT, "public/sw.js"))).toBe(true);
+    expect(fs.existsSync(path.join(ROOT, "src/app/[locale]/offline/page.tsx"))).toBe(true);
+  });
+
   it("apple-icon de 180 px, icono SVG y favicon servido desde public/", () => {
     expect(pngSize(path.join(ROOT, "src/app/apple-icon.png"))).toEqual({ width: 180, height: 180 });
     expect(fs.readFileSync(path.join(ROOT, "src/app/icon.svg"), "utf8")).toContain("<svg");

@@ -77,9 +77,9 @@ export function markInstalled(state: InstallState): InstallState {
   return { ...state, installed: true };
 }
 
-/** `/es/library`, `/en/library/…` (con o sin barra final). */
+/** `/es/library`, `/en/library/…` (con o sin barra final o consulta). */
 export function isLibraryPath(pathname: string | null | undefined): boolean {
-  return /^\/(?:es|en)\/library(?:\/|$)/.test(pathname ?? "");
+  return /^\/(?:es|en)\/library(?:[/?#]|$)/.test(pathname ?? "");
 }
 
 export type InstallPlatform = "ios" | "android" | "desktop";
