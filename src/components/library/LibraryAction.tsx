@@ -10,6 +10,10 @@
 // se recuerda mientras dure la página). Al marcarlo como completado, el estado
 // hace un «sello» lima (DIS-14, ≤ 300 ms, sin mover nada, nada con
 // movimiento reducido).
+//
+// F-27: a la vez se pide el progreso del título y lo que dice el proveedor
+// (/api/library/progress: temporadas, capítulos, páginas, horas medias) para
+// el control de progreso por formato del diálogo.
 // ============================================================
 
 import { useEffect, useRef, useState } from 'react'
@@ -19,11 +23,19 @@ import { KButton } from '@/components/ui/KButton'
 import { LibraryStatusModal, type LibraryStatusSaveData } from '@/components/library/LibraryStatusModal'
 import { ConfirmModal } from '@/components/ui/ConfirmModal'
 import { useToastContext } from '@/components/ui/ToastProvider'
-import { removeFromLibrary, saveLibraryEntry, fetchDiaryConfig, deleteDiaryLog } from '@/lib/library/actions'
+import {
+  removeFromLibrary,
+  saveLibraryEntry,
+  fetchDiaryConfig,
+  deleteDiaryLog,
+  fetchProgressConfig,
+  type ProgressConfig,
+} from '@/lib/library/actions'
+import type { LibraryPayloadWithProgress } from '@/lib/library/progress'
 import { playStamp, prefersReducedMotion } from '@/lib/library/motion'
 import { cn } from '@/lib/utils/index'
 import { createLogger } from '@/lib/logger'
-import type { DiaryConfig, LibraryEntry, LibraryStatus, LibraryPayload } from '@/types/library'
+import type { DiaryConfig, LibraryEntry, LibraryStatus } from '@/types/library'
 
 const log = createLogger('LibraryAction')
 
@@ -50,9 +62,29 @@ function loadDiary(mediaId: string): Promise<DiaryConfig | null> {
   return pending
 }
 
+/** Progreso y plan del proveedor por título (F-27), igual que el diario. */
+const progressCache = new Map<string, Promise<ProgressConfig | null>>()
+
+function loadProgress(mediaId: string): Promise<ProgressConfig | null> {
+  let pending = progressCache.get(mediaId)
+  if (!pending) {
+    pending = Promise.resolve()
+      .then(() => fetchProgressConfig(mediaId))
+      .catch((err) => {
+        // Sin la configuración, el progreso de siempre (episodios).
+        log.warn('Failed to load progress config', { err })
+        progressCache.delete(mediaId)
+        return null
+      })
+    progressCache.set(mediaId, pending)
+  }
+  return pending
+}
+
 /** Solo para tests. */
 export function __resetDiaryCache() {
   diaryCache.clear()
+  progressCache.clear()
 }
 
 interface LibraryActionProps {
@@ -98,6 +130,7 @@ export function LibraryAction({
   const [saveError, setSaveError] = useState<string | null>(null)
   const [removeError, setRemoveError] = useState<string | null>(null)
   const [diary, setDiary] = useState<DiaryConfig | null>(null)
+  const [progressConfig, setProgressConfig] = useState<ProgressConfig | null>(null)
   const [stamp, setStamp] = useState(0)
   // Al guardar o quitar, el botón que abrió el diálogo desaparece ("Añadir"
   // pasa a "Actualizar" y al revés): el foco va al que lo sustituye.
@@ -109,6 +142,9 @@ export function LibraryAction({
     if (!isAuthenticated) return
     void loadDiary(mediaId).then((config) => {
       if (config) setDiary(config)
+    })
+    void loadProgress(mediaId).then((config) => {
+      if (config) setProgressConfig(config)
     })
   }
 
@@ -132,7 +168,7 @@ export function LibraryAction({
     setLoading(true)
     setSaveError(null)
     try {
-      const payload: LibraryPayload = {
+      const payload: LibraryPayloadWithProgress = {
         mediaId,
         status: data.status,
         score: data.score ?? undefined,
@@ -140,12 +176,18 @@ export function LibraryAction({
         ...(data.favorite !== undefined ? { favorite: data.favorite } : {}),
         watchedAt: data.watchedAt ?? undefined,
         episodeProgress: data.episodeProgress ?? undefined,
+        ...(data.progress !== undefined ? { progress: data.progress } : {}),
         ...(data.log ? { log: data.log } : {}),
         mediaCache,
       }
       const result = await saveLibraryEntry(payload)
       const becameCompleted = result.entry.status === 'completed' && entry?.status !== 'completed'
       setEntry(result.entry)
+      // El progreso guardado pasa a ser el de partida (y el plan sigue valiendo).
+      progressCache.delete(mediaId)
+      setProgressConfig((prev) =>
+        prev ? { ...prev, progress: (result.entry as { progress?: ProgressConfig['progress'] }).progress ?? null, next: null } : prev
+      )
       if (result.log) {
         const added = result.log
         setDiary((prev) => (prev ? { ...prev, logs: [added, ...prev.logs] } : prev))
@@ -215,6 +257,7 @@ export function LibraryAction({
       diary={diary}
       onDeleteLog={handleDeleteLog}
       title={mediaCache.title}
+      progressConfig={progressConfig}
     />
   ) : null
 
