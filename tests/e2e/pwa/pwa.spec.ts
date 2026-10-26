@@ -136,6 +136,27 @@ test.describe("service worker y modo sin conexión", () => {
     }
   });
 
+  test("interruptor: con /sw-config.json en `enabled: false` el worker borra sus cachés y se da de baja", async ({
+    page,
+    context,
+  }) => {
+    const config = await page.request.get("/sw-config.json");
+    expect(await config.json()).toEqual({ enabled: true });
+    expect(config.headers()["cache-control"]).toContain("no-store");
+
+    await context.route("**/sw-config.json", (route) =>
+      route.fulfill({ status: 200, contentType: "application/json", body: '{"enabled":false}' }),
+    );
+    await page.goto("/es/home", { waitUntil: "load" });
+    await expect
+      .poll(() => page.evaluate(async () => (await navigator.serviceWorker.getRegistrations()).length), {
+        timeout: 15_000,
+      })
+      .toBe(0);
+    const names = await page.evaluate(() => caches.keys());
+    expect(names.filter((n) => n.startsWith("kultura-"))).toEqual([]);
+  });
+
   test("instalable: Chrome no pone pegas (Page.getInstallabilityErrors)", async ({ page }) => {
     await boot(page);
     const cdp = await page.context().newCDPSession(page);
