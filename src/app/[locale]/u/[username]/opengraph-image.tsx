@@ -2,12 +2,26 @@ import { ImageResponse } from "next/og";
 import { C, loadFont, fontsOption } from "@/lib/og/brand";
 import { posterDataUri } from "@/lib/og/poster";
 import { getPublicCollection, resolveRenamedUsername } from "@/lib/social/public-collection";
+import { publicTopFour } from "./r/_lib/top-four";
+import es from "../../../../../messages/es.json";
+import en from "../../../../../messages/en.json";
 
 /**
  * Tarjeta al compartir /u/{username}: nombre + collage de hasta cuatro
  * portadas de sus listas públicas. Cada portada se descarga aquí con un tope
  * de tiempo y, si falla, su hueco queda con el gradiente de póster de F0: la
  * tarjeta NUNCA depende de que un proveedor responda.
+ *
+ * CRE-8c (F-29): con el top 4 visible SIN CUENTA (`publicTopFour`: bandera
+ * `SHARE_PUBLIC_LIBRARY=1` y biblioteca pública), la tarjeta es "El top 4
+ * de …" con sus 4 favoritos. La tarjeta se pide siempre sin sesión, así que
+ * nunca enseña nada de una biblioteca que un anónimo no pueda ver. Caché corta
+ * (5-10 min): si cambia la visibilidad, la tarjeta no se queda un año.
+ *
+ * El `alt` es fijo: traducirlo exige `generateImageMetadata`, que movería la
+ * imagen a `/opengraph-image/<id>` y rompería `ogImagePath` (la usa
+ * "Compartir perfil"). Pendiente: fijar `openGraph.images` con el alt
+ * traducido en los metadatos de `/u/[username]/page.tsx`.
  */
 export const alt = "KULTURA";
 export const size = { width: 1200, height: 630 };
@@ -29,6 +43,9 @@ const COPY = {
   en: { heading: "The collection of", lists: (n: number) => (n === 1 ? "1 list" : `${n} lists`) },
 };
 
+/** Ver la cabecera: la tarjeta puede depender de la visibilidad de la biblioteca. */
+const OG_CACHE_CONTROL = "public, max-age=300, s-maxage=600";
+
 export default async function Image({
   params,
 }: {
@@ -41,31 +58,34 @@ export default async function Image({
   } catch {
     // `%` suelto: se usa tal cual (dará la tarjeta genérica).
   }
-  const copy = COPY[locale === "en" ? "en" : "es"];
+  const l = locale === "en" ? "en" : "es";
+  const copy = COPY[l];
 
   // R11: con un nombre antiguo, la tarjeta es la del nombre actual (la página
   // ya redirige con 308; la imagen se pide a veces por la URL vieja). Solo
-  // listas públicas: la tarjeta la ve cualquiera, la biblioteca nunca.
+  // listas públicas: la tarjeta la ve cualquiera, la biblioteca nunca (salvo
+  // el top 4 cuando su dueño la deja ver sin cuenta, ver cabecera).
   let collection = await getPublicCollection(username).catch(() => null);
   if (!collection) {
     const current = await resolveRenamedUsername(username).catch(() => null);
     if (current) collection = await getPublicCollection(current).catch(() => null);
   }
+  const displayName = collection?.owner.username ?? username;
+  const top = collection ? await publicTopFour(displayName).catch(() => null) : null;
   const lists = collection?.lists ?? [];
-  const sources = lists
-    .flatMap((l) => l.items)
+  const sources = (top ?? lists.flatMap((list) => list.items))
     .map((i) => i.poster)
     .filter((p): p is string => Boolean(p))
     .slice(0, 4);
   const posters = await Promise.all(sources.map(posterDataUri));
   while (posters.length < 4) posters.push(null);
 
-  const displayName = collection?.owner.username ?? username;
+  const heading = top ? (l === "en" ? en : es).share.og.top4 : copy.heading;
   const meta = copy.lists(lists.length);
   const fonts = (
     await Promise.all([
       loadFont("Bricolage+Grotesque", 800, `kultura${displayName}`),
-      loadFont("Figtree", 700, `${copy.heading}${meta}`),
+      loadFont("Figtree", 700, `${heading}${meta}`),
     ])
   ).filter((f) => f !== null);
 
@@ -90,7 +110,7 @@ export default async function Image({
             <div style={{ width: 9, height: 9, background: C.pink, transform: "rotate(14deg)", marginLeft: 4, marginBottom: 10 }} />
           </div>
           <div style={{ display: "flex", fontSize: 34, fontWeight: 700, color: C.muted, marginTop: 56 }}>
-            {copy.heading}
+            {heading}
           </div>
           <div
             style={{
@@ -149,6 +169,6 @@ export default async function Image({
         </div>
       </div>
     ),
-    { ...size, ...fontsOption(fonts) },
+    { ...size, ...fontsOption(fonts), headers: { "cache-control": OG_CACHE_CONTROL } },
   );
 }

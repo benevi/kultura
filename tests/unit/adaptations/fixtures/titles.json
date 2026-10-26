@@ -1,0 +1,692 @@
+[
+  {
+    "slug": "dune-2021",
+    "type": "movie",
+    "label": "Dune",
+    "year": 2021,
+    "value": "438631",
+    "expect": {
+      "type": "book",
+      "label": "^Dune$"
+    },
+    "externalId": "438631",
+    "fixture": "dune-2021.json",
+    "queryHash": "a3f9500dd419da11"
+  },
+  {
+    "slug": "lotr-fellowship",
+    "type": "movie",
+    "label": "The Lord of the Rings: The Fellowship of the Ring",
+    "year": 2001,
+    "expect": {
+      "type": "book",
+      "label": "Lord of the Rings|Fellowship of the Ring"
+    },
+    "value": "120",
+    "externalId": "120",
+    "fixture": "lotr-fellowship.json",
+    "queryHash": "907dbc053d2af04d"
+  },
+  {
+    "slug": "harry-potter-1",
+    "type": "movie",
+    "label": "Harry Potter and the Philosopher's Stone",
+    "year": 2001,
+    "expect": {
+      "type": "book",
+      "label": "Philosopher's Stone"
+    },
+    "value": "671",
+    "externalId": "671",
+    "fixture": "harry-potter-1.json",
+    "queryHash": "fd9820f52571f003"
+  },
+  {
+    "slug": "hunger-games",
+    "type": "movie",
+    "label": "The Hunger Games",
+    "year": 2012,
+    "expect": {
+      "type": "book",
+      "label": "^The Hunger Games$"
+    },
+    "value": "70160",
+    "externalId": "70160",
+    "fixture": "hunger-games.json",
+    "queryHash": "d8cae6a9650fcf15"
+  },
+  {
+    "slug": "fight-club",
+    "type": "movie",
+    "label": "Fight Club",
+    "year": 1999,
+    "value": "550",
+    "expect": {
+      "type": "book",
+      "label": "^Fight Club$"
+    },
+    "externalId": "550",
+    "fixture": "fight-club.json",
+    "queryHash": "b44dca4faddc05fc"
+  },
+  {
+    "slug": "the-godfather",
+    "type": "movie",
+    "label": "The Godfather",
+    "year": 1972,
+    "value": "238",
+    "expect": {
+      "type": "book",
+      "label": "^The Godfather$"
+    },
+    "externalId": "238",
+    "fixture": "the-godfather.json",
+    "queryHash": "6b8e344d7b601ea1"
+  },
+  {
+    "slug": "jurassic-park",
+    "type": "movie",
+    "label": "Jurassic Park",
+    "year": 1993,
+    "value": "329",
+    "expect": {
+      "type": "book",
+      "label": "^Jurassic Park$"
+    },
+    "externalId": "329",
+    "fixture": "jurassic-park.json",
+    "queryHash": "406e6908f11cd35d"
+  },
+  {
+    "slug": "the-shining",
+    "type": "movie",
+    "label": "The Shining",
+    "year": 1980,
+    "value": "694",
+    "expect": {
+      "type": "book",
+      "label": "^The Shining$"
+    },
+    "externalId": "694",
+    "fixture": "the-shining.json",
+    "queryHash": "3c558edd9ee3582d"
+  },
+  {
+    "slug": "gone-girl",
+    "type": "movie",
+    "label": "Gone Girl",
+    "year": 2014,
+    "expect": {
+      "type": "book",
+      "label": "^Gone Girl$"
+    },
+    "value": "210577",
+    "externalId": "210577",
+    "fixture": "gone-girl.json",
+    "queryHash": "0bdaa0f2a6720b4e"
+  },
+  {
+    "slug": "the-martian",
+    "type": "movie",
+    "label": "The Martian",
+    "year": 2015,
+    "expect": {
+      "type": "book",
+      "label": "^The Martian$"
+    },
+    "value": "286217",
+    "externalId": "286217",
+    "fixture": "the-martian.json",
+    "queryHash": "468752e589be76df"
+  },
+  {
+    "slug": "blade-runner",
+    "type": "movie",
+    "label": "Blade Runner",
+    "year": 1982,
+    "expect": {
+      "type": "book",
+      "label": "Androids"
+    },
+    "value": "78",
+    "externalId": "78",
+    "fixture": "blade-runner.json",
+    "queryHash": "ee5caa17b7bdf958"
+  },
+  {
+    "slug": "forrest-gump",
+    "type": "movie",
+    "label": "Forrest Gump",
+    "year": 1994,
+    "value": "13",
+    "expect": {
+      "type": "book",
+      "label": "^Forrest Gump$"
+    },
+    "externalId": "13",
+    "fixture": "forrest-gump.json",
+    "queryHash": "e6b82a49433015fc"
+  },
+  {
+    "slug": "ready-player-one",
+    "type": "movie",
+    "label": "Ready Player One",
+    "year": 2018,
+    "expect": {
+      "type": "book",
+      "label": "^Ready Player One$"
+    },
+    "value": "333339",
+    "externalId": "333339",
+    "fixture": "ready-player-one.json",
+    "queryHash": "a9d790833dc75848"
+  },
+  {
+    "slug": "silence-of-the-lambs",
+    "type": "movie",
+    "label": "The Silence of the Lambs",
+    "year": 1991,
+    "expect": {
+      "type": "book",
+      "label": "Silence of the Lambs"
+    },
+    "value": "274",
+    "externalId": "274",
+    "fixture": "silence-of-the-lambs.json",
+    "queryHash": "e5d9eb5e12246ea3"
+  },
+  {
+    "slug": "oppenheimer",
+    "type": "movie",
+    "label": "Oppenheimer",
+    "year": 2023,
+    "expect": {
+      "type": "book",
+      "label": "American Prometheus"
+    },
+    "value": "872585",
+    "externalId": "872585",
+    "fixture": "oppenheimer.json",
+    "queryHash": "886711f515fcdc63"
+  },
+  {
+    "slug": "narnia-lion",
+    "type": "movie",
+    "label": "The Chronicles of Narnia: The Lion, the Witch and the Wardrobe",
+    "year": 2005,
+    "expect": {
+      "type": "book",
+      "label": "Lion, the Witch and the Wardrobe"
+    },
+    "value": "411",
+    "externalId": "411",
+    "fixture": "narnia-lion.json",
+    "queryHash": "a070eae9e6e841b9"
+  },
+  {
+    "slug": "twilight",
+    "type": "movie",
+    "label": "Twilight",
+    "year": 2008,
+    "expect": {
+      "type": "book",
+      "label": "^Twilight$"
+    },
+    "value": "8966",
+    "externalId": "8966",
+    "fixture": "twilight.json",
+    "queryHash": "1b9b0a3e6007eb26"
+  },
+  {
+    "slug": "uncharted-2022",
+    "type": "movie",
+    "label": "Uncharted",
+    "year": 2022,
+    "expect": {
+      "type": "game",
+      "label": "Uncharted"
+    },
+    "value": "335787",
+    "externalId": "335787",
+    "fixture": "uncharted-2022.json",
+    "queryHash": "fcbe5f1d0a65c9f2"
+  },
+  {
+    "slug": "super-mario-movie",
+    "type": "movie",
+    "label": "The Super Mario Bros. Movie",
+    "year": 2023,
+    "expect": {
+      "type": "game",
+      "label": "Mario"
+    },
+    "value": "502356",
+    "externalId": "502356",
+    "fixture": "super-mario-movie.json",
+    "queryHash": "044865b7c1420455"
+  },
+  {
+    "slug": "sonic-2020",
+    "type": "movie",
+    "label": "Sonic the Hedgehog",
+    "year": 2020,
+    "expect": {
+      "type": "game",
+      "label": "Sonic"
+    },
+    "value": "454626",
+    "externalId": "454626",
+    "fixture": "sonic-2020.json",
+    "queryHash": "0abdc2b553482da8"
+  },
+  {
+    "slug": "the-witcher-tv",
+    "type": "tv",
+    "label": "The Witcher",
+    "year": 2019,
+    "value": "71912",
+    "expect": {
+      "type": "book",
+      "label": "Witcher|Wiedźmin|Sapkowski|Last Wish|Blood of Elves"
+    },
+    "externalId": "71912",
+    "fixture": "the-witcher-tv.json",
+    "queryHash": "c3304b2f478eeb1b"
+  },
+  {
+    "slug": "arcane",
+    "type": "tv",
+    "label": "Arcane",
+    "year": 2021,
+    "value": "94605",
+    "expect": {
+      "type": "game",
+      "label": "League of Legends"
+    },
+    "externalId": "94605",
+    "fixture": "arcane.json",
+    "queryHash": "90e0b445408ee88c"
+  },
+  {
+    "slug": "shogun-2024",
+    "type": "tv",
+    "label": "Shōgun",
+    "year": 2024,
+    "expect": {
+      "type": "book",
+      "label": "Sh[oō]gun"
+    },
+    "value": "126308",
+    "externalId": "126308",
+    "fixture": "shogun-2024.json",
+    "queryHash": "f92981800391a81d"
+  },
+  {
+    "slug": "the-last-of-us-tv",
+    "type": "tv",
+    "label": "The Last of Us",
+    "year": 2023,
+    "value": "100088",
+    "expect": {
+      "type": "game",
+      "label": "The Last of Us"
+    },
+    "externalId": "100088",
+    "fixture": "the-last-of-us-tv.json",
+    "queryHash": "eae1b8fcd57e8348"
+  },
+  {
+    "slug": "game-of-thrones",
+    "type": "tv",
+    "label": "Game of Thrones",
+    "year": 2011,
+    "value": "1399",
+    "expect": {
+      "type": "book",
+      "label": "Game of Thrones|Song of Ice and Fire"
+    },
+    "externalId": "1399",
+    "fixture": "game-of-thrones.json",
+    "queryHash": "db864deff20f168a"
+  },
+  {
+    "slug": "the-expanse",
+    "type": "tv",
+    "label": "The Expanse",
+    "year": 2015,
+    "expect": {
+      "type": "book",
+      "label": "Leviathan Wakes|Expanse"
+    },
+    "value": "63639",
+    "externalId": "63639",
+    "fixture": "the-expanse.json",
+    "queryHash": "7dc6ed606d4fd75a"
+  },
+  {
+    "slug": "fallout-tv",
+    "type": "tv",
+    "label": "Fallout",
+    "year": 2024,
+    "expect": {
+      "type": "game",
+      "label": "Fallout"
+    },
+    "value": "106379",
+    "externalId": "106379",
+    "fixture": "fallout-tv.json",
+    "queryHash": "5504a86b21e17310"
+  },
+  {
+    "slug": "handmaids-tale",
+    "type": "tv",
+    "label": "The Handmaid's Tale",
+    "year": 2017,
+    "expect": {
+      "type": "book",
+      "label": "Handmaid"
+    },
+    "value": "69478",
+    "externalId": "69478",
+    "fixture": "handmaids-tale.json",
+    "queryHash": "b8e8b1d921ea8e7a"
+  },
+  {
+    "slug": "normal-people",
+    "type": "tv",
+    "label": "Normal People",
+    "year": 2020,
+    "expect": {
+      "type": "book",
+      "label": "^Normal People$"
+    },
+    "value": "89905",
+    "externalId": "89905",
+    "fixture": "normal-people.json",
+    "queryHash": "5632df3bae0176da"
+  },
+  {
+    "slug": "outlander",
+    "type": "tv",
+    "label": "Outlander",
+    "year": 2014,
+    "expect": {
+      "type": "book",
+      "label": "Outlander|Cross Stitch"
+    },
+    "value": "56570",
+    "externalId": "56570",
+    "fixture": "outlander.json",
+    "queryHash": "f56974d64d49d5d7"
+  },
+  {
+    "slug": "queens-gambit",
+    "type": "tv",
+    "label": "The Queen's Gambit",
+    "year": 2020,
+    "expect": {
+      "type": "book",
+      "label": "Queen's Gambit"
+    },
+    "value": "87739",
+    "externalId": "87739",
+    "fixture": "queens-gambit.json",
+    "queryHash": "001f32ad6499e6e8"
+  },
+  {
+    "slug": "good-omens",
+    "type": "tv",
+    "label": "Good Omens",
+    "year": 2019,
+    "expect": {
+      "type": "book",
+      "label": "^Good Omens$"
+    },
+    "value": "71915",
+    "externalId": "71915",
+    "fixture": "good-omens.json",
+    "queryHash": "272e1d89220f10d8"
+  },
+  {
+    "slug": "castlevania-tv",
+    "type": "tv",
+    "label": "Castlevania",
+    "year": 2017,
+    "expect": {
+      "type": "game",
+      "label": "Castlevania"
+    },
+    "value": "71024",
+    "externalId": "71024",
+    "fixture": "castlevania-tv.json",
+    "queryHash": "275c1a712e9b67d6"
+  },
+  {
+    "slug": "one-piece-2023",
+    "type": "tv",
+    "label": "One Piece",
+    "year": 2023,
+    "expect": {
+      "type": "manga",
+      "label": "One Piece"
+    },
+    "value": "111110",
+    "externalId": "111110",
+    "fixture": "one-piece-2023.json",
+    "queryHash": "bd9be73dff67787f"
+  },
+  {
+    "slug": "shadow-and-bone",
+    "type": "tv",
+    "label": "Shadow and Bone",
+    "year": 2021,
+    "expect": {
+      "type": "book",
+      "label": "Shadow and Bone|Grisha"
+    },
+    "value": "85720",
+    "externalId": "85720",
+    "fixture": "shadow-and-bone.json",
+    "queryHash": "dbfcbcf0e4473536"
+  },
+  {
+    "slug": "bridgerton",
+    "type": "tv",
+    "label": "Bridgerton",
+    "year": 2020,
+    "expect": {
+      "type": "book",
+      "label": "Duke and I|Bridgerton"
+    },
+    "value": "91239",
+    "externalId": "91239",
+    "fixture": "bridgerton.json",
+    "queryHash": "429532d229ee156e"
+  },
+  {
+    "slug": "big-little-lies",
+    "type": "tv",
+    "label": "Big Little Lies",
+    "year": 2017,
+    "expect": {
+      "type": "book",
+      "label": "^Big Little Lies$"
+    },
+    "value": "66292",
+    "externalId": "66292",
+    "fixture": "big-little-lies.json",
+    "queryHash": "27e25c6ee9a028af"
+  },
+  {
+    "slug": "attack-on-titan",
+    "type": "anime",
+    "label": "Attack on Titan",
+    "value": "16498",
+    "expect": {
+      "type": "manga",
+      "label": "Attack on Titan|Shingeki"
+    },
+    "externalId": "al-16498",
+    "fixture": "attack-on-titan.json",
+    "queryHash": "26ec846bcff6e99f"
+  },
+  {
+    "slug": "death-note",
+    "type": "anime",
+    "label": "Death Note",
+    "value": "1535",
+    "expect": {
+      "type": "manga",
+      "label": "Death Note"
+    },
+    "externalId": "al-1535",
+    "fixture": "death-note.json",
+    "queryHash": "171227193d21bd42"
+  },
+  {
+    "slug": "fma-brotherhood",
+    "type": "anime",
+    "label": "Fullmetal Alchemist: Brotherhood",
+    "value": "5114",
+    "expect": {
+      "type": "manga",
+      "label": "Fullmetal Alchemist"
+    },
+    "externalId": "al-5114",
+    "fixture": "fma-brotherhood.json",
+    "queryHash": "0cabf26dc94894e9"
+  },
+  {
+    "slug": "demon-slayer",
+    "type": "anime",
+    "label": "Demon Slayer: Kimetsu no Yaiba",
+    "value": "101922",
+    "expect": {
+      "type": "manga",
+      "label": "Demon Slayer|Kimetsu"
+    },
+    "externalId": "al-101922",
+    "fixture": "demon-slayer.json",
+    "queryHash": "e30cc69360061881"
+  },
+  {
+    "slug": "frieren",
+    "type": "anime",
+    "label": "Frieren: Beyond Journey's End",
+    "value": "154587",
+    "expect": {
+      "type": "manga",
+      "label": "Frieren"
+    },
+    "externalId": "al-154587",
+    "fixture": "frieren.json",
+    "queryHash": "b8dbfc644d702d0b"
+  },
+  {
+    "slug": "akira-film",
+    "type": "anime",
+    "label": "Akira",
+    "value": "47",
+    "expect": {
+      "type": "manga",
+      "label": "^Akira$"
+    },
+    "externalId": "al-47",
+    "fixture": "akira-film.json",
+    "queryHash": "9045ed672a0f198e"
+  },
+  {
+    "slug": "cyberpunk-edgerunners",
+    "type": "anime",
+    "label": "Cyberpunk: Edgerunners",
+    "value": "120377",
+    "expect": {
+      "type": "game",
+      "label": "Cyberpunk"
+    },
+    "externalId": "al-120377",
+    "fixture": "cyberpunk-edgerunners.json",
+    "queryHash": "1afed2ff9ed466fa"
+  },
+  {
+    "slug": "berserk-manga",
+    "type": "manga",
+    "label": "Berserk",
+    "value": "30002",
+    "expect": {
+      "type": "anime",
+      "label": "Berserk"
+    },
+    "externalId": "al-30002",
+    "fixture": "berserk-manga.json",
+    "malId": 2,
+    "queryHash": "e14c8150ea1b0d01"
+  },
+  {
+    "slug": "monster-manga",
+    "type": "manga",
+    "label": "Monster",
+    "value": "30001",
+    "expect": {
+      "type": "anime",
+      "label": "Monster"
+    },
+    "externalId": "al-30001",
+    "fixture": "monster-manga.json",
+    "malId": 1,
+    "queryHash": "f6890859bab2157a"
+  },
+  {
+    "slug": "dune-novel",
+    "type": "book",
+    "label": "Dune",
+    "value": "OL893415W",
+    "expect": {
+      "type": "movie",
+      "label": "Dune"
+    },
+    "externalId": "OL893415W",
+    "fixture": "dune-novel.json",
+    "queryHash": "fa8ca57b3e0f360f"
+  },
+  {
+    "slug": "the-hobbit",
+    "type": "book",
+    "label": "The Hobbit",
+    "expect": {
+      "type": "movie",
+      "label": "Hobbit"
+    },
+    "value": "OL27482W",
+    "externalId": "OL27482W",
+    "fixture": "the-hobbit.json",
+    "queryHash": "ab4c3f888f2fbe5f"
+  },
+  {
+    "slug": "nineteen-eighty-four",
+    "type": "book",
+    "label": "Nineteen Eighty-Four",
+    "expect": {
+      "type": "movie",
+      "label": "1984|Nineteen Eighty-Four"
+    },
+    "value": "OL1168083W",
+    "externalId": "OL1168083W",
+    "fixture": "nineteen-eighty-four.json",
+    "queryHash": "21c2dfee720baa72"
+  },
+  {
+    "slug": "witcher-3",
+    "type": "game",
+    "label": "The Witcher 3: Wild Hunt",
+    "value": "the-witcher-3-wild-hunt",
+    "expect": {
+      "type": "book",
+      "label": "Witcher|Sapkowski|Last Wish|Blood of Elves|Wiedźmin"
+    },
+    "externalId": "",
+    "fixture": "witcher-3.json",
+    "kulturaId": "3328",
+    "queryHash": "1257575ff6e03489"
+  }
+]
