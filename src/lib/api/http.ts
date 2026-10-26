@@ -69,6 +69,7 @@ export const PROVIDER_IDS = [
   "openlibrary",
   "googlebooks",
   "steam",
+  "wikidata",
 ] as const;
 
 export type ProviderId = (typeof PROVIDER_IDS)[number];
