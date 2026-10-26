@@ -41,7 +41,7 @@ import {
   totalFor,
   type ProgressValue,
 } from '@/lib/library/progress'
-import { getProgressPlan, nextEpisodeInfo, progressV2Enabled } from '@/lib/library/progress-server'
+import { getProgressPlan, nextEpisodeInfo, progressColumnsExist, progressV2Enabled } from '@/lib/library/progress-server'
 import type { DbUserMediaLog } from '@/types/supabase'
 import type { DiaryLog, LibraryStatus } from '@/types/library'
 
@@ -57,8 +57,10 @@ async function session() {
   return { supabase, user: error ? null : user }
 }
 
-function limited(userId: string): NextResponse | null {
-  const rl = checkRateLimit(`${userId}:library`, LIMITS.library)
+/** GET (lo pide el diálogo al abrirse) con su propia cuenta, para que abrir
+ * fichas no gaste el cupo de guardar ni al revés. */
+function limited(userId: string, bucket: 'library' | 'library_progress' = 'library'): NextResponse | null {
+  const rl = checkRateLimit(`${userId}:${bucket}`, LIMITS.library)
   if (rl.allowed) return null
   return NextResponse.json(
     { error: 'Too many requests' },
@@ -66,16 +68,10 @@ function limited(userId: string): NextResponse | null {
   )
 }
 
-/** ¿Están las columnas? Para un título que aún no está en la biblioteca. */
-async function columnsExist(supabase: Awaited<ReturnType<typeof createClient>>): Promise<boolean> {
-  const { error } = await supabase.from('user_media').select('progress_episode').limit(1)
-  return !error
-}
-
 export async function GET(request: Request): Promise<NextResponse> {
   const { supabase, user } = await session()
   if (!user) return NextResponse.json({ error: 'Not authenticated' }, { status: 401 })
-  const tooMany = limited(user.id)
+  const tooMany = limited(user.id, 'library_progress')
   if (tooMany) return tooMany
 
   const mediaId = new URL(request.url).searchParams.get('mediaId')
@@ -100,7 +96,7 @@ export async function GET(request: Request): Promise<NextResponse> {
     return NextResponse.json({ error: 'Failed to read progress' }, { status: 500 })
   }
 
-  const migrated = row ? rowHasProgressColumns(row) : await columnsExist(supabase)
+  const migrated = row ? rowHasProgressColumns(row) : await progressColumnsExist(supabase)
   const enabled = progressV2Enabled() && migrated
   const locale = localeFromRequest(request)
   const progress = progressFromRow(row as Row | null)

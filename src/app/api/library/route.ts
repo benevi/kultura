@@ -25,7 +25,7 @@ import { checkRateLimit, LIMITS } from '@/lib/rate-limit'
 import { invalidateRecCache } from '@/lib/claude/recommendations'
 import { invalidateMatchScoreCache } from '@/lib/recommendations/match-score'
 import type { DbUserMedia, DbUserMediaLog } from '@/types/supabase'
-import type { DiaryLog, LibraryStatus } from '@/types/library'
+import type { DiaryLog, EpisodeProgress, LibraryStatus } from '@/types/library'
 import { isLibraryStatus } from '@/types/library'
 import { upsertMediaFromProvider, mediaFailureStatus } from '@/lib/media/upsert-from-provider'
 import { localeFromRequest } from '@/lib/media/request-locale'
@@ -39,6 +39,7 @@ import {
   progressFromRow,
   progressToColumns,
   progressToLegacy,
+  supportsLegacyProgress,
   type LibraryPayloadWithProgress,
   type LibraryEntryWithProgress,
 } from '@/lib/library/progress'
@@ -164,18 +165,26 @@ export async function POST(request: Request): Promise<NextResponse> {
   }
 
   // 4. Upsert en user_media
+  // El jsonb de siempre solo lo escriben series y anime: en el resto, con la
+  // bandera apagada y la migración aplicada, mandarlo (null) borraría las
+  // páginas u horas que ya están en las columnas.
   const legacyRow = {
     user_id: user.id,
     media_id: body.mediaId,
     status: body.status,
     score,
     watched_at: body.watchedAt ?? null,
-    // Con `progress` (cliente nuevo) manda él; si no, el campo de siempre.
-    episode_progress:
-      parsedProgress?.ok ? progressToLegacy(progressValue) : (body.episodeProgress ?? null),
+    ...(supportsLegacyProgress(mediaTypeOf)
+      ? {
+          // Con `progress` (cliente nuevo) manda él; si no, el campo de siempre.
+          episode_progress: parsedProgress?.ok
+            ? progressToLegacy(progressValue)
+            : (body.episodeProgress ?? null),
+        }
+      : {}),
   }
   type Row = Omit<typeof legacyRow, 'episode_progress'> & {
-    episode_progress?: typeof legacyRow.episode_progress
+    episode_progress?: EpisodeProgress | null
     rating10?: number | null
     favorite?: boolean
   }

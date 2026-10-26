@@ -468,8 +468,8 @@
       "hours": "{hours, number} h",
       "hoursOf": "{hours, number} h de ~{total, number} h"
     },
-    "quick": "{unit, select, episode {+1 ep.} chapter {+1 cap.} page {+10 págs.} percent {+5 %} hours {+1 h} other {+1}}",
-    "quickLabel": "{unit, select, episode {Marcar el siguiente episodio de «{title}»} chapter {Marcar el siguiente capítulo de «{title}»} page {Sumar 10 páginas a «{title}»} percent {Sumar un 5 % a «{title}»} hours {Sumar una hora jugada a «{title}»} other {Avanzar en «{title}»}}",
+    "quick": "{unit, select, episode {+1 ep.} chapter {+1 cap.} page {+10 págs.} percent {+5 %} hours {+1 h} advance {Avanzar} other {+1}}",
+    "quickLabel": "{unit, select, episode {Marcar el siguiente episodio de «{title}»} chapter {Marcar el siguiente capítulo de «{title}»} page {Sumar 10 páginas a «{title}»} percent {Sumar un 5 % a «{title}»} hours {Sumar una hora jugada a «{title}»} advance {Avanzar en «{title}»} other {Avanzar en «{title}»}}",
     "nextEpisode": "Siguiente: T{season, number} · E{episode, number}",
     "nextEpisodeNamed": "Siguiente: T{season, number} · E{episode, number} «{name}»",
     "saved": "«{title}»: {label}",

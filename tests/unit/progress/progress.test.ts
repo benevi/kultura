@@ -163,6 +163,14 @@ describe('marcar siguiente', () => {
     expect(beyond).toMatchObject({ value: { season: 2, episode: 7 }, finished: false, caughtUp: true })
   })
 
+  it('series sin estado de TMDB: el último episodio no se da por terminado (solo con ended)', () => {
+    const plan = { seasons: [{ number: 1, episodes: 8 }] }
+    expect(isAtEnd('tv', { season: 1, episode: 8 }, plan)).toBe(false)
+    expect(nextProgress('tv', { season: 1, episode: 7 }, plan)).toMatchObject({ value: { episode: 8 }, finished: false })
+    expect(nextProgress('tv', { season: 1, episode: 8 }, plan)).toMatchObject({ finished: false, caughtUp: true })
+    expect(isAtEnd('tv', { season: 1, episode: 8 }, { ...plan, ended: true })).toBe(true)
+  })
+
   it('series sin plan (TMDB caído): +1 episodio, sin cambiar de temporada ni proponer nada', () => {
     expect(nextProgress('tv', { season: 1, episode: 10 }, null)).toMatchObject({
       value: { season: 1, episode: 11 },
@@ -196,6 +204,8 @@ describe('marcar siguiente', () => {
     // Sin progreso ni total, en porcentaje; con total, en páginas.
     expect(nextProgress('book', null, null)?.value).toEqual({ percent: 5 })
     expect(nextProgress('book', null, { total: 200 })?.value).toEqual({ page: 10, total: 200 })
+    // Nunca hacia atrás: ibas por encima del total de la ficha (otra edición).
+    expect(nextProgress('book', { page: 400 }, { total: 350 })?.value).toEqual({ page: 400, total: 350 })
   })
 
   it('juegos: +1 hora frente a la media de RAWG, y las horas nunca dan un juego por terminado', () => {
@@ -214,6 +224,10 @@ describe('barra y unidad del botón', () => {
   it('porcentaje con el total; libro en % tal cual; sin total, nada', () => {
     expect(progressPercent('book', { page: 120, total: 350 })).toBe(34)
     expect(progressPercent('book', { percent: 45 })).toBe(45)
+    // Hacia abajo: casi terminado no es 100 %; y sin errores de coma flotante.
+    expect(progressPercent('book', { page: 349, total: 350 })).toBe(99)
+    expect(progressPercent('book', { page: 29, total: 100 })).toBe(29)
+    expect(progressPercent('book', { page: 350, total: 350 })).toBe(100)
     expect(progressPercent('tv', { season: 2, episode: 5, total: 10 })).toBe(50)
     expect(progressPercent('game', { hours: 30, total: 22 })).toBe(100)
     expect(progressPercent('tv', { episode: 5 })).toBeNull()
@@ -230,7 +244,9 @@ describe('barra y unidad del botón', () => {
     expect(quickUnit('tv', null)).toBe('episode')
     expect(quickUnit('comic', null)).toBe('chapter')
     expect(quickUnit('book', { page: 3 })).toBe('page')
-    expect(quickUnit('book', null)).toBe('percent')
+    expect(quickUnit('book', null)).toBe('advance')
+    expect(quickUnit('book', { total: 350 })).toBe('advance')
+    expect(quickUnit('book', { percent: 10 })).toBe('percent')
     expect(quickUnit('game', null)).toBe('hours')
     expect(quickUnit('movie', null)).toBeNull()
   })

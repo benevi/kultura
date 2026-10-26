@@ -468,8 +468,8 @@
       "hours": "{hours, number} h",
       "hoursOf": "{hours, number} h of ~{total, number} h"
     },
-    "quick": "{unit, select, episode {+1 ep.} chapter {+1 ch.} page {+10 pp.} percent {+5%} hours {+1 h} other {+1}}",
-    "quickLabel": "{unit, select, episode {Mark the next episode of “{title}”} chapter {Mark the next chapter of “{title}”} page {Add 10 pages to “{title}”} percent {Add 5% to “{title}”} hours {Add one hour played to “{title}”} other {Move forward in “{title}”}}",
+    "quick": "{unit, select, episode {+1 ep.} chapter {+1 ch.} page {+10 pp.} percent {+5%} hours {+1 h} advance {Move on} other {+1}}",
+    "quickLabel": "{unit, select, episode {Mark the next episode of “{title}”} chapter {Mark the next chapter of “{title}”} page {Add 10 pages to “{title}”} percent {Add 5% to “{title}”} hours {Add one hour played to “{title}”} advance {Move forward in “{title}”} other {Move forward in “{title}”}}",
     "nextEpisode": "Next: S{season, number} · E{episode, number}",
     "nextEpisodeNamed": "Next: S{season, number} · E{episode, number} “{name}”",
     "saved": "“{title}”: {label}",

@@ -43,6 +43,24 @@ describe('migración de progreso', () => {
     expect(on).toBeGreaterThan(fill)
   })
 
+  it('escritor antiguo (solo cambia el jsonb): temporada y episodio salen de él; el resto solo si trae la clave', () => {
+    const start = code.indexOf('if not cols_changed and json_changed then')
+    const end = code.indexOf('cols_changed := true;', start)
+    const branch = code.slice(start, end)
+    expect(start).toBeGreaterThan(-1)
+    // Nada se pone a NULL en bloque (un jsonb null de un libro no borra sus páginas).
+    expect(branch).not.toMatch(/progress_(chapter|volume|page|percent|hours) := null/)
+    for (const key of ['chapter', 'volume', 'page', 'percent', 'hours']) {
+      const guard = branch.indexOf(`if j ? '${key}' then`)
+      expect(guard, key).toBeGreaterThan(-1)
+      expect(branch.indexOf(`new.progress_${key} :=`), key).toBeGreaterThan(guard)
+    }
+    // Cambio de temporada sin total en el jsonb → el total (de otra temporada) a NULL.
+    expect(branch).toMatch(
+      /elsif tg_op = 'UPDATE' and new\.progress_season is distinct from old\.progress_season then\s+new\.progress_total := null;/
+    )
+  })
+
   it('el disparador no es SECURITY DEFINER (corre con la RLS de quien escribe)', () => {
     expect(code).not.toMatch(/security definer/i)
   })

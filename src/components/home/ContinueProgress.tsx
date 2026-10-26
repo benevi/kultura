@@ -8,7 +8,7 @@
 // barra solo anima su anchura y nada con movimiento reducido.
 // ============================================================
 
-import { useEffect, useRef } from 'react'
+import { useEffect, useId, useRef } from 'react'
 import { useTranslations } from 'next-intl'
 import { cn } from '@/lib/utils/index'
 import { KButton } from '@/components/ui/KButton'
@@ -47,6 +47,7 @@ export function ContinueProgress({ mediaId, mediaType, title, progress: initial,
   const label = useProgressLabel()
   const buttonRef = useRef<HTMLButtonElement>(null)
   const stampRef = useRef<HTMLSpanElement>(null)
+  const descId = useId()
   const state = useProgressAdvance({ mediaId, mediaType, title, progress: initial, status: initialStatus })
   const { progress, status } = state
 
@@ -71,7 +72,8 @@ export function ContinueProgress({ mediaId, mediaType, title, progress: initial,
         >
           {done ? tl('status.completed') : label(mediaType, progress)}
         </span>
-        {percent !== null && !done ? (
+        {/* En % la etiqueta ya dice el porcentaje: no se repite. */}
+        {percent !== null && !done && unit !== 'percent' ? (
           <span className="font-body text-xs text-text-tertiary tabular-nums">{t('percentDone', { percent })}</span>
         ) : null}
       </div>
@@ -101,13 +103,18 @@ export function ContinueProgress({ mediaId, mediaType, title, progress: initial,
               variant="secondary"
               onClick={state.advance}
               aria-busy={state.busy || undefined}
-              aria-label={t('quickLabel', { unit, title })}
+              // WCAG 2.5.3: el nombre es el texto visible («+1 ep.»); el
+              // título y la frase completa van en la descripción.
+              aria-describedby={descId}
               data-testid="progress-next"
               // 44 px de alto (zona táctil) en los dos tamaños.
               className={cn('h-11 text-text-primary', hero ? 'px-5 text-sm' : 'min-w-11 px-3 text-xs')}
             >
               <span aria-hidden="true">✓</span>
-              <span aria-hidden="true">{t('quick', { unit })}</span>
+              <span>{t('quick', { unit })}</span>
+              <span id={descId} hidden>
+                {t('quickLabel', { unit, title })}
+              </span>
             </KButton>
           )}
         </div>

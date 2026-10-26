@@ -137,7 +137,10 @@ describe('Continúa: 1 toque con actualización optimista', () => {
     renderIntl(<ContinueProgress {...tvProps} progress={{ season: 1, episode: 10, total: 10 }} />)
     expect(screen.getByTestId('progress-label')).toHaveTextContent('T1 · E10 de 10')
 
-    fireEvent.click(screen.getByRole('button', { name: 'Marcar el siguiente episodio de «Juego de tronos»' }))
+    // WCAG 2.5.3: el nombre es el texto visible; el título, en la descripción.
+    const next = screen.getByRole('button', { name: '+1 ep.' })
+    expect(next).toHaveAccessibleDescription('Marcar el siguiente episodio de «Juego de tronos»')
+    fireEvent.click(next)
     // Optimista: sin esperar a la red.
     expect(screen.getByTestId('progress-label')).toHaveTextContent('T1 · E11')
     expect(mockAdvance).toHaveBeenCalledWith('tv_1399')
@@ -198,13 +201,26 @@ describe('Continúa: 1 toque con actualización optimista', () => {
   it('libro con % visible y juego con horas (en inglés también)', () => {
     renderIntl(<ContinueProgress {...tvProps} mediaId="book_OL1W" mediaType="book" title="Dune" progress={{ percent: 45 }} />, 'en')
     expect(screen.getByTestId('progress-label')).toHaveTextContent('45% read')
-    expect(screen.getByRole('button', { name: 'Add 5% to “Dune”' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: '+5%' })).toHaveAccessibleDescription('Add 5% to “Dune”')
+    // En % la etiqueta ya lo dice: el porcentaje no se repite al lado.
+    expect(screen.getAllByText(/45%/)).toHaveLength(1)
+  })
+
+  it('libro con páginas: % hacia abajo (349 de 350 no es un 100 %)', () => {
+    renderIntl(<ContinueProgress {...tvProps} mediaId="book_OL1W" mediaType="book" title="Dune" progress={{ page: 349, total: 350 }} />)
+    expect(screen.getByText('99 %')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: '+10 págs.' })).toHaveAccessibleDescription('Sumar 10 páginas a «Dune»')
+  })
+
+  it('libro sin progreso: botón neutro «Avanzar» (páginas o % lo decide el servidor)', () => {
+    renderIntl(<ContinueProgress {...tvProps} mediaId="book_OL1W" mediaType="book" title="Dune" progress={null} />)
+    expect(screen.getByRole('button', { name: 'Avanzar' })).toHaveAccessibleDescription('Avanzar en «Dune»')
   })
 
   it('juego: «12,5 h de ~22 h» y +1 h', () => {
     renderIntl(<ContinueProgress {...tvProps} mediaId="game_1" mediaType="game" title="Hades" progress={{ hours: 12.5, total: 22 }} />)
     expect(screen.getByTestId('progress-label')).toHaveTextContent('12,5 h de ~22 h')
-    expect(screen.getByRole('button', { name: 'Sumar una hora jugada a «Hades»' })).toHaveTextContent('+1 h')
+    expect(screen.getByRole('button', { name: '+1 h' })).toHaveAccessibleDescription('Sumar una hora jugada a «Hades»')
   })
 })
 

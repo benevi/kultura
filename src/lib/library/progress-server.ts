@@ -30,6 +30,32 @@ export function progressV2Enabled(): boolean {
   return process.env.PROGRESS_V2 === '1'
 }
 
+/** Lo justo de un cliente de Supabase para la sonda (sirve el de servidor y los mocks). */
+interface ProbeClient {
+  from(table: 'user_media'): {
+    select(columns: string): { limit(n: number): PromiseLike<{ error: unknown }> }
+  }
+}
+
+/**
+ * ¿Tiene la base las columnas de 20261215270001? Sonda de una fila (sin
+ * filas también responde sin error). Con la bandera encendida antes de
+ * aplicar la migración devuelve false (42703) y todo sigue como antes.
+ */
+export async function progressColumnsExist(supabase: ProbeClient): Promise<boolean> {
+  try {
+    const { error } = await supabase.from('user_media').select('progress_episode').limit(1)
+    return !error
+  } catch {
+    return false
+  }
+}
+
+/** PROGRESS_V2 encendida Y la migración aplicada (misma detección que el GET). */
+export async function progressV2Active(supabase: ProbeClient): Promise<boolean> {
+  return progressV2Enabled() && (await progressColumnsExist(supabase))
+}
+
 // ── TMDB: temporadas y episodios ─────────────────────────────────────────────
 
 /** Partes de `/tv/{id}` que usa el progreso (la respuesta trae mucho más). */

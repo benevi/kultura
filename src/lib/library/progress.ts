@@ -302,8 +302,9 @@ export function isAtEnd(mediaType: string, value: ProgressValue | null, plan: Pr
     if (!last || typeof value.episode !== 'number') return false
     const here = { season: value.season ?? 1, episode: value.episode }
     if (cmpEpisode(here, { season: last.number, episode: last.episodes }) < 0) return false
-    // En emisión, el último de TMDB puede no ser el final: solo si terminó.
-    return plan?.ended === true || !plan?.lastAired
+    // El último episodio de TMDB solo es el final si la serie terminó
+    // (en emisión, o sin estado, puede haber más).
+    return plan?.ended === true
   }
   const total = totalFor(mediaType, value, plan)
   if (kind === 'anime') return total !== null && (value.episode ?? 0) >= total
@@ -347,8 +348,8 @@ export function nextProgress(
       if (info && base.episode >= info.episodes) {
         const following = seasons.find((s) => s.number > season)
         // Último episodio de la última temporada: no hay más que marcar. Si la
-        // serie sigue en emisión, estás al día; si terminó, se propone completar.
-        if (!following) return done({ ...base, season }, plan?.ended !== true && !!plan?.lastAired)
+        // serie terminó, se propone completar; si no, estás al día.
+        if (!following) return done({ ...base, season }, plan?.ended !== true)
         target = { season: following.number, episode: 1 }
       } else {
         target = { season, episode: base.episode + 1 }
@@ -380,8 +381,10 @@ export function nextProgress(
     if (usePercent) {
       return done({ percent: Math.min(100, (base.percent ?? 0) + QUICK_STEP.percent), total: base.total })
     }
-    const page = (base.page ?? 0) + QUICK_STEP.page
-    return done({ page: total !== null ? Math.min(page, total) : Math.min(page, PROGRESS_LIMITS.page.max), total: base.total })
+    const current = base.page ?? 0
+    const page = Math.min(current + QUICK_STEP.page, total ?? PROGRESS_LIMITS.page.max)
+    // Nunca hacia atrás (p. ej. si ya ibas por encima del total de la ficha).
+    return done({ page: Math.max(current, page), total: base.total })
   }
 
   // game
@@ -407,22 +410,31 @@ export function progressRatio(mediaType: string, value: ProgressValue | null | u
   return Math.max(0, Math.min(1, done / total))
 }
 
-/** Porcentaje entero para mostrar ("45 %"), o null. */
+/**
+ * Porcentaje entero para mostrar ("45 %"), o null. Hacia abajo: 349 de 350
+ * páginas es un 99 %, no un 100 % que parezca terminado.
+ */
 export function progressPercent(mediaType: string, value: ProgressValue | null | undefined): number | null {
   const ratio = progressRatio(mediaType, value)
-  return ratio === null ? null : Math.round(ratio * 100)
+  return ratio === null ? null : Math.floor(ratio * 100 + 1e-9)
 }
 
-/** Unidad que avanza un toque (para el texto del botón). */
-export function quickUnit(mediaType: string, value: ProgressValue | null | undefined): 'episode' | 'chapter' | 'page' | 'percent' | 'hours' | null {
+/**
+ * Unidad que avanza un toque (para el texto del botón). Libro sin progreso:
+ * `advance` (neutro), porque el servidor decide páginas o % según tenga o no
+ * el total de la ficha, y el cliente no lo sabe.
+ */
+export type QuickUnit = 'episode' | 'chapter' | 'page' | 'percent' | 'hours' | 'advance'
+
+export function quickUnit(mediaType: string, value: ProgressValue | null | undefined): QuickUnit | null {
   const kind = progressKindFor(mediaType)
   if (kind === 'tv' || kind === 'anime') return 'episode'
   if (kind === 'reading') return 'chapter'
   if (kind === 'game') return 'hours'
   if (kind === 'book') {
     if (typeof value?.percent === 'number') return 'percent'
-    if (typeof value?.page === 'number' || typeof value?.total === 'number') return 'page'
-    return 'percent'
+    if (typeof value?.page === 'number') return 'page'
+    return 'advance'
   }
   return null
 }

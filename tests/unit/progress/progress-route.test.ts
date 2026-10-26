@@ -58,8 +58,12 @@ vi.mock('@/lib/api/tmdb', () => ({ getTV }))
 vi.mock('@/lib/api/http', () => ({ providerFetch }))
 vi.mock('@/lib/env.server', () => ({ env: { TMDB_API_KEY: 'k' } }))
 vi.mock('@/lib/media/resolve-item', () => ({ resolveMediaItem }))
+const rateKeys: string[] = []
 vi.mock('@/lib/rate-limit', () => ({
-  checkRateLimit: () => ({ allowed: true, retryAfterSeconds: 0 }),
+  checkRateLimit: (key: string) => {
+    rateKeys.push(key)
+    return { allowed: true, retryAfterSeconds: 0 }
+  },
   LIMITS: { library: { windowMs: 60_000, max: 30 } },
 }))
 vi.mock('@/lib/claude/recommendations', () => ({ invalidateRecCache: vi.fn() }))
@@ -277,5 +281,12 @@ describe('GET: estado y plan para el diálogo', () => {
   it('película: sin progreso', async () => {
     const { json } = await get('movie_550')
     expect(json).toMatchObject({ kind: null, enabled: false })
+  })
+
+  it('el GET tiene su propio cupo (abrir fichas no gasta el de guardar)', async () => {
+    rateKeys.length = 0
+    entry = legacyTv({ season: 1, episode: 2 })
+    await get('tv_1399')
+    expect(rateKeys).toEqual([`${USER.id}:library_progress`])
   })
 })

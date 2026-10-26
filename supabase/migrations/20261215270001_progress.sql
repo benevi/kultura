@@ -26,9 +26,12 @@
 --        - si cambian las columnas → episode_progress = espejo de las
 --          columnas (solo las que tienen valor; NULL si no hay progreso);
 --        - si solo cambia episode_progress (código sin la bandera
---          PROGRESS_V2, un import, un cliente antiguo) → las columnas se
---          rellenan desde el jsonb (lo que no es número o se sale del rango
---          queda en NULL; progress_total se conserva si el jsonb no lo trae).
+--          PROGRESS_V2, un import, un cliente antiguo) → temporada y
+--          episodio salen del jsonb (lo que no es número o se sale del rango
+--          queda en NULL); capítulo, volumen, página, %, horas y total se
+--          conservan si el jsonb no trae la clave (un escritor antiguo no
+--          borra páginas ni horas); si cambia la temporada sin total en el
+--          jsonb, progress_total pasa a NULL (era el de otra temporada).
 --      Ejemplo: escribir {"season":2,"episode":5} → progress_season 2,
 --      progress_episode 5; escribir progress_page = 120 con total 350 →
 --      episode_progress = {"page":120,"total":350}.
@@ -139,36 +142,45 @@ begin
     json_changed := new.episode_progress is distinct from old.episode_progress;
   end if;
 
-  -- Escritor antiguo: solo ha cambiado el jsonb → las columnas salen de él.
+  -- Escritor antiguo: solo ha cambiado el jsonb. Ese código solo conoce
+  -- temporada y episodio ({season?, episode}): esas dos salen del jsonb y el
+  -- resto (capítulo, volumen, página, %, horas, total) se conserva salvo que
+  -- el jsonb traiga la clave. Así guardar un libro o un juego con el código
+  -- de antes (o un import) no borra sus páginas u horas. Si cambia la
+  -- temporada, el total (episodios de ESA temporada) deja de valer → NULL.
   if not cols_changed and json_changed then
-    j := new.episode_progress;
-    if j is null or jsonb_typeof(j) <> 'object' then
-      new.progress_season := null;
-      new.progress_episode := null;
-      new.progress_chapter := null;
-      new.progress_volume := null;
-      new.progress_page := null;
-      new.progress_percent := null;
-      new.progress_hours := null;
-    else
-      v := case when jsonb_typeof(j->'season') = 'number' then (j->>'season')::numeric end;
-      new.progress_season := case when v between 0 and 999 and v = trunc(v) then v::smallint end;
-      v := case when jsonb_typeof(j->'episode') = 'number' then (j->>'episode')::numeric end;
-      new.progress_episode := case when v between 1 and 99999 and v = trunc(v) then v::integer end;
+    j := case when jsonb_typeof(new.episode_progress) = 'object' then new.episode_progress else '{}'::jsonb end;
+    v := case when jsonb_typeof(j->'season') = 'number' then (j->>'season')::numeric end;
+    new.progress_season := case when v between 0 and 999 and v = trunc(v) then v::smallint end;
+    v := case when jsonb_typeof(j->'episode') = 'number' then (j->>'episode')::numeric end;
+    new.progress_episode := case when v between 1 and 99999 and v = trunc(v) then v::integer end;
+    if j ? 'chapter' then
       v := case when jsonb_typeof(j->'chapter') = 'number' then (j->>'chapter')::numeric end;
       new.progress_chapter := case when v between 0 and 99999.9 then round(v, 1) end;
+    end if;
+    if j ? 'volume' then
       v := case when jsonb_typeof(j->'volume') = 'number' then (j->>'volume')::numeric end;
       new.progress_volume := case when v between 0 and 9999 and v = trunc(v) then v::integer end;
+    end if;
+    if j ? 'page' then
       v := case when jsonb_typeof(j->'page') = 'number' then (j->>'page')::numeric end;
       new.progress_page := case when v between 0 and 100000 and v = trunc(v) then v::integer end;
+    end if;
+    if j ? 'percent' then
       v := case when jsonb_typeof(j->'percent') = 'number' then (j->>'percent')::numeric end;
       new.progress_percent := case when v between 0 and 100 then round(v)::smallint end;
+    end if;
+    if j ? 'hours' then
       v := case when jsonb_typeof(j->'hours') = 'number' then (j->>'hours')::numeric end;
       new.progress_hours := case when v between 0 and 99999.9 then round(v, 1) end;
+    end if;
+    if j ? 'total' then
       v := case when jsonb_typeof(j->'total') = 'number' then (j->>'total')::numeric end;
       new.progress_total := coalesce(
         case when v between 1 and 100000 and v = trunc(v) then v::integer end,
-        case when tg_op = 'UPDATE' then old.progress_total end);
+        new.progress_total);
+    elsif tg_op = 'UPDATE' and new.progress_season is distinct from old.progress_season then
+      new.progress_total := null;
     end if;
     cols_changed := true;
   end if;

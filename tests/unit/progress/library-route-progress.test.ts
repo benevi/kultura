@@ -8,6 +8,9 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 const mockGetUser = vi.fn()
 const upserts: Record<string, unknown>[] = []
 const upsertResults: Array<{ data: unknown; error: unknown }> = []
+/** Fila ya guardada en la base (con la migración): el upsert de PostgREST
+ * solo cambia las columnas que se mandan, el resto se queda. */
+let stored: Record<string, unknown> | null = null
 
 vi.mock('@/lib/supabase/server', () => ({
   createClient: async () => ({
@@ -15,7 +18,7 @@ vi.mock('@/lib/supabase/server', () => ({
     from: () => ({
       upsert: (row: Record<string, unknown>) => {
         upserts.push(row)
-        return { select: () => ({ single: async () => upsertResults.shift() ?? { data: { ...ROW, ...row }, error: null } }) }
+        return { select: () => ({ single: async () => upsertResults.shift() ?? { data: { ...ROW, ...(stored ?? {}), ...row }, error: null } }) }
       },
     }),
   }),
@@ -49,6 +52,7 @@ async function call(body: unknown) {
 beforeEach(() => {
   upserts.length = 0
   upsertResults.length = 0
+  stored = null
   mockGetUser.mockResolvedValue({ data: { user: USER }, error: null })
 })
 afterEach(() => vi.unstubAllEnvs())
@@ -64,6 +68,29 @@ describe('sin PROGRESS_V2 (hoy)', () => {
     await call({ mediaId: 'tv_1399', status: 'in_progress', progress: { season: 3, episode: 4, total: 10 } })
     expect(upserts[0].episode_progress).toEqual({ season: 3, episode: 4 })
     expect(upserts[0]).not.toHaveProperty('progress_season')
+  })
+
+  it('fila migrada de un libro y la bandera apagada: guardar el estado no borra las páginas', async () => {
+    stored = {
+      progress_season: null, progress_episode: null, progress_chapter: null, progress_volume: null,
+      progress_page: 120, progress_percent: null, progress_hours: null, progress_total: 350,
+      progress_updated_at: '2026-10-25T10:00:00Z', episode_progress: { page: 120, total: 350 },
+    }
+    // Un cliente antiguo manda episodeProgress null; uno nuevo, progress (que sin bandera no se escribe).
+    for (const extra of [{ episodeProgress: null }, { progress: { page: 200, total: 350 } }, {}]) {
+      upserts.length = 0
+      const { status, json } = await call({ mediaId: 'book_OL1W', status: 'pending', ...extra })
+      expect(status).toBe(200)
+      // Ni el jsonb (el disparador lo tomaría como «sin progreso») ni las columnas.
+      expect(upserts[0]).not.toHaveProperty('episode_progress')
+      expect(Object.keys(upserts[0]).filter((k) => k.startsWith('progress_'))).toEqual([])
+      expect((json.entry as Record<string, unknown>).progress).toEqual({ page: 120, total: 350 })
+    }
+  })
+
+  it('juego sin bandera: tampoco manda episode_progress', async () => {
+    await call({ mediaId: 'game_3498', status: 'in_progress', episodeProgress: null })
+    expect(upserts[0]).not.toHaveProperty('episode_progress')
   })
 })
 
