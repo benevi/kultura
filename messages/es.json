@@ -1030,7 +1030,9 @@
     "weeklyEmailPending": "Te hemos enviado un correo para confirmarlo. Pulsa el enlace (caduca en 7 días); hasta entonces no recibirás nada.",
     "weeklyEmailCooldown": "Ya te lo hemos enviado hace un momento. Revisa tu correo (también el spam) o inténtalo dentro de unos minutos.",
     "weeklyEmailUnconfirmed": "Primero tienes que confirmar tu dirección de correo.",
-    "weeklyEmailSendFailed": "No se ha podido enviar el correo de confirmación. Inténtalo más tarde."
+    "weeklyEmailSendFailed": "No se ha podido enviar el correo de confirmación. Inténtalo más tarde.",
+    "weeklyEmailDailyLimit": "Ya te hemos enviado 3 correos de confirmación hoy. Busca el último en tu bandeja (también en el spam) o vuelve a intentarlo mañana.",
+    "weeklyEmailBusy": "Ahora mismo no podemos enviar más correos de confirmación. Inténtalo dentro de unas horas."
   },
   "platforms": {
     "title": "Mis plataformas",

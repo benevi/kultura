@@ -16,7 +16,7 @@ import {
   type DigestStore,
   type SendRow,
 } from '@/lib/email/digest'
-import { verifyUnsubscribeToken } from '@/lib/email/unsubscribe-token'
+import { emailFingerprint, verifyUnsubscribeToken } from '@/lib/email/unsubscribe-token'
 import type { EmailMessage, SendResult } from '@/lib/email/resend'
 import type { CalendarEvent } from '@/lib/calendar/types'
 import { fakeSupabase, opsOf } from '../plataformas-listas/fake-supabase'
@@ -31,16 +31,27 @@ const U2 = '22222222-2222-4222-8222-222222222222'
 const U3 = '33333333-3333-4333-8333-333333333333'
 
 function memoryStore(
-  opted: Array<{ user_id: string; consented_at: string | null }>,
+  opted: Array<{ user_id: string; consented_at: string | null; confirmed_email_hash?: string | null }>,
   emails: Record<string, string>,
   unconfirmed: string[] = []
 ) {
   const rows: SendRow[] = []
   let seq = 0
-  const store: DigestStore & { rows: SendRow[]; finished: Array<{ id: string; status: string; error?: string | null }> } = {
+  const store: DigestStore & {
+    rows: SendRow[]
+    finished: Array<{ id: string; status: string; error?: string | null }>
+    reconfirmed: string[]
+  } = {
     rows,
     finished: [],
-    listOptedIn: async () => opted,
+    reconfirmed: [],
+    // Por defecto, cada uno confirmó la dirección que tiene ahora.
+    listOptedIn: async () =>
+      opted.map((p) => ({
+        ...p,
+        confirmed_email_hash:
+          p.confirmed_email_hash !== undefined ? p.confirmed_email_hash : emails[p.user_id] ? emailFingerprint(emails[p.user_id]) : null,
+      })),
     listSends: async (period) => rows.filter((r) => (r as SendRow & { period: string }).period === period).map((r) => ({ ...r })),
     claim: async (userId, period, existing) => {
       const found = rows.find((r) => r.user_id === userId && (r as SendRow & { period: string }).period === period)
@@ -65,6 +76,9 @@ function memoryStore(
     profiles: async (ids) => new Map(ids.map((id) => [id, { username: `user-${id.slice(0, 2)}`, locale: id === U2 ? ('en' as const) : ('es' as const) }])),
     email: async (id) =>
       emails[id] && !unconfirmed.includes(id) ? { email: emails[id], email_confirmed_at: '2026-12-01T00:00:00Z' } : null,
+    requireReconfirm: async (id) => {
+      store.reconfirmed.push(id)
+    },
   }
   return store
 }
@@ -283,6 +297,38 @@ describe('runWeeklyDigest', () => {
     expect(sent).toHaveLength(1)
   })
 
+  it('cambió de dirección desde que confirmó: no se envía, se desactiva y se pide confirmar la nueva', async () => {
+    const store = memoryStore(
+      [{ user_id: U1, consented_at: '2026-12-01T00:00:00Z', confirmed_email_hash: emailFingerprint('vieja@example.com') }],
+      { [U1]: 'nueva@example.com' }
+    )
+    const requestOptin = vi.fn(async () => 'sent')
+    const { d, send } = deps(store, { requestOptin })
+    expect(await runWeeklyDigest(d)).toMatchObject({ sent: 0, skipped: 1 })
+    expect(send).not.toHaveBeenCalled()
+    expect(store.reconfirmed).toEqual([U1])
+    expect(store.finished).toEqual([{ id: 'r1', status: 'skipped', error: 'email_changed' }])
+    expect(requestOptin).toHaveBeenCalledWith({ userId: U1, email: 'nueva@example.com', username: 'user-11', locale: 'es' })
+  })
+
+  it('sin huella guardada (confirmación antigua): tampoco se envía', async () => {
+    const store = memoryStore([{ user_id: U1, consented_at: null, confirmed_email_hash: null }], { [U1]: 'ana@example.com' })
+    const { d, send } = deps(store, { requestOptin: async () => 'sent' })
+    await runWeeklyDigest(d)
+    expect(send).not.toHaveBeenCalled()
+    expect(store.reconfirmed).toEqual([U1])
+  })
+
+  it('la huella no distingue mayúsculas ni espacios', async () => {
+    const store = memoryStore(
+      [{ user_id: U1, consented_at: null, confirmed_email_hash: emailFingerprint(' Ana@Example.com') }],
+      { [U1]: 'ana@example.com' }
+    )
+    const { d, sent } = deps(store)
+    await runWeeklyDigest(d)
+    expect(sent).toHaveLength(1)
+  })
+
   it('WEEKLY_EMAIL_ONLY: los demás se saltan sin enviar', async () => {
     const store = memoryStore([{ user_id: U1, consented_at: null }, { user_id: U2, consented_at: null }], { [U1]: 'yo@x.es', [U2]: 'otro@x.es' })
     const { d, sent } = deps(store, { config: { ...CONFIG, only: new Set(['yo@x.es']) } })
@@ -305,12 +351,13 @@ describe('almacén real (consultas a Supabase)', () => {
   it('reclama con UNIQUE (upsert ignorando duplicados) y lee solo lo de la semana', async () => {
     const client = fakeSupabase({
       tables: {
-        email_preferences: [{ data: [{ user_id: U1, consented_at: null }], error: null }],
+        email_preferences: [{ data: [{ user_id: U1, consented_at: null, confirmed_email_hash: 'h' }], error: null }],
         email_sends: [{ data: [{ id: 'r1' }], error: null }],
       },
     })
     const store = supabaseDigestStore(client as never)
-    expect(await store.listOptedIn()).toEqual([{ user_id: U1, consented_at: null }])
+    expect(await store.listOptedIn()).toEqual([{ user_id: U1, consented_at: null, confirmed_email_hash: 'h' }])
+    expect(opsOf(client, 'email_preferences', 'select')[0].args[0]).toContain('confirmed_email_hash')
     expect(opsOf(client, 'email_preferences', 'eq')).toContainEqual({ name: 'eq', args: ['weekly_digest', true] })
     expect(await store.claim(U1, '2026-W51', undefined)).toBe('r1')
     expect(opsOf(client, 'email_sends', 'upsert')[0].args).toEqual([

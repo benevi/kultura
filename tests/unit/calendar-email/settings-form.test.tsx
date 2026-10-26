@@ -106,6 +106,8 @@ describe('Ajustes › correo semanal', () => {
 
   it.each([
     [429, 'cooldown', 'weeklyEmailCooldown', 'status'],
+    [429, 'daily_limit', 'weeklyEmailDailyLimit', 'status'],
+    [503, 'busy', 'weeklyEmailBusy', 'status'],
     [403, 'unconfirmed_email', 'weeklyEmailUnconfirmed', 'alert'],
     [502, 'send_failed', 'weeklyEmailSendFailed', 'alert'],
   ])('%s %s → %s', async (status, error, text, role) => {

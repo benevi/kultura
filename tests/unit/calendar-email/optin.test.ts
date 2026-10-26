@@ -27,10 +27,17 @@ vi.mock('@/lib/email/resend', async (orig) => ({ ...(await orig<typeof import('@
 
 import { PUT } from '@/app/api/email/preferences/route'
 import { POST as confirmPOST } from '@/app/api/email/confirm/route'
-import { createOptinToken, createUnsubscribeToken, verifyOptinToken } from '@/lib/email/unsubscribe-token'
+import {
+  OPTIN_TOKEN_TTL_SECONDS,
+  createOptinToken,
+  createUnsubscribeToken,
+  emailFingerprint,
+  verifyOptinToken,
+} from '@/lib/email/unsubscribe-token'
 import { WEEKLY_EMAIL_CONSENT_VERSION } from '@/lib/email/consent'
 import { buildOptinEmail } from '@/lib/email/optin-template'
 import { stripSensitiveQuery } from '@/components/analytics/VercelAnalytics'
+import { _resetStoreForTests } from '@/lib/rate-limit'
 
 const SECRET = 'k'.repeat(40)
 const U1 = '11111111-1111-4111-8111-111111111111'
@@ -45,6 +52,23 @@ const CONFIRMED = '2026-12-01T00:00:00Z'
 let server: FakeClient
 let admin: FakeClient & { auth: { admin: { getUserById: (id: string) => Promise<unknown> } } }
 
+/**
+ * Lo que hace `email_optin_claim` en la base (probado aparte sobre PostgreSQL
+ * 16): 10 min entre enlaces, N al día por persona y un tope global en 24 h.
+ * Persiste entre peticiones y NO lo toca la baja.
+ */
+const claims = { log: [] as Array<{ user: string; at: number }>, now: Date.now() }
+function fakeClaim(args: { p_user: string; p_user_daily: number; p_global_daily: number; p_cooldown: string }) {
+  const minutes = Number(/^(\d+) minutes$/.exec(args.p_cooldown)?.[1])
+  const day = claims.now - 86400_000
+  const mine = claims.log.filter((c) => c.user === args.p_user)
+  if (mine.some((c) => c.at > claims.now - minutes * 60_000)) return 'cooldown'
+  if (mine.filter((c) => c.at > day).length >= args.p_user_daily) return 'user_cap'
+  if (claims.log.filter((c) => c.at > day).length >= args.p_global_daily) return 'global_cap'
+  claims.log.push({ user: args.p_user, at: claims.now })
+  return 'ok'
+}
+
 function setup(opts: { prefs?: unknown; prefsError?: { code: string } | null; rpc?: Record<string, unknown>; adminRpc?: Record<string, unknown> } = {}) {
   server = fakeSupabase({
     tables: {
@@ -55,6 +79,12 @@ function setup(opts: { prefs?: unknown; prefsError?: { code: string } | null; rp
   })
   ;(server.auth as { getUser: () => Promise<unknown> }).getUser = async () => ({ data: { user: h.user }, error: null })
   const base = fakeSupabase({ tables: { email_preferences: [{ data: null, error: null }] }, rpc: opts.adminRpc as never })
+  const plainRpc = base.rpc
+  base.rpc = async (fn: string, args: unknown) => {
+    if (fn !== 'email_optin_claim' || opts.adminRpc?.email_optin_claim) return plainRpc(fn, args)
+    base.rpcCalls.push({ fn, args })
+    return { data: fakeClaim(args as Parameters<typeof fakeClaim>[0]), error: null }
+  }
   admin = Object.assign(base, {
     auth: { admin: { getUserById: async () => ({ data: { user: h.adminUser }, error: null }) } },
   }) as typeof admin
@@ -70,6 +100,9 @@ const enable = (extra: Record<string, unknown> = {}) =>
 
 beforeEach(() => {
   vi.clearAllMocks()
+  _resetStoreForTests()
+  claims.log = []
+  claims.now = Date.now()
   Object.assign(process.env, ENV)
   h.user = { id: U1, email: 'ana@example.com', email_confirmed_at: CONFIRMED, app_metadata: {} }
   h.adminUser = { id: U1, email: 'ana@example.com', email_confirmed_at: CONFIRMED }
@@ -77,7 +110,7 @@ beforeEach(() => {
   setup()
 })
 afterEach(() => {
-  for (const k of [...Object.keys(ENV), 'WEEKLY_EMAIL_ONLY']) delete process.env[k]
+  for (const k of [...Object.keys(ENV), 'WEEKLY_EMAIL_ONLY', 'WEEKLY_EMAIL_OPTIN_DAILY_CAP']) delete process.env[k]
 })
 
 describe('PUT /api/email/preferences — pedir el alta', () => {
@@ -103,11 +136,12 @@ describe('PUT /api/email/preferences — pedir el alta', () => {
     const res = await enable()
     expect(res.status).toBe(202)
     expect(await res.json()).toEqual({ weekly: false, pending: true })
-    // Ni alta ni consentimiento registrados todavía.
+    // Ni alta ni consentimiento registrados: solo se reserva el envío con los topes.
     expect(server.rpcCalls).toEqual([])
-    expect(admin.rpcCalls).toEqual([])
-    const upsert = opsOf(admin, 'email_preferences', 'upsert')[0].args
-    expect(Object.keys(upsert[0] as object).sort()).toEqual(['optin_requested_at', 'user_id'])
+    expect(admin.rpcCalls).toEqual([
+      { fn: 'email_optin_claim', args: { p_user: U1, p_user_daily: 3, p_global_daily: 20, p_cooldown: '10 minutes' } },
+    ])
+    expect(opsOf(admin, 'email_preferences', 'upsert')).toEqual([])
     // El correo va a SU dirección, con un enlace de propósito "optin" atado a ella y a la versión.
     expect(h.send).toHaveBeenCalledTimes(1)
     const msg = h.send.mock.calls[0][0]
@@ -134,15 +168,68 @@ describe('PUT /api/email/preferences — pedir el alta', () => {
   })
 
   it('un enlace cada 10 min como mucho (no se usa para llenar un buzón)', async () => {
-    setup({ prefs: { weekly_digest: false, optin_requested_at: new Date(Date.now() - 60_000).toISOString() } })
+    expect((await enable()).status).toBe(202)
     const res = await enable()
     expect(res.status).toBe(429)
     expect(await res.json()).toEqual({ error: 'cooldown' })
-    expect(h.send).not.toHaveBeenCalled()
+    expect(h.send).toHaveBeenCalledTimes(1)
   })
 
-  it('ya activo con este texto: 200 y nada más', async () => {
-    setup({ prefs: { weekly_digest: true, consent_version: WEEKLY_EMAIL_CONSENT_VERSION, consented_at: CONFIRMED } })
+  // Regresión (revisión #49): la baja ponía optin_requested_at a null y
+  // alternar alta/baja mandaba ~15 correos por minuto.
+  it('alternar alta y baja NO salta el límite', async () => {
+    setup({ rpc: { set_email_weekly: { data: [{ weekly_digest: false, consent_version: null, consented_at: null }], error: null } } })
+    // 12 alternancias (24 peticiones) caben en el límite de la ruta (30/min):
+    // lo que frena son los topes de la base, no el de peticiones.
+    for (let i = 0; i < 12; i++) {
+      await enable()
+      await put({ weekly: false })
+    }
+    expect(h.send).toHaveBeenCalledTimes(1)
+  })
+
+  it('3 confirmaciones al día por persona (aunque esperes los 10 min)', async () => {
+    for (let i = 0; i < 3; i++) {
+      expect((await enable()).status).toBe(202)
+      claims.now += 11 * 60_000
+    }
+    const res = await enable()
+    expect(res.status).toBe(429)
+    expect(await res.json()).toEqual({ error: 'daily_limit' })
+    expect(h.send).toHaveBeenCalledTimes(3)
+    claims.now += 24 * 3600_000
+    expect((await enable()).status).toBe(202)
+  })
+
+  it('tope global diario configurable (WEEKLY_EMAIL_OPTIN_DAILY_CAP): 503 busy', async () => {
+    process.env.WEEKLY_EMAIL_OPTIN_DAILY_CAP = '2'
+    const users = ['22222222-2222-4222-8222-222222222222', '33333333-3333-4333-8333-333333333333', '44444444-4444-4444-8444-444444444444']
+    const statuses: number[] = []
+    for (const id of users) {
+      h.user = { id, email: `${id.slice(0, 4)}@example.com`, email_confirmed_at: CONFIRMED, app_metadata: {} }
+      const res = await enable()
+      statuses.push(res.status)
+      if (res.status === 503) expect(await res.json()).toEqual({ error: 'busy' })
+    }
+    expect(statuses).toEqual([202, 202, 503])
+    expect(h.send).toHaveBeenCalledTimes(2)
+    expect((admin.rpcCalls.at(-1)?.args as { p_global_daily: number }).p_global_daily).toBe(2)
+  })
+
+  it('un envío fallido cuenta para los topes (no se reintenta en bucle)', async () => {
+    h.send.mockResolvedValue({ ok: false, reason: 'http_error', status: 500 })
+    expect((await enable()).status).toBe(502)
+    expect((await enable()).status).toBe(429)
+  })
+
+  it('activo con otra dirección (la cambió): se pide confirmar la nueva', async () => {
+    setup({ prefs: { weekly_digest: true, consent_version: WEEKLY_EMAIL_CONSENT_VERSION, consented_at: CONFIRMED, confirmed_email_hash: emailFingerprint('vieja@example.com') } })
+    expect((await enable()).status).toBe(202)
+    expect(h.send.mock.calls[0][0].to).toBe('ana@example.com')
+  })
+
+  it('ya activo con este texto y esta dirección: 200 y nada más', async () => {
+    setup({ prefs: { weekly_digest: true, consent_version: WEEKLY_EMAIL_CONSENT_VERSION, consented_at: CONFIRMED, confirmed_email_hash: emailFingerprint('ana@example.com') } })
     const res = await enable()
     expect(res.status).toBe(200)
     expect(h.send).not.toHaveBeenCalled()
@@ -181,14 +268,31 @@ describe('POST /api/email/confirm — confirmar el alta', () => {
         body: `t=${encodeURIComponent(t)}&l=${l}`,
       })
     )
-  const confirmed = { email_confirm_weekly: { data: true, error: null } }
+  const confirmed = { email_confirm_weekly: { data: 'ok', error: null } }
 
-  it('enlace válido: activa y registra el consentimiento (versión firmada), 303 a ?status=done', async () => {
+  it('enlace válido: activa y registra el consentimiento, la versión y la huella de la dirección', async () => {
     setup({ adminRpc: confirmed })
-    const res = await post(token(), 'en')
+    const issued = new Date(Math.floor(Date.now() / 1000) * 1000 - 3600_000)
+    const res = await post(token('ana@example.com', WEEKLY_EMAIL_CONSENT_VERSION, issued), 'en')
     expect(res.status).toBe(303)
     expect(res.headers.get('location')).toBe('https://k.test/en/email/confirm?status=done')
-    expect(admin.rpcCalls).toEqual([{ fn: 'email_confirm_weekly', args: { p_user: U1, p_text_version: WEEKLY_EMAIL_CONSENT_VERSION } }])
+    expect(admin.rpcCalls).toEqual([
+      {
+        fn: 'email_confirm_weekly',
+        args: {
+          p_user: U1,
+          p_text_version: WEEKLY_EMAIL_CONSENT_VERSION,
+          p_email_hash: emailFingerprint('ana@example.com'),
+          p_issued_at: issued.toISOString(),
+        },
+      },
+    ])
+    expect(OPTIN_TOKEN_TTL_SECONDS).toBe(7 * 86400)
+  })
+
+  it('enlace emitido antes de una baja posterior (superseded): no vale', async () => {
+    setup({ adminRpc: { email_confirm_weekly: { data: 'superseded', error: null } } })
+    expect((await post(token())).headers.get('location')).toContain('status=invalid')
   })
 
   it('la dirección cambió desde que se pidió: no vale', async () => {
@@ -227,7 +331,7 @@ describe('POST /api/email/confirm — confirmar el alta', () => {
   })
 
   it('pulsar dos veces: el mismo resultado (la base no duplica el registro)', async () => {
-    setup({ adminRpc: { email_confirm_weekly: { data: false, error: null } } })
+    setup({ adminRpc: { email_confirm_weekly: { data: 'unchanged', error: null } } })
     expect((await post(token())).headers.get('location')).toContain('status=done')
   })
 

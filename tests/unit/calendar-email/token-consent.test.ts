@@ -19,7 +19,7 @@ import {
   verifyUnsubscribeToken,
 } from '@/lib/email/unsubscribe-token'
 import { WEEKLY_EMAIL_CONSENT_SHA256, WEEKLY_EMAIL_CONSENT_VERSION, isCurrentConsentVersion } from '@/lib/email/consent'
-import { weeklyEmailAllowedFor, weeklyEmailConfig } from '@/lib/email/config'
+import { optinGlobalDailyCap, weeklyEmailAllowedFor, weeklyEmailConfig } from '@/lib/email/config'
 
 const SECRET = 'x'.repeat(40)
 const USER = '11111111-1111-4111-8111-111111111111'
@@ -141,6 +141,39 @@ describe('consentimiento', () => {
   })
 })
 
+describe('migración: topes de confirmación y huella', () => {
+  const sql = readFileSync(path.resolve(__dirname, '../../../supabase/migrations/20261215280001_calendar_email.sql'), 'utf8')
+  const fn = (name: string) => {
+    const start = sql.indexOf(`create or replace function public.${name}(`)
+    // Sin comentarios: cuenta lo que se ejecuta.
+    return sql.slice(start, sql.indexOf('$$;', start)).replace(/--.*$/gm, '')
+  }
+
+  // Regresión (revisión #49): la baja borraba optin_requested_at y alternar
+  // alta/baja saltaba el límite de 10 min.
+  it('la baja (set_email_weekly) no borra optin_requested_at ni los registros de envío', () => {
+    const body = fn('set_email_weekly')
+    expect(body).not.toMatch(/optin_requested_at\s*=\s*null/)
+    expect(body).not.toMatch(/email_optin_requests/)
+  })
+
+  it('email_optin_claim: cooldown, tope por persona y global en una transacción con bloqueo', () => {
+    const body = fn('email_optin_claim')
+    expect(body).toContain('pg_advisory_xact_lock')
+    expect(body).toMatch(/return 'cooldown'/)
+    expect(body).toMatch(/return 'user_cap'/)
+    expect(body).toMatch(/return 'global_cap'/)
+    expect(sql).toMatch(/grant execute on function public\.email_optin_claim\(uuid, integer, integer, interval\) to service_role;/)
+  })
+
+  it('al confirmar se guarda la huella de la dirección y se rechaza un enlace anterior a la baja', () => {
+    const body = fn('email_confirm_weekly')
+    expect(body).toMatch(/confirmed_email_hash = excluded\.confirmed_email_hash/)
+    expect(body).toMatch(/return 'superseded'/)
+    expect(sql).toContain('drop function if exists public.email_confirm_weekly(uuid, text);')
+  })
+})
+
 describe('bandera y variables', () => {
   const full = {
     WEEKLY_EMAIL: '1',
@@ -172,6 +205,13 @@ describe('bandera y variables', () => {
     const config = weeklyEmailConfig(full)
     expect(weeklyEmailAllowedFor(config, { email: 'a@x.es', email_confirmed_at: null })).toBe(false)
     expect(weeklyEmailAllowedFor(config, { email: 'a@x.es' })).toBe(false)
+  })
+
+  it('WEEKLY_EMAIL_OPTIN_DAILY_CAP: 20 por defecto, entre 1 y 100', () => {
+    expect(optinGlobalDailyCap({} as NodeJS.ProcessEnv)).toBe(20)
+    expect(optinGlobalDailyCap({ WEEKLY_EMAIL_OPTIN_DAILY_CAP: '5' } as unknown as NodeJS.ProcessEnv)).toBe(5)
+    expect(optinGlobalDailyCap({ WEEKLY_EMAIL_OPTIN_DAILY_CAP: '500' } as unknown as NodeJS.ProcessEnv)).toBe(100)
+    expect(optinGlobalDailyCap({ WEEKLY_EMAIL_OPTIN_DAILY_CAP: 'x' } as unknown as NodeJS.ProcessEnv)).toBe(20)
   })
 
   it('WEEKLY_EMAIL_ONLY: solo esas direcciones (pruebas con onboarding@resend.dev)', () => {

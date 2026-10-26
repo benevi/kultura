@@ -14,6 +14,10 @@
 // respondió con error HTTP) se reintenta hasta 3 veces en la ventana.
 // Solo a direcciones confirmadas (email_confirmed_at) y que confirmaron el
 // alta con el enlace del doble opt-in (las únicas con weekly_digest = true).
+// Antes de cada envío se compara la huella de la dirección actual con la que
+// confirmó: si la persona cambió de correo, no se envía, se desactiva
+// (`email_reconfirm_required`) y se manda a la dirección nueva un enlace de
+// confirmación (con los mismos topes que desde Ajustes).
 //
 // Topes: `WEEKLY_EMAIL_DAILY_CAP` correos por ejecución (por defecto 50:
 // Resend Free son 100 al día y la moderación usa como mucho 80 en un día malo)
@@ -27,9 +31,10 @@ import { siteUrl } from '@/lib/site-url'
 import { getUserCalendar } from '@/lib/calendar/data'
 import { addDays, dateInZone, isoWeek, isoWeekday, type CalendarEvent } from '@/lib/calendar/types'
 import { weeklyEmailAllowedFor, weeklyEmailConfig, type WeeklyEmailConfig } from './config'
-import { isEmailNotMigrated } from './preferences'
+import { isEmailNotMigrated, requireWeeklyReconfirm } from './preferences'
+import { sendOptinRequest } from './optin'
 import { sendEmail, type EmailMessage, type SendResult } from './resend'
-import { createUnsubscribeToken } from './unsubscribe-token'
+import { createUnsubscribeToken, emailFingerprint } from './unsubscribe-token'
 import { buildWeeklyEmail } from './weekly-template'
 
 const log = createLogger('email/weekly')
@@ -64,6 +69,8 @@ export interface SendRow {
 export interface OptedIn {
   user_id: string
   consented_at: string | null
+  /** Huella de la dirección que confirmó el alta. */
+  confirmed_email_hash: string | null
 }
 
 export interface DigestStore {
@@ -79,12 +86,16 @@ export interface DigestStore {
   profiles(userIds: string[]): Promise<Map<string, { username: string; locale: 'es' | 'en' }>>
   /** Dirección de la cuenta SOLO si está confirmada (email_confirmed_at); si no, null. */
   email(userId: string): Promise<{ email: string; email_confirmed_at: string } | null>
+  /** La dirección cambió: desactiva hasta que confirme la nueva. */
+  requireReconfirm(userId: string): Promise<void>
 }
 
 export interface DigestDeps {
   store: DigestStore
   calendar: (userId: string, locale: 'es' | 'en', now: Date) => Promise<CalendarEvent[]>
   send: (message: EmailMessage) => Promise<SendResult>
+  /** Enlace de confirmación a la dirección nueva (con topes); por defecto sendOptinRequest. */
+  requestOptin?: (req: { userId: string; email: string; username: string; locale: 'es' | 'en' }) => Promise<string>
   config?: WeeklyEmailConfig
   now?: Date
   cap?: number
@@ -165,6 +176,7 @@ export async function runWeeklyDigest(deps: DigestDeps): Promise<DigestResult> {
   const optedIn = await deps.store.listOptedIn()
   if (optedIn === null) return { status: 'not_migrated', period }
   const sends = new Map((await deps.store.listSends(period)).map((r) => [r.user_id, r]))
+  const optedInById = new Map(optedIn.map((p) => [p.user_id, p]))
 
   // El martes y el miércoles solo se recupera a quien ya estaba apuntado el lunes.
   const eligible = optedIn.filter(
@@ -193,6 +205,20 @@ export async function runWeeklyDigest(deps: DigestDeps): Promise<DigestResult> {
       const email = recipient?.email ?? null
       if (!profile || !recipient || !email || !weeklyEmailAllowedFor(config, recipient)) {
         await deps.store.finish(rowId, { status: 'skipped', error: !profile || !email ? 'no_recipient' : 'not_allowed' })
+        skipped++
+        continue
+      }
+      const confirmedHash = optedInById.get(userId)?.confirmed_email_hash ?? null
+      if (confirmedHash !== emailFingerprint(email)) {
+        // Cambió de dirección desde que confirmó: nada a la nueva sin su confirmación.
+        await deps.store.requireReconfirm(userId)
+        await deps.store.finish(rowId, { status: 'skipped', error: 'email_changed' })
+        await (deps.requestOptin ?? (() => Promise.resolve('skipped')))({
+          userId,
+          email,
+          username: profile.username,
+          locale: profile.locale,
+        }).catch(() => 'error')
         skipped++
         continue
       }
@@ -266,7 +292,7 @@ export function supabaseDigestStore(admin: SupabaseClient): DigestStore {
     async listOptedIn() {
       const { data, error } = await admin
         .from('email_preferences')
-        .select('user_id, consented_at')
+        .select('user_id, consented_at, confirmed_email_hash')
         .eq('weekly_digest', true)
         .order('user_id', { ascending: true })
         .limit(2000)
@@ -336,6 +362,9 @@ export function supabaseDigestStore(admin: SupabaseClient): DigestStore {
       }
       return out
     },
+    async requireReconfirm(userId) {
+      await requireWeeklyReconfirm(admin, userId)
+    },
     async email(userId) {
       const { data, error } = await admin.auth.admin.getUserById(userId)
       const user = data?.user
@@ -360,6 +389,10 @@ export function defaultDigestDeps(admin: SupabaseClient, now: Date = new Date())
         })
       ).events,
     send: sendEmail,
+    requestOptin: async (req) => {
+      const config = weeklyEmailConfig()
+      return config.enabled ? sendOptinRequest(admin, config, { ...req, now }) : 'disabled'
+    },
     now,
   }
 }

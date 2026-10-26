@@ -1030,7 +1030,9 @@
     "weeklyEmailPending": "We've sent you an email to confirm it. Click the link (it expires in 7 days); until then you won't get anything.",
     "weeklyEmailCooldown": "We just sent it. Check your inbox (and spam) or try again in a few minutes.",
     "weeklyEmailUnconfirmed": "You need to confirm your email address first.",
-    "weeklyEmailSendFailed": "We couldn't send the confirmation email. Try again later."
+    "weeklyEmailSendFailed": "We couldn't send the confirmation email. Try again later.",
+    "weeklyEmailDailyLimit": "We've already sent you 3 confirmation emails today. Look for the latest one in your inbox (and spam) or try again tomorrow.",
+    "weeklyEmailBusy": "We can't send more confirmation emails right now. Try again in a few hours."
   },
   "platforms": {
     "title": "My streaming services",

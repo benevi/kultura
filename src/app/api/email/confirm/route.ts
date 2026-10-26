@@ -10,7 +10,8 @@
 //     envió el enlace (huella firmada), y se le puede ofrecer el correo
 //     (bandera, claves y WEEKLY_EMAIL_ONLY).
 // Entonces `email_confirm_weekly` lo activa y registra el consentimiento
-// (fecha, versión, origen `email_confirm`). Pulsar dos veces = una.
+// (fecha, versión, origen `email_confirm`) y la huella de la dirección.
+// Pulsar dos veces = una. Un enlace emitido antes de la última baja no vale.
 // Abrir el enlace (GET de la página) no confirma nada: lo pueden abrir los
 // filtros de correo.
 // ============================================================
@@ -23,7 +24,7 @@ import { createLogger } from '@/lib/logger'
 import { weeklyEmailAllowedFor, weeklyEmailConfig } from '@/lib/email/config'
 import { isCurrentConsentVersion } from '@/lib/email/consent'
 import { confirmWeeklyOptin } from '@/lib/email/preferences'
-import { emailFingerprint, verifyOptinToken } from '@/lib/email/unsubscribe-token'
+import { OPTIN_TOKEN_TTL_SECONDS, emailFingerprint, verifyOptinToken } from '@/lib/email/unsubscribe-token'
 
 const log = createLogger('api/email/confirm')
 
@@ -75,11 +76,14 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     return reply('invalid')
   }
 
-  const result = await confirmWeeklyOptin(admin, check.userId, check.textVersion)
+  // La base guarda la huella de la dirección confirmada (el envío semanal la
+  // compara antes de cada correo) y rechaza enlaces emitidos antes de una baja.
+  const issuedAt = new Date(check.expiresAt.getTime() - OPTIN_TOKEN_TTL_SECONDS * 1000)
+  const result = await confirmWeeklyOptin(admin, check.userId, check.textVersion, check.emailHash, issuedAt)
   if (!result.ok) {
     if (result.reason === 'not_migrated') return reply('invalid')
     log.error('confirmación de correo: la base no respondió')
     return reply('error')
   }
-  return reply('done')
+  return reply(result.status === 'superseded' ? 'invalid' : 'done')
 }

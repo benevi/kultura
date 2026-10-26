@@ -13,6 +13,10 @@
 //   EMAIL_TOKEN_SECRET     secreto (≥ 32 caracteres) para firmar los enlaces de
 //                          baja (HMAC). Cambiarlo invalida los enlaces viejos.
 // Opcional:
+//   WEEKLY_EMAIL_OPTIN_DAILY_CAP  correos de confirmación del alta al día para
+//                          toda la app (por defecto 20; Resend Free = 100/día
+//                          compartidos con el semanal y la moderación). Por
+//                          persona, 3 al día y uno cada 10 min (fijos).
 //   WEEKLY_EMAIL_ONLY      lista de correos separados por comas: si existe,
 //                          solo esas cuentas ven la opción y reciben el correo
 //                          (para probar con onboarding@resend.dev sin que nadie
@@ -20,6 +24,15 @@
 // ============================================================
 
 export const EMAIL_TOKEN_SECRET_MIN = 32
+export const OPTIN_GLOBAL_DAILY_DEFAULT = 20
+/** Correos de confirmación por persona en 24 h. */
+export const OPTIN_USER_DAILY_CAP = 3
+
+/** Tope global diario de correos de confirmación (WEEKLY_EMAIL_OPTIN_DAILY_CAP, 1-100). */
+export function optinGlobalDailyCap(env: NodeJS.ProcessEnv = process.env): number {
+  const n = Number(env.WEEKLY_EMAIL_OPTIN_DAILY_CAP)
+  return Number.isInteger(n) && n > 0 ? Math.min(n, 100) : OPTIN_GLOBAL_DAILY_DEFAULT
+}
 
 export type WeeklyEmailDisabledReason =
   | 'flag_off'

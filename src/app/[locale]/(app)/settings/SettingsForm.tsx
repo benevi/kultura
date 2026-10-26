@@ -145,7 +145,7 @@ export function SettingsForm({
   const [scaleState, setScaleState] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle')
   const [weeklyEmail, setWeeklyEmail] = useState(initialWeeklyEmail)
   const [weeklyState, setWeeklyState] = useState<
-    'idle' | 'saving' | 'on' | 'off' | 'pending' | 'cooldown' | 'unconfirmed' | 'sendFailed' | 'error' | 'stale'
+    'idle' | 'saving' | 'on' | 'off' | 'pending' | 'cooldown' | 'dailyLimit' | 'busy' | 'unconfirmed' | 'sendFailed' | 'error' | 'stale'
   >(initialWeeklyEmail?.pending && !initialWeeklyEmail.weekly ? 'pending' : 'idle')
 
   // Cambio de email (R1 / art. 16 RGPD): formulario en línea.
@@ -281,7 +281,11 @@ export function SettingsForm({
             ? 'stale'
             : code === 'cooldown'
               ? 'cooldown'
-              : code === 'unconfirmed_email'
+              : code === 'daily_limit'
+                ? 'dailyLimit'
+                : code === 'busy'
+                  ? 'busy'
+                  : code === 'unconfirmed_email'
                 ? 'unconfirmed'
                 : code === 'send_failed'
                   ? 'sendFailed'
@@ -780,7 +784,11 @@ export function SettingsForm({
                     ? t('weeklyEmailPending')
                     : weeklyState === 'cooldown'
                       ? t('weeklyEmailCooldown')
-                      : ''}
+                      : weeklyState === 'dailyLimit'
+                        ? t('weeklyEmailDailyLimit')
+                        : weeklyState === 'busy'
+                          ? t('weeklyEmailBusy')
+                          : ''}
             </p>
             {(weeklyState === 'error' || weeklyState === 'stale' || weeklyState === 'unconfirmed' || weeklyState === 'sendFailed') && (
               <p role="alert" className="text-sm text-accent-danger">

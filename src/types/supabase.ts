@@ -294,8 +294,36 @@ export type Database = {
           },
         ]
       }
+      email_optin_requests: {
+        Row: {
+          created_at: string
+          id: string
+          user_id: string
+        }
+        ComputedFields: never
+        Insert: {
+          created_at?: string
+          id?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "email_optin_requests_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       email_preferences: {
         Row: {
+          confirmed_email_hash: string | null
           consent_version: string | null
           consented_at: string | null
           optin_requested_at: string | null
@@ -306,6 +334,7 @@ export type Database = {
         }
         ComputedFields: never
         Insert: {
+          confirmed_email_hash?: string | null
           consent_version?: string | null
           consented_at?: string | null
           optin_requested_at?: string | null
@@ -315,6 +344,7 @@ export type Database = {
           weekly_digest?: boolean
         }
         Update: {
+          confirmed_email_hash?: string | null
           consent_version?: string | null
           consented_at?: string | null
           optin_requested_at?: string | null
@@ -1366,9 +1396,24 @@ export type Database = {
       }
       deletion_preview: { Args: { p_user: string }; Returns: Json }
       email_confirm_weekly: {
-        Args: { p_text_version: string; p_user: string }
-        Returns: boolean
+        Args: {
+          p_email_hash: string
+          p_issued_at: string
+          p_text_version: string
+          p_user: string
+        }
+        Returns: string
       }
+      email_optin_claim: {
+        Args: {
+          p_cooldown: string
+          p_global_daily: number
+          p_user: string
+          p_user_daily: number
+        }
+        Returns: string
+      }
+      email_reconfirm_required: { Args: { p_user: string }; Returns: boolean }
       email_unsubscribe: {
         Args: { p_source: string; p_user: string }
         Returns: boolean

@@ -10,7 +10,9 @@
 // el consentimiento. Así nadie puede apuntar un buzón ajeno aunque se haya
 // registrado con él (con «Confirm email» desactivado, Supabase da la dirección
 // por confirmada al darse de alta). Respuesta: 202 { pending: true }.
-// Entre dos enlaces hay 10 min (429 `cooldown`) para no llenar el buzón.
+// Topes (en la base, no se saltan alternando alta y baja): 10 min entre
+// enlaces (429 `cooldown`), 3 al día por persona (429 `daily_limit`) y
+// WEEKLY_EMAIL_OPTIN_DAILY_CAP para toda la app (503 `busy`).
 //
 // `weekly: false` da de baja al momento (y cancela una confirmación pendiente).
 // La demo, nunca.
@@ -22,18 +24,11 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { checkRateLimit, LIMITS } from '@/lib/rate-limit'
 import { isDemoUser } from '@/lib/demo'
 import { createLogger } from '@/lib/logger'
-import { siteUrl } from '@/lib/site-url'
 import { weeklyEmailAllowedFor, weeklyEmailConfig } from '@/lib/email/config'
 import { WEEKLY_EMAIL_CONSENT_VERSION, isCurrentConsentVersion } from '@/lib/email/consent'
-import {
-  OPTIN_COOLDOWN_MS,
-  readWeeklyEmailPreference,
-  requestWeeklyOptin,
-  setWeeklyEmail,
-} from '@/lib/email/preferences'
-import { createOptinToken } from '@/lib/email/unsubscribe-token'
-import { buildOptinEmail } from '@/lib/email/optin-template'
-import { sendEmail } from '@/lib/email/resend'
+import { readWeeklyEmailPreference, setWeeklyEmail } from '@/lib/email/preferences'
+import { sendOptinRequest } from '@/lib/email/optin'
+import { emailFingerprint } from '@/lib/email/unsubscribe-token'
 
 const log = createLogger('api/email/preferences')
 const NO_STORE = { 'Cache-Control': 'no-store' }
@@ -97,34 +92,40 @@ export async function PUT(request: Request): Promise<NextResponse> {
 
   const current = await readWeeklyEmailPreference(supabase, user.id)
   if (current === null) return NextResponse.json({ error: 'not_available' }, { status: 503 })
-  if (current.weekly && current.consentVersion === WEEKLY_EMAIL_CONSENT_VERSION) {
+  // Ya activo con este texto y ESTA dirección: nada que hacer. Si la dirección
+  // cambió, se pide confirmar la nueva.
+  if (
+    current.weekly &&
+    current.consentVersion === WEEKLY_EMAIL_CONSENT_VERSION &&
+    current.confirmedEmailHash === emailFingerprint(user.email)
+  ) {
     return NextResponse.json({ weekly: true, pending: false, consentedAt: current.consentedAt }, { headers: NO_STORE })
   }
-  const now = new Date()
-  if (current.optinRequestedAt && now.getTime() - new Date(current.optinRequestedAt).getTime() < OPTIN_COOLDOWN_MS) {
-    return NextResponse.json({ error: 'cooldown' }, { status: 429 })
-  }
-
-  const recorded = await requestWeeklyOptin(createAdminClient(), user.id, now)
-  if (!recorded.ok) {
-    if (recorded.reason === 'not_migrated') return NextResponse.json({ error: 'not_available' }, { status: 503 })
-    log.error('No se pudo apuntar la petición de confirmación')
-    return NextResponse.json({ error: 'Failed to save preference' }, { status: 500 })
-  }
-
-  const locale = body.locale === 'en' ? 'en' : 'es'
   const { data: profile } = await supabase.from('users').select('username').eq('id', user.id).maybeSingle()
-  const confirmUrl = new URL(`${siteUrl()}/${locale}/email/confirm`)
-  confirmUrl.searchParams.set('t', createOptinToken(user.id, user.email, WEEKLY_EMAIL_CONSENT_VERSION, config.secret, now))
-  const content = buildOptinEmail({
-    locale,
+  // Topes en la base, en una transacción (10 min, 3 al día por persona y el
+  // global): alternar alta y baja no los salta, porque la baja no borra nada.
+  const status = await sendOptinRequest(createAdminClient(), config, {
+    userId: user.id,
+    email: user.email,
     username: (profile as { username?: string } | null)?.username ?? '',
-    confirmUrl: confirmUrl.toString(),
+    locale: body.locale === 'en' ? 'en' : 'es',
   })
-  const sent = await sendEmail({ from: config.from, to: user.email, ...content })
-  if (!sent.ok) {
-    log.error(`No se pudo enviar el correo de confirmación (${sent.reason}${sent.status ? ` ${sent.status}` : ''})`)
-    return NextResponse.json({ error: 'send_failed' }, { status: 502 })
+  switch (status) {
+    case 'sent':
+      return NextResponse.json({ weekly: false, pending: true }, { status: 202, headers: NO_STORE })
+    case 'cooldown':
+      return NextResponse.json({ error: 'cooldown' }, { status: 429, headers: { 'Retry-After': '600' } })
+    case 'user_cap':
+      return NextResponse.json({ error: 'daily_limit' }, { status: 429, headers: { 'Retry-After': '86400' } })
+    case 'global_cap':
+      return NextResponse.json({ error: 'busy' }, { status: 503, headers: { 'Retry-After': '3600' } })
+    case 'not_migrated':
+      return NextResponse.json({ error: 'not_available' }, { status: 503 })
+    case 'send_failed':
+      log.error('No se pudo enviar el correo de confirmación')
+      return NextResponse.json({ error: 'send_failed' }, { status: 502 })
+    default:
+      log.error('No se pudo reservar el correo de confirmación')
+      return NextResponse.json({ error: 'Failed to save preference' }, { status: 500 })
   }
-  return NextResponse.json({ weekly: false, pending: true }, { status: 202, headers: NO_STORE })
 }
