@@ -45,13 +45,21 @@ describe('HeroSection', () => {
     expect(link).toHaveAttribute('href', '/media/movie/550')
   })
 
-  it('con episode_progress con current y total muestra la barra de progreso', () => {
+  it('serie con progreso (jsonb con total): barra, texto y botón de marcar siguiente (F-27)', () => {
     const itemWithProgress: HeroItem = {
-      ...baseItem,
-      episode_progress: { episode: 5, current: 5, total: 10 },
+      media_id: 'tv_1399',
+      episode_progress: { season: 2, episode: 5, total: 10 },
+      media: { ...baseMedia, id: 'tv_1399', type: 'tv' },
     }
     render(<HeroSection item={itemWithProgress} />)
-    expect(screen.getByTestId('progress-fill')).toBeInTheDocument()
+    expect(screen.getByTestId('progress-fill')).toHaveStyle({ width: '50%' })
+    expect(screen.getByTestId('progress-next')).toBeInTheDocument()
+  })
+
+  it('película: sin progreso ni botón (no hay nada que marcar)', () => {
+    render(<HeroSection item={{ ...baseItem, episode_progress: { episode: 5, total: 10 } }} />)
+    expect(screen.queryByTestId('progress-fill')).not.toBeInTheDocument()
+    expect(screen.queryByTestId('progress-next')).not.toBeInTheDocument()
   })
 
   it('sin item no pinta nada: el hueco lo ocupan las secciones de abajo', () => {

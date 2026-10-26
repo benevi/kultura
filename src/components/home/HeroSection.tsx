@@ -4,6 +4,9 @@ import { PosterImage } from '@/components/media/PosterImage'
 import { Link } from '@/i18n/navigation'
 import { useTranslations } from 'next-intl'
 import { KButton } from '@/components/ui/KButton'
+import { ContinueProgress, canQuickAdvance } from '@/components/home/ContinueProgress'
+import { progressFromJson } from '@/lib/library/progress'
+import type { LibraryStatus } from '@/types/library'
 import {
   type KIcon,
   IconFilm,
@@ -17,7 +20,13 @@ import {
 
 export interface HeroItem {
   media_id: string
-  episode_progress: { season?: number; episode: number; current?: number; total?: number } | null
+  /**
+   * jsonb de siempre ({season?, episode}) o, con la migración de F-27, espejo
+   * de las columnas de progreso ({page, total}, {hours, total}…).
+   */
+  episode_progress: Record<string, unknown> | null
+  /** Por defecto «en progreso» (es lo que pide Inicio para el hero). */
+  status?: LibraryStatus
   media: {
     id: string
     title: string
@@ -30,6 +39,8 @@ export interface HeroItem {
 
 interface HeroSectionProps {
   item: HeroItem | null
+  /** PROGRESS_V2 (F-27): «1 toque» en todos los formatos; si no, series y anime. */
+  fullProgress?: boolean
 }
 
 /* Mismo mapa de iconos propios que ProfileStats — icono coherente por tipo
@@ -55,7 +66,7 @@ const MEDIA_BLOCK_FALLBACK =
 const MEDIA_BLOCK_ACCENT = 'radial-gradient(120% 100% at 20% 10%, oklch(55% 0.2 340 / 0.5) 0%, transparent 55%)'
 const HARD_SHADOW = '10px 10px 0 var(--surface-elevated)'
 
-export function HeroSection({ item }: HeroSectionProps) {
+export function HeroSection({ item, fullProgress = false }: HeroSectionProps) {
   const t = useTranslations('home')
   const tMedia = useTranslations('media')
 
@@ -71,9 +82,9 @@ export function HeroSection({ item }: HeroSectionProps) {
   const href = `/media/${media.type}/${externalId}`
   const TypeIcon = TYPE_ICONS[media.type] ?? IconFilm
 
-  const progress = episode_progress?.current != null && episode_progress?.total != null
-    ? Math.round((episode_progress.current / episode_progress.total) * 100)
-    : null
+  // F-27: progreso por formato con «marcar siguiente» en 1 toque.
+  const progress = progressFromJson(episode_progress)
+  const quick = canQuickAdvance(media.type, fullProgress)
 
   return (
     <section className="relative rounded-bento-lg" style={{ boxShadow: HARD_SHADOW }}>
@@ -130,16 +141,15 @@ export function HeroSection({ item }: HeroSectionProps) {
             </p>
           )}
 
-          {progress !== null && (
-            <div className="w-full max-w-xs">
-              <div className="rounded-full h-1.5 bg-surface-elevated">
-                <div
-                  data-testid="progress-fill"
-                  className="rounded-full h-1.5 transition-all bg-accent-positive"
-                  style={{ width: `${Math.min(progress, 100)}%` }}
-                />
-              </div>
-            </div>
+          {quick && (
+            <ContinueProgress
+              mediaId={item.media_id}
+              mediaType={media.type}
+              title={media.title}
+              progress={progress}
+              status={item.status ?? 'in_progress'}
+              variant="hero"
+            />
           )}
 
           <KButton asChild size="lg" className="w-fit mt-1">
