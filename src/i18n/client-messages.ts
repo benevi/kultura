@@ -80,6 +80,8 @@ export const MEDIA_CLIENT_NAMESPACES = [
   "lists",
   "media_detail",
   "nav",
+  // F-27: progreso por formato en el diálogo de biblioteca.
+  "progress",
   "recommendations",
   "report",
 ] as const;
@@ -109,6 +111,7 @@ export const APP_CLIENT_NAMESPACES = [
   "notifications",
   "platforms",
   "profile",
+  "progress",
   "report",
   "search",
   "settings",

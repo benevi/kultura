@@ -1070,6 +1070,15 @@ export type Database = {
           favorite: boolean
           id: string
           media_id: string
+          progress_chapter: number | null
+          progress_episode: number | null
+          progress_hours: number | null
+          progress_page: number | null
+          progress_percent: number | null
+          progress_season: number | null
+          progress_total: number | null
+          progress_updated_at: string | null
+          progress_volume: number | null
           rating10: number | null
           score: number | null
           status: string
@@ -1084,6 +1093,15 @@ export type Database = {
           favorite?: boolean
           id?: string
           media_id: string
+          progress_chapter?: number | null
+          progress_episode?: number | null
+          progress_hours?: number | null
+          progress_page?: number | null
+          progress_percent?: number | null
+          progress_season?: number | null
+          progress_total?: number | null
+          progress_updated_at?: string | null
+          progress_volume?: number | null
           rating10?: number | null
           score?: number | null
           status: string
@@ -1097,6 +1115,15 @@ export type Database = {
           favorite?: boolean
           id?: string
           media_id?: string
+          progress_chapter?: number | null
+          progress_episode?: number | null
+          progress_hours?: number | null
+          progress_page?: number | null
+          progress_percent?: number | null
+          progress_season?: number | null
+          progress_total?: number | null
+          progress_updated_at?: string | null
+          progress_volume?: number | null
           rating10?: number | null
           score?: number | null
           status?: string
@@ -1546,7 +1573,18 @@ export interface DbUserMedia {
   /** F-24. Ausente antes de 20261208240001. */
   favorite?: boolean;
   watched_at: string | null; // date
+  /** jsonb. Con 20261215270001 (F-27), espejo de las columnas progress_* (user_media_sync_progress). */
   episode_progress: { season?: number; episode: number } | null; // jsonb
+  /** F-27: progreso por formato. Ausentes antes de 20261215270001 (rangos en sus CHECK). */
+  progress_season?: number | null; // smallint 0-999
+  progress_episode?: number | null; // integer 1-99999
+  progress_chapter?: number | null; // numeric(6,1) 0-99999.9
+  progress_volume?: number | null; // integer 0-9999
+  progress_page?: number | null; // integer 0-100000
+  progress_percent?: number | null; // smallint 0-100
+  progress_hours?: number | null; // numeric(6,1) 0-99999.9
+  progress_total?: number | null; // integer 1-100000 (total de la unidad principal)
+  progress_updated_at?: string | null; // timestamptz
   created_at: string; // timestamptz
   updated_at: string; // timestamptz — set by trigger set_updated_at on UPDATE
 }

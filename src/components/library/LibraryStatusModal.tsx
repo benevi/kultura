@@ -11,6 +11,12 @@
 // completado, un apunte del diario con fecha, revisionado, reseña (con aviso
 // de spoiler) y nota personal; debajo, los apuntes anteriores. Sin el diario,
 // el diálogo es el de siempre (estrellas enteras).
+//
+// F-27 (PRO-5): el progreso va por formato (`ProgressInput`): episodios con
+// el total de la temporada de TMDB, capítulos y volúmenes, páginas o %,
+// horas. Al llegar al final se propone pasar a «Completado» (y con ello sale
+// el apunte del diario). Sin PROGRESS_V2 o sin su migración, solo episodios
+// en series y anime, como siempre.
 // ============================================================
 
 import { useId, useState, type RefObject } from 'react'
@@ -18,12 +24,23 @@ import { useLocale, useTranslations } from 'next-intl'
 import { Select } from '@/components/ui/Select'
 import { KButton } from '@/components/ui/KButton'
 import { KInput } from '@/components/ui/KInput'
-import { EpisodeProgress } from '@/components/library/EpisodeProgress'
+import { ProgressInput } from '@/components/library/ProgressInput'
 import { RatingInput, type RatingMode } from '@/components/library/RatingInput'
 import { Modal } from '@/components/ui/Modal'
 import { entryRating10, formatRating, rating10ToScore } from '@/lib/library/rating'
 import { formatDiaryDate, localDateString } from '@/lib/library/dates'
 import { PRIVATE_NOTE_MAX, REVIEW_MAX } from '@/lib/library/diary'
+import {
+  isAtEnd,
+  progressFromJson,
+  progressKindFor,
+  progressToLegacy,
+  supportsLegacyProgress,
+  totalFor,
+  type LibraryEntryWithProgress,
+  type ProgressValue,
+} from '@/lib/library/progress'
+import type { ProgressConfig } from '@/lib/library/actions'
 import type {
   DiaryConfig,
   DiaryLogInput,
@@ -42,6 +59,8 @@ export interface LibraryStatusSaveData {
   favorite?: boolean
   watchedAt: string | null
   episodeProgress: EpisodeProgressType | null
+  /** Progreso por formato (F-27); ausente en formatos sin progreso. */
+  progress?: ProgressValue | null
   /** Apunte del diario a crear (solo con el diario activo). */
   log?: DiaryLogInput
 }
@@ -62,6 +81,8 @@ interface LibraryStatusModalProps {
   onDeleteLog?: (id: string) => Promise<void>
   /** Título de la obra: nombra los botones de borrar apunte. */
   title?: string
+  /** Progreso por formato y plan del proveedor (F-27). Sin él, solo episodios. */
+  progressConfig?: ProgressConfig | null
 }
 
 const TEXTAREA =
@@ -80,9 +101,11 @@ export function LibraryStatusModal({
   diary = null,
   onDeleteLog,
   title = '',
+  progressConfig = null,
 }: LibraryStatusModalProps) {
   const t = useTranslations('library')
   const td = useTranslations('diary')
+  const tp = useTranslations('progress')
   const locale = useLocale()
   const scoreLabelId = useId()
   const reviewId = useId()
@@ -99,8 +122,8 @@ export function LibraryStatusModal({
   const [ratingDirty, setRatingDirty] = useState(false)
   const [favorite, setFavorite] = useState<boolean>(current?.favorite ?? false)
   const [watchedAt, setWatchedAt] = useState<string>(current?.watchedAt ?? '')
-  const [episodeProgress, setEpisodeProgress] = useState<EpisodeProgressType | null>(
-    current?.episodeProgress ?? null
+  const [progress, setProgress] = useState<ProgressValue | null>(
+    (current as LibraryEntryWithProgress | null)?.progress ?? progressFromJson(current?.episodeProgress ?? null)
   )
   // Diario: se propone apuntar al marcarlo como completado por primera vez;
   // al editar algo que ya estaba completado, no (no duplicar apuntes).
@@ -116,8 +139,16 @@ export function LibraryStatusModal({
   const logs = diary?.logs ?? []
   const rewatch = rewatchTouched ? rewatchValue : wasCompleted || logs.length > 0
 
-  const showEpisodeProgress = mediaType === 'tv' || mediaType === 'anime'
-  const showSeason = mediaType === 'tv'
+  // F-27: todos los formatos con PROGRESS_V2 y su migración; si no, episodios.
+  const fullProgress = progressConfig?.enabled === true
+  const showProgress = progressKindFor(mediaType) !== null && (fullProgress || supportsLegacyProgress(mediaType))
+  const plan = progressConfig?.plan ?? null
+  const progressTotal = totalFor(mediaType, progress, plan) ?? progress?.total ?? null
+  const reachedEnd = showProgress && status !== 'completed' && isAtEnd(mediaType, progress, plan)
+  const next = progressConfig?.next ?? null
+  const showNext =
+    next !== null &&
+    JSON.stringify(progress ?? null) === JSON.stringify(progressConfig?.progress ?? null)
   const showDiary = diaryOn && status === 'completed'
 
   const statusOptions = [
@@ -141,13 +172,19 @@ export function LibraryStatusModal({
     e.preventDefault()
     const finalRating = ratingDirty ? rating10 : initialRating
     const completedOn = status === 'completed' && watchedAt ? watchedAt : null
+    // El total del proveedor viaja con el progreso (para la barra de Inicio).
+    const savedProgress = progress && progressTotal !== null ? { ...progress, total: progressTotal } : progress
     await onSave({
       status,
       score: rating10ToScore(finalRating),
       rating10: finalRating,
       ...(diaryOn ? { favorite } : {}),
       watchedAt: completedOn,
-      episodeProgress,
+      episodeProgress: showProgress ? progressToLegacy(savedProgress) : null,
+      // Siempre que el formato tenga progreso, aunque el control aún no se
+      // vea (configuración sin cargar): guardar = sustituir, y así no se
+      // pierden las páginas u horas que ya había.
+      ...(progressKindFor(mediaType) !== null ? { progress: savedProgress } : {}),
       ...(showDiary && addToDiary
         ? {
             log: {
@@ -227,14 +264,36 @@ export function LibraryStatusModal({
           />
         )}
 
-        {/* Progreso de episodios — solo para tv/anime. Cada campo lleva su
-            propia etiqueta (Temporada, Episodio). */}
-        {showEpisodeProgress && (
-          <EpisodeProgress
-            value={episodeProgress}
-            onChange={setEpisodeProgress}
-            showSeason={showSeason}
-          />
+        {/* Progreso por formato (F-27). Cada número con su etiqueta y −/+. */}
+        {showProgress && (
+          <div className="flex flex-col gap-2">
+            <ProgressInput
+              mediaType={mediaType}
+              value={progress}
+              onChange={setProgress}
+              full={fullProgress}
+              total={progressTotal}
+              referenceHours={mediaType === 'game' ? (plan?.total ?? null) : null}
+            />
+            {showNext && next && (
+              <p className="text-xs text-text-tertiary" data-testid="progress-next-episode">
+                {next.name
+                  ? tp('nextEpisodeNamed', { season: next.season, episode: next.episode, name: next.name })
+                  : tp('nextEpisode', { season: next.season, episode: next.episode })}
+              </p>
+            )}
+            {reachedEnd && (
+              <div
+                role="status"
+                className="flex flex-wrap items-center justify-between gap-3 rounded-[14px] bg-surface-default px-3 py-2.5"
+              >
+                <span className="text-sm font-medium text-text-primary">{tp('reachedEnd', { type: mediaType })}</span>
+                <KButton type="button" variant="secondary" size="sm" onClick={() => changeStatus('completed')}>
+                  {tp('markCompleted')}
+                </KButton>
+              </div>
+            )}
+          </div>
         )}
 
         {/* Diario (F-24) */}
