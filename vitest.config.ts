@@ -6,19 +6,14 @@ import path from "path";
 // proveedores) corren en `node`, y solo los `.tsx` (componentes) pagan el
 // arranque de jsdom en cada archivo, que era más de la mitad del tiempo de la
 // suite. Un `.ts` que necesite DOM lo declara con `// @vitest-environment jsdom`
-// en su primera línea.
+// en su primera línea (`tests/unit/lib/vitest-env.test.ts` lo vigila).
 const unit = "tests/unit/**/*.{test,spec}";
 
-// `.ts` de otros frentes que aún usan `document`/`window` sin declararlo.
-// Corren en jsdom hasta que cada uno lleve su cabecera; entonces se quitan de
-// aquí (y un test nuevo no se añade: usa la cabecera).
-const DOM_TS_PENDING = [
-  "tests/unit/import/import-storage.test.ts",
-  "tests/unit/landing/immersive-scene.test.ts",
-  "tests/unit/perf/instrumentation-client.test.ts",
-  "tests/unit/plataforma/sentry-client.test.ts",
-  "tests/unit/pwa/share.test.ts",
-];
+// Con la suite entera (cientos de archivos en paralelo) un render de jsdom
+// con consultas por rol puede pasar de los 5 s por defecto sin que nada vaya
+// mal: el tope sube a 15 s en los tests de componentes. Es un tope de tiempo,
+// no una aserción: lo que se comprueba es lo mismo.
+const DOM_TEST_TIMEOUT_MS = 15_000;
 
 export default defineConfig({
   plugins: [react()],
@@ -35,11 +30,17 @@ export default defineConfig({
     projects: [
       {
         extends: true,
-        test: { name: "node", environment: "node", include: [`${unit}.ts`], exclude: DOM_TS_PENDING },
+        test: { name: "node", environment: "node", include: [`${unit}.ts`] },
       },
       {
         extends: true,
-        test: { name: "dom", environment: "jsdom", include: [`${unit}.tsx`, ...DOM_TS_PENDING] },
+        test: {
+          name: "dom",
+          environment: "jsdom",
+          include: [`${unit}.tsx`],
+          testTimeout: DOM_TEST_TIMEOUT_MS,
+          hookTimeout: DOM_TEST_TIMEOUT_MS,
+        },
       },
     ],
   },

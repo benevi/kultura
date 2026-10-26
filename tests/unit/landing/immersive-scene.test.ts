@@ -1,3 +1,4 @@
+// @vitest-environment jsdom
 // ============================================================
 // KULTURA — Escena WebGL de la landing: ciclo de vida (sin GPU)
 // Un contexto WebGL falso que registra las llamadas: basta para comprobar

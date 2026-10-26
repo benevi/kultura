@@ -1,3 +1,4 @@
+// @vitest-environment jsdom
 /**
  * F-22 (REN-2) — Sentry fuera del JS inicial.
  * `instrumentation-client.ts` ya no importa el SDK: lo pide `loadSentry()`
