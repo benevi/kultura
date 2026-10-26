@@ -332,6 +332,66 @@
       "buy": "Compra"
     }
   },
+  "adaptations": {
+    "title": "También existe como…",
+    "subtitle": "La misma historia en otros formatos: de dónde sale, sus adaptaciones y el resto de la franquicia.",
+    "relation": {
+      "source": "Obra original",
+      "derivative": "Adaptación",
+      "sibling": "Otra adaptación",
+      "franchise": "Misma franquicia"
+    },
+    "meta": "{type} · {year}",
+    "inLibrary": "En tu biblioteca",
+    "sourceLabel": "Vínculos:",
+    "sourceLinkLabel": "Wikidata (se abre en una pestaña nueva)",
+    "loginToAdd": "Entra para añadir toda la franquicia",
+    "add": {
+      "action": "Añadir toda la franquicia",
+      "hint": "{count, plural, one {Añade como Pendiente el título que aún no tienes.} other {Añade como Pendiente los # títulos que aún no tienes.}}",
+      "progress": "Añadiendo {done} de {total}…",
+      "waiting": "Esperando {seconds} s para no pasar del límite de añadidos…",
+      "done": "{count, plural, one {Añadido # título como Pendiente.} other {Añadidos # títulos como Pendiente.}}",
+      "partial": "Añadidos {done} de {total}. Vuelve a pulsar para el resto.",
+      "rateLimited": "Has llegado al límite de añadidos por minuto. Vuelve a intentarlo en un momento.",
+      "error": "No se ha podido añadir. Inténtalo de nuevo.",
+      "allIn": "Ya tienes toda la franquicia en tu biblioteca."
+    }
+  },
+  "share": {
+    "rating": {
+      "action": "Compartir mi nota",
+      "label": "Compartir mi nota de {title}",
+      "menu": "Opciones para compartir",
+      "copy": "Copiar enlace",
+      "copied": "¡Enlace copiado!",
+      "onX": "Compartir en X",
+      "onWhatsApp": "Compartir en WhatsApp",
+      "text": "Le doy {rating} a {title} en KULTURA"
+    },
+    "page": {
+      "heading": "<who>@{username}</who> le da <score>{rating}</score> a <work>{title}</work>",
+      "metaTitle": "@{username} le da {rating} a {title}",
+      "metaDescription": "Mira qué le parece {title} a @{username} en KULTURA y apunta tú lo que quieres ver, leer y jugar.",
+      "genericHeading": "<work>{title}</work> en KULTURA",
+      "genericMetaTitle": "{title} en KULTURA",
+      "genericLead": "Mira la ficha de {title} y el perfil de @{username} en KULTURA.",
+      "viewTitle": "Ver la ficha",
+      "viewProfile": "Ver el perfil de @{username}",
+      "ctaRegister": "Crea tu cuenta gratis y puntúalo tú",
+      "ctaHint": "Gratis y sin anuncios.",
+      "ctaRate": "Puntúalo tú",
+      "ownerHint": "Tu nota la ven quienes ya pueden ver tu biblioteca (según Ajustes: tus amigos o cualquiera con cuenta) y quien tenga el enlace que compartes desde la ficha. Si pones tu biblioteca en «Solo yo», solo la ves tú.",
+      "posterAlt": "Portada de {title}"
+    },
+    "og": {
+      "ratedAlt": "@{username} le da {rating} a {title} en KULTURA",
+      "genericAlt": "{title} en KULTURA",
+      "profileAlt": "@{username} en KULTURA",
+      "cta": "¿Y tú qué le das?",
+      "top4": "El top 4 de"
+    }
+  },
   "library": {
     "status": {
       "completed": "Completado",

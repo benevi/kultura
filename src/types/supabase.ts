@@ -825,6 +825,34 @@ export type Database = {
         }
         Relationships: []
       }
+      media_adaptations: {
+        Row: {
+          expires_at: string
+          fetched_at: string
+          links: NonNullable<Json>
+          media_id: string
+          status: string
+          subject_qid: string | null
+        }
+        ComputedFields: never
+        Insert: {
+          expires_at: string
+          fetched_at?: string
+          links?: NonNullable<Json>
+          media_id: string
+          status?: string
+          subject_qid?: string | null
+        }
+        Update: {
+          expires_at?: string
+          fetched_at?: string
+          links?: NonNullable<Json>
+          media_id?: string
+          status?: string
+          subject_qid?: string | null
+        }
+        Relationships: []
+      }
       media_translations: {
         Row: {
           cache_key: string
