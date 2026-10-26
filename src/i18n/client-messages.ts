@@ -26,6 +26,8 @@ export const SHELL_CLIENT_NAMESPACES = [
   // Solo la rama que usa `ShareRanking`, el único componente cliente de
   // /best (≈ 6 KB menos de textos en el HTML de cada página pública).
   "best.share",
+  // F-28: solo el rótulo del Calendario (barra de escritorio y menú del avatar).
+  "calendar.nav",
   "demo",
   "errors",
   "nav",
@@ -85,6 +87,8 @@ export const MEDIA_CLIENT_NAMESPACES = [
 export const APP_CLIENT_NAMESPACES = [
   "aiRecommendations",
   "auth",
+  // F-28: la cabecera (NavLinks, menú del avatar) también se alcanza desde aquí.
+  "calendar.nav",
   "chat",
   "collection",
   "common",
