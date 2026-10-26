@@ -11,7 +11,7 @@
 
 import { useState } from 'react'
 import dynamic from 'next/dynamic'
-import { useTranslations } from 'next-intl'
+import { useImportT } from '@/lib/import/i18n'
 import { KButton } from '@/components/ui/KButton'
 
 // El lector de archivos solo se descarga si alguien abre el panel: el resto
@@ -27,7 +27,7 @@ interface WelcomeImportProps {
 }
 
 export function WelcomeImport({ locale, onFinished }: WelcomeImportProps) {
-  const t = useTranslations('import')
+  const t = useImportT()
   const [open, setOpen] = useState(false)
   // Una vez abierto se queda montado: cerrar el panel no corta una importación en marcha.
   const [mounted, setMounted] = useState(false)

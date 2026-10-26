@@ -16,6 +16,7 @@
 // de Letterboxd por su `tmdbID`).
 // ============================================================
 
+import { isValidRating10, rating10ToHalfStars } from '@/lib/library/rating'
 import { toCsv } from './csv'
 
 export type LetterboxdExportList = 'watched' | 'watchlist'
@@ -45,9 +46,13 @@ export function tmdbMovieId(mediaId: string): number | null {
   return m ? Number(m[1]) : null
 }
 
-/** rating10 → estrellas de Letterboxd ("4.5"); vacío sin nota. */
-function stars(rating10: number | null): string {
-  return rating10 === null ? '' : String(rating10 / 2)
+/**
+ * rating10 → estrellas de Letterboxd ("4.5"); vacío sin nota. Letterboxd
+ * solo admite medias estrellas: un 7,5/10 (D-14) se redondea a 4★, como lo
+ * pinta `StarRating`.
+ */
+export function letterboxdStars(rating10: number | null): string {
+  return isValidRating10(rating10) ? String(rating10ToHalfStars(rating10)) : ''
 }
 
 export function buildLetterboxdCsv(list: LetterboxdExportList, entries: ExportEntry[], logs: ExportLog[] = []): string {
@@ -71,11 +76,11 @@ export function buildLetterboxdCsv(list: LetterboxdExportList, entries: ExportEn
     if (e.status !== 'completed') continue
     const entryLogs = (logsByMedia.get(e.mediaId) ?? []).sort((a, b) => (a.watchedOn < b.watchedOn ? -1 : 1))
     if (entryLogs.length === 0) {
-      rows.push([...base, stars(e.rating10), e.watchedAt ?? '', 'false', ''])
+      rows.push([...base, letterboxdStars(e.rating10), e.watchedAt ?? '', 'false', ''])
       continue
     }
     for (const l of entryLogs) {
-      rows.push([...base, stars(l.rating10 ?? e.rating10), l.watchedOn, l.rewatch ? 'true' : 'false', l.review ?? ''])
+      rows.push([...base, letterboxdStars(l.rating10 ?? e.rating10), l.watchedOn, l.rewatch ? 'true' : 'false', l.review ?? ''])
     }
   }
   return toCsv(rows)

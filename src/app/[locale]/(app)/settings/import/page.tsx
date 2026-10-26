@@ -10,12 +10,14 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
-import { getTranslations } from 'next-intl/server'
+import { getMessages, getTranslations } from 'next-intl/server'
+import type { AbstractIntlMessages } from 'next-intl'
 import { createClient } from '@/lib/supabase/server'
 import { isDemoUser } from '@/lib/demo'
 import { PageHeading } from '@/components/layout/PageHeading'
 import { ImportClient } from './ImportClient'
 import { LetterboxdExport } from './LetterboxdExport'
+import { ImportMessages } from '@/lib/import/i18n'
 
 export async function generateMetadata({ params }: { params: Promise<{ locale: string }> }): Promise<Metadata> {
   const { locale } = await params
@@ -31,6 +33,8 @@ export default async function ImportPage({ params }: { params: Promise<{ locale:
 
   const t = await getTranslations({ locale, namespace: 'import' })
   const tSettings = await getTranslations({ locale, namespace: 'settings' })
+  // Los textos del importador viajan solo a esta página (ver `lib/import/i18n.tsx`).
+  const importMessages = ((await getMessages({ locale })) as Record<string, unknown>).import as AbstractIntlMessages
 
   return (
     <main className="mx-auto flex max-w-[720px] flex-col gap-7 px-4 py-8 md:px-8">
@@ -45,8 +49,10 @@ export default async function ImportPage({ params }: { params: Promise<{ locale:
           {t('title')}
         </PageHeading>
       </div>
-      <ImportClient locale={locale === 'en' ? 'en' : 'es'} isDemo={isDemoUser(user)} />
-      <LetterboxdExport />
+      <ImportMessages locale={locale} messages={importMessages}>
+        <ImportClient locale={locale === 'en' ? 'en' : 'es'} isDemo={isDemoUser(user)} />
+        <LetterboxdExport />
+      </ImportMessages>
     </main>
   )
 }

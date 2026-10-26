@@ -48,8 +48,6 @@ export const WELCOME_CLIENT_NAMESPACES = [
   "aiRecommendations",
   "auth",
   "discoverFilters.typeBadge",
-  // F-26: paso opcional "Importar" del onboarding.
-  "import",
   "onboarding",
 ] as const;
 
@@ -99,8 +97,6 @@ export const APP_CLIENT_NAMESPACES = [
   "friends",
   "groups",
   "home",
-  // F-26: importar desde otras apps (Ajustes → Importar).
-  "import",
   "library",
   "lists",
   "media",

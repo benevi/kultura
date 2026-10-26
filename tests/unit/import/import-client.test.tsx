@@ -16,6 +16,7 @@ vi.mock('next/link', () => ({
   ),
 }))
 
+import { ImportMessages } from '@/lib/import/i18n'
 import { ImportClient } from '@/app/[locale]/(app)/settings/import/ImportClient'
 import { WelcomeImport } from '@/app/[locale]/welcome/WelcomeImport'
 
@@ -28,7 +29,9 @@ function renderIn(locale: 'es' | 'en', ui: ReactElement) {
         throw err
       }}
     >
-      {ui}
+      <ImportMessages locale={locale} messages={(locale === 'es' ? es : en).import}>
+        {ui}
+      </ImportMessages>
     </NextIntlClientProvider>
   )
 }

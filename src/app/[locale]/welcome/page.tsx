@@ -13,13 +13,14 @@
 
 import type { Metadata } from 'next'
 import { redirect } from 'next/navigation'
-import { NextIntlClientProvider } from 'next-intl'
+import { NextIntlClientProvider, type AbstractIntlMessages } from 'next-intl'
 import { getMessages, getTranslations } from 'next-intl/server'
 import { createClient } from '@/lib/supabase/server'
 import { isDemoUser } from '@/lib/demo'
 import { resolveAuthNext } from '@/lib/utils/safe-redirect'
 import { GENERATED_USERNAME_REGEX } from '@/app/api/settings/identity'
 import { hasAcceptedTerms, readAccountState } from '@/app/api/settings/account-state'
+import { ImportMessages } from '@/lib/import/i18n'
 import { WelcomeFlow } from './WelcomeFlow'
 
 interface WelcomeProps {
@@ -37,7 +38,7 @@ export async function generateMetadata({ params }: WelcomeProps): Promise<Metada
  * Namespaces que usa el cliente de esta página. Se pasan en su propio
  * proveedor para no depender de qué recorte del layout (REN-5) llegue aquí.
  */
-const CLIENT_NAMESPACES = ['onboarding', 'auth', 'aiRecommendations', 'discoverFilters', 'media', 'errors', 'common', 'import'] as const
+const CLIENT_NAMESPACES = ['onboarding', 'auth', 'aiRecommendations', 'discoverFilters', 'media', 'errors', 'common'] as const
 
 export default async function WelcomePage({ params, searchParams }: WelcomeProps) {
   const { locale } = await params
@@ -66,15 +67,18 @@ export default async function WelcomePage({ params, searchParams }: WelcomeProps
 
   return (
     <NextIntlClientProvider locale={locale} messages={messages}>
-      <WelcomeFlow
-        locale={locale === 'en' ? 'en' : 'es'}
-        next={finish}
-        currentUsername={currentUsername}
-        // Un nombre generado (`u_xxxxxx`) se ofrece cambiar con el campo vacío;
-        // uno ya elegido se deja escrito.
-        suggestChange={GENERATED_USERNAME_REGEX.test(currentUsername)}
-        needsTerms={!hasAcceptedTerms(account.state, user)}
-      />
+      {/* F-26: textos del paso opcional "Importar", solo en esta página. */}
+      <ImportMessages locale={locale} messages={(all as Record<string, unknown>).import as AbstractIntlMessages}>
+        <WelcomeFlow
+          locale={locale === 'en' ? 'en' : 'es'}
+          next={finish}
+          currentUsername={currentUsername}
+          // Un nombre generado (`u_xxxxxx`) se ofrece cambiar con el campo vacío;
+          // uno ya elegido se deja escrito.
+          suggestChange={GENERATED_USERNAME_REGEX.test(currentUsername)}
+          needsTerms={!hasAcceptedTerms(account.state, user)}
+        />
+      </ImportMessages>
     </NextIntlClientProvider>
   )
 }

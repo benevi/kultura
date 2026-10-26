@@ -6,13 +6,13 @@
 // ============================================================
 
 import { useState } from 'react'
-import { useTranslations } from 'next-intl'
+import { useImportT } from '@/lib/import/i18n'
 import { KButton } from '@/components/ui/KButton'
 
 type List = 'watched' | 'watchlist'
 
 export function LetterboxdExport() {
-  const t = useTranslations('import')
+  const t = useImportT()
   const [busy, setBusy] = useState<List | null>(null)
   const [failed, setFailed] = useState(false)
 

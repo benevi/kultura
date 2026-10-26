@@ -14,7 +14,7 @@
 
 import { useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
-import { useTranslations } from 'next-intl'
+import { useImportT } from '@/lib/import/i18n'
 import { KButton } from '@/components/ui/KButton'
 import { cn } from '@/lib/utils/index'
 import { parseImportFiles, summarizeImport } from '@/lib/import/parse-file'
@@ -73,7 +73,7 @@ export interface ImportClientProps {
 }
 
 export function ImportClient({ locale, isDemo = false, compact = false, onFinished }: ImportClientProps) {
-  const t = useTranslations('import')
+  const t = useImportT()
   const inputRef = useRef<HTMLInputElement>(null)
   const abortRef = useRef<AbortController | null>(null)
   const statusRef = useRef<HTMLHeadingElement>(null)
@@ -490,7 +490,7 @@ function ProgressBar({ label, value, max }: { label: string; value: number; max:
 
 /** Recuento por resultado (solo lo que no es cero). */
 function Counts({ counts }: { counts: Record<ImportOutcome, number> }) {
-  const t = useTranslations('import')
+  const t = useImportT()
   const order: ImportOutcome[] = ['added', 'updated', 'kept', 'unmatched', 'pending', 'excluded', 'invalid']
   return (
     <ul className="flex flex-wrap gap-2">
