@@ -246,13 +246,13 @@ export function LibraryAction({
           >
             {t(`status.${entry.status}`)}
           </span>
-          {/* DIS-14: pegatina lima; solo decorativa (el estado ya se lee al lado). */}
+          {/* DIS-14: «badge colgante» de DISENO.md (lima, −8°, sombra dura); decorativa. */}
           {stamp > 0 && (
             <span
               ref={stampRef}
               aria-hidden="true"
               data-testid="library-stamp"
-              className="pointer-events-none absolute -top-4 -right-6 z-10 rounded-md bg-accent-lime px-2 py-0.5 font-display text-xs font-extrabold uppercase text-black opacity-0 shadow-sm"
+              className="pointer-events-none absolute -top-4 -right-6 z-10 whitespace-nowrap rounded-full bg-accent-lime px-3 py-1 text-xs font-extrabold text-on-accent-lime opacity-0 shadow-[4px_4px_0_rgba(0,0,0,0.4)]"
             >
               {td('stamp', { type: mediaCache.type })}
             </span>
