@@ -233,6 +233,20 @@ describe('POST /api/account/import', () => {
     ])
   })
 
+  it('una lista sin tipo (o con uno raro) se importa como mixta, no se pierde en silencio', async () => {
+    const res = await post({
+      library: [],
+      lists: [{ name: 'Sin tipo', items: [] }, { name: 'Rara', mediaType: 42, items: [] }],
+    })
+
+    expect((await res.json()).listsImported).toBe(2)
+    const inserted = writes['lists.insert'].map((call) => call[0] as { name: string; media_type: string })
+    expect(inserted.map((l) => [l.name, l.media_type])).toEqual([
+      ['Sin tipo', 'mixed'],
+      ['Rara', 'mixed'],
+    ])
+  })
+
   it('omite los items de lista cuyo título no existe (FK inválida)', async () => {
     // knownMediaIds vacío → ninguno está en `media`.
     await post({

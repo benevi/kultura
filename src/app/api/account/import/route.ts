@@ -258,12 +258,16 @@ async function importLists(
 
     let listId = existing.get(name)
     if (!listId) {
+      // `media_type` es NOT NULL: sin tipo (o con uno que no es texto) va como
+      // lista mixta (20261208250001) en vez de perderse sin avisar. Si el CHECK
+      // la rechaza (base sin esa migración), se salta como cualquier fallo.
+      const mediaType = typeof list.mediaType === 'string' && list.mediaType !== '' ? list.mediaType : 'mixed'
       const { data: created, error } = await supabase
         .from('lists')
         .insert({
           owner_id: userId,
           name,
-          media_type: typeof list.mediaType === 'string' ? list.mediaType : null,
+          media_type: mediaType,
           is_collaborative: list.isCollaborative === true,
         })
         .select('id')

@@ -18,9 +18,9 @@
 // ============================================================
 
 import { discoverTV, getTV, getTVVideos, searchTV } from "./tmdb";
-import type { TmdbTV, TmdbTVDetail } from "./tmdb";
+import type { TmdbTV } from "./tmdb";
 import { buildTmdbDiscoverParams } from "./tmdb-maps";
-import { normalizeTV } from "./normalizer";
+import { normalizeTV, type TmdbTVInput } from "./normalizer";
 import type { MediaItem } from "@/types/media";
 
 const TMDB_ANIMATION_GENRE = 16;
@@ -42,7 +42,7 @@ export function fromTmdbAnimeRef(ref: string): number {
 }
 
 /** Normaliza una serie de TMDB como anime (tipo e ids propios). */
-export function normalizeAnimeTmdb(raw: TmdbTVDetail): MediaItem {
+export function normalizeAnimeTmdb(raw: TmdbTVInput): MediaItem {
   const ref = toTmdbAnimeRef(raw.id);
   return { ...normalizeTV(raw), id: `anime_${ref}`, externalId: ref, type: "anime" };
 }
@@ -81,7 +81,7 @@ export async function discoverAnimeTmdb(
 ): Promise<AnimeTmdbPage> {
   const res = await discoverTV(page, buildAnimeTmdbParams(filters), locale);
   return {
-    items: (res.results ?? []).map((raw) => normalizeAnimeTmdb(raw as TmdbTVDetail)),
+    items: (res.results ?? []).map((raw) => normalizeAnimeTmdb(raw)),
     totalPages: Math.max(res.total_pages ?? 1, 1),
   };
 }
@@ -94,7 +94,7 @@ export async function searchAnimeTmdb(
   const res = await searchTV(query, page, locale);
   const results = (res.results ?? []) as TmdbTVWithOrigin[];
   return {
-    items: results.filter(isTmdbAnime).map((raw) => normalizeAnimeTmdb(raw as TmdbTVDetail)),
+    items: results.filter(isTmdbAnime).map((raw) => normalizeAnimeTmdb(raw)),
     totalPages: Math.max(res.total_pages ?? 1, 1),
   };
 }

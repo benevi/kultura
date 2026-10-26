@@ -56,11 +56,13 @@ code="$(curl -sS -o /dev/null -w '%{http_code}' -H 'RSC: 1' -H 'Sec-Fetch-Dest: 
 code="$(curl -sS -o /dev/null -w '%{http_code}' -H 'Sec-Fetch-Dest: document' -H "Referer: $BASE/es/privacy" "$BASE/es/login")"
 [[ "$code" == "200" ]] && ok "carga de documento normal: 200" || ko "documento: HTTP $code"
 
-echo "== 7. Service worker: sin CSP en /sw.js ni en /sw-config.json"
-for p in /sw.js /sw-config.json; do
-  H="$(h "$p")"; sleep 1
-  [[ -z "$(hv "$H" content-security-policy)$(hv "$H" content-security-policy-report-only)" ]] && ok "$p sin CSP ($(hv "$H" cache-control))" || ko "$p lleva CSP"
-done
+echo "== 7. Service worker: /sw.js con SU CSP (la del worker) y /sw-config.json sin CSP"
+SW_CSP="default-src 'none'; script-src 'self'; connect-src 'self'; img-src 'self'"
+H="$(h /sw.js)"; sleep 1
+[[ "$(hv "$H" content-security-policy)" == "$SW_CSP" && -z "$(hv "$H" content-security-policy-report-only)" ]] \
+  && ok "/sw.js con la CSP del worker ($(hv "$H" cache-control))" || ko "/sw.js: CSP «$(hv "$H" content-security-policy)»"
+H="$(h /sw-config.json)"; sleep 1
+[[ -z "$(hv "$H" content-security-policy)$(hv "$H" content-security-policy-report-only)" ]] && ok "/sw-config.json sin CSP ($(hv "$H" cache-control))" || ko "/sw-config.json lleva CSP"
 
 echo "== 8. Informes de CSP: /api/csp-report responde 204"
 code="$(curl -sS -o /dev/null -w '%{http_code}' -X POST -H 'content-type: application/csp-report' \

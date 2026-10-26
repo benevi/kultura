@@ -10,7 +10,16 @@
 //   - otro fallo → failures + 1, y a las MAX_FAILURES seguidas se borra (p. ej.
 //     tras cambiar el par VAPID, las viejas ya no valen).
 // Un evento de hace más de MAX_EVENT_AGE_MS no se envía (no se puede repetir
-// un aviso viejo aunque alguien tuviera el secreto).
+// un aviso viejo aunque alguien tuviera el secreto). En una amistad aceptada
+// la fecha que cuenta es `accepted_at` (20261222340001): `created_at` es la de
+// la solicitud, que puede tener semanas.
+//
+// Mensajes: un aviso por ráfaga. Si el mismo remitente ya escribió en esa
+// conversación dentro del mismo tramo fijo de PUSH_MESSAGE_BURST_SECONDS, ese
+// primer mensaje ya avisó y este no (`throttled`). Es la misma regla que aplica
+// el trigger desde 20261222340001 (allí ni se llama a esta ruta); aquí queda
+// por si la base aún tiene la función anterior. Mensajes de varias filas con
+// la misma fecha: avisa el de id menor.
 // ============================================================
 
 import 'server-only'
@@ -24,6 +33,8 @@ export const MAX_EVENT_AGE_MS = 10 * 60 * 1000
 export const MAX_FAILURES = 10
 /** Tope de envíos por evento (un grupo grande o muchas suscripciones escritas a mano). */
 export const MAX_SUBSCRIPTIONS_PER_EVENT = 50
+/** Tramo del aviso por ráfaga de mensajes (igual que en 20261222340001_push_throttle.sql). */
+export const PUSH_MESSAGE_BURST_SECONDS = 30
 
 const NOT_MIGRATED = new Set(['42P01', '42703', 'PGRST204', 'PGRST205'])
 
@@ -68,6 +79,62 @@ function isFresh(createdAt: string | null | undefined, now: number): boolean {
   return Number.isFinite(at) && now - at <= MAX_EVENT_AGE_MS && at - now <= 60_000
 }
 
+/**
+ * ¿Ya avisó otro mensaje del mismo remitente en esta conversación y tramo?
+ * Se busca el PRIMERO del tramo (por fecha y, en empate, por id): si no es
+ * este, este no avisa. Ante cualquier error de lectura, se avisa (mejor un
+ * aviso de más que ninguno).
+ */
+async function isBurstFollowUp(
+  admin: SupabaseClient,
+  m: { id: string; conversation_id: string; sender_id: string; created_at: string | null },
+): Promise<boolean> {
+  const at = Date.parse(m.created_at ?? '')
+  if (!m.created_at || !Number.isFinite(at)) return false
+  const burstMs = PUSH_MESSAGE_BURST_SECONDS * 1000
+  const { data, error } = await admin
+    .from('messages')
+    .select('id')
+    .eq('conversation_id', m.conversation_id)
+    .eq('sender_id', m.sender_id)
+    .gte('created_at', new Date(Math.floor(at / burstMs) * burstMs).toISOString())
+    .lte('created_at', m.created_at)
+    .order('created_at', { ascending: true })
+    .order('id', { ascending: true })
+    .limit(1)
+  if (error) return false
+  const first = ((data ?? []) as { id: string }[])[0]
+  return !!first && first.id !== m.id
+}
+
+const FRIENDSHIP_COLUMNS = 'id, requester_id, receiver_id, status, created_at'
+
+interface FriendshipRow {
+  requester_id: string
+  receiver_id: string
+  status: string
+  created_at: string | null
+  /** `undefined` = la columna aún no existe (migración sin aplicar). */
+  accepted_at?: string | null
+}
+
+/** La amistad con `accepted_at`, o sin ella si la migración no está aplicada. */
+async function readFriendship(admin: SupabaseClient, id: string): Promise<FriendshipRow | null> {
+  const withAcceptedAt = await admin
+    .from('friendships')
+    .select(`${FRIENDSHIP_COLUMNS}, accepted_at`)
+    .eq('id', id)
+    .maybeSingle()
+  if (!withAcceptedAt.error) {
+    const row = withAcceptedAt.data as FriendshipRow | null
+    return row ? { ...row, accepted_at: row.accepted_at ?? null } : null
+  }
+  if (!NOT_MIGRATED.has(withAcceptedAt.error.code ?? '')) return null
+  const { data } = await admin.from('friendships').select(FRIENDSHIP_COLUMNS).eq('id', id).maybeSingle()
+  const row = data as FriendshipRow | null
+  return row ? { ...row, accepted_at: undefined } : null
+}
+
 async function usernameOf(admin: SupabaseClient, userId: string): Promise<string | null> {
   const { data } = await admin.from('users').select('username').eq('id', userId).maybeSingle()
   const name = (data as { username?: unknown } | null)?.username
@@ -82,9 +149,10 @@ async function resolveTarget(input: DispatchBody, admin: SupabaseClient, now: nu
       .select('id, conversation_id, sender_id, created_at')
       .eq('id', input.id)
       .maybeSingle()
-    const m = msg as { conversation_id: string; sender_id: string; created_at: string | null } | null
+    const m = msg as { id: string; conversation_id: string; sender_id: string; created_at: string | null } | null
     if (!m) return 'not_found'
     if (!isFresh(m.created_at, now)) return 'stale'
+    if (await isBurstFollowUp(admin, m)) return 'throttled'
     const { data: members } = await admin
       .from('conversation_members')
       .select('user_id')
@@ -118,12 +186,7 @@ async function resolveTarget(input: DispatchBody, admin: SupabaseClient, now: nu
     }
   }
 
-  const { data } = await admin
-    .from('friendships')
-    .select('id, requester_id, receiver_id, status, created_at')
-    .eq('id', input.id)
-    .maybeSingle()
-  const f = data as { requester_id: string; receiver_id: string; status: string; created_at: string | null } | null
+  const f = await readFriendship(admin, input.id)
   if (!f) return 'not_found'
   if (input.kind === 'friend_request') {
     if (f.status !== 'pending') return 'not_pending'
@@ -136,6 +199,9 @@ async function resolveTarget(input: DispatchBody, admin: SupabaseClient, now: nu
     }
   }
   if (f.status !== 'accepted') return 'not_accepted'
+  // Sin la columna (antes de 20261222340001) no hay fecha de aceptación: como
+  // antes, se avisa. Con ella, null = aceptada antes de la migración.
+  if (f.accepted_at !== undefined && !isFresh(f.accepted_at, now)) return 'stale'
   return {
     recipients: [f.requester_id],
     event: { kind: 'friend_accepted', username: await usernameOf(admin, f.receiver_id) },

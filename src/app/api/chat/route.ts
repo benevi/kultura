@@ -87,7 +87,7 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
 
       const lastMsg = lastMsgResult.data
       const unread = lastMsg && row.last_read_at
-        ? new Date(lastMsg.created_at) > new Date(row.last_read_at)
+        ? new Date(lastMsg.created_at ?? 0) > new Date(row.last_read_at)
         : !!lastMsg
 
       return {

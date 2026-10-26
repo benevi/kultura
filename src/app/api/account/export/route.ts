@@ -13,14 +13,17 @@ import { getFriends } from '@/lib/social/friends'
 import { createLogger } from '@/lib/logger'
 import { collectExportSections } from './collect'
 import { readRatingScale } from '@/lib/library/scale'
+import { jsonStream } from '@/lib/utils/json-stream'
 
 const log = createLogger('api/account/export')
 
 /**
  * GET /api/account/export — exporta TODOS los datos del usuario autenticado
  * (arts. 15 y 20 RGPD): perfil, biblioteca, listas, amistades y, desde SEG-8,
- * mensajes enviados, conversaciones, posts, grupos, invitaciones,
- * recomendaciones, sugerencias, notificaciones y denuncias (ver `collect.ts`).
+ * mensajes enviados y recibidos (en las conversaciones de las que sigue siendo
+ * miembro), conversaciones, posts, grupos, invitaciones, recomendaciones,
+ * sugerencias, notificaciones, denuncias, diario y dispositivos con avisos push
+ * (ver `collect.ts`).
  * Biblioteca, listas y amistades reusan las queries de sus pantallas.
  */
 export async function GET(): Promise<NextResponse> {
@@ -71,7 +74,10 @@ export async function GET(): Promise<NextResponse> {
     )
     const itemsByList = new Map(listItems)
 
-    return NextResponse.json({
+    // En streaming: una cuenta con mucha actividad pasa de 4,5 MB, el tope de
+    // Vercel para una respuesta de una pieza. Los datos ya están leídos (un
+    // fallo de la base sigue siendo un 500), solo se envían por trozos.
+    return new NextResponse(jsonStream({
       exportedAt: new Date().toISOString(),
       profile: { email: user.email, ...profile },
       library,
@@ -80,6 +86,8 @@ export async function GET(): Promise<NextResponse> {
       lists: lists.map((list) => ({ ...list, items: itemsByList.get(list.id) ?? [] })),
       friendships,
       ...sections,
+    }), {
+      headers: { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store' },
     })
   } catch (err) {
     log.error('Failed to export account data', { err, userId: user.id })
