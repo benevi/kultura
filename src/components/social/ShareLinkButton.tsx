@@ -7,10 +7,11 @@
 // Recibe una RUTA relativa ("/u/ana"); el origen se resuelve en el cliente.
 // ============================================================
 
+import { useEffect } from 'react'
 import { useTranslations } from 'next-intl'
 import { KButton } from '@/components/ui/KButton'
 import { useToastContext } from '@/components/ui/ToastProvider'
-import { prepareShareImage, shareNative } from '@/components/pwa/share'
+import { preloadShareImage, prepareShareImage, shareNative } from '@/components/pwa/share'
 
 interface ShareLinkButtonProps {
   path: string
@@ -22,6 +23,9 @@ interface ShareLinkButtonProps {
 export function ShareLinkButton({ path, title, label, size = 'sm' }: ShareLinkButtonProps) {
   const t = useTranslations('collection')
   const { show } = useToastContext()
+
+  // La tarjeta OG tiene que estar descargada ANTES del toque (Safari).
+  useEffect(() => preloadShareImage(path), [path])
 
   async function handleShare() {
     const url = new URL(path, window.location.origin).toString()

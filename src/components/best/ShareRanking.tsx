@@ -12,7 +12,7 @@
 
 import { useEffect, useId, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
-import { prepareShareImage, shareNative } from "@/components/pwa/share";
+import { preloadShareImage, prepareShareImage, shareNative } from "@/components/pwa/share";
 
 interface ShareRankingProps {
   /** Ruta con locale, p. ej. "/es/best/anime/2026". */
@@ -37,6 +37,9 @@ export function ShareRanking({ path, title }: ShareRankingProps) {
 
   const fullUrl = () => new URL(path, window.location.origin).toString();
   const text = t("text", { title });
+
+  // La tarjeta OG tiene que estar descargada ANTES del toque (Safari).
+  useEffect(() => preloadShareImage(path), [path]);
 
   useEffect(() => {
     if (!open) return;

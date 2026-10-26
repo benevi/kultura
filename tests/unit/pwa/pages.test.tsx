@@ -20,7 +20,9 @@ function lookup(locale: string, dotted: string): string {
   return value;
 }
 
+const setRequestLocale = vi.fn();
 vi.mock("next-intl/server", () => ({
+  setRequestLocale: (l: string) => setRequestLocale(l),
   getTranslations: async (arg: string | { locale: string; namespace: string }) => {
     const { locale, namespace } = typeof arg === "string" ? { locale: currentLocale, namespace: arg } : arg;
     return (key: string) => lookup(locale, `${namespace}.${key}`);
@@ -32,7 +34,7 @@ vi.mock("next/navigation", () => ({
   },
 }));
 
-import OfflinePage, { generateMetadata } from "@/app/[locale]/offline/page";
+import OfflinePage, { dynamicParams, generateMetadata, generateStaticParams } from "@/app/[locale]/offline/page";
 import ChatLoading from "@/app/[locale]/(app)/chat/loading";
 import NotificationsLoading from "@/app/[locale]/(app)/notifications/loading";
 
@@ -45,6 +47,14 @@ describe("/[locale]/offline", () => {
     expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent(lookup(locale, "pwa.offline.title"));
     expect(screen.getByRole("button", { name: lookup(locale, "pwa.offline.retry") })).toBeInTheDocument();
     expect(screen.getByRole("link", { name: lookup(locale, "pwa.offline.home") })).toHaveAttribute("href", `/${locale}`);
+  });
+
+  it("estática: solo es/en en el build y fija el idioma de la petición", async () => {
+    expect(generateStaticParams()).toEqual([{ locale: "es" }, { locale: "en" }]);
+    expect(dynamicParams).toBe(false);
+    setRequestLocale.mockClear();
+    await OfflinePage({ params: Promise.resolve({ locale: "en" }) });
+    expect(setRequestLocale).toHaveBeenCalledWith("en");
   });
 
   it("no indexable y con título traducido", async () => {

@@ -1,7 +1,8 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { getTranslations } from "next-intl/server";
+import { getTranslations, setRequestLocale } from "next-intl/server";
 import { isAppLocale } from "@/i18n/detect";
+import { routing } from "@/i18n/routing";
 import { Logo } from "@/components/layout/Logo";
 import { KButton } from "@/components/ui/KButton";
 import { RetryButton } from "@/components/pwa/RetryButton";
@@ -21,6 +22,12 @@ interface Props {
   params: Promise<{ locale: string }>;
 }
 
+/** Solo es/en: la página se genera en el build y sale del CDN (D-02, F-22). */
+export function generateStaticParams() {
+  return routing.locales.map((locale) => ({ locale }));
+}
+export const dynamicParams = false;
+
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { locale } = await params;
   if (!isAppLocale(locale)) return {};
@@ -31,6 +38,9 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 export default async function OfflinePage({ params }: Props) {
   const { locale } = await params;
   if (!isAppLocale(locale)) notFound();
+  // Sin esto next-intl leería el idioma de las cabeceras y la página dejaría
+  // de ser estática.
+  setRequestLocale(locale);
   const t = await getTranslations({ locale, namespace: "pwa.offline" });
 
   return (

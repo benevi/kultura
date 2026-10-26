@@ -7,11 +7,19 @@
 // - `scope: "/"` (el archivo vive en la raíz, no hace falta
 //   `Service-Worker-Allowed`) y `updateViaCache: "none"`: el navegador
 //   comprueba `sw.js` en la red en cada visita, sin la caché HTTP.
-// - Interruptor: `NEXT_PUBLIC_PWA_SW=0` des-registra el worker en los
-//   navegadores que ya lo tengan (si algún día hiciera falta retirarlo).
+// - Interruptor: `NEXT_PUBLIC_PWA_SW=0` (y redeploy) des-registra el worker
+//   y borra sus cachés `kultura-*` en los navegadores que ya lo tengan. Esto
+//   solo corre en la zona con sesión; para quien no vuelva a ella, el propio
+//   worker consulta `/sw-config.json` y se da de baja solo (ver `public/sw.js`).
 // ============================================================
 
 export const SW_URL = "/sw.js";
+export const SW_CACHE_PREFIX = "kultura-";
+
+/** Valor de `NEXT_PUBLIC_PWA_SW`: cualquier cosa salvo "0" = activado. */
+export function isServiceWorkerEnabled(flag: string | undefined): boolean {
+  return flag?.trim() !== "0";
+}
 
 export type SwResult = "unsupported" | "skipped" | "unregistered" | "scheduled";
 
@@ -22,7 +30,7 @@ interface SwEnv {
 }
 
 export function swMode({ flag, production }: SwEnv): "register" | "unregister" | "skip" {
-  if (flag === "0") return "unregister";
+  if (!isServiceWorkerEnabled(flag)) return "unregister";
   return production ? "register" : "skip";
 }
 
@@ -44,6 +52,7 @@ export async function setupServiceWorker(
         .filter((r) => [r.active, r.waiting, r.installing].some((w) => w?.scriptURL.endsWith(SW_URL)))
         .map((r) => r.unregister().catch(() => false)),
     );
+    await deleteWorkerCaches(win);
     return "unregistered";
   }
   const register = () => {
@@ -54,4 +63,16 @@ export async function setupServiceWorker(
   if (win.document.readyState === "complete") register();
   else win.addEventListener("load", register, { once: true });
   return "scheduled";
+}
+
+/** Borra las cachés del worker (solo las `kultura-*`). */
+export async function deleteWorkerCaches(win: Window): Promise<void> {
+  const storage = (win as Window & { caches?: CacheStorage }).caches;
+  if (!storage) return;
+  try {
+    const names = await storage.keys();
+    await Promise.all(names.filter((n) => n.startsWith(SW_CACHE_PREFIX)).map((n) => storage.delete(n)));
+  } catch {
+    // Sin acceso a Cache Storage (modo privado estricto): no hay nada que borrar.
+  }
 }

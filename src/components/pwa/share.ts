@@ -4,13 +4,16 @@
 // `navigator.share` con la imagen `opengraph-image` de la página compartida
 // (perfil público, ranking…) cuando el navegador acepta archivos
 // (`navigator.canShare({ files })`, Android, iOS, Windows, ChromeOS); si no,
-// el enlace solo, como antes. La imagen se pide al mostrar intención
-// (puntero encima, foco) para tenerla lista al tocar: Safari exige que
-// `share()` llegue poco después del gesto y una descarga larga lo agota. Al
-// tocar se espera como mucho `IMAGE_BUDGET_MS`; si no ha llegado, sin imagen.
+// el enlace solo, como antes.
+//
+// Safari exige que `share()` llegue enseguida tras el gesto: cualquier
+// `await` de red entre el toque y `share()` lo agota (NotAllowedError). Por
+// eso la imagen se adjunta SOLO si ya está descargada: se precarga antes del
+// gesto (`preloadShareImage` al montar el botón, en un momento libre, y
+// `prepareShareImage` al apuntar o enfocar). Si al tocar aún no ha llegado,
+// se comparte el enlace solo y sin esperar.
 // ============================================================
 
-export const IMAGE_BUDGET_MS = 1200;
 const FETCH_TIMEOUT_MS = 4000;
 const LOCALE_PREFIX = /^\/(?:es|en)(?:\/|$)/;
 
@@ -28,6 +31,8 @@ export function ogImagePath(path: string, locale = "es"): string {
 }
 
 const pending = new Map<string, Promise<File | null>>();
+/** Tarjetas ya descargadas, listas para adjuntar sin esperar. */
+const ready = new Map<string, File>();
 
 function documentLocale(): string {
   const lang = typeof document !== "undefined" ? document.documentElement.lang : "";
@@ -61,15 +66,37 @@ export function prepareShareImage(path: string): Promise<File | null> {
     }
   })();
   pending.set(src, task);
-  // Un fallo no se queda guardado: la próxima vez se reintenta.
   task.then((file) => {
-    if (!file) pending.delete(src);
+    if (file) ready.set(src, file);
+    // Un fallo no se queda guardado: la próxima vez se reintenta.
+    else pending.delete(src);
   });
   return task;
 }
 
-function within<T>(promise: Promise<T>, ms: number, fallback: T): Promise<T> {
-  return Promise.race([promise, new Promise<T>((resolve) => setTimeout(() => resolve(fallback), ms))]);
+/** La tarjeta de `path` si YA está descargada (sin esperar a nada). */
+export function readyShareImage(path: string): File | null {
+  return ready.get(ogImagePath(path, documentLocale())) ?? null;
+}
+
+/**
+ * Precarga la tarjeta antes de cualquier gesto, cuando el navegador está
+ * libre. Nada en navegadores sin archivos en la hoja ni con ahorro de datos.
+ * Devuelve la función para cancelarla (al desmontar el botón).
+ */
+export function preloadShareImage(path: string): () => void {
+  if (!canShareFiles() || typeof window === "undefined") return () => undefined;
+  const connection = (navigator as Navigator & { connection?: { saveData?: boolean } }).connection;
+  if (connection?.saveData) return () => undefined;
+  const run = () => void prepareShareImage(path);
+  const idle = (window as Window & { requestIdleCallback?: (cb: () => void, o?: { timeout: number }) => number })
+    .requestIdleCallback;
+  if (idle) {
+    const id = idle(run, { timeout: 4000 });
+    return () => window.cancelIdleCallback?.(id);
+  }
+  const id = window.setTimeout(run, 1500);
+  return () => window.clearTimeout(id);
 }
 
 const isAbort = (err: unknown) => err instanceof DOMException && err.name === "AbortError";
@@ -92,7 +119,9 @@ export async function shareNative({
 }): Promise<ShareOutcome> {
   if (typeof navigator === "undefined" || typeof navigator.share !== "function") return "unavailable";
   const data: ShareData = text ? { title, text, url } : { title, url };
-  const file = imagePath ? await within(prepareShareImage(imagePath), IMAGE_BUDGET_MS, null) : null;
+  // Sin `await` antes de `share()`: solo vale la imagen ya descargada.
+  const file = imagePath ? readyShareImage(imagePath) : null;
+  if (imagePath && !file) void prepareShareImage(imagePath); // para la próxima vez
   if (file) {
     try {
       await navigator.share({ ...data, files: [file] });

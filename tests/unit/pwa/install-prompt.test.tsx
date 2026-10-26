@@ -139,6 +139,45 @@ describe("InstallPrompt", () => {
     expect(screen.getByTestId("install-prompt")).toBeInTheDocument();
   });
 
+  it("Escape la cierra como «Ahora no» y devuelve el foco adonde estaba", () => {
+    previousVisit();
+    render(
+      <>
+        <main id="main" tabIndex={-1}>
+          <button type="button">antes</button>
+        </main>
+        <InstallPrompt labels={labels} />
+      </>,
+    );
+    fireBeforeInstallPrompt();
+    const before = screen.getByRole("button", { name: "antes" });
+    before.focus();
+    const later = screen.getByRole("button", { name: labels.later });
+    fireEvent.focus(later, { relatedTarget: before });
+    later.focus();
+    fireEvent.keyDown(later, { key: "Escape" });
+    expect(screen.queryByTestId("install-prompt")).toBeNull();
+    expect(document.activeElement).toBe(before);
+    expect(JSON.parse(window.localStorage.getItem(INSTALL_STORAGE_KEY)!).dismissedAt).toEqual(expect.any(Number));
+  });
+
+  it("si el elemento de antes ya no existe, el foco va al contenido principal; otras teclas no cierran", () => {
+    previousVisit();
+    render(
+      <>
+        <main id="main" tabIndex={-1} />
+        <InstallPrompt labels={labels} />
+      </>,
+    );
+    fireBeforeInstallPrompt();
+    const action = screen.getByRole("button", { name: labels.action });
+    action.focus();
+    fireEvent.keyDown(action, { key: "Enter" });
+    expect(screen.getByTestId("install-prompt")).toBeInTheDocument();
+    fireEvent.keyDown(action, { key: "Escape" });
+    expect(document.activeElement).toBe(document.getElementById("main"));
+  });
+
   it("iOS: instrucciones de Compartir → Añadir a pantalla de inicio, sin botón Instalar", () => {
     setUserAgent(IPHONE);
     previousVisit();

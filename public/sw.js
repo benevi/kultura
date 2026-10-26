@@ -17,8 +17,17 @@
  * hash se acumulan entre despliegues sin cambiar `VERSION`, así que su caché
  * se recorta a `MAX_STATIC_ENTRIES` (se van las más antiguas).
  *
- * Interruptor de emergencia: `NEXT_PUBLIC_PWA_SW=0` en Vercel hace que el
- * cliente des-registre este worker (`src/components/pwa/ServiceWorker.tsx`).
+ * Interruptor de emergencia: `NEXT_PUBLIC_PWA_SW=0` en Vercel (y redeploy).
+ * Actúa por dos vías, para que llegue también a quien no vuelve a la zona con
+ * sesión (donde se registra el worker):
+ *  1. El cliente lo des-registra y borra las cachés `kultura-*`
+ *     (`src/components/pwa/sw-register.ts`).
+ *  2. El propio worker consulta `/sw-config.json` (`src/app/sw-config.json/
+ *     route.ts`) al activarse y, como mucho cada `CONFIG_CHECK_MS`, tras una
+ *     navegación con red en CUALQUIER página que controle (también la
+ *     portada o un ranking). Si dice `{"enabled": false}`, borra sus cachés
+ *     y se da de baja (`self.registration.unregister()`). Sin red o con una
+ *     respuesta rara no hace nada.
  *
  * Las funciones de enrutado son declaraciones de primer nivel y sin estado
  * para que `tests/unit/pwa/sw.test.ts` las pruebe ejecutando ESTE archivo.
@@ -32,6 +41,9 @@ const CURRENT_CACHES = [STATIC_CACHE, OFFLINE_CACHE];
 const MAX_STATIC_ENTRIES = 200;
 /** La página offline se refresca como mucho una vez al día. */
 const OFFLINE_MAX_AGE_MS = 24 * 60 * 60 * 1000;
+/** Cada cuánto se consulta, como mucho, si el worker sigue activado. */
+const CONFIG_CHECK_MS = 60 * 60 * 1000;
+const CONFIG_URL = "/sw-config.json";
 
 const LOCALES = ["es", "en"];
 const DEFAULT_LOCALE = "es";
@@ -198,6 +210,48 @@ function refreshOfflineIfStale(now) {
   return refreshing;
 }
 
+/** ¿La configuración servida pide retirar el worker? Solo un `false` explícito. */
+function isDisabledConfig(config) {
+  return Boolean(config && typeof config === "object" && config.enabled === false);
+}
+
+/** Baja completa: cachés `kultura-*` fuera y registro anulado. */
+async function retire() {
+  const names = await caches.keys();
+  await Promise.all(
+    names
+      .filter(function (name) { return name.indexOf(CACHE_PREFIX) === 0; })
+      .map(function (name) { return caches.delete(name); })
+  );
+  await self.registration.unregister();
+}
+
+let lastConfigCheck = 0;
+let checkingConfig = null;
+
+/**
+ * Consulta `/sw-config.json` (sin caché, sin cookies). Devuelve `true` si el
+ * worker se ha dado de baja. `force` salta el límite de frecuencia.
+ */
+function checkConfig(now, force) {
+  if (checkingConfig) return checkingConfig;
+  if (!force && now - lastConfigCheck < CONFIG_CHECK_MS) return Promise.resolve(false);
+  lastConfigCheck = now;
+  checkingConfig = (async function () {
+    const response = await fetch(CONFIG_URL, { cache: "no-store", credentials: "omit" });
+    if (!response.ok) return false;
+    if (!isDisabledConfig(await response.json())) return false;
+    await retire();
+    return true;
+  })()
+    .catch(function () { return false; })
+    .then(function (retired) {
+      checkingConfig = null;
+      return retired;
+    });
+  return checkingConfig;
+}
+
 async function cacheFirst(request) {
   const cache = await caches.open(STATIC_CACHE);
   const hit = (await cache.match(request)) || (await caches.match(request, { cacheName: OFFLINE_CACHE }));
@@ -213,7 +267,12 @@ async function cacheFirst(request) {
 async function networkWithOfflineFallback(event) {
   try {
     const response = await fetch(event.request);
-    event.waitUntil(refreshOfflineIfStale(Date.now()));
+    const now = Date.now();
+    event.waitUntil(
+      checkConfig(now, false).then(function (retired) {
+        return retired ? undefined : refreshOfflineIfStale(now);
+      })
+    );
     return response;
   } catch (e) {
     const path = offlinePathFor(new URL(event.request.url).pathname);
@@ -241,6 +300,7 @@ self.addEventListener("activate", function (event) {
       // que el worker deja pasar (`/api/auth/callback?code=…` de Google) podría
       // salir dos veces a la red y gastar un código de un solo uso.
       await self.clients.claim();
+      await checkConfig(Date.now(), true);
     })()
   );
 });

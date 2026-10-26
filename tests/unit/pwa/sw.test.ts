@@ -87,13 +87,19 @@ const OFFLINE_HTML = (locale: string) =>
 function loadWorker(fetchImpl: FetchMock) {
   const handlers: Record<string, Handler> = {};
   const caches = new MemoryCacheStorage();
-  const state = { skipWaiting: 0, claimed: 0, preload: 0, fetches: [] as string[] };
+  const state = { skipWaiting: 0, claimed: 0, preload: 0, unregistered: 0, fetches: [] as string[] };
   const self = {
     location: new URL(`${ORIGIN}/sw.js`),
     addEventListener: (type: string, fn: Handler) => (handlers[type] = fn),
     skipWaiting: async () => void state.skipWaiting++,
     clients: { claim: async () => void state.claimed++ },
-    registration: { navigationPreload: { enable: async () => void state.preload++ } },
+    registration: {
+      navigationPreload: { enable: async () => void state.preload++ },
+      unregister: async () => {
+        state.unregistered++;
+        return true;
+      },
+    },
   };
   const fetch: FetchMock = async (input, init) => {
     const raw = typeof input === "string" ? input : input instanceof URL ? input.href : input.url;
@@ -103,7 +109,7 @@ function loadWorker(fetchImpl: FetchMock) {
   const context = vm.createContext({ self, caches, fetch, Response, Request, URL, Promise, console });
   // Las `const` de primer nivel no son propiedades del global: se exponen.
   vm.runInContext(
-    `${SOURCE}\n;globalThis.STATIC_CACHE = STATIC_CACHE; globalThis.OFFLINE_CACHE = OFFLINE_CACHE; globalThis.MAX_STATIC_ENTRIES = MAX_STATIC_ENTRIES;`,
+    `${SOURCE}\n;globalThis.STATIC_CACHE = STATIC_CACHE; globalThis.OFFLINE_CACHE = OFFLINE_CACHE; globalThis.MAX_STATIC_ENTRIES = MAX_STATIC_ENTRIES; globalThis.CONFIG_CHECK_MS = CONFIG_CHECK_MS;`,
     context,
     { filename: "sw.js" },
   );
@@ -144,6 +150,9 @@ const networkAt = (date: string, html = OFFLINE_HTML): FetchMock => async (input
   const { pathname } = new URL(raw, ORIGIN);
   if (pathname.endsWith("/offline")) {
     return basic(html(pathname.split("/")[1]), { status: 200, headers: { date } });
+  }
+  if (pathname === "/sw-config.json") {
+    return basic(JSON.stringify({ enabled: true }), { status: 200, headers: { "content-type": "application/json" } });
   }
   return basic(`net:${pathname}`, { status: 200 });
 };
@@ -357,9 +366,10 @@ describe("sw.js · fetch", () => {
   it("no refresca si la copia es de hoy; si el refresco falla a medias, se queda la de antes", async () => {
     const w = loadWorker(network);
     await dispatch(w, "install");
-    const before = w.state.fetches.length;
+    const pages = () => w.state.fetches.filter((p) => p !== "/sw-config.json").length;
+    const before = pages();
     await dispatch(w, "fetch", { request: req("/es/home", { mode: "navigate" }) });
-    expect(w.state.fetches.length).toBe(before + 1); // solo la navegación
+    expect(pages()).toBe(before + 1); // solo la navegación, sin volver a bajar la offline
 
     const old = new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toUTCString();
     const w2 = loadWorker(networkAt(old));
@@ -407,5 +417,79 @@ describe("sw.js · fetch", () => {
     expect(await dispatch(w, "fetch", { request: req("/api/search?q=dune") })).toBeUndefined();
     expect(await dispatch(w, "fetch", { request: req("https://image.tmdb.org/x.jpg") })).toBeUndefined();
     expect(w.state.fetches).toEqual([]);
+  });
+});
+
+describe("sw.js · baja por /sw-config.json (interruptor)", () => {
+  /** Red con la configuración que se quiera para /sw-config.json. */
+  const withConfig = (body: string | null, status = 200): FetchMock => async (input) => {
+    const raw = typeof input === "string" ? input : input instanceof URL ? input.href : input.url;
+    if (new URL(raw, ORIGIN).pathname === "/sw-config.json") {
+      if (body === null) throw new TypeError("Failed to fetch");
+      return basic(body, { status, headers: { "content-type": "application/json" } });
+    }
+    return network(input);
+  };
+
+  it("solo un `enabled: false` explícito lo retira", () => {
+    const w = loadWorker(network);
+    const isDisabled = w.fn<(c: unknown) => boolean>("isDisabledConfig");
+    expect(isDisabled({ enabled: false })).toBe(true);
+    expect(isDisabled({ enabled: true })).toBe(false);
+    expect(isDisabled({})).toBe(false);
+    expect(isDisabled({ enabled: "false" })).toBe(false);
+    expect(isDisabled(null)).toBe(false);
+  });
+
+  it("al activarse con el interruptor puesto: borra sus cachés (no las ajenas) y se da de baja", async () => {
+    const w = loadWorker(withConfig('{"enabled":false}'));
+    await dispatch(w, "install");
+    await w.caches.open("otra-app");
+    await dispatch(w, "activate");
+    expect(w.state.unregistered).toBe(1);
+    expect(await w.caches.keys()).toEqual(["otra-app"]);
+  });
+
+  it("activado, sin red o con una respuesta rara: sigue como estaba", async () => {
+    for (const config of ['{"enabled":true}', null, "<html>", '{"enabled":false}']) {
+      const w = loadWorker(config === '{"enabled":false}' ? withConfig(config, 500) : withConfig(config));
+      await dispatch(w, "install");
+      await dispatch(w, "activate");
+      expect(w.state.unregistered, String(config)).toBe(0);
+      expect(await w.caches.keys()).toContain(w.context.OFFLINE_CACHE);
+    }
+  });
+
+  it("tras una navegación con red en cualquier página, como mucho una consulta por hora", async () => {
+    const w = loadWorker(withConfig('{"enabled":true}'));
+    await dispatch(w, "install");
+    await dispatch(w, "activate");
+    const count = () => w.state.fetches.filter((p) => p === "/sw-config.json").length;
+    expect(count()).toBe(1);
+    await dispatch(w, "fetch", { request: req("/es/best/movie/2026", { mode: "navigate" }) });
+    expect(count()).toBe(1); // dentro de la hora: no repite
+
+    // Una hora después lo vuelve a mirar y, si se apagó, se retira.
+    const realNow = Date.now;
+    try {
+      const later = realNow() + (w.context.CONFIG_CHECK_MS as number) + 1;
+      w.context.Date = { ...Date, now: () => later, parse: Date.parse } as DateConstructor;
+      const wrapped = w.context.fetch as FetchMock;
+      w.context.fetch = async (input: RequestInfo | URL, init?: RequestInit) => {
+        const raw = typeof input === "string" ? input : input instanceof URL ? input.href : input.url;
+        if (raw.includes("/sw-config.json")) {
+          w.state.fetches.push("/sw-config.json");
+          return basic('{"enabled":false}', { status: 200 });
+        }
+        return wrapped(input, init);
+      };
+      const res = await dispatch(w, "fetch", { request: req("/es", { mode: "navigate" }) });
+      expect(await res!.text()).toBe("net:/es"); // la navegación no espera a la baja
+      expect(count()).toBe(2);
+      expect(w.state.unregistered).toBe(1);
+      expect((await w.caches.keys()).filter((n) => n.startsWith("kultura-"))).toEqual([]);
+    } finally {
+      w.context.Date = Date;
+    }
   });
 });

@@ -5,9 +5,10 @@
 //
 // Tarjeta fija abajo (encima de la BottomNav en móvil, abajo a la izquierda
 // en escritorio, para no chocar con los toasts de la derecha). No es un
-// diálogo: no roba el foco ni bloquea la página. Cuándo sale lo decide
-// `install-policy.ts`; en iOS enseña los dos pasos de "Añadir a pantalla de
-// inicio" en lugar del botón.
+// diálogo: no roba el foco ni bloquea la página. Escape la cierra ("Ahora
+// no") y el foco vuelve adonde estaba antes de entrar en ella. Cuándo sale
+// lo decide `install-policy.ts`; en iOS enseña los dos pasos de "Añadir a
+// pantalla de inicio" en lugar del botón.
 //
 // `appinstalled` se registra en `analytics_events` vía `/api/pwa/installed`
 // (`track()`, D-12, solo usuarios registrados). Va con `sendBeacon`, que no
@@ -15,7 +16,7 @@
 // salta por un evento que el usuario no ha pedido.
 // ============================================================
 
-import { useCallback, useEffect, useId, useState } from "react";
+import { useCallback, useEffect, useId, useRef, useState, type FocusEvent, type KeyboardEvent } from "react";
 import { usePathname } from "next/navigation";
 import { KButton } from "@/components/ui/KButton";
 import { Logo } from "@/components/layout/Logo";
@@ -72,6 +73,9 @@ export function InstallPrompt({ labels }: { labels: InstallLabels }) {
   const titleId = useId();
   const [platform, setPlatform] = useState<InstallPlatform>("desktop");
   const [open, setOpen] = useState(false);
+  const cardRef = useRef<HTMLElement>(null);
+  /** Dónde estaba el foco antes de entrar en la tarjeta (para devolverlo). */
+  const returnFocusRef = useRef<HTMLElement | null>(null);
 
   const evaluate = useCallback(() => {
     const now = Date.now();
@@ -112,13 +116,38 @@ export function InstallPrompt({ labels }: { labels: InstallLabels }) {
     };
   }, []);
 
+  /**
+   * Al cerrarse con el foco dentro, el foco vuelve adonde estaba antes de
+   * entrar (o al contenido principal): no se queda en un nodo que desaparece.
+   */
+  const restoreFocus = () => {
+    const card = cardRef.current;
+    if (!card || !card.contains(document.activeElement)) return;
+    const back = returnFocusRef.current;
+    const target = back && back.isConnected ? back : document.getElementById("main");
+    target?.focus({ preventScroll: true });
+  };
+
   const later = () => {
     writeInstallState(storage(), dismiss(readInstallState(storage()), Date.now()));
+    restoreFocus();
     setOpen(false);
+  };
+
+  const onKeyDown = (e: KeyboardEvent<HTMLElement>) => {
+    if (e.key !== "Escape") return;
+    e.stopPropagation();
+    later();
+  };
+
+  const onFocus = (e: FocusEvent<HTMLElement>) => {
+    const from = e.relatedTarget;
+    if (from instanceof HTMLElement && !e.currentTarget.contains(from)) returnFocusRef.current = from;
   };
 
   const install = async () => {
     const event = takeDeferredPrompt();
+    restoreFocus();
     setOpen(false);
     if (!event) return;
     try {
@@ -140,8 +169,11 @@ export function InstallPrompt({ labels }: { labels: InstallLabels }) {
 
   return (
     <aside
+      ref={cardRef}
       aria-labelledby={titleId}
       data-testid="install-prompt"
+      onKeyDown={onKeyDown}
+      onFocus={onFocus}
       className="fixed z-40 inset-x-4 bottom-[calc(4.5rem+env(safe-area-inset-bottom))] md:inset-x-auto md:left-4 md:bottom-4 md:w-96 rounded-18 border border-surface-border bg-surface-elevated p-4 text-text-primary shadow-[0_2px_8px_rgba(0,0,0,0.15)] motion-safe:animate-toast-in"
     >
       <div className="flex items-start gap-3">
