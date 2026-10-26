@@ -88,7 +88,7 @@ describe("metadatos", () => {
     expect(md.title).toBe("@benevi le da 9/10 a Dune · KULTURA");
     expect(md.robots).toEqual({ index: false, follow: true });
     const og = (md.openGraph as { images: Array<{ url: string; alt: string; width: number }> }).images[0];
-    expect(og.url).toBe(`https://kulturaapp.vercel.app/es/u/benevi/r/movie/438631/opengraph-image/${SIG()}?v=9`);
+    expect(og.url).toBe(`https://kulturaapp.vercel.app/es/u/benevi/r/movie/438631/card/${SIG()}?v=9`);
     expect(og.alt).toBe("@benevi le da 9/10 a Dune en KULTURA");
     expect(og.width).toBe(1200);
     expect((md.twitter as { card: string }).card).toBe("summary_large_image");
@@ -100,7 +100,7 @@ describe("metadatos", () => {
     const md = await generateMetadata(props());
     expect(md.title).toBe("@benevi le da 9/10 a Dune · KULTURA");
     const og = (md.openGraph as { images: Array<{ url: string; alt: string }> }).images[0];
-    expect(og.url).toBe("https://kulturaapp.vercel.app/es/u/benevi/r/movie/438631/opengraph-image/card");
+    expect(og.url).toBe("https://kulturaapp.vercel.app/es/u/benevi/r/movie/438631/opengraph-image");
     expect(og.alt).toBe("Dune en KULTURA");
     expect(JSON.stringify(md)).not.toContain(SIG());
   });
@@ -109,6 +109,65 @@ describe("metadatos", () => {
     const md = await generateMetadata(props());
     expect(md.title).toBe("Dune en KULTURA · KULTURA");
     expect(JSON.stringify(md)).not.toContain("9/10");
+  });
+});
+
+describe("regresión (PR #51): la firma no sale en los metadatos sin una firma válida", () => {
+  type Images = { images?: unknown[] };
+  const branches: Array<[string, () => void, Record<string, string>, Partial<{ username: string; id: string }>?]> = [
+    ["usuario inexistente", () => {}, {}, { username: "nadie" }],
+    ["título que no se puede cargar (proveedor caído)", () => {
+      h.world.db.tables.media = [];
+      h.world.db.tables.user_media = [];
+    }, {}, { id: "693134" }],
+    ["id de título imposible", () => {}, {}, { id: "x y" }],
+    ["anónimo sin firma", () => {}, {}],
+    ["anónimo con firma inventada", () => {}, { s: "AAAAAAAAAAAAAAAAAAAAAA" }],
+    ["firma de otro título", () => {}, { s: "OTRA" }],
+    ["biblioteca 'Solo yo' con firma válida", () => {
+      h.world.db.tables.users[0].library_visibility = "private";
+    }, { s: "VALID" }],
+    ["bloqueo con firma válida", () => {
+      h.sessionUser = { id: "stranger" };
+      h.world.rpc.has_block_with = () => ({ data: true, error: null });
+    }, { s: "VALID" }],
+    ["amigo con sesión sin firma", () => {
+      h.sessionUser = { id: "friend" };
+    }, {}],
+    ["dueño sin firma", () => {
+      h.sessionUser = { id: "owner" };
+    }, {}],
+    ["la base falla al leer el dueño", () => {
+      h.world.db.failures.users = { code: "XX000", message: "boom" };
+    }, { s: "VALID" }],
+  ];
+
+  it.each(branches)("%s: sin firma y con `images` explícito (nunca el de los archivos)", async (_name, setup, sp, over) => {
+    setup();
+    const query = { ...sp };
+    if (query.s === "VALID") query.s = SIG();
+    if (query.s === "OTRA") query.s = ratingShareSignature("owner", "movie_841")!;
+    const md = await generateMetadata(props(query, over ?? {}));
+    const dump = JSON.stringify(md);
+    // La firma VÁLIDA de esta nota no puede salir (sí puede repetirse la que
+    // trae la petición si no vale: no da acceso a nada).
+    if (query.s !== SIG()) expect(dump).not.toContain(SIG());
+    else expect(dump).not.toContain(`/card/${SIG()}`);
+    expect(dump).not.toContain("/card/");
+    expect(Array.isArray((md.openGraph as Images | undefined)?.images)).toBe(true);
+    expect(Array.isArray((md.twitter as Images | undefined)?.images)).toBe(true);
+  });
+
+  it("solo con la firma válida sale la tarjeta firmada", async () => {
+    const md = await generateMetadata(props({ s: SIG() }));
+    expect(JSON.stringify(md)).toContain(`/card/${SIG()}`);
+  });
+
+  it("no encontrado: tarjeta vacía a propósito", async () => {
+    const md = await generateMetadata(props({}, { username: "nadie" }));
+    expect(md.openGraph).toEqual({ images: [] });
+    expect(md.twitter).toEqual({ images: [] });
+    expect(md.robots).toEqual({ index: false, follow: true });
   });
 });
 

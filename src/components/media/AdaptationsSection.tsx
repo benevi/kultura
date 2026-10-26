@@ -120,7 +120,7 @@ export async function AdaptationsSection({ item, locale, userId, supabase }: Pro
       <div className="mt-4 flex flex-col gap-2">
         {userId ? (
           view.addable.length > 1 ? (
-            <AddFranchiseButton items={view.addable} />
+            <AddFranchiseButton items={view.addable} userId={userId} />
           ) : view.addable.length === 0 ? (
             <p className="text-xs text-text-tertiary">{t("add.allIn")}</p>
           ) : null

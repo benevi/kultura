@@ -94,8 +94,15 @@ async function card(url, expectStatus) {
 }
 console.log("\nTarjetas:");
 await card(`${BASE}/es/u/${USER}/opengraph-image`, 200);
-await card(`${BASE}/es/u/${USER}/r/movie/438631/opengraph-image/card`, 200);
-await card(`${BASE}/en/u/${USER}/r/movie/438631/opengraph-image/card`, 200);
-await card(`${BASE}/es/u/${USER}/r/movie/438631/opengraph-image/AAAAAAAAAAAAAAAAAAAAAA`, 404);
+await card(`${BASE}/es/u/${USER}/r/movie/438631/opengraph-image`, 200);
+await card(`${BASE}/en/u/${USER}/r/movie/438631/opengraph-image`, 200);
+await card(`${BASE}/es/u/${USER}/r/movie/438631/card/AAAAAAAAAAAAAAAAAAAAAA`, 404);
+// La firma no puede salir en el HTML de la página sin una firma válida.
+for (const url of [`/es/u/${USER}/r/movie/438631`, `/es/u/${USER}/r/movie/999999999`, `/es/u/nadie-zzz/r/movie/438631`]) {
+  const html = await (await get(`${BASE}${url}`)).text();
+  const leaks = /\/card\/[A-Za-z0-9_-]{22}/.test(html);
+  if (leaks) ogFail++;
+  console.log(leaks ? "-- FIRMA EN EL HTML" : "OK sin firma", url);
+}
 
 process.exit(ratio >= 0.7 && ogFail === 0 ? 0 : 1);

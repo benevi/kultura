@@ -381,7 +381,7 @@
       "ctaRegister": "Create your free account and rate it",
       "ctaHint": "Free and ad-free.",
       "ctaRate": "Rate it yourself",
-      "ownerHint": "Only people with the link you share from the title page can see your rating. If you set your library to “Only me”, it stops showing.",
+      "ownerHint": "Your rating is visible to people who can already see your library (per Settings: your friends or anyone with an account) and to anyone with the link you share from the title page. If you set your library to “Only me”, only you can see it.",
       "posterAlt": "Cover of {title}"
     },
     "og": {

@@ -1,10 +1,11 @@
 // ============================================================
 // F-29 · Tarjetas OG con next/og (CRE-8a y c)
 //
-//   - la de la nota se pide SIEMPRE sin sesión: variante `card` (genérica)
-//     y la firmada (id = firma); Next sirve 404 a cualquier otro id;
-//   - `generateImageMetadata` no usa next-intl/server (Next 15 lo llama en
-//     una capa donde no está) y da el alt traducido;
+//   - la de la nota se pide SIEMPRE sin sesión: `opengraph-image` genérica y
+//     la firmada en `card/[sig]` (route handler: 404 con firma que no vale);
+//   - regresión (revisión del PR #51): el archivo de metadatos NO tiene
+//     `generateImageMetadata`, que publicaba la firma como og:image en
+//     cualquier respuesta de la página (también en un 404);
 //   - caché corta, no el año por defecto de ImageResponse;
 //   - el top 4 del perfil solo si la biblioteca se puede ver sin cuenta.
 // ============================================================
@@ -50,7 +51,9 @@ vi.mock("@/lib/social/public-collection", async (orig) => ({
   resolveRenamedUsername: async () => null,
 }));
 
-import RatedImage, { generateImageMetadata, size, contentType } from "@/app/[locale]/u/[username]/r/[type]/[id]/opengraph-image";
+import * as ratedImageModule from "@/app/[locale]/u/[username]/r/[type]/[id]/opengraph-image";
+import RatedImage from "@/app/[locale]/u/[username]/r/[type]/[id]/opengraph-image";
+import { GET as signedCard } from "@/app/[locale]/u/[username]/r/[type]/[id]/card/[sig]/route";
 import ProfileImage from "@/app/[locale]/u/[username]/opengraph-image";
 import { ratingShareSignature } from "@/app/[locale]/u/[username]/r/_lib/rating-share";
 import { publicTopFour } from "@/app/[locale]/u/[username]/r/_lib/top-four";
@@ -79,22 +82,16 @@ afterEach(() => {
 });
 
 describe("tarjeta de la nota", () => {
-  it("generateImageMetadata: `card` y la firmada, alt traducido, sin next-intl", async () => {
-    const meta = await generateImageMetadata({ params: Promise.resolve(params) });
-    expect(meta).toEqual([
-      { id: "card", alt: "@benevi en KULTURA", size, contentType },
-      { id: SIG(), alt: "@benevi en KULTURA", size, contentType },
-    ]);
-    const en = await generateImageMetadata({ params: { ...params, locale: "en" } });
-    expect(en[0].alt).toBe("@benevi on KULTURA");
+  const card = (sig: string, over: Partial<typeof params> = {}) =>
+    signedCard(new Request("https://kulturaapp.vercel.app/x"), { params: Promise.resolve({ ...params, ...over, sig }) });
+
+  it("regresión: el archivo de metadatos no anuncia variantes (ni la firma)", () => {
+    expect("generateImageMetadata" in ratedImageModule).toBe(false);
+    expect(ratedImageModule.size).toEqual({ width: 1200, height: 630 });
   });
 
-  it("usuario inexistente: solo `card` (la firma no existe)", async () => {
-    await expect(generateImageMetadata({ params: { ...params, username: "nadie" } })).resolves.toHaveLength(1);
-  });
-
-  it("id firmado: '@benevi le da 9/10 a Dune' con portada y caché corta", async () => {
-    await RatedImage({ params, id: SIG() });
+  it("firmada: '@benevi le da 9/10 a Dune' con portada y caché corta", async () => {
+    await card(SIG());
     const [res] = h.responses;
     expect(text(res.element)).toMatch(/@benevi\s+le\s+da\s+9\/10\s+a\s+Dune/);
     expect(h.posterDataUri).toHaveBeenCalledWith("https://image.tmdb.org/t/p/w500/d.jpg");
@@ -102,18 +99,30 @@ describe("tarjeta de la nota", () => {
     expect(String((res.options.headers as Record<string, string>)["cache-control"])).not.toContain("31536000");
   });
 
-  it("`card` (o el dueño en 'Solo yo'): genérica, nunca la nota", async () => {
-    await RatedImage({ params, id: "card" });
+  it("firma que no vale, de otro título, usuario o título inexistentes: 404 sin pintar nada", async () => {
+    for (const res of [
+      await card("AAAAAAAAAAAAAAAAAAAAAA"),
+      await card(ratingShareSignature("owner", "movie_841")!),
+      await card(SIG(), { username: "nadie" }),
+      await card(SIG(), { id: "x y" }),
+    ]) {
+      expect((res as Response).status).toBe(404);
+    }
+    expect(h.responses).toEqual([]);
+  });
+
+  it("genérica (o el dueño en 'Solo yo' con firma): nunca la nota", async () => {
+    await RatedImage({ params });
     expect(text(h.responses[0].element)).not.toContain("9/10");
     expect(text(h.responses[0].element)).toContain("Dune");
     h.world.db.tables.users[0].library_visibility = "private";
-    await RatedImage({ params, id: SIG() });
+    await card(SIG());
     expect(text(h.responses[1].element)).not.toContain("9/10");
   });
 
   it("en inglés y con la escala del dueño", async () => {
     h.world.metadata.owner = { rating_scale: "stars" };
-    await RatedImage({ params: { ...params, locale: "en" }, id: SIG() });
+    await card(SIG(), { locale: "en" });
     expect(text(h.responses[0].element)).toMatch(/@benevi\s+gives\s+Dune\s+4\.5★/);
   });
 });

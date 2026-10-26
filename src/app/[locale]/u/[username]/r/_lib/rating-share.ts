@@ -58,12 +58,21 @@ function shareSecret(): string | null {
   );
 }
 
+/**
+ * Versión de la firma (va dentro del HMAC). Subirla invalida TODOS los
+ * enlaces compartidos de golpe; rotar `SHARE_SECRET` hace lo mismo. Sin
+ * caducidad a propósito: un enlace publicado en redes debe seguir enseñando
+ * su tarjeta, y lo que el dueño controla es la visibilidad ("Solo yo" corta
+ * todas sus notas compartidas al instante, en página y tarjeta).
+ */
+export const RATING_SHARE_VERSION = "v1";
+
 /** Firma del enlace de la nota de `ownerId` sobre `mediaId`, o `null` sin clave. */
 export function ratingShareSignature(ownerId: string, mediaId: string): string | null {
   const secret = shareSecret();
   if (!secret || !ownerId || !mediaId) return null;
   return createHmac("sha256", secret)
-    .update(`kultura-rating-share:v1|${ownerId}|${mediaId}`)
+    .update(`kultura-rating-share:${RATING_SHARE_VERSION}|${ownerId}|${mediaId}`)
     .digest("base64url")
     .slice(0, SIG_LENGTH);
 }

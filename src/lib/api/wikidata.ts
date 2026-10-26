@@ -26,7 +26,7 @@
 //
 // Uso del servicio (https://www.mediawiki.org/wiki/Wikidata_Query_Service/User_Manual):
 // User-Agent identificativo con URL y contacto (`providerUserAgent`, D-18),
-// plazo propio y circuito de `providerFetch`. Las respuestas se guardan en la
+// plazo propio (7 s) y circuito de `providerFetch`. Las respuestas se guardan en la
 // tabla `media_adaptations` (o, sin ella, en la caché de datos de Next): una
 // ficha consulta Wikidata como mucho una vez cada varios días.
 //
@@ -54,7 +54,7 @@ export const WIKIDATA_SPARQL_ENDPOINT = "https://query.wikidata.org/sparql";
 export const WIKIDATA_PROVIDER = "wikidata" as ProviderId;
 
 /** Plazo por intento: WDQS tarda 0,3-3 s con franquicias grandes (Dune ~3 s). */
-export const WIKIDATA_TIMEOUT_MS = 8000;
+export const WIKIDATA_TIMEOUT_MS = 7000;
 
 /** Propiedades de Wikidata usadas (ver cabecera). */
 export const WD = {

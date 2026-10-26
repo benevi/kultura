@@ -9,6 +9,34 @@ import es from "../../../messages/es.json";
 
 const refresh = vi.fn();
 vi.mock("next/navigation", () => ({ useRouter: () => ({ refresh }) }));
+
+// Biblioteca de quien pulsa, vista con su sesión del navegador.
+const lib = vi.hoisted(() => ({
+  owned: new Set<string>(),
+  fail: false,
+  queries: [] as Array<{ userId: unknown; ids: unknown }>,
+}));
+vi.mock("@/lib/supabase/client", () => ({
+  createClient: () => ({
+    from: () => {
+      const q = { userId: undefined as unknown, ids: undefined as unknown };
+      const chain = {
+        select: () => chain,
+        eq: (_c: string, v: unknown) => {
+          q.userId = v;
+          return chain;
+        },
+        in: async (_c: string, ids: string[]) => {
+          q.ids = ids;
+          lib.queries.push(q);
+          if (lib.fail) return { data: null, error: { message: "boom" } };
+          return { data: ids.filter((id) => lib.owned.has(id)).map((media_id) => ({ media_id })), error: null };
+        },
+      };
+      return chain;
+    },
+  }),
+}));
 vi.mock("next-intl", () => ({
   useTranslations: () => (key: string, values?: Record<string, unknown>) =>
     values ? `${key}:${JSON.stringify(values)}` : key,
@@ -30,6 +58,9 @@ let fetchMock: ReturnType<typeof vi.fn>;
 beforeEach(() => {
   vi.useFakeTimers();
   refresh.mockReset();
+  lib.owned = new Set();
+  lib.fail = false;
+  lib.queries = [];
   fetchMock = vi.fn();
   globalThis.fetch = fetchMock as unknown as typeof fetch;
 });
@@ -46,7 +77,7 @@ async function press() {
 describe("AddFranchiseButton", () => {
   it("añade como Pendiente uno a uno, sin pisar nada, y refresca la ficha", async () => {
     fetchMock.mockImplementation(async () => ok());
-    render(<AddFranchiseButton items={ITEMS} />);
+    render(<AddFranchiseButton items={ITEMS} userId="u1" />);
     expect(screen.getByText('hint:{"count":3}')).toBeInTheDocument();
     await press();
     expect(fetchMock).toHaveBeenCalledTimes(3);
@@ -68,7 +99,7 @@ describe("AddFranchiseButton", () => {
       .mockResolvedValueOnce(ok())
       .mockResolvedValueOnce(tooMany("3"))
       .mockResolvedValue(ok());
-    render(<AddFranchiseButton items={ITEMS} />);
+    render(<AddFranchiseButton items={ITEMS} userId="u1" />);
     fireEvent.click(screen.getByRole("button"));
     await act(() => vi.advanceTimersByTimeAsync(400));
     expect(screen.getByRole("status")).toHaveTextContent('waiting:{"seconds":3}');
@@ -85,7 +116,7 @@ describe("AddFranchiseButton", () => {
       .mockResolvedValueOnce(ok())
       .mockResolvedValueOnce(tooMany("2"))
       .mockResolvedValueOnce(tooMany("2"));
-    render(<AddFranchiseButton items={ITEMS} />);
+    render(<AddFranchiseButton items={ITEMS} userId="u1" />);
     await press();
     expect(screen.getByRole("status")).toHaveTextContent('partial:{"done":1,"total":3}');
     // El botón sigue, ahora con los 2 que faltan.
@@ -96,7 +127,7 @@ describe("AddFranchiseButton", () => {
 
   it("429 sin nada añadido: aviso de límite", async () => {
     fetchMock.mockResolvedValue(tooMany("120"));
-    render(<AddFranchiseButton items={ITEMS} />);
+    render(<AddFranchiseButton items={ITEMS} userId="u1" />);
     await press();
     expect(screen.getByRole("status")).toHaveTextContent("rateLimited");
     expect(fetchMock).toHaveBeenCalledTimes(1);
@@ -108,10 +139,50 @@ describe("AddFranchiseButton", () => {
       .mockResolvedValueOnce(new Response("{}", { status: 502 }))
       .mockResolvedValueOnce(ok())
       .mockResolvedValueOnce(new Response("{}", { status: 401 }));
-    render(<AddFranchiseButton items={ITEMS} />);
+    render(<AddFranchiseButton items={ITEMS} userId="u1" />);
     await press();
     expect(fetchMock).toHaveBeenCalledTimes(3);
     expect(screen.getByRole("status")).toHaveTextContent('partial:{"done":1,"total":3}');
+  });
+
+  it("solo inserta: lo que ya está en SU biblioteca (otra pestaña) se salta y no se pisa", async () => {
+    fetchMock.mockImplementation(async () => ok());
+    lib.owned = new Set(["movie_2"]);
+    render(<AddFranchiseButton items={ITEMS} userId="u1" />);
+    await press();
+    expect(fetchMock.mock.calls.map((c) => JSON.parse((c[1] as RequestInit).body as string).mediaId)).toEqual([
+      "book_OL1W",
+      "tv_3",
+    ]);
+    expect(lib.queries.every((q) => q.userId === "u1")).toBe(true);
+    expect(screen.getByRole("status")).toHaveTextContent('done:{"count":2}');
+  });
+
+  it("si entra justo antes de enviarlo, también se salta", async () => {
+    fetchMock.mockImplementation(async () => {
+      lib.owned.add("tv_3"); // otra pestaña lo añade mientras tanto
+      return ok();
+    });
+    render(<AddFranchiseButton items={ITEMS} userId="u1" />);
+    await press();
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+  });
+
+  it("ya estaban todos: lo dice y no envía nada", async () => {
+    lib.owned = new Set(ITEMS.map((i) => i.mediaId));
+    render(<AddFranchiseButton items={ITEMS} userId="u1" />);
+    await press();
+    expect(fetchMock).not.toHaveBeenCalled();
+    expect(screen.getByRole("status")).toHaveTextContent("allIn");
+  });
+
+  it("si no se puede comprobar la biblioteca, no se envía nada y se puede reintentar", async () => {
+    lib.fail = true;
+    render(<AddFranchiseButton items={ITEMS} userId="u1" />);
+    await press();
+    expect(fetchMock).not.toHaveBeenCalled();
+    expect(screen.getByRole("status")).toHaveTextContent("error");
+    expect(screen.getByRole("button")).toBeInTheDocument();
   });
 
   it("los textos existen en es y en (plural ICU)", () => {

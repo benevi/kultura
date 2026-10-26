@@ -183,8 +183,8 @@ describe("runSparql", () => {
     expect(init.cache).toBe("no-store");
   });
 
-  it("plazo de 8 s por intento", () => {
-    expect(WIKIDATA_TIMEOUT_MS).toBe(8000);
+  it("plazo de 7 s por intento", () => {
+    expect(WIKIDATA_TIMEOUT_MS).toBe(7000);
   });
 
   it("los fallos cuentan en el circuito propio de Wikidata", async () => {

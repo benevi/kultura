@@ -6,10 +6,10 @@
 // del dueño; a los demás, la misma página GENÉRICA (título + perfil, sin
 // nota). Nunca indexable (página personal).
 //
-// Tarjeta de compartir: `opengraph-image` con dos variantes, la genérica
-// (`card`) y la firmada (id = firma). Los metadatos la fijan SIEMPRE a mano
-// (los de página mandan sobre los del archivo), así la firma solo sale en el
-// HTML de quien ya vino con ella.
+// Tarjeta de compartir: la genérica (`opengraph-image`) o la firmada
+// (`card/[firma]`, route handler). Los metadatos fijan `images` SIEMPRE a mano,
+// también vacío en el 404 y si algo falla (los de página mandan sobre los del
+// archivo): la firma solo sale en el HTML de quien ya trae una firma válida.
 // ============================================================
 
 import * as React from "react";
@@ -89,19 +89,40 @@ async function load(props: Props) {
   return { locale, name, type, externalId, sp, sig, view };
 }
 
-/** URL absoluta de la tarjeta: la firmada solo si quien mira ya traía la firma. */
+/**
+ * URL absoluta de la tarjeta. La firmada SOLO si la petición trae una firma
+ * válida para este dueño y título (`view.signed`) y la nota se ve: es la misma
+ * firma que ya tiene quien mira, nunca una nueva.
+ */
 function ogImageUrl(locale: string, view: Extract<RatingShareView, { kind: "rated" | "generic" }>, sig?: string) {
-  const base = `${siteUrl()}/${locale}${ratingPagePath(view.owner.username, view.parsed.type, view.parsed.externalId)}/opengraph-image`;
-  if (view.kind === "rated" && view.signed && sig) return `${base}/${sig}?v=${view.rating.rating10}`;
-  if (view.kind === "rated" && view.publicWithoutSignature) return `${base}/card?v=${view.rating.rating10}`;
-  return `${base}/card`;
+  const base = `${siteUrl()}/${locale}${ratingPagePath(view.owner.username, view.parsed.type, view.parsed.externalId)}`;
+  if (view.kind === "rated" && view.signed && sig) return `${base}/card/${encodeURIComponent(sig)}?v=${view.rating.rating10}`;
+  if (view.kind === "rated" && view.publicWithoutSignature) return `${base}/opengraph-image?v=${view.rating.rating10}`;
+  return `${base}/opengraph-image`;
 }
 
+const ROBOTS = { index: false, follow: true };
+
+/** Sin título o con un fallo: nada de tarjeta (ni la que Next deduciría de los archivos). */
+const NO_CARD: Metadata = {
+  title: SITE_NAME,
+  robots: ROBOTS,
+  openGraph: { images: [] },
+  twitter: { images: [] },
+};
+
 export async function generateMetadata(props: Props): Promise<Metadata> {
+  try {
+    return await buildMetadata(props);
+  } catch {
+    return NO_CARD;
+  }
+}
+
+async function buildMetadata(props: Props): Promise<Metadata> {
   const { locale, view, sig } = await load(props);
+  if (view.kind === "not_found") return NO_CARD;
   const t = await getTranslations({ locale, namespace: "share" });
-  const robots = { index: false, follow: true };
-  if (view.kind === "not_found") return { title: SITE_NAME, robots };
 
   const values = { username: view.owner.username, title: view.media.title };
   const rated = view.kind === "rated";
@@ -123,7 +144,7 @@ export async function generateMetadata(props: Props): Promise<Metadata> {
   return {
     title: `${title} · ${SITE_NAME}`,
     description,
-    robots,
+    robots: ROBOTS,
     alternates: { canonical: path },
     openGraph: {
       type: "website",

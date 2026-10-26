@@ -381,7 +381,7 @@
       "ctaRegister": "Crea tu cuenta gratis y puntúalo tú",
       "ctaHint": "Gratis y sin anuncios.",
       "ctaRate": "Puntúalo tú",
-      "ownerHint": "Solo ve tu nota quien tenga el enlace que compartes desde la ficha. Si pones tu biblioteca en «Solo yo», deja de verse.",
+      "ownerHint": "Tu nota la ven quienes ya pueden ver tu biblioteca (según Ajustes: tus amigos o cualquiera con cuenta) y quien tenga el enlace que compartes desde la ficha. Si pones tu biblioteca en «Solo yo», solo la ves tú.",
       "posterAlt": "Portada de {title}"
     },
     "og": {
