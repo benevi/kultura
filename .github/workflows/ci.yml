@@ -137,10 +137,10 @@ jobs:
 
   lighthouse:
     name: Rendimiento (Lighthouse CI con presupuesto)
-    # REN (criterio 6, F-22): falla el PR si el JS inicial de un ranking o un
-    # legal pasa de 150 KB transferidos o su CLS de 0,05 (la portada, de
-    # momento, con tope de 160 KB y el CLS solo como aviso: ver
-    # lighthouserc.json y tests/unit/csp/lighthouse-budget.test.ts). Mismo entorno que el job de accesibilidad (Supabase simulado y sin
+    # REN (criterio 6, F-22): falla el PR si el JS inicial de la portada, un
+    # ranking o un legal pasa de 150 KB transferidos o su CLS de 0,05 (ver
+    # lighthouserc.json y tests/unit/csp/lighthouse-budget.test.ts; el tope
+    # provisional de 160 KB de la portada se retiró en F-30). Mismo entorno que el job de accesibilidad (Supabase simulado y sin
     # red): mide el código, no a los proveedores. LCP y TBT avisan sin fallar
     # (en un runner compartido varían demasiado para cortar).
     # Ojo: `next start` sirve gzip y Vercel brotli (≈ 10-15 % menos): en
