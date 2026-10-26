@@ -316,10 +316,16 @@ export function ImmersiveBackdrop({
         </>
       ) : null}
 
-      {/* Fondo quieto de escritorio: el collage de siempre, a la derecha. */}
+      {/* Fondo quieto de escritorio: el collage, DENTRO de la retícula y
+          pegado a su borde derecho (el mismo que los botones de la
+          cabecera). El texto del hero le deja su ancho (`Hero.tsx`), así que
+          a ningún ancho se montan (F-30). */}
       {quiet ? (
-        <div className="pointer-events-none absolute right-8 top-1/2 hidden -translate-y-1/2 lg:block xl:right-16">
-          {collage}
+        <div
+          data-hero-collage
+          className="pointer-events-none absolute inset-x-0 top-1/2 hidden -translate-y-1/2 lg:block"
+        >
+          <div className="page-grid flex justify-end">{collage}</div>
         </div>
       ) : null}
     </>

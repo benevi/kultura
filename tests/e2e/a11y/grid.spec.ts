@@ -81,6 +81,38 @@ test.describe("retícula única (DIS-8)", () => {
   }
 });
 
+test.describe("portada: el h1 no se monta sobre el collage (revisión #57)", () => {
+  test.beforeEach(({}, info) => {
+    test.skip(info.project.name !== "escritorio-1440", "los anchos los fija el propio test");
+  });
+
+  test("h1 y subtítulo no cruzan el collage a 1024, 1280, 1366, 1440 y 1680 px", async ({ page }) => {
+    for (const width of [1024, 1280, 1366, 1440, 1680]) {
+      await page.setViewportSize({ width, height: 900 });
+      await open(page, "/es");
+      const r = await page.evaluate(() => {
+        const box = (el: Element) => {
+          const b = el.getBoundingClientRect();
+          return { l: b.left, t: b.top, r: b.right, b: b.bottom };
+        };
+        // El collage entero: la unión de sus piezas (giradas, con sombra).
+        const pieces = Array.from(document.querySelectorAll("[data-hero-collage] [aria-hidden] > *")).map(box);
+        const collage = pieces.reduce(
+          (u, p) => ({ l: Math.min(u.l, p.l), t: Math.min(u.t, p.t), r: Math.max(u.r, p.r), b: Math.max(u.b, p.b) }),
+          { l: Infinity, t: Infinity, r: -Infinity, b: -Infinity }
+        );
+        const text = ["#hero-title", "#hero p"].map((s) => box(document.querySelector(s)!));
+        return { collage, pieces: pieces.length, text };
+      });
+      expect(r.pieces, `${width}: sin collage`).toBeGreaterThan(0);
+      for (const t of r.text) {
+        const cross = t.l < r.collage.r && t.r > r.collage.l && t.t < r.collage.b && t.b > r.collage.t;
+        expect(cross, `${width} px: texto ${JSON.stringify(t)} cruza el collage ${JSON.stringify(r.collage)}`).toBe(false);
+      }
+    }
+  });
+});
+
 const WIDTHS = [320, 375, 414, 768, 1024, 1280, 1440];
 const OVERFLOW_PUBLIC = ["/es", "/en", "/es/best", "/es/best/movie/2026", "/es/u/benevi", "/es/privacy", "/es/terms", "/es/login", "/es/media/movie/550"];
 const OVERFLOW_APP = ["/es/home", "/es/library", "/es/lists", "/es/friends", "/es/chat", "/es/notifications", "/es/settings"];

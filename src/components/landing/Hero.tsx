@@ -63,7 +63,7 @@ export function Hero({
             </span>
             <h1
               id="hero-title"
-              className="max-w-[17ch] text-balance font-display text-3xl font-extrabold leading-[1] tracking-[-0.03em] text-text-primary min-[400px]:text-4xl md:text-display md:leading-[0.95]"
+              className="max-w-[17ch] lg:max-w-[min(17ch,calc(100%-31rem))] text-balance font-display text-3xl font-extrabold leading-[1] tracking-[-0.03em] text-text-primary min-[400px]:text-4xl md:text-display md:leading-[0.95]"
             >
               {copy.title.map((part, i) =>
                 typeof part === "string" ? (
@@ -79,7 +79,7 @@ export function Hero({
               )}
             </h1>
           </div>
-          <p className="mt-6 max-w-[46ch] text-pretty text-lg text-text-secondary md:mt-7 md:text-xl">{copy.sub}</p>
+          <p className="mt-6 max-w-[46ch] lg:max-w-[min(46ch,calc(100%-31rem))] text-pretty text-lg text-text-secondary md:mt-7 md:text-xl">{copy.sub}</p>
           <div className="mt-8 flex flex-col gap-3 min-[400px]:flex-row min-[400px]:flex-wrap min-[400px]:items-center">
             <KButton variant="primary" size="lg" asChild>
               <a href={`/${copy.locale}/login?mode=register`}>{copy.cta}</a>
