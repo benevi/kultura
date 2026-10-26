@@ -22,7 +22,11 @@ class MemoryCache {
   }
   async match(req: RequestInfo | URL) {
     const hit = this.entries.get(this.key(req));
-    return hit ? hit.clone() : undefined;
+    if (!hit) return undefined;
+    // Como en el navegador: lo guardado conserva su tipo ("basic").
+    const copy = hit.clone();
+    Object.defineProperty(copy, "type", { value: hit.type });
+    return copy;
   }
   async put(req: RequestInfo | URL, res: Response) {
     this.entries.delete(this.key(req));
@@ -113,15 +117,17 @@ async function dispatch(
   type: string,
   extra: Record<string, unknown> = {},
 ) {
-  let waited: Promise<unknown> | undefined;
+  const waits: Promise<unknown>[] = [];
   let responded: Promise<Response> | undefined;
   worker.handlers[type]({
     ...extra,
-    waitUntil: (p: Promise<unknown>) => (waited = p),
+    waitUntil: (p: Promise<unknown>) => void waits.push(p),
     respondWith: (p: Promise<Response>) => (responded = p),
   });
-  if (waited) await waited;
-  return responded ? await responded : undefined;
+  const response = responded ? await responded : undefined;
+  // `waitUntil` también se llama desde dentro de `respondWith` (refresco).
+  for (let i = 0; i < waits.length; i++) await waits[i];
+  return response;
 }
 
 const req = (url: string, init: RequestInit & { mode?: string } = {}) => {
@@ -132,12 +138,16 @@ const req = (url: string, init: RequestInit & { mode?: string } = {}) => {
   return r;
 };
 
-const network: FetchMock = async (input) => {
+/** Red simulada; `date` = cabecera Date de las páginas offline. */
+const networkAt = (date: string, html = OFFLINE_HTML): FetchMock => async (input) => {
   const raw = typeof input === "string" ? input : input instanceof URL ? input.href : input.url;
   const { pathname } = new URL(raw, ORIGIN);
-  if (pathname.endsWith("/offline")) return basic(OFFLINE_HTML(pathname.split("/")[1]), { status: 200 });
+  if (pathname.endsWith("/offline")) {
+    return basic(html(pathname.split("/")[1]), { status: 200, headers: { date } });
+  }
   return basic(`net:${pathname}`, { status: 200 });
 };
+const network: FetchMock = networkAt(new Date().toUTCString());
 const offlineNetwork: FetchMock = async () => {
   throw new TypeError("Failed to fetch");
 };
@@ -227,15 +237,24 @@ describe("sw.js · ciclo de vida", () => {
     w = loadWorker(network);
   });
 
-  it("install precachea /es/offline y /en/offline con sus estáticos y toma el control", async () => {
+  it("install precachea /es/offline y /en/offline con sus estáticos (juntos) y toma el control", async () => {
     await dispatch(w, "install");
     const offline = await w.caches.open(w.context.OFFLINE_CACHE as string);
-    expect(Array.from(offline.entries.keys()).map((u) => new URL(u).pathname).sort()).toEqual([
-      "/en/offline",
-      "/es/offline",
-    ]);
-    const statics = await w.caches.open(w.context.STATIC_CACHE as string);
-    expect(statics.entries.size).toBe(6);
+    const paths = Array.from(offline.entries.keys()).map((u) => new URL(u).pathname);
+    expect(paths.filter((p) => p.endsWith("/offline")).sort()).toEqual(["/en/offline", "/es/offline"]);
+    expect(paths.filter((p) => p.startsWith("/_next/static/"))).toHaveLength(6);
+    expect(w.state.skipWaiting).toBe(1);
+  });
+
+  it("install no falla si un estático no llega (la página se pinta sin él)", async () => {
+    w = loadWorker(async (input) => {
+      const raw = typeof input === "string" ? input : (input as Request).url;
+      if (raw.includes("font.woff2")) throw new TypeError("Failed to fetch");
+      return network(input);
+    });
+    await dispatch(w, "install");
+    const offline = await w.caches.open(w.context.OFFLINE_CACHE as string);
+    expect(offline.entries.size).toBe(2 + 5);
     expect(w.state.skipWaiting).toBe(1);
   });
 
@@ -288,6 +307,19 @@ describe("sw.js · fetch", () => {
     expect(statics.entries.has(`${ORIGIN}/_next/static/chunks/c0.js`)).toBe(false);
   });
 
+  it("los estáticos de la página offline se sirven de su caché y el recorte no los toca", async () => {
+    const w = loadWorker(network);
+    await dispatch(w, "install");
+    const max = w.context.MAX_STATIC_ENTRIES as number;
+    for (let i = 0; i <= max + 2; i++) {
+      await dispatch(w, "fetch", { request: req(`/_next/static/chunks/c${i}.js`) });
+    }
+    await new Promise((r) => setTimeout(r, 0));
+    w.context.fetch = offlineNetwork;
+    const res = await dispatch(w, "fetch", { request: req("/_next/static/chunks/main-abc.js") });
+    expect(await res!.text()).toBe("net:/_next/static/chunks/main-abc.js");
+  });
+
   it("navegación con red: responde la red y NO guarda el HTML", async () => {
     const w = loadWorker(network);
     const res = await dispatch(w, "fetch", {
@@ -305,6 +337,44 @@ describe("sw.js · fetch", () => {
     await dispatch(w, "activate");
     expect(w.state.preload).toBe(0);
     expect(SOURCE).not.toMatch(/navigationPreload\.enable|preloadResponse/);
+  });
+
+  it("tras una navegación con red, refresca la página offline si tiene más de un día", async () => {
+    const old = new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toUTCString();
+    const w = loadWorker(networkAt(old));
+    await dispatch(w, "install");
+    // Nuevo despliegue: otra página offline con otro chunk.
+    const v2 = (locale: string) => OFFLINE_HTML(locale).replace("main-abc.js", "main-v2.js");
+    w.context.fetch = networkAt(new Date().toUTCString(), v2);
+    await dispatch(w, "fetch", { request: req("/es/home", { mode: "navigate" }) });
+    const offline = await w.caches.open(w.context.OFFLINE_CACHE as string);
+    const paths = Array.from(offline.entries.keys()).map((u) => new URL(u).pathname);
+    expect(paths).toContain("/_next/static/chunks/main-v2.js");
+    expect(paths).not.toContain("/_next/static/chunks/main-abc.js"); // podado
+    expect(await (await offline.match("/es/offline"))!.text()).toContain("main-v2.js");
+  });
+
+  it("no refresca si la copia es de hoy; si el refresco falla a medias, se queda la de antes", async () => {
+    const w = loadWorker(network);
+    await dispatch(w, "install");
+    const before = w.state.fetches.length;
+    await dispatch(w, "fetch", { request: req("/es/home", { mode: "navigate" }) });
+    expect(w.state.fetches.length).toBe(before + 1); // solo la navegación
+
+    const old = new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toUTCString();
+    const w2 = loadWorker(networkAt(old));
+    await dispatch(w2, "install");
+    const v2 = (locale: string) => OFFLINE_HTML(locale).replace("main-abc.js", "main-v2.js");
+    const fresh = networkAt(new Date().toUTCString(), v2);
+    w2.context.fetch = async (input: RequestInfo | URL) => {
+      const raw = typeof input === "string" ? input : (input as Request).url;
+      if (raw.includes("main-v2.js")) throw new TypeError("Failed to fetch");
+      return fresh(input);
+    };
+    await dispatch(w2, "fetch", { request: req("/es/home", { mode: "navigate" }) });
+    const offline = await w2.caches.open(w2.context.OFFLINE_CACHE as string);
+    expect(await (await offline.match("/es/offline"))!.text()).toContain("main-abc.js");
+    expect(await offline.match("/_next/static/chunks/main-abc.js")).toBeDefined();
   });
 
   it("sin red: una navegación recibe la página offline de su idioma", async () => {
