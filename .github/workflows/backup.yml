@@ -50,7 +50,8 @@ jobs:
       - name: Instalar Supabase CLI
         uses: supabase/setup-cli@v1
         with:
-          version: latest
+          # Fija y la misma que scripts/db-diff.sh (SUPABASE_CLI_VERSION): cambiarlas a la vez.
+          version: 2.120.0
 
       - name: Instalar age
         run: sudo apt-get update -qq && sudo apt-get install -y -qq age
