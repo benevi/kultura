@@ -258,6 +258,135 @@ export type Database = {
         }
         Relationships: []
       }
+      email_consent_events: {
+        Row: {
+          action: string
+          created_at: string
+          id: string
+          source: string
+          text_version: string
+          user_id: string
+        }
+        ComputedFields: never
+        Insert: {
+          action: string
+          created_at?: string
+          id?: string
+          source: string
+          text_version: string
+          user_id: string
+        }
+        Update: {
+          action?: string
+          created_at?: string
+          id?: string
+          source?: string
+          text_version?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "email_consent_events_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      email_preferences: {
+        Row: {
+          consent_version: string | null
+          consented_at: string | null
+          unsubscribed_at: string | null
+          updated_at: string
+          user_id: string
+          weekly_digest: boolean
+        }
+        ComputedFields: never
+        Insert: {
+          consent_version?: string | null
+          consented_at?: string | null
+          unsubscribed_at?: string | null
+          updated_at?: string
+          user_id: string
+          weekly_digest?: boolean
+        }
+        Update: {
+          consent_version?: string | null
+          consented_at?: string | null
+          unsubscribed_at?: string | null
+          updated_at?: string
+          user_id?: string
+          weekly_digest?: boolean
+        }
+        Relationships: [
+          {
+            foreignKeyName: "email_preferences_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: true
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      email_sends: {
+        Row: {
+          attempts: number
+          created_at: string
+          error: string | null
+          id: string
+          items: number
+          kind: string
+          period: string
+          provider_id: string | null
+          returned_at: string | null
+          sent_at: string | null
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        ComputedFields: never
+        Insert: {
+          attempts?: number
+          created_at?: string
+          error?: string | null
+          id?: string
+          items?: number
+          kind?: string
+          period: string
+          provider_id?: string | null
+          returned_at?: string | null
+          sent_at?: string | null
+          status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          attempts?: number
+          created_at?: string
+          error?: string | null
+          id?: string
+          items?: number
+          kind?: string
+          period?: string
+          provider_id?: string | null
+          returned_at?: string | null
+          sent_at?: string | null
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "email_sends_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       friendships: {
         Row: {
           created_at: string | null
@@ -1178,6 +1307,10 @@ export type Database = {
         Returns: string
       }
       deletion_preview: { Args: { p_user: string }; Returns: Json }
+      email_unsubscribe: {
+        Args: { p_source: string; p_user: string }
+        Returns: boolean
+      }
       group_successor: {
         Args: { p_group: string; p_user: string }
         Returns: string
@@ -1221,6 +1354,14 @@ export type Database = {
           politicas_sin_check: number
           rls: boolean
           tabla: string
+        }[]
+      }
+      set_email_weekly: {
+        Args: { p_enabled: boolean; p_source?: string; p_text_version: string }
+        Returns: {
+          consent_version: string
+          consented_at: string
+          weekly_digest: boolean
         }[]
       }
       transfer_owned_content: { Args: { p_user: string }; Returns: Json }
