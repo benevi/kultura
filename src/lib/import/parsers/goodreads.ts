@@ -52,7 +52,8 @@ export function parseGoodreads(table: CsvTable): { items: Array<Omit<ImportItem,
       continue
     }
     const isbn = [cleanIsbn(pick(r, 'isbn13')), cleanIsbn(pick(r, 'isbn'))].filter((v): v is string => !!v)
-    const status = shelfStatus(pick(r, 'exclusive shelf') || 'to-read')
+    // Sin estantería: pendiente (lo mismo que "to read").
+    const status = shelfStatus(pick(r, 'exclusive shelf'))
     const stars = Number(pick(r, 'my rating'))
     const rating10 = Number.isInteger(stars) && stars >= 1 && stars <= 5 ? stars * 2 : null
     const dateRead = toIsoDate(pick(r, 'date read'))
