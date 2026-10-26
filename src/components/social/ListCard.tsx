@@ -58,7 +58,17 @@ export function ListCard({ list }: ListCardProps) {
         </div>
       </div>
       <div className="flex items-center gap-2 text-xs text-text-secondary font-medium pt-3 flex-wrap">
-        <span>{MEDIA_FILTER_KEYS.has(list.mediaType) ? tf(list.mediaType as FilterKey) : list.mediaType}</span>
+        <span>
+          {list.mediaType === 'mixed'
+            ? tl('mediaTypeMixed')
+            : MEDIA_FILTER_KEYS.has(list.mediaType) ? tf(list.mediaType as FilterKey) : list.mediaType}
+        </span>
+        {list.template && (
+          <>
+            <span aria-hidden="true">·</span>
+            <span>{tl(`template.${list.template}`)}</span>
+          </>
+        )}
         {list.owner && (
           <>
             <span>·</span>

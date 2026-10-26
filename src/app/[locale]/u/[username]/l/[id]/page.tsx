@@ -4,6 +4,11 @@
 // `username` (así un enlace no sirve para adivinar listas privadas). Un
 // nombre antiguo redirige (308) al actual (R11), y se puede denunciar
 // (D-13): con sesión, el botón de F-11; sin ella, el formulario público.
+//
+// F-25 (MIXED_LISTS): los títulos salen en el orden que eligió el dueño, con
+// sus notas y la descripción; un «Ranking personal» pinta el número. Esos
+// datos se piden EN PARALELO con la lista (solo por id) y solo se usan si la
+// lista resulta ser pública y de `username`.
 // ============================================================
 
 import { notFound, permanentRedirect } from 'next/navigation'
@@ -20,16 +25,18 @@ import { createClient } from '@/lib/supabase/server'
 import { isModerationV2 } from '@/lib/social/friends'
 import { siteUrl } from '@/lib/site-url'
 import { getPublicList, resolveRenamedUsername, usernameExists } from '@/lib/social/public-collection'
+import { getPublicListExtras, sortListItems } from '@/lib/social/lists'
+import { OrderedListGrid } from '@/components/collection/OrderedListGrid'
 import type { MediaItem, MediaType } from '@/types/media'
 
 interface Props {
   params: Promise<{ locale: string; username: string; id: string }>
 }
 
-const SINGULAR_KEY = {
+const SINGULAR_KEY: Record<string, string> = {
   movie: 'movie', tv: 'tv', anime: 'anime', manga: 'manga',
   book: 'book', comic: 'comic', game: 'game',
-} as const
+}
 
 function decodeName(raw: string): string {
   try {
@@ -62,7 +69,10 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 export default async function PublicListPage({ params }: Props) {
   const { locale, username, id } = await params
   const name = decodeName(username)
-  const data = await getPublicList(name, id)
+  const [data, extras] = await Promise.all([
+    getPublicList(name, id),
+    getPublicListExtras(id).catch(() => null),
+  ])
   if (!data) {
     // R11: el enlace se compartió con un nombre que ya no existe → al actual.
     if (!(await usernameExists(name))) {
@@ -80,15 +90,27 @@ export default async function PublicListPage({ params }: Props) {
 
   const t = await getTranslations('collection')
   const tm = await getTranslations('media')
+  const tl = await getTranslations('lists')
   const { owner, list } = data
-  const gridItems: MediaItem[] = list.items.map((item) => ({
+  const toMediaItem = (item: (typeof list.items)[number]): MediaItem => ({
     id: item.mediaId,
     externalId: item.mediaId.split('_').slice(1).join('_'),
     type: item.type as MediaType,
     title: item.title,
     poster: item.poster ?? undefined,
     year: item.year,
-  }))
+  })
+  const gridItems: MediaItem[] = list.items.map(toMediaItem)
+  // Orden del dueño (F-25); `getPublicList` las trae por fecha.
+  const ordered = extras
+    ? sortListItems(
+        list.items.map((item) => ({
+          entry: { item: toMediaItem(item), note: extras.items.get(item.mediaId)?.note ?? null },
+          position: extras.items.get(item.mediaId)?.position ?? null,
+        })),
+      ).map(({ entry }) => entry)
+    : null
+  const formatLabel = SINGULAR_KEY[list.mediaType] ? tm(SINGULAR_KEY[list.mediaType]) : tl('mediaTypeMixed')
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -96,7 +118,10 @@ export default async function PublicListPage({ params }: Props) {
       <main id="main" className="flex-1 w-full max-w-4xl mx-auto px-4 md:px-8 py-10 flex flex-col gap-10">
         <header className="flex flex-col gap-3">
           <div>
-            <FormatLabel>{tm(SINGULAR_KEY[list.mediaType])}</FormatLabel>
+            <FormatLabel>{formatLabel}</FormatLabel>
+            {extras?.template ? (
+              <span className="ml-2 text-[13px] font-bold text-text-tertiary">{tl(`template.${extras.template}`)}</span>
+            ) : null}
           </div>
           <h1 className="font-display text-[30px] md:text-[38px] font-bold tracking-tight text-text-primary leading-tight">
             {list.name}
@@ -114,9 +139,18 @@ export default async function PublicListPage({ params }: Props) {
               {t('backToCollection')}
             </span>
           </Link>
+          {extras?.description ? (
+            <p className="max-w-2xl text-[15px] leading-relaxed text-text-secondary whitespace-pre-line break-words">
+              {extras.description}
+            </p>
+          ) : null}
         </header>
 
-        <MediaGrid items={gridItems} requirePoster={false} />
+        {ordered ? (
+          <OrderedListGrid entries={ordered} ranked={extras?.template === 'ranking'} label={list.name} />
+        ) : (
+          <MediaGrid items={gridItems} requirePoster={false} />
+        )}
 
         {signedIn ? null : <SignUpCta href={`/login?mode=register&ref=${encodeURIComponent(owner.username)}`} />}
 

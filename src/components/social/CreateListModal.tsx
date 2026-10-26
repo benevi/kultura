@@ -7,36 +7,75 @@ import { KButton } from '@/components/ui/KButton'
 import { KInput } from '@/components/ui/KInput'
 import { Modal } from '@/components/ui/Modal'
 import { Select } from '@/components/ui/Select'
-import { useToastContext } from '@/components/ui/ToastProvider'
 import { cn } from '@/lib/utils/index'
 
 const MEDIA_TYPE_KEYS = ['movie', 'tv', 'anime', 'book', 'comic', 'manga', 'game'] as const
-type MediaTypeKey = typeof MEDIA_TYPE_KEYS[number]
+type MediaTypeKey = typeof MEDIA_TYPE_KEYS[number] | 'mixed'
 
 /** D-04c / X5: al crear se pregunta, y lo marcado de inicio es privada. */
 const VISIBILITIES = ['private', 'public'] as const
 type Visibility = typeof VISIBILITIES[number]
 
+/**
+ * F-25 (PRO-10): plantillas. «Franquicia» es siempre mixta (Dune: libro +
+ * películas + juego); «Ranking personal» numera los títulos y admite
+ * cualquier formato. `free` = la lista de siempre.
+ */
+const TEMPLATES = ['free', 'franchise', 'ranking'] as const
+type TemplateKey = typeof TEMPLATES[number]
+
+const DESCRIPTION_MAX = 500
+
+/** Mismo acabado que `KInput` (DISENO.md: caja surface-2, radio 14, foco pink). */
+const TEXTAREA_CLASS = cn(
+  'w-full min-h-[88px] resize-y rounded-[14px] bg-surface-elevated px-[18px] py-[15px]',
+  'border border-field-border',
+  'font-body text-base md:text-[15px] text-text-primary',
+  'placeholder:text-text-tertiary',
+  'transition-colors duration-base ease-standard',
+  'focus-visible:[outline-style:solid] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus-ring'
+)
+
 interface CreateListModalProps {
   onClose: () => void
+  /** MIXED_LISTS (F-25): plantillas, «Varios formatos» y descripción. */
+  mixedEnabled?: boolean
 }
 
-export function CreateListModal({ onClose }: CreateListModalProps) {
+export function CreateListModal({ onClose, mixedEnabled = false }: CreateListModalProps) {
   const t = useTranslations('lists')
   const tf = useTranslations('filters')
   const tc = useTranslations('common')
   const router = useRouter()
-  const { showError } = useToastContext()
   const nameRef = useRef<HTMLInputElement>(null)
   const errorId = useId()
+  const descriptionId = useId()
+  const descriptionHintId = useId()
 
   const [name, setName] = useState('')
   const [nameError, setNameError] = useState('')
   const [mediaType, setMediaType] = useState<MediaTypeKey>('movie')
+  const [template, setTemplate] = useState<TemplateKey>('free')
+  const [description, setDescription] = useState('')
   const [isCollaborative, setIsCollaborative] = useState(false)
   const [visibility, setVisibility] = useState<Visibility>('private')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+
+  const typeLocked = template === 'franchise'
+  const effectiveType: MediaTypeKey = typeLocked ? 'mixed' : mediaType
+
+  // «Franquicia» fija el tipo en mixta sin perder el que se había elegido:
+  // al volver a otra plantilla, el selector conserva su valor.
+  function chooseTemplate(next: TemplateKey) {
+    setTemplate(next)
+  }
+
+  function namePlaceholder(): string {
+    if (template === 'franchise') return t('franchiseNamePlaceholder')
+    if (template === 'ranking') return t('rankingNamePlaceholder')
+    return t('namePlaceholder')
+  }
 
   async function handleCreate(e: React.FormEvent) {
     e.preventDefault()
@@ -54,36 +93,36 @@ export function CreateListModal({ onClose }: CreateListModalProps) {
       const res = await fetch('/api/lists', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: name.trim(), mediaType, isCollaborative }),
+        // Una sola petición: la visibilidad va en el alta (antes, un PATCH
+        // aparte que podía fallar y dejarla privada).
+        body: JSON.stringify({
+          name: name.trim(),
+          mediaType: effectiveType,
+          isCollaborative,
+          isPublic: visibility === 'public',
+          ...(mixedEnabled && description.trim() ? { description: description.trim() } : {}),
+          ...(mixedEnabled && template !== 'free' ? { template } : {}),
+        }),
       })
-      const data = await res.json()
+      const data = await res.json().catch(() => ({}))
       if (!res.ok) {
-        setError(data.error ?? t('errorCreate'))
+        setError(data.error === 'mixed_unavailable' ? t('errorMixedUnavailable') : t('errorCreate'))
         setLoading(false)
         return
-      }
-      // La lista nace privada (`is_public default false`); hacerla pública es
-      // el mismo PATCH que el selector de la propia lista.
-      let publishFailed = false
-      if (visibility === 'public') {
-        const patch = await fetch(`/api/lists/${data.list.id}`, {
-          method: 'PATCH',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ isPublic: true }),
-        }).catch(() => null)
-        publishFailed = !patch?.ok
       }
       router.push(`/lists/${data.list.id}`)
       router.refresh()
       onClose()
-      // El aviso va al toast DESPUÉS de cerrar: con el diálogo abierto, la
-      // región de avisos está `aria-hidden` y el lector no lo leería.
-      if (publishFailed) setTimeout(() => showError(t('visibilityAfterCreateError')), 0)
     } catch {
       setError(t('errorCreate'))
       setLoading(false)
     }
   }
+
+  const typeOptions = [
+    ...MEDIA_TYPE_KEYS.map((key) => ({ value: key, label: tf(key) })),
+    ...(mixedEnabled ? [{ value: 'mixed', label: t('mediaTypeMixed') }] : []),
+  ]
 
   return (
     <Modal
@@ -96,6 +135,38 @@ export function CreateListModal({ onClose }: CreateListModalProps) {
       dismissible={!loading}
     >
       <form onSubmit={handleCreate} noValidate className="flex flex-col gap-4">
+        {/* F-25: plantilla primero (cambia el ejemplo del nombre y el tipo). */}
+        {mixedEnabled && (
+          <fieldset className="flex flex-col gap-2">
+            <legend className="mb-1.5 text-sm text-muted">{t('templateLabel')}</legend>
+            {TEMPLATES.map((option) => {
+              const checked = template === option
+              return (
+                <label
+                  key={option}
+                  className={cn(
+                    'flex min-h-11 cursor-pointer items-start gap-3 rounded-[14px] bg-surface-default px-3 py-3 transition-colors',
+                    checked && 'ring-2 ring-accent-pink'
+                  )}
+                >
+                  <input
+                    type="radio"
+                    name="list-template"
+                    value={option}
+                    checked={checked}
+                    onChange={() => chooseTemplate(option)}
+                    className="mt-0.5 h-5 w-5 flex-shrink-0 cursor-pointer accent-accent-pink"
+                  />
+                  <span className="flex flex-col">
+                    <span className="text-sm font-bold text-text-primary">{t(`template.${option}`)}</span>
+                    <span className="text-xs text-text-tertiary">{t(`template.${option}Hint`)}</span>
+                  </span>
+                </label>
+              )
+            })}
+          </fieldset>
+        )}
+
         <KInput
           ref={nameRef}
           label={t('listName')}
@@ -104,19 +175,46 @@ export function CreateListModal({ onClose }: CreateListModalProps) {
             setName(e.target.value)
             if (nameError && e.target.value.trim()) setNameError('')
           }}
-          placeholder={t('namePlaceholder')}
+          placeholder={namePlaceholder()}
           error={nameError}
           maxLength={80}
           aria-required="true"
           autoComplete="off"
         />
 
-        <Select
-          label={t('mediaType')}
-          value={mediaType}
-          onChange={(v) => setMediaType(v as MediaTypeKey)}
-          options={MEDIA_TYPE_KEYS.map((key) => ({ value: key, label: tf(key) }))}
-        />
+        {typeLocked ? (
+          <p className="text-sm text-text-secondary">
+            <span className="font-bold text-text-primary">{t('mediaType')}:</span> {t('mediaTypeMixed')}
+          </p>
+        ) : (
+          <Select
+            label={t('mediaType')}
+            value={mediaType}
+            onChange={(v) => setMediaType(v as MediaTypeKey)}
+            options={typeOptions}
+          />
+        )}
+
+        {mixedEnabled && (
+          <div className="flex w-full flex-col gap-2">
+            <label htmlFor={descriptionId} className="font-body text-[13px] font-bold text-text-tertiary">
+              {t('descriptionLabel')}
+            </label>
+            <textarea
+              id={descriptionId}
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              maxLength={DESCRIPTION_MAX}
+              rows={3}
+              placeholder={t('descriptionPlaceholder')}
+              aria-describedby={descriptionHintId}
+              className={TEXTAREA_CLASS}
+            />
+            <p id={descriptionHintId} className="text-xs text-text-tertiary">
+              {t('descriptionHint', { count: DESCRIPTION_MAX - description.length })}
+            </p>
+          </div>
+        )}
 
         {/* Visibilidad: radios nativos (flechas y lector gratis), privada marcada. */}
         <fieldset className="flex flex-col gap-2">

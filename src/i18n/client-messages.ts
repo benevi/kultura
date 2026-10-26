@@ -98,6 +98,7 @@ export const APP_CLIENT_NAMESPACES = [
   "moderation",
   "nav",
   "notifications",
+  "platforms",
   "profile",
   "report",
   "search",

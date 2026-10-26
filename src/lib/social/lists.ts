@@ -221,14 +221,15 @@ export async function getListDetail(listId: string): Promise<{
       : query.order('added_at', { ascending: false })
   }
 
-  let [itemsRes, membersRes] = await Promise.all([
+  const [firstItems, membersRes] = await Promise.all([
     readItems(mixed),
     supabase
       .from('list_members')
       .select('list_id, user_id, user:user_id(id, username, avatar_color, avatar_initials)')
       .eq('list_id', listId),
   ])
-  if (itemsRes.error && mixed && isNotMigrated(itemsRes.error)) itemsRes = await readItems(false)
+  const itemsRes =
+    firstItems.error && mixed && isNotMigrated(firstItems.error) ? await readItems(false) : firstItems
 
   if (itemsRes.error) throw new Error(`Failed to fetch list items: ${itemsRes.error.message}`)
   if (membersRes.error) throw new Error(`Failed to fetch list members: ${membersRes.error.message}`)

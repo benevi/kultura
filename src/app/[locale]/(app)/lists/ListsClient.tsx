@@ -10,9 +10,11 @@ import type { List } from '@/types/list'
 
 interface Props {
   lists: List[]
+  /** MIXED_LISTS (F-25): plantillas y listas de varios formatos al crear. */
+  mixedEnabled?: boolean
 }
 
-export function ListsClient({ lists }: Props) {
+export function ListsClient({ lists, mixedEnabled = false }: Props) {
   const t = useTranslations('lists')
   const [showModal, setShowModal] = useState(false)
 
@@ -42,7 +44,7 @@ export function ListsClient({ lists }: Props) {
         </div>
       )}
 
-      {showModal && <CreateListModal onClose={() => setShowModal(false)} />}
+      {showModal && <CreateListModal mixedEnabled={mixedEnabled} onClose={() => setShowModal(false)} />}
     </main>
   )
 }
