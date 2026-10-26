@@ -6,7 +6,7 @@
  */
 export default function HomeLoading() {
   return (
-    <main className="page-grid py-6 md:py-8 space-y-8 md:space-y-10">
+    <main className="page-grid [&>*]:max-w-4xl py-6 md:py-8 space-y-8 md:space-y-10">
       <div className="motion-safe:animate-pulse flex flex-col md:flex-row overflow-hidden rounded-bento-xl bg-surface-elevated shadow-hard-sm md:shadow-hard">
         <div className="aspect-[16/9] w-full md:aspect-auto md:h-56 md:w-64 lg:w-80 flex-shrink-0 bg-surface-default" />
         <div className="flex flex-1 flex-col gap-3 p-6 md:p-8">

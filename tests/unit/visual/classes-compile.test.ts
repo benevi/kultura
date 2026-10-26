@@ -16,7 +16,7 @@
  * build (`ci.yml`, «Clases sin regla»), para que el fallo se lea solo.
  */
 import { describe, it, expect, beforeAll } from "vitest";
-import { readFileSync, readdirSync } from "node:fs";
+import { readFileSync, readdirSync, rmSync, writeFileSync } from "node:fs";
 import { join, resolve, relative } from "node:path";
 import ts from "typescript";
 import resolveConfig from "tailwindcss/resolveConfig";
@@ -62,30 +62,36 @@ function literalPieces(node: ts.Node, out: string[]) {
 }
 
 /** Cadenas de clases de un archivo, con su línea. */
-function classStrings(file: string): Array<{ text: string; line: number }> {
+/**
+ * `strict`: la cadena está en un sitio que SOLO admite clases (`className`,
+ * argumentos de `cn`/`clsx`/`cva`): cada token cuenta, también una clase
+ * suelta en una expresión (`cond && "rounded-md"`). Si no (constantes cuyo
+ * nombre sugiere clases), solo cuenta si alguna de sus palabras es una clase.
+ */
+function classStrings(file: string): Array<{ text: string; line: number; strict: boolean }> {
   const source = ts.createSourceFile(file, readFileSync(file, "utf8"), ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX);
-  const found: Array<{ text: string; line: number }> = [];
-  const collect = (node: ts.Node) => {
+  const found: Array<{ text: string; line: number; strict: boolean }> = [];
+  const collect = (node: ts.Node, strict: boolean) => {
     const pieces: string[] = [];
     literalPieces(node, pieces);
     const line = source.getLineAndCharacterOfPosition(node.getStart()).line + 1;
-    for (const text of pieces) found.push({ text, line });
+    for (const text of pieces) found.push({ text, line, strict });
   };
   const visit = (node: ts.Node) => {
     if (ts.isJsxAttribute(node) && /className$/i.test(node.name.getText()) && node.initializer) {
-      collect(node.initializer);
+      collect(node.initializer, true);
       return;
     }
     if (ts.isCallExpression(node) && CLASS_FUNCS.has(node.expression.getText())) {
-      node.arguments.forEach(collect);
+      node.arguments.forEach((arg) => collect(arg, true));
       return;
     }
     if (ts.isVariableDeclaration(node) && node.initializer && CLASS_HOLDER.test(node.name.getText())) {
-      collect(node.initializer);
+      collect(node.initializer, false);
       return;
     }
     if (ts.isPropertyAssignment(node) && /className$/i.test(node.name.getText())) {
-      collect(node.initializer);
+      collect(node.initializer, true);
       return;
     }
     ts.forEachChild(node, visit);
@@ -120,16 +126,27 @@ describe("criterio DIS (1) · clases sin regla", () => {
     expect(unknown).toBeNull();
   });
 
+  it("una clase suelta en una expresión dentro de className también cuenta", () => {
+    const probe = join(ROOT, "tests/unit/visual/__probe__.tsx");
+    writeFileSync(probe, 'export const X = ({ on }: { on: boolean }) => <div className={on && "rounded-md"} />;\n');
+    try {
+      const strings = classStrings(probe);
+      expect(strings).toContainEqual(expect.objectContaining({ text: "rounded-md", strict: true }));
+    } finally {
+      rmSync(probe);
+    }
+  });
+
   it("toda clase usada en src genera CSS o es propia de globals.css", () => {
     const missing = new Map<string, string>();
     for (const file of walk(SRC)) {
-      for (const { text, line } of classStrings(file)) {
+      for (const { text, line, strict } of classStrings(file)) {
         const tokens = text.split(/\s+/).filter((t) => t && CLASS_SHAPE.test(t));
         if (tokens.length === 0) continue;
         const ranked = order(tokens);
-        // Solo cuenta como cadena de clases si al menos una lo es de verdad:
-        // así una constante `size = "sm"` o una lista de columnas no cuentan.
-        if (!ranked.some(([, rank]) => rank !== null)) continue;
+        // Fuera de `className`/`cn`, solo cuenta como cadena de clases si al
+        // menos una lo es de verdad: una constante `size = "sm"` no cuenta.
+        if (!strict && !ranked.some(([, rank]) => rank !== null)) continue;
         for (const [cls, rank] of ranked) {
           if (rank !== null || MARKERS.test(cls)) continue;
           const bare = cls.replace(/^(?:[\w-]+:|\[[^\]]+\]:)*!?/, "");

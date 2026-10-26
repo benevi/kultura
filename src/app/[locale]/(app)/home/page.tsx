@@ -147,7 +147,7 @@ export default async function HomePage() {
     }))
 
   return (
-    <main className="page-grid py-6 md:py-8 space-y-8 md:space-y-10">
+    <main className="page-grid [&>*]:max-w-4xl py-6 md:py-8 space-y-8 md:space-y-10">
       {deletionRequestedAt && (
         <div
           role="status"
