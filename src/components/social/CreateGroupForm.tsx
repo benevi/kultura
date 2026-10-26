@@ -32,6 +32,8 @@ const FIELD_STYLE = { background: F0.surface2, borderColor: F0.stroke, color: F0
 export function CreateGroupForm({ onCreated, onCancel }: CreateGroupFormProps) {
   const t = useTranslations('friends')
   const tG = useTranslations('groups')
+  // Mismos nombres de personaje que en el registro.
+  const tAuth = useTranslations('auth')
   const [groupName, setGroupName] = useState('')
   const [groupDesc, setGroupDesc] = useState('')
   const [isPublic, setIsPublic] = useState(true)
@@ -110,6 +112,7 @@ export function CreateGroupForm({ onCreated, onCancel }: CreateGroupFormProps) {
           onChange={setIcon}
           label={tG('groupIcon')}
           noneLabel={tG('groupIconNone')}
+          iconLabel={(key) => tAuth(`characters.${key}`)}
         />
       </div>
 
