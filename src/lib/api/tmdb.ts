@@ -66,6 +66,10 @@ export interface TmdbTV {
   genres?: { id: number; name: string }[];
   number_of_episodes?: number;
   number_of_seasons?: number;
+  /** Los listados de /discover/tv los traen (F-06: rankings sin anime). */
+  origin_country?: string[];
+  original_language?: string;
+  vote_count?: number;
 }
 
 export interface TmdbTVDetail extends TmdbTV {
