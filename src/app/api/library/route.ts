@@ -24,7 +24,8 @@ import { createClient } from '@/lib/supabase/server'
 import { checkRateLimit, LIMITS } from '@/lib/rate-limit'
 import { invalidateRecCache } from '@/lib/claude/recommendations'
 import { invalidateMatchScoreCache } from '@/lib/recommendations/match-score'
-import type { DbUserMedia, DbUserMediaLog } from '@/types/supabase'
+import type { DbUserMedia, DbUserMediaLog, Json } from '@/types/supabase'
+import { asJson } from '@/lib/supabase/json'
 import type { DiaryLog, EpisodeProgress, LibraryStatus } from '@/types/library'
 import { isLibraryStatus } from '@/types/library'
 import { upsertMediaFromProvider, mediaFailureStatus } from '@/lib/media/upsert-from-provider'
@@ -175,12 +176,12 @@ export async function POST(request: Request): Promise<NextResponse> {
     score,
     watched_at: body.watchedAt ?? null,
     // Con `progress` (cliente nuevo) manda él; si no, el campo de siempre.
-    episode_progress: (parsedProgress?.ok
+    episode_progress: asJson((parsedProgress?.ok
       ? progressToLegacy(progressValue)
-      : (body.episodeProgress ?? null)) as EpisodeProgress | null,
+      : (body.episodeProgress ?? null)) as EpisodeProgress | null),
   }
   type Row = Omit<typeof legacyRow, 'episode_progress'> & {
-    episode_progress?: EpisodeProgress | null
+    episode_progress?: Json
     rating10?: number | null
     favorite?: boolean
   }

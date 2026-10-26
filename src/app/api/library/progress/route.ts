@@ -43,6 +43,7 @@ import {
 } from '@/lib/library/progress'
 import { getProgressPlan, nextEpisodeInfo, progressColumnsExist, progressV2Enabled } from '@/lib/library/progress-server'
 import type { DbUserMediaLog } from '@/types/supabase'
+import { asJson } from '@/lib/supabase/json'
 import type { DiaryLog, LibraryStatus } from '@/types/library'
 
 const log = createLogger('api/library/progress')
@@ -246,7 +247,7 @@ export async function POST(request: Request): Promise<NextResponse> {
     supabase
       .from('user_media')
       .update({
-        ...(columns ? progressToColumns(value) : { episode_progress: progressToLegacy(value) }),
+        ...(columns ? progressToColumns(value) : { episode_progress: asJson(progressToLegacy(value)) }),
         ...(status !== row.status ? { status } : {}),
       })
       .eq('user_id', user.id)

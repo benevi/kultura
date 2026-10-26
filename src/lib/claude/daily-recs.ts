@@ -18,6 +18,7 @@
 // ============================================================
 
 import { createAdminClient } from '@/lib/supabase/admin'
+import { asJson } from '@/lib/supabase/json'
 import { aiDay } from '@/lib/claude/budget'
 import { createLogger } from '@/lib/logger'
 import type { AiRec } from '@/lib/claude/recommendations'
@@ -141,7 +142,7 @@ export async function writeDailyRecs(
     const { error } = await createAdminClient()
       .from('ai_recs')
       .upsert(
-        { user_id: userId, day, locale, payload: result },
+        { user_id: userId, day, locale, payload: asJson(result) },
         { onConflict: 'user_id,day' }
       )
     if (error) {

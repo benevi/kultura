@@ -258,12 +258,16 @@ async function importLists(
 
     let listId = existing.get(name)
     if (!listId) {
+      // `media_type` es NOT NULL: sin tipo la fila no se puede crear (antes se
+      // intentaba con null y fallaba igual).
+      const mediaType = typeof list.mediaType === 'string' ? list.mediaType : null
+      if (!mediaType) continue
       const { data: created, error } = await supabase
         .from('lists')
         .insert({
           owner_id: userId,
           name,
-          media_type: typeof list.mediaType === 'string' ? list.mediaType : null,
+          media_type: mediaType,
           is_collaborative: list.isCollaborative === true,
         })
         .select('id')

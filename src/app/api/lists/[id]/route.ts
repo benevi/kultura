@@ -15,6 +15,7 @@ import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { track } from '@/lib/analytics/track'
 import { createAdminClient } from '@/lib/supabase/admin'
+import type { TablesUpdate } from '@/types/supabase'
 import { canEditList, getListAccess } from '@/lib/social/lists'
 import { checkRateLimit, LIMITS } from '@/lib/rate-limit'
 import { createLogger } from '@/lib/logger'
@@ -317,7 +318,7 @@ export async function PATCH(request: Request, { params }: Params): Promise<NextR
   }
 
   // ── Datos de la lista: solo el dueño ────────────────────────────────────────
-  const update: Record<string, unknown> = {}
+  const update: TablesUpdate<'lists'> = {}
   if ('isPublic' in body) {
     if (typeof body.isPublic !== 'boolean') {
       return NextResponse.json({ error: 'isPublic must be a boolean' }, { status: 400 })

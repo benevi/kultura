@@ -19,7 +19,6 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { searchMovies, searchTV } from "@/lib/api/tmdb";
-import type { TmdbMovieDetail, TmdbTVDetail } from "@/lib/api/tmdb";
 import { normalizeMovie, normalizeTV } from "@/lib/api/normalizer";
 import { resolveApiLocale } from "@/lib/api/locale";
 import { searchByType } from "@/lib/api/search";
@@ -105,10 +104,10 @@ export async function GET(request: NextRequest) {
 
   const [movies, tv] = await Promise.allSettled([
     searchMovies(q, 1, locale).then((r) =>
-      rankSearchResults(q, r.results.map((raw) => normalizeMovie(raw as TmdbMovieDetail)))
+      rankSearchResults(q, r.results.map((raw) => normalizeMovie(raw)))
     ),
     searchTV(q, 1, locale).then((r) =>
-      rankSearchResults(q, r.results.map((raw) => normalizeTV(raw as TmdbTVDetail)))
+      rankSearchResults(q, r.results.map((raw) => normalizeTV(raw)))
     ),
   ]);
 
