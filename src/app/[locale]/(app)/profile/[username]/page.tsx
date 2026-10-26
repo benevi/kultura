@@ -4,6 +4,7 @@
 // secciones de biblioteca reciente y estadísticas detalladas.
 // ============================================================
 
+import { Suspense } from 'react'
 import { notFound, permanentRedirect } from 'next/navigation'
 import type { Metadata } from 'next'
 import { createClient } from '@/lib/supabase/server'
@@ -18,6 +19,7 @@ import { ReportButton } from '@/components/social/ReportButton'
 import { ShareLinkButton } from '@/components/social/ShareLinkButton'
 import { hasPublicLists, resolveRenamedUsername } from '@/lib/social/public-collection'
 import { MediaRow } from '@/components/home/MediaRow'
+import { FriendProfileActivity, FriendsActivitySkeleton } from '../../home/sections'
 import { KButton } from '@/components/ui/KButton'
 import { Link } from '@/i18n/navigation'
 import { IconLibrary } from '@/components/icons'
@@ -189,6 +191,13 @@ export default async function ProfilePage({ params }: Props) {
           </div>
         )}
       </div>
+
+      {/* Lo último que ha hecho tu amigo (PRO-7): no retrasa el resto. */}
+      {currentUser && friendshipStatus === 'accepted' && libraryVisible && (
+        <Suspense fallback={<FriendsActivitySkeleton />}>
+          <FriendProfileActivity viewerId={currentUser.id} friendId={profileUser.id} locale={locale} />
+        </Suspense>
+      )}
 
       {/* Viendo ahora */}
       {inProgressItems.length > 0 && (

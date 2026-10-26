@@ -1,4 +1,4 @@
-import { render, screen, fireEvent, waitFor } from '@testing-library/react'
+import { render, screen, fireEvent, waitFor, act } from '@testing-library/react'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import type { LibraryEntry } from '@/types/library'
 
@@ -320,6 +320,45 @@ describe('LibraryAction', () => {
     fireEvent.submit(screen.getByRole('dialog').querySelector('form')!)
     await waitFor(() => {
       expect(mockShow).toHaveBeenCalledWith({ message: 'saved', type: 'success' })
+    })
+  })
+
+  // DIS-14: «Deshacer» en el aviso al quitar; vuelve con estado, nota y progreso.
+  describe('quitar con «Deshacer»', () => {
+    async function removeIt(entry: LibraryEntry = baseEntry) {
+      render(
+        <LibraryAction mediaId="movie_550" mediaCache={mediaCache} initialEntry={entry} isAuthenticated={true} />
+      )
+      fireEvent.click(screen.getByText('remove'))
+      fireEvent.click(screen.getByRole('button', { name: 'removeConfirm' }))
+      await waitFor(() => expect(mockShow).toHaveBeenCalled())
+      return mockShow.mock.calls[0][0] as { message: string; action?: { label: string; onAction: () => void } }
+    }
+
+    it('el aviso de quitado trae la acción «Deshacer»', async () => {
+      const toast = await removeIt()
+      expect(toast.message).toBe('removed')
+      expect(toast.action?.label).toBe('undo')
+    })
+
+    it('deshacer vuelve a guardar la entrada con su estado y nota', async () => {
+      const entry = { ...baseEntry, status: 'in_progress' as const, score: 3, rating10: 6.5, favorite: true }
+      mockSave.mockResolvedValueOnce(entry)
+      const toast = await removeIt(entry)
+      await act(async () => toast.action!.onAction())
+      expect(mockSave).toHaveBeenCalledWith(
+        expect.objectContaining({ mediaId: 'movie_550', status: 'in_progress', score: 3, rating10: 6.5, favorite: true, mediaCache })
+      )
+      await waitFor(() => expect(screen.getByText('status.in_progress')).toBeInTheDocument())
+      expect(mockShow).toHaveBeenLastCalledWith({ message: 'restored', type: 'success' })
+    })
+
+    it('si deshacer falla, lo dice', async () => {
+      mockSave.mockRejectedValueOnce(new Error('boom'))
+      const toast = await removeIt()
+      await act(async () => toast.action!.onAction())
+      await waitFor(() => expect(mockShowError).toHaveBeenCalledWith('errors.undoFailed'))
+      expect(screen.getByText(/addToLibrary/)).toBeInTheDocument()
     })
   })
 })

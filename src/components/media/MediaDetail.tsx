@@ -282,7 +282,9 @@ export async function MediaDetail({
         <div className="flex flex-col md:flex-row gap-8 md:gap-14">
           {/* ── Columna izquierda: poster ── */}
           <div className="w-full md:w-[420px] flex-shrink-0">
-            <div className="relative">
+            {/* `data-library-stamp`: aquí cuelga el sello «Visto» de
+                `LibraryAction` al marcarlo como completado (DIS-14). */}
+            <div className="relative" data-library-stamp="">
               <div
                 className="relative w-full h-[260px] sm:h-auto sm:aspect-[3/4] rounded-bento-xl overflow-hidden flex items-end p-6 md:p-8 shadow-hard-sm md:shadow-hard"
               >

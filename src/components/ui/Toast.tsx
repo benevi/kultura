@@ -16,6 +16,16 @@ export interface ToastItem {
    * nunca dura menos de 6 s (ACC-11). `Infinity` = se queda hasta cerrarlo.
    */
   duration?: number
+  /**
+   * Acción dentro del aviso (p. ej. «Deshacer»). Un aviso con acción dura
+   * por defecto lo mismo que un error (8 s): da tiempo a leerlo y pulsarla.
+   */
+  action?: ToastAction
+}
+
+export interface ToastAction {
+  label: string
+  onAction: () => void
 }
 
 /** Duración por defecto de un aviso normal. */
@@ -28,11 +38,11 @@ export const TOAST_ERROR_MIN_MS = 6000
 const SWIPE_DISMISS_PX = 80
 
 /** Tiempo efectivo en pantalla (`Infinity` = persistente). */
-export function toastDuration(toast: Pick<ToastItem, 'type' | 'duration'>): number {
+export function toastDuration(toast: Pick<ToastItem, 'type' | 'duration' | 'action'>): number {
   if (toast.type === 'error') {
     return Math.max(toast.duration ?? TOAST_ERROR_DEFAULT_MS, TOAST_ERROR_MIN_MS)
   }
-  return toast.duration ?? TOAST_DEFAULT_MS
+  return toast.duration ?? (toast.action ? TOAST_ERROR_DEFAULT_MS : TOAST_DEFAULT_MS)
 }
 
 const typeStyles: Record<ToastType, string> = {
@@ -143,6 +153,18 @@ function SingleToast({ toast, onDismiss }: SingleToastProps) {
         {typeIcon[toast.type]}
       </span>
       <p className="flex-1 leading-snug py-2">{toast.message}</p>
+      {toast.action && (
+        <button
+          type="button"
+          onClick={() => {
+            toast.action!.onAction()
+            startExit()
+          }}
+          className="flex-shrink-0 min-h-11 rounded-full px-3 font-bold text-accent-pink hover:bg-surface-default transition-colors focus-visible:[outline-style:solid] focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-focus-ring"
+        >
+          {toast.action.label}
+        </button>
+      )}
       <button
         type="button"
         onClick={startExit}

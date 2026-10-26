@@ -3,7 +3,7 @@
 import { createContext, useCallback, useContext, useMemo } from 'react'
 import { useToast } from '@/hooks/useToast'
 import { ToastContainer } from './Toast'
-import type { ToastType } from './Toast'
+import type { ToastAction, ToastType } from './Toast'
 
 interface ErrorOptions {
   /** `true`: no se cierra solo, hasta que la persona lo cierre. */
@@ -13,7 +13,8 @@ interface ErrorOptions {
 }
 
 interface ToastContextValue {
-  show: (payload: { message: string; type?: ToastType; duration?: number }) => void
+  /** `action`: un botón en el aviso (p. ej. «Deshacer» al quitar de la biblioteca). */
+  show: (payload: { message: string; type?: ToastType; duration?: number; action?: ToastAction }) => void
   /**
    * Aviso de error accesible: región `assertive`, ≥ 6 s (8 s por defecto),
    * pausa con el ratón o el foco encima y, con `persistent`, sin cierre solo.

@@ -21,6 +21,7 @@ import { TonightClient } from './TonightClient'
 /** Pendientes que se miran (los más recientes); `availableTonight` comprueba 24. */
 const TONIGHT_CANDIDATES = 40
 const FEED_LIMIT = 8
+const PROFILE_FEED_LIMIT = 6
 
 export async function TonightOnMyPlatforms({ userId, locale }: { userId: string; locale: string }) {
   const supabase = await createClient()
@@ -127,58 +128,99 @@ export async function FriendsActivity({ userId, locale }: { userId: string; loca
           ) : null}
         </div>
       ) : (
-        <ul className="flex flex-col divide-y divide-surface-border overflow-hidden rounded-bento bg-surface-default">
-          {visible.map((entry) => {
-            const media = entry.media!
-            const href = `/media/${media.type}/${media.id.split('_').slice(1).join('_')}`
-            return (
-              <li key={entry.id} className="flex items-center gap-3 px-4 py-3 sm:px-5">
-                <Avatar
-                  initials={entry.user.avatar_initials}
-                  color={entry.user.avatar_color}
-                  size="sm"
-                />
-                <div className="flex min-w-0 flex-1 flex-col gap-0.5">
-                  <p className="font-body text-sm text-text-secondary">
-                    {t.rich(STATUS_KEY[entry.status], {
-                      user: entry.user.username,
-                      title: media.title,
-                      who: (chunks) => (
-                        <Link href={`/profile/${entry.user.username}`} className="font-bold text-text-primary hover:underline underline-offset-4">
-                          {chunks}
-                        </Link>
-                      ),
-                      what: (chunks) => (
-                        <Link href={href} className="font-bold text-text-primary hover:underline underline-offset-4">
-                          {chunks}
-                        </Link>
-                      ),
-                    })}
-                  </p>
-                  <p className="font-body text-xs text-text-tertiary">
-                    {typeof entry.score === 'number' && entry.score > 0 ? (
-                      <>
-                        <span aria-hidden="true" className="text-accent-yellow">★</span>{' '}
-                        {t('activityScore', { score: entry.score })}
-                        {' · '}
-                      </>
-                    ) : null}
-                    <time dateTime={entry.updatedAt}>{relativeTime(entry.updatedAt, locale)}</time>
-                  </p>
-                </div>
-                <Link href={href} tabIndex={-1} aria-hidden="true" className="flex-shrink-0">
-                  <div
-                    className="relative h-[60px] w-10 overflow-hidden rounded-lg"
-                    style={{ background: posterGradient(media.id || media.title) }}
-                  >
-                    {media.poster ? <PosterImage src={media.poster} sizes="40px" className="object-cover" /> : null}
-                  </div>
-                </Link>
-              </li>
-            )
-          })}
-        </ul>
+        activityList(visible, locale, t)
       )}
+    </section>
+  )
+}
+
+type HomeT = Awaited<ReturnType<typeof getTranslations<'home'>>>
+
+/** Lista de apuntes de actividad (Inicio y perfil de un amigo). */
+function activityList(entries: FeedEntry[], locale: string, t: HomeT) {
+  return (
+    <ul className="flex flex-col divide-y divide-surface-border overflow-hidden rounded-bento bg-surface-default">
+      {entries.map((entry) => {
+        const media = entry.media!
+        const href = `/media/${media.type}/${media.id.split('_').slice(1).join('_')}`
+        return (
+          <li key={entry.id} className="flex items-center gap-3 px-4 py-3 sm:px-5">
+            <Avatar
+              initials={entry.user.avatar_initials}
+              color={entry.user.avatar_color}
+              size="sm"
+            />
+            <div className="flex min-w-0 flex-1 flex-col gap-0.5">
+              <p className="font-body text-sm text-text-secondary">
+                {t.rich(STATUS_KEY[entry.status], {
+                  user: entry.user.username,
+                  title: media.title,
+                  who: (chunks) => (
+                    <Link href={`/profile/${entry.user.username}`} className="font-bold text-text-primary hover:underline underline-offset-4">
+                      {chunks}
+                    </Link>
+                  ),
+                  what: (chunks) => (
+                    <Link href={href} className="font-bold text-text-primary hover:underline underline-offset-4">
+                      {chunks}
+                    </Link>
+                  ),
+                })}
+              </p>
+              <p className="font-body text-xs text-text-tertiary">
+                {typeof entry.score === 'number' && entry.score > 0 ? (
+                  <>
+                    <span aria-hidden="true" className="text-accent-yellow">★</span>{' '}
+                    {t('activityScore', { score: entry.score })}
+                    {' · '}
+                  </>
+                ) : null}
+                <time dateTime={entry.updatedAt}>{relativeTime(entry.updatedAt, locale)}</time>
+              </p>
+            </div>
+            <Link href={href} tabIndex={-1} aria-hidden="true" className="flex-shrink-0">
+              <div
+                className="relative h-[60px] w-10 overflow-hidden rounded-lg"
+                style={{ background: posterGradient(media.id || media.title) }}
+              >
+                {media.poster ? <PosterImage src={media.poster} sizes="40px" className="object-cover" /> : null}
+              </div>
+            </Link>
+          </li>
+        )
+      })}
+    </ul>
+  )
+}
+
+/**
+ * PRO-7 en el perfil: lo último que ha hecho ESTE amigo (la misma consulta que
+ * Inicio, filtrada a él; la RLS de `user_media` sigue decidiendo). Fuera si
+ * no hay nada o falla: el perfil ya enseña sus filas por estado.
+ */
+export async function FriendProfileActivity({
+  viewerId,
+  friendId,
+  locale,
+}: {
+  viewerId: string
+  friendId: string
+  locale: string
+}) {
+  let entries: FeedEntry[]
+  try {
+    entries = (await getFriendsFeed(viewerId, PROFILE_FEED_LIMIT, [friendId])).filter((e) => e.media)
+  } catch {
+    return null
+  }
+  if (entries.length === 0) return null
+  const t = await getTranslations('home')
+  return (
+    <section aria-labelledby="profile-activity-title" className="flex flex-col gap-3">
+      <h2 id="profile-activity-title" className="font-display text-xl font-bold text-text-primary">
+        {t('recentActivity')}
+      </h2>
+      {activityList(entries, locale, t)}
     </section>
   )
 }

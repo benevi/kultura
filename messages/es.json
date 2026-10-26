@@ -399,7 +399,8 @@
     "errors": {
       "saveFailed": "No hemos podido guardarlo. Revisa la conexión y reintenta.",
       "providerUnavailable": "No hemos podido guardar el cambio: el catálogo no responde. Reintenta en un momento.",
-      "removeFailed": "No hemos podido quitarlo de tu biblioteca. Reintenta."
+      "removeFailed": "No hemos podido quitarlo de tu biblioteca. Reintenta.",
+      "undoFailed": "No hemos podido devolverlo a tu biblioteca. Añádelo otra vez."
     },
     "title": "Mi biblioteca",
     "empty": {
@@ -426,7 +427,9 @@
     "removeConfirmBody": "Se borrarán el estado, la nota y el progreso de «{title}».",
     "removeConfirm": "Quitar",
     "removed": "Quitado de tu biblioteca",
-    "saved": "Guardado en tu biblioteca"
+    "saved": "Guardado en tu biblioteca",
+    "undo": "Deshacer",
+    "restored": "Ha vuelto a tu biblioteca"
   },
   "diary": {
     "title": "Diario",

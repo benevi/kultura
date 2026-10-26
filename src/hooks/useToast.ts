@@ -1,5 +1,5 @@
 import { useReducer, useCallback } from 'react'
-import type { ToastItem, ToastType } from '@/components/ui/Toast'
+import type { ToastAction, ToastItem, ToastType } from '@/components/ui/Toast'
 
 const MAX_TOASTS = 3
 
@@ -7,6 +7,7 @@ interface ShowPayload {
   message: string
   type?: ToastType
   duration?: number
+  action?: ToastAction
 }
 
 type Action =
@@ -29,12 +30,12 @@ function reducer(state: ToastItem[], action: Action): ToastItem[] {
 export function useToast() {
   const [toasts, dispatch] = useReducer(reducer, [])
 
-  const show = useCallback(({ message, type = 'info', duration }: ShowPayload) => {
+  const show = useCallback(({ message, type = 'info', duration, action }: ShowPayload) => {
     const id =
       typeof crypto !== 'undefined' && crypto.randomUUID
         ? crypto.randomUUID()
         : `${Date.now()}-${Math.random()}`
-    dispatch({ type: 'SHOW', payload: { id, message, type, duration } })
+    dispatch({ type: 'SHOW', payload: { id, message, type, duration, ...(action ? { action } : {}) } })
   }, [])
 
   const dismiss = useCallback((id: string) => {

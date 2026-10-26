@@ -399,7 +399,8 @@
     "errors": {
       "saveFailed": "We couldn't save it. Check your connection and try again.",
       "providerUnavailable": "We couldn't save the change: the catalog isn't responding. Try again in a moment.",
-      "removeFailed": "We couldn't remove it from your library. Try again."
+      "removeFailed": "We couldn't remove it from your library. Try again.",
+      "undoFailed": "We couldn't put it back in your library. Add it again."
     },
     "title": "My library",
     "empty": {
@@ -426,7 +427,9 @@
     "removeConfirmBody": "The status, rating and progress of “{title}” will be deleted.",
     "removeConfirm": "Remove",
     "removed": "Removed from your library",
-    "saved": "Saved to your library"
+    "saved": "Saved to your library",
+    "undo": "Undo",
+    "restored": "Back in your library"
   },
   "diary": {
     "title": "Diary",

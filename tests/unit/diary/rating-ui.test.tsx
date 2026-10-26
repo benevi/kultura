@@ -320,6 +320,28 @@ describe('LibraryAction con el diario', () => {
       }
     })
 
+    // F-24: en la ficha el sello cuelga del PÓSTER (`data-library-stamp`), no
+    // de la etiqueta de estado.
+    it('en la ficha, la pegatina cuelga del póster', async () => {
+      vi.stubGlobal('matchMedia', (q: string) => ({ matches: false, media: q, addEventListener: vi.fn(), removeEventListener: vi.fn() }))
+      mockFetchDiary.mockResolvedValue(ON('stars'))
+      mockSave.mockResolvedValueOnce({ entry: ENTRY, log: null, logFailed: false })
+      const poster = document.createElement('div')
+      poster.setAttribute('data-library-stamp', '')
+      document.body.appendChild(poster)
+      try {
+        render(<LibraryAction {...props} initialEntry={null} />)
+        fireEvent.click(screen.getByText(/addToLibrary/))
+        submit()
+        const stamp = await screen.findByTestId('library-stamp')
+        expect(poster.contains(stamp)).toBe(true)
+        expect(stamp.className).toContain('absolute')
+        expect(stamp).toHaveAttribute('aria-hidden', 'true')
+      } finally {
+        poster.remove()
+      }
+    })
+
     it('con movimiento reducido no hay pegatina ni animación', async () => {
       vi.stubGlobal('matchMedia', (q: string) => ({ matches: true, media: q, addEventListener: vi.fn(), removeEventListener: vi.fn() }))
       mockFetchDiary.mockResolvedValue(ON('stars'))

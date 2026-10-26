@@ -35,6 +35,19 @@ describe('ToastContainer', () => {
     expect(screen.getByRole('status')).not.toHaveTextContent('Falló')
   })
 
+  // DIS-14: «Deshacer» dentro del aviso; con acción dura 8 s y se cierra al pulsarla.
+  it('un aviso con acción pinta su botón, la ejecuta y se cierra', () => {
+    const onAction = vi.fn()
+    const onDismiss = vi.fn()
+    render(<ToastContainer toasts={[toast({ message: 'Quitado', action: { label: 'Deshacer', onAction } })]} onDismiss={onDismiss} />)
+    fireEvent.click(screen.getByRole('button', { name: 'Deshacer' }))
+    expect(onAction).toHaveBeenCalledTimes(1)
+    act(() => { vi.advanceTimersByTime(200) })
+    expect(onDismiss).toHaveBeenCalledWith('t1')
+    expect(toastDuration({ type: 'success', action: { label: 'x', onAction } })).toBe(8000)
+    expect(toastDuration({ type: 'success' })).toBe(4000)
+  })
+
   it('un aviso normal va a la región status (educada)', () => {
     render(<ToastContainer toasts={[toast({ message: 'Guardado' })]} onDismiss={vi.fn()} />)
     expect(screen.getByRole('status')).toHaveTextContent('Guardado')

@@ -9,7 +9,9 @@
 // (/api/library/diary; se adelanta al pasar el ratón o el foco por el botón y
 // se recuerda mientras dure la página). Al marcarlo como completado, el estado
 // hace un «sello» lima (DIS-14, ≤ 300 ms, sin mover nada, nada con
-// movimiento reducido).
+// movimiento reducido) que cuelga del póster de la ficha (`data-library-stamp`)
+// o, si no lo hay, de la etiqueta de estado. Al quitarlo de la biblioteca, el
+// aviso trae «Deshacer» (vuelve con su estado, nota y progreso).
 //
 // F-27: a la vez se pide el progreso del título y lo que dice el proveedor
 // (/api/library/progress: temporadas, capítulos, páginas, horas medias) para
@@ -17,6 +19,7 @@
 // ============================================================
 
 import { useEffect, useRef, useState } from 'react'
+import { createPortal } from 'react-dom'
 import { useTranslations } from 'next-intl'
 import { Link } from '@/i18n/navigation'
 import { KButton } from '@/components/ui/KButton'
@@ -138,6 +141,11 @@ export function LibraryAction({
   const addRef = useRef<HTMLButtonElement>(null)
   const updateRef = useRef<HTMLButtonElement>(null)
   const stampRef = useRef<HTMLSpanElement>(null)
+  // El póster de la ficha, si lo hay: el sello se pinta colgado de él.
+  const [posterAnchor, setPosterAnchor] = useState<HTMLElement | null>(null)
+  useEffect(() => {
+    setPosterAnchor(document.querySelector<HTMLElement>('[data-library-stamp]'))
+  }, [])
 
   function prefetch() {
     if (!isAuthenticated) return
@@ -219,7 +227,32 @@ export function LibraryAction({
     show({ message: td('deleted', { title: mediaCache.title }), type: 'success' })
   }
 
+  /** Vuelve a guardar la entrada quitada, con su estado, nota y progreso. */
+  async function restore(removed: LibraryEntry) {
+    const progress = (removed as { progress?: ProgressConfig['progress'] }).progress
+    try {
+      const result = await saveLibraryEntry({
+        mediaId,
+        status: removed.status,
+        score: removed.score ?? undefined,
+        ...(removed.rating10 !== undefined && removed.rating10 !== null ? { rating10: removed.rating10 } : {}),
+        ...(removed.favorite !== undefined ? { favorite: removed.favorite } : {}),
+        watchedAt: removed.watchedAt ?? undefined,
+        episodeProgress: removed.episodeProgress ?? undefined,
+        ...(progress !== undefined ? { progress } : {}),
+        mediaCache,
+      })
+      setEntry(result.entry)
+      progressCache.delete(mediaId)
+      show({ message: t('restored'), type: 'success' })
+    } catch (err) {
+      log.error('Failed to restore library entry', { err })
+      showError(t('errors.undoFailed'))
+    }
+  }
+
   async function handleRemove() {
+    const removed = entry
     setLoading(true)
     setRemoveError(null)
     try {
@@ -229,13 +262,33 @@ export function LibraryAction({
       // La FK borra el diario del título con la entrada.
       setDiary((prev) => (prev ? { ...prev, logs: [] } : prev))
       diaryCache.delete(mediaId)
-      show({ message: t('removed'), type: 'success' })
+      show({
+        message: t('removed'),
+        type: 'success',
+        ...(removed ? { action: { label: t('undo'), onAction: () => void restore(removed) } } : {}),
+      })
     } catch (err) {
       log.error('Failed to remove library entry', { err })
       setRemoveError(t('errors.removeFailed'))
     } finally {
       setLoading(false)
     }
+  }
+
+  function stampBadge(position: string) {
+    return (
+      <span
+        ref={stampRef}
+        aria-hidden="true"
+        data-testid="library-stamp"
+        className={cn(
+          'pointer-events-none z-10 whitespace-nowrap rounded-full bg-accent-lime px-3 py-1 text-xs font-extrabold text-on-accent-lime opacity-0 shadow-sticker',
+          position
+        )}
+      >
+        {td('stamp', { type: mediaCache.type })}
+      </span>
+    )
   }
 
   if (!isAuthenticated) {
@@ -291,17 +344,10 @@ export function LibraryAction({
           >
             {t(`status.${entry.status}`)}
           </span>
-          {/* DIS-14: «badge colgante» de DISENO.md (lima, −8°, sombra dura); decorativa. */}
-          {stamp > 0 && (
-            <span
-              ref={stampRef}
-              aria-hidden="true"
-              data-testid="library-stamp"
-              className="pointer-events-none absolute -top-4 -right-6 z-10 whitespace-nowrap rounded-full bg-accent-lime px-3 py-1 text-xs font-extrabold text-on-accent-lime opacity-0 shadow-sticker"
-            >
-              {td('stamp', { type: mediaCache.type })}
-            </span>
-          )}
+          {/* DIS-14: «badge colgante» de DISENO.md (lima, −8°, sombra dura);
+              decorativa. Cuelga del póster de la ficha si lo hay. */}
+          {stamp > 0 && !posterAnchor && stampBadge('absolute -top-4 -right-6')}
+          {stamp > 0 && posterAnchor && createPortal(stampBadge('absolute -top-3.5 -left-3.5 text-sm'), posterAnchor)}
         </span>
         <KButton
           ref={updateRef}

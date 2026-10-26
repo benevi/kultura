@@ -26,7 +26,7 @@ vi.mock('@/i18n/navigation', () => ({ Link: () => null }))
 const providers = vi.hoisted(() => ({ movie: vi.fn(), tv: vi.fn() }))
 vi.mock('@/lib/api/tmdb', () => ({ getMovieProviders: providers.movie, getTVProviders: providers.tv }))
 
-import { FriendsActivity, TonightOnMyPlatforms } from '@/app/[locale]/(app)/home/sections'
+import { FriendProfileActivity, FriendsActivity, TonightOnMyPlatforms } from '@/app/[locale]/(app)/home/sections'
 import { TonightClient } from '@/app/[locale]/(app)/home/TonightClient'
 
 function text(node: ReactNode): string {
@@ -84,6 +84,40 @@ describe('FriendsActivity', () => {
   it('si falla la lectura, la sección no sale (Inicio sigue)', async () => {
     client = fakeSupabase({ tables: { friendships: [{ data: null, error: { message: 'x' } }] } })
     expect(await FriendsActivity({ userId: ME, locale: 'es' })).toBeNull()
+  })
+})
+
+// PRO-7 en el perfil de un amigo: su actividad, solo la suya.
+describe('FriendProfileActivity', () => {
+  beforeEach(() => vi.clearAllMocks())
+
+  it('lo último del amigo, consultando SOLO su biblioteca y sin releer amistades', async () => {
+    client = fakeSupabase({
+      tables: {
+        user_media: [{
+          data: [{
+            id: 'um1', user_id: 'f1', media_id: 'tv_1396', status: 'in_progress', score: null,
+            created_at: '2026-10-01T00:00:00Z', updated_at: new Date().toISOString(),
+            user: { id: 'f1', username: 'lucia', avatar_color: 'blue', avatar_initials: 'LU' },
+            media: { id: 'tv_1396', title: 'Breaking Bad', poster: null, type: 'tv' },
+          }],
+          error: null,
+        }],
+      },
+    })
+    const out = text(await FriendProfileActivity({ viewerId: ME, friendId: 'f1', locale: 'es' }))
+    expect(out).toContain('home.recentActivity')
+    expect(out).toContain('home.activity.in_progress{"user":"lucia","title":"Breaking Bad"}')
+    expect(client.calls.map((c) => c.table)).toEqual(['user_media'])
+    const filter = client.calls[0].ops.find((o) => o.name === 'in')
+    expect(filter?.args).toEqual(['user_id', ['f1']])
+  })
+
+  it('sin actividad o si falla la lectura, no sale nada', async () => {
+    client = fakeSupabase({ tables: { user_media: [{ data: [], error: null }] } })
+    expect(await FriendProfileActivity({ viewerId: ME, friendId: 'f1', locale: 'es' })).toBeNull()
+    client = fakeSupabase({ tables: { user_media: [{ data: null, error: { message: 'x' } }] } })
+    expect(await FriendProfileActivity({ viewerId: ME, friendId: 'f1', locale: 'es' })).toBeNull()
   })
 })
 
