@@ -3,7 +3,7 @@
 // secuela. Sí lo es un 2-9 suelto o un número romano («Final Fantasy XVI»).
 
 import { describe, it, expect } from "vitest";
-import { isSequelFor, relevanceScore } from "@/lib/api/search-rank";
+import { isSequelFor, relevanceScore, titleWords } from "@/lib/api/search-rank";
 import type { MediaItem } from "@/types/media";
 
 describe("isSequelFor", () => {
@@ -44,5 +44,12 @@ describe("isSequelFor", () => {
     expect(relevanceScore("apollo", item("Apollo 13"), 0)).toBe(
       relevanceScore("apollo", item("Apollo Ever"), 0)
     );
+  });
+});
+
+describe("titleWords", () => {
+  it("una palabra que coincide con una propiedad de Object se queda como texto", () => {
+    expect(titleWords("The Constructor")).toEqual(["the", "constructor"]);
+    expect(titleWords("Final Fantasy XVI")).toEqual(["final", "fantasy", "16"]);
   });
 });
