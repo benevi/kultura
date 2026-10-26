@@ -16,7 +16,7 @@ vi.mock('@/lib/rate-limit', () => ({
   checkRateLimit: () => ({ allowed: true, retryAfterSeconds: 0 }),
   LIMITS: { library: {}, lists: {} },
 }))
-vi.mock('@/lib/social/lists', () => ({ canEditList: vi.fn() }))
+vi.mock('@/lib/social/lists', () => ({ canEditList: vi.fn(), getListAccess: vi.fn() }))
 vi.mock('@/lib/media/upsert-from-provider', () => ({
   upsertMediaFromProvider: async () => ({ ok: true, id: 'movie_550', title: 'Fight Club', created: false }),
   mediaFailureStatus: () => ({ status: 502, error: 'x' }),
@@ -32,7 +32,8 @@ vi.mock('@/lib/supabase/server', () => ({
         return {
           select: () => ({ eq: () => ({ maybeSingle: h.listLookup }) }),
           update: () => ({ eq: () => ({ eq: () => Promise.resolve({ error: null }) }) }),
-          insert: () => ({ select: () => ({ single: async () => h.insertedList }) }),
+          // F-25: se crea SIN RETURNING (la RLS de SELECT no ve la fila nueva).
+          insert: async () => h.insertedList,
         }
       }
       return {}
@@ -100,11 +101,13 @@ describe('listas públicas', () => {
 
   it('POST de una lista que nace pública también cuenta; privada, no', async () => {
     const { POST } = await import('@/app/api/lists/route')
-    h.insertedList = { data: { id: 'l9', is_public: true }, error: null }
-    await POST(json('http://k/api/lists', 'POST', { name: 'Top', mediaType: 'anime' }))
-    expect(h.track).toHaveBeenCalledWith(USER, 'list_made_public', { media_type: 'anime' }, { dedupeKey: 'list_made_public:l9' })
+    h.insertedList = { data: null, error: null }
+    h.listLookup.mockResolvedValue({ data: null, error: null })
+    await POST(json('http://k/api/lists', 'POST', { name: 'Top', mediaType: 'anime', isPublic: true }))
+    expect(h.track).toHaveBeenCalledWith(USER, 'list_made_public', { media_type: 'anime' }, {
+      dedupeKey: expect.stringMatching(/^list_made_public:[0-9a-f-]{36}$/),
+    })
     h.track.mockClear()
-    h.insertedList = { data: { id: 'l10', is_public: false }, error: null }
     await POST(json('http://k/api/lists', 'POST', { name: 'Mía', mediaType: 'anime' }))
     expect(h.track).not.toHaveBeenCalled()
   })

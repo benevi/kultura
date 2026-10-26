@@ -20,6 +20,11 @@
 //     que ya existen se usan tal cual y las que faltan se piden al proveedor
 //     (lib/media). Lo que no se pueda resolver ahora se omite y se cuenta en
 //     `libraryUnresolved`; reimportar el mismo fichero lo completa.
+//   - F-24: la nota fina `rating10` (0,5-10) y `favorite` vuelven tal cual con
+//     RATING_SCALE_10=1 (sin ella, o sin la migración, se guarda `score`). El
+//     diario (`diary`) se reimporta para los títulos que estén en la
+//     biblioteca, sin duplicar apuntes (misma fecha, título, revisionado y
+//     reseña).
 // ============================================================
 
 import { NextRequest, NextResponse } from 'next/server'
@@ -30,6 +35,9 @@ import { invalidateMatchScoreCache } from '@/lib/recommendations/match-score'
 import { createLogger } from '@/lib/logger'
 import { ensureMediaRows } from '@/lib/media/upsert-from-provider'
 import { localeFromRequest } from '@/lib/media/request-locale'
+import { isValidRating10, rating10ToScore, scoreToRating10 } from '@/lib/library/rating'
+import { isNotMigrated, ratingScale10Enabled } from '@/lib/library/scale'
+import { isValidDiaryDate, parseLogInput } from '@/lib/library/diary'
 
 const log = createLogger('api/account/import')
 
@@ -40,6 +48,9 @@ interface ImportableEntry {
   mediaId: string
   status: string
   score: number | null
+  /** F-24: nota fina; sin ella en el fichero, score × 2. */
+  rating10: number | null
+  favorite: boolean | undefined
   watchedAt: string | null
 }
 
@@ -61,11 +72,16 @@ function parseEntry(raw: unknown): ImportableEntry | null {
   if (typeof status !== 'string' || !LIBRARY_STATUSES.includes(status)) return null
 
   const score = entry.score
+  const legacyScore = typeof score === 'number' && Number.isInteger(score) && score >= 1 && score <= 5 ? score : null
+  // La nota fina manda si viene y es válida (exports con F-24); si no, la vieja.
+  const rating10 = isValidRating10(entry.rating10) ? entry.rating10 : scoreToRating10(legacyScore)
 
   return {
     mediaId,
     status,
-    score: typeof score === 'number' && Number.isInteger(score) && score >= 1 && score <= 5 ? score : null,
+    score: rating10 === null ? null : rating10ToScore(rating10),
+    rating10,
+    favorite: typeof entry.favorite === 'boolean' ? entry.favorite : undefined,
     watchedAt: typeof entry.watchedAt === 'string' ? entry.watchedAt : null,
   }
 }
@@ -116,6 +132,8 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
 
   let libraryImported = 0
   let libraryUnresolved = 0
+  const scale10 = ratingScale10Enabled()
+  let migrated = scale10
   try {
     if (entries.length > 0) {
       // 1. La ficha del título: `user_media.media_id` es FK contra `media`, así
@@ -132,16 +150,41 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
 
       // 2. La entrada de biblioteca, SIEMPRE para el usuario autenticado.
       if (importable.length > 0) {
-        const { error: libraryError } = await supabase.from('user_media').upsert(
-          importable.map((entry) => ({
-            user_id: user.id,
-            media_id: entry.mediaId,
-            status: entry.status,
-            score: entry.score,
-            watched_at: entry.watchedAt,
-          })),
-          { onConflict: 'user_id,media_id' }
-        )
+        const legacyRows = importable.map((entry) => ({
+          user_id: user.id,
+          media_id: entry.mediaId,
+          status: entry.status,
+          score: entry.score,
+          watched_at: entry.watchedAt,
+        }))
+        let libraryError: { code?: string; message: string } | null = null
+        if (scale10) {
+          // Un upsert de varias filas necesita las mismas columnas en todas:
+          // `favorite` solo si el fichero lo trae en alguna (si no, no se toca).
+          const withFavorite = importable.some((entry) => entry.favorite !== undefined)
+          ;({ error: libraryError } = await supabase.from('user_media').upsert(
+            importable.map((entry, i) => ({
+              ...legacyRows[i],
+              rating10: entry.rating10,
+              ...(withFavorite ? { favorite: entry.favorite ?? false } : {}),
+            })),
+            { onConflict: 'user_id,media_id' }
+          ))
+          if (libraryError && isNotMigrated(libraryError)) {
+            log.warn('RATING_SCALE_10 activa sin la migración 20261208240001; se importa solo score', {
+              code: libraryError.code,
+            })
+            migrated = false
+            libraryError = null
+            ;({ error: libraryError } = await supabase
+              .from('user_media')
+              .upsert(legacyRows, { onConflict: 'user_id,media_id' }))
+          }
+        } else {
+          ;({ error: libraryError } = await supabase
+            .from('user_media')
+            .upsert(legacyRows, { onConflict: 'user_id,media_id' }))
+        }
         if (libraryError) throw new Error(`user_media: ${libraryError.message}`)
       }
 
@@ -151,6 +194,15 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     log.error('Failed to import library', { err, userId: user.id })
     return NextResponse.json({ error: 'Failed to import data' }, { status: 500 })
   }
+
+  const diaryImported =
+    scale10 && migrated
+      ? await importDiary(payload.diary, user.id, supabase).catch((err) => {
+          // Como las listas: secundario, no invalida la biblioteca importada.
+          log.error('Failed to import diary', { err, userId: user.id })
+          return 0
+        })
+      : 0
 
   const listsImported = await importLists(payload.lists, user.id, supabase).catch((err) => {
     // Las listas son secundarias: que fallen no debe invalidar una biblioteca
@@ -171,6 +223,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     // petición): reimportar el mismo fichero los completa.
     libraryUnresolved,
     listsImported,
+    diaryImported,
     // Explícito, no silencioso: el usuario debe saber que esto no vuelve solo.
     friendshipsImported: 0,
   })
@@ -247,4 +300,109 @@ async function importLists(
   }
 
   return imported
+}
+
+/** Clave de un apunte para no duplicarlo al reimportar. */
+const logKey = (l: { media_id: string; watched_on: string; rewatch: boolean; review: string | null }) =>
+  [l.media_id, l.watched_on, l.rewatch ? 1 : 0, l.review ?? ''].join('\u0000')
+
+const DIARY_IMPORT_MAX = 5000
+const DIARY_CHUNK = 500
+const EXISTING_PAGE = 1000
+/** Techo de seguridad: 50.000 apuntes leídos para deduplicar. */
+const EXISTING_MAX_PAGES = 50
+
+/**
+ * Reimporta el diario (F-24) del fichero: solo apuntes de títulos que estén
+ * en la biblioteca del usuario (FK compuesta) y sin repetir los que ya tiene.
+ */
+async function importDiary(
+  raw: unknown,
+  userId: string,
+  supabase: Awaited<ReturnType<typeof createClient>>
+): Promise<number> {
+  if (!Array.isArray(raw) || raw.length === 0) return 0
+
+  const rows: Array<{
+    user_id: string
+    media_id: string
+    watched_on: string
+    rewatch: boolean
+    rating10: number | null
+    review: string | null
+    spoiler: boolean
+    private_note: string | null
+  }> = []
+  for (const candidate of raw.slice(0, DIARY_IMPORT_MAX)) {
+    if (typeof candidate !== 'object' || candidate === null) continue
+    const item = candidate as Record<string, unknown>
+    if (typeof item.mediaId !== 'string' || !/^[a-z]+_.+$/.test(item.mediaId)) continue
+    if (!isValidDiaryDate(item.watchedOn)) continue
+    const parsed = parseLogInput({
+      watchedOn: item.watchedOn,
+      rewatch: item.rewatch === true,
+      rating10: isValidRating10(item.rating10) ? item.rating10 : null,
+      review: typeof item.review === 'string' ? item.review : undefined,
+      spoiler: item.spoiler === true,
+      privateNote: typeof item.privateNote === 'string' ? item.privateNote : undefined,
+    })
+    if (!parsed.ok) continue
+    rows.push({
+      user_id: userId,
+      media_id: item.mediaId,
+      watched_on: item.watchedOn,
+      rewatch: parsed.log.rewatch,
+      rating10: parsed.log.rating10 ?? null,
+      review: parsed.log.review,
+      spoiler: parsed.log.spoiler,
+      private_note: parsed.log.privateNote,
+    })
+  }
+  if (rows.length === 0) return 0
+
+  const mediaIds = Array.from(new Set(rows.map((r) => r.media_id)))
+  const inLibrary = new Set<string>()
+  for (let i = 0; i < mediaIds.length; i += 100) {
+    const { data: inLibraryRaw, error: libError } = await supabase
+      .from('user_media')
+      .select('media_id')
+      .eq('user_id', userId)
+      .in('media_id', mediaIds.slice(i, i + 100))
+    if (libError) throw new Error(`user_media: ${libError.message}`)
+    for (const r of (inLibraryRaw ?? []) as Array<{ media_id: string }>) inLibrary.add(r.media_id)
+  }
+
+  // Apuntes que ya tiene, TODOS: PostgREST corta en 1.000 filas por petición
+  // y sin paginar, a partir del apunte 1.001 se duplicaría al reimportar.
+  const seen = new Set<string>()
+  for (let page = 0; page < EXISTING_MAX_PAGES; page++) {
+    const from = page * EXISTING_PAGE
+    const { data: existingRaw, error: existingError } = await supabase
+      .from('user_media_logs')
+      .select('id, media_id, watched_on, rewatch, review')
+      .eq('user_id', userId)
+      .order('id')
+      .range(from, from + EXISTING_PAGE - 1)
+    if (existingError) {
+      if (isNotMigrated(existingError)) return 0
+      throw new Error(`user_media_logs: ${existingError.message}`)
+    }
+    const batch = (existingRaw ?? []) as Array<{ media_id: string; watched_on: string; rewatch: boolean; review: string | null }>
+    for (const l of batch) seen.add(logKey(l))
+    if (batch.length < EXISTING_PAGE) break
+  }
+
+  const toInsert = rows.filter((r) => {
+    if (!inLibrary.has(r.media_id)) return false
+    const key = logKey(r)
+    if (seen.has(key)) return false
+    seen.add(key)
+    return true
+  })
+
+  for (let i = 0; i < toInsert.length; i += DIARY_CHUNK) {
+    const { error } = await supabase.from('user_media_logs').insert(toInsert.slice(i, i + DIARY_CHUNK))
+    if (error) throw new Error(`user_media_logs: ${error.message}`)
+  }
+  return toInsert.length
 }

@@ -6,6 +6,7 @@ import type { LibraryEntry } from '@/types/library'
 
 vi.mock('next-intl', () => ({
   useTranslations: () => (key: string) => key,
+  useLocale: () => 'es',
 }))
 
 const mockShow = vi.fn()
@@ -31,19 +32,28 @@ vi.mock('@/i18n/navigation', () => ({
   useRouter: () => ({ push: vi.fn() }),
 }))
 
-const mockAddToLibrary = vi.fn()
-const mockUpdateLibrary = vi.fn()
+// F-24: añadir y actualizar van por `saveLibraryEntry` (entrada + apunte del
+// diario opcional). El mock devuelve la entrada que se le dé, sin apunte.
+const mockSave = vi.fn()
 const mockRemoveFromLibrary = vi.fn()
+const mockFetchDiary = vi.fn()
+const mockDeleteLog = vi.fn()
 
 vi.mock('@/lib/library/actions', () => ({
-  addToLibrary: (...args: unknown[]) => mockAddToLibrary(...args),
-  updateLibrary: (...args: unknown[]) => mockUpdateLibrary(...args),
+  saveLibraryEntry: async (...args: unknown[]) => {
+    const result = await mockSave(...args)
+    return result && typeof result === 'object' && 'entry' in result
+      ? result
+      : { entry: result, log: null, logFailed: false }
+  },
   removeFromLibrary: (...args: unknown[]) => mockRemoveFromLibrary(...args),
+  fetchDiaryConfig: (...args: unknown[]) => mockFetchDiary(...args),
+  deleteDiaryLog: (...args: unknown[]) => mockDeleteLog(...args),
 }))
 
 // ── Fixtures ──────────────────────────────────────────────────────────────────
 
-import { LibraryAction } from '@/components/library/LibraryAction'
+import { LibraryAction, __resetDiaryCache } from '@/components/library/LibraryAction'
 
 const mediaCache = {
   externalId: '550',
@@ -73,13 +83,15 @@ const baseEntry: LibraryEntry = {
 
 describe('LibraryAction', () => {
   beforeEach(() => {
-    mockAddToLibrary.mockReset()
-    mockUpdateLibrary.mockReset()
+    __resetDiaryCache()
+    mockSave.mockReset()
     mockRemoveFromLibrary.mockReset()
+    mockFetchDiary.mockReset()
+    mockFetchDiary.mockResolvedValue({ enabled: false, scale: 'stars', logs: [] })
+    mockDeleteLog.mockReset()
     mockShow.mockReset()
     mockShowError.mockReset()
-    mockAddToLibrary.mockResolvedValue({ ...baseEntry, status: 'pending' })
-    mockUpdateLibrary.mockResolvedValue(baseEntry)
+    mockSave.mockResolvedValue({ ...baseEntry, status: 'pending' })
     mockRemoveFromLibrary.mockResolvedValue(undefined)
   })
 
@@ -173,9 +185,9 @@ describe('LibraryAction', () => {
     })
   })
 
-  it('handleSave con entry null → llama addToLibrary', async () => {
+  it('handleSave con entry null → guarda la entrada nueva', async () => {
     const newEntry: LibraryEntry = { ...baseEntry, status: 'pending', score: null }
-    mockAddToLibrary.mockResolvedValue(newEntry)
+    mockSave.mockResolvedValue(newEntry)
 
     render(
       <LibraryAction
@@ -190,12 +202,12 @@ describe('LibraryAction', () => {
     // Hacer submit
     fireEvent.submit(screen.getByRole('dialog').querySelector('form')!)
     await waitFor(() => {
-      expect(mockAddToLibrary).toHaveBeenCalled()
+      expect(mockSave).toHaveBeenCalled()
     })
   })
 
-  it('handleSave con entry existente → llama updateLibrary', async () => {
-    mockUpdateLibrary.mockResolvedValue(baseEntry)
+  it('handleSave con entry existente → guarda la actualización', async () => {
+    mockSave.mockResolvedValue(baseEntry)
 
     render(
       <LibraryAction
@@ -210,12 +222,12 @@ describe('LibraryAction', () => {
     // Submit
     fireEvent.submit(screen.getByRole('dialog').querySelector('form')!)
     await waitFor(() => {
-      expect(mockUpdateLibrary).toHaveBeenCalled()
+      expect(mockSave).toHaveBeenCalled()
     })
   })
 
   it('modal se cierra tras guardar correctamente', async () => {
-    mockAddToLibrary.mockResolvedValue({ ...baseEntry, status: 'pending', score: null })
+    mockSave.mockResolvedValue({ ...baseEntry, status: 'pending', score: null })
 
     render(
       <LibraryAction
@@ -235,7 +247,7 @@ describe('LibraryAction', () => {
   })
 
   it('error en guardar → mantiene modal abierto', async () => {
-    mockAddToLibrary.mockRejectedValue(new Error('Save failed'))
+    mockSave.mockRejectedValue(new Error('Save failed'))
 
     render(
       <LibraryAction
@@ -249,7 +261,7 @@ describe('LibraryAction', () => {
     fireEvent.submit(screen.getByRole('dialog').querySelector('form')!)
 
     await waitFor(() => {
-      expect(mockAddToLibrary).toHaveBeenCalled()
+      expect(mockSave).toHaveBeenCalled()
     })
     // El modal sigue abierto porque hubo error
     expect(screen.getByTestId('modal-panel')).toBeInTheDocument()
@@ -260,7 +272,7 @@ describe('LibraryAction', () => {
   // Revisión #41: el error va DENTRO del diálogo abierto (role="alert"): un
   // toast quedaba debajo de la hoja y fuera del árbol accesible.
   it('error 502 del proveedor → aviso dentro del diálogo, que sigue abierto', async () => {
-    mockAddToLibrary.mockRejectedValue(new Error('Media provider unavailable'))
+    mockSave.mockRejectedValue(new Error('Media provider unavailable'))
     render(
       <LibraryAction mediaId="movie_550" mediaCache={mediaCache} initialEntry={null} isAuthenticated={true} />
     )
@@ -274,7 +286,7 @@ describe('LibraryAction', () => {
   })
 
   it('otro error al guardar → aviso genérico dentro del diálogo', async () => {
-    mockAddToLibrary.mockRejectedValue(new Error('Failed to save library entry'))
+    mockSave.mockRejectedValue(new Error('Failed to save library entry'))
     render(
       <LibraryAction mediaId="movie_550" mediaCache={mediaCache} initialEntry={null} isAuthenticated={true} />
     )

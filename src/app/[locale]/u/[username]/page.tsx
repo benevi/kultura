@@ -176,6 +176,9 @@ export default async function PublicCollectionPage({ params, searchParams }: Pro
 
   const t = await getTranslations('collection')
   const tm = await getTranslations('media')
+  const tl = await getTranslations('lists')
+  // F-25: una lista mixta no tiene formato en `media`; su grupo va al final.
+  const formatName = (format: string) => (format in PLURAL_KEY ? tm(PLURAL_KEY[format as MediaType]) : tl('mediaTypeMixed'))
 
   // D-12: el alta desde este perfil lleva la atribución de la visita; sin
   // `ref`, se atribuye a este perfil (sin firma: no crea amistad).
@@ -242,9 +245,9 @@ export default async function PublicCollectionPage({ params, searchParams }: Pro
             </div>
           ) : (
             groupByFormat(lists).map(([format, group], groupIndex) => (
-              <section key={format} className="flex flex-col gap-6" aria-label={tm(PLURAL_KEY[format])}>
+              <section key={format} className="flex flex-col gap-6" aria-label={formatName(format)}>
                 <div>
-                  <FormatLabel>{tm(PLURAL_KEY[format])}</FormatLabel>
+                  <FormatLabel>{formatName(format)}</FormatLabel>
                 </div>
                 {group.map((list, i) => (
                   <PublicListRow

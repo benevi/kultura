@@ -12,6 +12,7 @@ import { getUserLists, getListDetail } from '@/lib/social/lists'
 import { getFriends } from '@/lib/social/friends'
 import { createLogger } from '@/lib/logger'
 import { collectExportSections } from './collect'
+import { readRatingScale } from '@/lib/library/scale'
 
 const log = createLogger('api/account/export')
 
@@ -74,6 +75,8 @@ export async function GET(): Promise<NextResponse> {
       exportedAt: new Date().toISOString(),
       profile: { email: user.email, ...profile },
       library,
+      // F-24: cómo ve sus notas (½★ o /10). Las notas van en `library[].rating10`.
+      libraryPreferences: { ratingScale: readRatingScale(user) },
       lists: lists.map((list) => ({ ...list, items: itemsByList.get(list.id) ?? [] })),
       friendships,
       ...sections,

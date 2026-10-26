@@ -42,7 +42,11 @@ vi.mock('@/lib/supabase/server', () => ({
 // canEditList usa createClient también — mockeamos su import
 vi.mock('@/lib/social/lists', async (importOriginal) => {
   const actual = await importOriginal<typeof import('@/lib/social/lists')>()
-  return { ...actual, canEditList: vi.fn().mockResolvedValue(true) }
+  return {
+    ...actual,
+    canEditList: vi.fn().mockResolvedValue(true),
+    getListAccess: vi.fn().mockResolvedValue({ exists: true, canEdit: true, isOwner: true, mediaType: 'movie' }),
+  }
 })
 
 // La fila de `media` la garantiza el servidor (SEG-2); se prueba en
@@ -130,10 +134,13 @@ describe('POST /api/lists', () => {
 
   it('creates list and returns 201', async () => {
     mockGetUser.mockResolvedValue({ data: { user: AUTH_USER }, error: null })
+    // F-25: insert SIN RETURNING y lectura aparte por id (ver
+    // tests/unit/plataformas-listas/lists-regressions.test.ts).
     mockFromLists.mockReturnValue({
-      insert: vi.fn().mockReturnValue({
-        select: vi.fn().mockReturnValue({
-          single: vi.fn().mockResolvedValue({ data: LIST_ROW, error: null }),
+      insert: vi.fn().mockResolvedValue({ error: null }),
+      select: vi.fn().mockReturnValue({
+        eq: vi.fn().mockReturnValue({
+          maybeSingle: vi.fn().mockResolvedValue({ data: LIST_ROW, error: null }),
         }),
       }),
     })

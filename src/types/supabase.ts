@@ -13,7 +13,8 @@
 //
 //    que sustituye solo lo que hay entre las marcas. La versión actual sale de
 //    aplicar TODAS las migraciones de `supabase/migrations/` (hasta
-//    `20261115170001_analytics.sql`), en orden, sobre un PostgreSQL 16 vacío:
+//    `20261208250001_platforms_mixed_lists.sql`), en orden, sobre un
+//    PostgreSQL 16 vacío:
 //    incluye las tablas y columnas de migraciones que quizá aún no estén
 //    aplicadas en producción. Regenerar desde producción SOLO después de
 //    aplicarlas todas (ver `supabase/README.md`); si no, desaparecerían tipos
@@ -527,6 +528,8 @@ export type Database = {
           id: string
           list_id: string
           media_id: string
+          note: string | null
+          position: number | null
         }
         ComputedFields: never
         Insert: {
@@ -535,6 +538,8 @@ export type Database = {
           id?: string
           list_id: string
           media_id: string
+          note?: string | null
+          position?: number | null
         }
         Update: {
           added_at?: string | null
@@ -542,6 +547,8 @@ export type Database = {
           id?: string
           list_id?: string
           media_id?: string
+          note?: string | null
+          position?: number | null
         }
         Relationships: [
           {
@@ -604,31 +611,37 @@ export type Database = {
       lists: {
         Row: {
           created_at: string | null
+          description: string | null
           id: string
           is_collaborative: boolean | null
           is_public: boolean
           media_type: string
           name: string
           owner_id: string
+          template: string | null
         }
         ComputedFields: never
         Insert: {
           created_at?: string | null
+          description?: string | null
           id?: string
           is_collaborative?: boolean | null
           is_public?: boolean
           media_type: string
           name: string
           owner_id: string
+          template?: string | null
         }
         Update: {
           created_at?: string | null
+          description?: string | null
           id?: string
           is_collaborative?: boolean | null
           is_public?: boolean
           media_type?: string
           name?: string
           owner_id?: string
+          template?: string | null
         }
         Relationships: [
           {
@@ -925,8 +938,10 @@ export type Database = {
         Row: {
           created_at: string | null
           episode_progress: Json | null
+          favorite: boolean
           id: string
           media_id: string
+          rating10: number | null
           score: number | null
           status: string
           updated_at: string
@@ -937,8 +952,10 @@ export type Database = {
         Insert: {
           created_at?: string | null
           episode_progress?: Json | null
+          favorite?: boolean
           id?: string
           media_id: string
+          rating10?: number | null
           score?: number | null
           status: string
           updated_at?: string
@@ -948,8 +965,10 @@ export type Database = {
         Update: {
           created_at?: string | null
           episode_progress?: Json | null
+          favorite?: boolean
           id?: string
           media_id?: string
+          rating10?: number | null
           score?: number | null
           status?: string
           updated_at?: string
@@ -968,6 +987,94 @@ export type Database = {
             foreignKeyName: "user_media_user_id_fkey"
             columns: ["user_id"]
             isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      user_media_logs: {
+        Row: {
+          created_at: string
+          id: string
+          media_id: string
+          private_note: string | null
+          rating10: number | null
+          review: string | null
+          rewatch: boolean
+          spoiler: boolean
+          updated_at: string
+          user_id: string
+          watched_on: string
+        }
+        ComputedFields: never
+        Insert: {
+          created_at?: string
+          id?: string
+          media_id: string
+          private_note?: string | null
+          rating10?: number | null
+          review?: string | null
+          rewatch?: boolean
+          spoiler?: boolean
+          updated_at?: string
+          user_id: string
+          watched_on?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          media_id?: string
+          private_note?: string | null
+          rating10?: number | null
+          review?: string | null
+          rewatch?: boolean
+          spoiler?: boolean
+          updated_at?: string
+          user_id?: string
+          watched_on?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_media_logs_entry_fkey"
+            columns: ["user_id", "media_id"]
+            isOneToOne: false
+            referencedRelation: "user_media"
+            referencedColumns: ["user_id", "media_id"]
+          },
+          {
+            foreignKeyName: "user_media_logs_media_id_fkey"
+            columns: ["media_id"]
+            isOneToOne: false
+            referencedRelation: "media"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      user_streaming_services: {
+        Row: {
+          region: string | null
+          services: number[]
+          updated_at: string
+          user_id: string
+        }
+        ComputedFields: never
+        Insert: {
+          region?: string | null
+          services?: number[]
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          region?: string | null
+          services?: number[]
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_streaming_services_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: true
             referencedRelation: "users"
             referencedColumns: ["id"]
           },
@@ -1099,6 +1206,10 @@ export type Database = {
         Returns: string
       }
       purge_old_analytics_events: { Args: { p_keep?: string }; Returns: number }
+      reorder_list_items: {
+        Args: { p_items: string[]; p_list: string }
+        Returns: number
+      }
       rls_audit: {
         Args: Record<PropertyKey, never>
         Returns: {
@@ -1288,11 +1399,30 @@ export interface DbUserMedia {
   user_id: string; // uuid → users.id
   media_id: string; // text → media.id
   status: "completed" | "in_progress" | "pending" | "abandoned";
-  score: number | null; // smallint 1-5
+  score: number | null; // smallint 1-5 (el disparador user_media_sync_rating la deriva de rating10)
+  /** numeric(3,1) 0,5-10 en pasos de 0,5 (F-24). Ausente antes de 20261208240001. */
+  rating10?: number | null;
+  /** F-24. Ausente antes de 20261208240001. */
+  favorite?: boolean;
   watched_at: string | null; // date
   episode_progress: { season?: number; episode: number } | null; // jsonb
   created_at: string; // timestamptz
   updated_at: string; // timestamptz — set by trigger set_updated_at on UPDATE
+}
+
+/** Tabla: user_media_logs (diario, F-24; FK compuesta → user_media y media_id → media, on delete cascade) */
+export interface DbUserMediaLog {
+  id: string; // uuid
+  user_id: string; // uuid
+  media_id: string; // text
+  watched_on: string; // date (por defecto hoy)
+  rewatch: boolean;
+  rating10: number | null; // numeric(3,1) 0,5-10, pasos de 0,5
+  review: string | null; // ≤ 5000
+  spoiler: boolean;
+  private_note: string | null; // ≤ 2000, solo la ve su dueño
+  created_at: string; // timestamptz
+  updated_at: string; // timestamptz
 }
 
 /** Tabla: friendships */
@@ -1320,11 +1450,16 @@ export interface DbList {
   id: string; // uuid
   owner_id: string; // uuid → users.id
   name: string;
-  media_type: "movie" | "tv" | "anime" | "book" | "comic" | "manga" | "game";
+  /** `mixed` (varios formatos) solo tras F-25 (`20261208250001_platforms_mixed_lists`). */
+  media_type: "movie" | "tv" | "anime" | "book" | "comic" | "manga" | "game" | "mixed";
   is_collaborative: boolean;
   /** Visible sin sesión en /u/{username}. Por defecto privada. */
   is_public: boolean;
   created_at: string; // timestamptz
+  /** F-25: texto libre (≤ 500). Ausente antes de aplicarla. */
+  description?: string | null;
+  /** F-25: plantilla con la que se creó (`franchise` | `ranking`). Ausente antes de aplicarla. */
+  template?: "franchise" | "ranking" | null;
 }
 
 /** Tabla: list_members */
@@ -1342,6 +1477,10 @@ export interface DbListItem {
   media_id: string; // text → media.id
   added_by: string | null; // uuid → users.id (on delete set null)
   added_at: string; // timestamptz
+  /** F-25: orden manual (0 = primero; el disparador pone los nuevos al final). Ausente antes de aplicarla. */
+  position?: number | null;
+  /** F-25: nota de quien edita la lista (≤ 500). Ausente antes de aplicarla. */
+  note?: string | null;
 }
 
 /** Tabla: notifications */
@@ -1462,6 +1601,7 @@ export type DomainTypesMatchSchema = [
   Expect<SameColumns<DbUser, Tables<"users">>>,
   Expect<SameColumns<DbMedia, Tables<"media">>>,
   Expect<SameColumns<DbUserMedia, Tables<"user_media">>>,
+  Expect<SameColumns<DbUserMediaLog, Tables<"user_media_logs">>>,
   Expect<SameColumns<DbFriendship, Tables<"friendships">>>,
   Expect<SameColumns<DbRecommendation, Tables<"recommendations">>>,
   Expect<SameColumns<DbList, Tables<"lists">>>,

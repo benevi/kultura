@@ -79,7 +79,10 @@ function findProps(node: ReactNode): Record<string, unknown> | null {
   return findProps(el.props?.children)
 }
 
-/** Primer <Suspense> del árbol (o null). */
+/**
+ * El <Suspense> de "Para ti" (el que tiene por esqueleto `AiRecommendations`).
+ * F-25 añadió otros dos en Inicio (plataformas y actividad de amigos).
+ */
 function findSuspense(node: ReactNode): ReactElement<{ fallback: ReactNode; children: ReactNode }> | null {
   if (!node || typeof node !== 'object') return null
   if (Array.isArray(node)) {
@@ -89,8 +92,9 @@ function findSuspense(node: ReactNode): ReactElement<{ fallback: ReactNode; chil
     }
     return null
   }
-  const el = node as ReactElement<{ children?: ReactNode }>
-  if (el.type === Suspense) return el as ReactElement<{ fallback: ReactNode; children: ReactNode }>
+  const el = node as ReactElement<{ children?: ReactNode; fallback?: ReactNode }>
+  if (el.type === Suspense && (el.props.fallback as ReactElement | undefined)?.type === AiRecommendationsStub)
+    return el as ReactElement<{ fallback: ReactNode; children: ReactNode }>
   return findSuspense(el.props?.children)
 }
 

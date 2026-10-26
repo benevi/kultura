@@ -1,6 +1,6 @@
 'use client'
 
-import { useMemo } from 'react'
+import { useMemo, useState } from 'react'
 import { PageHeading } from '@/components/layout/PageHeading'
 import { useSearchParams } from 'next/navigation'
 import { useTranslations } from 'next-intl'
@@ -9,11 +9,20 @@ import { FilterChip } from '@/components/ui/FilterChip'
 import { KButton } from '@/components/ui/KButton'
 import { MediaGrid } from '@/components/media/MediaGrid'
 import { IconLibrary } from '@/components/icons'
-import type { LibraryEntry } from '@/types/library'
+import { SegmentedControl } from '@/components/ui/SegmentedControl'
+import { DiaryList } from '@/components/library/DiaryList'
+import { useToastContext } from '@/components/ui/ToastProvider'
+import { saveRatingScale } from '@/lib/library/actions'
+import { isRatingScale, type DiaryLog, type LibraryEntry, type RatingScale } from '@/types/library'
 import type { MediaItem, MediaType } from '@/types/media'
 
 interface LibraryClientProps {
   entries: LibraryEntry[]
+  /**
+   * F-24: diario y escala de notas. `null` sin RATING_SCALE_10 o sin la
+   * migración: la Biblioteca de siempre.
+   */
+  diary?: { logs: DiaryLog[]; scale: RatingScale } | null
 }
 
 function parseMediaId(mediaId: string): { type: MediaType; externalId: string } {
@@ -128,30 +137,58 @@ function EmptyFiltered({
   )
 }
 
-export function LibraryClient({ entries }: LibraryClientProps) {
+export function LibraryClient({ entries, diary = null }: LibraryClientProps) {
   const t = useTranslations('library')
   const tF = useTranslations('filters')
+  const td = useTranslations('diary')
   const router = useRouter()
   const searchParams = useSearchParams()
+  const { showError } = useToastContext()
 
   const currentType = searchParams.get('type') ?? 'all'
   const currentStatus = searchParams.get('status') ?? 'all'
   const currentScore = searchParams.get('score') ?? 'all'
+  const onlyFavorites = diary !== null && searchParams.get('fav') === '1'
+  const view = diary !== null && searchParams.get('view') === 'diary' ? 'diary' : 'collection'
+  const [scale, setScale] = useState<RatingScale>(diary?.scale ?? 'stars')
 
-  function handleFilterChange(key: string, value: string) {
+  function push(next: Record<string, string>) {
     const params = new URLSearchParams()
-    const newType = key === 'type' ? value : currentType
-    const newStatus = key === 'status' ? value : currentStatus
-    const newScore = key === 'score' ? value : currentScore
-    if (newType !== 'all') params.set('type', newType)
-    if (newStatus !== 'all') params.set('status', newStatus)
-    if (newScore !== 'all') params.set('score', newScore)
+    const merged = {
+      type: currentType,
+      status: currentStatus,
+      score: currentScore,
+      fav: onlyFavorites ? '1' : 'all',
+      view,
+      ...next,
+    }
+    if (merged.view === 'diary') params.set('view', 'diary')
+    if (merged.type !== 'all') params.set('type', merged.type)
+    if (merged.status !== 'all') params.set('status', merged.status)
+    if (merged.score !== 'all') params.set('score', merged.score)
+    if (merged.fav === '1') params.set('fav', '1')
     const qs = params.toString()
     router.push(`/library${qs ? `?${qs}` : ''}`)
   }
 
+  function handleFilterChange(key: string, value: string) {
+    push({ [key]: value })
+  }
+
   function resetFilters() {
     router.push('/library')
+  }
+
+  async function changeScale(next: string) {
+    if (!isRatingScale(next) || next === scale) return
+    const previous = scale
+    setScale(next)
+    try {
+      await saveRatingScale(next)
+    } catch {
+      setScale(previous)
+      showError(td('scaleSaveFailed'))
+    }
   }
 
   const filtered = useMemo(
@@ -163,8 +200,9 @@ export function LibraryClient({ entries }: LibraryClientProps) {
           if (currentScore === 'all') return true
           const min = parseInt(currentScore, 10)
           return e.score !== null && e.score >= min
-        }),
-    [entries, currentType, currentStatus, currentScore]
+        })
+        .filter((e) => !onlyFavorites || e.favorite === true),
+    [entries, currentType, currentStatus, currentScore, onlyFavorites]
   )
 
   const mediaItems = useMemo(
@@ -178,12 +216,48 @@ export function LibraryClient({ entries }: LibraryClientProps) {
     return byStatus
   }, [entries])
 
-  const hasActiveFilters = currentType !== 'all' || currentStatus !== 'all' || currentScore !== 'all'
+  const hasActiveFilters =
+    currentType !== 'all' || currentStatus !== 'all' || currentScore !== 'all' || onlyFavorites
+
+  // F-24: vista (colección / diario) y escala de notas, solo con el diario activo.
+  const diaryControls = diary ? (
+    <div className="flex flex-wrap items-center gap-3 mb-6">
+      <SegmentedControl
+        ariaLabel={td('view')}
+        value={view}
+        onChange={(v) => push({ view: v })}
+        options={[
+          { value: 'collection', label: td('viewCollection') },
+          { value: 'diary', label: td('viewDiary') },
+        ]}
+      />
+      <SegmentedControl
+        ariaLabel={td('scaleLabel')}
+        value={scale}
+        onChange={changeScale}
+        options={[
+          { value: 'stars', label: td('scaleStars') },
+          { value: 'ten', label: td('scaleTen') },
+        ]}
+      />
+    </div>
+  ) : null
+
+  if (diary && view === 'diary') {
+    return (
+      <div>
+        <PageHeading emoji="📚">{t('title')}</PageHeading>
+        {diaryControls}
+        <DiaryList logs={diary.logs} scale={scale} />
+      </div>
+    )
+  }
 
   if (entries.length === 0) {
     return (
       <div>
         <PageHeading emoji="📚">{t('title')}</PageHeading>
+        {diaryControls}
         <EmptyLibrary t={t} />
       </div>
     )
@@ -202,6 +276,8 @@ export function LibraryClient({ entries }: LibraryClientProps) {
       >
         {t('title')}
       </PageHeading>
+
+      {diaryControls}
 
       {/* Contadores (artboard): tarjetas sueltas, radio 20, cifra en color. */}
       <ul className="flex flex-wrap gap-4 mb-8" aria-label={t('title')}>
@@ -275,6 +351,19 @@ export function LibraryClient({ entries }: LibraryClientProps) {
             ))}
           </div>
         </div>
+
+        {/* Favoritos (F-24) */}
+        {diary && (
+          <div role="group" aria-label={td('favorite')}>
+            <div className="flex gap-2">
+              <FilterChip
+                label={td('favorites')}
+                active={onlyFavorites}
+                onClick={() => handleFilterChange('fav', onlyFavorites ? 'all' : '1')}
+              />
+            </div>
+          </div>
+        )}
 
         {/* Reset rápido si hay filtros activos */}
         {hasActiveFilters && (

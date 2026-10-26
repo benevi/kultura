@@ -1,9 +1,16 @@
 // ============================================================
 // KULTURA — Route Handler: /api/library
 // Gestiona la biblioteca personal del usuario autenticado.
-// POST: upsert de una entrada (status, score, progress). La fila de `media`
-//       la garantiza el servidor desde el proveedor (lib/media).
-// DELETE: eliminar una entrada
+// POST: upsert de una entrada (status, nota, progreso, favorito) y, si llega,
+//       un apunte del diario. La fila de `media` la garantiza el servidor
+//       desde el proveedor (lib/media).
+// DELETE: eliminar una entrada (y, por la FK, su diario)
+//
+// F-24 (D-14): con RATING_SCALE_10=1 se guarda la nota fina `rating10`
+// (0,5-10) junto a `score` (1-5, derivada) y el diario. Sin la bandera se
+// escribe solo `score`, como siempre, y una nota fina que llegue se redondea a
+// score. Si la bandera está encendida pero la migración no (columna o tabla
+// inexistente), se vuelve a escribir solo `score` en vez de dar un 500.
 // ============================================================
 
 import { NextResponse } from 'next/server'
@@ -11,21 +18,30 @@ import { createClient } from '@/lib/supabase/server'
 import { checkRateLimit, LIMITS } from '@/lib/rate-limit'
 import { invalidateRecCache } from '@/lib/claude/recommendations'
 import { invalidateMatchScoreCache } from '@/lib/recommendations/match-score'
-import type { DbUserMedia } from '@/types/supabase'
-import type { LibraryEntry, LibraryPayload, LibraryStatus } from '@/types/library'
+import type { DbUserMedia, DbUserMediaLog } from '@/types/supabase'
+import type { DiaryLog, LibraryEntry, LibraryPayload, LibraryStatus } from '@/types/library'
 import { isLibraryStatus } from '@/types/library'
 import { upsertMediaFromProvider, mediaFailureStatus } from '@/lib/media/upsert-from-provider'
 import { localeFromRequest } from '@/lib/media/request-locale'
 import { track } from '@/lib/analytics/track'
+import { createLogger } from '@/lib/logger'
+import { entryRating10, isValidRating10, rating10ToScore, scoreToRating10 } from '@/lib/library/rating'
+import { isNotMigrated, ratingScale10Enabled } from '@/lib/library/scale'
+import { mapLog, parseLogInput, today } from '@/lib/library/diary'
+
+const log = createLogger('api/library')
 
 /** Mapea una fila de user_media a LibraryEntry */
 function mapEntry(row: DbUserMedia): LibraryEntry {
+  const rating10 = row.rating10 === null || row.rating10 === undefined ? undefined : Number(row.rating10)
   return {
     id: row.id,
     userId: row.user_id,
     mediaId: row.media_id,
     status: row.status as LibraryStatus,
     score: row.score,
+    rating10: entryRating10({ rating10, score: row.score }),
+    favorite: row.favorite ?? false,
     watchedAt: row.watched_at,
     episodeProgress: row.episode_progress,
     createdAt: row.created_at,
@@ -89,6 +105,27 @@ export async function POST(request: Request): Promise<NextResponse> {
     }
   }
 
+  // F-24: nota fina 0,5-10 en pasos de 0,5 (null la quita).
+  if (body.rating10 !== undefined && body.rating10 !== null && !isValidRating10(body.rating10)) {
+    return NextResponse.json(
+      { error: 'rating10 must be between 0.5 and 10 in steps of 0.5' },
+      { status: 400 }
+    )
+  }
+  if (body.favorite !== undefined && typeof body.favorite !== 'boolean') {
+    return NextResponse.json({ error: 'favorite must be a boolean' }, { status: 400 })
+  }
+  const parsedLog = body.log === undefined || body.log === null ? null : parseLogInput(body.log)
+  if (parsedLog && !parsedLog.ok) {
+    return NextResponse.json({ error: parsedLog.error }, { status: 400 })
+  }
+
+  // Una sola nota: manda rating10 si llega; si no, la de siempre (score × 2).
+  // Sin nota en el cuerpo, la entrada queda sin nota (como antes).
+  const rating10 = body.rating10 !== undefined ? body.rating10 : scoreToRating10(body.score)
+  const score = rating10 === null ? null : rating10ToScore(rating10)
+  const scale10 = ratingScale10Enabled()
+
   // 3. La fila del catálogo compartido `media` (FK de user_media). La escribe
   //    el servidor con la ficha del proveedor; `mediaCache` se ignora a
   //    propósito (SEG-2): con él cualquiera renombraba un título para todos.
@@ -103,24 +140,67 @@ export async function POST(request: Request): Promise<NextResponse> {
   }
 
   // 4. Upsert en user_media
-  const { data, error: upsertError } = await supabase
-    .from('user_media')
-    .upsert(
-      {
-        user_id: user.id,
-        media_id: body.mediaId,
-        status: body.status,
-        score: body.score ?? null,
-        watched_at: body.watchedAt ?? null,
-        episode_progress: body.episodeProgress ?? null,
-      },
-      { onConflict: 'user_id,media_id' }
-    )
-    .select()
-    .single()
+  const legacyRow = {
+    user_id: user.id,
+    media_id: body.mediaId,
+    status: body.status,
+    score,
+    watched_at: body.watchedAt ?? null,
+    episode_progress: body.episodeProgress ?? null,
+  }
+  const upsertEntry = (row: typeof legacyRow & { rating10?: number | null; favorite?: boolean }) =>
+    supabase.from('user_media').upsert(row, { onConflict: 'user_id,media_id' }).select().single()
+
+  let migrated = scale10
+  let { data, error: upsertError } = scale10
+    ? await upsertEntry({
+        ...legacyRow,
+        rating10,
+        ...(typeof body.favorite === 'boolean' ? { favorite: body.favorite } : {}),
+      })
+    : await upsertEntry(legacyRow)
+
+  if (upsertError && scale10 && isNotMigrated(upsertError)) {
+    // Bandera encendida sin la migración: se guarda como siempre.
+    log.warn('RATING_SCALE_10 activa pero falta la migración 20261208240001; se escribe solo score', {
+      code: upsertError.code,
+    })
+    migrated = false
+    ;({ data, error: upsertError } = await upsertEntry(legacyRow))
+  }
 
   if (upsertError || !data) {
     return NextResponse.json({ error: 'Failed to save library entry' }, { status: 500 })
+  }
+
+  // 4b. Apunte del diario (F-24). Si falla, la entrada ya está guardada: se
+  //     devuelve igualmente y el cliente avisa de que el apunte no entró.
+  let diaryLog: DiaryLog | null = null
+  let logFailed = false
+  if (parsedLog?.ok && migrated) {
+    const entry = parsedLog.log
+    const { data: logRow, error: logError } = await supabase
+      .from('user_media_logs')
+      .insert({
+        user_id: user.id,
+        media_id: body.mediaId,
+        watched_on: entry.watchedOn ?? body.watchedAt ?? today(),
+        rewatch: entry.rewatch,
+        rating10: entry.rating10 !== undefined ? entry.rating10 : rating10,
+        review: entry.review,
+        spoiler: entry.spoiler,
+        private_note: entry.privateNote,
+      })
+      .select()
+      .single()
+    if (logError || !logRow) {
+      if (!isNotMigrated(logError)) {
+        log.error('Failed to insert diary log', { err: logError, userId: user.id })
+        logFailed = true
+      }
+    } else {
+      diaryLog = mapLog(logRow as DbUserMediaLog)
+    }
   }
 
   // 5. Invalidar caches de recomendaciones — biblioteca cambió
@@ -134,15 +214,15 @@ export async function POST(request: Request): Promise<NextResponse> {
     track(user, 'library_add', { media_type: mediaType, status: body.status }, {
       dedupeKey: `library_add:${user.id}:${body.mediaId}`,
     }),
-    typeof body.score === 'number'
-      ? track(user, 'rating_set', { media_type: mediaType, score: body.score }, {
+    typeof score === 'number'
+      ? track(user, 'rating_set', { media_type: mediaType, score }, {
           dedupeKey: `rating_set:${user.id}:${body.mediaId}`,
         })
       : null,
   ])
 
   const entry = mapEntry(data as DbUserMedia)
-  return NextResponse.json({ entry })
+  return NextResponse.json({ entry, log: diaryLog, ...(logFailed ? { logFailed: true } : {}) })
 }
 
 /** DELETE /api/library — eliminar entrada de user_media */

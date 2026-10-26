@@ -92,7 +92,8 @@ export function AddToListButton({ item }: AddToListButtonProps) {
     }
   }
 
-  const compatibleLists = lists.filter((l) => l.media_type === item.type)
+  // Una lista mixta (F-25) admite cualquier formato.
+  const compatibleLists = lists.filter((l) => l.media_type === item.type || l.media_type === 'mixed')
 
   return (
     <>
