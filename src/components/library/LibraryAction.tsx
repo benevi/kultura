@@ -173,7 +173,7 @@ export function LibraryAction({
     await deleteDiaryLog(id)
     setDiary((prev) => (prev ? { ...prev, logs: prev.logs.filter((l) => l.id !== id) } : prev))
     diaryCache.delete(mediaId)
-    show({ message: td('deleted'), type: 'success' })
+    show({ message: td('deleted', { title: mediaCache.title }), type: 'success' })
   }
 
   async function handleRemove() {
@@ -214,6 +214,7 @@ export function LibraryAction({
       error={saveError}
       diary={diary}
       onDeleteLog={handleDeleteLog}
+      title={mediaCache.title}
     />
   ) : null
 

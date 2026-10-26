@@ -107,6 +107,15 @@ describe('medias estrellas y texto', () => {
     expect(formatRating(8, 'ten', 'en')).toBe('8/10')
     expect(formatRating(null, 'ten', 'es')).toBe('')
   })
+
+  it('en estrellas, el texto redondea a ½ igual que el control (7,5 → "4 ★", no "3,75 ★")', () => {
+    for (const r of [0.5, 1, 1.5, 3.5, 6.5, 7, 7.5, 9.5, 10]) {
+      expect(formatRating(r, 'stars', 'es')).toBe(`${String(rating10ToHalfStars(r)).replace('.', ',')} ★`)
+    }
+    expect(formatRating(7.5, 'stars', 'es')).toBe('4 ★')
+    expect(formatRating(6.5, 'stars', 'en')).toBe('3.5 ★')
+    expect(formatRating(7.5, 'ten', 'es')).toBe('7,5/10')
+  })
 })
 
 describe('apunte del diario', () => {

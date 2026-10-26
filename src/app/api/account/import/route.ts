@@ -308,6 +308,9 @@ const logKey = (l: { media_id: string; watched_on: string; rewatch: boolean; rev
 
 const DIARY_IMPORT_MAX = 5000
 const DIARY_CHUNK = 500
+const EXISTING_PAGE = 1000
+/** Techo de seguridad: 50.000 apuntes leídos para deduplicar. */
+const EXISTING_MAX_PAGES = 50
 
 /**
  * Reimporta el diario (F-24) del fichero: solo apuntes de títulos que estén
@@ -369,17 +372,25 @@ async function importDiary(
     for (const r of (inLibraryRaw ?? []) as Array<{ media_id: string }>) inLibrary.add(r.media_id)
   }
 
-  const { data: existingRaw, error: existingError } = await supabase
-    .from('user_media_logs')
-    .select('media_id, watched_on, rewatch, review')
-    .eq('user_id', userId)
-  if (existingError) {
-    if (isNotMigrated(existingError)) return 0
-    throw new Error(`user_media_logs: ${existingError.message}`)
+  // Apuntes que ya tiene, TODOS: PostgREST corta en 1.000 filas por petición
+  // y sin paginar, a partir del apunte 1.001 se duplicaría al reimportar.
+  const seen = new Set<string>()
+  for (let page = 0; page < EXISTING_MAX_PAGES; page++) {
+    const from = page * EXISTING_PAGE
+    const { data: existingRaw, error: existingError } = await supabase
+      .from('user_media_logs')
+      .select('id, media_id, watched_on, rewatch, review')
+      .eq('user_id', userId)
+      .order('id')
+      .range(from, from + EXISTING_PAGE - 1)
+    if (existingError) {
+      if (isNotMigrated(existingError)) return 0
+      throw new Error(`user_media_logs: ${existingError.message}`)
+    }
+    const batch = (existingRaw ?? []) as Array<{ media_id: string; watched_on: string; rewatch: boolean; review: string | null }>
+    for (const l of batch) seen.add(logKey(l))
+    if (batch.length < EXISTING_PAGE) break
   }
-  const seen = new Set(
-    ((existingRaw ?? []) as Array<{ media_id: string; watched_on: string; rewatch: boolean; review: string | null }>).map(logKey)
-  )
 
   const toInsert = rows.filter((r) => {
     if (!inLibrary.has(r.media_id)) return false

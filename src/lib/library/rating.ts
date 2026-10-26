@@ -92,10 +92,12 @@ export function halfStarsToRating10(stars: number): number | null {
 
 /**
  * Texto corto de una nota según la preferencia: "4,5 ★" o "9/10" ("7,5/10").
- * Vacío si no hay nota.
+ * En estrellas redondea a la media estrella más cercana, IGUAL que el control
+ * (`rating10ToHalfStars`): un 7,5 se lee "4 ★" y se ven 4 estrellas, nunca
+ * "3,75 ★". Vacío si no hay nota.
  */
 export function formatRating(rating10: number | null | undefined, scale: RatingScale, locale: string): string {
   if (!isValidRating10(rating10)) return ''
-  const fmt = new Intl.NumberFormat(locale, { maximumFractionDigits: 2 })
-  return scale === 'ten' ? `${fmt.format(rating10)}/10` : `${fmt.format(rating10 / 2)} ★`
+  const fmt = new Intl.NumberFormat(locale, { maximumFractionDigits: 1 })
+  return scale === 'ten' ? `${fmt.format(rating10)}/10` : `${fmt.format(rating10ToHalfStars(rating10))} ★`
 }

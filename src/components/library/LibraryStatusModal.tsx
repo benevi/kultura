@@ -60,6 +60,8 @@ interface LibraryStatusModalProps {
   diary?: DiaryConfig | null
   /** Borra un apunte anterior; lanza si falla. */
   onDeleteLog?: (id: string) => Promise<void>
+  /** Título de la obra: nombra los botones de borrar apunte. */
+  title?: string
 }
 
 const TEXTAREA =
@@ -77,6 +79,7 @@ export function LibraryStatusModal({
   error = null,
   diary = null,
   onDeleteLog,
+  title = '',
 }: LibraryStatusModalProps) {
   const t = useTranslations('library')
   const td = useTranslations('diary')
@@ -348,7 +351,7 @@ export function LibraryStatusModal({
                         onClick={() => handleDelete(log.id)}
                         loading={deleting === log.id}
                         disabled={deleting !== null}
-                        aria-label={td('deleteLog', { date })}
+                        aria-label={td('deleteLog', { title, date })}
                       >
                         {td('delete')}
                       </KButton>

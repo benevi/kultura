@@ -13,6 +13,7 @@ const upsertErrors: Array<{ code?: string; message: string } | null> = []
 const logInserts: unknown[] = []
 let libraryIds: string[] = []
 let existingLogs: Array<Record<string, unknown>> = []
+const existingRanges: Array<[number, number]> = []
 
 vi.mock('@/lib/supabase/server', () => ({
   createClient: async () => ({
@@ -31,7 +32,16 @@ vi.mock('@/lib/supabase/server', () => ({
       }
       if (table === 'user_media_logs') {
         return {
-          select: () => ({ eq: async () => ({ data: existingLogs, error: null }) }),
+          select: () => ({
+            eq: () => ({
+              order: () => ({
+                range: async (from: number, to: number) => {
+                  existingRanges.push([from, to])
+                  return { data: existingLogs.slice(from, to + 1), error: null }
+                },
+              }),
+            }),
+          }),
           insert: async (rows: unknown[]) => {
             logInserts.push(...rows)
             return { error: null }
@@ -88,6 +98,7 @@ beforeEach(() => {
   logInserts.length = 0
   libraryIds = ['movie_1', 'movie_2']
   existingLogs = []
+  existingRanges.length = 0
   mockGetUser.mockResolvedValue({ data: { user: { id: ME } }, error: null })
 })
 afterEach(() => vi.unstubAllEnvs())
@@ -119,6 +130,22 @@ describe('import con RATING_SCALE_10=1', () => {
       { media_id: 'movie_1', watched_on: '2026-10-20', rewatch: true, review: null },
     ]
     const { json } = await runImport(FILE)
+    expect(json.diaryImported).toBe(0)
+    expect(logInserts).toHaveLength(0)
+  })
+
+  it('la comprobación de duplicados lee TODOS los apuntes (pagina más allá de 1.000)', async () => {
+    const filler = Array.from({ length: 1500 }, (_, i) => ({
+      media_id: 'movie_2', watched_on: '2020-01-01', rewatch: true, review: `relleno ${i}`,
+    }))
+    // Los dos del fichero están en la página 2 (posiciones 1.500 y 1.501).
+    existingLogs = [
+      ...filler,
+      { media_id: 'movie_1', watched_on: '2026-10-01', rewatch: false, review: 'Obra maestra' },
+      { media_id: 'movie_1', watched_on: '2026-10-20', rewatch: true, review: null },
+    ]
+    const { json } = await runImport(FILE)
+    expect(existingRanges).toEqual([[0, 999], [1000, 1999]])
     expect(json.diaryImported).toBe(0)
     expect(logInserts).toHaveLength(0)
   })

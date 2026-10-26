@@ -68,6 +68,32 @@ beforeEach(() => {
   search = new URLSearchParams()
 })
 
+describe('textos REALES del diario (messages/*.json, sin simular)', () => {
+  async function translator(locale: 'es' | 'en') {
+    const { createTranslator } = await vi.importActual<typeof import('next-intl')>('next-intl')
+    const messages = (await import(`../../../messages/${locale}.json`)).default
+    return createTranslator({ locale, messages, namespace: 'diary' })
+  }
+
+  it('la nota sobre 10 sale con el separador decimal del idioma', async () => {
+    expect((await translator('es'))('ratingOfTen', { value: 7.5 })).toBe('7,5 de 10')
+    expect((await translator('en'))('ratingOfTen', { value: 7.5 })).toBe('7.5 out of 10')
+  })
+
+  it('el contador de la reseña agrupa miles según el idioma', async () => {
+    expect((await translator('es'))('chars', { count: 12, max: 5000 })).toBe('12 / 5000')
+    expect((await translator('en'))('chars', { count: 12, max: 5000 })).toBe('12 / 5,000')
+  })
+
+  it('las opciones de escala tienen un nombre claro y borrar un apunte nombra el título', async () => {
+    const es = await translator('es')
+    expect(es('scaleStars')).toBe('Medias estrellas')
+    expect(es('scaleTen')).toBe('Nota sobre 10')
+    expect(es('deleteLog', { title: 'Fight Club', date: '20 oct 2026' })).toBe('Borrar el apunte de «Fight Club» del 20 oct 2026')
+    expect(es('deleted', { title: 'Fight Club' })).toBe('Apunte de «Fight Club» borrado')
+  })
+})
+
 describe('StarRating en medias estrellas', () => {
   it('10 radios "0,5 … 5 estrellas", una sola parada de Tab y nombre del grupo', () => {
     render(<StarRating value={3.5} onChange={vi.fn()} step={0.5} label="Puntuación" />)
@@ -191,11 +217,13 @@ describe('LibraryStatusModal con el diario', () => {
   it('lista los apuntes anteriores (spoiler oculto) y los borra', async () => {
     const onDeleteLog = vi.fn().mockResolvedValue(undefined)
     render(
-      <LibraryStatusModal {...modalProps} current={ENTRY} onSave={vi.fn()} diary={ON('ten', [LOG])} onDeleteLog={onDeleteLog} />
+      <LibraryStatusModal {...modalProps} current={ENTRY} onSave={vi.fn()} diary={ON('ten', [LOG])} onDeleteLog={onDeleteLog} title="Fight Club" />
     )
     expect(screen.getByText('spoilerHidden')).toBeInTheDocument()
     expect(screen.queryByText('El final cambia todo')).toBeNull()
-    fireEvent.click(screen.getByRole('button', { name: /^deleteLog/ }))
+    const del = screen.getByRole('button', { name: /^deleteLog/ })
+    expect(del.getAttribute('aria-label')).toContain('"title":"Fight Club"')
+    fireEvent.click(del)
     await waitFor(() => expect(onDeleteLog).toHaveBeenCalledWith(LOG.id))
   })
 
@@ -369,6 +397,8 @@ describe('DiaryList', () => {
     fireEvent.click(screen.getAllByRole('button', { name: /^deleteLog/ })[0])
     await waitFor(() => expect(mockDeleteLog).toHaveBeenCalledWith(LOG.id))
     await waitFor(() => expect(screen.queryByText('El final cambia todo')).toBeNull())
+    // El aviso nombra la obra.
+    expect(mockShow).toHaveBeenCalledWith({ message: 'deleted:{"title":"Fight Club"}', type: 'success' })
   })
 
   it('vacío → texto de diario vacío', () => {

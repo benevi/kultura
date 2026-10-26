@@ -49,12 +49,12 @@ export function DiaryList({ logs: initialLogs, scale }: DiaryListProps) {
   const [revealed, setRevealed] = useState<Set<string>>(new Set())
   const [deleting, setDeleting] = useState<string | null>(null)
 
-  async function remove(id: string) {
-    setDeleting(id)
+  async function remove(log: DiaryLog) {
+    setDeleting(log.id)
     try {
-      await deleteDiaryLog(id)
-      setLogs((prev) => prev.filter((l) => l.id !== id))
-      show({ message: t('deleted'), type: 'success' })
+      await deleteDiaryLog(log.id)
+      setLogs((prev) => prev.filter((l) => l.id !== log.id))
+      show({ message: t('deleted', { title: log.title ?? log.mediaId }), type: 'success' })
     } catch {
       showError(t('deleteFailed'))
     } finally {
@@ -156,10 +156,10 @@ export function DiaryList({ logs: initialLogs, scale }: DiaryListProps) {
                       type="button"
                       variant="secondary"
                       size="sm"
-                      onClick={() => remove(log.id)}
+                      onClick={() => remove(log)}
                       loading={deleting === log.id}
                       disabled={deleting !== null}
-                      aria-label={t('deleteLog', { date })}
+                      aria-label={t('deleteLog', { title, date })}
                     >
                       {t('delete')}
                     </KButton>
