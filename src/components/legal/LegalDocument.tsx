@@ -19,8 +19,7 @@
 
 import type { Metadata } from 'next'
 import type { ReactNode } from 'react'
-import { getTranslations } from 'next-intl/server'
-import { Link } from '@/i18n/navigation'
+import { getLocale, getTranslations } from 'next-intl/server'
 import { Header } from '@/components/layout/Header'
 import { Footer } from '@/components/layout/Footer'
 import { siteUrl } from '@/lib/site-url'
@@ -63,14 +62,23 @@ const CHIP =
 
 type Chunks = (chunks: ReactNode) => ReactNode
 
-/** Etiquetas y valores comunes a todos los textos legales. */
-function richTags(): Record<string, string | Chunks> {
+/**
+ * Etiquetas y valores comunes a todos los textos legales.
+ *
+ * Enlaces internos con `<a>` y el idioma delante, nunca el `Link` de
+ * next-intl (F-22, D-02): los legales llevan la CSP fija de las páginas
+ * cacheables (`'unsafe-inline'`) y un `Link` navega sin recargar el
+ * documento, así que la página de destino (p. ej. /settings, con sesión)
+ * heredaría esa CSP en vez de la suya con nonce. Un `<a>` carga el documento
+ * nuevo con su propia CSP.
+ */
+function richTags(locale: string): Record<string, string | Chunks> {
   const internal = (href: string): Chunks =>
     function InternalLink(chunks) {
       return (
-        <Link href={href} className={TEXT_LINK}>
+        <a href={`/${locale}${href}`} className={TEXT_LINK}>
           {chunks}
-        </Link>
+        </a>
       )
     }
   return {
@@ -134,7 +142,8 @@ export async function LegalDocument({ doc }: { doc: LegalDoc }) {
   const { namespace } = DOCS[doc]
   const t = await getTranslations(namespace)
   const tl = await getTranslations('legal')
-  const tags = richTags()
+  const locale = await getLocale()
+  const tags = richTags(locale)
   const rich = (key: string) => t.rich(key, tags)
 
   const summary = Object.keys(t.raw('summary') as Record<string, string>)
@@ -142,7 +151,7 @@ export async function LegalDocument({ doc }: { doc: LegalDoc }) {
 
   return (
     <div className="min-h-screen flex flex-col">
-      <Header />
+      <Header locale={locale} />
       <main id="main" className="flex-1 w-full max-w-6xl mx-auto px-4 md:px-8 py-10 md:py-16">
         <div className="max-w-[68ch]">
           <nav aria-label={tl('nav.label')}>
@@ -151,8 +160,8 @@ export async function LegalDocument({ doc }: { doc: LegalDoc }) {
                 const current = d === doc
                 return (
                   <li key={d}>
-                    <Link
-                      href={DOCS[d].path}
+                    <a
+                      href={`/${locale}${DOCS[d].path}`}
                       aria-current={current ? 'page' : undefined}
                       className={`${CHIP} ${
                         current
@@ -161,7 +170,7 @@ export async function LegalDocument({ doc }: { doc: LegalDoc }) {
                       }`}
                     >
                       {tl(`nav.${d}`)}
-                    </Link>
+                    </a>
                   </li>
                 )
               })}
