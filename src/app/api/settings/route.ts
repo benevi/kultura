@@ -17,6 +17,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
+import type { TablesUpdate } from '@/types/supabase'
 import { z } from 'zod'
 import { isValidAvatarColor, isValidLocale } from '@/lib/constants/avatarColors'
 import { isValidAvatarIcon } from '@/components/icons/avatars'
@@ -147,7 +148,7 @@ export async function PATCH(req: NextRequest): Promise<NextResponse> {
     }
   }
 
-  const updates: Record<string, string | null> = {}
+  const updates: TablesUpdate<'users'> = {}
   if (username !== undefined) updates.username = username
   if (avatar_color !== undefined) updates.avatar_color = avatar_color
   if (preferred_locale !== undefined) updates.preferred_locale = preferred_locale
@@ -192,10 +193,13 @@ export async function PATCH(req: NextRequest): Promise<NextResponse> {
     // sin él, con el JWT del usuario, que sigue pasando por RLS y por
     // demo_no_update.
     const writer = updates.username !== undefined && admin ? admin : supabase
-    const write = (fields: Record<string, string | null>) =>
+    const write = (fields: TablesUpdate<'users'>) =>
       writer.from('users').update(fields).eq('id', user.id).select('*').single()
 
-    let { data, error: updateError } = await write(updates)
+    const first = await write(updates)
+    // Sin tipar a la fila: si solo había columnas sin migrar, la respuesta es `{}`.
+    let data: Record<string, unknown> | null = first.data
+    let updateError = first.error
 
     // Migración de F-12 sin aplicar: la columna nueva no existe. Se guarda el
     // resto y se avisa de lo que no se pudo (el selector ni se enseña).

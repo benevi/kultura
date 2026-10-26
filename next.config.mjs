@@ -89,6 +89,16 @@ const IS_DEV = process.env.NODE_ENV !== "production";
  */
 export const DOCUMENT_SOURCE = "/((?!_next/|sw\\.js|sw-config\\.json).*)";
 
+/**
+ * CSP propia del service worker (la CSP de la respuesta de `/sw.js` es la del
+ * worker, no la de las páginas). El worker no carga scripts de fuera
+ * (`importScripts`), solo hace `fetch` a su propio origen (estáticos,
+ * navegaciones, `/sw-config.json`, `/api/push/subscribe`) y el icono de los
+ * avisos es `/icons/icon-192.png`. Si alguien colase código en el worker,
+ * no podría mandar nada a otro dominio.
+ */
+export const SW_CSP = "default-src 'none'; script-src 'self'; connect-src 'self'; img-src 'self'";
+
 // ── Sentry ligero en el navegador (REN-2) ─────────────────────────────────────
 // La captura de errores se queda; fuera lo que pesa: el tracing del navegador
 // (browserTracingIntegration, que el SDK añade por defecto) y, por si algún día
@@ -129,6 +139,7 @@ const nextConfig = {
         source: "/icons/:file*",
         headers: [{ key: "Cache-Control", value: "public, max-age=604800, stale-while-revalidate=86400" }],
       },
+      { source: "/sw.js", headers: [{ key: "Content-Security-Policy", value: SW_CSP }] },
       // D-02: CSP fija en las rutas cacheables (el middleware no les pone la
       // del nonce). Sin la de informe en dev: ahí no hay receptor que escuche.
       ...STATIC_CSP_SOURCES.map((source) => ({

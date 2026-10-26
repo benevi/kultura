@@ -8,6 +8,8 @@
  *   (con el mismo `path-to-regexp` que usa Next para `headers()`).
  */
 // @vitest-environment node
+import { readFileSync } from "node:fs";
+import path from "node:path";
 import { describe, it, expect, beforeAll, vi } from "vitest";
 
 // Solo se lee `config.matcher` del middleware: sus dependencias de runtime fuera.
@@ -35,6 +37,7 @@ interface ConfigModule {
   STATIC_CSP_SOURCES: string[];
   DOCUMENT_SOURCE: string;
   staticCsp: (isDev: boolean) => string;
+  SW_CSP: string;
   reportOnlyCsp: (supabaseUrl: string | undefined) => string;
 }
 
@@ -113,7 +116,8 @@ describe("next.config.mjs — la misma lista de rutas", () => {
       // En vitest NODE_ENV no es production: la de desarrollo.
       expect(csp).toBe(buildStaticCsp({ isDev: true }));
     }
-    const others = rules.filter((r) => !mod.STATIC_CSP_SOURCES.includes(r.source));
+    // La única otra es la del service worker, que es SU política (ver abajo).
+    const others = rules.filter((r) => !mod.STATIC_CSP_SOURCES.includes(r.source) && r.source !== "/sw.js");
     for (const rule of others) {
       expect(rule.headers.some((h) => h.key === "Content-Security-Policy")).toBe(false);
     }
@@ -212,14 +216,39 @@ describe("política solo de informe con connect-src acotado (SEG-10)", () => {
 describe("F-23 — service worker (/sw.js y /sw-config.json)", () => {
   const SW = ["/sw.js", "/sw-config.json"];
 
-  it("ninguna CSP de next.config (fija ni de informe): en /sw.js sería la política del propio worker", () => {
-    for (const path of SW) {
-      const matching = rules.filter((r) => pathToRegexp(r.source).test(path));
-      const keys = matching.flatMap((r) => r.headers.map((h) => h.key));
-      expect(keys.some((k) => k.startsWith("Content-Security-Policy") || k === "Reporting-Endpoints")).toBe(false);
-      // Sí las cabeceras de seguridad generales.
-      expect(keys).toContain("X-Content-Type-Options");
-    }
+  it("/sw.js lleva SOLO su propia CSP (la del worker): nada de la fija ni de la de informe de las páginas", () => {
+    const matching = rules.filter((r) => pathToRegexp(r.source).test("/sw.js"));
+    const csp = matching.flatMap((r) => r.headers).filter((h) => h.key.startsWith("Content-Security-Policy"));
+    expect(csp).toEqual([{ key: "Content-Security-Policy", value: mod.SW_CSP }]);
+    expect(matching.flatMap((r) => r.headers.map((h) => h.key))).not.toContain("Reporting-Endpoints");
+    // Sí las cabeceras de seguridad generales.
+    expect(matching.flatMap((r) => r.headers.map((h) => h.key))).toContain("X-Content-Type-Options");
+  });
+
+  it("la CSP del worker: nada por defecto, scripts y peticiones solo del propio origen", () => {
+    expect(directive(mod.SW_CSP, "default-src")).toBe("default-src 'none'");
+    expect(directive(mod.SW_CSP, "script-src")).toBe("script-src 'self'");
+    expect(directive(mod.SW_CSP, "connect-src")).toBe("connect-src 'self'");
+    // El icono de los avisos (/icons/icon-192.png) es del propio origen.
+    expect(directive(mod.SW_CSP, "img-src")).toBe("img-src 'self'");
+    expect(mod.SW_CSP).not.toMatch(/unsafe|https?:|\*/);
+  });
+
+  it("todo lo que pide el worker es del propio origen (si no, la CSP lo cortaría)", () => {
+    const source = readFileSync(path.resolve(__dirname, "../../../public/sw.js"), "utf8");
+    expect(source).not.toMatch(/importScripts\s*\(/);
+    // Ninguna URL absoluta a otro dominio en el código del worker.
+    const code = source.replace(/\/\*[\s\S]*?\*\//g, "").replace(/^\s*\/\/.*$/gm, "");
+    expect(code).not.toMatch(/["'`]https?:\/\//);
+    // Las peticiones a la red se hacen a rutas relativas o a la propia petición (ya filtrada por origen).
+    expect(source).toMatch(/if \(url\.origin !== origin\) return "bypass";/);
+  });
+
+  it("/sw-config.json no lleva CSP (es un JSON, no un documento ni un worker)", () => {
+    const matching = rules.filter((r) => pathToRegexp(r.source).test("/sw-config.json"));
+    const keys = matching.flatMap((r) => r.headers.map((h) => h.key));
+    expect(keys.some((k) => k.startsWith("Content-Security-Policy") || k === "Reporting-Endpoints")).toBe(false);
+    expect(keys).toContain("X-Content-Type-Options");
   });
 
   it("el middleware no los ve (sin nonce, sin sesión): su matcher deja fuera las rutas con punto", async () => {

@@ -1,6 +1,7 @@
 import { createClient as createSupabaseClient } from '@supabase/supabase-js'
 import { env } from '@/lib/env.server'
 import { publicEnv } from '@/lib/env.public'
+import type { Database } from '@/types/supabase'
 
 /**
  * Cliente Supabase con service-role key. BYPASSA RLS — solo para uso server-side
@@ -15,7 +16,7 @@ import { publicEnv } from '@/lib/env.public'
 export function createAdminClient() {
   // env/publicEnv ya validados (Zod): la service-role key existe o el server
   // no habría arrancado (instrumentation.ts). Acceso a `env` es lazy + memoizado.
-  return createSupabaseClient(
+  return createSupabaseClient<Database>(
     publicEnv.NEXT_PUBLIC_SUPABASE_URL,
     env.SUPABASE_SERVICE_ROLE_KEY,
     {

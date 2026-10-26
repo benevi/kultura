@@ -13,7 +13,8 @@ export function isLibraryStatus(value: string): value is LibraryStatus {
 }
 
 /** Progreso de episodios para series y anime */
-export interface EpisodeProgress {
+// `type` y no `interface`: así se asigna a la columna jsonb (`Json`) del cliente tipado.
+export type EpisodeProgress = {
   season?: number
   episode: number
 }

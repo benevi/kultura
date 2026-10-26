@@ -75,4 +75,12 @@ describe(".github/workflows/backup.yml", () => {
   it("permisos mínimos", () => {
     expect(wf).toMatch(/permissions:\s*\n\s*contents:\s*read/);
   });
+
+  it("CLI de Supabase en versión fija, la misma que scripts/db-diff.sh (latest cambiaría el volcado sin avisar)", () => {
+    const pinned = /SUPABASE_CLI_VERSION="([\d.]+)"/.exec(read("scripts/db-diff.sh"))?.[1];
+    expect(pinned).toMatch(/^\d+\.\d+\.\d+$/);
+    const setup = /uses: supabase\/setup-cli@[^\n]+\n\s+with:\n(?:\s+#[^\n]*\n)*\s+version: (\S+)/.exec(wf)?.[1];
+    expect(setup).toBe(pinned);
+    expect(wf).not.toMatch(/version:\s*latest/);
+  });
 });
