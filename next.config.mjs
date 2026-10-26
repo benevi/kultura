@@ -82,6 +82,9 @@ export function reportOnlyCsp(/** @type {string | undefined} */ supabaseUrl) {
 
 const IS_DEV = process.env.NODE_ENV !== "production";
 
+/** Todo menos los recursos de `/_next/` (JS, CSS, fuentes, imágenes optimizadas). */
+export const DOCUMENT_SOURCE = "/((?!_next/).*)";
+
 // ── Sentry ligero en el navegador (REN-2) ─────────────────────────────────────
 // La captura de errores se queda; fuera lo que pesa: el tracing del navegador
 // (browserTracingIntegration, que el SDK añade por defecto) y, por si algún día
@@ -128,16 +131,22 @@ const nextConfig = {
         source,
         headers: [{ key: "Content-Security-Policy", value: staticCsp(IS_DEV) }],
       })),
+      // SEG-10: a dónde manda Chromium los informes de `report-to csp`, y la
+      // política solo de informe con `connect-src` acotado (no bloquea nada;
+      // dice qué rompería cerrarlo). Solo en documentos: en los JS, CSS e
+      // imágenes de `/_next/` no hacen nada y sumaban ~1 KB por petición.
       {
-        source: "/(.*)",
+        source: DOCUMENT_SOURCE,
         headers: [
-          // SEG-10: a dónde manda Chromium los informes de `report-to csp`, y
-          // la política solo de informe con `connect-src` acotado (no bloquea
-          // nada; dice qué rompería cerrarlo).
           { key: "Reporting-Endpoints", value: `${CSP_REPORT_GROUP}="${CSP_REPORT_PATH}"` },
           ...(IS_DEV
             ? []
             : [{ key: "Content-Security-Policy-Report-Only", value: reportOnlyCsp(process.env.NEXT_PUBLIC_SUPABASE_URL) }]),
+        ],
+      },
+      {
+        source: "/(.*)",
+        headers: [
           {
             key: "X-Content-Type-Options",
             value: "nosniff",

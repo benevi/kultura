@@ -29,6 +29,7 @@ type Rule = { source: string; headers: Header[] };
 interface ConfigModule {
   default: { headers: () => Promise<Rule[]> };
   STATIC_CSP_SOURCES: string[];
+  DOCUMENT_SOURCE: string;
   staticCsp: (isDev: boolean) => string;
   reportOnlyCsp: (supabaseUrl: string | undefined) => string;
 }
@@ -185,9 +186,21 @@ describe("política solo de informe con connect-src acotado (SEG-10)", () => {
     expect(buildReportOnlyCsp(url)).toContain("report-uri /api/csp-report");
   });
 
-  it("Reporting-Endpoints en todas las rutas, con el grupo de report-to", () => {
-    const all = rules.find((r) => r.source === "/(.*)")?.headers ?? [];
-    expect(all.find((h) => h.key === "Reporting-Endpoints")?.value).toBe(REPORTING_ENDPOINTS);
+  it("Reporting-Endpoints en los documentos, con el grupo de report-to", () => {
+    const docs = rules.find((r) => r.source === mod.DOCUMENT_SOURCE)?.headers ?? [];
+    expect(docs.find((h) => h.key === "Reporting-Endpoints")?.value).toBe(REPORTING_ENDPOINTS);
     expect(REPORTING_ENDPOINTS).toBe('csp="/api/csp-report"');
+  });
+
+  it("ni la de informe ni Reporting-Endpoints van en los recursos de /_next/ (~1 KB por petición)", () => {
+    const re = pathToRegexp(mod.DOCUMENT_SOURCE);
+    for (const path of ["/es", "/es/best/movie/2026", "/api/discover", "/favicon.ico", "/"]) {
+      expect(re.test(path)).toBe(true);
+    }
+    for (const path of ["/_next/static/chunks/app.js", "/_next/image", "/_next/static/media/a.woff2"]) {
+      expect(re.test(path)).toBe(false);
+    }
+    const all = rules.find((r) => r.source === "/(.*)")?.headers ?? [];
+    expect(all.some((h) => h.key === "Reporting-Endpoints" || h.key.startsWith("Content-Security-Policy"))).toBe(false);
   });
 });
