@@ -25,6 +25,8 @@ export const ANALYTICS_EVENTS = [
   'list_made_public',
   'invite_accepted',
   'share',
+  // F-23 (MOV-3): la app instalada desde el navegador (`appinstalled`).
+  'app_installed',
 ] as const
 export type AnalyticsEvent = (typeof ANALYTICS_EVENTS)[number]
 

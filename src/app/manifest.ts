@@ -44,5 +44,19 @@ export default function manifest(): MetadataRoute.Manifest {
         icons: [{ src: "/icons/icon-192.png", sizes: "192x192", type: "image/png" }],
       },
     ],
+    share_target: SHARE_TARGET,
   };
 }
+
+/**
+ * MOV-9: con la app instalada, aparece en la hoja de Compartir del sistema.
+ * Lo compartido (p. ej. un enlace de TMDB) abre la búsqueda: lo recibe
+ * `src/app/[locale]/share/route.ts`. Forma de la especificación (Web Share
+ * Target, `params` como objeto); el tipo de Next la describe distinta.
+ */
+export const SHARE_TARGET = {
+  action: `/${routing.defaultLocale}/share`,
+  method: "GET",
+  enctype: "application/x-www-form-urlencoded",
+  params: { title: "title", text: "text", url: "url" },
+} as const;

@@ -1,0 +1,495 @@
+/**
+ * MOV-2 (VERIF-B, D-02) — service worker `public/sw.js`.
+ *
+ * Se ejecuta el archivo REAL en un contexto `vm` con un `self` falso, una
+ * Cache Storage en memoria y un `fetch` simulado: así se prueban tanto las
+ * funciones de enrutado como los eventos `install`, `activate` y `fetch`.
+ */
+// @vitest-environment node
+import { describe, it, expect, beforeEach } from "vitest";
+import fs from "node:fs";
+import path from "node:path";
+import vm from "node:vm";
+
+const SOURCE = fs.readFileSync(path.resolve(__dirname, "../../../public/sw.js"), "utf8");
+const ORIGIN = "https://kulturaapp.vercel.app";
+
+class MemoryCache {
+  entries = new Map<string, Response>();
+  private key(req: RequestInfo | URL) {
+    const raw = typeof req === "string" ? req : req instanceof URL ? req.href : req.url;
+    return new URL(raw, ORIGIN).href;
+  }
+  async match(req: RequestInfo | URL) {
+    const hit = this.entries.get(this.key(req));
+    if (!hit) return undefined;
+    // Como en el navegador: lo guardado conserva su tipo ("basic").
+    const copy = hit.clone();
+    Object.defineProperty(copy, "type", { value: hit.type });
+    return copy;
+  }
+  async put(req: RequestInfo | URL, res: Response) {
+    this.entries.delete(this.key(req));
+    this.entries.set(this.key(req), res);
+  }
+  async delete(req: RequestInfo | URL) {
+    return this.entries.delete(this.key(req));
+  }
+  async keys() {
+    return Array.from(this.entries.keys()).map((u) => new Request(u));
+  }
+}
+
+class MemoryCacheStorage {
+  stores = new Map<string, MemoryCache>();
+  async open(name: string) {
+    if (!this.stores.has(name)) this.stores.set(name, new MemoryCache());
+    return this.stores.get(name)!;
+  }
+  async keys() {
+    return Array.from(this.stores.keys());
+  }
+  async delete(name: string) {
+    return this.stores.delete(name);
+  }
+  async match(req: RequestInfo | URL, opts: { cacheName?: string } = {}) {
+    const names = opts.cacheName ? [opts.cacheName] : Array.from(this.stores.keys());
+    for (const name of names) {
+      const hit = await this.stores.get(name)?.match(req);
+      if (hit) return hit;
+    }
+    return undefined;
+  }
+}
+
+/** Respuesta "propia" (type basic) como las que ve un worker real. */
+function basic(body: string, init: ResponseInit & { redirected?: boolean } = {}) {
+  const res = new Response(body, init);
+  Object.defineProperty(res, "type", { value: "basic" });
+  if (init.redirected) Object.defineProperty(res, "redirected", { value: true });
+  return res;
+}
+
+type Handler = (event: Record<string, unknown>) => void;
+type FetchMock = (input: RequestInfo | URL, init?: RequestInit) => Promise<Response>;
+
+const OFFLINE_HTML = (locale: string) =>
+  `<!doctype html><html lang="${locale}"><head>` +
+  `<link rel="stylesheet" href="/_next/static/css/app.css">` +
+  `<link rel="preload" href="/_next/static/media/font.woff2" as="font">` +
+  `<script src="/_next/static/chunks/main-abc.js" async></script></head>` +
+  `<body><h1>offline ${locale}</h1>` +
+  `<script>self.__next_f.push([1,"0:[\\"/_next/static/chunks/app/offline-123.js\\"]"])</script>` +
+  // Así nombra Next los chunks en la carga RSC: sin `/_next/` y con la ruta
+  // del segmento escapada (`[locale]`, grupos `(app)`).
+  `<script>self.__next_f.push([1,"2:I[1,[\\"static/chunks/app/%5Blocale%5D/offline/page-4d6a.js\\",\\"static/chunks/app/%5Blocale%5D/(app)/template-f16a.js\\"]]"])</script></body></html>`;
+
+function loadWorker(fetchImpl: FetchMock) {
+  const handlers: Record<string, Handler> = {};
+  const caches = new MemoryCacheStorage();
+  const state = { skipWaiting: 0, claimed: 0, preload: 0, unregistered: 0, fetches: [] as string[] };
+  const self = {
+    location: new URL(`${ORIGIN}/sw.js`),
+    addEventListener: (type: string, fn: Handler) => (handlers[type] = fn),
+    skipWaiting: async () => void state.skipWaiting++,
+    clients: { claim: async () => void state.claimed++ },
+    registration: {
+      navigationPreload: { enable: async () => void state.preload++ },
+      unregister: async () => {
+        state.unregistered++;
+        return true;
+      },
+    },
+  };
+  const fetch: FetchMock = async (input, init) => {
+    const raw = typeof input === "string" ? input : input instanceof URL ? input.href : input.url;
+    state.fetches.push(new URL(raw, ORIGIN).pathname);
+    return fetchImpl(input, init);
+  };
+  const context = vm.createContext({ self, caches, fetch, Response, Request, URL, Promise, console });
+  // Las `const` de primer nivel no son propiedades del global: se exponen.
+  vm.runInContext(
+    `${SOURCE}\n;globalThis.STATIC_CACHE = STATIC_CACHE; globalThis.OFFLINE_CACHE = OFFLINE_CACHE; globalThis.MAX_STATIC_ENTRIES = MAX_STATIC_ENTRIES; globalThis.CONFIG_CHECK_MS = CONFIG_CHECK_MS;`,
+    context,
+    { filename: "sw.js" },
+  );
+  const fn = <T extends (...args: never[]) => unknown>(name: string) => context[name] as T;
+  return { handlers, caches, state, context, fn };
+}
+
+/** Lanza un evento y espera a lo que el worker haya pasado a waitUntil/respondWith. */
+async function dispatch(
+  worker: ReturnType<typeof loadWorker>,
+  type: string,
+  extra: Record<string, unknown> = {},
+) {
+  const waits: Promise<unknown>[] = [];
+  let responded: Promise<Response> | undefined;
+  worker.handlers[type]({
+    ...extra,
+    waitUntil: (p: Promise<unknown>) => void waits.push(p),
+    respondWith: (p: Promise<Response>) => (responded = p),
+  });
+  const response = responded ? await responded : undefined;
+  // `waitUntil` también se llama desde dentro de `respondWith` (refresco).
+  for (let i = 0; i < waits.length; i++) await waits[i];
+  return response;
+}
+
+const req = (url: string, init: RequestInit & { mode?: string } = {}) => {
+  const { mode, ...rest } = init;
+  const r = new Request(new URL(url, ORIGIN), rest);
+  // `mode: "navigate"` no se puede crear con `new Request`: se simula.
+  if (mode) Object.defineProperty(r, "mode", { value: mode });
+  return r;
+};
+
+/** Red simulada; `date` = cabecera Date de las páginas offline. */
+const networkAt = (date: string, html = OFFLINE_HTML): FetchMock => async (input) => {
+  const raw = typeof input === "string" ? input : input instanceof URL ? input.href : input.url;
+  const { pathname } = new URL(raw, ORIGIN);
+  if (pathname.endsWith("/offline")) {
+    return basic(html(pathname.split("/")[1]), { status: 200, headers: { date } });
+  }
+  if (pathname === "/sw-config.json") {
+    return basic(JSON.stringify({ enabled: true }), { status: 200, headers: { "content-type": "application/json" } });
+  }
+  return basic(`net:${pathname}`, { status: 200 });
+};
+const network: FetchMock = networkAt(new Date().toUTCString());
+const offlineNetwork: FetchMock = async () => {
+  throw new TypeError("Failed to fetch");
+};
+
+describe("sw.js · enrutado", () => {
+  const w = loadWorker(network);
+  const route = w.fn<(r: Request, o: string) => string>("routeRequest");
+
+  it("/_next/static/** va a cache-first", () => {
+    expect(route(req("/_next/static/chunks/main-abc.js"), ORIGIN)).toBe("static");
+    expect(route(req("/_next/static/css/app.css"), ORIGIN)).toBe("static");
+    expect(route(req("/_next/static/media/font.woff2"), ORIGIN)).toBe("static");
+  });
+
+  it("las navegaciones van a la red con respaldo offline", () => {
+    expect(route(req("/es/library", { mode: "navigate" }), ORIGIN)).toBe("navigate");
+    expect(route(req("/en", { mode: "navigate" }), ORIGIN)).toBe("navigate");
+  });
+
+  it("nunca intercepta /api/*, ni siquiera una navegación", () => {
+    expect(route(req("/api/discover?type=movie"), ORIGIN)).toBe("bypass");
+    expect(route(req("/api/auth/callback?code=x", { mode: "navigate" }), ORIGIN)).toBe("bypass");
+    expect(route(req("/api"), ORIGIN)).toBe("bypass");
+  });
+
+  it("deja pasar lo que no es suyo: otros orígenes, POST, RSC, imágenes y HTML que no es navegación", () => {
+    expect(route(req("https://image.tmdb.org/t/p/w342/x.jpg"), ORIGIN)).toBe("bypass");
+    expect(route(req("https://cdn.example.com/_next/static/x.js"), ORIGIN)).toBe("bypass");
+    expect(route(req("/api/auth/demo", { method: "POST", mode: "navigate" }), ORIGIN)).toBe("bypass");
+    expect(route(req("/es/library?_rsc=abc", { headers: { RSC: "1" } }), ORIGIN)).toBe("bypass");
+    expect(route(req("/_next/image?url=x&w=64"), ORIGIN)).toBe("bypass");
+    expect(route(req("/icons/icon-192.png"), ORIGIN)).toBe("bypass");
+    expect(route(req("/es/library"), ORIGIN)).toBe("bypass");
+  });
+
+  it("deja pasar only-if-cached fuera de same-origin (fetch la rechazaría)", () => {
+    const r = req("/_next/static/chunks/a.js");
+    Object.defineProperty(r, "cache", { value: "only-if-cached" });
+    expect(route(r, ORIGIN)).toBe("bypass");
+  });
+
+  it("elige la página offline por idioma de la URL", () => {
+    const offlinePathFor = w.fn<(p: string) => string>("offlinePathFor");
+    expect(offlinePathFor("/en/library")).toBe("/en/offline");
+    expect(offlinePathFor("/en")).toBe("/en/offline");
+    expect(offlinePathFor("/es/u/benevi")).toBe("/es/offline");
+    expect(offlinePathFor("/")).toBe("/es/offline");
+    expect(offlinePathFor("/fr/x")).toBe("/es/offline");
+    expect(offlinePathFor("/english")).toBe("/es/offline");
+  });
+
+  it("solo guarda respuestas propias, 200 y sin redirección", () => {
+    const isCacheable = w.fn<(r: Response) => boolean>("isCacheable");
+    expect(isCacheable(basic("x", { status: 200 }))).toBe(true);
+    expect(isCacheable(basic("x", { status: 404 }))).toBe(false);
+    expect(isCacheable(basic("x", { status: 206 }))).toBe(false);
+    expect(isCacheable(basic("x", { status: 200, redirected: true }))).toBe(false);
+    expect(isCacheable(new Response("x"))).toBe(false); // type "default", no "basic"
+  });
+
+  it("limpia solo las cachés de KULTURA de versiones anteriores", () => {
+    const stale = w.fn<(n: string[]) => string[]>("staleCacheNames");
+    const current = [w.context.STATIC_CACHE as string, w.context.OFFLINE_CACHE as string];
+    expect(stale([...current, "kultura-static-v0", "kultura-offline-v0", "otra-app"])).toEqual([
+      "kultura-static-v0",
+      "kultura-offline-v0",
+    ]);
+  });
+
+  it("saca los estáticos de la página offline, también los de la carga RSC escapada", () => {
+    const extract = w.fn<(h: string) => string[]>("extractStaticAssets");
+    expect(extract(OFFLINE_HTML("es"))).toEqual([
+      "/_next/static/css/app.css",
+      "/_next/static/media/font.woff2",
+      "/_next/static/chunks/main-abc.js",
+      "/_next/static/chunks/app/offline-123.js",
+      "/_next/static/chunks/app/%5Blocale%5D/offline/page-4d6a.js",
+      "/_next/static/chunks/app/%5Blocale%5D/(app)/template-f16a.js",
+    ]);
+    expect(extract("")).toEqual([]);
+  });
+});
+
+describe("sw.js · ciclo de vida", () => {
+  let w: ReturnType<typeof loadWorker>;
+  beforeEach(() => {
+    w = loadWorker(network);
+  });
+
+  it("install precachea /es/offline y /en/offline con sus estáticos (juntos) y toma el control", async () => {
+    await dispatch(w, "install");
+    const offline = await w.caches.open(w.context.OFFLINE_CACHE as string);
+    const paths = Array.from(offline.entries.keys()).map((u) => new URL(u).pathname);
+    expect(paths.filter((p) => p.endsWith("/offline")).sort()).toEqual(["/en/offline", "/es/offline"]);
+    expect(paths.filter((p) => p.startsWith("/_next/static/"))).toHaveLength(6);
+    expect(w.state.skipWaiting).toBe(1);
+  });
+
+  it("install no falla si un estático no llega (la página se pinta sin él)", async () => {
+    w = loadWorker(async (input) => {
+      const raw = typeof input === "string" ? input : (input as Request).url;
+      if (raw.includes("font.woff2")) throw new TypeError("Failed to fetch");
+      return network(input);
+    });
+    await dispatch(w, "install");
+    const offline = await w.caches.open(w.context.OFFLINE_CACHE as string);
+    expect(offline.entries.size).toBe(2 + 5);
+    expect(w.state.skipWaiting).toBe(1);
+  });
+
+  it("install falla (y el navegador lo reintenta) si no llega la página offline", async () => {
+    w = loadWorker(async (input) => {
+      const raw = typeof input === "string" ? input : (input as Request).url;
+      if (raw.includes("/en/offline")) return basic("boom", { status: 500 });
+      return network(input);
+    });
+    await expect(dispatch(w, "install")).rejects.toThrow(/en\/offline/);
+    expect(w.state.skipWaiting).toBe(0);
+  });
+
+  it("activate borra cachés viejas y reclama los clientes", async () => {
+    await w.caches.open("kultura-static-v0");
+    await w.caches.open("otra-app");
+    await w.caches.open(w.context.STATIC_CACHE as string);
+    await dispatch(w, "activate");
+    expect((await w.caches.keys()).sort()).toEqual([w.context.STATIC_CACHE, "otra-app"].sort());
+    expect(w.state.claimed).toBe(1);
+  });
+});
+
+describe("sw.js · fetch", () => {
+  it("cache-first en estáticos: la 2.ª vez no sale a la red", async () => {
+    const w = loadWorker(network);
+    const first = await dispatch(w, "fetch", { request: req("/_next/static/chunks/a.js") });
+    const second = await dispatch(w, "fetch", { request: req("/_next/static/chunks/a.js") });
+    expect(await first!.text()).toBe("net:/_next/static/chunks/a.js");
+    expect(await second!.text()).toBe("net:/_next/static/chunks/a.js");
+    expect(w.state.fetches.filter((p) => p === "/_next/static/chunks/a.js")).toHaveLength(1);
+  });
+
+  it("no guarda un estático que falla (404) y lo vuelve a pedir", async () => {
+    const w = loadWorker(async () => basic("nope", { status: 404 }));
+    await dispatch(w, "fetch", { request: req("/_next/static/chunks/x.js") });
+    await dispatch(w, "fetch", { request: req("/_next/static/chunks/x.js") });
+    expect(w.state.fetches).toHaveLength(2);
+  });
+
+  it("recorta la caché de estáticos a MAX_STATIC_ENTRIES (fuera los más antiguos)", async () => {
+    const w = loadWorker(network);
+    const max = w.context.MAX_STATIC_ENTRIES as number;
+    for (let i = 0; i <= max + 2; i++) {
+      await dispatch(w, "fetch", { request: req(`/_next/static/chunks/c${i}.js`) });
+    }
+    await new Promise((r) => setTimeout(r, 0));
+    const statics = await w.caches.open(w.context.STATIC_CACHE as string);
+    expect(statics.entries.size).toBe(max);
+    expect(statics.entries.has(`${ORIGIN}/_next/static/chunks/c0.js`)).toBe(false);
+  });
+
+  it("los estáticos de la página offline se sirven de su caché y el recorte no los toca", async () => {
+    const w = loadWorker(network);
+    await dispatch(w, "install");
+    const max = w.context.MAX_STATIC_ENTRIES as number;
+    for (let i = 0; i <= max + 2; i++) {
+      await dispatch(w, "fetch", { request: req(`/_next/static/chunks/c${i}.js`) });
+    }
+    await new Promise((r) => setTimeout(r, 0));
+    w.context.fetch = offlineNetwork;
+    const res = await dispatch(w, "fetch", { request: req("/_next/static/chunks/main-abc.js") });
+    expect(await res!.text()).toBe("net:/_next/static/chunks/main-abc.js");
+  });
+
+  it("navegación con red: responde la red y NO guarda el HTML", async () => {
+    const w = loadWorker(network);
+    const res = await dispatch(w, "fetch", {
+      request: req("/es/library", { mode: "navigate" }),
+    });
+    expect(await res!.text()).toBe("net:/es/library");
+    for (const name of await w.caches.keys()) {
+      const cache = await w.caches.open(name);
+      expect(Array.from(cache.entries.keys()).some((u) => u.includes("/es/library"))).toBe(false);
+    }
+  });
+
+  it("no activa navigation preload (una navegación que deja pasar no puede salir dos veces)", async () => {
+    const w = loadWorker(network);
+    await dispatch(w, "activate");
+    expect(w.state.preload).toBe(0);
+    expect(SOURCE).not.toMatch(/navigationPreload\.enable|preloadResponse/);
+  });
+
+  it("tras una navegación con red, refresca la página offline si tiene más de un día", async () => {
+    const old = new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toUTCString();
+    const w = loadWorker(networkAt(old));
+    await dispatch(w, "install");
+    // Nuevo despliegue: otra página offline con otro chunk.
+    const v2 = (locale: string) => OFFLINE_HTML(locale).replace("main-abc.js", "main-v2.js");
+    w.context.fetch = networkAt(new Date().toUTCString(), v2);
+    await dispatch(w, "fetch", { request: req("/es/home", { mode: "navigate" }) });
+    const offline = await w.caches.open(w.context.OFFLINE_CACHE as string);
+    const paths = Array.from(offline.entries.keys()).map((u) => new URL(u).pathname);
+    expect(paths).toContain("/_next/static/chunks/main-v2.js");
+    expect(paths).not.toContain("/_next/static/chunks/main-abc.js"); // podado
+    expect(await (await offline.match("/es/offline"))!.text()).toContain("main-v2.js");
+  });
+
+  it("no refresca si la copia es de hoy; si el refresco falla a medias, se queda la de antes", async () => {
+    const w = loadWorker(network);
+    await dispatch(w, "install");
+    const pages = () => w.state.fetches.filter((p) => p !== "/sw-config.json").length;
+    const before = pages();
+    await dispatch(w, "fetch", { request: req("/es/home", { mode: "navigate" }) });
+    expect(pages()).toBe(before + 1); // solo la navegación, sin volver a bajar la offline
+
+    const old = new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toUTCString();
+    const w2 = loadWorker(networkAt(old));
+    await dispatch(w2, "install");
+    const v2 = (locale: string) => OFFLINE_HTML(locale).replace("main-abc.js", "main-v2.js");
+    const fresh = networkAt(new Date().toUTCString(), v2);
+    w2.context.fetch = async (input: RequestInfo | URL) => {
+      const raw = typeof input === "string" ? input : (input as Request).url;
+      if (raw.includes("main-v2.js")) throw new TypeError("Failed to fetch");
+      return fresh(input);
+    };
+    await dispatch(w2, "fetch", { request: req("/es/home", { mode: "navigate" }) });
+    const offline = await w2.caches.open(w2.context.OFFLINE_CACHE as string);
+    expect(await (await offline.match("/es/offline"))!.text()).toContain("main-abc.js");
+    expect(await offline.match("/_next/static/chunks/main-abc.js")).toBeDefined();
+  });
+
+  it("sin red: una navegación recibe la página offline de su idioma", async () => {
+    const w = loadWorker(network);
+    await dispatch(w, "install");
+    w.context.fetch = offlineNetwork;
+    const es = await dispatch(w, "fetch", {
+      request: req("/es/library", { mode: "navigate" }),
+    });
+    const en = await dispatch(w, "fetch", {
+      request: req("/en/discover", { mode: "navigate" }),
+    });
+    expect(await es!.text()).toContain("offline es");
+    expect(await en!.text()).toContain("offline en");
+  });
+
+  it("sin red y sin página guardada: respuesta mínima 503 en el idioma de la URL", async () => {
+    const w = loadWorker(offlineNetwork);
+    const res = await dispatch(w, "fetch", {
+      request: req("/en/library", { mode: "navigate" }),
+    });
+    expect(res!.status).toBe(503);
+    const html = await res!.text();
+    expect(html).toContain('lang="en"');
+    expect(html).toContain("offline");
+  });
+
+  it("no llama a respondWith en /api/* ni en otros orígenes", async () => {
+    const w = loadWorker(network);
+    expect(await dispatch(w, "fetch", { request: req("/api/search?q=dune") })).toBeUndefined();
+    expect(await dispatch(w, "fetch", { request: req("https://image.tmdb.org/x.jpg") })).toBeUndefined();
+    expect(w.state.fetches).toEqual([]);
+  });
+});
+
+describe("sw.js · baja por /sw-config.json (interruptor)", () => {
+  /** Red con la configuración que se quiera para /sw-config.json. */
+  const withConfig = (body: string | null, status = 200): FetchMock => async (input) => {
+    const raw = typeof input === "string" ? input : input instanceof URL ? input.href : input.url;
+    if (new URL(raw, ORIGIN).pathname === "/sw-config.json") {
+      if (body === null) throw new TypeError("Failed to fetch");
+      return basic(body, { status, headers: { "content-type": "application/json" } });
+    }
+    return network(input);
+  };
+
+  it("solo un `enabled: false` explícito lo retira", () => {
+    const w = loadWorker(network);
+    const isDisabled = w.fn<(c: unknown) => boolean>("isDisabledConfig");
+    expect(isDisabled({ enabled: false })).toBe(true);
+    expect(isDisabled({ enabled: true })).toBe(false);
+    expect(isDisabled({})).toBe(false);
+    expect(isDisabled({ enabled: "false" })).toBe(false);
+    expect(isDisabled(null)).toBe(false);
+  });
+
+  it("al activarse con el interruptor puesto: borra sus cachés (no las ajenas) y se da de baja", async () => {
+    const w = loadWorker(withConfig('{"enabled":false}'));
+    await dispatch(w, "install");
+    await w.caches.open("otra-app");
+    await dispatch(w, "activate");
+    expect(w.state.unregistered).toBe(1);
+    expect(await w.caches.keys()).toEqual(["otra-app"]);
+  });
+
+  it("activado, sin red o con una respuesta rara: sigue como estaba", async () => {
+    for (const config of ['{"enabled":true}', null, "<html>", '{"enabled":false}']) {
+      const w = loadWorker(config === '{"enabled":false}' ? withConfig(config, 500) : withConfig(config));
+      await dispatch(w, "install");
+      await dispatch(w, "activate");
+      expect(w.state.unregistered, String(config)).toBe(0);
+      expect(await w.caches.keys()).toContain(w.context.OFFLINE_CACHE);
+    }
+  });
+
+  it("tras una navegación con red en cualquier página, como mucho una consulta por hora", async () => {
+    const w = loadWorker(withConfig('{"enabled":true}'));
+    await dispatch(w, "install");
+    await dispatch(w, "activate");
+    const count = () => w.state.fetches.filter((p) => p === "/sw-config.json").length;
+    expect(count()).toBe(1);
+    await dispatch(w, "fetch", { request: req("/es/best/movie/2026", { mode: "navigate" }) });
+    expect(count()).toBe(1); // dentro de la hora: no repite
+
+    // Una hora después lo vuelve a mirar y, si se apagó, se retira.
+    const realNow = Date.now;
+    try {
+      const later = realNow() + (w.context.CONFIG_CHECK_MS as number) + 1;
+      w.context.Date = { ...Date, now: () => later, parse: Date.parse } as DateConstructor;
+      const wrapped = w.context.fetch as FetchMock;
+      w.context.fetch = async (input: RequestInfo | URL, init?: RequestInit) => {
+        const raw = typeof input === "string" ? input : input instanceof URL ? input.href : input.url;
+        if (raw.includes("/sw-config.json")) {
+          w.state.fetches.push("/sw-config.json");
+          return basic('{"enabled":false}', { status: 200 });
+        }
+        return wrapped(input, init);
+      };
+      const res = await dispatch(w, "fetch", { request: req("/es", { mode: "navigate" }) });
+      expect(await res!.text()).toBe("net:/es"); // la navegación no espera a la baja
+      expect(count()).toBe(2);
+      expect(w.state.unregistered).toBe(1);
+      expect((await w.caches.keys()).filter((n) => n.startsWith("kultura-"))).toEqual([]);
+    } finally {
+      w.context.Date = Date;
+    }
+  });
+});
