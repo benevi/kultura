@@ -286,7 +286,6 @@
     "steamLanguages": "Languages",
     "steamScreenshots": "Screenshots",
     "whyRecommended": "Why we recommend it",
-    "whyRecommendedText": "It matches genres you already enjoy — {genres} — based on what is in your library.",
     "breadcrumbLabel": "You are here",
     "breadcrumbHome": "Home",
     "ctaAdd": "Add to my library",
@@ -427,7 +426,9 @@
     "removeConfirmBody": "The status, rating and progress of “{title}” will be deleted.",
     "removeConfirm": "Remove",
     "removed": "Removed from your library",
-    "saved": "Saved to your library"
+    "saved": "Saved to your library",
+    "undo": "Undo",
+    "restored": "Back in your library"
   },
   "diary": {
     "title": "Diary",
@@ -891,7 +892,8 @@
     "joinGroup": "Join",
     "leaveGroup": "Leave",
     "groupError": "We couldn't create the group. Try again in a moment.",
-    "joinGroupError": "We couldn't add you to the group. Try again in a moment."
+    "joinGroupError": "We couldn't add you to the group. Try again in a moment.",
+    "copyProfileLink": "Copy my profile link"
   },
   "invite": {
     "bannerTitle": "{username} invites you to KULTURA",
@@ -955,7 +957,8 @@
     "inviteError": "We couldn't send the invitation. Try again.",
     "groupIcon": "Group icon",
     "groupIconNone": "No icon (initial)",
-    "joinNotAllowed": "You can't join this group. If you think this is a mistake, talk to its creator."
+    "joinNotAllowed": "You can't join this group. If you think this is a mistake, talk to its creator.",
+    "ownerBadge": "Group owner"
   },
   "chat": {
     "title": "Messages",
@@ -2121,7 +2124,9 @@
     "emptyOwnHint": "Make a list public from Lists and it will show up here, with a link to share it.",
     "emptyOwnAction": "Go to my lists",
     "reportProfile": "Report this profile",
-    "reportList": "Report this list"
+    "reportList": "Report this list",
+    "ogHeading": "The collection of",
+    "listsCount": "{count, plural, one {# list} other {# lists}}"
   },
   "push": {
     "settings": {
@@ -2158,6 +2163,17 @@
       "listInviteNoName": "@{username} invited you to a list.",
       "groupInvite": "@{username} invited you to the group “{name}”.",
       "groupInviteNoName": "@{username} invited you to a group."
+    },
+    "offer": {
+      "title": "Want a heads-up?",
+      "chatBody": "Turn on notifications and we’ll tell you when they reply, even with KULTURA closed. Just who wrote, never the message.",
+      "friendsBody": "Turn on notifications and we’ll tell you when they accept your request or message you, even with KULTURA closed.",
+      "enable": "Turn on notifications",
+      "later": "Not now",
+      "close": "Close",
+      "done": "Done: we’ll notify you on this device. You can change it in Settings.",
+      "denied": "You’ve blocked KULTURA notifications. Allow them in your site settings if you change your mind.",
+      "error": "We couldn’t turn on notifications. Try again from Settings."
     }
   }
 }

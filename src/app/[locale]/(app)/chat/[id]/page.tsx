@@ -8,13 +8,15 @@ import { redirect, notFound } from 'next/navigation'
 import { ConversationClient } from './ConversationClient'
 import { isModerationV2 } from '@/lib/social/friends'
 import type { Metadata } from 'next'
+import { getTranslations } from 'next-intl/server'
 
 interface Props {
   params: Promise<{ locale: string; id: string }>
 }
 
 export async function generateMetadata(): Promise<Metadata> {
-  return { title: 'Chat' }
+  const t = await getTranslations('chat')
+  return { title: t('title') }
 }
 
 export default async function ConversationPage({ params }: Props) {

@@ -29,14 +29,5 @@
         "message": "Sombra fuera del set: usa shadow-hard, shadow-hard-sm, shadow-sticker o shadow-soft (DISENO.md)."
       }
     ]
-  },
-  "overrides": [
-    {
-      "files": [
-        "src/app/[[]locale]/(app)/settings/SettingsForm.tsx",
-        "src/app/[[]locale]/(app)/discover/**"
-      ],
-      "rules": { "no-restricted-syntax": "off" }
-    }
-  ]
+  }
 }

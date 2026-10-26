@@ -71,10 +71,10 @@ export default async function BestFormatHubPage({ params }: Props) {
         <header className="flex flex-col gap-4">
           <BestBreadcrumbs locale={locale} crumbs={crumbs} />
           <h1 className="font-display text-3xl md:text-4xl font-bold leading-tight text-text-primary">{title}</h1>
-          <p className="text-body text-text-secondary max-w-prose">
+          <p className="text-base text-text-secondary max-w-prose">
             {t(`formatHub.description.${format}`, { first: BEST_FIRST_YEAR })} {t("formatHub.intro")}
           </p>
-          <p className="text-meta text-text-tertiary max-w-prose">
+          <p className="text-sm text-text-tertiary max-w-prose">
             {t(`formatHub.criteria.${format}`)}
           </p>
           <BestFormatNav locale={locale} current={format} hrefFor={(f) => `/best/${f}`} />

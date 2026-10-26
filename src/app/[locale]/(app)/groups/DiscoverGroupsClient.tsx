@@ -6,6 +6,7 @@ import { FilterBar, type FilterGroup } from '@/components/ui/FilterBar'
 import { GroupCard, type GroupCardData } from '@/components/social/GroupCard'
 import { KButton } from '@/components/ui/KButton'
 import { F0 } from '@/lib/design/f0-tokens'
+import { IconSearch } from '@/components/icons'
 
 const PAGE_SIZE = 50
 
@@ -130,7 +131,7 @@ export function DiscoverGroupsClient() {
 
       {loaded && groups.length === 0 ? (
         <div className="rounded-bento border p-8 text-center" style={{ background: F0.surface, borderColor: F0.stroke }}>
-          <div className="text-3xl mb-3">🔍</div>
+          <IconSearch aria-hidden="true" className="mx-auto mb-3 h-8 w-8" style={{ color: F0.muted }} />
           <p className="text-sm" style={{ color: F0.textSecondary }}>{t('noGroupsFound')}</p>
         </div>
       ) : (

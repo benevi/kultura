@@ -6,8 +6,8 @@
  * - ≤ 4 radios distintos (sin contar la píldora) y fuera los nombres viejos
  *   (`rounded-card`, `-18`, `-24`, `-3xl`, `bento-lg`);
  * - 0 `text-[Npx]`, `rounded-[…]` y `shadow-[…]` en `src`;
- * - los alias en retirada solo en los archivos de otros frentes que aún los
- *   usan (Descubrir, Ajustes), para que nadie más vuelva a ellos;
+ * - los alias retirados (`rounded`, `-xl`, `-20`, `-card`) ya no existen ni
+ *   se usan en ningún archivo (Descubrir y Ajustes incluidos);
  * - la retícula `page-grid` existe y la usan las cabeceras.
  */
 import { describe, it, expect } from "vitest";
@@ -16,8 +16,8 @@ import { join, resolve, relative } from "node:path";
 import config from "../../../tailwind.config";
 
 const ROOT = resolve(__dirname, "../../..");
-/** Archivos de otros frentes en esta oleada (F-32 Descubrir, F-33 Ajustes). */
-const FOREIGN = [/^src\/app\/\[locale\]\/\(app\)\/discover\//, /^src\/app\/\[locale\]\/\(app\)\/settings\/SettingsForm\.tsx$/];
+/** Sin excepciones: Descubrir y Ajustes ya usan el set (antes iban aparte). */
+const FOREIGN: RegExp[] = [];
 
 function walk(dir: string): string[] {
   return readdirSync(dir, { withFileTypes: true }).flatMap((entry) => {
@@ -48,11 +48,15 @@ describe("DIS-7 · radios", () => {
     expect(Array.from(values).sort()).toEqual(["16px", "20px", "32px", "8px"]);
   });
 
+  it("la configuración ya no define los alias retirados", () => {
+    expect(Object.keys(radii).filter((k) => ["DEFAULT", "xl", "20", "card"].includes(k))).toEqual([]);
+  });
+
   it("0 usos de rounded-card / -18 / -24 / -3xl / bento-lg (salvo archivos ajenos)", () => {
     expect(offenders(new RegExp(`${B}rounded(-[a-z]{1,2})?-(card|18|24|3xl|bento-lg)(?![\\w-])`, "g"), { allowForeign: true })).toEqual([]);
   });
 
-  it("los alias en retirada (`rounded`, `-xl`, `-20`, `-card`) solo en archivos ajenos", () => {
+  it("0 usos de los alias retirados (`rounded`, `-xl`, `-20`, `-card`)", () => {
     expect(
       offenders(new RegExp(`${B}rounded(-[a-z]{1,2})?(-(xl|20|card))?(?=["'\`\\s}])`, "g"), { allowForeign: true }).filter(
         (o) => !/rounded(-[a-z]{1,2})?-(lg|2xl|bento|bento-xl|full|pill|button|none)$/.test(o)
@@ -77,6 +81,16 @@ describe("DIS-12 · escala tipográfica", () => {
     ]);
     expect(sizes.xs[0]).toBe("12px");
     expect(sizes["8xl"][0]).toBe("96px");
+  });
+});
+
+describe("ESLint vigila radios, tipos y sombras en todo src", () => {
+  it("ningún override apaga la regla (antes Descubrir y Ajustes iban aparte)", () => {
+    const eslint = JSON.parse(readFileSync(join(ROOT, ".eslintrc.json"), "utf8")) as {
+      overrides?: { files: string[]; rules?: Record<string, unknown> }[];
+    };
+    const off = (eslint.overrides ?? []).filter((o) => o.rules && "no-restricted-syntax" in o.rules);
+    expect(off.flatMap((o) => o.files)).toEqual([]);
   });
 });
 

@@ -44,9 +44,10 @@ describe('push · fronteras', () => {
     expect({ ...pkg.dependencies, ...pkg.devDependencies }['web-push']).toBeUndefined()
   })
 
-  it('solo push.settings viaja al navegador (push.notify es del servidor)', () => {
+  it('solo push.settings y push.offer viajan al navegador (push.notify es del servidor)', () => {
     const cm = read('src/i18n/client-messages.ts')
     expect(cm).toContain('"push.settings"')
+    expect(cm).toContain('"push.offer"')
     expect(cm).not.toMatch(/"push"|"push\.notify"/)
   })
 })

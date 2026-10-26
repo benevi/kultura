@@ -2,6 +2,7 @@
 
 import { useRef, useState } from 'react'
 import { PageHeading } from '@/components/layout/PageHeading'
+import { IconSettings } from '@/components/icons'
 import { useTranslations, useLocale } from 'next-intl'
 import { useRouter, usePathname } from 'next/navigation'
 import { KButton } from '@/components/ui/KButton'
@@ -498,18 +499,18 @@ export function SettingsForm({
     }
   }
 
-  const eyebrow = 'text-[13px] font-extrabold uppercase tracking-wide text-text-tertiary mb-3'
+  const eyebrow = 'text-meta font-extrabold uppercase tracking-wide text-text-tertiary mb-3'
   const row = 'px-5 py-4 sm:px-6 sm:py-5'
 
   return (
     <div className="flex flex-col gap-7">
-      <PageHeading emoji="⚙️" className="mb-0">{t('title')}</PageHeading>
+      <PageHeading icon={IconSettings} className="mb-0">{t('title')}</PageHeading>
 
       {/* ROJO-7: borrado programado; mientras no venza, se puede deshacer. */}
       {pendingDeletion && (
         <div
           role="status"
-          className="flex flex-wrap items-center justify-between gap-4 rounded-20 border-2 border-accent-danger/50 bg-surface-default px-5 py-4 sm:px-6"
+          className="flex flex-wrap items-center justify-between gap-4 rounded-bento border-2 border-accent-danger/50 bg-surface-default px-5 py-4 sm:px-6"
         >
           <p className="text-sm font-body text-text-primary">
             {t('deletionPending', { date: formatDay(purgeDate(pendingDeletion), currentLocale) })}
@@ -529,7 +530,7 @@ export function SettingsForm({
       {/* Sección Perfil */}
       <section>
         <p className={eyebrow}>{t('profile')}</p>
-        <div className="flex flex-col rounded-20 bg-surface-default divide-y divide-surface-border overflow-hidden">
+        <div className="flex flex-col rounded-bento bg-surface-default divide-y divide-surface-border overflow-hidden">
           {/* Email + cambio en línea */}
           <div className={cn(row, 'flex flex-col gap-4')}>
             <div className="flex items-center justify-between gap-4 flex-wrap">
@@ -682,7 +683,7 @@ export function SettingsForm({
       {/* Sección Preferencias */}
       <section>
         <p className={eyebrow}>{t('preferences')}</p>
-        <div className="flex flex-col rounded-20 bg-surface-default divide-y divide-surface-border overflow-hidden">
+        <div className="flex flex-col rounded-bento bg-surface-default divide-y divide-surface-border overflow-hidden">
           {/* Idioma */}
           <div role="group" aria-labelledby="settings-language-label" className={cn(row, 'flex items-center justify-between gap-4 flex-wrap')}>
             <span id="settings-language-label" className="text-sm font-semibold text-text-primary">{t('language')}</span>
@@ -728,7 +729,7 @@ export function SettingsForm({
                   { value: 'ten', label: t('ratingScaleTen') },
                 ]}
               />
-              <p role="status" className="min-h-5 text-[13px] text-text-tertiary">
+              <p role="status" className="min-h-5 text-meta text-text-tertiary">
                 {scaleState === 'saved' ? t('ratingScaleSaved') : ''}
               </p>
               {scaleState === 'error' && (
@@ -747,7 +748,7 @@ export function SettingsForm({
       {weeklyEmail !== null && (
         <section id="email" className="scroll-mt-20">
           <p className={eyebrow}>{t('emailSection')}</p>
-          <div className={cn(row, 'flex flex-col gap-3 rounded-20 bg-surface-default')}>
+          <div className={cn(row, 'flex flex-col gap-3 rounded-bento bg-surface-default')}>
             {/* Nombre corto en la etiqueta y el texto que se acepta como
                 descripción: el lector no lo repite dos veces. */}
             <div className="flex items-start justify-between gap-4">
@@ -758,7 +759,7 @@ export function SettingsForm({
                 <p id="weekly-email-consent" className="text-sm font-body text-text-tertiary">
                   {t('weeklyEmailConsent')}
                 </p>
-                {!weeklyEmail.weekly && <p className="text-[13px] text-text-tertiary">{t('weeklyEmailHowTo')}</p>}
+                {!weeklyEmail.weekly && <p className="text-meta text-text-tertiary">{t('weeklyEmailHowTo')}</p>}
               </div>
               <input
                 id="weekly-email-switch"
@@ -773,14 +774,14 @@ export function SettingsForm({
             </div>
             {isDemo && <p className="text-sm text-text-tertiary">{t('weeklyEmailDemo')}</p>}
             {weeklyEmail.weekly && weeklyEmail.consentedAt ? (
-              <p className="text-[13px] text-text-tertiary">
+              <p className="text-meta text-text-tertiary">
                 {t('weeklyEmailSince', { date: formatDay(new Date(weeklyEmail.consentedAt), currentLocale) })}{' '}
                 <Link href={`/${currentLocale}/calendar`} className="font-semibold text-text-secondary underline hover:text-text-primary">
                   {t('weeklyEmailCalendar')}
                 </Link>
               </p>
             ) : null}
-            <p role="status" className="min-h-5 text-[13px] text-text-tertiary">
+            <p role="status" className="min-h-5 text-meta text-text-tertiary">
               {weeklyState === 'on'
                 ? t('weeklyEmailOn')
                 : weeklyState === 'off'
@@ -816,7 +817,7 @@ export function SettingsForm({
       {push.state !== 'hidden' && push.state !== 'loading' && (
         <section id="push" className="scroll-mt-20">
           <p className={eyebrow}>{tPush('section')}</p>
-          <div className={cn(row, 'flex flex-col gap-3 rounded-20 bg-surface-default')}>
+          <div className={cn(row, 'flex flex-col gap-3 rounded-bento bg-surface-default')}>
             <div className="flex items-start justify-between gap-4">
               <div className="flex flex-col gap-1 min-w-0">
                 <label htmlFor="push-switch" className="cursor-pointer text-sm font-semibold text-text-primary">
@@ -896,7 +897,7 @@ export function SettingsForm({
       {libraryVisibility !== null && (
         <section>
           <p className={eyebrow}>{t('privacy')}</p>
-          <div className={cn(row, 'flex flex-col gap-4 rounded-20 bg-surface-default')}>
+          <div className={cn(row, 'flex flex-col gap-4 rounded-bento bg-surface-default')}>
             <div className="flex flex-col gap-1">
               <span id="library-visibility-label" className="text-sm font-semibold text-text-primary">
                 {t('libraryVisibility')}
@@ -910,7 +911,7 @@ export function SettingsForm({
                   <label
                     key={option}
                     className={cn(
-                      'flex min-h-[44px] cursor-pointer items-start gap-3 rounded-[14px] bg-surface-elevated px-4 py-3 transition-colors',
+                      'flex min-h-[44px] cursor-pointer items-start gap-3 rounded-2xl bg-surface-elevated px-4 py-3 transition-colors',
                       checked && 'ring-2 ring-accent-pink'
                     )}
                   >
@@ -937,7 +938,7 @@ export function SettingsForm({
       {/* Sección Zona de peligro (D2/D3) */}
       <section>
         <p className={cn(eyebrow, 'text-accent-danger')}>{t('dangerZone')}</p>
-        <div className="flex flex-col rounded-20 bg-surface-default divide-y divide-surface-border overflow-hidden">
+        <div className="flex flex-col rounded-bento bg-surface-default divide-y divide-surface-border overflow-hidden">
           <div className={cn(row, 'flex items-center justify-between gap-4 flex-wrap')}>
             <p className="text-sm font-body text-text-tertiary max-w-xs">{t('exportDataHint', { email: PRIVACY_CONTACT_EMAIL })}</p>
             <KButton

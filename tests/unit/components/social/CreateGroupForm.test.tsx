@@ -9,7 +9,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 // ── Mocks ─────────────────────────────────────────────────────────────────────
 
 vi.mock('next-intl', () => ({
-  useTranslations: () => (key: string) => key,
+  useTranslations: (ns?: string) => (key: string) => (ns === 'auth' ? `auth.${key}` : key),
 }))
 
 const mockFetch = vi
@@ -59,5 +59,14 @@ describe('CreateGroupForm', () => {
     expect(screen.queryByText('privateHint')).not.toBeInTheDocument()
     fireEvent.click(screen.getByRole('button', { name: 'private' }))
     expect(screen.getByText('privateHint')).toBeInTheDocument()
+  })
+
+  // Los personajes del icono del grupo, con su nombre traducido (no la clave «fox»).
+  it('nombra los personajes con auth.characters.*', () => {
+    render(<CreateGroupForm onCreated={vi.fn()} onCancel={vi.fn()} />)
+    const radios = screen.getAllByRole('radio').slice(1)
+    expect(radios.length).toBeGreaterThan(0)
+    for (const radio of radios) expect(radio.getAttribute('aria-label')).toMatch(/^auth\.characters\./)
+    expect(screen.getByRole('radio', { name: 'auth.characters.fox' })).toBeInTheDocument()
   })
 })

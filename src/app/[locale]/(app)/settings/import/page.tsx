@@ -15,6 +15,7 @@ import type { AbstractIntlMessages } from 'next-intl'
 import { createClient } from '@/lib/supabase/server'
 import { isDemoUser } from '@/lib/demo'
 import { PageHeading } from '@/components/layout/PageHeading'
+import { IconImport } from '@/components/icons'
 import { ImportClient } from './ImportClient'
 import { LetterboxdExport } from './LetterboxdExport'
 import { ImportMessages } from '@/lib/import/i18n'
@@ -45,7 +46,7 @@ export default async function ImportPage({ params }: { params: Promise<{ locale:
         >
           ← {tSettings('title')}
         </Link>
-        <PageHeading emoji="📥" className="mb-0">
+        <PageHeading icon={IconImport} className="mb-0">
           {t('title')}
         </PageHeading>
       </div>

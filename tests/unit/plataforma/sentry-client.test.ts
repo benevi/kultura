@@ -1,3 +1,4 @@
+// @vitest-environment jsdom
 /**
  * Tests unitarios — Sentry en el navegador (REN-2).
  *

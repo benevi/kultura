@@ -58,7 +58,7 @@ export default async function BestHubPage({ params }: Props) {
         <header className="flex flex-col gap-4">
           <BestBreadcrumbs locale={locale} crumbs={crumbs} />
           <h1 className="font-display text-3xl md:text-4xl font-bold leading-tight text-text-primary">{title}</h1>
-          <p className="text-body text-text-secondary max-w-prose">{t("hub.intro")}</p>
+          <p className="text-base text-text-secondary max-w-prose">{t("hub.intro")}</p>
           <BestFormatNav locale={locale} hrefFor={(f) => `/best/${f}`} />
         </header>
 

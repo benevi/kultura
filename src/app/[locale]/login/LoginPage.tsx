@@ -734,7 +734,7 @@ export function LoginPage({ locale }: LoginPageProps) {
           error={form.fieldErrors.email}
           aria-required="true"
           aria-invalid={form.fieldErrors.email ? true : undefined}
-          placeholder="tucorreo@ejemplo.com"
+          placeholder={tAuth("emailPlaceholder")}
         />
 
         {mode !== "reset" && (
@@ -770,6 +770,7 @@ export function LoginPage({ locale }: LoginPageProps) {
               onChange={handleAvatarIconChange}
               label={tAuth("chooseCharacter")}
               noneLabel={tAuth("chooseCharacterNone")}
+              iconLabel={(key) => tAuth(`characters.${key}`)}
             />
           </div>
         )}

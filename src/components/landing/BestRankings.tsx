@@ -104,7 +104,7 @@ export function BestRankings({ basePath, year, heading, sub, cta, copy, tops = {
                 </div>
 
                 <span className="relative z-10 mt-auto lg:max-w-[50%]">
-                  <span className="block font-display text-2xl md:text-3xl font-extrabold tracking-tight text-balance mb-3">
+                  <span className="block font-display text-xl md:text-3xl font-extrabold tracking-tight text-balance mb-3">
                     {copy[format].title}
                   </span>
                   {first ? (
@@ -132,7 +132,7 @@ export function BestRankings({ basePath, year, heading, sub, cta, copy, tops = {
           <ul className="flex flex-col gap-3">
             {previous.years.map((y) => (
               <li key={y.year} className="flex flex-wrap items-center gap-2">
-                <span className="w-14 shrink-0 font-display text-lg font-extrabold text-text-secondary">{y.year}</span>
+                <span className="w-14 shrink-0 font-display text-xl font-extrabold text-text-secondary">{y.year}</span>
                 {y.links.map((l) => (
                   <a
                     key={l.format}

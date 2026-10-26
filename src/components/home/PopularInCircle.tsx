@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import { MediaRow } from '@/components/home/MediaRow'
 import { useTranslations } from 'next-intl'
 import type { CircleMediaItem } from '@/lib/social/circle'
+import { IconFriends } from '@/components/icons'
 
 export function PopularInCircle() {
   const t = useTranslations('home')
@@ -42,7 +43,7 @@ export function PopularInCircle() {
       title={t('popularInCircle')}
       items={rowItems}
       isLoading={status === 'loading'}
-      emptyIcon={status === 'empty' ? '👥' : undefined}
+      emptyIcon={status === 'empty' ? IconFriends : undefined}
       emptyMessage={status === 'empty' ? t('noFriends') : undefined}
       emptyHint={status === 'empty' ? t('noFriendsHint') : undefined}
       emptyAction={status === 'empty' ? { label: t('addFriends'), href: '/friends' } : undefined}

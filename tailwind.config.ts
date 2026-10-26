@@ -45,14 +45,6 @@ const config: Config = {
       full: "9999px",
       pill: "9999px",
       button: "9999px",
-      /* Alias en retirada: solo los usan archivos de otros frentes
-         (Descubrir y Ajustes). Apuntan a un radio del set y
-         `tests/unit/visual/scales.test.ts` impide que se usen en ningún
-         otro archivo. */
-      DEFAULT: "8px",
-      xl: "16px",
-      card: "16px",
-      "20": "20px",
     },
 
     /* Escala tipográfica cerrada (tamaño / interlineado). Se conservan los

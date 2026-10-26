@@ -286,7 +286,6 @@
     "steamLanguages": "Idiomas",
     "steamScreenshots": "Capturas",
     "whyRecommended": "Por qué te lo recomendamos",
-    "whyRecommendedText": "Coincide con géneros que ya te gustan — {genres} — según lo que tienes en tu biblioteca.",
     "breadcrumbLabel": "Estás en",
     "breadcrumbHome": "Inicio",
     "ctaAdd": "Añadir a mi biblioteca",
@@ -427,7 +426,9 @@
     "removeConfirmBody": "Se borrarán el estado, la nota y el progreso de «{title}».",
     "removeConfirm": "Quitar",
     "removed": "Quitado de tu biblioteca",
-    "saved": "Guardado en tu biblioteca"
+    "saved": "Guardado en tu biblioteca",
+    "undo": "Deshacer",
+    "restored": "Ha vuelto a tu biblioteca"
   },
   "diary": {
     "title": "Diario",
@@ -891,7 +892,8 @@
     "joinGroup": "Unirse",
     "leaveGroup": "Salir",
     "groupError": "No hemos podido crear el grupo. Reintenta en un momento.",
-    "joinGroupError": "No hemos podido unirte al grupo. Reintenta en un momento."
+    "joinGroupError": "No hemos podido unirte al grupo. Reintenta en un momento.",
+    "copyProfileLink": "Copiar el enlace de mi perfil"
   },
   "invite": {
     "bannerTitle": "{username} te invita a KULTURA",
@@ -955,7 +957,8 @@
     "inviteError": "No hemos podido enviar la invitación. Reintenta.",
     "groupIcon": "Icono del grupo",
     "groupIconNone": "Sin icono (inicial)",
-    "joinNotAllowed": "No puedes unirte a este grupo. Si crees que es un error, habla con quien lo creó."
+    "joinNotAllowed": "No puedes unirte a este grupo. Si crees que es un error, habla con quien lo creó.",
+    "ownerBadge": "Creador del grupo"
   },
   "chat": {
     "title": "Mensajes",
@@ -2121,7 +2124,9 @@
     "emptyOwnHint": "Haz pública una lista desde Listas y aparecerá aquí, con su enlace para compartir.",
     "emptyOwnAction": "Ir a mis listas",
     "reportProfile": "Denunciar este perfil",
-    "reportList": "Denunciar esta lista"
+    "reportList": "Denunciar esta lista",
+    "ogHeading": "La colección de",
+    "listsCount": "{count, plural, one {# lista} other {# listas}}"
   },
   "push": {
     "settings": {
@@ -2158,6 +2163,17 @@
       "listInviteNoName": "@{username} te ha invitado a una lista.",
       "groupInvite": "@{username} te ha invitado al grupo «{name}».",
       "groupInviteNoName": "@{username} te ha invitado a un grupo."
+    },
+    "offer": {
+      "title": "¿Te avisamos?",
+      "chatBody": "Activa los avisos y te diremos cuando te contesten, aunque tengas KULTURA cerrada. Solo quién te escribe, nunca el mensaje.",
+      "friendsBody": "Activa los avisos y te diremos cuando acepten tu solicitud o te escriban, aunque tengas KULTURA cerrada.",
+      "enable": "Activar avisos",
+      "later": "Ahora no",
+      "close": "Cerrar",
+      "done": "Listo: te avisaremos en este dispositivo. Puedes cambiarlo en Ajustes.",
+      "denied": "Has bloqueado las notificaciones de KULTURA. Permítelas en los ajustes del sitio si cambias de idea.",
+      "error": "No hemos podido activar los avisos. Prueba otra vez desde Ajustes."
     }
   }
 }

@@ -11,6 +11,8 @@ import { FriendshipButton } from '@/components/social/FriendshipButton'
 import { F0 } from '@/lib/design/f0-tokens'
 import { getBlockedUsers, unblockUser, type BlockedUser } from '@/lib/social/actions'
 import type { Friendship } from '@/types/user'
+import { IconLists, IconFriends } from '@/components/icons'
+import { PushOffer } from '@/components/push/PushOffer'
 
 interface SearchUser {
   id: string
@@ -116,10 +118,12 @@ export function FriendsClient({
           size="sm"
           variant="primary"
           onClick={handleCopyProfileLink}
+          aria-label={copied ? undefined : t('copyProfileLink')}
+          title={t('copyProfileLink')}
           className="relative z-10 flex-shrink-0 rounded-full font-extrabold"
           style={{ background: F0.pink, color: F0.onPink }}
         >
-          {copied ? t('profileLinkCopied') : '📋'}
+          {copied ? t('profileLinkCopied') : <IconLists className="h-4 w-4" />}
         </KButton>
       </section>
 
@@ -226,7 +230,7 @@ export function FriendsClient({
           <h2 className="font-display text-xl font-bold mb-3" style={{ color: F0.text }}>{t('myFriends')}</h2>
           {friends.length === 0 ? (
             <div className="rounded-bento border p-8 text-center" style={CARD_STYLE}>
-              <div className="text-3xl mb-3">👥</div>
+              <IconFriends aria-hidden="true" className="mx-auto mb-3 h-8 w-8" style={{ color: F0.muted }} />
               <p className="text-sm" style={{ color: F0.textSecondary }}>{t('noFriends')}</p>
               <p className="text-xs mt-1" style={{ color: F0.muted }}>{t('noFriendsHint')}</p>
             </div>
@@ -246,6 +250,8 @@ export function FriendsClient({
 
         <BlockedUsersSection />
       </div>
+      {/* Tras pedir o aceptar una amistad se ofrecen los avisos push. */}
+      <PushOffer />
     </div>
   )
 }

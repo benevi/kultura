@@ -1,4 +1,4 @@
-import { render, screen, fireEvent, waitFor } from '@testing-library/react'
+import { render, screen, fireEvent, waitFor, act } from '@testing-library/react'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import type { LibraryEntry } from '@/types/library'
 
@@ -176,13 +176,13 @@ describe('LibraryAction', () => {
     expect(mockRemoveFromLibrary).not.toHaveBeenCalled()
     expect(screen.getByRole('alertdialog')).toHaveTextContent('removeConfirmBody')
     fireEvent.click(screen.getByRole('button', { name: 'removeConfirm' }))
-    await waitFor(() => {
-      expect(mockRemoveFromLibrary).toHaveBeenCalledWith('movie_550')
-    })
-    // Después de eliminar, debe mostrar el botón de añadir
+    // Desaparece al momento; el borrado real llega cuando se va el aviso.
     await waitFor(() => {
       expect(screen.getByText(/addToLibrary/)).toBeInTheDocument()
     })
+    const toast = mockShow.mock.calls[0][0] as { action: { onExpire: () => void } }
+    await act(async () => toast.action.onExpire())
+    expect(mockRemoveFromLibrary).toHaveBeenCalledWith('movie_550')
   })
 
   it('handleSave con entry null → guarda la entrada nueva', async () => {
@@ -298,17 +298,17 @@ describe('LibraryAction', () => {
     })
   })
 
-  it('error al quitar → aviso de error y la entrada sigue', async () => {
+  it('error al quitar (al irse el aviso) → aviso de error y la entrada vuelve', async () => {
     mockRemoveFromLibrary.mockRejectedValue(new Error('Failed to remove from library'))
     render(
       <LibraryAction mediaId="movie_550" mediaCache={mediaCache} initialEntry={baseEntry} isAuthenticated={true} />
     )
     fireEvent.click(screen.getByText('remove'))
     fireEvent.click(screen.getByRole('button', { name: 'removeConfirm' }))
-    const dialog = screen.getByRole('alertdialog')
-    await waitFor(() => {
-      expect(dialog.querySelector('[role="alert"]')).toHaveTextContent('errors.removeFailed')
-    })
+    await waitFor(() => expect(mockShow).toHaveBeenCalled())
+    const toast = mockShow.mock.calls[0][0] as { action: { onExpire: () => void } }
+    await act(async () => toast.action.onExpire())
+    await waitFor(() => expect(mockShowError).toHaveBeenCalledWith('errors.removeFailed'))
     expect(screen.getByText('status.completed')).toBeInTheDocument()
   })
 
@@ -320,6 +320,59 @@ describe('LibraryAction', () => {
     fireEvent.submit(screen.getByRole('dialog').querySelector('form')!)
     await waitFor(() => {
       expect(mockShow).toHaveBeenCalledWith({ message: 'saved', type: 'success' })
+    })
+  })
+
+  // DIS-14: «Deshacer» en el aviso al quitar. El borrado real (que se lleva
+  // por la FK el diario: reseñas y notas privadas) espera a que el aviso se
+  // vaya; «Deshacer» lo cancela, así que no se pierde nada.
+  describe('quitar con «Deshacer»', () => {
+    type Toast = { message: string; action?: { label: string; onAction: () => void; onExpire?: () => void } }
+    async function removeIt(entry: LibraryEntry = baseEntry) {
+      render(
+        <LibraryAction mediaId="movie_550" mediaCache={mediaCache} initialEntry={entry} isAuthenticated={true} />
+      )
+      fireEvent.click(screen.getByText('remove'))
+      fireEvent.click(screen.getByRole('button', { name: 'removeConfirm' }))
+      await waitFor(() => expect(mockShow).toHaveBeenCalled())
+      return mockShow.mock.calls[0][0] as Toast
+    }
+
+    it('el aviso de quitado trae «Deshacer» y aún no se ha borrado nada', async () => {
+      const toast = await removeIt()
+      expect(toast.message).toBe('removed')
+      expect(toast.action?.label).toBe('undo')
+      expect(mockRemoveFromLibrary).not.toHaveBeenCalled()
+    })
+
+    it('REGRESIÓN: deshacer cancela el borrado (el diario no se toca) y la entrada vuelve tal cual', async () => {
+      mockFetchDiary.mockResolvedValue({ enabled: true, scale: 'stars', logs: [{ id: 'log-1' }] })
+      const entry = { ...baseEntry, status: 'in_progress' as const, score: 3, rating10: 6.5, favorite: true }
+      const toast = await removeIt(entry)
+      await act(async () => toast.action!.onAction())
+      // Si luego se va el aviso, ya no borra.
+      await act(async () => toast.action!.onExpire?.())
+      expect(mockRemoveFromLibrary).not.toHaveBeenCalled()
+      expect(mockSave).not.toHaveBeenCalled()
+      await waitFor(() => expect(screen.getByText('status.in_progress')).toBeInTheDocument())
+      expect(mockShow).toHaveBeenLastCalledWith({ message: 'restored', type: 'success' })
+    })
+
+    it('volver a añadirlo antes de que se vaya el aviso cancela el borrado pendiente', async () => {
+      const toast = await removeIt()
+      fireEvent.click(screen.getByText(/addToLibrary/))
+      fireEvent.submit(screen.getByRole('dialog').querySelector('form')!)
+      await waitFor(() => expect(mockSave).toHaveBeenCalled())
+      await act(async () => toast.action!.onExpire?.())
+      expect(mockRemoveFromLibrary).not.toHaveBeenCalled()
+    })
+
+    it('al cerrar la página con el borrado pendiente, se hace ya', async () => {
+      await removeIt()
+      act(() => {
+        window.dispatchEvent(new Event('pagehide'))
+      })
+      await waitFor(() => expect(mockRemoveFromLibrary).toHaveBeenCalledWith('movie_550', { keepalive: true }))
     })
   })
 })

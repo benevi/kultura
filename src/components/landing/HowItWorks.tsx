@@ -70,7 +70,7 @@ function TrackArt({ p, status }: { p: (i: number) => Poster | null; status: stri
         <ArtPoster item={p(3)} seed="track-0" sizes="96px" />
       </div>
       <div className="flex flex-col gap-3 pb-1">
-        <span className="self-start rounded-full bg-accent-lime px-3 py-1 text-meta font-bold text-on-accent-lime">
+        <span className="self-start rounded-full bg-accent-lime px-3 py-1 text-xs font-bold text-on-accent-lime">
           {status}
         </span>
         <span className="flex gap-0.5 text-accent-highlight">

@@ -1,3 +1,4 @@
+// @vitest-environment jsdom
 // F-26 — Avance del importador en este navegador: por cuenta, borrable y sin
 // romper si el almacenamiento falla.
 import { describe, it, expect, beforeEach, vi } from 'vitest'

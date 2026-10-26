@@ -42,11 +42,13 @@ export async function updateLibrary(payload: LibraryPayload): Promise<LibraryEnt
 }
 
 /** Elimina un título de la biblioteca del usuario autenticado */
-export async function removeFromLibrary(mediaId: string): Promise<void> {
+/** `keepalive`: la petición sobrevive al cierre de la página (borrado pendiente). */
+export async function removeFromLibrary(mediaId: string, { keepalive = false }: { keepalive?: boolean } = {}): Promise<void> {
   const response = await fetch('/api/library', {
     method: 'DELETE',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ mediaId }),
+    ...(keepalive ? { keepalive: true } : {}),
   })
 
   if (!response.ok) {

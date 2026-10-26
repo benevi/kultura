@@ -168,7 +168,7 @@ export function Comparison({
           </colgroup>
           <thead>
             <tr>
-              <th scope="col" className="px-3 py-3 text-left text-meta font-bold text-text-secondary">
+              <th scope="col" className="px-3 py-3 text-left text-sm font-bold text-text-secondary">
                 {formatHeader}
               </th>
               <th scope="col" className="bg-surface-elevated px-1 py-3 text-center">
@@ -179,7 +179,7 @@ export function Comparison({
                   KULTURA
                 </span>
               </th>
-              <th scope="col" className="px-3 py-3 text-left text-meta font-bold leading-tight text-text-secondary">
+              <th scope="col" className="px-3 py-3 text-left text-sm font-bold leading-tight text-text-secondary">
                 {specialistHeader}
               </th>
             </tr>
@@ -205,7 +205,7 @@ export function Comparison({
                         ))}
                       </span>
                     ) : (
-                      <span className="text-meta leading-tight text-text-tertiary">{none}</span>
+                      <span className="text-sm leading-tight text-text-tertiary">{none}</span>
                     )}
                   </td>
                 </tr>

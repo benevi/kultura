@@ -10,6 +10,8 @@ import { blockUser, deleteMessage, leaveConversation } from '@/lib/social/action
 import { createClient } from '@/lib/supabase/client'
 import { useToastContext } from '@/components/ui/ToastProvider'
 import { useUnreadChat } from '@/components/layout/UnreadChatProvider'
+import { offerPushInContext } from '@/lib/push/offer'
+import { PushOffer } from '@/components/push/PushOffer'
 
 interface Message {
   id: string
@@ -416,6 +418,9 @@ export function ConversationClient({
         const realMsg: Message = { ...real, users: null }
         setMessages(prev => prev.map(m => (m.id === tempId ? realMsg : m)))
       }
+      // Mensaje enviado: buen momento para ofrecer los avisos de respuesta
+      // (PushOffer decide si hay algo que ofrecer; una vez por visita).
+      offerPushInContext('chat')
     }
 
     setSending(false)
@@ -537,6 +542,10 @@ export function ConversationClient({
         })}
         <div ref={bottomRef} />
       </div>
+
+      {/* Tras enviar un mensaje se ofrecen los avisos push: en el flujo,
+          encima del campo de escribir (nunca lo tapa). */}
+      <PushOffer placement="inline" />
 
       {/* Input — F-11: si ya no se puede escribir, se explica por qué. */}
       {!canSend ? (

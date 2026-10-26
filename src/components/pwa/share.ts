@@ -20,6 +20,13 @@ const LOCALE_PREFIX = /^\/(?:es|en)(?:\/|$)/;
 export type ShareOutcome = "shared" | "cancelled" | "unavailable";
 
 /**
+ * Id de la tarjeta del perfil público (`/u/{nombre}`): su `opengraph-image`
+ * usa `generateImageMetadata` (alt traducido) y vive en `/opengraph-image/card`.
+ */
+export const PROFILE_OG_ID = "card";
+const PROFILE_PATH = /^\/(?:es|en)\/u\/[^/]+$/;
+
+/**
  * Ruta de la tarjeta OG de una página (convención `opengraph-image` de Next).
  * Las rutas sin idioma (`/u/ana`) se completan con el del documento para no
  * pasar por la redirección del middleware.
@@ -27,7 +34,7 @@ export type ShareOutcome = "shared" | "cancelled" | "unavailable";
 export function ogImagePath(path: string, locale = "es"): string {
   const clean = path.split(/[?#]/)[0].replace(/\/+$/, "") || "/";
   const withLocale = LOCALE_PREFIX.test(clean) ? clean : `/${locale}${clean === "/" ? "" : clean}`;
-  return `${withLocale}/opengraph-image`;
+  return PROFILE_PATH.test(withLocale) ? `${withLocale}/opengraph-image/${PROFILE_OG_ID}` : `${withLocale}/opengraph-image`;
 }
 
 const pending = new Map<string, Promise<File | null>>();

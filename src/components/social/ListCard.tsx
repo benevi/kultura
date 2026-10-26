@@ -1,6 +1,7 @@
 import { Link } from '@/i18n/navigation'
 import { useTranslations } from 'next-intl'
 import type { List } from '@/types/list'
+import { IconFriends } from '@/components/icons'
 
 type FilterKey = 'movie' | 'tv' | 'anime' | 'book' | 'comic' | 'manga' | 'game'
 const MEDIA_FILTER_KEYS = new Set<string>(['movie', 'tv', 'anime', 'book', 'comic', 'manga', 'game'])
@@ -52,7 +53,7 @@ export function ListCard({ list }: ListCardProps) {
               role="img"
               aria-label={tl('collaborative')}
             >
-              👥
+              <IconFriends aria-hidden="true" className="h-4 w-4" />
             </span>
           )}
         </div>

@@ -16,6 +16,24 @@ export interface ToastItem {
    * nunca dura menos de 6 s (ACC-11). `Infinity` = se queda hasta cerrarlo.
    */
   duration?: number
+  /**
+   * Acción dentro del aviso (p. ej. «Deshacer»). Un aviso con acción dura
+   * por defecto lo mismo que un error (8 s): da tiempo a leerlo y pulsarla.
+   */
+  action?: ToastAction
+}
+
+export interface ToastAction {
+  label: string
+  onAction: () => void
+  /**
+   * El aviso se va SIN pulsar la acción (tiempo, cerrar, deslizar o
+   * desplazado por avisos nuevos). Para confirmar lo que la acción deshacía
+   * (p. ej. el borrado real al quitar de la biblioteca). Se llama una vez.
+   */
+  onExpire?: () => void
+  /** Lleva el foco a la acción al aparecer (p. ej. tras cerrar un diálogo). */
+  autoFocus?: boolean
 }
 
 /** Duración por defecto de un aviso normal. */
@@ -28,11 +46,11 @@ export const TOAST_ERROR_MIN_MS = 6000
 const SWIPE_DISMISS_PX = 80
 
 /** Tiempo efectivo en pantalla (`Infinity` = persistente). */
-export function toastDuration(toast: Pick<ToastItem, 'type' | 'duration'>): number {
+export function toastDuration(toast: Pick<ToastItem, 'type' | 'duration' | 'action'>): number {
   if (toast.type === 'error') {
     return Math.max(toast.duration ?? TOAST_ERROR_DEFAULT_MS, TOAST_ERROR_MIN_MS)
   }
-  return toast.duration ?? TOAST_DEFAULT_MS
+  return toast.duration ?? (toast.action ? TOAST_ERROR_DEFAULT_MS : TOAST_DEFAULT_MS)
 }
 
 const typeStyles: Record<ToastType, string> = {
@@ -71,13 +89,23 @@ function SingleToast({ toast, onDismiss }: SingleToastProps) {
   const dragRef = useRef<{ x: number; id: number } | null>(null)
   const [exiting, setExiting] = useState(false)
   const [dragX, setDragX] = useState(0)
+  const settledRef = useRef(false)
+  const actionRef = useRef<HTMLButtonElement>(null)
+  const autoFocusAction = toast.action?.autoFocus === true
+  useEffect(() => {
+    if (autoFocusAction) actionRef.current?.focus()
+  }, [autoFocusAction])
 
-  const startExit = useCallback(() => {
+  const startExit = useCallback((acted = false) => {
+    if (!settledRef.current) {
+      settledRef.current = true
+      if (!acted) toast.action?.onExpire?.()
+    }
     if (timerRef.current) clearTimeout(timerRef.current)
     timerRef.current = null
     setExiting(true)
     setTimeout(() => onDismiss(toast.id), ANIM_DURATION)
-  }, [toast.id, onDismiss])
+  }, [toast.id, toast.action, onDismiss])
 
   const pause = useCallback(() => {
     if (!timerRef.current) return
@@ -90,7 +118,7 @@ function SingleToast({ toast, onDismiss }: SingleToastProps) {
     if (timerRef.current || exiting || hoverRef.current || focusRef.current) return
     if (!Number.isFinite(remainingRef.current)) return
     startedAtRef.current = Date.now()
-    timerRef.current = setTimeout(startExit, Math.max(0, remainingRef.current))
+    timerRef.current = setTimeout(() => startExit(), Math.max(0, remainingRef.current))
   }, [exiting, startExit])
 
   useEffect(() => {
@@ -143,9 +171,23 @@ function SingleToast({ toast, onDismiss }: SingleToastProps) {
         {typeIcon[toast.type]}
       </span>
       <p className="flex-1 leading-snug py-2">{toast.message}</p>
+      {toast.action && (
+        <button
+          ref={actionRef}
+          type="button"
+          data-toast-action=""
+          onClick={() => {
+            toast.action!.onAction()
+            startExit(true)
+          }}
+          className="flex-shrink-0 min-h-11 rounded-full px-3 font-bold text-accent-pink hover:bg-surface-default transition-colors focus-visible:[outline-style:solid] focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-focus-ring"
+        >
+          {toast.action.label}
+        </button>
+      )}
       <button
         type="button"
-        onClick={startExit}
+        onClick={() => startExit()}
         aria-label={t('dismiss')}
         className="flex-shrink-0 flex items-center justify-center w-11 h-11 rounded-full text-text-secondary hover:text-text-primary hover:bg-surface-default transition-colors focus-visible:[outline-style:solid] focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-focus-ring"
       >

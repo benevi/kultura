@@ -31,7 +31,7 @@ export function FinalCta({ title, sub, cta, demo, locale }: FinalCtaProps) {
         >
           {title}
         </h2>
-        <p className="mx-auto mt-6 max-w-[44ch] text-lg text-text-primary">{sub}</p>
+        <p className="mx-auto mt-6 max-w-[44ch] text-lg text-text-primary md:text-xl">{sub}</p>
         <div className="mt-9 flex flex-col items-stretch justify-center gap-3 min-[400px]:flex-row min-[400px]:flex-wrap min-[400px]:items-center">
           <KButton variant="primary" size="lg" asChild>
             <a href={`/${locale}/login?mode=register`}>{cta}</a>

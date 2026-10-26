@@ -28,7 +28,7 @@ const STRETCHED_LINK =
 
 const SAVE_LINK =
   "relative z-10 inline-flex min-h-11 items-center self-start rounded-full border-2 border-stroke px-4 " +
-  "text-meta font-bold text-text-secondary hover:bg-surface-elevated hover:text-text-primary transition-colors " +
+  "text-sm font-bold text-text-secondary hover:bg-surface-elevated hover:text-text-primary transition-colors " +
   "focus-visible:[outline-style:solid] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus-ring";
 
 function formatRating(rating: number, locale: string): string {
@@ -51,7 +51,7 @@ function Meta({ item, locale, t }: { item: BestItem; locale: string; t: T }) {
   }
   if (parts.length === 0) return null;
   return (
-    <p className="text-meta font-bold text-text-secondary">
+    <p className="text-sm font-bold text-text-secondary">
       {parts.map((p, i) => (
         <span key={i}>
           {i > 0 ? <span aria-hidden="true"> · </span> : null}
@@ -104,24 +104,24 @@ const FEATURE_BG =
 const PODIUM = [
   {
     li: `col-span-2 flex-row md:col-span-1 md:flex-col ${FEATURE_BG}`,
-    number: "text-6xl md:text-8xl",
-    title: "text-lg md:text-2xl",
+    number: "text-6xl",
+    title: "text-2xl",
     sizes: "(min-width: 896px) 300px, (min-width: 768px) 36vw, 40vw",
     poster: "w-2/5 md:w-full",
     extra: "flex",
   },
   {
     li: "flex-col md:mt-12",
-    number: "text-5xl md:text-7xl",
-    title: "text-base md:text-lg",
+    number: "text-4xl",
+    title: "text-base",
     sizes: "(min-width: 896px) 250px, (min-width: 768px) 30vw, 50vw",
     poster: "w-full",
     extra: "hidden md:flex",
   },
   {
     li: "flex-col md:mt-24",
-    number: "text-5xl md:text-6xl",
-    title: "text-base md:text-lg",
+    number: "text-4xl",
+    title: "text-base",
     sizes: "(min-width: 896px) 210px, (min-width: 768px) 26vw, 50vw",
     poster: "w-full",
     extra: "hidden md:flex",
@@ -179,7 +179,7 @@ export async function BestPodium({ items, locale }: { items: BestItem[]; locale:
                 <Genres genres={item.genres} />
                 {item.synopsis ? (
                   <p
-                    className={`text-meta text-text-secondary md:text-sm ${first ? "line-clamp-3 md:line-clamp-5" : "line-clamp-3"}`}
+                    className={`text-sm text-text-secondary ${first ? "line-clamp-3 md:line-clamp-5" : "line-clamp-3"}`}
                   >
                     {item.synopsis}
                   </p>
@@ -209,7 +209,7 @@ export async function BestRankList({ items, locale }: { items: BestItem[]; local
           <li key={item.id} className="relative flex items-start gap-3 rounded-bento bg-surface-default p-3 md:gap-5 md:p-4">
             <span
               aria-hidden="true"
-              className="w-7 shrink-0 pt-1 text-right font-display text-xl font-extrabold leading-none text-text-tertiary md:w-12 md:text-3xl"
+              className="w-8 shrink-0 pt-1 text-right font-display text-2xl font-extrabold leading-none text-text-tertiary md:w-12"
             >
               {n}
             </span>
@@ -221,7 +221,7 @@ export async function BestRankList({ items, locale }: { items: BestItem[]; local
               <BestPoster src={item.poster} alt={item.title} sizes="(min-width: 768px) 80px, 64px" />
             </div>
             <div className="flex min-w-0 flex-1 flex-col gap-1.5">
-              <h2 className="font-display text-base font-extrabold leading-tight text-text-primary md:text-lg">
+              <h2 className="font-display text-base font-extrabold leading-tight text-text-primary">
                 <a href={localeHref(locale, bestItemPath(item))} className={STRETCHED_LINK}>
                   <span className="sr-only">{t("position", { n })}</span>{" "}
                   {item.title}
@@ -229,7 +229,7 @@ export async function BestRankList({ items, locale }: { items: BestItem[]; local
               </h2>
               <Meta item={item} locale={locale} t={t} />
               {item.synopsis ? (
-                <p className="text-meta text-text-secondary line-clamp-2 md:text-sm">{item.synopsis}</p>
+                <p className="text-sm text-text-secondary line-clamp-2">{item.synopsis}</p>
               ) : null}
               <SaveLink item={item} locale={locale} t={t} />
             </div>
