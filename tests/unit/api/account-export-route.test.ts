@@ -291,6 +291,68 @@ describe('GET /api/account/export', () => {
       ])
     })
 
+    it('mensajes RECIBIDOS en las conversaciones de las que sigue siendo miembro, con el remitente (art. 15)', async () => {
+      arrange()
+      // Un mensaje de alguien que ya salió de la conversación también es para el usuario.
+      adminState.db.tables.messages.push(
+        { id: 'm4', conversation_id: 'c1', sender_id: STRANGER, content: 'antes de irme', created_at: '2026-01-04' },
+        // Conversación de la que el usuario salió: ya no es miembro, no entra.
+        { id: 'm5', conversation_id: 'c7', sender_id: OTHER, content: 'de un chat que dejé', created_at: '2026-01-05' },
+      )
+      const body = await (await (await import('@/app/api/account/export/route')).GET()).json()
+      expect(body.messagesReceived).toEqual([
+        { id: 'm2', conversationId: 'c1', senderId: OTHER, senderUsername: 'bob', content: 'de bob', createdAt: '2026-01-03' },
+        { id: 'm4', conversationId: 'c1', senderId: STRANGER, senderUsername: 'carol', content: 'antes de irme', createdAt: '2026-01-04' },
+      ])
+      // Los enviados siguen en `messages` y no se repiten aquí.
+      expect(body.messages.map((m: { id: string }) => m.id)).toEqual(['m1'])
+      const text = JSON.stringify(body)
+      expect(text).not.toContain('de un chat que dejé')
+      expect(text).not.toContain('ajeno')
+    })
+
+    it('suscripciones push: endpoint recortado y fechas, nunca las claves p256dh ni auth', async () => {
+      arrange()
+      const P256 = 'B' + 'q'.repeat(86)
+      const AUTH = 'z'.repeat(22)
+      const ENDPOINT = 'https://fcm.googleapis.com/fcm/send/dXk3TOKENSECRETO-muy-largo-que-no-debe-salir-entero'
+      adminState.db.tables.push_subscriptions = [
+        {
+          id: 'ps1', user_id: ME, endpoint: ENDPOINT, p256dh: P256, auth: AUTH, locale: 'es', expires_at: null,
+          failures: 0, last_success_at: '2026-12-23', created_at: '2026-12-22', updated_at: '2026-12-23',
+        },
+        {
+          id: 'ps2', user_id: OTHER, endpoint: 'https://updates.push.services.mozilla.com/wpush/v2/de-bob', p256dh: P256, auth: AUTH,
+          locale: 'en', expires_at: null, failures: 0, last_success_at: null, created_at: '2026-12-22', updated_at: '2026-12-22',
+        },
+      ]
+      const body = await (await (await import('@/app/api/account/export/route')).GET()).json()
+      expect(body.pushSubscriptions).toEqual([
+        {
+          id: 'ps1',
+          endpoint: `${ENDPOINT.slice(0, 40)}…`,
+          locale: 'es',
+          createdAt: '2026-12-22',
+          updatedAt: '2026-12-23',
+          lastSuccessAt: '2026-12-23',
+          expiresAt: null,
+        },
+      ])
+      const text = JSON.stringify(body)
+      expect(text).not.toContain(P256)
+      expect(text).not.toContain(AUTH)
+      expect(text).not.toContain('no-debe-salir-entero')
+      expect(text).not.toContain('de-bob')
+    })
+
+    it('sin la tabla de push (migración sin aplicar) el export sale igual', async () => {
+      arrange()
+      adminState.db.failures.push_subscriptions = { code: 'PGRST205', message: 'not found' }
+      const res = await (await import('@/app/api/account/export/route')).GET()
+      expect(res.status).toBe(200)
+      expect((await res.json()).pushSubscriptions).toEqual([])
+    })
+
     it('conversaciones: solo las suyas, con participantes, sin el contenido ajeno', async () => {
       const body = await exportAll()
       expect(body.conversations).toEqual([
@@ -305,7 +367,8 @@ describe('GET /api/account/export', () => {
           ],
         },
       ])
-      expect(JSON.stringify(body)).not.toContain('de bob')
+      // Lo de bob solo en `messagesReceived` (ver arriba); el chat ajeno, nunca.
+      expect(JSON.stringify(body.conversations)).not.toContain('de bob')
       expect(JSON.stringify(body)).not.toContain('ajeno')
     })
 
@@ -332,5 +395,25 @@ describe('GET /api/account/export', () => {
       const body = await (await (await import('@/app/api/account/export/route')).GET()).json()
       expect(body.messages).toHaveLength(2345)
     })
+  })
+})
+
+describe('/privacy describe lo que trae el export', () => {
+  it('es y en: mensajes recibidos, dispositivos push y lo que NO se incluye', async () => {
+    const es = (await import('../../../messages/es.json')).default.legal.privacy.sections
+    const en = (await import('../../../messages/en.json')).default.legal.privacy.sections
+    expect(es.rights.p2).toContain('los que te han escrito en las conversaciones en las que sigues')
+    expect(es.rights.p2).toContain('dispositivos con notificaciones push')
+    expect(es.rights.p2).toContain('No incluye los mensajes de las conversaciones que has dejado')
+    expect(es.rights.p2).toContain('claves de cifrado')
+    expect(en.rights.p2).toContain("the ones other people wrote to you in the conversations you're still in")
+    expect(en.rights.p2).toContain('devices with push notifications')
+    expect(en.rights.p2).toContain("doesn't include messages from conversations you've left")
+    expect(en.rights.p2).toContain('encryption keys')
+    // Los servicios push del navegador figuran como proveedores y con su plazo, en los dos idiomas.
+    expect(Object.keys(es.providers.list)).toEqual(Object.keys(en.providers.list))
+    expect(Object.keys(es.retention.list)).toEqual(Object.keys(en.retention.list))
+    expect(es.providers.list).toHaveProperty('push')
+    expect(es.retention.list).toHaveProperty('push')
   })
 })

@@ -19,8 +19,10 @@ const log = createLogger('api/account/export')
 /**
  * GET /api/account/export — exporta TODOS los datos del usuario autenticado
  * (arts. 15 y 20 RGPD): perfil, biblioteca, listas, amistades y, desde SEG-8,
- * mensajes enviados, conversaciones, posts, grupos, invitaciones,
- * recomendaciones, sugerencias, notificaciones y denuncias (ver `collect.ts`).
+ * mensajes enviados y recibidos (en las conversaciones de las que sigue siendo
+ * miembro), conversaciones, posts, grupos, invitaciones, recomendaciones,
+ * sugerencias, notificaciones, denuncias, diario y dispositivos con avisos push
+ * (ver `collect.ts`).
  * Biblioteca, listas y amistades reusan las queries de sus pantallas.
  */
 export async function GET(): Promise<NextResponse> {

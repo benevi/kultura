@@ -3,18 +3,24 @@
 //
 // Lo que el export no traía: mensajes enviados, posts de grupo, grupos e
 // invitaciones, recomendaciones enviadas y recibidas, sugerencias,
-// notificaciones, denuncias y los metadatos de sus conversaciones.
+// notificaciones, denuncias y los metadatos de sus conversaciones. Después:
+// los mensajes RECIBIDOS en las conversaciones de las que sigue siendo
+// miembro, con su remitente (art. 15; WP242 los cuenta como datos del
+// usuario), y los dispositivos con avisos push (sin sus claves de cifrado y
+// con el endpoint recortado: el endpoint entero es una credencial de envío).
 //
 // Se lee con el cliente ADMIN porque la RLS no siempre deja al usuario leer lo
 // suyo (`reports` no tiene política SELECT; los posts de un grupo del que salió
 // dejan de verse). Por eso CADA consulta filtra por el id del usuario
 // autenticado, y del contenido ajeno solo se incluye lo imprescindible para
 // entender lo propio (quién participa en sus chats y el nombre de usuario de la
-// otra parte de una recomendación), nunca los mensajes ni posts de otros.
+// otra parte de una recomendación) y lo que otros le han escrito en los chats
+// en los que sigue; nunca los posts de otros ni los chats que dejó (ya no
+// puede leerlos en la app y en ellos hay más personas).
 // Columnas literales del DDL (`20260502233945_remote_schema.sql`,
 // `20260601000001_add_group_visibility.sql`,
 // `20260601000002_group_invitations.sql`,
-// `20260913220000_avatar_and_group_icons.sql`).
+// `20260913220000_avatar_and_group_icons.sql`, `20261222330001_push.sql`).
 // ============================================================
 
 import type { SupabaseClient } from '@supabase/supabase-js'
@@ -91,11 +97,42 @@ async function fetchIn(
   return rows
 }
 
+/** Lo que se enseña del endpoint push: servicio y el principio del token. */
+export const PUSH_ENDPOINT_PREVIEW = 40
+
+export function truncateEndpoint(endpoint: unknown): string | null {
+  if (typeof endpoint !== 'string') return null
+  return endpoint.length > PUSH_ENDPOINT_PREVIEW ? `${endpoint.slice(0, PUSH_ENDPOINT_PREVIEW)}…` : endpoint
+}
+
+/**
+ * Mensajes de OTRAS personas en las conversaciones dadas (las del usuario).
+ * Troceado como `fetchIn`, con el filtro del remitente en la propia consulta.
+ */
+async function fetchReceivedMessages(admin: SupabaseClient, userId: string, conversationIds: string[]): Promise<Row[]> {
+  const rows: Row[] = []
+  for (let i = 0; i < conversationIds.length; i += IN_CHUNK) {
+    const chunk = conversationIds.slice(i, i + IN_CHUNK)
+    rows.push(
+      ...(await fetchAll('messages', () =>
+        admin
+          .from('messages')
+          .select('id, conversation_id, sender_id, content, created_at')
+          .in('conversation_id', chunk)
+          .neq('sender_id', userId) as unknown as PageQuery
+      ))
+    )
+  }
+  return rows
+}
+
 const byCreatedAt = (a: Row, b: Row) => String(a.created_at ?? '').localeCompare(String(b.created_at ?? ''))
 const str = (v: unknown) => (v === undefined ? null : v)
 
 export interface ExportSections {
   messages: Row[]
+  /** Mensajes de otras personas en las conversaciones de las que sigue siendo miembro. */
+  messagesReceived: Row[]
   conversations: Row[]
   groupPosts: Row[]
   groups: Row[]
@@ -106,6 +143,8 @@ export interface ExportSections {
   reports: Row[]
   /** Diario (F-24, user_media_logs): vacío si la migración no está aplicada. */
   diary: Row[]
+  /** Dispositivos con avisos push (F-33): vacío si la migración no está aplicada. */
+  pushSubscriptions: Row[]
 }
 
 export async function collectExportSections(admin: SupabaseClient, userId: string): Promise<ExportSections> {
@@ -125,6 +164,7 @@ export async function collectExportSections(admin: SupabaseClient, userId: strin
     notifications,
     reports,
     diaryRows,
+    pushRows,
   ] = await Promise.all([
     fetchAll('messages', q('messages', 'id, conversation_id, content, created_at', 'sender_id')),
     fetchAll('conversation_members', q('conversation_members', 'conversation_id, last_read_at', 'user_id')),
@@ -147,13 +187,20 @@ export async function collectExportSections(admin: SupabaseClient, userId: strin
       'user_media_logs',
       q('user_media_logs', 'id, media_id, watched_on, rewatch, rating10, review, spoiler, private_note, created_at', 'user_id')
     ),
+    // Sin p256dh ni auth: no se piden (ni salen del servidor).
+    fetchAll(
+      'push_subscriptions',
+      q('push_subscriptions', 'id, endpoint, locale, expires_at, last_success_at, created_at, updated_at', 'user_id')
+    ),
   ])
 
-  // Conversaciones propias: fechas y participantes (no sus mensajes).
+  // Conversaciones de las que sigue siendo miembro: fechas, participantes y
+  // los mensajes que le han escrito los demás.
   const conversationIds = myConversationRows.map((r) => String(r.conversation_id))
-  const [conversationRows, memberRows] = await Promise.all([
+  const [conversationRows, memberRows, receivedRows] = await Promise.all([
     fetchIn(admin, 'conversations', 'id, created_at, last_message_at', 'id', conversationIds),
     fetchIn(admin, 'conversation_members', 'conversation_id, user_id', 'conversation_id', conversationIds),
+    fetchReceivedMessages(admin, userId, conversationIds),
   ])
 
   // Grupos: de los que es miembro y los que creó.
@@ -170,6 +217,8 @@ export async function collectExportSections(admin: SupabaseClient, userId: strin
   // Nombres de usuario de la otra parte (chats, recomendaciones, invitaciones).
   const otherIds = new Set<string>()
   for (const m of memberRows) otherIds.add(String(m.user_id))
+  // Quien escribió y luego salió de la conversación ya no está en memberRows.
+  for (const m of receivedRows) otherIds.add(String(m.sender_id))
   for (const r of sent) otherIds.add(String(r.to_user_id))
   for (const r of received) otherIds.add(String(r.from_user_id))
   for (const i of invitations) {
@@ -193,6 +242,14 @@ export async function collectExportSections(admin: SupabaseClient, userId: strin
     messages: [...messages].sort(byCreatedAt).map((m) => ({
       id: m.id,
       conversationId: m.conversation_id,
+      content: m.content,
+      createdAt: str(m.created_at),
+    })),
+    messagesReceived: [...receivedRows].sort(byCreatedAt).map((m) => ({
+      id: m.id,
+      conversationId: m.conversation_id,
+      senderId: m.sender_id,
+      senderUsername: nameOf(m.sender_id),
       content: m.content,
       createdAt: str(m.created_at),
     })),
@@ -294,5 +351,14 @@ export async function collectExportSections(admin: SupabaseClient, userId: strin
         privateNote: str(l.private_note),
         createdAt: str(l.created_at),
       })),
+    pushSubscriptions: [...pushRows].sort(byCreatedAt).map((p) => ({
+      id: p.id,
+      endpoint: truncateEndpoint(p.endpoint),
+      locale: str(p.locale),
+      createdAt: str(p.created_at),
+      updatedAt: str(p.updated_at),
+      lastSuccessAt: str(p.last_success_at),
+      expiresAt: str(p.expires_at),
+    })),
   }
 }

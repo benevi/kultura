@@ -1628,7 +1628,7 @@
     "privacy": {
       "title": "Política de privacidad",
       "metaDescription": "Qué datos trata KULTURA, para qué, con qué proveedores, cuánto tiempo y cómo ejercer tus derechos, explicado sin rodeos.",
-      "updated": "Última actualización: 23 de octubre de 2026",
+      "updated": "Última actualización: 26 de octubre de 2026",
       "version": "Versión 2026-10",
       "summary": {
         "s1": "KULTURA la hago yo, Víctor Franco, como proyecto personal gratuito y sin anuncios. Para cualquier cosa sobre tus datos, escríbeme a <mail>{email}</mail>.",
@@ -1652,7 +1652,7 @@
             "library": "<b>Biblioteca</b>: títulos guardados, estado, notas, progreso y fechas.",
             "social": "<b>Actividad social</b>: amistades y solicitudes, bloqueos, mensajes privados, listas, grupos y sus publicaciones, recomendaciones entre amigos y notificaciones.",
             "sent": "<b>Lo que me envías</b>: sugerencias y denuncias. En el <report>formulario de denuncia sin cuenta</report>, también el correo de contacto si decides dejarlo.",
-            "technical": "<b>Datos técnicos</b>: dirección IP y datos del navegador para servir la web, frenar abusos y limitar peticiones; informes de errores, y datos de uso agregados (ver «Analítica y cookies»)."
+            "technical": "<b>Datos técnicos</b>: dirección IP y datos del navegador para servir la web, frenar abusos y limitar peticiones; informes de errores, y datos de uso agregados (ver «Analítica y cookies»). Si activas las notificaciones push en un dispositivo, también la dirección de avisos que crea su navegador, sus claves de cifrado y el idioma de los avisos."
           },
           "p2": "Para crear la cuenta son obligatorios el correo y la contraseña, o entrar con Google; sin ellos no se puede crear la cuenta (art. 13.2.e RGPD). Todo lo demás es opcional: biografía, avatar, lo que guardes o compartas y el correo del formulario de denuncia.",
           "p3": "No pido categorías especiales de datos. Aun así, lo que ves, lees o juegas puede decir cosas de ti: por eso tu biblioteca no es pública por defecto."
@@ -1697,6 +1697,7 @@
             "resend": "<b>Resend</b> (EE. UU.): me envía por correo el aviso de cada denuncia, con su contenido y, si lo dejaste, tu correo de contacto.",
             "upstash": "<b>Upstash</b> (Upstash Inc., EE. UU.): contador para limitar peticiones. Solo recibe una huella cifrada (hash) de la IP o del identificador, que caduca en minutos.",
             "google": "<b>Google</b> (Google Ireland Ltd.): inicio de sesión, solo si eliges entrar con Google.",
+            "push": "<b>Servicios de notificaciones push</b> del navegador (Google, Mozilla, Apple o Microsoft, según el que uses): solo si activas las notificaciones. Entregan cada aviso cifrado y no pueden leerlo; el aviso dice quién te escribe, nunca el texto del mensaje.",
             "github": "<b>GitHub</b> (GitHub Inc., EE. UU.): guarda las copias de seguridad, que se cifran antes de salir, así que GitHub no puede leerlas."
           },
           "p2": "Varios son empresas de EE. UU. o pueden acceder desde allí para dar soporte. Esas <b>transferencias internacionales</b> se amparan en el Marco de Privacidad de Datos UE-EE. UU. cuando la empresa está adherida y, en todo caso, en las cláusulas contractuales tipo de la Comisión Europea incluidas en sus condiciones de tratamiento (arts. 45 y 46 RGPD).",
@@ -1724,6 +1725,7 @@
             "suggestions": "Las sugerencias que enviaste se conservan sin vínculo con tu cuenta. Si quieres que las borre, pídemelo.",
             "ai": "Las recomendaciones de IA: hasta que se generan las del día siguiente.",
             "events": "Eventos de uso: mientras tengas la cuenta; se borran con ella.",
+            "push": "Dispositivos con notificaciones push: hasta que las desactives o cierres sesión en ese dispositivo, el navegador las dé de baja o fallen 10 envíos seguidos. Se borran con la cuenta.",
             "logs": "Registros del servidor: se borran solos en menos de un día. Informes de errores (Sentry): 30 días. Huellas del límite de peticiones: unos minutos.",
             "backups": "Copias de seguridad semanales cifradas: 90 días. Lo que borras desaparece de ellas cuando caducan.",
             "reports": "Denuncias y su resolución: el tiempo necesario para resolver el caso y atender una posible reclamación."
@@ -1732,7 +1734,7 @@
         "rights": {
           "title": "Tus derechos",
           "p1": "Puedes pedir acceso, rectificación, supresión, oposición, limitación del tratamiento y portabilidad de tus datos. Muchas cosas las haces tú desde <settings>Ajustes</settings>: editar tu perfil, cambiar quién ve tu biblioteca, exportar tus datos y borrar tu cuenta. Para lo demás, escríbeme a <mail>{email}</mail>; respondo en un mes como máximo.",
-          "p2": "La exportación es un archivo JSON con tu perfil, biblioteca, listas, amistades, los mensajes que has enviado, tus conversaciones (fechas y participantes), publicaciones, grupos, invitaciones, recomendaciones enviadas y recibidas, sugerencias, notificaciones y denuncias. No incluye los mensajes que te han escrito otras personas: puedes leerlos en la app mientras sigas en la conversación y, si quieres una copia, pídemela por correo y te la envío.",
+          "p2": "La exportación es un archivo JSON con tu perfil, biblioteca, listas, amistades, los mensajes que has enviado y los que te han escrito en las conversaciones en las que sigues (con quién los escribió), tus conversaciones (fechas y participantes), publicaciones, grupos, invitaciones, recomendaciones enviadas y recibidas, sugerencias, notificaciones, denuncias, tu diario y los dispositivos con notificaciones push. No incluye los mensajes de las conversaciones que has dejado (si quieres una copia, pídemela por correo y te la envío) ni las claves de cifrado de las notificaciones push: de cada dispositivo van solo las fechas y el principio de su dirección de avisos.",
           "p3": "Si crees que no he atendido bien tu solicitud, puedes reclamar ante la Agencia Española de Protección de Datos (<aepd>aepd.es</aepd>)."
         },
         "minors": {
