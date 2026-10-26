@@ -20,7 +20,6 @@ import { isDemoUser } from '@/lib/demo'
 import { resolveAuthNext } from '@/lib/utils/safe-redirect'
 import { GENERATED_USERNAME_REGEX } from '@/app/api/settings/identity'
 import { hasAcceptedTerms, readAccountState } from '@/app/api/settings/account-state'
-import { ImportMessages } from '@/lib/import/i18n'
 import { WelcomeFlow } from './WelcomeFlow'
 
 interface WelcomeProps {
@@ -67,18 +66,18 @@ export default async function WelcomePage({ params, searchParams }: WelcomeProps
 
   return (
     <NextIntlClientProvider locale={locale} messages={messages}>
-      {/* F-26: textos del paso opcional "Importar", solo en esta página. */}
-      <ImportMessages locale={locale} messages={(all as Record<string, unknown>).import as AbstractIntlMessages}>
-        <WelcomeFlow
-          locale={locale === 'en' ? 'en' : 'es'}
-          next={finish}
-          currentUsername={currentUsername}
-          // Un nombre generado (`u_xxxxxx`) se ofrece cambiar con el campo vacío;
-          // uno ya elegido se deja escrito.
-          suggestChange={GENERATED_USERNAME_REGEX.test(currentUsername)}
-          needsTerms={!hasAcceptedTerms(account.state, user)}
-        />
-      </ImportMessages>
+      <WelcomeFlow
+        locale={locale === 'en' ? 'en' : 'es'}
+        next={finish}
+        currentUsername={currentUsername}
+        // Un nombre generado (`u_xxxxxx`) se ofrece cambiar con el campo vacío;
+        // uno ya elegido se deja escrito.
+        suggestChange={GENERATED_USERNAME_REGEX.test(currentUsername)}
+        needsTerms={!hasAcceptedTerms(account.state, user)}
+        // F-26: textos del paso opcional "Importar", solo en esta página (el
+        // paso los envuelve en su propio <ImportMessages>).
+        importMessages={((all as Record<string, unknown>).import as AbstractIntlMessages | undefined) ?? null}
+      />
     </NextIntlClientProvider>
   )
 }

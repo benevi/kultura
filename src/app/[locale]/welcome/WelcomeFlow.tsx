@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { useTranslations } from 'next-intl'
+import { useTranslations, type AbstractIntlMessages } from 'next-intl'
 import { Logo } from '@/components/layout/Logo'
 import { KButton } from '@/components/ui/KButton'
 import { KInput } from '@/components/ui/KInput'
@@ -48,11 +48,13 @@ interface WelcomeFlowProps {
   suggestChange: boolean
   /** Alta con Google: falta la casilla de edad y términos (SEG-7). */
   needsTerms: boolean
+  /** F-26: textos del paso opcional "Importar" (sin ellos no se ofrece). */
+  importMessages?: AbstractIntlMessages | null
 }
 
 type SaveState = 'saving' | 'saved' | 'error'
 
-export function WelcomeFlow({ locale, next, currentUsername, suggestChange, needsTerms }: WelcomeFlowProps) {
+export function WelcomeFlow({ locale, next, currentUsername, suggestChange, needsTerms, importMessages = null }: WelcomeFlowProps) {
   const t = useTranslations('onboarding')
   const tAuth = useTranslations('auth')
   const router = useRouter()
@@ -400,7 +402,7 @@ export function WelcomeFlow({ locale, next, currentUsername, suggestChange, need
             )}
 
             {/* F-26: quien viene de otra app se trae su historial en vez de puntuar a mano. */}
-            <WelcomeImport locale={locale} onFinished={setImportedCount} />
+            <WelcomeImport locale={locale} messages={importMessages} onFinished={setImportedCount} />
 
             <ul className="grid grid-cols-2 gap-5 sm:grid-cols-3 lg:grid-cols-5">
               {titles.map((title, i) => (

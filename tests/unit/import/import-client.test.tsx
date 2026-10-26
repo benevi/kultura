@@ -137,10 +137,17 @@ describe('ImportClient', () => {
 })
 
 describe('WelcomeImport (paso opcional del onboarding)', () => {
+  it('lleva su propio proveedor de textos y, sin textos, no se pinta (ni revienta)', () => {
+    const { container } = render(<WelcomeImport locale="es" messages={null} onFinished={vi.fn()} />)
+    expect(container).toBeEmptyDOMElement()
+    render(<WelcomeImport locale="en" messages={en.import} onFinished={vi.fn()} />)
+    expect(screen.getByRole('button', { name: 'Import my history' })).toBeInTheDocument()
+  })
+
   it('cerrado por defecto; se abre y avisa de lo importado', async () => {
     okBatch()
     const onFinished = vi.fn()
-    const { container } = renderIn('es', <WelcomeImport locale="es" onFinished={onFinished} />)
+    const { container } = render(<WelcomeImport locale="es" messages={es.import} onFinished={onFinished} />)
     const toggle = screen.getByRole('button', { name: 'Importar mi historial' })
     expect(toggle).toHaveAttribute('aria-expanded', 'false')
     expect(container.querySelector('input[type="file"]')).toBeNull()

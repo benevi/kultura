@@ -11,7 +11,8 @@
 
 import { useState } from 'react'
 import dynamic from 'next/dynamic'
-import { useOptionalImportT } from '@/lib/import/i18n'
+import type { AbstractIntlMessages } from 'next-intl'
+import { ImportMessages, useImportT } from '@/lib/import/i18n'
 import { KButton } from '@/components/ui/KButton'
 
 // El lector de archivos solo se descarga si alguien abre el panel: el resto
@@ -23,17 +24,29 @@ const ImportClient = dynamic(
 
 interface WelcomeImportProps {
   locale: 'es' | 'en'
+  /**
+   * Subárbol `import` de los mensajes (lo pasa `welcome/page.tsx`). El paso
+   * lleva su PROPIO proveedor: no depende de qué haya por encima de
+   * `WelcomeFlow`. Sin textos, el paso opcional no se pinta.
+   */
+  messages?: AbstractIntlMessages | null
   onFinished: (inLibrary: number) => void
 }
 
-export function WelcomeImport({ locale, onFinished }: WelcomeImportProps) {
-  const t = useOptionalImportT()
+export function WelcomeImport({ locale, messages, onFinished }: WelcomeImportProps) {
+  if (!messages) return null
+  return (
+    <ImportMessages locale={locale} messages={messages}>
+      <WelcomeImportPanel locale={locale} onFinished={onFinished} />
+    </ImportMessages>
+  )
+}
+
+function WelcomeImportPanel({ locale, onFinished }: Omit<WelcomeImportProps, 'messages'>) {
+  const t = useImportT()
   const [open, setOpen] = useState(false)
   // Una vez abierto se queda montado: cerrar el panel no corta una importación en marcha.
   const [mounted, setMounted] = useState(false)
-
-  // Sin los textos del importador (página que no los pasa), el paso opcional no aparece.
-  if (!t) return null
 
   return (
     <section aria-labelledby="welcome-import" className="rounded-bento bg-surface-default px-5 py-5 sm:px-6">
