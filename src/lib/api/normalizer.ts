@@ -8,7 +8,9 @@ import type { MediaItem, StreamingProvider } from "@/types/media";
 import {
   tmdbPoster,
   tmdbBackdrop,
+  type TmdbMovie,
   type TmdbMovieDetail,
+  type TmdbTV,
   type TmdbTVDetail,
   type TmdbProvidersResponse,
 } from "./tmdb";
@@ -82,8 +84,15 @@ export function sanitizeYear(year: number | null | undefined): number | undefine
 
 // ── Normalizers ───────────────────────────────────────────────────────────────
 
+/**
+ * Un elemento de listado de TMDB (`/discover`, `/search`) o una ficha
+ * completa: los campos de ficha (créditos, vídeos, duración…) son opcionales.
+ */
+export type TmdbMovieInput = TmdbMovie & Partial<TmdbMovieDetail>;
+export type TmdbTVInput = TmdbTV & Partial<TmdbTVDetail>;
+
 export function normalizeMovie(
-  raw: TmdbMovieDetail,
+  raw: TmdbMovieInput,
   providers?: TmdbProvidersResponse
 ): MediaItem {
   const externalId = String(raw.id);
@@ -123,7 +132,7 @@ export function normalizeMovie(
 }
 
 export function normalizeTV(
-  raw: TmdbTVDetail,
+  raw: TmdbTVInput,
   providers?: TmdbProvidersResponse
 ): MediaItem {
   const externalId = String(raw.id);
@@ -135,14 +144,9 @@ export function normalizeTV(
 
   const cast = raw.credits?.cast.slice(0, 5).map((c) => c.name) ?? [];
   const networks = raw.networks?.map((n) => n.name) ?? [];
-  // F-06: origen y votos. Los listados de /discover/tv los traen y el tipo no
-  // los declara; sirven para sacar el anime japonés de los rankings de series
-  // (que tiene el suyo) sin quitar la animación occidental.
-  const extra = raw as TmdbTVDetail & {
-    origin_country?: string[];
-    original_language?: string;
-    vote_count?: number;
-  };
+  // F-06: origen y votos (los traen los listados de /discover/tv); sirven
+  // para sacar el anime japonés de los rankings de series (que tiene el suyo)
+  // sin quitar la animación occidental (ver `metadata`).
 
   return {
     id: `tv_${externalId}`,
@@ -161,9 +165,9 @@ export function normalizeTV(
     streamingProviders:
       extractProviders(providers ?? raw["watch/providers"]),
     metadata: {
-      originCountry: extra.origin_country?.length ? extra.origin_country : undefined,
-      originalLanguage: extra.original_language || undefined,
-      voteCount: typeof extra.vote_count === "number" ? extra.vote_count : undefined,
+      originCountry: raw.origin_country?.length ? raw.origin_country : undefined,
+      originalLanguage: raw.original_language || undefined,
+      voteCount: typeof raw.vote_count === "number" ? raw.vote_count : undefined,
       episodes: raw.number_of_episodes,
       seasons: raw.number_of_seasons,
       status: raw.status,
