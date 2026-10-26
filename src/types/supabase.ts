@@ -1050,6 +1050,36 @@ export type Database = {
           },
         ]
       }
+      user_streaming_services: {
+        Row: {
+          region: string | null
+          services: number[]
+          updated_at: string
+          user_id: string
+        }
+        ComputedFields: never
+        Insert: {
+          region?: string | null
+          services?: number[]
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          region?: string | null
+          services?: number[]
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_streaming_services_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: true
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       username_history: {
         Row: {
           changed_at: string
@@ -1087,8 +1117,6 @@ export type Database = {
           id: string
           library_visibility: string
           preferred_locale: string | null
-          streaming_region: string | null
-          streaming_services: number[]
           username: string
         }
         ComputedFields: never
@@ -1101,8 +1129,6 @@ export type Database = {
           id: string
           library_visibility?: string
           preferred_locale?: string | null
-          streaming_region?: string | null
-          streaming_services?: number[]
           username: string
         }
         Update: {
@@ -1114,8 +1140,6 @@ export type Database = {
           id?: string
           library_visibility?: string
           preferred_locale?: string | null
-          streaming_region?: string | null
-          streaming_services?: number[]
           username?: string
         }
         Relationships: []
@@ -1353,10 +1377,6 @@ export interface DbUser {
   library_visibility?: "public" | "friends" | "private";
   created_at: string; // timestamptz
   preferred_locale: string | null;
-  /** F-25 (`20261208250001_platforms_mixed_lists`): ids de proveedor de TMDB. Ausente antes de aplicarla. */
-  streaming_services?: number[];
-  /** F-25: país ISO de 2 letras del catálogo de streaming; null = el del idioma. */
-  streaming_region?: string | null;
 }
 
 /** Tabla: media */

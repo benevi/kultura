@@ -3,10 +3,13 @@
 --
 -- QUÉ HACE (el código funciona antes y después de aplicarla; lo nuevo se
 -- enciende con la bandera MIXED_LISTS=1 en Vercel DESPUÉS de aplicarla):
---   1. users.streaming_services integer[] (ids de proveedor de TMDB, máx. 30)
---      y users.streaming_region text (país ISO de 2 letras; NULL = el del
---      idioma). El usuario los cambia con su JWT (GRANT de columna, como
---      library_visibility), pasa por RLS y por demo_no_update.
+--   1. Tabla `user_streaming_services` (una fila por usuario): `services`
+--      integer[] (ids de proveedor de TMDB, máx. 30) y `region` (país ISO de 2
+--      letras; NULL = el del idioma). Es un dato privado: la RLS solo deja
+--      leerla y escribirla a su DUEÑO (no va en `users`, que cualquiera con
+--      sesión lee entera). Demo: solo lectura (demo_no_*). Si una versión
+--      anterior de este archivo creó `users.streaming_services/_region`, se
+--      copian a la tabla y se borran esas columnas.
 --   2. lists: el CHECK `lists_media_type_check` admite 'mixed' (lista con
 --      varios formatos), y dos columnas: `description` (≤ 500) y `template`
 --      ('franchise' | 'ranking' | NULL).
@@ -28,16 +31,19 @@
 --      no puede editar actualiza 0 filas.
 --
 -- IDEMPOTENTE: se puede ejecutar dos veces seguidas sin error ni cambios.
--- No crea tablas: las políticas demo_no_* de users, lists y list_items ya
--- existen (20261101120001) y cubren las columnas nuevas.
+-- Al final se vuelve a ejecutar el bloque demo_no_* (20261008000001) para
+-- cubrir la tabla nueva; lists y list_items ya lo tenían.
 --
 -- CÓMO COMPROBARLO (SQL Editor, después de aplicarla):
 --   select column_name, data_type from information_schema.columns
 --    where table_schema = 'public'
---      and (table_name, column_name) in (('users','streaming_services'),
---          ('users','streaming_region'), ('lists','description'),
+--      and (table_name, column_name) in (('user_streaming_services','services'),
+--          ('user_streaming_services','region'), ('lists','description'),
 --          ('lists','template'), ('list_items','position'), ('list_items','note'));
 --                                                              -- 6 filas
+--   select policyname, cmd, roles from pg_policies
+--    where tablename = 'user_streaming_services' order by 1;   -- 4 *_own (authenticated)
+--                                                              -- + 3 demo_no_*
 --   select pg_get_constraintdef(oid) from pg_constraint
 --    where conname = 'lists_media_type_check';                 -- incluye 'mixed'
 --   select policyname, cmd from pg_policies
@@ -49,35 +55,54 @@
 -- ============================================================
 
 
--- ── 1. Mis plataformas ────────────────────────────────────────────────────
-alter table public.users
-  add column if not exists streaming_services integer[] not null default '{}';
-alter table public.users
-  add column if not exists streaming_region text;
+-- ── 1. Mis plataformas (privado: solo el dueño) ──────────────────────────
+create table if not exists public.user_streaming_services (
+  user_id uuid primary key references public.users(id) on delete cascade,
+  services integer[] not null default '{}',
+  region text,
+  updated_at timestamptz not null default now(),
+  constraint user_streaming_services_services_check check (
+    cardinality(services) <= 30
+    and array_position(services, null) is null
+    and 0 < all (services)
+  ),
+  constraint user_streaming_services_region_check check (region is null or region ~ '^[A-Z]{2}$')
+);
+alter table public.user_streaming_services enable row level security;
 
+drop policy if exists "user_streaming_services_select_own" on public.user_streaming_services;
+create policy "user_streaming_services_select_own" on public.user_streaming_services
+  for select to authenticated using (user_id = auth.uid());
+drop policy if exists "user_streaming_services_insert_own" on public.user_streaming_services;
+create policy "user_streaming_services_insert_own" on public.user_streaming_services
+  for insert to authenticated with check (user_id = auth.uid());
+drop policy if exists "user_streaming_services_update_own" on public.user_streaming_services;
+create policy "user_streaming_services_update_own" on public.user_streaming_services
+  for update to authenticated using (user_id = auth.uid()) with check (user_id = auth.uid());
+drop policy if exists "user_streaming_services_delete_own" on public.user_streaming_services;
+create policy "user_streaming_services_delete_own" on public.user_streaming_services
+  for delete to authenticated using (user_id = auth.uid());
+
+revoke all on public.user_streaming_services from public, anon;
+grant select, insert, update, delete on public.user_streaming_services to authenticated;
+grant all on public.user_streaming_services to service_role;
+
+-- Una versión anterior de este archivo guardaba esto en `users` (legible por
+-- cualquiera con sesión): se traslada y se borra.
 do $$
 begin
-  if not exists (select 1 from pg_constraint
-                  where conname = 'users_streaming_services_check' and conrelid = 'public.users'::regclass) then
-    alter table public.users
-      add constraint users_streaming_services_check check (
-        cardinality(streaming_services) <= 30
-        and array_position(streaming_services, null) is null
-        and 0 < all (streaming_services)
-      );
-  end if;
-  if not exists (select 1 from pg_constraint
-                  where conname = 'users_streaming_region_check' and conrelid = 'public.users'::regclass) then
-    alter table public.users
-      add constraint users_streaming_region_check check (
-        streaming_region is null or streaming_region ~ '^[A-Z]{2}$'
-      );
+  if exists (select 1 from information_schema.columns
+              where table_schema = 'public' and table_name = 'users' and column_name = 'streaming_services') then
+    execute $q$
+      insert into public.user_streaming_services (user_id, services, region)
+      select id, streaming_services, streaming_region from public.users
+       where cardinality(streaming_services) > 0 or streaming_region is not null
+      on conflict (user_id) do nothing
+    $q$;
+    alter table public.users drop column if exists streaming_services;
+    alter table public.users drop column if exists streaming_region;
   end if;
 end $$;
-
--- Como library_visibility (20261101120001): el dueño las cambia con su JWT.
--- anon NO recibe SELECT de estas columnas (solo las seis públicas de F-02).
-grant update (streaming_services, streaming_region) on public.users to authenticated;
 
 
 -- ── 2. Listas mixtas, descripción y plantilla ─────────────────────────────
@@ -230,3 +255,32 @@ as $$
 $$;
 revoke all on function public.reorder_list_items(uuid, uuid[]) from public, anon;
 grant execute on function public.reorder_list_items(uuid, uuid[]) to authenticated;
+
+
+-- ── 7. Demo de solo lectura también en la tabla nueva (copia de 20261008000001) ─
+do $$
+declare
+  t record;
+begin
+  for t in
+    select c.relname
+    from pg_class c
+    join pg_namespace n on n.oid = c.relnamespace
+    where n.nspname = 'public' and c.relkind = 'r' and c.relrowsecurity
+  loop
+    execute format('drop policy if exists demo_no_insert on public.%I', t.relname);
+    execute format('drop policy if exists demo_no_update on public.%I', t.relname);
+    execute format('drop policy if exists demo_no_delete on public.%I', t.relname);
+
+    execute format(
+      'create policy demo_no_insert on public.%I as restrictive for insert to authenticated
+         with check (not public.is_demo_session())', t.relname);
+    execute format(
+      'create policy demo_no_update on public.%I as restrictive for update to authenticated
+         using (not public.is_demo_session()) with check (not public.is_demo_session())', t.relname);
+    execute format(
+      'create policy demo_no_delete on public.%I as restrictive for delete to authenticated
+         using (not public.is_demo_session())', t.relname);
+  end loop;
+end
+$$;

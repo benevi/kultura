@@ -2,7 +2,8 @@
 // KULTURA — Mis plataformas (F-25, PRO-6): catálogo por región
 //
 // Ids de proveedor de TMDB (`watch/providers`, datos de JustWatch). Se guarda
-// el id PRINCIPAL de cada plataforma en `users.streaming_services`; `aliases`
+// el id PRINCIPAL de cada plataforma en `user_streaming_services.services`
+// (tabla privada: solo la lee y escribe su dueño); `aliases`
 // son las variantes con las que TMDB la sirve en algunos países o títulos
 // («Netflix basic with Ads», «Amazon Prime Video with Ads»…), que cuentan
 // como la misma suscripción.
@@ -10,6 +11,8 @@
 // Sin servidor ni red: lo usan Ajustes (navegador) e Inicio (servidor).
 // Regiones: las mismas que `tmdbRegion` (es → ES, en → US).
 // ============================================================
+
+import type { SupabaseClient } from '@supabase/supabase-js'
 
 export const PLATFORM_REGIONS = ['ES', 'US'] as const
 export type PlatformRegion = (typeof PLATFORM_REGIONS)[number]
@@ -85,4 +88,24 @@ export function expandServices(services: number[], region: PlatformRegion): Set<
 /** Nombres (para "Esta noche en Netflix y Filmin"). Los ids desconocidos no salen. */
 export function platformNames(services: number[], region: PlatformRegion): string[] {
   return PLATFORMS_BY_REGION[region].filter((p) => services.includes(p.id)).map((p) => p.name)
+}
+
+/**
+ * Plataformas guardadas del usuario con SU sesión. `null` si la tabla aún no
+ * existe (migración sin aplicar) o la lectura falla: quien llama no pinta
+ * nada. Sin fila: ninguna marcada y la región del idioma.
+ */
+export async function readPlatforms(
+  supabase: Pick<SupabaseClient, 'from'>,
+  userId: string,
+  locale: string | null | undefined
+): Promise<{ services: number[]; region: PlatformRegion } | null> {
+  const { data, error } = await supabase
+    .from('user_streaming_services')
+    .select('services, region')
+    .eq('user_id', userId)
+    .maybeSingle()
+  if (error) return null
+  const row = data as { services?: unknown; region?: unknown } | null
+  return { services: normalizeServices(row?.services), region: platformRegionFor(row?.region, locale) }
 }

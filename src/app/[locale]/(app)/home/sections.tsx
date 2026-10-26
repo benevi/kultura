@@ -14,34 +14,13 @@ import { Avatar } from '@/components/ui/Avatar'
 import { KButton } from '@/components/ui/KButton'
 import { PosterImage } from '@/components/media/PosterImage'
 import { posterGradient } from '@/lib/images/poster-gradient'
-import { normalizeServices, platformNames, platformRegionFor } from '../settings/platforms'
+import { platformNames, readPlatforms } from '../settings/platforms'
 import { availableTonight, type TonightCandidate } from './tonight'
 import { TonightClient } from './TonightClient'
 
 /** Pendientes que se miran (los más recientes); `availableTonight` comprueba 24. */
 const TONIGHT_CANDIDATES = 40
 const FEED_LIMIT = 8
-
-type Supabase = Awaited<ReturnType<typeof createClient>>
-
-/** Plataformas guardadas, o `null` si la columna aún no existe (sin migración). */
-export async function readPlatforms(
-  supabase: Supabase,
-  userId: string,
-  locale: string
-): Promise<{ services: number[]; region: ReturnType<typeof platformRegionFor> } | null> {
-  const { data, error } = await supabase
-    .from('users')
-    .select('streaming_services, streaming_region')
-    .eq('id', userId)
-    .maybeSingle()
-  // Sin la columna (migración de F-25 sin aplicar: 42703) o con un fallo, la
-  // sección simplemente no sale.
-  if (error) return null
-  const row = data as { streaming_services?: unknown; streaming_region?: unknown } | null
-  if (!row) return null
-  return { services: normalizeServices(row.streaming_services), region: platformRegionFor(row.streaming_region, locale) }
-}
 
 export async function TonightOnMyPlatforms({ userId, locale }: { userId: string; locale: string }) {
   const supabase = await createClient()

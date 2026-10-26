@@ -90,13 +90,14 @@ describe('FriendsActivity', () => {
 describe('TonightOnMyPlatforms', () => {
   beforeEach(() => vi.clearAllMocks())
 
-  it('sin la migración (columna inexistente) no sale nada', async () => {
-    client = fakeSupabase({ tables: { users: [{ data: null, error: { code: '42703', message: 'no column' } }] } })
+  it('sin la migración (tabla inexistente) no sale nada', async () => {
+    client = fakeSupabase({ tables: { user_streaming_services: [{ data: null, error: { code: 'PGRST205', message: 'no table' } }] } })
     expect(await TonightOnMyPlatforms({ userId: ME, locale: 'es' })).toBeNull()
   })
 
   it('sin plataformas marcadas: invitación a elegirlas, sin consultar TMDB', async () => {
-    client = fakeSupabase({ tables: { users: [{ data: { streaming_services: [], streaming_region: null }, error: null }] } })
+    // Sin fila (nunca las guardó) = ninguna marcada.
+    client = fakeSupabase({ tables: { user_streaming_services: [{ data: null, error: null }] } })
     const out = text(await TonightOnMyPlatforms({ userId: ME, locale: 'es' }))
     expect(out).toContain('platforms.tonightSetup')
     expect(providers.movie).not.toHaveBeenCalled()
@@ -105,7 +106,7 @@ describe('TonightOnMyPlatforms', () => {
   it('con Netflix y Filmin: solo los pendientes disponibles en ellas', async () => {
     client = fakeSupabase({
       tables: {
-        users: [{ data: { streaming_services: [8, 63], streaming_region: 'ES' }, error: null }],
+        user_streaming_services: [{ data: { services: [8, 63], region: 'ES' }, error: null }],
         user_media: [{
           data: [
             { media_id: 'movie_1', media: { id: 'movie_1', title: 'En Netflix', poster: null, type: 'movie' } },

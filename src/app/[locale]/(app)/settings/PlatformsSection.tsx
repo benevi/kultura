@@ -5,9 +5,9 @@
 //
 // Casillas nativas (Tab, Espacio y lector de pantalla sin trabajo extra) con
 // el catálogo de TMDB de la región elegida. Se guarda solo, con una pausa
-// corta para agrupar varios toques, con el JWT del usuario: la migración da
-// GRANT de estas dos columnas y la RLS (users_update_own + demo_no_update)
-// decide. La cuenta demo lo ve pero no lo cambia.
+// corta para agrupar varios toques, con el JWT del usuario en la tabla
+// privada `user_streaming_services` (RLS: solo su dueño; demo_no_* la deja en
+// solo lectura). La cuenta demo lo ve pero no lo cambia.
 // ============================================================
 
 import { useEffect, useId, useRef, useState } from 'react'
@@ -46,11 +46,15 @@ export function PlatformsSection({ userId, initialServices, initialRegion, isDem
     if (!next) return
     try {
       const supabase = createClient()
+      // Tabla privada (solo el dueño la lee y escribe). Upsert: la primera vez
+      // no hay fila.
       const { data, error } = await supabase
-        .from('users')
-        .update({ streaming_services: next.services, streaming_region: next.region })
-        .eq('id', userId)
-        .select('id')
+        .from('user_streaming_services')
+        .upsert(
+          { user_id: userId, services: next.services, region: next.region, updated_at: new Date().toISOString() },
+          { onConflict: 'user_id' }
+        )
+        .select('user_id')
       // 0 filas = la RLS no dejó (p. ej. demo): también es un fallo.
       if (error || !data || data.length === 0) throw new Error(error?.message ?? 'not updated')
       saved.current = next

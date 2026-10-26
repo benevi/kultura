@@ -17,15 +17,22 @@ vi.mock('@/i18n/navigation', () => ({
 vi.mock('@/components/media/PosterImage', () => ({ PosterImage: () => null }))
 
 const update = vi.fn()
-const result = { data: [{ id: 'u1' }] as unknown[] | null, error: null as unknown }
+const tables: string[] = []
+const result = { data: [{ user_id: 'u1' }] as unknown[] | null, error: null as unknown }
 vi.mock('@/lib/supabase/client', () => ({
   createClient: () => ({
-    from: () => ({
-      update: (values: unknown) => {
-        update(values)
-        return { eq: () => ({ select: async () => result }) }
-      },
-    }),
+    from: (table: string) => {
+      tables.push(table)
+      return {
+        upsert: (values: Record<string, unknown>, opts: unknown) => {
+          // `updated_at` cambia en cada llamada: no forma parte de lo comprobado.
+          const { updated_at: _ignored, ...rest } = values
+          void _ignored
+          update(rest, opts)
+          return { select: async () => result }
+        },
+      }
+    },
   }),
 }))
 
@@ -35,7 +42,8 @@ import { TonightClient } from '@/app/[locale]/(app)/home/TonightClient'
 beforeEach(() => {
   vi.useFakeTimers()
   update.mockClear()
-  result.data = [{ id: 'u1' }]
+  tables.length = 0
+  result.data = [{ user_id: 'u1' }]
   result.error = null
 })
 afterEach(() => vi.useRealTimers())
@@ -60,7 +68,9 @@ describe('PlatformsSection', () => {
       await vi.advanceTimersByTimeAsync(PLATFORMS_SAVE_DELAY_MS + 10)
     })
     expect(update).toHaveBeenCalledTimes(1)
-    expect(update).toHaveBeenCalledWith({ streaming_services: [8, 63], streaming_region: 'ES' })
+    // Tabla privada (RLS: solo el dueño), nunca `users` (la lee cualquiera con sesión).
+    expect(tables).toEqual(['user_streaming_services'])
+    expect(update).toHaveBeenCalledWith({ user_id: 'u1', services: [8, 63], region: 'ES' }, { onConflict: 'user_id' })
     expect(screen.getByRole('status')).toHaveTextContent('platforms.saved')
   })
 
@@ -82,7 +92,7 @@ describe('PlatformsSection', () => {
     await act(async () => {
       await vi.advanceTimersByTimeAsync(PLATFORMS_SAVE_DELAY_MS + 10)
     })
-    expect(update).toHaveBeenCalledWith({ streaming_services: [8], streaming_region: 'US' })
+    expect(update).toHaveBeenCalledWith({ user_id: 'u1', services: [8], region: 'US' }, { onConflict: 'user_id' })
     expect(screen.getByRole('checkbox', { name: 'Hulu' })).toBeInTheDocument()
   })
 

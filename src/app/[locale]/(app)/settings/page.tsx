@@ -4,7 +4,7 @@ import { isDemoUser } from '@/lib/demo'
 import { getTranslations } from 'next-intl/server'
 import { SettingsForm } from './SettingsForm'
 import { PlatformsSection } from './PlatformsSection'
-import { normalizeServices, platformRegionFor } from './platforms'
+import { readPlatforms } from './platforms'
 import { isLibraryVisibility } from '@/app/api/settings/identity'
 import { accountGraceEnabled, libraryVisibilityEnabled, readAccountState } from '@/app/api/settings/account-state'
 import { ACCOUNT_GRACE_DAYS } from '@/app/api/settings/identity'
@@ -27,9 +27,11 @@ export default async function SettingsPage({ params, searchParams }: SettingsPag
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect(`/${locale}/login?next=${encodeURIComponent(`/${locale}/settings`)}`)
 
-  const [{ data: profile }, account] = await Promise.all([
+  const [{ data: profile }, account, platforms] = await Promise.all([
     supabase.from('users').select('*').eq('id', user.id).single(),
     readAccountState(supabase, user.id),
+    // F-25: tabla privada (RLS: solo el dueño); `null` sin la migración.
+    readPlatforms(supabase, user.id, locale),
   ])
 
   // D-04b: el selector solo con la bandera Y la columna (migración aplicada);
@@ -38,18 +40,15 @@ export default async function SettingsPage({ params, searchParams }: SettingsPag
   const initialLibraryVisibility =
     libraryVisibilityEnabled() && isLibraryVisibility(visibility) ? visibility : null
 
-  // F-25: «Mis plataformas» solo si la columna existe (migración aplicada);
-  // `select('*')` la trae sin pedirla por nombre, así que antes no falla nada.
-  const streaming = profile as { streaming_services?: unknown; streaming_region?: unknown } | null
-  const platformsSlot =
-    streaming && Array.isArray(streaming.streaming_services) ? (
-      <PlatformsSection
-        userId={user.id}
-        initialServices={normalizeServices(streaming.streaming_services)}
-        initialRegion={platformRegionFor(streaming.streaming_region, locale)}
-        isDemo={isDemoUser(user)}
-      />
-    ) : null
+  // F-25: «Mis plataformas» solo si su tabla existe (migración aplicada).
+  const platformsSlot = platforms ? (
+    <PlatformsSection
+      userId={user.id}
+      initialServices={platforms.services}
+      initialRegion={platforms.region}
+      isDemo={isDemoUser(user)}
+    />
+  ) : null
 
   return (
     <main className="max-w-[640px] mx-auto px-4 md:px-8 py-8">
