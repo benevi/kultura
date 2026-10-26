@@ -543,6 +543,10 @@ export function ConversationClient({
         <div ref={bottomRef} />
       </div>
 
+      {/* Tras enviar un mensaje se ofrecen los avisos push: en el flujo,
+          encima del campo de escribir (nunca lo tapa). */}
+      <PushOffer placement="inline" />
+
       {/* Input — F-11: si ya no se puede escribir, se explica por qué. */}
       {!canSend ? (
         <p
@@ -578,8 +582,6 @@ export function ConversationClient({
         </button>
       </form>
       )}
-      {/* Tras enviar un mensaje se ofrecen los avisos push. */}
-      <PushOffer />
     </div>
   )
 }

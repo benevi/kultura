@@ -100,7 +100,8 @@ describe('PushOffer', () => {
     fireEvent.click(screen.getByRole('button', { name: 'enable' }))
     expect(notification.requestPermission).toHaveBeenCalledTimes(1)
     await waitFor(() => expect(pushManager.subscribe).toHaveBeenCalled())
-    expect(await screen.findByText('done')).toBeInTheDocument()
+    expect(await screen.findByTestId('push-offer')).toHaveTextContent('done')
+    await waitFor(() => expect(screen.getByTestId('push-offer-status')).toHaveTextContent('done'))
     expect(fetchMock.mock.calls.some(([url]) => url === '/api/push/subscribe')).toBe(true)
   })
 
@@ -147,6 +148,43 @@ describe('PushOffer', () => {
     act(() => offerPushInContext('chat'))
     await act(async () => {})
     expect(screen.queryByTestId('push-offer')).toBeNull()
+  })
+
+  it('la X y Esc la cierran solo esta vez (no la descartan como «Ahora no»)', async () => {
+    install()
+    render(<PushOffer />)
+    act(() => offerPushInContext('chat'))
+    fireEvent.click(await screen.findByRole('button', { name: 'close' }))
+    expect(screen.queryByTestId('push-offer')).toBeNull()
+    expect(localStorage.getItem(PUSH_OFFER_DISMISSED_KEY)).toBeNull()
+
+    sessionStorage.clear()
+    act(() => offerPushInContext('chat'))
+    await screen.findByTestId('push-offer')
+    fireEvent.keyDown(document, { key: 'Escape' })
+    expect(screen.queryByTestId('push-offer')).toBeNull()
+    expect(localStorage.getItem(PUSH_OFFER_DISMISSED_KEY)).toBeNull()
+  })
+
+  it('la región status se monta vacía y el texto entra después', async () => {
+    install()
+    render(<PushOffer />)
+    expect(screen.queryByRole('status')).toBeNull()
+    act(() => offerPushInContext('chat'))
+    const region = screen.getByTestId('push-offer-status')
+    expect(region).toHaveAttribute('role', 'status')
+    expect(region).toBeEmptyDOMElement()
+    await waitFor(() => expect(region).toHaveTextContent('chatBody'))
+    expect(screen.getByTestId('push-offer-status')).toBe(region)
+  })
+
+  it('en el chat va en el flujo (no flotante), para no tapar el campo de escribir', async () => {
+    install()
+    render(<PushOffer placement="inline" />)
+    act(() => offerPushInContext('chat'))
+    const card = await screen.findByTestId('push-offer')
+    expect(card).toHaveAttribute('data-placement', 'inline')
+    expect(card.className).not.toMatch(/\bfixed\b/)
   })
 
   it('una vez por visita como mucho', async () => {
