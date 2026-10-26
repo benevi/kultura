@@ -70,6 +70,8 @@ export const PUBLIC_PROFILE_CLIENT_NAMESPACES = ["discoverFilters.typeBadge", "i
  * este proveedor (usan las del shell), como en `(app)`.
  */
 export const MEDIA_CLIENT_NAMESPACES = [
+  // F-29: "Añadir toda la franquicia" de "También existe como…".
+  "adaptations.add",
   // F-18: "Cerrar" y "Cargando…" de `Modal`/`Spinner` y las estrellas de
   // `StarRating` en los diálogos de biblioteca, listas y recomendar.
   "common",
@@ -84,6 +86,8 @@ export const MEDIA_CLIENT_NAMESPACES = [
   "progress",
   "recommendations",
   "report",
+  // F-29: "Compartir mi nota" (CRE-8a), solo la rama del botón.
+  "share.rating",
 ] as const;
 
 export const APP_CLIENT_NAMESPACES = [
