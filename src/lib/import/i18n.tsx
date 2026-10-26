@@ -47,3 +47,10 @@ export function useImportT(): ImportTranslator {
   return t
 }
 
+/**
+ * Como `useImportT`, pero `null` sin proveedor: para el paso opcional de
+ * /welcome, que sin textos del importador simplemente no se pinta.
+ */
+export function useOptionalImportT(): ImportTranslator | null {
+  return useContext(ImportTextContext)
+}

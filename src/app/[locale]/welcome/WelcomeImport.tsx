@@ -11,7 +11,7 @@
 
 import { useState } from 'react'
 import dynamic from 'next/dynamic'
-import { useImportT } from '@/lib/import/i18n'
+import { useOptionalImportT } from '@/lib/import/i18n'
 import { KButton } from '@/components/ui/KButton'
 
 // El lector de archivos solo se descarga si alguien abre el panel: el resto
@@ -27,10 +27,13 @@ interface WelcomeImportProps {
 }
 
 export function WelcomeImport({ locale, onFinished }: WelcomeImportProps) {
-  const t = useImportT()
+  const t = useOptionalImportT()
   const [open, setOpen] = useState(false)
   // Una vez abierto se queda montado: cerrar el panel no corta una importación en marcha.
   const [mounted, setMounted] = useState(false)
+
+  // Sin los textos del importador (página que no los pasa), el paso opcional no aparece.
+  if (!t) return null
 
   return (
     <section aria-labelledby="welcome-import" className="rounded-bento bg-surface-default px-5 py-5 sm:px-6">
