@@ -2,11 +2,15 @@ import { ImageResponse } from "next/og";
 import { C, loadFont, fontsOption } from "@/lib/og/brand";
 import { posterDataUri } from "@/lib/og/poster";
 import { getPublicCollection, resolveRenamedUsername } from "@/lib/social/public-collection";
+import { profileTopFour, type TopFourClient } from "./r/_lib/top-four";
 
 /**
  * Tarjeta al compartir /u/{username}: nombre + collage de hasta cuatro
- * portadas de sus listas públicas. Cada portada se descarga aquí con un tope
- * de tiempo y, si falla, su hueco queda con el gradiente de póster de F0: la
+ * portadas. F-29: su "top 4" — los títulos de sus listas públicas que más
+ * valora (favorito, luego nota), sin enseñar ninguna nota y nunca algo que no
+ * sea ya público (ver `r/_lib/top-four.ts`); sin notas, las cuatro primeras
+ * de sus listas, como antes. Cada portada se descarga aquí con un tope de
+ * tiempo y, si falla, su hueco queda con el gradiente de póster de F0: la
  * tarjeta NUNCA depende de que un proveedor responda.
  */
 export const alt = "KULTURA";
@@ -25,9 +29,19 @@ const FALLBACKS = [
 const TILT = [-6, 3, -2, 5];
 
 const COPY = {
-  es: { heading: "La colección de", lists: (n: number) => (n === 1 ? "1 lista" : `${n} listas`) },
-  en: { heading: "The collection of", lists: (n: number) => (n === 1 ? "1 list" : `${n} lists`) },
+  es: { heading: "La colección de", top: "El top 4 de", lists: (n: number) => (n === 1 ? "1 lista" : `${n} listas`) },
+  en: { heading: "The collection of", top: "The top 4 of", lists: (n: number) => (n === 1 ? "1 list" : `${n} lists`) },
 };
+
+/** Service role para el orden del top 4; sin clave (o fuera del servidor), sin orden. */
+async function adminClient(): Promise<TopFourClient | null> {
+  try {
+    const { createAdminClient } = await import("@/lib/supabase/admin");
+    return createAdminClient() as unknown as TopFourClient;
+  } catch {
+    return null;
+  }
+}
 
 export default async function Image({
   params,
@@ -52,20 +66,20 @@ export default async function Image({
     if (current) collection = await getPublicCollection(current).catch(() => null);
   }
   const lists = collection?.lists ?? [];
-  const sources = lists
-    .flatMap((l) => l.items)
-    .map((i) => i.poster)
-    .filter((p): p is string => Boolean(p))
-    .slice(0, 4);
-  const posters = await Promise.all(sources.map(posterDataUri));
+  const items = lists.flatMap((l) => l.items);
+  const top = collection
+    ? await profileTopFour(collection.owner.id, items, await adminClient())
+    : { posters: [], ranked: false };
+  const posters = await Promise.all(top.posters.map(posterDataUri));
   while (posters.length < 4) posters.push(null);
 
   const displayName = collection?.owner.username ?? username;
+  const heading = top.ranked ? copy.top : copy.heading;
   const meta = copy.lists(lists.length);
   const fonts = (
     await Promise.all([
       loadFont("Bricolage+Grotesque", 800, `kultura${displayName}`),
-      loadFont("Figtree", 700, `${copy.heading}${meta}`),
+      loadFont("Figtree", 700, `${heading}${meta}`),
     ])
   ).filter((f) => f !== null);
 
@@ -90,7 +104,7 @@ export default async function Image({
             <div style={{ width: 9, height: 9, background: C.pink, transform: "rotate(14deg)", marginLeft: 4, marginBottom: 10 }} />
           </div>
           <div style={{ display: "flex", fontSize: 34, fontWeight: 700, color: C.muted, marginTop: 56 }}>
-            {copy.heading}
+            {heading}
           </div>
           <div
             style={{

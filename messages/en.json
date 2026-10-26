@@ -332,6 +332,39 @@
       "buy": "Buy"
     }
   },
+  "adaptations": {
+    "title": "Also exists as…",
+    "rel": {
+      "source": "Source"
+    },
+    "franchise": "Franchise: {name}",
+    "franchiseCount": "{count, plural, one {# title} other {# titles}} on KULTURA",
+    "inLibrary": "{count, plural, one {# already in your library} other {# already in your library}}",
+    "addAll": "Add the whole franchise ({count})",
+    "adding": "Adding {done} of {total}…",
+    "addedOne": "{count} title added to “Pending”.",
+    "addedOther": "{count} titles added to “Pending”.",
+    "allInLibrary": "You already have the whole franchise in your library.",
+    "rateLimited": "That's a lot at once: wait a minute and tap again to add the rest.",
+    "failed": "Couldn't add them. Try again in a while.",
+    "loginToAdd": "Sign up to add the franchise",
+    "sourceLabel": "Links from"
+  },
+  "share": {
+    "button": "Share my rating",
+    "shareText": "My rating of {title} on KULTURA",
+    "copied": "Link copied.",
+    "copyError": "Couldn't copy it. Copy it by hand:",
+    "headline": "{username} gives {title} {rating}/10",
+    "metaDescription": "{username}'s rating on KULTURA, where they track films, TV, anime, manga, books, comics and games.",
+    "notFound": "Rating not found",
+    "viewTitle": "See the title",
+    "viewProfile": "{username}'s profile",
+    "joinHint": "Want to keep track of what you watch, read and play?",
+    "join": "Sign up for free",
+    "cardLead": "{username} gives it",
+    "cardGeneric": "On KULTURA"
+  },
   "library": {
     "status": {
       "completed": "Completed",

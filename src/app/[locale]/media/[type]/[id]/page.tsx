@@ -19,6 +19,8 @@ import type { Metadata } from "next";
 import { getTranslations } from "next-intl/server";
 import type { MediaItem } from "@/types/media";
 import { MediaDetail, type Breadcrumb } from "@/components/media/MediaDetail";
+import { rawgSlugFromUrl } from "@/lib/adaptations/model";
+import { ratingSharePath, rating10Of } from "@/app/[locale]/u/[username]/r/_lib/share";
 import { getViewer } from "@/lib/media/viewer";
 import { createClient } from "@/lib/supabase/server";
 import { getMediaEntry } from "@/lib/library/queries";
@@ -137,10 +139,10 @@ export default async function MediaDetailPage({ params }: Props) {
   if (!data) notFound();
 
   const { item } = data;
-  const { user } = await getViewer();
+  const { user, profile } = await getViewer();
   const supabase = user ? await createClient() : null;
 
-  const [initialEntry, kulturaRating, matchScores, synopsis, t, tMedia] = await Promise.all([
+  const [initialEntry, kulturaRating, matchScores, synopsis, t, tMedia, tShare] = await Promise.all([
     user ? getMediaEntry(user.id, item.id).catch(() => null) : Promise.resolve(null),
     getKulturaRating(item.id),
     // Afinidad (F3a) solo como compuerta de "Por qué te lo recomendamos": sin
@@ -151,7 +153,16 @@ export default async function MediaDetailPage({ params }: Props) {
     cachedSynopsis(item.synopsis, item.id, locale),
     getTranslations({ locale, namespace: "media_detail" }),
     getTranslations({ locale, namespace: "media" }),
+    getTranslations({ locale, namespace: "share" }),
   ]);
+
+  // F-29: "Compartir mi nota" solo si hay nota (la página compartida la lee
+  // con la firma que se genera aquí, para el dueño).
+  const ownRating = rating10Of(initialEntry);
+  const sharePath =
+    user && profile?.username && ownRating !== null
+      ? ratingSharePath(locale, { id: user.id, username: profile.username }, item.id)
+      : null;
 
   // Miga de pan: la misma en pantalla y en el JSON-LD. El formato enlaza a su
   // ranking del año cuando existe (los hubs `/best/[format]` llegan con F-16).
@@ -190,6 +201,23 @@ export default async function MediaDetailPage({ params }: Props) {
         initialEntry={initialEntry}
         isAuthenticated={Boolean(user)}
         matchScore={matchScores.get(item.id)}
+        adaptations={{
+          rawgSlug: item.type === "game" ? rawgSlugFromUrl(data.source?.url) : undefined,
+          userId: user?.id ?? null,
+        }}
+        shareRating={
+          sharePath
+            ? {
+                path: sharePath,
+                labels: {
+                  button: tShare("button"),
+                  shareText: tShare("shareText", { title: item.title }),
+                  copied: tShare("copied"),
+                  copyError: tShare("copyError"),
+                },
+              }
+            : undefined
+        }
       />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: serializeJsonLd(jsonLd) }} />
     </>

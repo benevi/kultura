@@ -693,6 +693,28 @@ export type Database = {
         }
         Relationships: []
       }
+      media_adaptations: {
+        Row: {
+          fetched_at: string
+          media_id: string
+          payload: Json
+          wikidata_id: string | null
+        }
+        ComputedFields: never
+        Insert: {
+          fetched_at?: string
+          media_id: string
+          payload?: Json
+          wikidata_id?: string | null
+        }
+        Update: {
+          fetched_at?: string
+          media_id?: string
+          payload?: Json
+          wikidata_id?: string | null
+        }
+        Relationships: []
+      }
       media_translations: {
         Row: {
           cache_key: string

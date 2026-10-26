@@ -332,6 +332,39 @@
       "buy": "Compra"
     }
   },
+  "adaptations": {
+    "title": "También existe como…",
+    "rel": {
+      "source": "Origen"
+    },
+    "franchise": "Franquicia: {name}",
+    "franchiseCount": "{count, plural, one {# título} other {# títulos}} en KULTURA",
+    "inLibrary": "{count, plural, one {# ya en tu biblioteca} other {# ya en tu biblioteca}}",
+    "addAll": "Añadir toda la franquicia ({count})",
+    "adding": "Añadiendo {done} de {total}…",
+    "addedOne": "{count} título añadido a «Pendiente».",
+    "addedOther": "{count} títulos añadidos a «Pendiente».",
+    "allInLibrary": "Ya tienes toda la franquicia en tu biblioteca.",
+    "rateLimited": "Son muchos de golpe: espera un minuto y vuelve a pulsar para añadir el resto.",
+    "failed": "No se pudo añadir. Inténtalo de nuevo en un rato.",
+    "loginToAdd": "Crea tu cuenta para añadir la franquicia",
+    "sourceLabel": "Vínculos de"
+  },
+  "share": {
+    "button": "Compartir mi nota",
+    "shareText": "Mi nota de {title} en KULTURA",
+    "copied": "Enlace copiado.",
+    "copyError": "No se pudo copiar. Cópialo a mano:",
+    "headline": "{username} le da {rating}/10 a {title}",
+    "metaDescription": "La nota de {username} en KULTURA, donde sigue cine, series, anime, manga, libros, cómics y juegos.",
+    "notFound": "Nota no encontrada",
+    "viewTitle": "Ver la ficha",
+    "viewProfile": "Perfil de {username}",
+    "joinHint": "¿Llevas tu propia cuenta de lo que ves, lees y juegas?",
+    "join": "Crea tu cuenta gratis",
+    "cardLead": "{username} le da",
+    "cardGeneric": "En KULTURA"
+  },
   "library": {
     "status": {
       "completed": "Completado",
