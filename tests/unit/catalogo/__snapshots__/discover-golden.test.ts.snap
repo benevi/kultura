@@ -9,19 +9,19 @@ exports[`caracterización de Descubrir (mismas entradas → mismas salidas) > ty
     },
     {
       "method": "GET",
-      "url": "https://api.rawg.io/api/games?key=test-rawg-key&ordering=-rating&exclude_tags=nsfw%2Cadult%2Chentai%2Csexual-content%2Cporn&dates=1970-01-01%2C2026-10-26&page=1",
+      "url": "https://api.rawg.io/api/games?key=%3Cclave%3E&ordering=-rating&exclude_tags=nsfw%2Cadult%2Chentai%2Csexual-content%2Cporn&dates=1970-01-01%2C2026-10-26&page=1",
     },
     {
       "method": "GET",
-      "url": "https://api.themoviedb.org/3/discover/movie?api_key=test-tmdb-key&language=es-ES&sort_by=popularity.desc&include_adult=false&page=1&vote_count.gte=50&primary_release_date.lte=2026-10-26",
+      "url": "https://api.themoviedb.org/3/discover/movie?api_key=%3Cclave%3E&language=es-ES&sort_by=popularity.desc&include_adult=false&page=1&vote_count.gte=50&primary_release_date.lte=2026-10-26",
     },
     {
       "method": "GET",
-      "url": "https://api.themoviedb.org/3/discover/tv?api_key=test-tmdb-key&language=es-ES&sort_by=popularity.desc&include_adult=false&page=1&vote_count.gte=50&first_air_date.lte=2026-10-26",
+      "url": "https://api.themoviedb.org/3/discover/tv?api_key=%3Cclave%3E&language=es-ES&sort_by=popularity.desc&include_adult=false&page=1&vote_count.gte=50&first_air_date.lte=2026-10-26",
     },
     {
       "method": "GET",
-      "url": "https://comicvine.gamespot.com/api/issues/?api_key=test-comicvine-key&format=json&sort=cover_date%3Adesc&limit=100&offset=0&field_list=id%2Cname%2Cissue_number%2Ccover_date%2Cstore_date%2Cdeck%2Cimage%2Cvolume&filter=cover_date%3A1900-01-01%7C2026-10-26",
+      "url": "https://comicvine.gamespot.com/api/issues/?api_key=%3Cclave%3E&format=json&sort=cover_date%3Adesc&limit=100&offset=0&field_list=id%2Cname%2Cissue_number%2Ccover_date%2Cstore_date%2Cdeck%2Cimage%2Cvolume&filter=cover_date%3A1900-01-01%7C2026-10-26",
     },
     {
       "method": "GET",
@@ -470,19 +470,19 @@ exports[`caracterización de Descubrir (mismas entradas → mismas salidas) > ty
     },
     {
       "method": "GET",
-      "url": "https://api.rawg.io/api/games?key=test-rawg-key&ordering=-rating&exclude_tags=nsfw%2Cadult%2Chentai%2Csexual-content%2Cporn&dates=1970-01-01%2C2026-10-26&page=1",
+      "url": "https://api.rawg.io/api/games?key=%3Cclave%3E&ordering=-rating&exclude_tags=nsfw%2Cadult%2Chentai%2Csexual-content%2Cporn&dates=1970-01-01%2C2026-10-26&page=1",
     },
     {
       "method": "GET",
-      "url": "https://api.themoviedb.org/3/discover/movie?api_key=test-tmdb-key&language=es-ES&sort_by=popularity.desc&include_adult=false&page=1&vote_count.gte=50&primary_release_date.lte=2026-10-26",
+      "url": "https://api.themoviedb.org/3/discover/movie?api_key=%3Cclave%3E&language=es-ES&sort_by=popularity.desc&include_adult=false&page=1&vote_count.gte=50&primary_release_date.lte=2026-10-26",
     },
     {
       "method": "GET",
-      "url": "https://api.themoviedb.org/3/discover/tv?api_key=test-tmdb-key&language=es-ES&sort_by=popularity.desc&include_adult=false&page=1&vote_count.gte=50&first_air_date.lte=2026-10-26",
+      "url": "https://api.themoviedb.org/3/discover/tv?api_key=%3Cclave%3E&language=es-ES&sort_by=popularity.desc&include_adult=false&page=1&vote_count.gte=50&first_air_date.lte=2026-10-26",
     },
     {
       "method": "GET",
-      "url": "https://comicvine.gamespot.com/api/issues/?api_key=test-comicvine-key&format=json&sort=cover_date%3Adesc&limit=100&offset=0&field_list=id%2Cname%2Cissue_number%2Ccover_date%2Cstore_date%2Cdeck%2Cimage%2Cvolume&filter=cover_date%3A1900-01-01%7C2026-10-26",
+      "url": "https://comicvine.gamespot.com/api/issues/?api_key=%3Cclave%3E&format=json&sort=cover_date%3Adesc&limit=100&offset=0&field_list=id%2Cname%2Cissue_number%2Ccover_date%2Cstore_date%2Cdeck%2Cimage%2Cvolume&filter=cover_date%3A1900-01-01%7C2026-10-26",
     },
     {
       "method": "GET",
@@ -944,19 +944,19 @@ exports[`caracterización de Descubrir (mismas entradas → mismas salidas) > ty
     },
     {
       "method": "GET",
-      "url": "https://api.rawg.io/api/games?key=test-rawg-key&search=dune&page=1",
+      "url": "https://api.rawg.io/api/games?key=%3Cclave%3E&search=dune&page=1",
     },
     {
       "method": "GET",
-      "url": "https://api.themoviedb.org/3/search/movie?api_key=test-tmdb-key&language=es-ES&query=dune&page=1",
+      "url": "https://api.themoviedb.org/3/search/movie?api_key=%3Cclave%3E&language=es-ES&query=dune&page=1",
     },
     {
       "method": "GET",
-      "url": "https://api.themoviedb.org/3/search/tv?api_key=test-tmdb-key&language=es-ES&query=dune&page=1",
+      "url": "https://api.themoviedb.org/3/search/tv?api_key=%3Cclave%3E&language=es-ES&query=dune&page=1",
     },
     {
       "method": "GET",
-      "url": "https://comicvine.gamespot.com/api/search/?api_key=test-comicvine-key&format=json&query=dune&resources=volume&limit=10&page=1&field_list=id%2Cname%2Cstart_year%2Ccount_of_issues%2Cdeck%2Cpublisher%2Cimage%2Cfirst_issue",
+      "url": "https://comicvine.gamespot.com/api/search/?api_key=%3Cclave%3E&format=json&query=dune&resources=volume&limit=10&page=1&field_list=id%2Cname%2Cstart_year%2Ccount_of_issues%2Cdeck%2Cpublisher%2Cimage%2Cfirst_issue",
     },
     {
       "method": "GET",
@@ -1392,19 +1392,19 @@ exports[`caracterización de Descubrir (mismas entradas → mismas salidas) > ty
     },
     {
       "method": "GET",
-      "url": "https://api.rawg.io/api/games?key=test-rawg-key&search=dune&page=1",
+      "url": "https://api.rawg.io/api/games?key=%3Cclave%3E&search=dune&page=1",
     },
     {
       "method": "GET",
-      "url": "https://api.themoviedb.org/3/search/movie?api_key=test-tmdb-key&language=es-ES&query=dune&page=1",
+      "url": "https://api.themoviedb.org/3/search/movie?api_key=%3Cclave%3E&language=es-ES&query=dune&page=1",
     },
     {
       "method": "GET",
-      "url": "https://api.themoviedb.org/3/search/tv?api_key=test-tmdb-key&language=es-ES&query=dune&page=1",
+      "url": "https://api.themoviedb.org/3/search/tv?api_key=%3Cclave%3E&language=es-ES&query=dune&page=1",
     },
     {
       "method": "GET",
-      "url": "https://comicvine.gamespot.com/api/search/?api_key=test-comicvine-key&format=json&query=dune&resources=volume&limit=10&page=1&field_list=id%2Cname%2Cstart_year%2Ccount_of_issues%2Cdeck%2Cpublisher%2Cimage%2Cfirst_issue",
+      "url": "https://comicvine.gamespot.com/api/search/?api_key=%3Cclave%3E&format=json&query=dune&resources=volume&limit=10&page=1&field_list=id%2Cname%2Cstart_year%2Ccount_of_issues%2Cdeck%2Cpublisher%2Cimage%2Cfirst_issue",
     },
     {
       "method": "GET",
@@ -1823,19 +1823,19 @@ exports[`caracterización de Descubrir (mismas entradas → mismas salidas) > ty
     },
     {
       "method": "GET",
-      "url": "https://api.rawg.io/api/games?key=test-rawg-key&ordering=name&page=1&exclude_tags=nsfw%2Cadult%2Chentai%2Csexual-content%2Cporn&dates=1970-01-01%2C2026-10-26",
+      "url": "https://api.rawg.io/api/games?key=%3Cclave%3E&ordering=name&page=1&exclude_tags=nsfw%2Cadult%2Chentai%2Csexual-content%2Cporn&dates=1970-01-01%2C2026-10-26",
     },
     {
       "method": "GET",
-      "url": "https://api.themoviedb.org/3/discover/movie?api_key=test-tmdb-key&language=es-ES&sort_by=original_title.asc&include_adult=false&page=1&vote_count.gte=50&primary_release_date.lte=2026-10-26",
+      "url": "https://api.themoviedb.org/3/discover/movie?api_key=%3Cclave%3E&language=es-ES&sort_by=original_title.asc&include_adult=false&page=1&vote_count.gte=50&primary_release_date.lte=2026-10-26",
     },
     {
       "method": "GET",
-      "url": "https://api.themoviedb.org/3/discover/tv?api_key=test-tmdb-key&language=es-ES&sort_by=original_name.asc&include_adult=false&page=1&vote_count.gte=50&first_air_date.lte=2026-10-26",
+      "url": "https://api.themoviedb.org/3/discover/tv?api_key=%3Cclave%3E&language=es-ES&sort_by=original_name.asc&include_adult=false&page=1&vote_count.gte=50&first_air_date.lte=2026-10-26",
     },
     {
       "method": "GET",
-      "url": "https://comicvine.gamespot.com/api/issues/?api_key=test-comicvine-key&format=json&sort=name%3Aasc&limit=100&offset=0&field_list=id%2Cname%2Cissue_number%2Ccover_date%2Cstore_date%2Cdeck%2Cimage%2Cvolume&filter=cover_date%3A1900-01-01%7C2026-10-26",
+      "url": "https://comicvine.gamespot.com/api/issues/?api_key=%3Cclave%3E&format=json&sort=name%3Aasc&limit=100&offset=0&field_list=id%2Cname%2Cissue_number%2Ccover_date%2Cstore_date%2Cdeck%2Cimage%2Cvolume&filter=cover_date%3A1900-01-01%7C2026-10-26",
     },
     {
       "method": "GET",
@@ -2378,19 +2378,19 @@ exports[`caracterización de Descubrir (mismas entradas → mismas salidas) > ty
     },
     {
       "method": "GET",
-      "url": "https://api.rawg.io/api/games?key=test-rawg-key&ordering=-rating&page=2&exclude_tags=nsfw%2Cadult%2Chentai%2Csexual-content%2Cporn&dates=1970-01-01%2C2026-10-26",
+      "url": "https://api.rawg.io/api/games?key=%3Cclave%3E&ordering=-rating&page=2&exclude_tags=nsfw%2Cadult%2Chentai%2Csexual-content%2Cporn&dates=1970-01-01%2C2026-10-26",
     },
     {
       "method": "GET",
-      "url": "https://api.themoviedb.org/3/discover/movie?api_key=test-tmdb-key&language=es-ES&sort_by=vote_average.desc&include_adult=false&page=2&vote_count.gte=50&primary_release_date.lte=2026-10-26",
+      "url": "https://api.themoviedb.org/3/discover/movie?api_key=%3Cclave%3E&language=es-ES&sort_by=vote_average.desc&include_adult=false&page=2&vote_count.gte=50&primary_release_date.lte=2026-10-26",
     },
     {
       "method": "GET",
-      "url": "https://api.themoviedb.org/3/discover/tv?api_key=test-tmdb-key&language=es-ES&sort_by=vote_average.desc&include_adult=false&page=2&vote_count.gte=50&first_air_date.lte=2026-10-26",
+      "url": "https://api.themoviedb.org/3/discover/tv?api_key=%3Cclave%3E&language=es-ES&sort_by=vote_average.desc&include_adult=false&page=2&vote_count.gte=50&first_air_date.lte=2026-10-26",
     },
     {
       "method": "GET",
-      "url": "https://comicvine.gamespot.com/api/issues/?api_key=test-comicvine-key&format=json&sort=cover_date%3Adesc&limit=100&offset=300&field_list=id%2Cname%2Cissue_number%2Ccover_date%2Cstore_date%2Cdeck%2Cimage%2Cvolume&filter=cover_date%3A1900-01-01%7C2026-10-26",
+      "url": "https://comicvine.gamespot.com/api/issues/?api_key=%3Cclave%3E&format=json&sort=cover_date%3Adesc&limit=100&offset=300&field_list=id%2Cname%2Cissue_number%2Ccover_date%2Cstore_date%2Cdeck%2Cimage%2Cvolume&filter=cover_date%3A1900-01-01%7C2026-10-26",
     },
     {
       "method": "GET",
@@ -3387,7 +3387,7 @@ exports[`caracterización de Descubrir (mismas entradas → mismas salidas) > ty
   "calls": [
     {
       "method": "GET",
-      "url": "https://api.themoviedb.org/3/discover/tv?api_key=test-tmdb-key&language=es-ES&sort_by=popularity.desc&include_adult=false&page=1&vote_count.gte=20&first_air_date.lte=2026-10-26&with_genres=16&with_origin_country=JP",
+      "url": "https://api.themoviedb.org/3/discover/tv?api_key=%3Cclave%3E&language=es-ES&sort_by=popularity.desc&include_adult=false&page=1&vote_count.gte=20&first_air_date.lte=2026-10-26&with_genres=16&with_origin_country=JP",
     },
     {
       "body": "{"query":"\\n  query (\\n    $page: Int\\n    $perPage: Int\\n    $search: String\\n    $genre_in: [String]\\n    $seasonYear: Int\\n    $startDate_greater: FuzzyDateInt\\n    $startDate_lesser: FuzzyDateInt\\n    $status: MediaStatus\\n    $sort: [MediaSort]\\n    $averageScore_greater: Int\\n  ) {\\n    Page(page: $page, perPage: $perPage) {\\n      pageInfo { currentPage lastPage hasNextPage total }\\n      media(\\n        type: ANIME\\n        isAdult: false\\n        search: $search\\n        genre_in: $genre_in\\n        seasonYear: $seasonYear\\n        startDate_greater: $startDate_greater\\n        startDate_lesser: $startDate_lesser\\n        status: $status\\n        sort: $sort\\n        averageScore_greater: $averageScore_greater\\n      ) {\\n        \\n  id\\n  title { romaji english native }\\n  coverImage { extraLarge large }\\n  description(asHtml: false)\\n  genres\\n  averageScore\\n  seasonYear\\n  startDate { year }\\n  episodes\\n  status\\n  studios(isMain: true) { nodes { name } }\\n  trailer { id site }\\n  source\\n\\n      }\\n    }\\n  }\\n","variables":{"page":1,"perPage":20,"startDate_lesser":20261027,"sort":["POPULARITY_DESC"]}}",
@@ -3970,7 +3970,7 @@ exports[`caracterización de Descubrir (mismas entradas → mismas salidas) > ty
   "calls": [
     {
       "method": "GET",
-      "url": "https://api.themoviedb.org/3/discover/tv?api_key=test-tmdb-key&language=es-ES&sort_by=popularity.desc&include_adult=false&page=1&vote_count.gte=20&first_air_date.lte=2026-10-26&with_genres=16&with_origin_country=JP",
+      "url": "https://api.themoviedb.org/3/discover/tv?api_key=%3Cclave%3E&language=es-ES&sort_by=popularity.desc&include_adult=false&page=1&vote_count.gte=20&first_air_date.lte=2026-10-26&with_genres=16&with_origin_country=JP",
     },
     {
       "body": "{"query":"\\n  query (\\n    $page: Int\\n    $perPage: Int\\n    $search: String\\n    $genre_in: [String]\\n    $seasonYear: Int\\n    $startDate_greater: FuzzyDateInt\\n    $startDate_lesser: FuzzyDateInt\\n    $status: MediaStatus\\n    $sort: [MediaSort]\\n    $averageScore_greater: Int\\n  ) {\\n    Page(page: $page, perPage: $perPage) {\\n      pageInfo { currentPage lastPage hasNextPage total }\\n      media(\\n        type: ANIME\\n        isAdult: false\\n        search: $search\\n        genre_in: $genre_in\\n        seasonYear: $seasonYear\\n        startDate_greater: $startDate_greater\\n        startDate_lesser: $startDate_lesser\\n        status: $status\\n        sort: $sort\\n        averageScore_greater: $averageScore_greater\\n      ) {\\n        \\n  id\\n  title { romaji english native }\\n  coverImage { extraLarge large }\\n  description(asHtml: false)\\n  genres\\n  averageScore\\n  seasonYear\\n  startDate { year }\\n  episodes\\n  status\\n  studios(isMain: true) { nodes { name } }\\n  trailer { id site }\\n  source\\n\\n      }\\n    }\\n  }\\n","variables":{"page":1,"perPage":20,"startDate_lesser":20261027,"sort":["POPULARITY_DESC"]}}",
@@ -6640,7 +6640,7 @@ exports[`caracterización de Descubrir (mismas entradas → mismas salidas) > ty
   "calls": [
     {
       "method": "GET",
-      "url": "https://comicvine.gamespot.com/api/issues/?api_key=test-comicvine-key&format=json&sort=cover_date%3Adesc&limit=100&offset=0&field_list=id%2Cname%2Cissue_number%2Ccover_date%2Cstore_date%2Cdeck%2Cimage%2Cvolume&filter=cover_date%3A2020-01-01%7C2020-12-31",
+      "url": "https://comicvine.gamespot.com/api/issues/?api_key=%3Cclave%3E&format=json&sort=cover_date%3Adesc&limit=100&offset=0&field_list=id%2Cname%2Cissue_number%2Ccover_date%2Cstore_date%2Cdeck%2Cimage%2Cvolume&filter=cover_date%3A2020-01-01%7C2020-12-31",
     },
   ],
   "result": {
@@ -6691,11 +6691,11 @@ exports[`caracterización de Descubrir (mismas entradas → mismas salidas) > ty
   "calls": [
     {
       "method": "GET",
-      "url": "https://comicvine.gamespot.com/api/issues/?api_key=test-comicvine-key&format=json&sort=cover_date%3Adesc&limit=100&offset=0&field_list=id%2Cname%2Cissue_number%2Ccover_date%2Cstore_date%2Cdeck%2Cimage%2Cvolume&filter=cover_date%3A1900-01-01%7C2026-10-26",
+      "url": "https://comicvine.gamespot.com/api/issues/?api_key=%3Cclave%3E&format=json&sort=cover_date%3Adesc&limit=100&offset=0&field_list=id%2Cname%2Cissue_number%2Ccover_date%2Cstore_date%2Cdeck%2Cimage%2Cvolume&filter=cover_date%3A1900-01-01%7C2026-10-26",
     },
     {
       "method": "GET",
-      "url": "https://comicvine.gamespot.com/api/volumes/?api_key=test-comicvine-key&format=json&filter=id%3A700%7C701%7C702%7C703&field_list=id%2Cpublisher%2Ccount_of_issues%2Cconcepts&limit=100",
+      "url": "https://comicvine.gamespot.com/api/volumes/?api_key=%3Cclave%3E&format=json&filter=id%3A700%7C701%7C702%7C703&field_list=id%2Cpublisher%2Ccount_of_issues%2Cconcepts&limit=100",
     },
   ],
   "result": {
@@ -6824,7 +6824,7 @@ exports[`caracterización de Descubrir (mismas entradas → mismas salidas) > ty
   "calls": [
     {
       "method": "GET",
-      "url": "https://api.rawg.io/api/games?key=test-rawg-key&ordering=-rating&page=1&exclude_tags=nsfw%2Cadult%2Chentai%2Csexual-content%2Cporn&platforms=4&dates=2015-01-01%2C2015-12-31",
+      "url": "https://api.rawg.io/api/games?key=%3Cclave%3E&ordering=-rating&page=1&exclude_tags=nsfw%2Cadult%2Chentai%2Csexual-content%2Cporn&platforms=4&dates=2015-01-01%2C2015-12-31",
     },
   ],
   "result": {
@@ -7302,7 +7302,7 @@ exports[`caracterización de Descubrir (mismas entradas → mismas salidas) > ty
   "calls": [
     {
       "method": "GET",
-      "url": "https://api.rawg.io/api/games?key=test-rawg-key&ordering=-rating&exclude_tags=nsfw%2Cadult%2Chentai%2Csexual-content%2Cporn&dates=1970-01-01%2C2026-10-26&page=1",
+      "url": "https://api.rawg.io/api/games?key=%3Cclave%3E&ordering=-rating&exclude_tags=nsfw%2Cadult%2Chentai%2Csexual-content%2Cporn&dates=1970-01-01%2C2026-10-26&page=1",
     },
   ],
   "result": {
@@ -7319,7 +7319,7 @@ exports[`caracterización de Descubrir (mismas entradas → mismas salidas) > ty
   "calls": [
     {
       "method": "GET",
-      "url": "https://api.rawg.io/api/games?key=test-rawg-key&ordering=-rating&exclude_tags=nsfw%2Cadult%2Chentai%2Csexual-content%2Cporn&dates=1970-01-01%2C2026-10-26&page=1",
+      "url": "https://api.rawg.io/api/games?key=%3Cclave%3E&ordering=-rating&exclude_tags=nsfw%2Cadult%2Chentai%2Csexual-content%2Cporn&dates=1970-01-01%2C2026-10-26&page=1",
     },
   ],
   "result": {
@@ -7797,7 +7797,7 @@ exports[`caracterización de Descubrir (mismas entradas → mismas salidas) > ty
   "calls": [
     {
       "method": "GET",
-      "url": "https://api.rawg.io/api/games?key=test-rawg-key&search=portal&page=1",
+      "url": "https://api.rawg.io/api/games?key=%3Cclave%3E&search=portal&page=1",
     },
   ],
   "result": {
@@ -9161,7 +9161,7 @@ exports[`caracterización de Descubrir (mismas entradas → mismas salidas) > ty
   "calls": [
     {
       "method": "GET",
-      "url": "https://api.themoviedb.org/3/discover/movie?api_key=test-tmdb-key&language=es-ES&sort_by=vote_average.desc&include_adult=false&page=1&vote_count.gte=50&with_genres=18&with_original_language=ja&primary_release_date.gte=2010-01-01&primary_release_date.lte=2019-12-31&with_runtime.gte=151&vote_average.gte=7",
+      "url": "https://api.themoviedb.org/3/discover/movie?api_key=%3Cclave%3E&language=es-ES&sort_by=vote_average.desc&include_adult=false&page=1&vote_count.gte=50&with_genres=18&with_original_language=ja&primary_release_date.gte=2010-01-01&primary_release_date.lte=2019-12-31&with_runtime.gte=151&vote_average.gte=7",
     },
   ],
   "result": {
@@ -9599,7 +9599,7 @@ exports[`caracterización de Descubrir (mismas entradas → mismas salidas) > ty
   "calls": [
     {
       "method": "GET",
-      "url": "https://api.themoviedb.org/3/discover/movie?api_key=test-tmdb-key&language=es-ES&sort_by=popularity.desc&include_adult=false&page=1&vote_count.gte=50&primary_release_date.lte=2026-10-26",
+      "url": "https://api.themoviedb.org/3/discover/movie?api_key=%3Cclave%3E&language=es-ES&sort_by=popularity.desc&include_adult=false&page=1&vote_count.gte=50&primary_release_date.lte=2026-10-26",
     },
   ],
   "result": {
@@ -9616,7 +9616,7 @@ exports[`caracterización de Descubrir (mismas entradas → mismas salidas) > ty
   "calls": [
     {
       "method": "GET",
-      "url": "https://api.themoviedb.org/3/discover/movie?api_key=test-tmdb-key&language=es-ES&sort_by=popularity.desc&include_adult=false&page=1&vote_count.gte=50&primary_release_date.lte=2026-10-26",
+      "url": "https://api.themoviedb.org/3/discover/movie?api_key=%3Cclave%3E&language=es-ES&sort_by=popularity.desc&include_adult=false&page=1&vote_count.gte=50&primary_release_date.lte=2026-10-26",
     },
   ],
   "result": {
@@ -10054,7 +10054,7 @@ exports[`caracterización de Descubrir (mismas entradas → mismas salidas) > ty
   "calls": [
     {
       "method": "GET",
-      "url": "https://api.themoviedb.org/3/discover/movie?api_key=test-tmdb-key&language=en-US&sort_by=popularity.desc&include_adult=false&page=3&vote_count.gte=50&primary_release_date.lte=2026-10-26",
+      "url": "https://api.themoviedb.org/3/discover/movie?api_key=%3Cclave%3E&language=en-US&sort_by=popularity.desc&include_adult=false&page=3&vote_count.gte=50&primary_release_date.lte=2026-10-26",
     },
   ],
   "result": {
@@ -10504,7 +10504,7 @@ exports[`caracterización de Descubrir (mismas entradas → mismas salidas) > ty
   "calls": [
     {
       "method": "GET",
-      "url": "https://api.themoviedb.org/3/search/movie?api_key=test-tmdb-key&language=es-ES&query=dune&page=1",
+      "url": "https://api.themoviedb.org/3/search/movie?api_key=%3Cclave%3E&language=es-ES&query=dune&page=1",
     },
   ],
   "result": {
@@ -10942,7 +10942,7 @@ exports[`caracterización de Descubrir (mismas entradas → mismas salidas) > ty
   "calls": [
     {
       "method": "GET",
-      "url": "https://api.themoviedb.org/3/discover/movie?api_key=test-tmdb-key&language=es-ES&sort_by=popularity.desc&include_adult=false&page=1&vote_count.gte=50&primary_release_date.lte=2026-10-26",
+      "url": "https://api.themoviedb.org/3/discover/movie?api_key=%3Cclave%3E&language=es-ES&sort_by=popularity.desc&include_adult=false&page=1&vote_count.gte=50&primary_release_date.lte=2026-10-26",
     },
   ],
   "result": {
@@ -11380,7 +11380,7 @@ exports[`caracterización de Descubrir (mismas entradas → mismas salidas) > ty
   "calls": [
     {
       "method": "GET",
-      "url": "https://api.themoviedb.org/3/discover/tv?api_key=test-tmdb-key&language=es-ES&sort_by=popularity.desc&include_adult=false&page=1&vote_count.gte=50&with_watch_providers=8&watch_region=ES&first_air_date.lte=2026-10-26",
+      "url": "https://api.themoviedb.org/3/discover/tv?api_key=%3Cclave%3E&language=es-ES&sort_by=popularity.desc&include_adult=false&page=1&vote_count.gte=50&with_watch_providers=8&watch_region=ES&first_air_date.lte=2026-10-26",
     },
   ],
   "result": {
@@ -11958,7 +11958,7 @@ exports[`caracterización de Descubrir (mismas entradas → mismas salidas) > ty
   "calls": [
     {
       "method": "GET",
-      "url": "https://api.themoviedb.org/3/discover/tv?api_key=test-tmdb-key&language=es-ES&sort_by=popularity.desc&include_adult=false&page=1&vote_count.gte=50&first_air_date.lte=2026-10-26",
+      "url": "https://api.themoviedb.org/3/discover/tv?api_key=%3Cclave%3E&language=es-ES&sort_by=popularity.desc&include_adult=false&page=1&vote_count.gte=50&first_air_date.lte=2026-10-26",
     },
   ],
   "result": {

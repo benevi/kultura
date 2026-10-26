@@ -68,7 +68,12 @@ export function installNetwork(fail: FailMap = {}): RecordedCall[] {
     const url = new URL(typeof input === "string" ? input : input instanceof URL ? input.href : input.url);
     const method = (init?.method ?? "GET").toUpperCase();
     const body = typeof init?.body === "string" ? init.body : undefined;
-    calls.push({ method, url: url.toString(), ...(body ? { body } : {}) });
+    // Las claves salen del entorno (en CI son otras): en la foto, un marcador.
+    const recorded = new URL(url);
+    for (const name of ["api_key", "key"]) {
+      if (recorded.searchParams.has(name)) recorded.searchParams.set(name, "<clave>");
+    }
+    calls.push({ method, url: recorded.toString(), ...(body ? { body } : {}) });
     const host = url.hostname;
 
     if (host === "api.themoviedb.org") {
