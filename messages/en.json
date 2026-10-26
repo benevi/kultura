@@ -332,6 +332,66 @@
       "buy": "Buy"
     }
   },
+  "adaptations": {
+    "title": "Also available as…",
+    "subtitle": "The same story in other formats: where it comes from, its adaptations and the rest of the franchise.",
+    "relation": {
+      "source": "Original work",
+      "derivative": "Adaptation",
+      "sibling": "Another adaptation",
+      "franchise": "Same franchise"
+    },
+    "meta": "{type} · {year}",
+    "inLibrary": "In your library",
+    "sourceLabel": "Links:",
+    "sourceLinkLabel": "Wikidata (opens in a new tab)",
+    "loginToAdd": "Log in to add the whole franchise",
+    "add": {
+      "action": "Add the whole franchise",
+      "hint": "{count, plural, one {Adds the title you don't have yet as Pending.} other {Adds the # titles you don't have yet as Pending.}}",
+      "progress": "Adding {done} of {total}…",
+      "waiting": "Waiting {seconds} s to stay within the adding limit…",
+      "done": "{count, plural, one {Added # title as Pending.} other {Added # titles as Pending.}}",
+      "partial": "Added {done} of {total}. Press again for the rest.",
+      "rateLimited": "You've hit the per-minute adding limit. Try again in a moment.",
+      "error": "Couldn't add them. Please try again.",
+      "allIn": "You already have the whole franchise in your library."
+    }
+  },
+  "share": {
+    "rating": {
+      "action": "Share my rating",
+      "label": "Share my rating of {title}",
+      "menu": "Sharing options",
+      "copy": "Copy link",
+      "copied": "Link copied!",
+      "onX": "Share on X",
+      "onWhatsApp": "Share on WhatsApp",
+      "text": "I give {title} {rating} on KULTURA"
+    },
+    "page": {
+      "heading": "<who>@{username}</who> gives <work>{title}</work> <score>{rating}</score>",
+      "metaTitle": "@{username} gives {title} {rating}",
+      "metaDescription": "See what @{username} thinks of {title} on KULTURA and keep track of what you want to watch, read and play.",
+      "genericHeading": "<work>{title}</work> on KULTURA",
+      "genericMetaTitle": "{title} on KULTURA",
+      "genericLead": "See {title} and @{username}'s profile on KULTURA.",
+      "viewTitle": "See the title",
+      "viewProfile": "See @{username}'s profile",
+      "ctaRegister": "Create your free account and rate it",
+      "ctaHint": "Free and ad-free.",
+      "ctaRate": "Rate it yourself",
+      "ownerHint": "Your rating is visible to people who can already see your library (per Settings: your friends or anyone with an account) and to anyone with the link you share from the title page. If you set your library to “Only me”, only you can see it.",
+      "posterAlt": "Cover of {title}"
+    },
+    "og": {
+      "ratedAlt": "@{username} gives {title} {rating} on KULTURA",
+      "genericAlt": "{title} on KULTURA",
+      "profileAlt": "@{username} on KULTURA",
+      "cta": "What would you give it?",
+      "top4": "The top 4 of"
+    }
+  },
   "library": {
     "status": {
       "completed": "Completed",
