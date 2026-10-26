@@ -30,7 +30,7 @@ import {
   type ParseErrorCode,
   type ParsedImport,
 } from '@/lib/import/types'
-import { loadProgress, saveProgress } from './import-storage'
+import { clearProgress, loadProgress, saveProgress } from './import-storage'
 
 type Phase = 'idle' | 'reading' | 'preview' | 'running' | 'paused' | 'done' | 'error'
 type RunErrorCode = 'auth' | 'demo' | 'server' | 'network'
@@ -65,6 +65,8 @@ function download(name: string, content: string, type: string) {
 
 export interface ImportClientProps {
   locale: 'es' | 'en'
+  /** Cuenta de la sesión: el avance guardado en este navegador es por cuenta. */
+  userId: string
   isDemo?: boolean
   /** Versión del onboarding: sin instrucciones por app ni enlace a la biblioteca. */
   compact?: boolean
@@ -72,7 +74,7 @@ export interface ImportClientProps {
   onFinished?: (inLibrary: number) => void
 }
 
-export function ImportClient({ locale, isDemo = false, compact = false, onFinished }: ImportClientProps) {
+export function ImportClient({ locale, userId, isDemo = false, compact = false, onFinished }: ImportClientProps) {
   const t = useImportT()
   const inputRef = useRef<HTMLInputElement>(null)
   const abortRef = useRef<AbortController | null>(null)
@@ -113,7 +115,7 @@ export function ImportClient({ locale, isDemo = false, compact = false, onFinish
       const result = await parseImportFiles(inputs, { letterboxd: { ambiguousAs: as } })
       setFiles(list)
       setParsed(result)
-      const stored = loadProgress(fingerprint(result.source, result.items))
+      const stored = loadProgress(userId, fingerprint(result.source, result.items))
       setPrevious(stored)
       setResults(stored ?? new Map())
       setPhase('preview')
@@ -142,12 +144,12 @@ export function ImportClient({ locale, isDemo = false, compact = false, onFinish
       },
       onBatch: (r) => {
         setResults(new Map(r))
-        saveProgress(fp, parsed.source, r)
+        saveProgress(userId, fp, parsed.source, r)
       },
     })
     abortRef.current = null
     setResults(new Map(end.results))
-    saveProgress(fp, parsed.source, end.results)
+    saveProgress(userId, fp, parsed.source, end.results)
     if (end.status === 'error') {
       setRunError(end.error)
       setPhase('paused')
@@ -160,6 +162,13 @@ export function ImportClient({ locale, isDemo = false, compact = false, onFinish
     setPhase('done')
     const c = countResults(end.results)
     onFinished?.(c.added + c.updated + c.kept)
+  }
+
+  /** Olvida lo importado antes con este archivo: se vuelve a mandar todo. */
+  function startOver() {
+    clearProgress(userId)
+    setPrevious(null)
+    setResults(new Map())
   }
 
   function reset() {
@@ -367,6 +376,11 @@ export function ImportClient({ locale, isDemo = false, compact = false, onFinish
             <p role="status" className="font-body text-sm font-bold text-text-secondary">
               {t('resumeNote', { done, total: summary.total })}
             </p>
+          ) : null}
+          {done > 0 ? (
+            <KButton type="button" variant="secondary" className="self-start" onClick={startOver}>
+              {t('startOver')}
+            </KButton>
           ) : null}
 
           <div className="flex flex-col-reverse gap-3 sm:flex-row sm:items-center sm:justify-between">

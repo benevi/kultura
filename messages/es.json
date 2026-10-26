@@ -720,6 +720,7 @@
     "start": "{count, plural, one {Importar # título} other {Importar # títulos}}",
     "another": "Elegir otro archivo",
     "resumeNote": "Ya importaste {done} de {total} títulos de este archivo: se sigue por donde ibas.",
+    "startOver": "Empezar de cero",
     "progressLabel": "Progreso de la importación",
     "running": "Importando… {processed} de {total}",
     "retrying": "Reintentando los que no respondieron…",

@@ -50,7 +50,7 @@ export default async function ImportPage({ params }: { params: Promise<{ locale:
         </PageHeading>
       </div>
       <ImportMessages locale={locale} messages={importMessages}>
-        <ImportClient locale={locale === 'en' ? 'en' : 'es'} isDemo={isDemoUser(user)} />
+        <ImportClient locale={locale === 'en' ? 'en' : 'es'} userId={user.id} isDemo={isDemoUser(user)} />
         <LetterboxdExport />
       </ImportMessages>
     </main>

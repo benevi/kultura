@@ -76,6 +76,7 @@ export default async function WelcomePage({ params, searchParams }: WelcomeProps
         needsTerms={!hasAcceptedTerms(account.state, user)}
         // F-26: textos del paso opcional "Importar", solo en esta página (el
         // paso los envuelve en su propio <ImportMessages>).
+        userId={user.id}
         importMessages={((all as Record<string, unknown>).import as AbstractIntlMessages | undefined) ?? null}
       />
     </NextIntlClientProvider>

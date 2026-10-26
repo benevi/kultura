@@ -30,19 +30,21 @@ interface WelcomeImportProps {
    * `WelcomeFlow`. Sin textos, el paso opcional no se pinta.
    */
   messages?: AbstractIntlMessages | null
+  /** Cuenta de la sesión (el avance guardado es por cuenta). Sin ella, no se pinta. */
+  userId?: string | null
   onFinished: (inLibrary: number) => void
 }
 
-export function WelcomeImport({ locale, messages, onFinished }: WelcomeImportProps) {
-  if (!messages) return null
+export function WelcomeImport({ locale, messages, userId, onFinished }: WelcomeImportProps) {
+  if (!messages || !userId) return null
   return (
     <ImportMessages locale={locale} messages={messages}>
-      <WelcomeImportPanel locale={locale} onFinished={onFinished} />
+      <WelcomeImportPanel locale={locale} userId={userId} onFinished={onFinished} />
     </ImportMessages>
   )
 }
 
-function WelcomeImportPanel({ locale, onFinished }: Omit<WelcomeImportProps, 'messages'>) {
+function WelcomeImportPanel({ locale, userId, onFinished }: { locale: 'es' | 'en'; userId: string; onFinished: (inLibrary: number) => void }) {
   const t = useImportT()
   const [open, setOpen] = useState(false)
   // Una vez abierto se queda montado: cerrar el panel no corta una importación en marcha.
@@ -73,7 +75,7 @@ function WelcomeImportPanel({ locale, onFinished }: Omit<WelcomeImportProps, 'me
         </KButton>
       </div>
       <div id="welcome-import-panel" hidden={!open} className="mt-5">
-        {mounted && <ImportClient locale={locale} compact onFinished={onFinished} />}
+        {mounted && <ImportClient locale={locale} userId={userId} compact onFinished={onFinished} />}
       </div>
     </section>
   )

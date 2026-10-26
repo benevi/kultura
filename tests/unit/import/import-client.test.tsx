@@ -83,7 +83,7 @@ function okBatch() {
 describe('ImportClient', () => {
   it.each(['es', 'en'] as const)('flujo completo en %s sin claves que falten', async (locale) => {
     okBatch()
-    const { container } = renderIn(locale, <ImportClient locale={locale} />)
+    const { container } = renderIn(locale, <ImportClient locale={locale} userId="user-a" />)
     pickFile(container, csvFile())
 
     const start = await screen.findByRole('button', { name: locale === 'es' ? 'Importar 2 títulos' : 'Import 2 titles' })
@@ -107,20 +107,20 @@ describe('ImportClient', () => {
   })
 
   it('archivo que no se reconoce → aviso con alerta', async () => {
-    const { container } = renderIn('es', <ImportClient locale="es" />)
+    const { container } = renderIn('es', <ImportClient locale="es" userId="user-a" />)
     pickFile(container, csvFile('foo,bar\n1,2\n', 'cosas.csv'))
     expect(await screen.findByRole('alert')).toHaveTextContent('No reconocemos este archivo')
   })
 
   it('retoma por donde iba con el mismo archivo', async () => {
     okBatch()
-    const first = renderIn('es', <ImportClient locale="es" />)
+    const first = renderIn('es', <ImportClient locale="es" userId="user-a" />)
     pickFile(first.container, csvFile())
     fireEvent.click(await screen.findByRole('button', { name: 'Importar 2 títulos' }))
     await screen.findByRole('heading', { name: 'Importación terminada' })
     first.unmount()
 
-    const second = renderIn('es', <ImportClient locale="es" />)
+    const second = renderIn('es', <ImportClient locale="es" userId="user-a" />)
     pickFile(second.container, csvFile())
     expect(await screen.findByText('Ya importaste 2 de 2 títulos de este archivo: se sigue por donde ibas.')).toBeInTheDocument()
     fetchMock.mockClear()
@@ -129,8 +129,44 @@ describe('ImportClient', () => {
     expect(fetchMock).not.toHaveBeenCalled()
   })
 
+  it('el avance guardado es por cuenta: otra cuenta en el mismo navegador empieza de cero', async () => {
+    okBatch()
+    const first = renderIn('es', <ImportClient locale="es" userId="user-a" />)
+    pickFile(first.container, csvFile())
+    fireEvent.click(await screen.findByRole('button', { name: 'Importar 2 títulos' }))
+    await screen.findByRole('heading', { name: 'Importación terminada' })
+    first.unmount()
+    expect(window.localStorage.getItem('kultura:import:v2:user-a')).not.toBeNull()
+
+    const other = renderIn('es', <ImportClient locale="es" userId="user-b" />)
+    pickFile(other.container, csvFile())
+    await screen.findByRole('button', { name: 'Importar 2 títulos' })
+    expect(screen.queryByText(/Ya importaste/)).toBeNull()
+    expect(screen.queryByRole('button', { name: 'Empezar de cero' })).toBeNull()
+  })
+
+  it('«Empezar de cero» borra el avance y vuelve a mandar todo', async () => {
+    okBatch()
+    const first = renderIn('es', <ImportClient locale="es" userId="user-a" />)
+    pickFile(first.container, csvFile())
+    fireEvent.click(await screen.findByRole('button', { name: 'Importar 2 títulos' }))
+    await screen.findByRole('heading', { name: 'Importación terminada' })
+    first.unmount()
+
+    const second = renderIn('es', <ImportClient locale="es" userId="user-a" />)
+    pickFile(second.container, csvFile())
+    fireEvent.click(await screen.findByRole('button', { name: 'Empezar de cero' }))
+    expect(window.localStorage.getItem('kultura:import:v2:user-a')).toBeNull()
+    expect(screen.queryByText(/Ya importaste/)).toBeNull()
+    fetchMock.mockClear()
+    fireEvent.click(screen.getByRole('button', { name: 'Importar 2 títulos' }))
+    await screen.findByRole('heading', { name: 'Importación terminada' })
+    expect(fetchMock).toHaveBeenCalledTimes(1)
+    expect(JSON.parse(String(fetchMock.mock.calls[0][1].body)).items).toHaveLength(2)
+  })
+
   it('la demo no ve el selector de archivo', () => {
-    const { container } = renderIn('es', <ImportClient locale="es" isDemo />)
+    const { container } = renderIn('es', <ImportClient locale="es" userId="user-a" isDemo />)
     expect(screen.getByRole('status')).toHaveTextContent('La cuenta demo es de solo lectura')
     expect(container.querySelector('input[type="file"]')).toBeNull()
   })
@@ -140,14 +176,14 @@ describe('WelcomeImport (paso opcional del onboarding)', () => {
   it('lleva su propio proveedor de textos y, sin textos, no se pinta (ni revienta)', () => {
     const { container } = render(<WelcomeImport locale="es" messages={null} onFinished={vi.fn()} />)
     expect(container).toBeEmptyDOMElement()
-    render(<WelcomeImport locale="en" messages={en.import} onFinished={vi.fn()} />)
+    render(<WelcomeImport locale="en" messages={en.import} userId="user-a" onFinished={vi.fn()} />)
     expect(screen.getByRole('button', { name: 'Import my history' })).toBeInTheDocument()
   })
 
   it('cerrado por defecto; se abre y avisa de lo importado', async () => {
     okBatch()
     const onFinished = vi.fn()
-    const { container } = render(<WelcomeImport locale="es" messages={es.import} onFinished={onFinished} />)
+    const { container } = render(<WelcomeImport locale="es" messages={es.import} userId="user-a" onFinished={onFinished} />)
     const toggle = screen.getByRole('button', { name: 'Importar mi historial' })
     expect(toggle).toHaveAttribute('aria-expanded', 'false')
     expect(container.querySelector('input[type="file"]')).toBeNull()

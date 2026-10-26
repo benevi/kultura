@@ -720,6 +720,7 @@
     "start": "{count, plural, one {Import # title} other {Import # titles}}",
     "another": "Choose another file",
     "resumeNote": "You already imported {done} of {total} titles from this file: it picks up where you left off.",
+    "startOver": "Start over",
     "progressLabel": "Import progress",
     "running": "Importing… {processed} of {total}",
     "retrying": "Retrying the ones that didn't respond…",

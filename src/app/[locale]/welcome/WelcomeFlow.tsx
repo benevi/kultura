@@ -50,11 +50,13 @@ interface WelcomeFlowProps {
   needsTerms: boolean
   /** F-26: textos del paso opcional "Importar" (sin ellos no se ofrece). */
   importMessages?: AbstractIntlMessages | null
+  /** F-26: cuenta de la sesión, para el avance guardado del importador. */
+  userId?: string | null
 }
 
 type SaveState = 'saving' | 'saved' | 'error'
 
-export function WelcomeFlow({ locale, next, currentUsername, suggestChange, needsTerms, importMessages = null }: WelcomeFlowProps) {
+export function WelcomeFlow({ locale, next, currentUsername, suggestChange, needsTerms, importMessages = null, userId = null }: WelcomeFlowProps) {
   const t = useTranslations('onboarding')
   const tAuth = useTranslations('auth')
   const router = useRouter()
@@ -402,7 +404,7 @@ export function WelcomeFlow({ locale, next, currentUsername, suggestChange, need
             )}
 
             {/* F-26: quien viene de otra app se trae su historial en vez de puntuar a mano. */}
-            <WelcomeImport locale={locale} messages={importMessages} onFinished={setImportedCount} />
+            <WelcomeImport locale={locale} messages={importMessages} userId={userId} onFinished={setImportedCount} />
 
             <ul className="grid grid-cols-2 gap-5 sm:grid-cols-3 lg:grid-cols-5">
               {titles.map((title, i) => (
