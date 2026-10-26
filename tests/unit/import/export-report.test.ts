@@ -34,6 +34,27 @@ describe('buildLetterboxdCsv', () => {
     ])
   })
 
+  it('neutraliza fórmulas de hoja de cálculo en Title y Review (=, +, -, @, tab, CR) y KULTURA las recupera al reimportar', async () => {
+    const evil = [{ mediaId: 'movie_7', status: 'completed', rating10: 8, watchedAt: '2020-01-01', title: '=HYPERLINK("http://x")', year: 2020 }]
+    const evilLogs = [
+      { mediaId: 'movie_7', watchedOn: '2020-01-01', rewatch: false, rating10: 8, review: '+cmd|calc' },
+      { mediaId: 'movie_7', watchedOn: '2021-01-01', rewatch: true, rating10: 8, review: '@SUM(1)' },
+      { mediaId: 'movie_7', watchedOn: '2022-01-01', rewatch: true, rating10: 8, review: '-2+3' },
+      { mediaId: 'movie_7', watchedOn: '2023-01-01', rewatch: true, rating10: 8, review: '\tx' },
+      { mediaId: 'movie_7', watchedOn: '2024-01-01', rewatch: true, rating10: 8, review: '\rx' },
+    ]
+    const csv = buildLetterboxdCsv('watched', evil, evilLogs)
+    const records = parseCsvTable(csv).records
+    expect(records.map((r) => r.title)).toEqual(Array(5).fill(`'=HYPERLINK("http://x")`))
+    expect(records.map((r) => r.review)).toEqual(["'+cmd|calc", "'@SUM(1)", "'-2+3", "'\tx", "'\rx"].map((v) => v.trim()))
+    expect(records.every((r) => !/^[=+\-@\t\r]/.test(r.title) && !/^[=+\-@\t\r]/.test(r.review))).toBe(true)
+    expect(parseCsvTable(buildLetterboxdCsv('watchlist', [{ ...evil[0], status: 'pending' }])).records[0].title).toBe(`'=HYPERLINK("http://x")`)
+
+    const back = await parseImportFiles([{ name: 'kultura-letterboxd-watched.csv', bytes: bytes(csv) }])
+    expect(back.items[0]).toMatchObject({ ids: { tmdb: 7 }, title: '=HYPERLINK("http://x")' })
+    expect(back.items[0].logs?.map((l) => l.review)).toContain('+cmd|calc')
+  })
+
   it('pendientes → watchlist', () => {
     const table = parseCsvTable(buildLetterboxdCsv('watchlist', entries))
     expect(table.records).toEqual([

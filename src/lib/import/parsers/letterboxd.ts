@@ -179,6 +179,14 @@ export function parseLetterboxd(
   return { items, warnings }
 }
 
+/**
+ * Quita el apóstrofo con el que el export de KULTURA neutraliza las fórmulas
+ * de hoja de cálculo (`'=…` → `=…`).
+ */
+function unescapeFormula<T extends string | null>(value: T): T {
+  return (value === null ? value : value.replace(/^'(?=[=+\-@\t\r])/, '')) as T
+}
+
 /** Formato de importación de Letterboxd: una fila = una película vista (o un apunte). */
 function readImportFormat(
   input: LetterboxdInput,
@@ -187,7 +195,7 @@ function readImportFormat(
   let skipped = 0
   const watchlist = input.fileName.toLowerCase().includes('watchlist')
   for (const r of input.table.records) {
-    const title = cleanTitle(pick(r, 'title', 'name'))
+    const title = unescapeFormula(cleanTitle(pick(r, 'title', 'name')))
     const tmdb = toPositiveInt(pick(r, 'tmdbid'))
     const imdbRaw = pick(r, 'imdbid')
     const imdb = /^tt\d{5,10}$/.test(imdbRaw) ? imdbRaw : undefined
@@ -215,7 +223,7 @@ function readImportFormat(
         watchedOn,
         rewatch: truthy(pick(r, 'rewatch')),
         rating10,
-        review: cleanReview(pick(r, 'review')),
+        review: unescapeFormula(cleanReview(pick(r, 'review'))),
         spoiler: false,
       })
     } else if (rating10 !== null) {

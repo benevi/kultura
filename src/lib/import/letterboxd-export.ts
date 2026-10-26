@@ -18,6 +18,7 @@
 
 import { isValidRating10, rating10ToHalfStars } from '@/lib/library/rating'
 import { toCsv } from './csv'
+import { spreadsheetSafe } from './report'
 
 export type LetterboxdExportList = 'watched' | 'watchlist'
 
@@ -67,7 +68,11 @@ export function buildLetterboxdCsv(list: LetterboxdExportList, entries: ExportEn
   for (const e of entries) {
     const tmdb = tmdbMovieId(e.mediaId)
     if (tmdb === null) continue
-    const base = [tmdb, e.title ?? '', e.year ?? ''] as const
+    // Título y reseña son texto libre: si empiezan por =, +, -, @, tabulador o
+    // retorno, Excel/Sheets los tomaría por fórmula al abrir el CSV (igual que
+    // en el informe). Letterboxd empareja por tmdbID, así que el apóstrofo no
+    // le afecta, y el importador de KULTURA lo quita al leerlo.
+    const base = [tmdb, spreadsheetSafe(e.title ?? ''), e.year ?? ''] as const
     if (list === 'watchlist') {
       if (e.status !== 'pending') continue
       rows.push([...base, '', '', '', ''])
@@ -80,7 +85,7 @@ export function buildLetterboxdCsv(list: LetterboxdExportList, entries: ExportEn
       continue
     }
     for (const l of entryLogs) {
-      rows.push([...base, letterboxdStars(l.rating10 ?? e.rating10), l.watchedOn, l.rewatch ? 'true' : 'false', l.review ?? ''])
+      rows.push([...base, letterboxdStars(l.rating10 ?? e.rating10), l.watchedOn, l.rewatch ? 'true' : 'false', spreadsheetSafe(l.review ?? '')])
     }
   }
   return toCsv(rows)
