@@ -37,11 +37,20 @@ export function LandingPosterImage({
   className?: string;
 }) {
   const [failedSrc, setFailedSrc] = React.useState<string | null>(null);
+  const ref = React.useRef<HTMLImageElement>(null);
+  // La portada llega en el HTML estático: si da 404 ANTES de hidratar, su
+  // `error` ya ocurrió y `onError` no se entera (quedaba el icono de imagen
+  // rota). Al montar, una imagen terminada sin píxeles es una imagen rota.
+  React.useEffect(() => {
+    const img = ref.current;
+    if (img && img.complete && img.naturalWidth === 0) setFailedSrc(src);
+  }, [src]);
   // Por URL: si la muestra cambia, la portada nueva se vuelve a intentar.
   if (failedSrc === src) return null;
   return (
     // eslint-disable-next-line @next/next/no-img-element
     <img
+      ref={ref}
       src={posterLoader({ src, width: 384 })}
       srcSet={landingSrcSet(src)}
       sizes={sizes}

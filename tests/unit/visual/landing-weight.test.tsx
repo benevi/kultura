@@ -40,6 +40,41 @@ describe("peso de la portada", () => {
   });
 });
 
+describe("portada rota antes de hidratar (revisión #57)", () => {
+  // La portada estática de la landing llega en el HTML: si da 404 antes de
+  // que React hidrate, el `onError` ya ha pasado y nadie lo escucha. Al
+  // montar hay que mirar si la imagen ya terminó sin píxeles.
+  it("si al montar la imagen ya falló (complete y sin ancho), se retira y queda el gradiente", () => {
+    const proto = HTMLImageElement.prototype;
+    const complete = Object.getOwnPropertyDescriptor(proto, "complete");
+    const natural = Object.getOwnPropertyDescriptor(proto, "naturalWidth");
+    Object.defineProperty(proto, "complete", { configurable: true, get: () => true });
+    Object.defineProperty(proto, "naturalWidth", { configurable: true, get: () => 0 });
+    try {
+      const { container } = render(<LandingPosterImage src="https://image.tmdb.org/t/p/original/rota.jpg" sizes="140px" />);
+      expect(container.querySelector("img")).toBeNull();
+    } finally {
+      if (complete) Object.defineProperty(proto, "complete", complete);
+      else delete (proto as unknown as Record<string, unknown>).complete;
+      if (natural) Object.defineProperty(proto, "naturalWidth", natural);
+      else delete (proto as unknown as Record<string, unknown>).naturalWidth;
+    }
+  });
+
+  it("una imagen aún sin cargar (lazy) no se retira", () => {
+    const proto = HTMLImageElement.prototype;
+    const complete = Object.getOwnPropertyDescriptor(proto, "complete");
+    Object.defineProperty(proto, "complete", { configurable: true, get: () => false });
+    try {
+      const { container } = render(<LandingPosterImage src="https://image.tmdb.org/t/p/original/b.jpg" sizes="140px" />);
+      expect(container.querySelector("img")).not.toBeNull();
+    } finally {
+      if (complete) Object.defineProperty(proto, "complete", complete);
+      else delete (proto as unknown as Record<string, unknown>).complete;
+    }
+  });
+});
+
 describe("tira móvil del hero sin salto", () => {
   const box = (el: Element) => el.firstElementChild!.className;
 
