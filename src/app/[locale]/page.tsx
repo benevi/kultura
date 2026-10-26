@@ -6,6 +6,7 @@ import { Footer } from "@/components/layout/Footer";
 import { FEATURE_KEYS, FeatureGrid } from "@/components/landing/FeatureGrid";
 import { BestRankings } from "@/components/landing/BestRankings";
 import { Hero } from "@/components/landing/Hero";
+import { HeroCollage, HeroStripPlaceholder } from "@/components/landing/HeroCollage";
 import { ImmersiveBackdrop } from "@/components/landing/ImmersiveBackdrop";
 import { MotionToggle } from "@/components/landing/MotionToggle";
 import { HowItWorks, STEP_KEYS } from "@/components/landing/HowItWorks";
@@ -167,12 +168,12 @@ export default async function HomePage({ params }: Props) {
         <Hero
           copy={hero}
           backdrop={
-            <Suspense fallback={<ImmersiveBackdrop items={[]} />}>
+            <Suspense fallback={<ImmersiveBackdrop items={[]} collage={<HeroCollage items={[]} />} />}>
               <HeroBackdropSlot locale={locale} />
             </Suspense>
           }
           strip={
-            <Suspense fallback={null}>
+            <Suspense fallback={<HeroStripPlaceholder />}>
               <HeroStripSlot locale={locale} />
             </Suspense>
           }

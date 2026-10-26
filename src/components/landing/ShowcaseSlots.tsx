@@ -17,7 +17,7 @@
 // ============================================================
 
 import { ImmersiveBackdrop } from "@/components/landing/ImmersiveBackdrop";
-import { HeroStrip } from "@/components/landing/HeroCollage";
+import { HeroCollage, HeroStrip } from "@/components/landing/HeroCollage";
 import { FeatureGrid, type FeatureGridProps } from "@/components/landing/FeatureGrid";
 import { BestRankings, type BestRankingsProps } from "@/components/landing/BestRankings";
 import { HowItWorks, type HowItWorksProps } from "@/components/landing/HowItWorks";
@@ -41,7 +41,7 @@ export async function HeroBackdropSlot({ locale }: { locale: string }) {
           media={SCENE_MEDIA}
         />
       ))}
-      <ImmersiveBackdrop items={showcase} />
+      <ImmersiveBackdrop items={showcase} collage={<HeroCollage items={showcase} />} />
     </>
   );
 }

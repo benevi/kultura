@@ -17,7 +17,7 @@ import {
   IconLists,
   type KIcon,
 } from "@/components/icons";
-import { PosterTile, STICKER_SHADOW } from "@/components/landing/PosterTile";
+import { PosterTile, STICKER_SHADOW, fallbackGradient } from "@/components/landing/PosterTile";
 import type { ShowcaseItem } from "@/lib/landing/showcase";
 
 /** Posición, rotación y tamaño de cada pieza — idénticos en las dos versiones. */
@@ -83,9 +83,33 @@ export function HeroCollage({ items }: { items: ShowcaseItem[] }) {
  * (rejilla de 4 columnas, como mucho 76 px cada una): a 320 px caben sin
  * desbordar la página, que con piezas fijas de 72 px se salía 15 px.
  */
+const STRIP = "mt-10 grid max-w-[22rem] grid-cols-4 gap-2.5 px-1 md:hidden";
+const STRIP_ROTATION = (i: number) => (i % 2 === 0 ? "rotate-[-1.2deg]" : "rotate-[1deg]");
+
+/**
+ * Hueco de la tira mientras llega la muestra (y si no llega): mismas
+ * medidas y bloques de color de la paleta. Sin él, la tira entraba después
+ * del primer pintado y empujaba toda la página 158 px hacia abajo en móvil
+ * (CLS 0,07 bajo el hero, en la sección de funciones).
+ */
+export function HeroStripPlaceholder() {
+  return (
+    <div className={STRIP} aria-hidden="true">
+      {["a", "b", "c", "d"].map((seed, i) => (
+        <div
+          key={seed}
+          className={`aspect-[2/3] rounded-2xl shadow-sticker ${STRIP_ROTATION(i)}`}
+          style={{ background: fallbackGradient(`strip-${seed}`) }}
+        />
+      ))}
+    </div>
+  );
+}
+
 export function HeroStrip({ items }: { items: ShowcaseItem[] }) {
   const posters = items.slice(0, 4);
-  if (posters.length < 4) return null;
+  // Con menos de 4 portadas, el hueco reservado: la altura no cambia nunca.
+  if (posters.length < 4) return <HeroStripPlaceholder />;
 
   return (
     <div
