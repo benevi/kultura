@@ -182,7 +182,7 @@ describe('Continúa: 1 toque con actualización optimista', () => {
     // El hueco del aviso existe desde el principio, vacío (CLS 0).
     expect(screen.getByRole('alert')).toBeEmptyDOMElement()
     fireEvent.click(screen.getByTestId('progress-next'))
-    await waitFor(() => expect(screen.getByRole('alert')).toHaveTextContent('No se ha podido guardar el progreso de «Juego de tronos»'))
+    await waitFor(() => expect(screen.getByRole('alert')).toHaveTextContent('No hemos podido guardar el progreso de «Juego de tronos»'))
     expect(screen.getByTestId('progress-label')).toHaveTextContent('T2 · E4 de 10')
   })
 

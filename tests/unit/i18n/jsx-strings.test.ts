@@ -2,12 +2,11 @@
 /**
  * TXT, criterio (2): ningún texto fijo en el JSX ni emojis en la interfaz.
  *
- * Mismo parser que la auditoría (`trabajo/TXT/jsxtext.js`, compilador de
- * TypeScript sobre cada `.tsx`), con dos ajustes para que no haya falsos
- * positivos: los atributos que se miran son solo los que se LEEN (`alt`,
- * `title`, `placeholder`, `aria-label`, `label`, `*Label`, `*Text`…), no
- * `aria-labelledby`, `field` o `seed`; y en los hijos se miran también las
- * ramas literales de `a ? b : 'c'` y `a || 'c'`.
+ * Recorre cada `.tsx` con el compilador de TypeScript y mira el texto de
+ * los nodos JSX, los atributos que se LEEN (`alt`, `title`, `placeholder`,
+ * `aria-label`, `label`, `*Label`, `*Text`…; no `aria-labelledby`, `field`
+ * o `seed`), las ramas literales de `a ? b : 'c'` y `a || 'c'` en los hijos
+ * y los `title`/`description` fijos de `metadata`.
  *
  * Lo que queda en componentes que este cambio no puede tocar va en
  * `KNOWN_DEBT` con su archivo: el test falla si aparece una cadena nueva y

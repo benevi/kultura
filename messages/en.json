@@ -120,7 +120,7 @@
     "nameInvalid": "Letters, numbers and underscores only (3-20 characters).",
     "nameReserved": "That name is reserved. Try another one.",
     "nameTaken": "Someone already has that name. Try another one.",
-    "saveError": "We couldn't save it. Please try again.",
+    "saveError": "We couldn't save it. Try again.",
     "continue": "Continue",
     "continueAll": "I like it all",
     "back": "Back",
@@ -191,7 +191,7 @@
     "weakPassword": "That password is too easy to guess. Try a longer or less common one.",
     "signupDisabled": "Email sign-up is closed right now. You can sign in with Google.",
     "sessionExpired": "Your session has expired. Request a new link or sign in again.",
-    "authCallbackError": "We couldn't finish signing you in. Please try again.",
+    "authCallbackError": "We couldn't finish signing you in. Try again.",
     "authLinkOtherBrowser": "You opened the link in a different browser from the one that requested it. If you were confirming your email, it's already confirmed: sign in with your password. If you wanted to change your password, request a new link and open it in this same browser.",
     "authLinkExpired": "The link has expired or was already used. Request a new one.",
     "unexpectedDescription": "The page didn't load properly. Retry; if it keeps happening, tell us in Feedback."
@@ -254,7 +254,7 @@
   "search": {
     "title": "Search",
     "placeholder": "Search movies, shows, anime, books…",
-    "noResults": "We found nothing for",
+    "noResults": "No results for",
     "resultsFor": "Results for",
     "all": "All",
     "randomize": "Surprise me",
@@ -346,7 +346,7 @@
       "done": "{count, plural, one {Added # title as Pending.} other {Added # titles as Pending.}}",
       "partial": "Added {done} of {total}. Press again for the rest.",
       "rateLimited": "You've hit the per-minute adding limit. Try again in a moment.",
-      "error": "Couldn't add them. Please try again.",
+      "error": "We couldn't add them. Try again.",
       "allIn": "You already have the whole franchise in your library."
     }
   },
@@ -398,7 +398,7 @@
     "watchedAt": "Date",
     "episode": "Episode",
     "errors": {
-      "saveFailed": "Couldn't save it. Check your connection and try again.",
+      "saveFailed": "We couldn't save it. Check your connection and try again.",
       "providerUnavailable": "We couldn't save the change: the catalog isn't responding. Try again in a moment.",
       "removeFailed": "We couldn't remove it from your library. Try again."
     },
@@ -503,7 +503,7 @@
     "nextEpisodeNamed": "Next: S{season, number} · E{episode, number} “{name}”",
     "saved": "“{title}”: {label}",
     "caughtUp": "You’re up to date with “{title}”: no more episodes have aired.",
-    "failed": "Couldn’t save your progress on “{title}”. Please try again.",
+    "failed": "We couldn't save your progress on “{title}”. Try again.",
     "unavailable": "Progress for this format isn’t available yet.",
     "reachedEnd": "{type, select, book {You’ve reached the end of the book.} manga {You’ve reached the last chapter.} comic {You’ve reached the last issue.} game {You’ve reached the end.} other {You’ve reached the last episode.}}",
     "markCompleted": "Mark as completed",
@@ -515,7 +515,7 @@
     "completed": "“{title}” moved to Completed.",
     "completedWithLog": "“{title}” moved to Completed and added to your diary.",
     "completedLogFailed": "“{title}” moved to Completed, but it couldn’t be added to your diary.",
-    "completeFailed": "Couldn’t move it to Completed. Please try again."
+    "completeFailed": "We couldn't move it to Completed. Try again."
   },
   "profile": {
     "memberSince": "Member since",
@@ -530,7 +530,7 @@
     "saveBio": "Save",
     "cancelBio": "Cancel",
     "bioPlaceholder": "Tell people about yourself…",
-    "bioSaveError": "Couldn't save your bio. Please try again.",
+    "bioSaveError": "We couldn't save your bio. Try again.",
     "inProgress": "in progress",
     "lastCompleted": "Last completed",
     "watchingNow": "Watching now",
@@ -612,7 +612,7 @@
     "descriptionPlaceholder": "What the list is about, where to start…",
     "descriptionHint": "{count, plural, one {# character left} other {# characters left}}",
     "descriptionSave": "Save description",
-    "descriptionError": "The description couldn't be saved. Please try again.",
+    "descriptionError": "We couldn't save the description. Try again.",
     "addDescription": "Add a description",
     "editDescription": "Edit description",
     "errorMixedUnavailable": "Mixed-format lists aren't available yet. Choose a format.",
@@ -635,7 +635,7 @@
     "notePlaceholder": "Why it's here, where to start…",
     "noteHint": "{count, plural, one {# character left} other {# characters left}}",
     "noteSave": "Save note",
-    "noteError": "The note couldn't be saved. Please try again.",
+    "noteError": "We couldn't save the note. Try again.",
     "noteFor": "Note on “{title}”",
     "addNote": "Add a note",
     "editNote": "Edit note",
@@ -649,8 +649,8 @@
     "starterHint": "Rate or complete 3 titles and we'll start recommending just for you.",
     "generating": "Generating personalized recommendations…",
     "needMoreItems": "Rate 3 titles and we'll start recommending.",
-    "error": "Could not load recommendations. Try again.",
-    "retry": "Try again",
+    "error": "We couldn't load recommendations. Try again.",
+    "retry": "Retry",
     "rateLimited": "Lots of people are asking for picks right now. Give it a few seconds and retry.",
     "needMoreItemsHint": "The more you add to your library, the better your recommendations will be.",
     "exploreContent": "Explore content",
@@ -798,7 +798,7 @@
       "body": "CSV in Letterboxd's import format, matched by TMDB id. On Letterboxd: Settings → Data → Import; your watchlist, from Watchlist → Import.",
       "watched": "Watched films (CSV)",
       "watchlist": "Watchlist (CSV)",
-      "error": "The download failed. Try again in a while."
+      "error": "We couldn't download it. Try again in a while."
     },
     "welcome": {
       "title": "Coming from another app?",
@@ -818,8 +818,8 @@
     "reject": "Reject",
     "inviteAccepted": "You joined the group",
     "inviteRejected": "Invitation rejected",
-    "inviteActionError": "Could not process the invitation. Please try again.",
-    "loadError": "Could not load notifications. Please try again.",
+    "inviteActionError": "We couldn't process the invitation. Try again.",
+    "loadError": "We couldn't load notifications. Try again.",
     "unread": "Unread",
     "acceptInvite": "Accept the invitation to {group}",
     "rejectInvite": "Reject the invitation to {group}"
@@ -891,7 +891,7 @@
     "joinGroup": "Join",
     "leaveGroup": "Leave",
     "groupError": "We couldn't create the group. Try again in a moment.",
-    "joinGroupError": "Could not join the group"
+    "joinGroupError": "We couldn't add you to the group. Try again in a moment."
   },
   "invite": {
     "bannerTitle": "{username} invites you to KULTURA",
@@ -902,7 +902,7 @@
     "shareTitle": "Join me on KULTURA",
     "shareText": "This is where I keep what I watch, read and play. Sign up with this link and we'll be friends on KULTURA.",
     "copied": "Invite link copied",
-    "copyError": "Couldn't copy it. Copy the link by hand:"
+    "copyError": "We couldn't copy it. Copy the link by hand:"
   },
   "suggestions": {
     "title": "Suggestions and feedback",
@@ -915,7 +915,7 @@
     "subjectLabel": "Subject",
     "subjectPlaceholder": "Brief summary of your suggestion",
     "descriptionLabel": "Description",
-    "descriptionPlaceholder": "Tell us more about your idea or issue…",
+    "descriptionPlaceholder": "Tell me more about your idea or issue…",
     "submit": "Submit feedback",
     "submitting": "Sending…",
     "success": "Thanks for your feedback!",
@@ -935,7 +935,7 @@
     "postPlaceholder": "Write something in the group…",
     "publish": "Post",
     "beFirst": "Be the first to post in this group",
-    "postError": "Could not publish the post. Please try again.",
+    "postError": "We couldn't publish the post. Try again.",
     "myGroupsTab": "My groups",
     "discoverTab": "Discover",
     "searchPlaceholder": "Search groups…",
@@ -952,7 +952,7 @@
     "inviteFriends": "Invite friends",
     "noInvitableFriends": "You have no friends to invite to this group",
     "inviteSent": "Invitation sent",
-    "inviteError": "Could not send the invitation. Please try again.",
+    "inviteError": "We couldn't send the invitation. Try again.",
     "groupIcon": "Group icon",
     "groupIconNone": "No icon (initial)",
     "joinNotAllowed": "You can't join this group. If you think this is a mistake, talk to its creator."
@@ -967,10 +967,10 @@
     "send": "Send",
     "you": "You",
     "noFriendsToChat": "Add friends first to start chatting",
-    "sendError": "Message could not be sent. Please try again.",
-    "startError": "Could not start the conversation. Please try again.",
+    "sendError": "We couldn't send the message. Try again.",
+    "startError": "We couldn't start the conversation. Try again.",
     "notFriendsError": "You can only message your friends.",
-    "loadError": "Couldn't load the data.",
+    "loadError": "We couldn't load the data.",
     "retry": "Retry",
     "conversationCount": "{count, plural, =0 {No conversations} one {# conversation} other {# conversations}}",
     "otherLeft": "No longer in this chat",
@@ -997,7 +997,7 @@
     "email": "Email address",
     "changePassword": "Change password",
     "changePasswordHint": "Choose a new password to sign in with your email.",
-    "dangerZone": "Careful",
+    "dangerZone": "Danger zone",
     "exportData": "Export my data",
     "exportDataHint": "Download a JSON file with your profile, library, lists, friendships and the messages you sent. It doesn't include messages other people wrote to you: if you want a copy, ask for it at {email}.",
     "exportDataError": "We couldn't prepare your file. Try again in a moment.",
@@ -1007,11 +1007,11 @@
     "deleteAccountConfirmMessage": "Your profile, library, lists, friendships and everything you sent will be deleted. Groups you created and your shared lists pass to another member; if nobody is left, they are deleted.",
     "deleteAccountConfirmButton": "Yes, delete my account",
     "deleteAccountCancel": "Cancel",
-    "deleteAccountError": "We couldn't delete your account. Try again in a moment; if it keeps failing, write to me.",
+    "deleteAccountError": "We couldn't delete your account. Try again in a moment; if it keeps failing, tell us in Feedback.",
     "importData": "Import data",
     "importDataHint": "Restore your library and lists from an exported file. It will not duplicate what you already have.",
     "importDataSuccess": "Imported: {count, plural, one {# title} other {# titles}} and {lists, plural, one {# list} other {# lists}}",
-    "importDataError": "Could not import the data. Check that the file is a Kultura export.",
+    "importDataError": "We couldn't import the data. Check that the file is a KULTURA export.",
     "avatarIcon": "Character",
     "avatarIconNone": "No character (initials)",
     "changeEmail": "Change email",
@@ -1108,7 +1108,7 @@
     "count": "{count, plural, =0 {None ticked} one {# ticked} other {# ticked}}",
     "saving": "Saving…",
     "saved": "Streaming services saved",
-    "error": "Your streaming services couldn't be saved. Please try again.",
+    "error": "We couldn't save your streaming services. Try again.",
     "demoLocked": "The demo account can't change its streaming services.",
     "attribution": "Availability from JustWatch, via TMDB.",
     "tonightTitle": "Tonight on your services",
@@ -1159,8 +1159,8 @@
     "emptyLibraryBody": "Mark shows and anime as “In progress” or add movies, games and manga to your list, and their episodes, premieres and releases will show up here.",
     "emptyLibraryCta": "Discover titles",
     "emptyTitle": "Nothing on the horizon",
-    "emptyBody": "None of your in-progress or planned titles has dates {days, plural, one {tomorrow} other {in the next # days}}.",
-    "emptyFilter": "Nothing in this format {days, plural, one {tomorrow} other {in the next # days}}.",
+    "emptyBody": "None of your in-progress or planned titles has dates {days, plural, one {in the next day} other {in the next # days}}.",
+    "emptyFilter": "Nothing in this format {days, plural, one {in the next day} other {in the next # days}}.",
     "libraryCta": "Go to my library",
     "emailPromoTitle": "Get this every Monday by email",
     "emailPromoBody": "Turn on the weekly digest in Settings. You can unsubscribe in one click.",
@@ -1192,7 +1192,7 @@
       "invalidBody": "Unsubscribe links last 90 days. You can also unsubscribe from Settings, signed in.",
       "errorTitle": "We couldn't unsubscribe you",
       "errorBody": "Something failed on our side. Try again in a few minutes or unsubscribe from Settings.",
-      "retry": "Try again",
+      "retry": "Retry",
       "settings": "Go to Settings",
       "home": "Back to KULTURA"
     },
@@ -1218,7 +1218,7 @@
       "staleBody": "Turn it on again in Settings to read the new wording before confirming.",
       "errorTitle": "We couldn't confirm it",
       "errorBody": "Something failed on our side. Try again in a few minutes.",
-      "retry": "Try again",
+      "retry": "Retry",
       "settings": "Go to Settings",
       "calendar": "Open my calendar"
     }
@@ -1240,7 +1240,7 @@
     "detailsLabel": "Details (optional)",
     "detailsHint": "Tell us what is going on. A person reads every report.",
     "placeholder": "Describe the issue",
-    "error": "We couldn't send the report. Please try again.",
+    "error": "We couldn't send the report. Try again.",
     "errorReason": "Choose a reason.",
     "errorTooMany": "You have sent many reports in a row. Wait a little and try again.",
     "errorNotFound": "That content no longer exists or you can't see it.",
@@ -1299,7 +1299,7 @@
         "details": "Explain what is happening (at least {min, plural, one {# character} other {# characters}}).",
         "email": "Enter a valid email so we can reply to you.",
         "goodFaith": "Tick the good-faith statement to send the report.",
-        "generic": "We couldn't send the report. Please try again in a few minutes."
+        "generic": "We couldn't send the report. Try again in a few minutes."
       }
     }
   },
@@ -1312,8 +1312,8 @@
     "blockConfirmBody": "You will stop being friends, they won't be able to message you or send you requests, and you won't be able to invite each other to groups. They are not notified.",
     "blockedNotice": "You have blocked this user.",
     "unblockedNotice": "You have unblocked this user.",
-    "blockError": "We couldn't block them. Please try again.",
-    "unblockError": "We couldn't unblock them. Please try again.",
+    "blockError": "We couldn't block them. Try again.",
+    "unblockError": "We couldn't unblock them. Try again.",
     "blockedListTitle": "Blocked users",
     "blockedListHint": "They can't message you or send you requests. Unblocking doesn't bring the friendship back.",
     "unblockUser": "Unblock {username}",
@@ -1322,7 +1322,7 @@
     "leave": "Leave chat",
     "leaveConfirmTitle": "Leave this conversation?",
     "leaveConfirmBody": "You will stop seeing it and its messages. If the other person leaves too, it is deleted.",
-    "leaveError": "We couldn't leave the chat. Please try again.",
+    "leaveError": "We couldn't leave the chat. Try again.",
     "cannotMessage": "You can no longer message each other here: you are not friends, there is a block, or the other person has left.",
     "delete": "Delete",
     "deleteMessage": "Delete my message",
@@ -1340,7 +1340,7 @@
     "removeMemberNamed": "Remove {username}",
     "removeMemberConfirmTitle": "Remove {username}?",
     "removeMemberConfirmBody": "They leave the group and can't rejoin on their own. You can invite them again later.",
-    "removeMemberError": "We couldn't remove them. Please try again.",
+    "removeMemberError": "We couldn't remove them. Try again.",
     "memberRemoved": "{username} is no longer in the group."
   },
   "landing": {
@@ -1942,7 +1942,7 @@
       "title": "You're offline",
       "body": "There's no internet right now. As soon as it's back, KULTURA will pick up where you left off.",
       "safe": "Your library and lists are safe: they're stored in your account, not on this device.",
-      "retry": "Try again",
+      "retry": "Retry",
       "home": "Go to the home page"
     },
     "install": {
@@ -2032,7 +2032,7 @@
       "years": "All years",
       "top": "{year} top 5",
       "seeRanking": "See the full {year} ranking",
-      "unavailable": "This ranking is not available right now. Please try again in a while."
+      "unavailable": "This ranking is not available right now. Try again in a while."
     },
     "formatHub": {
       "title": {
@@ -2082,9 +2082,9 @@
     "shareCollection": "Share my collection",
     "publicHint": "Anyone with the link can see it, even without an account.",
     "privateHint": "Only you and the list's members can see it.",
-    "visibilityError": "Couldn't change the visibility",
+    "visibilityError": "We couldn't change the visibility",
     "linkCopied": "Link copied",
-    "linkCopyError": "Couldn't copy the link",
+    "linkCopyError": "We couldn't copy the link",
     "heading": "{username}'s collection",
     "metaTitle": "{username}'s collection",
     "metaDescription": "{username}'s lists on KULTURA: movies, series, anime, books, comics, manga and video games.",

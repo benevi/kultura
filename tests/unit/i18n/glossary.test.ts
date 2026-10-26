@@ -92,6 +92,14 @@ describe("TXT-11 — reglas de voz comprobables", () => {
     expect([...es, ...en]).toEqual([]);
   });
 
+  it("una sola fórmula para los fallos: «No hemos podido… Reintenta» / «We couldn't… Try again»", () => {
+    const es = entries("es")
+      .filter(([, v]) => /\bNo se (ha |han )?pud|\bNo se pudieron\b|\bInt[ée]ntalo\b|\bVuelve a intentarlo\b|\bIntentarlo otra vez\b/i.test(v))
+      .map(([k]) => k);
+    const en = entries("en").filter(([, v]) => /\bPlease try again\b|^Could not\b|^Couldn['’]t\b/i.test(v)).map(([k]) => k);
+    expect([...es, ...en]).toEqual([]);
+  });
+
   it("mayúsculas sostenidas solo en las pegatinas (badges)", () => {
     const ALLOWED = /(Badge|badge)$/;
     const SIGLAS = /\b(KULTURA|JSON|CSV|HTTPS?|RGPD|GDPR|LSSI|LSSICE|ISBN|IMDb|TMDB|RAWG|URL|WCAG|PWA|DSA|XML|ZIP|AEPD|NSFW|SMTP|LOPDGDD|OADIS|NEXT_LOCALE|OK)\b/g;
