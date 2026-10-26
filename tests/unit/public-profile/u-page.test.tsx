@@ -277,3 +277,11 @@ describe('/u: nombres antiguos y metadatos', () => {
     expect(rich.alternates?.canonical).toBe('/en/u/ana')
   })
 })
+
+describe('/u con una lista mixta (F-25)', () => {
+  it('su grupo se rotula «Varios formatos», nunca con una clave vacía de `media`', async () => {
+    h.collection = { owner: { ...OWNER }, lists: [list('l1'), list('l2', 'mixed')] }
+    const labels = all(await render(), h.M.FormatLabel).map((p) => String(p.children))
+    expect(labels).toEqual(['movies', 'mediaTypeMixed'])
+  })
+})

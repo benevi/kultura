@@ -47,8 +47,6 @@ const mockUserMediaChain = {
   select: vi.fn(),
 }
 
-let fromCallCount = 0
-
 vi.mock('@/lib/supabase/server', () => ({
   createClient: () => ({
     from: vi.fn((table: string) => {
@@ -64,7 +62,6 @@ vi.mock('@/lib/supabase/server', () => ({
 describe('getFriendsFeed', () => {
   beforeEach(() => {
     vi.clearAllMocks()
-    fromCallCount = 0
   })
 
   it('returns empty array if user has no friends', async () => {

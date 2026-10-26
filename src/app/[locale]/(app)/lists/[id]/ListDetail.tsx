@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useCallback, useId, useState } from 'react'
 import { useTranslations } from 'next-intl'
 import { Link, useRouter } from '@/i18n/navigation'
 import { Avatar } from '@/components/ui/Avatar'
@@ -12,6 +12,8 @@ import { ShareLinkButton } from '@/components/social/ShareLinkButton'
 import { MediaCard } from '@/components/media/MediaCard'
 import { createLogger } from '@/lib/logger'
 import type { List, ListItem, ListMember } from '@/types/list'
+import { ReorderableItems } from './ReorderableItems'
+import { ItemNote } from './ItemNote'
 
 const log = createLogger('ListDetail')
 
@@ -22,7 +24,11 @@ interface ListDetailProps {
   currentUserId: string
   currentUserFriends: Array<{ id: string; username: string; avatarColor: string; avatarInitials: string }>
   canEdit: boolean
+  /** MIXED_LISTS (F-25): ordenar, notas y descripción. */
+  mixedEnabled?: boolean
 }
+
+const DESCRIPTION_MAX = 500
 
 export function ListDetail({
   list,
@@ -31,8 +37,10 @@ export function ListDetail({
   currentUserId,
   currentUserFriends,
   canEdit,
+  mixedEnabled = false,
 }: ListDetailProps) {
   const t = useTranslations('lists')
+  const tf = useTranslations('filters')
   const tc = useTranslations('common')
   const tcol = useTranslations('collection')
   const router = useRouter()
@@ -47,6 +55,17 @@ export function ListDetail({
   const [actionError, setActionError] = useState<string | null>(null)
   const [isPublic, setIsPublic] = useState(list.isPublic)
   const [savingVisibility, setSavingVisibility] = useState(false)
+  const [reordering, setReordering] = useState(false)
+  const [description, setDescription] = useState(list.description ?? '')
+  const [editingDescription, setEditingDescription] = useState(false)
+  const [descriptionDraft, setDescriptionDraft] = useState('')
+  const [savingDescription, setSavingDescription] = useState(false)
+  const [descriptionError, setDescriptionError] = useState(false)
+  const descriptionFieldId = useId()
+  const descriptionHintId = useId()
+  const ranked = list.template === 'ranking'
+  const canOrder = mixedEnabled && canEdit
+  const onItemsChange = useCallback((next: ListItem[]) => setItems(next), [])
 
   const isOwner = list.ownerId === currentUserId
   const publicPath = list.owner ? `/u/${list.owner.username}/l/${list.id}` : null
@@ -128,7 +147,8 @@ export function ListDetail({
         body: JSON.stringify({ userId: inviteUserId }),
       })
       if (!res.ok) {
-        setActionError(t('inviteError'))
+        const data = (await res.json().catch(() => ({}))) as { error?: string }
+        setActionError(data.error === 'not_friends' ? t('inviteNotFriend') : t('inviteError'))
         return
       }
       const friend = currentUserFriends.find((f) => f.id === inviteUserId)
@@ -169,6 +189,29 @@ export function ListDetail({
       setActionError(t('removeMemberError'))
     }
   }
+
+  async function handleSaveDescription(e: React.FormEvent) {
+    e.preventDefault()
+    setSavingDescription(true)
+    setDescriptionError(false)
+    try {
+      const res = await fetch(`/api/lists/${list.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ description: descriptionDraft }),
+      })
+      if (!res.ok) throw new Error(`HTTP ${res.status}`)
+      setDescription(descriptionDraft.trim())
+      setEditingDescription(false)
+    } catch (err) {
+      log.error('description save failed', { message: err instanceof Error ? err.message : String(err) })
+      setDescriptionError(true)
+    } finally {
+      setSavingDescription(false)
+    }
+  }
+
+  const formatLabel = list.mediaType === 'mixed' ? t('mediaTypeMixed') : tf(list.mediaType)
 
   const memberIds = new Set(members.map((m) => m.userId))
   memberIds.add(list.ownerId)
@@ -211,6 +254,9 @@ export function ListDetail({
               </div>
             )}
             <span className="text-[13px] text-text-tertiary">
+              <span className="font-semibold text-text-secondary">{formatLabel}</span>
+              {list.template ? ` · ${t(`template.${list.template}`)}` : ''}
+              {' · '}
               {list.isCollaborative && (
                 <span className="font-semibold text-text-primary">{t('collaborative')}</span>
               )}
@@ -218,6 +264,53 @@ export function ListDetail({
               {t('itemCount', { count: items.length })}
             </span>
           </div>
+          {description && !editingDescription && (
+            <p className="mt-4 max-w-2xl text-[15px] leading-relaxed text-text-secondary whitespace-pre-line break-words">
+              {description}
+            </p>
+          )}
+          {isOwner && mixedEnabled && !editingDescription && (
+            <button
+              type="button"
+              onClick={() => {
+                setDescriptionDraft(description)
+                setDescriptionError(false)
+                setEditingDescription(true)
+              }}
+              className="mt-2 inline-flex min-h-11 items-center rounded-sm text-[13px] font-bold text-accent-pink underline-offset-4 hover:underline focus-visible:[outline-style:solid] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus-ring"
+            >
+              {description ? t('editDescription') : t('addDescription')}
+            </button>
+          )}
+          {isOwner && mixedEnabled && editingDescription && (
+            <form onSubmit={handleSaveDescription} className="mt-4 flex max-w-2xl flex-col gap-2">
+              <label htmlFor={descriptionFieldId} className="text-[13px] font-bold text-text-tertiary">
+                {t('descriptionLabel')}
+              </label>
+              <textarea
+                id={descriptionFieldId}
+                autoFocus
+                value={descriptionDraft}
+                onChange={(e) => setDescriptionDraft(e.target.value)}
+                maxLength={DESCRIPTION_MAX}
+                rows={3}
+                placeholder={t('descriptionPlaceholder')}
+                aria-describedby={descriptionHintId}
+                aria-invalid={descriptionError ? true : undefined}
+                className="w-full min-h-[88px] resize-y rounded-[14px] border border-field-border bg-surface-elevated px-4 py-3 font-body text-base md:text-[15px] text-text-primary placeholder:text-text-tertiary focus-visible:[outline-style:solid] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus-ring"
+              />
+              <p id={descriptionHintId} className="text-xs text-text-tertiary">
+                {t('descriptionHint', { count: DESCRIPTION_MAX - descriptionDraft.length })}
+              </p>
+              {descriptionError && <p role="alert" className="text-sm text-accent-danger">{t('descriptionError')}</p>}
+              <div className="flex gap-2">
+                <KButton type="submit" size="sm" loading={savingDescription}>{t('descriptionSave')}</KButton>
+                <KButton type="button" size="sm" variant="secondary" onClick={() => setEditingDescription(false)} disabled={savingDescription}>
+                  {t('cancel')}
+                </KButton>
+              </div>
+            </form>
+          )}
           {isOwner && (
             <div className="flex items-center gap-3 mt-4 flex-wrap">
               <SegmentedControl
@@ -282,11 +375,25 @@ export function ListDetail({
 
       {/* Items */}
       <section>
-        <h2 className="font-display text-xl font-bold mb-4 text-text-primary">
-          {t('itemsTitle')}
-          <span className="ml-2 text-sm font-body font-medium text-text-secondary">{items.length}</span>
-        </h2>
-        {items.length === 0 ? (
+        <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+          <h2 className="font-display text-xl font-bold text-text-primary">
+            {t('itemsTitle')}
+            <span className="ml-2 text-sm font-body font-medium text-text-secondary">{items.length}</span>
+          </h2>
+          {canOrder && items.length > 0 && (
+            <KButton
+              variant={reordering ? 'primary' : 'secondary'}
+              size="sm"
+              aria-pressed={reordering}
+              onClick={() => setReordering((v) => !v)}
+            >
+              {reordering ? t('reorderDone') : t('reorder')}
+            </KButton>
+          )}
+        </div>
+        {reordering && canOrder && items.length > 0 ? (
+          <ReorderableItems listId={list.id} items={items} onItemsChange={onItemsChange} ranked={ranked} />
+        ) : items.length === 0 ? (
           <div className="bg-surface-default rounded-3xl p-10 text-center flex flex-col items-center gap-3">
             <span aria-hidden="true" className="text-3xl">📋</span>
             <p className="text-text-primary text-sm font-medium">{t('noItems')}</p>
@@ -299,9 +406,20 @@ export function ListDetail({
             </Link>
           </div>
         ) : (
-          <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-5">
-            {items.map((item) => (
-              <div key={item.id} className="relative group">
+          // El orden manual es el orden de lectura (lista numerada); el número
+          // solo se PINTA en un «Ranking personal».
+          <ol className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-5" aria-label={t('itemsTitle')}>
+            {items.map((item, index) => (
+              <li key={item.id} className="relative group flex flex-col gap-2">
+                {ranked && (
+                  <span
+                    aria-hidden="true"
+                    className="pointer-events-none absolute -left-2 -top-2 z-10 flex h-8 min-w-8 items-center justify-center rounded-full bg-accent-lime px-2 font-display text-sm font-extrabold tabular-nums text-on-accent-lime shadow-[4px_4px_0_rgba(0,0,0,0.4)]"
+                  >
+                    {index + 1}
+                  </span>
+                )}
+                {ranked && <span className="sr-only">{t('rankPosition', { position: index + 1 })}</span>}
                 {item.media ? (
                   <MediaCard item={item.media} />
                 ) : (
@@ -322,9 +440,14 @@ export function ListDetail({
                     className="absolute top-0 right-0 bg-surface-base/80 hover:text-accent-danger md:opacity-0 md:group-hover:opacity-100 md:focus-visible:opacity-100 transition-opacity"
                   />
                 )}
-              </div>
+                {/* En la rejilla la nota solo se lee; se escribe en «Ordenar y
+                    anotar» (una fila por título, sin controles ocultos). */}
+                {mixedEnabled && item.note ? (
+                  <ItemNote listId={list.id} item={item} editable={false} onSaved={() => undefined} />
+                ) : null}
+              </li>
             ))}
-          </div>
+          </ol>
         )}
       </section>
 

@@ -396,6 +396,46 @@
     "removed": "Removed from your library",
     "saved": "Saved to your library"
   },
+  "diary": {
+    "title": "Diary",
+    "clearRating": "Clear rating",
+    "notRated": "Not rated",
+    "ratingOfTen": "{value, number} out of 10",
+    "favorite": "Favorite",
+    "addToDiary": "Add to diary",
+    "addToDiaryHint": "Save the date and, if you like, a review.",
+    "rewatch": "{type, select, book {Reread (I'd read it before)} manga {Reread (I'd read it before)} comic {Reread (I'd read it before)} game {Replay (I'd played it before)} other {Rewatch (I'd seen it before)}}",
+    "rewatchShort": "{type, select, book {reread} manga {reread} comic {reread} game {replay} other {rewatch}}",
+    "review": "Review",
+    "reviewPlaceholder": "What did you think?",
+    "chars": "{count, number} / {max, number}",
+    "spoiler": "Contains spoilers",
+    "spoilerHidden": "Review with spoilers (hidden)",
+    "showSpoiler": "Show the review with spoilers",
+    "hideSpoiler": "Hide the review",
+    "privateNote": "Private note (only you can see it)",
+    "privateNotePlaceholder": "Who with, where, which edition…",
+    "previousLogs": "{count, plural, one {Your entry} other {Your # entries}}",
+    "delete": "Delete",
+    "deleteLog": "Delete the entry for “{title}” from {date}",
+    "deleteFailed": "We couldn't delete the entry. Try again.",
+    "deleted": "Entry for “{title}” deleted",
+    "logFailed": "Saved to your library, but we couldn't add it to your diary. Try again.",
+    "savedWithLog": "Saved to your library and your diary",
+    "stamp": "{type, select, book {Read!} manga {Read!} comic {Read!} game {Played!} other {Watched!}}",
+    "removeConfirmBody": "The status, rating, progress and diary of “{title}” will be deleted.",
+    "view": "View",
+    "viewCollection": "Collection",
+    "viewDiary": "Diary",
+    "scaleLabel": "Rating scale",
+    "scaleStars": "Half stars",
+    "scaleTen": "Score out of 10",
+    "scaleSaveFailed": "We couldn't save your rating scale. Try again.",
+    "favorites": "♥ Favorites",
+    "listLabel": "Diary entries",
+    "emptyTitle": "Your diary is empty",
+    "emptyHint": "Mark a title as completed and add it to your diary: here you'll see what you watched, read or played, and when."
+  },
   "profile": {
     "memberSince": "Member since",
     "totalItems": "titles",
@@ -484,10 +524,54 @@
     "visibilityPrivateHint": "Only you and the people you invite.",
     "visibilityPublic": "Public",
     "visibilityPublicHint": "Anyone with the link, even without an account.",
-    "visibilityAfterCreateError": "The list was created as private: we couldn't make it public. You can change it from the list itself.",
     "itemCount": "{count, plural, one {# title} other {# titles}}",
     "removeItemNamed": "Remove “{title}” from the list",
-    "metaFallback": "List"
+    "metaFallback": "List",
+    "mediaTypeMixed": "Mixed formats",
+    "templateLabel": "What kind of list?",
+    "template": {
+      "free": "Free list",
+      "freeHint": "Titles in one format or several, in any order you like.",
+      "franchise": "Franchise",
+      "franchiseHint": "A saga across every format: books, movies, TV, games…",
+      "ranking": "Personal ranking",
+      "rankingHint": "Your favourites numbered from first to last. Drag to reorder them."
+    },
+    "franchiseNamePlaceholder": "E.g. Dune, from the books to the game",
+    "rankingNamePlaceholder": "E.g. My top 10 horror movies",
+    "descriptionLabel": "Description (optional)",
+    "descriptionPlaceholder": "What the list is about, where to start…",
+    "descriptionHint": "{count, plural, one {# character left} other {# characters left}}",
+    "descriptionSave": "Save description",
+    "descriptionError": "The description couldn't be saved. Please try again.",
+    "addDescription": "Add a description",
+    "editDescription": "Edit description",
+    "errorMixedUnavailable": "Mixed-format lists aren't available yet. Choose a format.",
+    "inviteNotFriend": "You can only invite your friends. Send them a friend request first.",
+    "reorder": "Reorder and add notes",
+    "reorderDone": "Done",
+    "reorderHint": "Drag each title by its handle or use Move up and Move down. With a keyboard: press Space on the handle to pick it up, the arrow keys to move it, Space to drop it and Escape to cancel.",
+    "dragHandle": "Move “{title}”, position {position} of {total}",
+    "moveUp": "Move “{title}” up",
+    "moveDown": "Move “{title}” down",
+    "grabbed": "“{title}” picked up, position {position} of {total}. Move it with the arrow keys.",
+    "moved": "“{title}”, position {position} of {total}.",
+    "dropped": "“{title}” dropped at position {position} of {total}.",
+    "dragCancelled": "Move cancelled. “{title}” is back at position {position}.",
+    "orderSaving": "Saving the order…",
+    "orderSaved": "Order saved",
+    "orderError": "The order couldn't be saved. The last change has been undone.",
+    "rankPosition": "Number {position}",
+    "noteLabel": "Note on “{title}”",
+    "notePlaceholder": "Why it's here, where to start…",
+    "noteHint": "{count, plural, one {# character left} other {# characters left}}",
+    "noteSave": "Save note",
+    "noteError": "The note couldn't be saved. Please try again.",
+    "noteFor": "Note on “{title}”",
+    "addNote": "Add a note",
+    "editNote": "Edit note",
+    "addNoteNamed": "Add a note to “{title}”",
+    "editNoteNamed": "Edit the note on “{title}”"
   },
   "aiRecommendations": {
     "title": "For you",
@@ -582,7 +666,14 @@
     "genreNewsTitle": "New in {genre}",
     "genreSeriesTitle": "Series in {genre}",
     "continuing": "Continuing",
-    "trends": "Trending"
+    "trends": "Trending",
+    "activity": {
+      "completed": "<who>{user}</who> finished <what>{title}</what>",
+      "in_progress": "<who>{user}</who> is on <what>{title}</what>",
+      "pending": "<who>{user}</who> saved <what>{title}</what> for later",
+      "abandoned": "<who>{user}</who> dropped <what>{title}</what>"
+    },
+    "activityScore": "{score, plural, one {# star} other {# stars}}"
   },
   "friends": {
     "title": "Friends",
@@ -807,6 +898,35 @@
       "wizard": "Wizard"
     },
     "deleteAccountHintGrace": "Your account is scheduled for {days, plural, one {# day} other {# days}} in case you change your mind; after that your profile, library, lists, friendships and everything you sent are deleted. Groups you created and your shared lists pass to another member."
+  },
+  "platforms": {
+    "title": "My streaming services",
+    "hint": "Tick the services you subscribe to. Home will tell you which of your saved titles you can watch tonight on them.",
+    "region": "Catalogue for",
+    "regions": {
+      "ES": "Spain",
+      "US": "United States"
+    },
+    "groupLabel": "Streaming services",
+    "count": "{count, plural, =0 {None ticked} one {# ticked} other {# ticked}}",
+    "saving": "Saving…",
+    "saved": "Streaming services saved",
+    "error": "Your streaming services couldn't be saved. Please try again.",
+    "demoLocked": "The demo account can't change its streaming services.",
+    "attribution": "Availability from JustWatch, via TMDB.",
+    "tonightTitle": "Tonight on your services",
+    "tonightHint": "Saved titles you can watch right now on {platforms}.",
+    "tonightEmpty": "None of your saved titles is on your services right now.",
+    "tonightEmptyHint": "Save some movies or TV shows for later, or check which services you've ticked.",
+    "tonightSetup": "What to watch tonight? Tick your streaming services and we'll tell you which saved titles are on them.",
+    "tonightSetupCta": "Choose my services",
+    "editPlatforms": "Change services",
+    "surprise": "Surprise me",
+    "surpriseAgain": "Another one",
+    "surpriseLabel": "Tonight",
+    "surprisePick": "Tonight: {title}, on {platforms}.",
+    "surpriseOn": "On {platforms}",
+    "surpriseOpen": "See “{title}”"
   },
   "report": {
     "label": "Report",
@@ -1520,6 +1640,30 @@
     "body": "Look around as much as you like, but nothing is saved here.",
     "cta": "Create my account",
     "readOnly": "This is a demo, so nothing is saved. Create your account to use it for real."
+  },
+  "pwa": {
+    "offline": {
+      "metaTitle": "You're offline",
+      "title": "You're offline",
+      "body": "There's no internet right now. As soon as it's back, KULTURA will pick up where you left off.",
+      "safe": "Your library and lists are safe: they're stored in your account, not on this device.",
+      "retry": "Try again",
+      "home": "Go to the home page"
+    },
+    "install": {
+      "title": "Install KULTURA",
+      "body": "Open it from your home screen, full screen, without hunting for the tab.",
+      "action": "Install",
+      "later": "Not now",
+      "iosTitle": "Add KULTURA to your home screen",
+      "iosStepShare": "Tap Share in the browser bar.",
+      "iosStepAdd": "Choose “Add to Home Screen”.",
+      "iosDone": "Got it"
+    },
+    "loading": {
+      "chat": "Loading conversations…",
+      "notifications": "Loading notifications…"
+    }
   },
   "best": {
     "title": {

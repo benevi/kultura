@@ -77,13 +77,14 @@ describe('CreateListModal', () => {
     expect(fetchMock).not.toHaveBeenCalled()
   })
 
-  it('privada: un solo POST; pública: POST y después PATCH isPublic', async () => {
+  it('una sola petición: la visibilidad va en el alta (F-25; antes un PATCH aparte que podía fallar)', async () => {
     fetchMock.mockResolvedValue({ ok: true, json: async () => ({ list: { id: 'l1' } }) })
     const { unmount } = render(<CreateListModal onClose={vi.fn()} />)
     fireEvent.change(screen.getByRole('textbox', { name: 'lists.listName' }), { target: { value: 'Mi lista' } })
     fireEvent.click(screen.getByRole('button', { name: 'lists.create' }))
     await waitFor(() => expect(mockPush).toHaveBeenCalledWith('/lists/l1'))
     expect(fetchMock).toHaveBeenCalledTimes(1)
+    expect(JSON.parse(fetchMock.mock.calls[0][1].body)).toMatchObject({ isPublic: false })
     unmount()
 
     fetchMock.mockClear()
@@ -91,22 +92,19 @@ describe('CreateListModal', () => {
     fireEvent.change(screen.getByRole('textbox', { name: 'lists.listName' }), { target: { value: 'Mi lista' } })
     fireEvent.click(screen.getByRole('radio', { name: /lists\.visibilityPublic/ }))
     fireEvent.click(screen.getByRole('button', { name: 'lists.create' }))
-    await waitFor(() =>
-      expect(fetchMock).toHaveBeenCalledWith('/api/lists/l1', expect.objectContaining({ method: 'PATCH', body: JSON.stringify({ isPublic: true }) }))
-    )
+    await waitFor(() => expect(mockPush).toHaveBeenCalled())
+    expect(fetchMock).toHaveBeenCalledTimes(1)
+    expect(fetchMock).toHaveBeenCalledWith('/api/lists', expect.objectContaining({ method: 'POST' }))
+    expect(JSON.parse(fetchMock.mock.calls[0][1].body)).toMatchObject({ isPublic: true })
   })
 
-  it('si el PATCH falla, se avisa al cerrar (la lista queda privada)', async () => {
-    fetchMock
-      .mockResolvedValueOnce({ ok: true, json: async () => ({ list: { id: 'l2' } }) })
-      .mockResolvedValueOnce({ ok: false, json: async () => ({}) })
+  it('si el alta falla, el error se anuncia dentro del diálogo y no navega', async () => {
+    fetchMock.mockResolvedValueOnce({ ok: false, json: async () => ({ error: 'x' }) })
     render(<CreateListModal onClose={vi.fn()} />)
     fireEvent.change(screen.getByRole('textbox', { name: 'lists.listName' }), { target: { value: 'X' } })
-    fireEvent.click(screen.getByRole('radio', { name: /lists\.visibilityPublic/ }))
     fireEvent.click(screen.getByRole('button', { name: 'lists.create' }))
-    await waitFor(() => expect(mockShowError).toHaveBeenCalledWith('lists.visibilityAfterCreateError'))
-    // Después de cerrar: con el diálogo abierto el toast no se leería.
-    expect(mockPush).toHaveBeenCalled()
+    await waitFor(() => expect(screen.getAllByRole('alert').some((a) => a.textContent === 'lists.errorCreate')).toBe(true))
+    expect(mockPush).not.toHaveBeenCalled()
   })
 })
 

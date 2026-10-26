@@ -1,6 +1,7 @@
 // ============================================================
 // KULTURA — Tipos de Listas
-// Una lista solo puede contener un tipo de contenido (DEC-008)
+// Una lista contiene un solo formato (DEC-008) o, con F-25 (MIXED_LISTS),
+// varios (`mixed`): «Franquicia» = libro + películas + juego.
 // ============================================================
 
 import type { MediaType, MediaItem } from "./media";
@@ -9,17 +10,27 @@ import type { UserProfile } from "./user";
 // Re-export para conveniencia
 export type { UserProfile };
 
+/** Formato de una lista: uno de los siete o `mixed` (F-25). */
+export type ListMediaType = MediaType | "mixed";
+
+/** Plantilla con la que se creó la lista (F-25). */
+export type ListTemplate = "franchise" | "ranking";
+
 /** Lista de títulos (pública o colaborativa) */
 export interface List {
   id: string;
   ownerId: string;
   name: string;
-  /** Un solo tipo de contenido por lista — DEC-008 */
-  mediaType: MediaType;
+  /** Un solo tipo de contenido por lista — DEC-008 — o `mixed` (F-25) */
+  mediaType: ListMediaType;
   isCollaborative: boolean;
   /** Visible sin sesión en la colección pública del dueño */
   isPublic: boolean;
   createdAt: string;
+  /** F-25: texto libre del dueño. */
+  description?: string | null;
+  /** F-25: «Ranking personal» numera los títulos. */
+  template?: ListTemplate | null;
   /** Datos embebidos */
   owner?: UserProfile;
   itemCount?: number;
@@ -32,6 +43,10 @@ export interface ListItem {
   mediaId: string;
   addedBy?: string;
   addedAt: string;
+  /** F-25: orden manual (0 = primero). Ausente sin la migración. */
+  position?: number | null;
+  /** F-25: nota de quien edita la lista. */
+  note?: string | null;
   /** MediaItem embebido — disponible cuando se hace join */
   media?: MediaItem;
   /** Perfil de quien añadió el item */

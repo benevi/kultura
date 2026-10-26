@@ -19,9 +19,17 @@ import type { HeroItem } from '@/components/home/HeroSection'
 import { Link } from '@/i18n/navigation'
 import { generatedUsername, initialsFor, purgeDate } from '@/app/api/settings/identity'
 import { readAccountState } from '@/app/api/settings/account-state'
+import {
+  FriendsActivity,
+  FriendsActivitySkeleton,
+  TonightOnMyPlatforms,
+  TonightSkeleton,
+} from './sections'
 
+// TXT-5: el título iba fijo en español también en /en.
 export async function generateMetadata(): Promise<Metadata> {
-  return { title: 'Inicio' }
+  const t = await getTranslations('home')
+  return { title: t('title') }
 }
 
 /**
@@ -167,6 +175,12 @@ export default async function HomePage() {
           que la IA te elige por match), después lo social y por último las
           novedades generales. Antes, una cuenta sin título en curso abría con
           la tarjeta vacía de "Popular entre tus amigos". */}
+      {/* F-25 (PRO-6): «¿qué veo esta noche?» con los pendientes que están
+          en las plataformas del usuario. En streaming: consulta a TMDB. */}
+      <Suspense fallback={<TonightSkeleton />}>
+        <TonightOnMyPlatforms userId={user.id} locale={locale} />
+      </Suspense>
+
       {showStarter ? (
         <Suspense fallback={<AiRecommendations pending />}>
           <StarterForYou locale={locale} />
@@ -174,6 +188,10 @@ export default async function HomePage() {
       ) : (
         <AiRecommendations initial={todayRecs} />
       )}
+      {/* F-25 (PRO-7): lo que hacen los amigos, antes de lo popular entre ellos. */}
+      <Suspense fallback={<FriendsActivitySkeleton />}>
+        <FriendsActivity userId={user.id} locale={locale} />
+      </Suspense>
       <PopularInCircle />
       <GenreNews />
     </main>

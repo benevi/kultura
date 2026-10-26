@@ -71,6 +71,8 @@ export const MEDIA_CLIENT_NAMESPACES = [
   // F-18: "Cerrar" y "Cargando…" de `Modal`/`Spinner` y las estrellas de
   // `StarRating` en los diálogos de biblioteca, listas y recomendar.
   "common",
+  // F-24: escala de notas y diario en el diálogo de biblioteca.
+  "diary",
   "errors",
   "library",
   "lists",
@@ -87,6 +89,7 @@ export const APP_CLIENT_NAMESPACES = [
   "collection",
   "common",
   "demo",
+  "diary",
   "discover",
   "discoverFilters",
   "errors",
@@ -100,6 +103,7 @@ export const APP_CLIENT_NAMESPACES = [
   "moderation",
   "nav",
   "notifications",
+  "platforms",
   "profile",
   "report",
   "search",
