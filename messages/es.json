@@ -399,8 +399,7 @@
     "errors": {
       "saveFailed": "No hemos podido guardarlo. Revisa la conexión y reintenta.",
       "providerUnavailable": "No hemos podido guardar el cambio: el catálogo no responde. Reintenta en un momento.",
-      "removeFailed": "No hemos podido quitarlo de tu biblioteca. Reintenta.",
-      "undoFailed": "No hemos podido devolverlo a tu biblioteca. Añádelo otra vez."
+      "removeFailed": "No hemos podido quitarlo de tu biblioteca. Reintenta."
     },
     "title": "Mi biblioteca",
     "empty": {

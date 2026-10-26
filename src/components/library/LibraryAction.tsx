@@ -10,8 +10,14 @@
 // se recuerda mientras dure la página). Al marcarlo como completado, el estado
 // hace un «sello» lima (DIS-14, ≤ 300 ms, sin mover nada, nada con
 // movimiento reducido) que cuelga del póster de la ficha (`data-library-stamp`)
-// o, si no lo hay, de la etiqueta de estado. Al quitarlo de la biblioteca, el
-// aviso trae «Deshacer» (vuelve con su estado, nota y progreso).
+// o, si no lo hay, de la etiqueta de estado.
+//
+// Quitar con «Deshacer»: el título desaparece al momento, pero el DELETE real
+// espera a que se vaya el aviso (`onExpire`). El borrado se lleva por la FK
+// (ON DELETE CASCADE) el diario del título —reseñas y notas privadas— y eso
+// no se puede volver a crear: por eso «Deshacer» CANCELA el borrado en vez de
+// volver a guardar la entrada. Si la página se cierra antes, se borra ya
+// (`keepalive`); si se vuelve a añadir antes, el borrado pendiente se anula.
 //
 // F-27: a la vez se pide el progreso del título y lo que dice el proveedor
 // (/api/library/progress: temporadas, capítulos, páginas, horas medias) para
@@ -84,6 +90,12 @@ function loadProgress(mediaId: string): Promise<ProgressConfig | null> {
   return pending
 }
 
+/** Borrado pendiente mientras dura el aviso con «Deshacer». */
+interface PendingRemoval {
+  entry: LibraryEntry
+  settled: boolean
+}
+
 /** Solo para tests. */
 export function __resetDiaryCache() {
   diaryCache.clear()
@@ -141,6 +153,15 @@ export function LibraryAction({
   const addRef = useRef<HTMLButtonElement>(null)
   const updateRef = useRef<HTMLButtonElement>(null)
   const stampRef = useRef<HTMLSpanElement>(null)
+  const pendingRef = useRef<PendingRemoval | null>(null)
+  // Tras confirmar, el foco va al «Deshacer» del aviso (el botón que abrió el
+  // diálogo ya no existe); si no hay aviso, a «Añadir».
+  const afterRemoveFocus = {
+    get current(): HTMLElement | null {
+      const actions = document.querySelectorAll<HTMLElement>('[data-toast-action]')
+      return actions[actions.length - 1] ?? addRef.current
+    },
+  }
   // El póster de la ficha, si lo hay: el sello se pinta colgado de él.
   const [posterAnchor, setPosterAnchor] = useState<HTMLElement | null>(null)
   useEffect(() => {
@@ -174,6 +195,8 @@ export function LibraryAction({
   }, [stamp])
 
   async function handleSave(data: LibraryStatusSaveData) {
+    // Volver a añadirlo mientras sigue el aviso: el borrado pendiente no se hace.
+    if (pendingRef.current) pendingRef.current.settled = true
     setLoading(true)
     setSaveError(null)
     try {
@@ -227,52 +250,58 @@ export function LibraryAction({
     show({ message: td('deleted', { title: mediaCache.title }), type: 'success' })
   }
 
-  /** Vuelve a guardar la entrada quitada, con su estado, nota y progreso. */
-  async function restore(removed: LibraryEntry) {
-    const progress = (removed as { progress?: ProgressConfig['progress'] }).progress
-    try {
-      const result = await saveLibraryEntry({
-        mediaId,
-        status: removed.status,
-        score: removed.score ?? undefined,
-        ...(removed.rating10 !== undefined && removed.rating10 !== null ? { rating10: removed.rating10 } : {}),
-        ...(removed.favorite !== undefined ? { favorite: removed.favorite } : {}),
-        watchedAt: removed.watchedAt ?? undefined,
-        episodeProgress: removed.episodeProgress ?? undefined,
-        ...(progress !== undefined ? { progress } : {}),
-        mediaCache,
-      })
-      setEntry(result.entry)
-      progressCache.delete(mediaId)
-      show({ message: t('restored'), type: 'success' })
-    } catch (err) {
-      log.error('Failed to restore library entry', { err })
-      showError(t('errors.undoFailed'))
-    }
+  /** «Deshacer»: el borrado no llega a hacerse; la entrada vuelve tal cual. */
+  function undoRemove(pending: PendingRemoval) {
+    if (pending.settled) return
+    pending.settled = true
+    pendingRef.current = null
+    setEntry(pending.entry)
+    show({ message: t('restored'), type: 'success' })
   }
 
-  async function handleRemove() {
-    const removed = entry
-    setLoading(true)
-    setRemoveError(null)
+  /** El aviso se fue sin «Deshacer» (o se cierra la página): ahora sí se borra. */
+  async function commitRemove(pending: PendingRemoval, keepalive = false) {
+    if (pending.settled) return
+    pending.settled = true
+    if (pendingRef.current === pending) pendingRef.current = null
     try {
-      await removeFromLibrary(mediaId)
-      setEntry(null)
-      setConfirmRemove(false)
+      await (keepalive ? removeFromLibrary(mediaId, { keepalive: true }) : removeFromLibrary(mediaId))
       // La FK borra el diario del título con la entrada.
       setDiary((prev) => (prev ? { ...prev, logs: [] } : prev))
       diaryCache.delete(mediaId)
-      show({
-        message: t('removed'),
-        type: 'success',
-        ...(removed ? { action: { label: t('undo'), onAction: () => void restore(removed) } } : {}),
-      })
     } catch (err) {
       log.error('Failed to remove library entry', { err })
-      setRemoveError(t('errors.removeFailed'))
-    } finally {
-      setLoading(false)
+      setEntry(pending.entry)
+      showError(t('errors.removeFailed'))
     }
+  }
+
+  // Cerrar o dejar la página con un borrado pendiente: se hace ya.
+  useEffect(() => {
+    const flush = () => {
+      if (pendingRef.current) void commitRemove(pendingRef.current, true)
+    }
+    window.addEventListener('pagehide', flush)
+    return () => window.removeEventListener('pagehide', flush)
+  })
+
+  function handleRemove() {
+    if (!entry) return
+    const pending: PendingRemoval = { entry, settled: false }
+    pendingRef.current = pending
+    setRemoveError(null)
+    setEntry(null)
+    setConfirmRemove(false)
+    show({
+      message: t('removed'),
+      type: 'success',
+      action: {
+        label: t('undo'),
+        onAction: () => undoRemove(pending),
+        onExpire: () => void commitRemove(pending),
+        autoFocus: true,
+      },
+    })
   }
 
   function stampBadge(position: string) {
@@ -389,7 +418,7 @@ export function LibraryAction({
         loading={loading}
         onConfirm={handleRemove}
         onCancel={() => { setConfirmRemove(false); setRemoveError(null) }}
-        finalFocusRef={addRef}
+        finalFocusRef={afterRemoveFocus}
         error={removeError}
       />
     </>
