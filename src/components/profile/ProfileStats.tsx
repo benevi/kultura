@@ -57,7 +57,7 @@ export async function ProfileStats({ byType, totalItems }: ProfileStatsProps) {
               {tMedia(s.type as Parameters<typeof tMedia>[0])}
             </p>
             <p className="text-xs text-text-tertiary mt-0.5">
-              {s.completed} {t('completed')}
+              {s.completed} {t('completed', { count: s.completed })}
             </p>
           </div>
           )
