@@ -105,7 +105,7 @@ function AiArt({ p, chip }: { p: (i: number) => Poster | null; chip: string }) {
       <div className="relative h-full transition-transform duration-base ease-standard group-hover:rotate-0" style={{ rotate: "4deg" }}>
         <ArtPoster item={p(0)} seed="ai-0" sizes="220px" className="h-full" />
         <span
-          className="absolute -top-3 -left-4 rounded-full bg-accent-lime px-3 py-1 text-[13px] font-extrabold text-on-accent-lime"
+          className="absolute -top-3 -left-4 rounded-full bg-accent-lime px-3 py-1 text-meta font-extrabold text-on-accent-lime"
           style={{ rotate: "-8deg", boxShadow: STICKER_SHADOW }}
         >
           ✦ {chip}

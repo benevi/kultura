@@ -97,7 +97,7 @@ export function FriendsClient({
     <div className="flex flex-col gap-6">
       {/* Share link — card "feature" (DISENO.md: gradiente + acento radial) */}
       <section
-        className="relative overflow-hidden rounded-bento-lg p-5 flex items-center justify-between gap-4"
+        className="relative overflow-hidden rounded-bento-xl p-5 flex items-center justify-between gap-4"
         style={{
           background: `linear-gradient(155deg, oklch(30% 0.05 280), ${F0.bg})`,
         }}
@@ -126,7 +126,7 @@ export function FriendsClient({
       {/* Link a grupos (los grupos ahora viven en /groups) */}
       <Link
         href="/groups"
-        className="rounded-20 border p-4 flex items-center justify-between gap-4 transition-colors hover:brightness-110"
+        className="rounded-bento border p-4 flex items-center justify-between gap-4 transition-colors hover:brightness-110"
         style={CARD_STYLE}
       >
         <span className="text-sm font-bold" style={{ color: F0.text }}>{t('groups')}</span>
@@ -172,7 +172,7 @@ export function FriendsClient({
               {searchResults.map(u => (
                 <div
                   key={u.id}
-                  className="flex items-center gap-4 rounded-20 px-[22px] py-4"
+                  className="flex items-center gap-4 rounded-bento px-[22px] py-4"
                   style={{ background: F0.surface }}
                 >
                   <Avatar initials={u.avatar_initials} color={u.avatar_color} size="sm" />
@@ -225,7 +225,7 @@ export function FriendsClient({
         <section>
           <h2 className="font-display text-xl font-bold mb-3" style={{ color: F0.text }}>{t('myFriends')}</h2>
           {friends.length === 0 ? (
-            <div className="rounded-20 border p-8 text-center" style={CARD_STYLE}>
+            <div className="rounded-bento border p-8 text-center" style={CARD_STYLE}>
               <div className="text-3xl mb-3">👥</div>
               <p className="text-sm" style={{ color: F0.textSecondary }}>{t('noFriends')}</p>
               <p className="text-xs mt-1" style={{ color: F0.muted }}>{t('noFriendsHint')}</p>
@@ -304,7 +304,7 @@ function BlockedUsersSection() {
           {error && <p role="alert" className="text-xs mb-2 text-accent-danger">{t('unblockError')}</p>}
           <ul className="flex flex-col gap-3">
             {users.map((u) => (
-              <li key={u.id} className="flex items-center gap-4 rounded-20 px-[22px] py-4" style={{ background: F0.surface }}>
+              <li key={u.id} className="flex items-center gap-4 rounded-bento px-[22px] py-4" style={{ background: F0.surface }}>
                 <Avatar initials={u.avatarInitials} color={u.avatarColor} size="sm" />
                 <Link
                   href={`/profile/${u.username}`}

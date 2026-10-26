@@ -40,7 +40,7 @@ export default async function NotificationsPage() {
   }
 
   return (
-    <main className="max-w-2xl mx-auto px-4 md:px-8 py-8">
+    <main className="page-grid [&>*]:max-w-2xl py-8">
       <PageHeading emoji="🔔">{t('title')}</PageHeading>
       {fetchError ? (
         <div className="bg-surface-default border border-surface-border rounded-bento p-10 text-center text-sm text-text-tertiary">

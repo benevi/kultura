@@ -232,7 +232,7 @@ export function ResetPasswordForm({ locale }: ResetPasswordFormProps) {
           {error && (
             <p
               role="alert"
-              className="rounded-[14px] bg-accent-danger/10 px-[18px] py-3 font-body text-sm text-accent-danger"
+              className="rounded-2xl bg-accent-danger/10 px-[18px] py-3 font-body text-sm text-accent-danger"
             >
               {error}
             </p>

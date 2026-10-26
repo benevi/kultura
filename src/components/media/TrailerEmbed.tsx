@@ -48,7 +48,7 @@ export function TrailerEmbed({ youtubeKey: rawKey, title }: TrailerEmbedProps) {
   if (!YOUTUBE_ID.test(youtubeKey)) return null;
 
   return (
-    <div className="relative aspect-video w-full rounded-[24px] overflow-hidden bg-surface-elevated">
+    <div className="relative aspect-video w-full rounded-bento overflow-hidden bg-surface-elevated">
       {playing ? (
         <iframe
           ref={iframeRef}

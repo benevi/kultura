@@ -52,7 +52,7 @@ export function SegmentedControl({
       role="radiogroup"
       aria-label={ariaLabel}
       className={cn(
-        "inline-flex items-center gap-1 p-1 rounded-xl bg-surface-elevated",
+        "inline-flex items-center gap-1 p-1 rounded-2xl bg-surface-elevated",
         "overflow-x-auto max-w-full scrollbar-hide flex-nowrap",
         className
       )}

@@ -124,7 +124,7 @@ export function PublicReportForm({ types, presetType, presetTarget }: Props) {
         ref={doneRef}
         tabIndex={-1}
         role="status"
-        className="rounded-card border border-surface-border bg-surface-default p-6 focus:outline-none focus-visible:ring-2 focus-visible:ring-accent-pink"
+        className="rounded-2xl border border-surface-border bg-surface-default p-6 focus:outline-none focus-visible:ring-2 focus-visible:ring-accent-pink"
       >
         <h2 className="font-display text-xl font-bold text-text-primary mb-2">{t('doneTitle')}</h2>
         <p className="text-text-secondary text-sm leading-relaxed">{t('doneBody', { reference })}</p>
@@ -139,13 +139,13 @@ export function PublicReportForm({ types, presetType, presetTarget }: Props) {
         id={ids.summary}
         tabIndex={-1}
         role="alert"
-        className={formError ? 'rounded-card border border-accent-danger p-3 text-sm text-accent-danger focus:outline-none focus-visible:ring-2 focus-visible:ring-accent-pink' : 'sr-only'}
+        className={formError ? 'rounded-2xl border border-accent-danger p-3 text-sm text-accent-danger focus:outline-none focus-visible:ring-2 focus-visible:ring-accent-pink' : 'sr-only'}
       >
         {formError}
       </div>
 
       {fixedTarget ? (
-        <div className="rounded-card border border-surface-border bg-surface-default p-4">
+        <div className="rounded-2xl border border-surface-border bg-surface-default p-4">
           <p className="text-xs font-bold text-text-tertiary">{t('targetFixedLabel')}</p>
           <p className="text-sm text-text-primary mt-1">
             {t(`types.${targetType}`)} · <span className="break-all text-text-secondary">{target}</span>
@@ -154,14 +154,14 @@ export function PublicReportForm({ types, presetType, presetTarget }: Props) {
       ) : (
         <>
           <div className="flex flex-col gap-2">
-            <label htmlFor={ids.type} className="font-body text-[13px] font-bold text-text-tertiary">
+            <label htmlFor={ids.type} className="font-body text-meta font-bold text-text-tertiary">
               {t('typeLabel')}
             </label>
             <select
               id={ids.type}
               value={targetType}
               onChange={(e) => setTargetType(e.target.value as ReportTargetType)}
-              className="w-full rounded-[14px] bg-surface-elevated px-[18px] py-[15px] border border-field-border font-body text-base md:text-[15px] text-text-primary focus-visible:[outline-style:solid] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus-ring"
+              className="w-full rounded-2xl bg-surface-elevated px-[18px] py-[15px] border border-field-border font-body text-base md:text-body text-text-primary focus-visible:[outline-style:solid] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus-ring"
             >
               {types.map((type) => (
                 <option key={type} value={type}>{t(`types.${type}`)}</option>
@@ -190,7 +190,7 @@ export function PublicReportForm({ types, presetType, presetTarget }: Props) {
         aria-invalid={errors.reason ? true : undefined}
         aria-describedby={errors.reason ? ids.reasonMsg : undefined}
       >
-        <legend className="font-body text-[13px] font-bold text-text-tertiary mb-2">{tr('reasonsLegend')}</legend>
+        <legend className="font-body text-meta font-bold text-text-tertiary mb-2">{tr('reasonsLegend')}</legend>
         {REPORT_REASONS.map((r) => (
           <label key={r} className="flex items-center gap-3 min-h-11 px-2 rounded-button cursor-pointer text-text-primary hover:bg-surface-elevated">
             <input
@@ -209,7 +209,7 @@ export function PublicReportForm({ types, presetType, presetTarget }: Props) {
       </fieldset>
 
       <div className="flex flex-col gap-2">
-        <label htmlFor={ids.details} className="font-body text-[13px] font-bold text-text-tertiary">
+        <label htmlFor={ids.details} className="font-body text-meta font-bold text-text-tertiary">
           {t('detailsLabel')}
         </label>
         <textarea
@@ -221,7 +221,7 @@ export function PublicReportForm({ types, presetType, presetTarget }: Props) {
           required
           aria-invalid={errors.details ? true : undefined}
           aria-describedby={ids.detailsMsg}
-          className={`w-full rounded-[14px] bg-surface-elevated px-[18px] py-[15px] border font-body text-base md:text-[15px] text-text-primary placeholder:text-text-tertiary resize-y focus-visible:[outline-style:solid] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus-ring ${errors.details ? 'border-accent-danger' : 'border-field-border'}`}
+          className={`w-full rounded-2xl bg-surface-elevated px-[18px] py-[15px] border font-body text-base md:text-body text-text-primary placeholder:text-text-tertiary resize-y focus-visible:[outline-style:solid] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus-ring ${errors.details ? 'border-accent-danger' : 'border-field-border'}`}
         />
         {errors.details ? (
           <p id={ids.detailsMsg} role="alert" className="text-xs text-accent-danger">{errors.details}</p>

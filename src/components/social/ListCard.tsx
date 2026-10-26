@@ -45,7 +45,7 @@ export function ListCard({ list }: ListCardProps) {
           </span>
           {list.isCollaborative && (
             <span
-              className="flex-shrink-0 rounded-full bg-black/40 backdrop-blur-sm text-white text-[11px] font-bold w-7 h-7 flex items-center justify-center leading-none"
+              className="flex-shrink-0 rounded-full bg-black/40 backdrop-blur-sm text-white text-xs font-bold w-7 h-7 flex items-center justify-center leading-none"
               title={tl('collaborative')}
               // `aria-label` en un span sin rol no se anuncia (axe
               // aria-prohibited-attr): como imagen, sí.

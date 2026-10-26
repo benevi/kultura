@@ -18,7 +18,7 @@ interface ErrorStateProps {
  * colgante. Decorativo.
  */
 function BrokenPosters({ sticker }: { sticker: string }) {
-  const poster = 'absolute w-16 h-24 rounded-[14px]'
+  const poster = 'absolute w-16 h-24 rounded-2xl'
   return (
     <div aria-hidden className="relative w-48 h-32 mx-auto">
       <span
@@ -31,15 +31,15 @@ function BrokenPosters({ sticker }: { sticker: string }) {
       />
       {/* Póster central «roto»: dos mitades separadas por una grieta. */}
       <span
-        className="absolute left-1/2 top-2 -ml-8 w-16 h-12 rounded-t-[14px] -rotate-[4deg] origin-bottom-left"
+        className="absolute left-1/2 top-2 -ml-8 w-16 h-12 rounded-t-2xl -rotate-[4deg] origin-bottom-left"
         style={{ background: 'linear-gradient(155deg, oklch(68% 0.24 350), oklch(55% 0.2 350))' }}
       />
       <span
-        className="absolute left-1/2 top-[3.6rem] -ml-8 w-16 h-12 rounded-b-[14px] rotate-[5deg] origin-top-right"
+        className="absolute left-1/2 top-[3.6rem] -ml-8 w-16 h-12 rounded-b-2xl rotate-[5deg] origin-top-right"
         style={{ background: 'linear-gradient(155deg, oklch(55% 0.2 350), oklch(45% 0.16 350))' }}
       />
       <span
-        className="absolute -top-1 left-1 -rotate-[8deg] rounded-full bg-accent-lime px-3 py-1 text-xs font-extrabold text-on-accent-lime shadow-[4px_4px_0_rgba(0,0,0,0.4)]"
+        className="absolute -top-1 left-1 -rotate-[8deg] rounded-full bg-accent-lime px-3 py-1 text-xs font-extrabold text-on-accent-lime shadow-sticker"
       >
         {sticker}
       </span>

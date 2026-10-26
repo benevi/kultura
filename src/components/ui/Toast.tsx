@@ -137,7 +137,7 @@ function SingleToast({ toast, onDismiss }: SingleToastProps) {
       onPointerUp={onPointerEnd}
       onPointerCancel={onPointerEnd}
       style={dragX ? { transform: `translateX(${dragX}px)`, opacity: Math.max(0.3, 1 - Math.abs(dragX) / 240) } : undefined}
-      className={`pointer-events-auto touch-pan-y flex items-center gap-3 pl-4 pr-1 py-1 min-h-14 rounded-18 border bg-surface-elevated text-text-primary shadow-[0_2px_8px_rgba(0,0,0,0.15)] text-sm w-full ${typeStyles[toast.type]} ${exiting ? 'animate-toast-out' : 'animate-toast-in'}`}
+      className={`pointer-events-auto touch-pan-y flex items-center gap-3 pl-4 pr-1 py-1 min-h-14 rounded-2xl border bg-surface-elevated text-text-primary shadow-soft text-sm w-full ${typeStyles[toast.type]} ${exiting ? 'animate-toast-out' : 'animate-toast-in'}`}
     >
       <span aria-hidden className={`font-bold flex-shrink-0 ${iconStyles[toast.type]}`}>
         {typeIcon[toast.type]}

@@ -105,10 +105,10 @@ export function PlatformsSection({ userId, initialServices, initialRegion, isDem
 
   return (
     <section id="platforms" aria-labelledby="platforms-title" className="scroll-mt-24">
-      <h2 id="platforms-title" className="text-[13px] font-extrabold uppercase tracking-wide text-text-tertiary mb-3">
+      <h2 id="platforms-title" className="text-meta font-extrabold uppercase tracking-wide text-text-tertiary mb-3">
         {t('title')}
       </h2>
-      <div className="flex flex-col gap-5 rounded-20 bg-surface-default px-5 py-4 sm:px-6 sm:py-5">
+      <div className="flex flex-col gap-5 rounded-bento bg-surface-default px-5 py-4 sm:px-6 sm:py-5">
         <p className="text-sm font-body text-text-tertiary">{t('hint')}</p>
 
         <div className="flex flex-wrap items-center justify-between gap-3">
@@ -140,7 +140,7 @@ export function PlatformsSection({ userId, initialServices, initialRegion, isDem
                 <li key={p.id}>
                   <label
                     className={cn(
-                      'flex min-h-11 cursor-pointer items-center gap-3 rounded-[14px] bg-surface-elevated px-3 py-2.5 transition-colors',
+                      'flex min-h-11 cursor-pointer items-center gap-3 rounded-2xl bg-surface-elevated px-3 py-2.5 transition-colors',
                       checked && 'ring-2 ring-accent-pink'
                     )}
                   >
@@ -159,11 +159,11 @@ export function PlatformsSection({ userId, initialServices, initialRegion, isDem
         </fieldset>
 
         {isDemo ? <p className="text-sm text-text-tertiary">{t('demoLocked')}</p> : null}
-        <p role="status" className="min-h-5 text-[13px] text-text-tertiary">
+        <p role="status" className="min-h-5 text-meta text-text-tertiary">
           {state === 'saving' ? t('saving') : state === 'saved' ? t('saved') : ''}
         </p>
         {state === 'error' ? <p role="alert" className="text-sm text-accent-danger">{t('error')}</p> : null}
-        <p className="text-[11px] text-text-tertiary">{t('attribution')}</p>
+        <p className="text-xs text-text-tertiary">{t('attribution')}</p>
       </div>
     </section>
   )

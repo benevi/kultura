@@ -260,11 +260,11 @@ export function LibraryClient({ entries, diary = null }: LibraryClientProps) {
       {/* Contadores (artboard): tarjetas sueltas, radio 20, cifra en color. */}
       <ul className="flex flex-wrap gap-4 mb-8" aria-label={t('title')}>
         {COUNTERS.map((c) => (
-          <li key={c.status} className="bg-surface-default rounded-20 px-[26px] py-[18px] min-w-[150px]">
-            <span className={`block font-display text-[30px] font-extrabold leading-none tabular-nums ${c.tone}`}>
+          <li key={c.status} className="bg-surface-default rounded-bento px-[26px] py-[18px] min-w-[150px]">
+            <span className={`block font-display text-3xl font-extrabold leading-none tabular-nums ${c.tone}`}>
               {counts[c.status] ?? 0}
             </span>
-            <span className="block mt-2 text-[13px] font-semibold text-text-tertiary">
+            <span className="block mt-2 text-meta font-semibold text-text-tertiary">
               {t(`counters.${c.labelKey}`)}
             </span>
           </li>

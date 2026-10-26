@@ -14,7 +14,7 @@ const STEAM_HOME = "https://store.steampowered.com";
  * para que rodee la palabra y no la zona táctil entera.
  */
 export const SOURCE_LINK_CLASS =
-  "py-4 px-2 -mx-2 rounded-[4px] underline underline-offset-2 hover:text-accent-pink transition-colors " +
+  "py-4 px-2 -mx-2 rounded-lg underline underline-offset-2 hover:text-accent-pink transition-colors " +
   "focus-visible:[outline-style:solid] focus-visible:outline-2 focus-visible:outline-offset-[-12px] focus-visible:outline-focus-ring";
 
 /**

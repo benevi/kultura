@@ -62,7 +62,7 @@ export async function ProfileHeader({
           el mismo error ya corregido en GroupDetail. */}
       <div
         aria-hidden="true"
-        className="h-[120px] md:h-[160px] rounded-bento-lg"
+        className="h-[120px] md:h-[160px] rounded-bento-xl"
         style={{
           background:
             'radial-gradient(120% 100% at 20% 10%, oklch(55% 0.2 260 / 0.6) 0%, transparent 55%), linear-gradient(160deg, oklch(30% 0.1 260), oklch(16% 0.06 240))',
@@ -76,10 +76,10 @@ export async function ProfileHeader({
           initials={avatarInitials}
           icon={avatarIcon}
           size="lg"
-          className="w-[88px] h-[88px] md:w-[110px] md:h-[110px] text-2xl md:text-[34px] font-extrabold rounded-[28px_28px_28px_8px] border-[5px] border-bg"
+          className="w-[88px] h-[88px] md:w-[110px] md:h-[110px] text-2xl md:text-3xl font-extrabold rounded-bento-xl rounded-bl-lg border-[5px] border-bg"
         />
         <div className="pb-2.5 min-w-0">
-          <h1 className="font-display text-2xl md:text-[28px] font-extrabold text-text-primary leading-tight truncate">
+          <h1 className="font-display text-2xl md:text-3xl font-extrabold text-text-primary leading-tight truncate">
             {username}
           </h1>
           <p className="text-sm text-text-tertiary mt-1">
@@ -97,7 +97,7 @@ export async function ProfileHeader({
       {showCounters ? (
       <ul className="flex flex-wrap gap-4 mt-7">
         {stats.map((s) => (
-          <li key={s.label} className="bg-surface-default rounded-20 px-[26px] py-4">
+          <li key={s.label} className="bg-surface-default rounded-bento px-[26px] py-4">
             <p className="font-display text-2xl font-extrabold text-text-primary leading-none tabular-nums">{s.value}</p>
             <p className="text-xs font-semibold text-text-tertiary mt-1.5">{s.label}</p>
           </li>

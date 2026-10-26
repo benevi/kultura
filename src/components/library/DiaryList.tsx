@@ -98,9 +98,9 @@ export function DiaryList({ logs: initialLogs, scale }: DiaryListProps) {
               const isHidden = log.spoiler && !revealed.has(log.id)
               const reviewId = `diary-review-${log.id}`
               return (
-                <li key={log.id} className="flex gap-4 rounded-20 bg-surface-default p-3">
+                <li key={log.id} className="flex gap-4 rounded-bento bg-surface-default p-3">
                   {/* Portada con tamaño fijo y gradiente detrás (CLS 0). */}
-                  <div className="relative h-24 w-16 shrink-0 overflow-hidden rounded-xl bg-surface-elevated">
+                  <div className="relative h-24 w-16 shrink-0 overflow-hidden rounded-lg bg-surface-elevated">
                     <div aria-hidden="true" className="absolute inset-0" style={{ background: posterGradient(log.mediaId) }} />
                     {log.poster ? <PosterImage src={log.poster} sizes="64px" className="object-cover" /> : null}
                   </div>
@@ -108,7 +108,7 @@ export function DiaryList({ logs: initialLogs, scale }: DiaryListProps) {
                     <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
                       <Link
                         href={`/media/${type}/${externalId}`}
-                        className="font-body font-semibold text-text-primary hover:underline focus-visible:[outline-style:solid] focus-visible:outline-2 focus-visible:outline-focus-ring rounded"
+                        className="font-body font-semibold text-text-primary hover:underline focus-visible:[outline-style:solid] focus-visible:outline-2 focus-visible:outline-focus-ring rounded-lg"
                       >
                         {title}
                         {log.year ? <span className="ml-1 font-normal text-text-tertiary">({log.year})</span> : null}
@@ -138,7 +138,7 @@ export function DiaryList({ logs: initialLogs, scale }: DiaryListProps) {
                             onClick={() => toggleSpoiler(log.id)}
                             aria-expanded={!isHidden}
                             aria-controls={isHidden ? undefined : reviewId}
-                            className="min-h-11 text-xs font-semibold text-accent-info underline-offset-2 hover:underline focus-visible:[outline-style:solid] focus-visible:outline-2 focus-visible:outline-focus-ring rounded"
+                            className="min-h-11 text-xs font-semibold text-accent-info underline-offset-2 hover:underline focus-visible:[outline-style:solid] focus-visible:outline-2 focus-visible:outline-focus-ring rounded-lg"
                           >
                             {isHidden ? t('showSpoiler') : t('hideSpoiler')}
                           </button>

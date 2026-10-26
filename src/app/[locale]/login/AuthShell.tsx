@@ -11,7 +11,7 @@ import { cn } from "@/lib/utils/index";
  */
 export const AUTH_CARD =
   "w-full rounded-bento-xl bg-surface-default p-7 md:p-11 " +
-  "shadow-[6px_6px_0_var(--surface-elevated)] md:shadow-[10px_10px_0_var(--surface-elevated)]";
+  "shadow-hard-sm md:shadow-hard";
 
 interface AuthShellProps {
   children: React.ReactNode;
@@ -32,7 +32,7 @@ export function AuthShell({ children, backLabel, cardClassName }: AuthShellProps
         <Link
           href="/"
           aria-label={backLabel}
-          className="mb-2 inline-block py-3 font-body text-[13px] font-bold text-text-tertiary underline-offset-4 transition-colors duration-base ease-standard hover:text-text-primary hover:underline"
+          className="mb-2 inline-block py-3 font-body text-meta font-bold text-text-tertiary underline-offset-4 transition-colors duration-base ease-standard hover:text-text-primary hover:underline"
         >
           <span aria-hidden="true">← </span>KULTURA
         </Link>

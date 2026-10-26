@@ -70,8 +70,8 @@ function ShimmerCard() {
     >
       <div className="aspect-[2/3] w-full bg-surface-default" />
       <div className="p-2 flex flex-col gap-2">
-        <div className="h-3 bg-surface-default rounded w-3/4" />
-        <div className="h-2 bg-surface-default rounded w-1/3" />
+        <div className="h-3 bg-surface-default rounded-lg w-3/4" />
+        <div className="h-2 bg-surface-default rounded-lg w-1/3" />
       </div>
     </div>
   );

@@ -16,9 +16,9 @@ import type { ListItem } from '@/types/list'
 export const NOTE_MAX = 500
 
 const TEXTAREA_CLASS = cn(
-  'w-full min-h-[72px] resize-y rounded-[14px] bg-surface-elevated px-4 py-3',
+  'w-full min-h-[72px] resize-y rounded-2xl bg-surface-elevated px-4 py-3',
   'border border-field-border',
-  'font-body text-base md:text-[14px] text-text-primary placeholder:text-text-tertiary',
+  'font-body text-base md:text-sm text-text-primary placeholder:text-text-tertiary',
   'focus-visible:[outline-style:solid] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus-ring'
 )
 
@@ -80,7 +80,7 @@ export function ItemNote({ listId, item, editable, onSaved, className }: ItemNot
   if (editing) {
     return (
       <form onSubmit={save} className={cn('flex flex-col gap-2', className)}>
-        <label htmlFor={fieldId} className="text-[13px] font-bold text-text-tertiary">
+        <label htmlFor={fieldId} className="text-meta font-bold text-text-tertiary">
           {t('noteLabel', { title })}
         </label>
         <textarea
@@ -123,7 +123,7 @@ export function ItemNote({ listId, item, editable, onSaved, className }: ItemNot
   return (
     <div className={cn('flex flex-col items-start gap-1', className)}>
       {item.note ? (
-        <p className="text-[13px] leading-snug text-text-secondary whitespace-pre-line break-words">
+        <p className="text-meta leading-snug text-text-secondary whitespace-pre-line break-words">
           <span className="sr-only">{t('noteFor', { title })}: </span>
           {item.note}
         </p>
@@ -134,7 +134,7 @@ export function ItemNote({ listId, item, editable, onSaved, className }: ItemNot
           type="button"
           onClick={open}
           aria-label={item.note ? t('editNoteNamed', { title }) : t('addNoteNamed', { title })}
-          className="inline-flex min-h-11 items-center text-[13px] font-bold text-accent-pink underline-offset-4 hover:underline focus-visible:[outline-style:solid] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus-ring rounded-sm"
+          className="inline-flex min-h-11 items-center text-meta font-bold text-accent-pink underline-offset-4 hover:underline focus-visible:[outline-style:solid] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus-ring rounded-lg"
         >
           {item.note ? t('editNote') : t('addNote')}
         </button>

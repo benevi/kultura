@@ -115,20 +115,20 @@ export default async function PublicListPage({ params }: Props) {
   return (
     <div className="min-h-screen flex flex-col">
       {signedIn ? <SignedInBar /> : <Header />}
-      <main id="main" className="flex-1 w-full max-w-4xl mx-auto px-4 md:px-8 py-10 flex flex-col gap-10">
+      <main id="main" className="page-grid [&>*]:max-w-4xl flex-1 py-10 flex flex-col gap-10">
         <header className="flex flex-col gap-3">
           <div>
             <FormatLabel>{formatLabel}</FormatLabel>
             {extras?.template ? (
-              <span className="ml-2 text-[13px] font-bold text-text-tertiary">{tl(`template.${extras.template}`)}</span>
+              <span className="ml-2 text-meta font-bold text-text-tertiary">{tl(`template.${extras.template}`)}</span>
             ) : null}
           </div>
-          <h1 className="font-display text-[30px] md:text-[38px] font-bold tracking-tight text-text-primary leading-tight">
+          <h1 className="font-display text-3xl md:text-4xl font-bold tracking-tight text-text-primary leading-tight">
             {list.name}
           </h1>
           <Link
             href={`/u/${owner.username}`}
-            className="self-start flex items-center gap-3 text-[13px] text-text-tertiary hover:text-text-primary"
+            className="self-start flex items-center gap-3 text-meta text-text-tertiary hover:text-text-primary"
           >
             <Avatar initials={owner.avatarInitials} color={owner.avatarColor} icon={owner.avatarIcon} size="sm" />
             <span>
@@ -140,7 +140,7 @@ export default async function PublicListPage({ params }: Props) {
             </span>
           </Link>
           {extras?.description ? (
-            <p className="max-w-2xl text-[15px] leading-relaxed text-text-secondary whitespace-pre-line break-words">
+            <p className="max-w-2xl text-body leading-relaxed text-text-secondary whitespace-pre-line break-words">
               {extras.description}
             </p>
           ) : null}
@@ -161,7 +161,7 @@ export default async function PublicListPage({ params }: Props) {
           ) : (
             <Link
               href={`/report?target=list&id=${encodeURIComponent(list.id)}`}
-              className="inline-flex items-center min-h-11 text-[13px] text-text-tertiary underline-offset-4 hover:underline hover:text-text-primary"
+              className="inline-flex items-center min-h-11 text-meta text-text-tertiary underline-offset-4 hover:underline hover:text-text-primary"
             >
               {t('reportList')}
             </Link>

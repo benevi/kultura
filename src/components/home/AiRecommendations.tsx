@@ -116,7 +116,7 @@ export function AiRecommendations({
       tabIndex={-1}
       // Recibe el foco tras el clic (el botón desaparece): anillo visible con
       // teclado, el mismo patrón de foco que el resto de controles.
-      className={`relative rounded-card focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-pink focus-visible:ring-offset-2 focus-visible:ring-offset-surface-base ${hasBadge ? 'pt-7 md:pt-8' : ''}`}
+      className={`relative rounded-2xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-pink focus-visible:ring-offset-2 focus-visible:ring-offset-surface-base ${hasBadge ? 'pt-7 md:pt-8' : ''}`}
       aria-label={t('title')}
       aria-busy={status === 'loading'}
     >
@@ -126,8 +126,8 @@ export function AiRecommendations({
           huérfano; en los estados vacío/error la tarjeta ya se explica sola. */}
       {hasBadge && (
         <div
-          className="inline-block absolute -top-3.5 left-0 z-10 rounded-2xl px-3.5 py-1.5 md:px-4 md:py-2 bg-accent-lime text-on-accent-lime font-display text-[10px] md:text-[11px] font-extrabold tracking-wide"
-          style={{ transform: 'rotate(-4deg)', boxShadow: '4px 4px 0 rgba(0,0,0,0.35)' }}
+          className="inline-block absolute -top-3.5 left-0 z-10 rounded-pill px-3.5 py-1.5 md:px-4 md:py-2 bg-accent-lime text-on-accent-lime font-display text-xs font-extrabold tracking-wide shadow-sticker"
+          style={{ transform: 'rotate(-4deg)' }}
         >
           {status === 'starter'
             ? `🔥 ${t('starterBadge')}`
@@ -140,7 +140,7 @@ export function AiRecommendations({
       {/* Sin fetch al montar (D-06): la IA se llama solo con este botón, y la
           línea de abajo dice qué se envía y a quién antes de pulsarlo. */}
       {status === 'idle' && (
-        <div className="bg-surface-default border border-surface-border rounded-card p-6 flex flex-col items-center gap-3 text-center">
+        <div className="bg-surface-default border border-surface-border rounded-2xl p-6 flex flex-col items-center gap-3 text-center">
           <span className="text-3xl" aria-hidden="true">✦</span>
           <div>
             <h2 className="font-display text-base font-bold text-text-primary">{t('askTitle')}</h2>
@@ -167,13 +167,13 @@ export function AiRecommendations({
       {status === 'loading' && (
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-5" aria-hidden="true">
           {SKELETON_KEYS.map((i) => (
-            <div key={i} className="animate-pulse bg-surface-elevated rounded-card aspect-[2/3]" />
+            <div key={i} className="animate-pulse bg-surface-elevated rounded-2xl aspect-[2/3]" />
           ))}
         </div>
       )}
 
       {status === 'empty' && (
-        <div className="bg-surface-default border border-surface-border rounded-card p-6 flex flex-col items-center gap-3 text-center">
+        <div className="bg-surface-default border border-surface-border rounded-2xl p-6 flex flex-col items-center gap-3 text-center">
           <span className="text-3xl">✦</span>
           <div>
             <p className="font-body text-sm font-medium text-text-primary">{t('needMoreItems')}</p>
@@ -206,7 +206,7 @@ export function AiRecommendations({
       )}
 
       {(status === 'rate_limited' || status === 'error') && (
-        <div className="bg-surface-default border border-surface-border rounded-card p-5 flex items-center justify-between gap-3">
+        <div className="bg-surface-default border border-surface-border rounded-2xl p-5 flex items-center justify-between gap-3">
           <div>
             <p className="font-body text-sm font-medium text-text-primary">
               {status === 'rate_limited' ? t('rateLimited') : t('error')}

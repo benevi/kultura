@@ -58,7 +58,7 @@ export default async function ConversationPage({ params }: Props) {
   }
 
   return (
-    <main className="max-w-2xl mx-auto px-0 md:px-4">
+    <main className="page-grid max-md:px-0 [&>*]:max-w-2xl">
       <ConversationClient
         conversationId={id}
         otherUser={otherUser}

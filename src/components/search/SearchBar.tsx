@@ -244,7 +244,7 @@ export function SearchBar({
         role="listbox"
         aria-label={t("suggestionsLabel")}
         hidden={!expanded}
-        className="absolute top-full mt-2 w-full bg-surface-elevated border border-border rounded-card shadow-xl z-50 overflow-hidden py-1"
+        className="absolute top-full mt-2 w-full bg-surface-elevated border border-border rounded-2xl shadow-soft z-50 overflow-hidden py-1"
       >
           {expanded && suggestions.map((item, index) => (
             <li
@@ -272,7 +272,7 @@ export function SearchBar({
                     detrás por si no hay portada o no carga. */}
                 <span
                   aria-hidden="true"
-                  className="relative w-9 h-12 rounded-md overflow-hidden flex-shrink-0"
+                  className="relative w-9 h-12 rounded-lg overflow-hidden flex-shrink-0"
                   style={{ background: posterGradient(item.id || item.title) }}
                 >
                   {item.poster && (

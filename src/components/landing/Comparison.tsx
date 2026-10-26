@@ -56,7 +56,7 @@ export interface ComparisonProps {
 }
 
 const STICKER = "inline-block rotate-[-4deg] rounded-full bg-accent-lime px-3 py-1.5 font-display text-sm font-extrabold leading-none text-on-accent-lime";
-const STICKER_SHADOW = { boxShadow: "4px 4px 0 rgba(0,0,0,.4)" };
+const STICKER_SHADOW = { boxShadow: "4px 4px 0 oklch(0% 0 0 / 0.4)" };
 
 function Mark({ on, yes, no }: { on: boolean; yes: string; no: string }) {
   return on ? (
@@ -96,7 +96,7 @@ export function Comparison({
 }: ComparisonProps) {
   const cell = "px-2 py-3 align-middle";
   return (
-    <section aria-labelledby="compare-title" className="px-4 md:px-8 pb-20 md:pb-28 max-w-6xl mx-auto">
+    <section aria-labelledby="compare-title" className="page-grid pb-20 md:pb-28">
       <h2
         id="compare-title"
         className="font-display text-4xl md:text-6xl font-extrabold tracking-[-0.03em] text-text-primary mb-4 max-w-[18ch] text-balance"
@@ -168,18 +168,18 @@ export function Comparison({
           </colgroup>
           <thead>
             <tr>
-              <th scope="col" className="px-3 py-3 text-left text-[13px] font-bold text-text-secondary">
+              <th scope="col" className="px-3 py-3 text-left text-meta font-bold text-text-secondary">
                 {formatHeader}
               </th>
               <th scope="col" className="bg-surface-elevated px-1 py-3 text-center">
                 <span
-                  className="inline-block rotate-[-4deg] rounded-full bg-accent-lime px-1.5 py-1 font-display text-[11px] font-extrabold leading-none text-on-accent-lime"
+                  className="inline-block rotate-[-4deg] rounded-full bg-accent-lime px-1.5 py-1 font-display text-xs font-extrabold leading-none text-on-accent-lime"
                   style={STICKER_SHADOW}
                 >
                   KULTURA
                 </span>
               </th>
-              <th scope="col" className="px-3 py-3 text-left text-[13px] font-bold leading-tight text-text-secondary">
+              <th scope="col" className="px-3 py-3 text-left text-meta font-bold leading-tight text-text-secondary">
                 {specialistHeader}
               </th>
             </tr>
@@ -199,13 +199,13 @@ export function Comparison({
                     {apps.length > 0 ? (
                       <span className="flex flex-wrap gap-1.5">
                         {apps.map((name) => (
-                          <span key={name} className="rounded-full bg-surface-elevated px-2.5 py-1 text-[12px] font-bold text-text-primary">
+                          <span key={name} className="rounded-full bg-surface-elevated px-2.5 py-1 text-xs font-bold text-text-primary">
                             {name}
                           </span>
                         ))}
                       </span>
                     ) : (
-                      <span className="text-[13px] leading-tight text-text-tertiary">{none}</span>
+                      <span className="text-meta leading-tight text-text-tertiary">{none}</span>
                     )}
                   </td>
                 </tr>

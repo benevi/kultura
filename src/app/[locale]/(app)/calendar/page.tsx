@@ -89,7 +89,7 @@ export default async function CalendarPage({ params, searchParams }: Props) {
   const hasAny = sections.upcoming.length + sections.later.length + sections.recent.length > 0
 
   return (
-    <main className="max-w-3xl mx-auto px-4 md:px-8 py-8">
+    <main className="page-grid [&>*]:max-w-3xl py-8">
       <PageHeading emoji="📅">{t('title')}</PageHeading>
       <p className="-mt-4 mb-6 text-sm text-text-secondary max-w-prose">{t('intro')}</p>
 
@@ -121,7 +121,7 @@ export default async function CalendarPage({ params, searchParams }: Props) {
       ) : null}
 
       {calendar && (calendar.failed > 0 || calendar.checked < calendar.candidates) ? (
-        <div role="status" className="mb-6 flex flex-col gap-1 rounded-20 bg-surface-default px-5 py-4 text-sm text-text-secondary">
+        <div role="status" className="mb-6 flex flex-col gap-1 rounded-bento bg-surface-default px-5 py-4 text-sm text-text-secondary">
           {calendar.failed > 0 ? <p>{t('partial')}</p> : null}
           {calendar.checked < calendar.candidates ? (
             <p>{t('truncated', { checked: calendar.checked, candidates: calendar.candidates })}</p>
@@ -130,7 +130,7 @@ export default async function CalendarPage({ params, searchParams }: Props) {
       ) : null}
 
       {!calendar ? (
-        <div className="rounded-20 bg-surface-default p-10 text-center text-sm text-text-secondary">{t('partial')}</div>
+        <div className="rounded-bento bg-surface-default p-10 text-center text-sm text-text-secondary">{t('partial')}</div>
       ) : calendar.candidates === 0 ? (
         <EmptyState title={t('emptyLibraryTitle')} body={t('emptyLibraryBody')} cta={t('emptyLibraryCta')} href="/discover" />
       ) : !hasAny ? (
@@ -183,7 +183,7 @@ export default async function CalendarPage({ params, searchParams }: Props) {
       {emailPref && !emailPref.weekly ? (
         <aside
           aria-labelledby="calendar-email-promo"
-          className="mt-10 flex flex-wrap items-center justify-between gap-4 rounded-20 bg-surface-default px-5 py-5 sm:px-6"
+          className="mt-10 flex flex-wrap items-center justify-between gap-4 rounded-bento bg-surface-default px-5 py-5 sm:px-6"
         >
           <div className="flex flex-col gap-1 min-w-0 max-w-md">
             <h2 id="calendar-email-promo" className="font-display text-lg font-bold text-text-primary">
@@ -211,7 +211,7 @@ export default async function CalendarPage({ params, searchParams }: Props) {
 function Section({ id, title, children }: { id: string; title: string; children: React.ReactNode }) {
   return (
     <section aria-labelledby={id} className="flex flex-col gap-6">
-      <h2 id={id} className="text-[13px] font-extrabold uppercase tracking-wide text-text-tertiary">
+      <h2 id={id} className="text-meta font-extrabold uppercase tracking-wide text-text-tertiary">
         {title}
       </h2>
       {children}
@@ -234,14 +234,14 @@ function EventRow({ event, what, typeLabel }: { event: CalendarEvent; what: stri
   const i = event.mediaId.indexOf('_')
   const href = `/media/${event.mediaId.slice(0, i)}/${encodeURIComponent(event.mediaId.slice(i + 1))}`
   return (
-    <li className="flex gap-4 rounded-20 bg-surface-default p-3">
+    <li className="flex gap-4 rounded-bento bg-surface-default p-3">
       {/* Portada de tamaño fijo con el gradiente siempre detrás (CLS 0). */}
-      <div className="relative h-[72px] w-12 shrink-0 overflow-hidden rounded-xl bg-surface-elevated">
+      <div className="relative h-[72px] w-12 shrink-0 overflow-hidden rounded-lg bg-surface-elevated">
         <div aria-hidden="true" className="absolute inset-0" style={{ background: posterGradient(event.mediaId) }} />
         {event.poster ? <PosterImage src={event.poster} sizes="48px" className="object-cover" /> : null}
       </div>
       <div className="flex min-w-0 flex-1 flex-col justify-center gap-1">
-        <Link href={href} className={cn('font-body font-semibold text-text-primary hover:underline rounded self-start', FOCUS)}>
+        <Link href={href} className={cn('font-body font-semibold text-text-primary hover:underline rounded-lg self-start', FOCUS)}>
           {event.title}
         </Link>
         <p className="text-sm text-text-secondary">{what}</p>
@@ -253,7 +253,7 @@ function EventRow({ event, what, typeLabel }: { event: CalendarEvent; what: stri
 
 function EmptyState({ title, body, cta, href }: { title: string; body: string; cta: string; href: string }) {
   return (
-    <div className="flex flex-col items-center justify-center gap-3 rounded-20 bg-surface-default px-6 py-14 text-center">
+    <div className="flex flex-col items-center justify-center gap-3 rounded-bento bg-surface-default px-6 py-14 text-center">
       <h2 className="font-display text-xl font-semibold text-text-primary">{title}</h2>
       <p className="max-w-sm text-sm leading-relaxed text-text-secondary">{body}</p>
       <Link

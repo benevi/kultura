@@ -65,8 +65,8 @@ export default async function ConfirmPage({ params, searchParams }: Props) {
   return (
     <div className="min-h-screen flex flex-col">
       <Header />
-      <main id="main" className="flex-1 px-4 md:px-8 py-12 md:py-16 max-w-xl mx-auto w-full">
-        <div className="rounded-20 bg-surface-default px-6 py-8 sm:px-8">
+      <main id="main" className="page-grid [&>*]:max-w-xl flex-1 py-12 md:py-16">
+        <div className="rounded-bento bg-surface-default px-6 py-8 sm:px-8">
           <h1 className="font-display text-2xl md:text-3xl font-extrabold tracking-tight text-text-primary mb-3">{title}</h1>
           <p className="text-text-secondary leading-relaxed mb-6">{body}</p>
           {showForm ? (

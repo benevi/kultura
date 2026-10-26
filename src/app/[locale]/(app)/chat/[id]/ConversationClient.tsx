@@ -132,7 +132,7 @@ function ConversationOptions({
               toggleRef.current?.focus()
             }
           }}
-          className="absolute right-0 top-12 z-20 w-72 max-w-[calc(100vw-2rem)] flex flex-col gap-2 p-3 bg-surface-elevated border border-surface-border rounded-card shadow-lg"
+          className="absolute right-0 top-12 z-20 w-72 max-w-[calc(100vw-2rem)] flex flex-col gap-2 p-3 bg-surface-elevated border border-surface-border rounded-2xl shadow-soft"
         >
           {confirm === 'block' ? (
             <InlineConfirm

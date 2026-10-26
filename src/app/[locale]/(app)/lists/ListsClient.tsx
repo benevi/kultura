@@ -19,7 +19,7 @@ export function ListsClient({ lists, mixedEnabled = false }: Props) {
   const [showModal, setShowModal] = useState(false)
 
   return (
-    <main className="max-w-5xl mx-auto px-4 md:px-8 py-8">
+    <main className="page-grid py-8">
       <PageHeading
         emoji="📋"
         action={

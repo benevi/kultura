@@ -185,7 +185,7 @@ function SingleGroup({
           )}
         </button>
       </PopoverTrigger>
-      <PopoverContent className="min-w-44 max-h-72 overflow-y-auto rounded-card shadow-xl">
+      <PopoverContent className="min-w-44 max-h-72 overflow-y-auto rounded-2xl shadow-soft">
         <PopoverHeader group={group} />
         {/* ACC-10: los `role="radio"` necesitan su `radiogroup` (axe
             aria-required-parent), con el nombre del filtro. */}
@@ -270,7 +270,7 @@ function SortGroup({
           )}
         </button>
       </PopoverTrigger>
-      <PopoverContent className="min-w-44 max-h-72 overflow-y-auto rounded-card shadow-xl">
+      <PopoverContent className="min-w-44 max-h-72 overflow-y-auto rounded-2xl shadow-soft">
         <PopoverHeader group={group} />
         <div role="radiogroup" aria-label={prefix} className="flex flex-col gap-0.5">
           {group.options.map((option, index) => (
@@ -340,7 +340,7 @@ function MultiGroup({
           {count > 0 && (
             <span
               data-testid={`badge-${group.key}`}
-              className="ml-0.5 inline-flex items-center justify-center min-w-4 h-4 px-1 rounded-full bg-accent-positive text-on-accent-positive text-[10px] font-semibold"
+              className="ml-0.5 inline-flex items-center justify-center min-w-4 h-4 px-1 rounded-full bg-accent-positive text-on-accent-positive text-xs font-semibold"
             >
               {count}
             </span>
@@ -352,7 +352,7 @@ function MultiGroup({
           )}
         </button>
       </PopoverTrigger>
-      <PopoverContent className="min-w-48 max-h-72 overflow-y-auto rounded-card shadow-xl">
+      <PopoverContent className="min-w-48 max-h-72 overflow-y-auto rounded-2xl shadow-soft">
         <PopoverHeader group={group} />
         {searchable && (
           <input

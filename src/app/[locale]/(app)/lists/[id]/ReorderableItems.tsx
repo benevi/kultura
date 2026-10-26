@@ -252,7 +252,7 @@ export function ReorderableItems({ listId, items, onItemsChange, ranked }: Reord
 
   return (
     <div className="flex flex-col gap-3">
-      <p id={instructionsId} className="text-[13px] text-text-tertiary">{t('reorderHint')}</p>
+      <p id={instructionsId} className="text-meta text-text-tertiary">{t('reorderHint')}</p>
 
       <ol className="flex flex-col gap-2" aria-label={t('itemsTitle')}>
         {items.map((item, index) => {
@@ -267,8 +267,8 @@ export function ReorderableItems({ listId, items, onItemsChange, ranked }: Reord
                 else rowRefs.current.delete(item.id)
               }}
               className={cn(
-                'flex flex-col gap-2 rounded-20 bg-surface-default px-3 py-3 sm:px-4 transition-shadow',
-                (grabbed || dragging) && 'ring-2 ring-accent-pink shadow-lg'
+                'flex flex-col gap-2 rounded-bento bg-surface-default px-3 py-3 sm:px-4 transition-shadow',
+                (grabbed || dragging) && 'ring-2 ring-accent-pink shadow-soft'
               )}
             >
               <div className="flex items-center gap-3">
@@ -316,13 +316,13 @@ export function ReorderableItems({ listId, items, onItemsChange, ranked }: Reord
                 </span>
 
                 <div
-                  className="relative h-[60px] w-10 flex-shrink-0 overflow-hidden rounded-md"
+                  className="relative h-[60px] w-10 flex-shrink-0 overflow-hidden rounded-lg"
                   style={{ background: posterGradient(item.mediaId) }}
                 >
                   {item.media?.poster ? <PosterImage src={item.media.poster} sizes="40px" /> : null}
                 </div>
 
-                <span className="min-w-0 flex-1 font-display text-[15px] font-bold leading-tight text-text-primary line-clamp-2">
+                <span className="min-w-0 flex-1 font-display text-body font-bold leading-tight text-text-primary line-clamp-2">
                   {title}
                 </span>
 
@@ -368,7 +368,7 @@ export function ReorderableItems({ listId, items, onItemsChange, ranked }: Reord
       </ol>
 
       <p role="status" className="sr-only">{announcement}</p>
-      <p aria-hidden="true" className="min-h-5 text-[13px] text-text-tertiary">
+      <p aria-hidden="true" className="min-h-5 text-meta text-text-tertiary">
         {saveState === 'saving' ? t('orderSaving') : saveState === 'saved' ? t('orderSaved') : ''}
       </p>
       {saveState === 'error' && (

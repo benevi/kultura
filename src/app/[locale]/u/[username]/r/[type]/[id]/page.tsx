@@ -208,12 +208,12 @@ export default async function RatedTitlePage(props: Props) {
   return (
     <div className="min-h-screen flex flex-col">
       {viewer ? <SignedInBar /> : <Header />}
-      <main id="main" className="flex-1 w-full max-w-4xl mx-auto px-4 md:px-8 py-10 flex flex-col gap-10">
+      <main id="main" className="page-grid [&>*]:max-w-4xl flex-1 py-10 flex flex-col gap-10">
         <article
-          className="rounded-bento-xl bg-surface-default p-6 md:p-10 shadow-[6px_6px_0_var(--surface-elevated)] md:shadow-[10px_10px_0_var(--surface-elevated)] flex flex-col sm:flex-row gap-6 md:gap-10"
+          className="rounded-bento-xl bg-surface-default p-6 md:p-10 shadow-hard-sm md:shadow-hard flex flex-col sm:flex-row gap-6 md:gap-10"
         >
           <div
-            className="relative w-36 sm:w-44 md:w-52 aspect-[2/3] flex-shrink-0 rounded-18 overflow-hidden self-center sm:self-start"
+            className="relative w-36 sm:w-44 md:w-52 aspect-[2/3] flex-shrink-0 rounded-2xl overflow-hidden self-center sm:self-start"
             style={{ background: posterGradient(parsed.id) }}
           >
             {media.poster ? (
@@ -239,7 +239,7 @@ export default async function RatedTitlePage(props: Props) {
                 part.tag === "score" ? (
                   <span
                     key={i}
-                    className="inline-block align-middle rounded-full bg-accent-lime text-on-accent-lime font-extrabold px-4 py-1 mx-1 -rotate-3 shadow-[4px_4px_0_rgba(0,0,0,.4)]"
+                    className="inline-block align-middle rounded-full bg-accent-lime text-on-accent-lime font-extrabold px-4 py-1 mx-1 -rotate-3 shadow-sticker"
                   >
                     {part.text}
                   </span>
@@ -261,7 +261,7 @@ export default async function RatedTitlePage(props: Props) {
             </p>
 
             {view.kind === "generic" ? (
-              <p className="text-[15px] text-text-secondary leading-relaxed max-w-prose">{t("page.genericLead", values)}</p>
+              <p className="text-body text-text-secondary leading-relaxed max-w-prose">{t("page.genericLead", values)}</p>
             ) : null}
 
             <div className="flex flex-wrap gap-2.5">
@@ -274,7 +274,7 @@ export default async function RatedTitlePage(props: Props) {
             </div>
 
             {view.kind === "rated" && view.isOwner ? (
-              <p className="text-[13px] text-text-tertiary leading-relaxed max-w-prose">{t("page.ownerHint")}</p>
+              <p className="text-meta text-text-tertiary leading-relaxed max-w-prose">{t("page.ownerHint")}</p>
             ) : null}
           </div>
         </article>

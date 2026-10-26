@@ -75,9 +75,9 @@ describe('BottomNav', () => {
     expect(screen.getByRole('link', { name: 'Listas' })).toHaveAttribute('aria-current', 'page')
   })
 
-  it('etiquetas de 11 px (antes 10 px)', () => {
+  it('etiquetas de 12 px, el tamaño caption de la escala (antes 10 y 11 px)', () => {
     render(<BottomNav username="ana" />)
-    expect(screen.getByText('Inicio').className).toContain('text-[11px]')
+    expect(screen.getByText('Inicio').className).toContain('text-xs')
   })
 
   it('re-tocar la pestaña en la que estás sube al principio y no navega', () => {

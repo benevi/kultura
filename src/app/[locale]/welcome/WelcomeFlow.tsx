@@ -247,12 +247,12 @@ export function WelcomeFlow({ locale, next, currentUsername, suggestChange, need
   }
 
   const headingClass =
-    'font-display text-[28px] md:text-[34px] font-extrabold leading-tight tracking-tight text-text-primary outline-none text-balance'
-  const bodyClass = 'mt-3 font-body text-[15px] text-text-secondary max-w-[52ch]'
+    'font-display text-2xl md:text-3xl font-extrabold leading-tight tracking-tight text-text-primary outline-none text-balance'
+  const bodyClass = 'mt-3 font-body text-body text-text-secondary max-w-[52ch]'
 
   return (
-    <main className="min-h-dvh bg-surface-base px-4 py-6 md:px-14 md:py-10">
-      <div className="mx-auto flex w-full max-w-[1040px] flex-col gap-8">
+    <main className="min-h-dvh bg-surface-base py-6 md:py-10">
+      <div className="page-grid flex flex-col gap-8">
         <header className="flex items-center justify-between gap-4">
           <Logo size={28} />
           {/* Saltar todo: nadie se queda atrapado en el onboarding. */}
@@ -260,7 +260,7 @@ export function WelcomeFlow({ locale, next, currentUsername, suggestChange, need
             type="button"
             onClick={finish}
             disabled={finishing}
-            className="min-h-[44px] rounded-pill px-3 font-body text-[13px] font-bold text-text-tertiary underline-offset-4 transition-colors hover:text-text-primary hover:underline disabled:opacity-40"
+            className="min-h-[44px] rounded-pill px-3 font-body text-meta font-bold text-text-tertiary underline-offset-4 transition-colors hover:text-text-primary hover:underline disabled:opacity-40"
           >
             {t('skipAll')}
           </button>
@@ -271,7 +271,7 @@ export function WelcomeFlow({ locale, next, currentUsername, suggestChange, need
         {step === 'name' && (
           <section aria-labelledby="welcome-heading" className="animate-toast-in mx-auto w-full max-w-[560px]">
             <div className={AUTH_CARD}>
-              <p className="inline-block rotate-[-4deg] rounded-pill bg-accent-lime px-3.5 py-1.5 font-display text-[11px] font-extrabold tracking-wide text-on-accent-lime shadow-[4px_4px_0_rgba(0,0,0,0.35)]">
+              <p className="inline-block rotate-[-4deg] rounded-pill bg-accent-lime px-3.5 py-1.5 font-display text-xs font-extrabold tracking-wide text-on-accent-lime shadow-sticker">
                 {t('welcomeBadge')}
               </p>
               <h1 id="welcome-heading" ref={headingRef} tabIndex={-1} className={cn(headingClass, 'mt-5')}>
@@ -314,7 +314,7 @@ export function WelcomeFlow({ locale, next, currentUsername, suggestChange, need
                 )}
 
                 {nameFailed && (
-                  <p role="alert" className="rounded-[14px] bg-accent-danger/10 px-[18px] py-3 font-body text-sm text-accent-danger">
+                  <p role="alert" className="rounded-2xl bg-accent-danger/10 px-[18px] py-3 font-body text-sm text-accent-danger">
                     {nameFailed}
                   </p>
                 )}
@@ -347,7 +347,7 @@ export function WelcomeFlow({ locale, next, currentUsername, suggestChange, need
                         setFormats((prev) => (active ? prev.filter((f) => f !== type) : [...prev, type]))
                       }
                       className={cn(
-                        'inline-flex min-h-[48px] items-center gap-2 rounded-pill px-5 py-3 font-body text-[15px] font-bold transition-colors duration-150',
+                        'inline-flex min-h-[48px] items-center gap-2 rounded-pill px-5 py-3 font-body text-body font-bold transition-colors duration-150',
                         'focus-visible:[outline-style:solid] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus-ring',
                         active
                           ? 'bg-accent-pink text-on-accent-pink'
@@ -398,7 +398,7 @@ export function WelcomeFlow({ locale, next, currentUsername, suggestChange, need
             </div>
 
             {rateError && (
-              <p role="alert" className="rounded-[14px] bg-accent-danger/10 px-[18px] py-3 font-body text-sm text-accent-danger">
+              <p role="alert" className="rounded-2xl bg-accent-danger/10 px-[18px] py-3 font-body text-sm text-accent-danger">
                 {rateError}
               </p>
             )}
@@ -540,7 +540,7 @@ function RateTile({ title, locale, score, priority, formatLabel, onRate }: RateT
       {rated ? (
         <span
           aria-hidden="true"
-          className="absolute -left-2 -top-2 z-10 rotate-[-8deg] rounded-pill bg-accent-lime px-2.5 py-1 font-display text-xs font-extrabold text-on-accent-lime shadow-[4px_4px_0_rgba(0,0,0,0.4)]"
+          className="absolute -left-2 -top-2 z-10 rotate-[-8deg] rounded-pill bg-accent-lime px-2.5 py-1 font-display text-xs font-extrabold text-on-accent-lime shadow-sticker"
         >
           ★ {score}
         </span>

@@ -37,7 +37,7 @@ export default async function ImportPage({ params }: { params: Promise<{ locale:
   const importMessages = ((await getMessages({ locale })) as Record<string, unknown>).import as AbstractIntlMessages
 
   return (
-    <main className="mx-auto flex max-w-[720px] flex-col gap-7 px-4 py-8 md:px-8">
+    <main className="page-grid [&>*]:max-w-[720px] flex flex-col gap-7 py-8">
       <div className="flex flex-col gap-2">
         <Link
           href={`/${locale}/settings`}

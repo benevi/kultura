@@ -59,10 +59,10 @@ export default async function GroupPage({ params }: Props) {
   const GroupIcon = group.icon ? AVATAR_ICONS[group.icon] : undefined
 
   return (
-    <main className="max-w-3xl mx-auto px-4 md:px-8 py-8 flex flex-col gap-8">
+    <main className="page-grid [&>*]:max-w-3xl py-8 flex flex-col gap-8">
       {/* Group header — card "feature" (DISENO.md: gradiente + acento radial) */}
       <div
-        className="relative overflow-hidden rounded-bento-lg p-6 md:py-9 md:px-10 flex items-start gap-4"
+        className="relative overflow-hidden rounded-bento-xl p-6 md:py-9 md:px-10 flex items-start gap-4"
         style={{
           // Fórmula literal del artboard: acento radial al 60 % en la esquina
           // superior-izquierda (`120% 100% at 20% 10%`) sobre un lineal de
@@ -73,7 +73,7 @@ export default async function GroupPage({ params }: Props) {
         }}
       >
         <div
-          className="relative z-10 w-14 h-14 rounded-[16px_16px_16px_4px] flex-shrink-0 flex items-center justify-center font-display font-extrabold text-xl"
+          className="relative z-10 w-14 h-14 rounded-2xl rounded-bl-lg flex-shrink-0 flex items-center justify-center font-display font-extrabold text-xl"
           style={{ background: group.coverColor, color: F0.onPink }}
         >
           {GroupIcon ? (
@@ -87,7 +87,7 @@ export default async function GroupPage({ params }: Props) {
             {/* Mismo criterio que ListDetail: el nombre del grupo es el
                 título de la pantalla y va al tipo del canvas, pero vive dentro
                 de la portada con el icono, no en una fila de título. */}
-            <h1 className="font-display text-[26px] md:text-[34px] font-extrabold tracking-tight truncate" style={{ color: F0.text }}>
+            <h1 className="font-display text-2xl md:text-3xl font-extrabold tracking-tight truncate" style={{ color: F0.text }}>
               {group.name}
             </h1>
             {!group.isPublic && (
@@ -110,7 +110,7 @@ export default async function GroupPage({ params }: Props) {
                 {stackPreview.map((m, i) => m.user && (
                   <div
                     key={m.user.id}
-                    className="w-10 h-10 rounded-full flex items-center justify-center text-[11px] font-extrabold text-white"
+                    className="w-10 h-10 rounded-full flex items-center justify-center text-xs font-extrabold text-white"
                     style={{
                       background: `linear-gradient(135deg, ${m.user.avatarColor}, color-mix(in srgb, ${m.user.avatarColor} 55%, black))`,
                       border: `2px solid ${F0.bg}`,

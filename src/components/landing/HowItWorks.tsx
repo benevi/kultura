@@ -70,7 +70,7 @@ function TrackArt({ p, status }: { p: (i: number) => Poster | null; status: stri
         <ArtPoster item={p(3)} seed="track-0" sizes="96px" />
       </div>
       <div className="flex flex-col gap-3 pb-1">
-        <span className="self-start rounded-full bg-accent-lime px-3 py-1 text-[13px] font-bold text-on-accent-lime">
+        <span className="self-start rounded-full bg-accent-lime px-3 py-1 text-meta font-bold text-on-accent-lime">
           {status}
         </span>
         <span className="flex gap-0.5 text-accent-highlight">
@@ -123,7 +123,7 @@ export function HowItWorks({ heading, steps, statusLabel, searchPlaceholder, pos
     share: <ShareArt p={p} />,
   };
   return (
-    <section aria-labelledby="how-title" className="px-4 md:px-8 pb-20 md:pb-28 max-w-6xl mx-auto">
+    <section aria-labelledby="how-title" className="page-grid pb-20 md:pb-28">
       <h2
         id="how-title"
         className="font-display text-4xl md:text-6xl font-extrabold tracking-[-0.03em] text-text-primary mb-12 max-w-[14ch]"

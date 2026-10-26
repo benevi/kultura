@@ -119,7 +119,7 @@ export function InlineConfirm({
           onCancel()
         }
       }}
-      className={`flex flex-col gap-2 p-3 w-full max-w-sm bg-surface-default border border-surface-border rounded-card text-sm text-left ${className ?? ''}`}
+      className={`flex flex-col gap-2 p-3 w-full max-w-sm bg-surface-default border border-surface-border rounded-2xl text-sm text-left ${className ?? ''}`}
     >
       <p id={titleId} className="font-bold text-text-primary">{title}</p>
       <p id={bodyId} className="text-xs text-text-secondary">{body}</p>
@@ -256,7 +256,7 @@ export function ReportButton({ targetType, targetId, variant = 'button', context
               close()
             }
           }}
-          className="mt-2 flex flex-col gap-3 p-3 w-full max-w-sm bg-surface-default border border-surface-border rounded-card text-sm text-left"
+          className="mt-2 flex flex-col gap-3 p-3 w-full max-w-sm bg-surface-default border border-surface-border rounded-2xl text-sm text-left"
         >
           <p id={titleId} className="font-bold text-text-primary text-sm">{t('prompt')}</p>
           <fieldset className="flex flex-col gap-1">

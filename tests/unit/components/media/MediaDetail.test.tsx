@@ -401,7 +401,7 @@ describe("MediaDetail", () => {
     const { container } = render(
       await MediaDetail({ item: mockItem, initialEntry: null, isAuthenticated: false })
     );
-    const poster = screen.getByRole("heading", { level: 1 }).closest("div[class*='rounded-[32px]']")!;
+    const poster = screen.getByRole("heading", { level: 1 }).closest("div[class*='rounded-bento-xl']")!;
     expect(poster.className).toContain("h-[260px]");
     expect(poster.className).toContain("sm:aspect-[3/4]");
     expect(poster.className).not.toMatch(/(^| )aspect-\[3\/4\]/);

@@ -92,7 +92,7 @@ export function ContinueProgress({ mediaId, mediaType, title, progress: initial,
           {done ? (
             <span
               ref={stampRef}
-              className="inline-flex min-h-9 items-center rounded-full bg-accent-lime px-3 text-xs font-extrabold text-on-accent-lime shadow-[4px_4px_0_rgba(0,0,0,0.4)]"
+              className="inline-flex min-h-9 items-center rounded-full bg-accent-lime px-3 text-xs font-extrabold text-on-accent-lime shadow-sticker"
             >
               {td('stamp', { type: mediaType })}
             </span>

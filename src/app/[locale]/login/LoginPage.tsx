@@ -186,7 +186,7 @@ function GoogleIcon({ className }: { className?: string }) {
 
 /** Enlace de texto del pie de la tarjeta: 44px de alto táctil (ACC-12). */
 const FOOT_LINK =
-  "inline-block py-3 font-body text-[13px] underline-offset-4 hover:underline";
+  "inline-block py-3 font-body text-meta underline-offset-4 hover:underline";
 
 // ---------------------------------------------------------------------------
 // Component
@@ -582,16 +582,16 @@ export function LoginPage({ locale }: LoginPageProps) {
               ),
             })}
           </p>
-          <p className="font-body text-[13px] text-text-tertiary">{tAuth("checkSpam")}</p>
+          <p className="font-body text-meta text-text-tertiary">{tAuth("checkSpam")}</p>
           {resent && (
-            <p className="font-body text-[13px] font-bold text-text-secondary">{tAuth("resent")}</p>
+            <p className="font-body text-meta font-bold text-text-secondary">{tAuth("resent")}</p>
           )}
         </div>
 
         {form.error && (
           <p
             role="alert"
-            className="mt-4 rounded-[14px] bg-accent-danger/10 px-[18px] py-3 text-left font-body text-sm text-accent-danger"
+            className="mt-4 rounded-2xl bg-accent-danger/10 px-[18px] py-3 text-left font-body text-sm text-accent-danger"
           >
             {form.error}
           </p>
@@ -653,7 +653,7 @@ export function LoginPage({ locale }: LoginPageProps) {
       {accountNotice && (
         <p
           role="status"
-          className="mb-5 rounded-[14px] bg-surface-elevated px-[18px] py-3 font-body text-sm text-text-secondary"
+          className="mb-5 rounded-2xl bg-surface-elevated px-[18px] py-3 font-body text-sm text-text-secondary"
         >
           {accountNotice}
         </p>
@@ -664,7 +664,7 @@ export function LoginPage({ locale }: LoginPageProps) {
       {mode !== "reset" && inApp && (
         <div
           role="note"
-          className="mb-5 rounded-[14px] bg-surface-elevated px-[18px] py-3 font-body text-sm text-text-secondary"
+          className="mb-5 rounded-2xl bg-surface-elevated px-[18px] py-3 font-body text-sm text-text-secondary"
         >
           <p className="font-bold text-text-primary">{tAuth("inAppTitle")}</p>
           <p className="mt-1">{tAuth("inAppBody")}</p>
@@ -759,7 +759,7 @@ export function LoginPage({ locale }: LoginPageProps) {
             se queda con sus iniciales, igual que las cuentas de siempre. */}
         {mode === "register" && (
           <div className="flex flex-col gap-2">
-            <span className="font-body text-[13px] font-bold text-text-tertiary">
+            <span className="font-body text-meta font-bold text-text-tertiary">
               {tAuth("chooseCharacter")}
             </span>
             <AvatarIconPicker
@@ -791,7 +791,7 @@ export function LoginPage({ locale }: LoginPageProps) {
         {form.error && (
           <div
             role="alert"
-            className="rounded-[14px] bg-accent-danger/10 px-[18px] py-3 font-body text-sm text-accent-danger"
+            className="rounded-2xl bg-accent-danger/10 px-[18px] py-3 font-body text-sm text-accent-danger"
           >
             <p>{form.error}</p>
             {form.errorKey === "emailNotConfirmed" && (
@@ -839,7 +839,7 @@ export function LoginPage({ locale }: LoginPageProps) {
       {/* Cambio de modo al PIE, como el mockup ("¿No tienes cuenta?
           Regístrate"), como enlace de verdad (ROJO-10): se puede abrir en otra
           pestaña y funciona antes de hidratar. */}
-      <p className="mt-2 text-center font-body text-[13px] text-text-tertiary">
+      <p className="mt-2 text-center font-body text-meta text-text-tertiary">
         {mode === "reset" ? (
           <Link
             href={modeHref("login")}

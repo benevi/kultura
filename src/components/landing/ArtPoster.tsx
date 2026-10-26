@@ -36,7 +36,7 @@ export function ArtPoster({ item, seed, className, style, sizes = "160px", child
   return (
     <div
       aria-hidden="true"
-      className={cn("relative overflow-hidden aspect-[2/3] rounded-card", className)}
+      className={cn("relative overflow-hidden aspect-[2/3] rounded-2xl", className)}
       style={{ background: fallbackGradient(seed), ...merged }}
     >
       {children}

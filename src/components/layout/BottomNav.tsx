@@ -42,7 +42,7 @@ export function BottomNav({ username }: { username: string }) {
                 aria-current={active ? 'page' : undefined}
                 onClick={(e: MouseEvent<HTMLAnchorElement>) => handleClick(e, href)}
                 className={cn(
-                  'group flex flex-col items-center justify-center gap-1 h-full w-full rounded-18 [-webkit-tap-highlight-color:transparent]',
+                  'group flex flex-col items-center justify-center gap-1 h-full w-full rounded-2xl [-webkit-tap-highlight-color:transparent]',
                   FOCUS_RING,
                   'focus-visible:outline-offset-[-4px]',
                   active ? 'text-text-primary' : 'text-text-secondary'
@@ -57,7 +57,7 @@ export function BottomNav({ username }: { username: string }) {
                 >
                   <Icon className="w-6 h-6" />
                 </span>
-                <span className={cn('text-[11px] leading-none truncate max-w-full px-1', active ? 'font-bold' : 'font-medium')}>
+                <span className={cn('text-xs leading-none truncate max-w-full px-1', active ? 'font-bold' : 'font-medium')}>
                   {t(labelKey)}
                 </span>
               </Link>

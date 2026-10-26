@@ -49,7 +49,7 @@ export function DemoBanner() {
 
   return (
     <div className="border-b border-surface-border bg-surface-elevated">
-      <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-3 px-4 py-2.5 md:px-8">
+      <div className="page-grid flex flex-wrap items-center justify-between gap-3 py-2.5">
         <p className="text-sm text-text-secondary">
           <span className="font-bold text-text-primary">{t("title")}</span> {t("body")}
         </p>

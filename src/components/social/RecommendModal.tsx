@@ -136,7 +136,7 @@ export function RecommendModal({ mediaId, mediaCache, onClose }: RecommendModalP
             placeholder={t('messagePlaceholder')}
             rows={2}
             maxLength={500}
-            className="w-full bg-surface-default border border-field-border rounded-[14px] px-3 py-2 text-base md:text-sm text-text-primary placeholder:text-text-tertiary resize-none focus-visible:[outline-style:solid] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus-ring"
+            className="w-full bg-surface-default border border-field-border rounded-2xl px-3 py-2 text-base md:text-sm text-text-primary placeholder:text-text-tertiary resize-none focus-visible:[outline-style:solid] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus-ring"
           />
         </div>
       )}

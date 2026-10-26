@@ -86,8 +86,8 @@ interface LibraryStatusModalProps {
 }
 
 const TEXTAREA =
-  'w-full bg-surface-elevated border border-field-border rounded-[14px] px-[18px] py-3 font-body text-base md:text-[15px] text-text-primary placeholder:text-text-tertiary resize-y focus-visible:[outline-style:solid] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus-ring'
-const CHECK_ROW = 'flex min-h-11 items-center gap-3 cursor-pointer rounded-[14px] bg-surface-default px-3 py-2.5'
+  'w-full bg-surface-elevated border border-field-border rounded-2xl px-[18px] py-3 font-body text-base md:text-body text-text-primary placeholder:text-text-tertiary resize-y focus-visible:[outline-style:solid] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus-ring'
+const CHECK_ROW = 'flex min-h-11 items-center gap-3 cursor-pointer rounded-2xl bg-surface-default px-3 py-2.5'
 const CHECKBOX = 'accent-accent-positive w-5 h-5 flex-shrink-0'
 
 export function LibraryStatusModal({
@@ -285,7 +285,7 @@ export function LibraryStatusModal({
             {reachedEnd && (
               <div
                 role="status"
-                className="flex flex-wrap items-center justify-between gap-3 rounded-[14px] bg-surface-default px-3 py-2.5"
+                className="flex flex-wrap items-center justify-between gap-3 rounded-2xl bg-surface-default px-3 py-2.5"
               >
                 <span className="text-sm font-medium text-text-primary">{tp('reachedEnd', { type: mediaType })}</span>
                 <KButton type="button" variant="secondary" size="sm" onClick={() => changeStatus('completed')}>
@@ -329,7 +329,7 @@ export function LibraryStatusModal({
                 </label>
 
                 <div className="flex flex-col gap-2">
-                  <label htmlFor={reviewId} className="font-body text-[13px] font-bold text-text-tertiary">
+                  <label htmlFor={reviewId} className="font-body text-meta font-bold text-text-tertiary">
                     {td('review')}
                   </label>
                   <textarea
@@ -359,7 +359,7 @@ export function LibraryStatusModal({
                 </label>
 
                 <div className="flex flex-col gap-2">
-                  <label htmlFor={noteId} className="font-body text-[13px] font-bold text-text-tertiary">
+                  <label htmlFor={noteId} className="font-body text-meta font-bold text-text-tertiary">
                     {td('privateNote')}
                   </label>
                   <textarea
@@ -387,7 +387,7 @@ export function LibraryStatusModal({
               {logs.map((log) => {
                 const date = formatDiaryDate(log.watchedOn, locale)
                 return (
-                  <li key={log.id} className="flex items-start gap-3 rounded-[14px] bg-surface-default px-3 py-2">
+                  <li key={log.id} className="flex items-start gap-3 rounded-2xl bg-surface-default px-3 py-2">
                     <div className="flex min-w-0 flex-1 flex-col gap-0.5">
                       <span className="text-sm font-medium text-text-primary">
                         {date}

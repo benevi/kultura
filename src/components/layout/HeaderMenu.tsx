@@ -86,7 +86,7 @@ export function HeaderMenu({ label, trigger, triggerClassName, current, panelCla
         id={panelId}
         hidden={!open}
         className={cn(
-          'absolute right-4 md:right-8 top-full mt-2 z-50 w-64 max-w-[calc(100vw-2rem)] rounded-18 border border-surface-border bg-surface-default p-2 shadow-[0_2px_8px_rgba(0,0,0,0.15)]',
+          'absolute right-4 md:right-8 top-full mt-2 z-50 w-64 max-w-[calc(100vw-2rem)] rounded-2xl border border-surface-border bg-surface-default p-2 shadow-soft',
           panelClassName
         )}
       >

@@ -5,7 +5,7 @@ import { getTranslations } from 'next-intl/server'
 export default async function ListDetailLoading() {
   const t = await getTranslations('common')
   return (
-    <main aria-busy="true" className="max-w-4xl mx-auto px-4 md:px-8 py-8">
+    <main aria-busy="true" className="page-grid [&>*]:max-w-4xl py-8">
       <p role="status" className="sr-only">{t('loading')}</p>
       <div aria-hidden="true" className="flex flex-col gap-10 animate-pulse motion-reduce:animate-none">
         <div className="flex flex-col gap-3">

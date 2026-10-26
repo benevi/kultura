@@ -121,7 +121,7 @@ export function TonightClient({ picks, platforms }: { picks: TonightPick[]; plat
         </ul>
       )}
 
-      <p className="font-body text-[11px] text-text-tertiary">
+      <p className="font-body text-xs text-text-tertiary">
         {t('attribution')}
         {picks.length > 0 ? (
           <>

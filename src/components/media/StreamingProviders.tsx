@@ -136,7 +136,7 @@ export function StreamingProviders({
           target="_blank"
           rel="noopener noreferrer"
           aria-label={t("justwatchLinkLabel")}
-          className={`inline-flex items-center min-h-11 rounded hover:opacity-80 transition-opacity ${focusRing}`}
+          className={`inline-flex items-center min-h-11 rounded-lg hover:opacity-80 transition-opacity ${focusRing}`}
         >
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img

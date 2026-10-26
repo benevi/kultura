@@ -36,7 +36,7 @@ export default async function LibraryPage() {
 
   const [entries, diary] = await Promise.all([getUserMedia(user.id), diaryPromise])
   return (
-    <main className="max-w-6xl mx-auto px-4 md:px-8 py-8">
+    <main className="page-grid py-8">
       <LibraryClient entries={entries} diary={diary} />
     </main>
   )

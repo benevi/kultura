@@ -84,7 +84,7 @@ export function FriendCard({ friendship, variant, onAction }: FriendCardProps) {
     // Fila suelta del artboard de Amigos: superficie propia, radio 20,
     // padding 16/22 y gap 16 — sin borde ni separadores.
     <div
-      className="flex items-center gap-4 rounded-20 px-[22px] py-4"
+      className="flex items-center gap-4 rounded-bento px-[22px] py-4"
       style={{ background: F0.surface }}
     >
       <Link href={`/profile/${otherUser.username}`}>

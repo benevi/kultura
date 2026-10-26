@@ -46,7 +46,7 @@ export function MediaRow({
   requirePoster = true,
   cardRadius = 'bento',
 }: MediaRowProps) {
-  const radiusClass = cardRadius === '18' ? 'rounded-18' : 'rounded-bento'
+  const radiusClass = cardRadius === '18' ? 'rounded-2xl' : 'rounded-bento'
   const [failed, setFailed] = React.useState<ReadonlySet<string>>(() => new Set())
   const items = requirePoster ? allItems.filter((i) => i.poster && !failed.has(i.mediaId)) : allItems
   if (!isLoading && items.length === 0 && !emptyMessage) return null

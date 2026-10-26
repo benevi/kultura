@@ -74,8 +74,8 @@ describe("KInput — errores anunciados y foco visible (ACC-3, ACC-4, MOV-5)", (
     render(<KInput label="Campo" />);
     const cls = screen.getByLabelText("Campo").className;
     expect(cls).toMatch(/\btext-base\b/);
-    expect(cls).toMatch(/\bmd:text-\[15px\]/);
-    expect(cls).not.toMatch(/(^|\s)text-\[15px\]/);
+    expect(cls).toMatch(/\bmd:text-body\b/);
+    expect(cls).not.toMatch(/(^|\s)text-body\b/);
   });
 
   it("type=email: sin mayúscula automática ni corrector", () => {

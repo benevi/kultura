@@ -2,7 +2,7 @@
 // KULTURA — Pieza de portada de la landing (E-LANDING-SHOWCASE)
 //
 // Primitivo del collage y de la tira móvil del hero. Todo sale del
-// vocabulario ya en uso (DISENO.md): radio `rounded-bento`/`rounded-card`,
+// vocabulario ya en uso (DISENO.md): radio `rounded-bento`/`rounded-2xl`,
 // sombra dura de pegatina `4px 4px 0 rgba(0,0,0,.35)`, gradiente de dos
 // paradas del mismo matiz cuando no hay imagen real, rotaciones sutiles.
 // No se inventa ninguna forma, radio ni sombra nueva.
@@ -13,7 +13,7 @@ import { cn } from "@/lib/utils/index";
 import type { ShowcaseItem } from "@/lib/landing/showcase";
 
 /** Sombra de pegatina F0 (la misma del badge colgante del hero de Inicio). */
-export const STICKER_SHADOW = "4px 4px 0 rgba(0,0,0,0.35)";
+export const STICKER_SHADOW = "4px 4px 0 oklch(0% 0 0 / 0.4)";
 
 /**
  * Matices de la paleta para el relleno cuando una portada no carga. Mismo
@@ -62,7 +62,7 @@ export function PosterTile({
     <div
       className={cn(
         "relative overflow-hidden aspect-[2/3]",
-        radius === "bento" ? "rounded-bento" : "rounded-card",
+        radius === "bento" ? "rounded-bento" : "rounded-2xl",
         className
       )}
       style={style}

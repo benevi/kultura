@@ -57,6 +57,13 @@ jobs:
       - name: Typecheck
         run: npm run type-check
 
+      # Criterio DIS (1): ninguna clase de `src` sin regla compilada, y los
+      # sets cerrados de radios, tipos, sombras y retícula (F-30). También
+      # corren dentro de `npm test`; aquí van aparte para que el fallo se lea
+      # solo en el resumen del job.
+      - name: Sistema de diseño (clases sin regla y sets cerrados)
+        run: npx vitest run tests/unit/visual tests/unit/design
+
       - name: Unit tests
         run: npm test
 

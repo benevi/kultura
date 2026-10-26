@@ -23,7 +23,7 @@ export interface FinalCtaProps {
 
 export function FinalCta({ title, sub, cta, demo, locale }: FinalCtaProps) {
   return (
-    <section aria-labelledby="final-title" className="px-4 md:px-8 pb-20 md:pb-28 max-w-6xl mx-auto">
+    <section aria-labelledby="final-title" className="page-grid pb-20 md:pb-28">
       <div className="rounded-bento-xl px-6 py-14 text-center md:px-14 md:py-20" style={{ background: BACKGROUND }}>
         <h2
           id="final-title"

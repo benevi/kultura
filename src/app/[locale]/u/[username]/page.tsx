@@ -198,7 +198,7 @@ export default async function PublicCollectionPage({ params, searchParams }: Pro
   return (
     <div className="min-h-screen flex flex-col">
       {viewer ? <SignedInBar /> : <Header />}
-      <main id="main" className="flex-1 w-full max-w-4xl mx-auto px-4 md:px-8 py-10 flex flex-col gap-10 md:gap-12">
+      <main id="main" className="page-grid [&>*]:max-w-4xl flex-1 py-10 flex flex-col gap-10 md:gap-12">
         {!viewer && refIsOwner ? (
           <InviteBanner username={owner.username} friendsOnSignup={friendsOnSignup} registerHref={registerHref} />
         ) : null}
@@ -232,7 +232,7 @@ export default async function PublicCollectionPage({ params, searchParams }: Pro
             {t('publicLists')}
           </h2>
           {lists.length === 0 ? (
-            <div className="flex flex-col items-start gap-2 rounded-20 bg-surface-default px-6 py-7">
+            <div className="flex flex-col items-start gap-2 rounded-bento bg-surface-default px-6 py-7">
               <p className="font-bold text-text-primary">
                 {isOwner ? t('emptyOwn') : t('empty', { username: owner.username })}
               </p>
@@ -269,7 +269,7 @@ export default async function PublicCollectionPage({ params, searchParams }: Pro
           <p className="text-center">
             <Link
               href={`/report?target=user&id=${encodeURIComponent(owner.username)}`}
-              className="inline-flex items-center min-h-11 text-[13px] text-text-tertiary underline-offset-4 hover:underline hover:text-text-primary"
+              className="inline-flex items-center min-h-11 text-meta text-text-tertiary underline-offset-4 hover:underline hover:text-text-primary"
             >
               {t('reportProfile')}
             </Link>
@@ -288,7 +288,7 @@ async function OwnerNote({ owner }: { owner: PublicOwner }) {
   // Sin la columna rige la política de W1: cualquiera con sesión.
   const visibility = owner.libraryVisibility ?? 'public'
   return (
-    <p className="-mt-4 text-[13px] text-text-secondary">
+    <p className="-mt-4 text-meta text-text-secondary">
       {t('ownerNote', { visibility: ts(`visibility.${visibility}`) })}{' '}
       {visibility === 'public' ? `${t('ownerNoteNoAccount')} ` : null}
       {/* Área táctil de 44 px (py-3) sin abrir hueco entre líneas (-my-3). */}

@@ -67,14 +67,14 @@ export default async function BestFormatHubPage({ params }: Props) {
   return (
     <div className="min-h-screen flex flex-col">
       <Header locale={locale} />
-      <main id="main" className="flex-1 w-full max-w-4xl mx-auto px-4 md:px-8 py-8 md:py-10 flex flex-col gap-10 md:gap-12">
+      <main id="main" className="page-grid [&>*]:max-w-4xl flex-1 py-8 md:py-10 flex flex-col gap-10 md:gap-12">
         <header className="flex flex-col gap-4">
           <BestBreadcrumbs locale={locale} crumbs={crumbs} />
-          <h1 className="font-display text-3xl md:text-[42px] font-bold leading-tight text-text-primary">{title}</h1>
-          <p className="text-[15px] text-text-secondary max-w-prose">
+          <h1 className="font-display text-3xl md:text-4xl font-bold leading-tight text-text-primary">{title}</h1>
+          <p className="text-body text-text-secondary max-w-prose">
             {t(`formatHub.description.${format}`, { first: BEST_FIRST_YEAR })} {t("formatHub.intro")}
           </p>
-          <p className="text-[13px] text-text-tertiary max-w-prose">
+          <p className="text-meta text-text-tertiary max-w-prose">
             {t(`formatHub.criteria.${format}`)}
           </p>
           <BestFormatNav locale={locale} current={format} hrefFor={(f) => `/best/${f}`} />
@@ -87,17 +87,17 @@ export default async function BestFormatHubPage({ params }: Props) {
           return (
             <section key={year} aria-labelledby={`year-${year}`} className="flex flex-col gap-4">
               <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
-                <h2 id={`year-${year}`} className="font-display text-2xl md:text-[28px] font-extrabold text-text-primary">
+                <h2 id={`year-${year}`} className="font-display text-2xl md:text-3xl font-extrabold text-text-primary">
                   <a
                     href={localeHref(locale, `/best/${format}/${year}`)}
-                    className="hover:text-accent-pink transition-colors focus-visible:[outline-style:solid] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus-ring rounded-[4px]"
+                    className="hover:text-accent-pink transition-colors focus-visible:[outline-style:solid] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus-ring rounded-lg"
                   >
                     {yearTitle}
                   </a>
                 </h2>
                 <a
                   href={localeHref(locale, `/best/${format}/${year}`)}
-                  className="inline-flex min-h-11 items-center text-[14px] font-bold text-accent-pink underline underline-offset-4 focus-visible:[outline-style:solid] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus-ring rounded-[4px]"
+                  className="inline-flex min-h-11 items-center text-sm font-bold text-accent-pink underline underline-offset-4 focus-visible:[outline-style:solid] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus-ring rounded-lg"
                 >
                   {t("hub.seeRanking", { year })}
                 </a>
@@ -105,11 +105,11 @@ export default async function BestFormatHubPage({ params }: Props) {
               {show ? (
                 <BestTopRow items={ranking.items} locale={locale} label={t("hub.top", { year })} />
               ) : ranking ? (
-                <p className="text-[14px] text-text-tertiary">
+                <p className="text-sm text-text-tertiary">
                   {t("provisional", { count: ranking.items.length })}
                 </p>
               ) : (
-                <p className="text-[14px] text-text-tertiary">{t("hub.unavailable")}</p>
+                <p className="text-sm text-text-tertiary">{t("hub.unavailable")}</p>
               )}
             </section>
           );

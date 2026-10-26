@@ -1,8 +1,8 @@
 export default function HomeLoading() {
   return (
-    <main className="max-w-4xl mx-auto px-4 py-6 space-y-8">
+    <main className="page-grid py-6 md:py-8 space-y-8 md:space-y-10">
       {/* Hero skeleton */}
-      <div className="animate-pulse rounded-card overflow-hidden bg-surface-elevated aspect-[16/7] w-full" />
+      <div className="animate-pulse rounded-2xl overflow-hidden bg-surface-elevated aspect-[16/7] w-full" />
 
       {/* Media row skeleton */}
       {[0, 1, 2].map((row) => (
@@ -12,7 +12,7 @@ export default function HomeLoading() {
             {[0, 1, 2, 3, 4, 5].map((i) => (
               <div
                 key={i}
-                className="w-24 md:w-32 flex-shrink-0 aspect-[2/3] bg-surface-elevated rounded-card"
+                className="w-24 md:w-32 flex-shrink-0 aspect-[2/3] bg-surface-elevated rounded-2xl"
               />
             ))}
           </div>

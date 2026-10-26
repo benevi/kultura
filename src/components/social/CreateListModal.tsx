@@ -28,9 +28,9 @@ const DESCRIPTION_MAX = 500
 
 /** Mismo acabado que `KInput` (DISENO.md: caja surface-2, radio 14, foco pink). */
 const TEXTAREA_CLASS = cn(
-  'w-full min-h-[88px] resize-y rounded-[14px] bg-surface-elevated px-[18px] py-[15px]',
+  'w-full min-h-[88px] resize-y rounded-2xl bg-surface-elevated px-[18px] py-[15px]',
   'border border-field-border',
-  'font-body text-base md:text-[15px] text-text-primary',
+  'font-body text-base md:text-body text-text-primary',
   'placeholder:text-text-tertiary',
   'transition-colors duration-base ease-standard',
   'focus-visible:[outline-style:solid] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus-ring'
@@ -145,7 +145,7 @@ export function CreateListModal({ onClose, mixedEnabled = false }: CreateListMod
                 <label
                   key={option}
                   className={cn(
-                    'flex min-h-11 cursor-pointer items-start gap-3 rounded-[14px] bg-surface-default px-3 py-3 transition-colors',
+                    'flex min-h-11 cursor-pointer items-start gap-3 rounded-2xl bg-surface-default px-3 py-3 transition-colors',
                     checked && 'ring-2 ring-accent-pink'
                   )}
                 >
@@ -197,7 +197,7 @@ export function CreateListModal({ onClose, mixedEnabled = false }: CreateListMod
 
         {mixedEnabled && (
           <div className="flex w-full flex-col gap-2">
-            <label htmlFor={descriptionId} className="font-body text-[13px] font-bold text-text-tertiary">
+            <label htmlFor={descriptionId} className="font-body text-meta font-bold text-text-tertiary">
               {t('descriptionLabel')}
             </label>
             <textarea
@@ -229,7 +229,7 @@ export function CreateListModal({ onClose, mixedEnabled = false }: CreateListMod
               <label
                 key={option}
                 className={cn(
-                  'flex min-h-11 cursor-pointer items-start gap-3 rounded-[14px] bg-surface-default px-3 py-3 transition-colors',
+                  'flex min-h-11 cursor-pointer items-start gap-3 rounded-2xl bg-surface-default px-3 py-3 transition-colors',
                   checked && 'ring-2 ring-accent-pink'
                 )}
               >
@@ -251,7 +251,7 @@ export function CreateListModal({ onClose, mixedEnabled = false }: CreateListMod
         </fieldset>
 
         {/* Colaborativa */}
-        <label className="flex min-h-11 items-center gap-3 cursor-pointer rounded-[14px] bg-surface-default px-3 py-3">
+        <label className="flex min-h-11 items-center gap-3 cursor-pointer rounded-2xl bg-surface-default px-3 py-3">
           <input
             type="checkbox"
             checked={isCollaborative}

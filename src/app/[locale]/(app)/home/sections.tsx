@@ -168,7 +168,7 @@ export async function FriendsActivity({ userId, locale }: { userId: string; loca
                 </div>
                 <Link href={href} tabIndex={-1} aria-hidden="true" className="flex-shrink-0">
                   <div
-                    className="relative h-[60px] w-10 overflow-hidden rounded-md"
+                    className="relative h-[60px] w-10 overflow-hidden rounded-lg"
                     style={{ background: posterGradient(media.id || media.title) }}
                   >
                     {media.poster ? <PosterImage src={media.poster} sizes="40px" className="object-cover" /> : null}

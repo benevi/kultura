@@ -117,7 +117,7 @@ export function MediaCard({
           {showType && (
             <div
               data-testid="media-type-badge"
-              className="absolute top-2 left-2 rounded-full bg-surface-base/80 backdrop-blur-sm text-text-primary text-[10px] font-semibold px-2 py-1 leading-none"
+              className="absolute top-2 left-2 rounded-full bg-surface-base/80 backdrop-blur-sm text-text-primary text-xs font-semibold px-2 py-1 leading-none"
             >
               {tBadge(item.type)}
             </div>
@@ -125,7 +125,7 @@ export function MediaCard({
 
           {/* Rating overlay */}
           {item.rating !== undefined && (
-            <div className="absolute bottom-2 right-2 rounded-full bg-surface-base/80 backdrop-blur-sm text-accent-highlight text-[11px] font-bold px-2 py-1 leading-none">
+            <div className="absolute bottom-2 right-2 rounded-full bg-surface-base/80 backdrop-blur-sm text-accent-highlight text-xs font-bold px-2 py-1 leading-none">
               ★ {item.rating.toFixed(1)}
             </div>
           )}
@@ -139,7 +139,7 @@ export function MediaCard({
               {item.title}
             </Heading>
             {item.year ? (
-              <p className="text-[11px] text-white/75 font-medium mt-0.5">{item.year}</p>
+              <p className="text-xs text-white/75 font-medium mt-0.5">{item.year}</p>
             ) : null}
           </div>
         </div>
