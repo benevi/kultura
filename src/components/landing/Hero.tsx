@@ -16,7 +16,6 @@
 // palabra tiene su regla (clases literales para que Tailwind las genere).
 // ============================================================
 
-import { Link } from "@/i18n/navigation";
 import { KButton } from "@/components/ui/KButton";
 import { DemoButton } from "@/components/landing/DemoButton";
 import type { HeroCopy } from "@/lib/landing/immersive";
@@ -84,7 +83,7 @@ export function Hero({
           <p className="mt-6 max-w-[46ch] text-pretty text-lg text-text-secondary md:mt-7 md:text-xl">{copy.sub}</p>
           <div className="mt-8 flex flex-col gap-3 min-[400px]:flex-row min-[400px]:flex-wrap min-[400px]:items-center">
             <KButton variant="primary" size="lg" asChild>
-              <Link href="/login?mode=register">{copy.cta}</Link>
+              <a href={`/${copy.locale}/login?mode=register`}>{copy.cta}</a>
             </KButton>
             {copy.demo ? (
               <DemoButton label={copy.demo} locale={copy.locale} className="w-full min-[400px]:w-auto" />

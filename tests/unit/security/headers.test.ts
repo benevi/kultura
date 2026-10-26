@@ -2,6 +2,7 @@
  * Tests unitarios — Security headers.
  * - next.config.mjs: headers estáticos (no dependen del request).
  * - src/lib/csp.ts (C7): CSP dinámica con nonce por request, vía buildCsp().
+ *   La fija de las rutas cacheables (D-02) se prueba en tests/unit/csp/.
  * No hace una petición HTTP real; valida la configuración/función directamente.
  */
 import { describe, it, expect, beforeAll } from "vitest";
@@ -44,8 +45,10 @@ describe("next.config.mjs — security headers estáticos", () => {
     expect(configSource).toMatch(/X-Frame-Options[\s\S]*?(SAMEORIGIN|DENY)/);
   });
 
-  it("ya NO define Content-Security-Policy aquí (C7: se mueve a middleware.ts por el nonce)", () => {
-    expect(configSource).not.toContain("Content-Security-Policy");
+  it("la CSP de aquí es solo la fija de las rutas cacheables (D-02); la del nonce sigue en middleware.ts", () => {
+    // Detalle (rutas, valor y paridad con src/lib/csp.ts) en tests/unit/csp/static-csp.test.ts.
+    expect(configSource).toContain("STATIC_CSP_SOURCES.map");
+    expect(configSource).not.toContain("nonce-");
   });
 });
 

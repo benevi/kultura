@@ -34,6 +34,7 @@ function lookup(messages: Record<string, unknown>, ns: string, key: string): unk
 
 vi.mock("next-intl/server", () => ({
   getLocale: vi.fn(async () => intl.locale),
+  setRequestLocale: vi.fn(),
   getTranslations: vi.fn(async (arg: string | { locale: string; namespace: string }) => {
     const ns = typeof arg === "string" ? arg : arg.namespace;
     const loc = typeof arg === "string" ? intl.locale : arg.locale;
@@ -81,13 +82,11 @@ vi.mock("@/components/landing/ShowcaseSlots", async () => {
   };
 });
 
-vi.mock("@/i18n/navigation", () => ({
-  Link: ({ href, children, ...rest }: { href: string; children: React.ReactNode } & Record<string, unknown>) => (
-    <a href={href} {...(rest as React.AnchorHTMLAttributes<HTMLAnchorElement>)}>
-      {children}
-    </a>
-  ),
-}));
+// REN-9: la portada ya no usa el `Link` de next-intl (enlaces `<a>` con el
+// idioma); si alguien lo vuelve a importar, este doble hace fallar el test.
+vi.mock("@/i18n/navigation", () => {
+  throw new Error("la portada no debe importar @/i18n/navigation (REN-9)");
+});
 
 vi.mock("@/components/layout/Header", () => ({
   Header: () => <header data-testid="mock-header" />,
@@ -112,7 +111,7 @@ function showcaseItems(n = 21): ShowcaseItem[] {
 
 async function renderPage(locale: "es" | "en" = "es") {
   intl.locale = locale;
-  return render(await HomePage());
+  return render(await HomePage({ params: Promise.resolve({ locale }) }));
 }
 
 function jsonLd(container: HTMLElement) {
@@ -155,7 +154,7 @@ describe("Landing · hero único (D-11)", () => {
       )
     ).toBeInTheDocument();
     const cta = within(hero).getByRole("link", { name: "Crear mi cuenta gratis" });
-    expect(cta).toHaveAttribute("href", "/login?mode=register");
+    expect(cta).toHaveAttribute("href", "/es/login?mode=register");
     expect(within(hero).getByRole("button", { name: "Ver la demo" })).toBeInTheDocument();
     // Nada del hero está oculto a la espera de la animación.
     expect(hero.querySelector("[style*='visibility']")).toBeNull();
@@ -206,7 +205,7 @@ describe("Landing · secciones", () => {
     const final = container.querySelector("section[aria-labelledby='final-title']") as HTMLElement;
     expect(within(final).getByRole("link", { name: "Crear mi cuenta gratis" })).toHaveAttribute(
       "href",
-      "/login?mode=register"
+      "/es/login?mode=register"
     );
     expect(within(final).getByRole("button", { name: "Ver la demo" })).toBeInTheDocument();
   });
@@ -215,11 +214,11 @@ describe("Landing · secciones", () => {
   it("enlaza a los rankings de todos los años publicados", async () => {
     const { container } = await renderPage();
     const year = new Date().getFullYear();
-    const links = Array.from(container.querySelectorAll("a[href^='/best/']"));
+    const links = Array.from(container.querySelectorAll("a[href^='/es/best/']"));
     expect(links.length).toBeGreaterThanOrEqual(12);
     for (const f of ["anime", "movie", "tv", "game"]) {
       for (let y = 2024; y <= year; y++) {
-        expect(container.querySelector(`a[href="/best/${f}/${y}"]`)).not.toBeNull();
+        expect(container.querySelector(`a[href="/es/best/${f}/${y}"]`)).not.toBeNull();
       }
     }
     // Los chips de años anteriores llevan el título completo como nombre.
@@ -323,7 +322,7 @@ describe("Landing · portadas reales", () => {
     const year = new Date().getFullYear();
     showcase.fans = { game: [null, null, null] };
     const { container } = await renderPage();
-    const card = container.querySelector(`a[href="/best/game/${year}"]`) as HTMLElement;
+    const card = container.querySelector(`a[href="/es/best/game/${year}"]`) as HTMLElement;
     expect(card.querySelectorAll("img").length).toBe(0);
   });
 });

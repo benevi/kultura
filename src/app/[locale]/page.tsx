@@ -1,5 +1,6 @@
 import { Suspense } from "react";
-import { getLocale, getTranslations } from "next-intl/server";
+import { getTranslations, setRequestLocale } from "next-intl/server";
+import { routing } from "@/i18n/routing";
 import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/layout/Footer";
 import { FEATURE_KEYS, FeatureGrid } from "@/components/landing/FeatureGrid";
@@ -26,13 +27,22 @@ import { siteUrl } from "@/lib/site-url";
 import type { MediaType } from "@/types/media";
 import type { Metadata } from "next";
 
-export async function generateMetadata({
-  params,
-}: {
+interface Props {
   params: Promise<{ locale: string }>;
-}): Promise<Metadata> {
+}
+
+// D-02: la portada sale del CDN. Se pinta en el build (un HTML por idioma) y
+// se regenera cada día, como la muestra de portadas y los rankings que enseña.
+export const revalidate = 86400;
+
+export function generateStaticParams() {
+  return routing.locales.map((locale) => ({ locale }));
+}
+
+export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { locale } = await params;
   const l = locale === "en" ? "en" : "es";
+  setRequestLocale(l);
   const t = await getTranslations({ locale: l, namespace: "landing" });
   // D-11: la misma promesa que el h1 en <title>, OG y la tarjeta de X.
   const title = t("seo.title");
@@ -62,12 +72,13 @@ export async function generateMetadata({
   };
 }
 
-export default async function HomePage() {
-  const t = await getTranslations("landing");
-  const tb = await getTranslations("best");
-  const ts = await getTranslations("status");
-  const tq = await getTranslations("search");
-  const locale = await getLocale();
+export default async function HomePage({ params }: Props) {
+  const locale = (await params).locale === "en" ? "en" : "es";
+  setRequestLocale(locale);
+  const t = await getTranslations({ locale, namespace: "landing" });
+  const tb = await getTranslations({ locale, namespace: "best" });
+  const ts = await getTranslations({ locale, namespace: "status" });
+  const tq = await getTranslations({ locale, namespace: "search" });
   const demo = env.DEMO_USER_EMAIL ? t("hero.demo") : undefined;
 
   const formats = Object.fromEntries(
@@ -105,6 +116,7 @@ export default async function HomePage() {
     BEST_FORMATS.map((f) => [f, { label: tb(`chip.${f}`), title: tb(`title.${f}`, { year }) }])
   ) as Parameters<typeof BestRankings>[0]["copy"];
   const rankingsProps = {
+    basePath: `/${locale}`,
     year,
     heading: t("rankings.title", { year }),
     sub: t("rankings.sub"),
@@ -148,7 +160,7 @@ export default async function HomePage() {
     <div className="min-h-screen flex flex-col isolate">
       {/* Primero en el orden de foco (ACC-6): pausar la animación de fondo. */}
       <MotionToggle pauseLabel={t("motion.pause")} region={t("motion.region")} />
-      <Header />
+      <Header locale={locale} />
       <main className="flex-1">
         {/* Hero único (D-11): el mensaje y los botones son HTML del primer
             pintado; solo el fondo y la tira de portadas esperan a la muestra. */}

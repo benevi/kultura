@@ -1,20 +1,49 @@
 import { type NextRequest, NextResponse } from "next/server";
 import { createServerClient } from "@supabase/ssr";
+import type { User } from "@supabase/supabase-js";
 import createIntlMiddleware from "next-intl/middleware";
 import { routing } from "./i18n/routing";
 import { publicEnv } from "@/lib/env.public";
-import { buildCsp } from "@/lib/csp";
+import { buildCsp, isStaticCspRoute } from "@/lib/csp";
 import { DEMO_READ_ONLY_ERROR, isBlockedForDemo, isDemoUser } from "@/lib/demo";
 
 const intlMiddleware = createIntlMiddleware(routing);
 
+/**
+ * ¿Trae la petición la cookie de sesión de Supabase? Se llama
+ * `sb-<proyecto>-auth-token` y puede ir troceada (`.0`, `.1`…).
+ */
+function hasSupabaseSessionCookie(request: NextRequest): boolean {
+  return request.cookies.getAll().some((c) => c.name.startsWith("sb-"));
+}
+
 export async function middleware(request: NextRequest) {
-  // SEG-4a: la app no usa Server Actions. Next 14 procesa cualquier POST con
-  // `Next-Action` aunque no exista la acción (vía de DoS de la rama 14), así
-  // que se corta aquí, antes de gastar una llamada a Supabase. Al migrar a
-  // Next 15 y si algún día se usan Server Actions, quitar este bloque.
+  // SEG-4a: la app no usa Server Actions. Cualquier POST con `Next-Action` se
+  // corta aquí, antes de gastar una llamada a Supabase. Si algún día se usan
+  // Server Actions, quitar este bloque.
   if (request.headers.has("next-action")) {
     return new NextResponse(null, { status: 400 });
+  }
+
+  const { pathname } = request.nextUrl;
+
+  // `x-pathname`: ruta + query originales, para construir el `next` de las
+  // redirecciones a /login. Va en la PETICIÓN y se sobrescribe siempre: lo
+  // que mande el cliente no vale. `NextResponse.next({ request })` y
+  // next-intl reenvían las cabeceras de la petición tal cual.
+  request.headers.set("x-pathname", pathname + request.nextUrl.search);
+
+  // D-02: rutas cacheables en el CDN (portadas, rankings, legales, /offline).
+  // Su HTML es el mismo para todos: sin nonce (la CSP fija la pone
+  // `next.config.mjs`), sin sesión (no la leen) y sin cookies en la respuesta
+  // (una `Set-Cookie` saca la respuesta de la caché del CDN). Solo next-intl,
+  // que resuelve el idioma.
+  if (isStaticCspRoute(pathname)) {
+    const response = intlMiddleware(request);
+    // next-intl recuerda el idioma con la cookie NEXT_LOCALE; en una página
+    // cacheable no se manda (la pone la primera página dinámica que se visite).
+    response.headers.delete("set-cookie");
+    return response;
   }
 
   // C7: nonce único por request — habilita script-src sin 'unsafe-inline' en
@@ -25,46 +54,18 @@ export async function middleware(request: NextRequest) {
 
   // Cabeceras para el render, en la PETICIÓN (nunca en la respuesta, SEG-10):
   // - `content-security-policy`: de aquí saca Next el nonce que pone en sus
-  //   <script> (patrón documentado; Next 14 además copia las de la respuesta).
+  //   <script> (patrón documentado).
   // - `x-nonce`: para los Server Components que necesiten firmar un <script>.
-  // - `x-pathname`: ruta + query originales, para construir el `next` de las
-  //   redirecciones a /login. Se sobrescribe siempre: lo que mande el cliente
-  //   no vale. `NextResponse.next({ request })` y next-intl reenvían estas
-  //   cabeceras tal cual.
   request.headers.set("content-security-policy", csp);
   request.headers.set("x-nonce", nonce);
-  request.headers.set("x-pathname", request.nextUrl.pathname + request.nextUrl.search);
 
   // Start with a response that forwards the request as-is.
   // We'll replace it if the session gets refreshed.
   let supabaseResponse = NextResponse.next({ request });
 
-  const supabase = createServerClient(
-    publicEnv.NEXT_PUBLIC_SUPABASE_URL,
-    publicEnv.NEXT_PUBLIC_SUPABASE_ANON_KEY,
-    {
-      cookies: {
-        getAll: () => request.cookies.getAll(),
-        setAll(cookiesToSet) {
-          // Write refreshed cookies into the forwarded request headers so
-          // the Route Handler (or Server Component) receives the updated JWT.
-          cookiesToSet.forEach(({ name, value }) =>
-            request.cookies.set(name, value)
-          );
-          // Rebuild the supabaseResponse with the mutated request so the
-          // refreshed cookies flow downstream.
-          supabaseResponse = NextResponse.next({ request });
-          // Also set them on the response so the browser updates its cookies.
-          cookiesToSet.forEach(({ name, value, options }) =>
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            supabaseResponse.cookies.set(name, value, options as any)
-          );
-        },
-      },
-    }
-  );
-
   // Validate session against auth server; refreshes token if expired.
+  // Sin cookie de Supabase no hay sesión que validar ni refrescar: el
+  // visitante anónimo no gasta una llamada a Auth (SEO-11, F-22).
   // HOTFIX (incidente prod 2026-09-11): sin timeout, un Supabase lento/caído
   // cuelga esta llamada hasta que Vercel mata el middleware por timeout →
   // 504 en TODO el sitio (el matcher cubre casi cualquier request). Peor caso
@@ -72,24 +73,51 @@ export async function middleware(request: NextRequest) {
   // rutas protegidas hacen su propio check de auth y redirigen a login si
   // hace falta — preferible a un 504 global.
   const AUTH_CHECK_TIMEOUT_MS = 4000;
-  let user: Awaited<ReturnType<typeof supabase.auth.getUser>>["data"]["user"] = null;
-  try {
-    const result = await Promise.race([
-      supabase.auth.getUser(),
-      new Promise<never>((_, reject) =>
-        setTimeout(() => reject(new Error("auth check timed out")), AUTH_CHECK_TIMEOUT_MS)
-      ),
-    ]);
-    user = result.data.user;
-  } catch {
-    // Timeout o error del auth server: seguimos sin sesión refrescada en vez
-    // de bloquear la respuesta indefinidamente.
+  let user: User | null = null;
+  if (hasSupabaseSessionCookie(request)) {
+    const supabase = createServerClient(
+      publicEnv.NEXT_PUBLIC_SUPABASE_URL,
+      publicEnv.NEXT_PUBLIC_SUPABASE_ANON_KEY,
+      {
+        cookies: {
+          getAll: () => request.cookies.getAll(),
+          setAll(cookiesToSet) {
+            // Write refreshed cookies into the forwarded request headers so
+            // the Route Handler (or Server Component) receives the updated JWT.
+            cookiesToSet.forEach(({ name, value }) =>
+              request.cookies.set(name, value)
+            );
+            // Rebuild the supabaseResponse with the mutated request so the
+            // refreshed cookies flow downstream.
+            supabaseResponse = NextResponse.next({ request });
+            // Also set them on the response so the browser updates its cookies.
+            cookiesToSet.forEach(({ name, value, options }) =>
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
+              supabaseResponse.cookies.set(name, value, options as any)
+            );
+          },
+        },
+      }
+    );
+
+    try {
+      const result = await Promise.race([
+        supabase.auth.getUser(),
+        new Promise<never>((_, reject) =>
+          setTimeout(() => reject(new Error("auth check timed out")), AUTH_CHECK_TIMEOUT_MS)
+        ),
+      ]);
+      user = result.data.user;
+    } catch {
+      // Timeout o error del auth server: seguimos sin sesión refrescada en vez
+      // de bloquear la respuesta indefinidamente.
+    }
   }
 
   // E-DEMO: la cuenta demo es de solo lectura. Aquí se cortan las rutas que
   // escriben con el cliente ADMIN (ignoran RLS); lo que va directo a la base lo
   // corta la migración `demo_read_only`. Ver `src/lib/demo.ts`.
-  if (isDemoUser(user) && isBlockedForDemo(request.method, request.nextUrl.pathname)) {
+  if (isDemoUser(user) && isBlockedForDemo(request.method, pathname)) {
     const blocked = NextResponse.json({ error: DEMO_READ_ONLY_ERROR }, { status: 403 });
     supabaseResponse.cookies.getAll().forEach((cookie) => blocked.cookies.set(cookie));
     blocked.headers.set("Content-Security-Policy", csp);
@@ -97,7 +125,7 @@ export async function middleware(request: NextRequest) {
   }
 
   // For API routes: return the Supabase response (carries refreshed session).
-  if (request.nextUrl.pathname.startsWith("/api/")) {
+  if (pathname.startsWith("/api/")) {
     supabaseResponse.headers.set("Content-Security-Policy", csp);
     return supabaseResponse;
   }

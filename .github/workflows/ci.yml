@@ -29,7 +29,9 @@ jobs:
       TMDB_API_KEY: placeholder_tmdb
       RAWG_API_KEY: placeholder_rawg
       COMICVINE_KEY: placeholder_comicvine
-      ANTHROPIC_API_KEY: placeholder_anthropic
+      # Con el prefijo real: la portada y los legales se pintan en el build
+      # (D-02) y leen `env.server.ts`, que valida el formato.
+      ANTHROPIC_API_KEY: sk-ant-placeholder
 
     steps:
       - name: Checkout

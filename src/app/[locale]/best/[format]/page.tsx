@@ -7,7 +7,7 @@
 
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
-import { getTranslations } from "next-intl/server";
+import { getTranslations, setRequestLocale } from "next-intl/server";
 import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/layout/Footer";
 import { BestBreadcrumbs, BestCta, BestFormatNav } from "@/components/best/BestNav";
@@ -24,6 +24,13 @@ import { localeHref } from "@/lib/best/links";
 
 export const revalidate = 86400;
 
+// D-02: HTML cacheado en el CDN. Ningún ranking se pinta en el build (no
+// depende de los proveedores): cada URL se genera en su primera visita y se
+// regenera cada 24 h (`dynamicParams` sigue en su valor por defecto, true).
+export function generateStaticParams() {
+  return [];
+}
+
 interface Props {
   params: Promise<{ locale: string; format: string }>;
 }
@@ -31,6 +38,7 @@ interface Props {
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { locale, format } = await params;
   if (!isBestFormat(format)) return {};
+  setRequestLocale(locale);
   const t = await getTranslations({ locale, namespace: "best" });
   return bestMetadata({
     locale,
@@ -44,6 +52,7 @@ export default async function BestFormatHubPage({ params }: Props) {
   const { locale: rawLocale, format } = await params;
   if (!isBestFormat(format)) notFound();
   const locale = bestLocale(rawLocale);
+  setRequestLocale(locale);
   const t = await getTranslations({ locale, namespace: "best" });
   const years = bestYears();
   // Un año cuyo proveedor falla muestra un aviso; los demás se pintan.
@@ -57,7 +66,7 @@ export default async function BestFormatHubPage({ params }: Props) {
 
   return (
     <div className="min-h-screen flex flex-col">
-      <Header />
+      <Header locale={locale} />
       <main id="main" className="flex-1 w-full max-w-4xl mx-auto px-4 md:px-8 py-8 md:py-10 flex flex-col gap-10 md:gap-12">
         <header className="flex flex-col gap-4">
           <BestBreadcrumbs locale={locale} crumbs={crumbs} />

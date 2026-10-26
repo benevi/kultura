@@ -3,6 +3,7 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 
 // Mock next-intl server functions
 vi.mock("next-intl/server", () => ({
+  getLocale: vi.fn(async () => "es"),
   getTranslations: vi.fn(async () => (key: string) => {
     const map: Record<string, string> = {
       signIn: "Iniciar sesión",
@@ -12,14 +13,12 @@ vi.mock("next-intl/server", () => ({
   }),
 }));
 
-// Mock @/i18n/navigation
-vi.mock("@/i18n/navigation", () => ({
-  Link: ({ href, children, className }: { href: string; children: React.ReactNode; className?: string }) => (
-    <a href={href} className={className}>
-      {children}
-    </a>
-  ),
-}));
+// REN-9: la cabecera pública pinta `<a>` del servidor, no el `Link` de
+// next-intl (arrastraba al JS de la portada los trozos de la cabecera con
+// sesión, Supabase incluido). Si se vuelve a importar, el test falla.
+vi.mock("@/i18n/navigation", () => {
+  throw new Error("Header no debe importar @/i18n/navigation (REN-9)");
+});
 
 // Mock Button to render as simple element for easier testing
 vi.mock("@/components/ui/Button", () => ({
@@ -48,11 +47,17 @@ describe("Header", () => {
     expect(screen.getByText("kultura")).toBeInTheDocument();
   });
 
-  it("contiene un enlace al home (/)", async () => {
+  it("contiene un enlace a la portada del idioma (/es)", async () => {
     const HeaderResolved = await Header();
     render(HeaderResolved);
     const homeLink = screen.getByText("kultura").closest("a");
-    expect(homeLink).toHaveAttribute("href", "/");
+    expect(homeLink).toHaveAttribute("href", "/es");
+  });
+
+  it("con `locale` explícito los enlaces llevan ese idioma (páginas estáticas)", async () => {
+    render(await Header({ locale: "en" }));
+    expect(screen.getByText("kultura").closest("a")).toHaveAttribute("href", "/en");
+    expect(screen.getByRole("link", { name: /registrarse/i })).toHaveAttribute("href", "/en/login?mode=register");
   });
 
   it("renderiza enlace de Iniciar sesión hacia /login?mode=login", async () => {
@@ -60,7 +65,7 @@ describe("Header", () => {
     render(HeaderResolved);
     const signInLink = screen.getByRole("link", { name: /iniciar sesión/i });
     expect(signInLink).toBeInTheDocument();
-    expect(signInLink).toHaveAttribute("href", "/login?mode=login");
+    expect(signInLink).toHaveAttribute("href", "/es/login?mode=login");
   });
 
   it("renderiza enlace de Registrarse hacia /login?mode=register", async () => {
@@ -68,7 +73,7 @@ describe("Header", () => {
     render(HeaderResolved);
     const signUpLink = screen.getByRole("link", { name: /registrarse/i });
     expect(signUpLink).toBeInTheDocument();
-    expect(signUpLink).toHaveAttribute("href", "/login?mode=register");
+    expect(signUpLink).toHaveAttribute("href", "/es/login?mode=register");
   });
 
   it("la cabecera es opaca, como la de la app (antes bg-surface/80 no generaba regla y era transparente)", async () => {
