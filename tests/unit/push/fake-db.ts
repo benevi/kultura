@@ -1,6 +1,6 @@
 /**
  * Base en memoria con lo mínimo del cliente de Supabase que usan las rutas y
- * el envío de push: select/eq/neq/in/order/limit/maybeSingle, insert, upsert
+ * el envío de push: select/eq/neq/in/gte/lte/order/limit/maybeSingle, insert, upsert
  * (onConflict), update y delete (con `.select()` para RETURNING). Cada
  * llamada queda en `log` para comprobar qué se pidió.
  */
@@ -11,6 +11,8 @@ export interface FakeDb {
   log: { table: string; op: string; filters: string[]; values?: unknown }[]
   /** Error forzado por tabla (p. ej. tabla sin migrar). */
   errors: Record<string, { code: string; message: string } | undefined>
+  /** Columnas que aún no existen por tabla: un select que las pida da 42703. */
+  missingColumns: Record<string, string[] | undefined>
   from: (table: string) => Query
 }
 
@@ -20,15 +22,17 @@ class Query implements PromiseLike<{ data: unknown; error: unknown; count?: numb
   private op: 'select' | 'update' | 'delete' | 'upsert' | 'insert' = 'select'
   private values: Row | Row[] | null = null
   private conflict: string | null = null
-  private orderBy: { col: string; asc: boolean } | null = null
+  private orderBy: { col: string; asc: boolean }[] = []
+  private columns = '*'
   private max: number | null = null
   private single = false
   private returning = false
 
   constructor(private db: FakeDb, private table: string) {}
 
-  select() {
+  select(columns = '*') {
     if (this.op !== 'select') this.returning = true
+    else this.columns = columns
     return this
   }
   insert(values: Row | Row[]) {
@@ -66,12 +70,22 @@ class Query implements PromiseLike<{ data: unknown; error: unknown; count?: numb
     this.filterLog.push(`${col} in ${vs.join(',')}`)
     return this
   }
+  gte(col: string, v: unknown) {
+    this.filters.push((r) => r[col] != null && String(r[col]) >= String(v))
+    this.filterLog.push(`${col}>=${String(v)}`)
+    return this
+  }
+  lte(col: string, v: unknown) {
+    this.filters.push((r) => r[col] != null && String(r[col]) <= String(v))
+    this.filterLog.push(`${col}<=${String(v)}`)
+    return this
+  }
   is(col: string, v: unknown) {
     this.filters.push((r) => (r[col] ?? null) === v)
     return this
   }
   order(col: string, opts: { ascending?: boolean } = {}) {
-    this.orderBy = { col, asc: opts.ascending !== false }
+    this.orderBy.push({ col, asc: opts.ascending !== false })
     return this
   }
   limit(n: number) {
@@ -87,6 +101,10 @@ class Query implements PromiseLike<{ data: unknown; error: unknown; count?: numb
     const error = this.db.errors[this.table]
     this.db.log.push({ table: this.table, op: this.op, filters: this.filterLog, values: this.values ?? undefined })
     if (error) return { data: null, error }
+    const missing = (this.db.missingColumns[this.table] ?? []).find((c) =>
+      this.columns.split(',').map((x) => x.trim()).includes(c),
+    )
+    if (missing) return { data: null, error: { code: '42703', message: `column ${this.table}.${missing} does not exist` } }
     const rows = (this.db.tables[this.table] ??= [])
     const match = (r: Row) => this.filters.every((f) => f(r))
     if (this.op === 'insert' || this.op === 'upsert') {
@@ -110,9 +128,14 @@ class Query implements PromiseLike<{ data: unknown; error: unknown; count?: numb
       return { data: this.returning ? hit : null, error: null }
     }
     let out = rows.filter(match)
-    if (this.orderBy) {
-      const { col, asc } = this.orderBy
-      out = [...out].sort((a, b) => (String(a[col]) < String(b[col]) ? -1 : String(a[col]) > String(b[col]) ? 1 : 0) * (asc ? 1 : -1))
+    if (this.orderBy.length > 0) {
+      out = [...out].sort((a, b) => {
+        for (const { col, asc } of this.orderBy) {
+          const d = String(a[col]) < String(b[col]) ? -1 : String(a[col]) > String(b[col]) ? 1 : 0
+          if (d !== 0) return d * (asc ? 1 : -1)
+        }
+        return 0
+      })
     }
     if (this.max !== null) out = out.slice(0, this.max)
     if (this.single) return { data: out[0] ?? null, error: null }
@@ -132,6 +155,7 @@ export function fakeDb(tables: Record<string, Row[]> = {}): FakeDb {
     tables,
     log: [],
     errors: {},
+    missingColumns: {},
     from: (table: string) => new Query(db, table),
   }
   return db

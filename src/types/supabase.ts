@@ -422,6 +422,7 @@ export type Database = {
       }
       friendships: {
         Row: {
+          accepted_at: string | null
           created_at: string | null
           id: string
           receiver_id: string
@@ -430,6 +431,7 @@ export type Database = {
         }
         ComputedFields: never
         Insert: {
+          accepted_at?: string | null
           created_at?: string | null
           id?: string
           receiver_id: string
@@ -437,6 +439,7 @@ export type Database = {
           status: string
         }
         Update: {
+          accepted_at?: string | null
           created_at?: string | null
           id?: string
           receiver_id?: string
@@ -1742,6 +1745,8 @@ export interface DbFriendship {
   receiver_id: string; // uuid → users.id
   status: "pending" | "accepted";
   created_at: string; // timestamptz
+  /** timestamptz: cuándo se aceptó (trigger friendships_track_accepted_at). Ausente antes de 20261222340001. */
+  accepted_at?: string | null;
 }
 
 /** Tabla: recommendations */
