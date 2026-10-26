@@ -131,6 +131,29 @@ describe('Ajustes › push', () => {
     expect(screen.getByText('push.on')).toBeInTheDocument()
   })
 
+  it('mientras se guarda: aria-disabled (no disabled), el foco no se pierde y no se repite la petición', async () => {
+    install()
+    let release: (r: Response) => void = () => {}
+    fetchMock.mockImplementation(async (url: string) =>
+      url === '/api/push/status'
+        ? new Response(JSON.stringify({ enabled: true, publicKey: KEY, devices: 0, endpointHashes: [] }))
+        : new Promise<Response>((r) => (release = r)),
+    )
+    render(<SettingsForm {...PROPS} />)
+    const toggle = await screen.findByRole('switch', { name: 'push.label' })
+    toggle.focus()
+    fireEvent.click(toggle)
+    await waitFor(() => expect(toggle).toHaveAttribute('aria-disabled', 'true'))
+    expect(toggle).not.toBeDisabled()
+    expect(document.activeElement).toBe(toggle)
+    fireEvent.click(toggle)
+    await act(async () => {})
+    expect(posts('/api/push/subscribe')).toHaveLength(1)
+    await act(async () => release(new Response('{}', { status: 201 })))
+    await waitFor(() => expect(toggle).toBeChecked())
+    expect(toggle).not.toHaveAttribute('aria-disabled')
+  })
+
   it('si no da permiso: sigue apagado y lo explica; si lo bloquea, cómo desbloquearlo', async () => {
     install({ answer: 'default' })
     render(<SettingsForm {...PROPS} />)

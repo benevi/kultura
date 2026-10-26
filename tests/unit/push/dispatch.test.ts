@@ -171,6 +171,21 @@ describe('push · textos', () => {
     for (const m of [es, en]) expect(Object.keys(m).slice(-2)).toEqual(['collection', 'push'])
   })
 
+  it('el bloque push cumple VOZ.md (lo excluyen los tests de F-31): tú, una sola fórmula de error, sin emojis ni "..."', () => {
+    const flat = (o: object, p = ''): [string, string][] =>
+      Object.entries(o).flatMap(([k, v]) => (v && typeof v === 'object' ? flat(v, `${p}${k}.`) : [[`${p}${k}`, String(v)]]))
+    const esV = flat(es.push)
+    const enV = flat(en.push)
+    const bad = [
+      ...esV.filter(([, v]) => /\busted(es)?\b|^Error\b|\bError al\b|\bNo se (ha |han )?pud|\bInt[ée]ntalo\b|\bVuelve a intentarlo\b/i.test(v)),
+      ...enV.filter(([, v]) => /^(Failed|Error)\b|\bPlease try again\b|^Could not\b|^Couldn['’]t\b/i.test(v)),
+      ...[...esV, ...enV].filter(([, v]) => v.includes('...') || /\p{Extended_Pictographic}/u.test(v)),
+    ]
+    expect(bad).toEqual([])
+    expect(es.push.settings.error).toMatch(/^No hemos podido .+ reintenta\.$/)
+    expect(en.push.settings.error).toMatch(/^We couldn't .+ try again\.$/)
+  })
+
   it('cada tipo de notificación tiene su frase y hay un texto genérico para lo desconocido', () => {
     const p = (type: string, payload: Record<string, unknown>) =>
       buildPushPayload({ kind: 'notification', notificationId: NOTIF, type, payload }, 'es').body

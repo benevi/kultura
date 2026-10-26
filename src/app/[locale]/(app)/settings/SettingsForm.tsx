@@ -14,7 +14,7 @@ import { useRadioGroupKeys } from '@/components/ui/useRadioGroupKeys'
 import { SegmentedControl } from '@/components/ui/SegmentedControl'
 import { saveRatingScale } from '@/lib/library/actions'
 import { WEEKLY_EMAIL_CONSENT_VERSION } from '@/lib/email/consent'
-import { usePushSettings } from '@/lib/push/client'
+import { unsubscribeCurrentDevice, usePushSettings } from '@/lib/push/client'
 import { isRatingScale, type RatingScale } from '@/types/library'
 import type { AvatarColorName } from '@/lib/constants/avatarColors'
 import { cn } from '@/lib/utils/index'
@@ -483,6 +483,7 @@ export function SettingsForm({
       }
       const result = (await res.json().catch(() => ({}))) as { scheduled?: boolean; purgeAt?: string }
       const supabase = createClient()
+      await unsubscribeCurrentDevice()
       await supabase.auth.signOut()
       router.push(
         result.scheduled && result.purgeAt
@@ -831,9 +832,14 @@ export function SettingsForm({
                 role="switch"
                 checked={push.state === 'on'}
                 aria-describedby="push-description"
-                disabled={isDemo || !['on', 'off'].includes(push.state)}
-                onChange={(e) => (e.target.checked ? push.enable() : push.disable())}
-                className="mt-0.5 h-6 w-6 flex-shrink-0 cursor-pointer accent-accent-pink disabled:cursor-not-allowed"
+                disabled={isDemo || !['on', 'off', 'saving'].includes(push.state)}
+                // Mientras se guarda, aria-disabled (no disabled): el foco se queda en el interruptor.
+                aria-disabled={push.state === 'saving' || undefined}
+                onChange={(e) => {
+                  if (push.state === 'saving') return
+                  void (e.target.checked ? push.enable() : push.disable())
+                }}
+                className="mt-0.5 h-6 w-6 flex-shrink-0 cursor-pointer accent-accent-pink disabled:cursor-not-allowed aria-disabled:cursor-wait"
               />
             </div>
             {isDemo ? (
@@ -847,7 +853,7 @@ export function SettingsForm({
                     : tPush('denied')}
               </p>
             ) : null}
-            <p role="status" className="min-h-5 text-[13px] text-text-tertiary">
+            <p role="status" className="min-h-5 text-xs text-text-tertiary">
               {push.state === 'saving'
                 ? tPush('saving')
                 : push.notice === 'allOff'
@@ -867,13 +873,15 @@ export function SettingsForm({
             )}
             {!isDemo && push.otherDevices > 0 && (
               <div className="flex flex-wrap items-center justify-between gap-3">
-                <p className="text-[13px] text-text-tertiary">{tPush('otherDevices', { count: push.otherDevices })}</p>
+                <p className="text-xs text-text-tertiary">{tPush('otherDevices', { count: push.otherDevices })}</p>
                 <KButton
                   variant="secondary"
                   size="sm"
                   className="flex-shrink-0"
-                  onClick={() => push.disable(true)}
-                  disabled={push.state === 'saving'}
+                  onClick={() => {
+                    if (push.state !== 'saving') void push.disable(true)
+                  }}
+                  aria-disabled={push.state === 'saving' || undefined}
                 >
                   {tPush('disableAll')}
                 </KButton>

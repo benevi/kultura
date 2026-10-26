@@ -27,6 +27,7 @@ import {
   toStoredAttribution,
   type AttributionParams,
 } from "@/lib/analytics/attribution";
+import { unsubscribeCurrentDevice } from "@/lib/push/client";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -407,7 +408,9 @@ export function LoginPage({ locale }: LoginPageProps) {
 
   async function handleRegister() {
     const supabase = await getSupabase();
-    // Sale de la demo (o de otra cuenta) antes de crear la nueva.
+    // Sale de la demo (o de otra cuenta) antes de crear la nueva; F-33: sin
+    // llevarse los avisos push de la cuenta anterior.
+    await unsubscribeCurrentDevice();
     await supabase.auth.signOut();
     const { error, data } = await supabase.auth.signUp({
       email: form.email,

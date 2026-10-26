@@ -128,6 +128,41 @@ async function subscribeWith(registration: ServiceWorkerRegistration, publicKey:
   return registration.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: key })
 }
 
+/** Lo que espera, como mucho, `unsubscribeCurrentDevice` antes de dejar seguir. */
+export const SIGN_OUT_PUSH_TIMEOUT_MS = 1500
+
+/**
+ * Al cerrar sesión (o cambiar de cuenta): da de baja el push de ESTE
+ * navegador, para que no sigan llegando avisos de la cuenta que se va.
+ * Primero en el servidor (con la sesión que aún hay) y luego en el navegador.
+ * Nunca falla ni bloquea: sin service worker, sin suscripción o sin permiso no
+ * hace nada (ni una petición), y como mucho espera SIGN_OUT_PUSH_TIMEOUT_MS.
+ */
+export async function unsubscribeCurrentDevice(win: Win = window as Win): Promise<void> {
+  const work = (async () => {
+    if (!('serviceWorker' in win.navigator) || !('PushManager' in win)) return
+    const registration = await win.navigator.serviceWorker.getRegistration().catch(() => undefined)
+    const subscription = registration ? await registration.pushManager.getSubscription().catch(() => null) : null
+    if (!subscription) return
+    try {
+      await fetch('/api/push/unsubscribe', {
+        method: 'POST',
+        credentials: 'same-origin',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ endpoint: subscription.endpoint }),
+        signal: AbortSignal.timeout(SIGN_OUT_PUSH_TIMEOUT_MS),
+      })
+    } catch {
+      // Sin red o sin push en el servidor: se borra igual en el navegador.
+    }
+    await subscription.unsubscribe().catch(() => false)
+  })().catch(() => undefined)
+  await Promise.race([
+    work,
+    new Promise<void>((resolve) => win.setTimeout(resolve, SIGN_OUT_PUSH_TIMEOUT_MS + 250)),
+  ])
+}
+
 export function usePushSettings(locale: string, { disabled = false }: { disabled?: boolean } = {}) {
   const [state, setState] = useState<PushUiState>('loading')
   const [otherDevices, setOtherDevices] = useState(0)

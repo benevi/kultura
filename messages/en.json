@@ -2135,7 +2135,7 @@
       "unsupported": "This browser doesn't support push notifications.",
       "iosInstall": "On iPhone and iPad, first add KULTURA to your Home Screen (Share → “Add to Home Screen”) and turn them on from the installed app.",
       "demo": "The demo account can't turn on notifications.",
-      "error": "Couldn't change your notifications. Please try again.",
+      "error": "We couldn't change your notifications. Check your connection and try again.",
       "otherDevices": "{count, plural, one {Also on for # other device.} other {Also on for # other devices.}}",
       "disableAll": "Turn off everywhere"
     },
