@@ -65,9 +65,14 @@ describe("ShareRanking (DIS-10, ACC-10)", () => {
     const toggle = screen.getByRole("button", { name: "action" });
     fireEvent.click(toggle);
     await screen.findByRole("button", { name: "copy" });
-    fireEvent.keyDown(document, { key: "Escape" });
-    await waitFor(() => expect(toggle).toHaveAttribute("aria-expanded", "false"));
-    expect(document.activeElement).toBe(toggle);
+    // El oyente de teclado se registra en un efecto tras abrir el menú: con la
+    // CI cargada el menú puede verse antes. Se repite la tecla hasta que el
+    // efecto esté activo; la aserción no cambia.
+    await waitFor(() => {
+      fireEvent.keyDown(document, { key: "Escape" });
+      expect(toggle).toHaveAttribute("aria-expanded", "false");
+    });
+    await waitFor(() => expect(document.activeElement).toBe(toggle));
   });
 
   it("cancelar la hoja nativa no abre el menú", async () => {
