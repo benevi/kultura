@@ -85,10 +85,10 @@ describe('textos REALES del diario (messages/*.json, sin simular)', () => {
     expect((await translator('en'))('chars', { count: 12, max: 5000 })).toBe('12 / 5,000')
   })
 
-  it('las opciones de escala tienen un nombre claro y borrar un apunte nombra el título', async () => {
+  it('borrar un apunte nombra el título', async () => {
     const es = await translator('es')
-    expect(es('scaleStars')).toBe('Medias estrellas')
-    expect(es('scaleTen')).toBe('Nota sobre 10')
+    // La escala se elige en Ajustes desde F-28 (`settings.ratingScale*`):
+    // las claves del diario quedaron sin uso y se borraron (TXT-8).
     expect(es('deleteLog', { title: 'Fight Club', date: '20 oct 2026' })).toBe('Borrar el apunte de «Fight Club» del 20 oct 2026')
     expect(es('deleted', { title: 'Fight Club' })).toBe('Apunte de «Fight Club» borrado')
   })
