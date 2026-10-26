@@ -3,6 +3,8 @@ import { redirect } from 'next/navigation'
 import { isDemoUser } from '@/lib/demo'
 import { getTranslations } from 'next-intl/server'
 import { SettingsForm } from './SettingsForm'
+import { PlatformsSection } from './PlatformsSection'
+import { readPlatforms } from './platforms'
 import { isLibraryVisibility } from '@/app/api/settings/identity'
 import { accountGraceEnabled, libraryVisibilityEnabled, readAccountState } from '@/app/api/settings/account-state'
 import { ACCOUNT_GRACE_DAYS } from '@/app/api/settings/identity'
@@ -25,9 +27,11 @@ export default async function SettingsPage({ params, searchParams }: SettingsPag
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect(`/${locale}/login?next=${encodeURIComponent(`/${locale}/settings`)}`)
 
-  const [{ data: profile }, account] = await Promise.all([
+  const [{ data: profile }, account, platforms] = await Promise.all([
     supabase.from('users').select('*').eq('id', user.id).single(),
     readAccountState(supabase, user.id),
+    // F-25: tabla privada (RLS: solo el dueño); `null` sin la migración.
+    readPlatforms(supabase, user.id, locale),
   ])
 
   // D-04b: el selector solo con la bandera Y la columna (migración aplicada);
@@ -35,6 +39,16 @@ export default async function SettingsPage({ params, searchParams }: SettingsPag
   const visibility = (profile as { library_visibility?: unknown } | null)?.library_visibility
   const initialLibraryVisibility =
     libraryVisibilityEnabled() && isLibraryVisibility(visibility) ? visibility : null
+
+  // F-25: «Mis plataformas» solo si su tabla existe (migración aplicada).
+  const platformsSlot = platforms ? (
+    <PlatformsSection
+      userId={user.id}
+      initialServices={platforms.services}
+      initialRegion={platforms.region}
+      isDemo={isDemoUser(user)}
+    />
+  ) : null
 
   return (
     <main className="max-w-[640px] mx-auto px-4 md:px-8 py-8">
@@ -51,6 +65,7 @@ export default async function SettingsPage({ params, searchParams }: SettingsPag
         deletionRequestedAt={account.state?.deletion_requested_at ?? null}
         // Mismo cálculo que GET /api/account: con la bandera y la tabla, 7 días.
         graceDays={accountGraceEnabled() && account.migrated ? ACCOUNT_GRACE_DAYS : 0}
+        platformsSlot={platformsSlot}
       />
     </main>
   )

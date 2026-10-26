@@ -13,7 +13,8 @@
 //
 //    que sustituye solo lo que hay entre las marcas. La versión actual sale de
 //    aplicar TODAS las migraciones de `supabase/migrations/` (hasta
-//    `20261208240001_rating10_logs.sql`), en orden, sobre un PostgreSQL 16 vacío:
+//    `20261208250001_platforms_mixed_lists.sql`), en orden, sobre un
+//    PostgreSQL 16 vacío:
 //    incluye las tablas y columnas de migraciones que quizá aún no estén
 //    aplicadas en producción. Regenerar desde producción SOLO después de
 //    aplicarlas todas (ver `supabase/README.md`); si no, desaparecerían tipos
@@ -527,6 +528,8 @@ export type Database = {
           id: string
           list_id: string
           media_id: string
+          note: string | null
+          position: number | null
         }
         ComputedFields: never
         Insert: {
@@ -535,6 +538,8 @@ export type Database = {
           id?: string
           list_id: string
           media_id: string
+          note?: string | null
+          position?: number | null
         }
         Update: {
           added_at?: string | null
@@ -542,6 +547,8 @@ export type Database = {
           id?: string
           list_id?: string
           media_id?: string
+          note?: string | null
+          position?: number | null
         }
         Relationships: [
           {
@@ -604,31 +611,37 @@ export type Database = {
       lists: {
         Row: {
           created_at: string | null
+          description: string | null
           id: string
           is_collaborative: boolean | null
           is_public: boolean
           media_type: string
           name: string
           owner_id: string
+          template: string | null
         }
         ComputedFields: never
         Insert: {
           created_at?: string | null
+          description?: string | null
           id?: string
           is_collaborative?: boolean | null
           is_public?: boolean
           media_type: string
           name: string
           owner_id: string
+          template?: string | null
         }
         Update: {
           created_at?: string | null
+          description?: string | null
           id?: string
           is_collaborative?: boolean | null
           is_public?: boolean
           media_type?: string
           name?: string
           owner_id?: string
+          template?: string | null
         }
         Relationships: [
           {
@@ -1037,6 +1050,36 @@ export type Database = {
           },
         ]
       }
+      user_streaming_services: {
+        Row: {
+          region: string | null
+          services: number[]
+          updated_at: string
+          user_id: string
+        }
+        ComputedFields: never
+        Insert: {
+          region?: string | null
+          services?: number[]
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          region?: string | null
+          services?: number[]
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_streaming_services_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: true
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       username_history: {
         Row: {
           changed_at: string
@@ -1163,6 +1206,10 @@ export type Database = {
         Returns: string
       }
       purge_old_analytics_events: { Args: { p_keep?: string }; Returns: number }
+      reorder_list_items: {
+        Args: { p_items: string[]; p_list: string }
+        Returns: number
+      }
       rls_audit: {
         Args: Record<PropertyKey, never>
         Returns: {
@@ -1403,11 +1450,16 @@ export interface DbList {
   id: string; // uuid
   owner_id: string; // uuid → users.id
   name: string;
-  media_type: "movie" | "tv" | "anime" | "book" | "comic" | "manga" | "game";
+  /** `mixed` (varios formatos) solo tras F-25 (`20261208250001_platforms_mixed_lists`). */
+  media_type: "movie" | "tv" | "anime" | "book" | "comic" | "manga" | "game" | "mixed";
   is_collaborative: boolean;
   /** Visible sin sesión en /u/{username}. Por defecto privada. */
   is_public: boolean;
   created_at: string; // timestamptz
+  /** F-25: texto libre (≤ 500). Ausente antes de aplicarla. */
+  description?: string | null;
+  /** F-25: plantilla con la que se creó (`franchise` | `ranking`). Ausente antes de aplicarla. */
+  template?: "franchise" | "ranking" | null;
 }
 
 /** Tabla: list_members */
@@ -1425,6 +1477,10 @@ export interface DbListItem {
   media_id: string; // text → media.id
   added_by: string | null; // uuid → users.id (on delete set null)
   added_at: string; // timestamptz
+  /** F-25: orden manual (0 = primero; el disparador pone los nuevos al final). Ausente antes de aplicarla. */
+  position?: number | null;
+  /** F-25: nota de quien edita la lista (≤ 500). Ausente antes de aplicarla. */
+  note?: string | null;
 }
 
 /** Tabla: notifications */

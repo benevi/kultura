@@ -46,6 +46,11 @@ interface SettingsFormProps {
    * o migración sin aplicar). El texto de ayuda dice lo que de verdad pasará.
    */
   graceDays?: number
+  /**
+   * F-25: «Mis plataformas» (se guarda sola, fuera del botón Guardar). La
+   * página la pasa solo si la columna existe; va tras Preferencias.
+   */
+  platformsSlot?: React.ReactNode
 }
 
 /** Resumen de GET /api/account para el modal de borrado. */
@@ -88,6 +93,7 @@ export function SettingsForm({
   initialLibraryVisibility = null,
   deletionRequestedAt = null,
   graceDays = 0,
+  platformsSlot = null,
 }: SettingsFormProps) {
   const t = useTranslations('settings')
   const tErrors = useTranslations('errors')
@@ -614,6 +620,8 @@ export function SettingsForm({
           </div>
         </div>
       </section>
+
+      {platformsSlot}
 
       {/* Privacidad (D-04b): quién ve la biblioteca. Sin la migración o con la
           bandera apagada, no se enseña y rige "cualquiera con cuenta". */}
