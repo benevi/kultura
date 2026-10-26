@@ -562,7 +562,7 @@
     "invite": "Invitar",
     "removeMember": "Eliminar miembro",
     "deleteList": "Eliminar lista",
-    "deleteListTitle": "¿Borrar esta lista?",
+    "deleteListTitle": "¿Eliminar esta lista?",
     "deleteListConfirm": "Esto eliminará la lista permanentemente. No se puede deshacer.",
     "errorDelete": "No hemos podido borrar la lista. Reintenta en un momento.",
     "noItems": "Esta lista está vacía",

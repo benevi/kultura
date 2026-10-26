@@ -24,7 +24,7 @@ const DIALOGS: DialogCase[] = [
     name: "ConfirmModal (borrar lista)",
     path: `/es/lists/${LIST_ID}`,
     opener: "Eliminar lista",
-    title: "Eliminar lista",
+    title: "¿Eliminar esta lista?",
     role: "alertdialog",
   },
   {
@@ -158,7 +158,7 @@ test("error al añadir a una lista: el aviso se ve y se anuncia con el diálogo 
   const dialog = page.getByRole("dialog", { name: "Añadir a una lista" });
   await dialog.getByRole("radio", { name: "Pelis para el finde" }).check();
   await dialog.getByRole("button", { name: "Añadir", exact: true }).click();
-  await expectAnnouncedAlert(page, dialog, "Error al añadir el título");
+  await expectAnnouncedAlert(page, dialog, "No hemos podido añadir el título");
 });
 
 test("StarRating: flechas cambian la nota y el foco se ve (ACC-8)", async ({ page }) => {

@@ -41,7 +41,7 @@ En inglés: ortografía de EE. UU. (catalog, favorites, canceled) y *sentence ca
 | Estado vacío | Qué verás aquí + cómo empezar + botón con verbo | «Aún no hay nada aquí» · «Busca algo que hayas visto…» · «Buscar mi primer título» |
 | Error recuperable | Qué no ha salido + qué hacer | «Ahora mismo no llegamos a los catálogos. Reintenta en un minuto.» |
 | Límite de uso | Por qué + cuánto esperar | «Hay mucha gente consultando. Dale unos segundos y reintenta.» |
-| Confirmación destructiva | Pregunta corta + consecuencia + botón con el verbo | «¿Borrar esta lista?» · «Se borrará para todos los miembros.» · «Borrar» |
+| Confirmación destructiva | Pregunta corta + consecuencia + botón con el verbo | «¿Eliminar esta lista?» · «Se eliminará para todos los miembros.» · «Eliminar» |
 | Botón | Verbo + objeto, sin «Haz clic» | «Crear mi cuenta gratis», «Reintentar» |
 | Contador | ICU plural; si la cifra va aparte, la etiqueta concuerda | `{count, plural, one {título} other {títulos}}` |
 
