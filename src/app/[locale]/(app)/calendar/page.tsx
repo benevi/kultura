@@ -85,7 +85,7 @@ export default async function CalendarPage({ params, searchParams }: Props) {
   const tc = t as unknown as CalendarT
 
   const events = (calendar?.events ?? []).filter((e) => !filter || e.type === filter)
-  const sections = sectionize(events, calendar?.today ?? '')
+  const sections = calendar ? sectionize(events, calendar.today) : { upcoming: [], later: [], recent: [] }
   const hasAny = sections.upcoming.length + sections.later.length + sections.recent.length > 0
 
   return (

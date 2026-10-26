@@ -718,14 +718,19 @@ export function SettingsForm({
         <section id="email" className="scroll-mt-20">
           <p className={eyebrow}>{t('emailSection')}</p>
           <div className={cn(row, 'flex flex-col gap-3 rounded-20 bg-surface-default')}>
-            <label className="flex cursor-pointer items-start justify-between gap-4">
-              <span className="flex flex-col gap-1 min-w-0">
-                <span className="text-sm font-semibold text-text-primary">{t('weeklyEmail')}</span>
-                <span id="weekly-email-consent" className="text-sm font-body text-text-tertiary">
+            {/* Nombre corto en la etiqueta y el texto que se acepta como
+                descripción: el lector no lo repite dos veces. */}
+            <div className="flex items-start justify-between gap-4">
+              <div className="flex flex-col gap-1 min-w-0">
+                <label htmlFor="weekly-email-switch" className="cursor-pointer text-sm font-semibold text-text-primary">
+                  {t('weeklyEmail')}
+                </label>
+                <p id="weekly-email-consent" className="text-sm font-body text-text-tertiary">
                   {t('weeklyEmailConsent')}
-                </span>
-              </span>
+                </p>
+              </div>
               <input
+                id="weekly-email-switch"
                 type="checkbox"
                 role="switch"
                 checked={weeklyEmail.weekly}
@@ -734,7 +739,7 @@ export function SettingsForm({
                 onChange={(e) => handleWeeklyEmail(e.target.checked)}
                 className="mt-0.5 h-6 w-6 flex-shrink-0 cursor-pointer accent-accent-pink disabled:cursor-not-allowed"
               />
-            </label>
+            </div>
             {isDemo && <p className="text-sm text-text-tertiary">{t('weeklyEmailDemo')}</p>}
             {weeklyEmail.weekly && weeklyEmail.consentedAt ? (
               <p className="text-[13px] text-text-tertiary">

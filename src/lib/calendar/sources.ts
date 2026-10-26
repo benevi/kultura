@@ -9,7 +9,7 @@
 // Los `parse*` son puros: convierten la respuesta oficial de cada API en
 // eventos del calendario, y son lo que prueban los tests con respuestas de
 // ejemplo de la documentación (el proxy de desarrollo no deja llegar a los
-// proveedores; `scripts/check-calendar-sources.sh` las contrasta con las APIs
+// proveedores; `tests/contract/calendar.contract.test.ts` las contrasta con las APIs
 // reales desde una máquina con salida).
 //
 // Documentación de referencia:
