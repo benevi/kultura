@@ -10,6 +10,8 @@
  *   npx playwright test -c tests/e2e/pwa/playwright.pwa.config.ts
  *
  * Con `A11Y_BASE_URL` apunta a un servidor ya arrancado y no levanta nada.
+ * Si los puertos están ocupados, `A11Y_PORT` y `MOCK_SUPABASE_PORT` (los
+ * mismos en el build y en la ejecución: van incrustados en el build).
  * Solo Chromium: es donde se puede comprobar la instalabilidad (CDP).
  */
 import { defineConfig, devices } from "@playwright/test";

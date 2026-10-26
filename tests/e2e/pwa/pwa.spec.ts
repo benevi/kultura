@@ -66,8 +66,11 @@ test.describe("service worker y modo sin conexión", () => {
     const scope = await page.evaluate(async () => (await navigator.serviceWorker.getRegistration())?.scope);
     expect(new URL(scope!).pathname).toBe("/");
     const contents = await cacheContents(page);
-    expect(contents["kultura-offline-v1"]?.sort()).toEqual(["/en/offline", "/es/offline"]);
-    expect(contents["kultura-static-v1"]?.length ?? 0).toBeGreaterThan(0);
+    const offline = contents["kultura-offline-v1"] ?? [];
+    expect(offline.filter((p) => p.endsWith("/offline")).sort()).toEqual(["/en/offline", "/es/offline"]);
+    // Con sus scripts y hojas, para hidratarse sin red.
+    expect(offline.some((p) => /^\/_next\/static\/chunks\/.+\.js$/.test(p))).toBe(true);
+    expect(offline.some((p) => /^\/_next\/static\/css\/.+\.css$/.test(p))).toBe(true);
   });
 
   test("sin red: navegar muestra /offline en la URL pedida y en su idioma", async ({ page, context }) => {
@@ -126,8 +129,9 @@ test.describe("service worker y modo sin conexión", () => {
     const contents = await cacheContents(page);
     for (const [name, paths] of Object.entries(contents)) {
       for (const p of paths) {
-        if (name.startsWith("kultura-offline-")) expect(p).toMatch(/^\/(es|en)\/offline$/);
-        else expect(p, `${name}: ${p}`).toMatch(/^\/_next\/static\//);
+        // Las únicas páginas: /es/offline y /en/offline; el resto, estáticos.
+        expect(p, `${name}: ${p}`).toMatch(/^(\/_next\/static\/|\/(es|en)\/offline$)/);
+        if (!name.startsWith("kultura-offline-")) expect(p, `${name}: ${p}`).toMatch(/^\/_next\/static\//);
       }
     }
   });
