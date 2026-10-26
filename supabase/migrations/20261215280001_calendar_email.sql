@@ -294,7 +294,11 @@ begin
     raise exception 'invalid email hash' using errcode = '22023';
   end if;
   select * into v_row from public.email_preferences p where p.user_id = p_user for update;
-  if found and v_row.unsubscribed_at is not null and v_row.unsubscribed_at > p_issued_at then
+  -- Misma precisión en los dos lados: el enlace guarda la emisión en segundos
+  -- (caducidad Unix) y la baja lleva microsegundos; sin truncar, un enlace
+  -- emitido en el mismo segundo que la baja (justo después) salía superseded.
+  if found and v_row.unsubscribed_at is not null
+     and date_trunc('second', v_row.unsubscribed_at) > date_trunc('second', p_issued_at) then
     return 'superseded';
   end if;
   if found and v_row.weekly_digest and v_row.consent_version = p_text_version

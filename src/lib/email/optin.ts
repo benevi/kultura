@@ -27,7 +27,6 @@ export interface OptinRequest {
   email: string
   username: string
   locale: 'es' | 'en'
-  now?: Date
   send?: (message: EmailMessage) => Promise<SendResult>
 }
 
@@ -42,7 +41,9 @@ export async function sendOptinRequest(
   })
   if (claim !== 'ok') return claim
 
-  const now = req.now ?? new Date()
+  // La hora de firma es la de ahora, tras la reserva (y tras cualquier baja
+  // previa): un enlace con una hora anterior a la baja no confirmaría nunca.
+  const now = new Date()
   const confirmUrl = new URL(`${siteUrl()}/${req.locale}/email/confirm`)
   confirmUrl.searchParams.set('t', createOptinToken(req.userId, req.email, WEEKLY_EMAIL_CONSENT_VERSION, config.secret, now))
   const content = buildOptinEmail({ locale: req.locale, username: req.username, confirmUrl: confirmUrl.toString() })

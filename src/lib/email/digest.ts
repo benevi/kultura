@@ -391,7 +391,10 @@ export function defaultDigestDeps(admin: SupabaseClient, now: Date = new Date())
     send: sendEmail,
     requestOptin: async (req) => {
       const config = weeklyEmailConfig()
-      return config.enabled ? sendOptinRequest(admin, config, { ...req, now }) : 'disabled'
+      // Sin `now` del cron: el enlace se firma DESPUÉS de la baja de
+      // email_reconfirm_required y de la reserva; con la hora de inicio del
+      // cron nacía anterior a la baja y la base lo daba por `superseded`.
+      return config.enabled ? sendOptinRequest(admin, config, req) : 'disabled'
     },
     now,
   }
