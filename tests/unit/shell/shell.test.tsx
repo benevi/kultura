@@ -16,21 +16,24 @@ import en from "../../../messages/en.json";
 
 const state = vi.hoisted(() => ({
   xPathname: null as string | null,
+  headersCalls: 0,
   acceptLanguage: null as string | null,
   pathname: "/es" as string | null,
   locale: "es",
 }));
 
 vi.mock("next/headers", () => ({
-  headers: () =>
-    new Headers(
+  headers: () => {
+    state.headersCalls++;
+    return new Headers(
       Object.fromEntries(
         [
           ["x-pathname", state.xPathname],
           ["accept-language", state.acceptLanguage],
         ].filter(([, v]) => v !== null) as [string, string][],
       ),
-    ),
+    );
+  },
 }));
 
 vi.mock("next/navigation", () => ({
@@ -48,6 +51,7 @@ vi.mock("next-intl/server", async () => {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       createTranslator({ locale, messages: all[locale] as any, namespace: namespace as any }),
     getMessages: async () => all[state.locale as "es" | "en"],
+    setRequestLocale: () => {},
   };
 });
 
@@ -105,6 +109,7 @@ const childrenOf = (el: El) => ([] as ReactNode[]).concat(el.props.children).fil
 
 beforeEach(() => {
   state.xPathname = null;
+  state.headersCalls = 0;
   state.acceptLanguage = null;
   state.pathname = "/es";
   state.locale = "es";
@@ -270,7 +275,6 @@ describe("TXT-2/TXT-5/SEO-6 — metadatos por defecto traducidos", () => {
     ["es", es],
     ["en", en],
   ] as const)("%s: título, descripción, OG y tarjeta con la frase de la marca", async (locale, messages) => {
-    state.xPathname = `/${locale}/privacy?utm_source=x`;
     const meta = await generateMetadata({ params: Promise.resolve({ locale }) });
     expect(meta.title).toEqual({ template: "%s · KULTURA", default: messages.meta.defaultTitle });
     expect(meta.description).toBe(messages.meta.description);
@@ -279,7 +283,6 @@ describe("TXT-2/TXT-5/SEO-6 — metadatos por defecto traducidos", () => {
       type: "website",
       locale: locale === "es" ? "es_ES" : "en_US",
       alternateLocale: [locale === "es" ? "en_US" : "es_ES"],
-      url: `${siteUrl()}/${locale}/privacy`,
     });
     // Título, descripción e imagen de OG y X los rellena Next con los de cada
     // página y la tarjeta del sitio: fijarlos aquí haría que una página con
@@ -301,9 +304,19 @@ describe("TXT-2/TXT-5/SEO-6 — metadatos por defecto traducidos", () => {
     );
   });
 
-  it("sin x-pathname no inventa og:url", async () => {
+  // D-02 (F-22): este layout envuelve las páginas que se sirven desde el CDN;
+  // leer una cabecera las volvería dinámicas a todas. El `og:url` lo pone
+  // cada página indexable.
+  it("no lee cabeceras ni inventa og:url (aunque el middleware mande x-pathname)", async () => {
+    state.xPathname = "/es/privacy?utm_source=x";
     const meta = await generateMetadata({ params: Promise.resolve({ locale: "es" }) });
     expect(meta.openGraph).not.toHaveProperty("url");
+    expect(state.headersCalls).toBe(0);
+  });
+
+  it("pintar el layout tampoco lee cabeceras", async () => {
+    await LocaleLayout({ children: <p />, params: Promise.resolve({ locale: "es" }) });
+    expect(state.headersCalls).toBe(0);
   });
 
   describe("SEO-8 — el dominio es una variable", () => {
@@ -313,12 +326,10 @@ describe("TXT-2/TXT-5/SEO-6 — metadatos por defecto traducidos", () => {
       else process.env.NEXT_PUBLIC_SITE_URL = prev;
     });
 
-    it("metadataBase y og:url salen de NEXT_PUBLIC_SITE_URL", async () => {
+    it("metadataBase sale de NEXT_PUBLIC_SITE_URL", async () => {
       process.env.NEXT_PUBLIC_SITE_URL = "https://kulturaapp.example/";
-      state.xPathname = "/en/best/movie/2025";
       const meta = await generateMetadata({ params: Promise.resolve({ locale: "en" }) });
       expect(String(meta.metadataBase)).toBe("https://kulturaapp.example/");
-      expect(meta.openGraph).toMatchObject({ url: "https://kulturaapp.example/en/best/movie/2025" });
     });
   });
 
@@ -368,23 +379,33 @@ describe("ACC-7/TXT-4 — 404 y error global", () => {
     expect(screen.getByRole("link", { name: "Go to home" })).toHaveAttribute("href", "/en");
   });
 
-  it.each([
-    ["en-US,en;q=0.9,es;q=0.8", "en", "Page not found · KULTURA"],
-    ["es-ES,es;q=0.9", "es", "Página no encontrada · KULTURA"],
-    [null, "es", "Página no encontrada · KULTURA"],
-  ])("404 raíz con Accept-Language %s → %s", async (header, lang, title) => {
-    state.acceptLanguage = header;
-    const html = (await RootNotFound()) as El;
-    expect(html.type).toBe("html");
-    expect(html.props.lang).toBe(lang);
-    const markup = renderToStaticMarkup(html);
-    expect(markup.match(/<html/g)).toHaveLength(1);
-    expect(markup.match(/<body/g)).toHaveLength(1);
-    expect(markup).toContain('<main id="main"');
-    expect(markup).toContain(`href="/${lang}"`);
-    expect(markup).toContain("font-var-display");
-    expect((await rootNotFoundMetadata()).title).toBe(title);
-  });
+  // F-22 (D-02): Next pinta la 404 raíz dentro del árbol de todas las páginas;
+  // si lee cabeceras, ninguna página puede servirse desde el CDN. Por eso es
+  // bilingüe y no mira Accept-Language.
+  it.each(["en-US,en;q=0.9,es;q=0.8", "es-ES,es;q=0.9", null])(
+    "404 raíz (Accept-Language %s): bilingüe, sin leer cabeceras",
+    async (header) => {
+      state.acceptLanguage = header;
+      const html = (await RootNotFound()) as El;
+      expect(html.type).toBe("html");
+      expect(html.props.lang).toBe("es");
+      const markup = renderToStaticMarkup(html);
+      expect(markup.match(/<html/g)).toHaveLength(1);
+      expect(markup.match(/<body/g)).toHaveLength(1);
+      expect(markup.match(/<main/g)).toHaveLength(1);
+      expect(markup).toContain('<main id="main"');
+      expect(markup).toContain(`<h1 class="text-2xl font-display font-bold text-text-primary">${es.errors.notFoundTitle}</h1>`);
+      expect(markup).toContain('lang="en"');
+      expect(markup).toContain(en.errors.notFoundTitle);
+      expect(markup).toContain('href="/es"');
+      expect(markup).toContain('href="/en"');
+      expect(markup).toContain("font-var-display");
+      expect((await rootNotFoundMetadata()).title).toBe(
+        `${es.errors.notFoundTitle} · ${en.errors.notFoundTitle} · KULTURA`,
+      );
+      expect(state.headersCalls).toBe(0);
+    },
+  );
 
   describe("error global", () => {
     afterEach(() => window.history.replaceState(null, "", "/"));

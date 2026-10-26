@@ -3,11 +3,91 @@ import { withSentryConfig } from "@sentry/nextjs/config";
 
 const withNextIntl = createNextIntlPlugin("./src/i18n/request.ts");
 
-// ── Content Security Policy ───────────────────────────────────────────────────
-// C7: la CSP se genera dinámicamente por request en `src/middleware.ts` (necesita
-// inyectar un nonce distinto en cada respuesta) — no puede ser un header estático
-// aquí. Ver `src/lib/csp.ts` para las directivas. Los headers de abajo sí son
-// estáticos (no dependen del request) y se quedan en next.config.mjs.
+// ── Content Security Policy (C7, D-02) ────────────────────────────────────────
+// Dos políticas. Las rutas que dependen de quién mira llevan la CSP con nonce
+// por petición que pone `src/middleware.ts`. Las rutas cacheables en el CDN
+// (portadas, rankings, legales y /offline) llevan esta CSP FIJA: un HTML
+// cacheado no puede llevar un nonce por petición. Excepción firmada en el PR
+// de F-22: `script-src 'self' 'unsafe-inline'` (sin `unsafe-eval`) solo aquí.
+//
+// Este archivo no puede importar TypeScript: las cadenas son las mismas que
+// `src/lib/csp.ts` (`buildStaticCsp`, `buildReportOnlyCsp`,
+// `STATIC_CSP_ROUTES`) y `tests/unit/csp/static-csp.test.ts` exige que
+// coincidan.
+
+/** Rutas de la CSP fija, en el formato de `headers()` (path-to-regexp). */
+export const STATIC_CSP_SOURCES = [
+  "/:locale(es|en)",
+  "/:locale(es|en)/best",
+  "/:locale(es|en)/best/:path*",
+  "/:locale(es|en)/:page(privacy|terms|legal|accessibility|offline)",
+];
+
+const CSP_REPORT_PATH = "/api/csp-report";
+const CSP_REPORT_GROUP = "csp";
+
+/**
+ * @param {string} scriptSrc
+ * @param {string} connectSrc
+ * @param {boolean} isDev
+ * @param {boolean} [reportOnly]
+ */
+function cspDirectives(scriptSrc, connectSrc, isDev, reportOnly = false) {
+  return [
+    "default-src 'self'",
+    "frame-src https://www.youtube-nocookie.com https://www.youtube.com",
+    scriptSrc,
+    "style-src 'self' 'unsafe-inline'",
+    "img-src 'self' data: blob: https:",
+    connectSrc,
+    "font-src 'self' data:",
+    "media-src 'self'",
+    "object-src 'none'",
+    "base-uri 'self'",
+    "frame-ancestors 'self'",
+    "form-action 'self'",
+    isDev || reportOnly ? null : "upgrade-insecure-requests",
+    isDev ? null : `report-uri ${CSP_REPORT_PATH}`,
+    isDev ? null : `report-to ${CSP_REPORT_GROUP}`,
+  ]
+    .filter(Boolean)
+    .join("; ");
+}
+
+/** CSP fija de las rutas cacheables. En `next dev`, la de desarrollo (HMR). */
+export function staticCsp(/** @type {boolean} */ isDev) {
+  return isDev
+    ? cspDirectives(
+        "script-src 'self' 'unsafe-inline' 'unsafe-eval'",
+        "connect-src 'self' https: ws://localhost:* wss://localhost:* wss://*.supabase.co",
+        true,
+      )
+    : cspDirectives("script-src 'self' 'unsafe-inline'", "connect-src 'self' https: wss://*.supabase.co", false);
+}
+
+/** Política solo de informe con `connect-src` acotado (SEG-10). */
+export function reportOnlyCsp(/** @type {string | undefined} */ supabaseUrl) {
+  const sources = ["'self'"];
+  try {
+    if (supabaseUrl) {
+      const { host, origin } = new URL(supabaseUrl);
+      sources.push(origin, `wss://${host}`);
+    }
+  } catch {
+    // URL inválida: solo 'self'.
+  }
+  sources.push("https://*.ingest.sentry.io", "https://*.ingest.de.sentry.io");
+  return cspDirectives("script-src 'self' 'unsafe-inline'", `connect-src ${sources.join(" ")}`, false, true);
+}
+
+const IS_DEV = process.env.NODE_ENV !== "production";
+
+/**
+ * Todo menos los recursos de `/_next/` (JS, CSS, fuentes, imágenes
+ * optimizadas) y el service worker con su interruptor (F-23): una CSP en la
+ * respuesta de `/sw.js` se convierte en la política del propio worker.
+ */
+export const DOCUMENT_SOURCE = "/((?!_next/|sw\\.js|sw-config\\.json).*)";
 
 // ── Sentry ligero en el navegador (REN-2) ─────────────────────────────────────
 // La captura de errores se queda; fuera lo que pesa: el tracing del navegador
@@ -48,6 +128,25 @@ const nextConfig = {
       {
         source: "/icons/:file*",
         headers: [{ key: "Cache-Control", value: "public, max-age=604800, stale-while-revalidate=86400" }],
+      },
+      // D-02: CSP fija en las rutas cacheables (el middleware no les pone la
+      // del nonce). Sin la de informe en dev: ahí no hay receptor que escuche.
+      ...STATIC_CSP_SOURCES.map((source) => ({
+        source,
+        headers: [{ key: "Content-Security-Policy", value: staticCsp(IS_DEV) }],
+      })),
+      // SEG-10: a dónde manda Chromium los informes de `report-to csp`, y la
+      // política solo de informe con `connect-src` acotado (no bloquea nada;
+      // dice qué rompería cerrarlo). Solo en documentos: en los JS, CSS e
+      // imágenes de `/_next/` no hacen nada y sumaban ~1 KB por petición.
+      {
+        source: DOCUMENT_SOURCE,
+        headers: [
+          { key: "Reporting-Endpoints", value: `${CSP_REPORT_GROUP}="${CSP_REPORT_PATH}"` },
+          ...(IS_DEV
+            ? []
+            : [{ key: "Content-Security-Policy-Report-Only", value: reportOnlyCsp(process.env.NEXT_PUBLIC_SUPABASE_URL) }]),
+        ],
       },
       {
         source: "/(.*)",

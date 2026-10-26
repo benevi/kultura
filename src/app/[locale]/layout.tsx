@@ -1,8 +1,7 @@
 import type { Metadata, Viewport } from "next";
-import { headers } from "next/headers";
 import { bricolageGrotesque, figtree } from "@/app/fonts";
 import { NextIntlClientProvider } from "next-intl";
-import { getMessages, getTranslations } from "next-intl/server";
+import { getMessages, getTranslations, setRequestLocale } from "next-intl/server";
 import { notFound } from "next/navigation";
 import { preconnect } from "react-dom";
 import { Analytics } from "@vercel/analytics/next";
@@ -24,11 +23,12 @@ export async function generateMetadata({
   // pintar. Aquí NO se lanza `notFound()`: Next vuelve a leer los metadatos de
   // los layouts para la 404 y se quedaría sin `<title>`.
   if (!isAppLocale(locale)) return {};
-  // `x-pathname` lo pone siempre el middleware (ruta real, sin lo que mande
-  // el cliente); da el `og:url` de las páginas que no definen el suyo. Las
-  // páginas ya son dinámicas por el nonce de la CSP: leer la cabecera no
-  // cambia eso (si algún día se sirven estáticas, sale de aquí).
-  return shellMetadata(locale, (await headers()).get("x-pathname"));
+  // D-02: sin leer cabeceras. Este layout envuelve las páginas cacheables en
+  // el CDN y una sola llamada a `headers()` las volvería dinámicas a todas.
+  // Por eso no hay `og:url` por defecto: cada página indexable define el suyo
+  // (portada, rankings, legales, perfiles, fichas y login).
+  setRequestLocale(locale);
+  return shellMetadata(locale);
 }
 
 /**
@@ -62,8 +62,14 @@ export default async function LocaleLayout({
     notFound();
   }
 
+  // D-02: el idioma sale de la URL, no de la cabecera de next-intl, para que
+  // las páginas estáticas puedan pintarse sin petición (las que lo son llaman
+  // también a `setRequestLocale` y declaran `generateStaticParams`; las demás
+  // siguen siendo dinámicas por sus propias cookies o parámetros).
+  setRequestLocale(locale);
+
   const [messages, t] = await Promise.all([
-    getMessages(),
+    getMessages({ locale }),
     getTranslations({ locale, namespace: "meta" }),
   ]);
 

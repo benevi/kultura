@@ -15,6 +15,7 @@ const state = { locale: 'es' as 'es' | 'en' }
 vi.mock('next-intl/server', async () => {
   const { createTranslator } = await import('next-intl')
   return {
+    getLocale: vi.fn(async () => state.locale),
     getTranslations: vi.fn(async (arg: string | { locale: string; namespace: string }) => {
       const locale = (typeof arg === 'string' ? state.locale : arg.locale) as 'es' | 'en'
       const namespace = typeof arg === 'string' ? arg : arg.namespace
@@ -30,13 +31,12 @@ vi.mock('next-intl/server', async () => {
   }
 })
 
-vi.mock('@/i18n/navigation', () => ({
-  Link: ({ href, children, ...rest }: { href: string; children: React.ReactNode }) => (
-    <a href={href} {...rest}>
-      {children}
-    </a>
-  ),
-}))
+// F-22: los legales llevan la CSP fija de las páginas cacheables; el `Link` de
+// next-intl navegaría a páginas con sesión sin recargar el documento y estas
+// heredarían esa CSP. Solo `<a>`: si se vuelve a importar, el test falla.
+vi.mock('@/i18n/navigation', () => {
+  throw new Error('LegalDocument no debe importar @/i18n/navigation (F-22)')
+})
 vi.mock('@/components/layout/Header', () => ({ Header: () => <header>Header</header> }))
 vi.mock('@/components/layout/Footer', () => ({ Footer: () => <footer>Footer</footer> }))
 
@@ -98,6 +98,8 @@ describe.each(['es', 'en'] as const)('documentos legales (%s)', (locale) => {
     const nav = screen.getByRole('navigation', { name: all[locale].legal.nav.label })
     const current = within(nav).getAllByRole('link').filter((a) => a.getAttribute('aria-current') === 'page')
     expect(current).toHaveLength(1)
+    // Enlaces con el idioma delante (documento nuevo, con su propia CSP).
+    for (const a of within(nav).getAllByRole('link')) expect(a.getAttribute('href')).toMatch(new RegExp(`^/${locale}/`))
     expect(current[0].textContent).toBe(all[locale].legal.nav[doc])
   })
 
@@ -132,7 +134,7 @@ describe.each(['es', 'en'] as const)('documentos legales (%s)', (locale) => {
     expect(text).toMatch(locale === 'es' ? /No incluye los mensajes que te han escrito/ : /doesn't include messages other people wrote/)
     // Biblioteca de amigos por defecto (D-04).
     expect(text).toMatch(locale === 'es' ? /por defecto, solo tus amigos/ : /by default, only your friends/)
-    expect(container.querySelector('a[href="/settings"]')).not.toBeNull()
+    expect(container.querySelector(`a[href="/${locale}/settings"]`)).not.toBeNull()
   })
 
   it('privacidad: datos obligatorios (art. 13.2.e), reintento de la IA y tráiler sin cookies', async () => {
@@ -156,7 +158,7 @@ describe.each(['es', 'en'] as const)('documentos legales (%s)', (locale) => {
   it('términos: moderación real, denuncia sin cuenta y edad 14', async () => {
     const { container } = await renderDoc('terms', locale)
     const text = container.textContent ?? ''
-    expect(container.querySelector('a[href="/report"]')).not.toBeNull()
+    expect(container.querySelector(`a[href="/${locale}/report"]`)).not.toBeNull()
     expect(text).toMatch(locale === 'es' ? /suspender o eliminar la cuenta/ : /suspend or delete the account/)
     expect(text).toMatch(locale === 'es' ? /bloquear/ : /block/)
     expect(text).toMatch(/14/)
@@ -183,7 +185,7 @@ describe.each(['es', 'en'] as const)('documentos legales (%s)', (locale) => {
     expect(text).toMatch(/2022\/2065/)
     expect(text).toMatch(/art\. 11|Art\. 11/)
     expect(text).toMatch(/art\. 12|Art\. 12/)
-    expect(container.querySelector('a[href="/report"]')).not.toBeNull()
+    expect(container.querySelector(`a[href="/${locale}/report"]`)).not.toBeNull()
     // security.txt enlaza a esta sección.
     expect(container.querySelector('h2#security')).not.toBeNull()
     expect(text).toContain('kultura.example/.well-known/security.txt')

@@ -29,8 +29,13 @@ vi.mock("next-intl/middleware", async () => {
 const DEMO = { id: "d", app_metadata: { demo: true } };
 const NORMAL = { id: "n", app_metadata: {} };
 
+// Con sesión siempre hay cookie de Supabase: sin ella el middleware ni
+// consulta a Auth (F-22).
 function req(method: string, path: string) {
-  return new NextRequest(`http://localhost${path}`, { method });
+  return new NextRequest(`http://localhost${path}`, {
+    method,
+    headers: { cookie: "sb-test-auth-token=token" },
+  });
 }
 
 describe("isDemoUser", () => {

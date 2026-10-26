@@ -23,7 +23,9 @@
 
 export const SHELL_CLIENT_NAMESPACES = [
   "auth",
-  "best",
+  // Solo la rama que usa `ShareRanking`, el único componente cliente de
+  // /best (≈ 6 KB menos de textos en el HTML de cada página pública).
+  "best.share",
   "demo",
   "errors",
   "nav",

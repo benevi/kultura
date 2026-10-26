@@ -14,7 +14,7 @@
 
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
-import { getTranslations } from "next-intl/server";
+import { getTranslations, setRequestLocale } from "next-intl/server";
 import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/layout/Footer";
 import { BestPodium, BestRankList } from "@/components/best/BestOfList";
@@ -31,6 +31,13 @@ import { bestLocale, bestMetadata, rankingJsonLd, serializeJsonLd, type Crumb } 
 import { localeHref } from "@/lib/best/links";
 
 export const revalidate = 86400;
+
+// D-02: HTML cacheado en el CDN. Ningún ranking se pinta en el build (no
+// depende de los proveedores): cada URL se genera en su primera visita y se
+// regenera cada 24 h (`dynamicParams` sigue en su valor por defecto, true).
+export function generateStaticParams() {
+  return [];
+}
 
 interface Props {
   params: Promise<{ locale: string; format: string; year: string }>;
@@ -50,6 +57,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { locale, format, year } = await params;
   const parsed = parseBestParams(format, year);
   if (!parsed) return {};
+  setRequestLocale(locale);
   const t = await getTranslations({ locale, namespace: "best" });
   // Misma caché que la página: no repite llamadas. Si falla, la página
   // mostrará el error; los metadatos no deciden nada.
@@ -71,6 +79,7 @@ export default async function BestOfPage({ params }: Props) {
   const parsed = parseBestParams(format, year);
   if (!parsed) notFound();
   const locale = bestLocale(rawLocale);
+  setRequestLocale(locale);
 
   const t = await getTranslations({ locale, namespace: "best" });
   const ranking = await getBestRanking(parsed.format, parsed.year, locale);
@@ -86,7 +95,7 @@ export default async function BestOfPage({ params }: Props) {
 
   return (
     <div className="min-h-screen flex flex-col">
-      <Header />
+      <Header locale={locale} />
       <main id="main" className="flex-1 w-full max-w-4xl mx-auto px-4 md:px-8 py-8 md:py-10 flex flex-col gap-8 md:gap-10">
         <header className="flex flex-col gap-4">
           <BestBreadcrumbs locale={locale} crumbs={crumbs} />

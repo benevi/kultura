@@ -8,6 +8,10 @@
  *   firmar sus scripts), nunca en la de la respuesta.
  * - `x-pathname`: la ruta y la query originales viajan a los Server Components
  *   en la cabecera de la petición (la usa el layout de `(app)` para el `next`).
+ * - D-02 (F-22): las rutas cacheables (portada, rankings, legales, /offline)
+ *   no llevan CSP del middleware (la fija la pone next.config.mjs), ni
+ *   consultan la sesión, ni mandan cookies; sin cookie `sb-` tampoco se
+ *   consulta Auth en el resto.
  */
 // @vitest-environment node
 import { describe, it, expect, vi, beforeEach } from "vitest";
@@ -30,7 +34,10 @@ vi.mock("next-intl/middleware", async () => {
     default: () => (request: NextRequest) => {
       const headers = new Headers(request.headers);
       headers.set("X-NEXT-INTL-LOCALE", "es");
-      return NextResponse.next({ request: { headers } });
+      const res = NextResponse.next({ request: { headers } });
+      // Como el real en producción: recuerda el idioma con una cookie.
+      res.cookies.set("NEXT_LOCALE", "es");
+      return res;
     },
   };
 });
@@ -38,6 +45,9 @@ vi.mock("next-intl/middleware", async () => {
 function req(method: string, path: string, headers: Record<string, string> = {}) {
   return new NextRequest(`https://kultura.test${path}`, { method, headers });
 }
+
+/** Petición de alguien con la sesión abierta (cookie de Supabase). */
+const SESSION = { cookie: "sb-proyecto-auth-token=token" };
 
 /** Cabecera que Next reenvía a la petición (NextResponse.next({ request })). */
 function forwarded(res: Response, name: string) {
@@ -72,19 +82,19 @@ describe("SEG-4a — Server Actions bloqueadas", () => {
   });
 
   it("sin la cabecera la petición sigue su curso", async () => {
-    const res = await middleware(req("POST", "/api/library"));
+    const res = await middleware(req("POST", "/api/library", SESSION));
     expect(res.status).not.toBe(400);
     expect(getUser).toHaveBeenCalledTimes(1);
   });
 });
 
 describe("SEG-10 — x-nonce fuera de la respuesta", () => {
-  it.each(["/es", "/api/discover"])("%s: la respuesta no lleva x-nonce", async (path) => {
+  it.each(["/es", "/es/library", "/api/discover"])("%s: la respuesta no lleva x-nonce", async (path) => {
     const res = await middleware(req("GET", path));
     expect(res.headers.get("x-nonce")).toBeNull();
   });
 
-  it.each(["/es", "/api/discover"])(
+  it.each(["/es/library", "/es/login", "/es/u/benevi", "/api/discover"])(
     "%s: el nonce de la CSP de la respuesta llega a la petición",
     async (path) => {
       const res = await middleware(req("GET", path));
@@ -118,5 +128,168 @@ describe("x-pathname en la petición", () => {
   it("la respuesta al navegador no expone x-pathname", async () => {
     const res = await middleware(req("GET", "/es/library"));
     expect(res.headers.get("x-pathname")).toBeNull();
+  });
+});
+
+describe("D-02 — rutas cacheables en el CDN", () => {
+  const STATIC = [
+    "/es",
+    "/en",
+    "/es/best",
+    "/es/best/anime",
+    "/es/best/movie/2026",
+    "/en/best/game/2025",
+    "/es/privacy",
+    "/en/terms",
+    "/es/legal",
+    "/es/accessibility",
+    "/es/offline",
+  ];
+  const DYNAMIC = [
+    "/es/login",
+    "/es/u/benevi",
+    "/es/media/movie/603",
+    "/es/home",
+    "/es/welcome",
+    "/es/report",
+    "/es/reset-password",
+    "/es/bestias",
+    "/api/discover",
+  ];
+
+  it.each(STATIC)("%s: sin CSP del middleware ni nonce en la petición", async (path) => {
+    const res = await middleware(req("GET", path, SESSION));
+    expect(res.headers.get("content-security-policy")).toBeNull();
+    expect(forwarded(res, "content-security-policy")).toBeNull();
+    expect(forwarded(res, "x-nonce")).toBeNull();
+  });
+
+  it.each(STATIC)("%s: no consulta la sesión aunque haya cookie", async (path) => {
+    await middleware(req("GET", path, SESSION));
+    expect(getUser).not.toHaveBeenCalled();
+  });
+
+  it.each(STATIC)("%s: la respuesta no manda cookies (las sacaría de la caché)", async (path) => {
+    const res = await middleware(req("GET", path, SESSION));
+    expect(res.headers.get("set-cookie")).toBeNull();
+  });
+
+  it("sigue pasando por next-intl (idioma) y por x-pathname", async () => {
+    const res = await middleware(req("GET", "/es/best/movie/2026?utm_source=x"));
+    expect(forwarded(res, "x-next-intl-locale")).toBe("es");
+    expect(forwarded(res, "x-pathname")).toBe("/es/best/movie/2026?utm_source=x");
+  });
+
+  it.each(DYNAMIC)("%s: conserva la CSP con nonce", async (path) => {
+    const res = await middleware(req("GET", path, SESSION));
+    expect(res.headers.get("content-security-policy")).toMatch(/script-src 'self' 'nonce-[^']+'/);
+  });
+});
+
+describe("F-22 — sin cookie de Supabase no se consulta Auth", () => {
+  it("visitante anónimo en una página dinámica: ninguna llamada a getUser", async () => {
+    const res = await middleware(req("GET", "/es/login"));
+    expect(getUser).not.toHaveBeenCalled();
+    expect(res.headers.get("content-security-policy")).toMatch(/'nonce-/);
+  });
+
+  it("visitante anónimo en la API: tampoco", async () => {
+    await middleware(req("GET", "/api/search?q=dune"));
+    expect(getUser).not.toHaveBeenCalled();
+  });
+
+  it("con la cookie (aunque vaya troceada en .0/.1) sí se valida la sesión", async () => {
+    await middleware(
+      req("GET", "/es/home", { cookie: "sb-proyecto-auth-token.0=a; sb-proyecto-auth-token.1=b" })
+    );
+    expect(getUser).toHaveBeenCalledTimes(1);
+  });
+
+  it("otras cookies no cuentan como sesión", async () => {
+    await middleware(req("GET", "/es/home", { cookie: "NEXT_LOCALE=es; _vercel=1" }));
+    expect(getUser).not.toHaveBeenCalled();
+  });
+});
+
+describe("F-22 — /api/csp-report no pasa por la sesión", () => {
+  it("con cookie de sesión tampoco consulta Auth (los informes llegan solos y a ráfagas)", async () => {
+    const res = await middleware(req("POST", "/api/csp-report", SESSION));
+    expect(getUser).not.toHaveBeenCalled();
+    expect(res.status).toBe(200);
+    expect(res.headers.get("x-middleware-next")).toBe("1");
+  });
+});
+
+describe("revisión #47 — navegación del router desde una ruta con CSP fija", () => {
+  // Lo que llega al middleware del `fetch` del router: Next le quita `RSC`,
+  // `Next-Router-State-Tree` y `_rsc`; quedan `Sec-Fetch-Dest` y `Referer`.
+  const ROUTER = (from: string) => ({ ...SESSION, "sec-fetch-dest": "empty", referer: `https://kultura.test${from}` });
+  const DOCUMENT = (from: string) => ({ ...SESSION, "sec-fetch-dest": "document", referer: `https://kultura.test${from}` });
+
+  it.each(["/es/privacy", "/es", `/es/best/anime/2026`, "/en/offline"])(
+    "de %s a /es/settings: respuesta no RSC (409) para que el router cargue el documento",
+    async (from) => {
+      const res = await middleware(req("GET", "/es/settings", ROUTER(from)));
+      expect(res.status).toBe(409);
+      expect(res.headers.get("content-type")).toBeNull();
+      expect(res.headers.get("cache-control")).toBe("no-store");
+      expect(getUser).not.toHaveBeenCalled();
+    },
+  );
+
+  it("también hacia /u, /media y /login (y su precarga, que es el mismo fetch)", async () => {
+    for (const to of ["/es/u/benevi", "/es/media/movie/603", "/es/login"]) {
+      expect((await middleware(req("GET", to, ROUTER("/es/terms")))).status).toBe(409);
+    }
+  });
+
+  it("una carga de documento normal (enlace <a>) desde una página cacheable pasa con su nonce", async () => {
+    const res = await middleware(req("GET", "/es/settings", DOCUMENT("/es/privacy")));
+    expect(res.status).toBe(200);
+    expect(res.headers.get("content-security-policy")).toMatch(/'nonce-/);
+  });
+
+  it("entre páginas con nonce, el router navega como siempre", async () => {
+    const res = await middleware(req("GET", "/es/settings", ROUTER("/es/home")));
+    expect(res.status).toBe(200);
+    expect(res.headers.get("content-security-policy")).toMatch(/'nonce-/);
+  });
+
+  it("hacia otra página cacheable no se toca (misma CSP fija)", async () => {
+    const res = await middleware(req("GET", "/es/terms", ROUTER("/es/privacy")));
+    expect(res.status).toBe(200);
+    expect(res.headers.get("content-security-policy")).toBeNull();
+  });
+
+  it("la API (fetch de los componentes) no se ve afectada", async () => {
+    const res = await middleware(req("GET", "/api/search?q=x", ROUTER("/es")));
+    expect(res.status).toBe(200);
+  });
+
+  it("sin Sec-Fetch-Dest o sin Referer no se decide nada", async () => {
+    expect((await middleware(req("GET", "/es/settings", { ...SESSION, referer: "https://kultura.test/es" }))).status).toBe(200);
+    expect((await middleware(req("GET", "/es/settings", { ...SESSION, "sec-fetch-dest": "empty" }))).status).toBe(200);
+  });
+});
+
+describe("revisión #47 — rankings inexistentes fuera de la caché ISR", () => {
+  it.each(["/es/best/movie/abc", "/es/best/book", "/en/best/game/1999", "/es/best/tv/2026/x"])(
+    "%s → reescrita a la 404 dinámica del idioma, con nonce y sin caché",
+    async (path) => {
+      const res = await middleware(req("GET", path, SESSION));
+      const locale = path.split("/")[1];
+      expect(new URL(res.headers.get("x-middleware-rewrite") ?? "").pathname).toBe(`/${locale}/no-existe`);
+      expect(res.headers.get("content-security-policy")).toMatch(/'nonce-/);
+      expect(forwarded(res, "content-security-policy")).toMatch(/'nonce-/);
+      expect(res.headers.get("cache-control")).toBe("private, no-store");
+      expect(getUser).not.toHaveBeenCalled();
+    },
+  );
+
+  it("los rankings que existen siguen saliendo del CDN", async () => {
+    const year = new Date().getFullYear();
+    const res = await middleware(req("GET", `/es/best/movie/${year}`));
+    expect(res.headers.get("x-middleware-rewrite")).toBeNull();
+    expect(res.headers.get("content-security-policy")).toBeNull();
   });
 });

@@ -1,7 +1,9 @@
 'use client'
 
 import { useEffect } from 'react'
-import * as Sentry from '@sentry/nextjs'
+// Sentry bajo demanda (F-22): un import estático metía ~15 KB gz del SDK en
+// el JS inicial de todas las páginas.
+import { loadSentry } from '@/lib/logger'
 import { localeFromPathname } from '@/i18n/detect'
 // Solo se leen cuatro textos sueltos: webpack descarta el resto del JSON en
 // el bundle (este componente va en el JS de todas las páginas).
@@ -76,7 +78,9 @@ export default function GlobalError({
   const copy = COPY[locale]
 
   useEffect(() => {
-    Sentry.captureException(error)
+    loadSentry()
+      ?.then((Sentry) => Sentry.captureException(error))
+      .catch(() => {})
   }, [error])
 
   return (

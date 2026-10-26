@@ -29,7 +29,9 @@ jobs:
       TMDB_API_KEY: placeholder_tmdb
       RAWG_API_KEY: placeholder_rawg
       COMICVINE_KEY: placeholder_comicvine
-      ANTHROPIC_API_KEY: placeholder_anthropic
+      # Con el prefijo real: la portada y los legales se pintan en el build
+      # (D-02) y leen `env.server.ts`, que valida el formato.
+      ANTHROPIC_API_KEY: sk-ant-placeholder
 
     steps:
       - name: Checkout
@@ -124,6 +126,63 @@ jobs:
           path: |
             playwright-report/a11y
             test-results/a11y
+          retention-days: 14
+
+  lighthouse:
+    name: Rendimiento (Lighthouse CI con presupuesto)
+    # REN (criterio 6, F-22): falla el PR si el JS inicial de un ranking o un
+    # legal pasa de 150 KB transferidos o su CLS de 0,05 (la portada, de
+    # momento, con tope de 160 KB y el CLS solo como aviso: ver
+    # lighthouserc.json y tests/unit/csp/lighthouse-budget.test.ts). Mismo entorno que el job de accesibilidad (Supabase simulado y sin
+    # red): mide el código, no a los proveedores. LCP y TBT avisan sin fallar
+    # (en un runner compartido varían demasiado para cortar).
+    # Ojo: `next start` sirve gzip y Vercel brotli (≈ 10-15 % menos): en
+    # producción el margen es mayor que el que se ve aquí.
+    if: github.event_name != 'schedule'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build con Supabase simulado y sin red
+        run: npm run test:a11y:build
+
+      - name: Arrancar la app (Supabase simulado + next start)
+        run: |
+          node tests/e2e/a11y/mock-supabase.cjs &
+          node -e '
+            const { A11Y_ENV, A11Y_PORT } = require("./tests/e2e/a11y/env.cjs");
+            const { spawn } = require("node:child_process");
+            spawn("npx", ["next", "start", "-p", String(A11Y_PORT)], {
+              env: { ...process.env, ...A11Y_ENV }, stdio: "inherit", detached: true,
+            }).unref();
+          '
+          for i in $(seq 1 60); do
+            curl -sf -o /dev/null http://localhost:3187/es/privacy && exit 0
+            sleep 1
+          done
+          echo "next start no respondió en 60 s" && exit 1
+
+      - name: Lighthouse CI (lighthouserc.json)
+        run: npx --yes @lhci/cli@0.15.1 autorun
+
+      - name: Informes de Lighthouse
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: lighthouse-report
+          path: test-results/lhci
           retention-days: 14
 
   integration:

@@ -13,7 +13,6 @@
 // landing enlaza a los 12 rankings publicados).
 // ============================================================
 
-import { Link } from "@/i18n/navigation";
 import { ArtPoster } from "@/components/landing/ArtPoster";
 import { BEST_FORMATS, type BestFormat, type BestItem } from "@/lib/best/best-of";
 import { cn } from "@/lib/utils/index";
@@ -33,6 +32,13 @@ function background(hue: number): string {
 }
 
 export interface BestRankingsProps {
+  /**
+   * Prefijo de idioma de los enlaces (`/es`). Enlaces `<a>` y no el `Link` de
+   * next-intl (REN-9): el `Link` arrastra al JS de la portada los trozos de la
+   * cabecera con sesión. `locale` no sirve como nombre: `BestRankingsSlot` se
+   * lo queda para pedir los datos.
+   */
+  basePath: string;
   year: number;
   heading: string;
   sub: string;
@@ -50,7 +56,7 @@ export interface BestRankingsProps {
   };
 }
 
-export function BestRankings({ year, heading, sub, cta, copy, tops = {}, fans, previous }: BestRankingsProps) {
+export function BestRankings({ basePath, year, heading, sub, cta, copy, tops = {}, fans, previous }: BestRankingsProps) {
   return (
     <section aria-labelledby="rankings-title" className="px-4 md:px-8 pb-20 md:pb-28 max-w-6xl mx-auto">
       <h2
@@ -67,8 +73,8 @@ export function BestRankings({ year, heading, sub, cta, copy, tops = {}, fans, p
           const first = top[0];
           return (
             <li key={format}>
-              <Link
-                href={`/best/${format}/${year}`}
+              <a
+                href={`${basePath}/best/${format}/${year}`}
                 className={cn(
                   "group relative h-full min-h-[300px] rounded-bento overflow-hidden p-7 flex flex-col gap-6 text-text-primary",
                   "transition-transform duration-base ease-standard hover:-translate-y-1",
@@ -112,7 +118,7 @@ export function BestRankings({ year, heading, sub, cta, copy, tops = {}, fans, p
                     <span aria-hidden="true" className="inline-block transition-transform group-hover:translate-x-1">→</span>
                   </span>
                 </span>
-              </Link>
+              </a>
             </li>
           );
         })}
@@ -128,14 +134,14 @@ export function BestRankings({ year, heading, sub, cta, copy, tops = {}, fans, p
               <li key={y.year} className="flex flex-wrap items-center gap-2">
                 <span className="w-14 shrink-0 font-display text-lg font-extrabold text-text-secondary">{y.year}</span>
                 {y.links.map((l) => (
-                  <Link
+                  <a
                     key={l.format}
-                    href={`/best/${l.format}/${y.year}`}
+                    href={`${basePath}/best/${l.format}/${y.year}`}
                     aria-label={l.title}
                     className="inline-flex min-h-10 items-center rounded-full bg-surface-elevated px-4 text-sm font-bold text-text-primary transition-colors hover:bg-surface-border focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-pink focus-visible:ring-offset-2 focus-visible:ring-offset-surface-base"
                   >
                     {l.label}
-                  </Link>
+                  </a>
                 ))}
               </li>
             ))}

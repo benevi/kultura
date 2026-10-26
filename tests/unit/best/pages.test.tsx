@@ -17,6 +17,7 @@ vi.mock("next-intl/server", async () => {
   const messages = { es: (await import("../../../messages/es.json")).default, en: (await import("../../../messages/en.json")).default };
   return {
     getLocale: async () => intl.locale,
+    setRequestLocale: () => {},
     getTranslations: async (arg: string | { locale?: string; namespace?: string }) => {
       const opts = typeof arg === "string" ? { namespace: arg } : arg;
       const locale = (opts.locale ?? intl.locale) as "es" | "en";

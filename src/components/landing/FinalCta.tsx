@@ -7,7 +7,6 @@
 // púrpura, para que el botón rosa destaque.
 // ============================================================
 
-import { Link } from "@/i18n/navigation";
 import { KButton } from "@/components/ui/KButton";
 import { DemoButton } from "@/components/landing/DemoButton";
 
@@ -35,7 +34,7 @@ export function FinalCta({ title, sub, cta, demo, locale }: FinalCtaProps) {
         <p className="mx-auto mt-6 max-w-[44ch] text-lg text-text-primary">{sub}</p>
         <div className="mt-9 flex flex-col items-stretch justify-center gap-3 min-[400px]:flex-row min-[400px]:flex-wrap min-[400px]:items-center">
           <KButton variant="primary" size="lg" asChild>
-            <Link href="/login?mode=register">{cta}</Link>
+            <a href={`/${locale}/login?mode=register`}>{cta}</a>
           </KButton>
           {demo ? (
             <DemoButton
