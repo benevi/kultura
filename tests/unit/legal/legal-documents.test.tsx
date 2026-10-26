@@ -6,6 +6,10 @@
  */
 import { render, screen, within } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+
+// Render grande con consultas por rol: con la suite entera cargada se acerca
+// a los 5 s por defecto sin que nada falle (ver vitest.config.ts).
+vi.setConfig({ testTimeout: 15_000 })
 import es from '../../../messages/es.json'
 import en from '../../../messages/en.json'
 

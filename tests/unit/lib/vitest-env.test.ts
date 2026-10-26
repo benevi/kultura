@@ -34,6 +34,26 @@ describe("entorno de los tests .ts", () => {
     expect(readFileSync(join(ROOT, "vitest.config.ts"), "utf8")).not.toMatch(/DOM_TS_PENDING/);
   });
 
+  it("tope de 5 s por defecto; solo los archivos lentos conocidos lo suben", () => {
+    expect(readFileSync(join(ROOT, "vitest.config.ts"), "utf8")).not.toMatch(/testTimeout\s*:/);
+    const all = (dir: string): string[] =>
+      readdirSync(dir, { withFileTypes: true }).flatMap((e) =>
+        e.isDirectory() ? all(join(dir, e.name)) : /\.(test|spec)\.tsx?$/.test(e.name) ? [join(dir, e.name)] : []
+      );
+    const raised = all(UNIT)
+      .filter((f) => /vi\.setConfig\(\{\s*testTimeout/.test(readFileSync(f, "utf8")))
+      .map((f) => relative(ROOT, f))
+      .sort();
+    expect(raised).toEqual([
+      "tests/unit/a11y/controls.test.tsx",
+      "tests/unit/components/auth/register-form.test.tsx",
+      "tests/unit/components/home/MediaRow.test.tsx",
+      "tests/unit/components/ui/SegmentedControl.test.tsx",
+      "tests/unit/components/ui/pagination.test.tsx",
+      "tests/unit/legal/legal-documents.test.tsx",
+    ]);
+  });
+
   it("todo .ts que usa document/window/storage declara jsdom en su primera línea", () => {
     const missing = walk(UNIT)
       .filter((f) => /\b(document|window|localStorage|sessionStorage)\.\w/.test(code(readFileSync(f, "utf8"))))

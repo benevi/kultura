@@ -1,6 +1,10 @@
 import { render, screen } from '@testing-library/react'
 import { describe, it, expect, vi } from 'vitest'
 
+// Render grande con consultas por rol: con la suite entera cargada se acerca
+// a los 5 s por defecto sin que nada falle (ver vitest.config.ts).
+vi.setConfig({ testTimeout: 15_000 })
+
 vi.mock('next/image', () => ({
   default: ({ src, alt }: { src: string; alt: string }) => (
     // eslint-disable-next-line @next/next/no-img-element

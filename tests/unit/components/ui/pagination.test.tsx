@@ -1,5 +1,9 @@
 import { render, screen, fireEvent } from "@testing-library/react";
 import { describe, it, expect, vi } from "vitest";
+
+// Render grande con consultas por rol: con la suite entera cargada se acerca
+// a los 5 s por defecto sin que nada falle (ver vitest.config.ts).
+vi.setConfig({ testTimeout: 15_000 });
 import { Pagination } from "@/components/ui/Pagination";
 
 // Consultas por `aria-label` (getByLabelText con selector "button") en vez de

@@ -9,11 +9,9 @@ import path from "path";
 // en su primera línea (`tests/unit/lib/vitest-env.test.ts` lo vigila).
 const unit = "tests/unit/**/*.{test,spec}";
 
-// Con la suite entera (cientos de archivos en paralelo) un render de jsdom
-// con consultas por rol puede pasar de los 5 s por defecto sin que nada vaya
-// mal: el tope sube a 15 s en los tests de componentes. Es un tope de tiempo,
-// no una aserción: lo que se comprueba es lo mismo.
-const DOM_TEST_TIMEOUT_MS = 15_000;
+// Tope por defecto (5 s). Los pocos archivos que con la suite entera cargada
+// se acercan a él (renders grandes con consultas por rol) suben el suyo con
+// `vi.setConfig` con 15 s (lo vigila tests/unit/lib/vitest-env.test.ts).
 
 export default defineConfig({
   plugins: [react()],
@@ -34,13 +32,7 @@ export default defineConfig({
       },
       {
         extends: true,
-        test: {
-          name: "dom",
-          environment: "jsdom",
-          include: [`${unit}.tsx`],
-          testTimeout: DOM_TEST_TIMEOUT_MS,
-          hookTimeout: DOM_TEST_TIMEOUT_MS,
-        },
+        test: { name: "dom", environment: "jsdom", include: [`${unit}.tsx`] },
       },
     ],
   },
