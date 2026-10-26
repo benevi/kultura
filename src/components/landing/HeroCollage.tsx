@@ -67,7 +67,7 @@ export function HeroCollage({ items }: { items: ShowcaseItem[] }) {
         ) : (
           <div
             key={slot.position}
-            className={`absolute ${slot.position} aspect-[2/3] rounded-bento ${slot.rotation} flex items-center justify-center`}
+            className={`absolute ${slot.position} aspect-[2/3] rounded-2xl ${slot.rotation} flex items-center justify-center`}
             style={{ background: slot.gradient }}
           >
             <slot.icon className={`w-10 h-10 ${slot.iconTone} opacity-70`} />

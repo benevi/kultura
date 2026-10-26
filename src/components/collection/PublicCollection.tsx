@@ -2,15 +2,14 @@
 // KULTURA — Piezas del perfil público (/u/{username}, DIS-6)
 // Server Components. Solo primitivos de DISENO.md: avatar con la forma del
 // perfil, chips (inactivo + punto del matiz de cada formato, TYPE_HUE),
-// pegatina lima, pósters con el gradiente de respaldo SIEMPRE detrás, radio
-// 18 (el del perfil) y la tarjeta con sombra dura del login para registrarse.
+// pegatina lima, pósters con la tarjeta única `PosterFrame` (gradiente SIEMPRE detrás,
+// radio de póster) y la tarjeta con sombra dura del login para registrarse.
 // ============================================================
 
 import { getTranslations, getLocale } from 'next-intl/server'
 import { Avatar } from '@/components/ui/Avatar'
 import { KButton } from '@/components/ui/KButton'
-import { PosterImage } from '@/components/media/PosterImage'
-import { posterGradient } from '@/lib/images/poster-gradient'
+import { PosterFrame } from '@/components/media/PosterFrame'
 import { formatColor } from '@/lib/landing/immersive'
 import { Link } from '@/i18n/navigation'
 import { IconLibrary } from '@/components/icons'
@@ -48,25 +47,7 @@ function Poster({
   priority: boolean
 }) {
   return (
-    <div className="relative aspect-[2/3] rounded-2xl overflow-hidden bg-surface-elevated">
-      <div
-        aria-hidden="true"
-        className="absolute inset-0 flex items-center justify-center"
-        style={{ background: posterGradient(item.mediaId || item.title) }}
-      >
-        <span className="font-display text-lg font-extrabold text-white/90">
-          {item.title.slice(0, 2).toUpperCase()}
-        </span>
-      </div>
-      {item.poster ? (
-        <PosterImage
-          src={item.poster}
-          sizes={sizes}
-          priority={priority}
-          className="object-cover group-hover:scale-105 transition-transform duration-300"
-        />
-      ) : null}
-    </div>
+    <PosterFrame seed={item.mediaId} title={item.title} poster={item.poster} sizes={sizes} priority={priority} />
   )
 }
 

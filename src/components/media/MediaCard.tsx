@@ -1,7 +1,6 @@
 "use client";
 
-import { PosterImage } from "@/components/media/PosterImage";
-import { posterGradient } from "@/lib/images/poster-gradient";
+import { PosterFrame } from "@/components/media/PosterFrame";
 import { useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
 import { cn } from "@/lib/utils/index";
@@ -48,57 +47,30 @@ export function MediaCard({
   // (singular, ≠ filters.<type> que es plural). R6.
   const tBadge = useTranslations("discoverFilters.typeBadge");
 
+
   return (
     <Link href={href} className={cn("group block h-full", className)}>
-      <article className="h-full rounded-bento overflow-hidden cursor-pointer">
-        <div
-          className={cn(
-            "relative w-full overflow-hidden bg-surface-elevated",
-            aspect === "2/3" ? "aspect-[2/3]" : "h-full min-h-[110px]"
-          )}
+      {/* DIS-7: la misma tarjeta de póster que Inicio, listas y perfil
+          (`PosterFrame`), con el título DEBAJO y no encima con velo: se lee
+          igual sobre cualquier portada. En la rejilla bento (`fill`) el
+          póster ocupa lo que deja el título dentro de la celda. */}
+      <article className={cn("cursor-pointer", aspect === "fill" && "flex h-full flex-col")}>
+        <PosterFrame
+          seed={item.id || item.title}
+          title={item.title}
+          poster={item.poster}
+          sizes="(max-width: 640px) 45vw, (max-width: 1024px) 30vw, 20vw"
+          priority={priority}
+          onFail={onPosterError ? () => onPosterError(item.id) : undefined}
+          fill={aspect === "fill"}
+          className={aspect === "fill" ? "min-h-0 flex-1" : undefined}
         >
-          {/* El gradiente va SIEMPRE y va PRIMERO (E-CARD-PORTADA-404). Una
-              portada que da 404 —Open Library las sirve rotas a menudo— dejaba
-              el icono de imagen rota del navegador con el título en texto
-              crudo, encima del título de verdad que la card ya pinta debajo.
-              Con el respaldo detrás, un 404 deja color de la paleta. Es el
-              mismo patrón que `PosterTile` de la landing. */}
-          <div
-            data-placeholder
-            className="absolute inset-0 flex items-center justify-center"
-            style={{ background: posterGradient(item.id || item.title) }}
-          >
-            {/* Iniciales de relleno: decorativas (el título va debajo). */}
-            {!item.poster && (
-              <span
-                aria-hidden="true"
-                className="text-white/90 text-xs font-display font-bold line-clamp-2 px-2 text-center"
-              >
-                {item.title.slice(0, 2).toUpperCase()}
-              </span>
-            )}
-          </div>
-          {item.poster && (
-            /* `alt` vacío a propósito: la imagen es DECORATIVA porque el título
-               va como texto justo debajo, en el encabezado. Con un alt real, una
-               portada rota lo escupía en pantalla y además lo duplicaba para
-               quien usa lector. */
-            <PosterImage
-              src={item.poster}
-              sizes="(max-width: 640px) 45vw, (max-width: 1024px) 30vw, 20vw"
-              className="object-cover transition-transform duration-300 group-hover:scale-105"
-              priority={priority}
-              onFail={onPosterError ? () => onPosterError(item.id) : undefined}
-            />
-          )}
-
           {/* Acento radial de esquina (F0 §Cards feature grandes): solo en las
-              cards "feature" del bento (MediaGrid las marca con accentHue).
-              Va antes del scrim/badges para no taparlos. */}
+              cards "feature" del bento (MediaGrid las marca con accentHue). */}
           {accentHue !== undefined && (
             <div
               aria-hidden="true"
-              className="absolute inset-0 pointer-events-none"
+              className="pointer-events-none absolute inset-0"
               style={{
                 background: `radial-gradient(120% 100% at 20% 10%, oklch(58% 0.2 ${accentHue} / 0.55) 0%, transparent 55%)`,
               }}
@@ -106,18 +78,13 @@ export function MediaCard({
           )}
 
           {/* E-MATCH-SIN-BADGE: el porcentaje de afinidad ya no se pinta en
-              ninguna superficie. El match SIGUE calculándose y es el criterio
-              con el que la IA elige las recomendaciones (`recommendations.ts`);
-              lo que se retira es la etiqueta, no el motor.
-
-              Scrim para que título/badges se lean sobre cualquier poster */}
-          <div className="absolute inset-x-0 bottom-0 h-2/3 bg-gradient-to-t from-black/85 via-black/25 to-transparent pointer-events-none" />
+              ninguna superficie (el match sigue eligiendo recomendaciones). */}
 
           {/* Type badge overlay (modo "all", R5b) */}
           {showType && (
             <div
               data-testid="media-type-badge"
-              className="absolute top-2 left-2 rounded-full bg-surface-base/80 backdrop-blur-sm text-text-primary text-xs font-semibold px-2 py-1 leading-none"
+              className="absolute left-2 top-2 rounded-full bg-surface-base/80 px-2 py-1 text-xs font-semibold leading-none text-text-primary backdrop-blur-sm"
             >
               {tBadge(item.type)}
             </div>
@@ -125,24 +92,19 @@ export function MediaCard({
 
           {/* Rating overlay */}
           {item.rating !== undefined && (
-            <div className="absolute bottom-2 right-2 rounded-full bg-surface-base/80 backdrop-blur-sm text-accent-highlight text-xs font-bold px-2 py-1 leading-none">
+            <div className="absolute bottom-2 right-2 rounded-full bg-surface-base/80 px-2 py-1 text-xs font-bold leading-none text-accent-highlight backdrop-blur-sm">
               ★ {item.rating.toFixed(1)}
             </div>
           )}
+        </PosterFrame>
 
-          {/* Título + año, superpuestos sobre el scrim */}
-          <div className="absolute inset-x-2 bottom-2">
-            <Heading
-              className="font-display text-sm font-bold text-white line-clamp-2 leading-tight"
-              title={item.title}
-            >
-              {item.title}
-            </Heading>
-            {item.year ? (
-              <p className="text-xs text-white/75 font-medium mt-0.5">{item.year}</p>
-            ) : null}
-          </div>
-        </div>
+        <Heading
+          className="mt-2 line-clamp-2 font-display text-sm font-bold leading-tight text-text-primary"
+          title={item.title}
+        >
+          {item.title}
+        </Heading>
+        {item.year ? <p className="mt-0.5 font-body text-xs text-text-tertiary">{item.year}</p> : null}
       </article>
     </Link>
   );

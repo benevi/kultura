@@ -189,17 +189,17 @@ export default async function ProfilePage({ params }: Props) {
 
       {/* Viendo ahora */}
       {inProgressItems.length > 0 && (
-        <MediaRow title={t('watchingNow')} items={inProgressItems} requirePoster={false} cardRadius="18" />
+        <MediaRow title={t('watchingNow')} items={inProgressItems} requirePoster={false} />
       )}
 
       {/* Últimos completados */}
       {completedItems.length > 0 && (
-        <MediaRow title={t('lastCompleted')} items={completedItems} requirePoster={false} cardRadius="18" />
+        <MediaRow title={t('lastCompleted')} items={completedItems} requirePoster={false} />
       )}
 
       {/* Pendientes */}
       {pendingItems.length > 0 && (
-        <MediaRow title={t('pendingRow')} items={pendingItems} requirePoster={false} cardRadius="18" />
+        <MediaRow title={t('pendingRow')} items={pendingItems} requirePoster={false} />
       )}
 
       {/* Biblioteca oculta por su dueño (D-04b) */}

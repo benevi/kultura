@@ -547,7 +547,7 @@ function RateTile({ title, locale, score, priority, formatLabel, onRate }: RateT
       ) : null}
       <div
         className={cn(
-          'relative aspect-[2/3] w-full overflow-hidden rounded-bento bg-surface-elevated transition-shadow duration-200',
+          'relative aspect-[2/3] w-full overflow-hidden rounded-2xl bg-surface-elevated transition-shadow duration-200',
           rated && 'ring-2 ring-accent-lime ring-offset-2 ring-offset-surface-base'
         )}
       >

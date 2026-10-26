@@ -68,7 +68,7 @@ export function TonightSkeleton() {
       <div className="mb-3 h-5 w-56 rounded-button bg-surface-elevated" />
       <div className="flex gap-5 overflow-x-hidden">
         {[0, 1, 2, 3, 4].map((i) => (
-          <div key={i} className="aspect-[2/3] w-28 flex-shrink-0 rounded-bento bg-surface-elevated md:w-36" />
+          <div key={i} className="aspect-[2/3] w-28 flex-shrink-0 rounded-2xl bg-surface-elevated md:w-36" />
         ))}
       </div>
     </section>

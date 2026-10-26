@@ -31,7 +31,7 @@ export function pickIndex(length: number, previous: number | null, random: () =>
 function Poster({ item, sizes }: { item: TonightPick; sizes: string }) {
   return (
     <div
-      className="relative aspect-[2/3] w-full overflow-hidden rounded-bento bg-surface-elevated"
+      className="relative aspect-[2/3] w-full overflow-hidden rounded-2xl bg-surface-elevated"
       style={{ background: posterGradient(item.mediaId || item.title) }}
     >
       {item.poster ? <PosterImage src={item.poster} sizes={sizes} className="object-cover" /> : null}
