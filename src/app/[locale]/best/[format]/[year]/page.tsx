@@ -100,7 +100,7 @@ export default async function BestOfPage({ params }: Props) {
         <header className="flex flex-col gap-4">
           <BestBreadcrumbs locale={locale} crumbs={crumbs} />
           <h1 className="font-display text-3xl md:text-4xl font-bold leading-tight text-text-primary">{title}</h1>
-          <p className="text-body text-text-secondary max-w-prose">
+          <p className="text-base text-text-secondary max-w-prose">
             {t(`intro.${parsed.format}`, { year: parsed.year })}
           </p>
           <p className="text-meta text-text-tertiary max-w-prose">
@@ -125,7 +125,7 @@ export default async function BestOfPage({ params }: Props) {
             <h2 className="font-display text-2xl font-extrabold text-text-primary">
               {t("empty.title", { year: parsed.year })}
             </h2>
-            <p className="max-w-prose text-body text-text-secondary">
+            <p className="max-w-prose text-base text-text-secondary">
               {t("empty.body", { year: parsed.year, noun: t(`noun.${parsed.format}`) })}
             </p>
             {previousYear ? (

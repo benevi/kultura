@@ -21,7 +21,7 @@ export function Faq({ heading, items }: { heading: string; items: FaqItem[] }) {
       <div className="flex max-w-3xl flex-col gap-2.5">
         {items.map((it) => (
           <details key={it.key} className="group rounded-bento bg-surface-default">
-            <summary className="flex min-h-14 cursor-pointer list-none items-center justify-between gap-4 rounded-bento px-6 py-4 font-display text-lg font-extrabold text-text-primary focus-visible:[outline-style:solid] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus-ring [&::-webkit-details-marker]:hidden">
+            <summary className="flex min-h-14 cursor-pointer list-none items-center justify-between gap-4 rounded-bento px-6 py-4 font-display text-xl font-extrabold text-text-primary focus-visible:[outline-style:solid] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus-ring [&::-webkit-details-marker]:hidden">
               {it.q}
               <span
                 aria-hidden="true"

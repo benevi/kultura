@@ -132,10 +132,10 @@ export async function BestCta({ locale, year, returnTo }: { locale: string; year
       aria-labelledby="best-cta-title"
       className="flex flex-col items-start gap-4 rounded-bento bg-surface-default p-6 md:p-8"
     >
-      <h2 id="best-cta-title" className="font-display text-2xl font-extrabold text-text-primary md:text-3xl">
+      <h2 id="best-cta-title" className="font-display text-2xl font-extrabold text-text-primary">
         {t("cta.title")}
       </h2>
-      <p className="max-w-prose text-body text-text-secondary">{t("cta.body", { year })}</p>
+      <p className="max-w-prose text-base text-text-secondary">{t("cta.body", { year })}</p>
       <div className="flex flex-wrap gap-3">
         <a
           href={signUpHref(locale, returnTo)}

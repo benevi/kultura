@@ -104,24 +104,24 @@ const FEATURE_BG =
 const PODIUM = [
   {
     li: `col-span-2 flex-row md:col-span-1 md:flex-col ${FEATURE_BG}`,
-    number: "text-6xl md:text-8xl",
-    title: "text-lg md:text-2xl",
+    number: "text-6xl",
+    title: "text-2xl",
     sizes: "(min-width: 896px) 300px, (min-width: 768px) 36vw, 40vw",
     poster: "w-2/5 md:w-full",
     extra: "flex",
   },
   {
     li: "flex-col md:mt-12",
-    number: "text-5xl md:text-7xl",
-    title: "text-base md:text-lg",
+    number: "text-6xl md:text-4xl",
+    title: "text-base",
     sizes: "(min-width: 896px) 250px, (min-width: 768px) 30vw, 50vw",
     poster: "w-full",
     extra: "hidden md:flex",
   },
   {
     li: "flex-col md:mt-24",
-    number: "text-5xl md:text-6xl",
-    title: "text-base md:text-lg",
+    number: "text-6xl md:text-4xl",
+    title: "text-base",
     sizes: "(min-width: 896px) 210px, (min-width: 768px) 26vw, 50vw",
     poster: "w-full",
     extra: "hidden md:flex",
@@ -209,7 +209,7 @@ export async function BestRankList({ items, locale }: { items: BestItem[]; local
           <li key={item.id} className="relative flex items-start gap-3 rounded-bento bg-surface-default p-3 md:gap-5 md:p-4">
             <span
               aria-hidden="true"
-              className="w-7 shrink-0 pt-1 text-right font-display text-xl font-extrabold leading-none text-text-tertiary md:w-12 md:text-3xl"
+              className="w-8 shrink-0 pt-1 text-right font-display text-2xl font-extrabold leading-none text-text-tertiary md:w-12"
             >
               {n}
             </span>
@@ -221,7 +221,7 @@ export async function BestRankList({ items, locale }: { items: BestItem[]; local
               <BestPoster src={item.poster} alt={item.title} sizes="(min-width: 768px) 80px, 64px" />
             </div>
             <div className="flex min-w-0 flex-1 flex-col gap-1.5">
-              <h2 className="font-display text-base font-extrabold leading-tight text-text-primary md:text-lg">
+              <h2 className="font-display text-base font-extrabold leading-tight text-text-primary">
                 <a href={localeHref(locale, bestItemPath(item))} className={STRETCHED_LINK}>
                   <span className="sr-only">{t("position", { n })}</span>{" "}
                   {item.title}

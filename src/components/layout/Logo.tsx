@@ -61,7 +61,10 @@ export function Logo({ size = 26, variant = 'full', className = '' }: LogoProps)
       <Mark size={size} />
       {/* `whitespace-nowrap`: sin él, en una fila estrecha (cabecera a 320 px)
           el cuadradito final caía a una segunda línea. */}
+      {/* `data-wordmark`: es la marca, no texto de la escala (el recuento de
+          tamaños de `type-scale.spec.ts` la deja fuera). */}
       <span
+        data-wordmark=""
         className="font-display font-bold tracking-tight text-text-primary leading-none whitespace-nowrap"
         style={{ fontSize: size * 0.78 }}
       >

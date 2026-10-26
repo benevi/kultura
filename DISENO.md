@@ -116,7 +116,9 @@ apunta a los mismos tokens.
 
 Son los únicos tamaños de texto. `text-[13px]` y compañía no existen (ESLint
 los rechaza): se elige el escalón más cercano. Las páginas públicas usan
-≤ 7 de ellos.
+≤ 7 de ellos por página y ancho, también el texto decorativo (números del
+podio, pegatinas); lo cuenta `tests/e2e/a11y/type-scale.spec.ts` en la
+portada y los rankings (el logotipo no cuenta).
 
 <!-- escala:inicio -->
 | Clase | Tamaño | Interlineado | Uso |
