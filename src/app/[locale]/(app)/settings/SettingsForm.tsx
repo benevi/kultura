@@ -11,6 +11,10 @@ import { useToastContext } from '@/components/ui/ToastProvider'
 import { AVATAR_COLORS, isValidAvatarColor } from '@/lib/constants/avatarColors'
 import { AvatarIconPicker } from '@/components/ui/AvatarIconPicker'
 import { useRadioGroupKeys } from '@/components/ui/useRadioGroupKeys'
+import { SegmentedControl } from '@/components/ui/SegmentedControl'
+import { saveRatingScale } from '@/lib/library/actions'
+import { WEEKLY_EMAIL_CONSENT_VERSION } from '@/lib/email/consent'
+import { isRatingScale, type RatingScale } from '@/types/library'
 import type { AvatarColorName } from '@/lib/constants/avatarColors'
 import { cn } from '@/lib/utils/index'
 import { createClient } from '@/lib/supabase/client'
@@ -51,6 +55,16 @@ interface SettingsFormProps {
    * página la pasa solo si la columna existe; va tras Preferencias.
    */
   platformsSlot?: React.ReactNode
+  /**
+   * F-24 → F-28: escala de notas (½★ o /10), antes en la Biblioteca. `null`
+   * sin RATING_SCALE_10 (la escala aún no se usa en la app): no se enseña.
+   */
+  initialRatingScale?: RatingScale | null
+  /**
+   * F-28: correo semanal opt-in. `null` = no disponible (bandera WEEKLY_EMAIL
+   * o claves sin poner, migración sin aplicar, cuenta demo): no se enseña.
+   */
+  initialWeeklyEmail?: { weekly: boolean; consentedAt: string | null } | null
 }
 
 /** Resumen de GET /api/account para el modal de borrado. */
@@ -94,6 +108,8 @@ export function SettingsForm({
   deletionRequestedAt = null,
   graceDays = 0,
   platformsSlot = null,
+  initialRatingScale = null,
+  initialWeeklyEmail = null,
 }: SettingsFormProps) {
   const t = useTranslations('settings')
   const tErrors = useTranslations('errors')
@@ -124,6 +140,11 @@ export function SettingsForm({
   const [libraryVisibility, setLibraryVisibility] = useState<LibraryVisibility | null>(initialLibraryVisibility)
   // F-03: títulos del fichero que no se encontraron en el proveedor.
   const [importUnresolved, setImportUnresolved] = useState(0)
+  // F-28: escala de notas y correo semanal, que se guardan solos (sin el botón Guardar).
+  const [ratingScale, setRatingScale] = useState<RatingScale | null>(initialRatingScale)
+  const [scaleState, setScaleState] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle')
+  const [weeklyEmail, setWeeklyEmail] = useState(initialWeeklyEmail)
+  const [weeklyState, setWeeklyState] = useState<'idle' | 'saving' | 'on' | 'off' | 'error' | 'stale'>('idle')
 
   // Cambio de email (R1 / art. 16 RGPD): formulario en línea.
   const [emailFormOpen, setEmailFormOpen] = useState(false)
@@ -213,6 +234,47 @@ export function SettingsForm({
       toast.show({ message: t('errorSave'), type: 'error' })
     } finally {
       setSaving(false)
+    }
+  }
+
+  async function handleRatingScale(next: string) {
+    if (!isRatingScale(next) || next === ratingScale) return
+    const previous = ratingScale
+    setRatingScale(next)
+    setScaleState('saving')
+    try {
+      await saveRatingScale(next)
+      setScaleState('saved')
+      // La escala se lee en el servidor (Biblioteca, diario): que no quede vieja en la caché del router.
+      router.refresh()
+    } catch {
+      setRatingScale(previous)
+      setScaleState('error')
+    }
+  }
+
+  async function handleWeeklyEmail(enabled: boolean) {
+    if (!weeklyEmail || isDemo) return
+    const previous = weeklyEmail
+    setWeeklyEmail({ ...weeklyEmail, weekly: enabled })
+    setWeeklyState('saving')
+    try {
+      const res = await fetch('/api/email/preferences', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ weekly: enabled, consentVersion: WEEKLY_EMAIL_CONSENT_VERSION }),
+      })
+      if (!res.ok) {
+        setWeeklyEmail(previous)
+        setWeeklyState(res.status === 409 ? 'stale' : 'error')
+        return
+      }
+      const data = (await res.json()) as { weekly?: boolean; consentedAt?: string | null }
+      setWeeklyEmail({ weekly: data.weekly === true, consentedAt: data.consentedAt ?? null })
+      setWeeklyState(data.weekly ? 'on' : 'off')
+    } catch {
+      setWeeklyEmail(previous)
+      setWeeklyState('error')
     }
   }
 
@@ -591,7 +653,7 @@ export function SettingsForm({
       {/* Sección Preferencias */}
       <section>
         <p className={eyebrow}>{t('preferences')}</p>
-        <div className="flex flex-col rounded-20 bg-surface-default overflow-hidden">
+        <div className="flex flex-col rounded-20 bg-surface-default divide-y divide-surface-border overflow-hidden">
           {/* Idioma */}
           <div role="group" aria-labelledby="settings-language-label" className={cn(row, 'flex items-center justify-between gap-4 flex-wrap')}>
             <span id="settings-language-label" className="text-sm font-semibold text-text-primary">{t('language')}</span>
@@ -618,10 +680,81 @@ export function SettingsForm({
               ))}
             </div>
           </div>
+
+          {/* F-28: escala de notas (antes en la Biblioteca); se guarda sola. */}
+          {ratingScale !== null && (
+            <div className={cn(row, 'flex flex-col gap-3')}>
+              <div className="flex flex-col gap-1">
+                <span id="settings-rating-scale-label" className="text-sm font-semibold text-text-primary">
+                  {t('ratingScale')}
+                </span>
+                <span className="text-sm font-body text-text-tertiary">{t('ratingScaleHint')}</span>
+              </div>
+              <SegmentedControl
+                ariaLabel={t('ratingScale')}
+                value={ratingScale}
+                onChange={handleRatingScale}
+                options={[
+                  { value: 'stars', label: t('ratingScaleStars') },
+                  { value: 'ten', label: t('ratingScaleTen') },
+                ]}
+              />
+              <p role="status" className="min-h-5 text-[13px] text-text-tertiary">
+                {scaleState === 'saved' ? t('ratingScaleSaved') : ''}
+              </p>
+              {scaleState === 'error' && (
+                <p role="alert" className="text-sm text-accent-danger">{t('ratingScaleError')}</p>
+              )}
+            </div>
+          )}
         </div>
       </section>
 
       {platformsSlot}
+
+      {/* F-28 (CRE-9): correo semanal, opt-in, con el texto que se acepta a la
+          vista; se guarda solo y la base registra versión y fecha. */}
+      {weeklyEmail !== null && (
+        <section id="email" className="scroll-mt-20">
+          <p className={eyebrow}>{t('emailSection')}</p>
+          <div className={cn(row, 'flex flex-col gap-3 rounded-20 bg-surface-default')}>
+            <label className="flex cursor-pointer items-start justify-between gap-4">
+              <span className="flex flex-col gap-1 min-w-0">
+                <span className="text-sm font-semibold text-text-primary">{t('weeklyEmail')}</span>
+                <span id="weekly-email-consent" className="text-sm font-body text-text-tertiary">
+                  {t('weeklyEmailConsent')}
+                </span>
+              </span>
+              <input
+                type="checkbox"
+                role="switch"
+                checked={weeklyEmail.weekly}
+                aria-describedby="weekly-email-consent"
+                disabled={isDemo || weeklyState === 'saving'}
+                onChange={(e) => handleWeeklyEmail(e.target.checked)}
+                className="mt-0.5 h-6 w-6 flex-shrink-0 cursor-pointer accent-accent-pink disabled:cursor-not-allowed"
+              />
+            </label>
+            {isDemo && <p className="text-sm text-text-tertiary">{t('weeklyEmailDemo')}</p>}
+            {weeklyEmail.weekly && weeklyEmail.consentedAt ? (
+              <p className="text-[13px] text-text-tertiary">
+                {t('weeklyEmailSince', { date: formatDay(new Date(weeklyEmail.consentedAt), currentLocale) })}{' '}
+                <Link href={`/${currentLocale}/calendar`} className="font-semibold text-text-secondary underline hover:text-text-primary">
+                  {t('weeklyEmailCalendar')}
+                </Link>
+              </p>
+            ) : null}
+            <p role="status" className="min-h-5 text-[13px] text-text-tertiary">
+              {weeklyState === 'on' ? t('weeklyEmailOn') : weeklyState === 'off' ? t('weeklyEmailOff') : ''}
+            </p>
+            {(weeklyState === 'error' || weeklyState === 'stale') && (
+              <p role="alert" className="text-sm text-accent-danger">
+                {weeklyState === 'stale' ? t('weeklyEmailStale') : t('weeklyEmailError')}
+              </p>
+            )}
+          </div>
+        </section>
+      )}
 
       {/* Privacidad (D-04b): quién ve la biblioteca. Sin la migración o con la
           bandera apagada, no se enseña y rige "cualquiera con cuenta". */}

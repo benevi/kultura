@@ -1,6 +1,6 @@
 'use client'
 
-import { useMemo, useState } from 'react'
+import { useMemo } from 'react'
 import { PageHeading } from '@/components/layout/PageHeading'
 import { useSearchParams } from 'next/navigation'
 import { useTranslations } from 'next-intl'
@@ -11,9 +11,7 @@ import { MediaGrid } from '@/components/media/MediaGrid'
 import { IconLibrary } from '@/components/icons'
 import { SegmentedControl } from '@/components/ui/SegmentedControl'
 import { DiaryList } from '@/components/library/DiaryList'
-import { useToastContext } from '@/components/ui/ToastProvider'
-import { saveRatingScale } from '@/lib/library/actions'
-import { isRatingScale, type DiaryLog, type LibraryEntry, type RatingScale } from '@/types/library'
+import type { DiaryLog, LibraryEntry, RatingScale } from '@/types/library'
 import type { MediaItem, MediaType } from '@/types/media'
 
 interface LibraryClientProps {
@@ -143,14 +141,14 @@ export function LibraryClient({ entries, diary = null }: LibraryClientProps) {
   const td = useTranslations('diary')
   const router = useRouter()
   const searchParams = useSearchParams()
-  const { showError } = useToastContext()
 
   const currentType = searchParams.get('type') ?? 'all'
   const currentStatus = searchParams.get('status') ?? 'all'
   const currentScore = searchParams.get('score') ?? 'all'
   const onlyFavorites = diary !== null && searchParams.get('fav') === '1'
   const view = diary !== null && searchParams.get('view') === 'diary' ? 'diary' : 'collection'
-  const [scale, setScale] = useState<RatingScale>(diary?.scale ?? 'stars')
+  // F-28: la escala se elige en Ajustes; aquí solo se usa para pintar el diario.
+  const scale: RatingScale = diary?.scale ?? 'stars'
 
   function push(next: Record<string, string>) {
     const params = new URLSearchParams()
@@ -177,18 +175,6 @@ export function LibraryClient({ entries, diary = null }: LibraryClientProps) {
 
   function resetFilters() {
     router.push('/library')
-  }
-
-  async function changeScale(next: string) {
-    if (!isRatingScale(next) || next === scale) return
-    const previous = scale
-    setScale(next)
-    try {
-      await saveRatingScale(next)
-    } catch {
-      setScale(previous)
-      showError(td('scaleSaveFailed'))
-    }
   }
 
   const filtered = useMemo(
@@ -219,7 +205,8 @@ export function LibraryClient({ entries, diary = null }: LibraryClientProps) {
   const hasActiveFilters =
     currentType !== 'all' || currentStatus !== 'all' || currentScore !== 'all' || onlyFavorites
 
-  // F-24: vista (colección / diario) y escala de notas, solo con el diario activo.
+  // F-24: vista (colección / diario), solo con el diario activo. La escala de
+  // notas se cambia en Ajustes (F-28).
   const diaryControls = diary ? (
     <div className="flex flex-wrap items-center gap-3 mb-6">
       <SegmentedControl
@@ -229,15 +216,6 @@ export function LibraryClient({ entries, diary = null }: LibraryClientProps) {
         options={[
           { value: 'collection', label: td('viewCollection') },
           { value: 'diary', label: td('viewDiary') },
-        ]}
-      />
-      <SegmentedControl
-        ariaLabel={td('scaleLabel')}
-        value={scale}
-        onChange={changeScale}
-        options={[
-          { value: 'stars', label: td('scaleStars') },
-          { value: 'ten', label: td('scaleTen') },
         ]}
       />
     </div>

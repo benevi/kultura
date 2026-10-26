@@ -17,6 +17,20 @@ export interface EmailMessage {
   /** Texto plano: el contenido de usuario nunca se interpreta como HTML. */
   text: string
   replyTo?: string
+  /**
+   * F-28: versión HTML (plantilla propia, con todo lo dinámico escapado). Si
+   * falta, el correo va solo en texto plano, como los avisos de moderación.
+   */
+  html?: string
+  /** F-28: remitente propio (por defecto MODERATION_EMAIL_FROM o el de pruebas). */
+  from?: string
+  /** F-28: cabeceras extra (List-Unsubscribe, List-Unsubscribe-Post…). */
+  headers?: Record<string, string>
+  /**
+   * F-28: clave de idempotencia de Resend (24 h): si la misma petición se
+   * repite (reintento, cron duplicado), Resend no manda un segundo correo.
+   */
+  idempotencyKey?: string
 }
 
 export type SendResult =
@@ -39,13 +53,16 @@ export async function sendEmail(message: EmailMessage): Promise<SendResult> {
       headers: {
         Authorization: `Bearer ${apiKey}`,
         'Content-Type': 'application/json',
+        ...(message.idempotencyKey ? { 'Idempotency-Key': message.idempotencyKey } : {}),
       },
       body: JSON.stringify({
-        from: process.env.MODERATION_EMAIL_FROM?.trim() || DEFAULT_FROM,
+        from: message.from?.trim() || process.env.MODERATION_EMAIL_FROM?.trim() || DEFAULT_FROM,
         to: Array.isArray(message.to) ? message.to : [message.to],
         subject: message.subject,
         text: message.text,
+        ...(message.html ? { html: message.html } : {}),
         ...(message.replyTo ? { reply_to: message.replyTo } : {}),
+        ...(message.headers && Object.keys(message.headers).length > 0 ? { headers: message.headers } : {}),
       }),
       signal: controller.signal,
       cache: 'no-store',
