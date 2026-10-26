@@ -54,7 +54,6 @@ import {
   normalizeBookGoogle,
   normalizeGame,
 } from "./normalizer";
-import type { TmdbMovieDetail, TmdbTVDetail } from "./tmdb";
 import { isExactTitleMatch, rankSearchResults, titleIdentity } from "./search-rank";
 
 // La relevancia vive en `search-rank.ts` (funciones puras); se re-exporta
@@ -376,7 +375,7 @@ export async function searchByTypePaged(
       return {
         items: rankSearchResults(
           query,
-          r.results.map((raw) => normalizeMovie(raw as TmdbMovieDetail))
+          r.results.map((raw) => normalizeMovie(raw))
         ),
         totalPages,
         hasMore: page < totalPages,
@@ -388,7 +387,7 @@ export async function searchByTypePaged(
       return {
         items: rankSearchResults(
           query,
-          r.results.map((raw) => normalizeTV(raw as TmdbTVDetail))
+          r.results.map((raw) => normalizeTV(raw))
         ),
         totalPages,
         hasMore: page < totalPages,

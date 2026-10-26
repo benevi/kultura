@@ -41,6 +41,16 @@ const ROMAN: Record<string, string> = {
  * "V for Vendetta" no es "5 for vendetta".
  */
 export function titleWords(text: string | undefined | null): string[] {
+  return rawTitleWords(text).map(romanToArabic);
+}
+
+/** Romano de dos o más letras → arábigo; el resto, igual. */
+function romanToArabic(w: string): string {
+  return Object.hasOwn(ROMAN, w) ? ROMAN[w] : w;
+}
+
+/** Como `titleWords` pero sin pasar los romanos a arábigos. */
+function rawTitleWords(text: string | undefined | null): string[] {
   if (!text) return [];
   return text
     .normalize("NFKD")
@@ -52,8 +62,7 @@ export function titleWords(text: string | undefined | null): string[] {
     .replace(NON_WORD, " ")
     .trim()
     .split(" ")
-    .filter(Boolean)
-    .map((w) => ROMAN[w] ?? w);
+    .filter(Boolean);
 }
 
 function withoutArticle(words: string[]): string[] {
@@ -155,17 +164,20 @@ const SEQUEL_WORDS = new Set([
 
 /**
  * ¿El título es una continuación que la consulta no pide? Palabra de
- * temporada o de parte, o un número (romanos ya pasados a arábigos) que la
- * consulta no lleva. Si la consulta lleva números ("portal 2"), no se
- * penaliza nada: quien escribe el número sabe cuál quiere.
+ * temporada o de parte, un 2-9 suelto o un número romano ("Hades II",
+ * "Final Fantasy XVI") que la consulta no lleva. Un número arábigo de dos
+ * cifras es parte del nombre ("Apollo 13", "Ocean's 11", "28 Days Later"),
+ * no una entrega. Si la consulta lleva números ("portal 2"), no se penaliza
+ * nada: quien escribe el número sabe cuál quiere.
  */
 export function isSequelFor(query: string, title: string | undefined | null): boolean {
   const q = titleWords(query);
   if (q.some((w) => /\d/.test(w))) return false;
   const qs = new Set(q);
-  return titleWords(title).some(
-    (w) => !qs.has(w) && (SEQUEL_WORDS.has(w) || /^(?:[2-9]|[1-9]\d)$/.test(w))
-  );
+  return rawTitleWords(title).some((raw) => {
+    const w = romanToArabic(raw);
+    return !qs.has(w) && (SEQUEL_WORDS.has(w) || Object.hasOwn(ROMAN, raw) || /^[2-9]$/.test(w));
+  });
 }
 
 /** Posiciones sobre las que se reparte el desempate por orden del proveedor. */

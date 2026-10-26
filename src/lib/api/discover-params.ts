@@ -15,14 +15,6 @@ import { resolveApiLocale, type ApiLocale } from "@/lib/api/locale";
  */
 export const CATALOG_EDGE_CACHE = "public, s-maxage=3600, stale-while-revalidate=86400";
 
-/**
- * `type=all` mezcla siete proveedores y el agregado (`aggregate.ts`) devuelve
- * `fetchErrorKind: null` aunque falle alguna familia: con RAWG o ComicVine
- * caídos, la respuesta sale coja SIN que la ruta lo sepa. Por eso se cachea
- * poco (5 min + 10 de reserva) hasta que el agregado avise de los parciales.
- */
-export const CATALOG_EDGE_CACHE_AGGREGATE = "public, s-maxage=300, stale-while-revalidate=600";
-
 /** Errores y límites nunca se cachean: un fallo no se congela una hora. */
 export const NO_STORE = "no-store";
 
