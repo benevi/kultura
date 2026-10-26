@@ -990,6 +990,57 @@ export type Database = {
           },
         ]
       }
+      push_subscriptions: {
+        Row: {
+          auth: string
+          created_at: string
+          endpoint: string
+          expires_at: string | null
+          failures: number
+          id: string
+          last_success_at: string | null
+          locale: string
+          p256dh: string
+          updated_at: string
+          user_id: string
+        }
+        ComputedFields: never
+        Insert: {
+          auth: string
+          created_at?: string
+          endpoint: string
+          expires_at?: string | null
+          failures?: number
+          id?: string
+          last_success_at?: string | null
+          locale?: string
+          p256dh: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          auth?: string
+          created_at?: string
+          endpoint?: string
+          expires_at?: string | null
+          failures?: number
+          id?: string
+          last_success_at?: string | null
+          locale?: string
+          p256dh?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "push_subscriptions_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       recommendations: {
         Row: {
           created_at: string | null
