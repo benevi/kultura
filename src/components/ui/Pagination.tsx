@@ -75,9 +75,9 @@ export function Pagination({
   const t = useTranslations("discover");
   const entries = buildPageWindow(currentPage, totalPages);
 
-  // Botón cuadrado: tap target ≥40px (mobile-first), rounded-md, foco/hover DS.
+  // Botón cuadrado: tap target ≥40px (mobile-first), rounded-lg, foco/hover DS.
   const baseBtn =
-    "inline-flex items-center justify-center min-w-10 h-10 px-3 rounded-md " +
+    "inline-flex items-center justify-center min-w-10 h-10 px-3 rounded-lg " +
     "text-sm font-medium transition-colors cursor-pointer " +
     "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-pink " +
     "focus-visible:ring-offset-2 focus-visible:ring-offset-bg " +

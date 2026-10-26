@@ -24,7 +24,7 @@ export async function Header({ locale }: { locale?: string } = {}) {
 
   return (
     <header className="sticky top-0 z-50 bg-surface-default border-b border-surface-border">
-      <div className="flex h-14 justify-between items-center gap-2 max-w-6xl mx-auto px-4 md:px-8">
+      <div className="page-grid flex h-14 justify-between items-center gap-2">
         <a href={`/${lang}`} className="shrink-0">
           <Logo size={24} />
         </a>

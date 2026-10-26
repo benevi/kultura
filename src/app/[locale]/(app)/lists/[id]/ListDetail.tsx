@@ -226,7 +226,7 @@ export function ListDetail({
               al tipo del canvas (display 42px/700) — pero NO usa `PageHeading`:
               el artboard lo mete en una cabecera con avatares y chips debajo,
               no en la fila de título + acción. */}
-          <h1 className="font-display text-[30px] md:text-[38px] font-bold tracking-tight text-text-primary leading-tight">
+          <h1 className="font-display text-3xl md:text-4xl font-bold tracking-tight text-text-primary leading-tight">
             {list.name}
           </h1>
           <div className="flex items-center gap-3 mt-3 flex-wrap">
@@ -253,7 +253,7 @@ export function ListDetail({
                 ))}
               </div>
             )}
-            <span className="text-[13px] text-text-tertiary">
+            <span className="text-meta text-text-tertiary">
               <span className="font-semibold text-text-secondary">{formatLabel}</span>
               {list.template ? ` · ${t(`template.${list.template}`)}` : ''}
               {' · '}
@@ -265,7 +265,7 @@ export function ListDetail({
             </span>
           </div>
           {description && !editingDescription && (
-            <p className="mt-4 max-w-2xl text-[15px] leading-relaxed text-text-secondary whitespace-pre-line break-words">
+            <p className="mt-4 max-w-2xl text-body leading-relaxed text-text-secondary whitespace-pre-line break-words">
               {description}
             </p>
           )}
@@ -277,14 +277,14 @@ export function ListDetail({
                 setDescriptionError(false)
                 setEditingDescription(true)
               }}
-              className="mt-2 inline-flex min-h-11 items-center rounded-sm text-[13px] font-bold text-accent-pink underline-offset-4 hover:underline focus-visible:[outline-style:solid] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus-ring"
+              className="mt-2 inline-flex min-h-11 items-center rounded-lg text-meta font-bold text-accent-pink underline-offset-4 hover:underline focus-visible:[outline-style:solid] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus-ring"
             >
               {description ? t('editDescription') : t('addDescription')}
             </button>
           )}
           {isOwner && mixedEnabled && editingDescription && (
             <form onSubmit={handleSaveDescription} className="mt-4 flex max-w-2xl flex-col gap-2">
-              <label htmlFor={descriptionFieldId} className="text-[13px] font-bold text-text-tertiary">
+              <label htmlFor={descriptionFieldId} className="text-meta font-bold text-text-tertiary">
                 {t('descriptionLabel')}
               </label>
               <textarea
@@ -297,7 +297,7 @@ export function ListDetail({
                 placeholder={t('descriptionPlaceholder')}
                 aria-describedby={descriptionHintId}
                 aria-invalid={descriptionError ? true : undefined}
-                className="w-full min-h-[88px] resize-y rounded-[14px] border border-field-border bg-surface-elevated px-4 py-3 font-body text-base md:text-[15px] text-text-primary placeholder:text-text-tertiary focus-visible:[outline-style:solid] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus-ring"
+                className="w-full min-h-[88px] resize-y rounded-2xl border border-field-border bg-surface-elevated px-4 py-3 font-body text-base md:text-body text-text-primary placeholder:text-text-tertiary focus-visible:[outline-style:solid] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus-ring"
               />
               <p id={descriptionHintId} className="text-xs text-text-tertiary">
                 {t('descriptionHint', { count: DESCRIPTION_MAX - descriptionDraft.length })}
@@ -328,7 +328,7 @@ export function ListDetail({
             </div>
           )}
           {isOwner && (
-            <p className="text-[13px] text-text-tertiary mt-2">
+            <p className="text-meta text-text-tertiary mt-2">
               {isPublic ? tcol('publicHint') : tcol('privateHint')}
             </p>
           )}
@@ -394,7 +394,7 @@ export function ListDetail({
         {reordering && canOrder && items.length > 0 ? (
           <ReorderableItems listId={list.id} items={items} onItemsChange={onItemsChange} ranked={ranked} />
         ) : items.length === 0 ? (
-          <div className="bg-surface-default rounded-3xl p-10 text-center flex flex-col items-center gap-3">
+          <div className="bg-surface-default rounded-bento p-10 text-center flex flex-col items-center gap-3">
             <span aria-hidden="true" className="text-3xl">📋</span>
             <p className="text-text-primary text-sm font-medium">{t('noItems')}</p>
             <p className="text-text-secondary text-sm">{t('noItemsHint')}</p>
@@ -414,7 +414,7 @@ export function ListDetail({
                 {ranked && (
                   <span
                     aria-hidden="true"
-                    className="pointer-events-none absolute -left-2 -top-2 z-10 flex h-8 min-w-8 items-center justify-center rounded-full bg-accent-lime px-2 font-display text-sm font-extrabold tabular-nums text-on-accent-lime shadow-[4px_4px_0_rgba(0,0,0,0.4)]"
+                    className="pointer-events-none absolute -left-2 -top-2 z-10 flex h-8 min-w-8 items-center justify-center rounded-full bg-accent-lime px-2 font-display text-sm font-extrabold tabular-nums text-on-accent-lime shadow-sticker"
                   >
                     {index + 1}
                   </span>
@@ -424,7 +424,7 @@ export function ListDetail({
                   <MediaCard item={item.media} />
                 ) : (
                   <div
-                    className="aspect-[2/3] rounded-bento flex items-center justify-center"
+                    className="aspect-[2/3] rounded-2xl flex items-center justify-center"
                     style={{ background: 'linear-gradient(155deg, var(--surface2), var(--surface))' }}
                   >
                     <span className="text-xs text-text-secondary text-center px-1 line-clamp-3">{item.mediaId}</span>
@@ -455,7 +455,7 @@ export function ListDetail({
       {list.isCollaborative && (
         <section>
           <h2 className="font-display text-xl font-bold mb-4 text-text-primary">{t('membersTitle')}</h2>
-          <div className="bg-surface-default rounded-3xl divide-y divide-surface-border overflow-hidden">
+          <div className="bg-surface-default rounded-bento divide-y divide-surface-border overflow-hidden">
             {/* Owner */}
             {list.owner && (
               <div className="flex items-center gap-3 px-5 py-4">

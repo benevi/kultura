@@ -35,7 +35,7 @@ export async function OrderedListGrid({
             <>
               <span
                 aria-hidden="true"
-                className="pointer-events-none absolute -left-2 -top-2 z-10 flex h-8 min-w-8 items-center justify-center rounded-full bg-accent-lime px-2 font-display text-sm font-extrabold tabular-nums text-on-accent-lime shadow-[4px_4px_0_rgba(0,0,0,0.4)]"
+                className="pointer-events-none absolute -left-2 -top-2 z-10 flex h-8 min-w-8 items-center justify-center rounded-full bg-accent-lime px-2 font-display text-sm font-extrabold tabular-nums text-on-accent-lime shadow-sticker"
               >
                 {index + 1}
               </span>
@@ -45,7 +45,7 @@ export async function OrderedListGrid({
           {/* h2: los títulos van justo bajo el h1 de la lista (ACC-7). */}
           <MediaCard item={item} priority={index < 6} headingLevel={2} />
           {note ? (
-            <p className="text-[13px] leading-snug text-text-secondary whitespace-pre-line break-words">
+            <p className="text-meta leading-snug text-text-secondary whitespace-pre-line break-words">
               <span className="sr-only">{t('noteFor', { title: item.title })}: </span>
               {note}
             </p>

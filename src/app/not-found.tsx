@@ -58,7 +58,7 @@ export default async function RootNotFound() {
             <p className="text-text-secondary max-w-sm">{en("notFoundDescription")}</p>
             <a
               href={HOME.en}
-              className="inline-flex min-h-11 items-center font-bold text-accent-pink underline underline-offset-4 rounded-[4px] focus-visible:[outline-style:solid] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus-ring"
+              className="inline-flex min-h-11 items-center font-bold text-accent-pink underline underline-offset-4 rounded-lg focus-visible:[outline-style:solid] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus-ring"
             >
               {en("goHome")}
             </a>

@@ -171,11 +171,11 @@ export function Modal({
               'relative flex w-full max-w-sm flex-col gap-4 border border-surface-border bg-surface-elevated text-text-primary outline-none',
               isSheet
                 ? [
-                    'max-h-[85dvh] overflow-y-auto overscroll-contain rounded-t-bento-lg px-5 pt-3',
+                    'max-h-[85dvh] overflow-y-auto overscroll-contain rounded-t-bento-xl px-5 pt-3',
                     'pb-[calc(1.5rem+env(safe-area-inset-bottom))] animate-toast-in max-w-none',
-                    'md:max-w-sm md:max-h-[calc(100dvh-2rem)] md:rounded-bento-lg md:p-6 md:animate-modal-in',
+                    'md:max-w-sm md:max-h-[calc(100dvh-2rem)] md:rounded-bento-xl md:p-6 md:animate-modal-in',
                   ]
-                : 'max-h-[calc(100dvh-2rem)] overflow-y-auto rounded-bento-lg p-6 animate-modal-in',
+                : 'max-h-[calc(100dvh-2rem)] overflow-y-auto rounded-bento-xl p-6 animate-modal-in',
               className
             )}
           >

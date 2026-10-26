@@ -23,9 +23,9 @@ interface ShareRankingProps {
 const FOCUS =
   "focus-visible:[outline-style:solid] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus-ring";
 const MAIN =
-  `inline-flex min-h-11 items-center gap-2 rounded-full bg-surface-elevated px-5 text-[14px] font-bold text-text-primary hover:text-accent-pink transition-colors ${FOCUS}`;
+  `inline-flex min-h-11 items-center gap-2 rounded-full bg-surface-elevated px-5 text-sm font-bold text-text-primary hover:text-accent-pink transition-colors ${FOCUS}`;
 const OPTION =
-  `inline-flex min-h-11 items-center rounded-full border-2 border-stroke px-4 text-[13px] font-bold text-text-primary hover:bg-surface-elevated transition-colors ${FOCUS}`;
+  `inline-flex min-h-11 items-center rounded-full border-2 border-stroke px-4 text-meta font-bold text-text-primary hover:bg-surface-elevated transition-colors ${FOCUS}`;
 
 export function ShareRanking({ path, title }: ShareRankingProps) {
   const t = useTranslations("best.share");
@@ -133,7 +133,7 @@ export function ShareRanking({ path, title }: ShareRankingProps) {
           WhatsApp
         </button>
       </div>
-      <span role="status" aria-live="polite" className="text-[13px] font-bold text-accent-positive">
+      <span role="status" aria-live="polite" className="text-meta font-bold text-accent-positive">
         {copied ? t("copied") : ""}
       </span>
     </div>

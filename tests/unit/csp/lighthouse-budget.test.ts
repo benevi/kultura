@@ -25,23 +25,19 @@ describe("lighthouserc.json", () => {
     for (const url of urls) expect(forUrl(url)).toHaveLength(1);
   });
 
-  it("rankings y legales: JS ≤ 150 KB y CLS ≤ 0,05, como error (falla el PR)", () => {
-    for (const url of urls.filter((u) => /\/(best|privacy)/.test(u))) {
+  // F-30 retiró el tope provisional de 160 KB de la portada: medía ~150 KB
+  // con el gzip de `next start` y ahora ~140 KB (collage pintado en el
+  // servidor, <img> nativo en la landing). Y su CLS (0,07 por la tira móvil
+  // que entraba tarde) ya corta el PR como el resto.
+  it("portada, rankings y legales: JS ≤ 150 KB y CLS ≤ 0,05, como error (falla el PR)", () => {
+    expect(urls.length).toBeGreaterThanOrEqual(3);
+    for (const url of urls) {
       const [block] = forUrl(url);
       expect(block.assertions["resource-summary:script:size"][0]).toBe("error");
       expect(block.assertions["resource-summary:script:size"][1].maxNumericValue).toBeLessThanOrEqual(150 * 1024);
       expect(block.assertions["cumulative-layout-shift"][0]).toBe("error");
       expect(block.assertions["cumulative-layout-shift"][1].maxNumericValue).toBeLessThanOrEqual(0.05);
     }
-  });
-
-  // La portada mide ~155 KB con el gzip de `next start` (≈ 135-140 KB con el
-  // brotli de Vercel): su tope provisional es 160 KB hasta que F-09/F-30
-  // aligeren sus componentes cliente. No puede subir más.
-  it("portada: JS ≤ 160 KB como error (provisional)", () => {
-    const [block] = forUrl(urls.find((u) => u.endsWith("/es"))!);
-    expect(block.assertions["resource-summary:script:size"][0]).toBe("error");
-    expect(block.assertions["resource-summary:script:size"][1].maxNumericValue).toBeLessThanOrEqual(160 * 1024);
   });
 
   it("mide las páginas cacheables (portada, ranking y legal)", () => {

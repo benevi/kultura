@@ -28,7 +28,7 @@ export function SynopsisSection({ text, lang }: Props) {
           onClick={() => setExpanded(!expanded)}
           aria-expanded={expanded}
           aria-controls={textId}
-          className="inline-flex items-center min-h-11 text-xs font-bold text-accent-info hover:underline rounded-[4px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-pink"
+          className="inline-flex items-center min-h-11 text-xs font-bold text-accent-info hover:underline rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-pink"
         >
           {expanded ? t('readLess') : t('readMore')}
         </button>

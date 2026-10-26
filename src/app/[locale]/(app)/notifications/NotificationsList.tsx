@@ -90,7 +90,7 @@ function InviteActions({ invitationId, groupName }: { invitationId: string; grou
  * zona táctil es real y no se solapa con las líneas vecinas (un relleno en
  * línea sí lo hacía). `align-middle` mantiene el texto alineado con la frase.
  */
-const INLINE_LINK = `inline-flex items-center justify-center min-h-11 min-w-11 align-middle font-semibold rounded-[14px] hover:text-accent-info transition-colors ${FOCUS}`
+const INLINE_LINK = `inline-flex items-center justify-center min-h-11 min-w-11 align-middle font-semibold rounded-2xl hover:text-accent-info transition-colors ${FOCUS}`
 
 /** Color del icono por tipo: acentos decorativos de la paleta F0 (tokens). */
 const TYPE_ACCENT: Record<string, { fg: string }> = {
@@ -188,10 +188,10 @@ function NotificationItem({ notif }: { notif: AppNotification }) {
   // una tarjeta única con divide-y y el "no leída" en tinte verde.
   return (
     <li
-      className={`flex items-center gap-4 rounded-18 px-5 py-4 ${unread ? 'bg-surface-default' : 'bg-transparent'}`}
+      className={`flex items-center gap-4 rounded-2xl px-5 py-4 ${unread ? 'bg-surface-default' : 'bg-transparent'}`}
     >
       <div
-        className="flex-shrink-0 w-[42px] h-[42px] rounded-[14px] bg-surface-elevated flex items-center justify-center"
+        className="flex-shrink-0 w-[42px] h-[42px] rounded-2xl bg-surface-elevated flex items-center justify-center"
         style={{ color: accent.fg }}
       >
         {notif.type === 'recommendation' ? (
@@ -220,7 +220,7 @@ export function NotificationsList({ notifications }: Props) {
 
   if (notifications.length === 0) {
     return (
-      <div className="bg-surface-default rounded-18 p-10 text-center flex flex-col items-center gap-3 max-w-[720px]">
+      <div className="bg-surface-default rounded-2xl p-10 text-center flex flex-col items-center gap-3 max-w-[720px]">
         <IconBell className="w-8 h-8 text-text-tertiary" />
         <p className="font-bold text-text-primary">{t('noNotifications')}</p>
         <p className="text-sm text-text-tertiary">{t('noNotificationsHint')}</p>

@@ -6,6 +6,7 @@ import { Footer } from "@/components/layout/Footer";
 import { FEATURE_KEYS, FeatureGrid } from "@/components/landing/FeatureGrid";
 import { BestRankings } from "@/components/landing/BestRankings";
 import { Hero } from "@/components/landing/Hero";
+import { HeroCollage, HeroStripPlaceholder } from "@/components/landing/HeroCollage";
 import { ImmersiveBackdrop } from "@/components/landing/ImmersiveBackdrop";
 import { MotionToggle } from "@/components/landing/MotionToggle";
 import { HowItWorks, STEP_KEYS } from "@/components/landing/HowItWorks";
@@ -167,12 +168,12 @@ export default async function HomePage({ params }: Props) {
         <Hero
           copy={hero}
           backdrop={
-            <Suspense fallback={<ImmersiveBackdrop items={[]} />}>
+            <Suspense fallback={<ImmersiveBackdrop items={[]} collage={<HeroCollage items={[]} />} />}>
               <HeroBackdropSlot locale={locale} />
             </Suspense>
           }
           strip={
-            <Suspense fallback={null}>
+            <Suspense fallback={<HeroStripPlaceholder />}>
               <HeroStripSlot locale={locale} />
             </Suspense>
           }
@@ -180,7 +181,7 @@ export default async function HomePage({ params }: Props) {
 
         <section
           aria-labelledby="features-title"
-          className="px-4 md:px-8 pt-20 md:pt-28 pb-20 md:pb-28 max-w-6xl mx-auto"
+          className="page-grid pt-20 md:pt-28 pb-20 md:pb-28"
         >
           <h2
             id="features-title"

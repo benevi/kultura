@@ -64,7 +64,6 @@ const MEDIA_BLOCK_FALLBACK =
   'radial-gradient(120% 100% at 20% 10%, oklch(55% 0.2 340 / 0.6) 0%, transparent 55%), ' +
   'linear-gradient(160deg, oklch(30% 0.1 300), oklch(16% 0.06 280))'
 const MEDIA_BLOCK_ACCENT = 'radial-gradient(120% 100% at 20% 10%, oklch(55% 0.2 340 / 0.5) 0%, transparent 55%)'
-const HARD_SHADOW = '10px 10px 0 var(--surface-elevated)'
 
 export function HeroSection({ item, fullProgress = false }: HeroSectionProps) {
   const t = useTranslations('home')
@@ -87,21 +86,21 @@ export function HeroSection({ item, fullProgress = false }: HeroSectionProps) {
   const quick = canQuickAdvance(media.type, fullProgress)
 
   return (
-    <section className="relative rounded-bento-lg" style={{ boxShadow: HARD_SHADOW }}>
+    <section className="relative rounded-bento-xl shadow-hard-sm md:shadow-hard">
       {/* Badge colgante — misma pegatina lime/rotada/sombra dura que el match badge
           de F0, reutilizada aquí con texto real ("Continuando"), no un dato inventado. */}
       <div
-        className="absolute -top-3.5 left-6 md:left-9 z-20 rounded-2xl px-4 py-2 bg-accent-lime text-on-accent-lime font-display text-[11px] md:text-xs font-extrabold tracking-wide"
-        style={{ transform: 'rotate(-6deg)', boxShadow: '4px 4px 0 rgba(0,0,0,0.35)' }}
+        className="absolute -top-3.5 left-6 md:left-9 z-20 rounded-pill px-4 py-2 bg-accent-lime text-on-accent-lime font-display text-xs font-extrabold tracking-wide shadow-sticker"
+        style={{ transform: 'rotate(-6deg)' }}
       >
         <span aria-hidden="true">▶</span> <span className="uppercase">{t('continuing')}</span>
       </div>
 
       <div
-        className="relative overflow-hidden rounded-bento-lg flex flex-col md:flex-row"
+        className="relative overflow-hidden rounded-bento-xl flex flex-col md:flex-row"
         style={{ background: HERO_GRADIENT }}
       >
-        <div className="relative w-full md:w-64 lg:w-80 aspect-[16/9] md:aspect-auto md:self-stretch flex-shrink-0 overflow-hidden rounded-t-bento-lg md:rounded-l-bento-lg md:rounded-tr-none">
+        <div className="relative w-full md:w-64 lg:w-80 aspect-[16/9] md:aspect-auto md:self-stretch flex-shrink-0 overflow-hidden rounded-t-bento-xl md:rounded-l-bento-xl md:rounded-tr-none">
           {/* Respaldo SIEMPRE detrás: si la portada falla queda color, no hueco. */}
           <div className="absolute inset-0" style={{ background: MEDIA_BLOCK_FALLBACK }} />
           {media.poster && (

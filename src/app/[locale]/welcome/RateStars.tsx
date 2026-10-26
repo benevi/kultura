@@ -62,7 +62,7 @@ export function RateStars({ value, onChange, label }: RateStarsProps) {
                 move(5)
               }
             }}
-            className="flex h-8 w-8 items-center justify-center rounded-[8px] transition-transform duration-150 ease-out hover:scale-110 focus-visible:[outline-style:solid] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus-ring"
+            className="flex h-8 w-8 items-center justify-center rounded-lg transition-transform duration-150 ease-out hover:scale-110 focus-visible:[outline-style:solid] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus-ring"
           >
             <svg
               viewBox="0 0 24 24"

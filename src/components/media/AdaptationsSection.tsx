@@ -84,10 +84,10 @@ export async function AdaptationsSection({ item, locale, userId, supabase }: Pro
             <li key={card.mediaId}>
               <Link
                 href={`/media/${card.type}/${encodeURIComponent(card.externalId)}`}
-                className={`group flex items-center gap-3 rounded-18 bg-surface-default p-2.5 pr-4 min-h-11 hover:bg-surface-elevated transition-colors ${FOCUS}`}
+                className={`group flex items-center gap-3 rounded-2xl bg-surface-default p-2.5 pr-4 min-h-11 hover:bg-surface-elevated transition-colors ${FOCUS}`}
               >
                 <span
-                  className="relative w-12 h-[72px] flex-shrink-0 rounded-card overflow-hidden"
+                  className="relative w-12 h-[72px] flex-shrink-0 rounded-2xl overflow-hidden"
                   style={{ background: posterGradient(card.mediaId) }}
                   aria-hidden="true"
                 >
@@ -101,11 +101,11 @@ export async function AdaptationsSection({ item, locale, userId, supabase }: Pro
                     {card.year ? t("meta", { type: typeLabel, year: String(card.year) }) : typeLabel}
                   </span>
                   <span className="mt-1.5 flex flex-wrap gap-1.5">
-                    <span className="rounded-full border-2 border-surface-border text-text-secondary font-bold text-[11px] px-2.5 py-0.5">
+                    <span className="rounded-full border-2 border-surface-border text-text-secondary font-bold text-xs px-2.5 py-0.5">
                       {t(`relation.${card.relation}`)}
                     </span>
                     {card.inLibrary && (
-                      <span className="rounded-full bg-surface-elevated text-text-secondary font-bold text-[11px] px-2.5 py-0.5">
+                      <span className="rounded-full bg-surface-elevated text-text-secondary font-bold text-xs px-2.5 py-0.5">
                         {t("inLibrary")}
                       </span>
                     )}
@@ -128,7 +128,7 @@ export async function AdaptationsSection({ item, locale, userId, supabase }: Pro
           <Link
             href={`/login?mode=login&next=${encodeURIComponent(selfPath)}`}
             rel="nofollow"
-            className={`self-start text-sm font-bold text-text-primary underline underline-offset-2 hover:text-accent-pink rounded-[4px] min-h-11 inline-flex items-center ${FOCUS}`}
+            className={`self-start text-sm font-bold text-text-primary underline underline-offset-2 hover:text-accent-pink rounded-lg min-h-11 inline-flex items-center ${FOCUS}`}
           >
             {t("loginToAdd")}
           </Link>

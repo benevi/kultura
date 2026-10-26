@@ -102,12 +102,12 @@ export function GroupsClient({ myGroups: initialGroups }: GroupsClientProps) {
                 <Link
                   key={g.id}
                   href={`/groups/${g.id}`}
-                  className="rounded-24 border p-4 hover:brightness-110 transition-all flex flex-col gap-2"
+                  className="rounded-bento border p-4 hover:brightness-110 transition-all flex flex-col gap-2"
                   style={{ background: F0.surface, borderColor: F0.stroke }}
                 >
                   <div className="flex items-center gap-2.5">
                     <span
-                      className="w-11 h-11 rounded-[16px_16px_16px_4px] flex-shrink-0 flex items-center justify-center font-display font-extrabold text-sm"
+                      className="w-11 h-11 rounded-2xl rounded-bl-lg flex-shrink-0 flex items-center justify-center font-display font-extrabold text-sm"
                       style={{ background: g.coverColor, color: F0.onPink }}
                     >
                       {g.name.slice(0, 1).toUpperCase()}

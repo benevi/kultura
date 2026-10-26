@@ -147,11 +147,11 @@ export default async function HomePage() {
     }))
 
   return (
-    <main className="max-w-4xl mx-auto px-4 md:px-14 py-6 md:py-8 space-y-8 md:space-y-10">
+    <main className="page-grid [&>*]:max-w-4xl py-6 md:py-8 space-y-8 md:space-y-10">
       {deletionRequestedAt && (
         <div
           role="status"
-          className="flex flex-wrap items-center justify-between gap-3 rounded-20 border-2 border-accent-danger/50 bg-surface-default px-5 py-4"
+          className="flex flex-wrap items-center justify-between gap-3 rounded-bento border-2 border-accent-danger/50 bg-surface-default px-5 py-4"
         >
           <p className="font-body text-sm text-text-primary">
             {tSettings('deletionPending', {

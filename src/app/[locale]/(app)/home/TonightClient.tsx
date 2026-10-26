@@ -31,7 +31,7 @@ export function pickIndex(length: number, previous: number | null, random: () =>
 function Poster({ item, sizes }: { item: TonightPick; sizes: string }) {
   return (
     <div
-      className="relative aspect-[2/3] w-full overflow-hidden rounded-bento bg-surface-elevated"
+      className="relative aspect-[2/3] w-full overflow-hidden rounded-2xl bg-surface-elevated"
       style={{ background: posterGradient(item.mediaId || item.title) }}
     >
       {item.poster ? <PosterImage src={item.poster} sizes={sizes} className="object-cover" /> : null}
@@ -121,7 +121,7 @@ export function TonightClient({ picks, platforms }: { picks: TonightPick[]; plat
         </ul>
       )}
 
-      <p className="font-body text-[11px] text-text-tertiary">
+      <p className="font-body text-xs text-text-tertiary">
         {t('attribution')}
         {picks.length > 0 ? (
           <>

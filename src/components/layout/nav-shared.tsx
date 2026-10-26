@@ -68,7 +68,7 @@ export const HEADER_ICON_CURRENT = 'text-text-primary ring-2 ring-inset ring-sur
 
 /** Fila de enlace de un panel de la cabecera: 48 px de alto, ancho completo. */
 export const MENU_ROW = [
-  'flex items-center gap-3 w-full min-h-12 px-3 rounded-[14px] text-sm font-semibold text-text-primary text-left',
+  'flex items-center gap-3 w-full min-h-12 px-3 rounded-2xl text-sm font-semibold text-text-primary text-left',
   'hover:bg-surface-elevated transition-colors',
   FOCUS_RING,
   'focus-visible:outline-offset-[-2px]',
@@ -80,7 +80,7 @@ export function CountBadge({ count }: { count: number }) {
   return (
     <span
       aria-hidden
-      className="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 rounded-full bg-accent-pink text-on-accent-pink text-[11px] font-bold leading-none flex items-center justify-center ring-2 ring-surface-default"
+      className="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 rounded-full bg-accent-pink text-on-accent-pink text-xs font-bold leading-none flex items-center justify-center ring-2 ring-surface-default"
     >
       {count > 99 ? '99+' : count}
     </span>

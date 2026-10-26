@@ -10,8 +10,7 @@
 // ============================================================
 
 import * as React from 'react'
-import { PosterImage } from '@/components/media/PosterImage'
-import { posterGradient } from '@/lib/images/poster-gradient'
+import { PosterFrame } from '@/components/media/PosterFrame'
 import { Link } from '@/i18n/navigation'
 import { ContinueProgress, canQuickAdvance } from '@/components/home/ContinueProgress'
 import { progressFromJson } from '@/lib/library/progress'
@@ -47,25 +46,12 @@ export function ContinueRow({ title, items, fullProgress = false }: ContinueRowP
           return (
             <li key={item.mediaId} className="w-28 md:w-36 flex-shrink-0">
               <Link href={href} className="group block cursor-pointer">
-                <div className="relative aspect-[2/3] rounded-bento overflow-hidden bg-surface-elevated">
-                  {/* Respaldo SIEMPRE detrás: sin portada, bloque de color con iniciales. */}
-                  <div
-                    aria-hidden="true"
-                    className="absolute inset-0 flex items-center justify-center"
-                    style={{ background: posterGradient(item.mediaId || item.title) }}
-                  >
-                    <span className="font-display text-lg font-extrabold text-white/90">
-                      {item.title.slice(0, 2).toUpperCase()}
-                    </span>
-                  </div>
-                  {item.poster && (
-                    <PosterImage
-                      src={item.poster}
-                      sizes="(max-width: 768px) 112px, 144px"
-                      className="object-cover motion-safe:group-hover:scale-105 motion-safe:transition-transform motion-safe:duration-300"
-                    />
-                  )}
-                </div>
+                <PosterFrame
+                  seed={item.mediaId}
+                  title={item.title}
+                  poster={item.poster}
+                  sizes="(max-width: 768px) 112px, 144px"
+                />
                 <p
                   className="font-display text-sm font-bold mt-2 line-clamp-2 text-text-primary leading-tight"
                   title={item.title}

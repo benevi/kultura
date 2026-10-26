@@ -68,7 +68,7 @@ export function TonightSkeleton() {
       <div className="mb-3 h-5 w-56 rounded-button bg-surface-elevated" />
       <div className="flex gap-5 overflow-x-hidden">
         {[0, 1, 2, 3, 4].map((i) => (
-          <div key={i} className="aspect-[2/3] w-28 flex-shrink-0 rounded-bento bg-surface-elevated md:w-36" />
+          <div key={i} className="aspect-[2/3] w-28 flex-shrink-0 rounded-2xl bg-surface-elevated md:w-36" />
         ))}
       </div>
     </section>
@@ -168,7 +168,7 @@ export async function FriendsActivity({ userId, locale }: { userId: string; loca
                 </div>
                 <Link href={href} tabIndex={-1} aria-hidden="true" className="flex-shrink-0">
                   <div
-                    className="relative h-[60px] w-10 overflow-hidden rounded-md"
+                    className="relative h-[60px] w-10 overflow-hidden rounded-lg"
                     style={{ background: posterGradient(media.id || media.title) }}
                   >
                     {media.poster ? <PosterImage src={media.poster} sizes="40px" className="object-cover" /> : null}

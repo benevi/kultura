@@ -1,8 +1,7 @@
 'use client'
 
 import * as React from 'react'
-import { PosterImage } from '@/components/media/PosterImage'
-import { posterGradient } from '@/lib/images/poster-gradient'
+import { PosterFrame } from '@/components/media/PosterFrame'
 import { Link } from '@/i18n/navigation'
 import { KButton } from '@/components/ui/KButton'
 
@@ -29,8 +28,6 @@ interface MediaRowProps {
    * viendo, perfil) pasan `false` y se quedan con gradiente + título.
    */
   requirePoster?: boolean
-  /** Radio de las cards. Inicio usa el de bento; el artboard de Perfil, 18. */
-  cardRadius?: 'bento' | '18'
 }
 
 const SKELETONS = [0, 1, 2, 3, 4]
@@ -44,9 +41,7 @@ export function MediaRow({
   emptyAction,
   isLoading,
   requirePoster = true,
-  cardRadius = 'bento',
 }: MediaRowProps) {
-  const radiusClass = cardRadius === '18' ? 'rounded-18' : 'rounded-bento'
   const [failed, setFailed] = React.useState<ReadonlySet<string>>(() => new Set())
   const items = requirePoster ? allItems.filter((i) => i.poster && !failed.has(i.mediaId)) : allItems
   if (!isLoading && items.length === 0 && !emptyMessage) return null
@@ -60,7 +55,7 @@ export function MediaRow({
           {SKELETONS.map((i) => (
             <div
               key={i}
-              className="w-28 md:w-36 flex-shrink-0 animate-pulse bg-surface-elevated rounded-bento aspect-[2/3]"
+              className="w-28 md:w-36 flex-shrink-0 animate-pulse bg-surface-elevated rounded-2xl aspect-[2/3]"
             />
           ))}
         </div>
@@ -90,30 +85,15 @@ export function MediaRow({
                 href={href}
                 className="w-28 md:w-36 flex-shrink-0 cursor-pointer group"
               >
-                <div className={`relative aspect-[2/3] ${radiusClass} overflow-hidden bg-surface-elevated`}>
-                  {/* Respaldo F0 SIEMPRE detrás: un título sin portada o con
-                      portada rota se ve como bloque de color con sus
-                      iniciales, nunca como un hueco con "◻". */}
-                  <div
-                    aria-hidden="true"
-                    className="absolute inset-0 flex items-center justify-center"
-                    style={{ background: posterGradient(item.mediaId || item.title) }}
-                  >
-                    <span className="font-display text-lg font-extrabold text-white/90">
-                      {item.title.slice(0, 2).toUpperCase()}
-                    </span>
-                  </div>
-                  {item.poster && (
-                    <PosterImage
-                      src={item.poster}
-                      sizes="(max-width: 768px) 112px, 144px"
-                      className="object-cover group-hover:scale-105 transition-transform duration-300"
-                      onFail={() =>
-                        setFailed((prev) => (prev.has(item.mediaId) ? prev : new Set(prev).add(item.mediaId)))
-                      }
-                    />
-                  )}
-                </div>
+                <PosterFrame
+                  seed={item.mediaId}
+                  title={item.title}
+                  poster={item.poster}
+                  sizes="(max-width: 768px) 112px, 144px"
+                  onFail={() =>
+                    setFailed((prev) => (prev.has(item.mediaId) ? prev : new Set(prev).add(item.mediaId)))
+                  }
+                />
                 <p
                   className="font-display text-sm font-bold mt-2 line-clamp-2 text-text-primary leading-tight"
                   title={item.title}

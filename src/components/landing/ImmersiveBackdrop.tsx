@@ -23,7 +23,6 @@
 // ============================================================
 
 import * as React from "react";
-import { HeroCollage } from "@/components/landing/HeroCollage";
 import type { ShowcaseItem } from "@/lib/landing/showcase";
 import type { ImmersiveScene } from "@/lib/landing/immersive-scene";
 import { heroMotion } from "@/lib/landing/motion";
@@ -105,7 +104,18 @@ function whenIdle(cb: () => void): () => void {
   };
 }
 
-export function ImmersiveBackdrop({ items }: { items: ShowcaseItem[] }) {
+export function ImmersiveBackdrop({
+  items,
+  collage,
+}: {
+  items: ShowcaseItem[];
+  /**
+   * Collage quieto de escritorio, pintado en el SERVIDOR y pasado como hijo:
+   * así sus portadas, iconos y utilidades no viajan en el JS de la portada
+   * (F-30: de ~155 a < 150 KB).
+   */
+  collage?: React.ReactNode;
+}) {
   const allowed = useSceneAllowed();
   const [failed, setFailed] = React.useState(false);
   // El hero ya casi no se ve: el muro de portadas pasa a ser fondo de la página.
@@ -306,10 +316,16 @@ export function ImmersiveBackdrop({ items }: { items: ShowcaseItem[] }) {
         </>
       ) : null}
 
-      {/* Fondo quieto de escritorio: el collage de siempre, a la derecha. */}
+      {/* Fondo quieto de escritorio: el collage, DENTRO de la retícula y
+          pegado a su borde derecho (el mismo que los botones de la
+          cabecera). El texto del hero le deja su ancho (`Hero.tsx`), así que
+          a ningún ancho se montan (F-30). */}
       {quiet ? (
-        <div className="pointer-events-none absolute right-8 top-1/2 hidden -translate-y-1/2 lg:block xl:right-16">
-          <HeroCollage items={items} />
+        <div
+          data-hero-collage
+          className="pointer-events-none absolute inset-x-0 top-1/2 hidden -translate-y-1/2 lg:block"
+        >
+          <div className="page-grid flex justify-end">{collage}</div>
         </div>
       ) : null}
     </>

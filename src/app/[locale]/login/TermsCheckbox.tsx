@@ -32,7 +32,7 @@ export const TermsCheckbox = forwardRef<HTMLInputElement, TermsCheckboxProps>(
         <label
           htmlFor={id}
           className={cn(
-            "flex min-h-[44px] cursor-pointer items-start gap-3 rounded-[14px] bg-surface-elevated px-[18px] py-3",
+            "flex min-h-[44px] cursor-pointer items-start gap-3 rounded-2xl bg-surface-elevated px-[18px] py-3",
             error && "outline outline-1 outline-accent-danger"
           )}
         >
@@ -48,7 +48,7 @@ export const TermsCheckbox = forwardRef<HTMLInputElement, TermsCheckboxProps>(
             aria-describedby={error ? errorId : undefined}
             className="mt-0.5 h-5 w-5 flex-shrink-0 cursor-pointer accent-accent-pink"
           />
-          <span className="font-body text-[13px] leading-5 text-text-secondary">
+          <span className="font-body text-meta leading-5 text-text-secondary">
             {t.rich("termsLabel", {
               terms: (chunks) => (
                 <Link href="/terms" target="_blank" rel="noopener" className={LINK}>
@@ -64,7 +64,7 @@ export const TermsCheckbox = forwardRef<HTMLInputElement, TermsCheckboxProps>(
           </span>
         </label>
         {error && (
-          <p id={errorId} role="alert" className="px-1 font-body text-[13px] text-accent-danger">
+          <p id={errorId} role="alert" className="px-1 font-body text-meta text-accent-danger">
             {error}
           </p>
         )}

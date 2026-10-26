@@ -105,7 +105,8 @@ interface LibraryActionProps {
 
 const statusClasses: Record<LibraryStatus, string> = {
   completed: 'bg-accent-positive/20 text-accent-positive',
-  in_progress: 'bg-accent-info/20 text-accent-info',
+  // Texto claro sobre el azul: el azul sobre azul al 20 % daba < 4,5:1 (F-30).
+  in_progress: 'bg-accent-info/20 text-text-primary',
   pending: 'bg-accent-highlight/20 text-accent-highlight',
   abandoned: 'bg-accent-danger/20 text-accent-danger',
 }
@@ -296,7 +297,7 @@ export function LibraryAction({
               ref={stampRef}
               aria-hidden="true"
               data-testid="library-stamp"
-              className="pointer-events-none absolute -top-4 -right-6 z-10 whitespace-nowrap rounded-full bg-accent-lime px-3 py-1 text-xs font-extrabold text-on-accent-lime opacity-0 shadow-[4px_4px_0_rgba(0,0,0,0.4)]"
+              className="pointer-events-none absolute -top-4 -right-6 z-10 whitespace-nowrap rounded-full bg-accent-lime px-3 py-1 text-xs font-extrabold text-on-accent-lime opacity-0 shadow-sticker"
             >
               {td('stamp', { type: mediaCache.type })}
             </span>

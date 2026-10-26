@@ -58,7 +58,7 @@ export interface BestRankingsProps {
 
 export function BestRankings({ basePath, year, heading, sub, cta, copy, tops = {}, fans, previous }: BestRankingsProps) {
   return (
-    <section aria-labelledby="rankings-title" className="px-4 md:px-8 pb-20 md:pb-28 max-w-6xl mx-auto">
+    <section aria-labelledby="rankings-title" className="page-grid pb-20 md:pb-28">
       <h2
         id="rankings-title"
         className="font-display text-4xl md:text-6xl font-extrabold tracking-[-0.03em] text-text-primary mb-4 max-w-[14ch]"
@@ -83,7 +83,7 @@ export function BestRankings({ basePath, year, heading, sub, cta, copy, tops = {
                 )}
                 style={{ background: background(HUE[format]) }}
               >
-                <span className="relative z-10 self-start rounded-full bg-surface-elevated px-3 py-1 text-[12px] font-bold">
+                <span className="relative z-10 self-start rounded-full bg-surface-elevated px-3 py-1 text-xs font-bold">
                   {copy[format].label}
                 </span>
 
@@ -108,12 +108,12 @@ export function BestRankings({ basePath, year, heading, sub, cta, copy, tops = {
                     {copy[format].title}
                   </span>
                   {first ? (
-                    <span className="block text-[14px] mb-3 line-clamp-2">
+                    <span className="block text-sm mb-3 line-clamp-2">
                       {first.rating ? `★ ${first.rating.toFixed(1)} · ` : ""}
                       {first.title}
                     </span>
                   ) : null}
-                  <span className="text-[14px] font-bold">
+                  <span className="text-sm font-bold">
                     {cta}{" "}
                     <span aria-hidden="true" className="inline-block transition-transform group-hover:translate-x-1">→</span>
                   </span>

@@ -13,7 +13,7 @@ import type { Crumb } from "@/lib/best/seo";
 const FOCUS =
   "focus-visible:[outline-style:solid] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus-ring";
 
-const CHIP = `inline-flex min-h-11 items-center rounded-full px-4 text-[13px] font-bold transition-colors ${FOCUS}`;
+const CHIP = `inline-flex min-h-11 items-center rounded-full px-4 text-meta font-bold transition-colors ${FOCUS}`;
 /** Chip relleno: activo en lima (estado, DISENO.md), inactivo en `--surface-2`. */
 const CHIP_ON = "bg-accent-lime text-on-accent-lime";
 const CHIP_OFF = "bg-surface-elevated text-text-primary hover:text-accent-pink";
@@ -25,18 +25,18 @@ export async function BestBreadcrumbs({ locale, crumbs }: { locale: string; crum
   const t = await getTranslations({ locale, namespace: "best" });
   return (
     <nav aria-label={t("breadcrumb.label")}>
-      <ol className="flex flex-wrap items-center gap-x-1 text-[13px] font-bold text-text-tertiary">
+      <ol className="flex flex-wrap items-center gap-x-1 text-meta font-bold text-text-tertiary">
         {crumbs.map((c, i) => {
           const last = i === crumbs.length - 1;
           return (
             <li key={c.path} className="flex items-center gap-x-1">
               {last ? (
-                <a href={localeHref(locale, c.path)} aria-current="page" className={`py-3 text-text-secondary ${FOCUS} rounded-[4px]`}>
+                <a href={localeHref(locale, c.path)} aria-current="page" className={`py-3 text-text-secondary ${FOCUS} rounded-lg`}>
                   {c.name}
                 </a>
               ) : (
                 <>
-                  <a href={localeHref(locale, c.path)} className={`py-3 hover:text-accent-pink transition-colors ${FOCUS} rounded-[4px]`}>
+                  <a href={localeHref(locale, c.path)} className={`py-3 hover:text-accent-pink transition-colors ${FOCUS} rounded-lg`}>
                     {c.name}
                   </a>
                   <span aria-hidden="true">/</span>
@@ -122,7 +122,7 @@ export async function BestYearNav({
 
 /**
  * "Guarda los que te faltan" (CRE-11): alta con vuelta a este ranking. Mismo
- * patrón que el bloque de alta del perfil público: card `rounded-20`, pill
+ * patrón que el bloque de alta del perfil público: card `rounded-bento`, pill
  * primario y secundario.
  */
 export async function BestCta({ locale, year, returnTo }: { locale: string; year: number; returnTo: string }) {
@@ -130,12 +130,12 @@ export async function BestCta({ locale, year, returnTo }: { locale: string; year
   return (
     <section
       aria-labelledby="best-cta-title"
-      className="flex flex-col items-start gap-4 rounded-20 bg-surface-default p-6 md:p-8"
+      className="flex flex-col items-start gap-4 rounded-bento bg-surface-default p-6 md:p-8"
     >
-      <h2 id="best-cta-title" className="font-display text-2xl font-extrabold text-text-primary md:text-[28px]">
+      <h2 id="best-cta-title" className="font-display text-2xl font-extrabold text-text-primary md:text-3xl">
         {t("cta.title")}
       </h2>
-      <p className="max-w-prose text-[15px] text-text-secondary">{t("cta.body", { year })}</p>
+      <p className="max-w-prose text-body text-text-secondary">{t("cta.body", { year })}</p>
       <div className="flex flex-wrap gap-3">
         <a
           href={signUpHref(locale, returnTo)}

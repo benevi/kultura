@@ -43,7 +43,7 @@ export function PageHeading({
     >
       {/* 42px es el valor literal del canvas; en móvil baja a 30px para que un
           título largo no parta la pantalla. */}
-      <h1 className="font-display text-[30px] font-bold leading-tight tracking-tight text-text-primary md:text-[42px]">
+      <h1 className="font-display text-3xl font-bold leading-tight tracking-tight text-text-primary md:text-4xl">
         {children}
         {emoji && (
           <span aria-hidden="true" className="ml-2">

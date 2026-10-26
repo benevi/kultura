@@ -96,14 +96,14 @@ export default async function BestOfPage({ params }: Props) {
   return (
     <div className="min-h-screen flex flex-col">
       <Header locale={locale} />
-      <main id="main" className="flex-1 w-full max-w-4xl mx-auto px-4 md:px-8 py-8 md:py-10 flex flex-col gap-8 md:gap-10">
+      <main id="main" className="page-grid [&>*]:max-w-4xl flex-1 py-8 md:py-10 flex flex-col gap-8 md:gap-10">
         <header className="flex flex-col gap-4">
           <BestBreadcrumbs locale={locale} crumbs={crumbs} />
-          <h1 className="font-display text-3xl md:text-[42px] font-bold leading-tight text-text-primary">{title}</h1>
-          <p className="text-[15px] text-text-secondary max-w-prose">
+          <h1 className="font-display text-3xl md:text-4xl font-bold leading-tight text-text-primary">{title}</h1>
+          <p className="text-body text-text-secondary max-w-prose">
             {t(`intro.${parsed.format}`, { year: parsed.year })}
           </p>
-          <p className="text-[13px] text-text-tertiary max-w-prose">
+          <p className="text-meta text-text-tertiary max-w-prose">
             {t(`criteria.${parsed.format}`, { year: parsed.year, min: ranking.minVotes ?? 0 })}{" "}
             {t.rich("updated", {
               date: updatedLabel,
@@ -121,11 +121,11 @@ export default async function BestOfPage({ params }: Props) {
         </header>
 
         {items.length === 0 ? (
-          <section className="flex flex-col items-start gap-3 rounded-20 bg-surface-default p-6 md:p-8">
+          <section className="flex flex-col items-start gap-3 rounded-bento bg-surface-default p-6 md:p-8">
             <h2 className="font-display text-2xl font-extrabold text-text-primary">
               {t("empty.title", { year: parsed.year })}
             </h2>
-            <p className="max-w-prose text-[15px] text-text-secondary">
+            <p className="max-w-prose text-body text-text-secondary">
               {t("empty.body", { year: parsed.year, noun: t(`noun.${parsed.format}`) })}
             </p>
             {previousYear ? (
@@ -140,7 +140,7 @@ export default async function BestOfPage({ params }: Props) {
         ) : (
           <>
             {!isIndexableRanking(items.length) ? (
-              <p role="note" className="rounded-20 border-2 border-stroke px-4 py-3 text-[14px] text-text-secondary">
+              <p role="note" className="rounded-bento border-2 border-stroke px-4 py-3 text-sm text-text-secondary">
                 {t("provisional", { count: items.length })}
               </p>
             ) : null}

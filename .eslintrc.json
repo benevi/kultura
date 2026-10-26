@@ -1,4 +1,42 @@
 {
   "root": true,
-  "extends": ["next/core-web-vitals", "next/typescript"]
+  "extends": ["next/core-web-vitals", "next/typescript"],
+  "rules": {
+    "no-restricted-syntax": [
+      "error",
+      {
+        "selector": "Literal[value=/(^|[\\s:\"'`])text-\\[(\\d|clamp)/]",
+        "message": "Tamaño de texto fuera de la escala: usa text-xs/meta/sm/body/base/lg/xl/2xl…8xl/display (tailwind.config.ts, DISENO.md)."
+      },
+      {
+        "selector": "TemplateElement[value.raw=/(^|[\\s:\"'`])text-\\[(\\d|clamp)/]",
+        "message": "Tamaño de texto fuera de la escala: usa text-xs/meta/sm/body/base/lg/xl/2xl…8xl/display (tailwind.config.ts, DISENO.md)."
+      },
+      {
+        "selector": "Literal[value=/(^|[\\s:\"'`])rounded(-[a-z]{1,2})?-\\[/]",
+        "message": "Radio fuera del set: usa rounded-lg (8), rounded-2xl (16), rounded-bento (20), rounded-bento-xl (32) o rounded-full (DISENO.md)."
+      },
+      {
+        "selector": "TemplateElement[value.raw=/(^|[\\s:\"'`])rounded(-[a-z]{1,2})?-\\[/]",
+        "message": "Radio fuera del set: usa rounded-lg (8), rounded-2xl (16), rounded-bento (20), rounded-bento-xl (32) o rounded-full (DISENO.md)."
+      },
+      {
+        "selector": "Literal[value=/(^|[\\s:\"'`])shadow-\\[/]",
+        "message": "Sombra fuera del set: usa shadow-hard, shadow-hard-sm, shadow-sticker o shadow-soft (DISENO.md)."
+      },
+      {
+        "selector": "TemplateElement[value.raw=/(^|[\\s:\"'`])shadow-\\[/]",
+        "message": "Sombra fuera del set: usa shadow-hard, shadow-hard-sm, shadow-sticker o shadow-soft (DISENO.md)."
+      }
+    ]
+  },
+  "overrides": [
+    {
+      "files": [
+        "src/app/[[]locale]/(app)/settings/SettingsForm.tsx",
+        "src/app/[[]locale]/(app)/discover/**"
+      ],
+      "rules": { "no-restricted-syntax": "off" }
+    }
+  ]
 }

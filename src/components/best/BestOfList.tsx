@@ -5,8 +5,8 @@
 // Cada título enlaza a su ficha pública (PRO-8, CRE-11) con un enlace
 // "estirado" que cubre la card entera (una sola parada de teclado y un solo
 // nombre accesible, el título), y tiene su "Guardar" aparte, que lleva a la
-// misma ficha: allí está el botón de añadir (o el alta, sin cuenta). Primitivos de DISENO.md: card `rounded-20` sobre
-// `--surface-default`, portada `rounded-card` con el gradiente DETRÁS,
+// misma ficha: allí está el botón de añadir (o el alta, sin cuenta). Primitivos de DISENO.md: card `rounded-bento` sobre
+// `--surface-default`, portada `rounded-2xl` con el gradiente DETRÁS,
 // pegatina lima colgante para el #1, números en display.
 //
 // Las portadas llevan `alt` con el título (SEO-10: Google Imágenes) pero su
@@ -22,13 +22,13 @@ import { localeHref, saveHref } from "@/lib/best/links";
 
 /** Enlace que cubre su card (`relative`) y pinta el foco alrededor de ella. */
 const STRETCHED_LINK =
-  "after:absolute after:inset-0 after:rounded-20 hover:text-accent-pink transition-colors " +
+  "after:absolute after:inset-0 after:rounded-bento hover:text-accent-pink transition-colors " +
   "focus-visible:outline-none focus-visible:after:[outline-style:solid] focus-visible:after:outline-2 " +
   "focus-visible:after:outline-offset-2 focus-visible:after:outline-focus-ring";
 
 const SAVE_LINK =
   "relative z-10 inline-flex min-h-11 items-center self-start rounded-full border-2 border-stroke px-4 " +
-  "text-[13px] font-bold text-text-secondary hover:bg-surface-elevated hover:text-text-primary transition-colors " +
+  "text-meta font-bold text-text-secondary hover:bg-surface-elevated hover:text-text-primary transition-colors " +
   "focus-visible:[outline-style:solid] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus-ring";
 
 function formatRating(rating: number, locale: string): string {
@@ -51,7 +51,7 @@ function Meta({ item, locale, t }: { item: BestItem; locale: string; t: T }) {
   }
   if (parts.length === 0) return null;
   return (
-    <p className="text-[13px] font-bold text-text-secondary">
+    <p className="text-meta font-bold text-text-secondary">
       {parts.map((p, i) => (
         <span key={i}>
           {i > 0 ? <span aria-hidden="true"> · </span> : null}
@@ -78,7 +78,7 @@ function Genres({ genres }: { genres: string[] }) {
   return (
     <ul className="flex flex-wrap gap-1.5">
       {genres.map((g) => (
-        <li key={g} className="rounded-full bg-surface-elevated px-2.5 py-0.5 text-[12px] font-bold text-text-primary">
+        <li key={g} className="rounded-full bg-surface-elevated px-2.5 py-0.5 text-xs font-bold text-text-primary">
           {g}
         </li>
       ))}
@@ -104,7 +104,7 @@ const FEATURE_BG =
 const PODIUM = [
   {
     li: `col-span-2 flex-row md:col-span-1 md:flex-col ${FEATURE_BG}`,
-    number: "text-[56px] md:text-[96px]",
+    number: "text-6xl md:text-8xl",
     title: "text-lg md:text-2xl",
     sizes: "(min-width: 896px) 300px, (min-width: 768px) 36vw, 40vw",
     poster: "w-2/5 md:w-full",
@@ -112,7 +112,7 @@ const PODIUM = [
   },
   {
     li: "flex-col md:mt-12",
-    number: "text-[48px] md:text-[72px]",
+    number: "text-5xl md:text-7xl",
     title: "text-base md:text-lg",
     sizes: "(min-width: 896px) 250px, (min-width: 768px) 30vw, 50vw",
     poster: "w-full",
@@ -120,7 +120,7 @@ const PODIUM = [
   },
   {
     li: "flex-col md:mt-24",
-    number: "text-[48px] md:text-[60px]",
+    number: "text-5xl md:text-6xl",
     title: "text-base md:text-lg",
     sizes: "(min-width: 896px) 210px, (min-width: 768px) 26vw, 50vw",
     poster: "w-full",
@@ -147,19 +147,19 @@ export async function BestPodium({ items, locale }: { items: BestItem[]; locale:
         return (
           <li
             key={item.id}
-            className={`relative flex gap-3 rounded-20 bg-surface-default p-3 md:p-4 ${look.li}`}
+            className={`relative flex gap-3 rounded-bento bg-surface-default p-3 md:p-4 ${look.li}`}
           >
             {first ? (
               <span
                 aria-hidden="true"
-                className="absolute -left-2 -top-3 z-10 rotate-[-8deg] rounded-full bg-accent-lime px-3 py-1 text-sm font-extrabold text-on-accent-lime shadow-[4px_4px_0_rgba(0,0,0,.4)] md:-left-3.5 md:-top-3.5 md:text-base"
+                className="absolute -left-2 -top-3 z-10 rotate-[-8deg] rounded-full bg-accent-lime px-3 py-1 text-sm font-extrabold text-on-accent-lime shadow-sticker md:-left-3.5 md:-top-3.5 md:text-base"
               >
                 {t("sticker")}
               </span>
             ) : null}
             <div
               aria-hidden="true"
-              className={`relative aspect-[2/3] shrink-0 overflow-hidden rounded-card ${look.poster}`}
+              className={`relative aspect-[2/3] shrink-0 overflow-hidden rounded-2xl ${look.poster}`}
               style={{ background: posterGradient(item.id) }}
             >
               <BestPoster src={item.poster} alt={item.title} sizes={look.sizes} priority />
@@ -179,7 +179,7 @@ export async function BestPodium({ items, locale }: { items: BestItem[]; locale:
                 <Genres genres={item.genres} />
                 {item.synopsis ? (
                   <p
-                    className={`text-[13px] text-text-secondary md:text-[14px] ${first ? "line-clamp-3 md:line-clamp-5" : "line-clamp-3"}`}
+                    className={`text-meta text-text-secondary md:text-sm ${first ? "line-clamp-3 md:line-clamp-5" : "line-clamp-3"}`}
                   >
                     {item.synopsis}
                   </p>
@@ -206,16 +206,16 @@ export async function BestRankList({ items, locale }: { items: BestItem[]; local
       {rest.map((item, i) => {
         const n = i + 4;
         return (
-          <li key={item.id} className="relative flex items-start gap-3 rounded-20 bg-surface-default p-3 md:gap-5 md:p-4">
+          <li key={item.id} className="relative flex items-start gap-3 rounded-bento bg-surface-default p-3 md:gap-5 md:p-4">
             <span
               aria-hidden="true"
-              className="w-7 shrink-0 pt-1 text-right font-display text-xl font-extrabold leading-none text-text-tertiary md:w-12 md:text-[32px]"
+              className="w-7 shrink-0 pt-1 text-right font-display text-xl font-extrabold leading-none text-text-tertiary md:w-12 md:text-3xl"
             >
               {n}
             </span>
             <div
               aria-hidden="true"
-              className="relative aspect-[2/3] w-16 shrink-0 overflow-hidden rounded-card md:w-20"
+              className="relative aspect-[2/3] w-16 shrink-0 overflow-hidden rounded-2xl md:w-20"
               style={{ background: posterGradient(item.id) }}
             >
               <BestPoster src={item.poster} alt={item.title} sizes="(min-width: 768px) 80px, 64px" />
@@ -229,7 +229,7 @@ export async function BestRankList({ items, locale }: { items: BestItem[]; local
               </h2>
               <Meta item={item} locale={locale} t={t} />
               {item.synopsis ? (
-                <p className="text-[13px] text-text-secondary line-clamp-2 md:text-[14px]">{item.synopsis}</p>
+                <p className="text-meta text-text-secondary line-clamp-2 md:text-sm">{item.synopsis}</p>
               ) : null}
               <SaveLink item={item} locale={locale} t={t} />
             </div>

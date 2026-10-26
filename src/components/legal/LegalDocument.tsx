@@ -53,7 +53,7 @@ export function siteHost(): string {
 }
 
 const TEXT_LINK =
-  'underline underline-offset-2 decoration-1 text-text-primary hover:text-accent-pink transition-colors rounded-[4px] ' +
+  'underline underline-offset-2 decoration-1 text-text-primary hover:text-accent-pink transition-colors rounded-lg ' +
   'focus-visible:[outline-style:solid] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus-ring'
 
 const CHIP =
@@ -152,7 +152,7 @@ export async function LegalDocument({ doc }: { doc: LegalDoc }) {
   return (
     <div className="min-h-screen flex flex-col">
       <Header locale={locale} />
-      <main id="main" className="flex-1 w-full max-w-6xl mx-auto px-4 md:px-8 py-10 md:py-16">
+      <main id="main" className="page-grid flex-1 py-10 md:py-16">
         <div className="max-w-[68ch]">
           <nav aria-label={tl('nav.label')}>
             <ul className="flex flex-wrap gap-2">
@@ -186,7 +186,7 @@ export async function LegalDocument({ doc }: { doc: LegalDoc }) {
 
           <section
             aria-labelledby="legal-summary"
-            className="rounded-20 border border-surface-border bg-surface-elevated p-5 md:p-6 mb-10"
+            className="rounded-bento border border-surface-border bg-surface-elevated p-5 md:p-6 mb-10"
           >
             <h2 id="legal-summary" className="font-display font-extrabold text-xl tracking-tight text-text-primary mb-3">
               {tl('doc.summaryTitle')}

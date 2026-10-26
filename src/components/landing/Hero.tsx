@@ -54,17 +54,16 @@ export function Hero({
       <div className="relative h-full md:overflow-hidden">
         {backdrop}
 
-        <div className="relative px-4 pb-12 pt-16 md:absolute md:inset-x-0 md:bottom-0 md:px-14 md:pb-20 md:pt-0">
+        <div className="page-grid relative pb-12 pt-16 md:absolute md:inset-x-0 md:bottom-0 md:pb-20 md:pt-0">
           <div className="relative">
             <span
-              className="absolute -left-1 -top-10 rotate-[-8deg] whitespace-nowrap rounded-full bg-accent-lime px-4 py-2 font-display text-sm font-extrabold leading-none text-on-accent-lime md:-left-2"
-              style={{ boxShadow: "4px 4px 0 rgba(0,0,0,.4)" }}
+              className="absolute -left-1 -top-10 rotate-[-8deg] whitespace-nowrap rounded-full bg-accent-lime px-4 py-2 font-display text-sm font-extrabold leading-none text-on-accent-lime shadow-sticker md:-left-2"
             >
               {copy.badge}
             </span>
             <h1
               id="hero-title"
-              className="max-w-[17ch] text-balance font-display text-[2.25rem] font-extrabold leading-[1] tracking-[-0.03em] text-text-primary min-[400px]:text-[2.75rem] md:text-[clamp(3.25rem,5.4vw,5.75rem)] md:leading-[0.95]"
+              className="max-w-[17ch] lg:max-w-[min(17ch,calc(100%-31rem))] text-balance font-display text-3xl font-extrabold leading-[1] tracking-[-0.03em] text-text-primary min-[400px]:text-4xl md:text-display md:leading-[0.95]"
             >
               {copy.title.map((part, i) =>
                 typeof part === "string" ? (
@@ -80,7 +79,7 @@ export function Hero({
               )}
             </h1>
           </div>
-          <p className="mt-6 max-w-[46ch] text-pretty text-lg text-text-secondary md:mt-7 md:text-xl">{copy.sub}</p>
+          <p className="mt-6 max-w-[46ch] lg:max-w-[min(46ch,calc(100%-31rem))] text-pretty text-lg text-text-secondary md:mt-7 md:text-xl">{copy.sub}</p>
           <div className="mt-8 flex flex-col gap-3 min-[400px]:flex-row min-[400px]:flex-wrap min-[400px]:items-center">
             <KButton variant="primary" size="lg" asChild>
               <a href={`/${copy.locale}/login?mode=register`}>{copy.cta}</a>

@@ -177,7 +177,7 @@ function getCredits(item: MediaItem): { key: CreditKey; value: string }[] {
 
 const sectionTitle = "font-display text-xl font-bold text-text-primary mb-3";
 const crumbLink =
-  "inline-flex items-center min-h-11 rounded-[4px] hover:text-accent-pink transition-colors " +
+  "inline-flex items-center min-h-11 rounded-lg hover:text-accent-pink transition-colors " +
   "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-pink";
 
 export async function MediaDetail({
@@ -255,7 +255,7 @@ export async function MediaDetail({
 
   return (
     <main id="main" className="min-h-screen">
-      <div className="max-w-6xl mx-auto px-4 md:px-14 pt-1 pb-[calc(3.5rem+env(safe-area-inset-bottom))] md:pb-14">
+      <div className="page-grid pt-1 pb-[calc(3.5rem+env(safe-area-inset-bottom))] md:pb-14">
         {breadcrumbs.length > 0 && (
           <nav aria-label={t("breadcrumbLabel")} className="mb-2">
             <ol className="flex flex-wrap items-center gap-x-1.5 text-xs text-text-tertiary">
@@ -281,8 +281,7 @@ export async function MediaDetail({
           <div className="w-full md:w-[420px] flex-shrink-0">
             <div className="relative">
               <div
-                className="relative w-full h-[260px] sm:h-auto sm:aspect-[3/4] rounded-[32px] overflow-hidden flex items-end p-6 md:p-8"
-                style={{ boxShadow: "12px 12px 0 oklch(26% 0.025 280)" }}
+                className="relative w-full h-[260px] sm:h-auto sm:aspect-[3/4] rounded-bento-xl overflow-hidden flex items-end p-6 md:p-8 shadow-hard-sm md:shadow-hard"
               >
                 {/* Gradiente SIEMPRE detrás (E-CARD-PORTADA-404): con
                     `poster ? imagen : gradiente`, una portada que da 404
@@ -423,7 +422,7 @@ export async function MediaDetail({
                     <Link
                       href={`/login?mode=login&next=${next}`}
                       rel="nofollow"
-                      className="whitespace-nowrap font-bold text-text-primary underline underline-offset-2 hover:text-accent-pink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-pink rounded-[4px]"
+                      className="whitespace-nowrap font-bold text-text-primary underline underline-offset-2 hover:text-accent-pink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-pink rounded-lg"
                     >
                       {t("ctaLogin")}
                     </Link>

@@ -28,10 +28,10 @@ interface AuthHeaderProps {
 export function AuthHeader({ profile, unreadCount }: AuthHeaderProps) {
   return (
     <header className="sticky top-0 z-40 bg-surface-default border-b border-surface-border">
-      <div className="relative flex items-center gap-2 h-14 max-w-6xl mx-auto px-4 md:px-8">
+      <div className="page-grid relative flex items-center gap-2 h-14">
         <Link
           href="/home"
-          className={`flex items-center min-h-11 flex-shrink-0 rounded-[14px] hover:opacity-80 transition-opacity ${FOCUS_RING}`}
+          className={`flex items-center min-h-11 flex-shrink-0 rounded-2xl hover:opacity-80 transition-opacity ${FOCUS_RING}`}
         >
           <Logo size={24} />
         </Link>

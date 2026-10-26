@@ -44,7 +44,7 @@ export default async function ReportPage({ searchParams }: Props) {
   return (
     <div className="min-h-screen flex flex-col">
       <Header />
-      <main id="main" className="flex-1 px-4 md:px-8 py-12 md:py-16 max-w-2xl mx-auto w-full">
+      <main id="main" className="page-grid [&>*]:max-w-2xl flex-1 py-12 md:py-16">
         <h1 className="font-display text-3xl md:text-4xl font-extrabold tracking-tight text-text-primary mb-3">
           {t('title')}
         </h1>

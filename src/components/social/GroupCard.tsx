@@ -33,7 +33,7 @@ export function GroupCard({ group }: GroupCardProps) {
     >
       <div className="flex items-center gap-2.5">
         <span
-          className="w-11 h-11 rounded-[16px_16px_16px_4px] flex-shrink-0 flex items-center justify-center font-display font-extrabold text-sm"
+          className="w-11 h-11 rounded-2xl rounded-bl-lg flex-shrink-0 flex items-center justify-center font-display font-extrabold text-sm"
           style={{ background: group.coverColor, color: F0.onPink }}
         >
           {group.name.slice(0, 1).toUpperCase()}

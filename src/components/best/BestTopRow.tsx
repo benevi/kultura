@@ -19,16 +19,16 @@ export function BestTopRow({ items, locale, label }: { items: BestItem[]; locale
         <li key={item.id} className={i >= 3 ? "hidden sm:block" : undefined}>
           <a
             href={localeHref(locale, bestItemPath(item))}
-            className="group flex flex-col gap-2 rounded-card focus-visible:[outline-style:solid] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus-ring"
+            className="group flex flex-col gap-2 rounded-2xl focus-visible:[outline-style:solid] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus-ring"
           >
             <span
               aria-hidden="true"
-              className="relative block aspect-[2/3] w-full overflow-hidden rounded-card"
+              className="relative block aspect-[2/3] w-full overflow-hidden rounded-2xl"
               style={{ background: posterGradient(item.id) }}
             >
               <BestPoster src={item.poster} alt={item.title} sizes="(min-width: 896px) 160px, (min-width: 640px) 18vw, 30vw" />
             </span>
-            <span className="text-[13px] font-bold leading-snug text-text-primary line-clamp-2 group-hover:text-accent-pink transition-colors">
+            <span className="text-meta font-bold leading-snug text-text-primary line-clamp-2 group-hover:text-accent-pink transition-colors">
               <span className="text-text-tertiary">{i + 1}. </span>
               {item.title}
             </span>

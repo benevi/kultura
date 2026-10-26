@@ -42,10 +42,10 @@ export function LetterboxdExport() {
 
   return (
     <section aria-labelledby="letterboxd-export" className="flex flex-col gap-2">
-      <h2 id="letterboxd-export" className="mb-1 text-[13px] font-extrabold uppercase tracking-wide text-text-tertiary">
+      <h2 id="letterboxd-export" className="mb-1 text-meta font-extrabold uppercase tracking-wide text-text-tertiary">
         {t('export.title')}
       </h2>
-      <div className="flex flex-col gap-4 rounded-20 bg-surface-default px-5 py-5 sm:px-6">
+      <div className="flex flex-col gap-4 rounded-bento bg-surface-default px-5 py-5 sm:px-6">
         <p className="font-body text-sm text-text-tertiary">{t('export.body')}</p>
         <div className="flex flex-col gap-3 sm:flex-row">
           <KButton type="button" variant="secondary" loading={busy === 'watched'} disabled={busy !== null} onClick={() => void exportList('watched')}>

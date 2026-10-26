@@ -12,11 +12,11 @@ describe('PageHeading', () => {
     expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent('Tus listas')
   })
 
-  it('usa el display 42px/700 del canvas', () => {
+  it('usa el display 40px/700 de la escala (text-4xl)', () => {
     render(<PageHeading>Grupos</PageHeading>)
     const h1 = screen.getByRole('heading', { level: 1 })
     expect(h1.className).toContain('font-display')
-    expect(h1.className).toContain('md:text-[42px]')
+    expect(h1.className).toContain('md:text-4xl')
     expect(h1.className).toContain('font-bold')
   })
 

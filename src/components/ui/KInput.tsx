@@ -58,7 +58,7 @@ export const KInput = React.forwardRef<HTMLInputElement, KInputProps>(
         {label && (
           <label
             htmlFor={inputId}
-            className="font-body text-[13px] font-bold text-text-tertiary"
+            className="font-body text-meta font-bold text-text-tertiary"
           >
             {label}
           </label>
@@ -71,9 +71,9 @@ export const KInput = React.forwardRef<HTMLInputElement, KInputProps>(
           autoCapitalize={autoCapitalize ?? (isEmail ? "none" : undefined)}
           spellCheck={spellCheck ?? (isEmail ? false : undefined)}
           className={cn(
-            "w-full rounded-[14px] bg-surface-elevated px-[18px] py-[15px]",
+            "w-full rounded-2xl bg-surface-elevated px-[18px] py-[15px]",
             "border border-field-border",
-            "font-body text-base md:text-[15px] text-text-primary",
+            "font-body text-base md:text-body text-text-primary",
             "placeholder:text-text-tertiary",
             "transition-colors duration-base ease-standard",
             "focus-visible:[outline-style:solid] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus-ring",

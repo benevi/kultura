@@ -214,7 +214,7 @@ export function ImportClient({ locale, userId, isDemo = false, compact = false, 
 
   if (isDemo) {
     return (
-      <p role="status" className="rounded-20 bg-surface-default px-5 py-4 font-body text-sm text-text-secondary sm:px-6">
+      <p role="status" className="rounded-bento bg-surface-default px-5 py-4 font-body text-sm text-text-secondary sm:px-6">
         {t('demo')}
       </p>
     )
@@ -224,7 +224,7 @@ export function ImportClient({ locale, userId, isDemo = false, compact = false, 
   const counts = countResults(results)
   const done = previous ? Array.from(previous.values()).filter((r) => r.outcome !== 'pending').length : 0
   const unmatched = parsed ? parsed.items.filter((i) => results.get(i.key)?.outcome === 'unmatched') : []
-  const card = 'rounded-20 bg-surface-default px-5 py-5 sm:px-6'
+  const card = 'rounded-bento bg-surface-default px-5 py-5 sm:px-6'
   const sourceName = parsed ? t(`sources.${parsed.source}.name`) : ''
 
   return (
@@ -233,7 +233,7 @@ export function ImportClient({ locale, userId, isDemo = false, compact = false, 
         <>
           {!compact && (
             <div className="flex flex-col gap-2">
-              <p className="font-body text-[15px] text-text-secondary">{t('intro')}</p>
+              <p className="font-body text-body text-text-secondary">{t('intro')}</p>
               <p className="font-body text-sm text-text-tertiary">{t('keepNote')}</p>
             </div>
           )}
@@ -251,7 +251,7 @@ export function ImportClient({ locale, userId, isDemo = false, compact = false, 
               void read(Array.from(e.dataTransfer.files))
             }}
             className={cn(
-              'flex flex-col items-center gap-3 rounded-20 border-2 border-dashed px-5 py-8 text-center transition-colors',
+              'flex flex-col items-center gap-3 rounded-bento border-2 border-dashed px-5 py-8 text-center transition-colors',
               dragging ? 'border-accent-pink bg-surface-elevated' : 'border-surface-border bg-surface-default'
             )}
           >
@@ -278,17 +278,17 @@ export function ImportClient({ locale, userId, isDemo = false, compact = false, 
           </section>
 
           {parseError && (
-            <p role="alert" className="rounded-[14px] bg-accent-danger/10 px-[18px] py-3 font-body text-sm text-accent-danger">
+            <p role="alert" className="rounded-2xl bg-accent-danger/10 px-[18px] py-3 font-body text-sm text-accent-danger">
               {t(`parseErrors.${parseError}`, { mb: MB })}
             </p>
           )}
 
           {!compact && (
             <section aria-labelledby="import-howto" className="flex flex-col gap-2">
-              <h2 id="import-howto" className="mb-1 text-[13px] font-extrabold uppercase tracking-wide text-text-tertiary">
+              <h2 id="import-howto" className="mb-1 text-meta font-extrabold uppercase tracking-wide text-text-tertiary">
                 {t('howTo')}
               </h2>
-              <div className="flex flex-col divide-y divide-surface-border overflow-hidden rounded-20 bg-surface-default">
+              <div className="flex flex-col divide-y divide-surface-border overflow-hidden rounded-bento bg-surface-default">
                 {IMPORT_SOURCES.map((source) => (
                   <details key={source} className="group px-5 py-4 sm:px-6">
                     <summary className="flex min-h-[44px] cursor-pointer list-none items-center justify-between gap-3 font-body text-sm font-bold text-text-primary focus-visible:[outline-style:solid] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus-ring">
@@ -335,7 +335,7 @@ export function ImportClient({ locale, userId, isDemo = false, compact = false, 
           </p>
 
           {parsed.warnings.map((w) => (
-            <p key={w.code} className="rounded-[14px] bg-surface-elevated px-[18px] py-3 font-body text-sm text-text-secondary">
+            <p key={w.code} className="rounded-2xl bg-surface-elevated px-[18px] py-3 font-body text-sm text-text-secondary">
               {w.code === 'skipped_rows'
                 ? t('warnings.skipped_rows', { count: w.count })
                 : w.code === 'truncated'
@@ -351,7 +351,7 @@ export function ImportClient({ locale, userId, isDemo = false, compact = false, 
                 <label
                   key={option}
                   className={cn(
-                    'flex min-h-[44px] cursor-pointer items-center gap-3 rounded-[14px] bg-surface-elevated px-4 py-3 font-body text-sm font-bold text-text-primary',
+                    'flex min-h-[44px] cursor-pointer items-center gap-3 rounded-2xl bg-surface-elevated px-4 py-3 font-body text-sm font-bold text-text-primary',
                     ambiguousAs === option && 'ring-2 ring-accent-pink'
                   )}
                 >

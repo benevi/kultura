@@ -3,7 +3,7 @@ import { Link } from '@/i18n/navigation'
 import { renderDataAttribution } from '@/components/legal/DataAttribution'
 
 const FOOTER_LINK =
-  'inline-flex items-center min-h-11 px-2 rounded-[14px] text-sm text-text-secondary hover:text-accent-pink transition-colors ' +
+  'inline-flex items-center min-h-11 px-2 rounded-2xl text-sm text-text-secondary hover:text-accent-pink transition-colors ' +
   'focus-visible:[outline-style:solid] focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-focus-ring'
 
 /**
@@ -17,7 +17,7 @@ export async function AppFooter() {
 
   return (
     <footer className="border-t border-surface-border mt-8">
-      <div className="max-w-6xl mx-auto px-4 md:px-8 pt-2 flex flex-wrap items-center justify-between gap-x-4">
+      <div className="page-grid pt-2 flex flex-wrap items-center justify-between gap-x-4">
         <span className="font-display text-sm font-bold tracking-widest text-text-tertiary" translate="no">
           KULTURA
         </span>
@@ -41,7 +41,7 @@ export async function AppFooter() {
           </ul>
         </nav>
       </div>
-      {await renderDataAttribution('max-w-6xl mx-auto px-4 md:px-8 pt-1 pb-6')}
+      {await renderDataAttribution('page-grid pt-1 pb-6')}
     </footer>
   )
 }

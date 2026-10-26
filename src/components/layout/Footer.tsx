@@ -2,7 +2,7 @@ import { getLocale, getTranslations } from "next-intl/server";
 import { renderDataAttribution } from "@/components/legal/DataAttribution";
 
 const FOOTER_LINK =
-  "inline-flex items-center min-h-11 px-3 rounded-[14px] hover:text-accent-pink transition-colors " +
+  "inline-flex items-center min-h-11 px-3 rounded-2xl hover:text-accent-pink transition-colors " +
   "focus-visible:[outline-style:solid] focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-focus-ring";
 
 /**

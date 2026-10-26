@@ -54,7 +54,7 @@ export default async function FriendsPage({ params }: Props) {
     : siteUrl()
 
   return (
-    <main className="max-w-2xl mx-auto px-4 md:px-8 py-8">
+    <main className="page-grid [&>*]:max-w-2xl py-8">
       <PageHeading emoji="👥">{t('title')}</PageHeading>
       <FriendsClient
         friends={friends}

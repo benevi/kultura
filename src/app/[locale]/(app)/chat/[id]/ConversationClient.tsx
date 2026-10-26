@@ -132,7 +132,7 @@ function ConversationOptions({
               toggleRef.current?.focus()
             }
           }}
-          className="absolute right-0 top-12 z-20 w-72 max-w-[calc(100vw-2rem)] flex flex-col gap-2 p-3 bg-surface-elevated border border-surface-border rounded-card shadow-lg"
+          className="absolute right-0 top-12 z-20 w-72 max-w-[calc(100vw-2rem)] flex flex-col gap-2 p-3 bg-surface-elevated border border-surface-border rounded-2xl shadow-soft"
         >
           {confirm === 'block' ? (
             <InlineConfirm
@@ -510,21 +510,11 @@ export function ConversationClient({
                   </span>
                 )}
                 <div
-                  className="px-3.5 py-2.5 text-sm leading-relaxed"
-                  style={
+                  className={`px-3.5 py-2.5 text-sm leading-relaxed rounded-bento ${
                     isMine
-                      ? {
-                          background: 'oklch(68% 0.24 350)',
-                          color: 'oklch(15% 0.02 350)',
-                          fontWeight: 500,
-                          borderRadius: '20px 20px 4px 20px',
-                        }
-                      : {
-                          background: 'oklch(26% 0.025 280)',
-                          color: 'oklch(97% 0.004 280)',
-                          borderRadius: '20px 20px 20px 4px',
-                        }
-                  }
+                      ? 'bg-accent-pink text-on-accent-pink font-medium rounded-br-lg'
+                      : 'bg-surface-elevated text-text-primary rounded-bl-lg'
+                  }`}
                 >
                   {msg.content}
                 </div>

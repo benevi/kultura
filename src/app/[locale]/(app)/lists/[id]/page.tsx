@@ -46,7 +46,7 @@ export default async function ListDetailPage({ params }: Props) {
   }
 
   return (
-    <main className="max-w-4xl mx-auto px-4 md:px-8 py-8">
+    <main className="page-grid [&>*]:max-w-4xl py-8">
       <ListDetail
         list={list}
         items={items}

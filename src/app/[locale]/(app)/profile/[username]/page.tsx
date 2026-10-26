@@ -142,7 +142,7 @@ export default async function ProfilePage({ params }: Props) {
   const hasAnyContent = completedItems.length > 0 || inProgressItems.length > 0 || pendingItems.length > 0
 
   return (
-    <main className="max-w-4xl mx-auto px-4 md:px-8 py-8 flex flex-col gap-10">
+    <main className="page-grid [&>*]:max-w-4xl py-8 flex flex-col gap-10">
       {/* Header de perfil */}
       <div className="flex flex-col md:flex-row md:items-start gap-4">
         <div className="flex-1">
@@ -189,22 +189,22 @@ export default async function ProfilePage({ params }: Props) {
 
       {/* Viendo ahora */}
       {inProgressItems.length > 0 && (
-        <MediaRow title={t('watchingNow')} items={inProgressItems} requirePoster={false} cardRadius="18" />
+        <MediaRow title={t('watchingNow')} items={inProgressItems} requirePoster={false} />
       )}
 
       {/* Últimos completados */}
       {completedItems.length > 0 && (
-        <MediaRow title={t('lastCompleted')} items={completedItems} requirePoster={false} cardRadius="18" />
+        <MediaRow title={t('lastCompleted')} items={completedItems} requirePoster={false} />
       )}
 
       {/* Pendientes */}
       {pendingItems.length > 0 && (
-        <MediaRow title={t('pendingRow')} items={pendingItems} requirePoster={false} cardRadius="18" />
+        <MediaRow title={t('pendingRow')} items={pendingItems} requirePoster={false} />
       )}
 
       {/* Biblioteca oculta por su dueño (D-04b) */}
       {!libraryVisible && (
-        <div className="flex flex-col items-center gap-3 rounded-20 bg-surface-default px-6 py-14 text-center">
+        <div className="flex flex-col items-center gap-3 rounded-bento bg-surface-default px-6 py-14 text-center">
           <IconLibrary className="w-12 h-12 text-text-tertiary" />
           <p className="font-bold text-text-primary">
             {t('libraryHidden', { username: profileUser.username })}

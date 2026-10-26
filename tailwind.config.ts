@@ -26,6 +26,71 @@ const config: Config = {
     "./src/app/**/*.{js,ts,jsx,tsx,mdx}",
   ],
   theme: {
+    /* ─── Sets cerrados (F-30, DIS-7 y DIS-12) ──────────────────────────
+       Van FUERA de `extend`: sustituyen la escala de Tailwind, así que una
+       clase que no esté aquí (`rounded-md`, `shadow-xl`…) no genera CSS y
+       `tests/unit/visual/classes-compile.test.ts` la detecta. DISENO.md
+       documenta estos mismos valores (`tests/unit/visual/diseno-scales`). */
+
+    /* 4 radios + píldora. Pequeño (8): controles chicos, miniaturas y el
+       contorno de foco de los enlaces. Póster (16): pósteres, tarjetas,
+       campos y filas. Contenedor (20): bloques y secciones. Héroe (32):
+       héroe, modales, tarjeta de acceso y CTA. */
+    borderRadius: {
+      none: "0px",
+      lg: "8px",
+      "2xl": "16px",
+      bento: "20px",
+      "bento-xl": "32px",
+      full: "9999px",
+      pill: "9999px",
+      button: "9999px",
+      /* Alias en retirada: solo los usan archivos de otros frentes
+         (Descubrir y Ajustes). Apuntan a un radio del set y
+         `tests/unit/visual/scales.test.ts` impide que se usen en ningún
+         otro archivo. */
+      DEFAULT: "8px",
+      xl: "16px",
+      card: "16px",
+      "20": "20px",
+    },
+
+    /* Escala tipográfica cerrada (tamaño / interlineado). Se conservan los
+       nombres de Tailwind donde el valor coincide; `meta` (13) y `body` (15)
+       son los dos tamaños propios de la UI y `display`, el h1 de la portada.
+       Nada de `text-[Npx]`: lo prohíbe ESLint (.eslintrc.json). */
+    fontSize: {
+      xs: ["12px", { lineHeight: "16px" }],
+      meta: ["13px", { lineHeight: "18px" }],
+      sm: ["14px", { lineHeight: "20px" }],
+      body: ["15px", { lineHeight: "22px" }],
+      base: ["16px", { lineHeight: "24px" }],
+      lg: ["18px", { lineHeight: "26px" }],
+      xl: ["20px", { lineHeight: "28px" }],
+      "2xl": ["24px", { lineHeight: "30px" }],
+      "3xl": ["32px", { lineHeight: "1.15" }],
+      "4xl": ["40px", { lineHeight: "1.1" }],
+      "5xl": ["48px", { lineHeight: "1" }],
+      "6xl": ["60px", { lineHeight: "1" }],
+      "7xl": ["72px", { lineHeight: "1" }],
+      "8xl": ["96px", { lineHeight: "1" }],
+      display: ["clamp(3.25rem, 5.4vw, 5.75rem)", { lineHeight: "1" }],
+    },
+
+    /* Sombras: las del set cerrado de DISENO.md y ninguna más. */
+    boxShadow: {
+      none: "none",
+      /* Sombra dura de las piezas protagonistas (héroe, tarjeta de acceso,
+         CTA del perfil). En móvil, `hard-sm`: con 16 px de margen lateral,
+         los 10 px se comían el margen derecho (DIS-13). */
+      hard: "10px 10px 0 var(--surface-elevated)",
+      "hard-sm": "6px 6px 0 var(--surface-elevated)",
+      /* Pegatinas y badges colgantes. */
+      sticker: "4px 4px 0 oklch(0% 0 0 / 0.4)",
+      /* Menús, popovers y avisos flotantes. */
+      soft: "0 2px 8px oklch(0% 0 0 / 0.15)",
+    },
+
     extend: {
       colors: {
         /* ─── Design System tokens — modo oscuro ─── */
@@ -107,28 +172,6 @@ const config: Config = {
         body: ["var(--font-body)", "system-ui", "sans-serif"],
         /* Legacy aliases */
       },
-      borderRadius: {
-        card: "12px",
-        /* F0: botones y chips son píldoras completas (999px), no rect. redondeado */
-        button: "9999px",
-        pill: "9999px",
-        modal: "8px",
-        nav: "4px",
-        /* F3b — radios chunky del lenguaje visual F0 (Gen Z), más generosos que
-           `card` (12px, heredado del DS anterior, aún en uso en pantallas no
-           migradas). Nombre propio para no cambiar `card` a medio migrar. */
-        bento: "22px",
-        "bento-lg": "28px",
-        /* La tarjeta de auth del canvas usa 32px literal, y es de los radios
-           del set cerrado de DISENO.md. Aparece 4 veces en las 17 pantallas. */
-        "bento-xl": "32px",
-        /* Radios de los artboards que faltaban; están en el set de radios de
-           DISENO.md ("Nunca, bajo ninguna circunstancia"). Nombre = valor,
-           para que no haya que traducir "panel" o "tile" a píxeles. */
-        "18": "18px",
-        "20": "20px",
-        "24": "24px",
-      },
       transitionDuration: {
         fast: "var(--duration-fast)",   /* 100ms */
         base: "var(--duration-base)",   /* 150ms */
@@ -143,7 +186,23 @@ const config: Config = {
     },
   },
   plugins: [
-    plugin(function ({ addUtilities }) {
+    plugin(function ({ addComponents, addUtilities, theme }) {
+      /* Retícula única (DIS-8): el mismo borde izquierdo para el logo, el h1
+         y el contenido en todas las páginas. Ancho 72rem (`max-w-6xl`) con
+         16 px de margen en móvil y 32 px desde `md`. Las columnas más
+         estrechas (lectura larga, chat, ajustes) van DENTRO, alineadas a la
+         izquierda, nunca centradas aparte. */
+      addComponents({
+        ".page-grid": {
+          width: "100%",
+          maxWidth: theme("maxWidth.6xl"),
+          marginInline: "auto",
+          paddingInline: theme("spacing.4"),
+          [`@media (min-width: ${theme("screens.md")})`]: {
+            paddingInline: theme("spacing.8"),
+          },
+        },
+      });
       addUtilities({
         ".scrollbar-hide": {
           "-ms-overflow-style": "none",

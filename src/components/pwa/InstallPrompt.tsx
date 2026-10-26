@@ -174,7 +174,7 @@ export function InstallPrompt({ labels }: { labels: InstallLabels }) {
       data-testid="install-prompt"
       onKeyDown={onKeyDown}
       onFocus={onFocus}
-      className="fixed z-40 inset-x-4 bottom-[calc(4.5rem+env(safe-area-inset-bottom))] md:inset-x-auto md:left-4 md:bottom-4 md:w-96 rounded-18 border border-surface-border bg-surface-elevated p-4 text-text-primary shadow-[0_2px_8px_rgba(0,0,0,0.15)] motion-safe:animate-toast-in"
+      className="fixed z-40 inset-x-4 bottom-[calc(4.5rem+env(safe-area-inset-bottom))] md:inset-x-auto md:left-4 md:bottom-4 md:w-96 rounded-2xl border border-surface-border bg-surface-elevated p-4 text-text-primary shadow-soft motion-safe:animate-toast-in"
     >
       <div className="flex items-start gap-3">
         <Logo variant="mark" size={40} />

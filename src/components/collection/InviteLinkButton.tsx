@@ -49,7 +49,7 @@ export function InviteLinkButton({ path }: Props) {
       <KButton size="sm" onClick={handleClick}>
         {t('share')}
       </KButton>
-      <p role="status" className="text-[13px] text-text-secondary max-w-xs">
+      <p role="status" className="text-meta text-text-secondary max-w-xs">
         {status === 'copied' ? t('copied') : null}
         {status === 'error' ? (
           <>

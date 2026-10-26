@@ -18,7 +18,7 @@ export const PopoverContent = forwardRef<
       align={align}
       sideOffset={sideOffset}
       className={cn(
-        'z-50 bg-surface border border-border rounded-xl shadow-xl p-2 text-sm text-text',
+        'z-50 bg-surface border border-border rounded-2xl shadow-soft p-2 text-sm text-text',
         'animate-modal-in origin-[var(--radix-popover-content-transform-origin)]',
         'focus:outline-none',
         className

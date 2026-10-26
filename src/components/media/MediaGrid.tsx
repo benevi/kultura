@@ -62,17 +62,18 @@ const BENTO_ACCENT_HUE_PAIRS: [number, number][] = [
   [250, 55], // blue, orange
 ];
 
-function ShimmerCard() {
+/**
+ * Esqueleto con la forma real de `MediaCard` (DIS-13): póster con el radio
+ * de póster y, DEBAJO, las dos líneas del título y el año. En la rejilla
+ * bento (`fill`) el póster ocupa el alto que deja el título en la celda,
+ * como la tarjeta de verdad: al cargar, nada salta.
+ */
+function ShimmerCard({ fill = false }: { fill?: boolean }) {
   return (
-    <div
-      aria-hidden="true"
-      className="flex flex-col rounded-lg overflow-hidden bg-surface-elevated border border-surface-border animate-pulse"
-    >
-      <div className="aspect-[2/3] w-full bg-surface-default" />
-      <div className="p-2 flex flex-col gap-2">
-        <div className="h-3 bg-surface-default rounded w-3/4" />
-        <div className="h-2 bg-surface-default rounded w-1/3" />
-      </div>
+    <div aria-hidden="true" className={cn("motion-safe:animate-pulse", fill && "flex h-full flex-col")}>
+      <div className={cn("w-full rounded-2xl bg-surface-elevated", fill ? "min-h-0 flex-1" : "aspect-[2/3]")} />
+      <div className="mt-2 h-3.5 w-3/4 rounded-pill bg-surface-elevated" />
+      <div className="mt-1.5 h-3 w-1/3 rounded-pill bg-surface-elevated" />
     </div>
   );
 }
@@ -108,7 +109,7 @@ export function MediaGrid({
     return (
       <div data-loading aria-busy="true" className={gridClasses}>
         {Array.from({ length: 8 }, (_, i) => (
-          <ShimmerCard key={i} />
+          <ShimmerCard key={i} fill={layout === "bento"} />
         ))}
       </div>
     );

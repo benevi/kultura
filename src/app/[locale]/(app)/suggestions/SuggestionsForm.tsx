@@ -12,7 +12,7 @@ const DESCRIPTION_MIN = 10
 const DESCRIPTION_MAX = 2000
 
 const FIELD_CLASS =
-  'w-full bg-surface-elevated border border-field-border rounded-[14px] px-[18px] py-[15px] text-base md:text-sm text-text-primary placeholder-text-tertiary focus-visible:[outline-style:solid] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus-ring'
+  'w-full bg-surface-elevated border border-field-border rounded-2xl px-[18px] py-[15px] text-base md:text-sm text-text-primary placeholder-text-tertiary focus-visible:[outline-style:solid] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus-ring'
 
 /**
  * Formulario de sugerencias (ACC-2, ACC-3, ACC-10):
