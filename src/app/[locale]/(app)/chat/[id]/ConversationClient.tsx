@@ -510,21 +510,11 @@ export function ConversationClient({
                   </span>
                 )}
                 <div
-                  className="px-3.5 py-2.5 text-sm leading-relaxed"
-                  style={
+                  className={`px-3.5 py-2.5 text-sm leading-relaxed rounded-bento ${
                     isMine
-                      ? {
-                          background: 'oklch(68% 0.24 350)',
-                          color: 'oklch(15% 0.02 350)',
-                          fontWeight: 500,
-                          borderRadius: '20px 20px 4px 20px',
-                        }
-                      : {
-                          background: 'oklch(26% 0.025 280)',
-                          color: 'oklch(97% 0.004 280)',
-                          borderRadius: '20px 20px 20px 4px',
-                        }
-                  }
+                      ? 'bg-accent-pink text-on-accent-pink font-medium rounded-br-lg'
+                      : 'bg-surface-elevated text-text-primary rounded-bl-lg'
+                  }`}
                 >
                   {msg.content}
                 </div>

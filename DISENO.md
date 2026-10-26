@@ -14,6 +14,16 @@ alternativa "parecida" o "mejorada". Si hace falta un patrón que F0 no
 cubre, se construye combinando los primitivos de abajo (mismos radios,
 mismos gradientes, mismos pesos), no con valores nuevos.
 
+Los **textos** (tono, tuteo, glosario, mayúsculas, cifras y contadores) no
+están aquí: van en la guía de voz, [`VOZ.md`](VOZ.md).
+
+**El documento describe el código.** Los sets cerrados de abajo (radios,
+tamaños de texto, sombras y retícula) son los de `tailwind.config.ts`, que los
+define fuera de `extend`: una clase que no esté en el set no genera CSS.
+Lo comprueban `tests/unit/visual/` (que este documento y el config coincidan,
+que ninguna clase de `src` se quede sin regla y que no haya valores
+arbitrarios) y ESLint (`text-[Npx]`, `rounded-[…]` y `shadow-[…]` prohibidos).
+
 ## Tokens (OKLCH, literales, no aproximar a hex)
 
 Los tokens viven en `src/app/globals.css` (`:root`) con estos nombres. Son los
@@ -99,8 +109,97 @@ apunta a los mismos tokens.
 - Display / títulos: **Bricolage Grotesque** (pesos 500–800; es lo único que
   se carga, así que un título sin peso explícito se pinta a 500).
 - Cuerpo / UI: **Figtree** (pesos 400–800).
-- Carga con `next/font` en `src/app/[locale]/layout.tsx` (variables
-  `--font-display` y `--font-body`).
+- Autoalojadas con `next/font/local` en `src/app/fonts/index.ts` (variables
+  `--font-display` y `--font-body`; clases `font-display` y `font-body`).
+
+### Escala de tamaños (cerrada)
+
+Son los únicos tamaños de texto. `text-[13px]` y compañía no existen (ESLint
+los rechaza): se elige el escalón más cercano. Las páginas públicas usan
+≤ 7 de ellos.
+
+<!-- escala:inicio -->
+| Clase | Tamaño | Interlineado | Uso |
+|-------|--------|--------------|-----|
+| `text-xs` | 12px | 16px | Caption: pastillas, etiquetas de la barra inferior, años |
+| `text-meta` | 13px | 18px | Metadatos, etiquetas de campo, ayudas |
+| `text-sm` | 14px | 20px | UI general, botones, títulos de tarjeta |
+| `text-body` | 15px | 22px | Cuerpo en escritorio (campos desde `md`) |
+| `text-base` | 16px | 24px | Cuerpo; campos en móvil (iOS no hace zoom) |
+| `text-lg` | 18px | 26px | Entradillas |
+| `text-xl` | 20px | 28px | Título de sección pequeña |
+| `text-2xl` | 24px | 30px | h3 / h1 en móvil |
+| `text-3xl` | 32px | 1.15 | h2 / h1 de página en móvil |
+| `text-4xl` | 40px | 1.1 | h1 de página (`PageHeading` desde `md`) |
+| `text-5xl` | 48px | 1 | h1 de los legales en escritorio |
+| `text-6xl` | 60px | 1 | h2 de la portada, número del podio |
+| `text-7xl` | 72px | 1 | 404, número del podio |
+| `text-8xl` | 96px | 1 | Número #1 del podio de rankings |
+| `text-display` | clamp(3.25rem, 5.4vw, 5.75rem) | 1 | h1 de la portada |
+<!-- escala:fin -->
+
+## Radios (cerrados: 4 + píldora)
+
+<!-- radios:inicio -->
+| Clase | Radio | Uso |
+|-------|-------|-----|
+| `rounded-lg` | 8px | Controles pequeños, miniaturas (≤ 64 px), contorno de foco de los enlaces, esquina «de bocadillo» |
+| `rounded-2xl` | 16px | **Póster** y tarjetas, campos de formulario, filas, menús, avisos |
+| `rounded-bento` | 20px | Contenedores: bloques, secciones, tarjetas de lista |
+| `rounded-bento-xl` | 32px | Héroe, modales, tarjeta de acceso, CTA del perfil, banda del perfil |
+| `rounded-full` / `rounded-pill` / `rounded-button` | 9999px | Píldoras, chips, botones, avatares redondos |
+<!-- radios:fin -->
+
+Formas compuestas con esos mismos valores: avatar de perfil
+`rounded-bento-xl rounded-bl-lg` (32/32/32/8), avatar de grupo
+`rounded-2xl rounded-bl-lg` (16/16/16/8). En la configuración quedan unos alias
+en retirada (`rounded`, `rounded-xl`, `rounded-card`, `rounded-20`) que solo
+usan Descubrir y Ajustes mientras otros frentes los migran; apuntan a radios
+del set y un test impide usarlos en ningún otro sitio.
+
+## Sombras (cerradas)
+
+<!-- sombras:inicio -->
+| Clase | Valor | Uso |
+|-------|-------|-----|
+| `shadow-hard` | `10px 10px 0 var(--surface-elevated)` | Pieza protagonista (héroe, tarjeta de acceso, CTA) desde `md` |
+| `shadow-hard-sm` | `6px 6px 0 var(--surface-elevated)` | La misma en móvil (con 16 px de margen, 10 px se comían el margen derecho) |
+| `shadow-sticker` | `4px 4px 0 oklch(0% 0 0 / 0.4)` | Pegatinas y badges colgantes |
+| `shadow-soft` | `0 2px 8px oklch(0% 0 0 / 0.15)` | Menús, popovers, avisos flotantes |
+<!-- sombras:fin -->
+
+En estilos en línea (las piezas de la landing) se usa `STICKER_SHADOW` de
+`PosterTile.tsx`, con el mismo valor que `shadow-sticker`.
+
+## Retícula (única)
+
+Todas las páginas con cabecera usan el componente **`page-grid`**
+(`tailwind.config.ts`): ancho máximo 72rem (`max-w-6xl`), centrado, con
+**16 px** de margen lateral en móvil y **32 px** desde `md`. Lo llevan la
+cabecera pública y la de la app, el pie y el `<main>` de cada página, así que
+el logo, el h1 y el contenido empiezan en el mismo borde izquierdo (a 1440 px,
+x = 176). Las columnas más estrechas (lectura legal a `68ch`, chat, avisos,
+ajustes) van **dentro** de la retícula y alineadas a la izquierda
+(`[&>*]:max-w-2xl` en el `<main>`), nunca centradas aparte. Lo comprueba
+`tests/e2e/a11y/grid.spec.ts` en 7 rutas, junto con 0 desbordes de 320 a
+1440 px.
+
+## Tarjeta de póster (única)
+
+`src/components/media/PosterFrame.tsx`: 2:3, `rounded-2xl`, el gradiente de
+respaldo con las iniciales SIEMPRE detrás y primero, la portada encima y el
+título como texto **debajo** (nunca encima con velo). La usan `MediaCard`
+(rejillas de Descubrir, Biblioteca, listas, recomendaciones), `MediaRow` y
+`ContinueRow` (Inicio, perfil) y el perfil público. En catálogo, ninguna
+tarjeta sin portada (`requirePoster`); en la biblioteca del usuario sí se
+enseñan (gradiente + título).
+
+## Estados de carga
+
+Cada `loading.tsx` de `(app)` copia la forma de lo que sustituye: mismos
+radios, mismos anchos, huecos y rejilla, y las líneas del título debajo del
+póster (`tests/unit/visual/skeletons.test.ts`). El pulso va con
+`motion-safe:animate-pulse`.
 
 ## Formularios y foco (accesibilidad, WCAG 2.1 AA)
 
@@ -177,7 +276,7 @@ aquí se apartan de él a propósito. Valores comprobados en
 - **Badge colgante (pegatina)**: pill `--lime` + texto on-lime,
   `font-weight:800`. Versión "colgante" (esquina de poster): offset
   `top:-14px; left:-14px`, `rotate(-8deg)`,
-  `box-shadow:4px 4px 0 rgba(0,0,0,.4)`, sombra dura tipo pegatina, no
+  `shadow-sticker` (`4px 4px 0` negro al 40 %), sombra dura tipo pegatina, no
   blur. **E-MATCH-SIN-BADGE:** nació como "badge de match" y ya NO se usa
   para porcentajes de afinidad (retirados de toda la UI a petición del
   usuario). El primitivo sigue vivo para etiquetas de texto real
@@ -192,18 +291,20 @@ aquí se apartan de él a propósito. Valores comprobados en
 - **Avatares apilados** (amigos que vieron algo): círculo con
   `linear-gradient(135deg, colorA, colorB)`, borde `2px solid var(--bg)`,
   solapados con `margin-left` negativo (~`-12px`).
-- **Burbujas de chat**: entrante = `--surface-2`,
-  `border-radius:20px 20px 20px 4px`. Saliente = `--pink` + texto
-  on-pink, `border-radius:20px 20px 4px 20px`.
+- **Burbujas de chat**: entrante = `bg-surface-elevated`,
+  `rounded-bento rounded-bl-lg` (20/20/20/8). Saliente = `bg-accent-pink`
+  + `text-on-accent-pink`, `rounded-bento rounded-br-lg` (20/20/8/20). El
+  canvas usaba 4 px en la esquina de la cola; se redondea al radio pequeño
+  del set.
 
 ## Principio de extensión a pantallas nuevas
 
 Cuando una pantalla no tiene equivalente literal en F0 (todo excepto
 Home/Discover/MediaDetail), se construye combinando ÚNICAMENTE los
 primitivos de arriba: mismo header, mismos chips, mismos pills, misma
-fórmula de gradiente para posters, mismos radios (~14-32px según jerarquía
-del elemento), mismo espaciado (`padding:28px 56px` en headers/secciones
-de página, `gap:20px` entre cards de una fila). No se añade una paleta,
+fórmula de gradiente para posters, los radios del set (8/16/20/32 según
+jerarquía del elemento), la retícula `page-grid` y `gap:20px` (`gap-5`)
+entre cards de una fila. No se añade una paleta,
 tipografía, sombra o forma de card que no exista ya en F0. Si algo no
 está claro, replicar el patrón más parecido que sí exista antes de
 inventar uno.
@@ -227,15 +328,14 @@ inventar uno.
    F0 contemple aún, y así lo anotamos para futuras iteraciones.
 
 **Nunca, bajo ninguna circunstancia:**
-- Usar un radio que no esté en el set. El set real (canvas + lo que ya usa el
-  código, `tailwind.config.ts`) es {0, 4px, 6px, 8px, 12px (`rounded-card`),
-  13px, 14px, 16px, 18px (`rounded-18`), 20px (`rounded-20`), 22px
-  (`rounded-bento`), 24px (`rounded-24`), 28px (`rounded-bento-lg`), 32px
-  (`rounded-bento-xl`)} y 999px para píldoras. Redondear a la que esté ya en
-  uso; un radio nuevo se añade aquí antes que en el código.
-- Crear una sombra nueva. Las válidas son: sin sombra, `10px 10px 0 var(--surface-2)`
-  (hero cards), `4px 4px 0 rgba(0,0,0,.35/0.4)` (badges colgantes), soft blur como
-  `0 2px 8px rgba(0,0,0,0.15)` (solo si F0 ya la usa).
+- Usar un radio que no esté en el set de [Radios](#radios-cerrados-4--píldora)
+  (8, 16, 20, 32 y píldora). Redondear al más cercano; un radio nuevo se
+  añade aquí y en `tailwind.config.ts` antes que en ningún componente.
+- Usar un tamaño de texto fuera de la [escala](#escala-de-tamaños-cerrada).
+- Crear una sombra nueva: solo las cuatro de [Sombras](#sombras-cerradas) o
+  ninguna.
+- Centrar un contenedor de página por su cuenta (`max-w-* mx-auto px-*`): va
+  dentro de `page-grid`.
 - Mezclar hex con OKLCH. Si necesitas un color intermedio, calcula en OKLCH.
   No approximar valores OKLCH a hex "por conveniencia".
 - Inventar un componente nuevo (p. ej. "card deslizable", "modal con backdrop
@@ -247,12 +347,14 @@ inventar uno.
 ## Paleta de espacios y medidas (literales de F0)
 
 Usar SIEMPRE estos valores, no añadir nuevos:
-- **Padding/margen principal** en secciones: `28px` (horizontal) × `28px–56px`
+- **Margen lateral de página**: el de `page-grid` (16 px en móvil, 32 px desde
+  `md`). Dentro de tarjetas y secciones: `28px` (`p-7`) × `28px–56px`
   (vertical, según altura de sección).
 - **Gap entre cards en fila**: `20px`.
 - **Tamaño de card "standar"** en scroll horizontal: `220px`.
 - **Tamaño de avatar**: `44×44` (header), `36×36` (listas), `24×24` (inline).
-- **Radio de card estándar**: `14px` o `16px` (héroes y grandes: `20px`).
+- **Radio de card estándar**: `16px` (`rounded-2xl`); contenedores `20px`
+  (`rounded-bento`); héroes y modales `32px` (`rounded-bento-xl`).
 - **Tamaño de icono en búsqueda**: caja `44×44` con radio `16px`.
 
 No hagas cards de `180px`, `250px`, `300px`, etc., el set de tamaños es cerrado.
@@ -323,20 +425,6 @@ coincide). La conversión está en `src/lib/design/color.ts`.
 
 | Token | Alias F0 | OKLCH | Hex sRGB | Uso |
 |-------|----------|-------|----------|-----|
-slate #9aa5b8 ingamut True text 7.83 vs white 2.48
-red #f66d67 ingamut True text 6.77 vs white 2.88
-orange #fb7c00 ingamut False text 7.42 vs white 2.62
-amber #f9ad26 ingamut True text 9.86 vs white 1.91
-green #4fce74 ingamut True text 9.29 vs white 2.01
-teal #35c9c2 ingamut True text 9.16 vs white 2.04
-blue #3b9cf6 ingamut True text 6.93 vs white 2.87
-purple #9964e5 ingamut True text 4.99 vs white 3.95
-lime/on-lime 11.81
-destructive 4.94
-danger-text [6.74, 6.16, 5.41]
-field [3.99, 3.65, 3.2]
-pink [5.96, 5.45, 4.79]
-sel #fb40ad
 | `--surface-base` | `--bg` | `oklch(16% 0.015 280)` | `#0c0d14` | Fondo de página |
 | `--surface-default` | `--surface` | `oklch(21% 0.02 280)` | `#161721` | Tarjetas, cabeceras |
 | `--surface-elevated` | `--surface-2` | `oklch(26% 0.025 280)` | `#212330` | Chip inactivo, relleno de campo, caja de icono |
