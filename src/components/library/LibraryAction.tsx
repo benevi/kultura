@@ -105,7 +105,8 @@ interface LibraryActionProps {
 
 const statusClasses: Record<LibraryStatus, string> = {
   completed: 'bg-accent-positive/20 text-accent-positive',
-  in_progress: 'bg-accent-info/20 text-accent-info',
+  // Texto claro sobre el azul: el azul sobre azul al 20 % daba < 4,5:1 (F-30).
+  in_progress: 'bg-accent-info/20 text-text-primary',
   pending: 'bg-accent-highlight/20 text-accent-highlight',
   abandoned: 'bg-accent-danger/20 text-accent-danger',
 }
