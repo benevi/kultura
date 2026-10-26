@@ -11,6 +11,12 @@
 // escribe solo `score`, como siempre, y una nota fina que llegue se redondea a
 // score. Si la bandera está encendida pero la migración no (columna o tabla
 // inexistente), se vuelve a escribir solo `score` en vez de dar un 500.
+//
+// F-27 (PRO-5): con PROGRESS_V2=1 llega `progress` (episodios, capítulos,
+// páginas o %, horas según el formato) y se guarda en las columnas
+// `progress_*`; el disparador deja `episode_progress` como espejo. Sin la
+// bandera, o sin la migración 20261215270001, se guarda `episodeProgress`
+// como siempre (de `progress` se saca la temporada y el episodio).
 // ============================================================
 
 import { NextResponse } from 'next/server'
@@ -19,7 +25,7 @@ import { checkRateLimit, LIMITS } from '@/lib/rate-limit'
 import { invalidateRecCache } from '@/lib/claude/recommendations'
 import { invalidateMatchScoreCache } from '@/lib/recommendations/match-score'
 import type { DbUserMedia, DbUserMediaLog } from '@/types/supabase'
-import type { DiaryLog, LibraryEntry, LibraryPayload, LibraryStatus } from '@/types/library'
+import type { DiaryLog, LibraryStatus } from '@/types/library'
 import { isLibraryStatus } from '@/types/library'
 import { upsertMediaFromProvider, mediaFailureStatus } from '@/lib/media/upsert-from-provider'
 import { localeFromRequest } from '@/lib/media/request-locale'
@@ -28,11 +34,20 @@ import { createLogger } from '@/lib/logger'
 import { entryRating10, isValidRating10, rating10ToScore, scoreToRating10 } from '@/lib/library/rating'
 import { isNotMigrated, ratingScale10Enabled } from '@/lib/library/scale'
 import { mapLog, parseLogInput, today } from '@/lib/library/diary'
+import {
+  parseProgressInput,
+  progressFromRow,
+  progressToColumns,
+  progressToLegacy,
+  type LibraryPayloadWithProgress,
+  type LibraryEntryWithProgress,
+} from '@/lib/library/progress'
+import { progressV2Enabled } from '@/lib/library/progress-server'
 
 const log = createLogger('api/library')
 
-/** Mapea una fila de user_media a LibraryEntry */
-function mapEntry(row: DbUserMedia): LibraryEntry {
+/** Mapea una fila de user_media a LibraryEntry (con su progreso, F-27). */
+function mapEntry(row: DbUserMedia): LibraryEntryWithProgress {
   const rating10 = row.rating10 === null || row.rating10 === undefined ? undefined : Number(row.rating10)
   return {
     id: row.id,
@@ -44,6 +59,7 @@ function mapEntry(row: DbUserMedia): LibraryEntry {
     favorite: row.favorite ?? false,
     watchedAt: row.watched_at,
     episodeProgress: row.episode_progress,
+    progress: progressFromRow(row as unknown as Record<string, unknown>),
     createdAt: row.created_at,
   }
 }
@@ -68,9 +84,9 @@ export async function POST(request: Request): Promise<NextResponse> {
   }
 
   // 2. Validar body
-  let body: LibraryPayload
+  let body: LibraryPayloadWithProgress
   try {
-    body = await request.json() as LibraryPayload
+    body = await request.json() as LibraryPayloadWithProgress
   } catch {
     return NextResponse.json({ error: 'Invalid JSON body' }, { status: 400 })
   }
@@ -119,6 +135,14 @@ export async function POST(request: Request): Promise<NextResponse> {
   if (parsedLog && !parsedLog.ok) {
     return NextResponse.json({ error: parsedLog.error }, { status: 400 })
   }
+  // F-27: progreso por formato (solo los campos de ese formato y en rango).
+  const mediaTypeOf = body.mediaId.split('_')[0]
+  const parsedProgress = body.progress === undefined ? null : parseProgressInput(mediaTypeOf, body.progress)
+  if (parsedProgress && !parsedProgress.ok) {
+    return NextResponse.json({ error: parsedProgress.error }, { status: 400 })
+  }
+  const progressV2 = progressV2Enabled() && parsedProgress?.ok === true
+  const progressValue = parsedProgress?.ok ? parsedProgress.value : null
 
   // Una sola nota: manda rating10 si llega; si no, la de siempre (score × 2).
   // Sin nota en el cuerpo, la entrada queda sin nota (como antes).
@@ -146,19 +170,42 @@ export async function POST(request: Request): Promise<NextResponse> {
     status: body.status,
     score,
     watched_at: body.watchedAt ?? null,
-    episode_progress: body.episodeProgress ?? null,
+    // Con `progress` (cliente nuevo) manda él; si no, el campo de siempre.
+    episode_progress:
+      parsedProgress?.ok ? progressToLegacy(progressValue) : (body.episodeProgress ?? null),
   }
-  const upsertEntry = (row: typeof legacyRow & { rating10?: number | null; favorite?: boolean }) =>
+  type Row = Omit<typeof legacyRow, 'episode_progress'> & {
+    episode_progress?: typeof legacyRow.episode_progress
+    rating10?: number | null
+    favorite?: boolean
+  }
+  const upsertEntry = (row: Row) =>
     supabase.from('user_media').upsert(row, { onConflict: 'user_id,media_id' }).select().single()
 
+  const scaleExtras = scale10
+    ? { rating10, ...(typeof body.favorite === 'boolean' ? { favorite: body.favorite } : {}) }
+    : {}
+  // F-27: con las columnas, el espejo `episode_progress` lo escribe el
+  // disparador (mandarlo también podría pisar páginas u horas).
+  const withProgress = (row: Row): Row => {
+    if (!progressV2) return row
+    const { episode_progress: _legacy, ...rest } = row
+    void _legacy
+    return { ...rest, ...progressToColumns(progressValue) }
+  }
+
   let migrated = scale10
-  let { data, error: upsertError } = scale10
-    ? await upsertEntry({
-        ...legacyRow,
-        rating10,
-        ...(typeof body.favorite === 'boolean' ? { favorite: body.favorite } : {}),
-      })
-    : await upsertEntry(legacyRow)
+  let progressMigrated = progressV2
+  let { data, error: upsertError } = await upsertEntry(withProgress({ ...legacyRow, ...scaleExtras }))
+
+  if (upsertError && progressV2 && isNotMigrated(upsertError)) {
+    // PROGRESS_V2 encendida sin su migración: el progreso, como siempre.
+    log.warn('PROGRESS_V2 activa pero falta la migración 20261215270001; se escribe episode_progress', {
+      code: upsertError.code,
+    })
+    progressMigrated = false
+    ;({ data, error: upsertError } = await upsertEntry({ ...legacyRow, ...scaleExtras }))
+  }
 
   if (upsertError && scale10 && isNotMigrated(upsertError)) {
     // Bandera encendida sin la migración: se guarda como siempre.
@@ -166,7 +213,11 @@ export async function POST(request: Request): Promise<NextResponse> {
       code: upsertError.code,
     })
     migrated = false
-    ;({ data, error: upsertError } = await upsertEntry(legacyRow))
+    const retry = progressMigrated ? withProgress(legacyRow) : legacyRow
+    ;({ data, error: upsertError } = await upsertEntry(retry))
+    if (upsertError && progressMigrated && isNotMigrated(upsertError)) {
+      ;({ data, error: upsertError } = await upsertEntry(legacyRow))
+    }
   }
 
   if (upsertError || !data) {
