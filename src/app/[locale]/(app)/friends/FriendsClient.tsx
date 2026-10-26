@@ -12,6 +12,7 @@ import { F0 } from '@/lib/design/f0-tokens'
 import { getBlockedUsers, unblockUser, type BlockedUser } from '@/lib/social/actions'
 import type { Friendship } from '@/types/user'
 import { IconLists, IconFriends } from '@/components/icons'
+import { PushOffer } from '@/components/push/PushOffer'
 
 interface SearchUser {
   id: string
@@ -249,6 +250,8 @@ export function FriendsClient({
 
         <BlockedUsersSection />
       </div>
+      {/* Tras pedir o aceptar una amistad se ofrecen los avisos push. */}
+      <PushOffer />
     </div>
   )
 }

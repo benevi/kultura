@@ -2159,6 +2159,17 @@
       "listInviteNoName": "@{username} te ha invitado a una lista.",
       "groupInvite": "@{username} te ha invitado al grupo «{name}».",
       "groupInviteNoName": "@{username} te ha invitado a un grupo."
+    },
+    "offer": {
+      "title": "¿Te avisamos?",
+      "chatBody": "Activa los avisos y te diremos cuando te contesten, aunque tengas KULTURA cerrada. Solo quién te escribe, nunca el mensaje.",
+      "friendsBody": "Activa los avisos y te diremos cuando acepten tu solicitud o te escriban, aunque tengas KULTURA cerrada.",
+      "enable": "Activar avisos",
+      "later": "Ahora no",
+      "close": "Cerrar",
+      "done": "Listo: te avisaremos en este dispositivo. Puedes cambiarlo en Ajustes.",
+      "denied": "Has bloqueado las notificaciones de KULTURA. Permítelas en los ajustes del sitio si cambias de idea.",
+      "error": "No hemos podido activar los avisos. Prueba otra vez desde Ajustes."
     }
   }
 }

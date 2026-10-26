@@ -9,6 +9,7 @@ import { respondToFriendRequest, removeFriend } from '@/lib/social/actions'
 import { createLogger } from '@/lib/logger'
 import { F0 } from '@/lib/design/f0-tokens'
 import type { Friendship } from '@/types/user'
+import { offerPushInContext } from '@/lib/push/offer'
 
 const log = createLogger('FriendCard')
 
@@ -50,6 +51,7 @@ export function FriendCard({ friendship, variant, onAction }: FriendCardProps) {
     try {
       await respondToFriendRequest(friendship.id, 'accept')
       onAction(friendship.id)
+      offerPushInContext('friends')
     } catch (err) {
       log.error('Failed to accept friend request', { err })
       setLoading(false)

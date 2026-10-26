@@ -15,6 +15,7 @@ import {
 import { createLogger } from '@/lib/logger'
 import { F0 } from '@/lib/design/f0-tokens'
 import type { FriendshipStatusResult } from '@/lib/social/friends'
+import { offerPushInContext } from '@/lib/push/offer'
 
 const log = createLogger('FriendshipButton')
 
@@ -183,6 +184,7 @@ function FriendshipAction({
     try {
       await sendFriendRequest(targetUserId)
       setStatus('pending_sent')
+      offerPushInContext('friends')
     } catch (err) {
       log.error('Failed to send friend request', { err })
     } finally {
@@ -196,6 +198,7 @@ function FriendshipAction({
     try {
       await respondToFriendRequest(fId, 'accept')
       setStatus('accepted')
+      offerPushInContext('friends')
     } catch (err) {
       log.error('Failed to accept friend request', { err })
     } finally {

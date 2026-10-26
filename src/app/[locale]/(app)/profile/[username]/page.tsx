@@ -24,6 +24,7 @@ import { IconLibrary } from '@/components/icons'
 import { isNotMigrated } from '@/app/api/settings/account-state'
 import type { DbFriendship } from '@/types/supabase'
 import { getTranslations } from 'next-intl/server'
+import { PushOffer } from '@/components/push/PushOffer'
 
 interface Props {
   params: Promise<{ locale: string; username: string }>
@@ -169,6 +170,8 @@ export default async function ProfilePage({ params }: Props) {
               friendshipId={friendshipId}
             />
             <ReportButton targetType="user" targetId={profileUser.id} />
+            {/* Tras pedir o aceptar la amistad se ofrecen los avisos push. */}
+            <PushOffer />
           </div>
         )}
         {isOwnProfile && (

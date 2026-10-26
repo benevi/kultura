@@ -2159,6 +2159,17 @@
       "listInviteNoName": "@{username} invited you to a list.",
       "groupInvite": "@{username} invited you to the group “{name}”.",
       "groupInviteNoName": "@{username} invited you to a group."
+    },
+    "offer": {
+      "title": "Want a heads-up?",
+      "chatBody": "Turn on notifications and we’ll tell you when they reply, even with KULTURA closed. Just who wrote, never the message.",
+      "friendsBody": "Turn on notifications and we’ll tell you when they accept your request or message you, even with KULTURA closed.",
+      "enable": "Turn on notifications",
+      "later": "Not now",
+      "close": "Close",
+      "done": "Done: we’ll notify you on this device. You can change it in Settings.",
+      "denied": "You’ve blocked KULTURA notifications. Allow them in your site settings if you change your mind.",
+      "error": "We couldn’t turn on notifications. Try again from Settings."
     }
   }
 }

@@ -8,7 +8,7 @@
 // - un mensaje propio (eco realtime) NO re-marca
 // ============================================================
 
-import { render, screen, waitFor, act } from '@testing-library/react'
+import { render, screen, waitFor, act, fireEvent } from '@testing-library/react'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 
 vi.mock('next-intl', () => ({
@@ -70,6 +70,7 @@ vi.mock('@/lib/supabase/client', () => ({
 }))
 
 import { ConversationClient } from '@/app/[locale]/(app)/chat/[id]/ConversationClient'
+import { PUSH_OFFER_EVENT } from '@/lib/push/offer'
 
 const otherUser = { id: 'other-user', username: 'other', avatar_color: '#000', avatar_initials: 'OT' }
 
@@ -175,6 +176,32 @@ describe('ConversationClient — accesibilidad (ACC-11, ACC-19)', () => {
       expect(Element.prototype.scrollIntoView).toHaveBeenCalledWith({ behavior: 'auto' })
     } finally {
       window.matchMedia = original
+    }
+  })
+
+  // F-33: mensaje enviado → se ofrecen los avisos (PushOffer decide); si el
+  // envío falla, no.
+  it('tras enviar un mensaje pide ofrecer los avisos push; si falla, no', async () => {
+    const offers: string[] = []
+    const listener = (e: Event) => offers.push((e as CustomEvent<string>).detail)
+    window.addEventListener(PUSH_OFFER_EVENT, listener)
+    try {
+      renderConversation()
+      await waitFor(() => expect(mockFetch).toHaveBeenCalledWith('/api/chat/conv-1'))
+      expect(offers).toEqual([])
+
+      mockFetch.mockResolvedValueOnce({ ok: false, status: 500, json: async () => ({}) })
+      fireEvent.change(screen.getByLabelText('messageLabel'), { target: { value: 'hola' } })
+      fireEvent.click(screen.getByRole('button', { name: 'send' }))
+      await waitFor(() => expect(mockFetch).toHaveBeenCalledTimes(2))
+      await act(async () => {})
+      expect(offers).toEqual([])
+
+      mockFetch.mockResolvedValueOnce({ ok: true, json: async () => ({ message: { id: 'm1', content: 'hola', sender_id: 'me', created_at: new Date().toISOString() } }) })
+      fireEvent.click(screen.getByRole('button', { name: 'send' }))
+      await waitFor(() => expect(offers).toEqual(['chat']))
+    } finally {
+      window.removeEventListener(PUSH_OFFER_EVENT, listener)
     }
   })
 })

@@ -116,7 +116,9 @@ export const APP_CLIENT_NAMESPACES = [
   "platforms",
   "profile",
   "progress",
-  // F-33: solo la sección de Ajustes; `push.notify` lo usa el servidor.
+  // F-33: el aviso en contexto (chat y amigos) y la sección de Ajustes;
+  // `push.notify` lo usa el servidor.
+  "push.offer",
   "push.settings",
   "report",
   "search",
