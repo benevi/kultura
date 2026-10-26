@@ -10,9 +10,16 @@
 // ============================================================
 
 import { useState } from 'react'
+import dynamic from 'next/dynamic'
 import { useTranslations } from 'next-intl'
 import { KButton } from '@/components/ui/KButton'
-import { ImportClient } from '../(app)/settings/import/ImportClient'
+
+// El lector de archivos solo se descarga si alguien abre el panel: el resto
+// del onboarding no carga con él.
+const ImportClient = dynamic(
+  () => import('../(app)/settings/import/ImportClient').then((m) => m.ImportClient),
+  { ssr: false }
+)
 
 interface WelcomeImportProps {
   locale: 'es' | 'en'
