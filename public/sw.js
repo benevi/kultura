@@ -29,8 +29,22 @@
  *     y se da de baja (`self.registration.unregister()`). Sin red o con una
  *     respuesta rara no hace nada.
  *
+ * Notificaciones push (F-33, MOV-10). No tocan la caché ni el enrutado:
+ *  - `push`: el servidor (`/api/push/dispatch`) manda un JSON cifrado
+ *    {v, title, body, url, tag, lang}; se enseña SIEMPRE un aviso (Chrome
+ *    retira el permiso si un push no muestra nada), con textos de reserva si
+ *    llega vacío o roto. Los textos van recortados y en texto plano.
+ *  - `notificationclick`: abre (o enfoca) SOLO una URL del propio origen;
+ *    cualquier otra cosa (otro dominio, `javascript:`, basura) lleva a `/`.
+ *  - `pushsubscriptionchange`: si el navegador renueva la suscripción, se da
+ *    de alta la nueva en `/api/push/subscribe` con la sesión de la cookie y
+ *    se sustituye la vieja (`replaces`).
+ *  - El interruptor de arriba también vale aquí: al darse de baja el worker,
+ *    el navegador borra su suscripción push.
+ *
  * Las funciones de enrutado son declaraciones de primer nivel y sin estado
- * para que `tests/unit/pwa/sw.test.ts` las pruebe ejecutando ESTE archivo.
+ * para que `tests/unit/pwa/sw.test.ts` las pruebe ejecutando ESTE archivo
+ * (y `tests/unit/push/sw-push.test.ts`, las de push).
  * ============================================================ */
 
 const VERSION = "v1";
@@ -309,4 +323,141 @@ self.addEventListener("fetch", function (event) {
   const route = routeRequest(event.request, self.location.origin);
   if (route === "static") event.respondWith(cacheFirst(event.request));
   else if (route === "navigate") event.respondWith(networkWithOfflineFallback(event));
+});
+
+/* ── Notificaciones push (F-33) ──────────────────────────────────────── */
+
+const PUSH_ICON = "/icons/icon-192.png";
+const PUSH_MAX_TITLE = 80;
+const PUSH_MAX_BODY = 240;
+const PUSH_SUBSCRIBE_URL = "/api/push/subscribe";
+
+/**
+ * Ruta del propio origen a la que puede llevar un aviso. Una URL de otro
+ * origen, con otro esquema (`javascript:`, `data:`) o que no se entiende
+ * acaba en "/".
+ */
+function safeTargetUrl(raw, origin) {
+  if (typeof raw !== "string" || raw === "") return "/";
+  let url;
+  try {
+    url = new URL(raw, origin);
+  } catch (e) {
+    return "/";
+  }
+  if (url.origin !== origin || (url.protocol !== "https:" && url.protocol !== "http:")) return "/";
+  return url.pathname + url.search + url.hash;
+}
+
+function pushText(value, max) {
+  if (typeof value !== "string") return "";
+  // eslint-disable-next-line no-control-regex
+  const line = value.replace(/[\u0000-\u001f\u007f]+/g, " ").trim();
+  return line.length > max ? line.slice(0, max - 1) + "…" : line;
+}
+
+/** Textos de reserva si el push llega vacío o roto (no hay acceso a messages/*.json). */
+function fallbackPush(lang) {
+  const en = lang === "en";
+  return { title: "KULTURA", body: en ? "There's something new for you on KULTURA." : "Tienes novedades en KULTURA.", url: "/", tag: "", lang: en ? "en" : "es" };
+}
+
+/**
+ * Lo que trae el push (`PushMessageData`, o su texto en los tests) →
+ * {title, body, url, tag, lang} ya saneado.
+ */
+function parsePushData(data, origin, defaultLang) {
+  const lang = typeof defaultLang === "string" && defaultLang.toLowerCase().indexOf("en") === 0 ? "en" : "es";
+  let parsed = null;
+  try {
+    const text = data == null ? "" : typeof data === "string" ? data : data.text();
+    parsed = text ? JSON.parse(text) : null;
+  } catch (e) {
+    parsed = null;
+  }
+  if (!parsed || typeof parsed !== "object") return fallbackPush(lang);
+  const msgLang = parsed.lang === "en" ? "en" : parsed.lang === "es" ? "es" : lang;
+  const fallback = fallbackPush(msgLang);
+  return {
+    title: pushText(parsed.title, PUSH_MAX_TITLE) || fallback.title,
+    body: pushText(parsed.body, PUSH_MAX_BODY) || fallback.body,
+    url: safeTargetUrl(parsed.url, origin),
+    tag: typeof parsed.tag === "string" && /^[A-Za-z0-9_-]{1,64}$/.test(parsed.tag) ? parsed.tag : "",
+    lang: msgLang,
+  };
+}
+
+/** Opciones de `showNotification` para un aviso ya saneado. */
+function notificationOptions(push) {
+  const options = { body: push.body, icon: PUSH_ICON, lang: push.lang, data: { url: push.url } };
+  if (push.tag) {
+    // Un aviso por conversación: el nuevo sustituye al anterior y vuelve a sonar.
+    options.tag = push.tag;
+    options.renotify = true;
+  }
+  return options;
+}
+
+/** Enfoca una pestaña que ya esté en `path`; si no, lleva allí otra de KULTURA o abre una. */
+async function openOrFocus(path) {
+  const origin = self.location.origin;
+  const target = new URL(path, origin).href;
+  const windows = await self.clients.matchAll({ type: "window", includeUncontrolled: true });
+  for (let i = 0; i < windows.length; i++) {
+    if (windows[i].url === target && typeof windows[i].focus === "function") return windows[i].focus();
+  }
+  for (let i = 0; i < windows.length; i++) {
+    const w = windows[i];
+    if (new URL(w.url).origin !== origin || typeof w.navigate !== "function") continue;
+    try {
+      const moved = await w.navigate(target);
+      if (moved) return typeof moved.focus === "function" ? moved.focus() : moved;
+    } catch (e) {
+      // Pestaña que el worker no controla: se abre una nueva.
+    }
+  }
+  return self.clients.openWindow(target);
+}
+
+/** Endpoint y claves de una `PushSubscription` para `/api/push/subscribe`. */
+function subscriptionBody(subscription, replaces) {
+  const json = subscription.toJSON();
+  const body = {
+    endpoint: json.endpoint,
+    keys: json.keys,
+    expirationTime: typeof json.expirationTime === "number" ? json.expirationTime : null,
+  };
+  if (replaces && replaces !== json.endpoint) body.replaces = replaces;
+  return body;
+}
+
+async function resubscribe(oldSubscription, newSubscription) {
+  let subscription = newSubscription;
+  if (!subscription) {
+    const key = oldSubscription && oldSubscription.options && oldSubscription.options.applicationServerKey;
+    if (!key) return;
+    subscription = await self.registration.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: key });
+  }
+  await fetch(PUSH_SUBSCRIBE_URL, {
+    method: "POST",
+    credentials: "same-origin",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(subscriptionBody(subscription, oldSubscription && oldSubscription.endpoint)),
+  });
+}
+
+self.addEventListener("push", function (event) {
+  const lang = self.navigator && self.navigator.language;
+  const push = parsePushData(event.data, self.location.origin, lang);
+  event.waitUntil(self.registration.showNotification(push.title, notificationOptions(push)));
+});
+
+self.addEventListener("notificationclick", function (event) {
+  event.notification.close();
+  const data = event.notification.data || {};
+  event.waitUntil(openOrFocus(safeTargetUrl(data.url, self.location.origin)));
+});
+
+self.addEventListener("pushsubscriptionchange", function (event) {
+  event.waitUntil(resubscribe(event.oldSubscription, event.newSubscription).catch(function () {}));
 });

@@ -2194,5 +2194,42 @@
     "emptyOwnAction": "Ir a mis listas",
     "reportProfile": "Denunciar este perfil",
     "reportList": "Denunciar esta lista"
+  },
+  "push": {
+    "settings": {
+      "section": "Notificaciones push",
+      "label": "Avisos en este dispositivo",
+      "description": "Te avisamos de mensajes, solicitudes de amistad, recomendaciones e invitaciones aunque tengas KULTURA cerrada. El aviso dice quién te escribe, nunca el texto del mensaje.",
+      "on": "Activadas en este dispositivo.",
+      "off": "Desactivadas en este dispositivo.",
+      "allOff": "Desactivadas en todos tus dispositivos.",
+      "saving": "Guardando…",
+      "denied": "Has bloqueado las notificaciones de KULTURA en este navegador. Permítelas en los ajustes del sitio y vuelve aquí.",
+      "dismissed": "No has dado permiso. Puedes volver a intentarlo cuando quieras.",
+      "unsupported": "Este navegador no admite notificaciones push.",
+      "iosInstall": "En iPhone y iPad, primero añade KULTURA a la pantalla de inicio (Compartir → «Añadir a pantalla de inicio») y actívalas desde la app instalada.",
+      "demo": "La cuenta demo no puede activar notificaciones.",
+      "error": "No se han podido cambiar las notificaciones. Inténtalo de nuevo.",
+      "otherDevices": "{count, plural, one {También están activadas en # dispositivo más.} other {También están activadas en # dispositivos más.}}",
+      "disableAll": "Desactivar en todos"
+    },
+    "notify": {
+      "messageTitle": "Nuevo mensaje",
+      "messageBody": "@{username} te ha escrito.",
+      "messageBodyAnonymous": "Tienes un mensaje nuevo.",
+      "friendsTitle": "Amigos",
+      "friendRequest": "@{username} te ha enviado una solicitud de amistad.",
+      "friendRequestAnonymous": "Tienes una solicitud de amistad nueva.",
+      "friendAccepted": "@{username} ha aceptado tu solicitud de amistad.",
+      "friendAcceptedAnonymous": "Han aceptado tu solicitud de amistad.",
+      "notificationTitle": "KULTURA",
+      "fallbackBody": "Tienes novedades en KULTURA.",
+      "recommendation": "@{username} te recomienda «{title}».",
+      "recommendationNoTitle": "@{username} te ha recomendado algo.",
+      "listInvite": "@{username} te ha invitado a la lista «{name}».",
+      "listInviteNoName": "@{username} te ha invitado a una lista.",
+      "groupInvite": "@{username} te ha invitado al grupo «{name}».",
+      "groupInviteNoName": "@{username} te ha invitado a un grupo."
+    }
   }
 }
