@@ -1,7 +1,11 @@
 // ============================================================
 // KULTURA — Feed Queries (servidor)
-// Obtiene la actividad reciente de los amigos del usuario.
-// Uso exclusivo en Server Components.
+// Obtiene la actividad reciente de los amigos del usuario (PRO-7).
+// Uso exclusivo en Server Components: Inicio («Actividad reciente»).
+//
+// Privacidad: la biblioteca de cada amigo se lee con la sesión de quien mira,
+// así que la RLS de `user_media` (can_read_library, F-12) decide: quien la
+// tiene en «Solo yo» no aparece. Nada de esto se ve sin sesión.
 // ============================================================
 
 import { createClient } from '@/lib/supabase/server'
@@ -24,10 +28,31 @@ type FeedRow = DbUserMedia & {
   media: Pick<DbMedia, 'id' | 'title' | 'poster' | 'type'> | null
 }
 
+/** Ids de los amigos aceptados (en las dos direcciones de la amistad). */
+export async function getFriendIds(userId: string): Promise<string[]> {
+  const supabase = await createClient()
+  const { data: friendships, error } = await supabase
+    .from('friendships')
+    .select('requester_id, receiver_id')
+    .eq('status', 'accepted')
+    .or(`requester_id.eq.${userId},receiver_id.eq.${userId}`)
+
+  if (error) throw new Error(`Failed to fetch friendships: ${error.message}`)
+  return Array.from(
+    new Set(
+      ((friendships ?? []) as Array<{ requester_id: string; receiver_id: string }>).map((f) =>
+        f.requester_id === userId ? f.receiver_id : f.requester_id
+      )
+    )
+  )
+}
+
 /**
  * Devuelve la actividad reciente de los amigos aceptados del usuario.
  * Estrategia en dos queries:
- *   1. Obtener los IDs de amigos aceptados.
+ *   1. Obtener los IDs de amigos aceptados (o usar `friendIds` si ya se
+ *      tienen: Inicio los pide antes para distinguir "sin amigos" de "sin
+ *      actividad").
  *   2. Obtener user_media de esos amigos ordenado por updated_at DESC.
  *
  * updated_at se actualiza automáticamente vía trigger `set_updated_at`
@@ -36,31 +61,20 @@ type FeedRow = DbUserMedia & {
  */
 export async function getFriendsFeed(
   userId: string,
-  limit = 30
+  limit = 30,
+  friendIds?: string[]
 ): Promise<FeedEntry[]> {
+  const ids = friendIds ?? (await getFriendIds(userId))
+  if (ids.length === 0) return []
+
   const supabase = await createClient()
-
-  // 1. IDs de amigos aceptados (ambas direcciones)
-  const { data: friendships, error: friendError } = await supabase
-    .from('friendships')
-    .select('requester_id, receiver_id')
-    .eq('status', 'accepted')
-    .or(`requester_id.eq.${userId},receiver_id.eq.${userId}`)
-
-  if (friendError) throw new Error(`Failed to fetch friendships: ${friendError.message}`)
-  if (!friendships || friendships.length === 0) return []
-
-  const friendIds = friendships.map((f) =>
-    f.requester_id === userId ? f.receiver_id : f.requester_id
-  )
-
   // 2. Actividad reciente de esos amigos (ordenada por última actualización)
   const { data, error } = await supabase
     .from('user_media')
     .select(
       'id, user_id, media_id, status, score, created_at, updated_at, user:user_id(id, username, avatar_color, avatar_initials), media:media_id(id, title, poster, type)'
     )
-    .in('user_id', friendIds)
+    .in('user_id', ids)
     .order('updated_at', { ascending: false })
     .limit(limit)
 

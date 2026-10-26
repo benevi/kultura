@@ -3,6 +3,8 @@ import { redirect } from 'next/navigation'
 import { isDemoUser } from '@/lib/demo'
 import { getTranslations } from 'next-intl/server'
 import { SettingsForm } from './SettingsForm'
+import { PlatformsSection } from './PlatformsSection'
+import { normalizeServices, platformRegionFor } from './platforms'
 import { isLibraryVisibility } from '@/app/api/settings/identity'
 import { accountGraceEnabled, libraryVisibilityEnabled, readAccountState } from '@/app/api/settings/account-state'
 import { ACCOUNT_GRACE_DAYS } from '@/app/api/settings/identity'
@@ -36,6 +38,19 @@ export default async function SettingsPage({ params, searchParams }: SettingsPag
   const initialLibraryVisibility =
     libraryVisibilityEnabled() && isLibraryVisibility(visibility) ? visibility : null
 
+  // F-25: «Mis plataformas» solo si la columna existe (migración aplicada);
+  // `select('*')` la trae sin pedirla por nombre, así que antes no falla nada.
+  const streaming = profile as { streaming_services?: unknown; streaming_region?: unknown } | null
+  const platformsSlot =
+    streaming && Array.isArray(streaming.streaming_services) ? (
+      <PlatformsSection
+        userId={user.id}
+        initialServices={normalizeServices(streaming.streaming_services)}
+        initialRegion={platformRegionFor(streaming.streaming_region, locale)}
+        isDemo={isDemoUser(user)}
+      />
+    ) : null
+
   return (
     <main className="max-w-[640px] mx-auto px-4 md:px-8 py-8">
       <SettingsForm
@@ -51,6 +66,7 @@ export default async function SettingsPage({ params, searchParams }: SettingsPag
         deletionRequestedAt={account.state?.deletion_requested_at ?? null}
         // Mismo cálculo que GET /api/account: con la bandera y la tabla, 7 días.
         graceDays={accountGraceEnabled() && account.migrated ? ACCOUNT_GRACE_DAYS : 0}
+        platformsSlot={platformsSlot}
       />
     </main>
   )
