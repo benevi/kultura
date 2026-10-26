@@ -103,7 +103,7 @@ export default async function BestOfPage({ params }: Props) {
           <p className="text-base text-text-secondary max-w-prose">
             {t(`intro.${parsed.format}`, { year: parsed.year })}
           </p>
-          <p className="text-meta text-text-tertiary max-w-prose">
+          <p className="text-sm text-text-tertiary max-w-prose">
             {t(`criteria.${parsed.format}`, { year: parsed.year, min: ranking.minVotes ?? 0 })}{" "}
             {t.rich("updated", {
               date: updatedLabel,

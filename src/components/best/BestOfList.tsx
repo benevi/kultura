@@ -28,7 +28,7 @@ const STRETCHED_LINK =
 
 const SAVE_LINK =
   "relative z-10 inline-flex min-h-11 items-center self-start rounded-full border-2 border-stroke px-4 " +
-  "text-meta font-bold text-text-secondary hover:bg-surface-elevated hover:text-text-primary transition-colors " +
+  "text-sm font-bold text-text-secondary hover:bg-surface-elevated hover:text-text-primary transition-colors " +
   "focus-visible:[outline-style:solid] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus-ring";
 
 function formatRating(rating: number, locale: string): string {
@@ -51,7 +51,7 @@ function Meta({ item, locale, t }: { item: BestItem; locale: string; t: T }) {
   }
   if (parts.length === 0) return null;
   return (
-    <p className="text-meta font-bold text-text-secondary">
+    <p className="text-sm font-bold text-text-secondary">
       {parts.map((p, i) => (
         <span key={i}>
           {i > 0 ? <span aria-hidden="true"> · </span> : null}
@@ -112,7 +112,7 @@ const PODIUM = [
   },
   {
     li: "flex-col md:mt-12",
-    number: "text-6xl md:text-4xl",
+    number: "text-4xl",
     title: "text-base",
     sizes: "(min-width: 896px) 250px, (min-width: 768px) 30vw, 50vw",
     poster: "w-full",
@@ -120,7 +120,7 @@ const PODIUM = [
   },
   {
     li: "flex-col md:mt-24",
-    number: "text-6xl md:text-4xl",
+    number: "text-4xl",
     title: "text-base",
     sizes: "(min-width: 896px) 210px, (min-width: 768px) 26vw, 50vw",
     poster: "w-full",
@@ -179,7 +179,7 @@ export async function BestPodium({ items, locale }: { items: BestItem[]; locale:
                 <Genres genres={item.genres} />
                 {item.synopsis ? (
                   <p
-                    className={`text-meta text-text-secondary md:text-sm ${first ? "line-clamp-3 md:line-clamp-5" : "line-clamp-3"}`}
+                    className={`text-sm text-text-secondary ${first ? "line-clamp-3 md:line-clamp-5" : "line-clamp-3"}`}
                   >
                     {item.synopsis}
                   </p>
@@ -229,7 +229,7 @@ export async function BestRankList({ items, locale }: { items: BestItem[]; local
               </h2>
               <Meta item={item} locale={locale} t={t} />
               {item.synopsis ? (
-                <p className="text-meta text-text-secondary line-clamp-2 md:text-sm">{item.synopsis}</p>
+                <p className="text-sm text-text-secondary line-clamp-2">{item.synopsis}</p>
               ) : null}
               <SaveLink item={item} locale={locale} t={t} />
             </div>

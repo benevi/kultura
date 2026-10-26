@@ -28,7 +28,7 @@ export function BestTopRow({ items, locale, label }: { items: BestItem[]; locale
             >
               <BestPoster src={item.poster} alt={item.title} sizes="(min-width: 896px) 160px, (min-width: 640px) 18vw, 30vw" />
             </span>
-            <span className="text-meta font-bold leading-snug text-text-primary line-clamp-2 group-hover:text-accent-pink transition-colors">
+            <span className="text-sm font-bold leading-snug text-text-primary line-clamp-2 group-hover:text-accent-pink transition-colors">
               <span className="text-text-tertiary">{i + 1}. </span>
               {item.title}
             </span>
