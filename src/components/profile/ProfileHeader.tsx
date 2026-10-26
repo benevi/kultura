@@ -49,8 +49,8 @@ export async function ProfileHeader({
   }).format(new Date(createdAt))
 
   const stats = [
-    { value: totalItems, label: t('totalItems') },
-    { value: totalCompleted, label: t('completed') },
+    { value: totalItems, label: t('totalItems', { count: totalItems }) },
+    { value: totalCompleted, label: t('completed', { count: totalCompleted }) },
     { value: totalInProgress, label: t('inProgress') },
   ]
 
