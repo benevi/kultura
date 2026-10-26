@@ -4,7 +4,7 @@ import type { User } from "@supabase/supabase-js";
 import createIntlMiddleware from "next-intl/middleware";
 import { routing } from "./i18n/routing";
 import { publicEnv } from "@/lib/env.public";
-import { buildCsp, isStaticCspRoute } from "@/lib/csp";
+import { CSP_REPORT_PATH, buildCsp, isStaticCspRoute } from "@/lib/csp";
 import { DEMO_READ_ONLY_ERROR, isBlockedForDemo, isDemoUser } from "@/lib/demo";
 
 const intlMiddleware = createIntlMiddleware(routing);
@@ -26,6 +26,12 @@ export async function middleware(request: NextRequest) {
   }
 
   const { pathname } = request.nextUrl;
+
+  // Informes de CSP (SEG-10): los manda el navegador solo, a veces varios por
+  // página; no necesitan sesión ni idioma. Sin pasar por Supabase.
+  if (pathname === CSP_REPORT_PATH) {
+    return NextResponse.next();
+  }
 
   // `x-pathname`: ruta + query originales, para construir el `next` de las
   // redirecciones a /login. Va en la PETICIÓN y se sobrescribe siempre: lo

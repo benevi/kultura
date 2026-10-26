@@ -210,3 +210,12 @@ describe("F-22 — sin cookie de Supabase no se consulta Auth", () => {
     expect(getUser).not.toHaveBeenCalled();
   });
 });
+
+describe("F-22 — /api/csp-report no pasa por la sesión", () => {
+  it("con cookie de sesión tampoco consulta Auth (los informes llegan solos y a ráfagas)", async () => {
+    const res = await middleware(req("POST", "/api/csp-report", SESSION));
+    expect(getUser).not.toHaveBeenCalled();
+    expect(res.status).toBe(200);
+    expect(res.headers.get("x-middleware-next")).toBe("1");
+  });
+});
