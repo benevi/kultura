@@ -112,6 +112,13 @@ export function pickTitleMatch<T>(
   )
   const best = accepted[0]
 
+  // Dos candidatos igual de buenos a un año de distancia (sin ninguno del año
+  // exacto): no hay con qué desempatar, así que no se adivina.
+  if (best.delta !== 0) {
+    const tie = accepted.find((s) => s !== best && s.delta === best.delta && s.similarity >= best.similarity - 0.001)
+    if (tie) return null
+  }
+
   // Sin año que desempate: si hay otro candidato idéntico de otro año, no se adivina.
   if (!wanted.year) {
     const rivals = scored.filter(
