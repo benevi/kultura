@@ -414,7 +414,7 @@ export function ListDetail({
                 {ranked && (
                   <span
                     aria-hidden="true"
-                    className="pointer-events-none absolute -left-2 -top-2 z-10 flex h-8 min-w-8 items-center justify-center rounded-full bg-accent-lime px-2 font-display text-sm font-extrabold tabular-nums text-on-accent-lime shadow-[3px_3px_0_rgba(0,0,0,0.4)]"
+                    className="pointer-events-none absolute -left-2 -top-2 z-10 flex h-8 min-w-8 items-center justify-center rounded-full bg-accent-lime px-2 font-display text-sm font-extrabold tabular-nums text-on-accent-lime shadow-[4px_4px_0_rgba(0,0,0,0.4)]"
                   >
                     {index + 1}
                   </span>
