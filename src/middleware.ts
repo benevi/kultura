@@ -4,7 +4,13 @@ import type { User } from "@supabase/supabase-js";
 import createIntlMiddleware from "next-intl/middleware";
 import { routing } from "./i18n/routing";
 import { publicEnv } from "@/lib/env.public";
-import { CSP_REPORT_PATH, buildCsp, isStaticCspRoute } from "@/lib/csp";
+import {
+  CSP_REPORT_PATH,
+  buildCsp,
+  isInvalidBestPath,
+  isRouterFetchFromStaticRoute,
+  isStaticCspRoute,
+} from "@/lib/csp";
 import { DEMO_READ_ONLY_ERROR, isBlockedForDemo, isDemoUser } from "@/lib/demo";
 
 const intlMiddleware = createIntlMiddleware(routing);
@@ -44,12 +50,27 @@ export async function middleware(request: NextRequest) {
   // `next.config.mjs`), sin sesión (no la leen) y sin cookies en la respuesta
   // (una `Set-Cookie` saca la respuesta de la caché del CDN). Solo next-intl,
   // que resuelve el idioma.
-  if (isStaticCspRoute(pathname)) {
+  // Un ranking que no existe (/es/best/movie/abc) no llega a la página: se
+  // guardaría en la caché ISR, una entrada por URL inventada. Va a la 404
+  // dinámica (abajo), con nonce y sin caché.
+  const invalidBest = isInvalidBestPath(pathname);
+
+  if (isStaticCspRoute(pathname) && !invalidBest) {
     const response = intlMiddleware(request);
     // next-intl recuerda el idioma con la cookie NEXT_LOCALE; en una página
     // cacheable no se manda (la pone la primera página dinámica que se visite).
     response.headers.delete("set-cookie");
     return response;
+  }
+
+  // Defensa en profundidad (revisión #47): una navegación del router de Next
+  // desde una página con la CSP fija hacia una con nonce pintaría el destino
+  // dentro del documento de origen, que conserva su CSP `'unsafe-inline'`. Las
+  // páginas cacheables solo enlazan con `<a>` (test del grafo de imports),
+  // pero si algo se cuela, una respuesta que no es RSC hace que el router
+  // cargue el documento entero (`doMpaNavigation`), con su propia CSP.
+  if (!pathname.startsWith("/api/") && isRouterFetchFromStaticRoute(request.headers)) {
+    return new NextResponse(null, { status: 409, headers: { "Cache-Control": "no-store" } });
   }
 
   // C7: nonce único por request — habilita script-src sin 'unsafe-inline' en
@@ -64,6 +85,17 @@ export async function middleware(request: NextRequest) {
   // - `x-nonce`: para los Server Components que necesiten firmar un <script>.
   request.headers.set("content-security-policy", csp);
   request.headers.set("x-nonce", nonce);
+
+  if (invalidBest) {
+    // `[locale]/[...rest]` es dinámica y responde `notFound()` (404 del idioma).
+    const locale = pathname.split("/")[1];
+    const notFound = NextResponse.rewrite(new URL(`/${locale}/no-existe`, request.url), {
+      request: { headers: request.headers },
+    });
+    notFound.headers.set("Content-Security-Policy", csp);
+    notFound.headers.set("Cache-Control", "private, no-store");
+    return notFound;
+  }
 
   // Start with a response that forwards the request as-is.
   // We'll replace it if the session gets refreshed.

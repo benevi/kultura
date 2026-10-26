@@ -55,6 +55,62 @@ export function isStaticCspRoute(pathname: string): boolean {
   return STATIC_CSP_ROUTES.some((re) => re.test(path));
 }
 
+// ── Rankings: URL válidas (F-22, revisión #47) ───────────────────────────────
+// Los rankings se generan bajo demanda y se guardan en la caché ISR. Una URL
+// inventada (/es/best/movie/abc) no debe llegar a la página: se escribiría en
+// la caché (una entrada por URL basura). El middleware la manda a la 404
+// dinámica antes. Copia ligera (apta para el edge) de `BEST_FORMATS`,
+// `BEST_FIRST_YEAR` y `parseBestParams` de `src/lib/best/best-of.ts`;
+// `tests/unit/csp/best-paths.test.ts` exige que digan lo mismo.
+const BEST_FORMATS_EDGE = ["anime", "movie", "tv", "game"];
+const BEST_FIRST_YEAR_EDGE = 2024;
+const BEST_PATH = new RegExp(`^/(${LOCALES})/best(?:/(.*))?$`);
+
+/**
+ * `true` si la ruta es de /best pero no existe: formato desconocido, año que
+ * no es de 4 cifras o fuera de [2024, año en curso], o segmentos de más. Las
+ * tarjetas OG (`/best/{f}/{y}/opengraph-image…`) valen si formato y año valen.
+ */
+export function isInvalidBestPath(pathname: string, today: Date = new Date()): boolean {
+  const match = BEST_PATH.exec(pathname.length > 1 && pathname.endsWith("/") ? pathname.slice(0, -1) : pathname);
+  if (!match) return false;
+  const rest = match[2] ? match[2].split("/") : [];
+  if (rest.length === 0) return false;
+  const [format, year, extra, ...more] = rest;
+  if (!BEST_FORMATS_EDGE.includes(format)) return true;
+  if (year === undefined) return false;
+  if (!/^\d{4}$/.test(year)) return true;
+  const y = Number(year);
+  if (y < BEST_FIRST_YEAR_EDGE || y > today.getFullYear()) return true;
+  if (extra === undefined) return false;
+  return !(extra.startsWith("opengraph-image") && more.length === 0);
+}
+
+// ── Navegaciones del router desde una ruta con CSP fija (revisión #47) ────────
+/**
+ * ¿Pide esta petición una página con nonce desde JavaScript (el router de
+ * Next) estando el navegador en una página con la CSP fija? Si se sirviera, la
+ * página de destino se pintaría dentro del documento de origen y heredaría su
+ * CSP `'unsafe-inline'`.
+ *
+ * Next quita al middleware las cabeceras del router (`RSC`,
+ * `Next-Router-State-Tree`…, ver `FLIGHT_HEADERS` en `server/web/adapter`) y
+ * el parámetro `_rsc`, así que se reconoce por lo que sí llega: una carga de
+ * documento trae `Sec-Fetch-Dest: document`; el `fetch` del router, `empty`.
+ * El origen es el `Referer` (la URL actual del documento; misma web, así que
+ * `strict-origin-when-cross-origin` lo manda entero). Navegadores sin
+ * `Sec-Fetch-*` (Safari < 16.4) no tienen esta red: la primera defensa son los
+ * enlaces `<a>` de las páginas cacheables (test del grafo de imports).
+ */
+export function isRouterFetchFromStaticRoute(headers: Headers): boolean {
+  if (headers.get("sec-fetch-dest") !== "empty") return false;
+  try {
+    return isStaticCspRoute(new URL(headers.get("referer") ?? "").pathname);
+  } catch {
+    return false;
+  }
+}
+
 /** Directivas comunes a las dos políticas; solo cambia `script-src`. */
 function directives(scriptSrc: string, connectSrc: string, isDev: boolean, reportOnly = false): string {
   return [

@@ -219,3 +219,77 @@ describe("F-22 — /api/csp-report no pasa por la sesión", () => {
     expect(res.headers.get("x-middleware-next")).toBe("1");
   });
 });
+
+describe("revisión #47 — navegación del router desde una ruta con CSP fija", () => {
+  // Lo que llega al middleware del `fetch` del router: Next le quita `RSC`,
+  // `Next-Router-State-Tree` y `_rsc`; quedan `Sec-Fetch-Dest` y `Referer`.
+  const ROUTER = (from: string) => ({ ...SESSION, "sec-fetch-dest": "empty", referer: `https://kultura.test${from}` });
+  const DOCUMENT = (from: string) => ({ ...SESSION, "sec-fetch-dest": "document", referer: `https://kultura.test${from}` });
+
+  it.each(["/es/privacy", "/es", `/es/best/anime/2026`, "/en/offline"])(
+    "de %s a /es/settings: respuesta no RSC (409) para que el router cargue el documento",
+    async (from) => {
+      const res = await middleware(req("GET", "/es/settings", ROUTER(from)));
+      expect(res.status).toBe(409);
+      expect(res.headers.get("content-type")).toBeNull();
+      expect(res.headers.get("cache-control")).toBe("no-store");
+      expect(getUser).not.toHaveBeenCalled();
+    },
+  );
+
+  it("también hacia /u, /media y /login (y su precarga, que es el mismo fetch)", async () => {
+    for (const to of ["/es/u/benevi", "/es/media/movie/603", "/es/login"]) {
+      expect((await middleware(req("GET", to, ROUTER("/es/terms")))).status).toBe(409);
+    }
+  });
+
+  it("una carga de documento normal (enlace <a>) desde una página cacheable pasa con su nonce", async () => {
+    const res = await middleware(req("GET", "/es/settings", DOCUMENT("/es/privacy")));
+    expect(res.status).toBe(200);
+    expect(res.headers.get("content-security-policy")).toMatch(/'nonce-/);
+  });
+
+  it("entre páginas con nonce, el router navega como siempre", async () => {
+    const res = await middleware(req("GET", "/es/settings", ROUTER("/es/home")));
+    expect(res.status).toBe(200);
+    expect(res.headers.get("content-security-policy")).toMatch(/'nonce-/);
+  });
+
+  it("hacia otra página cacheable no se toca (misma CSP fija)", async () => {
+    const res = await middleware(req("GET", "/es/terms", ROUTER("/es/privacy")));
+    expect(res.status).toBe(200);
+    expect(res.headers.get("content-security-policy")).toBeNull();
+  });
+
+  it("la API (fetch de los componentes) no se ve afectada", async () => {
+    const res = await middleware(req("GET", "/api/search?q=x", ROUTER("/es")));
+    expect(res.status).toBe(200);
+  });
+
+  it("sin Sec-Fetch-Dest o sin Referer no se decide nada", async () => {
+    expect((await middleware(req("GET", "/es/settings", { ...SESSION, referer: "https://kultura.test/es" }))).status).toBe(200);
+    expect((await middleware(req("GET", "/es/settings", { ...SESSION, "sec-fetch-dest": "empty" }))).status).toBe(200);
+  });
+});
+
+describe("revisión #47 — rankings inexistentes fuera de la caché ISR", () => {
+  it.each(["/es/best/movie/abc", "/es/best/book", "/en/best/game/1999", "/es/best/tv/2026/x"])(
+    "%s → reescrita a la 404 dinámica del idioma, con nonce y sin caché",
+    async (path) => {
+      const res = await middleware(req("GET", path, SESSION));
+      const locale = path.split("/")[1];
+      expect(new URL(res.headers.get("x-middleware-rewrite") ?? "").pathname).toBe(`/${locale}/no-existe`);
+      expect(res.headers.get("content-security-policy")).toMatch(/'nonce-/);
+      expect(forwarded(res, "content-security-policy")).toMatch(/'nonce-/);
+      expect(res.headers.get("cache-control")).toBe("private, no-store");
+      expect(getUser).not.toHaveBeenCalled();
+    },
+  );
+
+  it("los rankings que existen siguen saliendo del CDN", async () => {
+    const year = new Date().getFullYear();
+    const res = await middleware(req("GET", `/es/best/movie/${year}`));
+    expect(res.headers.get("x-middleware-rewrite")).toBeNull();
+    expect(res.headers.get("content-security-policy")).toBeNull();
+  });
+});
