@@ -111,7 +111,12 @@ export async function processImportBatch(items: ImportItem[], opts: ProcessOptio
     outcome.set(key, { key, outcome: o, ...extra })
 
   // 1. Emparejar.
-  const matches = await matchItems(items, { budget, locale: opts.locale })
+  const admin = createAdminClient()
+  const matches = await matchItems(items, {
+    budget,
+    locale: opts.locale,
+    existingByMal: (kind, mals) => findLibraryByMal(opts.supabase, admin, opts.userId, kind, mals),
+  })
   const matchedItems: Array<{ item: ImportItem; mediaId: string; by: MatchMethod; prebuilt?: MediaItem }> = []
   for (const item of items) {
     const m = matches.get(item.key) ?? { status: 'pending' as const }
@@ -121,7 +126,6 @@ export async function processImportBatch(items: ImportItem[], opts: ProcessOptio
 
   // 2. Fichas del catálogo: las que ya vienen del proveedor se escriben tal
   //    cual (sin volver a pedirlas); el resto las pide `ensureMediaRows`.
-  const admin = createAdminClient()
   const available = new Set<string>()
   const prebuiltRows = new Map<string, MediaRowInsert>()
   for (const m of matchedItems) {
@@ -221,6 +225,52 @@ export async function processImportBatch(items: ImportItem[], opts: ProcessOptio
     wrote: rows.length > 0 || diaryImported > 0,
     providerCalls: budget.used,
   }
+}
+
+/**
+ * MAL ID → id del título que la persona ya tiene en su biblioteca: el id
+ * legacy de Jikan (`anime_{mal}`) o una ficha cuyo `metadata.malId` coincida
+ * (los manga `al-` lo guardan). Lanza si la base falla: quien llama deja esas
+ * filas pendientes antes que arriesgar un duplicado.
+ */
+export async function findLibraryByMal(
+  supabase: SupabaseClient,
+  admin: SupabaseClient,
+  userId: string,
+  kind: 'anime' | 'manga',
+  mals: number[]
+): Promise<Map<number, string>> {
+  const out = new Map<number, string>()
+  if (mals.length === 0) return out
+  const candidates = new Map<string, number>()
+  for (const mal of mals) candidates.set(`${kind}_${mal}`, mal)
+
+  const { data: tagged, error: mediaError } = await admin
+    .from('media')
+    .select('id, metadata')
+    .eq('type', kind)
+    .in('metadata->>malId', mals.map(String))
+  if (mediaError) throw new Error(`media: ${mediaError.code ?? ''}`)
+  for (const row of (tagged ?? []) as Array<{ id: string; metadata: { malId?: unknown } | null }>) {
+    const mal = Number(row.metadata?.malId)
+    if (Number.isInteger(mal) && mals.includes(mal)) candidates.set(row.id, mal)
+  }
+
+  const ids = Array.from(candidates.keys())
+  for (let i = 0; i < ids.length; i += CHUNK) {
+    const { data, error } = await supabase
+      .from('user_media')
+      .select('media_id')
+      .eq('user_id', userId)
+      .in('media_id', ids.slice(i, i + CHUNK))
+    if (error) throw new Error(`user_media: ${error.code ?? ''}`)
+    for (const r of (data ?? []) as Array<{ media_id: string }>) {
+      const mal = candidates.get(r.media_id)
+      // Con los dos ids en la biblioteca (duplicado ya existente), vale cualquiera.
+      if (mal !== undefined && !out.has(mal)) out.set(mal, r.media_id)
+    }
+  }
+  return out
 }
 
 function fromPrebuilt(

@@ -4,9 +4,11 @@
 // Orden de preferencia, del más exacto al menos:
 //   1. id de TMDB (formato de importación de Letterboxd) → sin petición.
 //   2. IMDb ID / TheTVDB ID → TMDB `GET /find/{id}` (findByExternalId).
-//   3. MAL ID → AniList `Page.media(idMal_in: […])`: 50 filas en UNA petición
-//      (AniList es el proveedor con menos cupo). Si AniList no responde o le
-//      falta el título, Jikan `/anime|manga/{id}` (MyAnimeList) uno a uno.
+//   3. MAL ID → lo que ya tenga en su biblioteca con ese MAL ID; si no,
+//      AniList `Page.media(idMal_in: […])`: 50 filas en UNA petición (AniList
+//      es el proveedor con menos cupo). Si AniList falla, `pending` (nunca
+//      Jikan: daría otro id para el mismo título). Solo si AniList responde y
+//      no tiene ese MAL ID, Jikan `/anime|manga/{id}` (MyAnimeList).
 //   4. ISBN → Open Library `search.json?q=isbn:…`.
 //   5. Título + año (TMDB, en inglés: Letterboxd y TV Time usan los títulos
 //      en inglés de TMDB) o título + autor (Open Library), con las reglas
@@ -57,6 +59,11 @@ export interface MatchContext {
   budget: ProviderBudget
   /** Idioma de la persona (`es`/`en`): el de las fichas nuevas del catálogo. */
   locale: 'es' | 'en'
+  /**
+   * MAL ID → id del título que la persona YA tiene en su biblioteca (si lo
+   * tiene). Lo pone `process-batch` con su sesión; sin él no se comprueba.
+   */
+  existingByMal?: (kind: 'anime' | 'manga', mals: number[]) => Promise<Map<number, string>>
 }
 
 const PENDING: MatchResult = { status: 'pending' }
@@ -211,25 +218,52 @@ async function matchMal(items: ImportItem[], ctx: MatchContext): Promise<Map<str
   for (const kind of ['anime', 'manga'] as const) {
     const group = items.filter((i) => i.kind === kind && i.ids?.mal)
     if (group.length === 0) continue
-    let found: Map<number, AniListByMal> | null = null
+    const mals = group.map((i) => i.ids!.mal!)
+
+    // 1. ¿Ya está en su biblioteca por ese MAL ID (`anime_{mal}` de Jikan o
+    //    una ficha `al-` con `metadata.malId`)? Entonces es ESE título: si no,
+    //    reimportar crearía un duplicado con el otro id.
+    let existing: Map<number, string>
+    try {
+      existing = ctx.existingByMal ? await ctx.existingByMal(kind, mals) : new Map()
+    } catch {
+      // Sin poder comprobarlo no se arriesga un duplicado: se reintenta.
+      for (const item of group) results.set(item.key, PENDING)
+      continue
+    }
+    const rest = group.filter((item) => {
+      const mediaId = existing.get(item.ids!.mal!)
+      if (mediaId) results.set(item.key, { status: 'matched', mediaId, by: 'mal' })
+      return !mediaId
+    })
+    if (rest.length === 0) continue
+
+    // 2. AniList (la fuente de anime y manga: ids `al-`). Si falla o no queda
+    //    presupuesto, las filas quedan `pending`: NUNCA se cae a Jikan, que
+    //    guardaría `anime_{mal}` y la próxima vez saldría `anime_al-N` (el
+    //    mismo título dos veces en la biblioteca).
+    let found: Map<number, AniListByMal>
     try {
       found = await anilistByMal(
-        group.map((i) => i.ids!.mal!),
+        rest.map((i) => i.ids!.mal!),
         kind === 'anime' ? 'ANIME' : 'MANGA',
         ctx
       )
     } catch {
-      found = null // AniList caído o sin presupuesto: Jikan.
+      for (const item of rest) results.set(item.key, PENDING)
+      continue
     }
-    await mapLimit(group, 2, async (item) => {
+    await mapLimit(rest, 2, async (item) => {
       const mal = item.ids!.mal!
-      const media = found?.get(mal)
+      const media = found.get(mal)
       if (media) {
         if (media.isAdult) return results.set(item.key, EXCLUDED)
         const normalized =
           kind === 'anime' ? normalizeAniListAnime(media as AniListMedia) : normalizeAniListManga(media as AniListManga)
         return results.set(item.key, matched(normalized.id, 'mal', normalized))
       }
+      // 3. AniList ha respondido y no tiene ese MAL ID: no hay ficha `al-` con
+      //    la que chocar, así que Jikan (MyAnimeList) con su id de siempre.
       results.set(item.key, await jikanByMal(item, mal, ctx))
     })
   }

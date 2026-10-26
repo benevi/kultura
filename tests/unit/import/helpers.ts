@@ -95,13 +95,20 @@ export function fakeClient(db: FakeDb) {
           .map((r) => (columns ? Object.fromEntries(columns.map((c) => [c, r[c] ?? null])) : { ...r }))
         return { data, error: null }
       }
+      // `metadata->>malId` (JSON a texto, como PostgREST).
+      const read = (r: Row, col: string): unknown => {
+        const [base, key] = col.split('->>')
+        if (key === undefined) return r[base]
+        const v = (r[base] as Record<string, unknown> | null | undefined)?.[key]
+        return v === undefined || v === null ? null : String(v)
+      }
       const query = {
         eq(col: string, value: unknown) {
-          filters.push((r) => r[col] === value)
+          filters.push((r) => read(r, col) === value)
           return query
         },
         in(col: string, values: unknown[]) {
-          filters.push((r) => values.includes(r[col]))
+          filters.push((r) => values.includes(read(r, col)))
           return query
         },
         like(col: string, pattern: string) {

@@ -21,7 +21,13 @@ vi.mock('@/lib/media/upsert-from-provider', async (importOriginal) => ({
   },
 }))
 
-import { mergeIncoming, planLibraryWrite, processImportBatch } from '@/lib/import/server/process-batch'
+const anilist = vi.hoisted(() => ({ fetch: vi.fn() }))
+vi.mock('@/lib/api/http', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@/lib/api/http')>()),
+  providerFetch: anilist.fetch,
+}))
+
+import { findLibraryByMal, mergeIncoming, planLibraryWrite, processImportBatch } from '@/lib/import/server/process-batch'
 
 const item = (over: Partial<ImportItem>): ImportItem => ({
   key: '0',
@@ -145,5 +151,38 @@ describe('processImportBatch', () => {
     const r = await run([item({ key: 'a', ids: { tmdb: 1 } }), item({ key: 'b', ids: { tmdb: 2 } })])
     expect(r.results.map((x) => x.outcome)).toEqual(['added', 'pending'])
     expect(state.db.tables.user_media.map((x) => x.media_id)).toEqual(['movie_1'])
+  })
+
+  it('findLibraryByMal: id legacy de Jikan y ficha al- con metadata.malId, solo de SU biblioteca', async () => {
+    state.db.tables.media.push(
+      { id: 'manga_al-30002', type: 'manga', metadata: { malId: 2 } },
+      { id: 'manga_al-9', type: 'manga', metadata: { malId: 9 } },
+      { id: 'anime_al-77', type: 'anime', metadata: { malId: 2 } }
+    )
+    state.db.tables.user_media.push(
+      { user_id: 'u1', media_id: 'manga_al-30002', status: 'completed' },
+      { user_id: 'u1', media_id: 'manga_13', status: 'pending' },
+      { user_id: 'otra', media_id: 'manga_al-9', status: 'pending' }
+    )
+    const db = fakeClient(state.db) as never
+    const found = await findLibraryByMal(db, db, 'u1', 'manga', [2, 13, 9])
+    expect(Array.from(found.entries()).sort()).toEqual([
+      [13, 'manga_13'],
+      [2, 'manga_al-30002'],
+    ])
+    state.db.errors['user_media.select'] = { code: '500', message: 'x' }
+    await expect(findLibraryByMal(db, db, 'u1', 'manga', [2])).rejects.toThrow()
+  })
+
+  it('reimportar MAL con el título guardado como anime_{mal} no crea anime_al-N (sin duplicado)', async () => {
+    anilist.fetch.mockResolvedValue({
+      data: { Page: { media: [{ id: 5114, idMal: 5114, isAdult: false, title: { romaji: 'FMA:B', english: 'FMA:B', native: null }, coverImage: {}, genres: [], startDate: { year: 2009 } }] } },
+    })
+    state.db.tables.media.push({ id: 'anime_5114', type: 'anime', title: 'FMA:B', metadata: {} })
+    state.db.tables.user_media.push({ user_id: 'u1', media_id: 'anime_5114', status: 'completed', score: 5, watched_at: null })
+    const r = await run([item({ kind: 'anime', title: 'FMA:B', ids: { mal: 5114 }, rating10: 10 })])
+    expect(r.results[0]).toMatchObject({ outcome: 'kept', mediaId: 'anime_5114', by: 'mal' })
+    expect(state.db.tables.user_media.map((x) => x.media_id)).toEqual(['anime_5114'])
+    expect(anilist.fetch).not.toHaveBeenCalled()
   })
 })

@@ -145,8 +145,24 @@ describe('matchItems', () => {
     expect(mocks.jikanAnime).toHaveBeenCalledWith(5114)
   })
 
-  it('AniList caído → Jikan para todos; Jikan 404 → sin emparejar', async () => {
+  it('AniList caído o sin presupuesto → pending, NUNCA Jikan (daría anime_{mal} y luego anime_al-N duplicado)', async () => {
     mocks.providerFetch.mockRejectedValue(new ProviderError('anilist', 'http', 'AniList → 403', { status: 403 }))
+    mocks.jikanAnime.mockResolvedValue(JIKAN_ANIME_5114)
+    const items = [item({ key: '0', kind: 'anime', ids: { mal: 5114 } }), item({ key: '1', kind: 'anime', ids: { mal: 1 } })]
+    const down = await matchItems(items, ctx())
+    expect(down.get('0')).toEqual({ status: 'pending' })
+    expect(down.get('1')).toEqual({ status: 'pending' })
+
+    mocks.providerFetch.mockReset()
+    mocks.providerFetch.mockResolvedValue(ANILIST_BY_MAL)
+    const noBudget = await matchItems(items, ctx(0))
+    expect(Array.from(noBudget.values())).toEqual([{ status: 'pending' }, { status: 'pending' }])
+    expect(mocks.providerFetch).not.toHaveBeenCalled()
+    expect(mocks.jikanAnime).not.toHaveBeenCalled()
+  })
+
+  it('AniList responde pero no tiene ese MAL ID → Jikan; Jikan 404 → sin emparejar', async () => {
+    mocks.providerFetch.mockResolvedValue({ data: { Page: { media: [] } } })
     mocks.jikanAnime.mockImplementation(async (id: number) => {
       if (id === 5114) return JIKAN_ANIME_5114
       throw Object.assign(new Error('Jikan → 404'), { status: 404 })
@@ -157,6 +173,31 @@ describe('matchItems', () => {
     )
     expect(r.get('0')).toMatchObject({ status: 'matched', mediaId: 'anime_5114' })
     expect(r.get('1')).toEqual({ status: 'unmatched' })
+  })
+
+  it('ya en la biblioteca por MAL ID → ese mismo título, sin preguntar a AniList ni a Jikan', async () => {
+    mocks.providerFetch.mockResolvedValue(ANILIST_BY_MAL)
+    const existingByMal = vi.fn(async () => new Map([[5114, 'anime_5114'], [1, 'anime_al-1']]))
+    const r = await matchItems(
+      [item({ key: '0', kind: 'anime', ids: { mal: 5114 } }), item({ key: '1', kind: 'anime', ids: { mal: 1 } })],
+      { ...ctx(), existingByMal }
+    )
+    expect(existingByMal).toHaveBeenCalledWith('anime', [5114, 1])
+    expect(r.get('0')).toEqual({ status: 'matched', mediaId: 'anime_5114', by: 'mal' })
+    expect(r.get('1')).toEqual({ status: 'matched', mediaId: 'anime_al-1', by: 'mal' })
+    expect(mocks.providerFetch).not.toHaveBeenCalled()
+    expect(mocks.jikanAnime).not.toHaveBeenCalled()
+  })
+
+  it('si no se puede comprobar la biblioteca → pending (antes que arriesgar un duplicado)', async () => {
+    mocks.providerFetch.mockResolvedValue(ANILIST_BY_MAL)
+    const r = await matchItems([item({ key: '0', kind: 'anime', ids: { mal: 1 } })], {
+      ...ctx(),
+      existingByMal: async () => {
+        throw new Error('db')
+      },
+    })
+    expect(r.get('0')).toEqual({ status: 'pending' })
   })
 
   it('Goodreads: ISBN en Open Library; sin ISBN, título + autor (otro autor no vale)', async () => {
