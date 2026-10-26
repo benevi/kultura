@@ -3,7 +3,8 @@
 //
 // Tras el alta (correo o Google): 1) nombre público y, si entró con Google,
 // la casilla de edad y términos; 2) formatos; 3) puntuar títulos conocidos;
-// 4) primeras recomendaciones con el botón de "Para ti". Objetivo: primer
+// 4) primeras recomendaciones con el botón de "Para ti". En el paso 3, opcional,
+// importar el historial de otra app (F-26). Objetivo: primer
 // valor en menos de un minuto. Todo se puede saltar.
 //
 // Fuera de `(app)`: sin la navegación de la app, a pantalla completa. Pide
@@ -36,7 +37,7 @@ export async function generateMetadata({ params }: WelcomeProps): Promise<Metada
  * Namespaces que usa el cliente de esta página. Se pasan en su propio
  * proveedor para no depender de qué recorte del layout (REN-5) llegue aquí.
  */
-const CLIENT_NAMESPACES = ['onboarding', 'auth', 'aiRecommendations', 'discoverFilters', 'media', 'errors', 'common'] as const
+const CLIENT_NAMESPACES = ['onboarding', 'auth', 'aiRecommendations', 'discoverFilters', 'media', 'errors', 'common', 'import'] as const
 
 export default async function WelcomePage({ params, searchParams }: WelcomeProps) {
   const { locale } = await params

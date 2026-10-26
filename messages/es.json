@@ -606,6 +606,141 @@
   "genreNews": {
     "title": "Novedades en tus géneros"
   },
+  "import": {
+    "metaTitle": "Importar desde otras apps",
+    "title": "Importar",
+    "intro": "Tráete tu historial de Letterboxd, MyAnimeList, Goodreads, IMDb o TV Time en un par de minutos.",
+    "keepNote": "Lo que ya tengas en KULTURA no se pisa: solo se añaden los títulos nuevos y las notas o fechas que falten.",
+    "privacy": "El archivo se abre en tu navegador. A KULTURA solo llegan los títulos, notas, fechas y reseñas que se importan.",
+    "howTo": "Cómo conseguir el archivo",
+    "sources": {
+      "letterboxd": {
+        "name": "Letterboxd",
+        "how": "En Letterboxd: Settings → Data → Export your data. Sube el ZIP tal cual (o sus ratings.csv, diary.csv y watchlist.csv)."
+      },
+      "mal": {
+        "name": "MyAnimeList",
+        "how": "En MyAnimeList: tu perfil → Export (panel.php?go=export). Exporta la lista de anime o de manga y sube el archivo .xml.gz."
+      },
+      "goodreads": {
+        "name": "Goodreads",
+        "how": "En Goodreads: My Books → Import and export → Export Library. Sube el CSV que descarga."
+      },
+      "imdb": {
+        "name": "IMDb",
+        "how": "En IMDb: Your ratings o Watchlist → menú ⋯ → Export. Sube el CSV."
+      },
+      "tvtime": {
+        "name": "TV Time (beta)",
+        "how": "Si pediste tu exportación de datos antes del cierre, sube el ZIP. Se importan las series y películas; el progreso por episodio, no."
+      }
+    },
+    "chooseFile": "Elegir archivo",
+    "dropHint": "o arrástralo aquí · ZIP, CSV o XML · hasta {mb} MB y {max} títulos",
+    "dropZoneLabel": "Archivo para importar",
+    "reading": "Leyendo el archivo…",
+    "parseErrors": {
+      "too_large": "El archivo pasa de {mb} MB. Si es de Letterboxd, prueba a subir solo ratings.csv, diary.csv y watchlist.csv.",
+      "unknown_format": "No reconocemos este archivo. Sube la exportación tal cual de Letterboxd, MyAnimeList, Goodreads, IMDb o TV Time.",
+      "empty": "El archivo no trae títulos que importar.",
+      "mixed_sources": "Sube los archivos de una sola app cada vez.",
+      "corrupt": "El archivo está dañado o no se puede abrir. Descárgalo otra vez de la app de origen.",
+      "too_many_files": "El ZIP trae demasiados archivos. Sube solo los CSV de tu exportación."
+    },
+    "previewTitle": "{source}: {count, plural, one {# título} other {# títulos}}",
+    "previewFiles": "Archivos: {files}",
+    "summary": {
+      "completed": "{count, plural, one {# visto o leído} other {# vistos o leídos}}",
+      "in_progress": "{count, plural, one {# en curso} other {# en curso}}",
+      "pending": "{count, plural, one {# pendiente} other {# pendientes}}",
+      "abandoned": "{count, plural, one {# abandonado} other {# abandonados}}",
+      "rated": "{count, plural, one {# con nota} other {# con nota}}",
+      "logs": "{count, plural, one {# apunte de diario} other {# apuntes de diario}}"
+    },
+    "warnings": {
+      "skipped_rows": "{count, plural, one {# fila no trae título o estado y no se importará.} other {# filas no traen título o estado y no se importarán.}}",
+      "truncated": "Se importan {max} títulos de una vez; los {count} restantes, en otra importación.",
+      "ambiguous_list": "Este CSV no dice si son películas vistas o tu lista de pendientes.",
+      "no_known_files": "En el ZIP no hay ningún archivo que sepamos leer."
+    },
+    "ambiguousWatched": "Son películas vistas",
+    "ambiguousWatchlist": "Es mi lista de pendientes",
+    "start": "{count, plural, one {Importar # título} other {Importar # títulos}}",
+    "another": "Elegir otro archivo",
+    "resumeNote": "Ya importaste {done} de {total} títulos de este archivo: se sigue por donde ibas.",
+    "progressLabel": "Progreso de la importación",
+    "running": "Importando… {processed} de {total}",
+    "retrying": "Reintentando los que no respondieron…",
+    "waiting": "Esperando un momento para no saturar a los proveedores…",
+    "pause": "Pausar",
+    "resume": "Seguir",
+    "paused": "En pausa. Lo importado se queda; pulsa «Seguir» para continuar.",
+    "doneTitle": "Importación terminada",
+    "counts": {
+      "added": "{count, plural, one {# añadido} other {# añadidos}}",
+      "updated": "{count, plural, one {# completado con nota o fecha} other {# completados con nota o fecha}}",
+      "kept": "{count, plural, one {# ya estaba} other {# ya estaban}}",
+      "unmatched": "{count, plural, one {# sin emparejar} other {# sin emparejar}}",
+      "excluded": "{count, plural, one {# fuera del catálogo (adultos)} other {# fuera del catálogo (adultos)}}",
+      "pending": "{count, plural, one {# sin respuesta del proveedor} other {# sin respuesta del proveedor}}",
+      "invalid": "{count, plural, one {# no válido} other {# no válidos}}"
+    },
+    "diaryImported": "{count, plural, one {# apunte de diario} other {# apuntes de diario}}",
+    "downloadReport": "Descargar informe (CSV)",
+    "retryPending": "Reintentar los que faltan",
+    "unmatchedTitle": "Sin emparejar: búscalos y añádelos a mano",
+    "unmatchedMore": "{count, plural, one {y # más en el informe} other {y # más en el informe}}",
+    "searchFor": "Buscar «{title}»",
+    "toLibrary": "Ver mi biblioteca",
+    "runErrors": {
+      "auth": "Tu sesión ha caducado. Vuelve a entrar y elige el mismo archivo: se sigue por donde ibas.",
+      "demo": "La cuenta demo es de solo lectura.",
+      "server": "El servidor no responde ahora. Lo importado se queda; inténtalo en unos minutos con el mismo archivo.",
+      "network": "Sin conexión. Lo importado se queda; cuando vuelva la red, pulsa «Seguir»."
+    },
+    "demo": "La cuenta demo es de solo lectura: crea tu cuenta gratis para importar tu historial.",
+    "report": {
+      "fileName": "kultura-informe-importacion",
+      "title": "Título en el archivo",
+      "year": "Año",
+      "result": "Resultado",
+      "matchedTitle": "Título en KULTURA",
+      "matchedYear": "Año en KULTURA",
+      "method": "Emparejado por",
+      "link": "Enlace",
+      "outcomes": {
+        "added": "Añadido",
+        "updated": "Completado",
+        "kept": "Ya estaba",
+        "unmatched": "Sin emparejar",
+        "excluded": "Fuera del catálogo",
+        "pending": "Sin respuesta (reintentar)",
+        "invalid": "No válido"
+      },
+      "methods": {
+        "tmdb": "id de TMDB",
+        "imdb": "id de IMDb",
+        "tvdb": "id de TheTVDB",
+        "mal": "id de MyAnimeList",
+        "isbn": "ISBN",
+        "title_year": "título y año",
+        "title": "título"
+      }
+    },
+    "export": {
+      "title": "Llévate tus películas a Letterboxd",
+      "body": "CSV en el formato de importación de Letterboxd, emparejado por el id de TMDB. En Letterboxd: Settings → Data → Import; los pendientes, desde tu Watchlist → Import.",
+      "watched": "Películas vistas (CSV)",
+      "watchlist": "Pendientes (CSV)",
+      "error": "No se pudo descargar. Inténtalo de nuevo en un rato."
+    },
+    "welcome": {
+      "title": "¿Vienes de otra app?",
+      "body": "Importa tu historial de Letterboxd, MyAnimeList o Goodreads y tus recomendaciones salen ya con tus gustos.",
+      "open": "Importar mi historial",
+      "close": "Ahora no"
+    }
+  },
   "notifications": {
     "title": "Notificaciones",
     "noNotifications": "Sin notificaciones",

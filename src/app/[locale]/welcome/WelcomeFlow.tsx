@@ -14,6 +14,7 @@ import { AUTH_CARD } from '../login/AuthShell'
 import { TermsCheckbox } from '../login/TermsCheckbox'
 import { USERNAME_REGEX, isReservedUsername } from '@/app/api/settings/identity'
 import { RateStars } from './RateStars'
+import { WelcomeImport } from './WelcomeImport'
 import {
   STARTER_MIN_RATINGS,
   pickStarterTitles,
@@ -83,8 +84,10 @@ export function WelcomeFlow({ locale, next, currentUsername, suggestChange, need
   const [rateError, setRateError] = useState('')
   const timers = useRef(new Map<string, ReturnType<typeof setTimeout>>())
   const pending = useRef(new Map<string, () => Promise<void>>())
+  // F-26: lo importado de otra app (paso opcional) también cuenta.
+  const [importedCount, setImportedCount] = useState(0)
   // Lo que se está guardando ya cuenta: si falla, se descuenta y se avisa.
-  const ratedCount = Object.values(saveState).filter((s) => s !== 'error').length
+  const ratedCount = Object.values(saveState).filter((s) => s !== 'error').length + importedCount
 
   const [finishing, setFinishing] = useState(false)
 
@@ -395,6 +398,9 @@ export function WelcomeFlow({ locale, next, currentUsername, suggestChange, need
                 {rateError}
               </p>
             )}
+
+            {/* F-26: quien viene de otra app se trae su historial en vez de puntuar a mano. */}
+            <WelcomeImport locale={locale} onFinished={setImportedCount} />
 
             <ul className="grid grid-cols-2 gap-5 sm:grid-cols-3 lg:grid-cols-5">
               {titles.map((title, i) => (

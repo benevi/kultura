@@ -4,6 +4,7 @@
 // Docs: https://developer.themoviedb.org/reference/intro/getting-started
 // ============================================================
 
+import { z } from "zod";
 import { env } from "@/lib/env.server";
 import { tmdbLanguage, tmdbRegion } from "@/lib/api/locale";
 import { ProviderError, providerFetch } from "@/lib/api/http";
@@ -317,6 +318,66 @@ export async function getTV(
     { append_to_response: "credits,videos,watch/providers" },
     locale
   );
+}
+
+// ── Búsqueda por id externo (F-26, importadores) ─────────────────────────────
+
+/** Fuentes de id externo que acepta `GET /find/{external_id}` y que usa KULTURA. */
+export type TmdbExternalSource = "imdb_id" | "tvdb_id";
+
+export interface TmdbFindResult {
+  movies: TmdbMovie[];
+  tv: TmdbTV[];
+}
+
+/** Forma de cada id antes de meterlo en la URL (nunca texto libre del archivo). */
+const EXTERNAL_ID_SHAPE: Record<TmdbExternalSource, RegExp> = {
+  imdb_id: /^tt\d{5,10}$/,
+  tvdb_id: /^\d{1,10}$/,
+};
+
+/**
+ * Contrato mínimo de `/find` (documentación de TMDB v3): `movie_results` y
+ * `tv_results` con la forma de los listados; el resto (`person_results`,
+ * `tv_episode_results`, `tv_season_results`) no se usa.
+ */
+const tmdbFindSchema = z.looseObject({
+  movie_results: z.array(z.looseObject({ id: z.number() })).optional(),
+  tv_results: z.array(z.looseObject({ id: z.number() })).optional(),
+});
+
+/**
+ * Película o serie de TMDB a partir de su id de IMDb (`tt0133093`) o de
+ * TheTVDB (TV Time). Pasa por `providerFetch` (plazo, circuito y caché de
+ * una hora, como el resto) y rellena los géneros como los listados. Un id
+ * con forma inválida devuelve vacío sin llamar a TMDB.
+ */
+export async function findByExternalId(
+  externalId: string,
+  source: TmdbExternalSource,
+  locale?: string | null
+): Promise<TmdbFindResult> {
+  const id = externalId.trim();
+  if (!EXTERNAL_ID_SHAPE[source].test(id)) return { movies: [], tv: [] };
+  const url = new URL(`https://api.themoviedb.org/3/find/${encodeURIComponent(id)}`);
+  url.searchParams.set("api_key", env.TMDB_API_KEY);
+  url.searchParams.set("language", tmdbLanguage(locale));
+  url.searchParams.set("external_source", source);
+  const res = await providerFetch<{ movie_results?: TmdbMovie[]; tv_results?: TmdbTV[] }>(
+    "tmdb",
+    url.toString(),
+    {
+      schema: tmdbFindSchema,
+      label: "/find",
+      httpError: (status) =>
+        new ProviderError("tmdb", "http", `TMDB /find → ${status}`, { status }),
+    }
+  );
+  const [movies, tv] = await Promise.all([
+    hydrateGenres({ results: res.movie_results ?? [] }, "movie", locale),
+    hydrateGenres({ results: res.tv_results ?? [] }, "tv", locale),
+  ]);
+  return { movies: movies.results, tv: tv.results };
 }
 
 export async function getPopularMovies(
