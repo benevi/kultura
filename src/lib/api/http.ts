@@ -69,6 +69,7 @@ export const PROVIDER_IDS = [
   "openlibrary",
   "googlebooks",
   "steam",
+  "wikidata",
 ] as const;
 
 export type ProviderId = (typeof PROVIDER_IDS)[number];
@@ -334,6 +335,9 @@ function onSuccess(provider: ProviderId, probe: boolean): void {
 function onFailure(provider: ProviderId, probe: boolean, e: unknown): void {
   const state = circuitFor(provider);
   if (probe) state.probeInFlight = false;
+  // Cancelada por quien llama: no se sabe nada del proveedor. Si era la
+  // prueba, solo se libera (sigue half-open y la siguiente petición prueba).
+  if (e instanceof ProviderError && e.kind === "aborted") return;
   if (!isProviderHealthFailure(e)) {
     // Respuesta normal (404…): si era la prueba, el proveedor está vivo.
     if (probe) state.halfOpen = false;

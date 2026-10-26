@@ -1,0 +1,756 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`orden completo anime > attack on titan 1`] = `
+[
+  "anime_al-1286 · Attack on Titan · 113.000",
+  "anime_al-1287 · Attack on Titan: Junior High · 82.850",
+  "anime_al-1288 · Attack on Titan: No Regrets · 82.700",
+  "anime_al-1290 · Attack on Titan: Lost Girls · 82.550",
+  "anime_al-1291 · Attack on Titan: The Last Attack · 82.400",
+  "anime_al-1292 · Attack on Titan OVA · 72.250",
+  "anime_al-1284 · Attack on Titan Final Season · 67.100",
+  "anime_al-1285 · Attack on Titan Season 2 · 66.950",
+  "anime_al-1289 · Attack on Titan Season 3 · 66.800",
+  "anime_al-1293 · Attack on Titan Season 3 Part 2 · 66.650",
+]
+`;
+
+exports[`orden completo anime > bleach 1`] = `
+[
+  "anime_al-1215 · Bleach · 113.000",
+  "anime_al-1214 · Bleach: Thousand-Year Blood War · 82.850",
+  "anime_al-1216 · Bleach: Thousand-Year Blood War - The Separation · 82.700",
+  "anime_al-1217 · Bleach the Movie: Memories of Nobody · 82.550",
+  "anime_al-1218 · Bleach the Movie: Fade to Black · 82.400",
+  "anime_al-1219 · Bleach: The Sealed Sword Frenzy · 82.250",
+  "anime_al-1220 · Bleach the Movie: Hell Verse · 82.100",
+  "anime_al-1221 · Bleach the Movie: The DiamondDust Rebellion · 81.950",
+  "anime_al-1222 · Bleach: Thousand-Year Blood War - The Conflict · 81.800",
+  "anime_al-1223 · Bleach Pilot · 71.650",
+]
+`;
+
+exports[`orden completo anime > cowboy bebop 1`] = `
+[
+  "anime_al-1255 · Cowboy Bebop · 113.000",
+  "anime_al-1254 · Cowboy Bebop: The Movie · 82.850",
+  "anime_al-1256 · Cowboy Bebop: Yose Atsume Blues · 82.700",
+  "anime_al-1257 · Cowboy Bebop: Session XX · 82.550",
+  "anime_al-1262 · Cowboy Bebop Session 0 · 72.400",
+  "anime_al-1258 · Space Dandy · 2.250",
+  "anime_al-1259 · Samurai Champloo · 2.100",
+  "anime_al-1260 · Trigun · 1.950",
+  "anime_al-1261 · Outlaw Star · 1.800",
+  "anime_al-1263 · Bebop Pilot · 1.650",
+]
+`;
+
+exports[`orden completo anime > death note 1`] = `
+[
+  "anime_al-1265 · Death Note · 113.000",
+  "anime_al-1264 · Death Note: Relight · 82.850",
+  "anime_al-1270 · Death Note: Relight 2 · 77.700",
+  "anime_al-1266 · DEATH NOTE Pilot · 72.550",
+  "anime_al-1271 · Death Note Special · 72.400",
+  "anime_al-1267 · Death Parade · 2.250",
+  "anime_al-1268 · Deadman Wonderland · 2.100",
+  "anime_al-1269 · Death Billiards · 1.950",
+  "anime_al-1272 · Notes of Death · 1.800",
+  "anime_al-1273 · Death March · 1.650",
+]
+`;
+
+exports[`orden completo anime > frieren 1`] = `
+[
+  "anime_al-1225 · Frieren: Beyond Journey's End · 83.000",
+  "anime_al-1227 · Frieren: Beyond Journey's End Recap · 82.850",
+  "anime_al-1231 · Frieren: The Magic of Enjoying · 82.700",
+  "anime_al-1224 · Frieren: Beyond Journey's End Season 2 · 77.550",
+  "anime_al-1226 · Sousou no Frieren: ●● no Mahou · 62.400",
+  "anime_al-1229 · Fern ties Frieren's hair · 62.250",
+  "anime_al-1228 · Freezing · 2.100",
+  "anime_al-1230 · Friends · 1.950",
+  "anime_al-1232 · Free! · 1.800",
+  "anime_al-1233 · Frieza Saga · 1.650",
+]
+`;
+
+exports[`orden completo anime > jujutsu kaisen 1`] = `
+[
+  "anime_al-1236 · Jujutsu Kaisen · 113.000",
+  "anime_al-1239 · Jujutsu Kaisen: Hidden Inventory · 82.850",
+  "anime_al-1243 · Jujutsu Kaisen: Execution · 82.700",
+  "anime_al-1237 · Jujutsu Kaisen: The Culling Game Part 1 · 77.550",
+  "anime_al-1235 · Jujutsu Kaisen 0 · 72.400",
+  "anime_al-1238 · Jujutsu Kaisen Picture Drama · 72.250",
+  "anime_al-1240 · Jujutsu Kaisen x Uniqlo · 72.100",
+  "anime_al-1234 · Jujutsu Kaisen Season 2 · 66.950",
+  "anime_al-1241 · Jujutsu Kaisen Season 2 Recap · 66.800",
+  "anime_al-1242 · Jujutsushi · 1.650",
+]
+`;
+
+exports[`orden completo anime > naruto 1`] = `
+[
+  "anime_al-1205 · Naruto · 113.000",
+  "anime_al-1204 · Naruto Shippuden · 82.850",
+  "anime_al-1209 · Naruto: The Lost Story · 82.700",
+  "anime_al-1208 · Naruto the Movie: Ninja Clash in the Land of Snow · 72.550",
+  "anime_al-1211 · Naruto Shippuden: The Movie · 72.400",
+  "anime_al-1212 · Naruto Spin-Off: Rock Lee · 72.250",
+  "anime_al-1206 · Boruto: Naruto Next Generations · 62.100",
+  "anime_al-1207 · Road of Naruto · 61.950",
+  "anime_al-1210 · The Last: Naruto the Movie · 61.800",
+  "anime_al-1213 · Boruto: Naruto the Movie · 61.650",
+]
+`;
+
+exports[`orden completo anime > one punch man 1`] = `
+[
+  "anime_al-1246 · One-Punch Man · 113.000",
+  "anime_al-1247 · One-Punch Man: Road to Hero · 82.850",
+  "anime_al-1250 · One Punch Man: Gaiden · 82.700",
+  "anime_al-1248 · One-Punch Man Specials · 72.550",
+  "anime_al-1244 · One-Punch Man Season 3 · 67.400",
+  "anime_al-1245 · One-Punch Man Season 2 · 67.250",
+  "anime_al-1249 · One-Punch Man 2nd Season Specials · 67.100",
+  "anime_al-1251 · One-Punch Man Season 2 Commemorative Special · 66.950",
+  "anime_al-1252 · Punch Line · 1.800",
+  "anime_al-1253 · Megalo Box · 1.650",
+]
+`;
+
+exports[`orden completo anime > spy x family 1`] = `
+[
+  "anime_al-1276 · SPY x FAMILY · 113.000",
+  "anime_al-1279 · SPY×FAMILY: Anya's Hobby · 82.850",
+  "anime_al-1275 · SPY x FAMILY CODE: White · 72.700",
+  "anime_al-1283 · SPY×FAMILY Special · 72.550",
+  "anime_al-1274 · SPY x FAMILY Season 2 · 67.400",
+  "anime_al-1277 · SPY x FAMILY Part 2 · 67.250",
+  "anime_al-1278 · SPY x FAMILY Season 3 · 67.100",
+  "anime_al-1280 · Spy Classroom · 1.950",
+  "anime_al-1281 · Spy Kyoushitsu · 1.800",
+  "anime_al-1282 · Family Compo · 1.650",
+]
+`;
+
+exports[`orden completo anime > vinland saga 1`] = `
+[
+  "anime_al-1295 · Vinland Saga · 113.000",
+  "anime_al-1296 · Vinland Saga Recap · 72.850",
+  "anime_al-1297 · Vinland Saga Pilot · 72.700",
+  "anime_al-1294 · Vinland Saga Season 2 · 67.550",
+  "anime_al-1298 · Saga of Tanya the Evil · 2.400",
+  "anime_al-1299 · Arslan Senki · 2.250",
+  "anime_al-1300 · Berserk · 2.100",
+  "anime_al-1301 · Golden Kamuy · 1.950",
+  "anime_al-1302 · Dororo · 1.800",
+  "anime_al-1303 · Kingdom · 1.650",
+]
+`;
+
+exports[`orden completo book > 1984 1`] = `
+[
+  "book_OL1348W · 1984 · 113.000",
+  "book_OL1349W · 1984 (Spanish edition) · 82.850",
+  "book_OL1350W · 1984: Graphic Novel · 82.700",
+  "book_OL1352W · 1984 Revisited · 72.550",
+  "book_OL1355W · 1984. Rebelión en la granja · 72.400",
+  "book_OL1346W · Orwell's 1984: Study Guide · 62.250",
+  "book_OL1353W · George Orwell's 1984 (Bloom's Guides) · 62.100",
+  "book_OL1347W · Nineteen Eighty-Four · 1.950",
+  "book_OL1351W · 1985 · 1.800",
+  "book_OL1354W · Mil novecientos ochenta y cuatro · 1.650",
+]
+`;
+
+exports[`orden completo book > berserk 1`] = `
+[
+  "book_OL1321W · Berserk: The Prototype · 83.000",
+  "book_OL1318W · Berserk Deluxe Edition Volume 1 · 72.850",
+  "book_OL1319W · Berserk, Vol. 1 · 72.700",
+  "book_OL1322W · Berserk Official Guidebook · 72.550",
+  "book_OL1324W · Berserk Max · 72.400",
+  "book_OL1320W · Berserker · 2.250",
+  "book_OL1323W · The Berserkers · 2.100",
+  "book_OL1315W · ベルセルク 1 · -38.050",
+  "book_OL1316W · ベルセルク 2 · -38.200",
+  "book_OL1317W · ベルセルク 40 · -38.350",
+]
+`;
+
+exports[`orden completo book > cien años de soledad 1`] = `
+[
+  "book_OL1387W · Cien años de soledad · 113.000",
+  "book_OL1388W · Cien años de soledad (edición conmemorativa) · 82.850",
+  "book_OL1391W · Cien años de soledad: guía de lectura · 82.700",
+  "book_OL1392W · Cien años de soledad (ilustrada) · 82.550",
+  "book_OL1386W · One Hundred Years of Solitude · 2.400",
+  "book_OL1389W · Hundert Jahre Einsamkeit · 2.250",
+  "book_OL1390W · Cent ans de solitude · 2.100",
+  "book_OL1393W · Cent'anni di solitudine · 1.950",
+  "book_OL1394W · Los cien años · 1.800",
+  "book_OL1395W · Soledad · 1.650",
+]
+`;
+
+exports[`orden completo book > dune 1`] = `
+[
+  "book_OL1326W · Dune · 113.000",
+  "book_OL1328W · Dune: La saga · 82.850",
+  "book_OL1332W · Dune: House Atreides · 82.700",
+  "book_OL1325W · Dune Messiah · 72.550",
+  "book_OL1330W · The Dune Encyclopedia · 72.400",
+  "book_OL1334W · Dune World · 72.250",
+  "book_OL1327W · Children of Dune · 62.100",
+  "book_OL1331W · Heretics of Dune · 61.950",
+  "book_OL1333W · Chapterhouse: Dune · 61.800",
+  "book_OL1335W · God Emperor of Dune · 61.650",
+  "book_OL1329W · Duna · 1.500",
+]
+`;
+
+exports[`orden completo book > el hobbit 1`] = `
+[
+  "book_OL1337W · El hobbit · 113.000",
+  "book_OL1336W · The Hobbit · 102.850",
+  "book_OL1340W · Hobbit · 102.700",
+  "book_OL1342W · El hobbit: La desolación de Smaug (libro de la película) · 82.550",
+  "book_OL1338W · El Hobbit anotado · 72.400",
+  "book_OL1339W · The Hobbit, or There and Back Again · 72.250",
+  "book_OL1341W · The Annotated Hobbit · 62.100",
+  "book_OL1343W · Der Hobbit · 61.950",
+  "book_OL1344W · Bilbo le Hobbit · 61.800",
+  "book_OL1345W · The Art of The Hobbit · 61.650",
+]
+`;
+
+exports[`orden completo book > el principito 1`] = `
+[
+  "book_OL1357W · El principito · 113.000",
+  "book_OL1359W · El principito (Spanish Edition) · 82.850",
+  "book_OL1363W · El principito: Edición ilustrada · 82.700",
+  "book_OL1360W · El principito para niños · 72.550",
+  "book_OL1361W · El principito y la rosa · 72.400",
+  "book_OL1365W · El principito se pone la gorra · 72.250",
+  "book_OL1356W · Le Petit Prince · 2.100",
+  "book_OL1358W · The Little Prince · 1.950",
+  "book_OL1362W · Il Piccolo Principe · 1.800",
+  "book_OL1364W · Der kleine Prinz · 1.650",
+]
+`;
+
+exports[`orden completo book > el señor de los anillos 1`] = `
+[
+  "book_OL1305W · El Señor de los Anillos · 113.000",
+  "book_OL1306W · El Señor de los Anillos: La Comunidad del Anillo · 82.850",
+  "book_OL1308W · El Señor de los Anillos: Las dos torres · 82.700",
+  "book_OL1313W · El Señor de los Anillos: El retorno del Rey · 82.550",
+  "book_OL1310W · El Señor de los Anillos. Guía ilustrada · 72.400",
+  "book_OL1304W · The Lord of the Rings · 2.250",
+  "book_OL1307W · The Fellowship of the Ring · 2.100",
+  "book_OL1309W · Der Herr der Ringe · 1.950",
+  "book_OL1311W · Le Seigneur des Anneaux · 1.800",
+  "book_OL1312W · Il Signore degli Anelli · 1.650",
+  "book_OL1314W · Los anillos de poder · -198.500",
+]
+`;
+
+exports[`orden completo book > fahrenheit 451 1`] = `
+[
+  "book_OL1377W · Fahrenheit 451 · 113.000",
+  "book_OL1378W · Fahrenheit 451 (Spanish) · 82.850",
+  "book_OL1379W · Fahrenheit 451: Study Guide · 82.700",
+  "book_OL1384W · Fahrenheit 451 (Bloom's) · 82.550",
+  "book_OL1376W · Ray Bradbury's Fahrenheit 451 (Graphic Adaptation) · 62.400",
+  "book_OL1380W · Fahrenheit 9/11 · 2.250",
+  "book_OL1381W · Fahrenheit 452 · 2.100",
+  "book_OL1382W · Bradbury's Fahrenheit · 1.950",
+  "book_OL1383W · The Fahrenheit Chronicles · 1.800",
+  "book_OL1385W · 451 grados · 1.650",
+]
+`;
+
+exports[`orden completo book > rayuela 1`] = `
+[
+  "book_OL1397W · Rayuela · 113.000",
+  "book_OL1396W · Rayuela: edición crítica · 82.850",
+  "book_OL1400W · Rayuela (Cátedra) · 82.700",
+  "book_OL1403W · Rayuela: guía · 82.550",
+  "book_OL1401W · La rayuela del tiempo · 72.400",
+  "book_OL1405W · Rayuela 50 años · 72.250",
+  "book_OL1404W · Cortázar y Rayuela · 62.100",
+  "book_OL1398W · Hopscotch · 1.950",
+  "book_OL1399W · Marelle · 1.800",
+  "book_OL1402W · Rayuelas · 1.650",
+]
+`;
+
+exports[`orden completo book > sapiens 1`] = `
+[
+  "book_OL1367W · Sapiens: A Brief History of Humankind · 83.000",
+  "book_OL1368W · Sapiens: De animales a dioses · 82.850",
+  "book_OL1369W · Sapiens: A Graphic History · 82.700",
+  "book_OL1374W · Sapiens (edición gráfica) · 82.550",
+  "book_OL1371W · Sapiens and Stuff · 72.400",
+  "book_OL1373W · The Sapiens Workbook · 72.250",
+  "book_OL1375W · Sapiens Rising · 72.100",
+  "book_OL1366W · Homo sapiens · 61.950",
+  "book_OL1370W · Homo Deus · 1.800",
+  "book_OL1372W · Sapientia · 1.650",
+]
+`;
+
+exports[`orden completo game > baldur's gate 3 1`] = `
+[
+  "game_1437 · Baldur's Gate III · 116.398",
+  "game_1443 · Baldur's Gate 3 - Digital Deluxe · 84.172",
+  "game_1436 · Baldur's Gate · 5.655",
+  "game_1438 · Baldur's Gate II: Shadows of Amn · 5.454",
+  "game_1440 · Baldur's Gate: Enhanced Edition · 4.879",
+  "game_1439 · Baldur's Gate: Dark Alliance · 4.553",
+  "game_1441 · Baldur's Gate: Siege of Dragonspear · 4.104",
+  "game_1442 · Baldur's Gate: Dark Alliance II · 4.033",
+  "game_1445 · Baldur's Gate II: Enhanced Edition · 4.200",
+  "game_1444 · Gate 3 · 1.951",
+]
+`;
+
+exports[`orden completo game > celeste 1`] = `
+[
+  "game_1457 · Celeste · 116.301",
+  "game_1465 · Celeste: The Lost Levels · 83.151",
+  "game_1456 · Celeste Classic · 74.485",
+  "game_1459 · Celeste 64 · 74.041",
+  "game_1464 · Celeste Farewell · 73.722",
+  "game_1461 · Celeste Classic 2 · 68.454",
+  "game_1458 · Celestian Tales: Old North · 3.141",
+  "game_1460 · Celestial · 2.427",
+  "game_1462 · Celestia · 2.101",
+  "game_1463 · Celestial Command · 1.951",
+]
+`;
+
+exports[`orden completo game > elden ring 1`] = `
+[
+  "game_1467 · Elden Ring · 116.699",
+  "game_1468 · Elden Ring: Shadow of the Erdtree · 85.805",
+  "game_1469 · Elden Ring: Tarnished Edition · 83.741",
+  "game_1475 · Elden Ring: Colosseum · 83.152",
+  "game_1466 · Elden Ring Nightreign · 74.879",
+  "game_1472 · Elden Ring Network Test · 73.572",
+  "game_1473 · Elden Ring Seamless Coop · 72.577",
+  "game_1471 · Ring of Elysium · 4.253",
+  "game_1470 · Elden · 2.101",
+  "game_1474 · Eldenwood · 1.951",
+]
+`;
+
+exports[`orden completo game > god of war 1`] = `
+[
+  "game_1477 · God of War · 116.778",
+  "game_1478 · God of War · 116.151",
+  "game_1480 · God of War: Ascension · 85.655",
+  "game_1482 · God of War: Chains of Olympus · 85.396",
+  "game_1483 · God of War: Ghost of Sparta · 85.179",
+  "game_1485 · God of War: Betrayal · 83.958",
+  "game_1476 · God of War Ragnarök · 75.276",
+  "game_1484 · God of War Ragnarök: Valhalla · 74.429",
+  "game_1479 · God of War III · 70.056",
+  "game_1481 · God of War II · 69.826",
+]
+`;
+
+exports[`orden completo game > hades 1`] = `
+[
+  "game_1417 · Hades · 116.544",
+  "game_1422 · Hades: Battle Out of Hell · 83.327",
+  "game_1418 · Hades' Star · 74.313",
+  "game_1419 · Hades Challenge · 73.152",
+  "game_1421 · Hades Battleground · 72.701",
+  "game_1416 · Hades II · 69.950",
+  "game_1420 · Hadean Lands · 3.141",
+  "game_1423 · Hadeslayer · 2.251",
+  "game_1424 · Hade · 2.101",
+  "game_1425 · Hadesia · 1.951",
+]
+`;
+
+exports[`orden completo game > hollow knight 1`] = `
+[
+  "game_1407 · Hollow Knight · 116.477",
+  "game_1406 · Hollow Knight: Silksong · 85.329",
+  "game_1409 · Hollow Knight: Godmaster · 84.485",
+  "game_1408 · Hollow Knight: Voidheart Edition · 84.163",
+  "game_1413 · Hollow Knight: Lifeblood · 83.891",
+  "game_1415 · The Hollow Knight Fan Game · 72.551",
+  "game_1410 · Hollow · 3.141",
+  "game_1411 · Knight's Hollow · 2.427",
+  "game_1414 · Hollow Fields · 2.101",
+  "game_1412 · Hollow Knight Demo · -127.572",
+]
+`;
+
+exports[`orden completo game > minecraft 1`] = `
+[
+  "game_1428 · Minecraft · 116.778",
+  "game_1429 · Minecraft: Story Mode · 85.629",
+  "game_1431 · Minecraft: Pocket Edition · 85.179",
+  "game_1432 · Minecraft: Education Edition · 84.163",
+  "game_1433 · Minecraft: Story Mode - Season Two · 79.579",
+  "game_1426 · Minecraft Dungeons · 75.205",
+  "game_1427 · Minecraft Legends · 74.403",
+  "game_1430 · Minecraft Earth · 73.954",
+  "game_1435 · Minecraft 4K · 72.578",
+  "game_1434 · MineCraft Clone · 71.951",
+]
+`;
+
+exports[`orden completo game > portal 2 1`] = `
+[
+  "game_1447 · Portal 2 · 116.740",
+  "game_1449 · Portal 2 - The Final Hours · 84.341",
+  "game_1453 · Portal 2: Sixense · 83.741",
+  "game_1446 · Portal · 6.249",
+  "game_1448 · Portal Knights · 4.879",
+  "game_1450 · Portal Stories: Mel · 4.853",
+  "game_1452 · Bridge Constructor Portal · 4.403",
+  "game_1451 · Portal Reloaded · 3.954",
+  "game_1454 · Portal: Still Alive · 3.979",
+  "game_1455 · Portal Pinball · 2.972",
+]
+`;
+
+exports[`orden completo game > stardew valley 1`] = `
+[
+  "game_1497 · Stardew Valley · 116.653",
+  "game_1503 · Stardew Valley: Ridgeside · 83.628",
+  "game_1496 · Stardew Valley Expanded · 75.003",
+  "game_1498 · Stardew Valley Multiplayer · 73.591",
+  "game_1502 · Coral Island · 4.703",
+  "game_1501 · Sun Haven · 4.254",
+  "game_1504 · Valley · 4.008",
+  "game_1499 · Stardew Clone · 2.251",
+  "game_1505 · Star Valley · 2.101",
+  "game_1500 · Haunted Chocolatier · -198.350",
+]
+`;
+
+exports[`orden completo game > undertale 1`] = `
+[
+  "game_1487 · Undertale · 116.544",
+  "game_1489 · Undertale: Last Breath · 83.628",
+  "game_1486 · Undertale Yellow · 75.003",
+  "game_1495 · Undertale Red · 73.027",
+  "game_1488 · Deltarune · 5.576",
+  "game_1492 · Underrail · 4.729",
+  "game_1490 · Underhero · 3.713",
+  "game_1494 · Underworld Ascendant · 3.858",
+  "game_1493 · Undertow · 2.841",
+  "game_1491 · Undertale Demo · -127.028",
+]
+`;
+
+exports[`orden completo movie > avatar 1`] = `
+[
+  "movie_1035 · Avatar · 113.000",
+  "movie_1033 · Avatar: El sentido del agua · 82.850",
+  "movie_1034 · Avatar: Fuego y ceniza · 82.700",
+  "movie_1036 · Avatar: Creating the World of Pandora · 82.550",
+  "movie_1039 · Avatar: La leyenda de Aang – El último maestro aire · 82.400",
+  "movie_1040 · Avatar: Scene Deconstruction · 82.250",
+  "movie_1042 · Avatar: Real · 82.100",
+  "movie_1037 · Avatar Spirits · 71.950",
+  "movie_1041 · Avatarios · 1.800",
+  "movie_1038 · Avatar 4 · -133.350",
+]
+`;
+
+exports[`orden completo movie > coco 1`] = `
+[
+  "movie_1044 · Coco · 113.000",
+  "movie_1046 · Coco · 112.850",
+  "movie_1043 · Coco Chanel & Igor Stravinsky · 72.700",
+  "movie_1045 · Coco, de la rebeldía a la leyenda de Chanel · 72.550",
+  "movie_1047 · Coco Farm · 72.400",
+  "movie_1049 · Coco y el Rey de la Selva · 72.250",
+  "movie_1048 · Cocoon · 2.100",
+  "movie_1051 · Coconut the Little Dragon · 1.950",
+  "movie_1052 · Cocote · 1.800",
+  "movie_1050 · Coco Before Chanel: Making Of · -128.350",
+]
+`;
+
+exports[`orden completo movie > dune 1`] = `
+[
+  "movie_1002 · Dune · 113.000",
+  "movie_1003 · Dune · 112.850",
+  "movie_1010 · Dune: La herencia · 82.700",
+  "movie_1011 · Dune: The Making Of · 82.550",
+  "movie_1001 · Dune: Parte dos · 77.400",
+  "movie_1006 · Dune Drifter · 72.250",
+  "movie_1007 · Dune World · 72.100",
+  "movie_1008 · Dune Warriors · 71.950",
+  "movie_1005 · Jodorowsky's Dune · 61.800",
+  "movie_1009 · Dunas · 1.650",
+  "movie_1012 · Lynch/Oz · 1.500",
+  "movie_1004 · Dune: Parte tres · -123.650",
+]
+`;
+
+exports[`orden completo movie > el padrino 1`] = `
+[
+  "movie_1025 · El padrino · 113.000",
+  "movie_1029 · El padrino (making of) · 82.850",
+  "movie_1026 · El padrino de la novia · 72.700",
+  "movie_1028 · El Padrino, epílogo: La muerte de Michael Corleone · 72.550",
+  "movie_1031 · El padrino de Hong Kong · 72.400",
+  "movie_1032 · El padrino rojo · 72.250",
+  "movie_1023 · El padrino. Parte II · 67.100",
+  "movie_1024 · El padrino. Parte III · 66.950",
+  "movie_1027 · Mi padrino · 61.800",
+  "movie_1030 · Padrinos · 1.650",
+]
+`;
+
+exports[`orden completo movie > gladiator 1`] = `
+[
+  "movie_1074 · Gladiator · 113.000",
+  "movie_1076 · The Gladiator · 102.850",
+  "movie_1077 · Gladiator: El origen · 82.700",
+  "movie_1078 · Gladiator Days · 72.550",
+  "movie_1080 · Gladiator Cop · 72.400",
+  "movie_1073 · Gladiator II · 67.250",
+  "movie_1075 · Gladiators · 2.100",
+  "movie_1079 · The Gladiators · 1.950",
+  "movie_1081 · Gladiatress · 1.800",
+  "movie_1082 · Gladiator: The Making Of · -118.350",
+]
+`;
+
+exports[`orden completo movie > inception 1`] = `
+[
+  "movie_1014 · Origen · 113.000",
+  "movie_1015 · Inception: The Cobol Job · 82.850",
+  "movie_1017 · Inception: Jump Right Into the Action · 82.700",
+  "movie_1016 · The Inception of Ripley · 72.550",
+  "movie_1013 · Bikini Inception · 62.400",
+  "movie_1022 · Dream Inception · 62.250",
+  "movie_1019 · Interstellar · 2.100",
+  "movie_1020 · Insidious · 1.950",
+  "movie_1021 · Origen: El making of · 1.800",
+  "movie_1018 · Inceptor · -198.350",
+]
+`;
+
+exports[`orden completo movie > matrix 1`] = `
+[
+  "movie_1064 · Matrix · 113.000",
+  "movie_1069 · Matrix: Generation · 82.850",
+  "movie_1063 · Matrix Resurrections · 72.700",
+  "movie_1065 · Matrix Reloaded · 72.550",
+  "movie_1066 · Matrix Revolutions · 72.400",
+  "movie_1068 · The Matrix Revisited · 72.250",
+  "movie_1070 · Matrix of Evil · 72.100",
+  "movie_1071 · Making 'The Matrix' · 61.950",
+  "movie_1072 · Return to Source: The Philosophy of The Matrix · 61.800",
+  "movie_1067 · Animatrix · 1.650",
+]
+`;
+
+exports[`orden completo movie > spiderman 1`] = `
+[
+  "movie_1056 · Spider-Man · 93.000",
+  "movie_1053 · Spider-Man: No Way Home · 82.850",
+  "movie_1054 · Spider-Man: Cruzando el Multiverso · 82.700",
+  "movie_1055 · Spider-Man: Lejos de casa · 82.550",
+  "movie_1059 · Spider-Man: Homecoming · 82.400",
+  "movie_1060 · Spider-Man: Un nuevo universo · 82.250",
+  "movie_1062 · Spiderman: The Venom Saga · 82.100",
+  "movie_1057 · Spider-Man 2 · 1.950",
+  "movie_1058 · The Amazing Spider-Man · 1.800",
+  "movie_1061 · Spider-Man 3 · 1.650",
+]
+`;
+
+exports[`orden completo movie > titanic 1`] = `
+[
+  "movie_1094 · Titanic · 113.000",
+  "movie_1095 · Titanic · 112.850",
+  "movie_1096 · Titanic: La leyenda continúa · 82.700",
+  "movie_1100 · Titanic: 20 Years Later · 82.550",
+  "movie_1098 · Titanic 666 · 72.400",
+  "movie_1102 · Titanic Town · 72.250",
+  "movie_1093 · Titanic II · 67.100",
+  "movie_1097 · Raise the Titanic · 61.950",
+  "movie_1101 · S.O.S. Titanic · 61.800",
+  "movie_1099 · Ghosts of the Abyss · 1.650",
+]
+`;
+
+exports[`orden completo movie > your name 1`] = `
+[
+  "movie_1084 · Your Name. · 113.000",
+  "movie_1083 · Your Name Engraved Herein · 72.850",
+  "movie_1088 · Your Name in My Heart · 72.700",
+  "movie_1092 · Your Name Is Mine · 72.550",
+  "movie_1085 · Say Your Name · 62.400",
+  "movie_1086 · What's Your Name · 62.250",
+  "movie_1087 · Call Me by Your Name · 62.100",
+  "movie_1089 · In Your Name · 61.950",
+  "movie_1090 · Say My Name · 1.800",
+  "movie_1091 · My Name · 1.650",
+]
+`;
+
+exports[`orden completo tv > chernobyl 1`] = `
+[
+  "tv_1165 · Chernóbil · 116.954",
+  "tv_1164 · Chernobyl: The Lost Tapes · 84.635",
+  "tv_1166 · Chernobyl: Zona de exclusión · 84.704",
+  "tv_1167 · Chernobyl Diaries · 75.664",
+  "tv_1168 · Chernobyl 1986 · 74.879",
+  "tv_1170 · Chernobyl Heart · 73.741",
+  "tv_1173 · Chernobyl Liquidators · 72.702",
+  "tv_1171 · The Battle of Chernobyl · 63.563",
+  "tv_1172 · Inside Chernobyl · 62.578",
+  "tv_1169 · Surviving Disaster · 2.972",
+]
+`;
+
+exports[`orden completo tv > dark 1`] = `
+[
+  "tv_1104 · Dark · 116.845",
+  "tv_1106 · Dark Desire · 75.805",
+  "tv_1105 · Dark Matter · 75.479",
+  "tv_1108 · Dark Angel · 75.505",
+  "tv_1103 · Dark Shadows · 74.483",
+  "tv_1107 · Dark Winds · 74.729",
+  "tv_1110 · Dark Side of the Ring · 74.279",
+  "tv_1113 · Dark Matter · 74.553",
+  "tv_1112 · Dark Tourist · 74.103",
+  "tv_1109 · Dark Net · 73.263",
+  "tv_1111 · Dark Shadows · 73.113",
+]
+`;
+
+exports[`orden completo tv > fallout 1`] = `
+[
+  "tv_1175 · Fallout · 116.653",
+  "tv_1177 · Fallout: Lore Explained · 83.327",
+  "tv_1174 · Fallout Shelter · 73.302",
+  "tv_1176 · Fallout Boy · 72.851",
+  "tv_1181 · Fallout Family · 72.877",
+  "tv_1182 · Fallout in the Pacific · 72.551",
+  "tv_1179 · Fallout Season · 67.799",
+  "tv_1178 · After the Fallout · 62.991",
+  "tv_1180 · Nuclear Fallout · 62.645",
+  "tv_1183 · Atomic Fallout · 62.252",
+]
+`;
+
+exports[`orden completo tv > friends 1`] = `
+[
+  "tv_1115 · Friends · 116.954",
+  "tv_1123 · Friends: The Reunion · 85.930",
+  "tv_1116 · Friends from College · 75.003",
+  "tv_1114 · Friends with Benefits · 74.509",
+  "tv_1119 · Friends and Neighbors · 74.185",
+  "tv_1122 · Friends of the People · 73.291",
+  "tv_1121 · Best Friends Whenever · 64.008",
+  "tv_1117 · Close Friends · 62.552",
+  "tv_1118 · Good Friends · 62.499",
+  "tv_1120 · Fake Friends · 62.127",
+]
+`;
+
+exports[`orden completo tv > la casa de papel 1`] = `
+[
+  "tv_1135 · La casa de papel · 117.255",
+  "tv_1141 · Casa de papel · 103.327",
+  "tv_1134 · La casa de papel: Corea · 85.546",
+  "tv_1136 · La casa de papel: De Tokio a Berlín · 85.029",
+  "tv_1139 · La casa del dragón · 6.002",
+  "tv_1137 · Berlín · 5.205",
+  "tv_1138 · La casa de las flores · 4.879",
+  "tv_1143 · La casa de la pradera · 4.905",
+  "tv_1142 · La casa de Mickey Mouse · 4.279",
+  "tv_1140 · La casa de los famosos · 2.972",
+]
+`;
+
+exports[`orden completo tv > shogun 1`] = `
+[
+  "tv_1144 · Shōgun · 116.000",
+  "tv_1145 · Shogun · 115.250",
+  "tv_1147 · Shogun Assassin · 74.191",
+  "tv_1150 · Shogun Mayeda · 73.395",
+  "tv_1152 · Shogun Warriors · 73.178",
+  "tv_1153 · The Last Shogun · 63.291",
+  "tv_1151 · Ninja Shogun · 62.401",
+  "tv_1149 · Shotgun Wedding · 3.272",
+  "tv_1146 · Shogun's Ninja · 2.499",
+  "tv_1148 · The Shogun's Mistress · 2.252",
+]
+`;
+
+exports[`orden completo tv > stranger things 1`] = `
+[
+  "tv_1195 · Stranger Things · 117.255",
+  "tv_1194 · Stranger Things: Tales From '85 · 84.558",
+  "tv_1196 · Stranger Things: Spotlight · 83.302",
+  "tv_1202 · Stranger Things: The Experience · 83.027",
+  "tv_1200 · Stranger Things Day · 72.701",
+  "tv_1197 · Beyond Stranger Things · 64.254",
+  "tv_1199 · Stranger · 4.703",
+  "tv_1198 · Strangers · 3.563",
+  "tv_1203 · Strangers from Hell · 4.103",
+  "tv_1201 · Strange Things · 2.428",
+]
+`;
+
+exports[`orden completo tv > succession 1`] = `
+[
+  "tv_1185 · Succession · 116.602",
+  "tv_1188 · The Succession · 103.327",
+  "tv_1189 · Succession: Behind the Scenes · 83.399",
+  "tv_1184 · The Succession Game · 73.152",
+  "tv_1186 · Succession of Witches · 72.701",
+  "tv_1191 · Succession Wars · 72.551",
+  "tv_1193 · Succession Planning · 72.401",
+  "tv_1187 · Royal Succession · 62.795",
+  "tv_1190 · Line of Succession · 62.754",
+  "tv_1192 · Family Succession · 62.127",
+]
+`;
+
+exports[`orden completo tv > the boys 1`] = `
+[
+  "tv_1155 · The Boys · 117.041",
+  "tv_1163 · The Boys: México · 82.850",
+  "tv_1154 · The Boys Presents: Diabolical · 75.655",
+  "tv_1156 · Boys Over Flowers · 75.505",
+  "tv_1161 · The Boys in the Band · 74.879",
+  "tv_1160 · Boys Planet · 73.572",
+  "tv_1157 · The Boys from Brazil · 72.577",
+  "tv_1159 · The Boys of Summer · 72.552",
+  "tv_1162 · The Boys Club · 72.101",
+  "tv_1158 · Gen V · 4.730",
+]
+`;
+
+exports[`orden completo tv > the office 1`] = `
+[
+  "tv_1125 · The Office · 116.634",
+  "tv_1124 · The Office · 115.892",
+  "tv_1126 · The Office · 114.313",
+  "tv_1128 · Office Girls · 74.041",
+  "tv_1132 · The Office Christmas Specials · 74.185",
+  "tv_1127 · The Office Mix · 72.727",
+  "tv_1130 · Office Ladies · 72.878",
+  "tv_1129 · The Office Retreat · 72.251",
+  "tv_1133 · Corner Office · 62.754",
+  "tv_1131 · The Back Office · 62.252",
+]
+`;

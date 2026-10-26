@@ -6,7 +6,7 @@
 
 import { discoverByGenre, TMDB_GENRE_MAP } from '@/lib/api/tmdb'
 import { normalizeMovie, normalizeTV } from '@/lib/api/normalizer'
-import type { TmdbMovieDetail, TmdbTVDetail, TmdbSearchResponse, TmdbTVSearchResponse } from '@/lib/api/tmdb'
+import type { TmdbSearchResponse, TmdbTVSearchResponse } from '@/lib/api/tmdb'
 import type { MediaItem } from '@/types/media'
 
 /**
@@ -90,14 +90,14 @@ export async function getGenreNews(
   const movies: MediaItem[] =
     moviesResult.status === 'fulfilled'
       ? (moviesResult.value as TmdbSearchResponse).results.map((r) =>
-          normalizeMovie(r as TmdbMovieDetail)
+          normalizeMovie(r)
         )
       : []
 
   const tv: MediaItem[] =
     tvResult.status === 'fulfilled'
       ? (tvResult.value as TmdbTVSearchResponse).results.map((r) =>
-          normalizeTV(r as TmdbTVDetail)
+          normalizeTV(r)
         )
       : []
 
