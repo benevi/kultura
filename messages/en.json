@@ -332,6 +332,32 @@
       "buy": "Buy"
     }
   },
+  "adaptations": {
+    "title": "Also available as…",
+    "subtitle": "The same story in other formats: where it comes from, its adaptations and the rest of the franchise.",
+    "relation": {
+      "source": "Original work",
+      "derivative": "Adaptation",
+      "sibling": "Another adaptation",
+      "franchise": "Same franchise"
+    },
+    "meta": "{type} · {year}",
+    "inLibrary": "In your library",
+    "sourceLabel": "Links:",
+    "sourceLinkLabel": "Wikidata (opens in a new tab)",
+    "loginToAdd": "Log in to add the whole franchise",
+    "add": {
+      "action": "Add the whole franchise",
+      "hint": "{count, plural, one {Adds the title you don't have yet as Pending.} other {Adds the # titles you don't have yet as Pending.}}",
+      "progress": "Adding {done} of {total}…",
+      "waiting": "Waiting {seconds} s to stay within the adding limit…",
+      "done": "{count, plural, one {Added # title as Pending.} other {Added # titles as Pending.}}",
+      "partial": "Added {done} of {total}. Press again for the rest.",
+      "rateLimited": "You've hit the per-minute adding limit. Try again in a moment.",
+      "error": "Couldn't add them. Please try again.",
+      "allIn": "You already have the whole franchise in your library."
+    }
+  },
   "library": {
     "status": {
       "completed": "Completed",

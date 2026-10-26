@@ -34,6 +34,7 @@ import {
   serializeJsonLd,
 } from "@/lib/media/seo";
 import { isBestFormat } from "@/lib/best/best-of";
+import { AdaptationsSection } from "@/components/media/AdaptationsSection";
 import { OG_LOCALE, SITE_NAME } from "@/i18n/metadata";
 import { routing } from "@/i18n/routing";
 import { siteUrl } from "@/lib/site-url";
@@ -190,6 +191,12 @@ export default async function MediaDetailPage({ params }: Props) {
         initialEntry={initialEntry}
         isAuthenticated={Boolean(user)}
         matchScore={matchScores.get(item.id)}
+        adaptations={
+          // F-29: Wikidata (o su caché) llega en streaming; la ficha no la espera.
+          <React.Suspense fallback={null}>
+            <AdaptationsSection item={item} locale={locale} userId={user?.id ?? null} supabase={supabase} />
+          </React.Suspense>
+        }
       />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: serializeJsonLd(jsonLd) }} />
     </>

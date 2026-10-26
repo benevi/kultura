@@ -12,7 +12,7 @@
 // ============================================================
 
 import { PosterImage } from "@/components/media/PosterImage";
-import { Suspense } from "react";
+import { Suspense, type ReactNode } from "react";
 import { getLocale, getTranslations } from "next-intl/server";
 import type { MediaItem, StreamingProvider } from "@/types/media";
 import type { LibraryEntry } from "@/types/library";
@@ -79,6 +79,11 @@ interface MediaDetailProps {
   kulturaRating?: KulturaRating | null;
   /** Pasos anteriores a la ficha (el último, el título, lo añade la ficha). */
   breadcrumbs?: Breadcrumb[];
+  /**
+   * F-29: "También existe como…" (`AdaptationsSection` dentro de un
+   * <Suspense>, lo monta la página). Sin él, la ficha sale igual que antes.
+   */
+  adaptations?: ReactNode;
 }
 
 interface DetailTile {
@@ -182,6 +187,7 @@ export async function MediaDetail({
   source,
   kulturaRating,
   breadcrumbs = [],
+  adaptations,
 }: MediaDetailProps) {
   const t = await getTranslations("media_detail");
   const tMedia = await getTranslations("media");
@@ -471,6 +477,9 @@ export async function MediaDetail({
                 </dl>
               </section>
             )}
+
+            {/* También existe como… (F-29): se pinta cuando llega, sin hueco si no hay. */}
+            {adaptations}
 
             {/* Steam (solo juegos, y solo si se resolvió la ficha de tienda) */}
             {steam && <SteamSection steam={steam} />}

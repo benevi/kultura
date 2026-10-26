@@ -332,6 +332,32 @@
       "buy": "Compra"
     }
   },
+  "adaptations": {
+    "title": "También existe como…",
+    "subtitle": "La misma historia en otros formatos: de dónde sale, sus adaptaciones y el resto de la franquicia.",
+    "relation": {
+      "source": "Obra original",
+      "derivative": "Adaptación",
+      "sibling": "Otra adaptación",
+      "franchise": "Misma franquicia"
+    },
+    "meta": "{type} · {year}",
+    "inLibrary": "En tu biblioteca",
+    "sourceLabel": "Vínculos:",
+    "sourceLinkLabel": "Wikidata (se abre en una pestaña nueva)",
+    "loginToAdd": "Entra para añadir toda la franquicia",
+    "add": {
+      "action": "Añadir toda la franquicia",
+      "hint": "{count, plural, one {Añade como Pendiente el título que aún no tienes.} other {Añade como Pendiente los # títulos que aún no tienes.}}",
+      "progress": "Añadiendo {done} de {total}…",
+      "waiting": "Esperando {seconds} s para no pasar del límite de añadidos…",
+      "done": "{count, plural, one {Añadido # título como Pendiente.} other {Añadidos # títulos como Pendiente.}}",
+      "partial": "Añadidos {done} de {total}. Vuelve a pulsar para el resto.",
+      "rateLimited": "Has llegado al límite de añadidos por minuto. Vuelve a intentarlo en un momento.",
+      "error": "No se ha podido añadir. Inténtalo de nuevo.",
+      "allIn": "Ya tienes toda la franquicia en tu biblioteca."
+    }
+  },
   "library": {
     "status": {
       "completed": "Completado",

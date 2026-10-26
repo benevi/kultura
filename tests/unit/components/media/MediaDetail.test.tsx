@@ -458,3 +458,19 @@ describe("MediaDetail", () => {
     expect(nav.querySelector('[aria-current="page"]')).toHaveTextContent("Fight Club");
   });
 });
+
+// ── F-29: adaptaciones ──────────────────────────────────
+
+describe("MediaDetail · F-29", () => {
+  it("pinta el hueco de 'También existe como…' que le pasa la página", async () => {
+    render(
+      await MediaDetail({
+        item: mockItem,
+        initialEntry: null,
+        isAuthenticated: false,
+        adaptations: <section data-testid="adaptations-slot" />,
+      })
+    );
+    expect(screen.getByTestId("adaptations-slot")).toBeInTheDocument();
+  });
+});
