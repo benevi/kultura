@@ -16,6 +16,7 @@ import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { Link } from '@/i18n/navigation'
 import { PageHeading } from '@/components/layout/PageHeading'
+import { IconCalendar } from '@/components/icons'
 import { PosterImage } from '@/components/media/PosterImage'
 import { posterGradient } from '@/lib/images/poster-gradient'
 import { cn } from '@/lib/utils/index'
@@ -90,7 +91,7 @@ export default async function CalendarPage({ params, searchParams }: Props) {
 
   return (
     <main className="page-grid [&>*]:max-w-3xl py-8">
-      <PageHeading emoji="📅">{t('title')}</PageHeading>
+      <PageHeading icon={IconCalendar}>{t('title')}</PageHeading>
       <p className="-mt-4 mb-6 text-sm text-text-secondary max-w-prose">{t('intro')}</p>
 
       {calendar && calendar.candidates > 0 ? (

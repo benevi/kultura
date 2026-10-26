@@ -367,3 +367,47 @@ export const IconClose: KIcon = (props) => (
     <rect x="4.5" y="10.5" width="15" height="3" rx="1.5" transform="rotate(-45 12 12)" />
   </svg>
 )
+
+/** Ajustes — engranaje chunky de 8 dientes con centro hueco. */
+export const IconSettings: KIcon = (props) => (
+  <svg {...base(props)}>
+    <path
+      fillRule="evenodd"
+      d="M10.3 2h3.4l.6 2.6c.6.2 1.2.5 1.7.9l2.5-.9 1.7 2.9-2 1.8c.1.6.1 1.3 0 1.9l2 1.8-1.7 2.9-2.5-.9c-.5.4-1.1.7-1.7.9l-.6 2.6h-3.4l-.6-2.6c-.6-.2-1.2-.5-1.7-.9l-2.5.9-1.7-2.9 2-1.8a6 6 0 0 1 0-1.9l-2-1.8 1.7-2.9 2.5.9c.5-.4 1.1-.7 1.7-.9L10.3 2z M12 8.6a3.4 3.4 0 1 0 0 6.8 3.4 3.4 0 0 0 0-6.8z"
+      transform="translate(0 1)"
+    />
+  </svg>
+)
+
+/** Importar — bandeja con flecha que entra. */
+export const IconImport: KIcon = (props) => (
+  <svg {...base(props)}>
+    <path d="M10.5 3.5a1.5 1.5 0 0 1 3 0v6.9l1.9-1.9a1.5 1.5 0 0 1 2.1 2.1l-4.4 4.5a1.5 1.5 0 0 1-2.2 0l-4.4-4.5a1.5 1.5 0 0 1 2.1-2.1l1.9 1.9V3.5z" />
+    <path d="M3 14.5A1.5 1.5 0 0 1 4.5 13h2.2l2.6 2.7a3.8 3.8 0 0 0 5.4 0l2.6-2.7h2.2a1.5 1.5 0 0 1 1.5 1.5v4A2.5 2.5 0 0 1 18.5 21h-13A2.5 2.5 0 0 1 3 18.5v-4z" />
+  </svg>
+)
+
+/** Dueño — corona de tres puntas sobre una base. */
+export const IconCrown: KIcon = (props) => (
+  <svg {...base(props)}>
+    <path d="M3.2 7.4a1 1 0 0 1 1.6-.9l3.9 3.3 2.5-5.1a.9.9 0 0 1 1.6 0l2.5 5.1 3.9-3.3a1 1 0 0 1 1.6.9l-1.4 9.1H4.6L3.2 7.4z" />
+    <rect x="4.6" y="18" width="14.8" height="2.6" rx="1.3" />
+  </svg>
+)
+
+/** Hecho — disco con marca de verificación hueca. */
+export const IconCheck: KIcon = (props) => (
+  <svg {...base(props)}>
+    <path
+      fillRule="evenodd"
+      d="M12 2a10 10 0 1 1 0 20 10 10 0 0 1 0-20z M16.9 8.6a1.4 1.4 0 0 0-2-.1l-4.3 4.2-1.6-1.6a1.4 1.4 0 0 0-2 2l2.6 2.6a1.4 1.4 0 0 0 2 0l5.3-5.1a1.4 1.4 0 0 0 0-2z"
+    />
+  </svg>
+)
+
+/** En tendencia — llama de dos lenguas. */
+export const IconFlame: KIcon = (props) => (
+  <svg {...base(props)}>
+    <path d="M12.6 2.2c.4-.3 1-.1 1.1.4.5 2.2 1.8 3.6 3.1 5.1A8.3 8.3 0 0 1 19 13.5 7 7 0 0 1 12 21a7 7 0 0 1-7-7c0-2.4 1-4.3 2.4-5.8.4-.4 1-.2 1.1.3.2 1.1.7 2 1.5 2.6-.2-3.3.9-6.7 3.6-8.9z" />
+  </svg>
+)

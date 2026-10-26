@@ -11,18 +11,20 @@
 // `text-4xl tracking-wide`, `text-3xl font-extrabold`, `text-2xl md:text-3xl`…
 // Nueve tamaños distintos para el mismo elemento. Esto lo unifica.
 //
-// El emoji va APARTE del texto traducido a propósito: es decoración, no
-// contenido, así que lleva `aria-hidden` y no se cuela en el nombre accesible
-// de la pantalla ni obliga a repetirlo en cada idioma.
+// El canvas pone un emoji tras el título; en el código va un icono propio
+// (`src/components/icons`, VOZ.md: sin emojis en la interfaz) y APARTE del
+// texto traducido: es decoración, lleva `aria-hidden` y no se cuela en el
+// nombre accesible de la pantalla.
 // ============================================================
 
+import type { KIcon } from "@/components/icons";
 import { cn } from "@/lib/utils/index";
 
 export interface PageHeadingProps {
-  /** El título ya traducido. Sin emoji: ese va en `emoji`. */
+  /** El título ya traducido. */
   children: React.ReactNode;
-  /** Emoji decorativo del artboard. Opcional. */
-  emoji?: string;
+  /** Icono decorativo tras el título (el emoji del artboard). Opcional. */
+  icon?: KIcon;
   /** Acción primaria de la pantalla, a la derecha (normalmente un `KButton`). */
   action?: React.ReactNode;
   className?: string;
@@ -30,7 +32,7 @@ export interface PageHeadingProps {
 
 export function PageHeading({
   children,
-  emoji,
+  icon: Icon,
   action,
   className,
 }: PageHeadingProps) {
@@ -45,10 +47,12 @@ export function PageHeading({
           título largo no parta la pantalla. */}
       <h1 className="font-display text-3xl font-bold leading-tight tracking-tight text-text-primary md:text-4xl">
         {children}
-        {emoji && (
-          <span aria-hidden="true" className="ml-2">
-            {emoji}
-          </span>
+        {Icon && (
+          <Icon
+            aria-hidden="true"
+            data-testid="page-heading-icon"
+            className="ml-2 inline-block h-7 w-7 -translate-y-0.5 align-middle text-accent-pink md:h-8 md:w-8"
+          />
         )}
       </h1>
       {action && <div className="flex shrink-0 items-center gap-3">{action}</div>}

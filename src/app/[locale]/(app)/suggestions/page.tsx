@@ -4,6 +4,7 @@
 
 import { createClient } from '@/lib/supabase/server'
 import { PageHeading } from '@/components/layout/PageHeading'
+import { IconIdea } from '@/components/icons'
 import { redirect } from 'next/navigation'
 import { getTranslations } from 'next-intl/server'
 import { SuggestionsForm } from './SuggestionsForm'
@@ -24,7 +25,7 @@ export default async function SuggestionsPage() {
   return (
     <main className="page-grid [&>*]:max-w-[640px] py-10">
       <div className="mb-8">
-        <PageHeading emoji="💡" className="mb-2">{t('title')}</PageHeading>
+        <PageHeading icon={IconIdea} className="mb-2">{t('title')}</PageHeading>
         <p className="text-text-tertiary text-sm">{t('subtitle')}</p>
       </div>
       <div className="bg-surface-default rounded-bento p-6 sm:p-7">

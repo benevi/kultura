@@ -11,6 +11,7 @@
 
 import { createClient } from '@/lib/supabase/server'
 import { PageHeading } from '@/components/layout/PageHeading'
+import { IconFriends } from '@/components/icons'
 import { redirect } from 'next/navigation'
 import { getFriends, getPendingRequests } from '@/lib/social/friends'
 import { inviteUrl } from '@/lib/analytics/invite'
@@ -55,7 +56,7 @@ export default async function FriendsPage({ params }: Props) {
 
   return (
     <main className="page-grid [&>*]:max-w-2xl py-8">
-      <PageHeading emoji="👥">{t('title')}</PageHeading>
+      <PageHeading icon={IconFriends}>{t('title')}</PageHeading>
       <FriendsClient
         friends={friends}
         pendingRequests={pendingRequests}

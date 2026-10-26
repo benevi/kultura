@@ -4,6 +4,7 @@ import * as React from 'react'
 import { PosterFrame } from '@/components/media/PosterFrame'
 import { Link } from '@/i18n/navigation'
 import { KButton } from '@/components/ui/KButton'
+import type { KIcon } from '@/components/icons'
 
 export interface MediaRowItem {
   mediaId: string
@@ -17,7 +18,8 @@ export interface MediaRowItem {
 interface MediaRowProps {
   items: MediaRowItem[]
   title: string
-  emptyIcon?: string
+  /** Icono del estado vacío (solo desde componentes de cliente: es una función). */
+  emptyIcon?: KIcon
   emptyMessage?: string
   emptyHint?: string
   emptyAction?: { label: string; href: string }
@@ -35,7 +37,7 @@ const SKELETONS = [0, 1, 2, 3, 4]
 export function MediaRow({
   items: allItems,
   title,
-  emptyIcon,
+  emptyIcon: EmptyIcon,
   emptyMessage,
   emptyHint,
   emptyAction,
@@ -63,7 +65,7 @@ export function MediaRow({
 
       {!isLoading && items.length === 0 && emptyMessage && (
         <div className="bg-surface-default border border-surface-border rounded-bento p-6 text-center flex flex-col items-center gap-3">
-          {emptyIcon && <span className="text-3xl">{emptyIcon}</span>}
+          {EmptyIcon && <EmptyIcon aria-hidden="true" className="h-8 w-8 text-text-tertiary" />}
           <p className="font-body text-sm font-medium text-text-primary">{emptyMessage}</p>
           {emptyHint && <p className="font-body text-xs text-text-tertiary">{emptyHint}</p>}
           {emptyAction && (

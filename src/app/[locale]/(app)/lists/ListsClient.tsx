@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { PageHeading } from '@/components/layout/PageHeading'
+import { IconLists } from '@/components/icons'
 import { useTranslations } from 'next-intl'
 import { ListCard } from '@/components/social/ListCard'
 import { CreateListModal } from '@/components/social/CreateListModal'
@@ -21,7 +22,7 @@ export function ListsClient({ lists, mixedEnabled = false }: Props) {
   return (
     <main className="page-grid py-8">
       <PageHeading
-        emoji="📋"
+        icon={IconLists}
         action={
           <KButton variant="primary" size="sm" onClick={() => setShowModal(true)}>
             {t('newList')}

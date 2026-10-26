@@ -8,8 +8,7 @@
  * o `seed`), las ramas literales de `a ? b : 'c'` y `a || 'c'` en los hijos
  * y los `title`/`description` fijos de `metadata`.
  *
- * Lo que queda en componentes que este cambio no puede tocar va en
- * `KNOWN_DEBT` con su archivo: el test falla si aparece una cadena nueva y
+ * `KNOWN_DEBT` está vacía: el test falla si aparece una cadena nueva y
  * también si se arregla una de la lista sin quitarla (la lista no miente).
  */
 import { describe, it, expect } from "vitest";
@@ -111,49 +110,11 @@ function findings(): Finding[] {
 }
 
 /**
- * Deuda conocida: archivos de componentes fuera de este cambio (solo se han
- * podido tocar los textos). Cada entrada se arregla moviendo el texto a
- * `messages/*.json` (o el emoji a un icono de `src/components/icons`) y
- * borrándola de aquí.
+ * Deuda conocida: vacía. Una entrada nueva solo se acepta con su archivo y
+ * mientras se mueve el texto a `messages/*.json` (o el emoji a un icono de
+ * `src/components/icons`); el test falla si la lista miente.
  */
-const KNOWN_DEBT: Finding[] = [
-  { file: "src/app/[locale]/(app)/calendar/page.tsx", kind: "emoji", text: "emoji=📅" },
-  { file: "src/app/[locale]/(app)/chat/[id]/page.tsx", kind: "metadata", text: "title: Chat" },
-  { file: "src/app/[locale]/(app)/chat/page.tsx", kind: "emoji", text: "emoji=💬" },
-  { file: "src/app/[locale]/(app)/friends/FriendsClient.tsx", kind: "emoji", text: "👥" },
-  { file: "src/app/[locale]/(app)/friends/FriendsClient.tsx", kind: "emoji", text: "📋" },
-  { file: "src/app/[locale]/(app)/friends/page.tsx", kind: "emoji", text: "emoji=👥" },
-  { file: "src/app/[locale]/(app)/groups/DiscoverGroupsClient.tsx", kind: "emoji", text: "🔍" },
-  { file: "src/app/[locale]/(app)/groups/[id]/page.tsx", kind: "emoji", text: "👑" },
-  { file: "src/app/[locale]/(app)/groups/[id]/page.tsx", kind: "metadata", text: "title: Grupo" },
-  { file: "src/app/[locale]/(app)/groups/page.tsx", kind: "emoji", text: "emoji=🎉" },
-  { file: "src/app/[locale]/(app)/groups/page.tsx", kind: "metadata", text: "title: Grupos" },
-  { file: "src/app/[locale]/(app)/library/LibraryClient.tsx", kind: "emoji", text: "emoji=📚" },
-  { file: "src/app/[locale]/(app)/library/LibraryClient.tsx", kind: "emoji", text: "🔍" },
-  { file: "src/app/[locale]/(app)/lists/ListsClient.tsx", kind: "emoji", text: "emoji=📋" },
-  { file: "src/app/[locale]/(app)/lists/[id]/ListDetail.tsx", kind: "emoji", text: "📋" },
-  { file: "src/app/[locale]/(app)/notifications/page.tsx", kind: "emoji", text: "emoji=🔔" },
-  { file: "src/app/[locale]/(app)/settings/SettingsForm.tsx", kind: "emoji", text: "emoji=⚙️" },
-  { file: "src/app/[locale]/(app)/settings/import/page.tsx", kind: "emoji", text: "emoji=📥" },
-  { file: "src/app/[locale]/(app)/suggestions/SuggestionsForm.tsx", kind: "emoji", text: "✅" },
-  { file: "src/app/[locale]/(app)/suggestions/page.tsx", kind: "emoji", text: "emoji=💡" },
-  { file: "src/app/[locale]/login/LoginPage.tsx", kind: "texto", text: "tucorreo@ejemplo.com" },
-  { file: "src/app/[locale]/welcome/WelcomeFlow.tsx", kind: "emoji", text: "🌸" },
-  { file: "src/app/[locale]/welcome/WelcomeFlow.tsx", kind: "emoji", text: "🎬" },
-  { file: "src/app/[locale]/welcome/WelcomeFlow.tsx", kind: "emoji", text: "🎮" },
-  { file: "src/app/[locale]/welcome/WelcomeFlow.tsx", kind: "emoji", text: "💥" },
-  { file: "src/app/[locale]/welcome/WelcomeFlow.tsx", kind: "emoji", text: "📚" },
-  { file: "src/app/[locale]/welcome/WelcomeFlow.tsx", kind: "emoji", text: "📺" },
-  { file: "src/app/[locale]/welcome/WelcomeFlow.tsx", kind: "emoji", text: "🗯️" },
-  { file: "src/components/home/AiRecommendations.tsx", kind: "emoji", text: "`🔥 ${t('starterBadge')}`" },
-  { file: "src/components/home/AiRecommendations.tsx", kind: "emoji", text: "`🤖 ${t('aiPickBadge')}`" },
-  { file: "src/components/home/AiRecommendations.tsx", kind: "emoji", text: "🔥" },
-  { file: "src/components/home/AiRecommendations.tsx", kind: "emoji", text: "🤖" },
-  { file: "src/components/home/PopularInCircle.tsx", kind: "emoji", text: "emptyIcon=👥" },
-  { file: "src/components/home/PopularInCircle.tsx", kind: "emoji", text: "👥" },
-  { file: "src/components/media/MediaDetail.tsx", kind: "emoji", text: "🤖" },
-  { file: "src/components/social/ListCard.tsx", kind: "emoji", text: "👥" },
-];
+const KNOWN_DEBT: Finding[] = [];
 
 const id = (f: Finding) => `${f.file} | ${f.kind} | ${f.text}`;
 

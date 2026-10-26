@@ -4,6 +4,7 @@ import { useState, useCallback, useRef, useEffect } from 'react'
 import { Link } from '@/i18n/navigation'
 import { useTranslations } from 'next-intl'
 import { KButton } from '@/components/ui/KButton'
+import { IconFlame, IconSparkles } from '@/components/icons'
 import { MediaCard } from '@/components/media/MediaCard'
 import type { AiRec, AiRecsResult } from '@/lib/claude/recommendations'
 import type { MediaItem } from '@/types/media'
@@ -129,11 +130,19 @@ export function AiRecommendations({
           className="inline-block absolute -top-3.5 left-0 z-10 rounded-pill px-3.5 py-1.5 md:px-4 md:py-2 bg-accent-lime text-on-accent-lime font-display text-xs font-extrabold tracking-wide shadow-sticker"
           style={{ transform: 'rotate(-4deg)' }}
         >
-          {status === 'starter'
-            ? `🔥 ${t('starterBadge')}`
-            : status === 'done' && source === 'match'
-              ? `✦ ${t('matchBadge')}`
-              : `🤖 ${t('aiPickBadge')}`}
+          {status === 'starter' ? (
+            <span className="inline-flex items-center gap-1.5">
+              <IconFlame aria-hidden="true" className="h-3.5 w-3.5" />
+              {t('starterBadge')}
+            </span>
+          ) : status === 'done' && source === 'match' ? (
+            `✦ ${t('matchBadge')}`
+          ) : (
+            <span className="inline-flex items-center gap-1.5">
+              <IconSparkles aria-hidden="true" className="h-3.5 w-3.5" />
+              {t('aiPickBadge')}
+            </span>
+          )}
         </div>
       )}
 

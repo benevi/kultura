@@ -14,6 +14,7 @@ import { createLogger } from '@/lib/logger'
 import type { List, ListItem, ListMember } from '@/types/list'
 import { ReorderableItems } from './ReorderableItems'
 import { ItemNote } from './ItemNote'
+import { IconLists } from '@/components/icons'
 
 const log = createLogger('ListDetail')
 
@@ -395,7 +396,7 @@ export function ListDetail({
           <ReorderableItems listId={list.id} items={items} onItemsChange={onItemsChange} ranked={ranked} />
         ) : items.length === 0 ? (
           <div className="bg-surface-default rounded-bento p-10 text-center flex flex-col items-center gap-3">
-            <span aria-hidden="true" className="text-3xl">📋</span>
+            <IconLists aria-hidden="true" className="h-8 w-8 text-text-tertiary" />
             <p className="text-text-primary text-sm font-medium">{t('noItems')}</p>
             <p className="text-text-secondary text-sm">{t('noItemsHint')}</p>
             <Link

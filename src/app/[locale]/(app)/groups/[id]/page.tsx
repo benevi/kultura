@@ -18,13 +18,15 @@ import { isModerationV2 } from '@/lib/social/friends'
 import { getGroupById, getMemberRole, getGroupMembers } from '@/lib/social/groups'
 import { F0 } from '@/lib/design/f0-tokens'
 import type { Metadata } from 'next'
+import { IconCrown } from '@/components/icons'
 
 interface Props {
   params: Promise<{ locale: string; id: string }>
 }
 
 export async function generateMetadata(): Promise<Metadata> {
-  return { title: 'Grupo' }
+  const t = await getTranslations('groups')
+  return { title: t('title') }
 }
 
 export default async function GroupPage({ params }: Props) {
@@ -189,7 +191,7 @@ export default async function GroupPage({ params }: Props) {
                   )}
                   <span className="text-sm flex-1 truncate font-medium" style={{ color: F0.text }}>{m.user.username}</span>
                   {m.role === 'owner' && (
-                    <span className="text-xs flex-shrink-0" style={{ color: F0.yellow }} aria-label={tG('members')}>👑</span>
+                    <IconCrown role="img" aria-hidden={false} aria-label={tG('ownerBadge')} className="h-4 w-4 flex-shrink-0" style={{ color: F0.yellow }} />
                   )}
                   {moderation && isOwner && m.role !== 'owner' && (
                     <MemberRemoveButton groupId={id} userId={m.user.id} username={m.user.username} />

@@ -8,7 +8,7 @@ import { useRouter, Link } from '@/i18n/navigation'
 import { FilterChip } from '@/components/ui/FilterChip'
 import { KButton } from '@/components/ui/KButton'
 import { MediaGrid } from '@/components/media/MediaGrid'
-import { IconLibrary } from '@/components/icons'
+import { IconLibrary, IconSearch } from '@/components/icons'
 import { SegmentedControl } from '@/components/ui/SegmentedControl'
 import { DiaryList } from '@/components/library/DiaryList'
 import type { DiaryLog, LibraryEntry, RatingScale } from '@/types/library'
@@ -115,10 +115,10 @@ function EmptyFiltered({
   return (
     <div className="flex flex-col items-center justify-center py-16 px-4 text-center gap-4">
       <div
-        className="w-16 h-16 rounded-bento bg-surface-elevated flex items-center justify-center text-3xl select-none"
+        className="w-16 h-16 rounded-bento bg-surface-elevated flex items-center justify-center select-none"
         aria-hidden="true"
       >
-        🔍
+        <IconSearch className="h-8 w-8 text-text-tertiary" />
       </div>
       <div className="flex flex-col gap-1.5 max-w-xs">
         <p className="font-body font-medium text-text-primary text-base">
@@ -224,7 +224,7 @@ export function LibraryClient({ entries, diary = null }: LibraryClientProps) {
   if (diary && view === 'diary') {
     return (
       <div>
-        <PageHeading emoji="📚">{t('title')}</PageHeading>
+        <PageHeading icon={IconLibrary}>{t('title')}</PageHeading>
         {diaryControls}
         <DiaryList logs={diary.logs} scale={scale} />
       </div>
@@ -234,7 +234,7 @@ export function LibraryClient({ entries, diary = null }: LibraryClientProps) {
   if (entries.length === 0) {
     return (
       <div>
-        <PageHeading emoji="📚">{t('title')}</PageHeading>
+        <PageHeading icon={IconLibrary}>{t('title')}</PageHeading>
         {diaryControls}
         <EmptyLibrary t={t} />
       </div>
@@ -245,7 +245,7 @@ export function LibraryClient({ entries, diary = null }: LibraryClientProps) {
     <div>
       {/* Header */}
       <PageHeading
-        emoji="📚"
+        icon={IconLibrary}
         action={
           <span className="shrink-0 rounded-pill bg-surface-elevated px-3 py-1 text-xs font-body font-semibold text-text-secondary">
             {t('items', { count: filtered.length })}

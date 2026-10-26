@@ -5,6 +5,7 @@
 
 import { createClient } from '@/lib/supabase/server'
 import { PageHeading } from '@/components/layout/PageHeading'
+import { IconChat } from '@/components/icons'
 import { redirect } from 'next/navigation'
 import { getTranslations } from 'next-intl/server'
 import { getFriends } from '@/lib/social/friends'
@@ -36,7 +37,7 @@ export default async function ChatPage() {
 
   return (
     <main className="page-grid [&>*]:max-w-2xl py-8">
-      <PageHeading emoji="💬">{t('title')}</PageHeading>
+      <PageHeading icon={IconChat}>{t('title')}</PageHeading>
       <ChatClient friends={friends} />
     </main>
   )

@@ -4,6 +4,7 @@ import { useEffect, useId, useRef, useState } from 'react'
 import { useTranslations } from 'next-intl'
 import { KButton } from '@/components/ui/KButton'
 import { cn } from '@/lib/utils/index'
+import { IconCheck } from '@/components/icons'
 
 type SuggestionType = 'bug' | 'feature' | 'improvement' | 'other'
 
@@ -89,7 +90,7 @@ export function SuggestionsForm() {
         role="status"
         className="p-4 text-center flex flex-col items-center gap-3 outline-none"
       >
-        <div aria-hidden="true" className="text-4xl">✅</div>
+        <IconCheck aria-hidden="true" className="h-10 w-10 text-accent-positive" />
         <p className="font-display font-extrabold text-text-primary text-lg">{t('success')}</p>
         <p className="text-sm text-text-tertiary">{t('successHint')}</p>
         <KButton

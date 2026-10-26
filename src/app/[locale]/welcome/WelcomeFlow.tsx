@@ -21,19 +21,29 @@ import {
   type StarterTitle,
 } from './starter-titles'
 import type { MediaType } from '@/types/media'
+import {
+  IconAnime,
+  IconComic,
+  IconFilm,
+  IconGamepad,
+  IconLibrary,
+  IconManga,
+  IconTv,
+  type KIcon,
+} from '@/components/icons'
 
 const STEPS = ['name', 'formats', 'rate', 'recs'] as const
 type Step = (typeof STEPS)[number]
 
-/** Orden y emoji de los formatos (el mismo orden que el resto de la app). */
-export const WELCOME_FORMATS: ReadonlyArray<{ type: MediaType; emoji: string }> = [
-  { type: 'movie', emoji: '🎬' },
-  { type: 'tv', emoji: '📺' },
-  { type: 'anime', emoji: '🌸' },
-  { type: 'manga', emoji: '🗯️' },
-  { type: 'book', emoji: '📚' },
-  { type: 'comic', emoji: '💥' },
-  { type: 'game', emoji: '🎮' },
+/** Orden e icono de los formatos (el mismo orden e iconos que Descubrir). */
+export const WELCOME_FORMATS: ReadonlyArray<{ type: MediaType; icon: KIcon }> = [
+  { type: 'movie', icon: IconFilm },
+  { type: 'tv', icon: IconTv },
+  { type: 'anime', icon: IconAnime },
+  { type: 'manga', icon: IconManga },
+  { type: 'book', icon: IconLibrary },
+  { type: 'comic', icon: IconComic },
+  { type: 'game', icon: IconGamepad },
 ]
 
 /** Espera antes de guardar una nota: las flechas cambian la nota de una en una. */
@@ -336,7 +346,7 @@ export function WelcomeFlow({ locale, next, currentUsername, suggestChange, need
               <p className={bodyClass}>{t('formatsBody')}</p>
 
               <div role="group" aria-label={t('formatsTitle')} className="mt-7 flex flex-wrap gap-3">
-                {WELCOME_FORMATS.map(({ type, emoji }) => {
+                {WELCOME_FORMATS.map(({ type, icon: Icon }) => {
                   const active = formats.includes(type)
                   return (
                     <button
@@ -354,7 +364,7 @@ export function WelcomeFlow({ locale, next, currentUsername, suggestChange, need
                           : 'bg-surface-elevated text-text-primary hover:bg-surface-border'
                       )}
                     >
-                      <span aria-hidden="true">{emoji}</span>
+                      <Icon aria-hidden="true" className="h-5 w-5" />
                       {t(`formats.${type}`)}
                     </button>
                   )

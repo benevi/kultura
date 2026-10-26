@@ -2,6 +2,7 @@
 
 import { useRef, useState } from 'react'
 import { PageHeading } from '@/components/layout/PageHeading'
+import { IconSettings } from '@/components/icons'
 import { useTranslations, useLocale } from 'next-intl'
 import { useRouter, usePathname } from 'next/navigation'
 import { KButton } from '@/components/ui/KButton'
@@ -503,7 +504,7 @@ export function SettingsForm({
 
   return (
     <div className="flex flex-col gap-7">
-      <PageHeading emoji="⚙️" className="mb-0">{t('title')}</PageHeading>
+      <PageHeading icon={IconSettings} className="mb-0">{t('title')}</PageHeading>
 
       {/* ROJO-7: borrado programado; mientras no venza, se puede deshacer. */}
       {pendingDeletion && (

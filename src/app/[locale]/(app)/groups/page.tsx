@@ -5,6 +5,7 @@
 
 import { createClient } from '@/lib/supabase/server'
 import { PageHeading } from '@/components/layout/PageHeading'
+import { IconGroups } from '@/components/icons'
 import { redirect } from 'next/navigation'
 import { getTranslations } from 'next-intl/server'
 import { getUserGroups } from '@/lib/social/groups'
@@ -12,7 +13,8 @@ import { GroupsClient, type MyGroup } from './GroupsClient'
 import type { Metadata } from 'next'
 
 export async function generateMetadata(): Promise<Metadata> {
-  return { title: 'Grupos' }
+  const t = await getTranslations('groups')
+  return { title: t('pageTitle') }
 }
 
 export default async function GroupsPage() {
@@ -33,7 +35,7 @@ export default async function GroupsPage() {
 
   return (
     <main className="page-grid py-8">
-      <PageHeading emoji="🎉">{t('pageTitle')}</PageHeading>
+      <PageHeading icon={IconGroups}>{t('pageTitle')}</PageHeading>
       <GroupsClient myGroups={myGroups} />
     </main>
   )

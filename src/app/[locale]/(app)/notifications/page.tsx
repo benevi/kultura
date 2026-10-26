@@ -5,6 +5,7 @@
 
 import { createClient } from '@/lib/supabase/server'
 import { PageHeading } from '@/components/layout/PageHeading'
+import { IconBell } from '@/components/icons'
 import { redirect } from 'next/navigation'
 import { getNotifications, markAllRead } from '@/lib/social/notifications'
 import { NotificationsList } from './NotificationsList'
@@ -41,7 +42,7 @@ export default async function NotificationsPage() {
 
   return (
     <main className="page-grid [&>*]:max-w-2xl py-8">
-      <PageHeading emoji="🔔">{t('title')}</PageHeading>
+      <PageHeading icon={IconBell}>{t('title')}</PageHeading>
       {fetchError ? (
         <div className="bg-surface-default border border-surface-border rounded-bento p-10 text-center text-sm text-text-tertiary">
           {t('loadError')}
