@@ -376,7 +376,7 @@ describe("ACC-7/TXT-4 — 404 y error global", () => {
     const main = screen.getByRole("main");
     expect(main).toHaveAttribute("id", "main");
     expect(screen.getByRole("heading", { level: 1, name: "Page not found" })).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "Go to home" })).toHaveAttribute("href", "/en");
+    expect(screen.getByRole("link", { name: "Go to the home page" })).toHaveAttribute("href", "/en");
   });
 
   // F-22 (D-02): Next pinta la 404 raíz dentro del árbol de todas las páginas;

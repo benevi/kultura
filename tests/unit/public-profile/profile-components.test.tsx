@@ -30,7 +30,8 @@ describe('ProfileHeader — contadores y biblioteca oculta', () => {
   it('por defecto los pinta como siempre', async () => {
     render(await ProfileHeader({ ...base, totalItems: 7 }))
     expect(screen.getByText('7')).toBeInTheDocument()
-    expect(screen.getByText('totalItems')).toBeInTheDocument()
+    // TXT-7: la etiqueta concuerda con la cifra (ICU), así que recibe `count`.
+    expect(screen.getByText('totalItems:{"count":7}')).toBeInTheDocument()
   })
 })
 

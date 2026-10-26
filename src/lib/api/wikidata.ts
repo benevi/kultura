@@ -45,13 +45,8 @@ import type { MediaType } from "@/types/media";
 
 export const WIKIDATA_SPARQL_ENDPOINT = "https://query.wikidata.org/sparql";
 
-/**
- * Proveedor para el circuito y los logs de `providerFetch`. `http.ts` aún no
- * lo lista en `PROVIDER_IDS` (archivo de otro frente): el circuito y los
- * avisos van por clave de texto, así que funciona igual. Pendiente añadirlo a
- * la lista para que salga en `/api/health`.
- */
-export const WIKIDATA_PROVIDER = "wikidata" as ProviderId;
+/** Proveedor para el circuito y los logs de `providerFetch`. */
+export const WIKIDATA_PROVIDER: ProviderId = "wikidata";
 
 /** Plazo por intento: WDQS tarda 0,3-3 s con franquicias grandes (Dune ~3 s). */
 export const WIKIDATA_TIMEOUT_MS = 7000;

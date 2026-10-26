@@ -6,6 +6,10 @@
  */
 import { test, expect, type Locator, type Page } from "@playwright/test";
 import { expectNoBlockingViolations, isolateNetwork, open, signIn } from "./helpers";
+// Los textos que cambian con el tono (títulos de diálogo, avisos) se leen de
+// los mensajes reales: un cambio de redacción no rompe la prueba, una clave
+// que deje de pintarse sí.
+import es from "../../../messages/es.json";
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const { LIST_ID, GROUP_ID } = require("./fixtures.cjs");
 
@@ -23,8 +27,8 @@ const DIALOGS: DialogCase[] = [
   {
     name: "ConfirmModal (borrar lista)",
     path: `/es/lists/${LIST_ID}`,
-    opener: "Eliminar lista",
-    title: "Eliminar lista",
+    opener: es.lists.deleteList,
+    title: es.lists.deleteListTitle,
     role: "alertdialog",
   },
   {
@@ -158,7 +162,7 @@ test("error al añadir a una lista: el aviso se ve y se anuncia con el diálogo 
   const dialog = page.getByRole("dialog", { name: "Añadir a una lista" });
   await dialog.getByRole("radio", { name: "Pelis para el finde" }).check();
   await dialog.getByRole("button", { name: "Añadir", exact: true }).click();
-  await expectAnnouncedAlert(page, dialog, "Error al añadir el título");
+  await expectAnnouncedAlert(page, dialog, es.lists.errorAdding);
 });
 
 test("StarRating: flechas cambian la nota y el foco se ve (ACC-8)", async ({ page }) => {

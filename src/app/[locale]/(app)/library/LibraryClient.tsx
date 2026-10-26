@@ -248,7 +248,7 @@ export function LibraryClient({ entries, diary = null }: LibraryClientProps) {
         emoji="📚"
         action={
           <span className="shrink-0 rounded-pill bg-surface-elevated px-3 py-1 text-xs font-body font-semibold text-text-secondary">
-            {filtered.length} {t('items')}
+            {t('items', { count: filtered.length })}
           </span>
         }
       >

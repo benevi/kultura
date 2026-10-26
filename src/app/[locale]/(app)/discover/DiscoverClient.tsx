@@ -1,629 +1,114 @@
 "use client";
 
-import { useState, useMemo, useEffect } from "react";
+// ============================================================
+// KULTURA — Pantalla Descubrir (catálogo y búsqueda de las 7 familias)
+//
+// Compone: la URL (`useDiscoverUrl`), la página pedida a /api/discover
+// (`useDiscoverQuery`), la barra (`DiscoverToolbar`) y el cuerpo
+// (`DiscoverResults`). "all" es el agregado: misma rejilla, con badge de tipo
+// por card porque ahí los tipos se mezclan.
+// ============================================================
+
+import { useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
-import { useRouter } from "@/i18n/navigation";
-import { useSearchParams } from "next/navigation";
 import type { MediaItem } from "@/types/media";
-import type { DiscoverResult } from "@/lib/api/discover";
-import { MediaGrid, BENTO_CELL_CLASSES } from "@/components/media/MediaGrid";
-import { SearchBar } from "@/components/search/SearchBar";
 import { Pagination } from "@/components/ui/Pagination";
-import { FilterBar, type FilterGroup } from "@/components/ui/FilterBar";
-import {
-  TYPE_ORDER,
-  TYPE_FILTERS,
-  paramKeyFor,
-  type DiscoverType,
-} from "@/lib/discover/type-filters";
-import { getFilterOptions, humanizeSlug } from "@/lib/discover/filter-options";
-import { cn } from "@/lib/utils/index";
-import {
-  type KIcon,
-  IconCompass,
-  IconGrid,
-  IconTag,
-  IconCalendar,
-  IconStar,
-  IconMonitor,
-  IconClock,
-  IconGlobe,
-  IconActivity,
-  IconLayers,
-  IconGroups,
-  IconVolumes,
-  IconStudio,
-  IconFormat,
-  IconGamepad,
-  IconTimer,
-  IconSort,
-  IconDice,
-  IconClose,
-  IconFilm,
-  IconTv,
-  IconAnime,
-  IconLibrary,
-  IconManga,
-  IconComic,
-} from "@/components/icons";
-
-// Icono distintivo por pill de tipo (peso visual, mismo lenguaje que el
-// resto del sistema propio F1b/E78) — sustituye el emoji genérico que traía
-// el mockup F0 (decisión: iconos propios > emoji suelto). Puramente
-// decorativo — aria-hidden en el render, nunca forma parte del nombre
-// accesible del radio (que sigue siendo la etiqueta i18n). No toca el
-// acento de color (sigue siendo accent-positive único — decisión F2).
-const TYPE_ICONS: Record<DiscoverType, KIcon> = {
-  all: IconGrid,
-  movie: IconFilm,
-  tv: IconTv,
-  anime: IconAnime,
-  book: IconLibrary,
-  manga: IconManga,
-  game: IconGamepad,
-  comic: IconComic,
-};
-
-// Icono propio por key de filtro (spec V2 §Barra). Mapea claves lógicas de
-// TYPE_FILTERS a su icono pequeño en trigger + cabecera de popover.
-const FILTER_ICONS: Record<string, KIcon> = {
-  genre: IconTag,
-  year: IconCalendar,
-  valoracion: IconStar,
-  platform: IconMonitor,
-  duracion: IconClock,
-  idioma: IconGlobe,
-  status: IconActivity,
-  estado: IconActivity,
-  temporadas: IconLayers,
-  demografia: IconGroups,
-  volumenes: IconVolumes,
-  editorial: IconStudio,
-  formato: IconFormat,
-  modojuego: IconGamepad,
-  duracionmedia: IconTimer,
-  sort: IconSort,
-};
-
-// Skeleton de carga con el mismo patrón bento que el grid real (F3b) — evita
-// layout shift entre el estado de carga y el grid ya poblado.
-const DISCOVER_SKELETON_CELLS = Array.from(
-  { length: 18 },
-  (_, i) => BENTO_CELL_CLASSES[i % BENTO_CELL_CLASSES.length]
-);
+import { IconCompass } from "@/components/icons";
+import { type DiscoverType } from "@/lib/discover/type-filters";
+import { useDiscoverQuery } from "@/hooks/useDiscoverQuery";
+import { useDiscoverUrl } from "@/hooks/useDiscoverUrl";
+import { isDiscoverType } from "./discover-config";
+import { useFilterGroups } from "./useFilterGroups";
+import { DiscoverToolbar } from "./DiscoverToolbar";
+import { DiscoverResults } from "./DiscoverResults";
 
 export interface DiscoverClientProps {
   currentType: string;
   currentPage: number;
   /**
-   * E-DISCOVER-SEARCH-MERGE: query de texto activa (viene del param `q`).
-   * Con query, la página la sirve el BUSCADOR del proveedor en vez del catálogo
-   * de descubrir — misma forma de respuesta, mismo grid, misma paginación.
+   * E-DISCOVER-SEARCH-MERGE: query de texto activa (param `q`). Con query, la
+   * página la sirve el BUSCADOR del proveedor con la misma forma de respuesta.
    */
   currentQuery?: string;
 }
 
-// Triggers cuyo valor en URL es CSV (string[]). El resto es single (string).
-const MULTI_KINDS = new Set(["multi", "searchable"]);
-
-// Todos los query params de filtro que /api/discover parsea (discover-params.ts).
-// `type`/`page` se manejan aparte; el resto se reenvía tal cual al fetch.
-const FILTER_PARAM_KEYS = [
-  "genre",
-  "year",
-  "platform",
-  "sort",
-  "status",
-  "demografia",
-  "duracion",
-  "temporadas",
-  "volumenes",
-  "horas",
-  "editorial",
-  "formato",
-  "idioma",
-  // paramKeys cuyo `key` UI difiere del param de URL (E88). handleFilterChange
-  // escribe la URL por paramKey; estos deben estar aquí o el fetch los perdería
-  // al reconstruir filterQuery. Backend los aplica (rating→valoracion nativo,
-  // seasons/gamemode/playtime post-filtros).
-  "rating",
-  "seasons",
-  "gamemode",
-  "playtime",
-  "estado",
-] as const;
-
-/**
- * Buckets de año relativos al año actual: [actual, -1, -2] como YYYY +
- * 2 décadas previas como YYYYs + 'classic'. value en el formato que parsea
- * discover-params (YYYY / YYYYs / classic). label = placeholder (i18n: F6).
- */
-function buildYearBuckets(): { value: string; label: string }[] {
-  const now = new Date().getFullYear();
-  const years = [now, now - 1, now - 2].map((y) => ({
-    value: String(y),
-    label: String(y),
-  }));
-  // Década que contiene el año más antiguo listado, y la anterior.
-  const baseDecade = Math.floor((now - 2) / 10) * 10;
-  const decades = [baseDecade - 10, baseDecade - 20].map((d) => ({
-    value: `${d}s`,
-    label: `${d}s`,
-  }));
-  return [...years, ...decades, { value: "classic", label: "classic" }];
-}
-
-function isDiscoverType(t: string): t is DiscoverType {
-  return (TYPE_ORDER as readonly string[]).includes(t);
-}
-
-export function DiscoverClient({
-  currentType,
-  currentPage,
-  currentQuery = "",
-}: DiscoverClientProps) {
+export function DiscoverClient({ currentType, currentPage, currentQuery = "" }: DiscoverClientProps) {
   const t = useTranslations("discover");
-  const tF = useTranslations("filters");
-  const tS = useTranslations("search");
-  const tDF = useTranslations("discoverFilters");
-  // F-06 (DAT-1): el idioma viaja en la URL de /api/discover (la ruta no puede
-  // deducirlo y la caché de borde no debe mezclar idiomas).
   const locale = useLocale();
-  const router = useRouter();
-  const searchParams = useSearchParams();
+  const type: DiscoverType = isDiscoverType(currentType) ? currentType : "movie";
+  const url = useDiscoverUrl(type, currentQuery);
+  const filterGroups = useFilterGroups(type);
 
-  const type: DiscoverType = isDiscoverType(currentType)
-    ? currentType
-    : "movie";
-  // "all" = agregado (modo Descubrir todos). R5a: backend responde el merge de
-  // las 7 familias por /api/discover?type=all. R5b: se pinta como grid normal,
-  // con badge de tipo por card (showType) porque aquí los tipos sí se mezclan.
-  const isAggregate = type === "all";
-
-  // E59 F2/F5e: el fetch vive en el navegador (vía /api/discover) para que los
-  // E2E puedan mockearlo con page.route. Se re-pide al cambiar cualquier param
-  // de la URL (type, page, o cualquier filtro). Sin filtrado client-side: la
-  // URL es la única fuente de verdad y el servidor aplica todos los filtros.
-  const [items, setItems] = useState<MediaItem[]>([]);
-  // F3a/F3b: match score real por item (id → 0-100). Vacío = ningún item recibe
-  // badge (sin sesión, o sin señal suficiente — gate de computeMatchScores).
-  // E79 slice 1: el gate de "next" usa hasMore (fuente cruda), no totalPages.
-  const [hasMore, setHasMore] = useState(false);
-  // E79 slice 1b: totalPages del proveedor (DiscoverResult) → ventana numerada.
-  // Solo alimenta la UI de la paginación; el gate de "siguiente" sigue en hasMore.
-  // E79 slice 2: `null` cuando hay post-filtro activo (N crudo miente) → la
-  // ventana se pinta sin la última página.
-  const [totalPages, setTotalPages] = useState<number | null>(1);
-  const [fetchErrorKind, setFetchErrorKind] =
-    useState<DiscoverResult["fetchErrorKind"]>(null);
-  const [loading, setLoading] = useState(true);
-  // E-DISCOVER-SEARCH-MERGE: "Sorpréndeme" — un ítem al azar de la página
-  // actual. Venía de /search (que se fusiona aquí) y se conserva para no perder
-  // la función; a diferencia de allí, el botón está SIEMPRE visible y solo se
-  // deshabilita cuando no hay resultados.
+  // "Sorpréndeme": un ítem al azar de la página actual; se suelta al llegar
+  // otra página (pertenece a la que se estaba viendo).
   const [randomItem, setRandomItem] = useState<MediaItem | null>(null);
-
-  // Hay búsqueda activa: la barra de filtros de catálogo se oculta (ningún
-  // buscador de los proveedores acepta esos filtros) y el grid muestra
-  // resultados de búsqueda.
-  const isSearching = currentQuery.trim().length > 0;
-
-  // Cadena estable de los params de filtro presentes en la URL → dependencia
-  // del fetch (re-pide cuando cambia cualquier filtro, no solo type/page).
-  const filterQuery = useMemo(() => {
-    const out = new URLSearchParams();
-    for (const key of FILTER_PARAM_KEYS) {
-      const v = searchParams.get(key);
-      if (v) out.set(key, v);
-    }
-    return out.toString();
-  }, [searchParams]);
-
-  useEffect(() => {
-    let cancelled = false;
-    // R5b: "all" ya hace fetch normal a /api/discover?type=all (el backend R5a
-    // devuelve el merge de las 7 familias). Sin short-circuit.
-    setLoading(true);
-    const params = new URLSearchParams(filterQuery);
-    params.set("type", type);
-    params.set("page", String(currentPage));
-    if (currentQuery.trim()) params.set("q", currentQuery.trim());
-    params.set("locale", locale);
-    fetch(`/api/discover?${params.toString()}`)
-      .then((res) => res.json() as Promise<DiscoverResult>)
-      .then((data) => {
-        if (cancelled) return;
-        setItems(data.items ?? []);
-        setHasMore(data.hasMore ?? false);
-        // E79 slice 2: `null` (post-filtro activo) es significativo — NO colapsar
-        // a 1 con `??`. Solo el campo ausente (undefined) cae al default 1.
-        setTotalPages(data.totalPages === undefined ? 1 : data.totalPages);
-        setFetchErrorKind(data.fetchErrorKind ?? null);
-      })
-      .catch(() => {
-        if (cancelled) return;
-        setItems([]);
-        setHasMore(false);
-        setTotalPages(1);
-        setFetchErrorKind("generic");
-      })
-      .finally(() => {
-        if (!cancelled) {
-          setLoading(false);
-          // El aleatorio pertenece a la página que se estaba viendo.
-          setRandomItem(null);
-        }
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [type, currentPage, filterQuery, currentQuery, locale]);
-
-  // SegmentedControl de tipo: options derivadas de TYPE_ORDER.
-  const typeOptions = useMemo(
-    () => TYPE_ORDER.map((tp) => ({ value: tp, label: tF(tp) })),
-    [tF]
-  );
-
-  // FilterBar contextual: un group por trigger visible de TYPE_FILTERS[type].
-  // R3: icono lucide por key, y variante 'sort' para el pill "Ordenar: <valor>".
-  // R6: label de trigger y de opción vía i18n (namespace discoverFilters). El
-  // value (slug canónico) NUNCA se toca; solo se traduce el label visible. Para
-  // catálogos sin traducción (platform/editorial = nombres propios, o slugs de
-  // género no listados) se cae a humanizeSlug — la clave i18n actúa de override.
-  const filterGroups: FilterGroup[] = useMemo(() => {
-    // Label de trigger: discoverFilters.trigger.<key>, fallback humanizeSlug.
-    const triggerLabel = (key: string) =>
-      tDF.has(`trigger.${key}`) ? tDF(`trigger.${key}`) : humanizeSlug(key);
-    // Label de opción: discoverFilters.options.<key>.<slug>, fallback humanizeSlug.
-    const optionLabel = (key: string, value: string) =>
-      tDF.has(`options.${key}.${value}`)
-        ? tDF(`options.${key}.${value}`)
-        : humanizeSlug(value);
-
-    return TYPE_FILTERS[type].map((trigger) => {
-      const isSort = trigger.key === "sort";
-      // year: buckets propios (años/décadas/classic). Solo "classic" tiene
-      // label traducible; el resto son literales numéricos que no se traducen.
-      const rawOptions =
-        trigger.key === "year"
-          ? buildYearBuckets().map((o) =>
-              o.value === "classic"
-                ? { value: o.value, label: tF("classic") }
-                : o
-            )
-          : getFilterOptions(type, trigger.key).map((o) => ({
-              value: o.value,
-              label: optionLabel(trigger.key, o.value),
-            }));
-      return {
-        key: trigger.key,
-        kind: trigger.kind,
-        align: trigger.align,
-        icon: FILTER_ICONS[trigger.key],
-        label: triggerLabel(trigger.key),
-        ...(isSort
-          ? { variant: "sort" as const, sortLabel: tF("sort") }
-          : {}),
-        options: rawOptions,
-      };
-    });
-  }, [type, tF, tDF]);
-
-  // activeFilters desde la URL: multi → CSV→string[]; resto → string.
-  // E88: se lee por paramKey (lo que hay en la URL), no por key (clave UI); si no,
-  // el popover no reflejaría la selección de los triggers con key≠paramKey.
-  const activeFilters: Record<string, string | string[]> = useMemo(() => {
-    const out: Record<string, string | string[]> = {};
-    for (const trigger of TYPE_FILTERS[type]) {
-      const raw = searchParams.get(paramKeyFor(trigger.key));
-      if (MULTI_KINDS.has(trigger.kind)) {
-        out[trigger.key] = raw
-          ? raw
-              .split(",")
-              .map((v) => v.trim())
-              .filter(Boolean)
-          : [];
-      } else {
-        out[trigger.key] = raw ?? "all";
-      }
-    }
-    return out;
-  }, [type, searchParams]);
-
-  // Cambio de tipo: navega a ?type=X&page=1 y BORRA el resto de filtros
-  // (los triggers difieren por tipo, sus valores no son portables). La query de
-  // búsqueda SÍ se conserva: cambiar de tipo con una búsqueda activa es
-  // "búscame esto mismo en series", no "olvida lo que buscaba".
-  function handleTypeChange(newType: string) {
-    const params = new URLSearchParams();
-    params.set("type", newType);
-    params.set("page", "1");
-    if (isSearching) params.set("q", currentQuery.trim());
-    router.push(`/discover?${params.toString()}`);
-  }
-
-  /** Busca dentro de /discover: escribe `q`, resetea página, conserva tipo. */
-  function handleSearchSubmit(query: string) {
-    const params = new URLSearchParams();
-    params.set("type", type);
-    params.set("page", "1");
-    params.set("q", query);
-    router.push(`/discover?${params.toString()}`);
-  }
-
-  /** Limpia la búsqueda y vuelve al catálogo del tipo activo. */
-  function clearSearch() {
-    router.push(`/discover?type=${type}&page=1`);
-  }
+  const { items, hasMore, totalPages, fetchErrorKind, loading } = useDiscoverQuery({
+    type,
+    page: currentPage,
+    filterQuery: url.filterQuery,
+    query: currentQuery,
+    locale,
+    onSettled: () => setRandomItem(null),
+  });
 
   function pickRandom() {
     if (items.length === 0) return;
     setRandomItem(items[Math.floor(Math.random() * items.length)]);
   }
 
-  // Cambio de un filtro: muta los searchParams actuales, siempre page=1.
-  // E88: la URL se escribe por paramKey (contrato del backend), no por la clave
-  // lógica UI. Traducción key→paramKey vía paramKeyFor (fuente: type-filters.ts).
-  function handleFilterChange(key: string, value: string | string[]) {
-    const paramKey = paramKeyFor(key);
-    const params = new URLSearchParams(searchParams.toString());
-    if (value === "all") {
-      params.delete(paramKey);
-    } else if (Array.isArray(value)) {
-      if (value.length === 0) params.delete(paramKey);
-      else params.set(paramKey, value.join(","));
-    } else {
-      params.set(paramKey, value);
-    }
-    params.set("type", type);
-    params.set("page", "1");
-    router.push(`/discover?${params.toString()}`);
-  }
-
-  // "Limpiar filtros": borra TODOS los params de filtro, mantiene type+page=1.
-  function clearFilters() {
-    router.push(`/discover?type=${type}&page=1`);
-  }
-
-  // Hay al menos un filtro aplicado en la URL (distingue "0 resultados con
-  // filtros" de "catálogo base vacío"). filterQuery solo recoge FILTER_PARAM_KEYS.
-  const hasActiveFilters = filterQuery !== "";
-
   return (
     <div>
       {/* Header — G1: mismo peso tipográfico chunky que MediaDetail (F4). */}
       <div className="mb-4 pt-4 pb-2 flex items-center gap-2.5">
-        <IconCompass
-          className="h-8 w-8 sm:h-10 sm:w-10 text-accent-positive shrink-0"
-          aria-hidden="true"
-        />
+        <IconCompass className="h-8 w-8 sm:h-10 sm:w-10 text-accent-positive shrink-0" aria-hidden="true" />
         <h1 className="font-display text-4xl sm:text-5xl md:text-6xl font-bold tracking-tight text-text-primary">
           {t("title")}
         </h1>
       </div>
 
-      {/* Fetch error banner */}
       {fetchErrorKind !== null && (
         <div className="mb-6 rounded-xl border border-accent-danger/30 bg-accent-danger/10 px-4 py-3 text-sm text-accent-danger">
-          {fetchErrorKind === "rate-limit"
-            ? t("fetchError.rateLimit")
-            : t("fetchError.generic")}
+          {fetchErrorKind === "rate-limit" ? t("fetchError.rateLimit") : t("fetchError.generic")}
         </div>
       )}
 
-      {/* Barra Descubrir (R3): 2 filas etiquetadas (TIPO / FILTROS) + separador.
-          Sticky bajo el header de app (h-14). El grid fluye debajo sin solapar.
+      <DiscoverToolbar
+        type={type}
+        query={currentQuery}
+        isSearching={url.isSearching}
+        canRandomize={items.length > 0}
+        filterGroups={filterGroups}
+        activeFilters={url.activeFilters}
+        onSearch={url.submitSearch}
+        onClearSearch={url.resetToCatalog}
+        onRandom={pickRandom}
+        onTypeChange={url.changeType}
+        onFilterChange={url.changeFilter}
+      />
 
-          Móvil: las etiquetas TIPO/FILTROS se ocultan (como ya hacía BUSCAR) y
-          cada fila scrollea en horizontal, así los chips no se cortan a media
-          palabra ni se parten en varias líneas. Y el fondo es OPACO: con la
-          barra translúcida se veían las portadas por detrás, que era la mitad
-          de la sensación de desorden. */}
-      <div className="sticky top-14 z-30 bg-bg border-b border-border py-3 px-4 -mx-4 mb-6 flex flex-col gap-2.5 md:gap-3">
-        {/* FILA 0 — BUSCAR (E-DISCOVER-SEARCH-MERGE): el buscador de texto vive
-            aquí desde que /search se fusionó en /discover. En móvil el input
-            ocupa la fila y el botón de aleatorio queda a su lado. */}
-        <div className="flex items-center gap-2">
-          <SearchBar
-            key={currentQuery}
-            mode="inline"
-            defaultValue={currentQuery}
-            onSubmit={handleSearchSubmit}
-            onClear={clearSearch}
-            type={type}
-            className="flex-1 min-w-0"
-          />
-          {/* "Sorpréndeme": SIEMPRE visible, solo deshabilitado sin resultados. */}
-          <button
-            type="button"
-            onClick={pickRandom}
-            disabled={items.length === 0}
-            aria-label={tS("randomize")}
-            title={tS("randomize")}
-            className={cn(
-              "shrink-0 inline-flex items-center justify-center gap-1.5 rounded-button border px-3 py-2",
-              "text-sm font-body font-medium whitespace-nowrap",
-              "transition-all duration-150 ease-out",
-              "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-pink focus-visible:ring-offset-2 focus-visible:ring-offset-surface-base",
-              items.length === 0
-                ? "bg-surface-elevated text-text-tertiary border-surface-border cursor-not-allowed opacity-60"
-                : "bg-surface-elevated text-text-secondary border-surface-border hover:text-text-primary hover:border-text-tertiary active:scale-[0.97] cursor-pointer"
-            )}
-          >
-            <IconDice className="h-4 w-4" aria-hidden="true" />
-            <span className="hidden md:inline">{tS("randomize")}</span>
-          </button>
-        </div>
+      <DiscoverResults
+        loading={loading}
+        items={items}
+        randomItem={randomItem}
+        showType={type === "all"}
+        query={currentQuery}
+        isSearching={url.isSearching}
+        hasActiveFilters={url.hasActiveFilters}
+        onRandom={pickRandom}
+        onClearRandom={() => setRandomItem(null)}
+        onClearSearch={url.resetToCatalog}
+        onClearFilters={url.resetToCatalog}
+      />
 
-        {/* Chip de búsqueda activa, con salida rápida al catálogo. */}
-        {isSearching && (
-          <div className="flex items-center gap-2">
-            <span className="inline-flex items-center gap-2 rounded-full bg-accent-positive/10 border border-accent-positive/30 px-3 py-1 text-xs text-text-primary">
-              <span className="text-muted">{tS("resultsFor")}</span>
-              <span className="font-medium">{currentQuery}</span>
-              <button
-                type="button"
-                onClick={clearSearch}
-                aria-label={tF("reset")}
-                className="text-muted hover:text-text-primary transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-pink rounded-full"
-              >
-                <IconClose className="h-3.5 w-3.5" aria-hidden="true" />
-              </button>
-            </span>
-          </div>
-        )}
-
-        {/* SEPARADOR entre BUSCAR y TIPO. */}
-        <div className="border-t border-border" />
-
-        {/* FILA 1 — TIPO: label tenue + pills separadas (radiogroup). */}
-        <div className="flex items-center gap-3">
-          <div
-            role="radiogroup"
-            aria-label={tF("type")}
-            className="flex items-center gap-2 overflow-x-auto scrollbar-hide flex-nowrap"
-          >
-            {typeOptions.map((option) => {
-              const active = option.value === type;
-              const TypeIcon = TYPE_ICONS[option.value];
-              return (
-                <button
-                  key={option.value}
-                  type="button"
-                  role="radio"
-                  aria-checked={active}
-                  onClick={() => handleTypeChange(option.value)}
-                  className={cn(
-                    "inline-flex items-center justify-center gap-1.5 px-4 py-2 rounded-full",
-                    "text-sm font-body font-medium whitespace-nowrap cursor-pointer border",
-                    "transition-all duration-150 ease-out active:scale-[0.97]",
-                    "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-pink focus-visible:ring-offset-2 focus-visible:ring-offset-surface-base",
-                    active
-                      ? "bg-accent-positive text-on-accent-positive border-accent-positive"
-                      : "bg-surface-elevated text-text-secondary border-surface-border hover:text-text-primary hover:border-text-tertiary"
-                  )}
-                >
-                  <TypeIcon className="w-4 h-4" aria-hidden="true" />
-                  {option.label}
-                </button>
-              );
-            })}
-          </div>
-        </div>
-
-        {/* FILA 2 — FILTROS: label con icono grid + triggers (sort a la derecha).
-            Oculta en modo búsqueda: los buscadores de los proveedores no
-            aceptan estos filtros, así que mostrarlos sugeriría un efecto que
-            no existe (el tipo sí aplica, y sigue arriba). */}
-        {!isSearching && (
-          <>
-            <div className="border-t border-border" />
-            {/* Sin etiqueta visible (E-SIN-MONO: el artboard no la lleva); el
-                nombre de la fila lo dice el grupo a quien usa lector. */}
-            <div role="group" aria-label={tF("filters")} className="flex items-center gap-3">
-              <FilterBar
-                className="flex-1"
-                groups={filterGroups}
-                activeFilters={activeFilters}
-                onChange={handleFilterChange}
-              />
-            </div>
-          </>
-        )}
-      </div>
-
-      {loading ? (
-        <div className="animate-pulse grid grid-cols-2 md:grid-cols-12 auto-rows-[130px] md:auto-rows-[150px] grid-flow-row-dense gap-5">
-          {DISCOVER_SKELETON_CELLS.map((cellClass, i) => (
-            <div key={i} className={cn("bg-surface-elevated rounded-bento", cellClass)} />
-          ))}
-        </div>
-      ) : items.length > 0 ? (
-        <>
-          {randomItem && (
-            <div className="mb-4 flex flex-wrap items-center gap-3 rounded-card border border-accent-positive/30 bg-accent-positive/10 px-3 py-2 text-sm">
-              <span className="inline-flex items-center gap-1.5 text-text-primary">
-                <IconDice className="h-4 w-4 text-accent-positive" aria-hidden="true" />
-                {tS("showingRandom", { count: items.length })}
-              </span>
-              <div className="ml-auto flex items-center gap-3">
-                <button
-                  type="button"
-                  onClick={pickRandom}
-                  className="text-accent-info hover:text-accent-info/80 transition-colors"
-                >
-                  {tS("randomizeAgain")}
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setRandomItem(null)}
-                  aria-label={tF("reset")}
-                  className="text-muted hover:text-text-primary transition-colors"
-                >
-                  <IconClose className="h-4 w-4" aria-hidden="true" />
-                </button>
-              </div>
-            </div>
-          )}
-          <MediaGrid
-            items={randomItem ? [randomItem] : items}
-            showType={isAggregate}
-            layout="bento"
-          />
-        </>
-      ) : (
-        <div className="text-center py-16">
-          {isSearching ? (
-            <>
-              <p data-testid="discover-empty" className="text-muted">
-                {tS("noResults")} &ldquo;{currentQuery}&rdquo;
-              </p>
-              <button
-                onClick={clearSearch}
-                className="text-accent-info text-sm mt-2 hover:text-accent-info/80 transition-colors"
-              >
-                {tF("reset")}
-              </button>
-            </>
-          ) : hasActiveFilters ? (
-            <>
-              {/* 0 resultados CON filtros: ofrecer limpiar.
-                  Mensaje y label reusan claves existentes (noResults ya está
-                  redactado en clave de filtros; reset = "Limpiar filtros").
-                  i18n: F6 puede dividirlos en claves dedicadas. */}
-              <p data-testid="discover-empty" className="text-muted">
-                {t("noResults")}
-              </p>
-              <button
-                onClick={clearFilters}
-                className="text-accent-info text-sm mt-2 hover:text-accent-info/80 transition-colors"
-              >
-                {tF("reset")}
-              </button>
-            </>
-          ) : (
-            // Catálogo base vacío (sin filtros): no hay nada que limpiar.
-            <p className="text-muted">{t("noResults")}</p>
-          )}
-        </div>
-      )}
-
-      {/* Pagination — E79 slice 1: visible si hay siguiente (hasMore) o si no
-          estamos en la página 1 (para poder retroceder desde una última corta). */}
+      {/* E79-s1: visible si hay siguiente o si no es la página 1 (para poder
+          volver desde una última página corta). */}
       {!loading && (hasMore || currentPage > 1) && (
         <div className="flex justify-center items-center gap-4 mt-8">
           <Pagination
             currentPage={currentPage}
             hasMore={hasMore}
             totalPages={totalPages}
-            onPageChange={(page) => {
-              const params = new URLSearchParams(searchParams.toString());
-              params.set("type", type);
-              params.set("page", String(page));
-              // `q` ya viaja en searchParams; no hace falta reponerla.
-              router.push(`/discover?${params.toString()}`);
-            }}
+            onPageChange={url.goToPage}
           />
         </div>
       )}

@@ -175,7 +175,7 @@ describe.each(['es', 'en'] as const)('documentos legales (%s)', (locale) => {
     // a autoridades competentes o a quien acredite interés legítimo.
     if (locale === 'es') {
       expect(text).toMatch(/se dan de forma voluntaria: KULTURA no tiene actividad económica/)
-      expect(text).toMatch(/autoridades competentes o a quien acredite un interés legítimo y los pida por email/)
+      expect(text).toMatch(/autoridades competentes o a quien acredite un interés legítimo y los pida por correo/)
       expect(text).not.toMatch(/cualquier persona con (un )?interés legítimo/)
     } else {
       expect(text).toMatch(/given voluntarily: KULTURA has no economic activity/)
