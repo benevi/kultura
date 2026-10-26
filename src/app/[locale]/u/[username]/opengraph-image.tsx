@@ -1,8 +1,10 @@
 import { ImageResponse } from "next/og";
+import { createTranslator } from "next-intl";
 import { C, loadFont, fontsOption } from "@/lib/og/brand";
 import { posterDataUri } from "@/lib/og/poster";
 import { getPublicCollection, resolveRenamedUsername } from "@/lib/social/public-collection";
 import { publicTopFour } from "./r/_lib/top-four";
+import { PROFILE_OG_ID } from "@/components/pwa/share";
 import es from "../../../../../messages/es.json";
 import en from "../../../../../messages/en.json";
 
@@ -18,14 +20,37 @@ import en from "../../../../../messages/en.json";
  * nunca enseña nada de una biblioteca que un anónimo no pueda ver. Caché corta
  * (5-10 min): si cambia la visibilidad, la tarjeta no se queda un año.
  *
- * El `alt` es fijo: traducirlo exige `generateImageMetadata`, que movería la
- * imagen a `/opengraph-image/<id>` y rompería `ogImagePath` (la usa
- * "Compartir perfil"). Pendiente: fijar `openGraph.images` con el alt
- * traducido en los metadatos de `/u/[username]/page.tsx`.
+ * El `alt` sale traducido y con el nombre («@ana en KULTURA») por
+ * `generateImageMetadata`: la imagen vive en `/opengraph-image/card`
+ * (`PROFILE_OG_ID`, la que pide `ogImagePath` para un perfil). Como en la
+ * tarjeta del sitio, el texto se lee de los mensajes con `createTranslator`
+ * (en esa capa `next-intl/server` no está disponible) y los plurales van en
+ * ICU (`collection.listsCount`).
  */
-export const alt = "KULTURA";
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
+
+type CardParams = { locale: string; username: string };
+const MESSAGES = { es, en } as const;
+
+const cardLocale = (locale: string) => (locale === "en" ? "en" : "es");
+
+function decodeName(raw: string): string {
+  try {
+    return decodeURIComponent(raw);
+  } catch {
+    // `%` suelto: se usa tal cual (dará la tarjeta genérica).
+    return raw;
+  }
+}
+
+export async function generateImageMetadata({ params }: { params: CardParams | Promise<CardParams> }) {
+  const { locale, username } = await params;
+  const l = cardLocale(locale);
+  const tOg = createTranslator({ locale: l, messages: MESSAGES[l], namespace: "share.og" });
+  const alt = tOg("profileAlt", { username: decodeName(username) });
+  return [{ id: PROFILE_OG_ID, alt, size, contentType }];
+}
 
 const POSTER_W = 220;
 const POSTER_H = 330;
@@ -38,28 +63,15 @@ const FALLBACKS = [
 ];
 const TILT = [-6, 3, -2, 5];
 
-const COPY = {
-  es: { heading: "La colección de", lists: (n: number) => (n === 1 ? "1 lista" : `${n} listas`) },
-  en: { heading: "The collection of", lists: (n: number) => (n === 1 ? "1 list" : `${n} lists`) },
-};
-
 /** Ver la cabecera: la tarjeta puede depender de la visibilidad de la biblioteca. */
 const OG_CACHE_CONTROL = "public, max-age=300, s-maxage=600";
 
-export default async function Image({
-  params,
-}: {
-  params: { locale: string; username: string } | Promise<{ locale: string; username: string }>;
-}) {
+export default async function Image({ params }: { params: CardParams | Promise<CardParams> }) {
   const { locale, username: rawUsername } = await params;
-  let username = rawUsername;
-  try {
-    username = decodeURIComponent(rawUsername);
-  } catch {
-    // `%` suelto: se usa tal cual (dará la tarjeta genérica).
-  }
-  const l = locale === "en" ? "en" : "es";
-  const copy = COPY[l];
+  const username = decodeName(rawUsername);
+  const l = cardLocale(locale);
+  const tOg = createTranslator({ locale: l, messages: MESSAGES[l], namespace: "share.og" });
+  const t = createTranslator({ locale: l, messages: MESSAGES[l], namespace: "collection" });
 
   // R11: con un nombre antiguo, la tarjeta es la del nombre actual (la página
   // ya redirige con 308; la imagen se pide a veces por la URL vieja). Solo
@@ -80,8 +92,8 @@ export default async function Image({
   const posters = await Promise.all(sources.map(posterDataUri));
   while (posters.length < 4) posters.push(null);
 
-  const heading = top ? (l === "en" ? en : es).share.og.top4 : copy.heading;
-  const meta = copy.lists(lists.length);
+  const heading = top ? tOg("top4") : t("ogHeading");
+  const meta = t("listsCount", { count: lists.length });
   const fonts = (
     await Promise.all([
       loadFont("Bricolage+Grotesque", 800, `kultura${displayName}`),

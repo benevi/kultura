@@ -138,7 +138,7 @@ describe("LoginPage — modo register", () => {
   // navegador, el callback lo aplica (el localStorage no está allí).
   it("el personaje elegido va en options.data del signUp", async () => {
     render(<LoginPage locale="es" />);
-    fireEvent.click(screen.getByRole("radio", { name: "panda" }));
+    fireEvent.click(screen.getByRole("radio", { name: "characters.panda" }));
     fillAndSubmit("user@example.com", "password123");
     await waitFor(() =>
       expect(h.fake.auth.signUp).toHaveBeenCalledWith(
@@ -155,6 +155,18 @@ describe("LoginPage — modo register", () => {
         })
       )
     );
+  });
+
+  // Los personajes se nombran en el idioma de la página (auth.characters.*),
+  // no con la clave interna ("fox"); el ejemplo de correo también se traduce.
+  it("nombra los personajes y el ejemplo de correo con textos traducidos", () => {
+    render(<LoginPage locale="es" />);
+    const radios = screen.getAllByRole("radio");
+    for (const radio of radios.slice(1)) {
+      expect(radio.getAttribute("aria-label")).toMatch(/^characters\./);
+    }
+    expect(screen.getByRole("radio", { name: "characters.fox" })).toHaveAttribute("title", "characters.fox");
+    expect(screen.getByLabelText("email")).toHaveAttribute("placeholder", "emailPlaceholder");
   });
 
   it("sin sesión tras el registro → 'Revisa tu correo' con el email y reenviar", async () => {

@@ -54,7 +54,7 @@ vi.mock("@/lib/social/public-collection", async (orig) => ({
 import * as ratedImageModule from "@/app/[locale]/u/[username]/r/[type]/[id]/opengraph-image";
 import RatedImage from "@/app/[locale]/u/[username]/r/[type]/[id]/opengraph-image";
 import { GET as signedCard } from "@/app/[locale]/u/[username]/r/[type]/[id]/card/[sig]/route";
-import ProfileImage from "@/app/[locale]/u/[username]/opengraph-image";
+import ProfileImage, { generateImageMetadata as profileImageMetadata } from "@/app/[locale]/u/[username]/opengraph-image";
 import { ratingShareSignature } from "@/app/[locale]/u/[username]/r/_lib/rating-share";
 import { publicTopFour } from "@/app/[locale]/u/[username]/r/_lib/top-four";
 
@@ -161,6 +161,25 @@ describe("top 4 del perfil (CRE-8c)", () => {
     expect(text(card.element)).toContain("El top 4 de");
     expect(h.posterDataUri.mock.calls.map((c) => c[0])).toContain("https://image.tmdb.org/t/p/w500/1.jpg");
     expect(card.options).toMatchObject({ headers: { "cache-control": "public, max-age=300, s-maxage=600" } });
+  });
+
+  it("contador de listas con plural ICU en los dos idiomas", async () => {
+    await ProfileImage({ params: { locale: "es", username: "benevi" } });
+    expect(text(h.responses[0].element)).toContain("1 lista");
+    h.getPublicCollection.mockResolvedValue({
+      owner: { id: "owner", username: "benevi" },
+      lists: ["a", "b", "c"].map((id) => ({ id, name: id, mediaType: "movie", items: [] })),
+    });
+    await ProfileImage({ params: { locale: "en", username: "benevi" } });
+    expect(text(h.responses[1].element)).toContain("3 lists");
+    expect(text(h.responses[1].element)).toContain("The collection of");
+  });
+
+  it("alt traducido con el nombre (generateImageMetadata, sin next-intl/server)", async () => {
+    const [es] = await profileImageMetadata({ params: { locale: "es", username: "benevi" } });
+    const [en] = await profileImageMetadata({ params: Promise.resolve({ locale: "en", username: "ana%20b" }) });
+    expect(es).toMatchObject({ id: "card", alt: "@benevi en KULTURA" });
+    expect(en.alt).toBe("@ana b on KULTURA");
   });
 
   it("con la bandera pero biblioteca 'amigos': nada de la biblioteca", async () => {

@@ -1,3 +1,4 @@
+// @vitest-environment jsdom
 /**
  * MOV-9 — hoja nativa de compartir con la tarjeta OG adjunta cuando el
  * navegador acepta archivos y la tarjeta YA está descargada (Safari no deja
@@ -33,10 +34,17 @@ const load = () => import("@/components/pwa/share");
 describe("ogImagePath", () => {
   it("añade el idioma del documento si falta y respeta el que hay", async () => {
     const { ogImagePath } = await load();
-    expect(ogImagePath("/u/benevi", "en")).toBe("/en/u/benevi/opengraph-image");
     expect(ogImagePath("/es/best/movie/2026/")).toBe("/es/best/movie/2026/opengraph-image");
-    expect(ogImagePath("/en/u/ana?x=1#y")).toBe("/en/u/ana/opengraph-image");
     expect(ogImagePath("/")).toBe("/es/opengraph-image");
+  });
+
+  // El perfil público da el alt traducido con `generateImageMetadata`: su
+  // tarjeta vive en `/opengraph-image/card`.
+  it("la tarjeta del perfil público va con su id", async () => {
+    const { ogImagePath } = await load();
+    expect(ogImagePath("/u/benevi", "en")).toBe("/en/u/benevi/opengraph-image/card");
+    expect(ogImagePath("/en/u/ana?x=1#y")).toBe("/en/u/ana/opengraph-image/card");
+    expect(ogImagePath("/es/u/ana/r/movie/550")).toBe("/es/u/ana/r/movie/550/opengraph-image");
   });
 });
 
@@ -47,7 +55,7 @@ describe("shareNative", () => {
     const { prepareShareImage, shareNative } = await load();
     await prepareShareImage("/u/ana"); // precarga antes del gesto
     expect(await shareNative({ title: "Perfil", url: "https://k.app/es/u/ana", imagePath: "/u/ana" })).toBe("shared");
-    expect(fetchMock).toHaveBeenCalledWith("/es/u/ana/opengraph-image", expect.objectContaining({ credentials: "omit" }));
+    expect(fetchMock).toHaveBeenCalledWith("/es/u/ana/opengraph-image/card", expect.objectContaining({ credentials: "omit" }));
     const data = (share.mock.calls as unknown as [ShareData][])[0][0];
     expect(data).toMatchObject({ title: "Perfil", url: "https://k.app/es/u/ana" });
     expect(data.files?.[0]).toBeInstanceOf(File);

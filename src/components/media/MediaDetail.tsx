@@ -23,6 +23,7 @@ import { mediaPath } from "@/lib/media/seo";
 import { synopsisLang } from "@/lib/media/synopsis-lang";
 import { Link } from "@/i18n/navigation";
 import { KButton } from "@/components/ui/KButton";
+import { IconSparkles } from "@/components/icons";
 import { SOURCE_LINK_CLASS } from "@/components/legal/DataAttribution";
 import { TrailerEmbed } from "./TrailerEmbed";
 import { StreamingProviders } from "./StreamingProviders";
@@ -198,6 +199,8 @@ export async function MediaDetail({
 }: MediaDetailProps) {
   const t = await getTranslations("media_detail");
   const tMedia = await getTranslations("media");
+  // La misma frase que la recomendación de Inicio: un solo texto que mantener.
+  const tAi = await getTranslations("aiRecommendations");
   const locale = await getLocale();
   const extraDetail = getExtraDetailValue(item);
   const typeLabel = tMedia(item.type as Parameters<typeof tMedia>[0]);
@@ -443,10 +446,10 @@ export async function MediaDetail({
             {showWhyRecommended && (
               <section>
                 <span className="inline-flex items-center gap-1.5 rounded-full bg-surface-elevated text-text-primary font-bold text-xs px-4 py-2 mb-3">
-                  <span aria-hidden="true">🤖</span> {t("whyRecommended")}
+                  <IconSparkles className="h-4 w-4 text-accent-pink" /> {t("whyRecommended")}
                 </span>
                 <p className="text-sm text-text-secondary leading-relaxed">
-                  {t("whyRecommendedText", { genres: topGenres.join(", ") })}
+                  {tAi("whyRecommendedText", { genres: topGenres.join(", ") })}
                 </p>
               </section>
             )}

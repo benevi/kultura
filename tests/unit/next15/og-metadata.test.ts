@@ -24,6 +24,7 @@ vi.mock("next-intl/server", () => ({
 vi.mock("next/og", () => ({ ImageResponse: class {} }));
 
 import { generateImageMetadata, size, contentType } from "@/app/[locale]/opengraph-image";
+import * as loginCard from "@/app/[locale]/login/opengraph-image";
 import { fontsOption } from "@/lib/og/brand";
 
 describe("generateImageMetadata de la tarjeta del sitio", () => {
@@ -36,6 +37,16 @@ describe("generateImageMetadata de la tarjeta del sitio", () => {
     const [card] = await generateImageMetadata({ params: { locale: "en" } });
     expect(card.alt).toBe(en.landing.seo.title);
     expect(card.alt).not.toBe(es.landing.seo.title);
+  });
+});
+
+// /en/login reexporta la tarjeta del sitio: sin `generateImageMetadata` su
+// alt salía fijo en español.
+describe("tarjeta de /login", () => {
+  it("reexporta generateImageMetadata: alt en inglés en /en/login", async () => {
+    expect(typeof loginCard.generateImageMetadata).toBe("function");
+    const [card] = await loginCard.generateImageMetadata!({ params: { locale: "en" } });
+    expect(card.alt).toBe(en.landing.seo.title);
   });
 });
 

@@ -286,7 +286,6 @@
     "steamLanguages": "Idiomas",
     "steamScreenshots": "Capturas",
     "whyRecommended": "Por qué te lo recomendamos",
-    "whyRecommendedText": "Coincide con géneros que ya te gustan — {genres} — según lo que tienes en tu biblioteca.",
     "breadcrumbLabel": "Estás en",
     "breadcrumbHome": "Inicio",
     "ctaAdd": "Añadir a mi biblioteca",
@@ -891,7 +890,8 @@
     "joinGroup": "Unirse",
     "leaveGroup": "Salir",
     "groupError": "No hemos podido crear el grupo. Reintenta en un momento.",
-    "joinGroupError": "No hemos podido unirte al grupo. Reintenta en un momento."
+    "joinGroupError": "No hemos podido unirte al grupo. Reintenta en un momento.",
+    "copyProfileLink": "Copiar el enlace de mi perfil"
   },
   "invite": {
     "bannerTitle": "{username} te invita a KULTURA",
@@ -955,7 +955,8 @@
     "inviteError": "No hemos podido enviar la invitación. Reintenta.",
     "groupIcon": "Icono del grupo",
     "groupIconNone": "Sin icono (inicial)",
-    "joinNotAllowed": "No puedes unirte a este grupo. Si crees que es un error, habla con quien lo creó."
+    "joinNotAllowed": "No puedes unirte a este grupo. Si crees que es un error, habla con quien lo creó.",
+    "ownerBadge": "Creador del grupo"
   },
   "chat": {
     "title": "Mensajes",
@@ -2119,7 +2120,9 @@
     "emptyOwnHint": "Haz pública una lista desde Listas y aparecerá aquí, con su enlace para compartir.",
     "emptyOwnAction": "Ir a mis listas",
     "reportProfile": "Denunciar este perfil",
-    "reportList": "Denunciar esta lista"
+    "reportList": "Denunciar esta lista",
+    "ogHeading": "La colección de",
+    "listsCount": "{count, plural, one {# lista} other {# listas}}"
   },
   "push": {
     "settings": {

@@ -25,21 +25,7 @@ const OWN = (k: string) => !(k === "push" || k.startsWith("push."));
 const USED = usedKeys();
 
 /** Clave → archivo que la tiene que leer (no se ha podido tocar aquí). */
-export const PENDING_WIRING: Record<string, string> = {
-  "auth.characters.astronaut": "src/app/[locale]/login/LoginPage.tsx (iconLabel del AvatarIconPicker)",
-  "auth.characters.robot": "src/app/[locale]/login/LoginPage.tsx (iconLabel del AvatarIconPicker)",
-  "auth.characters.cat": "src/app/[locale]/login/LoginPage.tsx (iconLabel del AvatarIconPicker)",
-  "auth.characters.ninja": "src/app/[locale]/login/LoginPage.tsx (iconLabel del AvatarIconPicker)",
-  "auth.characters.alien": "src/app/[locale]/login/LoginPage.tsx (iconLabel del AvatarIconPicker)",
-  "auth.characters.ghost": "src/app/[locale]/login/LoginPage.tsx (iconLabel del AvatarIconPicker)",
-  "auth.characters.owl": "src/app/[locale]/login/LoginPage.tsx (iconLabel del AvatarIconPicker)",
-  "auth.characters.fox": "src/app/[locale]/login/LoginPage.tsx (iconLabel del AvatarIconPicker)",
-  "auth.characters.dragon": "src/app/[locale]/login/LoginPage.tsx (iconLabel del AvatarIconPicker)",
-  "auth.characters.octopus": "src/app/[locale]/login/LoginPage.tsx (iconLabel del AvatarIconPicker)",
-  "auth.characters.panda": "src/app/[locale]/login/LoginPage.tsx (iconLabel del AvatarIconPicker)",
-  "auth.characters.wizard": "src/app/[locale]/login/LoginPage.tsx (iconLabel del AvatarIconPicker)",
-  "auth.emailPlaceholder": "src/app/[locale]/login/LoginPage.tsx (placeholder fijo «tucorreo@ejemplo.com»)",
-};
+export const PENDING_WIRING: Record<string, string> = {};
 
 /** Grupos de claves con el mismo texto a propósito, con el motivo. */
 const SAME_TEXT_DIFFERENT_ROLE: { keys: string[]; why: string }[] = [
@@ -88,8 +74,6 @@ const CROSS_NAMESPACE_DEBT: Record<string, string> = {
   "auth.valueLine invite.bannerText": "login (shell) y banner de invitación (/u): proveedores distintos",
   "landing.seo.title meta.defaultTitle": "D-11: la misma promesa en la landing y en el título por defecto",
   "onboarding.nameReserved settings.errorUsernameReserved": "/welcome y Ajustes: proveedores distintos",
-  "aiRecommendations.whyRecommendedText media_detail.whyRecommendedText":
-    "src/components/media/MediaDetail.tsx: leer aiRecommendations.whyRecommendedText y borrar media_detail.whyRecommendedText",
 };
 
 describe("TXT-8 — sin claves muertas", () => {
