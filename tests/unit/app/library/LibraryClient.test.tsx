@@ -6,8 +6,12 @@ import type { LibraryEntry, LibraryStatus } from "@/types/library";
 vi.mock("next-intl", () => {
   const t = (key: string) => key;
   t.has = () => true;
-  return { useTranslations: () => t };
+  return { useTranslations: () => t, useLocale: () => "es" };
 });
+
+vi.mock("@/components/ui/ToastProvider", () => ({
+  useToastContext: () => ({ show: vi.fn(), showError: vi.fn(), dismiss: vi.fn() }),
+}));
 
 vi.mock("@/i18n/navigation", () => ({
   useRouter: () => ({ push: vi.fn() }),
