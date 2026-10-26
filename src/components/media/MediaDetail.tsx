@@ -29,6 +29,7 @@ import { StreamingProviders } from "./StreamingProviders";
 import { SynopsisSection } from "./SynopsisSection";
 import { TranslatedSynopsis } from "./TranslatedSynopsis";
 import { SteamSection } from "./SteamSection";
+import { ShareRatingButton } from "./ShareRatingButton";
 import { LibraryAction } from "@/components/library/LibraryAction";
 import { RecommendButton } from "@/components/social/RecommendButton";
 import { AddToListButton } from "@/components/social/AddToListButton";
@@ -84,6 +85,11 @@ interface MediaDetailProps {
    * <Suspense>, lo monta la página). Sin él, la ficha sale igual que antes.
    */
   adaptations?: ReactNode;
+  /**
+   * CRE-8a: enlace firmado y nota del usuario con sesión que ya ha puntuado
+   * este título ("Compartir mi nota"). Solo para el dueño de la nota.
+   */
+  shareRating?: { path: string; rating: string } | null;
 }
 
 interface DetailTile {
@@ -188,6 +194,7 @@ export async function MediaDetail({
   kulturaRating,
   breadcrumbs = [],
   adaptations,
+  shareRating,
 }: MediaDetailProps) {
   const t = await getTranslations("media_detail");
   const tMedia = await getTranslations("media");
@@ -399,6 +406,9 @@ export async function MediaDetail({
                     <AddToListButton item={item} />
                     <RecommendButton item={item} />
                   </div>
+                  {shareRating && (
+                    <ShareRatingButton path={shareRating.path} title={item.title} rating={shareRating.rating} />
+                  )}
                   <ReportButton targetType="media" targetId={item.id} />
                 </>
               ) : (

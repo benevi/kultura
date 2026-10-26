@@ -82,6 +82,8 @@ export const MEDIA_CLIENT_NAMESPACES = [
   "nav",
   "recommendations",
   "report",
+  // F-29: "Compartir mi nota" (CRE-8a), solo la rama del botón.
+  "share.rating",
 ] as const;
 
 export const APP_CLIENT_NAMESPACES = [

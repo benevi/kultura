@@ -459,7 +459,7 @@ describe("MediaDetail", () => {
   });
 });
 
-// ── F-29: adaptaciones ──────────────────────────────────
+// ── F-29: adaptaciones y "Compartir mi nota" ──────────────────────────────────
 
 describe("MediaDetail · F-29", () => {
   it("pinta el hueco de 'También existe como…' que le pasa la página", async () => {
@@ -472,5 +472,16 @@ describe("MediaDetail · F-29", () => {
       })
     );
     expect(screen.getByTestId("adaptations-slot")).toBeInTheDocument();
+  });
+
+  it("'Compartir mi nota' solo con sesión y nota propia", async () => {
+    const share = { path: "/es/u/ana/r/movie/550?s=abcdefghijklmnopqrstuv&ref=ana", rating: "9/10" };
+    const { unmount } = render(
+      await MediaDetail({ item: mockItem, initialEntry: null, isAuthenticated: true, shareRating: share })
+    );
+    expect(screen.getByRole("button", { name: "action" })).toBeInTheDocument();
+    unmount();
+    render(await MediaDetail({ item: mockItem, initialEntry: null, isAuthenticated: false, shareRating: share }));
+    expect(screen.queryByRole("button", { name: "action" })).toBeNull();
   });
 });

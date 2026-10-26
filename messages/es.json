@@ -358,6 +358,40 @@
       "allIn": "Ya tienes toda la franquicia en tu biblioteca."
     }
   },
+  "share": {
+    "rating": {
+      "action": "Compartir mi nota",
+      "label": "Compartir mi nota de {title}",
+      "menu": "Opciones para compartir",
+      "copy": "Copiar enlace",
+      "copied": "¡Enlace copiado!",
+      "onX": "Compartir en X",
+      "onWhatsApp": "Compartir en WhatsApp",
+      "text": "Le doy {rating} a {title} en KULTURA"
+    },
+    "page": {
+      "heading": "<who>@{username}</who> le da <score>{rating}</score> a <work>{title}</work>",
+      "metaTitle": "@{username} le da {rating} a {title}",
+      "metaDescription": "Mira qué le parece {title} a @{username} en KULTURA y apunta tú lo que quieres ver, leer y jugar.",
+      "genericHeading": "<work>{title}</work> en KULTURA",
+      "genericMetaTitle": "{title} en KULTURA",
+      "genericLead": "Mira la ficha de {title} y el perfil de @{username} en KULTURA.",
+      "viewTitle": "Ver la ficha",
+      "viewProfile": "Ver el perfil de @{username}",
+      "ctaRegister": "Crea tu cuenta gratis y puntúalo tú",
+      "ctaHint": "Gratis y sin anuncios.",
+      "ctaRate": "Puntúalo tú",
+      "ownerHint": "Solo ve tu nota quien tenga el enlace que compartes desde la ficha. Si pones tu biblioteca en «Solo yo», deja de verse.",
+      "posterAlt": "Portada de {title}"
+    },
+    "og": {
+      "ratedAlt": "@{username} le da {rating} a {title} en KULTURA",
+      "genericAlt": "{title} en KULTURA",
+      "profileAlt": "@{username} en KULTURA",
+      "cta": "¿Y tú qué le das?",
+      "top4": "El top 4 de"
+    }
+  },
   "library": {
     "status": {
       "completed": "Completado",

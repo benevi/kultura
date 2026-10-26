@@ -35,6 +35,10 @@ import {
 } from "@/lib/media/seo";
 import { isBestFormat } from "@/lib/best/best-of";
 import { AdaptationsSection } from "@/components/media/AdaptationsSection";
+import { formatShareRating, ratingSharePath } from "@/app/[locale]/u/[username]/r/_lib/rating-share";
+import { ratingScale10Enabled, readRatingScale } from "@/lib/library/scale";
+import type { LibraryEntry } from "@/types/library";
+import type { User } from "@supabase/supabase-js";
 import { OG_LOCALE, SITE_NAME } from "@/i18n/metadata";
 import { routing } from "@/i18n/routing";
 import { siteUrl } from "@/lib/site-url";
@@ -81,6 +85,24 @@ function shareImage(item: MediaItem) {
     return { url: item.poster, ...(tmdb ? { width: 500, height: 750 } : {}), alt: item.title };
   }
   return null;
+}
+
+/**
+ * CRE-8a: "Compartir mi nota" para quien ya ha puntuado este título. El
+ * enlace va FIRMADO (es lo que deja ver esa nota a quien no ve su biblioteca)
+ * y la nota en SU escala (½★ o /10; sin RATING_SCALE_10, la entera de siempre).
+ */
+function shareRatingFor(
+  user: User | null,
+  username: string | undefined,
+  entry: LibraryEntry | null,
+  item: MediaItem,
+  locale: string
+): { path: string; rating: string } | null {
+  if (!user || !username || !entry) return null;
+  const rating = formatShareRating(entry, ratingScale10Enabled() ? readRatingScale(user) : "legacy", locale);
+  const path = ratingSharePath({ id: user.id, username }, item.type, item.externalId);
+  return rating && path ? { path: `/${locale}${path}`, rating: rating.text } : null;
 }
 
 // ── Metadata ──────────────────────────────────────────────────────────────────
@@ -138,7 +160,7 @@ export default async function MediaDetailPage({ params }: Props) {
   if (!data) notFound();
 
   const { item } = data;
-  const { user } = await getViewer();
+  const { user, profile } = await getViewer();
   const supabase = user ? await createClient() : null;
 
   const [initialEntry, kulturaRating, matchScores, synopsis, t, tMedia] = await Promise.all([
@@ -191,6 +213,7 @@ export default async function MediaDetailPage({ params }: Props) {
         initialEntry={initialEntry}
         isAuthenticated={Boolean(user)}
         matchScore={matchScores.get(item.id)}
+        shareRating={shareRatingFor(user, profile?.username, initialEntry, item, locale)}
         adaptations={
           // F-29: Wikidata (o su caché) llega en streaming; la ficha no la espera.
           <React.Suspense fallback={null}>

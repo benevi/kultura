@@ -358,6 +358,40 @@
       "allIn": "You already have the whole franchise in your library."
     }
   },
+  "share": {
+    "rating": {
+      "action": "Share my rating",
+      "label": "Share my rating of {title}",
+      "menu": "Sharing options",
+      "copy": "Copy link",
+      "copied": "Link copied!",
+      "onX": "Share on X",
+      "onWhatsApp": "Share on WhatsApp",
+      "text": "I give {title} {rating} on KULTURA"
+    },
+    "page": {
+      "heading": "<who>@{username}</who> gives <work>{title}</work> <score>{rating}</score>",
+      "metaTitle": "@{username} gives {title} {rating}",
+      "metaDescription": "See what @{username} thinks of {title} on KULTURA and keep track of what you want to watch, read and play.",
+      "genericHeading": "<work>{title}</work> on KULTURA",
+      "genericMetaTitle": "{title} on KULTURA",
+      "genericLead": "See {title} and @{username}'s profile on KULTURA.",
+      "viewTitle": "See the title",
+      "viewProfile": "See @{username}'s profile",
+      "ctaRegister": "Create your free account and rate it",
+      "ctaHint": "Free and ad-free.",
+      "ctaRate": "Rate it yourself",
+      "ownerHint": "Only people with the link you share from the title page can see your rating. If you set your library to “Only me”, it stops showing.",
+      "posterAlt": "Cover of {title}"
+    },
+    "og": {
+      "ratedAlt": "@{username} gives {title} {rating} on KULTURA",
+      "genericAlt": "{title} on KULTURA",
+      "profileAlt": "@{username} on KULTURA",
+      "cta": "What would you give it?",
+      "top4": "The top 4 of"
+    }
+  },
   "library": {
     "status": {
       "completed": "Completed",

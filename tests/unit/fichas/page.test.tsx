@@ -253,6 +253,25 @@ describe("página de la ficha", () => {
     expect(slot.props.children.props).toMatchObject({ item: { id: "movie_550" }, locale: "es", userId: null, supabase: null });
   });
 
+  it("F-29: 'Compartir mi nota' solo con nota propia, con enlace firmado y en su escala", async () => {
+    process.env.RATING_SCALE_10 = "1";
+    mocks.getViewer.mockResolvedValue({ user: { id: "u1", user_metadata: { rating_scale: "ten" } }, profile: { username: "ana" } });
+    mocks.getMediaEntry.mockResolvedValue({ status: "completed", score: 5, rating10: 9 });
+    render(await MediaDetailPage(params()));
+    const share = mocks.mediaDetailProps.current?.shareRating as { path: string; rating: string };
+    expect(share.rating).toBe("9/10");
+    expect(share.path).toMatch(/^\/es\/u\/ana\/r\/movie\/550\?s=[A-Za-z0-9_-]{22}&ref=ana$/);
+
+    mocks.getMediaEntry.mockResolvedValue({ status: "pending", score: null, rating10: null });
+    render(await MediaDetailPage(params()));
+    expect(mocks.mediaDetailProps.current?.shareRating).toBeNull();
+
+    mocks.getViewer.mockResolvedValue({ user: null, profile: null });
+    render(await MediaDetailPage(params()));
+    expect(mocks.mediaDetailProps.current?.shareRating).toBeNull();
+    delete process.env.RATING_SCALE_10;
+  });
+
   it("con nota de KULTURA, la ficha la enseña pero el JSON-LD no la marca", async () => {
     mocks.getKulturaRating.mockResolvedValue({ value: 4.5, count: 6 });
     const { container } = render(await MediaDetailPage(params()));
