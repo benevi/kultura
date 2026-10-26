@@ -70,27 +70,31 @@ describe('sin PROGRESS_V2 (hoy)', () => {
     expect(upserts[0]).not.toHaveProperty('progress_season')
   })
 
-  it('fila migrada de un libro y la bandera apagada: guardar el estado no borra las páginas', async () => {
+  // Sin bandera la fila es EXACTAMENTE la de hoy (contrato de F-24), también
+  // en libros y juegos (episode_progress: null). Que eso no borre las páginas
+  // u horas ya migradas lo garantiza el disparador user_media_sync_progress
+  // (solo saca del jsonb temporada y episodio; ver migration.test.ts y la
+  // prueba sobre PostgreSQL 16 del PR), no la ruta.
+  it('fila migrada de un libro y la bandera apagada: payload de siempre y la entrada conserva sus páginas', async () => {
     stored = {
       progress_season: null, progress_episode: null, progress_chapter: null, progress_volume: null,
       progress_page: 120, progress_percent: null, progress_hours: null, progress_total: 350,
       progress_updated_at: '2026-10-25T10:00:00Z', episode_progress: { page: 120, total: 350 },
     }
-    // Un cliente antiguo manda episodeProgress null; uno nuevo, progress (que sin bandera no se escribe).
     for (const extra of [{ episodeProgress: null }, { progress: { page: 200, total: 350 } }, {}]) {
       upserts.length = 0
       const { status, json } = await call({ mediaId: 'book_OL1W', status: 'pending', ...extra })
       expect(status).toBe(200)
-      // Ni el jsonb (el disparador lo tomaría como «sin progreso») ni las columnas.
-      expect(upserts[0]).not.toHaveProperty('episode_progress')
+      expect(upserts[0].episode_progress).toBeNull()
       expect(Object.keys(upserts[0]).filter((k) => k.startsWith('progress_'))).toEqual([])
       expect((json.entry as Record<string, unknown>).progress).toEqual({ page: 120, total: 350 })
     }
   })
 
-  it('juego sin bandera: tampoco manda episode_progress', async () => {
+  it('juego sin bandera: la fila de siempre (episode_progress null)', async () => {
     await call({ mediaId: 'game_3498', status: 'in_progress', episodeProgress: null })
-    expect(upserts[0]).not.toHaveProperty('episode_progress')
+    expect(upserts[0].episode_progress).toBeNull()
+    expect(Object.keys(upserts[0]).filter((k) => k.startsWith('progress_'))).toEqual([])
   })
 })
 

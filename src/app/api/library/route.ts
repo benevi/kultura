@@ -39,8 +39,6 @@ import {
   progressFromRow,
   progressToColumns,
   progressToLegacy,
-  progressKindFor,
-  supportsLegacyProgress,
   type LibraryPayloadWithProgress,
   type LibraryEntryWithProgress,
 } from '@/lib/library/progress'
@@ -166,24 +164,20 @@ export async function POST(request: Request): Promise<NextResponse> {
   }
 
   // 4. Upsert en user_media
-  // El jsonb de siempre no se manda en los formatos con progreso propio
-  // (libros, manga, cómic, juegos): con la bandera apagada y la migración
-  // aplicada, mandarlo (null) borraría sus páginas u horas. Películas: null,
-  // como siempre.
+  // Sin bandera, la fila es la de siempre (episode_progress incluido, también
+  // null en libros o juegos). No borra páginas ni horas ya migradas: el
+  // disparador user_media_sync_progress solo saca del jsonb temporada y
+  // episodio y conserva el resto si el jsonb no trae la clave.
   const legacyRow = {
     user_id: user.id,
     media_id: body.mediaId,
     status: body.status,
     score,
     watched_at: body.watchedAt ?? null,
-    ...(supportsLegacyProgress(mediaTypeOf) || !progressKindFor(mediaTypeOf)
-      ? {
-          // Con `progress` (cliente nuevo) manda él; si no, el campo de siempre.
-          episode_progress: parsedProgress?.ok
-            ? progressToLegacy(progressValue)
-            : (body.episodeProgress ?? null),
-        }
-      : {}),
+    // Con `progress` (cliente nuevo) manda él; si no, el campo de siempre.
+    episode_progress: (parsedProgress?.ok
+      ? progressToLegacy(progressValue)
+      : (body.episodeProgress ?? null)) as EpisodeProgress | null,
   }
   type Row = Omit<typeof legacyRow, 'episode_progress'> & {
     episode_progress?: EpisodeProgress | null
