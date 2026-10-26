@@ -1,0 +1,501 @@
+Date,Name,Year,Letterboxd URI,Rating
+2022-01-25,The Shawshank Redemption,1994,https://boxd.it/kV0o,4
+2023-06-23,The Godfather,1972,https://boxd.it/prF4,4.5
+2024-02-26,The Dark Knight,2008,https://boxd.it/2fdg,2.5
+2020-08-13,The Godfather Part II,1974,https://boxd.it/ezYG,4
+2022-10-05,12 Angry Men,1957,https://boxd.it/p6Q2,2.5
+2020-01-13,Schindler's List,1993,https://boxd.it/eqHO,3.5
+2024-01-06,The Lord of the Rings: The Return of the King,2003,https://boxd.it/BQsj,4.5
+2020-02-07,Pulp Fiction,1994,https://boxd.it/FnwX,3
+2019-03-22,The Lord of the Rings: The Fellowship of the Ring,2001,https://boxd.it/gV32,4.5
+2023-04-16,"The Good, the Bad and the Ugly",1966,https://boxd.it/1eGl,5
+2021-07-15,Forrest Gump,1994,https://boxd.it/URPn,4
+2024-02-06,Fight Club,1999,https://boxd.it/xeSZ,4
+2023-06-11,The Lord of the Rings: The Two Towers,2002,https://boxd.it/9XyO,4.5
+2024-04-07,Inception,2010,https://boxd.it/qIcH,3.5
+2021-02-13,Star Wars: Episode V – The Empire Strikes Back,1980,https://boxd.it/6rnd,3
+2023-05-03,The Matrix,1999,https://boxd.it/Fa80,2.5
+2024-11-21,Goodfellas,1990,https://boxd.it/utEM,4
+2019-12-14,One Flew Over the Cuckoo's Nest,1975,https://boxd.it/PnDw,4
+2022-11-18,Se7en,1995,https://boxd.it/tO0T,3
+2021-09-29,It's a Wonderful Life,1946,https://boxd.it/4bm1,4
+2024-09-23,Seven Samurai,1954,https://boxd.it/TLTu,5
+2021-08-14,The Silence of the Lambs,1991,https://boxd.it/iGFU,3.5
+2021-08-10,Saving Private Ryan,1998,https://boxd.it/qLZe,5
+2022-03-18,City of God,2002,https://boxd.it/0upV,5
+2024-04-10,Interstellar,2014,https://boxd.it/wW4m,4
+2023-05-04,Life Is Beautiful,1997,https://boxd.it/5LAe,5
+2023-09-07,The Green Mile,1999,https://boxd.it/2rmD,4.5
+2023-11-21,Star Wars,1977,https://boxd.it/4VN4,3
+2022-06-18,Terminator 2: Judgment Day,1991,https://boxd.it/O7K8,3
+2019-10-30,Back to the Future,1985,https://boxd.it/ALOe,4.5
+2020-06-03,Spirited Away,2001,https://boxd.it/M6AR,4.5
+2020-03-27,The Pianist,2002,https://boxd.it/vlZC,4.5
+2024-08-10,Psycho,1960,https://boxd.it/Cclb,5
+2023-01-29,Parasite,2019,https://boxd.it/Rclw,3
+2022-06-25,Léon: The Professional,1994,https://boxd.it/r5N2,4.5
+2019-04-11,The Lion King,1994,https://boxd.it/Q9cI,4
+2021-11-14,Gladiator,2000,https://boxd.it/c0FK,3
+2024-04-30,American History X,1998,https://boxd.it/EEvR,2.5
+2023-12-13,The Departed,2006,https://boxd.it/APkh,4
+2019-02-15,The Usual Suspects,1995,https://boxd.it/vmuh,5
+2020-12-06,The Prestige,2006,https://boxd.it/Ajjh,2
+2023-06-27,Whiplash,2014,https://boxd.it/LTXj,2.5
+2023-04-26,Casablanca,1942,https://boxd.it/zsae,3
+2022-02-02,Harakiri,1962,https://boxd.it/ZeJN,4
+2019-09-02,The Intouchables,2011,https://boxd.it/OE6I,5
+2022-03-20,Modern Times,1936,https://boxd.it/PfSh,4.5
+2021-10-19,Once Upon a Time in the West,1968,https://boxd.it/R9uZ,2.5
+2019-01-25,Rear Window,1954,https://boxd.it/MUUE,3
+2021-05-06,Alien,1979,https://boxd.it/cN0G,4.5
+2019-03-10,City Lights,1931,https://boxd.it/b62u,3.5
+2019-01-23,Apocalypse Now,1979,https://boxd.it/zVCQ,3.5
+2021-08-03,Memento,2000,https://boxd.it/A88n,3.5
+2022-01-23,Django Unchained,2012,https://boxd.it/Yzpz,2.5
+2022-01-27,Indiana Jones and the Raiders of the Lost Ark,1981,https://boxd.it/N9ip,4
+2019-04-02,WALL·E,2008,https://boxd.it/Rula,3.5
+2022-06-11,The Lives of Others,2006,https://boxd.it/yA3B,2.5
+2024-08-06,Sunset Boulevard,1950,https://boxd.it/2XnV,2.5
+2021-07-06,Paths of Glory,1957,https://boxd.it/ErXu,4
+2019-02-08,The Shining,1980,https://boxd.it/LgS5,0.5
+2020-02-11,The Great Dictator,1940,https://boxd.it/pfR0,3.5
+2021-12-16,Avengers: Infinity War,2018,https://boxd.it/lZbC,3.5
+2024-02-24,Witness for the Prosecution,1957,https://boxd.it/0vJx,3.5
+2024-02-19,Aliens,1986,https://boxd.it/7Nm3,3
+2019-03-27,Spider-Man: Into the Spider-Verse,2018,https://boxd.it/eIOT,4.5
+2024-02-06,American Beauty,1999,https://boxd.it/dqYu,4
+2022-04-12,Dr. Strangelove or: How I Learned to Stop Worrying and Love the Bomb,1964,https://boxd.it/Nem5,4
+2024-08-07,The Dark Knight Rises,2012,https://boxd.it/Dz7B,4
+2023-06-11,Oldboy,2003,https://boxd.it/nqLB,3.5
+2019-03-03,Joker,2019,https://boxd.it/q7nb,4
+2023-10-07,Amadeus,1984,https://boxd.it/2Av7,3.5
+2019-06-02,Braveheart,1995,https://boxd.it/E3Is,4.5
+2021-10-29,Toy Story,1995,https://boxd.it/jyOk,4
+2019-02-10,Coco,2017,https://boxd.it/iDWW,1
+2020-04-10,Inglourious Basterds,2009,https://boxd.it/L2Tb,4
+2019-09-19,Das Boot,1981,https://boxd.it/3dgl,1.5
+2023-01-24,Princess Mononoke,1997,https://boxd.it/YGla,3
+2022-01-31,Avengers: Endgame,2019,https://boxd.it/Jg3f,3
+2022-07-06,Once Upon a Time in America,1984,https://boxd.it/gtpo,1.5
+2024-08-22,Good Will Hunting,1997,https://boxd.it/uWjU,2.5
+2022-09-27,Your Name.,2016,https://boxd.it/eGw4,4
+2021-12-30,Toy Story 3,2010,https://boxd.it/LGXt,5
+2021-04-30,Requiem for a Dream,2000,https://boxd.it/JeCd,4.5
+2024-11-04,Singin' in the Rain,1952,https://boxd.it/Z2Qk,4.5
+2019-09-07,3 Idiots,2009,https://boxd.it/3RXQ,2.5
+2023-06-11,Star Wars: Episode VI – Return of the Jedi,1983,https://boxd.it/y70o,4.5
+2024-03-06,2001: A Space Odyssey,1968,https://boxd.it/rEqC,4
+2020-06-16,Reservoir Dogs,1992,https://boxd.it/vGxi,3
+2024-01-15,Eternal Sunshine of the Spotless Mind,2004,https://boxd.it/CK0U,3
+2024-08-28,High and Low,1963,https://boxd.it/Fk5Q,3.5
+2023-08-18,Citizen Kane,1941,https://boxd.it/g0Qj,4.5
+2023-11-21,Lawrence of Arabia,1962,https://boxd.it/w7JL,3.5
+2021-01-20,M,1931,https://boxd.it/F258,4
+2024-11-15,North by Northwest,1959,https://boxd.it/HHMK,3.5
+2023-09-30,Vertigo,1958,https://boxd.it/am4Q,2.5
+2021-02-22,Amélie,2001,https://boxd.it/nvJL,5
+2023-12-18,Capernaum,2018,https://boxd.it/cntJ,2.5
+2024-06-07,A Clockwork Orange,1971,https://boxd.it/Rwzu,2
+2019-04-02,Double Indemnity,1944,https://boxd.it/iYOg,3.5
+2021-03-28,Full Metal Jacket,1987,https://boxd.it/TGtC,4
+2022-12-03,Scarface,1983,https://boxd.it/4Z16,3.5
+2023-03-01,The Hunt,2012,https://boxd.it/pzXD,4.5
+2020-04-30,To Kill a Mockingbird,1962,https://boxd.it/gozA,3.5
+2023-11-03,The Sting,1973,https://boxd.it/lHBa,3
+2020-01-24,Up,2009,https://boxd.it/QgxX,3.5
+2019-01-13,Heat,1995,https://boxd.it/e0jV,4
+2023-12-04,L.A. Confidential,1997,https://boxd.it/oTlK,4.5
+2021-05-12,Metropolis,1927,https://boxd.it/KwDA,3
+2020-06-26,Die Hard,1988,https://boxd.it/EZ8n,4
+2024-06-04,Snatch,2000,https://boxd.it/mYMy,4.5
+2021-03-15,Bicycle Thieves,1948,https://boxd.it/vwmX,4
+2019-08-14,Taxi Driver,1976,https://boxd.it/rDPK,4
+2022-11-22,Downfall,2004,https://boxd.it/Qtbu,3.5
+2020-04-05,Incendies,2010,https://boxd.it/6ujD,5
+2022-06-09,Batman Begins,2005,https://boxd.it/9JZm,4.5
+2020-11-04,For a Few Dollars More,1965,https://boxd.it/z5nu,4.5
+2021-07-30,Green Book,2018,https://boxd.it/hQOl,3
+2021-09-02,The Wolf of Wall Street,2013,https://boxd.it/iGXi,4
+2022-08-19,Some Like It Hot,1959,https://boxd.it/qq9e,3
+2021-10-09,The Kid,1921,https://boxd.it/Ewvy,5
+2024-05-05,Judgment at Nuremberg,1961,https://boxd.it/CFC4,2
+2023-10-10,The Father,2020,https://boxd.it/H920,2.5
+2023-08-12,All About Eve,1950,https://boxd.it/Vv2W,4.5
+2021-05-16,Top Gun: Maverick,2022,https://boxd.it/kK7q,4.5
+2020-02-14,Ran,1985,https://boxd.it/aEY6,4
+2022-11-28,Casino,1995,https://boxd.it/57Df,4.5
+2021-07-15,Unforgiven,1992,https://boxd.it/nVNV,4
+2019-03-14,There Will Be Blood,2007,https://boxd.it/3tIJ,4.5
+2019-10-10,Pan's Labyrinth,2006,https://boxd.it/LO7U,4.5
+2021-12-26,The Truman Show,1998,https://boxd.it/KR8D,4.5
+2023-03-19,The Sixth Sense,1999,https://boxd.it/TjdO,2.5
+2023-05-24,Shutter Island,2010,https://boxd.it/EHU3,2.5
+2019-02-25,A Beautiful Mind,2001,https://boxd.it/iHrk,4.5
+2021-02-27,Jurassic Park,1993,https://boxd.it/MTsc,3.5
+2022-03-15,Yojimbo,1961,https://boxd.it/xxmb,4
+2023-02-17,The Treasure of the Sierra Madre,1948,https://boxd.it/uok3,5
+2023-07-14,Monty Python and the Holy Grail,1975,https://boxd.it/ONeO,4
+2019-08-28,No Country for Old Men,2007,https://boxd.it/RO8m,3
+2021-10-10,The Great Escape,1963,https://boxd.it/8JHt,3.5
+2020-07-22,Kill Bill: Vol. 1,2003,https://boxd.it/vwyV,4.5
+2023-04-23,Rashomon,1950,https://boxd.it/OuvB,3
+2023-01-28,The Thing,1982,https://boxd.it/yF7E,4
+2020-06-08,Finding Nemo,2003,https://boxd.it/XdO2,4.5
+2019-01-27,The Elephant Man,1980,https://boxd.it/sA2u,3.5
+2023-05-22,Chinatown,1974,https://boxd.it/mCCT,4.5
+2024-10-23,Raging Bull,1980,https://boxd.it/INth,1.5
+2021-06-08,V for Vendetta,2005,https://boxd.it/MTGJ,4.5
+2019-11-04,Gone with the Wind,1939,https://boxd.it/hXEL,3
+2023-02-27,"Lock, Stock and Two Smoking Barrels",1998,https://boxd.it/voCB,4.5
+2022-10-04,Inside Out,2015,https://boxd.it/fiou,4.5
+2020-01-02,Dial M for Murder,1954,https://boxd.it/q1Dw,0.5
+2022-05-20,The Secret in Their Eyes,2009,https://boxd.it/cH22,3.5
+2024-12-05,Howl's Moving Castle,2004,https://boxd.it/LWBl,3.5
+2021-04-26,"Three Billboards Outside Ebbing, Missouri",2017,https://boxd.it/X73Z,5
+2023-01-30,The Bridge on the River Kwai,1957,https://boxd.it/a0rb,3
+2023-01-16,Trainspotting,1996,https://boxd.it/qy8N,2.5
+2020-11-25,Prisoners,2013,https://boxd.it/wT9i,3.5
+2020-11-01,Warrior,2011,https://boxd.it/vq1t,4.5
+2019-03-14,Fargo,1996,https://boxd.it/smuz,3
+2019-10-13,Gran Torino,2008,https://boxd.it/FUnu,3.5
+2023-02-08,My Neighbor Totoro,1988,https://boxd.it/XiAq,4.5
+2020-07-05,Catch Me If You Can,2002,https://boxd.it/X78x,5
+2021-02-23,Million Dollar Baby,2004,https://boxd.it/qZZ9,2.5
+2024-04-06,Children of Heaven,1997,https://boxd.it/YPok,4
+2024-06-22,Blade Runner,1982,https://boxd.it/aa9x,4.5
+2019-01-05,The Gold Rush,1925,https://boxd.it/2aWs,4.5
+2023-07-22,Before Sunrise,1995,https://boxd.it/HMos,3.5
+2019-08-11,12 Years a Slave,2013,https://boxd.it/TlG0,3.5
+2023-08-25,Klaus,2019,https://boxd.it/aucy,4.5
+2019-05-19,Harry Potter and the Deathly Hallows: Part 2,2011,https://boxd.it/1s7l,3.5
+2023-05-10,Ben-Hur,1959,https://boxd.it/CLdw,3
+2020-01-08,Gone Girl,2014,https://boxd.it/IO1g,1.5
+2019-01-03,The Grand Budapest Hotel,2014,https://boxd.it/2Z1S,4.5
+2021-04-16,On the Waterfront,1954,https://boxd.it/068g,2.5
+2022-07-21,In the Name of the Father,1993,https://boxd.it/uXqT,3
+2019-01-11,The General,1926,https://boxd.it/l5xn,4
+2019-07-17,Wild Strawberries,1957,https://boxd.it/8xjJ,3.5
+2023-05-05,Barry Lyndon,1975,https://boxd.it/bO6Y,0.5
+2020-04-16,The Deer Hunter,1978,https://boxd.it/S6U9,5
+2020-01-16,Hacksaw Ridge,2016,https://boxd.it/xonx,1
+2022-08-06,Memories of Murder,2003,https://boxd.it/Mf4p,2.5
+2024-02-27,Sherlock Jr.,1924,https://boxd.it/WIu3,4.5
+2021-01-17,Wild Tales,2014,https://boxd.it/kH6n,5
+2020-02-21,The Wages of Fear,1953,https://boxd.it/n0oQ,3
+2023-11-11,Mr. Smith Goes to Washington,1939,https://boxd.it/Mrlg,3
+2021-01-26,Mad Max: Fury Road,2015,https://boxd.it/HRyV,3
+2020-01-02,Mary and Max,2009,https://boxd.it/mXd4,3.5
+2020-09-11,How to Train Your Dragon,2010,https://boxd.it/rjMm,3.5
+2022-06-24,Room,2015,https://boxd.it/Lme2,3.5
+2022-01-14,The Seventh Seal,1957,https://boxd.it/70gi,2.5
+2019-07-12,"Monsters, Inc.",2001,https://boxd.it/K5rv,3.5
+2024-09-12,Jaws,1975,https://boxd.it/xG8C,2.5
+2019-06-14,Dead Poets Society,1989,https://boxd.it/D5tr,3.5
+2021-03-28,Ratatouille,2007,https://boxd.it/aYNc,1.5
+2022-02-18,Tokyo Story,1953,https://boxd.it/mOva,4.5
+2022-11-04,The Big Lebowski,1998,https://boxd.it/tiI3,5
+2020-03-02,Rocky,1976,https://boxd.it/BLYa,4.5
+2021-10-21,Ford v Ferrari,2019,https://boxd.it/LzKi,3
+2024-11-26,Logan,2017,https://boxd.it/N0Qq,3
+2023-11-04,The Terminator,1984,https://boxd.it/FI4a,4
+2020-12-21,Spotlight,2015,https://boxd.it/lppa,3.5
+2024-02-25,Hotel Rwanda,2004,https://boxd.it/uxbQ,5
+2020-08-30,Platoon,1986,https://boxd.it/mDIj,3.5
+2022-11-10,The Passion of Joan of Arc,1928,https://boxd.it/G7Qc,3.5
+2024-05-08,Before Sunset,2004,https://boxd.it/9UYf,4.5
+2023-06-18,The Exorcist,1973,https://boxd.it/A5On,3.5
+2021-08-03,La Haine,1995,https://boxd.it/z46H,3
+2022-12-19,Rush,2013,https://boxd.it/B7UX,2.5
+2020-11-13,The Incredibles,2004,https://boxd.it/QcHR,3
+2021-12-31,Stand by Me,1986,https://boxd.it/BpUm,3.5
+2020-12-17,Hachi: A Dog's Tale,2009,https://boxd.it/MYD6,1
+2020-08-19,The Wizard of Oz,1939,https://boxd.it/JlT6,3
+2021-07-08,Into the Wild,2007,https://boxd.it/J2sg,3
+2020-06-04,Network,1976,https://boxd.it/E4QE,3
+2019-02-12,The Best Years of Our Lives,1946,https://boxd.it/ES8d,2
+2022-09-02,The 400 Blows,1959,https://boxd.it/OADu,3.5
+2021-01-23,Pirates of the Caribbean: The Curse of the Black Pearl,2003,https://boxd.it/pgyV,1
+2024-11-19,Gangs of Wasseypur,2012,https://boxd.it/6lSr,3.5
+2019-02-05,The Handmaiden,2016,https://boxd.it/AZfE,4
+2019-07-13,Persona,1966,https://boxd.it/chl7,4
+2024-06-03,8½,1963,https://boxd.it/h7AU,4.5
+2021-11-09,La Dolce Vita,1960,https://boxd.it/ufnu,4
+2023-10-02,Andrei Rublev,1966,https://boxd.it/6uj6,2.5
+2019-07-13,Stalker,1979,https://boxd.it/eHs8,3.5
+2020-05-13,Solaris,1972,https://boxd.it/EO4r,3
+2021-10-04,Mirror,1975,https://boxd.it/QuDw,3
+2023-04-21,Ikiru,1952,https://boxd.it/GmhX,3
+2024-12-07,Tokyo Godfather,2003,https://boxd.it/rM3v,4.5
+2022-11-28,Grave of the Fireflies,1988,https://boxd.it/pGGU,3.5
+2024-01-08,Akira,1988,https://boxd.it/VVmy,3
+2020-06-27,Perfect Blue,1997,https://boxd.it/Gk12,3
+2023-06-14,Ghost in the Shell,1995,https://boxd.it/AJSE,3.5
+2020-11-27,Paprika,2006,https://boxd.it/hIpB,4.5
+2023-05-21,The Wind Rises,2013,https://boxd.it/qtec,2.5
+2023-01-03,Nausicaä of the Valley of the Wind,1984,https://boxd.it/WVLG,2
+2022-09-26,Castle in the Sky,1986,https://boxd.it/ES2l,3.5
+2019-08-15,Kiki's Delivery Service,1989,https://boxd.it/iuNk,3.5
+2024-08-15,Porco Rosso,1992,https://boxd.it/Qrkc,3.5
+2021-06-26,Ponyo,2008,https://boxd.it/2F5I,4.5
+2020-03-14,The Boy and the Heron,2023,https://boxd.it/hcoM,2.5
+2021-07-20,Weathering with You,2019,https://boxd.it/h0C3,4.5
+2022-03-28,A Silent Voice,2016,https://boxd.it/XTgK,3
+2019-10-23,Drive My Car,2021,https://boxd.it/p2Ck,3
+2019-05-09,Shoplifters,2018,https://boxd.it/4h4P,4.5
+2024-03-30,Burning,2018,https://boxd.it/rRGQ,4.5
+2022-05-05,Decision to Leave,2022,https://boxd.it/uZFR,4.5
+2023-01-17,Train to Busan,2016,https://boxd.it/qptR,3
+2024-01-23,The Wailing,2016,https://boxd.it/ujoy,4
+2024-08-17,I Saw the Devil,2010,https://boxd.it/mOoo,4
+2019-07-19,Mother,2009,https://boxd.it/cvk3,5
+2022-06-20,Snowpiercer,2013,https://boxd.it/siSd,4.5
+2023-11-13,Okja,2017,https://boxd.it/gQ83,2
+2024-08-23,In the Mood for Love,2000,https://boxd.it/YY1d,5
+2022-09-08,Chungking Express,1994,https://boxd.it/BURU,5
+2020-07-16,"Crouching Tiger, Hidden Dragon",2000,https://boxd.it/aTlG,4
+2022-09-16,Hero,2002,https://boxd.it/hsij,2
+2023-01-15,Farewell My Concubine,1993,https://boxd.it/8rDo,3.5
+2021-09-26,Raise the Red Lantern,1991,https://boxd.it/gh1n,3
+2021-08-16,Yi Yi,2000,https://boxd.it/WiYo,4
+2022-08-22,A Brighter Summer Day,1991,https://boxd.it/RdOM,2.5
+2021-04-25,Infernal Affairs,2002,https://boxd.it/5hZs,2.5
+2021-01-29,Everything Everywhere All at Once,2022,https://boxd.it/hUIk,4.5
+2020-12-30,Past Lives,2023,https://boxd.it/4VxV,2.5
+2023-04-02,Aftersun,2022,https://boxd.it/NSBW,1
+2019-10-07,The Banshees of Inisherin,2022,https://boxd.it/yVjT,2.5
+2020-05-21,Tár,2022,https://boxd.it/AXVI,3.5
+2021-05-04,The Fabelmans,2022,https://boxd.it/UtG6,4
+2022-11-29,Oppenheimer,2023,https://boxd.it/c7Hd,3
+2021-08-04,Barbie,2023,https://boxd.it/IFeM,3
+2022-08-29,Killers of the Flower Moon,2023,https://boxd.it/nxBK,3.5
+2020-09-20,Poor Things,2023,https://boxd.it/TL0x,1
+2023-02-08,Anatomy of a Fall,2023,https://boxd.it/R7GR,3
+2019-09-10,The Zone of Interest,2023,https://boxd.it/e50m,1.5
+2019-01-12,Perfect Days,2023,https://boxd.it/5wbR,3
+2021-05-19,Dune,2021,https://boxd.it/wlcE,3.5
+2023-12-09,Dune: Part Two,2024,https://boxd.it/FLAf,5
+2022-10-20,Challengers,2024,https://boxd.it/YNFN,2.5
+2023-10-29,Furiosa: A Mad Max Saga,2024,https://boxd.it/oi9K,3
+2023-04-12,Inside Out 2,2024,https://boxd.it/pTSm,4.5
+2021-03-18,The Substance,2024,https://boxd.it/Fz7K,3
+2021-10-08,Anora,2024,https://boxd.it/VwKG,5
+2019-11-15,Conclave,2024,https://boxd.it/028I,5
+2023-04-12,The Brutalist,2024,https://boxd.it/tjmq,3.5
+2023-05-15,Flow,2024,https://boxd.it/6XAc,1
+2023-02-18,Wicked,2024,https://boxd.it/Ln59,3.5
+2020-04-09,A Real Pain,2024,https://boxd.it/usqu,3
+2020-12-27,I'm Still Here,2024,https://boxd.it/o1j0,1
+2020-06-02,Emilia Pérez,2024,https://boxd.it/1fWW,5
+2022-10-16,The Wild Robot,2024,https://boxd.it/mWQD,2.5
+2021-02-22,Nosferatu,2024,https://boxd.it/rNvB,2.5
+2021-06-26,Civil War,2024,https://boxd.it/fp3X,4
+2019-01-31,Longlegs,2024,https://boxd.it/CG61,3
+2023-02-01,Late Night with the Devil,2024,https://boxd.it/AHYf,5
+2024-02-02,Love Lies Bleeding,2024,https://boxd.it/H2JZ,2.5
+2024-04-20,Kinds of Kindness,2024,https://boxd.it/XfAW,2.5
+2019-06-26,Sing Sing,2024,https://boxd.it/7zOJ,2.5
+2022-10-18,Nickel Boys,2024,https://boxd.it/XW5K,1
+2019-02-19,All We Imagine as Light,2024,https://boxd.it/pVxn,4.5
+2020-05-28,The Seed of the Sacred Fig,2024,https://boxd.it/46cd,4
+2024-07-27,Society of the Snow,2023,https://boxd.it/m03l,2.5
+2024-09-09,The Holdovers,2023,https://boxd.it/oTwJ,0.5
+2021-03-13,May December,2023,https://boxd.it/YK0r,5
+2021-11-18,Saltburn,2023,https://boxd.it/J0h8,3
+2023-09-05,Godzilla Minus One,2023,https://boxd.it/wzIh,3.5
+2020-05-07,Spider-Man: Across the Spider-Verse,2023,https://boxd.it/FwYj,2.5
+2022-11-28,John Wick: Chapter 4,2023,https://boxd.it/pKfo,3
+2021-02-17,Guardians of the Galaxy Vol. 3,2023,https://boxd.it/gMQm,4.5
+2020-04-06,The Super Mario Bros. Movie,2023,https://boxd.it/6uDu,2
+2021-04-09,Talk to Me,2022,https://boxd.it/wfZk,4.5
+2019-06-19,Bottoms,2023,https://boxd.it/lSzM,5
+2021-03-04,Asteroid City,2023,https://boxd.it/qzOm,4
+2022-09-14,Fallen Leaves,2023,https://boxd.it/GJR8,4.5
+2022-07-16,The Taste of Things,2023,https://boxd.it/aqys,2.5
+2024-08-25,American Fiction,2023,https://boxd.it/ySs3,4.5
+2024-01-19,Maestro,2023,https://boxd.it/J0lg,4.5
+2020-06-25,The Iron Claw,2023,https://boxd.it/QJy9,3.5
+2023-11-06,Napoleon,2023,https://boxd.it/iV7K,3
+2024-10-05,Wonka,2023,https://boxd.it/Nc3w,4
+2023-06-24,Priscilla,2023,https://boxd.it/YKsv,4.5
+2019-07-15,Monster,2023,https://boxd.it/0FlP,2.5
+2023-05-16,Evil Does Not Exist,2023,https://boxd.it/Joqp,4
+2020-05-16,The Teachers' Lounge,2023,https://boxd.it/l4b6,4
+2024-07-29,Robot Dreams,2023,https://boxd.it/kPph,1.5
+2021-04-22,20 Days in Mariupol,2023,https://boxd.it/UT1r,2.5
+2024-10-06,Top Gun,1986,https://boxd.it/XCwm,3
+2021-03-04,Ghostbusters,1984,https://boxd.it/BOkG,3
+2024-04-05,Gremlins,1984,https://boxd.it/dhOi,4.5
+2019-02-19,The Goonies,1985,https://boxd.it/Ojvq,3.5
+2022-05-18,E.T. the Extra-Terrestrial,1982,https://boxd.it/gqh7,4
+2021-12-19,Close Encounters of the Third Kind,1977,https://boxd.it/SahM,3
+2021-01-03,Raiders of the Lost Ark,1981,https://boxd.it/mEyz,1.5
+2024-12-10,Indiana Jones and the Last Crusade,1989,https://boxd.it/GiH4,4.5
+2022-05-25,Who Framed Roger Rabbit,1988,https://boxd.it/PYbN,4
+2022-03-23,Beetlejuice,1988,https://boxd.it/mvcB,2.5
+2020-09-24,Edward Scissorhands,1990,https://boxd.it/FPTp,3.5
+2023-10-31,Batman,1989,https://boxd.it/GZUC,2.5
+2023-07-13,The Princess Bride,1987,https://boxd.it/DnTH,4.5
+2020-01-11,Ferris Bueller's Day Off,1986,https://boxd.it/wtb9,5
+2023-07-25,The Breakfast Club,1985,https://boxd.it/km1Y,3
+2024-08-01,Dirty Dancing,1987,https://boxd.it/4KU2,3
+2024-05-17,Ghost,1990,https://boxd.it/qfaQ,3
+2020-03-02,Pretty Woman,1990,https://boxd.it/ozYI,2.5
+2020-06-11,Home Alone,1990,https://boxd.it/cbTN,4
+2021-09-25,Thelma & Louise,1991,https://boxd.it/twkk,4
+2024-09-30,Point Break,1991,https://boxd.it/Um3f,3.5
+2019-04-17,Basic Instinct,1992,https://boxd.it/zi0y,4
+2023-09-18,Groundhog Day,1993,https://boxd.it/dZ1R,4
+2024-05-23,Mrs. Doubtfire,1993,https://boxd.it/CnLp,2.5
+2021-02-01,Philadelphia,1993,https://boxd.it/9CYF,4.5
+2020-06-13,Speed,1994,https://boxd.it/lGtS,1
+2019-07-19,The Mask,1994,https://boxd.it/bw5t,2.5
+2021-11-19,Dumb and Dumber,1994,https://boxd.it/E5ch,2.5
+2020-03-03,Four Weddings and a Funeral,1994,https://boxd.it/Of5U,3.5
+2020-03-11,Clueless,1995,https://boxd.it/8wCk,1.5
+2020-08-15,Toy Story 2,1999,https://boxd.it/ITQ8,3.5
+2024-06-12,Jumanji,1995,https://boxd.it/Zt1j,3.5
+2020-07-18,Twelve Monkeys,1995,https://boxd.it/otKB,3.5
+2023-03-13,Independence Day,1996,https://boxd.it/LpXy,3
+2024-09-04,Scream,1996,https://boxd.it/5AGs,3
+2023-05-14,Jerry Maguire,1996,https://boxd.it/WdlF,3.5
+2024-07-10,Titanic,1997,https://boxd.it/1Kqp,3.5
+2024-07-31,Men in Black,1997,https://boxd.it/25SC,3
+2022-02-23,Face/Off,1997,https://boxd.it/F70k,1
+2022-10-18,The Fifth Element,1997,https://boxd.it/42x0,4
+2023-05-29,Boogie Nights,1997,https://boxd.it/qFsG,2.5
+2020-11-08,The Big Short,2015,https://boxd.it/Sl2l,5
+2023-04-20,Arrival,2016,https://boxd.it/Mmbd,3
+2019-08-01,Blade Runner 2049,2017,https://boxd.it/pVFm,3
+2020-09-05,Sicario,2015,https://boxd.it/DPIA,4
+2022-04-18,Enemy,2013,https://boxd.it/9qKV,3
+2021-11-19,Incendies,2011,https://boxd.it/dllg,3
+2020-12-08,Moonlight,2016,https://boxd.it/esso,2.5
+2023-06-29,La La Land,2016,https://boxd.it/YULg,2.5
+2020-09-26,Lady Bird,2017,https://boxd.it/98ej,3
+2021-07-20,Get Out,2017,https://boxd.it/MgUf,5
+2019-03-04,Us,2019,https://boxd.it/NosS,1
+2023-06-01,Nope,2022,https://boxd.it/1Pdl,4.5
+2023-11-24,Hereditary,2018,https://boxd.it/OiPV,2.5
+2023-10-20,Midsommar,2019,https://boxd.it/aNsM,5
+2021-07-22,The Witch,2015,https://boxd.it/G1Sx,3.5
+2022-08-08,The Lighthouse,2019,https://boxd.it/MVX4,4.5
+2022-02-14,Uncut Gems,2019,https://boxd.it/8PRF,3
+2022-11-17,Good Time,2017,https://boxd.it/DgYt,4.5
+2023-10-18,Marriage Story,2019,https://boxd.it/bYPm,4
+2023-12-17,Little Women,2019,https://boxd.it/NjyB,4.5
+2022-11-18,Frances Ha,2012,https://boxd.it/d2nq,2.5
+2023-10-01,The Florida Project,2017,https://boxd.it/KApw,3.5
+2020-07-06,Call Me by Your Name,2017,https://boxd.it/a9wA,2.5
+2021-05-12,Portrait of a Lady on Fire,2019,https://boxd.it/Vknq,4.5
+2020-11-24,Phantom Thread,2017,https://boxd.it/ei6Q,3.5
+2020-02-28,Roma,2018,https://boxd.it/koY3,3.5
+2024-10-08,The Irishman,2019,https://boxd.it/luuL,3.5
+2024-10-25,Once Upon a Time... in Hollywood,2019,https://boxd.it/ZeYj,4.5
+2020-01-23,1917,2019,https://boxd.it/IRxw,3.5
+2020-01-23,Jojo Rabbit,2019,https://boxd.it/19HY,4.5
+2020-08-16,Knives Out,2019,https://boxd.it/ec61,4.5
+2021-12-01,Glass Onion: A Knives Out Mystery,2022,https://boxd.it/25hS,2.5
+2024-12-02,The Social Network,2010,https://boxd.it/aZrc,3
+2023-11-30,Black Swan,2010,https://boxd.it/waTz,4.5
+2019-01-03,Drive,2011,https://boxd.it/2JQU,5
+2022-08-25,Her,2013,https://boxd.it/f2zQ,2.5
+2019-07-26,Gravity,2013,https://boxd.it/EGMz,4.5
+2019-04-19,Birdman or (The Unexpected Virtue of Ignorance),2014,https://boxd.it/fBpo,3.5
+2020-10-27,Nightcrawler,2014,https://boxd.it/kKCa,2.5
+2022-04-10,Ex Machina,2014,https://boxd.it/KRrF,3
+2022-09-13,It Follows,2014,https://boxd.it/dDoi,3.5
+2019-04-08,The Babadook,2014,https://boxd.it/Q7wQ,5
+2021-12-22,Mad Max,1979,https://boxd.it/P2vU,4.5
+2022-10-29,The Revenant,2015,https://boxd.it/wyQ5,4.5
+2022-04-17,Carol,2015,https://boxd.it/RWL8,3.5
+2022-12-30,Anomalisa,2015,https://boxd.it/rD59,5
+2021-02-01,The Lobster,2015,https://boxd.it/lAYy,3
+2022-06-11,Paterson,2016,https://boxd.it/S918,1.5
+2020-02-21,Manchester by the Sea,2016,https://boxd.it/lLKK,4.5
+2023-03-21,Toni Erdmann,2016,https://boxd.it/vfHK,3
+2022-04-10,Silence,2016,https://boxd.it/M3VW,1
+2022-07-19,Dunkirk,2017,https://boxd.it/kC1t,4.5
+2020-01-12,The Shape of Water,2017,https://boxd.it/IqB5,4
+2022-05-13,Annihilation,2018,https://boxd.it/hXU2,3
+2023-04-14,Cold War,2018,https://boxd.it/uwS2,3
+2021-05-27,First Reformed,2017,https://boxd.it/Kfr2,3
+2021-03-20,Pain and Glory,2019,https://boxd.it/e4eM,3
+2023-12-12,Soul,2020,https://boxd.it/6cNp,4
+2024-09-09,Nomadland,2020,https://boxd.it/vJJu,3
+2019-02-19,Minari,2020,https://boxd.it/vyvN,3.5
+2023-11-15,Promising Young Woman,2020,https://boxd.it/5RJ5,3.5
+2021-05-18,The Power of the Dog,2021,https://boxd.it/i2pX,3.5
+2019-01-01,The Worst Person in the World,2021,https://boxd.it/wFgI,5
+2022-09-06,Titane,2021,https://boxd.it/ZCqU,3
+2022-07-18,Licorice Pizza,2021,https://boxd.it/E67G,3
+2021-03-10,The French Dispatch,2021,https://boxd.it/1vof,1.5
+2021-09-20,West Side Story,2021,https://boxd.it/6XyT,2.5
+2023-01-19,West Side Story,1961,https://boxd.it/xVGO,4.5
+2024-04-13,A Star Is Born,2018,https://boxd.it/blNT,3
+2021-08-05,A Star Is Born,1954,https://boxd.it/GxKa,4
+2020-03-24,Little Shop of Horrors,1986,https://boxd.it/24rP,2.5
+2024-06-02,Suspiria,1977,https://boxd.it/l7b5,3
+2022-09-14,Suspiria,2018,https://boxd.it/SxCV,4
+2020-06-29,The Fly,1986,https://boxd.it/NQCM,3.5
+2021-06-04,Scarface,1932,https://boxd.it/pbyL,5
+2022-05-20,Ocean's Eleven,2001,https://boxd.it/hphC,4.5
+2019-11-22,Ocean's Eleven,1960,https://boxd.it/PPPK,4.5
+2019-03-26,True Grit,2010,https://boxd.it/9LR4,3.5
+2023-03-18,True Grit,1969,https://boxd.it/qUQ7,4
+2022-10-01,Dune,1984,https://boxd.it/42UP,3.5
+2024-09-24,Halloween,1978,https://boxd.it/Dy5n,0.5
+2020-04-18,Halloween,2018,https://boxd.it/lHxk,3
+2024-11-10,Psycho,1998,https://boxd.it/U9ji,3
+2021-12-18,The Thing from Another World,1951,https://boxd.it/4bhr,3
+2021-10-23,King Kong,1933,https://boxd.it/JIta,3.5
+2020-08-01,King Kong,2005,https://boxd.it/R9Kj,3
+2019-03-08,Planet of the Apes,1968,https://boxd.it/4YAx,4
+2021-11-02,Rise of the Planet of the Apes,2011,https://boxd.it/pMpg,3
+2023-12-06,The Day the Earth Stood Still,1951,https://boxd.it/YoIs,4.5
+2023-08-20,Invasion of the Body Snatchers,1978,https://boxd.it/vbSJ,4.5
+2023-11-11,Ghost in the Shell,2017,https://boxd.it/Yv8V,4
+2024-03-12,RoboCop,1987,https://boxd.it/sdrE,5
+2024-05-20,Total Recall,1990,https://boxd.it/bQaC,4.5
+2019-12-22,Starship Troopers,1997,https://boxd.it/8Uip,4
+2024-07-19,Being John Malkovich,1999,https://boxd.it/QLKC,1.5
+2024-04-16,Magnolia,1999,https://boxd.it/KCbM,3.5
+2022-02-09,American Psycho,2000,https://boxd.it/7rxb,5
+2024-11-12,Almost Famous,2000,https://boxd.it/Crn1,4.5
+2019-09-11,"O Brother, Where Art Thou?",2000,https://boxd.it/xRBh,4.5
+2020-04-18,Mulholland Drive,2001,https://boxd.it/ymP2,5
+2020-02-26,Donnie Darko,2001,https://boxd.it/d0n3,4.5
+2021-03-12,The Royal Tenenbaums,2001,https://boxd.it/VJzl,3
+2024-08-31,Shrek,2001,https://boxd.it/RcXc,2
+2022-07-20,28 Days Later,2002,https://boxd.it/NcBI,3
+2020-09-25,Lost in Translation,2003,https://boxd.it/FTcH,4.5
+2024-05-13,Kill Bill: Vol. 2,2004,https://boxd.it/RnSG,4.5
+2019-07-07,Shaun of the Dead,2004,https://boxd.it/mtW5,5
+2022-08-13,Hot Fuzz,2007,https://boxd.it/XNa6,5
+2022-03-29,The World's End,2013,https://boxd.it/WGRk,3
+2024-03-19,Scott Pilgrim vs. the World,2010,https://boxd.it/4J7a,2
+2023-09-05,Zodiac,2007,https://boxd.it/fZcM,5
+2020-09-14,Juno,2007,https://boxd.it/ufmE,3.5
+2023-04-12,Superbad,2007,https://boxd.it/YkaF,4
+2024-01-31,Children of Men,2006,https://boxd.it/7CKV,3
+2020-11-16,The Fountain,2006,https://boxd.it/Tyy5,4
+2023-06-15,Little Miss Sunshine,2006,https://boxd.it/5Ghn,5
+2019-09-07,Brokeback Mountain,2005,https://boxd.it/l8vv,4.5
+2023-07-25,Kiss Kiss Bang Bang,2005,https://boxd.it/EgON,3.5
+2019-06-07,Pride & Prejudice,2005,https://boxd.it/Imll,1.5
+2022-07-31,Mean Girls,2004,https://boxd.it/9HZZ,3.5
+2020-04-20,Collateral,2004,https://boxd.it/X14z,3.5
+2022-07-01,Napoleon Dynamite,2004,https://boxd.it/663q,3
+2021-06-06,Big Fish,2003,https://boxd.it/lr7u,4.5
+2023-03-23,Elf,2003,https://boxd.it/BfHa,4
+2024-11-07,Love Actually,2003,https://boxd.it/XA7a,3
+2021-12-02,School of Rock,2003,https://boxd.it/JkUR,4.5
+2023-09-30,Mystic River,2003,https://boxd.it/azZG,3
+2024-05-23,Old Boy,2013,https://boxd.it/fg2v,3
+2024-03-02,Biutiful,2010,https://boxd.it/1geW,4
+2021-08-17,Open Your Eyes,1997,https://boxd.it/TWS0,3
+2024-04-10,The Others,2001,https://boxd.it/AUwW,3.5
+2019-10-11,Talk to Her,2002,https://boxd.it/fLHs,2.5
+2023-11-19,All About My Mother,1999,https://boxd.it/5j96,3
+2024-11-04,Volver,2006,https://boxd.it/JvpU,2.5
+2022-08-05,The Skin I Live In,2011,https://boxd.it/FTx1,4
+2022-04-25,Parallel Mothers,2021,https://boxd.it/MI4V,3

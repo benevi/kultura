@@ -3,7 +3,8 @@
 //
 // Tras el alta (correo o Google): 1) nombre público y, si entró con Google,
 // la casilla de edad y términos; 2) formatos; 3) puntuar títulos conocidos;
-// 4) primeras recomendaciones con el botón de "Para ti". Objetivo: primer
+// 4) primeras recomendaciones con el botón de "Para ti". En el paso 3, opcional,
+// importar el historial de otra app (F-26). Objetivo: primer
 // valor en menos de un minuto. Todo se puede saltar.
 //
 // Fuera de `(app)`: sin la navegación de la app, a pantalla completa. Pide
@@ -12,7 +13,7 @@
 
 import type { Metadata } from 'next'
 import { redirect } from 'next/navigation'
-import { NextIntlClientProvider } from 'next-intl'
+import { NextIntlClientProvider, type AbstractIntlMessages } from 'next-intl'
 import { getMessages, getTranslations } from 'next-intl/server'
 import { createClient } from '@/lib/supabase/server'
 import { isDemoUser } from '@/lib/demo'
@@ -73,6 +74,10 @@ export default async function WelcomePage({ params, searchParams }: WelcomeProps
         // uno ya elegido se deja escrito.
         suggestChange={GENERATED_USERNAME_REGEX.test(currentUsername)}
         needsTerms={!hasAcceptedTerms(account.state, user)}
+        // F-26: textos del paso opcional "Importar", solo en esta página (el
+        // paso los envuelve en su propio <ImportMessages>).
+        userId={user.id}
+        importMessages={((all as Record<string, unknown>).import as AbstractIntlMessages | undefined) ?? null}
       />
     </NextIntlClientProvider>
   )

@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { useTranslations } from 'next-intl'
+import { useTranslations, type AbstractIntlMessages } from 'next-intl'
 import { Logo } from '@/components/layout/Logo'
 import { KButton } from '@/components/ui/KButton'
 import { KInput } from '@/components/ui/KInput'
@@ -14,6 +14,7 @@ import { AUTH_CARD } from '../login/AuthShell'
 import { TermsCheckbox } from '../login/TermsCheckbox'
 import { USERNAME_REGEX, isReservedUsername } from '@/app/api/settings/identity'
 import { RateStars } from './RateStars'
+import { WelcomeImport } from './WelcomeImport'
 import {
   STARTER_MIN_RATINGS,
   pickStarterTitles,
@@ -47,11 +48,15 @@ interface WelcomeFlowProps {
   suggestChange: boolean
   /** Alta con Google: falta la casilla de edad y términos (SEG-7). */
   needsTerms: boolean
+  /** F-26: textos del paso opcional "Importar" (sin ellos no se ofrece). */
+  importMessages?: AbstractIntlMessages | null
+  /** F-26: cuenta de la sesión, para el avance guardado del importador. */
+  userId?: string | null
 }
 
 type SaveState = 'saving' | 'saved' | 'error'
 
-export function WelcomeFlow({ locale, next, currentUsername, suggestChange, needsTerms }: WelcomeFlowProps) {
+export function WelcomeFlow({ locale, next, currentUsername, suggestChange, needsTerms, importMessages = null, userId = null }: WelcomeFlowProps) {
   const t = useTranslations('onboarding')
   const tAuth = useTranslations('auth')
   const router = useRouter()
@@ -83,8 +88,10 @@ export function WelcomeFlow({ locale, next, currentUsername, suggestChange, need
   const [rateError, setRateError] = useState('')
   const timers = useRef(new Map<string, ReturnType<typeof setTimeout>>())
   const pending = useRef(new Map<string, () => Promise<void>>())
+  // F-26: lo importado de otra app (paso opcional) también cuenta.
+  const [importedCount, setImportedCount] = useState(0)
   // Lo que se está guardando ya cuenta: si falla, se descuenta y se avisa.
-  const ratedCount = Object.values(saveState).filter((s) => s !== 'error').length
+  const ratedCount = Object.values(saveState).filter((s) => s !== 'error').length + importedCount
 
   const [finishing, setFinishing] = useState(false)
 
@@ -395,6 +402,9 @@ export function WelcomeFlow({ locale, next, currentUsername, suggestChange, need
                 {rateError}
               </p>
             )}
+
+            {/* F-26: quien viene de otra app se trae su historial en vez de puntuar a mano. */}
+            <WelcomeImport locale={locale} messages={importMessages} userId={userId} onFinished={setImportedCount} />
 
             <ul className="grid grid-cols-2 gap-5 sm:grid-cols-3 lg:grid-cols-5">
               {titles.map((title, i) => (
