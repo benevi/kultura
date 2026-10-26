@@ -115,7 +115,7 @@ describe("hero · el mensaje no depende de la animación", () => {
     installMedia({ reduce: true, width: 1440 });
     render(<HeroUnderTest />);
     expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent("Tu watchlist de cine y libros");
-    expect(screen.getByRole("link", { name: "Crear mi cuenta gratis" })).toHaveAttribute("href", "/login?mode=register");
+    expect(screen.getByRole("link", { name: "Crear mi cuenta gratis" })).toHaveAttribute("href", "/es/login?mode=register");
     expect(screen.getByRole("button", { name: "Ver la demo" })).toBeInTheDocument();
   });
 });
