@@ -11,7 +11,9 @@
 // y en un recurso (`types`) que el catálogo no usa. El monitor de caídas rápido es
 // `/api/health` sin `deep` (cada 5 min); este, cada 60 min.
 //
-// Ocho entradas: los proveedores que sirven catálogo o ficha. Jikan queda
+// Nueve entradas: los proveedores que sirven catálogo o ficha, Wikidata
+// incluida (adaptaciones de la ficha; su sonda es una consulta SPARQL sin
+// tripletas, gratis para WDQS y sin cupo que gastar). Jikan queda
 // fuera a propósito: solo resuelve ids antiguos de bibliotecas (ver
 // `jikan.ts`), y su caída no se nota en ninguna pantalla nueva.
 // ============================================================
@@ -30,6 +32,7 @@ import { probeMangaDex } from "@/lib/api/mangadex";
 import { probeOpenLibrary } from "@/lib/api/openlibrary";
 import { probeGoogleBooks } from "@/lib/api/googlebooks";
 import { probeSteam } from "@/lib/api/steam";
+import { probeWikidata } from "@/lib/api/wikidata";
 
 /** Resultado de las sondas: 1 h (ver el cálculo de cupo de la cabecera). */
 export const DEEP_HEALTH_TTL_SECONDS = 3600;
@@ -43,6 +46,7 @@ export const PROBES: ReadonlyArray<[ProviderId, () => Promise<void>]> = [
   ["openlibrary", probeOpenLibrary],
   ["googlebooks", probeGoogleBooks],
   ["steam", probeSteam],
+  ["wikidata", probeWikidata],
 ];
 
 export interface ProviderProbe {

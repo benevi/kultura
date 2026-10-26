@@ -284,3 +284,17 @@ export async function runSparql(query: string, opts: SparqlOptions): Promise<Spa
   const bindings = Array.isArray(json?.results?.bindings) ? json.results.bindings : [];
   return { results: { bindings } };
 }
+
+/**
+ * Consulta de la sonda: una fila constante y ninguna tripleta, así que WDQS
+ * responde sin tocar el grafo (lo más barato que admite el servicio).
+ */
+export const WIKIDATA_PROBE_QUERY = "SELECT ?ok WHERE { BIND(1 AS ?ok) }";
+
+/**
+ * Sonda de `/api/health?deep=1`: misma ruta que las fichas (GET, User-Agent,
+ * plazo, contrato y circuito de `providerFetch`), sin caché de datos.
+ */
+export async function probeWikidata(): Promise<void> {
+  await runSparql(WIKIDATA_PROBE_QUERY, { cache: false });
+}
