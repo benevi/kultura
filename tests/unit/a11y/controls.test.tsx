@@ -259,6 +259,8 @@ describe('SuggestionsForm (ACC-2/3)', () => {
     fireEvent.click(screen.getByRole('button', { name: 'suggestions.submit' }))
     const status = await screen.findByRole('status')
     expect(status).toHaveTextContent('suggestions.success')
-    expect(document.activeElement).toBe(status)
+    // El foco se mueve en un efecto tras el render: con la CI cargada, findByRole
+    // puede resolver antes de que corra. Se espera al efecto, no se relaja la aserción.
+    await waitFor(() => expect(document.activeElement).toBe(status))
   })
 })
