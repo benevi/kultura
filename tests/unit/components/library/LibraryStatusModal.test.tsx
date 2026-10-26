@@ -6,6 +6,7 @@ import type { LibraryEntry } from '@/types/library'
 
 vi.mock('next-intl', () => ({
   useTranslations: () => (key: string) => key,
+  useLocale: () => 'es',
 }))
 
 // ── Fixtures ──────────────────────────────────────────────────────────────────
@@ -102,6 +103,7 @@ describe('LibraryStatusModal', () => {
       expect(onSave).toHaveBeenCalledWith({
         status: 'in_progress',
         score: null,
+        rating10: null,
         watchedAt: null,
         episodeProgress: null,
       })

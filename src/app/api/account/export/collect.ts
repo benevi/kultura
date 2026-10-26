@@ -104,6 +104,8 @@ export interface ExportSections {
   suggestions: Row[]
   notifications: Row[]
   reports: Row[]
+  /** Diario (F-24, user_media_logs): vacío si la migración no está aplicada. */
+  diary: Row[]
 }
 
 export async function collectExportSections(admin: SupabaseClient, userId: string): Promise<ExportSections> {
@@ -122,6 +124,7 @@ export async function collectExportSections(admin: SupabaseClient, userId: strin
     suggestions,
     notifications,
     reports,
+    diaryRows,
   ] = await Promise.all([
     fetchAll('messages', q('messages', 'id, conversation_id, content, created_at', 'sender_id')),
     fetchAll('conversation_members', q('conversation_members', 'conversation_id, last_read_at', 'user_id')),
@@ -140,6 +143,10 @@ export async function collectExportSections(admin: SupabaseClient, userId: strin
     fetchAll('suggestions', q('suggestions', 'id, type, subject, description, created_at', 'user_id')),
     fetchAll('notifications', q('notifications', 'id, type, payload, read_at, created_at', 'user_id')),
     fetchAll('reports', q('reports', 'id, target_type, target_id, reason, created_at', 'reporter_id')),
+    fetchAll(
+      'user_media_logs',
+      q('user_media_logs', 'id, media_id, watched_on, rewatch, rating10, review, spoiler, private_note, created_at', 'user_id')
+    ),
   ])
 
   // Conversaciones propias: fechas y participantes (no sus mensajes).
@@ -271,5 +278,21 @@ export async function collectExportSections(admin: SupabaseClient, userId: strin
       reason: str(r.reason),
       createdAt: str(r.created_at),
     })),
+    // Mismo formato que reimporta /api/account/import (`diary`).
+    diary: [...diaryRows]
+      .sort((a, b) =>
+        String(a.watched_on).localeCompare(String(b.watched_on)) || byCreatedAt(a, b)
+      )
+      .map((l) => ({
+        id: l.id,
+        mediaId: l.media_id,
+        watchedOn: l.watched_on,
+        rewatch: l.rewatch === true,
+        rating10: l.rating10 === null || l.rating10 === undefined ? null : Number(l.rating10),
+        review: str(l.review),
+        spoiler: l.spoiler === true,
+        privateNote: str(l.private_note),
+        createdAt: str(l.created_at),
+      })),
   }
 }

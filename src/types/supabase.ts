@@ -938,8 +938,10 @@ export type Database = {
         Row: {
           created_at: string | null
           episode_progress: Json | null
+          favorite: boolean
           id: string
           media_id: string
+          rating10: number | null
           score: number | null
           status: string
           updated_at: string
@@ -950,8 +952,10 @@ export type Database = {
         Insert: {
           created_at?: string | null
           episode_progress?: Json | null
+          favorite?: boolean
           id?: string
           media_id: string
+          rating10?: number | null
           score?: number | null
           status: string
           updated_at?: string
@@ -961,8 +965,10 @@ export type Database = {
         Update: {
           created_at?: string | null
           episode_progress?: Json | null
+          favorite?: boolean
           id?: string
           media_id?: string
+          rating10?: number | null
           score?: number | null
           status?: string
           updated_at?: string
@@ -982,6 +988,64 @@ export type Database = {
             columns: ["user_id"]
             isOneToOne: false
             referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      user_media_logs: {
+        Row: {
+          created_at: string
+          id: string
+          media_id: string
+          private_note: string | null
+          rating10: number | null
+          review: string | null
+          rewatch: boolean
+          spoiler: boolean
+          updated_at: string
+          user_id: string
+          watched_on: string
+        }
+        ComputedFields: never
+        Insert: {
+          created_at?: string
+          id?: string
+          media_id: string
+          private_note?: string | null
+          rating10?: number | null
+          review?: string | null
+          rewatch?: boolean
+          spoiler?: boolean
+          updated_at?: string
+          user_id: string
+          watched_on?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          media_id?: string
+          private_note?: string | null
+          rating10?: number | null
+          review?: string | null
+          rewatch?: boolean
+          spoiler?: boolean
+          updated_at?: string
+          user_id?: string
+          watched_on?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_media_logs_entry_fkey"
+            columns: ["user_id", "media_id"]
+            isOneToOne: false
+            referencedRelation: "user_media"
+            referencedColumns: ["user_id", "media_id"]
+          },
+          {
+            foreignKeyName: "user_media_logs_media_id_fkey"
+            columns: ["media_id"]
+            isOneToOne: false
+            referencedRelation: "media"
             referencedColumns: ["id"]
           },
         ]
@@ -1315,11 +1379,30 @@ export interface DbUserMedia {
   user_id: string; // uuid → users.id
   media_id: string; // text → media.id
   status: "completed" | "in_progress" | "pending" | "abandoned";
-  score: number | null; // smallint 1-5
+  score: number | null; // smallint 1-5 (el disparador user_media_sync_rating la deriva de rating10)
+  /** numeric(3,1) 0,5-10 en pasos de 0,5 (F-24). Ausente antes de 20261208240001. */
+  rating10?: number | null;
+  /** F-24. Ausente antes de 20261208240001. */
+  favorite?: boolean;
   watched_at: string | null; // date
   episode_progress: { season?: number; episode: number } | null; // jsonb
   created_at: string; // timestamptz
   updated_at: string; // timestamptz — set by trigger set_updated_at on UPDATE
+}
+
+/** Tabla: user_media_logs (diario, F-24; FK compuesta → user_media y media_id → media, on delete cascade) */
+export interface DbUserMediaLog {
+  id: string; // uuid
+  user_id: string; // uuid
+  media_id: string; // text
+  watched_on: string; // date (por defecto hoy)
+  rewatch: boolean;
+  rating10: number | null; // numeric(3,1) 0,5-10, pasos de 0,5
+  review: string | null; // ≤ 5000
+  spoiler: boolean;
+  private_note: string | null; // ≤ 2000, solo la ve su dueño
+  created_at: string; // timestamptz
+  updated_at: string; // timestamptz
 }
 
 /** Tabla: friendships */
@@ -1498,6 +1581,7 @@ export type DomainTypesMatchSchema = [
   Expect<SameColumns<DbUser, Tables<"users">>>,
   Expect<SameColumns<DbMedia, Tables<"media">>>,
   Expect<SameColumns<DbUserMedia, Tables<"user_media">>>,
+  Expect<SameColumns<DbUserMediaLog, Tables<"user_media_logs">>>,
   Expect<SameColumns<DbFriendship, Tables<"friendships">>>,
   Expect<SameColumns<DbRecommendation, Tables<"recommendations">>>,
   Expect<SameColumns<DbList, Tables<"lists">>>,
