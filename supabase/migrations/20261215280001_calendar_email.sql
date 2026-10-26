@@ -6,22 +6,28 @@
 -- WEEKLY_EMAIL=1 en Vercel):
 --   1. public.email_preferences: una fila por persona con el resumen semanal
 --      (opt-in, por defecto NO), la versión del texto de consentimiento que
---      aceptó, cuándo, y cuándo se dio de baja. La persona solo LEE su fila
---      (RLS del dueño); se escribe únicamente con las funciones del punto 4,
---      así la fecha y la versión las pone el servidor y no se pueden retocar.
+--      aceptó, cuándo, cuándo se dio de baja y cuándo pidió por última vez el
+--      enlace de confirmación (`optin_requested_at`). La persona solo LEE su
+--      fila (RLS del dueño); se escribe únicamente con las funciones del punto
+--      4 y desde el servidor, así fecha y versión no se pueden retocar.
 --   2. public.email_consent_events: registro de solo-añadir de cada alta y
---      baja (acción, versión del texto, origen: ajustes, página de baja o
---      baja en 1 clic de RFC 8058). La persona lee las suyas; nadie las edita.
---      Se borran con la cuenta (cascada), como el resto de sus datos.
+--      baja (acción, versión del texto, origen: confirmación por correo, ajustes,
+--      página de baja o baja en 1 clic de RFC 8058). La persona lee las suyas;
+--      nadie las edita. Se borran con la cuenta (cascada).
 --   3. public.email_sends: un envío por persona y semana (`period` = semana
 --      ISO, p. ej. 2026-W51) con UNIQUE (user_id, kind, period): si el cron se
 --      repite, la fila ya existe y no se reenvía. Solo el servidor (service
 --      role): RLS sin políticas. `returned_at` = volvió a la app desde el
 --      correo (medición sin píxel de seguimiento). Sin direcciones de correo.
---   4. public.set_email_weekly(p_enabled, p_text_version, p_source): alta o
---      baja desde Ajustes con la sesión de la persona (auth.uid()); la demo no
---      puede. public.email_unsubscribe(p_user, p_source): baja sin sesión
---      desde el enlace firmado del correo (solo service_role). Las dos son
+--   4. DOBLE OPT-IN: el alta NO se puede hacer con la sesión. Ajustes pide
+--      un enlace firmado (propósito "optin", 7 días) que se envía a la
+--      dirección de la cuenta; solo al pulsarlo el servidor llama a
+--      public.email_confirm_weekly(p_user, p_text_version) (solo service_role),
+--      que activa el correo y REGISTRA el consentimiento.
+--      public.set_email_weekly(false, …): baja desde Ajustes con la sesión
+--      (auth.uid(); la demo no puede); con p_enabled = true lanza 42501.
+--      public.email_unsubscribe(p_user, p_source): baja sin sesión desde el
+--      enlace firmado del correo (solo service_role). Las tres son
 --      idempotentes: repetir la misma acción no cambia nada ni duplica el
 --      registro.
 --   5. Vuelve a ejecutar el bloque demo_no_* (20261008000001) para cubrir las
@@ -45,7 +51,10 @@
 --          has_table_privilege('authenticated', 'public.email_sends', 'select');
 --                                                       -- f, f, f
 --   select to_regprocedure('public.set_email_weekly(boolean,text,text)'),
+--          to_regprocedure('public.email_confirm_weekly(uuid,text)'),
 --          to_regprocedure('public.email_unsubscribe(uuid,text)');  -- ninguna NULL
+--   select has_function_privilege('authenticated', 'public.email_confirm_weekly(uuid,text)', 'execute');
+--                                                       -- f (solo el servidor)
 --   select * from public.rls_audit() where not ok;      -- 0 filas
 --   -- Tras unas semanas:
 --   select period, status, count(*), count(returned_at) from public.email_sends
@@ -60,12 +69,16 @@ create table if not exists public.email_preferences (
   consent_version text,
   consented_at timestamptz,
   unsubscribed_at timestamptz,
+  optin_requested_at timestamptz,
   updated_at timestamptz not null default now(),
   constraint email_preferences_consent_version_check
     check (consent_version is null or consent_version ~ '^[a-z0-9][a-z0-9.-]{0,31}$'),
   constraint email_preferences_consent_check
     check (not weekly_digest or (consent_version is not null and consented_at is not null))
 );
+
+-- Por si una versión anterior de este archivo creó la tabla sin ella.
+alter table public.email_preferences add column if not exists optin_requested_at timestamptz;
 
 create index if not exists email_preferences_weekly_idx
   on public.email_preferences (user_id) where weekly_digest;
@@ -94,9 +107,14 @@ create table if not exists public.email_consent_events (
   created_at timestamptz not null default now(),
   constraint email_consent_events_action_check check (action in ('opt_in', 'opt_out')),
   constraint email_consent_events_source_check
-    check (source in ('settings', 'unsubscribe_page', 'one_click')),
+    check (source in ('email_confirm', 'settings', 'unsubscribe_page', 'one_click')),
   constraint email_consent_events_version_check check (text_version ~ '^[a-z0-9][a-z0-9.-]{0,31}$')
 );
+
+-- Reconstruido para que una versión anterior de este archivo converja.
+alter table public.email_consent_events drop constraint if exists email_consent_events_source_check;
+alter table public.email_consent_events add constraint email_consent_events_source_check
+  check (source in ('email_confirm', 'settings', 'unsubscribe_page', 'one_click'));
 
 create index if not exists email_consent_events_user_idx
   on public.email_consent_events (user_id, created_at desc);
@@ -148,11 +166,12 @@ comment on table public.email_sends is
   'F-28: un correo semanal por persona y semana ISO (UNIQUE: el cron repetido no reenvía). Sin direcciones ni contenido.';
 
 
--- ── 4. Alta y baja ───────────────────────────────────────────────────────
--- Desde Ajustes, con la sesión de la persona. SECURITY DEFINER para que la
--- fecha y la versión las ponga la base (las tablas no admiten escritura de
+-- ── 4. Alta (doble opt-in) y baja ───────────────────────────────────────
+-- Baja desde Ajustes, con la sesión de la persona. SECURITY DEFINER para que
+-- la fecha la ponga la base (las tablas no admiten escritura de
 -- `authenticated`), con las mismas reglas que una política: auth.uid() y la
--- demo fuera.
+-- demo fuera. El ALTA no se acepta por aquí (doble opt-in: ver
+-- email_confirm_weekly); se conserva la firma para no romper llamadas.
 create or replace function public.set_email_weekly(
   p_enabled boolean,
   p_text_version text,
@@ -173,6 +192,9 @@ begin
   if public.is_demo_session() then
     raise exception 'demo account is read-only' using errcode = '42501';
   end if;
+  if p_enabled then
+    raise exception 'weekly email requires confirmation by email' using errcode = '42501';
+  end if;
   if p_source is distinct from 'settings' then
     raise exception 'invalid source' using errcode = '22023';
   end if;
@@ -183,26 +205,16 @@ begin
   select p.weekly_digest into v_current
     from public.email_preferences p where p.user_id = v_user for update;
 
-  if p_enabled then
-    -- Alta (o renovación con un texto nuevo): fecha y versión de ahora.
-    if v_current is distinct from true
-       or not exists (select 1 from public.email_preferences p
-                       where p.user_id = v_user and p.consent_version = p_text_version) then
-      insert into public.email_preferences as p
-             (user_id, weekly_digest, consent_version, consented_at, unsubscribed_at, updated_at)
-      values (v_user, true, p_text_version, now(), null, now())
-      on conflict (user_id) do update
-        set weekly_digest = true, consent_version = excluded.consent_version,
-            consented_at = excluded.consented_at, unsubscribed_at = null, updated_at = now();
-      insert into public.email_consent_events (user_id, action, text_version, source)
-      values (v_user, 'opt_in', p_text_version, p_source);
-    end if;
-  elsif v_current then
+  if v_current then
     update public.email_preferences p
-       set weekly_digest = false, unsubscribed_at = now(), updated_at = now()
+       set weekly_digest = false, unsubscribed_at = now(), optin_requested_at = null, updated_at = now()
      where p.user_id = v_user;
     insert into public.email_consent_events (user_id, action, text_version, source)
     values (v_user, 'opt_out', p_text_version, p_source);
+  else
+    -- Cancela también una confirmación pendiente.
+    update public.email_preferences p set optin_requested_at = null, updated_at = now()
+     where p.user_id = v_user and p.optin_requested_at is not null;
   end if;
 
   return query
@@ -212,6 +224,38 @@ end
 $$;
 revoke all on function public.set_email_weekly(boolean, text, text) from public, anon;
 grant execute on function public.set_email_weekly(boolean, text, text) to authenticated, service_role;
+
+-- Alta confirmada (doble opt-in). La llama el servidor con el service role
+-- tras verificar el enlace "optin" (firma, caducidad, dirección y versión).
+-- Aquí se REGISTRA el consentimiento: fecha de ahora y versión del texto que
+-- se le enseñó. Devuelve true si ha cambiado algo (false: ya estaba activo
+-- con esa versión; pulsar el enlace dos veces no duplica el registro).
+create or replace function public.email_confirm_weekly(p_user uuid, p_text_version text)
+returns boolean
+language plpgsql security definer
+set search_path = public, pg_temp
+as $$
+begin
+  if p_text_version is null or p_text_version !~ '^[a-z0-9][a-z0-9.-]{0,31}$' then
+    raise exception 'invalid text version' using errcode = '22023';
+  end if;
+  if exists (select 1 from public.email_preferences p
+              where p.user_id = p_user and p.weekly_digest and p.consent_version = p_text_version) then
+    return false;
+  end if;
+  insert into public.email_preferences as p
+         (user_id, weekly_digest, consent_version, consented_at, unsubscribed_at, optin_requested_at, updated_at)
+  values (p_user, true, p_text_version, now(), null, null, now())
+  on conflict (user_id) do update
+    set weekly_digest = true, consent_version = excluded.consent_version, consented_at = excluded.consented_at,
+        unsubscribed_at = null, optin_requested_at = null, updated_at = now();
+  insert into public.email_consent_events (user_id, action, text_version, source)
+  values (p_user, 'opt_in', p_text_version, 'email_confirm');
+  return true;
+end
+$$;
+revoke all on function public.email_confirm_weekly(uuid, text) from public, anon, authenticated;
+grant execute on function public.email_confirm_weekly(uuid, text) to service_role;
 
 -- Baja sin sesión (enlace firmado del correo o List-Unsubscribe-Post). La
 -- llama el servidor con el service role tras verificar la firma. Devuelve

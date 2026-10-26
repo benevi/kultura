@@ -85,18 +85,42 @@ describe('Ajustes › correo semanal', () => {
     expect(document.getElementById('email')).not.toBeNull() // ancla de los enlaces del correo
   })
 
-  it('activar manda la versión del texto y enseña desde cuándo', async () => {
-    fetchMock.mockResolvedValue(new Response(JSON.stringify({ weekly: true, consentedAt: '2026-12-14T06:00:00Z' }), { status: 200 }))
+  it('doble opt-in: activar manda la versión, pide la confirmación por correo y el interruptor sigue apagado', async () => {
+    fetchMock.mockResolvedValue(new Response(JSON.stringify({ weekly: false, pending: true }), { status: 202 }))
     render(<SettingsForm {...PROPS} initialWeeklyEmail={{ weekly: false, consentedAt: null }} />)
+    expect(screen.getByText('weeklyEmailHowTo')).toBeInTheDocument()
     fireEvent.click(screen.getByRole('switch'))
     await waitFor(() => expect(fetchMock).toHaveBeenCalled())
     const [url, init] = fetchMock.mock.calls[0]
     expect(url).toBe('/api/email/preferences')
     expect(init.method).toBe('PUT')
-    expect(JSON.parse(init.body)).toEqual({ weekly: true, consentVersion: WEEKLY_EMAIL_CONSENT_VERSION })
-    expect(await screen.findByText('weeklyEmailOn')).toHaveAttribute('role', 'status')
+    expect(JSON.parse(init.body)).toEqual({ weekly: true, consentVersion: WEEKLY_EMAIL_CONSENT_VERSION, locale: 'es' })
+    expect(await screen.findByText('weeklyEmailPending')).toHaveAttribute('role', 'status')
+    expect(screen.getByRole('switch')).not.toBeChecked()
+  })
+
+  it('con la confirmación ya pedida (al volver a Ajustes) lo recuerda', () => {
+    render(<SettingsForm {...PROPS} initialWeeklyEmail={{ weekly: false, consentedAt: null, pending: true }} />)
+    expect(screen.getByText('weeklyEmailPending')).toBeInTheDocument()
+  })
+
+  it.each([
+    [429, 'cooldown', 'weeklyEmailCooldown', 'status'],
+    [403, 'unconfirmed_email', 'weeklyEmailUnconfirmed', 'alert'],
+    [502, 'send_failed', 'weeklyEmailSendFailed', 'alert'],
+  ])('%s %s → %s', async (status, error, text, role) => {
+    fetchMock.mockResolvedValue(new Response(JSON.stringify({ error }), { status }))
+    render(<SettingsForm {...PROPS} initialWeeklyEmail={{ weekly: false, consentedAt: null }} />)
+    fireEvent.click(screen.getByRole('switch'))
+    expect(await screen.findByText(text)).toHaveAttribute('role', role)
+    expect(screen.getByRole('switch')).not.toBeChecked()
+  })
+
+  it('activo: desde cuándo y enlace al calendario', () => {
+    render(<SettingsForm {...PROPS} initialWeeklyEmail={{ weekly: true, consentedAt: '2026-12-14T06:00:00Z' }} />)
     expect(screen.getByRole('switch')).toBeChecked()
     expect(screen.getByText(/weeklyEmailSince/)).toBeInTheDocument()
+    expect(screen.queryByText('weeklyEmailHowTo')).toBeNull()
   })
 
   it('texto viejo (409): vuelve atrás y pide recargar', async () => {
@@ -134,7 +158,11 @@ describe('Ajustes › página', () => {
     for (const k of [...Object.keys(ENV), 'RATING_SCALE_10']) delete process.env[k]
   })
 
-  async function formProps(prefs: { data: unknown; error: { code: string } | null }, email = 'ana@example.com') {
+  async function formProps(
+    prefs: { data: unknown; error: { code: string } | null },
+    email = 'ana@example.com',
+    confirmedAt: string | null = '2026-12-01T00:00:00Z'
+  ) {
     client = fakeSupabase({
       tables: {
         users: [{ data: { id: 'u1', username: 'ana' }, error: null }],
@@ -143,7 +171,7 @@ describe('Ajustes › página', () => {
       },
     })
     ;(client.auth as { getUser: () => Promise<unknown> }).getUser = async () => ({
-      data: { user: { id: 'u1', email, app_metadata: {}, user_metadata: { rating_scale: 'ten' } } },
+      data: { user: { id: 'u1', email, email_confirmed_at: confirmedAt, app_metadata: {}, user_metadata: { rating_scale: 'ten' } } },
       error: null,
     })
     const { default: Page } = await import('@/app/[locale]/(app)/settings/page')
@@ -170,8 +198,16 @@ describe('Ajustes › página', () => {
     expect((await formProps({ data: { weekly_digest: true, consent_version: 'v', consented_at: '2026-12-01' }, error: null })).initialWeeklyEmail).toEqual({
       weekly: true,
       consentedAt: '2026-12-01',
+      pending: false,
     })
-    expect((await formProps({ data: null, error: null })).initialWeeklyEmail).toEqual({ weekly: false, consentedAt: null })
+    expect((await formProps({ data: null, error: null })).initialWeeklyEmail).toEqual({ weekly: false, consentedAt: null, pending: false })
+    const recent = new Date(Date.now() - 3600_000).toISOString()
+    expect((await formProps({ data: { weekly_digest: false, optin_requested_at: recent }, error: null })).initialWeeklyEmail).toMatchObject({ pending: true })
     expect((await formProps({ data: null, error: { code: 'PGRST205' } })).initialWeeklyEmail).toBeNull()
+  })
+
+  it('dirección sin confirmar: la opción no se ofrece', async () => {
+    Object.assign(process.env, ENV)
+    expect((await formProps({ data: null, error: null }, 'ana@example.com', null)).initialWeeklyEmail).toBeNull()
   })
 })

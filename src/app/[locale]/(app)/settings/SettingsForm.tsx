@@ -64,7 +64,7 @@ interface SettingsFormProps {
    * F-28: correo semanal opt-in. `null` = no disponible (bandera WEEKLY_EMAIL
    * o claves sin poner, migración sin aplicar, cuenta demo): no se enseña.
    */
-  initialWeeklyEmail?: { weekly: boolean; consentedAt: string | null } | null
+  initialWeeklyEmail?: { weekly: boolean; consentedAt: string | null; pending?: boolean } | null
 }
 
 /** Resumen de GET /api/account para el modal de borrado. */
@@ -144,7 +144,9 @@ export function SettingsForm({
   const [ratingScale, setRatingScale] = useState<RatingScale | null>(initialRatingScale)
   const [scaleState, setScaleState] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle')
   const [weeklyEmail, setWeeklyEmail] = useState(initialWeeklyEmail)
-  const [weeklyState, setWeeklyState] = useState<'idle' | 'saving' | 'on' | 'off' | 'error' | 'stale'>('idle')
+  const [weeklyState, setWeeklyState] = useState<
+    'idle' | 'saving' | 'on' | 'off' | 'pending' | 'cooldown' | 'unconfirmed' | 'sendFailed' | 'error' | 'stale'
+  >(initialWeeklyEmail?.pending && !initialWeeklyEmail.weekly ? 'pending' : 'idle')
 
   // Cambio de email (R1 / art. 16 RGPD): formulario en línea.
   const [emailFormOpen, setEmailFormOpen] = useState(false)
@@ -253,24 +255,42 @@ export function SettingsForm({
     }
   }
 
+  // Doble opt-in: activar solo PIDE el correo de confirmación (202); el
+  // interruptor sigue apagado hasta que se pulsa el enlace de ese correo.
   async function handleWeeklyEmail(enabled: boolean) {
     if (!weeklyEmail || isDemo) return
     const previous = weeklyEmail
-    setWeeklyEmail({ ...weeklyEmail, weekly: enabled })
+    if (!enabled) setWeeklyEmail({ ...weeklyEmail, weekly: false })
     setWeeklyState('saving')
     try {
       const res = await fetch('/api/email/preferences', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ weekly: enabled, consentVersion: WEEKLY_EMAIL_CONSENT_VERSION }),
+        body: JSON.stringify({ weekly: enabled, consentVersion: WEEKLY_EMAIL_CONSENT_VERSION, locale: currentLocale }),
       })
+      if (res.status === 202) {
+        setWeeklyEmail({ ...previous, weekly: false, pending: true })
+        setWeeklyState('pending')
+        return
+      }
       if (!res.ok) {
+        const code = ((await res.json().catch(() => ({}))) as { error?: string }).error
         setWeeklyEmail(previous)
-        setWeeklyState(res.status === 409 ? 'stale' : 'error')
+        setWeeklyState(
+          res.status === 409
+            ? 'stale'
+            : code === 'cooldown'
+              ? 'cooldown'
+              : code === 'unconfirmed_email'
+                ? 'unconfirmed'
+                : code === 'send_failed'
+                  ? 'sendFailed'
+                  : 'error'
+        )
         return
       }
       const data = (await res.json()) as { weekly?: boolean; consentedAt?: string | null }
-      setWeeklyEmail({ weekly: data.weekly === true, consentedAt: data.consentedAt ?? null })
+      setWeeklyEmail({ weekly: data.weekly === true, consentedAt: data.consentedAt ?? null, pending: false })
       setWeeklyState(data.weekly ? 'on' : 'off')
     } catch {
       setWeeklyEmail(previous)
@@ -712,8 +732,9 @@ export function SettingsForm({
 
       {platformsSlot}
 
-      {/* F-28 (CRE-9): correo semanal, opt-in, con el texto que se acepta a la
-          vista; se guarda solo y la base registra versión y fecha. */}
+      {/* F-28 (CRE-9): correo semanal, opt-in con doble confirmación por
+          correo y el texto que se acepta a la vista; la base registra versión
+          y fecha al confirmar. */}
       {weeklyEmail !== null && (
         <section id="email" className="scroll-mt-20">
           <p className={eyebrow}>{t('emailSection')}</p>
@@ -728,6 +749,7 @@ export function SettingsForm({
                 <p id="weekly-email-consent" className="text-sm font-body text-text-tertiary">
                   {t('weeklyEmailConsent')}
                 </p>
+                {!weeklyEmail.weekly && <p className="text-[13px] text-text-tertiary">{t('weeklyEmailHowTo')}</p>}
               </div>
               <input
                 id="weekly-email-switch"
@@ -750,11 +772,25 @@ export function SettingsForm({
               </p>
             ) : null}
             <p role="status" className="min-h-5 text-[13px] text-text-tertiary">
-              {weeklyState === 'on' ? t('weeklyEmailOn') : weeklyState === 'off' ? t('weeklyEmailOff') : ''}
+              {weeklyState === 'on'
+                ? t('weeklyEmailOn')
+                : weeklyState === 'off'
+                  ? t('weeklyEmailOff')
+                  : weeklyState === 'pending'
+                    ? t('weeklyEmailPending')
+                    : weeklyState === 'cooldown'
+                      ? t('weeklyEmailCooldown')
+                      : ''}
             </p>
-            {(weeklyState === 'error' || weeklyState === 'stale') && (
+            {(weeklyState === 'error' || weeklyState === 'stale' || weeklyState === 'unconfirmed' || weeklyState === 'sendFailed') && (
               <p role="alert" className="text-sm text-accent-danger">
-                {weeklyState === 'stale' ? t('weeklyEmailStale') : t('weeklyEmailError')}
+                {weeklyState === 'stale'
+                  ? t('weeklyEmailStale')
+                  : weeklyState === 'unconfirmed'
+                    ? t('weeklyEmailUnconfirmed')
+                    : weeklyState === 'sendFailed'
+                      ? t('weeklyEmailSendFailed')
+                      : t('weeklyEmailError')}
               </p>
             )}
           </div>

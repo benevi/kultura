@@ -7,7 +7,13 @@
 // el lunes). Por persona y semana ISO hay UNA fila en `email_sends`
 // (UNIQUE): se "reclama" antes de enviar, así un cron repetido o dos a la vez
 // no mandan dos correos; además Resend recibe una Idempotency-Key por persona
-// y semana (24 h). Los fallos se reintentan hasta 3 veces en la ventana.
+// y semana. Esa clave solo protege 24 h, así que lo que NO se sabe si salió
+// (fila "sending" de una ejecución cortada, fallo de red, excepción) solo se
+// reintenta dentro de las primeras 23 h desde que se reclamó; pasado eso se da
+// por perdido antes que arriesgar un duplicado. Lo que seguro no salió (Resend
+// respondió con error HTTP) se reintenta hasta 3 veces en la ventana.
+// Solo a direcciones confirmadas (email_confirmed_at) y que confirmaron el
+// alta con el enlace del doble opt-in (las únicas con weekly_digest = true).
 //
 // Topes: `WEEKLY_EMAIL_DAILY_CAP` correos por ejecución (por defecto 50:
 // Resend Free son 100 al día y la moderación usa como mucho 80 en un día malo)
@@ -34,6 +40,11 @@ export const WEEKLY_EMAIL_LAST_CATCHUP_DAY = 3
 export const WEEKLY_EMAIL_MAX_ATTEMPTS = 3
 /** Una fila "sending" más vieja que esto es de una ejecución que se cortó. */
 export const STALE_SENDING_MS = 30 * 60_000
+/**
+ * Reintentos de envíos de resultado incierto: solo mientras la Idempotency-Key
+ * de Resend (24 h desde la primera petición) siga evitando el duplicado.
+ */
+export const UNCERTAIN_RETRY_WINDOW_MS = 23 * 3600_000
 export const WEEKLY_EMAIL_TIME_BUDGET_MS = 35_000
 /** Peticiones a proveedores por persona en el correo (el calendario de 7 días). */
 export const WEEKLY_EMAIL_CALENDAR_BUDGET = 25
@@ -44,6 +55,10 @@ export interface SendRow {
   status: 'sending' | 'sent' | 'failed' | 'skipped'
   attempts: number
   updated_at: string
+  /** Primera vez que se reclamó (y se usó la Idempotency-Key). */
+  created_at: string
+  /** Código del último fallo (`http_error_500`, `network_error`…). */
+  error?: string | null
 }
 
 export interface OptedIn {
@@ -62,7 +77,8 @@ export interface DigestStore {
     patch: { status: 'sent' | 'failed' | 'skipped'; items?: number; provider_id?: string | null; error?: string | null }
   ): Promise<void>
   profiles(userIds: string[]): Promise<Map<string, { username: string; locale: 'es' | 'en' }>>
-  email(userId: string): Promise<string | null>
+  /** Dirección de la cuenta SOLO si está confirmada (email_confirmed_at); si no, null. */
+  email(userId: string): Promise<{ email: string; email_confirmed_at: string } | null>
 }
 
 export interface DigestDeps {
@@ -97,11 +113,18 @@ function capFromEnv(): number {
   return Number.isInteger(n) && n > 0 ? Math.min(n, 100) : WEEKLY_EMAIL_DEFAULT_CAP
 }
 
-function needsSend(row: SendRow | undefined, now: Date): boolean {
+/** ¿Resend contestó con un error HTTP? Entonces seguro que no salió. */
+function certainlyNotSent(row: SendRow): boolean {
+  return /^http_error_\d{3}$/.test(row.error ?? '')
+}
+
+export function needsSend(row: SendRow | undefined, now: Date): boolean {
   if (!row) return true
-  if (row.status === 'failed') return row.attempts < WEEKLY_EMAIL_MAX_ATTEMPTS
+  if (row.attempts >= WEEKLY_EMAIL_MAX_ATTEMPTS) return false
+  const withinKeyWindow = now.getTime() - new Date(row.created_at).getTime() < UNCERTAIN_RETRY_WINDOW_MS
+  if (row.status === 'failed') return certainlyNotSent(row) || withinKeyWindow
   if (row.status === 'sending') {
-    return row.attempts < WEEKLY_EMAIL_MAX_ATTEMPTS && now.getTime() - new Date(row.updated_at).getTime() > STALE_SENDING_MS
+    return withinKeyWindow && now.getTime() - new Date(row.updated_at).getTime() > STALE_SENDING_MS
   }
   return false
 }
@@ -166,8 +189,9 @@ export async function runWeeklyDigest(deps: DigestDeps): Promise<DigestResult> {
     }
     try {
       const profile = profiles.get(userId)
-      const email = await deps.store.email(userId)
-      if (!profile || !email || !weeklyEmailAllowedFor(config, email)) {
+      const recipient = await deps.store.email(userId)
+      const email = recipient?.email ?? null
+      if (!profile || !recipient || !email || !weeklyEmailAllowedFor(config, recipient)) {
         await deps.store.finish(rowId, { status: 'skipped', error: !profile || !email ? 'no_recipient' : 'not_allowed' })
         skipped++
         continue
@@ -255,7 +279,7 @@ export function supabaseDigestStore(admin: SupabaseClient): DigestStore {
     async listSends(period) {
       const { data, error } = await admin
         .from('email_sends')
-        .select('id, user_id, status, attempts, updated_at')
+        .select('id, user_id, status, attempts, updated_at, created_at, error')
         .eq('kind', 'weekly')
         .eq('period', period)
         .limit(5000)
@@ -314,8 +338,10 @@ export function supabaseDigestStore(admin: SupabaseClient): DigestStore {
     },
     async email(userId) {
       const { data, error } = await admin.auth.admin.getUserById(userId)
-      if (error || !data?.user?.email) return null
-      return data.user.email
+      const user = data?.user
+      // Sin dirección confirmada no se envía nada (aunque la fila diga weekly_digest).
+      if (error || !user?.email || !user.email_confirmed_at) return null
+      return { email: user.email, email_confirmed_at: user.email_confirmed_at }
     },
   }
 }

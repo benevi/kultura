@@ -11,7 +11,12 @@ import type { ReactElement } from 'react'
 import type { CalendarEvent, CalendarResult } from '@/lib/calendar/types'
 
 const h = vi.hoisted(() => ({
-  user: { id: 'u1', email: 'ana@example.com', app_metadata: {} } as { id: string; email: string; app_metadata: Record<string, unknown> } | null,
+  user: { id: 'u1', email: 'ana@example.com', email_confirmed_at: '2026-12-01T00:00:00Z', app_metadata: {} } as {
+    id: string
+    email: string
+    email_confirmed_at: string | null
+    app_metadata: Record<string, unknown>
+  } | null,
   calendar: vi.fn(),
   after: vi.fn(),
   markReturn: vi.fn(),
@@ -49,7 +54,9 @@ vi.mock('@/components/layout/Footer', () => ({ Footer: () => <footer /> }))
 
 import CalendarPage from '@/app/[locale]/(app)/calendar/page'
 import UnsubscribePage from '@/app/[locale]/email/unsubscribe/page'
-import { createUnsubscribeToken } from '@/lib/email/unsubscribe-token'
+import ConfirmPage from '@/app/[locale]/email/confirm/page'
+import { createOptinToken, createUnsubscribeToken } from '@/lib/email/unsubscribe-token'
+import { WEEKLY_EMAIL_CONSENT_VERSION } from '@/lib/email/consent'
 
 const TODAY = '2026-12-14'
 function ev(over: Partial<CalendarEvent>): CalendarEvent {
@@ -89,7 +96,7 @@ async function renderCalendar(query: Record<string, string> = {}) {
 describe('/calendar', () => {
   beforeEach(() => {
     vi.clearAllMocks()
-    h.user = { id: 'u1', email: 'ana@example.com', app_metadata: {} }
+    h.user = { id: 'u1', email: 'ana@example.com', email_confirmed_at: '2026-12-01T00:00:00Z', app_metadata: {} }
     h.calendar.mockResolvedValue(RESULT)
     h.pref.mockResolvedValue(null)
   })
@@ -181,6 +188,52 @@ describe('/calendar', () => {
     h.calendar.mockRejectedValue(new Error('down'))
     await renderCalendar()
     expect(screen.getByText('calendar.partial')).toBeInTheDocument()
+  })
+})
+
+describe('/email/confirm (doble opt-in)', () => {
+  const SECRET = 'q'.repeat(40)
+  beforeEach(() => {
+    process.env.EMAIL_TOKEN_SECRET = SECRET
+  })
+  afterEach(() => {
+    delete process.env.EMAIL_TOKEN_SECRET
+  })
+  async function renderPage(query: Record<string, string>, locale = 'es') {
+    const page = (await ConfirmPage({ params: Promise.resolve({ locale }), searchParams: Promise.resolve(query) })) as ReactElement
+    return render(page)
+  }
+  const U = '11111111-1111-4111-8111-111111111111'
+
+  it('abrir el enlace NO activa nada: pide confirmar con un POST', async () => {
+    const t = createOptinToken(U, 'a@x.es', WEEKLY_EMAIL_CONSENT_VERSION, SECRET)
+    const { container } = await renderPage({ t })
+    const form = container.querySelector('form')!
+    expect(form).toHaveAttribute('method', 'post')
+    expect(form).toHaveAttribute('action', '/api/email/confirm')
+    expect((form.querySelector('input[name="t"]') as HTMLInputElement).value).toBe(t)
+    expect(screen.getByRole('button', { name: 'email.confirm.confirm' })).toBeInTheDocument()
+  })
+
+  it('enlace de baja, falso o caducado: no se ofrece confirmar', async () => {
+    await renderPage({ t: createUnsubscribeToken(U, SECRET) })
+    expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent('email.confirm.invalidTitle')
+    expect(screen.queryByRole('button')).toBeNull()
+  })
+
+  it('texto viejo: stale', async () => {
+    await renderPage({ t: createOptinToken(U, 'a@x.es', '2020-01-v0', SECRET) })
+    expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent('email.confirm.staleTitle')
+  })
+
+  it('hecho: enlace al calendario', async () => {
+    await renderPage({ status: 'done' }, 'en')
+    expect(screen.getByRole('link', { name: 'email.confirm.calendar' })).toHaveAttribute('href', '/en/calendar')
+  })
+
+  it('no se indexa ni manda el token como referrer', async () => {
+    const { generateMetadata } = await import('@/app/[locale]/email/confirm/page')
+    expect(await generateMetadata()).toMatchObject({ robots: { index: false, follow: false }, referrer: 'no-referrer' })
   })
 })
 

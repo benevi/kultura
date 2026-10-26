@@ -913,7 +913,12 @@
     "weeklyEmailError": "We couldn't save that. Try again.",
     "weeklyEmailStale": "The wording of this notice has changed. Reload the page to read the new one before turning it on.",
     "weeklyEmailDemo": "The demo account doesn't get emails.",
-    "weeklyEmailCalendar": "Open the calendar"
+    "weeklyEmailCalendar": "Open the calendar",
+    "weeklyEmailHowTo": "We'll send you an email to confirm it: it won't turn on until you click the link.",
+    "weeklyEmailPending": "We've sent you an email to confirm it. Click the link (it expires in 7 days); until then you won't get anything.",
+    "weeklyEmailCooldown": "We just sent it. Check your inbox (and spam) or try again in a few minutes.",
+    "weeklyEmailUnconfirmed": "You need to confirm your email address first.",
+    "weeklyEmailSendFailed": "We couldn't send the confirmation email. Try again later."
   },
   "platforms": {
     "title": "My streaming services",
@@ -1014,6 +1019,32 @@
       "retry": "Try again",
       "settings": "Go to Settings",
       "home": "Back to KULTURA"
+    },
+    "optin": {
+      "subject": "Confirm your KULTURA weekly digest",
+      "greeting": "Hi {username},",
+      "body": "You asked to get an email every Monday with the episodes, premieres and releases from your library. To turn it on, confirm that this address is yours.",
+      "cta": "Confirm and turn on",
+      "expires": "The link expires in 7 days.",
+      "ignore": "If you didn't ask for this, ignore this email: you won't get anything else.",
+      "linkText": "Confirm: {url}"
+    },
+    "confirm": {
+      "metaTitle": "Confirm the weekly digest",
+      "title": "Confirm your weekly digest",
+      "body": "Press the button to start getting the Monday email with what's coming from your library.",
+      "confirm": "Confirm and turn on",
+      "doneTitle": "Done: it'll arrive on Monday",
+      "doneBody": "You can unsubscribe any time from Settings or with the link in every email.",
+      "invalidTitle": "This link is invalid or has expired",
+      "invalidBody": "Confirmation links last 7 days and only work for the address they were sent to. Turn it on again in Settings.",
+      "staleTitle": "The wording of this notice has changed",
+      "staleBody": "Turn it on again in Settings to read the new wording before confirming.",
+      "errorTitle": "We couldn't confirm it",
+      "errorBody": "Something failed on our side. Try again in a few minutes.",
+      "retry": "Try again",
+      "settings": "Go to Settings",
+      "calendar": "Open my calendar"
     }
   },
   "report": {

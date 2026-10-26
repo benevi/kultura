@@ -298,6 +298,7 @@ export type Database = {
         Row: {
           consent_version: string | null
           consented_at: string | null
+          optin_requested_at: string | null
           unsubscribed_at: string | null
           updated_at: string
           user_id: string
@@ -307,6 +308,7 @@ export type Database = {
         Insert: {
           consent_version?: string | null
           consented_at?: string | null
+          optin_requested_at?: string | null
           unsubscribed_at?: string | null
           updated_at?: string
           user_id: string
@@ -315,6 +317,7 @@ export type Database = {
         Update: {
           consent_version?: string | null
           consented_at?: string | null
+          optin_requested_at?: string | null
           unsubscribed_at?: string | null
           updated_at?: string
           user_id?: string
@@ -1307,6 +1310,10 @@ export type Database = {
         Returns: string
       }
       deletion_preview: { Args: { p_user: string }; Returns: Json }
+      email_confirm_weekly: {
+        Args: { p_text_version: string; p_user: string }
+        Returns: boolean
+      }
       email_unsubscribe: {
         Args: { p_source: string; p_user: string }
         Returns: boolean

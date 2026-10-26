@@ -913,7 +913,12 @@
     "weeklyEmailError": "No se ha podido guardar. Inténtalo de nuevo.",
     "weeklyEmailStale": "El texto del aviso ha cambiado. Recarga la página para leer el nuevo antes de activarlo.",
     "weeklyEmailDemo": "La cuenta demo no recibe correos.",
-    "weeklyEmailCalendar": "Ver el calendario"
+    "weeklyEmailCalendar": "Ver el calendario",
+    "weeklyEmailHowTo": "Te enviaremos un correo para confirmarlo: no se activa hasta que pulses el enlace.",
+    "weeklyEmailPending": "Te hemos enviado un correo para confirmarlo. Pulsa el enlace (caduca en 7 días); hasta entonces no recibirás nada.",
+    "weeklyEmailCooldown": "Ya te lo hemos enviado hace un momento. Revisa tu correo (también el spam) o inténtalo dentro de unos minutos.",
+    "weeklyEmailUnconfirmed": "Primero tienes que confirmar tu dirección de correo.",
+    "weeklyEmailSendFailed": "No se ha podido enviar el correo de confirmación. Inténtalo más tarde."
   },
   "platforms": {
     "title": "Mis plataformas",
@@ -1014,6 +1019,32 @@
       "retry": "Intentarlo otra vez",
       "settings": "Ir a Ajustes",
       "home": "Volver a KULTURA"
+    },
+    "optin": {
+      "subject": "Confirma tu resumen semanal de KULTURA",
+      "greeting": "Hola, {username}:",
+      "body": "Has pedido recibir cada lunes un correo con los episodios, estrenos y lanzamientos de tu biblioteca. Para activarlo, confirma que esta dirección es tuya.",
+      "cta": "Confirmar y activar",
+      "expires": "El enlace caduca en 7 días.",
+      "ignore": "Si no lo has pedido tú, ignora este correo: no te llegará nada más.",
+      "linkText": "Confirmar: {url}"
+    },
+    "confirm": {
+      "metaTitle": "Confirmar el resumen semanal",
+      "title": "Confirma tu resumen semanal",
+      "body": "Pulsa el botón para empezar a recibir cada lunes el correo con lo que llega de tu biblioteca.",
+      "confirm": "Confirmar y activar",
+      "doneTitle": "Hecho: te llegará el lunes",
+      "doneBody": "Puedes darte de baja cuando quieras desde Ajustes o con el enlace de cada correo.",
+      "invalidTitle": "Este enlace no es válido o ha caducado",
+      "invalidBody": "Los enlaces de confirmación duran 7 días y solo valen para la dirección a la que se enviaron. Vuelve a activarlo en Ajustes.",
+      "staleTitle": "El texto del aviso ha cambiado",
+      "staleBody": "Vuelve a activarlo en Ajustes para leer el texto nuevo antes de confirmar.",
+      "errorTitle": "No se ha podido confirmar",
+      "errorBody": "Ha fallado algo de nuestro lado. Vuelve a intentarlo en unos minutos.",
+      "retry": "Intentarlo otra vez",
+      "settings": "Ir a Ajustes",
+      "calendar": "Ver mi calendario"
     }
   },
   "report": {

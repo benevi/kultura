@@ -4,10 +4,12 @@
 // Lo que la persona acepta es el texto `settings.weeklyEmailConsent` en su
 // idioma. Se guarda QUÉ versión aceptó y cuándo (email_preferences y
 // email_consent_events). Si el texto cambia, cambia la versión: el test
-// `tests/unit/email/consent.test.ts` compara la huella SHA-256 de los dos
+// `tests/unit/calendar-email/token-consent.test.ts` compara la huella SHA-256 de los dos
 // idiomas con la de aquí y falla si alguien retoca el texto sin subirla.
 // El servidor rechaza (409) un alta con una versión que no es la vigente: la
-// página tenía el texto viejo.
+// página tenía el texto viejo. Doble opt-in: la versión viaja firmada en el
+// enlace de confirmación y el consentimiento se registra al pulsarlo
+// (email_confirm_weekly); si entretanto cambió el texto, no se activa.
 // ============================================================
 
 export const WEEKLY_EMAIL_CONSENT_VERSION = '2026-12-v1'

@@ -10,8 +10,12 @@ import path from 'node:path'
 import es from '../../../messages/es.json'
 import en from '../../../messages/en.json'
 import {
+  OPTIN_TOKEN_TTL_SECONDS,
   UNSUBSCRIBE_TOKEN_TTL_SECONDS,
+  createOptinToken,
   createUnsubscribeToken,
+  emailFingerprint,
+  verifyOptinToken,
   verifyUnsubscribeToken,
 } from '@/lib/email/unsubscribe-token'
 import { WEEKLY_EMAIL_CONSENT_SHA256, WEEKLY_EMAIL_CONSENT_VERSION, isCurrentConsentVersion } from '@/lib/email/consent'
@@ -73,6 +77,43 @@ describe('token de baja', () => {
   })
 })
 
+describe('token de confirmación del alta (doble opt-in)', () => {
+  it('ida y vuelta: versión del texto y huella de la dirección', () => {
+    const token = createOptinToken(USER, 'Ana@Example.com ', '2026-12-v1', SECRET, NOW)
+    expect(verifyOptinToken(token, SECRET, NOW)).toEqual({
+      ok: true,
+      userId: USER,
+      expiresAt: new Date(NOW.getTime() + OPTIN_TOKEN_TTL_SECONDS * 1000),
+      textVersion: '2026-12-v1',
+      emailHash: emailFingerprint('ana@example.com'),
+    })
+    // La dirección no va en claro.
+    expect(Buffer.from(token.split('.')[1], 'base64url').toString()).not.toContain('example')
+  })
+
+  it('caduca a los 7 días', () => {
+    const token = createOptinToken(USER, 'a@x.es', '2026-12-v1', SECRET, NOW)
+    const later = new Date(NOW.getTime() + (OPTIN_TOKEN_TTL_SECONDS + 1) * 1000)
+    expect(verifyOptinToken(token, SECRET, later)).toEqual({ ok: false, reason: 'expired' })
+    expect(OPTIN_TOKEN_TTL_SECONDS).toBe(7 * 86400)
+  })
+
+  it('los propósitos no se intercambian: un enlace de baja no confirma y uno de alta no da de baja', () => {
+    const unsub = createUnsubscribeToken(USER, SECRET, NOW)
+    const optin = createOptinToken(USER, 'a@x.es', '2026-12-v1', SECRET, NOW)
+    expect(verifyOptinToken(unsub, SECRET, NOW)).toEqual({ ok: false, reason: 'malformed' })
+    expect(verifyUnsubscribeToken(optin, SECRET, NOW)).toEqual({ ok: false, reason: 'malformed' })
+  })
+
+  it('manipulado u otro secreto: no vale', () => {
+    const token = createOptinToken(USER, 'a@x.es', '2026-12-v1', SECRET, NOW)
+    expect(verifyOptinToken(token, 'y'.repeat(40), NOW)).toEqual({ ok: false, reason: 'bad_signature' })
+    const [v, body, sig] = token.split('.')
+    const forged = Buffer.from(Buffer.from(body, 'base64url').toString().replace('2026-12-v1', '2099-01-v9')).toString('base64url')
+    expect(verifyOptinToken(`${v}.${forged}.${sig}`, SECRET, NOW)).toEqual({ ok: false, reason: 'bad_signature' })
+  })
+})
+
 describe('consentimiento', () => {
   it('la huella del texto aceptado coincide con la versión vigente (si cambias el texto, sube la versión)', () => {
     const sha = (s: string) => createHash('sha256').update(s).digest('hex')
@@ -118,17 +159,25 @@ describe('bandera y variables', () => {
     expect(weeklyEmailConfig(env as NodeJS.ProcessEnv)).toEqual({ enabled: false, reason })
   })
 
-  it('con todo → activado para cualquiera', () => {
+  const confirmed = (email: string) => ({ email, email_confirmed_at: '2026-12-01T00:00:00Z' })
+
+  it('con todo → activado para cualquiera con la dirección confirmada', () => {
     const config = weeklyEmailConfig(full)
     expect(config).toMatchObject({ enabled: true, from: 'KULTURA <onboarding@resend.dev>', only: null })
-    expect(weeklyEmailAllowedFor(config, 'cualquiera@example.com')).toBe(true)
+    expect(weeklyEmailAllowedFor(config, confirmed('cualquiera@example.com'))).toBe(true)
     expect(weeklyEmailAllowedFor(config, null)).toBe(false)
+  })
+
+  it('sin email_confirmed_at: nunca', () => {
+    const config = weeklyEmailConfig(full)
+    expect(weeklyEmailAllowedFor(config, { email: 'a@x.es', email_confirmed_at: null })).toBe(false)
+    expect(weeklyEmailAllowedFor(config, { email: 'a@x.es' })).toBe(false)
   })
 
   it('WEEKLY_EMAIL_ONLY: solo esas direcciones (pruebas con onboarding@resend.dev)', () => {
     const config = weeklyEmailConfig({ ...full, WEEKLY_EMAIL_ONLY: ' Victor@Example.com , otra@x.es' } as NodeJS.ProcessEnv)
-    expect(weeklyEmailAllowedFor(config, 'victor@example.com')).toBe(true)
-    expect(weeklyEmailAllowedFor(config, 'otra@x.es')).toBe(true)
-    expect(weeklyEmailAllowedFor(config, 'nadie@x.es')).toBe(false)
+    expect(weeklyEmailAllowedFor(config, confirmed('victor@example.com'))).toBe(true)
+    expect(weeklyEmailAllowedFor(config, confirmed('otra@x.es'))).toBe(true)
+    expect(weeklyEmailAllowedFor(config, confirmed('nadie@x.es'))).toBe(false)
   })
 })

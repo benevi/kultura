@@ -78,7 +78,7 @@ export default async function CalendarPage({ params, searchParams }: Props) {
       log.error('No se pudo cargar el calendario', { err })
       return null
     }),
-    !isDemoUser(user) && weeklyEmailAllowedFor(config, user.email)
+    !isDemoUser(user) && weeklyEmailAllowedFor(config, user)
       ? readWeeklyEmailPreference(supabase, user.id)
       : Promise.resolve(null),
   ])

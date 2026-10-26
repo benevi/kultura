@@ -11,6 +11,7 @@ import {
   weeklyPeriodFromCampaign,
   markWeeklyReturn,
   STALE_SENDING_MS,
+  needsSend,
   type DigestDeps,
   type DigestStore,
   type SendRow,
@@ -29,7 +30,11 @@ const U1 = '11111111-1111-4111-8111-111111111111'
 const U2 = '22222222-2222-4222-8222-222222222222'
 const U3 = '33333333-3333-4333-8333-333333333333'
 
-function memoryStore(opted: Array<{ user_id: string; consented_at: string | null }>, emails: Record<string, string>) {
+function memoryStore(
+  opted: Array<{ user_id: string; consented_at: string | null }>,
+  emails: Record<string, string>,
+  unconfirmed: string[] = []
+) {
   const rows: SendRow[] = []
   let seq = 0
   const store: DigestStore & { rows: SendRow[]; finished: Array<{ id: string; status: string; error?: string | null }> } = {
@@ -41,7 +46,8 @@ function memoryStore(opted: Array<{ user_id: string; consented_at: string | null
       const found = rows.find((r) => r.user_id === userId && (r as SendRow & { period: string }).period === period)
       if (!existing) {
         if (found) return null
-        const row = { id: `r${++seq}`, user_id: userId, status: 'sending', attempts: 1, updated_at: new Date().toISOString(), period } as SendRow & { period: string }
+        const stamp = new Date().toISOString()
+        const row = { id: `r${++seq}`, user_id: userId, status: 'sending', attempts: 1, updated_at: stamp, created_at: stamp, period } as SendRow & { period: string }
         rows.push(row)
         return row.id
       }
@@ -53,10 +59,12 @@ function memoryStore(opted: Array<{ user_id: string; consented_at: string | null
     finish: async (id, patch) => {
       const row = rows.find((r) => r.id === id)!
       row.status = patch.status
+      row.error = patch.error ?? null
       store.finished.push({ id, status: patch.status, error: patch.error })
     },
     profiles: async (ids) => new Map(ids.map((id) => [id, { username: `user-${id.slice(0, 2)}`, locale: id === U2 ? ('en' as const) : ('es' as const) }])),
-    email: async (id) => emails[id] ?? null,
+    email: async (id) =>
+      emails[id] && !unconfirmed.includes(id) ? { email: emails[id], email_confirmed_at: '2026-12-01T00:00:00Z' } : null,
   }
   return store
 }
@@ -186,15 +194,62 @@ describe('runWeeklyDigest', () => {
 
   it('una fila "sending" de una ejecución cortada se recupera pasados 30 min', async () => {
     const store = memoryStore([{ user_id: U1, consented_at: '2026-12-01T00:00:00Z' }], { [U1]: 'ana@example.com' })
-    store.rows.push({ id: 'old', user_id: U1, status: 'sending', attempts: 1, updated_at: new Date(MONDAY.getTime() - STALE_SENDING_MS - 1000).toISOString(), period: '2026-W51' } as SendRow)
+    const stale = new Date(MONDAY.getTime() - STALE_SENDING_MS - 1000).toISOString()
+    store.rows.push({ id: 'old', user_id: U1, status: 'sending', attempts: 1, updated_at: stale, created_at: stale, period: '2026-W51' } as SendRow)
     const { d, sent } = deps(store)
     await runWeeklyDigest(d)
     expect(sent).toHaveLength(1)
     const fresh = memoryStore([{ user_id: U1, consented_at: null }], { [U1]: 'a@x.es' })
-    fresh.rows.push({ id: 'now', user_id: U1, status: 'sending', attempts: 1, updated_at: MONDAY.toISOString(), period: '2026-W51' } as SendRow)
+    fresh.rows.push({ id: 'now', user_id: U1, status: 'sending', attempts: 1, updated_at: MONDAY.toISOString(), created_at: MONDAY.toISOString(), period: '2026-W51' } as SendRow)
     const other = deps(fresh)
     await runWeeklyDigest(other.d)
     expect(other.sent).toHaveLength(0)
+  })
+
+  it('dirección sin confirmar (email_confirmed_at vacío): no se envía', async () => {
+    const store = memoryStore([{ user_id: U1, consented_at: null }], { [U1]: 'ana@example.com' }, [U1])
+    const { d, send } = deps(store)
+    expect(await runWeeklyDigest(d)).toMatchObject({ sent: 0, skipped: 1 })
+    expect(send).not.toHaveBeenCalled()
+    expect(store.finished).toEqual([{ id: 'r1', status: 'skipped', error: 'no_recipient' }])
+  })
+
+  it('corte tras enviar: el martes (más de 23 h, fuera de la Idempotency-Key) NO se reenvía', async () => {
+    const store = memoryStore([{ user_id: U1, consented_at: '2026-12-01T00:00:00Z' }], { [U1]: 'ana@example.com' })
+    // El lunes se reclamó y la función se cortó justo después de llamar a Resend.
+    store.rows.push({ id: 'cut', user_id: U1, status: 'sending', attempts: 1, updated_at: MONDAY.toISOString(), created_at: MONDAY.toISOString(), period: '2026-W51' } as SendRow)
+    const tuesday = deps(store, { now: TUESDAY })
+    await runWeeklyDigest(tuesday.d)
+    expect(tuesday.sent).toHaveLength(0)
+  })
+
+  it('fallo de red (¿salió o no?): se reintenta solo dentro de la ventana de la clave', async () => {
+    const store = memoryStore([{ user_id: U1, consented_at: '2026-12-01T00:00:00Z' }], { [U1]: 'ana@example.com' })
+    const monday = deps(store, { send: async () => ({ ok: false, reason: 'network_error' }) })
+    await runWeeklyDigest(monday.d)
+    expect(store.finished.at(-1)).toMatchObject({ status: 'failed', error: 'network_error' })
+    // El mismo lunes una hora después: sí (la clave de Resend evita el duplicado)…
+    const row = store.rows[0]
+    expect(needsSend(row, new Date(new Date(row.created_at).getTime() + 3600_000))).toBe(true)
+    // …el martes, no.
+    const tuesday = deps(store, { now: TUESDAY })
+    await runWeeklyDigest(tuesday.d)
+    expect(tuesday.sent).toHaveLength(0)
+  })
+
+  it('needsSend: reglas de reintento', () => {
+    const base = { id: 'x', user_id: U1, attempts: 1, created_at: MONDAY.toISOString(), updated_at: MONDAY.toISOString() }
+    const t = (h: number) => new Date(MONDAY.getTime() + h * 3600_000)
+    expect(needsSend(undefined, t(0))).toBe(true)
+    expect(needsSend({ ...base, status: 'sent' }, t(1))).toBe(false)
+    expect(needsSend({ ...base, status: 'skipped' }, t(1))).toBe(false)
+    expect(needsSend({ ...base, status: 'failed', error: 'http_error_503' }, t(48))).toBe(true)
+    expect(needsSend({ ...base, status: 'failed', error: 'http_error_503', attempts: 3 }, t(48))).toBe(false)
+    expect(needsSend({ ...base, status: 'failed', error: 'exception' }, t(22))).toBe(true)
+    expect(needsSend({ ...base, status: 'failed', error: 'exception' }, t(24))).toBe(false)
+    expect(needsSend({ ...base, status: 'sending' }, t(0.25))).toBe(false)
+    expect(needsSend({ ...base, status: 'sending' }, t(1))).toBe(true)
+    expect(needsSend({ ...base, status: 'sending' }, t(23.5))).toBe(false)
   })
 
   it('el martes solo recupera a quien ya estaba apuntado el lunes', async () => {

@@ -11,6 +11,12 @@ import { ACCOUNT_GRACE_DAYS } from '@/app/api/settings/identity'
 import { ratingScale10Enabled, readRatingScale } from '@/lib/library/scale'
 import { weeklyEmailAllowedFor, weeklyEmailConfig } from '@/lib/email/config'
 import { readWeeklyEmailPreference } from '@/lib/email/preferences'
+import { OPTIN_TOKEN_TTL_SECONDS } from '@/lib/email/unsubscribe-token'
+
+function isOptinPending(requestedAt: string | null): boolean {
+  if (!requestedAt) return false
+  return Date.now() - new Date(requestedAt).getTime() < OPTIN_TOKEN_TTL_SECONDS * 1000
+}
 import type { Metadata } from 'next'
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -32,7 +38,7 @@ export default async function SettingsPage({ params, searchParams }: SettingsPag
 
   // F-28: el correo semanal solo se ofrece con todo configurado (bandera,
   // claves y, si existe, WEEKLY_EMAIL_ONLY) y nunca a la demo.
-  const offerWeeklyEmail = !isDemoUser(user) && weeklyEmailAllowedFor(weeklyEmailConfig(), user.email)
+  const offerWeeklyEmail = !isDemoUser(user) && weeklyEmailAllowedFor(weeklyEmailConfig(), user)
   const [{ data: profile }, account, platforms, weeklyEmail] = await Promise.all([
     supabase.from('users').select('*').eq('id', user.id).single(),
     readAccountState(supabase, user.id),
@@ -76,7 +82,16 @@ export default async function SettingsPage({ params, searchParams }: SettingsPag
         platformsSlot={platformsSlot}
         // F-24 → F-28: la escala de notas vive aquí (antes, en la Biblioteca).
         initialRatingScale={ratingScale10Enabled() ? readRatingScale(user) : null}
-        initialWeeklyEmail={weeklyEmail ? { weekly: weeklyEmail.weekly, consentedAt: weeklyEmail.consentedAt } : null}
+        initialWeeklyEmail={
+          weeklyEmail
+            ? {
+                weekly: weeklyEmail.weekly,
+                consentedAt: weeklyEmail.consentedAt,
+                // Enlace de confirmación enviado y aún vigente (7 días).
+                pending: isOptinPending(weeklyEmail.optinRequestedAt),
+              }
+            : null
+        }
       />
     </main>
   )

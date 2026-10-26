@@ -1,7 +1,6 @@
 // ============================================================
-// F-28 — /api/email/preferences (alta con consentimiento versionado),
-// /api/email/unsubscribe (baja sin sesión: GET seguro, POST en 1 clic de
-// RFC 8058, idempotente) y el cron diario (retención de analítica y correo).
+// F-28 — /api/email/unsubscribe (baja sin sesión: GET seguro, POST en 1 clic
+// de RFC 8058, idempotente). El alta (doble opt-in) está en optin.test.ts.
 // ============================================================
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
@@ -22,85 +21,11 @@ vi.mock('@/lib/supabase/server', () => ({
 vi.mock('@/lib/supabase/admin', () => ({ createAdminClient: () => ({ rpc: h.adminRpc }) }))
 vi.mock('@/lib/demo', () => ({ isDemoUser: (u: { email?: string } | null) => u?.email === 'demo@kultura.test' }))
 
-import { PUT } from '@/app/api/email/preferences/route'
 import { GET as unsubGET, POST as unsubPOST } from '@/app/api/email/unsubscribe/route'
 import { createUnsubscribeToken } from '@/lib/email/unsubscribe-token'
-import { WEEKLY_EMAIL_CONSENT_VERSION } from '@/lib/email/consent'
 
 const SECRET = 'k'.repeat(40)
 const U1 = '11111111-1111-4111-8111-111111111111'
-const ENV = {
-  WEEKLY_EMAIL: '1',
-  RESEND_API_KEY: 're_test',
-  EMAIL_FROM: 'KULTURA <onboarding@resend.dev>',
-  EMAIL_TOKEN_SECRET: SECRET,
-}
-
-function put(body: unknown) {
-  return PUT(new Request('https://k.test/api/email/preferences', { method: 'PUT', body: JSON.stringify(body) }))
-}
-
-describe('PUT /api/email/preferences', () => {
-  beforeEach(() => {
-    vi.clearAllMocks()
-    Object.assign(process.env, ENV)
-    h.user = { id: U1, email: 'ana@example.com', app_metadata: {} }
-    h.rpc.mockResolvedValue({ data: [{ weekly_digest: true, consent_version: WEEKLY_EMAIL_CONSENT_VERSION, consented_at: '2026-12-14T06:00:00Z' }], error: null })
-  })
-  afterEach(() => {
-    for (const k of [...Object.keys(ENV), 'WEEKLY_EMAIL_ONLY']) delete process.env[k]
-  })
-
-  it('sin sesión 401; demo 403', async () => {
-    h.user = null
-    expect((await put({ weekly: true })).status).toBe(401)
-    h.user = { id: U1, email: 'demo@kultura.test' }
-    expect((await put({ weekly: true })).status).toBe(403)
-    expect(h.rpc).not.toHaveBeenCalled()
-  })
-
-  it('cuerpo inválido 400', async () => {
-    expect((await put({ weekly: 'sí' })).status).toBe(400)
-  })
-
-  it('alta: con la versión vigente, por la función de la base (registra el consentimiento)', async () => {
-    const res = await put({ weekly: true, consentVersion: WEEKLY_EMAIL_CONSENT_VERSION })
-    expect(res.status).toBe(200)
-    expect(await res.json()).toEqual({ weekly: true, consentedAt: '2026-12-14T06:00:00Z' })
-    expect(h.rpc).toHaveBeenCalledWith('set_email_weekly', {
-      p_enabled: true,
-      p_text_version: WEEKLY_EMAIL_CONSENT_VERSION,
-      p_source: 'settings',
-    })
-  })
-
-  it('alta con un texto viejo: 409 y nada guardado', async () => {
-    const res = await put({ weekly: true, consentVersion: '2020-01-v0' })
-    expect(res.status).toBe(409)
-    expect(h.rpc).not.toHaveBeenCalled()
-  })
-
-  it('alta sin el correo semanal configurado (o fuera de WEEKLY_EMAIL_ONLY): 403', async () => {
-    delete process.env.EMAIL_FROM
-    expect((await put({ weekly: true, consentVersion: WEEKLY_EMAIL_CONSENT_VERSION })).status).toBe(403)
-    process.env.EMAIL_FROM = ENV.EMAIL_FROM
-    process.env.WEEKLY_EMAIL_ONLY = 'victor@example.com'
-    expect((await put({ weekly: true, consentVersion: WEEKLY_EMAIL_CONSENT_VERSION })).status).toBe(403)
-  })
-
-  it('baja: siempre se acepta (aunque falte la configuración)', async () => {
-    delete process.env.WEEKLY_EMAIL
-    h.rpc.mockResolvedValue({ data: [{ weekly_digest: false, consent_version: 'x', consented_at: null }], error: null })
-    const res = await put({ weekly: false })
-    expect(res.status).toBe(200)
-    expect(h.rpc).toHaveBeenCalledWith('set_email_weekly', expect.objectContaining({ p_enabled: false }))
-  })
-
-  it('sin la migración: 503', async () => {
-    h.rpc.mockResolvedValue({ data: null, error: { code: 'PGRST202', message: 'not found' } })
-    expect((await put({ weekly: true, consentVersion: WEEKLY_EMAIL_CONSENT_VERSION })).status).toBe(503)
-  })
-})
 
 describe('/api/email/unsubscribe', () => {
   const token = () => createUnsubscribeToken(U1, SECRET)

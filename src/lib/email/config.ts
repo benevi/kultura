@@ -47,8 +47,22 @@ export function weeklyEmailConfig(env: NodeJS.ProcessEnv = process.env): WeeklyE
   }
 }
 
-/** ¿Se le puede ofrecer (y enviar) el correo semanal a esta dirección? */
-export function weeklyEmailAllowedFor(config: WeeklyEmailConfig, email: string | null | undefined): boolean {
-  if (!config.enabled || !email) return false
-  return config.only === null || config.only.has(email.trim().toLowerCase())
+/** Lo que hace falta saber de la persona (el `User` de Supabase lo cumple). */
+export interface EmailRecipient {
+  email?: string | null
+  /** Sin fecha de confirmación de la dirección no se ofrece ni se envía nada. */
+  email_confirmed_at?: string | null
+}
+
+/**
+ * ¿Se le puede ofrecer (y enviar) el correo semanal a esta persona? Exige la
+ * dirección confirmada en Supabase Auth. OJO: con «Confirm email» desactivado
+ * Supabase la da por confirmada al registrarse, así que esto NO prueba que el
+ * buzón sea suyo: eso lo hace el doble opt-in (enlace `optin` enviado a esa
+ * dirección); hasta que se pulsa, no se activa nada.
+ */
+export function weeklyEmailAllowedFor(config: WeeklyEmailConfig, recipient: EmailRecipient | null | undefined): boolean {
+  const email = recipient?.email?.trim()
+  if (!config.enabled || !email || !recipient?.email_confirmed_at) return false
+  return config.only === null || config.only.has(email.toLowerCase())
 }
