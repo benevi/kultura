@@ -38,17 +38,25 @@ async function edges(page: Page, content?: string) {
       return r.width > 0 && r.height > 0 ? r : null;
     };
     const logo = visible(document.querySelector("header svg"));
-    const h1 = Array.from(document.querySelectorAll("main h1")).map(visible).find(Boolean) ?? null;
+    // El encabezado de la página: el h1 visible (Inicio lo tiene solo para
+    // lectores de pantalla; ahí, el primer h2).
+    const heading =
+      Array.from(document.querySelectorAll("main h1")).find((el) => visible(el)) ??
+      Array.from(document.querySelectorAll("main h2")).find((el) => visible(el)) ??
+      null;
+    const grid = (heading?.closest(".page-grid") ?? document.querySelector("main.page-grid, main .page-grid")) as HTMLElement | null;
+    // Su bloque: el hijo de la retícula que lo contiene (el h1 del perfil va
+    // tras el avatar y el de la ficha dentro del póster; lo que se alinea es
+    // la pieza entera, que empieza en el borde de la retícula).
+    let block: Element | null = heading;
+    while (block && block.parentElement && block.parentElement !== grid) block = block.parentElement;
+    const h1 = grid && block ? visible(block) : visible(heading);
     let left: number | null = null;
     if (contentSel) left = visible(document.querySelector(contentSel))?.left ?? null;
-    else {
-      // El contenido empieza donde empieza la caja de contenido de la
-      // retícula (`page-grid`) que envuelve al h1.
-      const grid = (h1 && document.querySelector("main h1")?.closest(".page-grid")) || document.querySelector("main.page-grid, main .page-grid");
-      if (grid) {
-        const r = grid.getBoundingClientRect();
-        left = r.left + parseFloat(getComputedStyle(grid).paddingLeft);
-      }
+    else if (grid) {
+      // El contenido empieza donde empieza la caja de contenido de la retícula.
+      const r = grid.getBoundingClientRect();
+      left = r.left + parseFloat(getComputedStyle(grid).paddingLeft);
     }
     return { logo: logo?.left ?? null, h1: h1?.left ?? null, content: left };
   }, content);
