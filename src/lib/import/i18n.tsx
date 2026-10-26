@@ -12,14 +12,24 @@
 // ============================================================
 
 import { createContext, useContext, useMemo } from 'react'
-import { createTranslator, type AbstractIntlMessages } from 'next-intl'
-
-type Values = Record<string, string | number | Date>
+// Tipo solo (se borra al compilar): ningún código de next-intl/use-intl entra
+// por aquí; ver `format-message.ts`.
+import type { AbstractIntlMessages } from 'next-intl'
+import { formatMessage, type MessageValues } from './format-message'
 
 /** Traductor del namespace `import` (se usa igual que el `t` de next-intl). */
-export type ImportTranslator = (key: string, values?: Values) => string
+export type ImportTranslator = (key: string, values?: MessageValues) => string
 
 const ImportTextContext = createContext<ImportTranslator | null>(null)
+
+/** `"counts.added"` → el texto del subárbol, o `undefined`. */
+function lookup(messages: AbstractIntlMessages, key: string): string | undefined {
+  let node: unknown = messages
+  for (const part of key.split('.')) {
+    node = node && typeof node === 'object' ? (node as Record<string, unknown>)[part] : undefined
+  }
+  return typeof node === 'string' ? node : undefined
+}
 
 export function ImportMessages({
   locale,
@@ -31,13 +41,18 @@ export function ImportMessages({
   messages: AbstractIntlMessages
   children: React.ReactNode
 }) {
-  const t = useMemo<ImportTranslator>(() => {
-    const translate = createTranslator({ locale, messages: { import: messages }, namespace: 'import' }) as unknown as (
-      key: string,
-      values?: Values
-    ) => string
-    return (key, values) => translate(key, values)
-  }, [locale, messages])
+  const t = useMemo<ImportTranslator>(
+    () => (key, values) => {
+      const message = lookup(messages, key)
+      if (message === undefined) {
+        // Como next-intl: la clave a la vista y un aviso, nunca una pantalla rota.
+        if (process.env.NODE_ENV !== 'production') console.error(`[import] falta el texto "${key}"`)
+        return `import.${key}`
+      }
+      return formatMessage(message, values, locale)
+    },
+    [locale, messages]
+  )
   return <ImportTextContext.Provider value={t}>{children}</ImportTextContext.Provider>
 }
 
