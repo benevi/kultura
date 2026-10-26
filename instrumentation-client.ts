@@ -17,6 +17,17 @@
 
 import { loadSentry } from "@/lib/logger";
 
+// CSP (F-22): zod 4 prueba `Function("")` la primera vez que valida un objeto
+// para decidir si compila validadores; sin `unsafe-eval` el navegador lo
+// bloquea y lo cuenta como violación (llegaba a /api/csp-report desde /login).
+// Sin compilar valida igual. Es el mismo ajuste que `z.config({ jitless: true })`
+// pero sin importar zod en el JS de todas las páginas (~3 KB gz): zod lee su
+// configuración de este global al cargarse (`zod/v4/core/core.js`), y este
+// archivo corre antes que cualquier otro código de la app.
+const zodGlobal = globalThis as { __zod_globalConfig?: { jitless?: boolean } };
+// Se modifica el objeto si ya existe (zod guarda la referencia, no una copia).
+(zodGlobal.__zod_globalConfig ??= {}).jitless = true;
+
 const EARLY_ERRORS_MAX = 20;
 
 if (process.env.NEXT_PUBLIC_SENTRY_DSN && typeof window !== "undefined") {

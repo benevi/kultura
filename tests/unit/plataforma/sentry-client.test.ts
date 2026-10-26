@@ -5,25 +5,42 @@
  * defecto: errores globales, promesas rechazadas, breadcrumbs) y se quita lo
  * que pesa: Session Replay (≈ 38 KB gz + rrweb grabando en búfer en cada
  * página) y el tracing del navegador (se elimina del bundle en next.config).
+ *
+ * F-22: el SDK ya no se inicializa al cargar `instrumentation-client.ts`, sino
+ * en `loadSentry()` (src/lib/logger.ts) cuando se descarga bajo demanda; el
+ * reparto de cuándo se pide está en tests/unit/perf/instrumentation-client.
  */
-// @vitest-environment node
 import { describe, it, expect, vi, beforeAll } from "vitest";
 
 const init = vi.fn();
 const replayIntegration = vi.fn(() => ({ name: "Replay" }));
 const browserTracingIntegration = vi.fn(() => ({ name: "BrowserTracing" }));
+let client: object | undefined;
 
-vi.mock("@sentry/nextjs", () => ({ init, replayIntegration, browserTracingIntegration }));
+vi.mock("@sentry/nextjs", () => ({
+  init: (opts: unknown) => {
+    init(opts);
+    client = {};
+  },
+  getClient: () => client,
+  replayIntegration,
+  browserTracingIntegration,
+}));
 
 let options: Record<string, unknown>;
 
 beforeAll(async () => {
   process.env.NEXT_PUBLIC_SENTRY_DSN = "https://key@o0.ingest.sentry.io/1";
-  await import("../../../instrumentation-client");
+  const { loadSentry, _resetSentryForTests } = await import("@/lib/logger");
+  _resetSentryForTests();
+  await loadSentry();
+  // Una segunda petición (otro error, o el arranque diferido) no reinicia.
+  _resetSentryForTests();
+  await loadSentry();
   options = init.mock.calls[0]?.[0] as Record<string, unknown>;
 });
 
-describe("instrumentation-client.ts (Sentry en el navegador)", () => {
+describe("Sentry en el navegador (loadSentry)", () => {
   it("inicializa Sentry una vez con el DSN público (la captura de errores sigue)", () => {
     expect(init).toHaveBeenCalledTimes(1);
     expect(options.dsn).toBe("https://key@o0.ingest.sentry.io/1");
