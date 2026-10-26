@@ -10,7 +10,7 @@
  * el runtime Edge y podría importar este módulo en el futuro.
  *
  * Los eventos `error` con `NEXT_PUBLIC_SENTRY_DSN` configurado se reenvían a
- * Sentry vía import dinámico (ver C1, `sentry.*.config.ts`). Si Sentry no
+ * Sentry vía import dinámico (`loadSentry`, ver C1 y `instrumentation*.ts`). Si Sentry no
  * está configurado o falla al cargar, el logging local no se ve afectado —
  * el reenvío es best-effort y nunca bloquea ni lanza.
  */
@@ -20,7 +20,6 @@ type LogLevel = "debug" | "info" | "warn" | "error";
 export type LogContext = Record<string, unknown>;
 
 const isProd = process.env.NODE_ENV === "production";
-const hasSentry = Boolean(process.env.NEXT_PUBLIC_SENTRY_DSN);
 
 function serializeContext(context?: LogContext): Record<string, unknown> | undefined {
   if (!context) return undefined;
@@ -61,11 +60,59 @@ function emit(level: LogLevel, scope: string, message: string, context?: LogCont
   else console.log(...args);
 }
 
+type SentryModule = typeof import("@sentry/nextjs");
+
+let sentryPromise: Promise<SentryModule> | null = null;
+
+/**
+ * Sentry bajo demanda (REN-2, F-22). El SDK pesa ~60 KB gz y no va en el JS
+ * inicial de ninguna página: en el navegador lo pide `instrumentation-client.ts`
+ * cuando el hilo queda libre, o este logger con el primer error, lo que llegue
+ * antes; los dos comparten esta promesa, así que se descarga e inicializa una
+ * sola vez. En el servidor y el edge el SDK ya lo inicializa
+ * `instrumentation.ts`: aquí solo se importa.
+ *
+ * Sin `NEXT_PUBLIC_SENTRY_DSN` devuelve null y no descarga nada.
+ */
+export function loadSentry(): Promise<SentryModule> | null {
+  if (!process.env.NEXT_PUBLIC_SENTRY_DSN) return null;
+  if (!sentryPromise) {
+    sentryPromise = import("@sentry/nextjs").then((Sentry) => {
+      if (typeof window !== "undefined") initBrowserSentry(Sentry);
+      return Sentry;
+    });
+    // Si falla la descarga (sin red, bloqueador) se reintenta con el próximo error.
+    sentryPromise.catch(() => {
+      sentryPromise = null;
+    });
+  }
+  return sentryPromise;
+}
+
+/**
+ * Inicializa el SDK del navegador una sola vez. REN-2: solo captura de errores
+ * (sin Replay ni trazas del navegador, que `clientSentryDefines` quita además
+ * del build). Un fallo aquí no impide capturar con lo que haya.
+ */
+function initBrowserSentry(Sentry: SentryModule): void {
+  try {
+    if (!Sentry.getClient()) Sentry.init({ dsn: process.env.NEXT_PUBLIC_SENTRY_DSN });
+  } catch {
+    // SDK a medias (o doble de test sin `init`): se sigue sin inicializar.
+  }
+}
+
+/** Solo para tests: olvida la promesa compartida. */
+export function _resetSentryForTests(): void {
+  sentryPromise = null;
+}
+
 /** Reenvío best-effort a Sentry. Nunca lanza, nunca bloquea al caller. */
 function reportToSentry(message: string, context?: LogContext): void {
-  if (!hasSentry) return;
+  const pending = loadSentry();
+  if (!pending) return;
   const err = context?.err ?? context?.error;
-  import("@sentry/nextjs")
+  pending
     .then((Sentry) => {
       if (err instanceof Error) {
         Sentry.captureException(err, { extra: { message, ...context } });
