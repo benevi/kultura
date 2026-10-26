@@ -12,7 +12,13 @@ vi.mock("@/lib/logger", () => ({
 }));
 
 import { POST } from "@/app/api/csp-report/route";
-import { CSP_REPORT_MAX_BYTES, CSP_REPORT_MAX_ITEMS, extractViolations, scrubUrl } from "@/app/api/csp-report/report";
+import {
+  CSP_REPORT_MAX_BYTES,
+  CSP_REPORT_MAX_ITEMS,
+  extractViolations,
+  readBodyCapped,
+  scrubUrl,
+} from "@/app/api/csp-report/report";
 import { _resetStoreForTests } from "@/lib/rate-limit";
 
 function post(body: string, type = "application/csp-report", ip = "203.0.113.7") {
@@ -150,5 +156,53 @@ describe("POST /api/csp-report", () => {
     const res = await POST(post(JSON.stringify(LEGACY), "application/csp-report", "198.51.100.1"));
     expect(res.status).toBe(429);
     expect(res.headers.get("retry-after")).toBeTruthy();
+  });
+
+  it("413 sin leer el cuerpo si el Content-Length declarado pasa del tope", async () => {
+    const req = new Request("https://kultura.test/api/csp-report", {
+      method: "POST",
+      headers: { "content-type": "application/csp-report", "content-length": String(CSP_REPORT_MAX_BYTES + 1) },
+      body: "{}",
+    });
+    const text = vi.spyOn(req, "text");
+    expect((await POST(req)).status).toBe(413);
+    expect(text).not.toHaveBeenCalled();
+  });
+
+  it("sin Content-Length: lee por trozos y corta (cancela el flujo) al pasar de 16 KB", async () => {
+    let pulled = 0;
+    let cancelled = false;
+    const chunk = new TextEncoder().encode("x".repeat(4096));
+    const stream = new ReadableStream<Uint8Array>({
+      pull(controller) {
+        pulled++;
+        controller.enqueue(chunk); // infinito: sin el corte no terminaría nunca
+      },
+      cancel() {
+        cancelled = true;
+      },
+    });
+    const req = new Request("https://kultura.test/api/csp-report", {
+      method: "POST",
+      headers: { "content-type": "application/csp-report" },
+      body: stream,
+      // @ts-expect-error -- `duplex` lo exige undici para cuerpos en flujo
+      duplex: "half",
+    });
+    expect((await POST(req)).status).toBe(413);
+    expect(cancelled).toBe(true);
+    expect(pulled).toBeLessThanOrEqual(Math.ceil(CSP_REPORT_MAX_BYTES / chunk.byteLength) + 2);
+  });
+});
+
+describe("readBodyCapped", () => {
+  it("devuelve el texto entero si cabe", async () => {
+    const req = new Request("https://kultura.test", { method: "POST", body: "hola ñ" });
+    expect(await readBodyCapped(req, 100)).toBe("hola ñ");
+  });
+
+  it("null si pasa del tope y \"\" sin cuerpo", async () => {
+    expect(await readBodyCapped(new Request("https://kultura.test", { method: "POST", body: "x".repeat(11) }), 10)).toBeNull();
+    expect(await readBodyCapped(new Request("https://kultura.test"), 10)).toBe("");
   });
 });

@@ -86,3 +86,36 @@ export function extractViolations(body: unknown): CspViolation[] {
   return [];
 }
 
+/**
+ * Lee el cuerpo por trozos y deja de leer (cancela el flujo) en cuanto pasa
+ * de `max` bytes: un cuerpo enorme sin Content-Length no llega a memoria.
+ * `null` = demasiado grande. Un cuerpo ausente o ilegible es "".
+ */
+export async function readBodyCapped(request: Request, max: number): Promise<string | null> {
+  if (!request.body) return "";
+  const reader = request.body.getReader();
+  const chunks: Uint8Array[] = [];
+  let size = 0;
+  try {
+    for (;;) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      size += value.byteLength;
+      if (size > max) {
+        await reader.cancel().catch(() => {});
+        return null;
+      }
+      chunks.push(value);
+    }
+  } catch {
+    return "";
+  }
+  const all = new Uint8Array(size);
+  let offset = 0;
+  for (const chunk of chunks) {
+    all.set(chunk, offset);
+    offset += chunk.byteLength;
+  }
+  return new TextDecoder().decode(all);
+}
+
