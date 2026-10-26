@@ -114,6 +114,30 @@ describe('ProgressInput', () => {
     expect(screen.queryByTestId('progress-summary')).not.toBeInTheDocument()
   })
 
+  it('sin la bandera la temporada empieza en 1, nunca 0 (va al jsonb antiguo)', () => {
+    const spy = vi.fn()
+    renderIntl(<Controlled mediaType="tv" initial={{ season: 1, episode: 3 }} full={false} spy={spy} />)
+    const season = screen.getByRole('spinbutton', { name: 'Temporada' })
+    expect(season).toHaveAttribute('min', '1')
+    // «−» desde la 1: desactivado.
+    expect(screen.getByRole('button', { name: 'Temporada anterior' })).toBeDisabled()
+    // Escribir 0 se ajusta a 1.
+    fireEvent.change(season, { target: { value: '0' } })
+    expect(spy).toHaveBeenLastCalledWith({ season: 1, episode: 3 })
+  })
+
+  it('sin la bandera, «+» en una temporada vacía da la 1; con ella se admite la 0 (especiales)', () => {
+    const spy = vi.fn()
+    renderIntl(<Controlled mediaType="tv" initial={{ episode: 2 }} full={false} spy={spy} />)
+    fireEvent.click(screen.getByRole('button', { name: 'Temporada siguiente' }))
+    expect(spy).toHaveBeenLastCalledWith({ season: 1, episode: 2 })
+    const spy2 = vi.fn()
+    renderIntl(<Controlled mediaType="tv" initial={{ season: 1, episode: 2 }} full spy={spy2} />)
+    const [, fullSeasonDown] = screen.getAllByRole('button', { name: 'Temporada anterior' })
+    fireEvent.click(fullSeasonDown)
+    expect(spy2).toHaveBeenLastCalledWith({ season: 0, episode: 2 })
+  })
+
   it('«Limpiar progreso» lo borra', () => {
     const spy = vi.fn()
     renderIntl(<Controlled mediaType="game" initial={{ hours: 3 }} spy={spy} />)
@@ -155,6 +179,8 @@ describe('Continúa: 1 toque con actualización optimista', () => {
   it('si falla, vuelve a lo de antes y lo dice (role=alert)', async () => {
     mockAdvance.mockRejectedValueOnce(new Error('Failed to save progress'))
     renderIntl(<ContinueProgress {...tvProps} progress={{ season: 2, episode: 4, total: 10 }} />)
+    // El hueco del aviso existe desde el principio, vacío (CLS 0).
+    expect(screen.getByRole('alert')).toBeEmptyDOMElement()
     fireEvent.click(screen.getByTestId('progress-next'))
     await waitFor(() => expect(screen.getByRole('alert')).toHaveTextContent('No se ha podido guardar el progreso de «Juego de tronos»'))
     expect(screen.getByTestId('progress-label')).toHaveTextContent('T2 · E4 de 10')

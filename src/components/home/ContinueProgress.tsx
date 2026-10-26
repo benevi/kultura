@@ -124,11 +124,10 @@ export function ContinueProgress({ mediaId, mediaType, title, progress: initial,
       <span className="sr-only" role="status" aria-live="polite">
         {state.announcement?.tone === 'polite' ? state.announcement.text : ''}
       </span>
-      {state.announcement?.tone === 'alert' && (
-        <p role="alert" className="text-xs font-medium text-accent-danger">
-          {state.announcement.text}
-        </p>
-      )}
+      {/* Hueco reservado (2 líneas) para el aviso: aparece sin empujar nada (CLS 0). */}
+      <p role="alert" className="min-h-8 text-xs font-medium leading-4 text-accent-danger line-clamp-2">
+        {state.announcement?.tone === 'alert' ? state.announcement.text : ''}
+      </p>
 
       <FinishPrompt
         open={state.finish !== null}

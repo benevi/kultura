@@ -13,6 +13,7 @@ const logInserts: Record<string, unknown>[] = []
 let entry: Record<string, unknown> | null = null
 let updateResults: Array<{ data: unknown; error: unknown }> = []
 let probeError: unknown = null
+let probes = 0
 let logResult: { data: unknown; error: unknown } = { data: null, error: null }
 let tv: unknown = TV_GOT
 const getTV = vi.fn(async () => tv)
@@ -26,7 +27,10 @@ vi.mock('@/lib/supabase/server', () => ({
       if (table === 'user_media') {
         return {
           select: (cols: string) => {
-            if (cols === 'progress_episode') return { limit: async () => ({ data: [], error: probeError }) }
+            if (cols === 'progress_episode') {
+              probes++
+              return { limit: async () => ({ data: [], error: probeError }) }
+            }
             const q = { eq: () => q, maybeSingle: async () => ({ data: entry, error: null }) }
             return q
           },
@@ -105,6 +109,7 @@ beforeEach(() => {
   logInserts.length = 0
   updateResults = []
   probeError = null
+  probes = 0
   logResult = { data: null, error: null }
   tv = TV_GOT
   entry = null
@@ -268,6 +273,12 @@ describe('GET: estado y plan para el diálogo', () => {
       next: { season: 1, episode: 3, name: 'Lord Nieve' },
     })
     expect((json.plan as { seasons: unknown[] }).seasons).toHaveLength(8)
+  })
+
+  it('sin PROGRESS_V2 no se lanza la sonda de columnas', async () => {
+    entry = null
+    expect((await get('book_OL1W')).json.enabled).toBe(false)
+    expect(probes).toBe(0)
   })
 
   it('enabled solo con PROGRESS_V2 y las columnas (sonda si el título no está)', async () => {

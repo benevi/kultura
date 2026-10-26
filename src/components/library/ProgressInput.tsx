@@ -53,9 +53,9 @@ const STEP_BUTTON =
   'inline-flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-full border border-field-border bg-surface-default font-display text-lg font-bold text-text-primary hover:bg-surface-elevated focus-visible:[outline-style:solid] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus-ring disabled:pointer-events-none disabled:opacity-40 transition-colors'
 const LABEL = 'block text-xs font-body font-medium text-text-secondary mb-1'
 
-function clampField(field: ProgressField, n: number): number {
+function clampField(field: ProgressField, n: number, min: number = PROGRESS_LIMITS[field].min): number {
   const lim = PROGRESS_LIMITS[field]
-  const v = Math.min(lim.max, Math.max(lim.min, n))
+  const v = Math.min(lim.max, Math.max(min, n))
   return lim.whole ? Math.round(v) : Math.round(v * 10) / 10
 }
 
@@ -69,12 +69,14 @@ interface StepperProps {
   step?: number
   testId?: string
   width?: string
+  /** Mínimo propio (más alto que el de la base). */
+  min?: number
 }
 
-function Stepper({ field, label, value, onValue, hint, step, testId, width = 'w-20' }: StepperProps) {
+function Stepper({ field, label, value, onValue, hint, step, testId, width = 'w-20', min: minProp }: StepperProps) {
   const t = useTranslations('progress')
   const id = useId()
-  const lim = PROGRESS_LIMITS[field]
+  const lim = { ...PROGRESS_LIMITS[field], min: Math.max(PROGRESS_LIMITS[field].min, minProp ?? PROGRESS_LIMITS[field].min) }
   const inc = step ?? lim.step
   const current = typeof value === 'number' ? value : null
 
@@ -86,7 +88,7 @@ function Stepper({ field, label, value, onValue, hint, step, testId, width = 'w-
     }
     const n = Number(raw)
     if (!Number.isFinite(n)) return
-    onValue(clampField(field, n))
+    onValue(clampField(field, n, lim.min))
   }
 
   return (
@@ -100,7 +102,7 @@ function Stepper({ field, label, value, onValue, hint, step, testId, width = 'w-
           className={STEP_BUTTON}
           aria-label={t('decrease', { unit: field })}
           disabled={current === null || current <= lim.min}
-          onClick={() => onValue(current === null ? null : clampField(field, current - inc))}
+          onClick={() => onValue(current === null ? null : clampField(field, current - inc, lim.min))}
         >
           <span aria-hidden="true">−</span>
         </button>
@@ -122,7 +124,7 @@ function Stepper({ field, label, value, onValue, hint, step, testId, width = 'w-
           className={STEP_BUTTON}
           aria-label={t('increase', { unit: field })}
           disabled={current !== null && current >= lim.max}
-          onClick={() => onValue(clampField(field, (current ?? (field === 'episode' ? 0 : lim.min)) + inc))}
+          onClick={() => onValue(clampField(field, current === null ? Math.max(lim.min, (field === 'episode' ? 0 : PROGRESS_LIMITS[field].min) + inc) : current + inc, lim.min))}
         >
           <span aria-hidden="true">+</span>
         </button>
@@ -166,7 +168,15 @@ export function ProgressInput({
     body = (
       <>
         {withSeason && (
-          <Stepper field="season" label={t('season')} value={value?.season} onValue={(n) => set('season', n)} testId="input-season" />
+          <Stepper
+            field="season"
+            label={t('season')}
+            value={value?.season}
+            onValue={(n) => set('season', n)}
+            testId="input-season"
+            // Sin la bandera va al jsonb antiguo ({season?, episode}): temporada 1 o más.
+            min={full ? undefined : 1}
+          />
         )}
         <Stepper
           field="episode"
@@ -207,7 +217,7 @@ export function ProgressInput({
               <label
                 key={String(pct)}
                 className={cn(
-                  'inline-flex min-h-10 min-w-[4.5rem] cursor-pointer items-center justify-center rounded-full px-3 text-sm font-bold transition-colors',
+                  'inline-flex min-h-11 min-w-[4.5rem] cursor-pointer items-center justify-center rounded-full px-3 text-sm font-bold transition-colors',
                   'has-[:focus-visible]:[outline-style:solid] has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-focus-ring',
                   pct === byPercent ? 'bg-accent-positive text-on-accent-positive' : 'text-text-secondary hover:text-text-primary'
                 )}

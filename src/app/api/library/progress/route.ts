@@ -96,8 +96,8 @@ export async function GET(request: Request): Promise<NextResponse> {
     return NextResponse.json({ error: 'Failed to read progress' }, { status: 500 })
   }
 
-  const migrated = row ? rowHasProgressColumns(row) : await progressColumnsExist(supabase)
-  const enabled = progressV2Enabled() && migrated
+  // Sin la bandera no hace falta saber si están las columnas (ni gastar la sonda).
+  const enabled = progressV2Enabled() && (row ? rowHasProgressColumns(row) : await progressColumnsExist(supabase))
   const locale = localeFromRequest(request)
   const progress = progressFromRow(row as Row | null)
   const plan = await getProgressPlan(parsed.id, locale)
