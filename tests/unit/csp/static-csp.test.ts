@@ -8,7 +8,11 @@
  *   (con el mismo `path-to-regexp` que usa Next para `headers()`).
  */
 // @vitest-environment node
-import { describe, it, expect, beforeAll } from "vitest";
+import { describe, it, expect, beforeAll, vi } from "vitest";
+
+// Solo se lee `config.matcher` del middleware: sus dependencias de runtime fuera.
+vi.mock("next-intl/middleware", () => ({ default: () => () => null }));
+vi.mock("@supabase/ssr", () => ({ createServerClient: () => ({}) }));
 // El mismo path-to-regexp con el que Next compila las `source` de `headers()`
 // (no trae tipos).
 // eslint-disable-next-line @typescript-eslint/no-require-imports
@@ -202,5 +206,33 @@ describe("política solo de informe con connect-src acotado (SEG-10)", () => {
     }
     const all = rules.find((r) => r.source === "/(.*)")?.headers ?? [];
     expect(all.some((h) => h.key === "Reporting-Endpoints" || h.key.startsWith("Content-Security-Policy"))).toBe(false);
+  });
+});
+
+describe("F-23 — service worker (/sw.js y /sw-config.json)", () => {
+  const SW = ["/sw.js", "/sw-config.json"];
+
+  it("ninguna CSP de next.config (fija ni de informe): en /sw.js sería la política del propio worker", () => {
+    for (const path of SW) {
+      const matching = rules.filter((r) => pathToRegexp(r.source).test(path));
+      const keys = matching.flatMap((r) => r.headers.map((h) => h.key));
+      expect(keys.some((k) => k.startsWith("Content-Security-Policy") || k === "Reporting-Endpoints")).toBe(false);
+      // Sí las cabeceras de seguridad generales.
+      expect(keys).toContain("X-Content-Type-Options");
+    }
+  });
+
+  it("el middleware no los ve (sin nonce, sin sesión): su matcher deja fuera las rutas con punto", async () => {
+    const { config } = await import("@/middleware");
+    for (const path of SW) {
+      const hit = config.matcher.some((m: string) => pathToRegexp(m).test(path));
+      expect(hit).toBe(false);
+    }
+  });
+
+  it("/[locale]/offline sí lleva la CSP fija (página cacheable)", () => {
+    expect(isStaticCspRoute("/es/offline")).toBe(true);
+    const keys = rules.filter((r) => pathToRegexp(r.source).test("/en/offline")).flatMap((r) => r.headers.map((h) => h.key));
+    expect(keys).toContain("Content-Security-Policy");
   });
 });

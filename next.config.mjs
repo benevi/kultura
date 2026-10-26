@@ -82,8 +82,12 @@ export function reportOnlyCsp(/** @type {string | undefined} */ supabaseUrl) {
 
 const IS_DEV = process.env.NODE_ENV !== "production";
 
-/** Todo menos los recursos de `/_next/` (JS, CSS, fuentes, imágenes optimizadas). */
-export const DOCUMENT_SOURCE = "/((?!_next/).*)";
+/**
+ * Todo menos los recursos de `/_next/` (JS, CSS, fuentes, imágenes
+ * optimizadas) y el service worker con su interruptor (F-23): una CSP en la
+ * respuesta de `/sw.js` se convierte en la política del propio worker.
+ */
+export const DOCUMENT_SOURCE = "/((?!_next/|sw\\.js|sw-config\\.json).*)";
 
 // ── Sentry ligero en el navegador (REN-2) ─────────────────────────────────────
 // La captura de errores se queda; fuera lo que pesa: el tracing del navegador

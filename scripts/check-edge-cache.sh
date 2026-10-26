@@ -31,7 +31,7 @@ for p in "$RANK" /es /es/privacy; do
 done
 
 echo "== 3. CSP: fija en las cacheables, nonce en el resto, nunca unsafe-eval"
-for p in /es /en "$RANK" /es/best /es/privacy /es/terms /es/legal /es/accessibility; do
+for p in /es /en "$RANK" /es/best /es/privacy /es/terms /es/legal /es/accessibility /es/offline; do
   csp="$(hv "$(h "$p")" content-security-policy)"; sleep 1
   if [[ "$csp" == *"script-src 'self' 'unsafe-inline'"* && "$csp" != *nonce-* && "$csp" != *unsafe-eval* ]]; then ok "$p fija"; else ko "$p: $csp"; fi
 done
@@ -45,7 +45,24 @@ H="$(h /es/u/benevi)"
 [[ "$(hv "$H" cache-control)" == private* ]] && ok "cache-control: $(hv "$H" cache-control)" || ko "cache-control: $(hv "$H" cache-control)"
 [[ "$(hv "$H" x-vercel-cache)" == "MISS" ]] && ok "x-vercel-cache: MISS" || ko "x-vercel-cache: $(hv "$H" x-vercel-cache)"
 
-echo "== 5. Informes de CSP: /api/csp-report responde 204"
+echo "== 5. Ranking inventado: 404 dinámica, sin caché"
+H="$(h /es/best/movie/abc)"
+[[ "$(head -1 <<<"$H")" == *404* ]] && ok "404" || ko "$(head -1 <<<"$H")"
+[[ "$(hv "$H" cache-control)" == *no-store* ]] && ok "cache-control: $(hv "$H" cache-control)" || ko "cache-control: $(hv "$H" cache-control)"
+
+echo "== 6. Router de Next desde una página cacheable hacia una con nonce → 409 (carga completa)"
+code="$(curl -sS -o /dev/null -w '%{http_code}' -H 'RSC: 1' -H 'Sec-Fetch-Dest: empty' -H "Referer: $BASE/es/privacy" "$BASE/es/login")"
+[[ "$code" == "409" ]] && ok "409" || ko "HTTP $code"
+code="$(curl -sS -o /dev/null -w '%{http_code}' -H 'Sec-Fetch-Dest: document' -H "Referer: $BASE/es/privacy" "$BASE/es/login")"
+[[ "$code" == "200" ]] && ok "carga de documento normal: 200" || ko "documento: HTTP $code"
+
+echo "== 7. Service worker: sin CSP en /sw.js ni en /sw-config.json"
+for p in /sw.js /sw-config.json; do
+  H="$(h "$p")"; sleep 1
+  [[ -z "$(hv "$H" content-security-policy)$(hv "$H" content-security-policy-report-only)" ]] && ok "$p sin CSP ($(hv "$H" cache-control))" || ko "$p lleva CSP"
+done
+
+echo "== 8. Informes de CSP: /api/csp-report responde 204"
 code="$(curl -sS -o /dev/null -w '%{http_code}' -X POST -H 'content-type: application/csp-report' \
   --data '{"csp-report":{"document-uri":"'"$BASE"'/es","blocked-uri":"inline","effective-directive":"script-src-elem","disposition":"report"}}' \
   "$BASE/api/csp-report")"

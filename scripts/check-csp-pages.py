@@ -31,6 +31,7 @@ PAGES = [
     ("/es/best", True),
     ("/es/privacy", True),
     ("/en/terms", True),
+    ("/es/offline", True),
     ("/es/login", False),
     ("/es/u/benevi", False),
 ]
