@@ -8,7 +8,7 @@
  * - el aviso de instalación sale en la 2.ª visita, «Ahora no» lo calla 30
  *   días, y `appinstalled` se manda a /api/pwa/installed.
  */
-import { test, expect, type Page } from "@playwright/test";
+import { test, expect, type BrowserContext, type Page } from "@playwright/test";
 import { expectNoBlockingViolations, isolateNetwork, open, signIn } from "../a11y/helpers";
 
 test.beforeEach(async ({ context }, testInfo) => {
@@ -27,6 +27,22 @@ async function boot(page: Page, path = "/es/home") {
       );
     }
   });
+}
+
+/**
+ * Corta la red. `setOffline` no alcanza a las peticiones del propio worker en
+ * Chromium (salen como red real), así que además se abortan con
+ * `context.route`, que sí las ve con PW_EXPERIMENTAL_SERVICE_WORKER_NETWORK_EVENTS
+ * (lo pone la config).
+ */
+async function goOffline(context: BrowserContext) {
+  await context.setOffline(true);
+  await context.route(/^https?:\/\/(localhost|127\.0\.0\.1)[:/]/, (route) => route.abort("internetdisconnected"));
+}
+
+async function goOnline(context: BrowserContext) {
+  await context.unroute(/^https?:\/\/(localhost|127\.0\.0\.1)[:/]/);
+  await context.setOffline(false);
 }
 
 async function cacheContents(page: Page) {
@@ -56,7 +72,7 @@ test.describe("service worker y modo sin conexión", () => {
 
   test("sin red: navegar muestra /offline en la URL pedida y en su idioma", async ({ page, context }) => {
     await boot(page);
-    await context.setOffline(true);
+    await goOffline(context);
 
     const res = await page.goto("/es/library");
     expect(res?.status()).toBe(200);
@@ -69,7 +85,7 @@ test.describe("service worker y modo sin conexión", () => {
 
   test("sin red: arrancar en start_url (/es) abre la página offline con su CSS", async ({ page, context }) => {
     await boot(page);
-    await context.setOffline(true);
+    await goOffline(context);
     await page.goto("/es");
     await expect(page.getByRole("heading", { level: 1 })).toHaveText("Sin conexión");
     // Los estáticos salen de la caché: la página no se pinta sin estilos.
@@ -79,14 +95,14 @@ test.describe("service worker y modo sin conexión", () => {
 
   test("sin red, un enlace interno también acaba en la página offline", async ({ page, context }) => {
     await boot(page);
-    await context.setOffline(true);
+    await goOffline(context);
     await page.locator('a[href="/es/library"]').first().click();
     await expect(page.getByRole("heading", { level: 1 })).toHaveText("Sin conexión");
   });
 
   test("«Reintentar» sin red vuelve a la página offline; al volver la red se reintenta solo", async ({ page, context }) => {
     await boot(page);
-    await context.setOffline(true);
+    await goOffline(context);
     await page.goto("/es/notifications");
     const heading = page.getByRole("heading", { level: 1 });
     await expect(heading).toHaveText("Sin conexión");
@@ -96,7 +112,7 @@ test.describe("service worker y modo sin conexión", () => {
     expect(new URL(page.url()).pathname).toBe("/es/notifications");
 
     // Evento `online`: recarga la URL que falló, ya con la página de verdad.
-    await context.setOffline(false);
+    await goOnline(context);
     await expect(page.getByRole("button", { name: "Reintentar" })).toHaveCount(0);
     await expect(heading).not.toHaveText("Sin conexión");
     expect(new URL(page.url()).pathname).toBe("/es/notifications");

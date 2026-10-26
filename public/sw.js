@@ -83,15 +83,17 @@ function staleCacheNames(names) {
 }
 
 /**
- * Estáticos que necesita la página offline para pintarse con su CSS y sus
- * fuentes (scripts, hojas, fuentes). Se sacan de su HTML, también de la carga
- * RSC escapada (`\"/_next/static/…\"`).
+ * Estáticos que necesita la página offline para pintarse e hidratarse sin red
+ * (scripts, hojas, fuentes). Se sacan de su HTML: de los `src`/`href`
+ * (`/_next/static/…`) y de la carga RSC, donde Next los nombra sin la barra
+ * inicial (`"static/chunks/app/%5Blocale%5D/offline/page-….js"`). Si falta
+ * uno, React no hidrata y se ve la pantalla de error en lugar del aviso.
  */
 function extractStaticAssets(html) {
-  const found = String(html || "").match(/\/_next\/static\/[A-Za-z0-9._~\-\/%]+/g) || [];
+  const found = String(html || "").match(/static\/(?:chunks|css|media)\/[A-Za-z0-9._~\-\/%()@+\[\]]+/g) || [];
   const unique = [];
   for (let i = 0; i < found.length; i++) {
-    const path = found[i].replace(/\\+$/, "");
+    const path = "/_next/" + found[i].replace(/\\+$/, "");
     if (!/\.(?:js|css|woff2?|ttf|otf)$/.test(path)) continue;
     if (unique.indexOf(path) < 0) unique.push(path);
   }
@@ -159,8 +161,6 @@ async function cacheFirst(request) {
 
 async function networkWithOfflineFallback(event) {
   try {
-    const preloaded = await event.preloadResponse;
-    if (preloaded) return preloaded;
     return await fetch(event.request);
   } catch (e) {
     const path = offlinePathFor(new URL(event.request.url).pathname);
@@ -184,10 +184,9 @@ self.addEventListener("activate", function (event) {
     (async function () {
       const names = await caches.keys();
       await Promise.all(staleCacheNames(names).map(function (name) { return caches.delete(name); }));
-      // La navegación sale a la red mientras arranca el worker (sin esperarle).
-      if (self.registration.navigationPreload) {
-        await self.registration.navigationPreload.enable().catch(function () {});
-      }
+      // Sin "navigation preload" a propósito: con él activo, una navegación
+      // que el worker deja pasar (`/api/auth/callback?code=…` de Google) podría
+      // salir dos veces a la red y gastar un código de un solo uso.
       await self.clients.claim();
     })()
   );

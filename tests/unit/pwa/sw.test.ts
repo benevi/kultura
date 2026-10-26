@@ -75,7 +75,10 @@ const OFFLINE_HTML = (locale: string) =>
   `<link rel="preload" href="/_next/static/media/font.woff2" as="font">` +
   `<script src="/_next/static/chunks/main-abc.js" async></script></head>` +
   `<body><h1>offline ${locale}</h1>` +
-  `<script>self.__next_f.push([1,"0:[\\"/_next/static/chunks/app/offline-123.js\\"]"])</script></body></html>`;
+  `<script>self.__next_f.push([1,"0:[\\"/_next/static/chunks/app/offline-123.js\\"]"])</script>` +
+  // Así nombra Next los chunks en la carga RSC: sin `/_next/` y con la ruta
+  // del segmento escapada (`[locale]`, grupos `(app)`).
+  `<script>self.__next_f.push([1,"2:I[1,[\\"static/chunks/app/%5Blocale%5D/offline/page-4d6a.js\\",\\"static/chunks/app/%5Blocale%5D/(app)/template-f16a.js\\"]]"])</script></body></html>`;
 
 function loadWorker(fetchImpl: FetchMock) {
   const handlers: Record<string, Handler> = {};
@@ -211,6 +214,8 @@ describe("sw.js · enrutado", () => {
       "/_next/static/media/font.woff2",
       "/_next/static/chunks/main-abc.js",
       "/_next/static/chunks/app/offline-123.js",
+      "/_next/static/chunks/app/%5Blocale%5D/offline/page-4d6a.js",
+      "/_next/static/chunks/app/%5Blocale%5D/(app)/template-f16a.js",
     ]);
     expect(extract("")).toEqual([]);
   });
@@ -230,7 +235,7 @@ describe("sw.js · ciclo de vida", () => {
       "/es/offline",
     ]);
     const statics = await w.caches.open(w.context.STATIC_CACHE as string);
-    expect(statics.entries.size).toBe(4);
+    expect(statics.entries.size).toBe(6);
     expect(w.state.skipWaiting).toBe(1);
   });
 
@@ -244,13 +249,12 @@ describe("sw.js · ciclo de vida", () => {
     expect(w.state.skipWaiting).toBe(0);
   });
 
-  it("activate borra cachés viejas, activa navigation preload y reclama los clientes", async () => {
+  it("activate borra cachés viejas y reclama los clientes", async () => {
     await w.caches.open("kultura-static-v0");
     await w.caches.open("otra-app");
     await w.caches.open(w.context.STATIC_CACHE as string);
     await dispatch(w, "activate");
     expect((await w.caches.keys()).sort()).toEqual([w.context.STATIC_CACHE, "otra-app"].sort());
-    expect(w.state.preload).toBe(1);
     expect(w.state.claimed).toBe(1);
   });
 });
@@ -288,7 +292,6 @@ describe("sw.js · fetch", () => {
     const w = loadWorker(network);
     const res = await dispatch(w, "fetch", {
       request: req("/es/library", { mode: "navigate" }),
-      preloadResponse: Promise.resolve(undefined),
     });
     expect(await res!.text()).toBe("net:/es/library");
     for (const name of await w.caches.keys()) {
@@ -297,14 +300,11 @@ describe("sw.js · fetch", () => {
     }
   });
 
-  it("usa la respuesta de navigation preload si llega", async () => {
+  it("no activa navigation preload (una navegación que deja pasar no puede salir dos veces)", async () => {
     const w = loadWorker(network);
-    const res = await dispatch(w, "fetch", {
-      request: req("/es/home", { mode: "navigate" }),
-      preloadResponse: Promise.resolve(basic("preloaded", { status: 200 })),
-    });
-    expect(await res!.text()).toBe("preloaded");
-    expect(w.state.fetches).toEqual([]);
+    await dispatch(w, "activate");
+    expect(w.state.preload).toBe(0);
+    expect(SOURCE).not.toMatch(/navigationPreload\.enable|preloadResponse/);
   });
 
   it("sin red: una navegación recibe la página offline de su idioma", async () => {
@@ -313,11 +313,9 @@ describe("sw.js · fetch", () => {
     w.context.fetch = offlineNetwork;
     const es = await dispatch(w, "fetch", {
       request: req("/es/library", { mode: "navigate" }),
-      preloadResponse: Promise.reject(new TypeError("offline")),
     });
     const en = await dispatch(w, "fetch", {
       request: req("/en/discover", { mode: "navigate" }),
-      preloadResponse: Promise.resolve(undefined),
     });
     expect(await es!.text()).toContain("offline es");
     expect(await en!.text()).toContain("offline en");
@@ -327,7 +325,6 @@ describe("sw.js · fetch", () => {
     const w = loadWorker(offlineNetwork);
     const res = await dispatch(w, "fetch", {
       request: req("/en/library", { mode: "navigate" }),
-      preloadResponse: Promise.resolve(undefined),
     });
     expect(res!.status).toBe(503);
     const html = await res!.text();

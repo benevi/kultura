@@ -13,6 +13,10 @@
  * Solo Chromium: es donde se puede comprobar la instalabilidad (CDP).
  */
 import { defineConfig, devices } from "@playwright/test";
+
+// Sin esto, en Chromium `context.setOffline()` y `context.route()` no alcanzan
+// a las peticiones que hace el propio service worker (las ve como red real).
+process.env.PW_EXPERIMENTAL_SERVICE_WORKER_NETWORK_EVENTS = "1";
 import path from "node:path";
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const { ROOT, A11Y_PORT, MOCK_SUPABASE_PORT, BASE_URL, A11Y_ENV } = require("../a11y/env.cjs");
