@@ -152,10 +152,9 @@ los rechaza): se elige el escalón más cercano. Las páginas públicas usan
 
 Formas compuestas con esos mismos valores: avatar de perfil
 `rounded-bento-xl rounded-bl-lg` (32/32/32/8), avatar de grupo
-`rounded-2xl rounded-bl-lg` (16/16/16/8). En la configuración quedan unos alias
-en retirada (`rounded`, `rounded-xl`, `rounded-card`, `rounded-20`) que solo
-usan Descubrir y Ajustes mientras otros frentes los migran; apuntan a radios
-del set y un test impide usarlos en ningún otro sitio.
+`rounded-2xl rounded-bl-lg` (16/16/16/8). Los alias viejos (`rounded`,
+`rounded-xl`, `rounded-card`, `rounded-20`) ya no existen: ESLint y
+`tests/unit/visual/scales.test.ts` vigilan todo `src`, sin excepciones.
 
 ## Sombras (cerradas)
 

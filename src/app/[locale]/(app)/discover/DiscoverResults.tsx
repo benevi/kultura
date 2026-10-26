@@ -57,7 +57,7 @@ export function DiscoverResults({
     return (
       <>
         {randomItem && (
-          <div className="mb-4 flex flex-wrap items-center gap-3 rounded-card border border-accent-positive/30 bg-accent-positive/10 px-3 py-2 text-sm">
+          <div className="mb-4 flex flex-wrap items-center gap-3 rounded-2xl border border-accent-positive/30 bg-accent-positive/10 px-3 py-2 text-sm">
             <span className="inline-flex items-center gap-1.5 text-text-primary">
               <IconDice className="h-4 w-4 text-accent-positive" aria-hidden="true" />
               {tS("showingRandom", { count: items.length })}

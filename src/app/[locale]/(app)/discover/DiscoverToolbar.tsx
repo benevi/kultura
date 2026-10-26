@@ -74,7 +74,9 @@ export function DiscoverToolbar({
             "transition-all duration-150 ease-out",
             "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-pink focus-visible:ring-offset-2 focus-visible:ring-offset-surface-base",
             !canRandomize
-              ? "bg-surface-elevated text-text-tertiary border-surface-border cursor-not-allowed opacity-60"
+              ? // Deshabilitado sin apagarlo con opacidad (se quedaba por debajo
+                // de 4,5:1): texto terciario y borde discontinuo.
+                "bg-surface-elevated text-text-tertiary border-dashed border-surface-border cursor-not-allowed"
               : "bg-surface-elevated text-text-secondary border-surface-border hover:text-text-primary hover:border-text-tertiary active:scale-[0.97] cursor-pointer"
           )}
         >

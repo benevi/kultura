@@ -67,7 +67,7 @@ export function DiscoverClient({ currentType, currentPage, currentQuery = "" }: 
       </div>
 
       {fetchErrorKind !== null && (
-        <div className="mb-6 rounded-xl border border-accent-danger/30 bg-accent-danger/10 px-4 py-3 text-sm text-accent-danger">
+        <div className="mb-6 rounded-2xl border border-accent-danger/30 bg-accent-danger/10 px-4 py-3 text-sm text-accent-danger">
           {fetchErrorKind === "rate-limit" ? t("fetchError.rateLimit") : t("fetchError.generic")}
         </div>
       )}
