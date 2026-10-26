@@ -5,7 +5,10 @@
 // diario (`vercel.json`), que hace todo lo periódico:
 //   1. keep-alive de Supabase: llama por dentro a /api/health, que consulta la
 //      base (el proyecto gratuito se pausa por inactividad);
-//   2. purga de las cuentas cuyo borrado venció (ROJO-7, 7 días de gracia).
+//   2. purga de las cuentas cuyo borrado venció (ROJO-7, 7 días de gracia);
+//   3. retención de la analítica de producto (13 meses, F-17);
+//   4. los lunes, el correo semanal (F-28; detrás de WEEKLY_EMAIL=1 y sus
+//      claves: sin ellas `weekly.status` dice `disabled` y por qué).
 //
 // El keep-alive se hace siempre (es inocuo y no puede depender de una
 // variable mal puesta). La purga exige CRON_SECRET: Vercel manda
@@ -19,11 +22,15 @@ import { GET as healthCheck } from '@/app/api/health/route'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { createLogger } from '@/lib/logger'
 import { purgeExpiredAccounts } from './purge'
+import { purgeOldAnalytics } from './analytics'
+import { defaultDigestDeps, runWeeklyDigest } from '@/lib/email/digest'
 
 const log = createLogger('cron/daily')
 
 /** Nunca en caché: cada ejecución tiene que tocar la base. */
 export const dynamic = 'force-dynamic'
+/** El máximo de Hobby: el correo semanal se corta solo a los ~35 s (digest.ts). */
+export const maxDuration = 60
 
 function authorized(req: NextRequest, secret: string): boolean {
   const given = Buffer.from(req.headers.get('authorization') ?? '')
@@ -55,11 +62,26 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
   }
 
   // 2. Purga de cuentas.
-  const purge = await purgeExpiredAccounts(createAdminClient()).catch((e: unknown) => {
+  const admin = createAdminClient()
+  const purge = await purgeExpiredAccounts(admin).catch((e: unknown) => {
     log.error(`purga: ${e instanceof Error ? e.message : String(e)}`)
     return { status: 'error' as const, deleted: 0, failed: 0 }
   })
 
-  const ok = health.ok === true && purge.status !== 'error' && purge.failed === 0
-  return NextResponse.json({ ok, health, purge }, { status: ok ? 200 : 500, headers: noStore })
+  // 3. Retención de la analítica (tolera que la función no exista aún).
+  const analytics = await purgeOldAnalytics(admin)
+
+  // 4. Correo semanal (solo los lunes; martes y miércoles recupera lo pendiente).
+  const weekly = await runWeeklyDigest(defaultDigestDeps(admin)).catch((e: unknown) => {
+    log.error(`correo semanal: ${e instanceof Error ? e.message : String(e)}`)
+    return { status: 'error' as const }
+  })
+
+  const ok =
+    health.ok === true &&
+    purge.status !== 'error' &&
+    purge.failed === 0 &&
+    analytics.status !== 'error' &&
+    weekly.status !== 'error'
+  return NextResponse.json({ ok, health, purge, analytics, weekly }, { status: ok ? 200 : 500, headers: noStore })
 }

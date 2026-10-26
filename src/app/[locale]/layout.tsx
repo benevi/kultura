@@ -4,7 +4,7 @@ import { NextIntlClientProvider } from "next-intl";
 import { getMessages, getTranslations, setRequestLocale } from "next-intl/server";
 import { notFound } from "next/navigation";
 import { preconnect } from "react-dom";
-import { Analytics } from "@vercel/analytics/next";
+import { VercelAnalytics } from "@/components/analytics/VercelAnalytics";
 import { isAppLocale } from "@/i18n/detect";
 import { SHELL_CLIENT_NAMESPACES, pickMessages } from "@/i18n/client-messages";
 import { SHELL_VIEWPORT, shellMetadata } from "@/i18n/metadata";
@@ -88,7 +88,8 @@ export default async function LocaleLayout({
         <NextIntlClientProvider messages={pickMessages(messages, SHELL_CLIENT_NAMESPACES)}>
           {children}
         </NextIntlClientProvider>
-        <Analytics />
+        {/* F-28: sin `?t=` (enlaces firmados del correo) en las páginas vistas. */}
+        <VercelAnalytics />
       </body>
     </html>
   );

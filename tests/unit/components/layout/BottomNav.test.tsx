@@ -51,7 +51,9 @@ describe('BottomNav', () => {
     const bottomHrefs = hrefsOf(bottom)
     const { container: top } = render(<NavLinks username="ana" />)
     expect(bottomHrefs).toEqual(['/home', '/discover', '/library', '/lists', '/profile/ana'])
-    expect(hrefsOf(top)).toEqual(bottomHrefs)
+    // F-28: NavLinks añade el Calendario al final, solo desde xl (en móvil va en el menú del avatar).
+    expect(hrefsOf(top).slice(0, 5)).toEqual(bottomHrefs)
+    expect(hrefsOf(top).slice(5)).toEqual(['/calendar'])
   })
 
   it('es una navegación con nombre y sin botón «Más»', () => {

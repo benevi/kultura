@@ -15,6 +15,7 @@ vi.mock('next-intl', () => ({
       lists: 'Listas',
       profileTab: 'Perfil',
       primaryNav: 'Navegación principal',
+      label: 'Calendario',
     }
     return map[key] ?? key
   }),
@@ -36,12 +37,22 @@ describe('NavLinks', () => {
     mockPathname.value = '/home'
   })
 
-  it('pinta los 5 destinos en orden: Inicio, Descubrir, Biblioteca, Listas, Perfil', () => {
+  it('pinta los 5 destinos en orden: Inicio, Descubrir, Biblioteca, Listas, Perfil (y el Calendario desde xl)', () => {
     render(<NavLinks username="ana" />)
     const nav = screen.getByRole('navigation', { name: 'Navegación principal' })
     const links = within(nav).getAllByRole('link')
-    expect(links.map((a) => a.textContent)).toEqual(['Inicio', 'Descubrir', 'Biblioteca', 'Listas', 'Perfil'])
-    expect(links.map((a) => a.getAttribute('href'))).toEqual(['/home', '/discover', '/library', '/lists', '/profile/ana'])
+    expect(links.map((a) => a.textContent)).toEqual(['Inicio', 'Descubrir', 'Biblioteca', 'Listas', 'Perfil', 'Calendario'])
+    expect(links.map((a) => a.getAttribute('href'))).toEqual(['/home', '/discover', '/library', '/lists', '/profile/ana', '/calendar'])
+  })
+
+  // F-28: a 768-1279 px no cabe un sexto destino; ahí y en móvil está en el menú del avatar.
+  it('el Calendario solo se ve desde xl y se marca activo en /calendar', () => {
+    mockPathname.value = '/calendar'
+    render(<NavLinks username="ana" />)
+    const calendar = screen.getByRole('link', { name: 'Calendario' })
+    expect(calendar.closest('li')?.className).toContain('hidden xl:block')
+    expect(calendar).toHaveAttribute('aria-current', 'page')
+    expect(calendar.className).toContain('min-h-11')
   })
 
   it('ya no mete chat, amigos, grupos ni sugerencias en la barra (van en Social y en el avatar)', () => {

@@ -5,7 +5,7 @@ import { useTranslations } from 'next-intl'
 import { Link, useRouter, usePathname } from '@/i18n/navigation'
 import { cn } from '@/lib/utils/index'
 import { Avatar } from '@/components/ui/Avatar'
-import { IconIdea } from '@/components/icons'
+import { IconCalendar, IconIdea } from '@/components/icons'
 import { createClient } from '@/lib/supabase/client'
 import { LanguageSwitcher } from '@/components/layout/LanguageSwitcher'
 import { isNavActive, FOCUS_RING, MENU_ROW } from '@/components/layout/nav-shared'
@@ -37,6 +37,7 @@ function IconSettings(props: { className?: string }) {
 export function AvatarDropdown({ username, avatarColor, avatarInitials, avatarIcon }: AvatarDropdownProps) {
   const t = useTranslations('nav')
   const tAuth = useTranslations('auth')
+  const tCalendar = useTranslations('calendar.nav')
   const router = useRouter()
   const pathname = usePathname()
   const languageLabelId = useId()
@@ -48,9 +49,12 @@ export function AvatarDropdown({ username, avatarColor, avatarInitials, avatarIc
     router.refresh()
   }
 
+  // F-28: el Calendario, también aquí (en móvil y en escritorio estrecho es
+  // el único acceso; en `xl` está además en la barra).
   const links = [
-    { key: 'settings', href: '/settings', icon: IconSettings },
-    { key: 'suggestions', href: '/suggestions', icon: IconIdea },
+    { key: 'calendar', href: '/calendar', icon: IconCalendar, label: tCalendar('label') },
+    { key: 'settings', href: '/settings', icon: IconSettings, label: t('settings') },
+    { key: 'suggestions', href: '/suggestions', icon: IconIdea, label: t('suggestions') },
   ] as const
 
   return (
@@ -65,7 +69,7 @@ export function AvatarDropdown({ username, avatarColor, avatarInitials, avatarIc
           <p className="px-3 pt-1 pb-2 text-xs text-text-tertiary truncate" translate="no">@{username}</p>
           <nav aria-label={t('accountNav')}>
             <ul className="flex flex-col gap-0.5">
-              {links.map(({ key, href, icon: Icon }) => {
+              {links.map(({ key, href, icon: Icon, label }) => {
                 const active = isNavActive(pathname, href)
                 return (
                   <li key={key}>
@@ -76,7 +80,7 @@ export function AvatarDropdown({ username, avatarColor, avatarInitials, avatarIc
                       className={cn(MENU_ROW, active && 'bg-surface-elevated')}
                     >
                       <Icon className="w-5 h-5 text-text-secondary" />
-                      {t(key)}
+                      {label}
                     </Link>
                   </li>
                 )

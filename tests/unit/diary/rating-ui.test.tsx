@@ -356,22 +356,19 @@ describe('Biblioteca con el diario', () => {
     expect(screen.queryByText('favorites')).toBeNull()
   })
 
-  it('con diario: vista Colección/Diario, escala ½★ o /10 y filtro de favoritos', () => {
+  it('con diario: vista Colección/Diario y filtro de favoritos', () => {
     search = new URLSearchParams('fav=1')
     render(<LibraryClient entries={entries} diary={{ logs: [], scale: 'stars' }} />)
     expect(screen.getByRole('radiogroup', { name: 'view' })).toBeInTheDocument()
-    expect(screen.getByRole('radiogroup', { name: 'scaleLabel' })).toBeInTheDocument()
     expect(screen.getByTestId('grid')).toHaveTextContent('1')
   })
 
-  it('cambiar la escala la guarda; si falla, vuelve atrás y avisa', async () => {
-    mockSaveScale.mockRejectedValueOnce(new Error('x'))
+  // F-28: la escala ½★ o /10 se elige en Ajustes (tests/unit/calendar-email/settings-form.test.tsx);
+  // en la Biblioteca solo queda lo imprescindible.
+  it('la escala de notas ya no está en la Biblioteca (pasó a Ajustes)', () => {
     render(<LibraryClient entries={entries} diary={{ logs: [], scale: 'stars' }} />)
-    const ten = within(screen.getByRole('radiogroup', { name: 'scaleLabel' })).getByRole('radio', { name: 'scaleTen' })
-    fireEvent.click(ten)
-    await waitFor(() => expect(mockSaveScale).toHaveBeenCalledWith('ten'))
-    await waitFor(() => expect(mockShowError).toHaveBeenCalledWith('scaleSaveFailed'))
-    expect(ten).toHaveAttribute('aria-checked', 'false')
+    expect(screen.queryByRole('radiogroup', { name: 'scaleLabel' })).toBeNull()
+    expect(mockSaveScale).not.toHaveBeenCalled()
   })
 
   it('?view=diary enseña el diario', () => {
