@@ -6,8 +6,9 @@
 
 import { createClient } from '@/lib/supabase/server'
 import type { DbUserMedia, DbMedia } from '@/types/supabase'
-import type { LibraryEntry, LibraryStatus } from '@/types/library'
+import type { LibraryStatus } from '@/types/library'
 import { entryRating10 } from '@/lib/library/rating'
+import { progressFromRow, type LibraryEntryWithProgress } from '@/lib/library/progress'
 
 type UserMediaWithMedia = DbUserMedia & {
   media: Pick<DbMedia, 'title' | 'poster' | 'year'> | null
@@ -16,9 +17,10 @@ type UserMediaWithMedia = DbUserMedia & {
 /**
  * Mapea una fila de user_media (con join de media) a LibraryEntry. Las
  * columnas de F-24 (rating10, favorite) llegan con `*` si la migración está
- * aplicada; si no, rating10 = score × 2 y favorite = false.
+ * aplicada; si no, rating10 = score × 2 y favorite = false. Igual el
+ * progreso de F-27 (`progress`): columnas `progress_*` o, sin ellas, el jsonb.
  */
-function mapEntry(row: UserMediaWithMedia): LibraryEntry {
+function mapEntry(row: UserMediaWithMedia): LibraryEntryWithProgress {
   const rating10 = row.rating10 === null || row.rating10 === undefined ? undefined : Number(row.rating10)
   return {
     id: row.id,
@@ -30,6 +32,8 @@ function mapEntry(row: UserMediaWithMedia): LibraryEntry {
     favorite: row.favorite ?? false,
     watchedAt: row.watched_at,
     episodeProgress: row.episode_progress,
+    // F-27: columnas progress_* si la migración está; si no, el jsonb.
+    progress: progressFromRow(row as unknown as Record<string, unknown>),
     createdAt: row.created_at,
     title: row.media?.title,
     poster: row.media?.poster ?? undefined,
@@ -42,7 +46,7 @@ function mapEntry(row: UserMediaWithMedia): LibraryEntry {
  * ordenadas por fecha de creación descendente.
  * Incluye datos de visualización de la tabla media (JOIN).
  */
-export async function getUserMedia(userId: string): Promise<LibraryEntry[]> {
+export async function getUserMedia(userId: string): Promise<LibraryEntryWithProgress[]> {
   const supabase = await createClient()
 
   const { data, error } = await supabase
@@ -66,7 +70,7 @@ export async function getRecentLibraryByStatus(
   userId: string,
   status: LibraryStatus,
   limit = 8
-): Promise<LibraryEntry[]> {
+): Promise<LibraryEntryWithProgress[]> {
   const supabase = await createClient()
 
   const { data, error } = await supabase
@@ -88,7 +92,7 @@ export async function getRecentLibraryByStatus(
 export async function getMediaEntry(
   userId: string,
   mediaId: string
-): Promise<LibraryEntry | null> {
+): Promise<LibraryEntryWithProgress | null> {
   const supabase = await createClient()
 
   const { data, error } = await supabase

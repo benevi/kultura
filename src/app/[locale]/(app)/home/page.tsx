@@ -7,7 +7,7 @@ import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { redirect } from 'next/navigation'
 import { HeroSection } from '@/components/home/HeroSection'
-import { MediaRow } from '@/components/home/MediaRow'
+import { ContinueRow } from '@/components/home/ContinueRow'
 import { AiRecommendations } from '@/components/home/AiRecommendations'
 import { PopularInCircle } from '@/components/home/PopularInCircle'
 import { GenreNews } from '@/components/home/GenreNews'
@@ -19,6 +19,7 @@ import type { HeroItem } from '@/components/home/HeroSection'
 import { Link } from '@/i18n/navigation'
 import { generatedUsername, initialsFor, purgeDate } from '@/app/api/settings/identity'
 import { readAccountState } from '@/app/api/settings/account-state'
+import { progressV2Active } from '@/lib/library/progress-server'
 import {
   FriendsActivity,
   FriendsActivitySkeleton,
@@ -86,7 +87,7 @@ export default async function HomePage() {
   // Fetches paralelos: in_progress hero + recientes + lo necesario para "Para
   // ti" SIN llamar a la IA (D-06): las recomendaciones de hoy si ya existen y
   // cuántos títulos con señal tiene la biblioteca.
-  const [inProgressResult, recentResult, todayRecs, signalResult, account] = await Promise.all([
+  const [inProgressResult, recentResult, todayRecs, signalResult, account, fullProgress] = await Promise.all([
     supabase
       .from('user_media')
       .select('media_id, episode_progress, media(id, title, poster, year, type, synopsis)')
@@ -97,7 +98,7 @@ export default async function HomePage() {
       .maybeSingle(),
     supabase
       .from('user_media')
-      .select('media_id, status, media(id, title, poster, type)')
+      .select('media_id, status, episode_progress, media(id, title, poster, type)')
       .eq('user_id', user.id)
       .in('status', ['in_progress', 'pending'])
       .order('updated_at', { ascending: false })
@@ -111,6 +112,9 @@ export default async function HomePage() {
       .or('status.eq.completed,score.gte.4'),
     // ROJO-7: borrado programado → aviso arriba, con la salida a Ajustes.
     readAccountState(supabase, user.id),
+    // F-27: «marcar siguiente» en todos los formatos solo con PROGRESS_V2 y
+    // la migración aplicada (misma sonda que GET /api/library/progress).
+    progressV2Active(supabase),
   ])
   const deletionRequestedAt = account.state?.deletion_requested_at ?? null
 
@@ -125,7 +129,8 @@ export default async function HomePage() {
 
   type RecentRow = {
     media_id: string
-    status: string
+    status: 'in_progress' | 'pending'
+    episode_progress: unknown
     media: { id: string; title: string; poster: string | null; type: string } | null
   }
 
@@ -137,6 +142,8 @@ export default async function HomePage() {
       title: item.media?.title ?? '',
       poster: item.media?.poster ?? null,
       type: item.media?.type ?? '',
+      status: item.status,
+      progress: item.episode_progress,
     }))
 
   return (
@@ -161,15 +168,10 @@ export default async function HomePage() {
           </Link>
         </div>
       )}
-      <HeroSection item={inProgress} />
+      <HeroSection item={inProgress} fullProgress={fullProgress} />
 
-      {filteredRecent.length > 0 && (
-        <MediaRow
-          title={t('continueWatching')}
-          items={filteredRecent}
-          requirePoster={false}
-        />
-      )}
+      {/* F-27 (PRO-5): cada tarjeta con su progreso y «1 toque» para avanzar. */}
+      <ContinueRow title={t('continueWatching')} items={filteredRecent} fullProgress={fullProgress} />
 
       {/* Orden tras retirar el hero vacío: primero lo propio (lo que sigues, lo
           que la IA te elige por match), después lo social y por último las
