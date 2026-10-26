@@ -34,8 +34,32 @@ interface Props {
   supabase: SupabaseClient | null;
 }
 
+/**
+ * Tope de la sección: la respuesta en streaming no se cierra hasta que llega,
+ * y una ficha no puede quedarse abierta lo que tarde Wikidata en un mal día.
+ * Pasado el tope sale sin la sección (la consulta sigue y, si acaba, la
+ * siguiente visita ya la encuentra en la tabla).
+ */
+export const ADAPTATIONS_SECTION_BUDGET_MS = 7000;
+
+function withinBudget<T>(promise: Promise<T>, fallback: T): Promise<T> {
+  return new Promise((resolve) => {
+    const timer = setTimeout(() => resolve(fallback), ADAPTATIONS_SECTION_BUDGET_MS);
+    promise.then(
+      (value) => {
+        clearTimeout(timer);
+        resolve(value);
+      },
+      () => {
+        clearTimeout(timer);
+        resolve(fallback);
+      }
+    );
+  });
+}
+
 export async function AdaptationsSection({ item, locale, userId, supabase }: Props) {
-  const { links } = await getAdaptations(item);
+  const { links } = await withinBudget(getAdaptations(item), { links: [], source: "none" as const });
   if (links.length === 0) return null;
   const view = await buildAdaptationView(links, { locale, userId, supabase });
   if (view.cards.length === 0) return null;

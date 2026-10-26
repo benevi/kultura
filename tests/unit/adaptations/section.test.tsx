@@ -33,7 +33,7 @@ vi.mock("@/components/media/AddFranchiseButton", () => ({
   AddFranchiseButton: ({ items }: { items: unknown[] }) => <button data-testid="add-franchise" data-count={items.length} />,
 }));
 
-import { AdaptationsSection } from "@/components/media/AdaptationsSection";
+import { ADAPTATIONS_SECTION_BUDGET_MS, AdaptationsSection } from "@/components/media/AdaptationsSection";
 
 const ITEM = { id: "movie_438631", type: "movie" as const, externalId: "438631", title: "Dune" };
 
@@ -64,6 +64,15 @@ describe("AdaptationsSection", () => {
     h.getAdaptations.mockResolvedValue({ links: [], source: "none" });
     expect(await AdaptationsSection({ item: ITEM, locale: "es", userId: null, supabase: null })).toBeNull();
     expect(h.buildAdaptationView).not.toHaveBeenCalled();
+  });
+
+  it("Wikidata lento: pasado el tope sale sin la sección (la ficha no se queda abierta)", async () => {
+    vi.useFakeTimers();
+    h.getAdaptations.mockReturnValue(new Promise(() => {}));
+    const pending = AdaptationsSection({ item: ITEM, locale: "es", userId: null, supabase: null });
+    await vi.advanceTimersByTimeAsync(ADAPTATIONS_SECTION_BUDGET_MS + 10);
+    await expect(pending).resolves.toBeNull();
+    vi.useRealTimers();
   });
 
   it("título, tarjetas enlazadas a su ficha con formato, año y relación", async () => {
