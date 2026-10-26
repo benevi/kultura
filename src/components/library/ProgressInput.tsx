@@ -209,7 +209,7 @@ export function ProgressInput({
                 className={cn(
                   'inline-flex min-h-10 min-w-[4.5rem] cursor-pointer items-center justify-center rounded-full px-3 text-sm font-bold transition-colors',
                   'has-[:focus-visible]:[outline-style:solid] has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-focus-ring',
-                  pct === byPercent ? 'bg-accent-pink text-on-accent-pink' : 'text-text-secondary hover:text-text-primary'
+                  pct === byPercent ? 'bg-accent-positive text-on-accent-positive' : 'text-text-secondary hover:text-text-primary'
                 )}
               >
                 <input

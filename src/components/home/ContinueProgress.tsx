@@ -11,6 +11,7 @@
 import { useEffect, useRef } from 'react'
 import { useTranslations } from 'next-intl'
 import { cn } from '@/lib/utils/index'
+import { KButton } from '@/components/ui/KButton'
 import { FinishPrompt } from '@/components/library/FinishPrompt'
 import { useProgressAdvance } from '@/components/library/useProgressAdvance'
 import { useProgressLabel } from '@/components/library/useProgressLabel'
@@ -85,33 +86,29 @@ export function ContinueProgress({ mediaId, mediaType, title, progress: initial,
       </div>
 
       {unit && (
-        <div className={cn('flex items-center', hero ? 'min-h-11' : 'min-h-11')}>
+        <div className="flex min-h-11 items-center">
           {done ? (
             <span
               ref={stampRef}
-              className="inline-flex min-h-9 items-center rounded-full bg-accent-lime px-3 text-xs font-extrabold text-on-accent-lime shadow-[3px_3px_0_rgba(0,0,0,0.35)]"
+              className="inline-flex min-h-9 items-center rounded-full bg-accent-lime px-3 text-xs font-extrabold text-on-accent-lime shadow-[4px_4px_0_rgba(0,0,0,0.4)]"
             >
               {td('stamp', { type: mediaType })}
             </span>
           ) : (
-            <button
+            <KButton
               ref={buttonRef}
               type="button"
+              variant="secondary"
               onClick={state.advance}
               aria-busy={state.busy || undefined}
               aria-label={t('quickLabel', { unit, title })}
               data-testid="progress-next"
-              className={cn(
-                'relative inline-flex min-h-11 items-center justify-center gap-1.5 rounded-pill font-body font-extrabold whitespace-nowrap',
-                'border-2 border-accent-positive text-text-primary hover:bg-accent-positive hover:text-on-accent-positive',
-                'focus-visible:[outline-style:solid] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus-ring',
-                'motion-safe:transition-colors motion-safe:active:scale-95',
-                hero ? 'px-5 text-sm' : 'min-w-11 px-3 text-xs'
-              )}
+              // 44 px de alto (zona táctil) en los dos tamaños.
+              className={cn('h-11 text-text-primary', hero ? 'px-5 text-sm' : 'min-w-11 px-3 text-xs')}
             >
               <span aria-hidden="true">✓</span>
               <span aria-hidden="true">{t('quick', { unit })}</span>
-            </button>
+            </KButton>
           )}
         </div>
       )}
