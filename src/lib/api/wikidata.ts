@@ -263,6 +263,8 @@ export interface SparqlOptions {
   /** `false` = sin caché de Next (la ficha usa la tabla); si no, `revalidate` en segundos. */
   cache: false | { revalidate: number };
   signal?: AbortSignal;
+  /** Plazo por intento; por defecto WIKIDATA_TIMEOUT_MS (el de las fichas). */
+  timeoutMs?: number;
 }
 
 /**
@@ -274,7 +276,7 @@ export async function runSparql(query: string, opts: SparqlOptions): Promise<Spa
   const url = `${WIKIDATA_SPARQL_ENDPOINT}?${new URLSearchParams({ query, format: "json" })}`;
   const json = await providerFetch<SparqlResults>(WIKIDATA_PROVIDER, url, {
     schema: sparqlResultsSchema,
-    timeoutMs: WIKIDATA_TIMEOUT_MS,
+    timeoutMs: opts.timeoutMs ?? WIKIDATA_TIMEOUT_MS,
     headers: { Accept: "application/sparql-results+json" },
     label: "sparql",
     cache: opts.cache,
@@ -292,9 +294,16 @@ export async function runSparql(query: string, opts: SparqlOptions): Promise<Spa
 export const WIKIDATA_PROBE_QUERY = "SELECT ?ok WHERE { BIND(1 AS ?ok) }";
 
 /**
+ * Plazo de la sonda: la consulta constante responde en milisegundos cuando
+ * WDQS está bien; los 7 s de las fichas (franquicias grandes) harían que
+ * `/api/health?deep=1` tardase eso cada vez que WDQS va lento.
+ */
+export const WIKIDATA_PROBE_TIMEOUT_MS = 2500;
+
+/**
  * Sonda de `/api/health?deep=1`: misma ruta que las fichas (GET, User-Agent,
  * plazo, contrato y circuito de `providerFetch`), sin caché de datos.
  */
 export async function probeWikidata(): Promise<void> {
-  await runSparql(WIKIDATA_PROBE_QUERY, { cache: false });
+  await runSparql(WIKIDATA_PROBE_QUERY, { cache: false, timeoutMs: WIKIDATA_PROBE_TIMEOUT_MS });
 }

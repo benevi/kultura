@@ -1,7 +1,8 @@
 // ============================================================
 // KULTURA — Sondas de `/api/health?deep=1` (COD-2)
-// Nueve proveedores (los ocho del catálogo y Wikidata, que da las
-// adaptaciones de la ficha), una llamada barata y sin caché de datos cada uno, el
+// Ocho proveedores de catálogo que cuentan para `ok` y Wikidata (adaptaciones
+// de la ficha) como sonda OPCIONAL: sale en el informe pero no tumba `ok` ni
+// hace saltar el monitor. Una llamada barata y sin caché de datos cada uno, el
 // resultado completo cacheado (para que la ruta no sirva para gastar cupo) y
 // sin filtrar URLs ni claves en la respuesta.
 // ============================================================
@@ -14,9 +15,11 @@ vi.mock("next/cache", () => ({ unstable_cache: fakeUnstableCache }));
 import {
   DEEP_HEALTH_TTL_SECONDS,
   getProvidersReport,
+  OPTIONAL_PROBES,
   PROBES,
   runProviderProbes,
 } from "@/app/api/health/providers";
+import { WIKIDATA_PROBE_TIMEOUT_MS } from "@/lib/api/wikidata";
 import { resetProviderCircuits } from "@/lib/api/http";
 
 /** Respuesta mínima válida para la sonda de cada proveedor, según la URL. */
@@ -40,7 +43,8 @@ describe("sondas de proveedores", () => {
   });
   afterEach(() => vi.unstubAllGlobals());
 
-  it("nueve entradas, una por proveedor de catálogo o ficha (también Wikidata)", () => {
+  it("ocho sondas que cuentan y Wikidata como opcional", () => {
+    expect(OPTIONAL_PROBES.map(([p]) => p)).toEqual(["wikidata"]);
     expect(PROBES.map(([p]) => p)).toEqual([
       "tmdb",
       "rawg",
@@ -50,7 +54,6 @@ describe("sondas de proveedores", () => {
       "openlibrary",
       "googlebooks",
       "steam",
-      "wikidata",
     ]);
   });
 
@@ -99,7 +102,7 @@ describe("sondas de proveedores", () => {
     expect(call[1]?.cache).toBe("no-store");
   });
 
-  it("Wikidata caída → ok:false con su tipo de fallo, como los demás", async () => {
+  it("Wikidata caída o con 429 → sale en el informe con su fallo, pero `ok` sigue true", async () => {
     vi.stubGlobal(
       "fetch",
       vi.fn(async (url: string) =>
@@ -107,9 +110,31 @@ describe("sondas de proveedores", () => {
       )
     );
     const report = await runProviderProbes();
-    expect(report.ok).toBe(false);
-    expect(report.providers.wikidata).toMatchObject({ ok: false, status: 503 });
+    expect(report.ok).toBe(true);
+    expect(report.providers.wikidata).toMatchObject({ ok: false, status: 503, optional: true });
+    // Las que cuentan no llevan la marca.
+    expect(report.providers.tmdb).not.toHaveProperty("optional");
   });
+
+  it("Wikidata lenta: su sonda corta a los ~2,5 s (no a los 7 s de las fichas) y no tumba `ok`", async () => {
+    expect(WIKIDATA_PROBE_TIMEOUT_MS).toBeLessThanOrEqual(3000);
+    vi.stubGlobal(
+      "fetch",
+      vi.fn((url: string, init?: RequestInit) =>
+        url.includes("query.wikidata.org")
+          ? new Promise<Response>((_resolve, reject) => {
+              init?.signal?.addEventListener("abort", () => reject(new DOMException("aborted", "AbortError")));
+            })
+          : Promise.resolve(Response.json(okFor(url)))
+      )
+    );
+    const startedAt = Date.now();
+    const report = await runProviderProbes();
+    const elapsed = Date.now() - startedAt;
+    expect(elapsed).toBeLessThan(WIKIDATA_PROBE_TIMEOUT_MS + 1500);
+    expect(report.ok).toBe(true);
+    expect(report.providers.wikidata).toMatchObject({ ok: false, optional: true });
+  }, 10_000);
 
   it("el informe dura al menos 1 h (288 rondas al día se comían el cupo de RAWG)", () => {
     expect(DEEP_HEALTH_TTL_SECONDS).toBeGreaterThanOrEqual(3600);

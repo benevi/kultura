@@ -11,9 +11,12 @@
 // y en un recurso (`types`) que el catálogo no usa. El monitor de caídas rápido es
 // `/api/health` sin `deep` (cada 5 min); este, cada 60 min.
 //
-// Nueve entradas: los proveedores que sirven catálogo o ficha, Wikidata
-// incluida (adaptaciones de la ficha; su sonda es una consulta SPARQL sin
-// tripletas, gratis para WDQS y sin cupo que gastar). Jikan queda
+// Ocho entradas que cuentan para `ok`: los proveedores que sirven catálogo o
+// ficha. Wikidata (adaptaciones de la ficha) va en OPTIONAL_PROBES: se ve en
+// `providers` con `optional: true` pero no cuenta para `ok`, porque WDQS va
+// lento o responde 429 a menudo y la ficha sin adaptaciones sigue funcionando;
+// si contase, el monitor saltaría por algo que nadie nota. Su sonda es una
+// consulta SPARQL sin tripletas con un plazo propio de 2,5 s. Jikan queda
 // fuera a propósito: solo resuelve ids antiguos de bibliotecas (ver
 // `jikan.ts`), y su caída no se nota en ninguna pantalla nueva.
 // ============================================================
@@ -46,6 +49,10 @@ export const PROBES: ReadonlyArray<[ProviderId, () => Promise<void>]> = [
   ["openlibrary", probeOpenLibrary],
   ["googlebooks", probeGoogleBooks],
   ["steam", probeSteam],
+];
+
+/** Se sondean y se enseñan, pero un fallo suyo no pone `ok: false`. */
+export const OPTIONAL_PROBES: ReadonlyArray<[ProviderId, () => Promise<void>]> = [
   ["wikidata", probeWikidata],
 ];
 
@@ -57,6 +64,8 @@ export interface ProviderProbe {
   /** Solo si falla: tipo de fallo y status, nunca el mensaje (puede llevar URL). */
   error?: string;
   status?: number;
+  /** Sonda opcional (OPTIONAL_PROBES): no cuenta para `ok`. */
+  optional?: true;
 }
 
 export interface ProvidersReport {
@@ -75,14 +84,19 @@ function describeFailure(e: unknown): Pick<ProviderProbe, "error" | "status"> {
 
 /** Lanza todas las sondas en paralelo. Nunca lanza. */
 export async function runProviderProbes(): Promise<ProvidersReport> {
+  const all = [
+    ...PROBES.map(([provider, probe]) => ({ provider, probe, optional: false })),
+    ...OPTIONAL_PROBES.map(([provider, probe]) => ({ provider, probe, optional: true })),
+  ];
   const entries = await Promise.all(
-    PROBES.map(async ([provider, probe]): Promise<[string, ProviderProbe]> => {
+    all.map(async ({ provider, probe, optional }): Promise<[string, ProviderProbe]> => {
       const startedAt = Date.now();
+      const mark = optional ? { optional: true as const } : {};
       try {
         await probe();
         return [
           provider,
-          { ok: true, ms: Date.now() - startedAt, circuit: providerCircuitState(provider) },
+          { ok: true, ms: Date.now() - startedAt, circuit: providerCircuitState(provider), ...mark },
         ];
       } catch (e) {
         return [
@@ -92,6 +106,7 @@ export async function runProviderProbes(): Promise<ProvidersReport> {
             ms: Date.now() - startedAt,
             circuit: providerCircuitState(provider),
             ...describeFailure(e),
+            ...mark,
           },
         ];
       }
@@ -99,7 +114,7 @@ export async function runProviderProbes(): Promise<ProvidersReport> {
   );
   const providers = Object.fromEntries(entries);
   return {
-    ok: entries.every(([, p]) => p.ok),
+    ok: entries.every(([, p]) => p.ok || p.optional === true),
     checkedAt: new Date().toISOString(),
     providers,
   };
