@@ -11,7 +11,6 @@ import { SegmentedControl } from '@/components/ui/SegmentedControl'
 import { ShareLinkButton } from '@/components/social/ShareLinkButton'
 import { MediaCard } from '@/components/media/MediaCard'
 import { createLogger } from '@/lib/logger'
-import { cn } from '@/lib/utils/index'
 import type { List, ListItem, ListMember } from '@/types/list'
 import { ReorderableItems } from './ReorderableItems'
 import { ItemNote } from './ItemNote'
@@ -381,7 +380,7 @@ export function ListDetail({
             {t('itemsTitle')}
             <span className="ml-2 text-sm font-body font-medium text-text-secondary">{items.length}</span>
           </h2>
-          {canOrder && items.length > 1 && (
+          {canOrder && items.length > 0 && (
             <KButton
               variant={reordering ? 'primary' : 'secondary'}
               size="sm"
@@ -392,7 +391,7 @@ export function ListDetail({
             </KButton>
           )}
         </div>
-        {reordering && canOrder && items.length > 1 ? (
+        {reordering && canOrder && items.length > 0 ? (
           <ReorderableItems listId={list.id} items={items} onItemsChange={onItemsChange} ranked={ranked} />
         ) : items.length === 0 ? (
           <div className="bg-surface-default rounded-3xl p-10 text-center flex flex-col items-center gap-3">
@@ -441,15 +440,11 @@ export function ListDetail({
                     className="absolute top-0 right-0 bg-surface-base/80 hover:text-accent-danger md:opacity-0 md:group-hover:opacity-100 md:focus-visible:opacity-100 transition-opacity"
                   />
                 )}
-                {mixedEnabled && (
-                  <ItemNote
-                    listId={list.id}
-                    item={item}
-                    editable={canEdit}
-                    onSaved={(note) => setItems((prev) => prev.map((i) => (i.id === item.id ? { ...i, note } : i)))}
-                    className={cn(!item.note && 'md:opacity-0 md:group-hover:opacity-100 md:focus-within:opacity-100 transition-opacity')}
-                  />
-                )}
+                {/* En la rejilla la nota solo se lee; se escribe en «Ordenar y
+                    anotar» (una fila por título, sin controles ocultos). */}
+                {mixedEnabled && item.note ? (
+                  <ItemNote listId={list.id} item={item} editable={false} onSaved={() => undefined} />
+                ) : null}
               </li>
             ))}
           </ol>

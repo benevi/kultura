@@ -508,7 +508,7 @@
     "editDescription": "Edit description",
     "errorMixedUnavailable": "Mixed-format lists aren't available yet. Choose a format.",
     "inviteNotFriend": "You can only invite your friends. Send them a friend request first.",
-    "reorder": "Reorder",
+    "reorder": "Reorder and add notes",
     "reorderDone": "Done",
     "reorderHint": "Drag each title by its handle or use Move up and Move down. With a keyboard: press Space on the handle to pick it up, the arrow keys to move it, Space to drop it and Escape to cancel.",
     "dragHandle": "Move “{title}”, position {position} of {total}",

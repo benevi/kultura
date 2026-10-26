@@ -508,7 +508,7 @@
     "editDescription": "Editar descripción",
     "errorMixedUnavailable": "Las listas con varios formatos aún no están disponibles. Elige un formato.",
     "inviteNotFriend": "Solo puedes invitar a tus amigos. Envíale antes una solicitud de amistad.",
-    "reorder": "Ordenar",
+    "reorder": "Ordenar y anotar",
     "reorderDone": "Listo",
     "reorderHint": "Arrastra cada título por el asa o usa Subir y Bajar. Con teclado: Espacio en el asa para cogerlo, flechas para moverlo, Espacio para soltarlo y Escape para cancelar.",
     "dragHandle": "Mover «{title}», posición {position} de {total}",
