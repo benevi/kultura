@@ -50,6 +50,21 @@ const baseProps = {
 // ── Tests ─────────────────────────────────────────────────────────────────────
 
 describe('ProfileHeader', () => {
+  it('sin fecha de alta (o inválida) no pinta «Miembro desde» ni se inventa una', async () => {
+    for (const createdAt of [null, '', 'no-es-fecha']) {
+      const { container, unmount } = render(await ProfileHeader({ ...baseProps, createdAt }))
+      expect(container.textContent).not.toContain('memberSince')
+      expect(container.textContent).not.toContain(String(new Date().getFullYear()))
+      unmount()
+    }
+  })
+
+  it('con fecha de alta sí la pinta', async () => {
+    const { container } = render(await ProfileHeader(baseProps))
+    expect(container.textContent).toContain('memberSince')
+    expect(container.textContent).toContain('2024')
+  })
+
   it('renderiza el username', async () => {
     render(await ProfileHeader(baseProps))
     expect(screen.getByText('testuser')).toBeInTheDocument()

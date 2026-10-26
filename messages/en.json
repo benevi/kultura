@@ -1632,7 +1632,7 @@
     "privacy": {
       "title": "Privacy Policy",
       "metaDescription": "What data KULTURA processes, why, with which providers, for how long and how to exercise your rights, in plain words.",
-      "updated": "Last updated: 23 October 2026",
+      "updated": "Last updated: 26 October 2026",
       "version": "Version 2026-10",
       "summary": {
         "s1": "KULTURA is made by me, Víctor Franco, as a free personal project with no ads. For anything about your data, write to <mail>{email}</mail>.",
@@ -1656,7 +1656,7 @@
             "library": "<b>Library</b>: saved titles, status, ratings, progress and dates.",
             "social": "<b>Social activity</b>: friendships and requests, blocks, private messages, lists, groups and their posts, recommendations between friends and notifications.",
             "sent": "<b>What you send me</b>: suggestions and reports. In the <report>report form for people without an account</report>, also the contact email if you choose to leave one.",
-            "technical": "<b>Technical data</b>: IP address and browser data to serve the site, stop abuse and rate-limit requests; error reports; and aggregated usage data (see “Analytics and cookies”)."
+            "technical": "<b>Technical data</b>: IP address and browser data to serve the site, stop abuse and rate-limit requests; error reports; and aggregated usage data (see “Analytics and cookies”). If you turn on push notifications on a device, also the notification address its browser creates, its encryption keys and the language of the notifications."
           },
           "p2": "To create an account, an email and password, or signing in with Google, are required; without them the account can't be created (Art. 13(2)(e) GDPR). Everything else is optional: bio, avatar, what you save or share and the email in the report form.",
           "p3": "I don't ask for special categories of data. Still, what you watch, read or play can say things about you: that's why your library is not public by default."
@@ -1701,6 +1701,7 @@
             "resend": "<b>Resend</b> (USA): emails me a notice of each report, with its content and, if you left one, your contact email.",
             "upstash": "<b>Upstash</b> (Upstash Inc., USA): a counter for rate limiting. It only receives an encrypted fingerprint (hash) of the IP or ID, which expires within minutes.",
             "google": "<b>Google</b> (Google Ireland Ltd.): sign-in, only if you choose to sign in with Google.",
+            "push": "<b>Browser push notification services</b> (Google, Mozilla, Apple or Microsoft, depending on yours): only if you turn on notifications. They deliver each notification encrypted and can't read it; the notification says who wrote to you, never the text of the message.",
             "github": "<b>GitHub</b> (GitHub Inc., USA): stores the backups, which are encrypted before they leave, so GitHub can't read them."
           },
           "p2": "Several are US companies or may access data from there to provide support. These <b>international transfers</b> rely on the EU-US Data Privacy Framework where the company is certified and, in any case, on the European Commission's standard contractual clauses included in their processing terms (Arts. 45 and 46 GDPR).",
@@ -1728,6 +1729,7 @@
             "suggestions": "Suggestions you sent are kept without any link to your account. If you want them deleted, just ask.",
             "ai": "AI recommendations: until the next day's are generated.",
             "events": "Usage events: while you have the account; they are deleted with it.",
+            "push": "Devices with push notifications: until you turn them off or sign out on that device, the browser cancels them, or 10 deliveries in a row fail. They're deleted with your account.",
             "logs": "Server logs: deleted automatically within a day. Error reports (Sentry): 30 days. Rate-limit fingerprints: a few minutes.",
             "backups": "Encrypted weekly backups: 90 days. What you delete disappears from them when they expire.",
             "reports": "Reports and their outcome: as long as needed to resolve the case and handle a possible appeal."
@@ -1736,7 +1738,7 @@
         "rights": {
           "title": "Your rights",
           "p1": "You can ask for access, rectification, erasure, objection, restriction of processing and portability of your data. You can do many things yourself in <settings>Settings</settings>: edit your profile, change who sees your library, export your data and delete your account. For anything else, write to <mail>{email}</mail>; I reply within one month at most.",
-          "p2": "The export is a JSON file with your profile, library, lists, friendships, the messages you sent, your conversations (dates and participants), posts, groups, invitations, recommendations sent and received, suggestions, notifications and reports. It doesn't include messages other people wrote to you: you can read them in the app while you're still in the conversation and, if you want a copy, ask me by email and I'll send it.",
+          "p2": "The export is a JSON file with your profile, library, lists, friendships, the messages you sent and the ones other people wrote to you in the conversations you're still in (with who wrote them), your conversations (dates and participants), posts, groups, invitations, recommendations sent and received, suggestions, notifications, reports, your diary and your devices with push notifications. It doesn't include messages from conversations you've left (if you want a copy, ask me by email and I'll send it) or the encryption keys of push notifications: for each device you only get the dates and the start of its notification address.",
           "p3": "If you think I haven't handled your request properly, you can complain to the Spanish Data Protection Agency (<aepd>aepd.es</aepd>) or to the authority in your country."
         },
         "minors": {

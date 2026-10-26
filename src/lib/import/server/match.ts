@@ -34,7 +34,6 @@ import {
   normalizeTV,
 } from '@/lib/api/normalizer'
 import { isNSFW } from '@/lib/api/nsfw-filter'
-import type { TmdbMovieDetail, TmdbTVDetail } from '@/lib/api/tmdb'
 import { authorKey, pickTitleMatch } from '../title-match'
 import type { ImportItem, MatchMethod } from '../types'
 import { BudgetExhausted, isNotFound, mapLimit, type ProviderBudget } from './budget'
@@ -95,12 +94,12 @@ const yearOf = (date: string | undefined | null) => {
 
 function fromTmdbMovie(raw: TmdbMovie, by: MatchMethod, prebuilt: boolean): MatchResult {
   if ((raw as { adult?: boolean }).adult) return EXCLUDED
-  return matched(`movie_${raw.id}`, by, prebuilt ? normalizeMovie(raw as TmdbMovieDetail) : undefined)
+  return matched(`movie_${raw.id}`, by, prebuilt ? normalizeMovie(raw) : undefined)
 }
 
 function fromTmdbTv(raw: TmdbTV, by: MatchMethod, prebuilt: boolean): MatchResult {
   if ((raw as { adult?: boolean }).adult) return EXCLUDED
-  return matched(`tv_${raw.id}`, by, prebuilt ? normalizeTV(raw as TmdbTVDetail) : undefined)
+  return matched(`tv_${raw.id}`, by, prebuilt ? normalizeTV(raw) : undefined)
 }
 
 /** Idioma en que se busca por título: el de los títulos de Letterboxd / TV Time. */

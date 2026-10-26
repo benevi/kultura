@@ -62,6 +62,20 @@ describe("callback de auth", () => {
     expect(res.headers.get("location")).toBe("https://k.test/es/home");
   });
 
+  it.each([
+    ["//evil.com", "next=//evil.com"],
+    ["%2F%2Fevil.com (codificado)", "next=%2F%2Fevil.com"],
+    ["//evil.com/es/library", "next=%2F%2Fevil.com%2Fes%2Flibrary"],
+    ["/\\evil.com", "next=%2F%5Cevil.com"],
+    ["/\\t/evil.com (tabulador)", "next=%2F%09%2Fevil.com"],
+  ])("next que empieza por // (o lo parece) → inicio, nunca otro dominio: %s", async (_label, query) => {
+    mockExchange.mockResolvedValue({ error: null });
+    const res = await call(`?code=abc&${query}`);
+    const location = res.headers.get("location") ?? "";
+    expect(location).toBe("https://k.test/es/home");
+    expect(new URL(location).host).toBe("k.test");
+  });
+
   // Regresión R1(a): antes iba a `/login?error=…` sin locale y el login no
   // reconocía el error, así que el fallo era invisible.
   it("fallo del canje → login CON locale y código visible", async () => {

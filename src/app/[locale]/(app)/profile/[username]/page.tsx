@@ -156,7 +156,7 @@ export default async function ProfilePage({ params }: Props) {
             avatarInitials={profileUser.avatar_initials}
             avatarIcon={profileUser.avatar_icon ?? null}
             createdAt={profileUser.created_at}
-            bio={(profileUser as { bio?: string | null }).bio ?? null}
+            bio={profileUser.bio}
             isOwner={isOwnProfile}
             totalItems={stats.totalItems}
             totalCompleted={stats.totalCompleted}

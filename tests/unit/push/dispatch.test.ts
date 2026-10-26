@@ -4,7 +4,9 @@
  */
 import { describe, it, expect, vi } from 'vitest'
 import type { SupabaseClient } from '@supabase/supabase-js'
-import { dispatchPush, MAX_FAILURES } from '@/lib/push/dispatch'
+import { readFileSync } from 'node:fs'
+import path from 'node:path'
+import { dispatchPush, MAX_FAILURES, PUSH_MESSAGE_BURST_SECONDS } from '@/lib/push/dispatch'
 import { buildPushPayload, cleanName } from '@/lib/push/payload'
 import type { PushConfig } from '@/lib/push/config'
 import type { PushMessage, PushOutcome } from '@/lib/push/webpush'
@@ -117,6 +119,7 @@ describe('push · dispatchPush', () => {
     expect(a.sent[0].payload).toMatchObject({ url: '/es/friends' })
     expect(await run(db, { kind: 'friend_accepted', id: FRIEND }, a.send)).toMatchObject({ status: 'skipped', reason: 'not_accepted' })
     db.tables.friendships[0].status = 'accepted'
+    db.tables.friendships[0].accepted_at = recent
     const b = sender()
     await run(db, { kind: 'friend_accepted', id: FRIEND }, b.send)
     expect(b.sent.map((m) => m.endpoint.split('/').pop())).toEqual(['s-a'])
@@ -160,6 +163,94 @@ describe('push · dispatchPush', () => {
     empty.tables.push_subscriptions = []
     expect(await run(empty, { kind: 'message', id: MSG }, send)).toMatchObject({ reason: 'no_subscriptions' })
     expect(send).not.toHaveBeenCalled()
+  })
+})
+
+describe('push · un aviso por ráfaga (mensajes escritos en bucle con la API)', () => {
+  // Tramos fijos de 30 s: [11:59:30, 12:00:00) y [12:00:00, 12:00:30).
+  const at = (s: number) => new Date(NOW - 60_000 + s * 1000).toISOString() // s=0 → 11:59:00
+  const msg = (id: string, sender: string, created_at: string) => ({ id, conversation_id: CONV, sender_id: sender, content: 'x', created_at })
+  const M1 = '7a1c2d3e-4b5a-4c6d-8e7f-000000000001'
+  const M2 = '7a1c2d3e-4b5a-4c6d-8e7f-000000000002'
+  const M3 = '7a1c2d3e-4b5a-4c6d-8e7f-000000000003'
+
+  it('el mismo remitente en el mismo tramo de 30 s: solo avisa el primero', async () => {
+    const db = world()
+    db.tables.messages = [msg(M1, A, at(31)), msg(M2, A, at(45))]
+    const { send } = sender()
+    expect(await run(db, { kind: 'message', id: M1 }, send)).toMatchObject({ status: 'done', sent: 3 })
+    expect(await run(db, { kind: 'message', id: M2 }, send)).toMatchObject({ status: 'skipped', reason: 'throttled' })
+    expect(send).toHaveBeenCalledTimes(3)
+  })
+
+  it('otro remitente en el mismo tramo sí avisa (una conversación de dos que se contestan)', async () => {
+    const db = world()
+    db.tables.messages = [msg(M1, A, at(31)), msg(M2, B, at(40))]
+    const { send, sent } = sender()
+    await run(db, { kind: 'message', id: M1 }, send)
+    expect(await run(db, { kind: 'message', id: M2 }, send)).toMatchObject({ status: 'done' })
+    expect(sent.filter((m) => m.endpoint.endsWith('s-a'))).toHaveLength(1)
+  })
+
+  it('en el tramo siguiente vuelve a avisar (como mucho un aviso cada 30 s, nunca silencio largo)', async () => {
+    const db = world()
+    db.tables.messages = [msg(M1, A, at(31)), msg(M2, A, at(55)), msg(M3, A, at(60))]
+    const { send } = sender()
+    expect(await run(db, { kind: 'message', id: M2 }, send)).toMatchObject({ reason: 'throttled' })
+    expect(await run(db, { kind: 'message', id: M3 }, send)).toMatchObject({ status: 'done' })
+  })
+
+  it('misma fecha exacta (INSERT de varias filas): avisa el de id menor, como el trigger', async () => {
+    const db = world()
+    db.tables.messages = [msg(M2, A, at(40)), msg(M1, A, at(40))]
+    const { send } = sender()
+    expect(await run(db, { kind: 'message', id: M2 }, send)).toMatchObject({ reason: 'throttled' })
+    expect(await run(db, { kind: 'message', id: M1 }, send)).toMatchObject({ status: 'done' })
+  })
+
+  it('el tramo y la regla son los mismos que en la migración 20261222340001', () => {
+    const sql = readFileSync(path.resolve(__dirname, '../../../supabase/migrations/20261222340001_push_throttle.sql'), 'utf8')
+    expect(PUSH_MESSAGE_BURST_SECONDS).toBe(30)
+    expect(sql).toContain(`floor(extract(epoch from new.created_at) / ${PUSH_MESSAGE_BURST_SECONDS}) * ${PUSH_MESSAGE_BURST_SECONDS}`)
+    expect(sql).toMatch(/p\.sender_id = new\.sender_id/)
+    expect(sql).toMatch(/p\.created_at = new\.created_at and p\.id < new\.id/)
+  })
+})
+
+describe('push · amistad aceptada con control de antigüedad (accepted_at)', () => {
+  function accepted(acceptedAt: string | null | undefined, createdAt = new Date(NOW - 20 * 24 * 3600_000).toISOString()) {
+    const db = world()
+    Object.assign(db.tables.friendships[0], { status: 'accepted', created_at: createdAt, accepted_at: acceptedAt })
+    return db
+  }
+
+  it('aceptada hace un momento aunque la solicitud sea de hace semanas → avisa', async () => {
+    const { send, sent } = sender()
+    expect(await run(accepted(recent), { kind: 'friend_accepted', id: FRIEND }, send)).toMatchObject({ status: 'done', sent: 1 })
+    expect(sent.map((m) => m.endpoint.split('/').pop())).toEqual(['s-a'])
+  })
+
+  it('aceptada hace más de 10 minutos → no se repite el aviso', async () => {
+    const { send } = sender()
+    const old = new Date(NOW - 11 * 60_000).toISOString()
+    expect(await run(accepted(old), { kind: 'friend_accepted', id: FRIEND }, send)).toMatchObject({ status: 'skipped', reason: 'stale' })
+    expect(send).not.toHaveBeenCalled()
+  })
+
+  it('aceptada antes de la migración (accepted_at nulo) → no se avisa', async () => {
+    const { send } = sender()
+    expect(await run(accepted(null), { kind: 'friend_accepted', id: FRIEND }, send)).toMatchObject({ reason: 'stale' })
+  })
+
+  it('sin la columna (migración sin aplicar) → se comporta como antes y avisa', async () => {
+    const db = accepted(undefined)
+    db.missingColumns.friendships = ['accepted_at']
+    const { send } = sender()
+    expect(await run(db, { kind: 'friend_accepted', id: FRIEND }, send)).toMatchObject({ status: 'done', sent: 1 })
+    // La solicitud nueva sigue leyendo su fila sin la columna.
+    db.tables.friendships[0].status = 'pending'
+    db.tables.friendships[0].created_at = recent
+    expect(await run(db, { kind: 'friend_request', id: FRIEND }, send)).toMatchObject({ status: 'done' })
   })
 })
 

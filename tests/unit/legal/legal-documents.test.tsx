@@ -130,8 +130,10 @@ describe.each(['es', 'en'] as const)('documentos legales (%s)', (locale) => {
     expect(text).not.toMatch(/\b16\b/)
     expect(text).toMatch(locale === 'es' ? /solo cuando pulsas/ : /only when you press/)
     expect(text).toMatch(locale === 'es' ? /7 días/ : /7 days/)
-    // La exportación dice qué NO incluye (mensajes recibidos) y cómo pedirlos.
-    expect(text).toMatch(locale === 'es' ? /No incluye los mensajes que te han escrito/ : /doesn't include messages other people wrote/)
+    // La exportación dice qué incluye (también lo recibido en los chats en los
+    // que sigue), qué NO (chats que dejó, claves push) y cómo pedirlo.
+    expect(text).toMatch(locale === 'es' ? /los que te han escrito en las conversaciones en las que sigues/ : /the ones other people wrote to you in the conversations you're still in/)
+    expect(text).toMatch(locale === 'es' ? /No incluye los mensajes de las conversaciones que has dejado/ : /doesn't include messages from conversations you've left/)
     // Biblioteca de amigos por defecto (D-04).
     expect(text).toMatch(locale === 'es' ? /por defecto, solo tus amigos/ : /by default, only your friends/)
     expect(container.querySelector(`a[href="/${locale}/settings"]`)).not.toBeNull()
