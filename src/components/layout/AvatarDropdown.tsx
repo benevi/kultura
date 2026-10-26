@@ -7,6 +7,7 @@ import { cn } from '@/lib/utils/index'
 import { Avatar } from '@/components/ui/Avatar'
 import { IconCalendar, IconIdea } from '@/components/icons'
 import { createClient } from '@/lib/supabase/client'
+import { unsubscribeCurrentDevice } from '@/lib/push/client'
 import { LanguageSwitcher } from '@/components/layout/LanguageSwitcher'
 import { isNavActive, FOCUS_RING, MENU_ROW } from '@/components/layout/nav-shared'
 import { HeaderMenu } from '@/components/layout/HeaderMenu'
@@ -44,6 +45,8 @@ export function AvatarDropdown({ username, avatarColor, avatarInitials, avatarIc
 
   async function handleSignOut() {
     const supabase = createClient()
+    // F-33: los avisos push de este navegador se van con la sesión.
+    await unsubscribeCurrentDevice()
     await supabase.auth.signOut()
     router.push('/login')
     router.refresh()

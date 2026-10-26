@@ -2120,5 +2120,42 @@
     "emptyOwnAction": "Go to my lists",
     "reportProfile": "Report this profile",
     "reportList": "Report this list"
+  },
+  "push": {
+    "settings": {
+      "section": "Push notifications",
+      "label": "Alerts on this device",
+      "description": "We let you know about messages, friend requests, recommendations and invitations even when KULTURA is closed. The alert says who wrote to you, never what the message says.",
+      "on": "On for this device.",
+      "off": "Off for this device.",
+      "allOff": "Off on all your devices.",
+      "saving": "Saving…",
+      "denied": "You've blocked KULTURA notifications in this browser. Allow them in the site settings and come back here.",
+      "dismissed": "You didn't give permission. You can try again whenever you like.",
+      "unsupported": "This browser doesn't support push notifications.",
+      "iosInstall": "On iPhone and iPad, first add KULTURA to your Home Screen (Share → “Add to Home Screen”) and turn them on from the installed app.",
+      "demo": "The demo account can't turn on notifications.",
+      "error": "We couldn't change your notifications. Check your connection and try again.",
+      "otherDevices": "{count, plural, one {Also on for # other device.} other {Also on for # other devices.}}",
+      "disableAll": "Turn off everywhere"
+    },
+    "notify": {
+      "messageTitle": "New message",
+      "messageBody": "@{username} sent you a message.",
+      "messageBodyAnonymous": "You have a new message.",
+      "friendsTitle": "Friends",
+      "friendRequest": "@{username} sent you a friend request.",
+      "friendRequestAnonymous": "You have a new friend request.",
+      "friendAccepted": "@{username} accepted your friend request.",
+      "friendAcceptedAnonymous": "Your friend request was accepted.",
+      "notificationTitle": "KULTURA",
+      "fallbackBody": "There’s something new for you on KULTURA.",
+      "recommendation": "@{username} recommends “{title}” to you.",
+      "recommendationNoTitle": "@{username} recommended something to you.",
+      "listInvite": "@{username} invited you to the list “{name}”.",
+      "listInviteNoName": "@{username} invited you to a list.",
+      "groupInvite": "@{username} invited you to the group “{name}”.",
+      "groupInviteNoName": "@{username} invited you to a group."
+    }
   }
 }
