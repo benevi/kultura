@@ -18,7 +18,6 @@
 // ============================================================
 
 import { createAdminClient } from '@/lib/supabase/admin'
-import { asJson } from '@/lib/supabase/json'
 import { aiDay } from '@/lib/claude/budget'
 import { createLogger } from '@/lib/logger'
 import type { AiRec } from '@/lib/claude/recommendations'
@@ -26,7 +25,9 @@ import type { AiRec } from '@/lib/claude/recommendations'
 const log = createLogger('claude/daily-recs')
 
 /** Lo que recibe Inicio: las recomendaciones y de dónde salen. */
-export interface AiRecsResult {
+// `type` y no `interface` (como EpisodeProgress), aunque al guardarlo se pasa
+// por JSON: `MediaItem.metadata` es `Record<string, unknown>`, que no es `Json`.
+export type AiRecsResult = {
   recommendations: AiRec[]
   /** `ai` → el modelo eligió y explicó; `match` → orden por match, sin frase. */
   source: 'ai' | 'match'
@@ -142,7 +143,10 @@ export async function writeDailyRecs(
     const { error } = await createAdminClient()
       .from('ai_recs')
       .upsert(
-        { user_id: userId, day, locale, payload: asJson(result) },
+        // Ida y vuelta por JSON: lo que se guarda es exactamente lo que vale como
+        // jsonb (`metadata` de cada título es `Record<string, unknown>` y no
+        // encaja en el tipo `Json`), sin cast.
+        { user_id: userId, day, locale, payload: JSON.parse(JSON.stringify(result)) },
         { onConflict: 'user_id,day' }
       )
     if (error) {

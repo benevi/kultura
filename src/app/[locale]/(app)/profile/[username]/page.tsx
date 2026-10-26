@@ -152,8 +152,7 @@ export default async function ProfilePage({ params }: Props) {
             avatarColor={profileUser.avatar_color}
             avatarInitials={profileUser.avatar_initials}
             avatarIcon={profileUser.avatar_icon ?? null}
-            // `created_at` tiene default now(): el null del tipo no llega a pasar.
-            createdAt={profileUser.created_at ?? new Date().toISOString()}
+            createdAt={profileUser.created_at}
             bio={profileUser.bio}
             isOwner={isOwnProfile}
             totalItems={stats.totalItems}

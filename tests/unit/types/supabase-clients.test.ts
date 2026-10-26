@@ -24,6 +24,19 @@ describe("clientes de Supabase tipados", () => {
     expect(source).toMatch(/import type \{ Database \} from ["']@\/types\/supabase["']/);
   });
 
+  it("sin casts a Json: las columnas jsonb reciben tipos `type` (EpisodeProgress) o una ida y vuelta por JSON", () => {
+    expect(() => read("src/lib/supabase/json.ts")).toThrow();
+    expect(read("src/types/library.ts")).toMatch(/export type EpisodeProgress = \{/);
+    expect(read("src/lib/claude/daily-recs.ts")).toMatch(/export type AiRecsResult = \{/);
+    expect(read("src/app/api/account/export/collect.ts")).not.toContain("as unknown as");
+  });
+
+  it("el perfil no se inventa la fecha de alta si la columna viene nula", () => {
+    const page = read("src/app/[locale]/(app)/profile/[username]/page.tsx");
+    expect(page).toContain("createdAt={profileUser.created_at}");
+    expect(page).not.toMatch(/created_at \?\? new Date\(/);
+  });
+
   it("los normalizadores de TMDB aceptan el elemento de listado sin cast a la ficha", () => {
     for (const file of ["src/app/api/search/route.ts", "src/lib/import/server/match.ts", "src/lib/api/anime-tmdb.ts"]) {
       expect(read(file), file).not.toMatch(/as Tmdb(Movie|TV)Detail\b/);

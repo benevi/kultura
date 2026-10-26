@@ -13,7 +13,8 @@ interface ProfileHeaderProps {
   avatarColor: string
   avatarInitials: string
   avatarIcon?: string | null
-  createdAt: string
+  /** Fecha de alta; sin ella (o inválida) no se pinta «Miembro desde». */
+  createdAt: string | null
   bio: string | null
   isOwner: boolean
   totalItems: number
@@ -43,10 +44,13 @@ export async function ProfileHeader({
   const t = await getTranslations('profile')
   const locale = await getLocale()
 
-  const formattedDate = new Intl.DateTimeFormat(locale, {
-    month: 'long',
-    year: 'numeric',
-  }).format(new Date(createdAt))
+  // Sin fecha de alta (la columna admite null) o con una inválida, la línea no
+  // se pinta: mejor nada que una fecha inventada o un RangeError.
+  const joinedAt = createdAt ? new Date(createdAt) : null
+  const formattedDate =
+    joinedAt && Number.isFinite(joinedAt.getTime())
+      ? new Intl.DateTimeFormat(locale, { month: 'long', year: 'numeric' }).format(joinedAt)
+      : null
 
   const stats = [
     { value: totalItems, label: t('totalItems', { count: totalItems }) },
@@ -82,9 +86,11 @@ export async function ProfileHeader({
           <h1 className="font-display text-2xl md:text-3xl font-extrabold text-text-primary leading-tight truncate">
             {username}
           </h1>
-          <p className="text-sm text-text-tertiary mt-1">
-            {t('memberSince')} {formattedDate}
-          </p>
+          {formattedDate ? (
+            <p className="text-sm text-text-tertiary mt-1">
+              {t('memberSince')} {formattedDate}
+            </p>
+          ) : null}
         </div>
       </div>
 
