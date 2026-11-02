@@ -50,7 +50,9 @@ def original_url(src):
     q = urllib.parse.urlparse(src)
     if q.path.endswith("/_next/image"):
         src = urllib.parse.parse_qs(q.query).get("url", [src])[0]
-    src = src.replace("/t/p/w500/", "/t/p/w780/").replace("/t/p/w342/", "/t/p/w780/")
+    src = re.sub(r"/t/p/w(92|154|185|342|500)/", "/t/p/w780/", src)
+    # AniList: la portada "medium" mide ~230 px; se pide la "large" (la mayor que sirve AniList, ~460 px).
+    src = re.sub(r"/cover/(small|medium)/", "/cover/large/", src)
     # RAWG sirve miniaturas de 200 px: se pide la de 1280.
     return re.sub(r"/media/(resize|crop)/[^/]+/[^/]+/", "/media/resize/1280/-/", src)
 
@@ -74,9 +76,9 @@ async def scrape(url):
             const h = li.querySelector('h2'); const num = h.querySelector('span');
             const title = h.textContent.replace(num ? num.textContent : '', '').trim();
             const meta = li.querySelector('p') ? li.querySelector('p').textContent : '';
-            const m = meta.match(/★\\s*([0-9.]+)/);
+            const m = meta.match(/★\\s*([0-9]+(?:[.,][0-9]+)?)/);
             const img = li.querySelector('img');
-            return { title, score: m ? parseFloat(m[1]) : null,
+            return { title, score: m ? parseFloat(m[1].replace(',', '.')) : null,
                      genres: [...li.querySelectorAll('ul li')].map(x => x.textContent.trim()),
                      src: img ? (img.currentSrc || img.src) : null };
         })""")

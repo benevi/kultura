@@ -42,7 +42,7 @@ body.land .info{top:1240px}
  <div class="ln" id="e3" style="top:660px;font-size:142px"><span></span></div>
  <div id="cta"></div>
  <div id="url"></div>
- <div class="ln" id="logo" style="left:0;width:1080px;top:1560px;font-size:120px;text-align:center;font-weight:800"><span>kultura<b style="color:var(--acc2)">.</b></span></div>
+ <div class="ln" id="logo" style="left:0;width:1080px;top:1560px;font-size:120px;text-align:center;font-weight:800"><span>kultura<b style="color:#ff2d8a">.</b></span></div>
  <div id="flash"></div><div id="grain"></div>
 </div>
 <script>
@@ -66,7 +66,7 @@ window.setData=function(d){
  if(d.intro[1].length>9)$('t2').style.fontSize=Math.floor(168*9/d.intro[1].length)+'px';
  ['e1','e2','e3'].forEach((id,k)=>$(id).firstElementChild.textContent=d.outro[k]);
  const longest=Math.max(...d.outro.map(s=>s.length));if(longest>12)['e1','e2','e3'].forEach(id=>$(id).style.fontSize=Math.floor(142*12/longest)+'px');
- $('cta').textContent=d.cta;$('url').textContent=d.url;
+ $('cta').textContent=d.cta;if(/^#c6ff3d$/i.test(d.accent2||''))$('cta').style.color='#09090e';$('url').textContent=d.url;
  d.items.forEach((it,i)=>{
   const b=document.createElement('img');b.className='bg';b.src=it.img;$('bgs').appendChild(b);bgs.push(b);
   const n=document.createElement('div');n.className='num';n.textContent=it.rank;$('nums').appendChild(n);nums.push(n);
@@ -102,7 +102,7 @@ window.render=function(t){
   const ip=eo((lt-.35)/.6);
   inf.style.opacity=(ip*(1-out)).toFixed(3);
   inf.style.transform='translateY('+(1-ip)*70+'px)';
-  const sv=inf.querySelector('.sv');if(sv)sv.textContent=(d.score*eo((lt-.5)/1.1)).toFixed(1);
+  const sv=inf.querySelector('.sv');if(sv)sv.textContent=(d.score*eo((lt-.5)/1.1)).toFixed(1).replace('.',',');
   if(lt>=0&&lt<.12)flash=Math.max(flash,.35*(1-lt/.12));
   if(big&&lt>=.5&&lt<.65)flash=Math.max(flash,.18*(1-(lt-.5)/.15));
  });
