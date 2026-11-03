@@ -46,19 +46,37 @@ function parseEmbed(item) {
 
 const singular = (t) => (t.endsWith("s") ? t.slice(0, -1) : t);
 
-function embed(row, parentTable, spec) {
+/**
+ * `alias:columna_fk(...)` (p. ej. `media:media_id(...)`, `user:user_id(...)`):
+ * PostgREST embebe por la columna, no por el nombre de tabla. Solo en el modo
+ * portadas (`E2E_COVERS=1`), para no cambiar lo que ve la red de accesibilidad.
+ */
+const FK_TABLES = { added_by: "users", owner_id: "users", sender_id: "users", requester_id: "users", receiver_id: "users" };
+function fkSpec(spec) {
+  if (process.env.E2E_COVERS !== "1" || tables[spec.table]) return spec;
+  const col = spec.table;
+  const base = col.replace(/_id$/, "");
+  const table = FK_TABLES[col] || [base, `${base}s`].find((t) => tables[t]) || (col === "user_id" ? "users" : null);
+  return table ? { ...spec, table, hint: col } : spec;
+}
+
+function embed(row, parentTable, rawSpec) {
+  const spec = fkSpec(rawSpec);
   const related = tables[spec.table] ?? [];
   const cols = Object.keys(row);
   // Muchos a uno: una columna del padre apunta al id del embebido.
   let fkCol =
-    (spec.hint && cols.find((c) => spec.hint === c || spec.hint.includes(c))) ||
+    (spec.hint && cols.find((c) => spec.hint === c)) ||
+    (spec.hint && cols.find((c) => spec.hint.includes(c))) ||
     cols.find((c) => c === `${singular(spec.table)}_id`);
-  if (fkCol && row[fkCol] !== undefined && fkCol.endsWith("_id")) {
+  if (fkCol && row[fkCol] !== undefined && (fkCol.endsWith("_id") || fkCol === spec.hint)) {
     const target = related.find((r) => r.id === row[fkCol]);
     return target ? project(target, spec.table, spec.sub) : null;
   }
-  // Uno a muchos: filas del embebido que apuntan al padre.
-  const backCol = `${singular(parentTable)}_id`;
+  // Uno a muchos: filas del embebido que apuntan al padre. En modo portadas,
+  // la pista `tabla_columna_fkey` dice por qué columna (`lists_owner_id_fkey`).
+  const fkHint = process.env.E2E_COVERS === "1" && spec.hint ? /^[a-z]+_(\w+_id)_fkey$/.exec(spec.hint) : null;
+  const backCol = fkHint ? fkHint[1] : `${singular(parentTable)}_id`;
   if (row.id !== undefined && related.some((r) => backCol in r)) {
     return related.filter((r) => r[backCol] === row.id).map((r) => project(r, spec.table, spec.sub));
   }

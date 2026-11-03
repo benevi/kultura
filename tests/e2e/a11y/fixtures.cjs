@@ -202,6 +202,17 @@ const list = {
   created_at: NOW,
 };
 
+const PUBLIC_LIST_ID = "00000000-0000-4000-8000-0000000000a2";
+const publicList = {
+  id: PUBLIC_LIST_ID,
+  owner_id: "00000000-0000-4000-8000-000000000003",
+  name: "Lo mejor que he visto este año",
+  media_type: "movie",
+  is_collaborative: false,
+  is_public: true,
+  created_at: NOW,
+};
+
 const group = {
   id: GROUP_ID,
   name: "Club de cine",
@@ -217,14 +228,29 @@ const group = {
 const tables = {
   users: [user, friend, benevi],
   media: mediaRows,
-  lists: [list],
-  list_items: mediaRows.slice(0, COVERS ? 8 : 2).map((m, i) => ({
-    id: `00000000-0000-4000-8000-0000000000d${i}`,
-    list_id: LIST_ID,
-    media_id: m.id,
-    added_by: USER_ID,
-    added_at: NOW,
-  })),
+  // Modo portadas: además, una lista pública de benevi para `/u/benevi`.
+  lists: COVERS ? [list, publicList] : [list],
+  list_items: [
+    ...mediaRows.slice(0, COVERS ? 8 : 2).map((m, i) => ({
+      id: `00000000-0000-4000-8000-0000000000d${i}`,
+      list_id: LIST_ID,
+      media_id: m.id,
+      added_by: USER_ID,
+      added_at: NOW,
+    })),
+    ...(COVERS
+      ? mediaRows
+          .filter((m) => m.type === "movie")
+          .map((m, i) => ({
+            id: `00000000-0000-4000-8000-0000000000e${i.toString(16)}`,
+            list_id: PUBLIC_LIST_ID,
+            media_id: m.id,
+            added_by: benevi.id,
+            added_at: NOW,
+            position: i,
+          }))
+      : []),
+  ],
   // Matrix ya está en la biblioteca: su ficha enseña "Actualizar" y "Eliminar".
   // En modo portadas: una biblioteca con los cuatro estados en los 7 formatos.
   user_media: COVERS ? coverLibrary() : [
@@ -294,6 +320,7 @@ function coverLibrary() {
 }
 
 module.exports = {
+  PUBLIC_LIST_ID,
   USER_ID,
   FRIEND_ID,
   LIST_ID,
