@@ -3,7 +3,25 @@
 import { useEffect, useRef, useState } from "react";
 import { Cromo } from "@/components/album/Cromo";
 import { Logo } from "@/components/layout/Logo";
-import { sceneAllowed, textureUrl } from "@/lib/landing/immersive";
+import { textureUrl } from "@/lib/landing/album";
+
+interface SceneEnv {
+  reducedMotion: boolean;
+  width: number;
+  saveData?: boolean;
+  deviceMemory?: number;
+  cores?: number;
+}
+
+/** Mismo criterio que la portada: sin movimiento reducido, ancho de escritorio y un aparato con recursos. */
+function sceneAllowed(env: SceneEnv): boolean {
+  if (env.reducedMotion) return false;
+  if (env.width < 768) return false;
+  if (env.saveData) return false;
+  if (env.deviceMemory !== undefined && env.deviceMemory <= 4) return false;
+  if (env.cores !== undefined && env.cores <= 4) return false;
+  return true;
+}
 import type { MediaType } from "@/types/media";
 import { cn } from "@/lib/utils/index";
 import {
