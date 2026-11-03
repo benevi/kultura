@@ -8,6 +8,13 @@
  * Así cada ejecución pinta exactamente lo mismo y no hay flakes de red.
  */
 
+/**
+ * `E2E_COVERS=1`: catálogo con portadas reales (`tests/e2e/fixtures/covers`)
+ * para las capturas de diseño. Sin la variable, los datos de siempre.
+ */
+const COVERS = process.env.E2E_COVERS === "1";
+const covers = COVERS ? require("../fixtures/covers/catalogue.cjs") : null;
+
 const USER_ID = "00000000-0000-4000-8000-000000000001";
 const FRIEND_ID = "00000000-0000-4000-8000-000000000002";
 const LIST_ID = "00000000-0000-4000-8000-0000000000a1";
@@ -85,10 +92,28 @@ function tmdbMovie(m, i) {
   };
 }
 
-const tmdbResults = MOVIES.map(tmdbMovie);
+/** Modo portadas: las películas y series del catálogo, con su ruta de TMDB. */
+function coverTmdb(c, i) {
+  const posterPath = new URL(c.poster).pathname.replace(/^\/t\/p\/[^/]+/, "");
+  const base = tmdbMovie({ id: Number(c.externalId), title: c.title, year: c.year }, i);
+  return {
+    ...base,
+    poster_path: posterPath,
+    backdrop_path: null,
+    vote_average: c.rating ?? base.vote_average,
+    media_type: c.type,
+  };
+}
+const COVER_MOVIES = COVERS ? covers.CATALOGUE.filter((c) => c.type === "movie").map(coverTmdb) : [];
+const COVER_TV = COVERS ? covers.CATALOGUE.filter((c) => c.type === "tv").map(coverTmdb) : [];
+
+const tmdbResults = COVERS ? COVER_MOVIES : MOVIES.map(tmdbMovie);
+/** Listados: en modo portadas, las series para las rutas de `/tv`. */
+const listFor = (pathname) => (COVERS && /\/tv\b/.test(pathname) ? COVER_TV : tmdbResults);
 
 function tmdbDetail(id) {
-  const base = tmdbResults.find((m) => m.id === id) ?? tmdbMovie({ id, title: `Título ${id}`, year: 2020 }, 0);
+  const base =
+    [...tmdbResults, ...COVER_TV].find((m) => m.id === id) ?? tmdbMovie({ id, title: `Título ${id}`, year: 2020 }, 0);
   return {
     ...base,
     runtime: 139,
@@ -120,7 +145,8 @@ function tmdbResponse(pathname) {
     if (sub === "/credits") return { id: Number(id), cast: [], crew: [] };
     if (sub === "/external_ids") return { id: Number(id) };
     // recommendations, similar…
-    return { page: 1, total_pages: 1, total_results: tmdbResults.length, results: tmdbResults };
+    const results = listFor(pathname);
+    return { page: 1, total_pages: 1, total_results: results.length, results };
   }
   if (pathname.startsWith("/3/genre/")) {
     return {
@@ -132,11 +158,27 @@ function tmdbResponse(pathname) {
     };
   }
   if (pathname === "/3/configuration") return { images: {} };
-  return { page: 1, total_pages: 1, total_results: tmdbResults.length, results: tmdbResults };
+  const results = listFor(pathname);
+  return { page: 1, total_pages: 1, total_results: results.length, results };
 }
 
 /** Filas de `media` (catálogo cacheado) para listas y biblioteca. */
-const mediaRows = MOVIES.slice(0, 4).map((m) => ({
+const coverRows = COVERS
+  ? covers.CATALOGUE.map((c) => ({
+      id: covers.mediaId(c),
+      external_id: c.externalId,
+      type: c.type,
+      title: c.title,
+      poster: c.poster,
+      backdrop: null,
+      year: c.year,
+      synopsis: `Sinopsis de prueba de ${c.title}.`,
+      genres: ["Drama"],
+      metadata: null,
+      updated_at: NOW,
+    }))
+  : null;
+const mediaRows = coverRows ?? MOVIES.slice(0, 4).map((m) => ({
   id: `movie_${m.id}`,
   external_id: String(m.id),
   type: "movie",
@@ -176,7 +218,7 @@ const tables = {
   users: [user, friend, benevi],
   media: mediaRows,
   lists: [list],
-  list_items: mediaRows.slice(0, 2).map((m, i) => ({
+  list_items: mediaRows.slice(0, COVERS ? 8 : 2).map((m, i) => ({
     id: `00000000-0000-4000-8000-0000000000d${i}`,
     list_id: LIST_ID,
     media_id: m.id,
@@ -184,7 +226,8 @@ const tables = {
     added_at: NOW,
   })),
   // Matrix ya está en la biblioteca: su ficha enseña "Actualizar" y "Eliminar".
-  user_media: [
+  // En modo portadas: una biblioteca con los cuatro estados en los 7 formatos.
+  user_media: COVERS ? coverLibrary() : [
     {
       id: "00000000-0000-4000-8000-0000000000a9",
       user_id: USER_ID,
@@ -223,6 +266,32 @@ const tables = {
     },
   ],
 };
+
+/** Biblioteca del modo portadas (la del usuario de prueba y la de benevi). */
+function coverLibrary() {
+  const STATUS = ["completed", "in_progress", "pending", "abandoned", "completed", "pending"];
+  const rows = [];
+  covers.CATALOGUE.slice(0, 16).forEach((c, i) => {
+    for (const [owner, offset] of [[USER_ID, 0], [benevi.id, 1]]) {
+      const status = STATUS[(i + offset) % STATUS.length];
+      const day = String(1 + ((i * 3 + offset) % 27)).padStart(2, "0");
+      rows.push({
+        id: `00000000-0000-4000-8000-${String(i * 2 + offset).padStart(4, "0")}000000a9`.slice(0, 36),
+        user_id: owner,
+        media_id: covers.mediaId(c),
+        status,
+        score: status === "completed" ? (i % 3 === 0 ? 5 : 4) : null,
+        rating10: status === "completed" ? (i % 3 === 0 ? 10 : 8) : null,
+        favorite: i % 5 === 0,
+        watched_at: status === "completed" ? `2026-10-${day}T20:00:00.000Z` : null,
+        episode_progress: status === "in_progress" ? 4 : null,
+        created_at: NOW,
+        updated_at: `2026-10-${day}T20:00:00.000Z`,
+      });
+    }
+  });
+  return rows;
+}
 
 module.exports = {
   USER_ID,
