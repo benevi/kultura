@@ -1,64 +1,59 @@
 import { ImageResponse } from "next/og";
-import { C, loadFont, fontsOption } from "@/lib/og/brand";
+import { createTranslator } from "next-intl";
+import es from "../../../../../../messages/es.json";
+import en from "../../../../../../messages/en.json";
+import { C, FORMAT_HEX, OG_FONT, fontsOption, loadDisplayFont, loadFont, loadLogoFont } from "@/lib/og/brand";
+import { OgCromo, OgWordmark } from "@/lib/og/cromo";
 import { posterDataUri } from "@/lib/og/poster";
-import { getBestOf, parseBestParams, type BestFormat } from "@/lib/best/best-of";
+import { getBestOf, parseBestParams } from "@/lib/best/best-of";
 
 /**
- * Tarjeta al compartir un ranking (/best/{formato}/{año}): título y las tres
- * primeras portadas en abanico. Igual que la de /u, NUNCA depende de que el
- * proveedor responda: sin datos, salen los gradientes de respaldo.
+ * Tarjeta al compartir un ranking (/best/{formato}/{año}), 1200×630: una
+ * página impresa del álbum. Campo cian con el titular en Lilita One (el mismo
+ * texto que el h1 de la página, de `best.title`), el formato con su color
+ * junto a su nombre y el logotipo; a la derecha, el podio: las tres portadas
+ * reales como cromos con su caja amarilla del puesto, en escalera como en la
+ * web. NUNCA depende de que el proveedor responda: sin datos, salen los
+ * respaldos de color.
  */
 export const alt = "KULTURA";
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
 
-const POSTER_W = 230;
-const POSTER_H = 345;
-const FALLBACKS = [
-  "linear-gradient(155deg, #e63b7d, #6e1f42)",
-  "linear-gradient(155deg, #b83cc8, #4f1a5a)",
-  "linear-gradient(155deg, #4a7dd8, #1f3766)",
-];
-const TILT = [-7, 2, 8];
+const MESSAGES = { es, en } as const;
 
-const TITLES: Record<"es" | "en", Record<BestFormat, string>> = {
-  es: {
-    anime: "Los mejores animes de",
-    movie: "Las mejores películas de",
-    tv: "Las mejores series de",
-    game: "Los mejores videojuegos de",
-  },
-  en: {
-    anime: "Best anime of",
-    movie: "Best movies of",
-    tv: "Best TV series of",
-    game: "Best video games of",
-  },
-};
-const BADGE = { es: "Ranking", en: "Ranking" };
+/** Podio: tamaño y bajada de cada cromo (como `md:mt-16` / `md:mt-32`). */
+const PODIUM = [
+  { w: 230, h: 345, top: 0 },
+  { w: 190, h: 285, top: 50 },
+  { w: 160, h: 240, top: 100 },
+] as const;
 
 type Params = { locale: string; format: string; year: string };
+
+function clip(text: string, max: number): string {
+  return text.length > max ? `${text.slice(0, max - 1)}…` : text;
+}
 
 export default async function Image({ params }: { params: Params | Promise<Params> }) {
   const { locale, format, year } = await params;
   const l = locale === "en" ? "en" : "es";
   const parsed = parseBestParams(format, year);
-  const heading = parsed ? TITLES[l][parsed.format] : "KULTURA";
-  const yearLabel = parsed ? String(parsed.year) : "";
+  const t = createTranslator({ locale: l, messages: MESSAGES[l] });
+  const heading = parsed ? t(`best.title.${parsed.format}`, { year: parsed.year }) : "KULTURA";
+  const formatLabel = parsed ? t(`album.format.${parsed.format}`) : "";
 
   const items = parsed ? await getBestOf(parsed.format, parsed.year, l).catch(() => []) : [];
-  // Abanico con el #1 en el centro (el más alto).
-  const fan = [items[1], items[0], items[2]].filter(Boolean);
-  const posters = await Promise.all(fan.map((i) => posterDataUri(i.poster)));
+  const posters = await Promise.all(items.slice(0, 3).map((i) => posterDataUri(i.poster)));
   while (posters.length < 3) posters.push(null);
-  const top = items[0]?.title ?? "";
+  const top = items[0]?.title ? clip(items[0].title, 34) : "";
+  const meta = top ? `1. ${top}` : "";
 
-  const fonts = (
-    await Promise.all([
-      loadFont("Bricolage+Grotesque", 800, `kultura${heading}${yearLabel}`),
-      loadFont("Figtree", 700, `${BADGE[l]}#1${top}`),
-    ])
-  ).filter((f) => f !== null);
+  const fonts = await Promise.all([
+    loadDisplayFont(`${heading}123`),
+    loadFont("Figtree", 700, `${formatLabel}${meta}`),
+    loadLogoFont(),
+  ]);
 
   return new ImageResponse(
     (
@@ -69,86 +64,37 @@ export default async function Image({ params }: { params: Params | Promise<Param
           display: "flex",
           alignItems: "center",
           justifyContent: "space-between",
-          padding: "0 70px 0 80px",
-          background: `radial-gradient(120% 100% at 15% 10%, rgba(196,240,55,0.22), ${C.bg} 55%)`,
-          color: C.text,
-          fontFamily: "Figtree",
+          padding: "56px 64px",
+          background: C.cyan,
+          color: C.navy,
+          fontFamily: OG_FONT.body,
         }}
       >
-        <div style={{ display: "flex", flexDirection: "column", maxWidth: 560 }}>
-          <div style={{ display: "flex", alignItems: "flex-end", fontSize: 44, fontWeight: 800, fontFamily: "Bricolage Grotesque" }}>
-            kultura
-            <div style={{ width: 9, height: 9, background: C.pink, transform: "rotate(14deg)", marginLeft: 4, marginBottom: 10 }} />
-          </div>
-          <div
-            style={{
-              display: "flex",
-              alignSelf: "flex-start",
-              marginTop: 48,
-              padding: "8px 20px",
-              borderRadius: 999,
-              background: C.lime,
-              color: "#1c1622",
-              fontSize: 24,
-              fontWeight: 700,
-            }}
-          >
-            {BADGE[l]}
-          </div>
-          <div
-            style={{
-              display: "flex",
-              fontSize: 58,
-              fontWeight: 800,
-              letterSpacing: -2,
-              lineHeight: 1.02,
-              marginTop: 18,
-              fontFamily: "Bricolage Grotesque",
-            }}
-          >
-            {heading}
-          </div>
-          <div
-            style={{
-              display: "flex",
-              fontSize: 120,
-              fontWeight: 800,
-              letterSpacing: -4,
-              lineHeight: 1,
-              color: C.lime,
-              fontFamily: "Bricolage Grotesque",
-            }}
-          >
-            {yearLabel}
-          </div>
-          {top && (
-            <div style={{ display: "flex", fontSize: 26, fontWeight: 700, color: C.muted, marginTop: 18 }}>
-              {`#1 ${top.length > 38 ? `${top.slice(0, 37)}…` : top}`}
+        <div style={{ display: "flex", flexDirection: "column", justifyContent: "space-between", height: "100%", width: 440 }}>
+          <OgWordmark size={44} />
+          <div style={{ display: "flex", flexDirection: "column" }}>
+            <div style={{ display: "flex", fontFamily: OG_FONT.display, fontSize: 76, lineHeight: 1.02, color: C.navy }}>
+              {heading}
             </div>
-          )}
+            {parsed ? (
+              <div style={{ display: "flex", alignItems: "center", marginTop: 26, fontSize: 28, fontWeight: 700 }}>
+                <div style={{ width: 18, height: 18, borderRadius: 9, background: FORMAT_HEX[parsed.format], border: `2px solid ${C.navy}`, marginRight: 12 }} />
+                {formatLabel}
+              </div>
+            ) : null}
+            {meta ? <div style={{ display: "flex", marginTop: 10, fontSize: 28, fontWeight: 700 }}>{meta}</div> : null}
+          </div>
         </div>
-        <div style={{ display: "flex", alignItems: "center" }}>
+        <div style={{ display: "flex", alignItems: "flex-start", height: PODIUM[0].h }}>
           {posters.map((uri, i) => (
-            <div
+            <OgCromo
               key={i}
-              style={{
-                display: "flex",
-                width: POSTER_W,
-                height: POSTER_H,
-                marginLeft: i === 0 ? 0 : -95,
-                marginTop: i === 1 ? -50 : 40,
-                borderRadius: 18,
-                overflow: "hidden",
-                background: FALLBACKS[i],
-                transform: `rotate(${TILT[i]}deg)`,
-                boxShadow: `10px 10px 0 ${C.surface2}`,
-              }}
-            >
-              {uri && (
-                // eslint-disable-next-line @next/next/no-img-element, jsx-a11y/alt-text
-                <img src={uri} width={POSTER_W} height={POSTER_H} style={{ objectFit: "cover" }} />
-              )}
-            </div>
+              uri={uri}
+              width={PODIUM[i].w}
+              height={PODIUM[i].h}
+              n={i + 1}
+              style={{ marginTop: PODIUM[i].top, marginLeft: i === 0 ? 0 : 16 }}
+            />
           ))}
         </div>
       </div>
