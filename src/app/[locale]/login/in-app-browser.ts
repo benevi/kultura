@@ -2,13 +2,18 @@
  * Navegadores integrados de las apps sociales (MOV-11).
  *
  * Google rechaza el inicio de sesión dentro de estos WebViews
- * (`disallowed_useragent`), justo donde llega el tráfico de Instagram, TikTok
- * o X. Se detectan para avisar antes de que el botón de Google lleve a un
- * error, y se ofrece abrir la página en el navegador del sistema.
+ * (`403 disallowed_useragent`), justo donde llega el tráfico de Instagram,
+ * TikTok, X, Facebook o LinkedIn. En ellos el botón de Google no se pinta (ni
+ * en el HTML del servidor, que ya lee el user agent): primero el correo, y una
+ * línea para abrir la página en el navegador del sistema con el enlace copiado.
+ *
+ * Además de las apps por nombre, cualquier WebView de Android (`; wv)` en el
+ * user agent): Google también los bloquea. Las pestañas personalizadas de
+ * Chrome (WhatsApp, Telegram) no llevan esa marca y sí pueden usar Google.
  */
 
 const IN_APP_UA =
-  /Instagram|FBAN|FBAV|FB_IAB|FBIOS|Messenger|TikTok|musical_ly|BytedanceWebview|Bytedance|Twitter|Line\/|Snapchat|Pinterest/i;
+  /Instagram|Barcelona|FBAN|FBAV|FB_IAB|FBIOS|Messenger|TikTok|musical_ly|BytedanceWebview|Bytedance|Twitter|LinkedInApp|Line\/|Snapchat|Pinterest|; wv\)/i;
 
 export interface InAppBrowser {
   /** Android: se puede intentar abrir Chrome con un enlace `intent://`. */

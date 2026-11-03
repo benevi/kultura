@@ -8,6 +8,10 @@ describe("detectInAppBrowser (MOV-11)", () => {
     ["Mozilla/5.0 (Linux; Android 13) Chrome/120 musical_ly_2023 BytedanceWebview", true],
     ["Mozilla/5.0 (iPhone) AppleWebKit TikTok 32.0", false],
     ["Mozilla/5.0 (iPhone) AppleWebKit Twitter for iPhone", false],
+    // LinkedIn, Threads y cualquier WebView de Android (Google bloquea todos).
+    ["Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 Mobile/15E148 [LinkedInApp]", false],
+    ["Mozilla/5.0 (iPhone) AppleWebKit/605.1.15 Mobile/15E148 Barcelona 300.0.0", false],
+    ["Mozilla/5.0 (Linux; Android 14; Pixel 8 Build/AP1A; wv) AppleWebKit/537.36 Version/4.0 Chrome/120 Mobile Safari/537.36", true],
   ])("detecta %s", (ua, android) => {
     expect(detectInAppBrowser(ua)).toEqual({ android });
   });
