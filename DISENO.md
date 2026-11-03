@@ -12,7 +12,7 @@ control del final.
   públicos, legales) = las páginas impresas del álbum: cian de imprenta,
   amarillo, tinta marina, página blanca y el rosa de KULTURA para la ÚNICA
   acción principal de cada pantalla. El color manda por regiones enteras.
-- **La app con sesión** = el álbum abierto de noche en el sofá: fondo azul
+- **La app (con la cuenta abierta)** = el álbum abierto de noche en el sofá: fondo azul
   marino profundo (la tinta de la tapa, nunca negro puro), huecos un escalón
   más claros, cromos con su borde blanco. El rosa es el único color de
   acción. El cian y el amarillo solo como **bandas de orientación** (la
