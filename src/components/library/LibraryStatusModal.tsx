@@ -17,9 +17,13 @@
 // horas. Al llegar al final se propone pasar a «Completado» (y con ello sale
 // el apunte del diario). Sin PROGRESS_V2 o sin su migración, solo episodios
 // en series y anime, como siempre.
+//
+// WIG: borrar un apunte anterior pide confirmación en su propia fila (un
+// aviso con «Deshacer» quedaría debajo del diálogo), y cerrar con una reseña
+// o una nota personal escritas avisa de que se pierden.
 // ============================================================
 
-import { useId, useState, type RefObject } from 'react'
+import { useEffect, useId, useRef, useState, type RefObject } from 'react'
 import { useLocale, useTranslations } from 'next-intl'
 import { Select } from '@/components/ui/Select'
 import { KButton } from '@/components/ui/KButton'
@@ -86,8 +90,8 @@ interface LibraryStatusModalProps {
 }
 
 const TEXTAREA =
-  'w-full bg-surface-elevated border border-field-border rounded-2xl px-[18px] py-3 font-body text-base md:text-body text-text-primary placeholder:text-text-tertiary resize-y focus-visible:[outline-style:solid] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus-ring'
-const CHECK_ROW = 'flex min-h-11 items-center gap-3 cursor-pointer rounded-2xl bg-surface-default px-3 py-2.5'
+  'w-full bg-surface-elevated border border-field-border rounded-lg px-4 py-3 font-body text-base md:text-body text-text-primary placeholder:text-text-tertiary resize-y focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus-ring'
+const CHECK_ROW = 'flex min-h-11 items-center gap-3 cursor-pointer rounded-lg bg-surface-default px-3 py-2.5'
 const CHECKBOX = 'accent-accent-positive w-5 h-5 flex-shrink-0'
 
 export function LibraryStatusModal({
@@ -135,6 +139,11 @@ export function LibraryStatusModal({
   const [privateNote, setPrivateNote] = useState('')
   const [deleting, setDeleting] = useState<string | null>(null)
   const [deleteError, setDeleteError] = useState<string | null>(null)
+  // Fila del apunte que pregunta «¿Borrarlo?» (el primer toque no borra).
+  const [confirmingDelete, setConfirmingDelete] = useState<string | null>(null)
+  // Aviso de cerrar con la reseña o la nota personal sin guardar.
+  const [confirmDiscard, setConfirmDiscard] = useState(false)
+  const keepEditingRef = useRef<HTMLButtonElement>(null)
 
   const logs = diary?.logs ?? []
   const rewatch = rewatchTouched ? rewatchValue : wasCompleted || logs.length > 0
@@ -150,6 +159,21 @@ export function LibraryStatusModal({
     next !== null &&
     JSON.stringify(progress ?? null) === JSON.stringify(progressConfig?.progress ?? null)
   const showDiary = diaryOn && status === 'completed'
+  const unsavedText = showDiary && addToDiary && (review.trim() !== '' || privateNote.trim() !== '')
+
+  /** Cerrar (Esc, fondo, ×, Cancelar): con texto escrito sin guardar, primero se avisa. */
+  function requestClose() {
+    if (loading) return
+    if (unsavedText && !confirmDiscard) {
+      setConfirmDiscard(true)
+      return
+    }
+    onClose()
+  }
+
+  useEffect(() => {
+    if (confirmDiscard) keepEditingRef.current?.focus()
+  }, [confirmDiscard])
 
   const statusOptions = [
     { value: 'completed', label: t('status.completed') },
@@ -205,6 +229,7 @@ export function LibraryStatusModal({
     setDeleteError(null)
     try {
       await onDeleteLog(id)
+      setConfirmingDelete(null)
     } catch {
       setDeleteError(td('deleteFailed'))
     } finally {
@@ -215,7 +240,7 @@ export function LibraryStatusModal({
   return (
     <Modal
       open
-      onClose={onClose}
+      onClose={requestClose}
       variant="sheet"
       title={current ? t('updateEntry') : t('addToLibrary')}
       dismissible={!loading}
@@ -285,7 +310,7 @@ export function LibraryStatusModal({
             {reachedEnd && (
               <div
                 role="status"
-                className="flex flex-wrap items-center justify-between gap-3 rounded-2xl bg-surface-default px-3 py-2.5"
+                className="flex flex-wrap items-center justify-between gap-3 rounded-lg bg-surface-default px-3 py-2.5"
               >
                 <span className="text-sm font-medium text-text-primary">{tp('reachedEnd', { type: mediaType })}</span>
                 <KButton type="button" variant="secondary" size="sm" onClick={() => changeStatus('completed')}>
@@ -298,7 +323,7 @@ export function LibraryStatusModal({
 
         {/* Diario (F-24) */}
         {showDiary && (
-          <fieldset className="flex flex-col gap-3 border-t border-border pt-4">
+          <fieldset className="flex flex-col gap-3 border-t-2 border-surface-border pt-4">
             <legend className="sr-only">{td('title')}</legend>
             <label className={CHECK_ROW}>
               <input
@@ -386,35 +411,59 @@ export function LibraryStatusModal({
             <ul className="flex flex-col gap-2">
               {logs.map((log) => {
                 const date = formatDiaryDate(log.watchedOn, locale)
+                const asking = confirmingDelete === log.id
                 return (
-                  <li key={log.id} className="flex items-start gap-3 rounded-2xl bg-surface-default px-3 py-2">
+                  <li key={log.id} className="flex flex-wrap items-start gap-3 rounded-lg bg-surface-default px-3 py-2">
                     <div className="flex min-w-0 flex-1 flex-col gap-0.5">
                       <span className="text-sm font-medium text-text-primary">
                         {date}
                         {log.rewatch ? <span className="ml-2 text-xs text-text-tertiary">· {td('rewatchShort', { type: mediaType })}</span> : null}
                         {log.rating10 !== null ? (
-                          <span className="ml-2 text-xs text-accent-highlight">{formatRating(log.rating10, mode === 'ten' ? 'ten' : 'stars', locale)}</span>
+                          <span className="ml-2 text-xs tabular-nums text-text-secondary">{formatRating(log.rating10, mode === 'ten' ? 'ten' : 'stars', locale)}</span>
                         ) : null}
                       </span>
                       {log.review ? (
-                        <span className="line-clamp-2 text-xs text-text-secondary">
+                        <span className="line-clamp-2 break-words text-xs text-text-secondary">
                           {log.spoiler ? td('spoilerHidden') : log.review}
                         </span>
                       ) : null}
                     </div>
-                    {onDeleteLog && (
+                    {onDeleteLog && !asking ? (
                       <KButton
                         type="button"
                         variant="secondary"
                         size="sm"
-                        onClick={() => handleDelete(log.id)}
-                        loading={deleting === log.id}
+                        onClick={() => { setDeleteError(null); setConfirmingDelete(log.id) }}
                         disabled={deleting !== null}
                         aria-label={td('deleteLog', { title, date })}
                       >
                         {td('delete')}
                       </KButton>
-                    )}
+                    ) : null}
+                    {onDeleteLog && asking ? (
+                      <div role="group" aria-label={td('deleteLog', { title, date })} className="flex w-full flex-wrap items-center gap-2">
+                        <span className="mr-auto text-sm text-text-primary">{td('deleteAsk')}</span>
+                        <KButton
+                          type="button"
+                          variant="secondary"
+                          size="sm"
+                          onClick={() => handleDelete(log.id)}
+                          loading={deleting === log.id}
+                          autoFocus
+                        >
+                          {td('deleteConfirm')}
+                        </KButton>
+                        <KButton
+                          type="button"
+                          variant="secondary"
+                          size="sm"
+                          onClick={() => setConfirmingDelete(null)}
+                          disabled={deleting !== null}
+                        >
+                          {td('deleteKeep')}
+                        </KButton>
+                      </div>
+                    ) : null}
                   </li>
                 )
               })}
@@ -426,6 +475,21 @@ export function LibraryStatusModal({
             )}
           </section>
         )}
+
+        {/* Cerrar con la reseña o la nota escritas: se pierden, se avisa (WIG). */}
+        {confirmDiscard ? (
+          <div role="alert" className="flex flex-col gap-3 rounded-lg bg-surface-default px-3 py-3">
+            <p className="text-sm font-medium text-text-primary">{td('discardAsk')}</p>
+            <div className="flex flex-wrap gap-2">
+              <KButton ref={keepEditingRef} type="button" variant="secondary" size="sm" onClick={() => setConfirmDiscard(false)}>
+                {td('discardKeep')}
+              </KButton>
+              <KButton type="button" variant="secondary" size="sm" onClick={onClose}>
+                {td('discardConfirm')}
+              </KButton>
+            </div>
+          </div>
+        ) : null}
 
         {/* Botones */}
         <div className="flex items-center gap-3 pt-2">
@@ -440,7 +504,7 @@ export function LibraryStatusModal({
           <KButton
             type="button"
             variant="secondary"
-            onClick={onClose}
+            onClick={requestClose}
             disabled={loading}
           >
             {t('cancel')}
