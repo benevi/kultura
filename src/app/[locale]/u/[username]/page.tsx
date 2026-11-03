@@ -1,10 +1,15 @@
 // ============================================================
 // KULTURA — /u/[username] (Server Component, PÚBLICA)
-// Perfil público de escaparate (DIS-6, CRE-7, CRE-12): cabecera con avatar,
-// @usuario y bio; contadores por formato, 4 favoritos y "en curso" si quien
-// mira puede ver la biblioteca (D-04b); y las listas públicas, visibles sin
-// cuenta. Vive FUERA de `(app)` a propósito: ese grupo redirige a login a
-// quien no tiene sesión.
+// El álbum de una persona (DIS-6, CRE-7, CRE-12), como página impresa:
+// portada en el campo cian (avatar, «El álbum de @ana», bio y sus números),
+// y debajo sus páginas: favoritos y «en curso» si quien mira puede ver la
+// biblioteca (D-04b), y una página por formato con sus listas públicas,
+// visibles sin cuenta. Vive FUERA de `(app)` a propósito: ese grupo
+// redirige a login a quien no tiene sesión.
+//
+// Página de aterrizaje de un enlace compartido: lo compartido en la primera
+// pantalla, legible sin cuenta, y UNA acción fija al pie («Empieza tu
+// álbum, gratis») que vuelve aquí tras el alta. Sin modales.
 //
 // Invitación: `?ref={username}&inv={firma}` enseña "{username} te invita" y
 // los enlaces de registro llevan la atribución (`utm_*`, `ref`, `inv`) hasta
@@ -14,20 +19,21 @@
 import { notFound, permanentRedirect } from 'next/navigation'
 import type { Metadata } from 'next'
 import { getTranslations } from 'next-intl/server'
-import { Header } from '@/components/layout/Header'
 import { Footer } from '@/components/layout/Footer'
 import { KButton } from '@/components/ui/KButton'
+import { AlbumPage } from '@/components/album/AlbumPage'
 import { ReportButton } from '@/components/social/ReportButton'
 import { Link } from '@/i18n/navigation'
 import {
+  AlbumNumbers,
   CollectionOwner,
   FavoritesGrid,
   FormatCounters,
-  FormatLabel,
-  SignedInBar,
+  FormatPageHeading,
   InviteBanner,
   LockedLibrary,
   PLURAL_KEY,
+  PublicBar,
   PublicListRow,
   SignUpCta,
   WatchingRow,
@@ -177,78 +183,101 @@ export default async function PublicCollectionPage({ params, searchParams }: Pro
   const t = await getTranslations('collection')
   const tm = await getTranslations('media')
   const tl = await getTranslations('lists')
+  const ti = await getTranslations('invite')
   // F-25: una lista mixta no tiene formato en `media`; su grupo va al final.
-  const formatName = (format: string) => (format in PLURAL_KEY ? tm(PLURAL_KEY[format as MediaType]) : tl('mediaTypeMixed'))
+  const isFormat = (format: string): format is MediaType => format in PLURAL_KEY
+  const formatName = (format: string) => (isFormat(format) ? tm(PLURAL_KEY[format]) : tl('mediaTypeMixed'))
 
   // D-12: el alta desde este perfil lleva la atribución de la visita; sin
-  // `ref`, se atribuye a este perfil (sin firma: no crea amistad).
+  // `ref`, se atribuye a este perfil (sin firma: no crea amistad). Tras el
+  // alta se vuelve a esta página (`next`).
+  const pagePath = `/${locale}/u/${encodeURIComponent(owner.username)}`
   const attribution = parseAttributionRecord(sp)
   const refIsOwner = attribution.ref?.toLowerCase() === owner.username.toLowerCase()
   const friendsOnSignup = refIsOwner && isValidInviteSignature(owner.id, attribution.ref, attribution.inv)
   const signupAttribution: AttributionParams = attribution.ref
     ? attribution
     : { ...attribution, ref: owner.username, channel: attribution.utm_source ? 'utm' : 'ref' }
-  const registerHref = withAttribution('/login?mode=register', signupAttribution)
-  const loginHref = withAttribution('/login?mode=login', signupAttribution)
+  const registerHref = withAttribution(`/login?mode=register&next=${encodeURIComponent(pagePath)}`, signupAttribution)
+  const invited = !viewer && refIsOwner
 
-  // REN-6: prioridad solo para la PRIMERA fila de pósters reales de la página.
+  // REN-6: prioridad solo para la PRIMERA fila de portadas reales de la página.
   const firstPosters: 'favorites' | 'watching' | 'lists' =
     showcase && showcase.favorites.length > 0 ? 'favorites' : showcase && showcase.watching.length > 0 ? 'watching' : 'lists'
 
+  // Los números de la portada: los de la biblioteca si quien mira la puede
+  // ver; si no, solo lo público (listas y sus títulos). Nunca un cero.
+  const publicTitles = lists.reduce((n, l) => n + l.items.length, 0)
+  const numbers =
+    canRead && showcase && showcase.total > 0 ? (
+      <FormatCounters showcase={showcase} locale={locale} />
+    ) : (
+      <AlbumNumbers
+        locale={locale}
+        numbers={[
+          { key: 'publicListsCount', count: lists.length },
+          { key: 'titlesCount', count: publicTitles },
+        ]}
+      />
+    )
+
   return (
-    <div className="min-h-screen flex flex-col">
-      {viewer ? <SignedInBar /> : <Header />}
-      <main id="main" className="page-grid [&>*]:max-w-4xl flex-1 py-10 flex flex-col gap-10 md:gap-12">
-        {!viewer && refIsOwner ? (
-          <InviteBanner username={owner.username} friendsOnSignup={friendsOnSignup} registerHref={registerHref} />
-        ) : null}
+    <AlbumPage as="div" contained={false} className="flex min-h-screen flex-col">
+      <PublicBar locale={locale} signedIn={Boolean(viewer)} returnTo={pagePath} />
+      <main id="main" className="flex-1">
+        {invited ? <InviteBanner username={owner.username} friendsOnSignup={friendsOnSignup} /> : null}
 
         <CollectionOwner
           owner={owner}
+          locale={locale}
+          numbers={numbers}
           actions={<OwnerActions owner={owner} locale={locale} viewer={viewer} isOwner={isOwner} />}
         />
 
-        {isOwner ? <OwnerNote owner={owner} /> : null}
+        <div className="page-grid flex flex-col gap-12 py-10 md:gap-16 md:py-14">
+          {isOwner ? <OwnerNote owner={owner} /> : null}
 
-        {/* Biblioteca (D-04b) */}
-        {canRead && showcase ? (
-          <>
-            <FormatCounters showcase={showcase} />
-            <FavoritesGrid favorites={showcase.favorites} isOwner={isOwner} priority={firstPosters === 'favorites'} />
-            <WatchingRow items={showcase.watching} priorityCount={firstPosters === 'watching' ? PRIORITY_POSTERS : 0} />
-          </>
-        ) : (
-          <HiddenLibrary
-            owner={owner}
-            signedIn={Boolean(viewer)}
-            registerHref={registerHref}
-            loginHref={loginHref}
-          />
-        )}
+          {/* Biblioteca (D-04b) */}
+          {canRead && showcase ? (
+            <>
+              <FavoritesGrid favorites={showcase.favorites} isOwner={isOwner} priority={firstPosters === 'favorites'} />
+              <WatchingRow
+                items={showcase.watching}
+                locale={locale}
+                priorityCount={firstPosters === 'watching' ? PRIORITY_POSTERS : 0}
+              />
+            </>
+          ) : (
+            <HiddenLibrary owner={owner} signedIn={Boolean(viewer)} />
+          )}
 
-        {/* Listas públicas: las ve cualquiera */}
-        <section aria-labelledby="lists-title" className="flex flex-col gap-6">
-          <h2 id="lists-title" className="font-display text-xl md:text-2xl font-extrabold text-text-primary">
-            {t('publicLists')}
-          </h2>
+          {/* Listas públicas, una página por formato: las ve cualquiera */}
           {lists.length === 0 ? (
-            <div className="flex flex-col items-start gap-2 rounded-bento bg-surface-default px-6 py-7">
-              <p className="font-bold text-text-primary">
-                {isOwner ? t('emptyOwn') : t('empty', { username: owner.username })}
-              </p>
-              <p className="text-sm text-text-tertiary">{isOwner ? t('emptyOwnHint') : t('emptyHint')}</p>
-              {isOwner ? (
-                <KButton asChild variant="secondary" size="sm" className="mt-2">
-                  <Link href="/lists">{t('emptyOwnAction')}</Link>
-                </KButton>
-              ) : null}
-            </div>
+            <section aria-labelledby="lists-title" className="flex flex-col gap-4">
+              <h2 id="lists-title" className="font-display text-2xl text-text-primary md:text-3xl">
+                {t('publicLists')}
+              </h2>
+              <div className="flex flex-col items-start gap-2 rounded-bento border-2 border-dashed border-slot-line px-5 py-6">
+                <p className="font-semibold text-text-primary">
+                  {isOwner ? t('emptyOwn') : t('empty', { username: owner.username })}
+                </p>
+                <p className="text-sm text-text-secondary">{isOwner ? t('emptyOwnHint') : t('emptyHint')}</p>
+                {isOwner ? (
+                  <KButton asChild variant="secondary" size="sm" className="mt-2">
+                    <Link href="/lists">{t('emptyOwnAction')}</Link>
+                  </KButton>
+                ) : null}
+              </div>
+            </section>
           ) : (
             groupByFormat(lists).map(([format, group], groupIndex) => (
-              <section key={format} className="flex flex-col gap-6" aria-label={formatName(format)}>
-                <div>
-                  <FormatLabel>{formatName(format)}</FormatLabel>
-                </div>
+              <section key={format} aria-labelledby={`page-${format}`} className="flex flex-col gap-8">
+                <FormatPageHeading
+                  id={`page-${format}`}
+                  name={formatName(format)}
+                  format={isFormat(format) ? format : undefined}
+                  lists={group.length}
+                />
                 {group.map((list, i) => (
                   <PublicListRow
                     key={list.id}
@@ -260,24 +289,23 @@ export default async function PublicCollectionPage({ params, searchParams }: Pro
               </section>
             ))
           )}
-        </section>
 
-        {!viewer ? <SignUpCta href={registerHref} /> : null}
-
-        {/* DSA: denunciar sin cuenta lleva al formulario público (F-11) */}
-        {!viewer ? (
-          <p className="text-center">
-            <Link
-              href={`/report?target=user&id=${encodeURIComponent(owner.username)}`}
-              className="inline-flex items-center min-h-11 text-meta text-text-tertiary underline-offset-4 hover:underline hover:text-text-primary"
-            >
-              {t('reportProfile')}
-            </Link>
-          </p>
-        ) : null}
+          {/* DSA: denunciar sin cuenta lleva al formulario público (F-11) */}
+          {!viewer ? (
+            <p>
+              <Link
+                href={`/report?target=user&id=${encodeURIComponent(owner.username)}`}
+                className="inline-flex min-h-11 items-center rounded-lg text-meta text-text-tertiary underline-offset-4 hover:text-text-primary hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus-ring"
+              >
+                {t('reportProfile')}
+              </Link>
+            </p>
+          ) : null}
+        </div>
       </main>
+      {!viewer ? <SignUpCta href={registerHref} label={invited ? ti('bannerCta') : t('ctaButton')} /> : null}
       <Footer />
-    </div>
+    </AlbumPage>
   )
 }
 
@@ -288,13 +316,13 @@ async function OwnerNote({ owner }: { owner: PublicOwner }) {
   // Sin la columna rige la política de W1: cualquiera con sesión.
   const visibility = owner.libraryVisibility ?? 'public'
   return (
-    <p className="-mt-4 text-meta text-text-secondary">
+    <p className="-mt-4 max-w-prose text-meta text-text-secondary">
       {t('ownerNote', { visibility: ts(`visibility.${visibility}`) })}{' '}
       {visibility === 'public' ? `${t('ownerNoteNoAccount')} ` : null}
       {/* Área táctil de 44 px (py-3) sin abrir hueco entre líneas (-my-3). */}
       <Link
         href="/settings"
-        className="inline-flex items-center py-3 -my-3 align-baseline font-bold text-text-primary underline-offset-4 hover:underline"
+        className="-my-3 inline-flex items-center py-3 align-baseline font-bold text-text-primary underline-offset-4 hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus-ring"
       >
         {t('ownerSettings')}
       </Link>
@@ -302,18 +330,12 @@ async function OwnerNote({ owner }: { owner: PublicOwner }) {
   )
 }
 
-/** La biblioteca no es visible para quien mira: por qué y qué puede hacer. */
-async function HiddenLibrary({
-  owner,
-  signedIn,
-  registerHref,
-  loginHref,
-}: {
-  owner: PublicOwner
-  signedIn: boolean
-  registerHref: string
-  loginHref: string
-}) {
+/**
+ * La biblioteca no es visible para quien mira: por qué. Sin botones: la
+ * acción de quien llega sin cuenta es la barra fija; con sesión, «Ver su
+ * perfil y añadirle» ya está en la portada.
+ */
+async function HiddenLibrary({ owner, signedIn }: { owner: PublicOwner; signedIn: boolean }) {
   const t = await getTranslations('collection')
   const tp = await getTranslations('profile')
   const hiddenTitle = tp('libraryHidden', { username: owner.username })
@@ -321,30 +343,15 @@ async function HiddenLibrary({
     return <LockedLibrary title={hiddenTitle} text={tp('libraryHiddenPrivate')} />
   }
   if (signedIn) {
-    // Con sesión y sin permiso: solo amigos (o la base no lo confirmó). El
-    // botón para ir a su perfil y añadirle ya está en la cabecera.
+    // Con sesión y sin permiso: solo amigos (o la base no lo confirmó).
     return <LockedLibrary title={hiddenTitle} text={tp('libraryHiddenFriends')} />
   }
-  const ctas = (
-    <>
-      <KButton asChild size="sm">
-        <Link href={registerHref}>{t('ctaButton')}</Link>
-      </KButton>
-      <KButton asChild variant="secondary" size="sm">
-        <Link href={loginHref}>{t('signIn')}</Link>
-      </KButton>
-    </>
-  )
   // Sin sesión no se sabe quién puede verla (la visibilidad no es pública):
   // se explica que hace falta cuenta y que decide su dueño.
-  return (
-    <LockedLibrary title={t('lockedTitle', { username: owner.username })} text={t('lockedText')}>
-      {ctas}
-    </LockedLibrary>
-  )
+  return <LockedLibrary title={t('lockedTitle', { username: owner.username })} text={t('lockedText')} />
 }
 
-/** Acciones de la cabecera según quién mira. */
+/** Acciones de la portada según quién mira. */
 async function OwnerActions({
   owner,
   locale,

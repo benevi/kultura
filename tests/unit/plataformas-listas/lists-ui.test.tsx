@@ -116,8 +116,11 @@ const h = vi.hoisted(() => ({
 
 vi.mock('next/navigation', () => ({ permanentRedirect: vi.fn(), notFound: vi.fn(() => { throw new Error('NOT_FOUND') }) }))
 vi.mock('next-intl/server', () => ({
-  getTranslations: async (ns?: string) => (key: string, values?: Record<string, unknown>) =>
-    `${typeof ns === 'string' ? ns + '.' : ''}${key}${values ? JSON.stringify(values) : ''}`,
+  getTranslations: async (ns?: string) => {
+    const t = (key: string, values?: Record<string, unknown>) =>
+      `${typeof ns === 'string' ? ns + '.' : ''}${key}${values ? JSON.stringify(values) : ''}`
+    return Object.assign(t, { rich: t })
+  },
 }))
 vi.mock('@/lib/supabase/server', () => ({
   createClient: async () => ({ auth: { getUser: async () => ({ data: { user: null } }) } }),
@@ -191,11 +194,14 @@ describe('lista pública en el orden del dueño', () => {
     expect(label?.props.children).toBe('lists.mediaTypeMixed')
   })
 
-  it('sin extras (bandera apagada o sin migrar): la rejilla de siempre', async () => {
+  it('sin extras (bandera apagada o sin migrar): la misma página, en el orden de llegada y sin números', async () => {
     h.list = { ...LIST, list: { ...LIST.list, mediaType: 'movie' } }
     h.extras = null
     const tree = await page()
-    expect(find(tree as ReactNode, (el) => (el.type as { name?: string }).name === 'OrderedListGrid')).toBeNull()
-    expect(find(tree as ReactNode, (el) => (el.type as { name?: string }).name === 'MediaGrid')).not.toBeNull()
+    const grid = find(tree as ReactNode, (el) => (el.type as { name?: string }).name === 'OrderedListGrid')
+    expect(grid).not.toBeNull()
+    expect((grid!.props.entries as Array<{ item: { id: string } }>).map((e) => e.item.id)).toEqual(['game_1', 'movie_2', 'book_3'])
+    expect(grid!.props.ranked).toBe(false)
+    expect(grid!.props.showFormat).toBe(false)
   })
 })

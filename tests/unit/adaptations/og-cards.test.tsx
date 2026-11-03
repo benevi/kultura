@@ -147,7 +147,7 @@ describe("top 4 del perfil (CRE-8c)", () => {
     await expect(publicTopFour("benevi")).resolves.toBeNull();
     expect(h.world.reads.filter((r) => r.table === "user_media")).toEqual([]);
     await ProfileImage({ params: { locale: "es", username: "benevi" } });
-    expect(text(h.responses[0].element)).toContain("La colección de");
+    expect(text(h.responses[0].element)).toContain("El álbum de");
     expect(h.posterDataUri.mock.calls.map((c) => c[0])).toEqual(["https://image.tmdb.org/t/p/w500/lista.jpg"]);
   });
 
@@ -172,7 +172,7 @@ describe("top 4 del perfil (CRE-8c)", () => {
     });
     await ProfileImage({ params: { locale: "en", username: "benevi" } });
     expect(text(h.responses[1].element)).toContain("3 lists");
-    expect(text(h.responses[1].element)).toContain("The collection of");
+    expect(text(h.responses[1].element)).toContain("The album of");
   });
 
   it("alt traducido con el nombre (generateImageMetadata, sin next-intl/server)", async () => {

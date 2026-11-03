@@ -26,17 +26,18 @@ const h = vi.hoisted(() => {
       Link: marker('Link'),
       SignUpCta: marker('SignUpCta'),
       FormatLabel: marker('FormatLabel'),
-      MediaGrid: marker('MediaGrid'),
+      OrderedListGrid: marker('OrderedListGrid'),
       Avatar: marker('Avatar'),
-      Header: marker('Header'),
-      SignedInBar: marker('SignedInBar'),
+      PublicBar: marker('PublicBar'),
       Footer: marker('Footer'),
     },
   }
 })
 
 vi.mock('next/navigation', () => ({ permanentRedirect: h.permanentRedirect, notFound: h.notFound }))
-vi.mock('next-intl/server', () => ({ getTranslations: async () => (k: string) => k }))
+vi.mock('next-intl/server', () => ({
+  getTranslations: async () => Object.assign((k: string) => k, { rich: (k: string) => k }),
+}))
 vi.mock('@/lib/supabase/server', () => ({
   createClient: () => ({ auth: { getUser: async () => ({ data: { user: h.user } }) } }),
 }))
@@ -50,11 +51,10 @@ vi.mock('@/components/social/ReportButton', () => ({ ReportButton: h.M.ReportBut
 vi.mock('@/components/collection/PublicCollection', () => ({
   SignUpCta: h.M.SignUpCta,
   FormatLabel: h.M.FormatLabel,
-  SignedInBar: h.M.SignedInBar,
+  PublicBar: h.M.PublicBar,
 }))
-vi.mock('@/components/media/MediaGrid', () => ({ MediaGrid: h.M.MediaGrid }))
+vi.mock('@/components/collection/OrderedListGrid', () => ({ OrderedListGrid: h.M.OrderedListGrid }))
 vi.mock('@/components/ui/Avatar', () => ({ Avatar: h.M.Avatar }))
-vi.mock('@/components/layout/Header', () => ({ Header: h.M.Header }))
 vi.mock('@/components/layout/Footer', () => ({ Footer: h.M.Footer }))
 vi.mock('@/i18n/navigation', () => ({ Link: h.M.Link }))
 
@@ -105,7 +105,11 @@ describe('/u/[username]/l/[id]', () => {
     const tree = await page()
     expect(all(tree, h.M.ReportButton)).toHaveLength(0)
     expect(all(tree, h.M.Link).map((l) => l.href)).toContain(`/report?target=list&id=${LIST.list.id}`)
-    expect(all(tree, h.M.SignUpCta)[0].href).toBe('/login?mode=register&ref=ana')
+    // La única acción: hacer la tuya, con la atribución y la vuelta a esta lista.
+    const [cta] = all(tree, h.M.SignUpCta)
+    expect(cta.href).toBe(`/login?mode=register&next=${encodeURIComponent(`/es/u/ana/l/${LIST.list.id}`)}&ref=ana`)
+    expect(cta.label).toBe('ctaListButton')
+    expect(all(tree, h.M.PublicBar)[0]).toMatchObject({ signedIn: false, returnTo: `/es/u/ana/l/${LIST.list.id}` })
   })
 
   it('con sesión: ReportButton de lista (con MODERATION_V2) y sin llamada a registrarse', async () => {
@@ -113,9 +117,8 @@ describe('/u/[username]/l/[id]', () => {
     const tree = await page()
     expect(all(tree, h.M.ReportButton)[0]).toMatchObject({ targetType: 'list', targetId: LIST.list.id })
     expect(all(tree, h.M.SignUpCta)).toHaveLength(0)
-    // Con sesión, sin la cabecera pública de «Registrarse».
-    expect(all(tree, h.M.Header)).toHaveLength(0)
-    expect(all(tree, h.M.SignedInBar)).toHaveLength(1)
+    // Con sesión, la cabecera lleva a Inicio (sin «Entrar»).
+    expect(all(tree, h.M.PublicBar)[0]).toMatchObject({ signedIn: true })
     h.v2 = false
     expect(all(await page(), h.M.ReportButton)).toHaveLength(0)
   })

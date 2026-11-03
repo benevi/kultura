@@ -1,5 +1,6 @@
 import { ImageResponse } from "next/og";
-import { C, loadFont, fontsOption } from "@/lib/og/brand";
+import { C, OG_FONT, fontsOption, loadDisplayFont, loadFont, loadLogoFont } from "@/lib/og/brand";
+import { OgCromo, OgWordmark } from "@/lib/og/cromo";
 import { posterDataUri } from "@/lib/og/poster";
 import { resolveRatingShare, splitRich, type RatingShareView } from "./rating-share";
 import es from "../../../../../../../messages/es.json";
@@ -102,13 +103,14 @@ export async function renderRatedCard(p: CardParams, sig?: string): Promise<Imag
   const glyphs = parts.map((x) => x.text).join("");
   const long = glyphs.length > 48;
 
-  const fonts = (
-    await Promise.all([
-      loadFont("Bricolage+Grotesque", 800, `kultura${glyphs}`),
-      loadFont("Figtree", 700, `${handle}${footer}`),
-    ])
-  ).filter((f) => f !== null);
+  const fonts = await Promise.all([
+    loadDisplayFont(glyphs),
+    loadFont("Figtree", 700, `${handle}${footer}`),
+    loadLogoFont(),
+  ]);
 
+  // Página impresa del álbum: campo cian, tinta marina, la nota en la caja
+  // amarilla y la portada como cromo (respaldo de color siempre detrás).
   return new ImageResponse(
     (
       <div
@@ -119,16 +121,13 @@ export async function renderRatedCard(p: CardParams, sig?: string): Promise<Imag
           alignItems: "center",
           justifyContent: "space-between",
           padding: "0 80px",
-          background: `radial-gradient(120% 100% at 20% 10%, rgba(230,59,125,0.30), ${C.bg} 55%)`,
-          color: C.text,
-          fontFamily: "Figtree",
+          background: C.cyan,
+          color: C.navy,
+          fontFamily: OG_FONT.body,
         }}
       >
         <div style={{ display: "flex", flexDirection: "column", maxWidth: 640 }}>
-          <div style={{ display: "flex", alignItems: "flex-end", fontSize: 40, fontWeight: 800, fontFamily: "Bricolage Grotesque" }}>
-            kultura
-            <div style={{ width: 9, height: 9, background: C.lime, transform: "rotate(14deg)", marginLeft: 4, marginBottom: 9 }} />
-          </div>
+          <OgWordmark size={40} />
           <div
             style={{
               display: "flex",
@@ -136,10 +135,8 @@ export async function renderRatedCard(p: CardParams, sig?: string): Promise<Imag
               alignItems: "center",
               marginTop: 48,
               fontSize: long ? 54 : 66,
-              fontWeight: 800,
-              letterSpacing: -2,
               lineHeight: 1.12,
-              fontFamily: "Bricolage Grotesque",
+              fontFamily: OG_FONT.display,
             }}
           >
             {lines.map((word, i) => (
@@ -150,18 +147,17 @@ export async function renderRatedCard(p: CardParams, sig?: string): Promise<Imag
                       key={j}
                       style={{
                         display: "flex",
-                        padding: "4px 22px",
-                        borderRadius: 999,
-                        background: C.lime,
-                        color: "#1c1622",
-                        transform: "rotate(-3deg)",
-                        boxShadow: "6px 6px 0 rgba(0,0,0,0.4)",
+                        padding: "2px 16px",
+                        borderRadius: 6,
+                        border: `3px solid ${C.navy}`,
+                        background: C.yellow,
+                        color: C.ink,
                       }}
                     >
                       {w.text}
                     </div>
                   ) : (
-                    <div key={j} style={{ display: "flex", color: w.tag === "work" ? C.pink : C.text }}>
+                    <div key={j} style={{ display: "flex" }}>
                       {w.text}
                     </div>
                   )
@@ -170,26 +166,10 @@ export async function renderRatedCard(p: CardParams, sig?: string): Promise<Imag
             ))}
           </div>
           {footer ? (
-            <div style={{ display: "flex", marginTop: 40, fontSize: 30, fontWeight: 700, color: C.muted }}>{footer}</div>
+            <div style={{ display: "flex", marginTop: 40, fontSize: 30, fontWeight: 700 }}>{footer}</div>
           ) : null}
         </div>
-        <div
-          style={{
-            display: "flex",
-            width: POSTER_W,
-            height: POSTER_H,
-            borderRadius: 24,
-            overflow: "hidden",
-            background: "linear-gradient(155deg, #e63b7d, #6e1f42)",
-            transform: "rotate(3deg)",
-            boxShadow: `12px 12px 0 ${C.surface2}`,
-          }}
-        >
-          {poster && (
-            // eslint-disable-next-line @next/next/no-img-element, jsx-a11y/alt-text
-            <img src={poster} width={POSTER_W} height={POSTER_H} style={{ objectFit: "cover" }} />
-          )}
-        </div>
+        <OgCromo uri={poster} width={POSTER_W} height={POSTER_H} />
       </div>
     ),
     { ...CARD_SIZE, ...fontsOption(fonts), headers: { "cache-control": OG_CACHE_CONTROL } }

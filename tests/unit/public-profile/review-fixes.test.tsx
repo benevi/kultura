@@ -33,7 +33,7 @@ describe('FavoritesGrid del dueño', () => {
 
 describe('InviteBanner', () => {
   it('no es un encabezado (va antes del h1 de la página)', async () => {
-    render(await InviteBanner({ username: 'ana', friendsOnSignup: true, registerHref: '/login' }))
+    render(await InviteBanner({ username: 'ana', friendsOnSignup: true }))
     expect(screen.queryByRole('heading')).not.toBeInTheDocument()
     expect(screen.getByRole('complementary', { name: 'bannerTitle' })).toBeInTheDocument()
   })

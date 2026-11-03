@@ -53,11 +53,11 @@ vi.mock("@/i18n/navigation", () => ({
     </a>
   ),
 }));
-vi.mock("@/components/layout/Header", () => ({ Header: () => <header data-testid="public-header" /> }));
 vi.mock("@/components/layout/Footer", () => ({ Footer: () => <footer /> }));
 vi.mock("@/components/collection/PublicCollection", () => ({
-  SignedInBar: () => <header data-testid="signed-in-bar" />,
-  SignUpCta: ({ href }: { href: string }) => <a data-testid="signup" href={href} />,
+  PublicBar: ({ signedIn }: { signedIn: boolean }) =>
+    signedIn ? <header data-testid="signed-in-bar" /> : <header data-testid="public-header" />,
+  SignUpCta: ({ href, label }: { href: string; label: string }) => <a data-testid="signup" href={href}>{label}</a>,
 }));
 vi.mock("next/image", () => ({
   // eslint-disable-next-line @next/next/no-img-element, jsx-a11y/alt-text
@@ -182,6 +182,8 @@ describe("página", () => {
     const signup = screen.getByTestId("signup").getAttribute("href")!;
     expect(signup).toContain("/login?mode=register&next=%2Fes%2Fmedia%2Fmovie%2F438631");
     expect(signup).toContain("ref=benevi");
+    // La única acción en rosa es la de la barra fija; la ficha queda como secundaria.
+    expect(screen.getByTestId("signup")).toHaveTextContent(es.share.page.ctaRegister);
     expect(screen.getByTestId("public-header")).toBeInTheDocument();
   });
 

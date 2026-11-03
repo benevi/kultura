@@ -36,7 +36,6 @@ const h = vi.hoisted(() => {
       CollectionOwner: marker('CollectionOwner'),
       FavoritesGrid: marker('FavoritesGrid'),
       FormatCounters: marker('FormatCounters'),
-      FormatLabel: marker('FormatLabel'),
       InviteBanner: marker('InviteBanner'),
       LockedLibrary: marker('LockedLibrary'),
       PublicListRow: marker('PublicListRow'),
@@ -46,8 +45,10 @@ const h = vi.hoisted(() => {
       InviteLinkButton: marker('InviteLinkButton'),
       Link: marker('Link'),
       KButton: marker('KButton'),
-      Header: marker('Header'),
-      SignedInBar: marker('SignedInBar'),
+      PublicBar: marker('PublicBar'),
+      AlbumNumbers: marker('AlbumNumbers'),
+      FormatPageHeading: marker('FormatPageHeading'),
+      AlbumPage: marker('AlbumPage'),
       Footer: marker('Footer'),
     },
   }
@@ -79,7 +80,7 @@ vi.mock('@/components/collection/PublicCollection', () => ({
 vi.mock('@/components/collection/InviteLinkButton', () => ({ InviteLinkButton: h.M.InviteLinkButton }))
 vi.mock('@/components/social/ReportButton', () => ({ ReportButton: h.M.ReportButton }))
 vi.mock('@/components/ui/KButton', () => ({ KButton: h.M.KButton }))
-vi.mock('@/components/layout/Header', () => ({ Header: h.M.Header }))
+vi.mock('@/components/album/AlbumPage', () => ({ AlbumPage: h.M.AlbumPage }))
 vi.mock('@/components/layout/Footer', () => ({ Footer: h.M.Footer }))
 vi.mock('@/i18n/navigation', () => ({ Link: h.M.Link }))
 
@@ -96,7 +97,7 @@ async function expand(node: ReactNode): Promise<ReactNode> {
     return expand(await (el.type as (p: unknown) => ReactNode | Promise<ReactNode>)(el.props))
   }
   const props: Record<string, unknown> = { ...el.props }
-  for (const key of ['children', 'actions']) {
+  for (const key of ['children', 'actions', 'numbers']) {
     if (key in props) props[key] = await expand(props[key] as ReactNode)
   }
   return { ...el, props } as ReactNode
@@ -109,6 +110,7 @@ function all(node: ReactNode, type: unknown, out: Array<Record<string, unknown>>
     if (el.type === type) out.push(el.props)
     all(el.props.children as ReactNode, type, out)
     if (el.props.actions) all(el.props.actions as ReactNode, type, out)
+    if (el.props.numbers) all(el.props.numbers as ReactNode, type, out)
   }
   return out
 }
@@ -145,7 +147,7 @@ beforeEach(() => {
 describe('/u sin sesión', () => {
   it('nunca consulta la biblioteca ni las columnas privadas del dueño, y explica que hace falta cuenta', async () => {
     const tree = await render()
-    expect(all(tree, h.M.Header)).toHaveLength(1)
+    expect(all(tree, h.M.PublicBar)[0]).toMatchObject({ signedIn: false, returnTo: '/es/u/ana' })
     expect(h.canRead).not.toHaveBeenCalled()
     expect(h.getShowcase).not.toHaveBeenCalled()
     expect(h.details).not.toHaveBeenCalled()
@@ -162,22 +164,31 @@ describe('/u sin sesión', () => {
     const tree = await render({ ref: 'ana', inv, utm_source: 'Reddit' })
     const [banner] = all(tree, h.M.InviteBanner)
     expect(banner.friendsOnSignup).toBe(true)
-    expect(banner.registerHref).toBe(`/login?mode=register&utm_source=reddit&ref=ana&inv=${inv}`)
-    expect(all(tree, h.M.SignUpCta)[0].href).toBe(banner.registerHref)
+    // UNA acción: la barra fija acepta la invitación y vuelve a esta página.
+    const [cta] = all(tree, h.M.SignUpCta)
+    expect(cta.href).toBe(`/login?mode=register&next=%2Fes%2Fu%2Fana&utm_source=reddit&ref=ana&inv=${inv}`)
+    expect(cta.label).toBe('bannerCta')
   })
 
   it('firma que no cuadra: banner sin prometer amistad (y la firma no viaja si no tiene formato)', async () => {
     const tree = await render({ ref: 'ana', inv: BAD })
     const [banner] = all(tree, h.M.InviteBanner)
     expect(banner.friendsOnSignup).toBe(false)
-    const bad = all(await render({ ref: 'ana', inv: 'nope' }), h.M.InviteBanner)[0]
-    expect(bad.registerHref).toBe('/login?mode=register&ref=ana')
+    const bad = all(await render({ ref: 'ana', inv: 'nope' }), h.M.SignUpCta)[0]
+    expect(bad.href).toBe('/login?mode=register&next=%2Fes%2Fu%2Fana&ref=ana')
   })
 
   it('sin ref: no hay banner y el alta se atribuye a este perfil (sin firma)', async () => {
     const tree = await render({ utm_source: 'tiktok' })
     expect(all(tree, h.M.InviteBanner)).toHaveLength(0)
-    expect(all(tree, h.M.SignUpCta)[0].href).toBe('/login?mode=register&utm_source=tiktok&ref=ana')
+    const [cta] = all(tree, h.M.SignUpCta)
+    expect(cta.href).toBe('/login?mode=register&next=%2Fes%2Fu%2Fana&utm_source=tiktok&ref=ana')
+    expect(cta.label).toBe('ctaButton')
+    // Sin sesión, la portada enseña solo lo público: listas y sus títulos.
+    expect(all(tree, h.M.AlbumNumbers)[0].numbers).toEqual([
+      { key: 'publicListsCount', count: 2 },
+      { key: 'titlesCount', count: 2 },
+    ])
   })
 
   it('denunciar sin cuenta lleva al formulario público (F-11)', async () => {
@@ -199,8 +210,7 @@ describe('/u con sesión', () => {
 
   it('con sesión, la cabecera no ofrece «Registrarse» (barra con sesión)', async () => {
     const tree = await render()
-    expect(all(tree, h.M.Header)).toHaveLength(0)
-    expect(all(tree, h.M.SignedInBar)).toHaveLength(1)
+    expect(all(tree, h.M.PublicBar)[0]).toMatchObject({ signedIn: true })
   })
 
   it('con permiso: contadores, favoritos (con prioridad) y denuncia con el botón de F-11', async () => {
@@ -281,7 +291,8 @@ describe('/u: nombres antiguos y metadatos', () => {
 describe('/u con una lista mixta (F-25)', () => {
   it('su grupo se rotula «Varios formatos», nunca con una clave vacía de `media`', async () => {
     h.collection = { owner: { ...OWNER }, lists: [list('l1'), list('l2', 'mixed')] }
-    const labels = all(await render(), h.M.FormatLabel).map((p) => String(p.children))
-    expect(labels).toEqual(['movies', 'mediaTypeMixed'])
+    const pages = all(await render(), h.M.FormatPageHeading)
+    expect(pages.map((p) => p.name)).toEqual(['movies', 'mediaTypeMixed'])
+    expect(pages.map((p) => p.format)).toEqual(['movie', undefined])
   })
 })

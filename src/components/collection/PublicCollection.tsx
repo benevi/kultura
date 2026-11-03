@@ -1,19 +1,33 @@
 // ============================================================
-// KULTURA — Piezas del perfil público (/u/{username}, DIS-6)
-// Server Components. Solo primitivos de DISENO.md: avatar con la forma del
-// perfil, chips (inactivo + punto del matiz de cada formato, TYPE_HUE),
-// pegatina lima, pósters con la tarjeta única `PosterFrame` (gradiente SIEMPRE detrás,
-// radio de póster) y la tarjeta con sombra dura del login para registrarse.
+// KULTURA — Piezas de las páginas públicas de una persona (/u/…)
+//
+// El perfil, la lista y la nota compartidos son PÁGINAS IMPRESAS del álbum
+// (DISENO.md): papel blanco, campos de cian y amarillo que ocupan regiones
+// enteras, tinta marina y el rosa solo para la ÚNICA acción de la pantalla
+// (la barra fija de abajo para quien llega sin cuenta). Los títulos son
+// cromos con su borde blanco (`Cromo`): pegados, puestos «en curso» con su
+// tira de progreso o huecos numerados (`Slot`). Las cifras salen de los
+// datos y con el formato del idioma; si no hay dato, no hay cifra.
+//
+// Server Components, salvo `PasteOnEnter` (el pegado escalonado de cada
+// rejilla, una vez, al entrar en pantalla).
 // ============================================================
 
-import { getTranslations, getLocale } from 'next-intl/server'
+import { getTranslations } from 'next-intl/server'
 import { Avatar } from '@/components/ui/Avatar'
 import { KButton } from '@/components/ui/KButton'
-import { PosterFrame } from '@/components/media/PosterFrame'
-import { formatColor } from '@/lib/landing/immersive'
+import { Cromo } from '@/components/album/Cromo'
+import { FormatTag } from '@/components/album/FormatTag'
+import { NumberBadge } from '@/components/album/NumberBadge'
+import { Slot } from '@/components/album/Slot'
+import { StatusBand } from '@/components/album/StatusBand'
+import { AlbumPage } from '@/components/album/AlbumPage'
+import { getAlbumLabels } from '@/components/album/labels.server'
+import { FORMAT_COLOR } from '@/lib/design/album'
+import { formatCount } from '@/lib/design/format'
 import { Link } from '@/i18n/navigation'
-import { IconLibrary } from '@/components/icons'
 import { Logo } from '@/components/layout/Logo'
+import { PasteOnEnter } from '@/components/collection/PasteOnEnter'
 import type {
   FavoriteItem,
   LibraryShowcase,
@@ -29,158 +43,300 @@ export const PLURAL_KEY: Record<MediaType, string> = {
   book: 'books', comic: 'comics', game: 'games',
 }
 
-const SECTION_TITLE = 'font-display text-xl md:text-2xl font-extrabold text-text-primary'
+/** Foco del sistema (DISENO.md): contorno de 2 px, marino en papel. */
+export const FOCUS =
+  'focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus-ring'
+
+/** Título de sección de una página impresa: Lilita, sin antetítulo. */
+const SECTION_TITLE = 'font-display text-2xl md:text-3xl text-text-primary text-balance'
+
+/** Enlace de texto en papel: tinta marina, subrayado al pasar, 44 px de alto. */
+const TEXT_LINK = `inline-flex min-h-11 items-center rounded-lg text-meta font-bold text-text-primary underline-offset-4 hover:underline ${FOCUS}`
+
+function isFormat(type: string): type is MediaType {
+  return type in PLURAL_KEY
+}
 
 function mediaHref(item: PublicCollectionItem): string {
   const externalId = item.mediaId.split('_').slice(1).join('_')
   return `/media/${item.type}/${externalId}`
 }
 
-/** Póster con el gradiente de respaldo detrás (nunca un hueco). */
-function Poster({
-  item,
-  sizes,
-  priority,
-}: {
-  item: PublicCollectionItem
-  sizes: string
-  priority: boolean
-}) {
-  return (
-    <PosterFrame seed={item.mediaId} title={item.title} poster={item.poster} sizes={sizes} priority={priority} />
-  )
-}
-
-// ── Cabecera ────────────────────────────────────────────────────────────
-
-export async function CollectionOwner({
-  owner,
-  actions,
-}: {
-  owner: PublicOwner
-  actions?: React.ReactNode
-}) {
-  const t = await getTranslations('collection')
-  const locale = await getLocale()
-  const since = owner.createdAt && !Number.isNaN(Date.parse(owner.createdAt))
-    ? new Intl.DateTimeFormat(locale, { month: 'long', year: 'numeric' }).format(new Date(owner.createdAt))
-    : null
-
-  return (
-    <header className="flex flex-col gap-6 md:flex-row md:items-end md:justify-between">
-      <div className="flex items-center gap-5 min-w-0">
-        <Avatar
-          initials={owner.avatarInitials}
-          color={owner.avatarColor}
-          icon={owner.avatarIcon}
-          size="lg"
-          className="w-24 h-24 text-3xl font-extrabold rounded-bento-xl rounded-bl-lg flex-shrink-0"
-        />
-        <div className="min-w-0">
-          <p className="text-meta font-bold text-text-tertiary">{t('eyebrow')}</p>
-          <h1 className="font-display text-3xl md:text-4xl font-extrabold tracking-tight text-text-primary leading-tight break-words">
-            @{owner.username}
-          </h1>
-          {since ? <p className="text-sm text-text-tertiary mt-1">{t('memberSince', { date: since })}</p> : null}
-          {owner.bio ? (
-            <p className="text-body text-text-secondary mt-3 max-w-prose whitespace-pre-line">{owner.bio}</p>
-          ) : null}
-        </div>
-      </div>
-      {actions ? (
-        <div className="flex flex-row flex-wrap items-start gap-3 md:flex-col md:items-end flex-shrink-0">{actions}</div>
-      ) : null}
-    </header>
-  )
-}
-
-// ── Cabecera de página con sesión ───────────────────────────────────────
+// ── Barras de la página ─────────────────────────────────────────────────
 
 /**
- * Con sesión, la cabecera pública (Entrar / Registrarse) no tiene sentido:
- * logotipo y vuelta a Inicio, con el mismo alto y fondo que `Header`. Sin
- * componentes cliente, así no carga textos de navegación en esta zona.
+ * Cabecera de las páginas compartidas: el logotipo y UN botón secundario
+ * («Entrar» sin sesión, «Inicio» con ella). Sin «Registrarse» en rosa: la
+ * acción de la página es la barra fija de abajo, y en una pantalla solo hay
+ * un rosa. Enlaces `<a>` del servidor (no cargan JS); la vuelta tras entrar
+ * es esta misma página (`next`).
  */
-export async function SignedInBar() {
-  const t = await getTranslations('nav')
+export async function PublicBar({
+  locale,
+  signedIn,
+  returnTo,
+}: {
+  locale: string
+  signedIn: boolean
+  /** Ruta (con idioma) a la que volver tras entrar. */
+  returnTo?: string
+}) {
+  const [tAuth, tNav] = await Promise.all([
+    getTranslations({ locale, namespace: 'auth' }),
+    getTranslations({ locale, namespace: 'nav' }),
+  ])
+  const compact = 'h-9 px-3 text-xs sm:h-10 sm:px-4 sm:text-sm'
+  const loginHref = `/${locale}/login?mode=login${returnTo ? `&next=${encodeURIComponent(returnTo)}` : ''}`
   return (
-    <header className="sticky top-0 z-50 bg-surface-default border-b border-surface-border">
-      <div className="page-grid flex h-14 justify-between items-center gap-2">
-        <Link href="/home" className="shrink-0 inline-flex items-center min-h-11" aria-label="KULTURA">
+    <header className="sticky top-0 z-50 border-b-2 border-surface-border bg-surface-base">
+      <div className="page-grid flex h-14 items-center justify-between gap-2">
+        <a
+          href={signedIn ? `/${locale}/home` : `/${locale}`}
+          aria-label="KULTURA"
+          className={`flex min-h-11 shrink-0 items-center rounded-lg ${FOCUS}`}
+        >
           <Logo size={24} />
-        </Link>
-        <KButton asChild variant="secondary" size="md" className="h-9 px-3 text-xs sm:h-10 sm:px-4 sm:text-sm">
-          <Link href="/home">{t('home')}</Link>
+        </a>
+        <KButton asChild variant="secondary" size="md" className={compact}>
+          {signedIn ? (
+            <a href={`/${locale}/home`}>{tNav('home')}</a>
+          ) : (
+            <a href={loginHref}>
+              {/* Por debajo de 360 px, la forma corta (como `Header`). */}
+              <span className="min-[360px]:hidden">{tAuth('signInAction')}</span>
+              <span className="max-[359px]:hidden">{tAuth('signIn')}</span>
+            </a>
+          )}
         </KButton>
       </div>
     </header>
   )
 }
 
+/**
+ * La ÚNICA acción en rosa de una página compartida, para quien llega sin
+ * cuenta: una barra fija al pie, en la zona del pulgar y con el margen
+ * seguro del iPhone. Es `sticky` (no `fixed`): al final de la página se
+ * queda en su sitio y nunca tapa el pie. Sin modales. El enlace lleva la
+ * atribución y la vuelta a esta página (`next`).
+ */
+export async function SignUpCta({ href, label }: { href: string; label: string }) {
+  const t = await getTranslations('collection')
+  return (
+    <div
+      data-sticky-cta=""
+      className="sticky bottom-0 z-40 border-t-2 border-album-navy bg-album-white pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]"
+    >
+      <div className="page-grid flex items-center justify-between gap-4">
+        <p className="hidden text-sm font-semibold text-text-secondary sm:block">{t('ctaLine')}</p>
+        <KButton asChild size="lg" className="w-full sm:w-auto">
+          <Link href={href}>{label}</Link>
+        </KButton>
+      </div>
+    </div>
+  )
+}
+
+// ── Portada del álbum (cabecera del perfil) ─────────────────────────────
+
+export interface AlbumNumber {
+  /** Clave ICU de `collection` con `<n>#</n>` (el número va en su caja). */
+  key: 'titlesCount' | 'completedCount' | 'publicListsCount'
+  count: number
+}
+
+/**
+ * Los números del álbum: cada cifra en su caja (como la numeración de un
+ * álbum), dentro de su frase ICU («<12> títulos»), así el plural concuerda y
+ * el lector lee la frase entera. Solo cifras que salen de los datos y nunca
+ * un cero a un desconocido (un álbum vacío no se anuncia).
+ */
+export async function AlbumNumbers({
+  numbers,
+  formats = [],
+  locale,
+}: {
+  numbers: AlbumNumber[]
+  formats?: Array<{ type: MediaType; count: number }>
+  locale: string
+}) {
+  const shown = numbers.filter((n) => n.count > 0)
+  const perFormat = formats.filter((f) => f.count > 0)
+  if (shown.length === 0 && perFormat.length === 0) return null
+  const [t, tm] = await Promise.all([getTranslations('collection'), getTranslations('media')])
+  const badge = (chunks: React.ReactNode) => (
+    <NumberBadge n={chunks as string} tone="white" size="md" className="mr-2" />
+  )
+  return (
+    <div className="flex flex-col gap-3">
+      {shown.length > 0 ? (
+        <ul aria-label={t('statsLabel')} className="flex flex-wrap items-center gap-x-5 gap-y-2">
+          {shown.map((n) => (
+            <li key={n.key} className="inline-flex items-center text-base font-semibold text-text-primary">
+              {t.rich(n.key, { count: n.count, n: badge })}
+            </li>
+          ))}
+        </ul>
+      ) : null}
+      {perFormat.length > 0 ? (
+        <ul aria-label={t('byFormatLabel')} className="flex flex-wrap gap-2">
+          {perFormat.map((f) => (
+            <li
+              key={f.type}
+              className="inline-flex h-8 items-center gap-2 rounded-cromo bg-album-white pl-1 pr-3 text-sm font-semibold text-album-navy"
+            >
+              <span className="inline-flex h-6 min-w-6 items-center justify-center rounded-cromo bg-album-navy px-1.5 font-numeral text-base leading-none text-album-white">
+                {formatCount(f.count, locale)}
+              </span>
+              <span aria-hidden="true" className="h-2 w-2 shrink-0 rounded-full" style={{ backgroundColor: FORMAT_COLOR[f.type] }} />
+              {tm(PLURAL_KEY[f.type])}
+            </li>
+          ))}
+        </ul>
+      ) : null}
+    </div>
+  )
+}
+
+/**
+ * La portada del álbum de una persona, en el campo cian: su avatar con el
+ * borde blanco de un cromo, «El álbum de @ana» (Lilita, hasta 3 líneas en
+ * el móvil), desde cuándo está (solo si se sabe), su bio (las palabras
+ * largas se parten y se respetan sus saltos de línea), sus números y las
+ * acciones de quien mira.
+ */
+export async function CollectionOwner({
+  owner,
+  numbers,
+  actions,
+  locale,
+}: {
+  owner: PublicOwner
+  numbers?: React.ReactNode
+  actions?: React.ReactNode
+  locale: string
+}) {
+  const t = await getTranslations('collection')
+  const since =
+    owner.createdAt && !Number.isNaN(Date.parse(owner.createdAt))
+      ? new Intl.DateTimeFormat(locale, { month: 'long', year: 'numeric' }).format(new Date(owner.createdAt))
+      : null
+
+  return (
+    <AlbumPage as="header" tone="cyan" className="border-b-2 border-album-navy">
+      <div className="flex flex-col gap-6 py-8 md:flex-row md:items-end md:justify-between md:py-12">
+        <div className="flex min-w-0 flex-col gap-5 sm:flex-row sm:items-end">
+          <Avatar
+            initials={owner.avatarInitials}
+            color={owner.avatarColor}
+            icon={owner.avatarIcon}
+            size="lg"
+            className="h-20 w-20 shrink-0 rounded-cromo border-[3px] border-album-white text-2xl md:h-28 md:w-28 md:text-3xl"
+          />
+          <div className="min-w-0">
+            <h1 className="break-words font-display text-3xl text-text-primary text-balance [overflow-wrap:anywhere] md:text-5xl">
+              {t('heading', { username: owner.username })}
+            </h1>
+            {since ? <p className="mt-2 text-sm font-semibold text-text-primary">{t('memberSince', { date: since })}</p> : null}
+            {owner.bio ? (
+              <p className="mt-3 max-w-prose whitespace-pre-line break-words text-base text-text-primary [overflow-wrap:anywhere]">
+                {owner.bio}
+              </p>
+            ) : null}
+          </div>
+        </div>
+        {actions ? <div className="flex shrink-0 flex-wrap items-start gap-3 md:flex-col md:items-end">{actions}</div> : null}
+      </div>
+      {numbers ? <div className="pb-8 md:pb-10">{numbers}</div> : null}
+    </AlbumPage>
+  )
+}
+
 // ── Invitación ──────────────────────────────────────────────────────────
 
-/** "{username} te invita a KULTURA" (CRE-7), para quien llega sin cuenta con `?ref=`. */
+/**
+ * «Ana te invita a KULTURA» (CRE-7), en una franja amarilla sobre la portada,
+ * para quien llega sin cuenta con `?ref=`. No es un encabezado (va antes del
+ * h1) y no lleva botón: la acción es la barra fija («Aceptar la invitación»).
+ */
 export async function InviteBanner({
   username,
   friendsOnSignup,
-  registerHref,
 }: {
   username: string
   /** La firma del enlace es válida: al registrarse serán amigos. */
   friendsOnSignup: boolean
-  registerHref: string
 }) {
   const t = await getTranslations('invite')
   return (
-    <aside
-      aria-labelledby="invite-title"
-      className="relative rounded-bento-xl bg-surface-default p-6 md:p-8 flex flex-col md:flex-row md:items-center gap-5 justify-between"
-      style={{
-        background:
-          'radial-gradient(120% 100% at 20% 10%, oklch(68% 0.24 350 / 0.28) 0%, transparent 55%), var(--surface-default)',
-      }}
-    >
-      <div>
-        {/* No es un encabezado: el banner va antes del h1 de la página. */}
-        <p id="invite-title" className="font-display text-2xl md:text-3xl font-extrabold text-text-primary">
+    <AlbumPage as="div" tone="yellow" className="border-b-2 border-album-navy">
+      <aside aria-labelledby="invite-title" className="flex flex-col gap-1 py-4">
+        <p id="invite-title" className="font-display text-xl text-text-primary md:text-2xl">
           {t('bannerTitle', { username })}
         </p>
-        <p className="text-body text-text-secondary mt-2 max-w-prose">
+        <p className="max-w-prose text-sm font-medium text-text-primary">
           {friendsOnSignup ? t('bannerFriends') : t('bannerText')}
         </p>
-      </div>
-      <KButton asChild size="lg" className="flex-shrink-0 self-start md:self-auto">
-        <Link href={registerHref}>{t('bannerCta')}</Link>
-      </KButton>
-    </aside>
+      </aside>
+    </AlbumPage>
   )
 }
 
-// ── Biblioteca visible: contadores, favoritos y "en curso" ──────────────
+// ── Biblioteca visible: números, favoritos y «en curso» ─────────────────
 
-export async function FormatCounters({ showcase }: { showcase: LibraryShowcase }) {
+/** Los números de la biblioteca (solo con permiso de quien mira, D-04b). */
+export async function FormatCounters({ showcase, locale }: { showcase: LibraryShowcase; locale: string }) {
   if (showcase.total === 0) return null
-  const t = await getTranslations('collection')
-  const tm = await getTranslations('media')
   return (
-    <section aria-label={t('statsLabel')}>
-      <ul className="flex flex-wrap gap-2.5">
-        <li className="inline-flex items-center gap-2 rounded-pill bg-surface-elevated px-4 py-2 text-sm font-bold text-text-primary">
-          <span className="tabular-nums">{t('items', { count: showcase.total })}</span>
-          <span className="text-text-tertiary font-semibold">· {t('completedCount', { count: showcase.completed })}</span>
-        </li>
-        {showcase.byFormat.map((f) => (
-          <li
-            key={f.type}
-            className="inline-flex items-center gap-2 rounded-pill bg-surface-elevated px-4 py-2 text-sm font-bold text-text-primary"
-          >
-            <span aria-hidden="true" className="w-2.5 h-2.5 rounded-full" style={{ background: formatColor(f.type) }} />
-            <span className="tabular-nums">{f.count}</span>
-            <span className="font-semibold text-text-secondary">{tm(PLURAL_KEY[f.type])}</span>
-          </li>
-        ))}
-      </ul>
-    </section>
+    <AlbumNumbers
+      locale={locale}
+      numbers={[
+        { key: 'titlesCount', count: showcase.total },
+        { key: 'completedCount', count: showcase.completed },
+      ]}
+      formats={showcase.byFormat}
+    />
+  )
+}
+
+/** Cromo enlazado a su ficha, con el título y una línea de datos debajo. */
+function CromoLink({
+  item,
+  sizes,
+  priority,
+  state,
+  progress,
+  progressLabel,
+  meta,
+  heading: Heading = 'h3',
+}: {
+  item: PublicCollectionItem
+  sizes: string
+  priority: boolean
+  state?: 'pasted' | 'placed'
+  progress?: number
+  progressLabel?: string
+  meta?: React.ReactNode
+  heading?: 'h3' | 'h4' | 'p'
+}) {
+  return (
+    <Link href={mediaHref(item)} className={`group block rounded-cromo ${FOCUS} focus-visible:outline-offset-4`}>
+      <Cromo
+        seed={item.mediaId}
+        title={item.title}
+        poster={item.poster}
+        sizes={sizes}
+        priority={priority}
+        state={state}
+        format={isFormat(item.type) ? item.type : undefined}
+        progress={progress}
+        progressLabel={progressLabel}
+      />
+      <Heading className="mt-2 line-clamp-2 text-sm font-semibold leading-tight text-text-primary" title={item.title}>
+        {item.title}
+      </Heading>
+      {meta ? <div className="mt-1 flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1 text-xs text-text-tertiary">{meta}</div> : null}
+    </Link>
   )
 }
 
@@ -191,21 +347,21 @@ export async function FavoritesGrid({
 }: {
   favorites: FavoriteItem[]
   isOwner: boolean
-  /** Primera fila de pósters de la página: carga con prioridad (REN-6). */
+  /** Primera fila de portadas de la página: carga con prioridad (REN-6). */
   priority: boolean
 }) {
   if (favorites.length === 0 && !isOwner) return null
   const t = await getTranslations('collection')
-  const tm = await getTranslations('media')
+  const album = await getAlbumLabels()
 
-  // Dueño sin ninguna nota: una tarjeta compacta, no cuatro huecos 2:3 vacíos.
+  // Dueño sin ninguna nota: una tarjeta compacta, no cuatro huecos vacíos.
   if (favorites.length === 0) {
     return (
       <section aria-labelledby="favorites-title" className="flex flex-col gap-4">
         <h2 id="favorites-title" className={SECTION_TITLE}>{t('favorites')}</h2>
-        <div className="flex flex-col gap-3 rounded-bento bg-surface-default px-6 py-5 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex flex-col gap-3 rounded-bento border-2 border-dashed border-slot-line px-5 py-5 sm:flex-row sm:items-center sm:justify-between">
           <p className="text-sm text-text-secondary">{t('favoritesEmpty')}</p>
-          <KButton asChild size="sm" className="self-start sm:self-auto flex-shrink-0">
+          <KButton asChild variant="secondary" size="sm" className="shrink-0 self-start sm:self-auto">
             <Link href="/library">{t('favoritesEmptyAction')}</Link>
           </KButton>
         </div>
@@ -213,88 +369,103 @@ export async function FavoritesGrid({
     )
   }
 
-  // Estado vacío diseñado: el dueño ve los huecos que le faltan y qué hacer.
-  const placeholders = isOwner ? Math.max(0, 4 - favorites.length) : 0
+  // El dueño ve sus huecos libres, numerados: lo que le falta para el top 4.
+  const empty = isOwner ? Math.max(0, 4 - favorites.length) : 0
 
   return (
     <section aria-labelledby="favorites-title" className="flex flex-col gap-4">
       <h2 id="favorites-title" className={SECTION_TITLE}>{t('favorites')}</h2>
-      <ul className="grid grid-cols-2 md:grid-cols-4 gap-5">
+      <PasteOnEnter className="grid grid-cols-2 gap-x-4 gap-y-6 sm:grid-cols-4 md:gap-x-6">
         {favorites.map((item) => (
-          <li key={item.mediaId}>
-            <Link href={mediaHref(item)} className="group block">
-              <div className="relative">
-                <Poster item={item} sizes="(max-width: 768px) 45vw, 200px" priority={priority} />
-                <span className="absolute left-2 top-2 rotate-[-8deg] rounded-full bg-accent-lime px-3 py-1 text-xs font-extrabold text-on-accent-lime shadow-sticker">
-                  {tm(item.type as MediaType)}
-                </span>
-              </div>
-              <p className="font-display text-body font-bold mt-2.5 line-clamp-2 text-text-primary leading-tight">
-                {item.title}
-              </p>
-              <p className="text-xs text-text-tertiary mt-0.5">
-                <span aria-hidden="true" className="text-accent-yellow">★</span>{' '}
-                {t('favoriteScore', { score: item.score })}
-                {item.year ? ` · ${item.year}` : ''}
-              </p>
-            </Link>
+          <li key={item.mediaId} className="min-w-0">
+            <CromoLink
+              item={item}
+              sizes="(max-width: 640px) 45vw, 220px"
+              priority={priority}
+              meta={
+                <>
+                  {isFormat(item.type) ? <FormatTag format={item.type} label={album.format(item.type)} /> : null}
+                  <span className="tabular-nums">{t('favoriteScore', { score: item.score })}</span>
+                </>
+              }
+            />
           </li>
         ))}
-        {Array.from({ length: placeholders }, (_, i) => (
-          <li key={`empty-${i}`} aria-hidden={i > 0 ? true : undefined}>
-            <Link
-              href="/library"
-              className="flex aspect-[2/3] items-center justify-center rounded-2xl border-2 border-dashed border-surface-border p-4 text-center text-meta font-semibold text-text-tertiary hover:text-text-primary hover:border-text-tertiary transition-colors"
-              tabIndex={i > 0 ? -1 : undefined}
-            >
-              {i === 0 ? t('favoritesHint') : <span className="text-2xl">+</span>}
-            </Link>
+        {Array.from({ length: empty }, (_, i) => (
+          <li key={`empty-${i}`} className="min-w-0" aria-hidden={i > 0 ? true : undefined}>
+            {i === 0 ? (
+              <Link href="/library" className={`group block rounded-cromo ${FOCUS}`}>
+                <Slot number={favorites.length + 1} title={t('favoritesHint')} />
+              </Link>
+            ) : (
+              <Slot number={favorites.length + 1 + i} title="" />
+            )}
           </li>
         ))}
-      </ul>
+      </PasteOnEnter>
     </section>
   )
 }
 
-/** Fila horizontal de pósters (en curso y listas públicas). */
-export function PosterStrip({
-  items,
-  priorityCount = 0,
-}: {
-  items: PublicCollectionItem[]
-  /** Cuántas de las primeras portadas cargan con prioridad (REN-6). */
-  priorityCount?: number
-}) {
-  return (
-    <ul className="flex gap-5 overflow-x-auto pb-2 scrollbar-hide">
-      {items.map((item, i) => (
-        <li key={item.mediaId} className="w-28 md:w-36 flex-shrink-0">
-          <Link href={mediaHref(item)} className="group block">
-            <Poster item={item} sizes="(max-width: 768px) 112px, 144px" priority={i < priorityCount} />
-            <p className="font-display text-sm font-bold mt-2 line-clamp-2 text-text-primary leading-tight" title={item.title}>
-              {item.title}
-            </p>
-            {item.year ? <p className="font-body text-xs text-text-tertiary mt-0.5">{item.year}</p> : null}
-          </Link>
-        </li>
-      ))}
-    </ul>
-  )
+/** Un título en curso: lo que se sepa de su avance y de cuándo lo tocó. */
+export type WatchingItem = PublicCollectionItem & {
+  /** Avance de 0 a 1 (si se conoce el total). */
+  progress?: number | null
+  /** Última vez que se tocó (ISO). */
+  updatedAt?: string | null
 }
 
-export async function WatchingRow({ items, priorityCount }: { items: PublicCollectionItem[]; priorityCount: number }) {
+/** «En curso»: cromos puestos sin apretar, con su tira y su «hace N días». */
+export async function WatchingRow({
+  items,
+  priorityCount,
+  locale,
+}: {
+  items: WatchingItem[]
+  priorityCount: number
+  locale: string
+}) {
   if (items.length === 0) return null
   const t = await getTranslations('collection')
+  const album = await getAlbumLabels(locale)
+  const percent = new Intl.NumberFormat(locale, { style: 'percent', maximumFractionDigits: 0 })
   return (
     <section aria-labelledby="watching-title" className="flex flex-col gap-4">
       <h2 id="watching-title" className={SECTION_TITLE}>{t('watching')}</h2>
-      <PosterStrip items={items} priorityCount={priorityCount} />
+      <PasteOnEnter className="-mx-4 flex snap-x gap-4 overflow-x-auto px-4 pb-2 scrollbar-hide md:mx-0 md:grid md:grid-cols-6 md:overflow-visible md:px-0">
+        {items.map((item, i) => {
+          const progress = typeof item.progress === 'number' ? item.progress : undefined
+          return (
+            <li key={item.mediaId} className="w-32 shrink-0 snap-start md:w-auto">
+              <CromoLink
+                item={item}
+                state="placed"
+                progress={progress}
+                progressLabel={progress === undefined ? undefined : album.progressPercent(percent.format(progress))}
+                sizes="(max-width: 768px) 128px, 160px"
+                priority={i < priorityCount}
+              />
+              {/* La banda solo con la fecha: «En curso» ya lo dice la sección. */}
+              {item.updatedAt ? (
+                <StatusBand
+                  status="in_progress"
+                  label={album.status('in_progress')}
+                  touchedAt={item.updatedAt}
+                  locale={locale}
+                  className="mt-2"
+                />
+              ) : null}
+            </li>
+          )
+        })}
+      </PasteOnEnter>
     </section>
   )
 }
 
 // ── Biblioteca no visible para quien mira ───────────────────────────────
 
+/** La biblioteca que no se puede ver: un hueco discontinuo con el motivo. */
 export function LockedLibrary({
   title,
   text,
@@ -305,25 +476,55 @@ export function LockedLibrary({
   children?: React.ReactNode
 }) {
   return (
-    <section className="flex flex-col items-center gap-3 rounded-bento bg-surface-default px-6 py-10 text-center">
-      <IconLibrary className="w-10 h-10 text-text-tertiary" />
-      <h2 className="font-bold text-text-primary">{title}</h2>
-      <p className="max-w-md text-sm text-text-secondary">{text}</p>
-      {children ? <div className="mt-2 flex flex-wrap items-center justify-center gap-3">{children}</div> : null}
+    <section className="flex flex-col items-start gap-2 rounded-bento border-2 border-dashed border-slot-line px-5 py-6 md:px-8 md:py-8">
+      <h2 className="font-display text-xl text-text-primary text-balance md:text-2xl">{title}</h2>
+      <p className="max-w-prose text-sm text-text-secondary">{text}</p>
+      {children ? <div className="mt-2 flex flex-wrap items-center gap-3">{children}</div> : null}
     </section>
   )
 }
 
-// ── Listas públicas ─────────────────────────────────────────────────────
+// ── Listas públicas: una página por formato ─────────────────────────────
 
-export function FormatLabel({ children }: { children: React.ReactNode }) {
+/** Nombre de un formato (con su punto de color, que nunca va solo). */
+export function FormatLabel({ children, format }: { children: React.ReactNode; format?: MediaType }) {
   return (
-    <span className="inline-flex items-center px-4 py-1.5 rounded-pill bg-surface-elevated text-text-primary text-meta font-bold">
+    <span className="inline-flex items-center gap-2">
+      {format ? (
+        <span aria-hidden="true" className="h-3 w-3 shrink-0 rounded-full" style={{ backgroundColor: FORMAT_COLOR[format] }} />
+      ) : null}
       {children}
     </span>
   )
 }
 
+/** Fila de cromos de una lista (desliza en el móvil, rejilla en escritorio). */
+export function CromoStrip({
+  items,
+  priorityCount = 0,
+}: {
+  items: PublicCollectionItem[]
+  /** Cuántas de las primeras portadas cargan con prioridad (REN-6). */
+  priorityCount?: number
+}) {
+  return (
+    <PasteOnEnter className="-mx-4 flex snap-x gap-4 overflow-x-auto px-4 pb-2 scrollbar-hide md:mx-0 md:grid md:grid-cols-6 md:overflow-visible md:px-0">
+      {items.map((item, i) => (
+        <li key={item.mediaId} className="w-28 shrink-0 snap-start md:w-auto">
+          <CromoLink
+            item={item}
+            heading="h4"
+            sizes="(max-width: 768px) 112px, 160px"
+            priority={i < priorityCount}
+            meta={item.year ? <span className="tabular-nums">{item.year}</span> : null}
+          />
+        </li>
+      ))}
+    </PasteOnEnter>
+  )
+}
+
+/** Una lista pública dentro de su página de formato. */
 export async function PublicListRow({
   list,
   username,
@@ -334,33 +535,40 @@ export async function PublicListRow({
   priorityCount?: number
 }) {
   const t = await getTranslations('collection')
+  // Las primeras 12: el resto, en la página de la lista.
+  const shown = list.items.slice(0, 12)
   return (
-    <div className="flex flex-col gap-3">
-      <h3 className="font-display text-lg font-bold text-text-primary">{list.name}</h3>
-      <PosterStrip items={list.items} priorityCount={priorityCount} />
-      <Link
-        href={`/u/${username}/l/${list.id}`}
-        className="self-start inline-flex items-center min-h-11 text-meta font-bold text-text-secondary hover:text-text-primary"
-      >
-        {t('viewList')} · {t('items', { count: list.items.length })}
-      </Link>
-    </div>
+    <article className="flex flex-col gap-3">
+      <div className="flex flex-wrap items-baseline justify-between gap-x-4">
+        <h3 className="min-w-0 break-words font-display text-xl text-text-primary">{list.name}</h3>
+        <Link href={`/u/${encodeURIComponent(username)}/l/${list.id}`} className={TEXT_LINK}>
+          {t('viewListCount', { count: list.items.length })}
+        </Link>
+      </div>
+      <CromoStrip items={shown} priorityCount={priorityCount} />
+    </article>
   )
 }
 
-export async function SignUpCta({ href = '/login?mode=register' }: { href?: string }) {
+/** Cabecera de una página de formato: su nombre y cuántas listas tiene. */
+export async function FormatPageHeading({
+  id,
+  name,
+  format,
+  lists,
+}: {
+  id: string
+  name: string
+  format?: MediaType
+  lists: number
+}) {
   const t = await getTranslations('collection')
   return (
-    <section className="rounded-bento-xl bg-surface-default p-7 md:p-11 shadow-hard-sm md:shadow-hard flex flex-col md:flex-row md:items-center gap-5 justify-between">
-      <div>
-        <h2 className="font-display text-2xl md:text-3xl font-extrabold text-text-primary">
-          {t('ctaTitle')}
-        </h2>
-        <p className="text-sm text-text-secondary mt-2 max-w-prose">{t('ctaText')}</p>
-      </div>
-      <KButton asChild size="lg" className="flex-shrink-0">
-        <Link href={href}>{t('ctaButton')}</Link>
-      </KButton>
-    </section>
+    <div className="flex items-baseline justify-between gap-4 border-b-2 border-album-navy pb-2">
+      <h2 id={id} className={SECTION_TITLE}>
+        <FormatLabel format={format}>{name}</FormatLabel>
+      </h2>
+      <span className="shrink-0 text-sm font-semibold text-text-secondary">{t('listsCount', { count: lists })}</span>
+    </div>
   )
 }
