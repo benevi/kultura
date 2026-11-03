@@ -65,6 +65,11 @@ vi.mock("@/components/media/TrailerEmbed", () => ({
   ),
 }));
 
+// "Tu diario" (con la cuenta abierta) avisa con toasts al borrar un apunte.
+vi.mock("@/components/ui/ToastProvider", () => ({
+  useToastContext: () => ({ show: vi.fn(), showError: vi.fn(), dismiss: vi.fn() }),
+}));
+
 vi.mock("@/components/library/LibraryAction", () => ({
   LibraryAction: () => <div data-testid="library-action" />,
 }));
@@ -202,7 +207,10 @@ describe("MediaDetail", () => {
 
   it("renderiza la nota del proveedor con su fuente y su escala (/10), en formato del idioma", async () => {
     render(await MediaDetail({ item: mockItem, initialEntry: null, isAuthenticated: false }));
-    expect(screen.getByText("8,4/10")).toBeInTheDocument();
+    // La cifra en Lilita (la nota grande) y la escala al lado, en pequeño.
+    const score = screen.getByText("8,4");
+    expect(score.className).toContain("font-display");
+    expect(score.parentElement).toHaveTextContent("8,4/10");
     expect(screen.getByText("TMDB")).toBeInTheDocument();
     expect(screen.getByText('providerRatingLabel:{"source":"TMDB"}:', { exact: false })).toHaveClass("sr-only");
   });
@@ -301,7 +309,8 @@ describe("MediaDetail", () => {
   it("sin sesión: CTA al registro con `next` de vuelta a la ficha, sin biblioteca", async () => {
     render(await MediaDetail({ item: mockItem, initialEntry: null, isAuthenticated: false }));
     const cta = screen.getByRole("link", { name: /ctaAdd/ });
-    expect(cta).toHaveAttribute("href", "/es/login?mode=register&next=%2Fes%2Fmedia%2Fmovie%2F550");
+    // Tras crear la cuenta vuelve aquí con `?guardar=1`: la acción se cumple.
+    expect(cta).toHaveAttribute("href", "/es/login?mode=register&next=%2Fes%2Fmedia%2Fmovie%2F550%3Fguardar%3D1");
     expect(cta).toHaveAttribute("rel", "nofollow");
     expect(screen.getByRole("link", { name: "ctaLogin" })).toHaveAttribute(
       "href",
@@ -397,17 +406,52 @@ describe("MediaDetail", () => {
   });
 
   // Revisión del PR #40: a 390 px el CTA caía hacia 805 px (bajo la BottomNav).
-  it("en móvil el póster es una banda de 260 px (3:4 desde sm) y el final respeta el área segura", async () => {
+  // Ahora, en el móvil: título arriba, cromo (media columna) y datos lado a
+  // lado, y la acción justo debajo, dentro de la primera pantalla.
+  it("móvil: título, cromo y datos en la misma fila, la acción debajo; el final respeta el área segura", async () => {
     const { container } = render(
       await MediaDetail({ item: mockItem, initialEntry: null, isAuthenticated: false })
     );
-    const poster = screen.getByRole("heading", { level: 1 }).closest("div[class*='rounded-bento-xl']")!;
-    expect(poster.className).toContain("h-[260px]");
-    expect(poster.className).toContain("sm:aspect-[3/4]");
-    expect(poster.className).not.toMatch(/(^| )aspect-\[3\/4\]/);
+    const title = container.querySelector("[data-ficha-title]")!;
+    const cromo = container.querySelector("[data-ficha-cromo]")!;
+    const facts = container.querySelector("[data-ficha-facts]")!;
+    const actions = container.querySelector("[data-ficha-actions]")!;
+    expect(title.className).toMatch(/(^| )col-span-2( |$)/);
+    expect(cromo.className).toMatch(/(^| )col-start-1 row-start-2( |$)/);
+    expect(facts.className).toMatch(/(^| )col-start-2 row-start-2( |$)/);
+    expect(actions.className).toMatch(/(^| )col-span-2( |$)/);
+    expect(actions).toContainElement(screen.getByRole("link", { name: /ctaAdd/ }));
+    // En escritorio el cromo se queda quieto a la izquierda mientras se lee.
+    expect(cromo.className).toContain("md:sticky");
     expect(container.querySelector("main > div")!.className).toContain(
       "pb-[calc(3.5rem+env(safe-area-inset-bottom))]"
     );
+  });
+
+  // Contrato «Álbum de cromos»: sin degradados ni velo negro sobre la portada.
+  it("sin degradado de héroe ni velo sobre la portada; el título va fuera del cromo", async () => {
+    const { container } = render(await MediaDetail({ item: mockItem, initialEntry: null, isAuthenticated: false }));
+    expect(container.innerHTML).not.toMatch(/radial-gradient|bg-gradient-to|from-black/);
+    const cromo = container.querySelector("[data-ficha-cromo]")!;
+    expect(cromo.querySelector("h1")).toBeNull();
+    // El único degradado es el respaldo de color detrás de la portada.
+    const gradients = Array.from(container.querySelectorAll<HTMLElement>("[style*='gradient']"));
+    expect(gradients.every((el) => el.hasAttribute("data-placeholder"))).toBe(true);
+  });
+
+  it("el h1 no se corta: equilibrado, parte palabras largas y baja un escalón si el título es largo", async () => {
+    const long = { ...mockItem, title: "Pippi Calzaslargas y los piratas de los Mares del Sur: la película restaurada" };
+    render(await MediaDetail({ item: long, initialEntry: null, isAuthenticated: false }));
+    const h1 = screen.getByRole("heading", { level: 1 });
+    expect(h1.className).toContain("text-balance");
+    expect(h1.className).toContain("break-words");
+    expect(h1.className).not.toContain("line-clamp");
+    expect(h1.className).toContain("text-2xl");
+  });
+
+  it("fuera de la biblioteca, el cromo se sostiene sobre su hueco", async () => {
+    const { container } = render(await MediaDetail({ item: mockItem, initialEntry: null, isAuthenticated: false }));
+    expect(container.querySelector("[data-title-cromo]")).toHaveAttribute("data-title-cromo", "slot");
   });
 
   it("una sinopsis en otro idioma que la página lleva `lang` (WCAG 3.1.2)", async () => {

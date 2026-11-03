@@ -5,6 +5,7 @@ import { getUnreadCount } from "@/lib/social/notifications";
 import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/layout/Footer";
 import { ToastProvider } from "@/components/ui/ToastProvider";
+import { AlbumPage } from "@/components/album/AlbumPage";
 
 /**
  * Ficha pública (D-01). Con sesión se ve dentro de la app (cabecera, avisos,
@@ -31,13 +32,15 @@ export default async function MediaLayout({ children }: { children: React.ReactN
 
   // Sin perfil pero con sesión (alta a medias) la ficha ya ofrece biblioteca y
   // listas, que avisan con toasts: el proveedor va también aquí.
+  // Sin la cuenta abierta es una página impresa del álbum (`AlbumPage`, papel blanco):
+  // la cabecera, los botones y los campos se re-visten solos.
   return (
     <ToastProvider>
-      <div className="min-h-dvh flex flex-col">
+      <AlbumPage as="div" contained={false} className="flex min-h-dvh flex-col">
         <Header />
         <div className="flex-1">{page}</div>
         <Footer />
-      </div>
+      </AlbumPage>
     </ToastProvider>
   );
 }

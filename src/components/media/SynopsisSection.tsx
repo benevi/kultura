@@ -20,7 +20,9 @@ export function SynopsisSection({ text, lang }: Props) {
 
   return (
     <div>
-      <p id={textId} lang={lang} className="text-sm text-text-secondary leading-relaxed whitespace-pre-line">{displayed}</p>
+      <p id={textId} lang={lang} className="max-w-prose whitespace-pre-line break-words text-base leading-relaxed text-text-secondary md:text-body">
+        {displayed}
+      </p>
       {/* Zona táctil de 44 px (2.5.8 / ACC-12) y estado para lector. */}
       {isLong && (
         <button
@@ -28,7 +30,7 @@ export function SynopsisSection({ text, lang }: Props) {
           onClick={() => setExpanded(!expanded)}
           aria-expanded={expanded}
           aria-controls={textId}
-          className="inline-flex items-center min-h-11 text-xs font-bold text-accent-info hover:underline rounded-lg focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus-ring"
+          className="inline-flex min-h-11 items-center rounded-lg text-sm font-semibold text-text-primary underline underline-offset-2 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus-ring"
         >
           {expanded ? t('readLess') : t('readMore')}
         </button>

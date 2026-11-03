@@ -2,15 +2,16 @@
 
 // ============================================================
 // KULTURA — LibraryAction
-// CTA para añadir / actualizar / eliminar un título de la
-// biblioteca personal del usuario desde la página de detalle.
+// Tu estado de un título en la ficha: añadirlo, cambiarlo o quitarlo de tu
+// biblioteca. Con el título dentro, la banda de estado («En curso · hace 3
+// días») y tu nota («8,5 de 10»); el cromo de la ficha (`TitleCromo`) cambia
+// de forma a la vez porque comparten estado (`TitleEntryProvider`) y se pega
+// al cambiar (DISENO.md: pegado al cambiar de estado).
 //
-// F-24: al abrir el diálogo pide la escala y el diario del título
-// (/api/library/diary; se adelanta al pasar el ratón o el foco por el botón y
-// se recuerda mientras dure la página). Al marcarlo como completado, el estado
-// hace un «sello» lima (DIS-14, ≤ 300 ms, sin mover nada, nada con
-// movimiento reducido) que cuelga del póster de la ficha (`data-library-stamp`)
-// o, si no lo hay, de la etiqueta de estado.
+// F-24: el diálogo usa la escala y el diario del título. La ficha ya los
+// trae del servidor (`initialDiary`); si no, se piden a /api/library/diary
+// (se adelanta al pasar el ratón o el foco por el botón y se recuerda
+// mientras dure la página).
 //
 // Quitar con «Deshacer»: el título desaparece al momento, pero el DELETE real
 // espera a que se vaya el aviso (`onExpire`). El borrado se lleva por la FK
@@ -25,10 +26,10 @@
 // ============================================================
 
 import { useEffect, useRef, useState } from 'react'
-import { createPortal } from 'react-dom'
-import { useTranslations } from 'next-intl'
+import { useLocale, useTranslations } from 'next-intl'
 import { Link } from '@/i18n/navigation'
 import { KButton } from '@/components/ui/KButton'
+import { StatusBand } from '@/components/album/StatusBand'
 import { LibraryStatusModal, type LibraryStatusSaveData } from '@/components/library/LibraryStatusModal'
 import { ConfirmModal } from '@/components/ui/ConfirmModal'
 import { useToastContext } from '@/components/ui/ToastProvider'
@@ -41,18 +42,16 @@ import {
   type ProgressConfig,
 } from '@/lib/library/actions'
 import type { LibraryPayloadWithProgress } from '@/lib/library/progress'
-import { playStamp, prefersReducedMotion } from '@/lib/library/motion'
-import { cn } from '@/lib/utils/index'
+import { entryRating10 } from '@/lib/library/rating'
 import { createLogger } from '@/lib/logger'
-import type { DiaryConfig, LibraryEntry, LibraryStatus } from '@/types/library'
+import type { DiaryConfig, DiaryLog, LibraryEntry, RatingScale } from '@/types/library'
+import { useTitleEntryState } from './entry-context'
+import { ratingParts, type DisplayScale } from './rating-display'
 
 const log = createLogger('LibraryAction')
 
 /** Mensaje de `/api/library` cuando el proveedor no responde (502). */
 const PROVIDER_UNAVAILABLE = 'Media provider unavailable'
-
-/** Cuánto se queda la pegatina de «Visto» antes de irse. */
-const STAMP_VISIBLE_MS = 1400
 
 /** Escala y diario por título, mientras dure la página (una petición por título). */
 const diaryCache = new Map<string, Promise<DiaryConfig | null>>()
@@ -90,9 +89,13 @@ function loadProgress(mediaId: string): Promise<ProgressConfig | null> {
   return pending
 }
 
+/** Entrada con la última vez que se tocó (`updated_at`), si la trae. */
+type TouchedEntry = LibraryEntry & { updatedAt?: string }
+
 /** Borrado pendiente mientras dura el aviso con «Deshacer». */
 interface PendingRemoval {
   entry: LibraryEntry
+  logs: DiaryLog[]
   settled: boolean
 }
 
@@ -116,14 +119,29 @@ interface LibraryActionProps {
   }
   initialEntry: LibraryEntry | null
   isAuthenticated: boolean
+  /**
+   * Diario del título ya leído en el servidor (F-24, con la migración): el
+   * diálogo no tiene que pedirlo. `null`/ausente: se pide al abrir.
+   */
+  initialDiary?: { scale: RatingScale; logs: DiaryLog[] } | null
+  /** Escala con la que se pinta tu nota antes de que llegue la del diario. */
+  scale?: DisplayScale
+  /**
+   * `?guardar=1` (vuelta de «Guardar» en un ranking tras entrar): si el
+   * título NO está en tu biblioteca, se guarda como pendiente al llegar. Si ya
+   * está, no se toca (POST /api/library sustituye: pisaría estado, nota y
+   * progreso).
+   */
+  autoSave?: boolean
 }
 
-const statusClasses: Record<LibraryStatus, string> = {
-  completed: 'bg-accent-positive/20 text-accent-positive',
-  // Texto claro sobre el azul: el azul sobre azul al 20 % daba < 4,5:1 (F-30).
-  in_progress: 'bg-accent-info/20 text-text-primary',
-  pending: 'bg-accent-highlight/20 text-accent-highlight',
-  abandoned: 'bg-accent-danger/20 text-accent-danger',
+/** Cruz del «+»: dibujada, no un carácter (DISENO.md). */
+function PlusIcon() {
+  return (
+    <svg aria-hidden="true" viewBox="0 0 16 16" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth={2.25} strokeLinecap="round">
+      <path d="M8 3v10M3 8h10" />
+    </svg>
+  )
 }
 
 export function LibraryAction({
@@ -131,13 +149,18 @@ export function LibraryAction({
   mediaCache,
   initialEntry,
   isAuthenticated,
+  initialDiary = null,
+  scale = 'legacy',
+  autoSave = false,
 }: LibraryActionProps) {
   const t = useTranslations('library')
   const td = useTranslations('diary')
   const tc = useTranslations('common')
+  const locale = useLocale()
   const { show, showError } = useToastContext()
 
-  const [entry, setEntry] = useState<LibraryEntry | null>(initialEntry)
+  const shared = useTitleEntryState(initialEntry, initialDiary?.logs ?? null, initialDiary?.scale ?? scale)
+  const { entry, setEntry, logs, setLogs } = shared
   const [modalOpen, setModalOpen] = useState(false)
   const [confirmRemove, setConfirmRemove] = useState(false)
   const [loading, setLoading] = useState(false)
@@ -145,14 +168,18 @@ export function LibraryAction({
   // toast quedaría debajo y fuera del árbol accesible mientras dure).
   const [saveError, setSaveError] = useState<string | null>(null)
   const [removeError, setRemoveError] = useState<string | null>(null)
-  const [diary, setDiary] = useState<DiaryConfig | null>(null)
+  const [diaryMeta, setDiaryMeta] = useState<Pick<DiaryConfig, 'enabled' | 'scale'> | null>(
+    initialDiary ? { enabled: true, scale: initialDiary.scale } : null
+  )
+  // Con el diario del servidor, los apuntes ya son los buenos: lo que llegue
+  // después de /api/library/diary no los pisa (podría traer uno que se está
+  // borrando con «Deshacer»).
+  const logsKnown = useRef(initialDiary !== null)
   const [progressConfig, setProgressConfig] = useState<ProgressConfig | null>(null)
-  const [stamp, setStamp] = useState(0)
   // Al guardar o quitar, el botón que abrió el diálogo desaparece ("Añadir"
   // pasa a "Actualizar" y al revés): el foco va al que lo sustituye.
   const addRef = useRef<HTMLButtonElement>(null)
   const updateRef = useRef<HTMLButtonElement>(null)
-  const stampRef = useRef<HTMLSpanElement>(null)
   const pendingRef = useRef<PendingRemoval | null>(null)
   // Tras confirmar, el foco va al «Deshacer» del aviso (el botón que abrió el
   // diálogo ya no existe); si no hay aviso, a «Añadir».
@@ -162,16 +189,16 @@ export function LibraryAction({
       return actions[actions.length - 1] ?? addRef.current
     },
   }
-  // El póster de la ficha, si lo hay: el sello se pinta colgado de él.
-  const [posterAnchor, setPosterAnchor] = useState<HTMLElement | null>(null)
-  useEffect(() => {
-    setPosterAnchor(document.querySelector<HTMLElement>('[data-library-stamp]'))
-  }, [])
 
   function prefetch() {
     if (!isAuthenticated) return
     void loadDiary(mediaId).then((config) => {
-      if (config) setDiary(config)
+      if (!config) return
+      setDiaryMeta({ enabled: config.enabled, scale: config.scale })
+      if (!logsKnown.current) {
+        logsKnown.current = true
+        setLogs(config.logs)
+      }
     })
     void loadProgress(mediaId).then((config) => {
       if (config) setProgressConfig(config)
@@ -182,17 +209,6 @@ export function LibraryAction({
     setModalOpen(true)
     prefetch()
   }
-
-  // Sello de «Visto»: pegatina en posición absoluta (no ocupa sitio, CLS 0).
-  useEffect(() => {
-    if (stamp === 0) return
-    const el = stampRef.current
-    if (!el || !playStamp(el)) return
-    const timer = window.setTimeout(() => {
-      el.animate?.([{ opacity: 1 }, { opacity: 0 }], { duration: 200, fill: 'forwards' })
-    }, STAMP_VISIBLE_MS)
-    return () => window.clearTimeout(timer)
-  }, [stamp])
 
   async function handleSave(data: LibraryStatusSaveData) {
     // Volver a añadirlo mientras sigue el aviso: el borrado pendiente no se hace.
@@ -213,8 +229,9 @@ export function LibraryAction({
         mediaCache,
       }
       const result = await saveLibraryEntry(payload)
-      const becameCompleted = result.entry.status === 'completed' && entry?.status !== 'completed'
-      setEntry(result.entry)
+      // Lo acabas de tocar: la banda dice «hoy».
+      const touched: TouchedEntry = { ...result.entry, updatedAt: new Date().toISOString() }
+      setEntry(touched)
       // El progreso guardado pasa a ser el de partida (y el plan sigue valiendo).
       progressCache.delete(mediaId)
       setProgressConfig((prev) =>
@@ -222,11 +239,10 @@ export function LibraryAction({
       )
       if (result.log) {
         const added = result.log
-        setDiary((prev) => (prev ? { ...prev, logs: [added, ...prev.logs] } : prev))
+        setLogs((prev) => [added, ...prev])
         diaryCache.delete(mediaId)
       }
       setModalOpen(false)
-      if (becameCompleted && !prefersReducedMotion()) setStamp((n) => n + 1)
       if (result.logFailed) showError(td('logFailed'))
       else show({ message: result.log ? td('savedWithLog') : t('saved'), type: 'success' })
     } catch (err) {
@@ -243,9 +259,10 @@ export function LibraryAction({
     }
   }
 
+  /** Desde el diálogo, tras confirmar en la propia fila (no hay aviso encima de un diálogo). */
   async function handleDeleteLog(id: string) {
     await deleteDiaryLog(id)
-    setDiary((prev) => (prev ? { ...prev, logs: prev.logs.filter((l) => l.id !== id) } : prev))
+    setLogs((prev) => prev.filter((l) => l.id !== id))
     diaryCache.delete(mediaId)
     show({ message: td('deleted', { title: mediaCache.title }), type: 'success' })
   }
@@ -256,6 +273,7 @@ export function LibraryAction({
     pending.settled = true
     pendingRef.current = null
     setEntry(pending.entry)
+    setLogs(pending.logs)
     show({ message: t('restored'), type: 'success' })
   }
 
@@ -266,15 +284,42 @@ export function LibraryAction({
     if (pendingRef.current === pending) pendingRef.current = null
     try {
       await (keepalive ? removeFromLibrary(mediaId, { keepalive: true }) : removeFromLibrary(mediaId))
-      // La FK borra el diario del título con la entrada.
-      setDiary((prev) => (prev ? { ...prev, logs: [] } : prev))
       diaryCache.delete(mediaId)
     } catch (err) {
       log.error('Failed to remove library entry', { err })
       setEntry(pending.entry)
+      setLogs(pending.logs)
       showError(t('errors.removeFailed'))
     }
   }
+
+  // `?guardar=1`: guardar como pendiente SOLO si no estaba (la entrada que ya
+  // pinta la ficha manda), una vez, y quitar el parámetro de la URL para que
+  // recargar no lo repita.
+  const autoSaved = useRef(false)
+  useEffect(() => {
+    if (!autoSave || autoSaved.current || !isAuthenticated) return
+    autoSaved.current = true
+    try {
+      const url = new URL(window.location.href)
+      url.searchParams.delete('guardar')
+      window.history.replaceState(window.history.state, '', url.toString())
+    } catch {
+      // Sin URL que limpiar (tests): no pasa nada.
+    }
+    if (initialEntry) return
+    void saveLibraryEntry({ mediaId, status: 'pending', mediaCache })
+      .then((result) => {
+        setEntry({ ...result.entry, updatedAt: new Date().toISOString() } as TouchedEntry)
+        show({ message: t('saved'), type: 'success' })
+      })
+      .catch((err) => {
+        log.error('Failed to auto-save library entry', { err })
+        showError(t('errors.saveFailed'))
+      })
+    // Solo al llegar a la ficha.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   // Cerrar o dejar la página con un borrado pendiente: se hace ya.
   useEffect(() => {
@@ -287,10 +332,12 @@ export function LibraryAction({
 
   function handleRemove() {
     if (!entry) return
-    const pending: PendingRemoval = { entry, settled: false }
+    const pending: PendingRemoval = { entry, logs, settled: false }
     pendingRef.current = pending
     setRemoveError(null)
     setEntry(null)
+    // La FK se lleva el diario con la entrada: se deja de ver ya.
+    setLogs([])
     setConfirmRemove(false)
     show({
       message: t('removed'),
@@ -304,22 +351,6 @@ export function LibraryAction({
     })
   }
 
-  function stampBadge(position: string) {
-    return (
-      <span
-        ref={stampRef}
-        aria-hidden="true"
-        data-testid="library-stamp"
-        className={cn(
-          'pointer-events-none z-10 whitespace-nowrap rounded-full bg-accent-lime px-3 py-1 text-xs font-extrabold text-on-accent-lime opacity-0 shadow-sticker',
-          position
-        )}
-      >
-        {td('stamp', { type: mediaCache.type })}
-      </span>
-    )
-  }
-
   if (!isAuthenticated) {
     return (
       <KButton asChild variant="primary">
@@ -327,6 +358,8 @@ export function LibraryAction({
       </KButton>
     )
   }
+
+  const diary: DiaryConfig | null = diaryMeta ? { ...diaryMeta, logs } : null
 
   const modal = modalOpen ? (
     <LibraryStatusModal
@@ -350,55 +383,71 @@ export function LibraryAction({
         <KButton
           ref={addRef}
           variant="primary"
+          size="lg"
+          className="w-full sm:w-auto"
           onClick={openModal}
           onPointerEnter={prefetch}
           onFocus={prefetch}
         >
-          <span aria-hidden="true">+</span> {t('addToLibrary')}
+          <PlusIcon /> {t('addToLibrary')}
         </KButton>
         {modal}
       </>
     )
   }
 
+  const ratingScale: DisplayScale = diaryMeta?.enabled ? diaryMeta.scale : shared.scale
+  const rating = ratingParts(entryRating10(entry), ratingScale, locale)
+  const touchedAt = (entry as TouchedEntry).updatedAt ?? null
+
   return (
     <>
-      <div className="flex items-center gap-3 flex-wrap">
-        <span className="relative inline-flex">
-          <span
-            className={cn(
-              'px-3 py-1 rounded-pill text-sm font-body font-medium',
-              statusClasses[entry.status]
-            )}
+      <div className="flex flex-col gap-4" data-library-entry={entry.status}>
+        <div className="flex flex-wrap items-center gap-x-5 gap-y-2">
+          <StatusBand
+            status={entry.status}
+            label={t(`status.${entry.status}`)}
+            touchedAt={touchedAt}
+            locale={locale}
+            className="h-9 px-3 text-sm"
+          />
+          {rating ? (
+            <p className="flex items-baseline gap-1.5">
+              <span aria-hidden="true" className="text-meta font-semibold text-text-tertiary">
+                {td('yourRating')}
+              </span>
+              <span aria-hidden="true" className="font-display text-3xl leading-none tabular-nums text-text-primary">
+                {rating.value}
+              </span>
+              <span aria-hidden="true" className="text-meta text-text-tertiary">
+                {td('outOf', { max: rating.max })}
+              </span>
+              <span className="sr-only">
+                {td('yourRating')}: {td('ratingOf', { value: rating.value, max: rating.max })}
+              </span>
+            </p>
+          ) : null}
+        </div>
+        <div className="flex flex-wrap items-center gap-2.5">
+          <KButton
+            ref={updateRef}
+            variant="primary"
+            onClick={openModal}
+            onPointerEnter={prefetch}
+            onFocus={prefetch}
           >
-            {t(`status.${entry.status}`)}
-          </span>
-          {/* DIS-14: «badge colgante» de DISENO.md (lima, −8°, sombra dura);
-              decorativa. Cuelga del póster de la ficha si lo hay. */}
-          {stamp > 0 && !posterAnchor && stampBadge('absolute -top-4 -right-6')}
-          {stamp > 0 && posterAnchor && createPortal(stampBadge('absolute -top-3.5 -left-3.5 text-sm'), posterAnchor)}
-        </span>
-        <KButton
-          ref={updateRef}
-          variant="secondary"
-          size="sm"
-          onClick={openModal}
-          onPointerEnter={prefetch}
-          onFocus={prefetch}
-        >
-          {t('updateEntry')}
-        </KButton>
-        <KButton
-          variant="secondary"
-          size="sm"
-          onClick={() => { setConfirmRemove(true); prefetch() }}
-          onPointerEnter={prefetch}
-          onFocus={prefetch}
-          disabled={loading}
-          className="text-accent-danger hover:text-accent-danger border-accent-danger/30 hover:border-accent-danger/60"
-        >
-          {t('remove')}
-        </KButton>
+            {t('updateEntry')}
+          </KButton>
+          <KButton
+            variant="secondary"
+            onClick={() => { setConfirmRemove(true); prefetch() }}
+            onPointerEnter={prefetch}
+            onFocus={prefetch}
+            disabled={loading}
+          >
+            {t('remove')}
+          </KButton>
+        </div>
       </div>
 
       {modal}

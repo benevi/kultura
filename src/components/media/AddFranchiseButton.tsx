@@ -170,7 +170,10 @@ export function AddFranchiseButton({ items, userId }: { items: FranchiseItem[]; 
       {remaining.length > 0 && phase.kind !== "done" && (
         <>
           <KButton type="button" variant="secondary" size="md" onClick={run} loading={busy} aria-describedby="franchise-hint">
-            <span aria-hidden="true">+</span> {t("action")}
+            <svg aria-hidden="true" viewBox="0 0 16 16" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth={2.25} strokeLinecap="round">
+              <path d="M8 3v10M3 8h10" />
+            </svg>
+            {t("action")}
           </KButton>
           <p id="franchise-hint" className="text-xs text-text-tertiary">
             {t("hint", { count: remaining.length })}

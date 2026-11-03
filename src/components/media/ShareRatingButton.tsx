@@ -25,8 +25,10 @@ interface Props {
 
 const FOCUS =
   "focus-visible:[outline-style:solid] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus-ring";
-const MAIN = `inline-flex min-h-11 items-center gap-2 rounded-full bg-surface-elevated px-5 text-sm font-bold text-text-primary hover:text-accent-pink transition-colors ${FOCUS}`;
-const OPTION = `inline-flex min-h-11 items-center rounded-full border-2 border-stroke px-4 text-meta font-bold text-text-primary hover:bg-surface-elevated transition-colors ${FOCUS}`;
+// Secundarios del álbum (DISENO.md): radio 8 px y los tokens del secundario;
+// el rosa queda para la única acción de la ficha.
+const MAIN = `inline-flex min-h-11 items-center gap-2 rounded-button border-2 border-button-secondary-border bg-button-secondary px-4 text-sm font-bold text-on-button-secondary hover:border-surface-border hover:bg-surface-border transition-colors ${FOCUS}`;
+const OPTION = `inline-flex min-h-11 items-center rounded-button border-2 border-surface-border px-4 text-meta font-bold text-text-primary hover:bg-surface-elevated transition-colors ${FOCUS}`;
 
 export function ShareRatingButton({ path, title, rating }: Props) {
   const t = useTranslations("share.rating");

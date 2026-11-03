@@ -85,11 +85,14 @@ describe("AdaptationsSection", () => {
       "/es/media/anime/al-1",
     ]);
     expect(links[0]).toHaveTextContent("Dune");
-    expect(links[0]).toHaveTextContent('meta:{"type":"T:book","year":"1965"}');
+    // Formato con su nombre al lado del punto (namespace `album`) y año.
+    expect(links[0]).toHaveTextContent("format.book");
+    expect(links[0]).toHaveTextContent("1965");
     expect(links[0]).toHaveTextContent("relation.source");
-    expect(links[1]).toHaveTextContent("T:movie");
+    expect(links[1]).toHaveTextContent("format.movie");
     expect(links[1]).toHaveTextContent("inLibrary");
-    // Gradiente siempre detrás; portada solo si la hay.
+    // Son cromos: el respaldo de color siempre detrás; portada solo si la hay.
+    expect(links.every((a) => a.querySelector("[data-cromo] [data-placeholder]"))).toBe(true);
     expect(screen.getAllByTestId("poster")).toHaveLength(1);
   });
 

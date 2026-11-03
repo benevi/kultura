@@ -37,7 +37,9 @@ import { isBestFormat } from "@/lib/best/best-of";
 import { AdaptationsSection } from "@/components/media/AdaptationsSection";
 import { formatShareRating, ratingSharePath } from "@/app/[locale]/u/[username]/r/_lib/rating-share";
 import { ratingScale10Enabled, readRatingScale } from "@/lib/library/scale";
-import type { LibraryEntry } from "@/types/library";
+import { readDiary } from "@/lib/library/diary";
+import { withTouchedAt } from "@/components/library/touched-at";
+import type { DiaryLog, LibraryEntry, RatingScale } from "@/types/library";
 import type { User } from "@supabase/supabase-js";
 import { OG_LOCALE, SITE_NAME } from "@/i18n/metadata";
 import { routing } from "@/i18n/routing";
@@ -46,6 +48,8 @@ import type { AppLocale } from "@/i18n/detect";
 
 interface Props {
   params: Promise<{ locale: string; type: string; id: string }>;
+  /** `?guardar=1`: vuelta de «Guardar» (rankings) tras entrar o crear la cuenta. */
+  searchParams?: Promise<Record<string, string | string[] | undefined>>;
 }
 
 // `React.cache` existe en el React de servidor de Next; en tests, la función.
@@ -154,8 +158,10 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
 // ── Page ──────────────────────────────────────────────────────────────────────
 
-export default async function MediaDetailPage({ params }: Props) {
+export default async function MediaDetailPage({ params, searchParams }: Props) {
   const { locale, type, id } = await params;
+  const query = (await searchParams) ?? {};
+  const wantsSave = query.guardar === "1";
   const data = await loadDetail(type, id, locale);
   if (!data) notFound();
 
@@ -163,8 +169,28 @@ export default async function MediaDetailPage({ params }: Props) {
   const { user, profile } = await getViewer();
   const supabase = user ? await createClient() : null;
 
-  const [initialEntry, kulturaRating, matchScores, synopsis, t, tMedia] = await Promise.all([
-    user ? getMediaEntry(user.id, item.id).catch(() => null) : Promise.resolve(null),
+  // F-24: escala de notas y diario de ESTE título, solo con RATING_SCALE_10 y
+  // la migración; si falta la tabla o falla, la ficha de siempre.
+  const scale10 = ratingScale10Enabled();
+  const diaryPromise: Promise<{ scale: RatingScale; logs: DiaryLog[] } | null> =
+    user && supabase && scale10
+      ? readDiary(supabase, user.id, { mediaId: item.id, limit: 50 })
+          .then((d) => (d.migrated ? { scale: readRatingScale(user), logs: d.logs } : null))
+          .catch(() => null)
+      : Promise.resolve(null);
+  // La banda de estado dice «hace N días»: la última vez que lo tocaste.
+  const entryPromise: Promise<LibraryEntry | null> =
+    user && supabase
+      ? getMediaEntry(user.id, item.id)
+          .then(async (entry) =>
+            entry ? ((await withTouchedAt(supabase, user.id, [entry], item.id))[0] ?? entry) : null
+          )
+          .catch(() => null)
+      : Promise.resolve(null);
+
+  const [initialEntry, diary, kulturaRating, matchScores, synopsis, t, tMedia] = await Promise.all([
+    entryPromise,
+    diaryPromise,
     getKulturaRating(item.id),
     // Afinidad (F3a) solo como compuerta de "Por qué te lo recomendamos": sin
     // biblioteca suficiente devuelve un Map vacío y no se pinta la sección.
@@ -214,6 +240,10 @@ export default async function MediaDetailPage({ params }: Props) {
         isAuthenticated={Boolean(user)}
         matchScore={matchScores.get(item.id)}
         shareRating={shareRatingFor(user, profile?.username, initialEntry, item, locale)}
+        diary={diary}
+        ratingScale={user && scale10 ? readRatingScale(user) : "legacy"}
+        // Solo si NO está ya: la entrada de arriba manda (no pisar estado, nota ni progreso).
+        autoSave={wantsSave && Boolean(user) && initialEntry === null}
         adaptations={
           // F-29: Wikidata (o su caché) llega en streaming; la ficha no la espera.
           <React.Suspense fallback={null}>

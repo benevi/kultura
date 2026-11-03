@@ -11,6 +11,7 @@ import type { SteamInfo } from "@/lib/api/steam";
 
 vi.mock("next-intl/server", () => ({
   getTranslations: () => Promise.resolve((key: string) => key),
+  getLocale: () => Promise.resolve("es"),
 }));
 
 vi.mock("next/image", () => ({
@@ -57,8 +58,15 @@ describe("SteamSection", () => {
     await renderSection(FULL);
     expect(screen.getByText("12,49€")).toBeInTheDocument();
     expect(screen.getByText("24,99€")).toBeInTheDocument();
-    expect(screen.getByText("−50%")).toBeInTheDocument();
+    // Con el formato del idioma: espacio duro antes del % (WIG).
+    expect(screen.getByText((_, el) => el?.textContent === "-50 %" && el.tagName === "SPAN")).toBeInTheDocument();
     expect(screen.getByText("93")).toBeInTheDocument();
+  });
+
+  it("cada captura enlazada tiene nombre (un enlace solo con imagen decorativa no lo tenía)", async () => {
+    await renderSection(FULL);
+    const links = screen.getAllByRole("link", { name: /^steamScreenshotLabel/ });
+    expect(links).toHaveLength(2);
   });
 
   it("enlaza a la tienda con rel seguro y target _blank", async () => {
@@ -120,8 +128,8 @@ describe("SteamSection", () => {
   });
 
   it("la grid de capturas es mobile-first (2 columnas, 4 en md)", async () => {
-    await renderSection(FULL);
-    const list = screen.getByRole("list");
+    const { container } = render(await SteamSection({ steam: FULL }));
+    const list = container.querySelector("img")!.closest("ul")!;
     expect(list.className).toContain("grid-cols-2");
     expect(list.className).toContain("md:grid-cols-4");
   });

@@ -77,13 +77,15 @@ export function StreamingProviders({
   if (groups.length === 0) return null;
 
   return (
-    <section>
-      <h2 className="font-display text-xl font-bold text-text-primary mb-3">{title}</h2>
+    <section aria-labelledby="ficha-where">
+      <h2 id="ficha-where" className="mb-3 font-display text-2xl text-text-primary">
+        {title}
+      </h2>
       {/* Grupos en línea (con salto si no caben), no uno por fila. */}
       <div className="flex flex-wrap gap-x-8 gap-y-4">
         {groups.map((group) => (
           <div key={group.type}>
-            <h3 className="text-xs font-bold uppercase tracking-wide text-text-tertiary mb-2">
+            <h3 className="mb-2 text-meta font-semibold text-text-secondary">
               {t(`watchType.${group.type}`)}
             </h3>
             <ul className="flex flex-wrap gap-3">
@@ -99,7 +101,7 @@ export function StreamingProviders({
                       width={48}
                       height={48}
                       loading="lazy"
-                      className="w-12 h-12 rounded-lg object-contain bg-surface-elevated"
+                      className="h-12 w-12 rounded-cromo border-2 border-surface-border bg-surface-elevated object-contain"
                     />
                     {/* El nombre ya lo da el `alt`: no se lee dos veces. */}
                     <span aria-hidden="true" className="max-w-[72px] truncate text-xs text-text-tertiary">

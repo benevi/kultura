@@ -144,9 +144,20 @@ describe('LibraryAction', () => {
         isAuthenticated={true}
       />
     )
+    // La banda de estado del álbum (estado en tinta sobre la superficie elevada).
     const badge = screen.getByText('status.completed')
-    expect(badge).toBeInTheDocument()
-    expect(badge.className).toMatch(/accent-positive/)
+    expect(badge.closest('[data-status]')).toHaveAttribute('data-status', 'completed')
+    // Y tu nota (4 de 5) con la cifra en Lilita y su nombre para el lector.
+    expect(screen.getByText('4').className).toContain('font-display')
+    expect(screen.getByText('yourRating:', { exact: false })).toHaveClass('sr-only')
+  })
+
+  it('con fecha de último cambio, la banda dice cuándo lo tocaste', () => {
+    const touched = { ...baseEntry, updatedAt: '2024-01-01T10:00:00Z' } as LibraryEntry
+    const { container } = render(
+      <LibraryAction mediaId="movie_550" mediaCache={mediaCache} initialEntry={touched} isAuthenticated={true} />
+    )
+    expect(container.querySelector('[data-status] time')).toHaveAttribute('dateTime', '2024-01-01T10:00:00.000Z')
   })
 
   it('autenticado con entry → muestra botones Actualizar y Eliminar', () => {
@@ -373,6 +384,25 @@ describe('LibraryAction', () => {
         window.dispatchEvent(new Event('pagehide'))
       })
       await waitFor(() => expect(mockRemoveFromLibrary).toHaveBeenCalledWith('movie_550', { keepalive: true }))
+    })
+  })
+
+  // ?guardar=1 (vuelta de «Guardar» de un ranking o del alta desde la ficha).
+  describe('?guardar=1', () => {
+    it('sin el título en la biblioteca: lo guarda como pendiente y lo confirma', async () => {
+      mockSave.mockResolvedValue({ ...baseEntry, status: 'pending' })
+      render(<LibraryAction mediaId="movie_550" mediaCache={mediaCache} initialEntry={null} isAuthenticated autoSave />)
+      await waitFor(() => expect(mockSave).toHaveBeenCalledTimes(1))
+      expect(mockSave.mock.calls[0][0]).toMatchObject({ mediaId: 'movie_550', status: 'pending', mediaCache })
+      await waitFor(() => expect(mockShow).toHaveBeenCalledWith({ message: 'saved', type: 'success' }))
+      expect(await screen.findByText('status.pending')).toBeInTheDocument()
+    })
+
+    it('con el título ya dentro: no toca estado, nota ni progreso', async () => {
+      render(<LibraryAction mediaId="movie_550" mediaCache={mediaCache} initialEntry={baseEntry} isAuthenticated autoSave />)
+      await act(async () => {})
+      expect(mockSave).not.toHaveBeenCalled()
+      expect(screen.getByText('status.completed')).toBeInTheDocument()
     })
   })
 })

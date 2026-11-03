@@ -1,30 +1,44 @@
 // ============================================================
-// KULTURA — MediaDetail (F0)
-// Ficha de detalle de un título cultural. Layout de dos columnas
-// tal y como se diseñó a mano en el canvas F0 ("Kultura Editorial"):
-// poster grande + chips + CTAs a la izquierda, sinopsis, ficha
-// técnica, "Dónde ver" y tráiler a la derecha. Ver DISENO.md — fuente
-// de verdad del sistema visual. Server Component async.
+// KULTURA — MediaDetail: la ficha, «el reverso del cromo» (DISENO.md)
+//
+// El cromo en grande es lo que manda (anverso, `TitleCromo`): su forma dice
+// tu estado (sostenido sobre su hueco si no lo tienes o está pendiente,
+// puesto con la tira de progreso si va en curso, pegado si lo acabaste, con
+// la esquina doblada si lo dejaste) y se pega al cambiarlo. Al lado, el
+// reverso: título en Lilita, formato, año, notas reales con su fuente y su
+// escala, tus acciones y, debajo, dónde verlo en España, sinopsis, tu
+// diario, detalles, adaptaciones (como cromos), Steam y tráiler.
+//
+// En el móvil: título arriba, cromo y datos lado a lado, y la acción
+// principal dentro de la primera pantalla. En escritorio, el cromo a la
+// izquierda y quieto mientras se lee el reverso. Sin degradados ni velos
+// encima de la portada: el título va fuera de ella.
 //
 // Es PÚBLICA (D-01): sin sesión, el CTA principal lleva al registro con
 // `next` de vuelta aquí y la denuncia va al formulario sin cuenta de
 // `/report`; con sesión, biblioteca, listas, recomendar y denunciar.
+// Server Component async.
 // ============================================================
 
-import { PosterImage } from "@/components/media/PosterImage";
 import { Suspense, type ReactNode } from "react";
 import { getLocale, getTranslations } from "next-intl/server";
 import type { MediaItem, StreamingProvider } from "@/types/media";
-import type { LibraryEntry } from "@/types/library";
+import type { DiaryLog, LibraryEntry, RatingScale } from "@/types/library";
 import type { SteamInfo } from "@/lib/api/steam";
 import type { SourceLink } from "@/lib/media/source-link";
 import type { KulturaRating } from "@/lib/media/kultura-rating";
 import { mediaPath } from "@/lib/media/seo";
 import { synopsisLang } from "@/lib/media/synopsis-lang";
+import { formatScore } from "@/lib/design/format";
 import { Link } from "@/i18n/navigation";
 import { KButton } from "@/components/ui/KButton";
-import { IconSparkles } from "@/components/icons";
+import { IconChevronRight } from "@/components/icons";
+import { FormatTag } from "@/components/album/FormatTag";
 import { SOURCE_LINK_CLASS } from "@/components/legal/DataAttribution";
+import { TitleEntryProvider } from "@/components/library/entry-context";
+import { TitleCromo } from "@/components/library/TitleCromo";
+import { TitleDiary } from "@/components/library/TitleDiary";
+import type { DisplayScale } from "@/components/library/rating-display";
 import { TrailerEmbed } from "./TrailerEmbed";
 import { StreamingProviders } from "./StreamingProviders";
 import { SynopsisSection } from "./SynopsisSection";
@@ -35,14 +49,6 @@ import { LibraryAction } from "@/components/library/LibraryAction";
 import { RecommendButton } from "@/components/social/RecommendButton";
 import { AddToListButton } from "@/components/social/AddToListButton";
 import { ReportButton } from "@/components/social/ReportButton";
-import {
-  IconCalendar,
-  IconFormat,
-  IconStar,
-  IconClock,
-  IconLayers,
-  type KIcon,
-} from "@/components/icons";
 
 /** Un paso de la miga de pan (ruta sin idioma, para el `Link` de next-intl). */
 export interface Breadcrumb {
@@ -91,33 +97,12 @@ interface MediaDetailProps {
    * este título ("Compartir mi nota"). Solo para el dueño de la nota.
    */
   shareRating?: { path: string; rating: string } | null;
-}
-
-interface DetailTile {
-  key: string;
-  icon: KIcon;
-  label: string;
-  value: string;
-  hint?: string;
-}
-
-// ── Poster fallback (sin imagen real) ────────────────────────────────────────
-// Misma fórmula que "Posters/cards sin imagen real" + "Cards feature grandes"
-// del sistema de diseño (DISENO.md): degradado lineal de dos paradas del mismo
-// matiz + acento radial en la esquina superior-izquierda. El matiz se deriva
-// del id del item (determinista) para variar entre títulos.
-const POSTER_HUES = [350, 130, 55, 300, 250, 95] as const;
-
-function posterGradient(seed: string): string {
-  let hash = 0;
-  for (let i = 0; i < seed.length; i++) {
-    hash = (hash * 31 + seed.charCodeAt(i)) >>> 0;
-  }
-  const hue = POSTER_HUES[hash % POSTER_HUES.length];
-  return [
-    `radial-gradient(120% 90% at 20% 15%, oklch(50% 0.16 ${hue} / 0.55) 0%, transparent 55%)`,
-    `linear-gradient(160deg, oklch(38% 0.13 ${hue}), oklch(18% 0.06 ${hue}))`,
-  ].join(", ");
+  /** F-24: tu escala y tus apuntes de ESTE título (con la cuenta abierta y la migración). */
+  diary?: { scale: RatingScale; logs: DiaryLog[] } | null;
+  /** Escala de tu nota sin diario (`legacy`: estrellas enteras). */
+  ratingScale?: DisplayScale;
+  /** `?guardar=1`: con la cuenta abierta y sin el título, se guarda como pendiente al llegar. */
+  autoSave?: boolean;
 }
 
 type ExtraKey = "duration" | "episodes" | "chapters" | "pages";
@@ -176,10 +161,19 @@ function getCredits(item: MediaItem): { key: CreditKey; value: string }[] {
     .map(([key, value]) => ({ key, value }));
 }
 
-const sectionTitle = "font-display text-xl font-bold text-text-primary mb-3";
-const crumbLink =
-  "inline-flex items-center min-h-11 rounded-lg hover:text-accent-pink transition-colors " +
+/** El mismo título de sección en todo el reverso (Lilita a 24 px). */
+export const SECTION_TITLE = "mb-3 font-display text-2xl text-text-primary";
+const FOCUS =
   "focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus-ring";
+const crumbLink = `inline-flex min-h-11 items-center rounded-lg underline-offset-2 hover:text-text-primary hover:underline transition-colors ${FOCUS}`;
+
+/**
+ * Tamaño del titular: hasta 3 líneas en el móvil (DISENO.md). Un título largo
+ * baja un escalón en vez de cortarse (WIG: nada de `line-clamp` en el h1).
+ */
+function headlineSize(title: string): string {
+  return title.length > 48 ? "text-2xl md:text-4xl" : "text-3xl md:text-5xl";
+}
 
 export async function MediaDetail({
   item,
@@ -196,32 +190,44 @@ export async function MediaDetail({
   breadcrumbs = [],
   adaptations,
   shareRating,
+  diary = null,
+  ratingScale = "legacy",
+  autoSave = false,
 }: MediaDetailProps) {
   const t = await getTranslations("media_detail");
-  const tMedia = await getTranslations("media");
+  const tAlbum = await getTranslations("album");
   // La misma frase que la recomendación de Inicio: un solo texto que mantener.
   const tAi = await getTranslations("aiRecommendations");
   const locale = await getLocale();
   const extraDetail = getExtraDetailValue(item);
-  const typeLabel = tMedia(item.type as Parameters<typeof tMedia>[0]);
+  const formatLabel = tAlbum(`format.${item.type}` as Parameters<typeof tAlbum>[0]);
   const genres = genreLabels ?? item.genres ?? [];
   const credits = getCredits(item);
 
-  const tiles: DetailTile[] = [];
-  if (item.year) {
-    tiles.push({ key: "year", icon: IconCalendar, label: t("year"), value: String(item.year) });
+  // Datos del título (año, duración…), con su nombre para el lector.
+  const facts: { key: string; label: string; value: string }[] = [];
+  if (item.year) facts.push({ key: "year", label: t("year"), value: String(item.year) });
+  if (extraDetail) {
+    facts.push({
+      key: extraDetail.key,
+      label: t(extraDetail.key),
+      value:
+        extraDetail.key === "duration"
+          ? t("durationValue", { minutes: extraDetail.value })
+          : t("countValue", { count: extraDetail.value, kind: extraDetail.key }),
+    });
   }
-  tiles.push({ key: "type", icon: IconFormat, label: t("type"), value: typeLabel });
+
   // Notas aparte de los datos y cada una con su escala (revisión del PR #40):
   // la de KULTURA es 1-5 y la del proveedor 0-10; juntas y sin escala
-  // parecían la misma cosa.
-  const decimal = new Intl.NumberFormat(locale, { minimumFractionDigits: 1, maximumFractionDigits: 1 });
-  const ratings: { key: string; label: string; srLabel?: string; value: string; hint?: string }[] = [];
+  // parecían la misma cosa. La cifra va en Lilita (la nota grande).
+  const ratings: { key: string; label: string; srLabel?: string; value: string; scale: string; hint?: string }[] = [];
   if (kulturaRating) {
     ratings.push({
       key: "kultura",
       label: t("kulturaRatingLabel"),
-      value: `${decimal.format(kulturaRating.value)}/5`,
+      value: formatScore(kulturaRating.value, locale),
+      scale: "/5",
       hint: t("kulturaRatingHint", { count: kulturaRating.count }),
     });
   }
@@ -230,18 +236,8 @@ export async function MediaDetail({
       key: "provider",
       label: item.ratingSource,
       srLabel: t("providerRatingLabel", { source: item.ratingSource }),
-      value: `${decimal.format(item.rating)}/10`,
-    });
-  }
-  if (extraDetail) {
-    tiles.push({
-      key: extraDetail.key,
-      icon: extraDetail.key === "duration" ? IconClock : IconLayers,
-      label: t(extraDetail.key),
-      value:
-        extraDetail.key === "duration"
-          ? t("durationValue", { minutes: extraDetail.value })
-          : String(extraDetail.value),
+      value: formatScore(item.rating, locale),
+      scale: "/10",
     });
   }
 
@@ -253,142 +249,122 @@ export async function MediaDetail({
   const showWhyRecommended = matchScore !== undefined && topGenres.length > 0;
 
   // Vuelta a esta ficha tras registrarse o entrar (D-01, CTA sin sesión).
+  // Tras crear la cuenta, «Añadir a mi biblioteca» se cumple solo
+  // (`?guardar=1`: pendiente, y nunca pisa una entrada que ya exista).
   const selfPath = mediaPath(locale, item.type, item.externalId);
   const next = encodeURIComponent(selfPath);
+  const nextSave = encodeURIComponent(`${selfPath}?guardar=1`);
+  const scale: DisplayScale = diary?.scale ?? ratingScale;
 
   return (
     <main id="main" className="min-h-screen">
       <div className="page-grid pt-1 pb-[calc(3.5rem+env(safe-area-inset-bottom))] md:pb-14">
-        {breadcrumbs.length > 0 && (
-          <nav aria-label={t("breadcrumbLabel")} className="mb-2">
+        {breadcrumbs.length > 0 ? (
+          <nav aria-label={t("breadcrumbLabel")} className="mb-1">
             <ol className="flex flex-wrap items-center gap-x-1.5 text-xs text-text-tertiary">
               {breadcrumbs.map((c) => (
                 <li key={c.href} className="inline-flex items-center gap-1.5">
                   <Link href={c.href} className={crumbLink}>
                     {c.name}
                   </Link>
-                  <span aria-hidden="true">›</span>
+                  <IconChevronRight aria-hidden="true" className="h-3 w-3" />
                 </li>
               ))}
-              <li className="inline-flex items-center min-h-11 min-w-0">
-                <span aria-current="page" className="text-text-secondary line-clamp-1">
+              <li className="inline-flex min-h-11 min-w-0 items-center">
+                <span aria-current="page" className="line-clamp-1 text-text-secondary">
                   {item.title}
                 </span>
               </li>
             </ol>
           </nav>
-        )}
+        ) : null}
 
-        <div className="flex flex-col md:flex-row gap-8 md:gap-14">
-          {/* ── Columna izquierda: poster ── */}
-          <div className="w-full md:w-[420px] flex-shrink-0">
-            {/* `data-library-stamp`: aquí cuelga el sello «Visto» de
-                `LibraryAction` al marcarlo como completado (DIS-14). */}
-            <div className="relative" data-library-stamp="">
-              <div
-                className="relative w-full h-[260px] sm:h-auto sm:aspect-[3/4] rounded-bento-xl overflow-hidden flex items-end p-6 md:p-8 shadow-hard-sm md:shadow-hard"
-              >
-                {/* Gradiente SIEMPRE detrás (E-CARD-PORTADA-404): con
-                    `poster ? imagen : gradiente`, una portada que da 404
-                    dejaba la ficha con un hueco del color de fondo. */}
-                <div
-                  className="absolute inset-0 flex items-center justify-center"
-                  style={{ background: posterGradient(item.id) }}
-                >
-                  {!item.poster && (
-                    <span aria-hidden="true" className="text-white/90 font-display font-extrabold text-3xl">
-                      {item.title.slice(0, 2).toUpperCase()}
-                    </span>
-                  )}
-                </div>
-                {item.poster && (
-                  <PosterImage
-                    src={item.poster}
-                    sizes="(max-width: 768px) 90vw, 420px"
-                    className="object-cover object-[center_25%] sm:object-center"
-                    priority
-                  />
-                )}
+        <TitleEntryProvider initialEntry={initialEntry} initialLogs={diary?.logs ?? null} scale={scale}>
+          <article
+            data-ficha=""
+            className="grid grid-cols-2 gap-x-4 gap-y-5 md:grid-cols-[minmax(0,5fr)_minmax(0,7fr)] md:grid-rows-[auto_auto_auto_1fr] md:gap-x-12 md:gap-y-6"
+          >
+            {/* ── Título: arriba en el móvil, junto al cromo en escritorio ── */}
+            <header data-ficha-title="" className="col-span-2 min-w-0 md:col-span-1 md:col-start-2 md:row-start-1">
+              <h1 className={`break-words font-display text-balance text-text-primary hyphens-auto ${headlineSize(item.title)}`}>
+                {item.title}
+              </h1>
+              {item.originalTitle && item.originalTitle !== item.title ? (
+                <p className="mt-1 break-words text-sm text-text-tertiary">{item.originalTitle}</p>
+              ) : null}
+            </header>
 
-                {/* Scrim inferior — legibilidad del título superpuesto */}
-                <div className="absolute inset-x-0 bottom-0 h-2/3 bg-gradient-to-t from-black/85 via-black/30 to-transparent pointer-events-none" />
-
-                <div className="relative z-[1] w-full">
-                  <h1 className="font-display text-2xl sm:text-3xl text-balance text-album-white line-clamp-3">
-                    {item.title}
-                  </h1>
-                  {item.originalTitle && item.originalTitle !== item.title && (
-                    <p className="text-white/70 text-sm mt-1 line-clamp-1">
-                      {item.originalTitle}
-                    </p>
-                  )}
-                </div>
-              </div>
+            {/* ── El anverso: el cromo, lo que manda ── */}
+            <div
+              data-ficha-cromo=""
+              className="col-start-1 row-start-2 self-start md:row-span-4 md:row-start-1 md:sticky md:top-20"
+            >
+              <TitleCromo
+                id={item.id}
+                type={item.type}
+                title={item.title}
+                poster={item.poster}
+                initialEntry={initialEntry}
+                labels={{ folded: tAlbum("folded"), foil: tAlbum("foil") }}
+                sizes="(max-width: 768px) 50vw, 440px"
+                priority
+              />
             </div>
 
-            {/* Chips: año / tipo / duración o episodios (DISENO.md — chip inactivo).
-                La etiqueta va como texto para lector (un `aria-label` en un
-                <span> sin rol no se anuncia). */}
-            {tiles.length > 0 && (
-              <ul className="flex flex-wrap gap-2 mt-4">
-                {tiles.map(({ key, icon: Icon, label, value, hint }) => (
-                  <li
-                    key={key}
-                    className="inline-flex items-center gap-1.5 rounded-full bg-surface-elevated text-text-primary font-bold text-xs px-4 py-2"
-                  >
-                    <Icon className="w-3.5 h-3.5 text-text-tertiary" />
+            {/* ── Datos: formato, año, duración, notas y géneros ── */}
+            <div data-ficha-facts="" className="col-start-2 row-start-2 flex min-w-0 flex-col gap-4 md:row-start-2">
+              <ul className="flex flex-wrap items-center gap-x-3 gap-y-1.5 text-sm text-text-secondary">
+                <li>
+                  <FormatTag format={item.type} label={formatLabel} className="text-sm" />
+                </li>
+                {facts.map(({ key, label, value }) => (
+                  <li key={key} className="tabular-nums">
                     <span className="sr-only">{label}: </span>
                     {value}
-                    {hint && <span className="text-text-tertiary font-medium">{hint}</span>}
                   </li>
                 ))}
               </ul>
-            )}
 
-            {/* Notas: KULTURA (1-5) y proveedor (0-10), con su etiqueta visible. */}
-            {ratings.length > 0 && (
-              <ul aria-label={t("ratingsLabel")} className="flex flex-wrap gap-2 mt-2">
-                {ratings.map(({ key, label, srLabel, value, hint }) => (
-                  <li
-                    key={key}
-                    className="inline-flex items-center gap-1.5 rounded-full bg-surface-elevated text-text-primary text-xs px-4 py-2"
-                  >
-                    <IconStar
-                      className={`w-3.5 h-3.5 ${key === "kultura" ? "text-accent-highlight" : "text-text-tertiary"}`}
-                    />
-                    {srLabel ? (
-                      <>
-                        <span className="sr-only">{srLabel}: </span>
-                        <span aria-hidden="true" className="font-medium text-text-secondary">
-                          {label}
-                        </span>
-                      </>
-                    ) : (
-                      <span className="font-medium text-text-secondary">{label}</span>
-                    )}
-                    <span className="font-bold">{value}</span>
-                    {hint && <span className="text-text-tertiary font-medium">· {hint}</span>}
-                  </li>
-                ))}
-              </ul>
-            )}
+              {ratings.length > 0 ? (
+                <ul aria-label={t("ratingsLabel")} className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:gap-x-8">
+                  {ratings.map(({ key, label, srLabel, value, scale: max, hint }) => (
+                    <li key={key} className="flex flex-col">
+                      <span className="flex items-baseline gap-0.5">
+                        {srLabel ? <span className="sr-only">{srLabel}: </span> : null}
+                        <span className="font-display text-4xl leading-none tabular-nums text-text-primary">{value}</span>
+                        <span className="text-meta font-semibold text-text-tertiary">{max}</span>
+                      </span>
+                      <span className="mt-1 text-xs text-text-tertiary">
+                        {srLabel ? (
+                          <span aria-hidden="true" className="font-semibold text-text-secondary">
+                            {label}
+                          </span>
+                        ) : (
+                          <span className="font-semibold text-text-secondary">{label}</span>
+                        )}
+                        {hint ? <span> · {hint}</span> : null}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              ) : null}
 
-            {/* Géneros — chip "outline" (DISENO.md) */}
-            {genres.length > 0 && (
-              <ul aria-label={t("genres")} className="flex flex-wrap gap-2 mt-2.5">
-                {genres.slice(0, 5).map((g) => (
-                  <li
-                    key={g}
-                    className="rounded-full border-2 border-surface-border text-text-secondary font-bold text-xs px-3.5 py-1.5"
-                  >
-                    {g}
-                  </li>
-                ))}
-              </ul>
-            )}
+              {genres.length > 0 ? (
+                <ul aria-label={t("genres")} className="flex flex-wrap gap-1.5">
+                  {genres.slice(0, 5).map((g) => (
+                    <li
+                      key={g}
+                      className="rounded-full border-2 border-surface-border px-2.5 py-0.5 text-xs font-semibold text-text-secondary"
+                    >
+                      {g}
+                    </li>
+                  ))}
+                </ul>
+              ) : null}
+            </div>
 
-            {/* CTAs — primario "+ Añadir a mi biblioteca" / secundarios */}
-            <div className="flex flex-col gap-2.5 mt-6">
+            {/* ── Tus acciones: una sola acción rosa por pantalla ── */}
+            <div data-ficha-actions="" className="col-span-2 flex flex-col gap-3 md:col-span-1 md:col-start-2 md:row-start-3">
               {isAuthenticated ? (
                 <>
                   <LibraryAction
@@ -405,130 +381,148 @@ export async function MediaDetail({
                     }}
                     initialEntry={initialEntry}
                     isAuthenticated
+                    initialDiary={diary}
+                    scale={scale}
+                    autoSave={autoSave}
                   />
-                  <div className="flex items-center gap-2.5 flex-wrap">
+                  <div className="flex flex-wrap items-center gap-2.5">
                     <AddToListButton item={item} />
                     <RecommendButton item={item} />
+                    {shareRating ? (
+                      <ShareRatingButton path={shareRating.path} title={item.title} rating={shareRating.rating} />
+                    ) : null}
                   </div>
-                  {shareRating && (
-                    <ShareRatingButton path={shareRating.path} title={item.title} rating={shareRating.rating} />
-                  )}
-                  <ReportButton targetType="media" targetId={item.id} />
                 </>
               ) : (
                 <>
-                  <KButton asChild variant="primary" size="lg">
-                    <Link href={`/login?mode=register&next=${next}`} rel="nofollow">
-                      <span aria-hidden="true">+</span> {t("ctaAdd")}
+                  <KButton asChild variant="primary" size="lg" className="w-full sm:w-auto sm:self-start">
+                    <Link href={`/login?mode=register&next=${nextSave}`} rel="nofollow">
+                      <svg aria-hidden="true" viewBox="0 0 16 16" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth={2.25} strokeLinecap="round">
+                        <path d="M8 3v10M3 8h10" />
+                      </svg>
+                      {t("ctaAdd")}
                     </Link>
                   </KButton>
-                  <p className="text-xs text-text-secondary leading-relaxed">
+                  <p className="text-meta leading-relaxed text-text-secondary">
                     {t("ctaHint")}{" "}
                     <Link
                       href={`/login?mode=login&next=${next}`}
                       rel="nofollow"
-                      className="whitespace-nowrap font-bold text-text-primary underline underline-offset-2 hover:text-accent-pink focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus-ring rounded-lg"
+                      className={`whitespace-nowrap rounded-lg font-bold text-text-primary underline underline-offset-2 ${FOCUS}`}
                     >
                       {t("ctaLogin")}
                     </Link>
                   </p>
-                  <KButton asChild variant="secondary" size="sm" className="self-start text-xs text-text-tertiary">
-                    <Link href={`/report?target=media&id=${encodeURIComponent(item.id)}`} rel="nofollow">
-                      {t("reportPublic")}
-                    </Link>
-                  </KButton>
                 </>
               )}
             </div>
-          </div>
 
-          {/* ── Columna derecha: info ── */}
-          <div className="flex-1 min-w-0 pt-1 md:pt-2 space-y-8">
-            {/* Por qué te lo recomendamos — solo con señal real (ver arriba) */}
-            {showWhyRecommended && (
-              <section>
-                <span className="inline-flex items-center gap-1.5 rounded-full bg-surface-elevated text-text-primary font-bold text-xs px-4 py-2 mb-3">
-                  <IconSparkles className="h-4 w-4 text-accent-pink" /> {t("whyRecommended")}
-                </span>
-                <p className="text-sm text-text-secondary leading-relaxed">
-                  {tAi("whyRecommendedText", { genres: topGenres.join(", ") })}
-                </p>
-              </section>
-            )}
+            {/* ── El reverso: lo que se lee ── */}
+            <div data-ficha-body="" className="col-span-2 min-w-0 space-y-10 pt-2 md:col-span-1 md:col-start-2 md:row-start-4">
+              {/* Dónde ver: suscripción, alquiler y compra (PRO-2, PRO-6) */}
+              {providers && providers.length > 0 ? (
+                <StreamingProviders providers={providers} title={t("whereToWatch")} link={watchLink} />
+              ) : null}
 
-            {/* Sinopsis */}
-            {item.synopsis && (
-              <section>
-                <h2 className={sectionTitle}>{t("synopsis")}</h2>
-                {/* E-SINOPSIS-I18N: AniList, RAWG y ComicVine solo publican
-                    inglés. La traducción se resuelve fuera del render crítico
-                    — el fallback es el texto original, así que la ficha nunca
-                    espera y nunca se queda sin sinopsis. Sin sesión solo se
-                    usa una traducción ya hecha (tope de IA, D-06). */}
-                <Suspense
-                  fallback={<SynopsisSection text={item.synopsis} lang={synopsisLang(item.synopsis, locale)} />}
-                >
-                  <TranslatedSynopsis
-                    text={item.synopsis}
-                    mediaId={item.id}
-                    cacheOnly={!isAuthenticated}
-                  />
-                </Suspense>
-              </section>
-            )}
+              {/* Sinopsis */}
+              {item.synopsis ? (
+                <section aria-labelledby="ficha-synopsis">
+                  <h2 id="ficha-synopsis" className={SECTION_TITLE}>
+                    {t("synopsis")}
+                  </h2>
+                  {/* E-SINOPSIS-I18N: AniList, RAWG y ComicVine solo publican
+                      inglés. La traducción se resuelve fuera del render crítico
+                      — el fallback es el texto original, así que la ficha nunca
+                      espera y nunca se queda sin sinopsis. Sin cuenta abierta solo se
+                      usa una traducción ya hecha (tope de IA, D-06). */}
+                  <Suspense
+                    fallback={<SynopsisSection text={item.synopsis} lang={synopsisLang(item.synopsis, locale)} />}
+                  >
+                    <TranslatedSynopsis text={item.synopsis} mediaId={item.id} cacheOnly={!isAuthenticated} />
+                  </Suspense>
+                </section>
+              ) : null}
 
-            {/* Ficha técnica */}
-            {credits.length > 0 && (
-              <section>
-                <h2 className={sectionTitle}>{t("details")}</h2>
-                <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-2 text-sm">
-                  {credits.map(({ key, value }) => (
-                    <div key={key} className="contents">
-                      <dt className="text-text-tertiary font-bold">{t(`credits.${key}`)}</dt>
-                      <dd className="text-text-secondary min-w-0">{value}</dd>
-                    </div>
-                  ))}
-                </dl>
-              </section>
-            )}
+              {/* Por qué te lo recomendamos — solo con señal real (ver arriba) */}
+              {showWhyRecommended ? (
+                <section aria-labelledby="ficha-why">
+                  <h2 id="ficha-why" className={SECTION_TITLE}>
+                    {t("whyRecommended")}
+                  </h2>
+                  <p className="max-w-prose text-sm leading-relaxed text-text-secondary">
+                    {tAi("whyRecommendedText", { genres: topGenres.join(", ") })}
+                  </p>
+                </section>
+              ) : null}
 
-            {/* También existe como… (F-29): se pinta cuando llega, sin hueco si no hay. */}
-            {adaptations}
+              {/* Tu diario de este título (con la cuenta abierta) */}
+              {isAuthenticated ? <TitleDiary title={item.title} headingClassName={SECTION_TITLE} /> : null}
 
-            {/* Steam (solo juegos, y solo si se resolvió la ficha de tienda) */}
-            {steam && <SteamSection steam={steam} />}
+              {/* Ficha técnica */}
+              {credits.length > 0 ? (
+                <section aria-labelledby="ficha-details">
+                  <h2 id="ficha-details" className={SECTION_TITLE}>
+                    {t("details")}
+                  </h2>
+                  <dl className="grid grid-cols-[auto_minmax(0,1fr)] gap-x-4 gap-y-2 text-sm">
+                    {credits.map(({ key, value }) => (
+                      <div key={key} className="contents">
+                        <dt className="font-semibold text-text-tertiary">{t(`credits.${key}`)}</dt>
+                        <dd className="min-w-0 break-words text-text-secondary">{value}</dd>
+                      </div>
+                    ))}
+                  </dl>
+                </section>
+              ) : null}
 
-            {/* Dónde ver: suscripción, alquiler y compra (PRO-2, PRO-6) */}
-            {providers && providers.length > 0 && (
-              <StreamingProviders providers={providers} title={t("whereToWatch")} link={watchLink} />
-            )}
+              {/* También existe como… (F-29): se pinta cuando llega, sin hueco si no hay. */}
+              {adaptations}
 
-            {/* Tráiler */}
-            {trailerKey && (
-              <section>
-                <h2 className={sectionTitle}>{t("trailer")}</h2>
-                <TrailerEmbed youtubeKey={trailerKey} title={t("trailerTitle", { title: item.title })} />
-              </section>
-            )}
+              {/* Steam (solo juegos, y solo si se resolvió la ficha de tienda) */}
+              {steam ? <SteamSection steam={steam} /> : null}
 
-            {/* Fuente de los datos: enlace activo a la página del título en su
-                proveedor (RAWG lo exige en cada página con sus datos). */}
-            {source && (
-              <p className="text-xs text-text-tertiary leading-relaxed">
-                {t("sourceLabel")}{" "}
-                <a
-                  href={source.url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  aria-label={t("sourceLinkLabel", { name: source.name })}
-                  className={SOURCE_LINK_CLASS}
-                >
-                  {source.name}
-                </a>
-              </p>
-            )}
-          </div>
-        </div>
+              {/* Tráiler */}
+              {trailerKey ? (
+                <section aria-labelledby="ficha-trailer">
+                  <h2 id="ficha-trailer" className={SECTION_TITLE}>
+                    {t("trailer")}
+                  </h2>
+                  <TrailerEmbed youtubeKey={trailerKey} title={t("trailerTitle", { title: item.title })} />
+                </section>
+              ) : null}
+
+              {/* Pie del reverso: fuente de los datos (RAWG la exige en cada
+                  página con sus datos) y denunciar. */}
+              <footer className="flex flex-col items-start gap-2 border-t-2 border-surface-border pt-4">
+                {source ? (
+                  <p className="text-xs leading-relaxed text-text-tertiary">
+                    {t("sourceLabel")}{" "}
+                    <a
+                      href={source.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      aria-label={t("sourceLinkLabel", { name: source.name })}
+                      className={SOURCE_LINK_CLASS}
+                    >
+                      {source.name}
+                    </a>
+                  </p>
+                ) : null}
+                {isAuthenticated ? (
+                  <ReportButton targetType="media" targetId={item.id} />
+                ) : (
+                  <Link
+                    href={`/report?target=media&id=${encodeURIComponent(item.id)}`}
+                    rel="nofollow"
+                    className={`inline-flex min-h-11 items-center rounded-lg text-xs font-semibold text-text-tertiary underline underline-offset-2 hover:text-text-primary ${FOCUS}`}
+                  >
+                    {t("reportPublic")}
+                  </Link>
+                )}
+              </footer>
+            </div>
+          </article>
+        </TitleEntryProvider>
       </div>
     </main>
   );

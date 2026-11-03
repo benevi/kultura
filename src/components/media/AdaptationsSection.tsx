@@ -4,25 +4,26 @@
 // la consulta a Wikidata (o a su caché) nunca retrase el resto de la página.
 // Sin vínculos no pinta nada.
 //
-// Diseño (DISENO.md): fila de tarjetas compactas con portada pequeña y el
-// gradiente de póster SIEMPRE detrás, chip de relación "outline" y el mismo
-// título de sección que el resto de la ficha. Al final, "Añadir toda la
-// franquicia" (con sesión) y la cita de la fuente (Wikidata, CC0).
+// Diseño (DISENO.md): los otros formatos como cromos (el respaldo de color
+// SIEMPRE detrás de la portada), con el título, el formato (punto + nombre),
+// el año y la relación debajo, y el mismo título de sección que el resto de
+// la ficha. Al final, "Añadir toda la franquicia" (con la cuenta abierta) y la cita de
+// la fuente (Wikidata, CC0).
 // ============================================================
 
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { getTranslations } from "next-intl/server";
 import type { MediaItem } from "@/types/media";
-import { posterGradient } from "@/lib/images/poster-gradient";
 import { Link } from "@/i18n/navigation";
+import { Cromo } from "@/components/album/Cromo";
+import { FormatTag } from "@/components/album/FormatTag";
 import { mediaPath } from "@/lib/media/seo";
 import { getAdaptations } from "@/lib/adaptations/load";
 import { buildAdaptationView } from "@/lib/adaptations/display";
 import { SOURCE_LINK_CLASS } from "@/components/legal/DataAttribution";
-import { PosterImage } from "./PosterImage";
 import { AddFranchiseButton } from "./AddFranchiseButton";
 
-const sectionTitle = "font-display text-xl font-bold text-text-primary mb-1";
+const sectionTitle = "mb-3 font-display text-2xl text-text-primary";
 const FOCUS =
   "focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus-ring";
 
@@ -64,9 +65,9 @@ export async function AdaptationsSection({ item, locale, userId, supabase }: Pro
   const view = await buildAdaptationView(links, { locale, userId, supabase });
   if (view.cards.length === 0) return null;
 
-  const [t, tMedia] = await Promise.all([
+  const [t, tAlbum] = await Promise.all([
     getTranslations({ locale, namespace: "adaptations" }),
-    getTranslations({ locale, namespace: "media" }),
+    getTranslations({ locale, namespace: "album" }),
   ]);
   const selfPath = mediaPath(locale, item.type, item.externalId);
 
@@ -75,46 +76,35 @@ export async function AdaptationsSection({ item, locale, userId, supabase }: Pro
       <h2 id="adaptations-title" className={sectionTitle}>
         {t("title")}
       </h2>
-      <p className="text-sm text-text-secondary leading-relaxed mb-4">{t("subtitle")}</p>
 
-      <ul className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-        {view.cards.map((card) => {
-          const typeLabel = tMedia(card.type);
-          return (
-            <li key={card.mediaId}>
-              <Link
-                href={`/media/${card.type}/${encodeURIComponent(card.externalId)}`}
-                className={`group flex items-center gap-3 rounded-2xl bg-surface-default p-2.5 pr-4 min-h-11 hover:bg-surface-elevated transition-colors ${FOCUS}`}
-              >
-                <span
-                  className="relative w-12 h-[72px] flex-shrink-0 rounded-cromo overflow-hidden"
-                  style={{ background: posterGradient(card.mediaId) }}
-                  aria-hidden="true"
-                >
-                  {card.poster && <PosterImage src={card.poster} sizes="48px" className="object-cover" />}
-                </span>
-                <span className="min-w-0 flex-1">
-                  <span className="block font-bold text-sm text-text-primary line-clamp-2 group-hover:text-accent-pink transition-colors">
-                    {card.title}
-                  </span>
-                  <span className="block text-xs text-text-tertiary mt-0.5">
-                    {card.year ? t("meta", { type: typeLabel, year: String(card.year) }) : typeLabel}
-                  </span>
-                  <span className="mt-1.5 flex flex-wrap gap-1.5">
-                    <span className="rounded-full border-2 border-surface-border text-text-secondary font-bold text-xs px-2.5 py-0.5">
-                      {t(`relation.${card.relation}`)}
-                    </span>
-                    {card.inLibrary && (
-                      <span className="rounded-full bg-surface-elevated text-text-secondary font-bold text-xs px-2.5 py-0.5">
-                        {t("inLibrary")}
-                      </span>
-                    )}
-                  </span>
-                </span>
-              </Link>
-            </li>
-          );
-        })}
+      {/* Cromos de los otros formatos: el título y su relación debajo. */}
+      <ul className="grid grid-cols-3 gap-3 sm:grid-cols-4">
+        {view.cards.map((card) => (
+          <li key={card.mediaId} className="min-w-0">
+            <Link
+              href={`/media/${card.type}/${encodeURIComponent(card.externalId)}`}
+              className={`group block rounded-cromo ${FOCUS}`}
+            >
+              <Cromo
+                title={card.title}
+                seed={card.mediaId}
+                poster={card.poster}
+                sizes="(max-width: 640px) 30vw, 140px"
+              />
+              <span className="mt-2 line-clamp-2 break-words text-sm font-semibold leading-tight text-text-primary">
+                {card.title}
+              </span>
+              <span className="mt-1 flex min-w-0 flex-wrap items-center gap-x-2 gap-y-0.5 text-xs text-text-tertiary">
+                <FormatTag format={card.type} label={tAlbum(`format.${card.type}`)} />
+                {card.year ? <span className="tabular-nums">{card.year}</span> : null}
+              </span>
+              <span className="mt-1 block text-xs font-semibold text-text-secondary">
+                {t(`relation.${card.relation}`)}
+                {card.inLibrary ? <span className="font-normal text-text-tertiary"> · {t("inLibrary")}</span> : null}
+              </span>
+            </Link>
+          </li>
+        ))}
       </ul>
 
       <div className="mt-4 flex flex-col gap-2">
@@ -128,7 +118,7 @@ export async function AdaptationsSection({ item, locale, userId, supabase }: Pro
           <Link
             href={`/login?mode=login&next=${encodeURIComponent(selfPath)}`}
             rel="nofollow"
-            className={`self-start text-sm font-bold text-text-primary underline underline-offset-2 hover:text-accent-pink rounded-lg min-h-11 inline-flex items-center ${FOCUS}`}
+            className={`self-start text-sm font-bold text-text-primary underline underline-offset-2 rounded-lg min-h-11 inline-flex items-center ${FOCUS}`}
           >
             {t("loginToAdd")}
           </Link>
