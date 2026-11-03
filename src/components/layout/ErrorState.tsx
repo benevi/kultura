@@ -13,34 +13,19 @@ interface ErrorStateProps {
 }
 
 /**
- * Tres pósteres «rotos»: los gradientes de dos paradas del mismo matiz de
- * DISENO.md, rotados en abanico, el central partido en dos, y la pegatina
- * colgante. Decorativo.
+ * Tres cromos que se han despegado: borde blanco de cromo, tintas planas del
+ * álbum (cian, rosa, amarillo), el central doblado por la esquina, y el
+ * número de hueco que se ha quedado vacío. Decorativo; sin degradados ni
+ * sombras.
  */
-function BrokenPosters({ sticker }: { sticker: string }) {
-  const poster = 'absolute w-16 h-24 rounded-2xl'
+function LooseCromos({ sticker }: { sticker: string }) {
+  const cromo = 'absolute w-16 h-24 rounded-cromo border-[3px] border-cromo-border'
   return (
     <div aria-hidden className="relative w-48 h-32 mx-auto">
-      <span
-        className={`${poster} left-3 top-5 -rotate-[10deg]`}
-        style={{ background: 'linear-gradient(155deg, oklch(62% 0.19 300), oklch(40% 0.12 300))' }}
-      />
-      <span
-        className={`${poster} right-3 top-5 rotate-[8deg]`}
-        style={{ background: 'linear-gradient(155deg, oklch(72% 0.19 55), oklch(48% 0.12 55))' }}
-      />
-      {/* Póster central «roto»: dos mitades separadas por una grieta. */}
-      <span
-        className="absolute left-1/2 top-2 -ml-8 w-16 h-12 rounded-t-2xl -rotate-[4deg] origin-bottom-left"
-        style={{ background: 'linear-gradient(155deg, oklch(68% 0.24 350), oklch(55% 0.2 350))' }}
-      />
-      <span
-        className="absolute left-1/2 top-[3.6rem] -ml-8 w-16 h-12 rounded-b-2xl rotate-[5deg] origin-top-right"
-        style={{ background: 'linear-gradient(155deg, oklch(55% 0.2 350), oklch(45% 0.16 350))' }}
-      />
-      <span
-        className="absolute -top-1 left-1 -rotate-[8deg] rounded-full bg-accent-lime px-3 py-1 text-xs font-extrabold text-on-accent-lime shadow-sticker"
-      >
+      <span className={`${cromo} left-3 top-5 -rotate-[10deg] bg-album-cyan`} />
+      <span className={`${cromo} right-3 top-5 rotate-[8deg] bg-album-yellow`} />
+      <span className={`${cromo} cromo-folded left-1/2 top-2 -ml-8 -rotate-[4deg] bg-album-pink`} />
+      <span className="absolute -top-1 left-1 -rotate-[8deg] inline-flex h-7 items-center rounded-cromo bg-album-white px-2.5 text-xs font-bold text-album-navy">
         {sticker}
       </span>
     </div>
@@ -67,11 +52,11 @@ export function ErrorState({ reset, minHeight = 'min-h-[40vh]', homeHref = '/hom
 
   return (
     <div className={`flex flex-col items-center justify-center ${minHeight} gap-6 px-4 py-10 text-center`}>
-      <BrokenPosters sticker={tNav('oops')} />
+      <LooseCromos sticker={tNav('oops')} />
       <h1
         ref={headingRef}
         tabIndex={-1}
-        className="font-display text-2xl font-bold text-text-primary focus:outline-none"
+        className="font-display text-2xl text-balance text-text-primary focus:outline-none"
       >
         {t('somethingWentWrong')}
       </h1>

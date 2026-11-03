@@ -179,7 +179,7 @@ function getCredits(item: MediaItem): { key: CreditKey; value: string }[] {
 const sectionTitle = "font-display text-xl font-bold text-text-primary mb-3";
 const crumbLink =
   "inline-flex items-center min-h-11 rounded-lg hover:text-accent-pink transition-colors " +
-  "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-pink";
+  "focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus-ring";
 
 export async function MediaDetail({
   item,
@@ -314,7 +314,7 @@ export async function MediaDetail({
                 <div className="absolute inset-x-0 bottom-0 h-2/3 bg-gradient-to-t from-black/85 via-black/30 to-transparent pointer-events-none" />
 
                 <div className="relative z-[1] w-full">
-                  <h1 className="font-display text-2xl sm:text-3xl font-extrabold tracking-tight text-white line-clamp-3">
+                  <h1 className="font-display text-2xl sm:text-3xl text-balance text-album-white line-clamp-3">
                     {item.title}
                   </h1>
                   {item.originalTitle && item.originalTitle !== item.title && (
@@ -427,7 +427,7 @@ export async function MediaDetail({
                     <Link
                       href={`/login?mode=login&next=${next}`}
                       rel="nofollow"
-                      className="whitespace-nowrap font-bold text-text-primary underline underline-offset-2 hover:text-accent-pink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-pink rounded-lg"
+                      className="whitespace-nowrap font-bold text-text-primary underline underline-offset-2 hover:text-accent-pink focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus-ring rounded-lg"
                     >
                       {t("ctaLogin")}
                     </Link>

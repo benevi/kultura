@@ -64,20 +64,22 @@ export function TrailerEmbed({ youtubeKey: rawKey, title }: TrailerEmbedProps) {
           onClick={() => setPlaying(true)}
           aria-labelledby={labelId}
           aria-describedby={noticeId}
-          className="group absolute inset-0 w-full h-full flex flex-col items-center justify-center gap-3 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-accent-pink"
+          className="group absolute inset-0 w-full h-full flex flex-col items-center justify-center gap-3 focus-visible:outline focus-visible:outline-2 focus-visible:-outline-offset-4 focus-visible:outline-focus-ring"
         >
           {/* Miniatura decorativa: el botón ya dice qué hace. */}
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src={trailerThumbnailUrl(youtubeKey)}
             alt=""
+            width={480}
+            height={360}
             loading="lazy"
             decoding="async"
             referrerPolicy="no-referrer"
             className="absolute inset-0 w-full h-full object-cover"
           />
-          <span aria-hidden="true" className="absolute inset-0 bg-black/60 group-hover:bg-black/50 transition-colors" />
-          <span className="relative inline-flex items-center gap-2 rounded-full bg-accent-pink text-on-accent-pink font-extrabold text-sm px-5 h-11">
+          <span aria-hidden="true" className="absolute inset-0 bg-surface-base/60 group-hover:bg-surface-base/50 transition-colors duration-fast" />
+          <span className="relative inline-flex items-center gap-2 rounded-button bg-accent-pink text-on-accent-pink font-bold text-sm px-5 h-11">
             <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" className="w-4 h-4">
               <path d="M8 5.5v13a1 1 0 0 0 1.5.86l10.5-6.5a1 1 0 0 0 0-1.72L9.5 4.64A1 1 0 0 0 8 5.5z" />
             </svg>

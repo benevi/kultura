@@ -30,7 +30,7 @@ export function BottomNav({ username }: { username: string }) {
   return (
     <nav
       aria-label={t('primaryNav')}
-      className="md:hidden fixed bottom-0 inset-x-0 z-40 bg-surface-default border-t border-surface-border pb-[env(safe-area-inset-bottom)]"
+      className="md:hidden fixed bottom-0 inset-x-0 z-40 bg-surface-base border-t-2 border-surface-border pb-[env(safe-area-inset-bottom)]"
     >
       <ul className="flex items-stretch h-16">
         {primaryNavItems(username).map(({ key, labelKey, href, icon: Icon }) => {
@@ -42,17 +42,21 @@ export function BottomNav({ username }: { username: string }) {
                 aria-current={active ? 'page' : undefined}
                 onClick={(e: MouseEvent<HTMLAnchorElement>) => handleClick(e, href)}
                 className={cn(
-                  'group flex flex-col items-center justify-center gap-1 h-full w-full rounded-2xl [-webkit-tap-highlight-color:transparent]',
+                  'group relative flex flex-col items-center justify-center gap-1 h-full w-full rounded-lg [-webkit-tap-highlight-color:transparent]',
                   FOCUS_RING,
                   'focus-visible:outline-offset-[-4px]',
                   active ? 'text-text-primary' : 'text-text-secondary'
                 )}
               >
-                {/* Pastilla neutra tras el icono del activo: el rosa queda para la acción. */}
+                {/* Banda amarilla de orientación arriba del destino activo
+                    (DISENO.md): el amarillo orienta, el rosa es la acción. */}
+                {active ? (
+                  <span aria-hidden="true" className="absolute inset-x-4 top-0 h-[3px] rounded-full bg-wayfinding" />
+                ) : null}
                 <span
                   className={cn(
-                    'flex items-center justify-center w-14 h-8 rounded-full transition-colors',
-                    active ? 'bg-surface-elevated' : 'group-active:bg-surface-elevated/60'
+                    'flex items-center justify-center w-14 h-8 rounded-full transition-colors duration-fast',
+                    active ? null : 'group-active:bg-surface-elevated'
                   )}
                 >
                   <Icon className="w-6 h-6" />

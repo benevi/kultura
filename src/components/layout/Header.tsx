@@ -23,9 +23,12 @@ export async function Header({ locale }: { locale?: string } = {}) {
   const compact = "h-9 px-3 text-xs sm:h-10 sm:px-4 sm:text-sm";
 
   return (
-    <header className="sticky top-0 z-50 bg-surface-default border-b border-surface-border">
+    <header className="sticky top-0 z-50 bg-surface-base border-b-2 border-surface-border">
       <div className="page-grid flex h-14 justify-between items-center gap-2">
-        <a href={`/${lang}`} className="shrink-0">
+        <a
+          href={`/${lang}`}
+          className="flex min-h-11 shrink-0 items-center rounded-lg focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus-ring"
+        >
           <Logo size={24} />
         </a>
         <nav className="flex items-center gap-1.5 sm:gap-2">

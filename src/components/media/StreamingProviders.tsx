@@ -54,7 +54,7 @@ interface StreamingProvidersProps {
 }
 
 const focusRing =
-  "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-pink";
+  "focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus-ring";
 
 /** Modalidades en el orden en que se pintan (claves de `media_detail.watchType`). */
 const GROUPS = ["flatrate", "free", "ads", "rent", "buy"] as const;

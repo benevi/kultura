@@ -62,14 +62,15 @@ describe('NavLinks', () => {
     }
   })
 
-  it('el activo lleva aria-current="page" y pastilla neutra (no el acento)', () => {
+  it('el activo lleva aria-current="page" y la banda de orientación (no el acento)', () => {
     mockPathname.value = '/discover'
     render(<NavLinks username="ana" />)
     const active = screen.getByRole('link', { name: 'Descubrir' })
     const inactive = screen.getByRole('link', { name: 'Inicio' })
     expect(active).toHaveAttribute('aria-current', 'page')
     expect(inactive).not.toHaveAttribute('aria-current')
-    expect(active.className).toContain('bg-surface-elevated')
+    expect(active.className).toContain('after:bg-wayfinding')
+    expect(inactive.className).not.toContain('after:bg-wayfinding')
     expect(active.className).not.toContain('bg-accent')
   })
 

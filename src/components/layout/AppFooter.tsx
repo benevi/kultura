@@ -3,7 +3,7 @@ import { Link } from '@/i18n/navigation'
 import { renderDataAttribution } from '@/components/legal/DataAttribution'
 
 const FOOTER_LINK =
-  'inline-flex items-center min-h-11 px-2 rounded-2xl text-sm text-text-secondary hover:text-accent-pink transition-colors ' +
+  'inline-flex items-center min-h-11 px-2 rounded-lg text-sm text-text-secondary underline-offset-4 hover:text-text-primary hover:underline transition-colors duration-fast ' +
   'focus-visible:[outline-style:solid] focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-focus-ring'
 
 /**
@@ -16,9 +16,9 @@ export async function AppFooter() {
   const tLegal = await getTranslations('legal')
 
   return (
-    <footer className="border-t border-surface-border mt-8">
+    <footer className="border-t-2 border-surface-border mt-8">
       <div className="page-grid pt-2 flex flex-wrap items-center justify-between gap-x-4">
-        <span className="font-display text-sm font-bold tracking-widest text-text-tertiary" translate="no">
+        <span className="font-body text-sm font-bold tracking-widest text-text-tertiary" translate="no">
           KULTURA
         </span>
         <nav aria-label={t('footerNav')}>

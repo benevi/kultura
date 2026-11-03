@@ -52,24 +52,32 @@ export function isNavActive(pathname: string, href: string): boolean {
   return path === base || path.startsWith(`${base}/`)
 }
 
-/** Foco visible común (DISENO.md: contorno de 2 px `--focus-ring`, no sombra). */
+/** Foco visible común (DISENO.md: contorno de 2 px `--focus-ring`, no sombra; amarillo de noche, marino en papel). */
 export const FOCUS_RING =
   'focus-visible:[outline-style:solid] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus-ring'
 
-/** Caja de icono de la cabecera: 44×44, radio 16, fondo `--surface-2` (DISENO.md). */
+/**
+ * Banda de orientación «estás aquí» (DISENO.md): una raya amarilla de 3 px
+ * (marina en papel) al pie del destino activo. El amarillo de la app solo se
+ * usa así, nunca como relleno detrás de texto. El elemento debe ser `relative`.
+ */
+export const WAYFINDING_BAND =
+  "after:pointer-events-none after:absolute after:inset-x-3 after:bottom-0 after:h-[3px] after:rounded-full after:bg-wayfinding"
+
+/** Caja de icono de la cabecera: 44×44, radio de control, superficie elevada (DISENO.md). */
 export const HEADER_ICON_BOX = [
   'relative flex items-center justify-center w-11 h-11 flex-shrink-0 rounded-2xl bg-surface-elevated text-text-secondary',
-  'hover:text-text-primary transition-colors',
+  'hover:text-text-primary hover:bg-surface-border transition-colors duration-fast',
   FOCUS_RING,
 ].join(' ')
 
-/** Estado «estás aquí» de una caja de la cabecera. */
-export const HEADER_ICON_CURRENT = 'text-text-primary ring-2 ring-inset ring-surface-border'
+/** Estado «estás aquí» de una caja de la cabecera: texto en tinta y la banda. */
+export const HEADER_ICON_CURRENT = `text-text-primary ${WAYFINDING_BAND}`
 
 /** Fila de enlace de un panel de la cabecera: 48 px de alto, ancho completo. */
 export const MENU_ROW = [
   'flex items-center gap-3 w-full min-h-12 px-3 rounded-2xl text-sm font-semibold text-text-primary text-left',
-  'hover:bg-surface-elevated transition-colors',
+  'hover:bg-surface-elevated transition-colors duration-fast',
   FOCUS_RING,
   'focus-visible:outline-offset-[-2px]',
 ].join(' ')
@@ -80,7 +88,7 @@ export function CountBadge({ count }: { count: number }) {
   return (
     <span
       aria-hidden
-      className="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 rounded-full bg-accent-pink text-on-accent-pink text-xs font-bold leading-none flex items-center justify-center ring-2 ring-surface-default"
+      className="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 rounded-full bg-accent-pink text-on-accent-pink text-xs font-bold leading-none tabular-nums flex items-center justify-center ring-2 ring-surface-base"
     >
       {count > 99 ? '99+' : count}
     </span>

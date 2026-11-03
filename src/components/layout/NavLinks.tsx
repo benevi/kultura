@@ -3,12 +3,16 @@
 import { useTranslations } from 'next-intl'
 import { Link, usePathname } from '@/i18n/navigation'
 import { cn } from '@/lib/utils/index'
-import { primaryNavItems, isNavActive, FOCUS_RING } from '@/components/layout/nav-shared'
+import { primaryNavItems, isNavActive, FOCUS_RING, WAYFINDING_BAND } from '@/components/layout/nav-shared'
 import { IconCalendar } from '@/components/icons'
 
 const LINK_BASE =
-  // Pastilla neutra para el activo: el rosa queda para la acción (DIS-9).
-  'flex items-center gap-1.5 min-h-11 px-4 rounded-full text-sm font-semibold whitespace-nowrap transition-colors'
+  // El activo lleva la banda amarilla de orientación al pie (DISENO.md); el
+  // rosa queda para la acción (DIS-9).
+  'relative flex items-center gap-1.5 min-h-11 px-4 rounded-lg text-sm font-semibold whitespace-nowrap transition-colors duration-fast'
+
+const LINK_ACTIVE = `text-text-primary ${WAYFINDING_BAND}`
+const LINK_IDLE = 'text-text-secondary hover:text-text-primary hover:bg-surface-elevated'
 
 /**
  * Navegación de escritorio (en móvil la hace `BottomNav`).
@@ -36,9 +40,7 @@ export function NavLinks({ username }: { username: string }) {
                 className={cn(
                   LINK_BASE,
                   FOCUS_RING,
-                  active
-                    ? 'bg-surface-elevated text-text-primary'
-                    : 'text-text-secondary hover:text-text-primary hover:bg-surface-elevated/60'
+                  active ? LINK_ACTIVE : LINK_IDLE
                 )}
               >
                 {/* A 768 px no caben 5 etiquetas + iconos + 3 botones: icono desde lg. */}
@@ -55,9 +57,7 @@ export function NavLinks({ username }: { username: string }) {
             className={cn(
               LINK_BASE,
               FOCUS_RING,
-              calendarActive
-                ? 'bg-surface-elevated text-text-primary'
-                : 'text-text-secondary hover:text-text-primary hover:bg-surface-elevated/60'
+              calendarActive ? LINK_ACTIVE : LINK_IDLE
             )}
           >
             <IconCalendar className="w-[18px] h-[18px]" />

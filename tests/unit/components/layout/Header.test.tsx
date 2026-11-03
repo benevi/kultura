@@ -80,7 +80,10 @@ describe("Header", () => {
     const HeaderResolved = await Header();
     const { container } = render(HeaderResolved);
     const header = container.querySelector("header")!;
-    expect(header).toHaveClass("bg-surface-default");
+    // Álbum: el fondo de la superficie (noche en la app, papel dentro de
+    // `.theme-paper`), opaco y con la raya de 2 px.
+    expect(header).toHaveClass("bg-surface-base");
+    expect(header).toHaveClass("border-b-2");
     expect(header.className).not.toMatch(/bg-surface\/80|backdrop-blur/);
   });
 

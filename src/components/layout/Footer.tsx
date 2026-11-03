@@ -2,7 +2,7 @@ import { getLocale, getTranslations } from "next-intl/server";
 import { renderDataAttribution } from "@/components/legal/DataAttribution";
 
 const FOOTER_LINK =
-  "inline-flex items-center min-h-11 px-3 rounded-2xl hover:text-accent-pink transition-colors " +
+  "inline-flex items-center min-h-11 px-3 rounded-lg underline-offset-4 hover:text-text-primary hover:underline transition-colors duration-fast " +
   "focus-visible:[outline-style:solid] focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-focus-ring";
 
 /**
@@ -34,7 +34,7 @@ export async function Footer() {
   ];
 
   return (
-    <footer className="border-t border-surface-border pt-6 pb-8 text-text-tertiary text-sm text-center flex flex-col items-center gap-2">
+    <footer className="border-t-2 border-surface-border pt-6 pb-8 text-text-tertiary text-sm text-center flex flex-col items-center gap-2">
       <nav aria-label={tNav("footerNav")}>
         <ul className="flex flex-wrap items-center justify-center">
           {links.map((l) => (
@@ -46,7 +46,8 @@ export async function Footer() {
           ))}
         </ul>
       </nav>
-      <span>© {new Date().getFullYear()} KULTURA</span>
+      {/* `translate="no"`: la marca no se traduce (WIG). */}
+      <span translate="no">© {new Date().getFullYear()} KULTURA</span>
       {await renderDataAttribution("max-w-xl px-4")}
     </footer>
   );

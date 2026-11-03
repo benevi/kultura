@@ -1,10 +1,11 @@
 // ============================================================
-// KULTURA — Logotipo de marca (F6)
-// Monograma abstracto propio (badge + 3 formas solapadas/rotadas con los
-// acentos decorativos de F7) + wordmark "kultura" en font-display, con un
-// cuadradito de color rotado sustituyendo el punto final — detalle
-// tipográfico propio en vez de un gradiente/glifo de stock. Todo inline
-// SVG/JSX, sin assets externos, mismo criterio que src/components/icons.
+// KULTURA — Logotipo de marca
+// Monograma (badge + 3 cromos solapados y rotados) + wordmark `kultura.` en
+// minúsculas con el punto ROSA (#ff2d8a, MARCA.md). El wordmark es lo único
+// que no cambia con el sistema: sigue en Bricolage Grotesque 700 (subconjunto
+// de sus 6 glifos, `font-logo`), no en la display del álbum. Los cromos del
+// monograma van en las tintas de imprenta del álbum (rosa, amarillo, cian):
+// sin violeta. Todo SVG/JSX en línea, sin assets externos.
 // ============================================================
 
 interface LogoProps {
@@ -29,18 +30,18 @@ function Mark({ size }: { size: number }) {
     >
       <rect x="1" y="1" width="22" height="22" rx="7.5" fill="var(--surface-elevated)" />
       <rect
-        x="3.5" y="4.5" width="12" height="8.2" rx="3.8"
-        fill="var(--accent-pink)"
+        x="3.5" y="4.5" width="12" height="8.2" rx="2"
+        fill="var(--album-pink)"
         transform="rotate(-10 9.5 8.6)"
       />
       <rect
-        x="8" y="8.5" width="12" height="8.2" rx="3.8"
-        fill="var(--accent-lime)"
+        x="8" y="8.5" width="12" height="8.2" rx="2"
+        fill="var(--album-yellow)"
         transform="rotate(6 14 12.6)"
       />
       <rect
-        x="4" y="12.5" width="12" height="8.2" rx="3.8"
-        fill="var(--accent-purple)"
+        x="4" y="12.5" width="12" height="8.2" rx="2"
+        fill="var(--album-cyan)"
         transform="rotate(-4 10 16.6)"
       />
     </svg>
@@ -60,25 +61,24 @@ export function Logo({ size = 26, variant = 'full', className = '' }: LogoProps)
     <span className={`inline-flex shrink-0 items-center gap-2 ${className}`}>
       <Mark size={size} />
       {/* `whitespace-nowrap`: sin él, en una fila estrecha (cabecera a 320 px)
-          el cuadradito final caía a una segunda línea. */}
-      {/* `data-wordmark`: es la marca, no texto de la escala (el recuento de
+          el punto final caía a una segunda línea. `translate="no"`: el
+          traductor del navegador lo convertía en «cultura» o «culture» (WIG).
+          `data-wordmark`: es la marca, no texto de la escala (el recuento de
           tamaños de `type-scale.spec.ts` la deja fuera). */}
       <span
         data-wordmark=""
-        className="font-display font-bold tracking-tight text-text-primary leading-none whitespace-nowrap"
+        translate="no"
+        className="font-logo font-bold tracking-tight text-text-primary leading-none whitespace-nowrap"
         style={{ fontSize: size * 0.78 }}
       >
         kultura
         <span
           aria-hidden="true"
-          className="inline-block bg-accent-lime align-middle"
+          className="inline-block rounded-full bg-album-pink align-baseline"
           style={{
-            width: size * 0.15,
-            height: size * 0.15,
-            borderRadius: 3,
-            marginLeft: size * 0.06,
-            marginBottom: size * 0.02,
-            transform: 'rotate(14deg)',
+            width: size * 0.17,
+            height: size * 0.17,
+            marginLeft: size * 0.04,
           }}
         />
       </span>

@@ -24,7 +24,7 @@ import { AddFranchiseButton } from "./AddFranchiseButton";
 
 const sectionTitle = "font-display text-xl font-bold text-text-primary mb-1";
 const FOCUS =
-  "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-pink focus-visible:ring-offset-2 focus-visible:ring-offset-surface-base";
+  "focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus-ring";
 
 interface Props {
   item: Pick<MediaItem, "id" | "type" | "externalId" | "title" | "metadata">;
@@ -87,7 +87,7 @@ export async function AdaptationsSection({ item, locale, userId, supabase }: Pro
                 className={`group flex items-center gap-3 rounded-2xl bg-surface-default p-2.5 pr-4 min-h-11 hover:bg-surface-elevated transition-colors ${FOCUS}`}
               >
                 <span
-                  className="relative w-12 h-[72px] flex-shrink-0 rounded-2xl overflow-hidden"
+                  className="relative w-12 h-[72px] flex-shrink-0 rounded-cromo overflow-hidden"
                   style={{ background: posterGradient(card.mediaId) }}
                   aria-hidden="true"
                 >

@@ -32,7 +32,7 @@ export async function SteamSection({ steam }: { steam: SteamInfo }) {
           href={steam.storeUrl}
           target="_blank"
           rel="noopener noreferrer"
-          className="text-sm text-accent-info hover:text-accent-info/80 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-pink rounded-lg"
+          className="text-sm text-accent-info hover:text-accent-info/80 transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus-ring rounded-lg"
         >
           {t("steamViewOnStore")}
         </a>
@@ -96,7 +96,7 @@ export async function SteamSection({ steam }: { steam: SteamInfo }) {
                   href={shot.full}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="block relative aspect-video max-w-full overflow-hidden rounded-2xl border border-surface-border hover:border-text-tertiary transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-pink"
+                  className="block relative aspect-video max-w-full overflow-hidden rounded-2xl border border-surface-border hover:border-text-tertiary transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus-ring"
                 >
                   <Image
                     src={shot.thumb}

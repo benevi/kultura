@@ -46,7 +46,7 @@ export function LanguageSwitcher({ labelledBy }: { labelledBy?: string }) {
       {/* Indicador deslizante: marca la opción activa sin depender de banderas/emoji */}
       <span
         aria-hidden
-        className="absolute inset-y-0.5 left-0.5 w-11 rounded-full bg-accent-positive transition-transform duration-300 ease-out"
+        className="absolute inset-y-0.5 left-0.5 w-11 rounded-full bg-text-primary transition-transform duration-base ease-out"
         style={{ transform: `translateX(${activeIndex * 44}px)` }}
       />
       {LOCALES.map((loc) => {
@@ -61,9 +61,9 @@ export function LanguageSwitcher({ labelledBy }: { labelledBy?: string }) {
             aria-pressed={active}
             aria-label={ENDONYMS[loc]}
             className={cn(
-              'relative z-10 w-11 h-11 text-xs font-bold uppercase tracking-wider rounded-full transition-colors duration-200',
+              'relative z-10 w-11 h-11 text-xs font-bold uppercase tracking-wider rounded-full transition-colors duration-fast',
               FOCUS_RING,
-              active ? 'text-on-accent-positive' : 'text-text-secondary hover:text-text-primary'
+              active ? 'text-surface-base' : 'text-text-secondary hover:text-text-primary'
             )}
           >
             {loc}

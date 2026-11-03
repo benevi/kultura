@@ -43,15 +43,15 @@ export function PageHeading({
         className
       )}
     >
-      {/* 42px es el valor literal del canvas; en móvil baja a 30px para que un
-          título largo no parta la pantalla. */}
-      <h1 className="font-display text-3xl font-bold leading-tight tracking-tight text-text-primary md:text-4xl">
+      {/* Lilita One (un solo peso), 32 px en móvil y 40 px desde `md`; con
+          `text-balance` un título largo no deja una palabra sola (WIG). */}
+      <h1 className="min-w-0 font-display text-3xl leading-tight text-balance break-words text-text-primary md:text-4xl">
         {children}
         {Icon && (
           <Icon
             aria-hidden="true"
             data-testid="page-heading-icon"
-            className="ml-2 inline-block h-7 w-7 -translate-y-0.5 align-middle text-accent-pink md:h-8 md:w-8"
+            className="ml-2 inline-block h-7 w-7 -translate-y-0.5 align-middle text-text-tertiary md:h-8 md:w-8"
           />
         )}
       </h1>
