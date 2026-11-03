@@ -1,459 +1,416 @@
-# Kultura · Sistema de diseño
+# Kultura · Sistema de diseño «Álbum de cromos»
 
-Este documento es el ÚNICO criterio de diseño válido para Kultura. Sustituye
-cualquier paleta, componente o layout usado antes en el código o en mockups
-anteriores. Nace de los mockups **"Kultura Editorial" (F0 v2)**: Home, Discover y
-MediaDetail se diseñaron a mano; el resto de pantallas (mockups "Kultura,
-diseño completo") se derivó extendiendo literalmente ese mismo vocabulario, no
-inventando uno nuevo.
+Este documento es el criterio de diseño de Kultura. La idea: **tu biblioteca
+es un álbum de cromos que llenas.** Cada título que quieres tiene su hueco
+numerado antes de tenerlo, y acabarlo pega el cromo. El mundo es el álbum de
+Panini que llenaba todo el mundo: páginas impresas en tintas planas, huecos
+numerados con el contorno discontinuo y el título impreso dentro, el cromo
+con su borde blanco, los «brillantes», el sobre, los repes y la página de
+control del final.
 
-**Regla de oro:** ante cualquier duda de diseño (color, tipografía, forma de
-un componente, cómo tratar una pantalla nueva), la respuesta correcta es
-"¿qué haría exactamente F0 aquí, con estos mismos tokens?", nunca una
-alternativa "parecida" o "mejorada". Si hace falta un patrón que F0 no
-cubre, se construye combinando los primitivos de abajo (mismos radios,
-mismos gradientes, mismos pesos), no con valores nuevos.
+- **Páginas públicas** (portada, rankings, login, bienvenida, perfil y listas
+  públicos, legales) = las páginas impresas del álbum: cian de imprenta,
+  amarillo, tinta marina, página blanca y el rosa de KULTURA para la ÚNICA
+  acción principal de cada pantalla. El color manda por regiones enteras.
+- **La app con sesión** = el álbum abierto de noche en el sofá: fondo azul
+  marino profundo (la tinta de la tapa, nunca negro puro), huecos un escalón
+  más claros, cromos con su borde blanco. El rosa es el único color de
+  acción. El cian y el amarillo solo como **bandas de orientación** (la
+  sección en la que estás, el foco de un hueco), nunca como relleno detrás
+  de lo que se lee.
+- **Colores de formato** = datos, nunca decoración: el punto, la tira de
+  progreso y la pestaña del hueco, siempre junto al nombre del formato.
+- **Nunca:** papel crema, degradados fuera del brillo, sombras en reposo,
+  halos, cristal o desenfoque de fondo, emoji, antetítulos («eyebrows»),
+  violeta, monoespaciada, `transition-all`.
 
-Los **textos** (tono, tuteo, glosario, mayúsculas, cifras y contadores) no
-están aquí: van en la guía de voz, [`VOZ.md`](VOZ.md).
+Las pantallas de la app son de trabajo (modo *Operate*): densas, con
+controles estándar; el álbum entra por los huecos, los números y las bandas,
+no por adornos.
 
-**El documento describe el código.** Los sets cerrados de abajo (radios,
-tamaños de texto, sombras y retícula) son los de `tailwind.config.ts`, que los
-define fuera de `extend`: una clase que no esté en el set no genera CSS.
-Lo comprueban `tests/unit/visual/` (que este documento y el config coincidan,
-que ninguna clase de `src` se quede sin regla y que no haya valores
-arbitrarios) y ESLint (`text-[Npx]`, `rounded-[…]` y `shadow-[…]` prohibidos).
+Los **textos** (tono, tuteo, glosario, cifras) no están aquí: van en la guía
+de voz, [`VOZ.md`](VOZ.md). Nunca «sin registro»: «gratis».
+
+**El documento describe el código.** Los sets cerrados (radios, tamaños de
+texto, sombras y retícula) son los de `tailwind.config.ts`, fuera de
+`extend`: una clase que no esté en el set no genera CSS. Lo comprueban
+`tests/unit/visual/` y `tests/unit/design/` (este documento = config, ninguna
+clase sin regla, contraste de cada par) y ESLint (`text-[Npx]`,
+`rounded-[…]` y `shadow-[…]` prohibidos).
 
 ## Tokens (OKLCH, literales, no aproximar a hex)
 
-Los tokens viven en `src/app/globals.css` (`:root`) con estos nombres. Son los
-que hay que usar en código; en Tailwind cada uno es una clase
-(`bg-surface-default`, `text-accent-pink`…).
+Viven en `src/app/globals.css`. `:root` es la **noche** (la app); la clase
+`.theme-paper` (o el componente `AlbumPage`) redefine los mismos nombres con
+los valores de **papel**, y todo lo que hay dentro se re-viste solo. En
+Tailwind cada token es una clase (`bg-surface-default`, `text-album-navy`,
+`bg-format-anime`…) y admite opacidad (`bg-surface-base/80`).
 
 ```css
-/* Superficies y texto */
---surface-base: oklch(16% 0.015 280);
---surface-default: oklch(21% 0.02 280);
---surface-elevated: oklch(26% 0.025 280);
---surface-border: oklch(32% 0.025 280);
---text-primary: oklch(97% 0.004 280);
---text-secondary: oklch(76% 0.02 280);
---text-tertiary: oklch(68% 0.02 280);
+/* Tintas del álbum (fijas) */
+--album-cyan: oklch(66.9% 0.147 237.2);
+--album-yellow: oklch(91.7% 0.192 101.4);
+--album-navy: oklch(30.9% 0.119 262.5);
+--album-white: oklch(100% 0 0);
+--album-pink: oklch(66.2% 0.246 0.9);
+--album-ink: oklch(18% 0.06 262.5);
 
-/* Acentos decorativos */
---accent-pink: oklch(68% 0.24 350);
---accent-lime: oklch(83% 0.24 130);
---accent-orange: oklch(72% 0.19 55);
---accent-purple: oklch(62% 0.19 300);
---accent-blue: oklch(68% 0.16 250);
---accent-yellow: oklch(85% 0.17 95);
+/* Formatos (datos) */
+--format-movie: oklch(69.2% 0.22 358.6);
+--format-tv: oklch(72.2% 0.148 252.3);
+--format-anime: oklch(90% 0.191 123.3);
+--format-manga: oklch(70.9% 0.184 29.1);
+--format-game: oklch(81.3% 0.125 203.5);
+--format-book: oklch(82.1% 0.149 72.1);
+--format-comic: oklch(90.7% 0.164 97.2);
+--format-movie-ink: oklch(72% 0.2 358.6);
 
-/* Acentos con rol (reutilizan los matices de arriba) */
---accent-positive: oklch(83% 0.24 130);
---accent-highlight: oklch(85% 0.17 95);
---accent-info: oklch(68% 0.16 250);
---accent-danger: oklch(60% 0.21 25);
+/* Noche: superficies y texto */
+--surface-base: oklch(21% 0.068 262.5);
+--surface-default: oklch(25.5% 0.08 262.5);
+--surface-elevated: oklch(30.5% 0.09 262.5);
+--surface-border: oklch(38% 0.09 262.5);
+--text-primary: oklch(98% 0.006 262.5);
+--text-secondary: oklch(86% 0.035 262.5);
+--text-tertiary: oklch(76% 0.05 262.5);
 
-/* Rojo accesible, campos y foco (ver "Formularios y foco") */
---accent-danger-text: oklch(70% 0.17 25);
+/* Acción, estados, campos y orientación */
+--accent-pink: var(--album-pink);
+--accent-pink-hover: oklch(71% 0.22 0.9);
+--on-accent-pink: var(--album-ink);
+--accent-positive: oklch(80% 0.17 150);
+--accent-highlight: var(--album-yellow);
+--accent-info: oklch(72.2% 0.148 252.3);
+--accent-danger: oklch(62% 0.21 25);
+--accent-danger-text: oklch(74% 0.16 25);
 --accent-danger-solid: oklch(55% 0.21 25);
---field-border: oklch(55% 0.02 280);
---focus-ring: var(--accent-pink);
-
-/* Texto sobre acentos ("on-color": oscuro del mismo matiz, no negro puro) */
---on-accent-pink: oklch(15% 0.02 350);
---on-accent-lime: oklch(18% 0.02 130);
---on-accent-orange: oklch(16% 0.03 55);
---on-accent-purple: oklch(15% 0.02 300);
---on-accent-blue: oklch(14% 0.03 250);
---on-accent-yellow: oklch(18% 0.03 95);
---on-accent-positive: oklch(18% 0.02 130);
 --on-accent-danger: oklch(97% 0.01 25);
+--field-border: oklch(63% 0.07 262.5);
+--focus-ring: var(--album-yellow);
+--wayfinding: var(--album-yellow);
 
-/* Alias con los nombres del canvas F0: existen para que copiar del canvas
-   funcione, pero en código nuevo se usan los nombres de arriba. */
---bg: var(--surface-base);
---surface: var(--surface-default);
---surface-2: var(--surface-elevated);
---stroke: var(--surface-border);
---text: var(--text-primary);
---muted: var(--text-tertiary);
---pink: var(--accent-pink);
---lime: var(--accent-lime);
---orange: var(--accent-orange);
---purple: var(--accent-purple);
---blue: var(--accent-blue);
---yellow: var(--accent-yellow);
+/* Piezas del álbum */
+--cromo-border: var(--album-white);
+--cromo-back: oklch(93% 0.02 237);
+--button-secondary-bg: var(--surface-elevated);
+--button-secondary-fg: var(--text-primary);
+
+/* Acentos heredados: ya apuntan a las tintas (sin violeta) */
+--accent-lime: var(--album-yellow);
+--accent-purple: var(--album-cyan);
+--accent-orange: var(--format-book);
+--accent-blue: var(--format-tv);
+--accent-yellow: var(--album-yellow);
 ```
 
-`tests/unit/design/diseno-doc.test.ts` comprueba que este bloque y la tabla
-del final coinciden con `globals.css`, y que ningún `var(--x)` de `src`
-apunta a un token inexistente (así se rompieron los avatares de la landing:
-`var(--pink)` no existía).
+Además: `--slot-line` (contorno del hueco: blanco al 28 % de noche, marino
+al 40 % en papel), `--shadow-lift` (la única sombra), los `--format-*-ink`
+del resto de formatos (de noche = el color base) y los alias del canvas F0
+(`--bg`, `--surface-2`, `--pink`…), que siguen existiendo para que el código
+viejo pinte.
 
-### Opacidad
+### Papel (`.theme-paper`)
 
-Los colores del tema admiten modificador de opacidad: `bg-surface-default/80`,
-`border-accent-danger/30`, `ring-accent-pink/40`. Tailwind los genera con
-`color-mix(in oklch, var(--token) 80%, transparent)` (Chrome 111, Safari 16.2,
-Firefox 113: en iOS 15.4-16.1 esas clases no se pintan; asumido). Antes los colores eran
-`var(--x)` a secas y esas clases **no generaban regla** (bordes gris claro,
-anillos azules por defecto). `tests/unit/design/tailwind-alpha.test.ts` compila
-Tailwind y falla si una clase `/<alfa>` usada en `src` no genera regla.
+```css
+.theme-paper {
+  --surface-base: var(--album-white);
+  --surface-default: var(--album-white);
+  --surface-elevated: oklch(96.5% 0.018 237);
+  --surface-border: oklch(86% 0.04 250);
+  --text-primary: var(--album-navy);
+  --text-secondary: oklch(40% 0.1 262.5);
+  --text-tertiary: oklch(47% 0.09 262.5);
+  --field-border: oklch(55% 0.09 262.5);
+  --focus-ring: var(--album-navy);
+  --wayfinding: var(--album-navy);
+  --button-secondary-bg: var(--album-white);
+  --button-secondary-fg: var(--album-navy);
+  --button-secondary-border: var(--album-navy);
+  /* + positivo, info, error y `--format-*-ink` oscurecidos para texto */
+}
+```
 
-En estilos en línea se usa `src/lib/design/f0-tokens.ts` (`F0.pink`…), que
-apunta a los mismos tokens.
+Campos de color: `AlbumPage tone="cyan"` / `tone="yellow"` (clases
+`paper-cyan` / `paper-yellow`) ponen todo el texto en tinta marina (4,59:1
+sobre cian, 10,65:1 sobre amarillo).
+
+**Portales**: un `Popover`, `Modal` o `Toast` se pinta en `<body>`, fuera de
+`.theme-paper`, así que en una página de papel sale con los tokens de noche.
+Es deliberado (los menús y avisos son la «capa de noche»); si una página
+pública necesita uno en papel, que ponga `theme-paper` en su contenido.
+
+### Contraste (comprobado en `tests/unit/design/contrast.test.ts`)
+
+| Par | Noche | Papel |
+|-----|-------|-------|
+| Texto principal / fondo | 17,5:1 | 13,5:1 |
+| Texto terciario / superficie elevada | 6,3:1 | 6,2:1 |
+| Texto del primario / rosa | 5,4:1 | 5,4:1 |
+| Foco / fondo (no texto, ≥ 3:1) | amarillo 14,6:1 | marino 13,5:1 |
+| Borde de campo / tarjeta (≥ 3:1) | 4,5:1 | 4,9:1 |
+| Rosa (forma del botón) / fondo (≥ 3:1) | 5,3:1 | 3,5:1 |
+
+El rosa `#ff2d8a` con texto blanco da 3,4:1: **el primario lleva texto en
+tinta marina casi negra** (`--album-ink`), no blanco. Los colores de formato
+pasan como texto sobre la noche (película con su variante `-ink`); sobre el
+papel, siempre la variante `-ink`.
 
 ## Tipografía
 
-- Display / títulos: **Bricolage Grotesque** (pesos 500–800; es lo único que
-  se carga, así que un título sin peso explícito se pinta a 500).
-- Cuerpo / UI: **Figtree** (pesos 400–800).
-- Autoalojadas con `next/font/local` en `src/app/fonts/index.ts` (variables
-  `--font-display` y `--font-body`; clases `font-display` y `font-body`).
+- **Display: Lilita One** (`next/font/google`, peso 400, latino + latino
+  extendido; variable `--font-display`, clase `font-display`). Solo
+  titulares, numerales de hueco y de ranking y la nota grande. Nunca texto
+  corrido, etiquetas ni botones. Es de un solo peso: `font-bold` no la
+  engorda (`font-synthesis: none`), así que no hace falta ni sirve.
+- **Texto y UI: Figtree** (400–700, autoalojada; `--font-body`,
+  `font-body`). Cifras tabulares (`tabular-nums`) en progreso, fechas y
+  notas.
+- **Guarda**: por debajo de 18 px (`text-xs`…`text-base`), `font-display`
+  pinta Figtree. Para un numeral pequeño en Lilita, `font-numeral`.
+- **Logotipo**: el wordmark `kultura.` (minúsculas, punto rosa) sigue en
+  Bricolage Grotesque 700, un subconjunto de sus 6 glifos (`font-logo`).
+  La marca no cambia con el sistema.
 
 ### Escala de tamaños (cerrada)
 
-Son los únicos tamaños de texto. `text-[13px]` y compañía no existen (ESLint
-los rechaza): se elige el escalón más cercano. Las páginas públicas usan
-≤ 7 de ellos por página y ancho, también el texto decorativo (números del
-podio, pegatinas); lo cuenta `tests/e2e/a11y/type-scale.spec.ts` en la
-portada y los rankings (el logotipo no cuenta).
+Son los únicos tamaños de texto (`text-[13px]` no existe: ESLint lo rechaza).
+Las páginas públicas usan ≤ 7 por página y ancho
+(`tests/e2e/a11y/type-scale.spec.ts`; el logotipo no cuenta).
 
 <!-- escala:inicio -->
 | Clase | Tamaño | Interlineado | Uso |
 |-------|--------|--------------|-----|
-| `text-xs` | 12px | 16px | Caption: pastillas, etiquetas de la barra inferior, años |
+| `text-xs` | 12px | 16px | Caption: etiquetas de formato, bandas de estado, barra inferior |
 | `text-meta` | 13px | 18px | Metadatos, etiquetas de campo, ayudas |
-| `text-sm` | 14px | 20px | UI general, botones, títulos de tarjeta |
+| `text-sm` | 14px | 20px | UI general, botones, títulos de cromo |
 | `text-body` | 15px | 22px | Cuerpo en escritorio (campos desde `md`) |
 | `text-base` | 16px | 24px | Cuerpo; campos en móvil (iOS no hace zoom) |
-| `text-lg` | 18px | 26px | Entradillas |
-| `text-xl` | 20px | 28px | Título de sección pequeña |
-| `text-2xl` | 24px | 30px | h3 / h1 en móvil |
+| `text-lg` | 18px | 26px | Entradillas; número del hueco (Lilita) |
+| `text-xl` | 20px | 28px | Título de sección pequeña, título de modal |
+| `text-2xl` | 24px | 30px | h3 / h1 en móvil, número de caja mediana |
 | `text-3xl` | 32px | 1.15 | h2 / h1 de página en móvil |
-| `text-4xl` | 40px | 1.1 | h1 de página (`PageHeading` desde `md`) |
+| `text-4xl` | 40px | 1.1 | h1 de página (`PageHeading` desde `md`), número grande |
 | `text-5xl` | 48px | 1 | h1 de los legales en escritorio |
 | `text-6xl` | 60px | 1 | h2 de la portada, número del podio |
-| `text-7xl` | 72px | 1 | 404, número del podio |
-| `text-8xl` | 96px | 1 | Número #1 del podio de rankings |
+| `text-7xl` | 72px | 1 | 404, número del podio (`NumberBadge size="xl"`) |
+| `text-8xl` | 96px | 1 | Número 1 del podio de rankings |
 | `text-display` | clamp(3.25rem, 5.4vw, 5.75rem) | 1 | h1 de la portada |
 <!-- escala:fin -->
 
 ## Radios (cerrados: 4 + píldora)
 
+Materia impresa: esquinas nítidas. Los nombres viejos se conservan con el
+valor nuevo para que el código existente no cambie.
+
 <!-- radios:inicio -->
 | Clase | Radio | Uso |
 |-------|-------|-----|
-| `rounded-lg` | 8px | Controles pequeños, miniaturas (≤ 64 px), contorno de foco de los enlaces, esquina «de bocadillo» |
-| `rounded-2xl` | 16px | **Póster** y tarjetas, campos de formulario, filas, menús, avisos |
-| `rounded-bento` | 20px | Contenedores: bloques, secciones, tarjetas de lista |
-| `rounded-bento-xl` | 32px | Héroe, modales, tarjeta de acceso, CTA del perfil, banda del perfil |
-| `rounded-full` / `rounded-pill` / `rounded-button` | 9999px | Píldoras, chips, botones, avatares redondos |
+| `rounded-cromo` | 4px | Cromo, hueco, caja de número, miniaturas, esqueletos de portada |
+| `rounded-lg` / `rounded-2xl` / `rounded-button` | 8px | Botones, campos, filas, menús, tarjetas, avisos |
+| `rounded-bento` | 12px | Contenedores: bloques, secciones, tarjetas de lista |
+| `rounded-bento-xl` | 16px | Modales, héroe, piezas protagonistas |
+| `rounded-full` / `rounded-pill` | 9999px | Chips, avatares, puntos de formato |
 <!-- radios:fin -->
 
-Formas compuestas con esos mismos valores: avatar de perfil
-`rounded-bento-xl rounded-bl-lg` (32/32/32/8), avatar de grupo
-`rounded-2xl rounded-bl-lg` (16/16/16/8). Los alias viejos (`rounded`,
-`rounded-xl`, `rounded-card`, `rounded-20`) ya no existen: ESLint y
-`tests/unit/visual/scales.test.ts` vigilan todo `src`, sin excepciones.
-
-## Sombras (cerradas)
+## Sombras (ninguna en reposo)
 
 <!-- sombras:inicio -->
 | Clase | Valor | Uso |
 |-------|-------|-----|
-| `shadow-hard` | `10px 10px 0 var(--surface-elevated)` | Pieza protagonista (héroe, tarjeta de acceso, CTA) desde `md` |
-| `shadow-hard-sm` | `6px 6px 0 var(--surface-elevated)` | La misma en móvil (con 16 px de margen, 10 px se comían el margen derecho) |
-| `shadow-sticker` | `4px 4px 0 oklch(0% 0 0 / 0.4)` | Pegatinas y badges colgantes |
-| `shadow-soft` | `0 2px 8px oklch(0% 0 0 / 0.15)` | Menús, popovers, avisos flotantes |
+| `shadow-lift` | `var(--shadow-lift)` | La única: un cromo mientras se mueve (hover, arrastre, pegado) |
+| `shadow-soft` | `var(--shadow-lift)` | La misma, para un menú o popover ABIERTO |
+| `shadow-hard` | `none` | Retirada (compila, no pinta) |
+| `shadow-hard-sm` | `none` | Retirada (compila, no pinta) |
+| `shadow-sticker` | `none` | Retirada (compila, no pinta) |
 <!-- sombras:fin -->
 
-En estilos en línea (las piezas de la landing) se usa `STICKER_SHADOW` de
-`PosterTile.tsx`, con el mismo valor que `shadow-sticker`.
+`--shadow-lift` = `0 10px 24px -8px oklch(12% 0.05 262.5 / 0.55)`: corta y
+suave, con desplazamiento. Nada de halos de color ni sombras duras.
 
 ## Retícula (única)
 
-Todas las páginas con cabecera usan el componente **`page-grid`**
-(`tailwind.config.ts`): ancho máximo 72rem (`max-w-6xl`), centrado, con
-**16 px** de margen lateral en móvil y **32 px** desde `md`. Lo llevan la
-cabecera pública y la de la app, el pie y el `<main>` de cada página, así que
-el logo, el h1 y el contenido empiezan en el mismo borde izquierdo (a 1440 px,
-x = 176). Las columnas más estrechas (lectura legal a `68ch`, chat, avisos,
-ajustes) van **dentro** de la retícula y alineadas a la izquierda
-(`[&>*]:max-w-2xl` en el `<main>`), nunca centradas aparte. Lo comprueba
-`tests/e2e/a11y/grid.spec.ts` en 7 rutas, junto con 0 desbordes de 320 a
-1440 px.
+Todas las páginas con cabecera usan **`page-grid`** (`tailwind.config.ts`):
+ancho máximo 72rem, centrado, **16 px** de margen lateral en móvil y
+**32 px** desde `md`. La llevan la cabecera pública y la de la app, el pie y
+el `<main>` de cada página. Las columnas estrechas (lectura legal, chat,
+avisos, ajustes) van **dentro**, alineadas a la izquierda
+(`[&>*]:max-w-2xl`), nunca centradas aparte
+(`tests/e2e/a11y/grid.spec.ts`).
 
-## Tarjeta de póster (única)
+En las páginas públicas, `AlbumPage` mete la retícula dentro del campo de
+color y, con `left` y `right`, pinta un **pliego**: dos páginas con el lomo
+en el centro (raya de 2 px) desde `md`, una página cada vez en el móvil.
 
-`src/components/media/PosterFrame.tsx`: 2:3, `rounded-2xl`, el gradiente de
-respaldo con las iniciales SIEMPRE detrás y primero, la portada encima y el
-título como texto **debajo** (nunca encima con velo). La usan `MediaCard`
-(rejillas de Descubrir, Biblioteca, listas, recomendaciones), `MediaRow` y
-`ContinueRow` (Inicio, perfil) y el perfil público. En catálogo, ninguna
-tarjeta sin portada (`requirePoster`); en la biblioteca del usuario sí se
-enseñan (gradiente + título).
+## Componentes del álbum (`src/components/album`)
 
-## Estados de carga
+Sin `"use client"`: sirven en servidor y en cliente. Ningún texto fijo: el
+texto llega por props, traducido con el namespace `album` de
+`messages/{es,en}.json` (`album.format.*`, `album.status.*`, `album.slot`,
+`album.rating`, `album.foil`, `album.folded`, `album.progress`…).
 
-Cada `loading.tsx` de `(app)` copia la forma de lo que sustituye: mismos
-radios, mismos anchos, huecos y rejilla, y las líneas del título debajo del
-póster (`tests/unit/visual/skeletons.test.ts`). El pulso va con
-`motion-safe:animate-pulse`.
+- **`Cromo`** — la portada con borde blanco de 3 px y radio 4 px, 2:3 (o
+  `fill` en una celda bento). El respaldo de color con las iniciales va
+  SIEMPRE detrás y primero (`cromoPlaceholder`, dos paradas del mismo
+  matiz, nunca violeta): si la portada da 404 queda el color, nunca un
+  hueco. Estados: `pasted` (completado, por defecto), `placed` (en curso:
+  `ProgressStrip` al pie en el color del formato), `folded` (abandonado:
+  esquina superior derecha doblada, sigue legible). `foil` = 10/10. Con
+  puntero fino, la esquina se levanta 4° al pasar el ratón por el cromo o
+  por su enlace (`group`) y también al enfocar el enlace con teclado; la
+  sombra `lift` solo mientras está alzado. `paste="in"` / `"out"` reproduce
+  el pegado / despegado. `still` lo deja quieto.
+- **`Slot`** — el hueco numerado (pendiente): 2:3, contorno discontinuo de
+  2 px (`--slot-line`), número arriba a la izquierda en Lilita One con
+  cifras tabulares y el título impreso en pequeño dentro; pestaña de esquina
+  en el color del formato (con `formatLabel` para el lector). Con
+  `children`, el cromo ocupa el hueco. `band` = la `StatusBand` debajo.
+- **`ProgressStrip`** — pista en tinta y relleno del color del formato,
+  crece con `transform` (sin mover la maquetación); `label` para el lector.
+- **`FormatTag`** — punto del color del formato + su nombre (obligatorio).
+- **`StatusBand`** — estado + «hace N días» (`Intl.RelativeTimeFormat`,
+  es/en) en `<time dateTime>`.
+- **`Foil`** — el brillo: banda especular en bucle, solo en cromos 10/10 y en
+  el podio. Es la única animación infinita y se para con movimiento reducido.
+- **`AlbumPage`** — la página impresa (aplica `theme-paper`), tono `white`,
+  `cyan` o `yellow`, una página o un pliego.
+- **`NumberBadge`** — el número en su caja redondeada (Lilita, tabular):
+  tintas `surface`, `white`, `navy` y, en páginas públicas, `yellow` /
+  `cyan`. Tamaños `sm` (hueco) a `xl` (podio).
 
-## Formularios y foco (accesibilidad, WCAG 2.1 AA)
+Estado de biblioteca → forma (`albumShapeFor`, `src/lib/design/album.ts`):
+pendiente = `Slot` vacío; en curso = `Cromo state="placed"`; completado =
+`Cromo` pegado (y `foil` si es 10/10, `isFoil`); abandonado =
+`Cromo state="folded"`, visible y reversible.
 
-El canvas F0 no dibuja campos con error ni foco de teclado legible, así que
-aquí se apartan de él a propósito. Valores comprobados en
-`tests/unit/design/contrast.test.ts`:
+### La tarjeta de catálogo
 
+`PosterFrame` (`src/components/media/PosterFrame.tsx`) conserva su API y ahora
+pinta un `Cromo`, así que `MediaRow`, `ContinueRow`, el perfil y las listas
+públicas ya son cromos sin cambios. `MediaCard` (rejillas de Descubrir,
+Biblioteca, listas, recomendaciones) usa `Cromo` directamente: título y año
+DEBAJO (Figtree 600), la nota en una caja de número sobre la esquina con
+formato del idioma (8,5) y nombre para el lector, el formato como
+`FormatTag` bajo el título (nunca encima de la portada). En catálogo, ninguna
+card sin portada (`requirePoster`); en la biblioteca del usuario sí
+(respaldo + título). `MediaGrid` pega sus cromos una vez al montar.
+
+## Botones y controles (`src/components/ui`)
+
+- **Primario** (`KButton`): rosa sólido, texto en tinta (`--album-ink`),
+  radio 8 px, Figtree 700, 44 px de alto mínimo en pantallas táctiles
+  (`pointer-coarse:h-11`). Uno por pantalla.
+- **Secundario**: de noche, relleno marino un escalón más claro y texto
+  blanco; en papel, blanco con tinta marina y raya de 2 px. Lo deciden los
+  tokens `--button-secondary-*`.
+- **Elegido** (chip de filtro, segmento, pestaña, página actual, idioma): el
+  chip «pegado», en la tinta del texto: `bg-text-primary text-surface-base`
+  (blanco con marino de noche, marino con blanco en papel). Nunca rosa (es
+  acción) ni amarillo de relleno.
+- **Foco**: contorno de 2 px `--focus-ring` con 2 px de separación
+  (`focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus-ring`;
+  en la navegación, `FOCUS_RING` de `nav-shared`). Amarillo de noche, marino
+  en papel. Contorno y no sombra: la sombra se borra en `forced-colors`.
+  `:focus-visible` lleva el mismo contorno por defecto en todo lo demás.
+- **Transiciones**: solo color y transformación
+  (`transition-[color,background-color,border-color,transform]`, o
+  `transition-colors`), nunca `transition-all`.
 - **Campo** (`KInput`, `Select`, `Input`): relleno `--surface-elevated` y
-  **borde de 1 px `--field-border`** (3,65:1 contra la tarjeta, 3,20:1 contra
-  el relleno). Sin borde el campo daba 1,14:1 y en alto contraste de Windows
-  desaparecía.
-- **Foco**: contorno (`outline`) de 2 px `--focus-ring` con 2 px de
-  separación (5,45:1 sobre la tarjeta). No el halo `pink/25 %` del canvas
-  (1,39:1). Contorno y no `box-shadow` porque la sombra se borra en
-  `forced-colors`. Los botones (`KButton`) mantienen su anillo pink de 2 px.
-- **Texto de campo**: 16 px en móvil (`text-base`) y 15 px desde `md`. Con
-  menos de 16 px, Safari de iOS hace zoom al enfocar.
-- **Texto rojo**: siempre `--accent-danger-text` (6,74 / 6,16 / 5,41:1 sobre
-  fondo / tarjeta / campo). `text-accent-danger` y `text-danger` ya apuntan a
-  él desde `tailwind.config.ts`; el rojo base `--accent-danger` (4,05:1 sobre
-  la tarjeta) queda para fondos y bordes.
-- **Botón destructivo**: `bg-accent-danger-solid text-on-accent-danger`
-  (4,94:1).
-- **Error de campo**: borde `--accent-danger`, mensaje con `role="alert"` y
-  el campo con `aria-invalid` + `aria-describedby`.
-- **Avatares de iniciales**: paleta en OKLCH en
-  `src/lib/constants/avatarColors.ts`, cada color con su texto "on-color"
-  (≥ 4,99:1). Nada de iniciales en blanco sobre colores claros.
-- **Selección de texto**: `--accent-pink` al 30 %.
+  borde de 1 px `--field-border`; error con borde `--accent-danger`,
+  mensaje `role="alert"` y `aria-invalid` + `aria-describedby`. 16 px en
+  móvil.
+- **Cifras**: nota con `formatScore` (8,5 / 8.5), recuentos con
+  `formatCount` (1.234), fechas relativas con `formatSince`
+  (`src/lib/design/format.ts`). Nunca `toFixed` ni `{n && …}` en JSX.
 
-## Componentes base (no reinventar)
+## La app de noche (`src/components/layout`)
 
-- **Logo** (`src/components/layout/Logo.tsx`, es el que manda): icono SVG de
-  24×24 de diseño, escalado al `size` pedido: badge `--surface-elevated` con
-  radio 7,5/24 y 3 rectángulos redondeados rotados en cascada (pink `-10deg`,
-  lime `6deg`, purple `-4deg`). Wordmark "kultura" en display **700**
-  (`font-bold`), `tracking-tight`, a `0,78 × size`, que no se parte nunca
-  (`whitespace-nowrap`), con un cuadradito **lime** de `0,15 × size` rotado
-  `14deg` al final. El canvas F0 tenía el wordmark a 800 y el cuadrado pink;
-  la versión del código es la decidida (D-19) y solo cambia si Víctor lo pide.
-- **Cabecera pública** (`Header.tsx`: landing, rankings, perfil público,
-  legales): opaca `--surface-default` con borde inferior `--surface-border`,
-  56 px de alto, logo de 24 px y los botones "Iniciar sesión" (secundario) +
-  "Registrarse" (primario). En móvil los botones son compactos (36 px) y por
-  debajo de 360 px "Iniciar sesión" se acorta a "Entra" para que quepa en
-  320 px sin scroll horizontal.
-- **Header** (todas las pantallas autenticadas, `AuthHeader.tsx`): mismo
-  fondo opaco y 56 px. **Canvas F0**: logo a la izquierda (+ chip opcional,
-  p. ej. racha), y a la derecha SOLO icono de búsqueda (caja `44×44`
-  `border-radius:16px` fondo `--surface-2`) + avatar cuadrado `44×44`
-  `border-radius:16px 16px 16px 4px` gradiente `135deg` pink→purple con
-  iniciales, sin barra de enlaces. **Estado actual del código**: lleva 8
-  enlaces de navegación (`NavLinks`), campana de 32 px y no tiene caja de
-  búsqueda; es deuda conocida (frente de navegación), no un patrón a copiar.
-- **Chips**: `border-radius:999px`, `font-weight:700`, `padding` variable
-  (8–20px según contexto). Activo = fondo de color vivo + texto "on-color"
-  correspondiente. Inactivo = fondo `--surface-2` + texto `--text`. Chip
-  "outline" = transparente + `border:2px solid var(--stroke)`.
-- **Botones pill**: primario = fondo pink + texto on-pink, `font-weight:800`.
-  Secundario = borde `2px solid var(--stroke)`, `font-weight:700`,
-  transparente. **El canvas lo confirma sin ambigüedad** (E-BOTON-PINK): los
-  13 pills de ACCIÓN de las 17 pantallas son pink, sin excepción. Los pills
-  lime que hay en el canvas NO son botones: son los badges de match, retirados
-  de la UI (E-MATCH-SIN-BADGE). Contarlos como botones hacía parecer que el
-  criterio estaba empatado 14-13 y no lo está.
-- **Posters / cards sin imagen real**: gradiente de dos paradas
-  `linear-gradient(150–160deg, oklch(L1% C1 H), oklch(L2% C2 H))` con el
-  mismo matiz (H) en ambas paradas y L2/C2 más bajos (más oscuro/apagado).
-  Nunca gris plano ni foto placeholder, siempre bloques de color vivo.
-- **Cards "feature" grandes**: además del gradiente lineal, un
-  `radial-gradient` de acento en la esquina superior-izquierda
-  (`120% 100% at 20% 10%`, color al 55-60% de opacidad, difuminando a
-  transparente a 55%).
-- **Badge colgante (pegatina)**: pill `--lime` + texto on-lime,
-  `font-weight:800`. Versión "colgante" (esquina de poster): offset
-  `top:-14px; left:-14px`, `rotate(-8deg)`,
-  `shadow-sticker` (`4px 4px 0` negro al 40 %), sombra dura tipo pegatina, no
-  blur. **E-MATCH-SIN-BADGE:** nació como "badge de match" y ya NO se usa
-  para porcentajes de afinidad (retirados de toda la UI a petición del
-  usuario). El primitivo sigue vivo para etiquetas de texto real
-  ("Continuando" en el hero de Inicio, "7 formatos culturales" en la
-  landing). No reintroducir un `%` aquí sin decisión expresa.
-- **Rotación de cards**: en grids tipo bento, las cards destacadas llevan
-  una rotación sutil (`-1.2deg` / `1deg`), no todo el grid, solo las
-  piezas grandes, y alternando signo.
-- **Avatares circulares con actividad** (stories): anillo `conic-gradient`
-  de 2-3 colores de la paleta, padding `3px`, círculo interior fondo
-  `--bg` con iniciales.
-- **Avatares apilados** (amigos que vieron algo): círculo con
-  `linear-gradient(135deg, colorA, colorB)`, borde `2px solid var(--bg)`,
-  solapados con `margin-left` negativo (~`-12px`).
-- **Burbujas de chat**: entrante = `bg-surface-elevated`,
-  `rounded-bento rounded-bl-lg` (20/20/20/8). Saliente = `bg-accent-pink`
-  + `text-on-accent-pink`, `rounded-bento rounded-br-lg` (20/20/8/20). El
-  canvas usaba 4 px en la esquina de la cola; se redondea al radio pequeño
-  del set.
+Cabecera, barra inferior y pie sobre el fondo (`--surface-base`) con raya de
+2 px `--surface-border`. El destino activo lleva la **banda de orientación**:
+raya amarilla de 3 px al pie (cabecera, `WAYFINDING_BAND`) o arriba (barra
+inferior), con el texto en tinta principal. El contador de avisos es la
+única pieza rosa de la cabecera. Logotipo `kultura.` con el punto rosa; el
+monograma, tres cromos en rosa, amarillo y cian sobre la superficie elevada.
 
-## Principio de extensión a pantallas nuevas
+## Movimiento (`src/lib/motion`)
 
-Cuando una pantalla no tiene equivalente literal en F0 (todo excepto
-Home/Discover/MediaDetail), se construye combinando ÚNICAMENTE los
-primitivos de arriba: mismo header, mismos chips, mismos pills, misma
-fórmula de gradiente para posters, los radios del set (8/16/20/32 según
-jerarquía del elemento), la retícula `page-grid` y `gap:20px` (`gap-5`)
-entre cards de una fila. No se añade una paleta,
-tipografía, sombra o forma de card que no exista ya en F0. Si algo no
-está claro, replicar el patrón más parecido que sí exista antes de
-inventar uno.
+- Duraciones **180 / 240 / 360 ms** (`duration-fast` / `-base` / `-slow`) y
+  cambio de ruta **200 ms** (`duration-route`, `animate-route`).
+- Curvas: `ease-out` = `cubic-bezier(.2,.8,.2,1)`; `ease-paste` =
+  `cubic-bezier(.3,1.3,.5,1)` (el cromo cae con un pequeño rebote y se
+  asienta; `animate-paste`, y `animate-unpaste` en 180 ms).
+- Con `prefers-reduced-motion`: todo instantáneo y el brillo parado.
+- Dentro de la app **nada va ligado al scroll**. En las páginas públicas, un
+  pegado escalonado por rejilla la primera vez que entra en pantalla.
+- **GSAP** (`gsap@3.15.0`) solo para secuencias orquestadas y SIEMPRE con
+  import dinámico, nunca en el layout: el JS inicial de cada ruta sigue en
+  ≤ 150 KB. Ayudas: `prefersReducedMotion()`, `loadGsap()` (import
+  memorizado), `pasteGrid(elementos)` (una vez, 40 ms por cromo, ≤ 600 ms
+  en total, parte de un estado visible, nada con movimiento reducido),
+  `pasteSchedule(n)` y el hook `usePasteGrid(ref, { trigger })` (`mount` en
+  la app, `enter` en público). Para un hover o un pegado suelto, CSS.
+- Prohibido: confeti, medallas, rachas, sonidos, contadores que suben,
+  rebotes en bucle, scroll secuestrado, carruseles automáticos, parallax en
+  texto, cargas con porcentaje, cursores propios, halos, cualquier entrada
+  de más de 600 ms.
 
-## Arbol de decisión: "¿Dudo de cómo diseñar/codificar algo?"
+## Principio de extensión
 
-1. **¿Existe en F0 v2 (Home/Discover/MediaDetail)?** → Usa exactamente eso.
-   Copia el HTML, los valores de CSS, los radios, los espacios. Zero
-   variación.
-2. **¿No existe en F0, pero existe un patrón análogo?** → Replica el patrón
-   exacto (mismo radio, misma fórmula de gradiente, misma sombra, mismo
-   peso). Cambiar solo lo que deba ser diferente semánticamente (p. ej.
-   color de fondo si es un chip "inactivo" vs uno "activo", pero mismo
-   radio 999px). Ejemplo: "Discover" tiene cards en bento rotadas;
-   "Library" necesita grid de tarjetas → mismo radio de card, misma
-   formula de rotación (±1deg), misma sombra, solo diferente fondo si el
-   contexto lo exige.
-3. **¿No existe patrón parecido en F0?** → NO inventar nada. Escalona hacia
-   arriba: busca en las 17 pantallas del canvas derivado cómo se resolvió
-   un problema similar. Si tampoco existe, pregunta, no es un caso que
-   F0 contemple aún, y así lo anotamos para futuras iteraciones.
-
-**Nunca, bajo ninguna circunstancia:**
-- Usar un radio que no esté en el set de [Radios](#radios-cerrados-4--píldora)
-  (8, 16, 20, 32 y píldora). Redondear al más cercano; un radio nuevo se
-  añade aquí y en `tailwind.config.ts` antes que en ningún componente.
-- Usar un tamaño de texto fuera de la [escala](#escala-de-tamaños-cerrada).
-- Crear una sombra nueva: solo las cuatro de [Sombras](#sombras-cerradas) o
-  ninguna.
-- Centrar un contenedor de página por su cuenta (`max-w-* mx-auto px-*`): va
-  dentro de `page-grid`.
-- Mezclar hex con OKLCH. Si necesitas un color intermedio, calcula en OKLCH.
-  No approximar valores OKLCH a hex "por conveniencia".
-- Inventar un componente nuevo (p. ej. "card deslizable", "modal con backdrop
-  custom"). Si se necesita, combina componentes existentes, card + backdrop
-  estándar, etc.
-- Cambiar la tipografía (Bricolage/Figtree) ni los pesos. Si necesitas enfasis,
-  usa 700 en lugar de 500, o 800 en lugar de 700, mismo juego de fuentes.
-
-## Paleta de espacios y medidas (literales de F0)
-
-Usar SIEMPRE estos valores, no añadir nuevos:
-- **Margen lateral de página**: el de `page-grid` (16 px en móvil, 32 px desde
-  `md`). Dentro de tarjetas y secciones: `28px` (`p-7`) × `28px–56px`
-  (vertical, según altura de sección).
-- **Gap entre cards en fila**: `20px`.
-- **Tamaño de card "standar"** en scroll horizontal: `220px`.
-- **Tamaño de avatar**: `44×44` (header), `36×36` (listas), `24×24` (inline).
-- **Radio de card estándar**: `16px` (`rounded-2xl`); contenedores `20px`
-  (`rounded-bento`); héroes y modales `32px` (`rounded-bento-xl`).
-- **Tamaño de icono en búsqueda**: caja `44×44` con radio `16px`.
-
-No hagas cards de `180px`, `250px`, `300px`, etc., el set de tamaños es cerrado.
-
-## Checklist de validación antes de implementar una pantalla
-
-Antes de tocar código (React/Tailwind), revisar:
-
-- [ ] ¿Existe un mockup en "Kultura Editorial" (F0 v2) o "Kultura, Diseño
-      Completo" (canvas derivado)? Si sí, visualizarlo primero.
-- [ ] Identificar cada componente usado: ¿header?, ¿cards?, ¿chips?, ¿pills
-      de botón?, ¿avatar?, ¿gradiente poster?
-- [ ] Para cada componente, confirmar: color (token OKLCH exacto), radio
-      (del set cerrado), tamaño, sombra (del set cerrado o ninguna).
-- [ ] ¿Hay algún elemento que no esté en este documento? Si sí, buscar en
-      el canvas derivado. Si tampoco, documentarlo como "patrón nuevo por
-      resolver" y no seguir adelante sin input del usuario.
-- [ ] ¿Usas todo CSS puro + Tailwind (clases)? No meter JS especial de
-      estilos inline si no es estrictamente necesario. Los radios, sombras,
-      colores deben salir de `globals.css` + clases de Tailwind.
-
-## Guía de migración de componentes (diseño → código)
-
-### Fase 1: Inventario (no tocar código aún)
-1. Abre el mockup de la pantalla en el canvas derivado.
-2. Lista cada "elemento visual": header, hero, card, badge, chip, etc.
-3. Para cada uno, anota: nombre del componente, tokens usados, medidas,
-   propiedades especiales (rotación, sombra, gradiente).
-4. Compara con el componente React existente en `/src/components`.
-   - ¿Ya existe con el nombre correcto? (p. ej. `<MediaCard>`)
-   - ¿Su prop API es compatible con lo que el mockup necesita?
-   - ¿Está usando los tokens OKLCH correctos, o todavía usa hex viejo?
-
-### Fase 2: Actualización progresiva
-Si el componente existe pero usa tokens viejos:
-1. Reemplaza el color hardcoded por `var(--nombre-token-oklch)`.
-2. Ajusta radios si no están en el set válido.
-3. Actualiza sombras si no son del set cerrado.
-4. No refactorices lógica de negocio, solo estilos.
-5. Corre tests unitarios del componente. ✓
-
-Si el componente no existe:
-1. Crea uno nuevo basado en el patrón más cercano que SÍ exista.
-2. Ejemplo: necesitas `<StoryAvatar>` con anillo conic-gradient
-   → consulta cómo `<Avatar>` hace gradiente y amplía con parámetros
-   de colores adicionales para el anillo.
-3. No inventes estructura HTML nueva si puedes reutilizar `<div>` +
-   Tailwind.
-
-### Fase 3: Integración en pantalla
-1. Importa componentes ya migrads. Ejemplo: `import { MediaCard } from
-   "@/components/MediaCard"`.
-2. En la pantalla (p. ej. `Home.tsx`), construye el layout con esos
-   componentes, usando espacios del set cerrado (`gap-5` para 20px,
-   `p-7` para 28px en Tailwind, o ajustar config).
-3. Compara visual: ¿matches el mockup?
-4. Corre tests de la pantalla + `npx tsc --noEmit`.
-5. Push cuando esté verde.
+Ante una pantalla nueva, se construye con estas piezas: `page-grid`,
+`AlbumPage` (público) o el fondo de noche (app), `Slot` / `Cromo` /
+`NumberBadge` / `StatusBand` para los títulos, `KButton` y los controles de
+`ui`, los radios y la escala de arriba. Si algo no está aquí, se replica el
+patrón más parecido que exista; no se inventa paleta, sombra ni radio.
 
 ## Referencia: tokens OKLCH → hex sRGB
 
-Los valores OKLCH son autoridad: en código se usa siempre el token. El hex es
-la conversión **exacta** a sRGB (la misma que pinta Chrome, recortando al gamut
-sRGB), para lo que no entiende OKLCH: `theme_color` del manifest, imágenes OG,
-correos, herramientas de contraste. No es una aproximación: si cambia un token,
-esta tabla se actualiza (`tests/unit/design/diseno-doc.test.ts` falla si no
-coincide). La conversión está en `src/lib/design/color.ts`.
+El OKLCH manda; el hex es su conversión **exacta** a sRGB (la que pinta
+Chrome, recortando al gamut), para lo que no entiende OKLCH: `theme_color`,
+imágenes OG, correos. `tests/unit/design/diseno-doc.test.ts` falla si no
+coincide. La conversión está en `src/lib/design/color.ts`. Valores de noche
+(`:root`).
 
-| Token | Alias F0 | OKLCH | Hex sRGB | Uso |
-|-------|----------|-------|----------|-----|
-| `--surface-base` | `--bg` | `oklch(16% 0.015 280)` | `#0c0d14` | Fondo de página |
-| `--surface-default` | `--surface` | `oklch(21% 0.02 280)` | `#161721` | Tarjetas, cabeceras |
-| `--surface-elevated` | `--surface-2` | `oklch(26% 0.025 280)` | `#212330` | Chip inactivo, relleno de campo, caja de icono |
-| `--surface-border` | `--stroke` | `oklch(32% 0.025 280)` | `#303240` | Borde decorativo, botón secundario |
-| `--text-primary` | `--text` | `oklch(97% 0.004 280)` | `#f4f5f8` | Texto principal |
-| `--text-secondary` | — | `oklch(76% 0.02 280)` | `#aeb0be` | Texto secundario |
-| `--text-tertiary` | `--muted` | `oklch(68% 0.02 280)` | `#9597a5` | Texto terciario, etiquetas |
-| `--accent-pink` | `--pink` | `oklch(68% 0.24 350)` | `#fb40ad` | Acento primario, botón primario, foco |
-| `--accent-lime` | `--lime` | `oklch(83% 0.24 130)` | `#91e300` | Pegatinas, logotipo |
-| `--accent-orange` | `--orange` | `oklch(72% 0.19 55)` | `#fb7c00` | Acento cálido |
-| `--accent-purple` | `--purple` | `oklch(62% 0.19 300)` | `#9964e5` | Acento alternativo |
-| `--accent-blue` | `--blue` | `oklch(68% 0.16 250)` | `#3b9cf6` | Acento frío |
-| `--accent-yellow` | `--yellow` | `oklch(85% 0.17 95)` | `#f1cb1c` | Acento de alerta |
-| `--accent-positive` | — | `oklch(83% 0.24 130)` | `#91e300` | Estado positivo (= lime) |
-| `--accent-highlight` | — | `oklch(85% 0.17 95)` | `#f1cb1c` | Nota, destacado (= yellow) |
-| `--accent-info` | — | `oklch(68% 0.16 250)` | `#3b9cf6` | Información, enlaces (= blue) |
-| `--accent-danger` | — | `oklch(60% 0.21 25)` | `#e23439` | Rojo: fondos y bordes de error |
-| `--accent-danger-text` | — | `oklch(70% 0.17 25)` | `#f66d67` | Rojo: TODO texto de error (`text-accent-danger`) |
+| Token | Alias | OKLCH | Hex sRGB | Uso |
+|-------|-------|-------|----------|-----|
+| `--album-cyan` | — | `oklch(66.9% 0.147 237.2)` | `#00a0e3` | Cian de imprenta (campos públicos, orientación) |
+| `--album-yellow` | — | `oklch(91.7% 0.192 101.4)` | `#ffe600` | Amarillo (campos públicos, foco y banda de noche) |
+| `--album-navy` | — | `oklch(30.9% 0.119 262.5)` | `#0b2a6b` | Tinta marina (texto en papel) |
+| `--album-white` | — | `oklch(100% 0 0)` | `#ffffff` | Página, borde del cromo |
+| `--album-pink` | — | `oklch(66.2% 0.246 0.9)` | `#ff2d8a` | La acción |
+| `--album-ink` | — | `oklch(18% 0.06 262.5)` | `#04102c` | Texto sobre rosa, amarillo y cian |
+| `--format-movie` | — | `oklch(69.2% 0.22 358.6)` | `#ff4f9a` | Película |
+| `--format-tv` | — | `oklch(72.2% 0.148 252.3)` | `#5aa9ff` | Serie |
+| `--format-anime` | — | `oklch(90% 0.191 123.3)` | `#c6f24e` | Anime |
+| `--format-manga` | — | `oklch(70.9% 0.184 29.1)` | `#ff6b5a` | Manga |
+| `--format-game` | — | `oklch(81.3% 0.125 203.5)` | `#3fd9e6` | Videojuego |
+| `--format-book` | — | `oklch(82.1% 0.149 72.1)` | `#ffb347` | Libro |
+| `--format-comic` | — | `oklch(90.7% 0.164 97.2)` | `#ffe04a` | Cómic |
+| `--format-movie-ink` | — | `oklch(72% 0.2 358.6)` | `#ff63a3` | Película como texto de noche |
+| `--surface-base` | `--bg` | `oklch(21% 0.068 262.5)` | `#061637` | Fondo de noche |
+| `--surface-default` | `--surface` | `oklch(25.5% 0.08 262.5)` | `#0c2049` | Huecos, tarjetas |
+| `--surface-elevated` | `--surface-2` | `oklch(30.5% 0.09 262.5)` | `#152c5c` | Secundario, campo, banda de estado |
+| `--surface-border` | `--stroke` | `oklch(38% 0.09 262.5)` | `#274172` | Rayas de 2 px, hover del secundario |
+| `--text-primary` | `--text` | `oklch(98% 0.006 262.5)` | `#f6f8fd` | Texto principal |
+| `--text-secondary` | — | `oklch(86% 0.035 262.5)` | `#c5d2e9` | Texto secundario |
+| `--text-tertiary` | `--muted` | `oklch(76% 0.05 262.5)` | `#a0b2d2` | Texto terciario, fechas |
+| `--accent-pink` | `--pink` | `oklch(66.2% 0.246 0.9)` | `#ff2d8a` | Botón primario |
+| `--accent-pink-hover` | — | `oklch(71% 0.22 0.9)` | `#ff559a` | Primario al pasar el ratón |
+| `--accent-lime` | `--lime` | `oklch(91.7% 0.192 101.4)` | `#ffe600` | Heredado (= amarillo) |
+| `--accent-orange` | `--orange` | `oklch(82.1% 0.149 72.1)` | `#ffb347` | Heredado (= libro) |
+| `--accent-purple` | `--purple` | `oklch(66.9% 0.147 237.2)` | `#00a0e3` | Heredado (= cian; no hay violeta) |
+| `--accent-blue` | `--blue` | `oklch(72.2% 0.148 252.3)` | `#5aa9ff` | Heredado (= serie) |
+| `--accent-yellow` | `--yellow` | `oklch(91.7% 0.192 101.4)` | `#ffe600` | Heredado (= amarillo) |
+| `--accent-positive` | — | `oklch(80% 0.17 150)` | `#5edb81` | Estado positivo |
+| `--accent-highlight` | — | `oklch(91.7% 0.192 101.4)` | `#ffe600` | Nota, destacado |
+| `--accent-info` | — | `oklch(72.2% 0.148 252.3)` | `#5aa9ff` | Información, enlaces |
+| `--accent-danger` | — | `oklch(62% 0.21 25)` | `#ea3c3f` | Rojo: fondos y bordes de error |
+| `--accent-danger-text` | — | `oklch(74% 0.16 25)` | `#ff7e76` | Rojo: texto de error |
 | `--accent-danger-solid` | — | `oklch(55% 0.21 25)` | `#d01c29` | Rojo: botón destructivo |
-| `--field-border` | — | `oklch(55% 0.02 280)` | `#6f717d` | Borde de campo de formulario |
-| `--focus-ring` | — | `oklch(68% 0.24 350)` | `#fb40ad` | Contorno de foco (= pink) |
-| `--on-accent-pink` | — | `oklch(15% 0.02 350)` | `#12080c` | Texto sobre pink |
-| `--on-accent-lime` | — | `oklch(18% 0.02 130)` | `#0f130a` | Texto sobre lime |
-| `--on-accent-purple` | — | `oklch(15% 0.02 300)` | `#0c0912` | Texto sobre purple |
-| `--on-accent-orange` | — | `oklch(16% 0.03 55)` | `#170902` | Texto sobre orange |
-| `--on-accent-blue` | — | `oklch(14% 0.03 250)` | `#020a15` | Texto sobre blue |
-| `--on-accent-yellow` | — | `oklch(18% 0.03 95)` | `#161103` | Texto sobre yellow |
 | `--on-accent-danger` | — | `oklch(97% 0.01 25)` | `#fcf3f2` | Texto sobre rojo sólido |
+| `--field-border` | — | `oklch(63% 0.07 262.5)` | `#7289b4` | Borde de campo |
+| `--focus-ring` | — | `oklch(91.7% 0.192 101.4)` | `#ffe600` | Foco de noche (= amarillo) |
+| `--on-accent-pink` | — | `oklch(18% 0.06 262.5)` | `#04102c` | Texto sobre rosa |
+| `--cromo-back` | — | `oklch(93% 0.02 237)` | `#dceaf4` | Dorso del cromo (esquina doblada) |
 
-`--accent-orange` cae un poco fuera de sRGB; el hex es el recortado, que es lo
-que se ve en pantallas sRGB.
+En papel, los hex principales: fondo `#ffffff`, texto `#0b2a6b`, secundario
+`#29457d`, terciario `#3f5a8d`, superficie elevada `#e9f6fe`, borde
+`#bed4eb`, borde de campo `#5571a6`, foco `#0b2a6b`.

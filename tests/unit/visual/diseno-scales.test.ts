@@ -40,12 +40,12 @@ describe("DISENO.md describe los sets cerrados del config", () => {
   it("radios: cada valor del set está documentado con su clase", () => {
     const radii = config.theme!.borderRadius as Record<string, string>;
     const documented = new Map(table("radios").flatMap(([classes, value]) => classes.map((c) => [c, value] as const)));
-    const canonical = ["lg", "2xl", "bento", "bento-xl", "full", "pill", "button"];
+    const canonical = ["cromo", "lg", "2xl", "bento", "bento-xl", "full", "pill", "button"];
     for (const key of canonical) expect(documented.get(`rounded-${key}`)).toBe(radii[key]);
     expect(documented.size).toBe(canonical.length);
   });
 
-  it("sombras: las cuatro del config, con el mismo valor", () => {
+  it("sombras: las del config, con el mismo valor", () => {
     const shadows = config.theme!.boxShadow as Record<string, string>;
     const rows = table("sombras");
     expect(rows.map(([[cls]]) => cls).sort()).toEqual(
@@ -58,6 +58,7 @@ describe("DISENO.md describe los sets cerrados del config", () => {
     expect(DOC).toMatch(/## Retícula/);
     expect(DOC).toContain("page-grid");
     expect(DOC).toContain("PosterFrame");
+    expect(DOC).toContain("Cromo");
   });
 
   it("enlaza la guía de voz", () => {
