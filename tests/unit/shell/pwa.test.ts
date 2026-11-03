@@ -29,15 +29,15 @@ describe("MOV-1 — PWA instalable", () => {
       start_url: "/es",
       scope: "/",
       display: "standalone",
-      theme_color: "#0c0d14",
-      background_color: "#0c0d14",
+      theme_color: "#061637",
+      background_color: "#061637",
       lang: "es",
       description: es.meta.description,
     });
   });
 
   it("el color de la barra del navegador es el mismo que el del manifest", () => {
-    expect(SURFACE_BASE_HEX).toBe("#0c0d14");
+    expect(SURFACE_BASE_HEX).toBe("#061637");
     expect(SHELL_VIEWPORT.themeColor).toBe(m.theme_color);
   });
 

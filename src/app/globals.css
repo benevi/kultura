@@ -3,90 +3,113 @@
 @tailwind utilities;
 
 :root {
-  /* ─── KULTURA Design System — modo oscuro (canónico) ───
-     Tokens OKLCH tomados literalmente del canvas de diseño F0 v2
-     ("Kultura Editorial" / "Kultura — Diseño completo").
-     Ver DISENO.md → "Sistema de diseño (fuente de verdad)". Los NOMBRES de
-     variable se conservan (compatibilidad con todo el código existente,
-     que ya canaliza colores a través de estos custom properties); lo que
-     cambia es el VALOR, ahora en la misma familia de matiz 280 (neutros)
-     + acentos vivos que usa F0. */
+  /* ─── KULTURA · «Álbum de cromos» ───────────────────────────────────
+     DISENO.md es la guía. La app con sesión es el álbum abierto de noche:
+     fondo azul marino profundo (la tinta de la tapa, nunca negro puro),
+     huecos un escalón más claros y cromos con su borde blanco. Las páginas
+     públicas son las páginas impresas del álbum: envuelven su contenido en
+     `.theme-paper` (o en `AlbumPage`), que redefine estos mismos tokens.
+     Los NOMBRES de variable se conservan: todo el código existente pasa
+     por ellos y se re-viste sin tocarlo. */
 
-  /* Superficies — idénticas a --bg/--surface/--surface-2/--stroke de F0 */
-  --surface-base: oklch(16% 0.015 280);
-  --surface-default: oklch(21% 0.02 280);
-  --surface-elevated: oklch(26% 0.025 280);
-  --surface-border: oklch(32% 0.025 280);
+  /* Tintas del álbum (fijas, iguales de día y de noche) */
+  --album-cyan: oklch(66.9% 0.147 237.2);
+  --album-yellow: oklch(91.7% 0.192 101.4);
+  --album-navy: oklch(30.9% 0.119 262.5);
+  --album-white: oklch(100% 0 0);
+  --album-pink: oklch(66.2% 0.246 0.9);
+  /* Texto sobre las tintas claras (rosa, amarillo, cian): marino casi negro */
+  --album-ink: oklch(18% 0.06 262.5);
 
-  /* Texto — F0 solo define un tono "muted"; text-tertiary lo replica
-     exactamente y text-secondary es un tono intermedio derivado (misma
-     familia de matiz) para la jerarquía de dos niveles que ya usa la UI. */
-  --text-primary: oklch(97% 0.004 280);
-  --text-secondary: oklch(76% 0.02 280);
-  --text-tertiary: oklch(68% 0.02 280);
+  /* Colores de formato: SON DATOS (punto, tira de progreso, pestaña del
+     hueco), siempre junto al nombre del formato. */
+  --format-movie: oklch(69.2% 0.22 358.6);
+  --format-tv: oklch(72.2% 0.148 252.3);
+  --format-anime: oklch(90% 0.191 123.3);
+  --format-manga: oklch(70.9% 0.184 29.1);
+  --format-game: oklch(81.3% 0.125 203.5);
+  --format-book: oklch(82.1% 0.149 72.1);
+  --format-comic: oklch(90.7% 0.164 97.2);
+  /* Variante apta para TEXTO sobre la superficie actual (≥ 4,5:1 también
+     sobre la superficie elevada). De noche, la base salvo película. */
+  --format-movie-ink: oklch(72% 0.2 358.6);
+  --format-tv-ink: var(--format-tv);
+  --format-anime-ink: var(--format-anime);
+  --format-manga-ink: var(--format-manga);
+  --format-game-ink: var(--format-game);
+  --format-book-ink: var(--format-book);
+  --format-comic-ink: var(--format-comic);
 
-  /* Acentos con rol semántico — remapeados a los matices vivos de F0
-     (no quedan colores "propios": cada uno reutiliza un matiz decorativo
-     de F0 con el rol semántico que ya tenía en la app). */
-  --accent-positive: oklch(83% 0.24 130); /* lime F0 — positivo/match, antes verde */
-  --accent-highlight: oklch(85% 0.17 95); /* yellow F0 — rating/premium, antes ámbar */
-  --accent-info: oklch(68% 0.16 250);     /* blue F0 — información/enlaces */
-  --accent-danger: oklch(60% 0.21 25);    /* rojo derivado (mismo matiz que los posters "Past Lives" de F0), F0 no define un rojo propio — SOLO destructivo */
-  /* Variantes accesibles del rojo (ACC-4), mismo matiz 25:
-     - texto rojo: 6,74 / 6,16 / 5,41:1 sobre fondo / tarjeta / campo
-       (el rojo base da 4,43 / 4,05 / 3,56 y no llega a 4,5). Tailwind lo usa
-       para TODO `text-accent-danger`, así que no hay que tocar cada pantalla.
-     - fondo de botón destructivo: 4,94:1 con `--on-accent-danger`. */
-  --accent-danger-text: oklch(70% 0.17 25);
+  /* Superficies de noche */
+  --surface-base: oklch(21% 0.068 262.5);
+  --surface-default: oklch(25.5% 0.08 262.5);
+  --surface-elevated: oklch(30.5% 0.09 262.5);
+  --surface-border: oklch(38% 0.09 262.5);
+
+  /* Texto de noche */
+  --text-primary: oklch(98% 0.006 262.5);
+  --text-secondary: oklch(86% 0.035 262.5);
+  --text-tertiary: oklch(76% 0.05 262.5);
+
+  /* Acentos con rol (estados). El rosa es la ÚNICA acción. */
+  --accent-positive: oklch(80% 0.17 150);
+  --accent-highlight: var(--album-yellow);
+  --accent-info: oklch(72.2% 0.148 252.3);
+  --accent-danger: oklch(62% 0.21 25);
+  --accent-danger-text: oklch(74% 0.16 25);
   --accent-danger-solid: oklch(55% 0.21 25);
 
-  /* Texto sobre acentos — mismo patrón que usa F0 (texto oscuro/saturado a
-     juego con el matiz de fondo, no blanco/negro puro) */
-  --on-accent-positive: oklch(18% 0.02 130);
-  --on-accent-highlight: oklch(18% 0.03 95);
-  --on-accent-info: oklch(14% 0.03 250);
+  /* Texto sobre acentos */
+  --on-accent-positive: var(--album-ink);
+  --on-accent-highlight: var(--album-ink);
+  --on-accent-info: var(--album-ink);
   --on-accent-danger: oklch(97% 0.01 25);
 
-  /* Acentos DECORATIVOS — idénticos a los tokens --pink/--lime/--orange/
-     --purple de F0. Sin rol semántico: mood-chips, stories, logotipo.
-     accent-lime coincide a propósito con accent-positive (en F0 el lime
-     ES el color de "match"/positivo). */
-  --accent-pink: oklch(68% 0.24 350);
-  --accent-lime: oklch(83% 0.24 130);
-  --accent-orange: oklch(72% 0.19 55);
-  --accent-purple: oklch(62% 0.19 300);
-  --accent-blue: oklch(68% 0.16 250);
-  --accent-yellow: oklch(85% 0.17 95);
+  /* Acentos heredados: apuntan a las tintas del álbum. No hay violeta:
+     `--accent-purple` es el cian de imprenta y `--accent-lime`, el amarillo
+     de las pegatinas. En código nuevo, usar `--album-*` o `--format-*`. */
+  --accent-pink: var(--album-pink);
+  --accent-pink-hover: oklch(71% 0.22 0.9);
+  --accent-lime: var(--album-yellow);
+  --accent-orange: var(--format-book);
+  --accent-purple: var(--album-cyan);
+  --accent-blue: var(--format-tv);
+  --accent-yellow: var(--album-yellow);
 
-  /* Texto sobre acentos decorativos (mismo patrón que los semánticos) */
-  --on-accent-pink: oklch(15% 0.02 350);
-  --on-accent-lime: oklch(18% 0.02 130);
-  --on-accent-orange: oklch(16% 0.03 55);
-  --on-accent-purple: oklch(15% 0.02 300);
-  --on-accent-blue: oklch(14% 0.03 250);
-  --on-accent-yellow: oklch(18% 0.03 95);
+  --on-accent-pink: var(--album-ink);
+  --on-accent-lime: var(--album-ink);
+  --on-accent-orange: var(--album-ink);
+  --on-accent-purple: var(--album-ink);
+  --on-accent-blue: var(--album-ink);
+  --on-accent-yellow: var(--album-ink);
 
-  /* ─── Campos de formulario y foco (ACC-3/ACC-4, WCAG 1.4.11) ───
-     El canvas F0 dibuja los campos sin borde, pero un relleno `surface-2`
-     sobre la tarjeta `surface` solo da 1,14:1: el campo no se distingue. El
-     borde de 1 px da 3,65:1 contra la tarjeta y 3,20:1 contra el relleno.
-     El foco es el pink del sistema como contorno de 2 px (5,45 / 4,79:1),
-     no el halo pink al 25 % (1,39:1). */
-  --field-border: oklch(55% 0.02 280);
-  --focus-ring: var(--accent-pink);
+  /* Campos, foco y orientación. De noche el foco y la banda de «estás
+     aquí» son amarillos; en papel, marino. */
+  --field-border: oklch(63% 0.07 262.5);
+  --focus-ring: var(--album-yellow);
+  --wayfinding: var(--album-yellow);
 
-  /* ─── Tokens de movimiento ─── */
-  --duration-fast: 100ms;
-  --duration-base: 150ms;
-  --duration-slow: 250ms;
-  --ease-standard: cubic-bezier(0, 0, 0.2, 1); /* ease-out con suavidad material */
+  /* Piezas del álbum */
+  --cromo-border: var(--album-white);
+  --cromo-back: oklch(93% 0.02 237);
+  --slot-line: oklch(100% 0 0 / 0.28);
+  --button-secondary-bg: var(--surface-elevated);
+  --button-secondary-fg: var(--text-primary);
+  --button-secondary-border: var(--surface-elevated);
 
-  /* ─── Alias con los nombres del canvas F0 (DIS-2, D-19) ───
-     `DISENO.md` y el canvas hablan de `--pink`, `--surface-2`, `--stroke`…
-     Estos alias hacen que copiar un valor del documento funcione en vez de
-     pintar vacío (los avatares de "Conecta con amigos" salían sin color
-     por `var(--pink)`). En código nuevo, preferir los nombres `--accent-*` /
-     `--surface-*` o las clases de Tailwind. */
+  /* Sombra única: solo mientras un cromo se mueve o con un menú abierto */
+  --shadow-lift: 0 10px 24px -8px oklch(12% 0.05 262.5 / 0.55);
+
+  /* ─── Movimiento (180 / 240 / 360 ms; cambio de ruta 200 ms) ─── */
+  --duration-fast: 180ms;
+  --duration-base: 240ms;
+  --duration-slow: 360ms;
+  --duration-route: 200ms;
+  --ease-out: cubic-bezier(0.2, 0.8, 0.2, 1);
+  --ease-paste: cubic-bezier(0.3, 1.3, 0.5, 1);
+  --ease-standard: var(--ease-out);
+
+  /* ─── Alias con los nombres del canvas F0 (DIS-2) ─── */
   --bg: var(--surface-base);
   --surface: var(--surface-default);
   --surface-2: var(--surface-elevated);
@@ -100,7 +123,7 @@
   --blue: var(--accent-blue);
   --yellow: var(--accent-yellow);
 
-  /* ─── Legacy tokens (conservados para compatibilidad con componentes existentes) ─── */
+  /* ─── Legacy tokens (compatibilidad con componentes existentes) ─── */
   --surface2: var(--surface-elevated);
   --surface3: var(--surface-elevated);
   --border-color: var(--surface-border);
@@ -112,6 +135,71 @@
   --warning: var(--accent-highlight);
   --info: var(--accent-info);
   --danger: var(--accent-danger);
+
+  color-scheme: dark;
+}
+
+/* ─── Páginas impresas (portada, rankings, login, perfil y listas públicos,
+   legales). Mismos nombres, valores de papel: blanco, tinta marina, foco
+   marino. Lo aplica `AlbumPage`, o la clase a mano en la raíz de la página.
+   Todo lo que hay dentro (cabecera pública, botones, campos) se re-viste
+   solo. */
+.theme-paper {
+  --surface-base: var(--album-white);
+  --surface-default: var(--album-white);
+  --surface-elevated: oklch(96.5% 0.018 237);
+  --surface-border: oklch(86% 0.04 250);
+
+  --text-primary: var(--album-navy);
+  --text-secondary: oklch(40% 0.1 262.5);
+  --text-tertiary: oklch(47% 0.09 262.5);
+
+  --accent-positive: oklch(52% 0.13 150);
+  --accent-highlight: oklch(50% 0.11 97.2);
+  --accent-info: oklch(50% 0.14 252.3);
+  --accent-danger-text: oklch(50% 0.19 25);
+  --on-accent-positive: var(--album-white);
+  --on-accent-info: var(--album-white);
+
+  --format-movie-ink: oklch(52% 0.2 358.6);
+  --format-tv-ink: oklch(50% 0.14 252.3);
+  --format-anime-ink: oklch(50% 0.13 123.3);
+  --format-manga-ink: oklch(53% 0.18 29.1);
+  --format-game-ink: oklch(50% 0.09 203.5);
+  --format-book-ink: oklch(52% 0.12 72.1);
+  --format-comic-ink: oklch(50% 0.11 97.2);
+
+  --field-border: oklch(55% 0.09 262.5);
+  --focus-ring: var(--album-navy);
+  --wayfinding: var(--album-navy);
+
+  --slot-line: oklch(30.9% 0.119 262.5 / 0.4);
+  --button-secondary-bg: var(--album-white);
+  --button-secondary-fg: var(--album-navy);
+  --button-secondary-border: var(--album-navy);
+
+  color-scheme: light;
+  background-color: var(--surface-base);
+  color: var(--text-primary);
+}
+
+/* Campos de color de una página impresa (`AlbumPage tone`): todo el texto
+   en tinta marina (4,59:1 sobre cian, 10,65:1 sobre amarillo). */
+.theme-paper.paper-cyan,
+.theme-paper.paper-yellow {
+  --surface-elevated: var(--album-white);
+  --surface-border: var(--album-navy);
+  --text-secondary: var(--album-navy);
+  --text-tertiary: var(--album-navy);
+  --field-border: var(--album-navy);
+}
+.theme-paper.paper-cyan {
+  --surface-base: var(--album-cyan);
+  --surface-default: var(--album-cyan);
+}
+.theme-paper.paper-yellow {
+  --surface-base: var(--album-yellow);
+  --surface-default: var(--album-yellow);
 }
 
 @layer base {
@@ -131,12 +219,40 @@
     scroll-padding-bottom: 5rem;
   }
 
+  /* Escritorio: sin rebote elástico al llegar al final (WIG). */
+  @media (pointer: fine) {
+    html {
+      overscroll-behavior: none;
+    }
+  }
+
   /* MOV-1: con `viewport-fit=cover` el contenido llega bajo la muesca en
      horizontal; los márgenes laterales seguros lo devuelven a la zona visible
      (en vertical valen 0). */
   body {
     padding-left: env(safe-area-inset-left, 0px);
     padding-right: env(safe-area-inset-right, 0px);
+  }
+
+  /* Toque: sin la espera del doble toque ni el destello gris por defecto. */
+  a,
+  button,
+  input,
+  label,
+  select,
+  summary,
+  textarea,
+  [role="button"] {
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  /* Foco del sistema para lo que no lo declara: contorno de 2 px con
+     separación (amarillo de noche, marino en papel). Contorno y no sombra:
+     la sombra desaparece en `forced-colors`. */
+  :focus-visible {
+    outline: 2px solid var(--focus-ring);
+    outline-offset: 2px;
   }
 
   /* Destino de "Saltar al contenido": recibe el foco por código, no es un
@@ -149,13 +265,16 @@
     box-sizing: border-box;
   }
 
-  /* Scrollbar */
+  /* Barra de desplazamiento en la tinta de la superficie */
+  * {
+    scrollbar-color: var(--surface-border) transparent;
+  }
   ::-webkit-scrollbar {
     width: 6px;
     height: 6px;
   }
   ::-webkit-scrollbar-track {
-    background: var(--surface-default);
+    background: transparent;
   }
   ::-webkit-scrollbar-thumb {
     background: var(--surface-border);
@@ -165,14 +284,20 @@
     background: var(--text-tertiary);
   }
 
-  /* Selection */
+  /* Selección: rosa del álbum al 30 % */
   ::selection {
-    background: oklch(68% 0.24 350 / 0.3); /* --accent-pink al 30 %, era un verde hex ajeno a la paleta */
+    background: oklch(66.2% 0.246 0.9 / 0.3);
     color: var(--text-primary);
+  }
+
+  /* Cursor de texto en la tinta de acción */
+  input,
+  textarea {
+    caret-color: var(--accent-pink);
   }
 }
 
-/* WCAG 2.1 — prefers-reduced-motion: neutralizar todas las transiciones y animaciones */
+/* WCAG 2.1 — prefers-reduced-motion: todo instantáneo, el brillo se para */
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
@@ -181,9 +306,12 @@
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
   }
+  .cromo-foil::after {
+    animation: none !important;
+  }
 }
 
-/* ─── Modal animations ─── */
+/* ─── Modal y avisos ─── */
 @keyframes modal-in {
   from {
     opacity: 0;
@@ -200,7 +328,6 @@
   to   { opacity: 1; }
 }
 
-/* ─── Toast animations ─── */
 @keyframes toast-in {
   from {
     opacity: 0;
@@ -223,45 +350,124 @@
   }
 }
 
-@layer utilities {
-  .animate-modal-in {
-    animation: modal-in var(--duration-slow) var(--ease-standard) both;
+/* ─── Álbum: pegar y despegar un cromo ───
+   Pegar: cae con un pequeño rebote (`--ease-paste`) y se asienta. Despegar
+   (vuelve a pendiente): lo inverso en 180 ms. Nunca parte de invisible. */
+@keyframes cromo-paste {
+  from { transform: translateY(-10px) scale(1.05) rotate(-2deg); }
+  to   { transform: none; }
+}
+@keyframes cromo-unpaste {
+  from { transform: none; }
+  to   { transform: translateY(-6px) scale(1.03) rotate(-1deg); }
+}
+/* Brillo (foil): banda especular que cruza el cromo. La ÚNICA animación
+   infinita del sistema; solo en cromos 10/10 y en el podio. */
+@keyframes cromo-foil {
+  from { transform: translateX(-120%) skewX(-18deg); }
+  to   { transform: translateX(220%) skewX(-18deg); }
+}
+/* Cambio de ruta: fundido de 200 ms */
+@keyframes route-fade {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+@layer components {
+  /* Cromo: portada con borde blanco de 3 px y radio 4 px (`Cromo`). */
+  .cromo {
+    transform-origin: 0% 100%;
+    transition-property: transform, box-shadow;
+    transition-duration: var(--duration-fast);
+    transition-timing-function: var(--ease-out);
   }
-  .animate-backdrop-in {
-    animation: backdrop-in var(--duration-slow) var(--ease-standard) both;
+  /* Esquina que se levanta 4° al pasar el ratón o al enfocar con teclado
+     (dispositivos con puntero fino). La sombra solo mientras está alzado. */
+  @media (hover: hover) and (pointer: fine) {
+    .group:hover .cromo:not(.cromo-static),
+    .cromo:not(.cromo-static):hover {
+      transform: perspective(800px) rotate3d(1, -1, 0, 4deg);
+      box-shadow: var(--shadow-lift);
+    }
   }
-  .animate-toast-in {
-    animation: toast-in var(--duration-base) var(--ease-standard) both;
+  .group:focus-visible .cromo:not(.cromo-static) {
+    transform: perspective(800px) rotate3d(1, -1, 0, 4deg);
+    box-shadow: var(--shadow-lift);
   }
-  .animate-toast-out {
-    animation: toast-out var(--duration-base) var(--ease-standard) both;
+
+  /* Abandonado: esquina superior derecha doblada, sigue legible. */
+  .cromo-folded {
+    clip-path: polygon(0 0, calc(100% - 1.25rem) 0, 100% 1.25rem, 100% 100%, 0 100%);
+  }
+
+  /* Brillo: capa que cruza el cromo en bucle (se para con movimiento reducido). */
+  .cromo-foil {
+    position: relative;
+    overflow: hidden;
+    isolation: isolate;
+  }
+  .cromo-foil::after {
+    content: "";
+    position: absolute;
+    inset: -10% auto -10% 0;
+    width: 45%;
+    pointer-events: none;
+    z-index: 2;
+    background: linear-gradient(
+      100deg,
+      transparent 0%,
+      oklch(100% 0 0 / 0.08) 30%,
+      oklch(100% 0 0 / 0.55) 50%,
+      oklch(100% 0 0 / 0.08) 70%,
+      transparent 100%
+    );
+    mix-blend-mode: soft-light;
+    transform: translateX(-120%) skewX(-18deg);
+    animation: cromo-foil 2.8s var(--ease-out) infinite;
+    animation-delay: 0.6s;
   }
 }
 
 @layer utilities {
+  .animate-modal-in {
+    animation: modal-in var(--duration-base) var(--ease-out) both;
+  }
+  .animate-backdrop-in {
+    animation: backdrop-in var(--duration-base) var(--ease-out) both;
+  }
+  .animate-toast-in {
+    animation: toast-in var(--duration-base) var(--ease-out) both;
+  }
+  .animate-toast-out {
+    animation: toast-out var(--duration-fast) var(--ease-out) both;
+  }
+  .animate-paste {
+    animation: cromo-paste var(--duration-base) var(--ease-paste) both;
+  }
+  .animate-unpaste {
+    animation: cromo-unpaste var(--duration-fast) var(--ease-out) both;
+  }
+  .animate-route {
+    animation: route-fade var(--duration-route) var(--ease-out) both;
+  }
+
   .text-balance {
     text-wrap: balance;
   }
 
-  /* Grain overlay — aplicado como clase en el body */
-  .grain::before {
-    content: "";
-    position: fixed;
-    inset: 0;
-    z-index: 999;
-    pointer-events: none;
-    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
-    background-repeat: repeat;
-    background-size: 128px 128px;
-    opacity: 0.03;
+  /* Lilita One es de un solo peso: nunca negrita sintética. */
+  .font-display {
+    font-synthesis: none;
   }
-}
-
-/* E-LANDING-INMERSIVA: entrada del nombre de formato en el hero inmersivo. */
-@keyframes k-word {
-  from { opacity: 0; transform: translateY(0.25em) skewY(4deg); filter: blur(8px); }
-  to { opacity: 1; transform: none; filter: none; }
-}
-@media (prefers-reduced-motion: reduce) {
-  [class*="animate-[k-word"] { animation: none !important; }
+  /* Lilita One solo para titulares y numerales: por debajo de 18 px
+     (`text-xs` … `text-base`) `font-display` pinta Figtree. Para un numeral
+     pequeño en Lilita, `font-numeral`. */
+  .font-display:is(.text-xs, .text-meta, .text-sm, .text-body, .text-base) {
+    font-family: var(--font-body), system-ui, sans-serif;
+  }
+  .font-numeral {
+    font-family: var(--font-display), system-ui, sans-serif;
+    font-synthesis: none;
+    font-variant-numeric: tabular-nums;
+  }
 }

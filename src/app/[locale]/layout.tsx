@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { bricolageGrotesque, figtree } from "@/app/fonts";
+import { fontVariables } from "@/app/fonts";
 import { NextIntlClientProvider } from "next-intl";
 import { getMessages, getTranslations, setRequestLocale } from "next-intl/server";
 import { notFound } from "next/navigation";
@@ -80,7 +80,7 @@ export default async function LocaleLayout({
     <html lang={locale} suppressHydrationWarning>
       <body
         suppressHydrationWarning
-        className={`${bricolageGrotesque.variable} ${figtree.variable} font-body bg-surface-base text-text-primary antialiased grain`}
+        className={`${fontVariables} font-body bg-surface-base text-text-primary antialiased`}
       >
         <SkipLink label={t("skipToContent")} />
         {/* REN-5: solo los textos de los componentes cliente de fuera de la

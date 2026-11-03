@@ -1,7 +1,7 @@
 /**
  * Tests unitarios — no hay tercera tipografía (E-SIN-MONO).
  *
- * El sistema de diseño son DOS familias: Bricolage Grotesque (display) y
+ * El sistema de diseño son DOS familias: Lilita One (display) y
  * Figtree (cuerpo). `layout.tsx` cargaba además JetBrains Mono y se usaba en
  * seis etiquetas `font-mono uppercase tracking-widest` sobre las filas de
  * filtros de Biblioteca y Descubrir; ningún artboard usa mono, y en el
@@ -25,7 +25,7 @@ function walk(dir: string): string[] {
   });
 }
 
-describe("E-SIN-MONO — solo Bricolage + Figtree", () => {
+describe("E-SIN-MONO — solo Lilita One + Figtree (y el wordmark)", () => {
   it("ningún componente usa la clase font-mono", () => {
     const offenders = walk(SRC).filter((f) => /\bfont-mono\b/.test(readFileSync(f, "utf8")));
     expect(offenders).toEqual([]);

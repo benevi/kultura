@@ -43,9 +43,11 @@ const B = "(?<![\\w-])";
 describe("DIS-7 · radios", () => {
   const radii = config.theme!.borderRadius as Record<string, string>;
 
-  it("≤ 4 radios distintos además de la píldora y el 0", () => {
+  it("≤ 4 radios distintos además de la píldora y el 0 (álbum: 4 / 8 / 12 / 16)", () => {
     const values = new Set(Object.values(radii).filter((v) => v !== "9999px" && v !== "0px"));
-    expect(Array.from(values).sort()).toEqual(["16px", "20px", "32px", "8px"]);
+    expect(Array.from(values).sort()).toEqual(["12px", "16px", "4px", "8px"]);
+    expect(radii.cromo).toBe("4px");
+    expect(radii.button).toBe("8px");
   });
 
   it("la configuración ya no define los alias retirados", () => {
@@ -59,7 +61,7 @@ describe("DIS-7 · radios", () => {
   it("0 usos de los alias retirados (`rounded`, `-xl`, `-20`, `-card`)", () => {
     expect(
       offenders(new RegExp(`${B}rounded(-[a-z]{1,2})?(-(xl|20|card))?(?=["'\`\\s}])`, "g"), { allowForeign: true }).filter(
-        (o) => !/rounded(-[a-z]{1,2})?-(lg|2xl|bento|bento-xl|full|pill|button|none)$/.test(o)
+        (o) => !/rounded(-[a-z]{1,2})?-(cromo|lg|2xl|bento|bento-xl|full|pill|button|none)$/.test(o)
       )
     ).toEqual([]);
   });
@@ -95,8 +97,12 @@ describe("ESLint vigila radios, tipos y sombras en todo src", () => {
 });
 
 describe("sombras del set cerrado", () => {
-  it("solo hard, hard-sm, sticker y soft", () => {
-    expect(Object.keys(config.theme!.boxShadow as object).sort()).toEqual(["hard", "hard-sm", "none", "soft", "sticker"]);
+  it("los nombres viejos siguen compilando y lift es la única sombra (nada en reposo)", () => {
+    const shadows = config.theme!.boxShadow as Record<string, string>;
+    expect(Object.keys(shadows).sort()).toEqual(["hard", "hard-sm", "lift", "none", "soft", "sticker"]);
+    for (const k of ["hard", "hard-sm", "sticker"]) expect(shadows[k]).toBe("none");
+    expect(shadows.lift).toBe("var(--shadow-lift)");
+    expect(shadows.soft).toBe(shadows.lift);
   });
 
   it("0 sombras arbitrarias `shadow-[…]`", () => {

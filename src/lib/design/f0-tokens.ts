@@ -45,4 +45,16 @@ export const F0 = {
   onPink: 'var(--on-accent-pink)',
   onLime: 'var(--on-accent-lime)',
   onPurple: 'var(--on-accent-purple)',
+
+  /* Álbum de cromos (DISENO.md): tintas fijas, cromo y orientación. */
+  albumCyan: 'var(--album-cyan)',
+  albumYellow: 'var(--album-yellow)',
+  albumNavy: 'var(--album-navy)',
+  albumWhite: 'var(--album-white)',
+  albumPink: 'var(--album-pink)',
+  albumInk: 'var(--album-ink)',
+  cromoBorder: 'var(--cromo-border)',
+  slotLine: 'var(--slot-line)',
+  wayfinding: 'var(--wayfinding)',
+  shadowLift: 'var(--shadow-lift)',
 } as const

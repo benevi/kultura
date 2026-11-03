@@ -1,6 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { getTranslations } from "next-intl/server";
-import { bricolageGrotesque, figtree } from "@/app/fonts";
+import { fontVariables } from "@/app/fonts";
 import { KButton } from "@/components/ui/KButton";
 import { SHELL_VIEWPORT, SITE_NAME } from "@/i18n/metadata";
 
@@ -39,7 +39,7 @@ export default async function RootNotFound() {
   return (
     <html lang="es">
       <body
-        className={`${bricolageGrotesque.variable} ${figtree.variable} font-body bg-surface-base text-text-primary antialiased`}
+        className={`${fontVariables} font-body bg-surface-base text-text-primary antialiased`}
       >
         {/* Misma composición que `NotFoundContent`, con las dos lenguas. */}
         <main
@@ -47,7 +47,7 @@ export default async function RootNotFound() {
           tabIndex={-1}
           className="flex flex-col items-center justify-center min-h-screen gap-6 p-8 text-center bg-surface-base"
         >
-          <p aria-hidden="true" className="text-7xl font-display font-bold text-text-secondary">404</p>
+          <p aria-hidden="true" className="text-7xl font-display text-text-secondary">404</p>
           <h1 className="text-2xl font-display font-bold text-text-primary">{es("notFoundTitle")}</h1>
           <p className="text-text-secondary max-w-sm">{es("notFoundDescription")}</p>
           <KButton asChild variant="primary">

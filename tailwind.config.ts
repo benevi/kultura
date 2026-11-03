@@ -32,19 +32,21 @@ const config: Config = {
        `tests/unit/visual/classes-compile.test.ts` la detecta. DISENO.md
        documenta estos mismos valores (`tests/unit/visual/diseno-scales`). */
 
-    /* 4 radios + píldora. Pequeño (8): controles chicos, miniaturas y el
-       contorno de foco de los enlaces. Póster (16): pósteres, tarjetas,
-       campos y filas. Contenedor (20): bloques y secciones. Héroe (32):
-       héroe, modales, tarjeta de acceso y CTA. */
+    /* 4 radios + píldora («Álbum de cromos», DISENO.md). Cromo (4): portada,
+       hueco y miniaturas. Control (8): botones, campos, filas, menús,
+       tarjetas (`lg`, `2xl` y `button` comparten valor: los nombres se
+       conservan para que el código existente no cambie). Contenedor (12):
+       bloques y secciones. Héroe (16): modales y piezas protagonistas. */
     borderRadius: {
       none: "0px",
+      cromo: "4px",
       lg: "8px",
-      "2xl": "16px",
-      bento: "20px",
-      "bento-xl": "32px",
+      "2xl": "8px",
+      bento: "12px",
+      "bento-xl": "16px",
       full: "9999px",
       pill: "9999px",
-      button: "9999px",
+      button: "8px",
     },
 
     /* Escala tipográfica cerrada (tamaño / interlineado). Se conservan los
@@ -69,23 +71,52 @@ const config: Config = {
       display: ["clamp(3.25rem, 5.4vw, 5.75rem)", { lineHeight: "1" }],
     },
 
-    /* Sombras: las del set cerrado de DISENO.md y ninguna más. */
+    /* Sombras: NINGUNA en reposo (DISENO.md). Los nombres viejos siguen
+       compilando, pero valen `none`; `lift` es la única sombra real y solo
+       aparece mientras un cromo se mueve o con un menú/popover abierto
+       (`soft`, que usan los menús, es la misma). */
     boxShadow: {
       none: "none",
-      /* Sombra dura de las piezas protagonistas (héroe, tarjeta de acceso,
-         CTA del perfil). En móvil, `hard-sm`: con 16 px de margen lateral,
-         los 10 px se comían el margen derecho (DIS-13). */
-      hard: "10px 10px 0 var(--surface-elevated)",
-      "hard-sm": "6px 6px 0 var(--surface-elevated)",
-      /* Pegatinas y badges colgantes. */
-      sticker: "4px 4px 0 oklch(0% 0 0 / 0.4)",
-      /* Menús, popovers y avisos flotantes. */
-      soft: "0 2px 8px oklch(0% 0 0 / 0.15)",
+      hard: "none",
+      "hard-sm": "none",
+      sticker: "none",
+      soft: "var(--shadow-lift)",
+      lift: "var(--shadow-lift)",
     },
 
     extend: {
       colors: {
-        /* ─── Design System tokens — modo oscuro ─── */
+        /* ─── Tintas del álbum y colores de formato (DISENO.md) ─── */
+        "album-cyan": token("--album-cyan"),
+        "album-yellow": token("--album-yellow"),
+        "album-navy": token("--album-navy"),
+        "album-white": token("--album-white"),
+        "album-pink": token("--album-pink"),
+        "album-ink": token("--album-ink"),
+        "format-movie": token("--format-movie"),
+        "format-tv": token("--format-tv"),
+        "format-anime": token("--format-anime"),
+        "format-manga": token("--format-manga"),
+        "format-game": token("--format-game"),
+        "format-book": token("--format-book"),
+        "format-comic": token("--format-comic"),
+        "format-movie-ink": token("--format-movie-ink"),
+        "format-tv-ink": token("--format-tv-ink"),
+        "format-anime-ink": token("--format-anime-ink"),
+        "format-manga-ink": token("--format-manga-ink"),
+        "format-game-ink": token("--format-game-ink"),
+        "format-book-ink": token("--format-book-ink"),
+        "format-comic-ink": token("--format-comic-ink"),
+        wayfinding: token("--wayfinding"),
+        "slot-line": token("--slot-line"),
+        "cromo-border": token("--cromo-border"),
+        "cromo-back": token("--cromo-back"),
+        "button-secondary": token("--button-secondary-bg"),
+        "on-button-secondary": token("--button-secondary-fg"),
+        "button-secondary-border": token("--button-secondary-border"),
+        "accent-pink-hover": token("--accent-pink-hover"),
+
+        /* ─── Superficies y texto (noche; `.theme-paper` las redefine) ─── */
         "surface-base": token("--surface-base"),
         "surface-default": token("--surface-default"),
         "surface-elevated": token("--surface-elevated"),
@@ -159,18 +190,22 @@ const config: Config = {
         DEFAULT: token("--surface-border"),
       },
       fontFamily: {
-        /* Design system fonts (F1 — Bricolage Grotesque + Figtree) */
+        /* Lilita One (titulares, numerales, la nota grande) + Figtree (todo
+           lo demás). `logo`: solo el wordmark «kultura», que no cambia. */
         display: ["var(--font-display)", "system-ui", "sans-serif"],
         body: ["var(--font-body)", "system-ui", "sans-serif"],
-        /* Legacy aliases */
+        logo: ["var(--font-logo)", "var(--font-body)", "system-ui", "sans-serif"],
       },
       transitionDuration: {
-        fast: "var(--duration-fast)",   /* 100ms */
-        base: "var(--duration-base)",   /* 150ms */
-        slow: "var(--duration-slow)",   /* 250ms */
+        fast: "var(--duration-fast)",   /* 180ms */
+        base: "var(--duration-base)",   /* 240ms */
+        slow: "var(--duration-slow)",   /* 360ms */
+        route: "var(--duration-route)", /* 200ms */
       },
       transitionTimingFunction: {
-        standard: "var(--ease-standard)", /* cubic-bezier(0,0,0.2,1) */
+        standard: "var(--ease-standard)", /* = out */
+        out: "var(--ease-out)",           /* cubic-bezier(.2,.8,.2,1) */
+        paste: "var(--ease-paste)",       /* cubic-bezier(.3,1.3,.5,1) */
       },
       backgroundImage: {
         "gradient-radial": "radial-gradient(var(--tw-gradient-stops))",
@@ -178,7 +213,9 @@ const config: Config = {
     },
   },
   plugins: [
-    plugin(function ({ addComponents, addUtilities, theme }) {
+    plugin(function ({ addComponents, addUtilities, addVariant, theme }) {
+      /* Pantallas táctiles: los controles crecen a 44 px (`pointer-coarse:h-11`). */
+      addVariant("pointer-coarse", "@media (pointer: coarse)");
       /* Retícula única (DIS-8): el mismo borde izquierdo para el logo, el h1
          y el contenido en todas las páginas. Ancho 72rem (`max-w-6xl`) con
          16 px de margen en móvil y 32 px desde `md`. Las columnas más

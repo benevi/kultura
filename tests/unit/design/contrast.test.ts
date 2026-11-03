@@ -17,7 +17,7 @@ import { readFileSync } from "fs";
 import { resolve } from "path";
 import { blend, contrastRatio, toSrgb, type Rgb } from "@/lib/design/color";
 import { AVATAR_COLORS } from "@/lib/constants/avatarColors";
-import { ROOT, resolveToken } from "./css-tokens";
+import { ROOT, resolvePaperToken, resolveToken } from "./css-tokens";
 
 function rgb(token: string): Rgb {
   const value = token.startsWith("--") ? resolveToken(token) : token;
@@ -79,3 +79,73 @@ describe("ACC-9 — iniciales legibles en los 8 colores de avatar", () => {
     expect(contrastRatio(rgb(c.on), rgb(c.value))).toBeGreaterThanOrEqual(TEXT);
   });
 });
+
+/* ─── Álbum de cromos: noche (app) y papel (páginas públicas) ─── */
+function paper(token: string): Rgb {
+  const out = toSrgb(resolvePaperToken(token));
+  if (!out) throw new Error(`No se puede convertir ${token}`);
+  return out;
+}
+
+const FORMATS = ["movie", "tv", "anime", "manga", "game", "book", "comic"];
+
+describe("Álbum — noche (la app)", () => {
+  const NIGHT: Array<[string, string, string, number]> = [
+    ["texto principal sobre el fondo", "--text-primary", "--surface-base", TEXT],
+    ["texto secundario sobre la superficie elevada", "--text-secondary", "--surface-elevated", TEXT],
+    ["texto terciario sobre la superficie elevada", "--text-tertiary", "--surface-elevated", TEXT],
+    ["texto del botón primario sobre el rosa", "--on-accent-pink", "--accent-pink", TEXT],
+    ["texto del primario sobre el rosa de hover", "--on-accent-pink", "--accent-pink-hover", TEXT],
+    ["texto del secundario sobre su relleno", "--button-secondary-fg", "--button-secondary-bg", TEXT],
+    ["rosa (forma del botón) contra el fondo", "--accent-pink", "--surface-base", NON_TEXT],
+    ["banda amarilla de orientación contra el fondo", "--wayfinding", "--surface-base", NON_TEXT],
+    ["foco amarillo contra el fondo", "--focus-ring", "--surface-base", NON_TEXT],
+    ["chip elegido (fondo sobre texto)", "--surface-base", "--text-primary", TEXT],
+  ];
+  it.each(NIGHT)("%s ≥ %3$s", (_n, fg, bg, min) => {
+    expect(contrastRatio(rgb(fg), rgb(bg))).toBeGreaterThanOrEqual(min);
+  });
+
+  it("el fondo es azul marino, no negro ni violeta", () => {
+    expect(resolveToken("--surface-base")).toMatch(/^oklch\((\d+(?:\.\d+)?)% [\d.]+ 262\.5\)$/);
+    const l = Number(/oklch\(([\d.]+)%/.exec(resolveToken("--surface-base"))![1]);
+    expect(l).toBeGreaterThanOrEqual(18);
+    for (const t of ["--accent-purple", "--surface-default", "--surface-elevated"]) {
+      const h = Number(/ ([\d.]+)\)$/.exec(resolveToken(t))![1]);
+      expect(h < 270 || h > 330).toBe(true);
+    }
+  });
+
+  it.each(FORMATS)("formato %s: texto apto ≥ 4,5:1 sobre el fondo y la superficie elevada", (f) => {
+    for (const bg of ["--surface-base", "--surface-elevated"]) {
+      expect(contrastRatio(rgb(`--format-${f}-ink`), rgb(bg))).toBeGreaterThanOrEqual(TEXT);
+    }
+    expect(contrastRatio(rgb(`--format-${f}`), rgb("--surface-base"))).toBeGreaterThanOrEqual(NON_TEXT);
+  });
+});
+
+describe("Álbum — papel (páginas públicas, .theme-paper)", () => {
+  const PAPER: Array<[string, string, string, number]> = [
+    ["tinta marina sobre blanco", "--text-primary", "--surface-base", TEXT],
+    ["texto secundario sobre blanco", "--text-secondary", "--surface-base", TEXT],
+    ["texto terciario sobre la superficie elevada", "--text-tertiary", "--surface-elevated", TEXT],
+    ["texto del botón primario sobre el rosa", "--on-accent-pink", "--accent-pink", TEXT],
+    ["secundario: marino sobre blanco", "--button-secondary-fg", "--button-secondary-bg", TEXT],
+    ["rosa (forma del botón) contra el blanco", "--accent-pink", "--surface-base", NON_TEXT],
+    ["foco marino contra el blanco", "--focus-ring", "--surface-base", NON_TEXT],
+    ["borde de campo contra el blanco", "--field-border", "--surface-base", NON_TEXT],
+    ["texto de error sobre blanco", "--accent-danger-text", "--surface-base", TEXT],
+    ["marino sobre el campo cian", "--album-navy", "--album-cyan", TEXT],
+    ["marino sobre el campo amarillo", "--album-navy", "--album-yellow", TEXT],
+  ];
+  it.each(PAPER)("%s ≥ %3$s", (_n, fg, bg, min) => {
+    expect(contrastRatio(paper(fg), paper(bg))).toBeGreaterThanOrEqual(min);
+  });
+
+  it.each(FORMATS)("formato %s: texto apto ≥ 4,5:1 sobre el papel y su superficie elevada", (f) => {
+    for (const bg of ["--surface-base", "--surface-elevated"]) {
+      expect(contrastRatio(paper(`--format-${f}-ink`), paper(bg))).toBeGreaterThanOrEqual(TEXT);
+    }
+  });
+});
+

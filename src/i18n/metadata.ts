@@ -5,11 +5,11 @@ import type { AppLocale } from "./detect";
 import { siteUrl } from "@/lib/site-url";
 
 /**
- * Hex real de `--surface-base` (oklch(16% 0.015 280), VERIF-B). La barra del
+ * Hex real de `--surface-base` (oklch(21% 0.068 262.5), VERIF-B). La barra del
  * sistema, la pantalla de arranque de la PWA y el manifest usan este valor:
  * no admiten OKLCH en todos los navegadores.
  */
-export const SURFACE_BASE_HEX = "#0c0d14";
+export const SURFACE_BASE_HEX = "#061637";
 
 export const SITE_NAME = "KULTURA";
 

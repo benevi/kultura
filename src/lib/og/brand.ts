@@ -11,16 +11,16 @@ import { TYPE_HUE, IMMERSIVE_FORMATS } from "@/lib/landing/immersive";
 import type { MediaType } from "@/types/media";
 
 export const C = {
-  bg: "#0c0d14", // --surface-base
-  surface2: "#212330", // --surface-elevated
-  text: "#f4f5f8", // --text-primary
-  muted: "#aeb0be", // --text-secondary
-  pink: "#fb40ad", // --accent-pink
-  lime: "#91e300", // --accent-lime
-  orange: "#fb7c00", // --accent-orange
-  purple: "#9964e5", // --accent-purple
-  blue: "#3b9cf6", // --accent-blue
-  yellow: "#f1cb1c", // --accent-yellow
+  bg: "#061637", // --surface-base
+  surface2: "#152c5c", // --surface-elevated
+  text: "#f6f8fd", // --text-primary
+  muted: "#c5d2e9", // --text-secondary
+  pink: "#ff2d8a", // --accent-pink
+  lime: "#ffe600", // --accent-lime
+  orange: "#ffb347", // --accent-orange
+  purple: "#00a0e3", // --accent-purple
+  blue: "#5aa9ff", // --accent-blue
+  yellow: "#ffe600", // --accent-yellow
   /** Acento radial de las cards "feature" (purple al 35 %). */
   purpleGlow: "rgba(153,100,229,0.35)",
 };

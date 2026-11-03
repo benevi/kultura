@@ -69,8 +69,10 @@ vi.mock("next-intl", async (importOriginal) => {
 });
 
 vi.mock("@/app/fonts", () => ({
-  bricolageGrotesque: { variable: "font-var-display" },
+  lilitaOne: { variable: "font-var-display" },
   figtree: { variable: "font-var-body" },
+  logoFont: { variable: "font-var-logo" },
+  fontVariables: "font-var-display font-var-body font-var-logo",
 }));
 vi.mock("@vercel/analytics/next", () => ({ Analytics: () => null }));
 vi.mock("@sentry/nextjs", () => ({ captureException: vi.fn() }));
@@ -334,7 +336,7 @@ describe("TXT-2/TXT-5/SEO-6 — metadatos por defecto traducidos", () => {
   });
 
   it("viewport: color de la barra = --surface-base real, modo oscuro y a sangre", () => {
-    expect(viewport).toMatchObject({ themeColor: "#0c0d14", colorScheme: "dark", viewportFit: "cover" });
+    expect(viewport).toMatchObject({ themeColor: "#061637", colorScheme: "dark", viewportFit: "cover" });
     expect(viewport).not.toHaveProperty("maximumScale");
   });
 });
@@ -430,8 +432,8 @@ describe("ACC-7/TXT-4 — 404 y error global", () => {
     it("no depende de hojas de estilo: estilos en línea con los hex de los tokens y fuente del sistema", () => {
       const markup = renderToStaticMarkup(<GlobalError error={new Error("x")} reset={() => {}} />);
       expect(markup).not.toContain("class=");
-      expect(markup).toMatch(/<body style="[^"]*background-color:#0c0d14[^"]*color:#f4f5f8[^"]*font-family:system-ui/);
-      expect(markup).toMatch(/<button[^>]*background-color:#fb40ad;color:#12080c/);
+      expect(markup).toMatch(/<body style="[^"]*background-color:#061637[^"]*color:#f6f8fd[^"]*font-family:system-ui/);
+      expect(markup).toMatch(/<button[^>]*background-color:#ff2d8a;color:#04102c/);
       const source = fs.readFileSync(path.join(ROOT, "src/app/global-error.tsx"), "utf8");
       expect(source).not.toMatch(/\.css['"]|@\/app\/fonts|usePathname\(/);
     });

@@ -116,7 +116,7 @@ beforeAll(() => {
 describe("criterio DIS (1) · clases sin regla", () => {
   it("el extractor encuentra las clases del código (no está vacío)", () => {
     const sample = classStrings(join(SRC, "components/layout/Header.tsx")).map((s) => s.text).join(" ");
-    expect(sample).toContain("bg-surface-default");
+    expect(sample).toContain("bg-surface-base");
     expect(sample).toContain("page-grid");
   });
 

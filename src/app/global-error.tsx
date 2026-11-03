@@ -31,12 +31,12 @@ const COPY = {
  * que todo va en línea y con la fuente del sistema.
  */
 const C = {
-  bg: '#0c0d14', // --surface-base
-  text: '#f4f5f8', // --text-primary
-  muted: '#aeb0be', // --text-secondary
-  border: '#303240', // --surface-border
-  pink: '#fb40ad', // --accent-pink
-  onPink: '#12080c', // --on-accent-pink
+  bg: '#061637', // --surface-base
+  text: '#f6f8fd', // --text-primary
+  muted: '#c5d2e9', // --text-secondary
+  border: '#274172', // --surface-border
+  pink: '#ff2d8a', // --accent-pink
+  onPink: '#04102c', // --on-accent-pink
 }
 
 const FONT = 'system-ui, -apple-system, "Segoe UI", Roboto, sans-serif'
