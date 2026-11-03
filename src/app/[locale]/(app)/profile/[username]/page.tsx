@@ -1,7 +1,11 @@
 // ============================================================
-// KULTURA — ProfilePage (Server Component)
-// Página pública de perfil de usuario: header con stats,
-// secciones de biblioteca reciente y estadísticas detalladas.
+// KULTURA — ProfilePage (Server Component, con sesión)
+// El álbum de una persona abierto de noche: la tapa (avatar, nombre, bio y
+// sus números), sus páginas por estado con la forma que da el álbum (en
+// curso = cromos puestos con su tira; completados = pegados, brillantes en
+// el 10/10; pendientes = huecos numerados; abandonados = esquina doblada)
+// y su álbum por formato. Lo que no se puede ver (D-04b) se dice, no se
+// rellena con ceros.
 // ============================================================
 
 import { Suspense } from 'react'
@@ -18,11 +22,11 @@ import { FriendshipButton } from '@/components/social/FriendshipButton'
 import { ReportButton } from '@/components/social/ReportButton'
 import { ShareLinkButton } from '@/components/social/ShareLinkButton'
 import { hasPublicLists, resolveRenamedUsername } from '@/lib/social/public-collection'
-import { MediaRow } from '@/components/home/MediaRow'
+import { ProfileShelf, type ShelfItem } from '@/components/profile/ProfileShelf'
+import { progressRatio, type LibraryEntryWithProgress } from '@/lib/library/progress'
 import { FriendProfileActivity, FriendsActivitySkeleton } from '../../home/sections'
 import { KButton } from '@/components/ui/KButton'
 import { Link } from '@/i18n/navigation'
-import { IconLibrary } from '@/components/icons'
 import { isNotMigrated } from '@/app/api/settings/account-state'
 import type { DbFriendship } from '@/types/supabase'
 import { getTranslations } from 'next-intl/server'
@@ -111,43 +115,46 @@ export default async function ProfilePage({ params }: Props) {
   const visibility = (profileUser as { library_visibility?: string }).library_visibility
 
   const EMPTY_STATS = { totalItems: 0, totalCompleted: 0, totalInProgress: 0, byType: [], topGenres: [] }
-  const [stats, recentCompleted, recentInProgress, recentPending, canShareCollection] = await Promise.all([
+  const recent = (status: 'completed' | 'in_progress' | 'pending' | 'abandoned') =>
+    libraryVisible ? getRecentLibraryByStatus(profileUser.id, status, 8) : Promise.resolve([])
+  const [stats, recentCompleted, recentInProgress, recentPending, recentAbandoned, canShareCollection] = await Promise.all([
     // Biblioteca oculta (D-04b): ni se consulta (la RLS devolvería 0 filas).
     libraryVisible ? getUserStats(profileUser.id) : Promise.resolve(EMPTY_STATS),
-    libraryVisible ? getRecentLibraryByStatus(profileUser.id, 'completed', 8) : Promise.resolve([]),
-    libraryVisible ? getRecentLibraryByStatus(profileUser.id, 'in_progress', 8) : Promise.resolve([]),
-    libraryVisible ? getRecentLibraryByStatus(profileUser.id, 'pending', 8) : Promise.resolve([]),
+    recent('completed'),
+    recent('in_progress'),
+    recent('pending'),
+    recent('abandoned'),
     // Solo el dueño ve el botón; para el resto ni se consulta.
     isOwnProfile ? hasPublicLists(profileUser.id) : Promise.resolve(false),
   ])
 
-  const completedItems = recentCompleted.map(entry => ({
-    mediaId: entry.mediaId,
-    title: entry.title ?? '',
-    poster: entry.poster ?? null,
-    type: entry.mediaId.split('_')[0],
-  }))
+  /** Entrada de biblioteca → título del álbum (nota fina, avance y fecha si se saben). */
+  const toShelf = (entry: LibraryEntryWithProgress & { updatedAt?: string | null }): ShelfItem => {
+    const type = entry.mediaId.split('_')[0]
+    return {
+      mediaId: entry.mediaId,
+      title: entry.title ?? '',
+      poster: entry.poster ?? null,
+      type,
+      rating10: entry.rating10 ?? null,
+      progress: progressRatio(type, entry.progress ?? null),
+      updatedAt: entry.updatedAt ?? null,
+    }
+  }
+  const completedItems = recentCompleted.map(toShelf)
+  const inProgressItems = recentInProgress.map(toShelf)
+  const pendingItems = recentPending.map(toShelf)
+  const abandonedItems = recentAbandoned.map(toShelf)
 
-  const inProgressItems = recentInProgress.map(entry => ({
-    mediaId: entry.mediaId,
-    title: entry.title ?? '',
-    poster: entry.poster ?? null,
-    type: entry.mediaId.split('_')[0],
-  }))
-
-  const pendingItems = recentPending.map(entry => ({
-    mediaId: entry.mediaId,
-    title: entry.title ?? '',
-    poster: entry.poster ?? null,
-    type: entry.mediaId.split('_')[0],
-  }))
-
-  const hasAnyContent = completedItems.length > 0 || inProgressItems.length > 0 || pendingItems.length > 0
+  const hasAnyContent =
+    completedItems.length > 0 || inProgressItems.length > 0 || pendingItems.length > 0 || abandonedItems.length > 0
+  // REN-6: prioridad solo para la primera fila de portadas de la página.
+  const firstShelf = inProgressItems.length > 0 ? 'in_progress' : completedItems.length > 0 ? 'completed' : 'other'
 
   return (
-    <main className="page-grid [&>*]:max-w-4xl py-8 flex flex-col gap-10">
-      {/* Header de perfil */}
-      <div className="flex flex-col md:flex-row md:items-start gap-4">
+    <main className="page-grid flex flex-col gap-10 py-8 [&>*]:max-w-5xl md:gap-12">
+      {/* La tapa del álbum */}
+      <div className="flex flex-col gap-4 md:flex-row md:items-start">
         <div className="flex-1">
           <ProfileHeader
             userId={profileUser.id}
@@ -165,7 +172,7 @@ export default async function ProfilePage({ params }: Props) {
           />
         </div>
         {currentUser && !isOwnProfile && (
-          <div className="flex-shrink-0 flex flex-col items-end gap-2 md:mt-0 mt-0">
+          <div className="flex shrink-0 flex-wrap items-center gap-2 md:flex-col md:items-end">
             <FriendshipButton
               initialStatus={friendshipStatus}
               targetUserId={profileUser.id}
@@ -177,7 +184,7 @@ export default async function ProfilePage({ params }: Props) {
           </div>
         )}
         {isOwnProfile && (
-          <div className="flex-shrink-0 flex items-center gap-3 flex-wrap">
+          <div className="flex shrink-0 flex-wrap items-center gap-3">
             {canShareCollection && (
               <ShareLinkButton
                 path={`/u/${profileUser.username}`}
@@ -199,29 +206,31 @@ export default async function ProfilePage({ params }: Props) {
         </Suspense>
       )}
 
-      {/* Viendo ahora */}
-      {inProgressItems.length > 0 && (
-        <MediaRow title={t('watchingNow')} items={inProgressItems} requirePoster={false} />
-      )}
-
-      {/* Últimos completados */}
-      {completedItems.length > 0 && (
-        <MediaRow title={t('lastCompleted')} items={completedItems} requirePoster={false} />
-      )}
-
-      {/* Pendientes */}
-      {pendingItems.length > 0 && (
-        <MediaRow title={t('pendingRow')} items={pendingItems} requirePoster={false} />
-      )}
+      {/* Sus páginas, por estado */}
+      <ProfileShelf
+        id="shelf-in-progress"
+        title={t('watchingNow')}
+        status="in_progress"
+        items={inProgressItems}
+        priorityCount={firstShelf === 'in_progress' ? 4 : 0}
+      />
+      <ProfileShelf
+        id="shelf-completed"
+        title={t('lastCompleted')}
+        status="completed"
+        items={completedItems}
+        priorityCount={firstShelf === 'completed' ? 4 : 0}
+      />
+      <ProfileShelf id="shelf-pending" title={t('pendingRow')} status="pending" items={pendingItems} />
+      <ProfileShelf id="shelf-abandoned" title={t('abandonedRow')} status="abandoned" items={abandonedItems} />
 
       {/* Biblioteca oculta por su dueño (D-04b) */}
       {!libraryVisible && (
-        <div className="flex flex-col items-center gap-3 rounded-bento bg-surface-default px-6 py-14 text-center">
-          <IconLibrary className="w-12 h-12 text-text-tertiary" />
-          <p className="font-bold text-text-primary">
+        <div className="flex flex-col items-start gap-2 rounded-bento border-2 border-dashed border-slot-line px-5 py-6 md:px-8">
+          <p className="font-display text-xl text-text-primary">
             {t('libraryHidden', { username: profileUser.username })}
           </p>
-          <p className="max-w-sm text-sm text-text-tertiary">
+          <p className="max-w-prose text-sm text-text-secondary">
             {visibility === 'friends' ? t('libraryHiddenFriends') : t('libraryHiddenPrivate')}
           </p>
         </div>
@@ -229,16 +238,20 @@ export default async function ProfilePage({ params }: Props) {
 
       {/* Empty state cuando la biblioteca está vacía */}
       {libraryVisible && !hasAnyContent && (
-        <div className="flex flex-col items-center gap-3 py-16 text-center">
-          <IconLibrary className="w-12 h-12 text-text-tertiary" />
-          <p className="font-bold" style={{ color: 'var(--text-primary)' }}>
+        <div className="flex flex-col items-start gap-2 rounded-bento border-2 border-dashed border-slot-line px-5 py-6 md:px-8">
+          <p className="font-display text-xl text-text-primary">
             {isOwnProfile
               ? t('emptyOwn')
               : t('emptyOther', { username: profileUser.username })}
           </p>
-          <p className="text-sm" style={{ color: 'var(--text-tertiary)' }}>
+          <p className="max-w-prose text-sm text-text-secondary">
             {isOwnProfile ? t('emptyOwnHint') : t('emptyOtherHint')}
           </p>
+          {isOwnProfile ? (
+            <KButton asChild size="sm" className="mt-2">
+              <Link href="/search">{t('emptyOwnAction')}</Link>
+            </KButton>
+          ) : null}
         </div>
       )}
 

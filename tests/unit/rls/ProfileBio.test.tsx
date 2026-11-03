@@ -31,7 +31,7 @@ afterEach(() => vi.unstubAllGlobals())
 
 function openEditor() {
   render(<ProfileBio bio={null} isOwner userId="user-1" />)
-  fireEvent.click(screen.getByRole('button', { name: /editBio/ }))
+  fireEvent.click(screen.getByRole('button', { name: /addBio/ }))
   return screen.getByRole('textbox')
 }
 

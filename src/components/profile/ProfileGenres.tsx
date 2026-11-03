@@ -16,19 +16,19 @@ export async function ProfileGenres({ topGenres }: ProfileGenresProps) {
   const top8 = topGenres.slice(0, 8)
 
   return (
-    <section>
-      <h2 className="font-display text-xl font-bold text-text-primary mb-4">{t('topGenres')}</h2>
-      <div className="flex flex-wrap gap-2">
+    <section aria-labelledby="profile-genres-title">
+      <h2 id="profile-genres-title" className="mb-4 font-display text-2xl text-text-primary">{t('topGenres')}</h2>
+      <ul className="flex flex-wrap gap-2">
         {top8.map(({ genre, count }) => (
-          <span
+          <li
             key={genre}
-            className="bg-surface-elevated border border-surface-border text-xs font-bold px-3.5 py-2 rounded-full text-text-primary"
+            className="inline-flex items-center rounded-pill bg-surface-elevated px-3.5 py-2 text-xs font-semibold text-text-primary"
             title={t('genreCount', { count })}
           >
             {genre}
-          </span>
+          </li>
         ))}
-      </div>
+      </ul>
     </section>
   )
 }

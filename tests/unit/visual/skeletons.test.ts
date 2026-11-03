@@ -25,7 +25,7 @@ describe("esqueletos con la forma real", () => {
     }
   });
 
-  it.each([`${APP}/home/loading.tsx`, `${APP}/profile/[username]/loading.tsx`])(
+  it.each([`${APP}/home/loading.tsx`])(
     "%s: filas con el ancho y el hueco de MediaRow",
     (file) => {
       const row = read("src/components/home/MediaRow.tsx");
@@ -48,11 +48,16 @@ describe("esqueletos con la forma real", () => {
     expect(loading).toContain('className="page-grid py-8"');
   });
 
-  it("Perfil: banda y avatar con la forma de ProfileHeader", () => {
+  it("Perfil: avatar-cromo de ProfileHeader y filas con el ancho y el hueco de ProfileShelf", () => {
     const header = read("src/components/profile/ProfileHeader.tsx");
+    const shelf = read("src/components/profile/ProfileShelf.tsx");
     const loading = read(`${APP}/profile/[username]/loading.tsx`);
-    for (const cls of ["h-[120px] md:h-[160px] rounded-bento-xl", "rounded-bento-xl rounded-bl-lg"]) {
+    for (const cls of ["h-20 w-20 shrink-0 rounded-cromo border-[3px] border-cromo-border", "md:h-28 md:w-28"]) {
       expect(header).toContain(cls);
+      expect(loading).toContain(cls);
+    }
+    for (const cls of ["w-28 shrink-0 snap-start md:w-36", "flex snap-x gap-4"]) {
+      expect(shelf).toContain(cls);
       expect(loading).toContain(cls);
     }
   });

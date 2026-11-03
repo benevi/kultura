@@ -10,7 +10,10 @@ import type { TypeStats } from '@/lib/library/stats'
 // ── Mocks ─────────────────────────────────────────────────────────────────────
 
 vi.mock('next-intl/server', () => ({
-  getTranslations: () => Promise.resolve((key: string) => key),
+  getTranslations: () =>
+    Promise.resolve((key: string, values?: Record<string, unknown>) =>
+      values && 'count' in values ? `${key}:${String(values.count)}` : key,
+    ),
   getLocale: () => Promise.resolve('es'),
 }))
 
@@ -50,13 +53,18 @@ describe('ProfileStats', () => {
     expect(screen.queryByText('game')).not.toBeInTheDocument()
   })
 
-  it('muestra el número de completados para cada tipo', async () => {
+  it('muestra el número de completados en UN mensaje ICU (WIG: nada de pegar cifra y texto)', async () => {
     const component = await ProfileStats({ byType: mockByType, totalItems: 15 })
     render(component)
-    // The component renders "{s.completed} {t('completed')}" in the same <p>
-    // So it appears as "8 completed" (where 'completed' is the i18n key via passthrough mock)
     expect(screen.getByText('10')).toBeInTheDocument()
-    expect(screen.getByText(/^8\s+completed$/)).toBeInTheDocument()
+    expect(screen.getByText('completedCount:8')).toBeInTheDocument()
+    expect(screen.queryByText(/^8\s+completed$/)).not.toBeInTheDocument()
+  })
+
+  it('el formato va con su nombre y su tira de completados', async () => {
+    const { container } = render(await ProfileStats({ byType: mockByType, totalItems: 15 }))
+    expect(container.querySelector('[data-format="movie"]')).toHaveTextContent('movie')
+    expect(container.querySelectorAll('[data-progress-strip]')).toHaveLength(2)
   })
 
   it('renderiza múltiples tipos en orden', async () => {

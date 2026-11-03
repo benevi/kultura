@@ -3,8 +3,12 @@ import { describe, it, expect, vi } from 'vitest'
 
 // ── Mocks ─────────────────────────────────────────────────────────────────────
 
+// Con los valores a la vista: «En KULTURA desde {date}» es UN mensaje (WIG).
 vi.mock('next-intl/server', () => ({
-  getTranslations: () => Promise.resolve((key: string) => key),
+  getTranslations: () =>
+    Promise.resolve((key: string, values?: Record<string, unknown>) =>
+      values && 'date' in values ? `${key}:${String(values.date)}` : key,
+    ),
   getLocale: () => Promise.resolve('es'),
 }))
 
@@ -115,9 +119,19 @@ describe('ProfileHeader', () => {
     expect(settingsLinks).toHaveLength(0)
   })
 
-  it('muestra fecha de creación formateada', async () => {
+  it('muestra fecha de creación formateada dentro del mensaje (no concatenada)', async () => {
     render(await ProfileHeader(baseProps))
-    // La clave 'memberSince' pasa por el mock key-passthrough
-    expect(screen.getByText(/memberSince/)).toBeInTheDocument()
+    expect(screen.getByText('memberSince:enero de 2024')).toBeInTheDocument()
+  })
+
+  it('las cifras van en sus cajas de número con el formato del idioma', async () => {
+    const { container } = render(await ProfileHeader({ ...baseProps, totalItems: 1234 }))
+    const badges = Array.from(container.querySelectorAll('[data-number-badge]')).map((b) => b.textContent)
+    expect(badges).toEqual(['1234', '30', '5'].map((n) => new Intl.NumberFormat('es').format(Number(n))))
+  })
+
+  it('sin banda de héroe con degradado (DISENO.md: sin degradados fuera del brillo)', async () => {
+    const { container } = render(await ProfileHeader(baseProps))
+    expect(container.innerHTML).not.toMatch(/gradient/)
   })
 })
