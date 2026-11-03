@@ -1,11 +1,11 @@
 import localFont from "next/font/local";
-import { Lilita_One } from "next/font/google";
 
 /**
  * Tipografía del «Álbum de cromos» (DISENO.md):
  *
- * - Display: **Lilita One** (Google Fonts, SIL OFL 1.1, un solo peso, 400),
- *   subconjuntos latino y latino extendido. Solo titulares, numerales de
+ * - Display: **Lilita One** (SIL OFL 1.1, un solo peso, 400), autoalojada:
+ *   los subconjuntos latino y latino extendido de Google Fonts unidos en un
+ *   solo woff2 (~10 KB), sin pedir nada a Google al construir. Solo titulares, numerales de
  *   hueco y de ranking y la nota grande; nunca texto corrido, etiquetas ni
  *   botones. `optional` (REN-7, F-22): el h1 es el LCP; si la fuente
  *   (precargada) no llega en ~100 ms ese primer pintado se queda con la de
@@ -16,11 +16,12 @@ import { Lilita_One } from "next/font/google";
  *   (la marca no cambia con el sistema). Es un subconjunto de 6 glifos
  *   (k, u, l, t, r, a; ~1 KB), no la familia entera.
  */
-export const lilitaOne = Lilita_One({
+export const lilitaOne = localFont({
+  src: "./LilitaOne-latin-ext.woff2",
   weight: "400",
-  subsets: ["latin", "latin-ext"],
   variable: "--font-display",
   display: "optional",
+  adjustFontFallback: "Arial",
 });
 
 /** Texto: `swap` con reserva de métricas ajustadas (el salto es mínimo). */

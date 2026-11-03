@@ -157,7 +157,7 @@ papel, siempre la variante `-ink`.
 
 ## Tipografía
 
-- **Display: Lilita One** (`next/font/google`, peso 400, latino + latino
+- **Display: Lilita One** (autoalojada con `next/font/local`, peso 400, latino + latino
   extendido; variable `--font-display`, clase `font-display`). Solo
   titulares, numerales de hueco y de ranking y la nota grande. Nunca texto
   corrido, etiquetas ni botones. Es de un solo peso: `font-bold` no la
