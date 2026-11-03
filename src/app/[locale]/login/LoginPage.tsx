@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef, useMemo } from "react";
+import { useState, useEffect, useRef, useMemo, type ReactNode } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
@@ -13,14 +13,13 @@ import {
 import { resolveAuthNext, safeInternalPath } from "@/lib/utils/safe-redirect";
 import { KButton } from "@/components/ui/KButton";
 import { KInput } from "@/components/ui/KInput";
-import { AvatarIconPicker } from "@/components/ui/AvatarIconPicker";
-import { Logo } from "@/components/layout/Logo";
 import { AuthShell } from "./AuthShell";
 import { getSupabase } from "./supabase-lazy";
 import { PasswordField } from "./PasswordField";
 import { TermsCheckbox } from "./TermsCheckbox";
 import { TERMS_VERSION } from "@/app/api/settings/identity";
 import { chromeIntentUrl, detectInAppBrowser, type InAppBrowser } from "./in-app-browser";
+import { referrerReturnPath } from "./return-path";
 import {
   attributionEntries,
   parseAttribution,
@@ -39,10 +38,11 @@ type Mode = "login" | "register" | "reset";
 type SentKind = "signup" | "reset";
 
 /**
- * Dónde se aparca el personaje elegido al registrarse hasta que hay sesión
- * (E-AVATAR-ICONS). La fila de `users` la crea un trigger de base de datos, y
- * el alta puede quedar pendiente de confirmar el correo, así que la elección
- * tiene que sobrevivir a ese hueco.
+ * Personaje elegido en el registro ANTIGUO, aparcado en el navegador hasta la
+ * primera sesión (E-AVATAR-ICONS). El registro ya no lo pide (correo,
+ * contraseña y la casilla de edad y términos; el personaje se elige en
+ * Ajustes), pero una elección hecha antes de confirmar el correo se sigue
+ * aplicando al entrar.
  */
 const PENDING_AVATAR_ICON_KEY = "kultura:pending-avatar-icon";
 
@@ -185,9 +185,14 @@ function GoogleIcon({ className }: { className?: string }) {
   );
 }
 
-/** Enlace de texto del pie de la tarjeta: 44px de alto táctil (ACC-12). */
-const FOOT_LINK =
-  "inline-block py-3 font-body text-meta underline-offset-4 hover:underline";
+/** Enlace de texto de la etiqueta: 44 px de alto táctil (ACC-12), en tinta. */
+const TEXT_LINK =
+  "inline-flex min-h-11 items-center rounded-lg font-body text-meta font-bold text-text-primary underline decoration-2 " +
+  "underline-offset-4 hover:decoration-accent-pink " +
+  "focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus-ring";
+
+/** Aviso dentro de la etiqueta (estado, error): caja de papel con raya de 2 px. */
+const NOTICE = "rounded-2xl border-2 px-4 py-3 font-body text-sm";
 
 // ---------------------------------------------------------------------------
 // Component
@@ -195,9 +200,19 @@ const FOOT_LINK =
 
 interface LoginPageProps {
   locale: string;
+  /**
+   * El sobre con los cromos (lo pinta el servidor y llega por `<Suspense>`).
+   * Decorativo: sin él, la página es la misma.
+   */
+  wall?: ReactNode;
+  /**
+   * Navegador integrado detectado en el servidor por el user agent: así el
+   * HTML ya sale sin «Continuar con Google» en Instagram, TikTok, X…
+   */
+  inApp?: InAppBrowser | null;
 }
 
-export function LoginPage({ locale }: LoginPageProps) {
+export function LoginPage({ locale, wall, inApp: serverInApp = null }: LoginPageProps) {
   const tAuth = useTranslations("auth");
   const tErrors = useTranslations("errors");
   const router = useRouter();
@@ -207,16 +222,18 @@ export function LoginPage({ locale }: LoginPageProps) {
   const mode: Mode =
     rawMode === "register" || rawMode === "reset" ? rawMode : "login";
 
-  // Destino tras entrar: el `next` saneado, o el inicio (CRE-5).
-  const rawNext = searchParams.get("next");
-  const safeNext = safeInternalPath(rawNext, "");
-  const dest = resolveAuthNext(rawNext, locale);
+  // Destino tras entrar: el `next` saneado; sin él, la página de la que se
+  // llegó (mismo origen, tras hidratar); y si no, el inicio (CRE-5).
+  const nextParam = safeInternalPath(searchParams.get("next"), "");
+  const [cameFrom, setCameFrom] = useState("");
+  const cameFromRef = useRef("");
+  const safeNext = nextParam || cameFrom;
+  const dest = resolveAuthNext(safeNext, locale);
   // D-12: de dónde viene el alta (por la URL; nada en cookies ni almacenamiento).
   const attribution = useMemo(() => parseAttribution(searchParams), [searchParams]);
 
   // E-DEMO: `/api/auth/demo` vuelve aquí si la demo no está disponible; el
-  // callback de auth, con su propio código de error (R1a). Antes el segundo
-  // caso no se mostraba y el fallo era invisible.
+  // callback de auth, con su propio código de error (R1a).
   const errorParam = searchParams.get("error");
   const callbackKey = callbackErrorKey(errorParam);
   // ROJO-7: vuelta de Ajustes tras borrar la cuenta (o programar el borrado).
@@ -245,48 +262,39 @@ export function LoginPage({ locale }: LoginPageProps) {
   // ROJO-10: hasta hidratar, el botón no envía. Sin JS el formulario no hace
   // nada en vez de recargar la página con los datos en la URL.
   const [hydrated, setHydrated] = useState(false);
-  const [inApp, setInApp] = useState<InAppBrowser | null>(null);
+  const [inApp, setInApp] = useState<InAppBrowser | null>(serverInApp);
   const [intentHref, setIntentHref] = useState<string | null>(null);
-  const [copied, setCopied] = useState(false);
+  const [copy, setCopy] = useState<"idle" | "copied" | "manual">("idle");
+  const [pageHref, setPageHref] = useState("");
 
   const emailRef = useRef<HTMLInputElement>(null);
   const passwordRef = useRef<HTMLInputElement>(null);
   const termsRef = useRef<HTMLInputElement>(null);
+  const manualRef = useRef<HTMLInputElement>(null);
 
   // SEG-7: casilla obligatoria de edad y términos en el registro por email.
   const [termsAccepted, setTermsAccepted] = useState(false);
   const sentHeadingRef = useRef<HTMLHeadingElement>(null);
 
-  // E-AVATAR-ICONS: el personaje elegido al registrarse. Se guarda también en el
-  // navegador porque el alta puede quedar pendiente de confirmar el correo y la
-  // elección tendría que sobrevivir hasta el primer inicio de sesión.
-  const [avatarIcon, setAvatarIcon] = useState<string | null>(null);
-
-  function handleAvatarIconChange(icon: string | null) {
-    setAvatarIcon(icon);
-    try {
-      if (icon) window.localStorage.setItem(PENDING_AVATAR_ICON_KEY, icon);
-      else window.localStorage.removeItem(PENDING_AVATAR_ICON_KEY);
-    } catch {
-      // Modo privado o almacenamiento bloqueado: se pierde solo si además hay
-      // confirmación por correo de por medio, y siempre queda Ajustes.
-    }
-  }
-
   useEffect(() => {
     setHydrated(true);
-    const detected = detectInAppBrowser(window.navigator.userAgent);
+    const detected = detectInAppBrowser(window.navigator.userAgent) ?? serverInApp;
     setInApp(detected);
+    setPageHref(window.location.href);
     if (detected?.android) setIntentHref(chromeIntentUrl(window.location.href));
+    if (!nextParam) {
+      const back = referrerReturnPath(document.referrer, window.location.origin);
+      cameFromRef.current = back;
+      setCameFrom(back);
+    }
+    // Solo al montar: el user agent y la página de origen no cambian.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Sesión ya abierta y enlaces de recuperación antiguos, tras el primer
   // pintado (REN-9):
   //  - al entrar con sesión → al destino;
-  //  - en `mode=reset` con sesión → a la pantalla de contraseña nueva. Es
-  //    donde aterrizan los correos de recuperación enviados antes de existir
-  //    esa pantalla (`next=/login?mode=reset`): con sesión abierta y sin forma
-  //    de cambiar la contraseña (R1).
+  //  - en `mode=reset` con sesión → a la pantalla de contraseña nueva (R1);
   //  - `PASSWORD_RECOVERY` (enlace en formato implícito) → misma pantalla.
   // En el registro no se redirige: se puede crear otra cuenta desde la demo.
   useEffect(() => {
@@ -303,7 +311,9 @@ export function LoginPage({ locale }: LoginPageProps) {
         if (mode === "register") return;
         const { data } = await supabase.auth.getSession();
         if (cancelled || !data.session) return;
-        router.replace(mode === "reset" ? `/${locale}/reset-password` : dest);
+        // El destino de AHORA: este efecto no ve el estado posterior al montaje.
+        const now = resolveAuthNext(nextParam || cameFromRef.current, locale);
+        router.replace(mode === "reset" ? `/${locale}/reset-password` : now);
       })();
     });
     return () => {
@@ -316,8 +326,6 @@ export function LoginPage({ locale }: LoginPageProps) {
 
   // Reset state when mode changes — solo cuando CAMBIA, no en el montaje: ahí
   // borraría el aviso de `initialError` (E-DEMO) antes de que se llegue a ver.
-  // Se compara con el modo anterior y no con un "ya montado" porque el modo
-  // estricto de React ejecuta los efectos dos veces al montar.
   const prevMode = useRef(mode);
   useEffect(() => {
     if (prevMode.current === mode) return;
@@ -334,11 +342,15 @@ export function LoginPage({ locale }: LoginPageProps) {
     return () => clearTimeout(id);
   }, [cooldown]);
 
-  // Al pasar a "Revisa tu correo", el foco va al título para que el lector de
-  // pantalla lo anuncie (ACC-3).
+  // Al pasar a "Revisa tu correo", el foco va al titular para que el lector
+  // de pantalla lo anuncie (ACC-3).
   useEffect(() => {
     if (sent) sentHeadingRef.current?.focus();
   }, [sent]);
+
+  useEffect(() => {
+    if (copy === "manual") manualRef.current?.select();
+  }, [copy]);
 
   // -------------------------------------------------------------------------
   // Field helpers
@@ -420,8 +432,6 @@ export function LoginPage({ locale }: LoginPageProps) {
         // canjear el código. El idioma viaja a los metadatos para que las
         // plantillas del correo salgan en el idioma del alta.
         emailRedirectTo: callbackUrl(dest, attribution),
-        // El personaje también viaja aquí: si se confirma desde otro
-        // navegador, el callback lo aplica (el `localStorage` no está allí).
         // SEG-7: la aceptación la convierte en `terms_accepted_at` el
         // disparador `handle_new_user` (con la hora del servidor).
         data: {
@@ -430,7 +440,6 @@ export function LoginPage({ locale }: LoginPageProps) {
           terms_version: TERMS_VERSION,
           // D-12: canal del alta (utm, ref o direct), sin la firma `inv`.
           attribution: toStoredAttribution(attribution),
-          ...(avatarIcon ? { avatar_icon: avatarIcon } : {}),
         },
       },
     });
@@ -440,7 +449,6 @@ export function LoginPage({ locale }: LoginPageProps) {
     if (data.session) {
       // Confirmación desactivada (D-08): alta inmediata, y al onboarding
       // (CRE-6), que termina en el destino original.
-      await applyPendingAvatarIcon();
       await recordImmediateSignup(dest, attribution);
       router.replace(welcomeHref(locale, dest));
     } else {
@@ -449,20 +457,15 @@ export function LoginPage({ locale }: LoginPageProps) {
   }
 
   /**
-   * Guarda el personaje elegido durante el registro (E-AVATAR-ICONS).
-   *
-   * La fila de `users` la crea un trigger de base de datos al dar de alta la
-   * cuenta, así que el personaje no puede viajar en el propio `signUp`: se
-   * escribe justo después, ya con sesión. Y como el alta puede exigir confirmar
-   * el correo (sin sesión todavía), la elección queda aparcada en el navegador
-   * y se aplica al primer inicio de sesión — si no, se perdería sin avisar.
+   * Aplica, ya con sesión, un personaje elegido en el registro antiguo y
+   * aparcado en el navegador (E-AVATAR-ICONS). Un fallo nunca impide entrar.
    */
   async function applyPendingAvatarIcon() {
     let pending: string | null = null;
     try {
-      pending = avatarIcon ?? window.localStorage.getItem(PENDING_AVATAR_ICON_KEY);
+      pending = window.localStorage.getItem(PENDING_AVATAR_ICON_KEY);
     } catch {
-      pending = avatarIcon;
+      return;
     }
     if (!pending) return;
 
@@ -471,7 +474,7 @@ export function LoginPage({ locale }: LoginPageProps) {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ avatar_icon: pending }),
     }).catch(() => {
-      // Un fallo aquí no puede impedir entrar: el personaje se cambia en Ajustes.
+      // El personaje se cambia en Ajustes.
     });
 
     try {
@@ -495,8 +498,7 @@ export function LoginPage({ locale }: LoginPageProps) {
 
   async function handleReset() {
     const supabase = await getSupabase();
-    // R1: el enlace lleva a la pantalla de contraseña nueva, no de vuelta a
-    // este formulario (que solo volvía a pedir el correo).
+    // R1: el enlace lleva a la pantalla de contraseña nueva.
     const { error } = await supabase.auth.resetPasswordForEmail(form.email, {
       redirectTo: callbackUrl(`/${locale}/reset-password`),
     });
@@ -542,16 +544,21 @@ export function LoginPage({ locale }: LoginPageProps) {
     else await handleReset();
   }
 
+  /**
+   * Copia el enlace de esta página (con su `next`) para pegarlo en Safari o
+   * Chrome. Algunos navegadores integrados no dejan escribir en el
+   * portapapeles: entonces se enseña el enlace, seleccionado, para copiarlo a mano.
+   */
   async function copyLink() {
     try {
       await window.navigator.clipboard.writeText(window.location.href);
-      setCopied(true);
+      setCopy("copied");
     } catch {
-      setCopied(false);
+      setCopy("manual");
     }
   }
 
-  /** Enlace a otro modo conservando el destino (`next`). */
+  /** Enlace a otro modo conservando el destino (`next`) y la atribución. */
   function modeHref(nextMode: Mode): string {
     const params = new URLSearchParams();
     if (nextMode !== "login") params.set("mode", nextMode);
@@ -567,38 +574,23 @@ export function LoginPage({ locale }: LoginPageProps) {
 
   if (sent) {
     return (
-      <AuthShell backLabel={tAuth("backHome")} cardClassName="text-center">
-        <Logo size={32} className="justify-center" />
-        <h1
-          ref={sentHeadingRef}
-          tabIndex={-1}
-          className="mt-7 font-display text-xl font-extrabold text-text-primary outline-none"
-        >
-          {tAuth("checkEmail")}
-        </h1>
-        <div role="status" className="mt-3 flex flex-col gap-3">
-          <p className="font-body text-sm text-text-secondary">
+      <AuthShell backLabel={tAuth("backHome")} title={tAuth("checkEmail")} titleRef={sentHeadingRef} aside={wall}>
+        <div role="status" className="flex flex-col gap-3">
+          <p className="font-body text-base text-text-primary">
             {tAuth.rich(sent === "reset" ? "resetSentBody" : "checkEmailBody", {
               email: form.email,
-              strong: (chunks) => (
-                <strong className="break-all font-bold text-text-primary">{chunks}</strong>
-              ),
+              strong: (chunks) => <strong className="break-all font-bold">{chunks}</strong>,
             })}
           </p>
-          <p className="font-body text-meta text-text-tertiary">{tAuth("checkSpam")}</p>
-          {resent && (
-            <p className="font-body text-meta font-bold text-text-secondary">{tAuth("resent")}</p>
-          )}
+          <p className="font-body text-sm text-text-secondary">{tAuth("checkSpam")}</p>
+          {resent ? <p className="font-body text-sm font-bold text-text-primary">{tAuth("resent")}</p> : null}
         </div>
 
-        {form.error && (
-          <p
-            role="alert"
-            className="mt-4 rounded-2xl bg-accent-danger/10 px-[18px] py-3 text-left font-body text-sm text-accent-danger"
-          >
+        {form.error ? (
+          <p role="alert" className={`${NOTICE} mt-4 border-accent-danger text-accent-danger`}>
             {form.error}
           </p>
-        )}
+        ) : null}
 
         <KButton
           type="button"
@@ -618,7 +610,7 @@ export function LoginPage({ locale }: LoginPageProps) {
             setSent(null);
             setForm((prev) => ({ ...prev, password: "", error: null, errorKey: null }));
           }}
-          className={`${FOOT_LINK} mt-2 text-text-tertiary hover:text-text-primary`}
+          className={`${TEXT_LINK} mt-2`}
         >
           {tAuth("useAnotherEmail")}
         </button>
@@ -630,97 +622,51 @@ export function LoginPage({ locale }: LoginPageProps) {
   // Render: main form
   // -------------------------------------------------------------------------
 
-  // El encabezado visible del artboard se quitó a petición del usuario
-  // (08/10/2026): la tarjeta va del logo a los campos. Se conserva SOLO para
-  // lectores de pantalla, porque la página necesita un <h1> que diga qué es.
-  const heading =
-    mode === "login"
-      ? tAuth("welcomeBack")
-      : mode === "register"
-        ? tAuth("createAccount")
-        : tAuth("resetPassword");
+  const title =
+    mode === "login" ? tAuth("loginTitle") : mode === "register" ? tAuth("registerTitle") : tAuth("resetPassword");
+  const showGoogle = mode !== "reset" && !inApp;
 
   return (
-    <AuthShell backLabel={tAuth("backHome")}>
-      {/* Logo de marca centrado, encima de los campos (F0 §Logo), con una
-          línea de valor debajo (CRE-5 / DIS-13). */}
-      <div className="mb-8 flex flex-col items-center gap-3 text-center">
-        <Logo size={32} />
-        <p className="font-body text-sm text-text-secondary">
-          {mode === "reset" ? tAuth("resetIntro") : tAuth("valueLine")}
-        </p>
-      </div>
-
-      <h1 className="sr-only">{heading}</h1>
-
-      {accountNotice && (
-        <p
-          role="status"
-          className="mb-5 rounded-2xl bg-surface-elevated px-[18px] py-3 font-body text-sm text-text-secondary"
-        >
+    <AuthShell
+      backLabel={tAuth("backHome")}
+      title={title}
+      lead={mode === "reset" ? tAuth("resetIntro") : tAuth("valueLine")}
+      aside={wall}
+    >
+      {accountNotice ? (
+        <p role="status" className={`${NOTICE} mb-5 border-text-primary text-text-primary`}>
           {accountNotice}
         </p>
-      )}
+      ) : null}
 
-      {/* MOV-11: Google no deja entrar desde el navegador integrado de las
-          apps sociales. Se avisa ANTES de que el botón lleve a un error. */}
-      {mode !== "reset" && inApp && (
-        <div
-          role="note"
-          className="mb-5 rounded-2xl bg-surface-elevated px-[18px] py-3 font-body text-sm text-text-secondary"
-        >
-          <p className="font-bold text-text-primary">{tAuth("inAppTitle")}</p>
-          <p className="mt-1">{tAuth("inAppBody")}</p>
-          <div className="flex flex-wrap gap-x-5">
-            {inApp.android && intentHref && (
-              <a href={intentHref} className={`${FOOT_LINK} font-bold text-accent-pink`}>
-                {tAuth("inAppOpenChrome")}
-              </a>
-            )}
-            <button
-              type="button"
-              onClick={copyLink}
-              className={`${FOOT_LINK} font-bold text-accent-pink`}
-            >
-              <span aria-live="polite">{copied ? tAuth("inAppCopied") : tAuth("inAppCopy")}</span>
-            </button>
-          </div>
-        </div>
-      )}
-
-      {/* Google OAuth arriba (oculto en reset — solo aplica a login/registro).
-          El canvas no dibuja este botón, así que se usa el primitivo que sí
-          existe: pill secundario (borde 2px, peso 700) de F0. */}
-      {mode !== "reset" && (
+      {/* Google arriba, salvo en los navegadores integrados de las apps
+          sociales (MOV-11): allí Google responde 403 disallowed_useragent,
+          así que ni se pinta y va primero el correo. */}
+      {showGoogle ? (
         <>
-          <button
+          <KButton
             type="button"
+            variant="secondary"
+            size="lg"
             onClick={handleGoogleLogin}
             disabled={form.loading || !hydrated}
-            className="flex w-full items-center justify-center gap-2 rounded-pill border-2 border-surface-border py-[13px] font-body text-sm font-bold text-text-secondary transition-colors duration-base ease-standard hover:bg-surface-elevated hover:text-text-primary disabled:opacity-50"
+            className="w-full"
           >
             <GoogleIcon className="h-4 w-4 shrink-0" />
             {tAuth("continueWithGoogle")}
-          </button>
+          </KButton>
 
-          <div className="my-5 flex items-center gap-3">
-            <div className="h-px flex-1 bg-surface-border" />
-            <span className="font-body text-xs font-bold uppercase tracking-wider text-text-tertiary">
-              {tAuth("or")}
-            </span>
-            <div className="h-px flex-1 bg-surface-border" />
+          <div className="my-5 flex items-center gap-3" aria-hidden="true">
+            <div className="h-0.5 flex-1 bg-surface-border" />
+            <span className="font-body text-meta text-text-secondary">{tAuth("or")}</span>
+            <div className="h-0.5 flex-1 bg-surface-border" />
           </div>
         </>
-      )}
+      ) : null}
 
-      {/* Form — gap 18px entre campos, literal del mockup. `method="post"`:
-          si algo enviase el formulario sin JS, los datos no irían en la URL. */}
-      <form
-        onSubmit={handleSubmit}
-        noValidate
-        method="post"
-        className="flex flex-col gap-[18px]"
-      >
+      {/* `method="post"`: si algo enviase el formulario sin JS, los datos no
+          irían en la URL. */}
+      <form onSubmit={handleSubmit} noValidate method="post" className="flex flex-col gap-[18px]">
         <KInput
           ref={emailRef}
           id="email"
@@ -737,7 +683,7 @@ export function LoginPage({ locale }: LoginPageProps) {
           placeholder={tAuth("emailPlaceholder")}
         />
 
-        {mode !== "reset" && (
+        {mode !== "reset" ? (
           <PasswordField
             ref={passwordRef}
             id="password"
@@ -756,26 +702,9 @@ export function LoginPage({ locale }: LoginPageProps) {
             showLabel={tAuth("showPasswordLabel")}
             hideLabel={tAuth("hidePasswordLabel")}
           />
-        )}
+        ) : null}
 
-        {/* Personaje del avatar (E-AVATAR-ICONS) — opcional: quien no elija
-            se queda con sus iniciales, igual que las cuentas de siempre. */}
-        {mode === "register" && (
-          <div className="flex flex-col gap-2">
-            <span className="font-body text-meta font-bold text-text-tertiary">
-              {tAuth("chooseCharacter")}
-            </span>
-            <AvatarIconPicker
-              value={avatarIcon}
-              onChange={handleAvatarIconChange}
-              label={tAuth("chooseCharacter")}
-              noneLabel={tAuth("chooseCharacterNone")}
-              iconLabel={(key) => tAuth(`characters.${key}`)}
-            />
-          </div>
-        )}
-
-        {mode === "register" && (
+        {mode === "register" ? (
           <TermsCheckbox
             ref={termsRef}
             id="terms"
@@ -788,82 +717,79 @@ export function LoginPage({ locale }: LoginPageProps) {
             }}
             error={form.fieldErrors.terms}
           />
-        )}
+        ) : null}
 
-        {/* Error global — rojo semántico, radio de campo (14px) para que no
-            parezca un chip. `role="alert"` para que se anuncie (ACC-3). */}
-        {form.error && (
-          <div
-            role="alert"
-            className="rounded-2xl bg-accent-danger/10 px-[18px] py-3 font-body text-sm text-accent-danger"
-          >
+        {/* Error global: se anuncia (ACC-3). */}
+        {form.error ? (
+          <div role="alert" className={`${NOTICE} border-accent-danger text-accent-danger`}>
             <p>{form.error}</p>
-            {form.errorKey === "emailNotConfirmed" && (
-              <button
-                type="button"
-                onClick={() => handleResend("signup")}
-                disabled={resending}
-                className="mt-1 inline-block py-2 font-bold underline underline-offset-4"
-              >
+            {form.errorKey === "emailNotConfirmed" ? (
+              <button type="button" onClick={() => handleResend("signup")} disabled={resending} className={TEXT_LINK}>
                 {tAuth("resendConfirmation")}
               </button>
-            )}
+            ) : null}
           </div>
-        )}
+        ) : null}
 
-        {/* Submit — pink, que desde E-BOTON-PINK es el defecto del primario. */}
-        <KButton
-          type="submit"
-          loading={form.loading}
-          disabled={!hydrated}
-          size="lg"
-          className="mt-2 w-full"
-        >
-          {mode === "login"
-            ? tAuth("signIn")
-            : mode === "register"
-              ? tAuth("signUp")
-              : tAuth("sendResetLink")}
+        {/* La única acción rosa de la pantalla; «gratis» va dentro del registro. */}
+        <KButton type="submit" loading={form.loading} disabled={!hydrated} size="lg" className="mt-1 w-full">
+          {mode === "login" ? tAuth("signIn") : mode === "register" ? tAuth("createAccount") : tAuth("sendResetLink")}
         </KButton>
-
       </form>
 
-      {/* Enlace a contraseña olvidada (solo al entrar) */}
-      {mode === "login" && (
-        <div className="mt-3 text-center">
-          <Link
-            href={modeHref("reset")}
-            className={`${FOOT_LINK} text-text-tertiary hover:text-text-primary`}
-          >
+      {/* En el navegador de otra app: una línea para abrirlo fuera y entrar
+          con Google, con el enlace de esta página (y su `next`) copiado. */}
+      {mode !== "reset" && inApp ? (
+        <div role="note" className="mt-5 border-t-2 border-surface-border pt-4">
+          <p className="font-body text-sm text-text-primary">{tAuth("inAppHint")}</p>
+          <div className="flex flex-wrap gap-x-5">
+            <button type="button" onClick={copyLink} className={TEXT_LINK}>
+              {tAuth("inAppCopy")}
+            </button>
+            {inApp.android && intentHref ? (
+              <a href={intentHref} className={TEXT_LINK}>
+                {tAuth("inAppOpenChrome")}
+              </a>
+            ) : null}
+          </div>
+          <p aria-live="polite" className="font-body text-meta text-text-secondary">
+            {copy === "copied" ? tAuth("inAppCopied") : null}
+          </p>
+          {copy === "manual" ? (
+            <KInput
+              ref={manualRef}
+              id="page-link"
+              label={tAuth("inAppCopyManual")}
+              value={pageHref}
+              readOnly
+              onFocus={(e) => e.currentTarget.select()}
+            />
+          ) : null}
+        </div>
+      ) : null}
+
+      <div className="mt-4 flex flex-col items-start border-t-2 border-surface-border pt-2">
+        {mode === "login" ? (
+          <Link href={modeHref("reset")} className={TEXT_LINK}>
             {tAuth("forgotPassword")}
           </Link>
-        </div>
-      )}
-
-      {/* Cambio de modo al PIE, como el mockup ("¿No tienes cuenta?
-          Regístrate"), como enlace de verdad (ROJO-10): se puede abrir en otra
-          pestaña y funciona antes de hidratar. */}
-      <p className="mt-2 text-center font-body text-meta text-text-tertiary">
+        ) : null}
+        {/* Cambio de modo como enlace de verdad (ROJO-10): funciona antes de
+            hidratar y se puede abrir en otra pestaña. */}
         {mode === "reset" ? (
-          <Link
-            href={modeHref("login")}
-            className={`${FOOT_LINK} font-bold text-accent-pink`}
-          >
+          <Link href={modeHref("login")} className={TEXT_LINK}>
             {tAuth("backToSignIn")}
           </Link>
         ) : (
-          <>
+          <p className="font-body text-meta text-text-secondary">
             {mode === "login" ? tAuth("dontHaveAccount") : tAuth("alreadyHaveAccount")}{" "}
-            {/* Imperativo, no infinitivo: el artboard pone "Regístrate". */}
-            <Link
-              href={modeHref(mode === "login" ? "register" : "login")}
-              className={`${FOOT_LINK} font-bold text-accent-pink`}
-            >
-              {mode === "login" ? tAuth("signUpAction") : tAuth("signInAction")}
+            <Link href={modeHref(mode === "login" ? "register" : "login")} className={TEXT_LINK}>
+              {mode === "login" ? tAuth("createAccount") : tAuth("signIn")}
             </Link>
-          </>
+          </p>
         )}
-      </p>
+      </div>
     </AuthShell>
   );
 }
+

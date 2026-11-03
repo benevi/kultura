@@ -169,7 +169,7 @@ describe("destino `next` (CRE-5)", () => {
   it("Google y el cambio de modo conservan el next", async () => {
     h.params = new URLSearchParams("next=%2Fen%2Fu%2Fbenevi");
     render(<LoginPage locale="en" />);
-    expect(screen.getByRole("link", { name: "signUpAction" })).toHaveAttribute(
+    expect(screen.getByRole("link", { name: "createAccount" })).toHaveAttribute(
       "href",
       "/login?mode=register&next=%2Fen%2Fu%2Fbenevi"
     );
@@ -275,12 +275,22 @@ describe("navegador integrado de apps sociales (MOV-11)", () => {
   }
   afterEach(() => setUA(realUA));
 
-  it("en Instagram (iOS) avisa y ofrece copiar el enlace", async () => {
+  it("en Instagram (iOS) no pinta Google: correo primero y copiar el enlace", async () => {
     setUA("Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit Instagram 300.0");
     render(<LoginPage locale="es" />);
-    expect(await screen.findByText("inAppTitle")).toBeInTheDocument();
+    expect(await screen.findByText("inAppHint")).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /continueWithGoogle/ })).not.toBeInTheDocument();
     expect(screen.getByRole("button", { name: "inAppCopy" })).toBeInTheDocument();
     expect(screen.queryByRole("link", { name: "inAppOpenChrome" })).not.toBeInTheDocument();
+  });
+
+  // Regresión: el HTML servido a un user agent de Instagram traía «Continuar
+  // con Google», que acaba en 403 disallowed_useragent.
+  it("con el navegador integrado detectado en el servidor, el HTML sale sin Google", () => {
+    const html = renderToString(<LoginPage locale="es" inApp={{ android: false }} />);
+    expect(html).not.toContain("continueWithGoogle");
+    expect(html).toContain("inAppHint");
+    expect(html).toContain('name="email"');
   });
 
   it("en TikTok (Android) ofrece abrir en Chrome", async () => {
@@ -290,9 +300,81 @@ describe("navegador integrado de apps sociales (MOV-11)", () => {
     expect(link.getAttribute("href")).toMatch(/^intent:\/\/.*package=com\.android\.chrome/);
   });
 
-  it("en un navegador normal no avisa", () => {
+  it("si el portapapeles está bloqueado, enseña el enlace para copiarlo a mano", async () => {
+    setUA("Mozilla/5.0 (iPhone) AppleWebKit LinkedInApp");
+    const clipboard = Object.getOwnPropertyDescriptor(window.navigator, "clipboard");
+    Object.defineProperty(window.navigator, "clipboard", {
+      value: { writeText: () => Promise.reject(new Error("blocked")) },
+      configurable: true,
+    });
+    render(<LoginPage locale="es" />);
+    fireEvent.click(await screen.findByRole("button", { name: "inAppCopy" }));
+    const field = await screen.findByLabelText("inAppCopyManual");
+    expect(field).toHaveValue(window.location.href);
+    if (clipboard) Object.defineProperty(window.navigator, "clipboard", clipboard);
+    else delete (window.navigator as { clipboard?: unknown }).clipboard;
+  });
+
+  it("en un navegador normal no avisa y Google está", () => {
     setUA("Mozilla/5.0 (Macintosh) AppleWebKit Safari/605");
     render(<LoginPage locale="es" />);
-    expect(screen.queryByText("inAppTitle")).not.toBeInTheDocument();
+    expect(screen.queryByText("inAppHint")).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /continueWithGoogle/ })).toBeInTheDocument();
+  });
+});
+
+describe("vuelta a la página de origen sin `next`", () => {
+  const realReferrer = Object.getOwnPropertyDescriptor(Document.prototype, "referrer");
+  function setReferrer(value: string) {
+    Object.defineProperty(document, "referrer", { value, configurable: true });
+  }
+  afterEach(() => {
+    delete (document as { referrer?: string }).referrer;
+    if (realReferrer) Object.defineProperty(Document.prototype, "referrer", realReferrer);
+  });
+
+  // Regresión: «Entrar» en la cabecera de un ranking no lleva `next`, y tras
+  // entrar se acababa en el inicio en vez de en el ranking.
+  it("entrar desde un ranking vuelve al ranking", async () => {
+    setReferrer(`${ORIGIN}/es/best/anime/2025#4`);
+    h.fake.addAccount("user@example.com", "password123");
+    render(<LoginPage locale="es" />);
+    type("email", "user@example.com");
+    type("password", "password123");
+    submit();
+    await waitFor(() => expect(h.replace).toHaveBeenCalledWith("/es/best/anime/2025#4"));
+  });
+
+  it("el registro lleva la página de origen al onboarding y al cambio de modo", async () => {
+    setReferrer(`${ORIGIN}/es/u/benevi/l/3`);
+    h.params = new URLSearchParams("mode=register");
+    render(<LoginPage locale="es" />);
+    await waitFor(() =>
+      expect(screen.getByRole("link", { name: "signIn" })).toHaveAttribute(
+        "href",
+        "/login?next=%2Fes%2Fu%2Fbenevi%2Fl%2F3"
+      )
+    );
+  });
+
+  it("una página de otro sitio no cuenta", async () => {
+    setReferrer("https://evil.example/es/library");
+    h.fake.addAccount("user@example.com", "password123");
+    render(<LoginPage locale="es" />);
+    type("email", "user@example.com");
+    type("password", "password123");
+    submit();
+    await waitFor(() => expect(h.replace).toHaveBeenCalledWith("/es/home"));
+  });
+
+  it("con `next` manda el `next`", async () => {
+    setReferrer(`${ORIGIN}/es/best/anime/2025`);
+    h.params = new URLSearchParams("next=%2Fes%2Flibrary");
+    h.fake.addAccount("user@example.com", "password123");
+    render(<LoginPage locale="es" />);
+    type("email", "user@example.com");
+    type("password", "password123");
+    submit();
+    await waitFor(() => expect(h.replace).toHaveBeenCalledWith("/es/library"));
   });
 });

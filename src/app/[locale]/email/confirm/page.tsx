@@ -12,6 +12,7 @@ import type { Metadata } from 'next'
 import { getTranslations } from 'next-intl/server'
 import { Header } from '@/components/layout/Header'
 import { Footer } from '@/components/layout/Footer'
+import { AlbumPage } from '@/components/album/AlbumPage'
 import { EMAIL_TOKEN_SECRET_MIN } from '@/lib/email/config'
 import { isCurrentConsentVersion } from '@/lib/email/consent'
 import { verifyOptinToken } from '@/lib/email/unsubscribe-token'
@@ -46,9 +47,16 @@ function viewFor(status: string, token: string): View {
   return isCurrentConsentVersion(check.textVersion) ? 'confirm' : 'stale'
 }
 
+// Botones del álbum en papel (los de `KButton`, sin cargar JavaScript): el
+// rosa es la única acción; el secundario, blanco con raya de 2 px en tinta.
 const BUTTON =
-  'inline-flex items-center justify-center min-h-11 px-6 rounded-pill font-body font-bold text-sm transition-colors ' +
-  'focus-visible:[outline-style:solid] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus-ring'
+  'inline-flex min-h-11 items-center justify-center rounded-button border-2 px-6 font-body text-sm font-bold ' +
+  'transition-colors duration-fast ease-out ' +
+  'focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus-ring'
+const PRIMARY = `${BUTTON} border-accent-pink bg-accent-pink text-on-accent-pink hover:border-accent-pink-hover hover:bg-accent-pink-hover`
+const SECONDARY = `${BUTTON} border-button-secondary-border bg-button-secondary text-on-button-secondary hover:bg-surface-elevated`
+/** La etiqueta blanca de la tapa, como en /login. */
+const LABEL = 'theme-paper w-full max-w-xl rounded-bento border-2 border-text-primary bg-surface-default p-6 md:p-8'
 
 export default async function ConfirmPage({ params, searchParams }: Props) {
   const { locale: rawLocale } = await params
@@ -63,35 +71,35 @@ export default async function ConfirmPage({ params, searchParams }: Props) {
   const showForm = view === 'confirm' || (view === 'error' && token !== '')
 
   return (
-    <div className="min-h-screen flex flex-col">
+    <AlbumPage as="div" contained={false} className="flex min-h-screen flex-col">
       <Header />
-      <main id="main" className="page-grid [&>*]:max-w-xl flex-1 py-12 md:py-16">
-        <div className="rounded-bento bg-surface-default px-6 py-8 sm:px-8">
-          <h1 className="font-display text-2xl md:text-3xl font-extrabold tracking-tight text-text-primary mb-3">{title}</h1>
-          <p className="text-text-secondary leading-relaxed mb-6">{body}</p>
+      <AlbumPage as="main" id="main" tone="cyan" className="flex-1 py-12 md:py-16">
+        <div className={LABEL}>
+          <h1 className="mb-3 text-balance font-display text-2xl text-text-primary md:text-3xl">{title}</h1>
+          <p className="mb-6 font-body text-base text-text-secondary">{body}</p>
           {showForm ? (
             <form method="post" action="/api/email/confirm" className="flex flex-wrap gap-3">
               <input type="hidden" name="t" value={token} />
               <input type="hidden" name="l" value={locale} />
-              <button type="submit" className={`${BUTTON} bg-accent-pink text-on-accent-pink hover:opacity-90`}>
+              <button type="submit" className={PRIMARY}>
                 {view === 'error' ? t('retry') : t('confirm')}
               </button>
             </form>
           ) : (
             <div className="flex flex-wrap gap-3">
               {view === 'done' ? (
-                <a href={`/${locale}/calendar`} className={`${BUTTON} bg-accent-pink text-on-accent-pink hover:opacity-90`}>
+                <a href={`/${locale}/calendar`} className={PRIMARY}>
                   {t('calendar')}
                 </a>
               ) : null}
-              <a href={`/${locale}/settings#email`} className={`${BUTTON} bg-surface-elevated text-text-primary`}>
+              <a href={`/${locale}/settings#email`} className={SECONDARY}>
                 {t('settings')}
               </a>
             </div>
           )}
         </div>
-      </main>
+      </AlbumPage>
       <Footer />
-    </div>
+    </AlbumPage>
   )
 }

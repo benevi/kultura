@@ -138,39 +138,21 @@ describe("LoginPage — modo register", () => {
     });
   });
 
-  // El personaje viaja en los metadatos: si la confirmación se abre en otro
-  // navegador, el callback lo aplica (el localStorage no está allí).
-  it("el personaje elegido va en options.data del signUp", async () => {
+  // El registro es correo, contraseña y la casilla: el personaje ya no se
+  // pide aquí (se elige en Ajustes).
+  it("no pide elegir personaje y el ejemplo de correo va traducido", () => {
     render(<LoginPage locale="es" />);
-    fireEvent.click(screen.getByRole("radio", { name: "characters.panda" }));
-    fillAndSubmit("user@example.com", "password123");
-    await waitFor(() =>
-      expect(h.fake.auth.signUp).toHaveBeenCalledWith(
-        expect.objectContaining({
-          options: expect.objectContaining({
-            data: {
-              locale: "es",
-              terms_accepted: true,
-              terms_version: TERMS_VERSION,
-              attribution: { channel: "direct" },
-              avatar_icon: "panda",
-            },
-          }),
-        })
-      )
-    );
+    expect(screen.queryAllByRole("radio")).toHaveLength(0);
+    expect(screen.queryByText("chooseCharacter")).not.toBeInTheDocument();
+    expect(screen.getByLabelText("email")).toHaveAttribute("placeholder", "emailPlaceholder");
   });
 
-  // Los personajes se nombran en el idioma de la página (auth.characters.*),
-  // no con la clave interna ("fox"); el ejemplo de correo también se traduce.
-  it("nombra los personajes y el ejemplo de correo con textos traducidos", () => {
+  it("el botón del registro dice «gratis» (createAccount) y es el único envío", () => {
     render(<LoginPage locale="es" />);
-    const radios = screen.getAllByRole("radio");
-    for (const radio of radios.slice(1)) {
-      expect(radio.getAttribute("aria-label")).toMatch(/^characters\./);
-    }
-    expect(screen.getByRole("radio", { name: "characters.fox" })).toHaveAttribute("title", "characters.fox");
-    expect(screen.getByLabelText("email")).toHaveAttribute("placeholder", "emailPlaceholder");
+    const submits = document.querySelectorAll('button[type="submit"]');
+    expect(submits).toHaveLength(1);
+    expect(submits[0].textContent).toBe("createAccount");
+    expect(screen.getByRole("heading", { level: 1 }).textContent).toBe("registerTitle");
   });
 
   it("sin sesión tras el registro → 'Revisa tu correo' con el email y reenviar", async () => {

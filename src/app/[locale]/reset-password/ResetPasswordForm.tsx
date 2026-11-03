@@ -1,11 +1,10 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
 import { KButton } from "@/components/ui/KButton";
-import { Logo } from "@/components/layout/Logo";
 import { isDemoUser } from "@/lib/demo";
 import { getAuthErrorKeyFromError } from "@/lib/utils/auth-errors";
 import { resolveAuthNext } from "@/lib/utils/safe-redirect";
@@ -18,6 +17,8 @@ type Status = "checking" | "ready" | "invalid" | "demo" | "done";
 
 interface ResetPasswordFormProps {
   locale: string;
+  /** El sobre con los cromos de la tapa (decorativo, llega del servidor). */
+  wall?: ReactNode;
 }
 
 /**
@@ -31,7 +32,7 @@ interface ResetPasswordFormProps {
  * Sin sesión → "el enlace ya no sirve" con un botón para pedir otro.
  * La cuenta demo no puede cambiarla (la comparte todo el mundo).
  */
-export function ResetPasswordForm({ locale }: ResetPasswordFormProps) {
+export function ResetPasswordForm({ locale, wall }: ResetPasswordFormProps) {
   const tAuth = useTranslations("auth");
   const tErrors = useTranslations("errors");
   const router = useRouter();
@@ -129,23 +130,16 @@ export function ResetPasswordForm({ locale }: ResetPasswordFormProps) {
   }
 
   return (
-    <AuthShell backLabel={tAuth("backHome")}>
-      <div className="flex justify-center">
-        <Logo size={32} />
-      </div>
-      <h1 className="mt-7 text-center font-display text-xl font-extrabold text-text-primary">
-        {tAuth("newPasswordTitle")}
-      </h1>
-
+    <AuthShell backLabel={tAuth("backHome")} title={tAuth("newPasswordTitle")} aside={wall}>
       {status === "checking" && (
-        <p role="status" className="mt-6 text-center font-body text-sm text-text-tertiary">
+        <p role="status" className="font-body text-sm text-text-secondary">
           {tAuth("checkingLink")}
         </p>
       )}
 
       {status === "invalid" && (
-        <div className="mt-6 flex flex-col gap-5 text-center">
-          <p role="alert" className="font-body text-sm text-text-secondary">
+        <div className="flex flex-col gap-5">
+          <p role="alert" className="font-body text-base text-text-primary">
             {tAuth("resetLinkInvalid")}
           </p>
           <KButton size="lg" className="w-full" asChild>
@@ -155,8 +149,8 @@ export function ResetPasswordForm({ locale }: ResetPasswordFormProps) {
       )}
 
       {status === "demo" && (
-        <div className="mt-6 flex flex-col gap-5 text-center">
-          <p role="alert" className="font-body text-sm text-text-secondary">
+        <div className="flex flex-col gap-5">
+          <p role="alert" className="font-body text-base text-text-primary">
             {tAuth("demoNoPassword")}
           </p>
           <KButton size="lg" className="w-full" asChild>
@@ -166,12 +160,12 @@ export function ResetPasswordForm({ locale }: ResetPasswordFormProps) {
       )}
 
       {status === "done" && (
-        <div className="mt-6 flex flex-col gap-5 text-center">
+        <div className="flex flex-col gap-5">
           <p
             ref={doneRef}
             tabIndex={-1}
             role="status"
-            className="font-body text-sm text-text-secondary outline-none"
+            className="font-body text-base text-text-primary outline-none"
           >
             {tAuth("passwordUpdated")}
           </p>
@@ -182,7 +176,7 @@ export function ResetPasswordForm({ locale }: ResetPasswordFormProps) {
       )}
 
       {status === "ready" && (
-        <form onSubmit={handleSubmit} noValidate method="post" className="mt-6 flex flex-col gap-[18px]">
+        <form onSubmit={handleSubmit} noValidate method="post" className="flex flex-col gap-[18px]">
           {/* Para que el gestor de contraseñas sepa a qué cuenta guardar la
               nueva: campo de usuario invisible con el email de la sesión. */}
           <input
@@ -230,15 +224,12 @@ export function ResetPasswordForm({ locale }: ResetPasswordFormProps) {
           />
 
           {error && (
-            <p
-              role="alert"
-              className="rounded-2xl bg-accent-danger/10 px-[18px] py-3 font-body text-sm text-accent-danger"
-            >
+            <p role="alert" className="rounded-2xl border-2 border-accent-danger px-4 py-3 font-body text-sm text-accent-danger">
               {error}
             </p>
           )}
 
-          <KButton type="submit" size="lg" loading={saving} className="mt-2 w-full">
+          <KButton type="submit" size="lg" loading={saving} className="mt-1 w-full">
             {tAuth("savePassword")}
           </KButton>
         </form>

@@ -104,22 +104,19 @@ describe("LoginPage — modo login", () => {
     await waitFor(() => expect(h.replace).toHaveBeenCalledWith("/es/home"));
   });
 
-  // ── Acabado F0 del artboard Login (canvas "Kultura — Diseño completo") ──
-  //
-  // El encabezado visible se quitó (decisión del usuario), pero la página sigue
-  // teniendo un <h1> para lectores de pantalla.
-  it("conserva un h1 accesible aunque el encabezado no se vea", () => {
+  // La tapa del álbum: el titular es el h1 de la página.
+  it("el titular de la tapa es el h1", () => {
     render(<LoginPage locale="es" />);
     const heading = screen.getByRole("heading", { level: 1 });
-    expect(heading.textContent).toBe("welcomeBack");
+    expect(heading.textContent).toBe("loginTitle");
   });
 
-  // El artboard pone el cambio de modo AL PIE ("¿No tienes cuenta?
-  // Regístrate"). Ahora es un enlace de verdad (ROJO-10).
+  // Una sola palabra por acción: el cambio de modo usa el mismo nombre que el
+  // botón del registro («Crear cuenta gratis»). Es un enlace de verdad (ROJO-10).
   it("ofrece el registro al pie como enlace a mode=register", () => {
     render(<LoginPage locale="es" />);
     expect(screen.getByText("dontHaveAccount")).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "signUpAction" })).toHaveAttribute(
+    expect(screen.getByRole("link", { name: "createAccount" })).toHaveAttribute(
       "href",
       "/login?mode=register"
     );

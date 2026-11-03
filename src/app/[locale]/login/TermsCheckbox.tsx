@@ -14,7 +14,7 @@ interface TermsCheckboxProps {
 }
 
 const LINK =
-  "font-bold text-text-primary underline underline-offset-4 hover:text-accent-pink";
+  "font-bold text-text-primary underline decoration-2 underline-offset-4 hover:decoration-accent-pink";
 
 /**
  * SEG-7: casilla obligatoria "tengo 14 años o más y acepto los términos y la
@@ -32,8 +32,8 @@ export const TermsCheckbox = forwardRef<HTMLInputElement, TermsCheckboxProps>(
         <label
           htmlFor={id}
           className={cn(
-            "flex min-h-[44px] cursor-pointer items-start gap-3 rounded-2xl bg-surface-elevated px-[18px] py-3",
-            error && "outline outline-1 outline-accent-danger"
+            "flex min-h-[44px] cursor-pointer items-start gap-3 rounded-2xl border-2 border-transparent bg-surface-elevated px-4 py-3",
+            error && "border-accent-danger"
           )}
         >
           <input
@@ -46,9 +46,9 @@ export const TermsCheckbox = forwardRef<HTMLInputElement, TermsCheckboxProps>(
             aria-required="true"
             aria-invalid={error ? true : undefined}
             aria-describedby={error ? errorId : undefined}
-            className="mt-0.5 h-5 w-5 flex-shrink-0 cursor-pointer accent-accent-pink"
+            className="h-5 w-5 flex-shrink-0 cursor-pointer accent-accent-pink"
           />
-          <span className="font-body text-meta leading-5 text-text-secondary">
+          <span className="font-body text-meta text-text-primary">
             {t.rich("termsLabel", {
               terms: (chunks) => (
                 <Link href="/terms" target="_blank" rel="noopener" className={LINK}>

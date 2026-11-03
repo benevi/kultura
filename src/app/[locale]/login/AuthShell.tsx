@@ -1,43 +1,75 @@
+import type { Ref } from "react";
 import { Link } from "@/i18n/navigation";
+import { AlbumPage } from "@/components/album/AlbumPage";
+import { Logo } from "@/components/layout/Logo";
 import { cn } from "@/lib/utils/index";
 
 /**
- * La tarjeta de auth, literal del artboard Login del canvas "Kultura — Diseño
- * completo": `--surface` sólido, radio 32px, padding 44px y la SOMBRA DURA
- * `10px 10px 0 var(--surface-2)` — la misma de las hero cards de F0.
- *
- * En móvil la sombra baja a 6px (DIS-13): con 10px y el gutter de 16px, a
- * 390px la sombra se comía el margen derecho.
+ * La etiqueta blanca de la tapa del álbum («este álbum es de…»), donde va el
+ * formulario: papel blanco, raya de 2 px en tinta y radio de contenedor. Sin
+ * sombra (nada en reposo). La usa también /welcome.
  */
 export const AUTH_CARD =
-  "w-full rounded-bento-xl bg-surface-default p-7 md:p-11 " +
-  "shadow-hard-sm md:shadow-hard";
+  "w-full rounded-bento border-2 border-text-primary bg-surface-default p-6 md:p-8";
+
+const FOCUS =
+  "focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus-ring";
 
 interface AuthShellProps {
+  /** Lo que va en la etiqueta: el formulario o el aviso. */
   children: React.ReactNode;
-  /** Nombre accesible del enlace "← KULTURA" a la portada. */
+  /** Nombre accesible del logotipo, que lleva a la portada. */
   backLabel: string;
+  /** Titular de la tapa (el h1 de la página). */
+  title: React.ReactNode;
+  /** Para llevar el foco al titular (p. ej. al pasar a «Revisa tu correo»). */
+  titleRef?: Ref<HTMLHeadingElement>;
+  /** Una línea bajo el titular. */
+  lead?: React.ReactNode;
+  /** El sobre con los cromos: a la derecha en escritorio, bajo la etiqueta en móvil. */
+  aside?: React.ReactNode;
   cardClassName?: string;
 }
 
 /**
- * Marco común de login y contraseña nueva: enlace de vuelta a la portada
- * (DIS-13) y la tarjeta. El gutter derecho es 6px mayor en móvil para que
- * tarjeta + sombra queden con ≥ 16px a cada lado.
+ * Portada de acceso = la tapa del álbum: campo cian de imprenta a toda la
+ * página, el titular en tinta marina, la etiqueta blanca con el formulario y,
+ * al lado, el sobre del que salen los cromos. El formulario está en el HTML
+ * desde el primer pintado; el sobre llega aparte y nunca lo retrasa.
  */
-export function AuthShell({ children, backLabel, cardClassName }: AuthShellProps) {
+export function AuthShell({ children, backLabel, title, titleRef, lead, aside, cardClassName }: AuthShellProps) {
   return (
-    <main className="flex min-h-screen flex-col items-center justify-center bg-surface-base py-10 pl-4 pr-[22px] md:px-4">
-      <div className="w-full max-w-[440px]">
+    <AlbumPage as="main" id="main" tone="cyan" className="min-h-dvh">
+      <div className="flex min-h-dvh flex-col pb-10 pt-2 md:pt-4">
         <Link
           href="/"
           aria-label={backLabel}
-          className="mb-2 inline-block py-3 font-body text-meta font-bold text-text-tertiary underline-offset-4 transition-colors duration-base ease-standard hover:text-text-primary hover:underline"
+          className={cn("inline-flex min-h-11 items-center self-start rounded-lg", FOCUS)}
         >
-          <span aria-hidden="true">← </span>KULTURA
+          <Logo size={28} />
         </Link>
-        <div className={cn(AUTH_CARD, cardClassName)}>{children}</div>
+        <div
+          className={cn(
+            "flex flex-1 flex-col gap-10 pt-6 md:pt-10",
+            aside != null && "lg:grid lg:grid-cols-[minmax(0,28rem)_minmax(0,1fr)] lg:items-center lg:gap-16 lg:pt-0"
+          )}
+        >
+          <div className="flex w-full min-w-0 max-w-md flex-col gap-6">
+            <div>
+              <h1
+                ref={titleRef}
+                tabIndex={titleRef ? -1 : undefined}
+                className="text-balance font-display text-3xl text-text-primary outline-none lg:text-5xl"
+              >
+                {title}
+              </h1>
+              {lead ? <p className="mt-3 font-body text-base text-text-primary">{lead}</p> : null}
+            </div>
+            <div className={cn("theme-paper", AUTH_CARD, cardClassName)}>{children}</div>
+          </div>
+          {aside != null ? <div className="w-full min-w-0 max-w-md lg:max-w-none">{aside}</div> : null}
+        </div>
       </div>
-    </main>
+    </AlbumPage>
   );
 }

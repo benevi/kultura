@@ -30,7 +30,7 @@ export const PasswordField = forwardRef<HTMLInputElement, PasswordFieldProps>(
           aria-pressed={visible}
           aria-controls={id}
           aria-label={visible ? hideLabel : showLabel}
-          className="absolute -top-3 right-0 px-1 py-3 font-body text-meta font-bold leading-5 text-text-tertiary underline-offset-4 transition-colors duration-base ease-standard hover:text-text-primary hover:underline"
+          className="absolute -top-3 right-0 rounded-lg px-1 py-3 font-body text-meta font-bold text-text-primary underline decoration-2 underline-offset-4 hover:decoration-accent-pink focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus-ring"
         >
           {visible ? hideText : showText}
         </button>

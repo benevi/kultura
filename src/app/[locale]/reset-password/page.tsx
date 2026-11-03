@@ -2,6 +2,8 @@ import { Suspense } from "react";
 import type { Metadata } from "next";
 import { getTranslations } from "next-intl/server";
 import { ResetPasswordForm } from "./ResetPasswordForm";
+import { SobreStage } from "../login/SobreStage";
+import { SobreWall } from "../login/SobreWall";
 
 interface ResetPasswordRouteProps {
   params: Promise<{ locale: string }>;
@@ -29,7 +31,14 @@ export default async function ResetPasswordRoute({ params }: ResetPasswordRouteP
   const { locale } = await params;
   return (
     <Suspense>
-      <ResetPasswordForm locale={locale} />
+      <ResetPasswordForm
+        locale={locale}
+        wall={
+          <Suspense fallback={<SobreStage covers={[]} />}>
+            <SobreWall locale={locale} />
+          </Suspense>
+        }
+      />
     </Suspense>
   );
 }
