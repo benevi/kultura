@@ -1,17 +1,18 @@
-import { PosterImage } from "@/components/media/PosterImage";
-import { posterGradient } from "@/lib/images/poster-gradient";
-import { cn } from "@/lib/utils/index";
+import { Cromo, type CromoProps } from "@/components/album/Cromo";
 
 /**
- * La tarjeta de póster de KULTURA (DIS-7): una sola, la misma en Inicio,
- * Descubrir, listas y perfil público. Radio de póster (16 px, `rounded-2xl`),
- * proporción 2:3 y el gradiente de respaldo SIEMPRE detrás y PRIMERO en el DOM
- * (E-CARD-PORTADA-404): si la portada da 404 queda color de la paleta con las
- * iniciales, nunca un hueco. El título va DEBAJO del póster, como texto, en
- * quien lo use (legible sobre cualquier portada).
+ * La tarjeta de póster de KULTURA (DIS-7), ahora un `Cromo` del álbum: una
+ * sola, la misma en Inicio, Descubrir, listas y perfil público. Borde blanco
+ * de 3 px, radio de cromo (4 px, `rounded-cromo`), 2:3 y el respaldo de color
+ * SIEMPRE detrás y PRIMERO en el DOM (E-CARD-PORTADA-404). El título va
+ * DEBAJO, como texto, en quien lo use.
  *
- * Sin `"use client"`: la usan tanto componentes de servidor (perfil público)
- * como de cliente. `onFail` solo puede pasarse desde un componente de cliente.
+ * Se conserva con su API de siempre para que las filas que ya la usan
+ * hereden el cromo sin cambios; en código nuevo, `Cromo` directamente (con
+ * estado, progreso y brillo).
+ *
+ * Sin `"use client"`: la usan componentes de servidor y de cliente. `onFail`
+ * solo puede pasarse desde un componente de cliente.
  */
 export function PosterFrame({
   seed,
@@ -23,10 +24,10 @@ export function PosterFrame({
   fill = false,
   className,
   children,
+  ...cromo
 }: {
-  /** Semilla del gradiente (id del título). */
+  /** Semilla del respaldo (id del título). */
   seed: string;
-  /** Título: de él salen las iniciales del respaldo (decorativas). */
   title: string;
   poster?: string | null;
   sizes: string;
@@ -35,37 +36,22 @@ export function PosterFrame({
   /** Ocupa el alto de su celda (rejilla bento) en vez de 2:3. */
   fill?: boolean;
   className?: string;
-  /** Capas encima del póster (pastillas de nota, número de posición…). */
+  /** Capas encima de la portada (nota, número de posición…). */
   children?: React.ReactNode;
-}) {
+} & Pick<CromoProps, "state" | "format" | "progress" | "progressLabel" | "stateLabel" | "foil" | "still" | "paste">) {
   return (
-    <div
-      className={cn(
-        "relative w-full overflow-hidden rounded-2xl bg-surface-elevated",
-        fill ? "h-full min-h-[110px]" : "aspect-[2/3]",
-        className
-      )}
+    <Cromo
+      seed={seed}
+      title={title}
+      poster={poster}
+      sizes={sizes}
+      priority={priority}
+      onPosterFail={onFail}
+      fill={fill}
+      className={className}
+      {...cromo}
     >
-      <div
-        data-placeholder
-        aria-hidden="true"
-        className="absolute inset-0 flex items-center justify-center"
-        style={{ background: posterGradient(seed || title) }}
-      >
-        <span aria-hidden="true" className="line-clamp-2 px-2 text-center font-display text-lg font-extrabold text-white/90">
-          {title.slice(0, 2).toUpperCase()}
-        </span>
-      </div>
-      {poster ? (
-        <PosterImage
-          src={poster}
-          sizes={sizes}
-          priority={priority}
-          className="object-cover motion-safe:transition-transform motion-safe:duration-300 motion-safe:group-hover:scale-105"
-          onFail={onFail}
-        />
-      ) : null}
       {children}
-    </div>
+    </Cromo>
   );
 }

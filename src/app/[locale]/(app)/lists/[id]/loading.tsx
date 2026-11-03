@@ -18,7 +18,7 @@ export default async function ListDetailLoading() {
           <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-5">
             {[0, 1, 2, 3, 4, 5, 6, 7, 8, 9].map((i) => (
               <div key={i}>
-                <div className="aspect-[2/3] rounded-2xl bg-surface-elevated" />
+                <div className="aspect-[2/3] rounded-cromo bg-surface-elevated" />
                 <div className="mt-2 h-3.5 w-3/4 rounded-pill bg-surface-elevated" />
               </div>
             ))}

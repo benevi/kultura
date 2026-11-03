@@ -16,7 +16,7 @@ export default function DiscoverLoading() {
       <div className="animate-pulse grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-3 md:gap-4">
         {Array.from({ length: 18 }).map((_, i) => (
           <div key={i} className="flex flex-col gap-2">
-            <div className="aspect-[2/3] bg-surface-elevated rounded-2xl" />
+            <div className="aspect-[2/3] bg-surface-elevated rounded-cromo" />
             <div className="h-3 w-3/4 bg-surface-elevated rounded-button" />
             <div className="h-3 w-1/2 bg-surface-elevated rounded-button" />
           </div>

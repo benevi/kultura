@@ -3,6 +3,7 @@
 import * as React from "react";
 import { useTranslations } from "next-intl";
 import { cn } from "@/lib/utils/index";
+import { usePasteGrid } from "@/lib/motion/usePasteGrid";
 import type { MediaItem } from "@/types/media";
 import { MediaCard } from "./MediaCard";
 
@@ -33,7 +34,7 @@ export interface MediaGridProps {
 /** Cards que se cargan con prioridad: lo que se ve sin hacer scroll. */
 const PRIORITY_CARDS = 6;
 
-// Patrón bento F0 (DISENO.md §Rotación de cards): ciclo de 6 celdas, fila alta
+// Patrón bento: ciclo de 6 celdas, fila alta
 // de 3 (5/4/3 columnas × row-span-3) + fila baja de 3 (4/4/4 columnas ×
 // row-span-2) — mismo 12-col grid y proporción 3:2 que el mockup de Discover.
 // Cadenas literales completas (no interpoladas) para que Tailwind las detecte
@@ -49,18 +50,8 @@ export const BENTO_CELL_CLASSES = [
   "col-span-2 md:col-span-4 md:row-span-2",
 ];
 
-// F0: solo las DOS primeras cards de cada ciclo de 6 ("feature grande" y
-// "feature mediano") llevan rotación sutil y acento radial — las 4 restantes
-// (incl. la de span-3, "pequeña" pese a compartir row-span) van sin transform.
-// Signos alternos, igual que en el mockup (-1.2deg / 1deg).
-const BENTO_ROTATION_CLASSES = ["-rotate-[1.2deg]", "rotate-[1deg]"];
-// Matices vivos de la paleta (H de --purple/--pink/--blue/--orange, DISENO.md
-// §Tokens) para el acento radial de esas mismas dos cards. Dos pares que se
-// alternan ciclo a ciclo para que filas consecutivas no se repitan idénticas.
-const BENTO_ACCENT_HUE_PAIRS: [number, number][] = [
-  [300, 350], // purple, pink — igual que el mockup F0
-  [250, 55], // blue, orange
-];
+// Álbum de cromos: sin rotación ni acento radial en las celdas grandes (sin
+// degradados fuera del brillo; la portada es la que manda).
 
 /**
  * Esqueleto con la forma real de `MediaCard` (DIS-13): póster con el radio
@@ -71,7 +62,7 @@ const BENTO_ACCENT_HUE_PAIRS: [number, number][] = [
 function ShimmerCard({ fill = false }: { fill?: boolean }) {
   return (
     <div aria-hidden="true" className={cn("motion-safe:animate-pulse", fill && "flex h-full flex-col")}>
-      <div className={cn("w-full rounded-2xl bg-surface-elevated", fill ? "min-h-0 flex-1" : "aspect-[2/3]")} />
+      <div className={cn("w-full rounded-cromo bg-surface-elevated", fill ? "min-h-0 flex-1" : "aspect-[2/3]")} />
       <div className="mt-2 h-3.5 w-3/4 rounded-pill bg-surface-elevated" />
       <div className="mt-1.5 h-3 w-1/3 rounded-pill bg-surface-elevated" />
     </div>
@@ -94,7 +85,12 @@ export function MediaGrid({
     (id: string) => setFailed((prev) => (prev.has(id) ? prev : new Set(prev).add(id))),
     []
   );
+  const gridRef = React.useRef<HTMLDivElement>(null);
+  // Un pegado escalonado por rejilla y página, al montar (en la app nada va
+  // ligado al scroll). GSAP se carga en ese momento; nada con movimiento
+  // reducido.
   const visible = requirePoster ? items.filter((i) => i.poster && !failed.has(i.id)) : items;
+  usePasteGrid(gridRef, { enabled: !loading && visible.length > 0 });
   const gridClasses = cn(
     layout === "bento"
       ? // gap-5 (20px): mismo espaciado entre cards de fila que fija DISENO.md
@@ -118,26 +114,17 @@ export function MediaGrid({
   if (visible.length === 0) {
     return (
       <div data-empty className="flex items-center justify-center py-16">
-        <p className="text-text-tertiary text-sm">{emptyMessage ?? t("noContent")}</p>
+        <p className="text-sm text-text-tertiary">{emptyMessage ?? t("noContent")}</p>
       </div>
     );
   }
 
   return (
-    <div className={gridClasses}>
+    <div ref={gridRef} className={gridClasses}>
       {visible.map((item, index) => {
         const cyclePos = index % BENTO_CELL_CLASSES.length;
-        const cycleIndex = Math.floor(index / BENTO_CELL_CLASSES.length);
-        // Solo las dos primeras posiciones del ciclo son "feature" (F0).
-        const isFeature = layout === "bento" && cyclePos < 2;
         return (
-          <div
-            key={item.id}
-            className={cn(
-              layout === "bento" ? BENTO_CELL_CLASSES[cyclePos] : undefined,
-              isFeature ? BENTO_ROTATION_CLASSES[cyclePos] : undefined
-            )}
-          >
+          <div key={item.id} className={layout === "bento" ? BENTO_CELL_CLASSES[cyclePos] : undefined}>
             <MediaCard
               item={item}
               showType={showType}
@@ -145,11 +132,6 @@ export function MediaGrid({
               onPosterError={requirePoster ? onPosterError : undefined}
               aspect={layout === "bento" ? "fill" : "2/3"}
               headingLevel={headingLevel}
-              accentHue={
-                isFeature
-                  ? BENTO_ACCENT_HUE_PAIRS[cycleIndex % BENTO_ACCENT_HUE_PAIRS.length][cyclePos]
-                  : undefined
-              }
             />
           </div>
         );

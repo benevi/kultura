@@ -21,7 +21,7 @@ export default function ProfileLoading() {
           <div className="flex gap-5 overflow-x-hidden pb-2">
             {[0, 1, 2, 3, 4].map((i) => (
               <div key={i} className="w-28 md:w-36 flex-shrink-0">
-                <div className="aspect-[2/3] bg-surface-elevated rounded-2xl" />
+                <div className="aspect-[2/3] bg-surface-elevated rounded-cromo" />
                 <div className="mt-2 h-3.5 w-3/4 bg-surface-elevated rounded-pill" />
               </div>
             ))}

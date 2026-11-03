@@ -48,6 +48,7 @@ export const REPORT_CLIENT_NAMESPACES = ["report"] as const;
  */
 export const WELCOME_CLIENT_NAMESPACES = [
   "aiRecommendations",
+  "album",
   "auth",
   "discoverFilters.typeBadge",
   "onboarding",
@@ -61,7 +62,7 @@ export const WELCOME_CLIENT_NAMESPACES = [
  * usaba). Mismo patrón que `/report`,
  * con `u/layout.tsx`, para no cargar `report` ni `invite` en todas las públicas.
  */
-export const PUBLIC_PROFILE_CLIENT_NAMESPACES = ["discoverFilters.typeBadge", "invite", "media", "report"] as const;
+export const PUBLIC_PROFILE_CLIENT_NAMESPACES = ["album", "discoverFilters.typeBadge", "invite", "media", "report"] as const;
 
 /**
  * `/[locale]/media/…` (ficha pública, D-01, fuera de `(app)`): biblioteca,
@@ -92,6 +93,8 @@ export const MEDIA_CLIENT_NAMESPACES = [
 
 export const APP_CLIENT_NAMESPACES = [
   "aiRecommendations",
+  // Álbum de cromos: nota y formato de `MediaCard` para el lector.
+  "album",
   "auth",
   // F-28: la cabecera (NavLinks, menú del avatar) también se alcanza desde aquí.
   "calendar.nav",

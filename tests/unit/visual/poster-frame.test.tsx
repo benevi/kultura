@@ -1,9 +1,10 @@
 /**
- * F-30 · DIS-7: una sola tarjeta de póster.
+ * F-30 · DIS-7: una sola tarjeta de póster, ahora el `Cromo` del álbum.
  *
  * Antes cada fila pintaba su póster a mano (radios 18, 20 y 22 para la misma
- * portada; título encima en unas y debajo en otras). Ahora todas usan
- * `PosterFrame`: radio de póster, 2:3 y gradiente de respaldo detrás.
+ * portada; título encima en unas y debajo en otras). Ahora todas pasan por
+ * `Cromo` (directamente o a través de `PosterFrame`): radio de cromo (4 px),
+ * borde blanco de 3 px, 2:3 y el respaldo de color detrás y primero.
  */
 import { describe, it, expect, vi } from "vitest";
 import { render } from "@testing-library/react";
@@ -18,11 +19,14 @@ vi.mock("next/image", () => ({
 
 const ROOT = resolve(__dirname, "../../..");
 
-describe("PosterFrame", () => {
-  it("radio de póster, 2:3 y el gradiente PRIMERO (detrás de la portada)", () => {
+describe("PosterFrame → Cromo", () => {
+  it("radio de cromo, borde blanco de 3 px, 2:3 y el respaldo PRIMERO (detrás de la portada)", () => {
     const { container } = render(<PosterFrame seed="tmdb_550" title="Fight Club" poster="https://x/p.jpg" sizes="100px" />);
     const frame = container.firstElementChild as HTMLElement;
-    expect(frame.className).toContain("rounded-2xl");
+    expect(frame).toHaveAttribute("data-cromo");
+    expect(frame.className).toContain("rounded-cromo");
+    expect(frame.className).toContain("border-[3px]");
+    expect(frame.className).toContain("border-cromo-border");
     expect(frame.className).toContain("aspect-[2/3]");
     const placeholder = frame.querySelector("[data-placeholder]")!;
     const img = frame.querySelector("img")!;
@@ -43,7 +47,7 @@ describe("PosterFrame", () => {
     "src/components/collection/PublicCollection.tsx",
   ])("%s usa la tarjeta única", (file) => {
     const code = readFileSync(resolve(ROOT, file), "utf8");
-    expect(code).toMatch(/<PosterFrame\b/);
+    expect(code).toMatch(/<(PosterFrame|Cromo)\b/);
     expect(code).not.toMatch(/posterGradient\(/);
   });
 });

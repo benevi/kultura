@@ -2079,6 +2079,33 @@
       "steamTrademark": "Steam and the Steam logo are trademarks of Valve Corporation; KULTURA is not affiliated with Valve."
     }
   },
+  "album": {
+    "format": {
+      "movie": "Movie",
+      "tv": "TV show",
+      "anime": "Anime",
+      "manga": "Manga",
+      "game": "Game",
+      "book": "Book",
+      "comic": "Comic"
+    },
+    "status": {
+      "pending": "Pending",
+      "in_progress": "In progress",
+      "completed": "Completed",
+      "abandoned": "Dropped"
+    },
+    "slot": "Slot {number}",
+    "slotPending": "Slot {number}, still missing:",
+    "rating": "Rating {score, number, ::.0}",
+    "score": "{score, number, ::.0}",
+    "foil": "Foil: 10 out of 10",
+    "folded": "Dropped, you can pick it up again",
+    "progress": "{current} of {total}",
+    "progressPercent": "{percent} done",
+    "missing": "{count, plural, one {# title missing} other {# titles missing}}",
+    "page": "Page {number}"
+  },
   "collection": {
     "visibility": "List visibility",
     "private": "Private",

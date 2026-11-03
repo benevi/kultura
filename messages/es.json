@@ -2079,6 +2079,33 @@
       "steamTrademark": "Steam y el logotipo de Steam son marcas de Valve Corporation; KULTURA no está afiliada a Valve."
     }
   },
+  "album": {
+    "format": {
+      "movie": "Película",
+      "tv": "Serie",
+      "anime": "Anime",
+      "manga": "Manga",
+      "game": "Videojuego",
+      "book": "Libro",
+      "comic": "Cómic"
+    },
+    "status": {
+      "pending": "Pendiente",
+      "in_progress": "En curso",
+      "completed": "Completado",
+      "abandoned": "Abandonado"
+    },
+    "slot": "Hueco {number}",
+    "slotPending": "Hueco {number}, te falta:",
+    "rating": "Nota {score, number, ::.0}",
+    "score": "{score, number, ::.0}",
+    "foil": "Brillante: 10 de 10",
+    "folded": "Abandonado, puedes retomarlo",
+    "progress": "{current} de {total}",
+    "progressPercent": "{percent} hecho",
+    "missing": "{count, plural, one {Te falta # título} other {Te faltan # títulos}}",
+    "page": "Página {number}"
+  },
   "collection": {
     "visibility": "Visibilidad de la lista",
     "private": "Privada",

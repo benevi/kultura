@@ -1,6 +1,7 @@
 "use client";
 
-import { PosterFrame } from "@/components/media/PosterFrame";
+import { Cromo } from "@/components/album/Cromo";
+import { FormatTag } from "@/components/album/FormatTag";
 import { useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
 import { cn } from "@/lib/utils/index";
@@ -14,10 +15,9 @@ export interface MediaCardProps {
   /** 'fill' para grid bento (la imagen ocupa el alto que le da la celda del grid). Default '2/3'. */
   aspect?: "2/3" | "fill";
   /**
-   * Acento radial de esquina superior-izquierda de las "cards feature" del
-   * bento (F0/DISENO.md §Cards feature grandes). Un matiz OKLCH (H de la
-   * paleta) activa la capa; ausente = sin acento (comportamiento actual,
-   * todos los consumidores fuera de MediaGrid layout="bento").
+   * Retirado con el álbum de cromos (sin degradados fuera del brillo). Se
+   * acepta y se ignora para no romper a quien aún lo pase.
+   * @deprecated
    */
   accentHue?: number;
   /** La portada no ha cargado: la rejilla puede sacar la card (E-SIN-CARDS-VACIAS). */
@@ -31,80 +31,71 @@ export interface MediaCardProps {
   headingLevel?: 2 | 3 | 4;
 }
 
+/**
+ * Card de catálogo: un `Cromo` pegado con el título y el año DEBAJO (se lee
+ * igual sobre cualquier portada). La nota va en una caja de número sobre la
+ * esquina, con formato del idioma (8,5) y nombre para el lector; el formato,
+ * como `FormatTag` (punto + nombre) bajo el título, nunca encima de la
+ * portada. El enlace levanta la esquina del cromo con ratón y con teclado.
+ */
 export function MediaCard({
   item,
   showType = false,
   priority = false,
   className,
   aspect = "2/3",
-  accentHue,
   onPosterError,
   headingLevel = 3,
 }: MediaCardProps) {
   const Heading = `h${headingLevel}` as "h2" | "h3" | "h4";
   const href = `/media/${item.type}/${item.externalId}` as const;
-  // Badge de tipo (modo "all", R5b): label localizado vía discoverFilters.typeBadge
-  // (singular, ≠ filters.<type> que es plural). R6.
+  // Nombre del formato en singular (R5b/R6): `discoverFilters.typeBadge`.
   const tBadge = useTranslations("discoverFilters.typeBadge");
-
+  const tAlbum = useTranslations("album");
+  // La nota sale con el formato del idioma (8,5 / 8.5) desde el propio
+  // mensaje ICU (`album.score`), sin `toFixed` (WIG).
+  const score = typeof item.rating === "number" ? item.rating : null;
 
   return (
-    <Link href={href} className={cn("group block h-full", className)}>
-      {/* DIS-7: la misma tarjeta de póster que Inicio, listas y perfil
-          (`PosterFrame`), con el título DEBAJO y no encima con velo: se lee
-          igual sobre cualquier portada. En la rejilla bento (`fill`) el
-          póster ocupa lo que deja el título dentro de la celda. */}
-      <article className={cn("cursor-pointer", aspect === "fill" && "flex h-full flex-col")}>
-        <PosterFrame
+    <Link
+      href={href}
+      className={cn(
+        "group block h-full rounded-cromo",
+        "focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-focus-ring",
+        className
+      )}
+    >
+      <article className={cn(aspect === "fill" && "flex h-full flex-col")}>
+        <Cromo
           seed={item.id || item.title}
           title={item.title}
           poster={item.poster}
           sizes="(max-width: 640px) 45vw, (max-width: 1024px) 30vw, 20vw"
           priority={priority}
-          onFail={onPosterError ? () => onPosterError(item.id) : undefined}
+          onPosterFail={onPosterError ? () => onPosterError(item.id) : undefined}
           fill={aspect === "fill"}
           className={aspect === "fill" ? "min-h-0 flex-1" : undefined}
         >
-          {/* Acento radial de esquina (F0 §Cards feature grandes): solo en las
-              cards "feature" del bento (MediaGrid las marca con accentHue). */}
-          {accentHue !== undefined && (
-            <div
-              aria-hidden="true"
-              className="pointer-events-none absolute inset-0"
-              style={{
-                background: `radial-gradient(120% 100% at 20% 10%, oklch(58% 0.2 ${accentHue} / 0.55) 0%, transparent 55%)`,
-              }}
-            />
-          )}
+          {score !== null ? (
+            <span className="absolute bottom-1.5 right-1.5 z-[1] inline-flex h-6 items-center gap-1 rounded-cromo bg-surface-base px-1.5 text-xs font-bold leading-none tabular-nums text-text-primary">
+              <svg aria-hidden="true" viewBox="0 0 12 12" className="h-3 w-3 text-accent-highlight" fill="currentColor">
+                <path d="M6 .8l1.6 3.3 3.6.5-2.6 2.5.6 3.6L6 9l-3.2 1.7.6-3.6L.8 4.6l3.6-.5z" />
+              </svg>
+              <span aria-hidden="true">{tAlbum("score", { score })}</span>
+              <span className="sr-only">{tAlbum("rating", { score })}</span>
+            </span>
+          ) : null}
+        </Cromo>
 
-          {/* E-MATCH-SIN-BADGE: el porcentaje de afinidad ya no se pinta en
-              ninguna superficie (el match sigue eligiendo recomendaciones). */}
-
-          {/* Type badge overlay (modo "all", R5b) */}
-          {showType && (
-            <div
-              data-testid="media-type-badge"
-              className="absolute left-2 top-2 rounded-full bg-surface-base/80 px-2 py-1 text-xs font-semibold leading-none text-text-primary backdrop-blur-sm"
-            >
-              {tBadge(item.type)}
-            </div>
-          )}
-
-          {/* Rating overlay */}
-          {item.rating !== undefined && (
-            <div className="absolute bottom-2 right-2 rounded-full bg-surface-base/80 px-2 py-1 text-xs font-bold leading-none text-accent-highlight backdrop-blur-sm">
-              ★ {item.rating.toFixed(1)}
-            </div>
-          )}
-        </PosterFrame>
-
-        <Heading
-          className="mt-2 line-clamp-2 font-display text-sm font-bold leading-tight text-text-primary"
-          title={item.title}
-        >
+        <Heading className="mt-2 line-clamp-2 font-body text-sm font-semibold leading-tight text-text-primary" title={item.title}>
           {item.title}
         </Heading>
-        {item.year ? <p className="mt-0.5 font-body text-xs text-text-tertiary">{item.year}</p> : null}
+        {showType || item.year ? (
+          <p className="mt-1 flex min-w-0 items-center gap-2 text-xs text-text-tertiary">
+            {showType ? <FormatTag data-testid="media-type-badge" format={item.type} label={tBadge(item.type)} /> : null}
+            {item.year ? <span className="tabular-nums">{item.year}</span> : null}
+          </p>
+        ) : null}
       </article>
     </Link>
   );

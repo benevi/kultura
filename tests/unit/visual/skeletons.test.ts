@@ -57,10 +57,10 @@ describe("esqueletos con la forma real", () => {
     }
   });
 
-  it("los pósteres de los esqueletos llevan el radio de póster", () => {
+  it("los pósteres de los esqueletos llevan el radio de cromo (4 px, como `Cromo`)", () => {
     for (const file of ["home", "library", "profile/[username]", "lists/[id]"]) {
       const code = read(`${APP}/${file}/loading.tsx`);
-      for (const m of code.matchAll(/className="[^"]*aspect-\[2\/3\][^"]*"/g)) expect(m[0]).toContain("rounded-2xl");
+      for (const m of code.matchAll(/className="[^"]*aspect-\[2\/3\][^"]*"/g)) expect(m[0]).toContain("rounded-cromo");
     }
   });
 });
