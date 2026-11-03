@@ -299,7 +299,7 @@
     "providerRatingLabel": "{source} rating",
     "chapters": "Chapters",
     "pages": "Pages",
-    "durationValue": "{minutes} min",
+    "durationValue": "{minutes, number} min",
     "credits": {
       "director": "Director",
       "cast": "Cast",
@@ -321,18 +321,18 @@
       "ads": "Free with ads",
       "rent": "Rent",
       "buy": "Buy"
-    }
+    },
+    "countValue": "{kind, select, episodes {{count, plural, one {# episode} other {# episodes}}} chapters {{count, plural, one {# chapter} other {# chapters}}} pages {{count, plural, one {# page} other {# pages}}} other {{count, number}}}",
+    "steamScreenshotLabel": "Screenshot {number, number} (opens in a new tab)"
   },
   "adaptations": {
     "title": "Also available as…",
-    "subtitle": "The same story in other formats: where it comes from, its adaptations and the rest of the franchise.",
     "relation": {
       "source": "Original work",
       "derivative": "Adaptation",
       "sibling": "Another adaptation",
       "franchise": "Same franchise"
     },
-    "meta": "{type} · {year}",
     "inLibrary": "In your library",
     "sourceLabel": "Links:",
     "sourceLinkLabel": "Wikidata (opens in a new tab)",
@@ -390,9 +390,8 @@
       "pending": "Pending",
       "abandoned": "Dropped"
     },
-    "addToLibrary": "Add to library",
+    "addToLibrary": "Add to my library",
     "updateEntry": "Update",
-    "remove": "Remove",
     "score": "Score",
     "watchedAt": "Date",
     "episode": "Episode",
@@ -414,12 +413,6 @@
     "saveStatus": "Save",
     "cancel": "Cancel",
     "clearProgress": "Clear progress",
-    "counters": {
-      "completed": "Completed",
-      "inProgress": "In progress",
-      "pending": "Pending",
-      "dropped": "Dropped"
-    },
     "statusLabel": "Status",
     "saving": "Saving…",
     "removeConfirmTitle": "Remove from your library?",
@@ -428,7 +421,32 @@
     "removed": "Removed from your library",
     "saved": "Saved to your library",
     "undo": "Undo",
-    "restored": "Back in your library"
+    "restored": "Back in your library",
+    "untitled": "Untitled",
+    "yourRatingOf": "Your rating: {value} out of {max}",
+    "views": {
+      "album": "Album",
+      "list": "List"
+    },
+    "album": {
+      "more": "Show {count, number} more"
+    },
+    "list": {
+      "label": "Your titles",
+      "search": "Search your library",
+      "searchPlaceholder": "Type a title…",
+      "sort": "Sort by",
+      "sorts": {
+        "recent": "Last touched",
+        "added": "Last added",
+        "title": "Title (A–Z)",
+        "rating": "Your rating",
+        "year": "Year"
+      },
+      "noRating": "Not rated",
+      "minRating": "{value, number}/{max, number} and up"
+    },
+    "remove": "Remove from my library"
   },
   "diary": {
     "title": "Diary",
@@ -456,15 +474,27 @@
     "deleted": "Entry for “{title}” deleted",
     "logFailed": "Saved to your library, but we couldn't add it to your diary. Try again.",
     "savedWithLog": "Saved to your library and your diary",
-    "stamp": "{type, select, book {Read!} manga {Read!} comic {Read!} game {Played!} other {Watched!}}",
     "removeConfirmBody": "The status, rating, progress and diary of “{title}” will be deleted.",
     "view": "View",
-    "viewCollection": "Titles",
     "viewDiary": "Diary",
     "favorites": "Favorites",
     "listLabel": "Diary entries",
     "emptyTitle": "Your diary is empty",
-    "emptyHint": "Mark a title as completed and add it to your diary: here you'll see what you watched, read or played, and when."
+    "emptyHint": "Mark a title as completed and add it to your diary: here you'll see what you watched, read or played, and when.",
+    "undo": "Undo",
+    "restored": "The entry is back in your diary",
+    "untitled": "Untitled",
+    "yourDiary": "Your diary",
+    "yourRating": "Your rating",
+    "outOf": "out of {max, number}",
+    "ratingOf": "{value} out of {max, number}",
+    "deleteAsk": "Delete this entry? Its review goes with it.",
+    "deleteConfirm": "Delete entry",
+    "deleteKeep": "Keep it",
+    "discardAsk": "Your review or private note isn't saved. If you leave, it's lost.",
+    "discardKeep": "Keep writing",
+    "discardConfirm": "Leave without saving",
+    "stamp": "{type, select, book {Read!} manga {Read!} comic {Read!} game {Played!} other {Watched!}}"
   },
   "progress": {
     "title": "Progress",
@@ -495,8 +525,8 @@
       "page": "p. {page, number}",
       "pageOf": "p. {page, number} of {total, number}",
       "percent": "{percent, number}% read",
-      "hours": "{hours, number} h",
-      "hoursOf": "{hours, number} h of ~{total, number} h"
+      "hours": "{hours, number} h",
+      "hoursOf": "{hours, number} h of ~{total, number} h"
     },
     "quick": "{unit, select, episode {+1 ep.} chapter {+1 ch.} page {+10 pp.} percent {+5%} hours {+1 h} advance {Move on} other {+1}}",
     "quickLabel": "{unit, select, episode {Mark the next episode of “{title}”} chapter {Mark the next chapter of “{title}”} page {Add 10 pages to “{title}”} percent {Add 5% to “{title}”} hours {Add one hour played to “{title}”} advance {Move forward in “{title}”} other {Move forward in “{title}”}}",

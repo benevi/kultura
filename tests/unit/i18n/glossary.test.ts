@@ -40,7 +40,7 @@ export const FORBIDDEN: Rule[] = [
 /** Grupos de claves que nombran el mismo concepto. */
 export const SAME_CONCEPT: { concept: string; keys: string[] }[] = [
   { concept: "completado", keys: ["status.completed", "library.status.completed", "filters.completed"] },
-  { concept: "en curso", keys: ["status.in_progress", "library.status.in_progress", "filters.inProgress", "library.counters.inProgress"] },
+  { concept: "en curso", keys: ["status.in_progress", "library.status.in_progress", "filters.inProgress", "album.status.in_progress"] },
   { concept: "pendiente", keys: ["status.pending", "library.status.pending", "filters.pending"] },
   { concept: "abandonado", keys: ["library.status.abandoned", "filters.dropped"] },
   { concept: "ajustes", keys: ["nav.settings", "settings.title"] },

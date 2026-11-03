@@ -3,7 +3,7 @@
 // sello de «Visto» y Biblioteca con diario/favoritos.
 // ============================================================
 
-import { render, screen, fireEvent, waitFor, within } from '@testing-library/react'
+import { render, screen, fireEvent, waitFor, within, act } from '@testing-library/react'
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import type { DiaryConfig, LibraryEntry } from '@/types/library'
 
@@ -47,6 +47,8 @@ import { StarRating } from '@/components/ui/StarRating'
 import { LibraryStatusModal } from '@/components/library/LibraryStatusModal'
 import { LibraryAction, __resetDiaryCache } from '@/components/library/LibraryAction'
 import { DiaryList } from '@/components/library/DiaryList'
+import { TitleEntryProvider } from '@/components/library/entry-context'
+import { TitleCromo } from '@/components/library/TitleCromo'
 import { LibraryClient } from '@/app/[locale]/(app)/library/LibraryClient'
 
 const ENTRY: LibraryEntry = {
@@ -224,7 +226,46 @@ describe('LibraryStatusModal con el diario', () => {
     const del = screen.getByRole('button', { name: /^deleteLog/ })
     expect(del.getAttribute('aria-label')).toContain('"title":"Fight Club"')
     fireEvent.click(del)
+    // WIG: el primer toque no borra (la reseña no tiene vuelta): pregunta en la fila.
+    expect(onDeleteLog).not.toHaveBeenCalled()
+    expect(screen.getByText('deleteAsk')).toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: 'deleteConfirm' }))
     await waitFor(() => expect(onDeleteLog).toHaveBeenCalledWith(LOG.id))
+  })
+
+  it('«No borrar» deja el apunte como estaba', () => {
+    const onDeleteLog = vi.fn()
+    render(
+      <LibraryStatusModal {...modalProps} current={ENTRY} onSave={vi.fn()} diary={ON('ten', [LOG])} onDeleteLog={onDeleteLog} />
+    )
+    fireEvent.click(screen.getByRole('button', { name: /^deleteLog/ }))
+    fireEvent.click(screen.getByRole('button', { name: 'deleteKeep' }))
+    expect(onDeleteLog).not.toHaveBeenCalled()
+    expect(screen.queryByText('deleteAsk')).toBeNull()
+    expect(screen.getByRole('button', { name: /^deleteLog/ })).toBeInTheDocument()
+  })
+
+  it('cerrar con la reseña escrita avisa antes de perderla', () => {
+    const onClose = vi.fn()
+    render(<LibraryStatusModal {...modalProps} onClose={onClose} current={null} onSave={vi.fn()} diary={ON('stars')} />)
+    fireEvent.change(screen.getByRole('combobox'), { target: { value: 'completed' } })
+    fireEvent.change(screen.getByLabelText('review'), { target: { value: 'Me encantó' } })
+    fireEvent.click(screen.getByRole('button', { name: 'cancel' }))
+    expect(onClose).not.toHaveBeenCalled()
+    expect(screen.getByText('discardAsk')).toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: 'discardKeep' }))
+    expect(screen.getByLabelText('review')).toHaveValue('Me encantó')
+    fireEvent.click(screen.getByRole('button', { name: 'cancel' }))
+    fireEvent.click(screen.getByRole('button', { name: 'discardConfirm' }))
+    expect(onClose).toHaveBeenCalledTimes(1)
+  })
+
+  it('cerrar sin nada escrito no pregunta', () => {
+    const onClose = vi.fn()
+    render(<LibraryStatusModal {...modalProps} onClose={onClose} current={null} onSave={vi.fn()} diary={ON('stars')} />)
+    fireEvent.click(screen.getByRole('button', { name: 'cancel' }))
+    expect(onClose).toHaveBeenCalledTimes(1)
+    expect(screen.queryByText('discardAsk')).toBeNull()
   })
 
   it('si borrar falla, lo dice dentro del diálogo', async () => {
@@ -233,6 +274,7 @@ describe('LibraryStatusModal con el diario', () => {
       <LibraryStatusModal {...modalProps} current={ENTRY} onSave={vi.fn()} diary={ON('ten', [LOG])} onDeleteLog={onDeleteLog} />
     )
     fireEvent.click(screen.getByRole('button', { name: /^deleteLog/ }))
+    fireEvent.click(screen.getByRole('button', { name: 'deleteConfirm' }))
     await waitFor(() =>
       expect(screen.getAllByRole('alert').some((a) => a.textContent === 'deleteFailed')).toBe(true)
     )
@@ -291,7 +333,11 @@ describe('LibraryAction con el diario', () => {
     await waitFor(() => expect(mockShowError).toHaveBeenCalledWith('logFailed'))
   })
 
-  describe('sello de «Visto» (DIS-14)', () => {
+  // Álbum de cromos: el sello «Visto» (DIS-14) se retira; el cromo de la ficha
+  // es el que cambia de forma y se pega al cambiar de estado (DISENO.md). La
+  // curva y la duración van en CSS (`animate-paste`, ≤ 360 ms, instantáneo
+  // con movimiento reducido: globals.css).
+  describe('el cromo de la ficha se pega al cambiar de estado', () => {
     let animate: ReturnType<typeof vi.fn>
     beforeEach(() => {
       animate = vi.fn(() => ({ cancel: vi.fn() }))
@@ -302,56 +348,59 @@ describe('LibraryAction con el diario', () => {
       vi.unstubAllGlobals()
     })
 
-    it('al marcarlo como completado, pegatina ≤ 300 ms con solo transform/opacity y en posición absoluta', async () => {
-      vi.stubGlobal('matchMedia', (q: string) => ({ matches: false, media: q, addEventListener: vi.fn(), removeEventListener: vi.fn() }))
-      mockFetchDiary.mockResolvedValue(ON('stars'))
-      mockSave.mockResolvedValueOnce({ entry: ENTRY, log: null, logFailed: false })
-      render(<LibraryAction {...props} initialEntry={null} />)
-      fireEvent.click(screen.getByText(/addToLibrary/))
-      submit()
-      const stamp = await screen.findByTestId('library-stamp')
-      expect(stamp).toHaveAttribute('aria-hidden', 'true')
-      expect(stamp.className).toContain('absolute') // no ocupa sitio: CLS 0
-      const call = animate.mock.calls.find((c) => c[0]?.[0]?.transform?.includes('rotate(-8deg)'))!
-      expect(call).toBeDefined()
-      expect(call[1].duration).toBeLessThanOrEqual(300)
-      for (const frame of call[0] as Record<string, unknown>[]) {
-        expect(Object.keys(frame).every((k) => k === 'transform' || k === 'opacity')).toBe(true)
-      }
-    })
+    function Ficha({ initialEntry }: { initialEntry: LibraryEntry | null }) {
+      return (
+        <TitleEntryProvider initialEntry={initialEntry}>
+          <TitleCromo id="movie_550" type="movie" title="Fight Club" labels={{ folded: 'folded', foil: 'foil' }} sizes="50vw" />
+          <LibraryAction {...props} initialEntry={initialEntry} />
+        </TitleEntryProvider>
+      )
+    }
 
-    // F-24: en la ficha el sello cuelga del PÓSTER (`data-library-stamp`), no
-    // de la etiqueta de estado.
-    it('en la ficha, la pegatina cuelga del póster', async () => {
-      vi.stubGlobal('matchMedia', (q: string) => ({ matches: false, media: q, addEventListener: vi.fn(), removeEventListener: vi.fn() }))
-      mockFetchDiary.mockResolvedValue(ON('stars'))
-      mockSave.mockResolvedValueOnce({ entry: ENTRY, log: null, logFailed: false })
-      const poster = document.createElement('div')
-      poster.setAttribute('data-library-stamp', '')
-      document.body.appendChild(poster)
-      try {
-        render(<LibraryAction {...props} initialEntry={null} />)
-        fireEvent.click(screen.getByText(/addToLibrary/))
-        submit()
-        const stamp = await screen.findByTestId('library-stamp')
-        expect(poster.contains(stamp)).toBe(true)
-        expect(stamp.className).toContain('absolute')
-        expect(stamp).toHaveAttribute('aria-hidden', 'true')
-      } finally {
-        poster.remove()
-      }
-    })
-
-    it('con movimiento reducido no hay pegatina ni animación', async () => {
-      vi.stubGlobal('matchMedia', (q: string) => ({ matches: true, media: q, addEventListener: vi.fn(), removeEventListener: vi.fn() }))
-      mockFetchDiary.mockResolvedValue(ON('stars'))
-      mockSave.mockResolvedValueOnce({ entry: ENTRY, log: null, logFailed: false })
-      render(<LibraryAction {...props} initialEntry={null} />)
-      fireEvent.click(screen.getByText(/addToLibrary/))
-      submit()
-      await waitFor(() => expect(mockShow).toHaveBeenCalled())
+    it('fuera de la biblioteca, sostenido sobre su hueco; al cargar no se pega', () => {
+      const { container } = render(<Ficha initialEntry={null} />)
+      const cromo = container.querySelector('[data-title-cromo]')!
+      expect(cromo).toHaveAttribute('data-title-cromo', 'slot')
+      expect(container.querySelector('.animate-paste')).toBeNull()
       expect(screen.queryByTestId('library-stamp')).toBeNull()
-      expect(animate).not.toHaveBeenCalled()
+    })
+
+    it('al marcarlo como completado se pega (sin sello aparte)', async () => {
+      mockFetchDiary.mockResolvedValue(ON('stars'))
+      mockSave.mockResolvedValueOnce({ entry: ENTRY, log: null, logFailed: false })
+      const { container } = render(<Ficha initialEntry={null} />)
+      fireEvent.click(screen.getByText(/addToLibrary/))
+      submit()
+      await waitFor(() => expect(container.querySelector('[data-title-cromo]')).toHaveAttribute('data-title-cromo', 'pasted'))
+      expect(container.querySelector('[data-title-cromo] .animate-paste')).not.toBeNull()
+      expect(screen.queryByTestId('library-stamp')).toBeNull()
+      // La banda de estado del bloque de acciones cambia a la vez.
+      expect(container.querySelector('[data-library-entry="completed"]')).not.toBeNull()
+    })
+
+    it('en curso con total: puesto, con la tira de progreso; abandonado: esquina doblada', () => {
+      // Una serie por el episodio 3 de 10 (las películas no llevan progreso).
+      const placed = render(
+        <TitleCromo
+          id="tv_1399"
+          type="tv"
+          title="Juego de tronos"
+          initialEntry={{ ...ENTRY, mediaId: 'tv_1399', status: 'in_progress', progress: { season: 1, episode: 3, total: 10 } } as LibraryEntry}
+          labels={{ folded: 'folded', foil: 'foil' }}
+          sizes="50vw"
+        />
+      )
+      expect(placed.container.querySelector('[data-title-cromo]')).toHaveAttribute('data-title-cromo', 'placed')
+      expect(placed.container.querySelector('[data-progress-strip]')).not.toBeNull()
+      placed.unmount()
+      const folded = render(<Ficha initialEntry={{ ...ENTRY, status: 'abandoned' }} />)
+      expect(folded.container.querySelector('[data-cromo]')).toHaveAttribute('data-state', 'folded')
+      expect(screen.getByText('folded')).toHaveClass('sr-only')
+    })
+
+    it('un 10/10 completado lleva brillo', () => {
+      const { container } = render(<Ficha initialEntry={{ ...ENTRY, rating10: 10 }} />)
+      expect(container.querySelector('.cromo-foil')).not.toBeNull()
     })
 
     it('estrellas en cascada: 40 ms entre una y otra, total ≤ 300 ms', () => {
@@ -372,17 +421,20 @@ describe('Biblioteca con el diario', () => {
     { ...ENTRY, id: 'b', mediaId: 'movie_2', favorite: false },
   ]
 
-  it('sin diario: ni vistas, ni escala, ni favoritos', () => {
+  it('sin diario: álbum y lista, pero ni vista de diario ni favoritos', () => {
     render(<LibraryClient entries={entries} />)
-    expect(screen.queryByRole('radiogroup', { name: 'view' })).toBeNull()
+    const views = screen.getByRole('radiogroup', { name: 'view' })
+    expect(within(views).getAllByRole('radio')).toHaveLength(2)
+    expect(within(views).queryByText('viewDiary')).toBeNull()
     expect(screen.queryByText('favorites')).toBeNull()
   })
 
-  it('con diario: vista Colección/Diario y filtro de favoritos', () => {
+  it('con diario: vista de diario y filtro de favoritos', () => {
     search = new URLSearchParams('fav=1')
-    render(<LibraryClient entries={entries} diary={{ logs: [], scale: 'stars' }} />)
-    expect(screen.getByRole('radiogroup', { name: 'view' })).toBeInTheDocument()
-    expect(screen.getByTestId('grid')).toHaveTextContent('1')
+    const { container } = render(<LibraryClient entries={entries} diary={{ logs: [], scale: 'stars' }} />)
+    const views = screen.getByRole('radiogroup', { name: 'view' })
+    expect(within(views).getByText('viewDiary')).toBeInTheDocument()
+    expect(container.querySelectorAll('[data-album-item]')).toHaveLength(1)
   })
 
   // F-28: la escala ½★ o /10 se elige en Ajustes (tests/unit/calendar-email/settings-form.test.tsx);
@@ -397,27 +449,55 @@ describe('Biblioteca con el diario', () => {
     search = new URLSearchParams('view=diary')
     render(<LibraryClient entries={entries} diary={{ logs: [LOG], scale: 'ten' }} />)
     expect(screen.getByRole('region', { name: 'listLabel' })).toBeInTheDocument()
-    expect(screen.getByText('9/10')).toBeInTheDocument()
+    expect(screen.getByText('ratingOf:{"value":"9","max":10}')).toBeInTheDocument()
   })
 })
 
 describe('DiaryList', () => {
-  it('agrupa por mes, oculta spoilers hasta pulsar y borra', async () => {
-    mockDeleteLog.mockResolvedValue(undefined)
-    render(<DiaryList logs={[LOG, { ...LOG, id: '22222222-2222-4222-8222-222222222222', watchedOn: '2026-09-02', spoiler: false, review: 'Sin destripes', rewatch: false }]} scale="stars" />)
+  const SECOND = { ...LOG, id: '22222222-2222-4222-8222-222222222222', watchedOn: '2026-09-02', spoiler: false, review: 'Sin destripes', rewatch: false }
+
+  it('agrupa por mes, con la nota en su escala, y oculta spoilers hasta pulsar', () => {
+    render(<DiaryList logs={[LOG, SECOND]} scale="stars" />)
     expect(screen.getAllByRole('heading', { level: 2 })).toHaveLength(2)
-    expect(screen.getAllByText('4,5 ★')).toHaveLength(2)
+    // 9/10 en medias estrellas: 4,5 de 5 (Intl).
+    expect(screen.getAllByText('ratingOf:{"value":"4,5","max":5}')).toHaveLength(2)
     expect(screen.queryByText('El final cambia todo')).toBeNull()
     const reveal = screen.getByRole('button', { name: 'showSpoiler' })
     expect(reveal).toHaveAttribute('aria-expanded', 'false')
     fireEvent.click(reveal)
     expect(screen.getByText('El final cambia todo')).toBeInTheDocument()
     expect(screen.getByText('Sin destripes')).toBeInTheDocument()
+  })
+
+  // REGRESIÓN (WIG): borrar un apunte (con su reseña) actuaba al momento, sin
+  // confirmar ni deshacer.
+  it('REGRESIÓN: borrar no es inmediato; «Deshacer» lo devuelve sin llamar al servidor', async () => {
+    mockDeleteLog.mockResolvedValue(undefined)
+    render(<DiaryList logs={[LOG, SECOND]} scale="stars" />)
     fireEvent.click(screen.getAllByRole('button', { name: /^deleteLog/ })[0])
-    await waitFor(() => expect(mockDeleteLog).toHaveBeenCalledWith(LOG.id))
-    await waitFor(() => expect(screen.queryByText('El final cambia todo')).toBeNull())
-    // El aviso nombra la obra.
-    expect(mockShow).toHaveBeenCalledWith({ message: 'deleted:{"title":"Fight Club"}', type: 'success' })
+    // Desaparece de la vista, pero el DELETE espera al aviso.
+    await waitFor(() => expect(screen.queryByText('spoilerHidden')).toBeNull())
+    expect(mockDeleteLog).not.toHaveBeenCalled()
+    const toast = mockShow.mock.calls.at(-1)![0]
+    expect(toast.message).toBe('deleted:{"title":"Fight Club"}')
+    expect(toast.action.label).toBe('undo')
+    act(() => toast.action.onAction())
+    expect(screen.getByText('spoilerHidden')).toBeInTheDocument()
+    // Volvió a su sitio (el primero), y nunca se borró.
+    expect(screen.getAllByRole('listitem')[0]).toHaveTextContent('spoilerHidden')
+    toast.action.onExpire?.()
+    expect(mockDeleteLog).not.toHaveBeenCalled()
+  })
+
+  it('si el aviso se va sin «Deshacer», ahora sí se borra; si falla, el apunte vuelve', async () => {
+    mockDeleteLog.mockRejectedValueOnce(new Error('500'))
+    render(<DiaryList logs={[LOG]} scale="stars" />)
+    fireEvent.click(screen.getByRole('button', { name: /^deleteLog/ }))
+    const toast = mockShow.mock.calls.at(-1)![0]
+    await act(async () => toast.action.onExpire())
+    expect(mockDeleteLog).toHaveBeenCalledWith(LOG.id)
+    expect(mockShowError).toHaveBeenCalledWith('deleteFailed')
+    expect(screen.getByText('spoilerHidden')).toBeInTheDocument()
   })
 
   it('vacío → texto de diario vacío', () => {

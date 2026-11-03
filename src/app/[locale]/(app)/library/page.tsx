@@ -4,6 +4,7 @@ import { getUserMedia } from '@/lib/library/queries'
 import { readDiary } from '@/lib/library/diary'
 import { ratingScale10Enabled, readRatingScale } from '@/lib/library/scale'
 import { createLogger } from '@/lib/logger'
+import { withTouchedAt } from '@/components/library/touched-at'
 import { LibraryClient } from './LibraryClient'
 import type { Metadata } from 'next'
 import type { DiaryLog, RatingScale } from '@/types/library'
@@ -25,7 +26,8 @@ export default async function LibraryPage() {
 
   // F-24: el diario solo con RATING_SCALE_10=1 y la migración aplicada; si
   // falta la tabla o falla, la Biblioteca de siempre.
-  const diaryPromise: Promise<{ logs: DiaryLog[]; scale: RatingScale } | null> = ratingScale10Enabled()
+  const scale10 = ratingScale10Enabled()
+  const diaryPromise: Promise<{ logs: DiaryLog[]; scale: RatingScale } | null> = scale10
     ? readDiary(supabase, user.id, { withMedia: true })
         .then((d) => (d.migrated ? { logs: d.logs, scale: readRatingScale(user) } : null))
         .catch((err) => {
@@ -34,10 +36,13 @@ export default async function LibraryPage() {
         })
     : Promise.resolve(null)
 
-  const [entries, diary] = await Promise.all([getUserMedia(user.id), diaryPromise])
+  // La banda de cada hueco dice «hace N días»: la última vez que lo tocaste.
+  const entriesPromise = getUserMedia(user.id).then((entries) => withTouchedAt(supabase, user.id, entries))
+
+  const [entries, diary] = await Promise.all([entriesPromise, diaryPromise])
   return (
     <main className="page-grid py-8">
-      <LibraryClient entries={entries} diary={diary} />
+      <LibraryClient entries={entries} diary={diary} scale={scale10 ? readRatingScale(user) : 'legacy'} />
     </main>
   )
 }

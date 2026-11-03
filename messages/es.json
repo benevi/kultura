@@ -299,7 +299,7 @@
     "providerRatingLabel": "Nota en {source}",
     "chapters": "Capítulos",
     "pages": "Páginas",
-    "durationValue": "{minutes} min",
+    "durationValue": "{minutes, number} min",
     "credits": {
       "director": "Dirección",
       "cast": "Reparto",
@@ -321,18 +321,18 @@
       "ads": "Gratis con anuncios",
       "rent": "Alquiler",
       "buy": "Compra"
-    }
+    },
+    "countValue": "{kind, select, episodes {{count, plural, one {# episodio} other {# episodios}}} chapters {{count, plural, one {# capítulo} other {# capítulos}}} pages {{count, plural, one {# página} other {# páginas}}} other {{count, number}}}",
+    "steamScreenshotLabel": "Captura {number, number} (se abre en una pestaña nueva)"
   },
   "adaptations": {
     "title": "También existe como…",
-    "subtitle": "La misma historia en otros formatos: de dónde sale, sus adaptaciones y el resto de la franquicia.",
     "relation": {
       "source": "Obra original",
       "derivative": "Adaptación",
       "sibling": "Otra adaptación",
       "franchise": "Misma franquicia"
     },
-    "meta": "{type} · {year}",
     "inLibrary": "En tu biblioteca",
     "sourceLabel": "Vínculos:",
     "sourceLinkLabel": "Wikidata (se abre en una pestaña nueva)",
@@ -390,9 +390,8 @@
       "pending": "Pendiente",
       "abandoned": "Abandonado"
     },
-    "addToLibrary": "Añadir a biblioteca",
+    "addToLibrary": "Añadir a mi biblioteca",
     "updateEntry": "Actualizar",
-    "remove": "Eliminar",
     "score": "Puntuación",
     "watchedAt": "Fecha",
     "episode": "Episodio",
@@ -414,12 +413,6 @@
     "saveStatus": "Guardar",
     "cancel": "Cancelar",
     "clearProgress": "Limpiar progreso",
-    "counters": {
-      "completed": "Completados",
-      "inProgress": "En curso",
-      "pending": "Pendientes",
-      "dropped": "Abandonados"
-    },
     "statusLabel": "Estado",
     "saving": "Guardando…",
     "removeConfirmTitle": "¿Quitar de tu biblioteca?",
@@ -428,7 +421,32 @@
     "removed": "Quitado de tu biblioteca",
     "saved": "Guardado en tu biblioteca",
     "undo": "Deshacer",
-    "restored": "Ha vuelto a tu biblioteca"
+    "restored": "Ha vuelto a tu biblioteca",
+    "untitled": "Sin título",
+    "yourRatingOf": "Tu nota: {value} de {max}",
+    "views": {
+      "album": "Álbum",
+      "list": "Lista"
+    },
+    "album": {
+      "more": "Ver {count, number} más"
+    },
+    "list": {
+      "label": "Tus títulos",
+      "search": "Buscar en tu biblioteca",
+      "searchPlaceholder": "Escribe un título…",
+      "sort": "Ordenar",
+      "sorts": {
+        "recent": "Lo último que tocaste",
+        "added": "Lo último que añadiste",
+        "title": "Título (A–Z)",
+        "rating": "Tu nota",
+        "year": "Año"
+      },
+      "noRating": "Sin nota",
+      "minRating": "Desde {value, number} de {max, number}"
+    },
+    "remove": "Quitar de mi biblioteca"
   },
   "diary": {
     "title": "Diario",
@@ -456,15 +474,27 @@
     "deleted": "Apunte de «{title}» borrado",
     "logFailed": "Guardado en tu biblioteca, pero no hemos podido apuntarlo en el diario. Reintenta.",
     "savedWithLog": "Guardado en tu biblioteca y en tu diario",
-    "stamp": "{type, select, book {¡Leído!} manga {¡Leído!} comic {¡Leído!} game {¡Jugado!} other {¡Visto!}}",
     "removeConfirmBody": "Se borrarán el estado, la nota, el progreso y el diario de «{title}».",
     "view": "Vista",
-    "viewCollection": "Títulos",
     "viewDiary": "Diario",
     "favorites": "Favoritos",
     "listLabel": "Apuntes del diario",
     "emptyTitle": "Tu diario está vacío",
-    "emptyHint": "Marca un título como completado y apúntalo en el diario: aquí verás qué viste, leíste o jugaste y cuándo."
+    "emptyHint": "Marca un título como completado y apúntalo en el diario: aquí verás qué viste, leíste o jugaste y cuándo.",
+    "undo": "Deshacer",
+    "restored": "El apunte ha vuelto a tu diario",
+    "untitled": "Sin título",
+    "yourDiary": "Tu diario",
+    "yourRating": "Tu nota",
+    "outOf": "de {max, number}",
+    "ratingOf": "{value} de {max, number}",
+    "deleteAsk": "¿Borrar este apunte? Se pierde su reseña.",
+    "deleteConfirm": "Borrar apunte",
+    "deleteKeep": "No borrar",
+    "discardAsk": "Tu reseña o tu nota personal no están guardadas. Si sales, se pierden.",
+    "discardKeep": "Seguir escribiendo",
+    "discardConfirm": "Salir sin guardar",
+    "stamp": "{type, select, book {¡Leído!} manga {¡Leído!} comic {¡Leído!} game {¡Jugado!} other {¡Visto!}}"
   },
   "progress": {
     "title": "Progreso",
@@ -494,9 +524,9 @@
       "volume": "Vol. {volume, number}",
       "page": "Pág. {page, number}",
       "pageOf": "Pág. {page, number} de {total, number}",
-      "percent": "{percent, number} % leído",
-      "hours": "{hours, number} h",
-      "hoursOf": "{hours, number} h de ~{total, number} h"
+      "percent": "{percent, number} % leído",
+      "hours": "{hours, number} h",
+      "hoursOf": "{hours, number} h de ~{total, number} h"
     },
     "quick": "{unit, select, episode {+1 ep.} chapter {+1 cap.} page {+10 págs.} percent {+5 %} hours {+1 h} advance {Avanzar} other {+1}}",
     "quickLabel": "{unit, select, episode {Marcar el siguiente episodio de «{title}»} chapter {Marcar el siguiente capítulo de «{title}»} page {Sumar 10 páginas a «{title}»} percent {Sumar un 5 % a «{title}»} hours {Sumar una hora jugada a «{title}»} advance {Avanzar en «{title}»} other {Avanzar en «{title}»}}",

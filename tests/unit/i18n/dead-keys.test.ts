@@ -31,7 +31,6 @@ export const PENDING_WIRING: Record<string, string> = {};
 const SAME_TEXT_DIFFERENT_ROLE: { keys: string[]; why: string }[] = [
   { keys: ["media_detail.steamFree", "media_detail.watchType.free"], why: "precio de Steam y tipo de oferta en streaming" },
   { keys: ["share.og.genericAlt", "share.page.genericMetaTitle"], why: "alt de la imagen y <title> de la página" },
-  { keys: ["library.counters.inProgress", "library.status.in_progress"], why: "contador de la barra y estado del selector" },
   { keys: ["diary.title", "diary.viewDiary"], why: "título de la sección y pestaña de la vista" },
   { keys: ["lists.descriptionHint", "lists.noteHint"], why: "contador de caracteres de dos campos distintos" },
   { keys: ["lists.noteFor", "lists.noteLabel"], why: "nombre accesible y etiqueta visible del mismo campo" },

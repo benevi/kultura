@@ -1,18 +1,52 @@
 'use client'
 
-import { useMemo } from 'react'
-import { PageHeading } from '@/components/layout/PageHeading'
+// ============================================================
+// KULTURA — Biblioteca: tu álbum (DISENO.md)
+//
+// Tres vistas, en la URL (`?view=`):
+// - álbum (por defecto): una página por estado con huecos numerados para lo
+//   pendiente y cromos puestos, pegados o doblados para lo demás
+//   (`AlbumView`);
+// - lista: la vista densa para operar, con búsqueda, orden y filtro de nota
+//   (`LibraryList`);
+// - diario (con F-24): tus apuntes por mes (`DiaryList`).
+// Encima, las pestañas de formato (fijas al hacer scroll) y el resumen por
+// estado, que también filtra. Los recuentos son de la biblioteca ENTERA:
+// son el resumen, no el resultado del filtro.
+// ============================================================
+
+import { useMemo, useState } from 'react'
 import { useSearchParams } from 'next/navigation'
-import { useTranslations } from 'next-intl'
+import { useLocale, useTranslations } from 'next-intl'
 import { useRouter, Link } from '@/i18n/navigation'
+import { PageHeading } from '@/components/layout/PageHeading'
 import { FilterChip } from '@/components/ui/FilterChip'
 import { KButton } from '@/components/ui/KButton'
-import { MediaGrid } from '@/components/media/MediaGrid'
-import { IconLibrary, IconSearch } from '@/components/icons'
+import { Select } from '@/components/ui/Select'
 import { SegmentedControl } from '@/components/ui/SegmentedControl'
+import { Slot } from '@/components/album/Slot'
+import { useAlbumLabels } from '@/components/album/labels'
+import { IconLibrary } from '@/components/icons'
 import { DiaryList } from '@/components/library/DiaryList'
-import type { DiaryLog, LibraryEntry, RatingScale } from '@/types/library'
-import type { MediaItem, MediaType } from '@/types/media'
+import { AlbumView } from '@/components/library/AlbumView'
+import { LibraryList } from '@/components/library/LibraryList'
+import {
+  ALBUM_STATUSES,
+  LIBRARY_SORTS,
+  isLibrarySort,
+  matchesQuery,
+  parseMediaId,
+  sortItems,
+  type LibraryItem,
+  type LibrarySort,
+} from '@/components/library/library-item'
+import type { DisplayScale } from '@/components/library/rating-display'
+import { FORMATS, FORMAT_COLOR } from '@/lib/design/album'
+import { formatCount } from '@/lib/design/format'
+import { entryRating10 } from '@/lib/library/rating'
+import { cn } from '@/lib/utils/index'
+import type { DiaryLog, LibraryEntry, LibraryStatus, RatingScale } from '@/types/library'
+import type { MediaType } from '@/types/media'
 
 interface LibraryClientProps {
   entries: LibraryEntry[]
@@ -21,212 +55,174 @@ interface LibraryClientProps {
    * migración: la Biblioteca de siempre.
    */
   diary?: { logs: DiaryLog[]; scale: RatingScale } | null
+  /** Escala de tus notas sin diario (`legacy`: estrellas enteras). */
+  scale?: DisplayScale
 }
 
-function parseMediaId(mediaId: string): { type: MediaType; externalId: string } {
-  const idx = mediaId.indexOf('_')
-  return {
-    type: mediaId.slice(0, idx) as MediaType,
-    externalId: mediaId.slice(idx + 1),
-  }
-}
+type View = 'album' | 'list' | 'diary'
 
-function entryToMediaItem(entry: LibraryEntry): MediaItem {
-  const { type, externalId } = parseMediaId(entry.mediaId)
-  return {
-    id: entry.mediaId,
-    externalId,
-    type,
-    title: entry.title ?? entry.mediaId,
-    poster: entry.poster,
-    year: entry.year,
-  }
-}
+/** Nombre de cada estado en el filtro (namespace `filters`). */
+const STATUS_FILTER_KEY = {
+  in_progress: 'inProgress',
+  pending: 'pending',
+  completed: 'completed',
+  abandoned: 'dropped',
+} as const satisfies Record<LibraryStatus, string>
 
-const TYPE_OPTIONS = [
-  { value: 'movie' as const, labelKey: 'movie' as const },
-  { value: 'tv' as const, labelKey: 'tv' as const },
-  { value: 'anime' as const, labelKey: 'anime' as const },
-  { value: 'book' as const, labelKey: 'book' as const },
-  { value: 'comic' as const, labelKey: 'comic' as const },
-  { value: 'manga' as const, labelKey: 'manga' as const },
-  { value: 'game' as const, labelKey: 'game' as const },
-]
+/** Nota mínima del filtro, sobre 5 (`?score=4` = 4 de 5 o más, 8 de 10 o más). */
+const SCORE_MIN = [5, 4, 3, 2] as const
 
-const STATUS_OPTIONS = [
-  { value: 'in_progress' as const, labelKey: 'inProgress' as const },
-  { value: 'pending' as const, labelKey: 'pending' as const },
-  { value: 'completed' as const, labelKey: 'completed' as const },
-  { value: 'abandoned' as const, labelKey: 'dropped' as const },
-]
-
-/**
- * Fila de contadores con la que abre el artboard de Biblioteca: tarjetas
- * sueltas, cifra display en el color de su estado. Cuentan la biblioteca
- * ENTERA, no la vista filtrada: son el resumen, no el resultado.
- */
-const COUNTERS = [
-  { status: 'completed' as const, labelKey: 'completed' as const, tone: 'text-accent-lime' },
-  { status: 'in_progress' as const, labelKey: 'inProgress' as const, tone: 'text-accent-blue' },
-  { status: 'pending' as const, labelKey: 'pending' as const, tone: 'text-accent-yellow' },
-  { status: 'abandoned' as const, labelKey: 'dropped' as const, tone: 'text-text-tertiary' },
-]
-
-const SCORE_OPTIONS = [
-  { value: '5', label: '★★★★★ 5' },
-  { value: '4', label: '★★★★ 4+' },
-  { value: '3', label: '★★★ 3+' },
-  { value: '2', label: '★★ 2+' },
-]
+const FOCUS =
+  'focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus-ring'
 
 function EmptyLibrary({ t }: { t: ReturnType<typeof useTranslations<'library'>> }) {
   return (
-    <div className="flex flex-col items-center justify-center py-20 px-4 text-center gap-5">
-      <div
-        className="w-20 h-20 rounded-bento bg-surface-elevated flex items-center justify-center"
-        aria-hidden="true"
-      >
-        <IconLibrary className="w-9 h-9 text-text-tertiary" />
+    <div className="flex flex-col items-start gap-6 py-10">
+      {/* La primera página del álbum, aún sin nada: huecos sin título. */}
+      <ul aria-hidden="true" className="grid w-full max-w-md grid-cols-4 gap-3">
+        {[1, 2, 3, 4].map((n) => (
+          <li key={n}>
+            <Slot number={n} title="" />
+          </li>
+        ))}
+      </ul>
+      <div className="flex max-w-prose flex-col gap-2">
+        <h2 className="font-display text-2xl text-text-primary">{t('empty.title')}</h2>
+        <p className="text-sm leading-relaxed text-text-secondary">{t('empty.hint')}</p>
       </div>
-      <div className="flex flex-col gap-2 max-w-sm">
-        <h2 className="font-display text-xl font-semibold text-text-primary">
-          {t('empty.title')}
-        </h2>
-        <p className="text-sm text-text-secondary leading-relaxed">
-          {t('empty.hint')}
-        </p>
-      </div>
-      <KButton asChild variant="primary" size="md">
+      <KButton asChild variant="primary" size="lg">
         <Link href="/discover">{t('empty.cta')}</Link>
       </KButton>
     </div>
   )
 }
 
-function EmptyFiltered({
-  t,
-  tF,
-  onReset,
-}: {
-  t: ReturnType<typeof useTranslations<'library'>>
-  tF: ReturnType<typeof useTranslations<'filters'>>
-  onReset: () => void
-}) {
+function EmptyFiltered({ t, onReset, resetLabel }: { t: ReturnType<typeof useTranslations<'library'>>; onReset: () => void; resetLabel: string }) {
   return (
-    <div className="flex flex-col items-center justify-center py-16 px-4 text-center gap-4">
-      <div
-        className="w-16 h-16 rounded-bento bg-surface-elevated flex items-center justify-center select-none"
-        aria-hidden="true"
-      >
-        <IconSearch className="h-8 w-8 text-text-tertiary" />
-      </div>
-      <div className="flex flex-col gap-1.5 max-w-xs">
-        <p className="font-body font-medium text-text-primary text-base">
-          {t('empty.filtered')}
-        </p>
-        <p className="text-sm text-text-secondary leading-relaxed">
-          {t('empty.filteredHint')}
-        </p>
-      </div>
+    <div className="flex flex-col items-start gap-3 py-12">
+      <p className="font-body text-base font-semibold text-text-primary">{t('empty.filtered')}</p>
+      <p className="max-w-prose text-sm leading-relaxed text-text-secondary">{t('empty.filteredHint')}</p>
       <KButton variant="secondary" size="sm" onClick={onReset}>
-        {tF('reset')}
+        {resetLabel}
       </KButton>
     </div>
   )
 }
 
-export function LibraryClient({ entries, diary = null }: LibraryClientProps) {
+export function LibraryClient({ entries, diary = null, scale: baseScale = 'legacy' }: LibraryClientProps) {
   const t = useTranslations('library')
   const tF = useTranslations('filters')
   const td = useTranslations('diary')
+  const labels = useAlbumLabels()
+  const locale = useLocale()
   const router = useRouter()
   const searchParams = useSearchParams()
 
-  const currentType = searchParams.get('type') ?? 'all'
-  const currentStatus = searchParams.get('status') ?? 'all'
-  const currentScore = searchParams.get('score') ?? 'all'
+  const rawType = searchParams.get('type') ?? 'all'
+  const currentType: MediaType | 'all' = (FORMATS as readonly string[]).includes(rawType) ? (rawType as MediaType) : 'all'
+  const rawStatus = searchParams.get('status') ?? 'all'
+  const currentStatus: LibraryStatus | 'all' = (ALBUM_STATUSES as readonly string[]).includes(rawStatus)
+    ? (rawStatus as LibraryStatus)
+    : 'all'
+  const rawScore = Number(searchParams.get('score'))
+  const currentScore = (SCORE_MIN as readonly number[]).includes(rawScore) ? rawScore : null
   const onlyFavorites = diary !== null && searchParams.get('fav') === '1'
-  const view = diary !== null && searchParams.get('view') === 'diary' ? 'diary' : 'collection'
-  // F-28: la escala se elige en Ajustes; aquí solo se usa para pintar el diario.
-  const scale: RatingScale = diary?.scale ?? 'stars'
+  const rawView = searchParams.get('view')
+  const view: View = rawView === 'diary' && diary !== null ? 'diary' : rawView === 'list' ? 'list' : 'album'
+  const rawSort = searchParams.get('sort')
+  const sort: LibrarySort = isLibrarySort(rawSort) ? rawSort : 'recent'
+  const [query, setQuery] = useState(searchParams.get('q') ?? '')
+  // F-28: la escala se elige en Ajustes; aquí solo se usa para pintar las notas.
+  const scale: DisplayScale = diary?.scale ?? baseScale
+  const items = entries as LibraryItem[]
 
   function push(next: Record<string, string>) {
-    const params = new URLSearchParams()
-    const merged = {
+    const merged: Record<string, string> = {
+      view,
       type: currentType,
       status: currentStatus,
-      score: currentScore,
+      score: currentScore === null ? 'all' : String(currentScore),
       fav: onlyFavorites ? '1' : 'all',
-      view,
+      sort,
       ...next,
     }
-    if (merged.view === 'diary') params.set('view', 'diary')
+    const params = new URLSearchParams()
+    if (merged.view !== 'album') params.set('view', merged.view)
     if (merged.type !== 'all') params.set('type', merged.type)
     if (merged.status !== 'all') params.set('status', merged.status)
     if (merged.score !== 'all') params.set('score', merged.score)
     if (merged.fav === '1') params.set('fav', '1')
+    if (merged.sort !== 'recent') params.set('sort', merged.sort)
     const qs = params.toString()
     router.push(`/library${qs ? `?${qs}` : ''}`)
   }
 
-  function handleFilterChange(key: string, value: string) {
-    push({ [key]: value })
-  }
-
   function resetFilters() {
-    router.push('/library')
+    setQuery('')
+    push({ type: 'all', status: 'all', score: 'all', fav: 'all' })
   }
 
-  const filtered = useMemo(
-    () =>
-      entries
-        .filter((e) => currentType === 'all' || e.mediaId.startsWith(currentType + '_'))
-        .filter((e) => currentStatus === 'all' || e.status === currentStatus)
-        .filter((e) => {
-          if (currentScore === 'all') return true
-          const min = parseInt(currentScore, 10)
-          return e.score !== null && e.score >= min
-        })
-        .filter((e) => !onlyFavorites || e.favorite === true),
-    [entries, currentType, currentStatus, currentScore, onlyFavorites]
-  )
-
-  const mediaItems = useMemo(
-    () => filtered.map((e) => entryToMediaItem(e)),
-    [filtered]
-  )
-
+  // Resumen de la biblioteca entera (por estado y por formato).
   const counts = useMemo(() => {
-    const byStatus: Record<string, number> = {}
-    for (const e of entries) byStatus[e.status] = (byStatus[e.status] ?? 0) + 1
-    return byStatus
-  }, [entries])
+    const byStatus: Partial<Record<LibraryStatus, number>> = {}
+    const byType: Partial<Record<MediaType, number>> = {}
+    for (const e of items) {
+      byStatus[e.status] = (byStatus[e.status] ?? 0) + 1
+      const { type } = parseMediaId(e.mediaId)
+      byType[type] = (byType[type] ?? 0) + 1
+    }
+    return { byStatus, byType }
+  }, [items])
+
+  const inList = view === 'list'
+  const filtered = useMemo(() => {
+    const base = items
+      .filter((e) => currentType === 'all' || e.mediaId.startsWith(`${currentType}_`))
+      .filter((e) => currentStatus === 'all' || e.status === currentStatus)
+      .filter((e) => !onlyFavorites || e.favorite === true)
+    if (!inList) return base
+    const scored = base
+      .filter((e) => currentScore === null || (entryRating10(e) ?? 0) >= currentScore * 2)
+      .filter((e) => matchesQuery(e, query))
+    return sortItems(scored, sort, locale)
+  }, [items, currentType, currentStatus, onlyFavorites, inList, currentScore, query, sort, locale])
 
   const hasActiveFilters =
-    currentType !== 'all' || currentStatus !== 'all' || currentScore !== 'all' || onlyFavorites
+    currentType !== 'all' ||
+    currentStatus !== 'all' ||
+    onlyFavorites ||
+    (inList && (currentScore !== null || query.trim() !== ''))
 
-  // F-24: vista (colección / diario), solo con el diario activo. La escala de
-  // notas se cambia en Ajustes (F-28).
-  const diaryControls = diary ? (
-    <div className="flex flex-wrap items-center gap-3 mb-6">
-      <SegmentedControl
-        ariaLabel={td('view')}
-        value={view}
-        onChange={(v) => push({ view: v })}
-        options={[
-          { value: 'collection', label: td('viewCollection') },
-          { value: 'diary', label: td('viewDiary') },
-        ]}
-      />
-    </div>
-  ) : null
+  const viewOptions = [
+    { value: 'album', label: t('views.album') },
+    { value: 'list', label: t('views.list') },
+    ...(diary ? [{ value: 'diary', label: td('viewDiary') }] : []),
+  ]
+  const viewSwitch = (
+    <SegmentedControl ariaLabel={td('view')} value={view} onChange={(v) => push({ view: v })} options={viewOptions} />
+  )
+
+  const heading = (
+    <PageHeading
+      icon={IconLibrary}
+      action={
+        entries.length > 0 ? (
+          <span className="shrink-0 rounded-pill bg-surface-elevated px-3 py-1 font-body text-xs font-semibold text-text-secondary">
+            {t('items', { count: entries.length })}
+          </span>
+        ) : undefined
+      }
+    >
+      {t('title')}
+    </PageHeading>
+  )
 
   if (diary && view === 'diary') {
     return (
       <div>
-        <PageHeading icon={IconLibrary}>{t('title')}</PageHeading>
-        {diaryControls}
-        <DiaryList logs={diary.logs} scale={scale} />
+        {heading}
+        <div className="mb-6">{viewSwitch}</div>
+        <DiaryList logs={diary.logs} scale={diary.scale} />
       </div>
     )
   }
@@ -234,133 +230,156 @@ export function LibraryClient({ entries, diary = null }: LibraryClientProps) {
   if (entries.length === 0) {
     return (
       <div>
-        <PageHeading icon={IconLibrary}>{t('title')}</PageHeading>
-        {diaryControls}
+        {heading}
         <EmptyLibrary t={t} />
       </div>
     )
   }
 
+  const presentFormats = FORMATS.filter((f) => (counts.byType[f] ?? 0) > 0)
+
   return (
     <div>
-      {/* Header */}
-      <PageHeading
-        icon={IconLibrary}
-        action={
-          <span className="shrink-0 rounded-pill bg-surface-elevated px-3 py-1 text-xs font-body font-semibold text-text-secondary">
-            {t('items', { count: filtered.length })}
-          </span>
-        }
-      >
-        {t('title')}
-      </PageHeading>
+      {heading}
+      <div className="mb-5">{viewSwitch}</div>
 
-      {diaryControls}
-
-      {/* Contadores (artboard): tarjetas sueltas, radio 20, cifra en color. */}
-      <ul className="flex flex-wrap gap-4 mb-8" aria-label={t('title')}>
-        {COUNTERS.map((c) => (
-          <li key={c.status} className="bg-surface-default rounded-bento px-[26px] py-[18px] min-w-[150px]">
-            <span className={`block font-display text-3xl font-extrabold leading-none tabular-nums ${c.tone}`}>
-              {counts[c.status] ?? 0}
-            </span>
-            <span className="block mt-2 text-meta font-semibold text-text-tertiary">
-              {t(`counters.${c.labelKey}`)}
-            </span>
-          </li>
-        ))}
-      </ul>
-
-      {/* Filters */}
-      <div className="flex flex-col gap-4 mb-8 pb-6 border-b border-border">
-        {/* Tipo */}
-        <div role="group" aria-label={tF('type')}>
-          <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide flex-nowrap">
-            <FilterChip
-              label={tF('all')}
-              active={currentType === 'all'}
-              onClick={() => handleFilterChange('type', 'all')}
-            />
-            {TYPE_OPTIONS.map((opt) => (
-              <FilterChip
-                key={opt.value}
-                label={tF(opt.labelKey)}
-                active={currentType === opt.value}
-                onClick={() => handleFilterChange('type', currentType === opt.value ? 'all' : opt.value)}
-              />
-            ))}
-          </div>
+      {/* Pestañas de formato, fijas bajo la cabecera (patrón permitido). */}
+      <div className="sticky top-[3.625rem] z-20 -mx-4 mb-5 border-b-2 border-surface-border bg-surface-base px-4 md:-mx-8 md:px-8">
+        <div role="group" aria-label={tF('type')} className="scrollbar-hide flex gap-1 overflow-x-auto">
+          {[{ value: 'all' as const, label: tF('all'), count: items.length }, ...presentFormats.map((f) => ({ value: f, label: labels.format(f), count: counts.byType[f] ?? 0 }))].map(
+            (tab) => {
+              const active = currentType === tab.value
+              return (
+                <button
+                  key={tab.value}
+                  type="button"
+                  aria-pressed={active}
+                  onClick={() => push({ type: active && tab.value !== 'all' ? 'all' : tab.value })}
+                  className={cn(
+                    'relative inline-flex min-h-11 shrink-0 items-center gap-1.5 whitespace-nowrap rounded-lg px-3 text-sm font-semibold transition-colors',
+                    'after:pointer-events-none after:absolute after:inset-x-3 after:bottom-0 after:h-[3px] after:rounded-full',
+                    FOCUS,
+                    active ? 'text-text-primary after:bg-wayfinding' : 'text-text-tertiary hover:text-text-primary'
+                  )}
+                >
+                  {tab.value !== 'all' ? (
+                    <span aria-hidden="true" className="h-2 w-2 rounded-full" style={{ backgroundColor: FORMAT_COLOR[tab.value] }} />
+                  ) : null}
+                  {tab.label}
+                  <span className="font-normal tabular-nums text-text-tertiary">{formatCount(tab.count, locale)}</span>
+                </button>
+              )
+            }
+          )}
         </div>
-
-        {/* Estado */}
-        <div role="group" aria-label={tF('status')}>
-          <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide flex-nowrap">
-            <FilterChip
-              label={tF('all')}
-              active={currentStatus === 'all'}
-              onClick={() => handleFilterChange('status', 'all')}
-            />
-            {STATUS_OPTIONS.map((opt) => (
-              <FilterChip
-                key={opt.value}
-                label={tF(opt.labelKey)}
-                active={currentStatus === opt.value}
-                onClick={() => handleFilterChange('status', currentStatus === opt.value ? 'all' : opt.value)}
-              />
-            ))}
-          </div>
-        </div>
-
-        {/* Puntuación */}
-        <div role="group" aria-label={tF('minScore')}>
-          <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide flex-nowrap">
-            <FilterChip
-              label={tF('all')}
-              active={currentScore === 'all'}
-              onClick={() => handleFilterChange('score', 'all')}
-            />
-            {SCORE_OPTIONS.map((opt) => (
-              <FilterChip
-                key={opt.value}
-                label={opt.label}
-                active={currentScore === opt.value}
-                onClick={() => handleFilterChange('score', currentScore === opt.value ? 'all' : opt.value)}
-              />
-            ))}
-          </div>
-        </div>
-
-        {/* Favoritos (F-24) */}
-        {diary && (
-          <div role="group" aria-label={td('favorite')}>
-            <div className="flex gap-2">
-              <FilterChip
-                label={td('favorites')}
-                active={onlyFavorites}
-                onClick={() => handleFilterChange('fav', onlyFavorites ? 'all' : '1')}
-              />
-            </div>
-          </div>
-        )}
-
-        {/* Reset rápido si hay filtros activos */}
-        {hasActiveFilters && (
-          <div className="flex">
-            <KButton variant="secondary" size="sm" onClick={resetFilters}>
-              {tF('reset')}
-            </KButton>
-          </div>
-        )}
       </div>
 
-      {/* Empty filtered */}
-      {filtered.length === 0 && (
-        <EmptyFiltered t={t} tF={tF} onReset={resetFilters} />
-      )}
+      {/* Resumen por estado (biblioteca entera); también filtra. */}
+      <div role="group" aria-label={tF('status')} className="mb-6 grid grid-cols-2 gap-2 sm:grid-cols-4">
+        {ALBUM_STATUSES.map((status) => {
+          const active = currentStatus === status
+          return (
+            <button
+              key={status}
+              type="button"
+              aria-pressed={active}
+              data-status-count={status}
+              onClick={() => push({ status: active ? 'all' : status })}
+              className={cn(
+                'flex min-h-11 items-baseline justify-between gap-2 rounded-lg border-2 px-3 py-2 text-left transition-colors',
+                FOCUS,
+                active
+                  ? 'border-text-primary bg-text-primary text-surface-base'
+                  : 'border-surface-border bg-surface-default text-text-primary hover:border-text-tertiary'
+              )}
+            >
+              <span className="text-sm font-semibold">{tF(STATUS_FILTER_KEY[status])}</span>
+              <span className="text-lg font-bold tabular-nums">{formatCount(counts.byStatus[status] ?? 0, locale)}</span>
+            </button>
+          )
+        })}
+      </div>
 
-      {/* Grid */}
-      {filtered.length > 0 && (
-        <MediaGrid items={mediaItems} showType requirePoster={false} />
+      {/* Controles de la lista (y favoritos en las dos vistas). */}
+      {inList || diary || hasActiveFilters ? (
+        <div className="mb-8 flex flex-col gap-4 border-b-2 border-surface-border pb-6">
+          {inList ? (
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
+              <div className="flex min-w-0 flex-1 flex-col gap-1.5">
+                <label htmlFor="library-search" className="font-body text-meta font-bold text-text-tertiary">
+                  {t('list.search')}
+                </label>
+                <input
+                  id="library-search"
+                  type="search"
+                  name="q"
+                  autoComplete="off"
+                  spellCheck={false}
+                  value={query}
+                  onChange={(e) => setQuery(e.target.value)}
+                  placeholder={t('list.searchPlaceholder')}
+                  className={`h-11 w-full rounded-lg border border-field-border bg-surface-elevated px-4 font-body text-base text-text-primary placeholder:text-text-tertiary md:text-body ${FOCUS}`}
+                />
+              </div>
+              <div className="sm:w-56">
+                <Select
+                  label={t('list.sort')}
+                  value={sort}
+                  onChange={(v) => push({ sort: v })}
+                  options={LIBRARY_SORTS.map((s) => ({ value: s, label: t(`list.sorts.${s}`) }))}
+                />
+              </div>
+            </div>
+          ) : null}
+
+          {inList ? (
+            <div role="group" aria-label={tF('minScore')} className="scrollbar-hide flex flex-nowrap gap-2 overflow-x-auto pb-1">
+              <FilterChip label={tF('all')} active={currentScore === null} onClick={() => push({ score: 'all' })} />
+              {SCORE_MIN.map((n) => {
+                const max = scale === 'ten' ? 10 : 5
+                const value = scale === 'ten' ? n * 2 : n
+                return (
+                  <FilterChip
+                    key={n}
+                    label={t('list.minRating', { value, max })}
+                    active={currentScore === n}
+                    onClick={() => push({ score: currentScore === n ? 'all' : String(n) })}
+                  />
+                )
+              })}
+            </div>
+          ) : null}
+
+          {diary || hasActiveFilters ? (
+            <div className="flex flex-wrap items-center gap-2">
+              {diary ? (
+                <FilterChip
+                  label={td('favorites')}
+                  active={onlyFavorites}
+                  onClick={() => push({ fav: onlyFavorites ? 'all' : '1' })}
+                />
+              ) : null}
+              {hasActiveFilters ? (
+                <KButton variant="secondary" size="sm" onClick={resetFilters}>
+                  {tF('reset')}
+                </KButton>
+              ) : null}
+            </div>
+          ) : null}
+        </div>
+      ) : null}
+
+      {filtered.length === 0 ? (
+        <EmptyFiltered t={t} onReset={resetFilters} resetLabel={tF('reset')} />
+      ) : inList ? (
+        <LibraryList items={filtered} scale={scale} />
+      ) : (
+        <AlbumView
+          items={filtered}
+          scale={scale}
+          showFormat={currentType === 'all'}
+          only={currentStatus === 'all' ? null : currentStatus}
+        />
       )}
     </div>
   )
