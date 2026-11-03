@@ -1,133 +1,69 @@
 // ============================================================
-// KULTURA — Copia del hero (D-11) y reglas de la galería de fondo
+// KULTURA — Copia de la portada «Álbum de cromos» (contrato de dirección)
 // ============================================================
 
-import { describe, it, expect, vi } from "vitest";
-
-// `Hero` importa la navegación de next-intl, que en Node necesita Next entero.
-vi.mock("@/i18n/navigation", () => ({ Link: () => null }));
-import { readFileSync } from "fs";
-import path from "path";
+import { describe, it, expect } from "vitest";
 import es from "../../../messages/es.json";
 import en from "../../../messages/en.json";
-import {
-  IMMERSIVE_FORMATS,
-  IMMERSIVE_PRELOAD,
-  SCENE_MEDIA,
-  activeFormatAt,
-  formatColor,
-  parseTitle,
-  plainTitle,
-  sceneAllowed,
-  FORMAT_FROM,
-  FINAL_FROM,
-} from "@/lib/landing/immersive";
-import { contrastRatio, toSrgb } from "@/lib/design/color";
-import { C, FORMAT_HEX } from "@/lib/og/brand";
-import { ACTIVE_CLASS } from "@/components/landing/Hero";
+import { FORMAT_HEX } from "@/lib/og/brand";
+import { IMMERSIVE_FORMATS } from "@/lib/landing/immersive";
 
-describe("copia confirmada de D-11", () => {
-  it("h1, subtítulo y botones en español, literales", () => {
-    expect(plainTitle(es.landing.hero.title)).toBe(
-      "Tu watchlist de cine, series, anime, manga, juegos, libros y cómics"
-    );
-    expect(es.landing.hero.sub).toBe(
-      "Apunta lo que quieres ver, leer y jugar, puntúa lo que ya viste y compártelo con tus amigos. Gratis y sin anuncios."
-    );
+type Tree = { [k: string]: string | Tree };
+const strings = (t: Tree): string[] => Object.values(t).flatMap((v) => (typeof v === "string" ? [v] : strings(v)));
+
+describe("titular y acciones", () => {
+  it("el titular del contrato, literal, en español", () => {
+    expect(es.landing.hero.title).toBe("Todo lo que ves, lees y juegas, en un álbum que llenas tú.");
     expect(es.landing.hero.cta).toBe("Crear mi cuenta gratis");
     expect(es.landing.hero.demo).toBe("Ver la demo");
   });
 
-  it("h1 y botones en inglés, literales", () => {
-    expect(plainTitle(en.landing.hero.title)).toBe(
-      "Your watchlist for movies, TV, anime, manga, games, books and comics"
-    );
+  it("en inglés, traducido", () => {
+    expect(en.landing.hero.title).toBe("Everything you watch, read and play, in an album you fill in.");
     expect(en.landing.hero.cta).toBe("Create my free account");
   });
 
-  it("la misma promesa en <title> y en la descripción", () => {
+  it("la misma promesa en la descripción y bajo el titular; el título por defecto es el de la portada", () => {
     for (const m of [es, en]) {
-      expect(m.landing.seo.title).toBe(`KULTURA — ${plainTitle(m.landing.hero.title)}`);
       expect(m.landing.seo.description).toBe(m.landing.hero.sub);
+      expect(m.meta.defaultTitle).toBe(m.landing.seo.title);
     }
   });
 
-  it("los siete formatos están marcados en el titular, en los dos idiomas", () => {
-    for (const m of [es, en]) {
-      const types = parseTitle(m.landing.hero.title)
-        .filter((p): p is Exclude<typeof p, string> => typeof p !== "string")
-        .map((p) => p.type);
-      expect(types).toEqual(IMMERSIVE_FORMATS);
-    }
-  });
-
-  it("parseTitle conserva el texto entre etiquetas", () => {
-    expect(parseTitle("A <movie>b</movie>, c <book>d</book>")).toEqual([
-      "A ",
-      { type: "movie", text: "b" },
-      ", c ",
-      { type: "book", text: "d" },
-    ]);
+  it("el subtítulo nombra los siete formatos y que es gratis", () => {
+    expect(es.landing.hero.sub).toMatch(/cine.*series.*anime.*manga.*videojuegos.*libros.*cómics/i);
+    expect(es.landing.hero.sub).toContain("Gratis y sin anuncios");
   });
 });
 
-describe("formato iluminado en el titular", () => {
-  it("solo durante el tramo de formatos", () => {
-    expect(activeFormatAt(0)).toBeNull();
-    expect(activeFormatAt(FORMAT_FROM)).toBe("movie");
-    expect(activeFormatAt(FINAL_FROM)).toBeNull();
-    expect(activeFormatAt(1)).toBeNull();
-  });
-
-  it("la clase de cada palabra pinta exactamente formatColor", () => {
-    for (const f of IMMERSIVE_FORMATS) {
-      expect(ACTIVE_CLASS[f]).toBe(`group-data-[active=${f}]/hero:text-[${formatColor(f).replace(/ /g, "_")}]`);
+describe("voz", () => {
+  it("nunca «sin registro»: se dice «gratis»", () => {
+    for (const ns of ["landing", "onboarding", "pwa", "demo", "meta"] as const) {
+      for (const s of strings(es[ns] as unknown as Tree)) expect(s.toLowerCase()).not.toMatch(/sin regist/);
     }
   });
 
-  it("el color de cada formato se lee sobre el fondo (≥ 7:1)", () => {
-    const bg = toSrgb("oklch(16% 0.015 280)")!;
-    for (const f of IMMERSIVE_FORMATS) {
-      expect(contrastRatio(toSrgb(formatColor(f))!, bg)).toBeGreaterThanOrEqual(7);
-    }
+  it("sin emoji en los textos de la portada", () => {
+    const emoji = /\p{Extended_Pictographic}/u;
+    for (const m of [es, en]) for (const s of strings(m.landing as unknown as Tree)) expect(emoji.test(s)).toBe(false);
   });
-});
 
-describe("¿galería WebGL? (REN-4, MOV-13, D-11)", () => {
-  const ok = { reducedMotion: false, width: 1440, saveData: false, deviceMemory: 8, cores: 8 };
-  it("escritorio capaz: sí", () => {
-    expect(sceneAllowed(ok)).toBe(true);
-    // Safari/Firefox no exponen deviceMemory: no cuenta como gama baja.
-    expect(sceneAllowed({ ...ok, deviceMemory: undefined })).toBe(true);
+  it("el creador va con su nombre, sin cifras de usuarios inventadas", () => {
+    expect(es.landing.trust.maker.body).toContain("Víctor Franco");
+    for (const s of strings(es.landing as unknown as Tree)) expect(s).not.toMatch(/\b(miles|millones) de (usuarios|personas)\b/i);
   });
-  it("no con reducir movimiento, en móvil, con ahorro de datos o en gama baja", () => {
-    expect(sceneAllowed({ ...ok, reducedMotion: true })).toBe(false);
-    expect(sceneAllowed({ ...ok, width: 767 })).toBe(false);
-    expect(sceneAllowed({ ...ok, saveData: true })).toBe(false);
-    expect(sceneAllowed({ ...ok, deviceMemory: 4 })).toBe(false);
-    expect(sceneAllowed({ ...ok, cores: 4 })).toBe(false);
-  });
-  it("las precargas son como mucho 4 y solo donde habrá galería", () => {
-    expect(IMMERSIVE_PRELOAD).toBeLessThanOrEqual(4);
-    expect(SCENE_MEDIA).toContain("min-width: 768px");
-    expect(SCENE_MEDIA).toContain("prefers-reduced-motion: no-preference");
+
+  it("es y en tienen las mismas claves en los namespaces de la portada", () => {
+    const keys = (t: Tree, p = ""): string[] =>
+      Object.entries(t).flatMap(([k, v]) => (typeof v === "string" ? [`${p}${k}`] : keys(v, `${p}${k}.`)));
+    for (const ns of ["landing", "demo", "pwa", "onboarding", "meta"] as const) {
+      expect(keys(en[ns] as unknown as Tree).sort()).toEqual(keys(es[ns] as unknown as Tree).sort());
+    }
   });
 });
 
 describe("tarjeta de compartir (OG)", () => {
-  // La tabla de DISENO.md es la fuente de los hex; antes la tarjeta usaba otra
-  // paleta (fondo #1a1620) y no casaba con la web.
-  it("los colores de marca son los hex exactos de la tabla de tokens", () => {
-    const doc = readFileSync(path.resolve(__dirname, "../../../DISENO.md"), "utf8");
-    const hex = (token: string) => new RegExp(`\\| \`${token}\` \\|[^|]*\\|[^|]*\\| \`(#[0-9a-f]{6})\``).exec(doc)?.[1];
-    expect(C.bg).toBe(hex("--surface-base"));
-    expect(C.surface2).toBe(hex("--surface-elevated"));
-    expect(C.text).toBe(hex("--text-primary"));
-    expect(C.pink).toBe(hex("--accent-pink"));
-    expect(C.lime).toBe(hex("--accent-lime"));
-    expect(C.purple).toBe(hex("--accent-purple"));
-  });
-  it("cada formato tiene su color hex derivado del OKLCH del hero", () => {
+  it("cada formato conserva su color hex", () => {
     for (const f of IMMERSIVE_FORMATS) expect(FORMAT_HEX[f]).toMatch(/^#[0-9a-f]{6}$/);
   });
 });

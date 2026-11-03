@@ -1,19 +1,22 @@
 import { ImageResponse } from "next/og";
 import { getTranslations } from "next-intl/server";
-import { C, FORMAT_HEX, loadFont, fontsOption } from "@/lib/og/brand";
-import { parseTitle } from "@/lib/landing/immersive";
+import { loadFont, fontsOption } from "@/lib/og/brand";
 import es from "../../../messages/es.json";
 import en from "../../../messages/en.json";
 
 /**
- * Tarjeta que se ve al compartir el enlace (WhatsApp, X, Discord...).
- * D-11: la misma promesa que el h1 de la landing, con cada formato en su color
- * (como se ilumina en el hero) y "Gratis y sin anuncios" debajo. El
- * rasterizador de next/og no entiende OKLCH, así que los colores salen de la
- * tabla hex exacta de DISENO.md (`lib/og/brand`).
+ * Tarjeta que se ve al compartir el enlace (WhatsApp, X, Discord...): la tapa
+ * del álbum. Campo cian de imprenta con el titular de la portada en Lilita
+ * One y tinta marina, el lema («Gratis y sin anuncios.») y, a la derecha, una
+ * página blanca con sus huecos numerados de contorno discontinuo. Sin
+ * portadas: la tarjeta no depende de ningún proveedor. El rasterizador de
+ * next/og no entiende OKLCH: los colores son los hex exactos de DISENO.md.
  */
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
+
+/** Tintas del álbum (tabla de DISENO.md). */
+const INK = { cyan: "#00a0e3", navy: "#0b2a6b", white: "#ffffff", pink: "#ff2d8a" };
 
 /**
  * `alt` estático, para los segmentos que REEXPORTAN esta tarjeta (p. ej.
@@ -25,17 +28,10 @@ export const alt: string = es.landing.seo.title;
 type Params = { locale: string };
 
 /**
- * `alt` traducido (SEO-6): con un `alt` estático salía "KULTURA" en los dos
- * idiomas.
- *
- * Next 15 resuelve `generateImageMetadata` junto a los metadatos de CADA
- * página del segmento, en una capa donde `next-intl/server` no está
- * disponible ("getTranslations is not supported in Client Components"): el
- * error rompía el render de todas las páginas con sesión. Por eso el texto se
- * lee directamente de los mensajes, sin `getTranslations`.
- *
- * `params` llega como objeto en Next 15 y como Promise en 16: se acepta lo uno
- * y lo otro (como en las demás tarjetas) para no depender de la versión.
+ * `alt` traducido (SEO-6). Next 15 resuelve `generateImageMetadata` en una
+ * capa donde `next-intl/server` no está disponible, así que el texto se lee
+ * directamente de los mensajes. `params` llega como objeto en Next 15 y como
+ * Promise en 16: se aceptan los dos.
  */
 export async function generateImageMetadata({ params }: { params: Params | Promise<Params> }) {
   const locale = (await params).locale === "en" ? "en" : "es";
@@ -43,58 +39,52 @@ export async function generateImageMetadata({ params }: { params: Params | Promi
   return [{ id: "card", alt: messages.landing.seo.title, size, contentType }];
 }
 
-type Segment = { text: string; color: string };
-
-/**
- * Palabra a palabra: satori parte las líneas por elemento, así el titular
- * envuelve como un texto normal y cada formato conserva su color. La
- * puntuación pegada a un formato ("cine,") va en la misma palabra, en blanco.
- */
-function titleWords(title: ReturnType<typeof parseTitle>): Segment[][] {
-  const words: Segment[][] = [];
-  let glued = false; // el trozo anterior terminó sin espacio
-  for (const part of title) {
-    if (typeof part !== "string") {
-      const seg = { text: part.text, color: FORMAT_HEX[part.type] };
-      if (glued && words.length) words[words.length - 1].push(seg);
-      else words.push([seg]);
-      glued = true;
-      continue;
-    }
-    const pieces = part.split(/(\s+)/).filter(Boolean);
-    for (const piece of pieces) {
-      if (/^\s+$/.test(piece)) {
-        glued = false;
-        continue;
-      }
-      const seg = { text: piece, color: C.text };
-      if (glued && words.length) words[words.length - 1].push(seg);
-      else words.push([seg]);
-      glued = true;
-    }
-  }
-  return words;
-}
-
-/** Lema corto bajo el titular: la última frase del subtítulo ("Gratis y sin anuncios."). */
+/** Lema corto: la última frase del subtítulo («Gratis y sin anuncios.»). */
 function tail(sub: string): string {
   const parts = sub.split(". ").filter(Boolean);
   return parts[parts.length - 1] ?? sub;
 }
 
+/** Hueco numerado: contorno discontinuo de 2 px y el número arriba a la izquierda. */
+function Slot({ n, w, h }: { n: number; w: number; h: number }) {
+  return (
+    <div style={{ display: "flex", position: "relative", width: w, height: h }}>
+      <svg width={w} height={h} viewBox={`0 0 ${w} ${h}`} style={{ position: "absolute", top: 0, left: 0 }}>
+        <rect
+          x="1.5"
+          y="1.5"
+          width={w - 3}
+          height={h - 3}
+          rx="4"
+          fill="none"
+          stroke={INK.navy}
+          strokeOpacity="0.45"
+          strokeWidth="3"
+          strokeDasharray="10 7"
+        />
+      </svg>
+      <div style={{ display: "flex", position: "absolute", top: 8, left: 12, fontSize: 26, color: INK.navy, fontFamily: "Lilita One" }}>
+        {String(n)}
+      </div>
+    </div>
+  );
+}
+
 export default async function Image({ params }: { params: Params | Promise<Params> }) {
   const locale = (await params).locale === "en" ? "en" : "es";
   const t = await getTranslations({ locale, namespace: "landing" });
-  const title = parseTitle(t.raw("hero.title") as string);
+  const title = t("hero.title");
   const lema = tail(t("hero.sub"));
-  const words = titleWords(title);
-  const glyphs = words.flatMap((w) => w.map((seg) => seg.text)).join("") + lema;
   const fonts = (
     await Promise.all([
-      loadFont("Bricolage+Grotesque", 800, `kultura${glyphs}`),
+      loadFont("Lilita+One", 400, `${title}0123456789`),
+      loadFont("Bricolage+Grotesque", 700, "kultura"),
       loadFont("Figtree", 700, lema),
     ])
   ).filter((f) => f !== null);
+
+  const slotW = 80;
+  const slotH = 120;
 
   return new ImageResponse(
     (
@@ -103,75 +93,43 @@ export default async function Image({ params }: { params: Params | Promise<Param
           width: "100%",
           height: "100%",
           display: "flex",
-          flexDirection: "column",
-          justifyContent: "center",
-          padding: "0 84px",
-          background: `radial-gradient(120% 100% at 20% 10%, ${C.purpleGlow}, ${C.bg} 55%)`,
-          color: C.text,
+          background: INK.cyan,
+          color: INK.navy,
           fontFamily: "Figtree",
+          padding: "64px 0 64px 72px",
         }}
       >
-        <div style={{ display: "flex", alignItems: "center", gap: 20 }}>
-          <div
-            style={{
-              width: 64,
-              height: 64,
-              borderRadius: 20,
-              background: C.surface2,
-              display: "flex",
-              position: "relative",
-            }}
-          >
-            {[
-              { c: C.pink, r: -10, t: 12, l: 9 },
-              { c: C.lime, r: 6, t: 25, l: 22 },
-              { c: C.purple, r: -4, t: 38, l: 14 },
-            ].map((p) => (
-              <div
-                key={p.c}
-                style={{
-                  position: "absolute",
-                  top: p.t,
-                  left: p.l,
-                  width: 32,
-                  height: 21,
-                  borderRadius: 9,
-                  background: p.c,
-                  transform: `rotate(${p.r}deg)`,
-                }}
-              />
-            ))}
-          </div>
-          <div style={{ display: "flex", alignItems: "flex-end", fontSize: 64, fontWeight: 800, letterSpacing: -2, fontFamily: "Bricolage Grotesque" }}>
+        <div style={{ display: "flex", flexDirection: "column", justifyContent: "space-between", width: 640 }}>
+          <div style={{ display: "flex", alignItems: "flex-end", fontSize: 52, fontWeight: 700, letterSpacing: -1.5, fontFamily: "Bricolage Grotesque" }}>
             kultura
-            <div style={{ width: 10, height: 10, background: C.lime, transform: "rotate(14deg)", marginLeft: 4, marginBottom: 16 }} />
+            <div style={{ width: 10, height: 10, borderRadius: 999, background: INK.pink, marginLeft: 4, marginBottom: 12 }} />
           </div>
+          <div style={{ display: "flex", fontSize: 76, lineHeight: 1.02, fontFamily: "Lilita One" }}>{title}</div>
+          <div style={{ display: "flex", fontSize: 32, fontWeight: 700 }}>{lema}</div>
         </div>
+        {/* La página derecha del álbum: blanca, con raya de tinta y huecos. */}
         <div
           style={{
             display: "flex",
-            flexWrap: "wrap",
-            columnGap: 22,
-            marginTop: 36,
-            fontSize: 76,
-            lineHeight: 1,
-            fontWeight: 800,
-            letterSpacing: -2.5,
-            fontFamily: "Bricolage Grotesque",
-            maxWidth: 1032,
+            flexDirection: "column",
+            justifyContent: "center",
+            marginLeft: 56,
+            padding: "28px 28px",
+            background: INK.white,
+            border: `3px solid ${INK.navy}`,
+            borderRight: "none",
+            borderRadius: "16px 0 0 16px",
+            flex: 1,
           }}
         >
-          {words.map((word, i) => (
-            <div key={i} style={{ display: "flex", marginBottom: 8 }}>
-              {word.map((seg, j) => (
-                <span key={j} style={{ color: seg.color }}>
-                  {seg.text}
-                </span>
+          {[0, 1].map((row) => (
+            <div key={row} style={{ display: "flex", gap: 16, marginTop: row ? 18 : 0 }}>
+              {[1, 2, 3, 4].map((col) => (
+                <Slot key={col} n={row * 4 + col} w={slotW} h={slotH} />
               ))}
             </div>
           ))}
         </div>
-        <div style={{ display: "flex", fontSize: 34, fontWeight: 700, marginTop: 30, color: C.muted }}>{lema}</div>
       </div>
     ),
     { ...size, ...fontsOption(fonts) },

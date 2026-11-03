@@ -197,8 +197,8 @@
     "unexpectedDescription": "The page didn't load properly. Retry; if it keeps happening, tell us in Feedback."
   },
   "meta": {
-    "defaultTitle": "KULTURA — Your watchlist for movies, TV, anime, manga, games, books and comics",
-    "description": "Track what you want to watch, read and play, rate what you've already seen and share it with your friends. Free and ad-free.",
+    "defaultTitle": "KULTURA — Your album of movies, TV, anime, manga, games, books and comics",
+    "description": "The album of everything you watch, read and play: note what you're missing and stick what you finish. Free and ad-free.",
     "skipToContent": "Skip to content"
   },
   "common": {
@@ -1378,19 +1378,32 @@
   },
   "landing": {
     "seo": {
-      "title": "KULTURA — Your watchlist for movies, TV, anime, manga, games, books and comics",
-      "description": "Keep track of what you want to watch, read and play, rate what you've finished and share it with friends. Free, no ads."
+      "title": "KULTURA — Your album of movies, TV, anime, manga, games, books and comics",
+      "description": "Movies, TV, anime, manga, video games, books and comics in one library. Free and ad-free."
     },
     "hero": {
-      "title": "Your watchlist for <movie>movies</movie>, <tv>TV</tv>, <anime>anime</anime>, <manga>manga</manga>, <game>games</game>, <book>books</book> and <comic>comics</comic>",
-      "sub": "Keep track of what you want to watch, read and play, rate what you've finished and share it with friends. Free, no ads.",
+      "title": "Everything you watch, read and play, in an album you fill in.",
+      "sub": "Movies, TV, anime, manga, video games, books and comics in one library. Free and ad-free.",
       "cta": "Create my free account",
-      "demo": "See the demo",
-      "badge": "7 formats, one list"
+      "demo": "See the demo"
     },
-    "motion": {
-      "pause": "Pause the background animation",
-      "region": "Background animation"
+    "album": {
+      "best": "The best of {year}",
+      "bestLink": "See the rankings",
+      "missing": "Still missing",
+      "region": "The open album"
+    },
+    "search": {
+      "label": "Look up what you're missing",
+      "placeholder": "A film, a show, a manga…",
+      "submit": "Search",
+      "formats": "Where to search",
+      "all": "Movies and TV",
+      "loading": "Searching…",
+      "results": "Results for “{q}”",
+      "empty": "Nothing found for “{q}”. Try another format.",
+      "error": "Search isn't responding right now. Try again in a while.",
+      "save": "Save"
     },
     "formats": {
       "movie": "Movies",
@@ -1401,39 +1414,40 @@
       "book": "Books",
       "comic": "Comics"
     },
-    "features": {
-      "title": "What's inside.",
-      "library": "Personal library",
-      "libraryDesc": "Log what you've watched, read or played with ratings and progress.",
-      "friends": "Connect with friends",
-      "friendsDesc": "See what the people you care about are enjoying.",
-      "lists": "Collaborative lists",
-      "listsDesc": "Build lists together: weekend picks, horror nights, the manga you haven't started yet.",
-      "ai": "AI recommendations",
-      "aiDesc": "We suggest what to watch, read or play based on what you've already rated.",
-      "aiChip": "AI"
+    "ritual": {
+      "title": "How the album fills up",
+      "find": {
+        "title": "Look it up",
+        "desc": "One search for movies, TV, anime, manga, games, books and comics."
+      },
+      "slot": {
+        "title": "Give it its slot",
+        "desc": "What you want to watch, read or play waits as pending, with its number and its title printed."
+      },
+      "paste": {
+        "title": "Stick it when you finish",
+        "desc": "While you're on an episode, chapter or page, the sticker is placed. When you finish, you stick it and rate it."
+      },
+      "share": {
+        "title": "Share your page",
+        "desc": "Make lists on your own or with friends. They start private; you choose which ones show on your profile."
+      }
     },
-    "how": {
-      "title": "How it works",
-      "steps": {
-        "find": {
-          "title": "Find it",
-          "desc": "Movies, TV, anime, manga, games, books and comics from the same search box."
-        },
-        "track": {
-          "title": "Track it and rate it",
-          "desc": "Mark it as pending, in progress or completed and rate it when you're done."
-        },
-        "share": {
-          "title": "Share it",
-          "desc": "Make lists with your friends and see what they're watching, reading and playing."
-        }
+    "sections": {
+      "title": "Seven sections, one album",
+      "tracks": {
+        "movie": "Rating, diary date and how many times you've rewatched it",
+        "tv": "The season and episode you're on",
+        "anime": "The episode you're on",
+        "manga": "Chapter and volume",
+        "game": "Hours played",
+        "book": "Page or percentage read",
+        "comic": "Issue and volume"
       }
     },
     "rankings": {
-      "title": "The best of {year}",
-      "sub": "Top-rated rankings for every format, updated daily.",
-      "cta": "See ranking",
+      "title": "The {year} rankings",
+      "cta": "See the full ranking",
       "previous": "Rankings from other years"
     },
     "compare": {
@@ -1448,6 +1462,25 @@
       "none": "None of these",
       "note": "Each app is marked for the format it focuses on; some let you log others partially. Letterboxd, Trakt, MyAnimeList, Goodreads and Backloggd are trademarks of their respective owners. KULTURA is not affiliated with any of them."
     },
+    "trust": {
+      "title": "What's behind it",
+      "free": {
+        "title": "Free, no ads, no paid plan",
+        "body": "There's no paid version and nothing hidden away. You can take your data with you as a JSON file from Settings and, if you delete your account, you have 30 days to change your mind."
+      },
+      "rankings": {
+        "title": "Rankings with the criterion in plain sight",
+        "body": "Each ranking orders the year's titles by their community rating on TMDB, AniList or RAWG, weighted by votes and with a minimum number of votes. The criterion is written on every ranking and recalculated daily."
+      },
+      "data": {
+        "title": "Where the data comes from",
+        "body": "Covers, synopses and ratings come from public catalogues: TMDB, AniList, RAWG and Steam, Open Library, Google Books, MangaDex and Comic Vine. “Where to watch” in Spain comes from JustWatch."
+      },
+      "maker": {
+        "title": "Who makes it",
+        "body": "I do, Víctor Franco, as a personal project. It's new and I say so: what you tell me through Suggestions decides what I improve first."
+      }
+    },
     "faq": {
       "title": "Frequently asked questions",
       "free": {
@@ -1459,7 +1492,7 @@
         "a": "Movies, TV shows, anime, manga, video games, books and comics. Search for a title, give it a status (pending, in progress, completed or dropped) and, if you like, a rating."
       },
       "demo": {
-        "q": "Can I try it without signing up?",
+        "q": "Can I look inside before creating an account?",
         "a": "Yes. “See the demo” opens a read-only sample account so you can see what it looks like inside."
       },
       "privacy": {
@@ -1476,8 +1509,8 @@
       }
     },
     "final": {
-      "title": "Your culture, in one place.",
-      "sub": "Keep count of what you watch, read and play. We'll discover the rest together."
+      "title": "Your album starts with the first slot.",
+      "sub": "Note what you're missing, stick what you finish and show it to whoever you like."
     }
   },
   "discoverFilters": {

@@ -20,7 +20,7 @@ interface GridRoute {
 }
 
 const GRID_ROUTES: GridRoute[] = [
-  { path: "/es", content: "#features-title" },
+  { path: "/es", content: "#best-title" },
   { path: "/es/best/movie/2026" },
   { path: "/es/u/benevi" },
   { path: "/es/privacy" },
@@ -81,13 +81,13 @@ test.describe("retícula única (DIS-8)", () => {
   }
 });
 
-test.describe("portada: el h1 no se monta sobre el collage (revisión #57)", () => {
+test.describe("portada: el titular no se monta sobre la solapa", () => {
   test.beforeEach(({}, info) => {
     test.skip(info.project.name !== "escritorio-1440", "los anchos los fija el propio test");
   });
 
-  test("h1 y subtítulo no cruzan el collage a 1024, 1280, 1366, 1440 y 1680 px", async ({ page }) => {
-    for (const width of [1024, 1280, 1366, 1440, 1680]) {
+  test("h1 y subtítulo no cruzan la solapa (buscador y botones) a 768, 1024, 1280, 1440 y 1680 px", async ({ page }) => {
+    for (const width of [768, 1024, 1280, 1440, 1680]) {
       await page.setViewportSize({ width, height: 900 });
       await open(page, "/es");
       const r = await page.evaluate(() => {
@@ -95,19 +95,13 @@ test.describe("portada: el h1 no se monta sobre el collage (revisión #57)", () 
           const b = el.getBoundingClientRect();
           return { l: b.left, t: b.top, r: b.right, b: b.bottom };
         };
-        // El collage entero: la unión de sus piezas (giradas, con sombra).
-        const pieces = Array.from(document.querySelectorAll("[data-hero-collage] [aria-hidden] > *")).map(box);
-        const collage = pieces.reduce(
-          (u, p) => ({ l: Math.min(u.l, p.l), t: Math.min(u.t, p.t), r: Math.max(u.r, p.r), b: Math.max(u.b, p.b) }),
-          { l: Infinity, t: Infinity, r: -Infinity, b: -Infinity }
-        );
-        const text = ["#hero-title", "#hero p"].map((s) => box(document.querySelector(s)!));
-        return { collage, pieces: pieces.length, text };
+        const flap = box(document.querySelector("[data-flap-search]")!.parentElement!);
+        const text = ["#hero-title", "#hero-title + p"].map((s) => box(document.querySelector(s)!));
+        return { flap, text };
       });
-      expect(r.pieces, `${width}: sin collage`).toBeGreaterThan(0);
       for (const t of r.text) {
-        const cross = t.l < r.collage.r && t.r > r.collage.l && t.t < r.collage.b && t.b > r.collage.t;
-        expect(cross, `${width} px: texto ${JSON.stringify(t)} cruza el collage ${JSON.stringify(r.collage)}`).toBe(false);
+        const cross = t.l < r.flap.r && t.r > r.flap.l && t.t < r.flap.b && t.b > r.flap.t;
+        expect(cross, `${width} px: texto ${JSON.stringify(t)} cruza la solapa ${JSON.stringify(r.flap)}`).toBe(false);
       }
     }
   });

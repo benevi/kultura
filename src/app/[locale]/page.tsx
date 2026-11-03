@@ -3,25 +3,27 @@ import { getTranslations, setRequestLocale } from "next-intl/server";
 import { routing } from "@/i18n/routing";
 import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/layout/Footer";
-import { FEATURE_KEYS, FeatureGrid } from "@/components/landing/FeatureGrid";
-import { BestRankings } from "@/components/landing/BestRankings";
-import { Hero } from "@/components/landing/Hero";
-import { HeroCollage, HeroStripPlaceholder } from "@/components/landing/HeroCollage";
-import { ImmersiveBackdrop } from "@/components/landing/ImmersiveBackdrop";
-import { MotionToggle } from "@/components/landing/MotionToggle";
-import { HowItWorks, STEP_KEYS } from "@/components/landing/HowItWorks";
+import { getAlbumLabels } from "@/components/album/labels.server";
+import { AlbumHero, MissingPagePlaceholder } from "@/components/landing/AlbumHero";
+import { BestPage } from "@/components/landing/BestPage";
+import { FLAP_FORMATS, type FlapSearchLabels } from "@/components/landing/FlapSearch";
+import { Ritual, RITUAL_STATUSES, RITUAL_STEPS } from "@/components/landing/Ritual";
+import { FormatSections } from "@/components/landing/FormatSections";
+import { RankingChecklist } from "@/components/landing/RankingChecklist";
 import { Comparison } from "@/components/landing/Comparison";
+import { Trust, TRUST_KEYS } from "@/components/landing/Trust";
 import { Faq } from "@/components/landing/Faq";
 import { FinalCta } from "@/components/landing/FinalCta";
 import {
-  BestRankingsSlot,
-  FeatureGridSlot,
-  HeroBackdropSlot,
-  HeroStripSlot,
-  HowItWorksSlot,
+  BestPageSlot,
+  FormatSectionsSlot,
+  MissingPageSlot,
+  RankingChecklistSlot,
+  RitualSlot,
 } from "@/components/landing/ShowcaseSlots";
-import { BEST_FORMATS, bestYears } from "@/lib/best/best-of";
-import { IMMERSIVE_FORMATS, parseTitle, type HeroCopy } from "@/lib/landing/immersive";
+import { BEST_FORMATS, bestYears, type BestFormat } from "@/lib/best/best-of";
+import { FORMATS } from "@/lib/design/album";
+import { ALBUM_PAGE_SIZE } from "@/lib/landing/album";
 import { faqJsonLd, faqKeys, type FaqItem } from "@/lib/landing/faq";
 import { env } from "@/lib/env.server";
 import { siteUrl } from "@/lib/site-url";
@@ -45,7 +47,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const l = locale === "en" ? "en" : "es";
   setRequestLocale(l);
   const t = await getTranslations({ locale: l, namespace: "landing" });
-  // D-11: la misma promesa que el h1 en <title>, OG y la tarjeta de X.
+  // D-11: la misma promesa en <title>, OG y la tarjeta de X.
   const title = t("seo.title");
   const description = t("seo.description");
   const base = siteUrl();
@@ -76,53 +78,75 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 export default async function HomePage({ params }: Props) {
   const locale = (await params).locale === "en" ? "en" : "es";
   setRequestLocale(locale);
-  const t = await getTranslations({ locale, namespace: "landing" });
-  const tb = await getTranslations({ locale, namespace: "best" });
-  const ts = await getTranslations({ locale, namespace: "status" });
-  const tq = await getTranslations({ locale, namespace: "search" });
+  const [t, tb, ts, album] = await Promise.all([
+    getTranslations({ locale, namespace: "landing" }),
+    getTranslations({ locale, namespace: "best" }),
+    getTranslations({ locale, namespace: "status" }),
+    getAlbumLabels(locale),
+  ]);
+  // E-DEMO: el botón solo existe si la cuenta demo está configurada.
   const demo = env.DEMO_USER_EMAIL ? t("hero.demo") : undefined;
+  const basePath = `/${locale}`;
+  const [year, ...olderYears] = bestYears();
 
-  const formats = Object.fromEntries(
-    IMMERSIVE_FORMATS.map((type) => [type, t(`formats.${type}`)])
-  ) as Record<MediaType, string>;
+  const names = Object.fromEntries(FORMATS.map((f) => [f, t(`formats.${f}`)])) as Record<MediaType, string>;
+  const formatLabels = Object.fromEntries(FORMATS.map((f) => [f, album.format(f)])) as Record<MediaType, string>;
+  const status = Object.fromEntries(RITUAL_STATUSES.map((s) => [s, ts(s)])) as Parameters<typeof Ritual>[0]["status"];
 
-  const hero: HeroCopy = {
-    title: parseTitle(t.raw("hero.title") as string),
-    sub: t("hero.sub"),
-    badge: t("hero.badge"),
-    cta: t("hero.cta"),
-    // E-DEMO: el botón solo existe si la cuenta demo está configurada.
-    demo,
+  // Textos ya traducidos: los componentes son síncronos (o de cliente) y no
+  // vuelven a pedir traducciones. Las plantillas con `{q}` se rellenan en el
+  // cliente.
+  const search: FlapSearchLabels = {
+    label: t("search.label"),
+    placeholder: t("search.placeholder"),
+    submit: t("search.submit"),
+    formats: t("search.formats"),
+    family: Object.fromEntries(
+      FLAP_FORMATS.map((f) => [f, f === "all" ? t("search.all") : names[f]])
+    ) as FlapSearchLabels["family"],
+    loading: t("search.loading"),
+    results: t.raw("search.results") as string,
+    empty: t.raw("search.empty") as string,
+    error: t("search.error"),
+    save: t("search.save"),
+    format: formatLabels,
+  };
+
+  const bestProps = {
+    heading: t("album.best", { year }),
+    linkLabel: t("album.bestLink"),
+    basePath,
+  };
+  const missingProps = {
+    heading: t("album.missing"),
+    startNumber: ALBUM_PAGE_SIZE + 1,
+    formatLabels,
+  };
+
+  const ritualProps = {
+    heading: t("ritual.title"),
+    steps: Object.fromEntries(
+      RITUAL_STEPS.map((k) => [k, { title: t(`ritual.${k}.title`), desc: t(`ritual.${k}.desc`) }])
+    ) as Parameters<typeof Ritual>[0]["steps"],
+    status,
+    format: formatLabels,
     locale,
   };
 
-  // Etiquetas ya traducidas: los componentes son síncronos y no vuelven a
-  // pedir traducciones.
-  const features = Object.fromEntries(
-    FEATURE_KEYS.map((key) => [key, { title: t(`features.${key}`), desc: t(`features.${key}Desc`) }])
-  ) as Parameters<typeof FeatureGrid>[0]["features"];
-  const featureProps = { features, aiChip: t("features.aiChip") };
-
-  const howProps = {
-    heading: t("how.title"),
-    steps: Object.fromEntries(
-      STEP_KEYS.map((key) => [key, { title: t(`how.steps.${key}.title`), desc: t(`how.steps.${key}.desc`) }])
-    ) as Parameters<typeof HowItWorks>[0]["steps"],
-    statusLabel: ts("completed"),
-    searchPlaceholder: tq("placeholder"),
+  const sectionsProps = {
+    heading: t("sections.title"),
+    names,
+    tracks: Object.fromEntries(FORMATS.map((f) => [f, t(`sections.tracks.${f}`)])) as Record<MediaType, string>,
   };
 
-  const [year, ...olderYears] = bestYears();
-  const bestCopy = Object.fromEntries(
-    BEST_FORMATS.map((f) => [f, { label: tb(`chip.${f}`), title: tb(`title.${f}`, { year }) }])
-  ) as Parameters<typeof BestRankings>[0]["copy"];
   const rankingsProps = {
-    basePath: `/${locale}`,
+    basePath,
+    locale,
     year,
     heading: t("rankings.title", { year }),
-    sub: t("rankings.sub"),
     cta: t("rankings.cta"),
-    copy: bestCopy,
+    titles: Object.fromEntries(BEST_FORMATS.map((f) => [f, tb(`title.${f}`, { year })])) as Record<BestFormat, string>,
+    ratingLabel: tb.raw("rating") as string,
     // SEO-9: además de los cuatro del año, enlaces a todos los anteriores.
     previous: {
       label: t("rankings.previous"),
@@ -158,55 +182,53 @@ export default async function HomePage({ params }: Props) {
   };
 
   return (
-    <div className="min-h-screen flex flex-col isolate">
-      {/* Primero en el orden de foco (ACC-6): pausar la animación de fondo. */}
-      <MotionToggle pauseLabel={t("motion.pause")} region={t("motion.region")} />
+    // Página impresa del álbum: la cabecera, los botones y los campos se
+    // re-visten de papel solos (`theme-paper`).
+    <div className="theme-paper isolate flex min-h-screen flex-col">
       <Header locale={locale} />
       <main className="flex-1">
-        {/* Hero único (D-11): el mensaje y los botones son HTML del primer
-            pintado; solo el fondo y la tira de portadas esperan a la muestra. */}
-        <Hero
-          copy={hero}
-          backdrop={
-            <Suspense fallback={<ImmersiveBackdrop items={[]} collage={<HeroCollage items={[]} />} />}>
-              <HeroBackdropSlot locale={locale} />
+        {/* El álbum abierto (primera pantalla): el titular, la solapa y las dos
+            páginas son HTML del primer pintado; las portadas llegan por
+            streaming y el sobre, si el equipo puede, después. */}
+        <AlbumHero
+          copy={{
+            title: t("hero.title"),
+            sub: t("hero.sub"),
+            cta: t("hero.cta"),
+            demo,
+            locale,
+            region: t("album.region"),
+          }}
+          search={search}
+          left={
+            <Suspense fallback={<BestPage {...bestProps} items={[]} />}>
+              <BestPageSlot locale={locale} year={year} {...bestProps} />
             </Suspense>
           }
-          strip={
-            <Suspense fallback={<HeroStripPlaceholder />}>
-              <HeroStripSlot locale={locale} />
+          right={
+            <Suspense fallback={<MissingPagePlaceholder heading={missingProps.heading} startNumber={missingProps.startNumber} />}>
+              <MissingPageSlot locale={locale} year={year} pendingLabel={album.slotPending} {...missingProps} />
             </Suspense>
           }
         />
 
-        <section
-          aria-labelledby="features-title"
-          className="page-grid pt-20 md:pt-28 pb-20 md:pb-28"
-        >
-          <h2
-            id="features-title"
-            className="font-display text-4xl md:text-6xl font-extrabold tracking-[-0.03em] text-text-primary mb-12 max-w-[14ch]"
-          >
-            {t("features.title")}
-          </h2>
-          <Suspense fallback={<FeatureGrid {...featureProps} />}>
-            <FeatureGridSlot locale={locale} {...featureProps} />
-          </Suspense>
-        </section>
+        <Suspense fallback={<Ritual {...ritualProps} covers={[]} />}>
+          <RitualSlot {...ritualProps} />
+        </Suspense>
 
-        <Suspense fallback={<HowItWorks {...howProps} />}>
-          <HowItWorksSlot locale={locale} {...howProps} />
+        <Suspense fallback={<FormatSections {...sectionsProps} covers={[]} />}>
+          <FormatSectionsSlot locale={locale} {...sectionsProps} />
         </Suspense>
 
         {/* Rankings públicos: entrada a /best/[formato]/[año]. */}
-        <Suspense fallback={<BestRankings {...rankingsProps} />}>
-          <BestRankingsSlot locale={locale} {...rankingsProps} />
+        <Suspense fallback={<RankingChecklist {...rankingsProps} />}>
+          <RankingChecklistSlot {...rankingsProps} />
         </Suspense>
 
         <Comparison
           heading={t("compare.title")}
           sub={t("compare.sub")}
-          formats={formats}
+          formats={names}
           appHeader={t("compare.appHeader")}
           formatsHeader={t("compare.formatsHeader")}
           formatHeader={t("compare.formatHeader")}
@@ -217,9 +239,20 @@ export default async function HomePage({ params }: Props) {
           note={t("compare.note")}
         />
 
+        <Trust
+          heading={t("trust.title")}
+          blocks={
+            Object.fromEntries(
+              TRUST_KEYS.map((k) => [k, { title: t(`trust.${k}.title`), body: t(`trust.${k}.body`) }])
+            ) as Parameters<typeof Trust>[0]["blocks"]
+          }
+          rankingsHref={`${basePath}/best`}
+          rankingsLabel={t("album.bestLink")}
+        />
+
         <Faq heading={t("faq.title")} items={faq} />
 
-        <FinalCta title={t("final.title")} sub={t("final.sub")} cta={hero.cta} demo={demo} locale={locale} />
+        <FinalCta title={t("final.title")} sub={t("final.sub")} cta={t("hero.cta")} demo={demo} locale={locale} />
       </main>
       <Footer />
       <script

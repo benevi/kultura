@@ -1,17 +1,16 @@
 // ============================================================
-// KULTURA — Cierre de la landing (CRE-10, DIS-15)
+// KULTURA — Cierre de la portada: la contratapa del álbum (CRE-10)
 //
-// La landing termina con la misma promesa y los mismos dos botones que el
-// hero: quien llega al final no tiene que volver arriba. Card "feature" grande
-// de F0 (gradiente de un matiz + acento radial arriba a la izquierda) en
-// púrpura, para que el botón rosa destaque.
+// La portada termina como empieza: la banda cian con el titular y, en la
+// solapa blanca, los mismos dos botones («Crear mi cuenta gratis», la única
+// acción rosa, y «Ver la demo»). Quien llega al final no tiene que volver
+// arriba. El sobre, ya abierto: el siguiente lo abres tú.
 // ============================================================
 
-import { KButton } from "@/components/ui/KButton";
+import { AlbumPage } from "@/components/album/AlbumPage";
 import { DemoButton } from "@/components/landing/DemoButton";
-
-const BACKGROUND =
-  "radial-gradient(120% 100% at 20% 10%, oklch(68% 0.2 300 / 0.58), transparent 55%), linear-gradient(160deg, oklch(42% 0.15 300), oklch(22% 0.06 300))";
+import { Sobre } from "@/components/landing/Sobre";
+import { KButton } from "@/components/ui/KButton";
 
 export interface FinalCtaProps {
   title: string;
@@ -23,31 +22,24 @@ export interface FinalCtaProps {
 
 export function FinalCta({ title, sub, cta, demo, locale }: FinalCtaProps) {
   return (
-    <section aria-labelledby="final-title" className="page-grid pb-20 md:pb-28">
-      <div className="rounded-bento-xl px-6 py-14 text-center md:px-14 md:py-20" style={{ background: BACKGROUND }}>
-        <h2
-          id="final-title"
-          className="mx-auto max-w-[16ch] text-balance font-display text-4xl font-extrabold leading-[0.95] tracking-[-0.03em] text-text-primary md:text-6xl"
-        >
-          {title}
-        </h2>
-        <p className="mx-auto mt-6 max-w-[44ch] text-lg text-text-primary md:text-xl">{sub}</p>
-        <div className="mt-9 flex flex-col items-stretch justify-center gap-3 min-[400px]:flex-row min-[400px]:flex-wrap min-[400px]:items-center">
-          <KButton variant="primary" size="lg" asChild>
-            <a href={`/${locale}/login?mode=register`}>{cta}</a>
-          </KButton>
-          {demo ? (
-            <DemoButton
-              label={demo}
-              locale={locale}
-              className="w-full min-[400px]:w-auto"
-              // Sobre el púrpura, el borde `--surface-border` y el texto
-              // secundario no se distinguían: borde y texto claros.
-              buttonClassName="border-text-secondary text-text-primary"
-            />
-          ) : null}
+    <AlbumPage tone="cyan" aria-labelledby="final-title" className="py-16 md:py-24">
+      <div className="grid gap-8 md:grid-cols-12 md:items-center">
+        <div className="md:col-span-7">
+          <h2 id="final-title" className="max-w-[18ch] text-balance font-display text-3xl text-text-primary md:text-4xl">
+            {title}
+          </h2>
+          <p className="mt-4 max-w-[44ch] text-lg text-text-primary">{sub}</p>
+        </div>
+        <div className="theme-paper flex items-center gap-5 rounded-2xl border-2 border-album-navy p-5 md:col-span-5">
+          <Sobre torn className="hidden min-[400px]:block" />
+          <div className="flex min-w-0 flex-1 flex-col gap-3">
+            <KButton variant="primary" size="lg" asChild>
+              <a href={`/${locale}/login?mode=register`}>{cta}</a>
+            </KButton>
+            {demo ? <DemoButton label={demo} locale={locale} className="w-full" /> : null}
+          </div>
         </div>
       </div>
-    </section>
+    </AlbumPage>
   );
 }

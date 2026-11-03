@@ -1,26 +1,52 @@
 /**
- * F-30 · Portada: JS ≤ 150 KB y sin salto bajo el hero.
+ * F-30 · Portada: JS ≤ 150 KB.
  *
- * - El collage de escritorio se pinta en el servidor y entra en
- *   `ImmersiveBackdrop` (cliente) como hijo: si el cliente lo importara,
- *   sus iconos, `cn`/tailwind-merge y portadas viajarían en el JS de `/es`.
- * - `LandingPosterImage` no usa `next/image` (≈ 6 KB de cliente).
- * - La tira móvil reserva su hueco (fallback del Suspense y < 4 portadas):
- *   antes entraba tarde y empujaba la página (CLS 0,07).
+ * - three.js SOLO en `sobre-scene.ts`, y ese módulo solo se carga con
+ *   `import()` (tras el primer pintado y en un rato libre): nada de three en el
+ *   JS inicial de `/es`.
+ * - Las piezas de cliente de la portada no arrastran `next/image` (≈ 6 KB):
+ *   ni `Cromo` (que lo importa) ni `PosterImage`; los cromos de la página
+ *   derecha los pinta el servidor y llegan como hijos.
+ * - `LandingPosterImage` no usa `next/image`.
+ * - GSAP no entra en la portada.
  */
 import { describe, it, expect } from "vitest";
 import { render } from "@testing-library/react";
-import { readFileSync } from "node:fs";
+import { readdirSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
-import { HeroStrip, HeroStripPlaceholder } from "@/components/landing/HeroCollage";
 import { LandingPosterImage, landingSrcSet } from "@/components/landing/LandingPosterImage";
 
 const ROOT = resolve(__dirname, "../../..");
 const code = (p: string) => readFileSync(resolve(ROOT, p), "utf8").replace(/\/\/.*$/gm, "");
+const LANDING = ["src/components/landing", "src/lib/landing"].flatMap((dir) =>
+  readdirSync(resolve(ROOT, dir)).map((f) => `${dir}/${f}`)
+);
+const isClient = (p: string) => /^\s*["']use client["']/.test(readFileSync(resolve(ROOT, p), "utf8"));
 
 describe("peso de la portada", () => {
-  it("ImmersiveBackdrop (cliente) no importa el collage", () => {
-    expect(code("src/components/landing/ImmersiveBackdrop.tsx")).not.toMatch(/from ["']@\/components\/landing\/HeroCollage["']/);
+  it("three.js solo lo importa la escena del sobre", () => {
+    const importers = [...LANDING, "src/app/[locale]/page.tsx"].filter((p) => /from\s+["']three["']/.test(code(p)));
+    expect(importers).toEqual(["src/lib/landing/sobre-scene.ts"]);
+  });
+
+  it("la escena del sobre solo se carga con import() dinámico", () => {
+    const statics = [...LANDING, "src/app/[locale]/page.tsx"].filter((p) =>
+      /import\s+(?!type\b)[^;]*from\s+["']@\/lib\/landing\/sobre-scene["']/.test(code(p))
+    );
+    expect(statics).toEqual([]);
+    expect(code("src/components/landing/MissingPage.tsx")).toMatch(/import\(\s*["']@\/lib\/landing\/sobre-scene["']\s*\)/);
+  });
+
+  it("ninguna pieza de cliente de la portada importa Cromo, PosterImage ni next/image", () => {
+    const clients = LANDING.filter((p) => p.endsWith(".tsx") && isClient(p));
+    expect(clients.length).toBeGreaterThanOrEqual(3);
+    for (const p of clients) {
+      expect(code(p), p).not.toMatch(/from\s+["'](next\/image|@\/components\/album\/Cromo|@\/components\/album|@\/components\/media\/PosterImage)["']/);
+    }
+  });
+
+  it("sin GSAP en la portada", () => {
+    for (const p of LANDING) expect(code(p), p).not.toMatch(/from\s+["']gsap["']|loadGsap/);
   });
 
   it("LandingPosterImage no importa next/image ni PosterImage", () => {
@@ -38,13 +64,22 @@ describe("peso de la portada", () => {
     expect(img.getAttribute("loading")).toBe("lazy");
     expect(img.getAttribute("alt")).toBe("");
   });
+
+  it("la portada prioritaria (LCP) no es diferida y va con prioridad alta", () => {
+    const { container } = render(
+      <LandingPosterImage src="https://image.tmdb.org/t/p/original/a.jpg" sizes="140px" priority />
+    );
+    const img = container.querySelector("img")!;
+    expect(img.getAttribute("loading")).toBe("eager");
+    expect(img.getAttribute("fetchpriority")).toBe("high");
+  });
 });
 
 describe("portada rota antes de hidratar (revisión #57)", () => {
   // La portada estática de la landing llega en el HTML: si da 404 antes de
   // que React hidrate, el `onError` ya ha pasado y nadie lo escucha. Al
   // montar hay que mirar si la imagen ya terminó sin píxeles.
-  it("si al montar la imagen ya falló (complete y sin ancho), se retira y queda el gradiente", () => {
+  it("si al montar la imagen ya falló (complete y sin ancho), se retira y queda el respaldo", () => {
     const proto = HTMLImageElement.prototype;
     const complete = Object.getOwnPropertyDescriptor(proto, "complete");
     const natural = Object.getOwnPropertyDescriptor(proto, "naturalWidth");
@@ -72,21 +107,5 @@ describe("portada rota antes de hidratar (revisión #57)", () => {
       if (complete) Object.defineProperty(proto, "complete", complete);
       else delete (proto as unknown as Record<string, unknown>).complete;
     }
-  });
-});
-
-describe("tira móvil del hero sin salto", () => {
-  const box = (el: Element) => el.firstElementChild!.className;
-
-  it("con < 4 portadas pinta el hueco reservado, no nada", () => {
-    const empty = render(<HeroStrip items={[]} />).container;
-    const placeholder = render(<HeroStripPlaceholder />).container;
-    expect(empty.firstElementChild).not.toBeNull();
-    expect(box(empty)).toBe(box(placeholder));
-    expect(placeholder.firstElementChild!.children).toHaveLength(4);
-  });
-
-  it("la página usa el hueco como fallback del Suspense de la tira", () => {
-    expect(code("src/app/[locale]/page.tsx")).toMatch(/<Suspense fallback=\{<HeroStripPlaceholder \/>\}>\s*<HeroStripSlot/);
   });
 });

@@ -4,7 +4,7 @@
 // La landing enseñaba su propuesta con bloques de gradiente: honestos como
 // primitivo F0, pero no cuentan qué hay dentro. Aquí se resuelve una muestra
 // de portadas REALES del catálogo (película, serie, anime, libro, manga,
-// juego, cómic) para pintarlas en el hero y en las tarjetas de features.
+// juego, cómic) para pintarlas en el álbum abierto de la portada.
 //
 // Decisiones (y por qué):
 //   - Fan-out por familia con `fetchDiscoverData` (la misma rama nativa que usa
@@ -31,7 +31,7 @@
 //     RAWG que se cuele se descarta. De paso, la landing ya no gasta cupo de RAWG.
 //
 // La landing NUNCA depende de esto para ser usable: sin muestra, los
-// componentes caen a su versión de gradiente (ver `HeroCollage`).
+// componentes caen a sus huecos vacíos (ver `ShowcaseSlots`).
 // ============================================================
 
 import * as React from "react";
@@ -53,10 +53,9 @@ export interface ShowcaseItem {
 }
 
 /**
- * Cuántas portadas pide la landing. La escena inmersiva del hero
- * (E-LANDING-INMERSIVA) monta un túnel de tres vueltas de siete portadas, así
- * que pide 21; el hero estático de respaldo (collage de 3 y tira de móvil de 4)
- * toma las primeras de la MISMA lista, que ya arranca con un tipo de cada.
+ * Cuántas portadas pide la landing: los 8 huecos de «Te faltan» (los que
+ * llena el sobre), el ritual y tres portadas por sección de formato salen de
+ * la MISMA lista, que ya arranca con un tipo de cada.
  */
 export const LANDING_SHOWCASE_SIZE = 21;
 

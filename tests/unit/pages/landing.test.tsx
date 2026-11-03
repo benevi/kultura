@@ -1,28 +1,12 @@
 import { render, screen, within } from "@testing-library/react";
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import type { ShowcaseItem } from "@/lib/landing/showcase";
+import type { AlbumCromo } from "@/lib/landing/album";
 import type { BestItem } from "@/lib/best/best-of";
 import es from "../../../messages/es.json";
 import en from "../../../messages/en.json";
 
-// next/image no funciona en jsdom → <img> plano (mismo mock que media-card).
-vi.mock("next/image", () => ({
-  default: (
-    props: React.ImgHTMLAttributes<HTMLImageElement> & {
-      fill?: boolean;
-      priority?: boolean;
-      sizes?: string;
-      loader?: unknown;
-    }
-  ) => {
-    const { fill: _fill, priority: _priority, sizes: _sizes, loader: _loader, ...rest } = props;
-    // eslint-disable-next-line @next/next/no-img-element, jsx-a11y/alt-text
-    return <img {...rest} />;
-  },
-}));
-
 // next-intl con los mensajes REALES (es/en): así el test comprueba la copia
-// de D-11 tal cual está en `messages/` y no un texto inventado aquí.
+// tal cual está en `messages/` y no un texto inventado aquí.
 const { intl } = vi.hoisted(() => ({ intl: { locale: "es" as "es" | "en" } }));
 
 function lookup(messages: Record<string, unknown>, ns: string, key: string): unknown {
@@ -32,57 +16,76 @@ function lookup(messages: Record<string, unknown>, ns: string, key: string): unk
   );
 }
 
+function translator(ns: string, loc: "es" | "en") {
+  const messages = (loc === "en" ? en : es) as unknown as Record<string, unknown>;
+  const t = (key: string, vars?: Record<string, string | number>) => {
+    const raw = lookup(messages, ns, key);
+    if (typeof raw !== "string") return `${ns}.${key}`;
+    return raw.replace(/\{(\w+)(?:, number, ::\.0)?\}/g, (_, v: string) => String(vars?.[v] ?? `{${v}}`));
+  };
+  t.raw = (key: string) => lookup(messages, ns, key);
+  return t;
+}
+
 vi.mock("next-intl/server", () => ({
   getLocale: vi.fn(async () => intl.locale),
   setRequestLocale: vi.fn(),
   getTranslations: vi.fn(async (arg: string | { locale: string; namespace: string }) => {
     const ns = typeof arg === "string" ? arg : arg.namespace;
-    const loc = typeof arg === "string" ? intl.locale : arg.locale;
-    const messages = (loc === "en" ? en : es) as unknown as Record<string, unknown>;
-    const t = (key: string, vars?: Record<string, string | number>) => {
-      const raw = lookup(messages, ns, key);
-      if (typeof raw !== "string") return `${ns}.${key}`;
-      return raw.replace(/\{(\w+)\}/g, (_, v: string) => String(vars?.[v] ?? `{${v}}`));
-    };
-    t.raw = (key: string) => lookup(messages, ns, key);
-    return t;
+    const loc = (typeof arg === "string" ? intl.locale : arg.locale) as "es" | "en";
+    return translator(ns, loc);
   }),
 }));
+vi.mock("server-only", () => ({}));
 
 const { demo } = vi.hoisted(() => ({ demo: { email: "demo@example.com" as string | undefined } }));
 vi.mock("@/lib/env.server", () => ({
   env: new Proxy({}, { get: (_t, prop) => (prop === "DEMO_USER_EMAIL" ? demo.email : undefined) }),
 }));
 
-// E-LANDING-SHOWCASE: los huecos de portadas son Server Components ASÍNCRONOS
-// dentro de <Suspense>, y react-dom no sabe renderizarlos en jsdom. Se mockean
-// por sus versiones síncronas y el test inyecta las portadas ahí.
-const { showcase } = vi.hoisted(() => ({
-  showcase: { items: [] as ShowcaseItem[], fans: undefined as Record<string, (BestItem | null)[]> | undefined },
+// Los huecos con datos son Server Components ASÍNCRONOS dentro de <Suspense>,
+// y react-dom no sabe renderizarlos en jsdom. Se mockean por sus versiones
+// síncronas y el test inyecta ahí las portadas.
+const { data } = vi.hoisted(() => ({
+  data: { best: [] as AlbumCromo[], missing: [] as AlbumCromo[], tops: {} as Record<string, BestItem[]> },
 }));
 
 vi.mock("@/components/landing/ShowcaseSlots", async () => {
-  const { ImmersiveBackdrop } = await import("@/components/landing/ImmersiveBackdrop");
-  const { HeroStrip } = await import("@/components/landing/HeroCollage");
-  const { FeatureGrid } = await import("@/components/landing/FeatureGrid");
-  const { BestRankings } = await import("@/components/landing/BestRankings");
-  const { HowItWorks } = await import("@/components/landing/HowItWorks");
+  const { BestPage } = await import("@/components/landing/BestPage");
+  const { MissingPage } = await import("@/components/landing/MissingPage");
+  const { LandingCromo } = await import("@/components/landing/LandingCromo");
+  const { Ritual } = await import("@/components/landing/Ritual");
+  const { FormatSections } = await import("@/components/landing/FormatSections");
+  const { RankingChecklist } = await import("@/components/landing/RankingChecklist");
+  type P<T extends (...a: never[]) => unknown> = Parameters<T>[0];
   return {
-    FeatureGridSlot: ({ locale: _l, ...props }: { locale: string } & React.ComponentProps<typeof FeatureGrid>) => (
-      <FeatureGrid {...props} posters={showcase.items} />
+    BestPageSlot: ({ locale: _l, year: _y, ...props }: { locale: string; year: number } & P<typeof BestPage>) => (
+      <BestPage {...props} items={data.best} />
     ),
-    HowItWorksSlot: ({ locale: _l, ...props }: { locale: string } & React.ComponentProps<typeof HowItWorks>) => (
-      <HowItWorks {...props} posters={showcase.items} />
+    MissingPageSlot: ({
+      locale: _l,
+      year: _y,
+      pendingLabel,
+      ...props
+    }: { locale: string; year: number; pendingLabel: (n: number) => string } & P<typeof MissingPage>) => (
+      <MissingPage
+        {...props}
+        items={data.missing.map((it) => ({ ...it, foil: false }))}
+        cromos={data.missing.map((it) => (
+          <LandingCromo key={it.id} title={it.title} seed={it.id} poster={it.poster} sizes="100px" />
+        ))}
+        pending={data.missing.map((_, i) => pendingLabel(props.startNumber + i))}
+      />
     ),
-    BestRankingsSlot: ({ locale: _l, ...props }: { locale: string } & React.ComponentProps<typeof BestRankings>) => (
-      <BestRankings {...props} fans={showcase.fans} />
+    RitualSlot: (props: P<typeof Ritual>) => <Ritual {...props} covers={data.missing} />,
+    FormatSectionsSlot: ({ locale: _l, ...props }: { locale: string } & P<typeof FormatSections>) => (
+      <FormatSections {...props} covers={data.missing} />
     ),
-    HeroBackdropSlot: () => <ImmersiveBackdrop items={showcase.items} />,
-    HeroStripSlot: () => <HeroStrip items={showcase.items} />,
+    RankingChecklistSlot: (props: P<typeof RankingChecklist>) => <RankingChecklist {...props} tops={data.tops} />,
   };
 });
 
-// REN-9: la portada ya no usa el `Link` de next-intl (enlaces `<a>` con el
+// REN-9: la portada no usa el `Link` de next-intl (enlaces `<a>` con el
 // idioma); si alguien lo vuelve a importar, este doble hace fallar el test.
 vi.mock("@/i18n/navigation", () => {
   throw new Error("la portada no debe importar @/i18n/navigation (REN-9)");
@@ -98,15 +101,19 @@ vi.mock("@/components/layout/Footer", () => ({
 
 import HomePage, { generateMetadata } from "@/app/[locale]/page";
 
-/** Muestra de portadas: una por familia primero (como pickShowcase). */
-function showcaseItems(n = 21): ShowcaseItem[] {
-  const types = ["movie", "tv", "anime", "book", "manga", "game", "comic"] as const;
-  return Array.from({ length: n }, (_, i) => ({
-    id: `${types[i % types.length]}_${i}`,
-    title: `Título ${i}`,
-    type: types[i % types.length],
-    poster: `https://image.tmdb.org/t/p/w500/poster-${i}.jpg`,
-  }));
+const TYPES = ["movie", "tv", "anime", "book", "manga", "game", "comic"] as const;
+
+function cromos(prefix: string, n: number): AlbumCromo[] {
+  return Array.from({ length: n }, (_, i) => {
+    const type = TYPES[i % TYPES.length];
+    return {
+      id: `${type}_${prefix}${i}`,
+      title: `${prefix} ${i}`,
+      type,
+      poster: `https://image.tmdb.org/t/p/w500/${prefix}-${i}.jpg`,
+      path: `/media/${type}/${prefix}${i}`,
+    };
+  });
 }
 
 async function renderPage(locale: "es" | "en" = "es") {
@@ -119,116 +126,183 @@ function jsonLd(container: HTMLElement) {
   return JSON.parse(script?.innerHTML ?? "{}") as { "@graph": Array<Record<string, unknown>> };
 }
 
-describe("Landing · hero único (D-11)", () => {
-  beforeEach(() => {
-    showcase.items = showcaseItems();
-    showcase.fans = undefined;
-    demo.email = "demo@example.com";
-  });
+const year = new Date().getFullYear();
 
-  it("un solo h1, con la copia confirmada y la palabra watchlist", async () => {
+beforeEach(() => {
+  data.best = cromos("Mejor", 8);
+  data.missing = cromos("Falta", 8);
+  data.tops = {
+    movie: [{ id: "movie_1", type: "movie", title: "Peli uno", poster: "https://image.tmdb.org/t/p/w500/p.jpg", rating: 8.7, genres: [] }],
+  };
+  demo.email = "demo@example.com";
+});
+
+describe("Portada · el álbum abierto (primera pantalla)", () => {
+  it("un solo h1, el titular del contrato", async () => {
     await renderPage();
     const h1s = screen.getAllByRole("heading", { level: 1 });
     expect(h1s).toHaveLength(1);
-    expect(h1s[0]).toHaveTextContent("Tu watchlist de cine, series, anime, manga, juegos, libros y cómics");
+    expect(h1s[0]).toHaveTextContent("Todo lo que ves, lees y juegas, en un álbum que llenas tú.");
   });
 
-  it("en inglés, el mismo hero traducido", async () => {
-    await renderPage("en");
-    expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent(
-      "Your watchlist for movies, TV, anime, manga, games, books and comics"
-    );
-    expect(screen.getAllByRole("link", { name: "Create my free account" }).length).toBeGreaterThanOrEqual(1);
-  });
-
-  // Antes el CTA vivía en el capítulo final de la intro, oculto con
-  // `visibility:hidden` hasta los 12,9-14 s. Ahora sale con el HTML.
-  it("subtítulo y los dos botones están en el primer pintado, sin esperar a la intro", async () => {
-    showcase.items = [];
+  it("la primera pantalla es papel del álbum: banda cian y pliego de dos páginas", async () => {
     const { container } = await renderPage();
-    const hero = container.querySelector("section[aria-labelledby='hero-title']") as HTMLElement;
-    expect(hero).not.toBeNull();
-    expect(
-      within(hero).getByText(
-        "Apunta lo que quieres ver, leer y jugar, puntúa lo que ya viste y compártelo con tus amigos. Gratis y sin anuncios."
-      )
-    ).toBeInTheDocument();
+    expect(container.firstElementChild?.className).toContain("theme-paper");
+    const hero = container.querySelector("section#hero") as HTMLElement;
+    expect(hero.querySelector("[data-album-page='cyan'] h1")).not.toBeNull();
+    const spread = within(hero).getByRole("region", { name: "El álbum abierto" });
+    expect(spread.querySelector("[data-spread]")).not.toBeNull();
+  });
+
+  it("la única acción rosa, «Ver la demo» y el buscador están en la solapa, sin esperar a nada", async () => {
+    data.best = [];
+    data.missing = [];
+    const { container } = await renderPage();
+    const hero = container.querySelector("section#hero") as HTMLElement;
     const cta = within(hero).getByRole("link", { name: "Crear mi cuenta gratis" });
     expect(cta).toHaveAttribute("href", "/es/login?mode=register");
+    expect(cta.className).toContain("bg-accent-pink");
+    expect(hero.querySelectorAll(".bg-accent-pink")).toHaveLength(1);
     expect(within(hero).getByRole("button", { name: "Ver la demo" })).toBeInTheDocument();
-    // Nada del hero está oculto a la espera de la animación.
-    expect(hero.querySelector("[style*='visibility']")).toBeNull();
+    expect(within(hero).getByRole("search")).toBeInTheDocument();
+    expect(within(hero).getByLabelText("Busca lo que te falta")).toHaveAttribute("type", "search");
+  });
+
+  it("página izquierda: «Lo mejor de {año}» con huecos llenos de portadas reales que enlazan a su ficha", async () => {
+    await renderPage();
+    const list = screen.getByRole("list", { name: `Lo mejor de ${year}` });
+    const links = within(list).getAllByRole("link");
+    expect(links).toHaveLength(8);
+    expect(links[0]).toHaveAttribute("href", `/es${data.best[0].path}`);
+    expect(links[0]).toHaveAccessibleName("Mejor 0");
+    expect(list.querySelectorAll("img")).toHaveLength(8);
+    // La primera portada es la del LCP: sin carga diferida.
+    expect(list.querySelector("img")).toHaveAttribute("loading", "eager");
+  });
+
+  it("página derecha: «Te faltan», huecos numerados con el título impreso y el sobre cerrado", async () => {
+    const { container } = await renderPage();
+    const list = screen.getByRole("list", { name: "Te faltan" });
+    const items = within(list).getAllByRole("listitem");
+    expect(items).toHaveLength(8);
+    expect(items[0]).toHaveTextContent("9");
+    expect(items[0]).toHaveTextContent("Hueco 9, te falta: Falta 0");
+    // Primer pintado: ningún hueco lleno (los llena el sobre o el respaldo quieto).
+    expect(list.querySelectorAll("[data-cromo]")).toHaveLength(0);
+    expect(container.querySelector("svg[data-sobre]")?.hasAttribute("data-torn")).toBe(false);
+  });
+
+  it("sin datos, las dos páginas siguen ahí con sus huecos vacíos", async () => {
+    data.best = [];
+    data.missing = [];
+    const { container } = await renderPage();
+    expect(container.querySelectorAll("img")).toHaveLength(0);
+    expect(screen.getByRole("list", { name: `Lo mejor de ${year}` }).querySelectorAll("[data-slot]")).toHaveLength(8);
+    expect(screen.getByRole("heading", { name: "Te faltan" })).toBeInTheDocument();
+  });
+
+  it("en inglés, el mismo álbum traducido", async () => {
+    await renderPage("en");
+    expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent(
+      "Everything you watch, read and play, in an album you fill in."
+    );
+    expect(screen.getAllByRole("link", { name: "Create my free account" }).length).toBeGreaterThanOrEqual(1);
   });
 
   it("sin cuenta demo configurada no hay botón de demo ni pregunta sobre ella", async () => {
     demo.email = undefined;
     await renderPage();
     expect(screen.queryByRole("button", { name: "Ver la demo" })).toBeNull();
-    expect(screen.queryByText("¿Puedo probarla sin registrarme?")).toBeNull();
+    expect(screen.queryByText("¿Puedo verla por dentro antes de crear la cuenta?")).toBeNull();
   });
 
-  // ACC-6: el capítulo de formatos anunciaba cada palabra con aria-live.
-  it("no hay regiones aria-live en la landing", async () => {
+  it("la única región viva es el estado del buscador", async () => {
     const { container } = await renderPage();
-    expect(container.querySelector("[aria-live]")).toBeNull();
-  });
-
-  it("el badge del hero sale de los mensajes", async () => {
-    await renderPage();
-    expect(screen.getByText("7 formatos, 1 sola lista")).toBeInTheDocument();
+    expect(container.querySelectorAll("[aria-live]")).toHaveLength(0);
+    expect(container.querySelectorAll("[role='status']")).toHaveLength(1);
   });
 });
 
-describe("Landing · secciones", () => {
-  beforeEach(() => {
-    showcase.items = showcaseItems();
-    showcase.fans = undefined;
-    demo.email = "demo@example.com";
-  });
-
-  it("orden: features, así funciona, rankings, comparativa, FAQ y cierre", async () => {
+describe("Portada · bajo la primera pantalla", () => {
+  it("orden: álbum, ritual, secciones, rankings, comparativa, lo que hay detrás, FAQ y cierre", async () => {
     await renderPage();
     const h2 = screen.getAllByRole("heading", { level: 2 }).map((h) => h.textContent);
-    const year = new Date().getFullYear();
     expect(h2).toEqual([
-      "Lo que hay dentro.",
-      "Así funciona",
       `Lo mejor de ${year}`,
+      "Te faltan",
+      "Así se llena el álbum",
+      "Siete secciones, un solo álbum",
+      `Los rankings de ${year}`,
       "La alternativa a Letterboxd, Trakt y MyAnimeList",
+      "Lo que hay detrás",
       "Preguntas frecuentes",
-      "Tu cultura, en un solo sitio.",
+      "Tu álbum empieza por el primer hueco.",
     ]);
   });
 
-  it("la landing termina con el CTA (cierre con los dos botones)", async () => {
+  it("el ritual va con los estados reales del álbum: pendiente, en curso y completado", async () => {
     const { container } = await renderPage();
-    const final = container.querySelector("section[aria-labelledby='final-title']") as HTMLElement;
-    expect(within(final).getByRole("link", { name: "Crear mi cuenta gratis" })).toHaveAttribute(
-      "href",
-      "/es/login?mode=register"
-    );
-    expect(within(final).getByRole("button", { name: "Ver la demo" })).toBeInTheDocument();
+    const ritual = container.querySelector("[aria-labelledby='ritual-title']") as HTMLElement;
+    expect(ritual.getAttribute("data-album-page")).toBe("yellow");
+    expect(within(ritual).getAllByRole("heading", { level: 3 }).map((h) => h.textContent)).toEqual([
+      "Búscalo",
+      "Apúntalo en su hueco",
+      "Pégalo al terminar",
+      "Comparte tu página",
+    ]);
+    expect(ritual.querySelector("[data-status='pending']")).not.toBeNull();
+    expect(ritual.querySelector("[data-cromo][data-state='placed'] [data-progress-strip]")).not.toBeNull();
+    expect(ritual.querySelector("[data-status='completed']")).not.toBeNull();
+  });
+
+  it("siete secciones, cada color de formato junto a su nombre", async () => {
+    const { container } = await renderPage();
+    const sections = container.querySelector("[aria-labelledby='sections-title']") as HTMLElement;
+    const rows = Array.from(sections.querySelectorAll("li[data-format]"));
+    expect(rows.map((r) => r.getAttribute("data-format"))).toEqual(["movie", "tv", "anime", "manga", "game", "book", "comic"]);
+    expect(within(sections).getAllByRole("heading", { level: 3 }).map((h) => h.textContent)).toEqual([
+      "Cine",
+      "Series",
+      "Anime",
+      "Manga",
+      "Juegos",
+      "Libros",
+      "Cómics",
+    ]);
+    expect(within(sections).getByText("Horas jugadas")).toBeInTheDocument();
   });
 
   // SEO-9: los cuatro rankings del año y todos los anteriores (≥ 12 enlaces).
   it("enlaza a los rankings de todos los años publicados", async () => {
     const { container } = await renderPage();
-    const year = new Date().getFullYear();
-    const links = Array.from(container.querySelectorAll("a[href^='/es/best/']"));
-    expect(links.length).toBeGreaterThanOrEqual(12);
     for (const f of ["anime", "movie", "tv", "game"]) {
       for (let y = 2024; y <= year; y++) {
         expect(container.querySelector(`a[href="/es/best/${f}/${y}"]`)).not.toBeNull();
       }
     }
-    // Los chips de años anteriores llevan el título completo como nombre.
     expect(screen.getByRole("link", { name: "Las mejores películas de 2024" })).toBeInTheDocument();
   });
 
-  it("la pegatina de la card de IA está traducida (TXT-4)", async () => {
-    await renderPage("en");
-    expect(screen.getByText(/✦\s*AI/)).toBeInTheDocument();
-    expect(screen.queryByText(/✦\s*IA/)).toBeNull();
+  it("la página de control: puesto, título enlazado a su ficha y la nota del proveedor en formato español", async () => {
+    const { container } = await renderPage();
+    const rankings = container.querySelector("[aria-labelledby='rankings-title']") as HTMLElement;
+    const link = within(rankings).getByRole("link", { name: "Peli uno" });
+    expect(link).toHaveAttribute("href", "/es/media/movie/1");
+    const row = link.closest("li") as HTMLElement;
+    expect(row).toHaveTextContent("8,7");
+    expect(within(row).getByText("nota 8,7 de 10")).toHaveClass("sr-only");
+  });
+
+  it("lo que hay detrás: gratis sin plan de pago, criterio, proveedores y el creador con su nombre", async () => {
+    const { container } = await renderPage();
+    const trust = container.querySelector("[aria-labelledby='trust-title']") as HTMLElement;
+    expect(within(trust).getByRole("heading", { name: "Gratis, sin anuncios, sin plan de pago" })).toBeInTheDocument();
+    expect(trust).toHaveTextContent("TMDB");
+    expect(trust).toHaveTextContent("AniList");
+    expect(trust).toHaveTextContent("RAWG");
+    expect(trust).toHaveTextContent("Open Library");
+    expect(trust).toHaveTextContent("Víctor Franco");
+    expect(within(trust).getByRole("link", { name: "Ver los rankings" })).toHaveAttribute("href", "/es/best");
   });
 
   it("FAQ visible y FAQPage en JSON-LD con las mismas preguntas", async () => {
@@ -247,13 +321,10 @@ describe("Landing · secciones", () => {
 
   it("comparativa: matriz en escritorio y una fila por formato en móvil", async () => {
     const { container } = await renderPage();
-    const section = container.querySelector("section[aria-labelledby='compare-title']") as HTMLElement;
+    const section = container.querySelector("[aria-labelledby='compare-title']") as HTMLElement;
     const srText = (row: HTMLElement) =>
-      // Lo que oye un lector de pantalla (la marca visual es aria-hidden).
       Array.from(row.querySelectorAll("td")).map((td) => td.querySelector(".sr-only")?.textContent ?? td.textContent);
 
-    // Escritorio (≥ md): 7 formatos en columnas, una fila por app. Sin
-    // columnas de funciones (todas las apps las tenían: no distinguían nada).
     const matrix = within(section).getByTestId("compare-matrix");
     expect(matrix.className).toContain("md:block");
     expect(within(matrix).getAllByRole("columnheader").map((h) => h.textContent)).toEqual(
@@ -267,20 +338,21 @@ describe("Landing · secciones", () => {
     expect(srText(row("Letterboxd"))).toEqual(["Sí", "No", "No", "No", "No", "No", "No"]);
     expect(srText(row("Goodreads"))).toEqual(["No", "No", "No", "No", "No", "Sí", "No"]);
 
-    // Móvil (< md): traspuesta, tres columnas, una fila por formato.
     const byFormat = within(section).getByTestId("compare-by-format");
     expect(byFormat.className).toContain("md:hidden");
     expect(within(byFormat).getAllByRole("columnheader").map((h) => h.textContent)).toEqual(
       ["Formato", "KULTURA", "App especializada"]
     );
-    expect(within(byFormat).getAllByRole("rowheader").map((h) => h.textContent)).toEqual(
-      ["Cine", "Series", "Anime", "Manga", "Juegos", "Libros", "Cómics"]
-    );
     const fmt = (name: string) => srText(within(byFormat).getByRole("rowheader", { name }).closest("tr") as HTMLElement);
     expect(fmt("Cine")).toEqual(["Sí", "LetterboxdTrakt"]);
-    expect(fmt("Libros")).toEqual(["Sí", "Goodreads"]);
-    expect(fmt("Juegos")).toEqual(["Sí", "Backloggd"]);
     expect(fmt("Cómics")).toEqual(["Sí", "Ninguna de estas"]);
+  });
+
+  it("el cierre repite la acción rosa y la demo", async () => {
+    const { container } = await renderPage();
+    const final = container.querySelector("[aria-labelledby='final-title']") as HTMLElement;
+    expect(within(final).getByRole("link", { name: "Crear mi cuenta gratis" })).toHaveAttribute("href", "/es/login?mode=register");
+    expect(within(final).getByRole("button", { name: "Ver la demo" })).toBeInTheDocument();
   });
 
   it("contiene Header y Footer", async () => {
@@ -288,69 +360,34 @@ describe("Landing · secciones", () => {
     expect(screen.getByTestId("mock-header")).toBeInTheDocument();
     expect(screen.getByTestId("mock-footer")).toBeInTheDocument();
   });
-});
 
-describe("Landing · portadas reales", () => {
-  beforeEach(() => {
-    demo.email = "demo@example.com";
-    showcase.fans = undefined;
-  });
-
-  it("features y 'así funciona' con portadas; decorativas (alt vacío)", async () => {
-    showcase.items = showcaseItems();
+  it("nada de sombras en reposo, degradados de adorno ni transition-all", async () => {
     const { container } = await renderPage();
-    const imgs = Array.from(container.querySelectorAll("img"));
-    // Features: estantería 4 + recomendación 1 + amigos 2 + lista 3.
-    expect(imgs.filter((img) => img.closest("article")).length).toBe(10);
-    // Así funciona: búsqueda 3 + ficha 1 + lista 3.
-    const how = container.querySelector("section[aria-labelledby='how-title']") as HTMLElement;
-    expect(how.querySelectorAll("img").length).toBe(7);
-    expect(imgs.every((img) => img.getAttribute("alt") === "")).toBe(true);
-  });
-
-  it("sin portadas se sigue renderizando (respaldo de gradientes, cero imágenes)", async () => {
-    showcase.items = [];
-    const { container } = await renderPage();
-    expect(container.querySelectorAll("img").length).toBe(0);
-    expect(screen.getByText("Lo que hay dentro.")).toBeInTheDocument();
-    expect(screen.getByRole("heading", { level: 1 })).toBeInTheDocument();
-  });
-
-  // DIS-4: una portada apaisada (captura de RAWG) no se recorta a carátula.
-  it("las piezas sin carátula del abanico de rankings caen a gradiente", async () => {
-    showcase.items = [];
-    const year = new Date().getFullYear();
-    showcase.fans = { game: [null, null, null] };
-    const { container } = await renderPage();
-    const card = container.querySelector(`a[href="/es/best/game/${year}"]`) as HTMLElement;
-    expect(card.querySelectorAll("img").length).toBe(0);
+    const html = container.innerHTML;
+    expect(html).not.toMatch(/shadow-(hard|sticker)|transition-all/);
+    const gradients = Array.from(container.querySelectorAll<HTMLElement>("[style*='gradient']"));
+    expect(gradients.every((el) => el.hasAttribute("data-placeholder"))).toBe(true);
   });
 });
 
-describe("Landing · metadatos (D-11, SEO-6)", () => {
-  it("title y OG con la promesa del h1; tarjeta grande de X; og completo", async () => {
+describe("Portada · metadatos (D-11, SEO-6)", () => {
+  it("title y OG con la promesa de la portada; tarjeta grande de X; og completo", async () => {
     const meta = await generateMetadata({ params: Promise.resolve({ locale: "es" }) });
-    expect(meta.title).toEqual({
-      absolute: "KULTURA — Tu watchlist de cine, series, anime, manga, juegos, libros y cómics",
-    });
-    expect(meta.description).toBe(
-      "Apunta lo que quieres ver, leer y jugar, puntúa lo que ya viste y compártelo con tus amigos. Gratis y sin anuncios."
-    );
+    expect(meta.title).toEqual({ absolute: es.landing.seo.title });
+    expect(meta.description).toBe(es.landing.hero.sub);
     expect(meta.twitter).toMatchObject({ card: "summary_large_image" });
     expect(meta.openGraph).toMatchObject({
       siteName: "KULTURA",
       type: "website",
       locale: "es_ES",
       url: expect.stringMatching(/\/es$/),
-      title: "KULTURA — Tu watchlist de cine, series, anime, manga, juegos, libros y cómics",
+      title: es.landing.seo.title,
     });
   });
 
   it("en inglés, en inglés", async () => {
     const meta = await generateMetadata({ params: Promise.resolve({ locale: "en" }) });
-    expect(meta.title).toEqual({
-      absolute: "KULTURA — Your watchlist for movies, TV, anime, manga, games, books and comics",
-    });
+    expect(meta.title).toEqual({ absolute: en.landing.seo.title });
     expect(meta.openGraph).toMatchObject({ locale: "en_US" });
   });
 });

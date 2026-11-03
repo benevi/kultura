@@ -1,44 +1,44 @@
 // ============================================================
-// KULTURA — Una portada que falla en la landing deja el gradiente, nunca el
-// icono de imagen rota.
+// KULTURA — Un cromo de la portada cuya portada falla deja el respaldo de
+// color, nunca el icono de imagen rota ni un hueco.
 // ============================================================
 
 import { render, fireEvent } from "@testing-library/react";
-import { describe, it, expect, vi } from "vitest";
+import { describe, it, expect } from "vitest";
+import { LandingCromo } from "@/components/landing/LandingCromo";
 
-vi.mock("next/image", () => ({
-  default: ({ src, onError }: { src: string; onError?: () => void }) => (
-    // eslint-disable-next-line @next/next/no-img-element
-    <img src={src} alt="" onError={onError} />
-  ),
-}));
+const props = { title: "Peli", seed: "movie_1", poster: "https://image.tmdb.org/t/p/w500/x.jpg", sizes: "100px" };
 
-import { PosterTile } from "@/components/landing/PosterTile";
-
-const item = { id: "movie_1", title: "Peli", type: "movie" as const, poster: "https://image.tmdb.org/t/p/w500/x.jpg" };
-
-describe("PosterTile · portada que no carga", () => {
-  it("el gradiente va detrás de la portada", () => {
-    const { container } = render(<PosterTile item={item} sizes="100px" />);
-    const tile = container.firstElementChild as HTMLElement;
-    const [first, second] = Array.from(tile.children);
-    expect(first.getAttribute("aria-hidden")).toBe("true");
+describe("LandingCromo · portada que no carga", () => {
+  it("el respaldo de color va detrás y primero; la portada encima", () => {
+    const { container } = render(<LandingCromo {...props} />);
+    const cromo = container.querySelector("[data-cromo]") as HTMLElement;
+    expect(cromo.className).toContain("border-cromo-border");
+    const [first, second] = Array.from(cromo.children);
+    expect(first.hasAttribute("data-placeholder")).toBe(true);
     expect((first as HTMLElement).style.background).toContain("linear-gradient");
     expect(second.tagName).toBe("IMG");
   });
 
-  it("si la imagen falla se retira y queda el gradiente", () => {
-    const { container } = render(<PosterTile item={item} sizes="100px" />);
+  it("si la imagen falla se retira y queda el respaldo", () => {
+    const { container } = render(<LandingCromo {...props} />);
     fireEvent.error(container.querySelector("img") as HTMLImageElement);
     expect(container.querySelector("img")).toBeNull();
-    const tile = container.firstElementChild as HTMLElement;
-    expect((tile.firstElementChild as HTMLElement).style.background).toContain("linear-gradient");
+    expect(container.querySelector("[data-placeholder]")).not.toBeNull();
   });
 
   it("una portada nueva se vuelve a intentar", () => {
-    const { container, rerender } = render(<PosterTile item={item} sizes="100px" />);
+    const { container, rerender } = render(<LandingCromo {...props} />);
     fireEvent.error(container.querySelector("img") as HTMLImageElement);
-    rerender(<PosterTile item={{ ...item, poster: "https://image.tmdb.org/t/p/w500/y.jpg" }} sizes="100px" />);
+    rerender(<LandingCromo {...props} poster="https://image.tmdb.org/t/p/w500/y.jpg" />);
     expect(container.querySelector("img")).not.toBeNull();
+  });
+
+  it("el título queda para el lector y el brillo solo si se pide", () => {
+    const { container, getByText, rerender } = render(<LandingCromo {...props} />);
+    expect(getByText("Peli").className).toContain("sr-only");
+    expect(container.querySelector(".cromo-foil")).toBeNull();
+    rerender(<LandingCromo {...props} foil />);
+    expect(container.querySelector(".cromo-foil")).not.toBeNull();
   });
 });
