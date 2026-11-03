@@ -174,18 +174,18 @@ export function InstallPrompt({ labels }: { labels: InstallLabels }) {
       data-testid="install-prompt"
       onKeyDown={onKeyDown}
       onFocus={onFocus}
-      className="fixed z-40 inset-x-4 bottom-[calc(4.5rem+env(safe-area-inset-bottom))] md:inset-x-auto md:left-4 md:bottom-4 md:w-96 rounded-2xl border border-surface-border bg-surface-elevated p-4 text-text-primary shadow-soft motion-safe:animate-toast-in"
+      className="fixed z-40 inset-x-4 bottom-[calc(4.5rem+env(safe-area-inset-bottom))] md:inset-x-auto md:left-4 md:bottom-4 md:w-96 rounded-bento border-2 border-surface-border bg-surface-default p-4 text-text-primary shadow-soft motion-safe:animate-toast-in"
     >
       <div className="flex items-start gap-3">
         <Logo variant="mark" size={40} />
         <div className="min-w-0 flex-1">
-          <h2 id={titleId} className="font-display text-base font-bold leading-snug">
+          <h2 id={titleId} className="font-body text-base font-bold leading-snug">
             {ios ? labels.iosTitle : labels.title}
           </h2>
           {ios ? (
             <ol className="mt-2 space-y-1.5 text-sm text-text-secondary">
               <li className="flex items-center gap-2">
-                <span aria-hidden="true" className="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full bg-surface-default text-text-primary">
+                <span aria-hidden="true" className="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-cromo bg-surface-elevated text-text-primary">
                   <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
                     <path d="M12 3v12M7 8l5-5 5 5M5 13v6a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-6" />
                   </svg>
@@ -193,7 +193,7 @@ export function InstallPrompt({ labels }: { labels: InstallLabels }) {
                 {labels.iosStepShare}
               </li>
               <li className="flex items-center gap-2">
-                <span aria-hidden="true" className="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full bg-surface-default text-text-primary">
+                <span aria-hidden="true" className="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-cromo bg-surface-elevated text-text-primary">
                   <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
                     <rect x="4" y="4" width="16" height="16" rx="4" />
                     <path d="M12 8v8M8 12h8" />

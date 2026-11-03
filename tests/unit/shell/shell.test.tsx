@@ -298,11 +298,11 @@ describe("TXT-2/TXT-5/SEO-6 — metadatos por defecto traducidos", () => {
     expect(meta.alternates).toBeUndefined();
   });
 
-  it("la frase confirmada (D-11) está literal en el título", () => {
-    expect(es.meta.defaultTitle).toContain("Tu watchlist de cine, series, anime, manga, juegos, libros y cómics");
-    expect(en.meta.defaultTitle).toContain("Your watchlist for movies, TV, anime, manga, games, books and comics");
+  it("la promesa del álbum (con los siete formatos) está literal en el título", () => {
+    expect(es.meta.defaultTitle).toContain("Tu álbum de cine, series, anime, manga, juegos, libros y cómics");
+    expect(en.meta.defaultTitle).toContain("Your album of movies, TV, anime, manga, games, books and comics");
     expect(es.meta.description).toBe(
-      "Apunta lo que quieres ver, leer y jugar, puntúa lo que ya viste y compártelo con tus amigos. Gratis y sin anuncios.",
+      "El álbum de todo lo que ves, lees y juegas: apunta lo que te falta y pega lo que terminas. Gratis y sin anuncios.",
     );
   });
 
@@ -396,7 +396,9 @@ describe("ACC-7/TXT-4 — 404 y error global", () => {
       expect(markup.match(/<body/g)).toHaveLength(1);
       expect(markup.match(/<main/g)).toHaveLength(1);
       expect(markup).toContain('<main id="main"');
-      expect(markup).toContain(`<h1 class="text-2xl font-display font-bold text-text-primary">${es.errors.notFoundTitle}</h1>`);
+      // Página impresa del álbum: papel y el titular en Lilita One.
+      expect(markup).toMatch(/<body class="[^"]*theme-paper/);
+      expect(markup).toMatch(new RegExp(`<h1 class="[^"]*font-display[^"]*">${es.errors.notFoundTitle}</h1>`));
       expect(markup).toContain('lang="en"');
       expect(markup).toContain(en.errors.notFoundTitle);
       expect(markup).toContain('href="/es"');

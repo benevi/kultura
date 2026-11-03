@@ -38,30 +38,36 @@ export default async function RootNotFound() {
 
   return (
     <html lang="es">
-      <body
-        className={`${fontVariables} font-body bg-surface-base text-text-primary antialiased`}
-      >
-        {/* Misma composición que `NotFoundContent`, con las dos lenguas. */}
-        <main
-          id="main"
-          tabIndex={-1}
-          className="flex flex-col items-center justify-center min-h-screen gap-6 p-8 text-center bg-surface-base"
-        >
-          <p aria-hidden="true" className="text-7xl font-display text-text-secondary">404</p>
-          <h1 className="text-2xl font-display font-bold text-text-primary">{es("notFoundTitle")}</h1>
-          <p className="text-text-secondary max-w-sm">{es("notFoundDescription")}</p>
-          <KButton asChild variant="primary">
-            <a href={HOME.es}>{es("goHome")}</a>
-          </KButton>
-          <div lang="en" className="flex flex-col items-center gap-3 pt-4 border-t border-surface-border">
-            <h2 className="text-lg font-display font-bold text-text-primary">{en("notFoundTitle")}</h2>
-            <p className="text-text-secondary max-w-sm">{en("notFoundDescription")}</p>
-            <a
-              href={HOME.en}
-              className="inline-flex min-h-11 items-center font-bold text-accent-pink underline underline-offset-4 rounded-lg focus-visible:[outline-style:solid] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus-ring"
+      <body className={`${fontVariables} theme-paper font-body antialiased`}>
+        {/* Página impresa del álbum: el hueco 404 está vacío, con su número
+            impreso, y el cromo que buscabas no está. Las dos lenguas. */}
+        <main id="main" tabIndex={-1} className="flex min-h-screen flex-col justify-center bg-surface-base py-12">
+          <div className="page-grid flex flex-col gap-8 sm:flex-row sm:items-center">
+            <div
+              aria-hidden="true"
+              className="relative aspect-[2/3] w-32 shrink-0 rounded-cromo border-2 border-dashed border-slot-line"
             >
-              {en("goHome")}
-            </a>
+              <span className="absolute left-3 top-2 font-display text-4xl leading-none tabular-nums text-text-secondary">404</span>
+            </div>
+            <div className="flex min-w-0 flex-col gap-4">
+              <h1 className="text-balance font-display text-3xl text-text-primary md:text-4xl">{es("notFoundTitle")}</h1>
+              <p className="max-w-[46ch] text-base text-text-secondary">{es("notFoundDescription")}</p>
+              <div>
+                <KButton asChild variant="primary" size="lg">
+                  <a href={HOME.es}>{es("goHome")}</a>
+                </KButton>
+              </div>
+              <div lang="en" className="mt-4 flex flex-col gap-2 border-t-2 border-surface-border pt-5">
+                <h2 className="font-display text-2xl text-text-primary">{en("notFoundTitle")}</h2>
+                <p className="max-w-[46ch] text-base text-text-secondary">{en("notFoundDescription")}</p>
+                <a
+                  href={HOME.en}
+                  className="inline-flex min-h-11 w-fit items-center rounded-lg font-semibold text-text-primary underline underline-offset-4 hover:no-underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus-ring"
+                >
+                  {en("goHome")}
+                </a>
+              </div>
+            </div>
           </div>
         </main>
       </body>

@@ -6,11 +6,11 @@ import { useTranslations, type AbstractIntlMessages } from 'next-intl'
 import { Logo } from '@/components/layout/Logo'
 import { KButton } from '@/components/ui/KButton'
 import { KInput } from '@/components/ui/KInput'
-import { PosterImage } from '@/components/media/PosterImage'
+import { Cromo } from '@/components/album/Cromo'
+import { NumberBadge } from '@/components/album/NumberBadge'
 import { AiRecommendations } from '@/components/home/AiRecommendations'
-import { posterGradient } from '@/lib/images/poster-gradient'
+import { FORMAT_COLOR } from '@/lib/design/album'
 import { cn } from '@/lib/utils/index'
-import { AUTH_CARD } from '../login/AuthShell'
 import { TermsCheckbox } from '../login/TermsCheckbox'
 import { USERNAME_REGEX, isReservedUsername } from '@/app/api/settings/identity'
 import { RateStars } from './RateStars'
@@ -34,6 +34,10 @@ import {
 
 const STEPS = ['name', 'formats', 'rate', 'recs'] as const
 type Step = (typeof STEPS)[number]
+const isStep = (v: string | null): v is Step => v !== null && (STEPS as readonly string[]).includes(v)
+
+/** La tarjeta de cada paso: papel blanco con su raya de tinta (página del álbum). */
+const STEP_CARD = 'w-full rounded-bento-xl border-2 border-album-navy bg-album-white p-6 md:p-10'
 
 /** Orden e icono de los formatos (el mismo orden e iconos que Descubrir). */
 export const WELCOME_FORMATS: ReadonlyArray<{ type: MediaType; icon: KIcon }> = [
@@ -71,8 +75,28 @@ export function WelcomeFlow({ locale, next, currentUsername, suggestChange, need
   const tAuth = useTranslations('auth')
   const router = useRouter()
 
-  const [step, setStep] = useState<Step>('name')
+  const [step, setStepState] = useState<Step>('name')
   const stepIndex = STEPS.indexOf(step)
+  // WIG: el paso va en la URL (`?step=`), así «Atrás» del navegador vuelve al
+  // paso anterior en vez de sacar del onboarding.
+  const setStep = (next: Step) => {
+    setStepState(next)
+    const url = new URL(window.location.href)
+    if (url.searchParams.get('step') === next) return
+    url.searchParams.set('step', next)
+    window.history.pushState({ step: next }, '', url)
+  }
+  useEffect(() => {
+    const read = () => {
+      const raw = new URL(window.location.href).searchParams.get('step')
+      setStepState(isStep(raw) ? raw : 'name')
+    }
+    // Al recargar en un paso: se vuelve a él, salvo que falte la casilla de
+    // términos (entonces el paso 1 es obligatorio).
+    if (!needsTerms) read()
+    window.addEventListener('popstate', read)
+    return () => window.removeEventListener('popstate', read)
+  }, [needsTerms])
   const headingRef = useRef<HTMLHeadingElement>(null)
   const firstRender = useRef(true)
 
@@ -256,12 +280,11 @@ export function WelcomeFlow({ locale, next, currentUsername, suggestChange, need
     router.replace(next)
   }
 
-  const headingClass =
-    'font-display text-2xl md:text-3xl font-extrabold leading-tight tracking-tight text-text-primary outline-none text-balance'
-  const bodyClass = 'mt-3 font-body text-body text-text-secondary max-w-[52ch]'
+  const headingClass = 'font-display text-3xl md:text-4xl leading-tight text-text-primary outline-none text-balance'
+  const bodyClass = 'mt-3 font-body text-base text-text-secondary max-w-[52ch]'
 
   return (
-    <main className="min-h-dvh bg-surface-base py-6 md:py-10">
+    <main className="theme-paper min-h-dvh bg-surface-base py-6 md:py-10">
       <div className="page-grid flex flex-col gap-8">
         <header className="flex items-center justify-between gap-4">
           <Logo size={28} />
@@ -270,7 +293,7 @@ export function WelcomeFlow({ locale, next, currentUsername, suggestChange, need
             type="button"
             onClick={finish}
             disabled={finishing}
-            className="min-h-[44px] rounded-pill px-3 font-body text-meta font-bold text-text-tertiary underline-offset-4 transition-colors hover:text-text-primary hover:underline disabled:opacity-40"
+            className="min-h-[44px] rounded-lg px-3 font-body text-sm font-semibold text-text-secondary underline underline-offset-4 transition-colors hover:text-text-primary hover:no-underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus-ring disabled:opacity-40"
           >
             {t('skipAll')}
           </button>
@@ -279,12 +302,9 @@ export function WelcomeFlow({ locale, next, currentUsername, suggestChange, need
         <Progress current={stepIndex} />
 
         {step === 'name' && (
-          <section aria-labelledby="welcome-heading" className="animate-toast-in mx-auto w-full max-w-[560px]">
-            <div className={AUTH_CARD}>
-              <p className="inline-block rotate-[-4deg] rounded-pill bg-accent-lime px-3.5 py-1.5 font-display text-xs font-extrabold tracking-wide text-on-accent-lime shadow-sticker">
-                {t('welcomeBadge')}
-              </p>
-              <h1 id="welcome-heading" ref={headingRef} tabIndex={-1} className={cn(headingClass, 'mt-5')}>
+          <section aria-labelledby="welcome-heading" className="animate-route mx-auto w-full max-w-[560px]">
+            <div className={STEP_CARD}>
+              <h1 id="welcome-heading" ref={headingRef} tabIndex={-1} className={headingClass}>
                 {t('nameTitle')}
               </h1>
               <p className={bodyClass}>{t('nameBody')}</p>
@@ -324,7 +344,7 @@ export function WelcomeFlow({ locale, next, currentUsername, suggestChange, need
                 )}
 
                 {nameFailed && (
-                  <p role="alert" className="rounded-2xl bg-accent-danger/10 px-[18px] py-3 font-body text-sm text-accent-danger">
+                  <p role="alert" className="rounded-2xl border-2 border-accent-danger px-[18px] py-3 font-body text-sm text-accent-danger">
                     {nameFailed}
                   </p>
                 )}
@@ -338,8 +358,8 @@ export function WelcomeFlow({ locale, next, currentUsername, suggestChange, need
         )}
 
         {step === 'formats' && (
-          <section aria-labelledby="welcome-heading" className="animate-toast-in mx-auto w-full max-w-[640px]">
-            <div className={AUTH_CARD}>
+          <section aria-labelledby="welcome-heading" className="animate-route mx-auto w-full max-w-[640px]">
+            <div className={STEP_CARD}>
               <h1 id="welcome-heading" ref={headingRef} tabIndex={-1} className={headingClass}>
                 {t('formatsTitle')}
               </h1>
@@ -357,14 +377,15 @@ export function WelcomeFlow({ locale, next, currentUsername, suggestChange, need
                         setFormats((prev) => (active ? prev.filter((f) => f !== type) : [...prev, type]))
                       }
                       className={cn(
-                        'inline-flex min-h-[48px] items-center gap-2 rounded-pill px-5 py-3 font-body text-body font-bold transition-colors duration-150',
-                        'focus-visible:[outline-style:solid] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus-ring',
+                        'inline-flex min-h-[48px] items-center gap-2 rounded-full border-2 px-5 py-3 font-body text-base font-semibold transition-colors duration-fast',
+                        'focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus-ring',
                         active
-                          ? 'bg-accent-pink text-on-accent-pink'
-                          : 'bg-surface-elevated text-text-primary hover:bg-surface-border'
+                          ? 'border-text-primary bg-text-primary text-surface-base'
+                          : 'border-surface-border bg-surface-elevated text-text-primary hover:border-text-primary'
                       )}
                     >
                       <Icon aria-hidden="true" className="h-5 w-5" />
+                      <span aria-hidden="true" className="h-2 w-2 rounded-full" style={{ backgroundColor: FORMAT_COLOR[type] }} />
                       {t(`formats.${type}`)}
                     </button>
                   )
@@ -384,7 +405,7 @@ export function WelcomeFlow({ locale, next, currentUsername, suggestChange, need
         )}
 
         {step === 'rate' && (
-          <section aria-labelledby="welcome-heading" className="animate-toast-in flex flex-col gap-7">
+          <section aria-labelledby="welcome-heading" className="animate-route flex flex-col gap-7">
             <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
               <div>
                 <h1 id="welcome-heading" ref={headingRef} tabIndex={-1} className={headingClass}>
@@ -395,10 +416,10 @@ export function WelcomeFlow({ locale, next, currentUsername, suggestChange, need
               <p
                 role="status"
                 className={cn(
-                  'inline-flex w-fit flex-shrink-0 items-center gap-2 rounded-pill px-4 py-2 font-body text-sm font-extrabold',
+                  'inline-flex w-fit flex-shrink-0 items-center gap-2 rounded-lg border-2 px-4 py-2 font-body text-sm font-semibold tabular-nums',
                   ratedCount >= STARTER_MIN_RATINGS
-                    ? 'bg-accent-lime text-on-accent-lime'
-                    : 'bg-surface-elevated text-text-primary'
+                    ? 'border-album-navy bg-album-yellow text-album-ink'
+                    : 'border-surface-border bg-surface-elevated text-text-primary'
                 )}
               >
                 {ratedCount >= STARTER_MIN_RATINGS
@@ -408,7 +429,7 @@ export function WelcomeFlow({ locale, next, currentUsername, suggestChange, need
             </div>
 
             {rateError && (
-              <p role="alert" className="rounded-2xl bg-accent-danger/10 px-[18px] py-3 font-body text-sm text-accent-danger">
+              <p role="alert" className="rounded-2xl border-2 border-accent-danger px-[18px] py-3 font-body text-sm text-accent-danger">
                 {rateError}
               </p>
             )}
@@ -420,6 +441,7 @@ export function WelcomeFlow({ locale, next, currentUsername, suggestChange, need
               {titles.map((title, i) => (
                 <RateTile
                   key={title.id}
+                  number={i + 1}
                   title={title}
                   locale={locale}
                   score={scores[title.id] ?? 0}
@@ -471,7 +493,7 @@ export function WelcomeFlow({ locale, next, currentUsername, suggestChange, need
         )}
 
         {step === 'recs' && (
-          <section aria-labelledby="welcome-heading" className="animate-toast-in flex flex-col gap-8">
+          <section aria-labelledby="welcome-heading" className="animate-route flex flex-col gap-8">
             <div>
               <h1 id="welcome-heading" ref={headingRef} tabIndex={-1} className={headingClass}>
                 {t('recsTitle')}
@@ -498,7 +520,10 @@ export function WelcomeFlow({ locale, next, currentUsername, suggestChange, need
   )
 }
 
-/** Barra de 4 segmentos: hecho = lima, actual = pink, pendiente = superficie. */
+/**
+ * Los cuatro pasos como los números del álbum: hecho = caja en tinta, el
+ * actual = amarillo con la banda de orientación debajo, pendiente = papel.
+ */
 function Progress({ current }: { current: number }) {
   const t = useTranslations('onboarding')
   return (
@@ -506,17 +531,18 @@ function Progress({ current }: { current: number }) {
       <p className="sr-only">{t('stepOf', { current: current + 1, total: STEPS.length })}</p>
       <ol className="grid grid-cols-4 gap-2">
         {STEPS.map((step, i) => (
-          <li key={step} aria-current={i === current ? 'step' : undefined} className="flex flex-col gap-2">
+          <li
+            key={step}
+            aria-current={i === current ? 'step' : undefined}
+            className={cn(
+              'flex items-center gap-2 border-b-[3px] pb-2',
+              i === current ? 'border-wayfinding' : 'border-transparent'
+            )}
+          >
+            <NumberBadge n={i + 1} size="sm" tone={i < current ? 'navy' : i === current ? 'yellow' : 'surface'} />
             <span
-              aria-hidden="true"
               className={cn(
-                'block h-1.5 rounded-pill transition-colors duration-300',
-                i < current ? 'bg-accent-lime' : i === current ? 'bg-accent-pink' : 'bg-surface-elevated'
-              )}
-            />
-            <span
-              className={cn(
-                'hidden font-body text-xs font-bold sm:block',
+                'hidden truncate font-body text-xs font-semibold sm:block',
                 i === current ? 'text-text-primary' : 'text-text-tertiary'
               )}
             >
@@ -531,6 +557,8 @@ function Progress({ current }: { current: number }) {
 
 interface RateTileProps {
   title: StarterTitle
+  /** Número del hueco en la primera página del álbum. */
+  number: number
   locale: 'es' | 'en'
   score: number
   priority: boolean
@@ -538,42 +566,45 @@ interface RateTileProps {
   onRate: (score: number) => void
 }
 
-/** Portada con el gradiente SIEMPRE detrás (por si la imagen falla) y sus estrellas. */
-function RateTile({ title, locale, score, priority, formatLabel, onRate }: RateTileProps) {
+/**
+ * Un título de la primera página del álbum: su número, el cromo puesto y, al
+ * puntuarlo, el cromo se pega (animación de pegado) con la nota en su caja.
+ * El respaldo de color va SIEMPRE detrás (si la portada falla, queda él).
+ */
+function RateTile({ title, number, locale, score, priority, formatLabel, onRate }: RateTileProps) {
   const t = useTranslations('onboarding')
   const name = title.title[locale]
   const rated = score > 0
-  // Portada caída (404, CDN bloqueado): fuera la <img> rota, queda el gradiente.
+  // Portada caída (404, CDN bloqueado): fuera la <img> rota, queda el respaldo.
   const [posterFailed, setPosterFailed] = useState(false)
   return (
     <li className="relative flex flex-col">
-      {rated ? (
-        <span
-          aria-hidden="true"
-          className="absolute -left-2 -top-2 z-10 rotate-[-8deg] rounded-pill bg-accent-lime px-2.5 py-1 font-display text-xs font-extrabold text-on-accent-lime shadow-sticker"
-        >
-          ★ {score}
-        </span>
-      ) : null}
-      <div
-        className={cn(
-          'relative aspect-[2/3] w-full overflow-hidden rounded-2xl bg-surface-elevated transition-shadow duration-200',
-          rated && 'ring-2 ring-accent-lime ring-offset-2 ring-offset-surface-base'
-        )}
-      >
-        <div aria-hidden="true" className="absolute inset-0" style={{ background: posterGradient(title.id) }} />
-        {!posterFailed && (
-          <PosterImage
-            src={title.poster}
-            sizes="(max-width: 640px) 45vw, (max-width: 1024px) 30vw, 200px"
-            priority={priority}
-            className="object-cover"
-            onFail={() => setPosterFailed(true)}
+      <div className="relative">
+        <Cromo
+          key={rated ? 'pasted' : 'placed'}
+          title={name}
+          seed={title.id}
+          poster={posterFailed ? null : title.poster}
+          sizes="(max-width: 640px) 45vw, (max-width: 1024px) 30vw, 200px"
+          priority={priority}
+          onPosterFail={() => setPosterFailed(true)}
+          state={rated ? 'pasted' : 'placed'}
+          paste={rated ? 'in' : undefined}
+        />
+        <NumberBadge n={number} size="sm" tone="white" className="absolute left-1.5 top-1.5 z-[2]" />
+        {rated ? (
+          <NumberBadge
+            n={score}
+            size="sm"
+            tone="yellow"
+            label={t('stars', { count: score })}
+            className="absolute bottom-1.5 right-1.5 z-[2]"
           />
-        )}
+        ) : null}
       </div>
-      <p className="mt-3 line-clamp-2 font-body text-sm font-bold text-text-primary">{name}</p>
-      <p className="font-body text-xs text-text-tertiary">
+      <p className="mt-3 line-clamp-2 font-body text-sm font-semibold text-text-primary">{name}</p>
+      <p className="flex items-center gap-1.5 font-body text-xs text-text-tertiary">
+        <span aria-hidden="true" className="h-2 w-2 rounded-full" style={{ backgroundColor: FORMAT_COLOR[title.type] }} />
         {formatLabel}
         {title.year ? ` · ${title.year}` : ''}
       </p>

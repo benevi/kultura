@@ -3,7 +3,7 @@
 // nombre + términos → formatos → 3 notas → recomendaciones → Inicio.
 // ============================================================
 
-import { render, screen, fireEvent, waitFor, within } from '@testing-library/react'
+import { act, render, screen, fireEvent, waitFor, within } from '@testing-library/react'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import type { ReactNode } from 'react'
 
@@ -63,6 +63,7 @@ function renderFlow(props: Partial<Parameters<typeof WelcomeFlow>[0]> = {}) {
 describe('WelcomeFlow', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    window.history.replaceState(null, '', '/es/welcome')
     global.fetch = vi.fn().mockImplementation(async () => ok())
   })
 
@@ -107,6 +108,37 @@ describe('WelcomeFlow', () => {
     fireEvent.click(screen.getByRole('button', { name: 'finish' }))
     await waitFor(() => expect(h.replace).toHaveBeenCalledWith('/es/home'))
     expect(calls('/api/settings').pop()).toEqual({ onboarding_done: true })
+  })
+
+  // WIG: el paso iba en `useState` y «Atrás» del navegador sacaba del flujo.
+  it('el paso va en la URL: «Atrás» del navegador vuelve al paso anterior', async () => {
+    window.history.replaceState(null, '', '/es/welcome')
+    renderFlow({ needsTerms: false })
+    fireEvent.click(screen.getByRole('button', { name: 'continue' }))
+    await screen.findByRole('heading', { name: 'formatsTitle' })
+    expect(new URL(window.location.href).searchParams.get('step')).toBe('formats')
+    fireEvent.click(screen.getByRole('button', { name: 'continueAll' }))
+    await screen.findByRole('heading', { name: 'rateTitle' })
+    expect(new URL(window.location.href).searchParams.get('step')).toBe('rate')
+
+    window.history.replaceState(null, '', '/es/welcome?step=formats')
+    act(() => {
+      window.dispatchEvent(new PopStateEvent('popstate'))
+    })
+    expect(await screen.findByRole('heading', { name: 'formatsTitle' })).toBeInTheDocument()
+    window.history.replaceState(null, '', '/es/welcome')
+  })
+
+  it('al puntuar, el cromo se pega en su hueco con la nota en su caja', async () => {
+    window.history.replaceState(null, '', '/es/welcome?step=rate')
+    const { container } = renderFlow({ needsTerms: false })
+    await screen.findByRole('heading', { name: 'rateTitle' })
+    const first = container.querySelector('ul li') as HTMLElement
+    expect(first.querySelector('[data-cromo]')?.getAttribute('data-state')).toBe('placed')
+    fireEvent.click(within(first).getAllByRole('radio')[3])
+    expect(first.querySelector('[data-cromo]')?.getAttribute('data-state')).toBe('pasted')
+    expect(first.querySelector('[data-cromo]')?.className).toContain('animate-paste')
+    window.history.replaceState(null, '', '/es/welcome')
   })
 
   it('con el nombre vacío y los términos ya aceptados no llama a la API', async () => {

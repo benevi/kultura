@@ -142,23 +142,23 @@ function PushOfferCard({
         aria-labelledby={titleId}
         data-testid="push-offer"
         data-placement={placement}
-        className={`${PLACEMENT_CLASS[placement]} rounded-2xl border border-surface-border bg-surface-elevated p-4 text-text-primary motion-safe:animate-toast-in`}
+        className={`${PLACEMENT_CLASS[placement]} rounded-bento border-2 border-surface-border bg-surface-default p-4 text-text-primary shadow-soft motion-safe:animate-toast-in`}
       >
         <button
           type="button"
           onClick={onClose}
           aria-label={t('close')}
           title={t('close')}
-          className="absolute right-1 top-1 flex h-11 w-11 items-center justify-center rounded-full text-text-secondary hover:bg-surface-default hover:text-text-primary focus-visible:[outline-style:solid] focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-focus-ring"
+          className="absolute right-1 top-1 flex h-11 w-11 items-center justify-center rounded-lg text-text-secondary transition-colors duration-fast hover:bg-surface-elevated hover:text-text-primary focus-visible:[outline-style:solid] focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-focus-ring"
         >
           <IconClose className="h-4 w-4" />
         </button>
         <div className="flex items-start gap-3">
-          <span aria-hidden="true" className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-2xl bg-surface-default text-accent-pink">
+          <span aria-hidden="true" className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-cromo bg-surface-elevated text-text-primary">
             <IconBell className="h-5 w-5" />
           </span>
           <div className="min-w-0 flex-1 pr-8">
-            <h2 id={titleId} className="font-display text-base font-bold leading-snug">
+            <h2 id={titleId} className="font-body text-base font-bold leading-snug">
               {t('title')}
             </h2>
             <p className="mt-1 text-sm text-text-secondary">{message}</p>
