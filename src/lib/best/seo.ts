@@ -12,6 +12,18 @@ const LOCALES = ["es", "en"] as const;
 type Locale = (typeof LOCALES)[number];
 const OG_LOCALE: Record<Locale, string> = { es: "es_ES", en: "en_US" };
 
+/** Tamaño de las tarjetas de compartir (las de `opengraph-image.tsx`). */
+export const OG_CARD = { width: 1200, height: 630 } as const;
+
+/**
+ * Ruta (sin idioma) de la tarjeta de un ranking. Es la única tarjeta que deja
+ * pasar el middleware bajo /best (`isInvalidBestPath`), así que los hubs
+ * enseñan la del ranking que destacan.
+ */
+export function rankingCardPath(format: string, year: number): string {
+  return `/best/${format}/${year}/opengraph-image`;
+}
+
 export function bestLocale(locale: string): Locale {
   return locale === "en" ? "en" : "es";
 }
@@ -32,15 +44,25 @@ export function bestMetadata({
   title,
   description,
   indexable = true,
+  image,
 }: {
   locale: string;
   path: string;
   title: string;
   description: string;
   indexable?: boolean;
+  /**
+   * Tarjeta de compartir explícita (ruta sin idioma). Los hubs no tienen
+   * tarjeta propia y, sin esto, salían sin `og:image` (solo `twitter:card`):
+   * Next sustituye el `openGraph` del layout y su imagen con él.
+   */
+  image?: { path: string; alt: string };
 }): Metadata {
   const l = bestLocale(locale);
   const ogTitle = `${title} · KULTURA`;
+  const images = image
+    ? [{ url: absoluteUrl(l, image.path), width: OG_CARD.width, height: OG_CARD.height, alt: image.alt }]
+    : undefined;
   return {
     title,
     description,
@@ -61,8 +83,9 @@ export function bestMetadata({
       url: absoluteUrl(l, path),
       title: ogTitle,
       description,
+      ...(images ? { images } : {}),
     },
-    twitter: { card: "summary_large_image", title: ogTitle, description },
+    twitter: { card: "summary_large_image", title: ogTitle, description, ...(images ? { images } : {}) },
   };
 }
 

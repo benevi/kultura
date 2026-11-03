@@ -1978,12 +1978,6 @@
       "tv": "Las series mejor valoradas de {year} con un mínimo de votos en TMDB, con sinopsis y dónde verlas. Guarda las que te faltan en KULTURA.",
       "game": "Los videojuegos mejor valorados de {year} con un mínimo de valoraciones en RAWG, con sinopsis y ficha. Guarda los que quieras jugar en KULTURA."
     },
-    "intro": {
-      "anime": "Los animes de {year} con mejor nota, en orden. Toca cualquiera para ver su ficha y guardarlo en tu lista.",
-      "movie": "Las películas de {year} con mejor nota, en orden. Toca cualquiera para ver su ficha y dónde verla.",
-      "tv": "Las series de {year} con mejor nota, en orden. Toca cualquiera para ver su ficha y dónde verla.",
-      "game": "Los videojuegos de {year} con mejor nota, en orden. Toca cualquiera para ver su ficha y guardarlo en tu lista."
-    },
     "chip": {
       "anime": "Animes",
       "movie": "Películas",
@@ -2003,6 +1997,7 @@
       "game": "Criterio: nota de los jugadores de RAWG ponderada por el número de valoraciones. Solo entran juegos con al menos {min, plural, one {# valoración} other {# valoraciones}} y un 7 sobre 10 o más."
     },
     "updated": "Actualizado el <time>{date}</time>",
+    "source": "Datos y portadas: <link>{provider}</link>.",
     "provisional": "Ranking provisional: por ahora {count, plural, one {solo # título llega} other {solo # títulos llegan}} al criterio. Se completará a medida que lleguen votos.",
     "empty": {
       "title": "Todavía no hay ranking de {year}",
@@ -2018,16 +2013,15 @@
       "home": "Inicio",
       "rankings": "Rankings"
     },
+    "siblings": "Otros rankings",
     "podium": "Podio: los tres primeros",
     "rest": "Del puesto 4 al {last}",
     "position": "Puesto {n}:",
-    "sticker": "#1",
-    "rating": "nota {rating} de 10",
+    "score": "Nota {rating}",
     "save": "Guardar <hidden>{title}</hidden>",
     "cta": {
       "title": "Guarda los que te faltan",
-      "body": "Marca los que ya conoces, apunta el resto y puntúalos a tu manera: tu propio ranking de {year}. Gratis y sin anuncios.",
-      "action": "Crear mi cuenta gratis",
+      "action": "Guarda los que te faltan · gratis",
       "login": "Ya tengo cuenta"
     },
     "hub": {

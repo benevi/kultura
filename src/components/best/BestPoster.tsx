@@ -7,19 +7,26 @@ import { bestPosterLoader } from "@/lib/best/poster";
  * Portada de un ranking (SEO-10, D-10). A diferencia de `PosterImage`
  * (decorativa en el catálogo), aquí la imagen lleva `alt` con el título:
  * Google Imágenes la asocia al título y el ranking no tiene ninguna imagen
- * con `alt=""`. Rellena su contenedor, que lleva DETRÁS el gradiente; el
- * contenedor va `aria-hidden` cuando el título ya está en texto al lado.
+ * con `alt=""`. Rellena su contenedor (el `Cromo`, que lleva DETRÁS su
+ * respaldo de color); el contenedor va `aria-hidden` cuando el título ya está
+ * en texto al lado.
+ *
+ * Carga (LCP): `first` = la primera portada de la página, `fetchpriority=high`
+ * y sin carga diferida; `eager` = visible en la primera pantalla (sin carga
+ * diferida, prioridad normal). El resto, diferidas.
  */
 export function BestPoster({
   src,
   alt,
   sizes,
-  priority = false,
+  first = false,
+  eager = false,
 }: {
   src: string;
   alt: string;
   sizes: string;
-  priority?: boolean;
+  first?: boolean;
+  eager?: boolean;
 }) {
   return (
     <Image
@@ -28,7 +35,9 @@ export function BestPoster({
       alt={alt}
       fill
       sizes={sizes}
-      priority={priority}
+      priority={first}
+      fetchPriority={first ? "high" : undefined}
+      loading={first || eager ? "eager" : "lazy"}
       className="object-cover"
     />
   );

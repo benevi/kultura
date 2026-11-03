@@ -20,12 +20,14 @@ interface ShareRankingProps {
   title: string;
 }
 
-const FOCUS =
-  "focus-visible:[outline-style:solid] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus-ring";
-const MAIN =
-  `inline-flex min-h-11 items-center gap-2 rounded-full bg-surface-elevated px-5 text-sm font-bold text-text-primary hover:text-accent-pink transition-colors ${FOCUS}`;
-const OPTION =
-  `inline-flex min-h-11 items-center rounded-full border-2 border-stroke px-4 text-sm font-bold text-text-primary hover:bg-surface-elevated transition-colors ${FOCUS}`;
+/** Botón secundario del álbum (en papel: blanco, tinta marina y raya de 2 px). */
+const BUTTON =
+  "inline-flex min-h-11 items-center gap-2 rounded-button border-2 border-button-secondary-border bg-button-secondary px-4 " +
+  "text-sm font-bold text-on-button-secondary transition-[color,background-color,border-color] duration-fast " +
+  "hover:border-surface-border hover:bg-surface-border " +
+  "focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus-ring";
+const MAIN = BUTTON;
+const OPTION = BUTTON;
 
 export function ShareRanking({ path, title }: ShareRankingProps) {
   const t = useTranslations("best.share");
@@ -133,7 +135,7 @@ export function ShareRanking({ path, title }: ShareRankingProps) {
           WhatsApp
         </button>
       </div>
-      <span role="status" aria-live="polite" className="text-sm font-bold text-accent-positive">
+      <span role="status" aria-live="polite" className="text-sm font-semibold text-text-primary">
         {copied ? t("copied") : ""}
       </span>
     </div>

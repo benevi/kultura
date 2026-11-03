@@ -1978,12 +1978,6 @@
       "tv": "The highest-rated TV series of {year} with a minimum number of TMDB votes, with synopses and where to watch. Save the ones you missed on KULTURA.",
       "game": "The highest-rated video games of {year} with a minimum number of RAWG ratings, with synopses and pages. Save the ones you want to play on KULTURA."
     },
-    "intro": {
-      "anime": "The best-rated anime of {year}, in order. Tap any of them to open its page and save it to your list.",
-      "movie": "The best-rated movies of {year}, in order. Tap any of them to open its page and see where to watch it.",
-      "tv": "The best-rated TV series of {year}, in order. Tap any of them to open its page and see where to watch it.",
-      "game": "The best-rated video games of {year}, in order. Tap any of them to open its page and save it to your list."
-    },
     "chip": {
       "anime": "Anime",
       "movie": "Movies",
@@ -2003,6 +1997,7 @@
       "game": "How it works: RAWG player score weighted by the number of ratings. Only games with at least {min, plural, one {# rating} other {# ratings}} and a 7 out of 10 or higher make the list."
     },
     "updated": "Updated on <time>{date}</time>",
+    "source": "Data and covers: <link>{provider}</link>.",
     "provisional": "Provisional ranking: so far {count, plural, one {only # title meets} other {only # titles meet}} the criteria. It will fill up as votes come in.",
     "empty": {
       "title": "No ranking for {year} yet",
@@ -2018,16 +2013,15 @@
       "home": "Home",
       "rankings": "Rankings"
     },
+    "siblings": "More rankings",
     "podium": "Podium: the top three",
     "rest": "Places 4 to {last}",
     "position": "Number {n}:",
-    "sticker": "#1",
-    "rating": "rated {rating} out of 10",
+    "score": "Score {rating}",
     "save": "Save <hidden>{title}</hidden>",
     "cta": {
       "title": "Save the ones you missed",
-      "body": "Mark the ones you already know, add the rest and rate them your way: your own {year} ranking. Free and ad-free.",
-      "action": "Create my free account",
+      "action": "Save the ones you missed · free",
       "login": "I already have an account"
     },
     "hub": {

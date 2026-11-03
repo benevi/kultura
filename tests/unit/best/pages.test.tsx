@@ -27,7 +27,9 @@ vi.mock("next-intl/server", async () => {
 });
 vi.mock("next/cache", () => ({ unstable_cache: <T,>(fn: T) => fn }));
 vi.mock("next/image", () => ({
-  default: ({ alt, src }: { alt: string; src: string }) => <img alt={alt} src={src} />,
+  default: ({ alt, src, fetchPriority, loading }: { alt: string; src: string; fetchPriority?: "high" | "low" | "auto"; loading?: "eager" | "lazy" }) => (
+    <img alt={alt} src={src} fetchPriority={fetchPriority} loading={loading} />
+  ),
 }));
 vi.mock("next/navigation", () => ({
   notFound: () => {
@@ -51,8 +53,8 @@ vi.mock("@/lib/best/best-of", async (importOriginal) => {
 });
 
 import BestOfPage, { generateMetadata } from "@/app/[locale]/best/[format]/[year]/page";
-import BestHubPage from "@/app/[locale]/best/page";
-import BestFormatHubPage from "@/app/[locale]/best/[format]/page";
+import BestHubPage, { generateMetadata as generateHubMetadata } from "@/app/[locale]/best/page";
+import BestFormatHubPage, { generateMetadata as generateFormatHubMetadata } from "@/app/[locale]/best/[format]/page";
 import { getBestRanking, type BestItem, type BestRanking } from "@/lib/best/best-of";
 
 const YEAR = new Date().getFullYear();
@@ -109,15 +111,48 @@ describe("ranking de un año", () => {
     }
   });
 
-  it("podio con jerarquía: #1 en la columna ancha y #2/#3 escalonados", async () => {
+  it("podio = tres brillantes: brillo, caja amarilla del puesto y escalera 1-2-3", async () => {
     await show(BestOfPage(params("anime")));
     const podium = screen.getByRole("list", { name: "Podio: los tres primeros" });
     expect(podium.className).toContain("md:grid-cols-[6fr_5fr_4fr]");
     const [one, two, three] = Array.from(podium.querySelectorAll(":scope > li"));
-    expect(one.className).toContain("md:bg-[radial-gradient(");
-    expect(two.className).toContain("md:mt-12");
-    expect(three.className).toContain("md:mt-24");
-    expect(one.textContent).toContain("#1");
+    expect(two.className).toContain("md:mt-16");
+    expect(three.className).toContain("md:mt-32");
+    [one, two, three].forEach((li, i) => {
+      // El brillo envuelve el cromo Y la caja del número (Foil > NumberBadge).
+      const foil = li.querySelector("[data-foil]");
+      expect(foil).not.toBeNull();
+      const badge = foil!.querySelector("[data-number-badge]");
+      expect(badge?.textContent).toBe(String(i + 1));
+      expect(badge?.className).toContain("bg-album-yellow");
+      expect(badge?.className).toContain("text-7xl");
+      expect(li.querySelector("[data-cromo]")).not.toBeNull();
+    });
+    // Ni pegatina «#1» ni degradado de fondo: el número va en su caja.
+    expect(podium.textContent).not.toContain("#1");
+    expect(one.className).not.toContain("gradient");
+  });
+
+  it("LCP: la primera portada con fetchpriority=high y sin carga diferida; el resto no compite", async () => {
+    const { container } = await show(BestOfPage(params("anime")));
+    const imgs = Array.from(container.querySelectorAll("img"));
+    expect(imgs[0]).toHaveAttribute("fetchpriority", "high");
+    expect(imgs[0]).toHaveAttribute("loading", "eager");
+    expect(imgs.filter((img) => img.getAttribute("fetchpriority") === "high")).toHaveLength(1);
+    // El #2 y el #3 se piden ya (primera pantalla en escritorio), sin prioridad alta.
+    expect(imgs[1]).toHaveAttribute("loading", "eager");
+    expect(imgs[5]).toHaveAttribute("loading", "lazy");
+  });
+
+  it("cada puesto: año, formato con su nombre y la nota con coma (8,4)", async () => {
+    await show(BestOfPage(params("anime")));
+    const rest = screen.getByRole("list", { name: "Del puesto 4 al 20" });
+    const row = rest.querySelector(":scope > li")!;
+    expect(row.querySelector("[data-number-badge]")?.textContent).toBe("4");
+    expect(within(row as HTMLElement).getByText(String(YEAR))).toBeInTheDocument();
+    expect(within(row as HTMLElement).getByText("Anime").closest("[data-format]")).toHaveAttribute("data-format", "anime");
+    expect(within(row as HTMLElement).getByText("Nota 8,1")).toBeInTheDocument();
+    expect(within(row as HTMLElement).getByRole("link", { name: "Guardar Título 4" })).toHaveAttribute("data-best-save", "anime_al-4");
   });
 
   it("0 imágenes con alt vacío: el póster lleva el título", async () => {
@@ -132,7 +167,6 @@ describe("ranking de un año", () => {
     await show(BestOfPage(params("anime")));
     const podium = screen.getByRole("list", { name: "Podio: los tres primeros" });
     expect(podium.querySelectorAll(":scope > li")).toHaveLength(3);
-    expect(within(podium).getByText("#1")).toBeInTheDocument();
     const rest = screen.getByRole("list", { name: "Del puesto 4 al 20" });
     expect(rest).toHaveAttribute("start", "4");
     const share = screen.getByRole("group", { name: "Compartir este ranking" });
@@ -153,10 +187,11 @@ describe("ranking de un año", () => {
     expect(within(years).getByRole("link", { name: String(YEAR) })).toHaveAttribute("aria-current", "page");
   });
 
-  it("criterio con el suelo de votos aplicado y fecha de actualización", async () => {
+  it("criterio con el suelo de votos aplicado, fecha de actualización y la fuente enlazada", async () => {
     vi.mocked(getBestRanking).mockResolvedValue(ranking(20, 1500));
     const { container } = await show(BestOfPage(params("movie", "2024")));
     expect(screen.getByText(/al menos 1500 votos/)).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "TMDB" })).toHaveAttribute("href", "https://www.themoviedb.org");
     const time = container.querySelector("time");
     expect(time).toHaveAttribute("dateTime", "2026-10-22T05:00:00.000Z");
     expect(time?.textContent).toBe("22 de octubre de 2026");
@@ -175,13 +210,21 @@ describe("ranking de un año", () => {
     }
   });
 
-  it("CTA «Guarda los que te faltan» con alta que vuelve al ranking", async () => {
-    await show(BestOfPage(params("anime")));
+  it("UNA acción de color: la barra fija «Guarda los que te faltan · gratis», alta que vuelve al ranking", async () => {
+    const { container } = await show(BestOfPage(params("anime")));
     const cta = screen.getByRole("region", { name: "Guarda los que te faltan" });
-    expect(within(cta).getByRole("link", { name: "Crear mi cuenta gratis" })).toHaveAttribute(
+    expect(cta).toHaveAttribute("data-best-signup");
+    expect(cta.className).toContain("fixed");
+    expect(within(cta).getByRole("link", { name: "Guarda los que te faltan · gratis" })).toHaveAttribute(
       "href",
       `/es/login?mode=register&next=${encodeURIComponent(`/es/best/anime/${YEAR}`)}`,
     );
+    // Ni la cabecera común (con su «Registrarse» rosa) ni otro rosa en la página.
+    expect(screen.queryByTestId("header")).toBeNull();
+    expect(container.querySelectorAll(".bg-accent-pink")).toHaveLength(1);
+    // Página impresa del álbum: papel y campo cian en la primera pantalla.
+    expect(container.firstElementChild?.className).toContain("theme-paper");
+    expect(container.querySelector('[data-album-page="cyan"] h1')).not.toBeNull();
   });
 
   it("sin el Link de next-intl (REN-9): solo <a> del servidor", async () => {
@@ -193,6 +236,8 @@ describe("ranking de un año", () => {
       "src/components/best/BestOfList.tsx",
       "src/components/best/BestNav.tsx",
       "src/components/best/BestTopRow.tsx",
+      "src/components/best/BestSave.tsx",
+      "src/components/best/PodiumTilt.tsx",
     ]) {
       expect(fs.readFileSync(file, "utf8"), file).not.toMatch(/@\/i18n\/navigation|components\/collection/);
     }
@@ -230,7 +275,8 @@ describe("ranking de un año", () => {
     await show(BestOfPage(params("anime", String(YEAR), "en")));
     expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent(`Best anime of ${YEAR}`);
     expect(screen.getByRole("link", { name: "Save Título 1" })).toBeInTheDocument();
-    expect(screen.getAllByText("★ 8.4")[0]).toBeInTheDocument();
+    expect(screen.getAllByText("Score 8.4")[0]).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Save the ones you missed · free" })).toBeInTheDocument();
   });
 
   it("formato o año no publicados → 404", async () => {
@@ -287,6 +333,21 @@ describe("hubs (SEO-7, D-16)", () => {
     const broken = screen.getByRole("region", { name: `Los mejores videojuegos de ${YEAR - 1}` });
     expect(within(broken).getByText(/no está disponible ahora mismo/)).toBeInTheDocument();
     expect(screen.getByRole("list", { name: `Top 5 de ${YEAR}` })).toBeInTheDocument();
+  });
+
+  it("/best y /best/anime llevan og:image: la tarjeta del ranking que destacan", async () => {
+    const hub = await generateHubMetadata({ params: Promise.resolve({ locale: "es" }) });
+    const og = (hub.openGraph?.images as Array<{ url: string; alt: string; width: number }>)[0];
+    expect(og.url).toBe(`https://x.app/es/best/movie/${YEAR}/opengraph-image`);
+    expect(og.alt).toBe(`Las mejores películas de ${YEAR}`);
+    expect(og.width).toBe(1200);
+    expect(hub.twitter).toMatchObject({ card: "summary_large_image", images: [expect.objectContaining({ url: og.url })] });
+
+    vi.mocked(getBestRanking).mockImplementation(async (_f, year) => (year === YEAR ? ranking(4) : ranking(20)));
+    const fh = await generateFormatHubMetadata({ params: Promise.resolve({ locale: "en", format: "anime" }) });
+    const card = (fh.openGraph?.images as Array<{ url: string; alt: string }>)[0];
+    expect(card.url).toBe(`https://x.app/en/best/anime/${YEAR - 1}/opengraph-image`);
+    expect(card.alt).toBe(`Best anime of ${YEAR - 1}`);
   });
 
   it("/best/libros → 404", async () => {
