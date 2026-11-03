@@ -46,8 +46,8 @@ describe('ToastContainer', () => {
         onDismiss={dismiss}
       />
     )
-    // 2000ms triggers startExit → 150ms exit animation → onDismiss
-    act(() => { vi.advanceTimersByTime(2150) })
+    // 2000ms triggers startExit → 180ms exit animation → onDismiss
+    act(() => { vi.advanceTimersByTime(2180) })
     expect(dismiss).toHaveBeenCalledWith('42')
   })
 
@@ -60,8 +60,8 @@ describe('ToastContainer', () => {
       />
     )
     fireEvent.click(screen.getByRole('button', { name: /cerrar/i }))
-    // 150ms exit animation before onDismiss
-    act(() => { vi.advanceTimersByTime(150) })
+    // 180ms exit animation before onDismiss
+    act(() => { vi.advanceTimersByTime(180) })
     expect(dismiss).toHaveBeenCalledWith('99')
   })
 
@@ -86,7 +86,8 @@ describe('ToastContainer', () => {
         onDismiss={dismiss}
       />
     )
-    const icon = screen.getByText('✓')
+    const icon = document.querySelector('[data-toast-icon]')!
     expect(icon.className).toMatch(/text-accent-positive/)
+    expect(icon.querySelector('svg')).not.toBeNull()
   })
 })

@@ -45,12 +45,14 @@ export interface FilterBarProps {
 function triggerPillClass(active: boolean, open: boolean) {
   return cn(
     "inline-flex items-center gap-1.5 px-3 py-1.5 rounded-pill text-xs font-body font-medium whitespace-nowrap cursor-pointer",
-    "border transition-all duration-150 ease-out active:scale-[0.97]",
-    "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-pink focus-visible:ring-offset-2 focus-visible:ring-offset-surface-base",
+    "border transition-[color,background-color,border-color,transform] duration-fast ease-out motion-safe:active:scale-[0.97]",
+    "focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus-ring",
+    // Con filtro: borde de tinta (blanco de noche, marino en papel). Abierto:
+    // la banda de orientación (amarillo de noche), como el foco de un hueco.
     active
-      ? "bg-accent-positive/15 border-accent-positive text-text-primary"
+      ? "bg-surface-elevated border-text-primary text-text-primary"
       : open
-        ? "bg-surface-elevated border-accent-positive/60 text-text-primary"
+        ? "bg-surface-elevated border-wayfinding text-text-primary"
         : "bg-transparent border-surface-border text-text-secondary hover:text-text-primary hover:border-text-tertiary"
   )
 }
@@ -185,7 +187,7 @@ function SingleGroup({
           )}
         </button>
       </PopoverTrigger>
-      <PopoverContent className="min-w-44 max-h-72 overflow-y-auto rounded-2xl shadow-soft">
+      <PopoverContent className="min-w-44 max-h-72 overflow-y-auto overscroll-contain rounded-2xl shadow-soft">
         <PopoverHeader group={group} />
         {/* ACC-10: los `role="radio"` necesitan su `radiogroup` (axe
             aria-required-parent), con el nombre del filtro. */}
@@ -203,7 +205,7 @@ function SingleGroup({
                   "min-h-8 px-2.5 py-1 rounded-pill text-xs cursor-pointer border transition-colors",
                   "focus-visible:[outline-style:solid] focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-focus-ring",
                   selected
-                    ? "bg-accent-positive text-on-accent-positive border-accent-positive font-semibold"
+                    ? "bg-text-primary text-surface-base border-text-primary font-semibold"
                     : "bg-surface-elevated text-text-secondary border-surface-border hover:text-text-primary"
                 )}
               >
@@ -270,7 +272,7 @@ function SortGroup({
           )}
         </button>
       </PopoverTrigger>
-      <PopoverContent className="min-w-44 max-h-72 overflow-y-auto rounded-2xl shadow-soft">
+      <PopoverContent className="min-w-44 max-h-72 overflow-y-auto overscroll-contain rounded-2xl shadow-soft">
         <PopoverHeader group={group} />
         <div role="radiogroup" aria-label={prefix} className="flex flex-col gap-0.5">
           {group.options.map((option, index) => (
@@ -283,7 +285,7 @@ function SortGroup({
               className={cn(
                 "text-left min-h-8 px-2 py-1.5 rounded-lg text-xs cursor-pointer hover:bg-surface-elevated",
                 "focus-visible:[outline-style:solid] focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-focus-ring",
-                option.value === value && "text-accent-positive font-semibold"
+                option.value === value && "bg-surface-elevated text-text-primary font-semibold"
               )}
             >
               {option.label}
@@ -340,7 +342,7 @@ function MultiGroup({
           {count > 0 && (
             <span
               data-testid={`badge-${group.key}`}
-              className="ml-0.5 inline-flex items-center justify-center min-w-4 h-4 px-1 rounded-full bg-accent-positive text-on-accent-positive text-xs font-semibold"
+              className="ml-0.5 inline-flex items-center justify-center min-w-4 h-4 px-1 rounded-full bg-text-primary text-surface-base text-xs font-semibold tabular-nums"
             >
               {count}
             </span>
@@ -352,11 +354,13 @@ function MultiGroup({
           )}
         </button>
       </PopoverTrigger>
-      <PopoverContent className="min-w-48 max-h-72 overflow-y-auto rounded-2xl shadow-soft">
+      <PopoverContent className="min-w-48 max-h-72 overflow-y-auto overscroll-contain rounded-2xl shadow-soft">
         <PopoverHeader group={group} />
         {searchable && (
           <input
             type="search"
+            name={`filter-${group.key}`}
+            autoComplete="off"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder={group.label}
@@ -377,7 +381,7 @@ function MultiGroup({
                   type="checkbox"
                   checked={checked}
                   onChange={() => toggle(option.value)}
-                  className="accent-accent-positive"
+                  className="accent-text-primary"
                 />
                 {option.icon && <span aria-hidden="true">{option.icon}</span>}
                 <span>{option.label}</span>

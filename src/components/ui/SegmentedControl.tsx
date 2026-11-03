@@ -68,10 +68,10 @@ export function SegmentedControl({
             className={cn(
               "inline-flex items-center justify-center min-h-11 px-3 py-1.5 rounded-lg",
               "text-xs font-body font-medium whitespace-nowrap cursor-pointer",
-              "transition-all duration-150 ease-out",
-              "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-pink focus-visible:ring-offset-2 focus-visible:ring-offset-surface-base",
+              "transition-[color,background-color] duration-fast ease-out",
+              "focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus-ring",
               active
-                ? "bg-accent-positive text-on-accent-positive"
+                ? "bg-text-primary text-surface-base"
                 : "text-text-secondary hover:text-text-primary"
             )}
           >

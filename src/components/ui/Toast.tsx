@@ -59,10 +59,25 @@ const typeStyles: Record<ToastType, string> = {
   info:    'border-surface-border',
 }
 
-const typeIcon: Record<ToastType, string> = {
-  success: '✓',
-  error:   '!',
-  info:    'i',
+/** Icono dibujado (no un glifo Unicode): visto, aviso, información. */
+const typeIcon: Record<ToastType, React.ReactNode> = {
+  success: (
+    <svg viewBox="0 0 16 16" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M3 8.5l3 3 7-7" />
+    </svg>
+  ),
+  error: (
+    <svg viewBox="0 0 16 16" className="h-4 w-4" fill="currentColor">
+      <rect x="6.75" y="2" width="2.5" height="8" rx="1.25" />
+      <circle cx="8" cy="13" r="1.5" />
+    </svg>
+  ),
+  info: (
+    <svg viewBox="0 0 16 16" className="h-4 w-4" fill="currentColor">
+      <circle cx="8" cy="3.5" r="1.5" />
+      <rect x="6.75" y="6" width="2.5" height="8" rx="1.25" />
+    </svg>
+  ),
 }
 
 const iconStyles: Record<ToastType, string> = {
@@ -71,7 +86,7 @@ const iconStyles: Record<ToastType, string> = {
   info:    'text-accent-info',
 }
 
-const ANIM_DURATION = 150 // matches --duration-base
+const ANIM_DURATION = 180 // = --duration-fast (la salida de `animate-toast-out`)
 
 interface SingleToastProps {
   toast: ToastItem
@@ -167,10 +182,10 @@ function SingleToast({ toast, onDismiss }: SingleToastProps) {
       style={dragX ? { transform: `translateX(${dragX}px)`, opacity: Math.max(0.3, 1 - Math.abs(dragX) / 240) } : undefined}
       className={`pointer-events-auto touch-pan-y flex items-center gap-3 pl-4 pr-1 py-1 min-h-14 rounded-2xl border bg-surface-elevated text-text-primary shadow-soft text-sm w-full ${typeStyles[toast.type]} ${exiting ? 'animate-toast-out' : 'animate-toast-in'}`}
     >
-      <span aria-hidden className={`font-bold flex-shrink-0 ${iconStyles[toast.type]}`}>
+      <span aria-hidden data-toast-icon="" className={`flex-shrink-0 ${iconStyles[toast.type]}`}>
         {typeIcon[toast.type]}
       </span>
-      <p className="flex-1 leading-snug py-2">{toast.message}</p>
+      <p className="min-w-0 flex-1 break-words py-2 leading-snug">{toast.message}</p>
       {toast.action && (
         <button
           ref={actionRef}

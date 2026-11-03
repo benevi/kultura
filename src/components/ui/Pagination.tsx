@@ -2,6 +2,7 @@
 
 import { useTranslations } from "next-intl";
 import { cn } from "@/lib/utils/index";
+import { IconChevronLeft, IconChevronRight } from "@/components/icons";
 
 export interface PaginationProps {
   currentPage: number;
@@ -77,10 +78,9 @@ export function Pagination({
 
   // Botón cuadrado: tap target ≥40px (mobile-first), rounded-lg, foco/hover DS.
   const baseBtn =
-    "inline-flex items-center justify-center min-w-10 h-10 px-3 rounded-lg " +
-    "text-sm font-medium transition-colors cursor-pointer " +
-    "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-pink " +
-    "focus-visible:ring-offset-2 focus-visible:ring-offset-bg " +
+    "inline-flex items-center justify-center min-w-10 h-10 px-3 rounded-lg pointer-coarse:h-11 pointer-coarse:min-w-11 " +
+    "text-sm font-medium tabular-nums transition-colors cursor-pointer " +
+    "focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus-ring " +
     "disabled:pointer-events-none disabled:opacity-50";
   // Botón inactivo: superficie/borde del DS, hover visible.
   const inactiveBtn =
@@ -98,7 +98,8 @@ export function Pagination({
             aria-label={t("previous")}
             onClick={() => onPageChange(currentPage - 1)}
           >
-            « <span className="hidden sm:inline">{t("previous")}</span>
+            <IconChevronLeft className="h-3 w-3" aria-hidden="true" />
+            <span className="hidden sm:ml-1.5 sm:inline">{t("previous")}</span>
           </button>
         </li>
 
@@ -119,8 +120,8 @@ export function Pagination({
                 className={cn(
                   baseBtn,
                   entry === currentPage
-                    ? // Activo: acento principal del DS (F2 — antes rojo legacy).
-                      "bg-accent-positive text-on-accent-positive border border-accent-positive"
+                    ? // Activo: la página «pegada», en la tinta del texto.
+                      "bg-text-primary text-surface-base border border-text-primary"
                     : inactiveBtn
                 )}
                 aria-label={t("pageN", { n: entry })}
@@ -143,7 +144,8 @@ export function Pagination({
             aria-label={t("next")}
             onClick={() => onPageChange(currentPage + 1)}
           >
-            <span className="hidden sm:inline">{t("next")}</span> »
+            <span className="hidden sm:mr-1.5 sm:inline">{t("next")}</span>
+            <IconChevronRight className="h-3 w-3" aria-hidden="true" />
           </button>
         </li>
       </ul>

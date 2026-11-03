@@ -62,8 +62,8 @@ describe('FilterBar — single (popover v3)', () => {
     render(
       <FilterBar groups={[singleGroup]} activeFilters={{ year: '2024' }} onChange={vi.fn()} />
     )
-    // R3: activo = borde resaltado (border-accent-positive), fondo tenue.
-    expect(screen.getByRole('button', { name: '2024' })).toHaveClass('border-accent-positive')
+    // R3 + álbum: activo = borde en la tinta del texto, nunca el verde de estados.
+    expect(screen.getByRole('button', { name: '2024' })).toHaveClass('border-text-primary')
   })
 
   it('grupo sin kind se comporta como single', () => {
@@ -126,8 +126,8 @@ describe('FilterBar — multi', () => {
         onChange={vi.fn()}
       />
     )
-    // R3: activo = borde resaltado (border-accent-positive).
-    expect(screen.getByRole('button', { name: /Género/ })).toHaveClass('border-accent-positive')
+    // R3 + álbum: activo = borde en la tinta del texto.
+    expect(screen.getByRole('button', { name: /Género/ })).toHaveClass('border-text-primary')
   })
 })
 

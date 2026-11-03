@@ -61,7 +61,7 @@ export function AvatarIconPicker({
           'w-11 h-11 rounded-full flex items-center justify-center text-xs font-bold text-text-secondary',
           'bg-surface-elevated transition-transform hover:scale-105 disabled:opacity-50',
           'focus-visible:[outline-style:solid] focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-focus-ring',
-          value === null ? 'ring-2 ring-accent-positive ring-offset-2 ring-offset-surface-default' : ''
+          value === null ? 'ring-2 ring-text-primary ring-offset-2 ring-offset-surface-default' : ''
         )}
       >
         Aa
@@ -82,7 +82,7 @@ export function AvatarIconPicker({
             className={cn(
               'rounded-full transition-transform hover:scale-105 disabled:opacity-50',
               'focus-visible:[outline-style:solid] focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-focus-ring',
-              selected ? 'ring-2 ring-accent-positive ring-offset-2 ring-offset-surface-default' : ''
+              selected ? 'ring-2 ring-text-primary ring-offset-2 ring-offset-surface-default' : ''
             )}
           >
             {/* El personaje trae su propio disco: pintarlo sobre un fondo de

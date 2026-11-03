@@ -89,7 +89,7 @@ describe('ToastContainer', () => {
     act(() => { vi.advanceTimersByTime(10 * 60_000) })
     expect(dismiss).not.toHaveBeenCalled()
     fireEvent.click(screen.getByRole('button', { name: 'Cerrar aviso' }))
-    act(() => { vi.advanceTimersByTime(150) })
+    act(() => { vi.advanceTimersByTime(180) })
     expect(dismiss).toHaveBeenCalledWith('t1')
   })
 
@@ -102,7 +102,7 @@ describe('ToastContainer', () => {
     act(() => { vi.advanceTimersByTime(10_000) })
     expect(dismiss).not.toHaveBeenCalled()
     fireEvent.mouseLeave(el)
-    act(() => { vi.advanceTimersByTime(1000 + 150) })
+    act(() => { vi.advanceTimersByTime(1000 + 180) })
     expect(dismiss).toHaveBeenCalledWith('t1')
   })
 
@@ -136,7 +136,7 @@ describe('ToastContainer', () => {
     fireEvent.pointerDown(el, { pointerType: 'touch', pointerId: 1, clientX: 100 })
     fireEvent.pointerMove(el, { pointerType: 'touch', pointerId: 1, clientX: 220 })
     fireEvent.pointerUp(el, { pointerType: 'touch', pointerId: 1, clientX: 220 })
-    act(() => { vi.advanceTimersByTime(150) })
+    act(() => { vi.advanceTimersByTime(180) })
     expect(dismiss).toHaveBeenCalledWith('t1')
   })
 })

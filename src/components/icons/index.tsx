@@ -289,6 +289,20 @@ export const IconChevronDown: KIcon = (props) => (
   </svg>
 )
 
+/** Chevron izquierda (paginación «anterior»). */
+export const IconChevronLeft: KIcon = (props) => (
+  <svg {...base(props)}>
+    <polygon points="16 4 16 20 7 12" />
+  </svg>
+)
+
+/** Chevron derecha (paginación «siguiente»). */
+export const IconChevronRight: KIcon = (props) => (
+  <svg {...base(props)}>
+    <polygon points="8 4 8 20 17 12" />
+  </svg>
+)
+
 /** Chevron arriba. */
 export const IconChevronUp: KIcon = (props) => (
   <svg {...base(props)}>

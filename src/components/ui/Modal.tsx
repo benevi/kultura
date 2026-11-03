@@ -136,7 +136,7 @@ export function Modal({
             if (e.target === e.currentTarget && startedOnOverlay) requestClose()
           }}
           className={cn(
-            'fixed inset-0 z-50 flex justify-center overflow-y-auto overscroll-contain bg-black/60 animate-backdrop-in',
+            'fixed inset-0 z-50 flex justify-center overflow-y-auto overscroll-contain bg-surface-base/80 animate-backdrop-in',
             isSheet ? 'items-end md:items-center md:p-4' : 'items-center p-4'
           )}
         >
@@ -195,7 +195,7 @@ export function Modal({
             <div className="flex items-start justify-between gap-3">
               <Dialog.Title
                 className={cn(
-                  'font-display text-xl font-extrabold leading-tight text-text-primary',
+                  'font-display text-xl leading-tight text-balance text-text-primary',
                   hideTitle && 'sr-only'
                 )}
               >

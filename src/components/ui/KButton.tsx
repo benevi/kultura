@@ -13,12 +13,23 @@ export interface KButtonProps extends React.ButtonHTMLAttributes<HTMLButtonEleme
   loading?: boolean;
 }
 
+/* Alto mínimo de 44 px en pantallas táctiles (`pointer-coarse:`), también en
+   los tamaños compactos. */
 const sizeClasses: Record<KButtonSize, string> = {
-  sm: "h-8 px-3 text-xs",
-  md: "h-10 px-4 text-sm",
+  sm: "h-9 px-3 text-sm pointer-coarse:h-11",
+  md: "h-10 px-4 text-sm pointer-coarse:h-11",
   lg: "h-11 px-6 text-base",
 };
 
+/**
+ * Botón del álbum (DISENO.md):
+ * - primario: rosa sólido, la ÚNICA acción de color (una por pantalla);
+ * - secundario: de noche, relleno marino un escalón más claro y texto
+ *   blanco; en papel (`.theme-paper`), blanco con tinta marina y raya de 2 px.
+ *   Lo deciden los tokens `--button-secondary-*`, no el componente.
+ * Radio 8 px, Figtree 700. Foco: contorno de 2 px con separación (amarillo
+ * de noche, marino en papel). Solo se animan color y transformación.
+ */
 export const KButton = React.forwardRef<HTMLButtonElement, KButtonProps>(
   ({ variant = "primary", size = "md", asChild = false, loading = false, className, children, disabled, ...props }, ref) => {
     const Comp = asChild ? Slot : "button";
@@ -30,43 +41,17 @@ export const KButton = React.forwardRef<HTMLButtonElement, KButtonProps>(
         disabled={isDisabled}
         aria-busy={loading || undefined}
         className={cn(
-          /* Base — radio F0: `rounded-pill` (20px) excede la mitad de la altura
-             de cualquier tamaño de botón (32/40/44px), por lo que el navegador
-             lo recorta a un estadio perfecto — el "botón pill" de DISENO.md. */
-          "inline-flex items-center justify-center gap-2 rounded-pill font-body whitespace-nowrap",
-          "transition-all duration-150 ease-out",
-          "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-pink focus-visible:ring-offset-2 focus-visible:ring-offset-surface-base",
+          /* `min-w-0 max-w-full overflow-hidden`: una etiqueta con datos
+             («Bloquear a {usuario}») no se sale de su caja (WIG). */
+          "inline-flex min-w-0 max-w-full items-center justify-center gap-2 overflow-hidden whitespace-nowrap rounded-button border-2 font-body font-bold",
+          "transition-[color,background-color,border-color,transform] duration-fast ease-out",
+          "focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus-ring",
           "disabled:pointer-events-none disabled:opacity-40",
-          /* Size */
+          "motion-safe:active:scale-[0.98]",
           sizeClasses[size],
-          /* Variant — pesos de DISENO.md: primario 800, secundario 700.
-
-             El primario es PINK (E-BOTON-PINK). Lo pintaba en
-             `accent-positive` (lime), y parecía que el canvas no lo zanjaba:
-             de los 27 pills de las 17 pantallas, 14 eran lime. Contados mal:
-             TODOS los lime son badges de match ("98% MATCH", "91%", "60%"…),
-             que además ya están retirados de la UI (E-MATCH-SIN-BADGE). De
-             los pills de ACCIÓN, los 13 son pink, sin excepción — Enviar,
-             Crear grupo, Empezar gratis, Añadir título, Nueva lista, Entrar,
-             Guardar, Enviar sugerencia. Coincide con DISENO.md.
-
-             `accent-positive` sigue siendo el verde semántico de estados
-             (nav activa, chip de filtro activo, badge de biblioteca); lo que
-             deja de ser es el color del botón primario. */
-          variant === "primary" && [
-            "font-extrabold",
-            "text-on-accent-pink",
-            "bg-accent-pink",
-            "hover:brightness-110",
-            "active:scale-[0.98]",
-          ],
-          variant === "secondary" && [
-            "font-bold",
-            "bg-transparent border-2 border-surface-border",
-            "text-text-secondary",
-            "hover:bg-surface-elevated hover:text-text-primary",
-            "active:scale-[0.98]",
-          ],
+          variant === "primary" && "border-accent-pink bg-accent-pink text-on-accent-pink hover:border-accent-pink-hover hover:bg-accent-pink-hover",
+          variant === "secondary" &&
+            "border-button-secondary-border bg-button-secondary text-on-button-secondary hover:border-surface-border hover:bg-surface-border",
           className
         )}
         {...props}
