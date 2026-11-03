@@ -22,6 +22,9 @@
  */
 
 export const SHELL_CLIENT_NAMESPACES = [
+  // Rótulos del álbum (formato, estado, «hace N días») de los cromos que se
+  // pintan en cliente fuera de la zona con sesión (ficha pública).
+  "album",
   "auth",
   // Solo la rama que usa `ShareRanking`, el único componente cliente de
   // /best (≈ 6 KB menos de textos en el HTML de cada página pública).
@@ -62,7 +65,7 @@ export const WELCOME_CLIENT_NAMESPACES = [
  * usaba). Mismo patrón que `/report`,
  * con `u/layout.tsx`, para no cargar `report` ni `invite` en todas las públicas.
  */
-export const PUBLIC_PROFILE_CLIENT_NAMESPACES = ["album", "discoverFilters.typeBadge", "invite", "media", "report"] as const;
+export const PUBLIC_PROFILE_CLIENT_NAMESPACES = ["album", "invite", "report"] as const;
 
 /**
  * `/[locale]/media/…` (ficha pública, D-01, fuera de `(app)`): biblioteca,
