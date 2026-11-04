@@ -114,7 +114,7 @@
   const canvas = $('#gl');
   const renderer = new T.WebGLRenderer({ canvas, antialias: true, alpha: true, powerPreference: 'high-performance' });
   renderer.outputEncoding = T.sRGBEncoding;
-  renderer.toneMapping = T.ACESFilmicToneMapping; renderer.toneMappingExposure = 1.0;
+  renderer.toneMapping = T.ACESFilmicToneMapping; renderer.toneMappingExposure = 0.8;
   renderer.shadowMap.enabled = true; renderer.shadowMap.type = T.PCFSoftShadowMap;
   const scene = new T.Scene();
   scene.fog = new T.Fog(new T.Color(HERO_GROUND), 13, 30);
@@ -162,14 +162,14 @@
     const g = new T.Group();
     const paper = new T.MeshStandardMaterial({ color: 0xe8e0cc, roughness: 0.92 });
     const spine = (m.format === 'book' || m.format === 'manga' || m.format === 'comic') ? new T.MeshStandardMaterial({ map: spineTex(m), emissiveMap: null, roughness: 0.7 }) : new T.MeshStandardMaterial({ color: shade(m.accent || '#444', 0.6), roughness: 0.7 });
-    const dark = new T.MeshStandardMaterial({ color: 0x0c0c0e, roughness: m.format === 'game' ? 0.22 : 0.5, metalness: m.format === 'game' ? 0.25 : 0 });
+    const dark = new T.MeshStandardMaterial({ color: 0x050506, roughness: m.format === 'game' ? 0.22 : 0.32, metalness: m.format === 'game' ? 0.25 : 0.55 });
     let cover;
     if (dep) {
       // screens: thin body, cover with real relief from its depth map
-      const body = new T.Mesh(new T.BoxGeometry(W * 1.045, H * 1.03, 0.07), dark); body.position.z = -0.02; g.add(body);
+      const body = new T.Mesh(new T.BoxGeometry(W * 1.03, H * 1.02, 0.08), dark); body.position.z = -0.02; g.add(body);
       cover = new T.Mesh(new T.PlaneGeometry(W, H, 90, Math.round(90 * H / W)),
-        new T.MeshStandardMaterial({ map, emissiveMap: map, emissive: 0xffffff, emissiveIntensity: 0.32, displacementMap: dep, displacementScale: 0.12, displacementBias: 0, roughness: 0.82, metalness: 0 }));
-      cover.position.z = 0.017; g.add(cover);
+        new T.MeshStandardMaterial({ map, emissiveMap: map, emissive: 0xffffff, emissiveIntensity: 0.32, displacementMap: dep, displacementScale: 0.09, displacementBias: 0, roughness: 0.82, metalness: 0 }));
+      cover.position.z = 0.03; g.add(cover); // in front of the bezel's face (0.02)
     } else if (m.format === 'game') {
       const body = new T.Mesh(new T.BoxGeometry(W * 1.05, H * 1.03, d), dark); g.add(body);
       cover = new T.Mesh(new T.PlaneGeometry(W * 0.97, H * 0.97), new T.MeshStandardMaterial({ map, emissiveMap: map, emissive: 0xffffff, emissiveIntensity: 0.38, roughness: 0.3, metalness: 0.08 }));
@@ -190,8 +190,8 @@
   const away = (i) => ({ p: V(4 + (i % 5) * 1.6, -1.5 + ((i * 7) % 5) * 0.9, -22 - (i % 4) * 2), r: V(0, -0.6, 0), s: 0.8, off: true });
   function region(verb) {
     const P = phoneNow();
-    const F = P ? { ves: [0.0, 1.0, 0.3, 0.74], lees: [0.04, 0.96, 0.34, 0.74], juegas: [0.0, 1.0, 0.3, 0.74] }
-                : { ves: [0.16, 0.84, 0.4, 0.9], lees: [0.06, 0.94, 0.47, 0.88], juegas: [0.16, 0.84, 0.4, 0.9] };
+    const F = P ? { ves: [-0.08, 1.08, 0.27, 0.8], lees: [0.02, 0.98, 0.3, 0.8], juegas: [-0.06, 1.06, 0.27, 0.8] }
+                : { ves: [0.16, 0.84, 0.4, 0.9], lees: [0.06, 0.94, 0.47, 0.88], juegas: [0.26, 0.8, 0.42, 0.86] };
     const [sx0, sx1, sy0, sy1] = F[verb || 'ves'];
     const a = at(sx0, sy1, 0), b = at(sx1, sy0, 0);
     return { x0: a.x, x1: b.x, y0: a.y, y1: b.y };
@@ -254,7 +254,8 @@
   // a screen point → the point on the z=0 plane under it, through the real camera (it drifts with the cursor)
   const _v = new T.Vector3(), _d = new T.Vector3();
   function onPlane(px, py) {
-    _v.set(px / innerWidth * 2 - 1, -(py / innerHeight * 2 - 1), 0.5).unproject(camera);
+    const cr = canvas.getBoundingClientRect(); // the canvas stops covering the viewport once the world scrolls away
+    _v.set((px - cr.left) / cr.width * 2 - 1, -((py - cr.top) / cr.height * 2 - 1), 0.5).unproject(camera);
     _d.copy(_v).sub(camera.position).normalize(); const t = -camera.position.z / _d.z;
     return camera.position.clone().add(_d.multiplyScalar(t));
   }
@@ -335,13 +336,16 @@
     const dt = Math.min(0.1, (now - last) / 1000); const ease = (r) => 1 - Math.exp(-dt * r); last = now; t += dt;
     if (!ptr.has) { ptr.tx = Math.sin(t * 0.35) * 0.5; ptr.ty = Math.cos(t * 0.27) * 0.3; }
     ptr.x += (ptr.tx - ptr.x) * ease(3.5); ptr.y += (ptr.ty - ptr.y) * ease(3.5);
-    if (FORCE !== null) { kT = k = +FORCE; } else k += (kT - k) * ease(5);
+    if (FORCE !== null) { kT = k = +FORCE; } else { if (Math.abs(kT - k) > 1.2) k = kT; else k += (kT - k) * ease(5); }
     intro = FORCE !== null ? 1 : Math.min(1, intro + dt / 1.6); const ie = 1 - Math.pow(1 - intro, 4);
     const b = Math.min(3, Math.round(k)); setBeat(k > 3.5 ? 0 : b);
     const a = Math.floor(Math.min(k, 3.999)), f = k - a, A = L[a], B = L[a + 1];
     // camera drifts with the chapter and the pointer
-    camera.position.set(ptr.x * 0.35 + k * 0.08, ptr.y * 0.25, 10 - Math.sin(Math.min(k, 1) * Math.PI) * 0.6);
-    camera.lookAt(k * 0.1, 0, 0);
+    const CAM = [[0, 0, 10, 0], [0, -0.35, 8.7, -0.15], [0, 0.15, 9.3, 0], [0, 1.3, 9.2, 0.35], [0, 0, 10, 0]];
+    const ca = CAM[a], cb = CAM[a + 1], cf = f * f * (3 - 2 * f), cv = (j) => ca[j] + (cb[j] - ca[j]) * cf;
+    const pan = Math.max(0, 1 - Math.abs(k - 2) * 2) * (kRooms - 2) * 1.6; // travelling along the shelf while you are in it
+    camera.position.set(ptr.x * 0.35 + cv(0) + pan, ptr.y * 0.25 + cv(1), cv(2));
+    camera.lookAt(pan * 0.9, cv(3), 0);
     key.position.set(ptr.x * 6, ptr.y * 4 + 1.5, 7); key.target.position.set(ptr.x * 2.5, ptr.y * 1.6, 0);
     // hover
     ray.setFromCamera(ndc, camera);
@@ -355,7 +359,8 @@
       featT += dt; if (featT > 3.2) { featT = 0; featIdx++; }
       const fr = objs[front[ROOMS[b - 1].verb]]; feat = hovered && inRoom.includes(hovered) ? hovered : (fr && inRoom.includes(fr) ? fr : inRoom[featIdx % Math.max(1, inRoom.length)]);
     }
-    if (feat && !phoneNow() && b === 2) { nowEl.style.left = (innerWidth * 0.62) + 'px'; nowEl.style.top = (innerHeight * 0.2) + 'px'; }
+    if (feat && !phoneNow() && b === 3) { nowEl.style.left = '40px'; nowEl.style.top = (innerHeight - 140) + 'px'; }
+    else if (feat && !phoneNow() && b === 2) { nowEl.style.left = (innerWidth * 0.62) + 'px'; nowEl.style.top = (innerHeight * 0.2) + 'px'; }
     else if (feat) { const v = feat.position.clone(); v.y -= H * feat.scale.y * 0.5 + 0.12; v.project(camera);
       nowEl.style.left = (phoneNow() ? 20 : Math.min(innerWidth - 320, Math.max(40, (v.x + 1) / 2 * innerWidth - 150))) + 'px'; nowEl.style.top = Math.min(innerHeight - 96, (1 - v.y) / 2 * innerHeight + 10) + 'px'; }
     if (k > 3.25) feat = null;
@@ -384,14 +389,14 @@
       if (u.spin > 0) u.spin = Math.max(0, u.spin - dt / 1.1); const sp = u.spin > 0 ? (1 - Math.pow(u.spin, 3)) * Math.PI * 2 : 0;
       o.rotation.set(tmpR.x - ptr.y * 0.14 + u.h * -ptr.y * 0.2, tmpR.y + ptr.x * 0.2 + u.h * ptr.x * 0.25 + sp, tmpR.z);
       o.scale.setScalar(s * (1 + u.h * (phoneNow() ? 0.03 : 0.06)));
-      if (u.dep) u.cover.material.displacementScale = 0.12 + u.h * 0.16;
+      if (u.dep) u.cover.material.displacementScale = 0.09 + u.h * 0.12;
     });
     const FY = [floorY.hero, floorY.ves, floorY.lees, floorY.juegas, floorY.juegas]; floor.position.y = FY[a] + (FY[a + 1] - FY[a]) * f;
     const inRoomK = Math.min(1, Math.max(0, k - 0.5) * 2, Math.max(0, 3.6 - k) * 2); // 0 in the hero, 1 inside the rooms
     roomMat.color.set(beat > 0 ? ROOMS[beat - 1].ground : HERO_GROUND); roomMat.color.multiplyScalar(0.55);
     roomFloor.position.set(0, floor.position.y - 0.002, -4); roomWall.position.set(0, floor.position.y + 10, -4.5 - (1 - inRoomK) * 30);
-    roomFloor.visible = roomWall.visible = inRoomK > 0.01 && k < 3.5; floor.visible = !roomFloor.visible;
-    hemi.intensity = 0.55 - inRoomK * 0.2; key.intensity = 2.4 + inRoomK * 2.6; rim.color.set(beat > 0 ? ROOMS[beat - 1].rim : 0xbcd2ff); rim.intensity = 0.7 + inRoomK * 0.9; key.angle = 0.62 - inRoomK * 0.18;
+    roomFloor.visible = roomWall.visible = inRoomK > 0.01 && k < 3.5 && kT < 3.5; floor.visible = !roomFloor.visible;
+    hemi.intensity = 0.55 - inRoomK * 0.2; key.intensity = 2.4 + inRoomK * 1.9; rim.color.set(beat > 0 ? ROOMS[beat - 1].rim : 0xbcd2ff); rim.intensity = 0.7 + inRoomK * 0.9; key.angle = 0.62 - inRoomK * 0.18;
     // shelf plank only in the reading room
     const lees = Math.max(0, 1 - Math.abs(k - 2) * 1.6);
     plank.visible = lees > 0.01;

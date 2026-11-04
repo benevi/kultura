@@ -16,7 +16,7 @@
   --ground:#0a0a0c;
   --g-hero:#0a0a0c; --g-ves:#08121d; --g-lees:#170e09; --g-juegas:#0a150c;
   --raised:#141416; --nest:#232326;
-  --ink:#ffffff; --muted:#b9b9be; --meta:#9a9aa0;
+  --ink:#ffffff; --muted:#cfcfd4; --meta:#a9a9b0;
   --accent:#e9e34a; --accent-ink:#111111;
   --font-display:"Red Hat Display","Arial Black",Impact,sans-serif;
   --font-text:"Red Hat Text",system-ui,-apple-system,"Segoe UI",sans-serif;
@@ -105,8 +105,9 @@ html:not(.gl-on) .rooms .shelf{display:block;padding-top:48px}
 .room-static{padding-block:56px}
 .room-static h2{font-family:var(--font-display);font-weight:900;text-transform:uppercase;letter-spacing:-.03em;line-height:.92;font-size:var(--step-head)}
 .room-static p{margin-top:16px;max-width:36ch;font-size:var(--step-lead);line-height:1.3}
-.room-static ul{display:flex;justify-content:flex-start;gap:12px;overflow-x:auto;margin-top:32px;padding-bottom:8px}
-.room-static img{height:220px;width:auto}
+.room-static ul{display:grid;grid-template-columns:repeat(8,minmax(0,1fr));gap:12px;margin-top:32px}
+.room-static img{width:100%;height:auto;aspect-ratio:2/3;object-fit:cover}
+@media(max-width:767px){.room-static ul{grid-template-columns:repeat(4,minmax(0,1fr))}}
 
 /* QUIET sections (cover the 3D stage) */
 .quiet{position:relative;z-index:2;background:var(--ground)}
@@ -129,16 +130,19 @@ section.quiet{padding-block:clamp(96px,11vw,160px)}
 @media(max-width:899px){.best .head,.best ol{grid-column:1 / -1}.best ol{margin-top:48px}}
 
 /* live thing: rate four */
-.rate{background:var(--raised)}
+.rate{background:var(--ground)}
 .rate .head{grid-column:1 / span 5}
 .rate .head p{margin-top:24px;color:var(--muted);max-width:28ch}
-.rate .ui{grid-column:7 / span 6;align-self:start}
+.rate .ui{grid-column:6 / span 7;align-self:start}
 .picks{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:20px}
-.pick{display:grid;grid-template-columns:120px minmax(0,1fr);grid-template-rows:auto 1fr;column-gap:16px;align-items:start;background:var(--nest);padding:12px;border-radius:4px}
-.pick img{grid-row:1 / 3;width:120px;height:180px;aspect-ratio:auto}
-.pick .nm{margin-top:0;height:auto;min-height:0}
-.pick .val{align-self:end;margin-top:12px}
-.pick .val button{background:var(--raised)}
+.picks{grid-template-columns:repeat(4,minmax(0,1fr))!important;gap:20px}
+.pick{display:flex;flex-direction:column}
+.pick img{width:100%;aspect-ratio:2/3;height:auto}
+.pick .nm{margin-top:12px;font-size:var(--step-small)}
+.pick .val{margin-top:auto;padding-top:8px}
+.pick .val output{font-size:var(--step-head);letter-spacing:-.03em}
+.pick .val output .star{display:none}
+.pick .val button{background:var(--nest);width:44px;height:44px}
 
 .pick img{width:100%;aspect-ratio:2/3;object-fit:cover}
 .pick .nm{margin-top:12px;font-size:var(--step-small);font-weight:500;line-height:1.3;min-height:2.6em}
@@ -207,7 +211,7 @@ html.gl-on .best .first img{opacity:0}
 .rate .head .mix{margin-top:40px}
 /* inside the app: real fragments, true-black flat */
 .inside .head{grid-column:1 / -1;display:flex;justify-content:space-between;align-items:end;gap:24px;flex-wrap:wrap}
-.inside .head{display:block;padding-left:calc(50% + 12px)}
+.inside .head{display:flex}
 .inside .head .inh{font-family:var(--font-text);font-weight:500;font-size:var(--step-lead);line-height:1.3}
 .inside .head p{color:var(--muted);max-width:36ch;margin-top:8px}
 @media(max-width:899px){.inside .head{padding-left:0}}
@@ -265,7 +269,7 @@ footer .giant text{font-family:var(--font-display);font-weight:900;font-size:188
   html.js .lift img{opacity:0;transform:translateY(16px)}
   html.js .lift.in img{opacity:1;transform:none;transition:opacity .7s var(--ease-expo),transform .7s var(--ease-expo)}
 }
-@media(max-width:1100px){.picks{grid-template-columns:1fr}}
+@media(max-width:899px){.picks{grid-template-columns:repeat(2,minmax(0,1fr))!important}}
 </style>
 </head>
 <body>
@@ -319,7 +323,7 @@ footer .giant text{font-family:var(--font-display);font-weight:900;font-size:188
 
   <section class="quiet inside frame" id="dentro" aria-labelledby="t-in">
     <div class="grid">
-      <div class="head"><h2 class="inh" id="t-in">Así es por dentro</h2><p>La ficha de cada título y tu biblioteca, con lo que llevas de cada cosa.</p></div>
+      <div class="head"><h2 class="h2" id="t-in">Así es por dentro</h2><p>La ficha de cada título y tu biblioteca, con lo que llevas de cada cosa.</p></div>
       <div class="frags rise">
         <div class="ficha" data-ui id="ficha"></div>
         <div class="lib" data-ui id="lib"></div>
