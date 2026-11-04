@@ -66,6 +66,7 @@ __pycache__/
 # Taste Skill: working files (the direction sheets are kept)
 .taste-skill/*
 !.taste-skill/direction.json
+!.taste-skill/options/
 !.taste-skill/app/
 .taste-skill/app/*
 !.taste-skill/app/direction.json
