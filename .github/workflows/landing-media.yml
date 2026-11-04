@@ -1,0 +1,82 @@
+name: Imágenes de la landing
+
+# Renueva cada semana las imágenes con profundidad de la landing
+# (scripts/landing-media/build.py): toma lo más visto de la semana y los
+# líderes de los rankings, calcula su mapa de profundidad con Depth Anything V2
+# (CPU, unos segundos por imagen), las sube al bucket «landing» de Supabase y
+# activa la semana nueva en `landing_media`. Si algo falla, no activa nada y la
+# landing sigue con la semana anterior. Los rankings siguen renovándose cada
+# día por su cuenta (/best, caché de 24 h).
+#
+# Secretos (Settings → Secrets and variables → Actions):
+#   SUPABASE_URL               https://<ref>.supabase.co
+#   SUPABASE_SERVICE_ROLE_KEY  la misma de Vercel (solo la usa el paso que sube)
+#   TMDB_API_KEY               la misma de Vercel
+#   REVALIDATE_SECRET          opcional; la misma de Vercel, para vaciar la caché al acabar
+# Requiere la migración supabase/migrations/20261229350001_landing_media.sql.
+
+on:
+  schedule:
+    # Lunes 04:41 UTC (después de la copia de seguridad; fuera de la hora en punto).
+    - cron: "41 4 * * 1"
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: "Solo calcular (no sube ni activa nada)"
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+concurrency:
+  group: landing-media
+  cancel-in-progress: false
+
+jobs:
+  build:
+    name: Renovar imágenes
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - name: Comprobar secretos
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          TMDB_API_KEY: ${{ secrets.TMDB_API_KEY }}
+        run: |
+          missing=""
+          [ -z "$SUPABASE_URL" ] && missing="$missing SUPABASE_URL"
+          [ -z "$SUPABASE_SERVICE_ROLE_KEY" ] && missing="$missing SUPABASE_SERVICE_ROLE_KEY"
+          [ -z "$TMDB_API_KEY" ] && missing="$missing TMDB_API_KEY"
+          if [ -n "$missing" ]; then echo "::error::Faltan secretos:$missing"; exit 1; fi
+
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: scripts/landing-media/requirements.txt
+
+      - name: Caché del modelo de profundidad
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/huggingface
+          key: hf-depth-anything-v2-base
+
+      - name: Instalar
+        run: pip install -r scripts/landing-media/requirements.txt
+
+      - name: Pruebas
+        run: python -m unittest scripts/landing-media/test_build.py
+
+      - name: Renovar
+        env:
+          SITE_URL: https://kulturaapp.vercel.app
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          TMDB_API_KEY: ${{ secrets.TMDB_API_KEY }}
+          REVALIDATE_SECRET: ${{ secrets.REVALIDATE_SECRET }}
+          DRY_RUN: ${{ inputs.dry_run && '1' || '0' }}
+        run: python scripts/landing-media/build.py

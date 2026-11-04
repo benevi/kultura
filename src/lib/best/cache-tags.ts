@@ -15,5 +15,8 @@ export const BEST_CACHE_VERSION = "best-of-v8";
 /** Etiqueta de las portadas de la landing (la aplica `lib/landing/showcase.ts`). */
 export const SHOWCASE_CACHE_TAG = "showcase";
 
+/** Etiqueta de las imágenes con profundidad de la landing (`lib/landing/media.ts`). La vacía la tarea semanal. */
+export const LANDING_MEDIA_CACHE_TAG = "landing-media";
+
 /** Etiquetas que `POST /api/revalidate` acepta. */
-export const REVALIDATABLE_TAGS: readonly string[] = [BEST_CACHE_TAG, SHOWCASE_CACHE_TAG];
+export const REVALIDATABLE_TAGS: readonly string[] = [BEST_CACHE_TAG, SHOWCASE_CACHE_TAG, LANDING_MEDIA_CACHE_TAG];
