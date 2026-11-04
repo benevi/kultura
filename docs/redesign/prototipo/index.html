@@ -88,15 +88,15 @@ html.gl-on .horizon{display:none}
 .rooms .stage > h2{position:absolute;left:var(--m);top:14svh;font-size:var(--step-head)}
 .verb{display:inline-block;overflow:hidden;vertical-align:bottom;padding-bottom:.06em}
 .verb span{display:inline-block}
-.rooms .say{position:absolute;left:var(--m);top:calc(14svh + 1.9 * var(--step-head));max-width:30ch;font-size:var(--step-lead);line-height:1.3}
+.rooms .say{position:absolute;left:var(--m);top:calc(14svh + 1.25 * var(--step-head));max-width:44ch;font-size:var(--step-lead);line-height:1.3}
 .rooms .count{position:absolute;left:var(--m);bottom:40px;font-size:var(--step-small);color:var(--muted)}
 .rooms .now{position:absolute;left:var(--m);bottom:96px;max-width:30ch;min-height:4em;transition:left .5s var(--ease-out),top .5s var(--ease-out)}
-.rooms .now b{display:block;font-size:var(--step-lead);line-height:1.25;font-weight:500}
+.rooms .now{width:300px;text-align:center}
+.rooms .now b{display:block;font-size:var(--step-lead);line-height:1.25;font-weight:500;text-wrap:balance}
 .rooms .now span{display:block;margin-top:8px;font-size:var(--step-small);color:var(--muted)}
-@media(max-width:767px){.rooms .now{bottom:72px;right:var(--mr);max-width:none;min-height:3.5em;left:var(--m)!important;top:auto!important}.rooms .now b{font-size:var(--step-body)}}
+@media(max-width:767px){.rooms .now{bottom:40px;right:var(--mr);max-width:none;width:auto;text-align:left;min-height:3.5em;left:var(--m)!important;top:auto!important}.rooms .now b{font-size:var(--step-body)}}
 .rooms .shelf{display:none}
-@media(min-width:768px){.rooms .stage[data-room="ves"] > h2,.rooms .stage[data-room="juegas"] > h2{top:28svh}.rooms .stage[data-room="ves"] .say,.rooms .stage[data-room="juegas"] .say{top:calc(28svh + 1.9 * var(--step-head))}.rooms .stage > h2,.rooms .say{transition:top .6s var(--ease-io)}}
-@media(max-width:767px){.rooms .stage > h2{top:12svh}.rooms .say{top:calc(12svh + 2.1 * var(--step-head));right:var(--mr)}}
+@media(max-width:767px){.rooms .stage > h2{top:11svh}.rooms .say{top:calc(11svh + 1.3 * var(--step-head));right:var(--mr)}}
 /* finished composition (reduced motion / no WebGL / no script) */
 html:not(.gl-on) .rooms{height:auto}
 html:not(.gl-on) .rooms .stage{position:relative;height:auto;padding-block:120px 0}
@@ -110,7 +110,7 @@ html:not(.gl-on) .rooms .shelf{display:block;padding-top:48px}
 
 /* QUIET sections (cover the 3D stage) */
 .quiet{position:relative;z-index:2;background:var(--ground)}
-section.quiet{padding-block:clamp(120px,14vw,200px)}
+section.quiet{padding-block:clamp(96px,11vw,160px)}
 .grid{display:grid;grid-template-columns:repeat(12,minmax(0,1fr));column-gap:24px}
 .grid > *{min-width:0}
 .h2{font-family:var(--font-display);font-weight:900;text-transform:uppercase;letter-spacing:-.03em;line-height:.92;font-size:var(--step-head)}
@@ -130,10 +130,16 @@ section.quiet{padding-block:clamp(120px,14vw,200px)}
 
 /* live thing: rate four */
 .rate{background:var(--raised)}
-.rate .head{grid-column:1 / span 4}
+.rate .head{grid-column:1 / span 5}
 .rate .head p{margin-top:24px;color:var(--muted);max-width:28ch}
-.rate .ui{grid-column:6 / span 7}
-.picks{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:16px}
+.rate .ui{grid-column:7 / span 6;align-self:start}
+.picks{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:20px}
+.pick{display:grid;grid-template-columns:120px minmax(0,1fr);grid-template-rows:auto 1fr;column-gap:16px;align-items:start;background:var(--nest);padding:12px;border-radius:4px}
+.pick img{grid-row:1 / 3;width:120px;height:180px;aspect-ratio:auto}
+.pick .nm{margin-top:0;height:auto;min-height:0}
+.pick .val{align-self:end;margin-top:12px}
+.pick .val button{background:var(--raised)}
+
 .pick img{width:100%;aspect-ratio:2/3;object-fit:cover}
 .pick .nm{margin-top:12px;font-size:var(--step-small);font-weight:500;line-height:1.3;min-height:2.6em}
 .pick input[type=range]{accent-color:var(--accent);height:32px;cursor:pointer}
@@ -175,7 +181,7 @@ section.quiet.rate{padding-bottom:clamp(96px,10vw,140px)}
 .best .more{grid-column:1 / -1;margin-top:32px;justify-self:start}
 @media(max-width:899px){.best .head{grid-column:1 / -1}.best .first{grid-template-columns:auto minmax(0,1fr);gap:20px}.best .first img{height:clamp(210px,56vw,300px)}.best ol{grid-template-columns:1fr}}
 /* rating steppers */
-.pick .nm{min-height:0;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;height:4.2em}
+.pick .nm{display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
 .pick .val{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:10px}
 .pick .val button{width:44px;height:44px;border:0;border-radius:999px;background:var(--nest);color:var(--ink);font:500 var(--step-lead)/1 var(--font-text);cursor:pointer;transition:background-color 180ms ease}
 .pick .val button:hover{background:#34343a}
@@ -184,6 +190,18 @@ section.quiet.rate{padding-bottom:clamp(96px,10vw,140px)}
 /* fragments: no stretched panels; chips wrap on phones */
 .frags{align-items:start}
 @media(max-width:560px){.lib .chips{flex-wrap:wrap;overflow:visible}}
+
+/* ranking v3: one poster across the width, then a balanced list */
+.best .head{grid-column:1 / span 5;align-self:start}
+.best .head p{margin-top:24px}.best .head a{display:inline-block;margin-top:24px}
+.best .first{grid-column:6 / -1;margin:0;display:grid;grid-template-columns:auto minmax(0,1fr);gap:28px;align-items:end}
+.best .first img{height:clamp(340px,38vw,560px);width:auto;max-width:none;aspect-ratio:2/3;object-fit:cover}
+.best ol{grid-column:1 / -1;margin-top:72px;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));column-gap:32px;row-gap:8px}
+.best li{grid-template-columns:64px 1fr auto}
+.best li img{width:64px;height:96px}
+@media(max-width:899px){.best .head,.best .first{grid-column:1 / -1}.best .first{margin-top:48px}.best .first img{height:clamp(220px,58vw,320px)}.best ol{grid-template-columns:1fr;margin-top:48px}}
+/* rating: the result lives under the explanation, the four picks on the right */
+.rate .head .mix{margin-top:40px}
 /* inside the app: real fragments, true-black flat */
 .inside .head{grid-column:1 / -1;display:flex;justify-content:space-between;align-items:end;gap:24px;flex-wrap:wrap}
 .inside .head p{color:var(--muted);max-width:36ch}
@@ -240,9 +258,8 @@ footer .giant text{font-family:var(--font-display);font-weight:900;font-size:188
   html.js .shutter.in img{clip-path:inset(0 0 0 0);transform:none;transition:clip-path 1.1s var(--ease-io),transform 1.3s var(--ease-expo)}
   html.js .lift img{opacity:0;transform:translateY(16px)}
   html.js .lift.in img{opacity:1;transform:none;transition:opacity .7s var(--ease-expo),transform .7s var(--ease-expo)}
-  html.js .hero h1 .ch{display:inline-block;transform:translateY(.9em);opacity:0;animation:up .7s var(--ease-expo) forwards}
-  @keyframes up{to{transform:none;opacity:1}}
 }
+@media(max-width:1100px){.picks{grid-template-columns:1fr}}
 </style>
 </head>
 <body>
@@ -262,7 +279,6 @@ footer .giant text{font-family:var(--font-display);font-weight:900;font-size:188
     <h1 class="disp" id="t-hero" aria-label="Kultura">KULTURA</h1>
     <ul class="horizon" id="horizon" aria-hidden="true"></ul>
     <p class="lede">Tu biblioteca de películas, series, anime, manga, videojuegos, libros y cómics.</p>
-    <p class="hint live-only" aria-live="polite"></p>
     <div class="act"><a class="link" href="#dentro">Ver la demo</a><a class="btn" href="#cuenta">Crear cuenta gratis</a></div>
   </section>
 
@@ -270,7 +286,6 @@ footer .giant text{font-family:var(--font-display);font-weight:900;font-size:188
     <div class="stage">
       <h2 class="disp live-only" id="t-rooms">Lo que <span class="verb"><span id="verb">ves</span></span></h2>
       <p class="say live-only" id="say">Películas, series y anime. Apunta lo que quieres ver y puntúa lo que viste.</p>
-      <p class="count live-only" id="count">1 de 3</p>
       <p class="now live-only" id="now" aria-live="polite"></p>
       <div class="shelf frame" id="shelf"></div>
     </div>
@@ -279,19 +294,18 @@ footer .giant text{font-family:var(--font-display);font-weight:900;font-size:188
 
   <section class="quiet best frame" id="mejor" aria-labelledby="t-best">
     <div class="grid">
-      <div class="head"><h2 class="h2" id="t-best">Lo mejor de 2026</h2><p>Lo que más nota tiene en Kultura este año, de todos los formatos.</p></div>
+      <div class="head"><h2 class="h2" id="t-best">Lo mejor de 2026</h2><p>Lo que más nota tiene en Kultura este año, de todos los formatos.</p><a class="link" href="#mejor">Ver los rankings por formato</a></div>
       <figure class="first" id="first"></figure>
-      <ol id="best" aria-label="Del segundo al octavo"></ol>
-      <a class="link more" href="#mejor">Ver los rankings por formato</a>
+      <ol id="best" aria-label="Del segundo al séptimo"></ol>
     </div>
   </section>
 
   <section class="quiet rate frame" id="probar" aria-labelledby="t-rate">
     <div class="grid">
-      <div class="head"><h2 class="h2" id="t-rate">Puntúa cuatro</h2><p>Es el primer paso de tu cuenta. Las notas son de ejemplo: cámbialas y mira tu mezcla.</p></div>
+      <div class="head"><h2 class="h2" id="t-rate">Puntúa cuatro</h2><p>Es el primer paso de tu cuenta. Las notas son de ejemplo: cámbialas y mira tu mezcla.</p><div class="mix"><p id="mixsay" aria-live="polite"></p><div class="mixbar" id="mixbar" aria-hidden="true"><div style="flex-grow:1">Ves<span></span></div><div style="flex-grow:1">Lees<span></span></div><div style="flex-grow:1">Juegas<span></span></div></div></div></div>
       <div class="ui">
         <div class="picks" id="picks"></div>
-        <div class="mix"><p id="mixsay" aria-live="polite"></p><div class="mixbar" id="mixbar" aria-hidden="true"><div style="flex-grow:1">Ves<span></span></div><div style="flex-grow:1">Lees<span></span></div><div style="flex-grow:1">Juegas<span></span></div></div></div>
+        
       </div>
     </div>
   </section>

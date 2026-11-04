@@ -37,7 +37,7 @@
   const ranked = M.filter((m) => m.rating && m.year === 2026).sort((a, b) => b.rating - a.rating).slice(0, 8);
   const one = ranked[0];
   $('#first').innerHTML = `<img src="${one.img}" alt="${one.title}, ${FMT[one.format]}" width="${one.w}" height="${one.h}" loading="lazy"><figcaption><em aria-label="Nota ${num(one.rating)} sobre 10">${num(one.rating)}</em><b>${one.title}</b><span>${FMT[one.format]} · ${one.year} · la mejor nota del año en Kultura</span></figcaption>`;
-  $('#best').innerHTML = ranked.slice(1)
+  $('#best').innerHTML = ranked.slice(1, 7)
     .map((m) => `<li><img src="${m.img}" alt="" width="48" height="72" loading="lazy"><span class="t">${m.title}<span class="f">${FMT[m.format]}</span></span><span class="r" aria-label="Nota ${num(m.rating)} sobre 10">${STAR} ${num(m.rating)}</span></li>`).join('');
 
   // Live thing: rate four
@@ -96,14 +96,10 @@
   $('#lib .chips').addEventListener('click', (e) => { const b = e.target.closest('button'); if (!b) return; $('#lib .chips').querySelectorAll('button').forEach((x) => x.setAttribute('aria-pressed', x === b)); });
 
   // Entrances (once, 85% down the viewport)
-  const io = new IntersectionObserver((es) => es.forEach((e) => { if (e.isIntersecting) { e.target.classList.add('in'); io.unobserve(e.target); } }), { rootMargin: '0px 0px -12% 0px' });
+  const io = new IntersectionObserver((es) => es.forEach((e) => { if (e.isIntersecting) { e.target.classList.add('in'); io.unobserve(e.target); } }), { rootMargin: '0px 0px -6% 0px' });
   $('#first').classList.add('shutter'); $('#best').classList.add('lift'); $('#picks').classList.add('lift');
   document.querySelectorAll('.rise, .shutter, .lift').forEach((el) => io.observe(el));
-  // Hero title: letters arrive on load (≤ 1.2 s), text stays in aria-label
-  if (!REDUCED) {
-    const h1 = $('#t-hero');
-    h1.innerHTML = [...'KULTURA'].map((c, i) => `<span class="ch" aria-hidden="true" style="animation-delay:${60 + i * 35}ms">${c}</span>`).join('');
-  }
+  // Hero title: painted on the first frame; the arrival is carried by the 3D objects coming out of the fog
   // Bar gets a solid ground once quiet sections reach it
   const bar = $('#bar');
   const quietIO = new IntersectionObserver((es) => { bar.classList.toggle('solid', es.some((e) => e.isIntersecting) || [...document.querySelectorAll('.quiet')].some((q) => { const r = q.getBoundingClientRect(); return r.top < 70 && r.bottom > 0; })); }, { rootMargin: '0px 0px -92% 0px' });
@@ -124,10 +120,14 @@
   scene.fog = new T.Fog(new T.Color(HERO_GROUND), 13, 30);
   const camera = new T.PerspectiveCamera(30, 1, 0.1, 80);
   camera.position.set(0, 0, 10);
-  scene.add(new T.HemisphereLight(0xffffff, 0x20202a, 0.55));
+  const hemi = new T.HemisphereLight(0xffffff, 0x20202a, 0.55); scene.add(hemi);
   const key = new T.SpotLight(0xfff4e6, 2.4, 40, 0.62, 0.85, 1.1);
   key.position.set(2, 2, 8); key.castShadow = true; key.shadow.mapSize.set(1024, 1024); key.shadow.camera.near = 2; key.shadow.camera.far = 30; key.shadow.bias = -0.0004; key.shadow.radius = 6; scene.add(key); scene.add(key.target);
   const floor = new T.Mesh(new T.PlaneGeometry(60, 60), new T.ShadowMaterial({ opacity: 0.5 })); floor.rotation.x = -Math.PI / 2; floor.receiveShadow = true; scene.add(floor);
+  // the room: a floor and a back wall in the room's colour, so the spotlight leaves a pool of light
+  const roomMat = new T.MeshStandardMaterial({ color: 0x000000, roughness: 0.92, metalness: 0 });
+  const roomFloor = new T.Mesh(new T.PlaneGeometry(40, 30), roomMat); roomFloor.rotation.x = -Math.PI / 2; roomFloor.receiveShadow = true; scene.add(roomFloor);
+  const roomWall = new T.Mesh(new T.PlaneGeometry(40, 20), roomMat); roomWall.receiveShadow = true; scene.add(roomWall);
   const rim = new T.DirectionalLight(0xbcd2ff, 0.7); rim.position.set(-4, 5, -6); scene.add(rim);
 
   const loader = new T.TextureLoader();
@@ -190,8 +190,8 @@
   const away = (i) => ({ p: V(4 + (i % 5) * 1.6, -1.5 + ((i * 7) % 5) * 0.9, -22 - (i % 4) * 2), r: V(0, -0.6, 0), s: 0.8, off: true });
   function region(verb) {
     const P = phoneNow();
-    const F = P ? { ves: [0.0, 1.0, 0.36, 0.78], lees: [0.04, 0.96, 0.44, 0.8], juegas: [0.02, 1.08, 0.36, 0.8] }
-                : { ves: [0.5, 1.03, 0.14, 0.84], lees: [0.04, 0.96, 0.47, 0.86], juegas: [0.62, 1.14, 0.1, 0.9] };
+    const F = P ? { ves: [0.02, 0.98, 0.33, 0.76], lees: [0.07, 0.93, 0.36, 0.74], juegas: [0.04, 0.96, 0.33, 0.76] }
+                : { ves: [0.16, 0.84, 0.4, 0.9], lees: [0.06, 0.94, 0.47, 0.88], juegas: [0.16, 0.84, 0.4, 0.9] };
     const [sx0, sx1, sy0, sy1] = F[verb || 'ves'];
     const a = at(sx0, sy1, 0), b = at(sx1, sy0, 0);
     return { x0: a.x, x1: b.x, y0: a.y, y1: b.y };
@@ -227,8 +227,9 @@
     const P = phoneNow(), cx = (R.x0 + R.x1) / 2, cy = (R.y0 + R.y1) / 2, w = R.x1 - R.x0, h = R.y1 - R.y0;
     if (verb === 'ves') { // a home cinema: three big screens in a triptych, the rest of the wall far behind
       const main = idx.slice(0, 3), rest = [];
-      const sc = Math.min(h * 0.86 / H, w * (P ? 0.5 : 0.36) / Math.max(...main.map((i) => objs[i].userData.W)));
-      const off = w * (P ? 0.37 : 0.34);
+      const sc = Math.min(h * 0.9 / H, w * (P ? 0.46 : 0.3) / Math.max(...main.map((i) => objs[i].userData.W)));
+      const off = w * (P ? 0.36 : 0.33);
+      front.ves = main[0];
       [[0, 0, -0.9, 0], [-1, -off, -0.1, 0.5], [1, off, -0.1, -0.5]].forEach(([_, dx, z, ry], k) => { const i = main[k]; if (i === undefined) return;
         out[i] = { p: V(cx + dx, cy - (k ? 0.04 : 0), z), r: V(0, ry, 0), s: sc * (k ? 0.86 : 1) }; });
       rest.forEach((i, k) => { const u = (k + 0.5) / rest.length;
@@ -245,15 +246,16 @@
         x += ww + u.gap * s; });
       shelfY = base; shelfW = total * s + 0.4; shelfX = cx; floorY.lees = base;
     } else { // games fanned like cards in a hand, running off the right edge
-      const use = idx.slice(0, P ? 5 : 6), n = use.length, maxW = Math.max(...use.map((j) => objs[j].userData.W));
-      const sg = Math.min(h * 0.8 / H, w / (maxW * (P ? 2.6 : 2.5))), rad = w * (P ? 0.8 : 0.44);
+      const pref = ['game-bg3', 'game-hades2', 'game-eldenring', 'game-silksong', 'ranking-3', 'feature-3'];
+      const use = idx.slice().sort((x, y) => pref.indexOf(objs[x].userData.m.id) - pref.indexOf(objs[y].userData.m.id)).slice(0, P ? 5 : 6), n = use.length, maxW = Math.max(...use.map((j) => objs[j].userData.W));
+      const sg = Math.min(h * 0.82 / H, w / (maxW * (P ? 2.7 : 3.2))), rad = w * (P ? 0.78 : 0.62);
       use.forEach((i, k) => { const a = (k - (n - 1) / 2) * (P ? 0.3 : 0.26);
-        out[i] = { p: V(cx + (P ? 0 : w * 0.06) + Math.sin(a) * rad, cy + (P ? 0.15 : -0.35) - (1 - Math.cos(a)) * rad * 0.5, -0.2 - Math.abs(a) * 0.9 + k * 0.01), r: V(0, -a * 0.35, -a * 0.75), s: sg }; });
+        out[i] = { p: V(cx + Math.sin(a) * rad, cy + 0.1 - (1 - Math.cos(a)) * rad * 0.5, -0.2 - Math.abs(a) * 0.9), r: V(0, -a * 0.35, -a * 0.75), s: sg }; front.juegas = use[Math.floor((n - 1) / 2)]; });
       floorY.juegas = cy - H * sg / 2 - 0.25;
     }
     return out;
   }
-  let L = [], shelfY = 0, shelfW = 1, shelfX = 0; const floorY = { hero: -2, ves: -2, lees: -2, juegas: -2 };
+  let L = [], shelfY = 0, shelfW = 1, shelfX = 0; const floorY = { hero: -2, ves: -2, lees: -2, juegas: -2 }; const front = {};
   const layouts = () => { L = [heroLayout(), roomLayout('ves'), roomLayout('lees'), roomLayout('juegas')]; floorY.hero = Math.min(...L[0].filter((o) => o && o.p.z > -2).map((o) => o.p.y - H * o.s / 2)) - 0.05; };
 
   /* shelf plank for the reading room */
@@ -286,7 +288,7 @@
     stageEl.dataset.room = b > 0 ? ROOMS[b - 1].verb : '';
     if (b > 0) {
       const r = ROOMS[b - 1];
-      countEl.textContent = b + ' de 3';
+      if (countEl) countEl.textContent = b + ' de 3';
       if (window.gsap) {
         if (verbTl) verbTl.kill();
         verbTl = gsap.timeline()
@@ -333,17 +335,17 @@
     ray.setFromCamera(ndc, camera);
     const hit = ptr.has ? ray.intersectObjects(objs.filter(Boolean).map((o) => o.userData.cover), false)[0] : null;
     const h = hit ? hit.object.userData.root : null;
-    if (h !== hovered) { hovered = h; if (hint) hint.innerHTML = h ? `<b>${h.userData.m.title}</b> · ${sub(h.userData.m)}` : ''; }
+    if (h !== hovered) { hovered = h; }
     // featured object of the room: the hovered one, otherwise one every 3.2 s
     let feat = null;
     if (b > 0) {
       const inRoom = objs.filter((o) => o && VERB[o.userData.m.format] === ROOMS[b - 1].verb && L[b][o.userData.i].p.z > -5);
       featT += dt; if (featT > 3.2) { featT = 0; featIdx++; }
-      feat = hovered && inRoom.includes(hovered) ? hovered : inRoom[featIdx % Math.max(1, inRoom.length)];
+      const fr = objs[front[ROOMS[b - 1].verb]]; feat = hovered && inRoom.includes(hovered) ? hovered : (fr && inRoom.includes(fr) ? fr : inRoom[featIdx % Math.max(1, inRoom.length)]);
     }
-    if (feat && !phoneNow() && b === 2) { nowEl.style.left = (innerWidth * 0.64) + 'px'; nowEl.style.top = (innerHeight * 0.17) + 'px'; }
+    if (feat && !phoneNow() && b === 2) { nowEl.style.left = (innerWidth * 0.62) + 'px'; nowEl.style.top = (innerHeight * 0.2) + 'px'; }
     else if (feat && !phoneNow()) { const v = feat.position.clone(); v.y -= H * feat.scale.y * 0.5 + 0.12; v.project(camera);
-      nowEl.style.left = Math.min(innerWidth - 300, Math.max(innerWidth * 0.45, (v.x + 1) / 2 * innerWidth - 40)) + 'px'; nowEl.style.top = Math.min(innerHeight - 110, (1 - v.y) / 2 * innerHeight + 8) + 'px'; }
+      nowEl.style.left = Math.min(innerWidth - 320, Math.max(40, (v.x + 1) / 2 * innerWidth - 150)) + 'px'; nowEl.style.top = Math.min(innerHeight - 96, (1 - v.y) / 2 * innerHeight + 10) + 'px'; }
     if (feat !== featObj) { featObj = feat; const m = feat && feat.userData.m;
       nowEl.innerHTML = m ? `<b>${m.title}</b><span>${[FMT[m.format], m.author, m.year].filter(Boolean).join(' · ')}${m.rating ? ' · ' + STAR + ' ' + num(m.rating) : ''}</span>` : ''; }
     objs.forEach((o, i) => {
@@ -368,6 +370,11 @@
       if (u.dep) u.cover.material.displacementScale = 0.12 + u.h * 0.16;
     });
     const FY = [floorY.hero, floorY.ves, floorY.lees, floorY.juegas]; floor.position.y = FY[a] + (FY[a + 1] - FY[a]) * f;
+    const inRoomK = Math.min(1, Math.max(0, k - 0.5) * 2); // 0 in the hero, 1 inside the rooms
+    roomMat.color.set(beat > 0 ? ROOMS[beat - 1].ground : HERO_GROUND); roomMat.color.multiplyScalar(0.55);
+    roomFloor.position.set(0, floor.position.y - 0.002, -4); roomWall.position.set(0, floor.position.y + 10, -4.5 - (1 - inRoomK) * 30);
+    roomFloor.visible = roomWall.visible = inRoomK > 0.01; floor.visible = !roomFloor.visible;
+    hemi.intensity = 0.55 - inRoomK * 0.25; key.intensity = 2.4 + inRoomK * 1.6; key.angle = 0.62 - inRoomK * 0.18;
     // shelf plank only in the reading room
     const lees = Math.max(0, 1 - Math.abs(k - 2) * 1.6);
     plank.visible = lees > 0.01;
