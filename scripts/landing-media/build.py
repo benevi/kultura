@@ -25,6 +25,7 @@ import datetime as dt
 import io
 import json
 import os
+import re
 import sys
 import time
 from dataclasses import dataclass, field
@@ -39,6 +40,10 @@ FEATURE_COUNT = 4       # «Lo que hay dentro»
 STEP_COUNT = 3          # «Así funciona»
 KEEP_WEEKS = 5
 FG_MIN, FG_MAX = 0.05, 0.45   # parte de la imagen que puede quedar delante
+FG_LAYER_MIN = 0.20           # por debajo, el efecto de capas apenas se nota
+MIN_WIDTH = 400               # portadas más pequeñas se ven borrosas
+EXCLUDED_FORMATS = {"book"}   # portadas de libro: casi todo texto, sin profundidad
+TEXT_MAX_WORDS = 0            # cualquier rótulo legible: el recorte lo partiría en dos
 WORD_BAND = (0.30, 0.62)      # franja vertical donde va el nombre
 WORD_BAND_MAX = 0.5           # como mucho la mitad de esa franja tapada
 
@@ -98,7 +103,7 @@ def pick_threshold(depth: np.ndarray) -> float:
         cover = band_of(fg)
         if cover > WORD_BAND_MAX:
             continue
-        score = abs(cover - BAND_TARGET) + 0.1 * abs(th - base)
+        score = abs(cover - BAND_TARGET) + 0.1 * abs(th - base) + (0.5 if ratio < FG_LAYER_MIN else 0)
         if best_score is None or score < best_score:
             best, best_score = float(th), score
     return best
@@ -115,7 +120,7 @@ def analyse(depth: np.ndarray, rgb: np.ndarray) -> Analysis:
     else:
         focus = (0.5, 0.4)
     band_cover = band_of(fg)
-    layered = FG_MIN <= ratio <= FG_MAX and band_cover <= WORD_BAND_MAX
+    layered = FG_LAYER_MIN <= ratio <= FG_MAX and band_cover <= WORD_BAND_MAX
     return Analysis(round(th, 3), round(ratio, 3), (round(focus[0], 3), round(focus[1], 3)), layered, accent_of(rgb), round(band_cover, 3))
 
 
@@ -138,6 +143,73 @@ def soften(depth: np.ndarray) -> np.ndarray:
     d = cv2.dilate(depth.astype("float32"), np.ones((k, k), np.uint8))
     d = cv2.GaussianBlur(d, (0, 0), k * 0.6)
     return (d - d.min()) / (d.max() - d.min() + 1e-8)
+
+
+# ---------------------------------------------------------------- calidad
+def hires(url: str) -> str:
+    """La versión grande de cada portada (la app usa miniaturas)."""
+    url = re.sub(r"(image\.tmdb\.org/t/p/)w\d+/", r"\1original/", url)
+    url = re.sub(r"(anilistcdn/media/\w+/cover/)(?:small|medium)/", r"\1large/", url)
+    url = re.sub(r"(covers\.openlibrary\.org/.+)-[SM]\.jpg$", r"\1-L.jpg", url)
+    return re.sub(r"(uploads\.mangadex\.org/covers/.+)\.(?:256|512)\.jpg$", r"\1", url)
+
+
+def too_flat(rgb: np.ndarray) -> bool:
+    """Casi todo fondo blanco liso (p. ej. algunas carátulas de Steam)."""
+    g = np.asarray(Image.fromarray(rgb).convert("L").resize((128, 192)), float)
+    blocks = g.reshape(24, 8, 16, 8).swapaxes(1, 2)
+    flat = (blocks.std((2, 3)) < 6) & (blocks.mean((2, 3)) > 225)
+    return float(flat.mean()) > 0.35
+
+
+def text_words(rgb: np.ndarray) -> int:
+    """Palabras legibles distintas (OCR de texto disperso, en positivo y en
+    negativo para los rótulos claros sobre fondo oscuro). Sin Tesseract, 0."""
+    try:
+        import pytesseract
+        from PIL import ImageOps
+    except ImportError as e:
+        print(f"OCR no disponible: {e}", file=sys.stderr)
+        return 0
+    im = Image.fromarray(rgb).convert("L")
+    scale = 1600 / max(im.size)  # el OCR acierta más con rótulos grandes
+    im = im.resize((round(im.width * scale), round(im.height * scale)), Image.LANCZOS)
+    found: set[str] = set()
+    for img in (im, ImageOps.invert(im)):
+        try:
+            d = pytesseract.image_to_data(img, config="--psm 11", output_type=pytesseract.Output.DICT)
+        except Exception as e:  # noqa: BLE001
+            print(f"OCR no disponible: {e}", file=sys.stderr)
+            return 0
+        found |= {w.lower() for w, c in zip(d["text"], d["conf"])
+                  if float(c) >= 70 and sum(ch.isalpha() for ch in w) >= 3}
+    return len(found)
+
+
+def reject_reason(rgb: np.ndarray, portrait: bool) -> str | None:
+    if portrait and rgb.shape[1] < MIN_WIDTH:
+        return f"pequeña ({rgb.shape[1]} px)"
+    if too_flat(rgb):
+        return "fondo liso"
+    n = text_words(rgb)
+    if n > TEXT_MAX_WORDS:
+        return f"texto ({n} palabras)"
+    return None
+
+
+def numeric_id(p: "Pick") -> str | None:
+    tail = p.external_id.rsplit("_", 1)[-1]
+    return tail if tail.isdigit() else None
+
+
+def tmdb_textless_poster(key: str, kind: str, tmdb_id: str) -> str | None:
+    """Póster sin texto (idioma nulo) de TMDB, si existe."""
+    r = get(f"https://api.themoviedb.org/3/{kind}/{tmdb_id}/images?api_key={key}&include_image_language=null")
+    posters = [x for x in (r.json().get("posters") or []) if x.get("iso_639_1") is None] if r.ok else []
+    if not posters:
+        return None
+    best = max(posters, key=lambda x: (x.get("vote_average") or 0, x.get("width") or 0))
+    return f"https://image.tmdb.org/t/p/original{best['file_path']}"
 
 
 # ---------------------------------------------------------------- selección
@@ -291,13 +363,41 @@ def main() -> int:
 
     depth_model = pipeline("depth-estimation", model="depth-anything/Depth-Anything-V2-Base-hf", device="cpu")
 
+    def candidate_urls(p: Pick) -> list[str]:
+        urls: list[str] = []
+        if p.portrait and tmdb and p.media_type in ("movie", "tv") and numeric_id(p):
+            urls.append(tmdb_textless_poster(tmdb, p.media_type, numeric_id(p)) or "")
+        if p.portrait and p.format == "game":
+            urls.append(steam_portrait(p.title) or "")
+        urls.append(hires(p.url))
+        if hires(p.url) != p.url:
+            urls.append(p.url)
+        return [u for i, u in enumerate(urls) if u and u not in urls[:i]]
+
+    def load_ok(p: Pick, max_w: int) -> np.ndarray | None:
+        """La primera versión de la imagen que pasa el control de calidad."""
+        for url in candidate_urls(p):
+            # Las apaisadas se bajan grandes para que el recorte vertical no quede borroso.
+            rgb = load_image(url, max(max_w, 1600) if p.portrait else max_w)
+            if rgb is None:
+                continue
+            if p.portrait:
+                rgb = to_portrait(rgb)
+            why = reject_reason(rgb, p.portrait)
+            if why:
+                print(f"  descartada {p.title[:40]} · {why} · {url[:80]}")
+                continue
+            p.url = url
+            return rgb
+        return None
+
     def process(p: Pick, max_w: int):
-        # Las apaisadas se bajan grandes para que el recorte vertical no quede borroso.
-        rgb = load_image(p.url, max(max_w, 1600) if p.portrait else max_w)
+        if (p.format or p.media_type) in EXCLUDED_FORMATS:
+            return None
+        rgb = load_ok(p, max_w)
         if rgb is None:
             return None
         if p.portrait:
-            rgb = to_portrait(rgb)
             if rgb.shape[1] > max_w:
                 im = Image.fromarray(rgb)
                 rgb = np.asarray(im.resize((max_w, round(im.height * max_w / im.width)), Image.LANCZOS))
@@ -340,22 +440,30 @@ def main() -> int:
         emit(c, *by_pick[id(c)])
         used.append(c)
 
-    # 2. Rankings: el líder de cada formato.
-    leaders: list[Pick] = []
+    # 2. Rankings: el líder de cada formato; si su imagen no pasa el control
+    #    de calidad, el siguiente del mismo ranking.
     reserve: list[Pick] = []
+    taken_urls = {u.url for u in used}
+    position = 0
     for rk in src.get("rankings", []):
-        for j, it in enumerate(rk.get("items", [])):
-            p = Pick("ranking", 0, it["type"], str(it.get("externalId") or it["id"]), it["title"], it["poster"],
-                     format=rk["format"], year=it.get("year"), rating=it.get("rating"))
-            if rk["format"] == "game":
-                p.url = steam_portrait(it["title"]) or it["poster"]
-            (leaders if j == 0 else reserve).append(p)
-    for i, p in enumerate(unique_by_url(leaders)):
-        p.position = i
-        res = process(p, 640)
-        if res:
-            emit(p, *res)
-            used.append(p)
+        if rk["format"] in EXCLUDED_FORMATS:
+            continue
+        picks = [Pick("ranking", 0, it["type"], str(it.get("externalId") or it["id"]), it["title"], it["poster"],
+                      format=rk["format"], year=it.get("year"), rating=it.get("rating"))
+                 for it in rk.get("items", [])]
+        chosen = False
+        for p in unique_by_url(picks):
+            if chosen or p.url in taken_urls:
+                reserve.append(p)
+                continue
+            p.position = position
+            res = process(p, 640)  # si no vale, no vuelve a probarse en la reserva
+            if res:
+                emit(p, *res)
+                used.append(p)
+                taken_urls.add(p.url)
+                chosen = True
+                position += 1
 
     # 3. Funciones y pasos: el resto, mezclando formatos y sin repetir.
     pool = reserve + [Pick("feature", 0, s["type"], str(s["id"]), s["title"], s["poster"], format=s["type"]) for s in src.get("showcase", [])]
@@ -376,6 +484,8 @@ def main() -> int:
     if not {"hero", "ranking"} <= slots:
         print("Semana incompleta: no se activa (sigue la anterior).", file=sys.stderr)
         return 1
+    # Al relanzar en la misma semana no deben quedar filas de la ejecución anterior.
+    store.rest("DELETE", f"landing_media?week=eq.{week}")
     store.rest("POST", "landing_media?on_conflict=week,slot,position", rows, "resolution=merge-duplicates")
     store.rest("PATCH", f"landing_media?week=eq.{week}", {"active": True})
     store.rest("PATCH", f"landing_media?week=neq.{week}&active=is.true", {"active": False})
