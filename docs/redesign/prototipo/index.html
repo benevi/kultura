@@ -197,13 +197,14 @@ section.quiet.rate{padding-bottom:clamp(96px,10vw,140px)}
 
 html.gl-on .best.inworld{background:transparent;z-index:1}
 html.gl-on .best .first img{opacity:0}
-.best li .t{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+html.gl-on .best .first img.landed{opacity:1}
+
 /* ranking v3: one poster across the width, then a balanced list */
 .best .head{grid-column:1 / span 5;align-self:start}
 .best .head p{margin-top:24px}.best .head a{display:inline-block;margin-top:24px}
 .best .first{grid-column:6 / -1;margin:0;display:grid;grid-template-columns:auto minmax(0,1fr);gap:28px;align-items:end}
 .best .first img{height:clamp(340px,38vw,560px);width:auto;max-width:none;aspect-ratio:2/3;object-fit:cover}
-.best ol{grid-column:1 / -1;margin-top:72px;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));column-gap:32px;row-gap:8px}
+.best ol{grid-column:1 / -1;margin-top:72px;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));column-gap:48px;row-gap:8px}
 .best li{grid-template-columns:64px 1fr auto}
 .best li img{width:64px;height:96px}
 @media(max-width:899px){.best .head,.best .first{grid-column:1 / -1}.best .first{margin-top:48px}.best .first img{height:clamp(220px,58vw,320px)}.best ol{grid-template-columns:1fr;margin-top:48px}}
@@ -335,7 +336,7 @@ footer .giant text{font-family:var(--font-display);font-weight:900;font-size:188
 <footer class="quiet frame" id="cuenta" aria-labelledby="t-foot">
   <div class="inv"><h2 class="h2" id="t-foot">Empieza tu biblioteca</h2><div style="display:flex;gap:24px;align-items:center"><a class="link" href="#dentro">Ver la demo</a><a class="btn" href="#cuenta">Crear cuenta gratis</a></div></div>
   <div class="legal"><span>Gratis y sin anuncios · Privacidad · Términos · Accesibilidad</span><span>Portadas: TMDB, AniList, MangaDex, Steam y Open Library</span></div>
-  <svg class="giant" viewBox="0 0 1000 150" preserveAspectRatio="xMidYMin meet" aria-hidden="true"><text x="0" y="150" textLength="1000" lengthAdjust="spacingAndGlyphs">KULTURA</text></svg>
+  <svg class="giant rise" viewBox="0 0 1000 150" preserveAspectRatio="xMidYMin meet" aria-hidden="true"><text x="0" y="150" textLength="1000" lengthAdjust="spacingAndGlyphs">KULTURA</text></svg>
 </footer>
 
 <script src="media.js"></script>

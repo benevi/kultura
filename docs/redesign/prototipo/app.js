@@ -31,7 +31,7 @@
   });
 
   // hero without 3D: a flat horizon of real covers (formats alternate)
-  $('#horizon').innerHTML = ['ranking-0', 'book-dune', 'game-eldenring', 'feature-1', 'comic-watchmen', 'ranking-2', 'manga-chainsaw', 'game-silksong', 'step-1', 'book-hailmary', 'ranking-1']
+  $('#horizon').innerHTML = ['ranking-0', 'book-dune', 'game-eldenring', 'feature-1', 'ranking-2', 'manga-chainsaw', 'game-silksong', 'step-1', 'book-hailmary', 'ranking-1']
     .map((id, i, a) => { const m = byId[id]; const d = i - (a.length - 1) / 2; return `<li style="--r:${(d * 1.3).toFixed(1)}deg;--y:${Math.round(d * d * 3)}px"><img src="${m.img}" alt="" width="${m.w}" height="${m.h}"></li>`; }).join('');
   // Best of 2026 (real ratings from the ranking seeds)
   const ranked = M.filter((m) => m.rating && m.year === 2026).sort((a, b) => b.rating - a.rating).slice(0, 8);
@@ -127,7 +127,7 @@
   // the room: a floor and a back wall in the room's colour, so the spotlight leaves a pool of light
   const roomMat = new T.MeshStandardMaterial({ color: 0x000000, roughness: 0.92, metalness: 0 });
   const roomFloor = new T.Mesh(new T.PlaneGeometry(40, 30), roomMat); roomFloor.rotation.x = -Math.PI / 2; roomFloor.receiveShadow = true; scene.add(roomFloor);
-  const roomWall = new T.Mesh(new T.PlaneGeometry(40, 20), roomMat); roomWall.receiveShadow = true; scene.add(roomWall);
+  const roomWall = new T.Mesh(new T.PlaneGeometry(40, 20), roomMat.clone()); roomWall.receiveShadow = false; scene.add(roomWall);
   const rim = new T.DirectionalLight(0xbcd2ff, 0.7); rim.position.set(-4, 5, -6); scene.add(rim);
 
   const loader = new T.TextureLoader();
@@ -338,7 +338,7 @@
     ptr.x += (ptr.tx - ptr.x) * ease(3.5); ptr.y += (ptr.ty - ptr.y) * ease(3.5);
     if (FORCE !== null) { kT = k = +FORCE; } else { if (Math.abs(kT - k) > 1.2) k = kT; else k += (kT - k) * ease(5); }
     intro = FORCE !== null ? 1 : Math.min(1, intro + dt / 1.6); const ie = 1 - Math.pow(1 - intro, 4);
-    const b = Math.min(3, Math.round(k)); setBeat(k > 3.5 ? 0 : b);
+    const b = Math.min(3, Math.round(k)); setBeat(k > 3.9 ? 0 : b);
     const a = Math.floor(Math.min(k, 3.999)), f = k - a, A = L[a], B = L[a + 1];
     // camera drifts with the chapter and the pointer
     const CAM = [[0, 0, 10, 0], [0, -0.35, 8.7, -0.15], [0, 0.15, 9.3, 0], [0, 1.3, 9.2, 0.35], [0, 0, 10, 0]];
@@ -359,9 +359,8 @@
       featT += dt; if (featT > 3.2) { featT = 0; featIdx++; }
       const fr = objs[front[ROOMS[b - 1].verb]]; feat = hovered && inRoom.includes(hovered) ? hovered : (fr && inRoom.includes(fr) ? fr : inRoom[featIdx % Math.max(1, inRoom.length)]);
     }
-    if (feat && !phoneNow() && b === 3) { nowEl.style.left = '40px'; nowEl.style.top = (innerHeight - 140) + 'px'; }
-    else if (feat && !phoneNow() && b === 2) { nowEl.style.left = (innerWidth * 0.62) + 'px'; nowEl.style.top = (innerHeight * 0.2) + 'px'; }
-    else if (feat) { const v = feat.position.clone(); v.y -= H * feat.scale.y * 0.5 + 0.12; v.project(camera);
+    if (feat && !phoneNow()) { nowEl.style.left = '40px'; nowEl.style.top = (innerHeight - 140) + 'px'; }
+    else if (false) { const v = feat.position.clone(); v.y -= H * feat.scale.y * 0.5 + 0.12; v.project(camera);
       nowEl.style.left = (phoneNow() ? 20 : Math.min(innerWidth - 320, Math.max(40, (v.x + 1) / 2 * innerWidth - 150))) + 'px'; nowEl.style.top = Math.min(innerHeight - 96, (1 - v.y) / 2 * innerHeight + 10) + 'px'; }
     if (k > 3.25) feat = null;
     if (feat !== featObj) { featObj = feat; const m = feat && feat.userData.m;
@@ -381,7 +380,10 @@
       g = g * g * (3 - 2 * g);
       tmpP.lerpVectors(pa.p, pb.p, g); tmpR.lerpVectors(pa.r, pb.r, g); let s = pa.s + (pb.s - pa.s) * g;
       if (o === starObj && slot && k > 2.6) { const q = Math.min(1, Math.max(0, (k - 3) / 0.85)); const e = q * q * (3 - 2 * q);
-        tmpP.lerp(slot.p, e); tmpR.multiplyScalar(1 - e); s += (slot.s - s) * e; }
+        tmpP.lerp(slot.p, e); tmpR.multiplyScalar(1 - e); s += (slot.s - s) * e;
+        const flying = k > 3.05; if (u.flying !== flying) { u.flying = flying; o.renderOrder = flying ? 10 : 0; o.traverse((m) => { if (m.isMesh) { m.renderOrder = flying ? 10 : 0; (Array.isArray(m.material) ? m.material : [m.material]).forEach((mt) => { mt.depthTest = !flying; }); } }); }
+        const landed = q >= 0.999; o.visible = !landed; const im = firstImg(); if (im) im.classList.toggle('landed', landed); }
+      else if (o === starObj) { o.visible = true; const im = firstImg(); if (im) im.classList.remove('landed'); }
       u.hT = (o === hovered || o === featObj) && !(o === starObj && k > 3.2) ? 1 : 0; u.h += (u.hT - u.h) * ease(8);
       const life = 1 - Math.abs(f - 0.5) * 0; // always alive
       const lift = phoneNow() ? 0.22 : 0.45;
@@ -392,10 +394,10 @@
       if (u.dep) u.cover.material.displacementScale = 0.09 + u.h * 0.12;
     });
     const FY = [floorY.hero, floorY.ves, floorY.lees, floorY.juegas, floorY.juegas]; floor.position.y = FY[a] + (FY[a + 1] - FY[a]) * f;
-    const inRoomK = Math.min(1, Math.max(0, k - 0.5) * 2, Math.max(0, 3.6 - k) * 2); // 0 in the hero, 1 inside the rooms
-    roomMat.color.set(beat > 0 ? ROOMS[beat - 1].ground : HERO_GROUND); roomMat.color.multiplyScalar(0.55);
+    const inRoomK = Math.min(1, Math.max(0, k - 0.5) * 2, Math.max(0, 3.92 - k) * 2.2); // 0 in the hero, 1 inside the rooms
+    roomMat.color.set(beat > 0 ? ROOMS[beat - 1].ground : HERO_GROUND); roomMat.color.multiplyScalar(0.55); roomWall.material.color.copy(roomMat.color);
     roomFloor.position.set(0, floor.position.y - 0.002, -4); roomWall.position.set(0, floor.position.y + 10, -4.5 - (1 - inRoomK) * 30);
-    roomFloor.visible = roomWall.visible = inRoomK > 0.01 && k < 3.5 && kT < 3.5; floor.visible = !roomFloor.visible;
+    roomFloor.visible = roomWall.visible = inRoomK > 0.01 && k < 3.9 && kT < 3.92; floor.visible = !roomFloor.visible;
     hemi.intensity = 0.55 - inRoomK * 0.2; key.intensity = 2.4 + inRoomK * 1.9; rim.color.set(beat > 0 ? ROOMS[beat - 1].rim : 0xbcd2ff); rim.intensity = 0.7 + inRoomK * 0.9; key.angle = 0.62 - inRoomK * 0.18;
     // shelf plank only in the reading room
     const lees = Math.max(0, 1 - Math.abs(k - 2) * 1.6);
