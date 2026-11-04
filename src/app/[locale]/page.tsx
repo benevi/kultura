@@ -1,31 +1,14 @@
-import { Suspense } from "react";
 import { getTranslations, setRequestLocale } from "next-intl/server";
 import { routing } from "@/i18n/routing";
-import { Header } from "@/components/layout/Header";
-import { Footer } from "@/components/layout/Footer";
-import { FEATURE_KEYS, FeatureGrid } from "@/components/landing/FeatureGrid";
-import { BestRankings } from "@/components/landing/BestRankings";
-import { Hero } from "@/components/landing/Hero";
-import { HeroCollage, HeroStripPlaceholder } from "@/components/landing/HeroCollage";
-import { ImmersiveBackdrop } from "@/components/landing/ImmersiveBackdrop";
-import { MotionToggle } from "@/components/landing/MotionToggle";
-import { HowItWorks, STEP_KEYS } from "@/components/landing/HowItWorks";
-import { Comparison } from "@/components/landing/Comparison";
-import { Faq } from "@/components/landing/Faq";
-import { FinalCta } from "@/components/landing/FinalCta";
-import {
-  BestRankingsSlot,
-  FeatureGridSlot,
-  HeroBackdropSlot,
-  HeroStripSlot,
-  HowItWorksSlot,
-} from "@/components/landing/ShowcaseSlots";
-import { BEST_FORMATS, bestYears } from "@/lib/best/best-of";
-import { IMMERSIVE_FORMATS, parseTitle, type HeroCopy } from "@/lib/landing/immersive";
+import { kulturaDisplay } from "@/app/fonts";
+import { Landing, COMPARE_FORMATS, type LandingCopy } from "@/components/landing/Landing";
+import { renderDataAttribution } from "@/components/legal/DataAttribution";
+import { bestYears } from "@/lib/best/best-of";
+import { getLandingMedia } from "@/lib/landing/media";
+import { RANKING_FORMATS, buildLandingScenes } from "@/lib/landing/scenes";
 import { faqJsonLd, faqKeys, type FaqItem } from "@/lib/landing/faq";
 import { env } from "@/lib/env.server";
 import { siteUrl } from "@/lib/site-url";
-import type { MediaType } from "@/types/media";
 import type { Metadata } from "next";
 
 interface Props {
@@ -76,68 +59,95 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 export default async function HomePage({ params }: Props) {
   const locale = (await params).locale === "en" ? "en" : "es";
   setRequestLocale(locale);
-  const t = await getTranslations({ locale, namespace: "landing" });
-  const tb = await getTranslations({ locale, namespace: "best" });
-  const ts = await getTranslations({ locale, namespace: "status" });
-  const tq = await getTranslations({ locale, namespace: "search" });
+  const [t, tb, ts, tm, tl, tn, media] = await Promise.all([
+    getTranslations({ locale, namespace: "landing" }),
+    getTranslations({ locale, namespace: "best" }),
+    getTranslations({ locale, namespace: "status" }),
+    getTranslations({ locale, namespace: "media" }),
+    getTranslations({ locale, namespace: "legal" }),
+    getTranslations({ locale, namespace: "nav" }),
+    getLandingMedia(),
+  ]);
+  // Imágenes de la semana; el hueco que falte usa el respaldo fijo.
+  const scenes = buildLandingScenes(media);
+  // E-DEMO: el botón solo existe si la cuenta demo está configurada.
   const demo = env.DEMO_USER_EMAIL ? t("hero.demo") : undefined;
-
-  const formats = Object.fromEntries(
-    IMMERSIVE_FORMATS.map((type) => [type, t(`formats.${type}`)])
-  ) as Record<MediaType, string>;
-
-  const hero: HeroCopy = {
-    title: parseTitle(t.raw("hero.title") as string),
-    sub: t("hero.sub"),
-    badge: t("hero.badge"),
-    cta: t("hero.cta"),
-    // E-DEMO: el botón solo existe si la cuenta demo está configurada.
-    demo,
-    locale,
-  };
-
-  // Etiquetas ya traducidas: los componentes son síncronos y no vuelven a
-  // pedir traducciones.
-  const features = Object.fromEntries(
-    FEATURE_KEYS.map((key) => [key, { title: t(`features.${key}`), desc: t(`features.${key}Desc`) }])
-  ) as Parameters<typeof FeatureGrid>[0]["features"];
-  const featureProps = { features, aiChip: t("features.aiChip") };
-
-  const howProps = {
-    heading: t("how.title"),
-    steps: Object.fromEntries(
-      STEP_KEYS.map((key) => [key, { title: t(`how.steps.${key}.title`), desc: t(`how.steps.${key}.desc`) }])
-    ) as Parameters<typeof HowItWorks>[0]["steps"],
-    statusLabel: ts("completed"),
-    searchPlaceholder: tq("placeholder"),
-  };
-
-  const [year, ...olderYears] = bestYears();
-  const bestCopy = Object.fromEntries(
-    BEST_FORMATS.map((f) => [f, { label: tb(`chip.${f}`), title: tb(`title.${f}`, { year }) }])
-  ) as Parameters<typeof BestRankings>[0]["copy"];
-  const rankingsProps = {
-    basePath: `/${locale}`,
-    year,
-    heading: t("rankings.title", { year }),
-    sub: t("rankings.sub"),
-    cta: t("rankings.cta"),
-    copy: bestCopy,
-    // SEO-9: además de los cuatro del año, enlaces a todos los anteriores.
-    previous: {
-      label: t("rankings.previous"),
-      years: olderYears.map((y) => ({
-        year: y,
-        links: BEST_FORMATS.map((f) => ({ format: f, label: tb(`chip.${f}`), title: tb(`title.${f}`, { year: y }) })),
-      })),
-    },
-  };
+  const [year] = bestYears();
 
   const faq: FaqItem[] = faqKeys(Boolean(demo)).map((key) => ({
     key,
     q: t(`faq.${key}.q`),
     a: t(`faq.${key}.a`),
   }));
+
+  const other = locale === "es" ? "en" : "es";
+  const copy: LandingCopy = {
+    locale,
+    nav: {
+      label: t("nav.label"),
+      features: t("nav.features"),
+      rankings: t("nav.rankings"),
+      faq: t("faq.title"),
+      login: t("nav.login"),
+    },
+    hero: {
+      lead: t("hero.lead"),
+      cta: t("hero.cta"),
+      demo,
+      scenes: t("hero.scenes"),
+      pause: t("hero.pause"),
+      play: t("hero.play"),
+    },
+    features: {
+      title: t("features.title"),
+      items: (["library", "ai", "friends", "lists"] as const).map((k) => ({
+        title: t(`features.${k}`),
+        desc: t(`features.${k}Desc`),
+      })),
+      hold: t("features.hold"),
+      holdLabel: t("features.holdLabel"),
+      friendNow: t.raw("features.friendNow") as string,
+    },
+    how: {
+      title: t("how.title"),
+      steps: (["find", "track", "share"] as const).map((k) => ({
+        title: t(`how.steps.${k}.title`),
+        desc: t(`how.steps.${k}.desc`),
+      })),
+      status: ts("completed"),
+    },
+    rankings: {
+      title: t("rankings.title", { year }),
+      sub: t("rankings.sub"),
+      cta: t("rankings.cta"),
+      year,
+      label: Object.fromEntries(RANKING_FORMATS.map((f) => [f, tb(`chip.${f}`)])) as LandingCopy["rankings"]["label"],
+      score: (score) => t("rankings.score", { score }),
+    },
+    compare: {
+      title: t("compare.title"),
+      sub: t("compare.sub"),
+      app: t("compare.appHeader"),
+      yes: t("compare.yes"),
+      no: t("compare.no"),
+      note: t("compare.note"),
+      formats: Object.fromEntries(COMPARE_FORMATS.map((f) => [f, t(`formats.${f}`)])) as LandingCopy["compare"]["formats"],
+      short: Object.fromEntries(COMPARE_FORMATS.map((f) => [f, t(`formatsShort.${f}`)])) as LandingCopy["compare"]["short"],
+    },
+    faq: { title: t("faq.title"), items: faq },
+    footer: {
+      nav: tn("footerNav"),
+      links: [
+        { href: "/privacy", text: tl("nav.privacy") },
+        { href: "/terms", text: tl("nav.terms") },
+        { href: "/legal", text: tl("nav.notice") },
+        { href: "/accessibility", text: tl("nav.accessibility") },
+      ],
+      otherLocale: { href: `/${other}`, text: t("footer.otherLocale"), lang: other },
+    },
+    attribution: await renderDataAttribution(),
+    typeLabel: Object.fromEntries(COMPARE_FORMATS.map((f) => [f, tm(f)])),
+  };
 
   const base = siteUrl();
   const jsonLd = {
@@ -158,70 +168,8 @@ export default async function HomePage({ params }: Props) {
   };
 
   return (
-    <div className="min-h-screen flex flex-col isolate">
-      {/* Primero en el orden de foco (ACC-6): pausar la animación de fondo. */}
-      <MotionToggle pauseLabel={t("motion.pause")} region={t("motion.region")} />
-      <Header locale={locale} />
-      <main className="flex-1">
-        {/* Hero único (D-11): el mensaje y los botones son HTML del primer
-            pintado; solo el fondo y la tira de portadas esperan a la muestra. */}
-        <Hero
-          copy={hero}
-          backdrop={
-            <Suspense fallback={<ImmersiveBackdrop items={[]} collage={<HeroCollage items={[]} />} />}>
-              <HeroBackdropSlot locale={locale} />
-            </Suspense>
-          }
-          strip={
-            <Suspense fallback={<HeroStripPlaceholder />}>
-              <HeroStripSlot locale={locale} />
-            </Suspense>
-          }
-        />
-
-        <section
-          aria-labelledby="features-title"
-          className="page-grid pt-20 md:pt-28 pb-20 md:pb-28"
-        >
-          <h2
-            id="features-title"
-            className="font-display text-4xl md:text-6xl font-extrabold tracking-[-0.03em] text-text-primary mb-12 max-w-[14ch]"
-          >
-            {t("features.title")}
-          </h2>
-          <Suspense fallback={<FeatureGrid {...featureProps} />}>
-            <FeatureGridSlot locale={locale} {...featureProps} />
-          </Suspense>
-        </section>
-
-        <Suspense fallback={<HowItWorks {...howProps} />}>
-          <HowItWorksSlot locale={locale} {...howProps} />
-        </Suspense>
-
-        {/* Rankings públicos: entrada a /best/[formato]/[año]. */}
-        <Suspense fallback={<BestRankings {...rankingsProps} />}>
-          <BestRankingsSlot locale={locale} {...rankingsProps} />
-        </Suspense>
-
-        <Comparison
-          heading={t("compare.title")}
-          sub={t("compare.sub")}
-          formats={formats}
-          appHeader={t("compare.appHeader")}
-          formatsHeader={t("compare.formatsHeader")}
-          formatHeader={t("compare.formatHeader")}
-          specialistHeader={t("compare.specialistHeader")}
-          yes={t("compare.yes")}
-          no={t("compare.no")}
-          none={t("compare.none")}
-          note={t("compare.note")}
-        />
-
-        <Faq heading={t("faq.title")} items={faq} />
-
-        <FinalCta title={t("final.title")} sub={t("final.sub")} cta={hero.cta} demo={demo} locale={locale} />
-      </main>
-      <Footer />
+    <div className={kulturaDisplay.variable}>
+      <Landing scenes={scenes} copy={copy} base={`/${locale}`} />
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd).replace(/</g, "\\u003c") }}

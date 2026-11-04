@@ -62,7 +62,7 @@ describe("DISENO.md — los tokens documentados existen en :root", () => {
 
 describe("src — ningún var(--x) apunta a un token inexistente", () => {
   /** Variables que se definen en tiempo de ejecución, no en :root. */
-  const RUNTIME = [/^--tw-/, /^--font-(display|body)$/, /^--radix-/, /^--p$/, /^--x$/];
+  const RUNTIME = [/^--tw-/, /^--font-(display|body|landing)$/, /^--radix-/, /^--p$/, /^--x$/];
 
   function walk(dir: string): string[] {
     return readdirSync(dir, { withFileTypes: true }).flatMap((entry) => {
@@ -74,10 +74,16 @@ describe("src — ningún var(--x) apunta a un token inexistente", () => {
 
   it("todas las referencias están definidas", () => {
     const missing: string[] = [];
+    // Variables locales de una hoja propia (la landing define las suyas bajo `.kl`).
+    const local = new Set(
+      walk(join(ROOT, "src"))
+        .filter((f) => f.endsWith(".css") && !f.endsWith("globals.css"))
+        .flatMap((f) => Array.from(readFileSync(f, "utf8").matchAll(/(--[\w-]+)\s*:/g), (m) => m[1])),
+    );
     for (const file of walk(join(ROOT, "src"))) {
       for (const m of Array.from(readFileSync(file, "utf8").matchAll(/var\((--[\w-]+)/g))) {
         const name = m[1];
-        if (RUNTIME.some((re) => re.test(name))) continue;
+        if (RUNTIME.some((re) => re.test(name)) || local.has(name)) continue;
         if (RAW_TOKENS[name] === undefined) missing.push(`${file.replace(ROOT + "/", "")}: ${name}`);
       }
     }

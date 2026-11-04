@@ -1354,13 +1354,12 @@
     "hero": {
       "title": "Tu watchlist de <movie>cine</movie>, <tv>series</tv>, <anime>anime</anime>, <manga>manga</manga>, <game>juegos</game>, <book>libros</book> y <comic>cómics</comic>",
       "sub": "Apunta lo que quieres ver, leer y jugar, puntúa lo que ya viste y compártelo con tus amigos. Gratis y sin anuncios.",
-      "cta": "Crear mi cuenta gratis",
+      "cta": "Crear cuenta",
       "demo": "Ver la demo",
-      "badge": "7 formatos, 1 sola lista"
-    },
-    "motion": {
-      "pause": "Pausar la animación de fondo",
-      "region": "Animación de fondo"
+      "lead": "Tu watchlist de cine, series, anime, manga, videojuegos, libros y cómics.",
+      "scenes": "Escenas",
+      "pause": "Pausar",
+      "play": "Reanudar"
     },
     "formats": {
       "movie": "Cine",
@@ -1372,58 +1371,52 @@
       "comic": "Cómics"
     },
     "features": {
-      "title": "Lo que hay dentro.",
+      "title": "Lo que hay dentro",
       "library": "Biblioteca personal",
-      "libraryDesc": "Registra lo que has visto, lees o juegas con puntuaciones y progreso.",
+      "libraryDesc": "Lo que has visto, leído y jugado, con tus notas y tu progreso.",
       "friends": "Conecta con amigos",
-      "friendsDesc": "Ve qué están disfrutando las personas que te importan.",
+      "friendsDesc": "Mira qué están disfrutando las personas que te importan.",
       "lists": "Listas colaborativas",
-      "listsDesc": "Montad listas entre todos: la del finde, la de pelis de miedo, la de manga por empezar.",
-      "ai": "Recomendaciones IA",
-      "aiDesc": "Te sugerimos qué ver, leer o jugar según lo que ya has puntuado.",
-      "aiChip": "IA"
+      "listsDesc": "Listas que hacéis entre varios, cada uno añade lo suyo.",
+      "ai": "Recomendaciones con IA",
+      "aiDesc": "Te sugiere qué ver, leer o jugar a partir de lo que has puntuado.",
+      "hold": "Mantén pulsado",
+      "holdLabel": "Mantén pulsado para ver con qué está Lucía",
+      "friendNow": "Lucía está con {title}"
     },
     "how": {
       "title": "Así funciona",
       "steps": {
         "find": {
           "title": "Búscalo",
-          "desc": "Películas, series, anime, manga, juegos, libros y cómics desde el mismo buscador."
+          "desc": "Un solo buscador para los siete formatos."
         },
         "track": {
           "title": "Apúntalo y puntúalo",
-          "desc": "Márcalo como pendiente, en curso o completado y ponle nota cuando lo termines."
+          "desc": "Pendiente, en curso, completado o abandonado. Y tu nota."
         },
         "share": {
           "title": "Compártelo",
-          "desc": "Crea listas con tus amigos y mira qué están viendo, leyendo y jugando."
+          "desc": "Crea listas con tus amigos y mirad qué tenéis en común."
         }
       }
     },
     "rankings": {
       "title": "Lo mejor de {year}",
-      "sub": "Rankings con las mejores valoraciones de cada formato, actualizados a diario.",
+      "sub": "Las mejores notas de cada formato, actualizadas cada día.",
       "cta": "Ver ranking",
-      "previous": "Rankings de otros años"
+      "score": "Nota {score}"
     },
     "compare": {
       "title": "La alternativa a Letterboxd, Trakt y MyAnimeList",
-      "sub": "Cada app lleva lo suyo: las pelis en una, el anime en otra, los libros en una tercera. En KULTURA está todo junto y lo compartes con la misma gente.",
+      "sub": "Todos tus formatos en una sola app, con las mismas personas.",
       "appHeader": "App",
-      "formatsHeader": "Formatos",
-      "formatHeader": "Formato",
-      "specialistHeader": "App especializada",
       "yes": "Sí",
       "no": "No",
-      "none": "Ninguna de estas",
-      "note": "De cada app se marca el formato en el que se centra; algunas permiten apuntar otros de forma parcial. Letterboxd, Trakt, MyAnimeList, Goodreads y Backloggd son marcas de sus respectivos propietarios. KULTURA no está afiliada a ninguna de ellas."
+      "note": "Letterboxd, Trakt, MyAnimeList, Goodreads y Backloggd son marcas de sus dueños. KULTURA no está afiliada a ellas."
     },
     "faq": {
-      "title": "Preguntas frecuentes",
-      "free": {
-        "q": "¿Cuánto cuesta?",
-        "a": "Nada. KULTURA es gratis y sin anuncios, y no tiene funciones de pago escondidas."
-      },
+      "title": "Preguntas",
       "what": {
         "q": "¿Qué puedo apuntar?",
         "a": "Películas, series, anime, manga, videojuegos, libros y cómics. Buscas el título, le pones un estado (pendiente, en curso, completado o abandonado) y, si quieres, una nota."
@@ -1445,9 +1438,23 @@
         "a": "Cuando pulsas «Recomiéndame», Claude, el modelo de IA de Anthropic, mira lo que has puntuado y te sugiere qué ver, leer o jugar. Solo se usa cuando tú lo pides."
       }
     },
-    "final": {
-      "title": "Tu cultura, en un solo sitio.",
-      "sub": "Lleva la cuenta de lo que ves, lees y juegas. Lo demás, lo descubrimos juntos."
+    "nav": {
+      "label": "Principal",
+      "features": "Funciones",
+      "rankings": "Rankings",
+      "login": "Entrar"
+    },
+    "formatsShort": {
+      "movie": "Cine",
+      "tv": "Ser.",
+      "anime": "Ani.",
+      "manga": "Man.",
+      "game": "Jue.",
+      "book": "Lib.",
+      "comic": "Cóm."
+    },
+    "footer": {
+      "otherLocale": "English"
     }
   },
   "discoverFilters": {
