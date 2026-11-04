@@ -86,7 +86,7 @@ html.gl-on .horizon{display:none}
 .rooms{position:relative;z-index:1;height:400svh}
 .rooms .stage{position:sticky;top:0;height:100svh;overflow:hidden}
 .rooms .stage > h2{position:absolute;left:var(--m);top:14svh;font-size:var(--step-head)}
-.verb{display:inline-block;overflow:hidden;vertical-align:bottom;padding-bottom:.06em}
+.verb{display:inline-block;overflow:hidden;vertical-align:bottom;padding-bottom:.18em;margin-bottom:-.18em}
 .verb span{display:inline-block}
 .rooms .say{position:absolute;left:var(--m);top:calc(14svh + 1.25 * var(--step-head));max-width:44ch;font-size:var(--step-lead);line-height:1.3}
 .rooms .count{position:absolute;left:var(--m);bottom:40px;font-size:var(--step-small);color:var(--muted)}
@@ -174,8 +174,8 @@ section.quiet.rate{padding-bottom:clamp(96px,10vw,140px)}
 .best .head{grid-column:1 / span 7}
 .best .first{grid-column:1 / -1;margin:56px 0 0;display:grid;grid-template-columns:auto minmax(0,1fr);gap:32px;align-items:end}
 .best .first img{height:clamp(300px,34vw,480px);width:auto;max-width:none;aspect-ratio:2/3;object-fit:cover}
-.best .first figcaption em{display:block;font-style:normal;font-family:var(--font-display);font-weight:900;font-size:var(--step-display);line-height:.8;letter-spacing:-.04em}
-.best .first figcaption b{display:block;font-size:var(--step-lead);font-weight:500;line-height:1.25;margin-top:20px}
+.best .first figcaption em{display:block;font-style:normal;font-family:var(--font-display);font-weight:900;font-size:var(--step-display);line-height:.9;letter-spacing:-.04em;padding-bottom:.08em}
+.best .first figcaption b{display:block;font-size:var(--step-lead);font-weight:500;line-height:1.25;margin-top:28px}
 .best .first figcaption span{display:block;font-size:var(--step-small);color:var(--meta);margin-top:6px}
 .best ol{grid-column:1 / -1;margin-top:56px;display:grid;grid-template-columns:1fr 1fr;column-gap:48px}
 .best .more{grid-column:1 / -1;margin-top:32px;justify-self:start}
@@ -191,6 +191,9 @@ section.quiet.rate{padding-bottom:clamp(96px,10vw,140px)}
 .frags{align-items:start}
 @media(max-width:560px){.lib .chips{flex-wrap:wrap;overflow:visible}}
 
+html.gl-on .best.inworld{background:transparent;z-index:1}
+html.gl-on .best .first img{opacity:0}
+.best li .t{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
 /* ranking v3: one poster across the width, then a balanced list */
 .best .head{grid-column:1 / span 5;align-self:start}
 .best .head p{margin-top:24px}.best .head a{display:inline-block;margin-top:24px}
@@ -204,7 +207,10 @@ section.quiet.rate{padding-bottom:clamp(96px,10vw,140px)}
 .rate .head .mix{margin-top:40px}
 /* inside the app: real fragments, true-black flat */
 .inside .head{grid-column:1 / -1;display:flex;justify-content:space-between;align-items:end;gap:24px;flex-wrap:wrap}
-.inside .head p{color:var(--muted);max-width:36ch}
+.inside .head{display:block;padding-left:calc(50% + 12px)}
+.inside .head .inh{font-family:var(--font-text);font-weight:500;font-size:var(--step-lead);line-height:1.3}
+.inside .head p{color:var(--muted);max-width:36ch;margin-top:8px}
+@media(max-width:899px){.inside .head{padding-left:0}}
 .frags{grid-column:1 / -1;display:grid;grid-template-columns:7fr 5fr;gap:16px;margin-top:56px}
 @media(max-width:899px){.frags{grid-template-columns:1fr}}
 [data-ui]{background:#000;font-size:14px;line-height:1.45;border-radius:12px;overflow:hidden}
@@ -290,15 +296,16 @@ footer .giant text{font-family:var(--font-display);font-weight:900;font-size:188
       <div class="shelf frame" id="shelf"></div>
     </div>
   </section>
-  </div>
-
-  <section class="quiet best frame" id="mejor" aria-labelledby="t-best">
+  <section class="quiet best frame inworld" id="mejor" aria-labelledby="t-best">
     <div class="grid">
-      <div class="head"><h2 class="h2" id="t-best">Lo mejor de 2026</h2><p>Lo que más nota tiene en Kultura este año, de todos los formatos.</p><a class="link" href="#mejor">Ver los rankings por formato</a></div>
+      <div class="head"><h2 class="h2" id="t-best">Lo mejor de 2026</h2><p>Lo que más nota tiene en Kultura este año, de todos los formatos.</p></div>
       <figure class="first" id="first"></figure>
       <ol id="best" aria-label="Del segundo al séptimo"></ol>
+      <a class="link more" href="#mejor">Ver los rankings por formato</a>
     </div>
   </section>
+
+  </div>
 
   <section class="quiet rate frame" id="probar" aria-labelledby="t-rate">
     <div class="grid">
@@ -312,7 +319,7 @@ footer .giant text{font-family:var(--font-display);font-weight:900;font-size:188
 
   <section class="quiet inside frame" id="dentro" aria-labelledby="t-in">
     <div class="grid">
-      <div class="head"><h2 class="h2" id="t-in">Así es por dentro</h2><p>La ficha de cada título y tu biblioteca, con lo que llevas de cada cosa.</p></div>
+      <div class="head"><h2 class="inh" id="t-in">Así es por dentro</h2><p>La ficha de cada título y tu biblioteca, con lo que llevas de cada cosa.</p></div>
       <div class="frags rise">
         <div class="ficha" data-ui id="ficha"></div>
         <div class="lib" data-ui id="lib"></div>

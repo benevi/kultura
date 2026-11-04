@@ -9,9 +9,9 @@
   const FMT = { movie: 'Película', tv: 'Serie', anime: 'Anime', manga: 'Manga', game: 'Videojuego', book: 'Libro', comic: 'Cómic' };
   const VERB = { movie: 'ves', tv: 'ves', anime: 'ves', manga: 'lees', book: 'lees', comic: 'lees', game: 'juegas' };
   const ROOMS = [
-    { verb: 'ves', say: 'Películas, series y anime. Apunta lo que quieres ver y puntúa lo que viste.', ground: '#08121d' },
-    { verb: 'lees', say: 'Manga, libros y cómics, con la página por la que vas.', ground: '#170e09' },
-    { verb: 'juegas', say: 'Videojuegos, con las horas que llevas y los que tienes pendientes.', ground: '#0a150c' },
+    { verb: 'ves', say: 'Películas, series y anime. Apunta lo que quieres ver y puntúa lo que viste.', ground: '#08121d', rim: '#6fa8ff' },
+    { verb: 'lees', say: 'Manga, libros y cómics, con la página por la que vas.', ground: '#170e09', rim: '#ffb36b' },
+    { verb: 'juegas', say: 'Videojuegos, con las horas que llevas y los que tienes pendientes.', ground: '#0a150c', rim: '#8dff9e' },
   ];
   const HERO_GROUND = '#0a0a0c';
   const byId = Object.fromEntries(M.map((m) => [m.id, m]));
@@ -26,7 +26,7 @@
     const items = M.filter((m) => VERB[m.format] === r.verb).slice(0, 8);
     const el = document.createElement('div');
     el.className = 'room-static';
-    el.innerHTML = `<h2 class="rs">Lo que ${r.verb}</h2><p>${r.say}</p><ul>${items.map((m) => `<li><img src="${m.img}" alt="${m.title}, ${FMT[m.format]}" width="${m.w}" height="${m.h}" loading="lazy" decoding="async"></li>`).join('')}</ul>`;
+    el.innerHTML = `<h2 class="rs">Lo que ${r.verb}</h2><p>${r.say}</p><ul>${items.map((m) => `<li><img src="${m.img}" alt="${m.title}, ${FMT[m.format]}" width="${m.w}" height="${m.h}" decoding="async"></li>`).join('')}</ul>`;
     shelf.appendChild(el);
   });
 
@@ -122,7 +122,7 @@
   camera.position.set(0, 0, 10);
   const hemi = new T.HemisphereLight(0xffffff, 0x20202a, 0.55); scene.add(hemi);
   const key = new T.SpotLight(0xfff4e6, 2.4, 40, 0.62, 0.85, 1.1);
-  key.position.set(2, 2, 8); key.castShadow = true; key.shadow.mapSize.set(1024, 1024); key.shadow.camera.near = 2; key.shadow.camera.far = 30; key.shadow.bias = -0.0004; key.shadow.radius = 6; scene.add(key); scene.add(key.target);
+  key.position.set(2, 2, 8); key.castShadow = true; key.shadow.mapSize.set(2048, 2048); key.shadow.camera.near = 2; key.shadow.camera.far = 30; key.shadow.bias = -0.0004; key.shadow.radius = 6; scene.add(key); scene.add(key.target);
   const floor = new T.Mesh(new T.PlaneGeometry(60, 60), new T.ShadowMaterial({ opacity: 0.5 })); floor.rotation.x = -Math.PI / 2; floor.receiveShadow = true; scene.add(floor);
   // the room: a floor and a back wall in the room's colour, so the spotlight leaves a pool of light
   const roomMat = new T.MeshStandardMaterial({ color: 0x000000, roughness: 0.92, metalness: 0 });
@@ -190,7 +190,7 @@
   const away = (i) => ({ p: V(4 + (i % 5) * 1.6, -1.5 + ((i * 7) % 5) * 0.9, -22 - (i % 4) * 2), r: V(0, -0.6, 0), s: 0.8, off: true });
   function region(verb) {
     const P = phoneNow();
-    const F = P ? { ves: [0.02, 0.98, 0.33, 0.76], lees: [0.07, 0.93, 0.36, 0.74], juegas: [0.04, 0.96, 0.33, 0.76] }
+    const F = P ? { ves: [0.0, 1.0, 0.3, 0.74], lees: [0.04, 0.96, 0.34, 0.74], juegas: [0.0, 1.0, 0.3, 0.74] }
                 : { ves: [0.16, 0.84, 0.4, 0.9], lees: [0.06, 0.94, 0.47, 0.88], juegas: [0.16, 0.84, 0.4, 0.9] };
     const [sx0, sx1, sy0, sy1] = F[verb || 'ves'];
     const a = at(sx0, sy1, 0), b = at(sx1, sy0, 0);
@@ -201,23 +201,17 @@
   const at = (sx, sy, z) => V((sx - 0.5) * visH(z) * camera.aspect, (0.5 - sy) * visH(z), z);
   function heroLayout() {
     const P = phoneNow(), n = objs.length, out = [];
-    // order the horizon so formats alternate (screen, paper, game…)
-    const order = [...objs.keys()].sort((a, b) => ((a * 7) % n) - ((b * 7) % n));
-    const near = P ? 7 : 11, mid = P ? 4 : 6;
-    order.forEach((i, k) => {
-      let p, s;
-      if (k < near) { // the horizon: a shallow arc under the title
-        const u = near === 1 ? 0.5 : k / (near - 1);
-        const z = -0.6 - (k % 2) * 0.7;
-        p = at(P ? -0.08 + u * 1.16 : 0.05 + u * 0.9, (P ? 0.47 : 0.66) + Math.pow(u - 0.5, 2) * (P ? 0.2 : 0.3), z); s = P ? 0.95 : 0.86;
-      } else if (k < near + mid) { // second row, deeper, between the gaps
-        const u = (k - near + 0.5) / mid;
-        p = at(0.02 + u * 0.96, P ? 0.36 : 0.57, -4.5 - (k % 3) * 0.6); s = P ? 1.05 : 1;
-      } else { // far horizon, dissolving in the fog
-        const u = (k - near - mid + 0.5) / Math.max(1, n - near - mid);
-        p = at(u, P ? 0.33 : 0.52, -10 - (k % 3)); s = 1.1;
-      }
-      out[i] = { p, r: V(Math.sin(k) * 0.06, -(p.x / 12) + Math.cos(k * 3) * 0.12, Math.sin(k * 1.9) * 0.05), s };
+    const focal = ['book-dune', 'ranking-0', 'game-eldenring'].map((id) => objs.findIndex((o) => o && o.userData.m.id === id)).filter((i) => i >= 0);
+    const others = [...objs.keys()].filter((i) => objs[i] && !focal.includes(i)).sort((a, b) => ((a * 7) % n) - ((b * 7) % n));
+    // three focal pieces in front, under the title
+    focal.forEach((i, k) => { const sx = P ? [0.5, 0.18, 0.82][k] : [0.5, 0.3, 0.7][k];
+      out[i] = { p: at(sx, P ? 0.5 : 0.66, k ? -0.6 : 0.4), r: V(0.02, k === 1 ? 0.28 : k === 2 ? -0.28 : 0, 0), s: P ? 0.9 : 1.08 }; });
+    // a ring of nine behind them, the rest dissolving in the fog
+    const ring = P ? 6 : 9;
+    others.forEach((i, k) => {
+      if (k < ring) { const u = (k + 0.5) / ring, side = u < 0.5 ? -1 : 1;
+        out[i] = { p: at(P ? 0.06 + u * 0.88 : 0.08 + u * 0.84, (P ? 0.42 : 0.56) + Math.abs(u - 0.5) * (P ? 0.12 : 0.14), -4.2 - (k % 3) * 0.7), r: V(0, side * -0.25 + Math.sin(k) * 0.1, Math.sin(k * 1.9) * 0.05), s: P ? 0.95 : 1 }; }
+      else out[i] = { p: at(0.2 + (((k - ring) * 0.37) % 1) * 0.6, 0.5, -28), r: V(0, 0, 0), s: 1 };
     });
     return out;
   }
@@ -249,14 +243,29 @@
       const pref = ['game-bg3', 'game-hades2', 'game-eldenring', 'game-silksong', 'ranking-3', 'feature-3'];
       const use = idx.slice().sort((x, y) => pref.indexOf(objs[x].userData.m.id) - pref.indexOf(objs[y].userData.m.id)).slice(0, P ? 5 : 6), n = use.length, maxW = Math.max(...use.map((j) => objs[j].userData.W));
       const sg = Math.min(h * 0.82 / H, w / (maxW * (P ? 2.7 : 3.2))), rad = w * (P ? 0.78 : 0.62);
-      use.forEach((i, k) => { const a = (k - (n - 1) / 2) * (P ? 0.3 : 0.26);
-        out[i] = { p: V(cx + Math.sin(a) * rad, cy + 0.1 - (1 - Math.cos(a)) * rad * 0.5, -0.2 - Math.abs(a) * 0.9), r: V(0, -a * 0.35, -a * 0.75), s: sg }; front.juegas = use[Math.floor((n - 1) / 2)]; });
+      use.forEach((i, k) => { const a = (k - (n - 1) / 2) * (P ? 0.32 : 0.3);
+        out[i] = { p: V(cx + Math.sin(a) * rad, cy + 0.1 - (1 - Math.cos(a)) * rad * 0.5, -0.2 - Math.abs(a) * 0.9 + (k - n / 2) * 0.09), r: V(0, -a * 0.2, -a * 0.6), s: sg }; front.juegas = use[Math.floor((n - 1) / 2)]; });
       floorY.juegas = cy - H * sg / 2 - 0.25;
     }
     return out;
   }
+  const star = () => null; let starObj = null;
+  const firstImg = () => document.querySelector('#first img');
+  // a screen point → the point on the z=0 plane under it, through the real camera (it drifts with the cursor)
+  const _v = new T.Vector3(), _d = new T.Vector3();
+  function onPlane(px, py) {
+    _v.set(px / innerWidth * 2 - 1, -(py / innerHeight * 2 - 1), 0.5).unproject(camera);
+    _d.copy(_v).sub(camera.position).normalize(); const t = -camera.position.z / _d.z;
+    return camera.position.clone().add(_d.multiplyScalar(t));
+  }
+  function posterSlot() {
+    const im = firstImg(); if (!im || !starObj) return null; const r = im.getBoundingClientRect(); if (r.height < 10) return null;
+    const top = onPlane(r.left + r.width / 2, r.top), bot = onPlane(r.left + r.width / 2, r.bottom);
+    const p = top.clone().add(bot).multiplyScalar(0.5);
+    return { p, s: (top.y - bot.y) / H };
+  }
   let L = [], shelfY = 0, shelfW = 1, shelfX = 0; const floorY = { hero: -2, ves: -2, lees: -2, juegas: -2 }; const front = {};
-  const layouts = () => { L = [heroLayout(), roomLayout('ves'), roomLayout('lees'), roomLayout('juegas')]; floorY.hero = Math.min(...L[0].filter((o) => o && o.p.z > -2).map((o) => o.p.y - H * o.s / 2)) - 0.05; };
+  const layouts = () => { L = [heroLayout(), roomLayout('ves'), roomLayout('lees'), roomLayout('juegas'), objs.map((_, i) => away(i))]; floorY.hero = Math.min(...L[0].filter((o) => o && o.p.z > -2).map((o) => o.p.y - H * o.s / 2)) - 0.02; };
 
   /* shelf plank for the reading room */
   const plank = new T.Mesh(new T.BoxGeometry(1, 0.06, 0.55), new T.MeshStandardMaterial({ color: 0x2a1c12, roughness: 0.85 }));
@@ -271,9 +280,12 @@
     for (const [a, b, u, v] of seg) if (p <= b) { const t = (p - a) / (b - a); return u + (v - u) * (t * t * (3 - 2 * t)); }
     return 3;
   }
+  let kRooms = 0, kRank = 0;
   if (window.gsap && window.ScrollTrigger) {
-    gsap.registerPlugin(ScrollTrigger);
-    ScrollTrigger.create({ trigger: rooms, start: 'top bottom', end: 'bottom bottom', onUpdate: (st) => { kT = mapP(st.progress); } });
+    gsap.registerPlugin(ScrollTrigger); gsap.ticker.lagSmoothing(0);
+    ScrollTrigger.create({ trigger: rooms, start: 'top bottom', end: 'bottom bottom', onUpdate: (st) => { kRooms = mapP(st.progress); kT = kRooms + kRank; } });
+    // leaving the last room: the poster of the year's best flies into the ranking
+    ScrollTrigger.create({ trigger: '#mejor', start: 'top bottom', end: 'top 25%', onUpdate: (st) => { kRank = st.progress; kT = kRooms + kRank; } });
   } else {
     addEventListener('scroll', () => { const r = rooms.getBoundingClientRect(), tot = r.height; kT = mapP(Math.min(1, Math.max(0, (innerHeight - r.top) / tot))); }, { passive: true });
   }
@@ -295,7 +307,7 @@
           .to(verbEl, { yPercent: -105, duration: 0.24, ease: 'power2.in' })
           .add(() => { verbEl.textContent = r.verb; sayEl.textContent = r.say; })
           .fromTo(verbEl, { yPercent: 105 }, { yPercent: 0, duration: 0.6, ease: 'expo.out' })
-          .fromTo(sayEl, { opacity: 0, y: 12 }, { opacity: 1, y: 0, duration: 0.5, ease: 'expo.out' }, '<0.05');
+          .fromTo(sayEl, { opacity: 0.45, y: 8 }, { opacity: 1, y: 0, duration: 0.35, ease: 'expo.out' }, '<');
       } else { verbEl.textContent = r.verb; sayEl.textContent = r.say; }
     }
   }
@@ -325,8 +337,8 @@
     ptr.x += (ptr.tx - ptr.x) * ease(3.5); ptr.y += (ptr.ty - ptr.y) * ease(3.5);
     if (FORCE !== null) { kT = k = +FORCE; } else k += (kT - k) * ease(5);
     intro = FORCE !== null ? 1 : Math.min(1, intro + dt / 1.6); const ie = 1 - Math.pow(1 - intro, 4);
-    const b = Math.round(k); setBeat(b);
-    const a = Math.floor(Math.min(k, 2.999)), f = k - a, A = L[a], B = L[a + 1];
+    const b = Math.min(3, Math.round(k)); setBeat(k > 3.5 ? 0 : b);
+    const a = Math.floor(Math.min(k, 3.999)), f = k - a, A = L[a], B = L[a + 1];
     // camera drifts with the chapter and the pointer
     camera.position.set(ptr.x * 0.35 + k * 0.08, ptr.y * 0.25, 10 - Math.sin(Math.min(k, 1) * Math.PI) * 0.6);
     camera.lookAt(k * 0.1, 0, 0);
@@ -338,16 +350,19 @@
     if (h !== hovered) { hovered = h; }
     // featured object of the room: the hovered one, otherwise one every 3.2 s
     let feat = null;
-    if (b > 0) {
+    if (b > 0 && k <= 3.25) {
       const inRoom = objs.filter((o) => o && VERB[o.userData.m.format] === ROOMS[b - 1].verb && L[b][o.userData.i].p.z > -5);
       featT += dt; if (featT > 3.2) { featT = 0; featIdx++; }
       const fr = objs[front[ROOMS[b - 1].verb]]; feat = hovered && inRoom.includes(hovered) ? hovered : (fr && inRoom.includes(fr) ? fr : inRoom[featIdx % Math.max(1, inRoom.length)]);
     }
     if (feat && !phoneNow() && b === 2) { nowEl.style.left = (innerWidth * 0.62) + 'px'; nowEl.style.top = (innerHeight * 0.2) + 'px'; }
-    else if (feat && !phoneNow()) { const v = feat.position.clone(); v.y -= H * feat.scale.y * 0.5 + 0.12; v.project(camera);
-      nowEl.style.left = Math.min(innerWidth - 320, Math.max(40, (v.x + 1) / 2 * innerWidth - 150)) + 'px'; nowEl.style.top = Math.min(innerHeight - 96, (1 - v.y) / 2 * innerHeight + 10) + 'px'; }
+    else if (feat) { const v = feat.position.clone(); v.y -= H * feat.scale.y * 0.5 + 0.12; v.project(camera);
+      nowEl.style.left = (phoneNow() ? 20 : Math.min(innerWidth - 320, Math.max(40, (v.x + 1) / 2 * innerWidth - 150))) + 'px'; nowEl.style.top = Math.min(innerHeight - 96, (1 - v.y) / 2 * innerHeight + 10) + 'px'; }
+    if (k > 3.25) feat = null;
     if (feat !== featObj) { featObj = feat; const m = feat && feat.userData.m;
       nowEl.innerHTML = m ? `<b>${m.title}</b><span>${[FMT[m.format], m.author, m.year].filter(Boolean).join(' · ')}${m.rating ? ' · ' + STAR + ' ' + num(m.rating) : ''}</span>` : ''; }
+    // the poster slot of the ranking, live (it scrolls with the page)
+    const slot = posterSlot();
     objs.forEach((o, i) => {
       if (!o) return; const u = o.userData; const pa = A[i];
       // hero → first room: the pieces that do not belong in the cinema fly past the camera, either side
@@ -359,8 +374,10 @@
       else if (pa.off && !pb.off) g = Math.max(0, Math.min(1, (f - 0.3 - st) / 0.52));
       else g = Math.max(0, Math.min(1, (f - st * 0.5) / 0.91));
       g = g * g * (3 - 2 * g);
-      tmpP.lerpVectors(pa.p, pb.p, g); tmpR.lerpVectors(pa.r, pb.r, g); const s = pa.s + (pb.s - pa.s) * g;
-      u.hT = o === hovered || o === featObj ? 1 : 0; u.h += (u.hT - u.h) * ease(8);
+      tmpP.lerpVectors(pa.p, pb.p, g); tmpR.lerpVectors(pa.r, pb.r, g); let s = pa.s + (pb.s - pa.s) * g;
+      if (o === starObj && slot && k > 2.6) { const q = Math.min(1, Math.max(0, (k - 3) / 0.85)); const e = q * q * (3 - 2 * q);
+        tmpP.lerp(slot.p, e); tmpR.multiplyScalar(1 - e); s += (slot.s - s) * e; }
+      u.hT = (o === hovered || o === featObj) && !(o === starObj && k > 3.2) ? 1 : 0; u.h += (u.hT - u.h) * ease(8);
       const life = 1 - Math.abs(f - 0.5) * 0; // always alive
       const lift = phoneNow() ? 0.22 : 0.45;
       o.position.set(tmpP.x, tmpP.y + Math.sin(t * 0.8 + u.seed) * 0.035 * life, tmpP.z + u.h * lift - (1 - ie) * (10 + (i % 5) * 2));
@@ -369,12 +386,12 @@
       o.scale.setScalar(s * (1 + u.h * (phoneNow() ? 0.03 : 0.06)));
       if (u.dep) u.cover.material.displacementScale = 0.12 + u.h * 0.16;
     });
-    const FY = [floorY.hero, floorY.ves, floorY.lees, floorY.juegas]; floor.position.y = FY[a] + (FY[a + 1] - FY[a]) * f;
-    const inRoomK = Math.min(1, Math.max(0, k - 0.5) * 2); // 0 in the hero, 1 inside the rooms
+    const FY = [floorY.hero, floorY.ves, floorY.lees, floorY.juegas, floorY.juegas]; floor.position.y = FY[a] + (FY[a + 1] - FY[a]) * f;
+    const inRoomK = Math.min(1, Math.max(0, k - 0.5) * 2, Math.max(0, 3.6 - k) * 2); // 0 in the hero, 1 inside the rooms
     roomMat.color.set(beat > 0 ? ROOMS[beat - 1].ground : HERO_GROUND); roomMat.color.multiplyScalar(0.55);
     roomFloor.position.set(0, floor.position.y - 0.002, -4); roomWall.position.set(0, floor.position.y + 10, -4.5 - (1 - inRoomK) * 30);
-    roomFloor.visible = roomWall.visible = inRoomK > 0.01; floor.visible = !roomFloor.visible;
-    hemi.intensity = 0.55 - inRoomK * 0.25; key.intensity = 2.4 + inRoomK * 1.6; key.angle = 0.62 - inRoomK * 0.18;
+    roomFloor.visible = roomWall.visible = inRoomK > 0.01 && k < 3.5; floor.visible = !roomFloor.visible;
+    hemi.intensity = 0.55 - inRoomK * 0.2; key.intensity = 2.4 + inRoomK * 2.6; rim.color.set(beat > 0 ? ROOMS[beat - 1].rim : 0xbcd2ff); rim.intensity = 0.7 + inRoomK * 0.9; key.angle = 0.62 - inRoomK * 0.18;
     // shelf plank only in the reading room
     const lees = Math.max(0, 1 - Math.abs(k - 2) * 1.6);
     plank.visible = lees > 0.01;
@@ -390,6 +407,7 @@
   addEventListener('scroll', toggle, { passive: true }); document.addEventListener('visibilitychange', toggle);
 
   Promise.all(list.map((m, i) => build(m, i))).then(() => {
+    starObj = objs.find((o) => o && o.userData.m.id === 'ranking-2') || null;
     size(); ready = true;
     html.classList.add('gl-on');
     toggle();
