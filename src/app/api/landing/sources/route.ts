@@ -10,7 +10,7 @@
 // ============================================================
 
 import { NextResponse } from "next/server";
-import { BEST_FORMATS, getFeaturedRanking } from "@/lib/best/best-of";
+import { BEST_FORMATS, bestYears, getBestRanking, getFeaturedRanking } from "@/lib/best/best-of";
 import { getLandingShowcase } from "@/lib/landing/showcase";
 import { createLogger } from "@/lib/logger";
 
@@ -25,8 +25,12 @@ export async function GET() {
   const rankings = await Promise.all(
     BEST_FORMATS.map(async (format) => {
       try {
-        const featured = await getFeaturedRanking(format, "es");
-        if (!featured) return { format, year: null, items: [] };
+        // El destacado exige una lista indexable (8+). Si ningún año llega
+        // (p. ej. juegos a principios de año), se usa el del año en curso tal
+        // cual, como hace la landing: su líder sigue siendo real.
+        const featured =
+          (await getFeaturedRanking(format, "es")) ??
+          { year: bestYears()[0], ranking: await getBestRanking(format, bestYears()[0], "es") };
         return {
           format,
           year: featured.year,
