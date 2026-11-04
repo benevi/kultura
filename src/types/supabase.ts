@@ -686,6 +686,82 @@ export type Database = {
           },
         ]
       }
+      landing_media: {
+        Row: {
+          id: string
+          week: string
+          slot: string
+          position: number
+          format: string | null
+          media_type: string
+          external_id: string
+          title: string
+          year: number | null
+          rating: number | null
+          image_path: string
+          depth_path: string
+          width: number
+          height: number
+          threshold: number
+          focus_x: number
+          focus_y: number
+          fg_ratio: number
+          layered: boolean
+          accent: string
+          active: boolean
+          created_at: string
+        }
+        ComputedFields: never
+        Insert: {
+          id?: string
+          week: string
+          slot: string
+          position?: number
+          format?: string | null
+          media_type: string
+          external_id: string
+          title: string
+          year?: number | null
+          rating?: number | null
+          image_path: string
+          depth_path: string
+          width: number
+          height: number
+          threshold?: number
+          focus_x?: number
+          focus_y?: number
+          fg_ratio?: number
+          layered?: boolean
+          accent?: string
+          active?: boolean
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          week?: string
+          slot?: string
+          position?: number
+          format?: string | null
+          media_type?: string
+          external_id?: string
+          title?: string
+          year?: number | null
+          rating?: number | null
+          image_path?: string
+          depth_path?: string
+          width?: number
+          height?: number
+          threshold?: number
+          focus_x?: number
+          focus_y?: number
+          fg_ratio?: number
+          layered?: boolean
+          accent?: string
+          active?: boolean
+          created_at?: string
+        }
+        Relationships: []
+      }
       list_items: {
         Row: {
           added_at: string | null
