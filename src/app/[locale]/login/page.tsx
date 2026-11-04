@@ -1,6 +1,8 @@
 import { Suspense } from "react";
 import type { Metadata } from "next";
 import { getTranslations } from "next-intl/server";
+import { getLandingMedia } from "@/lib/landing/media";
+import { buildLoginCovers, LOGIN_TOUR, type LoginFormat } from "@/lib/landing/login-covers";
 import { LoginPage } from "./LoginPage";
 
 interface LoginRouteProps {
@@ -41,10 +43,13 @@ export async function generateMetadata({ params }: LoginRouteProps): Promise<Met
 
 export default async function LoginRoute({ params }: LoginRouteProps) {
   const { locale } = await params;
+  const t = await getTranslations({ locale, namespace: "auth" });
+  const labels = Object.fromEntries(LOGIN_TOUR.map((f) => [f, t(`formats.${f}`)])) as Record<LoginFormat, string>;
+  const covers = buildLoginCovers(await getLandingMedia(), labels);
 
   return (
     <Suspense>
-      <LoginPage locale={locale} />
+      <LoginPage locale={locale} covers={covers} />
     </Suspense>
   );
 }

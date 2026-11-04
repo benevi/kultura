@@ -57,7 +57,8 @@ describe("recuperación de contraseña (R1)", () => {
         redirectTo: `${ORIGIN}/api/auth/callback?next=%2Fen%2Freset-password`,
       })
     );
-    expect(await screen.findByText("resetSentBody:user@example.com")).toBeInTheDocument();
+    expect(await screen.findByText("resetSentBody")).toBeInTheDocument();
+    expect(document.body.textContent).not.toContain("user@example.com");
   });
 
   // Los correos ya enviados con el formato antiguo aterrizan aquí con la
@@ -97,7 +98,7 @@ describe("Revisa tu correo: reenviar (ROJO-2)", () => {
     await screen.findByText("checkEmail");
 
     const button = screen.getByRole("button", { name: `resendIn:${RESEND_COOLDOWN_SECONDS}` });
-    expect(button).toBeDisabled();
+    expect(button).toHaveAttribute("aria-disabled", "true");
     // React 19: cada tic de la cuenta atrás es un efecto nuevo; el `act`
     // asíncrono deja que React aplique el render y programe el siguiente.
     for (let i = 0; i < RESEND_COOLDOWN_SECONDS; i++) {
@@ -108,7 +109,7 @@ describe("Revisa tu correo: reenviar (ROJO-2)", () => {
     vi.useRealTimers();
 
     const ready = screen.getByRole("button", { name: "resend" });
-    expect(ready).not.toBeDisabled();
+    expect(ready).not.toHaveAttribute("aria-disabled");
     fireEvent.click(ready);
     await waitFor(() =>
       expect(h.fake.auth.resend).toHaveBeenCalledWith({
@@ -169,7 +170,7 @@ describe("destino `next` (CRE-5)", () => {
   it("Google y el cambio de modo conservan el next", async () => {
     h.params = new URLSearchParams("next=%2Fen%2Fu%2Fbenevi");
     render(<LoginPage locale="en" />);
-    expect(screen.getByRole("link", { name: "signUpAction" })).toHaveAttribute(
+    expect(screen.getByRole("link", { name: "createAccount" })).toHaveAttribute(
       "href",
       "/login?mode=register&next=%2Fen%2Fu%2Fbenevi"
     );
@@ -278,7 +279,7 @@ describe("navegador integrado de apps sociales (MOV-11)", () => {
   it("en Instagram (iOS) avisa y ofrece copiar el enlace", async () => {
     setUA("Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit Instagram 300.0");
     render(<LoginPage locale="es" />);
-    expect(await screen.findByText("inAppTitle")).toBeInTheDocument();
+    expect(await screen.findByText("inAppBodyIos")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "inAppCopy" })).toBeInTheDocument();
     expect(screen.queryByRole("link", { name: "inAppOpenChrome" })).not.toBeInTheDocument();
   });
@@ -293,6 +294,6 @@ describe("navegador integrado de apps sociales (MOV-11)", () => {
   it("en un navegador normal no avisa", () => {
     setUA("Mozilla/5.0 (Macintosh) AppleWebKit Safari/605");
     render(<LoginPage locale="es" />);
-    expect(screen.queryByText("inAppTitle")).not.toBeInTheDocument();
+    expect(screen.queryByText("inAppBodyIos")).not.toBeInTheDocument();
   });
 });

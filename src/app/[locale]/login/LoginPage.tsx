@@ -11,14 +11,10 @@ import {
   type AuthErrorLike,
 } from "@/lib/utils/auth-errors";
 import { resolveAuthNext, safeInternalPath } from "@/lib/utils/safe-redirect";
-import { KButton } from "@/components/ui/KButton";
-import { KInput } from "@/components/ui/KInput";
-import { AvatarIconPicker } from "@/components/ui/AvatarIconPicker";
-import { Logo } from "@/components/layout/Logo";
-import { AuthShell } from "./AuthShell";
+import type { LoginCover } from "@/lib/landing/login-covers";
+import { CoverRow } from "./CoverRow";
+import { startCoverRow, type CoverRowHandle } from "./cover-row-engine";
 import { getSupabase } from "./supabase-lazy";
-import { PasswordField } from "./PasswordField";
-import { TermsCheckbox } from "./TermsCheckbox";
 import { TERMS_VERSION } from "@/app/api/settings/identity";
 import { chromeIntentUrl, detectInAppBrowser, type InAppBrowser } from "./in-app-browser";
 import {
@@ -28,6 +24,7 @@ import {
   type AttributionParams,
 } from "@/lib/analytics/attribution";
 import { unsubscribeCurrentDevice } from "@/lib/push/client";
+import "./login.css";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -39,10 +36,8 @@ type Mode = "login" | "register" | "reset";
 type SentKind = "signup" | "reset";
 
 /**
- * Dónde se aparca el personaje elegido al registrarse hasta que hay sesión
- * (E-AVATAR-ICONS). La fila de `users` la crea un trigger de base de datos, y
- * el alta puede quedar pendiente de confirmar el correo, así que la elección
- * tiene que sobrevivir a ese hueco.
+ * Personaje aparcado por altas anteriores a /welcome (E-AVATAR-ICONS): el registro
+ * ya no lo pide, pero quien se dio de alta antes y aún no ha entrado lo conserva.
  */
 const PENDING_AVATAR_ICON_KEY = "kultura:pending-avatar-icon";
 
@@ -56,6 +51,8 @@ interface FormState {
   errorKey: AuthErrorKey | null;
   fieldErrors: { email?: string; password?: string; terms?: string };
   loading: boolean;
+  /** Error con el que se llega a la página: va sobre el formulario y recibe el foco. */
+  early: boolean;
 }
 
 const EMPTY_FORM: FormState = {
@@ -65,6 +62,7 @@ const EMPTY_FORM: FormState = {
   errorKey: null,
   fieldErrors: {},
   loading: false,
+  early: false,
 };
 
 // ---------------------------------------------------------------------------
@@ -185,19 +183,19 @@ function GoogleIcon({ className }: { className?: string }) {
   );
 }
 
-/** Enlace de texto del pie de la tarjeta: 44px de alto táctil (ACC-12). */
-const FOOT_LINK =
-  "inline-block py-3 font-body text-meta underline-offset-4 hover:underline";
-
 // ---------------------------------------------------------------------------
 // Component
 // ---------------------------------------------------------------------------
 
 interface LoginPageProps {
   locale: string;
+  /** Portadas de la fila. Sin ellas la pantalla sigue funcionando, sin fila. */
+  covers?: LoginCover[];
 }
 
-export function LoginPage({ locale }: LoginPageProps) {
+const NO_COVERS: LoginCover[] = [];
+
+export function LoginPage({ locale, covers = NO_COVERS }: LoginPageProps) {
   const tAuth = useTranslations("auth");
   const tErrors = useTranslations("errors");
   const router = useRouter();
@@ -236,7 +234,7 @@ export function LoginPage({ locale }: LoginPageProps) {
         ? tErrors(callbackKey)
         : null;
 
-  const [form, setForm] = useState<FormState>({ ...EMPTY_FORM, error: initialError });
+  const [form, setForm] = useState<FormState>({ ...EMPTY_FORM, error: initialError, early: !!initialError });
   const [sent, setSent] = useState<SentKind | null>(null);
   const [cooldown, setCooldown] = useState(0);
   const [resending, setResending] = useState(false);
@@ -255,22 +253,56 @@ export function LoginPage({ locale }: LoginPageProps) {
 
   // SEG-7: casilla obligatoria de edad y términos en el registro por email.
   const [termsAccepted, setTermsAccepted] = useState(false);
-  const sentHeadingRef = useRef<HTMLHeadingElement>(null);
+  const headingRef = useRef<HTMLHeadingElement>(null);
+  const alertRef = useRef<HTMLDivElement>(null);
 
-  // E-AVATAR-ICONS: el personaje elegido al registrarse. Se guarda también en el
-  // navegador porque el alta puede quedar pendiente de confirmar el correo y la
-  // elección tendría que sobrevivir hasta el primer inicio de sesión.
-  const [avatarIcon, setAvatarIcon] = useState<string | null>(null);
+  // La fila: mostrar la contraseña o tener el foco en ella gira las portadas.
+  const [showPassword, setShowPassword] = useState(false);
+  const [passwordFocus, setPasswordFocus] = useState(false);
+  const [copyFailed, setCopyFailed] = useState(false);
+  const [paused, setPaused] = useState(false);
+  const rootRef = useRef<HTMLDivElement>(null);
+  const rowRef = useRef<HTMLDivElement>(null);
+  const slotRef = useRef<HTMLDivElement>(null);
+  const panelRef = useRef<HTMLDivElement>(null);
+  const slotImageRef = useRef<HTMLImageElement>(null);
+  const capTitleRef = useRef<HTMLSpanElement>(null);
+  const capLabelRef = useRef<HTMLSpanElement>(null);
+  const liveRef = useRef<HTMLParagraphElement>(null);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const engineRef = useRef<CoverRowHandle | null>(null);
 
-  function handleAvatarIconChange(icon: string | null) {
-    setAvatarIcon(icon);
-    try {
-      if (icon) window.localStorage.setItem(PENDING_AVATAR_ICON_KEY, icon);
-      else window.localStorage.removeItem(PENDING_AVATAR_ICON_KEY);
-    } catch {
-      // Modo privado o almacenamiento bloqueado: se pierde solo si además hay
-      // confirmación por correo de por medio, y siempre queda Ajustes.
-    }
+  useEffect(() => {
+    if (!covers.length || !rowRef.current) return;
+    const engine = startCoverRow({
+      root: rootRef.current!,
+      row: rowRef.current,
+      slot: slotRef.current!,
+      panel: panelRef.current!,
+      slotImage: slotImageRef.current!,
+      capTitle: capTitleRef.current!,
+      capLabel: capLabelRef.current!,
+      live: liveRef.current!,
+      canvas: canvasRef.current!,
+      covers,
+    });
+    engineRef.current = engine;
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) setPaused(true);
+    return () => {
+      engine.destroy();
+      engineRef.current = null;
+    };
+  }, [covers]);
+
+  function togglePause() {
+    const next = !paused;
+    setPaused(next);
+    engineRef.current?.setPaused(next);
+  }
+
+  /** Final: la fila se lleva el formulario. Sin fila, o con movimiento reducido, no espera. */
+  async function leaveRoom() {
+    await engineRef.current?.leave(tAuth("signedIn"));
   }
 
   useEffect(() => {
@@ -322,10 +354,26 @@ export function LoginPage({ locale }: LoginPageProps) {
   useEffect(() => {
     if (prevMode.current === mode) return;
     prevMode.current = mode;
-    setForm(EMPTY_FORM);
+    setForm((prev) => ({ ...EMPTY_FORM, email: prev.email }));
     setSent(null);
     setResent(false);
+    setShowPassword(false);
+    document.documentElement.scrollTop = 0;
+    headingRef.current?.focus({ preventScroll: true });
   }, [mode]);
+
+  // Se llega con un error en la URL: se anuncia y recibe el foco.
+  useEffect(() => {
+    if (initialError) alertRef.current?.focus();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Credenciales incorrectas: el foco vuelve a la contraseña, ya seleccionada.
+  useEffect(() => {
+    if (form.errorKey !== "invalidCredentials") return;
+    passwordRef.current?.focus();
+    passwordRef.current?.select();
+  }, [form.errorKey]);
 
   // Cuenta atrás del reenvío.
   useEffect(() => {
@@ -337,7 +385,9 @@ export function LoginPage({ locale }: LoginPageProps) {
   // Al pasar a "Revisa tu correo", el foco va al título para que el lector de
   // pantalla lo anuncie (ACC-3).
   useEffect(() => {
-    if (sent) sentHeadingRef.current?.focus();
+    if (!sent) return;
+    document.documentElement.scrollTop = 0;
+    headingRef.current?.focus({ preventScroll: true });
   }, [sent]);
 
   // -------------------------------------------------------------------------
@@ -350,7 +400,7 @@ export function LoginPage({ locale }: LoginPageProps) {
 
   function fail(error: AuthErrorLike | null) {
     const key = getAuthErrorKeyFromError(error);
-    setForm((prev) => ({ ...prev, loading: false, error: tErrors(key), errorKey: key }));
+    setForm((prev) => ({ ...prev, loading: false, error: tErrors(key), errorKey: key, early: false }));
   }
 
   function showSent(kind: SentKind) {
@@ -364,14 +414,16 @@ export function LoginPage({ locale }: LoginPageProps) {
   // Validation
   // -------------------------------------------------------------------------
 
-  function validate(): boolean {
+  function validate(email: string, password: string): boolean {
     const fieldErrors: FormState["fieldErrors"] = {};
 
-    if (!isValidEmail(form.email)) {
+    if (!isValidEmail(email)) {
       fieldErrors.email = tErrors("invalidEmail");
     }
 
-    if (mode !== "reset" && form.password.length < 8) {
+    if (mode !== "reset" && !password) {
+      fieldErrors.password = tAuth("passwordRequired");
+    } else if (mode !== "reset" && password.length < 8) {
       fieldErrors.password = tErrors("passwordTooShort");
     }
 
@@ -379,7 +431,7 @@ export function LoginPage({ locale }: LoginPageProps) {
       fieldErrors.terms = tAuth("termsRequired");
     }
 
-    setForm((prev) => ({ ...prev, fieldErrors, error: null, errorKey: null }));
+    setForm((prev) => ({ ...prev, email, password, fieldErrors, error: null, errorKey: null, early: false }));
 
     // ACC-3: el foco va al primer campo con error.
     if (fieldErrors.email) emailRef.current?.focus();
@@ -393,35 +445,31 @@ export function LoginPage({ locale }: LoginPageProps) {
   // Submit handlers
   // -------------------------------------------------------------------------
 
-  async function handleLogin() {
+  async function handleLogin(email: string, password: string) {
     const supabase = await getSupabase();
-    const { error } = await supabase.auth.signInWithPassword({
-      email: form.email,
-      password: form.password,
-    });
+    const { error } = await supabase.auth.signInWithPassword({ email, password });
 
     if (error) return fail(error);
 
     await applyPendingAvatarIcon();
+    await leaveRoom();
     router.replace(dest);
   }
 
-  async function handleRegister() {
+  async function handleRegister(email: string, password: string) {
     const supabase = await getSupabase();
     // Sale de la demo (o de otra cuenta) antes de crear la nueva; F-33: sin
     // llevarse los avisos push de la cuenta anterior.
     await unsubscribeCurrentDevice();
     await supabase.auth.signOut();
     const { error, data } = await supabase.auth.signUp({
-      email: form.email,
-      password: form.password,
+      email,
+      password,
       options: {
         // R2: sin esto el enlace de confirmación volvía a la Site URL sin
         // canjear el código. El idioma viaja a los metadatos para que las
         // plantillas del correo salgan en el idioma del alta.
         emailRedirectTo: callbackUrl(dest, attribution),
-        // El personaje también viaja aquí: si se confirma desde otro
-        // navegador, el callback lo aplica (el `localStorage` no está allí).
         // SEG-7: la aceptación la convierte en `terms_accepted_at` el
         // disparador `handle_new_user` (con la hora del servidor).
         data: {
@@ -430,7 +478,6 @@ export function LoginPage({ locale }: LoginPageProps) {
           terms_version: TERMS_VERSION,
           // D-12: canal del alta (utm, ref o direct), sin la firma `inv`.
           attribution: toStoredAttribution(attribution),
-          ...(avatarIcon ? { avatar_icon: avatarIcon } : {}),
         },
       },
     });
@@ -440,7 +487,6 @@ export function LoginPage({ locale }: LoginPageProps) {
     if (data.session) {
       // Confirmación desactivada (D-08): alta inmediata, y al onboarding
       // (CRE-6), que termina en el destino original.
-      await applyPendingAvatarIcon();
       await recordImmediateSignup(dest, attribution);
       router.replace(welcomeHref(locale, dest));
     } else {
@@ -448,21 +494,13 @@ export function LoginPage({ locale }: LoginPageProps) {
     }
   }
 
-  /**
-   * Guarda el personaje elegido durante el registro (E-AVATAR-ICONS).
-   *
-   * La fila de `users` la crea un trigger de base de datos al dar de alta la
-   * cuenta, así que el personaje no puede viajar en el propio `signUp`: se
-   * escribe justo después, ya con sesión. Y como el alta puede exigir confirmar
-   * el correo (sin sesión todavía), la elección queda aparcada en el navegador
-   * y se aplica al primer inicio de sesión — si no, se perdería sin avisar.
-   */
+  /** Guarda el personaje aparcado por un alta anterior, ya con sesión. */
   async function applyPendingAvatarIcon() {
     let pending: string | null = null;
     try {
-      pending = avatarIcon ?? window.localStorage.getItem(PENDING_AVATAR_ICON_KEY);
+      pending = window.localStorage.getItem(PENDING_AVATAR_ICON_KEY);
     } catch {
-      pending = avatarIcon;
+      // Modo privado o almacenamiento bloqueado: no hay nada aparcado.
     }
     if (!pending) return;
 
@@ -493,11 +531,11 @@ export function LoginPage({ locale }: LoginPageProps) {
     if (error) fail(error);
   }
 
-  async function handleReset() {
+  async function handleReset(email: string) {
     const supabase = await getSupabase();
     // R1: el enlace lleva a la pantalla de contraseña nueva, no de vuelta a
     // este formulario (que solo volvía a pedir el correo).
-    const { error } = await supabase.auth.resetPasswordForEmail(form.email, {
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
       redirectTo: callbackUrl(`/${locale}/reset-password`),
     });
 
@@ -533,21 +571,39 @@ export function LoginPage({ locale }: LoginPageProps) {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (!hydrated || !validate()) return;
+    if (!hydrated || form.loading) return;
 
-    setForm((prev) => ({ ...prev, loading: true, error: null, errorKey: null }));
+    // Los gestores de contraseñas no siempre avisan al rellenar: manda lo que hay en el formulario.
+    const data = new FormData(e.currentTarget as HTMLFormElement);
+    const email = String(data.get("email") ?? form.email);
+    const password = String(data.get("password") ?? form.password);
 
-    if (mode === "login") await handleLogin();
-    else if (mode === "register") await handleRegister();
-    else await handleReset();
+    // Intro en el correo con la contraseña aún vacía: se pasa al siguiente campo sin reñir.
+    if (mode !== "reset" && isValidEmail(email) && !password && document.activeElement === emailRef.current) {
+      setField("email", email);
+      passwordRef.current?.focus();
+      return;
+    }
+    // Se envía como contraseña: con el campo en texto, el gestor podría no ofrecer guardarla.
+    setShowPassword(false);
+
+    if (!validate(email, password)) return;
+
+    setForm((prev) => ({ ...prev, loading: true, error: null, errorKey: null, early: false }));
+
+    if (mode === "login") await handleLogin(email, password);
+    else if (mode === "register") await handleRegister(email, password);
+    else await handleReset(email);
   }
 
   async function copyLink() {
     try {
       await window.navigator.clipboard.writeText(window.location.href);
       setCopied(true);
+      setCopyFailed(false);
     } catch {
       setCopied(false);
+      setCopyFailed(true);
     }
   }
 
@@ -562,308 +618,386 @@ export function LoginPage({ locale }: LoginPageProps) {
   }
 
   // -------------------------------------------------------------------------
-  // Render: "Revisa tu correo"
+  // Render
   // -------------------------------------------------------------------------
 
-  if (sent) {
-    return (
-      <AuthShell backLabel={tAuth("backHome")} cardClassName="text-center">
-        <Logo size={32} className="justify-center" />
-        <h1
-          ref={sentHeadingRef}
-          tabIndex={-1}
-          className="mt-7 font-display text-xl font-extrabold text-text-primary outline-none"
-        >
-          {tAuth("checkEmail")}
-        </h1>
-        <div role="status" className="mt-3 flex flex-col gap-3">
-          <p className="font-body text-sm text-text-secondary">
-            {tAuth.rich(sent === "reset" ? "resetSentBody" : "checkEmailBody", {
-              email: form.email,
-              strong: (chunks) => (
-                <strong className="break-all font-bold text-text-primary">{chunks}</strong>
-              ),
-            })}
-          </p>
-          <p className="font-body text-meta text-text-tertiary">{tAuth("checkSpam")}</p>
-          {resent && (
-            <p className="font-body text-meta font-bold text-text-secondary">{tAuth("resent")}</p>
-          )}
-        </div>
-
-        {form.error && (
-          <p
-            role="alert"
-            className="mt-4 rounded-2xl bg-accent-danger/10 px-[18px] py-3 text-left font-body text-sm text-accent-danger"
-          >
-            {form.error}
-          </p>
-        )}
-
-        <KButton
-          type="button"
-          variant="secondary"
-          size="lg"
-          className="mt-6 w-full"
-          onClick={() => handleResend(sent)}
-          loading={resending}
-          disabled={cooldown > 0}
-        >
-          {cooldown > 0 ? tAuth("resendIn", { seconds: cooldown }) : tAuth("resend")}
-        </KButton>
-
-        <button
-          type="button"
-          onClick={() => {
-            setSent(null);
-            setForm((prev) => ({ ...prev, password: "", error: null, errorKey: null }));
-          }}
-          className={`${FOOT_LINK} mt-2 text-text-tertiary hover:text-text-primary`}
-        >
-          {tAuth("useAnotherEmail")}
-        </button>
-      </AuthShell>
-    );
-  }
-
-  // -------------------------------------------------------------------------
-  // Render: main form
-  // -------------------------------------------------------------------------
-
-  // El encabezado visible del artboard se quitó a petición del usuario
-  // (08/10/2026): la tarjeta va del logo a los campos. Se conserva SOLO para
-  // lectores de pantalla, porque la página necesita un <h1> que diga qué es.
-  const heading =
-    mode === "login"
-      ? tAuth("welcomeBack")
+  const title = sent
+    ? tAuth("checkEmail")
+    : mode === "login"
+      ? tAuth("enter")
       : mode === "register"
         ? tAuth("createAccount")
-        : tAuth("resetPassword");
+        : tAuth("recoverPassword");
 
-  return (
-    <AuthShell backLabel={tAuth("backHome")}>
-      {/* Logo de marca centrado, encima de los campos (F0 §Logo), con una
-          línea de valor debajo (CRE-5 / DIS-13). */}
-      <div className="mb-8 flex flex-col items-center gap-3 text-center">
-        <Logo size={32} />
-        <p className="font-body text-sm text-text-secondary">
-          {mode === "reset" ? tAuth("resetIntro") : tAuth("valueLine")}
-        </p>
-      </div>
+  const otherMode: Mode = mode === "login" ? "register" : "login";
+  const formatWord = (f: string) => function FormatWord(chunks: React.ReactNode) { return (
+    <span className="kh-f" data-f={f}>
+      {chunks}
+    </span>
+  ); };
 
-      <h1 className="sr-only">{heading}</h1>
-
-      {accountNotice && (
-        <p
-          role="status"
-          className="mb-5 rounded-2xl bg-surface-elevated px-[18px] py-3 font-body text-sm text-text-secondary"
-        >
-          {accountNotice}
-        </p>
+  const errorBlock = form.error ? (
+    <div className="kh-say is-bad" role="alert" tabIndex={-1} ref={alertRef}>
+      <p id="login-alert">{form.error}</p>
+      {form.errorKey === "emailNotConfirmed" && (
+        <button type="button" className="kh-link" onClick={() => handleResend("signup")} disabled={resending}>
+          {tAuth("resendConfirmation")}
+        </button>
       )}
-
-      {/* MOV-11: Google no deja entrar desde el navegador integrado de las
-          apps sociales. Se avisa ANTES de que el botón lleve a un error. */}
-      {mode !== "reset" && inApp && (
-        <div
-          role="note"
-          className="mb-5 rounded-2xl bg-surface-elevated px-[18px] py-3 font-body text-sm text-text-secondary"
-        >
-          <p className="font-bold text-text-primary">{tAuth("inAppTitle")}</p>
-          <p className="mt-1">{tAuth("inAppBody")}</p>
-          <div className="flex flex-wrap gap-x-5">
-            {inApp.android && intentHref && (
-              <a href={intentHref} className={`${FOOT_LINK} font-bold text-accent-pink`}>
-                {tAuth("inAppOpenChrome")}
-              </a>
-            )}
-            <button
-              type="button"
-              onClick={copyLink}
-              className={`${FOOT_LINK} font-bold text-accent-pink`}
-            >
-              <span aria-live="polite">{copied ? tAuth("inAppCopied") : tAuth("inAppCopy")}</span>
-            </button>
-          </div>
+      {form.early && (errorParam === "auth_link_expired" || errorParam === "auth_link_other_browser") && (
+        <div className="kh-acts">
+          <Link href={modeHref("reset")} className="kh-link">
+            {tAuth("requestNewLink")}
+          </Link>
         </div>
       )}
-
-      {/* Google OAuth arriba (oculto en reset — solo aplica a login/registro).
-          El canvas no dibuja este botón, así que se usa el primitivo que sí
-          existe: pill secundario (borde 2px, peso 700) de F0. */}
-      {mode !== "reset" && (
-        <>
-          <button
-            type="button"
-            onClick={handleGoogleLogin}
-            disabled={form.loading || !hydrated}
-            className="flex w-full items-center justify-center gap-2 rounded-pill border-2 border-surface-border py-[13px] font-body text-sm font-bold text-text-secondary transition-colors duration-base ease-standard hover:bg-surface-elevated hover:text-text-primary disabled:opacity-50"
-          >
-            <GoogleIcon className="h-4 w-4 shrink-0" />
-            {tAuth("continueWithGoogle")}
-          </button>
-
-          <div className="my-5 flex items-center gap-3">
-            <div className="h-px flex-1 bg-surface-border" />
-            <span className="font-body text-xs font-bold uppercase tracking-wider text-text-tertiary">
-              {tAuth("or")}
-            </span>
-            <div className="h-px flex-1 bg-surface-border" />
-          </div>
-        </>
-      )}
-
-      {/* Form — gap 18px entre campos, literal del mockup. `method="post"`:
-          si algo enviase el formulario sin JS, los datos no irían en la URL. */}
-      <form
-        onSubmit={handleSubmit}
-        noValidate
-        method="post"
-        className="flex flex-col gap-[18px]"
-      >
-        <KInput
-          ref={emailRef}
-          id="email"
-          name="email"
-          type="email"
-          inputMode="email"
-          autoComplete="email"
-          label={tAuth("email")}
-          value={form.email}
-          onChange={(e) => setField("email", e.target.value)}
-          error={form.fieldErrors.email}
-          aria-required="true"
-          aria-invalid={form.fieldErrors.email ? true : undefined}
-          placeholder={tAuth("emailPlaceholder")}
-        />
-
-        {mode !== "reset" && (
-          <PasswordField
-            ref={passwordRef}
-            id="password"
-            name="password"
-            autoComplete={mode === "register" ? "new-password" : "current-password"}
-            label={tAuth("password")}
-            value={form.password}
-            onChange={(e) => setField("password", e.target.value)}
-            error={form.fieldErrors.password}
-            hint={mode === "register" ? tAuth("passwordHint") : undefined}
-            aria-required="true"
-            aria-invalid={form.fieldErrors.password ? true : undefined}
-            placeholder="••••••••"
-            showText={tAuth("showPassword")}
-            hideText={tAuth("hidePassword")}
-            showLabel={tAuth("showPasswordLabel")}
-            hideLabel={tAuth("hidePasswordLabel")}
-          />
-        )}
-
-        {/* Personaje del avatar (E-AVATAR-ICONS) — opcional: quien no elija
-            se queda con sus iniciales, igual que las cuentas de siempre. */}
-        {mode === "register" && (
-          <div className="flex flex-col gap-2">
-            <span className="font-body text-meta font-bold text-text-tertiary">
-              {tAuth("chooseCharacter")}
-            </span>
-            <AvatarIconPicker
-              value={avatarIcon}
-              onChange={handleAvatarIconChange}
-              label={tAuth("chooseCharacter")}
-              noneLabel={tAuth("chooseCharacterNone")}
-              iconLabel={(key) => tAuth(`characters.${key}`)}
-            />
-          </div>
-        )}
-
-        {mode === "register" && (
-          <TermsCheckbox
-            ref={termsRef}
-            id="terms"
-            checked={termsAccepted}
-            onChange={(checked) => {
-              setTermsAccepted(checked);
-              if (checked && form.fieldErrors.terms) {
-                setForm((prev) => ({ ...prev, fieldErrors: { ...prev.fieldErrors, terms: undefined } }));
-              }
-            }}
-            error={form.fieldErrors.terms}
-          />
-        )}
-
-        {/* Error global — rojo semántico, radio de campo (14px) para que no
-            parezca un chip. `role="alert"` para que se anuncie (ACC-3). */}
-        {form.error && (
-          <div
-            role="alert"
-            className="rounded-2xl bg-accent-danger/10 px-[18px] py-3 font-body text-sm text-accent-danger"
-          >
-            <p>{form.error}</p>
-            {form.errorKey === "emailNotConfirmed" && (
-              <button
-                type="button"
-                onClick={() => handleResend("signup")}
-                disabled={resending}
-                className="mt-1 inline-block py-2 font-bold underline underline-offset-4"
-              >
-                {tAuth("resendConfirmation")}
-              </button>
-            )}
-          </div>
-        )}
-
-        {/* Submit — pink, que desde E-BOTON-PINK es el defecto del primario. */}
-        <KButton
-          type="submit"
-          loading={form.loading}
-          disabled={!hydrated}
-          size="lg"
-          className="mt-2 w-full"
-        >
-          {mode === "login"
-            ? tAuth("signIn")
-            : mode === "register"
-              ? tAuth("signUp")
-              : tAuth("sendResetLink")}
-        </KButton>
-
-      </form>
-
-      {/* Enlace a contraseña olvidada (solo al entrar) */}
-      {mode === "login" && (
-        <div className="mt-3 text-center">
-          <Link
-            href={modeHref("reset")}
-            className={`${FOOT_LINK} text-text-tertiary hover:text-text-primary`}
-          >
+      {form.errorKey === "invalidCredentials" && (
+        <div className="kh-acts">
+          <Link href={modeHref("reset")} className="kh-link">
             {tAuth("forgotPassword")}
           </Link>
+          <Link href={modeHref("register")} className="kh-link">
+            {tAuth("createAccount")}
+          </Link>
         </div>
       )}
+    </div>
+  ) : null;
 
-      {/* Cambio de modo al PIE, como el mockup ("¿No tienes cuenta?
-          Regístrate"), como enlace de verdad (ROJO-10): se puede abrir en otra
-          pestaña y funciona antes de hidratar. */}
-      <p className="mt-2 text-center font-body text-meta text-text-tertiary">
-        {mode === "reset" ? (
-          <Link
-            href={modeHref("login")}
-            className={`${FOOT_LINK} font-bold text-accent-pink`}
-          >
-            {tAuth("backToSignIn")}
+  const shut = !sent && mode !== "reset" && (showPassword || passwordFocus);
+
+  return (
+    <div ref={rootRef} className="kh" data-shut={shut ? "" : undefined}>
+      <header>
+        <Link href="/" aria-label={tAuth("backHome")} className="kh-brand kh-display">
+          KULTURA
+        </Link>
+        {(mode !== "reset" || sent) && (
+          <Link href={modeHref(otherMode)} className="kh-swap">
+            {mode === "login" ? tAuth("createAccount") : tAuth("enter")}
           </Link>
-        ) : (
-          <>
-            {mode === "login" ? tAuth("dontHaveAccount") : tAuth("alreadyHaveAccount")}{" "}
-            {/* Imperativo, no infinitivo: el artboard pone "Regístrate". */}
-            <Link
-              href={modeHref(mode === "login" ? "register" : "login")}
-              className={`${FOOT_LINK} font-bold text-accent-pink`}
-            >
-              {mode === "login" ? tAuth("signUpAction") : tAuth("signInAction")}
-            </Link>
-          </>
         )}
-      </p>
-    </AuthShell>
+      </header>
+
+      {covers.length > 0 && <CoverRow ref={rowRef} canvasRef={canvasRef} covers={covers} />}
+
+      <main id="main" tabIndex={-1} className="kh-stage">
+        <div ref={slotRef} className="kh-slot">
+          <div ref={panelRef} className="kh-panel" data-m={sent ? "sent" : mode}>
+            <h1 ref={headingRef} tabIndex={-1} className="kh-title kh-display">
+              {title}
+            </h1>
+
+            {sent ? (
+              <div className="kh-body">
+                <div role="status" className="kh-stack">
+                  <div>
+                    <p className="kh-lead" style={{ margin: 0 }}>
+                      {tAuth(sent === "reset" ? "resetSentBody" : "checkEmailBody")}
+                    </p>
+                    <p className="kh-small">{tAuth("checkSpam")}</p>
+                  </div>
+                  {resent && <p className="kh-say">{tAuth("resent")}</p>}
+                </div>
+                <div className="kh-stack" style={{ marginTop: 18 }}>
+                  {errorBlock}
+                  <button
+                    type="button"
+                    className="kh-btn kh-alt"
+                    style={{ margin: 0 }}
+                    onClick={() => {
+                      if (cooldown <= 0 && !resending) void handleResend(sent);
+                    }}
+                    aria-disabled={cooldown > 0 || resending ? true : undefined}
+                  >
+                    {cooldown > 0 ? tAuth("resendIn", { seconds: cooldown }) : tAuth("resend")}
+                  </button>
+                  <div className="kh-foot">
+                    <button
+                      type="button"
+                      className="kh-link is-dim"
+                      onClick={() => {
+                        setSent(null);
+                        setForm((prev) => ({ ...prev, password: "", error: null, errorKey: null }));
+                      }}
+                    >
+                      {tAuth("useAnotherEmail")}
+                    </button>
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <>
+                {mode === "reset" ? (
+                  <p className="kh-lead">{tAuth("resetIntro")}</p>
+                ) : accountNotice ? (
+                  <p className="kh-say" role="status" style={{ marginTop: 16 }}>
+                    {accountNotice}
+                  </p>
+                ) : (
+                  <p className="kh-lead">
+                    {tAuth.rich("valueLine", {
+                      movie: formatWord("movie"),
+                      tv: formatWord("tv"),
+                      anime: formatWord("anime"),
+                      manga: formatWord("manga"),
+                      game: formatWord("game"),
+                      book: formatWord("book"),
+                      comic: formatWord("comic"),
+                    })}
+                  </p>
+                )}
+
+                <div className="kh-body">
+                  {/* \`method="post"\`: si algo enviase el formulario sin JS, los datos no irían en la URL. */}
+                  <form onSubmit={handleSubmit} noValidate method="post" className="kh-form">
+                    {form.early && errorBlock}
+
+                    {/* MOV-11: Google no deja entrar desde el navegador integrado de las
+                        apps sociales. Se avisa ANTES de que el botón lleve a un error. */}
+                    {mode !== "reset" && inApp && (
+                      <div className="kh-say" role="note">
+                        <p>{tAuth(inApp.android ? "inAppBodyAndroid" : "inAppBodyIos")}</p>
+                        <div className="kh-acts">
+                          {inApp.android && intentHref && (
+                            <a href={intentHref} className="kh-link">
+                              {tAuth("inAppOpenChrome")}
+                            </a>
+                          )}
+                          <button type="button" onClick={copyLink} className="kh-link">
+                            <span aria-live="polite">
+                              {copied ? tAuth("inAppCopied") : copyFailed ? tAuth("inAppCopyFailed") : tAuth("inAppCopy")}
+                            </span>
+                          </button>
+                        </div>
+                      </div>
+                    )}
+
+                    {mode !== "reset" && !inApp && (
+                      <button
+                        type="button"
+                        onClick={handleGoogleLogin}
+                        disabled={!hydrated}
+                        aria-busy={form.loading ? true : undefined}
+                        className="kh-btn kh-alt"
+                      >
+                        <GoogleIcon />
+                        {tAuth("continueWithGoogle")}
+                      </button>
+                    )}
+
+                    <div className="kh-field">
+                      <input
+                        ref={emailRef}
+                        id="email"
+                        name="email"
+                        type="email"
+                        inputMode="email"
+                        autoComplete="username"
+                        autoCapitalize="none"
+                        spellCheck={false}
+                        enterKeyHint={mode === "reset" ? "send" : "next"}
+                        placeholder=" "
+                        value={form.email}
+                        onChange={(e) => {
+                          const value = e.target.value;
+                          setForm((prev) => ({
+                            ...prev,
+                            email: value,
+                            // El error se va solo cuando el dato ya es válido.
+                            fieldErrors: isValidEmail(value) ? { ...prev.fieldErrors, email: undefined } : prev.fieldErrors,
+                          }));
+                        }}
+                        aria-required="true"
+                        aria-invalid={form.fieldErrors.email ? true : undefined}
+                        aria-describedby={form.fieldErrors.email ? "email-error" : undefined}
+                      />
+                      <label htmlFor="email">{tAuth("email")}</label>
+                      {form.fieldErrors.email && (
+                        <p id="email-error" className="kh-note is-bad">
+                          {form.fieldErrors.email}
+                        </p>
+                      )}
+                    </div>
+
+                    {mode !== "reset" && (
+                      <div
+                        className="kh-field kh-pw"
+                        onFocus={() => setPasswordFocus(true)}
+                        onBlur={(e) => {
+                          if (!e.currentTarget.contains(e.relatedTarget)) setPasswordFocus(false);
+                        }}
+                      >
+                        <input
+                          ref={passwordRef}
+                          id="password"
+                          name="password"
+                          type={showPassword ? "text" : "password"}
+                          autoComplete={mode === "register" ? "new-password" : "current-password"}
+                          autoCapitalize="none"
+                          spellCheck={false}
+                          enterKeyHint="go"
+                          placeholder=" "
+                          value={form.password}
+                          onChange={(e) => {
+                            const value = e.target.value;
+                            setForm((prev) => ({
+                              ...prev,
+                              password: value,
+                              fieldErrors: value.length >= 8 ? { ...prev.fieldErrors, password: undefined } : prev.fieldErrors,
+                            }));
+                          }}
+                          aria-required="true"
+                          aria-invalid={form.fieldErrors.password || form.errorKey === "invalidCredentials" ? true : undefined}
+                          aria-describedby={
+                            form.errorKey === "invalidCredentials"
+                              ? "login-alert"
+                              : form.fieldErrors.password || mode === "register"
+                                ? "password-note"
+                                : undefined
+                          }
+                        />
+                        <label htmlFor="password">{tAuth("password")}</label>
+                        <button
+                          type="button"
+                          className="kh-eye"
+                          // Sin quitar el foco del campo: en el móvil cerraría el teclado.
+                          onMouseDown={(e) => e.preventDefault()}
+                          onClick={() => setShowPassword((v) => !v)}
+                          aria-controls="password"
+                          aria-pressed={showPassword}
+                          aria-label={showPassword ? tAuth("hidePasswordLabel") : tAuth("showPasswordLabel")}
+                        >
+                          {showPassword ? tAuth("hidePassword") : tAuth("showPassword")}
+                        </button>
+                        {form.fieldErrors.password ? (
+                          <p id="password-note" className="kh-note is-bad">
+                            {form.fieldErrors.password}
+                          </p>
+                        ) : (
+                          mode === "register" && (
+                            <p id="password-note" className="kh-note">
+                              {tAuth("passwordHint")}
+                            </p>
+                          )
+                        )}
+                      </div>
+                    )}
+
+                    {/* SEG-7: casilla obligatoria de edad y términos en el registro por correo. */}
+                    {mode === "register" && (
+                      <div>
+                        <label htmlFor="terms" className="kh-terms">
+                          <input
+                            ref={termsRef}
+                            id="terms"
+                            name="terms"
+                            type="checkbox"
+                            checked={termsAccepted}
+                            onChange={(e) => {
+                              const checked = e.target.checked;
+                              setTermsAccepted(checked);
+                              if (checked && form.fieldErrors.terms) {
+                                setForm((prev) => ({ ...prev, fieldErrors: { ...prev.fieldErrors, terms: undefined } }));
+                              }
+                            }}
+                            aria-required="true"
+                            aria-invalid={form.fieldErrors.terms ? true : undefined}
+                            aria-describedby={form.fieldErrors.terms ? "terms-error" : undefined}
+                          />
+                          <span>
+                            {tAuth.rich("termsLabel", {
+                              terms: (chunks) => (
+                                <Link href="/terms" target="_blank" rel="noopener">
+                                  {chunks}
+                                </Link>
+                              ),
+                              privacy: (chunks) => (
+                                <Link href="/privacy" target="_blank" rel="noopener">
+                                  {chunks}
+                                </Link>
+                              ),
+                            })}
+                          </span>
+                        </label>
+                        {form.fieldErrors.terms && (
+                          <p id="terms-error" role="alert" className="kh-note is-bad" style={{ marginTop: 0 }}>
+                            {form.fieldErrors.terms}
+                          </p>
+                        )}
+                      </div>
+                    )}
+
+                    <button
+                      type="submit"
+                      disabled={!hydrated}
+                      aria-busy={form.loading ? true : undefined}
+                      className="kh-btn kh-go"
+                    >
+                      {form.loading
+                        ? tAuth(mode === "login" ? "entering" : mode === "register" ? "creatingAccount" : "sending")
+                        : mode === "login"
+                          ? tAuth("enter")
+                          : mode === "register"
+                            ? tAuth("createAccount")
+                            : tAuth("sendResetLink")}
+                    </button>
+
+                    {!form.early && errorBlock}
+                  </form>
+
+                  {mode === "login" && form.errorKey !== "invalidCredentials" && (
+                    <div className="kh-foot">
+                      <Link href={modeHref("reset")} className="kh-link is-dim">
+                        {tAuth("forgotPassword")}
+                      </Link>
+                    </div>
+                  )}
+                  {mode === "reset" && (
+                    <div className="kh-foot">
+                      <Link href={modeHref("login")} className="kh-link is-dim">
+                        {tAuth("backToSignIn")}
+                      </Link>
+                    </div>
+                  )}
+                </div>
+              </>
+            )}
+          </div>
+          <div className="kh-slotback" aria-hidden="true">
+            {/* eslint-disable-next-line @next/next/no-img-element -- la pone el motor al entrar */}
+            <img ref={slotImageRef} alt="" />
+          </div>
+        </div>
+      </main>
+
+      {covers.length > 0 && (
+        <>
+          <div className="kh-cap">
+            <p aria-hidden="true">
+              <span ref={capTitleRef} style={{ color: "inherit", fontWeight: "inherit" }} />
+              <span ref={capLabelRef} />
+            </p>
+            <button
+              type="button"
+              className="kh-pause"
+              onClick={togglePause}
+              aria-label={paused ? tAuth("resumeCovers") : tAuth("pauseCovers")}
+            >
+              {paused ? (
+                <svg viewBox="0 0 14 14" aria-hidden="true">
+                  <path d="M3 1l10 6-10 6z" />
+                </svg>
+              ) : (
+                <svg viewBox="0 0 14 14" aria-hidden="true">
+                  <path d="M2 1h3.5v12H2zM8.5 1H12v12H8.5z" />
+                </svg>
+              )}
+            </button>
+          </div>
+          <p ref={liveRef} role="status" className="kh-sr" />
+        </>
+      )}
+    </div>
   );
 }

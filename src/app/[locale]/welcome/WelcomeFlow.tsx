@@ -6,6 +6,7 @@ import { useTranslations, type AbstractIntlMessages } from 'next-intl'
 import { Logo } from '@/components/layout/Logo'
 import { KButton } from '@/components/ui/KButton'
 import { KInput } from '@/components/ui/KInput'
+import { AvatarIconPicker } from '@/components/ui/AvatarIconPicker'
 import { PosterImage } from '@/components/media/PosterImage'
 import { AiRecommendations } from '@/components/home/AiRecommendations'
 import { posterGradient } from '@/lib/images/poster-gradient'
@@ -83,6 +84,8 @@ export function WelcomeFlow({ locale, next, currentUsername, suggestChange, need
   const [termsPending, setTermsPending] = useState(needsTerms)
   const [termsChecked, setTermsChecked] = useState(false)
   const [termsError, setTermsError] = useState('')
+  // Opcional: quien no elija se queda con sus iniciales.
+  const [avatarIcon, setAvatarIcon] = useState<string | null>(null)
   const [saving, setSaving] = useState(false)
   const [nameFailed, setNameFailed] = useState('')
   const usernameRef = useRef<HTMLInputElement>(null)
@@ -143,6 +146,7 @@ export function WelcomeFlow({ locale, next, currentUsername, suggestChange, need
     const body: Record<string, unknown> = {}
     if (changed) body.username = value
     if (termsPending) body.accept_terms = true
+    if (avatarIcon) body.avatar_icon = avatarIcon
     if (Object.keys(body).length === 0) return setStep('formats')
 
     setSaving(true)
@@ -309,6 +313,17 @@ export function WelcomeFlow({ locale, next, currentUsername, suggestChange, need
                   spellCheck={false}
                   maxLength={20}
                 />
+
+                <div className="flex flex-col gap-2">
+                  <span className="font-body text-meta font-bold text-text-tertiary">{tAuth('chooseCharacter')}</span>
+                  <AvatarIconPicker
+                    value={avatarIcon}
+                    onChange={setAvatarIcon}
+                    label={tAuth('chooseCharacter')}
+                    noneLabel={tAuth('chooseCharacterNone')}
+                    iconLabel={(key) => tAuth(`characters.${key}`)}
+                  />
+                </div>
 
                 {termsPending && (
                   <TermsCheckbox
