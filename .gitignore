@@ -70,3 +70,6 @@ __pycache__/
 !.taste-skill/app/
 .taste-skill/app/*
 !.taste-skill/app/direction.json
+
+# Modelos 3D crudos (scripts/3d/fetch.mjs); los .glb optimizados van en public/3d
+scratch/

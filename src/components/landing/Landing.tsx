@@ -130,8 +130,6 @@ export function Landing({ scenes, copy, base }: { scenes: LandingScenes; copy: L
       <div className="kl-intro" aria-hidden="true">
         <span className="kl-display">KULTURA</span>
       </div>
-      <LandingMotion scenes={heroScenes} />
-
       <header className="kl-top">
         <a className="kl-brand kl-display" href={href("")}>
           KULTURA
@@ -156,11 +154,10 @@ export function Landing({ scenes, copy, base }: { scenes: LandingScenes; copy: L
             decoding="async"
             style={{ objectPosition: `${pct(first.fx)} ${pct(first.fy)}` }}
           />
-          <canvas className="kl-bg" aria-hidden="true" />
+          <LandingMotion scenes={heroScenes} />
           <h1 className="kl-word kl-display" id="kl-h1">
             <span>KULTURA</span>
           </h1>
-          <canvas className="kl-fg" aria-hidden="true" />
           <div className="kl-hero-foot">
             <div>
               <p className="kl-lead kl-sub">{copy.hero.lead}</p>

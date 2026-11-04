@@ -105,8 +105,13 @@ body:has(.kl)::before { display: none; }
 .kl-stage[data-gl] canvas { opacity: 1; }
 .kl-stage .kl-bg { z-index: 1; }
 .kl-stage .kl-fg { z-index: 3; pointer-events: none; }
+/* Héroe 3D (R3F): ocupa la escena entre la portada estática y el titular. */
+.kl-hero3d { position: absolute; inset: 0; z-index: 3; pointer-events: none; }
+.kl-three { position: absolute; inset: 0; }
+.kl-stage[data-gl] { background: #0a0a0c; }
+.kl-stage[data-gl] > img.kl-ph { opacity: 0; transition: opacity 0.6s var(--ease-out); }
 .kl-word {
-  position: absolute; z-index: 2; left: 0; right: 0; top: 43%; text-align: center; white-space: nowrap;
+  position: absolute; z-index: 2; left: 0; right: 0; top: 36%; text-align: center; white-space: nowrap;
   color: var(--ink); pointer-events: none; will-change: transform; transform: translateY(-50%);
   /* «KULTURA» mide 3,24 em con este tipo: así ocupa el 96 % del ancho sin medir en JS. */
   font-size: calc(96vw / 3.24); line-height: 0.82;

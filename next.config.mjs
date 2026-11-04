@@ -118,6 +118,9 @@ export function clientSentryDefines(isServer) {
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  // three.js trae add-ons sin transpilar; es lo que pide la guía oficial de
+  // React Three Fiber para Next.js.
+  transpilePackages: ["three"],
   // SEG-10: no anunciar el framework (cabecera X-Powered-By: Next.js).
   poweredByHeader: false,
   webpack(config, { isServer, webpack }) {
