@@ -62,3 +62,10 @@ e2e_baseline.txt
 # Notas de trabajo locales (no versionadas)
 DISENO.md
 __pycache__/
+
+# Taste Skill: working files (the direction sheets are kept)
+.taste-skill/*
+!.taste-skill/direction.json
+!.taste-skill/app/
+.taste-skill/app/*
+!.taste-skill/app/direction.json
