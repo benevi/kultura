@@ -205,7 +205,7 @@
     const others = [...objs.keys()].filter((i) => objs[i] && !focal.includes(i)).sort((a, b) => ((a * 7) % n) - ((b * 7) % n));
     // three focal pieces in front, under the title
     focal.forEach((i, k) => { const sx = P ? [0.5, 0.18, 0.82][k] : [0.5, 0.3, 0.7][k];
-      out[i] = { p: at(sx, P ? 0.5 : 0.66, k ? -0.6 : 0.4), r: V(0.02, k === 1 ? 0.28 : k === 2 ? -0.28 : 0, 0), s: P ? 0.9 : 1.08 }; });
+      out[i] = { p: at(sx, P ? 0.52 : 0.66, k ? -0.6 : 0.4), r: V(0.02, k === 1 ? 0.28 : k === 2 ? -0.28 : 0, 0), s: P ? 1.15 : 1.08 }; });
     // a ring of nine behind them, the rest dissolving in the fog
     const ring = P ? 6 : 9;
     others.forEach((i, k) => {
@@ -286,7 +286,7 @@
     gsap.registerPlugin(ScrollTrigger); gsap.ticker.lagSmoothing(0);
     ScrollTrigger.create({ trigger: rooms, start: 'top bottom', end: 'bottom bottom', onUpdate: (st) => { kRooms = mapP(st.progress); kT = kRooms + kRank; } });
     // leaving the last room: the poster of the year's best flies into the ranking
-    ScrollTrigger.create({ trigger: '#mejor', start: 'top bottom', end: 'top 25%', onUpdate: (st) => { kRank = st.progress; kT = kRooms + kRank; } });
+    ScrollTrigger.create({ trigger: '#mejor', start: 'top 90%', end: 'top 15%', onUpdate: (st) => { kRank = st.progress; kT = kRooms + kRank; } });
   } else {
     addEventListener('scroll', () => { const r = rooms.getBoundingClientRect(), tot = r.height; kT = mapP(Math.min(1, Math.max(0, (innerHeight - r.top) / tot))); }, { passive: true });
   }
@@ -359,9 +359,13 @@
       featT += dt; if (featT > 3.2) { featT = 0; featIdx++; }
       const fr = objs[front[ROOMS[b - 1].verb]]; feat = hovered && inRoom.includes(hovered) ? hovered : (fr && inRoom.includes(fr) ? fr : inRoom[featIdx % Math.max(1, inRoom.length)]);
     }
-    if (feat && !phoneNow()) { nowEl.style.left = '40px'; nowEl.style.top = (innerHeight - 140) + 'px'; }
-    else if (false) { const v = feat.position.clone(); v.y -= H * feat.scale.y * 0.5 + 0.12; v.project(camera);
-      nowEl.style.left = (phoneNow() ? 20 : Math.min(innerWidth - 320, Math.max(40, (v.x + 1) / 2 * innerWidth - 150))) + 'px'; nowEl.style.top = Math.min(innerHeight - 96, (1 - v.y) / 2 * innerHeight + 10) + 'px'; }
+    if (feat && !phoneNow()) {
+      const v = feat.position.clone(); const half = H * feat.scale.y * 0.5;
+      const onShelf = b === 2 || b === 3; v.y += onShelf ? half + 0.18 : -half - 0.14; v.project(camera);
+      const x = (v.x + 1) / 2 * innerWidth, y = (1 - v.y) / 2 * innerHeight;
+      nowEl.style.left = Math.min(innerWidth - 320, Math.max(40, x - 150)) + 'px';
+      nowEl.style.top = (onShelf ? Math.max(innerHeight * 0.3, y - 70) : Math.min(innerHeight - 90, y + 24)) + 'px';
+    }
     if (k > 3.25) feat = null;
     if (feat !== featObj) { featObj = feat; const m = feat && feat.userData.m;
       nowEl.innerHTML = m ? `<b>${m.title}</b><span>${[FMT[m.format], m.author, m.year].filter(Boolean).join(' · ')}${m.rating ? ' · ' + STAR + ' ' + num(m.rating) : ''}</span>` : ''; }
@@ -382,7 +386,7 @@
       if (o === starObj && slot && k > 2.6) { const q = Math.min(1, Math.max(0, (k - 3) / 0.85)); const e = q * q * (3 - 2 * q);
         tmpP.lerp(slot.p, e); tmpR.multiplyScalar(1 - e); s += (slot.s - s) * e;
         const flying = k > 3.05; if (u.flying !== flying) { u.flying = flying; o.renderOrder = flying ? 10 : 0; o.traverse((m) => { if (m.isMesh) { m.renderOrder = flying ? 10 : 0; (Array.isArray(m.material) ? m.material : [m.material]).forEach((mt) => { mt.depthTest = !flying; }); } }); }
-        const landed = q >= 0.999; o.visible = !landed; const im = firstImg(); if (im) im.classList.toggle('landed', landed); }
+        const landed = q >= 0.999; o.visible = !landed; const im = firstImg(); if (im) im.classList.toggle('landed', landed); document.getElementById('first').classList.toggle('arrived', q > 0.9); }
       else if (o === starObj) { o.visible = true; const im = firstImg(); if (im) im.classList.remove('landed'); }
       u.hT = (o === hovered || o === featObj) && !(o === starObj && k > 3.2) ? 1 : 0; u.h += (u.hT - u.h) * ease(8);
       const life = 1 - Math.abs(f - 0.5) * 0; // always alive
