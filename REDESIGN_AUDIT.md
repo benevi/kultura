@@ -78,7 +78,7 @@ Kultura es un diario y una biblioteca social de cultura en 7 formatos: película
 
 La han decidido las skills (ver `SKILLS_AND_TOOLS.md` y `docs/redesign/DIRECCION.md`):
 
-- **Página** (Taste Skill): «La frase es la composición» (`sentence-as-layout`, semilla 1399116372). Big Shoulders + Public Sans y «Cobalto sobre arena».
+- **Página** (Taste Skill): «La hoja de contactos» (`contact-sheet`, semilla 1503157140). Work Sans y «plum-black-pink». Solo tema oscuro, a petición del usuario.
 - **Pantallas de app** (Taste Skill): `true-black-flat`.
 - **Patrones** (UI UX Pro Max): Editorial Grid / Magazine + Exaggerated Minimalism + Immersive/Interactive Experience. Los colores de categoría de Media Platform se descartan por la regla de un solo acento de Taste.
 - **Referencias** (Awesome Claude Design): Spotify (las portadas como única fuente de color), WIRED y The Verge (display alto y estrecho solo en momentos grandes).
