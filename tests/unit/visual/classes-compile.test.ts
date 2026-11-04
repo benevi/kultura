@@ -43,6 +43,14 @@ function walk(dir: string): string[] {
 }
 
 /** Trozos de texto literal bajo un nodo (cadenas y partes fijas de plantillas). */
+function walkCss(dir: string): string[] {
+  return readdirSync(dir, { withFileTypes: true }).flatMap((entry) => {
+    const full = join(dir, entry.name);
+    if (entry.isDirectory()) return walkCss(full);
+    return entry.name.endsWith(".css") ? [full] : [];
+  });
+}
+
 function literalPieces(node: ts.Node, out: string[]) {
   if (ts.isStringLiteral(node) || ts.isNoSubstitutionTemplateLiteral(node)) out.push(node.text);
   else if (ts.isTemplateExpression(node)) {
@@ -109,8 +117,9 @@ let ownClasses: Set<string>;
 beforeAll(() => {
   const context = createContext(resolveConfig(config));
   order = (classes) => context.getClassOrder(classes);
-  const css = readFileSync(join(SRC, "app/globals.css"), "utf8");
-  ownClasses = new Set(Array.from(css.matchAll(/\.([a-zA-Z][\w-]*)/g), (m) => m[1]));
+  // globals.css y las hojas propias de una página (p. ej. `components/landing/landing.css`).
+  const sheets = walkCss(SRC).map((f) => readFileSync(f, "utf8")).join("\n");
+  ownClasses = new Set(Array.from(sheets.matchAll(/\.([a-zA-Z][\w-]*)/g), (m) => m[1]));
 });
 
 describe("criterio DIS (1) · clases sin regla", () => {
@@ -137,7 +146,7 @@ describe("criterio DIS (1) · clases sin regla", () => {
     }
   });
 
-  it("toda clase usada en src genera CSS o es propia de globals.css", () => {
+  it("toda clase usada en src genera CSS o es propia de una hoja de src", () => {
     const missing = new Map<string, string>();
     for (const file of walk(SRC)) {
       for (const { text, line, strict } of classStrings(file)) {

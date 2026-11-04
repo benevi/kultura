@@ -4,8 +4,6 @@
 
 import { describe, it, expect, vi } from "vitest";
 
-// `Hero` importa la navegación de next-intl, que en Node necesita Next entero.
-vi.mock("@/i18n/navigation", () => ({ Link: () => null }));
 import { readFileSync } from "fs";
 import path from "path";
 import es from "../../../messages/es.json";
@@ -24,7 +22,6 @@ import {
 } from "@/lib/landing/immersive";
 import { contrastRatio, toSrgb } from "@/lib/design/color";
 import { C, FORMAT_HEX } from "@/lib/og/brand";
-import { ACTIVE_CLASS } from "@/components/landing/Hero";
 
 describe("copia confirmada de D-11", () => {
   it("h1, subtítulo y botones en español, literales", () => {
@@ -34,7 +31,7 @@ describe("copia confirmada de D-11", () => {
     expect(es.landing.hero.sub).toBe(
       "Apunta lo que quieres ver, leer y jugar, puntúa lo que ya viste y compártelo con tus amigos. Gratis y sin anuncios."
     );
-    expect(es.landing.hero.cta).toBe("Crear mi cuenta gratis");
+    expect(es.landing.hero.cta).toBe("Crear cuenta");
     expect(es.landing.hero.demo).toBe("Ver la demo");
   });
 
@@ -42,7 +39,7 @@ describe("copia confirmada de D-11", () => {
     expect(plainTitle(en.landing.hero.title)).toBe(
       "Your watchlist for movies, TV, anime, manga, games, books and comics"
     );
-    expect(en.landing.hero.cta).toBe("Create my free account");
+    expect(en.landing.hero.cta).toBe("Create account");
   });
 
   it("la misma promesa en <title> y en la descripción", () => {
@@ -77,12 +74,6 @@ describe("formato iluminado en el titular", () => {
     expect(activeFormatAt(FORMAT_FROM)).toBe("movie");
     expect(activeFormatAt(FINAL_FROM)).toBeNull();
     expect(activeFormatAt(1)).toBeNull();
-  });
-
-  it("la clase de cada palabra pinta exactamente formatColor", () => {
-    for (const f of IMMERSIVE_FORMATS) {
-      expect(ACTIVE_CLASS[f]).toBe(`group-data-[active=${f}]/hero:text-[${formatColor(f).replace(/ /g, "_")}]`);
-    }
   });
 
   it("el color de cada formato se lee sobre el fondo (≥ 7:1)", () => {

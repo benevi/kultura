@@ -14,7 +14,9 @@ import { test, expect, type Page } from "@playwright/test";
 import { isolateNetwork, open } from "./helpers";
 
 const MAX_SIZES = 7;
-const ROUTES = ["/es", "/es/best", "/es/best/movie/2026"];
+// La portada (rediseño v2) tiene su propia escala y queda fuera; los rankings,
+// hasta que se rediseñen, siguen con esta regla.
+const ROUTES = ["/es/best", "/es/best/movie/2026"];
 
 async function fontSizes(page: Page) {
   return page.evaluate(() => {

@@ -6,7 +6,7 @@
 // ============================================================
 
 /** Orden de las preguntas. `demo` solo existe si la cuenta demo está configurada. */
-export const FAQ_KEYS = ["free", "what", "demo", "privacy", "data", "ai"] as const;
+export const FAQ_KEYS = ["what", "demo", "privacy", "data", "ai"] as const;
 export type FaqKey = (typeof FAQ_KEYS)[number];
 
 export interface FaqItem {

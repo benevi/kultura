@@ -31,3 +31,17 @@ export const figtree = localFont({
   display: "swap",
   adjustFontFallback: "Arial",
 });
+
+/**
+ * Display de la landing v2: Bricolage Grotesque fijada en su versión más
+ * estrecha y pesada (opsz 12, wdth 75, wght 800), subconjunto latino, 17 KB.
+ * Solo la importa la portada, así que solo allí se precarga. `block`: es el
+ * nombre gigante; mejor ~100 ms en blanco (llega precargada) que verlo en Arial.
+ */
+export const kulturaDisplay = localFont({
+  src: "./KulturaDisplay-latin.woff2",
+  weight: "800",
+  variable: "--font-landing",
+  display: "block",
+  adjustFontFallback: false,
+});
