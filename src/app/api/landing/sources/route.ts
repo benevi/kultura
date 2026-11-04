@@ -19,7 +19,9 @@ const log = createLogger("landing-sources");
 /** Títulos por ranking que se mandan: el líder y los siguientes como reserva. */
 const SOURCES_PER_RANKING = 8;
 
-export const revalidate = 3600;
+// Dinámico: si un proveedor falla una vez, un ISR de 1 h congelaría la lista
+// vacía. No cuesta cupo: los rankings ya salen de las cachés de /best.
+export const dynamic = "force-dynamic";
 
 export async function GET() {
   const rankings = await Promise.all(
@@ -60,6 +62,6 @@ export async function GET() {
 
   return NextResponse.json(
     { generatedAt: new Date().toISOString(), rankings, showcase },
-    { headers: { "Cache-Control": "public, s-maxage=3600, stale-while-revalidate=86400" } },
+    { headers: { "Cache-Control": "no-store" } },
   );
 }
