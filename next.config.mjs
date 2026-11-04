@@ -116,6 +116,28 @@ export function clientSentryDefines(isServer) {
   };
 }
 
+// ── La escena 3D en un solo chunk diferido ───────────────────────────────────
+// three, React Three Fiber, drei y la escena (`src/components/three`) solo los
+// carga la portada, y tras el LCP (`useSceneGate`). Sin esta regla webpack los
+// repartía en cinco chunks «lib» y cada uno añade una entrada al mapa del
+// runtime que descargan todas las páginas; con la portada de rankings al borde
+// de su presupuesto de 150 KB (Lighthouse CI), eso bastaba para pasarse. Un
+// único chunk es además una sola petición para el 3D. Solo en el cliente.
+const THREE_CHUNK = {
+  name: "three",
+  chunks: "async",
+  enforce: true,
+  priority: 35,
+  reuseExistingChunk: true,
+  /** @param {{ resource?: string }} module */
+  test: (module) =>
+    typeof module.resource === "string" &&
+    (/[\\/]src[\\/]components[\\/]three[\\/]/.test(module.resource) ||
+      /[\\/]node_modules[\\/](three|three-stdlib|@react-three|maath|zustand|suspend-react|its-fine|react-reconciler|react-use-measure|@monogrid|stats-gl|detect-gpu|tunnel-rat|@use-gesture|troika-three-text|camera-controls|meshline|three-mesh-bvh|hls\.js|@mediapipe|utility-types|react-composer|glsl-noise|use-sync-external-store)[\\/]/.test(
+        module.resource,
+      )),
+};
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   // three.js trae add-ons sin transpilar; es lo que pide la guía oficial de
@@ -126,6 +148,8 @@ const nextConfig = {
   webpack(config, { isServer, webpack }) {
     const defines = clientSentryDefines(isServer);
     if (defines) config.plugins.push(new webpack.DefinePlugin(defines));
+    const groups = !isServer && config.optimization?.splitChunks?.cacheGroups;
+    if (groups) groups.three = THREE_CHUNK;
     return config;
   },
   async headers() {
