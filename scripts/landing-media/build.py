@@ -6,7 +6,7 @@ Lo ejecuta .github/workflows/landing-media.yml cada lunes (y a mano con
 workflow_dispatch). Pasos:
   1. Candidatos: GET {SITE_URL}/api/landing/sources (rankings destacados y
      muestra de portadas, datos ya públicos) + lo más visto de la semana en
-     TMDB (fondos SIN texto para la portada y el cierre).
+     TMDB (fondos SIN texto para la portada).
   2. Para cada imagen: mapa de profundidad (Depth Anything V2), dilatado y
      suavizado para que los bordes no se rompan al moverse, y control de
      calidad automático: umbral de la capa delantera (Otsu), foco del encuadre
@@ -327,16 +327,16 @@ def main() -> int:
 
     used: list[Pick] = []
 
-    # 1. Portada y cierre: fondos sin texto de lo más visto de la semana.
+    # 1. Portada: fondos sin texto de lo más visto de la semana.
     scenes = []
     for c in tmdb_hero_candidates(tmdb) if tmdb else []:
         res = process(c, 1920)
         if res:
             scenes.append((c, res))
-    ranked = choose_scenes([(c, r[2]) for c, r in scenes], HERO_COUNT + 1)
+    ranked = choose_scenes([(c, r[2]) for c, r in scenes], HERO_COUNT)
     by_pick = {id(c): r for c, r in scenes}
     for i, (c, _) in enumerate(ranked):
-        c.slot, c.position = ("hero", i) if i < HERO_COUNT else ("close", 0)
+        c.slot, c.position = "hero", i
         emit(c, *by_pick[id(c)])
         used.append(c)
 
