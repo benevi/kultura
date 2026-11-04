@@ -40,3 +40,5 @@ Notas de instalación:
 | 2026-11-04 | Taste Skill | `draw.mjs --app --kind community --keep palette,type` → `--style accent-ladder` | La hoja de la app (`.taste-skill/app/direction.json`). |
 | 2026-11-04 | Awesome Claude Design | Lectura de theverge, wired y spotify | Principios trasladables (sección 3 de `docs/redesign/DIRECCION.md`). |
 | 2026-11-04 | Design Motion Principles | Modo Create, paso 1 | La ponderación por contexto (sección 7 de `DIRECCION.md`). |
+| 2026-11-04 | Taste Skill | `--redraw palette` (requisito: tema oscuro) | `plum-black-pink`. |
+| 2026-11-04 | Taste Skill | Nuevo reparto `--options 3` (requisito: más visual, menos texto) → `--direction contact-sheet` | La hoja nueva; la app pasa a `true-black-flat`. |

@@ -1,12 +1,12 @@
 {
  "version": 1,
  "kind": "app",
- "at": "2026-11-04T16:02:47.164Z",
- "seed": 1099932050,
+ "at": "2026-11-04T16:13:07.616Z",
+ "seed": 1881500351,
  "input": {
   "kind": "community",
-  "brief": "Kultura: a social diary and library for everything you watch, read and play across seven formats, with friends, lists, chat and yearly rankings",
-  "theme": null,
+  "brief": "Kultura: a dark, image-first library of everything you watch, read and play across seven formats, with friends, lists, chat and yearly rankings",
+  "theme": "dark",
   "screens": [
    "home",
    "list",
@@ -18,75 +18,68 @@
    "palette",
    "type"
   ],
-  "style": "accent-ladder"
+  "style": "true-black-flat"
  },
  "style": {
-  "id": "accent-ladder",
-  "name": "Accent ladder",
-  "theme": "light",
-  "basis": "3 screens: a newsletter home, a network analytics overview, a cap-table company home",
+  "id": "true-black-flat",
+  "name": "True-black flat",
+  "theme": "dark",
+  "basis": "5 screens: an events back office, an event analytics tab, a community overview, an artist studio home, an artist insights page",
   "suits": [
-   "creator",
-   "smb-admin",
    "community",
-   "analytics"
+   "creator",
+   "markets"
   ],
-  "idea": "One brand hue at full strength only on small marks, and its pale tints doing all the area work: the active nav row, a plan card, badges and progress tracks.",
-  "colourBudget": "3-10%, nearly all of it as pale tints of the one hue",
+  "idea": "Night mode on true black: sidebar, top bar and page share one ground, elevation is a lightness step alone, and colour is confined to data marks.",
+  "colourBudget": "at or under 3%; the accent never touches buttons, tabs or nav",
   "tokens": {
-   "ground": "#f9fafb",
-   "surface": "#ffffff",
-   "raised": "#f3f4f6",
-   "border": "#e5e7eb",
-   "rule": "#f2f2f2",
-   "control": "#d1d5db",
-   "text": "#111827",
-   "muted": "#5f6672",
-   "accent": "#b8336a",
-   "accentSoft": "#fdf2f7",
-   "accentTrack": "#f8dbe8",
-   "accentInk": "#6b1d3e",
-   "positive": "#247b50",
-   "negative": "#c4242a",
-   "warning": "#92400e",
+   "ground": "#000000",
+   "surface": "#111111",
+   "raised": "#2a2a2a",
+   "border": "#1a1a1a",
+   "rule": "#161616",
+   "control": "#444444",
+   "text": "#ffffff",
+   "muted": "#b4b4b4",
+   "faint": "#949494",
+   "accent": "#c6f24e",
+   "positive": "#c6f24e",
+   "negative": "#e5484d",
+   "warning": "#e5a93b",
    "chart": [
-    "#b8336a",
-    "#6b7280",
-    "#d4618f"
+    "#c6f24e",
+    "#e6e6e6",
+    "#6b6b6b"
    ],
    "pills": {
     "positive": [
-     "#dcfce7",
-     "#14532d"
+     "#222a10",
+     "#c6f24e"
     ],
     "negative": [
-     "#ffedea",
-     "#831c1e"
+     "#2c1a20",
+     "#e5566f"
     ],
     "warning": [
-     "#fffbeb",
-     "#92400e"
+     "#2b2414",
+     "#e5a93b"
     ],
     "neutral": [
-     "#f3f4f6",
-     "#374151"
-    ],
-    "accent": [
-     "#fdf2f7",
-     "#6b1d3e"
+     "#222222",
+     "#ffffff"
     ]
    },
    "radius": {
-    "card": 8,
-    "control": 6
+    "card": 20,
+    "control": 999
    },
    "font": {
-    "family": "DM Sans",
+    "family": "Inter",
     "second": null,
-    "fallback": "Inter, system-ui, sans-serif",
+    "fallback": "system-ui, sans-serif",
     "sizes": {
-     "title": 32,
-     "section": 18,
+     "title": 20,
+     "section": 16,
      "kpi": 24,
      "body": 14,
      "small": 12
@@ -94,61 +87,54 @@
     "weights": [
      400,
      500,
-     600,
-     700
+     600
     ],
-    "note": "700 for the page title only."
+    "note": "Nothing above 600; inactive nav labels #bbb, active #fff."
    },
-   "density": "sparse",
-   "rowHeight": 45,
-   "sidebarWidth": 230,
-   "gap": 24,
-   "pad": 24,
-   "controlHeight": 32
+   "density": "medium",
+   "rowHeight": 80,
+   "sidebarWidth": 210,
+   "gap": 14,
+   "pad": 22,
+   "controlHeight": 36
   },
-  "shell": "open-plane",
+  "shell": "ruled-t-frame",
   "shellAlternatives": [
-   "ruled-t-frame"
+   "no-sidebar"
   ],
-  "signature": "The full hue goes only on small marks: the one filled-button style, the data series and the active nav icon. Its 50-200 tints carry every area: the active nav row (tint fill with the dark ink of the hue), the plan or trial card, badges and progress tracks. The primary action may instead be near-black, as on the study's newsletter home.",
+  "signature": "Elevation by lightness alone (#000 ground, #111 card, #2a2a2a nested panel) with no borders or shadows on cards; the active nav item is marked only by its label going from #bbb to #fff; the primary control is made primary by inversion, a white 36px pill with black text.",
   "identity": [
-   "The ladder built from the brand's own hue (its logo, the brief's object) in place of the dealt raspberry: the full hue on small marks, its pale tints on areas, never violet or indigo.",
-   "The product's objects in the lead block: the newsletter's latest issue as its cover, the shop's products as 40px thumbnails, the course's lessons with their own art.",
-   "A ground one level toward the hue's palest tint (#fbf7f8 for the raspberry) in place of #f9fafb, so the page and the tints read as one family."
+   "The one data hue from the product's world in place of the dealt lime: a solar amber (#f2b33d) for an energy home, a sky blue (#4cb3f0) for water or weather, a lime only for sport. It is still the only hue on data and never touches buttons, tabs or nav. A green or yellow-green hue is also --positive; an amber that sits beside --warning leaves the warning to its pill pair.",
+   "A ground with the product's temperature: the studied #000 for media and events, a warm near-black (#0e0d0c) for a home, a cool one (#0c0d0f) for a monitor, with cards one lightness step above it (#181716, #15171a). Never navy or slate.",
+   "A signature element from the product's world as the lead: the energy home's power flow (sun, house, battery and grid with their live kW), an event's doors against capacity, an artist's release with its cover."
   ],
   "avoid": [
-   "the full hue on large areas",
-   "a second accent family (four families on one screen was flagged in the study)",
-   "a gradient on the trial chip or upgrade button",
-   "a left accent bar on the active nav row on top of the tint (seen once in 23 screens)",
-   "violet or indigo"
+   "a navy or slate dark theme",
+   "glow, neon borders or shadows",
+   "a hue per chart (five hues across four charts was flagged)",
+   "the accent on buttons, tabs or nav",
+   "a 64px top bar left empty across most of its width (flagged twice)"
   ],
-  "notes": "All three studied screens of this kind used violet, purple or pink as the one hue. The move does not depend on the hue, so the house's violet and indigo ban holds and the library deals a raspberry instead."
+  "notes": "The studied screens of this kind used a violet-magenta (#dd6cff) and an orange (#ff5500) as their one data hue. The library deals a lime, which keeps the move and stays clear of the violet ban; because the lime is a yellow-green, it is also the positive colour (a second, mint green beside it read as two greens). The greys are #b4b4b4 for secondary text and #949494 for meta, 32 levels apart rather than the 20 of the measured #aaa and #969696, which read as one grey; #949494 still holds 4.5:1 on the #2a2a2a nested panel."
  },
  "shell": {
-  "id": "open-plane",
-  "name": "Open plane",
-  "basis": "5 of 23 screens",
+  "id": "no-sidebar",
+  "name": "No sidebar",
+  "basis": "3 of 23 screens",
   "suits": [
-   "finance",
-   "wallet",
-   "workspace",
+   "report",
    "creator",
-   "analytics"
+   "community"
   ],
   "numbers": {
-   "sidebarWidth": "230-256 (230, 240, 256 in the study; 280 and 292 with a built-in icon rail)",
-   "separation": "none, or one 1px hairline; the sidebar sits on the page ground or within 1-2% of it",
-   "navPitch": 34,
-   "navRowHeight": 32,
-   "navIcon": "16px outline, about 1.5px stroke",
-   "navLabel": "14px, 400, grey or ink",
-   "activeItem": "neutral grey pill, radius 6-12, inset 8-12px from the sidebar edges (#e9e9e9-#ededed)",
-   "topBar": "none",
-   "canvas": "fluid with a 24-64px gutter, or a centred 1100px column"
+   "topBar": "46-48px on the page ground, no border",
+   "column": "centred, 1088-1208px",
+   "gutters": "152-212px at a 1512px window",
+   "logo": "on the column's left edge",
+   "links": "14-15px semibold grey"
   },
-  "blueprint": "The labelled sidebar sits on the page ground with nothing or one hairline between it and the canvas; there is no top bar, and the page header and cards sit straight on the ground about 32-36px from the top. Workspace or account switcher at the top of the sidebar, primary nav on a 34px pitch, groups under 12-13px sentence-case grey labels with 22-56px of air above, utilities and the user row pushed to the bottom. Cards are white on the off-white ground (or the sidebar is white with a 1px border on a #f9fafb canvas). The canvas is fluid with one gutter value, or a centred column for personal homes.",
-  "phone": "The sidebar folds into a 48px top bar holding the screen's name, a menu button that opens a full-screen sheet with the nav and the switcher, and at most one action. Content takes the full width with 16px margins."
+  "blueprint": "A 46-48px top bar on the page ground over a centred 1088-1208px column; the logo sits exactly on the column's left edge and the bar's right cluster ends near its right edge, so header and content share one column. Three to five text links, a 36px search, the account. Use it for generated reports, viewers and products with few destinations; with a sticky bar on the same ground, give it a 1px rule when content scrolls under it (the studied bar without one sliced content off).",
+  "phone": "The bar keeps the logo, a search icon and a menu button; the links move into the menu sheet. The column becomes the full width with 16px margins."
  },
  "screens": [
   {
@@ -158,17 +144,19 @@
   {
    "name": "list",
    "pattern": {
-    "id": "count-cards-filter",
-    "name": "Count cards that filter",
+    "id": "table-filter-bar",
+    "name": "Table with tabs and a filter bar",
     "screen": "list",
     "kinds": [
      "community",
+     "devtools",
      "commerce",
-     "support"
+     "support",
+     "smb-admin"
     ],
-    "basis": "an events back office",
-    "blueprint": "Above a list, 3-5 equal count cards (61px tall, 12px padding, a 13px grey label over a 16/600 value, 8px gap) are the type filter: the selected card gets a 1.5px accent border and a pale accent fill, and the list below shows that type only. Zero counts print as '0' in the same style; no deltas, no icons. This is one place where a row of identical small cards is right: the cards are peers and each one does work.",
-    "phone": "The count cards become a horizontally scrolling row of chips with the count inside each, or a select above the list."
+    "basis": "an events back office, a tracks studio, a sessions overview",
+    "blueprint": "Title row: an 18-24px title on the left, at most an outlined secondary and the one primary (36px) on the right. Underline tabs for the list's states on a full-width 1px rule with a 2px indicator as wide as the label; 22-32px below, the toolbar: a search of about 252-316 x 32-36 on the left, the count ('7 events') and the sort on the right. The table sits on the panel or page ground with no card around it: a header of 12-13px grey sentence-case labels with no fill and no rule, rows on a 48-56px pitch for one line or 72-92px with a thumbnail (media height plus 24-32px), 1px rules 3-7% darker than the ground or no rules at all, the identity column given the most width, numbers right-aligned in tabular figures with the unit muted ('5 /10'), one status mark per row and one kebab at the far right. Drop a column that is empty in every row (a blank co-host column left a 300px dead band). On an overview, cap the rows and link to the full list; on the full list, state the total and load more at the end.",
+    "phone": "Rows become two-line items: identity and the key number on line 1, the secondary fields in 13px grey on line 2, the kebab at the right. Tabs scroll in their own row; the search becomes a full-width field."
    }
   },
   {
