@@ -17,7 +17,7 @@ import { createLogger } from "@/lib/logger";
 const log = createLogger("landing-sources");
 
 /** Títulos por ranking que se mandan: el líder y los siguientes como reserva. */
-export const SOURCES_PER_RANKING = 8;
+const SOURCES_PER_RANKING = 8;
 
 export const revalidate = 3600;
 
