@@ -1,0 +1,661 @@
+{
+ "version": 1,
+ "at": "2026-11-04T16:30:10.443Z",
+ "seed": 337853935,
+ "redraws": 8,
+ "input": {
+  "brief": "Kultura: a dark, cinematic, image-first home for everything you watch, read and play (movies, series, anime, manga, games, books, comics); real covers with depth maps, immersive 3D, few words",
+  "sector": "culture",
+  "tone": "bold",
+  "have": [
+   "product-ui",
+   "illustration"
+  ],
+  "keep": [],
+  "avoid": [],
+  "sections": [
+   "showcase",
+   "features",
+   "how-it-works",
+   "list",
+   "proof",
+   "faq",
+   "cta",
+   "footer"
+  ],
+  "direction": "loud-flat-poster"
+ },
+ "imagery": "atmosphere",
+ "allow": [],
+ "direction": {
+  "id": "loud-flat-poster",
+  "name": "Loud and flat",
+  "sectors": [
+   "agency",
+   "consumer-app",
+   "music",
+   "event",
+   "education",
+   "nonprofit",
+   "physical-product",
+   "saas",
+   "culture"
+  ],
+  "tones": [
+   "bold",
+   "playful"
+  ],
+  "needs": [],
+  "idea": "A page with the directness of a street poster: flat saturated colour, the heaviest type you can find, short blunt statements, and photographs cut out and stuck on. It is for subjects with a voice. Write the page as things a person would actually say out loud, and let the design say them at full volume. The craft is in the control beneath the noise: a strict grid, two or three colours, and exact alignment keep it from becoming a mess.",
+  "composition": "Hero: a statement of three to six words in ultra-heavy type at 11–15vw, filling the width, lines stacked tight (leading 0.85), flush left with 20–28px margins, on a flat saturated ground. One cut-out or hard-cropped photograph overlaps the type from the right or bottom, tilted 3–6 degrees. A single chunky button in the contrasting flat colour. Sections are solid panels in alternating palette colours: one is a row of short statements each on its own panel of unequal width; one is a single photograph bleeding off two edges with a caption block set over a solid colour bar; one is a large plain list. Panels meet edge to edge. Corners are square or use one large radius (28–40px) consistently.",
+  "typography": "The heaviest weight available, set tight, mostly lowercase or mostly uppercase (choose one). Body text is a plain grotesk at 18–20px.",
+  "typeClasses": [
+   "heavy-black",
+   "condensed-heavy",
+   "extended-heavy",
+   "rounded-friendly"
+  ],
+  "colour": "Three or four flat colours at full strength including black or white. Each panel is one colour; text on it is one other.",
+  "paletteTags": [
+   "flat-loud"
+  ],
+  "imagery": "Photographs with attitude, cropped hard or cut to a simple shape with `clip-path` (circle, arch, blunt polygon), slightly rotated, overlapping the type. Two or three on the page.",
+  "sectionTags": [
+   "poster",
+   "colour-field",
+   "type-led"
+  ],
+  "motion": "edge-marquee",
+  "richness": "Colour mass, type mass, and overlap.",
+  "pitfalls": "Headlines still obey the two-line rule: at 13vw that means very few words, which is correct for this voice. No outlines, no offset shadows, no sticker confetti. Rotation is for two or three images only, never for text blocks.",
+  "seenIn": [
+   "aww-warm-fuzzy",
+   "aww-aardvark-book-club",
+   "opl-uglycash",
+   "opl-depo-budget-app",
+   "aww-trevor-noah"
+  ],
+  "allow": []
+ },
+ "hero": {
+  "id": "name-across-the-middle",
+  "name": "Name across the middle",
+  "archetype": "giant-wordmark",
+  "directions": [
+   "name-as-monument",
+   "type-only-statement",
+   "loud-flat-poster"
+  ],
+  "needs": [],
+  "blueprint": "Paper and ink only; no picture on the first screen. The name runs on one line across the vertical centre, sized to span from the 18px left margin to the 18px right margin (97.5% of the width). Set it as inline SVG text with a `viewBox` fitted to the word and `width: 100%`, or tune its vw size to the letter count, so it never wraps. In a heavy grotesk the letters stand about 280px tall, from about 310px to 590px; nothing touches or overlaps them. The four corners carry everything else on 18px margins. Top-left: one supporting sentence at 18px on two lines, max 36ch, and 16px below it the single action as a solid ink rectangle. Top-right: a menu word or three text links at 15px. Bottom-left, on a baseline 24px above the edge: the city or the kind of work at 16px. Bottom-right on the same baseline: two or three text links at 15px. The ground between the corners and the name, about 230px above and below it, stays empty and is closed on both sides by the corner texts. The name returns in the footer at the same width with ground and ink swapped and a two-line invitation above it, so the page closes like a bracket.",
+  "mobile": "The name stays on one line across the width inside 16px margins and moves up to 22% of the height. The supporting sentence follows on the left margin at 17px, then the action at full width. The lower half holds the first picture of the work as a 4:5 frame cropped by the bottom edge, so the screen does not end in empty paper. A menu word sits top-right.",
+  "headline": "The name itself on one line, up to about 12 characters; the 18px sentence in the top-left corner says what it is.",
+  "motion": "scaling-wordmark",
+  "seenIn": [
+   "aww-nothin",
+   "aww-produx-design"
+  ]
+ },
+ "type": {
+  "id": "epilogue-black",
+  "name": "Epilogue",
+  "class": "heavy-black",
+  "display": {
+   "family": "Epilogue",
+   "source": "google",
+   "weights": [
+    900
+   ],
+   "italic": false,
+   "settings": "weight 900 · tracking -0.04em · leading 0.9 · sentence case or title case",
+   "css": "<link rel=\"preconnect\" href=\"https://fonts.googleapis.com\">\n<link rel=\"preconnect\" href=\"https://fonts.gstatic.com\" crossorigin>\n<link href=\"https://fonts.googleapis.com/css2?family=Epilogue:wght@400;500;900&display=swap\" rel=\"stylesheet\">"
+  },
+  "text": {
+   "family": "Epilogue",
+   "source": "google",
+   "weights": [
+    400,
+    500
+   ],
+   "italic": false,
+   "settings": "400 for body, 500 for emphasis · leading 1.5 · tracking 0",
+   "css": "<link rel=\"preconnect\" href=\"https://fonts.googleapis.com\">\n<link rel=\"preconnect\" href=\"https://fonts.gstatic.com\" crossorigin>\n<link href=\"https://fonts.googleapis.com/css2?family=Epilogue:wght@400;500;900&display=swap\" rel=\"stylesheet\">"
+  },
+  "standsInFor": [
+   "Die Grotesk D",
+   "Acme Gothic",
+   "FH Oscar"
+  ],
+  "note": "A broad black grotesque with a slightly uneven rhythm, at its best as a name set very large in mixed case. Suits entertainers, podcasts, consumer apps and blunt SaaS pages; emphasis comes from colour, not from a change of weight.",
+  "seenIn": [
+   "aww-trevor-noah",
+   "opl-juggle"
+  ],
+  "links": [
+   "https://fonts.googleapis.com/css2?family=Epilogue:wght@400;500;900&display=swap"
+  ],
+  "scale": {
+   "step-small": "clamp(0.8125rem, 0.79rem + 0.1vw, 0.875rem)",
+   "step-body": "clamp(1.0625rem, 1rem + 0.25vw, 1.1875rem)",
+   "step-lead": "clamp(1.25rem, 1.1rem + 0.7vw, 1.625rem)",
+   "step-head": "clamp(2.5rem, 1.2rem + 5vw, 5.5rem)"
+  }
+ },
+ "palette": {
+  "id": "poster-chapters",
+  "name": "Poster chapters",
+  "tags": [
+   "flat-loud"
+  ],
+  "bg": "#e6e0d2",
+  "surface": "#dcd5c5",
+  "ink": "#1a1a1a",
+  "muted": "#5f5b52",
+  "accent": "#18bc42",
+  "accentInk": "#1a1a1a",
+  "fields": [
+   {
+    "bg": "#ed4b44",
+    "ink": "#0f0f0f"
+   },
+   {
+    "bg": "#1a1a1a",
+    "ink": "#e6e0d2"
+   },
+   {
+    "bg": "#18bc42",
+    "ink": "#1a1a1a"
+   },
+   {
+    "bg": "#f2c21a",
+    "ink": "#1a1a1a"
+   },
+   {
+    "bg": "#e6e0d2",
+    "ink": "#1a1a1a"
+   }
+  ],
+  "note": "Each chapter takes one flat field in turn (coral red, near-black, bone, green, yellow) with black or bone type and no tints between them. Green doubles as the accent for the one button when the ground is bone or black.",
+  "seenIn": [
+   "aww-pp-neue-montreal"
+  ]
+ },
+ "photos": {
+  "set": "fog-and-quiet",
+  "title": "Fog and quiet",
+  "note": "misty, muted, minimal landscapes and empty horizons; calm areas for text",
+  "treatment": null,
+  "others": [
+   "object-still",
+   "mountain",
+   "interior-and-table",
+   "architecture"
+  ],
+  "photos": [
+   {
+    "id": 989,
+    "alt": "Low cloud covering a forested lakeshore under a pale sky",
+    "tone": "light",
+    "colours": [
+     "pale grey",
+     "dark teal",
+     "soft blue"
+    ],
+    "mono": false,
+    "calm": "top",
+    "quality": 5,
+    "ratio": 1.5,
+    "by": "Paul Jarvis",
+    "page": "https://unsplash.com/photos/eBDdgbM5dSo"
+   },
+   {
+    "id": 443,
+    "alt": "Mist and cloud hanging over dark pine-covered mountains",
+    "tone": "mid",
+    "colours": [
+     "grey",
+     "dark green",
+     "white"
+    ],
+    "mono": false,
+    "calm": "top",
+    "quality": 4,
+    "ratio": 1.5,
+    "by": "Tim Mossholder",
+    "page": "https://unsplash.com/photos/p3kpqGBRPok"
+   },
+   {
+    "id": 282,
+    "alt": "Wooden railing overlooking a pine forest covered by low fog",
+    "tone": "mid",
+    "colours": [
+     "muted brown",
+     "dark green",
+     "warm grey"
+    ],
+    "mono": false,
+    "calm": "top",
+    "quality": 4,
+    "ratio": 1.5,
+    "by": "Taylor Leopold",
+    "page": "https://unsplash.com/photos/9dw0xLlxw1s"
+   },
+   {
+    "id": 544,
+    "alt": "Layered hill ridges fading into warm beige mist",
+    "tone": "mid",
+    "colours": [
+     "beige",
+     "warm brown",
+     "cream"
+    ],
+    "mono": false,
+    "calm": "top",
+    "quality": 5,
+    "ratio": 1.5,
+    "by": "Francesco Gallarotti",
+    "page": "https://unsplash.com/photos/-HkuuUSY1pE"
+   },
+   {
+    "id": 70,
+    "alt": "Road lined with tall trees fading into thick fog",
+    "tone": "mid",
+    "colours": [
+     "grey",
+     "dark green"
+    ],
+    "mono": false,
+    "calm": "centre",
+    "quality": 5,
+    "ratio": 1.51,
+    "by": "Dorothy Lin",
+    "page": "https://unsplash.com/photos/OokBLPrkCNk"
+   },
+   {
+    "id": 842,
+    "alt": "Wooden steps with railings descending into pale pink fog",
+    "tone": "light",
+    "colours": [
+     "blush pink",
+     "pale grey",
+     "slate"
+    ],
+    "mono": false,
+    "calm": "top",
+    "quality": 5,
+    "ratio": 0.75,
+    "by": "Joe Beck",
+    "page": "https://unsplash.com/photos/NbUokuw0BQI"
+   },
+   {
+    "id": 634,
+    "alt": "Pine forest dissolving into fog beneath a pale pink sky",
+    "tone": "mid",
+    "colours": [
+     "dark green",
+     "pale pink",
+     "white"
+    ],
+    "mono": false,
+    "calm": "top",
+    "quality": 5,
+    "ratio": 1.5,
+    "by": "Jay Mantri",
+    "page": "https://unsplash.com/photos/TFyi0QOx08c"
+   },
+   {
+    "id": 994,
+    "alt": "Silky long-exposure sea beneath a blue and orange sunset sky",
+    "tone": "mid",
+    "colours": [
+     "soft blue",
+     "peach",
+     "grey"
+    ],
+    "mono": false,
+    "calm": "all",
+    "quality": 5,
+    "ratio": 1.5,
+    "by": "Jonathan Bean",
+    "page": "https://unsplash.com/photos/ywnnwzcdR5o"
+   }
+  ]
+ },
+ "motion": {
+  "id": "scaling-wordmark",
+  "name": "Scaling wordmark",
+  "description": "The giant name responds to the scroll: as the first screen leaves, the wordmark scales down a few percent (or grows from 0.94 to 1 as the footer arrives) on a scroll-linked timeline, so the monument feels heavy. Travel stays under 8%. Static fallback where scroll timelines are unsupported. Recipe: 'Scroll-linked progress' in references/motion.md, animating `scale`."
+ },
+ "sections": [
+  {
+   "id": "showcase-output-slips-along-the-edge",
+   "role": "showcase",
+   "name": "Output slips along the edge",
+   "shape": "full-bleed",
+   "tags": [
+    "photo-led",
+    "object-led"
+   ],
+   "directions": [
+    "page-is-the-object",
+    "borrowed-category",
+    "place-carries-it",
+    "loud-flat-poster"
+   ],
+   "needs": [],
+   "blueprint": "For subjects whose result is a piece of text or paper: a receipt, a note, a ticket, a written line. A full-bleed photograph, 100vw by 96svh, sets the scene. In the upper centre, left-aligned in a column starting at 18% of the width, two short paragraphs in paper colour at 28–32px, the first opening with the heading's two to four words; a neutral scrim sits behind that column only. Along the bottom, six paper-coloured slips stand side by side across the full width with 12px gaps, each a filled rectangle of a different height (between 26 and 44svh), their lower ends cut off by the section's bottom edge. Two or three of the slips, not all, are tilted by 1–2 degrees. Each slip carries a sample of real output in the text face at 15px: a bold first line, a divider made of typed characters, then four to eight lines.",
+   "mobile": "The photograph is 100svh. The paragraphs sit in the top third at 22px. Only three slips show, each 30vw wide, standing along the bottom at different heights, and the row scrolls sideways to reveal the rest. Slip text stays at 14px; do not scale it down.",
+   "seenIn": [
+    "opl-poetry-camera"
+   ]
+  },
+  {
+   "id": "features-pinned-heading-passing-rows",
+   "role": "features",
+   "name": "Pinned heading, passing rows",
+   "shape": "pinned",
+   "tags": [
+    "colour-field",
+    "type-led"
+   ],
+   "directions": [
+    "pinned-poster",
+    "loud-flat-poster",
+    "colour-chapters",
+    "split-stage",
+    "editorial-report"
+   ],
+   "needs": [],
+   "blueprint": "One flat saturated field, full-bleed, as tall as its content. Columns 1–5: the heading, two or three words, at clamp(56px, 6.6vw, 104px) in the heaviest weight, position: sticky; top: 32px, so it holds while the right side travels. Columns 7–12: four to six capability blocks stacked with 120px between them. Each block is a title at 28px bold, then a two-part row: a portrait photograph at 3:4, 180–220px wide with square corners, and beside it, top-aligned, a plain list of four to six short lines at 18px with 14px between lines. Photographs alternate between the left and the right of their list, so the column does not read as a ladder. One ink colour, chosen for contrast on the field. The heading releases when the bottom of the last block reaches it.",
+   "mobile": "The heading becomes a sticky bar at the top of the section: one line at 9vw on the field colour with 12px padding, holding while blocks pass under it. Each block stacks its title, a full-width 4:3 photograph, then the list at 17px. 72px between blocks.",
+   "seenIn": [
+    "opl-protip-marketing",
+    "aww-cerebrium",
+    "aww-sharplink"
+   ]
+  },
+  {
+   "id": "how-it-works-one-card-four-fields",
+   "role": "how-it-works",
+   "name": "One card, four fields",
+   "shape": "strip",
+   "tags": [
+    "ui-led",
+    "colour-field",
+    "dense"
+   ],
+   "directions": [
+    "colour-chapters",
+    "dense-tiles",
+    "one-motif",
+    "loud-flat-poster",
+    "product-performs",
+    "borrowed-category"
+   ],
+   "needs": [],
+   "blueprint": "Four flat colour fields stand side by side across the full viewport, each 25vw wide and 84svh tall, butted together with no gaps; neighbours differ clearly in lightness. The same card from the product (a ticket, an order, a request) appears once in each field at the same height, 38% down, centred, 260px wide at true size, each copy marked data-ui. It is further along every time: bare as it arrives, then with an owner and a due date, then with its checklist half ticked, then closed with its final figure. Along the bottom of each field, 28px in, one clause at clamp(22px, 2vw, 32px) on two lines begins with its order word: 'First it lands here.' 'Then someone takes it.' The heading, two to four words at the same size in the heaviest weight, sits top-left in the first field only. On hover a field's card rises 6px over 150ms.",
+   "mobile": "The fields stack, each full width and 64svh tall, colours meeting edge to edge. In each: the clause at 24px top-left with 20px margins, then the card at true size, left-aligned, 32px below. The heading sits in the first field above its clause, at 24px in the heaviest weight.",
+   "seenIn": [
+    "opl-typewave",
+    "opl-depo-budget-app",
+    "opl-leedlime"
+   ]
+  },
+  {
+   "id": "list-poster-lines",
+   "role": "list",
+   "name": "One item per poster line",
+   "shape": "statement",
+   "tags": [
+    "type-led",
+    "poster",
+    "colour-field"
+   ],
+   "directions": [
+    "loud-flat-poster",
+    "type-only-statement",
+    "name-as-monument",
+    "colour-chapters",
+    "borrowed-category"
+   ],
+   "needs": [],
+   "blueprint": "A short list set as a poster. Four to seven items (services, headline acts, courses, opening days) stack one per line at clamp(64px, 10vw, 150px) in the display weight, all capitals or all lowercase, leading 0.92, flush left at a 20px margin on a flat field. Its one detail (a price, a date, a time range) sits at the right margin on the same baseline at 18–20px with tabular figures, so the page has two alignments only: giant words left, small facts right. Items too long for one line at this size are shortened, not shrunk. Between items there is only the tight leading. Hovering an item swaps its ink for the accent. There is no heading: the first item starts 80px below the section top and the last ends 80px above the bottom. The list reuses the hero title's exact type size, so it reads as another poster.",
+   "mobile": "Items at 15vw, one per line, flush left with 16px margins. Each detail moves beneath its item at 15px, left-aligned, with 6px above and 22px below. If any single word is wider than the screen at 15vw, drop the whole list to 12vw rather than breaking a word.",
+   "seenIn": [
+    "opl-city-of-angels"
+   ]
+  },
+  {
+   "id": "proof-names-off-both-edges",
+   "role": "proof",
+   "name": "Names running off the edges",
+   "shape": "band",
+   "tags": [
+    "type-led",
+    "poster"
+   ],
+   "directions": [
+    "pinned-poster",
+    "loud-flat-poster",
+    "name-as-monument",
+    "borrowed-category",
+    "hero-object",
+    "colour-chapters"
+   ],
+   "needs": [],
+   "blueprint": "A full-bleed band in a flat colour, about 34vh tall, holding a single line of names that is cropped by both viewport edges. The names are set at 8vw in the display weight, `white-space: nowrap`, separated by a solid round dot one third of the cap height, and the line moves slowly to the left (a CSS `translateX` animation over 40 seconds on a duplicated track, paused under `prefers-reduced-motion`). The band has no heading. Its meaning comes from one sentence at 18px set directly below the band at the left margin on the page ground, stating plainly who these names are. Supplied logos may replace names if all are available as single-colour SVGs at 0.8em height; do not mix logos and set names in one line. The band butts against the sections above and below with no gap.",
+   "mobile": "The band is 22vh tall with names at 15vw, still cropped at both edges and still moving. The explaining sentence sits under it at 16px with 20px margins. Do not add a second line running the opposite way; one line is the idea.",
+   "seenIn": [
+    "aww-made-with-gsap-1"
+   ]
+  },
+  {
+   "id": "faq-filled-tile-accordion",
+   "role": "faq",
+   "name": "Accordion of filled tiles",
+   "shape": "stack",
+   "tags": [
+    "dense",
+    "colour-field"
+   ],
+   "directions": [
+    "dense-tiles",
+    "one-motif",
+    "product-performs",
+    "specimen-catalogue",
+    "loud-flat-poster",
+    "colour-chapters"
+   ],
+   "needs": [],
+   "blueprint": "A two-part row. Columns 1–4 hold the heading, two to four words at about 4vw, `position: sticky; top: 96px` so it stays while the list scrolls past. Columns 5–12 hold the accordion: each question is a filled tile one step from the page ground, with 8px between tiles, no border and the page's one radius (or its motif's corner). A closed tile is 72px tall with the question at 20px medium on the left, 24px padding, and on the right a plus sign drawn from two 3px bars 16px long. The open tile switches to the accent colour with its assigned ink, the plus becomes a minus by rotating one bar, and the answer appears at 17px, no wider than 52ch. Build each tile as `<details>` with a shared `name` so one opens at a time. Six to nine tiles.",
+   "mobile": "The heading sits above at 9vw, not sticky. Tiles run full width with 6px gaps, questions at 18px wrapping to two lines, closed height at least 64px. The open tile keeps the accent colour, and answers are set at 16px with 20px padding.",
+   "seenIn": [
+    "opl-locker-land"
+   ]
+  },
+  {
+   "id": "cta-giant-word-is-the-button",
+   "role": "cta",
+   "name": "One word is the button",
+   "shape": "band",
+   "tags": [
+    "poster",
+    "colour-field"
+   ],
+   "directions": [
+    "loud-flat-poster",
+    "colour-chapters",
+    "borrowed-category",
+    "name-as-monument",
+    "type-only-statement",
+    "pinned-poster",
+    "one-motif"
+   ],
+   "needs": [],
+   "blueprint": "The entire band is one link. A full-bleed field in the accent colour, about 60svh tall, contains a single verb of four to eight letters set at 24–30vw in the heaviest weight, tight tracking, sized with `clamp()` so it spans the content width on one line with its baseline 24px above the bottom edge. The `<a>` wraps the whole band; on hover and focus the field and the word swap colours instantly. In the top-left corner, at 20px, one sentence says what happens next; in the top-right, an arrow drawn as a simple inline SVG, 48px, points up and right. There is no other button anywhere in the section. In a page with a motif, the band's top corners take the motif's shape (a large radius, or a chamfer cut with `clip-path`). Keep the word honest: the action itself, not a slogan.",
+   "mobile": "The band is 46svh tall. The word is set at whatever size fills the width on one line; choose a shorter verb rather than going below 22vw. Sentence top-left at 17px across two lines, arrow top-right at 32px. The whole band stays tappable.",
+   "seenIn": [
+    "aww-lacoste-ace-breaker",
+    "aww-made-with-gsap-1"
+   ]
+  },
+  {
+   "id": "footer-invitation-over-cropped-wordmark",
+   "role": "footer",
+   "name": "Invitation over a cropped name",
+   "shape": "statement",
+   "tags": [
+    "type-led",
+    "poster"
+   ],
+   "directions": [
+    "loud-flat-poster",
+    "name-as-monument",
+    "borrowed-category",
+    "pinned-poster",
+    "type-only-statement",
+    "sentence-as-layout"
+   ],
+   "needs": [],
+   "blueprint": "Close and footer in one full-viewport field of the inverse colour. Upper third, columns 1–7: a two-line invitation at about 5vw, three to five words, with one filled rectangular button beneath it. At columns 10–12, top-aligned with the invitation, three or four social or contact links stacked at 16px. The wordmark fills the bottom of the screen at 26–30vw on one line, `white-space: nowrap`, heavier and larger than the viewport can hold: it is pushed down with `transform: translateY(30%)` so the bottom edge cuts through the letters, and a long name also runs off the right edge. `overflow: hidden` on the footer does the cropping. One row of credits and legal links at 13px sits directly above the wordmark's cap line, spread left and right. The cropped name must be recognisable from its upper two-thirds alone; test that it is.",
+   "mobile": "Invitation at 11vw on two lines at the top with a full-width button. Links follow as one row of words at 15px. The wordmark sits at 34vw at the bottom, cropped by both the bottom and the right edge, with the legal row above it at 12px.",
+   "seenIn": [
+    "aww-nothin",
+    "opl-goodgoodgreat",
+    "opl-marina-rachello",
+    "aww-butter"
+   ]
+  }
+ ],
+ "references": [
+  {
+   "id": "opl-depo-budget-app",
+   "name": "Depo Budget App",
+   "url": "https://depobudget.com",
+   "source": "One Page Love",
+   "kind": "consumer-app",
+   "score": 6.9,
+   "idea": "Budgeting reduced to one daily number, dressed in neo-brutalist sticker graphics: flat primaries, thick black outlines and a hard offset shadow on every box.",
+   "mood": [
+    "bold",
+    "cheerful",
+    "blunt",
+    "cartoonish"
+   ],
+   "archetype": "split-text-media",
+   "hero": "Saturated blue field with a faint grid of 100px squares. A 72px header holds a white wordmark left and a black store badge right, above a 3px black rule. Left column, starting 7% in and vertically centred: a cream box with black border holding one line of uppercase mono, a two-line white headline in very heavy grotesque at 5.3vw, two lines of 20px white copy, and a coral button with black border and hard offset shadow. Right of centre: an illustrated phone tilted about 4 degrees, 24% of the width and nearly full height, thick black outline, star stickers on two corners. A lime marquee strip closes the bottom.",
+   "type": "Archivo Black at 76px with -0.025em tracking for headings (white on colour, black on cream), DM Sans at 16 to 20px for copy, and a system monospace in small capitals for labels and amounts. About a 4:1 jump; three faces.",
+   "colour": "#1769e7 #f6eedf #c8e832 #7c3aed #3cbdb1 #ff5c40 — Each section takes a different flat fill: blue, cream, purple, teal, blue again, then a black footer. Lime, coral, amber and red fill cards and buttons; black outlines hold it together.",
+   "imagery": "Flat vector phone frames with thick black outlines showing simplified app screens in the page palette, light and dark themes alternating; four-point star stickers as decoration. No photography.",
+   "layout": "Content sits in a 1230px container with 105px margins. Sections are full-width colour blocks separated by 3px black rules; each opens with a left-aligned heavy heading and one line of copy, followed by a row of outlined cards or phones. The rhythm is uniform.",
+   "sections": [
+    {
+     "role": "how-it-works",
+     "description": "Cream section. A left-aligned heading and one line of copy, then four equal cards in a row with 16px gaps, each a different flat colour (amber, red, teal, lime) with a 2px black border and a 4px hard offset shadow. Inside each: a mono index number top-left, a bold label, one line of copy, a black hairline, then an amount in mono with a tiny uppercase caption."
+    },
+    {
+     "role": "showcase",
+     "description": "Purple section. A white one-line heading spans the container with a single line of copy beneath, then four phone screens in a row at equal width, alternating light and dark app themes, each in a thick black rounded frame. The phones run about a screen tall; a one-line white caption is centred under each at the bottom of the section."
+    },
+    {
+     "role": "features",
+     "description": "Teal section. A small amber mono label in a bordered box sits above a black heavy heading and one line of copy. Below, a three-by-three grid of white cards with black borders and hard shadows; each card is one short row with a line icon at left, a bold title and a single line of small grey copy. Cards are about 100px tall with 20px gaps."
+    }
+   ],
+   "steal": [
+    "Give each section its own flat saturated fill and separate them with a 3px black rule, so colour does the sectioning.",
+    "Apply one physical rule to every box (2px black border plus 4px hard offset shadow, no blur) so buttons, cards and phones read as one kit.",
+    "Show the product's core number as an oversized figure in a lime card rather than as a screenshot."
+   ]
+  },
+  {
+   "id": "aww-trevor-noah",
+   "name": "Trevor Noah",
+   "url": "https://www.trevornoah.com/",
+   "source": "Awwwards Site of the Day",
+   "kind": "culture",
+   "score": 7.8,
+   "idea": "The comedian as a paper cut-out sticker: his head is torn open and the things he makes (stand-up, books, video) spill out and become the navigation.",
+   "mood": [
+    "playful",
+    "bold",
+    "collage",
+    "warm",
+    "cheeky"
+   ],
+   "archetype": "giant-wordmark",
+   "hero": "The desktop capture caught a blank navy frame before the canvas painted; the next frame and the mobile shot show the scene. A deep navy field. The name runs across the top in bold pink grotesk on one line, sized to nearly touch both edges. Centred below is a photographic cut-out of the face with a thick white sticker outline and a torn top edge, from which glossy 3D objects (microphone, book, video player, brain, heart) erupt. Circular arrow buttons sit at the left and right edges; a torn-paper white label beneath the face names the current category. A hairline, a text ticker and a pink pill close the bottom.",
+   "type": "Die Grotesk D bold for the wordmark (361px in the digest), Die Grotesk C for everything else with body near 19px. Tight tracking, title case. Statements run at about 4vw and emphasise words by switching them to pink, never by changing weight or face.",
+   "colour": "#1d2440 #f78fb3 #f6f7ee #2b2b2b — One navy field for the entire page. Pink marks the wordmark, emphasised words and one pill; cream-white fills buttons and paper shapes. Photos bring the only other colour.",
+   "imagery": "Photo cut-outs of the face with thick white die-cut outlines and torn edges, toy-like 3D objects, and small stage photos shaped as peeling stickers or rounded tiles, tilted a few degrees and loosely clustered.",
+   "layout": "Centred, one idea per screen on an unbroken navy ground: statement, section title with drifting objects, a lone pill button. The fixed header has the pink name left and two cream pills right. Elements enter from the edges and overlap instead of sitting in columns.",
+   "sections": [
+    {
+     "role": "intro",
+     "description": "A centred four-line statement in white at about 4vw, the lines stepped and ragged instead of squared off, with one long word in pink on the first line. It occupies the lower half of the viewport while the upper half stays empty navy, and appears to build line by line."
+    },
+    {
+     "role": "gallery",
+     "description": "A two-line centred title, first line white and second pink, at about 2.5vw. Beneath it a loose cluster of tilted objects rises from the bottom edge: a 3D video-player tile in the middle, small rounded photo tiles and a 3D microphone to its left, all overlapping. On the next screen the objects have drifted upward past a single cream pill button centred in empty space."
+    },
+    {
+     "role": "footer",
+     "description": "Split footer. Left half: a second, larger cut-out of the face, tilted and cropped by the left and bottom edges, with a small white speech bubble above it. Right half: a five-row menu, each row a tiny index number at left and a bold label at about 2.5vw, separated by hairlines. Legal text is tiny along the bottom."
+    }
+   ],
+   "steal": [
+    "Cut the subject out of a photo with a thick white sticker border and a torn edge so photography behaves like illustration.",
+    "Emphasise words in a statement by colour alone (pink within white) while keeping one face and one weight.",
+    "Turn the footer into a large numbered menu beside a cropped portrait whose speech bubble addresses the departing visitor."
+   ],
+   "media": "Media covers essentially the whole first screen: a fixed WebGL layer behind everything, a photographic cut-out of the face with a torn top taking about a third of the width and the bottom two thirds of the height, props bursting out of it over the wordmark. Later the props re-form into a collage of tilted sticker photos round a 3D object and a stack of books, torn-paper strips mark the colour changes, and a giant cropped portrait peeks from the footer corner, every photo an alpha cut-out with an 8-10px white sticker outline and no video anywhere.",
+   "motion": "A load of about 7.3s plays as a large counter to 100, the intact face sticker, the crown tearing away, props spilling out and the name last, and Lenis then drives the fixed WebGL stage as the props fly down and re-form per chapter, the ground changing navy, charcoal, navy at torn-paper dividers. Headline lines rise from translateY(120%) through a clip-path over 1.2s cubic-bezier(0.215,0.61,0.355,1) and stickers pop in from scale 0 on an overshoot curve the house layer does not use, while 11 reduced-motion rules zero every duration."
+  },
+  {
+   "id": "opl-the-sapphic-bar-index",
+   "name": "The Sapphic Bar Index",
+   "url": "https://sapphicindex.com",
+   "source": "One Page Love",
+   "kind": "culture",
+   "score": 7.7,
+   "idea": "A nightlife guide dressed as a mock research dossier: taped snapshots, field notes, sticker stamps and a big numeric score for every bar.",
+   "mood": [
+    "cheeky",
+    "scrapbook",
+    "warm",
+    "editorial",
+    "tongue-in-cheek"
+   ],
+   "archetype": "split-text-media",
+   "hero": "The desktop capture caught the hero before it animated in (only an empty two-cell box and a black bar show); the mobile capture, which is the desktop layout scaled down, reveals it. On cream: a two-cell outlined masthead box top-left, then the title in black ultra-condensed caps on three lines filling the left 45%, with a pink boarding-pass ticket and a round stamp overlapping it at angles. Small text and a black rounded button sit beneath. The right half holds a tall torn-edge photograph of a hand raising a cocktail, taped at the top, tilted about 8 degrees and running off the top edge, a paper-clipped note on its corner.",
+   "type": "Three custom faces per the digest: a tall heavy condensed grotesque for the 119px title, a typewriter-style mono (61% of text) for bar names in bold caps, labels and notes, and a small sans for intro copy at 12px. Scores are heavy rounded numerals near 48px.",
+   "colour": "#f4efe9 #000000 #f5a3b7 #2f62d6 #f2622a #f2b632 — Cream paper and black ink carry the page. Saturated colour arrives only as sticker badges (pink, orange, yellow, blue, sage) and neon-lit photos, then a pink form card, black about panel and cobalt footer strip.",
+   "imagery": "Flash-lit nightlife snapshots with magenta and red neon casts, cropped near-square with torn or deckled edges and a strip of masking tape, each tilted a few degrees; plus die-cut sticker illustrations (stamps, tickets, lips, scissors) with thick outlines.",
+   "layout": "Cream page with roughly 6% side margins. After the collage hero, a row of five stickers, then a ruled table where each entry is a four-column row between full-width hairlines. It ends with a coupon-style form, a black rounded about panel and a marquee strip.",
+   "sections": [
+    {
+     "role": "list",
+     "description": "Full-width rows separated by 1px rules, each about 210px tall. Column one: a tilted taped snapshot about 150px square. Column two: a small index number, the bar name in bold mono caps, a pin icon with underlined district and a social handle, three lines of small mono description, then one or two small coloured sticker tags. Column three: a bold label over five bullet lines. Column four: a small label above a two-digit score in heavy numerals inside a thin circle."
+    },
+    {
+     "role": "other",
+     "description": "A legend row of five die-cut badges spaced evenly across the column directly under the hero, each a different silhouette and colour: pink oval, orange rounded rectangle with notched corners, yellow ticket, blue star, sage triangle. Each has a thick dark outline, a slight rotation and two lines of condensed caps inside. Smaller rectangular versions are reused as category tags in the list rows."
+    },
+    {
+     "role": "contact",
+     "description": "Submission form as a clip-out coupon: a pink rounded card inside a thin outlined frame, with a large beige paper cut-out of scissors overlapping the top-left corner. Left half holds a three-line mono caps heading and one line of text; a vertical dashed line divides it from the right half, which has four underline-only inputs with grey placeholders and a full-width black submit bar."
+    },
+    {
+     "role": "about",
+     "description": "Black full-width panel with a large top radius. The left third holds a small bold mono label and four short white mono paragraphs with an icon link. The right half shows a selfie photograph with torn paper edges and tape, tilted clockwise, a pink lips sticker overlapping its top-left corner. A cobalt strip beneath repeats a one-line credit across the full width."
+    }
+   ],
+   "steal": [
+    "Give every list row a large circled numeric score in its own right-hand column so a directory reads as a ranking.",
+    "Present photos as taped, torn-edge snapshots rotated a few degrees, repeating the same tape detail on every image for consistency.",
+    "Define a small set of die-cut sticker badges once as a legend, then reuse them in miniature as category tags in the rows."
+   ]
+  }
+ ],
+ "scenes": []
+}

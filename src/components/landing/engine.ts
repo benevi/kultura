@@ -232,10 +232,12 @@ export function startLanding(root: HTMLElement, scenes: HeroScene[]): () => void
   /* ---------- portada: escenas con capas ---------- */
   const hero = root.querySelector<HTMLElement>(".kl-stage")!;
   const word = hero.querySelector<HTMLElement>(".kl-word");
-  const bgC = hero.querySelector<HTMLCanvasElement>("canvas.kl-bg")!;
-  const fgC = hero.querySelector<HTMLCanvasElement>("canvas.kl-fg")!;
-  const bg = makeGL(bgC, false, pics);
-  const fg = makeGL(fgC, true, pics);
+  // Sin lienzos de portada (el héroe lo pinta la escena 3D de LandingMotion)
+  // el motor solo lleva las ventanas, los pasos y la pulsación larga.
+  const bgC = hero.querySelector<HTMLCanvasElement>("canvas.kl-bg");
+  const fgC = hero.querySelector<HTMLCanvasElement>("canvas.kl-fg");
+  const bg = bgC ? makeGL(bgC, false, pics) : null;
+  const fg = fgC ? makeGL(fgC, true, pics) : null;
   const st = { cur: 0, next: -1, wipe: 0, vis: true };
   const io1 = new IntersectionObserver((es) => (st.vis = es[0].isIntersecting));
   io1.observe(hero);
@@ -251,10 +253,10 @@ export function startLanding(root: HTMLElement, scenes: HeroScene[]): () => void
   }
   const fitHero = () => {
     const w = Math.round(hero.clientWidth * DPR), h = Math.round(hero.clientHeight * DPR);
-    [bgC, fgC].forEach((c) => { if (c.width !== w || c.height !== h) { c.width = w; c.height = h; } });
+    [bgC, fgC].forEach((c) => { if (c && (c.width !== w || c.height !== h)) { c.width = w; c.height = h; } });
   };
   function renderHero(t: number) {
-    if (!st.vis || !bg) return;
+    if (!st.vis || !bg || !bgC) return;
     fitHero();
     const r = hero.getBoundingClientRect();
     const prog = clamp(-r.top / r.height, -1, 1);
