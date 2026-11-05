@@ -88,8 +88,11 @@ export default async function LocaleLayout({
         <NextIntlClientProvider messages={pickMessages(messages, SHELL_CLIENT_NAMESPACES)}>
           {children}
         </NextIntlClientProvider>
-        {/* F-28: sin `?t=` (enlaces firmados del correo) en las páginas vistas. */}
-        <VercelAnalytics />
+        {/* F-28: sin `?t=` (enlaces firmados del correo) en las páginas vistas.
+            Solo en Vercel: fuera (CI, local, otro alojamiento) `/_vercel/insights/
+            script.js` no existe y la petición acaba en un 404 que ensucia la
+            consola y que Lighthouse cuenta como JS de la página. */}
+        {process.env.VERCEL ? <VercelAnalytics /> : null}
       </body>
     </html>
   );
