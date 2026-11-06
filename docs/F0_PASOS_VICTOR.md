@@ -11,6 +11,8 @@ Orden recomendado: 1 → 2 → 3 → 4. El 5 depende de D3.
 
 ## 1. Medición: Web Analytics + evento visto (≈ 20 min) — puerta F0
 
+**Hecho el 2026-11-06 (parte de base):** `library_add` registrado en `analytics_events` de producción a las 20:58:50 UTC, tras un alta real de Víctor en `kulturaapp.vercel.app` (consulta de solo lectura de Claude). `/_vercel/insights/script.js` y `/_vercel/speed-insights/script.js` responden 200. **Falta** que Víctor vea las visitas en el panel de Vercel → Analytics.
+
 El código ya está: `src/components/analytics/VercelAnalytics.tsx` (páginas
 vistas, sin cookies) y `src/lib/analytics/track.ts` (eventos de usuarios
 registrados en `analytics_events`).

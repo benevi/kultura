@@ -15,12 +15,13 @@
 - Revisión independiente: ver `04_DECISIONES` §4. CI del #74: lint, `cuj`, Lighthouse y axe en verde.
 
 ## Pendiente / ojo
+- Medición (puerta F0): evento `library_add` visto en `analytics_events` de producción el 2026-11-06 20:58 UTC; Web Analytics y Speed Insights (#77) activos. Falta que Víctor confirme las visitas en el panel de Vercel. La CLI de Vercel tiene sesión de Víctor (Hobby: solo 1 h de registros).
 - R9 reparado el 2026-11-06: el historial de producción registra 29 de 31; faltan solo las 2 de push (no aplicadas, a decidir).
 - F0 queda abierta solo por tareas de Víctor: simulacro de restauración (requiere su clave `age`), proyecto «KULTURA 2.0» en claude.ai y ver las visitas en Vercel Analytics. Dominio fuera de F0 (D3 actualizada: al 100 %).
-- Con esto se cierra la parte de Claude en F0. Lo que queda es de Víctor, con los pasos exactos en `docs/F0_PASOS_VICTOR.md`: Analytics con un evento visto, R9 (comando `migration repair` con las 22 versiones), el simulacro de restauración, el proyecto «KULTURA 2.0» (D8) y el dominio (D3).
+- Pasos de Víctor en `docs/F0_PASOS_VICTOR.md`.
 - Para v2.0 o F3-9: `/best` mantiene su suelo relajado del año en curso (series 300 → 75), y el líder de series es poco creíble también allí.
 - `build.py` sigue procesando 4 imágenes de ranking cada semana que ya no se pintan. Revisarlo cuando Inicio v2 decida si vuelven.
 - Había un `next start` viejo escuchando en el puerto 3187 (sirve la portada con rankings). No se tocó. Para medir en local se usó el 3191.
-- R9: no ejecutar `supabase db push` contra producción.
+- R9: un `supabase db push` contra producción aplicaría ya las 2 de push: no lanzarlo sin decidirlo.
 - `master` protegida: exige 4 checks y se permite el auto-merge (`04_DECISIONES` D-G1). Si se renombra un job de `ci.yml`, hay que actualizar la protección.
 - Squash-merge: solo con OK de Víctor (con su OK, auto-merge en verde).
