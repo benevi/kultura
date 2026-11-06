@@ -42,6 +42,10 @@ no escribe sin ella y no da error).
 
 ## 2. R9 — reparar el historial de migraciones de producción (≈ 15 min)
 
+**Verificado por Claude el 2026-11-06 (solo lectura):** las 22 de abajo están aplicadas en producción y las 2 de push no (detalle en `04_DECISIONES` R9). Falta solo escribir el historial. Claude no puede: su clasificador bloquea escrituras en producción.
+
+Alternativa sin CLI: Supabase **producción** → SQL Editor, pegar `docs/sql/r9_repair_history.sql` y ejecutar. Inserta solo las filas que faltan (idempotente) y devuelve las versiones añadidas: deben salir 22.
+
 Producción tiene aplicadas 29 de 31 migraciones, pero su historial solo
 registra 7 (comprobado de nuevo el 2026-11-06 con `list_migrations`: la última es `20260520000001`). Mientras no se repare, **nunca** ejecutes `supabase db push`
 contra producción: intentaría reaplicar 24 migraciones.
@@ -98,10 +102,10 @@ acabes si no lo necesitas.
    repo; esto es una copia de consulta».
 4. El proyecto antiguo se queda como archivo, sin borrarlo.
 
-## 5. Dominio (cuando decidas D3)
+## 5. Dominio — fuera de F0
 
-D3 = «aún no se compra». Sin dominio, la puerta de F0 no se cierra del todo
-(«dominio principal con 308 y Search Console»). Cuando lo compres
+D3 actualizada el 2026-11-06: el dominio se compra cuando la app esté al
+100 % (fin de F3). Sale de la puerta de F0 y pasa a F4. Cuando lo compres
 (`kulturaapp.es` recomendado), Claude te prepara la lista de pasos con:
 dominio en Vercel con 308, `NEXT_PUBLIC_SITE_URL`, Site URL y Redirect URLs
 de Supabase, Google OAuth, Search Console, Bing y `sitemap.xml`.

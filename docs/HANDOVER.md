@@ -15,6 +15,7 @@
 - Revisión independiente: ver `04_DECISIONES` §4. CI del #74: lint, `cuj`, Lighthouse y axe en verde.
 
 ## Pendiente / ojo
+- F0 queda abierta solo por tareas de Víctor: R9 (`docs/sql/r9_repair_history.sql` en el SQL Editor de producción; las 22 versiones ya verificadas), simulacro de restauración (requiere su clave `age`), proyecto «KULTURA 2.0» en claude.ai y ver las visitas en Vercel Analytics. Dominio fuera de F0 (D3 actualizada: al 100 %).
 - Con esto se cierra la parte de Claude en F0. Lo que queda es de Víctor, con los pasos exactos en `docs/F0_PASOS_VICTOR.md`: Analytics con un evento visto, R9 (comando `migration repair` con las 22 versiones), el simulacro de restauración, el proyecto «KULTURA 2.0» (D8) y el dominio (D3).
 - Para v2.0 o F3-9: `/best` mantiene su suelo relajado del año en curso (series 300 → 75), y el líder de series es poco creíble también allí.
 - `build.py` sigue procesando 4 imágenes de ranking cada semana que ya no se pintan. Revisarlo cuando Inicio v2 decida si vuelven.
