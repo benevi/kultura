@@ -15,10 +15,11 @@
 ## Verificación
 - `tsc` sin errores fuera de `.next/` (tipos viejos de otra rama); `npm run lint` limpio.
 - Suite completa en Windows: los mismos 16 fallos que `master` (10 ficheros: rutas con `\`, CRLF, tiempos); ninguno nuevo. CI (Linux) es la referencia.
-- Navegador (dev, con sesión en `kultura-test` reactivado): `/api/ui-v2?v=1` responde 303 a `/es/lists`; pero `/es/lists` cae en la página de error **en v1 y en v2** por `column lists.is_public does not exist` (`lib/social/lists.ts:157`), antes del conmutador. **Pantalla v2 sin ver con sesión.**
+- Navegador (dev, con sesión, contra `kultura-test`): v1 → `/api/ui-v2?v=1` → v2 → enlace «Volver» → v1, todo en `/es/lists` sin cambiar de URL; cookie no visible desde JS. Capturas 390 (margen 16 px, sin scroll horizontal) y 1440 (alineado con la cabecera, 176 px). Corregido: la pantalla v2 ahora usa `page-grid` como la vieja. Consola sin errores nuevos (hidratación de `#main` y CSP de Vercel Analytics en dev ya existían).
 
 ## Pendiente de Víctor
-- `kultura-test` va 18 migraciones por detrás del repo (de `20260913220000` a `20261229350001`; incluye `20261014000001_public_lists.sql`). Aplicarlas (`supabase link --project-ref xqvicvypoxxfbezqnkwr` + `supabase db push`) y repetir la prueba de `/es/lists`.
+- Hecho el 2026-11-06 (con tu OK): `kultura-test` puesto al día con `supabase db push` (16 migraciones; historial reparado para `20260913220000`/`20260914090000`, que estaban con otra versión). 35 tablas, todas con RLS, 182 políticas. El asesor de seguridad solo da avisos (funciones SECURITY DEFINER de ayuda, `search_path` en `set_updated_at` e `is_demo_session`, protección de contraseñas filtradas desactivada).
+- La CLI queda enlazada a `kultura-test` (`supabase/.temp/`, ignorado en git): antes de un `db push` a producción, volver a enlazar.
 - `.env.development.local` no sustituye `SUPABASE_SERVICE_ROLE_KEY`: el dev usa la de producción contra `kultura-test` (`Invalid API key` en el log). Añadir la `service_role` de `kultura-test`.
 - Probar: entrar y abrir `/api/ui-v2?v=1&next=/es/lists`; volver con el enlace de la pantalla.
 - Paneles de F0 de siempre (D3/D4/D8, Web Analytics, clave `age`).

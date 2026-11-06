@@ -17,8 +17,8 @@ export async function ListsScreen({ lists }: { lists: List[] }) {
   const exitHref = `/api/ui-v2?v=0&next=${encodeURIComponent(`/${locale}/lists`)}`;
 
   return (
-    // Sin ancho ni márgenes propios: la retícula la pone el armazón (DIS-8).
-    <main data-ui="v2" className="py-8 md:py-12">
+    // Retícula única del sistema (DIS-8), como la pantalla vieja (`ListsClient`).
+    <main data-ui="v2" className="page-grid py-8 md:py-12">
       <p className="text-sm text-white/60">{t("badge")}</p>
       <h1 className="mt-2 text-3xl font-semibold text-white">{t("listsTitle")}</h1>
 
