@@ -463,13 +463,13 @@ describe('esquema: código ↔ tipos', () => {
   })
 
   it('las tablas con nombre dinámico están acotadas a las conocidas', () => {
-    // collect.ts (export RGPD) y reports/shared.ts reciben el nombre por
+    // collect.ts (export RGPD) y social/reports.ts reciben el nombre por
     // variable; sus literales de tabla también tienen que existir.
     expect(usage.dynamic.map((d) => d.split(':')[0]).sort()).toEqual(
-      ['src/app/api/account/export/collect.ts', 'src/app/api/account/export/collect.ts', 'src/app/api/reports/shared.ts'].sort()
+      ['src/app/api/account/export/collect.ts', 'src/app/api/account/export/collect.ts', 'src/lib/social/reports.ts'].sort()
     )
     const collect = sources.find((s) => s.name === 'src/app/api/account/export/collect.ts')!.text
-    const shared = sources.find((s) => s.name === 'src/app/api/reports/shared.ts')!.text
+    const shared = sources.find((s) => s.name === 'src/lib/social/reports.ts')!.text
     const problems: string[] = []
     // q('tabla', 'col, col', 'columna_filtro') y fetchIn(admin, 'tabla', 'cols', 'columna', …)
     const calls = Array.from(collect.matchAll(/\b(?:q|fetchIn\(\s*admin\s*,)\s*\(?\s*'(\w+)',\s*'([^']*)',\s*'(\w+)'/g))

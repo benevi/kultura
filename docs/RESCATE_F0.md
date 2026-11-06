@@ -37,7 +37,7 @@ Los dos siguen usando `next-intl` y, `useAccountSettings`, `useToastContext`: la
 
 ## 3. Destino de los 36 `tests/**/*.test.ts` que importan `@/app` o `@/components`
 
-Consulta: `grep -rlE "from ['\"]@/(components|app)/|vi\.mock\(['\"]@/(components|app)/" tests --include=*.test.ts` = 36 (2026-11-06).
+Consulta: `grep -rlE "from ['\"]@/(components|app)/|vi\.mock\(['\"]@/(components|app)/" tests --include=*.test.ts` = 36 sobre `master` (`b76fbf2`, 2026-11-06); en esta rama da 31, porque los 5 del grupo B ya importan de `src/lib`.
 
 **A. Conservar tal cual (23)** — prueban route handlers o rutas de metadatos, que no son UI y sobreviven:
 `analytics/invite-attack`, `analytics/signup`, `api/discover-route`, `api/health-route`, `api/revalidate-route`, `api/search-route`, `app/seo-routes`, `auth/callback-route`, `calendar-email/cron`, `calendar-email/optin` (solo mockea `components/analytics/VercelAnalytics`), `calendar-email/routes`, `csp/csp-report`, `diary/account-import-export`, `identity/callback-welcome`, `identity/cron-daily`, `import/acceptance`, `import/route`, `legal/security-txt`, `providers/health-probes`, `push/routes`, `pwa/installed-route`, `search/routes`, `shell/pwa`.
@@ -53,7 +53,7 @@ Consulta: `grep -rlE "from ['\"]@/(components|app)/|vi\.mock\(['\"]@/(components
 **E. Candidatos a un 2.º rescate (4)** — lógica que sigue dentro de `src/components` (no se mueve en este PR):
 `landing/engine` (`components/landing/engine`), `pwa/install-policy` (`components/pwa/install-policy`), `pwa/sw-register` (`components/pwa/sw-register`), `pwa/share-target` (`components/pwa/share-target`; la parte de `app/[locale]/share/route` es A).
 
-Además se reapuntaron estos `.test.tsx` (importan o mockean un módulo movido; su destino lo decide la pantalla v2 correspondiente): `identity/welcome-flow`, `adaptations/og-cards`, `adaptations/rated-page`, `catalogo/discover-hooks`, `plataformas-listas/platforms-ui`, `plataformas-listas/settings-page`, `components/auth/register-form`, `calendar-email/settings-form`, `ui-v2/switch`.
+Además se reapuntaron estos `.test.tsx` (importan o mockean un módulo movido; su destino lo decide la pantalla v2 correspondiente): `identity/welcome-flow`, `adaptations/og-cards`, `adaptations/rated-page`, `catalogo/discover-hooks`, `plataformas-listas/settings-page`, `components/auth/register-form`, `calendar-email/settings-form`, `ui-v2/switch`. Y `schema/schema-drift.test.ts`, que cita como texto la ruta de `social/reports.ts`.
 
 ## 4. Destino de los 13 archivos de `tests/unit/design|visual`
 
