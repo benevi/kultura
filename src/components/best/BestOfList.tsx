@@ -1,6 +1,6 @@
 // ============================================================
 // KULTURA — Ranking público: podio (1-3) y lista compacta (4-20) (DIS-10)
-// Server Components sin JS de cliente salvo la portada (`next/image`).
+// Server Components sin JS de cliente (la portada es un <img> de servidor).
 //
 // Cada título enlaza a su ficha pública (PRO-8, CRE-11) con un enlace
 // "estirado" que cubre la card entera (una sola parada de teclado y un solo
