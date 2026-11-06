@@ -30,7 +30,8 @@ export function hasCredentials(): boolean {
 export async function login(page: Page): Promise<void> {
   await page.goto(`${BASE}/es/login`)
   await page.getByLabel('Correo electrónico').fill(TEST_USER_EMAIL)
-  await page.getByLabel('Contraseña').fill(TEST_USER_PASSWORD)
+  // `exact`: el botón «Mostrar contraseña» también tiene «contraseña» en su aria-label.
+  await page.getByLabel('Contraseña', { exact: true }).fill(TEST_USER_PASSWORD)
   await page.locator('form button[type=submit]').click()
   // Espera a que el redirect post-login complete
   await page.waitForURL(/\/(es|en)\/(home|library|discover)/, { timeout: 15_000 })

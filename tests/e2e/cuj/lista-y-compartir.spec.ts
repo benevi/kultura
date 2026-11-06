@@ -1,5 +1,5 @@
 // CUJ 5 · Crear lista y compartir (F3-8): crear una lista pública, añadirle un
-// título desde la ficha y abrir su enlace público sin sesión.
+// título desde la ficha, copiar su enlace con «Compartir» y abrirlo sin sesión.
 import { test, expect } from "@playwright/test";
 import { admin, createUser, eventually, login, uniq } from "./_db";
 
@@ -32,13 +32,19 @@ test("lista: crear pública, añadir título y abrir el enlace sin sesión", asy
     "título en list_items",
   );
 
-  // El dueño ve el botón de compartir; el enlace público abre sin sesión.
+  // «Compartir» copia el enlace público (sin hoja nativa: se fuerza el portapapeles).
+  await page.context().grantPermissions(["clipboard-read", "clipboard-write"]);
+  await page.addInitScript(() => Object.defineProperty(navigator, "share", { value: undefined, configurable: true }));
   await page.goto(`/es/lists/${listId}`);
-  await expect(page.getByRole("button", { name: /Compartir/ })).toBeVisible();
+  await page.getByRole("button", { name: "Compartir", exact: true }).click();
+  const publicPath = `/u/${user.username}/l/${listId}`;
+  await expect.poll(() => page.evaluate(() => navigator.clipboard.readText())).toContain(publicPath);
+  const copied = await page.evaluate(() => navigator.clipboard.readText());
 
+  // El enlace copiado abre la lista sin sesión.
   const anon = await browser.newContext({ bypassCSP: true, locale: "es-ES" });
   const visitor = await anon.newPage();
-  await visitor.goto(`/es/u/${user.username}/l/${listId}`);
+  await visitor.goto(copied);
   await expect(visitor.getByRole("heading", { name })).toBeVisible();
   await expect(visitor.getByText("Matrix").first()).toBeVisible();
   await anon.close();

@@ -48,12 +48,14 @@ const CUJ_ENV = {
   RAWG_API_KEY: "cuj-rawg",
   COMICVINE_KEY: "cuj-comicvine",
   ANTHROPIC_API_KEY: "sk-ant-cuj",
-  // Progreso por formato (F-27): la migración 20261215270001 ya está en local.
+  // Banderas de v2 cuyas migraciones ya están en local: se prueba ese camino
+  // (progreso por formato F-27 y nota /10 F-24), no el de compatibilidad.
   PROGRESS_V2: "1",
+  RATING_SCALE_10: "1",
   NEXT_TELEMETRY_DISABLED: "1",
-  // Mismo `fetch` sin red que el job de accesibilidad: localhost (Supabase
-  // local y la propia app) pasa tal cual; TMDB, datos fijos; el resto, 503.
-  NODE_OPTIONS: `--require ${path.join(ROOT, "tests/e2e/a11y/offline-fetch.cjs")}`,
+  // `fetch` sin red (ver offline-fetch.cjs): localhost pasa tal cual; TMDB,
+  // datos fijos con búsqueda que filtra; el resto, 503.
+  NODE_OPTIONS: `--require ${path.join(ROOT, "tests/e2e/cuj/offline-fetch.cjs")}`,
 };
 
 module.exports = { ROOT, CUJ_PORT, BASE_URL, SUPABASE_URL, ANON_KEY, SERVICE_ROLE_KEY, CUJ_ENV, assertLocalSupabase };

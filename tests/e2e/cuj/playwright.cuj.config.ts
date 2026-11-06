@@ -20,6 +20,13 @@ assertLocalSupabase();
 // Los specs de b3_5e leen la URL de aquí (por defecto apuntaban al dev :3001).
 process.env.E2E_BASE_URL = BASE_URL;
 
+// Los b3_5e necesitan el usuario A de seed-test.mjs. En CI es obligatorio (un
+// `skip` silencioso sería un verde falso); en local, sin él, no se incluyen.
+const hasSeedUser = Boolean(process.env.TEST_USER_EMAIL && process.env.TEST_USER_PASSWORD);
+if (process.env.CI && !hasSeedUser) {
+  throw new Error("CUJ: faltan TEST_USER_EMAIL / TEST_USER_PASSWORD (usuario de scripts/seed-test.mjs).");
+}
+
 export default defineConfig({
   testDir: __dirname,
   testMatch: /.*\.spec\.ts$/,
@@ -54,15 +61,16 @@ export default defineConfig({
       testMatch: /(registro|entrar)\.spec\.ts$/,
       use: { ...devices["Pixel 5"], viewport: { width: 390, height: 844 } },
     },
-    {
+    ...(hasSeedUser ? [{
       // b3_5e convertidos (no borrados): Descubrir e idioma, con el usuario A de
-      // scripts/seed-test.mjs (TEST_USER_EMAIL / TEST_USER_PASSWORD). Chat,
-      // grupos y notificaciones son v2.1 y siguen en su sitio sin correr aquí.
+      // scripts/seed-test.mjs. Ojo: los de Descubrir simulan /api/discover en
+      // el navegador (prueban la UI y el i18n, no la BD); solo el login es real.
+      // Chat, grupos y notificaciones son v2.1: siguen en su sitio sin correr.
       name: "b3_5e",
       testDir: path.join(ROOT, "tests/e2e/b3_5e_safety_net"),
       testMatch: /(discover-filters|discover-pagination|language-switch)\.spec\.ts$/,
       use: { ...devices["Desktop Chrome"], viewport: { width: 1440, height: 900 } },
-    },
+    }] : []),
   ],
   webServer: {
     command: `npx next start -p ${CUJ_PORT}`,

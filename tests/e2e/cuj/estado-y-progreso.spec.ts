@@ -27,9 +27,9 @@ test("estado y progreso: pendiente → en curso T1E3", async ({ page }) => {
     (e) => e?.status === "in_progress",
     "estado en curso en user_media",
   );
-  // Con PROGRESS_V2 va a las columnas; sin ella, al jsonb antiguo.
-  const legacy = entry!.episode_progress as { episode?: number } | null;
-  expect(entry!.progress_episode ?? legacy?.episode).toBe(3);
+  // PROGRESS_V2=1 (env.cjs): va a las columnas por formato, no al jsonb antiguo.
+  expect(entry!.progress_season).toBe(1);
+  expect(entry!.progress_episode).toBe(3);
 
   // Al recargar, el modal vuelve con lo guardado.
   await page.reload();

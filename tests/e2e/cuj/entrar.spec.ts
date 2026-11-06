@@ -20,7 +20,8 @@ test("entrar: contraseña incorrecta muestra el error y no entra", async ({ page
   await passwordField(page).fill("no-es-la-buena-123");
   await page.locator("form button[type=submit]").click();
 
-  await expect(page.getByRole("alert")).toBeVisible();
+  // En el formulario: Next también pinta un role=alert (anunciador de rutas).
+  await expect(page.locator("form [role=alert]")).toHaveText(/Correo o contraseña incorrectos/);
   await expect(page).toHaveURL(/\/es\/login/);
 });
 
