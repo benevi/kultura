@@ -74,7 +74,6 @@ export interface OptedIn {
 }
 
 export interface DigestStore {
-  /** `null` = la migración aún no está aplicada. */
   listOptedIn(): Promise<OptedIn[]>
   listSends(period: string): Promise<SendRow[]>
   /** Reclama el envío de esta persona y semana; devuelve el id de la fila o null si otro lo tiene. */

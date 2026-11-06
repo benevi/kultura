@@ -15,7 +15,7 @@
 // F-27 (PRO-5): con PROGRESS_V2=1 llega `progress` (episodios, capítulos,
 // páginas o %, horas según el formato) y se guarda en las columnas
 // `progress_*`; el disparador deja `episode_progress` como espejo. Sin la
-// bandera, o sin la migración 20261215270001, se guarda `episodeProgress`
+// bandera se guarda `episodeProgress`
 // como siempre (de `progress` se saca la temporada y el episodio).
 // ============================================================
 

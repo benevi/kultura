@@ -159,9 +159,9 @@ describe('viewerCanReadLibrary (D-04b)', () => {
     expect(await viewerCanReadLibrary(client as never, 'u1')).toBe(false)
   })
 
-  it('cualquier otro error: no se enseña', async () => {
+  it.each(['57014', 'PGRST202', '42883'])('si falla (%s): no se enseña', async (code) => {
     const { viewerCanReadLibrary } = await import('@/lib/social/public-collection')
-    rpc.mockResolvedValueOnce({ data: null, error: { code: '57014' } })
+    rpc.mockResolvedValueOnce({ data: null, error: { code } })
     expect(await viewerCanReadLibrary(client as never, 'u1')).toBe(false)
   })
 })

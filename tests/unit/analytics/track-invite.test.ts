@@ -198,9 +198,9 @@ describe('acceptInvite()', () => {
     }
   })
 
-  it('si falla la lectura de bloqueos, no crea nada', async () => {
+  it.each(['57014', '42P01', 'PGRST205'])('si falla la lectura de bloqueos (%s), no crea nada', async (code) => {
     h.results.users = [{ data: { id: 'inv-1', username: 'ana' } }]
-    h.results.blocks = [{ data: null, error: { code: '57014' } }]
+    h.results.blocks = [{ data: null, error: { code } }]
     expect(await acceptInvite(NEW, 'ana', inviteSignature('inv-1', 'ana')!)).toBe('blocked')
   })
 

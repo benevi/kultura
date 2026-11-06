@@ -4,7 +4,7 @@
 // GET             → { enabled, users }   (a quién he bloqueado)
 // POST   { userId } → bloquear (la base borra la amistad y las invitaciones)
 // DELETE { userId } → desbloquear (la amistad no vuelve: hay que pedirla)
-// `enabled: false` sin MODERATION_V2 o sin la migración: la UI no enseña nada.
+// `enabled: false` sin MODERATION_V2: la UI no enseña nada.
 // ============================================================
 
 import { NextResponse } from 'next/server'

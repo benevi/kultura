@@ -21,7 +21,7 @@
 //     (lib/media). Lo que no se pueda resolver ahora se omite y se cuenta en
 //     `libraryUnresolved`; reimportar el mismo fichero lo completa.
 //   - F-24: la nota fina `rating10` (0,5-10) y `favorite` vuelven tal cual con
-//     RATING_SCALE_10=1 (sin ella, o sin la migración, se guarda `score`). El
+//     RATING_SCALE_10=1 (sin ella se guarda `score`). El
 //     diario (`diary`) se reimporta para los títulos que estén en la
 //     biblioteca, sin duplicar apuntes (misma fecha, título, revisionado y
 //     reseña).

@@ -42,7 +42,7 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
     const library = (await getUserMedia(user.id)).filter((e) => e.mediaId.startsWith('movie_'))
     const logs: ExportLog[] = []
     if (list === 'watched') {
-      // El diario (F-24) si existe; sin la migración, sin apuntes.
+      // El diario (F-24): los apuntes de user_media_logs.
       for (let page = 0; page < MAX_PAGES; page++) {
         const from = page * PAGE
         const { data, error } = await supabase

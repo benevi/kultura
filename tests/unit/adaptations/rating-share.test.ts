@@ -153,8 +153,8 @@ describe("resolveRatingShare", () => {
     expect(libraryReadsBy("admin")).toBe(0);
   });
 
-  it("si no se puede comprobar el bloqueo (error raro), no se enseña", async () => {
-    h.world.rpc.has_block_with = () => ({ data: null, error: { code: "XX000", message: "boom" } });
+  it.each(["XX000", "PGRST202", "42883"])("si no se puede comprobar el bloqueo (%s), no se enseña", async (code) => {
+    h.world.rpc.has_block_with = () => ({ data: null, error: { code, message: "boom" } });
     expect((await view({ viewer: viewer("stranger"), sig: SIG() })).kind).toBe("generic");
   });
 

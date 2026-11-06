@@ -121,7 +121,7 @@ export function submitPublicReport(input: {
 }
 
 export interface BlockState {
-  /** false sin MODERATION_V2 o sin la migración: la UI no enseña bloquear. */
+  /** false sin MODERATION_V2: la UI no enseña bloquear. */
   enabled: boolean
   blocked: boolean
 }

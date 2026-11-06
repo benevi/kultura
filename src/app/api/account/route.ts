@@ -68,7 +68,7 @@ export async function GET(): Promise<NextResponse> {
     lists,
     messages,
     friends,
-    // `null`: la migración aún no está y no se sabe a quién pasarían.
+    // `null`: falló deletion_preview y no se sabe a quién pasarían.
     groups: preview?.groups ?? null,
     sharedLists: preview?.lists ?? null,
     graceDays,

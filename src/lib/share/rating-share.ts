@@ -140,7 +140,7 @@ export interface ShareOwner {
   username: string;
   avatarColor: string;
   avatarInitials: string;
-  /** `null`: columna sin migrar (se trata como el valor por defecto, "amigos"). */
+  /** `null`: sin valor (se trata como el valor por defecto, "amigos"). */
   libraryVisibility: LibraryVisibility | null;
 }
 
