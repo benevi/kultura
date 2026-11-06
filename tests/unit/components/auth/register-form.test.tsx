@@ -138,50 +138,22 @@ describe("LoginPage — modo register", () => {
     });
   });
 
-  // El personaje viaja en los metadatos: si la confirmación se abre en otro
-  // navegador, el callback lo aplica (el localStorage no está allí).
-  it("el personaje elegido va en options.data del signUp", async () => {
+  // El personaje pasa a /welcome: el registro es lo mínimo.
+  it("el registro no pide personaje", () => {
     render(<LoginPage locale="es" />);
-    fireEvent.click(screen.getByRole("radio", { name: "characters.panda" }));
-    fillAndSubmit("user@example.com", "password123");
-    await waitFor(() =>
-      expect(h.fake.auth.signUp).toHaveBeenCalledWith(
-        expect.objectContaining({
-          options: expect.objectContaining({
-            data: {
-              locale: "es",
-              terms_accepted: true,
-              terms_version: TERMS_VERSION,
-              attribution: { channel: "direct" },
-              avatar_icon: "panda",
-            },
-          }),
-        })
-      )
-    );
+    expect(screen.queryAllByRole("radio")).toHaveLength(0);
   });
 
-  // Los personajes se nombran en el idioma de la página (auth.characters.*),
-  // no con la clave interna ("fox"); el ejemplo de correo también se traduce.
-  it("nombra los personajes y el ejemplo de correo con textos traducidos", () => {
-    render(<LoginPage locale="es" />);
-    const radios = screen.getAllByRole("radio");
-    for (const radio of radios.slice(1)) {
-      expect(radio.getAttribute("aria-label")).toMatch(/^characters\./);
-    }
-    expect(screen.getByRole("radio", { name: "characters.fox" })).toHaveAttribute("title", "characters.fox");
-    expect(screen.getByLabelText("email")).toHaveAttribute("placeholder", "emailPlaceholder");
-  });
-
-  it("sin sesión tras el registro → 'Revisa tu correo' con el email y reenviar", async () => {
+  it("sin sesión tras el registro → 'Revisa tu correo' sin enseñar el correo, y reenviar", async () => {
     h.fake.requireEmailConfirmation(true);
     render(<LoginPage locale="es" />);
     fillAndSubmit("user@example.com", "password123");
 
     await waitFor(() => expect(screen.getByText("checkEmail")).toBeInTheDocument());
-    expect(screen.getByText("checkEmailBody:user@example.com")).toBeInTheDocument();
+    expect(screen.getByText("checkEmailBody")).toBeInTheDocument();
+    expect(document.body.textContent).not.toContain("user@example.com");
     expect(screen.getByText("checkSpam")).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /resendIn:60/ })).toBeDisabled();
+    expect(screen.getByRole("button", { name: /resendIn:60/ })).toHaveAttribute("aria-disabled", "true");
     expect(h.replace).not.toHaveBeenCalled();
   });
 

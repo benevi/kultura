@@ -72,7 +72,6 @@ const SAME_TEXT_DIFFERENT_ROLE: { keys: string[]; why: string }[] = [
  * namespaces y una zona no ve los de otra) o qué componente lo resuelve.
  */
 const CROSS_NAMESPACE_DEBT: Record<string, string> = {
-  "auth.valueLine invite.bannerText": "login (shell) y banner de invitación (/u): proveedores distintos",
   "landing.seo.title meta.defaultTitle": "D-11: la misma promesa en la landing y en el título por defecto",
   "onboarding.nameReserved settings.errorUsernameReserved": "/welcome y Ajustes: proveedores distintos",
 };

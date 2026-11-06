@@ -18,12 +18,12 @@ test.describe("Auth flow", () => {
     await page.goto(`/es/login`);
     await expect(page.getByLabel("Correo electrónico")).toBeVisible();
     await expect(passwordField(page)).toBeVisible();
-    await expect(page.getByRole("link", { name: "Regístrate" })).toBeVisible();
+    await expect(page.getByRole("link", { name: "Crear cuenta" })).toBeVisible();
   });
 
   test("sign-up link switches to register without confirm password", async ({ page }) => {
     await page.goto(`/es/login`);
-    await page.getByRole("link", { name: "Regístrate" }).click();
+    await page.getByRole("link", { name: "Crear cuenta" }).click();
     await expect(page).toHaveURL(/mode=register/);
     await expect(page.getByLabel("Confirmar contraseña")).toHaveCount(0);
     await page.getByRole("button", { name: "Mostrar contraseña" }).click();

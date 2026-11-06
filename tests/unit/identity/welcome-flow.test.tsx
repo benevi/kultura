@@ -66,6 +66,16 @@ describe('WelcomeFlow', () => {
     global.fetch = vi.fn().mockImplementation(async () => ok())
   })
 
+  // El personaje salió del registro: se elige aquí y es opcional.
+  it('el personaje elegido se guarda con el nombre', async () => {
+    renderFlow()
+    fireEvent.click(screen.getByRole('radio', { name: 'characters.panda' }))
+    fireEvent.click(screen.getByRole('checkbox'))
+    fireEvent.click(screen.getByRole('button', { name: 'continue' }))
+    await screen.findByRole('heading', { name: 'formatsTitle' })
+    expect(calls('/api/settings')[0]).toEqual({ accept_terms: true, avatar_icon: 'panda' })
+  })
+
   it('recorrido completo: tras 3 notas llega a Inicio', async () => {
     renderFlow()
 

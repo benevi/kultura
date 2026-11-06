@@ -64,7 +64,7 @@ describe("LoginPage — modo login", () => {
     render(<LoginPage locale="es" />);
     const submitBtn = document.querySelector('button[type="submit"]');
     expect(submitBtn).toBeInTheDocument();
-    expect(submitBtn?.textContent).toBe("signIn");
+    expect(submitBtn?.textContent).toBe("enter");
   });
 
   it("muestra error de validación cuando el email es inválido", async () => {
@@ -105,21 +105,16 @@ describe("LoginPage — modo login", () => {
   });
 
   // ── Acabado F0 del artboard Login (canvas "Kultura — Diseño completo") ──
-  //
-  // El encabezado visible se quitó (decisión del usuario), pero la página sigue
-  // teniendo un <h1> para lectores de pantalla.
-  it("conserva un h1 accesible aunque el encabezado no se vea", () => {
+  it("el título de la pantalla es su h1", () => {
     render(<LoginPage locale="es" />);
     const heading = screen.getByRole("heading", { level: 1 });
-    expect(heading.textContent).toBe("welcomeBack");
+    expect(heading.textContent).toBe("enter");
   });
 
-  // El artboard pone el cambio de modo AL PIE ("¿No tienes cuenta?
-  // Regístrate"). Ahora es un enlace de verdad (ROJO-10).
-  it("ofrece el registro al pie como enlace a mode=register", () => {
+  // El cambio de modo va en la barra superior, como enlace de verdad (ROJO-10).
+  it("ofrece el registro como enlace a mode=register", () => {
     render(<LoginPage locale="es" />);
-    expect(screen.getByText("dontHaveAccount")).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "signUpAction" })).toHaveAttribute(
+    expect(screen.getByRole("link", { name: "createAccount" })).toHaveAttribute(
       "href",
       "/login?mode=register"
     );
