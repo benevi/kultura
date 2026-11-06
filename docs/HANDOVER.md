@@ -15,7 +15,7 @@
 - Revisión independiente: ver `04_DECISIONES` §4. CI del #74: lint, `cuj`, Lighthouse y axe en verde.
 
 ## Pendiente / ojo
-- Con esto se cierra la parte de Claude en F0. Lo que queda es de Víctor: Analytics con un evento de prueba, el dominio (D3), el simulacro de restauración y R9 (el historial de migraciones de producción).
+- Con esto se cierra la parte de Claude en F0. Lo que queda es de Víctor, con los pasos exactos en `docs/F0_PASOS_VICTOR.md`: Analytics con un evento visto, R9 (comando `migration repair` con las 22 versiones), el simulacro de restauración, el proyecto «KULTURA 2.0» (D8) y el dominio (D3).
 - Para v2.0 o F3-9: `/best` mantiene su suelo relajado del año en curso (series 300 → 75), y el líder de series es poco creíble también allí.
 - `build.py` sigue procesando 4 imágenes de ranking cada semana que ya no se pintan. Revisarlo cuando Inicio v2 decida si vuelven.
 - Había un `next start` viejo escuchando en el puerto 3187 (sirve la portada con rankings). No se tocó. Para medir en local se usó el 3191.
