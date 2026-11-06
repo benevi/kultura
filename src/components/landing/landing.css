@@ -67,7 +67,7 @@ body:has(.kl)::before { display: none; }
   content: ""; position: absolute; left: 0; right: 0; bottom: 2px; height: 2px; background: currentColor;
   transform: scaleX(0); transform-origin: left; transition: transform 0.35s var(--ease-out);
 }
-.kl-link:hover::after, .kl-top nav a:hover::after, .kl-tile:hover .kl-link::after { transform: scaleX(1); }
+.kl-link:hover::after, .kl-top nav a:hover::after { transform: scaleX(1); }
 .kl-actions { display: flex; align-items: center; gap: 22px; flex-wrap: wrap; }
 .kl-actions form { display: contents; }
 
@@ -167,18 +167,6 @@ body:has(.kl)::before { display: none; }
 .kl-step p { margin-top: 16px; max-width: 30ch; font-size: var(--step-lead); color: var(--muted); }
 .kl-step.is-on p { color: var(--ink); }
 
-/* Rankings */
-.kl-best { padding: clamp(120px, 14vh, 200px) var(--m) 0; }
-.kl-best-head { display: flex; justify-content: space-between; align-items: flex-end; gap: 24px; margin-bottom: clamp(32px, 5vh, 56px); }
-.kl-best h2 { font-size: var(--step-head); }
-.kl-best-head p { max-width: 28ch; color: var(--muted); }
-.kl-tiles { display: grid; grid-template-columns: repeat(4, 1fr); gap: clamp(12px, 1.6vw, 24px); list-style: none; margin: 0; padding: 0; }
-.kl-tile { display: block; }
-.kl-tile .kl-fmt { margin-top: 16px; font-size: clamp(30px, 2.6vw, 44px); }
-.kl-tile .kl-lead-t { margin-top: 6px; font-weight: 600; font-size: var(--step-small); }
-.kl-tile .kl-link { margin-top: 10px; }
-.kl-score { position: absolute; right: 14px; top: 14px; z-index: 2; background: var(--bg); font-size: 22px; padding: 6px 10px; }
-
 /* Comparativa */
 .kl-vs { padding: clamp(140px, 16vh, 220px) var(--m) 0; }
 .kl-vs h2 { font-size: clamp(2.25rem, 1rem + 3.6vw, 5rem); max-width: 16ch; }
@@ -243,8 +231,6 @@ body:has(.kl)::before { display: none; }
   .kl-step { min-height: 0; margin-bottom: 64px; }
   .kl-step .kl-m-win { display: block; width: 62%; margin-bottom: 22px; }
   .kl-step h3 { font-size: clamp(48px, 15vw, 72px); }
-  .kl-best-head { flex-direction: column; align-items: flex-start; }
-  .kl-tiles { grid-template-columns: 1fr 1fr; }
   .kl-matrix th, .kl-matrix td { padding: 12px 2px; font-size: 12px; }
   .kl-matrix th[scope="row"] { font-size: 16px; padding-right: 6px; }
   .kl-matrix tbody tr.is-us th { padding-left: 8px; }

@@ -134,7 +134,7 @@ Convenciones: las rutas de pantalla son relativas a `src/app/[locale]/`; las de 
 - **Componentes:** `best/BestNav`, `BestTopRow`, `BestOfList`, `ShareRanking`.
 - **Textos:** `best`.
 - **Tests:** `best` (6).
-- **Nota:** credibilidad (suelo de votos) pendiente en F0 (§7.3).
+- **Nota:** credibilidad: el bloque de rankings sale de la portada hasta v2.0 (F0 §7.3, `04_DECISIONES` D-R1). El suelo de votos de `/best` queda para F3-9.
 
 ### F3-10 · Importar / Exportar
 | Pantalla | URL | Estados | Piezas propias |

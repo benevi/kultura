@@ -2,7 +2,6 @@ import { render, screen, within } from "@testing-library/react";
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import type { LandingMedia } from "@/lib/landing/media";
 import { FALLBACK_MEDIA } from "@/lib/landing/scenes";
-import { bestYears } from "@/lib/best/best-of";
 import es from "../../../messages/es.json";
 import en from "../../../messages/en.json";
 
@@ -55,8 +54,6 @@ vi.mock("@/i18n/navigation", () => {
 });
 
 import HomePage, { generateMetadata } from "@/app/[locale]/page";
-
-const year = bestYears()[0];
 
 async function renderPage(locale: "es" | "en" = "es") {
   intl.locale = locale;
@@ -114,10 +111,10 @@ describe("Landing v2 · portada", () => {
 });
 
 describe("Landing v2 · secciones", () => {
-  it("orden: portada, lo que hay dentro, así funciona, rankings, comparativa y preguntas", async () => {
+  it("orden: portada, lo que hay dentro, así funciona, comparativa y preguntas", async () => {
     const { container } = await renderPage();
     const ids = [...container.querySelectorAll("main > section")].map((s) => s.id);
-    expect(ids).toEqual(["", "dentro", "funciona", "rankings", "comparativa", "preguntas"]);
+    expect(ids).toEqual(["", "dentro", "funciona", "comparativa", "preguntas"]);
   });
 
   it("sin mencionar dinero (ni «gratis» ni «anuncios»)", async () => {
@@ -132,17 +129,20 @@ describe("Landing v2 · secciones", () => {
     const { container } = await renderPage();
     expect(container.querySelector(".kl-stage > img")!.getAttribute("src")).toBe("https://x.supabase.co/h.jpg");
     expect(container.querySelector(".kl-cap")!.textContent).toContain("Semana nueva");
-    expect(container.querySelectorAll(".kl-win")).toHaveLength(4 + 1 + 3 + 4);
+    expect(container.querySelectorAll(".kl-win")).toHaveLength(4 + 1 + 3);
   });
 
-  it("cuatro rankings del año en curso, con la nota en formato español", async () => {
+  // F0 §7.3: el bloque de rankings sale de la portada hasta v2.0 (sin suelo de
+  // votos que lo haga creíble: ver 04_DECISIONES). Ni notas ni enlaces a /best.
+  it("sin rankings: ni notas, ni enlaces a /best, ni ancla #rankings", async () => {
     const { container } = await renderPage();
-    for (const f of ["anime", "movie", "tv", "game"]) {
-      expect(container.querySelector(`a[href="/es/best/${f}/${year}"]`), f).toBeTruthy();
-    }
-    expect(container.querySelector(`a[href="/es/best/anime/${year}"] .kl-score`)!.textContent).toBe("9,0");
-    // Solo el año en curso (Víctor quitó los anteriores).
-    expect(container.querySelector(`a[href="/es/best/anime/${year - 1}"]`)).toBeNull();
+    expect(container.querySelector("#rankings")).toBeNull();
+    expect(container.querySelector('a[href="#rankings"]')).toBeNull();
+    expect(container.querySelector('a[href^="/es/best"]')).toBeNull();
+    expect(container.querySelector(".kl-score")).toBeNull();
+    const enPage = await renderPage("en");
+    expect(enPage.container.querySelector("#rankings")).toBeNull();
+    expect(enPage.container.querySelector('a[href^="/en/best"]')).toBeNull();
   });
 
   it("comparativa: seis apps por siete formatos y KULTURA con todos", async () => {
