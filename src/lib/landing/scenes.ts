@@ -12,7 +12,8 @@ import type { LandingMedia, LandingSlot } from "./media";
 /**
  * Formatos con ranking, en el orden de las tarjetas. La portada ya no pinta el
  * bloque (F0 §7.3, hasta v2.0), pero la tarea semanal sigue exigiendo el hueco
- * `ranking` para activar una semana (`build.py`), así que los datos se quedan.
+ * `ranking` para activar una semana (`build.py`), así que los datos se quedan
+ * (y `formatRating`, que hoy solo usan sus tests, para cuando vuelva en v2.0).
  */
 export const RANKING_FORMATS = ["anime", "movie", "tv", "game"] as const;
 export type RankingFormat = (typeof RANKING_FORMATS)[number];

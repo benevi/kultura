@@ -140,6 +140,9 @@ describe("Landing v2 · secciones", () => {
     expect(container.querySelector('a[href="#rankings"]')).toBeNull();
     expect(container.querySelector('a[href^="/es/best"]')).toBeNull();
     expect(container.querySelector(".kl-score")).toBeNull();
+    const enPage = await renderPage("en");
+    expect(enPage.container.querySelector("#rankings")).toBeNull();
+    expect(enPage.container.querySelector('a[href^="/en/best"]')).toBeNull();
   });
 
   it("comparativa: seis apps por siete formatos y KULTURA con todos", async () => {
