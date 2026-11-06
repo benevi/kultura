@@ -77,6 +77,8 @@ supabase link --project-ref xqvicvypoxxfbezqnkwr
 
 ## 3. Simulacro de restauración del backup (≈ 30 min)
 
+**Hecho el 2026-11-06.** Los backups no habían funcionado nunca (R10). Víctor generó la clave y puso los secretos, la copia salió en verde y Claude restauró en un PostgreSQL local con los recuentos iguales a producción (ver `supabase/README.md` § Prueba trimestral). Lo de abajo queda como referencia para la prueba trimestral.
+
 La guía está en `supabase/README.md` § «Restaurar».
 
 1. Confirma dónde está la clave privada `age` (`kultura-backup.key`). Si no
