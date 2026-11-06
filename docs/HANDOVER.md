@@ -15,10 +15,11 @@
 ## Verificación
 - `tsc` sin errores fuera de `.next/` (tipos viejos de otra rama); `npm run lint` limpio.
 - Suite completa en Windows: los mismos 16 fallos que `master` (10 ficheros: rutas con `\`, CRLF, tiempos); ninguno nuevo. CI (Linux) es la referencia.
-- Navegador (dev): `v=2` → 400; sin sesión → login, `no-store`, cookie no visible desde JS. **No verificado con sesión**: `kultura-test` está pausado.
+- Navegador (dev, con sesión en `kultura-test` reactivado): `/api/ui-v2?v=1` responde 303 a `/es/lists`; pero `/es/lists` cae en la página de error **en v1 y en v2** por `column lists.is_public does not exist` (`lib/social/lists.ts:157`), antes del conmutador. **Pantalla v2 sin ver con sesión.**
 
 ## Pendiente de Víctor
-- Reactivar `kultura-test` (sin él no hay prueba con sesión ni CUJ con BD real).
+- `kultura-test` va 18 migraciones por detrás del repo (de `20260913220000` a `20261229350001`; incluye `20261014000001_public_lists.sql`). Aplicarlas (`supabase link --project-ref xqvicvypoxxfbezqnkwr` + `supabase db push`) y repetir la prueba de `/es/lists`.
+- `.env.development.local` no sustituye `SUPABASE_SERVICE_ROLE_KEY`: el dev usa la de producción contra `kultura-test` (`Invalid API key` en el log). Añadir la `service_role` de `kultura-test`.
 - Probar: entrar y abrir `/api/ui-v2?v=1&next=/es/lists`; volver con el enlace de la pantalla.
 - Paneles de F0 de siempre (D3/D4/D8, Web Analytics, clave `age`).
 
