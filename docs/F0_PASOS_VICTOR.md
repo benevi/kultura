@@ -42,7 +42,7 @@ no escribe sin ella y no da error).
 
 ## 2. R9 — reparar el historial de migraciones de producción (≈ 15 min)
 
-**Verificado por Claude el 2026-11-06 (solo lectura):** las 22 de abajo están aplicadas en producción y las 2 de push no (detalle en `04_DECISIONES` R9). Falta solo escribir el historial. Claude no puede: su clasificador bloquea escrituras en producción.
+**Verificado por Claude el 2026-11-06 (solo lectura):** las 22 de abajo están aplicadas en producción y las 2 de push no (detalle en `04_DECISIONES` R9). **Hecho el 2026-11-06:** Claude ejecutó `docs/sql/r9_repair_history.sql` con tu permiso. Se insertaron 22 versiones y `list_migrations` registra 29: solo faltan las 2 de push. El resto de esta sección queda como referencia.
 
 Alternativa sin CLI: Supabase **producción** → SQL Editor, pegar `docs/sql/r9_repair_history.sql` y ejecutar. Inserta solo las filas que faltan (idempotente) y devuelve las versiones añadidas: deben salir 22.
 
