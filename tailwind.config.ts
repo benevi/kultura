@@ -24,6 +24,8 @@ const config: Config = {
     "./src/pages/**/*.{js,ts,jsx,tsx,mdx}",
     "./src/components/**/*.{js,ts,jsx,tsx,mdx}",
     "./src/app/**/*.{js,ts,jsx,tsx,mdx}",
+    // F0: pantallas de la UI v2 tras el interruptor `ui_v2` (src/lib/ui-v2.ts).
+    "./src/v2/**/*.{js,ts,jsx,tsx,mdx}",
   ],
   theme: {
     /* ─── Sets cerrados (F-30, DIS-7 y DIS-12) ──────────────────────────

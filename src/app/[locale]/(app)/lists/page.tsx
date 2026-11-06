@@ -8,6 +8,8 @@ import { redirect } from 'next/navigation'
 import { getUserLists } from '@/lib/social/lists'
 import { mixedListsEnabled } from '@/app/api/lists/shared'
 import { ListsClient } from './ListsClient'
+import { isUiV2Enabled } from '@/lib/ui-v2'
+import { ListsScreen } from '@/v2/lists/ListsScreen'
 import { getTranslations } from 'next-intl/server'
 import type { Metadata } from 'next'
 
@@ -23,6 +25,9 @@ export default async function ListsPage() {
   if (!user) redirect('/login')
 
   const lists = await getUserLists(user.id)
+
+  // F0: conmutador de UI (src/lib/ui-v2.ts). Mismos datos, otra pantalla.
+  if (await isUiV2Enabled()) return <ListsScreen lists={lists} />
 
   return <ListsClient lists={lists} mixedEnabled={mixedListsEnabled()} />
 }

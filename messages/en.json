@@ -643,6 +643,12 @@
     "addNoteNamed": "Add a note to “{title}”",
     "editNoteNamed": "Edit the note on “{title}”"
   },
+  "uiV2": {
+    "badge": "New interface · testing",
+    "listsTitle": "My lists",
+    "listsEmpty": "You have no lists yet.",
+    "exit": "Back to the current interface"
+  },
   "aiRecommendations": {
     "title": "For you",
     "aiPickBadge": "PICKED FOR YOU",
