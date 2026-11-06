@@ -8,8 +8,8 @@
 // ============================================================
 
 import type { SupabaseClient } from '@supabase/supabase-js'
-import { deleteAccountNow, isNotMigrated } from '@/app/api/settings/account-state'
-import { ACCOUNT_GRACE_DAYS } from '@/app/api/settings/identity'
+import { deleteAccountNow, isNotMigrated } from '@/lib/account/account-state'
+import { ACCOUNT_GRACE_DAYS } from '@/lib/account/identity'
 import { createLogger } from '@/lib/logger'
 
 const log = createLogger('cron/purge')

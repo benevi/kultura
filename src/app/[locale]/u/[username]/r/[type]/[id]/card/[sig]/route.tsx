@@ -14,7 +14,7 @@
 // ============================================================
 
 import { parseMediaId } from "@/lib/media/media-id";
-import { findShareOwner, isValidRatingShareSignature } from "../../../../_lib/rating-share";
+import { findShareOwner, isValidRatingShareSignature } from "@/lib/share/rating-share";
 import { decode, renderRatedCard, type CardParams } from "../../../../_lib/rated-card";
 
 type Params = CardParams & { sig: string };

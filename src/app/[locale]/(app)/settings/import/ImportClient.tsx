@@ -30,7 +30,7 @@ import {
   type ParseErrorCode,
   type ParsedImport,
 } from '@/lib/import/types'
-import { clearProgress, loadProgress, saveProgress } from './import-storage'
+import { clearProgress, loadProgress, saveProgress } from '@/lib/import/import-storage'
 
 type Phase = 'idle' | 'reading' | 'preview' | 'running' | 'paused' | 'done' | 'error'
 type RunErrorCode = 'auth' | 'demo' | 'server' | 'network'

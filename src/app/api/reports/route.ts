@@ -18,7 +18,7 @@ import {
   checkTargetAsUser,
   normalizeReason,
   storedReason,
-} from './shared'
+} from '@/lib/social/reports'
 
 const log = createLogger('api/reports')
 

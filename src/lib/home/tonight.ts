@@ -18,7 +18,7 @@ import {
   PLATFORMS_BY_REGION,
   expandServices,
   type PlatformRegion,
-} from '@/app/[locale]/(app)/settings/platforms'
+} from '@/lib/platforms/platforms'
 
 /** Cuántos pendientes se comprueban como mucho por visita (TMDB: 1 petición cada uno). */
 export const TONIGHT_MAX_CHECKS = 24

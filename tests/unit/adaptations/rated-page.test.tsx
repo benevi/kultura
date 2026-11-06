@@ -65,7 +65,7 @@ vi.mock("next/image", () => ({
 }));
 
 import RatedTitlePage, { generateMetadata } from "@/app/[locale]/u/[username]/r/[type]/[id]/page";
-import { ratingShareSignature } from "@/app/[locale]/u/[username]/r/_lib/rating-share";
+import { ratingShareSignature } from "@/lib/share/rating-share";
 
 const SIG = () => ratingShareSignature("owner", "movie_438631")!;
 const props = (sp: Record<string, string> = {}, over: Partial<{ username: string; id: string }> = {}) => ({

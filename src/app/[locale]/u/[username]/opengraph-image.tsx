@@ -3,7 +3,7 @@ import { createTranslator } from "next-intl";
 import { C, loadFont, fontsOption } from "@/lib/og/brand";
 import { posterDataUri } from "@/lib/og/poster";
 import { getPublicCollection, resolveRenamedUsername } from "@/lib/social/public-collection";
-import { publicTopFour } from "./r/_lib/top-four";
+import { publicTopFour } from "@/lib/share/top-four";
 import { PROFILE_OG_ID } from "@/components/pwa/share";
 import es from "../../../../../messages/es.json";
 import en from "../../../../../messages/en.json";

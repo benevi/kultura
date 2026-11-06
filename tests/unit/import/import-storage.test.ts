@@ -2,7 +2,7 @@
 // F-26 — Avance del importador en este navegador: por cuenta, borrable y sin
 // romper si el almacenamiento falla.
 import { describe, it, expect, beforeEach, vi } from 'vitest'
-import { clearProgress, loadProgress, progressKey, saveProgress } from '@/app/[locale]/(app)/settings/import/import-storage'
+import { clearProgress, loadProgress, progressKey, saveProgress } from '@/lib/import/import-storage'
 import type { ImportItemResult } from '@/lib/import/types'
 
 const results = new Map<string, ImportItemResult>([['0', { key: '0', outcome: 'added', mediaId: 'movie_1' }]])

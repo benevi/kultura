@@ -14,7 +14,7 @@ import { useEffect, useId, useRef, useState } from 'react'
 import { useTranslations } from 'next-intl'
 import { createClient } from '@/lib/supabase/client'
 import { cn } from '@/lib/utils/index'
-import { PLATFORMS_BY_REGION, PLATFORM_REGIONS, type PlatformRegion } from './platforms'
+import { PLATFORMS_BY_REGION, PLATFORM_REGIONS, type PlatformRegion } from '@/lib/platforms/platforms'
 
 export const PLATFORMS_SAVE_DELAY_MS = 700
 

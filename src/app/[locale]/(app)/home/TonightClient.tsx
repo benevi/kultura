@@ -14,7 +14,7 @@ import { KButton } from '@/components/ui/KButton'
 import { PosterImage } from '@/components/media/PosterImage'
 import { IconDice } from '@/components/icons'
 import { posterGradient } from '@/lib/images/poster-gradient'
-import type { TonightPick } from './tonight'
+import type { TonightPick } from '@/lib/home/tonight'
 
 function hrefOf(item: TonightPick): string {
   return `/media/${item.type}/${item.mediaId.split('_').slice(1).join('_')}`

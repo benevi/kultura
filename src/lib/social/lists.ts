@@ -13,7 +13,7 @@ import {
   isNotMigrated,
   listColumns,
   mixedListsEnabled,
-} from '@/app/api/lists/shared'
+} from '@/lib/social/lists-shared'
 import type { DbList, DbListItem, DbListMember, DbUser, DbMedia } from '@/types/supabase'
 import type { List, ListItem, ListMediaType, ListMember, ListTemplate } from '@/types/list'
 import type { MediaType } from '@/types/media'

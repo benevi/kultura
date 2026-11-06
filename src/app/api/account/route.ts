@@ -18,8 +18,8 @@ import {
   readAccountState,
   readDeletionPreview,
   scheduleDeletion,
-} from '@/app/api/settings/account-state'
-import { ACCOUNT_GRACE_DAYS, purgeDate } from '@/app/api/settings/identity'
+} from '@/lib/account/account-state'
+import { ACCOUNT_GRACE_DAYS, purgeDate } from '@/lib/account/identity'
 
 const log = createLogger('api/account')
 

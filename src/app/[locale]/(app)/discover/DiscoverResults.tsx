@@ -8,7 +8,7 @@ import type { MediaItem } from "@/types/media";
 import { MediaGrid } from "@/components/media/MediaGrid";
 import { cn } from "@/lib/utils/index";
 import { IconDice, IconClose } from "@/components/icons";
-import { DISCOVER_SKELETON_CELLS } from "./discover-config";
+import { DISCOVER_SKELETON_CELLS } from "@/components/discover/discover-icons";
 
 export interface DiscoverResultsProps {
   loading: boolean;

@@ -23,14 +23,14 @@ import { isValidAvatarColor, isValidLocale } from '@/lib/constants/avatarColors'
 import { isValidAvatarIcon } from '@/components/icons/avatars'
 import { checkRateLimit, LIMITS } from '@/lib/rate-limit'
 import { DEMO_READ_ONLY_ERROR, isDemoUser } from '@/lib/demo'
-import { LIBRARY_VISIBILITIES, USERNAME_REGEX, initialsFor, isReservedUsername } from './identity'
+import { LIBRARY_VISIBILITIES, USERNAME_REGEX, initialsFor, isReservedUsername } from '@/lib/account/identity'
 import {
   hasAcceptedTerms,
   isNotMigrated,
   markOnboarded,
   readAccountState,
   recordTermsAcceptance,
-} from './account-state'
+} from '@/lib/account/account-state'
 
 /** Tope de la bio: el mismo que el `maxLength` del editor (`ProfileBio`). */
 const BIO_MAX_LENGTH = 200

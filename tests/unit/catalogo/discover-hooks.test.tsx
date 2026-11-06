@@ -6,7 +6,7 @@ import { describe, it, expect, vi, afterEach } from "vitest";
 // discover-config solo toma de la rejilla el patrón de celdas del esqueleto.
 vi.mock("@/components/media/MediaGrid", () => ({ BENTO_CELL_CLASSES: ["cell"] }));
 import { useDiscoverQuery } from "@/hooks/useDiscoverQuery";
-import { buildYearBuckets } from "@/app/[locale]/(app)/discover/discover-config";
+import { buildYearBuckets } from "@/lib/discover/discover-config";
 
 const base = { type: "movie", page: 1, filterQuery: "", query: "", locale: "es" };
 

@@ -16,7 +16,7 @@ import {
   initialsFor,
   isReservedUsername,
   purgeDate,
-} from '@/app/api/settings/identity'
+} from '@/lib/account/identity'
 import { stripComments } from '../rls/migration-lint'
 
 const SQL = stripComments(

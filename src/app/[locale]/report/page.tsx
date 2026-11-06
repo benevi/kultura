@@ -10,7 +10,7 @@ import { getTranslations } from 'next-intl/server'
 import { Header } from '@/components/layout/Header'
 import { Footer } from '@/components/layout/Footer'
 import { isModerationV2 } from '@/lib/social/friends'
-import { allowedTargetTypes } from '@/app/api/reports/shared'
+import { allowedTargetTypes } from '@/lib/social/reports'
 import type { ReportTargetType } from '@/lib/social/actions'
 import { PublicReportForm } from './PublicReportForm'
 

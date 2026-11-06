@@ -9,8 +9,8 @@ import {
   normalizeServices,
   platformNames,
   platformRegionFor,
-} from '@/app/[locale]/(app)/settings/platforms'
-import { availableTonight, matchPlatforms, tmdbRefOf, TONIGHT_MAX_CHECKS } from '@/app/[locale]/(app)/home/tonight'
+} from '@/lib/platforms/platforms'
+import { availableTonight, matchPlatforms, tmdbRefOf, TONIGHT_MAX_CHECKS } from '@/lib/home/tonight'
 import { pickIndex } from '@/app/[locale]/(app)/home/TonightClient'
 import type { TmdbProvidersResponse } from '@/lib/api/tmdb'
 

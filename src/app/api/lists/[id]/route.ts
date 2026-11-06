@@ -31,7 +31,7 @@ import {
   isUuid,
   mixedListsEnabled,
   optionalText,
-} from '../shared'
+} from '@/lib/social/lists-shared'
 
 const log = createLogger('api/lists')
 

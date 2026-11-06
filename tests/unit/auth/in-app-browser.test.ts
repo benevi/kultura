@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { chromeIntentUrl, detectInAppBrowser } from "@/app/[locale]/login/in-app-browser";
+import { chromeIntentUrl, detectInAppBrowser } from "@/lib/auth/in-app-browser";
 
 describe("detectInAppBrowser (MOV-11)", () => {
   it.each([

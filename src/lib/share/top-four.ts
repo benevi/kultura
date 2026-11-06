@@ -10,7 +10,7 @@
 
 import { createAdminClient } from "@/lib/supabase/admin";
 import { pickFavorites, type FavoriteItem } from "@/lib/social/public-collection";
-import { anonymousCanSeeLibrary, findShareOwner } from "./rating-share";
+import { anonymousCanSeeLibrary, findShareOwner } from "@/lib/share/rating-share";
 
 const CANDIDATES = 40;
 

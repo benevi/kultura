@@ -9,7 +9,7 @@
 // nada se rompe: solo no aparece lo nuevo.
 // ============================================================
 
-import { isNotMigrated } from '@/app/api/settings/account-state'
+import { isNotMigrated } from '@/lib/account/account-state'
 import type { MediaType } from '@/types/media'
 import type { ListMediaType, ListTemplate } from '@/types/list'
 

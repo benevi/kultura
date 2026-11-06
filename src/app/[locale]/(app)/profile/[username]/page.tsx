@@ -23,7 +23,7 @@ import { FriendProfileActivity, FriendsActivitySkeleton } from '../../home/secti
 import { KButton } from '@/components/ui/KButton'
 import { Link } from '@/i18n/navigation'
 import { IconLibrary } from '@/components/icons'
-import { isNotMigrated } from '@/app/api/settings/account-state'
+import { isNotMigrated } from '@/lib/account/account-state'
 import type { DbFriendship } from '@/types/supabase'
 import { getTranslations } from 'next-intl/server'
 import { PushOffer } from '@/components/push/PushOffer'

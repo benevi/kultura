@@ -11,7 +11,7 @@
 
 import type { SupabaseClient, User } from '@supabase/supabase-js'
 import { isDemoUser } from '@/lib/demo'
-import { TERMS_VERSION } from './identity'
+import { TERMS_VERSION } from '@/lib/account/identity'
 
 /** Códigos de "esto aún no existe" (tabla, columna o función sin migrar). */
 const NOT_MIGRATED = new Set(['42P01', '42703', '42883', 'PGRST202', 'PGRST204', 'PGRST205'])

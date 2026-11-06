@@ -23,7 +23,7 @@ import {
   mixedListsEnabled,
   optionalText,
   validListTypes,
-} from './shared'
+} from '@/lib/social/lists-shared'
 import type { ListTemplate } from '@/types/list'
 
 const log = createLogger('api/lists')
