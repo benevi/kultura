@@ -1,33 +1,29 @@
-# HANDOVER — última sesión (2026-11-06)
+# HANDOVER — última sesión (2026-11-07)
 
-**Fase:** **F0 cerrada** el 2026-11-06 (`PLAN_ESTRATEGICO.md` §7.2–7.3). Siguiente: F1 (validar la cuña) y F2 (identidad). **Rama:** `master`.
+**Fase:** F1 (`PLAN_ESTRATEGICO.md` §7.3). F0 cerrada el 2026-11-06. **Rama:** `docs/f1-entrevistas` (PR abierto, sin fusionar).
 
-## Puerta de F0 (§7.2)
-| Condición | Estado | Evidencia |
-|---|---|---|
-| Evento emitido y visto en Web Analytics y en `analytics_events` | ✔ | `library_add` en `analytics_events` de producción, 2026-11-06 20:58:50 UTC. Vercel `/v9/projects/kultura`: `webAnalytics.hasData = true` (activo desde 2026-10-10); Speed Insights con datos desde 2026-11-06 20:57 UTC (#77). |
-| CUJ en verde contra Supabase real | ✔ | Job `cuj`, Playwright contra Supabase local en CI (#70), obligatorio en `master` (D-G1). |
-| Interruptor probado en una ruta | ✔ | `ui_v2` en `/es/lists` (#69). |
-| `CLAUDE.md` | ✔ | En el repo. |
-| Dominio principal con 308 y Search Console | fuera de F0 | D3 actualizada: se compra con la app al 100 %, pasa a F4. |
+## Hecho en esta sesión
+- Entregable: `docs/F1_ENTREVISTAS.md`, el guion «Mom test» para validar las dos cuñas de D2 (A: series y películas en español; B: anime y manga en español). Incluye:
+  - perfiles con filtro de 3 preguntas y canales con URL y fecha;
+  - mensaje de captación neutro, guion de 20 min y versión en formulario;
+  - consentimiento y RGPD;
+  - plantilla de notas y criterios de síntesis, con la regla de decisión escrita de antemano.
+- Canales comprobados el 2026-11-07:
+  - Discord «Club de Anime y Manga en Español» (18.821 miembros).
+  - Mediavida: foros `tv`, `cine` y `anime-manga`, más su ayuda de moderación.
+  - FilmAffinity no tiene foro público, así que no se capta dentro.
+  - Bingers (del cofundador de TV Time, hacia el 4/8/2026; TechCrunch).
+- **Sin verificar:** los subreddits, porque Reddit bloquea el acceso automático. Víctor los abre a mano y anota URL, miembros, norma y fecha.
+- Descartados: los servidores que reparten anime o series sin licencia (p. ej. «Japan Paw!»).
+- Revisión independiente: `04_DECISIONES` §4, con 7 graves y 10 menores, todos corregidos.
 
-## Hecho en F0 (PRs)
-#67 inventario `FUNCIONES_V2.md` · #68 test inestable · #69 interruptor `ui_v2` · #70 red CUJ con BD real · #71 margen de JS en `/best` · #72 rescate a `src/lib` · #73 limpieza · #74 portada sin rankings (D-R1) · #75 protección de `master` · #76–#81 pasos de Víctor, Speed Insights, medición, R9, backups (R10) y proyecto claude.ai.
-- R9: historial de migraciones de producción reparado (29 de 31; faltan las 2 de push, sin aplicar).
-- R10: los backups no habían funcionado nunca; arreglados y simulacro de restauración OK (`supabase/README.md`).
-- Proyecto «KULTURA 2.0» creado en claude.ai con instrucciones, `HANDOVER`, `04_DECISIONES` y `F0_PASOS_VICTOR`.
-
-## Pendiente de Víctor (no bloquea la fase)
-- Subir al proyecto «KULTURA 2.0» `docs/PLAN_ESTRATEGICO.md` y `docs/auditoria/*.md`: no están en el repo público y el navegador de la app no sube archivos.
-- Rotar la contraseña de la base de producción (se pegó en el chat) y actualizar el secreto `SUPABASE_DB_URL` con la nueva.
-- Copiar `C:\Users\victo\kultura-backup.key` fuera de este equipo. Sin ella, los backups no se pueden descifrar.
-- Lunes 2026-11-09: comprobar que el backup programado sale en verde.
-
-## Ojo
-- Un `supabase db push` contra producción aplicaría las 2 migraciones de push: no lanzarlo sin decidirlo y probarlas.
-- La CLI de Supabase está enlazada a `kultura-test`. La de Vercel tiene la sesión de Víctor (Hobby: solo 1 h de registros).
-- En Windows fallan unos 16 tests de unidad que ya fallaban igual en `master` (rutas con `\`, CRLF): no son regresiones.
-- `master` protegida: 4 checks obligatorios y auto-merge (D-G1). Si se renombra un job de `ci.yml`, hay que actualizar la protección. Squash-merge solo con OK de Víctor.
-- Para v2.0: `/best` mantiene su suelo relajado del año en curso (series 300 → 75), y el líder de series es poco creíble. `build.py` sigue procesando 4 imágenes de ranking que ya no se pintan.
-- Hay un `next start` viejo en el puerto 3187 (portada con rankings), sin tocar.
-- Siguiente paso de F1: guion de entrevistas (Mom test) y mini-landings `/es/series` y `/es/anime` (§7.3).
+## Pendiente / ojo
+- Squash-merge del PR: solo con el OK de Víctor (con su OK, auto-merge en verde, D-G1).
+- Víctor:
+  - pide permiso a la moderación (Discord y Mediavida) antes de publicar la captación;
+  - crea el formulario (Tally o Google Forms) según §3;
+  - entrevista a 8–10 personas, con al menos 3 en directo por cuña.
+- Siguiente sesión de F1, cuando haya 8–10 notas anonimizadas: `docs/F1_SINTESIS.md` con `design:research-synthesis`, codificación ciega por subagente (§6.1, paso 4) y una fila de decisión en `04_DECISIONES` §1.
+- Las mini-landings de la prueba de humo (`/es/series` y `/es/anime`) son otro entregable y no se han tocado.
+- Sigue en pie de F0: el backup programado del lunes (R10), rotar la contraseña de la base si no se hizo, y R9 (no lanzar `db push` contra producción sin decidir lo de las 2 de push).
+- `PLAN_ESTRATEGICO.md` y `docs/auditoria/` siguen fuera de git a propósito: hacer `git add` solo con rutas explícitas.
