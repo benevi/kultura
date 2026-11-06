@@ -309,6 +309,8 @@ e2e con BD real existentes (`tests/e2e/b3_5e_safety_net/`): `discover-filters`, 
 
 21 archivos con `isNotMigrated` (`grep -rlE isNotMigrated src | wc -l` = 21; limpieza de F0, §7.5): 14 en `src/app/api/` (11 rutas y 3 módulos `.ts`: `cron/daily/purge`, `lists/shared`, `settings/account-state`) (`account/export/letterboxd`, `account/import`, `cron/daily/purge`, `friends/blocks`, `groups/[id]/members/[userId]`, `library/diary`, `library/progress`, `library`, `lists`, `lists/shared`, `lists/[id]`, `reports/public`, `settings/account-state`, `settings`), 6 en `src/lib/` (`import/server/process-batch`, `library/diary`, `library/progress-server`, `library/scale`, `social/friends`, `social/lists`) y 1 en UI (`(app)/profile/[username]/page.tsx`, se va con la UI vieja).
 
+> **Hecho (2026-11-06, PR de limpieza F0, rama `refactor/f0-limpieza`).** Queda un solo helper, `src/lib/supabase/not-migrated.ts`. Se retira la tolerancia de las migraciones que sí están en producción (comprobado con el catálogo, ver `04_DECISIONES` R9). Se queda la tolerancia de push y la de `account/export/collect.ts`, porque `push.sql` y `push_throttle.sql` no están aplicadas en producción. La UI vieja conserva la reexportación desde `account-state.ts`, y las formas `migrated: true` y `progressV2Active()`, que se van con ella.
+
 ## 8. Dudas del inventario (resueltas el 2026-11-06)
 
 Registradas en `04_DECISIONES_Y_RIESGOS.md` §1b (D-I1 … D-I5).
