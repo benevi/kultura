@@ -26,9 +26,6 @@ vi.mock("next-intl/server", async () => {
   };
 });
 vi.mock("next/cache", () => ({ unstable_cache: <T,>(fn: T) => fn }));
-vi.mock("next/image", () => ({
-  default: ({ alt, src }: { alt: string; src: string }) => <img alt={alt} src={src} />,
-}));
 vi.mock("next/navigation", () => ({
   notFound: () => {
     throw new Error("NEXT_NOT_FOUND");

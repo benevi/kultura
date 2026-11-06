@@ -1,26 +1,20 @@
 # HANDOVER — última sesión (2026-11-06)
 
-**Fase:** F0 (`PLAN_ESTRATEGICO.md` §7.3). **Rama:** `test/f0-cuj-bd-real` → PR #70 (abierto, sin merge).
+**Fase:** F0 (`PLAN_ESTRATEGICO.md` §7.3). **Rama:** `fix/lighthouse-margen-js` (PR abierto, sin merge).
 
 ## Hecho en esta sesión
-- Entregable: **red de pruebas CUJ con BD real**. Los 8 CUJ de `FUNCIONES_V2.md` §6 están en `tests/e2e/cuj/`, uno por archivo: registro, entrar, buscar y añadir, estado y progreso, lista y compartir, perfil público, importar CSV y exportar. Registro y entrar se prueban también a 390 px.
-- `supabase/config.toml` nuevo, solo para `supabase start`. Postgres 17, como producción. Confirmación por correo desactivada. Límite de altas e inicios de sesión subido a 1000.
-- La app se construye y arranca con `next build` + `next start` contra Supabase local. TMDB responde con datos fijos y la búsqueda filtra por la consulta (`tests/e2e/cuj/offline-fetch.cjs`); el resto de proveedores devuelve 503. `env.cjs` aborta si la URL no es local.
-- `bypassCSP` solo en el navegador de los tests: la CSP de producción no deja hablar con `http://127.0.0.1:54321`.
-- Banderas encendidas en los CUJ: `PROGRESS_V2=1` y `RATING_SCALE_10=1`. Se prueba el camino con las migraciones aplicadas.
-- Job `cuj` en `ci.yml`, en cada PR: `supabase start` con todas las migraciones, `scripts/seed-test.mjs`, build y Playwright. Sin secretos.
-- `b3_5e` no se borra. Descubrir e idioma corren también en el job, con el usuario de `seed-test.mjs`. Los de Descubrir simulan `/api/discover`: prueban la UI y el i18n, no la BD.
-- Revisión independiente registrada en `04_DECISIONES` §4: 3 graves y 9 menores corregidos.
+- Entregable: **margen del presupuesto de JS inicial de Lighthouse CI** (límite 153 600 B de `resource-summary:script:size`, sin tocarlo).
+- Medido en `master` (`05a125c`, build con `env.cjs` + `next start` + `@lhci/cli@0.15.1 autorun`, local; CI añade ≈ 300 B): `/es` 149 757 · `/es/best/movie/2026` **153 304** · `/es/privacy` 143 072. Las 3 ejecuciones de cada URL dan el mismo número: el tamaño es determinista; el 153 602-153 603 de CI sale de la propia ruta `/best` (≈ 300 B más que en local).
+- Causa: `/best/[format]/[year]` cargaba el cliente de `next/image` (chunk con `head-manager`, blur…) solo por `BestPoster`, ≈ 9 KB gzip.
+- Arreglo (`[refactor]`, sin cambio de comportamiento): `src/components/best/BestPoster.tsx` es ahora componente de **servidor**: `getImgProps` (ruta interna de Next, porque `getImageProps` público arrastra el chunk cliente) + `preload` de `react-dom` con `priority` + `<img>`. Mismo `srcset`/`sizes`/`loading`/`decoding`/`style`; se mantiene `data-nimg`. Cambio observable aceptado: si la portada falla, el `alt` queda transparente (sin cliente no hay `onError`).
+- Resultado medido: `/es/best/movie/2026` **144 187** (−9 117 B); `/es` 149 756 pasa a ser la ruta más justa, con 3 844 B de margen (≈ 3,5 KB en CI).
+- Test nuevo `tests/unit/best/poster-server.test.tsx` (sin `"use client"`, sin `next/image`, srcset por cubos); `pages.test.tsx` ya no necesita el mock de `next/image`.
 
 ## Verificación
-- Local (Windows, sin Docker): `tsc` y lint limpios; Playwright reconoce los 17 CUJ (8 recorridos en 1440 y 390) y, con el usuario del seed, los 10 de `b3_5e`.
-- 1.ª ejecución en CI: las migraciones se aplican limpias en Supabase vacío y 7 de los 8 CUJ pasan. Fallaron «perfil público» (G1) y los `b3_5e` (G2), ambos ya corregidos. **El estado final del job está en el PR #70**: se da por hecho solo si está en verde.
-- Aviso no bloqueante en el log: `library/progress` no encuentra la temporada de TMDB (el fixture no tiene `/3/tv/:id/season/:n`).
+- `tsc` limpio fuera de `.next/`; `next lint` limpio. Suite en Windows: los mismos fallos que `master` (rutas con `\`, CRLF, tiempos); ninguno nuevo en `best/`, `csp/`, `shell/`.
+- Lighthouse local (3 ejecuciones por URL): ver PR para las 3 ejecuciones seguidas en CI.
 
-## Pendiente de Víctor
-- OK para el squash-merge del PR #70.
-- GitHub → Settings → Branches: marcar `CUJ con BD real` como check obligatorio en `master`.
-- Lo de la sesión anterior sigue igual: `service_role` de `kultura-test` en `.env.development.local`, CLI enlazada a `kultura-test` y los paneles de F0 (D3/D4/D8, Web Analytics, clave `age`).
-
-## Siguiente entregable propuesto (uno)
-PR de rescate de F0: mover los 11 `.ts` de `app/[locale]` a `src/lib/` y extraer `useAuthFlow` y `useAccountSettings`. Sin cambios de comportamiento; los CUJ hacen de red. Modelo: Sonnet 5.5 (mecánico, con plan aprobado).
+## Pendiente / ojo
+- `/es` (portada) queda a 3,8 KB del límite: la siguiente ruta a vigilar. Candidatos: `1255-*.js` (48 KB) y `4bd1b696-*.js` (55 KB) son framework/shared; `9930-*.js` (12,9 KB) es `next-intl` + fuentes + `SkipLink`.
+- Si una subida de Next rompe el import de `next/dist/shared/lib/get-img-props`, `tsc` y el test nuevo avisan.
+- Squash-merge: solo con OK de Víctor.
