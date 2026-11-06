@@ -37,6 +37,10 @@ Registro de las decisiones de Víctor sobre `docs/PLAN_ESTRATEGICO.md` §12 y de
 |---|---|---|---|
 | D-G1 | `master` exige 4 checks antes de fusionar (cierra el M10 de la revisión del PR #70) | Obligatorios: «Lint, typecheck, test, build», «Accesibilidad (axe, teclado, reflow y diálogos)», «Rendimiento (Lighthouse CI con presupuesto)» y «CUJ con BD real (Playwright + Supabase local)». Los 4 corren en todo PR a `master` (`ci.yml`, sin filtro de rutas). «Integración» no es obligatorio, porque solo corre a mano o programado. Sin `strict`, sin revisiones obligatorias y `enforce_admins: false` (Víctor puede saltársela). Se activa además `allow_auto_merge` en el repositorio. | El auto-merge con squash (con el OK de Víctor, regla de Git) fusiona solo con los 4 checks en verde; el #74 fue el primero. Si se renombra un job en `ci.yml`, hay que actualizar la protección, o los PR se quedan bloqueados esperando un check que no existe. |
 
+## 1e. Cierre de F0 (2026-11-06)
+
+F0 se da por cerrada: se cumplen todas las condiciones de la puerta de §7.2 salvo el dominio, que sale de F0 por D3 (compra con la app al 100 %, pasa a F4). La evidencia de cada condición está en `HANDOVER.md`. Las tareas abiertas de Víctor (subir el plan y las auditorías al proyecto de claude.ai, rotar la contraseña de la base, copiar la clave de backups y comprobar el backup del lunes) no bloquean la fase.
+
 ## 2. Riesgos derivados de estas respuestas
 
 | ID | Riesgo | Origen | Impacto | Mitigación / disparador |

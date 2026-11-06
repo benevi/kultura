@@ -1,28 +1,31 @@
 # HANDOVER — última sesión (2026-11-06)
 
-**Fase:** F0 (`PLAN_ESTRATEGICO.md` §7.3). **Rama:** `master` (PR #74 fusionado con squash, `93646a7`).
+**Fase:** **F0 cerrada** el 2026-11-06 (`PLAN_ESTRATEGICO.md` §7.2–7.3). Siguiente: F1 (validar la cuña) y F2 (identidad). **Rama:** `master`.
 
-## Hecho en esta sesión
-- Entregable: **credibilidad inmediata de la portada**, el último punto de Claude en F0. Víctor elige **retirar el bloque de rankings hasta v2.0** (`04_DECISIONES` D-R1), entre 3 opciones: retirar, tarjetas sin nota o un suelo de 2.000 votos.
-- Datos de la decisión: votos del proveedor (TMDB y AniList), consultados el 2026-11-06. Series 2026: con un suelo de 1.000 votos el líder sigue siendo «Así aprenderás» (9,4, 1.012 votos); con 2.000 no queda ninguna. RAWG respondía 522, así que juegos quedó sin medir. En `kultura-test`, `landing_media` está vacía y `user_media` solo tiene 3 notas, así que los votos propios no sirven.
-- Fuera la sección `#rankings`, su enlace del menú, su CSS y las claves `landing.rankings.*` y `landing.nav.rankings` (es/en).
-- Se quedan `scenes.ranking` y el hueco `ranking` de `build.py`, porque la tarea semanal lo exige para activar una semana.
-- Capturas en `docs/capturas/f0-portada-sin-rankings/`: 390 y 1440, animada, reduced-motion y sin WebGL. Consola sin errores propios; el 404 de `_vercel/insights` solo sale en local.
+## Puerta de F0 (§7.2)
+| Condición | Estado | Evidencia |
+|---|---|---|
+| Evento emitido y visto en Web Analytics y en `analytics_events` | ✔ | `library_add` en `analytics_events` de producción, 2026-11-06 20:58:50 UTC. Vercel `/v9/projects/kultura`: `webAnalytics.hasData = true` (activo desde 2026-10-10); Speed Insights con datos desde 2026-11-06 20:57 UTC (#77). |
+| CUJ en verde contra Supabase real | ✔ | Job `cuj`, Playwright contra Supabase local en CI (#70), obligatorio en `master` (D-G1). |
+| Interruptor probado en una ruta | ✔ | `ui_v2` en `/es/lists` (#69). |
+| `CLAUDE.md` | ✔ | En el repo. |
+| Dominio principal con 308 y Search Console | fuera de F0 | D3 actualizada: se compra con la app al 100 %, pasa a F4. |
 
-## Verificación
-- `tsc` y `next lint` limpios. `vitest` en Windows: los mismos 16 fallos conocidos y ninguno nuevo.
-- Lighthouse local en `/es` (build nuevo, `next start`): JS 149,8 KB (≤ 150 KB, justo, como ya estaba), CLS 0. El cambio no añade JS de cliente. La comparación buena es la del job de CI.
-- Revisión independiente: ver `04_DECISIONES` §4. CI del #74: lint, `cuj`, Lighthouse y axe en verde.
+## Hecho en F0 (PRs)
+#67 inventario `FUNCIONES_V2.md` · #68 test inestable · #69 interruptor `ui_v2` · #70 red CUJ con BD real · #71 margen de JS en `/best` · #72 rescate a `src/lib` · #73 limpieza · #74 portada sin rankings (D-R1) · #75 protección de `master` · #76–#81 pasos de Víctor, Speed Insights, medición, R9, backups (R10) y proyecto claude.ai.
+- R9: historial de migraciones de producción reparado (29 de 31; faltan las 2 de push, sin aplicar).
+- R10: los backups no habían funcionado nunca; arreglados y simulacro de restauración OK (`supabase/README.md`).
+- Proyecto «KULTURA 2.0» creado en claude.ai con instrucciones, `HANDOVER`, `04_DECISIONES` y `F0_PASOS_VICTOR`.
 
-## Pendiente / ojo
-- Medición (puerta F0): evento `library_add` visto en `analytics_events` de producción el 2026-11-06 20:58 UTC; Web Analytics y Speed Insights (#77) activos. Falta que Víctor confirme las visitas en el panel de Vercel. La CLI de Vercel tiene sesión de Víctor (Hobby: solo 1 h de registros).
-- R9 reparado el 2026-11-06: el historial de producción registra 29 de 31; faltan solo las 2 de push (no aplicadas, a decidir).
-- Backups (R10): no habían funcionado nunca; arreglados el 2026-11-06 y simulacro OK. Comprobar el lunes la ejecución programada. Rotar la contraseña de la base si no se hizo (se pegó en el chat).
-- F0 queda abierta solo por: subir `PLAN_ESTRATEGICO.md` y `docs/auditoria/` al proyecto «KULTURA 2.0» de claude.ai (ya creado) y ver las visitas en Vercel Analytics. Dominio fuera de F0 (D3: al 100 %).
-- Pasos de Víctor en `docs/F0_PASOS_VICTOR.md`.
-- Para v2.0 o F3-9: `/best` mantiene su suelo relajado del año en curso (series 300 → 75), y el líder de series es poco creíble también allí.
-- `build.py` sigue procesando 4 imágenes de ranking cada semana que ya no se pintan. Revisarlo cuando Inicio v2 decida si vuelven.
-- Había un `next start` viejo escuchando en el puerto 3187 (sirve la portada con rankings). No se tocó. Para medir en local se usó el 3191.
-- R9: un `supabase db push` contra producción aplicaría ya las 2 de push: no lanzarlo sin decidirlo.
-- `master` protegida: exige 4 checks y se permite el auto-merge (`04_DECISIONES` D-G1). Si se renombra un job de `ci.yml`, hay que actualizar la protección.
-- Squash-merge: solo con OK de Víctor (con su OK, auto-merge en verde).
+## Pendiente de Víctor (no bloquea la fase)
+- Subir al proyecto «KULTURA 2.0» `docs/PLAN_ESTRATEGICO.md` y `docs/auditoria/*.md`: no están en el repo público y el navegador de la app no sube archivos.
+- Rotar la contraseña de la base de producción (se pegó en el chat) y actualizar el secreto `SUPABASE_DB_URL` con la nueva.
+- Copiar `C:\Users\victo\kultura-backup.key` fuera de este equipo. Sin ella, los backups no se pueden descifrar.
+- Lunes 2026-11-09: comprobar que el backup programado sale en verde.
+
+## Ojo
+- Un `supabase db push` contra producción aplicaría las 2 migraciones de push: no lanzarlo sin decidirlo y probarlas.
+- La CLI de Supabase está enlazada a `kultura-test`. La de Vercel tiene la sesión de Víctor (Hobby: solo 1 h de registros).
+- En Windows fallan unos 16 tests de unidad que ya fallaban igual en `master` (rutas con `\`, CRLF): no son regresiones.
+- `master` protegida: 4 checks obligatorios y auto-merge. Squash-merge solo con OK de Víctor.
+- Siguiente paso de F1: guion de entrevistas (Mom test) y mini-landings `/es/series` y `/es/anime` (§7.3).
