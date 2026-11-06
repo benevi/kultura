@@ -13,7 +13,7 @@ Registro de las decisiones de Víctor sobre `docs/PLAN_ESTRATEGICO.md` §12 y de
 | D5 | Horas y alcance | **20 h/semana · alcance completo (12–13 flujos)** | Relanzamiento estimado **febrero–abril 2027** (§7.1). Ver R2. |
 | D6 | Partida para identidad humana | **Decidir entonces** (si F2 falla la rúbrica en 3 rondas) | La salida de emergencia de §6.1 queda sin financiar hasta esa fecha. Ver R3. |
 | D7 | Proceso de prototipos | **Acepta**: style tiles y 1.ª pantalla en HTML; desde la 2.ª, directamente en rama `v2/<pantalla>` sobre preview de Vercel | Sustituye la regla del 4/11. Nada llega a producción sin un «sí» escrito de Víctor. |
-| D8 | Fuente de verdad | **Sí**: proyecto nuevo «KULTURA 2.0» en claude.ai + `docs/` del repo como fuente única | El proyecto de claude.ai enlaza a `docs/`, no duplica. Los 74 handovers se archivan. |
+| D8 | Fuente de verdad | **Sí**: proyecto nuevo «KULTURA 2.0» en claude.ai + `docs/` del repo como fuente única | El proyecto de claude.ai enlaza a `docs/`, no duplica. Los 74 handovers se archivan. **Hecho 2026-11-06:** proyecto creado; el plan y las auditorías los sube Víctor (no están en el repo público). |
 
 ## 1b. Decisiones del inventario `FUNCIONES_V2.md` (2026-11-06)
 

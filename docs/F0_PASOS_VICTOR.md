@@ -99,6 +99,8 @@ acabes si no lo necesitas.
 
 ## 4. Proyecto «KULTURA 2.0» en claude.ai (≈ 10 min) — D8
 
+**Hecho el 2026-11-06** (Claude, desde el navegador de la app con la sesión de Víctor): proyecto «KULTURA 2.0» creado, con las instrucciones y `HANDOVER.md`, `04_DECISIONES_Y_RIESGOS.md` y `F0_PASOS_VICTOR.md` como contexto. Víctor sube a mano `PLAN_ESTRATEGICO.md` y `docs/auditoria/`, que no están en el repo, que es público. Al cambiar estos documentos, la copia del proyecto no se actualiza sola: gana el repo.
+
 1. claude.ai → Projects → *New project* «KULTURA 2.0».
 2. Sube como conocimiento: `docs/PLAN_ESTRATEGICO.md`, `docs/HANDOVER.md`,
    `docs/04_DECISIONES_Y_RIESGOS.md` y la carpeta `docs/auditoria/`.
