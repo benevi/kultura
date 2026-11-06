@@ -46,7 +46,9 @@ describe('token de baja', () => {
     const [v, body, sig] = token.split('.')
     const other = Buffer.from(Buffer.from(body, 'base64url').toString().replace(USER, '22222222-2222-4222-8222-222222222222')).toString('base64url')
     expect(verifyUnsubscribeToken(`${v}.${other}.${sig}`, SECRET, NOW)).toEqual({ ok: false, reason: 'bad_signature' })
-    const flipped = sig.slice(0, -1) + (sig.endsWith('A') ? 'B' : 'A')
+    // Carácter interior (todos sus 6 bits cuentan); el último de un base64url solo lleva 4 útiles.
+    const i = sig.length - 5
+    const flipped = sig.slice(0, i) + (sig[i] === 'A' ? 'B' : 'A') + sig.slice(i + 1)
     expect(verifyUnsubscribeToken(`${v}.${body}.${flipped}`, SECRET, NOW).ok).toBe(false)
   })
 

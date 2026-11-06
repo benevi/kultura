@@ -313,7 +313,11 @@ describe('POST /api/email/confirm — confirmar el alta', () => {
     setup({ adminRpc: confirmed })
     const old = token('ana@example.com', WEEKLY_EMAIL_CONSENT_VERSION, new Date(Date.now() - 8 * 86400_000))
     expect((await post(old)).headers.get('location')).toContain('status=invalid')
-    expect((await post(token().slice(0, -2) + 'AA')).headers.get('location')).toContain('status=invalid')
+    // Carácter interior de la firma (los 6 bits cuentan): el último de un base64url solo lleva 4 útiles.
+    const t = token()
+    const i = t.length - 5
+    const tampered = t.slice(0, i) + (t[i] === 'A' ? 'B' : 'A') + t.slice(i + 1)
+    expect((await post(tampered)).headers.get('location')).toContain('status=invalid')
     expect((await post(createUnsubscribeToken(U1, SECRET))).headers.get('location')).toContain('status=invalid')
     expect(admin.rpcCalls).toEqual([])
   })
