@@ -3,22 +3,17 @@
 //
 // `account_state` (migración 20261101120001_identity_privacy.sql) guarda lo
 // que solo debe ver el dueño: aceptación de términos, onboarding y borrado
-// pendiente. Todo aquí funciona ANTES de aplicar la migración:
-//   - sin la tabla, términos y onboarding se guardan en `app_metadata` (solo
-//     lo escribe el service role) y "es nuevo" se deduce de la fecha de alta;
-//   - sin las funciones de traspaso, borrar la cuenta hace lo de siempre.
+// pendiente. Las cuentas de antes de la tabla pueden tener términos y
+// onboarding en `app_metadata` (solo lo escribe el service role): se siguen
+// leyendo, pero ya no se escribe ahí (migración aplicada; F0, §7.5).
 // ============================================================
 
 import type { SupabaseClient, User } from '@supabase/supabase-js'
 import { isDemoUser } from '@/lib/demo'
 import { TERMS_VERSION } from '@/lib/account/identity'
 
-/** Códigos de "esto aún no existe" (tabla, columna o función sin migrar). */
-const NOT_MIGRATED = new Set(['42P01', '42703', '42883', 'PGRST202', 'PGRST204', 'PGRST205'])
-
-export function isNotMigrated(error: { code?: string | null } | null | undefined): boolean {
-  return !!error && NOT_MIGRATED.has(error.code ?? '')
-}
+/** Solo para la UI vieja (`(app)/profile/[username]/page.tsx`); se va con ella. */
+export { isNotMigrated } from '@/lib/supabase/not-migrated'
 
 /** Banderas que Víctor activa en Vercel tras aplicar la migración. */
 export function libraryVisibilityEnabled(): boolean {
@@ -39,19 +34,20 @@ export interface AccountState {
 const NEW_ACCOUNT_WINDOW_MS = 15 * 60 * 1000
 
 /**
- * Fila de `account_state` del usuario. `migrated: false` si la tabla no existe
- * todavía; `state: null` si existe pero no hay fila.
+ * Fila de `account_state` del usuario; `state: null` si no hay fila o falla la
+ * lectura. `migrated` siempre es `true` (la tabla existe): se conserva porque
+ * lo leen la UI vieja y `/api/account`.
  */
 export async function readAccountState(
   supabase: SupabaseClient,
   userId: string,
-): Promise<{ migrated: boolean; state: AccountState | null }> {
+): Promise<{ migrated: true; state: AccountState | null }> {
   const { data, error } = await supabase
     .from('account_state')
     .select('terms_accepted_at, terms_version, onboarded_at, deletion_requested_at')
     .eq('user_id', userId)
     .maybeSingle()
-  if (error) return { migrated: !isNotMigrated(error), state: null }
+  if (error) return { migrated: true, state: null }
   return { migrated: true, state: (data as AccountState | null) ?? null }
 }
 
@@ -76,11 +72,7 @@ export function hasAcceptedTerms(state: AccountState | null, user: MaybeUser): b
   )
 }
 
-/**
- * Escribe en `account_state` con el cliente admin; sin la tabla, en
- * `app_metadata` (que el usuario no puede tocar). Devuelve false si no se
- * pudo guardar en ningún sitio.
- */
+/** Escribe en `account_state` con el cliente admin. Devuelve false si falla. */
 async function writeAccountState(
   admin: SupabaseClient,
   user: MaybeUser,
@@ -89,12 +81,7 @@ async function writeAccountState(
   const { error } = await admin
     .from('account_state')
     .upsert({ user_id: user.id, ...fields, updated_at: new Date().toISOString() }, { onConflict: 'user_id' })
-  if (!error) return true
-  if (!isNotMigrated(error)) return false
-  const { error: metaError } = await admin.auth.admin.updateUserById(user.id, {
-    app_metadata: { ...(user.app_metadata ?? {}), ...fields },
-  })
-  return !metaError
+  return !error
 }
 
 export function recordTermsAcceptance(admin: SupabaseClient, user: MaybeUser): Promise<boolean> {
@@ -139,20 +126,17 @@ export async function readDeletionPreview(admin: SupabaseClient, userId: string)
 }
 
 /**
- * Borra la cuenta: primero traspasa grupos y listas colaborativas (si la
- * función existe) y después el usuario de Auth, que arrastra el resto en
- * cascada. Un fallo del traspaso que NO sea "sin migrar" para el borrado:
- * mejor no borrar que destruir lo de otros.
+ * Borra la cuenta: primero traspasa grupos y listas colaborativas y después
+ * el usuario de Auth, que arrastra el resto en cascada. Si el traspaso falla,
+ * no se borra: mejor no borrar que destruir lo de otros.
  */
 export async function deleteAccountNow(
   admin: SupabaseClient,
   userId: string,
 ): Promise<{ ok: true; transferred: { groups: number; lists: number } | null } | { ok: false; step: 'transfer' | 'delete'; message: string }> {
   const { data, error } = await admin.rpc('transfer_owned_content', { p_user: userId })
-  if (error && !isNotMigrated(error)) {
-    return { ok: false, step: 'transfer', message: error.message }
-  }
+  if (error) return { ok: false, step: 'transfer', message: error.message }
   const { error: deleteError } = await admin.auth.admin.deleteUser(userId)
   if (deleteError) return { ok: false, step: 'delete', message: deleteError.message }
-  return { ok: true, transferred: error ? null : ((data as { groups: number; lists: number } | null) ?? null) }
+  return { ok: true, transferred: (data as { groups: number; lists: number } | null) ?? null }
 }

@@ -26,7 +26,6 @@ import { DEMO_READ_ONLY_ERROR, isDemoUser } from '@/lib/demo'
 import { LIBRARY_VISIBILITIES, USERNAME_REGEX, initialsFor, isReservedUsername } from '@/lib/account/identity'
 import {
   hasAcceptedTerms,
-  isNotMigrated,
   markOnboarded,
   readAccountState,
   recordTermsAcceptance,
@@ -65,9 +64,6 @@ const PatchSchema = z.object({
   /** Fin (o salto) del onboarding. */
   onboarding_done: z.literal(true).optional(),
 })
-
-/** Columnas que pueden no existir todavía (migración de F-12 sin aplicar). */
-const OPTIONAL_COLUMNS = ['library_visibility'] as const
 
 export async function GET(): Promise<NextResponse> {
   const supabase = await createClient()
@@ -186,7 +182,6 @@ export async function PATCH(req: NextRequest): Promise<NextResponse> {
   }
 
   let updated: Record<string, unknown> | null = null
-  const ignored: string[] = []
 
   if (Object.keys(updates).length > 0) {
     // Con username, todo el cambio va en una sola escritura admin (atómica);
@@ -196,28 +191,7 @@ export async function PATCH(req: NextRequest): Promise<NextResponse> {
     const write = (fields: TablesUpdate<'users'>) =>
       writer.from('users').update(fields).eq('id', user.id).select('*').single()
 
-    const first = await write(updates)
-    // Sin tipar a la fila: si solo había columnas sin migrar, la respuesta es `{}`.
-    let data: Record<string, unknown> | null = first.data
-    let updateError = first.error
-
-    // Migración de F-12 sin aplicar: la columna nueva no existe. Se guarda el
-    // resto y se avisa de lo que no se pudo (el selector ni se enseña).
-    if (updateError && isNotMigrated(updateError)) {
-      const rest = { ...updates }
-      for (const column of OPTIONAL_COLUMNS) {
-        if (column in rest) {
-          delete rest[column]
-          ignored.push(column)
-        }
-      }
-      if (Object.keys(rest).length > 0 && ignored.length > 0) {
-        ;({ data, error: updateError } = await write(rest))
-      } else if (ignored.length > 0) {
-        data = {}
-        updateError = null
-      }
-    }
+    const { data, error: updateError } = await write(updates)
 
     // 23505: otro usuario se quedó el nombre entre la comprobación y la
     // escritura (o solo difiere en mayúsculas). 23514: CHECK de la base.
@@ -245,6 +219,5 @@ export async function PATCH(req: NextRequest): Promise<NextResponse> {
   return NextResponse.json({
     success: true,
     updated: updated ?? {},
-    ...(ignored.length > 0 ? { ignored } : {}),
   })
 }

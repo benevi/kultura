@@ -20,7 +20,7 @@ import { claimWeeklyOptin } from './preferences'
 import { sendEmail, type EmailMessage, type SendResult } from './resend'
 import { createOptinToken } from './unsubscribe-token'
 
-export type OptinSendStatus = 'sent' | 'cooldown' | 'user_cap' | 'global_cap' | 'not_migrated' | 'error' | 'send_failed'
+export type OptinSendStatus = 'sent' | 'cooldown' | 'user_cap' | 'global_cap' | 'error' | 'send_failed'
 
 export interface OptinRequest {
   userId: string

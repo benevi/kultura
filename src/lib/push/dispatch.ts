@@ -24,6 +24,7 @@
 
 import 'server-only'
 import type { SupabaseClient } from '@supabase/supabase-js'
+import { isNotMigrated } from '@/lib/supabase/not-migrated'
 import type { PushConfig } from './config'
 import { buildPushPayload, type PushEvent } from './payload'
 import { PUSH_LOCALES, type DispatchBody, type PushLocale } from './schemas'
@@ -35,8 +36,6 @@ export const MAX_FAILURES = 10
 export const MAX_SUBSCRIPTIONS_PER_EVENT = 50
 /** Tramo del aviso por ráfaga de mensajes (igual que en 20261222340001_push_throttle.sql). */
 export const PUSH_MESSAGE_BURST_SECONDS = 30
-
-const NOT_MIGRATED = new Set(['42P01', '42703', 'PGRST204', 'PGRST205'])
 
 export interface DispatchDeps {
   admin: SupabaseClient
@@ -129,7 +128,7 @@ async function readFriendship(admin: SupabaseClient, id: string): Promise<Friend
     const row = withAcceptedAt.data as FriendshipRow | null
     return row ? { ...row, accepted_at: row.accepted_at ?? null } : null
   }
-  if (!NOT_MIGRATED.has(withAcceptedAt.error.code ?? '')) return null
+  if (!isNotMigrated(withAcceptedAt.error)) return null
   const { data } = await admin.from('friendships').select(FRIENDSHIP_COLUMNS).eq('id', id).maybeSingle()
   const row = data as FriendshipRow | null
   return row ? { ...row, accepted_at: undefined } : null
@@ -228,7 +227,7 @@ export async function dispatchPush(input: DispatchBody, deps: DispatchDeps): Pro
     .in('user_id', recipients)
     .order('updated_at', { ascending: false })
     .limit(MAX_SUBSCRIPTIONS_PER_EVENT)
-  if (error) return skipped(NOT_MIGRATED.has(error.code ?? '') ? 'not_migrated' : 'read_failed')
+  if (error) return skipped(isNotMigrated(error) ? 'not_migrated' : 'read_failed')
   const subs = (data ?? []) as SubscriptionRow[]
   if (subs.length === 0) return skipped('no_subscriptions')
 

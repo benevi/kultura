@@ -127,13 +127,6 @@ export function isModerationV2(): boolean {
   return process.env.MODERATION_V2?.trim() === '1'
 }
 
-/** Errores de "la migración todavía no está aplicada" (tabla, columna o función que falta). */
-const NOT_MIGRATED_CODES = new Set(['42P01', '42703', '42883', 'PGRST202', 'PGRST204', 'PGRST205'])
-
-export function isNotMigratedError(error: { code?: string | null } | null | undefined): boolean {
-  return !!error && NOT_MIGRATED_CODES.has(error.code ?? '')
-}
-
 /** La RLS rechazó la escritura (insufficient_privilege). */
 export function isRlsDenied(error: { code?: string | null } | null | undefined): boolean {
   return error?.code === '42501'
@@ -146,11 +139,8 @@ export interface BlockedProfile {
   avatarInitials: string
 }
 
-/**
- * Usuarios que `userId` ha bloqueado. `null` si la tabla aún no existe (antes
- * de la migración): quien llama lo trata como "moderación no disponible".
- */
-export async function getBlockedUsers(userId: string): Promise<BlockedProfile[] | null> {
+/** Usuarios que `userId` ha bloqueado. */
+export async function getBlockedUsers(userId: string): Promise<BlockedProfile[]> {
   const supabase = await createClient()
   const { data, error } = await supabase
     .from('blocks')
@@ -158,10 +148,7 @@ export async function getBlockedUsers(userId: string): Promise<BlockedProfile[] 
     .eq('blocker_id', userId)
     .order('created_at', { ascending: false })
 
-  if (error) {
-    if (isNotMigratedError(error)) return null
-    throw new Error(`Failed to fetch blocked users: ${error.message}`)
-  }
+  if (error) throw new Error(`Failed to fetch blocked users: ${error.message}`)
 
   type Row = { blocked: Pick<DbUser, 'id' | 'username' | 'avatar_color' | 'avatar_initials'> | null }
   const rows = (data ?? []) as unknown as Row[]
@@ -180,9 +167,9 @@ export async function getBlockedUsers(userId: string): Promise<BlockedProfile[] 
 
 /**
  * ¿`userId` ha bloqueado a `otherId`? (Solo se ve el bloqueo propio: quien está
- * bloqueado no puede leer la fila.) `null` si la tabla aún no existe.
+ * bloqueado no puede leer la fila.)
  */
-export async function hasBlocked(userId: string, otherId: string): Promise<boolean | null> {
+export async function hasBlocked(userId: string, otherId: string): Promise<boolean> {
   const supabase = await createClient()
   const { data, error } = await supabase
     .from('blocks')
@@ -191,9 +178,6 @@ export async function hasBlocked(userId: string, otherId: string): Promise<boole
     .eq('blocked_id', otherId)
     .maybeSingle()
 
-  if (error) {
-    if (isNotMigratedError(error)) return null
-    throw new Error(`Failed to fetch block: ${error.message}`)
-  }
+  if (error) throw new Error(`Failed to fetch block: ${error.message}`)
   return data !== null
 }

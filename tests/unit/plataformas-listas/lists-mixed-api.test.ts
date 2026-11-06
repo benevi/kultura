@@ -82,28 +82,6 @@ describe('POST /api/lists — tipo, descripción y plantilla', () => {
     expect((await POST(req('POST', { name: 'x'.repeat(81), mediaType: 'movie' }, url))).status).toBe(400)
   })
 
-  it('bandera encendida antes de migrar: columna que falta → crea sin ella', async () => {
-    process.env.MIXED_LISTS = '1'
-    client = fakeSupabase({
-      user: USER,
-      tables: { lists: [{ data: null, error: { code: 'PGRST204', message: 'column' } }, { data: null, error: null }] },
-    })
-    const { POST } = await import('@/app/api/lists/route')
-    const res = await POST(req('POST', { name: 'X', mediaType: 'movie', description: 'd' }, 'http://localhost/api/lists'))
-    expect(res.status).toBe(201)
-    const inserts = opsOf(client, 'lists', 'insert')
-    expect(inserts).toHaveLength(2)
-    expect(inserts[1].args[0]).not.toHaveProperty('description')
-  })
-
-  it('bandera encendida antes de migrar: `mixed` choca con el CHECK viejo → 409 mixed_unavailable', async () => {
-    process.env.MIXED_LISTS = '1'
-    client = fakeSupabase({ user: USER, tables: { lists: [{ data: null, error: { code: '23514', message: 'check' } }] } })
-    const { POST } = await import('@/app/api/lists/route')
-    const res = await POST(req('POST', { name: 'X', mediaType: 'mixed' }, 'http://localhost/api/lists'))
-    expect(res.status).toBe(409)
-    expect((await res.json()).error).toBe('mixed_unavailable')
-  })
 })
 
 describe('GET /api/lists?mediaType=', () => {
@@ -124,17 +102,6 @@ describe('GET /api/lists?mediaType=', () => {
     expect(String(opsOf(client, 'lists', 'select')[0].args[0])).not.toContain('description')
   })
 
-  it('bandera antes de migrar: reintenta con las columnas viejas', async () => {
-    process.env.MIXED_LISTS = '1'
-    client = fakeSupabase({
-      user: USER,
-      tables: { lists: [{ data: null, error: { code: '42703', message: 'no column' } }, { data: [{ id: 'l' }], error: null }] },
-    })
-    const { GET } = await import('@/app/api/lists/route')
-    const res = await GET(new Request('http://localhost/api/lists'))
-    expect(res.status).toBe(200)
-    expect((await res.json()).lists).toEqual([{ id: 'l' }])
-  })
 })
 
 describe('POST /api/lists/[id] — formato del título', () => {
@@ -226,13 +193,6 @@ describe('PATCH /api/lists/[id] — orden manual', () => {
     expect(res.status).toBe(200)
   })
 
-  it('bandera antes de migrar (no existe la función): 409 not_available', async () => {
-    process.env.MIXED_LISTS = '1'
-    client = fakeSupabase({ user: USER, tables: { lists: [ownerList()] } })
-    const { PATCH } = await import('@/app/api/lists/[id]/route')
-    const res = await PATCH(req('PATCH', { order: [I1] }), params)
-    expect(res.status).toBe(409)
-  })
 })
 
 describe('PATCH /api/lists/[id] — nota y datos', () => {

@@ -12,7 +12,7 @@ import { z } from 'zod'
 import { createClient } from '@/lib/supabase/server'
 import { checkRateLimit, LIMITS } from '@/lib/rate-limit'
 import { createLogger } from '@/lib/logger'
-import { getBlockedUsers, hasBlocked, isModerationV2, isNotMigratedError } from '@/lib/social/friends'
+import { getBlockedUsers, hasBlocked, isModerationV2 } from '@/lib/social/friends'
 
 const log = createLogger('api/friends/blocks')
 
@@ -40,10 +40,10 @@ export async function GET(request: Request): Promise<NextResponse> {
         return NextResponse.json({ enabled: true, blocked: false })
       }
       const blocked = await hasBlocked(user.id, userId)
-      return NextResponse.json({ enabled: blocked !== null, blocked: blocked === true })
+      return NextResponse.json({ enabled: true, blocked })
     }
     const users = await getBlockedUsers(user.id)
-    return NextResponse.json({ enabled: users !== null, users: users ?? [] })
+    return NextResponse.json({ enabled: true, users })
   } catch (err) {
     log.error('blocks read failed', { err })
     return NextResponse.json({ error: 'blocks_failed' }, { status: 500 })
@@ -71,7 +71,6 @@ async function mutate(request: Request, action: 'block' | 'unblock'): Promise<Ne
   if (action === 'unblock') {
     const { error } = await supabase.from('blocks').delete().eq('blocker_id', user.id).eq('blocked_id', otherId)
     if (error) {
-      if (isNotMigratedError(error)) return NextResponse.json({ error: 'moderation_unavailable' }, { status: 503 })
       log.error('unblock failed', { err: error })
       return NextResponse.json({ error: 'unblock_failed' }, { status: 500 })
     }
@@ -86,7 +85,6 @@ async function mutate(request: Request, action: 'block' | 'unblock'): Promise<Ne
     .from('blocks')
     .upsert({ blocker_id: user.id, blocked_id: otherId }, { onConflict: 'blocker_id,blocked_id', ignoreDuplicates: true })
   if (error) {
-    if (isNotMigratedError(error)) return NextResponse.json({ error: 'moderation_unavailable' }, { status: 503 })
     log.error('block failed', { err: error })
     return NextResponse.json({ error: 'block_failed' }, { status: 500 })
   }

@@ -174,11 +174,9 @@ async function loadUncached(item: Subject): Promise<AdaptationsResult> {
   const stored = await readStoredAdaptations(item.id);
   if (stored.kind === "hit" && stored.fresh) return { links: stored.row.links, source: "table" };
 
-  const tableMissing = stored.kind === "missing";
   try {
-    // Sin tabla, la caché de datos de Next hace de tabla (misma TTL que "ok").
-    const value = await fetchAdaptations(item.id, claim, tableMissing ? { revalidate: ADAPTATIONS_TTL.ok } : false);
-    if (!tableMissing) await writeStoredAdaptations(item.id, value, ttlFor(value));
+    const value = await fetchAdaptations(item.id, claim, false);
+    await writeStoredAdaptations(item.id, value, ttlFor(value));
     return { links: value.links, source: "wikidata" };
   } catch (e) {
     if (!(e instanceof ProviderError)) log.warn("no se pudieron cargar las adaptaciones", { id: item.id, err: e });

@@ -112,13 +112,6 @@ describe('GET /api/cron/daily', () => {
     expect((await res.json()).purge).toEqual({ status: 'done', deleted: 0, failed: 1 })
   })
 
-  it('sin la migración la purga no aplica pero el keep-alive sí', async () => {
-    h.rows = { data: null as unknown as unknown[], error: { code: '42P01', message: 'missing' } }
-    const res = await call(`Bearer ${SECRET}`)
-    expect(res.status).toBe(200)
-    expect((await res.json()).purge.status).toBe('not_migrated')
-  })
-
   it('base caída → 500 (que se vea en el panel de Vercel)', async () => {
     h.health.mockResolvedValue(Response.json({ ok: false, db: 'down' }, { status: 503 }))
     const res = await call(`Bearer ${SECRET}`)

@@ -150,17 +150,6 @@ describe('import con RATING_SCALE_10=1', () => {
     expect(logInserts).toHaveLength(0)
   })
 
-  it('sin la migración (PGRST204) importa solo score y no toca el diario', async () => {
-    upsertErrors.push({ code: 'PGRST204', message: "Could not find the 'rating10' column" })
-    const { status, json } = await runImport(FILE)
-    expect(status).toBe(200)
-    expect(upserts).toHaveLength(2)
-    expect(upserts[1]).toEqual([
-      { user_id: ME, media_id: 'movie_1', status: 'completed', score: 5, watched_at: '2026-10-01' },
-      { user_id: ME, media_id: 'movie_2', status: 'completed', score: 3, watched_at: null },
-    ])
-    expect(json.diaryImported).toBe(0)
-  })
 })
 
 describe('import sin la bandera (hoy)', () => {

@@ -28,7 +28,7 @@ import { invalidateMatchScoreCache } from '@/lib/recommendations/match-score'
 import { localeFromRequest } from '@/lib/media/request-locale'
 import { parseMediaId } from '@/lib/media/media-id'
 import { createLogger } from '@/lib/logger'
-import { isNotMigrated, ratingScale10Enabled } from '@/lib/library/scale'
+import { ratingScale10Enabled } from '@/lib/library/scale'
 import { isValidDiaryDate, mapLog, today } from '@/lib/library/diary'
 import {
   nextProgress,
@@ -36,12 +36,11 @@ import {
   progressKindFor,
   progressToColumns,
   progressToLegacy,
-  rowHasProgressColumns,
   supportsLegacyProgress,
   totalFor,
   type ProgressValue,
 } from '@/lib/library/progress'
-import { getProgressPlan, nextEpisodeInfo, progressColumnsExist, progressV2Enabled } from '@/lib/library/progress-server'
+import { getProgressPlan, nextEpisodeInfo, progressV2Enabled } from '@/lib/library/progress-server'
 import type { DbUserMediaLog } from '@/types/supabase'
 import type { DiaryLog, LibraryStatus } from '@/types/library'
 
@@ -96,8 +95,7 @@ export async function GET(request: Request): Promise<NextResponse> {
     return NextResponse.json({ error: 'Failed to read progress' }, { status: 500 })
   }
 
-  // Sin la bandera no hace falta saber si están las columnas (ni gastar la sonda).
-  const enabled = progressV2Enabled() && (row ? rowHasProgressColumns(row) : await progressColumnsExist(supabase))
+  const enabled = progressV2Enabled()
   const locale = localeFromRequest(request)
   const progress = progressFromRow(row as Row | null)
   const plan = await getProgressPlan(parsed.id, locale)
@@ -205,10 +203,8 @@ export async function POST(request: Request): Promise<NextResponse> {
         .select()
         .single()
       if (logError || !logRow) {
-        if (!isNotMigrated(logError)) {
-          log.error('Failed to insert diary log', { err: logError, userId: user.id })
-          logFailed = true
-        }
+        log.error('Failed to insert diary log', { err: logError, userId: user.id })
+        logFailed = true
       } else {
         diaryLog = mapLog(logRow as DbUserMediaLog)
       }
@@ -220,7 +216,7 @@ export async function POST(request: Request): Promise<NextResponse> {
   if (!progressKindFor(parsed.type)) {
     return NextResponse.json({ error: `progress is not supported for ${parsed.type}` }, { status: 400 })
   }
-  const v2 = progressV2Enabled() && rowHasProgressColumns(row)
+  const v2 = progressV2Enabled()
   if (!v2 && !supportsLegacyProgress(parsed.type)) {
     return NextResponse.json({ error: 'progress_unavailable' }, { status: 409 })
   }
@@ -254,13 +250,7 @@ export async function POST(request: Request): Promise<NextResponse> {
       .select('*')
       .single()
 
-  let { data: saved, error: writeError } = await write(step.value, v2)
-  if (writeError && v2 && isNotMigrated(writeError) && supportsLegacyProgress(parsed.type)) {
-    log.warn('PROGRESS_V2 activa pero falta la migración 20261215270001; se escribe episode_progress', {
-      code: writeError.code,
-    })
-    ;({ data: saved, error: writeError } = await write(step.value, false))
-  }
+  const { data: saved, error: writeError } = await write(step.value, v2)
   if (writeError || !saved) {
     log.error('Failed to save progress', { err: writeError, userId: user.id })
     return NextResponse.json({ error: 'Failed to save progress' }, { status: 500 })

@@ -4,9 +4,6 @@
 // Migración 20261215290001_adaptations.sql: lectura para cualquiera y
 // escritura solo del service role. Aquí se usa siempre el cliente admin (solo
 // servidor): el cargador corre también fuera de una petición con cookies.
-//
-// Antes de aplicar la migración la tabla no existe (42P01 / PGRST205): se
-// devuelve `missing` y quien llama guarda en la caché de datos de Next.
 // ============================================================
 
 import type { SupabaseClient } from "@supabase/supabase-js";
@@ -27,13 +24,10 @@ export interface StoredAdaptations {
 }
 
 export type StoreRead =
-  | { kind: "missing" }
   | { kind: "error" }
   | { kind: "empty" }
   | { kind: "hit"; row: StoredAdaptations; fresh: boolean };
 
-/** "Esta tabla no existe todavía" (migración sin aplicar). */
-const TABLE_MISSING = new Set(["42P01", "PGRST205"]);
 
 type Row = {
   subject_qid: string | null;
@@ -65,7 +59,6 @@ export async function readStoredAdaptations(mediaId: string, now = Date.now()): 
       .eq("media_id", mediaId)
       .maybeSingle();
     if (error) {
-      if (TABLE_MISSING.has(error.code ?? "")) return { kind: "missing" };
       log.warn("no se pudo leer la caché de adaptaciones", { mediaId, code: error.code });
       return { kind: "error" };
     }
@@ -112,9 +105,7 @@ export async function writeStoredAdaptations(
       { onConflict: "media_id" }
     );
     if (error) {
-      if (!TABLE_MISSING.has(error.code ?? "")) {
-        log.warn("no se pudo guardar la caché de adaptaciones", { mediaId, code: error.code });
-      }
+      log.warn("no se pudo guardar la caché de adaptaciones", { mediaId, code: error.code });
       return false;
     }
     return true;

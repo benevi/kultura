@@ -14,11 +14,9 @@ import { track } from '@/lib/analytics/track'
 import { checkRateLimit, LIMITS } from '@/lib/rate-limit'
 import { createLogger } from '@/lib/logger'
 import {
-  LIST_COLUMNS_LEGACY,
   LIST_DESCRIPTION_MAX,
   LIST_NAME_MAX,
   LIST_TEMPLATES,
-  isNotMigrated,
   listColumns,
   mixedListsEnabled,
   optionalText,
@@ -56,9 +54,7 @@ export async function GET(request: Request): Promise<NextResponse> {
     return query
   }
 
-  let { data, error } = await run(listColumns(mixed))
-  // Bandera encendida antes de aplicar la migración: columnas de siempre.
-  if (error && mixed && isNotMigrated(error)) ({ data, error } = await run(LIST_COLUMNS_LEGACY))
+  const { data, error } = await run(listColumns(mixed))
 
   if (error) {
     return NextResponse.json({ error: 'Failed to fetch lists' }, { status: 500 })
@@ -150,23 +146,13 @@ export async function POST(request: Request): Promise<NextResponse> {
       }
     : {}
 
-  let { error: insertError } = await supabase.from('lists').insert({ ...base, ...extra })
-  // Bandera antes de la migración: sin las columnas nuevas, se crea sin ellas.
-  if (insertError && Object.keys(extra).length > 0 && isNotMigrated(insertError)) {
-    ;({ error: insertError } = await supabase.from('lists').insert(base))
-  }
+  const { error: insertError } = await supabase.from('lists').insert({ ...base, ...extra })
   if (insertError) {
-    // 23514: 'mixed' con el CHECK viejo (bandera encendida antes de migrar).
-    if (insertError.code === '23514' && mediaType === 'mixed') {
-      return NextResponse.json({ error: 'mixed_unavailable' }, { status: 409 })
-    }
     log.error('create list failed', { code: insertError.code, message: insertError.message })
     return NextResponse.json({ error: 'Failed to create list' }, { status: 500 })
   }
 
-  const read = (columns: string) => supabase.from('lists').select(columns).eq('id', base.id).maybeSingle()
-  let { data, error: readError } = await read(listColumns(mixed))
-  if (readError && mixed && isNotMigrated(readError)) ({ data, error: readError } = await read(LIST_COLUMNS_LEGACY))
+  const { data } = await supabase.from('lists').select(listColumns(mixed)).eq('id', base.id).maybeSingle()
   // Ya está creada: si la relectura fallase, se responde con lo insertado.
   const list = (data as Record<string, unknown> | null) ?? {
     ...base,

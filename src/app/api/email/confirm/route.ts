@@ -81,7 +81,6 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
   const issuedAt = new Date(check.expiresAt.getTime() - OPTIN_TOKEN_TTL_SECONDS * 1000)
   const result = await confirmWeeklyOptin(admin, check.userId, check.textVersion, check.emailHash, issuedAt)
   if (!result.ok) {
-    if (result.reason === 'not_migrated') return reply('invalid')
     log.error('confirmación de correo: la base no respondió')
     return reply('error')
   }

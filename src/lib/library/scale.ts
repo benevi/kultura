@@ -16,13 +16,6 @@ export function ratingScale10Enabled(): boolean {
   return process.env.RATING_SCALE_10 === '1'
 }
 
-/** Códigos de "esto aún no existe" (tabla, columna o caché de esquema). */
-const NOT_MIGRATED = new Set(['42P01', '42703', 'PGRST204', 'PGRST205'])
-
-export function isNotMigrated(error: { code?: string | null } | null | undefined): boolean {
-  return !!error && NOT_MIGRATED.has(error.code ?? '')
-}
-
 /** Clave de `user_metadata` donde vive la preferencia ½★ o /10. */
 export const RATING_SCALE_KEY = 'rating_scale'
 

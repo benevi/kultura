@@ -150,9 +150,7 @@ export async function writeDailyRecs(
         { onConflict: 'user_id,day' }
       )
     if (error) {
-      if (error.code !== '42P01' && error.code !== 'PGRST205') {
-        log.warn('No se pudieron guardar las recomendaciones del día', { code: error.code })
-      }
+      log.warn('No se pudieron guardar las recomendaciones del día', { code: error.code })
       return
     }
     // Minimización: solo hace falta la de hoy. Las de días anteriores del

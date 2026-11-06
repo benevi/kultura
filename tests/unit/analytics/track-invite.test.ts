@@ -198,11 +198,7 @@ describe('acceptInvite()', () => {
     }
   })
 
-  it('sin la tabla de bloqueos (F-11 sin aplicar) sigue; con otro error, no crea nada', async () => {
-    h.results.users = [{ data: { id: 'inv-1', username: 'ana' } }, { data: { username: 'u_x' } }]
-    h.results.blocks = [{ data: null, error: { code: '42P01' } }]
-    h.results.friendships = [{ data: [] }, { error: null }]
-    expect(await acceptInvite(NEW, 'ana', inviteSignature('inv-1', 'ana')!)).toBe('accepted')
+  it('si falla la lectura de bloqueos, no crea nada', async () => {
     h.results.users = [{ data: { id: 'inv-1', username: 'ana' } }]
     h.results.blocks = [{ data: null, error: { code: '57014' } }]
     expect(await acceptInvite(NEW, 'ana', inviteSignature('inv-1', 'ana')!)).toBe('blocked')

@@ -9,12 +9,12 @@
 
 import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
+import { isNotMigrated } from '@/lib/supabase/not-migrated'
 import { checkRateLimit, LIMITS } from '@/lib/rate-limit'
 import { createLogger } from '@/lib/logger'
 import { unsubscribeSchema } from '@/lib/push/schemas'
 
 const log = createLogger('api/push/unsubscribe')
-const NOT_MIGRATED = new Set(['42P01', '42703', 'PGRST204', 'PGRST205'])
 const MAX_BODY = 2048
 
 export async function POST(request: Request): Promise<NextResponse> {
@@ -47,7 +47,7 @@ export async function POST(request: Request): Promise<NextResponse> {
   if ('endpoint' in parsed.data) query = query.eq('endpoint', parsed.data.endpoint)
   const { data, error } = await query.select('id')
   if (error) {
-    if (NOT_MIGRATED.has(error.code ?? '')) return NextResponse.json({ ok: true, removed: 0 })
+    if (isNotMigrated(error)) return NextResponse.json({ ok: true, removed: 0 })
     if (error.code === '42501') return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
     log.error('No se pudo borrar la suscripción', { code: error.code })
     return NextResponse.json({ error: 'Failed to unsubscribe' }, { status: 500 })

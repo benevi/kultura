@@ -8,7 +8,7 @@
 // ============================================================
 
 import type { SupabaseClient } from '@supabase/supabase-js'
-import { deleteAccountNow, isNotMigrated } from '@/lib/account/account-state'
+import { deleteAccountNow } from '@/lib/account/account-state'
 import { ACCOUNT_GRACE_DAYS } from '@/lib/account/identity'
 import { createLogger } from '@/lib/logger'
 
@@ -18,7 +18,7 @@ const log = createLogger('cron/purge')
 export const MAX_PURGE_PER_RUN = 25
 
 export interface PurgeResult {
-  status: 'done' | 'not_migrated' | 'error'
+  status: 'done' | 'error'
   deleted: number
   failed: number
 }
@@ -34,7 +34,6 @@ export async function purgeExpiredAccounts(admin: SupabaseClient, now = new Date
     .limit(MAX_PURGE_PER_RUN)
 
   if (error) {
-    if (isNotMigrated(error)) return { status: 'not_migrated', deleted: 0, failed: 0 }
     log.error(`purga: no se pudo leer account_state · ${error.message}`)
     return { status: 'error', deleted: 0, failed: 0 }
   }

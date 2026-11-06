@@ -3,17 +3,11 @@
 // Uso exclusivo en Server Components y Route Handlers.
 //
 // F-25: con MIXED_LISTS=1 se leen también descripción, plantilla, orden
-// manual y notas. Si la bandera se enciende antes de aplicar la migración,
-// cada lectura reintenta con las columnas de siempre (nunca se rompe).
+// manual y notas.
 // ============================================================
 
 import { createClient } from '@/lib/supabase/server'
-import {
-  LIST_COLUMNS_LEGACY,
-  isNotMigrated,
-  listColumns,
-  mixedListsEnabled,
-} from '@/lib/social/lists-shared'
+import { listColumns, mixedListsEnabled } from '@/lib/social/lists-shared'
 import type { DbList, DbListItem, DbListMember, DbUser, DbMedia } from '@/types/supabase'
 import type { List, ListItem, ListMediaType, ListMember, ListTemplate } from '@/types/list'
 import type { MediaType } from '@/types/media'
@@ -149,10 +143,7 @@ export async function getUserLists(userId: string): Promise<List[]> {
       .select(`list_id, list:list_id(${columns}, ${OWNER_EMBED})`)
       .eq('user_id', userId)
 
-  let [owned, member] = await Promise.all([fetchOwned(listColumns(mixed)), fetchMember(listColumns(mixed))])
-  if (mixed && (isNotMigrated(owned.error) || isNotMigrated(member.error))) {
-    ;[owned, member] = await Promise.all([fetchOwned(LIST_COLUMNS_LEGACY), fetchMember(LIST_COLUMNS_LEGACY)])
-  }
+  const [owned, member] = await Promise.all([fetchOwned(listColumns(mixed)), fetchMember(listColumns(mixed))])
 
   if (owned.error) throw new Error(`Failed to fetch owned lists: ${owned.error.message}`)
   if (member.error) throw new Error(`Failed to fetch member lists: ${member.error.message}`)
@@ -198,15 +189,13 @@ export async function getListDetail(listId: string): Promise<{
   members: ListMember[]
 } | null> {
   const supabase = await createClient()
-  let mixed = mixedListsEnabled()
+  const mixed = mixedListsEnabled()
 
-  const readList = (columns: string) =>
-    supabase.from('lists').select(`${columns}, ${OWNER_EMBED}`).eq('id', listId).maybeSingle()
-  let { data: listRaw, error: listErr } = await readList(listColumns(mixed))
-  if (listErr && mixed && isNotMigrated(listErr)) {
-    mixed = false
-    ;({ data: listRaw, error: listErr } = await readList(LIST_COLUMNS_LEGACY))
-  }
+  const { data: listRaw, error: listErr } = await supabase
+    .from('lists')
+    .select(`${listColumns(mixed)}, ${OWNER_EMBED}`)
+    .eq('id', listId)
+    .maybeSingle()
 
   if (listErr) throw new Error(`Failed to fetch list: ${listErr.message}`)
   if (!listRaw) return null
@@ -221,15 +210,13 @@ export async function getListDetail(listId: string): Promise<{
       : query.order('added_at', { ascending: false })
   }
 
-  const [firstItems, membersRes] = await Promise.all([
+  const [itemsRes, membersRes] = await Promise.all([
     readItems(mixed),
     supabase
       .from('list_members')
       .select('list_id, user_id, user:user_id(id, username, avatar_color, avatar_initials)')
       .eq('list_id', listId),
   ])
-  const itemsRes =
-    firstItems.error && mixed && isNotMigrated(firstItems.error) ? await readItems(false) : firstItems
 
   if (itemsRes.error) throw new Error(`Failed to fetch list items: ${itemsRes.error.message}`)
   if (membersRes.error) throw new Error(`Failed to fetch list members: ${membersRes.error.message}`)

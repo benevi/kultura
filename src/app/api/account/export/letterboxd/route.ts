@@ -11,7 +11,6 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { checkRateLimitDistributed } from '@/lib/rate-limit'
 import { getUserMedia } from '@/lib/library/queries'
-import { isNotMigrated } from '@/lib/library/scale'
 import { createLogger } from '@/lib/logger'
 import { IMPORT_EXPORT_LIMIT } from '@/lib/import/limits'
 import { buildLetterboxdCsv, type ExportLog, type LetterboxdExportList } from '@/lib/import/letterboxd-export'
@@ -55,10 +54,7 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
           .order('watched_on')
           .order('id')
           .range(from, from + PAGE - 1)
-        if (error) {
-          if (isNotMigrated(error)) break
-          throw new Error(`user_media_logs: ${error.code ?? ''}`)
-        }
+        if (error) throw new Error(`user_media_logs: ${error.code ?? ''}`)
         const batch = (data ?? []) as Array<{ media_id: string; watched_on: string; rewatch: boolean; rating10: number | string | null; review: string | null }>
         for (const l of batch) {
           logs.push({

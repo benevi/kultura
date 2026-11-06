@@ -6,8 +6,8 @@
 // REGISTRADOS, desde el servidor, en `analytics_events` (migración
 // 20261115170001_analytics.sql). Nada se guarda en el navegador.
 //
-// `track()` nunca lanza ni bloquea de más: sin la tabla (42P01 / PGRST205),
-// sin claves o si Supabase tarda, el evento se pierde y la petición sigue.
+// `track()` nunca lanza ni bloquea de más: si falla la escritura, faltan
+// claves o Supabase tarda, el evento se pierde y la petición sigue.
 // La demo no deja rastro.
 // ============================================================
 
@@ -36,9 +36,6 @@ type TrackUser = { id: string; app_metadata?: Record<string, unknown> | null } |
 
 /** Lo que tarda como mucho un evento antes de darlo por perdido. */
 export const TRACK_TIMEOUT_MS = 1500
-
-/** "La tabla aún no existe": la migración no se ha aplicado. */
-const NOT_MIGRATED = new Set(['42P01', 'PGRST205', '42703', 'PGRST204'])
 
 const KEY_RE = /^[a-z][a-z0-9_]{0,39}$/
 
@@ -95,9 +92,7 @@ export async function track(
       : table.insert(row)
     const { error } = await withTimeout(query, TRACK_TIMEOUT_MS)
     if (error) {
-      if (!NOT_MIGRATED.has(error.code ?? '')) {
-        log.warn('analytics: evento no guardado', { name, code: error.code, message: error.message })
-      }
+      log.warn('analytics: evento no guardado', { name, code: error.code, message: error.message })
       return false
     }
     return true

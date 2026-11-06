@@ -48,11 +48,6 @@ export function summarizeScores(scores: readonly unknown[]): KulturaRating | nul
   return { value: Math.round(avg * 10) / 10, count: valid.length };
 }
 
-/** ¿Es el error de "esa columna no existe" (migración de F-12 sin aplicar)? */
-function isMissingColumn(error: { code?: string; message?: string }): boolean {
-  return error.code === "42703" || /library_visibility/.test(error.message ?? "");
-}
-
 /** Ids de las cuentas marcadas como demo (las únicas que lo saben es Auth). */
 async function computeDemoUserIds(): Promise<string[]> {
   const admin = createAdminClient();
@@ -85,7 +80,6 @@ async function computeKulturaRating(
     .not("score", "is", null)
     .limit(MAX_ROWS);
   if (error) {
-    if (isMissingColumn(error)) return null;
     // Un error se lanza para que la caché no lo guarde; fuera queda en `null`.
     throw new Error(`user_media: ${error.message}`);
   }

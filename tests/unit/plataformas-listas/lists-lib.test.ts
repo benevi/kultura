@@ -55,25 +55,6 @@ describe('getListDetail', () => {
     expect(opsOf(client, 'list_items', 'order')[0].args[0]).toBe('position')
   })
 
-  it('bandera encendida sin migración: reintenta con las columnas de siempre', async () => {
-    process.env.MIXED_LISTS = '1'
-    const legacyRow = { ...LIST_ROW, media_type: 'book', description: undefined, template: undefined }
-    client = fakeSupabase({
-      tables: {
-        lists: [{ data: null, error: { code: '42703', message: 'column lists.description does not exist' } }, { data: legacyRow, error: null }],
-        list_items: [{ data: [item('x', null, '2026-01-01')], error: null }],
-        list_members: [{ data: [], error: null }],
-      },
-    })
-    const { getListDetail } = await import('@/lib/social/lists')
-    const detail = await getListDetail('l1')
-    expect(detail?.list.description).toBeNull()
-    expect(detail?.list.template).toBeNull()
-    // Los títulos se pidieron ya sin position/note.
-    expect(String(opsOf(client, 'list_items', 'select')[0].args[0])).not.toContain('position')
-    expect(detail?.items).toHaveLength(1)
-  })
-
   it('sin la bandera: columnas y orden de siempre', async () => {
     client = fakeSupabase({
       tables: {

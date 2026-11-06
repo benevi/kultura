@@ -27,7 +27,6 @@ import {
   LIST_NOTE_MAX,
   LIST_REORDER_MAX,
   fitsList,
-  isNotMigrated,
   isUuid,
   mixedListsEnabled,
   optionalText,
@@ -363,7 +362,6 @@ export async function PATCH(request: Request, { params }: Params): Promise<NextR
     .eq('owner_id', user.id)
 
   if (updateErr) {
-    if (isNotMigrated(updateErr)) return NextResponse.json({ error: 'not_available' }, { status: 409 })
     log.error('PATCH list failed', { listId, message: updateErr.message })
     return NextResponse.json({ error: 'Failed to update list' }, { status: 500 })
   }
@@ -393,7 +391,6 @@ async function saveOrder(supabase: Client, listId: string, order: unknown): Prom
   }
   const { data, error } = await supabase.rpc('reorder_list_items', { p_list: listId, p_items: order })
   if (error) {
-    if (isNotMigrated(error)) return NextResponse.json({ error: 'not_available' }, { status: 409 })
     log.error('reorder failed', { listId, code: error.code, message: error.message })
     return NextResponse.json({ error: 'Failed to reorder' }, { status: 500 })
   }
@@ -412,7 +409,6 @@ async function saveNote(supabase: Client, listId: string, itemId: unknown, note:
     .eq('id', itemId)
     .eq('list_id', listId)
   if (error) {
-    if (isNotMigrated(error)) return NextResponse.json({ error: 'not_available' }, { status: 409 })
     log.error('note failed', { listId, code: error.code, message: error.message })
     return NextResponse.json({ error: 'Failed to save note' }, { status: 500 })
   }

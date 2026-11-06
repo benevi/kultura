@@ -90,15 +90,6 @@ describe('GET /api/library/diary', () => {
     expect(calls).toContainEqual({ op: 'order', args: ['watched_on', { ascending: false }] })
   })
 
-  it('con la bandera pero sin la tabla (42P01) → desactivado, no 500', async () => {
-    vi.stubEnv('RATING_SCALE_10', '1')
-    selectResult = { data: null, error: { code: '42P01', message: 'relation does not exist' } }
-    const { GET } = await import('@/app/api/library/diary/route')
-    const res = await GET(get())
-    expect(res.status).toBe(200)
-    expect((await res.json()).enabled).toBe(false)
-  })
-
   it('mediaId con formato malo → 400', async () => {
     const { GET } = await import('@/app/api/library/diary/route')
     expect((await GET(get('?mediaId=../x'))).status).toBe(400)
