@@ -27,5 +27,7 @@
 - Un `supabase db push` contra producción aplicaría las 2 migraciones de push: no lanzarlo sin decidirlo y probarlas.
 - La CLI de Supabase está enlazada a `kultura-test`. La de Vercel tiene la sesión de Víctor (Hobby: solo 1 h de registros).
 - En Windows fallan unos 16 tests de unidad que ya fallaban igual en `master` (rutas con `\`, CRLF): no son regresiones.
-- `master` protegida: 4 checks obligatorios y auto-merge. Squash-merge solo con OK de Víctor.
+- `master` protegida: 4 checks obligatorios y auto-merge (D-G1). Si se renombra un job de `ci.yml`, hay que actualizar la protección. Squash-merge solo con OK de Víctor.
+- Para v2.0: `/best` mantiene su suelo relajado del año en curso (series 300 → 75), y el líder de series es poco creíble. `build.py` sigue procesando 4 imágenes de ranking que ya no se pintan.
+- Hay un `next start` viejo en el puerto 3187 (portada con rankings), sin tocar.
 - Siguiente paso de F1: guion de entrevistas (Mom test) y mini-landings `/es/series` y `/es/anime` (§7.3).
