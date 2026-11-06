@@ -233,6 +233,10 @@ select count(*) from pg_policies where schemaname = 'public';
 
 Los números deben coincidir con los de producción del día del volcado.
 
+#### Sin Docker ni proyecto de test (Windows)
+
+En Windows `age` no está en scoop: `rage` (`scoop install rage postgresql`) usa el mismo formato (`rage -d -i kultura-backup.key …`). Para restaurar en un PostgreSQL local vacío, `node scripts/restore-drill-prep.mjs <carpeta>` genera `stub.sql` (roles, `auth.uid()` y `auth.users` mínimos) y `data_public.sql`. Orden: `stub.sql` → `roles.sql` → `schema.sql` → `data_public.sql` con `SET session_replication_role = replica`. Borrar la carpeta descifrada al terminar.
+
 ### Prueba trimestral
 
 Cada trimestre (enero, abril, julio, octubre) restaurar el último artefacto en
@@ -240,5 +244,5 @@ el proyecto de test con los pasos de arriba y apuntar aquí la fecha:
 
 | Fecha | Artefacto | Resultado |
 |---|---|---|
-| — | — | Pendiente de la primera ejecución |
+| 2026-11-06 | `kultura-db-20261106T2134Z.tar.gz.age` (995 KB, ejecución 42297553044) | OK: descifrado con la clave de Víctor (`rage`), `SHA256SUMS` correctas, restaurado en un PostgreSQL 18 local vacío. Recuentos iguales a producción ese día: users 7, user_media 124, políticas 175, tablas 34, auth.users 7. Solo fallan `supabase_vault` y la publicación `supabase_realtime`, propias de la plataforma. |
 

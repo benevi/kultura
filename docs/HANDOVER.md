@@ -17,7 +17,8 @@
 ## Pendiente / ojo
 - Medición (puerta F0): evento `library_add` visto en `analytics_events` de producción el 2026-11-06 20:58 UTC; Web Analytics y Speed Insights (#77) activos. Falta que Víctor confirme las visitas en el panel de Vercel. La CLI de Vercel tiene sesión de Víctor (Hobby: solo 1 h de registros).
 - R9 reparado el 2026-11-06: el historial de producción registra 29 de 31; faltan solo las 2 de push (no aplicadas, a decidir).
-- F0 queda abierta solo por tareas de Víctor: simulacro de restauración (requiere su clave `age`), proyecto «KULTURA 2.0» en claude.ai y ver las visitas en Vercel Analytics. Dominio fuera de F0 (D3 actualizada: al 100 %).
+- Backups (R10): no habían funcionado nunca; arreglados el 2026-11-06 y simulacro OK. Comprobar el lunes la ejecución programada. Rotar la contraseña de la base si no se hizo (se pegó en el chat).
+- F0 queda abierta solo por tareas de Víctor: proyecto «KULTURA 2.0» en claude.ai y ver las visitas en Vercel Analytics. Dominio fuera de F0 (D3 actualizada: al 100 %).
 - Pasos de Víctor en `docs/F0_PASOS_VICTOR.md`.
 - Para v2.0 o F3-9: `/best` mantiene su suelo relajado del año en curso (series 300 → 75), y el líder de series es poco creíble también allí.
 - `build.py` sigue procesando 4 imágenes de ranking cada semana que ya no se pintan. Revisarlo cuando Inicio v2 decida si vuelven.
