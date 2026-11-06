@@ -1,20 +1,23 @@
 # HANDOVER — última sesión (2026-11-06)
 
-**Fase:** F0 (`PLAN_ESTRATEGICO.md` §7.3). **Rama:** `fix/lighthouse-margen-js` (PR abierto, sin merge).
+**Fase:** F0 (`PLAN_ESTRATEGICO.md` §7.3). **Rama:** `refactor/f0-rescate` (PR abierto, sin merge).
 
 ## Hecho en esta sesión
-- Entregable: **margen del presupuesto de JS inicial de Lighthouse CI** (límite 153 600 B de `resource-summary:script:size`, sin tocarlo).
-- Medido en `master` (`05a125c`, build con `env.cjs` + `next start` + `@lhci/cli@0.15.1 autorun`, local; CI añade ≈ 300 B): `/es` 149 757 · `/es/best/movie/2026` **153 304** · `/es/privacy` 143 072. Las 3 ejecuciones de cada URL dan el mismo número: el tamaño es determinista; el 153 602-153 603 de CI sale de la propia ruta `/best` (≈ 300 B más que en local).
-- Causa: `/best/[format]/[year]` cargaba el cliente de `next/image` (chunk con `head-manager`, blur…) solo por `BestPoster`, ≈ 9 KB gzip.
-- Arreglo (`[refactor]`, sin cambio de comportamiento): `src/components/best/BestPoster.tsx` es ahora componente de **servidor**: `getImgProps` (ruta interna de Next, porque `getImageProps` público arrastra el chunk cliente) + `preload` de `react-dom` con `priority` + `<img>`. Mismo `srcset`/`sizes`/`loading`/`decoding`/`style`; se mantiene `data-nimg`. Cambio observable aceptado: si la portada falla, el `alt` queda transparente (sin cliente no hay `onError`).
-- Resultado medido: `/es/best/movie/2026` **144 187** (−9 117 B); `/es` 149 756 pasa a ser la ruta más justa, con 3 844 B de margen (≈ 3,5 KB en CI).
-- Test nuevo `tests/unit/best/poster-server.test.tsx` (sin `"use client"`, sin `next/image`, srcset por cubos); `pages.test.tsx` ya no necesita el mock de `next/image`.
+- Entregable: **PR de rescate de F0** (`[refactor]`, sin cambios de comportamiento; regla 8, §7.5). Mapa completo en `docs/RESCATE_F0.md`.
+- 10 `.ts` de `src/app/[locale]` → `src/lib/{auth,supabase,recommendations,home,discover,share,import,platforms}` y `src/hooks/useFilterGroups.ts`. `discover-config` partido: lógica a `src/lib/discover/`, iconos y esqueleto viejos a `src/components/discover/discover-icons.ts`. `share/route.ts` se queda (route handler).
+- 4 módulos de `@/app/api` que usaba la UI → `src/lib/account/{identity,account-state}.ts`, `src/lib/social/{lists-shared,reports}.ts`. Sin reexportes en las rutas viejas; `vi.mock` reapuntados.
+- Hooks: `src/hooks/useAuthFlow.ts` (de `LoginPage`) y `src/hooks/useAccountSettings.ts` (de `SettingsForm`), generados moviendo líneas tal cual; los componentes solo pintan.
+- `docs/RESCATE_F0.md` §3–§4: destino de los 36 tests `.ts` que importan UI (23 conservar, 5 reapuntados, 1 mixto, 3 rehacer con v2, 4 candidatos a 2.º rescate) y de los 13 `design|visual` (10 rehacer, 3 retirar; decide F2 paso 5). No se borra nada.
 
 ## Verificación
-- `tsc` limpio fuera de `.next/`; `next lint` limpio. Suite en Windows: los mismos fallos que `master` (rutas con `\`, CRLF, tiempos); ninguno nuevo en `best/`, `csp/`, `shell/`.
-- Lighthouse local (3 ejecuciones por URL): ver PR para las 3 ejecuciones seguidas en CI.
+- `tsc` limpio; `next lint` limpio.
+- `vitest` en Windows: mismos 16 fallos que `master` (rutas con `\`, CRLF), 4630 tests en ambos; ninguno nuevo.
+- Revisión independiente (subagente Opus): 1 grave (`schema-drift` citaba la ruta vieja como texto) y 2 menores, corregidos. Registro en `04_DECISIONES` §4.
+- CI (`cuj`, Lighthouse, tests en Linux): ver el PR.
 
 ## Pendiente / ojo
-- `/es` (portada) queda a 3,8 KB del límite: la siguiente ruta a vigilar. Candidatos: `1255-*.js` (48 KB) y `4bd1b696-*.js` (55 KB) son framework/shared; `9930-*.js` (12,9 KB) es `next-intl` + fuentes + `SkipLink`.
-- Si una subida de Next rompe el import de `next/dist/shared/lib/get-img-props`, `tsc` y el test nuevo avisan.
+- Al correr `vitest` en Windows se reescriben 3 snapshots de `tests/unit/catalogo/__snapshots__` solo por CRLF: restaurarlos con `git checkout` antes de hacer commit.
+- 2.º rescate candidato (no hecho): lógica dentro de `src/components` (`landing/engine`, `pwa/install-policy`, `pwa/sw-register`, `pwa/share-target`).
+- Para v2: `useAccountSettings` usa `useToastContext`; `useFilterGroups` usa `discover-icons` (UI vieja).
+- Siguiente PR de F0: limpieza (`isNotMigrated` único, `server-only` en `admin.ts`, quitar `three` y Geist).
 - Squash-merge: solo con OK de Víctor.
