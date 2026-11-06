@@ -31,7 +31,7 @@ import { siteUrl } from '@/lib/site-url'
 import { getUserCalendar } from '@/lib/calendar/data'
 import { addDays, dateInZone, isoWeek, isoWeekday, type CalendarEvent } from '@/lib/calendar/types'
 import { weeklyEmailAllowedFor, weeklyEmailConfig, type WeeklyEmailConfig } from './config'
-import { isEmailNotMigrated, requireWeeklyReconfirm } from './preferences'
+import { requireWeeklyReconfirm } from './preferences'
 import { sendOptinRequest } from './optin'
 import { sendEmail, type EmailMessage, type SendResult } from './resend'
 import { createUnsubscribeToken, emailFingerprint } from './unsubscribe-token'
@@ -74,8 +74,7 @@ export interface OptedIn {
 }
 
 export interface DigestStore {
-  /** `null` = la migración aún no está aplicada. */
-  listOptedIn(): Promise<OptedIn[] | null>
+  listOptedIn(): Promise<OptedIn[]>
   listSends(period: string): Promise<SendRow[]>
   /** Reclama el envío de esta persona y semana; devuelve el id de la fila o null si otro lo tiene. */
   claim(userId: string, period: string, existing: SendRow | undefined): Promise<string | null>
@@ -106,7 +105,6 @@ export interface DigestDeps {
 export type DigestResult =
   | { status: 'disabled'; reason: string }
   | { status: 'not_scheduled'; period: string }
-  | { status: 'not_migrated'; period: string }
   | { status: 'error'; period: string }
   | {
       status: 'done'
@@ -174,7 +172,6 @@ export async function runWeeklyDigest(deps: DigestDeps): Promise<DigestResult> {
   const monday = addDays(today, 1 - weekday)
 
   const optedIn = await deps.store.listOptedIn()
-  if (optedIn === null) return { status: 'not_migrated', period }
   const sends = new Map((await deps.store.listSends(period)).map((r) => [r.user_id, r]))
   const optedInById = new Map(optedIn.map((p) => [p.user_id, p]))
 
@@ -296,10 +293,7 @@ export function supabaseDigestStore(admin: SupabaseClient): DigestStore {
         .eq('weekly_digest', true)
         .order('user_id', { ascending: true })
         .limit(2000)
-      if (error) {
-        if (isEmailNotMigrated(error)) return null
-        throw new Error(`email_preferences: ${error.code ?? 'error'}`)
-      }
+      if (error) throw new Error(`email_preferences: ${error.code ?? 'error'}`)
       return (data ?? []) as OptedIn[]
     },
     async listSends(period) {

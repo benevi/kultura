@@ -175,7 +175,7 @@ describe('POST /api/reports/public', () => {
   })
 
   it('sin guardar y sin email no queda constancia → 503 (no se finge)', async () => {
-    state.insertError = { code: 'PGRST204', message: "Could not find the 'contact_email' column" }
+    state.insertError = { code: '23514', message: 'violates check constraint "reports_contact_email_format"' }
     mockNotify.mockResolvedValue({ ok: false, reason: 'not_configured' })
     const res = await post(valid)
     expect(res.status).toBe(503)

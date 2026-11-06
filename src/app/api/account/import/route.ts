@@ -21,7 +21,7 @@
 //     (lib/media). Lo que no se pueda resolver ahora se omite y se cuenta en
 //     `libraryUnresolved`; reimportar el mismo fichero lo completa.
 //   - F-24: la nota fina `rating10` (0,5-10) y `favorite` vuelven tal cual con
-//     RATING_SCALE_10=1 (sin ella, o sin la migración, se guarda `score`). El
+//     RATING_SCALE_10=1 (sin ella se guarda `score`). El
 //     diario (`diary`) se reimporta para los títulos que estén en la
 //     biblioteca, sin duplicar apuntes (misma fecha, título, revisionado y
 //     reseña).
@@ -36,7 +36,7 @@ import { createLogger } from '@/lib/logger'
 import { ensureMediaRows } from '@/lib/media/upsert-from-provider'
 import { localeFromRequest } from '@/lib/media/request-locale'
 import { isValidRating10, rating10ToScore, scoreToRating10 } from '@/lib/library/rating'
-import { isNotMigrated, ratingScale10Enabled } from '@/lib/library/scale'
+import { ratingScale10Enabled } from '@/lib/library/scale'
 import { isValidDiaryDate, parseLogInput } from '@/lib/library/diary'
 
 const log = createLogger('api/account/import')
@@ -133,7 +133,6 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
   let libraryImported = 0
   let libraryUnresolved = 0
   const scale10 = ratingScale10Enabled()
-  let migrated = scale10
   try {
     if (entries.length > 0) {
       // 1. La ficha del título: `user_media.media_id` es FK contra `media`, así
@@ -170,16 +169,6 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
             })),
             { onConflict: 'user_id,media_id' }
           ))
-          if (libraryError && isNotMigrated(libraryError)) {
-            log.warn('RATING_SCALE_10 activa sin la migración 20261208240001; se importa solo score', {
-              code: libraryError.code,
-            })
-            migrated = false
-            libraryError = null
-            ;({ error: libraryError } = await supabase
-              .from('user_media')
-              .upsert(legacyRows, { onConflict: 'user_id,media_id' }))
-          }
         } else {
           ;({ error: libraryError } = await supabase
             .from('user_media')
@@ -196,7 +185,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
   }
 
   const diaryImported =
-    scale10 && migrated
+    scale10
       ? await importDiary(payload.diary, user.id, supabase).catch((err) => {
           // Como las listas: secundario, no invalida la biblioteca importada.
           log.error('Failed to import diary', { err, userId: user.id })
@@ -387,10 +376,7 @@ async function importDiary(
       .eq('user_id', userId)
       .order('id')
       .range(from, from + EXISTING_PAGE - 1)
-    if (existingError) {
-      if (isNotMigrated(existingError)) return 0
-      throw new Error(`user_media_logs: ${existingError.message}`)
-    }
+    if (existingError) throw new Error(`user_media_logs: ${existingError.message}`)
     const batch = (existingRaw ?? []) as Array<{ media_id: string; watched_on: string; rewatch: boolean; review: string | null }>
     for (const l of batch) seen.add(logKey(l))
     if (batch.length < EXISTING_PAGE) break

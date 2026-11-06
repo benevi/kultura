@@ -14,7 +14,7 @@ import { checkRateLimit } from '@/lib/rate-limit'
 import { clientIp } from '@/lib/api/discover-params'
 import { createLogger } from '@/lib/logger'
 import { notifyReport } from '@/lib/email/moderation'
-import { isModerationV2, isNotMigratedError } from '@/lib/social/friends'
+import { isModerationV2 } from '@/lib/social/friends'
 import { reportReference, type ReportTargetType } from '@/lib/social/actions'
 import { PublicReportSchema, allowedTargetTypes, checkPublicTarget, storedReason } from '@/lib/social/reports'
 
@@ -23,7 +23,10 @@ const log = createLogger('api/reports/public')
 /** 5 denuncias por hora y IP: suficiente para una persona, caro para un bot. */
 const PUBLIC_REPORT_LIMIT = { windowMs: 60 * 60_000, max: 5 }
 
-/** Errores que indican que la tabla aún no admite la denuncia sin cuenta. */
+/**
+ * NOT NULL o CHECK de `reports` (p. ej. `reports_contact_email_format`): la
+ * denuncia no se guarda, pero se avisa igual a moderación.
+ */
 const LEGACY_SCHEMA_CODES = new Set(['23502', '23514'])
 
 export async function POST(request: Request): Promise<NextResponse> {
@@ -76,9 +79,9 @@ export async function POST(request: Request): Promise<NextResponse> {
 
   let stored = true
   if (error) {
-    if (isNotMigratedError(error) || LEGACY_SCHEMA_CODES.has(error.code ?? '')) {
+    if (LEGACY_SCHEMA_CODES.has(error.code ?? '')) {
       stored = false
-      log.warn('public report not stored: moderation migration pending', { code: error.code })
+      log.warn('public report not stored: schema constraint', { code: error.code })
     } else {
       log.error('public report insert failed', { err: error, targetType })
       return NextResponse.json({ error: 'report_failed' }, { status: 500 })

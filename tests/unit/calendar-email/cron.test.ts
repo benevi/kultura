@@ -52,13 +52,6 @@ describe('cron diario (F-28)', () => {
     expect(res.status).toBe(200)
   })
 
-  it.each(['PGRST202', '42883'])('si la función aún no existe (%s), no falla', async (code) => {
-    h.rpc.mockResolvedValue({ data: null, error: { code, message: 'missing' } })
-    const res = await call()
-    expect(res.status).toBe(200)
-    expect((await res.json()).analytics).toEqual({ status: 'not_migrated', deleted: 0 })
-  })
-
   it('otro error de la base sí pone el cron en rojo', async () => {
     h.rpc.mockResolvedValue({ data: null, error: { code: '57014', message: 'timeout' } })
     expect((await call()).status).toBe(500)

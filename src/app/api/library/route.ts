@@ -15,7 +15,7 @@
 // F-27 (PRO-5): con PROGRESS_V2=1 llega `progress` (episodios, capítulos,
 // páginas o %, horas según el formato) y se guarda en las columnas
 // `progress_*`; el disparador deja `episode_progress` como espejo. Sin la
-// bandera, o sin la migración 20261215270001, se guarda `episodeProgress`
+// bandera se guarda `episodeProgress`
 // como siempre (de `progress` se saca la temporada y el episodio).
 // ============================================================
 
@@ -32,7 +32,7 @@ import { localeFromRequest } from '@/lib/media/request-locale'
 import { track } from '@/lib/analytics/track'
 import { createLogger } from '@/lib/logger'
 import { entryRating10, isValidRating10, rating10ToScore, scoreToRating10 } from '@/lib/library/rating'
-import { isNotMigrated, ratingScale10Enabled } from '@/lib/library/scale'
+import { ratingScale10Enabled } from '@/lib/library/scale'
 import { mapLog, parseLogInput, today } from '@/lib/library/diary'
 import {
   parseProgressInput,
@@ -199,31 +199,7 @@ export async function POST(request: Request): Promise<NextResponse> {
     return { ...rest, ...progressToColumns(progressValue) }
   }
 
-  let migrated = scale10
-  let progressMigrated = progressV2
-  let { data, error: upsertError } = await upsertEntry(withProgress({ ...legacyRow, ...scaleExtras }))
-
-  if (upsertError && progressV2 && isNotMigrated(upsertError)) {
-    // PROGRESS_V2 encendida sin su migración: el progreso, como siempre.
-    log.warn('PROGRESS_V2 activa pero falta la migración 20261215270001; se escribe episode_progress', {
-      code: upsertError.code,
-    })
-    progressMigrated = false
-    ;({ data, error: upsertError } = await upsertEntry({ ...legacyRow, ...scaleExtras }))
-  }
-
-  if (upsertError && scale10 && isNotMigrated(upsertError)) {
-    // Bandera encendida sin la migración: se guarda como siempre.
-    log.warn('RATING_SCALE_10 activa pero falta la migración 20261208240001; se escribe solo score', {
-      code: upsertError.code,
-    })
-    migrated = false
-    const retry = progressMigrated ? withProgress(legacyRow) : legacyRow
-    ;({ data, error: upsertError } = await upsertEntry(retry))
-    if (upsertError && progressMigrated && isNotMigrated(upsertError)) {
-      ;({ data, error: upsertError } = await upsertEntry(legacyRow))
-    }
-  }
+  const { data, error: upsertError } = await upsertEntry(withProgress({ ...legacyRow, ...scaleExtras }))
 
   if (upsertError || !data) {
     return NextResponse.json({ error: 'Failed to save library entry' }, { status: 500 })
@@ -233,7 +209,7 @@ export async function POST(request: Request): Promise<NextResponse> {
   //     devuelve igualmente y el cliente avisa de que el apunte no entró.
   let diaryLog: DiaryLog | null = null
   let logFailed = false
-  if (parsedLog?.ok && migrated) {
+  if (parsedLog?.ok && scale10) {
     const entry = parsedLog.log
     const { data: logRow, error: logError } = await supabase
       .from('user_media_logs')
@@ -250,10 +226,8 @@ export async function POST(request: Request): Promise<NextResponse> {
       .select()
       .single()
     if (logError || !logRow) {
-      if (!isNotMigrated(logError)) {
-        log.error('Failed to insert diary log', { err: logError, userId: user.id })
-        logFailed = true
-      }
+      log.error('Failed to insert diary log', { err: logError, userId: user.id })
+      logFailed = true
     } else {
       diaryLog = mapLog(logRow as DbUserMediaLog)
     }

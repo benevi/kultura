@@ -60,14 +60,6 @@ export function aiDay(now: Date = new Date()): string {
   return dayFormatter.format(now)
 }
 
-/**
- * Códigos que significan "la migración aún no está aplicada": tabla
- * inexistente (42P01), función inexistente (42883) o PostgREST sin la función
- * / tabla en su caché de esquema (PGRST202 / PGRST205). Solo se usan para no
- * llenar el log de avisos mientras tanto; el comportamiento es el mismo.
- */
-const NOT_MIGRATED_CODES = new Set(['42P01', '42883', 'PGRST202', 'PGRST205'])
-
 // ── Contador en memoria (respaldo) ────────────────────────────────────────────
 
 let memoryDay = ''
@@ -104,9 +96,7 @@ export async function reserveAiCall(kind: AiCallKind): Promise<boolean> {
       p_cap: cap,
     })
     if (!error) return data === true
-    if (!NOT_MIGRATED_CODES.has(String(error.code))) {
-      log.warn('increment_ai_usage falló; se cuenta en memoria', { code: error.code, kind })
-    }
+    log.warn('increment_ai_usage falló; se cuenta en memoria', { code: error.code, kind })
   } catch (err) {
     log.warn('increment_ai_usage no respondió; se cuenta en memoria', { err: String(err), kind })
   }

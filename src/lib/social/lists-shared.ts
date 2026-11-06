@@ -2,14 +2,11 @@
 // KULTURA — Listas: bandera, columnas y validación (F-25, solo servidor)
 //
 // Las listas mixtas, el orden manual, las notas, la descripción y las
-// plantillas necesitan la migración 20261208250001_platforms_mixed_lists.sql.
-// Hasta que Víctor la aplica y enciende MIXED_LISTS=1, todo se lee y escribe
-// con las columnas de siempre. Si la bandera se enciende ANTES de aplicarla,
-// las lecturas reintentan con las columnas viejas (`isNotMigrated`), así que
-// nada se rompe: solo no aparece lo nuevo.
+// plantillas usan la migración 20261208250001_platforms_mixed_lists.sql (ya
+// aplicada). Sin MIXED_LISTS=1, todo se lee y escribe con las columnas de
+// siempre.
 // ============================================================
 
-import { isNotMigrated } from '@/lib/account/account-state'
 import type { MediaType } from '@/types/media'
 import type { ListMediaType, ListTemplate } from '@/types/list'
 
@@ -26,8 +23,6 @@ export const LIST_REORDER_MAX = 500
 export function mixedListsEnabled(): boolean {
   return process.env.MIXED_LISTS === '1'
 }
-
-export { isNotMigrated }
 
 /** Columnas de `lists` (las nuevas solo con la bandera). */
 export const LIST_COLUMNS_LEGACY = 'id, owner_id, name, media_type, is_collaborative, is_public, created_at'

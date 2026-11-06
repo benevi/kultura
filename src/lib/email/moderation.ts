@@ -98,8 +98,8 @@ function startOfUtcDay(now: Date): string {
 /**
  * Cuántas denuncias de hoy (UTC) hay en `reports`, en total y del mismo
  * denunciante. La fila de esta denuncia ya está insertada, así que cuenta.
- * `null` si no se puede contar (sin la migración no existe contact_email,
- * sin service role…): entonces se usa el contador en memoria.
+ * `null` si no se puede contar (sin service role, error de consulta…):
+ * entonces se usa el contador en memoria.
  */
 async function countToday(notice: ReportNotice): Promise<{ total: number; reporter: number } | null> {
   if (!notice.stored) return null

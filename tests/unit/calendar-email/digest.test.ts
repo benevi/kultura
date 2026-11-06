@@ -140,13 +140,6 @@ describe('runWeeklyDigest', () => {
     expect(send).not.toHaveBeenCalled()
   })
 
-  it('sin la migración: not_migrated', async () => {
-    const store = memoryStore([], {})
-    store.listOptedIn = async () => null
-    const { d } = deps(store)
-    expect(await runWeeklyDigest(d)).toEqual({ status: 'not_migrated', period: '2026-W51' })
-  })
-
   it('lunes: un correo por persona con lo de la semana, cabeceras de baja en 1 clic e idempotencia', async () => {
     const store = memoryStore(
       [
@@ -366,10 +359,6 @@ describe('almacén real (consultas a Supabase)', () => {
     ])
   })
 
-  it('sin la tabla → null (not_migrated)', async () => {
-    const client = fakeSupabase({ tables: { email_preferences: [{ data: null, error: { code: 'PGRST205' } }] } })
-    expect(await supabaseDigestStore(client as never).listOptedIn()).toBeNull()
-  })
 })
 
 describe('vuelta desde el correo', () => {

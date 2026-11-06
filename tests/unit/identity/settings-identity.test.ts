@@ -119,21 +119,6 @@ describe('PATCH /api/settings — identidad (F-12)', () => {
     expect(res.status).toBe(400)
   })
 
-  it('sin la columna (migración sin aplicar) guarda el resto y avisa de lo ignorado', async () => {
-    const users = table({
-      writes: [
-        { data: null, error: { code: 'PGRST204', message: "Could not find the 'library_visibility' column" } },
-        { data: { avatar_color: 'teal' }, error: null },
-      ],
-    })
-    h.userTables.users = users
-    const res = await run({ avatar_color: 'teal', library_visibility: 'friends' })
-    const body = await res.json()
-    expect(res.status).toBe(200)
-    expect(body.ignored).toEqual(['library_visibility'])
-    expect(users.update).toHaveBeenLastCalledWith({ avatar_color: 'teal' })
-  })
-
   it('accept_terms guarda terms_accepted_at y la versión en account_state (admin)', async () => {
     const state = table()
     h.adminTables.account_state = state
@@ -147,18 +132,6 @@ describe('PATCH /api/settings — identidad (F-12)', () => {
       }),
       { onConflict: 'user_id' }
     )
-  })
-
-  it('sin account_state, la aceptación va a app_metadata (que el usuario no puede tocar)', async () => {
-    h.adminTables.account_state = table({ upsert: { error: { code: '42P01' } } })
-    const res = await run({ accept_terms: true, onboarding_done: true })
-    expect(res.status).toBe(200)
-    expect(h.updateUserById).toHaveBeenCalledWith(AUTH_USER.id, {
-      app_metadata: expect.objectContaining({ provider: 'google', terms_accepted_at: expect.any(String) }),
-    })
-    expect(h.updateUserById).toHaveBeenCalledWith(AUTH_USER.id, {
-      app_metadata: expect.objectContaining({ onboarded_at: expect.any(String) }),
-    })
   })
 
   // SEG-7: "Saltar todo" no puede terminar el onboarding sin aceptar.

@@ -14,7 +14,7 @@ import { createClient } from '@/lib/supabase/server'
 import { checkRateLimit, LIMITS } from '@/lib/rate-limit'
 import { createLogger } from '@/lib/logger'
 import { readDiary } from '@/lib/library/diary'
-import { isNotMigrated, ratingScale10Enabled, readRatingScale } from '@/lib/library/scale'
+import { ratingScale10Enabled, readRatingScale } from '@/lib/library/scale'
 import type { DiaryConfig } from '@/types/library'
 
 const log = createLogger('api/library/diary')
@@ -49,7 +49,7 @@ export async function GET(request: Request): Promise<NextResponse> {
 
   try {
     const diary = await readDiary(supabase, user.id, { mediaId, limit: mediaId ? 50 : 100, withMedia: !mediaId })
-    const body: DiaryConfig = diary.migrated ? { enabled: true, scale, logs: diary.logs } : off
+    const body: DiaryConfig = { enabled: true, scale, logs: diary.logs }
     return NextResponse.json(body, { headers: { 'Cache-Control': 'private, no-store' } })
   } catch (err) {
     log.error('Failed to read diary', { err, userId: user.id })
@@ -88,7 +88,6 @@ export async function DELETE(request: Request): Promise<NextResponse> {
     .match({ id: body.id, user_id: user.id })
 
   if (error) {
-    if (isNotMigrated(error)) return NextResponse.json({ error: 'Entry not found' }, { status: 404 })
     log.error('Failed to delete diary log', { err: error, userId: user.id })
     return NextResponse.json({ error: 'Failed to delete diary entry' }, { status: 500 })
   }

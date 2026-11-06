@@ -94,16 +94,6 @@ describe('DELETE /api/account', () => {
     expect(body).toMatchObject({ ok: true, scheduled: false, transferred: { groups: 1, lists: 0 } })
   })
 
-  it('sin la migración (función inexistente) borra como siempre', async () => {
-    mockGetUser.mockResolvedValue({ data: { user: AUTH_USER }, error: null })
-    mockRpc.mockResolvedValue({ data: null, error: { code: 'PGRST202', message: 'not found' } })
-    mockDeleteUser.mockResolvedValue({ error: null })
-    const { DELETE } = await import('@/app/api/account/route')
-    const res = await DELETE()
-    expect(res.status).toBe(200)
-    expect(mockDeleteUser).toHaveBeenCalledWith(AUTH_USER.id)
-  })
-
   it('si el traspaso falla de verdad, NO borra (mejor eso que destruir lo de otros)', async () => {
     mockGetUser.mockResolvedValue({ data: { user: AUTH_USER }, error: null })
     mockRpc.mockResolvedValue({ data: null, error: { code: '40001', message: 'boom' } })
@@ -195,19 +185,6 @@ describe('GET /api/account (resumen del modal)', () => {
     })
   })
 
-  it('sin la migración: recuentos sí, herederos null y sin días de gracia', async () => {
-    process.env.ACCOUNT_GRACE = '1'
-    mockGetUser.mockResolvedValue({ data: { user: AUTH_USER }, error: null })
-    mockAdminFrom.mockImplementation(() => chain({ count: 2, error: null }))
-    mockUserFrom.mockReturnValue(chain({ data: null, error: { code: 'PGRST205', message: 'missing' } }))
-    mockRpc.mockResolvedValue({ data: null, error: { code: 'PGRST202', message: 'missing' } })
-
-    const { GET } = await import('@/app/api/account/route')
-    const body = await (await GET()).json()
-    expect(body.groups).toBeNull()
-    expect(body.graceDays).toBe(0)
-    delete process.env.ACCOUNT_GRACE
-  })
 })
 
 describe('PATCH /api/account (cancelar el borrado)', () => {

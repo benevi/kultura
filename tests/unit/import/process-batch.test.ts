@@ -107,16 +107,6 @@ describe('processImportBatch', () => {
     expect(state.db.tables.user_media_logs).toHaveLength(2)
   })
 
-  it('con la bandera pero SIN la migración (42703): se importa como antes, sin romper', async () => {
-    process.env.RATING_SCALE_10 = '1'
-    state.db.errors['user_media.noRating10'] = { code: '42703', message: 'column rating10 does not exist' }
-    const r = await run([item({ ids: { tmdb: 1 }, rating10: 7.5, logs })])
-    expect(r.results[0].outcome).toBe('added')
-    expect(state.db.tables.user_media[0]).not.toHaveProperty('rating10')
-    expect(state.db.tables.user_media[0].score).toBe(4)
-    expect(state.db.calls).not.toContain('user_media_logs.insert')
-  })
-
   it('lo que ya había no se pisa (nota de KULTURA) y lo que falta se completa', async () => {
     state.db.tables.user_media.push({ user_id: 'u1', media_id: 'movie_1', status: 'pending', score: 3, watched_at: null })
     state.db.tables.user_media.push({ user_id: 'u1', media_id: 'movie_2', status: 'completed', score: 4, watched_at: '2019-01-01' })

@@ -24,7 +24,7 @@ import { createLogger } from '@/lib/logger'
 import { buildMediaRow, ensureMediaRows, type MediaRowInsert } from '@/lib/media/upsert-from-provider'
 import { parseMediaId } from '@/lib/media/media-id'
 import { rating10ToScore, scoreToRating10, isValidRating10 } from '@/lib/library/rating'
-import { isNotMigrated, ratingScale10Enabled } from '@/lib/library/scale'
+import { ratingScale10Enabled } from '@/lib/library/scale'
 import type { LibraryStatus } from '@/types/library'
 import type { MediaItem } from '@/types/media'
 import { BATCH_DEADLINE_MS, MAX_PROVIDER_CALLS_PER_BATCH } from '../limits'
@@ -173,7 +173,6 @@ export async function processImportBatch(items: ImportItem[], opts: ProcessOptio
   // 4. Lo que ya hay en la biblioteca.
   const scale10 = ratingScale10Enabled()
   const existing = await readExisting(opts.supabase, opts.userId, mediaIds, scale10)
-  const migrated = existing.migrated
 
   // 5. Escribir lo nuevo y lo que se completa.
   const rows: Array<Record<string, unknown>> = []
@@ -192,7 +191,7 @@ export async function processImportBatch(items: ImportItem[], opts: ProcessOptio
       score: rating10ToScore(plan.entry.rating10),
       watched_at: plan.entry.watchedAt,
     }
-    if (scale10 && migrated) row.rating10 = plan.entry.rating10
+    if (scale10) row.rating10 = plan.entry.rating10
     rows.push(row)
   }
   for (let i = 0; i < rows.length; i += CHUNK) {
@@ -202,7 +201,7 @@ export async function processImportBatch(items: ImportItem[], opts: ProcessOptio
 
   // 6. Diario (F-24): apuntes que aún no tenga.
   const diaryImported =
-    scale10 && migrated
+    scale10
       ? await importLogs(opts.supabase, opts.userId, merged).catch((err) => {
           log.warn('no se pudo importar el diario del lote', { err })
           return 0
@@ -286,23 +285,15 @@ async function readExisting(
   userId: string,
   mediaIds: string[],
   scale10: boolean
-): Promise<{ rows: Map<string, ExistingEntry>; migrated: boolean }> {
-  let migrated = scale10
+): Promise<{ rows: Map<string, ExistingEntry> }> {
   const rows = new Map<string, ExistingEntry>()
   for (let i = 0; i < mediaIds.length; i += CHUNK) {
     const chunk = mediaIds.slice(i, i + CHUNK)
-    const select = (fine: boolean) =>
-      supabase
-        .from('user_media')
-        .select(fine ? 'media_id, status, score, rating10, watched_at' : 'media_id, status, score, watched_at')
-        .eq('user_id', userId)
-        .in('media_id', chunk)
-    let { data, error } = await select(migrated)
-    if (error && migrated && isNotMigrated(error)) {
-      log.warn('RATING_SCALE_10 activa sin la migración 20261208240001; se importa solo score', { code: error.code })
-      migrated = false
-      ;({ data, error } = await select(false))
-    }
+    const { data, error } = await supabase
+      .from('user_media')
+      .select(scale10 ? 'media_id, status, score, rating10, watched_at' : 'media_id, status, score, watched_at')
+      .eq('user_id', userId)
+      .in('media_id', chunk)
     if (error) throw new Error(`user_media: ${error.code ?? ''} ${error.message}`)
     for (const r of (data ?? []) as unknown as Array<{ media_id: string; status: LibraryStatus; score: number | null; rating10?: unknown; watched_at: string | null }>) {
       const fine = typeof r.rating10 === 'string' ? Number(r.rating10) : r.rating10
@@ -313,7 +304,7 @@ async function readExisting(
       })
     }
   }
-  return { rows, migrated }
+  return { rows }
 }
 
 async function importLogs(
@@ -332,10 +323,7 @@ async function importLogs(
       .select('media_id, watched_on, rewatch')
       .eq('user_id', userId)
       .in('media_id', ids.slice(i, i + CHUNK))
-    if (error) {
-      if (isNotMigrated(error)) return 0
-      throw new Error(`user_media_logs: ${error.code ?? ''}`)
-    }
+    if (error) throw new Error(`user_media_logs: ${error.code ?? ''}`)
     for (const l of (data ?? []) as Array<{ media_id: string; watched_on: string; rewatch: boolean }>) {
       seen.add(`${l.media_id}|${l.watched_on}|${l.rewatch ? 1 : 0}`)
     }
@@ -362,10 +350,7 @@ async function importLogs(
   )
   for (let i = 0; i < rows.length; i += 500) {
     const { error } = await supabase.from('user_media_logs').insert(rows.slice(i, i + 500))
-    if (error) {
-      if (isNotMigrated(error)) return 0
-      throw new Error(`user_media_logs: ${error.code ?? ''}`)
-    }
+    if (error) throw new Error(`user_media_logs: ${error.code ?? ''}`)
   }
   return rows.length
 }

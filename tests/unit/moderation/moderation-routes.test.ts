@@ -54,14 +54,6 @@ describe('/api/friends/blocks', () => {
     expect(calls.filter((c) => c.table === 'blocks')).toHaveLength(0)
   })
 
-  it('con bandera pero sin la tabla (migración pendiente) → enabled:false', async () => {
-    process.env.MODERATION_V2 = '1'
-    setup((c) => (c.table === 'blocks' ? { error: { code: 'PGRST205', message: 'no table' } } : {}))
-    const { GET } = await import('@/app/api/friends/blocks/route')
-    const g = await GET(jsonReq(`/api/friends/blocks?userId=${OTHER}`, 'GET'))
-    expect(await g.json()).toEqual({ enabled: false, blocked: false })
-  })
-
   it('bloquear: inserta la fila propia y borra la amistad en los dos sentidos', async () => {
     process.env.MODERATION_V2 = '1'
     setup((c) => (c.table === 'users' ? { data: { id: OTHER } } : {}))

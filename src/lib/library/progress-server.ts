@@ -1,12 +1,10 @@
 // ============================================================
 // KULTURA — Progreso por formato en el servidor (F-27)
 //
-// Bandera PROGRESS_V2=1 (Vercel) DESPUÉS de aplicar
-// 20261215270001_progress.sql. Sin ella, todo como antes: solo progreso de
-// episodios (series y anime) en el jsonb `episode_progress`. Con ella se
-// escriben las columnas `progress_*` de todos los formatos; si la base aún
-// no las tiene (bandera encendida antes de tiempo), se detecta por el código
-// de error (`isNotMigrated`) y se vuelve a lo de antes en vez de dar un 500.
+// Bandera PROGRESS_V2=1 (Vercel); 20261215270001_progress.sql ya está
+// aplicada. Sin la bandera, todo como antes: solo progreso de episodios
+// (series y anime) en el jsonb `episode_progress`. Con ella se escriben las
+// columnas `progress_*` de todos los formatos.
 //
 // El «plan» (cuántos episodios tiene cada temporada, capítulos, páginas,
 // horas medias) sale del proveedor por los clientes de `src/lib/api`, que
@@ -30,30 +28,13 @@ export function progressV2Enabled(): boolean {
   return process.env.PROGRESS_V2 === '1'
 }
 
-/** Lo justo de un cliente de Supabase para la sonda (sirve el de servidor y los mocks). */
-interface ProbeClient {
-  from(table: 'user_media'): {
-    select(columns: string): { limit(n: number): PromiseLike<{ error: unknown }> }
-  }
-}
-
 /**
- * ¿Tiene la base las columnas de 20261215270001? Sonda de una fila (sin
- * filas también responde sin error). Con la bandera encendida antes de
- * aplicar la migración devuelve false (42703) y todo sigue como antes.
+ * Igual que `progressV2Enabled()`. Conserva la firma (async, con cliente)
+ * porque lo llama la UI vieja (`(app)/home/page.tsx`); se va con ella.
  */
-export async function progressColumnsExist(supabase: ProbeClient): Promise<boolean> {
-  try {
-    const { error } = await supabase.from('user_media').select('progress_episode').limit(1)
-    return !error
-  } catch {
-    return false
-  }
-}
-
-/** PROGRESS_V2 encendida Y la migración aplicada (misma detección que el GET). */
-export async function progressV2Active(supabase: ProbeClient): Promise<boolean> {
-  return progressV2Enabled() && (await progressColumnsExist(supabase))
+export async function progressV2Active(_supabase?: unknown): Promise<boolean> {
+  void _supabase
+  return progressV2Enabled()
 }
 
 // ── TMDB: temporadas y episodios ─────────────────────────────────────────────

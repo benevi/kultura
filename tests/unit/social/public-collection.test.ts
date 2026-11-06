@@ -100,16 +100,13 @@ describe('getPublicCollection (consulta anidada, REN-6)', () => {
     expect(select).not.toMatch(/library_visibility|preferred_locale/)
   })
 
-  it('getOwnerDetails: fecha y visibilidad con sesión; sin la columna de F-12, solo la fecha', async () => {
+  it('getOwnerDetails: fecha y visibilidad con sesión; si falla, nada', async () => {
     results.users = [
       { data: { created_at: '2026-01-01T00:00:00Z', library_visibility: 'friends' }, error: null },
-      { data: null, error: { code: '42703' } },
-      { data: { created_at: '2026-02-01T00:00:00Z' }, error: null },
       { data: null, error: { code: '42501' } },
     ]
     const { getOwnerDetails } = await import('@/lib/social/public-collection')
     expect(await getOwnerDetails(client as never, 'u1')).toEqual({ createdAt: '2026-01-01T00:00:00Z', libraryVisibility: 'friends' })
-    expect(await getOwnerDetails(client as never, 'u1')).toEqual({ createdAt: '2026-02-01T00:00:00Z', libraryVisibility: null })
     expect(await getOwnerDetails(client as never, 'u1')).toEqual({ createdAt: null, libraryVisibility: null })
   })
 
@@ -162,15 +159,9 @@ describe('viewerCanReadLibrary (D-04b)', () => {
     expect(await viewerCanReadLibrary(client as never, 'u1')).toBe(false)
   })
 
-  it('sin la función (F-12 sin aplicar) rige W1: con sesión, sí', async () => {
+  it.each(['57014', 'PGRST202', '42883'])('si falla (%s): no se enseña', async (code) => {
     const { viewerCanReadLibrary } = await import('@/lib/social/public-collection')
-    rpc.mockResolvedValueOnce({ data: null, error: { code: 'PGRST202' } })
-    expect(await viewerCanReadLibrary(client as never, 'u1')).toBe(true)
-  })
-
-  it('cualquier otro error: no se enseña', async () => {
-    const { viewerCanReadLibrary } = await import('@/lib/social/public-collection')
-    rpc.mockResolvedValueOnce({ data: null, error: { code: '57014' } })
+    rpc.mockResolvedValueOnce({ data: null, error: { code } })
     expect(await viewerCanReadLibrary(client as never, 'u1')).toBe(false)
   })
 })

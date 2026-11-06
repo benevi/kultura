@@ -105,13 +105,10 @@ async function findInviter(admin: Admin, ref: string): Promise<{ id: string; use
   return (renamed as { id: string; username: string } | null) ?? null
 }
 
-/** "La tabla aún no existe" (F-11 sin aplicar): no hay bloqueos posibles. */
-const NOT_MIGRATED = new Set(['42P01', 'PGRST205'])
-
 /**
  * ¿Hay un bloqueo entre los dos, en cualquier sentido? El cliente admin se
- * salta la RLS de F-11, así que se comprueba aquí. Ante cualquier error que no
- * sea "la tabla no existe", se trata como bloqueado (no se crea nada).
+ * salta la RLS de F-11, así que se comprueba aquí. Ante cualquier error se
+ * trata como bloqueado (no se crea nada).
  */
 async function isBlockedEitherWay(admin: Admin, a: string, b: string): Promise<boolean> {
   const { data, error } = await admin
@@ -119,7 +116,7 @@ async function isBlockedEitherWay(admin: Admin, a: string, b: string): Promise<b
     .select('blocker_id')
     .or(`and(blocker_id.eq.${a},blocked_id.eq.${b}),and(blocker_id.eq.${b},blocked_id.eq.${a})`)
     .limit(1)
-  if (error) return !NOT_MIGRATED.has(error.code ?? '')
+  if (error) return true
   return Array.isArray(data) && data.length > 0
 }
 

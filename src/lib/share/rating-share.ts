@@ -41,9 +41,6 @@ export const SHARE_SIG_PARAM = "s";
 const SIG_LENGTH = 22;
 const SIG_RE = /^[A-Za-z0-9_-]{22}$/;
 
-/** Códigos de "esto aún no existe" (tabla, columna o función sin migrar). */
-const NOT_MIGRATED = new Set(["42P01", "42703", "42883", "PGRST202", "PGRST204", "PGRST205"]);
-
 const dedupe: <T extends (...args: never[]) => unknown>(fn: T) => T =
   (React as unknown as { cache?: <T>(fn: T) => T }).cache ?? ((fn) => fn);
 
@@ -143,7 +140,7 @@ export interface ShareOwner {
   username: string;
   avatarColor: string;
   avatarInitials: string;
-  /** `null`: columna sin migrar (se trata como el valor por defecto, "amigos"). */
+  /** `null`: sin valor (se trata como el valor por defecto, "amigos"). */
   libraryVisibility: LibraryVisibility | null;
 }
 
@@ -163,9 +160,11 @@ function toVisibility(value: unknown): LibraryVisibility | null {
 export const findShareOwner = dedupe(async (username: string): Promise<ShareOwner | null> => {
   const client = admin();
   if (!client || !username || username.length > 40) return null;
-  const read = (columns: string) => client.from("users").select(columns).eq("username", username).maybeSingle();
-  let { data, error } = await read("id, username, avatar_color, avatar_initials, library_visibility");
-  if (error && NOT_MIGRATED.has(error.code ?? "")) ({ data, error } = await read("id, username, avatar_color, avatar_initials"));
+  const { data, error } = await client
+    .from("users")
+    .select("id, username, avatar_color, avatar_initials, library_visibility")
+    .eq("username", username)
+    .maybeSingle();
   if (error || !data) return null;
   const row = data as unknown as Record<string, unknown>;
   if (typeof row.id !== "string" || typeof row.username !== "string") return null;
@@ -209,10 +208,12 @@ export async function loadOwnerRating(
   ownerId: string,
   mediaId: string
 ): Promise<{ score: number | null; rating10: number | null; media: ShareMedia | null } | null> {
-  const read = (columns: string) =>
-    client.from("user_media").select(columns).eq("user_id", ownerId).eq("media_id", mediaId).maybeSingle();
-  let { data, error } = await read("score, rating10, media(title, poster, year)");
-  if (error && NOT_MIGRATED.has(error.code ?? "")) ({ data, error } = await read("score, media(title, poster, year)"));
+  const { data, error } = await client
+    .from("user_media")
+    .select("score, rating10, media(title, poster, year)")
+    .eq("user_id", ownerId)
+    .eq("media_id", mediaId)
+    .maybeSingle();
   if (error || !data) return null;
   const row = data as unknown as RatingRow;
   const raw10 = row.rating10 === null || row.rating10 === undefined ? null : Number(row.rating10);
@@ -243,11 +244,11 @@ export function anonymousCanSeeLibrary(visibility: LibraryVisibility | null): bo
   return process.env.SHARE_PUBLIC_LIBRARY === "1" && visibility === "public";
 }
 
-/** ¿Hay un bloqueo entre quien mira y el dueño? Sin la función: no. Otro error: sí (no se enseña). */
+/** ¿Hay un bloqueo entre quien mira y el dueño? Ante un error: sí (no se enseña). */
 async function hasBlockWith(client: SupabaseClient, ownerId: string): Promise<boolean> {
   try {
     const { data, error } = await client.rpc("has_block_with", { p_other: ownerId });
-    if (error) return !NOT_MIGRATED.has(error.code ?? "");
+    if (error) return true;
     return data === true;
   } catch {
     return true;

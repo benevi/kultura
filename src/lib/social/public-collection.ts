@@ -322,22 +322,16 @@ export async function hasPublicLists(userId: string): Promise<boolean> {
 
 // ── Biblioteca en el perfil público (DIS-6, CRE-12) ─────────────────────
 
-/** Códigos de "esto aún no existe" (función o columna sin migrar). */
-const NOT_MIGRATED = new Set(['42P01', '42703', '42883', 'PGRST202', 'PGRST204', 'PGRST205'])
-
 /**
  * Fecha de alta y visibilidad de la biblioteca del dueño, leídas CON SESIÓN
- * (anon no tiene permiso sobre esas columnas). Sin la columna de F-12
- * (42703 / PGRST204), solo la fecha y `libraryVisibility: null`. Cualquier
- * otro fallo: nada (la página sigue sin esos dos datos).
+ * (anon no tiene permiso sobre esas columnas). Si falla: nada (la página
+ * sigue sin esos dos datos).
  */
 export async function getOwnerDetails(
   supabase: SupabaseClient,
   ownerId: string,
 ): Promise<Pick<PublicOwner, 'createdAt' | 'libraryVisibility'>> {
-  const read = (columns: string) => supabase.from('users').select(columns).eq('id', ownerId).maybeSingle()
-  let { data, error } = await read('created_at, library_visibility')
-  if (error && NOT_MIGRATED.has(error.code ?? '')) ({ data, error } = await read('created_at'))
+  const { data, error } = await supabase.from('users').select('created_at, library_visibility').eq('id', ownerId).maybeSingle()
   if (error || !data) return { createdAt: null, libraryVisibility: null }
   const row = data as { created_at?: string | null; library_visibility?: string | null }
   return { createdAt: row.created_at ?? null, libraryVisibility: toVisibility(row.library_visibility) }
@@ -346,13 +340,12 @@ export async function getOwnerDetails(
 
 /**
  * ¿Puede quien tiene la sesión de `supabase` leer la biblioteca de `ownerId`?
- * Lo decide la base (`can_read_library`, F-12). Sin la función, rige la
- * política de W1 (cualquiera con sesión puede leer), así que `true`. Cualquier
- * otro error → `false`: ante la duda, no se enseña.
+ * Lo decide la base (`can_read_library`, F-12). Ante un error → `false`: ante
+ * la duda, no se enseña.
  */
 export async function viewerCanReadLibrary(supabase: SupabaseClient, ownerId: string): Promise<boolean> {
   const { data, error } = await supabase.rpc('can_read_library', { p_owner: ownerId })
-  if (error) return NOT_MIGRATED.has(error.code ?? '')
+  if (error) return false
   return data === true
 }
 

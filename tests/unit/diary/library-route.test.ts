@@ -149,18 +149,6 @@ describe('con RATING_SCALE_10=1', () => {
     expect(logInserts[0].watched_on).toBe(new Date().toISOString().slice(0, 10))
   })
 
-  it('sin la migración aplicada (PGRST204) vuelve a escribir solo score y no intenta el diario', async () => {
-    upsertResults.push({ data: null, error: { code: 'PGRST204', message: "Could not find the 'rating10' column" } })
-    upsertResults.push({ data: ROW, error: null })
-    const { status, json } = await call({ mediaId: 'movie_550', status: 'completed', rating10: 9, log: { review: 'x' } })
-    expect(status).toBe(200)
-    expect(upserts).toHaveLength(2)
-    expect(upserts[1]).not.toHaveProperty('rating10')
-    expect(upserts[1]).toMatchObject({ score: 5 })
-    expect(logInserts).toHaveLength(0)
-    expect(json.logFailed).toBeUndefined()
-  })
-
   it('si el apunte falla, la entrada queda guardada y se avisa (logFailed)', async () => {
     upsertResults.push({ data: MIGRATED_ROW, error: null })
     logResults.push({ data: null, error: { code: '23514', message: 'check' } })

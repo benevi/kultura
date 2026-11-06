@@ -19,6 +19,7 @@
 
 import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
+import { isNotMigrated } from '@/lib/supabase/not-migrated'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { checkRateLimit, LIMITS } from '@/lib/rate-limit'
 import { isDemoUser } from '@/lib/demo'
@@ -30,7 +31,6 @@ const log = createLogger('api/push/subscribe')
 const NO_STORE = { 'Cache-Control': 'no-store' }
 const MAX_DEVICES = 10
 const MAX_BODY = 4096
-const NOT_MIGRATED = new Set(['42P01', '42703', 'PGRST204', 'PGRST205'])
 
 export async function POST(request: Request): Promise<NextResponse> {
   const supabase = await createClient()
@@ -74,7 +74,7 @@ export async function POST(request: Request): Promise<NextResponse> {
     .eq('user_id', user.id)
     .order('updated_at', { ascending: true })
   if (readError) {
-    if (NOT_MIGRATED.has(readError.code ?? '')) return NextResponse.json({ error: 'push_unavailable' }, { status: 503 })
+    if (isNotMigrated(readError)) return NextResponse.json({ error: 'push_unavailable' }, { status: 503 })
     log.error('No se pudieron leer las suscripciones', { code: readError.code })
     return NextResponse.json({ error: 'Failed to save subscription' }, { status: 500 })
   }
@@ -115,7 +115,7 @@ export async function POST(request: Request): Promise<NextResponse> {
     { onConflict: 'endpoint' },
   )
   if (error) {
-    if (NOT_MIGRATED.has(error.code ?? '')) return NextResponse.json({ error: 'push_unavailable' }, { status: 503 })
+    if (isNotMigrated(error)) return NextResponse.json({ error: 'push_unavailable' }, { status: 503 })
     if (error.code === '42501') return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
     log.error('No se pudo guardar la suscripción', { code: error.code })
     return NextResponse.json({ error: 'Failed to save subscription' }, { status: 500 })

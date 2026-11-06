@@ -94,11 +94,6 @@ describe('/api/email/unsubscribe', () => {
     expect(h.adminRpc).not.toHaveBeenCalled()
   })
 
-  it('sin la migración: como dado de baja (nadie puede estar apuntado)', async () => {
-    h.adminRpc.mockResolvedValue({ data: null, error: { code: 'PGRST202' } })
-    expect((await post('List-Unsubscribe=One-Click', `?t=${token()}`)).status).toBe(200)
-  })
-
   it('base caída: 500 en 1 clic; en la página, error con opción de reintentar', async () => {
     h.adminRpc.mockResolvedValue({ data: null, error: { code: '57014' } })
     const t = token()

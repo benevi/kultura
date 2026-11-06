@@ -1,8 +1,7 @@
 // ============================================================
 // KULTURA — Preferencias del correo semanal (F-28) · solo servidor
 // Lectura con la sesión de la persona (RLS: solo su fila) y escritura por las
-// funciones de la migración 20261215280001_calendar_email.sql. Sin la
-// migración aplicada todo devuelve "no disponible" y nada se rompe.
+// funciones de la migración 20261215280001_calendar_email.sql.
 //
 // Doble opt-in: el alta se pide desde Ajustes (`requestWeeklyOptin` apunta la
 // hora y se envía el enlace "optin" a la dirección de la cuenta) y solo se
@@ -12,13 +11,6 @@
 
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { WEEKLY_EMAIL_CONSENT_VERSION } from './consent'
-
-/** "Aún no existe" (tabla, columna, función o caché de esquema de PostgREST). */
-const NOT_MIGRATED = new Set(['42P01', '42703', '42883', 'PGRST202', 'PGRST204', 'PGRST205'])
-
-export function isEmailNotMigrated(error: { code?: string | null } | null | undefined): boolean {
-  return !!error && NOT_MIGRATED.has(error.code ?? '')
-}
 
 /** Entre dos enlaces de confirmación a la misma persona (que no se use para llenarle el buzón). */
 export const OPTIN_COOLDOWN_MS = 10 * 60_000
@@ -33,7 +25,7 @@ export interface WeeklyEmailPreference {
   confirmedEmailHash: string | null
 }
 
-/** La preferencia de la persona; `null` si la tabla aún no existe o falla la lectura. */
+/** La preferencia de la persona; `null` si falla la lectura. */
 export async function readWeeklyEmailPreference(
   supabase: Pick<SupabaseClient, 'from'>,
   userId: string
@@ -62,7 +54,7 @@ export async function readWeeklyEmailPreference(
 
 export type SetWeeklyResult =
   | { ok: true; preference: Omit<WeeklyEmailPreference, 'optinRequestedAt' | 'confirmedEmailHash'> }
-  | { ok: false; reason: 'not_migrated' | 'forbidden' | 'error' }
+  | { ok: false; reason: 'forbidden' | 'error' }
 
 /**
  * Baja con la sesión de la persona (`set_email_weekly(false)`, registra la
@@ -78,7 +70,6 @@ export async function setWeeklyEmail(
     p_source: 'settings',
   })
   if (error) {
-    if (isEmailNotMigrated(error)) return { ok: false, reason: 'not_migrated' }
     if (error.code === '42501') return { ok: false, reason: 'forbidden' }
     return { ok: false, reason: 'error' }
   }
@@ -95,7 +86,7 @@ export async function setWeeklyEmail(
   }
 }
 
-export type OptinClaim = 'ok' | 'cooldown' | 'user_cap' | 'global_cap' | 'not_migrated' | 'error'
+export type OptinClaim = 'ok' | 'cooldown' | 'user_cap' | 'global_cap' | 'error'
 
 /**
  * Reserva el envío de un enlace de confirmación con los topes en la base
@@ -115,13 +106,13 @@ export async function claimWeeklyOptin(
     p_global_daily: caps.globalDaily,
     p_cooldown: `${minutes} minutes`,
   })
-  if (error) return isEmailNotMigrated(error) ? 'not_migrated' : 'error'
+  if (error) return 'error'
   return data === 'ok' || data === 'cooldown' || data === 'user_cap' || data === 'global_cap' ? data : 'error'
 }
 
 export type ConfirmResult =
   | { ok: true; status: 'ok' | 'unchanged' | 'superseded' }
-  | { ok: false; reason: 'not_migrated' | 'error' }
+  | { ok: false; reason: 'error' }
 
 /**
  * Alta confirmada desde el enlace "optin" ya verificado: aquí se registra el
@@ -141,7 +132,7 @@ export async function confirmWeeklyOptin(
     p_email_hash: emailHash,
     p_issued_at: issuedAt.toISOString(),
   })
-  if (error) return { ok: false, reason: isEmailNotMigrated(error) ? 'not_migrated' : 'error' }
+  if (error) return { ok: false, reason: 'error' }
   return data === 'ok' || data === 'unchanged' || data === 'superseded'
     ? { ok: true, status: data }
     : { ok: false, reason: 'error' }
@@ -154,7 +145,7 @@ export async function requireWeeklyReconfirm(admin: Pick<SupabaseClient, 'rpc'>,
   return data === true
 }
 
-export type UnsubscribeResult = { ok: true; changed: boolean } | { ok: false; reason: 'not_migrated' | 'error' }
+export type UnsubscribeResult = { ok: true; changed: boolean } | { ok: false; reason: 'error' }
 
 /** Baja sin sesión (enlace firmado ya verificado). Idempotente. Cliente admin. */
 export async function unsubscribeWeekly(
@@ -163,6 +154,6 @@ export async function unsubscribeWeekly(
   source: 'unsubscribe_page' | 'one_click'
 ): Promise<UnsubscribeResult> {
   const { data, error } = await admin.rpc('email_unsubscribe', { p_user: userId, p_source: source })
-  if (error) return { ok: false, reason: isEmailNotMigrated(error) ? 'not_migrated' : 'error' }
+  if (error) return { ok: false, reason: 'error' }
   return { ok: true, changed: data === true }
 }

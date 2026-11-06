@@ -168,12 +168,6 @@ describe('antes de la migración (o sin PROGRESS_V2): solo episodios, en el json
     expect(updates).toHaveLength(0)
   })
 
-  it('con PROGRESS_V2 pero sin columnas en la fila, sigue en el jsonb', async () => {
-    vi.stubEnv('PROGRESS_V2', '1')
-    entry = legacyTv({ season: 2, episode: 2 })
-    await post({ mediaId: 'tv_1399', action: 'next' })
-    expect(updates[0]).toEqual({ episode_progress: { season: 2, episode: 3 } })
-  })
 })
 
 describe('después de la migración con PROGRESS_V2', () => {
@@ -215,14 +209,6 @@ describe('después de la migración con PROGRESS_V2', () => {
     expect(updates[0]).toEqual({ ...COLUMNS, progress_hours: 13.5, progress_total: 22 })
   })
 
-  it('si la base dice que faltan las columnas (PGRST204), reintenta en el jsonb', async () => {
-    entry = migratedTv(1, 1)
-    updateResults = [{ data: null, error: { code: 'PGRST204' } }]
-    const { status } = await post({ mediaId: 'tv_1399', action: 'next' })
-    expect(status).toBe(200)
-    expect(updates[1]).toEqual({ episode_progress: { season: 1, episode: 2 } })
-  })
-
   it('otro error de base es un 500 (la interfaz revierte)', async () => {
     entry = migratedTv(1, 1)
     updateResults = [{ data: null, error: { code: '23514', message: 'check' } }]
@@ -252,13 +238,6 @@ describe('completar', () => {
     expect(json.log).toMatchObject({ id: 'l1' })
   })
 
-  it('diario sin su migración: completa igual y no avisa de fallo', async () => {
-    vi.stubEnv('RATING_SCALE_10', '1')
-    entry = migratedTv(8, 6)
-    logResult = { data: null, error: { code: '42P01' } }
-    const { json } = await post({ mediaId: 'tv_1399', action: 'complete', log: true })
-    expect(json.logFailed).toBeUndefined()
-  })
 })
 
 describe('GET: estado y plan para el diálogo', () => {
@@ -281,12 +260,10 @@ describe('GET: estado y plan para el diálogo', () => {
     expect(probes).toBe(0)
   })
 
-  it('enabled solo con PROGRESS_V2 y las columnas (sonda si el título no está)', async () => {
+  it('enabled con PROGRESS_V2 aunque el título no esté en la biblioteca', async () => {
     vi.stubEnv('PROGRESS_V2', '1')
     entry = null
     expect((await get('book_OL1W')).json.enabled).toBe(true)
-    probeError = { code: '42703' }
-    expect((await get('book_OL1W')).json.enabled).toBe(false)
   })
 
   it('película: sin progreso', async () => {

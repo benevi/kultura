@@ -124,15 +124,6 @@ describe("getAdaptations", () => {
     expect(ADAPTATIONS_TTL.not_found).toBe(7 * 86_400);
   });
 
-  it("sin la tabla (42P01) → caché de datos de Next con la TTL de 'ok' y sin escribir", async () => {
-    h.db.failures.media_adaptations = { code: "42P01", message: 'relation "media_adaptations" does not exist' };
-    h.runSparql.mockResolvedValue(rows({ ol: "OL893415W" }));
-    const res = await getAdaptations({ ...DUNE, id: "movie_438631", externalId: "438631" });
-    expect(res.links).toHaveLength(1);
-    expect(h.runSparql).toHaveBeenCalledWith(expect.any(String), { cache: { revalidate: ADAPTATIONS_TTL.ok } });
-    expect(h.db.writes).toEqual([]);
-  });
-
   it("fila caducada y Wikidata caído → la caducada (mejor vieja que nada)", async () => {
     h.db.tables.media_adaptations = [
       {

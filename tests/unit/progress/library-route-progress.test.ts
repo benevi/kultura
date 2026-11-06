@@ -119,30 +119,4 @@ describe('con PROGRESS_V2', () => {
     expect(upserts).toHaveLength(0)
   })
 
-  it('sin la migración (PGRST204): vuelve a escribir episode_progress, como antes', async () => {
-    upsertResults.push({ data: null, error: { code: 'PGRST204' } })
-    const { status } = await call({ mediaId: 'tv_1399', status: 'in_progress', progress: { season: 1, episode: 5 } })
-    expect(status).toBe(200)
-    expect(upserts[1]).toMatchObject({ episode_progress: { season: 1, episode: 5 } })
-    expect(upserts[1]).not.toHaveProperty('progress_episode')
-  })
-
-  it('las dos banderas sin ninguna migración: termina en la fila de siempre', async () => {
-    vi.stubEnv('RATING_SCALE_10', '1')
-    upsertResults.push({ data: null, error: { code: 'PGRST204' } }, { data: null, error: { code: 'PGRST204' } })
-    const { status } = await call({ mediaId: 'tv_1399', status: 'in_progress', score: 4, progress: { episode: 2 } })
-    expect(status).toBe(200)
-    expect(upserts).toHaveLength(3)
-    expect(upserts[2]).not.toHaveProperty('rating10')
-    expect(upserts[2]).not.toHaveProperty('progress_episode')
-    expect(upserts[2].episode_progress).toEqual({ episode: 2 })
-  })
-
-  it('con la de notas aplicada y sin la de progreso: conserva rating10', async () => {
-    vi.stubEnv('RATING_SCALE_10', '1')
-    upsertResults.push({ data: null, error: { code: 'PGRST204' } })
-    await call({ mediaId: 'tv_1399', status: 'in_progress', rating10: 9, progress: { episode: 2 } })
-    expect(upserts[1]).toMatchObject({ rating10: 9, episode_progress: { episode: 2 } })
-    expect(upserts[1]).not.toHaveProperty('progress_episode')
-  })
 })

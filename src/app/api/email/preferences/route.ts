@@ -67,7 +67,6 @@ export async function PUT(request: Request): Promise<NextResponse> {
   if (!body.weekly) {
     const result = await setWeeklyEmail(supabase, false)
     if (!result.ok) {
-      if (result.reason === 'not_migrated') return NextResponse.json({ error: 'not_available' }, { status: 503 })
       if (result.reason === 'forbidden') return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
       log.error('No se pudo guardar la baja del correo')
       return NextResponse.json({ error: 'Failed to save preference' }, { status: 500 })
@@ -119,8 +118,6 @@ export async function PUT(request: Request): Promise<NextResponse> {
       return NextResponse.json({ error: 'daily_limit' }, { status: 429, headers: { 'Retry-After': '86400' } })
     case 'global_cap':
       return NextResponse.json({ error: 'busy' }, { status: 503, headers: { 'Retry-After': '3600' } })
-    case 'not_migrated':
-      return NextResponse.json({ error: 'not_available' }, { status: 503 })
     case 'send_failed':
       log.error('No se pudo enviar el correo de confirmación')
       return NextResponse.json({ error: 'send_failed' }, { status: 502 })

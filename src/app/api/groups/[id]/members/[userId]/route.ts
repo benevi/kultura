@@ -9,7 +9,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { checkRateLimit, LIMITS } from '@/lib/rate-limit'
 import { createLogger } from '@/lib/logger'
-import { isModerationV2, isNotMigratedError } from '@/lib/social/friends'
+import { isModerationV2 } from '@/lib/social/friends'
 import { getMemberRole } from '@/lib/social/groups'
 
 const log = createLogger('api/groups/members')
@@ -50,7 +50,7 @@ export async function DELETE(_req: NextRequest, { params }: RouteParams): Promis
       { group_id: groupId, user_id: targetId, banned_by: user.id },
       { onConflict: 'group_id,user_id', ignoreDuplicates: true },
     )
-  if (banError && !isNotMigratedError(banError)) {
+  if (banError) {
     log.error('group ban failed', { err: banError })
     return NextResponse.json({ error: 'remove_failed' }, { status: 500 })
   }

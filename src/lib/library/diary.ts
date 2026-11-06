@@ -7,15 +7,13 @@
 // colgado de la entrada de biblioteca: quitar el título borra su diario.
 //
 // Las funciones reciben el cliente de Supabase de quien llama (el de la
-// sesión) y nunca lanzan por una tabla que aún no existe: devuelven
-// `migrated: false` para que la pantalla se quede como antes.
+// sesión).
 // ============================================================
 
 import type { SupabaseClient } from '@supabase/supabase-js'
 import type { DbUserMediaLog, DbMedia } from '@/types/supabase'
 import type { DiaryLog, DiaryLogInput } from '@/types/library'
 import { isValidRating10 } from './rating'
-import { isNotMigrated } from './scale'
 
 export const REVIEW_MAX = 5000
 export const PRIVATE_NOTE_MAX = 2000
@@ -106,7 +104,8 @@ export function mapLog(row: LogRow): DiaryLog {
 
 const LOG_COLUMNS = 'id, user_id, media_id, watched_on, rewatch, rating10, review, spoiler, private_note, created_at, updated_at'
 
-export type DiaryRead = { migrated: true; logs: DiaryLog[] } | { migrated: false; logs: [] }
+/** `migrated` siempre es `true`: se conserva porque lo lee la UI vieja (`(app)/library/page.tsx`). */
+export type DiaryRead = { migrated: true; logs: DiaryLog[] }
 
 /**
  * El diario de una persona, del más reciente al más antiguo (fecha y, a igual
@@ -126,9 +125,6 @@ export async function readDiary(
     .order('watched_on', { ascending: false })
     .order('created_at', { ascending: false })
     .limit(options.limit ?? DIARY_PAGE)
-  if (error) {
-    if (isNotMigrated(error)) return { migrated: false, logs: [] }
-    throw new Error(`Failed to read diary: ${error.message}`)
-  }
+  if (error) throw new Error(`Failed to read diary: ${error.message}`)
   return { migrated: true, logs: ((data ?? []) as unknown as LogRow[]).map(mapLog) }
 }
