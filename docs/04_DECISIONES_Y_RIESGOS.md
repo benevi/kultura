@@ -31,6 +31,12 @@ Registro de las decisiones de Víctor sobre `docs/PLAN_ESTRATEGICO.md` §12 y de
 |---|---|---|---|
 | D-R1 | ¿Suelo de votos en los rankings de la portada o retirar el bloque hasta v2.0? | **Retirar el bloque** (opción recomendada, elegida por Víctor entre 3: retirar / tarjetas sin nota / suelo de 2.000 votos) | Votos del proveedor, consulta GET del 2026-11-06, criterio de `selectTmdb` (año 2026, nota ≥ 7, media ponderada m=500 C=6,5). **Series**: con un suelo de 1.000 votos quedan 2 títulos y el líder sigue siendo «Así aprenderás» (9,4, 1.012 votos); con 2.000 no queda ninguno. **Cine**: el respaldo «Batman: El ocaso…» tiene 9,1 con 503 votos; el líder de hoy es «Proyecto Salvación» (8,6, 8.702). **Anime**: «Re:ZERO S4» (9,0, 45.954 notas de AniList; el mínimo del top 60 es 1.589). **Juegos**: sin medir, porque RAWG respondía 522. En `kultura-test`, `landing_media` tiene 0 filas y `user_media` solo 3 notas (máx. 1 por título): los votos propios no sirven para un ranking. Un suelo no arregla las series. Consecuencias: la portada deja de enlazar a `/best`; desde fuera de `/best` solo llegan el sitemap (`sitemap.ts:145-158`) y la miga de pan de las fichas (`media/[type]/[id]/page.tsx:186`), porque `BestNav` solo se ve dentro de `/best`. Un enlace en el pie de la portada queda para el brief de Inicio v2. Además, el hueco `ranking` de `landing_media` se sigue calculando porque `build.py:484` lo exige para activar una semana. |
 
+## 1d. Protección de `master` (2026-11-06, a petición de Víctor)
+
+| # | Decisión | Detalle | Consecuencia |
+|---|---|---|---|
+| D-G1 | `master` exige 4 checks antes de fusionar (cierra el M10 de la revisión del PR #70) | Obligatorios: «Lint, typecheck, test, build», «Accesibilidad (axe, teclado, reflow y diálogos)», «Rendimiento (Lighthouse CI con presupuesto)» y «CUJ con BD real (Playwright + Supabase local)». Los 4 corren en todo PR a `master` (`ci.yml`, sin filtro de rutas). «Integración» no es obligatorio, porque solo corre a mano o programado. Sin `strict`, sin revisiones obligatorias y `enforce_admins: false` (Víctor puede saltársela). Se activa además `allow_auto_merge` en el repositorio. | El auto-merge con squash (con el OK de Víctor, regla de Git) fusiona solo con los 4 checks en verde; el #74 fue el primero. Si se renombra un job en `ci.yml`, hay que actualizar la protección, o los PR se quedan bloqueados esperando un check que no existe. |
+
 ## 2. Riesgos derivados de estas respuestas
 
 | ID | Riesgo | Origen | Impacto | Mitigación / disparador |

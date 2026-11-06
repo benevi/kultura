@@ -1,6 +1,6 @@
 # HANDOVER — última sesión (2026-11-06)
 
-**Fase:** F0 (`PLAN_ESTRATEGICO.md` §7.3). **Rama:** `feat/f0-portada-sin-rankings` (PR abierto, sin merge).
+**Fase:** F0 (`PLAN_ESTRATEGICO.md` §7.3). **Rama:** `master` (PR #74 fusionado con squash, `93646a7`).
 
 ## Hecho en esta sesión
 - Entregable: **credibilidad inmediata de la portada**, el último punto de Claude en F0. Víctor elige **retirar el bloque de rankings hasta v2.0** (`04_DECISIONES` D-R1), entre 3 opciones: retirar, tarjetas sin nota o un suelo de 2.000 votos.
@@ -12,7 +12,7 @@
 ## Verificación
 - `tsc` y `next lint` limpios. `vitest` en Windows: los mismos 16 fallos conocidos y ninguno nuevo.
 - Lighthouse local en `/es` (build nuevo, `next start`): JS 149,8 KB (≤ 150 KB, justo, como ya estaba), CLS 0. El cambio no añade JS de cliente. La comparación buena es la del job de CI.
-- Revisión independiente: ver `04_DECISIONES` §4. CI (`cuj`, Lighthouse, axe): ver el PR.
+- Revisión independiente: ver `04_DECISIONES` §4. CI del #74: lint, `cuj`, Lighthouse y axe en verde.
 
 ## Pendiente / ojo
 - Con esto se cierra la parte de Claude en F0. Lo que queda es de Víctor: Analytics con un evento de prueba, el dominio (D3), el simulacro de restauración y R9 (el historial de migraciones de producción).
@@ -20,4 +20,5 @@
 - `build.py` sigue procesando 4 imágenes de ranking cada semana que ya no se pintan. Revisarlo cuando Inicio v2 decida si vuelven.
 - Había un `next start` viejo escuchando en el puerto 3187 (sirve la portada con rankings). No se tocó. Para medir en local se usó el 3191.
 - R9: no ejecutar `supabase db push` contra producción.
-- Squash-merge: solo con OK de Víctor.
+- `master` protegida: exige 4 checks y se permite el auto-merge (`04_DECISIONES` D-G1). Si se renombra un job de `ci.yml`, hay que actualizar la protección.
+- Squash-merge: solo con OK de Víctor (con su OK, auto-merge en verde).
