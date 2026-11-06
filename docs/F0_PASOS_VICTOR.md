@@ -15,6 +15,7 @@ El código ya está: `src/components/analytics/VercelAnalytics.tsx` (páginas
 vistas, sin cookies) y `src/lib/analytics/track.ts` (eventos de usuarios
 registrados en `analytics_events`).
 
+0. Antes, fusionar el PR #77 (Speed Insights necesita el paquete `@vercel/speed-insights` en la app).
 1. Vercel → proyecto `kultura` → **Analytics** → *Enable* Web Analytics.
 2. Vercel → `kultura` → **Speed Insights** → *Enable*.
 3. Redesplegar producción (Deployments → último → *Redeploy*) para que el
@@ -42,7 +43,7 @@ no escribe sin ella y no da error).
 ## 2. R9 — reparar el historial de migraciones de producción (≈ 15 min)
 
 Producción tiene aplicadas 29 de 31 migraciones, pero su historial solo
-registra 7. Mientras no se repare, **nunca** ejecutes `supabase db push`
+registra 7 (comprobado de nuevo el 2026-11-06 con `list_migrations`: la última es `20260520000001`). Mientras no se repare, **nunca** ejecutes `supabase db push`
 contra producción: intentaría reaplicar 24 migraciones.
 
 ```bash
