@@ -15,7 +15,6 @@ Convenciones: las rutas de pantalla son relativas a `src/app/[locale]/`; las de 
 |---|---|---|---|
 | `login/page.tsx` | `/es/login` | — | `LoginPage`, `AuthShell`, `PasswordField`, `TermsCheckbox`, `in-app-browser.ts`, `supabase-lazy.ts`, `opengraph-image` |
 | `reset-password/page.tsx` | `/es/reset-password` | — | `ResetPasswordForm` (reutiliza `AuthShell`, `PasswordField`, `supabase-lazy` de `login/`) |
-| `email/confirm/page.tsx` | `/es/email/confirm` | — | confirmación de consentimiento del correo semanal (doble opt-in) **(no verificado: puede pertenecer al flujo de correo semanal, aparcado)** |
 
 - **API:** `auth/callback`, `auth/demo`, `settings` (identidad: importa `@/app/api/settings/identity` directamente).
 - **lib:** `utils/auth-errors`, `utils/safe-redirect`, `analytics/attribution`, `push/client`, `demo`.
@@ -44,7 +43,7 @@ Convenciones: las rutas de pantalla son relativas a `src/app/[locale]/`; las de 
 - **Componentes:** `home/HeroSection`, `home/ContinueRow`, `home/AiRecommendations`, `home/PopularInCircle`, `home/GenreNews`.
 - **Textos:** `home`, `aiRecommendations`, `popularInCircle`, `genreNews`.
 - **Rescate:** `tonight.ts` → `src/lib/`.
-- **Nota:** `popular-in-circle` y `genre-news` dependen del círculo social; decidir si v2.0 los mantiene en Inicio **(decisión pendiente)**.
+- **Nota:** «Popular en tu círculo» y «Noticias por género» (`(app)/home/page.tsx:197-198`) quedan como **candidatos**: el brief de Inicio en F2 decide si entran (D-I2).
 
 ### F3-4 · Buscar (Descubrir)
 | Pantalla | URL | Estados | Piezas propias |
@@ -87,8 +86,9 @@ Convenciones: las rutas de pantalla son relativas a `src/app/[locale]/`; las de 
 | `(app)/profile/[username]/page.tsx` | `/es/profile/victor` | `loading`, `error` | — (perfil dentro de la app) |
 | `u/[username]/page.tsx` | `/es/u/victor` | — | perfil público indexable, `opengraph-image` |
 | `u/[username]/r/[type]/[id]/page.tsx` | `/es/u/victor/r/movie/550` | — | nota compartible («le da 9/10»), `card/[sig]`, `opengraph-image`, `_lib/rating-share.ts`, `_lib/top-four.ts` |
+| `(app)/friends/page.tsx` | `/es/friends` | `error` | `FriendsClient`. **Versión mínima en v2.0 (D-I1):** lista de amigos, solicitudes y buscar usuario; bloqueos y chat fuera |
 
-- **API:** `settings` (bio), `friends` (botón de amistad).
+- **API:** `settings` (bio), `friends`, `users/search` (búsqueda de usuarios en la pantalla de amigos).
 - **lib:** `social/public-collection`, `social/friends`, `library/stats`, `analytics/invite`, `analytics/attribution`, `media/media-id`.
 - **Componentes:** `profile/ProfileHeader`, `ProfileStats`, `ProfileGenres`, `ProfileBio`, `collection/PublicCollection`, `collection/InviteLinkButton`, `social/ShareLinkButton`.
 - **Textos:** `profile`, `invite`, `collection`, `share`.
@@ -186,15 +186,15 @@ Convenciones: las rutas de pantalla son relativas a `src/app/[locale]/`; las de 
 | `(app)/groups/page.tsx` | `/es/groups` | grupos → v2.1 | `groups`, `groups/discover` |
 | `(app)/groups/[id]/page.tsx` | `/es/groups/<id>` | grupos → v2.1 | `groups/[id]/join`, `groups/[id]/invitations`, `groups/[id]/members/[userId]`, `groups/[id]/posts/[postId]`, `groups/invitations/[invitationId]` |
 | `(app)/notifications/page.tsx` | `/es/notifications` | notificaciones → v2.1 | `notifications` |
-| `(app)/suggestions/page.tsx` | `/es/suggestions` | buzón de sugerencias al equipo **(no verificado: Anexo A dice «sugerencias a amigos»; este es el formulario de sugerencias a KULTURA)** | `suggestions` |
-| `(app)/friends/page.tsx` | `/es/friends` | amistades: no listadas en v2.0 | `friends`, `friends/blocks`, `users/search` |
+| `email/confirm/page.tsx` | `/es/email/confirm` | correo semanal → v2.1: doble opt-in (`email/confirm/page.tsx:2`); sigue funcionando con la UI vieja (D-I4) | `email/confirm` |
 | `email/unsubscribe/page.tsx` | `/es/email/unsubscribe` | correo semanal → v2.1 (pero la baja en 1 clic debe seguir funcionando: obligación legal) | `email/unsubscribe` |
 
 ## 3. Transversales / sin flujo propio (se mantienen, se re-estilizan con el sistema final)
 
 | Pantalla | URL | Qué es |
 |---|---|---|
-| `report/page.tsx` | `/es/report` | denuncia pública (moderación; `reports`, `reports/public`). Requisito legal (DSA) **(no verificado)**: no puede desaparecer. |
+| `report/page.tsx` | `/es/report` | denuncia sin cuenta, DSA art. 16 (`report/page.tsx:2`; `reports`, `reports/public`). Obligatoria: se mantiene en v2.0 (D-I5). |
+| `(app)/suggestions/page.tsx` | `/es/suggestions` | buzón de sugerencias a KULTURA (enlazado en `layout/AppFooter.tsx:37` y `layout/AvatarDropdown.tsx:60`); canal de feedback para F4/F5 (D-I3). No son las «sugerencias a amigos» del Anexo A (v2.1). |
 | `offline/page.tsx` | `/es/offline` | página sin conexión de la PWA. |
 | `[...rest]/page.tsx` | cualquier ruta desconocida | `notFound()`; usa `not-found.tsx` raíz. |
 
@@ -230,7 +230,7 @@ El «dueño» es el flujo que la rehace o la consume primero; otras pantallas pu
 | `/api/account/import` | F3-10 | `ImportClient`, settings |
 | `/api/account/import/external` | F3-10 | `ImportClient` |
 | `/api/email/preferences` | F3-11 | `SettingsForm` |
-| `/api/email/confirm` | F3-1 | email/confirm |
+| `/api/email/confirm` | v2.1 | email/confirm |
 | `/api/landing/sources` | F3-13 | sin llamador directo (no verificado) |
 | `/api/chat` | v2.1 | chat, `UnreadChatProvider`, `lib/social/actions` |
 | `/api/chat/[id]` | v2.1 | `ConversationClient`, `lib/social/actions` |
@@ -243,9 +243,9 @@ El «dueño» es el flujo que la rehace o la consume primero; otras pantallas pu
 | `/api/groups/[id]/posts/[postId]` | v2.1 | `lib/social/actions` |
 | `/api/groups/invitations/[invitationId]` | v2.1 | `NotificationsList` |
 | `/api/notifications` | v2.1 | sin llamador por cadena; consumo vía `lib/social/notifications` **(no verificado)** |
-| `/api/friends/blocks` | v2.1 | `lib/social/actions` |
-| `/api/users/search` | v2.1 | `FriendsClient` |
-| `/api/suggestions` | v2.1 | `SuggestionsForm` |
+| `/api/friends/blocks` | v2.1 | `lib/social/actions` (bloqueos fuera de la pantalla mínima, D-I1) |
+| `/api/users/search` | F3-7 | `FriendsClient` |
+| `/api/suggestions` | transversal | `SuggestionsForm` |
 | `/api/email/unsubscribe` | v2.1 | email/unsubscribe, `lib/email/digest` |
 | `/api/push/status` | v2.1 | `lib/push/client`, `lib/push/offer` |
 | `/api/push/subscribe` | v2.1 | `lib/push/client` |
@@ -297,10 +297,12 @@ e2e con BD real existentes (`tests/e2e/b3_5e_safety_net/`): `discover-filters`, 
 
 20 archivos con `isNotMigrated` (limpieza de F0, §7.5): 14 en `src/app/api/` (`account/export/letterboxd`, `account/import`, `cron/daily/purge`, `friends/blocks`, `groups/[id]/members/[userId]`, `library/diary`, `library/progress`, `library`, `lists`, `lists/shared`, `lists/[id]`, `reports/public`, `settings/account-state`, `settings`), 5 en `src/lib/` (`import/server/process-batch`, `library/diary`, `library/progress-server`, `library/scale`, `social/friends`) y 1 en UI (`(app)/profile/[username]/page.tsx`, se va con la UI vieja).
 
-## 8. Dudas abiertas (decidir con Víctor)
+## 8. Dudas del inventario (resueltas el 2026-11-06)
 
-1. `email/confirm`: ¿flujo 1 (alta) o correo semanal (v2.1)? El código lo trata como confirmación de consentimiento del correo.
-2. `friends`: Anexo A no lo cita en v2.0, pero el perfil público e invitación (F3-7) usa amistades. ¿Pantalla de amigos mínima en v2.0 o solo el botón?
-3. Inicio: ¿se mantienen «popular en tu círculo» y «noticias por género» (dependen de lo social)?
-4. `suggestions`: el Anexo A habla de «sugerencias a amigos» (v2.1); la pantalla actual es el buzón de sugerencias a KULTURA. ¿Se queda como transversal?
-5. `report`: confirmar si es obligación legal (DSA) para mantenerlo en v2.0.
+Registradas en `04_DECISIONES_Y_RIESGOS.md` §1b (D-I1 … D-I5).
+
+1. `friends` → versión mínima dentro de F3-7 (D-I1).
+2. Inicio: bloques sociales y de noticias como candidatos; decide el brief de F2 (D-I2).
+3. `suggestions` → transversal v2.0 (D-I3).
+4. `email/confirm` → aparcado v2.1, sigue con la UI vieja (D-I4).
+5. `report` → transversal v2.0, obligación DSA art. 16 según el código (D-I5).

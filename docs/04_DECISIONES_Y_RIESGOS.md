@@ -15,6 +15,16 @@ Registro de las decisiones de Víctor sobre `docs/PLAN_ESTRATEGICO.md` §12 y de
 | D7 | Proceso de prototipos | **Acepta**: style tiles y 1.ª pantalla en HTML; desde la 2.ª, directamente en rama `v2/<pantalla>` sobre preview de Vercel | Sustituye la regla del 4/11. Nada llega a producción sin un «sí» escrito de Víctor. |
 | D8 | Fuente de verdad | **Sí**: proyecto nuevo «KULTURA 2.0» en claude.ai + `docs/` del repo como fuente única | El proyecto de claude.ai enlaza a `docs/`, no duplica. Los 74 handovers se archivan. |
 
+## 1b. Decisiones del inventario `FUNCIONES_V2.md` (2026-11-06)
+
+| # | Duda | Decisión | Evidencia / consecuencia |
+|---|---|---|---|
+| D-I1 | `/friends` no está en el Anexo A, pero perfil, «Popular en tu círculo» y Recomendar dependen de amistades | **Pantalla mínima dentro de F3-7**: amigos, solicitudes, buscar usuario | Bloqueos (`/api/friends/blocks`) y chat siguen en v2.1. F3-7 crece: revisar horas al planificarlo. |
+| D-I2 | ¿«Popular en tu círculo» y «Noticias por género» en Inicio v2.0? | **Lo decide el brief de Inicio en F2** | `(app)/home/page.tsx:197-198`. Quedan como candidatos, no compromisos. |
+| D-I3 | `/suggestions` (buzón a KULTURA, no «sugerencias a amigos») | **Transversal v2.0** | Enlazado en `layout/AppFooter.tsx:37` y `AvatarDropdown.tsx:60`; canal de feedback para F4/F5. |
+| D-I4 | `/email/confirm` | **Aparcado v2.1**, sigue funcionando con la UI vieja | Es el doble opt-in del correo semanal (`email/confirm/page.tsx:2`). No se borra. |
+| D-I5 | `/report` | **Transversal v2.0, obligatorio** | Denuncia sin cuenta, DSA art. 16 (`report/page.tsx:2`, `api/reports/public/route.ts:3`). Resuelta con el código, sin pregunta. |
+
 ## 2. Riesgos derivados de estas respuestas
 
 | ID | Riesgo | Origen | Impacto | Mitigación / disparador |
