@@ -38,7 +38,7 @@ vi.mock("next/navigation", () => ({
 // ---------------------------------------------------------------------------
 
 import { LoginPage } from "@/app/[locale]/login/LoginPage";
-import { TERMS_VERSION } from "@/app/api/settings/identity";
+import { TERMS_VERSION } from "@/lib/account/identity";
 
 function fillAndSubmit(email: string, password: string, { terms = true } = {}) {
   fireEvent.change(screen.getByLabelText("email"), { target: { value: email } });

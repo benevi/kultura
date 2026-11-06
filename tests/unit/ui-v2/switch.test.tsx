@@ -30,7 +30,7 @@ vi.mock("@/lib/social/lists", () => ({
     { id: "l1", ownerId: "u1", name: "Pelis de domingo", mediaType: "movie", isCollaborative: false, isPublic: false, createdAt: "2026-11-01" },
   ],
 }));
-vi.mock("@/app/api/lists/shared", () => ({ mixedListsEnabled: () => false }));
+vi.mock("@/lib/social/lists-shared", () => ({ mixedListsEnabled: () => false }));
 vi.mock("@/app/[locale]/(app)/lists/ListsClient", () => ({
   ListsClient: () => <div data-testid="ui-v1" />,
 }));

@@ -36,7 +36,7 @@ vi.mock('@/components/home/AiRecommendations', () => ({
 }))
 
 import { WelcomeFlow } from '@/app/[locale]/welcome/WelcomeFlow'
-import { STARTER_MIN_RATINGS, STARTER_RATE_COUNT, STARTER_TITLES, pickStarterTitles } from '@/app/[locale]/welcome/starter-titles'
+import { STARTER_MIN_RATINGS, STARTER_RATE_COUNT, STARTER_TITLES, pickStarterTitles } from '@/lib/recommendations/starter-titles'
 import { MIN_LIBRARY_ITEMS } from '@/lib/claude/recommendations'
 
 const ok = () => new Response(JSON.stringify({ success: true }), { status: 200 })

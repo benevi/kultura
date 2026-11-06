@@ -6,7 +6,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import { getUserLists } from '@/lib/social/lists'
-import { mixedListsEnabled } from '@/app/api/lists/shared'
+import { mixedListsEnabled } from '@/lib/social/lists-shared'
 import { ListsClient } from './ListsClient'
 import { isUiV2Enabled } from '@/lib/ui-v2'
 import { ListsScreen } from '@/v2/lists/ListsScreen'

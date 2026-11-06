@@ -1,33 +1,19 @@
 'use client'
 
-import { useRef, useState } from 'react'
 import { PageHeading } from '@/components/layout/PageHeading'
 import { IconSettings } from '@/components/icons'
 import { useTranslations, useLocale } from 'next-intl'
-import { useRouter, usePathname } from 'next/navigation'
 import { KButton } from '@/components/ui/KButton'
 import { KInput } from '@/components/ui/KInput'
 import { ConfirmModal } from '@/components/ui/ConfirmModal'
-import { useToastContext } from '@/components/ui/ToastProvider'
-import { AVATAR_COLORS, isValidAvatarColor } from '@/lib/constants/avatarColors'
+import { AVATAR_COLORS } from '@/lib/constants/avatarColors'
 import { AvatarIconPicker } from '@/components/ui/AvatarIconPicker'
 import { useRadioGroupKeys } from '@/components/ui/useRadioGroupKeys'
 import { SegmentedControl } from '@/components/ui/SegmentedControl'
-import { saveRatingScale } from '@/lib/library/actions'
-import { WEEKLY_EMAIL_CONSENT_VERSION } from '@/lib/email/consent'
-import { unsubscribeCurrentDevice, usePushSettings } from '@/lib/push/client'
-import { isRatingScale, type RatingScale } from '@/types/library'
-import type { AvatarColorName } from '@/lib/constants/avatarColors'
+import type { RatingScale } from '@/types/library'
 import { cn } from '@/lib/utils/index'
-import { createClient } from '@/lib/supabase/client'
-import { getAuthErrorKeyFromError } from '@/lib/utils/auth-errors'
-import {
-  LIBRARY_VISIBILITIES,
-  USERNAME_REGEX,
-  isReservedUsername,
-  purgeDate,
-  type LibraryVisibility,
-} from '@/app/api/settings/identity'
+import { LIBRARY_VISIBILITIES, purgeDate, type LibraryVisibility } from '@/lib/account/identity'
+import { useAccountSettings } from '@/hooks/useAccountSettings'
 import Link from 'next/link'
 
 interface SettingsFormProps {
@@ -69,26 +55,12 @@ interface SettingsFormProps {
   initialWeeklyEmail?: { weekly: boolean; consentedAt: string | null; pending?: boolean } | null
 }
 
-/** Resumen de GET /api/account para el modal de borrado. */
-interface DeletionSummary {
-  library: number
-  lists: number
-  messages: number
-  friends: number
-  groups: Array<{ name: string; successor: string | null }> | null
-  sharedLists: Array<{ name: string; successor: string | null }> | null
-  graceDays: number
-}
-
 /**
  * Contacto para pedir lo que la exportación no incluye (mensajes recibidos),
  * el mismo que publica la política de privacidad. Cuando entre `LEGAL_CONTACT_EMAIL`
  * (src/app/.well-known/contact.ts, F-19) conviene importarlo de allí.
  */
 const PRIVACY_CONTACT_EMAIL = 'kultura.app.contacto@gmail.com'
-
-/** Cuántos grupos/listas se nombran en el modal antes de "y N más". */
-const SUMMARY_MAX_NAMED = 4
 
 function formatDay(date: Date, locale: string): string {
   return new Intl.DateTimeFormat(locale === 'en' ? 'en-GB' : 'es-ES', {
@@ -114,55 +86,70 @@ export function SettingsForm({
   initialWeeklyEmail = null,
 }: SettingsFormProps) {
   const t = useTranslations('settings')
-  const tErrors = useTranslations('errors')
   const tPush = useTranslations('push.settings')
   const currentLocale = useLocale()
-  const router = useRouter()
-  const pathname = usePathname()
-  const toast = useToastContext()
-
-  const safeInitialColor: AvatarColorName = isValidAvatarColor(initialAvatarColor)
-    ? initialAvatarColor
-    : 'blue'
-
-  const [username, setUsername] = useState(initialUsername)
-  const [avatarColor, setAvatarColor] = useState<AvatarColorName>(safeInitialColor)
-  const [avatarIcon, setAvatarIcon] = useState<string | null>(initialAvatarIcon)
-  const [locale, setLocale] = useState(initialLocale ?? currentLocale)
-  const [saving, setSaving] = useState(false)
-  const [usernameError, setUsernameError] = useState('')
-  const [exporting, setExporting] = useState(false)
-  const [importing, setImporting] = useState(false)
-  const importInputRef = useRef<HTMLInputElement>(null)
-  const [deleteModalOpen, setDeleteModalOpen] = useState(false)
-  const [deleting, setDeleting] = useState(false)
-  const [deletionSummary, setDeletionSummary] = useState<DeletionSummary | null>(null)
-  const [summaryLoading, setSummaryLoading] = useState(false)
-  const [pendingDeletion, setPendingDeletion] = useState<string | null>(deletionRequestedAt)
-  const [cancellingDeletion, setCancellingDeletion] = useState(false)
-  const [libraryVisibility, setLibraryVisibility] = useState<LibraryVisibility | null>(initialLibraryVisibility)
-  // F-03: títulos del fichero que no se encontraron en el proveedor.
-  const [importUnresolved, setImportUnresolved] = useState(0)
-  // F-28: escala de notas y correo semanal, que se guardan solos (sin el botón Guardar).
-  const [ratingScale, setRatingScale] = useState<RatingScale | null>(initialRatingScale)
-  const [scaleState, setScaleState] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle')
-  // F-33: avisos push de ESTE navegador (el permiso solo se pide al pulsar).
-  const push = usePushSettings(currentLocale, { disabled: isDemo })
-  const [weeklyEmail, setWeeklyEmail] = useState(initialWeeklyEmail)
-  const [weeklyState, setWeeklyState] = useState<
-    'idle' | 'saving' | 'on' | 'off' | 'pending' | 'cooldown' | 'dailyLimit' | 'busy' | 'unconfirmed' | 'sendFailed' | 'error' | 'stale'
-  >(initialWeeklyEmail?.pending && !initialWeeklyEmail.weekly ? 'pending' : 'idle')
-
-  // Cambio de email (R1 / art. 16 RGPD): formulario en línea.
-  const [emailFormOpen, setEmailFormOpen] = useState(false)
-  const [newEmail, setNewEmail] = useState('')
-  const [emailError, setEmailError] = useState('')
-  const [emailSending, setEmailSending] = useState(false)
-  const [emailSentTo, setEmailSentTo] = useState<string | null>(null)
-  const newEmailRef = useRef<HTMLInputElement>(null)
-  // ACC-3: con un error, el foco vuelve al campo de usuario (su mensaje ya
-  // va enlazado y con role="alert" desde KInput).
-  const usernameRef = useRef<HTMLInputElement>(null)
+  // La lógica vive en `src/hooks/useAccountSettings.ts` (rescate F0).
+  const {
+    username,
+    avatarColor,
+    setAvatarColor,
+    avatarIcon,
+    setAvatarIcon,
+    locale,
+    setLocale,
+    saving,
+    usernameError,
+    exporting,
+    importing,
+    deleteModalOpen,
+    setDeleteModalOpen,
+    deleting,
+    deletionSummary,
+    pendingDeletion,
+    cancellingDeletion,
+    libraryVisibility,
+    setLibraryVisibility,
+    importUnresolved,
+    ratingScale,
+    scaleState,
+    weeklyEmail,
+    weeklyState,
+    emailFormOpen,
+    setEmailFormOpen,
+    newEmail,
+    setNewEmail,
+    emailError,
+    setEmailError,
+    emailSending,
+    emailSentTo,
+    setEmailSentTo,
+    importInputRef,
+    push,
+    newEmailRef,
+    usernameRef,
+    handleUsernameChange,
+    handleSave,
+    handleRatingScale,
+    handleWeeklyEmail,
+    handleChangeEmail,
+    handleExportData,
+    handleImportData,
+    openDeleteModal,
+    deletionMessage,
+    handleCancelDeletion,
+    handleDeleteAccount,
+  } = useAccountSettings({
+    initialUsername,
+    initialAvatarColor,
+    initialAvatarIcon,
+    initialLocale,
+    userEmail,
+    isDemo,
+    initialLibraryVisibility,
+    deletionRequestedAt,
+    initialRatingScale,
+    initialWeeklyEmail,
+  })
 
   // ACC-10: color de avatar como radiogroup (una parada de Tab, flechas).
   const { getItemProps: getColorProps } = useRadioGroupKeys(
@@ -170,334 +157,6 @@ export function SettingsForm({
     avatarColor,
     setAvatarColor
   )
-
-  function validateUsername(value: string): string {
-    if (!USERNAME_REGEX.test(value)) return t('errorInvalidUsername')
-    // El nombre que ya tiene no se revalida (puede ser anterior a la lista).
-    if (value !== initialUsername && isReservedUsername(value)) return t('errorUsernameReserved')
-    return ''
-  }
-
-  function handleUsernameChange(value: string) {
-    setUsername(value)
-    if (usernameError) setUsernameError(validateUsername(value))
-  }
-
-  async function handleSave() {
-    const validationError = validateUsername(username)
-    if (validationError) {
-      setUsernameError(validationError)
-      usernameRef.current?.focus()
-      return
-    }
-    setUsernameError('')
-    setSaving(true)
-
-    try {
-      const res = await fetch('/api/settings', {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          // Solo si cambió: así un nombre antiguo nunca bloquea guardar el
-          // resto (y no se gasta una escritura admin en cada guardado).
-          ...(username !== initialUsername ? { username } : {}),
-          avatar_color: avatarColor,
-          preferred_locale: locale,
-          ...(libraryVisibility !== null && libraryVisibility !== initialLibraryVisibility
-            ? { library_visibility: libraryVisibility }
-            : {}),
-          // Solo se envía si el usuario lo tocó: mandar la columna cuando su
-          // migración aún no está aplicada haría fallar TODO el guardado,
-          // incluidos nombre e idioma.
-          ...(avatarIcon !== initialAvatarIcon ? { avatar_icon: avatarIcon } : {}),
-        }),
-      })
-
-      if (res.status === 409) {
-        const data = (await res.json().catch(() => ({}))) as { error?: string }
-        setUsernameError(
-          data.error === 'username_reserved' ? t('errorUsernameReserved') : t('errorUsernameExists')
-        )
-        usernameRef.current?.focus()
-        return
-      }
-
-      if (!res.ok) {
-        toast.show({ message: t('errorSave'), type: 'error' })
-        return
-      }
-
-      toast.show({ message: t('saved'), type: 'success' })
-
-      // El header lo pinta el layout en el SERVIDOR: sin refrescarlo, el avatar
-      // seguía mostrando las iniciales viejas hasta recargar a mano.
-      router.refresh()
-
-      if (locale !== currentLocale) {
-        const newPath = pathname.replace(`/${currentLocale}/`, `/${locale}/`)
-        router.push(newPath)
-      }
-    } catch {
-      toast.show({ message: t('errorSave'), type: 'error' })
-    } finally {
-      setSaving(false)
-    }
-  }
-
-  async function handleRatingScale(next: string) {
-    if (!isRatingScale(next) || next === ratingScale) return
-    const previous = ratingScale
-    setRatingScale(next)
-    setScaleState('saving')
-    try {
-      await saveRatingScale(next)
-      setScaleState('saved')
-      // La escala se lee en el servidor (Biblioteca, diario): que no quede vieja en la caché del router.
-      router.refresh()
-    } catch {
-      setRatingScale(previous)
-      setScaleState('error')
-    }
-  }
-
-  // Doble opt-in: activar solo PIDE el correo de confirmación (202); el
-  // interruptor sigue apagado hasta que se pulsa el enlace de ese correo.
-  async function handleWeeklyEmail(enabled: boolean) {
-    if (!weeklyEmail || isDemo) return
-    const previous = weeklyEmail
-    if (!enabled) setWeeklyEmail({ ...weeklyEmail, weekly: false })
-    setWeeklyState('saving')
-    try {
-      const res = await fetch('/api/email/preferences', {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ weekly: enabled, consentVersion: WEEKLY_EMAIL_CONSENT_VERSION, locale: currentLocale }),
-      })
-      if (res.status === 202) {
-        setWeeklyEmail({ ...previous, weekly: false, pending: true })
-        setWeeklyState('pending')
-        return
-      }
-      if (!res.ok) {
-        const code = ((await res.json().catch(() => ({}))) as { error?: string }).error
-        setWeeklyEmail(previous)
-        setWeeklyState(
-          res.status === 409
-            ? 'stale'
-            : code === 'cooldown'
-              ? 'cooldown'
-              : code === 'daily_limit'
-                ? 'dailyLimit'
-                : code === 'busy'
-                  ? 'busy'
-                  : code === 'unconfirmed_email'
-                ? 'unconfirmed'
-                : code === 'send_failed'
-                  ? 'sendFailed'
-                  : 'error'
-        )
-        return
-      }
-      const data = (await res.json()) as { weekly?: boolean; consentedAt?: string | null }
-      setWeeklyEmail({ weekly: data.weekly === true, consentedAt: data.consentedAt ?? null, pending: false })
-      setWeeklyState(data.weekly ? 'on' : 'off')
-    } catch {
-      setWeeklyEmail(previous)
-      setWeeklyState('error')
-    }
-  }
-
-  async function handleChangeEmail(e: React.FormEvent) {
-    e.preventDefault()
-    const value = newEmail.trim()
-    let error = ''
-    if (!value.includes('@') || !value.includes('.')) error = tErrors('invalidEmail')
-    else if (value.toLowerCase() === userEmail.toLowerCase()) error = t('changeEmailSame')
-    setEmailError(error)
-    if (error) {
-      newEmailRef.current?.focus()
-      return
-    }
-
-    setEmailSending(true)
-    try {
-      const supabase = createClient()
-      const next = `/${currentLocale}/settings?email=confirmed`
-      const { error: updateError } = await supabase.auth.updateUser(
-        { email: value },
-        {
-          emailRedirectTo: `${window.location.origin}/api/auth/callback?next=${encodeURIComponent(next)}`,
-        }
-      )
-      if (updateError) {
-        setEmailError(tErrors(getAuthErrorKeyFromError(updateError)))
-        newEmailRef.current?.focus()
-        return
-      }
-      setEmailSentTo(value)
-      setEmailFormOpen(false)
-      setNewEmail('')
-    } catch {
-      setEmailError(tErrors('somethingWentWrong'))
-    } finally {
-      setEmailSending(false)
-    }
-  }
-
-  async function handleExportData() {
-    setExporting(true)
-    try {
-      const res = await fetch('/api/account/export')
-      if (!res.ok) {
-        toast.show({ message: t('exportDataError'), type: 'error' })
-        return
-      }
-      const data = await res.json()
-      const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' })
-      const url = URL.createObjectURL(blob)
-      const a = document.createElement('a')
-      a.href = url
-      a.download = `kultura-export-${new Date().toISOString().slice(0, 10)}.json`
-      document.body.appendChild(a)
-      a.click()
-      a.remove()
-      URL.revokeObjectURL(url)
-    } catch {
-      toast.show({ message: t('exportDataError'), type: 'error' })
-    } finally {
-      setExporting(false)
-    }
-  }
-
-  async function handleImportData(event: React.ChangeEvent<HTMLInputElement>) {
-    const file = event.target.files?.[0]
-    // El input se resetea siempre: si no, reimportar el MISMO fichero tras un
-    // fallo no dispararía el change y parecería que el botón no hace nada.
-    event.target.value = ''
-    if (!file) return
-
-    setImporting(true)
-    try {
-      const payload = JSON.parse(await file.text())
-      const res = await fetch('/api/account/import', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
-      })
-      if (!res.ok) {
-        toast.show({ message: t('importDataError'), type: 'error' })
-        return
-      }
-      const result: { libraryImported: number; listsImported: number; libraryUnresolved?: number } =
-        await res.json()
-      toast.show({
-        message: t('importDataSuccess', {
-          count: result.libraryImported,
-          lists: result.listsImported,
-        }),
-        type: 'success',
-      })
-      setImportUnresolved(result.libraryUnresolved ?? 0)
-      router.refresh()
-    } catch {
-      // Cubre tanto un JSON corrupto como un fallo de red.
-      toast.show({ message: t('importDataError'), type: 'error' })
-    } finally {
-      setImporting(false)
-    }
-  }
-
-  /** Abre el modal y pide el resumen de lo que se perdería (ROJO-7). */
-  async function openDeleteModal() {
-    setDeleteModalOpen(true)
-    setDeletionSummary(null)
-    setSummaryLoading(true)
-    try {
-      const res = await fetch('/api/account')
-      if (res.ok) setDeletionSummary((await res.json()) as DeletionSummary)
-    } catch {
-      // Sin resumen se enseña el texto genérico: borrar sigue siendo posible.
-    } finally {
-      setSummaryLoading(false)
-    }
-  }
-
-  /** "Se borrarán 34 títulos… Tu grupo «Club» pasará a lucia_lee…" */
-  function deletionMessage(summary: DeletionSummary | null): string {
-    if (!summary) return summaryLoading ? t('deleteSummaryLoading') : t('deleteAccountConfirmMessage')
-    const parts = [
-      t('deleteSummaryLoses', {
-        library: summary.library,
-        lists: summary.lists,
-        messages: summary.messages,
-        friends: summary.friends,
-      }),
-    ]
-    const named = (items: Array<{ name: string; successor: string | null }>, moved: string, gone?: string) => {
-      for (const item of items.slice(0, SUMMARY_MAX_NAMED)) {
-        if (item.successor) parts.push(t(moved, { name: item.name, user: item.successor }))
-        else if (gone) parts.push(t(gone, { name: item.name }))
-      }
-      if (items.length > SUMMARY_MAX_NAMED) {
-        parts.push(t('deleteSummaryMore', { count: items.length - SUMMARY_MAX_NAMED }))
-      }
-    }
-    named(summary.groups ?? [], 'deleteSummaryGroupMoves', 'deleteSummaryGroupGone')
-    named(summary.sharedLists ?? [], 'deleteSummaryListMoves')
-    parts.push(
-      summary.graceDays > 0
-        ? t('deleteSummaryGrace', { days: summary.graceDays })
-        : t('deleteSummaryNow')
-    )
-    return parts.join(' ')
-  }
-
-  async function handleCancelDeletion() {
-    setCancellingDeletion(true)
-    try {
-      const res = await fetch('/api/account', {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ cancel_deletion: true }),
-      })
-      if (!res.ok) {
-        toast.show({ message: t('errorSave'), type: 'error' })
-        return
-      }
-      setPendingDeletion(null)
-      toast.show({ message: t('deletionCancelled'), type: 'success' })
-      router.refresh()
-    } catch {
-      toast.show({ message: t('errorSave'), type: 'error' })
-    } finally {
-      setCancellingDeletion(false)
-    }
-  }
-
-  async function handleDeleteAccount() {
-    setDeleting(true)
-    try {
-      const res = await fetch('/api/account', { method: 'DELETE' })
-      if (!res.ok) {
-        toast.show({ message: t('deleteAccountError'), type: 'error' })
-        return
-      }
-      const result = (await res.json().catch(() => ({}))) as { scheduled?: boolean; purgeAt?: string }
-      const supabase = createClient()
-      await unsubscribeCurrentDevice()
-      await supabase.auth.signOut()
-      router.push(
-        result.scheduled && result.purgeAt
-          ? `/${currentLocale}/login?account=deletion_scheduled&purge_at=${encodeURIComponent(result.purgeAt)}`
-          : `/${currentLocale}/login?account=deleted`
-      )
-    } catch {
-      toast.show({ message: t('deleteAccountError'), type: 'error' })
-    } finally {
-      setDeleting(false)
-      setDeleteModalOpen(false)
-    }
-  }
 
   const eyebrow = 'text-meta font-extrabold uppercase tracking-wide text-text-tertiary mb-3'
   const row = 'px-5 py-4 sm:px-6 sm:py-5'

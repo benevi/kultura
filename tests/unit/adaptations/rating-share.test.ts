@@ -26,7 +26,7 @@ import {
   ratingShareSignature,
   resolveRatingShare,
   splitRich,
-} from "@/app/[locale]/u/[username]/r/_lib/rating-share";
+} from "@/lib/share/rating-share";
 
 const SIG = () => ratingShareSignature("owner", "movie_438631")!;
 

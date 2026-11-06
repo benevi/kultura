@@ -12,14 +12,14 @@ import { posterGradient } from '@/lib/images/poster-gradient'
 import { cn } from '@/lib/utils/index'
 import { AUTH_CARD } from '../login/AuthShell'
 import { TermsCheckbox } from '../login/TermsCheckbox'
-import { USERNAME_REGEX, isReservedUsername } from '@/app/api/settings/identity'
+import { USERNAME_REGEX, isReservedUsername } from '@/lib/account/identity'
 import { RateStars } from './RateStars'
 import { WelcomeImport } from './WelcomeImport'
 import {
   STARTER_MIN_RATINGS,
   pickStarterTitles,
   type StarterTitle,
-} from './starter-titles'
+} from '@/lib/recommendations/starter-titles'
 import type { MediaType } from '@/types/media'
 import {
   IconAnime,

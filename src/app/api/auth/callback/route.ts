@@ -6,7 +6,7 @@ import { routing } from "@/i18n/routing";
 import { isValidAvatarIcon } from "@/components/icons/avatars";
 import { isDemoUser } from "@/lib/demo";
 import { localeFromPath, resolveAuthNext } from "@/lib/utils/safe-redirect";
-import { needsOnboarding } from "@/app/api/settings/account-state";
+import { needsOnboarding } from "@/lib/account/account-state";
 import { parseAttribution, type AttributionParams } from "@/lib/analytics/attribution";
 import { recordSignup } from "@/lib/analytics/signup";
 import {

@@ -17,8 +17,8 @@ import { IconCompass } from "@/components/icons";
 import { type DiscoverType } from "@/lib/discover/type-filters";
 import { useDiscoverQuery } from "@/hooks/useDiscoverQuery";
 import { useDiscoverUrl } from "@/hooks/useDiscoverUrl";
-import { isDiscoverType } from "./discover-config";
-import { useFilterGroups } from "./useFilterGroups";
+import { isDiscoverType } from "@/lib/discover/discover-config";
+import { useFilterGroups } from "@/hooks/useFilterGroups";
 import { DiscoverToolbar } from "./DiscoverToolbar";
 import { DiscoverResults } from "./DiscoverResults";
 

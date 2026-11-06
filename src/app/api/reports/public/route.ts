@@ -16,7 +16,7 @@ import { createLogger } from '@/lib/logger'
 import { notifyReport } from '@/lib/email/moderation'
 import { isModerationV2, isNotMigratedError } from '@/lib/social/friends'
 import { reportReference, type ReportTargetType } from '@/lib/social/actions'
-import { PublicReportSchema, allowedTargetTypes, checkPublicTarget, storedReason } from '../shared'
+import { PublicReportSchema, allowedTargetTypes, checkPublicTarget, storedReason } from '@/lib/social/reports'
 
 const log = createLogger('api/reports/public')
 

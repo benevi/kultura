@@ -55,8 +55,8 @@ import * as ratedImageModule from "@/app/[locale]/u/[username]/r/[type]/[id]/ope
 import RatedImage from "@/app/[locale]/u/[username]/r/[type]/[id]/opengraph-image";
 import { GET as signedCard } from "@/app/[locale]/u/[username]/r/[type]/[id]/card/[sig]/route";
 import ProfileImage, { generateImageMetadata as profileImageMetadata } from "@/app/[locale]/u/[username]/opengraph-image";
-import { ratingShareSignature } from "@/app/[locale]/u/[username]/r/_lib/rating-share";
-import { publicTopFour } from "@/app/[locale]/u/[username]/r/_lib/top-four";
+import { ratingShareSignature } from "@/lib/share/rating-share";
+import { publicTopFour } from "@/lib/share/top-four";
 
 const SIG = () => ratingShareSignature("owner", "movie_438631")!;
 const params = { locale: "es", username: "benevi", type: "movie", id: "438631" };

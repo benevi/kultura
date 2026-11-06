@@ -13,7 +13,7 @@ import { FilterBar, type FilterGroup } from "@/components/ui/FilterBar";
 import { TYPE_ORDER, type DiscoverType } from "@/lib/discover/type-filters";
 import { cn } from "@/lib/utils/index";
 import { IconDice, IconClose } from "@/components/icons";
-import { TYPE_ICONS } from "./discover-config";
+import { TYPE_ICONS } from "@/components/discover/discover-icons";
 
 export interface DiscoverToolbarProps {
   type: DiscoverType;

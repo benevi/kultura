@@ -38,7 +38,7 @@ import {
   splitRich,
   type RatingShareView,
   type ShareViewer,
-} from "../../_lib/rating-share";
+} from "@/lib/share/rating-share";
 
 type SearchParams = Record<string, string | string[] | undefined>;
 

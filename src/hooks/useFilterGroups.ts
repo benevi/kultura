@@ -11,7 +11,8 @@ import { useTranslations } from "next-intl";
 import type { FilterGroup } from "@/components/ui/FilterBar";
 import { TYPE_FILTERS, type DiscoverType } from "@/lib/discover/type-filters";
 import { getFilterOptions, humanizeSlug } from "@/lib/discover/filter-options";
-import { FILTER_ICONS, buildYearBuckets } from "./discover-config";
+import { FILTER_ICONS } from "@/components/discover/discover-icons";
+import { buildYearBuckets } from "@/lib/discover/discover-config";
 
 export function useFilterGroups(type: DiscoverType): FilterGroup[] {
   const tF = useTranslations("filters");

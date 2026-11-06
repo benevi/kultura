@@ -35,7 +35,7 @@ import {
 } from "@/lib/media/seo";
 import { isBestFormat } from "@/lib/best/best-of";
 import { AdaptationsSection } from "@/components/media/AdaptationsSection";
-import { formatShareRating, ratingSharePath } from "@/app/[locale]/u/[username]/r/_lib/rating-share";
+import { formatShareRating, ratingSharePath } from "@/lib/share/rating-share";
 import { ratingScale10Enabled, readRatingScale } from "@/lib/library/scale";
 import type { LibraryEntry } from "@/types/library";
 import type { User } from "@supabase/supabase-js";

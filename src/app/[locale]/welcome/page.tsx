@@ -18,8 +18,8 @@ import { getMessages, getTranslations } from 'next-intl/server'
 import { createClient } from '@/lib/supabase/server'
 import { isDemoUser } from '@/lib/demo'
 import { resolveAuthNext } from '@/lib/utils/safe-redirect'
-import { GENERATED_USERNAME_REGEX } from '@/app/api/settings/identity'
-import { hasAcceptedTerms, readAccountState } from '@/app/api/settings/account-state'
+import { GENERATED_USERNAME_REGEX } from '@/lib/account/identity'
+import { hasAcceptedTerms, readAccountState } from '@/lib/account/account-state'
 import { WelcomeFlow } from './WelcomeFlow'
 
 interface WelcomeProps {

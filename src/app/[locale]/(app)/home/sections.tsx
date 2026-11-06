@@ -14,8 +14,8 @@ import { Avatar } from '@/components/ui/Avatar'
 import { KButton } from '@/components/ui/KButton'
 import { PosterImage } from '@/components/media/PosterImage'
 import { posterGradient } from '@/lib/images/poster-gradient'
-import { platformNames, readPlatforms } from '../settings/platforms'
-import { availableTonight, type TonightCandidate } from './tonight'
+import { platformNames, readPlatforms } from '@/lib/platforms/platforms'
+import { availableTonight, type TonightCandidate } from '@/lib/home/tonight'
 import { TonightClient } from './TonightClient'
 
 /** Pendientes que se miran (los más recientes); `availableTonight` comprueba 24. */

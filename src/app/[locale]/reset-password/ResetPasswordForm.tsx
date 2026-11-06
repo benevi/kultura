@@ -10,7 +10,7 @@ import { isDemoUser } from "@/lib/demo";
 import { getAuthErrorKeyFromError } from "@/lib/utils/auth-errors";
 import { resolveAuthNext } from "@/lib/utils/safe-redirect";
 import { AuthShell } from "../login/AuthShell";
-import { getSupabase } from "../login/supabase-lazy";
+import { getSupabase } from "@/lib/supabase/lazy";
 import { PasswordField } from "../login/PasswordField";
 
 type Status = "checking" | "ready" | "invalid" | "demo" | "done";

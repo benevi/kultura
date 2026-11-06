@@ -17,8 +17,8 @@ import { getStarterItems } from '@/lib/recommendations/starter'
 import type { Metadata } from 'next'
 import type { HeroItem } from '@/components/home/HeroSection'
 import { Link } from '@/i18n/navigation'
-import { generatedUsername, initialsFor, purgeDate } from '@/app/api/settings/identity'
-import { readAccountState } from '@/app/api/settings/account-state'
+import { generatedUsername, initialsFor, purgeDate } from '@/lib/account/identity'
+import { readAccountState } from '@/lib/account/account-state'
 import { progressV2Active } from '@/lib/library/progress-server'
 import {
   FriendsActivity,

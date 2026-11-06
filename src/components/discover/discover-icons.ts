@@ -1,7 +1,10 @@
-// KULTURA — Iconos y opciones fijas de la barra de Descubrir.
+// KULTURA — Iconos y esqueleto de la barra de Descubrir (UI vieja).
+//
+// Separado de `src/lib/discover/discover-config.ts` en el rescate F0: dependen
+// del set de iconos y de la rejilla bento del sistema viejo y se irán con él.
 
 import { BENTO_CELL_CLASSES } from "@/components/media/MediaGrid";
-import { TYPE_ORDER, type DiscoverType } from "@/lib/discover/type-filters";
+import type { DiscoverType } from "@/lib/discover/type-filters";
 import {
   type KIcon,
   IconGrid,
@@ -68,19 +71,3 @@ export const DISCOVER_SKELETON_CELLS = Array.from(
   { length: 18 },
   (_, i) => BENTO_CELL_CLASSES[i % BENTO_CELL_CLASSES.length]
 );
-
-/**
- * Años relativos al actual: [actual, -1, -2] como YYYY + las 2 décadas
- * previas como YYYYs + 'classic' (formatos que parsea discover-params).
- */
-export function buildYearBuckets(now = new Date().getFullYear()): { value: string; label: string }[] {
-  const years = [now, now - 1, now - 2].map((y) => ({ value: String(y), label: String(y) }));
-  // Década que contiene el año más antiguo listado, y la anterior.
-  const baseDecade = Math.floor((now - 2) / 10) * 10;
-  const decades = [baseDecade - 10, baseDecade - 20].map((d) => ({ value: `${d}s`, label: `${d}s` }));
-  return [...years, ...decades, { value: "classic", label: "classic" }];
-}
-
-export function isDiscoverType(t: string): t is DiscoverType {
-  return (TYPE_ORDER as readonly string[]).includes(t);
-}

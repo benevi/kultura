@@ -149,8 +149,8 @@ import { fakeSupabase, type FakeClient } from '../plataformas-listas/fake-supaba
 let client: FakeClient
 vi.mock('@/lib/supabase/server', () => ({ createClient: async () => client }))
 vi.mock('next-intl/server', () => ({ getTranslations: async () => (k: string) => k }))
-vi.mock('@/app/api/settings/account-state', async (importOriginal) => ({
-  ...(await importOriginal<typeof import('@/app/api/settings/account-state')>()),
+vi.mock('@/lib/account/account-state', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@/lib/account/account-state')>()),
   readAccountState: async () => ({ state: null, migrated: false }),
 }))
 

@@ -12,7 +12,7 @@
 import { createHash } from 'node:crypto'
 import { unstable_cache } from 'next/cache'
 import type { SupabaseClient } from '@supabase/supabase-js'
-import { readPlatforms } from '@/app/[locale]/(app)/settings/platforms'
+import { readPlatforms } from '@/lib/platforms/platforms'
 import { createLogger } from '@/lib/logger'
 import type { MediaType } from '@/types/media'
 import { buildCalendar, type CalendarFetchers } from './build'

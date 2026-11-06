@@ -1,7 +1,7 @@
 import { ImageResponse } from "next/og";
 import { C, loadFont, fontsOption } from "@/lib/og/brand";
 import { posterDataUri } from "@/lib/og/poster";
-import { resolveRatingShare, splitRich, type RatingShareView } from "./rating-share";
+import { resolveRatingShare, splitRich, type RatingShareView } from "@/lib/share/rating-share";
 import es from "../../../../../../../messages/es.json";
 import en from "../../../../../../../messages/en.json";
 
