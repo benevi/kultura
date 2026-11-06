@@ -15,6 +15,7 @@
 - Revisión independiente: ver `04_DECISIONES` §4. CI del #74: lint, `cuj`, Lighthouse y axe en verde.
 
 ## Pendiente / ojo
+- Medición (puerta F0): evento `library_add` visto en `analytics_events` de producción el 2026-11-06 20:58 UTC; Web Analytics y Speed Insights (#77) activos. Falta que Víctor confirme las visitas en el panel de Vercel. La CLI de Vercel tiene sesión de Víctor (Hobby: solo 1 h de registros).
 - Con esto se cierra la parte de Claude en F0. Lo que queda es de Víctor, con los pasos exactos en `docs/F0_PASOS_VICTOR.md`: Analytics con un evento visto, R9 (comando `migration repair` con las 22 versiones), el simulacro de restauración, el proyecto «KULTURA 2.0» (D8) y el dominio (D3).
 - Para v2.0 o F3-9: `/best` mantiene su suelo relajado del año en curso (series 300 → 75), y el líder de series es poco creíble también allí.
 - `build.py` sigue procesando 4 imágenes de ranking cada semana que ya no se pintan. Revisarlo cuando Inicio v2 decida si vuelven.
