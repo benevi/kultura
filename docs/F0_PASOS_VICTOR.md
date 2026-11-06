@@ -33,6 +33,8 @@ registrados en `analytics_events`).
      Debe salir `library_add` con la hora de ahora.
 7. Pasa a Claude las dos pruebas: una captura de Vercel y la fila de la consulta, sin ids.
 
+Estado comprobado por Claude el 2026-11-06 (solo lectura en producción): `analytics_events` tiene **0 filas**, pero tampoco hay actividad desde el 2026-10-10 (último usuario y último `user_media`; 7 usuarios y 123 títulos en total). El 0 no prueba que `track()` falle: hace falta la acción del punto 5.
+
 Si no aparece la fila: Vercel → `kultura` → Settings → Environment Variables
 → comprobar que `SUPABASE_SERVICE_ROLE_KEY` existe en *Production* (`track()`
 no escribe sin ella y no da error).
