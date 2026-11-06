@@ -1,6 +1,6 @@
 // CUJ 5 · Crear lista y compartir (F3-8): crear una lista pública, añadirle un
 // título desde la ficha, copiar su enlace con «Compartir» y abrirlo sin sesión.
-import { test, expect } from "@playwright/test";
+import { test, expect, servePosters } from "./fixtures";
 import { admin, createUser, eventually, login, uniq } from "./_db";
 
 test("lista: crear pública, añadir título y abrir el enlace sin sesión", async ({ page, browser }) => {
@@ -43,6 +43,7 @@ test("lista: crear pública, añadir título y abrir el enlace sin sesión", asy
 
   // El enlace copiado abre la lista sin sesión.
   const anon = await browser.newContext({ bypassCSP: true, locale: "es-ES" });
+  await servePosters(anon);
   const visitor = await anon.newPage();
   await visitor.goto(copied);
   await expect(visitor.getByRole("heading", { name })).toBeVisible();

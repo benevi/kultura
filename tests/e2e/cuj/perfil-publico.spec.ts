@@ -2,7 +2,7 @@
 // públicas del usuario y nunca las privadas. Se prueba la página (que filtra
 // las públicas y oculta las vacías, `lib/social/public-collection.ts`) y,
 // aparte, la RLS de `lists` con la clave anónima.
-import { test, expect } from "@playwright/test";
+import { test, expect } from "./fixtures";
 import { createClient } from "@supabase/supabase-js";
 import { admin, createUser, ensureMedia, uniq } from "./_db";
 // eslint-disable-next-line @typescript-eslint/no-require-imports

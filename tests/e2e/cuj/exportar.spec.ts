@@ -1,6 +1,6 @@
 // CUJ 8 · Exportar (F3-10): «Exportar mis datos» en Ajustes descarga un JSON
 // con la biblioteca y las listas reales del usuario (y de nadie más).
-import { test, expect } from "@playwright/test";
+import { test, expect } from "./fixtures";
 import { readFile } from "node:fs/promises";
 import { admin, createUser, ensureMedia, login, uniq } from "./_db";
 

@@ -1,6 +1,6 @@
 // CUJ 4 · Cambiar estado y progreso (F3-6): una serie pendiente pasa a «En
 // curso» con temporada y episodio; persiste en la BD y al recargar la ficha.
-import { test, expect } from "@playwright/test";
+import { test, expect } from "./fixtures";
 import { admin, createUser, ensureMedia, eventually, libraryEntry, login } from "./_db";
 
 const MEDIA_ID = "tv_1399";

@@ -2,7 +2,7 @@
 // Letterboxd se lee en el navegador, se procesa por lotes en
 // /api/account/import/external y deja la biblioteca escrita en la BD, con su
 // nota; lo que no se encuentra en el proveedor no se inventa.
-import { test, expect } from "@playwright/test";
+import { test, expect } from "./fixtures";
 import { admin, createUser, eventually, libraryEntry, login } from "./_db";
 
 const CSV = [
@@ -18,13 +18,19 @@ test("importar CSV: dos títulos con nota en la biblioteca y uno sin emparejar",
   await login(page, user);
 
   await page.goto("/es/settings/import");
-  await page.locator('input[type="file"]').setInputFiles({
-    name: "kultura-cuj.csv",
-    mimeType: "text/csv",
-    buffer: Buffer.from(CSV, "utf-8"),
-  });
+  // Si el archivo llega antes de hidratar, el onChange aún no existe: se
+  // reintenta hasta que aparece la vista previa.
+  const start = page.getByRole("button", { name: /Importar 3 títulos/ });
+  await expect(async () => {
+    await page.locator('input[type="file"]').setInputFiles({
+      name: "kultura-cuj.csv",
+      mimeType: "text/csv",
+      buffer: Buffer.from(CSV, "utf-8"),
+    });
+    await expect(start).toBeVisible({ timeout: 3_000 });
+  }).toPass({ timeout: 20_000 });
 
-  await page.getByRole("button", { name: /Importar 3 títulos/ }).click();
+  await start.click();
   await expect(page.getByText("Importación terminada")).toBeVisible({ timeout: 30_000 });
 
   const expected: Record<string, number> = { movie_603: 9, movie_27205: 8 };

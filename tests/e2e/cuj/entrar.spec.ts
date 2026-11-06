@@ -1,6 +1,6 @@
 // CUJ 2 · Entrar (F3-1): login por el formulario real contra Supabase local;
 // la sesión abre la app y sobrevive a una recarga; una contraseña mala no.
-import { test, expect } from "@playwright/test";
+import { test, expect } from "./fixtures";
 import { createUser, login, passwordField } from "./_db";
 
 test("entrar: con su contraseña abre la app y la sesión persiste", async ({ page }) => {

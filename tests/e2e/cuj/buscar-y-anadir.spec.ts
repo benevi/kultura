@@ -2,7 +2,7 @@
 // Descubrir (TMDB con datos fijos que FILTRA por la consulta, ver
 // offline-fetch.cjs), abrir la ficha y añadir a la biblioteca → fila en
 // `user_media` y ficha del catálogo creada desde el proveedor.
-import { test, expect } from "@playwright/test";
+import { test, expect } from "./fixtures";
 import { admin, createUser, eventually, libraryEntry, login } from "./_db";
 
 // «Interstellar» (fixtures.cjs): ningún otro CUJ lo usa, así la fila de

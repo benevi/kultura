@@ -1,7 +1,7 @@
 // CUJ 1 · Registro (F3-1): alta por correo en /es/login?mode=register contra
 // Supabase local (confirmación desactivada, como D-08) → onboarding, y el
 // disparador `handle_new_user` crea el perfil y guarda la aceptación (SEG-7).
-import { test, expect } from "@playwright/test";
+import { test, expect } from "./fixtures";
 import { admin, passwordField, PASSWORD, uniq } from "./_db";
 
 /** Usuario de auth por correo, sin depender de la paginación de listUsers. */
