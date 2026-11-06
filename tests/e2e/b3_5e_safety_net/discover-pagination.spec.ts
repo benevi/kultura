@@ -154,7 +154,9 @@ test.describe('Discover — tabs anime/manga + paginación [B3.5e]', () => {
   }) => {
     // Sobrescribe el mock por defecto del beforeEach con el de "primera vacía".
     await mockFilteredEmptyFirstPage(page)
-    await page.goto(`${BASE}/es/discover?type=game&page=1`)
+    // Con un filtro de verdad: el estado vacío con testid es el de «0 con
+    // filtros» (DiscoverResults); el del catálogo base vacío no lo lleva.
+    await page.goto(`${BASE}/es/discover?type=game&page=1&year=classic`)
 
     // Página 1 vacía → estado vacío, pero el botón next NO está deshabilitado.
     await expect(page.getByTestId('discover-empty')).toBeVisible({

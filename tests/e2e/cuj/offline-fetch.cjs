@@ -41,6 +41,14 @@ function tmdb(url) {
   return json(200, body);
 }
 
+// Portadas de TMDB: un PNG de 1×1 px. Con 503, el optimizador de imágenes
+// falla, el grid oculta la tarjeta (portada rota) y «buscar» dependía de una
+// carrera entre ese error y la comprobación del test.
+const PNG_1PX = Buffer.from(
+  "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=",
+  "base64",
+);
+
 globalThis.fetch = async function cujOfflineFetch(input, init) {
   let url;
   try {
@@ -50,5 +58,8 @@ globalThis.fetch = async function cujOfflineFetch(input, init) {
   }
   if (LOCAL.has(url.hostname)) return realFetch(input, init);
   if (url.hostname === "api.themoviedb.org") return tmdb(url);
+  if (url.hostname === "image.tmdb.org") {
+    return new Response(PNG_1PX, { status: 200, headers: { "content-type": "image/png" } });
+  }
   return json(503, { error: "offline (CUJ CI)" });
 };
