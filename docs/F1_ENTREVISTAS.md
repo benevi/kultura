@@ -1,6 +1,6 @@
 # F1 · Entrevistas para validar la cuña (guion «Mom test»)
 
-**Fase:** F1 (`PLAN_ESTRATEGICO.md` §7.3). **Decisión que alimenta:** D2 (`04_DECISIONES_Y_RIESGOS.md`).
+**Fase:** escrito en F1; **se usa antes del relanzamiento (F4)**, por la decisión D-F1. **Decisión que alimenta:** D2 y el mensaje del relanzamiento (`04_DECISIONES_Y_RIESGOS.md`). Con D-F1, la cuña de F1 la deciden la prueba de humo y §2.2; estas entrevistas solo la reabren ante una alerta roja (§6.4).
 **Quién hace qué:** Víctor entrevista o pasa el formulario; Claude sintetiza con `design:research-synthesis` cuando haya 8–10 entrevistas (`docs/F1_SINTESIS.md`, otra sesión).
 **Regla de oro:** se pregunta por **lo que la persona hizo**, nunca por lo que haría. No se presenta ningún producto, no se describen ideas y no se habla de dinero.
 
