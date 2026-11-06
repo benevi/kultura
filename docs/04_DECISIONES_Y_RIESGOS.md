@@ -36,6 +36,7 @@ Registro de las decisiones de Víctor sobre `docs/PLAN_ESTRATEGICO.md` §12 y de
 | R5 | `CLAUDE.md` exige leer `docs/NOW.md` y `docs/BACKLOG.md` antes de escribir código, y cerrar tareas en `docs/DONE.md`; **ninguno de los tres existe** en el repo. El flujo de trabajo de una tarea a la vez no tiene ancla. | proceso | medio | Crearlos (o adaptar `CLAUDE.md` a §8 del plan) en una tarea de F0 propia. No se mezcla con el inventario. |
 | R6 | La rama `feat/login-el-hueco` (commit `225a9be`) adelanta el paso 1 de F3 (Entrar/Crear cuenta) antes de que existan el interruptor (F0) y la identidad (F2). Sus cambios sin commit se descartaron el 2026-11-06. | proceso | medio | Queda aparcada, sin merge a `master`. Se revisa al llegar a F3 paso 1; puede servir de referencia, no de base. |
 | R7 | D8 depende de que Víctor cree el proyecto «KULTURA 2.0» en claude.ai: hasta entonces conviven dos fuentes (el proyecto viejo y `docs/`). | D8 | medio (context rot) | Mientras tanto, `docs/` manda; cualquier contradicción con el proyecto viejo se resuelve a favor del repo. |
+| R8 | El armazón de `(app)` monta `UnreadChatProvider`, que pide `/api/chat?countOnly=1` en todas las pantallas con sesión (`UnreadChatProvider.tsx:47`): aparcar el chat sin tocar el armazón deja una dependencia v2.0 → v2.1. Igual con `/api/friends/blocks` (botón del perfil) y `/api/reports` (Ficha, perfil, lista pública). | inventario | medio | El armazón v2 no monta el contador de chat mientras el chat esté aparcado, o se mantiene `/api/chat` vivo. `friends/blocks` y `reports` no se aparcan. Decidir al diseñar el interruptor `ui_v2`. |
 
 ## 3. Pendiente de Víctor (paneles, solo tú)
 
@@ -43,3 +44,9 @@ Registro de las decisiones de Víctor sobre `docs/PLAN_ESTRATEGICO.md` §12 y de
 - Consulta escrita a TMDB y ComicVine sobre donaciones (D4).
 - Dominio: reabrir la decisión antes de F1/F4 (D3, R1).
 - Resto de paneles de F0 en `PLAN_ESTRATEGICO.md` §7.3 (Web Analytics, `kultura-test`, custodia de la clave `age`).
+
+## 4. Registro de revisiones independientes (regla 2)
+
+| Fecha | Entregable | Revisor | Resultado |
+|---|---|---|---|
+| 2026-11-06 | `docs/FUNCIONES_V2.md` | subagente general, sin contexto previo, solo lectura | 3 graves (armazón con `/api/chat`, llamadores omitidos de `friends/blocks` y `reports`, §5 incompleto: 10 archivos de UI importan de `@/app/api`) y 5 menores (receptor `share`, llamadores HTTP frente a imports, `landing/sources`, 21 y no 20 `isNotMigrated`, `auth.spec` sin BD). Todos corregidos. |

@@ -7,7 +7,7 @@
 - Entregable: `docs/FUNCIONES_V2.md`, inventario del alcance v2.0 desde el código: 13 flujos, aparcados v2.1, transversales, 51 rutas de API con flujo dueño, 11 `.ts` de lógica a rescatar, huecos de los 8 CUJ, `isNotMigrated`.
 - Las 5 dudas del inventario resueltas (D-I1…D-I5 en `04_DECISIONES` §1b).
 - Comprobación: las 37 `page.tsx` y las 51 `route.ts` aparecen exactamente una vez en las tablas (script de cruce, `bad=0`).
-- Revisión independiente del inventario lanzada (regla 2); su resultado va en el siguiente commit o en la próxima sesión.
+- Revisión independiente del inventario hecha (regla 2): 3 graves + 5 menores, todos corregidos (`04_DECISIONES` §4). Nuevo riesgo R8: el armazón de `(app)` pide `/api/chat` en todas las pantallas; `friends/blocks` y `reports` no se pueden aparcar.
 
 ## Estado del repo
 - `master` al día con `origin/master` el 2026-11-06.

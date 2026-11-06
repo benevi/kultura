@@ -4,9 +4,19 @@
 **Cómo se sacó:** `find src/app -name page.tsx` (37 pantallas), `find src/app/api -name route.ts` (51 rutas), imports de cada carpeta de pantalla, búsqueda de `/api/<ruta>` en `src/` y namespaces de `messages/es.json`. Lo que no se pudo comprobar se marca **(no verificado)**.
 **Alcance:** completo, 13 flujos (decisión D5 en `04_DECISIONES_Y_RIESGOS.md`).
 
+**Revisión independiente (regla 2):** 2026-11-06, subagente revisor; 3 hallazgos graves y 5 menores, todos corregidos en esta versión (registro en `04_DECISIONES_Y_RIESGOS.md` §4). En §4 «llamadores» son llamadas HTTP reales (`fetch`), no imports ni comentarios.
+
 Convenciones: las rutas de pantalla son relativas a `src/app/[locale]/`; las de `lib`/`components` a `src/`. «Estados» se refiere a los archivos `loading.tsx` / `error.tsx` de cada carpeta (el estado vacío vive dentro de cada cliente y no se inventaría aquí).
 
 ---
+
+## 0. Armazón de la app (todas las pantallas de `(app)`)
+
+`(app)/layout.tsx:33` monta `components/layout/AppChrome`, que monta `UnreadChatProvider` (`AppChrome.tsx:40`). Ese proveedor llama a `fetch('/api/chat?countOnly=1')` (`UnreadChatProvider.tsx:47`) **en cada pantalla con sesión**: un flujo v2.0 depende hoy de una ruta v2.1.
+
+- **Piezas:** `layout/AppChrome`, `layout/UnreadChatProvider`, `layout/SocialMenu`, `layout/AvatarDropdown`, `layout/AppFooter`, `layout/DemoBanner`, `pwa/InstallPrompt`, `push/PushOffer`.
+- **API:** `chat` (contador), `auth/demo/exit` (`DemoBanner`), `pwa/installed` (`InstallPrompt`), `push/status` (`PushOffer` vía `lib/push/offer`).
+- **Decisión para el armazón v2:** no montar `UnreadChatProvider` mientras el chat esté aparcado, o mantener `/api/chat` vivo hasta v2.1. Se decide al construir el interruptor `ui_v2` (riesgo R8).
 
 ## 1. Flujos v2.0
 
@@ -56,6 +66,7 @@ Convenciones: las rutas de pantalla son relativas a `src/app/[locale]/`; las de 
 - **Componentes:** `search/SearchBar`, `media/MediaGrid`, `ui/FilterBar`, `ui/Pagination`.
 - **Textos:** `search`, `discover`, `discoverFilters`, `filters`.
 - **Tests:** `tests/unit/search` (10), `discover` (3), `catalogo` (10); e2e con BD real: `b3_5e_safety_net/discover-filters.spec.ts`, `discover-pagination.spec.ts`.
+- **PWA:** `share/route.ts` es el receptor `share_target` («Compartir → KULTURA» desde otra app): saca el título y abre la búsqueda o Descubrir (`share/route.ts:1-8`).
 - **Rescate:** `discover-config.ts`, `useFilterGroups.ts` → `src/lib/` / `src/hooks/`.
 
 ### F3-5 · Ficha pública de título
@@ -63,7 +74,7 @@ Convenciones: las rutas de pantalla son relativas a `src/app/[locale]/`; las de 
 |---|---|---|---|
 | `media/[type]/[id]/page.tsx` | `/es/media/movie/550` | `error` | — |
 
-- **API:** `library` (vía `components/library/LibraryAction`), `lists` (vía `social/AddToListButton`), `recommendations` (vía `social/RecommendModal`).
+- **API:** `library` (vía `components/library/LibraryAction`), `lists` (vía `social/AddToListButton`), `recommendations` (vía `social/RecommendModal`), `reports` (vía `social/ReportButton`, `MediaDetail.tsx:416`).
 - **lib:** `media/detail-data`, `media/kultura-rating`, `media/seo`, `media/viewer`, `recommendations/match-score`, `translate/synopsis`, `library/queries`, `library/scale`, `best/best-of`; importa `u/[username]/r/_lib/rating-share` (lógica atrapada en UI).
 - **Componentes:** `media/MediaDetail`, `media/AdaptationsSection`, `media/AddFranchiseButton`.
 - **Textos:** `media`, `media_detail`, `adaptations`, `share`, `status`.
@@ -88,13 +99,12 @@ Convenciones: las rutas de pantalla son relativas a `src/app/[locale]/`; las de 
 | `u/[username]/r/[type]/[id]/page.tsx` | `/es/u/victor/r/movie/550` | — | nota compartible («le da 9/10»), `card/[sig]`, `opengraph-image`, `_lib/rating-share.ts`, `_lib/top-four.ts` |
 | `(app)/friends/page.tsx` | `/es/friends` | `error` | `FriendsClient`. **Versión mínima en v2.0 (D-I1):** lista de amigos, solicitudes y buscar usuario; bloqueos y chat fuera |
 
-- **API:** `settings` (bio), `friends`, `users/search` (búsqueda de usuarios en la pantalla de amigos).
+- **API:** `settings` (bio), `friends`, `users/search` (búsqueda de usuarios en la pantalla de amigos), `friends/blocks` (`FriendshipButton.tsx:11-13`, usado en `profile/[username]/page.tsx:169`; y `FriendsClient.tsx:12`), `reports` (`ReportButton` en `u/[username]/page.tsx:377`).
 - **lib:** `social/public-collection`, `social/friends`, `library/stats`, `analytics/invite`, `analytics/attribution`, `media/media-id`.
 - **Componentes:** `profile/ProfileHeader`, `ProfileStats`, `ProfileGenres`, `ProfileBio`, `collection/PublicCollection`, `collection/InviteLinkButton`, `social/ShareLinkButton`.
 - **Textos:** `profile`, `invite`, `collection`, `share`.
 - **Tests:** `public-profile` (4), `identity` (10).
 - **Rescate:** `u/[username]/r/_lib/*.ts` → `src/lib/` (lo usa también la Ficha).
-- **Nota:** `share/route.ts` (handler fuera de `/api`, en `[locale]/share/`) pertenece aquí **(no verificado qué comparte)**.
 
 ### F3-8 · Listas (índice, detalle, pública, colaborar)
 | Pantalla | URL | Estados | Piezas propias |
@@ -103,7 +113,7 @@ Convenciones: las rutas de pantalla son relativas a `src/app/[locale]/`; las de 
 | `(app)/lists/[id]/page.tsx` | `/es/lists/<uuid>` | `loading` | `ListDetail`, `ItemNote`, `ReorderableItems` |
 | `u/[username]/l/[id]/page.tsx` | `/es/u/victor/l/<uuid>` | — | lista pública indexable |
 
-- **API:** `lists`, `lists/[id]`.
+- **API:** `lists`, `lists/[id]`, `reports` (`ReportButton` en `u/[username]/l/[id]/page.tsx:160`).
 - **lib:** `social/lists`, `social/public-collection`.
 - **Componentes:** `social/ListCard`, `social/CreateListModal`, `social/AddToListButton`, `collection/OrderedListGrid`.
 - **Textos:** `lists`, `collection`.
@@ -119,7 +129,7 @@ Convenciones: las rutas de pantalla son relativas a `src/app/[locale]/`; las de 
 | `best/[format]/page.tsx` | `/es/best/movie` | — | — |
 | `best/[format]/[year]/page.tsx` | `/es/best/movie/2025` | — | `opengraph-image` |
 
-- **API:** `discover` (vía `lib/best/best-of`), `revalidate` (etiquetas de caché).
+- **API:** ninguna por HTTP; los datos salen de `lib/api/discover` en el servidor (`lib/best/best-of.ts:21`). `revalidate` invalida su caché.
 - **lib:** `best/best-of`, `best/links`, `best/seo`, `best/sitemap`, `best/cache-tags`, `og/*`.
 - **Componentes:** `best/BestNav`, `BestTopRow`, `BestOfList`, `ShareRanking`.
 - **Textos:** `best`.
@@ -131,7 +141,7 @@ Convenciones: las rutas de pantalla son relativas a `src/app/[locale]/`; las de 
 |---|---|---|---|
 | `(app)/settings/import/page.tsx` | `/es/settings/import` | — | `ImportClient`, `LetterboxdExport`, `import-storage.ts` |
 
-- **API:** `account/import`, `account/import/external`, `account/export`, `account/export/letterboxd`.
+- **API:** `account/import/external` (`ImportClient.tsx:44`), `account/export/letterboxd` (`LetterboxdExport.tsx:23`). El import/export del JSON propio (`account/import`, `account/export`) se llama desde Ajustes (`SettingsForm.tsx:350,382`).
 - **lib:** `import/*` (parse-file, run, report, limits, validate, server/process-batch).
 - **Textos:** `import`.
 - **Tests:** `import` (15). Sin e2e contra BD real (CUJ «importar CSV» y «exportar» pendientes).
@@ -168,7 +178,7 @@ Convenciones: las rutas de pantalla son relativas a `src/app/[locale]/`; las de 
 |---|---|---|---|
 | `page.tsx` | `/es` | `error.tsx`, `not-found.tsx` (raíz) | `opengraph-image` |
 
-- **API:** `landing/sources` (sin llamador en `src/`: consumo server-side/ISR **(no verificado)**), `auth/demo`.
+- **API:** `landing/sources` (la consume `scripts/landing-media/build.py:361`, lanzado por `.github/workflows/landing-media.yml`, para renovar las imágenes semanales), `auth/demo`.
 - **lib:** `landing/media`, `landing/scenes`, `landing/faq`, `landing/showcase`, `best/best-of`.
 - **Componentes:** `landing/Landing`.
 - **Textos:** `landing`, `meta`.
@@ -215,7 +225,7 @@ El «dueño» es el flujo que la rehace o la consume primero; otras pantallas pu
 | `/api/library/diary` | F3-6 | `lib/library/actions` |
 | `/api/library/prefs` | F3-6 | `lib/library/actions` |
 | `/api/search` | F3-4 | `SearchBar`, `lib/api/*` |
-| `/api/discover` | F3-4 | `useDiscoverQuery`, `lib/best`, `lib/landing/showcase`, `lib/claude` |
+| `/api/discover` | F3-4 | `hooks/useDiscoverQuery.ts:62` (Rankings, landing e IA usan `lib/api/discover` directamente, sin HTTP: `lib/best/best-of.ts:21`) |
 | `/api/ai-recommendations` | F3-3 | `home/AiRecommendations` |
 | `/api/popular-in-circle` | F3-3 | `home/PopularInCircle` |
 | `/api/genre-news` | F3-3 | `home/GenreNews` |
@@ -223,16 +233,16 @@ El «dueño» es el flujo que la rehace o la consume primero; otras pantallas pu
 | `/api/friends` | F3-7 | `RecommendModal`, `lib/social/actions` |
 | `/api/lists` | F3-8 | lists, `AddToListButton`, `CreateListModal`, `lib/social/lists` |
 | `/api/lists/[id]` | F3-8 | lists/[id], `AddToListButton`, `lib/social/lists` |
-| `/api/revalidate` | F3-9 | `lib/best/*`, `lib/landing/showcase`, `lib/media/detail-data` |
-| `/api/account` | F3-11 | settings, import |
+| `/api/revalidate` | F3-9 | sin llamador HTTP en `src/`: invalida etiquetas de caché (`lib/best/cache-tags`) desde fuera **(no verificado quién la llama)** |
+| `/api/account` | F3-11 | `SettingsForm.tsx:416,458,480` (leer, cambiar, borrar cuenta) |
 | `/api/account/export` | F3-10 | settings, `LetterboxdExport` |
 | `/api/account/export/letterboxd` | F3-10 | `LetterboxdExport` |
-| `/api/account/import` | F3-10 | `ImportClient`, settings |
+| `/api/account/import` | F3-10 | `SettingsForm.tsx:382` (importar el JSON propio de KULTURA desde Ajustes) |
 | `/api/account/import/external` | F3-10 | `ImportClient` |
 | `/api/email/preferences` | F3-11 | `SettingsForm` |
 | `/api/email/confirm` | v2.1 | email/confirm |
-| `/api/landing/sources` | F3-13 | sin llamador directo (no verificado) |
-| `/api/chat` | v2.1 | chat, `UnreadChatProvider`, `lib/social/actions` |
+| `/api/landing/sources` | F3-13 | `scripts/landing-media/build.py:361` (workflow `landing-media.yml`) |
+| `/api/chat` | v2.1 | chat, `lib/social/actions` y **`UnreadChatProvider` en el armazón de todas las pantallas (§0, R8)** |
 | `/api/chat/[id]` | v2.1 | `ConversationClient`, `lib/social/actions` |
 | `/api/chat/[id]/messages/[messageId]` | v2.1 | `lib/social/actions` |
 | `/api/groups` | v2.1 | groups, notifications, `CreateGroupForm`, `InviteFriendsModal` |
@@ -243,7 +253,7 @@ El «dueño» es el flujo que la rehace o la consume primero; otras pantallas pu
 | `/api/groups/[id]/posts/[postId]` | v2.1 | `lib/social/actions` |
 | `/api/groups/invitations/[invitationId]` | v2.1 | `NotificationsList` |
 | `/api/notifications` | v2.1 | sin llamador por cadena; consumo vía `lib/social/notifications` **(no verificado)** |
-| `/api/friends/blocks` | v2.1 | `lib/social/actions` (bloqueos fuera de la pantalla mínima, D-I1) |
+| `/api/friends/blocks` | F3-7 | `lib/social/actions` ← `FriendshipButton` (perfil) y `FriendsClient`. La gestión de bloqueos queda fuera de la pantalla mínima (D-I1), pero el botón de bloquear la usa: **no se puede aparcar** |
 | `/api/users/search` | F3-7 | `FriendsClient` |
 | `/api/suggestions` | transversal | `SuggestionsForm` |
 | `/api/email/unsubscribe` | v2.1 | email/unsubscribe, `lib/email/digest` |
@@ -251,7 +261,7 @@ El «dueño» es el flujo que la rehace o la consume primero; otras pantallas pu
 | `/api/push/subscribe` | v2.1 | `lib/push/client` |
 | `/api/push/unsubscribe` | v2.1 | `lib/push/client` |
 | `/api/push/dispatch` | v2.1 | trigger de BD `push_on_event` |
-| `/api/reports` | transversal | report, `lib/social/actions` |
+| `/api/reports` | transversal | report, `lib/social/actions` ← `ReportButton` en Ficha (F3-5), perfil público (F3-7), lista pública (F3-8), chat y grupos |
 | `/api/reports/public` | transversal | `lib/social/actions` |
 | `/api/pwa/installed` | transversal | `pwa/InstallPrompt` |
 | `/api/cron/daily` | infra | cron de `vercel.json` (06:00), mantiene viva Supabase |
@@ -274,18 +284,20 @@ El «dueño» es el flujo que la rehace o la consume primero; otras pantallas pu
 | `u/[username]/r/_lib/top-four.ts` | F3-7 | `src/lib/share/` |
 | `(app)/settings/import/import-storage.ts` | F3-10 | `src/lib/import/` |
 | `(app)/settings/platforms.ts` | F3-11 | `src/lib/platforms/` |
-| `share/route.ts` | F3-7 | es un route handler: se queda en `app/`, revisar si debe ir a `/api` |
+| `share/route.ts` | F3-4 | receptor `share_target` de la PWA; es un route handler: se queda en `app/[locale]/` (la URL la fija `src/app/manifest.ts`) |
 
-Además, `login/` importa `@/app/api/settings/identity` (lógica de API usada desde UI): mover a `src/lib/` en el mismo PR.
+En la misma carpeta que los `.ts` de F3-7 hay también `u/[username]/r/_lib/rated-card.tsx` y el handler de imagen `u/[username]/r/[type]/[id]/card/[sig]/route.tsx`.
+
+**UI que importa de `@/app/api/`** (lógica de API usada desde pantallas; mover a `src/lib/` en el mismo PR de rescate): 10 archivos — `login/LoginPage.tsx`, `welcome/page.tsx`, `welcome/WelcomeFlow.tsx`, `(app)/home/page.tsx`, `(app)/settings/page.tsx`, `(app)/settings/SettingsForm.tsx`, `(app)/profile/[username]/page.tsx`, `(app)/lists/page.tsx`, `(app)/lists/[id]/page.tsx`, `report/page.tsx`. Módulos importados: `settings/identity`, `settings/account-state`, `lists/shared`, `reports/shared`.
 
 ## 6. Red de pruebas: qué hay y qué falta (para los 8 CUJ de F0)
 
-e2e con BD real existentes (`tests/e2e/b3_5e_safety_net/`): `discover-filters`, `discover-pagination` (F3-4), `language-switch` (transversal), `chat-send`, `group-feed-post`, `notifications-render` (v2.1).
+e2e con BD real existentes (`tests/e2e/b3_5e_safety_net/`): `discover-filters`, `discover-pagination` (F3-4), `language-switch` (transversal), `chat-send`, `group-feed-post`, `notifications-render` (v2.1). Otros e2e: `tests/e2e/a11y/` (Supabase simulado, solo accesibilidad) y `tests/e2e/pwa/pwa.spec.ts`.
 
 | CUJ de §7.3 | Flujo | e2e con BD real hoy |
 |---|---|---|
-| Registro | F3-1 | no (`tests/e2e/auth.spec.ts` existe; **no verificado** si usa BD real) |
-| Entrar | F3-1 | ídem |
+| Registro | F3-1 | no (`tests/e2e/auth.spec.ts` usa `example.com` y no inicia sesión: no toca BD real) |
+| Entrar | F3-1 | no (ídem) |
 | Buscar y añadir | F3-4 + F3-5 | buscar sí; añadir no |
 | Cambiar estado y progreso | F3-6 | no |
 | Crear lista y compartir | F3-8 | no |
@@ -295,7 +307,7 @@ e2e con BD real existentes (`tests/e2e/b3_5e_safety_net/`): `discover-filters`, 
 
 ## 7. Tolerancia a migraciones (`isNotMigrated`) en lo que sobrevive
 
-20 archivos con `isNotMigrated` (limpieza de F0, §7.5): 14 en `src/app/api/` (`account/export/letterboxd`, `account/import`, `cron/daily/purge`, `friends/blocks`, `groups/[id]/members/[userId]`, `library/diary`, `library/progress`, `library`, `lists`, `lists/shared`, `lists/[id]`, `reports/public`, `settings/account-state`, `settings`), 5 en `src/lib/` (`import/server/process-batch`, `library/diary`, `library/progress-server`, `library/scale`, `social/friends`) y 1 en UI (`(app)/profile/[username]/page.tsx`, se va con la UI vieja).
+21 archivos con `isNotMigrated` (`grep -rlE isNotMigrated src | wc -l` = 21; limpieza de F0, §7.5): 14 en `src/app/api/` (11 rutas y 3 módulos `.ts`: `cron/daily/purge`, `lists/shared`, `settings/account-state`) (`account/export/letterboxd`, `account/import`, `cron/daily/purge`, `friends/blocks`, `groups/[id]/members/[userId]`, `library/diary`, `library/progress`, `library`, `lists`, `lists/shared`, `lists/[id]`, `reports/public`, `settings/account-state`, `settings`), 6 en `src/lib/` (`import/server/process-batch`, `library/diary`, `library/progress-server`, `library/scale`, `social/friends`, `social/lists`) y 1 en UI (`(app)/profile/[username]/page.tsx`, se va con la UI vieja).
 
 ## 8. Dudas del inventario (resueltas el 2026-11-06)
 
