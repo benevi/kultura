@@ -50,3 +50,4 @@ Registro de las decisiones de Víctor sobre `docs/PLAN_ESTRATEGICO.md` §12 y de
 | Fecha | Entregable | Revisor | Resultado |
 |---|---|---|---|
 | 2026-11-06 | `docs/FUNCIONES_V2.md` | subagente general, sin contexto previo, solo lectura | 3 graves (armazón con `/api/chat`, llamadores omitidos de `friends/blocks` y `reports`, §5 incompleto: 10 archivos de UI importan de `@/app/api`) y 5 menores (receptor `share`, llamadores HTTP frente a imports, `landing/sources`, 21 y no 20 `isNotMigrated`, `auth.spec` sin BD). Todos corregidos. |
+| 2026-11-06 | Interruptor `ui_v2` (`src/lib/ui-v2.ts`, `/api/ui-v2`, `/es/lists`) | subagente general, sin contexto previo, solo lectura | Sin graves. 5 menores corregidos: contenedor propio en la pantalla v2 (DIS-8), test que impide usar el interruptor en rutas cacheables, límites documentados (`loading`/`error` viejos, caché al volver atrás), `next` hacia `/api` rechazado y sin sesión al login, helper de test robusto. |

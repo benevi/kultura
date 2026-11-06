@@ -643,6 +643,12 @@
     "addNoteNamed": "Añadir nota a «{title}»",
     "editNoteNamed": "Editar la nota de «{title}»"
   },
+  "uiV2": {
+    "badge": "Interfaz nueva · en pruebas",
+    "listsTitle": "Mis listas",
+    "listsEmpty": "Aún no tienes listas.",
+    "exit": "Volver a la interfaz actual"
+  },
   "aiRecommendations": {
     "title": "Para ti",
     "aiPickBadge": "PARA TI",
