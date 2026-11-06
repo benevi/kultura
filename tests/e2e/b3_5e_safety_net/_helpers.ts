@@ -16,7 +16,8 @@ export const TEST_USER_EMAIL = process.env.TEST_USER_EMAIL ?? ''
 export const TEST_USER_PASSWORD = process.env.TEST_USER_PASSWORD ?? ''
 export const TEST_GROUP_ID = process.env.TEST_GROUP_ID ?? ''
 
-export const BASE = 'http://localhost:3001'
+// La red CUJ (tests/e2e/cuj/) los corre contra su propio servidor y puerto.
+export const BASE = process.env.E2E_BASE_URL ?? 'http://localhost:3001'
 
 export function hasCredentials(): boolean {
   return Boolean(TEST_USER_EMAIL && TEST_USER_PASSWORD)
