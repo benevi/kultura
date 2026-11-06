@@ -25,6 +25,12 @@ Registro de las decisiones de Víctor sobre `docs/PLAN_ESTRATEGICO.md` §12 y de
 | D-I4 | `/email/confirm` | **Aparcado v2.1**, sigue funcionando con la UI vieja | Es el doble opt-in del correo semanal (`email/confirm/page.tsx:2`). No se borra. |
 | D-I5 | `/report` | **Transversal v2.0, obligatorio** | Denuncia sin cuenta, DSA art. 16 (`report/page.tsx:2`, `api/reports/public/route.ts:3`). Resuelta con el código, sin pregunta. |
 
+## 1c. Rankings de la portada (F0 §7.3, 2026-11-06)
+
+| # | Duda | Decisión | Evidencia / consecuencia |
+|---|---|---|---|
+| D-R1 | ¿Suelo de votos en los rankings de la portada o retirar el bloque hasta v2.0? | **Retirar el bloque** (opción recomendada, elegida por Víctor entre 3: retirar / tarjetas sin nota / suelo de 2.000 votos) | Votos del proveedor, consulta GET del 2026-11-06, criterio de `selectTmdb` (año 2026, nota ≥ 7, media ponderada m=500 C=6,5). **Series**: con un suelo de 1.000 votos quedan 2 títulos y el líder sigue siendo «Así aprenderás» (9,4, 1.012 votos); con 2.000 no queda ninguno. **Cine**: el respaldo «Batman: El ocaso…» tiene 9,1 con 503 votos; el líder de hoy es «Proyecto Salvación» (8,6, 8.702). **Anime**: «Re:ZERO S4» (9,0, 45.954 notas de AniList; el mínimo del top 60 es 1.589). **Juegos**: sin medir, porque RAWG respondía 522. En `kultura-test`, `landing_media` tiene 0 filas y `user_media` solo 3 notas (máx. 1 por título): los votos propios no sirven para un ranking. Un suelo no arregla las series. Consecuencias: la portada deja de enlazar a `/best`, que sigue en el sitemap y en su propia navegación, y el hueco `ranking` de `landing_media` se sigue calculando porque `build.py:484` lo exige para activar una semana. |
+
 ## 2. Riesgos derivados de estas respuestas
 
 | ID | Riesgo | Origen | Impacto | Mitigación / disparador |

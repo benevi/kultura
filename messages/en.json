@@ -1407,12 +1407,6 @@
         }
       }
     },
-    "rankings": {
-      "title": "The best of {year}",
-      "sub": "The top-rated titles in every format, updated daily.",
-      "cta": "See ranking",
-      "score": "Rating {score}"
-    },
     "compare": {
       "title": "The alternative to Letterboxd, Trakt and MyAnimeList",
       "sub": "All your formats in one app, with the same people.",
@@ -1447,7 +1441,6 @@
     "nav": {
       "label": "Main",
       "features": "Features",
-      "rankings": "Rankings",
       "login": "Sign in"
     },
     "formatsShort": {

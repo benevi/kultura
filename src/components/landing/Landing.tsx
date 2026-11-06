@@ -2,7 +2,7 @@
    landing no carga el JS de next/image, y cada imagen la sustituye WebGL. */
 import type { HTMLAttributes, ReactNode } from "react";
 import type { LandingMedia } from "@/lib/landing/media";
-import { RANKING_FORMATS, formatRating, type LandingScenes, type RankingFormat } from "@/lib/landing/scenes";
+import type { LandingScenes } from "@/lib/landing/scenes";
 import type { FaqItem } from "@/lib/landing/faq";
 import type { HeroScene } from "./engine";
 import { LandingMotion } from "./LandingMotion";
@@ -23,7 +23,7 @@ const APPS: [string, CompareFormat[]][] = [
 
 export interface LandingCopy {
   locale: "es" | "en";
-  nav: { label: string; features: string; rankings: string; faq: string; login: string };
+  nav: { label: string; features: string; faq: string; login: string };
   hero: { lead: string; cta: string; demo?: string; scenes: string; pause: string; play: string };
   features: {
     title: string;
@@ -33,7 +33,6 @@ export interface LandingCopy {
     friendNow: string;
   };
   how: { title: string; steps: { title: string; desc: string }[]; status: string };
-  rankings: { title: string; sub: string; cta: string; year: number; label: Record<RankingFormat, string>; score: (s: string) => string };
   compare: { title: string; sub: string; app: string; yes: string; no: string; note: string; formats: Record<CompareFormat, string>; short: Record<CompareFormat, string> };
   faq: { title: string; items: FaqItem[] };
   footer: { nav: string; links: { href: string; text: string }[]; otherLocale: { href: string; text: string; lang: string } };
@@ -138,7 +137,6 @@ export function Landing({ scenes, copy, base }: { scenes: LandingScenes; copy: L
         </a>
         <nav aria-label={copy.nav.label}>
           <a className="hide-m" href="#dentro">{copy.nav.features}</a>
-          <a className="hide-m" href="#rankings">{copy.nav.rankings}</a>
           <a className="hide-m" href="#preguntas">{copy.nav.faq}</a>
           <a href={href("/login?mode=login")}>{copy.nav.login}</a>
         </nav>
@@ -277,35 +275,6 @@ export function Landing({ scenes, copy, base }: { scenes: LandingScenes; copy: L
               ))}
             </ol>
           </div>
-        </section>
-
-        <section className="kl-best" id="rankings" aria-labelledby="kl-best">
-          <div className="kl-best-head" data-reveal="">
-            <h2 className="kl-display" id="kl-best">{copy.rankings.title}</h2>
-            <p>{copy.rankings.sub}</p>
-          </div>
-          <ul className="kl-tiles" data-reveal="" data-stagger="">
-            {RANKING_FORMATS.map((f) => {
-              const m = scenes.ranking[f];
-              const score = formatRating(m.rating, locale);
-              return (
-                <li key={f}>
-                  <a className="kl-tile" href={href(`/best/${f}/${copy.rankings.year}`)}>
-                    <Win m={m}>
-                      {score && (
-                        <span className="kl-score kl-display" aria-label={copy.rankings.score(score)}>
-                          {score}
-                        </span>
-                      )}
-                    </Win>
-                    <h3 className="kl-fmt kl-display">{copy.rankings.label[f]}</h3>
-                    <p className="kl-lead-t">{m.title}</p>
-                    <span className="kl-link">{copy.rankings.cta}</span>
-                  </a>
-                </li>
-              );
-            })}
-          </ul>
         </section>
 
         <section className="kl-vs" id="comparativa" aria-labelledby="kl-vs">

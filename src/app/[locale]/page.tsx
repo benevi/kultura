@@ -3,9 +3,8 @@ import { routing } from "@/i18n/routing";
 import { kulturaDisplay } from "@/app/fonts";
 import { Landing, COMPARE_FORMATS, type LandingCopy } from "@/components/landing/Landing";
 import { renderDataAttribution } from "@/components/legal/DataAttribution";
-import { bestYears } from "@/lib/best/best-of";
 import { getLandingMedia } from "@/lib/landing/media";
-import { RANKING_FORMATS, buildLandingScenes } from "@/lib/landing/scenes";
+import { buildLandingScenes } from "@/lib/landing/scenes";
 import { faqJsonLd, faqKeys, type FaqItem } from "@/lib/landing/faq";
 import { env } from "@/lib/env.server";
 import { siteUrl } from "@/lib/site-url";
@@ -16,7 +15,7 @@ interface Props {
 }
 
 // D-02: la portada sale del CDN. Se pinta en el build (un HTML por idioma) y
-// se regenera cada día, como la muestra de portadas y los rankings que enseña.
+// se regenera cada día, como la muestra de portadas que enseña.
 export const revalidate = 86400;
 
 export function generateStaticParams() {
@@ -59,9 +58,8 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 export default async function HomePage({ params }: Props) {
   const locale = (await params).locale === "en" ? "en" : "es";
   setRequestLocale(locale);
-  const [t, tb, ts, tm, tl, tn, media] = await Promise.all([
+  const [t, ts, tm, tl, tn, media] = await Promise.all([
     getTranslations({ locale, namespace: "landing" }),
-    getTranslations({ locale, namespace: "best" }),
     getTranslations({ locale, namespace: "status" }),
     getTranslations({ locale, namespace: "media" }),
     getTranslations({ locale, namespace: "legal" }),
@@ -72,7 +70,6 @@ export default async function HomePage({ params }: Props) {
   const scenes = buildLandingScenes(media);
   // E-DEMO: el botón solo existe si la cuenta demo está configurada.
   const demo = env.DEMO_USER_EMAIL ? t("hero.demo") : undefined;
-  const [year] = bestYears();
 
   const faq: FaqItem[] = faqKeys(Boolean(demo)).map((key) => ({
     key,
@@ -86,7 +83,6 @@ export default async function HomePage({ params }: Props) {
     nav: {
       label: t("nav.label"),
       features: t("nav.features"),
-      rankings: t("nav.rankings"),
       faq: t("faq.title"),
       login: t("nav.login"),
     },
@@ -115,14 +111,6 @@ export default async function HomePage({ params }: Props) {
         desc: t(`how.steps.${k}.desc`),
       })),
       status: ts("completed"),
-    },
-    rankings: {
-      title: t("rankings.title", { year }),
-      sub: t("rankings.sub"),
-      cta: t("rankings.cta"),
-      year,
-      label: Object.fromEntries(RANKING_FORMATS.map((f) => [f, tb(`chip.${f}`)])) as LandingCopy["rankings"]["label"],
-      score: (score) => t("rankings.score", { score }),
     },
     compare: {
       title: t("compare.title"),
