@@ -18,6 +18,10 @@
 import { test, expect, type Page } from '@playwright/test'
 import { login, BASE } from './_helpers'
 
+/** Portada de 1×1 px en `data:` (sin red): el grid oculta las tarjetas sin portada (`requirePoster`). */
+const POSTER =
+  'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII='
+
 /** Construye un MediaItem mínimo que MediaGrid sabe renderizar. */
 function mockItem(type: string, id: number) {
   return {
@@ -27,6 +31,7 @@ function mockItem(type: string, id: number) {
     title: `${type} item ${id}`,
     year: 2024,
     rating: 8,
+    poster: POSTER,
   }
 }
 
@@ -149,7 +154,9 @@ test.describe('Discover — tabs anime/manga + paginación [B3.5e]', () => {
   }) => {
     // Sobrescribe el mock por defecto del beforeEach con el de "primera vacía".
     await mockFilteredEmptyFirstPage(page)
-    await page.goto(`${BASE}/es/discover?type=game&page=1`)
+    // Con un filtro de verdad: el estado vacío con testid es el de «0 con
+    // filtros» (DiscoverResults); el del catálogo base vacío no lo lleva.
+    await page.goto(`${BASE}/es/discover?type=game&page=1&year=classic`)
 
     // Página 1 vacía → estado vacío, pero el botón next NO está deshabilitado.
     await expect(page.getByTestId('discover-empty')).toBeVisible({

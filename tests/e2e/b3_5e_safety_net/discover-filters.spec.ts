@@ -18,6 +18,10 @@
 import { test, expect, type Page } from '@playwright/test'
 import { login, BASE } from './_helpers'
 
+/** Portada de 1×1 px en `data:` (sin red): el grid oculta las tarjetas sin portada (`requirePoster`). */
+const POSTER =
+  'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII='
+
 /** MediaItem mínimo que MediaGrid sabe renderizar. */
 function mockItem(type: string, id: number) {
   return {
@@ -27,6 +31,7 @@ function mockItem(type: string, id: number) {
     title: `${type} item ${id}`,
     year: 2024,
     rating: 8,
+    poster: POSTER,
   }
 }
 

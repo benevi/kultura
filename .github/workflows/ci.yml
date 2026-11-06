@@ -192,6 +192,91 @@ jobs:
           path: test-results/lhci
           retention-days: 14
 
+  cuj:
+    name: CUJ con BD real (Playwright + Supabase local)
+    # F0 (PLAN_ESTRATEGICO §7.3): los 8 recorridos críticos contra Supabase
+    # local levantado con TODAS las migraciones de supabase/migrations/ (de paso
+    # comprueba que reproducen el esquema) y sembrado con scripts/seed-test.mjs.
+    # Sin secretos: claves locales de `supabase start`. Sin red a proveedores:
+    # TMDB con datos fijos (tests/e2e/a11y/offline-fetch.cjs). Nunca toca
+    # producción ni kultura-test (env.cjs aborta si la URL no es local).
+    if: github.event_name != 'schedule'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    env:
+      TEST_USER_EMAIL: seed-a@cuj.test
+      TEST_USER_PASSWORD: Seed-Kultura-2026!
+      TEST_USER_B_EMAIL: seed-b@cuj.test
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      - name: Supabase CLI
+        uses: supabase/setup-cli@v1
+        with:
+          version: 2.95.4
+
+      - name: Supabase local (aplica las migraciones)
+        run: supabase start -x studio,imgproxy,edge-runtime,logflare,vector,supavisor,postgres-meta
+
+      - name: Claves locales al entorno
+        run: |
+          supabase status -o env | sed -E 's/^([A-Z_]+)="(.*)"$/\1=\2/' | grep -E '^(API_URL|ANON_KEY|SERVICE_ROLE_KEY|PUBLISHABLE_KEY|SECRET_KEY)=' >> "$GITHUB_ENV"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Seed (scripts/seed-test.mjs contra Supabase local)
+        run: |
+          SUPABASE_TEST_URL="$API_URL" SUPABASE_TEST_SERVICE_ROLE_KEY="$SERVICE_ROLE_KEY" node scripts/seed-test.mjs
+
+      - name: Versión de Playwright
+        id: playwright
+        run: echo "version=$(node -p "require('@playwright/test/package.json').version")" >> "$GITHUB_OUTPUT"
+
+      - name: Caché de navegadores de Playwright
+        id: pw-cache
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ steps.playwright.outputs.version }}-chromium
+
+      - name: Navegador de Playwright (descarga)
+        if: steps.pw-cache.outputs.cache-hit != 'true'
+        run: npx playwright install --with-deps chromium
+
+      - name: Navegador de Playwright (desde la caché)
+        if: steps.pw-cache.outputs.cache-hit == 'true'
+        run: npx playwright install chromium
+
+      - name: Build contra Supabase local y sin red
+        run: npm run test:cuj:build
+
+      - name: Los 8 CUJ (+ b3_5e de Descubrir e idioma)
+        run: npm run test:cuj
+
+      - name: Informe de Playwright
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: cuj-report
+          path: |
+            playwright-report/cuj
+            test-results/cuj
+          retention-days: 14
+
+      - name: Logs de Supabase local
+        if: failure()
+        run: docker ps -a && docker logs supabase_auth_kultura --tail 200 || true
+
   integration:
     name: Integración (RLS y base) contra el proyecto de test
     # No en los PR: una migración nueva todavía no está aplicada en test y la

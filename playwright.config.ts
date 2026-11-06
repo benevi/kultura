@@ -25,7 +25,8 @@ export default defineConfig({
   testDir: "./tests/e2e",
   // La red de seguridad de accesibilidad tiene su propio config (servidor
   // construido con Supabase simulado y sin red): tests/e2e/a11y/.
-  testIgnore: ["a11y/**"],
+  // La red CUJ con Supabase local, también: tests/e2e/cuj/.
+  testIgnore: ["a11y/**", "cuj/**"],
   fullyParallel: false,
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 2 : 0,
