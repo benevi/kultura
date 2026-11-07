@@ -1454,6 +1454,33 @@
     },
     "footer": {
       "otherLocale": "Español"
+    },
+    "wedge": {
+      "series": {
+        "seo": {
+          "title": "KULTURA — Your shows and films, episode by episode",
+          "description": "Keep track of where you are in every show and film. Bring your history from TV Time, Letterboxd or IMDb and take your data with you whenever you like."
+        },
+        "title": "Your shows, episode by episode.",
+        "lead": "Keep track of where you are in every show and every film.",
+        "points": {
+          "one": "Seasons and episodes, not just “watched”",
+          "two": "Bring your history from TV Time, Letterboxd or IMDb"
+        }
+      },
+      "anime": {
+        "seo": {
+          "title": "KULTURA — Your anime and manga, in one place",
+          "description": "Anime episodes and manga chapters in the same library. Bring your MyAnimeList list and take it with you whenever you like."
+        },
+        "title": "Your anime and manga, in one place.",
+        "lead": "Episodes and chapters in the same library, without switching apps.",
+        "points": {
+          "one": "Progress by episode and by chapter",
+          "two": "Bring your MyAnimeList list"
+        }
+      },
+      "export": "Export everything whenever you like: your data is yours"
     }
   },
   "discoverFilters": {

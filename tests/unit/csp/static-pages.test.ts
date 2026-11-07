@@ -44,6 +44,9 @@ describe("páginas cacheables", () => {
     "src/app/[locale]/legal/page.tsx",
     "src/app/[locale]/accessibility/page.tsx",
     "src/app/[locale]/offline/page.tsx",
+    // F1 (D2): mini-landings de cuña.
+    "src/app/[locale]/series/page.tsx",
+    "src/app/[locale]/anime/page.tsx",
   ];
   const ON_DEMAND = [
     "src/app/[locale]/best/page.tsx",
@@ -116,7 +119,7 @@ describe("grafo de imports de las rutas cacheables: solo enlaces <a>", () => {
     resolve(LOCALE, "page.tsx"),
     resolve(LOCALE, "not-found.tsx"),
     resolve(LOCALE, "error.tsx"),
-    ...["best", "privacy", "terms", "legal", "accessibility", "offline"].flatMap((d) => walk(resolve(LOCALE, d))),
+    ...["best", "privacy", "terms", "legal", "accessibility", "offline", "series", "anime"].flatMap((d) => walk(resolve(LOCALE, d))),
   ].filter((f) => FILES.has(f));
 
   const graph = new Set<string>();
@@ -132,9 +135,9 @@ describe("grafo de imports de las rutas cacheables: solo enlaces <a>", () => {
   }
   const rel = (f: string) => f.slice(ROOT.length + 1);
 
-  it("cubre las seis familias de rutas cacheables (/offline incluida), la cabecera y el pie", () => {
+  it("cubre las familias de rutas cacheables (/offline y las cuñas de F1 incluidas), la cabecera y el pie", () => {
     const files = Array.from(graph).map(rel);
-    for (const dir of ["best", "privacy", "terms", "legal", "accessibility", "offline"]) {
+    for (const dir of ["best", "privacy", "terms", "legal", "accessibility", "offline", "series", "anime"]) {
       expect(files.some((f) => f.startsWith(`src/app/[locale]/${dir}/`))).toBe(true);
     }
     expect(files).toEqual(
@@ -143,6 +146,7 @@ describe("grafo de imports de las rutas cacheables: solo enlaces <a>", () => {
         "src/components/layout/Footer.tsx",
         "src/components/legal/LegalDocument.tsx",
         "src/components/best/ShareRanking.tsx",
+        "src/components/landing/WedgeCta.tsx",
       ]),
     );
   });

@@ -26,7 +26,9 @@ export interface SignupResult {
 
 /** Lo que pesa más: la URL (el clic real) o lo que guardó el `signUp`. */
 export function resolveSignupAttribution(fromUrl: AttributionParams, metadata: unknown): Attribution {
-  if (fromUrl.channel !== 'direct') return toStoredAttribution(fromUrl)
+  // Una URL con cuña (F1) también cuenta como clic real aunque el canal sea
+  // `direct`: Google no pasa por `signUp` y, si no, la cuña se perdería.
+  if (fromUrl.channel !== 'direct' || fromUrl.wedge) return toStoredAttribution(fromUrl)
   return storedAttribution(metadata) ?? { channel: 'direct' }
 }
 

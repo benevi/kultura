@@ -43,6 +43,13 @@ describe('parseAttribution', () => {
     expect(parseAttribution(qs('ref=ana&utm_source=x'))).toMatchObject({ channel: 'utm', ref: 'ana', utm_source: 'x' })
   })
 
+  it('wedge (F1): solo series o anime; no cambia el canal', () => {
+    expect(parseAttribution(qs('wedge=series'))).toEqual({ channel: 'direct', wedge: 'series' })
+    expect(parseAttribution(qs('wedge=%20Anime%20&utm_source=reddit'))).toEqual({ channel: 'utm', utm_source: 'reddit', wedge: 'anime' })
+    expect(parseAttribution(qs('wedge=games'))).toEqual({ channel: 'direct' })
+    expect(parseAttribution(qs('wedge=<b>'))).toEqual({ channel: 'direct' })
+  })
+
   it('searchParams de una página de Next (string | string[])', () => {
     expect(parseAttributionRecord({ utm_source: ['a', 'b'], ref: 'ana' })).toMatchObject({ utm_source: 'a', ref: 'ana' })
   })
@@ -64,5 +71,13 @@ describe('guardar y reenviar', () => {
     expect(withAttribution('/login?mode=register', a)).toBe(`/login?mode=register&utm_source=x&ref=ana&inv=${SIG}`)
     expect(withAttribution('/login', { channel: 'direct' })).toBe('/login')
     expect(withAttribution('/a#b', { channel: 'ref', ref: 'ana' })).toBe('/a?ref=ana#b')
+  })
+
+  it('la cuña se guarda, se relee y se reenvía (correo y Google)', () => {
+    const a = parseAttribution(qs('utm_source=x&wedge=anime'))
+    expect(toStoredAttribution(a)).toEqual({ channel: 'utm', utm_source: 'x', wedge: 'anime' })
+    expect(storedAttribution({ channel: 'direct', wedge: 'series' })).toEqual({ channel: 'direct', wedge: 'series' })
+    expect(storedAttribution({ channel: 'direct', wedge: 'otra' })).toEqual({ channel: 'direct' })
+    expect(withAttribution('/login?mode=register', a)).toBe('/login?mode=register&utm_source=x&wedge=anime')
   })
 })

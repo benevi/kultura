@@ -64,6 +64,8 @@ const STATIC_PATHS = [
   "/es/legal",
   "/en/accessibility",
   "/es/offline",
+  "/es/series",
+  "/en/anime",
 ];
 
 const DYNAMIC_PATHS = [
@@ -82,6 +84,8 @@ const DYNAMIC_PATHS = [
   "/es/bestias",
   "/es/privacy-extra",
   "/es/privacy/x",
+  "/es/series/x",
+  "/es/animes",
   "/api/discover",
   "/api/csp-report",
 ];

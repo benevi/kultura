@@ -18,6 +18,19 @@ export type UtmKey = (typeof UTM_KEYS)[number]
 /** Canal del alta: el 100 % de las cuentas nuevas cae en uno de los tres. */
 export type AttributionChannel = 'utm' | 'ref' | 'direct'
 
+/**
+ * Cuñas de la prueba de humo de F1 (`/es/series`, `/es/anime`; D2). Lista
+ * cerrada: cualquier otro valor se descarta. No cambia el canal: dice qué
+ * promesa vio quien se dio de alta, no de dónde vino.
+ */
+export const WEDGES = ['series', 'anime'] as const
+export type Wedge = (typeof WEDGES)[number]
+
+export function parseWedge(raw: string | null | undefined): Wedge | undefined {
+  const value = raw?.trim().toLowerCase() ?? ''
+  return (WEDGES as readonly string[]).includes(value) ? (value as Wedge) : undefined
+}
+
 export interface Attribution {
   channel: AttributionChannel
   utm_source?: string
@@ -27,6 +40,8 @@ export interface Attribution {
   utm_content?: string
   /** Nombre de usuario de quien comparte (sin verificar: solo atribución). */
   ref?: string
+  /** Mini-landing de F1 desde la que se pulsó «Crear cuenta». */
+  wedge?: Wedge
 }
 
 /** Lo que viaja por la URL: la atribución más la firma de la invitación. */
@@ -62,6 +77,8 @@ export function parseAttribution(params: ParamSource | null | undefined): Attrib
   if (ref && REF_RE.test(ref)) out.ref = ref
   const inv = params.get('inv')?.trim().toLowerCase()
   if (out.ref && inv && INV_RE.test(inv)) out.inv = inv
+  const wedge = parseWedge(params.get('wedge'))
+  if (wedge) out.wedge = wedge
   out.channel = out.utm_source ? 'utm' : out.ref ? 'ref' : 'direct'
   return out
 }
@@ -83,6 +100,7 @@ export function toStoredAttribution(attr: AttributionParams): Attribution {
   const out: Attribution = { channel: attr.channel }
   for (const key of UTM_KEYS) if (attr[key]) out[key] = attr[key]
   if (attr.ref) out.ref = attr.ref
+  if (attr.wedge) out.wedge = attr.wedge
   return out
 }
 
@@ -102,6 +120,7 @@ export function attributionEntries(attr: AttributionParams): Array<[string, stri
   for (const key of UTM_KEYS) if (attr[key]) entries.push([key, attr[key] as string])
   if (attr.ref) entries.push(['ref', attr.ref])
   if (attr.ref && attr.inv) entries.push(['inv', attr.inv])
+  if (attr.wedge) entries.push(['wedge', attr.wedge])
   return entries
 }
 
