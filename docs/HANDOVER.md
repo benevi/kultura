@@ -16,6 +16,7 @@
 - No se usa fuente mono: los datos van en cifras tabulares de Bricolage (K7).
 - Firma propia, distinta de KPR: el progreso («T2 E5») como forma tipográfica (K8).
 - Chaflán con dos tokens: 14 px en controles y 18 px en portadas; el foco va fuera del recorte.
+- Los 7 formatos son un pack, en el segundo acto (D-F2b, §A.4 del brief): portadas en el 2.º pantallazo y el perfil público como vitrina, nunca en el titular.
 - Sin desplazamiento secuestrado ni giroscopio. Marcar visto se hace con un toque, y hay «Deshacer».
 
 ## Pendiente / ojo

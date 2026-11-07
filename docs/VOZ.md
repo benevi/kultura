@@ -35,6 +35,8 @@ Complementa el brief (`docs/02_DISEÑO_BRIEF.md` §A). Las **reglas mecánicas**
 |---|---|---|
 | Unidad de serie | **episodio** (una palabra por concepto) | capítulo, ep., cap. |
 | Notación | **T2 E5** en ES y **S2 E5** en EN, cada una con su clave; el lector oye «Temporada 2, episodio 5» (`aria-label`) | 2x05, S02E05 en español |
+| Unidad en los demás formatos (pack, P3 del brief) | manga y cómic: **cap. 112**; libro: **p. 240**; juego: **12 h**; película: **48 min** (lo que falta). Cada una con su clave ES/EN y su `aria-label` completo («capítulo 112») | mezclar unidades en un mismo dato |
+| El conjunto de formatos | no se nombra en la interfaz: se enseña con portadas (P1 del brief). «Pack» es una palabra interna | «7 formatos», «todo en un solo lugar», «multiformato» |
 | Ver uno | **Marcar visto** | Check, completar episodio |
 | Ir al día | **al día** | actualizado, sincronizado |
 | Lo que te falta | **{n, plural, one {te queda # episodio} other {te quedan # episodios}}** (el verbo también concuerda) | pendientes ({n}) como titular |

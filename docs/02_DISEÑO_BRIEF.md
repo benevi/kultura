@@ -16,7 +16,12 @@ Todo este apartado sale de **evidencia de mesa**: plan §1, §2.2 y §5.1, y el 
   - en el **móvil, en el sofá, al terminar un episodio**, con una mano y en < 10 s («¿por cuál iba?», «marcar visto»);
   - en el **escritorio**, para importar, ordenar y hacer listas.
 - **Qué quieren:** saber por dónde van, no perder el hilo entre plataformas y que sus datos no dependan de que una app cierre.
-- **«Y también»:** anime, manga, juegos, libros y cómics existen y se ven, pero **nunca son titular** (plan §5.1). Si la prueba de humo reabre la cuña (≥ 30 altas de anime que ganan por D-F1b), se rehace este apartado y nada más.
+- **El pack, como segundo acto (D-F2b):** los 7 formatos (películas, series, anime, manga, libros, cómics y juegos) juntos en una misma web son **lo único que nadie más ofrece** (plan §3). No son un regalo escondido:
+  - son la razón para quedarse;
+  - entran por la cuña;
+  - **no son el titular**, porque la gente llega con un dolor concreto, no buscando un catálogo (plan §2.1 y §2.4).
+
+  Cómo se ve, en §A.4. Si la prueba de humo reabre la cuña (≥ 30 altas de anime que ganan por D-F1b), se rehace la cuña y el pack se queda igual.
 
 ### A.2 Personalidad: 3 adjetivos y 3 anti-adjetivos
 Cada adjetivo tiene una prueba que se ve en una captura; si falla, falla el criterio 1 de la rúbrica.
@@ -38,7 +43,16 @@ Cada adjetivo tiene una prueba que se ve en una captura; si falla, falla el crit
 - **Frase de apoyo** (≤ 90 caracteres, siempre visible con el titular): «Series y películas al día, en español. Y tus datos, siempre tuyos.»
 - **Lo que no prometemos:** IA, cifras de usuarios, «gratis para siempre» ni «sustituto de TV Time» (D-F1d: esa demanda ya migró). Tampoco nada de dinero en la portada (D4).
 
-### A.4 Tono
+### A.4 El pack: cómo se enseña (D-F2b)
+- **P1 · Segundo acto de la portada:**
+  - el **segundo pantallazo** enseña el pack con **portadas reales de los 7 formatos** en mosaico (R4);
+  - es un grupo visible de **≥ 1 portada por formato**, que se reconoce sin leer;
+  - los 7 formatos **no se listan con palabras** ni se explican; como mucho una frase (I1) que no sea «todo en un solo lugar» (X12).
+- **P2 · El perfil público es el pack:** la vitrina de una persona junta sus formatos en una misma composición. Es lo que se comparte (bucle de crecimiento, plan §5.2.5). Un formato vacío no deja hueco ni rótulo: simplemente no aparece.
+- **P3 · Un solo sistema para los 7:** la misma forma (K3), el mismo rótulo (R2) y el mismo gesto (B2) sirven para cualquier formato. Solo cambian la unidad del dato (K8: «T2 E5», «cap. 112», «p. 240», «12 h») y la proporción de la portada si el material lo exige (por ejemplo, la carátula de un juego). Nada de colores por formato ni iconos de formato.
+- **P4 · Lo que no hace el pack:** no es el titular, no es una rejilla de 7 categorías con icono y no se anuncia con cifras («7 formatos»).
+
+### A.5 Tono
 El registro, el presupuesto de palabras y la lista negra están en **`docs/VOZ.md`** (v2). Allí también se dice qué reglas del `VOZ.md` de la raíz se anulan.
 
 ---
@@ -268,7 +282,7 @@ Lo que aparezca de esta lista **no se enseña**. Base: plan §6.2 (no se quita n
 |---|---|---|---|---|---|
 | 1 | **Carácter** | tapando el logo, podría ser cualquier tracker o **confundirse con KPR** | se intuye, pero solo por el color | tapando el logo se reconoce por la firma propia (K8) junto con K1, K3 y K4 | captura con el logo tapado, junto a 2 de la competencia **y una de kprverse**; si se confunde con KPR, es un 2 |
 | 2 | **Fidelidad al brief** | ≥ 2 puntos de §C | 1 punto menor de §C, o falla una regla de §B | 0 de §C y cumple las reglas de §B que le aplican | X1–X21 marcadas y reglas citadas |
-| 3 | **Portadas como material** | portadas pequeñas en tarjetas, o ninguna | presentes, pero en segundo plano | ≥ 40 % del primer pantallazo (K6), y entera donde toca (R1) | área medida a 1440 y a 390 |
+| 3 | **Portadas como material** | portadas pequeñas en tarjetas, o ninguna | presentes, pero en segundo plano | ≥ 40 % del primer pantallazo (K6), entera donde toca (R1) y, en la portada y el perfil, el pack visible con ≥ 1 portada por formato (P1 y P2) | área medida a 1440 y a 390; recuento por formato |
 | 4 | **Legibilidad móvil** | a 390 hay desbordamiento, o el **cuerpo** < 16 px | se lee, pero la jerarquía tarda | en 3 s se sabe qué es y qué tocar, y la acción queda en el tercio inferior | captura de 390, enseñada 3 s a alguien |
 | 5 | **Profundidad y movimiento con propósito** | movimiento decorativo o por todas partes | correcto, pero sin interacción firma | 1 interacción firma por pantalla (I2 o B2), y solo curvas y duraciones de M1–M3 | vídeo o lista de animaciones con su curva |
 | 6 | **Sin WebGL ni animación** | sin WebGL se rompe, o > 150 KB de JS | funciona, pero queda pobre | sin WebGL y con reduced-motion se ve completa, en ≤ 150 KB | captura sin WebGL y con reduced-motion; build |

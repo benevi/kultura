@@ -55,6 +55,7 @@ F0 se da por cerrada: se cumplen todas las condiciones de la puerta de §7.2 sal
 | # | Decisión | Detalle | Consecuencia |
 |---|---|---|---|
 | D-F2a | **Titular de la portada: «Tus series, al día.»** (Víctor, elegido entre los 3 de `02_DISEÑO_BRIEF.md` §A.3) | Se elige sin la prueba de 5 s; es el que se entiende sin contexto. «Sabes por dónde vas.» queda como candidato para la frase del cierre. | La frase de apoyo se mantiene («Series y películas al día, en español. Y tus datos, siempre tuyos.»). El resto de la puerta de F2 (§A–§D) sigue pendiente del «sí» escrito. |
+| D-F2b | **Los 7 formatos se venden como pack, en el segundo acto, no como regalo** (Víctor, 2026-11-07, tras la crítica de Claude: el pack es el diferencial del plan §3, pero como titular repite lo que no ha funcionado, véase §2.1 y §2.4; y «todo en un solo lugar» está en X12) | La cuña sigue en el titular («Tus series, al día.», D-F2a). El pack: segundo pantallazo de la portada con portadas reales de los 7 formatos (P1), perfil público como vitrina del pack (P2) y un solo sistema para todos los formatos (P3). Sin listarlos con palabras ni anunciar «7 formatos» (P4). | `02_DISEÑO_BRIEF.md` §A.1 y §A.4, rúbrica 3 y `docs/VOZ.md`. **Matiza el plan §3 y §5.1**: lo que allí era «y también» o «viene de regalo» pasa a «pack en el segundo acto». El plan no está en git, así que se actualiza a mano en su próxima versión. |
 
 ## 2. Riesgos derivados de estas respuestas
 
