@@ -1,30 +1,27 @@
 # HANDOVER — última sesión (2026-11-07)
 
-**Fase:** F2 (identidad y dirección de arte), pasos 1–3 de §6.1 del plan. La cuña A es provisional (D-F1c y D-F1d). **Rama:** `docs/f2-brief`, con el PR abierto y sin fusionar.
+**Fase:** F2, paso 4 de §6.1 (style tiles), ronda 3 de 3. Cuña A provisional (D-F1c/D-F1d). **Rama:** `docs/f2-style-tiles` (desde `master` 345cbf2), PR #86 abierto sin fusionar.
 
-## Hecho en esta sesión: brief de diseño
-- `docs/02_DISEÑO_BRIEF.md` (v1.2, aprobado):
-  - **§A, plataforma de marca.** A quién hablamos (cuña A, desde evidencia de mesa sin verificar con personas); personalidad: *cinematográfica, exacta, cómplice* frente a *infantil o artesanal, corporativa o SaaS, ruidosa*; promesa y 3 titulares candidatos.
-  - **§B, referencias convertidas en reglas medibles.** kprverse (K1–K8), Immersive Garden (I1–I3), Dropbox Brand (D1–D4), Rijksmuseum (R1–R4) y Bruno Simon (B1–B2), cada una con URL y consultada el 2026-11-07 en el navegador integrado, con cifras de `getComputedStyle`. Incluye las reglas de movimiento (M1–M5), la base que los style tiles deben fijar (B.7) y el uso de las skills (B.8).
-  - **§C, anti-lista cerrada** (X1–X21), con cómo se detecta cada punto.
-  - **§D, rúbrica cerrada:** anclas 1/3/5 y cómo se mide cada criterio; el criterio 7 (accesibilidad) es una puerta.
-- `docs/VOZ.md` (v2): registro, presupuesto de palabras, lista negra, palabras de la cuña y qué reglas del `VOZ.md` de la raíz se anulan. El de la raíz no se toca (regla 3) y sus tests siguen mandando.
-- Skills usadas: taste-skill, impeccable, ui-ux-pro-max (sus CSV a mano, porque no hay Python), emil-design-eng y design-motion-principles.
-- Revisión independiente: Artisan + Advocate, 13 graves y 13 menores, todos corregidos (`04_DECISIONES` §4).
+## Rondas
+- **Ronda 1:** `A.html` «Encuadre», `B.html` «Marcador», `C.html` «Escena». Víctor (D-F2d): paleta de A, logo de B, C descartado, el acento no es fijo.
+- **Ronda 2:** `A2.html` «Encuadre con pista» (https://claude.ai/artifact/3bSSJt3aKQQURxQ8Vxuggs). Revisores 4·4·4·4; **Víctor: 3** (falla la legibilidad móvil; falta profundidad/3D) → D-F2e.
+- **Ronda 3 (actual):** `A3.html` «Encuadre en profundidad» (https://claude.ai/artifact/TtWXN7RnwijpACzUt7ZP6R).
+  - Escena en 3 planos sin WebGL: fondo 16:9 lejano, Los 100 y Sherlock en Z, póster delante con la pista K8 y la etiqueta «El último reino / T2 E5 / te quedan 4 episodios».
+  - La escena reposa girada (rotateX 2°, rotateY −7°); B1 suma ±6° con puntero fino.
+  - A 390: titular → escena → «Crear cuenta» → entradilla. CTA visible a 390×844 y 320×640.
+  - Tramos pendientes de la pista en #6b6b6b (3,7:1).
+  - Pruebas: axe 0 en 8 combinaciones, sin desbordes, B2 correcto. Revisores en 2 pasadas: **4·4·4·4 los dos** (`04_DECISIONES` §4).
 
-## Decisiones del brief (aprobadas, D-F2c)
-- No se usa fuente mono: los datos van en cifras tabulares de Bricolage (K7).
-- Firma propia, distinta de KPR: el progreso («T2 E5») como forma tipográfica (K8).
-- Chaflán con dos tokens: 14 px en controles y 18 px en portadas; el foco va fuera del recorte.
-- Los 7 formatos son un pack, en el segundo acto (D-F2b, §A.4 del brief): portadas en el 2.º pantallazo y el perfil público como vitrina, nunca en el titular.
-- Sin desplazamiento secuestrado ni giroscopio. Marcar visto se hace con un toque, y hay «Deshacer».
+- **Ronda 4:** `A2b.html` (https://claude.ai/artifact/3dM2PsctBcvZ5uHycpkNT2). Es A2 a 1440 y, a 390, titular primero, póster encuadrado con la cara por encima de la etiqueta, «Crear cuenta» visible a 320×640 y pista legible (#6b6b6b). Revisores: 4·4·4·4 los dos.
+
+## Estado de la puerta
+- A3 descartado; Víctor elige A2 y sin R3/D6 (D-F2f, D-F2g). **Puerta del paso 4 aprobada con A2b** (Víctor: «Pasa», D-F2h). Siguiente: paso 5, sistema de diseño sobre A2b.
+- Deuda para el paso 5: token `--rail-todo`, P3 con pistas largas, verde frente a `--ok` (K5), probar un acento frío (X11) y pack P1 en el paso 6.
 
 ## Pendiente / ojo
-- **Puerta de F2 (pasos 1–3): aprobada** por Víctor por escrito (D-F2c), con el titular «Tus series, al día.» (D-F2a) y el pack (D-F2b).
-- **Sesión siguiente:** paso 4, 3 style tiles en HTML (390/1440, sin WebGL, reduced-motion) que resuelvan B.7. Máximo 3 alternativas. Conviene Fable 5.1 u Opus 5.5.
-- Deuda para el paso 5: `landing.css:60` (0,5 s) y `:84` (curva fuera de M1); decidir si Figtree sale (X21).
+- Sin probar: VoiceOver iOS, NVDA, Safari real.
+- Fuera de git a propósito: `prototipos/login/`, capturas PNG, `.playwright-mcp/`, `PLAN_ESTRATEGICO.md`, `docs/auditoria/`.
+- `.claude/launch.json` tiene la entrada local `f2-tiles` (servidor estático en el scratchpad); no se versiona.
+- Deuda paso 5: `landing.css:60` y `:84`; decidir Figtree (X21).
+- Sigue en pie: prueba de humo F1, backup del lunes (R10), rotar contraseña de la base, R9.
 - Squash-merge solo con el OK de Víctor.
-- Sigue en pie de sesiones anteriores:
-  - prueba de humo F1 (publicar mensajes; cerrar F1 con la decisión);
-  - backup del lunes (R10), rotar la contraseña de la base y R9.
-- `PLAN_ESTRATEGICO.md`, `docs/auditoria/` y `prototipos/` siguen fuera de git: hacer `git add` solo con rutas explícitas.
