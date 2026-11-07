@@ -1,4 +1,4 @@
-# F2 · paso 4 · Style tiles (ronda 1)
+# F2 · paso 4 · Style tiles (rondas 1 y 2)
 
 Tres direcciones para `docs/02_DISEÑO_BRIEF.md` (v1.2), cuña A, titular «Tus series, al día.» (D-F2a). Portadas reales de TMDB (consulta `discover` del 2026-11-07, `language=es-ES`). Se abren en local (`A.html`, `B.html`, `C.html`); las fuentes y portadas van en `fuentes/` e `img/`.
 
@@ -27,3 +27,12 @@ Tres direcciones para `docs/02_DISEÑO_BRIEF.md` (v1.2), cuña A, titular «Tus 
 **Ninguno pasa todavía:** los revisores dejan el criterio 1 (Carácter) en 3 en los tres. B además deja el botón en 699–751 px a 390 (bajo la barra de Safari). Falta la nota de Víctor y su feedback escrito contra la rúbrica para la ronda 2. Sugerencia de los revisores: C como base con la pista de B como K8; o A (mejor para el usuario de la cuña, según Advocate).
 
 Capturas en `capturas/` (las JPEG van al repo; las PNG de página completa y reduced-motion se quedan en local).
+
+## Ronda 2 · A2 «Encuadre con pista» (D-F2d)
+Feedback de Víctor a la ronda 1: paleta de A, logotipo de B, C descartado y el acento no es fijo. A2 = paleta de A + monograma de B (toma el color de la escena; fijo en tinta como icono) + pista de episodios de B como lado izquierdo del marco del póster, con la etiqueta «El último reino / T2 E5 / te quedan 4 episodios» colgada del tramo actual, igual a 390 y a 1440. En «Seguir viendo» cada fila lleva el acento de su portada (ocre, verde, verde agua) y el acento solo llena la pista.
+
+- Artifact privado: https://claude.ai/artifact/3bSSJt3aKQQURxQ8Vxuggs
+- Pruebas: axe 0 en 8 combinaciones (390/1440/320/1024 × reduced-motion), consola limpia, sin WebGL, sin desbordes ni solapes, portadas 45 % (390) y 52 % (1440), B2 con ratón y teclado (nombre accesible «Marcar visto: T2 E5 de El último reino»).
+- Rúbrica (C1·C2·C3·C4): implementador 4·4·4·4; Artisan 3·3·3·4 → 4·4·4·4 tras arreglos; Advocate 4·4·4·4 → 4·4·4·4. **Pasa la puerta del paso 4**, pendiente de la nota de Víctor.
+- Condiciones abiertas: pack P1 en el paso 6; probar un acento frío (riesgo X11); P3 con pistas largas (anime); verde de Los 100 frente a `--ok`.
+- Capturas: `capturas/A2-390.jpg` y `A2-1440.jpg`.

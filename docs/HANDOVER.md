@@ -1,25 +1,29 @@
 # HANDOVER — última sesión (2026-11-07)
 
-**Fase:** F2, paso 4 de §6.1 (style tiles). Cuña A provisional (D-F1c/D-F1d). **Rama:** `docs/f2-style-tiles` (desde `master` 345cbf2), PR abierto sin fusionar.
+**Fase:** F2, paso 4 de §6.1 (style tiles), ronda 2 de 3. Cuña A provisional (D-F1c/D-F1d). **Rama:** `docs/f2-style-tiles` (desde `master` 345cbf2), PR abierto sin fusionar.
 
-## Hecho en esta sesión: 3 style tiles (ronda 1)
-- `prototipos/f2-tiles/` con `A.html` «Encuadre», `B.html` «Marcador», `C.html` «Escena»; `README.md` con pruebas y notas; `fuentes/`, `img/` (portadas TMDB, `discover` es-ES) y 6 capturas JPEG (390 y 1440).
-- Cada tile: logotipo, paleta (3 superficies, tinta, apagado, escena, reserva, error/éxito con icono), tipografía (KulturaDisplay 800 + Bricolage), forma (chaflán 14/18, foco fuera del recorte), imagen (2:3, 16:9, sin portada, carga), retícula 4/12, y fragmento de portada + Inicio/ficha con «Marcar visto» (B2).
-- Artifacts privados: A https://claude.ai/artifact/Lyh1swKbsMjRm3tcvpaYrw · B https://claude.ai/artifact/VqnKzjWxeDWARBwavsTzTN · C https://claude.ai/artifact/KjTku74WJKpSuRvJhp6K9x
-- Pruebas: axe 0 en 18 combinaciones (390/1440/320 × reduced-motion), consola limpia, sin WebGL, sin desbordes; portadas ≥ 40 % del 1.er pantallazo en los tres.
-- Revisión independiente Artisan + Advocate, 2 rondas (`04_DECISIONES` §4). Todo lo grave, corregido.
+## Ronda 1 (hecha)
+- `prototipos/f2-tiles/A.html` «Encuadre», `B.html` «Marcador», `C.html` «Escena». Ninguno llegó a 4 en Carácter según los revisores.
+- Artifacts: A https://claude.ai/artifact/Lyh1swKbsMjRm3tcvpaYrw · B https://claude.ai/artifact/VqnKzjWxeDWARBwavsTzTN · C https://claude.ai/artifact/KjTku74WJKpSuRvJhp6K9x
+- Feedback de Víctor (D-F2d): paleta de A, logo de B, C descartado, el acento no es fijo (K5 sin cambios).
+
+## Ronda 2: A2 «Encuadre con pista» (hecha)
+- `prototipos/f2-tiles/A2.html`: paleta de A + monograma de B (color de la escena; fijo en tinta como icono) + pista de episodios como lado izquierdo del marco del póster, con «El último reino / T2 E5 / te quedan 4 episodios» colgado del tramo actual, igual a 390 y a 1440.
+- «Seguir viendo»: cada fila con el acento de su portada (ocre, verde, verde agua); el acento solo llena la pista; botones en s2.
+- Póster en w780 (`img/lastkingdom_780.jpg`). Capturas `capturas/A2-390.jpg` y `A2-1440.jpg`.
+- Artifact privado: https://claude.ai/artifact/3bSSJt3aKQQURxQ8Vxuggs
+- Pruebas: axe 0 en 8 combinaciones, consola limpia, sin WebGL, sin solapes, portadas 45–52 %, B2 con ratón y teclado.
+- Revisión Artisan + Advocate, 2 pasadas (`04_DECISIONES` §4): 3·3·3·4 y 4·4·4·4 → **4·4·4·4 los dos: pasa la puerta.**
 
 ## Estado de la puerta
-- **Ningún tile pasa aún:** los revisores dejan el criterio 1 (Carácter) en 3 en los tres; C2–C4 en 4 (B: C4 3–4, botón a 699–751 px a 390).
-- Se enseñan a Víctor como **ronda 1 de 3**. Necesita: su nota 1–4 por tile y feedback escrito contra la rúbrica. Si difiere ≥ 2 de la del revisor, vale la más baja.
-- Sugerencias de los revisores para la ronda 2: C como base + la pista de B como K8 (Artisan); A es la mejor para el usuario (Advocate).
-- Si tras 3 rondas ninguno pasa → R3/D6 (persona humana).
+- Falta la **nota 1–4 de Víctor** y su «sí» a A2. Si difiere ≥ 2 de la del revisor, vale la más baja. Si no pasa: ronda 3 y, después, R3/D6.
+- Condiciones de los revisores: pack P1 (7 formatos) en el prototipo de portada (paso 6); probar un acento frío (riesgo X11); P3 con pistas largas (anime, 112 caps.) sin resolver.
+- Pregunta para Víctor: ¿se excluyen de K5 los verdes cercanos a `--ok` (el verde de Los 100 se lee como «hecho»)?
 
 ## Pendiente / ojo
-- **No empezar el paso 5** hasta el «sí» de Víctor a UNA dirección.
-- P1 (pack de 7 formatos) no aparece en los tiles: entra en el prototipo de portada (paso 6).
+- **No empezar el paso 5** hasta el «sí» de Víctor a A2.
 - Sin probar: VoiceOver iOS, NVDA, Safari real.
-- Fuera de git a propósito: `prototipos/login/` (material viejo), capturas PNG, `.playwright-mcp/`, `PLAN_ESTRATEGICO.md`, `docs/auditoria/`.
+- Fuera de git a propósito: `prototipos/login/`, capturas PNG, `.playwright-mcp/`, `PLAN_ESTRATEGICO.md`, `docs/auditoria/`.
 - `.claude/launch.json` tiene una entrada local `f2-tiles` (servidor estático en el scratchpad); no se versiona.
 - Deuda paso 5: `landing.css:60` y `:84`; decidir Figtree (X21).
 - Sigue en pie: prueba de humo F1, backup del lunes (R10), rotar contraseña de la base, R9.
