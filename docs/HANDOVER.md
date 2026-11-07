@@ -13,15 +13,8 @@
   - Pruebas: axe 0 en 8 combinaciones, sin desbordes, B2 correcto. Revisores en 2 pasadas: **4·4·4·4 los dos** (`04_DECISIONES` §4).
 
 ## Estado de la puerta
-- Falta la **nota 1–4 de Víctor** a A3. Es la última ronda: si no pasa → **R3/D6** (persona humana).
-- Para el paso 5 (si pasa):
-  - en móvil la etiqueta tapa el tramo actual de la pista;
-  - «te quedan 4 episodios» ocupa 2 líneas a 390;
-  - confirmar si el fondo 16:9 cuenta como portada (K6; el póster solo es el 25 % a 390);
-  - pack P1 en el paso 6;
-  - probar un acento frío (X11);
-  - P3 con pistas largas;
-  - verde frente a `--ok` (K5).
+- **A3 no pasa; Víctor elige A2 (D-F2f).** Falta que confirme si eso abre el paso 5 (con la legibilidad móvil de A2 como deuda) o si se activa R3/D6.
+- Deuda de A2 para el paso 5: legibilidad móvil (la nota 3 de Víctor), pack P1 en el paso 6, probar un acento frío (X11), P3 con pistas largas y verde frente a `--ok` (K5).
 
 ## Pendiente / ojo
 - **No empezar el paso 5** hasta el «sí» de Víctor.
