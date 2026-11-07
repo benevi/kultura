@@ -79,7 +79,7 @@ select cuna,
 
 ## Criterio (§7.3, sin cambios)
 - **Concluyente solo si alguna cuña llega a ≥ 30 altas.** En ese caso gana la que tenga más altas y más activación (3 títulos en 24 h).
-  - **Desempate propuesto (pendiente del OK de Víctor; se fija antes de ver datos):** si una cuña gana en altas y la otra en activación, gana la que tenga más altas activadas en número absoluto. Si siguen empatadas, la que tenga más altas.
+  - **Desempate (D-F1b, aprobado por Víctor el 2026-11-07, fijado antes de ver datos):** si una cuña gana en altas y la otra en activación, gana la que tenga más altas activadas en número absoluto. Si siguen empatadas, la que tenga más altas.
 - **Si ninguna llega a 30, la prueba es no concluyente.** Por D-F1 (`04_DECISIONES` §1f), la cuña es entonces **A (series y películas en español) por evidencia estructural** (§2.2). Las entrevistas (`F1_ENTREVISTAS.md`) pasan a antes de F4 y no reabren la cuña salvo alerta roja.
 - Nunca se decide con altas de un dígito. Tampoco se publican cifras de esta prueba en la web.
 

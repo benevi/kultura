@@ -11,7 +11,7 @@
 - Medición y criterio: `docs/F1_PRUEBA_DE_HUMO.md`, con los enlaces UTM, 2 consultas SQL y la regla de §7.3 + D-F1.
   - Altas: `signup_completed`.
   - Activación (3 títulos en 24 h): `user_media`, porque las importaciones no emiten `library_add`.
-  - Desempate propuesto, pendiente del OK de Víctor.
+  - Desempate aprobado (D-F1b): más altas activadas en número absoluto; si empatan, más altas.
 - Verificado en local:
   - `tsc` y `next lint` limpios.
   - `vitest`: 16 fallos, los mismos que `origin/master` en un worktree (Windows: CRLF y `\`).

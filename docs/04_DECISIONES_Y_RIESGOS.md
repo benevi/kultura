@@ -46,6 +46,7 @@ F0 se da por cerrada: se cumplen todas las condiciones de la puerta de §7.2 sal
 | # | Decisión | Detalle | Consecuencia |
 |---|---|---|---|
 | D-F1 | **Las entrevistas pasan a antes del relanzamiento (F4).** Ya no forman parte de F1. | El guion `docs/F1_ENTREVISTAS.md` queda listo y no se toca. Las entrevistas se hacen al final de F3 o al empezar F4, antes de publicar. | La puerta de F1 deja de exigir ≥ 8 entrevistas: se cierra con la prueba de humo evaluada y una decisión escrita. Con < 30 altas, la cuña es **A por evidencia estructural** (§2.2). Las entrevistas de F4 confirman o corrigen el mensaje y las prioridades del relanzamiento, pero no reabren la cuña salvo con una alerta roja (§6.4 del guion). Ver R11. |
+| D-F1b | **Desempate de la prueba de humo** (Víctor, 2026-11-07, antes de ver datos) | Si una cuña llega a ≥ 30 altas y una gana en altas y la otra en activación (3 títulos en 24 h), gana la que tenga más **altas activadas en número absoluto**. Si siguen empatadas, la que tenga más altas. | Queda en `docs/F1_PRUEBA_DE_HUMO.md` (Criterio). No cambia la rama «no concluyente» de D-F1. |
 
 ## 2. Riesgos derivados de estas respuestas
 
