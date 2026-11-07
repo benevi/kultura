@@ -4,7 +4,9 @@
       "url": [
         "http://localhost:3187/es",
         "http://localhost:3187/es/best/movie/2026",
-        "http://localhost:3187/es/privacy"
+        "http://localhost:3187/es/privacy",
+        "http://localhost:3187/es/series",
+        "http://localhost:3187/es/anime"
       ],
       "numberOfRuns": 3,
       "settings": {
@@ -15,7 +17,7 @@
     "assert": {
       "assertMatrix": [
         {
-          "matchingUrlPattern": "/es($|/(best|privacy))",
+          "matchingUrlPattern": "/es($|/(best|privacy|series|anime))",
           "aggregationMethod": "median-run",
           "assertions": {
             "resource-summary:script:size": ["error", { "maxNumericValue": 153600 }],

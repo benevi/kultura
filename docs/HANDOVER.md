@@ -1,27 +1,35 @@
 # HANDOVER — última sesión (2026-11-07)
 
-**Fase:** F1 (`PLAN_ESTRATEGICO.md` §7.3). F0 cerrada el 2026-11-06. **Rama:** `docs/f1-entrevistas` (PR abierto, sin fusionar).
+**Fase:** F1 (`PLAN_ESTRATEGICO.md` §7.3; D-F1: se cierra con la prueba de humo y una decisión escrita). **Rama:** `feat/f1-humo-cunas` (PR abierto, sin fusionar).
 
-## Hecho en esta sesión
-- Entregable: `docs/F1_ENTREVISTAS.md`, el guion «Mom test» para validar las dos cuñas de D2 (A: series y películas en español; B: anime y manga en español). Incluye:
-  - perfiles con filtro de 3 preguntas y canales con URL y fecha;
-  - mensaje de captación neutro, guion de 20 min y versión en formulario;
-  - consentimiento y RGPD;
-  - plantilla de notas y criterios de síntesis, con la regla de decisión escrita de antemano.
-- Canales comprobados el 2026-11-07:
-  - Discord «Club de Anime y Manga en Español» (18.821 miembros).
-  - Mediavida: foros `tv`, `cine` y `anime-manga`, más su ayuda de moderación.
-  - FilmAffinity no tiene foro público, así que no se capta dentro.
-  - Bingers (del cofundador de TV Time, hacia el 4/8/2026; TechCrunch).
-- **Sin verificar:** los subreddits, porque Reddit bloquea el acceso automático. Víctor los abre a mano y anota URL, miembros, norma y fecha.
-- Descartados: los servidores que reparten anime o series sin licencia (p. ej. «Japan Paw!»).
-- **Decisión D-F1 (Víctor, 2026-11-07):** las entrevistas pasan a antes del relanzamiento (F4). F1 se cierra con la prueba de humo y una decisión escrita; con < 30 altas, la cuña es A por §2.2. El riesgo queda en R11 de `04_DECISIONES`.
-- Revisión independiente: `04_DECISIONES` §4, con 7 graves y 10 menores, todos corregidos.
+## Hecho en esta sesión: prueba de humo de F1
+- `/es/series` y `/es/anime` (también `/en/…`): una promesa, una portada real y el CTA «Crear cuenta».
+  - Usan la landing v2 (`landing.css`), sin WebGL. Son estáticas para el CDN (`STATIC_CSP_ROUTES`) y llevan `noindex`.
+  - JS inicial: 120 kB (la portada `/es`, 124 kB).
+  - Código: `src/components/landing/{WedgeLanding,WedgeCta,wedge-page}.tsx` y `src/lib/landing/wedge.ts`.
+- Atribución por cuña: `wedge` en `parseAttribution` llega a `user_metadata.attribution` y a `signup_completed.props`, por correo y con Google, sin tablas nuevas. La isla del CTA copia los `utm_*` de la visita.
+- Medición y criterio: `docs/F1_PRUEBA_DE_HUMO.md`, con los enlaces UTM, 2 consultas SQL y la regla de §7.3 + D-F1.
+  - Altas: `signup_completed`.
+  - Activación (3 títulos en 24 h): `user_media`, porque las importaciones no emiten `library_add`.
+  - Desempate propuesto, pendiente del OK de Víctor.
+- Verificado en local:
+  - `tsc` y `next lint` limpios.
+  - `vitest`: 16 fallos, los mismos que `origin/master` en un worktree (Windows: CRLF y `\`).
+  - axe: 26/26 públicas a 390 y 1440, con reflow y Tab.
+  - Capturas con reduced-motion en `docs/capturas/f1/`. El CTA lleva la UTM y no hay errores de consola salvo `/_vercel/*`, que no existe en local.
+- En CI: el CUJ `tests/e2e/cuj/cuna.spec.ts` (aquí no hay Docker) y Lighthouse.
+- Revisión independiente: `04_DECISIONES` §4, con 1 grave y 3 menores, todos corregidos.
+- Entorno (petición de Víctor):
+  - Instalado Chromium de Playwright (1217).
+  - Las skills de `Escritorio\diseños` ya estaban todas; 3 solo se lanzan con `/nombre`.
+  - MCP caídos: activecampaign necesita la URL de la cuenta (`/plugin manage`); browser-use y definite fallan en el servidor del proveedor.
 
 ## Pendiente / ojo
-- Squash-merge del PR: solo con el OK de Víctor (con su OK, auto-merge en verde, D-G1).
-- **Siguiente entregable de F1:** las mini-landings de la prueba de humo (`/es/series` y `/es/anime`, con UTM). Después, la decisión escrita de la cuña.
-- Entrevistas (D-F1): al final de F3 o al empezar F4. Entonces, pedir permiso a la moderación (Discord y Mediavida), crear el formulario (§3) y hacer 8–10 entrevistas, con al menos 3 en directo por cuña.
-- Síntesis, cuando haya 8–10 notas anonimizadas (ya en F4): `docs/F1_SINTESIS.md` con `design:research-synthesis`, codificación ciega por subagente (§6.1, paso 4) y una fila de decisión en `04_DECISIONES` §1.
-- Sigue en pie de F0: el backup programado del lunes (R10), rotar la contraseña de la base si no se hizo, y R9 (no lanzar `db push` contra producción sin decidir lo de las 2 de push).
-- `PLAN_ESTRATEGICO.md` y `docs/auditoria/` siguen fuera de git a propósito: hacer `git add` solo con rutas explícitas.
+- Squash-merge del PR solo con el OK de Víctor.
+- Víctor:
+  - Publicar 2 mensajes en 3 comunidades por cuña con los enlaces UTM del documento.
+  - En la primera visita, mirar si el panel de Web Analytics (Hobby) enseña UTM y el evento `cta_click`, y anotarlo. La API de consulta responde 404 para el proyecto.
+- Cerrar F1: registrar los resultados en el documento y escribir la decisión en `04_DECISIONES`. Con < 30 altas en ambas cuñas, la cuña es A (D-F1). Después, retirar o rehacer las dos rutas en F2/F3.
+- En local hay un `next start` viejo en el 3187, y los tests de a11y lo reutilizan: usa `A11Y_BASE_URL` con un servidor nuevo. En Windows, un puerto recién liberado puede seguir sirviendo el build anterior: cambia de puerto.
+- Siguen en pie de F0: el backup programado del lunes (R10), rotar la contraseña de la base y R9 (no lanzar `db push` contra producción).
+- `PLAN_ESTRATEGICO.md` y `docs/auditoria/` siguen fuera de git: hacer `git add` solo con rutas explícitas.

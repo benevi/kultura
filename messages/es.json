@@ -1454,6 +1454,33 @@
     },
     "footer": {
       "otherLocale": "English"
+    },
+    "wedge": {
+      "series": {
+        "seo": {
+          "title": "KULTURA — Tus series y películas, episodio a episodio",
+          "description": "Lleva por dónde vas en cada serie y cada película, en español. Trae tu historial de TV Time, Letterboxd o IMDb y llévate tus datos cuando quieras."
+        },
+        "title": "Tus series, episodio a episodio.",
+        "lead": "Lleva por dónde vas en cada serie y cada película, en español.",
+        "points": {
+          "one": "Temporadas y episodios, no solo «vista»",
+          "two": "Trae tu historial de TV Time, Letterboxd o IMDb"
+        }
+      },
+      "anime": {
+        "seo": {
+          "title": "KULTURA — Anime y manga, en una app en español",
+          "description": "Episodios de anime y capítulos de manga en la misma biblioteca, en una app en español. Trae tu lista de MyAnimeList y llévatela cuando quieras."
+        },
+        "title": "Anime y manga, en una app en español.",
+        "lead": "Episodios y capítulos en la misma biblioteca, sin cambiar de app.",
+        "points": {
+          "one": "Progreso por episodio y por capítulo",
+          "two": "Trae tu lista de MyAnimeList"
+        }
+      },
+      "export": "Exporta todo cuando quieras: tus datos son tuyos"
     }
   },
   "discoverFilters": {

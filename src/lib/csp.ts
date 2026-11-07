@@ -47,6 +47,8 @@ export const STATIC_CSP_ROUTES: readonly RegExp[] = [
   new RegExp(`^/(${LOCALES})$`),
   new RegExp(`^/(${LOCALES})/best(/.*)?$`),
   new RegExp(`^/(${LOCALES})/(privacy|terms|legal|accessibility|offline)$`),
+  // F1 · prueba de humo (D2): mini-landings de cuña, sin datos de usuario.
+  new RegExp(`^/(${LOCALES})/(series|anime)$`),
 ];
 
 /** ¿Esta ruta (sin query) recibe la CSP fija de `next.config.mjs`? */

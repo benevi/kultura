@@ -59,6 +59,10 @@ describe('resolveSignupAttribution', () => {
     expect(resolveSignupAttribution({ channel: 'direct' }, { channel: 'ref', ref: 'bea' })).toEqual({ channel: 'ref', ref: 'bea' })
     expect(resolveSignupAttribution({ channel: 'direct' }, undefined)).toEqual({ channel: 'direct' })
   })
+
+  it('una URL con cuña y sin utm (Google desde /es/series) no pierde la cuña', () => {
+    expect(resolveSignupAttribution({ channel: 'direct', wedge: 'series' }, undefined)).toEqual({ channel: 'direct', wedge: 'series' })
+  })
 })
 
 describe('recordSignup', () => {

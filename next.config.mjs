@@ -21,6 +21,7 @@ export const STATIC_CSP_SOURCES = [
   "/:locale(es|en)/best",
   "/:locale(es|en)/best/:path*",
   "/:locale(es|en)/:page(privacy|terms|legal|accessibility|offline)",
+  "/:locale(es|en)/:wedge(series|anime)",
 ];
 
 const CSP_REPORT_PATH = "/api/csp-report";

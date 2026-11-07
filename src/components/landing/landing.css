@@ -206,6 +206,20 @@ body:has(.kl)::before { display: none; }
 .kl-legal { margin-top: 20px; font-size: 13px; color: var(--muted); max-width: 110ch; }
 .kl-legal :where(p, span, a) { color: inherit; font-size: inherit; }
 
+/* Mini-landings de cuña (F1, `/series` y `/anime`): texto y una ventana, sin WebGL. */
+.kl-wedge-hero {
+  min-height: 100svh; display: grid; grid-template-columns: minmax(0, 7fr) minmax(0, 5fr); align-items: center;
+  gap: clamp(32px, 6vw, 112px); padding: clamp(96px, 14vh, 160px) var(--m) clamp(48px, 8vh, 96px);
+}
+.kl-wedge-text h1 { font-size: clamp(2.75rem, 1rem + 4.6vw, 6rem); max-width: 14ch; }
+.kl-wedge-text .kl-lead { margin-top: clamp(20px, 3vh, 32px); max-width: 30ch; font-size: var(--step-lead); color: var(--muted); }
+.kl-wedge-points { list-style: none; margin: clamp(24px, 4vh, 40px) 0 0; padding: 0; display: grid; gap: 10px; font-weight: 600; }
+.kl-wedge-points li { display: flex; gap: 12px; align-items: baseline; }
+.kl-wedge-points li::before { content: ""; flex: 0 0 10px; height: 10px; background: var(--scene); clip-path: polygon(0 0, 100% 0, 100% 100%, 3px 100%, 0 calc(100% - 3px)); }
+.kl-wedge-text .kl-actions { margin-top: clamp(28px, 5vh, 48px); }
+.kl-wedge-win { max-height: 78vh; width: auto; height: min(78vh, 720px); justify-self: end; margin: 0; }
+.kl-wedge-win > img.kl-ph { opacity: 1; }
+
 /* Entradas al hacer scroll (las pone el JS; sin JS todo está visible). */
 .kl-reveal { animation: kl-in 0.9s var(--ease-out) both; }
 @keyframes kl-in { from { opacity: 0; transform: translateY(32px); } }
@@ -238,6 +252,10 @@ body:has(.kl)::before { display: none; }
   .kl-matrix .sh { display: inline; }
   .kl-dot { width: 11px; height: 11px; }
   .kl-faq { grid-template-columns: 1fr; padding-top: 110px; }
+  .kl-wedge .kl-top .kl-brand { display: inline; }
+  .kl-wedge .kl-top { justify-content: space-between; }
+  .kl-wedge-hero { grid-template-columns: 1fr; padding-top: 88px; gap: 32px; min-height: 0; }
+  .kl-wedge-win { order: -1; justify-self: start; width: 56%; height: auto; max-height: none; }
 }
 
 @media (prefers-reduced-motion: reduce) {

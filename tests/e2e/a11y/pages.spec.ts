@@ -22,6 +22,9 @@ const PUBLIC_PAGES: Array<{ path: string; status?: number }> = [
   { path: "/es/u/benevi" },
   { path: "/es/login" },
   { path: "/es/privacy" },
+  // F1 (D2): mini-landings de la prueba de humo.
+  { path: "/es/series" },
+  { path: "/es/anime" },
   { path: "/es/terms" },
   { path: "/es/esta-pagina-no-existe", status: 404 },
   // Ficha pública (D-01, F-15): sin sesión, con cabecera pública.
