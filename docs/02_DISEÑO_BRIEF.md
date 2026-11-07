@@ -1,6 +1,6 @@
 # KULTURA 2.0 — Brief de diseño (F2, pasos 1–3 de §6.1)
 
-**Estado:** v1.1 · 2026-11-07. Revisado por Artisan y Advocate (`04_DECISIONES` §4). Está **pendiente del «sí» escrito de Víctor** en cada puerta: §A, §B y §C–§D.
+**Estado:** v1.2 · 2026-11-07. Revisado por Artisan y Advocate (`04_DECISIONES` §4). **Aprobado por Víctor por escrito el 2026-11-07 (D-F2c)**: §A, §B, §C y §D, con titular (D-F2a) y pack (D-F2b).
 **Manda:** `PLAN_ESTRATEGICO.md` §5–§6 y `04_DECISIONES_Y_RIESGOS.md`. La voz va en `docs/VOZ.md`.
 **Para qué sirve:** que «como kprverse» deje de ser un gusto y pase a ser una lista de reglas medibles. Una propuesta que incumpla una regla de este documento no se enseña.
 **Evidencia:** las referencias se consultaron en el navegador integrado el **2026-11-07**, a 1440 × 900 (y kprverse también a 390 × 844). Las cifras salen de `getComputedStyle` sobre la página real. Lo no medido lleva **(no verificado)**.
@@ -306,7 +306,7 @@ Lo que aparezca de esta lista **no se enseña**. Base: plan §6.2 (no se quita n
 
 ## §E · Lo que decide Víctor (puerta de F2, pasos 1–3)
 1. ~~**Titular**~~: **hecho**, el 2 (D-F2a).
-2. **Personalidad:** sí o cambios a §A.2.
-3. **§B, §C y §D:** sí, o qué regla cambia y por qué.
+2. ~~**Personalidad**~~: **aprobada** (D-F2c).
+3. ~~**§B, §C y §D**~~: **aprobados** (D-F2c).
 
 Con el «sí» escrito, la sesión siguiente hace el paso 4: **3 style tiles** (logotipo, paleta, tipografía, forma y un fragmento de pantalla) en HTML. Se prueban a 390 y 1440, sin WebGL y con reduced-motion, y cada uno resuelve B.7.
