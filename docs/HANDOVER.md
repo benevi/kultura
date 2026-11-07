@@ -1,36 +1,30 @@
 # HANDOVER — última sesión (2026-11-07)
 
-**Fase:** F1, con la cuña A provisional (D-F1c); F2 puede empezar (`PLAN_ESTRATEGICO.md` §7.3; D-F1: se cierra con la prueba de humo y una decisión escrita). **Rama:** `feat/f1-humo-cunas` (PR abierto, sin fusionar).
+**Fase:** F2 (identidad y dirección de arte), pasos 1–3 de §6.1 del plan. La cuña A es provisional (D-F1c y D-F1d). **Rama:** `docs/f2-brief`, con el PR abierto y sin fusionar.
 
-## Hecho en esta sesión: prueba de humo de F1
-- `/es/series` y `/es/anime` (también `/en/…`): una promesa, una portada real y el CTA «Crear cuenta».
-  - Usan la landing v2 (`landing.css`), sin WebGL. Son estáticas para el CDN (`STATIC_CSP_ROUTES`) y llevan `noindex`.
-  - JS inicial: 120 kB (la portada `/es`, 124 kB).
-  - Código: `src/components/landing/{WedgeLanding,WedgeCta,wedge-page}.tsx` y `src/lib/landing/wedge.ts`.
-- Atribución por cuña: `wedge` en `parseAttribution` llega a `user_metadata.attribution` y a `signup_completed.props`, por correo y con Google, sin tablas nuevas. La isla del CTA copia los `utm_*` de la visita.
-- Medición y criterio: `docs/F1_PRUEBA_DE_HUMO.md`, con los enlaces UTM, 2 consultas SQL y la regla de §7.3 + D-F1.
-  - Altas: `signup_completed`.
-  - Activación (3 títulos en 24 h): `user_media`, porque las importaciones no emiten `library_add`.
-  - Desempate aprobado (D-F1b): más altas activadas en número absoluto; si empatan, más altas.
-- Verificado en local:
-  - `tsc` y `next lint` limpios.
-  - `vitest`: 16 fallos, los mismos que `origin/master` en un worktree (Windows: CRLF y `\`).
-  - axe: 26/26 públicas a 390 y 1440, con reflow y Tab.
-  - Capturas con reduced-motion en `docs/capturas/f1/`. El CTA lleva la UTM y no hay errores de consola salvo `/_vercel/*`, que no existe en local.
-- En CI: el CUJ `tests/e2e/cuj/cuna.spec.ts` (aquí no hay Docker) y Lighthouse.
-- Revisión independiente: `04_DECISIONES` §4, con 1 grave y 3 menores, todos corregidos.
-- Entorno (petición de Víctor):
-  - Instalado Chromium de Playwright (1217).
-  - Las skills de `Escritorio\diseños` ya estaban todas; 3 solo se lanzan con `/nombre`.
-  - MCP caídos: activecampaign necesita la URL de la cuenta (`/plugin manage`); browser-use y definite fallan en el servidor del proveedor.
+## Hecho en esta sesión: brief de diseño
+- `docs/02_DISEÑO_BRIEF.md` (v1.2, aprobado):
+  - **§A, plataforma de marca.** A quién hablamos (cuña A, desde evidencia de mesa sin verificar con personas); personalidad: *cinematográfica, exacta, cómplice* frente a *infantil o artesanal, corporativa o SaaS, ruidosa*; promesa y 3 titulares candidatos.
+  - **§B, referencias convertidas en reglas medibles.** kprverse (K1–K8), Immersive Garden (I1–I3), Dropbox Brand (D1–D4), Rijksmuseum (R1–R4) y Bruno Simon (B1–B2), cada una con URL y consultada el 2026-11-07 en el navegador integrado, con cifras de `getComputedStyle`. Incluye las reglas de movimiento (M1–M5), la base que los style tiles deben fijar (B.7) y el uso de las skills (B.8).
+  - **§C, anti-lista cerrada** (X1–X21), con cómo se detecta cada punto.
+  - **§D, rúbrica cerrada:** anclas 1/3/5 y cómo se mide cada criterio; el criterio 7 (accesibilidad) es una puerta.
+- `docs/VOZ.md` (v2): registro, presupuesto de palabras, lista negra, palabras de la cuña y qué reglas del `VOZ.md` de la raíz se anulan. El de la raíz no se toca (regla 3) y sus tests siguen mandando.
+- Skills usadas: taste-skill, impeccable, ui-ux-pro-max (sus CSV a mano, porque no hay Python), emil-design-eng y design-motion-principles.
+- Revisión independiente: Artisan + Advocate, 13 graves y 13 menores, todos corregidos (`04_DECISIONES` §4).
+
+## Decisiones del brief (aprobadas, D-F2c)
+- No se usa fuente mono: los datos van en cifras tabulares de Bricolage (K7).
+- Firma propia, distinta de KPR: el progreso («T2 E5») como forma tipográfica (K8).
+- Chaflán con dos tokens: 14 px en controles y 18 px en portadas; el foco va fuera del recorte.
+- Los 7 formatos son un pack, en el segundo acto (D-F2b, §A.4 del brief): portadas en el 2.º pantallazo y el perfil público como vitrina, nunca en el titular.
+- Sin desplazamiento secuestrado ni giroscopio. Marcar visto se hace con un toque, y hay «Deshacer».
 
 ## Pendiente / ojo
-- D-F1c: cuña A provisional. Pendientes en sesiones propias: B (usuarios actuales) y C (demanda de escritorio). Si alguno apunta claramente a anime, revisarlo antes de cerrar el brief de F2.
-- Squash-merge del PR solo con el OK de Víctor.
-- Víctor:
-  - Publicar 2 mensajes en 3 comunidades por cuña con los enlaces UTM del documento.
-  - En la primera visita, mirar si el panel de Web Analytics (Hobby) enseña UTM y el evento `cta_click`, y anotarlo. La API de consulta responde 404 para el proyecto.
-- Cerrar F1: registrar los resultados en el documento y escribir la decisión en `04_DECISIONES`. Con < 30 altas en ambas cuñas, la cuña es A (D-F1). Después, retirar o rehacer las dos rutas en F2/F3.
-- En local hay un `next start` viejo en el 3187, y los tests de a11y lo reutilizan: usa `A11Y_BASE_URL` con un servidor nuevo. En Windows, un puerto recién liberado puede seguir sirviendo el build anterior: cambia de puerto.
-- Siguen en pie de F0: el backup programado del lunes (R10), rotar la contraseña de la base y R9 (no lanzar `db push` contra producción).
-- `PLAN_ESTRATEGICO.md` y `docs/auditoria/` siguen fuera de git: hacer `git add` solo con rutas explícitas.
+- **Puerta de F2 (pasos 1–3): aprobada** por Víctor por escrito (D-F2c), con el titular «Tus series, al día.» (D-F2a) y el pack (D-F2b).
+- **Sesión siguiente:** paso 4, 3 style tiles en HTML (390/1440, sin WebGL, reduced-motion) que resuelvan B.7. Máximo 3 alternativas. Conviene Fable 5.1 u Opus 5.5.
+- Deuda para el paso 5: `landing.css:60` (0,5 s) y `:84` (curva fuera de M1); decidir si Figtree sale (X21).
+- Squash-merge solo con el OK de Víctor.
+- Sigue en pie de sesiones anteriores:
+  - prueba de humo F1 (publicar mensajes; cerrar F1 con la decisión);
+  - backup del lunes (R10), rotar la contraseña de la base y R9.
+- `PLAN_ESTRATEGICO.md`, `docs/auditoria/` y `prototipos/` siguen fuera de git: hacer `git add` solo con rutas explícitas.
