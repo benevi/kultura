@@ -1,6 +1,6 @@
 # HANDOVER — última sesión (2026-11-07)
 
-**Fase:** F1 (`PLAN_ESTRATEGICO.md` §7.3; D-F1: se cierra con la prueba de humo y una decisión escrita). **Rama:** `feat/f1-humo-cunas` (PR abierto, sin fusionar).
+**Fase:** F1, con la cuña A provisional (D-F1c); F2 puede empezar (`PLAN_ESTRATEGICO.md` §7.3; D-F1: se cierra con la prueba de humo y una decisión escrita). **Rama:** `feat/f1-humo-cunas` (PR abierto, sin fusionar).
 
 ## Hecho en esta sesión: prueba de humo de F1
 - `/es/series` y `/es/anime` (también `/en/…`): una promesa, una portada real y el CTA «Crear cuenta».
@@ -25,6 +25,7 @@
   - MCP caídos: activecampaign necesita la URL de la cuenta (`/plugin manage`); browser-use y definite fallan en el servidor del proveedor.
 
 ## Pendiente / ojo
+- D-F1c: cuña A provisional. Pendientes en sesiones propias: B (usuarios actuales) y C (demanda de escritorio). Si alguno apunta claramente a anime, revisarlo antes de cerrar el brief de F2.
 - Squash-merge del PR solo con el OK de Víctor.
 - Víctor:
   - Publicar 2 mensajes en 3 comunidades por cuña con los enlaces UTM del documento.
