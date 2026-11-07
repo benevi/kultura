@@ -20,7 +20,7 @@
 
 ## Pendiente / ojo
 - **Víctor**, puerta de F2 (§E del brief):
-  - elegir titular: recomendado, prueba de 5 s con 5 personas; si no, el titular 2;
+  - titular: hecho, «Tus series, al día.» (D-F2a);
   - dar el «sí» o cambios a §A, §B, §C y §D.
 - **Sesión siguiente, solo tras ese «sí»:** paso 4, 3 style tiles en HTML (390/1440, sin WebGL, reduced-motion) que resuelvan B.7. Máximo 3 alternativas. Conviene Fable 5.1 u Opus 5.5.
 - Deuda para el paso 5: `landing.css:60` (0,5 s) y `:84` (curva fuera de M1); decidir si Figtree sale (X21).

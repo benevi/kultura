@@ -50,6 +50,12 @@ F0 se da por cerrada: se cumplen todas las condiciones de la puerta de §7.2 sal
 | D-F1c | **Cuña A (series y películas en español) provisional desde hoy; F2 arranca con ella** (Víctor, 2026-11-07) | No se espera a la prueba de humo. Se complementa con (B) datos de los usuarios actuales (solo lectura, `user_media`) y (C) estudio de demanda de escritorio con URL y fecha, en sesiones propias. La prueba de humo sigue de fondo si se publican los mensajes. | Se reabre solo si: la prueba de humo da ≥ 30 altas a anime y gana por D-F1b, o B o C apuntan claramente a anime antes de cerrar el brief de F2. Si no, A queda confirmada y F1 se cierra con esta fila. |
 | D-F1d | **B y C hechas (2026-11-07): ninguna apunta a anime. D-F1c se mantiene** | B (producción, solo `select`, autorizado por Víctor): 7 cuentas, 4 de ellas demo, y 1 solo usuario externo con actividad (4 títulos, ninguno de anime). No hay progreso de episodios en uso ni altas atribuidas: **no concluyente**. C (demanda de escritorio, con URL y fecha): **apunta a A en España** (FilmAffinity domina las búsquedas, r/peliculas tiene 1,1 M, el cierre de TV Time tuvo eco en foros y prensa); B solo tiene más fuerza en LATAM y en Discord. Evidencia débil a moderada. Los informes están en las notas de sesión, fuera del repo. | La cuña A sigue provisional hasta la prueba de humo (solo se reabre con ≥ 30 altas de anime ganando por D-F1b). Para F4: el mensaje es «series + exportación en español», no «sustituto de TV Time», porque esa demanda ya migró (Trends cae desde septiembre de 2026). |
 
+## 1g. F2: brief de diseño (2026-11-07)
+
+| # | Decisión | Detalle | Consecuencia |
+|---|---|---|---|
+| D-F2a | **Titular de la portada: «Tus series, al día.»** (Víctor, elegido entre los 3 de `02_DISEÑO_BRIEF.md` §A.3) | Se elige sin la prueba de 5 s; es el que se entiende sin contexto. «Sabes por dónde vas.» queda como candidato para la frase del cierre. | La frase de apoyo se mantiene («Series y películas al día, en español. Y tus datos, siempre tuyos.»). El resto de la puerta de F2 (§A–§D) sigue pendiente del «sí» escrito. |
+
 ## 2. Riesgos derivados de estas respuestas
 
 | ID | Riesgo | Origen | Impacto | Mitigación / disparador |

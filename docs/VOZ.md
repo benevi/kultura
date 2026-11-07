@@ -55,7 +55,7 @@ Cuando la v2 sirva el 100 %, estas filas pasan al `VOZ.md` único y a `glossary.
 ## Ejemplos (antes → v2)
 | Antes | v2 |
 |---|---|
-| «Organiza todo lo que ves, lees y juegas en un solo lugar» | «Tus series, al día.» (o el titular que elija Víctor, §A.3) |
+| «Organiza todo lo que ves, lees y juegas en un solo lugar» | «Tus series, al día.» (D-F2a) |
 | «¡Empieza gratis!» | «Crear cuenta» |
 | «Resultados de búsqueda para "breaking"» | (sin rótulo: los resultados) |
 | «Aún no has añadido ningún título a tu biblioteca. ¡Explora y añade!» | «Aquí irá lo que veas.» · botón «Buscar una serie» |

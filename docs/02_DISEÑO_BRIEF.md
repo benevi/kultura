@@ -34,7 +34,7 @@ Cada adjetivo tiene una prueba que se ve en una captura; si falla, falla el crit
   2. **«Tus series, al día.»** (19): se entiende en 5 s sin contexto. Es lo que diría cualquier tracker; el carácter lo pone el diseño.
   3. «Cada episodio, en su sitio.» (27): exacto, pero más frío.
 
-  **Recomendación:** si Víctor puede hacer una **prueba de 5 s con 5 personas de la cuña** (captura a 390: «¿qué es esto?»), decide la prueba. Si no, el **2**, que es el más seguro. El 1 queda como frase del cierre de la portada.
+  **Elegido: el 2, «Tus series, al día.»** (Víctor, 2026-11-07, D-F2a). El 1 queda como candidato para la frase del cierre de la portada.
 - **Frase de apoyo** (≤ 90 caracteres, siempre visible con el titular): «Series y películas al día, en español. Y tus datos, siempre tuyos.»
 - **Lo que no prometemos:** IA, cifras de usuarios, «gratis para siempre» ni «sustituto de TV Time» (D-F1d: esa demanda ya migró). Tampoco nada de dinero en la portada (D4).
 
@@ -291,7 +291,7 @@ Lo que aparezca de esta lista **no se enseña**. Base: plan §6.2 (no se quita n
 ---
 
 ## §E · Lo que decide Víctor (puerta de F2, pasos 1–3)
-1. **Titular:** 1, 2 o 3 de §A.3 (recomendado: la prueba de 5 s; sin ella, el 2).
+1. ~~**Titular**~~: **hecho**, el 2 (D-F2a).
 2. **Personalidad:** sí o cambios a §A.2.
 3. **§B, §C y §D:** sí, o qué regla cambia y por qué.
 
