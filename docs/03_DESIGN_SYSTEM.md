@@ -1,6 +1,6 @@
 # KULTURA 2.0 — Sistema de diseño (F2, paso 5 de §6.1)
 
-**Estado:** v1.0-rc · 2026-11-07 · **para la puerta del paso 5.** Revisión independiente: Artisan y Advocate, 2 pasadas, **pasa** (`04_DECISIONES` §4). Falta el «sí» de Víctor.
+**Estado:** v1.0 · 2026-11-07 · **aprobado por Víctor (D-F2o).** Revisión independiente: Artisan y Advocate, 2 pasadas, **pasa** (`04_DECISIONES` §4).
 **Sustituye a** `DISENO.md` (raíz) para todo lo que se construya en `src/v2/`. `DISENO.md` no se borra (regla 3): sigue describiendo la UI v1 y sus tests hasta que la v2 sirva el 100 % y exista la etiqueta `v1-ui`.
 **Manda:** `02_DISEÑO_BRIEF.md` v1.2 (reglas K, I, D, R, B, M, P y X) y la dirección aprobada **A2b «Encuadre con pista»** (`prototipos/f2-tiles/A2b.html`, D-F2h). Este documento no inventa estilo: fija en tokens lo que A2b ya demostró y cierra la deuda que dejó D-F2h.
 **Demostración viva (D1):** `prototipos/f2-sistema/muestra.html` con `tokens.css`. Probada el 2026-11-07 (§10).
@@ -256,7 +256,7 @@ Ninguno se borra ahora (regla 3). **Aparcar** = sigue corriendo sin cambios, vig
 
 Resumen: **adaptar 4** (`css-tokens`, `contrast`, `no-mono`, `classes-compile` en alcance) más la parte `:63` de `diseno-doc`; **aparcar y retirar con v1 los otros 8**. Los 8 tests nuevos de v2 (`contrast`, `design-system-doc`, `focus`, `literals`, `poster`, `placeholder`, más dos que pidió Advocate: `scene-pipeline` —el acento calculado cumple ≥ 4,5:1 con `--on-scene` y ≥ 3:1 con `--s1`, y nunca cae en H250–290— y `button-contrast` —contraste de los botones calculado desde los tokens, porque axe no lo ve—) se escriben en el primer PR de F3 que cree `src/v2/styles/tokens.css`.
 
-## 13. Decisiones de este paso (pendientes del «sí» de Víctor)
+## 13. Decisiones de este paso (aprobadas por Víctor el 2026-11-07, D-F2o)
 - **D-F2i** · el éxito no tiene color; se retira `--ok` en v2 (§2.4).
 - **D-F2j** · Figtree sale de la v2 (§3.1).
 - **D-F2k** · pistas largas: discreta ≤ 18, por bloques, continua, sin pista (§7.1).

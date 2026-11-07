@@ -3,13 +3,13 @@
 **Fase:** F2, paso 5 de §6.1 (sistema de diseño). Cuña A provisional (D-F1c/D-F1d). **Rama:** `docs/f2-design-system` (desde `master` 88717a0), PR abierto sin fusionar.
 
 ## Hecho
-- `docs/03_DESIGN_SYSTEM.md` v1.0-rc. Sustituye a `DISENO.md` para la v2; el viejo queda marcado como superado y no se borra (regla 3).
+- `docs/03_DESIGN_SYSTEM.md` v1.0, aprobado (D-F2o). Sustituye a `DISENO.md` para la v2; el viejo queda marcado como superado y no se borra (regla 3).
 - Contenido: tokens (color, espacio, chaflán, capas), escala fluida K1 (tracking interpolado: −3,3 % a 52 px y −5 % desde 96 px), motion con reduced-motion, profundidad con WebGL opcional, 12 componentes con estados y foco, presupuesto y accesibilidad.
 - Demo viva (D1): `prototipos/f2-sistema/tokens.css` (pasa a `src/v2/styles/tokens.css` en F3) y `muestra.html`. Capturas JPEG en `capturas/`; las PNG se quedan en local.
 - Pruebas: axe 0 en 8 combinaciones (390/1440/320/1024 × reduced-motion), también con `contrast: more`; sin WebGL; sin desbordes a 320; 0 objetivos < 44 px.
 - Revisión: Artisan y Advocate, 2 pasadas → **pasa** (`04_DECISIONES` §4).
 
-## Deuda D-F2h cerrada (propuestas D-F2i…n, pendientes de Víctor)
+## Deuda D-F2h cerrada (D-F2i…n, aprobadas: D-F2o)
 - `--rail-todo` #6b6b6b, nunca sobre s3; con más contraste, los vistos pasan a tinta.
 - P3, pistas largas: discreta ≤ 18, por bloques, continua o sin pista.
 - Verde frente a `--ok`: el éxito no tiene color (tinta + icono).
@@ -20,7 +20,7 @@
 - 13 tests `design|visual` (§12): 4 se adaptan y 8 se aparcan hasta `v1-ui`; se crean 8 tests v2 en el primer PR de F3.
 
 ## Siguiente
-- **Víctor:** «sí» (o feedback contra la rúbrica) a `03_DESIGN_SYSTEM.md` y a D-F2i…n. Sin eso no empieza el paso 6, el prototipo vivo de Inicio con sesión, con el pack P1.
+- **Puerta del paso 5 aprobada** (Víctor: «Sí, apruebo», D-F2o). Siguiente: paso 6, prototipo vivo de Inicio con sesión con el pack P1. Antes, squash-merge de #87 con el OK de Víctor.
 - Condición del paso 6: VoiceOver en iOS y NVDA (Claude prepara un guion de 10 min) y Safari real.
 
 ## Ojo
