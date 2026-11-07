@@ -1,5 +1,7 @@
 # Kultura · Sistema de diseño
 
+> **Superado para la v2 (2026-11-07):** el sistema de diseño de KULTURA 2.0 es [`docs/03_DESIGN_SYSTEM.md`](docs/03_DESIGN_SYSTEM.md). Este documento se mantiene (regla 3) solo para la UI v1 y los tests que la vigilan, hasta `UI_V2_DEFAULT=1` y la etiqueta `v1-ui`.
+
 Este documento es el ÚNICO criterio de diseño válido para Kultura. Sustituye
 cualquier paleta, componente o layout usado antes en el código o en mockups
 anteriores. Nace de los mockups **"Kultura Editorial" (F0 v2)**: Home, Discover y

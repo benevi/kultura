@@ -1,0 +1,115 @@
+/* KULTURA 2.0 · tokens del sistema (F2 paso 5) · fuente de verdad: docs/03_DESIGN_SYSTEM.md
+   En F3 este archivo pasa tal cual a src/v2/styles/tokens.css. Fuera de aquí no hay literales
+   de color, tamaño, curva ni duración (rúbrica 9). Los contrastes son con el fondo indicado. */
+
+@font-face { font-family: "Kultura Display"; src: url("../f2-tiles/fuentes/KulturaDisplay-latin.woff2") format("woff2"); font-weight: 800; font-display: block; }
+@font-face { font-family: "Bricolage"; src: url("../f2-tiles/fuentes/BricolageGrotesque-latin.woff2") format("woff2"); font-weight: 200 800; font-display: swap; }
+
+:root {
+  color-scheme: dark;
+
+  /* ── Color · superficies (se separan por luminancia, X13/X17) ── */
+  --s0: #0a0a0a;            /* sala      · OKLCH L14 */
+  --s1: #151515;            /* superficie · L20 */
+  --s2: #212121;            /* elevada    · L25 (botón tranquilo, campo) */
+  --s3: #2b2b2b;            /* flotante   · L29 (menú, hoja, diálogo; única con sombra) */
+
+  /* ── Color · texto ── */
+  --ink: #f2f0eb;           /* 17,4 / 16,0 / 14,1 / 12,4 :1 sobre s0–s3 */
+  --muted: #a19d96;         /* 7,3 / 6,8 / 6,0 / 5,2 :1 */
+
+  /* ── Color · escena (K5): lo pone el pipeline por portada; esto es el valor por defecto ── */
+  --scene: #d9a35e;         /* El último reino · L75 C0,108 H72 · 8,8:1 con --on-scene */
+  --on-scene: #0a0a0a;      /* texto sobre --scene, siempre */
+  --scene-fallback: #b8ab95;/* reserva fija · L74,6 C0,034 H81 · 8,8:1 */
+  --ph: #4a3f33;            /* espacio reservado: dominante de la portada (lo pone el pipeline) */
+
+  /* ── Color · pista (K8) ── */
+  --rail-todo: #6b6b6b;     /* tramo pendiente · 3,7 / 3,4 / 3,0 :1 sobre s0/s1/s2 · nunca sobre s3 (2,7) */
+  --rail-done: var(--scene);/* tramo visto */
+  --rail-now: var(--ink);   /* contorno del tramo actual */
+  --rail-w: 14px;           /* pista vertical del encuadre (20 desde 1024) */
+  --rail-h: 10px;           /* pista horizontal */
+  --rail-gap: 3px;  --rail-gap-v: 4px;  --rail-now-w: 3px;
+
+  /* ── Color · estados ── */
+  --error: #ff9d8f;         /* 9,9 / 9,1 / 8,0 :1 · siempre con icono y texto */
+  /* Éxito: sin color propio. Tinta + icono (D-F2i). No existe --ok en v2. */
+  --focus: var(--ink);      /* el foco nunca usa --scene (K5) */
+
+  /* ── Marca ── */
+  --brand: #f2f0eb;         /* logotipo fijo (icono de app, favicon, OG) */
+
+  /* ── Tipografía (K1, K2, K7, D2) ── */
+  --font-display: "Kultura Display", "Bricolage", ui-sans-serif, system-ui, sans-serif;
+  --font-text: "Bricolage", ui-sans-serif, system-ui, sans-serif;
+  --fs-display: clamp(3.25rem, 1.75rem + 6.2vw, 8rem);   /* 52 a 390 · 91 a 1024 · 117 a 1440 · tope 128 */
+  --fs-k8: clamp(2.5rem, 1.625rem + 2.6vw, 4rem);        /* dato grande de la pista · 40 → 64 */
+  --fs-phrase: clamp(1.5rem, 1.22rem + 1.15vw, 2.25rem); /* frase I1 y h2 · 24 → 36 */
+  --fs-body: 1.0625rem;     /* 17 · cuerpo, botón */
+  --fs-small: 1rem;         /* 16 · rótulo y dato secundario, siempre en --muted o 600; nunca menos */
+  --fs-mark: 1.375rem;      /* 22 · palabra del logotipo (no cuenta en K2) */
+  --lh-display: .9;  --lh-caps: .94;  --lh-data: .95;  --lh-tight: 1.15;  --lh-phrase: 1.2;  --lh-body: 1.5;
+  /* Tracking K1: −3 % a 48 px → −5 % a 96 px, lineal: 1,92 px − 0,07·tamaño */
+  --tr-display: clamp(-.05em, calc(.12rem - .07em), -.03em);
+  --tr-data: -.02em;        /* dato y display pequeño (sin portada) */
+  --tr-caps: -.03em;        /* caja alta */
+  --tr-mark: -.01em;        /* logotipo */
+  --w-display: 800; --w-data: 600; --w-phrase: 500; --w-body: 400;
+
+  /* ── Espacio (base 4) y retícula ── */
+  --sp-1: 4px; --sp-2: 8px; --sp-3: 12px; --sp-4: 16px; --sp-6: 24px; --sp-8: 32px; --sp-12: 48px; --sp-16: 64px;
+  --sp-sec: clamp(4rem, 8.4vw, 7.5rem);   /* entre secciones · 64 → 120 */
+  --sp-scene: clamp(7.5rem, 16.7vw, 15rem);/* cambio de escena en relato · 120 → 240 */
+  --m: clamp(16px, 2.2vw, 32px);           /* margen */
+  --gut: clamp(12px, 1.6vw, 24px);         /* medianil */
+  --max: 1376px;                           /* ancho máximo */
+  --mosaic-gap: 2px;                       /* portadas y filas como material (R4: 0–4) */
+  --frame-h: clamp(280px, 46svh, 420px);   /* encuadre a < 1024 (A2b) */
+  --w-panel: 520px;  --w-field: 420px;  --w-sheet: 480px; /* anchos de panel, campo y hoja */
+  --icon: 1.125rem;                        /* icono de estado, 18 */
+  --ul-off: 4px;                           /* separación del subrayado */
+  --cols: 4;                               /* 12 desde 1024 */
+  --tap: 44px;  --tap-gap: 8px;  --ctl-h: 52px;  --top-h: 72px;
+  --row-thumb: 72px;        /* póster de fila (96 desde 1024) */
+  --tag-pad: 10px 16px 14px 14px;  /* etiqueta K8 (14 22 18 18 desde 1024) */
+  --field-line: 2px;        /* subrayado del campo (no es un filete separador, X13) */
+
+  /* ── Forma (K3): una esquina, la inferior izquierda ── */
+  --ch-ctl: 14px;           /* controles, etiqueta K8 a 390 */
+  --ch-cover: 18px;         /* portadas, paneles, etiqueta K8 desde 1024 */
+  --ch-mark: .28em;         /* monograma: proporcional a su tamaño */
+  --r-max: 2px;             /* ningún otro radio */
+
+  /* ── Profundidad ── */
+  --z-raised: 1; --z-tag: 2; --z-sticky: 10; --z-float: 20; --z-dialog: 30; --z-toast: 40; --z-skip: 50;
+  --shadow-float: 0 16px 40px rgb(0 0 0 / .55);  /* solo s3 flotante (X17) */
+  --scrim: rgb(10 10 10 / .7);  /* fondo tras un diálogo modal */
+  --veil: linear-gradient(to top, rgb(10 10 10 / .78), rgb(10 10 10 / 0) 60%); /* única veladura (B.7) */
+  --persp: 1200px;  --tilt: 6deg;
+
+  /* ── Movimiento (M1–M4) ── */
+  --ease: cubic-bezier(.2, 0, 0, 1);       /* entrar y salir */
+  --move: cubic-bezier(.77, 0, .175, 1);   /* moverse dentro de la pantalla */
+  --spring: linear(0, .25 7%, .58 17%, .82 29%, .94 42%, .985 57%, 1 75%, 1); /* amortiguamiento crítico */
+  --t-press: 120ms; --t-fill: 160ms; --t-menu: 200ms; --t-sheet: 280ms; --t-tilt: 450ms; --t-done: 600ms; --t-scene: 900ms;
+  --t-rm: 150ms;            /* con reduced-motion: solo opacidad, como mucho esto */
+
+  /* ── Foco ── */
+  --focus-w: 3px; --focus-off: 3px;
+}
+
+@media (min-width: 1024px) {
+  :root { --cols: 12; --rail-w: 20px; --row-thumb: 96px; --tag-pad: 14px 22px 18px 18px; }
+}
+
+/* Más contraste: apagado sube; los tramos vistos pasan a tinta (4,7:1 frente a --rail-todo,
+   que no se toca para no acercarse al acento); foco más grueso */
+@media (prefers-contrast: more) {
+  :root { --muted: #d2cec8; --rail-done: var(--ink); --focus-w: 4px; }
+}
+
+/* Reduced-motion: sin desplazamiento, escala ni inclinación; el resto, a --t-rm */
+@media (prefers-reduced-motion: reduce) {
+  :root { --t-press: 0ms; --t-fill: 0ms; --t-menu: var(--t-rm); --t-sheet: var(--t-rm); --t-tilt: 0ms; --t-done: var(--t-rm); --t-scene: 0ms; --tilt: 0deg; }
+}
