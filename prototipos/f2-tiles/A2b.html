@@ -1,0 +1,352 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0a0a0a">
+<link rel="icon" href="data:,">
+<title>Tile A2b · Encuadre</title>
+<link rel="preload" href="fuentes/KulturaDisplay-latin.woff2" as="font" type="font/woff2" crossorigin>
+<style>
+/* KULTURA · F2 paso 4 · Ronda 4 · Tile A2b «Encuadre con pista», legibilidad móvil (D-F2g)
+   Paleta de A, logotipo de B y la pista de episodios de B como firma (K8):
+   la pista es un lado del marco del póster, y la etiqueta «T2 E5» cuelga
+   de ella justo en el episodio por el que vas. El acento sale de cada portada (K5). */
+@font-face { font-family: "Kultura Display"; src: url("fuentes/KulturaDisplay-latin.woff2") format("woff2"); font-weight: 800; font-display: block; }
+@font-face { font-family: "Bricolage"; src: url("fuentes/BricolageGrotesque-latin.woff2") format("woff2"); font-weight: 200 800; font-display: swap; }
+
+:root {
+  /* Superficies: escalones de luminancia (OKLCH L 14 / 20 / 25) */
+  --s0: #0a0a0a; --s1: #151515; --s2: #212121;
+  --ink: #f2f0eb;           /* 17,4:1 sobre s0 */
+  --muted: #a19d96;         /* 7,3 / 6,8 / 6,0:1 */
+  --scene: #d9a35e;         /* por defecto, «El último reino»: L75 C0,108 H72 · 8,8:1 */
+  --scene-fallback: #b8ab95;/* reserva fija: L73 · 8,9:1 con #0a0a0a */
+  --on-scene: #0a0a0a;
+  --ph: #4a3f33;            /* espacio reservado: dominante de la portada */
+  --brand: #f2f0eb;         /* versión fija del logotipo (icono de app, favicon) */
+  --error: #ff9d8f; --ok: #8fd3a0;
+  --focus: #f2f0eb;         /* el foco nunca usa --scene */
+  --ch-ctl: 14px; --ch-cover: 18px;
+  --ease: cubic-bezier(.2,0,0,1);
+  --move: cubic-bezier(.77,0,.175,1);
+  --spring: linear(0, .25 7%, .58 17%, .82 29%, .94 42%, .985 57%, 1 75%, 1);
+  --m: clamp(16px, 2.2vw, 32px);
+  --gut: clamp(12px, 1.6vw, 24px);
+  --max: 1376px;
+  --rail: 14px;
+  --sp-1: 4px; --sp-2: 8px; --sp-3: 12px; --sp-4: 16px; --sp-6: 24px; --sp-8: 32px; --sp-12: 48px; --sp-16: 64px; --sp-30: 120px;
+  color-scheme: dark;
+}
+@media (prefers-contrast: more) { :root { --muted: #d2cec8; } }
+
+*, *::before, *::after { box-sizing: border-box; }
+html { background: var(--s0); -webkit-text-size-adjust: 100%; }
+body { margin: 0; background: var(--s0); color: var(--ink); font: 400 17px/1.5 "Bricolage", ui-sans-serif, system-ui, sans-serif; overflow-x: clip; }
+h1, h2, h3, p { margin: 0; }
+img { display: block; max-width: 100%; height: auto; }
+a { color: inherit; }
+:focus-visible { outline: 3px solid var(--focus); outline-offset: 3px; }
+.skip { position: absolute; left: var(--m); top: -100px; background: var(--ink); color: var(--s0); padding: 12px 16px; z-index: 10; }
+.skip:focus { top: 8px; }
+.vh { position: absolute !important; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+.wrap { max-width: var(--max); margin-inline: auto; padding-inline: var(--m); }
+.ch { clip-path: polygon(0 0, 100% 0, 100% 100%, var(--ch-cover) 100%, 0 calc(100% - var(--ch-cover))); }
+
+.btn { position: relative; isolation: isolate; display: inline-flex; align-items: center; justify-content: center; min-height: 52px; min-width: 44px; padding: 0 24px; border: 0; background: none; color: var(--on-scene); font: 600 17px/1 "Bricolage", sans-serif; text-decoration: none; cursor: pointer; transition: transform 120ms var(--ease); }
+.btn::before { content: ""; position: absolute; inset: 0; z-index: -1; background: var(--scene); clip-path: polygon(0 0, 100% 0, 100% 100%, var(--ch-ctl) 100%, 0 calc(100% - var(--ch-ctl))); }
+.btn:active { transform: scale(.97); }
+.btn--quiet { color: var(--ink); }
+.btn--quiet::before { background: var(--s2); }
+.btn[aria-disabled="true"] { color: var(--muted); }
+.btn[aria-disabled="true"]::before { background: var(--s2); }
+.link { display: inline-flex; align-items: center; min-height: 44px; padding-inline: 14px; font-weight: 600; text-underline-offset: 4px; background: var(--s0); }
+
+/* Logotipo (de B, retocado): monograma con chaflán + palabra en caja alta.
+   En pantalla el bloque toma el color de la escena; la versión fija va en tinta. */
+.mark { display: inline-flex; align-items: center; gap: 10px; min-height: 44px; text-decoration: none; font: 800 22px/1 "Kultura Display", sans-serif; letter-spacing: -.01em; text-transform: uppercase; }
+.mono { display: grid; place-items: center; width: 34px; height: 34px; background: var(--scene); color: var(--on-scene); font: 800 24px/1 "Kultura Display", sans-serif; text-transform: uppercase; clip-path: polygon(0 0, 100% 0, 100% 100%, 10px 100%, 0 calc(100% - 10px)); }
+.mono--brand { background: var(--brand); }
+
+.top { display: flex; justify-content: space-between; align-items: center; min-height: 72px; position: relative; z-index: 3; }
+
+/* ---------- Pista (K8): un tramo por episodio; los vistos se llenan ---------- */
+.rail { list-style: none; margin: 0; padding: 0; display: grid; gap: 3px; }
+.rail li { position: relative; overflow: hidden; background: #6b6b6b; } /* pendiente: 3,7:1 con #0a0a0a (1.4.11) */
+.rail li::after { content: ""; position: absolute; inset: 0; background: var(--scene); transform: scaleX(0); transform-origin: left; transition: transform 160ms var(--ease); }
+.rail li.v::after { transform: none; }
+.rail li.c { outline: 3px solid var(--ink); outline-offset: -3px; }
+.kb .rail li::after, .kb .btn { transition: none; } /* M3: desde teclado, sin animación */
+
+/* ---------- Portada, primer pantallazo ---------- */
+/* La misma forma en los dos anchos: pista vertical = lado izquierdo del marco;
+   la etiqueta cuelga del tramo del episodio actual y monta sobre el póster. */
+.frame { position: relative; display: grid; grid-template-columns: var(--rail) 1fr; column-gap: 4px; height: clamp(280px, 46svh, 420px); margin-right: calc(var(--m) * -1); }
+.frame__poster { grid-column: 2; grid-row: 1; margin: 0; height: 100%; overflow: hidden; background: var(--ph); }
+.frame__poster img { width: 100%; height: 100%; object-fit: cover; object-position: 50% 60%; } /* a 390: cara por encima de la etiqueta; el título del póster queda visible */
+.frame .rail { grid-column: 1; grid-row: 1; grid-template-rows: repeat(var(--n), 1fr); gap: 4px; }
+.frame .rail li::after { transform: scaleY(0); transform-origin: top; }
+.frame .rail li.v::after { transform: none; }
+.tag { position: absolute; left: calc(var(--rail) + 4px); top: calc((var(--cur) - .5) / var(--n) * 100%); transform: translateY(-50%); z-index: 2; margin: 0; padding: 10px 16px 14px 14px; background: var(--s0); clip-path: polygon(0 0, 100% 0, 100% 100%, 14px 100%, 0 calc(100% - 14px)); font-variant-numeric: tabular-nums; }
+.tag span { display: block; }
+.tag .ttl { font-size: 16px; font-weight: 600; color: var(--muted); }
+.tag .ep { font: 600 40px/.95 "Bricolage", sans-serif; letter-spacing: -.02em; margin-top: 4px; }
+.tag .left { white-space: nowrap; }
+.tag .left { font-size: 16px; margin-top: 4px; }
+.copy--h { padding-block: var(--sp-2) var(--sp-4); }
+.copy--b { display: flex; flex-direction: column; gap: var(--sp-4); padding-block: var(--sp-4) var(--sp-8); }
+.copy--b .act { order: -1; }
+.copy h1 { font: 800 clamp(52px, 13.4vw, 144px)/.9 "Kultura Display", sans-serif; letter-spacing: -.03em; }
+.copy h1 span { display: block; }
+.copy .lede { max-width: 34ch; color: var(--muted); }
+
+@media (max-width: 359px) { .frame__poster img { object-position: 50% 76%; } } /* la cara manda; el título ya va en la etiqueta */
+@media (min-width: 1024px) {
+  .hero { position: relative; min-height: calc(100svh - 72px); display: flex; flex-direction: column; justify-content: flex-end; }
+  :root { --rail: 20px; }
+  .frame { position: absolute; right: 0; top: -56px; bottom: var(--sp-6); height: auto; margin: 0; width: calc(min(54vw, 820px) + var(--rail) + 4px); min-height: 620px; }
+  .frame__poster img { object-position: 50% 40%; }
+  .tag { max-width: none; padding: 14px 22px 18px 18px; clip-path: polygon(0 0, 100% 0, 100% 100%, 18px 100%, 0 calc(100% - 18px)); }
+  .tag .ttl { font-size: 17px; }
+  .tag .ep { font-size: 64px; line-height: .9; }
+  .tag .left { font-size: 17px; }
+  .copy { position: relative; z-index: 1; max-width: calc(100% - min(54vw, 820px) - 88px); }
+  .copy--h { padding: 0; }
+  .copy--b { gap: 0; padding-block: var(--sp-3) var(--sp-12); }
+  .copy--b .act { order: 0; margin-top: var(--sp-4); }
+  .copy h1 { letter-spacing: -.05em; font-size: clamp(96px, 8vw, 128px); }
+  .copy h1 span { white-space: nowrap; }
+}
+.tilt { transition: transform 450ms var(--spring); }
+
+/* ---------- Inicio: seguir viendo (cada fila con el color de su portada) ---------- */
+.sec { padding-block: var(--sp-16); }
+@media (min-width: 1024px) { .sec { padding-block: var(--sp-30); } }
+.sec h2 { font: 600 28px/1.15 "Bricolage", sans-serif; margin-bottom: var(--sp-8); }
+.list { display: grid; gap: 2px; }
+.row { display: grid; grid-template-columns: 72px 1fr; gap: var(--sp-4); background: var(--s1); padding: var(--sp-3); align-items: center; }
+.row img { width: 72px; aspect-ratio: 2/3; object-fit: cover; }
+.row h3 { font: 600 17px/1.25 "Bricolage", sans-serif; }
+.row .yr { color: var(--muted); font-variant-numeric: tabular-nums; font-weight: 400; }
+.row .rail { grid-template-columns: repeat(var(--n), 1fr); margin-top: var(--sp-2); }
+.row .rail li { height: 10px; }
+.row .data { display: flex; justify-content: space-between; align-items: baseline; gap: var(--sp-3); margin-top: var(--sp-2); font-variant-numeric: tabular-nums; }
+.row .ep { font: 600 24px/1 "Bricolage", sans-serif; letter-spacing: -.02em; }
+.row .left { color: var(--muted); font-size: 16px; }
+.row .acts { grid-column: 1 / -1; display: flex; gap: var(--sp-3); align-items: center; flex-wrap: wrap; }
+.status { min-height: 44px; display: inline-flex; align-items: center; gap: 12px; }
+@media (min-width: 1024px) { .row { grid-template-columns: 96px 1fr 380px; padding: var(--sp-4); gap: var(--sp-6); } .row img { width: 96px; } .row .acts { grid-column: auto; justify-content: flex-end; } }
+
+/* ---------- Sistema ---------- */
+.logo-big { display: flex; align-items: center; gap: .16em; font: 800 clamp(48px, 13vw, 200px)/.9 "Kultura Display", sans-serif; text-transform: uppercase; letter-spacing: -.04em; }
+.logo-big .mono { width: 1.1em; height: 1.1em; font-size: .9em; clip-path: polygon(0 0, 100% 0, 100% 100%, .28em 100%, 0 calc(100% - .28em)); }
+.icons { display: flex; gap: var(--sp-4); margin-top: var(--sp-8); align-items: center; flex-wrap: wrap; }
+.icons .mono { width: 64px; height: 64px; font-size: 44px; clip-path: polygon(0 0, 100% 0, 100% 100%, 18px 100%, 0 calc(100% - 18px)); }
+.swatches { display: grid; grid-template-columns: repeat(2, 1fr); gap: var(--sp-2); }
+@media (min-width: 1024px) { .swatches { grid-template-columns: repeat(4, 1fr); } }
+.sw { min-height: 132px; padding: var(--sp-4); display: flex; flex-direction: column; justify-content: space-between; font-size: 16px; font-variant-numeric: tabular-nums; }
+.sw b { font-weight: 600; }
+.sw--line { outline: 2px solid var(--s2); outline-offset: -2px; }
+.sw--scene { color: var(--on-scene); background: var(--scene); }
+.states { display: flex; flex-direction: column; gap: var(--sp-3); font-size: 16px; }
+.states p { display: flex; gap: 10px; align-items: center; }
+.type { display: grid; gap: var(--sp-8); }
+.type .d { font: 800 clamp(48px, 9vw, 120px)/.92 "Kultura Display", sans-serif; letter-spacing: -.04em; }
+.type .f { font: 500 clamp(24px, 2.4vw, 36px)/1.2 "Bricolage", sans-serif; max-width: 26ch; }
+.type .b { max-width: 60ch; }
+.type .n { font: 600 32px/1 "Bricolage", sans-serif; font-variant-numeric: tabular-nums; }
+.caps { font: 800 48px/.94 "Kultura Display", sans-serif; text-transform: uppercase; letter-spacing: -.03em; }
+.meta { color: var(--muted); font-size: 16px; margin-top: var(--sp-2); font-variant-numeric: tabular-nums; }
+.forms { display: grid; grid-template-columns: repeat(2, 1fr); gap: var(--sp-6); align-items: start; }
+@media (min-width: 1024px) { .forms { grid-template-columns: repeat(4, 1fr); } }
+.forms figure { margin: 0; }
+.forms figcaption { margin-top: var(--sp-3); color: var(--muted); font-size: 16px; }
+.nocover { aspect-ratio: 2/3; background: var(--scene-fallback); color: var(--on-scene); padding: var(--sp-4); display: flex; align-items: flex-end; font: 800 28px/.95 "Kultura Display", sans-serif; letter-spacing: -.02em; }
+.loading { aspect-ratio: 2/3; background: var(--ph); }
+.backdrop { position: relative; aspect-ratio: 16/9; overflow: hidden; }
+.backdrop img { width: 100%; height: 100%; object-fit: cover; }
+.backdrop::after { content: ""; position: absolute; inset: 0; background: linear-gradient(to top, rgba(10,10,10,.78), rgba(10,10,10,0) 60%); }
+.backdrop span { position: absolute; left: 12px; bottom: 10px; z-index: 1; font-weight: 600; }
+.gridshow { display: grid; grid-template-columns: repeat(4, 1fr); gap: var(--gut); height: 96px; }
+.gridshow div { background: var(--s1); }
+@media (min-width: 1024px) { .gridshow { grid-template-columns: repeat(12, 1fr); } }
+.specs { margin-top: var(--sp-6); color: var(--muted); font-size: 16px; display: grid; gap: 6px; font-variant-numeric: tabular-nums; }
+footer { padding-block: var(--sp-12) var(--sp-16); color: var(--muted); font-size: 16px; }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { transition-duration: 1ms !important; animation: none !important; }
+  .tilt, .btn:active { transform: none !important; }
+}
+</style>
+</head>
+<body>
+<a class="skip" href="#escena">Saltar al contenido</a>
+<main id="escena">
+  <!-- Fragmento 1 · portada pública, primer pantallazo -->
+  <section class="wrap" style="max-width:none" aria-label="Portada">
+    <header class="top">
+      <a class="mark" href="#escena" aria-label="Kultura, inicio"><span class="mono" aria-hidden="true">K</span><span aria-hidden="true">Kultura</span></a>
+      <a class="link" href="#escena">Entrar</a>
+    </header>
+    <div class="hero">
+      <div class="copy copy--h"><h1><span>Tus series,</span> <span>al día.</span></h1></div>
+      <div class="frame tilt" data-tilt style="--n:8; --cur:5">
+        <figure class="frame__poster ch"><img src="img/lastkingdom_780.jpg" width="780" height="1170" alt="Póster de El último reino" fetchpriority="high"></figure>
+        <ol class="rail" aria-hidden="true"><li class="v"></li><li class="v"></li><li class="v"></li><li class="v"></li><li class="c"></li><li></li><li></li><li></li></ol>
+        <p class="tag"><span class="ttl" aria-hidden="true">El último reino</span><span class="ep" aria-hidden="true">T2 E5</span><span class="left" aria-hidden="true">te quedan 4 episodios</span><span class="vh">Ejemplo: en El último reino vas por la temporada 2, episodio 5. Te quedan 4 episodios.</span></p>
+      </div>
+      <div class="copy copy--b">
+        <p class="lede">Series y películas en español, episodio a episodio. Y tus datos, siempre tuyos.</p>
+        <div class="act"><a class="btn" href="#escena">Crear cuenta</a></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Fragmento 2 · Inicio: el acento cambia con cada portada (K5) -->
+  <section class="wrap sec" aria-labelledby="t-seguir">
+    <h2 id="t-seguir">Seguir viendo</h2>
+    <div class="list">
+      <article class="row" id="row1" style="--scene:#d9a35e">
+        <img src="img/lastkingdom.jpg" width="500" height="750" alt="">
+        <div>
+          <h3>El último reino <span class="yr">2015</span></h3>
+          <ol class="rail" id="ol" style="--n:8" aria-hidden="true"></ol>
+          <div class="data"><span class="ep" id="prog"></span><span class="left" id="left"></span></div>
+        </div>
+        <div class="acts">
+          <button class="btn btn--quiet" id="seen" type="button">Marcar visto<span class="vh" id="seenvh"></span></button>
+          <span class="status" id="status" aria-live="polite"></span>
+        </div>
+      </article>
+      <article class="row" style="--scene:#9ab552">
+        <img src="img/the100.jpg" width="342" height="513" alt="">
+        <div>
+          <h3>Los 100 <span class="yr">2014</span></h3>
+          <ol class="rail" style="--n:16" aria-hidden="true"><li class="v"></li><li class="v"></li><li class="v"></li><li class="v"></li><li class="v"></li><li class="v"></li><li class="v"></li><li class="v"></li><li class="v"></li><li class="v"></li><li class="v"></li><li class="c"></li><li></li><li></li><li></li><li></li></ol>
+          <div class="data"><span class="ep"><span aria-hidden="true">T2 E12</span><span class="vh">Temporada 2, episodio 12</span></span><span class="left">te quedan 5 episodios</span></div>
+        </div>
+        <div class="acts"><button class="btn btn--quiet" type="button">Marcar visto<span class="vh">: T2 E12 de Los 100</span></button></div>
+      </article>
+      <article class="row" style="--scene:#62c0b4">
+        <img src="img/sherlock.jpg" width="342" height="513" alt="">
+        <div>
+          <h3>Sherlock <span class="yr">2010</span></h3>
+          <ol class="rail" style="--n:3" aria-hidden="true"><li class="v"></li><li class="c"></li><li></li></ol>
+          <div class="data"><span class="ep"><span aria-hidden="true">T3 E2</span><span class="vh">Temporada 3, episodio 2</span></span><span class="left">te quedan 2 episodios</span></div>
+        </div>
+        <div class="acts"><button class="btn btn--quiet" type="button">Marcar visto<span class="vh">: T3 E2 de Sherlock</span></button></div>
+      </article>
+    </div>
+  </section>
+
+  <section class="wrap sec" aria-labelledby="t-logo">
+    <h2 id="t-logo">Logotipo</h2>
+    <p class="logo-big" role="img" aria-label="Kultura"><span class="mono" aria-hidden="true">K</span><span aria-hidden="true">Kultura</span></p>
+    <div class="icons" aria-hidden="true">
+      <span class="mono mono--brand">K</span>
+      <span class="mono" style="--scene:#d9a35e">K</span>
+      <span class="mono" style="--scene:#9ab552">K</span>
+      <span class="mono" style="--scene:#62c0b4">K</span>
+    </div>
+    <p class="specs">El monograma de B con el chaflán de las portadas y la palabra en caja alta por CSS. En pantalla, el bloque toma el color de la escena; como icono de app y favicon, va fijo en tinta.</p>
+  </section>
+
+  <section class="wrap sec" aria-labelledby="t-pal">
+    <h2 id="t-pal">Paleta</h2>
+    <div class="swatches">
+      <div class="sw sw--line" style="background:#0a0a0a"><b>Sala</b><span>#0a0a0a · L14</span></div>
+      <div class="sw" style="background:#151515"><b>Superficie</b><span>#151515 · L20</span></div>
+      <div class="sw" style="background:#212121"><b>Elevada</b><span>#212121 · L25</span></div>
+      <div class="sw" style="background:#f2f0eb;color:#0a0a0a"><b>Tinta</b><span>#f2f0eb · 17,4:1</span></div>
+      <div class="sw" style="background:#a19d96;color:#0a0a0a"><b>Apagado</b><span>#a19d96 · 7,3 / 6,8 / 6,0:1</span></div>
+      <div class="sw sw--scene" style="--scene:#d9a35e"><b>Escena · El último reino</b><span>#d9a35e · L75 C0,11 H72 · 8,8:1</span></div>
+      <div class="sw sw--scene" style="--scene:#9ab552"><b>Escena · Los 100</b><span>#9ab552 · L73 C0,13 H122 · 8,6:1</span></div>
+      <div class="sw sw--scene" style="--scene:#62c0b4"><b>Escena · Sherlock</b><span>#62c0b4 · L75 C0,09 H185 · 9,2:1</span></div>
+      <div class="sw" style="background:var(--scene-fallback);color:#0a0a0a"><b>Reserva</b><span>#b8ab95 · L73 · 8,9:1</span></div>
+      <div class="sw" style="background:#151515">
+        <div class="states">
+          <p style="color:var(--ok)"><svg width="18" height="18" viewBox="0 0 18 18" aria-hidden="true"><path d="M3 9.5l4 4 8-9" fill="none" stroke="currentColor" stroke-width="2.4"/></svg>Visto · 10,4:1</p>
+          <p style="color:var(--error)"><svg width="18" height="18" viewBox="0 0 18 18" aria-hidden="true"><path d="M4 4l10 10M14 4L4 14" fill="none" stroke="currentColor" stroke-width="2.4"/></svg>Error · 9,1:1</p>
+        </div>
+      </div>
+    </div>
+    <p class="specs">Lo fijo: sala, superficies, tinta, apagado y reserva. Lo que cambia: el acento, que sale de cada portada y se acota a L 55–75 % y C ≥ 0,08 (K5). En las listas, el acento solo llena la pista; los botones van en superficie elevada. Contrastes con #0a0a0a; el foco es siempre la tinta.</p>
+  </section>
+
+  <section class="wrap sec" aria-labelledby="t-tipo">
+    <h2 id="t-tipo">Tipografía</h2>
+    <div class="type">
+      <div><p class="d">Tus series, al día.</p><p class="meta">Display · KulturaDisplay 800 · 144/52 px · interlineado 0,90 · −5 % / −3 %</p></div>
+      <div><p class="caps">AÑO ÉPICO</p><p class="meta">Caja alta solo por CSS (logotipo y rótulos), interlineado 0,94</p></div>
+      <div><p class="f">Tus datos, siempre tuyos.</p><p class="meta">Frase · Bricolage 500 · 36/24 px</p></div>
+      <div><p class="b">Marcas el episodio al terminarlo y sabes por dónde vas, en el móvil o en el escritorio.</p><p class="meta">Cuerpo · Bricolage 400 · 17 px · 1,5</p></div>
+      <div><p class="n">T2 E5 · cap. 112 · p. 240 · 12 h</p><p class="meta">Dato · Bricolage 600 tabular · la misma pista sirve a los 7 formatos (P3)</p></div>
+    </div>
+  </section>
+
+  <section class="wrap sec" aria-labelledby="t-forma">
+    <h2 id="t-forma">Forma e imagen</h2>
+    <div class="forms">
+      <figure><img class="ch" src="img/sherlock.jpg" width="342" height="513" alt="Póster de Sherlock"><figcaption>Póster 2:3 · chaflán 18</figcaption></figure>
+      <figure><div class="nocover ch" role="img" aria-label="Sin portada: Los informáticos">Los informáticos</div><figcaption>Sin portada: reserva + título</figcaption></figure>
+      <figure><div class="loading ch" role="img" aria-busy="true" aria-label="Cargando portada"></div><figcaption>Cargando: color dominante, estático</figcaption></figure>
+      <figure>
+        <div style="display:flex;flex-direction:column;gap:12px;align-items:flex-start"><button class="btn" type="button">Crear cuenta</button><button class="btn btn--quiet" type="button">Deshacer</button></div>
+        <figcaption>Control · chaflán 14 · foco fuera del recorte</figcaption>
+      </figure>
+    </div>
+    <figure style="margin:var(--sp-8) 0 0"><div class="backdrop ch"><img src="img/lastkingdom_b.jpg" width="1280" height="720" alt=""><span>El último reino</span></div><figcaption class="specs">Fondo 16:9 · única veladura: neutra, desde abajo, 0,78, solo bajo texto</figcaption></figure>
+  </section>
+
+  <section class="wrap sec" aria-labelledby="t-ret">
+    <h2 id="t-ret">Retícula y movimiento</h2>
+    <div class="gridshow" aria-hidden="true"><div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div></div>
+    <div class="specs"><span>4 columnas a 390 · 12 a 1440 · margen clamp(16, 2,2vw, 32) · medianil clamp(12, 1,6vw, 24) · máx. 1376 · base 4</span><span>Marcar visto llena el tramo en 160 ms (cubic-bezier(.2,0,0,1)); desde teclado, sin animación · inclinación ±6° con muelle, solo con puntero fino</span></div>
+  </section>
+</main>
+<footer class="wrap">Tile A2b · Encuadre con pista · ronda 4 · portadas de TMDB</footer>
+
+<script>(()=>{const ol=document.getElementById('ol'),row=document.getElementById('row1');for(let i=0;i<8;i++)ol.append(document.createElement('li'));window.KCFG={s:2,n:8,ep:5,prog:document.getElementById('prog'),left:document.getElementById('left'),onKey:k=>row.classList.toggle('kb',k),onPaint:ep=>{[...ol.children].forEach((li,i)=>{li.className=i<ep-1?'v':i===ep-1?'c':'';});document.getElementById('seenvh').textContent=ep>8?': ya estás al día con El último reino':': T2 E'+ep+' de El último reino';}};})();</script>
+<script>
+/* B2 · marcar visto: un toque, aviso aria-live, «Deshacer» 5 s (se pausa con el foco dentro) */
+(() => {
+  const C = window.KCFG, btn = document.getElementById('seen'), st = document.getElementById('status');
+  let ep = C.ep, timer, last = null;
+  const said = n => 'Temporada ' + C.s + ', episodio ' + n;
+  const paint = () => {
+    const n = C.n - ep + 1;
+    C.prog.innerHTML = ep > C.n ? '<span>Al día</span>' : '<span aria-hidden="true">T' + C.s + ' E' + ep + '</span><span class="vh">' + said(ep) + '</span>';
+    C.left.textContent = n <= 0 ? '' : n === 1 ? 'te queda 1 episodio' : 'te quedan ' + n + ' episodios';
+    btn.setAttribute('aria-disabled', String(ep > C.n));
+    if (C.onPaint) C.onPaint(ep);
+  };
+  const clear = () => { if (st.contains(document.activeElement)) btn.focus(); st.textContent = ''; };
+  const arm = () => { clearTimeout(timer); timer = setTimeout(clear, 5000); };
+  st.addEventListener('focusin', () => clearTimeout(timer));
+  st.addEventListener('focusout', e => { if (!st.contains(e.relatedTarget) && st.firstChild) arm(); });
+  btn.addEventListener('click', e => {
+    if (C.onKey) C.onKey(e.detail === 0);
+    if (ep > C.n) return;
+    last = ep; ep += 1; paint();
+    st.textContent = '';
+    const msg = document.createElement('span');
+    msg.innerHTML = '<span aria-hidden="true">T' + C.s + ' E' + last + ' visto</span><span class="vh">' + said(last) + ', visto.</span>';
+    const undo = document.createElement('button'); undo.type = 'button'; undo.className = 'btn btn--quiet'; undo.textContent = 'Deshacer';
+    undo.addEventListener('click', () => { ep = last; paint(); btn.focus(); st.textContent = 'Deshecho'; clearTimeout(timer); timer = setTimeout(() => { st.textContent = ''; }, 2000); });
+    st.append(msg, ' ', undo); arm();
+  });
+  paint();
+})();
+</script>
+<script>
+/* B1 · inclinación ±6°: solo puntero fino y sin reduced-motion; vuelve con --spring */
+(() => {
+  if (!matchMedia('(pointer: fine)').matches || matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  document.querySelectorAll('[data-tilt]').forEach(el => {
+    el.addEventListener('pointermove', e => { const r = el.getBoundingClientRect(); const x = (e.clientX - r.left) / r.width - .5, y = (e.clientY - r.top) / r.height - .5; el.style.transform = 'perspective(1200px) rotateY(' + (x * 12) + 'deg) rotateX(' + (-y * 12) + 'deg)'; });
+    el.addEventListener('pointerleave', () => { el.style.transform = ''; });
+  });
+})();
+</script>
+</body>
+</html>

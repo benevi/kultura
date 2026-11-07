@@ -45,3 +45,11 @@ Nota de Víctor a A2: 3 (falla la legibilidad móvil; falta profundidad/3D). A3 
 - Rúbrica (C1·C2·C3·C4): Artisan 3·3·3·4 → 4·4·4·4; Advocate 4·4·3·4 → 4·4·4·4. **Pasa**, pendiente de la nota de Víctor (última ronda: si no pasa, R3/D6).
 - Pendiente para el paso 5: la etiqueta tapa el tramo actual de la pista en móvil; «te quedan 4 episodios» en 2 líneas a 390; ¿cuenta el fondo 16:9 como portada (K6)?
 - Capturas: `capturas/A3-390.jpg` y `A3-1440.jpg`.
+
+## Ronda 4 · A2b (D-F2f, D-F2g)
+Víctor descarta A3, se queda con A2 y pide llegar a 4 en todo sin R3/D6. A2b = A2 a 1440 (solo cambia el gris de los tramos pendientes) y, a 390: titular primero, marco de clamp(280px, 46svh, 420px), póster encuadrado para que la cara quede por encima de la etiqueta, etiqueta «El último reino / T2 E5 / te quedan 4 episodios» en una línea por dato, «Crear cuenta» antes de la entradilla y tramos pendientes en #6b6b6b (3,7:1).
+
+- Artifact privado: https://claude.ai/artifact/3dM2PsctBcvZ5uHycpkNT2
+- Pruebas: axe 0 en 10 combinaciones (390/1440/320/1024/360 × reduced-motion), sin desbordes, «Crear cuenta» visible sin desplazar en todas.
+- Rúbrica: Artisan 4·4·4·4, Advocate 4·4·4·4. **Pasa**, pendiente de la nota de Víctor.
+- Capturas: `capturas/A2b-390.jpg` y `A2b-1440.jpg`.

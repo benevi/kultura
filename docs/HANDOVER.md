@@ -12,9 +12,11 @@
   - Tramos pendientes de la pista en #6b6b6b (3,7:1).
   - Pruebas: axe 0 en 8 combinaciones, sin desbordes, B2 correcto. Revisores en 2 pasadas: **4·4·4·4 los dos** (`04_DECISIONES` §4).
 
+- **Ronda 4:** `A2b.html` (https://claude.ai/artifact/3dM2PsctBcvZ5uHycpkNT2). Es A2 a 1440 y, a 390, titular primero, póster encuadrado con la cara por encima de la etiqueta, «Crear cuenta» visible a 320×640 y pista legible (#6b6b6b). Revisores: 4·4·4·4 los dos.
+
 ## Estado de la puerta
-- **A3 no pasa; Víctor elige A2 (D-F2f).** Falta que confirme si eso abre el paso 5 (con la legibilidad móvil de A2 como deuda) o si se activa R3/D6.
-- Deuda de A2 para el paso 5: legibilidad móvil (la nota 3 de Víctor), pack P1 en el paso 6, probar un acento frío (X11), P3 con pistas largas y verde frente a `--ok` (K5).
+- A3 descartado; Víctor elige A2 y sin R3/D6 (D-F2f, D-F2g). Falta la **nota de Víctor a A2b**: con ≥ 4 en los 4 criterios empieza el paso 5.
+- Deuda para el paso 5: token `--rail-todo`, P3 con pistas largas, verde frente a `--ok` (K5), probar un acento frío (X11) y pack P1 en el paso 6.
 
 ## Pendiente / ojo
 - **No empezar el paso 5** hasta el «sí» de Víctor.
