@@ -65,6 +65,17 @@ F0 se da por cerrada: se cumplen todas las condiciones de la puerta de §7.2 sal
 | D-F2i … D-F2n | **Paso 5 de F2: decisiones del sistema de diseño** (propuestas de Claude, **aprobadas por Víctor el 2026-11-07, D-F2o**) | `docs/03_DESIGN_SYSTEM.md` §13. **i:** el éxito no tiene color; se retira `--ok` en v2 (cierra el verde frente a `--ok`, K5). **j:** Figtree sale de la v2 (X21; −20 KB de fuente). **k:** pistas largas: discreta ≤ 18 tramos, por bloques, continua o sin pista (P3). **l:** `src/v2/` sin Tailwind: CSS + tokens. **m:** acento frío girado a H245 (X11; alternativa A de 3). **n:** `--rail-todo: #6b6b6b`, nunca sobre `--s3`; con más contraste, los vistos pasan a tinta. Landing v1 (`src/components/landing/landing.css:60` y `:84`): se sustituye en F3, no se parchea. | Con el «sí», `03_DESIGN_SYSTEM.md` pasa a v1.0 aprobada y se abre el paso 6 (prototipo vivo de Inicio con sesión). Condición del paso 6: probar con VoiceOver en iOS y NVDA. De los 13 tests `design|visual`, 4 se adaptan y 8 se aparcan hasta `v1-ui` (§12). |
 | D-F2o | **Puerta del paso 5 de F2: aprobada** (Víctor, por escrito: «Sí, apruebo», 2026-11-07) | `docs/03_DESIGN_SYSTEM.md` v1.0 y las decisiones D-F2i…n. Revisores Artisan y Advocate: pasa (§4). | Desbloquea el paso 6: prototipo vivo de Inicio con sesión (artifact), con el pack P1, probado a 390 y 1440, sin WebGL y con reduced-motion antes de enseñarlo. Condición: VoiceOver en iOS y NVDA, con guion de Claude. El squash-merge del PR #87 sigue necesitando el OK explícito. |
 
+## 1h. Reinicio de F2 (Víctor, 2026-11-08)
+
+> **D-F2a…o quedan anuladas.** Se conservan arriba solo como historia; no son criterio de diseño.
+
+| ID | Decisión | Por qué / detalle | Consecuencia |
+|---|---|---|---|
+| D-F2p | **Toda la fase de diseño vuelve al paso 1 de §6.1 y se borra lo hecho, incluso lo aprobado** («No quiero que el diseño se base en lo que había hecho… No estabas usando las skills necesarias y el trabajo estaba quedando muy pobre») | Causa comprobada: en #85–#87 no se invocaron las skills. En #88 (cerrado) `taste-skill` solo se usó para `lint` e `inspect`, sin `draw.mjs` ni imágenes, y `ui-ux-pro-max` sin buscador. Además se arrastró titular y tipografía. | Borrado: brief, sistema, `docs/VOZ.md`, `prototipos/` entero, `.impeccable/`, `.taste-skill/`, `PRODUCT.md`, 3 artifacts. PR #88, #65 y #66 cerrados sin fusionar. Quedan `DISENO.md` y `VOZ.md` de la raíz: son de la v1 y los usan sus tests (regla 3). El contador de 3 rondas de §6.1 vuelve a 0. |
+| D-F2q | **Solo son fijos los vetos** (lista «No soporta» de `CLAUDE.md` y anti-lista §6.2) | Víctor elige «Nada, salvo vetos». Se abren negro exacto, tipografía, logotipo, chaflán, curvas, titular y firma. Modo claro sigue vetado. | Prevalece sobre las Preferencias «Le gusta» de `CLAUDE.md` y sobre §6.4 del plan, que siguen sin editar: pendiente de que Víctor los actualice. |
+| D-F2r | **Las respuestas de producto se vuelven a preguntar** en el paso 1 | Víctor elige «Preguntarlas de nuevo». Incluye el choque entre usuario, cuña A (D-F1c/D-F1d) y titular. | Sin respuestas no se diseña. |
+| D-F2s | **Python 3.12 instalado** (winget, usuario) para el buscador de `ui-ux-pro-max` | Con OK de Víctor. Buscador comprobado con una consulta real. | Las skills se usan enteras en cada paso y se comprueba su invocación. |
+
 ## 2. Riesgos derivados de estas respuestas
 
 | ID | Riesgo | Origen | Impacto | Mitigación / disparador |
