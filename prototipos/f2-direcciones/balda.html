@@ -1,0 +1,164 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0a0a0a">
+<link rel="icon" href="data:,">
+<title>Kultura La balda</title>
+<link rel="preload" href="fuentes/KulturaDisplay-latin.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="comun.css">
+<style>
+/* Logotipo: siete lomos de alturas distintas, uno sacado de la fila */
+.logo { display: inline-flex; align-items: flex-end; gap: 10px; min-height: 44px; text-decoration: none; font: 800 24px/1 "Kultura Display", sans-serif; letter-spacing: -.02em; padding-block: 8px; }
+.logo svg { display: block; }
+
+.hero { min-height: calc(100svh - 64px); display: flex; flex-direction: column; overflow: clip; }
+.hero__t { padding-inline: var(--m); display: grid; gap: 12px; }
+h1 { font: 800 23vw/.86 "Kultura Display", sans-serif; letter-spacing: -.035em; }
+h1 span { display: block; }
+.hero__t p { max-width: 44ch; }
+
+/* La balda: una fila de volúmenes en 3D sobre una tabla de luminancia */
+.shelf { --H: clamp(130px, calc(100svh - 560px), 420px); flex: 1; display: flex; align-items: flex-end; gap: 3px; padding: 16px var(--m) 0; margin-top: auto; overflow-x: auto; scrollbar-width: none; scroll-snap-type: x proximity; }
+.vol { --h: calc(var(--H) * var(--hr)); --w: calc(var(--h) * 2 / 3); --tt: calc(var(--t) * 1px); flex: none; position: relative; height: var(--h); width: calc(max(52px, var(--tt) + var(--w) * .22)); transition: width 300ms var(--move); perspective: 1400px; scroll-snap-align: center; }
+.vol.is-open { width: calc(var(--w) + 32px); }
+.box { position: absolute; left: 50%; bottom: 0; width: var(--w); height: var(--h); margin-left: calc(var(--w) / -2); transform-style: preserve-3d; transform: translateZ(calc(var(--tt) / -2)) rotateY(72deg); transition: transform 300ms var(--move); }
+.vol.is-open .box { transform: translateZ(40px) rotateX(var(--rx, 0deg)) rotateY(var(--ry, 0deg)); transition-duration: 200ms; }
+.face { position: absolute; inset: 0; backface-visibility: hidden; overflow: hidden; }
+.face--cover { transform: translateZ(calc(var(--tt) / 2)); background: var(--s2); clip-path: polygon(0 0, 100% 0, 100% 100%, var(--ch-cover) 100%, 0 calc(100% - var(--ch-cover))); }
+.face--cover img { width: 100%; height: 100%; object-fit: cover; }
+.face--back { transform: rotateY(180deg) translateZ(calc(var(--tt) / 2)); background: var(--s1); }
+.face--spine { left: 50%; width: var(--tt); margin-left: calc(var(--tt) / -2); transform: rotateY(-90deg) translateZ(calc(var(--w) / 2)); background: var(--s2); }
+/* El marcapáginas: asoma por el canto de la portada, sin tocarla, y baja hasta donde vas */
+.ribbon { position: absolute; left: 100%; margin-left: 2px; top: 0; width: 14px; height: 100%; background: var(--scene); backface-visibility: hidden; transform: translateZ(calc(var(--tt) / 2)) scaleY(var(--p)); transform-origin: top; transition: transform 200ms var(--ease); }
+.spine-t { display: none; position: absolute; left: 50%; top: 10px; bottom: 10px; overflow: hidden; transform: translateX(-50%); writing-mode: vertical-rl; font-size: 16px; font-weight: 600; color: var(--ink); white-space: nowrap; }
+@media (min-width: 1024px) { .spine-t { display: block; } .vol.is-open .spine-t { display: none; } }
+.sel { position: absolute; inset: 0; z-index: 3; width: 100%; }
+.sel:focus-visible { outline-offset: 2px; }
+.vol.is-open .sel { pointer-events: none; }
+
+/* La tabla: aquí vive el dato, nunca encima de la portada */
+.board { position: relative; z-index: 4; background: var(--s1); padding: 12px var(--m) 14px; display: grid; gap: 10px; grid-template-columns: 1fr; }
+.board__d { display: flex; align-items: baseline; flex-wrap: wrap; gap: 4px 16px; }
+.board__d b { font-weight: 600; color: var(--ink); }
+.board__do { display: flex; gap: 8px; flex-wrap: wrap; }
+.board__do .btn { flex: 1 1 auto; padding-inline: 12px; }
+
+@media (min-width: 1024px) {
+  h1 { font-size: min(13.6vw, 25svh); letter-spacing: -.045em; line-height: .84; }
+  h1 span { display: inline; }
+  .hero__t { gap: 8px; }
+  .hero__t p { max-width: none; }
+  .shelf { --H: clamp(280px, calc(100svh - 400px), 640px); overflow: visible; gap: 0; }
+  .vol, .vol.is-open { width: auto; }
+  .vol { flex: 1 1 0; min-width: 0; transition: flex-grow 300ms var(--move); }
+  .vol.is-open { flex-grow: 3; }
+  .board { grid-template-columns: 1fr auto; align-items: center; padding-block: 12px; }
+  .board__do .btn { flex: none; padding-inline: 24px; }
+}
+/* Primera carga: los volúmenes giran desde el lomo hasta su sitio, uno tras otro */
+.js .shelf.loading .box { transform: translateZ(calc(var(--tt) / -2)) rotateY(90deg) translateY(16px); }
+.shelf:not(.loading) .vol .box { transition-delay: var(--dl, 0ms); }
+@media (prefers-reduced-motion: reduce) { .vol.is-open .box { transform: none; } .box { transform: rotateY(72deg); } }
+
+/* Inicio con sesión: la lista de trabajo es plana y rápida */
+.sec { padding: var(--sec) var(--m) 0; }
+.sec h2 { font: 800 clamp(48px, 1.75rem + 6.2vw, 128px)/.9 "Kultura Display", sans-serif; letter-spacing: -.04em; margin-bottom: 32px; }
+.rows { display: grid; gap: 2px; margin-inline: calc(var(--m) * -1); }
+.row { display: grid; grid-template-columns: 72px minmax(0, 1fr); gap: 12px 16px; background: var(--s1); padding: 12px var(--m); align-items: center; }
+.row img { width: 72px; aspect-ratio: 2/3; object-fit: cover; clip-path: polygon(0 0, 100% 0, 100% 100%, var(--ch) 100%, 0 calc(100% - var(--ch))); }
+.row__d { font: 600 clamp(28px, 3vw, 44px)/1 "Bricolage", sans-serif; letter-spacing: -.02em; font-variant-numeric: tabular-nums; }
+.row h3 { font-size: 17px; font-weight: 600; line-height: 1.25; margin-top: 4px; }
+.row h3 span { color: var(--muted); font-weight: 400; }
+.row__m, .row__a { grid-column: 1 / -1; }
+.row__a { display: flex; gap: 8px; }
+.row__a .mark { flex: 1 1 auto; }
+.bar { height: 10px; background: var(--todo); margin-top: 8px; position: relative; overflow: hidden; }
+.bar i { position: absolute; inset: 0; background: var(--scene); transform: scaleX(var(--p)); transform-origin: left; transition: transform 200ms var(--ease); }
+@media (min-width: 1024px) { .row { grid-template-columns: 124px minmax(0, 1fr) minmax(0, 1fr) auto; gap: 32px; padding-block: 16px; } .row img { width: 124px; } .row__m, .row__a { grid-column: auto; } .row__a .mark { min-width: 200px; } .bar { margin-top: 8px; } }
+
+/* Tus datos */
+.own { padding: var(--sec) var(--m) 0; display: grid; gap: 24px; }
+.own p { font: 500 clamp(24px, 1.22rem + 1.15vw, 36px)/1.2 "Bricolage", sans-serif; max-width: 24ch; }
+.own figure { aspect-ratio: 16/10; overflow: hidden; margin-inline: calc(var(--m) * -1); }
+.own img { width: 100%; height: 100%; object-fit: cover; object-position: 50% 18%; }
+@media (min-width: 1024px) { .own { grid-template-columns: 5fr 7fr; align-items: end; } .own figure { margin: 0 calc(var(--m) * -1) 0 0; } }
+</style>
+</head>
+<body>
+<a class="skip" href="#contenido">Saltar al contenido</a>
+<header class="top">
+  <a class="logo" href="#" aria-label="Kultura, inicio">
+    <svg width="34" height="26" viewBox="0 0 34 26" aria-hidden="true" fill="currentColor"><rect x="0" y="6" width="4" height="20"/><rect x="5" y="2" width="6" height="24"/><rect x="12" y="10" width="3" height="16"/><rect x="16" y="0" width="5" height="26" fill="var(--scene)"/><rect x="22" y="4" width="4" height="22"/><rect x="27" y="8" width="3" height="18"/><rect x="31" y="3" width="3" height="23"/></svg>
+    <span aria-hidden="true">Kultura</span>
+  </a>
+  <a class="enter" href="#">Entrar</a>
+</header>
+<main id="contenido">
+  <section class="hero" aria-labelledby="t">
+    <div class="hero__t">
+      <h1 id="t"><span>Tus series, </span><span>al día.</span></h1>
+      <p>Lo que ves, lees y juegas, en español. Y tus datos, siempre tuyos.</p>
+    </div>
+    <div class="shelf loading" id="shelf"></div>
+    <div class="board" id="board">
+      <div class="board__d"><span class="data" id="bd"></span><span class="small"><span id="bf"></span> · <b id="bt"></b> · <span id="bl"></span></span></div>
+      <div class="board__do" id="bdo"><a class="btn" id="cta" href="#">Crear cuenta</a></div>
+    </div>
+  </section>
+
+  <section class="sec" id="inicio" aria-labelledby="t2">
+    <h2 id="t2" class="rise">Por dónde vas</h2>
+    <div class="rows" id="rows"></div>
+  </section>
+
+  <section class="own" aria-labelledby="t3"><p id="t3" class="rise">Te lo llevas todo cuando quieras. Lo tuyo no depende de nosotros.</p><figure class="rise" style="--i:1"><img src="img/juego.jpg" width="600" height="900" alt="Portada de Valheim"></figure></section>
+</main>
+<footer class="foot">
+  <span class="foot__name" aria-hidden="true">Kultura</span>
+  <div class="foot__line small"><span>Portadas de TMDB, AniList, MangaDex, Open Library, Comic Vine y Steam.</span><span>Prototipo: progreso de muestra.</span></div>
+</footer>
+<script src="comun.js"></script>
+<script>
+(() => {
+  const { works, $, left, full, setData, say, markBtn, tilt, riseAll, on, rm } = K;
+  const prog = w => Math.min(1, (w.cur - 1) / w.n).toFixed(3);
+  const shelf = $('#shelf'), bdo = $('#bdo'), vols = [];
+  const btn = markBtn(works[0]); bdo.prepend(btn);
+  let open = 0;
+  works.forEach((w, i) => {
+    const v = document.createElement('div'); v.className = 'vol';
+    v.style.setProperty('--t', w.t); v.style.setProperty('--hr', w.hr); v.style.setProperty('--scene', w.scene); v.style.setProperty('--p', prog(w));
+    v.innerHTML = '<div class="box" aria-hidden="true"><div class="face face--cover"><img src="img/' + w.id + '.jpg" alt=""' + (i === 0 ? ' fetchpriority="high"' : '') + '></div><i class="ribbon"></i><div class="face face--back"></div><div class="face face--spine"><span class="spine-t"></span></div></div>' +
+      '<button type="button" class="sel"><span class="vh">Ver ' + w.title + ', ' + w.fmt.toLowerCase() + '</span></button>';
+    if (w.t >= 20) v.querySelector('.spine-t').textContent = w.title;
+    v.querySelector('.sel').addEventListener('focus', () => { if (innerWidth < 1024) v.scrollIntoView({ inline: 'nearest', block: 'nearest' }); });
+    v.querySelector('.sel').addEventListener('click', e => { document.documentElement.classList.toggle('kb', e.detail === 0); setOpen(i, e); });
+    v.style.setProperty('--dl', (i * 70) + 'ms'); shelf.append(v); vols.push(v);
+    tilt(v, 4, v.querySelector('.box'));
+    on(x => { if (x === w) v.style.setProperty('--p', prog(w)); });
+  });
+  const paint = () => { const w = works[open]; setData($('#bd'), w); $('#bf').textContent = w.fmt; $('#bt').textContent = w.title; $('#bl').textContent = left(w); };
+  const mark = i => vols.forEach((v, k) => { v.classList.toggle('is-open', k === i); v.querySelector('.sel').setAttribute('aria-pressed', String(k === i)); });
+  const setOpen = (i, e) => {
+    open = i; mark(i); btn.setWork(works[i]); paint();
+    if (innerWidth < 1024) vols[i].scrollIntoView({ inline: 'center', block: 'nearest', behavior: rm || (e && e.detail === 0) ? 'auto' : 'smooth' });
+    const w = works[i]; say(w.fmt + ', ' + w.title + ': ' + full(w) + ', ' + left(w) + '.');
+  };
+  on(paint); mark(0); paint();
+  requestAnimationFrame(() => requestAnimationFrame(() => { shelf.classList.remove('loading'); setTimeout(() => vols.forEach(v => v.style.setProperty('--dl', '0ms')), 800); }));
+
+  const rows = $('#rows');
+  works.forEach(w => {
+    const r = document.createElement('article'); r.className = 'row'; r.style.setProperty('--scene', w.scene); r.style.setProperty('--p', prog(w));
+    r.innerHTML = '<img src="img/' + w.id + '.jpg" alt=""><div><div class="row__d" data-d></div><h3>' + w.title + ' <span class="num">' + w.y + '</span></h3></div><div class="row__m"><div class="small" data-l></div><div class="bar" aria-hidden="true"><i></i></div></div>';
+    const a = document.createElement('div'); a.className = 'row__a'; a.append(markBtn(w)); r.append(a); rows.append(r);
+    const p = () => { setData(r.querySelector('[data-d]'), w); r.querySelector('[data-l]').textContent = w.fmt + ' · ' + left(w); r.style.setProperty('--p', prog(w)); };
+    p(); on(x => { if (x === w) p(); });
+  });
+  riseAll();
+})();
+</script>
+</body>
+</html>

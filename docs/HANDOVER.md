@@ -1,31 +1,27 @@
-# HANDOVER — última sesión (2026-11-07)
+# HANDOVER — última sesión (2026-11-08)
 
-**Fase:** F2, paso 5 de §6.1 (sistema de diseño). Cuña A provisional (D-F1c/D-F1d). **Rama:** `docs/f2-design-system` (desde `master` 88717a0), PR abierto sin fusionar.
+**Fase:** F2 reabierta desde cero con las skills (D-F2p). **Rama:** `docs/f2-diseno-con-skills` (desde `master` 4937408), PR abierto sin fusionar.
 
 ## Hecho
-- `docs/03_DESIGN_SYSTEM.md` v1.0, aprobado (D-F2o). Sustituye a `DISENO.md` para la v2; el viejo queda marcado como superado y no se borra (regla 3).
-- Contenido: tokens (color, espacio, chaflán, capas), escala fluida K1 (tracking interpolado: −3,3 % a 52 px y −5 % desde 96 px), motion con reduced-motion, profundidad con WebGL opcional, 12 componentes con estados y foco, presupuesto y accesibilidad.
-- Demo viva (D1): `prototipos/f2-sistema/tokens.css` (pasa a `src/v2/styles/tokens.css` en F3) y `muestra.html`. Capturas JPEG en `capturas/`; las PNG se quedan en local.
-- Pruebas: axe 0 en 8 combinaciones (390/1440/320/1024 × reduced-motion), también con `contrast: more`; sin WebGL; sin desbordes a 320; 0 objetivos < 44 px.
-- Revisión: Artisan y Advocate, 2 pasadas → **pasa** (`04_DECISIONES` §4).
+- `PRODUCT.md`: verdad del producto con las respuestas de Víctor (D-F2q).
+- 3 direcciones de Portada + Inicio en `prototipos/f2-direcciones/`: **Revelado**, **La balda** y **La tira** (D-F2r). Contrato, pruebas y pendientes en su `LEEME.md`.
+- Artifacts privados: Revelado `7ZJEJN7niLBS3VZ3PfLaYa`, La balda `C7iVDknvmXNsigpFJJHcHt`, La tira `U9smJ598S5bv5yjfjoL1hj` (claude.ai/artifact/…). Se publican con las fuentes incrustadas, desde una copia.
+- Skills invocadas y comprobadas en las transcripciones: impeccable, taste-skill, emil-design-eng, design-motion-principles, ui-ux-pro-max (sin buscador: no hay Python).
+- Revisión: Artisan y Advocate, 2 pasadas (§4). 3,3 · 3,3 · 3,1. **Ninguna pasa la puerta del criterio 7**: faltan VoiceOver y NVDA. Graves nuevos corregidos después y medidos, sin repuntuar.
 
-## Deuda D-F2h cerrada (D-F2i…n, aprobadas: D-F2o)
-- `--rail-todo` #6b6b6b, nunca sobre s3; con más contraste, los vistos pasan a tinta.
-- P3, pistas largas: discreta ≤ 18, por bloques, continua o sin pista.
-- Verde frente a `--ok`: el éxito no tiene color (tinta + icono).
-- Acento frío (El caballero oscuro, H266): girar a H245, alternativa A de 3.
-- Figtree sale de la v2 (−20 KB).
-- `src/v2` sin Tailwind (CSS + tokens).
-- `landing.css:60` y `:84`: la ruta real es `src/components/landing/landing.css`. Se sustituye en F3, no se parchea.
-- 13 tests `design|visual` (§12): 4 se adaptan y 8 se aparcan hasta `v1-ui`; se crean 8 tests v2 en el primer PR de F3.
+## Falta decidir (Víctor)
+1. Qué dirección sigue, con nota y feedback contra la rúbrica. Advocate enseñaría Revelado; Artisan, La tira.
+2. Cuña y titular: usuario multiformato frente a cuña A (D-F1d) y «Tus series, al día.» (D-F2a).
+3. Deshacer: solo icono y sin caducar frente a B2.
 
 ## Siguiente
-- **Puerta del paso 5 aprobada** (Víctor: «Sí, apruebo», D-F2o). Siguiente: paso 6, prototipo vivo de Inicio con sesión con el pack P1. Antes, squash-merge de #87 con el OK de Víctor.
-- Condición del paso 6: VoiceOver en iOS y NVDA (Claude prepara un guion de 10 min) y Safari real.
+Tras elegir: `03_DESIGN_SYSTEM.md` y `DESIGN.md` desde el mundo elegido (A2b y D-F2i…o quedan sujetas), y paso 6.
 
 ## Ojo
-- `tests/unit/visual/scales.test.ts:108` falla en `master`: `Header.tsx` y `AuthHeader.tsx` sin `page-grid`. Es anterior a esta rama, que no toca `src/`.
-- JS inicial de `/es` (v1): 149.793 B de 153.600 (Lighthouse del 2026-11-06). Sin margen.
+- Pruebas de la entrega en el scratchpad de la sesión, no en el repo. Sin probar: lector de pantalla, táctil real, Safari, Firefox, Lighthouse.
+- Impeccable v4.8.1 disponible; no actualizado. `.taste-skill/` queda fuera de git. Sin telemetría de la tirada.
+- `tests/unit/visual/scales.test.ts:108` falla en `master`: `Header.tsx` y `AuthHeader.tsx` sin `page-grid`. Anterior a esta rama.
+- JS inicial de `/es` (v1): 149.793 B de 153.600. Sin margen.
 - Fuera de git a propósito: `prototipos/login/`, las PNG, `.playwright-mcp/`, `.lighthouseci/`, `PLAN_ESTRATEGICO.md` y `docs/auditoria/`.
-- Sigue en pie: prueba de humo F1, backup del lunes (R10), rotar la contraseña de la base y R9.
+- Sigue en pie: backup del lunes 2026-11-09 (R10), rotar la contraseña de la base (`SUPABASE_DB_URL`), copia de `kultura-backup.key`, entrevistas de F1, R9.
 - Squash-merge solo con el OK de Víctor.

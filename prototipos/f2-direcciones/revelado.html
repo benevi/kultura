@@ -1,0 +1,166 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0a0a0a">
+<link rel="icon" href="data:,">
+<title>Kultura Revelado</title>
+<link rel="preload" href="fuentes/KulturaDisplay-latin.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="comun.css">
+<style>
+/* Logotipo: la palabra se revela de izquierda a derecha, por pasos, sin dejar de leerse */
+.logo { font: 800 24px/1 "Kultura Display", sans-serif; letter-spacing: -.02em; text-decoration: none; display: inline-flex; min-height: 44px; align-items: center; }
+.logo i { font-style: normal; }
+.logo i:nth-child(5) { color: #e0e0dc; } .logo i:nth-child(6) { color: #cfcfcb; } .logo i:nth-child(7) { color: #bdbdb9; }
+
+.hero { padding-inline: var(--m); min-height: calc(100svh - 64px); display: flex; flex-direction: column; }
+h1 { font: 800 23vw/.86 "Kultura Display", sans-serif; letter-spacing: -.035em; }
+h1 span { display: block; }
+.lead { margin-top: 12px; max-width: 44ch; }
+
+/* La pared: siete copias en distinto punto de revelado, a 2 px */
+.wall { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 2px; margin-top: 16px; margin-inline: calc(var(--m) * -1); flex: 1; grid-template-rows: minmax(88px, 1fr) 56px; }
+.w { position: relative; min-width: 0; overflow: hidden; }
+.w.is-open { grid-column: 1 / -1; grid-row: 1; }
+.w__sel { position: absolute; inset: 0; z-index: 2; width: 100%; }
+.w .print { position: absolute; inset: 0; }
+.w__sel:focus-visible { outline-offset: -3px; }
+.w.is-open .w__sel { pointer-events: none; }
+
+.scene { position: absolute; inset: 0; transform: perspective(1000px) rotateX(var(--rx, 0deg)) rotateY(var(--ry, 0deg)) scale(1.03); transition: transform 200ms var(--ease); }
+.depth-fg { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: var(--fp); opacity: 0; transform: translate(var(--dx, 0), var(--dy, 0)) scale(1.03); transition: transform 200ms var(--ease); pointer-events: none; }
+.w.is-open .depth-fg { opacity: 1; }
+
+.bar { display: grid; gap: 10px; padding-block: 12px 14px; }
+.bar__t .small { display: block; }
+.bar__t b { color: var(--ink); font-weight: 600; }
+.bar__do { display: flex; gap: 8px; flex-wrap: wrap; }
+.bar__do .btn { flex: 1 1 auto; padding-inline: 12px; }
+
+@media (min-width: 1024px) {
+  h1 { font-size: min(13.6vw, 25svh); line-height: .84; letter-spacing: -.045em; }
+  h1 span { display: inline; }
+  .lead { margin-top: 8px; max-width: none; }
+  /* Las copias cerradas se pliegan hacia la abierta, como un fuelle: la pared tiene fondo */
+  .wall { display: flex; min-height: 320px; margin-top: 16px; }
+  .w { flex: 1 1 0; transition: flex-grow 300ms var(--move); }
+  .w.is-open { flex-grow: 3.2; }
+  .w:not(.is-open) .scene { transform: perspective(700px) rotateY(var(--fold, 0deg)) scale(1.16); }
+  .bar { grid-template-columns: 1fr auto; align-items: center; padding-block: 12px; }
+  .bar__t { display: flex; align-items: baseline; gap: 16px; }
+  .bar__do { flex-wrap: nowrap; }
+  .bar__do .btn { flex: none; padding-inline: 24px; }
+}
+@media (prefers-reduced-motion: reduce) { .w { transition: none !important; } }
+
+/* Inicio con sesión: hoja de contactos */
+.sec { padding: var(--sec) var(--m) 0; }
+.sec h2 { font: 800 clamp(48px, 1.75rem + 6.2vw, 128px)/.9 "Kultura Display", sans-serif; letter-spacing: -.04em; margin-bottom: 32px; }
+.sheet { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 32px 2px; margin-inline: calc(var(--m) * -1); }
+.c { display: flex; flex-direction: column; }
+.c__p { aspect-ratio: 2/3; }
+.c:first-child { grid-column: 1 / -1; }
+.c:first-child .c__p { aspect-ratio: 4/3; }
+.c__t { padding: 12px var(--m) 0 12px; flex: 1; display: flex; flex-direction: column; }
+.c:nth-child(even) .c__t, .c:first-child .c__t { padding-left: var(--m); }
+.c__d { font: 600 clamp(28px, 2.6vw, 40px)/1 "Bricolage", sans-serif; letter-spacing: -.02em; font-variant-numeric: tabular-nums; }
+.c h3 { font-size: 17px; font-weight: 600; margin-top: 6px; line-height: 1.25; }
+.c h3 span { color: var(--muted); font-weight: 400; }
+.c .small { min-height: 24px; margin-bottom: 12px; }
+.c__a { display: flex; gap: 8px; margin-top: auto; }
+.c__a .mark { flex: 1 1 auto; padding: 8px 12px; white-space: normal; text-align: center; min-width: 0; }
+@media (min-width: 1024px) {
+  .sheet { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  .c:first-child { grid-column: span 2; }
+  .c:first-child .c__p { aspect-ratio: auto; flex: 1; min-height: 0; }
+  .c:nth-child(even) .c__t { padding-left: 12px; }
+  .c:nth-child(4) .c__t { padding-left: var(--m); }
+  .c__a .mark { flex: none; padding-inline: 24px; }
+}
+
+/* Tus datos: una copia ya revelada entera y una frase */
+.own { display: grid; gap: 24px; padding: var(--sec) var(--m) 0; }
+.own__t { font: 500 clamp(24px, 1.22rem + 1.15vw, 36px)/1.2 "Bricolage", sans-serif; max-width: 22ch; }
+.own__p { aspect-ratio: 16/10; position: relative; overflow: hidden; margin-inline: calc(var(--m) * -1); }
+.own__p img { width: 100%; height: 100%; object-fit: cover; object-position: 50% 22%; }
+@media (min-width: 1024px) { .own { grid-template-columns: 5fr 7fr; align-items: end; } .own__p { margin: 0 calc(var(--m) * -1) 0 0; } }
+
+.foot__name i { font-style: normal; }
+.foot__name i:nth-child(5) { color: #e0e0dc; } .foot__name i:nth-child(6) { color: #cfcfcb; } .foot__name i:nth-child(7) { color: #bdbdb9; }
+</style>
+</head>
+<body>
+<a class="skip" href="#contenido">Saltar al contenido</a>
+<header class="top">
+  <a class="logo" href="#" aria-label="Kultura, inicio"><span aria-hidden="true"><i>K</i><i>u</i><i>l</i><i>t</i><i>u</i><i>r</i><i>a</i></span></a>
+  <a class="enter" href="#">Entrar</a>
+</header>
+<main id="contenido">
+  <section class="hero" aria-labelledby="t">
+    <h1 id="t"><span>Tus series, </span><span>al día.</span></h1>
+    <p class="lead">Lo que ves, lees y juegas, en español. Y tus datos, siempre tuyos.</p>
+    <div class="wall" id="wall"></div>
+    <div class="bar">
+      <div class="bar__t"><span class="data" id="bd"></span><span class="small"><span id="bf"></span> · <b id="bt"></b> · <span id="bl"></span></span></div>
+      <div class="bar__do" id="bdo"><a class="btn" href="#">Crear cuenta</a></div>
+    </div>
+  </section>
+
+  <section class="sec" id="inicio" aria-labelledby="t2">
+    <h2 id="t2" class="rise">Por dónde vas</h2>
+    <div class="sheet" id="sheet"></div>
+  </section>
+
+  <section class="own" aria-labelledby="t3">
+    <p class="own__t rise" id="t3">Te lo llevas todo cuando quieras. Lo tuyo no depende de nosotros.</p>
+    <figure class="own__p rise" style="--i:1"><img src="img/manga.jpg" width="640" height="864" alt="Portada de Solo Leveling"></figure>
+  </section>
+</main>
+<footer class="foot">
+  <span class="foot__name" aria-hidden="true"><i>K</i><i>u</i><i>l</i><i>t</i><i>u</i><i>r</i><i>a</i></span>
+  <div class="foot__line small"><span>Portadas de TMDB, AniList, MangaDex, Open Library, Comic Vine y Steam.</span><span>Prototipo: progreso de muestra.</span></div>
+</footer>
+<script src="comun.js"></script>
+<script>
+(() => {
+  const { works, $, left, full, setData, say, makePrint, markBtn, depthLayers, tilt, riseAll, on } = K;
+  const wall = $('#wall'), bdo = $('#bdo'), items = [];
+  const btn = markBtn(works[0]); bdo.prepend(btn);
+  let open = 0;
+  works.forEach((w, i) => {
+    const el = document.createElement('div'); el.className = 'w';
+    const sc = document.createElement('div'); sc.className = 'scene'; sc.style.setProperty('--fp', w.fp);
+    sc.append(makePrint(w, '', i)); sc.append(depthLayers(w)); el.append(sc);
+    const sel = document.createElement('button'); sel.type = 'button'; sel.className = 'w__sel';
+    sel.innerHTML = '<span class="vh">Ver ' + w.title + ', ' + w.fmt.toLowerCase() + '</span>';
+    sel.addEventListener('click', e => { document.documentElement.classList.toggle('kb', e.detail === 0); setOpen(i); announce(); });
+    el.append(sel); wall.append(el); items.push({ el, sel, sc });
+    tilt(el, 2.5, sc);
+  });
+  const paint = () => { const w = works[open]; setData($('#bd'), w); $('#bf').textContent = w.fmt; $('#bt').textContent = w.title; $('#bl').textContent = left(w); };
+  const announce = () => { const w = works[open]; say(w.fmt + ', ' + w.title + ': ' + full(w) + ', ' + left(w) + '.'); };
+  const setOpen = i => {
+    open = i;
+    items.forEach((it, k) => { it.el.classList.toggle('is-open', k === i); it.sel.setAttribute('aria-pressed', String(k === i)); it.sc.style.setProperty('--fold', (k < i ? 16 : -16) + 'deg'); });
+    btn.setWork(works[i]); paint();
+  };
+  on(paint); setOpen(0);
+
+  /* Inicio: las mismas obras, cada una con su botón */
+  const sheet = $('#sheet');
+  works.forEach(w => {
+    const c = document.createElement('article'); c.className = 'c'; c.style.setProperty('--scene', w.scene);
+    c.append(makePrint(w, 'c__p'));
+    const t = document.createElement('div'); t.className = 'c__t';
+    t.innerHTML = '<div class="c__d" data-d></div><h3>' + w.title + ' <span class="num">' + w.y + '</span></h3><div class="small" data-l></div>';
+    const a = document.createElement('div'); a.className = 'c__a'; a.append(markBtn(w)); t.append(a); c.append(t);
+    const p = () => { setData(t.querySelector('[data-d]'), w); t.querySelector('[data-l]').textContent = w.fmt + ' · ' + left(w); };
+    p(); on(x => { if (x === w) p(); });
+    sheet.append(c);
+  });
+  riseAll();
+})();
+</script>
+</body>
+</html>
