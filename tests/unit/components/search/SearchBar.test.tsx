@@ -183,6 +183,26 @@ describe("SearchBar — mode=inline", () => {
     expect(mockPush).not.toHaveBeenCalled();
   });
 
+  it("settleOnSubmit: tras Enter no se piden sugerencias, ni al cambiar de familia, hasta volver a escribir", async () => {
+    vi.useFakeTimers();
+    vi.mocked(global.fetch).mockResolvedValue({ ok: true, json: async () => [] } as Response);
+    const { rerender } = render(<SearchBar mode="inline" settleOnSubmit type="movie" onSubmit={vi.fn()} />);
+    const input = screen.getByRole("combobox");
+    fireEvent.change(input, { target: { value: "dune" } });
+    fireEvent.keyDown(input, { key: "Enter" });
+    await vi.advanceTimersByTimeAsync(450);
+    expect(global.fetch).not.toHaveBeenCalled();
+
+    rerender(<SearchBar mode="inline" settleOnSubmit type="all" onSubmit={vi.fn()} />);
+    await vi.advanceTimersByTimeAsync(450);
+    expect(global.fetch).not.toHaveBeenCalled();
+
+    fireEvent.change(input, { target: { value: "dune 2" } });
+    await vi.advanceTimersByTimeAsync(450);
+    expect(global.fetch).toHaveBeenCalledTimes(1);
+    vi.useRealTimers();
+  });
+
   it("Enter con el input vacío no llama a onSubmit", () => {
     const onSubmit = vi.fn();
     render(<SearchBar mode="inline" defaultValue="   " onSubmit={onSubmit} />);

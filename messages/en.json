@@ -249,6 +249,20 @@
     "fetchError": {
       "generic": "We can't reach the catalogs right now. Retry in a minute.",
       "rateLimit": "Lots of people are searching right now. Give it a few seconds and retry."
+    },
+    "v2": {
+      "results": "{count, plural, =0 {No results} one {# title} other {# titles}}",
+      "clearSearch": "Clear search",
+      "retry": "Try again",
+      "open": "See details",
+      "backToList": "Back to the list",
+      "noOption": "Nothing by that name",
+      "emptySearchTitle": "We found nothing",
+      "emptySearchHint": "Try another name or search every format.",
+      "emptySearchHintAll": "Try another name.",
+      "searchEverywhere": "Search everything",
+      "emptyFiltersTitle": "Nothing with these filters",
+      "emptyFiltersHint": "Remove one and look again."
     }
   },
   "search": {

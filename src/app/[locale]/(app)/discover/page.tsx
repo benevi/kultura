@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { DiscoverClient } from "./DiscoverClient";
+import { isUiV2Enabled } from "@/lib/ui-v2";
 
 interface SearchParams {
   type?: string;
@@ -28,6 +29,13 @@ export async function generateMetadata({
 // por lo que esta página ya no hace fetch server-side. Solo resuelve los params
 // de URL y delega en DiscoverClient, que pide los datos al Route Handler.
 export default async function DiscoverPage({ searchParams }: Props) {
+  // F0: conmutador de UI (src/lib/ui-v2.ts). La pantalla nueva lee la URL en el
+  // navegador: filtrar y paginar no vuelven al servidor.
+  if (await isUiV2Enabled()) {
+    const { DiscoverScreen } = await import("@/v2/discover/DiscoverScreen");
+    return <DiscoverScreen />;
+  }
+
   const resolvedSearchParams = await searchParams;
   const type = resolvedSearchParams.type ?? "movie";
   const page = Math.max(1, parseInt(resolvedSearchParams.page ?? "1", 10) || 1);

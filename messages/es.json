@@ -249,6 +249,20 @@
     "fetchError": {
       "generic": "Ahora mismo no llegamos a los catálogos. Reintenta en un minuto.",
       "rateLimit": "Hay mucha gente consultando. Dale unos segundos y reintenta."
+    },
+    "v2": {
+      "results": "{count, plural, =0 {Sin resultados} one {# título} other {# títulos}}",
+      "clearSearch": "Quitar búsqueda",
+      "retry": "Reintentar",
+      "open": "Ver ficha",
+      "backToList": "Volver a la lista",
+      "noOption": "Nada con ese nombre",
+      "emptySearchTitle": "No encontramos nada",
+      "emptySearchHint": "Prueba con otro nombre o busca en todos los formatos.",
+      "emptySearchHintAll": "Prueba con otro nombre.",
+      "searchEverywhere": "Buscar en todo",
+      "emptyFiltersTitle": "Nada con estos filtros",
+      "emptyFiltersHint": "Quita alguno y vuelve a mirar."
     }
   },
   "search": {
