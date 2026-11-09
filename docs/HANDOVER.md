@@ -33,5 +33,6 @@ Inicio y Biblioteca solo se han visto con Supabase simulado. Falta BD real y CUJ
 - `vitest`: 15 fallos heredados; `register-form` a veces falla por tiempo.
 - Las pruebas de `page.tsx` deben simular `@/lib/ui-v2`, porque `cookies()` falla fuera de una petición.
 - Fuera de git a propósito: `PLAN_ESTRATEGICO.md`, `docs/auditoria/`, `.lighthouseci/`, `.playwright-mcp/`, `.taste-skill/`, `.impeccable/`, `PROMPT_INICIO.txt`, snapshots de `tests/unit/catalogo`.
+- Chat en móvil (v1): el pie legal entra en el scroll y se ve bajo el campo de escribir; la página mide 1095 px en 844. Arreglar al rehacer el chat.
 - `next build` y `next dev` chocan en `.next`. No pasar `next build` por `| head`.
 - Pendiente de Víctor: backup (R10), rotar contraseña de BD y `SUPABASE_DB_URL`, copia de `kultura-backup.key`, entrevistas F1. Squash-merge solo con su OK.

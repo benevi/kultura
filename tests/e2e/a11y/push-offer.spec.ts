@@ -51,15 +51,28 @@ test("chat: el aviso de push no tapa el campo de escribir ni el botón de enviar
 
   const card = page.getByTestId("push-offer");
   await expect(card).toBeVisible();
-  const cardBox = (await card.boundingBox())!;
-  const inputBox = (await input.boundingBox())!;
-  const sendBox = (await page.locator('form button[type="submit"]').boundingBox())!;
-  expect(overlaps(cardBox, inputBox), `aviso ${JSON.stringify(cardBox)} / campo ${JSON.stringify(inputBox)}`).toBe(false);
-  expect(overlaps(cardBox, sendBox), `aviso ${JSON.stringify(cardBox)} / enviar ${JSON.stringify(sendBox)}`).toBe(false);
-  // Encima del campo y el campo sigue a la vista.
-  expect(cardBox.y + cardBox.height).toBeLessThanOrEqual(inputBox.y);
+  // Las tres cajas se leen en el mismo instante: justo tras enviar, el chat baja
+  // al último mensaje, y medirlas una a una compara posiciones de momentos
+  // distintos (un solape que no existe). Se reintenta hasta que la vista se asienta.
   const viewport = page.viewportSize()!;
-  expect(inputBox.y + inputBox.height).toBeLessThanOrEqual(viewport.height);
+  await expect(async () => {
+    const { cardBox, inputBox, sendBox } = await page.evaluate(() => {
+      const box = (selector: string) => {
+        const { x, y, width, height } = document.querySelector(selector)!.getBoundingClientRect();
+        return { x, y, width, height };
+      };
+      return {
+        cardBox: box('[data-testid="push-offer"]'),
+        inputBox: box("form input[type=text]"),
+        sendBox: box('form button[type="submit"]'),
+      };
+    });
+    expect(overlaps(cardBox, inputBox), `aviso ${JSON.stringify(cardBox)} / campo ${JSON.stringify(inputBox)}`).toBe(false);
+    expect(overlaps(cardBox, sendBox), `aviso ${JSON.stringify(cardBox)} / enviar ${JSON.stringify(sendBox)}`).toBe(false);
+    // Encima del campo y el campo sigue a la vista.
+    expect(cardBox.y + cardBox.height).toBeLessThanOrEqual(inputBox.y);
+    expect(inputBox.y + inputBox.height).toBeLessThanOrEqual(viewport.height);
+  }).toPass({ timeout: 5_000 });
 
   // Esc la cierra (solo esta vez).
   await page.keyboard.press("Escape");
