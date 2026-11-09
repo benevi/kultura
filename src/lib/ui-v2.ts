@@ -1,5 +1,6 @@
 import "server-only";
 import { cookies } from "next/headers";
+import { UI_V2_COOKIE, resolveUiV2 } from "./ui-v2-shared";
 
 // ============================================================
 // KULTURA — Interruptor de UI v2 (F0, PLAN_ESTRATEGICO §7.3)
@@ -22,21 +23,16 @@ import { cookies } from "next/headers";
 // `tests/unit/ui-v2/static-routes.test.ts`.
 //
 // Lo que NO cambia con el interruptor (a tener en cuenta al generalizarlo):
-// - `loading.tsx` y `error.tsx` de la carpeta siguen siendo los de la UI vieja.
+// - `error.tsx` y, salvo en Biblioteca, `loading.tsx` siguen siendo los de la UI
+//   vieja: cada `loading.tsx` tiene que preguntar él mismo por el interruptor.
 // - El cambio se aplica con una navegación de documento entero (303 desde
 //   `/api/ui-v2`); al volver atrás, la caché del navegador o el Router Cache
 //   pueden enseñar un momento la UI anterior hasta recargar.
 // ============================================================
 
-export const UI_V2_COOKIE = "ui_v2";
+export { UI_V2_COOKIE, resolveUiV2 };
 /** 30 días: lo justo para una ronda de pruebas sin tener que reactivarlo. */
 export const UI_V2_COOKIE_MAX_AGE = 60 * 60 * 24 * 30;
-
-export function resolveUiV2(cookieValue: string | undefined, envDefault: string | undefined): boolean {
-  if (cookieValue === "1") return true;
-  if (cookieValue === "0") return false;
-  return envDefault === "1";
-}
 
 /** ¿Pinta esta petición la UI v2? Para Server Components de rutas dinámicas. */
 export async function isUiV2Enabled(): Promise<boolean> {

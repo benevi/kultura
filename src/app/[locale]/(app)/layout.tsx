@@ -5,6 +5,7 @@ import { getUnreadCount } from '@/lib/social/notifications'
 import { AppChrome, getChromeSession } from '@/components/layout/AppChrome'
 import { getTranslations } from 'next-intl/server'
 import { PwaShell } from '@/components/pwa/PwaShell'
+import { V2Scope } from '@/v2/V2Scope'
 import type { InstallLabels } from '@/components/pwa/InstallPrompt'
 
 export default async function AppLayout({
@@ -30,11 +31,13 @@ export default async function AppLayout({
   ])
 
   return (
-    <AppChrome user={user} profile={profile} unreadCount={unreadCount}>
-      {children}
-      {/* F-23: service worker y aviso de instalación (MOV-2, MOV-3). */}
-      <PwaShell installLabels={installLabels(t)} />
-    </AppChrome>
+    <V2Scope>
+      <AppChrome user={user} profile={profile} unreadCount={unreadCount}>
+        {children}
+        {/* F-23: service worker y aviso de instalación (MOV-2, MOV-3). */}
+        <PwaShell installLabels={installLabels(t)} />
+      </AppChrome>
+    </V2Scope>
   )
 }
 

@@ -12,6 +12,7 @@ import type { Metadata } from 'next'
 import { getTranslations } from 'next-intl/server'
 import { Header } from '@/components/layout/Header'
 import { Footer } from '@/components/layout/Footer'
+import { V2Scope } from '@/v2/V2Scope'
 import { EMAIL_TOKEN_SECRET_MIN } from '@/lib/email/config'
 import { verifyUnsubscribeToken } from '@/lib/email/unsubscribe-token'
 
@@ -61,6 +62,7 @@ export default async function UnsubscribePage({ params, searchParams }: Props) {
   const body = { confirm: t('body'), done: t('doneBody'), invalid: t('invalidBody'), error: t('errorBody') }[view]
 
   return (
+    <V2Scope>
     <div className="min-h-screen flex flex-col">
       <Header />
       <main id="main" className="page-grid [&>*]:max-w-xl flex-1 py-12 md:py-16">
@@ -96,5 +98,6 @@ export default async function UnsubscribePage({ params, searchParams }: Props) {
       </main>
       <Footer />
     </div>
+    </V2Scope>
   )
 }

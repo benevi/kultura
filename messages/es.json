@@ -651,8 +651,8 @@
   },
   "aiRecommendations": {
     "title": "Para ti",
-    "aiPickBadge": "PARA TI",
-    "starterBadge": "LO MÁS POPULAR AHORA",
+    "aiPickBadge": "Para ti",
+    "starterBadge": "Lo más popular ahora",
     "starterHint": "Puntúa o completa 3 títulos y empezaremos a recomendarte a tu medida.",
     "generating": "Generando recomendaciones personalizadas…",
     "needMoreItems": "Puntúa 3 títulos y empezaremos a recomendarte.",
@@ -667,7 +667,7 @@
     "askButton": "Recomiéndame",
     "askPrivacy": "Al pulsar, enviamos a Anthropic (Claude) los títulos y notas de tu biblioteca para elegir y explicar cada recomendación.",
     "privacyLink": "Más información",
-    "matchBadge": "SEGÚN TU BIBLIOTECA",
+    "matchBadge": "Según tu biblioteca",
     "dailyNote": "Son tus recomendaciones de hoy. Mañana tendrás otras nuevas.",
     "cappedNote": "Hoy se han agotado las recomendaciones con IA, así que te enseñamos las que mejor encajan con tu biblioteca. Mañana vuelven las explicaciones.",
     "whyRecommendedText": "Coincide con géneros que ya te gustan — {genres} — según lo que tienes en tu biblioteca."
@@ -865,7 +865,15 @@
       "pending": "<who>{user}</who> ha apuntado <what>{title}</what>",
       "abandoned": "<who>{user}</who> ha dejado <what>{title}</what>"
     },
-    "activityScore": "{score, plural, one {# estrella} other {# estrellas}}"
+    "activityScore": "{score, plural, one {# estrella} other {# estrellas}}",
+    "v2": {
+      "title": "Por dónde vas",
+      "open": "Ver ficha",
+      "emptyTitle": "Aún no llevas nada",
+      "emptyText": "Busca lo que estés viendo, leyendo o jugando, o trae tu lista de otra web.",
+      "emptyDiscover": "Descubrir",
+      "emptyImport": "Importar mi lista"
+    }
   },
   "friends": {
     "title": "Amigos",
@@ -2110,6 +2118,84 @@
     "attribution": {
       "steam": "Carátulas y descripciones de videojuegos:",
       "steamTrademark": "Steam y el logotipo de Steam son marcas de Valve Corporation; KULTURA no está afiliada a Valve."
+    }
+  },
+  "portada": {
+    "seo": {
+      "title": "KULTURA — Todo lo que ves, lees y juegas",
+      "description": "Series, películas, anime, manga, libros, cómics y juegos en un solo sitio, en español y sabiendo por dónde vas."
+    },
+    "nav": {
+      "login": "Entrar"
+    },
+    "hero": {
+      "title": "Todo lo que ves, lees y juegas. Y por dónde vas.",
+      "lead": "Siete formatos, en español.",
+      "cta": "Crear cuenta",
+      "demo": "Ver la demo",
+      "plusOne": "+1, marcar uno más",
+      "shelfLabel": "Estantería de obras: usa las flechas para cambiar de obra"
+    },
+    "units": {
+      "episode": "Episodio {n}",
+      "chapter": "Capítulo {n}",
+      "hours": "{n} h",
+      "issue": "Número {n}",
+      "page": "Página {n}"
+    },
+    "continue": {
+      "title": "Sigue por donde ibas.",
+      "text": "Pulsa +1. Es una muestra: no se guarda nada."
+    },
+    "formatsTitle": "Siete formatos. Una sola estantería.",
+    "formats": {
+      "tv": {
+        "name": "Series",
+        "line": "Temporada y episodio."
+      },
+      "movie": {
+        "name": "Películas",
+        "line": "Vistas, pendientes y tu nota."
+      },
+      "anime": {
+        "name": "Anime",
+        "line": "Episodio a episodio."
+      },
+      "manga": {
+        "name": "Manga",
+        "line": "Tomo y capítulo."
+      },
+      "book": {
+        "name": "Libros",
+        "line": "Por página o por porcentaje."
+      },
+      "comic": {
+        "name": "Cómics",
+        "line": "Número a número."
+      },
+      "game": {
+        "name": "Juegos",
+        "line": "Las horas que llevas."
+      }
+    },
+    "spanish": {
+      "title": "Hecha en español.",
+      "text": "No traducida. Tu cultura, con tus palabras."
+    },
+    "import": {
+      "title": "¿Vienes de otro sitio? Tráete tu lista."
+    },
+    "close": {
+      "title": "¿Por dónde vas?",
+      "text": "Empieza por la obra que tienes a medias."
+    },
+    "footer": {
+      "label": "Información",
+      "privacy": "Privacidad",
+      "terms": "Condiciones",
+      "legal": "Aviso legal",
+      "accessibility": "Accesibilidad",
+      "otherLocale": "English"
     }
   },
   "collection": {

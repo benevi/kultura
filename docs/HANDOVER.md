@@ -1,27 +1,38 @@
-# HANDOVER — última sesión (2026-11-08)
+# HANDOVER — última sesión (2026-11-09)
 
-**Fase:** F2 reiniciada desde el paso 1 de §6.1 (D-F2p). **Rama:** `docs/f2-reinicio` (desde `master` 4937408).
+**Rama:** `feat/v2-rediseno-integral`, PR #90 sin fusionar. Todo tras `ui_v2` (cookie o `UI_V2_DEFAULT=1`): sin él, la web sigue igual. Detalle: `docs/REDESIGN_AUDIT.md` §9–§11. Decisiones: D-V2a…l.
 
 ## Hecho
-- Borrado todo F2 a petición de Víctor: `docs/02_DISEÑO_BRIEF.md`, `docs/03_DESIGN_SYSTEM.md`, `docs/VOZ.md`, `prototipos/` entero (también `login/` y las PNG locales, irrecuperables), `.impeccable/`, `.taste-skill/`, `PRODUCT.md` y 3 artifacts.
-- PR #88, #65 y #66 cerrados sin fusionar. Sus ramas siguen en el remoto.
-- D-F2a…o anuladas. `DISENO.md` y `VOZ.md` de la raíz se quedan: sirven a la v1 y a sus tests.
-- Python 3.12 instalado con winget para el buscador de `ui-ux-pro-max`.
+- **Portada rehecha:** abanico + «Sigue por donde ibas», portadas dinámicas que rotan cada mes (D-V2h, D-V2i).
+- **Inicio** (`src/v2/home/`, D-V2j) y **Biblioteca** (`src/v2/library/`, D-V2l): pantallas propias, revisadas y corregidas.
+- **Interruptor:** el enlace `/api/ui-v2` guarda la cookie también sin sesión; antes, tras el login se aterrizaba en la vieja.
+- **Fuente:** en v2 la Bricolage va con `swap`; con `optional` los títulos salían en Arial (D-V2k).
 
-## Reglas del reinicio
-- Solo son fijos los vetos de Víctor y la anti-lista. Se abren negro exacto, tipografía, chaflán, curvas, logo, titular y firma; sigue siendo oscuro.
-- Las respuestas de producto se vuelven a preguntar.
-- Skills por paso, comprobadas en la transcripción y registradas. La causa del fallo fue usar `taste-skill` solo para `lint` e `inspect`, sin `draw.mjs`, y `ui-ux-pro-max` sin buscador.
+## Sin hacer (es lo más grande)
+- **Resto de interiores:** tienen piel, no composición propia. **Siguiente: Descubrir o Listas.**
+- **Sin ver:** discover, search, lists, profile, settings, import, calendar, chat, groups, friends, notifications, suggestions, welcome, `u/*`, report, reset-password, email/*.
+- **Sin piel:** best, legales, offline, series, anime (estáticas).
+- `error.tsx` sigue v1 en todas; `loading.tsx`, también salvo en Biblioteca.
+
+## Sin probar
+Inicio y Biblioteca solo se han visto con Supabase simulado. Falta BD real y CUJ, preview de Vercel, Safari, Firefox, táctil real, lector de pantalla real.
 
 ## Siguiente
-Paso 1, plataforma de marca: `impeccable init` con las preguntas de producto a Víctor. No diseñar antes de responderlas.
+1. Víctor mira portada, Inicio y Biblioteca con `ui_v2=1` y da nota contra los vetos.
+2. Siguiente pantalla, mismo método: `src/v2/`, `if` en `page.tsx`, simulador de `tests/e2e/a11y/`, recorrido por el enlace del interruptor.
+
+## Decide Víctor
+- Portada girada de Inicio frente al veto de repetir composición.
+- Títulos en inglés de AniList en la página en español.
+- Licencias de imágenes (TMDB, AniList, Steam, Open Library).
+- `CLAUDE.md` (Preferencias) sigue citando el plan §6: conviene actualizarlo.
 
 ## Ojo
-- Choque con lo escrito: `CLAUDE.md` (Preferencias) y plan §6.4 siguen citando negro, fuentes y chaflán. Manda D-F2p; proponer a Víctor actualizar `CLAUDE.md`.
-- Quedan artifacts privados de rondas anteriores (tiles, muestra): no se tocaron.
-- Python: si la consola falla por codificación, usar `PYTHONIOENCODING=utf-8`. Ruta: `%LOCALAPPDATA%\Programs\Python\Python312\python.exe`; abrir terminal nueva para el PATH.
-- `tests/unit/visual/scales.test.ts:108` falla en `master`: `Header.tsx` y `AuthHeader.tsx` sin `page-grid`. Anterior a esta rama.
-- JS inicial de `/es` (v1): 149.793 B de 153.600. Sin margen.
-- Fuera de git a propósito: `.playwright-mcp/`, `.lighthouseci/`, `PLAN_ESTRATEGICO.md` y `docs/auditoria/`.
-- Sigue en pie: backup del lunes 2026-11-09 (R10), rotar la contraseña de la base, copia de `kultura-backup.key`, entrevistas de F1, R9.
-- Squash-merge solo con el OK de Víctor.
+- **Peso sobre el tope de 150 kB:** `/home` 171, `/library` 158 (154 antes), `/lists` 155. Reducir antes de `UI_V2_DEFAULT=1`.
+- LCP móvil de la portada simulado 6,0 s (aviso). Medir en Vercel.
+- `vitest`: 15 fallos heredados; `register-form` a veces falla por tiempo.
+- Las pruebas de `page.tsx` deben simular `@/lib/ui-v2`, porque `cookies()` falla fuera de una petición.
+- Fuera de git a propósito: `PLAN_ESTRATEGICO.md`, `docs/auditoria/`, `.lighthouseci/`, `.playwright-mcp/`, `.taste-skill/`, `.impeccable/`, `PROMPT_INICIO.txt`, snapshots de `tests/unit/catalogo`.
+- Chat en móvil (v1): el pie legal entra en el scroll y se ve bajo el campo de escribir; la página mide 1095 px en 844. Arreglar al rehacer el chat.
+- `next build` y `next dev` chocan en `.next`. No pasar `next build` por `| head`.
+- Pendiente de Víctor: backup (R10), rotar contraseña de BD y `SUPABASE_DB_URL`, copia de `kultura-backup.key`, entrevistas F1. Squash-merge solo con su OK.

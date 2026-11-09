@@ -119,7 +119,7 @@ describe("grafo de imports de las rutas cacheables: solo enlaces <a>", () => {
     resolve(LOCALE, "page.tsx"),
     resolve(LOCALE, "not-found.tsx"),
     resolve(LOCALE, "error.tsx"),
-    ...["best", "privacy", "terms", "legal", "accessibility", "offline", "series", "anime"].flatMap((d) => walk(resolve(LOCALE, d))),
+    ...["best", "privacy", "terms", "legal", "accessibility", "offline", "series", "anime", "portada-v2"].flatMap((d) => walk(resolve(LOCALE, d))),
   ].filter((f) => FILES.has(f));
 
   const graph = new Set<string>();

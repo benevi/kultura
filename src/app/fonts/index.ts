@@ -45,3 +45,16 @@ export const kulturaDisplay = localFont({
   display: "block",
   adjustFontFallback: false,
 });
+
+/**
+ * Bricolage para la portada v2: la identidad de esa página es su titular, así
+ * que no puede quedarse en la reserva en la primera visita como con `optional`.
+ * `swap` con métricas ajustadas: el cambio apenas mueve nada.
+ */
+export const bricolagePortada = localFont({
+  src: "./BricolageGrotesque-latin.woff2",
+  weight: "200 800",
+  variable: "--font-portada",
+  display: "swap",
+  adjustFontFallback: "Arial",
+});

@@ -651,8 +651,8 @@
   },
   "aiRecommendations": {
     "title": "For you",
-    "aiPickBadge": "PICKED FOR YOU",
-    "starterBadge": "POPULAR RIGHT NOW",
+    "aiPickBadge": "Picked for you",
+    "starterBadge": "Popular right now",
     "starterHint": "Rate or complete 3 titles and we'll start recommending just for you.",
     "generating": "Generating personalized recommendations…",
     "needMoreItems": "Rate 3 titles and we'll start recommending.",
@@ -667,7 +667,7 @@
     "askButton": "Recommend me something",
     "askPrivacy": "When you tap, the titles and ratings in your library are sent to Anthropic (Claude) to choose and explain each pick.",
     "privacyLink": "Learn more",
-    "matchBadge": "BASED ON YOUR LIBRARY",
+    "matchBadge": "Based on your library",
     "dailyNote": "These are today's picks. You'll get new ones tomorrow.",
     "cappedNote": "AI picks have run out for today, so these are the best matches for your library. Explanations are back tomorrow.",
     "whyRecommendedText": "It matches genres you already enjoy — {genres} — based on what is in your library."
@@ -865,7 +865,15 @@
       "pending": "<who>{user}</who> saved <what>{title}</what> for later",
       "abandoned": "<who>{user}</who> dropped <what>{title}</what>"
     },
-    "activityScore": "{score, plural, one {# star} other {# stars}}"
+    "activityScore": "{score, plural, one {# star} other {# stars}}",
+    "v2": {
+      "title": "Where you left off",
+      "open": "Open details",
+      "emptyTitle": "Nothing in progress yet",
+      "emptyText": "Find what you're watching, reading or playing, or bring your list from another site.",
+      "emptyDiscover": "Discover",
+      "emptyImport": "Import my list"
+    }
   },
   "friends": {
     "title": "Friends",
@@ -2110,6 +2118,84 @@
     "attribution": {
       "steam": "Video game artwork and descriptions:",
       "steamTrademark": "Steam and the Steam logo are trademarks of Valve Corporation; KULTURA is not affiliated with Valve."
+    }
+  },
+  "portada": {
+    "seo": {
+      "title": "KULTURA — Everything you watch, read and play",
+      "description": "Series, movies, anime, manga, books, comics and games in one place, always knowing where you are."
+    },
+    "nav": {
+      "login": "Sign in"
+    },
+    "hero": {
+      "title": "Everything you watch, read and play. And where you left off.",
+      "lead": "Seven formats, Spanish first.",
+      "cta": "Create account",
+      "demo": "See the demo",
+      "plusOne": "+1, mark one more",
+      "shelfLabel": "Shelf of titles: use the arrow keys to change title"
+    },
+    "units": {
+      "episode": "Episode {n}",
+      "chapter": "Chapter {n}",
+      "hours": "{n} h",
+      "issue": "Issue {n}",
+      "page": "Page {n}"
+    },
+    "continue": {
+      "title": "Pick up where you left off.",
+      "text": "Tap +1. It's a sample: nothing gets saved."
+    },
+    "formatsTitle": "Seven formats. One shelf.",
+    "formats": {
+      "tv": {
+        "name": "Series",
+        "line": "Season and episode."
+      },
+      "movie": {
+        "name": "Movies",
+        "line": "Watched, pending and your rating."
+      },
+      "anime": {
+        "name": "Anime",
+        "line": "Episode by episode."
+      },
+      "manga": {
+        "name": "Manga",
+        "line": "Volume and chapter."
+      },
+      "book": {
+        "name": "Books",
+        "line": "By page or by percentage."
+      },
+      "comic": {
+        "name": "Comics",
+        "line": "Issue by issue."
+      },
+      "game": {
+        "name": "Games",
+        "line": "The hours you have put in."
+      }
+    },
+    "spanish": {
+      "title": "Spanish first.",
+      "text": "Built in Spanish from day one. Your culture, in your own words."
+    },
+    "import": {
+      "title": "Coming from somewhere else? Bring your list."
+    },
+    "close": {
+      "title": "Where are you?",
+      "text": "Start with the work you left halfway."
+    },
+    "footer": {
+      "label": "Information",
+      "privacy": "Privacy",
+      "terms": "Terms",
+      "legal": "Legal notice",
+      "accessibility": "Accessibility",
+      "otherLocale": "Español"
     }
   },
   "collection": {

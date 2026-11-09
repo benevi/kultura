@@ -5,6 +5,7 @@ import { readDiary } from '@/lib/library/diary'
 import { ratingScale10Enabled, readRatingScale } from '@/lib/library/scale'
 import { createLogger } from '@/lib/logger'
 import { LibraryClient } from './LibraryClient'
+import { isUiV2Enabled } from '@/lib/ui-v2'
 import type { Metadata } from 'next'
 import type { DiaryLog, RatingScale } from '@/types/library'
 import { getTranslations } from 'next-intl/server'
@@ -35,6 +36,12 @@ export default async function LibraryPage() {
     : Promise.resolve(null)
 
   const [entries, diary] = await Promise.all([getUserMedia(user.id), diaryPromise])
+  // F0: conmutador de UI (src/lib/ui-v2.ts). Mismos datos, otra pantalla.
+  if (await isUiV2Enabled()) {
+    const { LibraryScreen } = await import('@/v2/library/LibraryScreen')
+    return <LibraryScreen entries={entries} diary={diary} />
+  }
+
   return (
     <main className="page-grid py-8">
       <LibraryClient entries={entries} diary={diary} />

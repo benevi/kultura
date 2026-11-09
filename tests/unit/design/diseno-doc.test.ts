@@ -62,7 +62,7 @@ describe("DISENO.md — los tokens documentados existen en :root", () => {
 
 describe("src — ningún var(--x) apunta a un token inexistente", () => {
   /** Variables que se definen en tiempo de ejecución, no en :root. */
-  const RUNTIME = [/^--tw-/, /^--font-(display|body|landing)$/, /^--radix-/, /^--p$/, /^--x$/];
+  const RUNTIME = [/^--tw-/, /^--font-(display|body|landing|portada)$/, /^--radix-/, /^--p$/, /^--x$/];
 
   function walk(dir: string): string[] {
     return readdirSync(dir, { withFileTypes: true }).flatMap((entry) => {

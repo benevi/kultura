@@ -1,10 +1,17 @@
+import { isUiV2Enabled } from '@/lib/ui-v2'
+
 /**
  * Esqueleto de la Biblioteca con la forma real (DIS-13): mismo ancho de
  * retícula que la página, el h1 (`PageHeading`), los contadores, la fila de
  * filtros y la rejilla uniforme de `MediaGrid` (3/4/5/6 columnas, hueco 12)
  * con el título debajo de cada póster.
  */
-export default function LibraryLoading() {
+export default async function LibraryLoading() {
+  if (await isUiV2Enabled()) {
+    const { LibrarySkeleton } = await import('@/v2/library/LibrarySkeleton')
+    return <LibrarySkeleton />
+  }
+
   return (
     <main className="page-grid py-8">
       <div aria-hidden="true" className="motion-safe:animate-pulse">
