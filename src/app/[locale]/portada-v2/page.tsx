@@ -5,11 +5,11 @@ import { PortadaScreen } from "@/v2/portada/PortadaScreen";
 import type { Metadata } from "next";
 
 // ============================================================
-// KULTURA — Portada v2 (destino de un rewrite, no una URL pública)
+// KULTURA — Portada v2 «Láminas» (fuera de servicio, D-H2)
 //
-// `/es` y `/en` son estáticas y salen del CDN: no pueden leer la cookie
-// `ui_v2`. El middleware sí la lee, antes de la caché, y reescribe aquí sin
-// cambiar la URL. El acceso directo a esta ruta da 404 (`src/middleware.ts`).
+// La portada es siempre la landing, también con la UI v2: el middleware ya no
+// reescribe aquí y el acceso directo da 404 (`src/middleware.ts`). El código
+// se queda hasta la limpieza de la UI vieja (regla 3).
 // ============================================================
 
 interface Props {

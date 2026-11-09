@@ -11,11 +11,10 @@ const req = (path: string, cookie?: string) =>
   new NextRequest(`http://localhost${path}`, cookie ? { headers: { cookie: `ui_v2=${cookie}` } } : undefined);
 const rewrittenTo = (res: Response) => res.headers.get("x-middleware-rewrite");
 
-describe("portada v2 en el middleware", () => {
-  it.each(["/es", "/en", "/es/"])("%s con la cookie se reescribe sin cambiar la URL", async (path) => {
+describe("portada en el middleware (D-H2)", () => {
+  it.each(["/es", "/en", "/es/"])("%s con la cookie de la v2 sigue siendo la landing: no se reescribe", async (path) => {
     const res = await middleware(req(path, "1"));
-    expect(rewrittenTo(res)).toContain(`/${path.split("/")[1]}/portada-v2`);
-    expect(res.status).toBe(200);
+    expect(rewrittenTo(res)).toBeNull();
   });
 
   it("la respuesta no lleva Set-Cookie: la portada sigue siendo cacheable", async () => {
@@ -23,7 +22,7 @@ describe("portada v2 en el middleware", () => {
     expect(res.headers.get("set-cookie")).toBeNull();
   });
 
-  it("sin cookie, o con la cookie a 0, sigue la portada de siempre", async () => {
+  it("sin cookie, o con la cookie a 0, la misma landing", async () => {
     expect(rewrittenTo(await middleware(req("/es")))).toBeNull();
     expect(rewrittenTo(await middleware(req("/es", "0")))).toBeNull();
   });
@@ -31,6 +30,15 @@ describe("portada v2 en el middleware", () => {
   it("la ruta interna no se sirve directamente", async () => {
     const res = await middleware(req("/es/portada-v2", "1"));
     expect(rewrittenTo(res)).toContain("/es/no-existe");
+  });
+
+  it("con UI_V2_DEFAULT=1 tampoco se reescribe", async () => {
+    vi.stubEnv("UI_V2_DEFAULT", "1");
+    try {
+      expect(rewrittenTo(await middleware(req("/es")))).toBeNull();
+    } finally {
+      vi.unstubAllEnvs();
+    }
   });
 });
 

@@ -1,8 +1,9 @@
 # HANDOVER — última sesión (2026-11-09)
 
-**Rama:** `kultura/v2-descubrir-9b4e71`, PR sin fusionar. Todo tras `ui_v2` (cookie o `UI_V2_DEFAULT=1`): sin él, la web sigue igual. Detalle: `docs/REDESIGN_AUDIT.md` §9–§12. Decisiones: D-V2a…m.
+**Rama:** `fix/landing-hero-retoque` (desde master, sin commit). La v2 sigue tras `ui_v2`. Detalle: `docs/REDESIGN_AUDIT.md` §9–§12. Decisiones: D-V2a…m, D-H1, D-H2.
 
 ## Hecho
+- **Héroe de producción retocado (D-H1):** la palabra va detrás del personaje cuando hay un umbral que recorta limpio (`cutThreshold`, `engine.ts`); si no, delante. Prototipos de portada abandonados. Las notas sin commit de `feat/v2-listas` (D-V2o) están en `git stash`. **D-H2:** `/es` sirve siempre ese héroe, también con la v2 (fuera el rewrite a `portada-v2`).
 - **#90 fusionado:** portada rehecha, **Inicio** (`src/v2/home/`, D-V2j) y **Biblioteca** (`src/v2/library/`, D-V2l).
 - **Descubrir** (`src/v2/discover/`, D-V2m): banda de formatos que tiñe la pantalla y pared de portadas. Revisada y corregida; **nota visual de Víctor pendiente**.
 - **Interruptor:** el enlace `/api/ui-v2` guarda la cookie también sin sesión.
