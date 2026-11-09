@@ -131,12 +131,12 @@ describe("GET /api/ui-v2", () => {
     expect((await get("?v=1&next=%2Fapi")).headers.get("location")).toBe("https://k.test/");
   });
 
-  it("sin sesión → al login con la página como next, sin cookie", async () => {
+  it("sin sesión → al login con la página como next, y la cookie ya guardada", async () => {
     h.user = null;
     const res = await get("?v=1&next=%2Fen%2Flists");
     expect(res.status).toBe(303);
     expect(res.headers.get("location")).toBe("https://k.test/en/login?next=%2Fen%2Flists");
-    expect(res.cookies.get(UI_V2_COOKIE)).toBeUndefined();
+    expect(res.cookies.get(UI_V2_COOKIE)?.value).toBe("1");
   });
 
   it("limita los intentos por IP", async () => {

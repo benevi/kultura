@@ -8,8 +8,9 @@
 // (nada en la base), así que un enlace ajeno como mucho cambia qué interfaz
 // ve uno mismo; por eso basta `SameSite=Lax` y no hay comprobación de origen.
 //
-// Requiere sesión: las pantallas v2 son de la zona con sesión y así un
-// visitante anónimo no se encuentra una interfaz a medias. Sin sesión, al login.
+// Sin sesión lleva al login, pero la cookie se guarda igual: si no, quien abre el
+// enlace entra y aterriza en la UI vieja, porque tras el login ya no pasa por
+// aquí. Solo llega a la v2 anónima quien abre este enlace a propósito.
 // Ver `src/lib/ui-v2.ts`.
 // ============================================================
 
@@ -43,14 +44,8 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
 
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
-  if (!user) {
-    // Quien abre el enlace sin sesión va a entrar y vuelve a la página; ahí
-    // tendrá que abrir el enlace otra vez (no se activa nada sin sesión).
-    const login = loginRedirectPath(localeFromPath(next) ?? routing.defaultLocale, next);
-    return NextResponse.redirect(new URL(login, request.url), { status: 303, headers: NO_STORE });
-  }
-
-  const response = NextResponse.redirect(new URL(next, request.url), { status: 303, headers: NO_STORE });
+  const target = user ? next : loginRedirectPath(localeFromPath(next) ?? routing.defaultLocale, next);
+  const response = NextResponse.redirect(new URL(target, request.url), { status: 303, headers: NO_STORE });
   response.cookies.set(UI_V2_COOKIE, v, {
     path: "/",
     httpOnly: true,
