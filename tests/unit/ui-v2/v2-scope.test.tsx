@@ -7,7 +7,7 @@ const cookieValue = vi.hoisted(() => ({ current: undefined as string | undefined
 vi.mock("next/headers", () => ({
   cookies: async () => ({ get: () => (cookieValue.current ? { value: cookieValue.current } : undefined) }),
 }));
-vi.mock("@/app/fonts", () => ({ kulturaDisplay: { variable: "font-var" } }));
+vi.mock("@/app/fonts", () => ({ kulturaDisplay: { variable: "font-var" }, bricolagePortada: { variable: "font-swap" } }));
 
 import { V2Scope } from "@/v2/V2Scope";
 

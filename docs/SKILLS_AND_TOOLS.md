@@ -27,3 +27,10 @@ El visto bueno de estas herramientas no sustituye a la aprobación de Víctor: l
 | `taste-skill` | Generación de direcciones para las tres propuestas | Propuestas A, B y C; Víctor eligió B + A |
 | Playwright + axe | Script de QA fuera del repo: 8 escenarios | Abanico roto en pantallas bajas y hueco en la sección de español, corregidos |
 | `@lhci/cli` 0.15.1 | 3 pasadas móvil sobre `/es` con `ui_v2=1` | Imágenes de 2,5 MB a 1,3 MB con `srcset` por CDN |
+
+## Inicio (2026-11-09)
+| Herramienta | Uso | Qué cambió |
+|---|---|---|
+| `impeccable` | `context`, `craft-floor` y `operate` antes de editar; `detect src/v2/home` (solo regex: sin hallazgos) | Pantalla de trabajo: tipo fijo, filas densas y un solo gesto |
+| `taste-skill` | `inspect.mjs --app` sobre el build, con un proxy local para la sesión simulada | Nada. **3 FAIL descartados:** `ui-wrapper` (confunde nuestro `data-ui`), `font-not-dealt` (compara con la dirección de la portada anterior) y `covered-text` (la barra inferior fija al desplazar). **4 WARN aceptados:** hueso (D-V2f), 48 % del texto bajo 13 px (pie legal y secciones heredadas, sin rehacer), secciones bajo el primer pantallazo y `h1` de 40 px |
+| Playwright + axe | Script de QA fuera del repo | Datos de `REDESIGN_AUDIT.md` §10; destapó que los títulos salían en Arial (D-V2k) |

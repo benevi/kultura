@@ -651,8 +651,8 @@
   },
   "aiRecommendations": {
     "title": "Para ti",
-    "aiPickBadge": "PARA TI",
-    "starterBadge": "LO MÁS POPULAR AHORA",
+    "aiPickBadge": "Para ti",
+    "starterBadge": "Lo más popular ahora",
     "starterHint": "Puntúa o completa 3 títulos y empezaremos a recomendarte a tu medida.",
     "generating": "Generando recomendaciones personalizadas…",
     "needMoreItems": "Puntúa 3 títulos y empezaremos a recomendarte.",
@@ -667,7 +667,7 @@
     "askButton": "Recomiéndame",
     "askPrivacy": "Al pulsar, enviamos a Anthropic (Claude) los títulos y notas de tu biblioteca para elegir y explicar cada recomendación.",
     "privacyLink": "Más información",
-    "matchBadge": "SEGÚN TU BIBLIOTECA",
+    "matchBadge": "Según tu biblioteca",
     "dailyNote": "Son tus recomendaciones de hoy. Mañana tendrás otras nuevas.",
     "cappedNote": "Hoy se han agotado las recomendaciones con IA, así que te enseñamos las que mejor encajan con tu biblioteca. Mañana vuelven las explicaciones.",
     "whyRecommendedText": "Coincide con géneros que ya te gustan — {genres} — según lo que tienes en tu biblioteca."
@@ -865,7 +865,15 @@
       "pending": "<who>{user}</who> ha apuntado <what>{title}</what>",
       "abandoned": "<who>{user}</who> ha dejado <what>{title}</what>"
     },
-    "activityScore": "{score, plural, one {# estrella} other {# estrellas}}"
+    "activityScore": "{score, plural, one {# estrella} other {# estrellas}}",
+    "v2": {
+      "title": "Por dónde vas",
+      "open": "Ver ficha",
+      "emptyTitle": "Aún no llevas nada",
+      "emptyText": "Busca lo que estés viendo, leyendo o jugando, o trae tu lista de otra web.",
+      "emptyDiscover": "Descubrir",
+      "emptyImport": "Importar mi lista"
+    }
   },
   "friends": {
     "title": "Amigos",

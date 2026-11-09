@@ -15,9 +15,13 @@ import "./skin.css";
 export async function V2Scope({ children }: { children: React.ReactNode }) {
   if (!(await isUiV2Enabled())) return <>{children}</>;
   // Solo con la UI v2: la fuente de display no viaja a quien sigue en la vieja.
-  const { kulturaDisplay } = await import("@/app/fonts");
+  const { bricolagePortada, kulturaDisplay } = await import("@/app/fonts");
   return (
-    <div data-ui="v2" className={`k2 ${kulturaDisplay.variable}`} style={{ display: "contents" }}>
+    <div
+      data-ui="v2"
+      className={`k2 ${kulturaDisplay.variable} ${bricolagePortada.variable}`}
+      style={{ display: "contents" }}
+    >
       {children}
     </div>
   );

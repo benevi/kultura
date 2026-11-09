@@ -7,6 +7,10 @@
    ============================================================ */
 
 .k2 {
+  /* La misma Bricolage, con `swap` en vez de `optional`: con `optional` los títulos
+     se quedaban en Arial si la fuente tardaba más de ~100 ms, y son la identidad. */
+  --font-display: var(--font-portada);
+
   /* Tierra y tinta */
   --k-ground: #0a0a0a;
   --k-raised: #151514;

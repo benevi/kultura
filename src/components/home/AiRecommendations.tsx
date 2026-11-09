@@ -127,7 +127,7 @@ export function AiRecommendations({
           huérfano; en los estados vacío/error la tarjeta ya se explica sola. */}
       {hasBadge && (
         <div
-          className="inline-block absolute -top-3.5 left-0 z-10 rounded-pill px-3.5 py-1.5 md:px-4 md:py-2 bg-accent-lime text-on-accent-lime font-display text-xs font-extrabold tracking-wide shadow-sticker"
+          className="inline-block absolute -top-3.5 left-0 z-10 rounded-pill px-3.5 py-1.5 md:px-4 md:py-2 bg-accent-lime text-on-accent-lime font-display text-xs font-extrabold uppercase tracking-wide shadow-sticker"
           style={{ transform: 'rotate(-4deg)' }}
         >
           {status === 'starter' ? (

@@ -23,9 +23,9 @@ Referencias, sin copiar: Bruno Simon (objeto 3D con personalidad que reacciona a
 | 3D | `src/v2/portada/portada.css` | Solo CSS. El motor WebGL se retiró (D-V2h) |
 
 ### Alcance real por pantalla
-- **Reconstruida:** portada (`/es`, `/en`).
+- **Reconstruida:** portada (`/es`, `/en`) e Inicio (`/home`, §10).
 - **Piel + ajustes propios, verificada con captura:** login/registro (`AuthShell`), ficha (`media`, con color por formato).
-- **Piel, sin captura porque exige sesión:** home, discover, search, library, lists, profile, settings, import, calendar, chat, groups, friends, notifications, suggestions, welcome. **No verificadas visualmente.**
+- **Piel, sin captura porque exige sesión:** discover, search, library, lists, profile, settings, import, calendar, chat, groups, friends, notifications, suggestions, welcome. **No verificadas visualmente.**
 - **Piel, sin captura:** perfiles públicos `u/*`, report, reset-password, email/*.
 - **Sin piel hasta `UI_V2_DEFAULT`:** rankings `best/*`, legales, offline, cuñas `series`/`anime` (estáticas, no leen la cookie). Con `UI_V2_DEFAULT=1` tampoco la reciben hoy: falta decidir cómo (ver §7).
 - **No reconstruidas:** el master prompt pide rediseñar todas. Aquí hay identidad común, no una composición nueva por pantalla. Es la parte pendiente más grande.
@@ -88,3 +88,19 @@ Abanico de portadas + lista «Sigue por donde ibas» (D-V2h). Datos de un build 
 | Imágenes | 1.315 KB (antes 2.530 KB) |
 
 **Sin probar:** preview de Vercel, Safari, Firefox, táctil real, lector de pantalla real, fallo real de proveedores. **Abierto:** licencias de imágenes de TMDB, AniList, Steam y Open Library.
+
+## 10. Inicio (2026-11-09, D-V2j)
+«Por dónde vas»: la obra en curso grande y el resto en filas con su +1. Datos de un build de producción local con el **Supabase simulado** del repo (`tests/e2e/a11y/`) y una biblioteca de ejemplo de 7 formatos:
+
+| Puerta | Resultado |
+|---|---|
+| `tsc`, lint | Limpios |
+| `vitest` | 15 fallos, los heredados de Windows/CRLF |
+| 1440, 768, 390, 320, reduced-motion a 390 | Sin desbordamiento, un `h1`, 0 imágenes rotas, axe sin serious/critical, consola sin errores salvo `_vercel/*` y websocket del simulador |
+| Avance con +1 | «Cap. 31 de 240» pasa a «Cap. 32 de 240», sin alerta |
+| Zona de toque del título | Responde 4 px por encima y por debajo de las letras |
+| CLS | 0,0003 como máximo (sin Lighthouse) |
+| JS | `next build`: **171 kB. Ya era 170 kB antes de este cambio** (compilado con `page.tsx` de HEAD). Supera el presupuesto de 150 KB por herencia; la v2 añade 1 kB. Con el navegador, las dos UI descargan lo mismo. **Pendiente: reducirlo** |
+| Estado vacío y `PROGRESS_V2` apagada | Vistos. Sin la bandera, solo series y anime tienen +1, igual que en la v1 |
+
+**Sin probar:** BD real y CUJ, preview de Vercel, secciones de Inicio con datos reales (recomendaciones, «Esta noche» con plataformas, actividad de amigos), Lighthouse en esta ruta, Safari, Firefox, táctil real, lector de pantalla real. `loading.tsx` y `error.tsx` de la ruta siguen siendo los de la v1.
