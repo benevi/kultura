@@ -5,11 +5,10 @@
 
 import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
-import { getUserLists } from '@/lib/social/lists'
+import { getListShelves, getUserLists } from '@/lib/social/lists'
 import { mixedListsEnabled } from '@/lib/social/lists-shared'
 import { ListsClient } from './ListsClient'
 import { isUiV2Enabled } from '@/lib/ui-v2'
-import { ListsScreen } from '@/v2/lists/ListsScreen'
 import { getTranslations } from 'next-intl/server'
 import type { Metadata } from 'next'
 
@@ -26,8 +25,14 @@ export default async function ListsPage() {
 
   const lists = await getUserLists(user.id)
 
-  // F0: conmutador de UI (src/lib/ui-v2.ts). Mismos datos, otra pantalla.
-  if (await isUiV2Enabled()) return <ListsScreen lists={lists} />
+  // F0: conmutador de UI (src/lib/ui-v2.ts). Mismos datos y los lomos de la balda.
+  if (await isUiV2Enabled()) {
+    const { ListsScreen } = await import('@/v2/lists/ListsScreen')
+    const shelves = await getListShelves(lists.map((list) => list.id))
+    return (
+      <ListsScreen lists={lists} shelves={shelves} currentUserId={user.id} mixedEnabled={mixedListsEnabled()} />
+    )
+  }
 
   return <ListsClient lists={lists} mixedEnabled={mixedListsEnabled()} />
 }

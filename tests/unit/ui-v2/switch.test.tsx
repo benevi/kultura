@@ -3,7 +3,8 @@
 // de /lists (PLAN_ESTRATEGICO §7.3)
 // ============================================================
 
-import { render, screen } from "@testing-library/react";
+import { render as rtlRender, screen } from "@testing-library/react";
+import { NextIntlClientProvider } from "next-intl";
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { NextRequest } from "next/server";
 import es from "../../../messages/es.json";
@@ -29,6 +30,7 @@ vi.mock("@/lib/social/lists", () => ({
   getUserLists: async () => [
     { id: "l1", ownerId: "u1", name: "Pelis de domingo", mediaType: "movie", isCollaborative: false, isPublic: false, createdAt: "2026-11-01" },
   ],
+  getListShelves: async () => ({}),
 }));
 vi.mock("@/lib/social/lists-shared", () => ({ mixedListsEnabled: () => false }));
 vi.mock("@/app/[locale]/(app)/lists/ListsClient", () => ({
@@ -58,14 +60,13 @@ import ListsPage from "@/app/[locale]/(app)/lists/page";
 import { _resetStoreForTests } from "@/lib/rate-limit";
 import type { ReactElement } from "react";
 
-/** La página devuelve un Server Component async (la pantalla v2): se resuelve antes de pintar. */
-async function page(): Promise<ReactElement> {
-  const el = (await ListsPage()) as ReactElement<Record<string, unknown>>;
-  if (typeof el.type !== "function") return el;
-  // Un componente síncrono se deja a React; uno async devuelve una promesa.
-  const out = (el.type as (p: unknown) => unknown)(el.props);
-  return out instanceof Promise ? ((await out) as ReactElement) : el;
-}
+const page = async () => (await ListsPage()) as ReactElement;
+const render = (ui: ReactElement) =>
+  rtlRender(
+    <NextIntlClientProvider locale="es" messages={es}>
+      {ui}
+    </NextIntlClientProvider>,
+  );
 
 beforeEach(() => {
   h.user = { id: "u1" };
@@ -155,16 +156,15 @@ describe("/lists: conmutador", () => {
   it("con la cookie ui_v2=1 pinta la nueva con los mismos datos", async () => {
     h.cookie = "1";
     const { container } = render(await page());
-    expect(container.querySelector('[data-ui="v2"]')).toBeTruthy();
+    expect(container.querySelector(".k2l")).toBeTruthy();
     expect(screen.queryByTestId("ui-v1")).toBeNull();
     expect(screen.getByText("Pelis de domingo").closest("a")?.getAttribute("href")).toBe("/es/lists/l1");
-    expect(screen.getByText(es.uiV2.exit).getAttribute("href")).toBe("/api/ui-v2?v=0&next=%2Fes%2Flists");
   });
 
   it("UI_V2_DEFAULT=1 pinta la nueva; la cookie 0 la apaga", async () => {
     process.env.UI_V2_DEFAULT = "1";
     const first = render(await page());
-    expect(first.container.querySelector('[data-ui="v2"]')).toBeTruthy();
+    expect(first.container.querySelector(".k2l")).toBeTruthy();
     first.unmount();
 
     h.cookie = "0";

@@ -146,3 +146,27 @@ Pantalla nueva en `src/v2/discover/`, tras `ui_v2`. Modo Operate: elegir formato
 **Encontrado al probar y corregido:** las sugerencias se abrían sobre el vacío tras Enter; en móvil, «Ver ficha» quedaba bajo la barra inferior.
 
 **Sin probar:** BD real y CUJ, proveedores reales (`/api/discover` simulado, salvo una pasada sin red que dio vacío), preview de Vercel, Lighthouse, Safari, Firefox, táctil real, lector de pantalla real. **`error.tsx` sigue siendo el de la v1.**
+
+## 13. Listas (2026-11-09, D-V2n)
+
+**Preguntas.** Índice: «¿qué lista abro?». Detalle: «¿qué hay y en qué orden?».
+
+**Composición.** Cada lista es una balda: nombre y cuenta a un lado y, al otro, sus obras de pie enseñando el lomo de la portada, sobre un tablón. Una lista vacía es el tablón solo. Se reconoce por lo que tiene dentro, sin repetir la pared de Biblioteca y Descubrir. En el detalle, la lista queda fija a la izquierda y los títulos van en filas; el número grande, solo en un ranking.
+
+**Movimiento.** Al señalar una lista con ratón, sus lomos suben 6 px, escalonados 60 ms en total al entrar y a la vez al salir; solo `transform`. Sin él con reduced-motion, teclado ni táctil.
+
+**Medido con Supabase simulado, portadas reales de AniList y build de producción:**
+| Comprobación | Resultado |
+|---|---|
+| 1440, 1024, 768, 390, 320 y reduced-motion a 390, en índice y detalle | sin desborde, un solo h1, consola sin errores |
+| axe serious/critical | 0 en índice, detalle, vacíos, lista colaborativa, lista ajena, EN, crear y ordenar. En borrar, 0 con el diálogo ya abierto (un aviso de contraste solo durante su entrada) |
+| CLS | ≤ 0,0087, salvo 0,0596 intermitente en el detalle a 768. Una traza del mismo valor en Biblioteca (0,0672) lo atribuye al pie del armazón; en el detalle no se capturó la traza |
+| Recorrido por `/api/ui-v2?v=1&next=/es/lists` | llega a la v2; sin cookie sigue la v1 |
+| Foco | vuelve al botón al cerrar crear y borrar; al quitar un título pasa al de la fila siguiente y la página no se mueve |
+| Toda la fila enlaza a la ficha, «Quitar» queda por encima | correcto |
+| Suite a11y (`playwright.a11y.config.ts`) | 101 correctas, 3 omitidas, antes de los dos últimos cambios de foco. Corre con la v1 salvo donde pide la cookie |
+| Peso | `next build`: `/lists` **158 kB** (155 antes) y `/lists/[id]` **177 kB**; tope 150, siguen por encima. En navegador, las dos UI descargan lo mismo |
+
+**Encontrado al probar y corregido:** el simulador no resolvía `alias:columna_id(...)` y las pruebas salían sin obras; la página perdía el foco al cargar un trozo con `next/dynamic`.
+
+**Sin probar:** BD real y CUJ (`lista-y-compartir` corre con la v1), arrastrar para ordenar en navegador, Lighthouse, preview de Vercel, Safari, Firefox, táctil real, lector de pantalla real. Con más de 40 listas, las siguientes salen con la balda vacía.
