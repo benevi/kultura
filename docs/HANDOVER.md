@@ -1,24 +1,24 @@
 # HANDOVER — última sesión (2026-11-09)
 
-**Rama:** `feat/v2-rediseno-integral`, PR #90 sin fusionar. Todo tras `ui_v2` (cookie o `UI_V2_DEFAULT=1`): sin él, la web sigue igual. Detalle: `docs/REDESIGN_AUDIT.md` §9–§11. Decisiones: D-V2a…l.
+**Rama:** `kultura/v2-descubrir-9b4e71`, PR sin fusionar. Todo tras `ui_v2` (cookie o `UI_V2_DEFAULT=1`): sin él, la web sigue igual. Detalle: `docs/REDESIGN_AUDIT.md` §9–§12. Decisiones: D-V2a…m.
 
 ## Hecho
-- **Portada rehecha:** abanico + «Sigue por donde ibas», portadas dinámicas que rotan cada mes (D-V2h, D-V2i).
-- **Inicio** (`src/v2/home/`, D-V2j) y **Biblioteca** (`src/v2/library/`, D-V2l): pantallas propias, revisadas y corregidas.
-- **Interruptor:** el enlace `/api/ui-v2` guarda la cookie también sin sesión; antes, tras el login se aterrizaba en la vieja.
-- **Fuente:** en v2 la Bricolage va con `swap`; con `optional` los títulos salían en Arial (D-V2k).
+- **#90 fusionado:** portada rehecha, **Inicio** (`src/v2/home/`, D-V2j) y **Biblioteca** (`src/v2/library/`, D-V2l).
+- **Descubrir** (`src/v2/discover/`, D-V2m): banda de formatos que tiñe la pantalla y pared de portadas. Revisada y corregida; **nota visual de Víctor pendiente**.
+- **Interruptor:** el enlace `/api/ui-v2` guarda la cookie también sin sesión.
+- **Fuente:** en v2 la Bricolage va con `swap` (D-V2k).
 
 ## Sin hacer (es lo más grande)
-- **Resto de interiores:** tienen piel, no composición propia. **Siguiente: Descubrir o Listas.**
-- **Sin ver:** discover, search, lists, profile, settings, import, calendar, chat, groups, friends, notifications, suggestions, welcome, `u/*`, report, reset-password, email/*.
+- **Resto de interiores:** tienen piel, no composición propia. **Siguiente: Listas.**
+- **Sin ver:** search, lists, profile, settings, import, calendar, chat, groups, friends, notifications, suggestions, welcome, `u/*`, report, reset-password, email/*.
 - **Sin piel:** best, legales, offline, series, anime (estáticas).
-- `error.tsx` sigue v1 en todas; `loading.tsx`, también salvo en Biblioteca.
+- `error.tsx` sigue v1 en todas; `loading.tsx`, también salvo en Biblioteca y Descubrir.
 
 ## Sin probar
-Inicio y Biblioteca solo se han visto con Supabase simulado. Falta BD real y CUJ, preview de Vercel, Safari, Firefox, táctil real, lector de pantalla real.
+Inicio, Biblioteca y Descubrir solo se han visto con Supabase simulado; Descubrir, además, con `/api/discover` simulado. Falta BD real y CUJ, proveedores reales, preview de Vercel, Safari, Firefox, táctil real, lector de pantalla real.
 
 ## Siguiente
-1. Víctor mira portada, Inicio y Biblioteca con `ui_v2=1` y da nota contra los vetos.
+1. Víctor mira Descubrir con `/api/ui-v2?v=1&next=/es/discover` y da nota contra los vetos.
 2. Siguiente pantalla, mismo método: `src/v2/`, `if` en `page.tsx`, simulador de `tests/e2e/a11y/`, recorrido por el enlace del interruptor.
 
 ## Decide Víctor
@@ -28,11 +28,12 @@ Inicio y Biblioteca solo se han visto con Supabase simulado. Falta BD real y CUJ
 - `CLAUDE.md` (Preferencias) sigue citando el plan §6: conviene actualizarlo.
 
 ## Ojo
-- **Peso sobre el tope de 150 kB:** `/home` 171, `/library` 158 (154 antes), `/lists` 155. Reducir antes de `UI_V2_DEFAULT=1`.
+- **Peso sobre el tope de 150 kB:** `/discover` 182 (178 antes), `/home` 171, `/library` 158, `/lists` 155. Reducir antes de `UI_V2_DEFAULT=1`.
+- **`SearchBar` en v1:** una respuesta de sugerencias que llega tras Enter abre el desplegable sobre los resultados. En v2 lo evita `settleOnSubmit`; la v1 se deja igual a propósito.
 - LCP móvil de la portada simulado 6,0 s (aviso). Medir en Vercel.
 - `vitest`: 15 fallos heredados; `register-form` a veces falla por tiempo.
 - Las pruebas de `page.tsx` deben simular `@/lib/ui-v2`, porque `cookies()` falla fuera de una petición.
 - Fuera de git a propósito: `PLAN_ESTRATEGICO.md`, `docs/auditoria/`, `.lighthouseci/`, `.playwright-mcp/`, `.taste-skill/`, `.impeccable/`, `PROMPT_INICIO.txt`, snapshots de `tests/unit/catalogo`.
-- Chat en móvil (v1): el pie legal entra en el scroll y se ve bajo el campo de escribir; la página mide 1095 px en 844. Arreglar al rehacer el chat.
+- Chat en móvil (v1): el pie legal entra en el scroll y se ve bajo el campo de escribir. Arreglar al rehacer el chat.
 - `next build` y `next dev` chocan en `.next`. No pasar `next build` por `| head`.
 - Pendiente de Víctor: backup (R10), rotar contraseña de BD y `SUPABASE_DB_URL`, copia de `kultura-backup.key`, entrevistas F1. Squash-merge solo con su OK.
