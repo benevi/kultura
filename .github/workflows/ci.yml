@@ -12,12 +12,14 @@ on:
   schedule:
     - cron: "17 6 * * 1"
 
+# Imagen fija: `ubuntu-latest` pasó a 26.04 (9/11/2026) y Playwright aún no
+# tiene Chromium para ella. Subir cuando Playwright la soporte.
 jobs:
   build:
     name: Lint, typecheck, test, build
     # El cron semanal solo existe para la suite de integración.
     if: github.event_name != 'schedule'
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
 
     env:
       # Placeholders para que `next build` no pete por env vars ausentes.
@@ -80,7 +82,7 @@ jobs:
     # (tests/e2e/a11y/mock-supabase.cjs) y `fetch` del servidor sin red
     # (offline-fetch.cjs); el navegador solo puede hablar con localhost.
     if: github.event_name != 'schedule'
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 25
 
     steps:
@@ -146,7 +148,7 @@ jobs:
     # Ojo: `next start` sirve gzip y Vercel brotli (≈ 10-15 % menos): en
     # producción el margen es mayor que el que se ve aquí.
     if: github.event_name != 'schedule'
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 20
 
     steps:
@@ -201,7 +203,7 @@ jobs:
     # TMDB con datos fijos (tests/e2e/a11y/offline-fetch.cjs). Nunca toca
     # producción ni kultura-test (env.cjs aborta si la URL no es local).
     if: github.event_name != 'schedule'
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 30
 
     env:
@@ -282,7 +284,7 @@ jobs:
     # No en los PR: una migración nueva todavía no está aplicada en test y la
     # suite fallaría por eso, no por el código. Se lanza a mano tras aplicarla.
     if: github.event_name == 'workflow_dispatch' || github.event_name == 'schedule'
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
 
     env:
       SUPABASE_TEST_URL: ${{ secrets.TEST_SUPABASE_URL }}
