@@ -25,7 +25,7 @@ Referencias, sin copiar: Bruno Simon (objeto 3D con personalidad que reacciona a
 ### Alcance real por pantalla
 - **Reconstruida:** portada (`/es`, `/en`) e Inicio (`/home`, §10).
 - **Piel + ajustes propios, verificada con captura:** login/registro (`AuthShell`), ficha (`media`, con color por formato).
-- **Piel, sin captura porque exige sesión:** discover, search, library, lists, profile, settings, import, calendar, chat, groups, friends, notifications, suggestions, welcome. **No verificadas visualmente.**
+- **Piel, sin captura porque exige sesión:** discover, search, lists, profile, settings, import, calendar, chat, groups, friends, notifications, suggestions, welcome. **No verificadas visualmente.**
 - **Piel, sin captura:** perfiles públicos `u/*`, report, reset-password, email/*.
 - **Sin piel hasta `UI_V2_DEFAULT`:** rankings `best/*`, legales, offline, cuñas `series`/`anime` (estáticas, no leen la cookie). Con `UI_V2_DEFAULT=1` tampoco la reciben hoy: falta decidir cómo (ver §7).
 - **No reconstruidas:** el master prompt pide rediseñar todas. Aquí hay identidad común, no una composición nueva por pantalla. Es la parte pendiente más grande.
@@ -104,3 +104,23 @@ Abanico de portadas + lista «Sigue por donde ibas» (D-V2h). Datos de un build 
 | Estado vacío y `PROGRESS_V2` apagada | Vistos. Sin la bandera, solo series y anime tienen +1, igual que en la v1 |
 
 **Sin probar:** BD real y CUJ, preview de Vercel, secciones de Inicio con datos reales (recomendaciones, «Esta noche» con plataformas, actividad de amigos), Lighthouse en esta ruta, Safari, Firefox, táctil real, lector de pantalla real. `loading.tsx` y `error.tsx` de la ruta siguen siendo los de la v1.
+
+## 11. Biblioteca (2026-11-09, D-V2l)
+
+Pantalla nueva en `src/v2/library/`, tras `ui_v2`. Modo Operate: el raíl dice lo que hay y la pared lo enseña. No repite la portada ni las filas de Inicio.
+
+**Se conserva de la v1:** filtros por tipo, estado, puntuación y favoritos, mismos parámetros de URL, vistas Títulos y Diario, borrar apunte, reseñas con spoilers ocultas, nota personal, vacíos.
+**Cambia:** los contadores son ahora el propio filtro de estado; los formatos sin obras no salen; filtrar es instantáneo (119 ms medidos, sin petición de documento); las obras llevan barra si van a medias y total conocido; la abandonada, sin color. `prefetch` apagado en la pared: 47 portadas no deben disparar 47 peticiones.
+
+**Medido con Supabase simulado, 47 obras, build de producción:**
+| Comprobación | Resultado |
+|---|---|
+| Anchos 1440, 1024, 768, 390, 320 y reduced-motion | sin desborde ni consola con errores |
+| axe serious/critical | 0 en títulos, filtros, vacío y diario |
+| CLS | ≤ 0,0001 |
+| Recorrido por `/api/ui-v2?v=1&next=/es/library` | llega a la v2 |
+| Atrás, sin entradas duplicadas, foco y apunte borrado | correctos |
+| Peso de `/[locale]/library` | 158 kB (154 kB antes; tope 150): **sigue por encima** |
+
+**Sin probar:** BD real y CUJ, preview de Vercel, Safari, Firefox, táctil real, lector de pantalla real. **`error.tsx` sigue siendo el de la v1.**
+**Reconocido y no arreglado:** el aviso de Taste sobre color crema (es el hueso de la marca), fuentes no repartidas (son las de la marca) y `data-ui` en la página (es el interruptor).

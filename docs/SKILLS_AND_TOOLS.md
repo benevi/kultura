@@ -34,3 +34,9 @@ El visto bueno de estas herramientas no sustituye a la aprobación de Víctor: l
 | `impeccable` | `context`, `craft-floor` y `operate` antes de editar; `detect src/v2/home` (solo regex: sin hallazgos) | Pantalla de trabajo: tipo fijo, filas densas y un solo gesto |
 | `taste-skill` | `inspect.mjs --app` sobre el build, con un proxy local para la sesión simulada | Nada. **3 FAIL descartados:** `ui-wrapper` (confunde nuestro `data-ui`), `font-not-dealt` (compara con la dirección de la portada anterior) y `covered-text` (la barra inferior fija al desplazar). **4 WARN aceptados:** hueso (D-V2f), 48 % del texto bajo 13 px (pie legal y secciones heredadas, sin rehacer), secciones bajo el primer pantallazo y `h1` de 40 px |
 | Playwright + axe | Script de QA fuera del repo | Datos de `REDESIGN_AUDIT.md` §10; destapó que los títulos salían en Arial (D-V2k) |
+
+## Biblioteca (2026-11-09)
+
+- **Impeccable** (`operate.md`, `craft-floor.md`): modo Operate. Cambió: tipo fijo en rem, esqueleto con la forma real, vacíos que dicen qué hacer, sin cajas ni iconos en ellos. Su detector solo corrió por expresiones regulares sobre `src/v2/library`: limpio, pero es un recuento parcial.
+- **Taste** (`inspect.mjs --app`): subió el texto de 12 a 13 px. Avisa del título de 40 px: se mantiene igual que Inicio, para que las dos pantallas coincidan.
+- **Emil / Design Motion:** la portada gira sobre su lomo a 200 ms y solo con ratón; color y foco, sin animación añadida.

@@ -23,7 +23,8 @@ import { UI_V2_COOKIE, resolveUiV2 } from "./ui-v2-shared";
 // `tests/unit/ui-v2/static-routes.test.ts`.
 //
 // Lo que NO cambia con el interruptor (a tener en cuenta al generalizarlo):
-// - `loading.tsx` y `error.tsx` de la carpeta siguen siendo los de la UI vieja.
+// - `error.tsx` y, salvo en Biblioteca, `loading.tsx` siguen siendo los de la UI
+//   vieja: cada `loading.tsx` tiene que preguntar él mismo por el interruptor.
 // - El cambio se aplica con una navegación de documento entero (303 desde
 //   `/api/ui-v2`); al volver atrás, la caché del navegador o el Router Cache
 //   pueden enseñar un momento la UI anterior hasta recargar.

@@ -1,0 +1,764 @@
+/* ============================================================
+   KULTURA v2 — Biblioteca
+   Pantalla de trabajo: el raíl dice lo que hay y la pared lo enseña.
+   Las portadas son el único color; lo demás, hueso sobre negro.
+   ============================================================ */
+
+.k2b {
+  display: grid;
+  grid-template-columns: 216px minmax(0, 1fr);
+  align-items: start;
+  gap: 24px 48px;
+  padding-block: 32px 72px;
+}
+
+.k2b--plain {
+  display: block;
+}
+
+.k2b-title {
+  margin: 0;
+  font-family: var(--k-font-voice);
+  font-size: 2.5rem;
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  line-height: 1.05;
+}
+
+/* Recibe el foco cuando desaparece el botón que lo tenía: no es un control. */
+.k2b-title:focus {
+  outline: none;
+}
+
+.k2b-head {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px 24px;
+}
+
+.k2b--plain .k2b-head {
+  margin-bottom: 32px;
+}
+
+/* Raíl */
+.k2b-rail {
+  position: sticky;
+  top: 88px;
+  max-height: calc(100vh - 88px);
+  max-height: calc(100dvh - 88px);
+  overflow-y: auto;
+  /* Visible: en pantallas bajas, lo de abajo tiene que notarse que existe. */
+  scrollbar-width: thin;
+  scrollbar-color: var(--k-line) transparent;
+}
+
+.k2b-rail__group {
+  display: flex;
+  flex-direction: column;
+  padding-bottom: 12px;
+  margin-bottom: 12px;
+  border-bottom: 1px solid var(--k-line);
+}
+
+.k2b-rail__item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  width: 100%;
+  min-height: 40px;
+  padding: 0 10px;
+  border: 0;
+  background: none;
+  color: var(--k-dim);
+  font: inherit;
+  font-size: 0.9375rem;
+  text-align: left;
+  cursor: pointer;
+  clip-path: polygon(0 0, calc(100% - 8px) 0, 100% 8px, 100% 100%, 0 100%);
+  transition:
+    background-color var(--k-fast) var(--k-ease),
+    color var(--k-fast) var(--k-ease);
+}
+
+.k2b-rail__label {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  white-space: nowrap;
+}
+
+.k2b-rail__label i {
+  flex: none;
+  width: 8px;
+  height: 8px;
+}
+
+.k2b-rail__count {
+  font-size: 0.875rem;
+  font-variant-numeric: tabular-nums;
+}
+
+@media (hover: hover) {
+  .k2b-rail__item:hover {
+    color: var(--k-bone);
+  }
+}
+
+.k2b-rail__item[aria-pressed="true"] {
+  background: var(--k-bone);
+  color: var(--k-ink);
+  font-weight: 600;
+}
+
+/* El color de manga es el hueso: sobre el hueso desaparecería el cuadrado. */
+.k2b-rail__item[aria-pressed="true"] i {
+  box-shadow: 0 0 0 1px var(--k-ink);
+}
+
+/* El recorte del chaflán se comería el anillo: el foco se dibuja por dentro. */
+.k2b-rail__item:focus-visible {
+  outline-offset: -3px;
+}
+
+.k2b-rail__item[aria-pressed="true"]:focus-visible {
+  outline-color: var(--k-ink);
+}
+
+/* El raíl recorta por los lados: su anillo de foco va por dentro. */
+.k2b-score button:focus-visible,
+.k2b-fav:focus-visible {
+  outline-offset: -3px;
+}
+
+.k2b-score button[aria-pressed="true"]:focus-visible,
+.k2b-fav[aria-pressed="true"]:focus-visible {
+  outline-color: var(--k-ink);
+}
+
+/* Título/Diario */
+.k2b-views {
+  display: flex;
+  gap: 4px;
+}
+
+.k2b-views button,
+.k2b-more,
+.k2b-score button,
+.k2b-fav {
+  min-height: 40px;
+  padding: 0 12px;
+  border: 1px solid var(--k-line);
+  background: none;
+  color: var(--k-dim);
+  font: inherit;
+  font-size: 0.875rem;
+  cursor: pointer;
+  transition:
+    border-color var(--k-fast) var(--k-ease),
+    color var(--k-fast) var(--k-ease);
+}
+
+@media (hover: hover) {
+  .k2b-views button:hover,
+  .k2b-more:hover,
+  .k2b-score button:hover,
+  .k2b-fav:hover {
+    border-color: var(--k-dim);
+    color: var(--k-bone);
+  }
+}
+
+.k2b-views button[aria-pressed="true"],
+.k2b-score button[aria-pressed="true"],
+.k2b-fav[aria-pressed="true"] {
+  border-color: var(--k-bone);
+  background: var(--k-bone);
+  color: var(--k-ink);
+  font-weight: 600;
+}
+
+/* Solo en móvil: en escritorio todo cabe en el raíl. */
+.k2b-more {
+  display: none;
+}
+
+.k2b-more[aria-expanded="true"] {
+  border-color: var(--k-dim);
+  color: var(--k-bone);
+}
+
+.k2b-rail__extra {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.k2b-score {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px;
+}
+
+.k2b-score span {
+  width: 100%;
+  margin-bottom: 4px;
+  color: var(--k-dim);
+  font-size: 0.875rem;
+}
+
+.k2b-score button {
+  flex: 1;
+  min-width: 40px;
+  padding: 0;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Pared */
+.k2b-shelf {
+  min-width: 0;
+  scroll-margin-top: 64px;
+}
+
+.k2b-shelf__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  min-height: 44px;
+  margin-bottom: 12px;
+  color: var(--k-dim);
+  font-size: 0.875rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.k2b-shelf__head p {
+  margin: 0;
+}
+
+.k2b-reset,
+.k2b-text-btn {
+  min-height: 44px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--k-bone);
+  font: inherit;
+  font-size: 0.875rem;
+  font-weight: 600;
+  text-align: left;
+  text-decoration: underline;
+  text-decoration-color: var(--k-dim);
+  text-underline-offset: 4px;
+  cursor: pointer;
+  transition: text-decoration-color var(--k-fast) var(--k-ease);
+}
+
+.k2b-reset[hidden] {
+  display: none;
+}
+
+@media (hover: hover) {
+  .k2b-reset:hover,
+  .k2b-text-btn:hover {
+    text-decoration-color: var(--k-bone);
+  }
+}
+
+.k2b-wall {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(148px, 1fr));
+  gap: 28px 16px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.k2b-work {
+  --c: var(--k-tv);
+  min-width: 0;
+}
+
+.k2b-work__link {
+  display: block;
+  color: inherit;
+  text-decoration: none;
+}
+
+.k2b-work__frame {
+  position: relative;
+  display: block;
+  perspective: 900px;
+}
+
+.k2b-cover {
+  display: block;
+  width: 100%;
+  height: auto;
+  aspect-ratio: 2 / 3;
+  object-fit: cover;
+  background: var(--k-raised);
+  clip-path: polygon(0 0, calc(100% - 14px) 0, 100% 14px, 100% 100%, 14px 100%, 0 calc(100% - 14px));
+  transform-origin: left center;
+  transition:
+    transform var(--k-base) var(--k-ease),
+    filter var(--k-base) var(--k-ease);
+}
+
+.k2b-cover--plain {
+  display: flex;
+  align-items: flex-end;
+  padding: 16px 12px;
+  overflow: hidden;
+  background: var(--c);
+  color: var(--k-ink);
+  font-size: 0.875rem;
+  font-weight: 700;
+  line-height: 1.15;
+  overflow-wrap: anywhere;
+}
+
+/* Sacar la obra de la estantería: gira sobre su lomo. */
+@media (hover: hover) {
+  .k2b-work__link:hover .k2b-cover {
+    transform: rotateY(-14deg);
+  }
+}
+
+/* Abandonada: sigue aquí, pero sin color. Recupera el color al señalarla. */
+.k2b-work[data-status="abandoned"] .k2b-cover {
+  filter: grayscale(1) brightness(0.7);
+}
+
+@media (hover: hover) {
+  .k2b-work[data-status="abandoned"] .k2b-work__link:hover .k2b-cover {
+    filter: none;
+  }
+}
+
+.k2b-work[data-status="abandoned"] .k2b-work__link:focus-visible .k2b-cover {
+  filter: none;
+}
+
+.k2b-work__link:focus-visible {
+  outline-offset: 4px;
+}
+
+/* A medias: cuánto llevas, sin cifra. */
+.k2b-work__bar {
+  position: absolute;
+  inset: auto 0 -6px;
+  display: block;
+  height: 3px;
+  background: var(--k-line);
+}
+
+.k2b-work__bar span {
+  display: block;
+  height: 100%;
+  background: var(--c);
+}
+
+.k2b-work__title {
+  display: -webkit-box;
+  margin: 10px 0 0;
+  overflow: hidden;
+  font-family: var(--k-font-voice);
+  font-size: 0.9375rem;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  line-height: 1.2;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+}
+
+.k2b-work__meta {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 4px;
+  color: var(--k-dim);
+  font-size: 0.8125rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.k2b-work__meta i {
+  flex: none;
+  width: 6px;
+  height: 6px;
+  background: var(--c);
+}
+
+@media (hover: hover) {
+  .k2b-work__link:hover .k2b-work__title {
+    text-decoration: underline;
+    text-underline-offset: 3px;
+  }
+}
+
+/* Vacíos: enseñan qué hacer, sin caja ni icono. */
+.k2b-empty {
+  padding-block: 24px;
+}
+
+.k2b-empty h2 {
+  margin: 0 0 8px;
+  font-family: var(--k-font-voice);
+  font-size: 1.5rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  line-height: 1.15;
+}
+
+.k2b-empty p {
+  max-width: 48ch;
+  margin: 0 0 24px;
+  color: var(--k-dim);
+}
+
+/* Quitar filtros no es la acción de la pantalla: no merece el acento. */
+.k2b-empty__reset {
+  --btn-bg: var(--k-bone);
+}
+
+/* Diario */
+.k2b-diary {
+  display: flex;
+  flex-direction: column;
+  gap: 40px;
+}
+
+.k2b-month h2 {
+  margin: 0 0 8px;
+  font-family: var(--k-font-voice);
+  font-size: 1.5rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  line-height: 1.15;
+}
+
+.k2b-month h2::first-letter {
+  text-transform: uppercase;
+}
+
+.k2b-month ul {
+  margin: 0;
+  padding: 0;
+  border-top: 1px solid var(--k-line);
+  list-style: none;
+}
+
+.k2b-log {
+  --c: var(--k-tv);
+  display: grid;
+  grid-template-columns: 56px minmax(0, 1fr) auto;
+  align-items: start;
+  gap: 16px;
+  padding: 16px 0;
+  border-bottom: 1px solid var(--k-line);
+}
+
+.k2b-log .k2b-cover {
+  clip-path: polygon(0 0, calc(100% - 8px) 0, 100% 8px, 100% 100%, 0 100%);
+}
+
+.k2b-log .k2b-cover--plain {
+  padding: 6px;
+  font-size: 0.625rem;
+}
+
+.k2b-log__cover {
+  display: block;
+}
+
+.k2b-log__body h3 {
+  margin: 0;
+  font-family: var(--k-font-voice);
+  font-size: 1.125rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  line-height: 1.2;
+}
+
+.k2b-log__body h3 a {
+  color: inherit;
+  text-decoration: none;
+}
+
+@media (hover: hover) {
+  .k2b-log__body h3 a:hover {
+    text-decoration: underline;
+    text-underline-offset: 4px;
+  }
+}
+
+.k2b-log__body h3 span {
+  color: var(--k-dim);
+  font-family: var(--font-body, inherit);
+  font-size: 0.875rem;
+  font-weight: 400;
+  letter-spacing: 0;
+}
+
+.k2b-log__meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0 12px;
+  margin: 4px 0 0;
+  color: var(--k-dim);
+  font-size: 0.875rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.k2b-log__meta b {
+  color: var(--k-bone);
+  font-weight: 600;
+}
+
+.k2b-log__review {
+  max-width: 65ch;
+  margin: 10px 0 0;
+  white-space: pre-line;
+}
+
+.k2b-log__hidden {
+  margin: 10px 0 0;
+  color: var(--k-dim);
+  font-style: italic;
+}
+
+.k2b-log__note {
+  max-width: 65ch;
+  margin: 8px 0 0;
+  color: var(--k-dim);
+  font-size: 0.875rem;
+}
+
+.k2b-log__note b {
+  font-weight: 600;
+}
+
+.k2b-log__delete {
+  color: var(--k-dim);
+  font-weight: 400;
+}
+
+.k2b-log__delete:disabled {
+  cursor: default;
+  opacity: 0.6;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .k2b-cover,
+  .k2b-rail__item {
+    transition: none;
+  }
+
+  .k2b-work__link:hover .k2b-cover {
+    transform: none;
+  }
+}
+
+/* Móvil: el raíl se tumba y sus grupos se desplazan; se queda arriba, no se pega. */
+@media (max-width: 900px) {
+  /* El mismo margen que `.page-grid`: los grupos llegan hasta el borde al desplazarse. */
+  .k2b {
+    --k2b-gutter: 16px;
+    display: block;
+    padding-block: 20px 48px;
+  }
+
+  .k2b-title {
+    width: 100%;
+    font-size: 2rem;
+  }
+
+  .k2b-more {
+    display: block;
+    min-height: 44px;
+    margin-left: auto;
+  }
+
+  .k2b-rail__extra[data-open="false"] {
+    display: none;
+  }
+
+  .k2b-rail {
+    position: static;
+    max-height: none;
+    overflow: visible;
+    margin-bottom: 16px;
+  }
+
+  .k2b-rail__group,
+  .k2b-rail__extra {
+    flex-direction: row;
+    gap: 4px;
+    margin: 0 calc(var(--k2b-gutter) * -1) 8px;
+    padding: 0 var(--k2b-gutter);
+    overflow-x: auto;
+    border-bottom: 0;
+    scrollbar-width: none;
+  }
+
+  .k2b-rail__group::-webkit-scrollbar,
+  .k2b-rail__extra::-webkit-scrollbar {
+    display: none;
+  }
+
+  .k2b-rail__item {
+    flex: none;
+    width: auto;
+    min-height: 44px;
+    gap: 8px;
+    border: 1px solid var(--k-line);
+    clip-path: none;
+  }
+
+  .k2b-rail__item[aria-pressed="true"] {
+    border-color: var(--k-bone);
+  }
+
+  .k2b-rail__extra {
+    align-items: center;
+    gap: 16px;
+  }
+
+  .k2b-score {
+    flex: none;
+    flex-wrap: nowrap;
+  }
+
+  .k2b-score span {
+    width: auto;
+    margin: 0 4px 0 0;
+    white-space: nowrap;
+  }
+
+  .k2b-views button,
+  .k2b-score button,
+  .k2b-fav {
+    min-height: 44px;
+    white-space: nowrap;
+  }
+
+  .k2b-score button {
+    flex: none;
+    min-width: 44px;
+  }
+
+  .k2b-fav {
+    flex: none;
+  }
+
+  .k2b-wall {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 20px 10px;
+  }
+
+  .k2b-cover {
+    clip-path: polygon(0 0, calc(100% - 10px) 0, 100% 10px, 100% 100%, 10px 100%, 0 calc(100% - 10px));
+  }
+
+  .k2b-cover--plain {
+    padding: 10px 8px;
+    font-size: 0.75rem;
+  }
+
+  .k2b-work__title {
+    margin-top: 8px;
+    font-size: 0.875rem;
+  }
+
+  .k2b-head {
+    margin-bottom: 16px;
+  }
+
+  .k2b-log {
+    grid-template-columns: 48px minmax(0, 1fr);
+    gap: 12px;
+  }
+
+  .k2b-log__delete {
+    grid-column: 2;
+    justify-self: start;
+    margin-top: -8px;
+  }
+}
+
+/* En tres columnas no cabe: que el formato no parta la línea y descuadre la fila. */
+@media (max-width: 500px) {
+  .k2b-work__year {
+    display: none;
+  }
+}
+
+/* El margen de `.page-grid` cambia en `md`, no donde cambian las columnas. */
+@media (min-width: 768px) and (max-width: 900px) {
+  .k2b {
+    --k2b-gutter: 32px;
+  }
+}
+
+@media (min-width: 701px) and (max-width: 900px) {
+  .k2b-wall {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 24px 12px;
+  }
+}
+
+/* Esqueleto: misma retícula que la pantalla, para que al cargar nada salte. */
+.k2b-skelwrap {
+  display: contents;
+}
+
+.k2b-skel {
+  background: var(--k-raised);
+}
+
+.k2b-skel--cover {
+  aspect-ratio: 2 / 3;
+  clip-path: polygon(0 0, calc(100% - 14px) 0, 100% 14px, 100% 100%, 14px 100%, 0 calc(100% - 14px));
+}
+
+.k2b-skel--line {
+  height: 14px;
+  margin-top: 10px;
+}
+
+.k2b-skel--row {
+  height: 40px;
+}
+
+.k2b-skel--views {
+  width: 136px;
+  height: 40px;
+}
+
+@media (max-width: 900px) {
+  .k2b-skel--title {
+    height: 34px;
+  }
+
+  .k2b-skel--views {
+    flex: 0 0 100%;
+    height: 44px;
+  }
+
+  .k2b-skel--row {
+    flex: none;
+    width: 96px;
+    height: 44px;
+  }
+}
+
+.k2b-skel--title {
+  width: min(320px, 70vw);
+  height: 40px;
+}
