@@ -18,8 +18,8 @@ export interface PaginationProps {
 }
 
 // Sentinel de elipsis dentro de la lista de páginas a renderizar.
-const ELLIPSIS = "ellipsis" as const;
-type PageEntry = number | typeof ELLIPSIS;
+export const ELLIPSIS = "ellipsis" as const;
+export type PageEntry = number | typeof ELLIPSIS;
 
 /**
  * Ventana de paginación: SIEMPRE primera (1) y última (total); alrededor de la
@@ -27,7 +27,7 @@ type PageEntry = number | typeof ELLIPSIS;
  * ventana es estrecha (1 vecino a cada lado) → como mucho 7 entradas, no
  * desborda en viewport angosto.
  */
-function buildPageWindow(current: number, total: number | null): PageEntry[] {
+export function buildPageWindow(current: number, total: number | null): PageEntry[] {
   // E79 slice 2: total no fiable (post-filtro activo). Ventana abierta anclada en
   // [1] con current±1, SIN última [N] (el N crudo miente) y sin salto a ella. Una
   // elipsis final señala "puede haber más" — el gate real de avance es hasMore.

@@ -40,3 +40,9 @@ El visto bueno de estas herramientas no sustituye a la aprobación de Víctor: l
 - **Impeccable** (`operate.md`, `craft-floor.md`): modo Operate. Cambió: tipo fijo en rem, esqueleto con la forma real, vacíos que dicen qué hacer, sin cajas ni iconos en ellos. Su detector solo corrió por expresiones regulares sobre `src/v2/library`: limpio, pero es un recuento parcial.
 - **Taste** (`inspect.mjs --app`): subió el texto de 12 a 13 px. Avisa del título de 40 px: se mantiene igual que Inicio, para que las dos pantallas coincidan.
 - **Emil / Design Motion:** la portada gira sobre su lomo a 200 ms y solo con ratón; color y foco, sin animación añadida.
+
+## Descubrir (2026-11-09)
+
+- **Impeccable** (`context`, `operate.md`, `craft-floor.md`, modo Operate): tipo fijo en rem, esqueleto con la forma real de la pared, vacíos que dicen qué hacer con una sola acción, estados de error y carga propios. Su detector solo corrió por expresiones regulares sobre `src/v2/discover`: limpio, sin valor de prueba completa.
+- **Taste** (`inspect.mjs --app`, con proxy local para la sesión simulada): no cambió nada. **2 FAIL descartados:** `contrast` (el relleno del formato activo va en `::before` y no lo ve; axe pasa) y `ui-wrapper` (confunde nuestro `data-ui`). **Avisos:** título de 40 px, igual que Inicio y Biblioteca; hueso, color de marca; `tiny-text` y `hero-void`, por el pie legal y porque esa pasada iba sin datos. Ningún texto de la pantalla baja de 13 px.
+- **Emil:** sin animación al navegar con teclado ni al paginar; `:active` de 0,97–0,98 en pulsables; la pared se atenúa con 120 ms de retardo para que una respuesta rápida no parpadee; una sola entrada con movimiento en toda la pantalla, la de «Sorpréndeme».

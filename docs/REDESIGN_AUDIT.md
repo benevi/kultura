@@ -25,7 +25,8 @@ Referencias, sin copiar: Bruno Simon (objeto 3D con personalidad que reacciona a
 ### Alcance real por pantalla
 - **Reconstruida:** portada (`/es`, `/en`) e Inicio (`/home`, §10).
 - **Piel + ajustes propios, verificada con captura:** login/registro (`AuthShell`), ficha (`media`, con color por formato).
-- **Piel, sin captura porque exige sesión:** discover, search, lists, profile, settings, import, calendar, chat, groups, friends, notifications, suggestions, welcome. **No verificadas visualmente.**
+- **Reconstruida también:** Biblioteca (§11) y Descubrir (§12).
+- **Piel, sin captura porque exige sesión:** search, lists, profile, settings, import, calendar, chat, groups, friends, notifications, suggestions, welcome. **No verificadas visualmente.**
 - **Piel, sin captura:** perfiles públicos `u/*`, report, reset-password, email/*.
 - **Sin piel hasta `UI_V2_DEFAULT`:** rankings `best/*`, legales, offline, cuñas `series`/`anime` (estáticas, no leen la cookie). Con `UI_V2_DEFAULT=1` tampoco la reciben hoy: falta decidir cómo (ver §7).
 - **No reconstruidas:** el master prompt pide rediseñar todas. Aquí hay identidad común, no una composición nueva por pantalla. Es la parte pendiente más grande.
@@ -124,3 +125,24 @@ Pantalla nueva en `src/v2/library/`, tras `ui_v2`. Modo Operate: el raíl dice l
 
 **Sin probar:** BD real y CUJ, preview de Vercel, Safari, Firefox, táctil real, lector de pantalla real. **`error.tsx` sigue siendo el de la v1.**
 **Reconocido y no arreglado:** el aviso de Taste sobre color crema (es el hueso de la marca), fuentes no repartidas (son las de la marca) y `data-ui` en la página (es el interruptor).
+
+## 12. Descubrir (2026-11-09, D-V2m)
+
+Pantalla nueva en `src/v2/discover/`, tras `ui_v2`. Modo Operate: elegir formato, filtrar y abrir una obra. No repite el abanico de la portada, ni las filas de Inicio, ni el raíl de Biblioteca.
+
+**Se conserva de la v1:** ocho formatos, filtros por formato con recuento, orden, búsqueda con sugerencias, paginación, «Sorpréndeme», portadas fallidas fuera, mismos parámetros de URL y `data-testid`.
+**Cambia:** ver D-V2m. Lo principal: sin ir al servidor al filtrar, error con «Reintentar» y sin eco de lo escrito.
+
+**Medido con Supabase simulado y `/api/discover` simulado con portadas reales, build de producción:**
+| Comprobación | Resultado |
+|---|---|
+| Anchos 1440, 1024, 900, 768, 390, 320 y reduced-motion a 1440 y 390 | sin desborde, consola sin errores salvo `_vercel/*` y websocket del simulador |
+| axe serious/critical | 0 en pared, filtro abierto, vacío y «Sorpréndeme» |
+| CLS | ≤ 0,0001, también de esqueleto a pared con respuesta lenta |
+| Recorrido por `/api/ui-v2?v=1&next=/es/discover` | llega a la v2; sin cookie sigue la v1 |
+| Formatos, flechas, filtros, búsqueda, vacíos, error, «Reintentar», paginación, Atrás, foco | correctos, sin recarga de documento |
+| Peso de `/[locale]/discover` | `next build`: **182 kB (178 kB con `page.tsx` de HEAD; tope 150): sigue por encima**, la v2 añade 4 kB. En navegador, las dos UI descargan lo mismo: 305 KB de JS transferidos |
+
+**Encontrado al probar y corregido:** las sugerencias se abrían sobre el vacío tras Enter; en móvil, «Ver ficha» quedaba bajo la barra inferior.
+
+**Sin probar:** BD real y CUJ, proveedores reales (`/api/discover` simulado, salvo una pasada sin red que dio vacío), preview de Vercel, Lighthouse, Safari, Firefox, táctil real, lector de pantalla real. **`error.tsx` sigue siendo el de la v1.**

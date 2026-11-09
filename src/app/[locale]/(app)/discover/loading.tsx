@@ -1,4 +1,11 @@
-export default function DiscoverLoading() {
+import { isUiV2Enabled } from "@/lib/ui-v2";
+
+export default async function DiscoverLoading() {
+  if (await isUiV2Enabled()) {
+    const { DiscoverSkeleton } = await import("@/v2/discover/DiscoverSkeleton");
+    return <DiscoverSkeleton />;
+  }
+
   return (
     <main className="page-grid py-8">
       {/* Filter bar skeleton */}
