@@ -23,7 +23,6 @@ Inicio y Biblioteca solo se han visto con Supabase simulado. Falta BD real y CUJ
 
 ## Decide Víctor
 - Portada girada de Inicio frente al veto de repetir composición.
-- Abandonada en blanco y negro, sin etiqueta: ¿basta? (D-V2l)
 - Títulos en inglés de AniList en la página en español.
 - Licencias de imágenes (TMDB, AniList, Steam, Open Library).
 - `CLAUDE.md` (Preferencias) sigue citando el plan §6: conviene actualizarlo.
