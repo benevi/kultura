@@ -12,6 +12,7 @@ import {
   isStaticCspRoute,
 } from "@/lib/csp";
 import { DEMO_READ_ONLY_ERROR, isBlockedForDemo, isDemoUser } from "@/lib/demo";
+import { UI_V2_COOKIE, resolveUiV2 } from "@/lib/ui-v2-shared";
 
 const intlMiddleware = createIntlMiddleware(routing);
 
@@ -53,7 +54,19 @@ export async function middleware(request: NextRequest) {
   // Un ranking que no existe (/es/best/movie/abc) no llega a la página: se
   // guardaría en la caché ISR, una entrada por URL inventada. Va a la 404
   // dinámica (abajo), con nonce y sin caché.
-  const invalidBest = isInvalidBestPath(pathname);
+  // La ruta interna de la portada v2 tampoco se sirve directa: sería una segunda
+  // portada indexable. Mismo camino, para que lleve CSP con nonce y no se cachee.
+  const invalidBest = isInvalidBestPath(pathname) || /^\/(es|en)\/portada-v2\/?$/.test(pathname);
+
+  // UI v2 de la portada: `/es` es estática y no puede leer la cookie, pero el
+  // middleware corre antes de la caché. Se reescribe sin cambiar la URL, con la
+  // misma CSP fija (`next.config.mjs` la pone por la ruta original).
+  const portada = /^\/(es|en)\/?$/.exec(pathname);
+  if (portada && resolveUiV2(request.cookies.get(UI_V2_COOKIE)?.value, process.env.UI_V2_DEFAULT)) {
+    const target = request.nextUrl.clone();
+    target.pathname = `/${portada[1]}/portada-v2`;
+    return NextResponse.rewrite(target);
+  }
 
   if (isStaticCspRoute(pathname) && !invalidBest) {
     const response = intlMiddleware(request);

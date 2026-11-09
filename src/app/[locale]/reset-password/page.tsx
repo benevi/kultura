@@ -1,6 +1,7 @@
 import { Suspense } from "react";
 import type { Metadata } from "next";
 import { getTranslations } from "next-intl/server";
+import { V2Scope } from "@/v2/V2Scope";
 import { ResetPasswordForm } from "./ResetPasswordForm";
 
 interface ResetPasswordRouteProps {
@@ -28,8 +29,10 @@ export async function generateMetadata({ params }: ResetPasswordRouteProps): Pro
 export default async function ResetPasswordRoute({ params }: ResetPasswordRouteProps) {
   const { locale } = await params;
   return (
-    <Suspense>
-      <ResetPasswordForm locale={locale} />
-    </Suspense>
+    <V2Scope>
+      <Suspense>
+        <ResetPasswordForm locale={locale} />
+      </Suspense>
+    </V2Scope>
   );
 }

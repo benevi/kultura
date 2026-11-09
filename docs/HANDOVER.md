@@ -1,27 +1,34 @@
-# HANDOVER — última sesión (2026-11-08)
+# HANDOVER — última sesión (2026-11-09)
 
-**Fase:** F2 reiniciada desde el paso 1 de §6.1 (D-F2p). **Rama:** `docs/f2-reinicio` (desde `master` 4937408).
+**Rama:** `feat/v2-rediseno-integral`. Todo tras `ui_v2` (cookie o `UI_V2_DEFAULT=1`): sin él, la web sigue igual. Detalle: `docs/REDESIGN_AUDIT.md`. Decisiones: D-V2a…g.
 
 ## Hecho
-- Borrado todo F2 a petición de Víctor: `docs/02_DISEÑO_BRIEF.md`, `docs/03_DESIGN_SYSTEM.md`, `docs/VOZ.md`, `prototipos/` entero (también `login/` y las PNG locales, irrecuperables), `.impeccable/`, `.taste-skill/`, `PRODUCT.md` y 3 artifacts.
-- PR #88, #65 y #66 cerrados sin fusionar. Sus ramas siguen en el remoto.
-- D-F2a…o anuladas. `DISENO.md` y `VOZ.md` de la raíz se quedan: sirven a la v1 y a sus tests.
-- Python 3.12 instalado con winget para el buscador de `ui-ux-pro-max`.
+- Dirección «Láminas», elegida por Víctor («Fusions»), sin que haya visto aún el resultado.
+- **Portada reconstruida** (`/es`, `/en`) con motor WebGL propio y póster como alternativa.
+- **Piel común** en todas las rutas dinámicas (`V2Scope`, `skin.css`). Acceso y ficha con ajustes propios y captura.
+- Revisión independiente hecha; graves corregidos (`04_DECISIONES` §4).
 
-## Reglas del reinicio
-- Solo son fijos los vetos de Víctor y la anti-lista. Se abren negro exacto, tipografía, chaflán, curvas, logo, titular y firma; sigue siendo oscuro.
-- Las respuestas de producto se vuelven a preguntar.
-- Skills por paso, comprobadas en la transcripción y registradas. La causa del fallo fue usar `taste-skill` solo para `lint` e `inspect`, sin `draw.mjs`, y `ui-ux-pro-max` sin buscador.
+## Sin hacer (es lo más grande)
+- **Las pantallas interiores no están rediseñadas**: tienen piel, no composición propia. El master prompt pide todas.
+- **Sin ver:** home, discover, search, library, lists, profile, settings, import, calendar, chat, groups, friends, notifications, suggestions, welcome, `u/*`, report, reset-password, email/*. Exigen sesión o no se capturaron.
+- **Sin piel:** best, legales, offline, series, anime (estáticas).
+
+## Sin probar
+Preview de Vercel (caché de `/es`: `x-vercel-cache` y ETag con y sin cookie), CUJ con BD real, Safari, Firefox, dispositivos físicos, fps medidos, Lighthouse tras los últimos arreglos.
 
 ## Siguiente
-Paso 1, plataforma de marca: `impeccable init` con las preguntas de producto a Víctor. No diseñar antes de responderlas.
+1. Víctor mira la preview del PR con `ui_v2=1` y da nota contra los vetos.
+2. Con su sesión, verificar las pantallas interiores y reconstruirlas una a una (home y biblioteca primero).
+
+## Decide Víctor
+- La portada usa una obra real con episodio fijo como muestra (`+1` no guarda nada). ¿Se queda?
+- Franja negra opaca del marcador: corta el objeto 3D al hacer scroll parcial. Se dejó por legibilidad.
+- `CLAUDE.md` (Preferencias) sigue citando Bricolage/chaflán y el plan §6: conviene actualizarlo.
 
 ## Ojo
-- Choque con lo escrito: `CLAUDE.md` (Preferencias) y plan §6.4 siguen citando negro, fuentes y chaflán. Manda D-F2p; proponer a Víctor actualizar `CLAUDE.md`.
-- Quedan artifacts privados de rondas anteriores (tiles, muestra): no se tocaron.
-- Python: si la consola falla por codificación, usar `PYTHONIOENCODING=utf-8`. Ruta: `%LOCALAPPDATA%\Programs\Python\Python312\python.exe`; abrir terminal nueva para el PATH.
-- `tests/unit/visual/scales.test.ts:108` falla en `master`: `Header.tsx` y `AuthHeader.tsx` sin `page-grid`. Anterior a esta rama.
-- JS inicial de `/es` (v1): 149.793 B de 153.600. Sin margen.
-- Fuera de git a propósito: `.playwright-mcp/`, `.lighthouseci/`, `PLAN_ESTRATEGICO.md` y `docs/auditoria/`.
-- Sigue en pie: backup del lunes 2026-11-09 (R10), rotar la contraseña de la base, copia de `kultura-backup.key`, entrevistas de F1, R9.
-- Squash-merge solo con el OK de Víctor.
+- `vitest`: 15 fallos heredados, ninguno de esta rama; `register-form` a veces falla por tiempo.
+- `/es` v2 148.365 B de 153.600: poco margen. Nada de GSAP/Three sin medir.
+- Fuera de git a propósito: `PLAN_ESTRATEGICO.md`, `docs/auditoria/`, `.lighthouseci/`, `.playwright-mcp/`, `.taste-skill/`, `PROMPT_INICIO.txt`, snapshots de `tests/unit/catalogo` (solo finales de línea).
+- `next build` y `next dev` chocan en `.next`.
+- Pendiente de Víctor: backup de hoy (R10), rotar contraseña de BD y `SUPABASE_DB_URL` (se pegó en una sesión), copia de `kultura-backup.key`, entrevistas F1.
+- Squash-merge solo con su OK.

@@ -5,6 +5,7 @@ import { getUnreadCount } from "@/lib/social/notifications";
 import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/layout/Footer";
 import { ToastProvider } from "@/components/ui/ToastProvider";
+import { V2Scope } from "@/v2/V2Scope";
 
 /**
  * Ficha pública (D-01). Con sesión se ve dentro de la app (cabecera, avisos,
@@ -23,21 +24,25 @@ export default async function MediaLayout({ children }: { children: React.ReactN
   if (user && profile) {
     const unreadCount = await getUnreadCount(user.id);
     return (
-      <AppChrome user={user} profile={profile} unreadCount={unreadCount}>
-        {page}
-      </AppChrome>
+      <V2Scope>
+        <AppChrome user={user} profile={profile} unreadCount={unreadCount}>
+          {page}
+        </AppChrome>
+      </V2Scope>
     );
   }
 
   // Sin perfil pero con sesión (alta a medias) la ficha ya ofrece biblioteca y
   // listas, que avisan con toasts: el proveedor va también aquí.
   return (
-    <ToastProvider>
-      <div className="min-h-dvh flex flex-col">
-        <Header />
-        <div className="flex-1">{page}</div>
-        <Footer />
-      </div>
-    </ToastProvider>
+    <V2Scope>
+      <ToastProvider>
+        <div className="min-h-dvh flex flex-col">
+          <Header />
+          <div className="flex-1">{page}</div>
+          <Footer />
+        </div>
+      </ToastProvider>
+    </V2Scope>
   );
 }

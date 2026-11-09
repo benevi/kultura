@@ -1,0 +1,526 @@
+/* KULTURA v2 — Portada «Láminas» */
+
+.k2-portada {
+  overflow-x: clip;
+}
+
+/* ── Escenario: un lienzo fijo y el contenido pasando por delante ───────── */
+
+.k2-stage {
+  position: relative;
+  isolation: isolate;
+  background: var(--k-ground);
+}
+
+.k2-stage__headline {
+  position: absolute;
+  inset: 0 0 auto 0;
+  z-index: 0;
+  height: 100svh;
+  display: flex;
+  align-items: center;
+  padding: 0 var(--k-gutter) clamp(9rem, 22svh, 13rem);
+  pointer-events: none;
+}
+
+.k2-wall {
+  margin: 0;
+  font-family: var(--k-font-display);
+  font-size: min(25svh, 24.5vw);
+  font-weight: 800;
+  line-height: 0.82;
+  letter-spacing: -0.03em;
+  text-transform: uppercase;
+  color: var(--k-bone);
+}
+
+.k2-wall span {
+  display: block;
+}
+
+.k2-stage__sticky {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  height: 100svh;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.k2-stage__canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+/* Sin WebGL: la misma pose, plana y quieta. */
+.k2-stage__poster {
+  position: absolute;
+  right: 9vw;
+  top: 50%;
+  width: auto;
+  height: 72svh;
+  transform: translateY(-52%) perspective(1400px) rotateY(-30deg) rotateX(5deg);
+  box-shadow:
+    6px 0 0 var(--k-accent),
+    12px 0 0 var(--k-raised),
+    18px 0 0 var(--k-accent),
+    24px 0 0 var(--k-raised);
+  transition: opacity var(--k-base) var(--k-ease);
+}
+
+.k2-stage__poster.is-hidden {
+  opacity: 0;
+}
+
+.k2-stage__hero {
+  position: relative;
+  z-index: 2;
+  margin-top: -100svh;
+  min-height: 100svh;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  pointer-events: none;
+}
+
+.k2-stage__hero > * {
+  pointer-events: auto;
+}
+
+/* ── Navegación ─────────────────────────────────────────────────────────── */
+
+.k2-nav {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.75rem var(--k-gutter);
+}
+
+.k2-nav__mark {
+  font-family: var(--k-font-display);
+  font-size: 1.75rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  line-height: 1;
+  color: var(--k-bone);
+  text-decoration: none;
+}
+
+.k2-nav__login {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  font-family: var(--k-font-voice);
+  font-weight: 700;
+  color: var(--k-bone);
+  text-underline-offset: 0.25em;
+}
+
+/* ── Banda inferior: el marcador vivo y la acción ───────────────────────── */
+
+.k2-stage__band {
+  display: grid;
+  grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr);
+  gap: var(--k-gap) clamp(1rem, 4vw, 4rem);
+  align-items: end;
+  padding: 1rem var(--k-gutter) 1.25rem;
+  background: var(--k-ground);
+}
+
+.k2-tracker__formats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem 1rem;
+}
+
+.k2-tracker__format {
+  min-height: 44px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--k-dim);
+  font-family: var(--k-font-voice);
+  font-size: var(--k-step-body);
+  font-weight: 700;
+  cursor: pointer;
+  transition: color var(--k-fast) var(--k-ease);
+}
+
+.k2-tracker__format[aria-pressed="true"] {
+  color: var(--k-accent);
+  text-decoration: underline;
+  text-decoration-thickness: 2px;
+  text-underline-offset: 0.3em;
+}
+
+@media (hover: hover) {
+  .k2-tracker__format:hover {
+    color: var(--k-bone);
+  }
+}
+
+.k2-tracker__row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.k2-tracker__now {
+  margin: 0;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.k2-tracker__title {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--k-dim);
+}
+
+.k2-tracker__unit {
+  font-family: var(--k-font-voice);
+  font-size: var(--k-step-lead);
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
+}
+
+.k2-tracker__plus {
+  flex: none;
+  min-width: 72px;
+  font-size: var(--k-step-lead);
+}
+
+.k2-hero-actions__lead {
+  margin: 0 0 0.75rem;
+  max-width: 38ch;
+  font-size: var(--k-step-lead);
+  line-height: 1.25;
+}
+
+.k2-hero-actions,
+.k2-tracker {
+  min-width: 0;
+}
+
+.k2-hero-actions__row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem 1.25rem;
+}
+
+/* ── Relato: bloques planos que pasan sobre el lienzo ───────────────────── */
+
+.k2-cap {
+  position: relative;
+  z-index: 2;
+  min-height: 130svh;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: flex-start;
+  padding: 0 var(--k-gutter);
+}
+
+.k2-cap > * {
+  max-width: 18ch;
+  background: var(--k-ground);
+  padding: 0.35em 0.5em;
+  margin: 0;
+}
+
+.k2-cap--right {
+  align-items: flex-end;
+}
+
+.k2-cap__title {
+  font-family: var(--k-font-display);
+  font-size: var(--k-step-head);
+  font-weight: 800;
+  line-height: 0.95;
+  letter-spacing: -0.02em;
+  text-transform: uppercase;
+}
+
+.k2-cap__text {
+  max-width: 36ch;
+  font-size: var(--k-step-lead);
+  line-height: 1.3;
+}
+
+/* ── Siete hojas de color que se apilan como carpetas ───────────────────── */
+
+.k2-sheets {
+  position: relative;
+  background: var(--k-ground);
+  padding-top: var(--k-section);
+}
+
+.k2-sheets__title {
+  margin: 0 0 2rem;
+  padding: 0 var(--k-gutter);
+  font-family: var(--k-font-display);
+  font-size: var(--k-step-head);
+  font-weight: 800;
+  line-height: 0.95;
+  letter-spacing: -0.02em;
+  text-transform: uppercase;
+}
+
+.k2-sheet {
+  --i: 0;
+  --sheet: var(--k-tv);
+  --band: 46px;
+  position: sticky;
+  top: calc(var(--i) * var(--band));
+  min-height: calc(100svh - var(--i) * var(--band));
+  overflow: hidden;
+  display: grid;
+  grid-template-columns: minmax(0, 7fr) minmax(0, 5fr);
+  grid-template-rows: auto 1fr;
+  column-gap: var(--k-gutter);
+  padding: 0 var(--k-gutter) var(--k-gutter);
+  background: var(--sheet);
+  color: var(--k-ink);
+}
+
+.k2-sheet__name {
+  grid-column: 1 / -1;
+  margin: 0;
+  padding-top: 0.04em;
+  font-family: var(--k-font-display);
+  font-size: var(--k-step-wall);
+  font-weight: 800;
+  line-height: 0.82;
+  letter-spacing: -0.03em;
+  text-transform: uppercase;
+}
+
+.k2-sheet__line {
+  align-self: end;
+  margin: 0;
+  max-width: 24ch;
+  font-family: var(--k-font-voice);
+  font-size: var(--k-step-head);
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: -0.02em;
+}
+
+.k2-sheet__cover {
+  justify-self: end;
+  align-self: end;
+  width: min(100%, 52svh);
+  height: auto;
+  aspect-ratio: 2 / 3;
+  object-fit: cover;
+  rotate: 4deg;
+  margin-bottom: -6svh;
+}
+
+/* ── Español de verdad ──────────────────────────────────────────────────── */
+
+.k2-statement {
+  position: relative;
+  padding: var(--k-section) var(--k-gutter);
+  background: var(--k-ground);
+}
+
+.k2-statement__title {
+  margin: 0;
+  font-family: var(--k-font-display);
+  font-size: var(--k-step-wall);
+  font-weight: 800;
+  line-height: 0.84;
+  letter-spacing: -0.03em;
+  text-transform: uppercase;
+  max-width: 10ch;
+}
+
+.k2-statement__text {
+  margin: 2rem 0 0 auto;
+  max-width: 34ch;
+  font-size: var(--k-step-lead);
+  line-height: 1.3;
+}
+
+/* ── Importar ───────────────────────────────────────────────────────────── */
+
+.k2-import {
+  padding: 0 var(--k-gutter) var(--k-section);
+  background: var(--k-ground);
+}
+
+.k2-import__title {
+  margin: 0 0 1.5rem;
+  max-width: 24ch;
+  font-family: var(--k-font-voice);
+  font-size: var(--k-step-head);
+  font-weight: 800;
+  line-height: 1;
+  letter-spacing: -0.02em;
+}
+
+.k2-import__list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem 1.5rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  color: var(--k-dim);
+  font-size: var(--k-step-lead);
+}
+
+/* ── Cierre ─────────────────────────────────────────────────────────────── */
+
+.k2-close {
+  min-height: 90svh;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 3rem;
+  padding: var(--k-gutter);
+  background: var(--k-tv);
+  color: var(--k-ink);
+}
+
+.k2-close__title {
+  margin: 0;
+  font-family: var(--k-font-display);
+  font-size: clamp(5rem, 2rem + 16vw, 17rem);
+  font-weight: 800;
+  line-height: 0.82;
+  letter-spacing: -0.03em;
+  text-transform: uppercase;
+}
+
+.k2-close__row {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: end;
+  gap: 1.5rem;
+}
+
+.k2-close__text {
+  margin: 0;
+  max-width: 34ch;
+  font-size: var(--k-step-lead);
+  line-height: 1.25;
+}
+
+.k2-btn--ink {
+  --btn-bg: var(--k-ink);
+  --btn-fg: var(--k-bone);
+  min-width: 14rem;
+}
+
+@media (hover: hover) {
+  .k2-btn--ink:hover {
+    --btn-bg: var(--k-raised);
+  }
+}
+
+/* ── Pie: siete letras, siete formatos ──────────────────────────────────── */
+
+.k2-foot {
+  padding: var(--k-gutter);
+  background: var(--k-ground);
+  color: var(--k-dim);
+  font-size: var(--k-step-small);
+}
+
+.k2-foot__links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem 1.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.k2-foot__links a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  color: var(--k-bone);
+  text-underline-offset: 0.25em;
+}
+
+.k2-foot__credits {
+  max-width: 70ch;
+}
+
+.k2-foot__credits a {
+  color: var(--k-bone);
+}
+
+/* ── Móvil: diseñado para el pulgar ─────────────────────────────────────── */
+
+@media (max-width: 719px) {
+  .k2-stage__headline {
+    align-items: flex-start;
+    padding: 4.25rem var(--k-gutter) 0;
+  }
+
+  .k2-wall {
+    font-size: 30vw;
+    line-height: 0.82;
+  }
+
+  .k2-stage__poster {
+    right: -6vw;
+    top: 56%;
+    height: 38svh;
+    transform: translateY(-50%) perspective(900px) rotateY(-26deg) rotateX(4deg);
+  }
+
+  .k2-stage__band {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .k2-hero-actions__lead {
+    margin-bottom: 0.5rem;
+    font-size: var(--k-step-body);
+  }
+
+  .k2-hero-actions__row .k2-btn {
+    flex: 1 1 auto;
+  }
+
+  .k2-sheet {
+    --band: 30px;
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: auto auto 1fr;
+  }
+
+  .k2-sheet__name {
+    font-size: clamp(4rem, 20vw, 7rem);
+  }
+
+  .k2-sheet__line {
+    align-self: start;
+    margin-top: 0.75rem;
+    font-size: var(--k-step-lead);
+    line-height: 1.1;
+  }
+
+  .k2-sheet__cover {
+    width: 80%;
+    margin-bottom: -4svh;
+  }
+
+  .k2-close__title {
+    font-size: 26vw;
+  }
+
+  .k2-btn--ink {
+    width: 100%;
+  }
+
+}

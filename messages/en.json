@@ -2112,6 +2112,89 @@
       "steamTrademark": "Steam and the Steam logo are trademarks of Valve Corporation; KULTURA is not affiliated with Valve."
     }
   },
+  "portada": {
+    "seo": {
+      "title": "KULTURA — Watch. Read. Play.",
+      "description": "Series, movies, anime, manga, books, comics and games in one place, always knowing where you are."
+    },
+    "nav": {
+      "login": "Sign in"
+    },
+    "hero": {
+      "title": "Watch. Read. Play.",
+      "line1": "Watch.",
+      "line2": "Read.",
+      "line3": "Play.",
+      "lead": "All in one place, always knowing where you are.",
+      "cta": "Create account",
+      "demo": "See the demo",
+      "plusOne": "Mark one more",
+      "formatsLabel": "Pick a sample format"
+    },
+    "units": {
+      "episode": "Episode {n}",
+      "chapter": "Chapter {n}",
+      "hours": "{n} h"
+    },
+    "story": {
+      "oneTitle": "Every work is a block.",
+      "oneText": "And every episode, volume or chapter, a sheet.",
+      "twoTitle": "Mark one.",
+      "twoText": "The edge lights up and the next one is already waiting.",
+      "threeTitle": "You never lose your place.",
+      "threeText": "Even if you come back a year from now."
+    },
+    "formatsTitle": "Seven formats. One shelf.",
+    "formats": {
+      "tv": {
+        "name": "Series",
+        "line": "Season and episode."
+      },
+      "movie": {
+        "name": "Movies",
+        "line": "Watched, pending and your rating."
+      },
+      "anime": {
+        "name": "Anime",
+        "line": "Episode by episode."
+      },
+      "manga": {
+        "name": "Manga",
+        "line": "Volume and chapter."
+      },
+      "book": {
+        "name": "Books",
+        "line": "By page or by percentage."
+      },
+      "comic": {
+        "name": "Comics",
+        "line": "Issue by issue."
+      },
+      "game": {
+        "name": "Games",
+        "line": "The hours you have put in."
+      }
+    },
+    "spanish": {
+      "title": "Spanish first.",
+      "text": "Built in Spanish from day one. Your culture, in your own words."
+    },
+    "import": {
+      "title": "Coming from somewhere else? Bring your list."
+    },
+    "close": {
+      "title": "Where are you?",
+      "text": "Start with the work you left halfway."
+    },
+    "footer": {
+      "label": "Information",
+      "privacy": "Privacy",
+      "terms": "Terms",
+      "legal": "Legal notice",
+      "accessibility": "Accessibility",
+      "otherLocale": "Español"
+    }
+  },
   "collection": {
     "visibility": "List visibility",
     "private": "Private",

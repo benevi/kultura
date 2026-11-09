@@ -2112,6 +2112,89 @@
       "steamTrademark": "Steam y el logotipo de Steam son marcas de Valve Corporation; KULTURA no está afiliada a Valve."
     }
   },
+  "portada": {
+    "seo": {
+      "title": "KULTURA — Ves. Lees. Juegas.",
+      "description": "Series, películas, anime, manga, libros, cómics y juegos en un solo sitio, en español y sabiendo por dónde vas."
+    },
+    "nav": {
+      "login": "Entrar"
+    },
+    "hero": {
+      "title": "Ves. Lees. Juegas.",
+      "line1": "Ves.",
+      "line2": "Lees.",
+      "line3": "Juegas.",
+      "lead": "Todo en un sitio, en español, y sabiendo por dónde vas.",
+      "cta": "Crear cuenta",
+      "demo": "Ver la demo",
+      "plusOne": "Marcar uno más",
+      "formatsLabel": "Elige un formato de muestra"
+    },
+    "units": {
+      "episode": "Episodio {n}",
+      "chapter": "Capítulo {n}",
+      "hours": "{n} h"
+    },
+    "story": {
+      "oneTitle": "Cada obra es un bloque.",
+      "oneText": "Y cada episodio, tomo o capítulo, una lámina.",
+      "twoTitle": "Marca una.",
+      "twoText": "El canto se enciende y el siguiente ya está esperando.",
+      "threeTitle": "Nunca pierdes el sitio.",
+      "threeText": "Aunque vuelvas dentro de un año."
+    },
+    "formatsTitle": "Siete formatos. Una sola estantería.",
+    "formats": {
+      "tv": {
+        "name": "Series",
+        "line": "Temporada y episodio."
+      },
+      "movie": {
+        "name": "Películas",
+        "line": "Vistas, pendientes y tu nota."
+      },
+      "anime": {
+        "name": "Anime",
+        "line": "Episodio a episodio."
+      },
+      "manga": {
+        "name": "Manga",
+        "line": "Tomo y capítulo."
+      },
+      "book": {
+        "name": "Libros",
+        "line": "Por página o por porcentaje."
+      },
+      "comic": {
+        "name": "Cómics",
+        "line": "Número a número."
+      },
+      "game": {
+        "name": "Juegos",
+        "line": "Las horas que llevas."
+      }
+    },
+    "spanish": {
+      "title": "Hecha en español.",
+      "text": "No traducida. Tu cultura, con tus palabras."
+    },
+    "import": {
+      "title": "¿Vienes de otro sitio? Tráete tu lista."
+    },
+    "close": {
+      "title": "¿Por dónde vas?",
+      "text": "Empieza por la obra que tienes a medias."
+    },
+    "footer": {
+      "label": "Información",
+      "privacy": "Privacidad",
+      "terms": "Condiciones",
+      "legal": "Aviso legal",
+      "accessibility": "Accesibilidad",
+      "otherLocale": "English"
+    }
+  },
   "collection": {
     "visibility": "Visibilidad de la lista",
     "private": "Privada",
