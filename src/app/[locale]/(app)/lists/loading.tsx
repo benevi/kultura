@@ -1,8 +1,14 @@
 // MOV-14 (F-25): esqueleto de «Mis listas» con la misma rejilla que la página
 // (sin salto al llegar los datos). El pulso se apaga con reduced-motion.
 import { getTranslations } from 'next-intl/server'
+import { isUiV2Enabled } from '@/lib/ui-v2'
 
 export default async function ListsLoading() {
+  if (await isUiV2Enabled()) {
+    const { ListsSkeleton } = await import('@/v2/lists/ListsSkeleton')
+    return <ListsSkeleton />
+  }
+
   const t = await getTranslations('common')
   return (
     <main aria-busy="true" className="page-grid py-8">

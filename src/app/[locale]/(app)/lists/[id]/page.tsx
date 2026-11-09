@@ -9,6 +9,7 @@ import { getListDetail, canEditList } from '@/lib/social/lists'
 import { getFriends } from '@/lib/social/friends'
 import { mixedListsEnabled } from '@/lib/social/lists-shared'
 import { ListDetail } from './ListDetail'
+import { isUiV2Enabled } from '@/lib/ui-v2'
 import { getTranslations } from 'next-intl/server'
 import type { Metadata } from 'next'
 
@@ -43,6 +44,22 @@ export default async function ListDetailPage({ params }: Props) {
       .map((f) => f.otherUser)
       .filter((u): u is NonNullable<typeof u> => u !== undefined)
       .map((u) => ({ id: u.id, username: u.username, avatarColor: u.avatarColor, avatarInitials: u.avatarInitials }))
+  }
+
+  // F0: conmutador de UI (src/lib/ui-v2.ts). Mismos datos, otra pantalla.
+  if (await isUiV2Enabled()) {
+    const { ListScreen } = await import('@/v2/lists/ListScreen')
+    return (
+      <ListScreen
+        list={list}
+        items={items}
+        members={members}
+        currentUserId={user?.id ?? ''}
+        currentUserFriends={friends}
+        canEdit={canEdit}
+        mixedEnabled={mixedListsEnabled()}
+      />
+    )
   }
 
   return (

@@ -1,0 +1,664 @@
+/* ============================================================
+   KULTURA v2 — Listas
+   El índice son baldas: cada lista, un tablón con sus obras de pie, enseñando el
+   lomo. El detalle son filas, porque ahí importan el orden y las notas. El color
+   es de las portadas y de los formatos; lo demás, hueso sobre negro.
+   ============================================================ */
+
+.k2l {
+  --k-accent: var(--k-bone);
+  /* Ordenar usa el componente común: sus números, en hueso. */
+  --accent-lime: var(--k-bone);
+  padding-block: 32px 72px;
+}
+
+.k2l .k2-btn {
+  min-height: 44px;
+  font-size: 1rem;
+}
+
+@media (hover: hover) {
+  .k2l .k2-btn:hover {
+    --btn-bg: var(--k-dim);
+  }
+}
+
+.k2l-title {
+  margin: 0;
+  font-family: var(--k-font-voice);
+  font-size: 2.5rem;
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  line-height: 1.05;
+  overflow-wrap: anywhere;
+}
+
+.k2l-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px 24px;
+  margin-bottom: 16px;
+}
+
+.k2l-h2 {
+  margin: 0;
+  font-family: var(--k-font-voice);
+  font-size: 1.125rem;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+
+/* Recibe el foco cuando desaparece la fila que lo tenía: no es un control. */
+.k2l-h2:focus {
+  outline: none;
+}
+
+.k2l-small {
+  font-size: 0.875rem;
+}
+
+.k2l-dim {
+  margin: 0;
+  color: var(--k-dim);
+}
+
+.k2l-error {
+  margin: 0;
+  color: var(--accent-danger-text);
+  font-size: 0.9375rem;
+}
+
+/* Formato: un cuadrado de su color, como en Biblioteca y Descubrir. */
+.k2l-meta {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  margin: 0;
+  color: var(--k-dim);
+  font-size: 0.9375rem;
+  line-height: 1.35;
+}
+
+.k2l-meta > i {
+  flex: none;
+  width: 8px;
+  height: 8px;
+  background: var(--c);
+}
+
+.k2l-meta__icon {
+  flex: none;
+  align-self: center;
+  display: inline-flex;
+}
+
+/* ── Índice ─────────────────────────────────────────────────────────────── */
+
+.k2l-index {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* 5 + 7 columnas: el nombre a un lado, la balda al otro; todas empiezan igual. */
+.k2l-row {
+  display: grid;
+  grid-template-columns: minmax(0, 5fr) minmax(0, 7fr);
+  align-items: end;
+  gap: 16px clamp(24px, 4vw, 64px);
+  padding-block: 24px 0;
+  color: inherit;
+  text-decoration: none;
+}
+
+.k2l-row__text {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+  padding-bottom: 16px;
+}
+
+.k2l-row__name {
+  display: -webkit-box;
+  overflow: hidden;
+  font-family: var(--k-font-voice);
+  font-size: 1.5rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  line-height: 1.15;
+  overflow-wrap: anywhere;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
+.k2l-row:focus-visible {
+  outline-offset: 4px;
+}
+
+/* La balda: doce lomos como mucho; el tablón es el borde. */
+.k2l-shelf {
+  display: grid;
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+  align-items: end;
+  gap: 3px;
+  height: 118px;
+  padding-top: 6px;
+  border-bottom: 3px solid var(--k-line);
+}
+
+.k2l-spine {
+  position: relative;
+  display: block;
+  height: 100%;
+  overflow: hidden;
+  background: var(--c);
+  clip-path: polygon(0 0, calc(100% - 8px) 0, 100% 8px, 100% 100%, 0 100%);
+  transition: transform var(--k-fast) var(--k-ease);
+}
+
+.k2l-spine .k2b-cover {
+  /* Si se llega desde Biblioteca, su hoja sigue cargada y recortaría la imagen. */
+  clip-path: none;
+  position: absolute;
+  inset: 0;
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* Sin portada: el lomo liso de su formato. */
+.k2l-spine .k2b-cover--plain {
+  background: var(--c);
+}
+
+@media (hover: hover) {
+  .k2l-row:hover .k2l-row__name {
+    text-decoration: underline;
+    text-decoration-thickness: 2px;
+    text-underline-offset: 0.15em;
+  }
+}
+
+/* Al señalar una lista, sus obras asoman: de una en una, sin hacerse esperar. El
+   retardo solo va al entrar: al salir vuelven todas a la vez. */
+@media (hover: hover) and (prefers-reduced-motion: no-preference) {
+  .k2l-row:hover .k2l-spine {
+    transform: translateY(-6px);
+  }
+
+  .k2l-row:hover .k2l-spine:nth-child(2) { transition-delay: 15ms; }
+  .k2l-row:hover .k2l-spine:nth-child(3) { transition-delay: 30ms; }
+  .k2l-row:hover .k2l-spine:nth-child(4) { transition-delay: 45ms; }
+  .k2l-row:hover .k2l-spine:nth-child(n + 5) { transition-delay: 60ms; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .k2l-spine {
+    transition: none;
+  }
+}
+
+/* ── Vacíos ─────────────────────────────────────────────────────────────── */
+
+.k2l-empty {
+  max-width: 34rem;
+  padding-block: 24px;
+}
+
+.k2l-empty .k2l-shelf {
+  height: 72px;
+  margin-bottom: 24px;
+}
+
+.k2l-empty h2,
+.k2l-empty h3 {
+  margin: 0;
+  font-family: var(--k-font-voice);
+  font-size: 1.5rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  line-height: 1.15;
+}
+
+.k2l-empty p {
+  margin: 8px 0 20px;
+  color: var(--k-dim);
+}
+
+/* ── Una lista ──────────────────────────────────────────────────────────── */
+
+.k2l--one {
+  display: grid;
+  grid-template-columns: minmax(0, 360px) minmax(0, 1fr);
+  align-items: start;
+  gap: 32px clamp(32px, 5vw, 80px);
+}
+
+.k2l-side {
+  position: sticky;
+  top: 88px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 12px;
+  max-height: calc(100vh - 104px);
+  max-height: calc(100dvh - 104px);
+  /* El anillo de foco de lo que toca el borde no debe recortarse. */
+  margin: -6px;
+  padding: 6px;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: var(--k-line) transparent;
+}
+
+.k2l-description {
+  margin: 4px 0 0;
+  max-width: 65ch;
+  font-size: 1rem;
+  line-height: 1.5;
+  white-space: pre-line;
+  overflow-wrap: anywhere;
+}
+
+.k2l-add {
+  margin-top: 8px;
+}
+
+.k2l-group {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  width: 100%;
+  margin-top: 12px;
+  padding-top: 16px;
+  border-top: 1px solid var(--k-line);
+}
+
+.k2l-visibility {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 12px;
+}
+
+/* El verde del conmutador común diría «bien» donde solo hay una elección. */
+.k2l .k2l-visibility [role="radio"] {
+  font-size: 0.875rem;
+}
+
+.k2l .k2l-visibility [role="radio"][aria-checked="true"] {
+  background: var(--k-bone);
+  color: var(--k-ink);
+}
+
+.k2l-members {
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.k2l-members li {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 44px;
+}
+
+.k2l-members__name {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  color: inherit;
+  font-size: 0.9375rem;
+  text-decoration: none;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+@media (hover: hover) {
+  .k2l-members__name:hover {
+    text-decoration: underline;
+  }
+}
+
+.k2l-invite {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.k2l-invite select,
+.k2l-form textarea {
+  width: 100%;
+  min-width: 0;
+  border: 1px solid var(--field-border);
+  background: var(--k-raised);
+  color: var(--k-bone);
+  font: inherit;
+  font-size: 1rem;
+}
+
+.k2l-invite select {
+  flex: 1;
+  min-height: 44px;
+  padding-inline: 10px;
+}
+
+.k2l-form {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 100%;
+  margin-top: 4px;
+}
+
+.k2l-form label {
+  color: var(--k-dim);
+  font-size: 0.875rem;
+}
+
+.k2l-form textarea {
+  padding: 10px 12px;
+  resize: vertical;
+}
+
+.k2l-form__actions {
+  display: flex;
+  gap: 8px;
+}
+
+/* El botón pequeño común se queda en 32 px: aquí se pulsa con el dedo. */
+.k2l .k2l-form__actions button,
+.k2l .k2l-invite button {
+  min-height: 44px;
+}
+
+.k2l-delete {
+  margin-top: 12px;
+  color: var(--k-dim);
+}
+
+@media (hover: hover) {
+  .k2l .k2l-delete:hover {
+    color: var(--accent-danger-text);
+  }
+}
+
+/* Títulos */
+.k2l-items {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-width: 0;
+}
+
+.k2l-items__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 44px;
+}
+
+.k2l-toggle {
+  min-height: 44px;
+  padding: 0 14px;
+  border: 1px solid var(--k-line);
+  background: none;
+  color: var(--k-bone);
+  font: inherit;
+  font-size: 0.9375rem;
+  cursor: pointer;
+  transition:
+    background-color var(--k-fast) var(--k-ease),
+    color var(--k-fast) var(--k-ease);
+}
+
+@media (hover: hover) {
+  .k2l-toggle:hover {
+    background: var(--k-raised);
+  }
+}
+
+.k2l-toggle[aria-pressed="true"] {
+  border-color: var(--k-bone);
+  background: var(--k-bone);
+  color: var(--k-ink);
+}
+
+.k2l-list {
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.k2l-item {
+  position: relative;
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding-block: 12px;
+  border-top: 1px solid var(--k-line);
+}
+
+.k2l-item__rank {
+  flex: none;
+  width: 2.75rem;
+  color: var(--c);
+  font-family: var(--k-font-display);
+  font-size: 2.5rem;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+  text-align: right;
+}
+
+.k2l-item__cover {
+  flex: none;
+  display: block;
+  width: 72px;
+}
+
+.k2l-item__cover .k2b-cover {
+  display: block;
+  width: 100%;
+  height: auto;
+  aspect-ratio: 2 / 3;
+  object-fit: cover;
+  background: var(--k-raised);
+  clip-path: polygon(0 0, calc(100% - 10px) 0, 100% 10px, 100% 100%, 0 100%);
+}
+
+.k2l-item__cover .k2b-cover--plain {
+  display: flex;
+  align-items: flex-end;
+  padding: 6px;
+  overflow: hidden;
+  color: var(--k-bone);
+  font-size: 0.6875rem;
+  font-weight: 700;
+  line-height: 1.1;
+  overflow-wrap: anywhere;
+}
+
+.k2l-item__text {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+  min-width: 0;
+  padding-top: 2px;
+}
+
+.k2l-item__title {
+  font-family: var(--k-font-voice);
+  font-size: 1.125rem;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  line-height: 1.2;
+  overflow-wrap: anywhere;
+  color: inherit;
+  text-decoration: none;
+}
+
+/* Toda la fila es el enlace de su título: un solo enlace por obra para el teclado
+   y el lector de pantalla, y una zona cómoda para el dedo. Quitar queda por encima. */
+a.k2l-item__title::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+}
+
+a.k2l-item__title:focus-visible {
+  outline: none;
+}
+
+a.k2l-item__title:focus-visible::after {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: -2px;
+}
+
+.k2l-item > button {
+  z-index: 1;
+}
+
+@media (hover: hover) {
+  a.k2l-item__title:hover {
+    text-decoration: underline;
+    text-decoration-thickness: 2px;
+    text-underline-offset: 0.15em;
+  }
+}
+
+.k2l-item__note {
+  /* Por encima del enlace de la fila: la nota se puede seleccionar. */
+  position: relative;
+  z-index: 1;
+  margin: 4px 0 0;
+  max-width: 65ch;
+  color: var(--text-secondary);
+  font-size: 0.9375rem;
+  line-height: 1.45;
+  white-space: pre-line;
+  overflow-wrap: anywhere;
+}
+
+/* ── Esqueletos ─────────────────────────────────────────────────────────── */
+
+.k2l-skelwrap {
+  display: contents;
+}
+
+.k2l-skel {
+  background: var(--k-raised);
+}
+
+.k2l-skel--title {
+  width: min(260px, 70%);
+  height: 42px;
+}
+
+.k2l-skel--button {
+  width: 132px;
+  height: 44px;
+}
+
+.k2l-skel--name {
+  width: min(280px, 80%);
+  height: 28px;
+}
+
+.k2l-skel--line {
+  width: 140px;
+  height: 18px;
+}
+
+.k2l-skel--shelf {
+  height: 118px;
+}
+
+.k2l-skel--cover {
+  flex: none;
+  width: 72px;
+  aspect-ratio: 2 / 3;
+}
+
+/* ── Móvil ──────────────────────────────────────────────────────────────── */
+
+@media (max-width: 959px) {
+  .k2l--one {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .k2l-side {
+    position: static;
+    max-height: none;
+    margin: 0;
+    padding: 0;
+    overflow: visible;
+  }
+}
+
+@media (max-width: 767px) {
+  .k2l {
+    padding-block: 24px 48px;
+  }
+
+  .k2l-title {
+    font-size: 2rem;
+  }
+
+  .k2l-row {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 10px;
+  }
+
+  .k2l-row__text {
+    padding-bottom: 0;
+  }
+
+  .k2l-row__name {
+    font-size: 1.25rem;
+  }
+
+  /* Ocho lomos: doce quedarían en tiras demasiado finas para reconocer nada. */
+  .k2l-shelf {
+    grid-template-columns: repeat(8, minmax(0, 1fr));
+    height: 96px;
+  }
+
+  .k2l-spine:nth-child(n + 9) {
+    display: none;
+  }
+
+  .k2l-skel--shelf {
+    height: 96px;
+  }
+
+  .k2l-add {
+    width: 100%;
+  }
+
+  .k2l-item__cover,
+  .k2l-skel--cover {
+    width: 60px;
+  }
+
+  .k2l-item__title {
+    font-size: 1rem;
+  }
+
+  .k2l-item__rank {
+    width: 2.25rem;
+    font-size: 2.25rem;
+  }
+}

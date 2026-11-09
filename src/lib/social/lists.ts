@@ -11,6 +11,9 @@ import { listColumns, mixedListsEnabled } from '@/lib/social/lists-shared'
 import type { DbList, DbListItem, DbListMember, DbUser, DbMedia } from '@/types/supabase'
 import type { List, ListItem, ListMediaType, ListMember, ListTemplate } from '@/types/list'
 import type { MediaType } from '@/types/media'
+import { createLogger } from '@/lib/logger'
+
+const log = createLogger('lists')
 
 // ── Row types ─────────────────────────────────────────────────────────────────
 
@@ -178,6 +181,62 @@ export async function getUserLists(userId: string): Promise<List[]> {
     .map((l) => mapList({ ...l, item_count: counts[l.id] ?? 0 }))
 
   return [...ownedLists, ...membered]
+}
+
+/** Una obra de pie en la balda de una lista (UI v2). */
+export interface ListShelfItem {
+  mediaId: string
+  type: MediaType
+  poster: string | null
+}
+
+/** Lomos por lista como mucho: los que caben en la balda. */
+export const SHELF_MAX_ITEMS = 12
+/** Baldas que se piden: una lectura por lista, así que tienen tope. */
+export const SHELF_MAX_LISTS = 40
+
+/**
+ * Las primeras obras de cada lista, en su orden, para el índice de la UI v2. Una
+ * lectura por lista con su límite: una sola para todas traería todos los títulos
+ * y el tope de filas de PostgREST la cortaría por donde cayese. Son decoración: si
+ * una lectura falla, esa lista sale igual, con la balda vacía.
+ */
+export async function getListShelves(listIds: string[]): Promise<Record<string, ListShelfItem[]>> {
+  if (listIds.length === 0) return {}
+  const supabase = await createClient()
+  const mixed = mixedListsEnabled()
+  const columns = mixed ? 'media_id, added_at, position' : 'media_id, added_at'
+  type Row = {
+    media_id: string
+    added_at: string | null
+    position?: number | null
+    media: { type: string; poster: string | null } | null
+  }
+
+  const entries = await Promise.all(
+    listIds.slice(0, SHELF_MAX_LISTS).map(async (listId): Promise<[string, ListShelfItem[]]> => {
+      let query = supabase.from('list_items').select(`${columns}, media:media_id(type, poster)`).eq('list_id', listId)
+      if (mixed) query = query.order('position', { ascending: true, nullsFirst: false })
+      const { data, error } = await query.order('added_at', { ascending: false }).limit(SHELF_MAX_ITEMS)
+      if (error || !data) {
+        log.warn('list shelf read failed', { message: error?.message })
+        return [listId, []]
+      }
+      const rows = (data as unknown as Row[]).map((row) => ({ addedAt: row.added_at, position: row.position ?? null, row }))
+      return [
+        listId,
+        sortListItems(rows)
+          .slice(0, SHELF_MAX_ITEMS)
+          .map(({ row }) => ({
+            mediaId: row.media_id,
+            // Sin fila de catálogo, el formato va en el propio id (`movie_603`).
+            type: (row.media?.type ?? row.media_id.split('_')[0]) as MediaType,
+            poster: row.media?.poster ?? null,
+          })),
+      ]
+    }),
+  )
+  return Object.fromEntries(entries)
 }
 
 /**
