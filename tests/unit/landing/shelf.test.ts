@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { coverSource } from "@/lib/landing/cover-source";
 import {
   buildShelf,
+  isPublicManga,
   CURATED_BOOKS,
   CURATED_COMICS,
   monthIndex,
@@ -70,6 +71,33 @@ describe("estantería de la portada", () => {
     expect(coverSource("https://cdn.steamstatic.com/steam/apps/1/library_600x900_2x.jpg").srcSet).toContain("/library_600x900.jpg 300w");
     expect(coverSource("https://covers.openlibrary.org/b/id/1-L.jpg").srcSet).toContain("/b/id/1-M.jpg 180w");
     expect(coverSource("/landing/fallback/a.jpg")).toEqual({ src: "/landing/fallback/a.jpg" });
+  });
+});
+
+describe("manga en la portada pública", () => {
+  const manga = (genres: string[], tags: Array<{ name: string; rank: number; isAdult?: boolean }>) => ({ id: 1, genres, tags });
+
+  it("deja pasar lo normal, aunque tenga violencia", () => {
+    expect(isPublicManga(manga(["Action"], [{ name: "Gore", rank: 76 }, { name: "Torture", rank: 42 }]))).toBe(true);
+  });
+
+  it("una escena suelta no quita la obra", () => {
+    expect(isPublicManga(manga(["Action"], [{ name: "Rape", rank: 45, isAdult: true }, { name: "Nudity", rank: 47 }]))).toBe(true);
+  });
+
+  it("quita géneros y etiquetas adultas que definen la obra", () => {
+    expect(isPublicManga(manga(["Ecchi"], []))).toBe(false);
+    expect(isPublicManga(manga(["Action"], [{ name: "Large Breasts", rank: 71, isAdult: true }]))).toBe(false);
+    expect(isPublicManga(manga(["Comedy"], [{ name: "Female Harem", rank: 98 }]))).toBe(false);
+    expect(isPublicManga(manga(["Action"], [{ name: "Nudity", rank: 73 }]))).toBe(false);
+  });
+
+  it("quita lo infantil con cualquier rango", () => {
+    expect(isPublicManga(manga(["Comedy"], [{ name: "Kids", rank: 20 }]))).toBe(false);
+  });
+
+  it("sin etiquetas no entra", () => {
+    expect(isPublicManga({ id: 1, genres: ["Action"], tags: null })).toBe(false);
   });
 });
 

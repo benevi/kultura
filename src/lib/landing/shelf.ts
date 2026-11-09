@@ -5,8 +5,9 @@
 //   - Series, películas y anime: el ranking destacado de /best (ya filtrado por
 //     votos y nota, y localizado). Evita lo que traía la muestra de Descubrir,
 //     ordenada por popularidad a secas.
-//   - Manga: tendencia de AniList con nota mínima. MangaDex no sirve aquí: sus
-//     portadas las bloquea el navegador si se piden desde otra web.
+//   - Manga: tendencia de AniList con nota mínima y filtro de contenido
+//     (`isPublicManga`). MangaDex no sirve aquí: sus portadas las bloquea el
+//     navegador si se piden desde otra web.
 //   - Juegos: la lista blanca de `showcase.ts` (RAWG no tiene carátula vertical).
 //   - Libros y cómics: listas revisadas a mano. Las fuentes abiertas devuelven
 //     clásicos en inglés y números sueltos sin contexto.
@@ -19,7 +20,7 @@
 // ============================================================
 
 import { unstable_cache } from "next/cache";
-import { discoverTrendingManga, normalizeAniListManga } from "@/lib/api/anilist";
+import { type AniListManga, discoverTrendingManga, normalizeAniListManga } from "@/lib/api/anilist";
 import { getFeaturedRanking } from "@/lib/best/best-of";
 import { BEST_CACHE_TAG, SHOWCASE_CACHE_TAG } from "@/lib/best/cache-tags";
 import { createLogger } from "@/lib/logger";
@@ -68,6 +69,13 @@ const FAMILY_TIMEOUT_MS = 6000;
 const PER_FORMAT = 5;
 const MANGA_MIN_SCORE = 7;
 const MANGA_BLOCKED_GENRES = new Set(["Ecchi", "Hentai"]);
+/** Una etiqueta cuenta si la obra va de eso: una escena suelta no quita la obra (Dandadan pasa). */
+const MANGA_TAG_MIN_RANK = 60;
+const MANGA_BLOCKED_TAGS = new Set(["Nudity", "Female Harem", "Male Harem", "Mixed Gender Harem", "Incest"]);
+/** Público infantil: la portada no debe parecerlo. Cuenta con cualquier rango. */
+const MANGA_KIDS_TAG = "Kids";
+/** Veto a mano de lo que se cuele, por id de AniList. */
+const MANGA_BLOCKED_IDS = new Set<number>([]);
 
 /**
  * Composición del abanico, de izquierda a derecha: [formato, puesto en su lista].
@@ -161,12 +169,25 @@ async function rankingPool(format: "tv" | "movie" | "anime", locale: string): Pr
   );
 }
 
+/**
+ * ¿Puede salir este manga en la portada pública? La tendencia cambia sola y nadie
+ * la revisa antes. Sin etiquetas no se puede juzgar: no entra.
+ */
+export function isPublicManga(manga: Pick<AniListManga, "id" | "genres" | "tags">): boolean {
+  if (MANGA_BLOCKED_IDS.has(manga.id) || !manga.tags) return false;
+  if (manga.genres?.some((genre) => MANGA_BLOCKED_GENRES.has(genre))) return false;
+  return !manga.tags.some(
+    (tag) =>
+      tag.name === MANGA_KIDS_TAG ||
+      ((tag.rank ?? 0) >= MANGA_TAG_MIN_RANK && (Boolean(tag.isAdult) || MANGA_BLOCKED_TAGS.has(tag.name))),
+  );
+}
+
 async function mangaPool(): Promise<ShelfItem[]> {
   const raw = await discoverTrendingManga();
-  return raw.flatMap((manga) => {
+  return raw.filter(isPublicManga).flatMap((manga) => {
     const item = normalizeAniListManga(manga);
-    const blocked = item.genres?.some((genre) => MANGA_BLOCKED_GENRES.has(genre));
-    if (!item.poster || blocked || (item.rating ?? 0) < MANGA_MIN_SCORE) return [];
+    if (!item.poster || (item.rating ?? 0) < MANGA_MIN_SCORE) return [];
     return [{ id: item.id, format: "manga" as const, title: item.title, poster: item.poster }];
   });
 }
@@ -222,7 +243,7 @@ const shelfLong = unstable_cache(
     }
     return shelf;
   },
-  ["portada-shelf-v2"],
+  ["portada-shelf-v3"],
   { revalidate: 60 * 60 * 24, tags: [BEST_CACHE_TAG, SHOWCASE_CACHE_TAG] },
 );
 
@@ -232,7 +253,7 @@ const shelfShort = unstable_cache(
     if (memo && Date.now() - memo.at < 60_000) return memo.shelf;
     return (await loadShelf(locale, month)).shelf;
   },
-  ["portada-shelf-v2-short"],
+  ["portada-shelf-v3-short"],
   { revalidate: 60 * 60, tags: [BEST_CACHE_TAG, SHOWCASE_CACHE_TAG] },
 );
 

@@ -339,6 +339,15 @@ export interface AniListManga {
   volumes?: number | null;
   status?: string | null;
   format?: string | null;
+  /** Solo lo pide la tendencia de la portada. */
+  tags?: AniListTag[] | null;
+}
+
+export interface AniListTag {
+  name: string;
+  /** 0–100: cuánto describe la etiqueta a la obra, según votan en AniList. */
+  rank?: number | null;
+  isAdult?: boolean | null;
 }
 
 /** Una búsqueda de complemento se cachea 24 h: las obras no cambian de nombre. */
@@ -372,6 +381,7 @@ const MANGA_TRENDING_QUERY = `
       pageInfo { currentPage lastPage hasNextPage total }
       media(type: MANGA, isAdult: false, format: MANGA, countryOfOrigin: "JP", averageScore_greater: 76, popularity_greater: 20000, sort: [TRENDING_DESC, POPULARITY_DESC]) {
         ${MANGA_FIELDS}
+        tags { name rank isAdult }
       }
     }
   }

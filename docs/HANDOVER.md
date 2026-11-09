@@ -1,11 +1,11 @@
 # HANDOVER — última sesión (2026-11-09)
 
-**Rama:** `feat/v2-rediseno-integral`, PR #90 sin fusionar. Todo tras `ui_v2` (cookie o `UI_V2_DEFAULT=1`): sin él, la web sigue igual. Detalle: `docs/REDESIGN_AUDIT.md` §9. Decisiones: D-V2a…h.
+**Rama:** `feat/v2-rediseno-integral`, PR #90 sin fusionar. Todo tras `ui_v2` (cookie o `UI_V2_DEFAULT=1`): sin él, la web sigue igual. Detalle: `docs/REDESIGN_AUDIT.md` §9. Decisiones: D-V2a…i.
 
 ## Hecho
 - **Portada rehecha** tras «duele a la vista»: abanico + «Sigue por donde ibas» (B + A, D-V2h). Sin WebGL.
 - **Portadas dinámicas:** series, películas, anime y manga vivos; juegos, libros y cómics de listas revisadas. Todas rotan cada mes.
-- Revisión independiente hecha; importantes corregidos (`04_DECISIONES` §4).
+- Revisión independiente hecha; importantes corregidos (`04_DECISIONES` §4). El filtro de manga (D-V2i) es posterior y no pasó por ella.
 
 ## Sin hacer (es lo más grande)
 - **Las pantallas interiores no están rediseñadas**: tienen piel, no composición propia. El master prompt pide todas.
@@ -20,7 +20,6 @@ Preview de Vercel, CUJ con BD real, Safari, Firefox, táctil real, lector de pan
 2. Con su sesión, reconstruir las pantallas interiores una a una (home y biblioteca primero).
 
 ## Decide Víctor
-- Manga en tendencia sin revisión humana (solo filtro de géneros y nota): ¿lista negra o lista revisada?
 - Títulos en inglés de AniList en la página en español.
 - La barra de progreso vuelve a 1 cada 10 unidades: es muestra, no porcentaje.
 - Licencias de imágenes (TMDB, AniList, Steam, Open Library).
