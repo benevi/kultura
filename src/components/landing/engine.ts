@@ -39,7 +39,7 @@ vec4 samp(sampler2D I,sampler2D D,float a,vec2 f,float th,out float al){
   vec2 uv=(v-.5)/zoom+.5;vec2 c=cover(vec2(uv.x,1.-uv.y),a,f);
   float d=texture2D(D,c).r;vec2 p=c-off*(d-.5);
   d=texture2D(D,p).r;p=c-off*(d-.5);d=max(d,texture2D(D,p).r);p=c-off*(d-.5);
-  d=texture2D(D,p).r;al=smoothstep(th-.03,th+.03,d);
+  d=texture2D(D,p).r;al=smoothstep(th-.012,th+.012,d);
   return texture2D(I,clamp(p,.002,.998));}
 float chamfer(vec2 q,vec2 h,float k){vec2 a=abs(q);return step(a.x,h.x)*step(a.y,h.y)*step(a.x+a.y,h.x+h.y-k);}
 void main(){
@@ -67,6 +67,42 @@ function isSoftware(gl: WebGLRenderingContext): boolean {
   const info = gl.getExtension("WEBGL_debug_renderer_info");
   const name = info ? String(gl.getParameter(info.UNMASKED_RENDERER_WEBGL)) : "";
   return /swiftshader|llvmpipe|softpipe|software/i.test(name);
+}
+
+/**
+ * Umbral de la capa delantera para una escena. Mira la franja donde va el
+ * nombre (27-60 % del alto) en el mapa de profundidad reducido. Si mucha parte
+ * cae cerca del umbral, el recorte sale a trozos (letras mordidas y bordes que
+ * bailan con el parallax), así que se busca el umbral que deja menos píxeles dudosos, siempre
+ * que la figura tape entre el 4 y el 60 % de la franja (si tapa más, el nombre
+ * no se lee). Prefiere el umbral de la tarea semanal si ya corta limpio.
+ * Devuelve null si ninguno corta limpio: entonces el nombre va delante.
+ */
+export const CUT_BAND: [number, number] = [0.27, 0.6];
+const MAX_UNSURE = 0.15;
+export function cutThreshold(px: Uint8ClampedArray, w: number, h: number, th: number): number | null {
+  const v: number[] = [];
+  for (let y = Math.round(h * CUT_BAND[0]); y < Math.round(h * CUT_BAND[1]); y++) {
+    for (let x = 0; x < w; x++) v.push(px[(y * w + x) * 4] / 255);
+  }
+  if (!v.length) return null;
+  const score = (t: number) => {
+    let unsure = 0, front = 0;
+    for (const d of v) {
+      if (Math.abs(d - t) <= 0.08) unsure++;
+      else if (d > t) front++;
+    }
+    const f = front / v.length;
+    return f < 0.04 || f > 0.6 ? Infinity : unsure / v.length;
+  };
+  let best = th, bestScore = score(th);
+  if (bestScore > MAX_UNSURE) {
+    for (let k = 15; k <= 90; k++) {
+      const s = score(k / 100);
+      if (s < bestScore) { best = k / 100; bestScore = s; }
+    }
+  }
+  return bestScore <= MAX_UNSURE ? best : null;
 }
 
 /** Imágenes compartidas entre contextos (cada contexto sube su textura). */
@@ -236,6 +272,31 @@ export function startLanding(root: HTMLElement, scenes: HeroScene[]): () => void
   const fgC = hero.querySelector<HTMLCanvasElement>("canvas.kl-fg")!;
   const bg = makeGL(bgC, false, pics);
   const fg = makeGL(fgC, true, pics);
+  // Recorte por escena: se comprueba el mapa la primera vez que la escena
+  // pinta con capa delantera (nunca en móvil); hasta saberlo, sin capa.
+  const clean = new Map<string, number | null>();
+  const cuts = (s: HeroScene) => {
+    if (!s.layered) return false;
+    if (!clean.has(s.image)) {
+      clean.set(s.image, null);
+      loadImg(s.depth)
+        .then((img) => {
+          const W = 96, H = 54;
+          const x = document.createElement("canvas").getContext("2d", { willReadFrequently: true });
+          if (!x) return;
+          x.canvas.width = W;
+          x.canvas.height = H;
+          x.drawImage(img, 0, 0, W, H);
+          clean.set(s.image, cutThreshold(x.getImageData(0, 0, W, H).data, W, H, s.th));
+          ready++;
+        })
+        .catch(() => {});
+    }
+    return clean.get(s.image) != null;
+  };
+  // Sin umbral limpio (o aún sin calcular), un umbral imposible: esa escena no
+  // deja nada en la capa delantera, ni a mitad de un cambio de escena.
+  const thOf = (s: HeroScene) => clean.get(s.image) ?? 2;
   const st = { cur: 0, next: -1, wipe: 0, vis: true };
   const io1 = new IntersectionObserver((es) => (st.vis = es[0].isIntersecting));
   io1.observe(hero);
@@ -264,7 +325,7 @@ export function startLanding(root: HTMLElement, scenes: HeroScene[]): () => void
     if (key === lastHero) return;
     lastHero = key;
     const o: DrawOpts = {
-      a: A.image, b: B ? B.image : null, thA: A.th, thB: B ? B.th : 0.5, wipe: st.wipe,
+      a: A.image, b: B ? B.image : null, thA: thOf(A), thB: B ? thOf(B) : 0.5, wipe: st.wipe,
       off: [drift[0] * 0.016, -drift[1] * 0.01 - prog * 0.022], zoom: 1.05 + Math.max(0, prog) * 0.1,
       fa: [A.fx, A.fy], fb: B ? [B.fx, B.fy] : undefined, x: 0, y: 0, w: bgC.width, h: bgC.height, scrim: 1,
     };
@@ -275,8 +336,10 @@ export function startLanding(root: HTMLElement, scenes: HeroScene[]): () => void
       fg.gl.clearColor(0, 0, 0, 0);
       fg.gl.clear(fg.gl.COLOR_BUFFER_BIT);
       // Capa delantera solo si la escena lo permite (y nunca en móvil).
-      const layered = A.layered && (!B || B.layered || st.wipe < 0.5);
-      if (ok && layered && !narrow()) fg.draw({ ...o, layer: 1 });
+      if (ok && !narrow()) {
+        const cutA = cuts(A), cutB = B ? cuts(B) : false;
+        if (cutA || cutB) fg.draw({ ...o, layer: 1 });
+      }
     }
     if (word) word.style.transform = `translate3d(${-drift[0] * 8}px,${prog * -24}%,0) translateY(-50%)`;
   }

@@ -1,5 +1,6 @@
 // ============================================================
-// KULTURA — Interruptor de UI v2: la parte apta para el middleware (Edge).
+// KULTURA — Interruptor de UI v2: la parte sin dependencias de servidor (apta
+// también para el Edge; el middleware ya no la usa desde D-H2).
 // `src/lib/ui-v2.ts` añade la lectura de cookies para Server Components.
 // ============================================================
 
