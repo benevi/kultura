@@ -366,6 +366,28 @@ export async function searchMangaAniList(query: string, perPage = 10): Promise<A
   return data.Page?.media ?? [];
 }
 
+const MANGA_TRENDING_QUERY = `
+  query ($perPage: Int) {
+    Page(page: 1, perPage: $perPage) {
+      pageInfo { currentPage lastPage hasNextPage total }
+      media(type: MANGA, isAdult: false, format: MANGA, countryOfOrigin: "JP", averageScore_greater: 76, popularity_greater: 20000, sort: [TRENDING_DESC, POPULARITY_DESC]) {
+        ${MANGA_FIELDS}
+      }
+    }
+  }
+`;
+
+/** Mangas en tendencia, para la estantería de la portada. */
+export async function discoverTrendingManga(perPage = 30): Promise<AniListManga[]> {
+  const data = await anilistFetch<{ Page: { media: AniListManga[] } }>(
+    MANGA_TRENDING_QUERY,
+    { perPage },
+    anilistPageSchema,
+    { cache: { revalidate: ANILIST_MANGA_SEARCH_REVALIDATE_SECONDS }, retries: 0 }
+  );
+  return data.Page?.media ?? [];
+}
+
 /** Detalle de un manga de AniList (ficha y biblioteca de ids `al-{id}`). */
 export async function getMangaAniList(id: number): Promise<AniListManga> {
   const data = await anilistFetch<{ Media: AniListManga }>(MANGA_DETAIL_QUERY, { id }, anilistMediaSchema);

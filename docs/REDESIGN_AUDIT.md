@@ -20,7 +20,7 @@ Referencias, sin copiar: Bruno Simon (objeto 3D con personalidad que reacciona a
 | Piel | `src/v2/skin.css`, `src/v2/V2Scope.tsx` | Re-valora los tokens v1 en toda ruta dinámica, portales incluidos |
 | Bloque-logotipo | `src/v2/Blocks.tsx` | Portada y acceso |
 | Portada | `src/v2/portada/*`, `portada-v2/page.tsx`, rewrite en `src/middleware.ts` | **Reconstruida** |
-| Motor 3D | `src/v2/portada/engine.ts` | WebGL propio, carga diferida |
+| 3D | `src/v2/portada/portada.css` | Solo CSS. El motor WebGL se retiró (D-V2h) |
 
 ### Alcance real por pantalla
 - **Reconstruida:** portada (`/es`, `/en`).
@@ -71,3 +71,20 @@ Series 5,89 · Películas 12,74 · Anime 7,63 · Manga 16,37 · Libros 7,66 · C
 ## 8. Dudas sin resolver
 - La build local mostró portadas rotas `image.tmdb.org/.../a11y-550.jpg` en dos hojas. El prefijo `a11y-` solo existe en `tests/e2e/a11y/`, así que apunta a una caché local de una prueba anterior (**no verificado**). Se comprueba en la preview.
 - El aviso de hidratación del login en desarrollo no se investigó: no aparece en la build de producción.
+
+## 9. Portada rehecha (2026-11-09, sustituye a lo dicho sobre la portada en §2–§6)
+Abanico de portadas + lista «Sigue por donde ibas» (D-V2h). Datos de un build de producción local:
+
+| Puerta | Resultado |
+|---|---|
+| `tsc`, lint | Limpios |
+| `vitest` | 16 fallos: los 15 heredados de Windows/CRLF y `register-form`, por tiempo (pasa solo) |
+| 8 escenarios (es/en 1440, 390, 1920, 768, 1366×650, reduced-motion, sin WebGL) | Sin desbordamiento, 0 imágenes rotas, axe sin serious/critical |
+| Consola | Solo 2 errores: `_vercel/*`, inexistentes en local |
+| JS inicial | 144 KB transferidos (tope 150 KB); `next build` da 121 kB |
+| CLS | 0,000 |
+| TBT | 63–66 ms |
+| LCP móvil simulado | **6,0 s: por encima del aviso de 2,5 s.** Tope de aviso, no de error. Sin medir en Vercel |
+| Imágenes | 1.315 KB (antes 2.530 KB) |
+
+**Sin probar:** preview de Vercel, Safari, Firefox, táctil real, lector de pantalla real, fallo real de proveedores. **Abierto:** licencias de imágenes de TMDB, AniList, Steam y Open Library.

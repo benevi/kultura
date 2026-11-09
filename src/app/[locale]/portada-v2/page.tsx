@@ -16,7 +16,8 @@ interface Props {
   params: Promise<{ locale: string }>;
 }
 
-export const revalidate = 86400;
+// Cada hora: si se generó con proveedores caídos, no se queda un día con el respaldo.
+export const revalidate = 3600;
 
 export function generateStaticParams() {
   return routing.locales.map((locale) => ({ locale }));

@@ -2114,35 +2114,30 @@
   },
   "portada": {
     "seo": {
-      "title": "KULTURA — Watch. Read. Play.",
+      "title": "KULTURA — Everything you watch, read and play",
       "description": "Series, movies, anime, manga, books, comics and games in one place, always knowing where you are."
     },
     "nav": {
       "login": "Sign in"
     },
     "hero": {
-      "title": "Watch. Read. Play.",
-      "line1": "Watch.",
-      "line2": "Read.",
-      "line3": "Play.",
-      "lead": "All in one place, always knowing where you are.",
+      "title": "Everything you watch, read and play. And where you left off.",
+      "lead": "Seven formats, Spanish first.",
       "cta": "Create account",
       "demo": "See the demo",
-      "plusOne": "Mark one more",
-      "formatsLabel": "Pick a sample format"
+      "plusOne": "+1, mark one more",
+      "shelfLabel": "Shelf of titles: use the arrow keys to change title"
     },
     "units": {
       "episode": "Episode {n}",
       "chapter": "Chapter {n}",
-      "hours": "{n} h"
+      "hours": "{n} h",
+      "issue": "Issue {n}",
+      "page": "Page {n}"
     },
-    "story": {
-      "oneTitle": "Every work is a block.",
-      "oneText": "And every episode, volume or chapter, a sheet.",
-      "twoTitle": "Mark one.",
-      "twoText": "The edge lights up and the next one is already waiting.",
-      "threeTitle": "You never lose your place.",
-      "threeText": "Even if you come back a year from now."
+    "continue": {
+      "title": "Pick up where you left off.",
+      "text": "Tap +1. It's a sample: nothing gets saved."
     },
     "formatsTitle": "Seven formats. One shelf.",
     "formats": {

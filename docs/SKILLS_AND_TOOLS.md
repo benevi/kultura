@@ -19,3 +19,11 @@ GSAP y Three.js (presupuesto de JS), Taste `lint.mjs`, `d2c`, Figma. Tampoco se 
 
 ## Atención
 El visto bueno de estas herramientas no sustituye a la aprobación de Víctor: la dirección «Láminas» la eligió él como pin, pero no ha visto el resultado.
+
+## Portada rehecha (2026-11-09)
+| Herramienta | Uso | Qué cambió |
+|---|---|---|
+| `impeccable` | `critique` sobre la portada anterior, `craft-floor` antes de editar, brief de superficie en `.impeccable/surfaces/src-v2-portada.md` | Se retiró la pila de láminas y el pie con letras en bloque; una sola idea por pantalla |
+| `taste-skill` | Generación de direcciones para las tres propuestas | Propuestas A, B y C; Víctor eligió B + A |
+| Playwright + axe | Script de QA fuera del repo: 8 escenarios | Abanico roto en pantallas bajas y hueco en la sección de español, corregidos |
+| `@lhci/cli` 0.15.1 | 3 pasadas móvil sobre `/es` con `ui_v2=1` | Imágenes de 2,5 MB a 1,3 MB con `srcset` por CDN |

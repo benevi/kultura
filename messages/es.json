@@ -2114,35 +2114,30 @@
   },
   "portada": {
     "seo": {
-      "title": "KULTURA — Ves. Lees. Juegas.",
+      "title": "KULTURA — Todo lo que ves, lees y juegas",
       "description": "Series, películas, anime, manga, libros, cómics y juegos en un solo sitio, en español y sabiendo por dónde vas."
     },
     "nav": {
       "login": "Entrar"
     },
     "hero": {
-      "title": "Ves. Lees. Juegas.",
-      "line1": "Ves.",
-      "line2": "Lees.",
-      "line3": "Juegas.",
-      "lead": "Todo en un sitio, en español, y sabiendo por dónde vas.",
+      "title": "Todo lo que ves, lees y juegas. Y por dónde vas.",
+      "lead": "Siete formatos, en español.",
       "cta": "Crear cuenta",
       "demo": "Ver la demo",
-      "plusOne": "Marcar uno más",
-      "formatsLabel": "Elige un formato de muestra"
+      "plusOne": "+1, marcar uno más",
+      "shelfLabel": "Estantería de obras: usa las flechas para cambiar de obra"
     },
     "units": {
       "episode": "Episodio {n}",
       "chapter": "Capítulo {n}",
-      "hours": "{n} h"
+      "hours": "{n} h",
+      "issue": "Número {n}",
+      "page": "Página {n}"
     },
-    "story": {
-      "oneTitle": "Cada obra es un bloque.",
-      "oneText": "Y cada episodio, tomo o capítulo, una lámina.",
-      "twoTitle": "Marca una.",
-      "twoText": "El canto se enciende y el siguiente ya está esperando.",
-      "threeTitle": "Nunca pierdes el sitio.",
-      "threeText": "Aunque vuelvas dentro de un año."
+    "continue": {
+      "title": "Sigue por donde ibas.",
+      "text": "Pulsa +1. Es una muestra: no se guarda nada."
     },
     "formatsTitle": "Siete formatos. Una sola estantería.",
     "formats": {
