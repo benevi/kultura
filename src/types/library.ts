@@ -55,15 +55,20 @@ export interface LibraryEntry {
 export interface LibraryPayload {
   mediaId: string
   status: LibraryStatus
-  /** Nota entera 1-5. Si llega `rating10`, manda `rating10`. */
-  score?: number
+  /**
+   * Nota entera 1-5. Si llega `rating10`, manda `rating10`. Ausente = no se
+   * toca; `null` la quita (saneamiento 1.2: el POST solo cambia lo que llega).
+   */
+  score?: number | null
   /** Nota fina 0,5-10 (pasos de 0,5); `null` la quita. Solo con RATING_SCALE_10. */
   rating10?: number | null
   favorite?: boolean
   /** Apunte del diario que se crea junto con la entrada (solo con RATING_SCALE_10). */
   log?: DiaryLogInput
-  watchedAt?: string
-  episodeProgress?: EpisodeProgress
+  /** Ausente = no se toca; `null` la quita. */
+  watchedAt?: string | null
+  /** Ausente = no se toca; `null` lo quita. */
+  episodeProgress?: EpisodeProgress | null
   /** Datos del MediaItem para cachear en tabla media si no existe */
   mediaCache?: {
     externalId: string
