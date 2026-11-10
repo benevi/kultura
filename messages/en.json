@@ -979,6 +979,7 @@
     "otherLeft": "No longer in this chat",
     "loadingMessages": "Loading messages…",
     "logLabel": "Messages with {username}",
+    "loadOlder": "Show earlier messages",
     "logLabelFallback": "Conversation messages",
     "backToChats": "Back to messages",
     "messageLabel": "Message"

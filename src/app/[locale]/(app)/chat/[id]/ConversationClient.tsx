@@ -290,7 +290,11 @@ export function ConversationClient({
   // El historial entra con la región callada; a partir de ahí, cada mensaje
   // nuevo se anuncia (si no, al abrir el chat se leería entero).
   const [announce, setAnnounce] = useState(false)
+  // Saneamiento 1.3: el GET trae los últimos 100; los anteriores, a petición.
+  const [hasMore, setHasMore] = useState(false)
+  const [loadingOlder, setLoadingOlder] = useState(false)
   const bottomRef = useRef<HTMLDivElement>(null)
+  const logRef = useRef<HTMLDivElement>(null)
 
   // ACC-19: el desplazamiento suave respeta `prefers-reduced-motion` (la
   // regla global de CSS no alcanza a `scrollIntoView` desde JS).
@@ -310,6 +314,7 @@ export function ConversationClient({
       .then(r => r.json())
       .then(d => {
         setMessages(d.messages ?? [])
+        setHasMore(d.hasMore === true)
         setLoading(false)
         setTimeout(() => setAnnounce(true), 0)
         setTimeout(scrollToBottom, 50)
@@ -321,6 +326,34 @@ export function ConversationClient({
   }, [conversationId, scrollToBottom, markConversationRead])
 
   useEffect(() => { loadMessages() }, [loadMessages])
+
+  // Página anterior: se añade arriba sin mover lo que se está leyendo.
+  const loadOlder = useCallback(async () => {
+    const oldest = messages[0]
+    if (!oldest || loadingOlder) return
+    setLoadingOlder(true)
+    try {
+      const res = await fetch(
+        `/api/chat/${conversationId}?before=${encodeURIComponent(oldest.created_at)}`
+      )
+      if (!res.ok) throw new Error(String(res.status))
+      const d = (await res.json()) as { messages?: Message[]; hasMore?: boolean }
+      const el = logRef.current
+      const prevHeight = el?.scrollHeight ?? 0
+      setMessages(prev => {
+        const seen = new Set(prev.map(m => m.id))
+        return [...(d.messages ?? []).filter(m => !seen.has(m.id)), ...prev]
+      })
+      setHasMore(d.hasMore === true)
+      requestAnimationFrame(() => {
+        if (el) el.scrollTop += el.scrollHeight - prevHeight
+      })
+    } catch {
+      show({ message: t('loadError'), type: 'error' })
+    } finally {
+      setLoadingOlder(false)
+    }
+  }, [messages, loadingOlder, conversationId, show, t])
 
   // Realtime subscription
   useEffect(() => {
@@ -482,6 +515,7 @@ export function ConversationClient({
       {/* Messages — ACC-11: `role="log"` educado; los mensajes que llegan
           por realtime se anuncian al añadirse, sin releer el historial. */}
       <div
+        ref={logRef}
         role="log"
         aria-live={announce ? 'polite' : 'off'}
         aria-relevant="additions"
@@ -490,6 +524,13 @@ export function ConversationClient({
         tabIndex={0}
         className="flex-1 overflow-y-auto px-4 py-4 flex flex-col gap-3 focus-visible:[outline-style:solid] focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-focus-ring"
       >
+        {!loading && hasMore && (
+          <div className="flex justify-center">
+            <KButton variant="secondary" size="sm" onClick={loadOlder} loading={loadingOlder}>
+              {t('loadOlder')}
+            </KButton>
+          </div>
+        )}
         {!loading && !loadError && messages.length === 0 && (
           <div className="text-center text-sm text-text-secondary py-8">
             {t('messagePlaceholder')}
