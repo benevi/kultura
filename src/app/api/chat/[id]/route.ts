@@ -1,6 +1,6 @@
 // ============================================================
 // KULTURA — /api/chat/[id]
-// GET: mensajes de una conversación
+// GET: los últimos mensajes de una conversación (?before=ISO para los anteriores)
 // POST: enviar mensaje
 // ============================================================
 
@@ -13,7 +13,10 @@ interface RouteParams {
   params: Promise<{ id: string }>
 }
 
-export async function GET(_req: NextRequest, { params }: RouteParams): Promise<NextResponse> {
+/** Mensajes por página. */
+const CHAT_PAGE_SIZE = 100
+
+export async function GET(req: NextRequest, { params }: RouteParams): Promise<NextResponse> {
   const { id } = await params
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
@@ -35,25 +38,44 @@ export async function GET(_req: NextRequest, { params }: RouteParams): Promise<N
     .eq('user_id', user.id)
     .maybeSingle()
 
+  // Saneamiento 1.3: `?before=<created_at>` pide la página anterior.
+  const beforeParam = req.nextUrl.searchParams.get('before')
+  if (beforeParam !== null && Number.isNaN(Date.parse(beforeParam))) {
+    return NextResponse.json({ error: 'Invalid before' }, { status: 400 })
+  }
+
   if (!member) return NextResponse.json({ error: 'Not a member' }, { status: 403 })
 
-  // Fetch messages with sender info
-  const { data: messages } = await supabase
+  // Saneamiento 1.3: los ÚLTIMOS mensajes. Antes se pedían los 100 primeros en
+  // orden ascendente, así que en una conversación larga no se veía lo nuevo.
+  // Se pide uno de más para saber si quedan anteriores.
+  let query = supabase
     .from('messages')
     .select('id, content, sender_id, created_at, users(username, avatar_color, avatar_initials)')
     .eq('conversation_id', id)
-    .order('created_at', { ascending: true })
-    .limit(100)
+  if (beforeParam !== null) query = query.lt('created_at', beforeParam)
+  const { data: rows, error } = await query
+    .order('created_at', { ascending: false })
+    .limit(CHAT_PAGE_SIZE + 1)
 
-  // Mark as read
-  supabase
-    .from('conversation_members')
-    .update({ last_read_at: new Date().toISOString() })
-    .eq('conversation_id', id)
-    .eq('user_id', user.id)
-    .then(() => {})
+  if (error) return NextResponse.json({ error: 'Failed to load messages' }, { status: 500 })
 
-  return NextResponse.json({ messages: messages ?? [], currentUserId: user.id })
+  const page = rows ?? []
+  const hasMore = page.length > CHAT_PAGE_SIZE
+  // De vuelta a orden cronológico para pintarlos.
+  const messages = page.slice(0, CHAT_PAGE_SIZE).reverse()
+
+  // Leído solo al abrir (no al pedir mensajes viejos).
+  if (beforeParam === null) {
+    supabase
+      .from('conversation_members')
+      .update({ last_read_at: new Date().toISOString() })
+      .eq('conversation_id', id)
+      .eq('user_id', user.id)
+      .then(() => {})
+  }
+
+  return NextResponse.json({ messages, hasMore, currentUserId: user.id })
 }
 
 export async function POST(req: NextRequest, { params }: RouteParams): Promise<NextResponse> {
