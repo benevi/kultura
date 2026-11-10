@@ -81,6 +81,9 @@ export function useAccountSettings({
   const importInputRef = useRef<HTMLInputElement>(null)
   const [deleteModalOpen, setDeleteModalOpen] = useState(false)
   const [deleting, setDeleting] = useState(false)
+  /** Contraseña para reautenticar el borrado (solo cuentas con contraseña). */
+  const [deletePassword, setDeletePassword] = useState('')
+  const [deleteError, setDeleteError] = useState<string | null>(null)
   const [deletionSummary, setDeletionSummary] = useState<DeletionSummary | null>(null)
   const [summaryLoading, setSummaryLoading] = useState(false)
   const [pendingDeletion, setPendingDeletion] = useState<string | null>(deletionRequestedAt)
@@ -348,6 +351,8 @@ export function useAccountSettings({
   /** Abre el modal y pide el resumen de lo que se perdería (ROJO-7). */
   async function openDeleteModal() {
     setDeleteModalOpen(true)
+    setDeletePassword('')
+    setDeleteError(null)
     setDeletionSummary(null)
     setSummaryLoading(true)
     try {
@@ -414,13 +419,27 @@ export function useAccountSettings({
 
   async function handleDeleteAccount() {
     setDeleting(true)
+    setDeleteError(null)
     try {
-      const res = await fetch('/api/account', { method: 'DELETE' })
+      const res = await fetch('/api/account', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ password: deletePassword }),
+      })
       if (!res.ok) {
-        toast.show({ message: t('deleteAccountError'), type: 'error' })
+        // Reautenticación: el error se queda en el modal, abierto, para corregir.
+        const { error } = (await res.json().catch(() => ({}))) as { error?: string }
+        if (error === 'password_required' || error === 'wrong_password') {
+          setDeleteError(t('deletePasswordWrong'))
+        } else if (error === 'reauth_required') {
+          setDeleteError(t('deleteReauthRequired'))
+        } else {
+          setDeleteError(t('deleteAccountError'))
+        }
         return
       }
       const result = (await res.json().catch(() => ({}))) as { scheduled?: boolean; purgeAt?: string }
+      setDeleteModalOpen(false)
       const supabase = createClient()
       await unsubscribeCurrentDevice()
       await supabase.auth.signOut()
@@ -430,10 +449,10 @@ export function useAccountSettings({
           : `/${currentLocale}/login?account=deleted`
       )
     } catch {
-      toast.show({ message: t('deleteAccountError'), type: 'error' })
+      setDeleteError(t('deleteAccountError'))
     } finally {
       setDeleting(false)
-      setDeleteModalOpen(false)
+      setDeletePassword('')
     }
   }
 
@@ -486,5 +505,8 @@ export function useAccountSettings({
     deletionMessage,
     handleCancelDeletion,
     handleDeleteAccount,
+    deletePassword,
+    setDeletePassword,
+    deleteError,
   }
 }

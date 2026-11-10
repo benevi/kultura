@@ -8,6 +8,7 @@ import { readPlatforms } from '@/lib/platforms/platforms'
 import { isLibraryVisibility } from '@/lib/account/identity'
 import { accountGraceEnabled, libraryVisibilityEnabled, readAccountState } from '@/lib/account/account-state'
 import { ACCOUNT_GRACE_DAYS } from '@/lib/account/identity'
+import { hasPasswordIdentity } from '@/lib/account/reauth'
 import { ratingScale10Enabled, readRatingScale } from '@/lib/library/scale'
 import { weeklyEmailAllowedFor, weeklyEmailConfig } from '@/lib/email/config'
 import { readWeeklyEmailPreference } from '@/lib/email/preferences'
@@ -79,6 +80,7 @@ export default async function SettingsPage({ params, searchParams }: SettingsPag
         deletionRequestedAt={account.state?.deletion_requested_at ?? null}
         // Mismo cálculo que GET /api/account: con la bandera y la tabla, 7 días.
         graceDays={accountGraceEnabled() && account.migrated ? ACCOUNT_GRACE_DAYS : 0}
+        hasPassword={hasPasswordIdentity(user)}
         platformsSlot={platformsSlot}
         // F-24 → F-28: la escala de notas vive aquí (antes, en la Biblioteca).
         initialRatingScale={ratingScale10Enabled() ? readRatingScale(user) : null}

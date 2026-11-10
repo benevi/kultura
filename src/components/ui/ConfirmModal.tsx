@@ -1,6 +1,6 @@
 'use client'
 
-import type { RefObject } from 'react'
+import type { ReactNode, RefObject } from 'react'
 import { KButton } from '@/components/ui/KButton'
 import { Modal } from '@/components/ui/Modal'
 
@@ -20,6 +20,8 @@ interface ConfirmModalProps {
   finalFocusRef?: RefObject<HTMLElement | null>
   /** Error al confirmar: se anuncia dentro del diálogo. */
   error?: string | null
+  /** Campos extra entre el mensaje y los botones (p. ej. la contraseña). */
+  children?: ReactNode
 }
 
 /**
@@ -40,6 +42,7 @@ export function ConfirmModal({
   loading = false,
   finalFocusRef,
   error = null,
+  children,
 }: ConfirmModalProps) {
   return (
     <Modal
@@ -54,6 +57,7 @@ export function ConfirmModal({
       finalFocusRef={finalFocusRef}
       error={error}
     >
+      {children ? <div className="mb-4">{children}</div> : null}
       <div className="flex flex-wrap justify-end gap-2">
         <KButton
           variant="secondary"

@@ -20,6 +20,7 @@ import {
   scheduleDeletion,
 } from '@/lib/account/account-state'
 import { ACCOUNT_GRACE_DAYS, purgeDate } from '@/lib/account/identity'
+import { verifyDeletionIdentity } from '@/lib/account/reauth'
 
 const log = createLogger('api/account')
 
@@ -77,14 +78,18 @@ export async function GET(): Promise<NextResponse> {
 }
 
 /**
- * DELETE /api/account — con `ACCOUNT_GRACE=1` y la migración de F-12, deja la
- * cuenta programada para borrarse en 7 días (el cron diario la borra; entrar y
- * cancelar en Ajustes la salva). Si no, la borra ya: primero traspasa grupos y
+ * DELETE /api/account — body `{ password? }`. Antes de nada, reautenticación:
+ * contraseña si la cuenta la tiene; si no (solo Google), un inicio de sesión
+ * de hace menos de 10 minutos.
+ *
+ * Con `ACCOUNT_GRACE=1`, deja la cuenta programada para borrarse en 7 días
+ * (el cron diario la borra; entrar y cancelar en Ajustes la salva). Si no se
+ * puede programar, 503 y nada se borra. Sin la bandera, la borra ya: primero traspasa grupos y
  * listas colaborativas a otra persona y después el usuario de Auth, que se
  * lleva en cascada el resto (`list_items.added_by` y `suggestions.user_id`
  * quedan a NULL, conservando lo que aportó a listas ajenas sin su nombre).
  */
-export async function DELETE(): Promise<NextResponse> {
+export async function DELETE(req: Request): Promise<NextResponse> {
   const supabase = await createClient()
   const user = await currentUser(supabase)
   if (!user) return NextResponse.json({ error: 'Not authenticated' }, { status: 401 })
@@ -100,6 +105,15 @@ export async function DELETE(): Promise<NextResponse> {
     )
   }
 
+  // Reautenticación (va tras el límite: frena también adivinar la contraseña).
+  const body = (await req.json().catch(() => null)) as { password?: unknown } | null
+  const password = typeof body?.password === 'string' && body.password.length > 0 ? body.password : null
+  const identity = await verifyDeletionIdentity(user, password)
+  if (!identity.ok) {
+    const status = identity.code === 'password_required' ? 400 : 403
+    return NextResponse.json({ error: identity.code }, { status })
+  }
+
   const admin = createAdminClient()
 
   if (accountGraceEnabled()) {
@@ -111,8 +125,10 @@ export async function DELETE(): Promise<NextResponse> {
         purgeAt: purgeDate(requestedAt).toISOString(),
       })
     }
-    // Sin la tabla no hay quien cumpla el borrado programado: se borra ya.
-    log.warn('ACCOUNT_GRACE activo pero account_state no responde: borrado inmediato')
+    // El modal ha prometido días de gracia: no se borra en su lugar. Mejor un
+    // error y reintentar que un borrado inmediato e irreversible.
+    log.error('ACCOUNT_GRACE activo pero no se pudo programar el borrado: no se borra', { userId: user.id })
+    return NextResponse.json({ error: 'deletion_not_scheduled' }, { status: 503 })
   }
 
   const result = await deleteAccountNow(admin, user.id)
