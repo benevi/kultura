@@ -145,9 +145,15 @@ export async function POST(request: Request): Promise<NextResponse> {
   const progressValue = parsedProgress?.ok ? parsedProgress.value : null
 
   // Una sola nota: manda rating10 si llega; si no, la de siempre (score × 2).
-  // Sin nota en el cuerpo, la entrada queda sin nota (como antes).
-  const rating10 = body.rating10 !== undefined ? body.rating10 : scoreToRating10(body.score)
-  const score = rating10 === null ? null : rating10ToScore(rating10)
+  // Saneamiento 1.2: sin nota en el cuerpo NO se toca la que haya (antes se
+  // borraba: p. ej. «Añadir franquicia» o un cambio de estado la dejaban a null).
+  const hasRating = body.rating10 !== undefined || body.score !== undefined
+  const rating10 = !hasRating
+    ? undefined
+    : body.rating10 !== undefined
+      ? body.rating10
+      : scoreToRating10(body.score ?? undefined)
+  const score = rating10 === undefined ? undefined : rating10 === null ? null : rating10ToScore(rating10)
   const scale10 = ratingScale10Enabled()
 
   // 3. La fila del catálogo compartido `media` (FK de user_media). La escribe
@@ -168,27 +174,43 @@ export async function POST(request: Request): Promise<NextResponse> {
   // null en libros o juegos). No borra páginas ni horas ya migradas: el
   // disparador user_media_sync_progress solo saca del jsonb temporada y
   // episodio y conserva el resto si el jsonb no trae la clave.
-  const legacyRow = {
-    user_id: user.id,
-    media_id: body.mediaId,
-    status: body.status,
-    score,
-    watched_at: body.watchedAt ?? null,
-    // Con `progress` (cliente nuevo) manda él; si no, el campo de siempre.
-    episode_progress: (parsedProgress?.ok
-      ? progressToLegacy(progressValue)
-      : (body.episodeProgress ?? null)) as EpisodeProgress | null,
-  }
-  type Row = Omit<typeof legacyRow, 'episode_progress'> & {
+  // Saneamiento 1.2: solo van las columnas que trae el cuerpo. En un upsert
+  // PostgREST actualiza únicamente esas; las demás conservan su valor (o el
+  // valor por defecto si la fila es nueva).
+  type Row = {
+    user_id: string
+    media_id: string
+    status: LibraryStatus
+    score?: number | null
+    watched_at?: string | null
     episode_progress?: EpisodeProgress | null
     rating10?: number | null
     favorite?: boolean
+  }
+  const hasLegacyProgress = parsedProgress?.ok === true || body.episodeProgress !== undefined
+  const legacyRow: Row = {
+    user_id: user.id,
+    media_id: body.mediaId,
+    status: body.status,
+    ...(score !== undefined ? { score } : {}),
+    ...(body.watchedAt !== undefined ? { watched_at: body.watchedAt } : {}),
+    // Con `progress` (cliente nuevo) manda él; si no, el campo de siempre.
+    ...(hasLegacyProgress
+      ? {
+          episode_progress: (parsedProgress?.ok
+            ? progressToLegacy(progressValue)
+            : (body.episodeProgress ?? null)) as EpisodeProgress | null,
+        }
+      : {}),
   }
   const upsertEntry = (row: Row) =>
     supabase.from('user_media').upsert(row, { onConflict: 'user_id,media_id' }).select().single()
 
   const scaleExtras = scale10
-    ? { rating10, ...(typeof body.favorite === 'boolean' ? { favorite: body.favorite } : {}) }
+    ? {
+        ...(rating10 !== undefined ? { rating10 } : {}),
+        ...(typeof body.favorite === 'boolean' ? { favorite: body.favorite } : {}),
+      }
     : {}
   // F-27: con las columnas, el espejo `episode_progress` lo escribe el
   // disparador (mandarlo también podría pisar páginas u horas).
@@ -218,7 +240,7 @@ export async function POST(request: Request): Promise<NextResponse> {
         media_id: body.mediaId,
         watched_on: entry.watchedOn ?? body.watchedAt ?? today(),
         rewatch: entry.rewatch,
-        rating10: entry.rating10 !== undefined ? entry.rating10 : rating10,
+        rating10: entry.rating10 !== undefined ? entry.rating10 : (rating10 ?? null),
         review: entry.review,
         spoiler: entry.spoiler,
         private_note: entry.privateNote,

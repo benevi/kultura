@@ -83,7 +83,8 @@ describe('sin la bandera (hoy)', () => {
     const { status, json } = await call({ mediaId: 'movie_550', status: 'completed', score: 5, log: { review: 'x' } })
     expect(status).toBe(200)
     expect(upserts[0]).toEqual({
-      user_id: USER.id, media_id: 'movie_550', status: 'completed', score: 5, watched_at: null, episode_progress: null,
+      // Saneamiento 1.2: lo que no llega (fecha, progreso) no se manda.
+      user_id: USER.id, media_id: 'movie_550', status: 'completed', score: 5,
     })
     expect(logInserts).toHaveLength(0)
     expect(json.log).toBeNull()
@@ -96,6 +97,37 @@ describe('sin la bandera (hoy)', () => {
     await call({ mediaId: 'movie_550', status: 'completed', rating10: 9 })
     expect(upserts[0]).toMatchObject({ score: 5 })
     expect(upserts[0]).not.toHaveProperty('rating10')
+  })
+})
+
+// Saneamiento 1.2: el POST solo cambia lo que trae el cuerpo. Antes un
+// { mediaId, status } (Añadir franquicia, un cambio de estado) dejaba a null
+// la nota, la fecha y el progreso de una entrada que ya existía.
+describe('upsert parcial (saneamiento 1.2)', () => {
+  it('solo estado: no manda nota, fecha ni progreso', async () => {
+    upsertResults.push({ data: ROW, error: null })
+    await call({ mediaId: 'movie_550', status: 'pending' })
+    expect(upserts[0]).toEqual({ user_id: USER.id, media_id: 'movie_550', status: 'pending' })
+  })
+
+  it('solo estado con la escala de 10: tampoco toca rating10 ni favorito', async () => {
+    vi.stubEnv('RATING_SCALE_10', '1')
+    upsertResults.push({ data: ROW, error: null })
+    await call({ mediaId: 'movie_550', status: 'completed' })
+    expect(upserts[0]).toEqual({ user_id: USER.id, media_id: 'movie_550', status: 'completed' })
+  })
+
+  it('null explícito sí borra (el diálogo sustituye la entrada entera)', async () => {
+    upsertResults.push({ data: ROW, error: null })
+    await call({ mediaId: 'movie_550', status: 'pending', score: null, watchedAt: null, episodeProgress: null })
+    expect(upserts[0]).toMatchObject({ score: null, watched_at: null, episode_progress: null })
+  })
+
+  it('el apunte del diario sin nota propia ni de la entrada va con null', async () => {
+    vi.stubEnv('RATING_SCALE_10', '1')
+    upsertResults.push({ data: ROW, error: null })
+    await call({ mediaId: 'movie_550', status: 'completed', log: { review: 'x' } })
+    expect(logInserts[0]).toMatchObject({ rating10: null })
   })
 })
 

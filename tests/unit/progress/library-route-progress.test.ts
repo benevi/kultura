@@ -85,7 +85,9 @@ describe('sin PROGRESS_V2 (hoy)', () => {
       upserts.length = 0
       const { status, json } = await call({ mediaId: 'book_OL1W', status: 'pending', ...extra })
       expect(status).toBe(200)
-      expect(upserts[0].episode_progress).toBeNull()
+      // Saneamiento 1.2: sin progreso en el cuerpo, ni se manda la columna.
+      if (Object.keys(extra).length === 0) expect(upserts[0]).not.toHaveProperty('episode_progress')
+      else expect(upserts[0].episode_progress).toBeNull()
       expect(Object.keys(upserts[0]).filter((k) => k.startsWith('progress_'))).toEqual([])
       expect((json.entry as Record<string, unknown>).progress).toEqual({ page: 120, total: 350 })
     }

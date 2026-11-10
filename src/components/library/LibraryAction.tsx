@@ -203,11 +203,13 @@ export function LibraryAction({
       const payload: LibraryPayloadWithProgress = {
         mediaId,
         status: data.status,
-        score: data.score ?? undefined,
+        // El diálogo sustituye la entrada entera: lo vacío va como `null`
+        // explícito (el POST ya no borra lo que no llega).
+        score: data.score,
         rating10: data.rating10,
         ...(data.favorite !== undefined ? { favorite: data.favorite } : {}),
-        watchedAt: data.watchedAt ?? undefined,
-        episodeProgress: data.episodeProgress ?? undefined,
+        watchedAt: data.watchedAt,
+        episodeProgress: data.episodeProgress,
         ...(data.progress !== undefined ? { progress: data.progress } : {}),
         ...(data.log ? { log: data.log } : {}),
         mediaCache,
