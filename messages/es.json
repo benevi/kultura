@@ -249,20 +249,6 @@
     "fetchError": {
       "generic": "Ahora mismo no llegamos a los catálogos. Reintenta en un minuto.",
       "rateLimit": "Hay mucha gente consultando. Dale unos segundos y reintenta."
-    },
-    "v2": {
-      "results": "{count, plural, =0 {Sin resultados} one {# título} other {# títulos}}",
-      "clearSearch": "Quitar búsqueda",
-      "retry": "Reintentar",
-      "open": "Ver ficha",
-      "backToList": "Volver a la lista",
-      "noOption": "Nada con ese nombre",
-      "emptySearchTitle": "No encontramos nada",
-      "emptySearchHint": "Prueba con otro nombre o busca en todos los formatos.",
-      "emptySearchHintAll": "Prueba con otro nombre.",
-      "searchEverywhere": "Buscar en todo",
-      "emptyFiltersTitle": "Nada con estos filtros",
-      "emptyFiltersHint": "Quita alguno y vuelve a mirar."
     }
   },
   "search": {
@@ -657,12 +643,6 @@
     "addNoteNamed": "Añadir nota a «{title}»",
     "editNoteNamed": "Editar la nota de «{title}»"
   },
-  "uiV2": {
-    "badge": "Interfaz nueva · en pruebas",
-    "listsTitle": "Mis listas",
-    "listsEmpty": "Aún no tienes listas.",
-    "exit": "Volver a la interfaz actual"
-  },
   "aiRecommendations": {
     "title": "Para ti",
     "aiPickBadge": "Para ti",
@@ -879,15 +859,7 @@
       "pending": "<who>{user}</who> ha apuntado <what>{title}</what>",
       "abandoned": "<who>{user}</who> ha dejado <what>{title}</what>"
     },
-    "activityScore": "{score, plural, one {# estrella} other {# estrellas}}",
-    "v2": {
-      "title": "Por dónde vas",
-      "open": "Ver ficha",
-      "emptyTitle": "Aún no llevas nada",
-      "emptyText": "Busca lo que estés viendo, leyendo o jugando, o trae tu lista de otra web.",
-      "emptyDiscover": "Descubrir",
-      "emptyImport": "Importar mi lista"
-    }
+    "activityScore": "{score, plural, one {# estrella} other {# estrellas}}"
   },
   "friends": {
     "title": "Amigos",
@@ -2132,84 +2104,6 @@
     "attribution": {
       "steam": "Carátulas y descripciones de videojuegos:",
       "steamTrademark": "Steam y el logotipo de Steam son marcas de Valve Corporation; KULTURA no está afiliada a Valve."
-    }
-  },
-  "portada": {
-    "seo": {
-      "title": "KULTURA — Todo lo que ves, lees y juegas",
-      "description": "Series, películas, anime, manga, libros, cómics y juegos en un solo sitio, en español y sabiendo por dónde vas."
-    },
-    "nav": {
-      "login": "Entrar"
-    },
-    "hero": {
-      "title": "Todo lo que ves, lees y juegas. Y por dónde vas.",
-      "lead": "Siete formatos, en español.",
-      "cta": "Crear cuenta",
-      "demo": "Ver la demo",
-      "plusOne": "+1, marcar uno más",
-      "shelfLabel": "Estantería de obras: usa las flechas para cambiar de obra"
-    },
-    "units": {
-      "episode": "Episodio {n}",
-      "chapter": "Capítulo {n}",
-      "hours": "{n} h",
-      "issue": "Número {n}",
-      "page": "Página {n}"
-    },
-    "continue": {
-      "title": "Sigue por donde ibas.",
-      "text": "Pulsa +1. Es una muestra: no se guarda nada."
-    },
-    "formatsTitle": "Siete formatos. Una sola estantería.",
-    "formats": {
-      "tv": {
-        "name": "Series",
-        "line": "Temporada y episodio."
-      },
-      "movie": {
-        "name": "Películas",
-        "line": "Vistas, pendientes y tu nota."
-      },
-      "anime": {
-        "name": "Anime",
-        "line": "Episodio a episodio."
-      },
-      "manga": {
-        "name": "Manga",
-        "line": "Tomo y capítulo."
-      },
-      "book": {
-        "name": "Libros",
-        "line": "Por página o por porcentaje."
-      },
-      "comic": {
-        "name": "Cómics",
-        "line": "Número a número."
-      },
-      "game": {
-        "name": "Juegos",
-        "line": "Las horas que llevas."
-      }
-    },
-    "spanish": {
-      "title": "Hecha en español.",
-      "text": "No traducida. Tu cultura, con tus palabras."
-    },
-    "import": {
-      "title": "¿Vienes de otro sitio? Tráete tu lista."
-    },
-    "close": {
-      "title": "¿Por dónde vas?",
-      "text": "Empieza por la obra que tienes a medias."
-    },
-    "footer": {
-      "label": "Información",
-      "privacy": "Privacidad",
-      "terms": "Condiciones",
-      "legal": "Aviso legal",
-      "accessibility": "Accesibilidad",
-      "otherLocale": "English"
     }
   },
   "collection": {

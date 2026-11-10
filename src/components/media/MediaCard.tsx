@@ -15,7 +15,7 @@ export interface MediaCardProps {
   aspect?: "2/3" | "fill";
   /**
    * Acento radial de esquina superior-izquierda de las "cards feature" del
-   * bento (F0/DISENO.md §Cards feature grandes). Un matiz OKLCH (H de la
+   * bento (F0, cards feature grandes). Un matiz OKLCH (H de la
    * paleta) activa la capa; ausente = sin acento (comportamiento actual,
    * todos los consumidores fuera de MediaGrid layout="bento").
    */

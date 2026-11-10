@@ -1,6 +1,6 @@
 // @vitest-environment node
 /**
- * TXT-6 (glosario) y TXT-11 (voz, ver VOZ.md): una palabra por concepto y las
+ * TXT-6 (glosario) y TXT-11 (voz): una palabra por concepto y las
  * reglas de estilo que se pueden comprobar sin leer.
  *
  * - `FORBIDDEN`: sinónimos o formas que el glosario descarta, con la que va.

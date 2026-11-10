@@ -27,7 +27,7 @@ interface FriendsClientProps {
   profileUrl: string
 }
 
-/* Card F0 estándar (DISENO.md — combinación de primitivos: mismo radio,
+/* Card F0 estándar (combinación de primitivos: mismo radio,
    mismo stroke que el resto de la pantalla). Reutilizada por las varias
    secciones de esta pantalla en vez de repetir las mismas clases. */
 const CARD_STYLE = { background: F0.surface, borderColor: F0.stroke }
@@ -97,7 +97,7 @@ export function FriendsClient({
 
   return (
     <div className="flex flex-col gap-6">
-      {/* Share link — card "feature" (DISENO.md: gradiente + acento radial) */}
+      {/* Share link — card "feature" (gradiente + acento radial) */}
       <section
         className="relative overflow-hidden rounded-bento-xl p-5 flex items-center justify-between gap-4"
         style={{

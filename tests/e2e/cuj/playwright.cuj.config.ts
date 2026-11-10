@@ -1,5 +1,5 @@
 /**
- * Red de pruebas CUJ con BD real (F0, PLAN_ESTRATEGICO §7.3): los 8 recorridos
+ * Red de pruebas CUJ con BD real (F0): los 8 recorridos
  * críticos contra un `next start` construido con `env.cjs` y Supabase local.
  *
  *   supabase start                 # migraciones de supabase/migrations/

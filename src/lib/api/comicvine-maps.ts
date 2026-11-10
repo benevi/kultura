@@ -1,6 +1,6 @@
 // ============================================================
 // KULTURA — ComicVine filter translation tables (E59 F3c)
-// Traduce el contrato canónico (docs/E59_FILTER_SPEC.md) a los params de /issues:
+// Traduce el contrato canónico a los params de /issues:
 // sort → sort (cover_date:* | name:*), year → filter cover_date:a|b (rango),
 // editorial → POST-filtro sobre el publisher resuelto vía /volumes.
 //

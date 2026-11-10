@@ -194,7 +194,7 @@ jobs:
 
   cuj:
     name: CUJ con BD real (Playwright + Supabase local)
-    # F0 (PLAN_ESTRATEGICO §7.3): los 8 recorridos críticos contra Supabase
+    # F0: los 8 recorridos críticos contra Supabase
     # local levantado con TODAS las migraciones de supabase/migrations/ (de paso
     # comprueba que reproducen el esquema) y sembrado con scripts/seed-test.mjs.
     # Sin secretos: claves locales de `supabase start`. Sin red a proveedores:

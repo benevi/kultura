@@ -10,8 +10,7 @@
 // funciona igual y conserva la cuña.
 //
 // El clic se manda como evento personalizado de Vercel Web Analytics. En el
-// plan Hobby puede que no se registre (no verificado; ver
-// docs/F1_PRUEBA_DE_HUMO.md).
+// plan Hobby puede que no se registre (no verificado).
 // ============================================================
 
 import { useEffect, useRef } from "react";

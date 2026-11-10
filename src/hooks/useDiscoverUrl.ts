@@ -42,11 +42,7 @@ export const DISCOVER_FILTER_PARAM_KEYS = [
 /** Triggers cuyo valor en la URL es CSV (string[]). El resto es single. */
 const MULTI_KINDS = new Set(["multi", "searchable"]);
 
-/**
- * `navigate` (UI v2): recibe la query string y escribe la URL a su manera, sin
- * ir al servidor. Sin él, `router.push` de siempre.
- */
-export function useDiscoverUrl(type: DiscoverType, query: string, navigate?: (search: string) => void) {
+export function useDiscoverUrl(type: DiscoverType, query: string) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const isSearching = query.trim().length > 0;
@@ -80,8 +76,7 @@ export function useDiscoverUrl(type: DiscoverType, query: string, navigate?: (se
     return out;
   }, [type, searchParams]);
 
-  const go = (params: URLSearchParams) =>
-    navigate ? navigate(params.toString()) : router.push(`/discover?${params.toString()}`);
+  const go = (params: URLSearchParams) => router.push(`/discover?${params.toString()}`);
 
   return {
     isSearching,
@@ -113,7 +108,7 @@ export function useDiscoverUrl(type: DiscoverType, query: string, navigate?: (se
 
     /** Limpia búsqueda o filtros: vuelve al catálogo del tipo activo. */
     resetToCatalog() {
-      go(new URLSearchParams({ type, page: "1" }));
+      router.push(`/discover?type=${type}&page=1`);
     },
 
     /** Cambio de un filtro sobre la URL actual, siempre a la página 1. */

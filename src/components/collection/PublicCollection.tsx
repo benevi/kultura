@@ -1,6 +1,6 @@
 // ============================================================
 // KULTURA — Piezas del perfil público (/u/{username}, DIS-6)
-// Server Components. Solo primitivos de DISENO.md: avatar con la forma del
+// Server Components. Solo primitivos del sistema de diseño: avatar con la forma del
 // perfil, chips (inactivo + punto del matiz de cada formato, TYPE_HUE),
 // pegatina lima, pósters con la tarjeta única `PosterFrame` (gradiente SIEMPRE detrás,
 // radio de póster) y la tarjeta con sombra dura del login para registrarse.

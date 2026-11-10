@@ -34,12 +34,6 @@ export interface SearchBarProps {
    * series.
    */
   type?: string;
-  /**
-   * UI v2: al enviar, se descartan las sugerencias pendientes y no se piden
-   * más hasta volver a escribir. Sin esto, una respuesta que llega después de
-   * Enter (o el cambio de `type`) abre el desplegable encima de los resultados.
-   */
-  settleOnSubmit?: boolean;
 }
 
 export function SearchBar({
@@ -50,7 +44,6 @@ export function SearchBar({
   onSubmit,
   onClear,
   type,
-  settleOnSubmit = false,
 }: SearchBarProps) {
   const t = useTranslations("search");
   const tMedia = useTranslations("media");
@@ -147,11 +140,6 @@ export function SearchBar({
     const trimmed = query.trim();
     if (trimmed.length === 0) return;
     setOpen(false);
-    if (settleOnSubmit) {
-      hasTypedRef.current = false;
-      if (debounceRef.current) clearTimeout(debounceRef.current);
-      abortRef.current?.abort();
-    }
     if (mode === "inline") {
       onSubmit?.(trimmed);
       return;

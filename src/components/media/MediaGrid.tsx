@@ -33,7 +33,7 @@ export interface MediaGridProps {
 /** Cards que se cargan con prioridad: lo que se ve sin hacer scroll. */
 const PRIORITY_CARDS = 6;
 
-// Patrón bento F0 (DISENO.md §Rotación de cards): ciclo de 6 celdas, fila alta
+// Patrón bento F0 (rotación de cards): ciclo de 6 celdas, fila alta
 // de 3 (5/4/3 columnas × row-span-3) + fila baja de 3 (4/4/4 columnas ×
 // row-span-2) — mismo 12-col grid y proporción 3:2 que el mockup de Discover.
 // Cadenas literales completas (no interpoladas) para que Tailwind las detecte
@@ -54,8 +54,8 @@ export const BENTO_CELL_CLASSES = [
 // (incl. la de span-3, "pequeña" pese a compartir row-span) van sin transform.
 // Signos alternos, igual que en el mockup (-1.2deg / 1deg).
 const BENTO_ROTATION_CLASSES = ["-rotate-[1.2deg]", "rotate-[1deg]"];
-// Matices vivos de la paleta (H de --purple/--pink/--blue/--orange, DISENO.md
-// §Tokens) para el acento radial de esas mismas dos cards. Dos pares que se
+// Matices vivos de la paleta (H de --purple/--pink/--blue/--orange)
+// para el acento radial de esas mismas dos cards. Dos pares que se
 // alternan ciclo a ciclo para que filas consecutivas no se repitan idénticas.
 const BENTO_ACCENT_HUE_PAIRS: [number, number][] = [
   [300, 350], // purple, pink — igual que el mockup F0
@@ -97,7 +97,7 @@ export function MediaGrid({
   const visible = requirePoster ? items.filter((i) => i.poster && !failed.has(i.id)) : items;
   const gridClasses = cn(
     layout === "bento"
-      ? // gap-5 (20px): mismo espaciado entre cards de fila que fija DISENO.md
+      ? // gap-5 (20px): mismo espaciado entre cards de fila que fija el sistema de diseño
         // §Principio de extensión — también da holgura cómoda a la rotación
         // de las cards feature sin que se solapen con sus vecinas.
         "grid grid-cols-2 md:grid-cols-12 auto-rows-[130px] md:auto-rows-[150px] grid-flow-row-dense gap-5"

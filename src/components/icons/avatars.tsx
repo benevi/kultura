@@ -7,7 +7,7 @@
 // fila de doce círculos idénticos donde no se distinguía ni el personaje ni uno
 // de otro — justo lo contrario de elegir una cara.
 //
-// Volumen sin salirse del sistema (DISENO.md): el disco usa un degradado radial
+// Volumen sin salirse del sistema: el disco usa un degradado radial
 // de TRES paradas del MISMO matiz (clara arriba-izquierda → token → oscura
 // abajo-derecha), que es la fórmula de poster llevada a redondo, más un brillo
 // blanco a baja opacidad. Ninguna sombra CSS nueva y ningún matiz fuera de la

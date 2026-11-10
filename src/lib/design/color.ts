@@ -1,11 +1,11 @@
 // ============================================================
 // KULTURA — Utilidades de color (OKLCH → sRGB y contraste WCAG)
 // ------------------------------------------------------------
-// El sistema de diseño se escribe en OKLCH (DISENO.md), pero el contraste de
+// El sistema de diseño se escribe en OKLCH, pero el contraste de
 // WCAG 2.x se define sobre sRGB. Estas funciones convierten un token OKLCH a
 // sRGB con el mismo recorte por canal que aplica Chrome al pintar, y calculan
 // la razón de contraste. Las usan:
-// - los tests de contraste y de la tabla de hex de DISENO.md;
+// - los tests de contraste y de la tabla de hex del sistema de diseño;
 // - `Avatar`, para elegir el color del texto de las iniciales cuando el color
 //   llega como hex suelto (cuentas antiguas).
 //

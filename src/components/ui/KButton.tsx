@@ -32,14 +32,14 @@ export const KButton = React.forwardRef<HTMLButtonElement, KButtonProps>(
         className={cn(
           /* Base — radio F0: `rounded-pill` (20px) excede la mitad de la altura
              de cualquier tamaño de botón (32/40/44px), por lo que el navegador
-             lo recorta a un estadio perfecto — el "botón pill" de DISENO.md. */
+             lo recorta a un estadio perfecto — el "botón pill" del sistema de diseño. */
           "inline-flex items-center justify-center gap-2 rounded-pill font-body whitespace-nowrap",
           "transition-all duration-150 ease-out",
           "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-pink focus-visible:ring-offset-2 focus-visible:ring-offset-surface-base",
           "disabled:pointer-events-none disabled:opacity-40",
           /* Size */
           sizeClasses[size],
-          /* Variant — pesos de DISENO.md: primario 800, secundario 700.
+          /* Variant — pesos del sistema de diseño: primario 800, secundario 700.
 
              El primario es PINK (E-BOTON-PINK). Lo pintaba en
              `accent-positive` (lime), y parecía que el canvas no lo zanjaba:
@@ -48,7 +48,7 @@ export const KButton = React.forwardRef<HTMLButtonElement, KButtonProps>(
              que además ya están retirados de la UI (E-MATCH-SIN-BADGE). De
              los pills de ACCIÓN, los 13 son pink, sin excepción — Enviar,
              Crear grupo, Empezar gratis, Añadir título, Nueva lista, Entrar,
-             Guardar, Enviar sugerencia. Coincide con DISENO.md.
+             Guardar, Enviar sugerencia. Coincide con el sistema de diseño.
 
              `accent-positive` sigue siendo el verde semántico de estados
              (nav activa, chip de filtro activo, badge de biblioteca); lo que

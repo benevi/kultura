@@ -4,8 +4,6 @@
 
 import { describe, it, expect, vi } from "vitest";
 
-import { readFileSync } from "fs";
-import path from "path";
 import es from "../../../messages/es.json";
 import en from "../../../messages/en.json";
 import {
@@ -21,7 +19,7 @@ import {
   FINAL_FROM,
 } from "@/lib/landing/immersive";
 import { contrastRatio, toSrgb } from "@/lib/design/color";
-import { C, FORMAT_HEX } from "@/lib/og/brand";
+import { FORMAT_HEX } from "@/lib/og/brand";
 
 describe("copia confirmada de D-11", () => {
   it("h1, subtítulo y botones en español, literales", () => {
@@ -106,18 +104,6 @@ describe("¿galería WebGL? (REN-4, MOV-13, D-11)", () => {
 });
 
 describe("tarjeta de compartir (OG)", () => {
-  // La tabla de DISENO.md es la fuente de los hex; antes la tarjeta usaba otra
-  // paleta (fondo #1a1620) y no casaba con la web.
-  it("los colores de marca son los hex exactos de la tabla de tokens", () => {
-    const doc = readFileSync(path.resolve(__dirname, "../../../DISENO.md"), "utf8");
-    const hex = (token: string) => new RegExp(`\\| \`${token}\` \\|[^|]*\\|[^|]*\\| \`(#[0-9a-f]{6})\``).exec(doc)?.[1];
-    expect(C.bg).toBe(hex("--surface-base"));
-    expect(C.surface2).toBe(hex("--surface-elevated"));
-    expect(C.text).toBe(hex("--text-primary"));
-    expect(C.pink).toBe(hex("--accent-pink"));
-    expect(C.lime).toBe(hex("--accent-lime"));
-    expect(C.purple).toBe(hex("--accent-purple"));
-  });
   it("cada formato tiene su color hex derivado del OKLCH del hero", () => {
     for (const f of IMMERSIVE_FORMATS) expect(FORMAT_HEX[f]).toMatch(/^#[0-9a-f]{6}$/);
   });

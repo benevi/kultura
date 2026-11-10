@@ -262,7 +262,7 @@ describe('push · textos', () => {
     for (const m of [es, en]) expect(Object.keys(m).slice(-2)).toEqual(['collection', 'push'])
   })
 
-  it('el bloque push cumple VOZ.md (lo excluyen los tests de F-31): tú, una sola fórmula de error, sin emojis ni "..."', () => {
+  it('el bloque push cumple la guía de voz (lo excluyen los tests de F-31): tú, una sola fórmula de error, sin emojis ni "..."', () => {
     const flat = (o: object, p = ''): [string, string][] =>
       Object.entries(o).flatMap(([k, v]) => (v && typeof v === 'object' ? flat(v, `${p}${k}.`) : [[`${p}${k}`, String(v)]]))
     const esV = flat(es.push)

@@ -14,7 +14,7 @@ export interface KInputProps extends React.ComponentProps<"input"> {
  * - Etiqueta encima, 13px peso 700 en `--muted` (= `text-tertiary`).
  * - Caja rellena de `--surface-2`, radio 14px, padding 15/18.
  *
- * Excepciones al canvas por accesibilidad (documentadas en DISENO.md):
+ * Excepciones al canvas por accesibilidad (documentadas en el sistema de diseño):
  * - Borde de 1 px `--field-border` (ACC-4, WCAG 1.4.11). Sin él, el relleno
  *   `surface-2` sobre la tarjeta `surface` daba 1,14:1 y el campo no se veía;
  *   en alto contraste de Windows desaparecía del todo.

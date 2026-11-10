@@ -17,7 +17,7 @@ interface LogoProps {
 
 /** Icono de marca: badge redondeado conteniendo 3 rectángulos rotados en
  * cascada (monograma abstracto, no un glifo literal) — geometría literal
- * del canvas F0 v2 ("Kultura Editorial"), ver DISENO.md. */
+ * del canvas F0 v2 ("Kultura Editorial"). */
 function Mark({ size }: { size: number }) {
   return (
     <svg

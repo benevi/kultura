@@ -26,7 +26,7 @@ const COPY = {
 }
 
 /**
- * Hex de los tokens de DISENO.md. Aquí no hay hojas de estilo ni fuentes de
+ * Hex de los tokens del sistema de diseño. Aquí no hay hojas de estilo ni fuentes de
  * la app: este documento sustituye al layout raíz y Next no carga su CSS, así
  * que todo va en línea y con la fuente del sistema.
  */

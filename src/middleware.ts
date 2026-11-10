@@ -53,13 +53,7 @@ export async function middleware(request: NextRequest) {
   // Un ranking que no existe (/es/best/movie/abc) no llega a la página: se
   // guardaría en la caché ISR, una entrada por URL inventada. Va a la 404
   // dinámica (abajo), con nonce y sin caché.
-  // La portada v2, fuera de servicio (D-H2), tampoco se sirve directa: sería una
-  // segunda portada indexable. Mismo camino, para que lleve CSP con nonce y no se cachee.
-  const invalidBest = isInvalidBestPath(pathname) || /^\/(es|en)\/portada-v2\/?$/.test(pathname);
-
-  // D-H2: la portada es siempre la landing (el héroe de producción), también
-  // con la UI v2. La portada v2 «Láminas» ya no se sirve; queda en el código
-  // hasta la limpieza de la UI vieja (regla 3).
+  const invalidBest = isInvalidBestPath(pathname);
 
   if (isStaticCspRoute(pathname) && !invalidBest) {
     const response = intlMiddleware(request);

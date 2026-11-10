@@ -14,7 +14,7 @@ interface ErrorStateProps {
 
 /**
  * Tres pósteres «rotos»: los gradientes de dos paradas del mismo matiz de
- * DISENO.md, rotados en abanico, el central partido en dos, y la pegatina
+ * el sistema de diseño, rotados en abanico, el central partido en dos, y la pegatina
  * colgante. Decorativo.
  */
 function BrokenPosters({ sticker }: { sticker: string }) {

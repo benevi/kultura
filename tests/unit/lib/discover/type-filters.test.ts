@@ -1,5 +1,5 @@
 // E59 · R2 — TYPE_FILTERS V2 + TYPE_ORDER (rediseño desde mockup)
-// Contrato: docs/E59_FILTER_SPEC_V2.md. Verifica: orden con "all", matriz por
+// Verifica: orden con "all", matriz por
 // tipo en orden, kinds (single/multi/searchable), sort align:'end' en todos,
 // postFilter flags, y los 5 ocultos AUSENTES (política A).
 

@@ -133,7 +133,7 @@ describe("Landing v2 · secciones", () => {
   });
 
   // F0 §7.3: el bloque de rankings sale de la portada hasta v2.0 (sin suelo de
-  // votos que lo haga creíble: ver 04_DECISIONES). Ni notas ni enlaces a /best.
+  // votos que lo haga creíble). Ni notas ni enlaces a /best.
   it("sin rankings: ni notas, ni enlaces a /best, ni ancla #rankings", async () => {
     const { container } = await renderPage();
     expect(container.querySelector("#rankings")).toBeNull();

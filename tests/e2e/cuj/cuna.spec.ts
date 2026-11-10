@@ -1,7 +1,7 @@
 // CUJ · Prueba de humo de F1 (D2): de la mini-landing de una cuña al alta.
 // Llega con UTM de comunidad → el CTA lleva la cuña y las UTM al registro →
 // alta por correo contra Supabase local → `signup_completed` guarda la cuña y
-// la UTM en `props` (lo que lee la consulta de docs/F1_PRUEBA_DE_HUMO.md).
+// la UTM en `props`.
 import { test, expect } from "./fixtures";
 import { admin, passwordField, PASSWORD, uniq } from "./_db";
 

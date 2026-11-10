@@ -3,7 +3,7 @@
 // Ficha de detalle de un título cultural. Layout de dos columnas
 // tal y como se diseñó a mano en el canvas F0 ("Kultura Editorial"):
 // poster grande + chips + CTAs a la izquierda, sinopsis, ficha
-// técnica, "Dónde ver" y tráiler a la derecha. Ver DISENO.md — fuente
+// técnica, "Dónde ver" y tráiler a la derecha. El sistema de diseño es la fuente
 // de verdad del sistema visual. Server Component async.
 //
 // Es PÚBLICA (D-01): sin sesión, el CTA principal lleva al registro con
@@ -103,7 +103,7 @@ interface DetailTile {
 
 // ── Poster fallback (sin imagen real) ────────────────────────────────────────
 // Misma fórmula que "Posters/cards sin imagen real" + "Cards feature grandes"
-// del sistema de diseño (DISENO.md): degradado lineal de dos paradas del mismo
+// del sistema de diseño: degradado lineal de dos paradas del mismo
 // matiz + acento radial en la esquina superior-izquierda. El matiz se deriva
 // del id del item (determinista) para variar entre títulos.
 const POSTER_HUES = [350, 130, 55, 300, 250, 95] as const;
@@ -326,7 +326,7 @@ export async function MediaDetail({
               </div>
             </div>
 
-            {/* Chips: año / tipo / duración o episodios (DISENO.md — chip inactivo).
+            {/* Chips: año / tipo / duración o episodios (chip inactivo).
                 La etiqueta va como texto para lector (un `aria-label` en un
                 <span> sin rol no se anuncia). */}
             {tiles.length > 0 && (
@@ -373,7 +373,7 @@ export async function MediaDetail({
               </ul>
             )}
 
-            {/* Géneros — chip "outline" (DISENO.md) */}
+            {/* Géneros — chip "outline" */}
             {genres.length > 0 && (
               <ul aria-label={t("genres")} className="flex flex-wrap gap-2 mt-2.5">
                 {genres.slice(0, 5).map((g) => (

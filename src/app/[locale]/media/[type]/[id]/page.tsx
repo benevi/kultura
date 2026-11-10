@@ -200,8 +200,6 @@ export default async function MediaDetailPage({ params }: Props) {
 
   return (
     <>
-      {/* UI v2: la acción de la ficha lleva el color de su formato (`v2/skin.css`). */}
-      <div data-format={type} style={{ display: "contents" }}>
       <MediaDetail
         item={item}
         genreLabels={data.genreLabels}
@@ -223,7 +221,6 @@ export default async function MediaDetailPage({ params }: Props) {
           </React.Suspense>
         }
       />
-      </div>
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: serializeJsonLd(jsonLd) }} />
     </>
   );

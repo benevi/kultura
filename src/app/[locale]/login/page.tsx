@@ -1,7 +1,6 @@
 import { Suspense } from "react";
 import type { Metadata } from "next";
 import { getTranslations } from "next-intl/server";
-import { V2Scope } from "@/v2/V2Scope";
 import { LoginPage } from "./LoginPage";
 
 interface LoginRouteProps {
@@ -44,10 +43,8 @@ export default async function LoginRoute({ params }: LoginRouteProps) {
   const { locale } = await params;
 
   return (
-    <V2Scope>
-      <Suspense>
-        <LoginPage locale={locale} />
-      </Suspense>
-    </V2Scope>
+    <Suspense>
+      <LoginPage locale={locale} />
+    </Suspense>
   );
 }

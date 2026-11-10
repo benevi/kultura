@@ -373,7 +373,7 @@ export function LibraryAction({
           >
             {t(`status.${entry.status}`)}
           </span>
-          {/* DIS-14: «badge colgante» de DISENO.md (lima, −8°, sombra dura);
+          {/* DIS-14: «badge colgante» del sistema de diseño (lima, −8°, sombra dura);
               decorativa. Cuelga del póster de la ficha si lo hay. */}
           {stamp > 0 && !posterAnchor && stampBadge('absolute -top-4 -right-6')}
           {stamp > 0 && posterAnchor && createPortal(stampBadge('absolute -top-3.5 -left-3.5 text-sm'), posterAnchor)}

@@ -265,7 +265,7 @@ function FriendshipAction({
   }
 
   // accepted — pill secundario estándar (sin color de "peligro": F0 no define
-  // un matiz propio para eso entre los 6 acentos decorativos de DISENO.md).
+  // un matiz propio para eso entre los 6 acentos decorativos del sistema de diseño).
   return (
     <KButton
       variant="secondary"

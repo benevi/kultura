@@ -1,7 +1,7 @@
 // ============================================================
 // KULTURA — Marca para las tarjetas de compartir (next/og)
 // El rasterizador de next/og no entiende OKLCH, así que aquí van los hex
-// EXACTOS de la tabla de tokens de DISENO.md ("Referencia: tokens OKLCH → hex
+// EXACTOS de la tabla de tokens del sistema de diseño ("Referencia: tokens OKLCH → hex
 // sRGB"); es la única excepción. Antes eran aproximaciones de otra paleta
 // (fondo #1a1620 en vez de #0c0d14) y las tarjetas no casaban con la web.
 // ============================================================

@@ -10,7 +10,7 @@
 // Su propia cabecera decía que, cuando esa migración llegara, las literales
 // debían sustituirse por `var(--…)`. Llegó, y durante un tiempo no se hizo:
 // trece archivos pintaban con valores clavados, inmunes a cualquier cambio
-// de token — exactamente la mezcla de paletas que DISENO.md prohíbe.
+// de token — exactamente la mezcla de paletas que el sistema de diseño prohíbe.
 //
 // La sustitución es 1:1 (los literales coincidían exactamente con los valores
 // de `globals.css`), así que no cambia un píxel; lo que cambia es que a partir
