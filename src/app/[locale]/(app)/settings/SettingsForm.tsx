@@ -39,6 +39,11 @@ interface SettingsFormProps {
    */
   graceDays?: number
   /**
+   * La cuenta entra con contraseña: el borrado la pide. Sin ella (solo
+   * Google), el servidor exige un inicio de sesión reciente.
+   */
+  hasPassword?: boolean
+  /**
    * F-25: «Mis plataformas» (se guarda sola, fuera del botón Guardar). La
    * página la pasa solo si la columna existe; va tras Preferencias.
    */
@@ -81,6 +86,7 @@ export function SettingsForm({
   initialLibraryVisibility = null,
   deletionRequestedAt = null,
   graceDays = 0,
+  hasPassword = true,
   platformsSlot = null,
   initialRatingScale = null,
   initialWeeklyEmail = null,
@@ -105,6 +111,9 @@ export function SettingsForm({
     setDeleteModalOpen,
     deleting,
     deletionSummary,
+    deletePassword,
+    setDeletePassword,
+    deleteError,
     pendingDeletion,
     cancellingDeletion,
     libraryVisibility,
@@ -672,7 +681,19 @@ export function SettingsForm({
         onCancel={() => setDeleteModalOpen(false)}
         isDestructive
         loading={deleting}
-      />
+        error={deleteError}
+      >
+        {hasPassword ? (
+          <KInput
+            type="password"
+            autoComplete="current-password"
+            label={t('deletePasswordLabel')}
+            value={deletePassword}
+            onChange={(e) => setDeletePassword(e.target.value)}
+            disabled={deleting}
+          />
+        ) : null}
+      </ConfirmModal>
     </div>
   )
 }

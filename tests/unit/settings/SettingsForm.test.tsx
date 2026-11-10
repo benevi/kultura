@@ -46,6 +46,13 @@ const DEFAULT_PROPS = {
 
 // ── Tests ─────────────────────────────────────────────────────────────────────
 
+/** Lo que manda el modal al confirmar: DELETE con la contraseña (saneamiento 1.1). */
+const DELETE_WITH = (password: string) => ({
+  method: 'DELETE',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({ password }),
+})
+
 describe('SettingsForm', () => {
   beforeEach(() => {
     vi.clearAllMocks()
@@ -155,7 +162,7 @@ describe('SettingsForm', () => {
     expect(screen.getByText('deleteAccountConfirmTitle')).toBeInTheDocument()
     // Solo pide el resumen (GET); nada de DELETE hasta confirmar.
     await waitFor(() => expect(global.fetch).toHaveBeenCalledWith('/api/account'))
-    expect(global.fetch).not.toHaveBeenCalledWith('/api/account', { method: 'DELETE' })
+    expect(global.fetch).not.toHaveBeenCalledWith('/api/account', expect.objectContaining({ method: 'DELETE' }))
     // Sin resumen, el texto genérico.
     await waitFor(() => expect(screen.getByText('deleteAccountConfirmMessage')).toBeInTheDocument())
   })
@@ -167,10 +174,11 @@ describe('SettingsForm', () => {
 
     render(<SettingsForm {...DEFAULT_PROPS} />)
     fireEvent.click(screen.getByText('deleteAccount'))
+    fireEvent.change(screen.getByLabelText('deletePasswordLabel'), { target: { value: 'secreta' } })
     fireEvent.click(screen.getByText('deleteAccountConfirmButton'))
 
     await waitFor(() => {
-      expect(global.fetch).toHaveBeenCalledWith('/api/account', { method: 'DELETE' })
+      expect(global.fetch).toHaveBeenCalledWith('/api/account', DELETE_WITH('secreta'))
       expect(mockSignOut).toHaveBeenCalledOnce()
       expect(mockRouterPush).toHaveBeenCalledWith('/es/login?account=deleted')
     })
@@ -184,9 +192,41 @@ describe('SettingsForm', () => {
     fireEvent.click(screen.getByText('deleteAccountConfirmButton'))
 
     await waitFor(() => {
-      expect(global.fetch).toHaveBeenCalledWith('/api/account', { method: 'DELETE' })
+      expect(global.fetch).toHaveBeenCalledWith('/api/account', DELETE_WITH(''))
     })
     expect(mockSignOut).not.toHaveBeenCalled()
     expect(mockRouterPush).not.toHaveBeenCalled()
+  })
+
+  // Saneamiento 1.1: contraseña errónea → aviso dentro del modal, que sigue abierto.
+  it('contraseña errónea: avisa en el modal y no cierra sesión', async () => {
+    global.fetch = vi.fn().mockImplementation(async (_url: string, init?: RequestInit) =>
+      init?.method === 'DELETE'
+        ? new Response(JSON.stringify({ error: 'wrong_password' }), { status: 403 })
+        : new Response(null, { status: 500 })
+    )
+    render(<SettingsForm {...DEFAULT_PROPS} />)
+    fireEvent.click(screen.getByText('deleteAccount'))
+    fireEvent.change(screen.getByLabelText('deletePasswordLabel'), { target: { value: 'mala' } })
+    fireEvent.click(screen.getByText('deleteAccountConfirmButton'))
+
+    await waitFor(() => expect(screen.getByText('deletePasswordWrong')).toBeInTheDocument())
+    expect(screen.getByText('deleteAccountConfirmTitle')).toBeInTheDocument()
+    expect(mockSignOut).not.toHaveBeenCalled()
+  })
+
+  it('cuenta solo con Google: sin campo de contraseña; si el acceso es viejo, pide volver a entrar', async () => {
+    global.fetch = vi.fn().mockImplementation(async (_url: string, init?: RequestInit) =>
+      init?.method === 'DELETE'
+        ? new Response(JSON.stringify({ error: 'reauth_required' }), { status: 403 })
+        : new Response(null, { status: 500 })
+    )
+    render(<SettingsForm {...DEFAULT_PROPS} hasPassword={false} />)
+    fireEvent.click(screen.getByText('deleteAccount'))
+    expect(screen.queryByLabelText('deletePasswordLabel')).not.toBeInTheDocument()
+    fireEvent.click(screen.getByText('deleteAccountConfirmButton'))
+
+    await waitFor(() => expect(screen.getByText('deleteReauthRequired')).toBeInTheDocument())
+    expect(mockSignOut).not.toHaveBeenCalled()
   })
 })
