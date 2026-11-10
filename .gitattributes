@@ -1,0 +1,18 @@
+# Finales de línea LF en el repo y en la copia de trabajo, también en Windows.
+# Sin esto, con core.autocrlf=true, los tests que leen ficheros (CRLF) fallan en local.
+* text=auto eol=lf
+
+# Binarios: sin conversión.
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.webp binary
+*.avif binary
+*.ico binary
+*.woff binary
+*.woff2 binary
+*.ttf binary
+*.otf binary
+*.pdf binary
+*.zip binary
