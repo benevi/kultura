@@ -1,6 +1,6 @@
 // ============================================================
 // KULTURA — RAWG filter translation tables (E59 F3b · R4c-1)
-// Traduce el contrato canónico (docs/E59_FILTER_SPEC.md) a los params nativos
+// Traduce el contrato canónico a los params nativos
 // de /games: genres (slug), platforms (id), dates (rango), ordering.
 //
 // R4c-1: 4 filtros game NO nativos en RAWG → POST-filtro sobre los MediaItem ya

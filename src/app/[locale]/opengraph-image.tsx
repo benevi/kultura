@@ -10,7 +10,7 @@ import en from "../../../messages/en.json";
  * D-11: la misma promesa que el h1 de la landing, con cada formato en su color
  * (como se ilumina en el hero) y "Gratis y sin anuncios" debajo. El
  * rasterizador de next/og no entiende OKLCH, así que los colores salen de la
- * tabla hex exacta de DISENO.md (`lib/og/brand`).
+ * tabla hex exacta del sistema de diseño (`lib/og/brand`).
  */
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";

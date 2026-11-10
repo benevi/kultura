@@ -1,6 +1,5 @@
 import { Link } from "@/i18n/navigation";
 import { cn } from "@/lib/utils/index";
-import { Blocks } from "@/v2/Blocks";
 
 /**
  * La tarjeta de auth, literal del artboard Login del canvas "Kultura — Diseño
@@ -28,10 +27,8 @@ interface AuthShellProps {
  */
 export function AuthShell({ children, backLabel, cardClassName }: AuthShellProps) {
   return (
-    <main className="k2-auth flex min-h-screen flex-col items-center justify-center bg-surface-base py-10 pl-4 pr-[22px] md:px-4">
-      {/* Solo la UI v2 lo enseña (`v2/skin.css`). */}
-      <Blocks className="k2-auth__blocks hidden" />
-      <div className="k2-auth__column w-full max-w-[440px]">
+    <main className="flex min-h-screen flex-col items-center justify-center bg-surface-base py-10 pl-4 pr-[22px] md:px-4">
+      <div className="w-full max-w-[440px]">
         <Link
           href="/"
           aria-label={backLabel}
@@ -39,7 +36,7 @@ export function AuthShell({ children, backLabel, cardClassName }: AuthShellProps
         >
           <span aria-hidden="true">← </span>KULTURA
         </Link>
-        <div className={cn("k2-auth__card", AUTH_CARD, cardClassName)}>{children}</div>
+        <div className={cn(AUTH_CARD, cardClassName)}>{children}</div>
       </div>
     </main>
   );

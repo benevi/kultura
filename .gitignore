@@ -60,5 +60,4 @@ e2e_baseline.txt
 .env*
 
 # Notas de trabajo locales (no versionadas)
-DISENO.md
 __pycache__/

@@ -249,20 +249,6 @@
     "fetchError": {
       "generic": "We can't reach the catalogs right now. Retry in a minute.",
       "rateLimit": "Lots of people are searching right now. Give it a few seconds and retry."
-    },
-    "v2": {
-      "results": "{count, plural, =0 {No results} one {# title} other {# titles}}",
-      "clearSearch": "Clear search",
-      "retry": "Try again",
-      "open": "See details",
-      "backToList": "Back to the list",
-      "noOption": "Nothing by that name",
-      "emptySearchTitle": "We found nothing",
-      "emptySearchHint": "Try another name or search every format.",
-      "emptySearchHintAll": "Try another name.",
-      "searchEverywhere": "Search everything",
-      "emptyFiltersTitle": "Nothing with these filters",
-      "emptyFiltersHint": "Remove one and look again."
     }
   },
   "search": {
@@ -657,12 +643,6 @@
     "addNoteNamed": "Add a note to “{title}”",
     "editNoteNamed": "Edit the note on “{title}”"
   },
-  "uiV2": {
-    "badge": "New interface · testing",
-    "listsTitle": "My lists",
-    "listsEmpty": "You have no lists yet.",
-    "exit": "Back to the current interface"
-  },
   "aiRecommendations": {
     "title": "For you",
     "aiPickBadge": "Picked for you",
@@ -879,15 +859,7 @@
       "pending": "<who>{user}</who> saved <what>{title}</what> for later",
       "abandoned": "<who>{user}</who> dropped <what>{title}</what>"
     },
-    "activityScore": "{score, plural, one {# star} other {# stars}}",
-    "v2": {
-      "title": "Where you left off",
-      "open": "Open details",
-      "emptyTitle": "Nothing in progress yet",
-      "emptyText": "Find what you're watching, reading or playing, or bring your list from another site.",
-      "emptyDiscover": "Discover",
-      "emptyImport": "Import my list"
-    }
+    "activityScore": "{score, plural, one {# star} other {# stars}}"
   },
   "friends": {
     "title": "Friends",
@@ -2132,84 +2104,6 @@
     "attribution": {
       "steam": "Video game artwork and descriptions:",
       "steamTrademark": "Steam and the Steam logo are trademarks of Valve Corporation; KULTURA is not affiliated with Valve."
-    }
-  },
-  "portada": {
-    "seo": {
-      "title": "KULTURA — Everything you watch, read and play",
-      "description": "Series, movies, anime, manga, books, comics and games in one place, always knowing where you are."
-    },
-    "nav": {
-      "login": "Sign in"
-    },
-    "hero": {
-      "title": "Everything you watch, read and play. And where you left off.",
-      "lead": "Seven formats, Spanish first.",
-      "cta": "Create account",
-      "demo": "See the demo",
-      "plusOne": "+1, mark one more",
-      "shelfLabel": "Shelf of titles: use the arrow keys to change title"
-    },
-    "units": {
-      "episode": "Episode {n}",
-      "chapter": "Chapter {n}",
-      "hours": "{n} h",
-      "issue": "Issue {n}",
-      "page": "Page {n}"
-    },
-    "continue": {
-      "title": "Pick up where you left off.",
-      "text": "Tap +1. It's a sample: nothing gets saved."
-    },
-    "formatsTitle": "Seven formats. One shelf.",
-    "formats": {
-      "tv": {
-        "name": "Series",
-        "line": "Season and episode."
-      },
-      "movie": {
-        "name": "Movies",
-        "line": "Watched, pending and your rating."
-      },
-      "anime": {
-        "name": "Anime",
-        "line": "Episode by episode."
-      },
-      "manga": {
-        "name": "Manga",
-        "line": "Volume and chapter."
-      },
-      "book": {
-        "name": "Books",
-        "line": "By page or by percentage."
-      },
-      "comic": {
-        "name": "Comics",
-        "line": "Issue by issue."
-      },
-      "game": {
-        "name": "Games",
-        "line": "The hours you have put in."
-      }
-    },
-    "spanish": {
-      "title": "Spanish first.",
-      "text": "Built in Spanish from day one. Your culture, in your own words."
-    },
-    "import": {
-      "title": "Coming from somewhere else? Bring your list."
-    },
-    "close": {
-      "title": "Where are you?",
-      "text": "Start with the work you left halfway."
-    },
-    "footer": {
-      "label": "Information",
-      "privacy": "Privacy",
-      "terms": "Terms",
-      "legal": "Legal notice",
-      "accessibility": "Accessibility",
-      "otherLocale": "Español"
     }
   },
   "collection": {

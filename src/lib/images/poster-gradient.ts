@@ -1,6 +1,6 @@
 // Matices reutilizados literalmente del canvas F0 v2 para posters sin imagen
 // real — nunca gris plano: siempre un gradiente de dos paradas del mismo
-// matiz (ver DISENO.md → "Posters / cards sin imagen real").
+// matiz (posters y cards sin imagen real).
 const POSTER_HUES = [300, 55, 320, 220, 160, 40, 150, 260, 95, 350, 130, 25, 45, 250];
 
 export function posterGradient(seed: string): string {

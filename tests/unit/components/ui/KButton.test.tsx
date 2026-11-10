@@ -49,7 +49,7 @@ describe('KButton', () => {
   // E-BOTON-PINK: el primario es pink, no el lime semántico. Parecía que el
   // canvas no lo zanjaba (14 pills lime vs. 13 pink), pero TODOS los lime son
   // badges de match —retirados de la UI—; de los pills de ACCIÓN, los 13 son
-  // pink. Coincide con DISENO.md: "primario = fondo pink + texto on-pink".
+  // pink. Coincide con el sistema de diseño: "primario = fondo pink + texto on-pink".
   it('variant primary es pink, no accent-positive', () => {
     render(<KButton>Guardar</KButton>)
     const btn = screen.getByRole('button', { name: 'Guardar' })

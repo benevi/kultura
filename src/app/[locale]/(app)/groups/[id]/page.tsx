@@ -52,7 +52,7 @@ export default async function GroupPage({ params }: Props) {
 
   const tG = await getTranslations('groups')
 
-  // Preview "apilado" (DISENO.md — avatares apilados): primeros miembros de
+  // Preview "apilado" (avatares apilados): primeros miembros de
   // la lista ya cargada, mismo dato que el sidebar, solo tratamiento visual.
   const stackPreview = members.slice(0, 5)
 
@@ -62,7 +62,7 @@ export default async function GroupPage({ params }: Props) {
 
   return (
     <main className="page-grid [&>*]:max-w-3xl py-8 flex flex-col gap-8">
-      {/* Group header — card "feature" (DISENO.md: gradiente + acento radial) */}
+      {/* Group header — card "feature" (gradiente + acento radial) */}
       <div
         className="relative overflow-hidden rounded-bento-xl p-6 md:py-9 md:px-10 flex items-start gap-4"
         style={{
@@ -106,7 +106,7 @@ export default async function GroupPage({ params }: Props) {
           )}
 
           <div className="flex items-center gap-3 mt-3 flex-wrap">
-            {/* Amigos/miembros apilados (DISENO.md — avatares apilados) */}
+            {/* Amigos/miembros apilados (avatares apilados) */}
             {stackPreview.length > 0 && (
               <div className="flex items-center">
                 {stackPreview.map((m, i) => m.user && (

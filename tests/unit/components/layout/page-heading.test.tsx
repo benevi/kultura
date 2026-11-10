@@ -21,7 +21,7 @@ describe('PageHeading', () => {
     expect(h1.className).toContain('font-bold')
   })
 
-  // El icono es decoración (sustituye al emoji del canvas, VOZ.md): no puede
+  // El icono es decoración (sustituye al emoji del canvas): no puede
   // ensuciar el nombre accesible de la pantalla.
   it('el icono va aria-hidden y fuera del texto traducido', () => {
     const { container } = render(<PageHeading icon={IconLists}>Tus listas</PageHeading>)

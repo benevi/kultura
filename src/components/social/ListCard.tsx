@@ -6,7 +6,7 @@ import { IconFriends } from '@/components/icons'
 type FilterKey = 'movie' | 'tv' | 'anime' | 'book' | 'comic' | 'manga' | 'game'
 const MEDIA_FILTER_KEYS = new Set<string>(['movie', 'tv', 'anime', 'book', 'comic', 'manga', 'game'])
 
-// Portada sin imagen real (F0/DISENO.md): gradiente lineal de dos paradas con
+// Portada sin imagen real (F0): gradiente lineal de dos paradas con
 // el mismo matiz (más oscuro en la segunda parada) + acento radial en la
 // esquina superior-izquierda ("cards feature grandes"). El matiz se deriva
 // del id de la lista para que cada tarjeta tenga un color estable y propio,

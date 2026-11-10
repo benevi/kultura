@@ -5,7 +5,7 @@
 // Cada título enlaza a su ficha pública (PRO-8, CRE-11) con un enlace
 // "estirado" que cubre la card entera (una sola parada de teclado y un solo
 // nombre accesible, el título), y tiene su "Guardar" aparte, que lleva a la
-// misma ficha: allí está el botón de añadir (o el alta, sin cuenta). Primitivos de DISENO.md: card `rounded-bento` sobre
+// misma ficha: allí está el botón de añadir (o el alta, sin cuenta). Primitivos del sistema de diseño: card `rounded-bento` sobre
 // `--surface-default`, portada `rounded-2xl` con el gradiente DETRÁS,
 // pegatina lima colgante para el #1, números en display.
 //
@@ -87,7 +87,7 @@ function Genres({ genres }: { genres: string[] }) {
 }
 
 /**
- * Fondo "card feature" (DISENO.md) del #1, solo desde `md`: radial pink al
+ * Fondo "card feature" del #1, solo desde `md`: radial pink al
  * 55 % en la esquina superior izquierda, que allí queda detrás del póster.
  * En móvil (fila con el número arriba a la derecha) teñiría el número pink.
  */
@@ -96,7 +96,7 @@ const FEATURE_BG =
 
 /**
  * Jerarquía del podio desde `md` (DIS-10): el #1 es la columna más ancha, con
- * el número en display de 96 px y el fondo de "card feature" de DISENO.md
+ * el número en display de 96 px y el fondo de "card feature" del sistema de diseño
  * (radial pink en la esquina superior izquierda); el #2 y el #3 son más
  * estrechos, con números menores, y bajan en escalera. El orden visual sigue
  * siendo 1-2-3 de izquierda a derecha, el mismo que el del documento.

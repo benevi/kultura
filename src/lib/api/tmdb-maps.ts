@@ -1,6 +1,6 @@
 // ============================================================
 // KULTURA — TMDB filter translation tables (E59 F3a)
-// Traduce el contrato canónico de filtros (docs/E59_FILTER_SPEC.md) a los
+// Traduce el contrato canónico de filtros a los
 // params nativos de /discover/{movie,tv}. Centraliza las tablas (género,
 // plataforma, idioma, sort, rangos de año/duración, status) y expone un
 // builder que produce el Record<string,string> que se pasa a tmdbFetch.

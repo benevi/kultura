@@ -24,14 +24,12 @@ const config: Config = {
     "./src/pages/**/*.{js,ts,jsx,tsx,mdx}",
     "./src/components/**/*.{js,ts,jsx,tsx,mdx}",
     "./src/app/**/*.{js,ts,jsx,tsx,mdx}",
-    // F0: pantallas de la UI v2 tras el interruptor `ui_v2` (src/lib/ui-v2.ts).
-    "./src/v2/**/*.{js,ts,jsx,tsx,mdx}",
   ],
   theme: {
     /* ─── Sets cerrados (F-30, DIS-7 y DIS-12) ──────────────────────────
        Van FUERA de `extend`: sustituyen la escala de Tailwind, así que una
        clase que no esté aquí (`rounded-md`, `shadow-xl`…) no genera CSS y
-       `tests/unit/visual/classes-compile.test.ts` la detecta. DISENO.md
+       `tests/unit/visual/classes-compile.test.ts` la detecta. El sistema de diseño
        documenta estos mismos valores (`tests/unit/visual/diseno-scales`). */
 
     /* 4 radios + píldora. Pequeño (8): controles chicos, miniaturas y el
@@ -71,7 +69,7 @@ const config: Config = {
       display: ["clamp(3.25rem, 5.4vw, 5.75rem)", { lineHeight: "1" }],
     },
 
-    /* Sombras: las del set cerrado de DISENO.md y ninguna más. */
+    /* Sombras: las del set cerrado del sistema de diseño y ninguna más. */
     boxShadow: {
       none: "none",
       /* Sombra dura de las piezas protagonistas (héroe, tarjeta de acceso,

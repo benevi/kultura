@@ -4,7 +4,7 @@
 // la consulta a Wikidata (o a su caché) nunca retrase el resto de la página.
 // Sin vínculos no pinta nada.
 //
-// Diseño (DISENO.md): fila de tarjetas compactas con portada pequeña y el
+// Diseño: fila de tarjetas compactas con portada pequeña y el
 // gradiente de póster SIEMPRE detrás, chip de relación "outline" y el mismo
 // título de sección que el resto de la ficha. Al final, "Añadir toda la
 // franquicia" (con sesión) y la cita de la fuente (Wikidata, CC0).

@@ -14,7 +14,7 @@ const FOCUS =
   "focus-visible:[outline-style:solid] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus-ring";
 
 const CHIP = `inline-flex min-h-11 items-center rounded-full px-4 text-sm font-bold transition-colors ${FOCUS}`;
-/** Chip relleno: activo en lima (estado, DISENO.md), inactivo en `--surface-2`. */
+/** Chip relleno: activo en lima (estado), inactivo en `--surface-2`. */
 const CHIP_ON = "bg-accent-lime text-on-accent-lime";
 const CHIP_OFF = "bg-surface-elevated text-text-primary hover:text-accent-pink";
 /** Chip "outline" para los años: el activo se rellena del mismo lima. */

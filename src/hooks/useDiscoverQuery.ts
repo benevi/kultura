@@ -19,8 +19,6 @@ export interface DiscoverQueryInput {
   /** Búsqueda de texto (E-DISCOVER-SEARCH-MERGE); vacía = catálogo. */
   query: string;
   locale: string;
-  /** Cambiarlo repite la petición (el «Reintentar» de la UI v2). */
-  retryKey?: number;
   /** Se llama al terminar cada petición vigente (con éxito o con error). */
   onSettled?: () => void;
 }
@@ -41,7 +39,6 @@ export function useDiscoverQuery({
   filterQuery,
   query,
   locale,
-  retryKey = 0,
   onSettled,
 }: DiscoverQueryInput): DiscoverQueryState {
   const [items, setItems] = useState<MediaItem[]>([]);
@@ -88,7 +85,7 @@ export function useDiscoverQuery({
     return () => {
       cancelled = true;
     };
-  }, [type, page, filterQuery, query, locale, retryKey]);
+  }, [type, page, filterQuery, query, locale]);
 
   return { items, hasMore, totalPages, fetchErrorKind, loading };
 }

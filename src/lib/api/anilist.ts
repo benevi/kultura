@@ -339,15 +339,6 @@ export interface AniListManga {
   volumes?: number | null;
   status?: string | null;
   format?: string | null;
-  /** Solo lo pide la tendencia de la portada. */
-  tags?: AniListTag[] | null;
-}
-
-export interface AniListTag {
-  name: string;
-  /** 0–100: cuánto describe la etiqueta a la obra, según votan en AniList. */
-  rank?: number | null;
-  isAdult?: boolean | null;
 }
 
 /** Una búsqueda de complemento se cachea 24 h: las obras no cambian de nombre. */
@@ -371,29 +362,6 @@ export async function searchMangaAniList(query: string, perPage = 10): Promise<A
       timeoutMs: ANILIST_MANGA_SEARCH_TIMEOUT_MS,
       retries: 0,
     }
-  );
-  return data.Page?.media ?? [];
-}
-
-const MANGA_TRENDING_QUERY = `
-  query ($perPage: Int) {
-    Page(page: 1, perPage: $perPage) {
-      pageInfo { currentPage lastPage hasNextPage total }
-      media(type: MANGA, isAdult: false, format: MANGA, countryOfOrigin: "JP", averageScore_greater: 76, popularity_greater: 20000, sort: [TRENDING_DESC, POPULARITY_DESC]) {
-        ${MANGA_FIELDS}
-        tags { name rank isAdult }
-      }
-    }
-  }
-`;
-
-/** Mangas en tendencia, para la estantería de la portada. */
-export async function discoverTrendingManga(perPage = 30): Promise<AniListManga[]> {
-  const data = await anilistFetch<{ Page: { media: AniListManga[] } }>(
-    MANGA_TRENDING_QUERY,
-    { perPage },
-    anilistPageSchema,
-    { cache: { revalidate: ANILIST_MANGA_SEARCH_REVALIDATE_SECONDS }, retries: 0 }
   );
   return data.Page?.media ?? [];
 }

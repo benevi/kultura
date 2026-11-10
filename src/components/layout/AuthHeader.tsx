@@ -19,7 +19,7 @@ interface AuthHeaderProps {
 }
 
 /**
- * Cabecera con sesión (DISENO.md): 56 px, opaca. Logo a la izquierda, los 5
+ * Cabecera con sesión: 56 px, opaca. Logo a la izquierda, los 5
  * destinos en el centro (solo escritorio; en móvil van en `BottomNav`) y a la
  * derecha tres cajas de 44×44: Social, notificaciones y avatar. A 320 px
  * caben logo + 3 cajas sin scroll horizontal (el idioma va en el menú del

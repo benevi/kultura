@@ -12,7 +12,7 @@
 // Nueve tamaños distintos para el mismo elemento. Esto lo unifica.
 //
 // El canvas pone un emoji tras el título; en el código va un icono propio
-// (`src/components/icons`, VOZ.md: sin emojis en la interfaz) y APARTE del
+// (`src/components/icons`: sin emojis en la interfaz) y APARTE del
 // texto traducido: es decoración, lleva `aria-hidden` y no se cuela en el
 // nombre accesible de la pantalla.
 // ============================================================

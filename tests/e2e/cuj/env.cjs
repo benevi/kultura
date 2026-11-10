@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-require-imports */
 /**
- * Entorno de la red de pruebas CUJ (F0, PLAN_ESTRATEGICO §7.3): la app
+ * Entorno de la red de pruebas CUJ (F0): la app
  * construida y arrancada contra **Supabase local** (`supabase start`, con
  * todas las migraciones de `supabase/migrations/`) y sin red hacia los
  * proveedores (TMDB responde con los datos fijos del job de accesibilidad;

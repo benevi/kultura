@@ -20,7 +20,6 @@ import { Link } from '@/i18n/navigation'
 import { generatedUsername, initialsFor, purgeDate } from '@/lib/account/identity'
 import { readAccountState } from '@/lib/account/account-state'
 import { progressV2Active } from '@/lib/library/progress-server'
-import { isUiV2Enabled } from '@/lib/ui-v2'
 import {
   FriendsActivity,
   FriendsActivitySkeleton,
@@ -147,7 +146,9 @@ export default async function HomePage() {
       progress: item.episode_progress,
     }))
 
-  const deletionNotice = deletionRequestedAt && (
+  return (
+    <main className="page-grid [&>*]:max-w-4xl py-6 md:py-8 space-y-8 md:space-y-10">
+      {deletionRequestedAt && (
         <div
           role="status"
           className="flex flex-wrap items-center justify-between gap-3 rounded-bento border-2 border-accent-danger/50 bg-surface-default px-5 py-4"
@@ -166,10 +167,12 @@ export default async function HomePage() {
             {tSettings('cancelDeletion')}
           </Link>
         </div>
-  )
+      )}
+      <HeroSection item={inProgress} fullProgress={fullProgress} />
 
-  const otherSections = (
-    <>
+      {/* F-27 (PRO-5): cada tarjeta con su progreso y «1 toque» para avanzar. */}
+      <ContinueRow title={t('continueWatching')} items={filteredRecent} fullProgress={fullProgress} />
+
       {/* Orden tras retirar el hero vacío: primero lo propio (lo que sigues, lo
           que la IA te elige por match), después lo social y por último las
           novedades generales. Antes, una cuenta sin título en curso abría con
@@ -193,43 +196,6 @@ export default async function HomePage() {
       </Suspense>
       <PopularInCircle />
       <GenreNews />
-    </>
-  )
-
-  // F0: conmutador de UI (src/lib/ui-v2.ts). Mismos datos, otra pantalla.
-  if (await isUiV2Enabled()) {
-    const { HomeScreen } = await import('@/v2/home/HomeScreen')
-    const lead = inProgress?.media
-      ? [{
-          mediaId: inProgress.media_id,
-          title: inProgress.media.title,
-          poster: inProgress.media.poster,
-          type: inProgress.media.type,
-          status: 'in_progress' as const,
-          year: inProgress.media.year,
-          progress: inProgress.episode_progress,
-        }]
-      : []
-    return (
-      <HomeScreen
-        items={[...lead, ...filteredRecent].filter((item) => item.type)}
-        fullProgress={fullProgress}
-        notice={deletionNotice}
-      >
-        {otherSections}
-      </HomeScreen>
-    )
-  }
-
-  return (
-    <main className="page-grid [&>*]:max-w-4xl py-6 md:py-8 space-y-8 md:space-y-10">
-      {deletionNotice}
-      <HeroSection item={inProgress} fullProgress={fullProgress} />
-
-      {/* F-27 (PRO-5): cada tarjeta con su progreso y «1 toque» para avanzar. */}
-      <ContinueRow title={t('continueWatching')} items={filteredRecent} fullProgress={fullProgress} />
-
-      {otherSections}
     </main>
   )
 }

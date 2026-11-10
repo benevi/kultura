@@ -17,7 +17,6 @@ const { readTodayMock, starterMock, getDailyMock, signal } = vi.hoisted(() => ({
   signal: { count: 5 as number | null, error: null as unknown },
 }))
 
-vi.mock('@/lib/ui-v2', () => ({ isUiV2Enabled: async () => false }))
 vi.mock('next/navigation', () => ({ redirect: vi.fn() }))
 // Aviso de borrado programado (F-12): enlace a Ajustes.
 vi.mock('@/i18n/navigation', () => ({ Link: () => null }))

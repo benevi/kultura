@@ -52,11 +52,11 @@ export function isNavActive(pathname: string, href: string): boolean {
   return path === base || path.startsWith(`${base}/`)
 }
 
-/** Foco visible común (DISENO.md: contorno de 2 px `--focus-ring`, no sombra). */
+/** Foco visible común (contorno de 2 px `--focus-ring`, no sombra). */
 export const FOCUS_RING =
   'focus-visible:[outline-style:solid] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus-ring'
 
-/** Caja de icono de la cabecera: 44×44, radio 16, fondo `--surface-2` (DISENO.md). */
+/** Caja de icono de la cabecera: 44×44, radio 16, fondo `--surface-2`. */
 export const HEADER_ICON_BOX = [
   'relative flex items-center justify-center w-11 h-11 flex-shrink-0 rounded-2xl bg-surface-elevated text-text-secondary',
   'hover:text-text-primary transition-colors',

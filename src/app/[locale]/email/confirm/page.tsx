@@ -12,7 +12,6 @@ import type { Metadata } from 'next'
 import { getTranslations } from 'next-intl/server'
 import { Header } from '@/components/layout/Header'
 import { Footer } from '@/components/layout/Footer'
-import { V2Scope } from '@/v2/V2Scope'
 import { EMAIL_TOKEN_SECRET_MIN } from '@/lib/email/config'
 import { isCurrentConsentVersion } from '@/lib/email/consent'
 import { verifyOptinToken } from '@/lib/email/unsubscribe-token'
@@ -64,7 +63,6 @@ export default async function ConfirmPage({ params, searchParams }: Props) {
   const showForm = view === 'confirm' || (view === 'error' && token !== '')
 
   return (
-    <V2Scope>
     <div className="min-h-screen flex flex-col">
       <Header />
       <main id="main" className="page-grid [&>*]:max-w-xl flex-1 py-12 md:py-16">
@@ -95,6 +93,5 @@ export default async function ConfirmPage({ params, searchParams }: Props) {
       </main>
       <Footer />
     </div>
-    </V2Scope>
   )
 }

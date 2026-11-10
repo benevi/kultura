@@ -13,7 +13,6 @@ const h = vi.hoisted(() => ({
   signOut: vi.fn(),
 }))
 
-vi.mock('@/lib/ui-v2', () => ({ isUiV2Enabled: async () => false }))
 vi.mock('next/navigation', () => ({
   redirect: (url: string) => {
     throw new Error(`REDIRECT ${url}`)

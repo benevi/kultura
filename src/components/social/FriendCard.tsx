@@ -21,7 +21,7 @@ interface FriendCardProps {
 }
 
 /**
- * Anillo "story" F0 (DISENO.md — avatares circulares con actividad):
+ * Anillo "story" F0 (avatares circulares con actividad):
  * conic-gradient de 3 colores de la paleta + hueco --bg de 3px. Aquí marca
  * "esto requiere tu atención" sobre el avatar de una solicitud pendiente,
  * no un dato inventado — solo el tratamiento visual del avatar ya real.

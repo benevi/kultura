@@ -7,7 +7,7 @@
 // keyframes globales ni de estilos en línea bloqueables.
 // ============================================================
 
-/** Duraciones de DISENO.md (--duration-fast / --duration-slow) y el paso de la cascada. */
+/** Duraciones del sistema de diseño (--duration-fast / --duration-slow) y el paso de la cascada. */
 export const STAMP_MS = 250
 export const STAR_POP_MS = 140
 export const STAR_CASCADE_STEP_MS = 40

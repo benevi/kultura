@@ -4,7 +4,7 @@
 //   - el orden canónico de tipos incl. "all" (TYPE_ORDER) → barra TIPO + validación
 //   - qué triggers de filtro se MUESTRAN por tipo (TYPE_FILTERS)
 //
-// Contrato: docs/E59_FILTER_SPEC_V2.md (mockup = fuente de verdad).
+// Contrato: el mockup es la fuente de verdad.
 // Política A: pares sin dato en la API se OCULTAN (no aparecen aquí).
 // "nunca un trigger que mienta": solo se listan triggers `nativo` o `post` viable.
 //

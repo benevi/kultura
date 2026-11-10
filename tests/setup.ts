@@ -1,4 +1,3 @@
-import { vi } from "vitest";
 import "@testing-library/jest-dom";
 
 // Defaults de env para tests unitarios: cualquier módulo que importe
@@ -16,10 +15,3 @@ process.env.TMDB_API_KEY ??= "test-tmdb-key";
 process.env.RAWG_API_KEY ??= "test-rawg-key";
 process.env.COMICVINE_KEY ??= "test-comicvine-key";
 process.env.ANTHROPIC_API_KEY = "sk-ant-test-key";
-
-// UI v2: `V2Scope` lee cookies y es asíncrono, y los tests de layouts pintan con
-// RTL fuera de una petición. Aquí no hace nada; su test propio lo desactiva con
-// `vi.unmock` (tests/unit/ui-v2/v2-scope.test.tsx).
-vi.mock("@/v2/V2Scope", () => ({
-  V2Scope: ({ children }: { children: unknown }) => children,
-}));

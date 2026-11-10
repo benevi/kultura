@@ -3,7 +3,7 @@
  *
  * ACC-9: era hex de Tailwind con iniciales en blanco y solo 1 de 8 colores
  * llegaba a 4,5:1 (ámbar 2,15:1). Ahora es OKLCH como el resto del sistema
- * (DISENO.md prohíbe mezclar hex) y cada color trae su texto "on-color"
+ * (el sistema de diseño prohíbe mezclar hex) y cada color trae su texto "on-color"
  * oscuro del mismo matiz, el patrón de F0 para texto sobre acentos vivos.
  * Contrastes (tests/unit/design/contrast.test.ts): 4,99-9,86:1.
  *

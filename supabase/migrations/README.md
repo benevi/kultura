@@ -67,4 +67,4 @@ La baseline está marcada como `applied` en remoto (proyecto `app movies`, ref `
 
 La baseline fue verificada el 2026-05-03 contra postgres puro (no Supabase): el SQL es sintácticamente válido y todas las DDLs (`CREATE TABLE`, `CREATE FUNCTION`, FKs, CHECK constraints) ejecutan sin error. Los únicos errores observados son los esperables por ausencia de schemas/roles propios de Supabase (`auth`, `authenticated`, `anon`, `service_role`, `extensions`, `supabase_vault`, `supabase_realtime`).
 
-La verificación con stack Supabase completo (`supabase db reset` local) quedó pendiente de Docker Desktop por degradación del backend de containerd. Anotada como **B2-VERIFY-LOCAL** en `docs/BACKLOG.md` para reintentar cuando Docker se restaure.
+La verificación con stack Supabase completo (`supabase db reset` local) quedó pendiente de Docker Desktop por degradación del backend de containerd. Anotada como **B2-VERIFY-LOCAL** para reintentar cuando Docker se restaure.

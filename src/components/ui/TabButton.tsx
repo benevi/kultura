@@ -9,7 +9,7 @@ interface TabButtonProps {
 }
 
 /**
- * Pestaña reutilizable (Friends, Groups…), como chip F0 (DISENO.md — Chips):
+ * Pestaña reutilizable (Friends, Groups…), como chip F0 (Chips):
  * activo = fondo de color vivo + texto on-color, font-weight 800; inactivo =
  * fondo --surface-2 + texto --text, font-weight 700. El contenedor (`flex
  * gap-2`) lo aporta el padre.

@@ -6,7 +6,7 @@
   /* ─── KULTURA Design System — modo oscuro (canónico) ───
      Tokens OKLCH tomados literalmente del canvas de diseño F0 v2
      ("Kultura Editorial" / "Kultura — Diseño completo").
-     Ver DISENO.md → "Sistema de diseño (fuente de verdad)". Los NOMBRES de
+     Los NOMBRES de
      variable se conservan (compatibilidad con todo el código existente,
      que ya canaliza colores a través de estos custom properties); lo que
      cambia es el VALOR, ahora en la misma familia de matiz 280 (neutros)
@@ -82,7 +82,7 @@
   --ease-standard: cubic-bezier(0, 0, 0.2, 1); /* ease-out con suavidad material */
 
   /* ─── Alias con los nombres del canvas F0 (DIS-2, D-19) ───
-     `DISENO.md` y el canvas hablan de `--pink`, `--surface-2`, `--stroke`…
+     El canvas habla de `--pink`, `--surface-2`, `--stroke`…
      Estos alias hacen que copiar un valor del documento funcione en vez de
      pintar vacío (los avatares de "Conecta con amigos" salían sin color
      por `var(--pink)`). En código nuevo, preferir los nombres `--accent-*` /

@@ -7,7 +7,7 @@
 //   TEST_GROUP_ID      — UUID de un grupo del que el usuario es miembro
 //
 // Si no están configuradas, los tests que dependen de auth devolverán skip
-// automáticamente. Ver: docs/TEST_SETUP_B3_5e.md para crear el usuario.
+// automáticamente.
 // ============================================================
 
 import type { Page } from '@playwright/test'

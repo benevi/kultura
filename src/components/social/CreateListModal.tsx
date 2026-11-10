@@ -26,7 +26,7 @@ type TemplateKey = typeof TEMPLATES[number]
 
 const DESCRIPTION_MAX = 500
 
-/** Mismo acabado que `KInput` (DISENO.md: caja surface-2, radio 14, foco pink). */
+/** Mismo acabado que `KInput` (caja surface-2, radio 14, foco pink). */
 const TEXTAREA_CLASS = cn(
   'w-full min-h-[88px] resize-y rounded-2xl bg-surface-elevated px-[18px] py-[15px]',
   'border border-field-border',

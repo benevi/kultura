@@ -57,7 +57,7 @@ const TYPE_ICONS: Record<string, KIcon> = {
 
 /* Fórmula F0 del hero (canvas "Kultura Editorial"): gradiente lineal de dos
    tonos + acento radial en la esquina superior-izquierda — misma fórmula
-   que "cards feature grandes" en DISENO.md, con los valores oklch literales
+   que "cards feature grandes" en el sistema de diseño, con los valores oklch literales
    del hero real. */
 const HERO_GRADIENT = 'linear-gradient(120deg, oklch(38% 0.14 300) 0%, oklch(22% 0.08 280) 100%)'
 const MEDIA_BLOCK_FALLBACK =
