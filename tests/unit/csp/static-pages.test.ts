@@ -133,7 +133,7 @@ describe("grafo de imports de las rutas cacheables: solo enlaces <a>", () => {
       if (target && !graph.has(target)) stack.push(target);
     }
   }
-  const rel = (f: string) => f.slice(ROOT.length + 1);
+  const rel = (f: string) => f.slice(ROOT.length + 1).replace(/\\/g, "/");
 
   it("cubre las familias de rutas cacheables (/offline y las cuñas de F1 incluidas), la cabecera y el pie", () => {
     const files = Array.from(graph).map(rel);

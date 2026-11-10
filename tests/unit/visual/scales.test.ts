@@ -12,7 +12,7 @@
  */
 import { describe, it, expect } from "vitest";
 import { readFileSync, readdirSync } from "node:fs";
-import { join, resolve, relative } from "node:path";
+import { join, resolve, relative, sep } from "node:path";
 import config from "../../../tailwind.config";
 
 const ROOT = resolve(__dirname, "../../..");
@@ -29,7 +29,7 @@ function walk(dir: string): string[] {
 
 /** Código sin comentarios (la documentación cita clases retiradas). */
 const FILES = walk(join(ROOT, "src")).map((file) => ({
-  rel: relative(ROOT, file),
+  rel: relative(ROOT, file).split(sep).join("/"),
   code: readFileSync(file, "utf8").replace(/\/\*[\s\S]*?\*\//g, " ").replace(/(^|\s)\/\/.*$/gm, " "),
 }));
 

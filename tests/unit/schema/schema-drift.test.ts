@@ -412,7 +412,7 @@ const migrations = readdirSync(MIGRATIONS_DIR)
 const fromMigrations = schemaFromMigrations(migrations)
 const fromTypes = schemaFromTypes(readFileSync(TYPES_FILE, 'utf8'))
 const sources: SourceFile[] = walk(path.join(ROOT, 'src')).map((p) => ({
-  name: path.relative(ROOT, p),
+  name: path.relative(ROOT, p).split(path.sep).join("/"),
   text: readFileSync(p, 'utf8'),
 }))
 const usage = scanUsage(sources, fromTypes)
