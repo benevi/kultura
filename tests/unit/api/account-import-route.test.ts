@@ -13,6 +13,12 @@ const mockGetUser = vi.fn()
 const writes: Record<string, unknown[][]> = {}
 const listRows: Array<{ id: string; name: string }> = []
 const knownMediaIds: string[] = []
+/** Saneamiento 1.4: errores a devolver, por orden, en cada upsert de user_media. */
+const libraryUpsertErrors: Array<{ message: string } | null> = []
+/** Error de cada insert de list_items (null = bien). */
+let listItemsInsertError: { message: string } | null = null
+/** Tamaño de cada `.in()` (para comprobar los lotes). */
+const inSizes: number[] = []
 
 function tableStub(table: string) {
   const record = (op: string, payload: unknown) => {
@@ -23,7 +29,7 @@ function tableStub(table: string) {
   return {
     upsert: vi.fn(async (payload: unknown) => {
       record('upsert', payload)
-      return { error: null }
+      return { error: table === 'user_media' ? (libraryUpsertErrors.shift() ?? null) : null }
     }),
     insert: vi.fn((payload: unknown) => {
       record('insert', payload)
@@ -32,7 +38,8 @@ function tableStub(table: string) {
           single: vi.fn(async () => ({ data: { id: 'new-list-id' }, error: null })),
         })),
         // list_items: insert sin .select() → se espera la promesa directamente.
-        then: (resolve: (v: unknown) => unknown) => resolve({ error: null }),
+        then: (resolve: (v: unknown) => unknown) =>
+          resolve({ error: table === 'list_items' ? listItemsInsertError : null }),
       }
     }),
     select: vi.fn(() => ({
@@ -40,10 +47,10 @@ function tableStub(table: string) {
         data: table === 'lists' ? listRows : [],
         error: null,
       })),
-      in: vi.fn(async () => ({
-        data: knownMediaIds.map((id) => ({ id })),
-        error: null,
-      })),
+      in: vi.fn(async (_col: string, ids: string[]) => {
+        inSizes.push(ids.length)
+        return { data: knownMediaIds.filter((id) => ids.includes(id)).map((id) => ({ id })), error: null }
+      }),
     })),
   }
 }
@@ -110,6 +117,9 @@ const ENTRY = {
 
 describe('POST /api/account/import', () => {
   beforeEach(() => {
+    libraryUpsertErrors.length = 0
+    listItemsInsertError = null
+    inSizes.length = 0
     vi.clearAllMocks()
     for (const key of Object.keys(writes)) delete writes[key]
     listRows.length = 0
@@ -271,5 +281,72 @@ describe('POST /api/account/import', () => {
 
     expect(mockInvalidateMatch).toHaveBeenCalledWith(AUTH_USER.id)
     expect(mockInvalidateRec).toHaveBeenCalledWith(AUTH_USER.id)
+  })
+})
+
+// Saneamiento 1.4: por lotes, cada error comprobado y lo que no entra, contado.
+describe('POST /api/account/import — lotes y errores', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    for (const k of Object.keys(writes)) delete writes[k]
+    listRows.length = 0
+    knownMediaIds.length = 0
+    libraryUpsertErrors.length = 0
+    listItemsInsertError = null
+    inSizes.length = 0
+    mockGetUser.mockResolvedValue({ data: { user: AUTH_USER }, error: null })
+  })
+
+  const many = (n: number) =>
+    Array.from({ length: n }, (_, i) => ({ mediaId: `movie_${i + 1}`, status: 'completed' }))
+
+  it('la biblioteca va en lotes de 200', async () => {
+    const res = await post({ library: many(450) })
+    expect(res.status).toBe(200)
+    const batches = writes['user_media.upsert'].map(([rows]) => (rows as unknown[]).length)
+    expect(batches).toEqual([200, 200, 50])
+    expect((await res.json()).libraryImported).toBe(450)
+  })
+
+  it('un lote que falla se cuenta (con sus ids) y los demás se guardan', async () => {
+    libraryUpsertErrors.push(null, { message: 'boom' }, null)
+    const res = await post({ library: many(450) })
+    expect(res.status).toBe(200)
+    const body = await res.json()
+    expect(body.libraryImported).toBe(250)
+    expect(body.libraryFailed).toBe(200)
+    expect(body.libraryFailedIds).toHaveLength(200)
+    expect(body.libraryFailedIds[0]).toBe('movie_201')
+  })
+
+  it('si fallan todos los lotes es un 500, no «0 importados»', async () => {
+    libraryUpsertErrors.push({ message: 'boom' })
+    const res = await post({ library: many(3) })
+    expect(res.status).toBe(500)
+  })
+
+  it('los ids de una lista se buscan en lotes de 200 y un insert fallido se cuenta', async () => {
+    const items = many(450).map((e) => e.mediaId)
+    knownMediaIds.push(...items)
+    listItemsInsertError = { message: 'boom' }
+    const res = await post({ library: [], lists: [{ name: 'Grande', mediaType: 'movie', items }] })
+    expect(res.status).toBe(200)
+    expect(inSizes).toEqual([200, 200, 50])
+    const body = await res.json()
+    expect(body.listsImported).toBe(1)
+    expect(body.listItemsFailed).toBe(450)
+  })
+
+  it('un cuerpo de más de 20 MB → 413 sin tocar la base', async () => {
+    const { POST } = await import('@/app/api/account/import/route')
+    const big = new Request('http://localhost/api/account/import', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Content-Length': String(21 * 1024 * 1024) },
+      body: '{}',
+    })
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const res = await POST(big as any)
+    expect(res.status).toBe(413)
+    expect(writes['user_media.upsert']).toBeUndefined()
   })
 })

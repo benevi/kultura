@@ -1041,6 +1041,7 @@
       "private": "Only me",
       "privateHint": "Nobody else sees it, not even your friends. It doesn't count in “Popular with your friends” either."
     },
+    "importPartial": "{count, plural, =0 {Part of the file couldn't be saved} one {# item couldn't be saved} other {# items couldn't be saved}}. Import the same file again to finish: nothing gets duplicated.",
     "importUnresolved": "{count, plural, one {# title wasn't found in the catalog and wasn't imported} other {# titles weren't found in the catalog and weren't imported}}. Import the same file again later to complete it.",
     "deleteSummaryLoading": "Working out what would be deleted…",
     "deleteSummaryLoses": "This deletes {library, plural, one {# title} other {# titles}} from your library, {lists, plural, one {# list} other {# lists}}, {messages, plural, one {# message} other {# messages}} and {friends, plural, one {# friendship} other {# friendships}}.",

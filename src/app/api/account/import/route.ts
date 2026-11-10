@@ -25,6 +25,10 @@
 //     diario (`diary`) se reimporta para los títulos que estén en la
 //     biblioteca, sin duplicar apuntes (misma fecha, título, revisionado y
 //     reseña).
+//   - Saneamiento 1.4: todo se escribe por lotes de 200 y se comprueba el
+//     error de cada lote. Lo que no entra se cuenta (`libraryFailed`,
+//     `listItemsFailed`, `diaryFailed`) en vez de darlo por importado; un lote
+//     que falla no tumba los demás. El cuerpo tiene tope (413).
 // ============================================================
 
 import { NextRequest, NextResponse } from 'next/server'
@@ -40,6 +44,22 @@ import { ratingScale10Enabled } from '@/lib/library/scale'
 import { isValidDiaryDate, parseLogInput } from '@/lib/library/diary'
 
 const log = createLogger('api/account/import')
+
+/** Una biblioteca grande con su diario necesita más que una petición normal. */
+export const maxDuration = 120
+
+/** Filas por sentencia (upsert/insert) y por filtro `.in()`. */
+const CHUNK = 200
+/** Tope del cuerpo: un export de 10.000 títulos con diario ronda unos pocos MB. */
+const MAX_BODY_BYTES = 20 * 1024 * 1024
+/** Cuántos ids de títulos no importados se devuelven (el total va aparte). */
+const MAX_FAILED_IDS = 200
+
+function chunks<T>(items: T[], size = CHUNK): T[][] {
+  const out: T[][] = []
+  for (let i = 0; i < items.length; i += size) out.push(items.slice(i, i + size))
+  return out
+}
 
 const LIBRARY_STATUSES = ['completed', 'in_progress', 'pending', 'abandoned']
 
@@ -102,9 +122,18 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     )
   }
 
+  // Tope de tamaño antes de leer (si el cliente lo declara) y después (si no).
+  const declared = Number(request.headers.get('content-length'))
+  if (Number.isFinite(declared) && declared > MAX_BODY_BYTES) {
+    return NextResponse.json({ error: 'Payload too large' }, { status: 413 })
+  }
   let body: unknown
   try {
-    body = await request.json()
+    const text = await request.text()
+    if (new TextEncoder().encode(text).byteLength > MAX_BODY_BYTES) {
+      return NextResponse.json({ error: 'Payload too large' }, { status: 413 })
+    }
+    body = JSON.parse(text)
   } catch {
     return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 })
   }
@@ -132,6 +161,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
 
   let libraryImported = 0
   let libraryUnresolved = 0
+  const libraryFailedIds: string[] = []
   const scale10 = ratingScale10Enabled()
   try {
     if (entries.length > 0) {
@@ -147,57 +177,55 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       libraryUnresolved = unresolved.length
       const importable = entries.filter((entry) => available.has(entry.mediaId))
 
-      // 2. La entrada de biblioteca, SIEMPRE para el usuario autenticado.
-      if (importable.length > 0) {
-        const legacyRows = importable.map((entry) => ({
-          user_id: user.id,
-          media_id: entry.mediaId,
-          status: entry.status,
-          score: entry.score,
-          watched_at: entry.watchedAt,
-        }))
-        let libraryError: { code?: string; message: string } | null = null
-        if (scale10) {
-          // Un upsert de varias filas necesita las mismas columnas en todas:
-          // `favorite` solo si el fichero lo trae en alguna (si no, no se toca).
-          const withFavorite = importable.some((entry) => entry.favorite !== undefined)
-          ;({ error: libraryError } = await supabase.from('user_media').upsert(
-            importable.map((entry, i) => ({
-              ...legacyRows[i],
-              rating10: entry.rating10,
-              ...(withFavorite ? { favorite: entry.favorite ?? false } : {}),
-            })),
-            { onConflict: 'user_id,media_id' }
-          ))
+      // 2. La entrada de biblioteca, SIEMPRE para el usuario autenticado. Por
+      //    lotes: un lote que falla se cuenta y los demás siguen.
+      // Un upsert de varias filas necesita las mismas columnas en todas:
+      // `favorite` solo si el fichero lo trae en alguna (si no, no se toca).
+      const withFavorite = scale10 && importable.some((entry) => entry.favorite !== undefined)
+      const toRow = (entry: ImportableEntry) => ({
+        user_id: user.id,
+        media_id: entry.mediaId,
+        status: entry.status,
+        score: entry.score,
+        watched_at: entry.watchedAt,
+        ...(scale10 ? { rating10: entry.rating10 } : {}),
+        ...(withFavorite ? { favorite: entry.favorite ?? false } : {}),
+      })
+      for (const batch of chunks(importable)) {
+        const { error } = await supabase
+          .from('user_media')
+          .upsert(batch.map(toRow), { onConflict: 'user_id,media_id' })
+        if (error) {
+          log.error('Failed to import library batch', { err: error, userId: user.id, size: batch.length })
+          libraryFailedIds.push(...batch.map((entry) => entry.mediaId))
         } else {
-          ;({ error: libraryError } = await supabase
-            .from('user_media')
-            .upsert(legacyRows, { onConflict: 'user_id,media_id' }))
+          libraryImported += batch.length
         }
-        if (libraryError) throw new Error(`user_media: ${libraryError.message}`)
       }
-
-      libraryImported = importable.length
+      // Nada entró y había qué importar: es un fallo, no un «0 importados».
+      if (importable.length > 0 && libraryImported === 0) {
+        throw new Error('user_media: every batch failed')
+      }
     }
   } catch (err) {
     log.error('Failed to import library', { err, userId: user.id })
     return NextResponse.json({ error: 'Failed to import data' }, { status: 500 })
   }
 
-  const diaryImported =
+  const diary =
     scale10
       ? await importDiary(payload.diary, user.id, supabase).catch((err) => {
           // Como las listas: secundario, no invalida la biblioteca importada.
           log.error('Failed to import diary', { err, userId: user.id })
-          return 0
+          return { imported: 0, failed: 0, errored: true }
         })
-      : 0
+      : { imported: 0, failed: 0, errored: false }
 
-  const listsImported = await importLists(payload.lists, user.id, supabase).catch((err) => {
+  const lists = await importLists(payload.lists, user.id, supabase).catch((err) => {
     // Las listas son secundarias: que fallen no debe invalidar una biblioteca
     // ya importada correctamente.
     log.error('Failed to import lists', { err, userId: user.id })
-    return 0
+    return { imported: 0, itemsFailed: 0, errored: true }
   })
 
   // El perfil de gustos y las recomendaciones se calculan sobre la biblioteca:
@@ -211,8 +239,17 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     // Títulos válidos cuyo proveedor no respondió (o fuera del tope por
     // petición): reimportar el mismo fichero los completa.
     libraryUnresolved,
-    listsImported,
-    diaryImported,
+    // Saneamiento 1.4: lo que la base rechazó (reimportar lo reintenta).
+    libraryFailed: libraryFailedIds.length,
+    libraryFailedIds: libraryFailedIds.slice(0, MAX_FAILED_IDS),
+    listsImported: lists.imported,
+    listItemsFailed: lists.itemsFailed,
+    diaryImported: diary.imported,
+    diaryFailed: diary.failed,
+    // Una sección entera que no se pudo leer/escribir (detalle en el log).
+    ...(lists.errored || diary.errored
+      ? { sectionsFailed: [...(lists.errored ? ['lists'] : []), ...(diary.errored ? ['diary'] : [])] }
+      : {}),
     // Explícito, no silencioso: el usuario debe saber que esto no vuelve solo.
     friendshipsImported: 0,
   })
@@ -227,18 +264,21 @@ async function importLists(
   raw: unknown,
   userId: string,
   supabase: Awaited<ReturnType<typeof createClient>>
-): Promise<number> {
-  if (!Array.isArray(raw)) return 0
+): Promise<{ imported: number; itemsFailed: number; errored: boolean }> {
+  if (!Array.isArray(raw)) return { imported: 0, itemsFailed: 0, errored: false }
 
-  const { data: existingRaw } = await supabase
+  const { data: existingRaw, error: existingError } = await supabase
     .from('lists')
     .select('id, name')
     .eq('owner_id', userId)
+  // Sin saber cuáles existen, crearlas duplicaría: mejor no tocar nada.
+  if (existingError) throw new Error(`lists: ${existingError.message}`)
   const existing = new Map(
     ((existingRaw ?? []) as Array<{ id: string; name: string }>).map((l) => [l.name, l.id])
   )
 
   let imported = 0
+  let itemsFailed = 0
   for (const candidate of raw) {
     if (typeof candidate !== 'object' || candidate === null) continue
     const list = candidate as Record<string, unknown>
@@ -274,25 +314,42 @@ async function importLists(
 
     // Solo los títulos que existan ya en `media` (los que venían en la
     // biblioteca importada): insertar una FK inexistente fallaría.
-    const { data: knownRaw } = await supabase.from('media').select('id').in('id', items)
-    const known = new Set(((knownRaw ?? []) as Array<{ id: string }>).map((m) => m.id))
+    // Por lotes: un `.in()` con miles de ids no cabe en la URL.
+    const known = new Set<string>()
+    let lookupFailed = false
+    for (const batch of chunks(items)) {
+      const { data: knownRaw, error } = await supabase.from('media').select('id').in('id', batch)
+      if (error) { lookupFailed = true; break }
+      for (const m of (knownRaw ?? []) as Array<{ id: string }>) known.add(m.id)
+    }
 
-    const { data: alreadyRaw } = await supabase
+    const { data: alreadyRaw, error: alreadyError } = await supabase
       .from('list_items')
       .select('media_id')
       .eq('list_id', listId)
+    if (lookupFailed || alreadyError) {
+      log.error('Failed to read list items for import', { listId, err: alreadyError })
+      itemsFailed += items.length
+      continue
+    }
     const already = new Set(
       ((alreadyRaw ?? []) as Array<{ media_id: string }>).map((i) => i.media_id)
     )
 
-    const toInsert = items
+    const toInsert = Array.from(new Set(items))
       .filter((mediaId) => known.has(mediaId) && !already.has(mediaId))
       .map((mediaId) => ({ list_id: listId, media_id: mediaId, added_by: userId }))
 
-    if (toInsert.length > 0) await supabase.from('list_items').insert(toInsert)
+    for (const batch of chunks(toInsert)) {
+      const { error } = await supabase.from('list_items').insert(batch)
+      if (error) {
+        log.error('Failed to import list items batch', { listId, err: error, size: batch.length })
+        itemsFailed += batch.length
+      }
+    }
   }
 
-  return imported
+  return { imported, itemsFailed, errored: false }
 }
 
 /** Clave de un apunte para no duplicarlo al reimportar. */
@@ -300,7 +357,7 @@ const logKey = (l: { media_id: string; watched_on: string; rewatch: boolean; rev
   [l.media_id, l.watched_on, l.rewatch ? 1 : 0, l.review ?? ''].join('\u0000')
 
 const DIARY_IMPORT_MAX = 5000
-const DIARY_CHUNK = 500
+const DIARY_CHUNK = CHUNK
 const EXISTING_PAGE = 1000
 /** Techo de seguridad: 50.000 apuntes leídos para deduplicar. */
 const EXISTING_MAX_PAGES = 50
@@ -313,8 +370,9 @@ async function importDiary(
   raw: unknown,
   userId: string,
   supabase: Awaited<ReturnType<typeof createClient>>
-): Promise<number> {
-  if (!Array.isArray(raw) || raw.length === 0) return 0
+): Promise<{ imported: number; failed: number; errored: boolean }> {
+  const none = { imported: 0, failed: 0, errored: false }
+  if (!Array.isArray(raw) || raw.length === 0) return none
 
   const rows: Array<{
     user_id: string
@@ -351,16 +409,16 @@ async function importDiary(
       private_note: parsed.log.privateNote,
     })
   }
-  if (rows.length === 0) return 0
+  if (rows.length === 0) return none
 
   const mediaIds = Array.from(new Set(rows.map((r) => r.media_id)))
   const inLibrary = new Set<string>()
-  for (let i = 0; i < mediaIds.length; i += 100) {
+  for (let i = 0; i < mediaIds.length; i += CHUNK) {
     const { data: inLibraryRaw, error: libError } = await supabase
       .from('user_media')
       .select('media_id')
       .eq('user_id', userId)
-      .in('media_id', mediaIds.slice(i, i + 100))
+      .in('media_id', mediaIds.slice(i, i + CHUNK))
     if (libError) throw new Error(`user_media: ${libError.message}`)
     for (const r of (inLibraryRaw ?? []) as Array<{ media_id: string }>) inLibrary.add(r.media_id)
   }
@@ -390,9 +448,16 @@ async function importDiary(
     return true
   })
 
-  for (let i = 0; i < toInsert.length; i += DIARY_CHUNK) {
-    const { error } = await supabase.from('user_media_logs').insert(toInsert.slice(i, i + DIARY_CHUNK))
-    if (error) throw new Error(`user_media_logs: ${error.message}`)
+  let imported = 0
+  let failed = 0
+  for (const batch of chunks(toInsert, DIARY_CHUNK)) {
+    const { error } = await supabase.from('user_media_logs').insert(batch)
+    if (error) {
+      log.error('Failed to import diary batch', { err: error, userId, size: batch.length })
+      failed += batch.length
+    } else {
+      imported += batch.length
+    }
   }
-  return toInsert.length
+  return { imported, failed, errored: false }
 }
