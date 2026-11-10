@@ -8,7 +8,7 @@
  */
 import { describe, it, expect } from "vitest";
 import { readFileSync, readdirSync } from "node:fs";
-import { join, relative, resolve } from "node:path";
+import { join, relative, resolve, sep } from "node:path";
 
 const ROOT = resolve(__dirname, "../../..");
 const UNIT = join(ROOT, "tests", "unit");
@@ -42,7 +42,7 @@ describe("entorno de los tests .ts", () => {
       );
     const raised = all(UNIT)
       .filter((f) => /vi\.setConfig\(\{\s*testTimeout/.test(readFileSync(f, "utf8")))
-      .map((f) => relative(ROOT, f))
+      .map((f) => relative(ROOT, f).split(sep).join("/"))
       .sort();
     expect(raised).toEqual([
       "tests/unit/a11y/controls.test.tsx",
@@ -58,7 +58,7 @@ describe("entorno de los tests .ts", () => {
     const missing = walk(UNIT)
       .filter((f) => /\b(document|window|localStorage|sessionStorage)\.\w/.test(code(readFileSync(f, "utf8"))))
       .filter((f) => readFileSync(f, "utf8").split("\n")[0].trim() !== "// @vitest-environment jsdom")
-      .map((f) => relative(ROOT, f));
+      .map((f) => relative(ROOT, f).split(sep).join("/"));
     expect(missing).toEqual([]);
   });
 });

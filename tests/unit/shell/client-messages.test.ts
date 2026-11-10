@@ -121,7 +121,7 @@ function translationUses(files: string[]): { uses: Use[]; dynamic: Use[] } {
   const dynamic: Use[] = [];
   for (const file of files) {
     const source = FILES.get(file)!;
-    const rel = path.relative(ROOT, file);
+    const rel = path.relative(ROOT, file).split(path.sep).join("/");
     for (const match of Array.from(source.matchAll(/useTranslations\(([^)]*)\)/g))) {
       const arg = match[1].trim();
       const literal = arg.match(/^['"`]([^'"`$]+)['"`]$/);
