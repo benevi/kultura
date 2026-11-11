@@ -3,10 +3,11 @@
 // POST: verifica que el handler delega creación de conversación a la
 // RPC create_conversation_with_members en lugar de INSERTs directos.
 // GET /api/chat/unread (E96, antes ?countOnly=1): no leídas en UNA query.
+// GET /api/chat: la lista, también en UNA query (saneamiento 6.4, sin N+1).
 // ============================================================
 
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { chatCreateResultSchema, unreadResultSchema } from '@/lib/api/contracts/chat'
+import { chatCreateResultSchema, conversationsResultSchema, unreadResultSchema } from '@/lib/api/contracts/chat'
 
 function makeRequest(body: unknown): Request {
   return new Request('http://localhost/api/chat', {
@@ -219,5 +220,95 @@ describe('GET /api/chat/unread', () => {
     const { GET } = await import('@/app/api/chat/unread/route')
     const res = await GET()
     expect(res.status).toBe(500)
+  })
+})
+
+// ============================================================
+// Saneamiento 6.4 — GET /api/chat sin N+1
+// ============================================================
+
+describe('GET /api/chat', () => {
+  /** Cadena select().eq().neq().order().order().limit().limit() que resuelve al final. */
+  function stubListQuery(rows: unknown, error: unknown = null) {
+    const calls: Array<[string, unknown[]]> = []
+    const chain: Record<string, unknown> = {}
+    let limits = 0
+    for (const m of ['select', 'eq', 'neq', 'order']) {
+      chain[m] = (...a: unknown[]) => {
+        calls.push([m, a])
+        return chain
+      }
+    }
+    chain.limit = (...a: unknown[]) => {
+      calls.push(['limit', a])
+      return ++limits === 2 ? Promise.resolve({ data: rows, error }) : chain
+    }
+    mockFrom.mockReturnValue(chain)
+    return calls
+  }
+
+  const BEA = { id: 'user-b', username: 'bea', avatar_color: '#fff', avatar_initials: 'B' }
+
+  beforeEach(() => {
+    vi.clearAllMocks()
+    mockGetUser.mockResolvedValue({ data: { user: { id: 'user-a' } } })
+  })
+
+  it('una sola consulta con el otro miembro y el último mensaje embebidos', async () => {
+    const calls = stubListQuery([
+      {
+        conversation_id: 'c1',
+        last_read_at: '2026-07-16T09:00:00Z',
+        conversations: {
+          id: 'c1',
+          last_message_at: '2026-07-16T10:00:00Z',
+          messages: [{ content: 'hola', sender_id: 'user-b', created_at: '2026-07-16T10:00:00Z' }],
+          others: [{ users: BEA }],
+        },
+      },
+      {
+        conversation_id: 'c2',
+        last_read_at: null,
+        conversations: { id: 'c2', last_message_at: '2026-07-15T10:00:00Z', messages: [], others: [] },
+      },
+    ])
+    const { GET } = await import('@/app/api/chat/route')
+    const res = await GET()
+    expect(res.status).toBe(200)
+    const data = conversationsResultSchema.parse((await res.json()).data)
+    expect(data).toEqual([
+      { id: 'c1', lastMessageAt: '2026-07-16T10:00:00Z', otherUser: BEA, lastMessage: { content: 'hola', isMine: false }, unread: true },
+      { id: 'c2', lastMessageAt: '2026-07-15T10:00:00Z', otherUser: null, lastMessage: null, unread: false },
+    ])
+    expect(mockFrom).toHaveBeenCalledTimes(1)
+    expect(mockFrom).toHaveBeenCalledWith('conversation_members')
+    expect(calls).toContainEqual(['neq', ['conversations.others.user_id', 'user-a']])
+    expect(calls).toContainEqual(['limit', [1, { referencedTable: 'conversations.messages' }]])
+  })
+
+  it('mensaje mío y ya leído: isMine y sin no leídas', async () => {
+    stubListQuery([
+      {
+        conversation_id: 'c1',
+        last_read_at: '2026-07-16T11:00:00Z',
+        conversations: {
+          id: 'c1',
+          last_message_at: '2026-07-16T10:00:00Z',
+          messages: [{ content: 'yo', sender_id: 'user-a', created_at: '2026-07-16T10:00:00Z' }],
+          others: [{ users: BEA }],
+        },
+      },
+    ])
+    const { GET } = await import('@/app/api/chat/route')
+    const data = conversationsResultSchema.parse((await (await GET()).json()).data)
+    expect(data[0]).toMatchObject({ lastMessage: { content: 'yo', isMine: true }, unread: false })
+  })
+
+  it('500 si falla la consulta', async () => {
+    stubListQuery(null, { code: 'XX000', message: 'boom' })
+    const { GET } = await import('@/app/api/chat/route')
+    const res = await GET()
+    expect(res.status).toBe(500)
+    expect((await res.json()).error.code).toBe('internal')
   })
 })

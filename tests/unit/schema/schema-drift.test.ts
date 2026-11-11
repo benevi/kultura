@@ -346,6 +346,29 @@ function scanUsage(files: SourceFile[], schema: TypesSchema): Usage {
             if (!schema.relations.has(table)) {
               problems.push(`${at(node)}: la tabla \`${table}\` no existe en las migraciones`)
             } else {
+              // Alias del select (`others:conversation_members(…)`) → tabla.
+              const aliases = new Map<string, string>()
+              /** Tabla a la que lleva una ruta de embebidos (`conversations.others`), si se resuelve. */
+              const resolvePath = (from: string, segs: string[]): string | undefined => {
+                let cur: string | undefined = from
+                for (const s of segs) {
+                  if (!cur) return undefined
+                  const name: string = aliases.get(s) ?? s
+                  cur = schema.relations.has(name) ? name : schema.foreignKeys.get(cur)?.get(name)
+                }
+                return cur
+              }
+              /** `{ referencedTable | foreignTable: 'a.b' }` de order/limit/range. */
+              const referencedTable = (arg: ts.Expression | undefined): string | undefined => {
+                if (!arg || !ts.isObjectLiteralExpression(arg)) return undefined
+                for (const p of arg.properties) {
+                  if (ts.isPropertyAssignment(p) && ts.isIdentifier(p.name) &&
+                      (p.name.text === 'referencedTable' || p.name.text === 'foreignTable')) {
+                    return stringArg(p.initializer)
+                  }
+                }
+                return undefined
+              }
               // Sube por la cadena: .from('t').select(…).eq(…).order(…)…
               let cur: ts.Node = node
               while (ts.isPropertyAccessExpression(cur.parent) && ts.isCallExpression(cur.parent.parent)) {
@@ -356,17 +379,24 @@ function scanUsage(files: SourceFile[], schema: TypesSchema): Usage {
                 const has = (t: string, c: string) => schema.relations.get(t)?.has(c) ?? false
                 if (m === 'select') {
                   const sel = stringArg(first)
-                  if (sel !== undefined) checkSelect(schema, table, sel, here, problems)
+                  if (sel !== undefined) {
+                    checkSelect(schema, table, sel, here, problems)
+                    for (const a of sel.matchAll(/(\w+):(\w+)[!(]/g)) aliases.set(a[1], a[2])
+                  }
                 } else if (COLUMN_METHODS.has(m)) {
                   const col = stringArg(first)
-                  // `rel(col)` ordena por un recurso embebido; `rel.col` filtra uno: se
-                  // comprueba la columna en la tabla relacionada si se puede resolver.
-                  const embedded = col ? /^(\w+)[.(](\w+)\)?$/.exec(col) : null
-                  if (embedded) {
-                    const rel = schema.relations.has(embedded[1]) ? embedded[1] : schema.foreignKeys.get(table)?.get(embedded[1])
-                    if (rel && !has(rel, embedded[2])) problems.push(`${here}: \`.${m}('${col}')\` sobre \`${table}\`, columna inexistente`)
-                  } else if (col && !col.includes('->') && !has(table, col)) {
-                    problems.push(`${here}: \`.${m}('${col}')\` sobre \`${table}\`, columna inexistente`)
+                  // `rel(col)` ordena por un recurso embebido; `a.b.col` filtra uno
+                  // (con alias del select); `{ referencedTable: 'a.b' }` ordena dentro
+                  // de uno. Se comprueba la columna en la tabla a la que lleva la ruta
+                  // si se puede resolver.
+                  const ref = referencedTable(call.arguments[1])
+                  const parts = col ? col.replace(/\)$/, '').split(/[.(]/) : []
+                  const path = [...(ref ? ref.split('.') : []), ...parts.slice(0, -1)]
+                  if (col && !col.includes('->') && parts.every((p) => /^\w+$/.test(p))) {
+                    const target = path.length ? resolvePath(table, path) : table
+                    if (target && !has(target, parts[parts.length - 1])) {
+                      problems.push(`${here}: \`.${m}('${col}')\` sobre \`${table}\`, columna inexistente`)
+                    }
                   }
                 } else if (m === 'match') {
                   for (const k of objectKeys(first)) if (!has(table, k)) problems.push(`${here}: \`.match\` con \`${table}.${k}\` inexistente`)
@@ -519,6 +549,22 @@ describe('esquema: el detector detecta', () => {
       'x.ts:6: `onConflict` con `user_media.media` inexistente',
       'x.ts:7: la columna `users.apodo` no existe',
       "x.ts:8: `.order('conversations(ultimo)')` sobre `conversation_members`, columna inexistente",
+    ])
+  })
+
+  it('rutas de embebidos con alias y referencedTable (saneamiento 6.4)', () => {
+    const problems = scan(`
+      await db.from('conversation_members')
+        .select('conversation_id, conversations(id, messages(content), others:conversation_members(user_id))')
+        .neq('conversations.others.user_id', u)
+        .neq('conversations.others.usuario', u)
+        .order('created_at', { referencedTable: 'conversations.messages' })
+        .order('creado', { referencedTable: 'conversations.messages' })
+        .limit(1, { referencedTable: 'conversations.messages' })
+    `)
+    expect(problems).toEqual([
+      "x.ts:5: `.neq('conversations.others.usuario')` sobre `conversation_members`, columna inexistente",
+      "x.ts:7: `.order('creado')` sobre `conversation_members`, columna inexistente",
     ])
   })
 

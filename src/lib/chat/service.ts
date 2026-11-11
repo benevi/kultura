@@ -73,62 +73,61 @@ export async function countUnread(supabase: SupabaseClient, userId: string): Pro
   return success({ count })
 }
 
-/** Mis conversaciones (la más reciente primero), con el otro miembro y el último mensaje. */
+/**
+ * Mis conversaciones (la más reciente primero), con el otro miembro y el
+ * último mensaje. Una sola consulta (antes eran 2 por conversación): el
+ * otro miembro y el último mensaje van embebidos, con su límite por
+ * conversación.
+ */
 export async function listConversations(
   supabase: SupabaseClient,
   userId: string
 ): Promise<ServiceResult<ConversationSummary[]>> {
   const { data, error } = await supabase
     .from('conversation_members')
-    .select('conversation_id, last_read_at, conversations(id, last_message_at)')
+    .select(
+      'conversation_id, last_read_at, conversations(id, last_message_at, ' +
+        'messages(content, sender_id, created_at), ' +
+        'others:conversation_members(user_id, users(id, username, avatar_color, avatar_initials)))'
+    )
     .eq('user_id', userId)
+    .neq('conversations.others.user_id', userId)
     .order('conversations(last_message_at)', { ascending: false })
+    .order('created_at', { referencedTable: 'conversations.messages', ascending: false })
+    .limit(1, { referencedTable: 'conversations.messages' })
+    .limit(1, { referencedTable: 'conversations.others' })
   if (error) {
     log.error('Failed to list conversations', { code: error.code, message: error.message })
     return failure('internal', { message: 'Failed to load conversations' })
   }
 
+  type Message = { content: string; sender_id: string | null; created_at: string | null }
   type Row = {
     conversation_id: string
     last_read_at: string | null
-    conversations: { id: string; last_message_at: string } | null
+    conversations: {
+      id: string
+      last_message_at: string
+      messages: Message[] | null
+      others: Array<{ users: Profile | null }> | null
+    } | null
   }
   const rows = (data ?? []) as unknown as Row[]
-  const conversations = await Promise.all(
-    rows.map(async (row): Promise<ConversationSummary> => {
-      const convId = row.conversation_id
-      const [membersResult, lastMsgResult] = await Promise.all([
-        supabase
-          .from('conversation_members')
-          .select('user_id, users(id, username, avatar_color, avatar_initials)')
-          .eq('conversation_id', convId)
-          .neq('user_id', userId)
-          .limit(1)
-          .maybeSingle(),
-        supabase
-          .from('messages')
-          .select('content, sender_id, created_at')
-          .eq('conversation_id', convId)
-          .order('created_at', { ascending: false })
-          .limit(1)
-          .maybeSingle(),
-      ])
+  const conversations = rows.map((row): ConversationSummary => {
+    const conv = row.conversations
+    const lastMsg = conv?.messages?.[0] ?? null
+    const unread = lastMsg && row.last_read_at
+      ? new Date(lastMsg.created_at ?? 0) > new Date(row.last_read_at)
+      : !!lastMsg
 
-      const otherUser = (membersResult.data as { users: Profile | null } | null)?.users ?? null
-      const lastMsg = lastMsgResult.data as { content: string; sender_id: string | null; created_at: string | null } | null
-      const unread = lastMsg && row.last_read_at
-        ? new Date(lastMsg.created_at ?? 0) > new Date(row.last_read_at)
-        : !!lastMsg
-
-      return {
-        id: convId,
-        lastMessageAt: row.conversations?.last_message_at ?? null,
-        otherUser,
-        lastMessage: lastMsg ? { content: lastMsg.content, isMine: lastMsg.sender_id === userId } : null,
-        unread,
-      }
-    })
-  )
+    return {
+      id: row.conversation_id,
+      lastMessageAt: conv?.last_message_at ?? null,
+      otherUser: conv?.others?.[0]?.users ?? null,
+      lastMessage: lastMsg ? { content: lastMsg.content, isMine: lastMsg.sender_id === userId } : null,
+      unread,
+    }
+  })
   return success(conversations)
 }
 
