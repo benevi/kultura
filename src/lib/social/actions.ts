@@ -3,7 +3,8 @@
 // Helpers que hacen fetch al Route Handler /api/friends.
 // Uso exclusivo en Client Components.
 // Amistades y bloqueos ya usan el contrato nuevo (`apiFetch`, lanza
-// `ApiError`); denuncias, chat y grupos siguen con `call` hasta su módulo.
+// `ApiError`), igual que salir del chat y borrar mensajes; denuncias y
+// grupos siguen con `call` hasta su módulo.
 // ============================================================
 
 import { apiFetch } from '@/lib/api/client'
@@ -135,12 +136,12 @@ export async function unblockUser(userId: string): Promise<void> {
   await apiFetch('/api/friends/blocks', { method: 'DELETE', json: { userId } })
 }
 
-export function leaveConversation(conversationId: string): Promise<{ ok: true }> {
-  return call(`/api/chat/${encodeURIComponent(conversationId)}`, { method: 'DELETE' })
+export async function leaveConversation(conversationId: string): Promise<void> {
+  await apiFetch(`/api/chat/${encodeURIComponent(conversationId)}`, { method: 'DELETE' })
 }
 
-export function deleteMessage(conversationId: string, messageId: string): Promise<{ ok: true }> {
-  return call(
+export async function deleteMessage(conversationId: string, messageId: string): Promise<void> {
+  await apiFetch(
     `/api/chat/${encodeURIComponent(conversationId)}/messages/${encodeURIComponent(messageId)}`,
     { method: 'DELETE' },
   )

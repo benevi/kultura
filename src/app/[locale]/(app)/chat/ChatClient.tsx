@@ -6,6 +6,9 @@ import { Link } from '@/i18n/navigation'
 import { Avatar } from '@/components/ui/Avatar'
 import { KButton } from '@/components/ui/KButton'
 import { IconChat } from '@/components/icons'
+import { ApiError } from '@/lib/api/client'
+import { fetchConversations, openConversation } from '@/lib/chat/client'
+import { CHAT_ERRORS } from '@/lib/chat/errors'
 
 interface OtherUser {
   id: string
@@ -57,9 +60,8 @@ export function ChatClient({ friends }: Props) {
   const loadConversations = useCallback(() => {
     setLoading(true)
     setLoadError(false)
-    fetch('/api/chat')
-      .then(r => r.json())
-      .then(d => { setConversations(d.conversations ?? []); setLoading(false) })
+    fetchConversations()
+      .then(d => { setConversations(d); setLoading(false) })
       .catch(() => { setLoadError(true); setLoading(false) })
   }, [])
 
@@ -69,19 +71,11 @@ export function ChatClient({ friends }: Props) {
     setStartingChat(friendId)
     setStartError(null)
     try {
-      const res = await fetch('/api/chat', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ targetUserId: friendId }),
-      })
-      const data = await res.json().catch(() => null)
-      if (!res.ok || !data?.conversationId) {
-        setStartError(res.status === 403 ? 'notFriends' : 'generic')
-        return
-      }
-      window.location.href = `/chat/${data.conversationId}`
-    } catch {
-      setStartError('generic')
+      const { conversationId } = await openConversation(friendId)
+      window.location.href = `/chat/${conversationId}`
+    } catch (err) {
+      const notFriends = err instanceof ApiError && err.code === 'forbidden' && err.message === CHAT_ERRORS.notFriends
+      setStartError(notFriends ? 'notFriends' : 'generic')
     } finally {
       setStartingChat(null)
     }

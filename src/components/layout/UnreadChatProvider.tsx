@@ -3,7 +3,7 @@
 // ============================================================
 // KULTURA — UnreadChatProvider (E96)
 // Contexto global del badge de mensajes no leídos.
-// Count inicial vía /api/chat?countOnly=1 + suscripción realtime
+// Count inicial vía /api/chat/unread + suscripción realtime
 // a INSERT en messages (sin filtro; RLS limita a mis conversaciones).
 // Al recibir un mensaje ajeno fuera de la conversación abierta se
 // refetchea el count (no incremento local: robusto ante carreras).
@@ -12,6 +12,7 @@
 import { createContext, useContext, useState, useEffect, useRef, useCallback } from 'react'
 import { usePathname } from '@/i18n/navigation'
 import { createClient } from '@/lib/supabase/client'
+import { fetchUnreadCount } from '@/lib/chat/client'
 
 interface UnreadChatContextValue {
   unreadCount: number
@@ -44,10 +45,8 @@ export function UnreadChatProvider({ userId, children }: Props) {
 
   const refreshUnread = useCallback(async () => {
     try {
-      const res = await fetch('/api/chat?countOnly=1')
-      if (!res.ok) return
-      const { count } = await res.json()
-      if (typeof count === 'number') setUnreadCount(count)
+      const { count } = await fetchUnreadCount()
+      setUnreadCount(count)
     } catch {
       // silencioso: el badge conserva el último valor conocido
     }

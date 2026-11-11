@@ -7,6 +7,9 @@ import { Avatar } from '@/components/ui/Avatar'
 import { KButton } from '@/components/ui/KButton'
 import { InlineConfirm, ReportButton, useRestoreFocus } from '@/components/social/ReportButton'
 import { blockUser, deleteMessage, leaveConversation } from '@/lib/social/actions'
+import { ApiError } from '@/lib/api/client'
+import { fetchMessages, sendChatMessage } from '@/lib/chat/client'
+import { CHAT_ERRORS } from '@/lib/chat/errors'
 import { createClient } from '@/lib/supabase/client'
 import { useToastContext } from '@/components/ui/ToastProvider'
 import { useUnreadChat } from '@/components/layout/UnreadChatProvider'
@@ -311,10 +314,9 @@ export function ConversationClient({
     setLoading(true)
     setAnnounce(false)
     setLoadError(false)
-    fetch(`/api/chat/${conversationId}`)
-      .then(r => r.json())
+    fetchMessages(conversationId)
       .then(d => {
-        setMessages(d.messages ?? [])
+        setMessages(d.messages as Message[])
         setHasMore(d.hasMore === true)
         setLoading(false)
         setTimeout(() => setAnnounce(true), 0)
@@ -334,16 +336,13 @@ export function ConversationClient({
     if (!oldest || loadingOlder) return
     setLoadingOlder(true)
     try {
-      const res = await fetch(
-        `/api/chat/${conversationId}?before=${encodeURIComponent(oldest.created_at)}`
-      )
-      if (!res.ok) throw new Error(String(res.status))
-      const d = (await res.json()) as { messages?: Message[]; hasMore?: boolean }
+      const d = await fetchMessages(conversationId, oldest.created_at)
+      const older = d.messages as Message[]
       const el = logRef.current
       const prevHeight = el?.scrollHeight ?? 0
       setMessages(prev => {
         const seen = new Set(prev.map(m => m.id))
-        return [...(d.messages ?? []).filter(m => !seen.has(m.id)), ...prev]
+        return [...older.filter(m => !seen.has(m.id)), ...prev]
       })
       setHasMore(d.hasMore === true)
       requestAnimationFrame(() => {
@@ -429,32 +428,23 @@ export function ConversationClient({
     setMessages(prev => [...prev, tempMsg])
     setTimeout(scrollToBottom, 50)
 
-    const res = await fetch(`/api/chat/${conversationId}`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ content }),
-    })
-
-    if (!res.ok) {
+    try {
+      const real = await sendChatMessage(conversationId, content)
+      // Reconcile: replace the optimistic temp message with the real one (id UUID from server)
+      const realMsg: Message = { ...real, users: null }
+      setMessages(prev => prev.map(m => (m.id === tempId ? realMsg : m)))
+      // Mensaje enviado: buen momento para ofrecer los avisos de respuesta
+      // (PushOffer decide si hay algo que ofrecer; una vez por visita).
+      offerPushInContext('chat')
+    } catch (err) {
       setMessages(prev => prev.filter(m => m.id !== tempId))
       setText(content)
-      const err = await res.json().catch(() => ({})) as { error?: string }
-      if (res.status === 403 && err.error === 'cannot_message') {
+      if (err instanceof ApiError && err.code === 'forbidden' && err.message === CHAT_ERRORS.cannotMessage) {
         // F-11: ya no sois amigos o hay un bloqueo; se explica en lugar del campo.
         setCanSend(false)
       } else {
         show({ message: t('sendError'), type: 'error' })
       }
-    } else {
-      // Reconcile: replace the optimistic temp message with the real one (id UUID from server)
-      const { message: real } = await res.json().catch(() => ({ message: null }))
-      if (real) {
-        const realMsg: Message = { ...real, users: null }
-        setMessages(prev => prev.map(m => (m.id === tempId ? realMsg : m)))
-      }
-      // Mensaje enviado: buen momento para ofrecer los avisos de respuesta
-      // (PushOffer decide si hay algo que ofrecer; una vez por visita).
-      offerPushInContext('chat')
     }
 
     setSending(false)

@@ -33,8 +33,9 @@ test.beforeEach(async ({ context, baseURL }) => {
   await context.route(`**/api/chat/${CONVERSATION_ID}`, (route) => {
     if (route.request().method() !== "POST") return route.fallback();
     return route.fulfill({
+      status: 201,
       contentType: "application/json",
-      body: JSON.stringify({ message: { id: "00000000-0000-4000-8000-0000000000f1", content: "hola", sender_id: "me", created_at: new Date().toISOString() } }),
+      body: JSON.stringify({ data: { id: "00000000-0000-4000-8000-0000000000f1", content: "hola", sender_id: "me", created_at: new Date().toISOString() } }),
     });
   });
 });

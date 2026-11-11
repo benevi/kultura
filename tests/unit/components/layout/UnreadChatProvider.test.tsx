@@ -1,6 +1,6 @@
 // ============================================================
 // KULTURA — UnreadChatProvider unit tests (E96)
-// Count inicial vía /api/chat?countOnly=1, refetch al recibir INSERT
+// Count inicial vía /api/chat/unread ({ data: { count } }), refetch al recibir INSERT
 // realtime ajeno fuera de la conversación abierta, ignorar mensajes
 // propios o de la conversación activa, y markConversationRead.
 // ============================================================
@@ -64,7 +64,7 @@ function Consumer() {
 const mockFetch = vi.fn()
 
 function stubCount(count: number) {
-  mockFetch.mockResolvedValue({ ok: true, json: async () => ({ count }) })
+  mockFetch.mockResolvedValue({ ok: true, json: async () => ({ data: { count } }) })
 }
 
 function renderProvider(userId = 'me') {
@@ -96,7 +96,7 @@ describe('UnreadChatProvider', () => {
     stubCount(2)
     renderProvider()
     await waitFor(() => expect(screen.getByTestId('count')).toHaveTextContent('2'))
-    expect(mockFetch).toHaveBeenCalledWith('/api/chat?countOnly=1')
+    expect(mockFetch).toHaveBeenCalledWith('/api/chat/unread', expect.anything())
   })
 
   it('REGRESIÓN E96-fix: setAuth con el JWT de la sesión COMPLETADO antes de suscribir', async () => {
