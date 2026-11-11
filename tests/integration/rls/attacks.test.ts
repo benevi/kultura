@@ -240,6 +240,15 @@ describe.skipIf(!configured)("RLS — ataques rechazados", () => {
     expect(r2.error).not.toBeNull();
   });
 
+  it("un miembro no publica en su grupo saltándose la API (saneamiento 4.6)", async () => {
+    expect(await isMember(attackerGroup, attacker.id)).toBe(true);
+    const post = await attacker.client
+      .from("group_posts")
+      .insert({ group_id: attackerGroup, user_id: attacker.id, content: "sin límite" })
+      .select("id");
+    expect(blocked(post)).toBe(true);
+  });
+
   it("posts de grupo y mensajes de 5.000 caracteres se rechazan", async () => {
     const post = await attacker.client
       .from("group_posts")

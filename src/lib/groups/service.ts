@@ -337,15 +337,34 @@ export async function removeMember(
 
 // ── Posts ────────────────────────────────────────────────────────────────────
 
-/** Publica en el grupo. Quién puede (miembro, sin veto) lo decide la RLS. */
+/**
+ * Publica en el grupo. Desde la migración `group_posts_insert_via_api` la
+ * RLS no deja insertar a `authenticated` (así nadie se salta el límite de
+ * la ruta): aquí se comprueba que es miembro (un vetado deja de serlo) con
+ * su sesión y se inserta con el cliente admin. La demo ya la para el
+ * middleware en cualquier escritura a `/api/*`.
+ */
 export async function createPost(
   supabase: SupabaseClient,
   userId: string,
   groupId: string,
   content: string
 ): Promise<ServiceResult<null>> {
-  const { error } = await supabase.from('group_posts').insert({ group_id: groupId, user_id: userId, content })
-  if (isRlsDenied(error)) return failure('forbidden', { message: 'Cannot post in this group' })
+  const { data: member, error: memberErr } = await supabase
+    .from('group_members')
+    .select('user_id')
+    .eq('group_id', groupId)
+    .eq('user_id', userId)
+    .maybeSingle()
+  if (memberErr) {
+    log.error('Failed to check membership', { code: memberErr.code, message: memberErr.message })
+    return failure('internal', { message: 'Failed to post' })
+  }
+  if (!member) return failure('forbidden', { message: 'Cannot post in this group' })
+
+  const { error } = await createAdminClient()
+    .from('group_posts')
+    .insert({ group_id: groupId, user_id: userId, content })
   if (error) {
     log.error('Failed to post', { code: error.code, message: error.message })
     return failure('internal', { message: 'Failed to post' })
