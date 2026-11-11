@@ -11,6 +11,7 @@
 import { useRef, useState } from 'react'
 import { useTranslations } from 'next-intl'
 import { advanceProgress, completeFromProgress } from '@/lib/library/actions'
+import { ApiError } from '@/lib/api/client'
 import { localDateString } from '@/lib/library/dates'
 import { nextProgress, type ProgressValue } from '@/lib/library/progress'
 import { useProgressLabel } from '@/components/library/useProgressLabel'
@@ -68,7 +69,7 @@ export function useProgressAdvance({ mediaId, mediaType, title, progress: initia
     } catch (err) {
       setProgress(before)
       setStatus(beforeStatus)
-      const unavailable = err instanceof Error && err.message === 'progress_unavailable'
+      const unavailable = err instanceof ApiError && err.code === 'conflict' && err.message === 'progress_unavailable'
       setAnnouncement({ text: unavailable ? t('unavailable') : t('failed', { title }), tone: 'alert' })
     } finally {
       inFlight.current = false

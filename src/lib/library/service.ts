@@ -16,16 +16,16 @@
 
 import 'server-only'
 import type { SupabaseClient, User } from '@supabase/supabase-js'
-import { invalidateRecCache } from '@/lib/claude/recommendations'
-import { invalidateMatchScoreCache } from '@/lib/recommendations/match-score'
+import { invalidateLibraryCaches as invalidateCaches } from '@/lib/library/invalidate'
 import type { DbUserMedia, DbUserMediaLog } from '@/types/supabase'
-import type { DiaryLog, EpisodeProgress, LibraryStatus } from '@/types/library'
+import type { DiaryConfig, DiaryLog, EpisodeProgress, LibraryStatus, RatingScale } from '@/types/library'
 import { upsertMediaFromProvider } from '@/lib/media/upsert-from-provider'
 import { track } from '@/lib/analytics/track'
 import { createLogger } from '@/lib/logger'
 import { entryRating10, rating10ToScore, scoreToRating10 } from '@/lib/library/rating'
-import { ratingScale10Enabled } from '@/lib/library/scale'
-import { mapLog, parseLogInput, today } from '@/lib/library/diary'
+import { RATING_SCALE_KEY, ratingScale10Enabled, readRatingScale } from '@/lib/library/scale'
+import { mapLog, parseLogInput, readDiary, today } from '@/lib/library/diary'
+import { isDemoUser } from '@/lib/demo'
 import {
   parseProgressInput,
   progressFromRow,
@@ -61,12 +61,6 @@ export interface SaveEntryResult {
   entry: LibraryEntryWithProgress
   log: DiaryLog | null
   logFailed: boolean
-}
-
-/** La biblioteca cambió: las recomendaciones y el match score se recalculan. */
-function invalidateCaches(userId: string): void {
-  invalidateRecCache(userId)
-  invalidateMatchScoreCache(userId)
 }
 
 /** Upsert de una entrada (y, si llega `input.log`, un apunte del diario). */
@@ -224,4 +218,62 @@ export async function removeEntry(
   if (count === 0) return failure('not_found', { message: 'Entry not found' })
   invalidateCaches(userId)
   return success(null)
+}
+
+// ── Diario y escala (F-24) ───────────────────────────────────────────────────
+
+/**
+ * Escala (bandera + preferencia ½★ o /10) y apuntes del diario: los de un
+ * título o, sin `mediaId`, los últimos 100 con su ficha.
+ */
+export async function readDiaryConfig(
+  supabase: SupabaseClient,
+  user: User,
+  mediaId: string | undefined
+): Promise<ServiceResult<DiaryConfig>> {
+  const scale = readRatingScale(user)
+  if (!ratingScale10Enabled()) return success({ enabled: false, scale, logs: [] })
+  try {
+    const diary = await readDiary(supabase, user.id, { mediaId, limit: mediaId ? 50 : 100, withMedia: !mediaId })
+    return success({ enabled: true, scale, logs: diary.logs })
+  } catch (err) {
+    log.error('Failed to read diary', { err, userId: user.id })
+    return failure('internal', { message: 'Failed to read diary' })
+  }
+}
+
+/** Borra un apunte propio. `not_found` si no existe o no es suyo. */
+export async function removeDiaryLog(
+  supabase: SupabaseClient,
+  userId: string,
+  id: string
+): Promise<ServiceResult<null>> {
+  const { error, count } = await supabase
+    .from('user_media_logs')
+    .delete({ count: 'exact' })
+    .match({ id, user_id: userId })
+  if (error) {
+    log.error('Failed to delete diary log', { err: error, userId })
+    return failure('internal', { message: 'Failed to delete diary entry' })
+  }
+  if (count === 0) return failure('not_found', { message: 'Entry not found' })
+  return success(null)
+}
+
+/**
+ * Guarda la escala en `user_metadata.rating_scale` (la escribe la propia
+ * persona con su sesión). La cuenta demo es de solo lectura.
+ */
+export async function setRatingScale(
+  supabase: SupabaseClient,
+  user: User,
+  ratingScale: RatingScale
+): Promise<ServiceResult<{ ratingScale: RatingScale }>> {
+  if (isDemoUser(user)) return failure('forbidden', { message: 'Demo account is read-only' })
+  const { error } = await supabase.auth.updateUser({ data: { [RATING_SCALE_KEY]: ratingScale } })
+  if (error) {
+    log.error('Failed to save rating scale', { err: error, userId: user.id })
+    return failure('internal', { message: 'Failed to save preference' })
+  }
+  return success({ ratingScale })
 }

@@ -1,7 +1,7 @@
 // ============================================================
 // KULTURA — Library Actions (cliente)
-// Helpers que hacen fetch a /api/library (ya con el contrato `{ data }` de la
-// fase 7) y a diary, prefs y progress (aún con su formato).
+// Helpers que hablan con /api/library y sus subrutas (diary, prefs, progress)
+// con el contrato de la fase 7: devuelven `data` o lanzan `ApiError`.
 // Uso exclusivo en Client Components.
 // ============================================================
 
@@ -24,11 +24,6 @@ export async function removeFromLibrary(mediaId: string, { keepalive = false }: 
 
 // ── F-24: notas finas y diario ───────────────────────────────────────────────
 
-async function failure(response: Response, fallback: string): Promise<Error> {
-  const data = (await response.json().catch(() => ({}))) as { error?: string }
-  return new Error(data.error ?? fallback)
-}
-
 export interface SaveLibraryResult {
   entry: LibraryEntry
   /** El apunte del diario creado junto con la entrada, si se pidió y entró. */
@@ -47,30 +42,15 @@ export async function saveLibraryEntry(payload: LibraryPayload): Promise<SaveLib
 
 /** Escala (bandera + preferencia) y apuntes del diario de un título. */
 export async function fetchDiaryConfig(mediaId: string): Promise<DiaryConfig> {
-  const response = await fetch(`/api/library/diary?mediaId=${encodeURIComponent(mediaId)}`, {
-    headers: { Accept: 'application/json' },
-    cache: 'no-store',
-  })
-  if (!response.ok) throw await failure(response, 'Failed to read diary')
-  return (await response.json()) as DiaryConfig
+  return apiFetch<DiaryConfig>(`/api/library/diary?mediaId=${encodeURIComponent(mediaId)}`, { cache: 'no-store' })
 }
 
 export async function deleteDiaryLog(id: string): Promise<void> {
-  const response = await fetch('/api/library/diary', {
-    method: 'DELETE',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ id }),
-  })
-  if (!response.ok) throw await failure(response, 'Failed to delete diary entry')
+  await apiFetch<null>('/api/library/diary', { method: 'DELETE', json: { id } })
 }
 
 export async function saveRatingScale(ratingScale: RatingScale): Promise<void> {
-  const response = await fetch('/api/library/prefs', {
-    method: 'PUT',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ ratingScale }),
-  })
-  if (!response.ok) throw await failure(response, 'Failed to save preference')
+  await apiFetch<{ ratingScale: RatingScale }>('/api/library/prefs', { method: 'PUT', json: { ratingScale } })
 }
 
 // ── F-27: progreso por formato ───────────────────────────────────────────────
@@ -91,12 +71,7 @@ export interface ProgressConfig {
 }
 
 export async function fetchProgressConfig(mediaId: string): Promise<ProgressConfig> {
-  const response = await fetch(`/api/library/progress?mediaId=${encodeURIComponent(mediaId)}`, {
-    headers: { Accept: 'application/json' },
-    cache: 'no-store',
-  })
-  if (!response.ok) throw await failure(response, 'Failed to read progress')
-  return (await response.json()) as ProgressConfig
+  return apiFetch<ProgressConfig>(`/api/library/progress?mediaId=${encodeURIComponent(mediaId)}`, { cache: 'no-store' })
 }
 
 export interface AdvanceResult {
@@ -109,15 +84,13 @@ export interface AdvanceResult {
   diary: boolean
 }
 
-/** «Marcar siguiente» (episodio, capítulo, páginas, %, hora). */
+/**
+ * «Marcar siguiente» (episodio, capítulo, páginas, %, hora). Lanza `ApiError`;
+ * `conflict` con `message: 'progress_unavailable'` si ese formato no tiene
+ * progreso todavía.
+ */
 export async function advanceProgress(mediaId: string): Promise<AdvanceResult> {
-  const response = await fetch('/api/library/progress', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ mediaId, action: 'next' }),
-  })
-  if (!response.ok) throw await failure(response, 'Failed to save progress')
-  return (await response.json()) as AdvanceResult
+  return apiFetch<AdvanceResult>('/api/library/progress', { method: 'POST', json: { mediaId, action: 'next' } })
 }
 
 /** Pasa a «Completado» (y, si se pide y el diario está activo, lo apunta). */
@@ -125,12 +98,9 @@ export async function completeFromProgress(
   mediaId: string,
   options: { log: boolean; watchedOn?: string }
 ): Promise<{ log: DiaryLog | null; logFailed: boolean }> {
-  const response = await fetch('/api/library/progress', {
+  const data = await apiFetch<{ log: DiaryLog | null; logFailed: boolean }>('/api/library/progress', {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ mediaId, action: 'complete', log: options.log, watchedOn: options.watchedOn }),
+    json: { mediaId, action: 'complete', log: options.log, watchedOn: options.watchedOn },
   })
-  if (!response.ok) throw await failure(response, 'Failed to save library entry')
-  const data = (await response.json()) as { log?: DiaryLog | null; logFailed?: boolean }
   return { log: data.log ?? null, logFailed: data.logFailed === true }
 }
