@@ -30,6 +30,7 @@ vi.mock('@/lib/media/upsert-from-provider', async (importOriginal) => ({
 vi.mock('@/lib/rate-limit', async (importOriginal) => ({
   ...(await importOriginal<typeof import('@/lib/rate-limit')>()),
   checkRateLimit: () => ({ allowed: true, retryAfterSeconds: 0 }),
+  checkRateLimitDistributed: async () => ({ allowed: true, retryAfterSeconds: 0 }),
 }))
 vi.mock('@/lib/analytics/track', () => ({ track: async () => undefined }))
 
@@ -46,7 +47,9 @@ async function call(body: unknown) {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(body),
   }))
-  return { status: res.status, json: (await res.json()) as Record<string, unknown> }
+  // Contrato de la fase 7: `{ data }` si sale bien, `{ error }` si no.
+  const payload = (await res.json()) as { data?: Record<string, unknown> } & Record<string, unknown>
+  return { status: res.status, json: payload.data ?? payload }
 }
 
 beforeEach(() => {

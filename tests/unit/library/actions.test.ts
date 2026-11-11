@@ -1,7 +1,7 @@
 // ============================================================
 // KULTURA — actions.ts unit tests
-// Verifica que los helpers cliente de biblioteca hacen fetch
-// al Route Handler correctamente.
+// Verifica que los helpers cliente de biblioteca hablan con /api/library
+// con el contrato de la fase 7 (`{ data }` / `{ error: { code } }`).
 // ============================================================
 
 import { describe, it, expect, vi, beforeEach } from 'vitest'
@@ -41,75 +41,40 @@ describe('library/actions', () => {
     vi.restoreAllMocks()
   })
 
-  describe('addToLibrary', () => {
-    it('hace POST a /api/library con el payload correcto', async () => {
+  describe('saveLibraryEntry', () => {
+    it('hace POST a /api/library con el payload y devuelve data', async () => {
       const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce(
-        new Response(JSON.stringify({ entry: MOCK_ENTRY }), { status: 200 })
+        new Response(JSON.stringify({ data: { entry: MOCK_ENTRY, log: null, logFailed: false } }), { status: 200 })
       )
 
-      const { addToLibrary } = await import('@/lib/library/actions')
-      const result = await addToLibrary(PAYLOAD)
+      const { saveLibraryEntry } = await import('@/lib/library/actions')
+      const result = await saveLibraryEntry(PAYLOAD)
 
       expect(fetchSpy).toHaveBeenCalledOnce()
       const [url, options] = fetchSpy.mock.calls[0] as [string, RequestInit]
       expect(url).toBe('/api/library')
       expect(options.method).toBe('POST')
-      expect(options.headers).toEqual({ 'Content-Type': 'application/json' })
       expect(JSON.parse(options.body as string)).toEqual(PAYLOAD)
-      expect(result).toEqual(MOCK_ENTRY)
+      expect(result).toEqual({ entry: MOCK_ENTRY, log: null, logFailed: false })
     })
 
-    it('lanza Error si la respuesta no es ok', async () => {
+    it('lanza ApiError con el code del contrato', async () => {
       vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce(
-        new Response(JSON.stringify({ error: 'Not authenticated' }), { status: 401 })
+        new Response(JSON.stringify({ error: { code: 'provider_unavailable' } }), { status: 502 })
       )
 
-      const { addToLibrary } = await import('@/lib/library/actions')
-      await expect(addToLibrary(PAYLOAD)).rejects.toThrow('Not authenticated')
-    })
-
-    it('lanza Error con mensaje genérico si no hay error en el body', async () => {
-      vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce(
-        new Response('', { status: 500 })
-      )
-
-      const { addToLibrary } = await import('@/lib/library/actions')
-      await expect(addToLibrary(PAYLOAD)).rejects.toThrow('Failed to add to library')
-    })
-  })
-
-  describe('updateLibrary', () => {
-    it('hace POST a /api/library con el payload correcto', async () => {
-      const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce(
-        new Response(JSON.stringify({ entry: MOCK_ENTRY }), { status: 200 })
-      )
-
-      const { updateLibrary } = await import('@/lib/library/actions')
-      const updatePayload: LibraryPayload = { ...PAYLOAD, status: 'in_progress', score: 3 }
-      const result = await updateLibrary(updatePayload)
-
-      expect(fetchSpy).toHaveBeenCalledOnce()
-      const [url, options] = fetchSpy.mock.calls[0] as [string, RequestInit]
-      expect(url).toBe('/api/library')
-      expect(options.method).toBe('POST')
-      expect(JSON.parse(options.body as string)).toEqual(updatePayload)
-      expect(result).toEqual(MOCK_ENTRY)
-    })
-
-    it('lanza Error si la respuesta no es ok', async () => {
-      vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce(
-        new Response(JSON.stringify({ error: 'Failed to update library entry' }), { status: 500 })
-      )
-
-      const { updateLibrary } = await import('@/lib/library/actions')
-      await expect(updateLibrary(PAYLOAD)).rejects.toThrow('Failed to update library entry')
+      const { saveLibraryEntry } = await import('@/lib/library/actions')
+      const { ApiError } = await import('@/lib/api/client')
+      const err = await saveLibraryEntry(PAYLOAD).catch((e: unknown) => e)
+      expect(err).toBeInstanceOf(ApiError)
+      expect((err as InstanceType<typeof ApiError>).code).toBe('provider_unavailable')
     })
   })
 
   describe('removeFromLibrary', () => {
     it('hace DELETE a /api/library con mediaId', async () => {
       const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce(
-        new Response(JSON.stringify({ ok: true }), { status: 200 })
+        new Response(JSON.stringify({ data: null }), { status: 200 })
       )
 
       const { removeFromLibrary } = await import('@/lib/library/actions')
@@ -122,22 +87,29 @@ describe('library/actions', () => {
       expect(JSON.parse(options.body as string)).toEqual({ mediaId: 'movie_550' })
     })
 
-    it('lanza Error si la respuesta no es ok', async () => {
-      vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce(
-        new Response(JSON.stringify({ error: 'Entry not found' }), { status: 404 })
+    it('keepalive llega a fetch', async () => {
+      const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce(
+        new Response(JSON.stringify({ data: null }), { status: 200 })
       )
-
       const { removeFromLibrary } = await import('@/lib/library/actions')
-      await expect(removeFromLibrary('movie_550')).rejects.toThrow('Entry not found')
+      await removeFromLibrary('movie_550', { keepalive: true })
+      expect((fetchSpy.mock.calls[0][1] as RequestInit).keepalive).toBe(true)
     })
 
-    it('lanza Error con mensaje genérico si no hay error en el body', async () => {
+    it('lanza ApiError not_found si no estaba', async () => {
       vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce(
-        new Response('', { status: 500 })
+        new Response(JSON.stringify({ error: { code: 'not_found' } }), { status: 404 })
       )
 
       const { removeFromLibrary } = await import('@/lib/library/actions')
-      await expect(removeFromLibrary('movie_550')).rejects.toThrow('Failed to remove from library')
+      await expect(removeFromLibrary('movie_550')).rejects.toMatchObject({ code: 'not_found', status: 404 })
+    })
+
+    it('sin cuerpo, el code sale del estado', async () => {
+      vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce(new Response('', { status: 500 }))
+
+      const { removeFromLibrary } = await import('@/lib/library/actions')
+      await expect(removeFromLibrary('movie_550')).rejects.toMatchObject({ code: 'internal' })
     })
   })
 })

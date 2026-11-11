@@ -22,6 +22,7 @@ import { createClient } from '@/lib/supabase/server'
 import { checkRateLimitDistributed, type RateLimitOptions } from '@/lib/rate-limit'
 import { clientIp } from '@/lib/api/discover-params'
 import { API_ERRORS, type ApiErrorCode, type ApiErrorBody, type ApiSuccessBody } from '@/lib/api/errors'
+import type { ServiceResult } from '@/lib/api/result'
 
 export { clientIp }
 
@@ -55,6 +56,12 @@ export function apiError(code: ApiErrorCode, opts: ApiErrorOptions = {}): NextRe
     },
     { status: status ?? API_ERRORS[code], headers }
   )
+}
+
+/** Respuesta de un servicio: `{ data }` o el error con su código. */
+export function respond<T>(result: ServiceResult<T>): NextResponse<ApiSuccessBody<T> | ApiErrorBody> {
+  if (result.ok) return ok(result.value)
+  return apiError(result.code, { message: result.message, field: result.field })
 }
 
 // ── Sesión ───────────────────────────────────────────────────────────────────
