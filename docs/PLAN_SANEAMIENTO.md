@@ -23,7 +23,7 @@ Estado de cada fase: ⬜ pendiente · 🟨 en curso · ✅ hecha
 
 ---
 
-## ⬜ Bloqueantes (antes de subir ninguna rama)
+## ✅ Bloqueantes (antes de subir ninguna rama)
 
 Hoy, `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY` y `SUPABASE_SERVICE_ROLE_KEY` son una sola variable compartida por Development, Preview y Production. Por tanto, **cualquier despliegue de preview lee y escribe en la base de producción con la clave de servicio**.
 
@@ -44,7 +44,7 @@ Comprobado: Preview y Development usan `xqvicvypoxxfbezqnkwr` y Production usa `
 5. Borrar las variables de ramas de preview viejas: `GOOGLE_BOOKS_KEY` para `kultura/great-bohr-rqwuvw` y para `claude/revision-exhaustiva-proyecto-4mcw94`.
 6. Comprobación (la hace Claude): `vercel env ls` muestra las tres variables de Supabase duplicadas por entorno.
 
-### B2 · Redis para el límite de peticiones (Q21). Lo hace Víctor
+### ✅ B2 · Redis para el límite de peticiones (Q21). Hecho el 11-11-2026: Upstash `kultura-redis` conectado a los tres entornos (`KV_REST_API_URL` y `KV_REST_API_TOKEN`)
 
 1. Vercel → Marketplace → Upstash Redis (plan gratuito) → conectarlo al proyecto `kultura` en todos los entornos.
 2. El código ya lee `KV_REST_API_URL` / `KV_REST_API_TOKEN` (`src/lib/rate-limit.ts:133`).
