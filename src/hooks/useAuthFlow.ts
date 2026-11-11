@@ -18,6 +18,7 @@ import {
   type AttributionParams,
 } from "@/lib/analytics/attribution";
 import { unsubscribeCurrentDevice } from "@/lib/push/client";
+import { updateSettings } from "@/lib/settings/client";
 
 // KULTURA — Lógica de Entrar / Crear cuenta / Recuperar (rescate F0, §7.3).
 //
@@ -429,11 +430,7 @@ export function useAuthFlow(locale: string) {
     }
     if (!pending) return;
 
-    await fetch("/api/settings", {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ avatar_icon: pending }),
-    }).catch(() => {
+    await updateSettings({ avatar_icon: pending }).catch(() => {
       // Un fallo aquí no puede impedir entrar: el personaje se cambia en Ajustes.
     });
 

@@ -13,6 +13,8 @@ import { getAuthErrorKeyFromError } from '@/lib/utils/auth-errors'
 import { USERNAME_REGEX, isReservedUsername, type LibraryVisibility } from '@/lib/account/identity'
 import { ApiError } from '@/lib/api/client'
 import { ACCOUNT_ERRORS } from '@/lib/account/errors'
+import { updateSettings } from '@/lib/settings/client'
+import { SETTINGS_ERRORS } from '@/lib/settings/errors'
 import {
   cancelAccountDeletion,
   deleteAccount,
@@ -136,10 +138,7 @@ export function useAccountSettings({
     setSaving(true)
 
     try {
-      const res = await fetch('/api/settings', {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
+      await updateSettings({
           // Solo si cambió: así un nombre antiguo nunca bloquea guardar el
           // resto (y no se gasta una escritura admin en cada guardado).
           ...(username !== initialUsername ? { username } : {}),
@@ -152,22 +151,7 @@ export function useAccountSettings({
           // migración aún no está aplicada haría fallar TODO el guardado,
           // incluidos nombre e idioma.
           ...(avatarIcon !== initialAvatarIcon ? { avatar_icon: avatarIcon } : {}),
-        }),
       })
-
-      if (res.status === 409) {
-        const data = (await res.json().catch(() => ({}))) as { error?: string }
-        setUsernameError(
-          data.error === 'username_reserved' ? t('errorUsernameReserved') : t('errorUsernameExists')
-        )
-        usernameRef.current?.focus()
-        return
-      }
-
-      if (!res.ok) {
-        toast.show({ message: t('errorSave'), type: 'error' })
-        return
-      }
 
       toast.show({ message: t('saved'), type: 'success' })
 
@@ -179,8 +163,15 @@ export function useAccountSettings({
         const newPath = pathname.replace(`/${currentLocale}/`, `/${locale}/`)
         router.push(newPath)
       }
-    } catch {
-      toast.show({ message: t('errorSave'), type: 'error' })
+    } catch (err) {
+      if (err instanceof ApiError && err.code === 'conflict') {
+        setUsernameError(
+          err.message === SETTINGS_ERRORS.usernameReserved ? t('errorUsernameReserved') : t('errorUsernameExists')
+        )
+        usernameRef.current?.focus()
+      } else {
+        toast.show({ message: t('errorSave'), type: 'error' })
+      }
     } finally {
       setSaving(false)
     }

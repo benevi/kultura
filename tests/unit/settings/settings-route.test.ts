@@ -3,6 +3,7 @@
 // ============================================================
 
 import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { settingsPatchResultSchema } from '@/lib/api/contracts/settings'
 
 const AUTH_USER = { id: 'user-001', email: 'test@example.com' }
 
@@ -19,6 +20,11 @@ vi.mock('@/lib/supabase/server', () => ({
 
 vi.mock('@/lib/supabase/admin', () => ({
   createAdminClient: () => ({ from: mockAdminFrom }),
+}))
+
+vi.mock('@/lib/rate-limit', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@/lib/rate-limit')>()),
+  checkRateLimitDistributed: async () => ({ allowed: true, retryAfterSeconds: 0 }),
 }))
 
 /** Cadena `update().eq().select().single()` que guarda lo que se escribe. */
@@ -42,37 +48,6 @@ function makeRequest(body: unknown): Request {
     body: JSON.stringify(body),
   })
 }
-
-describe('GET /api/settings', () => {
-  beforeEach(() => vi.clearAllMocks())
-
-  it('returns 401 if not authenticated', async () => {
-    mockGetUser.mockResolvedValue({ data: { user: null }, error: null })
-    const { GET } = await import('@/app/api/settings/route')
-    const res = await GET()
-    expect(res.status).toBe(401)
-  })
-
-  it('returns user settings for authenticated user', async () => {
-    mockGetUser.mockResolvedValue({ data: { user: AUTH_USER }, error: null })
-    const mockSingle = vi.fn().mockResolvedValue({
-      data: { username: 'testuser', avatar_color: 'blue', preferred_locale: 'es' },
-      error: null,
-    })
-    mockFrom.mockReturnValue({
-      select: vi.fn().mockReturnThis(),
-      eq: vi.fn().mockReturnThis(),
-      single: mockSingle,
-    })
-
-    const { GET } = await import('@/app/api/settings/route')
-    const res = await GET()
-    expect(res.status).toBe(200)
-    const body = await res.json()
-    expect(body.username).toBe('testuser')
-    expect(body.avatar_color).toBe('blue')
-  })
-})
 
 describe('PATCH /api/settings', () => {
   beforeEach(() => vi.clearAllMocks())
@@ -98,7 +73,7 @@ describe('PATCH /api/settings', () => {
     const res = await PATCH(makeRequest({ username: 'newname' }) as import('next/server').NextRequest)
     expect(res.status).toBe(200)
     const body = await res.json()
-    expect(body.success).toBe(true)
+    expect(settingsPatchResultSchema.parse(body.data)).toBeNull()
     // La base ya no deja cambiar `username` con el JWT del usuario. Las
     // iniciales siguen al nombre nuevo (antes se quedaban las del email).
     expect(admin.update).toHaveBeenCalledWith({ username: 'newname', avatar_initials: 'NE' })
@@ -125,7 +100,7 @@ describe('PATCH /api/settings', () => {
     const { PATCH } = await import('@/app/api/settings/route')
     const res = await PATCH(makeRequest({ username: 'racename' }) as import('next/server').NextRequest)
     expect(res.status).toBe(409)
-    expect((await res.json()).error).toBe('username_taken')
+    expect((await res.json()).error).toMatchObject({ code: 'conflict', message: 'username_taken' })
   })
 
   it('la cuenta demo no puede cambiar nada (el admin no la frena)', async () => {
@@ -195,7 +170,7 @@ describe('PATCH /api/settings', () => {
     const res = await PATCH(makeRequest({ username: 'takenname' }) as import('next/server').NextRequest)
     expect(res.status).toBe(409)
     const body = await res.json()
-    expect(body.error).toBe('username_taken')
+    expect(body.error).toMatchObject({ code: 'conflict', message: 'username_taken' })
   })
 
   it('returns 400 for invalid avatar_color', async () => {

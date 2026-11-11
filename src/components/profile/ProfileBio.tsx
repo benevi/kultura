@@ -3,9 +3,8 @@
 import { useState } from 'react'
 import { useTranslations } from 'next-intl'
 import { KButton } from '@/components/ui/KButton'
-
-/** Mismo tope que valida `PATCH /api/settings`. */
-const BIO_MAX_LENGTH = 200
+import { updateSettings } from '@/lib/settings/client'
+import { BIO_MAX_LENGTH } from '@/lib/settings/errors'
 
 interface Props {
   bio: string | null
@@ -29,12 +28,7 @@ export function ProfileBio({ bio, isOwner }: Props) {
     setSaveError(false)
     const next = draft.trim()
     try {
-      const res = await fetch('/api/settings', {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ bio: next || null }),
-      })
-      if (!res.ok) throw new Error(`HTTP ${res.status}`)
+      await updateSettings({ bio: next || null })
       setCurrentBio(next)
       setEditing(false)
     } catch {
