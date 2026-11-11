@@ -8,6 +8,8 @@ import { Spinner } from '@/components/ui/Spinner'
 import { Modal } from '@/components/ui/Modal'
 import { useToastContext } from '@/components/ui/ToastProvider'
 import type { MediaItem } from '@/types/media'
+import { ApiError } from '@/lib/api/client'
+import { addListItem, fetchMyLists } from '@/lib/lists/client'
 
 interface RawList {
   id: string
@@ -38,13 +40,9 @@ export function AddToListButton({ item }: AddToListButtonProps) {
     if (!open) return
     setLoadingLists(true)
     setFetchError(false)
-    fetch(`/api/lists`)
-      .then((r) => {
-        if (!r.ok) throw new Error('fetch failed')
-        return r.json()
-      })
-      .then((data: { lists?: RawList[] }) => {
-        setLists(data.lists ?? [])
+    fetchMyLists()
+      .then((data) => {
+        setLists(data as unknown as RawList[])
         setSelectedListId('')
       })
       .catch(() => setFetchError(true))
@@ -56,34 +54,15 @@ export function AddToListButton({ item }: AddToListButtonProps) {
     setAdding(true)
     setAddError(null)
     try {
-      const res = await fetch(`/api/lists/${selectedListId}`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          mediaId: item.id,
-          mediaCache: {
-            externalId: item.externalId,
-            type: item.type,
-            title: item.title,
-            poster: item.poster,
-            backdrop: item.backdrop,
-            year: item.year,
-            synopsis: item.synopsis,
-            genres: item.genres,
-          },
-        }),
-      })
-
       const selectedName = lists.find((l) => l.id === selectedListId)?.name ?? ''
-
-      if (res.status === 201) {
+      try {
+        await addListItem(selectedListId, item.id)
         show({ message: t('added', { name: selectedName }), type: 'success' })
         setOpen(false)
-      } else if (res.status === 409) {
+      } catch (err) {
+        if (!(err instanceof ApiError) || err.code !== 'conflict') throw err
         show({ message: t('alreadyIn', { name: selectedName }), type: 'info' })
         setOpen(false)
-      } else {
-        setAddError(t('errorAdding'))
       }
     } catch {
       setAddError(t('errorAdding'))

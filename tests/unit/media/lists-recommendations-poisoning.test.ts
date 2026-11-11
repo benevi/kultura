@@ -90,11 +90,11 @@ beforeEach(() => {
   })
 })
 
-describe('POST /api/lists/[id] — añadir título', () => {
+describe('POST /api/lists/[id]/items — añadir título', () => {
   it('no cambia una fila existente con un mediaCache alterado', async () => {
-    const { POST } = await import('@/app/api/lists/[id]/route')
+    const { POST } = await import('@/app/api/lists/[id]/items/route')
     const res = await POST(req('http://localhost/api/lists/l1', { mediaId: 'movie_550', mediaCache: POISON }), {
-      params: Promise.resolve({ id: 'l1' }),
+      params: Promise.resolve({ id: '11111111-1111-4111-8111-111111111111' }),
     })
     expect(res.status).toBe(201)
     expect(state.db.tables.media).toEqual([REAL_ROW])
@@ -103,9 +103,9 @@ describe('POST /api/lists/[id] — añadir título', () => {
 
   it('un título nuevo se crea desde el proveedor', async () => {
     state.db.tables.media = []
-    const { POST } = await import('@/app/api/lists/[id]/route')
+    const { POST } = await import('@/app/api/lists/[id]/items/route')
     const res = await POST(req('http://localhost/api/lists/l1', { mediaId: 'movie_550', mediaCache: POISON }), {
-      params: Promise.resolve({ id: 'l1' }),
+      params: Promise.resolve({ id: '11111111-1111-4111-8111-111111111111' }),
     })
     expect(res.status).toBe(201)
     expect(state.db.tables.media[0].title).toBe('El club de la lucha')
@@ -115,9 +115,9 @@ describe('POST /api/lists/[id] — añadir título', () => {
   it('si el proveedor no responde para un título nuevo → 502 sin item huérfano', async () => {
     state.db.tables.media = []
     getMovieMock.mockRejectedValue(new Error('down'))
-    const { POST } = await import('@/app/api/lists/[id]/route')
+    const { POST } = await import('@/app/api/lists/[id]/items/route')
     const res = await POST(req('http://localhost/api/lists/l1', { mediaId: 'movie_550', mediaCache: POISON }), {
-      params: Promise.resolve({ id: 'l1' }),
+      params: Promise.resolve({ id: '11111111-1111-4111-8111-111111111111' }),
     })
     expect(res.status).toBe(502)
     expect(state.db.tables.list_items).toEqual([])

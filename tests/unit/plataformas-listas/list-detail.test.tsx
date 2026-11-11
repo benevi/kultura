@@ -88,7 +88,7 @@ describe('ListDetail (F-25)', () => {
   })
 
   it('el dueño edita la descripción en línea', async () => {
-    fetchMock.mockResolvedValueOnce({ ok: true, json: async () => ({ ok: true }) })
+    fetchMock.mockResolvedValueOnce({ ok: true, status: 200, json: async () => ({ data: { description: 'Todo Dune' } }) })
     renderDetail()
     fireEvent.click(screen.getByRole('button', { name: 'lists.editDescription' }))
     const field = screen.getByRole('textbox', { name: 'lists.descriptionLabel' })
@@ -99,10 +99,15 @@ describe('ListDetail (F-25)', () => {
   })
 
   it('invitar a quien ya no es amigo: el motivo, no un error genérico', async () => {
-    fetchMock.mockResolvedValueOnce({ ok: false, status: 403, json: async () => ({ error: 'not_friends' }) })
+    fetchMock.mockResolvedValueOnce({
+      ok: false, status: 403, headers: new Headers(),
+      json: async () => ({ error: { code: 'forbidden', message: 'not_friends' } }),
+    })
     renderDetail()
     fireEvent.change(screen.getByRole('combobox', { name: 'lists.inviteMember' }), { target: { value: 'f1' } })
     fireEvent.click(screen.getByRole('button', { name: 'lists.invite' }))
     await waitFor(() => expect(screen.getByRole('alert')).toHaveTextContent('lists.inviteNotFriend'))
+    expect(fetchMock).toHaveBeenCalledWith('/api/lists/l1/members', expect.objectContaining({ method: 'POST' }))
+    expect(JSON.parse(fetchMock.mock.calls[0][1].body)).toEqual({ userId: 'f1' })
   })
 })

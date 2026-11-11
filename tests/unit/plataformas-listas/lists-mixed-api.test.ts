@@ -5,14 +5,15 @@
 // ============================================================
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
+import { itemsPatchResultSchema } from '@/lib/api/contracts/lists'
 import { fakeSupabase, opsOf, type FakeClient } from './fake-supabase'
 
 let client: FakeClient
 vi.mock('@/lib/supabase/server', () => ({ createClient: async () => client }))
 vi.mock('@/lib/supabase/admin', () => ({ createAdminClient: () => ({}) }))
-vi.mock('@/lib/rate-limit', () => ({
-  checkRateLimit: () => ({ allowed: true }),
-  LIMITS: { lists: {} },
+vi.mock('@/lib/rate-limit', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@/lib/rate-limit')>()),
+  checkRateLimitDistributed: async () => ({ allowed: true, retryAfterSeconds: 0 }),
 }))
 vi.mock('@/lib/analytics/track', () => ({ track: vi.fn(async () => undefined) }))
 vi.mock('@/lib/media/upsert-from-provider', () => ({
@@ -104,19 +105,19 @@ describe('GET /api/lists?mediaType=', () => {
 
 })
 
-describe('POST /api/lists/[id] — formato del título', () => {
+describe('POST /api/lists/[id]/items — formato del título', () => {
   beforeEach(() => vi.clearAllMocks())
 
   it('lista de películas: un libro → 400 type_mismatch', async () => {
     client = fakeSupabase({ user: USER, tables: { lists: [ownerList('movie')] } })
-    const { POST } = await import('@/app/api/lists/[id]/route')
+    const { POST } = await import('@/app/api/lists/[id]/items/route')
     const res = await POST(req('POST', { mediaId: 'book_abc' }), params)
     expect(res.status).toBe(400)
-    expect((await res.json()).error).toBe('type_mismatch')
+    expect((await res.json()).error).toMatchObject({ code: 'invalid_input', field: 'mediaId', message: 'type_mismatch' })
   })
 
   it('lista mixta: libro, película y juego entran', async () => {
-    const { POST } = await import('@/app/api/lists/[id]/route')
+    const { POST } = await import('@/app/api/lists/[id]/items/route')
     for (const mediaId of ['book_abc', 'movie_550', 'game_3498']) {
       client = fakeSupabase({
         user: USER,
@@ -146,36 +147,39 @@ describe('POST /api/lists/[id] — formato del título', () => {
         ],
       },
     })
-    const { POST } = await import('@/app/api/lists/[id]/route')
+    const { POST } = await import('@/app/api/lists/[id]/items/route')
     const res = await POST(req('POST', { mediaId: 'movie_550' }), params)
     expect(res.status).toBe(409)
   })
 })
 
-describe('PATCH /api/lists/[id] — orden manual', () => {
+describe('PATCH /api/lists/[id]/items — orden manual', () => {
   beforeEach(() => vi.clearAllMocks())
 
   it('sin la bandera: 404 not_available y no llama a la base', async () => {
     client = fakeSupabase({ user: USER })
-    const { PATCH } = await import('@/app/api/lists/[id]/route')
+    const { PATCH } = await import('@/app/api/lists/[id]/items/route')
     const res = await PATCH(req('PATCH', { order: [I1, I2] }), params)
     expect(res.status).toBe(404)
+    expect((await res.json()).error).toEqual({ code: 'not_found', message: 'not_available' })
     expect(client.rpcCalls).toHaveLength(0)
   })
 
   it('guarda el orden completo con una sola llamada a reorder_list_items', async () => {
     process.env.MIXED_LISTS = '1'
     client = fakeSupabase({ user: USER, tables: { lists: [ownerList()] }, rpc: { reorder_list_items: { data: 3, error: null } } })
-    const { PATCH } = await import('@/app/api/lists/[id]/route')
+    const { PATCH } = await import('@/app/api/lists/[id]/items/route')
     const res = await PATCH(req('PATCH', { order: [I3, I1, I2] }), params)
     expect(res.status).toBe(200)
     expect(client.rpcCalls).toEqual([{ fn: 'reorder_list_items', args: { p_list: LIST, p_items: [I3, I1, I2] } }])
-    expect(await res.json()).toEqual({ ok: true, moved: 3 })
+    const body = await res.json()
+    expect(body).toEqual({ data: { moved: 3 } })
+    itemsPatchResultSchema.parse(body.data)
   })
 
   it('valida: vacío, repetidos, no uuid', async () => {
     process.env.MIXED_LISTS = '1'
-    const { PATCH } = await import('@/app/api/lists/[id]/route')
+    const { PATCH } = await import('@/app/api/lists/[id]/items/route')
     for (const order of [[], [I1, I1], ['x'], 'nope']) {
       client = fakeSupabase({ user: USER, tables: { lists: [ownerList()] } })
       const res = await PATCH(req('PATCH', { order }), params)
@@ -189,7 +193,7 @@ describe('PATCH /api/lists/[id] — orden manual', () => {
       user: USER,
       tables: { lists: [{ data: { owner_id: 'otro', is_collaborative: false, media_type: 'mixed' }, error: null }] },
     })
-    const { PATCH } = await import('@/app/api/lists/[id]/route')
+    const { PATCH } = await import('@/app/api/lists/[id]/items/route')
     const res = await PATCH(req('PATCH', { order: [I1] }), params)
     expect(res.status).toBe(403)
     expect(client.rpcCalls).toHaveLength(0)
@@ -205,20 +209,20 @@ describe('PATCH /api/lists/[id] — orden manual', () => {
       },
       rpc: { reorder_list_items: { data: 1, error: null } },
     })
-    const { PATCH } = await import('@/app/api/lists/[id]/route')
+    const { PATCH } = await import('@/app/api/lists/[id]/items/route')
     const res = await PATCH(req('PATCH', { order: [I1] }), params)
     expect(res.status).toBe(200)
   })
 
 })
 
-describe('PATCH /api/lists/[id] — nota y datos', () => {
+describe('PATCH /api/lists/[id]/items — notas', () => {
   beforeEach(() => vi.clearAllMocks())
 
   it('guarda una nota recortada (y vacía → null)', async () => {
     process.env.MIXED_LISTS = '1'
     client = fakeSupabase({ user: USER, tables: { lists: [ownerList()], list_items: [{ data: null, error: null, count: 1 }] } })
-    const { PATCH } = await import('@/app/api/lists/[id]/route')
+    const { PATCH } = await import('@/app/api/lists/[id]/items/route')
     const res = await PATCH(req('PATCH', { itemId: I1, note: '  La mejor  ' }), params)
     expect(res.status).toBe(200)
     expect(opsOf(client, 'list_items', 'update')[0].args[0]).toEqual({ note: 'La mejor' })
@@ -230,12 +234,16 @@ describe('PATCH /api/lists/[id] — nota y datos', () => {
 
   it('nota de más de 500 → 400; título que no es de la lista → 404', async () => {
     process.env.MIXED_LISTS = '1'
-    const { PATCH } = await import('@/app/api/lists/[id]/route')
+    const { PATCH } = await import('@/app/api/lists/[id]/items/route')
     client = fakeSupabase({ user: USER, tables: { lists: [ownerList()] } })
     expect((await PATCH(req('PATCH', { itemId: I1, note: 'x'.repeat(501) }), params)).status).toBe(400)
     client = fakeSupabase({ user: USER, tables: { lists: [ownerList()], list_items: [{ data: null, error: null, count: 0 }] } })
     expect((await PATCH(req('PATCH', { itemId: I1, note: 'hola' }), params)).status).toBe(404)
   })
+})
+
+describe('PATCH /api/lists/[id] — datos', () => {
+  beforeEach(() => vi.clearAllMocks())
 
   it('el dueño cambia nombre y descripción; un miembro no', async () => {
     process.env.MIXED_LISTS = '1'

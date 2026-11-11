@@ -57,7 +57,7 @@ describe('AddToListButton', () => {
   it('shows noListsAtAll + CTA when user has no lists at all', async () => {
     mockFetch.mockResolvedValueOnce({
       ok: true,
-      json: async () => ({ lists: [] }),
+      json: async () => ({ data: [] }),
     })
     renderBtn()
     fireEvent.click(screen.getByRole('button', { name: /addToList/i }))
@@ -72,7 +72,7 @@ describe('AddToListButton', () => {
     const lists = [{ id: 'list-2', name: 'Mis libros', media_type: 'book', is_collaborative: false }]
     mockFetch.mockResolvedValueOnce({
       ok: true,
-      json: async () => ({ lists }),
+      json: async () => ({ data: lists }),
     })
     renderBtn()
     fireEvent.click(screen.getByRole('button', { name: /addToList/i }))
@@ -85,8 +85,8 @@ describe('AddToListButton', () => {
   it('shows list options and adds with success toast on 201', async () => {
     const lists = [{ id: 'list-1', name: 'Favs', media_type: 'movie', is_collaborative: false }]
     mockFetch
-      .mockResolvedValueOnce({ ok: true, json: async () => ({ lists }) })
-      .mockResolvedValueOnce({ ok: true, status: 201, json: async () => ({}) })
+      .mockResolvedValueOnce({ ok: true, status: 200, json: async () => ({ data: lists }) })
+      .mockResolvedValueOnce({ ok: true, status: 201, json: async () => ({ data: { id: 'item-1' } }) })
 
     renderBtn()
     fireEvent.click(screen.getByRole('button', { name: /addToList/i }))
@@ -100,13 +100,15 @@ describe('AddToListButton', () => {
         expect.objectContaining({ type: 'success' })
       )
     })
+    expect(mockFetch).toHaveBeenLastCalledWith('/api/lists/list-1/items', expect.objectContaining({ method: 'POST' }))
+    expect(JSON.parse(mockFetch.mock.lastCall![1].body)).toEqual({ mediaId: 'movie_550' })
   })
 
   it('shows info toast on 409 (already in list)', async () => {
     const lists = [{ id: 'list-1', name: 'Favs', media_type: 'movie', is_collaborative: false }]
     mockFetch
-      .mockResolvedValueOnce({ ok: true, json: async () => ({ lists }) })
-      .mockResolvedValueOnce({ ok: true, status: 409, json: async () => ({}) })
+      .mockResolvedValueOnce({ ok: true, status: 200, json: async () => ({ data: lists }) })
+      .mockResolvedValueOnce({ ok: false, status: 409, headers: new Headers(), json: async () => ({ error: { code: 'conflict' } }) })
 
     renderBtn()
     fireEvent.click(screen.getByRole('button', { name: /addToList/i }))
@@ -123,7 +125,7 @@ describe('AddToListButton', () => {
   })
 
   it('cancel button closes modal without adding', async () => {
-    mockFetch.mockResolvedValueOnce({ ok: true, json: async () => ({ lists: [] }) })
+    mockFetch.mockResolvedValueOnce({ ok: true, json: async () => ({ data: [] }) })
     renderBtn()
     fireEvent.click(screen.getByRole('button', { name: /addToList/i }))
     await waitFor(() => expect(screen.getByText('noListsAtAll')).toBeInTheDocument())

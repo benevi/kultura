@@ -58,9 +58,12 @@ export function apiError(code: ApiErrorCode, opts: ApiErrorOptions = {}): NextRe
   )
 }
 
-/** Respuesta de un servicio: `{ data }` o el error con su código. */
-export function respond<T>(result: ServiceResult<T>): NextResponse<ApiSuccessBody<T> | ApiErrorBody> {
-  if (result.ok) return ok(result.value)
+/** Respuesta de un servicio: `{ data }` (con `init`, p. ej. 201) o el error con su código. */
+export function respond<T>(
+  result: ServiceResult<T>,
+  init?: ResponseInit
+): NextResponse<ApiSuccessBody<T> | ApiErrorBody> {
+  if (result.ok) return ok(result.value, init)
   return apiError(result.code, { message: result.message, field: result.field })
 }
 

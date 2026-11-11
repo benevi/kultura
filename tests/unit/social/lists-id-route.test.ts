@@ -1,5 +1,5 @@
 // ============================================================
-// KULTURA — Route Handler /api/lists/[id] unit tests (DELETE item)
+// KULTURA — Route Handler /api/lists/[id]/items unit tests (DELETE item)
 // Verifica el borrado de item: 404 si no existe, 403 sin permiso, 200 OK.
 // ============================================================
 
@@ -8,14 +8,14 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
 function makeRequest(body: unknown, method = 'DELETE'): Request {
-  return new Request('http://localhost/api/lists/list-001', {
+  return new Request('http://localhost/api/lists/11111111-1111-4111-8111-111111111111/items', {
     method,
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(body),
   })
 }
 
-const PARAMS = { params: Promise.resolve({ id: 'list-001' }) }
+const PARAMS = { params: Promise.resolve({ id: '11111111-1111-4111-8111-111111111111' }) }
 
 // ── Mock factories ─────────────────────────────────────────────────────────────
 
@@ -38,19 +38,22 @@ vi.mock('@/lib/supabase/server', () => ({
   createClient: () => buildSupabaseMock(),
 }))
 
-vi.mock('@/lib/rate-limit', () => ({
-  checkRateLimit: () => ({ allowed: true }),
-  LIMITS: { lists: {} },
+vi.mock('@/lib/rate-limit', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@/lib/rate-limit')>()),
+  checkRateLimitDistributed: async () => ({ allowed: true, retryAfterSeconds: 0 }),
 }))
 
 const mockCanEditList = vi.fn()
 vi.mock('@/lib/social/lists', () => ({
-  canEditList: (...args: unknown[]) => mockCanEditList(...args),
+  getListAccess: async () => {
+    const canEdit = await mockCanEditList()
+    return { exists: true, canEdit, isOwner: canEdit, mediaType: 'movie' }
+  },
 }))
 
 // ── Tests ─────────────────────────────────────────────────────────────────────
 
-describe('DELETE /api/lists/[id] — eliminar item', () => {
+describe('DELETE /api/lists/[id]/items — eliminar item', () => {
   beforeEach(() => {
     vi.clearAllMocks()
   })
@@ -58,8 +61,8 @@ describe('DELETE /api/lists/[id] — eliminar item', () => {
   it('devuelve 401 si el usuario no está autenticado', async () => {
     mockGetUser.mockResolvedValueOnce({ data: { user: null }, error: { message: 'No session' } })
 
-    const { DELETE } = await import('@/app/api/lists/[id]/route')
-    const response = await DELETE(makeRequest({ itemId: 'item-001' }), PARAMS)
+    const { DELETE } = await import('@/app/api/lists/[id]/items/route')
+    const response = await DELETE(makeRequest({ itemId: '22222222-2222-4222-8222-222222222222' }), PARAMS)
 
     expect(response.status).toBe(401)
   })
@@ -67,24 +70,24 @@ describe('DELETE /api/lists/[id] — eliminar item', () => {
   it('devuelve 400 si falta itemId', async () => {
     mockGetUser.mockResolvedValueOnce({ data: { user: { id: 'user-001' } }, error: null })
 
-    const { DELETE } = await import('@/app/api/lists/[id]/route')
+    const { DELETE } = await import('@/app/api/lists/[id]/items/route')
     const response = await DELETE(makeRequest({}), PARAMS)
 
     expect(response.status).toBe(400)
-    const body = await response.json() as { error: string }
-    expect(body.error).toBe('itemId is required')
+    const body = await response.json() as { error: { code: string; field?: string } }
+    expect(body.error).toMatchObject({ code: 'invalid_input', field: 'itemId' })
   })
 
   it('devuelve 403 si el usuario no puede editar la lista', async () => {
     mockGetUser.mockResolvedValueOnce({ data: { user: { id: 'user-001' } }, error: null })
     mockCanEditList.mockResolvedValueOnce(false)
 
-    const { DELETE } = await import('@/app/api/lists/[id]/route')
-    const response = await DELETE(makeRequest({ itemId: 'item-001' }), PARAMS)
+    const { DELETE } = await import('@/app/api/lists/[id]/items/route')
+    const response = await DELETE(makeRequest({ itemId: '22222222-2222-4222-8222-222222222222' }), PARAMS)
 
     expect(response.status).toBe(403)
-    const body = await response.json() as { error: string }
-    expect(body.error).toBe('Forbidden')
+    const body = await response.json() as { error: { code: string } }
+    expect(body.error.code).toBe('forbidden')
   })
 
   it('devuelve 404 si el item no existía', async () => {
@@ -96,15 +99,15 @@ describe('DELETE /api/lists/[id] — eliminar item', () => {
       }),
     })
 
-    const { DELETE } = await import('@/app/api/lists/[id]/route')
-    const response = await DELETE(makeRequest({ itemId: 'item-999' }), PARAMS)
+    const { DELETE } = await import('@/app/api/lists/[id]/items/route')
+    const response = await DELETE(makeRequest({ itemId: '99999999-9999-4999-8999-999999999999' }), PARAMS)
 
     expect(response.status).toBe(404)
-    const body = await response.json() as { error: string }
-    expect(body.error).toBe('Not found')
+    const body = await response.json() as { error: { code: string } }
+    expect(body.error.code).toBe('not_found')
   })
 
-  it('devuelve 200 { ok: true } al eliminar correctamente', async () => {
+  it('devuelve 200 { data: null } al eliminar correctamente', async () => {
     mockGetUser.mockResolvedValueOnce({ data: { user: { id: 'user-001' } }, error: null })
     mockCanEditList.mockResolvedValueOnce(true)
     mockListItemsDelete.mockReturnValueOnce({
@@ -113,11 +116,10 @@ describe('DELETE /api/lists/[id] — eliminar item', () => {
       }),
     })
 
-    const { DELETE } = await import('@/app/api/lists/[id]/route')
-    const response = await DELETE(makeRequest({ itemId: 'item-001' }), PARAMS)
+    const { DELETE } = await import('@/app/api/lists/[id]/items/route')
+    const response = await DELETE(makeRequest({ itemId: '22222222-2222-4222-8222-222222222222' }), PARAMS)
 
     expect(response.status).toBe(200)
-    const body = await response.json() as { ok: boolean }
-    expect(body.ok).toBe(true)
+    expect(await response.json()).toEqual({ data: null })
   })
 })

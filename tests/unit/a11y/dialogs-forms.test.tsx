@@ -78,7 +78,7 @@ describe('CreateListModal', () => {
   })
 
   it('una sola petición: la visibilidad va en el alta (F-25; antes un PATCH aparte que podía fallar)', async () => {
-    fetchMock.mockResolvedValue({ ok: true, json: async () => ({ list: { id: 'l1' } }) })
+    fetchMock.mockResolvedValue({ ok: true, status: 201, json: async () => ({ data: { id: 'l1' } }) })
     const { unmount } = render(<CreateListModal onClose={vi.fn()} />)
     fireEvent.change(screen.getByRole('textbox', { name: 'lists.listName' }), { target: { value: 'Mi lista' } })
     fireEvent.click(screen.getByRole('button', { name: 'lists.create' }))
@@ -99,7 +99,7 @@ describe('CreateListModal', () => {
   })
 
   it('si el alta falla, el error se anuncia dentro del diálogo y no navega', async () => {
-    fetchMock.mockResolvedValueOnce({ ok: false, json: async () => ({ error: 'x' }) })
+    fetchMock.mockResolvedValueOnce({ ok: false, status: 500, headers: new Headers(), json: async () => ({ error: { code: 'internal' } }) })
     render(<CreateListModal onClose={vi.fn()} />)
     fireEvent.change(screen.getByRole('textbox', { name: 'lists.listName' }), { target: { value: 'X' } })
     fireEvent.click(screen.getByRole('button', { name: 'lists.create' }))
@@ -138,7 +138,7 @@ describe('AddToListButton', () => {
     fireEvent.click(screen.getByRole('button', { name: 'lists.addToList' }))
     const dialog = screen.getByRole('dialog', { name: 'lists.addToListTitle' })
     expect(screen.getByRole('status', { name: 'common.loading' })).toBeInTheDocument()
-    resolve({ ok: true, json: async () => ({ lists: [{ id: 'l1', name: 'Favs', media_type: 'movie', is_collaborative: false }] }) })
+    resolve({ ok: true, status: 200, json: async () => ({ data: [{ id: 'l1', name: 'Favs', media_type: 'movie', is_collaborative: false }] }) })
     await waitFor(() => expect(screen.getByRole('radio', { name: 'Favs' })).toBeInTheDocument())
     expect(screen.getByRole('group', { name: 'lists.selectList' })).toBeInTheDocument()
     expectLabelledControls(dialog)
