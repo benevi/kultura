@@ -92,7 +92,8 @@ describe('Inicio — identidad', () => {
     const row = h.insert.mock.calls[0][0]
     expect(row.username).toMatch(/^u_[a-z0-9]{6}$/)
     expect(row.username).not.toContain('nombre')
-    expect(row.avatar_initials).not.toBe('NO')
+    // Iniciales del nombre generado, no del email («nombre@…»).
+    expect(row.avatar_initials).toBe(row.username.slice(2, 4).toUpperCase())
   })
 
   // Saneamiento 1.6: el respaldo crea también account_state, como el disparador.
