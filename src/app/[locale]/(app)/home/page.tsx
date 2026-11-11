@@ -21,6 +21,7 @@ import { generatedUsername, initialsFor, purgeDate } from '@/lib/account/identit
 import { readAccountState } from '@/lib/account/account-state'
 import { createLogger } from '@/lib/logger'
 import { progressV2Active } from '@/lib/library/progress-server'
+import { progressFromRow } from '@/lib/library/progress'
 import {
   FriendsActivity,
   FriendsActivitySkeleton,
@@ -81,6 +82,15 @@ async function ensureProfile(userId: string): Promise<boolean> {
   return true
 }
 
+/** Columnas de progreso por formato (migración 20261215270001_progress, aplicada). */
+const PROGRESS_SELECT =
+  'progress_season, progress_episode, progress_chapter, progress_volume, progress_page, progress_percent, progress_hours, progress_total'
+
+/** Progreso de la fila (columnas o, si no, el jsonb) con la forma que esperan Hero y ContinueRow. */
+function progressAsJson(row: Record<string, unknown>): Record<string, unknown> | null {
+  return progressFromRow(row) as Record<string, unknown> | null
+}
+
 export default async function HomePage() {
   const t = await getTranslations('home')
   const supabase = await createClient()
@@ -104,7 +114,7 @@ export default async function HomePage() {
   const [inProgressResult, recentResult, todayRecs, signalResult, account, fullProgress] = await Promise.all([
     supabase
       .from('user_media')
-      .select('media_id, episode_progress, media(id, title, poster, year, type, synopsis)')
+      .select(`media_id, episode_progress, ${PROGRESS_SELECT}, media(id, title, poster, year, type, synopsis)`)
       .eq('user_id', user.id)
       .eq('status', 'in_progress')
       .order('updated_at', { ascending: false })
@@ -112,7 +122,7 @@ export default async function HomePage() {
       .maybeSingle(),
     supabase
       .from('user_media')
-      .select('media_id, status, episode_progress, media(id, title, poster, type)')
+      .select(`media_id, status, episode_progress, ${PROGRESS_SELECT}, media(id, title, poster, type)`)
       .eq('user_id', user.id)
       .in('status', ['in_progress', 'pending'])
       .order('updated_at', { ascending: false })
@@ -138,7 +148,13 @@ export default async function HomePage() {
   const signalCount = signalResult.error ? null : signalResult.count
   const showStarter = !todayRecs && signalCount !== null && signalCount < MIN_LIBRARY_ITEMS
 
-  const inProgress = inProgressResult.data as HeroItem | null
+  // Saneamiento 5.4: con PROGRESS_V2 el progreso vive en las columnas
+  // `progress_*`; el jsonb solo refleja episodios. Leyendo solo el jsonb, un
+  // libro a la mitad salía «Continuando» y «Sin empezar» a la vez.
+  const inProgressRaw = inProgressResult.data as (HeroItem & Record<string, unknown>) | null
+  const inProgress: HeroItem | null = inProgressRaw
+    ? { ...inProgressRaw, episode_progress: progressAsJson(inProgressRaw) }
+    : null
   const heroMediaId = inProgress?.media_id
 
   type RecentRow = {
@@ -157,7 +173,7 @@ export default async function HomePage() {
       poster: item.media?.poster ?? null,
       type: item.media?.type ?? '',
       status: item.status,
-      progress: item.episode_progress,
+      progress: progressAsJson(item as unknown as Record<string, unknown>),
     }))
 
   return (
