@@ -11,7 +11,7 @@
 // el alta (D-12), sin cookies.
 // ============================================================
 
-import { notFound, permanentRedirect } from 'next/navigation'
+import { notFound } from 'next/navigation'
 import type { Metadata } from 'next'
 import { getTranslations } from 'next-intl/server'
 import { Header } from '@/components/layout/Header'
@@ -38,7 +38,6 @@ import {
   getLibraryShowcase,
   getOwnerDetails,
   getPublicCollection,
-  resolveRenamedUsername,
   viewerCanReadLibrary,
   type LibraryShowcase,
   type PublicList,
@@ -116,17 +115,6 @@ function groupByFormat(lists: PublicList[]): Array<[MediaType, PublicList[]]> {
   return groups
 }
 
-/** Query original (para conservar `ref`, `inv` y `utm_*` al redirigir un nombre antiguo). */
-function queryString(sp: SearchParams): string {
-  const params = new URLSearchParams()
-  for (const [key, value] of Object.entries(sp)) {
-    if (typeof value === 'string') params.set(key, value)
-    else if (Array.isArray(value) && value[0]) params.set(key, value[0])
-  }
-  const q = params.toString()
-  return q ? `?${q}` : ''
-}
-
 type Viewer = { id: string } | null
 
 async function currentViewer(supabase: Awaited<ReturnType<typeof createClient>>): Promise<Viewer> {
@@ -143,13 +131,8 @@ export default async function PublicCollectionPage({ params, searchParams }: Pro
   const sp = (await searchParams) ?? {}
   const name = decodeName(username)
   const collection = await getPublicCollection(name)
-  if (!collection) {
-    // R11 / ROJO-6: un nombre antiguo redirige (308) al actual, así los
-    // enlaces ya compartidos (también los de invitación) no se rompen.
-    const current = await resolveRenamedUsername(name)
-    if (current) permanentRedirect(`/${locale}/u/${encodeURIComponent(current)}${queryString(sp)}`)
-    notFound()
-  }
+  // Un nombre antiguo es un 404 más (Q8): no lleva al nombre actual.
+  if (!collection) notFound()
 
   const { lists } = collection
   let owner: PublicOwner = collection.owner

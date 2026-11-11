@@ -16,7 +16,8 @@ import { PushOffer } from '@/components/push/PushOffer'
 interface Message {
   id: string
   content: string
-  sender_id: string
+  /** `null`: la cuenta del autor se borró (el texto llega vacío). */
+  sender_id: string | null
   created_at: string
   users: {
     username: string
@@ -374,7 +375,7 @@ export function ConversationClient({
           const { data: senderData } = await supabase
             .from('users')
             .select('username, avatar_color, avatar_initials')
-            .eq('id', newMsg.sender_id)
+            .eq('id', newMsg.sender_id ?? '') // un INSERT siempre trae autor
             .maybeSingle()
 
           const fullMsg: Message = {
@@ -538,6 +539,9 @@ export function ConversationClient({
         )}
         {messages.map((msg) => {
           const isMine = msg.sender_id === currentUserId
+          // Saneamiento 2.10 (Q6): al borrar su cuenta, el mensaje se queda
+          // sin autor ni texto; la conversación del otro no se rompe.
+          const orphaned = msg.sender_id === null
           return (
             <div key={msg.id} className={`flex gap-2 ${isMine ? 'flex-row-reverse' : 'flex-row'}`}>
               {!isMine && msg.users && (
@@ -550,9 +554,9 @@ export function ConversationClient({
               <div className={`max-w-[75%] ${isMine ? 'items-end' : 'items-start'} flex flex-col gap-1`}>
                 {/* En los recibidos, el nombre de quien escribe acompaña al
                     avatar: sin él solo se veían unas iniciales sueltas. */}
-                {!isMine && msg.users?.username && (
+                {!isMine && (orphaned || msg.users?.username) && (
                   <span className="text-xs font-semibold text-text-secondary px-1">
-                    {msg.users.username}
+                    {orphaned ? t('deletedUser') : msg.users?.username}
                   </span>
                 )}
                 <div
@@ -562,13 +566,13 @@ export function ConversationClient({
                       : 'bg-surface-elevated text-text-primary rounded-bl-lg'
                   }`}
                 >
-                  {msg.content}
+                  {orphaned ? <span className="italic text-text-secondary">{t('deletedMessage')}</span> : msg.content}
                 </div>
                 <div className={`flex items-center gap-1 ${isMine ? 'flex-row-reverse' : 'flex-row'}`}>
                   <span className="text-xs text-text-secondary px-1">
                     {timeLabel(msg.created_at, locale)}
                   </span>
-                  {moderation && (
+                  {moderation && !orphaned && (
                     <MessageActions
                       conversationId={conversationId}
                       message={msg}

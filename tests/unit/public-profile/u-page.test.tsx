@@ -24,7 +24,6 @@ const h = vi.hoisted(() => {
     canRead: vi.fn(),
     getShowcase: vi.fn(),
     details: vi.fn(),
-    renamed: vi.fn(),
     permanentRedirect: vi.fn((url: string) => {
       throw new Error(`308 ${url}`)
     }),
@@ -66,7 +65,6 @@ vi.mock('@/lib/social/public-collection', () => ({
   getLibraryShowcase: (...args: unknown[]) => h.getShowcase(...args),
   getOwnerDetails: (...args: unknown[]) => h.details(...args),
   viewerCanReadLibrary: (...args: unknown[]) => h.canRead(...args),
-  resolveRenamedUsername: (...args: unknown[]) => h.renamed(...args),
 }))
 vi.mock('@/lib/analytics/invite', () => ({
   invitePath: (locale: string, u: { username: string }) => `/${locale}/u/${u.username}?ref=${u.username}&inv=firma`,
@@ -138,7 +136,6 @@ beforeEach(() => {
   h.collection = { owner: { ...OWNER }, lists: [list('l1'), list('l2')] }
   h.canRead.mockResolvedValue(true)
   h.getShowcase.mockResolvedValue(SHOWCASE)
-  h.renamed.mockResolvedValue(null)
   h.details.mockResolvedValue({ createdAt: '2026-01-01T00:00:00Z', libraryVisibility: 'friends' })
 })
 
@@ -258,12 +255,10 @@ describe('/u con sesión', () => {
 })
 
 describe('/u: nombres antiguos y metadatos', () => {
-  it('un nombre antiguo redirige (308) conservando la invitación', async () => {
+  it('un nombre antiguo no se resuelve (Q8): 404 como uno que no existe, sin redirigir', async () => {
     h.collection = null
-    h.renamed.mockResolvedValue('ana_nueva')
-    await expect(render({ ref: 'ana_vieja', inv: GOOD }, 'ana_vieja')).rejects.toThrow(
-      `308 /es/u/ana_nueva?ref=ana_vieja&inv=${GOOD}`,
-    )
+    await expect(render({ ref: 'ana_vieja', inv: GOOD }, 'ana_vieja')).rejects.toThrow('NOT_FOUND')
+    expect(h.permanentRedirect).not.toHaveBeenCalled()
   })
 
   it('canonical sin ?ref y fuera del índice con menos de 5 títulos públicos', async () => {

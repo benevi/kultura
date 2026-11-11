@@ -1,9 +1,9 @@
 // ============================================================
 // KULTURA — /u/[username]/l/[id] (Server Component, PÚBLICA)
 // Una lista pública en solo lectura. 404 si no es pública o no es de
-// `username` (así un enlace no sirve para adivinar listas privadas). Un
-// nombre antiguo redirige (308) al actual (R11), y se puede denunciar
-// (D-13): con sesión, el botón de F-11; sin ella, el formulario público.
+// `username` (así un enlace no sirve para adivinar listas privadas; un
+// nombre antiguo tampoco lleva al actual, Q8). Se puede denunciar (D-13):
+// con sesión, el botón de F-11; sin ella, el formulario público.
 //
 // F-25 (MIXED_LISTS): los títulos salen en el orden que eligió el dueño, con
 // sus notas y la descripción; un «Ranking personal» pinta el número. Esos
@@ -11,7 +11,7 @@
 // lista resulta ser pública y de `username`.
 // ============================================================
 
-import { notFound, permanentRedirect } from 'next/navigation'
+import { notFound } from 'next/navigation'
 import type { Metadata } from 'next'
 import { getTranslations } from 'next-intl/server'
 import { Header } from '@/components/layout/Header'
@@ -24,7 +24,7 @@ import { Link } from '@/i18n/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { isModerationV2 } from '@/lib/social/friends'
 import { siteUrl } from '@/lib/site-url'
-import { getPublicList, resolveRenamedUsername, usernameExists } from '@/lib/social/public-collection'
+import { getPublicList } from '@/lib/social/public-collection'
 import { getPublicListExtras, sortListItems } from '@/lib/social/lists'
 import { OrderedListGrid } from '@/components/collection/OrderedListGrid'
 import type { MediaItem, MediaType } from '@/types/media'
@@ -67,20 +67,14 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 }
 
 export default async function PublicListPage({ params }: Props) {
-  const { locale, username, id } = await params
+  const { username, id } = await params
   const name = decodeName(username)
   const [data, extras] = await Promise.all([
     getPublicList(name, id),
     getPublicListExtras(id).catch(() => null),
   ])
-  if (!data) {
-    // R11: el enlace se compartió con un nombre que ya no existe → al actual.
-    if (!(await usernameExists(name))) {
-      const current = await resolveRenamedUsername(name)
-      if (current) permanentRedirect(`/${locale}/u/${encodeURIComponent(current)}/l/${encodeURIComponent(id)}`)
-    }
-    notFound()
-  }
+  // Un nombre antiguo es un 404 más (Q8): no lleva al nombre actual.
+  if (!data) notFound()
 
   const supabase = await createClient()
   const signedIn = await supabase.auth

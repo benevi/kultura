@@ -122,7 +122,6 @@ function rest(req, res, url) {
     const rpc = {
       can_read_library: true,
       can_send_message: true,
-      username_redirect: null,
       deletion_preview: { groups: [{ name: "Club de cine", successor: null }], lists: [] },
     };
     return send(res, 200, fn in rpc ? rpc[fn] : null);

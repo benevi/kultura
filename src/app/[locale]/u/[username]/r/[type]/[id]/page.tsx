@@ -13,7 +13,7 @@
 // ============================================================
 
 import * as React from "react";
-import { notFound, permanentRedirect } from "next/navigation";
+import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import { getTranslations } from "next-intl/server";
 import { Header } from "@/components/layout/Header";
@@ -26,9 +26,7 @@ import { Link } from "@/i18n/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { posterGradient } from "@/lib/images/poster-gradient";
 import { mediaPath } from "@/lib/media/seo";
-import { parseMediaId } from "@/lib/media/media-id";
 import { siteUrl } from "@/lib/site-url";
-import { resolveRenamedUsername } from "@/lib/social/public-collection";
 import { parseAttributionRecord, withAttribution, type AttributionParams } from "@/lib/analytics/attribution";
 import { OG_LOCALE, SITE_NAME } from "@/i18n/metadata";
 import {
@@ -158,29 +156,10 @@ async function buildMetadata(props: Props): Promise<Metadata> {
   };
 }
 
-/** Query original (atribución) para conservarla al redirigir un nombre antiguo. */
-function queryString(sp: SearchParams): string {
-  const params = new URLSearchParams();
-  for (const [key, value] of Object.entries(sp)) {
-    const v = first(value);
-    if (typeof v === "string") params.set(key, v);
-  }
-  const q = params.toString();
-  return q ? `?${q}` : "";
-}
-
 export default async function RatedTitlePage(props: Props) {
-  const { locale, name, type, externalId, sp, view } = await load(props);
-  if (view.kind === "not_found") {
-    // R11: nombre antiguo → el actual, con la firma y la atribución. (La
-    // firma va por el id del dueño, no por su nombre: sigue valiendo.)
-    const parsed = parseMediaId(`${type}_${externalId}`);
-    const current = parsed ? await resolveRenamedUsername(name).catch(() => null) : null;
-    if (parsed && current) {
-      permanentRedirect(`/${locale}${ratingPagePath(current, parsed.type, parsed.externalId)}${queryString(sp)}`);
-    }
-    notFound();
-  }
+  const { locale, sp, view } = await load(props);
+  // Un nombre antiguo es un 404 más (Q8): no lleva al nombre actual.
+  if (view.kind === "not_found") notFound();
 
   const [t, tc] = await Promise.all([
     getTranslations({ locale, namespace: "share" }),

@@ -999,7 +999,7 @@ export type Database = {
           conversation_id: string
           created_at: string | null
           id: string
-          sender_id: string
+          sender_id: string | null
         }
         ComputedFields: never
         Insert: {
@@ -1007,14 +1007,14 @@ export type Database = {
           conversation_id: string
           created_at?: string | null
           id?: string
-          sender_id: string
+          sender_id?: string | null
         }
         Update: {
           content?: string
           conversation_id?: string
           created_at?: string | null
           id?: string
-          sender_id?: string
+          sender_id?: string | null
         }
         Relationships: [
           {
@@ -1602,7 +1602,6 @@ export type Database = {
         }[]
       }
       transfer_owned_content: { Args: { p_user: string }; Returns: Json }
-      username_redirect: { Args: { p_username: string }; Returns: string }
     }
     Enums: {
       [_ in never]: never

@@ -57,6 +57,22 @@ supabase db push    # aplica al remoto
 
 **NUNCA** editar la baseline `20260502233945_remote_schema.sql` ni archivos de migraciones ya aplicadas. Cualquier corrección o cambio de schema → migración nueva.
 
+### Orden
+
+Una migración nueva lleva fecha **posterior** a la última que ya hay en `master`. CI lo comprueba en cada PR (`scripts/check-migration-order.mjs`): una migración con fecha anterior se quedaría sin aplicar en producción.
+
+### Permisos: cada migración concede lo suyo (desde `20261230000001`)
+
+Las tablas, secuencias y funciones que crean las migraciones (rol `postgres`) **ya no se conceden solas a `anon`**, y `authenticated` ya no recibe `TRUNCATE`, `REFERENCES` ni `TRIGGER`. Al crear una tabla:
+
+```sql
+-- `authenticated` sigue recibiendo SELECT/INSERT/UPDATE/DELETE por defecto (la RLS decide).
+-- Solo si la lee alguien sin sesión (perfil público, etc.):
+grant select on public.mi_tabla to anon;
+```
+
+Y una función que deba llamar alguien sin sesión necesita `grant execute … to anon` explícito. Las funciones `security definer` que usan las políticas necesitan `EXECUTE` para el rol que consulta; el aviso del linter de Supabase sobre ellas es esperado.
+
 ## Importante: la baseline ya está aplicada en remoto
 
 La baseline está marcada como `applied` en remoto (proyecto `app movies`, ref `zfrbyphzvfuvejdwjfea`). **NO ejecutar `supabase db push` sobre ella** — el remoto ya la tiene. Hacerlo provocaría error de duplicados o estados inconsistentes.

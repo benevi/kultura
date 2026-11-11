@@ -979,6 +979,8 @@
     "otherLeft": "No longer in this chat",
     "loadingMessages": "Loading messages…",
     "logLabel": "Messages with {username}",
+    "deletedUser": "Deleted user",
+    "deletedMessage": "Message from a deleted account",
     "loadOlder": "Show earlier messages",
     "logLabelFallback": "Conversation messages",
     "backToChats": "Back to messages",

@@ -178,12 +178,13 @@ describe('acceptInvite()', () => {
     expect(h.ops.some((o) => o.op === 'insert')).toBe(false)
   })
 
-  it('nombre antiguo: se resuelve con username_redirect', async () => {
+  it('nombre antiguo no se resuelve (Q8): invitación inválida, sin rpc ni amistad', async () => {
     h.results.users = [{ data: null }, { data: { id: 'inv-1', username: 'ana_nueva' } }, { data: { username: 'u_x' } }]
     h.rpc.mockResolvedValue({ data: 'ana_nueva', error: null })
     h.results.friendships = [{ data: [] }, { error: null }]
-    expect(await acceptInvite(NEW, 'ana_vieja', inviteSignature('inv-1', 'ana_vieja')!)).toBe('accepted')
-    expect(h.rpc).toHaveBeenCalledWith('username_redirect', { p_username: 'ana_vieja' })
+    expect(await acceptInvite(NEW, 'ana_vieja', inviteSignature('inv-1', 'ana_vieja')!)).toBe('invalid')
+    expect(h.rpc).not.toHaveBeenCalled()
+    expect(h.ops.some((o) => o.op === 'insert')).toBe(false)
   })
 
   it('F-11: con un bloqueo en cualquier sentido no se crea nada (y no se revela)', async () => {
