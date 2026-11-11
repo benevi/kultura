@@ -5,9 +5,9 @@ on:
     branches: [master]
   pull_request:
     branches: [master]
-  # Integración contra el proyecto Supabase de TEST: a mano (Actions → CI →
-  # Run workflow) después de aplicar una migración allí, y cada lunes para
-  # detectar deriva.
+  # Integración contra el proyecto Supabase de TEST: en los PR que tocan
+  # migraciones o la API, a mano (Actions → CI → Run workflow) y cada lunes
+  # para detectar deriva.
   workflow_dispatch:
   schedule:
     - cron: "17 6 * * 1"
@@ -289,10 +289,16 @@ jobs:
 
   integration:
     name: Integración (RLS y base) contra el proyecto de test
-    # No en los PR: una migración nueva todavía no está aplicada en test y la
-    # suite fallaría por eso, no por el código. Se lanza a mano tras aplicarla.
-    if: github.event_name == 'workflow_dispatch' || github.event_name == 'schedule'
+    # Saneamiento, red de seguridad 3: en cada PR que toque migraciones o la
+    # API, además de a mano y cada lunes. Una migración nueva se aplica en
+    # kultura-test ANTES de abrir el PR (ver supabase/migrations/README.md).
+    if: github.event_name != 'push'
     runs-on: ubuntu-24.04
+    # Una sola a la vez: todas usan la misma base de test y los mismos
+    # usuarios fijos; dos a la vez chocaban (23505).
+    concurrency:
+      group: integration-test-db
+      cancel-in-progress: false
 
     env:
       SUPABASE_TEST_URL: ${{ secrets.TEST_SUPABASE_URL }}
@@ -300,19 +306,32 @@ jobs:
       SUPABASE_TEST_SERVICE_ROLE_KEY: ${{ secrets.TEST_SUPABASE_SERVICE_ROLE_KEY }}
 
     steps:
-      - name: Comprobar secretos del proyecto de test
-        id: secrets
-        run: |
-          if [ -z "$SUPABASE_TEST_URL" ] || [ -z "$SUPABASE_TEST_ANON_KEY" ] || [ -z "$SUPABASE_TEST_SERVICE_ROLE_KEY" ]; then
-            echo "::notice::Faltan TEST_SUPABASE_URL / TEST_SUPABASE_ANON_KEY / TEST_SUPABASE_SERVICE_ROLE_KEY: se omite la integración."
-            echo "run=false" >> "$GITHUB_OUTPUT"
-          else
-            echo "run=true" >> "$GITHUB_OUTPUT"
-          fi
-
       - name: Checkout
-        if: steps.secrets.outputs.run == 'true'
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: ¿Toca migraciones o la API?
+        id: secrets
+        env:
+          EVENT: ${{ github.event_name }}
+          BASE_REF: ${{ github.base_ref }}
+        run: |
+          if [ "$EVENT" = "pull_request" ]; then
+            if git diff --name-only "origin/$BASE_REF...HEAD" | grep -qE '^supabase/migrations/.+\.sql$|^src/app/api/'; then
+              echo "El PR toca supabase/migrations/*.sql o src/app/api/**: se ejecuta."
+            else
+              echo "El PR no toca migraciones ni la API: no hace falta."
+              echo "run=false" >> "$GITHUB_OUTPUT"
+              exit 0
+            fi
+          fi
+          # Si tiene que correr y faltan los secretos, falla (no se salta).
+          if [ -z "$SUPABASE_TEST_URL" ] || [ -z "$SUPABASE_TEST_ANON_KEY" ] || [ -z "$SUPABASE_TEST_SERVICE_ROLE_KEY" ]; then
+            echo "::error::Faltan TEST_SUPABASE_URL / TEST_SUPABASE_ANON_KEY / TEST_SUPABASE_SERVICE_ROLE_KEY."
+            exit 1
+          fi
+          echo "run=true" >> "$GITHUB_OUTPUT"
 
       - name: Setup Node.js
         if: steps.secrets.outputs.run == 'true'

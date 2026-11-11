@@ -61,6 +61,10 @@ supabase db push    # aplica al remoto
 
 Una migración nueva lleva fecha **posterior** a la última que ya hay en `master`. CI lo comprueba en cada PR (`scripts/check-migration-order.mjs`): una migración con fecha anterior se quedaría sin aplicar en producción.
 
+### Antes de abrir el PR: aplicarla en `kultura-test`
+
+CI ejecuta la integración (RLS y base) contra `kultura-test` en cada PR que toca `supabase/migrations/**` o `src/app/api/**`. Una migración nueva tiene que estar **ya aplicada en `kultura-test`** al abrir el PR; si no, la suite falla por eso y no por el código. A producción solo se aplica después de la copia manual (`backup.yml`) y del visto bueno.
+
 ### Permisos: cada migración concede lo suyo (desde `20261230000001`)
 
 Las tablas, secuencias y funciones que crean las migraciones (rol `postgres`) **ya no se conceden solas a `anon`**, y `authenticated` ya no recibe `TRUNCATE`, `REFERENCES` ni `TRIGGER`. Al crear una tabla:
