@@ -1,60 +1,25 @@
 // ============================================================
 // KULTURA — Library Actions (cliente)
-// Helpers que hacen fetch al Route Handler /api/library.
+// Helpers que hacen fetch a /api/library (ya con el contrato `{ data }` de la
+// fase 7) y a diary, prefs y progress (aún con su formato).
 // Uso exclusivo en Client Components.
 // ============================================================
 
 import type { DiaryConfig, DiaryLog, LibraryEntry, LibraryPayload, LibraryStatus, RatingScale } from '@/types/library'
+import { apiFetch } from '@/lib/api/client'
 import type { ProgressKind, ProgressPlan, ProgressValue } from '@/lib/library/progress'
 
-/** Añade un título a la biblioteca del usuario autenticado */
-export async function addToLibrary(payload: LibraryPayload): Promise<LibraryEntry> {
-  const response = await fetch('/api/library', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(payload),
-  })
-
-  if (!response.ok) {
-    const data = await response.json().catch(() => ({})) as { error?: string }
-    throw new Error(data.error ?? 'Failed to add to library')
-  }
-
-  const data = await response.json() as { entry: LibraryEntry }
-  return data.entry
-}
-
-/** Actualiza una entrada existente en la biblioteca del usuario autenticado */
-export async function updateLibrary(payload: LibraryPayload): Promise<LibraryEntry> {
-  const response = await fetch('/api/library', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(payload),
-  })
-
-  if (!response.ok) {
-    const data = await response.json().catch(() => ({})) as { error?: string }
-    throw new Error(data.error ?? 'Failed to update library entry')
-  }
-
-  const data = await response.json() as { entry: LibraryEntry }
-  return data.entry
-}
-
-/** Elimina un título de la biblioteca del usuario autenticado */
-/** `keepalive`: la petición sobrevive al cierre de la página (borrado pendiente). */
+/**
+ * Elimina un título de la biblioteca del usuario autenticado.
+ * `keepalive`: la petición sobrevive al cierre de la página (borrado pendiente).
+ * Lanza `ApiError` (`not_found` si ya no estaba).
+ */
 export async function removeFromLibrary(mediaId: string, { keepalive = false }: { keepalive?: boolean } = {}): Promise<void> {
-  const response = await fetch('/api/library', {
+  await apiFetch<null>('/api/library', {
     method: 'DELETE',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ mediaId }),
+    json: { mediaId },
     ...(keepalive ? { keepalive: true } : {}),
   })
-
-  if (!response.ok) {
-    const data = await response.json().catch(() => ({})) as { error?: string }
-    throw new Error(data.error ?? 'Failed to remove from library')
-  }
 }
 
 // ── F-24: notas finas y diario ───────────────────────────────────────────────
@@ -72,16 +37,12 @@ export interface SaveLibraryResult {
   logFailed: boolean
 }
 
-/** Guarda la entrada (y, si llega `payload.log`, un apunte del diario). */
+/**
+ * Guarda la entrada (y, si llega `payload.log`, un apunte del diario).
+ * Lanza `ApiError` (`provider_unavailable` si el proveedor no respondió).
+ */
 export async function saveLibraryEntry(payload: LibraryPayload): Promise<SaveLibraryResult> {
-  const response = await fetch('/api/library', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(payload),
-  })
-  if (!response.ok) throw await failure(response, 'Failed to save library entry')
-  const data = (await response.json()) as { entry: LibraryEntry; log?: DiaryLog | null; logFailed?: boolean }
-  return { entry: data.entry, log: data.log ?? null, logFailed: data.logFailed === true }
+  return apiFetch<SaveLibraryResult>('/api/library', { method: 'POST', json: payload })
 }
 
 /** Escala (bandera + preferencia) y apuntes del diario de un título. */

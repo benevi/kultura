@@ -14,6 +14,7 @@ vi.mock('@/lib/analytics/track', () => ({ track: h.track }))
 vi.mock('@/lib/supabase/admin', () => ({ createAdminClient: () => ({}) }))
 vi.mock('@/lib/rate-limit', () => ({
   checkRateLimit: () => ({ allowed: true, retryAfterSeconds: 0 }),
+  checkRateLimitDistributed: async () => ({ allowed: true, retryAfterSeconds: 0 }),
   LIMITS: { library: {}, lists: {} },
 }))
 vi.mock('@/lib/social/lists', () => ({ canEditList: vi.fn(), getListAccess: vi.fn() }))

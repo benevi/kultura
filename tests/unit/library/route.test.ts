@@ -4,6 +4,7 @@
 // ============================================================
 
 import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { librarySaveResultSchema } from '@/lib/api/contracts/library'
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -19,7 +20,6 @@ function makeRequest(body: unknown, method = 'POST'): Request {
 
 const mockGetUser = vi.fn()
 const mockMediaUpsert = vi.fn()
-const mockUserMediaUpsertSelect = vi.fn()
 const mockUserMediaUpsert = vi.fn()
 const mockUserMediaDelete = vi.fn()
 
@@ -59,7 +59,11 @@ const mockCheckRateLimit = vi.fn<() => { allowed: boolean; retryAfterSeconds: nu
 }))
 vi.mock('@/lib/rate-limit', async (importOriginal) => {
   const actual = await importOriginal<typeof import('@/lib/rate-limit')>()
-  return { ...actual, checkRateLimit: () => mockCheckRateLimit() }
+  return {
+    ...actual,
+    checkRateLimit: () => mockCheckRateLimit(),
+    checkRateLimitDistributed: async () => mockCheckRateLimit(),
+  }
 })
 
 // ── DB rows ───────────────────────────────────────────────────────────────────
@@ -91,8 +95,7 @@ describe('POST /api/library', () => {
     const response = await POST(makeRequest({ mediaId: 'movie_550', status: 'completed' }))
 
     expect(response.status).toBe(401)
-    const body = await response.json() as { error: string }
-    expect(body.error).toBe('Not authenticated')
+    expect(await response.json()).toEqual({ error: { code: 'unauthenticated' } })
   })
 
   it('devuelve 400 con status inválido', async () => {
@@ -102,8 +105,8 @@ describe('POST /api/library', () => {
     const response = await POST(makeRequest({ mediaId: 'movie_550', status: 'watching' }))
 
     expect(response.status).toBe(400)
-    const body = await response.json() as { error: string }
-    expect(body.error).toContain('status must be one of')
+    const body = await response.json() as { error: { code: string; field?: string } }
+    expect(body.error).toMatchObject({ code: 'invalid_input', field: 'status' })
   })
 
   it('devuelve 400 si falta mediaId', async () => {
@@ -113,8 +116,8 @@ describe('POST /api/library', () => {
     const response = await POST(makeRequest({ status: 'completed' }))
 
     expect(response.status).toBe(400)
-    const body = await response.json() as { error: string }
-    expect(body.error).toBe('mediaId is required')
+    const body = await response.json() as { error: { code: string; field?: string } }
+    expect(body.error).toMatchObject({ code: 'invalid_input', field: 'mediaId' })
   })
 
   it('devuelve 400 con score fuera de rango (F3)', async () => {
@@ -125,8 +128,8 @@ describe('POST /api/library', () => {
         makeRequest({ mediaId: 'movie_550', status: 'completed', score: badScore })
       )
       expect(response.status, `score=${badScore}`).toBe(400)
-      const body = await response.json() as { error: string }
-      expect(body.error).toContain('score must be an integer between 1 and 5')
+      const body = await response.json() as { error: { code: string; field?: string } }
+      expect(body.error).toMatchObject({ code: 'invalid_input', field: 'score' })
     }
   })
 
@@ -144,9 +147,13 @@ describe('POST /api/library', () => {
     )
 
     expect(response.status).toBe(200)
-    const body = await response.json() as { entry: { id: string; status: string } }
-    expect(body.entry.id).toBe('uuid-001')
-    expect(body.entry.status).toBe('completed')
+    const body = await response.json() as { data: unknown }
+    // Contrato (7.2): la respuesta cumple el esquema publicado.
+    const data = librarySaveResultSchema.parse(body.data)
+    expect(data.entry.id).toBe('uuid-001')
+    expect(data.entry.status).toBe('completed')
+    expect(data.log).toBeNull()
+    expect(data.logFailed).toBe(false)
   })
 
   it('garantiza la fila de media desde el servidor y nunca la escribe con el cliente del usuario', async () => {
@@ -179,6 +186,7 @@ describe('POST /api/library', () => {
     const response = await POST(makeRequest({ mediaId: 'movie_550', status: 'pending' }))
 
     expect(response.status).toBe(502)
+    expect(((await response.json()) as { error: { code: string } }).error.code).toBe('provider_unavailable')
     expect(mockUserMediaUpsert).not.toHaveBeenCalled()
   })
 
@@ -190,7 +198,16 @@ describe('POST /api/library', () => {
     const response = await POST(makeRequest({ mediaId: 'movie_x', status: 'pending' }))
 
     expect(response.status).toBe(400)
+    expect(((await response.json()) as { error: { field?: string } }).error.field).toBe('mediaId')
     expect(mockUserMediaUpsert).not.toHaveBeenCalled()
+  })
+
+  it('400 invalid_json si el cuerpo no es JSON', async () => {
+    mockGetUser.mockResolvedValueOnce({ data: { user: { id: 'user-uuid-001' } }, error: null })
+    const { POST } = await import('@/app/api/library/route')
+    const response = await POST(new Request('http://localhost/api/library', { method: 'POST', body: '{' }))
+    expect(response.status).toBe(400)
+    expect(await response.json()).toEqual({ error: { code: 'invalid_json' } })
   })
 })
 
@@ -207,8 +224,7 @@ describe('DELETE /api/library', () => {
     const response = await DELETE(makeRequest({ mediaId: 'movie_550' }, 'DELETE'))
 
     expect(response.status).toBe(401)
-    const body = await response.json() as { error: string }
-    expect(body.error).toBe('Not authenticated')
+    expect(await response.json()).toEqual({ error: { code: 'unauthenticated' } })
   })
 
   it('devuelve 404 si la entrada no existía', async () => {
@@ -221,11 +237,11 @@ describe('DELETE /api/library', () => {
     const response = await DELETE(makeRequest({ mediaId: 'movie_999' }, 'DELETE'))
 
     expect(response.status).toBe(404)
-    const body = await response.json() as { error: string }
-    expect(body.error).toBe('Entry not found')
+    const body = await response.json() as { error: { code: string } }
+    expect(body.error.code).toBe('not_found')
   })
 
-  it('devuelve 200 { ok: true } al eliminar correctamente', async () => {
+  it('devuelve 200 { data: null } al eliminar correctamente', async () => {
     mockGetUser.mockResolvedValueOnce({ data: { user: { id: 'user-uuid-001' } }, error: null })
     mockUserMediaDelete.mockReturnValueOnce({
       match: vi.fn().mockResolvedValueOnce({ error: null, count: 1 }),
@@ -235,8 +251,7 @@ describe('DELETE /api/library', () => {
     const response = await DELETE(makeRequest({ mediaId: 'movie_550' }, 'DELETE'))
 
     expect(response.status).toBe(200)
-    const body = await response.json() as { ok: boolean }
-    expect(body.ok).toBe(true)
+    expect(await response.json()).toEqual({ data: null })
   })
 
   it('devuelve 429 si se supera el rate limit (E99)', async () => {
@@ -247,5 +262,7 @@ describe('DELETE /api/library', () => {
     const response = await DELETE(makeRequest({ mediaId: 'movie_550' }, 'DELETE'))
 
     expect(response.status).toBe(429)
+    expect(response.headers.get('Retry-After')).toBe('30')
+    expect(await response.json()).toEqual({ error: { code: 'rate_limited' } })
   })
 })

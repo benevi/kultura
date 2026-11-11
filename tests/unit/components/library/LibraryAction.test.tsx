@@ -1,5 +1,6 @@
 import { render, screen, fireEvent, waitFor, act } from '@testing-library/react'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { ApiError } from '@/lib/api/client'
 import type { LibraryEntry } from '@/types/library'
 
 // ── Mocks ──────────────────────────────────────────────────────────────────────
@@ -272,7 +273,7 @@ describe('LibraryAction', () => {
   // Revisión #41: el error va DENTRO del diálogo abierto (role="alert"): un
   // toast quedaba debajo de la hoja y fuera del árbol accesible.
   it('error 502 del proveedor → aviso dentro del diálogo, que sigue abierto', async () => {
-    mockSave.mockRejectedValue(new Error('Media provider unavailable'))
+    mockSave.mockRejectedValue(new ApiError('provider_unavailable', 502))
     render(
       <LibraryAction mediaId="movie_550" mediaCache={mediaCache} initialEntry={null} isAuthenticated={true} />
     )

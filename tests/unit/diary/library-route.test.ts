@@ -42,6 +42,7 @@ vi.mock('@/lib/media/upsert-from-provider', async (importOriginal) => ({
 vi.mock('@/lib/rate-limit', async (importOriginal) => ({
   ...(await importOriginal<typeof import('@/lib/rate-limit')>()),
   checkRateLimit: () => ({ allowed: true, retryAfterSeconds: 0 }),
+  checkRateLimitDistributed: async () => ({ allowed: true, retryAfterSeconds: 0 }),
 }))
 vi.mock('@/lib/analytics/track', () => ({ track: async () => undefined }))
 
@@ -63,7 +64,9 @@ function post(body: unknown) {
 async function call(body: unknown) {
   const { POST } = await import('@/app/api/library/route')
   const res = await POST(post(body))
-  return { status: res.status, json: (await res.json()) as Record<string, unknown> }
+  // Contrato de la fase 7: `{ data }` si sale bien, `{ error }` si no.
+  const payload = (await res.json()) as { data?: Record<string, unknown> } & Record<string, unknown>
+  return { status: res.status, json: payload.data ?? payload }
 }
 
 beforeEach(() => {
@@ -203,13 +206,13 @@ describe('validación (con y sin bandera)', () => {
     [{ rating10: 7.3 }, 'rating10 must be'],
     [{ rating10: 0 }, 'rating10 must be'],
     [{ rating10: 11 }, 'rating10 must be'],
-    [{ favorite: 'sí' }, 'favorite must be a boolean'],
+    [{ favorite: 'sí' }, '"field":"favorite"'],
     [{ log: { watchedOn: 'ayer' } }, 'log.watchedOn'],
     [{ log: { review: 'a'.repeat(5001) } }, 'log.review is too long'],
   ])('%j → 400', async (extra, message) => {
     const { status, json } = await call({ mediaId: 'movie_550', status: 'completed', ...extra })
     expect(status).toBe(400)
-    expect(String(json.error)).toContain(message)
+    expect(JSON.stringify(json.error)).toContain(message)
     expect(upserts).toHaveLength(0)
   })
 })

@@ -1,331 +1,40 @@
 // ============================================================
 // KULTURA — Route Handler: /api/library
-// Gestiona la biblioteca personal del usuario autenticado.
 // POST: upsert de una entrada (status, nota, progreso, favorito) y, si llega,
-//       un apunte del diario. La fila de `media` la garantiza el servidor
-//       desde el proveedor (lib/media).
-// DELETE: eliminar una entrada (y, por la FK, su diario)
-//
-// F-24 (D-14): con RATING_SCALE_10=1 se guarda la nota fina `rating10`
-// (0,5-10) junto a `score` (1-5, derivada) y el diario. Sin la bandera se
-// escribe solo `score`, como siempre, y una nota fina que llegue se redondea a
-// score. Si la bandera está encendida pero la migración no (columna o tabla
-// inexistente), se vuelve a escribir solo `score` en vez de dar un 500.
-//
-// F-27 (PRO-5): con PROGRESS_V2=1 llega `progress` (episodios, capítulos,
-// páginas o %, horas según el formato) y se guarda en las columnas
-// `progress_*`; el disparador deja `episode_progress` como espejo. Sin la
-// bandera se guarda `episodeProgress`
-// como siempre (de `progress` se saca la temporada y el episodio).
+//       un apunte del diario. DELETE: borrar una entrada.
+// La lógica está en `lib/library/service.ts`; el contrato (entrada y
+// salida) en `lib/api/contracts/library.ts`. Respuesta: `{ data }` o
+// `{ error: { code, message?, field? } }` (saneamiento 6 y 7).
 // ============================================================
 
-import { NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase/server'
-import { checkRateLimit, LIMITS } from '@/lib/rate-limit'
-import { invalidateRecCache } from '@/lib/claude/recommendations'
-import { invalidateMatchScoreCache } from '@/lib/recommendations/match-score'
-import type { DbUserMedia, DbUserMediaLog } from '@/types/supabase'
-import type { DiaryLog, EpisodeProgress, LibraryStatus } from '@/types/library'
-import { isLibraryStatus } from '@/types/library'
-import { upsertMediaFromProvider, mediaFailureStatus } from '@/lib/media/upsert-from-provider'
+import { LIMITS } from '@/lib/rate-limit'
+import { parseBody, rateLimit, requireUser, respond } from '@/lib/api/route'
+import { libraryDeleteSchema, libraryPostSchema } from '@/lib/api/contracts/library'
+import { removeEntry, saveEntry } from '@/lib/library/service'
 import { localeFromRequest } from '@/lib/media/request-locale'
-import { track } from '@/lib/analytics/track'
-import { createLogger } from '@/lib/logger'
-import { entryRating10, isValidRating10, rating10ToScore, scoreToRating10 } from '@/lib/library/rating'
-import { ratingScale10Enabled } from '@/lib/library/scale'
-import { mapLog, parseLogInput, today } from '@/lib/library/diary'
-import {
-  parseProgressInput,
-  progressFromRow,
-  progressToColumns,
-  progressToLegacy,
-  type LibraryPayloadWithProgress,
-  type LibraryEntryWithProgress,
-} from '@/lib/library/progress'
-import { progressV2Enabled } from '@/lib/library/progress-server'
-
-const log = createLogger('api/library')
-
-/** Mapea una fila de user_media a LibraryEntry (con su progreso, F-27). */
-function mapEntry(row: DbUserMedia): LibraryEntryWithProgress {
-  const rating10 = row.rating10 === null || row.rating10 === undefined ? undefined : Number(row.rating10)
-  return {
-    id: row.id,
-    userId: row.user_id,
-    mediaId: row.media_id,
-    status: row.status as LibraryStatus,
-    score: row.score,
-    rating10: entryRating10({ rating10, score: row.score }),
-    favorite: row.favorite ?? false,
-    watchedAt: row.watched_at,
-    episodeProgress: row.episode_progress,
-    progress: progressFromRow(row as unknown as Record<string, unknown>),
-    createdAt: row.created_at,
-  }
-}
 
 /** POST /api/library — upsert en user_media */
-export async function POST(request: Request): Promise<NextResponse> {
-  const supabase = await createClient()
+export async function POST(request: Request) {
+  const auth = await requireUser()
+  if (!auth.ok) return auth.response
+  const limited = await rateLimit(request, { key: 'library', limit: LIMITS.library, userId: auth.user.id })
+  if (limited) return limited
+  const body = await parseBody(request, libraryPostSchema)
+  if (!body.ok) return body.response
 
-  // 1. Autenticar
-  const { data: { user }, error: authError } = await supabase.auth.getUser()
-  if (authError || !user) {
-    return NextResponse.json({ error: 'Not authenticated' }, { status: 401 })
-  }
-
-  // 1b. Rate limiting — 30 req/min por usuario
-  const rl = checkRateLimit(`${user.id}:library`, LIMITS.library)
-  if (!rl.allowed) {
-    return NextResponse.json(
-      { error: 'Too many requests' },
-      { status: 429, headers: { 'Retry-After': String(rl.retryAfterSeconds) } }
-    )
-  }
-
-  // 2. Validar body
-  let body: LibraryPayloadWithProgress
-  try {
-    body = await request.json() as LibraryPayloadWithProgress
-  } catch {
-    return NextResponse.json({ error: 'Invalid JSON body' }, { status: 400 })
-  }
-
-  if (!body.mediaId) {
-    return NextResponse.json({ error: 'mediaId is required' }, { status: 400 })
-  }
-
-  // Validar formato "{type}_{externalId}" — evita datos corruptos en FK
-  if (!/^[a-z]+_.+$/.test(body.mediaId)) {
-    return NextResponse.json(
-      { error: 'mediaId must follow the format "{type}_{externalId}"' },
-      { status: 400 }
-    )
-  }
-
-  if (!body.status || !isLibraryStatus(body.status)) {
-    return NextResponse.json(
-      { error: 'status must be one of: completed, in_progress, pending, abandoned' },
-      { status: 400 }
-    )
-  }
-
-  // Validar score (1..5) — la DB tiene CHECK (score BETWEEN 1 AND 5); sin este
-  // guard un score inválido devolvía un 500 opaco en vez de un 400 claro.
-  if (body.score !== undefined && body.score !== null) {
-    if (!Number.isInteger(body.score) || body.score < 1 || body.score > 5) {
-      return NextResponse.json(
-        { error: 'score must be an integer between 1 and 5' },
-        { status: 400 }
-      )
-    }
-  }
-
-  // F-24: nota fina 0,5-10 en pasos de 0,5 (null la quita).
-  if (body.rating10 !== undefined && body.rating10 !== null && !isValidRating10(body.rating10)) {
-    return NextResponse.json(
-      { error: 'rating10 must be between 0.5 and 10 in steps of 0.5' },
-      { status: 400 }
-    )
-  }
-  if (body.favorite !== undefined && typeof body.favorite !== 'boolean') {
-    return NextResponse.json({ error: 'favorite must be a boolean' }, { status: 400 })
-  }
-  const parsedLog = body.log === undefined || body.log === null ? null : parseLogInput(body.log)
-  if (parsedLog && !parsedLog.ok) {
-    return NextResponse.json({ error: parsedLog.error }, { status: 400 })
-  }
-  // F-27: progreso por formato (solo los campos de ese formato y en rango).
-  const mediaTypeOf = body.mediaId.split('_')[0]
-  const parsedProgress = body.progress === undefined ? null : parseProgressInput(mediaTypeOf, body.progress)
-  if (parsedProgress && !parsedProgress.ok) {
-    return NextResponse.json({ error: parsedProgress.error }, { status: 400 })
-  }
-  const progressV2 = progressV2Enabled() && parsedProgress?.ok === true
-  const progressValue = parsedProgress?.ok ? parsedProgress.value : null
-
-  // Una sola nota: manda rating10 si llega; si no, la de siempre (score × 2).
-  // Saneamiento 1.2: sin nota en el cuerpo NO se toca la que haya (antes se
-  // borraba: p. ej. «Añadir franquicia» o un cambio de estado la dejaban a null).
-  const hasRating = body.rating10 !== undefined || body.score !== undefined
-  const rating10 = !hasRating
-    ? undefined
-    : body.rating10 !== undefined
-      ? body.rating10
-      : scoreToRating10(body.score ?? undefined)
-  const score = rating10 === undefined ? undefined : rating10 === null ? null : rating10ToScore(rating10)
-  const scale10 = ratingScale10Enabled()
-
-  // 3. La fila del catálogo compartido `media` (FK de user_media). La escribe
-  //    el servidor con la ficha del proveedor; `mediaCache` se ignora a
-  //    propósito (SEG-2): con él cualquiera renombraba un título para todos.
-  //    Si la fila ya existe no se reescribe; solo se completan sus géneros si
-  //    faltan, que es lo que necesita el match score.
-  const media = await upsertMediaFromProvider(body.mediaId, {
-    locale: localeFromRequest(request),
-  })
-  if (!media.ok) {
-    const failure = mediaFailureStatus(media.reason)
-    return NextResponse.json({ error: failure.error }, { status: failure.status })
-  }
-
-  // 4. Upsert en user_media
-  // Sin bandera, la fila es la de siempre (episode_progress incluido, también
-  // null en libros o juegos). No borra páginas ni horas ya migradas: el
-  // disparador user_media_sync_progress solo saca del jsonb temporada y
-  // episodio y conserva el resto si el jsonb no trae la clave.
-  // Saneamiento 1.2: solo van las columnas que trae el cuerpo. En un upsert
-  // PostgREST actualiza únicamente esas; las demás conservan su valor (o el
-  // valor por defecto si la fila es nueva).
-  type Row = {
-    user_id: string
-    media_id: string
-    status: LibraryStatus
-    score?: number | null
-    watched_at?: string | null
-    episode_progress?: EpisodeProgress | null
-    rating10?: number | null
-    favorite?: boolean
-  }
-  const hasLegacyProgress = parsedProgress?.ok === true || body.episodeProgress !== undefined
-  const legacyRow: Row = {
-    user_id: user.id,
-    media_id: body.mediaId,
-    status: body.status,
-    ...(score !== undefined ? { score } : {}),
-    ...(body.watchedAt !== undefined ? { watched_at: body.watchedAt } : {}),
-    // Con `progress` (cliente nuevo) manda él; si no, el campo de siempre.
-    ...(hasLegacyProgress
-      ? {
-          episode_progress: (parsedProgress?.ok
-            ? progressToLegacy(progressValue)
-            : (body.episodeProgress ?? null)) as EpisodeProgress | null,
-        }
-      : {}),
-  }
-  const upsertEntry = (row: Row) =>
-    supabase.from('user_media').upsert(row, { onConflict: 'user_id,media_id' }).select().single()
-
-  const scaleExtras = scale10
-    ? {
-        ...(rating10 !== undefined ? { rating10 } : {}),
-        ...(typeof body.favorite === 'boolean' ? { favorite: body.favorite } : {}),
-      }
-    : {}
-  // F-27: con las columnas, el espejo `episode_progress` lo escribe el
-  // disparador (mandarlo también podría pisar páginas u horas).
-  const withProgress = (row: Row): Row => {
-    if (!progressV2) return row
-    const { episode_progress: _legacy, ...rest } = row
-    void _legacy
-    return { ...rest, ...progressToColumns(progressValue) }
-  }
-
-  const { data, error: upsertError } = await upsertEntry(withProgress({ ...legacyRow, ...scaleExtras }))
-
-  if (upsertError || !data) {
-    return NextResponse.json({ error: 'Failed to save library entry' }, { status: 500 })
-  }
-
-  // 4b. Apunte del diario (F-24). Si falla, la entrada ya está guardada: se
-  //     devuelve igualmente y el cliente avisa de que el apunte no entró.
-  let diaryLog: DiaryLog | null = null
-  let logFailed = false
-  if (parsedLog?.ok && scale10) {
-    const entry = parsedLog.log
-    const { data: logRow, error: logError } = await supabase
-      .from('user_media_logs')
-      .insert({
-        user_id: user.id,
-        media_id: body.mediaId,
-        watched_on: entry.watchedOn ?? body.watchedAt ?? today(),
-        rewatch: entry.rewatch,
-        rating10: entry.rating10 !== undefined ? entry.rating10 : (rating10 ?? null),
-        review: entry.review,
-        spoiler: entry.spoiler,
-        private_note: entry.privateNote,
-      })
-      .select()
-      .single()
-    if (logError || !logRow) {
-      log.error('Failed to insert diary log', { err: logError, userId: user.id })
-      logFailed = true
-    } else {
-      diaryLog = mapLog(logRow as DbUserMediaLog)
-    }
-  }
-
-  // 5. Invalidar caches de recomendaciones — biblioteca cambió
-  invalidateRecCache(user.id)
-  invalidateMatchScoreCache(user.id)
-
-  // 6. D-12: embudo (1.ª acción, 3 títulos). Una vez por título y por usuario;
-  //    nunca bloquea ni falla la respuesta.
-  const mediaType = body.mediaId.split('_')[0]
-  await Promise.all([
-    track(user, 'library_add', { media_type: mediaType, status: body.status }, {
-      dedupeKey: `library_add:${user.id}:${body.mediaId}`,
-    }),
-    typeof score === 'number'
-      ? track(user, 'rating_set', { media_type: mediaType, score }, {
-          dedupeKey: `rating_set:${user.id}:${body.mediaId}`,
-        })
-      : null,
-  ])
-
-  const entry = mapEntry(data as DbUserMedia)
-  return NextResponse.json({ entry, log: diaryLog, ...(logFailed ? { logFailed: true } : {}) })
+  return respond(
+    await saveEntry(auth.supabase, auth.user, body.value, { locale: localeFromRequest(request) })
+  )
 }
 
 /** DELETE /api/library — eliminar entrada de user_media */
-export async function DELETE(request: Request): Promise<NextResponse> {
-  const supabase = await createClient()
+export async function DELETE(request: Request) {
+  const auth = await requireUser()
+  if (!auth.ok) return auth.response
+  const limited = await rateLimit(request, { key: 'library', limit: LIMITS.library, userId: auth.user.id })
+  if (limited) return limited
+  const body = await parseBody(request, libraryDeleteSchema)
+  if (!body.ok) return body.response
 
-  // 1. Autenticar
-  const { data: { user }, error: authError } = await supabase.auth.getUser()
-  if (authError || !user) {
-    return NextResponse.json({ error: 'Not authenticated' }, { status: 401 })
-  }
-
-  // 1b. Rate limiting — 30 req/min por usuario
-  const rl = checkRateLimit(`${user.id}:library`, LIMITS.library)
-  if (!rl.allowed) {
-    return NextResponse.json(
-      { error: 'Too many requests' },
-      { status: 429, headers: { 'Retry-After': String(rl.retryAfterSeconds) } }
-    )
-  }
-
-  // 2. Leer mediaId del body
-  let body: { mediaId: string }
-  try {
-    body = await request.json() as { mediaId: string }
-  } catch {
-    return NextResponse.json({ error: 'Invalid JSON body' }, { status: 400 })
-  }
-
-  if (!body.mediaId) {
-    return NextResponse.json({ error: 'mediaId is required' }, { status: 400 })
-  }
-
-  // 3. Delete con match user_id + media_id
-  const { error: deleteError, count } = await supabase
-    .from('user_media')
-    .delete({ count: 'exact' })
-    .match({ user_id: user.id, media_id: body.mediaId })
-
-  if (deleteError) {
-    return NextResponse.json({ error: 'Failed to delete library entry' }, { status: 500 })
-  }
-
-  // 4. 404 si no existía
-  if (count === 0) {
-    return NextResponse.json({ error: 'Entry not found' }, { status: 404 })
-  }
-
-  // 5. Invalidar caches de recomendaciones — biblioteca cambió
-  invalidateRecCache(user.id)
-  invalidateMatchScoreCache(user.id)
-
-  return NextResponse.json({ ok: true })
+  return respond(await removeEntry(auth.supabase, auth.user.id, body.value.mediaId))
 }

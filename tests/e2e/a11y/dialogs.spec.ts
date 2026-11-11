@@ -140,7 +140,7 @@ async function expectAnnouncedAlert(page: Page, dialog: Locator, text: string) {
 test("502 del catálogo al guardar: el aviso se ve y se anuncia con el diálogo abierto", async ({ page }) => {
   await page.route("**/api/library", (route) =>
     route.request().method() === "POST"
-      ? route.fulfill({ status: 502, contentType: "application/json", body: JSON.stringify({ error: "Media provider unavailable" }) })
+      ? route.fulfill({ status: 502, contentType: "application/json", body: JSON.stringify({ error: { code: "provider_unavailable" } }) })
       : route.continue()
   );
   await open(page, "/es/media/movie/550");

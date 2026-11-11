@@ -44,12 +44,10 @@ import type { LibraryPayloadWithProgress } from '@/lib/library/progress'
 import { playStamp, prefersReducedMotion } from '@/lib/library/motion'
 import { cn } from '@/lib/utils/index'
 import { createLogger } from '@/lib/logger'
+import { ApiError } from '@/lib/api/client'
 import type { DiaryConfig, LibraryEntry, LibraryStatus } from '@/types/library'
 
 const log = createLogger('LibraryAction')
-
-/** Mensaje de `/api/library` cuando el proveedor no responde (502). */
-const PROVIDER_UNAVAILABLE = 'Media provider unavailable'
 
 /** Cuánto se queda la pegatina de «Visto» antes de irse. */
 const STAMP_VISIBLE_MS = 1400
@@ -236,7 +234,7 @@ export function LibraryAction({
       // ACC-11: antes el fallo solo iba al log y la persona no se enteraba.
       // El diálogo sigue abierto con sus datos para reintentar.
       setSaveError(
-        err instanceof Error && err.message === PROVIDER_UNAVAILABLE
+        err instanceof ApiError && err.code === 'provider_unavailable'
           ? t('errors.providerUnavailable')
           : t('errors.saveFailed')
       )
