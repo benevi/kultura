@@ -20,6 +20,7 @@ import { Link } from '@/i18n/navigation'
 import { generatedUsername, initialsFor, purgeDate } from '@/lib/account/identity'
 import { readAccountState } from '@/lib/account/account-state'
 import { createLogger } from '@/lib/logger'
+import { localizeHeroSynopsis } from '@/lib/media/hero-synopsis'
 import { progressV2Active } from '@/lib/library/progress-server'
 import {
   FriendsActivity,
@@ -138,8 +139,9 @@ export default async function HomePage() {
   const signalCount = signalResult.error ? null : signalResult.count
   const showStarter = !todayRecs && signalCount !== null && signalCount < MIN_LIBRARY_ITEMS
 
-  const inProgress = inProgressResult.data as HeroItem | null
-  const heroMediaId = inProgress?.media_id
+  const inProgressRow = inProgressResult.data as HeroItem | null
+  const heroMediaId = inProgressRow?.media_id
+  const inProgress = inProgressRow ? await localizeHeroSynopsis(inProgressRow, locale) : null
 
   type RecentRow = {
     media_id: string
