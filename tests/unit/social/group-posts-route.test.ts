@@ -1,5 +1,6 @@
 // ============================================================
 // KULTURA — POST /api/groups/[id]/posts (saneamiento 4.6)
+// Pertenencia con la sesión del usuario; el INSERT, con el cliente admin.
 // ============================================================
 
 import { describe, it, expect, vi, beforeEach } from 'vitest'
@@ -9,13 +10,24 @@ const GROUP_ID = '11111111-1111-4111-8111-111111111111'
 const USER_ID = '22222222-2222-4222-8222-222222222222'
 const mockGetUser = vi.fn()
 const mockInsert = vi.fn()
+const mockMember = vi.fn()
 const mockRateLimit = vi.fn()
+
+/** `group_members.select().eq().eq().maybeSingle()` con la sesión del usuario. */
+const memberQuery = { select: () => memberQuery, eq: () => memberQuery, maybeSingle: () => mockMember() }
 
 vi.mock('@/lib/supabase/server', () => ({
   createClient: async () => ({
     auth: { getUser: mockGetUser },
-    from: vi.fn(() => ({ insert: mockInsert })),
+    from: vi.fn((table: string) => {
+      if (table === 'group_members') return memberQuery
+      throw new Error(`la sesión del usuario no escribe en ${table}`)
+    }),
   }),
+}))
+
+vi.mock('@/lib/supabase/admin', () => ({
+  createAdminClient: () => ({ from: vi.fn(() => ({ insert: mockInsert })) }),
 }))
 
 vi.mock('@/lib/rate-limit', () => ({
@@ -39,6 +51,7 @@ describe('POST /api/groups/[id]/posts', () => {
     mockGetUser.mockResolvedValue({ data: { user: { id: USER_ID } } })
     mockRateLimit.mockReturnValue({ allowed: true, retryAfterSeconds: 0 })
     mockInsert.mockResolvedValue({ error: null })
+    mockMember.mockResolvedValue({ data: { user_id: USER_ID }, error: null })
   })
 
   it('401 sin sesión', async () => {
@@ -83,11 +96,19 @@ describe('POST /api/groups/[id]/posts', () => {
     expect(mockInsert).toHaveBeenCalledWith({ group_id: GROUP_ID, user_id: USER_ID, content: 'hola' })
   })
 
-  it('403 si la RLS lo rechaza (no miembro o vetado)', async () => {
-    mockInsert.mockResolvedValue({ error: { code: '42501' } })
+  it('403 si no es miembro (o le han vetado), sin insertar', async () => {
+    mockMember.mockResolvedValue({ data: null, error: null })
     const res = await POST(req({ content: 'hola' }), ctx)
     expect(res.status).toBe(403)
     expect((await res.json()).error.code).toBe('forbidden')
+    expect(mockInsert).not.toHaveBeenCalled()
+  })
+
+  it('500 si falla la comprobación de pertenencia, sin insertar', async () => {
+    mockMember.mockResolvedValue({ data: null, error: { code: 'XX000', message: 'boom' } })
+    const res = await POST(req({ content: 'hola' }), ctx)
+    expect(res.status).toBe(500)
+    expect(mockInsert).not.toHaveBeenCalled()
   })
 
   it('500 con otro error', async () => {
