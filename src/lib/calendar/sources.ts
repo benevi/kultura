@@ -45,6 +45,11 @@ import {
 /** Las fechas de un título cambian poco: 6 h compartidas entre todos. */
 export const CALENDAR_PROVIDER_REVALIDATE_SECONDS = 6 * 3600
 const CACHE = { revalidate: CALENDAR_PROVIDER_REVALIDATE_SECONDS }
+/**
+ * Plazo de cada petición del calendario (saneamiento 5.1). El general de
+ * `providerFetch` es 6 s: con uno lento, la página esperaba entera.
+ */
+export const CALENDAR_PROVIDER_TIMEOUT_MS = 2500
 
 /** Máximo de ids por consulta de AniList (su `perPage` máximo es 50). */
 export const ANILIST_BATCH = 50
@@ -385,6 +390,7 @@ export async function fetchTmdbTv(id: number, locale: string): Promise<TmdbTvCal
     schema: tmdbTvCalendarSchema,
     label: '/tv/{id} (calendario)',
     cache: CACHE,
+    timeoutMs: CALENDAR_PROVIDER_TIMEOUT_MS,
   })
 }
 
@@ -396,6 +402,7 @@ export async function fetchTmdbMovie(id: number): Promise<TmdbMovieCalendar> {
     schema: tmdbMovieCalendarSchema,
     label: '/movie/{id} (calendario)',
     cache: CACHE,
+    timeoutMs: CALENDAR_PROVIDER_TIMEOUT_MS,
   })
 }
 
@@ -406,6 +413,7 @@ export async function fetchRawgGame(id: number): Promise<RawgGameCalendar> {
     schema: rawgGameCalendarSchema,
     label: '/games/{id} (calendario)',
     cache: CACHE,
+    timeoutMs: CALENDAR_PROVIDER_TIMEOUT_MS,
   })
 }
 
@@ -420,6 +428,7 @@ export async function fetchMangaDexFeed(id: string, locale: string): Promise<Man
     schema: mangadexFeedSchema,
     label: '/manga/{id}/feed (calendario)',
     cache: CACHE,
+    timeoutMs: CALENDAR_PROVIDER_TIMEOUT_MS,
   })
 }
 
@@ -487,6 +496,7 @@ export async function fetchAniListBatch(
     schema: anilistCalendarSchema,
     label: 'graphql (calendario)',
     cache: CACHE,
+    timeoutMs: CALENDAR_PROVIDER_TIMEOUT_MS,
     checkBody: (json) => {
       const errors = (json as { errors?: unknown[] } | null)?.errors
       if (Array.isArray(errors) && errors.length > 0) throw new Error('AniList GraphQL errors')

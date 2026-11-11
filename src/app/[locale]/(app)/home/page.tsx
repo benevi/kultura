@@ -20,6 +20,7 @@ import { Link } from '@/i18n/navigation'
 import { generatedUsername, initialsFor, purgeDate } from '@/lib/account/identity'
 import { readAccountState } from '@/lib/account/account-state'
 import { createLogger } from '@/lib/logger'
+import { localizeHeroSynopsis } from '@/lib/media/hero-synopsis'
 import { progressV2Active } from '@/lib/library/progress-server'
 import { progressFromRow } from '@/lib/library/progress'
 import {
@@ -152,10 +153,11 @@ export default async function HomePage() {
   // `progress_*`; el jsonb solo refleja episodios. Leyendo solo el jsonb, un
   // libro a la mitad salía «Continuando» y «Sin empezar» a la vez.
   const inProgressRaw = inProgressResult.data as (HeroItem & Record<string, unknown>) | null
-  const inProgress: HeroItem | null = inProgressRaw
+  const inProgressRow: HeroItem | null = inProgressRaw
     ? { ...inProgressRaw, episode_progress: progressAsJson(inProgressRaw) }
     : null
-  const heroMediaId = inProgress?.media_id
+  const heroMediaId = inProgressRow?.media_id
+  const inProgress = inProgressRow ? await localizeHeroSynopsis(inProgressRow, locale) : null
 
   type RecentRow = {
     media_id: string
