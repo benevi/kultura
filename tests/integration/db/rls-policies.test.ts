@@ -6,6 +6,7 @@
  * El esquema debe estar aplicado antes de correr estos tests.
  */
 import { createClient } from "@supabase/supabase-js";
+import { cachedClient } from "../login";
 import { describe, it, expect, beforeAll, afterAll } from "vitest";
 
 const TEST_URL = process.env.SUPABASE_TEST_URL ?? "";
@@ -22,11 +23,9 @@ function clientAnon() {
   return createClient(TEST_URL, TEST_ANON_KEY);
 }
 
-async function clientAs(email: string, password: string) {
-  const client = createClient(TEST_URL, TEST_ANON_KEY);
-  const { error } = await client.auth.signInWithPassword({ email, password });
-  if (error) throw new Error(`Login failed for ${email}: ${error.message}`);
-  return client;
+// Una sesión por usuario y fichero, con reintento ante el límite de Auth.
+function clientAs(email: string, password: string) {
+  return cachedClient(TEST_URL, TEST_ANON_KEY, email, password);
 }
 
 describe("RLS — users table", () => {

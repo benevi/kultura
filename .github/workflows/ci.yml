@@ -318,8 +318,8 @@ jobs:
           BASE_REF: ${{ github.base_ref }}
         run: |
           if [ "$EVENT" = "pull_request" ]; then
-            if git diff --name-only "origin/$BASE_REF...HEAD" | grep -qE '^(supabase/migrations/|src/app/api/)'; then
-              echo "El PR toca supabase/migrations/** o src/app/api/**: se ejecuta."
+            if git diff --name-only "origin/$BASE_REF...HEAD" | grep -qE '^supabase/migrations/.+\.sql$|^src/app/api/'; then
+              echo "El PR toca supabase/migrations/*.sql o src/app/api/**: se ejecuta."
             else
               echo "El PR no toca migraciones ni la API: no hace falta."
               echo "run=false" >> "$GITHUB_OUTPUT"

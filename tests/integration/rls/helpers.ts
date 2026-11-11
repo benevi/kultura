@@ -8,6 +8,7 @@
  * `auth.users` → `public.users` se lleva amistades, grupos, listas y chats.
  */
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
+import { signInWithRetry } from "../login";
 
 export const TEST_URL = process.env.SUPABASE_TEST_URL ?? "";
 export const TEST_ANON_KEY = process.env.SUPABASE_TEST_ANON_KEY ?? "";
@@ -50,8 +51,7 @@ export async function createUser(label: string, opts: { demo?: boolean } = {}): 
   created.push(data.user.id);
 
   const client = anonClient();
-  const { error: loginError } = await client.auth.signInWithPassword({ email, password: PASSWORD });
-  if (loginError) throw new Error(`login ${label}: ${loginError.message}`);
+  await signInWithRetry(client, email, PASSWORD);
   return { id: data.user.id, email, client };
 }
 

@@ -5,6 +5,7 @@
  * Uso: npm run test:integration
  */
 import { createClient } from "@supabase/supabase-js";
+import { cachedClient } from "../login";
 import { describe, it, expect, beforeAll, afterAll } from "vitest";
 
 const TEST_URL = process.env.SUPABASE_TEST_URL ?? "";
@@ -16,11 +17,9 @@ const USER_PASSWORD = "TestPassword123!";
 
 const TEST_MEDIA_ID = "movie_integration_upsert_test";
 
-async function clientAs(email: string, password: string) {
-  const client = createClient(TEST_URL, TEST_ANON_KEY);
-  const { error } = await client.auth.signInWithPassword({ email, password });
-  if (error) throw new Error(`Login failed for ${email}: ${error.message}`);
-  return client;
+// Una sesión por usuario y fichero, con reintento ante el límite de Auth.
+function clientAs(email: string, password: string) {
+  return cachedClient(TEST_URL, TEST_ANON_KEY, email, password);
 }
 
 describe("Library upsert — flujo completo", () => {
