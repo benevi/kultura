@@ -9,7 +9,7 @@
 
 import { createClient } from '@/lib/supabase/server'
 import { escapeLikePattern } from '@/lib/utils/escape-like'
-import type { DbGroup, DbGroupInvitation, DbGroupMember, DbUser } from '@/types/supabase'
+import type { DbGroup, DbGroupMember, DbUser } from '@/types/supabase'
 
 // ── Row types ─────────────────────────────────────────────────────────────────
 
@@ -87,7 +87,8 @@ function resolveCoverColor(coverColor: string): string {
   return coverColor === LEGACY_RED ? 'var(--accent-pink)' : coverColor
 }
 
-function mapGroup(row: GroupRow): Group {
+/** Fila de `groups` → `Group` (con el color legacy ya remapeado). */
+export function mapGroup(row: GroupRow): Group {
   return {
     id: row.id,
     ownerId: row.owner_id,
@@ -419,41 +420,4 @@ export async function getInvitableFriends(
   }
 
   return friends
-}
-
-/** Invitación a grupo, ya mapeada a camelCase. */
-export interface GroupInvitation {
-  id: string
-  groupId: string
-  inviterId: string
-  inviteeId: string
-  status: 'pending' | 'accepted'
-  createdAt: string
-}
-
-function mapInvitation(row: DbGroupInvitation): GroupInvitation {
-  return {
-    id: row.id,
-    groupId: row.group_id,
-    inviterId: row.inviter_id,
-    inviteeId: row.invitee_id,
-    status: row.status,
-    createdAt: row.created_at,
-  }
-}
-
-/** Invitaciones pending enviadas para un grupo (visibles al inviter por RLS). */
-export async function getSentGroupInvitations(groupId: string): Promise<GroupInvitation[]> {
-  const supabase = await createClient()
-
-  const { data, error } = await supabase
-    .from('group_invitations')
-    .select('id, group_id, inviter_id, invitee_id, status, created_at')
-    .eq('group_id', groupId)
-    .eq('status', 'pending')
-    .order('created_at', { ascending: false })
-
-  if (error) throw new Error(`Failed to fetch sent invitations: ${error.message}`)
-
-  return (data as DbGroupInvitation[]).map(mapInvitation)
 }

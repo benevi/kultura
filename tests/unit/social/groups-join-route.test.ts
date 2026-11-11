@@ -1,20 +1,22 @@
 // ============================================================
 // KULTURA — Route Handler /api/groups/[id]/join unit tests
 // Verifica auth, join (insert role='member') y leave.
+// Contrato: { data: { joined } } / { error: { code, message? } }.
 // ============================================================
 
 import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { joinResultSchema, GROUP_ERRORS } from '@/lib/api/contracts/groups'
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
-const GROUP_ID = 'group-001'
+const GROUP_ID = '11111111-1111-4111-8111-111111111111'
 
 function makeRequest(): Request {
   return new Request(`http://localhost/api/groups/${GROUP_ID}/join`, { method: 'POST' })
 }
 
-function makeContext() {
-  return { params: Promise.resolve({ id: GROUP_ID }) }
+function makeContext(id = GROUP_ID) {
+  return { params: Promise.resolve({ id }) }
 }
 
 // ── Mock factories ─────────────────────────────────────────────────────────────
@@ -39,6 +41,11 @@ vi.mock('@/lib/supabase/server', () => ({
   createClient: () => buildSupabaseMock(),
 }))
 
+vi.mock('@/lib/rate-limit', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@/lib/rate-limit')>()),
+  checkRateLimitDistributed: async () => ({ allowed: true, retryAfterSeconds: 0 }),
+}))
+
 vi.mock('@/lib/social/groups', () => ({
   getGroupById: (...args: unknown[]) => mockGetGroupById(...args),
   getMemberRole: (...args: unknown[]) => mockGetMemberRole(...args),
@@ -46,8 +53,8 @@ vi.mock('@/lib/social/groups', () => ({
 
 // ── Fixtures ──────────────────────────────────────────────────────────────────
 
-const AUTH_USER = { id: 'user-001' }
-const GROUP = { id: GROUP_ID, name: 'Film Club', owner_id: 'owner-xyz' }
+const AUTH_USER = { id: '22222222-2222-4222-8222-222222222222' }
+const GROUP = { id: GROUP_ID, name: 'Film Club', owner_id: '33333333-3333-4333-8333-333333333333' }
 
 // ── POST /api/groups/[id]/join ──────────────────────────────────────────────────
 
@@ -62,6 +69,7 @@ describe('POST /api/groups/[id]/join', () => {
     const { POST } = await import('@/app/api/groups/[id]/join/route')
     const res = await POST(makeRequest() as never, makeContext())
     expect(res.status).toBe(401)
+    expect((await res.json()).error.code).toBe('unauthenticated')
   })
 
   it('returns 404 if group does not exist', async () => {
@@ -71,6 +79,17 @@ describe('POST /api/groups/[id]/join', () => {
     const { POST } = await import('@/app/api/groups/[id]/join/route')
     const res = await POST(makeRequest() as never, makeContext())
     expect(res.status).toBe(404)
+    expect((await res.json()).error.code).toBe('not_found')
+  })
+
+  it('returns 404 if the id is not a uuid (no DB access)', async () => {
+    mockGetUser.mockResolvedValue({ data: { user: AUTH_USER }, error: null })
+
+    const { POST } = await import('@/app/api/groups/[id]/join/route')
+    const res = await POST(makeRequest() as never, makeContext('not-a-uuid'))
+    expect(res.status).toBe(404)
+    expect((await res.json()).error.code).toBe('not_found')
+    expect(mockGetGroupById).not.toHaveBeenCalled()
   })
 
   it('joins as member: inserts user_id=auth.uid() role=member and returns 201', async () => {
@@ -84,7 +103,7 @@ describe('POST /api/groups/[id]/join', () => {
 
     expect(res.status).toBe(201)
     const body = await res.json()
-    expect(body.joined).toBe(true)
+    expect(joinResultSchema.parse(body.data).joined).toBe(true)
 
     // payload must satisfy the RLS WITH CHECK: user_id = auth.uid() AND role = 'member'
     expect(mockInsert).toHaveBeenCalledWith({
@@ -94,14 +113,16 @@ describe('POST /api/groups/[id]/join', () => {
     })
   })
 
-  it('owner cannot leave: returns 400', async () => {
+  it('owner cannot leave: returns 403 owner_cannot_leave', async () => {
     mockGetUser.mockResolvedValue({ data: { user: AUTH_USER }, error: null })
     mockGetGroupById.mockResolvedValue(GROUP)
     mockGetMemberRole.mockResolvedValue('owner')
 
     const { POST } = await import('@/app/api/groups/[id]/join/route')
     const res = await POST(makeRequest() as never, makeContext())
-    expect(res.status).toBe(400)
+    expect(res.status).toBe(403)
+    const body = await res.json()
+    expect(body.error).toEqual({ code: 'forbidden', message: GROUP_ERRORS.ownerCannotLeave })
   })
 
   it('member leaves: deletes own row and returns joined=false', async () => {
@@ -118,6 +139,6 @@ describe('POST /api/groups/[id]/join', () => {
     const res = await POST(makeRequest() as never, makeContext())
     expect(res.status).toBe(200)
     const body = await res.json()
-    expect(body.joined).toBe(false)
+    expect(joinResultSchema.parse(body.data).joined).toBe(false)
   })
 })

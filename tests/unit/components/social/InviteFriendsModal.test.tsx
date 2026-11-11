@@ -1,6 +1,6 @@
 // ============================================================
 // KULTURA — InviteFriendsModal unit tests (E45-d.2)
-// Carga de amigos invitables, estado vacío, invitar (POST + res.ok),
+// Carga de amigos invitables, estado vacío, invitar (POST + { data }),
 // y cierre por overlay / stopPropagation en panel.
 // ============================================================
 
@@ -26,7 +26,7 @@ const FRIENDS = [
 ]
 
 function mockFetchFriends(friends = FRIENDS) {
-  global.fetch = vi.fn().mockResolvedValue({ ok: true, json: async () => ({ friends }) })
+  global.fetch = vi.fn().mockResolvedValue({ ok: true, json: async () => ({ data: friends }) })
 }
 
 // ── Tests ─────────────────────────────────────────────────────────────────────
@@ -39,7 +39,7 @@ describe('InviteFriendsModal', () => {
     render(<InviteFriendsModal groupId="g1" onClose={vi.fn()} />)
     await waitFor(() => expect(screen.getByText('ada')).toBeInTheDocument())
     expect(screen.getByText('bob')).toBeInTheDocument()
-    expect(global.fetch).toHaveBeenCalledWith('/api/groups/g1/invitations')
+    expect(global.fetch).toHaveBeenCalledWith('/api/groups/g1/invitations', expect.anything())
   })
 
   it('muestra estado vacío si no hay invitables', async () => {
@@ -51,8 +51,21 @@ describe('InviteFriendsModal', () => {
   it('invitar hace POST con inviteeId y muestra toast de éxito', async () => {
     const fetchMock = vi
       .fn()
-      .mockResolvedValueOnce({ ok: true, json: async () => ({ friends: FRIENDS }) })
-      .mockResolvedValueOnce({ ok: true, json: async () => ({ invitation: {} }) })
+      .mockResolvedValueOnce({ ok: true, json: async () => ({ data: FRIENDS }) })
+      .mockResolvedValueOnce({
+        ok: true,
+        status: 201,
+        json: async () => ({
+          data: {
+            id: 'inv-1',
+            groupId: 'g1',
+            inviterId: 'me',
+            inviteeId: 'f1',
+            status: 'pending',
+            createdAt: '2026-06-01T00:00:00Z',
+          },
+        }),
+      })
     global.fetch = fetchMock
 
     render(<InviteFriendsModal groupId="g1" onClose={vi.fn()} />)
@@ -76,11 +89,16 @@ describe('InviteFriendsModal', () => {
     await waitFor(() => expect(screen.queryByText('ada')).not.toBeInTheDocument())
   })
 
-  it('toast de error si el POST falla (res.ok=false)', async () => {
+  it('toast de error si el POST falla ({ error: { code } })', async () => {
     const fetchMock = vi
       .fn()
-      .mockResolvedValueOnce({ ok: true, json: async () => ({ friends: FRIENDS }) })
-      .mockResolvedValueOnce({ ok: false, json: async () => ({ error: 'x' }) })
+      .mockResolvedValueOnce({ ok: true, json: async () => ({ data: FRIENDS }) })
+      .mockResolvedValueOnce({
+        ok: false,
+        status: 403,
+        headers: new Headers(),
+        json: async () => ({ error: { code: 'forbidden', message: 'not_friends' } }),
+      })
     global.fetch = fetchMock
 
     render(<InviteFriendsModal groupId="g1" onClose={vi.fn()} />)

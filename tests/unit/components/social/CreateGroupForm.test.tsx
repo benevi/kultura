@@ -1,6 +1,7 @@
 // ============================================================
 // KULTURA — CreateGroupForm unit tests
-// Verifica que el toggle de visibilidad envía is_public en el POST.
+// Verifica que el toggle de visibilidad envía is_public en el POST y que
+// onCreated recibe el grupo ya mapeado (data de POST /api/groups).
 // ============================================================
 
 import { render, screen, fireEvent, waitFor } from '@testing-library/react'
@@ -12,9 +13,20 @@ vi.mock('next-intl', () => ({
   useTranslations: (ns?: string) => (key: string) => (ns === 'auth' ? `auth.${key}` : key),
 }))
 
+const CREATED = {
+  id: 'g1',
+  ownerId: 'me',
+  name: 'Cinéfilos',
+  description: null,
+  coverColor: 'var(--accent-pink)',
+  icon: null,
+  isPublic: true,
+  createdAt: '2026-01-01T00:00:00Z',
+  memberRole: 'owner',
+}
 const mockFetch = vi
   .fn()
-  .mockResolvedValue({ ok: true, json: async () => ({ group: { id: 'g1', name: 'X' } }) })
+  .mockResolvedValue({ ok: true, status: 201, json: async () => ({ data: CREATED }) })
 global.fetch = mockFetch as unknown as typeof fetch
 
 import { CreateGroupForm } from '@/components/social/CreateGroupForm'
@@ -42,6 +54,16 @@ describe('CreateGroupForm', () => {
 
     await waitFor(() => expect(mockFetch).toHaveBeenCalled())
     expect(bodyOf(mockFetch.mock.calls[0]).is_public).toBe(true)
+  })
+
+  it('llama a onCreated con el grupo mapeado de data', async () => {
+    const onCreated = vi.fn()
+    render(<CreateGroupForm onCreated={onCreated} onCancel={vi.fn()} />)
+    fillName()
+    fireEvent.click(screen.getByRole('button', { name: /createGroup/i }))
+
+    await waitFor(() => expect(onCreated).toHaveBeenCalledWith(CREATED))
+    expect(mockFetch).toHaveBeenCalledWith('/api/groups', expect.objectContaining({ method: 'POST' }))
   })
 
   it('sends is_public: false when private is selected', async () => {

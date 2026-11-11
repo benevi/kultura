@@ -8,7 +8,7 @@ import { useState } from 'react'
 import { useTranslations } from 'next-intl'
 import { useRouter } from '@/i18n/navigation'
 import { InlineConfirm, useRestoreFocus } from '@/components/social/ReportButton'
-import { removeGroupMember } from '@/lib/social/actions'
+import { removeGroupMember } from '@/lib/groups/client'
 
 interface Props {
   groupId: string

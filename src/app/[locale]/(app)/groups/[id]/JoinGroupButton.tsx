@@ -6,6 +6,9 @@ import { useTranslations } from 'next-intl'
 import { KButton } from '@/components/ui/KButton'
 import { useToastContext } from '@/components/ui/ToastProvider'
 import { F0 } from '@/lib/design/f0-tokens'
+import { ApiError } from '@/lib/api/client'
+import { toggleGroupMembership } from '@/lib/groups/client'
+import { GROUP_ERRORS } from '@/lib/groups/errors'
 
 interface Props {
   groupId: string
@@ -25,15 +28,12 @@ export function JoinGroupButton({ groupId, isMember, isOwner }: Props) {
   async function handleClick() {
     setLoading(true)
     try {
-      const res = await fetch(`/api/groups/${groupId}/join`, { method: 'POST' })
-      if (res.ok) {
-        router.refresh()
-      } else {
-        // F-11: 403 = vetado por el dueño (o grupo privado): mensaje propio.
-        show({ message: res.status === 403 ? tGroups('joinNotAllowed') : t('joinGroupError'), type: 'error' })
-      }
-    } catch {
-      show({ message: t('joinGroupError'), type: 'error' })
+      await toggleGroupMembership(groupId)
+      router.refresh()
+    } catch (err) {
+      // F-11: vetado por el dueño (o grupo privado): mensaje propio.
+      const notAllowed = err instanceof ApiError && err.message === GROUP_ERRORS.joinNotAllowed
+      show({ message: notAllowed ? tGroups('joinNotAllowed') : t('joinGroupError'), type: 'error' })
     } finally {
       setLoading(false)
     }

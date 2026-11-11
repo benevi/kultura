@@ -7,6 +7,7 @@ import { GroupCard, type GroupCardData } from '@/components/social/GroupCard'
 import { KButton } from '@/components/ui/KButton'
 import { F0 } from '@/lib/design/f0-tokens'
 import { IconSearch } from '@/components/icons'
+import { discoverGroups } from '@/lib/groups/client'
 
 const PAGE_SIZE = 50
 
@@ -34,20 +35,15 @@ export function DiscoverGroupsClient() {
   async function fetchGroups(currentOffset: number, replace: boolean) {
     setLoading(true)
     try {
-      const params = new URLSearchParams()
-      if (query.trim()) params.set('q', query.trim())
-      params.set('scope', scope)
-      params.set('size', size)
-      params.set('limit', String(PAGE_SIZE))
-      params.set('offset', String(currentOffset))
-
-      const res = await fetch(`/api/groups/discover?${params.toString()}`)
-      if (res.ok) {
-        const data: { groups: GroupCardData[] } = await res.json()
-        const next = data.groups ?? []
-        setGroups(prev => (replace ? next : [...prev, ...next]))
-        setHasMore(next.length === PAGE_SIZE)
-      }
+      const next: GroupCardData[] = await discoverGroups({
+        q: query.trim() || undefined,
+        scope,
+        size,
+        limit: PAGE_SIZE,
+        offset: currentOffset,
+      })
+      setGroups(prev => (replace ? next : [...prev, ...next]))
+      setHasMore(next.length === PAGE_SIZE)
     } catch {
       if (replace) setGroups([])
       setHasMore(false)

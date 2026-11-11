@@ -52,7 +52,7 @@ function groupInvite(overrides: Partial<AppNotification> = {}): AppNotification 
 describe('NotificationsList — group_invite', () => {
   beforeEach(() => {
     vi.clearAllMocks()
-    global.fetch = vi.fn().mockResolvedValue({ ok: true, json: async () => ({ ok: true }) })
+    global.fetch = vi.fn().mockResolvedValue({ ok: true, status: 200, json: async () => ({ data: null }) })
   })
 
   it('renderiza texto de invitación con username y nombre del grupo', () => {
@@ -127,8 +127,13 @@ describe('NotificationsList — group_invite', () => {
     )
   })
 
-  it('muestra toast de error si la acción falla (res.ok=false)', async () => {
-    global.fetch = vi.fn().mockResolvedValue({ ok: false, json: async () => ({ error: 'x' }) })
+  it('muestra toast de error si la acción falla ({ error: { code } })', async () => {
+    global.fetch = vi.fn().mockResolvedValue({
+      ok: false,
+      status: 409,
+      headers: new Headers(),
+      json: async () => ({ error: { code: 'conflict', message: 'invitation_resolved' } }),
+    })
     render(<NotificationsList notifications={[groupInvite()]} />)
     fireEvent.click(screen.getByText('accept'))
     await waitFor(() => {

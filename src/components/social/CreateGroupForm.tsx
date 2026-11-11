@@ -5,18 +5,11 @@ import { AvatarIconPicker } from '@/components/ui/AvatarIconPicker'
 import { useTranslations } from 'next-intl'
 import { KButton } from '@/components/ui/KButton'
 import { F0 } from '@/lib/design/f0-tokens'
-
-export interface CreatedGroup {
-  id: string
-  name: string
-  description: string | null
-  cover_color: string
-  memberRole: string
-}
+import { createGroup, type GroupSummary } from '@/lib/groups/client'
 
 interface CreateGroupFormProps {
   /** Llamado con el grupo recién creado (memberRole = 'owner'). */
-  onCreated: (group: CreatedGroup) => void
+  onCreated: (group: GroupSummary) => void
   /** Cerrar el form sin crear. */
   onCancel: () => void
 }
@@ -48,22 +41,13 @@ export function CreateGroupForm({ onCreated, onCancel }: CreateGroupFormProps) {
     setCreating(true)
     setError(false)
     try {
-      const res = await fetch('/api/groups', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          name: groupName.trim(),
-          description: groupDesc.trim() || undefined,
-          is_public: isPublic,
-          icon,
-        }),
+      const group = await createGroup({
+        name: groupName.trim(),
+        description: groupDesc.trim() || undefined,
+        is_public: isPublic,
+        icon,
       })
-      const data = await res.json().catch(() => null)
-      if (!res.ok || !data?.group) {
-        setError(true)
-        return
-      }
-      onCreated({ ...data.group, memberRole: 'owner' })
+      onCreated(group)
       setGroupName('')
       setGroupDesc('')
       setIsPublic(true)

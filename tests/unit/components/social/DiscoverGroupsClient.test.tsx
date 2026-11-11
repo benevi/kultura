@@ -45,16 +45,19 @@ import { DiscoverGroupsClient } from '@/app/[locale]/(app)/groups/DiscoverGroups
 function makeGroup(i: number, isMember = false) {
   return {
     id: `g-${i}`,
+    ownerId: 'owner-1',
     name: `Group ${i}`,
     description: `Desc ${i}`,
     coverColor: '#E82020',
+    icon: null,
+    createdAt: '2026-01-01T00:00:00Z',
     memberCount: i,
     isMember,
   }
 }
 
 function okJson(groups: unknown[]) {
-  return { ok: true, json: async () => ({ groups }) }
+  return { ok: true, status: 200, json: async () => ({ data: groups }) }
 }
 
 // ── Tests ─────────────────────────────────────────────────────────────────────

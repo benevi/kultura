@@ -75,7 +75,7 @@ describe('GroupFeed', () => {
   })
 
   it('el dueño borra un post ajeno tras confirmar', async () => {
-    mockFetch.mockResolvedValue(ok({ ok: true }))
+    mockFetch.mockResolvedValue(ok({ data: null }))
     renderEs(<GroupFeed groupId="g1" currentUserId="me" isOwner moderation />)
     await screen.findByText('post ajeno')
     fireEvent.click(screen.getByRole('button', { name: 'Borrar la publicación de ana' }))
@@ -90,7 +90,7 @@ describe('GroupFeed', () => {
 
 describe('MemberRemoveButton', () => {
   it('expulsar pide confirmación, llama a la API y anuncia el resultado', async () => {
-    mockFetch.mockResolvedValue(ok({ ok: true }))
+    mockFetch.mockResolvedValue(ok({ data: null }))
     renderEs(<MemberRemoveButton groupId="g1" userId="u-2" username="ana" />)
     fireEvent.click(screen.getByRole('button', { name: 'Expulsar a ana' }))
     await act(async () => {

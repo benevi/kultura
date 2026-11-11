@@ -1,48 +1,21 @@
 // ============================================================
-// KULTURA — GET /api/groups/discover
-// Grupos para la pestaña "Descubrir": búsqueda + scope + size + paginación.
-// Delega en getDiscoverableGroups (RPC get_discoverable_groups).
+// KULTURA — Route Handler: /api/groups/discover
+// GET: grupos públicos para «Descubrir» (?q, scope, size, limit, offset).
 // ============================================================
 
-import { NextRequest, NextResponse } from 'next/server'
-import { z } from 'zod'
-import { createClient } from '@/lib/supabase/server'
-import { checkRateLimit, LIMITS } from '@/lib/rate-limit'
-import { getDiscoverableGroups } from '@/lib/social/groups'
+import { LIMITS } from '@/lib/rate-limit'
+import { parseQuery, rateLimit, requireUser, respond } from '@/lib/api/route'
+import { discoverQuerySchema } from '@/lib/api/contracts/groups'
+import { discoverGroups } from '@/lib/groups/service'
 
-const QuerySchema = z.object({
-  q: z.string().trim().max(60).optional(),
-  scope: z.enum(['all', 'joined', 'unjoined']).default('all'),
-  size: z.enum(['all', 'small', 'medium', 'large']).default('all'),
-  limit: z.coerce.number().int().min(1).max(50).default(50),
-  offset: z.coerce.number().int().min(0).default(0),
-})
+/** GET /api/groups/discover */
+export async function GET(request: Request) {
+  const auth = await requireUser()
+  if (!auth.ok) return auth.response
+  const limited = await rateLimit(request, { key: 'groups_discover', limit: LIMITS.search, userId: auth.user.id })
+  if (limited) return limited
+  const query = parseQuery(request, discoverQuerySchema)
+  if (!query.ok) return query.response
 
-export async function GET(req: NextRequest): Promise<NextResponse> {
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) return NextResponse.json({ error: 'Not authenticated' }, { status: 401 })
-
-  const ip = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ?? 'unknown'
-  const rl = checkRateLimit(`groups_discover:${user.id ?? `ip:${ip}`}`, LIMITS.search)
-  if (!rl.allowed) {
-    return NextResponse.json(
-      { error: 'Too many requests' },
-      { status: 429, headers: { 'Retry-After': String(rl.retryAfterSeconds) } }
-    )
-  }
-
-  const sp = req.nextUrl.searchParams
-  const parsed = QuerySchema.safeParse({
-    q: sp.get('q') ?? undefined,
-    scope: sp.get('scope') ?? undefined,
-    size: sp.get('size') ?? undefined,
-    limit: sp.get('limit') ?? undefined,
-    offset: sp.get('offset') ?? undefined,
-  })
-  if (!parsed.success) return NextResponse.json({ error: 'Invalid params' }, { status: 400 })
-
-  const groups = await getDiscoverableGroups(parsed.data)
-
-  return NextResponse.json({ groups })
+  return respond(await discoverGroups(query.value))
 }

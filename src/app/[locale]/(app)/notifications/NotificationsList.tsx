@@ -7,6 +7,7 @@ import { IconSparkles, IconLists, IconUserPlus, IconGroups, IconBell } from '@/c
 import { useToastContext } from '@/components/ui/ToastProvider'
 import type { AppNotification } from '@/lib/social/notifications'
 import { FOCUS_RING as FOCUS } from '@/components/layout/nav-shared'
+import { respondToGroupInvitation } from '@/lib/groups/client'
 
 interface Props {
   notifications: AppNotification[]
@@ -36,14 +37,7 @@ function InviteActions({ invitationId, groupName }: { invitationId: string; grou
   async function respond(action: 'accept' | 'reject') {
     setLoading(true)
     try {
-      const res = await fetch(`/api/groups/invitations/${invitationId}`, {
-        method: action === 'accept' ? 'PATCH' : 'DELETE',
-      })
-      if (!res.ok) {
-        show({ message: t('inviteActionError'), type: 'error' })
-        setLoading(false)
-        return
-      }
+      await respondToGroupInvitation(invitationId, action)
       show({
         message: action === 'accept' ? t('inviteAccepted') : t('inviteRejected'),
         type: 'success',
