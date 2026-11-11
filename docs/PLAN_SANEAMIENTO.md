@@ -118,7 +118,7 @@ Estado de partida:
 10. **Borrado de cuenta y mensajes** (Q6): `messages.sender_id` pasa a `ON DELETE SET NULL` y el texto de esos mensajes se vacía. El chat del otro usuario muestra «usuario eliminado».
 11. Revisar el resto de funciones SECURITY DEFINER que avisa el linter y revocar `EXECUTE` donde solo se usen desde políticas.
 12. Test de CI que vigila el orden de las migraciones (regla 5).
-13. Panel de Supabase: activar la protección contra contraseñas filtradas (Víctor).
+13. ~~Panel de Supabase: activar la protección contra contraseñas filtradas (Víctor).~~ Descartado el 11-11-2026: solo existe en el plan Pro y el proyecto está en el gratuito. Revisar si se cambia de plan.
 
 **Verificación:** un test de RLS por punto en `tests/integration` contra `kultura-test`, y `get_advisors` (security) sin avisos nuevos.
 
