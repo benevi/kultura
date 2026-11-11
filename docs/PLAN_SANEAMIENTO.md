@@ -164,7 +164,10 @@ Estado de partida:
 
 ---
 
-## ⬜ Fase 4 · Seguridad en la API (en paralelo, requiere B2)
+## ✅ Fase 4 · Seguridad en la API — #108 · 11-11-2026
+
+- `HEALTH_DEEP_TOKEN` configurado en Vercel (Production); el monitor externo lo lleva si usa `?deep=1`.
+- 4.6: la RLS de `group_posts` sigue admitiendo el INSERT directo (sin el rate limit de la API). Cerrarlo con una migración en la fase 6 (módulo `groups`).
 
 1. Usar `checkRateLimitDistributed`, ya con Redis, en `reports/public`, `ai-recommendations`, `recommendations`, `auth/demo` y `revalidate`.
 2. `recommendations`: comprobar la amistad en el servidor **antes** de llamar al proveedor.
