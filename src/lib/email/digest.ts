@@ -379,6 +379,8 @@ export function defaultDigestDeps(admin: SupabaseClient, now: Date = new Date())
           now: at,
           daysAhead: 6,
           budget: WEEKLY_EMAIL_CALENDAR_BUDGET,
+          // Nadie espera la página: más margen para no mandar un correo a medias.
+          deadlineMs: 15_000,
           cache: false,
         })
       ).events,

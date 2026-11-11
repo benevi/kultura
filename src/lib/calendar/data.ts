@@ -97,6 +97,8 @@ export interface UserCalendarOptions {
   /** Presupuesto de peticiones (ver build.ts). */
   budget?: number
   fetchers?: CalendarFetchers
+  /** Tope del cálculo (ver build.ts). El correo, sin nadie esperando, admite más. */
+  deadlineMs?: number
   /** Sin caché por persona (tests y el correo, que ya va de uno en uno). */
   cache?: boolean
 }
@@ -121,7 +123,7 @@ export async function getUserCalendar(
   ])
   const region = platforms?.region ?? (locale === 'en' ? 'US' : 'ES')
   const window = { today, until: addDays(today, daysAhead), now, region, locale }
-  const run = () => buildCalendar(candidates, window, { budget: opts.budget, fetchers: opts.fetchers })
+  const run = () => buildCalendar(candidates, window, { budget: opts.budget, fetchers: opts.fetchers, deadlineMs: opts.deadlineMs })
 
   if (candidates.length === 0) return { events: [], candidates: 0, checked: 0, failed: 0, today }
   if (opts.cache === false) return run()
