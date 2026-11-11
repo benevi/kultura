@@ -9,6 +9,9 @@ export default defineConfig(({ mode }) => {
       environment: "node",
       globals: true,
       passWithNoTests: true,
+      // Los ficheros comparten usuarios (test-user-a/b) y filas (la amistad
+      // A↔B): en paralelo se pisan unos a otros. En serie.
+      fileParallelism: false,
       include: ["tests/integration/**/*.{test,spec}.{ts,tsx}"],
       setupFiles: ["./tests/setup.ts"],
       env,

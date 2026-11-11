@@ -86,7 +86,7 @@ describe("RLS — user_media table", () => {
       user_id: me.user!.id,
       media_id: mediaId,
       status: "pending",
-    });
+    }, { onConflict: "user_id,media_id" });
     expect(error).toBeNull();
   });
 

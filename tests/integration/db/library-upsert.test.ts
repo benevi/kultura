@@ -41,6 +41,10 @@ describe("Library upsert — flujo completo", () => {
       type: "movie",
       title: "Integration Upsert Test Movie",
     });
+
+    // Una ejecución anterior que no llegó al afterAll puede haber dejado la
+    // fila: se borra para que el INSERT parta de cero.
+    await client.from("user_media").delete().match({ user_id: userId, media_id: TEST_MEDIA_ID });
   });
 
   afterAll(async () => {
@@ -59,7 +63,7 @@ describe("Library upsert — flujo completo", () => {
       user_id: userId,
       media_id: TEST_MEDIA_ID,
       status: "pending",
-    });
+    }, { onConflict: "user_id,media_id" });
 
     expect(error).toBeNull();
   });
