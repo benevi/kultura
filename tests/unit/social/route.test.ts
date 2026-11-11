@@ -158,6 +158,33 @@ describe('POST /api/friends', () => {
     const body = await res.json()
     expect(body.friendship.id).toBe('friendship-001')
   })
+
+  it('saneamiento 3.1: si la otra persona la mandó a la vez (23505) → 409, no 500', async () => {
+    mockGetUser.mockResolvedValue({ data: { user: AUTH_USER }, error: null })
+    mockFromUsers.mockReturnValue({
+      select: vi.fn().mockReturnValue({
+        eq: vi.fn().mockReturnValue({
+          maybeSingle: vi.fn().mockResolvedValue({ data: { id: RECEIVER_ID }, error: null }),
+        }),
+      }),
+    })
+    mockFromFriendships.mockReturnValue({
+      select: vi.fn().mockReturnValue({
+        or: vi.fn().mockReturnValue({
+          maybeSingle: vi.fn().mockResolvedValue({ data: null, error: null }),
+        }),
+      }),
+      insert: vi.fn().mockReturnValue({
+        select: vi.fn().mockReturnValue({
+          single: vi.fn().mockResolvedValue({ data: null, error: { code: '23505', message: 'duplicate key' } }),
+        }),
+      }),
+    })
+
+    const { POST } = await import('@/app/api/friends/route')
+    const res = await POST(makeRequest({ receiverId: RECEIVER_ID }))
+    expect(res.status).toBe(409)
+  })
 })
 
 // ── PATCH /api/friends ────────────────────────────────────────────────────────

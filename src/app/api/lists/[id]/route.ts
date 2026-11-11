@@ -187,6 +187,10 @@ export async function POST(request: Request, { params }: Params): Promise<NextRe
     .select('id, list_id, media_id, added_by, added_at')
     .single()
 
+  // Saneamiento 3.1: otra petición lo añadió a la vez (único por lista).
+  if (itemErr?.code === '23505') {
+    return NextResponse.json({ error: 'Item already in list' }, { status: 409 })
+  }
   if (itemErr || !item) {
     return NextResponse.json({ error: 'Failed to add item' }, { status: 500 })
   }

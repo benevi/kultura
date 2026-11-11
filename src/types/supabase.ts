@@ -244,17 +244,23 @@ export type Database = {
           created_at: string | null
           id: string
           last_message_at: string | null
+          user_high: string | null
+          user_low: string | null
         }
         ComputedFields: never
         Insert: {
           created_at?: string | null
           id?: string
           last_message_at?: string | null
+          user_high?: string | null
+          user_low?: string | null
         }
         Update: {
           created_at?: string | null
           id?: string
           last_message_at?: string | null
+          user_high?: string | null
+          user_low?: string | null
         }
         Relationships: []
       }
@@ -1877,10 +1883,8 @@ export interface DbListItem {
 export interface DbNotification {
   id: string; // uuid
   user_id: string; // uuid → users.id
-  // F-17 añadió 'invite_accepted' al CHECK (`20261115170001_analytics`); el
-  // literal no se amplía aquí porque `AppNotification` (lib/social/notifications.ts)
-  // aún no lo admite. Pendiente en ese archivo.
-  type: "recommendation" | "list_invite" | "group_invite";
+  // 'invite_accepted': F-17 (`20261115170001_analytics`).
+  type: "recommendation" | "list_invite" | "group_invite" | "invite_accepted";
   payload: Record<string, unknown>; // jsonb
   read_at: string | null; // timestamptz
   created_at: string; // timestamptz
@@ -1916,6 +1920,9 @@ export interface DbConversation {
   id: string; // uuid
   created_at: string; // timestamptz
   last_message_at: string; // timestamptz — actualizado por trigger handle_new_message
+  /** Saneamiento 3.1: pareja ordenada (user_low < user_high), única. null si una de las cuentas se borró. */
+  user_low: string | null; // uuid → users.id
+  user_high: string | null; // uuid → users.id
 }
 
 /** Tabla: conversation_members (pivot users ↔ conversations) */
