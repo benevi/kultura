@@ -132,7 +132,7 @@ Estado de partida:
 
 ---
 
-## ⬜ Fase 3 · Integridad e índices
+## ✅ Fase 3 · Integridad e índices — #106 · prod: 11-11-2026
 
 - No hay duplicados en producción (comprobado), así que no hace falta deduplicar antes.
 - `media_translations` y `media_adaptations` son **cachés por id de proveedor**: no llevan clave foránea a `media` (Q15).
@@ -155,6 +155,12 @@ Estado de partida:
    - `media ((metadata->>'malId'))`
    - El resto de claves foráneas sin índice que avisa `get_advisors` (performance).
 4. Regenerar `src/types/supabase.ts` y añadir `invite_accepted` a la unión de `src/lib/social/notifications.ts:11`.
+
+**Notas de la ejecución:**
+- Migración `20261231000001_integrity_and_indexes`, aplicada en producción el 11-11-2026 tras la copia de las 09:00. Sin duplicados antes de aplicarla.
+- La conversación única por pareja usa dos columnas nuevas, `conversations.user_low` y `user_high`. En producción solo 1 de las 3 conversaciones tiene pareja: las otras dos tienen un solo miembro porque la otra cuenta se borró.
+- `src/types/supabase.ts` se actualizó a mano, no se regeneró: el fichero lleva tipos propios (`Db*`) que el generador no produce.
+- La API devuelve 409 (no 500) si una amistad o un título de lista choca con la restricción.
 
 ---
 
