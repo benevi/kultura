@@ -46,7 +46,7 @@ describe('CreateListModal con MIXED_LISTS', () => {
   })
 
   it('«Franquicia» crea una lista mixta con su plantilla y descripción', async () => {
-    fetchMock.mockResolvedValue({ ok: true, json: async () => ({ list: { id: 'dune' } }) })
+    fetchMock.mockResolvedValue({ ok: true, status: 201, json: async () => ({ data: { id: 'dune' } }) })
     render(<CreateListModal onClose={vi.fn()} mixedEnabled />)
     const group = screen.getByRole('group', { name: 'lists.templateLabel' })
     expect(within(group).getByRole('radio', { name: /lists\.template\.free/ })).toBeChecked()
@@ -65,7 +65,7 @@ describe('CreateListModal con MIXED_LISTS', () => {
   })
 
   it('«Ranking personal» conserva el formato elegido', async () => {
-    fetchMock.mockResolvedValue({ ok: true, json: async () => ({ list: { id: 'top' } }) })
+    fetchMock.mockResolvedValue({ ok: true, status: 201, json: async () => ({ data: { id: 'top' } }) })
     render(<CreateListModal onClose={vi.fn()} mixedEnabled />)
     fireEvent.click(screen.getByRole('radio', { name: /lists\.template\.ranking/ }))
     fireEvent.change(screen.getByRole('textbox', { name: 'lists.listName' }), { target: { value: 'Top' } })
@@ -76,7 +76,10 @@ describe('CreateListModal con MIXED_LISTS', () => {
   })
 
   it('mixed_unavailable (bandera antes de migrar): aviso específico en el diálogo', async () => {
-    fetchMock.mockResolvedValue({ ok: false, json: async () => ({ error: 'mixed_unavailable' }) })
+    fetchMock.mockResolvedValue({
+      ok: false, status: 400, headers: new Headers(),
+      json: async () => ({ error: { code: 'invalid_input', field: 'mediaType', message: 'mixed_unavailable' } }),
+    })
     render(<CreateListModal onClose={vi.fn()} mixedEnabled />)
     fireEvent.click(screen.getByRole('radio', { name: /lists\.template\.franchise/ }))
     fireEvent.change(screen.getByRole('textbox', { name: 'lists.listName' }), { target: { value: 'Dune' } })
@@ -94,7 +97,7 @@ describe('AddToListButton', () => {
     fetchMock.mockResolvedValueOnce({
       ok: true,
       json: async () => ({
-        lists: [
+        data: [
           { id: 'l1', name: 'Pelis', media_type: 'movie', is_collaborative: false },
           { id: 'l2', name: 'Dune', media_type: 'mixed', is_collaborative: false },
         ],

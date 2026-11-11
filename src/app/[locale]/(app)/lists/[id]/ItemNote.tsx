@@ -12,6 +12,7 @@ import { useTranslations } from 'next-intl'
 import { KButton } from '@/components/ui/KButton'
 import { cn } from '@/lib/utils/index'
 import type { ListItem } from '@/types/list'
+import { setListItemNote } from '@/lib/lists/client'
 
 export const NOTE_MAX = 500
 
@@ -60,14 +61,8 @@ export function ItemNote({ listId, item, editable, onSaved, className }: ItemNot
     setSaving(true)
     setError(false)
     try {
-      const res = await fetch(`/api/lists/${listId}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ itemId: item.id, note: draft }),
-      })
-      if (!res.ok) throw new Error(`HTTP ${res.status}`)
-      const data = (await res.json().catch(() => ({}))) as { note?: string | null }
-      onSaved(data.note ?? (draft.trim() || null))
+      const data = await setListItemNote(listId, item.id, draft)
+      onSaved(data.note)
       close()
     } catch {
       setError(true)

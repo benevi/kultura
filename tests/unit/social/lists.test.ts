@@ -3,6 +3,7 @@
 // ============================================================
 
 import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { itemAddResultSchema, listCreateResultSchema, listsResultSchema } from '@/lib/api/contracts/lists'
 
 function makeRequest(body: unknown, method = 'POST', headers: Record<string, string> = {}): Request {
   return new Request('http://localhost/api/lists', {
@@ -12,9 +13,10 @@ function makeRequest(body: unknown, method = 'POST', headers: Record<string, str
   })
 }
 
+const LIST_ID = '11111111-1111-4111-8111-111111111111'
 const AUTH_USER = { id: 'user-001' }
 const OTHER_USER = { id: 'user-002' }
-const LIST_ROW = { id: 'list-001', owner_id: 'user-001', name: 'My list', media_type: 'movie', is_collaborative: false, created_at: '2024-01-01T00:00:00Z' }
+const LIST_ROW = { id: LIST_ID, owner_id: 'user-001', name: 'My list', media_type: 'movie', is_collaborative: false, is_public: false, created_at: '2024-01-01T00:00:00Z' }
 
 const mockGetUser = vi.fn()
 const mockFromLists = vi.fn()
@@ -56,6 +58,12 @@ vi.mock('@/lib/media/upsert-from-provider', async (importOriginal) => ({
   upsertMediaFromProvider: vi.fn(async (id: string) => ({ ok: true, id, title: 'Fight Club', created: false })),
 }))
 
+// El límite distribuido no entra en estos tests.
+vi.mock('@/lib/rate-limit', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@/lib/rate-limit')>()),
+  checkRateLimitDistributed: async () => ({ allowed: true, retryAfterSeconds: 0 }),
+}))
+
 function makeGetRequest(search = ''): Request {
   return new Request(`http://localhost/api/lists${search}`, { method: 'GET' })
 }
@@ -85,7 +93,7 @@ describe('GET /api/lists', () => {
     const res = await GET(makeGetRequest())
     expect(res.status).toBe(200)
     const body = await res.json()
-    expect(body.lists).toHaveLength(1)
+    expect(listsResultSchema.parse(body.data)).toHaveLength(1)
   })
 
   it('filters lists by mediaType', async () => {
@@ -148,13 +156,13 @@ describe('POST /api/lists', () => {
     const res = await POST(makeRequest({ name: 'My list', mediaType: 'movie' }))
     expect(res.status).toBe(201)
     const body = await res.json()
-    expect(body.list.id).toBe('list-001')
+    expect(listCreateResultSchema.parse(body.data).id).toBe(LIST_ID)
   })
 })
 
 // ── DELETE /api/lists ─────────────────────────────────────────────────────────
 
-describe('DELETE /api/lists', () => {
+describe('DELETE /api/lists/[id]', () => {
   beforeEach(() => vi.clearAllMocks())
 
   it('returns 403 if user is not the owner', async () => {
@@ -166,8 +174,8 @@ describe('DELETE /api/lists', () => {
         }),
       }),
     })
-    const { DELETE } = await import('@/app/api/lists/route')
-    const res = await DELETE(makeRequest({ listId: 'list-001' }, 'DELETE'))
+    const { DELETE } = await import('@/app/api/lists/[id]/route')
+    const res = await DELETE(makeRequest({}, 'DELETE'), { params: Promise.resolve({ id: LIST_ID }) })
     expect(res.status).toBe(403)
   })
 
@@ -183,28 +191,28 @@ describe('DELETE /api/lists', () => {
         eq: vi.fn().mockResolvedValue({ error: null }),
       }),
     })
-    const { DELETE } = await import('@/app/api/lists/route')
-    const res = await DELETE(makeRequest({ listId: 'list-001' }, 'DELETE'))
+    const { DELETE } = await import('@/app/api/lists/[id]/route')
+    const res = await DELETE(makeRequest({}, 'DELETE'), { params: Promise.resolve({ id: LIST_ID }) })
     expect(res.status).toBe(200)
   })
 })
 
 // ── POST /api/lists/[id] — añadir item ───────────────────────────────────────
 
-describe('POST /api/lists/[id] — add item', () => {
+describe('POST /api/lists/[id]/items — add item', () => {
   beforeEach(() => vi.clearAllMocks())
 
   it('returns 401 if not authenticated', async () => {
     mockGetUser.mockResolvedValue({ data: { user: null }, error: null })
-    const { POST } = await import('@/app/api/lists/[id]/route')
-    const res = await POST(makeRequest({ mediaId: 'movie_550' }), { params: Promise.resolve({ id: 'list-001' }) })
+    const { POST } = await import('@/app/api/lists/[id]/items/route')
+    const res = await POST(makeRequest({ mediaId: 'movie_550' }), { params: Promise.resolve({ id: LIST_ID }) })
     expect(res.status).toBe(401)
   })
 
   it('returns 400 if mediaId format is invalid', async () => {
     mockGetUser.mockResolvedValue({ data: { user: AUTH_USER }, error: null })
-    const { POST } = await import('@/app/api/lists/[id]/route')
-    const res = await POST(makeRequest({ mediaId: 'invalid' }), { params: Promise.resolve({ id: 'list-001' }) })
+    const { POST } = await import('@/app/api/lists/[id]/items/route')
+    const res = await POST(makeRequest({ mediaId: 'invalid' }), { params: Promise.resolve({ id: LIST_ID }) })
     expect(res.status).toBe(400)
   })
 
@@ -219,8 +227,8 @@ describe('POST /api/lists/[id] — add item', () => {
         }),
       }),
     })
-    const { POST } = await import('@/app/api/lists/[id]/route')
-    const res = await POST(makeRequest({ mediaId: 'movie_550' }), { params: Promise.resolve({ id: 'list-001' }) })
+    const { POST } = await import('@/app/api/lists/[id]/items/route')
+    const res = await POST(makeRequest({ mediaId: 'movie_550' }), { params: Promise.resolve({ id: LIST_ID }) })
     expect(res.status).toBe(409)
   })
 
@@ -237,16 +245,16 @@ describe('POST /api/lists/[id] — add item', () => {
       insert: vi.fn().mockReturnValue({
         select: vi.fn().mockReturnValue({
           single: vi.fn().mockResolvedValue({
-            data: { id: 'item-001', list_id: 'list-001', media_id: 'movie_550', added_by: AUTH_USER.id, added_at: '2024-01-01' },
+            data: { id: 'item-001', list_id: LIST_ID, media_id: 'movie_550', added_by: AUTH_USER.id, added_at: '2024-01-01' },
             error: null,
           }),
         }),
       }),
     })
-    const { POST } = await import('@/app/api/lists/[id]/route')
-    const res = await POST(makeRequest({ mediaId: 'movie_550' }), { params: Promise.resolve({ id: 'list-001' }) })
+    const { POST } = await import('@/app/api/lists/[id]/items/route')
+    const res = await POST(makeRequest({ mediaId: 'movie_550' }), { params: Promise.resolve({ id: LIST_ID }) })
     expect(res.status).toBe(201)
     const body = await res.json()
-    expect(body.item.id).toBe('item-001')
+    expect(itemAddResultSchema.parse(body.data).id).toBe('item-001')
   })
 })

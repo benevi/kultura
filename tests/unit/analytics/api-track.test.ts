@@ -91,12 +91,12 @@ describe('POST /api/library', () => {
 describe('listas públicas', () => {
   it('PATCH isPublic=true → list_made_public una vez por lista; despublicar no cuenta', async () => {
     const { PATCH } = await import('@/app/api/lists/[id]/route')
-    const params = { params: Promise.resolve({ id: 'list-1' }) }
+    const params = { params: Promise.resolve({ id: '11111111-1111-4111-8111-111111111111' }) }
     h.listLookup.mockResolvedValue({ data: { owner_id: 'u1' } })
-    await PATCH(json('http://k/api/lists/list-1', 'PATCH', { isPublic: true }), params)
-    expect(h.track).toHaveBeenCalledWith(USER, 'list_made_public', {}, { dedupeKey: 'list_made_public:list-1' })
+    await PATCH(json('http://k/api/lists/11111111-1111-4111-8111-111111111111', 'PATCH', { isPublic: true }), params)
+    expect(h.track).toHaveBeenCalledWith(USER, 'list_made_public', {}, { dedupeKey: 'list_made_public:11111111-1111-4111-8111-111111111111' })
     h.track.mockClear()
-    await PATCH(json('http://k/api/lists/list-1', 'PATCH', { isPublic: false }), params)
+    await PATCH(json('http://k/api/lists/11111111-1111-4111-8111-111111111111', 'PATCH', { isPublic: false }), params)
     expect(h.track).not.toHaveBeenCalled()
   })
 

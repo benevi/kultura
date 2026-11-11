@@ -152,9 +152,9 @@ test("502 del catálogo al guardar: el aviso se ve y se anuncia con el diálogo 
 });
 
 test("error al añadir a una lista: el aviso se ve y se anuncia con el diálogo abierto", async ({ page }) => {
-  await page.route(`**/api/lists/${LIST_ID}`, (route) =>
+  await page.route(`**/api/lists/${LIST_ID}/items`, (route) =>
     route.request().method() === "POST"
-      ? route.fulfill({ status: 500, contentType: "application/json", body: "{}" })
+      ? route.fulfill({ status: 500, contentType: "application/json", body: JSON.stringify({ error: { code: "internal" } }) })
       : route.continue()
   );
   await open(page, "/es/media/movie/550");

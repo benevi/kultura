@@ -43,7 +43,7 @@ const bodies = () => fetchMock.mock.calls.map((c) => JSON.parse(c[1].body))
 beforeEach(() => {
   vi.useFakeTimers()
   fetchMock.mockReset()
-  fetchMock.mockResolvedValue({ ok: true, json: async () => ({ ok: true }) })
+  fetchMock.mockResolvedValue({ ok: true, status: 200, json: async () => ({ data: { moved: 3 } }) })
   vi.stubGlobal('fetch', fetchMock)
 })
 afterEach(() => vi.useRealTimers())
@@ -84,7 +84,8 @@ describe('ReorderableItems — teclado', () => {
     expect(screen.getByRole('status')).toHaveTextContent('lists.dropped')
     await settle()
     expect(fetchMock).toHaveBeenCalledTimes(1)
-    expect(fetchMock.mock.calls[0][0]).toBe(`/api/lists/${LIST}`)
+    expect(fetchMock.mock.calls[0][0]).toBe(`/api/lists/${LIST}/items`)
+    expect(fetchMock.mock.calls[0][1].method).toBe('PATCH')
     expect(bodies()[0]).toEqual({ order: ['b', 'c', 'a'] })
   })
 
@@ -123,7 +124,7 @@ describe('ReorderableItems — botones y guardado', () => {
   })
 
   it('si el guardado falla, vuelve al último orden guardado y lo avisa', async () => {
-    fetchMock.mockResolvedValueOnce({ ok: false, json: async () => ({}) })
+    fetchMock.mockResolvedValueOnce({ ok: false, status: 500, headers: new Headers(), json: async () => ({ error: { code: 'internal' } }) })
     render(<Harness />)
     fireEvent.click(screen.getByRole('button', { name: /lists\.moveUp.*"title":"Hijos de Dune"/ }))
     expect(order()).toBe('a,c,b')
@@ -156,7 +157,7 @@ describe('ItemNote', () => {
   beforeEach(() => vi.useRealTimers())
 
   it('añadir: campo con etiqueta, guarda recortado y vuelve con la nota visible', async () => {
-    fetchMock.mockResolvedValueOnce({ ok: true, json: async () => ({ ok: true, note: 'Empieza aquí' }) })
+    fetchMock.mockResolvedValueOnce({ ok: true, status: 200, json: async () => ({ data: { note: 'Empieza aquí' } }) })
     const onSaved = vi.fn()
     render(<ItemNote listId={LIST} item={mk('a', 'Dune')} editable onSaved={onSaved} />)
     fireEvent.click(screen.getByRole('button', { name: /lists\.addNoteNamed/ }))
@@ -164,11 +165,12 @@ describe('ItemNote', () => {
     fireEvent.change(field, { target: { value: '  Empieza aquí ' } })
     fireEvent.click(screen.getByRole('button', { name: 'lists.noteSave' }))
     await waitFor(() => expect(onSaved).toHaveBeenCalledWith('Empieza aquí'))
+    expect(fetchMock).toHaveBeenCalledWith(`/api/lists/${LIST}/items`, expect.objectContaining({ method: 'PATCH' }))
     expect(JSON.parse(fetchMock.mock.calls[0][1].body)).toEqual({ itemId: 'a', note: '  Empieza aquí ' })
   })
 
   it('fallo: se anuncia y el texto escrito se queda', async () => {
-    fetchMock.mockResolvedValueOnce({ ok: false, json: async () => ({}) })
+    fetchMock.mockResolvedValueOnce({ ok: false, status: 500, headers: new Headers(), json: async () => ({ error: { code: 'internal' } }) })
     render(<ItemNote listId={LIST} item={mk('a', 'Dune')} editable onSaved={vi.fn()} />)
     fireEvent.click(screen.getByRole('button', { name: /lists\.addNoteNamed/ }))
     fireEvent.change(screen.getByRole('textbox', { name: /lists\.noteLabel/ }), { target: { value: 'hola' } })

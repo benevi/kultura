@@ -25,6 +25,7 @@ import { posterGradient } from '@/lib/images/poster-gradient'
 import { cn } from '@/lib/utils/index'
 import type { ListItem } from '@/types/list'
 import { ItemNote } from './ItemNote'
+import { reorderListItems } from '@/lib/lists/client'
 
 /** Pausa antes de guardar: varias flechas seguidas = una sola petición. */
 export const SAVE_DELAY_MS = 600
@@ -96,12 +97,7 @@ export function ReorderableItems({ listId, items, onItemsChange, ranked }: Reord
     if (!order) return
     setSaveState('saving')
     try {
-      const res = await fetch(`/api/lists/${listId}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ order: order.map((i) => i.id) }),
-      })
-      if (!res.ok) throw new Error(`HTTP ${res.status}`)
+      await reorderListItems(listId, order.map((i) => i.id))
       savedRef.current = order
       // Si entretanto hubo otro movimiento, ese ya tiene su temporizador.
       if (!pendingRef.current) setSaveState('saved')

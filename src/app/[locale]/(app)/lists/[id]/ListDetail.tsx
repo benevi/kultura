@@ -11,6 +11,15 @@ import { SegmentedControl } from '@/components/ui/SegmentedControl'
 import { ShareLinkButton } from '@/components/social/ShareLinkButton'
 import { MediaCard } from '@/components/media/MediaCard'
 import { createLogger } from '@/lib/logger'
+import { ApiError } from '@/lib/api/client'
+import {
+  deleteList,
+  inviteListMember,
+  removeListItem,
+  removeListMember,
+  updateList,
+} from '@/lib/lists/client'
+import { LIST_ERRORS } from '@/lib/lists/errors'
 import type { List, ListItem, ListMember } from '@/types/list'
 import { ReorderableItems } from './ReorderableItems'
 import { ItemNote } from './ItemNote'
@@ -78,12 +87,7 @@ export function ListDetail({
     setActionError(null)
     setIsPublic(next) // optimista: se revierte si falla
     try {
-      const res = await fetch(`/api/lists/${list.id}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ isPublic: next }),
-      })
-      if (!res.ok) throw new Error(`HTTP ${res.status}`)
+      await updateList(list.id, { isPublic: next })
     } catch (err) {
       log.error('visibility change failed', { message: err instanceof Error ? err.message : String(err) })
       setIsPublic(!next)
@@ -97,16 +101,7 @@ export function ListDetail({
     setDeleting(true)
     setDeleteError(null)
     try {
-      const res = await fetch('/api/lists', {
-        method: 'DELETE',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ listId: list.id }),
-      })
-      if (!res.ok) {
-        setDeleteError(t('errorDelete'))
-        setDeleting(false)
-        return
-      }
+      await deleteList(list.id)
       router.push('/lists')
       router.refresh()
     } catch {
@@ -119,15 +114,7 @@ export function ListDetail({
     setRemovingItem(itemId)
     setActionError(null)
     try {
-      const res = await fetch(`/api/lists/${list.id}`, {
-        method: 'DELETE',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ itemId }),
-      })
-      if (!res.ok) {
-        setActionError(t('removeError'))
-        return
-      }
+      await removeListItem(list.id, itemId)
       setItems((prev) => prev.filter((i) => i.id !== itemId))
     } catch (err) {
       log.error('Failed to remove item', { err })
@@ -142,16 +129,7 @@ export function ListDetail({
     setInviting(true)
     setActionError(null)
     try {
-      const res = await fetch(`/api/lists/${list.id}`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'x-action': 'invite' },
-        body: JSON.stringify({ userId: inviteUserId }),
-      })
-      if (!res.ok) {
-        const data = (await res.json().catch(() => ({}))) as { error?: string }
-        setActionError(data.error === 'not_friends' ? t('inviteNotFriend') : t('inviteError'))
-        return
-      }
+      await inviteListMember(list.id, inviteUserId)
       const friend = currentUserFriends.find((f) => f.id === inviteUserId)
       if (friend) {
         setMembers((prev) => [
@@ -165,8 +143,9 @@ export function ListDetail({
       }
       setInviteUserId('')
     } catch (err) {
-      log.error('Failed to invite member', { err })
-      setActionError(t('inviteError'))
+      const notFriend = err instanceof ApiError && err.code === 'forbidden' && err.message === LIST_ERRORS.notFriends
+      if (!notFriend) log.error('Failed to invite member', { err })
+      setActionError(notFriend ? t('inviteNotFriend') : t('inviteError'))
     } finally {
       setInviting(false)
     }
@@ -175,15 +154,7 @@ export function ListDetail({
   async function handleRemoveMember(userId: string) {
     setActionError(null)
     try {
-      const res = await fetch(`/api/lists/${list.id}`, {
-        method: 'DELETE',
-        headers: { 'Content-Type': 'application/json', 'x-action': 'remove-member' },
-        body: JSON.stringify({ userId }),
-      })
-      if (!res.ok) {
-        setActionError(t('removeMemberError'))
-        return
-      }
+      await removeListMember(list.id, userId)
       setMembers((prev) => prev.filter((m) => m.userId !== userId))
     } catch (err) {
       log.error('Failed to remove member', { err })
@@ -196,12 +167,7 @@ export function ListDetail({
     setSavingDescription(true)
     setDescriptionError(false)
     try {
-      const res = await fetch(`/api/lists/${list.id}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ description: descriptionDraft }),
-      })
-      if (!res.ok) throw new Error(`HTTP ${res.status}`)
+      await updateList(list.id, { description: descriptionDraft })
       setDescription(descriptionDraft.trim())
       setEditingDescription(false)
     } catch (err) {

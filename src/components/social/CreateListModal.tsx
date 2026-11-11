@@ -8,6 +8,9 @@ import { KInput } from '@/components/ui/KInput'
 import { Modal } from '@/components/ui/Modal'
 import { Select } from '@/components/ui/Select'
 import { cn } from '@/lib/utils/index'
+import { ApiError } from '@/lib/api/client'
+import { createList } from '@/lib/lists/client'
+import { LIST_ERRORS } from '@/lib/lists/errors'
 
 const MEDIA_TYPE_KEYS = ['movie', 'tv', 'anime', 'book', 'comic', 'manga', 'game'] as const
 type MediaTypeKey = typeof MEDIA_TYPE_KEYS[number] | 'mixed'
@@ -90,31 +93,22 @@ export function CreateListModal({ onClose, mixedEnabled = false }: CreateListMod
     setError(null)
 
     try {
-      const res = await fetch('/api/lists', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        // Una sola petición: la visibilidad va en el alta (antes, un PATCH
-        // aparte que podía fallar y dejarla privada).
-        body: JSON.stringify({
-          name: name.trim(),
-          mediaType: effectiveType,
-          isCollaborative,
-          isPublic: visibility === 'public',
-          ...(mixedEnabled && description.trim() ? { description: description.trim() } : {}),
-          ...(mixedEnabled && template !== 'free' ? { template } : {}),
-        }),
+      // Una sola petición: la visibilidad va en el alta (antes, un PATCH
+      // aparte que podía fallar y dejarla privada).
+      const list = await createList({
+        name: name.trim(),
+        mediaType: effectiveType,
+        isCollaborative,
+        isPublic: visibility === 'public',
+        ...(mixedEnabled && description.trim() ? { description: description.trim() } : {}),
+        ...(mixedEnabled && template !== 'free' ? { template } : {}),
       })
-      const data = await res.json().catch(() => ({}))
-      if (!res.ok) {
-        setError(data.error === 'mixed_unavailable' ? t('errorMixedUnavailable') : t('errorCreate'))
-        setLoading(false)
-        return
-      }
-      router.push(`/lists/${data.list.id}`)
+      router.push(`/lists/${list.id}`)
       router.refresh()
       onClose()
-    } catch {
-      setError(t('errorCreate'))
+    } catch (err) {
+      const mixedOff = err instanceof ApiError && err.message === LIST_ERRORS.mixedUnavailable
+      setError(mixedOff ? t('errorMixedUnavailable') : t('errorCreate'))
       setLoading(false)
     }
   }

@@ -5,11 +5,12 @@
 // ============================================================
 
 import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { listPatchResultSchema } from '@/lib/api/contracts/lists'
 
-const PARAMS = { params: Promise.resolve({ id: 'list-001' }) }
+const PARAMS = { params: Promise.resolve({ id: '11111111-1111-4111-8111-111111111111' }) }
 
 function makeRequest(body: unknown): Request {
-  return new Request('http://localhost/api/lists/list-001', {
+  return new Request('http://localhost/api/lists/11111111-1111-4111-8111-111111111111', {
     method: 'PATCH',
     headers: { 'Content-Type': 'application/json' },
     body: typeof body === 'string' ? body : JSON.stringify(body),
@@ -37,11 +38,11 @@ vi.mock('@/lib/supabase/server', () => ({
 }))
 
 vi.mock('@/lib/supabase/admin', () => ({ createAdminClient: () => ({}) }))
-vi.mock('@/lib/rate-limit', () => ({
-  checkRateLimit: () => ({ allowed: true }),
-  LIMITS: { lists: {} },
+vi.mock('@/lib/rate-limit', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@/lib/rate-limit')>()),
+  checkRateLimitDistributed: async () => ({ allowed: true, retryAfterSeconds: 0 }),
 }))
-vi.mock('@/lib/social/lists', () => ({ canEditList: vi.fn() }))
+vi.mock('@/lib/social/lists', () => ({ getListAccess: vi.fn() }))
 
 describe('PATCH /api/lists/[id] — visibilidad', () => {
   beforeEach(() => vi.clearAllMocks())
@@ -81,6 +82,8 @@ describe('PATCH /api/lists/[id] — visibilidad', () => {
     const res = await PATCH(makeRequest({ isPublic: true }), PARAMS)
     expect(res.status).toBe(200)
     expect(mockUpdate).toHaveBeenCalledWith({ is_public: true })
-    expect(await res.json()).toEqual({ ok: true, isPublic: true })
+    const body = await res.json()
+    expect(body).toEqual({ data: { isPublic: true } })
+    listPatchResultSchema.parse(body.data)
   })
 })
