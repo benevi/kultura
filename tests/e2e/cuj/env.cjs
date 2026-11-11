@@ -52,6 +52,8 @@ const CUJ_ENV = {
   // (progreso por formato F-27 y nota /10 F-24), no el de compatibilidad.
   PROGRESS_V2: "1",
   RATING_SCALE_10: "1",
+  // Bloquear, denunciar y moderar grupos (F-11): los E2E sociales los recorren.
+  MODERATION_V2: "1",
   NEXT_TELEMETRY_DISABLED: "1",
   // `fetch` sin red (ver offline-fetch.cjs): localhost pasa tal cual; TMDB,
   // datos fijos con búsqueda que filtra; el resto, 503.
