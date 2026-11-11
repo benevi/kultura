@@ -329,8 +329,15 @@ export function useAccountSettings({
         toast.show({ message: t('importDataError'), type: 'error' })
         return
       }
-      const result: { libraryImported: number; listsImported: number; libraryUnresolved?: number } =
-        await res.json()
+      const result: {
+        libraryImported: number
+        listsImported: number
+        libraryUnresolved?: number
+        libraryFailed?: number
+        listItemsFailed?: number
+        diaryFailed?: number
+        sectionsFailed?: string[]
+      } = await res.json()
       toast.show({
         message: t('importDataSuccess', {
           count: result.libraryImported,
@@ -339,6 +346,13 @@ export function useAccountSettings({
         type: 'success',
       })
       setImportUnresolved(result.libraryUnresolved ?? 0)
+      // Saneamiento 1.4: lo que la base no guardó se dice (antes se daba por
+      // importado). Reimportar el mismo archivo lo reintenta sin duplicar.
+      const failed =
+        (result.libraryFailed ?? 0) + (result.listItemsFailed ?? 0) + (result.diaryFailed ?? 0)
+      if (failed > 0 || (result.sectionsFailed?.length ?? 0) > 0) {
+        toast.show({ message: t('importPartial', { count: failed }), type: 'error' })
+      }
       router.refresh()
     } catch {
       // Cubre tanto un JSON corrupto como un fallo de red.
