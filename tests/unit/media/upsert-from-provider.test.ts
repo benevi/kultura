@@ -165,6 +165,64 @@ describe('upsertMediaFromProvider', () => {
     expect(mocks.state.db.writes.map((w) => w.op)).toEqual(['update'])
   })
 
+  // Saneamiento 1.5: una ficha de más de 30 días se refresca al usarla.
+  describe('refresco de fichas caducadas', () => {
+    const OLD = new Date(Date.now() - 40 * 86_400_000).toISOString()
+    const RECENT = new Date(Date.now() - 5 * 86_400_000).toISOString()
+
+    it('caducada: póster, año y géneros del proveedor; título intacto; sinopsis solo si faltaba', async () => {
+      mocks.state.db.tables.media.push({
+        id: 'movie_550', external_id: '550', type: 'movie', title: 'Guardada', poster: 'viejo.jpg',
+        backdrop: null, year: 1990, synopsis: null, metadata: { genres: ['Comedia'], runtime: 120 }, updated_at: OLD,
+      })
+      const { upsertMediaFromProvider } = await import('@/lib/media/upsert-from-provider')
+      expect(await upsertMediaFromProvider('movie_550')).toMatchObject({ ok: true, title: 'Guardada', created: false })
+
+      const row = mocks.state.db.tables.media[0]
+      expect(mocks.getMovie).toHaveBeenCalledOnce()
+      expect(row.title).toBe('Guardada')
+      expect(row.poster).toContain('/p550.jpg')
+      expect(row.year).toBe(2001)
+      expect(row.synopsis).toBe('Sinopsis')
+      expect(row.metadata).toMatchObject({ runtime: 120, genres: ['Drama'] })
+      expect(Date.parse(row.updated_at as string)).toBeGreaterThan(Date.parse(RECENT))
+      expect(mocks.state.db.writes.map((w) => w.op)).toEqual(['update'])
+    })
+
+    it('caducada: una sinopsis que ya existe no se cambia y un póster que el proveedor no da no se borra', async () => {
+      mocks.getMovie.mockImplementation(async (id: number) => movie(id, { poster_path: null, overview: 'Otra' }))
+      mocks.state.db.tables.media.push({
+        id: 'movie_550', external_id: '550', type: 'movie', title: 'Guardada', poster: 'bueno.jpg',
+        synopsis: 'Mía', metadata: { genres: ['Drama'] }, updated_at: OLD,
+      })
+      const { upsertMediaFromProvider } = await import('@/lib/media/upsert-from-provider')
+      await upsertMediaFromProvider('movie_550')
+      const row = mocks.state.db.tables.media[0]
+      expect(row.poster).toBe('bueno.jpg')
+      expect(row.synopsis).toBe('Mía')
+    })
+
+    it('reciente: no se pregunta al proveedor ni se escribe', async () => {
+      mocks.state.db.tables.media.push({
+        id: 'movie_550', external_id: '550', type: 'movie', title: 'Guardada', metadata: { genres: ['Drama'] }, updated_at: RECENT,
+      })
+      const { upsertMediaFromProvider } = await import('@/lib/media/upsert-from-provider')
+      await upsertMediaFromProvider('movie_550')
+      expect(mocks.getMovie).not.toHaveBeenCalled()
+      expect(mocks.state.db.writes).toEqual([])
+    })
+
+    it('caducada y el proveedor caído: se usa la fila tal cual (ok) sin escribir', async () => {
+      mocks.getMovie.mockRejectedValue(new Error('down'))
+      mocks.state.db.tables.media.push({
+        id: 'movie_550', external_id: '550', type: 'movie', title: 'Guardada', metadata: { genres: ['Drama'] }, updated_at: OLD,
+      })
+      const { upsertMediaFromProvider } = await import('@/lib/media/upsert-from-provider')
+      expect(await upsertMediaFromProvider('movie_550')).toMatchObject({ ok: true, title: 'Guardada' })
+      expect(mocks.state.db.writes).toEqual([])
+    })
+  })
+
   it('una fila existente con un id de forma antigua sigue sirviendo (no se exige la forma actual)', async () => {
     mocks.state.db.tables.media.push({ id: 'book_x', external_id: 'x', type: 'book', title: 'Antiguo', metadata: { genres: ['Novela'] } })
     const { upsertMediaFromProvider } = await import('@/lib/media/upsert-from-provider')

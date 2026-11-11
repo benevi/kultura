@@ -9,10 +9,15 @@
 //     aplicarla.
 //   - La ficha sale del PROVEEDOR (`resolveMediaItem`), nunca de lo que mande
 //     el navegador (`mediaCache` se ignora).
-//   - Una fila que ya existe NO se reescribe (`ignoreDuplicates`). Única
-//     excepción: si le faltan los géneros se rellena `metadata.genres` —y solo
-//     eso— desde el proveedor, porque el match score depende de ellos (ver
-//     `lib/library/backfill-genres.ts`).
+//   - Una fila que ya existe NO se reescribe al crearla (`ignoreDuplicates`).
+//     Excepciones, siempre con datos del proveedor:
+//       · si le faltan los géneros se rellena `metadata.genres`, porque el
+//         match score depende de ellos (`lib/library/backfill-genres.ts`);
+//       · saneamiento 1.5: si la ficha tiene más de 30 días (`updated_at`), al
+//         volver a usarla se refrescan póster, fondo, año y géneros, y la
+//         sinopsis si faltaba. El título no se toca: depende del idioma de
+//         quien la creó y cambiarlo haría bailar el nombre para todos. Antes
+//         una ficha se quedaba congelada para siempre.
 // ============================================================
 
 import type { SupabaseClient } from '@supabase/supabase-js'
@@ -38,7 +43,69 @@ interface ExistingMediaRow {
   type: string
   external_id: string
   title: string
+  poster?: string | null
+  backdrop?: string | null
+  year?: number | null
+  synopsis?: string | null
   metadata: Record<string, unknown> | null
+  updated_at?: string | null
+}
+
+/** Edad a partir de la cual una ficha se refresca al volver a usarla. */
+export const MEDIA_REFRESH_AFTER_MS = 30 * 24 * 60 * 60 * 1000
+
+/**
+ * ¿Toca refrescar la ficha? Sin fecha legible, no (en la base la columna
+ * siempre la tiene: `default now()`).
+ */
+export function isMediaStale(row: Pick<ExistingMediaRow, 'updated_at'>, now = Date.now()): boolean {
+  const at = row.updated_at ? Date.parse(row.updated_at) : NaN
+  return !Number.isNaN(at) && now - at > MEDIA_REFRESH_AFTER_MS
+}
+
+/**
+ * Cambios para refrescar una ficha existente con la del proveedor. Nunca
+ * vacía un campo que ya tiene valor (un proveedor que devuelve menos no borra
+ * nada) y nunca toca el título.
+ */
+export function buildMediaRefresh(row: ExistingMediaRow, item: MediaItem, nowIso: string) {
+  const fresh = buildMediaRow({ id: row.id, type: row.type, externalId: row.external_id } as ParsedMediaId, item)
+  return {
+    poster: fresh.poster ?? row.poster ?? null,
+    backdrop: fresh.backdrop ?? row.backdrop ?? null,
+    year: fresh.year ?? row.year ?? null,
+    synopsis: row.synopsis ?? fresh.synopsis,
+    metadata: {
+      ...(row.metadata ?? {}),
+      ...(fresh.metadata.genres.length > 0 ? fresh.metadata : {}),
+    },
+    updated_at: nowIso,
+  }
+}
+
+/**
+ * Refresca una ficha caducada. Nunca lanza: si el proveedor no responde o la
+ * escritura falla, la fila se usa tal cual y se reintentará la próxima vez.
+ * Devuelve si se ha refrescado.
+ */
+async function refreshStaleRow(
+  admin: SupabaseClient,
+  row: ExistingMediaRow,
+  locale: string
+): Promise<boolean> {
+  const parsed = parseMediaId(row.id)
+  if (!parsed) return false
+  const item = await resolveMediaItem(parsed, locale).catch(() => null)
+  if (!item) return false
+  const { error } = await admin
+    .from('media')
+    .update(buildMediaRefresh(row, item, new Date().toISOString()))
+    .eq('id', row.id)
+  if (error) {
+    log.warn('no se pudo refrescar la ficha', { id: row.id, error })
+    return false
+  }
+  return true
 }
 
 /** Columnas de `media` (DDL en `20260502233945_remote_schema.sql`). */
@@ -105,7 +172,7 @@ export async function upsertMediaFromProvider(
 
   const { data: existing, error: readError } = await admin
     .from('media')
-    .select('id, type, external_id, title, metadata')
+    .select('id, type, external_id, title, poster, backdrop, year, synopsis, metadata, updated_at')
     .eq('id', mediaId)
     .maybeSingle()
   if (readError) {
@@ -117,7 +184,9 @@ export async function upsertMediaFromProvider(
   // antigua que hoy no se aceptaría para crearla.
   if (existing) {
     const row = existing as ExistingMediaRow
-    await fillMissingGenres(admin, row, locale)
+    // El refresco ya trae los géneros; si no toca (o falla), solo los que falten.
+    const refreshed = isMediaStale(row) && (await refreshStaleRow(admin, row, locale))
+    if (!refreshed) await fillMissingGenres(admin, row, locale)
     return { ok: true, id: mediaId, title: row.title, created: false }
   }
 
