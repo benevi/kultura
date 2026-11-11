@@ -5,8 +5,9 @@
 // ============================================================
 
 import { z } from 'zod'
-import { mediaIdSchema } from '@/lib/api/contracts/common'
+import { mediaIdSchema, uuidSchema } from '@/lib/api/contracts/common'
 import { isValidRating10 } from '@/lib/library/rating'
+import { isValidDiaryDate } from '@/lib/library/diary'
 
 export const libraryStatusSchema = z.enum(['completed', 'in_progress', 'pending', 'abandoned'])
 
@@ -94,3 +95,70 @@ export const librarySaveResultSchema = z.object({
 
 /** `data` de DELETE /api/library. */
 export const libraryDeleteResultSchema = z.null()
+
+// ── /api/library/diary, /prefs y /progress ──────────────────────────────────
+
+/** GET /api/library/diary: con `mediaId`, los apuntes de ese título; sin él, los últimos. */
+export const diaryQuerySchema = z.object({ mediaId: mediaIdSchema.optional() })
+
+/** DELETE /api/library/diary. */
+export const diaryDeleteSchema = z.object({ id: uuidSchema })
+
+export const ratingScaleSchema = z.enum(['stars', 'ten'])
+
+/** PUT /api/library/prefs. */
+export const prefsPutSchema = z.object({ ratingScale: ratingScaleSchema })
+
+/** GET /api/library/progress. */
+export const progressQuerySchema = z.object({ mediaId: mediaIdSchema })
+
+/** POST /api/library/progress: «marcar siguiente» o «completar». */
+export const progressPostSchema = z.object({
+  mediaId: mediaIdSchema,
+  action: z.enum(['next', 'complete']),
+  /** Solo en `complete`: apuntarlo en el diario (si F-24 está activo). */
+  log: z.boolean().optional(),
+  /** Solo en `complete`: AAAA-MM-DD (por defecto, hoy). */
+  watchedOn: z.string().refine(isValidDiaryDate, 'watchedOn must be a valid YYYY-MM-DD date').optional(),
+})
+
+export type ProgressPostInput = z.infer<typeof progressPostSchema>
+
+/** `data` de GET /api/library/diary. */
+export const diaryConfigSchema = z.object({
+  enabled: z.boolean(),
+  scale: ratingScaleSchema,
+  logs: z.array(diaryLogSchema.passthrough()),
+})
+
+/** `data` de PUT /api/library/prefs. */
+export const prefsResultSchema = z.object({ ratingScale: ratingScaleSchema })
+
+/** `data` de GET /api/library/progress. */
+export const progressConfigSchema = z.object({
+  enabled: z.boolean(),
+  kind: z.enum(['tv', 'anime', 'reading', 'book', 'game']).nullable(),
+  progress: progressValueSchema.nullable(),
+  total: nullableNumber,
+  plan: z.record(z.string(), z.unknown()).nullable(),
+  next: z
+    .object({ season: z.number(), episode: z.number(), name: z.string().nullable(), airDate: z.string().nullable() })
+    .nullable(),
+  diary: z.boolean(),
+})
+
+/** `data` de POST /api/library/progress con `action: 'next'`. */
+export const progressAdvanceResultSchema = z.object({
+  progress: progressValueSchema.nullable(),
+  status: libraryStatusSchema,
+  finished: z.boolean(),
+  caughtUp: z.boolean(),
+  diary: z.boolean(),
+})
+
+/** `data` de POST /api/library/progress con `action: 'complete'`. */
+export const progressCompleteResultSchema = z.object({
+  status: z.literal('completed'),
+  log: diaryLogSchema.nullable(),
+  logFailed: z.boolean(),
+})

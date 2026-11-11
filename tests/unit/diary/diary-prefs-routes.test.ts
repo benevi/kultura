@@ -41,6 +41,7 @@ vi.mock('@/lib/supabase/server', () => ({
 vi.mock('@/lib/rate-limit', async (importOriginal) => ({
   ...(await importOriginal<typeof import('@/lib/rate-limit')>()),
   checkRateLimit: () => ({ allowed: true, retryAfterSeconds: 0 }),
+  checkRateLimitDistributed: async () => ({ allowed: true, retryAfterSeconds: 0 }),
 }))
 
 const USER = { id: '00000000-0000-4000-8000-000000000001', user_metadata: { rating_scale: 'ten' }, app_metadata: {} }
@@ -71,7 +72,7 @@ describe('GET /api/library/diary', () => {
   it('sin la bandera: desactivado, con la preferencia, y sin tocar la base', async () => {
     const { GET } = await import('@/app/api/library/diary/route')
     const res = await GET(get())
-    expect(await res.json()).toEqual({ enabled: false, scale: 'ten', logs: [] })
+    expect(await res.json()).toEqual({ data: { enabled: false, scale: 'ten', logs: [] } })
     expect(calls.find((c) => c.op === 'from')).toBeUndefined()
     expect(res.headers.get('Cache-Control')).toContain('no-store')
   })
@@ -79,7 +80,7 @@ describe('GET /api/library/diary', () => {
   it('con la bandera: los apuntes del título, del más reciente al más antiguo', async () => {
     vi.stubEnv('RATING_SCALE_10', '1')
     const { GET } = await import('@/app/api/library/diary/route')
-    const body = await (await GET(get())).json()
+    const { data: body } = await (await GET(get())).json()
     expect(body.enabled).toBe(true)
     expect(body.logs).toEqual([
       expect.objectContaining({ id: LOG_ROW.id, rating10: 7.5, privateNote: 'nota', watchedOn: '2026-10-20' }),

@@ -64,7 +64,7 @@ vi.mock('@/lib/env.server', () => ({ env: { TMDB_API_KEY: 'k' } }))
 vi.mock('@/lib/media/resolve-item', () => ({ resolveMediaItem }))
 const rateKeys: string[] = []
 vi.mock('@/lib/rate-limit', () => ({
-  checkRateLimit: (key: string) => {
+  checkRateLimitDistributed: async (key: string) => {
     rateKeys.push(key)
     return { allowed: true, retryAfterSeconds: 0 }
   },
@@ -88,6 +88,12 @@ const migratedTv = (season: number, episode: number) => ({
   episode_progress: { season, episode, total: 10 },
 })
 
+/** Contrato de la fase 7: `{ data }` si sale bien, `{ error }` si no. */
+function unwrap(body: unknown): Record<string, unknown> {
+  const b = body as { data?: Record<string, unknown> } & Record<string, unknown>
+  return b.data ?? b
+}
+
 async function post(body: unknown) {
   const { POST } = await import('@/app/api/library/progress/route')
   const res = await POST(new Request('http://localhost/api/library/progress', {
@@ -95,13 +101,13 @@ async function post(body: unknown) {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(body),
   }))
-  return { status: res.status, json: (await res.json()) as Record<string, unknown> }
+  return { status: res.status, json: unwrap(await res.json()) }
 }
 
 async function get(mediaId: string) {
   const { GET } = await import('@/app/api/library/progress/route')
   const res = await GET(new Request(`http://localhost/api/library/progress?mediaId=${mediaId}`))
-  return { status: res.status, json: (await res.json()) as Record<string, unknown> }
+  return { status: res.status, json: unwrap(await res.json()) }
 }
 
 beforeEach(() => {
@@ -164,7 +170,7 @@ describe('antes de la migración (o sin PROGRESS_V2): solo episodios, en el json
     entry = { ...BASE, media_id: 'book_OL1W', episode_progress: null }
     const res = await post({ mediaId: 'book_OL1W', action: 'next' })
     expect(res.status).toBe(409)
-    expect(res.json.error).toBe('progress_unavailable')
+    expect(res.json.error).toEqual({ code: 'conflict', message: 'progress_unavailable' })
     expect(updates).toHaveLength(0)
   })
 
@@ -275,6 +281,6 @@ describe('GET: estado y plan para el diálogo', () => {
     rateKeys.length = 0
     entry = legacyTv({ season: 1, episode: 2 })
     await get('tv_1399')
-    expect(rateKeys).toEqual([`${USER.id}:library_progress`])
+    expect(rateKeys).toEqual([`library_progress:${USER.id}`])
   })
 })
