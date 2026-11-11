@@ -212,26 +212,29 @@ Los filtros de la biblioteca **no van aquí**: pasan a la fase 8 (Q28).
 
 ---
 
-## ⬜ Fase 6 · Backend por módulos (un PR por módulo)
+## 🟨 Fase 6 · Backend por módulos (un PR por módulo) — 1 a 3: base #118 · library #119 #120 · lists #121 · friends #122 · chat #123 · groups #124 · account/import #125 · settings #126 · 11-11-2026
 
-Orden: `library` → `lists` → `friends` → `chat` → `groups` → `account/import` → `settings`.
+Orden: `library` → `lists` → `friends` → `chat` → `groups` → `account/import` → `settings`. Hecho.
 
-1. **zod** en todos los bodies y query params, con un único esquema para `mediaId`.
-2. **Helpers** en `src/lib/api/`: `requireUser()`, `rateLimit(req, key)` (con `clientIp()`) y `apiError(code, status)`.
-3. **Sacar la lógica de los handlers** a `src/lib/<módulo>/service.ts`. Primero `lists/[id]` (separando invitaciones de añadir ítems), `account/import`, `library`, `friends` y `library/progress`.
-4. **Rendimiento:**
-   - N+1 en `api/chat/route.ts:67-81`.
+- Cambios de comportamiento: el usuario demo con un cuerpo inválido recibe 400/413 antes que 403; `?list` inválido en el export de Letterboxd da 400; `GET /api/settings` eliminado (sin uso).
+- Pendiente, un PR por punto: 4 (cada viñeta por separado), 5 y 6.
+
+1. ✅ **zod** en todos los bodies y query params, con un único esquema para `mediaId`.
+2. ✅ **Helpers** en `src/lib/api/route.ts`: `requireUser()`, `rateLimit()` (distribuido, con `clientIp()`), `parseBody()` (con tope de bytes), `parseQuery()`, `respond()` y `apiError()`.
+3. ✅ **Lógica fuera de los handlers**, en `src/lib/<módulo>/service.ts` (devuelven `ServiceResult`).
+4. ⬜ **Rendimiento:**
+   - N+1 en la lista de conversaciones (ahora en `lib/chat/service.ts`).
    - Descubrimiento de grupos paginado en SQL.
    - Endpoint bulk para añadir una franquicia.
    - Timeout y reintentos en el cliente de Anthropic y en `og/brand.ts`.
-5. **Código muerto:** `getPopularTV`, `getTrendingMovies`, `getMovieVideos`, `getSentGroupInvitations`, `getPushConfig`, `addToLibrary` / `updateLibrary` si solo los usan tests, y `components/library/EpisodeProgress.tsx`.
+5. ⬜ **Código muerto** que queda: `getPopularTV`, `getTrendingMovies`, `getMovieVideos` (solo tests), `getPushConfig` y `components/library/EpisodeProgress.tsx` (solo su test). `getSentGroupInvitations` y `updateLibrary` ya no existen; `addToLibrary` sigue en uso.
 6. **Una sola fuente de verdad** (Q23; las seis banderas valen `1` en producción):
    - `rating10` sustituye a `score`.
    - Las columnas `progress_*` sustituyen al JSON `episode_progress`.
 
    Para cada par, tres PRs: primero leer solo de la nueva, después dejar de escribir en la vieja y por último borrarla en una migración.
 
-## ⬜ Fase 7 · Contrato de la API (junto a la fase 6)
+## ✅ Fase 7 · Contrato de la API (junto a la fase 6) — #118 a #126 · 11-11-2026. Cliente: `apiFetch` lanza `ApiError`; service worker en v9
 
 1. Formato único:
    - Errores: `{ error: { code, message?, field? } }`.
