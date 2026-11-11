@@ -46,12 +46,13 @@ function routeFetch(handlers: Record<string, (init?: RequestInit) => unknown>) {
   mockFetch.mockImplementation(async (url: string, init?: RequestInit) => {
     const key = `${init?.method ?? 'GET'} ${url}`
     const h = handlers[key]
-    if (!h) return { ok: true, status: 200, json: async () => ({}) }
+    if (!h) return { ok: true, status: 200, json: async () => ({ data: null }) }
     return h(init)
   })
 }
 
 const ok = (body: unknown) => ({ ok: true, status: 200, json: async () => body })
+const page = (msgs: typeof messages | []) => ok({ data: { messages: msgs, hasMore: false, currentUserId: 'me' } })
 
 beforeEach(() => {
   mockFetch.mockReset()
@@ -64,7 +65,7 @@ afterEach(() => vi.unstubAllGlobals())
 
 describe('ConversationClient con MODERATION_V2', () => {
   it('sin moderación no hay botones nuevos', async () => {
-    routeFetch({ 'GET /api/chat/conv-1': () => ok({ messages }) })
+    routeFetch({ 'GET /api/chat/conv-1': () => page(messages) })
     renderEs(<ConversationClient conversationId="conv-1" otherUser={otherUser} currentUserId="me" />)
     await screen.findByText('insulto')
     expect(screen.queryByRole('button', { name: /denunciar/i })).not.toBeInTheDocument()
@@ -72,7 +73,7 @@ describe('ConversationClient con MODERATION_V2', () => {
   })
 
   it('cada mensaje ajeno tiene "Denunciar mensaje: <autor>" y el propio "Borrar mi mensaje"', async () => {
-    routeFetch({ 'GET /api/chat/conv-1': () => ok({ messages }) })
+    routeFetch({ 'GET /api/chat/conv-1': () => page(messages) })
     renderEs(<ConversationClient conversationId="conv-1" otherUser={otherUser} currentUserId="me" moderation />)
     await screen.findByText('insulto')
     expect(screen.getByRole('button', { name: 'Denunciar mensaje: troll' })).toBeInTheDocument()
@@ -82,8 +83,8 @@ describe('ConversationClient con MODERATION_V2', () => {
 
   it('borrar el propio pide confirmación y lo quita de la lista', async () => {
     routeFetch({
-      'GET /api/chat/conv-1': () => ok({ messages }),
-      'DELETE /api/chat/conv-1/messages/m-2': () => ok({ ok: true }),
+      'GET /api/chat/conv-1': () => page(messages),
+      'DELETE /api/chat/conv-1/messages/m-2': () => ok({ data: null }),
     })
     renderEs(<ConversationClient conversationId="conv-1" otherUser={otherUser} currentUserId="me" moderation />)
     await screen.findByText('lo mío')
@@ -98,7 +99,7 @@ describe('ConversationClient con MODERATION_V2', () => {
 
   it('opciones: desplegable con aria-expanded; bloquear confirma y cierra el campo de texto con explicación', async () => {
     routeFetch({
-      'GET /api/chat/conv-1': () => ok({ messages }),
+      'GET /api/chat/conv-1': () => page(messages),
       'POST /api/friends/blocks': () => ok({ data: null }),
     })
     renderEs(<ConversationClient conversationId="conv-1" otherUser={otherUser} currentUserId="me" moderation />)
@@ -119,8 +120,8 @@ describe('ConversationClient con MODERATION_V2', () => {
 
   it('salir del chat confirma, llama a DELETE y vuelve a la lista', async () => {
     routeFetch({
-      'GET /api/chat/conv-1': () => ok({ messages }),
-      'DELETE /api/chat/conv-1': () => ok({ ok: true }),
+      'GET /api/chat/conv-1': () => page(messages),
+      'DELETE /api/chat/conv-1': () => ok({ data: null }),
     })
     renderEs(<ConversationClient conversationId="conv-1" otherUser={otherUser} currentUserId="me" moderation />)
     await screen.findByText('insulto')
@@ -133,7 +134,7 @@ describe('ConversationClient con MODERATION_V2', () => {
   })
 
   it('canSend=false (sin amistad o con bloqueo): no hay campo, hay explicación', async () => {
-    routeFetch({ 'GET /api/chat/conv-1': () => ok({ messages }) })
+    routeFetch({ 'GET /api/chat/conv-1': () => page(messages) })
     renderEs(<ConversationClient conversationId="conv-1" otherUser={otherUser} currentUserId="me" moderation canSend={false} />)
     await screen.findByText('insulto')
     expect(screen.getByRole('status')).toHaveTextContent('Ya no podéis escribiros')
@@ -142,8 +143,8 @@ describe('ConversationClient con MODERATION_V2', () => {
 
   it('si el servidor responde 403 cannot_message al enviar, se explica en lugar del campo', async () => {
     routeFetch({
-      'GET /api/chat/conv-1': () => ok({ messages: [] }),
-      'POST /api/chat/conv-1': () => ({ ok: false, status: 403, json: async () => ({ error: 'cannot_message' }) }),
+      'GET /api/chat/conv-1': () => page([]),
+      'POST /api/chat/conv-1': () => ({ ok: false, status: 403, headers: new Headers(), json: async () => ({ error: { code: 'forbidden', message: 'cannot_message' } }) }),
     })
     renderEs(<ConversationClient conversationId="conv-1" otherUser={otherUser} currentUserId="me" />)
     const input = await screen.findByRole('textbox', { name: 'Mensaje' })

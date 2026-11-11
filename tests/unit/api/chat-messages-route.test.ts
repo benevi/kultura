@@ -4,15 +4,16 @@
 
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { NextRequest } from 'next/server'
+import { messagesPageSchema } from '@/lib/api/contracts/chat'
 
 vi.mock('@/lib/rate-limit', async (importOriginal) => {
   const actual = await importOriginal<typeof import('@/lib/rate-limit')>()
-  return { ...actual, checkRateLimit: () => ({ allowed: true, retryAfterSeconds: 0 }) }
+  return { ...actual, checkRateLimitDistributed: async () => ({ allowed: true, retryAfterSeconds: 0 }) }
 })
 
 const USER = { id: 'u-1' }
 let member: unknown = { user_id: 'u-1' }
-let messageRows: { id: string; created_at: string }[] = []
+let messageRows: { id: string; content: string; sender_id: string; created_at: string }[] = []
 const calls: { table: string; method: string; args: unknown[] }[] = []
 
 function chain(table: string, result: () => unknown) {
@@ -42,16 +43,21 @@ vi.mock('@/lib/supabase/server', () => ({
 function rowsDesc(n: number) {
   return Array.from({ length: n }, (_, i) => ({
     id: `m${n - i}`,
+    content: `hola ${n - i}`,
+    sender_id: 'u-1',
     created_at: new Date(Date.UTC(2026, 0, 1, 0, 0, n - i)).toISOString(),
   }))
 }
 
 async function get(query = '') {
   const { GET } = await import('@/app/api/chat/[id]/route')
-  const res = await GET(new NextRequest(`http://localhost/api/chat/c-1${query}`), {
-    params: Promise.resolve({ id: 'c-1' }),
+  const res = await GET(new NextRequest(`http://localhost/api/chat/44444444-4444-4444-8444-444444444444${query}`), {
+    params: Promise.resolve({ id: '44444444-4444-4444-8444-444444444444' }),
   })
-  return { status: res.status, json: (await res.json()) as Record<string, unknown> }
+  const body = (await res.json()) as { data?: Record<string, unknown> }
+  // Éxito: el contrato de `data`; error: el cuerpo `{ error }` tal cual.
+  if (res.ok) messagesPageSchema.parse(body.data)
+  return { status: res.status, json: (body.data ?? body) as Record<string, unknown> }
 }
 
 describe('GET /api/chat/[id]', () => {

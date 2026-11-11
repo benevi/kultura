@@ -1,44 +1,28 @@
 // ============================================================
-// KULTURA — /api/chat/[id]/messages/[messageId] (F-11)
+// KULTURA — Route Handler: /api/chat/[id]/messages/[messageId] (F-11)
 // DELETE: borrar un mensaje propio (con MODERATION_V2; la política
 // "Senders can delete own messages" llega con la migración de moderación).
 // ============================================================
 
-import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase/server'
-import { checkRateLimit, LIMITS } from '@/lib/rate-limit'
-import { isModerationV2 } from '@/lib/social/friends'
+import { LIMITS } from '@/lib/rate-limit'
+import { apiError, rateLimit, requireUser, respond } from '@/lib/api/route'
+import { uuidSchema } from '@/lib/api/contracts/common'
+import { deleteOwnMessage } from '@/lib/chat/service'
 
-interface RouteParams {
+interface Params {
   params: Promise<{ id: string; messageId: string }>
 }
 
-export async function DELETE(_req: NextRequest, { params }: RouteParams): Promise<NextResponse> {
+/** DELETE /api/chat/[id]/messages/[messageId] */
+export async function DELETE(request: Request, { params }: Params) {
+  const auth = await requireUser()
+  if (!auth.ok) return auth.response
+  const limited = await rateLimit(request, { key: 'chat_delete', limit: LIMITS.chat_read, userId: auth.user.id })
+  if (limited) return limited
   const { id, messageId } = await params
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) return NextResponse.json({ error: 'Not authenticated' }, { status: 401 })
-  if (!isModerationV2()) return NextResponse.json({ error: 'moderation_disabled' }, { status: 404 })
-
-  const rl = checkRateLimit(`chat_delete:${user.id}`, LIMITS.chat_read)
-  if (!rl.allowed) {
-    return NextResponse.json(
-      { error: 'Too many requests' },
-      { status: 429, headers: { 'Retry-After': String(rl.retryAfterSeconds) } }
-    )
+  if (!uuidSchema.safeParse(id).success || !uuidSchema.safeParse(messageId).success) {
+    return apiError('not_found', { message: 'Message not found' })
   }
 
-  // Filtro explícito por remitente además de la RLS: nunca se borra lo ajeno.
-  const { data, error } = await supabase
-    .from('messages')
-    .delete()
-    .eq('id', messageId)
-    .eq('conversation_id', id)
-    .eq('sender_id', user.id)
-    .select('id')
-
-  if (error) return NextResponse.json({ error: 'delete_failed' }, { status: 500 })
-  if (!data || data.length === 0) return NextResponse.json({ error: 'not_found' }, { status: 404 })
-
-  return NextResponse.json({ ok: true })
+  return respond(await deleteOwnMessage(auth.supabase, auth.user.id, id, messageId))
 }

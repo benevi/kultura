@@ -123,7 +123,9 @@ describe('POST /api/friends con bloqueo', () => {
 
 // ── /api/chat/[id] ──────────────────────────────────────────────────────────
 describe('/api/chat/[id]', () => {
-  const CONV = 'conv-1'
+  const CONV = '44444444-4444-4444-8444-444444444444'
+  const M1 = '55555555-5555-4555-8555-555555555551'
+  const M2 = '55555555-5555-4555-8555-555555555552'
 
   it('POST: tras bloquear o dejar de ser amigos la RLS rechaza el mensaje → 403 cannot_message', async () => {
     setup((c) => {
@@ -134,7 +136,7 @@ describe('/api/chat/[id]', () => {
     const { POST } = await import('@/app/api/chat/[id]/route')
     const res = await POST(jsonReq(`/api/chat/${CONV}`, 'POST', { content: 'hola' }), params({ id: CONV }))
     expect(res.status).toBe(403)
-    expect(await res.json()).toEqual({ error: 'cannot_message' })
+    expect(await res.json()).toEqual({ error: { code: 'forbidden', message: 'cannot_message' } })
   })
 
   it('DELETE (salir) sin MODERATION_V2 → 404 y no toca nada', async () => {
@@ -169,18 +171,18 @@ describe('/api/chat/[id]', () => {
 
   it('borrar un mensaje filtra por remitente = yo (nunca lo ajeno)', async () => {
     process.env.MODERATION_V2 = '1'
-    setup((c) => (c.table === 'messages' ? { data: [{ id: 'm1' }] } : {}))
+    setup((c) => (c.table === 'messages' ? { data: [{ id: M1 }] } : {}))
     const { DELETE } = await import('@/app/api/chat/[id]/messages/[messageId]/route')
-    const res = await DELETE(jsonReq(`/api/chat/${CONV}/messages/m1`, 'DELETE'), params({ id: CONV, messageId: 'm1' }))
+    const res = await DELETE(jsonReq(`/api/chat/${CONV}/messages/${M1}`, 'DELETE'), params({ id: CONV, messageId: M1 }))
     expect(res.status).toBe(200)
-    expect(calls[0]).toMatchObject({ op: 'delete', filters: { id: 'm1', conversation_id: CONV, sender_id: ME } })
+    expect(calls[0]).toMatchObject({ op: 'delete', filters: { id: M1, conversation_id: CONV, sender_id: ME } })
   })
 
   it('borrar un mensaje ajeno o inexistente → 404', async () => {
     process.env.MODERATION_V2 = '1'
     setup(() => ({ data: [] }))
     const { DELETE } = await import('@/app/api/chat/[id]/messages/[messageId]/route')
-    const res = await DELETE(jsonReq(`/api/chat/${CONV}/messages/m2`, 'DELETE'), params({ id: CONV, messageId: 'm2' }))
+    const res = await DELETE(jsonReq(`/api/chat/${CONV}/messages/${M2}`, 'DELETE'), params({ id: CONV, messageId: M2 }))
     expect(res.status).toBe(404)
   })
 })

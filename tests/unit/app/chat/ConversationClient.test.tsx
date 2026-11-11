@@ -6,6 +6,7 @@
 //   a marcar leída (regresión: sin esto el badge contaría la conversación
 //   que el usuario está mirando)
 // - un mensaje propio (eco realtime) NO re-marca
+// Contrato de /api/chat: éxito { data }, error { error: { code } }.
 // ============================================================
 
 import { render, screen, waitFor, act, fireEvent } from '@testing-library/react'
@@ -87,14 +88,14 @@ describe('ConversationClient — marcado de leído (E96)', () => {
     vi.clearAllMocks()
     capturedHandler = null
     Element.prototype.scrollIntoView = vi.fn()
-    mockFetch.mockResolvedValue({ ok: true, json: async () => ({ messages: [] }) })
+    mockFetch.mockResolvedValue({ ok: true, json: async () => ({ data: { messages: [], hasMore: false, currentUserId: 'me' } }) })
     vi.stubGlobal('fetch', mockFetch)
   })
 
   it('al cargar los mensajes marca la conversación como leída', async () => {
     renderConversation()
     await waitFor(() => expect(mockMarkConversationRead).toHaveBeenCalledWith('conv-1'))
-    expect(mockFetch).toHaveBeenCalledWith('/api/chat/conv-1')
+    expect(mockFetch).toHaveBeenCalledWith('/api/chat/conv-1', expect.anything())
   })
 
   it('REGRESIÓN: mensaje ajeno recibido con el chat abierto → re-marca leída (badge no cuenta)', async () => {
@@ -135,9 +136,13 @@ describe('ConversationClient — accesibilidad (ACC-11, ACC-19)', () => {
     mockFetch.mockResolvedValue({
       ok: true,
       json: async () => ({
-        messages: [
-          { id: 'old-1', content: 'historial', sender_id: 'other-user', created_at: '2026-07-16T09:00:00Z', users: null },
-        ],
+        data: {
+          messages: [
+            { id: 'old-1', content: 'historial', sender_id: 'other-user', created_at: '2026-07-16T09:00:00Z', users: null },
+          ],
+          hasMore: false,
+          currentUserId: 'me',
+        },
       }),
     })
     vi.stubGlobal('fetch', mockFetch)
@@ -187,17 +192,17 @@ describe('ConversationClient — accesibilidad (ACC-11, ACC-19)', () => {
     window.addEventListener(PUSH_OFFER_EVENT, listener)
     try {
       renderConversation()
-      await waitFor(() => expect(mockFetch).toHaveBeenCalledWith('/api/chat/conv-1'))
+      await waitFor(() => expect(mockFetch).toHaveBeenCalledWith('/api/chat/conv-1', expect.anything()))
       expect(offers).toEqual([])
 
-      mockFetch.mockResolvedValueOnce({ ok: false, status: 500, json: async () => ({}) })
+      mockFetch.mockResolvedValueOnce({ ok: false, status: 500, headers: new Headers(), json: async () => ({ error: { code: 'internal' } }) })
       fireEvent.change(screen.getByLabelText('messageLabel'), { target: { value: 'hola' } })
       fireEvent.click(screen.getByRole('button', { name: 'send' }))
       await waitFor(() => expect(mockFetch).toHaveBeenCalledTimes(2))
       await act(async () => {})
       expect(offers).toEqual([])
 
-      mockFetch.mockResolvedValueOnce({ ok: true, json: async () => ({ message: { id: 'm1', content: 'hola', sender_id: 'me', created_at: new Date().toISOString() } }) })
+      mockFetch.mockResolvedValueOnce({ ok: true, json: async () => ({ data: { id: 'm1', content: 'hola', sender_id: 'me', created_at: new Date().toISOString() } }) })
       fireEvent.click(screen.getByRole('button', { name: 'send' }))
       await waitFor(() => expect(offers).toEqual(['chat']))
     } finally {
