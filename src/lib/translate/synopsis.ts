@@ -256,9 +256,10 @@ export async function translateSynopsis({
   if (!translated) return source;
 
   rememberInMemory(cacheKey, translated);
-  // Sin await: la traducción ya está lista para este usuario; guardarla es
-  // para los siguientes y no debe retrasar la respuesta.
-  void writeCache({ cacheKey, mediaId, locale: target, sourceHash, content: translated });
+  // Saneamiento 5.3: con await. Sin él, en Vercel la escritura podía perderse
+  // al terminar la respuesta y cada visita volvía a pagar la traducción.
+  // Es un upsert indexado: unas decenas de ms frente a segundos del modelo.
+  await writeCache({ cacheKey, mediaId, locale: target, sourceHash, content: translated });
 
   return translated;
 }
