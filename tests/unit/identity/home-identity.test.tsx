@@ -10,6 +10,7 @@ const h = vi.hoisted(() => ({
   profile: null as unknown,
   account: { data: null as unknown, error: null as unknown },
   insert: vi.fn(),
+  upsert: vi.fn(),
   signOut: vi.fn(),
 }))
 
@@ -58,8 +59,9 @@ vi.mock('@/lib/supabase/server', () => ({
 }))
 vi.mock('@/lib/supabase/admin', () => ({
   createAdminClient: () => ({
-    from: () => ({
+    from: (table: string) => ({
       insert: h.insert,
+      upsert: (...args: unknown[]) => h.upsert(table, ...args),
       select: () => ({ eq: () => ({ maybeSingle: async () => ({ data: null }) }) }),
     }),
   }),
@@ -80,6 +82,7 @@ describe('Inicio — identidad', () => {
     h.profile = { id: 'user-1', username: 'ana' }
     h.account = { data: null, error: null }
     h.insert.mockResolvedValue({ error: null })
+    h.upsert.mockResolvedValue({ error: null })
   })
 
   it('sin fila en users crea un nombre generado, NUNCA la parte local del email', async () => {
@@ -90,6 +93,27 @@ describe('Inicio — identidad', () => {
     expect(row.username).toMatch(/^u_[a-z0-9]{6}$/)
     expect(row.username).not.toContain('nombre')
     expect(row.avatar_initials).not.toBe('NO')
+  })
+
+  // Saneamiento 1.6: el respaldo crea también account_state, como el disparador.
+  it('sin fila en users crea también account_state (sin pisar una que ya exista)', async () => {
+    h.profile = null
+    await HomePage()
+    expect(h.upsert).toHaveBeenCalledWith('account_state', { user_id: 'user-1' }, { onConflict: 'user_id', ignoreDuplicates: true })
+  })
+
+  it('si account_state falla, no echa a nadie (la fila de users ya está)', async () => {
+    h.profile = null
+    h.upsert.mockResolvedValue({ error: { message: 'boom' } })
+    await HomePage()
+    expect(h.signOut).not.toHaveBeenCalled()
+  })
+
+  it('si users no se puede crear, tampoco se crea account_state', async () => {
+    h.profile = null
+    h.insert.mockResolvedValue({ error: { code: '42501' } })
+    await expect(HomePage()).rejects.toThrow('REDIRECT /login')
+    expect(h.upsert).not.toHaveBeenCalled()
   })
 
   it('si el nombre aleatorio choca, reintenta con otro', async () => {
@@ -110,6 +134,7 @@ describe('Inicio — identidad', () => {
   it('con perfil no toca nada', async () => {
     await HomePage()
     expect(h.insert).not.toHaveBeenCalled()
+    expect(h.upsert).not.toHaveBeenCalled()
   })
 
   it('borrado programado → aviso con la fecha del borrado y salida a Ajustes', async () => {

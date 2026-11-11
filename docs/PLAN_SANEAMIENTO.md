@@ -73,19 +73,19 @@ Estado de partida:
 8. Eliminar el worktree viejo `.claude/worktrees/reverent-germain-3e5b66` si ya no se usa.
 9. Un único commit, subir la rama (**después de B1**), PR y merge.
 
-## 🟨 PR de documentación (Q29)
+## ✅ PR de documentación (Q29) — PR #96
 
 - Mover este fichero a `docs/PLAN_SANEAMIENTO.md`, en un PR que solo contenga eso.
 - Marcar cada fase aquí mismo a medida que se cierra.
 
-## ⬜ PR de finales de línea (Q18)
+## ✅ PR de finales de línea (Q18) — PR #97
 
 - Añadir `.gitattributes` con `* text=auto eol=lf` y normalizar el repo en un PR propio.
 - Va antes de la fase 1, para que los diffs siguientes salgan limpios y los tests pasen también en Windows.
 
 ---
 
-## ⬜ Fase 1 · Pérdida de datos (solo código)
+## 🟨 Fase 1 · Pérdida de datos (solo código) — 1.1 #98 · 1.2 #99 · 1.3 #100 · 1.4 #101 · 1.5 #102 · 1.6 (este PR)
 
 | # | Problema | Arreglo |
 |---|---|---|
@@ -97,6 +97,10 @@ Estado de partida:
 | 1.6 | `src/app/[locale]/(app)/home/page.tsx:55-68`: `ensureProfile` crea `users` sin crear `account_state`. | Crear las dos filas a la vez. |
 
 **Verificación:** un test por punto y el CUJ de biblioteca/progreso en verde.
+
+**Notas de la ejecución:**
+- 1.1: para cuentas solo de Google se pide un inicio de sesión de hace menos de 10 minutos en vez de un código por email: hoy no hay servicio de email (sin `RESEND_API_KEY`). Revisar cuando lo haya.
+- 1.5: el título no se refresca (depende del idioma de quien creó la ficha). En prod ninguna ficha tiene el póster a null, así que los pósters vacíos no venían de aquí: ver el punto 2 de pendientes (probable bloqueo de hotlinking en MangaDex o ComicVine).
 
 ---
 
