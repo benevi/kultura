@@ -237,6 +237,10 @@ Los números deben coincidir con los de producción del día del volcado.
 
 En Windows `age` no está en scoop: `rage` (`scoop install rage postgresql`) usa el mismo formato (`rage -d -i kultura-backup.key …`). Para restaurar en un PostgreSQL local vacío, `node scripts/restore-drill-prep.mjs <carpeta>` genera `stub.sql` (roles, `auth.uid()` y `auth.users` mínimos) y `data_public.sql`. Orden: `stub.sql` → `roles.sql` → `schema.sql` → `data_public.sql` con `SET session_replication_role = replica`. Borrar la carpeta descifrada al terminar.
 
+#### Con Docker (Supabase local, la opción preferida)
+
+`supabase init` y `supabase start` en una carpeta temporal, y cargar con `psql` en `postgresql://supabase_admin:postgres@127.0.0.1:54322/postgres` (`postgres` no es superusuario y `roles.sql` toca `supabase_admin`). Las imágenes locales de Auth y Storage pueden ir por detrás de producción (columnas nuevas en `auth.*` y `storage.*`): cargar de `data.sql` solo los `COPY` de `public.*`, `auth.users` y `auth.identities`. Al terminar, `supabase stop --no-backup` y borrar la carpeta descifrada.
+
 ### Prueba trimestral
 
 Cada trimestre (enero, abril, julio, octubre) restaurar el último artefacto en
@@ -245,4 +249,5 @@ el proyecto de test con los pasos de arriba y apuntar aquí la fecha:
 | Fecha | Artefacto | Resultado |
 |---|---|---|
 | 2026-11-06 | `kultura-db-20261106T2134Z.tar.gz.age` (995 KB, ejecución 42297553044) | OK: descifrado con la clave de Víctor (`rage`), `SHA256SUMS` correctas, restaurado en un PostgreSQL 18 local vacío. Recuentos iguales a producción ese día: users 7, user_media 124, políticas 175, tablas 34, auth.users 7. Solo fallan `supabase_vault` y la publicación `supabase_realtime`, propias de la plataforma. |
+| 2026-11-11 | `kultura-db-20261111T1140Z.tar.gz.age` (1,0 MB, ejecución 43013767672) | OK en Supabase local con Docker: descifrado con `rage`, `SHA256SUMS` correctas, carga en 2 s (unos 5 min en total con el arranque de Supabase). Recuentos iguales a producción: users 8, user_media 124, políticas 173, tablas 34, auth.users 8, media 96. Sin restaurar: las 24 tablas de `auth` que no son `users` ni `identities` y las 9 de `storage`, por versión de las imágenes locales. Contenedores, volúmenes y ficheros borrados. |
 
