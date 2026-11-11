@@ -5,16 +5,9 @@ import { useTranslations } from 'next-intl'
 import { Avatar } from '@/components/ui/Avatar'
 import { KButton } from '@/components/ui/KButton'
 import { Modal } from '@/components/ui/Modal'
+import { fetchFriends } from '@/lib/social/actions'
 
-interface Friend {
-  friendshipId: string
-  user: {
-    id: string
-    username: string
-    avatar_color: string
-    avatar_initials: string
-  }
-}
+type Friend = Awaited<ReturnType<typeof fetchFriends>>[number]
 
 interface RecommendModalProps {
   mediaId: string
@@ -43,11 +36,8 @@ export function RecommendModal({ mediaId, mediaCache, onClose }: RecommendModalP
   const [status, setStatus] = useState<'idle' | 'sending' | 'sent' | 'error'>('idle')
 
   useEffect(() => {
-    fetch('/api/friends')
-      .then((r) => r.json())
-      .then((data: { friends?: Friend[] }) => {
-        setFriends(data.friends ?? [])
-      })
+    fetchFriends()
+      .then(setFriends)
       .catch(() => setFriends([]))
       .finally(() => setLoadingFriends(false))
   }, [])

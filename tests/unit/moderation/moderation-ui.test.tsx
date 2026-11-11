@@ -111,7 +111,7 @@ describe('MemberRemoveButton', () => {
 
 describe('FriendshipButton — bloquear', () => {
   it('si la moderación no está disponible no pinta "Bloquear"', async () => {
-    mockFetch.mockResolvedValue(ok({ enabled: false, blocked: false }))
+    mockFetch.mockResolvedValue(ok({ data: { enabled: false, blocked: false } }))
     renderEs(<FriendshipButton initialStatus="accepted" targetUserId="u-2" friendshipId="f-1" />)
     await waitFor(() => expect(mockFetch).toHaveBeenCalled())
     expect(screen.queryByRole('button', { name: 'Bloquear' })).not.toBeInTheDocument()
@@ -119,7 +119,7 @@ describe('FriendshipButton — bloquear', () => {
 
   it('bloquear confirma, quita el botón de amistad y ofrece desbloquear', async () => {
     mockFetch.mockImplementation(async (_url: string, init?: RequestInit) =>
-      init?.method === 'POST' ? ok({ ok: true }) : ok({ enabled: true, blocked: false }),
+      init?.method === 'POST' ? ok({ data: null }) : ok({ data: { enabled: true, blocked: false } }),
     )
     renderEs(<FriendshipButton initialStatus="accepted" targetUserId="u-2" friendshipId="f-1" />)
     fireEvent.click(await screen.findByRole('button', { name: 'Bloquear' }))

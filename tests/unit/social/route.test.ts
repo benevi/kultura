@@ -4,6 +4,7 @@
 // ============================================================
 
 import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { friendRequestResultSchema, friendRespondResultSchema } from '@/lib/api/contracts/friends'
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -42,17 +43,17 @@ const mockCheckRateLimit = vi.fn<() => { allowed: boolean; retryAfterSeconds: nu
 }))
 vi.mock('@/lib/rate-limit', async (importOriginal) => {
   const actual = await importOriginal<typeof import('@/lib/rate-limit')>()
-  return { ...actual, checkRateLimit: () => mockCheckRateLimit() }
+  return { ...actual, checkRateLimitDistributed: async () => mockCheckRateLimit() }
 })
 
 // ── Fixtures ──────────────────────────────────────────────────────────────────
 
-const AUTH_USER = { id: 'user-001' }
-const RECEIVER_ID = 'user-002'
+const AUTH_USER = { id: '00000000-0000-4000-8000-000000000001' }
+const RECEIVER_ID = '00000000-0000-4000-8000-000000000002'
 const FRIENDSHIP_ROW = {
   id: 'friendship-001',
-  requester_id: 'user-001',
-  receiver_id: 'user-002',
+  requester_id: '00000000-0000-4000-8000-000000000001',
+  receiver_id: '00000000-0000-4000-8000-000000000002',
   status: 'pending',
   created_at: '2024-01-01T00:00:00Z',
 }
@@ -80,7 +81,7 @@ describe('POST /api/friends', () => {
     const res = await POST(makeRequest({}))
     expect(res.status).toBe(400)
     const body = await res.json()
-    expect(body.error).toBe('receiverId is required')
+    expect(body.error).toMatchObject({ code: 'invalid_input', field: 'receiverId' })
   })
 
   it('returns 400 if sending request to self', async () => {
@@ -90,7 +91,7 @@ describe('POST /api/friends', () => {
     const res = await POST(makeRequest({ receiverId: AUTH_USER.id }))
     expect(res.status).toBe(400)
     const body = await res.json()
-    expect(body.error).toContain('yourself')
+    expect(body.error.message).toContain('yourself')
   })
 
   it('returns 404 if receiver does not exist', async () => {
@@ -156,7 +157,7 @@ describe('POST /api/friends', () => {
     const res = await POST(makeRequest({ receiverId: RECEIVER_ID }))
     expect(res.status).toBe(201)
     const body = await res.json()
-    expect(body.friendship.id).toBe('friendship-001')
+    expect(friendRequestResultSchema.parse(body.data).id).toBe('friendship-001')
   })
 
   it('saneamiento 3.1: si la otra persona la mandó a la vez (23505) → 409, no 500', async () => {
@@ -199,7 +200,7 @@ describe('PATCH /api/friends', () => {
     mockGetUser.mockResolvedValue({ data: { user: null }, error: null })
 
     const { PATCH } = await import('@/app/api/friends/route')
-    const res = await PATCH(makeRequest({ friendshipId: 'f-001', action: 'accept' }, 'PATCH'))
+    const res = await PATCH(makeRequest({ friendshipId: '33333333-3333-4333-8333-333333333333', action: 'accept' }, 'PATCH'))
     expect(res.status).toBe(401)
   })
 
@@ -207,7 +208,7 @@ describe('PATCH /api/friends', () => {
     mockGetUser.mockResolvedValue({ data: { user: AUTH_USER }, error: null })
 
     const { PATCH } = await import('@/app/api/friends/route')
-    const res = await PATCH(makeRequest({ friendshipId: 'f-001', action: 'invalid' }, 'PATCH'))
+    const res = await PATCH(makeRequest({ friendshipId: '33333333-3333-4333-8333-333333333333', action: 'invalid' }, 'PATCH'))
     expect(res.status).toBe(400)
   })
 
@@ -217,7 +218,7 @@ describe('PATCH /api/friends', () => {
       select: vi.fn().mockReturnValue({
         eq: vi.fn().mockReturnValue({
           maybeSingle: vi.fn().mockResolvedValue({
-            data: { id: 'f-001', receiver_id: 'other-user', status: 'pending' },
+            data: { id: '33333333-3333-4333-8333-333333333333', receiver_id: 'other-user', status: 'pending' },
             error: null,
           }),
         }),
@@ -225,13 +226,13 @@ describe('PATCH /api/friends', () => {
     })
 
     const { PATCH } = await import('@/app/api/friends/route')
-    const res = await PATCH(makeRequest({ friendshipId: 'f-001', action: 'accept' }, 'PATCH'))
+    const res = await PATCH(makeRequest({ friendshipId: '33333333-3333-4333-8333-333333333333', action: 'accept' }, 'PATCH'))
     expect(res.status).toBe(403)
   })
 
   it('accepts a pending request', async () => {
     mockGetUser.mockResolvedValue({ data: { user: AUTH_USER }, error: null })
-    const PENDING_FRIENDSHIP = { id: 'f-001', receiver_id: AUTH_USER.id, status: 'pending' }
+    const PENDING_FRIENDSHIP = { id: '33333333-3333-4333-8333-333333333333', receiver_id: AUTH_USER.id, status: 'pending' }
     const ACCEPTED = { ...FRIENDSHIP_ROW, status: 'accepted' }
 
     mockFromFriendships.mockReturnValue({
@@ -250,10 +251,10 @@ describe('PATCH /api/friends', () => {
     })
 
     const { PATCH } = await import('@/app/api/friends/route')
-    const res = await PATCH(makeRequest({ friendshipId: 'f-001', action: 'accept' }, 'PATCH'))
+    const res = await PATCH(makeRequest({ friendshipId: '33333333-3333-4333-8333-333333333333', action: 'accept' }, 'PATCH'))
     expect(res.status).toBe(200)
     const body = await res.json()
-    expect(body.friendship.status).toBe('accepted')
+    expect(friendRespondResultSchema.parse(body.data)?.status).toBe('accepted')
   })
 
   it('returns 429 when rate limited (E99)', async () => {
@@ -261,7 +262,7 @@ describe('PATCH /api/friends', () => {
     mockCheckRateLimit.mockReturnValue({ allowed: false, retryAfterSeconds: 30 })
 
     const { PATCH } = await import('@/app/api/friends/route')
-    const res = await PATCH(makeRequest({ friendshipId: 'f-001', action: 'accept' }, 'PATCH'))
+    const res = await PATCH(makeRequest({ friendshipId: '33333333-3333-4333-8333-333333333333', action: 'accept' }, 'PATCH'))
     expect(res.status).toBe(429)
   })
 })
@@ -278,7 +279,7 @@ describe('DELETE /api/friends', () => {
     mockGetUser.mockResolvedValue({ data: { user: null }, error: null })
 
     const { DELETE } = await import('@/app/api/friends/route')
-    const res = await DELETE(makeRequest({ friendshipId: 'f-001' }, 'DELETE'))
+    const res = await DELETE(makeRequest({ friendshipId: '33333333-3333-4333-8333-333333333333' }, 'DELETE'))
     expect(res.status).toBe(401)
   })
 
@@ -288,7 +289,7 @@ describe('DELETE /api/friends', () => {
       select: vi.fn().mockReturnValue({
         eq: vi.fn().mockReturnValue({
           maybeSingle: vi.fn().mockResolvedValue({
-            data: { id: 'f-001', requester_id: 'other-a', receiver_id: 'other-b' },
+            data: { id: '33333333-3333-4333-8333-333333333333', requester_id: 'other-a', receiver_id: 'other-b' },
             error: null,
           }),
         }),
@@ -296,7 +297,7 @@ describe('DELETE /api/friends', () => {
     })
 
     const { DELETE } = await import('@/app/api/friends/route')
-    const res = await DELETE(makeRequest({ friendshipId: 'f-001' }, 'DELETE'))
+    const res = await DELETE(makeRequest({ friendshipId: '33333333-3333-4333-8333-333333333333' }, 'DELETE'))
     expect(res.status).toBe(403)
   })
 
@@ -306,7 +307,7 @@ describe('DELETE /api/friends', () => {
       select: vi.fn().mockReturnValue({
         eq: vi.fn().mockReturnValue({
           maybeSingle: vi.fn().mockResolvedValue({
-            data: { id: 'f-001', requester_id: AUTH_USER.id, receiver_id: RECEIVER_ID },
+            data: { id: '33333333-3333-4333-8333-333333333333', requester_id: AUTH_USER.id, receiver_id: RECEIVER_ID },
             error: null,
           }),
         }),
@@ -317,10 +318,10 @@ describe('DELETE /api/friends', () => {
     })
 
     const { DELETE } = await import('@/app/api/friends/route')
-    const res = await DELETE(makeRequest({ friendshipId: 'f-001' }, 'DELETE'))
+    const res = await DELETE(makeRequest({ friendshipId: '33333333-3333-4333-8333-333333333333' }, 'DELETE'))
     expect(res.status).toBe(200)
     const body = await res.json()
-    expect(body.ok).toBe(true)
+    expect(body).toEqual({ data: null })
   })
 
   it('returns 429 when rate limited (E99)', async () => {
@@ -328,7 +329,7 @@ describe('DELETE /api/friends', () => {
     mockCheckRateLimit.mockReturnValue({ allowed: false, retryAfterSeconds: 30 })
 
     const { DELETE } = await import('@/app/api/friends/route')
-    const res = await DELETE(makeRequest({ friendshipId: 'f-001' }, 'DELETE'))
+    const res = await DELETE(makeRequest({ friendshipId: '33333333-3333-4333-8333-333333333333' }, 'DELETE'))
     expect(res.status).toBe(429)
   })
 })
