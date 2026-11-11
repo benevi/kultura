@@ -98,7 +98,7 @@ describe('SettingsForm — F-12', () => {
   })
 
   it('el 409 username_reserved de la API se explica como reservado', async () => {
-    global.fetch = vi.fn().mockResolvedValue(new Response(JSON.stringify({ error: 'username_reserved' }), { status: 409 }))
+    global.fetch = vi.fn().mockResolvedValue(new Response(JSON.stringify({ error: { code: 'conflict', message: 'username_reserved' } }), { status: 409 }))
     render(<SettingsForm {...PROPS} />)
     fireEvent.change(screen.getByDisplayValue('testuser'), { target: { value: 'otro_nombre' } })
     fireEvent.click(screen.getByText('save'))

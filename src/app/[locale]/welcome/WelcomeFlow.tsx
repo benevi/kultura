@@ -13,6 +13,9 @@ import { cn } from '@/lib/utils/index'
 import { AUTH_CARD } from '../login/AuthShell'
 import { TermsCheckbox } from '../login/TermsCheckbox'
 import { USERNAME_REGEX, isReservedUsername } from '@/lib/account/identity'
+import { ApiError } from '@/lib/api/client'
+import { updateSettings, type SettingsPatch } from '@/lib/settings/client'
+import { SETTINGS_ERRORS } from '@/lib/settings/errors'
 import { RateStars } from './RateStars'
 import { WelcomeImport } from './WelcomeImport'
 import {
@@ -140,38 +143,27 @@ export function WelcomeFlow({ locale, next, currentUsername, suggestChange, need
     if (nameErr) return usernameRef.current?.focus()
     if (termsErr) return termsRef.current?.focus()
 
-    const body: Record<string, unknown> = {}
+    const body: SettingsPatch = {}
     if (changed) body.username = value
     if (termsPending) body.accept_terms = true
     if (Object.keys(body).length === 0) return setStep('formats')
 
     setSaving(true)
     try {
-      const res = await fetch('/api/settings', {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(body),
-      })
-      if (res.status === 409) {
-        const data = (await res.json().catch(() => ({}))) as { error?: string }
-        setUsernameError(data.error === 'username_reserved' ? t('nameReserved') : t('nameTaken'))
-        usernameRef.current?.focus()
-        return
-      }
-      if (res.status === 400) {
-        setUsernameError(t('nameInvalid'))
-        usernameRef.current?.focus()
-        return
-      }
-      if (!res.ok) {
-        setNameFailed(t('saveError'))
-        return
-      }
+      await updateSettings(body)
       if (changed) setSavedUsername(value)
       setTermsPending(false)
       setStep('formats')
-    } catch {
-      setNameFailed(t('saveError'))
+    } catch (err) {
+      if (err instanceof ApiError && err.code === 'conflict') {
+        setUsernameError(err.message === SETTINGS_ERRORS.usernameReserved ? t('nameReserved') : t('nameTaken'))
+        usernameRef.current?.focus()
+      } else if (err instanceof ApiError && err.code === 'invalid_input') {
+        setUsernameError(t('nameInvalid'))
+        usernameRef.current?.focus()
+      } else {
+        setNameFailed(t('saveError'))
+      }
     } finally {
       setSaving(false)
     }
@@ -238,13 +230,14 @@ export function WelcomeFlow({ locale, next, currentUsername, suggestChange, need
     }
     setFinishing(true)
     await flushRatings()
-    const res = await fetch('/api/settings', {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      // Casilla marcada pero aún sin guardar (salta desde el paso 1): va junta.
-      body: JSON.stringify(termsPending ? { accept_terms: true, onboarding_done: true } : { onboarding_done: true }),
-    }).catch(() => null)
-    if (res?.status === 409) {
+    // Casilla marcada pero aún sin guardar (salta desde el paso 1): va junta.
+    const termsMissing = await updateSettings(
+      termsPending ? { accept_terms: true, onboarding_done: true } : { onboarding_done: true }
+    ).then(
+      () => false,
+      (err) => err instanceof ApiError && err.message === SETTINGS_ERRORS.termsRequired
+    )
+    if (termsMissing) {
       // El servidor no tiene la aceptación: de vuelta a la casilla.
       setFinishing(false)
       setTermsPending(true)

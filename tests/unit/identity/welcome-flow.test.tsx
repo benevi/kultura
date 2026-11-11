@@ -39,7 +39,7 @@ import { WelcomeFlow } from '@/app/[locale]/welcome/WelcomeFlow'
 import { STARTER_MIN_RATINGS, STARTER_RATE_COUNT, STARTER_TITLES, pickStarterTitles } from '@/lib/recommendations/starter-titles'
 import { MIN_LIBRARY_ITEMS } from '@/lib/claude/recommendations'
 
-const ok = () => new Response(JSON.stringify({ success: true }), { status: 200 })
+const ok = () => new Response(JSON.stringify({ data: null, success: true }), { status: 200 })
 
 function calls(url: string) {
   return (global.fetch as ReturnType<typeof vi.fn>).mock.calls
@@ -117,7 +117,7 @@ describe('WelcomeFlow', () => {
   })
 
   it('nombre cogido → error en el campo y se queda en el paso', async () => {
-    global.fetch = vi.fn().mockResolvedValue(new Response(JSON.stringify({ error: 'username_taken' }), { status: 409 }))
+    global.fetch = vi.fn().mockResolvedValue(new Response(JSON.stringify({ error: { code: 'conflict', message: 'username_taken' } }), { status: 409 }))
     renderFlow({ needsTerms: false })
     fireEvent.change(screen.getByLabelText('nameLabel'), { target: { value: 'pepe_00' } })
     fireEvent.click(screen.getByRole('button', { name: 'continue' }))
@@ -165,7 +165,7 @@ describe('WelcomeFlow', () => {
   })
 
   it('si el servidor responde terms_required (409), no entra y pide la casilla', async () => {
-    global.fetch = vi.fn().mockResolvedValue(new Response(JSON.stringify({ error: 'terms_required' }), { status: 409 }))
+    global.fetch = vi.fn().mockResolvedValue(new Response(JSON.stringify({ error: { code: 'conflict', message: 'terms_required' } }), { status: 409 }))
     renderFlow({ needsTerms: false })
     fireEvent.click(screen.getByRole('button', { name: 'skipAll' }))
     expect(await screen.findByText('termsRequired')).toBeInTheDocument()

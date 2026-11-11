@@ -29,10 +29,10 @@ vi.mock('@/lib/supabase/admin', () => ({
   }),
 }))
 
-vi.mock('@/lib/rate-limit', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('@/lib/rate-limit')>()
-  return { ...actual, checkRateLimit: () => ({ allowed: true, retryAfterSeconds: 0 }) }
-})
+vi.mock('@/lib/rate-limit', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@/lib/rate-limit')>()),
+  checkRateLimitDistributed: async () => ({ allowed: true, retryAfterSeconds: 0 }),
+}))
 
 /**
  * Cadena de PostgREST: `maybeSingle` resuelve a `lookup`, y `single` (fin de
@@ -73,7 +73,7 @@ describe('PATCH /api/settings — identidad (F-12)', () => {
   it.each(['admin', 'Soporte', 'kultura_oficial', 'KULTURA'])('rechaza el nombre reservado %s', async (name) => {
     const res = await run({ username: name })
     expect(res.status).toBe(409)
-    expect((await res.json()).error).toBe('username_reserved')
+    expect((await res.json()).error).toMatchObject({ code: 'conflict', message: 'username_reserved' })
     expect((h.adminTables.users as ReturnType<typeof table>).update).not.toHaveBeenCalled()
   })
 
@@ -81,7 +81,7 @@ describe('PATCH /api/settings — identidad (F-12)', () => {
     h.adminTables.username_history = table({ lookup: { data: { user_id: 'otra' }, error: null } })
     const res = await run({ username: 'pepe_viejo' })
     expect(res.status).toBe(409)
-    expect((await res.json()).error).toBe('username_taken')
+    expect((await res.json()).error).toMatchObject({ code: 'conflict', message: 'username_taken' })
   })
 
   it('volver a un nombre antiguo PROPIO sí se puede', async () => {
@@ -103,7 +103,7 @@ describe('PATCH /api/settings — identidad (F-12)', () => {
     h.adminTables.users = table({ writes: [{ data: null, error: { code: '23514' } }] })
     const res = await run({ username: 'raro_ok' })
     expect(res.status).toBe(409)
-    expect((await res.json()).error).toBe('username_reserved')
+    expect((await res.json()).error).toMatchObject({ code: 'conflict', message: 'username_reserved' })
   })
 
   it('library_visibility se escribe con el JWT del usuario (RLS + demo_no_update)', async () => {
@@ -141,7 +141,7 @@ describe('PATCH /api/settings — identidad (F-12)', () => {
     h.adminTables.account_state = state
     const res = await run({ onboarding_done: true })
     expect(res.status).toBe(409)
-    expect((await res.json()).error).toBe('terms_required')
+    expect((await res.json()).error).toMatchObject({ code: 'conflict', message: 'terms_required' })
     expect(state.upsert).not.toHaveBeenCalled()
   })
 
