@@ -51,6 +51,13 @@ describe('ok y apiError', () => {
     expect(withField.status).toBe(400)
     expect(await withField.json()).toEqual({ error: { code: 'invalid_input', field: 'status', message: 'bad' } })
   })
+
+  it.each([
+    ['payload_too_large', 413],
+    ['unavailable', 503],
+  ] as const)('%s → %i', (code, status) => {
+    expect(apiError(code).status).toBe(status)
+  })
 })
 
 describe('requireUser', () => {
@@ -115,6 +122,24 @@ describe('parseBody y parseQuery', () => {
     expect(r.ok && r.value).toEqual({ mediaId: 'movie_603', n: 2 })
   })
 
+  it('con maxBytes: 413 payload_too_large si lo pasa (declarado o leído); si no, valida igual', async () => {
+    const body = JSON.stringify({ mediaId: 'movie_603' })
+    const read = await parseBody(post(body, true), schema, { maxBytes: body.length - 1 })
+    expect(!read.ok && read.response.status).toBe(413)
+    expect(!read.ok && (await read.response.json())).toEqual({ error: { code: 'payload_too_large' } })
+
+    const declared = new Request('http://localhost/api/x', {
+      method: 'POST',
+      body,
+      headers: { 'content-length': '999999' },
+    })
+    const r2 = await parseBody(declared, schema, { maxBytes: 1000 })
+    expect(!r2.ok && r2.response.status).toBe(413)
+
+    const fits = await parseBody(post(body, true), schema, { maxBytes: body.length })
+    expect(fits.ok && fits.value).toEqual({ mediaId: 'movie_603' })
+  })
+
   it('parseQuery lee el primer valor de cada clave', () => {
     const q = z.object({ mediaId: mediaIdSchema })
     const good = parseQuery(new Request('http://localhost/api/x?mediaId=tv_1&mediaId=tv_2'), q)
@@ -166,6 +191,7 @@ describe('apiFetch', () => {
 
   it('sin code del catálogo, lo saca del estado', async () => {
     expect((await toApiError(new Response('nope', { status: 502 }))).code).toBe('provider_unavailable')
+    expect((await toApiError(new Response('nope', { status: 413 }))).code).toBe('payload_too_large')
     expect((await toApiError(new Response(JSON.stringify({ error: 'x' }), { status: 404 }))).code).toBe('not_found')
   })
 })

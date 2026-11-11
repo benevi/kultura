@@ -8,6 +8,7 @@
 // ============================================================
 
 import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { kulturaImportResultSchema } from '@/lib/api/contracts/account'
 import { createFakeDb, fakeClient, type FakeDb } from './fake-supabase'
 
 const { state, getMovieMock } = vi.hoisted(() => ({
@@ -25,7 +26,7 @@ vi.mock('@/lib/supabase/admin', () => ({
 }))
 vi.mock('@/lib/rate-limit', async (importOriginal) => ({
   ...(await importOriginal<typeof import('@/lib/rate-limit')>()),
-  checkRateLimit: () => ({ allowed: true, retryAfterSeconds: 0 }),
+  checkRateLimitDistributed: async () => ({ allowed: true, retryAfterSeconds: 0 }),
 }))
 vi.mock('@/lib/claude/recommendations', () => ({ invalidateRecCache: vi.fn() }))
 vi.mock('@/lib/recommendations/match-score', () => ({ invalidateMatchScoreCache: vi.fn() }))
@@ -76,7 +77,7 @@ describe('POST /api/account/import — catálogo solo desde el servidor', () => 
         library: [
           { mediaId: 'movie_550', status: 'completed', title: 'ENVENENADO', poster: 'https://evil.example/x.png', year: 1 },
         ],
-      }) as never
+      })
     )
 
     expect(res.status).toBe(200)
@@ -88,9 +89,9 @@ describe('POST /api/account/import — catálogo solo desde el servidor', () => 
   it('los títulos que no estaban en el catálogo se crean desde el proveedor, no desde el fichero', async () => {
     const { POST } = await import('@/app/api/account/import/route')
     const res = await POST(
-      req({ library: [{ mediaId: 'movie_13', status: 'pending', title: 'ENVENENADO' }] }) as never
+      req({ library: [{ mediaId: 'movie_13', status: 'pending', title: 'ENVENENADO' }] })
     )
-    const body = await res.json()
+    const body = kulturaImportResultSchema.parse((await res.json()).data)
 
     expect(res.status).toBe(200)
     expect(body.libraryImported).toBe(1)
@@ -108,9 +109,9 @@ describe('POST /api/account/import — catálogo solo desde el servidor', () => 
           { mediaId: 'movie_550', status: 'completed' },
           { mediaId: 'movie_13', status: 'pending' },
         ],
-      }) as never
+      })
     )
-    const body = await res.json()
+    const body = kulturaImportResultSchema.parse((await res.json()).data)
 
     expect(res.status).toBe(200)
     expect(body.libraryImported).toBe(1)

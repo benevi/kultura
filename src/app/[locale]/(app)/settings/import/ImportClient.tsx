@@ -19,7 +19,8 @@ import { KButton } from '@/components/ui/KButton'
 import { cn } from '@/lib/utils/index'
 import { parseImportFiles, summarizeImport } from '@/lib/import/parse-file'
 import { buildReportCsv, type ReportLabels } from '@/lib/import/report'
-import { countResults, fingerprint, runImport, type RunProgress, type SendBatch } from '@/lib/import/run'
+import { countResults, fingerprint, runImport, type RunProgress } from '@/lib/import/run'
+import { sendImportBatch } from '@/lib/account/client'
 import { MAX_FILE_BYTES, MAX_IMPORT_ITEMS } from '@/lib/import/limits'
 import {
   IMPORT_OUTCOMES,
@@ -38,19 +39,6 @@ type RunErrorCode = 'auth' | 'demo' | 'server' | 'network'
 const MB = Math.round(MAX_FILE_BYTES / 1024 / 1024)
 const UNMATCHED_SHOWN = 20
 const ACCEPT = '.zip,.csv,.xml,.gz,text/csv,application/zip,application/xml,text/xml,application/gzip'
-
-/** Envía un lote al servidor (el orquestador decide qué hacer con cada respuesta). */
-const sendBatch: SendBatch = async (request, signal) => {
-  const res = await fetch('/api/account/import/external', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(request),
-    signal,
-  })
-  if (res.ok) return { ok: true, data: await res.json() }
-  const retry = Number(res.headers.get('Retry-After'))
-  return { ok: false, status: res.status, retryAfterSeconds: Number.isFinite(retry) ? retry : undefined }
-}
 
 function download(name: string, content: string, type: string) {
   const url = URL.createObjectURL(new Blob([content], { type }))
@@ -135,7 +123,7 @@ export function ImportClient({ locale, userId, isDemo = false, compact = false, 
     const end = await runImport({
       source: parsed.source,
       items: parsed.items,
-      send: sendBatch,
+      send: sendImportBatch,
       previous: from ?? undefined,
       signal: controller.signal,
       onProgress: (p) => {

@@ -3,6 +3,7 @@
 // ============================================================
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
+import { accountDeleteResultSchema, deletionSummarySchema } from '@/lib/api/contracts/account'
 
 const mockGetUser = vi.fn()
 const mockUserFrom = vi.fn()
@@ -21,14 +22,16 @@ vi.mock('@/lib/supabase/admin', () => ({
   }),
 }))
 
-const mockCheckRateLimit = vi.fn<() => { allowed: boolean; retryAfterSeconds: number }>(() => ({
-  allowed: true,
-  retryAfterSeconds: 0,
+// Rate limit (distribuido): por defecto permitido; algunos tests lo fuerzan a bloquear.
+const { mockCheckRateLimit } = vi.hoisted(() => ({
+  mockCheckRateLimit: vi.fn<(key: string, opts: unknown) => Promise<{ allowed: boolean; retryAfterSeconds: number }>>(
+    async () => ({ allowed: true, retryAfterSeconds: 0 })
+  ),
 }))
-vi.mock('@/lib/rate-limit', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('@/lib/rate-limit')>()
-  return { ...actual, checkRateLimit: () => mockCheckRateLimit() }
-})
+vi.mock('@/lib/rate-limit', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@/lib/rate-limit')>()),
+  checkRateLimitDistributed: mockCheckRateLimit,
+}))
 
 // La reautenticación tiene sus propios tests (account-reauth.test.ts).
 const mockVerifyIdentity = vi.fn()
@@ -58,23 +61,23 @@ describe('DELETE /api/account', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     delete process.env.ACCOUNT_GRACE
-    mockCheckRateLimit.mockReturnValue({ allowed: true, retryAfterSeconds: 0 })
+    mockCheckRateLimit.mockResolvedValue({ allowed: true, retryAfterSeconds: 0 })
     mockRpc.mockResolvedValue({ data: { groups: 1, lists: 0 }, error: null })
     mockVerifyIdentity.mockResolvedValue({ ok: true })
   })
 
   // Saneamiento 1.1: sin reautenticar no se programa ni se borra nada.
   it.each([
-    ['password_required', 400],
-    ['wrong_password', 403],
-    ['reauth_required', 403],
-  ] as const)('reautenticación fallida (%s) → %i y no se toca nada', async (code, status) => {
+    ['password_required', 400, { code: 'invalid_input', field: 'password', message: 'password_required' }],
+    ['wrong_password', 403, { code: 'forbidden', message: 'wrong_password' }],
+    ['reauth_required', 403, { code: 'forbidden', message: 'reauth_required' }],
+  ] as const)('reautenticación fallida (%s) → %i y no se toca nada', async (code, status, error) => {
     mockGetUser.mockResolvedValue({ data: { user: AUTH_USER }, error: null })
     mockVerifyIdentity.mockResolvedValue({ ok: false, code })
     const { DELETE } = await import('@/app/api/account/route')
     const res = await DELETE(del({ password: 'mala' }))
     expect(res.status).toBe(status)
-    expect(await res.json()).toEqual({ error: code })
+    expect(await res.json()).toEqual({ error })
     expect(mockAdminFrom).not.toHaveBeenCalled()
     expect(mockRpc).not.toHaveBeenCalled()
     expect(mockDeleteUser).not.toHaveBeenCalled()
@@ -90,10 +93,29 @@ describe('DELETE /api/account', () => {
 
   it('el límite de peticiones va antes de comprobar la contraseña', async () => {
     mockGetUser.mockResolvedValue({ data: { user: AUTH_USER }, error: null })
-    mockCheckRateLimit.mockReturnValue({ allowed: false, retryAfterSeconds: 30 })
+    mockCheckRateLimit.mockResolvedValue({ allowed: false, retryAfterSeconds: 30 })
+    const { DELETE } = await import('@/app/api/account/route')
+    const res = await DELETE(del())
+    expect(res.status).toBe(429)
+    expect(mockVerifyIdentity).not.toHaveBeenCalled()
+  })
+
+  it('el cupo es por usuario (clave account_delete:<id>)', async () => {
+    mockGetUser.mockResolvedValue({ data: { user: AUTH_USER }, error: null })
+    mockDeleteUser.mockResolvedValue({ error: null })
     const { DELETE } = await import('@/app/api/account/route')
     await DELETE(del())
+    expect(mockCheckRateLimit).toHaveBeenCalledWith(`account_delete:${AUTH_USER.id}`, expect.anything())
+  })
+
+  it('un cuerpo que no es JSON → 400 invalid_json y no se toca nada', async () => {
+    mockGetUser.mockResolvedValue({ data: { user: AUTH_USER }, error: null })
+    const { DELETE } = await import('@/app/api/account/route')
+    const res = await DELETE(new Request('http://localhost/api/account', { method: 'DELETE', body: 'nope' }))
+    expect(res.status).toBe(400)
+    expect(await res.json()).toEqual({ error: { code: 'invalid_json' } })
     expect(mockVerifyIdentity).not.toHaveBeenCalled()
+    expect(mockDeleteUser).not.toHaveBeenCalled()
   })
 
   it('returns 401 if not authenticated', async () => {
@@ -101,6 +123,7 @@ describe('DELETE /api/account', () => {
     const { DELETE } = await import('@/app/api/account/route')
     const res = await DELETE(del())
     expect(res.status).toBe(401)
+    expect(await res.json()).toEqual({ error: { code: 'unauthenticated' } })
     expect(mockDeleteUser).not.toHaveBeenCalled()
   })
 
@@ -109,16 +132,28 @@ describe('DELETE /api/account', () => {
     const { DELETE } = await import('@/app/api/account/route')
     const res = await DELETE(del())
     expect(res.status).toBe(403)
+    expect(await res.json()).toEqual({ error: { code: 'forbidden', message: 'demo_read_only' } })
+    expect(mockVerifyIdentity).not.toHaveBeenCalled()
     expect(mockRpc).not.toHaveBeenCalled()
     expect(mockDeleteUser).not.toHaveBeenCalled()
   })
 
-  it('returns 429 when rate limited', async () => {
-    mockGetUser.mockResolvedValue({ data: { user: AUTH_USER }, error: null })
-    mockCheckRateLimit.mockReturnValue({ allowed: false, retryAfterSeconds: 30 })
+  it('el límite de peticiones va antes que el corte de la demo', async () => {
+    mockGetUser.mockResolvedValue({ data: { user: { ...AUTH_USER, app_metadata: { demo: true } } }, error: null })
+    mockCheckRateLimit.mockResolvedValue({ allowed: false, retryAfterSeconds: 30 })
     const { DELETE } = await import('@/app/api/account/route')
     const res = await DELETE(del())
     expect(res.status).toBe(429)
+  })
+
+  it('returns 429 when rate limited', async () => {
+    mockGetUser.mockResolvedValue({ data: { user: AUTH_USER }, error: null })
+    mockCheckRateLimit.mockResolvedValue({ allowed: false, retryAfterSeconds: 30 })
+    const { DELETE } = await import('@/app/api/account/route')
+    const res = await DELETE(del())
+    expect(res.status).toBe(429)
+    expect(res.headers.get('Retry-After')).toBe('30')
+    expect(await res.json()).toEqual({ error: { code: 'rate_limited' } })
     expect(mockDeleteUser).not.toHaveBeenCalled()
   })
 
@@ -135,8 +170,8 @@ describe('DELETE /api/account', () => {
     expect(mockDeleteUser).toHaveBeenCalledWith(AUTH_USER.id)
     expect(mockRpc.mock.invocationCallOrder[0]).toBeLessThan(mockDeleteUser.mock.invocationCallOrder[0])
     expect(res.status).toBe(200)
-    const body = await res.json()
-    expect(body).toMatchObject({ ok: true, scheduled: false, transferred: { groups: 1, lists: 0 } })
+    const { data } = await res.json()
+    expect(accountDeleteResultSchema.parse(data)).toEqual({ scheduled: false, transferred: { groups: 1, lists: 0 } })
   })
 
   it('si el traspaso falla de verdad, NO borra (mejor eso que destruir lo de otros)', async () => {
@@ -145,6 +180,7 @@ describe('DELETE /api/account', () => {
     const { DELETE } = await import('@/app/api/account/route')
     const res = await DELETE(del())
     expect(res.status).toBe(500)
+    expect((await res.json()).error.code).toBe('internal')
     expect(mockDeleteUser).not.toHaveBeenCalled()
   })
 
@@ -172,7 +208,9 @@ describe('DELETE /api/account', () => {
 
       const { DELETE } = await import('@/app/api/account/route')
       const res = await DELETE(del())
-      const body = await res.json()
+      expect(res.status).toBe(200)
+      const body = accountDeleteResultSchema.parse((await res.json()).data)
+      if (!body.scheduled) throw new Error('debería estar programado')
 
       expect(mockAdminFrom).toHaveBeenCalledWith('account_state')
       expect(state.upsert).toHaveBeenCalledWith(
@@ -197,7 +235,7 @@ describe('DELETE /api/account', () => {
       const { DELETE } = await import('@/app/api/account/route')
       const res = await DELETE(del())
       expect(res.status).toBe(503)
-      expect(await res.json()).toEqual({ error: 'deletion_not_scheduled' })
+      expect(await res.json()).toEqual({ error: { code: 'unavailable', message: 'deletion_not_scheduled' } })
       expect(mockRpc).not.toHaveBeenCalled()
       expect(mockDeleteUser).not.toHaveBeenCalled()
     })
@@ -222,7 +260,8 @@ describe('GET /api/account (resumen del modal)', () => {
 
     const { GET } = await import('@/app/api/account/route')
     const res = await GET()
-    const body = await res.json()
+    expect(res.status).toBe(200)
+    const body = deletionSummarySchema.parse((await res.json()).data)
 
     expect(mockRpc).toHaveBeenCalledWith('deletion_preview', { p_user: AUTH_USER.id })
     expect(body).toMatchObject({
@@ -250,6 +289,7 @@ describe('PATCH /api/account (cancelar el borrado)', () => {
       new Request('http://localhost/api/account', { method: 'PATCH', body: JSON.stringify({ cancel_deletion: true }) })
     )
     expect(res.status).toBe(200)
+    expect(await res.json()).toEqual({ data: null })
     expect(state.update).toHaveBeenCalledWith(expect.objectContaining({ deletion_requested_at: null }))
     expect(state.eq).toHaveBeenCalledWith('user_id', AUTH_USER.id)
   })
@@ -259,5 +299,6 @@ describe('PATCH /api/account (cancelar el borrado)', () => {
     const { PATCH } = await import('@/app/api/account/route')
     const res = await PATCH(new Request('http://localhost/api/account', { method: 'PATCH', body: '{}' }))
     expect(res.status).toBe(400)
+    expect((await res.json()).error.code).toBe('invalid_input')
   })
 })

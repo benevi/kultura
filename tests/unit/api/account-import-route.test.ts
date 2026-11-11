@@ -6,6 +6,7 @@
 // ============================================================
 
 import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { kulturaImportResultSchema } from '@/lib/api/contracts/account'
 
 const mockGetUser = vi.fn()
 
@@ -62,14 +63,16 @@ vi.mock('@/lib/supabase/server', () => ({
   }),
 }))
 
-const mockCheckRateLimit = vi.fn<() => { allowed: boolean; retryAfterSeconds: number }>(() => ({
-  allowed: true,
-  retryAfterSeconds: 0,
+// Rate limit (distribuido): por defecto permitido; un test lo fuerza a bloquear.
+const { mockCheckRateLimit } = vi.hoisted(() => ({
+  mockCheckRateLimit: vi.fn<(key: string, opts: unknown) => Promise<{ allowed: boolean; retryAfterSeconds: number }>>(
+    async () => ({ allowed: true, retryAfterSeconds: 0 })
+  ),
 }))
-vi.mock('@/lib/rate-limit', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('@/lib/rate-limit')>()
-  return { ...actual, checkRateLimit: () => mockCheckRateLimit() }
-})
+vi.mock('@/lib/rate-limit', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@/lib/rate-limit')>()),
+  checkRateLimitDistributed: mockCheckRateLimit,
+}))
 
 const mockInvalidateRec = vi.fn()
 const mockInvalidateMatch = vi.fn()
@@ -101,8 +104,13 @@ function req(body: unknown): Request {
 
 async function post(body: unknown) {
   const { POST } = await import('@/app/api/account/import/route')
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  return POST(req(body) as any)
+  return POST(req(body))
+}
+
+/** `data` de una respuesta 200, validado con el contrato. */
+async function data(res: Response) {
+  expect(res.status).toBe(200)
+  return kulturaImportResultSchema.parse((await res.json()).data)
 }
 
 const ENTRY = {
@@ -124,35 +132,41 @@ describe('POST /api/account/import', () => {
     for (const key of Object.keys(writes)) delete writes[key]
     listRows.length = 0
     knownMediaIds.length = 0
-    mockCheckRateLimit.mockReturnValue({ allowed: true, retryAfterSeconds: 0 })
+    mockCheckRateLimit.mockResolvedValue({ allowed: true, retryAfterSeconds: 0 })
     mockGetUser.mockResolvedValue({ data: { user: AUTH_USER }, error: null })
   })
 
   it('401 si no hay sesión', async () => {
     mockGetUser.mockResolvedValue({ data: { user: null }, error: null })
-    expect((await post({ library: [] })).status).toBe(401)
+    const res = await post({ library: [] })
+    expect(res.status).toBe(401)
+    expect(await res.json()).toEqual({ error: { code: 'unauthenticated' } })
   })
 
   it('429 cuando se supera el límite', async () => {
-    mockCheckRateLimit.mockReturnValue({ allowed: false, retryAfterSeconds: 30 })
-    expect((await post({ library: [] })).status).toBe(429)
+    mockCheckRateLimit.mockResolvedValue({ allowed: false, retryAfterSeconds: 30 })
+    const res = await post({ library: [] })
+    expect(res.status).toBe(429)
+    expect(await res.json()).toEqual({ error: { code: 'rate_limited' } })
+    expect(mockCheckRateLimit).toHaveBeenCalledWith(`account_import:${AUTH_USER.id}`, expect.anything())
   })
 
   it('400 si el JSON está corrupto', async () => {
-    expect((await post('{ esto no es json')).status).toBe(400)
+    const res = await post('{ esto no es json')
+    expect(res.status).toBe(400)
+    expect(await res.json()).toEqual({ error: { code: 'invalid_json' } })
   })
 
   it('400 si el fichero no es un export de Kultura', async () => {
     const res = await post({ algo: 'otra cosa' })
     expect(res.status).toBe(400)
-    expect((await res.json()).error).toContain('library')
+    expect(await res.json()).toMatchObject({ error: { code: 'invalid_input', field: 'library' } })
   })
 
   it('garantiza la ficha en el servidor y reconstruye la entrada de biblioteca', async () => {
     const res = await post({ library: [ENTRY] })
 
-    expect(res.status).toBe(200)
-    expect((await res.json()).libraryImported).toBe(1)
+    expect((await data(res)).libraryImported).toBe(1)
 
     // media: nunca con el cliente del usuario ni con el título del fichero.
     expect(mockEnsureMediaRows).toHaveBeenCalledWith(['movie_550'])
@@ -188,7 +202,7 @@ describe('POST /api/account/import', () => {
       ],
     })
 
-    const body = await res.json()
+    const body = await data(res)
     expect(body.libraryImported).toBe(1)
     expect(body.librarySkipped).toBe(3)
   })
@@ -209,7 +223,7 @@ describe('POST /api/account/import', () => {
   it('las entradas cuyo título no se pudo resolver se omiten y se cuentan', async () => {
     mockEnsureMediaRows.mockResolvedValueOnce({ available: new Set(['movie_550']), unresolved: ['game_7'] })
     const res = await post({ library: [ENTRY, { mediaId: 'game_7', status: 'pending' }] })
-    const body = await res.json()
+    const body = await data(res)
 
     expect(body.libraryImported).toBe(1)
     expect(body.libraryUnresolved).toBe(1)
@@ -225,7 +239,7 @@ describe('POST /api/account/import', () => {
       lists: [{ name: 'Pendientes', items: [] }],
     })
 
-    expect((await res.json()).listsImported).toBe(0)
+    expect((await data(res)).listsImported).toBe(0)
     expect(writes['lists.insert']).toBeUndefined()
   })
 
@@ -237,7 +251,7 @@ describe('POST /api/account/import', () => {
       lists: [{ name: 'Favoritas', mediaType: 'movie', isCollaborative: false, items: ['movie_550'] }],
     })
 
-    expect((await res.json()).listsImported).toBe(1)
+    expect((await data(res)).listsImported).toBe(1)
     expect(writes['list_items.insert'][0][0]).toEqual([
       { list_id: 'new-list-id', media_id: 'movie_550', added_by: AUTH_USER.id },
     ])
@@ -249,7 +263,7 @@ describe('POST /api/account/import', () => {
       lists: [{ name: 'Sin tipo', items: [] }, { name: 'Rara', mediaType: 42, items: [] }],
     })
 
-    expect((await res.json()).listsImported).toBe(2)
+    expect((await data(res)).listsImported).toBe(2)
     const inserted = writes['lists.insert'].map((call) => call[0] as { name: string; media_type: string })
     expect(inserted.map((l) => [l.name, l.media_type])).toEqual([
       ['Sin tipo', 'mixed'],
@@ -273,7 +287,7 @@ describe('POST /api/account/import', () => {
       friendships: [{ friendshipId: 'f-1' }, { friendshipId: 'f-2' }],
     })
 
-    expect((await res.json()).friendshipsImported).toBe(0)
+    expect((await data(res)).friendshipsImported).toBe(0)
   })
 
   it('invalida el perfil de gustos y las recomendaciones tras repoblar la biblioteca', async () => {
@@ -294,6 +308,7 @@ describe('POST /api/account/import — lotes y errores', () => {
     libraryUpsertErrors.length = 0
     listItemsInsertError = null
     inSizes.length = 0
+    mockCheckRateLimit.mockResolvedValue({ allowed: true, retryAfterSeconds: 0 })
     mockGetUser.mockResolvedValue({ data: { user: AUTH_USER }, error: null })
   })
 
@@ -302,17 +317,16 @@ describe('POST /api/account/import — lotes y errores', () => {
 
   it('la biblioteca va en lotes de 200', async () => {
     const res = await post({ library: many(450) })
-    expect(res.status).toBe(200)
+    const imported = await data(res)
     const batches = writes['user_media.upsert'].map(([rows]) => (rows as unknown[]).length)
     expect(batches).toEqual([200, 200, 50])
-    expect((await res.json()).libraryImported).toBe(450)
+    expect(imported.libraryImported).toBe(450)
   })
 
   it('un lote que falla se cuenta (con sus ids) y los demás se guardan', async () => {
     libraryUpsertErrors.push(null, { message: 'boom' }, null)
     const res = await post({ library: many(450) })
-    expect(res.status).toBe(200)
-    const body = await res.json()
+    const body = await data(res)
     expect(body.libraryImported).toBe(250)
     expect(body.libraryFailed).toBe(200)
     expect(body.libraryFailedIds).toHaveLength(200)
@@ -323,6 +337,7 @@ describe('POST /api/account/import — lotes y errores', () => {
     libraryUpsertErrors.push({ message: 'boom' })
     const res = await post({ library: many(3) })
     expect(res.status).toBe(500)
+    expect((await res.json()).error.code).toBe('internal')
   })
 
   it('los ids de una lista se buscan en lotes de 200 y un insert fallido se cuenta', async () => {
@@ -330,9 +345,8 @@ describe('POST /api/account/import — lotes y errores', () => {
     knownMediaIds.push(...items)
     listItemsInsertError = { message: 'boom' }
     const res = await post({ library: [], lists: [{ name: 'Grande', mediaType: 'movie', items }] })
-    expect(res.status).toBe(200)
+    const body = await data(res)
     expect(inSizes).toEqual([200, 200, 50])
-    const body = await res.json()
     expect(body.listsImported).toBe(1)
     expect(body.listItemsFailed).toBe(450)
   })
@@ -344,9 +358,9 @@ describe('POST /api/account/import — lotes y errores', () => {
       headers: { 'Content-Type': 'application/json', 'Content-Length': String(21 * 1024 * 1024) },
       body: '{}',
     })
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const res = await POST(big as any)
+    const res = await POST(big)
     expect(res.status).toBe(413)
+    expect(await res.json()).toEqual({ error: { code: 'payload_too_large' } })
     expect(writes['user_media.upsert']).toBeUndefined()
   })
 })

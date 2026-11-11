@@ -55,6 +55,7 @@ vi.mock('@/lib/media/upsert-from-provider', async (importOriginal) => ({
 }))
 
 import { POST } from '@/app/api/account/import/external/route'
+import { importBatchResultSchema } from '@/lib/api/contracts/account'
 import { MAX_BATCH_BYTES } from '@/lib/import/limits'
 
 function post(body: unknown, headers: Record<string, string> = {}) {
@@ -63,7 +64,7 @@ function post(body: unknown, headers: Record<string, string> = {}) {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', ...headers },
       body: typeof body === 'string' ? body : JSON.stringify(body),
-    }) as never
+    })
   )
 }
 
@@ -88,14 +89,16 @@ describe('POST /api/account/import/external', () => {
 
   it('sin sesión → 401', async () => {
     state.user = null
-    expect((await post(valid)).status).toBe(401)
+    const res = await post(valid)
+    expect(res.status).toBe(401)
+    expect(await res.json()).toEqual({ error: { code: 'unauthenticated' } })
   })
 
   it('la cuenta demo no puede importar → 403 demo_read_only, sin escribir nada', async () => {
     state.user = { id: 'demo', app_metadata: { demo: true } }
     const res = await post(valid)
     expect(res.status).toBe(403)
-    expect(await res.json()).toEqual({ error: 'demo_read_only' })
+    expect(await res.json()).toEqual({ error: { code: 'forbidden', message: 'demo_read_only' } })
     expect(state.db.tables.user_media).toHaveLength(0)
   })
 
@@ -104,23 +107,30 @@ describe('POST /api/account/import/external', () => {
     const res = await post(valid)
     expect(res.status).toBe(429)
     expect(res.headers.get('Retry-After')).toBe('42')
-    expect(state.rlKeys).toEqual(['user-1:import_batch'])
+    expect(await res.json()).toEqual({ error: { code: 'rate_limited' } })
+    expect(state.rlKeys).toEqual(['import_batch:user-1'])
   })
 
-  it('lote demasiado grande → 413; JSON roto, fuente desconocida o más de 50 filas → 400', async () => {
-    expect((await post('x'.repeat(MAX_BATCH_BYTES + 1))).status).toBe(413)
-    expect((await post(valid, { 'content-length': String(MAX_BATCH_BYTES + 10) })).status).toBe(413)
-    expect((await post('{nope')).status).toBe(400)
-    expect((await post({ ...valid, source: 'trakt' })).status).toBe(400)
+  it('lote demasiado grande → 413; JSON roto, fuente desconocida, sin filas o más de 50 → 400', async () => {
+    const outcome = async (res: Response) => ({ status: res.status, code: (await res.json()).error.code })
+    expect(await outcome(await post('x'.repeat(MAX_BATCH_BYTES + 1)))).toEqual({ status: 413, code: 'payload_too_large' })
+    expect(await outcome(await post(valid, { 'content-length': String(MAX_BATCH_BYTES + 10) }))).toEqual({
+      status: 413,
+      code: 'payload_too_large',
+    })
+    expect(await outcome(await post('{nope'))).toEqual({ status: 400, code: 'invalid_json' })
+    expect(await outcome(await post({ ...valid, source: 'trakt' }))).toEqual({ status: 400, code: 'invalid_input' })
+    expect(await outcome(await post({ source: 'letterboxd', items: [] }))).toEqual({ status: 400, code: 'invalid_input' })
     const many = Array.from({ length: 51 }, (_, i) => ({ ...valid.items[0], key: String(i) }))
-    expect((await post({ source: 'letterboxd', items: many })).status).toBe(400)
+    expect(await outcome(await post({ source: 'letterboxd', items: many }))).toEqual({ status: 400, code: 'invalid_input' })
+    expect(state.db.tables.user_media).toHaveLength(0)
   })
 
   it('importa lo válido, marca lo inválido y lo escribe para el usuario de la sesión', async () => {
     const res = await post(valid)
     expect(res.status).toBe(200)
     expect(res.headers.get('Cache-Control')).toBe('no-store')
-    const body = await res.json()
+    const body = importBatchResultSchema.parse((await res.json()).data)
     expect(body.results).toEqual([
       { key: '0', outcome: 'added', mediaId: 'movie_438631', by: 'title_year', title: 'Dune', year: 2021 },
       { key: '1', outcome: 'invalid' },
@@ -143,6 +153,7 @@ describe('POST /api/account/import/external', () => {
     state.db.errors['user_media.upsert'] = { code: '23503', message: 'fk' }
     const res = await post(valid)
     expect(res.status).toBe(500)
+    expect((await res.json()).error.code).toBe('internal')
     expect(JSON.stringify(state.logs)).not.toContain(SECRET_TITLE)
   })
 })

@@ -11,6 +11,15 @@ import type { AvatarColorName } from '@/lib/constants/avatarColors'
 import { createClient } from '@/lib/supabase/client'
 import { getAuthErrorKeyFromError } from '@/lib/utils/auth-errors'
 import { USERNAME_REGEX, isReservedUsername, type LibraryVisibility } from '@/lib/account/identity'
+import { ApiError } from '@/lib/api/client'
+import { ACCOUNT_ERRORS } from '@/lib/account/errors'
+import {
+  cancelAccountDeletion,
+  deleteAccount,
+  fetchDeletionSummary,
+  importKulturaExport,
+  type DeletionSummary,
+} from '@/lib/account/client'
 
 // KULTURA — Lógica de Ajustes de cuenta (rescate F0, §7.3).
 //
@@ -34,15 +43,7 @@ export interface AccountSettingsInit {
 }
 
 /** Resumen de GET /api/account para el modal de borrado. */
-export interface DeletionSummary {
-  library: number
-  lists: number
-  messages: number
-  friends: number
-  groups: Array<{ name: string; successor: string | null }> | null
-  sharedLists: Array<{ name: string; successor: string | null }> | null
-  graceDays: number
-}
+export type { DeletionSummary }
 
 /** Cuántos grupos/listas se nombran en el modal antes de "y N más". */
 const SUMMARY_MAX_NAMED = 4
@@ -320,24 +321,7 @@ export function useAccountSettings({
     setImporting(true)
     try {
       const payload = JSON.parse(await file.text())
-      const res = await fetch('/api/account/import', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
-      })
-      if (!res.ok) {
-        toast.show({ message: t('importDataError'), type: 'error' })
-        return
-      }
-      const result: {
-        libraryImported: number
-        listsImported: number
-        libraryUnresolved?: number
-        libraryFailed?: number
-        listItemsFailed?: number
-        diaryFailed?: number
-        sectionsFailed?: string[]
-      } = await res.json()
+      const result = await importKulturaExport(payload)
       toast.show({
         message: t('importDataSuccess', {
           count: result.libraryImported,
@@ -345,17 +329,16 @@ export function useAccountSettings({
         }),
         type: 'success',
       })
-      setImportUnresolved(result.libraryUnresolved ?? 0)
+      setImportUnresolved(result.libraryUnresolved)
       // Saneamiento 1.4: lo que la base no guardó se dice (antes se daba por
       // importado). Reimportar el mismo archivo lo reintenta sin duplicar.
-      const failed =
-        (result.libraryFailed ?? 0) + (result.listItemsFailed ?? 0) + (result.diaryFailed ?? 0)
+      const failed = result.libraryFailed + result.listItemsFailed + result.diaryFailed
       if (failed > 0 || (result.sectionsFailed?.length ?? 0) > 0) {
         toast.show({ message: t('importPartial', { count: failed }), type: 'error' })
       }
       router.refresh()
     } catch {
-      // Cubre tanto un JSON corrupto como un fallo de red.
+      // Cubre un JSON corrupto, un fichero que no es nuestro y un fallo de red.
       toast.show({ message: t('importDataError'), type: 'error' })
     } finally {
       setImporting(false)
@@ -370,8 +353,7 @@ export function useAccountSettings({
     setDeletionSummary(null)
     setSummaryLoading(true)
     try {
-      const res = await fetch('/api/account')
-      if (res.ok) setDeletionSummary((await res.json()) as DeletionSummary)
+      setDeletionSummary(await fetchDeletionSummary())
     } catch {
       // Sin resumen se enseña el texto genérico: borrar sigue siendo posible.
     } finally {
@@ -412,15 +394,7 @@ export function useAccountSettings({
   async function handleCancelDeletion() {
     setCancellingDeletion(true)
     try {
-      const res = await fetch('/api/account', {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ cancel_deletion: true }),
-      })
-      if (!res.ok) {
-        toast.show({ message: t('errorSave'), type: 'error' })
-        return
-      }
+      await cancelAccountDeletion()
       setPendingDeletion(null)
       toast.show({ message: t('deletionCancelled'), type: 'success' })
       router.refresh()
@@ -435,30 +409,27 @@ export function useAccountSettings({
     setDeleting(true)
     setDeleteError(null)
     try {
-      const res = await fetch('/api/account', {
-        method: 'DELETE',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ password: deletePassword }),
-      })
-      if (!res.ok) {
+      let result: Awaited<ReturnType<typeof deleteAccount>>
+      try {
+        result = await deleteAccount(deletePassword)
+      } catch (err) {
         // Reautenticación: el error se queda en el modal, abierto, para corregir.
-        const { error } = (await res.json().catch(() => ({}))) as { error?: string }
-        if (error === 'password_required' || error === 'wrong_password') {
+        const reason = err instanceof ApiError ? err.message : null
+        if (reason === ACCOUNT_ERRORS.passwordRequired || reason === ACCOUNT_ERRORS.wrongPassword) {
           setDeleteError(t('deletePasswordWrong'))
-        } else if (error === 'reauth_required') {
+        } else if (reason === ACCOUNT_ERRORS.reauthRequired) {
           setDeleteError(t('deleteReauthRequired'))
         } else {
           setDeleteError(t('deleteAccountError'))
         }
         return
       }
-      const result = (await res.json().catch(() => ({}))) as { scheduled?: boolean; purgeAt?: string }
       setDeleteModalOpen(false)
       const supabase = createClient()
       await unsubscribeCurrentDevice()
       await supabase.auth.signOut()
       router.push(
-        result.scheduled && result.purgeAt
+        result.scheduled
           ? `/${currentLocale}/login?account=deletion_scheduled&purge_at=${encodeURIComponent(result.purgeAt)}`
           : `/${currentLocale}/login?account=deleted`
       )

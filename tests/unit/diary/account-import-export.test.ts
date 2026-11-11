@@ -5,7 +5,8 @@
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { createFakeDb, fakeClient } from '../media/fake-supabase'
-import { collectExportSections } from '@/app/api/account/export/collect'
+import { collectExportSections } from '@/lib/account/export-collect'
+import { kulturaImportResultSchema } from '@/lib/api/contracts/account'
 
 const mockGetUser = vi.fn()
 const upserts: unknown[][] = []
@@ -55,7 +56,7 @@ vi.mock('@/lib/supabase/server', () => ({
 }))
 vi.mock('@/lib/rate-limit', async (importOriginal) => ({
   ...(await importOriginal<typeof import('@/lib/rate-limit')>()),
-  checkRateLimit: () => ({ allowed: true, retryAfterSeconds: 0 }),
+  checkRateLimitDistributed: async () => ({ allowed: true, retryAfterSeconds: 0 }),
 }))
 vi.mock('@/lib/claude/recommendations', () => ({ invalidateRecCache: vi.fn() }))
 vi.mock('@/lib/recommendations/match-score', () => ({ invalidateMatchScoreCache: vi.fn() }))
@@ -70,13 +71,14 @@ function importRequest(body: unknown) {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(body),
-  }) as unknown as import('next/server').NextRequest
+  })
 }
 
 async function runImport(body: unknown) {
   const { POST } = await import('@/app/api/account/import/route')
   const res = await POST(importRequest(body))
-  return { status: res.status, json: (await res.json()) as Record<string, unknown> }
+  const out = await res.json()
+  return { status: res.status, json: kulturaImportResultSchema.parse(out.data) }
 }
 
 const FILE = {

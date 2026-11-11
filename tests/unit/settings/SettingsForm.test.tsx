@@ -46,12 +46,19 @@ const DEFAULT_PROPS = {
 
 // ── Tests ─────────────────────────────────────────────────────────────────────
 
-/** Lo que manda el modal al confirmar: DELETE con la contraseña (saneamiento 1.1). */
+/**
+ * Lo que manda el modal al confirmar: DELETE con la contraseña (saneamiento 1.1);
+ * sin contraseña (cuenta solo con Google), un cuerpo vacío.
+ */
 const DELETE_WITH = (password: string) => ({
   method: 'DELETE',
-  headers: { 'Content-Type': 'application/json' },
-  body: JSON.stringify({ password }),
+  headers: { Accept: 'application/json', 'Content-Type': 'application/json' },
+  body: JSON.stringify(password ? { password } : {}),
 })
+
+/** Error con el contrato `{ error: { code, message } }`. */
+const apiErrorResponse = (status: number, code: string, message: string) =>
+  new Response(JSON.stringify({ error: { code, message } }), { status, headers: new Headers() })
 
 describe('SettingsForm', () => {
   beforeEach(() => {
@@ -161,7 +168,12 @@ describe('SettingsForm', () => {
     fireEvent.click(screen.getByText('deleteAccount'))
     expect(screen.getByText('deleteAccountConfirmTitle')).toBeInTheDocument()
     // Solo pide el resumen (GET); nada de DELETE hasta confirmar.
-    await waitFor(() => expect(global.fetch).toHaveBeenCalledWith('/api/account'))
+    await waitFor(() =>
+      expect(global.fetch).toHaveBeenCalledWith(
+        '/api/account',
+        expect.not.objectContaining({ method: expect.anything() })
+      )
+    )
     expect(global.fetch).not.toHaveBeenCalledWith('/api/account', expect.objectContaining({ method: 'DELETE' }))
     // Sin resumen, el texto genérico.
     await waitFor(() => expect(screen.getByText('deleteAccountConfirmMessage')).toBeInTheDocument())
@@ -169,7 +181,7 @@ describe('SettingsForm', () => {
 
   it('confirmar en el modal llama DELETE /api/account, hace signOut y redirige al login con aviso', async () => {
     global.fetch = vi.fn().mockImplementation(async () =>
-      new Response(JSON.stringify({ ok: true, scheduled: false }), { status: 200 })
+      new Response(JSON.stringify({ data: { scheduled: false, transferred: null } }), { status: 200 })
     )
 
     render(<SettingsForm {...DEFAULT_PROPS} />)
@@ -202,7 +214,7 @@ describe('SettingsForm', () => {
   it('contraseña errónea: avisa en el modal y no cierra sesión', async () => {
     global.fetch = vi.fn().mockImplementation(async (_url: string, init?: RequestInit) =>
       init?.method === 'DELETE'
-        ? new Response(JSON.stringify({ error: 'wrong_password' }), { status: 403 })
+        ? apiErrorResponse(403, 'forbidden', 'wrong_password')
         : new Response(null, { status: 500 })
     )
     render(<SettingsForm {...DEFAULT_PROPS} />)
@@ -218,7 +230,7 @@ describe('SettingsForm', () => {
   it('cuenta solo con Google: sin campo de contraseña; si el acceso es viejo, pide volver a entrar', async () => {
     global.fetch = vi.fn().mockImplementation(async (_url: string, init?: RequestInit) =>
       init?.method === 'DELETE'
-        ? new Response(JSON.stringify({ error: 'reauth_required' }), { status: 403 })
+        ? apiErrorResponse(403, 'forbidden', 'reauth_required')
         : new Response(null, { status: 500 })
     )
     render(<SettingsForm {...DEFAULT_PROPS} hasPassword={false} />)

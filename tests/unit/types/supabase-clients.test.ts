@@ -28,7 +28,7 @@ describe("clientes de Supabase tipados", () => {
     expect(() => read("src/lib/supabase/json.ts")).toThrow();
     expect(read("src/types/library.ts")).toMatch(/export type EpisodeProgress = \{/);
     expect(read("src/lib/claude/daily-recs.ts")).toMatch(/export type AiRecsResult = \{/);
-    expect(read("src/app/api/account/export/collect.ts")).not.toContain("as unknown as");
+    expect(read("src/lib/account/export-collect.ts")).not.toContain("as unknown as");
   });
 
   it("el perfil no se inventa la fecha de alta si la columna viene nula", () => {
