@@ -97,12 +97,8 @@ type Admin = ReturnType<typeof createAdminClient>
 
 async function findInviter(admin: Admin, ref: string): Promise<{ id: string; username: string } | null> {
   const { data } = await admin.from('users').select('id, username').eq('username', ref).maybeSingle()
-  if (data) return data as { id: string; username: string }
-  // Nombre antiguo (F-12): el enlace se compartió antes de cambiarlo.
-  const { data: current, error } = await admin.rpc('username_redirect', { p_username: ref })
-  if (error || typeof current !== 'string' || !current || current === ref) return null
-  const { data: renamed } = await admin.from('users').select('id, username').eq('username', current).maybeSingle()
-  return (renamed as { id: string; username: string } | null) ?? null
+  // Un nombre antiguo no se resuelve (Q8): el enlace deja de servir.
+  return (data as { id: string; username: string } | null) ?? null
 }
 
 /**

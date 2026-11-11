@@ -53,6 +53,14 @@ jobs:
       - name: Audit (producción)
         run: npm audit --omit=dev --audit-level=high
 
+      # Saneamiento 2.12: una migración nueva con fecha anterior a la última
+      # de master se quedaría sin aplicar en producción.
+      - name: Orden de las migraciones
+        if: github.event_name == 'pull_request'
+        run: |
+          git fetch --depth=1 origin "$GITHUB_BASE_REF"
+          node scripts/check-migration-order.mjs FETCH_HEAD
+
       - name: Lint
         run: npm run lint
 

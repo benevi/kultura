@@ -48,7 +48,6 @@ vi.mock("@/lib/media/detail-data", () => ({ loadMediaDetail: async () => null })
 vi.mock("@/lib/social/public-collection", async (orig) => ({
   ...(await orig<typeof import("@/lib/social/public-collection")>()),
   getPublicCollection: h.getPublicCollection,
-  resolveRenamedUsername: async () => null,
 }));
 
 import * as ratedImageModule from "@/app/[locale]/u/[username]/r/[type]/[id]/opengraph-image";

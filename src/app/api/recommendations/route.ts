@@ -11,6 +11,7 @@ import { checkRateLimit, LIMITS } from '@/lib/rate-limit'
 import { createLogger } from '@/lib/logger'
 import { upsertMediaFromProvider, mediaFailureStatus } from '@/lib/media/upsert-from-provider'
 import { localeFromRequest } from '@/lib/media/request-locale'
+import { isRlsDenied } from '@/lib/social/friends'
 
 const log = createLogger('api/recommendations')
 
@@ -114,6 +115,10 @@ export async function POST(request: Request): Promise<NextResponse> {
     .select('id')
     .single()
 
+  // Saneamiento 2.4 (Q7): la RLS solo deja recomendar a amistades aceptadas.
+  if (isRlsDenied(recError)) {
+    return NextResponse.json({ error: 'not_friends' }, { status: 403 })
+  }
   if (recError || !recommendation) {
     return NextResponse.json({ error: 'Failed to create recommendation' }, { status: 500 })
   }

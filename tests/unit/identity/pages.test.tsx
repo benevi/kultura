@@ -153,11 +153,12 @@ describe('/profile/[username] (D-04b y nombres antiguos)', () => {
     return ProfilePage({ params: Promise.resolve({ locale: 'es', username }) })
   }
 
-  it('nombre antiguo → 308 al actual', async () => {
+  it('nombre antiguo no se resuelve (Q8): 404, sin redirigir ni llamar a ninguna rpc', async () => {
     h.tables.users = single(null)
     h.rpc.mockResolvedValue({ data: 'ana_nueva', error: null })
-    await expect(page('ana_vieja')).rejects.toThrow('308 /es/profile/ana_nueva')
-    expect(h.rpc).toHaveBeenCalledWith('username_redirect', { p_username: 'ana_vieja' })
+    await expect(page('ana_vieja')).rejects.toThrow('NOT_FOUND')
+    expect(h.rpc).not.toHaveBeenCalled()
+    expect(h.permanentRedirect).not.toHaveBeenCalled()
   })
 
   it('nombre que no existe ni existió → 404', async () => {
@@ -198,16 +199,18 @@ describe('/u/[username] (pública)', () => {
     h.user = null
   })
 
-  it('nombre antiguo → 308 al actual, así los enlaces compartidos no se rompen', async () => {
+  it('nombre antiguo no se resuelve (Q8): 404, sin redirigir ni llamar a username_redirect', async () => {
     h.tables = { users: single(null) }
     h.rpc.mockResolvedValue({ data: 'ana_nueva', error: null })
     const { default: PublicCollectionPage } = await import('@/app/[locale]/u/[username]/page')
     await expect(
       PublicCollectionPage({ params: Promise.resolve({ locale: 'en', username: 'ana_vieja' }) })
-    ).rejects.toThrow('308 /en/u/ana_nueva')
+    ).rejects.toThrow('NOT_FOUND')
+    expect(h.rpc).not.toHaveBeenCalledWith('username_redirect', expect.anything())
+    expect(h.permanentRedirect).not.toHaveBeenCalled()
   })
 
-  it('sin la función (migración sin aplicar) → 404 de siempre', async () => {
+  it('nombre que no existe → 404', async () => {
     h.tables = { users: single(null) }
     h.rpc.mockResolvedValue({ data: null, error: { code: 'PGRST202' } })
     const { default: PublicCollectionPage } = await import('@/app/[locale]/u/[username]/page')

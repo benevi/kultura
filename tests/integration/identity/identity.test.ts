@@ -72,13 +72,19 @@ describe.skipIf(!configured)("F-12 identidad (proyecto de test)", () => {
     }
   });
 
-  it("tras renombrar, el nombre antiguo resuelve al nuevo (308 en /u y /profile)", async () => {
+  it("tras renombrar, el nombre antiguo no lleva al nuevo: username_redirect ya no existe (Q8)", async () => {
     const admin = adminClient();
     const { data: before } = await admin.from("users").select("username").eq("id", owner.id).single();
     const renamed = `f12_${RUN}`.slice(0, 20);
     await admin.from("users").update({ username: renamed }).eq("id", owner.id);
-    const { data } = await stranger.client.rpc("username_redirect", { p_username: before!.username });
-    expect(data).toBe(renamed);
+    // Fuera de los tipos generados: se llama por nombre a propósito.
+    const rpc = stranger.client.rpc.bind(stranger.client) as unknown as (
+      fn: string,
+      args: Record<string, unknown>
+    ) => Promise<{ data: unknown; error: { code?: string } | null }>;
+    const { data, error } = await rpc("username_redirect", { p_username: before!.username });
+    expect(data).toBeNull();
+    expect(error?.code).toBe("PGRST202");
   });
 
   it("friends (por defecto): el amigo la ve, un desconocido no", async () => {

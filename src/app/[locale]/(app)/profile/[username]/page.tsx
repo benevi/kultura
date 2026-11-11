@@ -5,7 +5,7 @@
 // ============================================================
 
 import { Suspense } from 'react'
-import { notFound, permanentRedirect } from 'next/navigation'
+import { notFound } from 'next/navigation'
 import type { Metadata } from 'next'
 import { createClient } from '@/lib/supabase/server'
 import { getUserStats } from '@/lib/library/stats'
@@ -17,7 +17,7 @@ import { ProfileGenres } from '@/components/profile/ProfileGenres'
 import { FriendshipButton } from '@/components/social/FriendshipButton'
 import { ReportButton } from '@/components/social/ReportButton'
 import { ShareLinkButton } from '@/components/social/ShareLinkButton'
-import { hasPublicLists, resolveRenamedUsername } from '@/lib/social/public-collection'
+import { hasPublicLists } from '@/lib/social/public-collection'
 import { MediaRow } from '@/components/home/MediaRow'
 import { FriendProfileActivity, FriendsActivitySkeleton } from '../../home/sections'
 import { KButton } from '@/components/ui/KButton'
@@ -76,13 +76,8 @@ export default async function ProfilePage({ params }: Props) {
     .eq('username', username)
     .maybeSingle()
 
-  if (!profileUser) {
-    // R11: un nombre antiguo redirige (308) al actual. Sin la migración, la
-    // función no existe y es un 404 normal.
-    const current = await resolveRenamedUsername(username)
-    if (current) permanentRedirect(`/${locale}/profile/${encodeURIComponent(current)}`)
-    notFound()
-  }
+  // Un nombre antiguo es un 404 más (Q8): no lleva al nombre actual.
+  if (!profileUser) notFound()
 
   // Usuario autenticado (puede ser null si no hay sesión)
   const { data: { user: currentUser } } = await supabase.auth.getUser()

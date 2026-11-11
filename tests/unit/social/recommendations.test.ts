@@ -167,6 +167,33 @@ describe('POST /api/recommendations', () => {
     )
   })
 
+  it('saneamiento 2.4 (Q7): si la RLS lo rechaza (no sois amigos) → 403 not_friends, sin aviso', async () => {
+    // Otro usuario: el límite de peticiones (en memoria) va por usuario.
+    mockGetUser.mockResolvedValue({ data: { user: { id: 'user-rls' } }, error: null })
+    mockFromUsers.mockReturnValue({
+      select: vi.fn().mockReturnValue({
+        eq: vi.fn().mockReturnValue({
+          maybeSingle: vi.fn().mockResolvedValue({ data: { id: RECEIVER_ID }, error: null }),
+        }),
+      }),
+    })
+    mockFromRecommendations.mockReturnValue({
+      insert: vi.fn().mockReturnValue({
+        select: vi.fn().mockReturnValue({
+          single: vi.fn().mockResolvedValue({
+            data: null,
+            error: { code: '42501', message: 'new row violates row-level security policy' },
+          }),
+        }),
+      }),
+    })
+    const { POST } = await import('@/app/api/recommendations/route')
+    const res = await POST(makeRequest({ toUserId: RECEIVER_ID, mediaId: MEDIA_ID }))
+    expect(res.status).toBe(403)
+    expect(await res.json()).toEqual({ error: 'not_friends' })
+    expect(mockAdminNotifInsert).not.toHaveBeenCalled()
+  })
+
   it('garantiza la fila de media en el servidor e ignora mediaCache (SEG-2)', async () => {
     mockGetUser.mockResolvedValue({ data: { user: AUTH_USER }, error: null })
     mockFromUsers.mockReturnValue({

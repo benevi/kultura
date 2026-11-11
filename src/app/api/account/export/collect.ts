@@ -261,7 +261,8 @@ export async function collectExportSections(admin: SupabaseClient, userId: strin
   const otherIds = new Set<string>()
   for (const m of memberRows) otherIds.add(String(m.user_id))
   // Quien escribió y luego salió de la conversación ya no está en memberRows.
-  for (const m of receivedRows) otherIds.add(String(m.sender_id))
+  // Sin autor (cuenta borrada, saneamiento 2.10) no hay nombre que buscar.
+  for (const m of receivedRows) if (m.sender_id) otherIds.add(String(m.sender_id))
   for (const r of sent) otherIds.add(String(r.to_user_id))
   for (const r of received) otherIds.add(String(r.from_user_id))
   for (const i of invitations) {

@@ -85,7 +85,7 @@ Estado de partida:
 
 ---
 
-## 🟨 Fase 1 · Pérdida de datos (solo código) — 1.1 #98 · 1.2 #99 · 1.3 #100 · 1.4 #101 · 1.5 #102 · 1.6 (este PR)
+## ✅ Fase 1 · Pérdida de datos (solo código) — 1.1 #98 · 1.2 #99 · 1.3 #100 · 1.4 #101 · 1.5 #102 · 1.6 #103
 
 | # | Problema | Arreglo |
 |---|---|---|
@@ -104,7 +104,7 @@ Estado de partida:
 
 ---
 
-## ⬜ Fase 2 · Seguridad en la base de datos (migración `20261230000001_harden_grants_and_policies`)
+## 🟨 Fase 2 · Seguridad en la base de datos (migración `20261230000001_harden_grants_and_policies`) — código y test: este PR · prod: pendiente
 
 1. `alter default privileges in schema public revoke all on tables, sequences, functions from anon`. Revisar también lo que se concede por defecto a `authenticated`.
 2. `is_group_member` e `is_conversation_member`: usar `auth.uid()` en lugar del parámetro, o revocar `EXECUTE` y llamarlas solo desde políticas.
@@ -118,9 +118,17 @@ Estado de partida:
 10. **Borrado de cuenta y mensajes** (Q6): `messages.sender_id` pasa a `ON DELETE SET NULL` y el texto de esos mensajes se vacía. El chat del otro usuario muestra «usuario eliminado».
 11. Revisar el resto de funciones SECURITY DEFINER que avisa el linter y revocar `EXECUTE` donde solo se usen desde políticas.
 12. Test de CI que vigila el orden de las migraciones (regla 5).
-13. Panel de Supabase: activar la protección contra contraseñas filtradas (Víctor).
+13. ~~Panel de Supabase: activar la protección contra contraseñas filtradas (Víctor).~~ Descartado el 11-11-2026: solo existe en el plan Pro y el proyecto está en el gratuito. Revisar si se cambia de plan.
 
 **Verificación:** un test de RLS por punto en `tests/integration` contra `kultura-test`, y `get_advisors` (security) sin avisos nuevos.
+
+**Notas de la ejecución:**
+- Aplicada en `kultura-test` el 11-11-2026: `tests/integration/rls` (50) en verde, `fase2.test.ts` incluido. Producción: pendiente de copia manual y «sí».
+- 1: los privilegios por defecto de `supabase_admin` no se pueden cambiar desde una migración. `authenticated` sigue recibiendo SELECT/INSERT/UPDATE/DELETE por defecto (la RLS decide); ver `supabase/migrations/README.md`.
+- 2 y 11: las funciones SECURITY DEFINER que usan las políticas (`can_read_*`, `has_block_with`, `is_*`, `can_send_message`) necesitan EXECUTE para quien consulta: el aviso del linter sobre ellas es esperado. `is_group_owner` se deja igual (una política la llama con otro usuario).
+- 3: `username_history` se conserva: un nombre antiguo sigue reservado (ya no redirige).
+- 4: la API responde 403 `not_friends` si la base lo rechaza.
+- La integración de CI no corre: faltan los secretos `SUPABASE_TEST_*` en GitHub. Añadirlos (Víctor) para que el cron semanal la ejecute. Al correrla a mano salió que `createGroup` de los tests fallaba con grupos privados (RETURNING antes del disparador); la app ya lo evitaba.
 
 ---
 

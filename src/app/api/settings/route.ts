@@ -7,7 +7,7 @@
 // avatar_color, preferred_locale y (desde F-12) library_visibility. El nombre
 // de usuario se cambia con el cliente admin, después de validar sesión,
 // formato, nombres reservados y que no esté cogido (ni como nombre antiguo de
-// otra persona, que sigue redirigiendo a ella); por eso aquí se corta a mano la
+// otra persona: ver abajo); por eso aquí se corta a mano la
 // cuenta demo, que el admin no frena.
 //
 // F-12 (onboarding): `accept_terms` y `onboarding_done` los guarda el servidor
@@ -167,8 +167,8 @@ export async function PATCH(req: NextRequest): Promise<NextResponse> {
   const needsAdmin = updates.username !== undefined || accept_terms || onboarding_done
   const admin = needsAdmin ? createAdminClient() : null
 
-  // Un nombre antiguo de OTRA persona sigue redirigiendo a ella (308 desde
-  // /u/<antiguo>): quedárselo secuestraría sus enlaces compartidos.
+  // Un nombre antiguo de OTRA persona queda reservado: ya no redirige (Q8),
+  // pero quien lo cogiera podría hacerse pasar por ella en enlaces viejos.
   if (admin && username) {
     const { data: previous, error: historyError } = await admin
       .from('username_history')

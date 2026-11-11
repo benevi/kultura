@@ -124,8 +124,6 @@ vi.mock('@/lib/supabase/server', () => ({
 }))
 vi.mock('@/lib/social/public-collection', () => ({
   getPublicList: async () => h.list,
-  usernameExists: async () => true,
-  resolveRenamedUsername: async () => null,
 }))
 vi.mock('@/lib/social/lists', async (importOriginal) => ({
   ...(await importOriginal<typeof import('@/lib/social/lists')>()),

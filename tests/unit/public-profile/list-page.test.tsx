@@ -1,5 +1,5 @@
-// F-17: lista pública /u/[username]/l/[id] — 308 desde un nombre antiguo
-// (pendiente de F-12) y denuncia (D-13): botón con sesión, formulario sin ella.
+// F-17: lista pública /u/[username]/l/[id] — un nombre antiguo es un 404 más
+// (Q8) y denuncia (D-13): botón con sesión, formulario sin ella.
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { isValidElement, type ReactElement, type ReactNode } from 'react'
 
@@ -12,8 +12,6 @@ const h = vi.hoisted(() => {
   return {
     user: null as { id: string } | null,
     list: null as unknown,
-    exists: vi.fn(),
-    renamed: vi.fn(),
     v2: true,
     permanentRedirect: vi.fn((url: string) => {
       throw new Error(`308 ${url}`)
@@ -42,8 +40,6 @@ vi.mock('@/lib/supabase/server', () => ({
 }))
 vi.mock('@/lib/social/public-collection', () => ({
   getPublicList: async () => h.list,
-  usernameExists: (...a: unknown[]) => h.exists(...a),
-  resolveRenamedUsername: (...a: unknown[]) => h.renamed(...a),
 }))
 vi.mock('@/lib/social/friends', () => ({ isModerationV2: () => h.v2 }))
 vi.mock('@/components/social/ReportButton', () => ({ ReportButton: h.M.ReportButton }))
@@ -83,22 +79,19 @@ beforeEach(() => {
   h.user = null
   h.list = LIST
   h.v2 = true
-  h.exists.mockResolvedValue(true)
-  h.renamed.mockResolvedValue(null)
 })
 
 describe('/u/[username]/l/[id]', () => {
-  it('nombre antiguo → 308 a la misma lista con el nombre actual', async () => {
+  it('nombre antiguo no se resuelve (Q8): 404, sin redirigir al actual', async () => {
     h.list = null
-    h.exists.mockResolvedValue(false)
-    h.renamed.mockResolvedValue('ana_nueva')
-    await expect(page('ana_vieja')).rejects.toThrow(`308 /es/u/ana_nueva/l/${LIST.list.id}`)
+    await expect(page('ana_vieja')).rejects.toThrow('NOT_FOUND')
+    expect(h.permanentRedirect).not.toHaveBeenCalled()
   })
 
-  it('lista privada de alguien que existe → 404 (no se busca un nombre antiguo)', async () => {
+  it('lista privada de alguien que existe → 404', async () => {
     h.list = null
     await expect(page()).rejects.toThrow('NOT_FOUND')
-    expect(h.renamed).not.toHaveBeenCalled()
+    expect(h.permanentRedirect).not.toHaveBeenCalled()
   })
 
   it('sin sesión: enlace al formulario público y registro atribuido a la lista', async () => {

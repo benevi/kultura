@@ -71,13 +71,15 @@ export async function makeFriends(a: TestUser, b: TestUser): Promise<void> {
 }
 
 export async function createGroup(owner: TestUser, isPublic: boolean): Promise<string> {
-  const { data, error } = await owner.client
+  // Sin RETURNING, como la app (lib/social/groups.ts): la fila de dueño la
+  // crea un disparador AFTER, así que un grupo privado aún no es visible para
+  // quien lo crea cuando se comprueba la política SELECT del RETURNING.
+  const id = crypto.randomUUID();
+  const { error } = await owner.client
     .from("groups")
-    .insert({ owner_id: owner.id, name: `F02 ${RUN}`, is_public: isPublic })
-    .select("id")
-    .single();
-  if (error || !data) throw new Error(`createGroup: ${error?.message}`);
-  return data.id as string;
+    .insert({ id, owner_id: owner.id, name: `F02 ${RUN}`, is_public: isPublic });
+  if (error) throw new Error(`createGroup: ${error.message}`);
+  return id;
 }
 
 export async function isMember(groupId: string, userId: string): Promise<boolean> {

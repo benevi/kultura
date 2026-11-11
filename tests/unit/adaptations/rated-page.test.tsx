@@ -16,7 +16,6 @@ const h = vi.hoisted(() => ({
   permanentRedirect: vi.fn((url: string) => {
     throw new Error(`REDIRECT ${url}`);
   }),
-  renamed: vi.fn(async () => null as string | null),
 }));
 
 vi.mock("next/navigation", () => ({ notFound: h.notFound, permanentRedirect: h.permanentRedirect }));
@@ -28,10 +27,6 @@ vi.mock("@/lib/supabase/server", () => ({
   },
 }));
 vi.mock("@/lib/media/detail-data", () => ({ loadMediaDetail: async () => null }));
-vi.mock("@/lib/social/public-collection", async (orig) => ({
-  ...(await orig<typeof import("@/lib/social/public-collection")>()),
-  resolveRenamedUsername: h.renamed,
-}));
 vi.mock("next-intl/server", () => {
   const pick = (ns: string, key: string) => {
     const tree = (es as unknown as Record<string, Record<string, unknown>>)[ns];
@@ -78,7 +73,6 @@ beforeEach(() => {
   h.world.rpc.can_read_library = ({ p_owner, uid }) => ({ data: p_owner === uid || uid === "friend", error: null });
   h.world.rpc.has_block_with = () => ({ data: false, error: null });
   h.sessionUser = null;
-  h.renamed.mockReset().mockResolvedValue(null);
   process.env.RATING_SCALE_10 = "1";
 });
 
@@ -200,16 +194,19 @@ describe("página", () => {
     expect(screen.queryByTestId("signup")).toBeNull();
   });
 
-  it("usuario inexistente → 404; nombre antiguo → 308 al actual conservando firma y ref", async () => {
+  it("usuario inexistente → 404; un nombre antiguo tampoco se resuelve (Q8), aunque traiga firma", async () => {
+    const redirectRpc = vi.fn(() => ({ data: "benevi", error: null }));
+    h.world.rpc.username_redirect = redirectRpc;
     await expect(RatedTitlePage(props({}, { username: "nadie" }))).rejects.toThrow("NEXT_NOT_FOUND");
-    h.renamed.mockResolvedValue("benevi");
     await expect(RatedTitlePage(props({ s: SIG(), ref: "viejo" }, { username: "viejo" }))).rejects.toThrow(
-      `REDIRECT /es/u/benevi/r/movie/438631?s=${SIG()}&ref=viejo`
+      "NEXT_NOT_FOUND"
     );
+    expect(redirectRpc).not.toHaveBeenCalled();
+    expect(h.permanentRedirect).not.toHaveBeenCalled();
   });
 
-  it("id de título imposible → 404 sin buscar renombrados", async () => {
+  it("id de título imposible → 404", async () => {
     await expect(RatedTitlePage(props({}, { id: "x y" }))).rejects.toThrow("NEXT_NOT_FOUND");
-    expect(h.renamed).not.toHaveBeenCalled();
+    expect(h.permanentRedirect).not.toHaveBeenCalled();
   });
 });

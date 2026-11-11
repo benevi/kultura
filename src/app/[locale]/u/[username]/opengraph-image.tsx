@@ -2,7 +2,7 @@ import { ImageResponse } from "next/og";
 import { createTranslator } from "next-intl";
 import { C, loadFont, fontsOption } from "@/lib/og/brand";
 import { posterDataUri } from "@/lib/og/poster";
-import { getPublicCollection, resolveRenamedUsername } from "@/lib/social/public-collection";
+import { getPublicCollection } from "@/lib/social/public-collection";
 import { publicTopFour } from "@/lib/share/top-four";
 import { PROFILE_OG_ID } from "@/components/pwa/share";
 import es from "../../../../../messages/es.json";
@@ -73,15 +73,10 @@ export default async function Image({ params }: { params: CardParams | Promise<C
   const tOg = createTranslator({ locale: l, messages: MESSAGES[l], namespace: "share.og" });
   const t = createTranslator({ locale: l, messages: MESSAGES[l], namespace: "collection" });
 
-  // R11: con un nombre antiguo, la tarjeta es la del nombre actual (la página
-  // ya redirige con 308; la imagen se pide a veces por la URL vieja). Solo
-  // listas públicas: la tarjeta la ve cualquiera, la biblioteca nunca (salvo
-  // el top 4 cuando su dueño la deja ver sin cuenta, ver cabecera).
-  let collection = await getPublicCollection(username).catch(() => null);
-  if (!collection) {
-    const current = await resolveRenamedUsername(username).catch(() => null);
-    if (current) collection = await getPublicCollection(current).catch(() => null);
-  }
+  // Un nombre antiguo no se resuelve (Q8): tarjeta vacía, como uno que no
+  // existe. Solo listas públicas: la tarjeta la ve cualquiera, la biblioteca
+  // nunca (salvo el top 4 cuando su dueño la deja ver sin cuenta, ver cabecera).
+  const collection = await getPublicCollection(username).catch(() => null);
   const displayName = collection?.owner.username ?? username;
   const top = collection ? await publicTopFour(displayName).catch(() => null) : null;
   const lists = collection?.lists ?? [];
