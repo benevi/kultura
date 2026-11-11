@@ -6,14 +6,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { checkRateLimitDistributed, LIMITS } from '@/lib/rate-limit'
-
-/**
- * Escapa los comodines de `LIKE` (`%`, `_`) y la barra: buscar "%" o "_" no
- * debe convertirse en "todos los usuarios" ni en un patrón caro.
- */
-function escapeLikePattern(q: string): string {
-  return q.replace(/[\\%_]/g, (c) => `\\${c}`)
-}
+import { escapeLikePattern } from '@/lib/utils/escape-like'
 
 /** Longitud máxima de la consulta (un nombre de usuario no pasa de 30). */
 const MAX_QUERY_LENGTH = 40

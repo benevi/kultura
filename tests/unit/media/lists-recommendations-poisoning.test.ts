@@ -26,6 +26,7 @@ vi.mock('@/lib/supabase/admin', () => ({
 vi.mock('@/lib/rate-limit', async (importOriginal) => ({
   ...(await importOriginal<typeof import('@/lib/rate-limit')>()),
   checkRateLimit: () => ({ allowed: true, retryAfterSeconds: 0 }),
+  checkRateLimitDistributed: async () => ({ allowed: true, retryAfterSeconds: 0 }),
 }))
 vi.mock('@/lib/social/lists', () => ({
   canEditList: vi.fn(async () => true),
@@ -83,6 +84,7 @@ beforeEach(() => {
       { id: FRIEND.id, username: 'bob' },
     ],
     list_items: [],
+    friendships: [{ id: 'f-1', requester_id: USER.id, receiver_id: FRIEND.id, status: 'accepted' }],
     recommendations: [],
     notifications: [],
   })

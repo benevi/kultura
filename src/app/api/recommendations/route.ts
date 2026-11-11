@@ -7,7 +7,7 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
-import { checkRateLimit, LIMITS } from '@/lib/rate-limit'
+import { checkRateLimitDistributed, LIMITS } from '@/lib/rate-limit'
 import { createLogger } from '@/lib/logger'
 import { upsertMediaFromProvider, mediaFailureStatus } from '@/lib/media/upsert-from-provider'
 import { localeFromRequest } from '@/lib/media/request-locale'
@@ -33,7 +33,7 @@ export async function POST(request: Request): Promise<NextResponse> {
   }
 
   // Rate limiting — 10 req/min por usuario
-  const rl = checkRateLimit(`${user.id}:recommendations`, LIMITS.recommendations)
+  const rl = await checkRateLimitDistributed(`${user.id}:recommendations`, LIMITS.recommendations)
   if (!rl.allowed) {
     return NextResponse.json(
       { error: 'Too many requests' },
@@ -86,6 +86,23 @@ export async function POST(request: Request): Promise<NextResponse> {
 
   if (!receiver) {
     return NextResponse.json({ error: 'User not found' }, { status: 404 })
+  }
+
+  // Saneamiento 4.2 (Q7): solo a amistades aceptadas, y ANTES de pedir la
+  // ficha al proveedor (sin esto, cualquiera gastaba cuota del proveedor con
+  // recomendaciones que la base iba a rechazar). La RLS lo vuelve a exigir,
+  // junto con que no haya bloqueo. Una sola fila posible por pareja (fase 3).
+  const pair = [user.id, body.toUserId]
+  const { data: friendship } = await supabase
+    .from('friendships')
+    .select('id')
+    .eq('status', 'accepted')
+    .in('requester_id', pair)
+    .in('receiver_id', pair)
+    .maybeSingle()
+
+  if (!friendship) {
+    return NextResponse.json({ error: 'not_friends' }, { status: 403 })
   }
 
   // Obtener username del remitente para el payload de notificación

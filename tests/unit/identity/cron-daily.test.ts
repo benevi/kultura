@@ -57,7 +57,8 @@ describe('GET /api/cron/daily', () => {
     const res = await call(`Bearer ${SECRET}`)
     expect(res.status).toBe(200)
     expect(h.health).toHaveBeenCalledOnce()
-    expect((await res.json()).purge).toEqual({ status: 'not_configured' })
+    // Saneamiento 4.4: no revela que falta el secreto.
+    expect((await res.json()).purge).toEqual({ status: 'unauthorized' })
     expect(h.rpc).not.toHaveBeenCalled()
     expect(h.deleteUser).not.toHaveBeenCalled()
   })

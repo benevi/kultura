@@ -7,7 +7,7 @@
 // funcionar hasta el día en que el proyecto se pausa igualmente.
 // ============================================================
 
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { NextRequest } from "next/server";
 import { GET, dynamic } from "@/app/api/health/route";
 
@@ -109,9 +109,44 @@ describe("GET /api/health", () => {
     expect(probesMock).not.toHaveBeenCalled();
   });
 
+  describe("?deep=1 sin token (saneamiento 4.3)", () => {
+    afterEach(() => {
+      delete process.env.HEALTH_DEEP_TOKEN;
+    });
+
+    it.each([
+      ["sin HEALTH_DEEP_TOKEN configurado", undefined, "https://kultura.test/api/health?deep=1&token=x", {}],
+      ["sin token", "s3creto", "https://kultura.test/api/health?deep=1", {}],
+      ["con otro token", "s3creto", "https://kultura.test/api/health?deep=1&token=otro", {}],
+      ["con otro Bearer", "s3creto", "https://kultura.test/api/health?deep=1", { authorization: "Bearer otro" }],
+    ])("%s → 401 y ninguna sonda", async (_name, token, url, extra) => {
+      if (token) process.env.HEALTH_DEEP_TOKEN = token;
+      const res = await GET(new NextRequest(url, { headers: { "x-forwarded-for": "12.0.0.1", ...extra } }));
+      expect(res.status).toBe(401);
+      expect(probesMock).not.toHaveBeenCalled();
+    });
+
+    it("con el token en la cabecera Bearer también vale", async () => {
+      process.env.HEALTH_DEEP_TOKEN = "s3creto";
+      probesMock.mockResolvedValue({ ok: true, providers: {}, checkedAt: null });
+      const res = await GET(
+        new NextRequest("https://kultura.test/api/health?deep=1", {
+          headers: { "x-forwarded-for": "12.0.0.2", authorization: "Bearer s3creto" },
+        })
+      );
+      expect(res.status).toBe(200);
+    });
+  });
+
   describe("?deep=1", () => {
+    beforeEach(() => {
+      process.env.HEALTH_DEEP_TOKEN = "s3creto";
+    });
+    afterEach(() => {
+      delete process.env.HEALTH_DEEP_TOKEN;
+    });
     const deepReq = (ip: string) =>
-      new NextRequest("https://kultura.test/api/health?deep=1", {
+      new NextRequest("https://kultura.test/api/health?deep=1&token=s3creto", {
         headers: { "x-forwarded-for": ip },
       });
     const provider = (ok: boolean) => ({ ok, ms: 10, circuit: "closed" });

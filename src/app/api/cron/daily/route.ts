@@ -52,9 +52,12 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
   const health = (await healthResponse.json().catch(() => ({ ok: false }))) as { ok?: boolean }
 
   // Lo que borra datos exige el secreto. Sin él, solo el keep-alive.
+  // Saneamiento 4.4: la respuesta no dice si CRON_SECRET existe (antes
+  // `not_configured` lo revelaba a cualquiera); eso solo va al log.
   const secret = process.env.CRON_SECRET
   if (!secret || !authorized(req, secret)) {
-    const purge = { status: secret ? 'unauthorized' : 'not_configured' } as const
+    if (!secret) log.error('cron/daily: falta CRON_SECRET, la purga no se ejecuta')
+    const purge = { status: 'unauthorized' } as const
     return NextResponse.json(
       { ok: health.ok === true, health, purge },
       { status: healthResponse.status, headers: noStore }

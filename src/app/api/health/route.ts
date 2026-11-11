@@ -34,8 +34,13 @@
 //    respuesta sigue siendo 200 mientras la base responda; `ok` solo es `true`
 //    si además responden todos los proveedores. Monitores: `/api/health` cada
 //    5 min (base) y `?deep=1` cada 60 min con palabra clave `"ok":true`.
+//  - Saneamiento 4.3: `?deep=1` exige `HEALTH_DEEP_TOKEN`, en la cabecera
+//    `Authorization: Bearer <token>` o en `?token=<token>` (los monitores
+//    externos suelen admitir solo una URL). Sin él, 401: las sondas gastan
+//    cupo de los proveedores y su informe describe la infraestructura.
 // ============================================================
 
+import { timingSafeEqual } from "node:crypto";
 import { NextResponse, type NextRequest } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { checkRateLimit } from "@/lib/rate-limit";
@@ -50,6 +55,16 @@ const HEALTH_LIMIT = { windowMs: 60_000, max: 30 };
 /** Sin caché: el objetivo del endpoint es tocar la base en CADA llamada. */
 export const dynamic = "force-dynamic";
 
+/** ¿Trae el token de `?deep=1`? Sin `HEALTH_DEEP_TOKEN` configurado, nadie lo trae. */
+function deepAuthorized(req: NextRequest): boolean {
+  const token = process.env.HEALTH_DEEP_TOKEN;
+  if (!token) return false;
+  const header = req.headers.get("authorization");
+  const given = Buffer.from(header?.startsWith("Bearer ") ? header.slice(7) : (req.nextUrl.searchParams.get("token") ?? ""));
+  const expected = Buffer.from(token);
+  return given.length === expected.length && timingSafeEqual(given, expected);
+}
+
 export async function GET(req: NextRequest): Promise<NextResponse> {
   const ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "unknown";
   const rl = checkRateLimit(`${ip}:health`, HEALTH_LIMIT);
@@ -61,6 +76,12 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
   }
 
   const deep = req.nextUrl.searchParams.get("deep") === "1";
+  if (deep && !deepAuthorized(req)) {
+    return NextResponse.json(
+      { ok: false, error: "Unauthorized" },
+      { status: 401, headers: { "Cache-Control": "no-store" } }
+    );
+  }
   const startedAt = Date.now();
   // Las sondas de proveedores no dependen de la base: van en paralelo.
   const providersPromise: Promise<ProvidersReport | null> = deep

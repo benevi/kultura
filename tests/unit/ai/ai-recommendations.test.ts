@@ -37,7 +37,7 @@ vi.mock('@/lib/claude/recommendations', () => ({
   readTodayAiRecommendations: mockReadToday,
 }))
 
-vi.mock('@/lib/rate-limit', () => ({ checkRateLimit: mockRateLimit }))
+vi.mock('@/lib/rate-limit', () => ({ checkRateLimitDistributed: async (...a: unknown[]) => mockRateLimit(...a) }))
 
 /** Las recomendaciones del día con la forma de D-06. */
 function dailyReturns(recommendations: unknown[]) {
