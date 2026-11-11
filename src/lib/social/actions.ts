@@ -2,51 +2,37 @@
 // KULTURA — Friends Actions (cliente)
 // Helpers que hacen fetch al Route Handler /api/friends.
 // Uso exclusivo en Client Components.
+// Amistades y bloqueos ya usan el contrato nuevo (`apiFetch`, lanza
+// `ApiError`); denuncias, chat y grupos siguen con `call` hasta su módulo.
 // ============================================================
+
+import { apiFetch } from '@/lib/api/client'
 
 /** Envía una solicitud de amistad al usuario con el id dado */
 export async function sendFriendRequest(receiverId: string): Promise<void> {
-  const response = await fetch('/api/friends', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ receiverId }),
-  })
-
-  if (!response.ok) {
-    const data = await response.json().catch(() => ({})) as { error?: string }
-    throw new Error(data.error ?? 'Failed to send friend request')
-  }
+  await apiFetch('/api/friends', { method: 'POST', json: { receiverId } })
 }
 
 /** Acepta o rechaza una solicitud de amistad */
-export async function respondToFriendRequest(
-  friendshipId: string,
-  action: 'accept' | 'decline'
-): Promise<void> {
-  const response = await fetch('/api/friends', {
-    method: 'PATCH',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ friendshipId, action }),
-  })
-
-  if (!response.ok) {
-    const data = await response.json().catch(() => ({})) as { error?: string }
-    throw new Error(data.error ?? 'Failed to respond to friend request')
-  }
+export async function respondToFriendRequest(friendshipId: string, action: 'accept' | 'decline'): Promise<void> {
+  await apiFetch('/api/friends', { method: 'PATCH', json: { friendshipId, action } })
 }
 
 /** Elimina una amistad existente */
 export async function removeFriend(friendshipId: string): Promise<void> {
-  const response = await fetch('/api/friends', {
-    method: 'DELETE',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ friendshipId }),
-  })
+  await apiFetch('/api/friends', { method: 'DELETE', json: { friendshipId } })
+}
 
-  if (!response.ok) {
-    const data = await response.json().catch(() => ({})) as { error?: string }
-    throw new Error(data.error ?? 'Failed to remove friend')
-  }
+export interface FriendProfile {
+  id: string
+  username: string
+  avatar_color: string
+  avatar_initials: string
+}
+
+/** Amigos aceptados, con el perfil del otro. */
+export function fetchFriends(): Promise<{ friendshipId: string; user: FriendProfile }[]> {
+  return apiFetch('/api/friends')
 }
 
 // ── Moderación (F-11): denuncias, bloqueo, salir y moderar ───────────────────
@@ -127,7 +113,7 @@ export interface BlockState {
 }
 
 export function getBlockState(userId: string): Promise<BlockState> {
-  return call<BlockState>(`/api/friends/blocks?userId=${encodeURIComponent(userId)}`, { method: 'GET' })
+  return apiFetch<BlockState>(`/api/friends/blocks?userId=${encodeURIComponent(userId)}`)
 }
 
 export interface BlockedUser {
@@ -138,15 +124,15 @@ export interface BlockedUser {
 }
 
 export function getBlockedUsers(): Promise<{ enabled: boolean; users: BlockedUser[] }> {
-  return call('/api/friends/blocks', { method: 'GET' })
+  return apiFetch('/api/friends/blocks')
 }
 
-export function blockUser(userId: string): Promise<{ ok: true }> {
-  return call('/api/friends/blocks', { method: 'POST', body: JSON.stringify({ userId }) })
+export async function blockUser(userId: string): Promise<void> {
+  await apiFetch('/api/friends/blocks', { method: 'POST', json: { userId } })
 }
 
-export function unblockUser(userId: string): Promise<{ ok: true }> {
-  return call('/api/friends/blocks', { method: 'DELETE', body: JSON.stringify({ userId }) })
+export async function unblockUser(userId: string): Promise<void> {
+  await apiFetch('/api/friends/blocks', { method: 'DELETE', json: { userId } })
 }
 
 export function leaveConversation(conversationId: string): Promise<{ ok: true }> {

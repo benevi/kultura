@@ -99,7 +99,7 @@ describe('ConversationClient con MODERATION_V2', () => {
   it('opciones: desplegable con aria-expanded; bloquear confirma y cierra el campo de texto con explicación', async () => {
     routeFetch({
       'GET /api/chat/conv-1': () => ok({ messages }),
-      'POST /api/friends/blocks': () => ok({ ok: true }),
+      'POST /api/friends/blocks': () => ok({ data: null }),
     })
     renderEs(<ConversationClient conversationId="conv-1" otherUser={otherUser} currentUserId="me" moderation />)
     await screen.findByText('insulto')

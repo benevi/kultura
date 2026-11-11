@@ -13,7 +13,11 @@ const { current } = vi.hoisted(() => ({
 vi.mock('@/lib/supabase/server', () => ({ createClient: () => current.client }))
 vi.mock('@/lib/rate-limit', async (importOriginal) => {
   const actual = await importOriginal<typeof import('@/lib/rate-limit')>()
-  return { ...actual, checkRateLimit: () => ({ allowed: true, retryAfterSeconds: 0, remaining: 1 }) }
+  return {
+    ...actual,
+    checkRateLimit: () => ({ allowed: true, retryAfterSeconds: 0, remaining: 1 }),
+    checkRateLimitDistributed: async () => ({ allowed: true, retryAfterSeconds: 0, remaining: 1 }),
+  }
 })
 
 const ME = 'aaaaaaaa-0000-4000-8000-000000000001'
@@ -48,9 +52,10 @@ describe('/api/friends/blocks', () => {
     setup(() => ({}))
     const { GET, POST } = await import('@/app/api/friends/blocks/route')
     const g = await GET(jsonReq(`/api/friends/blocks?userId=${OTHER}`, 'GET'))
-    expect(await g.json()).toEqual({ enabled: false, blocked: false })
+    expect(await g.json()).toEqual({ data: { enabled: false, blocked: false } })
     const p = await POST(jsonReq('/api/friends/blocks', 'POST', { userId: OTHER }))
     expect(p.status).toBe(404)
+    expect((await p.json()).error).toEqual({ code: 'not_found', message: 'moderation_disabled' })
     expect(calls.filter((c) => c.table === 'blocks')).toHaveLength(0)
   })
 
@@ -95,8 +100,7 @@ describe('/api/friends/blocks', () => {
     const { GET } = await import('@/app/api/friends/blocks/route')
     const res = await GET(jsonReq('/api/friends/blocks', 'GET'))
     expect(await res.json()).toEqual({
-      enabled: true,
-      users: [{ id: OTHER, username: 'troll', avatarColor: '#000', avatarInitials: 'TR' }],
+      data: { enabled: true, users: [{ id: OTHER, username: 'troll', avatarColor: '#000', avatarInitials: 'TR' }] },
     })
   })
 })
@@ -113,7 +117,7 @@ describe('POST /api/friends con bloqueo', () => {
     const { POST } = await import('@/app/api/friends/route')
     const res = await POST(jsonReq('/api/friends', 'POST', { receiverId: OTHER }))
     expect(res.status).toBe(403)
-    expect(await res.json()).toEqual({ error: 'not_allowed' })
+    expect(await res.json()).toEqual({ error: { code: 'forbidden' } })
   })
 })
 

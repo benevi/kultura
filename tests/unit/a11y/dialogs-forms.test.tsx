@@ -113,7 +113,7 @@ describe('RecommendModal', () => {
     fetchMock.mockResolvedValue({
       ok: true,
       json: async () => ({
-        friends: [{ friendshipId: 'f', user: { id: 'u2', username: 'ada', avatar_color: 'blue', avatar_initials: 'AD' } }],
+        data: [{ friendshipId: 'f', user: { id: 'u2', username: 'ada', avatar_color: 'blue', avatar_initials: 'AD' } }],
       }),
     })
     render(<RecommendModal mediaId="movie_1" mediaCache={{ externalId: '1', type: 'movie', title: 'T' }} onClose={vi.fn()} />)
