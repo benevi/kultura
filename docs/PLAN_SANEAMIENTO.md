@@ -178,7 +178,12 @@ Estado de partida:
 7. `push/subscribe:86-91`: no borrar con service role las suscripciones de otra cuenta.
 8. `.env.example`: quitar `NEXT_PUBLIC_TMDB_API_KEY` y `NEXT_PUBLIC_RAWG_KEY`.
 
-## ⬜ Fase 5 · Errores visibles (en paralelo)
+## ✅ Fase 5 · Errores visibles — 5.1 #110 · 5.3 #111 · 5.4 #112 · 11-11-2026
+
+- 5.1: deadline de 3,5 s para la página (15 s en el correo), timeout de 2,5 s por proveedor y 6 en paralelo; lo que no llega se marca como fallo parcial y no se guarda en caché.
+- 5.2: sin cambios. En producción no hay ninguna fila de `media` sin póster y todos los hosts cargan. «Juegos» sale vacío porque RAWG está caído (Cloudflare 522), no por nuestro código.
+- 5.3: la traducción funcionaba; fallaba el hero de Inicio, que ahora se traduce al idioma activo, y la caché se escribe siempre.
+- 5.4: Inicio lee las columnas `progress_*`.
 
 1. **Calendario** (6,6 s y fallo parcial): timeout por proveedor, consultas en paralelo y caché de unas 6 h.
 2. **Pósters vacíos en Descubrir**: comprobar que se arreglan con 1.5; si no, script de relleno.
@@ -187,7 +192,12 @@ Estado de partida:
 
 Los filtros de la biblioteca **no van aquí**: pasan a la fase 8 (Q28).
 
-## ⬜ Red de seguridad (en paralelo desde la fase 0)
+## 🟨 Red de seguridad (en paralelo desde la fase 0) — 3 #113 · 4 #115 · 7 #114 · 11-11-2026
+
+- 2: pendiente de instalar Docker Desktop en este equipo.
+- 3: la integración corre en serie (los ficheros comparten usuarios) y el login reintenta ante el límite de Auth de `kultura-test`.
+- 5: faltan los secretos de GitHub `RAWG_API_KEY`, `COMICVINE_KEY` y `GOOGLE_BOOKS_KEY`; RAWG además está caído.
+- 6: `npm audit fix` no arregla ninguna sin romper; las que quedan vienen de `@sentry/nextjs` (subida a la 11, aparte) y de `typescript-eslint` (sin arreglo publicado).
 
 1. B1 hecho y comprobado.
 2. **Prueba de restauración en un Supabase local (Docker)**, que se borra al terminar. **Nunca en `kultura-test`** (Q16). Apuntar la fecha y la duración.
