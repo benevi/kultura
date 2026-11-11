@@ -5,7 +5,7 @@ import { useLocale, useTranslations } from 'next-intl'
 import { Avatar } from '@/components/ui/Avatar'
 import { KButton } from '@/components/ui/KButton'
 import { InlineConfirm, ReportButton, useRestoreFocus } from '@/components/social/ReportButton'
-import { deleteGroupPost } from '@/lib/social/actions'
+import { createGroupPost, deleteGroupPost } from '@/lib/groups/client'
 import { createClient } from '@/lib/supabase/client'
 import { F0 } from '@/lib/design/f0-tokens'
 
@@ -175,15 +175,11 @@ export function GroupFeed({ groupId, currentUserId, isOwner = false, moderation 
     setPostError(null)
     const content = text.trim()
     // Saneamiento 4.6: por la API (validación y rate limit), no directo a la base.
-    const res = await fetch(`/api/groups/${groupId}/posts`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ content }),
-    }).catch(() => null)
-    if (!res?.ok) {
-      setPostError(t('postError'))
-    } else {
+    try {
+      await createGroupPost(groupId, content)
       setText('')
+    } catch {
+      setPostError(t('postError'))
     }
     setPosting(false)
   }

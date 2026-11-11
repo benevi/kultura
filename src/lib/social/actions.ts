@@ -3,8 +3,8 @@
 // Helpers que hacen fetch al Route Handler /api/friends.
 // Uso exclusivo en Client Components.
 // Amistades y bloqueos ya usan el contrato nuevo (`apiFetch`, lanza
-// `ApiError`), igual que salir del chat y borrar mensajes; denuncias y
-// grupos siguen con `call` hasta su módulo.
+// `ApiError`), igual que salir del chat y borrar mensajes; las denuncias
+// siguen con `call`. Lo de grupos está en `lib/groups/client.ts`.
 // ============================================================
 
 import { apiFetch } from '@/lib/api/client'
@@ -143,20 +143,6 @@ export async function leaveConversation(conversationId: string): Promise<void> {
 export async function deleteMessage(conversationId: string, messageId: string): Promise<void> {
   await apiFetch(
     `/api/chat/${encodeURIComponent(conversationId)}/messages/${encodeURIComponent(messageId)}`,
-    { method: 'DELETE' },
-  )
-}
-
-export function deleteGroupPost(groupId: string, postId: string): Promise<{ ok: true }> {
-  return call(
-    `/api/groups/${encodeURIComponent(groupId)}/posts/${encodeURIComponent(postId)}`,
-    { method: 'DELETE' },
-  )
-}
-
-export function removeGroupMember(groupId: string, userId: string): Promise<{ ok: true }> {
-  return call(
-    `/api/groups/${encodeURIComponent(groupId)}/members/${encodeURIComponent(userId)}`,
     { method: 'DELETE' },
   )
 }

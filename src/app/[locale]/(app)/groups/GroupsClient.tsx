@@ -5,7 +5,8 @@ import { useTranslations } from 'next-intl'
 import { Link } from '@/i18n/navigation'
 import { KButton } from '@/components/ui/KButton'
 import { TabButton } from '@/components/ui/TabButton'
-import { CreateGroupForm, type CreatedGroup } from '@/components/social/CreateGroupForm'
+import { CreateGroupForm } from '@/components/social/CreateGroupForm'
+import type { GroupSummary } from '@/lib/groups/client'
 import { DiscoverGroupsClient } from './DiscoverGroupsClient'
 import { IconGroups } from '@/components/icons'
 import { F0 } from '@/lib/design/f0-tokens'
@@ -30,15 +31,14 @@ export function GroupsClient({ myGroups: initialGroups }: GroupsClientProps) {
   const [groups, setGroups] = useState<MyGroup[]>(initialGroups)
   const [showCreate, setShowCreate] = useState(false)
 
-  function handleCreated(group: CreatedGroup) {
+  function handleCreated(group: GroupSummary) {
     setGroups(prev => [
       {
         id: group.id,
         name: group.name,
         description: group.description,
-        // Mismo default legacy que avatar_color (ver Avatar.tsx LEGACY_RED):
-        // se remapea al leer, no se toca el default a nivel de BD.
-        coverColor: group.cover_color === '#E82020' ? F0.pink : group.cover_color,
+        // El color legacy ya llega remapeado (ver mapGroup).
+        coverColor: group.coverColor,
         memberRole: group.memberRole,
       },
       ...prev,

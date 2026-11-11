@@ -22,7 +22,7 @@ vi.mock('@/i18n/navigation', () => ({
   ),
 }))
 
-const mockFetch = vi.fn().mockResolvedValue({ ok: true, json: async () => ({ groups: [] }) })
+const mockFetch = vi.fn().mockResolvedValue({ ok: true, status: 200, json: async () => ({ data: [] }) })
 global.fetch = mockFetch
 
 import { GroupsClient, type MyGroup } from '@/app/[locale]/(app)/groups/GroupsClient'

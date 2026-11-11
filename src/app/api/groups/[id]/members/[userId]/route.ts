@@ -1,74 +1,27 @@
 // ============================================================
-// KULTURA — /api/groups/[id]/members/[userId] (F-11, con MODERATION_V2)
-// DELETE: el dueño expulsa a un miembro. Se le veta (group_bans) para que no
-// vuelva a entrar solo en un grupo público; el dueño puede volver a
-// invitarle. Nunca sobre sí mismo ni sobre el dueño.
+// KULTURA — Route Handler: /api/groups/[id]/members/[userId] (F-11)
+// DELETE: el dueño expulsa a un miembro (y le veta). Con MODERATION_V2.
 // ============================================================
 
-import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase/server'
-import { checkRateLimit, LIMITS } from '@/lib/rate-limit'
-import { createLogger } from '@/lib/logger'
-import { isModerationV2 } from '@/lib/social/friends'
-import { getMemberRole } from '@/lib/social/groups'
+import { LIMITS } from '@/lib/rate-limit'
+import { apiError, rateLimit, requireUser, respond } from '@/lib/api/route'
+import { uuidSchema } from '@/lib/api/contracts/common'
+import { removeMember } from '@/lib/groups/service'
 
-const log = createLogger('api/groups/members')
-
-interface RouteParams {
+interface Params {
   params: Promise<{ id: string; userId: string }>
 }
 
-export async function DELETE(_req: NextRequest, { params }: RouteParams): Promise<NextResponse> {
-  const { id: groupId, userId: targetId } = await params
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) return NextResponse.json({ error: 'Not authenticated' }, { status: 401 })
-  if (!isModerationV2()) return NextResponse.json({ error: 'moderation_disabled' }, { status: 404 })
-
-  const rl = checkRateLimit(`group_kick:${user.id}`, LIMITS.groups_join)
-  if (!rl.allowed) {
-    return NextResponse.json(
-      { error: 'Too many requests' },
-      { status: 429, headers: { 'Retry-After': String(rl.retryAfterSeconds) } }
-    )
+/** DELETE /api/groups/[id]/members/[userId] */
+export async function DELETE(request: Request, { params }: Params) {
+  const auth = await requireUser()
+  if (!auth.ok) return auth.response
+  const limited = await rateLimit(request, { key: 'group_kick', limit: LIMITS.groups_join, userId: auth.user.id })
+  if (limited) return limited
+  const { id, userId } = await params
+  if (!uuidSchema.safeParse(id).success || !uuidSchema.safeParse(userId).success) {
+    return apiError('not_found', { message: 'Member not found' })
   }
 
-  if (targetId === user.id) return NextResponse.json({ error: 'cannot_remove_self' }, { status: 400 })
-
-  const [myRole, targetRole] = await Promise.all([
-    getMemberRole(groupId, user.id),
-    getMemberRole(groupId, targetId),
-  ])
-  if (myRole !== 'owner') return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
-  if (targetRole === null) return NextResponse.json({ error: 'not_a_member' }, { status: 404 })
-  if (targetRole === 'owner') return NextResponse.json({ error: 'cannot_remove_owner' }, { status: 400 })
-
-  // El veto expulsa por disparador (handle_new_group_ban).
-  const { error: banError } = await supabase
-    .from('group_bans')
-    .upsert(
-      { group_id: groupId, user_id: targetId, banned_by: user.id },
-      { onConflict: 'group_id,user_id', ignoreDuplicates: true },
-    )
-  if (banError) {
-    log.error('group ban failed', { err: banError })
-    return NextResponse.json({ error: 'remove_failed' }, { status: 500 })
-  }
-
-  // Y además el DELETE directo (política "Group owners can remove members"),
-  // por si el disparador o la tabla de vetos faltaran.
-  const { error } = await supabase
-    .from('group_members')
-    .delete()
-    .eq('group_id', groupId)
-    .eq('user_id', targetId)
-  if (error) {
-    log.error('group member remove failed', { err: error })
-    return NextResponse.json({ error: 'remove_failed' }, { status: 500 })
-  }
-
-  if ((await getMemberRole(groupId, targetId)) !== null) {
-    return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
-  }
-  return NextResponse.json({ ok: true })
+  return respond(await removeMember(auth.supabase, auth.user.id, id, userId))
 }

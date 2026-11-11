@@ -10,10 +10,12 @@
 
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { NextRequest } from 'next/server'
+import { groupCreateResultSchema } from '@/lib/api/contracts/groups'
 
 const mockGetUser = vi.fn()
 const rows: Array<Record<string, unknown>> = []
 
+const OWNER_ID = '22222222-2222-4222-8222-222222222222'
 const RLS_ERROR = { code: '42501', message: 'new row violates row-level security policy for table "groups"' }
 
 function groupsTable() {
@@ -53,10 +55,10 @@ vi.mock('@/lib/supabase/server', () => ({
   }),
 }))
 
-vi.mock('@/lib/rate-limit', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('@/lib/rate-limit')>()
-  return { ...actual, checkRateLimit: () => ({ allowed: true, retryAfterSeconds: 0, remaining: 1 }) }
-})
+vi.mock('@/lib/rate-limit', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@/lib/rate-limit')>()),
+  checkRateLimitDistributed: async () => ({ allowed: true, retryAfterSeconds: 0 }),
+}))
 
 function makeRequest(body: unknown): NextRequest {
   return new NextRequest('http://localhost/api/groups', {
@@ -69,16 +71,16 @@ function makeRequest(body: unknown): NextRequest {
 describe('POST /api/groups — grupo privado', () => {
   beforeEach(() => {
     rows.length = 0
-    mockGetUser.mockResolvedValue({ data: { user: { id: 'owner-1' } }, error: null })
+    mockGetUser.mockResolvedValue({ data: { user: { id: OWNER_ID } }, error: null })
   })
 
   it('crea un grupo privado aunque la RLS de SELECT no deje ver la fila en el RETURNING', async () => {
     const { POST } = await import('@/app/api/groups/route')
     const res = await POST(makeRequest({ name: 'Club privado', is_public: false }))
     expect(res.status).toBe(201)
-    const body = await res.json()
-    expect(body.group).toMatchObject({ name: 'Club privado', is_public: false, owner_id: 'owner-1' })
-    expect(typeof body.group.id).toBe('string')
+    const group = groupCreateResultSchema.parse((await res.json()).data)
+    expect(group).toMatchObject({ name: 'Club privado', isPublic: false, ownerId: OWNER_ID, memberRole: 'owner' })
+    expect(typeof group.id).toBe('string')
     expect(rows).toHaveLength(1)
   })
 
@@ -86,6 +88,9 @@ describe('POST /api/groups — grupo privado', () => {
     const { POST } = await import('@/app/api/groups/route')
     const res = await POST(makeRequest({ name: 'Club público' }))
     expect(res.status).toBe(201)
-    expect((await res.json()).group).toMatchObject({ name: 'Club público', is_public: true })
+    expect(groupCreateResultSchema.parse((await res.json()).data)).toMatchObject({
+      name: 'Club público',
+      isPublic: true,
+    })
   })
 })

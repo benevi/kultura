@@ -6,6 +6,7 @@
 
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { NextRequest } from 'next/server'
+import { discoverResultSchema } from '@/lib/api/contracts/groups'
 
 // ── Mock factories ──────────────────────────────────────────────────────────
 
@@ -38,15 +39,14 @@ vi.mock('@/lib/supabase/server', () => ({
   }),
 }))
 
-// Rate limit: por defecto permitido; un test concreto lo fuerza a bloquear.
-const mockCheckRateLimit = vi.fn<() => { allowed: boolean; retryAfterSeconds: number }>(() => ({
-  allowed: true,
-  retryAfterSeconds: 0,
+// Rate limit (distribuido): por defecto permitido; un test concreto lo fuerza a bloquear.
+const { mockRateLimit } = vi.hoisted(() => ({
+  mockRateLimit: vi.fn(async () => ({ allowed: true, retryAfterSeconds: 0 })),
 }))
-vi.mock('@/lib/rate-limit', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('@/lib/rate-limit')>()
-  return { ...actual, checkRateLimit: () => mockCheckRateLimit() }
-})
+vi.mock('@/lib/rate-limit', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@/lib/rate-limit')>()),
+  checkRateLimitDistributed: mockRateLimit,
+}))
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -89,7 +89,7 @@ function setRows(rows: unknown[]) {
 describe('GET /api/groups/discover', () => {
   beforeEach(() => {
     vi.clearAllMocks()
-    mockCheckRateLimit.mockReturnValue({ allowed: true, retryAfterSeconds: 0 })
+    mockRateLimit.mockResolvedValue({ allowed: true, retryAfterSeconds: 0 })
     queryResult = { data: [], error: null }
   })
 
@@ -104,12 +104,13 @@ describe('GET /api/groups/discover', () => {
 
   it('returns 429 when rate limited', async () => {
     mockGetUser.mockResolvedValue({ data: { user: AUTH_USER }, error: null })
-    mockCheckRateLimit.mockReturnValue({ allowed: false, retryAfterSeconds: 30 })
+    mockRateLimit.mockResolvedValue({ allowed: false, retryAfterSeconds: 30 })
 
     const { GET } = await import('@/app/api/groups/discover/route')
     const res = await GET(makeRequest())
     expect(res.status).toBe(429)
     expect(res.headers.get('Retry-After')).toBe('30')
+    expect((await res.json()).error.code).toBe('rate_limited')
     expect(mockFrom).not.toHaveBeenCalled()
   })
 
@@ -119,6 +120,7 @@ describe('GET /api/groups/discover', () => {
     const { GET } = await import('@/app/api/groups/discover/route')
     const res = await GET(makeRequest('scope=bogus'))
     expect(res.status).toBe(400)
+    expect((await res.json()).error).toMatchObject({ code: 'invalid_input', field: 'scope' })
     expect(mockFrom).not.toHaveBeenCalled()
   })
 
@@ -195,8 +197,8 @@ describe('GET /api/groups/discover', () => {
     const res = await GET(makeRequest())
     expect(res.status).toBe(200)
     const body = await res.json()
-    expect(body.groups).toHaveLength(1)
-    expect(body.groups[0]).toEqual({
+    expect(discoverResultSchema.parse(body.data)).toHaveLength(1)
+    expect(discoverResultSchema.parse(body.data)[0]).toEqual({
       id: 'group-001',
       ownerId: 'user-002',
       name: 'Cinéfilos',
@@ -217,8 +219,8 @@ describe('GET /api/groups/discover', () => {
     const { GET } = await import('@/app/api/groups/discover/route')
     const res = await GET(makeRequest())
     const body = await res.json()
-    expect(body.groups[0].isMember).toBe(true)
-    expect(body.groups[0].memberCount).toBe(2)
+    expect(discoverResultSchema.parse(body.data)[0].isMember).toBe(true)
+    expect(discoverResultSchema.parse(body.data)[0].memberCount).toBe(2)
   })
 
   it('scope=joined keeps only groups the caller belongs to', async () => {
@@ -231,7 +233,7 @@ describe('GET /api/groups/discover', () => {
     const { GET } = await import('@/app/api/groups/discover/route')
     const res = await GET(makeRequest('scope=joined'))
     const body = await res.json()
-    expect(body.groups.map((g: { id: string }) => g.id)).toEqual(['g-joined'])
+    expect(discoverResultSchema.parse(body.data).map((g: { id: string }) => g.id)).toEqual(['g-joined'])
   })
 
   it('scope=unjoined drops groups the caller belongs to', async () => {
@@ -244,7 +246,7 @@ describe('GET /api/groups/discover', () => {
     const { GET } = await import('@/app/api/groups/discover/route')
     const res = await GET(makeRequest('scope=unjoined'))
     const body = await res.json()
-    expect(body.groups.map((g: { id: string }) => g.id)).toEqual(['g-other'])
+    expect(discoverResultSchema.parse(body.data).map((g: { id: string }) => g.id)).toEqual(['g-other'])
   })
 
   it('size buckets filter by member count', async () => {
@@ -258,15 +260,15 @@ describe('GET /api/groups/discover', () => {
 
     let res = await GET(makeRequest('size=small'))
     let body = await res.json()
-    expect(body.groups.map((g: { id: string }) => g.id)).toEqual(['g-small'])
+    expect(discoverResultSchema.parse(body.data).map((g: { id: string }) => g.id)).toEqual(['g-small'])
 
     res = await GET(makeRequest('size=medium'))
     body = await res.json()
-    expect(body.groups.map((g: { id: string }) => g.id)).toEqual(['g-medium'])
+    expect(discoverResultSchema.parse(body.data).map((g: { id: string }) => g.id)).toEqual(['g-medium'])
 
     res = await GET(makeRequest('size=large'))
     body = await res.json()
-    expect(body.groups.map((g: { id: string }) => g.id)).toEqual(['g-large'])
+    expect(discoverResultSchema.parse(body.data).map((g: { id: string }) => g.id)).toEqual(['g-large'])
   })
 
   it('orders by member count desc then created_at desc', async () => {
@@ -280,7 +282,7 @@ describe('GET /api/groups/discover', () => {
     const { GET } = await import('@/app/api/groups/discover/route')
     const res = await GET(makeRequest())
     const body = await res.json()
-    expect(body.groups.map((g: { id: string }) => g.id)).toEqual(['g-many', 'g-mid-new', 'g-few'])
+    expect(discoverResultSchema.parse(body.data).map((g: { id: string }) => g.id)).toEqual(['g-many', 'g-mid-new', 'g-few'])
   })
 
   it('paginates with offset/limit after filtering', async () => {
@@ -295,6 +297,6 @@ describe('GET /api/groups/discover', () => {
     const { GET } = await import('@/app/api/groups/discover/route')
     const res = await GET(makeRequest('limit=1&offset=1'))
     const body = await res.json()
-    expect(body.groups.map((g: { id: string }) => g.id)).toEqual(['g-b'])
+    expect(discoverResultSchema.parse(body.data).map((g: { id: string }) => g.id)).toEqual(['g-b'])
   })
 })

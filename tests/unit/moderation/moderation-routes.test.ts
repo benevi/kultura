@@ -4,6 +4,7 @@
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { NextRequest } from 'next/server'
+import { GROUP_ERRORS } from '@/lib/api/contracts/groups'
 import { makeSupabase, type Handler, type QueryCall } from './supabase-mock'
 
 const { current } = vi.hoisted(() => ({
@@ -212,13 +213,17 @@ describe('DELETE /api/groups/[id]/posts/[postId]', () => {
 
   it('el autor borra su post (también sin bandera: la base ya lo permitía)', async () => {
     setup(groupHandler({ author: ME, roles: { [ME]: 'member' } }))
-    expect((await call()).status).toBe(200)
+    const res = await call()
+    expect(res.status).toBe(200)
+    expect(await res.json()).toEqual({ data: null })
   })
 
   it('un miembro que no es dueño NO borra un post ajeno', async () => {
     process.env.MODERATION_V2 = '1'
     setup(groupHandler({ author: OTHER, roles: { [ME]: 'member', [OTHER]: 'member' } }))
-    expect((await call()).status).toBe(403)
+    const res = await call()
+    expect(res.status).toBe(403)
+    expect((await res.json()).error.code).toBe('forbidden')
     expect(calls.some((c) => c.table === 'group_posts' && c.op === 'delete')).toBe(false)
   })
 
@@ -254,6 +259,7 @@ describe('DELETE /api/groups/[id]/members/[userId]', () => {
     setup(groupHandler({ author: OTHER, roles: { [ME]: 'owner', [OTHER]: 'member' } }))
     const res = await call(OTHER)
     expect(res.status).toBe(200)
+    expect(await res.json()).toEqual({ data: null })
     expect(calls.find((c) => c.table === 'group_bans')).toMatchObject({
       op: 'upsert',
       payload: { group_id: GROUP, user_id: OTHER, banned_by: ME },
@@ -265,15 +271,32 @@ describe('DELETE /api/groups/[id]/members/[userId]', () => {
 
   it('nunca sobre sí mismo ni sobre el dueño; un no-dueño no expulsa', async () => {
     setup(groupHandler({ author: OTHER, roles: { [ME]: 'owner', [OTHER]: 'owner' } }))
-    expect((await call(ME)).status).toBe(400)
-    expect((await call(OTHER)).status).toBe(400)
+    const self = await call(ME)
+    expect(self.status).toBe(400)
+    expect((await self.json()).error).toEqual({ code: 'invalid_input', message: GROUP_ERRORS.cannotRemoveSelf })
+    const owner = await call(OTHER)
+    expect(owner.status).toBe(400)
+    expect((await owner.json()).error).toEqual({ code: 'invalid_input', message: GROUP_ERRORS.cannotRemoveOwner })
     setup(groupHandler({ author: OTHER, roles: { [ME]: 'member', [OTHER]: 'member' } }))
-    expect((await call(OTHER)).status).toBe(403)
+    const notOwner = await call(OTHER)
+    expect(notOwner.status).toBe(403)
+    expect((await notOwner.json()).error.code).toBe('forbidden')
   })
 
   it('sin MODERATION_V2 → 404', async () => {
     delete process.env.MODERATION_V2
     setup(groupHandler({ author: OTHER, roles: { [ME]: 'owner', [OTHER]: 'member' } }))
-    expect((await call(OTHER)).status).toBe(404)
+    const res = await call(OTHER)
+    expect(res.status).toBe(404)
+    expect((await res.json()).error).toEqual({ code: 'not_found', message: 'moderation_disabled' })
+  })
+
+  it('ids que no son uuid → 404 sin tocar la base', async () => {
+    setup(groupHandler({ author: OTHER, roles: { [ME]: 'owner', [OTHER]: 'member' } }))
+    const { DELETE } = await import('@/app/api/groups/[id]/members/[userId]/route')
+    const res = await DELETE(jsonReq('/api/groups/g1/members/u2', 'DELETE'), params({ id: 'g1', userId: 'u2' }))
+    expect(res.status).toBe(404)
+    expect((await res.json()).error.code).toBe('not_found')
+    expect(calls).toHaveLength(0)
   })
 })

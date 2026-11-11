@@ -149,7 +149,8 @@ describe('InviteFriendsModal', () => {
   it('nombre, carga traducida y cada "Invitar" dice a quién', async () => {
     fetchMock.mockResolvedValue({
       ok: true,
-      json: async () => ({ friends: [{ id: 'u2', username: 'ada', avatarColor: 'blue', avatarInitials: 'AD' }] }),
+      status: 200,
+      json: async () => ({ data: [{ id: 'u2', username: 'ada', avatarColor: 'blue', avatarInitials: 'AD' }] }),
     })
     render(<InviteFriendsModal groupId="g1" onClose={vi.fn()} />)
     expect(screen.getByRole('dialog', { name: 'groups.inviteFriends' })).toBeInTheDocument()

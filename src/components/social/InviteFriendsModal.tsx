@@ -8,13 +8,7 @@ import { Spinner } from '@/components/ui/Spinner'
 import { KButton } from '@/components/ui/KButton'
 import { Modal } from '@/components/ui/Modal'
 import { F0 } from '@/lib/design/f0-tokens'
-
-interface InvitableFriend {
-  id: string
-  username: string
-  avatarColor: string
-  avatarInitials: string
-}
+import { fetchInvitableFriends, inviteToGroup, type InvitableFriend } from '@/lib/groups/client'
 
 interface InviteFriendsModalProps {
   groupId: string
@@ -35,15 +29,9 @@ export function InviteFriendsModal({ groupId, onClose }: InviteFriendsModalProps
     let active = true
     ;(async () => {
       try {
-        const res = await fetch(`/api/groups/${groupId}/invitations`)
-        const data = await res.json()
+        const list = await fetchInvitableFriends(groupId)
         if (!active) return
-        if (!res.ok) {
-          setLoadError(true)
-          setLoading(false)
-          return
-        }
-        setFriends((data.friends ?? []) as InvitableFriend[])
+        setFriends(list)
         setLoading(false)
       } catch {
         if (!active) return
@@ -59,16 +47,7 @@ export function InviteFriendsModal({ groupId, onClose }: InviteFriendsModalProps
   async function handleInvite(inviteeId: string) {
     setInvitingId(inviteeId)
     try {
-      const res = await fetch(`/api/groups/${groupId}/invitations`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ inviteeId }),
-      })
-      if (!res.ok) {
-        show({ message: t('inviteError'), type: 'error' })
-        setInvitingId(null)
-        return
-      }
+      await inviteToGroup(groupId, inviteeId)
       show({ message: t('inviteSent'), type: 'success' })
       // Quitar al invitado de la lista (ya no es invitable)
       setFriends((prev) => prev.filter((f) => f.id !== inviteeId))

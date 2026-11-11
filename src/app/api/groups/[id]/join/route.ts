@@ -1,58 +1,27 @@
 // ============================================================
-// KULTURA — POST /api/groups/[id]/join
-// Join or leave a group
+// KULTURA — Route Handler: /api/groups/[id]/join
+// POST: entrar en el grupo (201, { joined: true }) o, si ya es miembro,
+// salir (200, { joined: false }). El dueño no puede salir.
 // ============================================================
 
-import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase/server'
-import { getGroupById, getMemberRole } from '@/lib/social/groups'
-import { checkRateLimit, LIMITS } from '@/lib/rate-limit'
+import { LIMITS } from '@/lib/rate-limit'
+import { apiError, rateLimit, requireUser, respond } from '@/lib/api/route'
+import { uuidSchema } from '@/lib/api/contracts/common'
+import { toggleMembership } from '@/lib/groups/service'
 
-interface Props {
+interface Params {
   params: Promise<{ id: string }>
 }
 
-export async function POST(_req: NextRequest, { params }: Props): Promise<NextResponse> {
+/** POST /api/groups/[id]/join */
+export async function POST(request: Request, { params }: Params) {
+  const auth = await requireUser()
+  if (!auth.ok) return auth.response
+  const limited = await rateLimit(request, { key: 'groups_join', limit: LIMITS.groups_join, userId: auth.user.id })
+  if (limited) return limited
   const { id } = await params
-  const supabase = await createClient()
+  if (!uuidSchema.safeParse(id).success) return apiError('not_found', { message: 'Group not found' })
 
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) return NextResponse.json({ error: 'Not authenticated' }, { status: 401 })
-
-  const rl = checkRateLimit(`${user.id}:groups_join`, LIMITS.groups_join)
-  if (!rl.allowed) {
-    return NextResponse.json(
-      { error: 'Too many requests' },
-      { status: 429, headers: { 'Retry-After': String(rl.retryAfterSeconds) } }
-    )
-  }
-
-  const group = await getGroupById(id)
-  if (!group) return NextResponse.json({ error: 'Group not found' }, { status: 404 })
-
-  const existingRole = await getMemberRole(id, user.id)
-
-  if (existingRole) {
-    if (existingRole === 'owner') {
-      return NextResponse.json({ error: 'Owner cannot leave group' }, { status: 400 })
-    }
-    const { error } = await supabase
-      .from('group_members')
-      .delete()
-      .eq('group_id', id)
-      .eq('user_id', user.id)
-
-    if (error) return NextResponse.json({ error: 'Failed to leave group' }, { status: 500 })
-    return NextResponse.json({ joined: false })
-  }
-
-  const { error } = await supabase
-    .from('group_members')
-    .insert({ group_id: id, user_id: user.id, role: 'member' })
-
-  // F-11: la RLS rechaza la entrada (vetado por el dueño, o grupo privado):
-  // es un "no puedes", no un fallo del servidor.
-  if (error?.code === '42501') return NextResponse.json({ error: 'join_not_allowed' }, { status: 403 })
-  if (error) return NextResponse.json({ error: 'Failed to join group' }, { status: 500 })
-  return NextResponse.json({ joined: true }, { status: 201 })
+  const result = await toggleMembership(auth.supabase, auth.user.id, id)
+  return respond(result, result.ok && result.value.joined ? { status: 201 } : undefined)
 }
