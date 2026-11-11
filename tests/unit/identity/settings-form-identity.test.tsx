@@ -138,10 +138,28 @@ describe('SettingsForm — F-12', () => {
     })
   })
 
-  it('tras importar, avisa de los títulos que no se encontraron (libraryUnresolved)', async () => {
-    global.fetch = vi.fn().mockResolvedValue(
-      new Response(JSON.stringify({ libraryImported: 10, listsImported: 1, libraryUnresolved: 3 }), { status: 200 })
+  /** `{ data }` de POST /api/account/import (KulturaImportResult). */
+  const importResponse = (libraryUnresolved: number) =>
+    new Response(
+      JSON.stringify({
+        data: {
+          libraryImported: 10,
+          librarySkipped: 0,
+          libraryUnresolved,
+          libraryFailed: 0,
+          libraryFailedIds: [],
+          listsImported: 1,
+          listItemsFailed: 0,
+          diaryImported: 0,
+          diaryFailed: 0,
+          friendshipsImported: 0,
+        },
+      }),
+      { status: 200 }
     )
+
+  it('tras importar, avisa de los títulos que no se encontraron (libraryUnresolved)', async () => {
+    global.fetch = vi.fn().mockResolvedValue(importResponse(3))
     const { container } = render(<SettingsForm {...PROPS} />)
     const input = container.querySelector('input[type="file"]') as HTMLInputElement
     const file = new File(['{"library":[]}'], 'export.json', { type: 'application/json' })
@@ -151,15 +169,13 @@ describe('SettingsForm — F-12', () => {
   })
 
   it('sin títulos sin resolver no hay aviso', async () => {
-    global.fetch = vi.fn().mockResolvedValue(
-      new Response(JSON.stringify({ libraryImported: 10, listsImported: 1, libraryUnresolved: 0 }), { status: 200 })
-    )
+    global.fetch = vi.fn().mockResolvedValue(importResponse(0))
     const { container } = render(<SettingsForm {...PROPS} />)
     const input = container.querySelector('input[type="file"]') as HTMLInputElement
     const file = new File(['{}'], 'export.json')
     Object.defineProperty(file, 'text', { value: async () => '{}' })
     fireEvent.change(input, { target: { files: [file] } })
-    await waitFor(() => expect(mockToast).toHaveBeenCalled())
+    await waitFor(() => expect(mockToast).toHaveBeenCalledWith(expect.objectContaining({ type: 'success' })))
     expect(screen.queryByText(/importUnresolved/)).not.toBeInTheDocument()
   })
 
@@ -168,16 +184,19 @@ describe('SettingsForm — F-12', () => {
       global.fetch = vi.fn().mockResolvedValue(
         new Response(
           JSON.stringify({
-            library: 34,
-            lists: 3,
-            messages: 120,
-            friends: 5,
-            groups: [
-              { name: 'Club', successor: 'lucia_lee' },
-              { name: 'Solo', successor: null },
-            ],
-            sharedLists: [{ name: 'Pelis', successor: 'marcos' }],
-            graceDays: 7,
+            data: {
+              library: 34,
+              lists: 3,
+              messages: 120,
+              friends: 5,
+              groups: [
+                { name: 'Club', successor: 'lucia_lee' },
+                { name: 'Solo', successor: null },
+              ],
+              sharedLists: [{ name: 'Pelis', successor: 'marcos' }],
+              graceDays: 7,
+              deletionRequestedAt: null,
+            },
           }),
           { status: 200 }
         )
@@ -196,7 +215,7 @@ describe('SettingsForm — F-12', () => {
       const purgeAt = '2026-11-01T10:00:00.000Z'
       global.fetch = vi.fn().mockImplementation(async (_url: string, init?: RequestInit) =>
         init?.method === 'DELETE'
-          ? new Response(JSON.stringify({ ok: true, scheduled: true, purgeAt }), { status: 200 })
+          ? new Response(JSON.stringify({ data: { scheduled: true, purgeAt } }), { status: 200 })
           : new Response(null, { status: 500 })
       )
       render(<SettingsForm {...PROPS} />)
@@ -211,6 +230,7 @@ describe('SettingsForm — F-12', () => {
     })
 
     it('con un borrado pendiente se avisa y se puede cancelar', async () => {
+      global.fetch = vi.fn().mockResolvedValue(new Response(JSON.stringify({ data: null }), { status: 200 }))
       render(<SettingsForm {...PROPS} deletionRequestedAt="2026-10-20T10:00:00.000Z" />)
       expect(screen.getByText(/deletionPending/)).toBeInTheDocument()
       fireEvent.click(screen.getByText('cancelDeletion'))

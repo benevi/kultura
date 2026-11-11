@@ -7,7 +7,9 @@ import { buildReportCsv, mediaPath, spreadsheetSafe, type ReportLabels } from '@
 import { parseCsvTable } from '@/lib/import/csv'
 import { parseImportFiles } from '@/lib/import/parse-file'
 import { readZip } from '@/lib/import/archive'
-import { parseImportBatch, parseImportItem } from '@/lib/import/validate'
+import { parseImportItem, splitImportItems } from '@/lib/import/validate'
+import { importBatchSchema } from '@/lib/api/contracts/account'
+import { BATCH_SIZE } from '@/lib/import/limits'
 import { bytes, makeZip } from './helpers'
 
 const entries = [
@@ -155,9 +157,16 @@ describe('validación del servidor', () => {
   })
 
   it('lote: fuente, tamaño y claves repetidas', () => {
-    expect(parseImportBatch({ source: 'trakt', items: [{}] })).toMatchObject({ ok: false })
-    expect(parseImportBatch({ source: 'mal', items: [] })).toMatchObject({ ok: false })
-    const parsed = parseImportBatch({
+    // Forma del lote (fuente y tamaño): el esquema del contrato.
+    expect(importBatchSchema.safeParse(null).success).toBe(false)
+    expect(importBatchSchema.safeParse({ source: 'trakt', items: [{}] }).success).toBe(false)
+    expect(importBatchSchema.safeParse({ source: 'mal', items: [] }).success).toBe(false)
+    expect(importBatchSchema.safeParse({ source: 'mal', items: 'x' }).success).toBe(false)
+    expect(importBatchSchema.safeParse({ source: 'mal', items: Array(BATCH_SIZE + 1).fill({}) }).success).toBe(false)
+    expect(importBatchSchema.safeParse({ source: 'mal', items: Array(BATCH_SIZE).fill({}) }).success).toBe(true)
+
+    // Cada fila: las válidas sin repetir clave; las que no valen, a `invalidKeys`.
+    const batch = importBatchSchema.parse({
       source: 'mal',
       items: [
         { key: '1', kind: 'anime', title: 'A', status: 'pending', ids: { mal: 1 } },
@@ -165,7 +174,8 @@ describe('validación del servidor', () => {
         { key: '2', kind: 'anime', title: '', status: 'pending' },
       ],
     })
-    expect(parsed).toMatchObject({ ok: true, invalidKeys: ['2'] })
-    expect(parsed.ok && parsed.items.map((i) => i.title)).toEqual(['A'])
+    const split = splitImportItems(batch.items)
+    expect(split.invalidKeys).toEqual(['2'])
+    expect(split.items.map((i) => i.title)).toEqual(['A'])
   })
 })

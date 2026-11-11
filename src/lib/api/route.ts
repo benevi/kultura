@@ -117,14 +117,23 @@ function invalid(error: z.ZodError): Fail {
   }
 }
 
-/** Cuerpo JSON validado con `schema`: 400 `invalid_json` o `invalid_input`. */
+/**
+ * Cuerpo JSON validado con `schema`: 400 `invalid_json` o `invalid_input`.
+ * Con `maxBytes`, 413 `payload_too_large` si lo pasa (declarado o leído).
+ */
 export async function parseBody<S extends z.ZodType>(
   req: Request,
-  schema: S
+  schema: S,
+  opts: { maxBytes?: number } = {}
 ): Promise<{ ok: true; value: z.output<S> } | Fail> {
+  const { maxBytes } = opts
+  const tooLarge = (): Fail => ({ ok: false, response: apiError('payload_too_large') })
+  if (maxBytes !== undefined && Number(req.headers.get('content-length') ?? 0) > maxBytes) return tooLarge()
   let raw: unknown
   try {
-    raw = await req.json()
+    const text = await req.text()
+    if (maxBytes !== undefined && new TextEncoder().encode(text).byteLength > maxBytes) return tooLarge()
+    raw = JSON.parse(text)
   } catch {
     return { ok: false, response: apiError('invalid_json') }
   }

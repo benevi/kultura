@@ -25,8 +25,12 @@ export const API_ERRORS = {
   invalid_input: 400,
   /** Ya existe (amistad repetida, nombre en uso…). */
   conflict: 409,
+  /** El cuerpo pasa del tope de la ruta (importaciones). */
+  payload_too_large: 413,
   /** Demasiadas peticiones (lleva `Retry-After`). */
   rate_limited: 429,
+  /** No se puede hacer ahora (p. ej. programar el borrado): reintentar. */
+  unavailable: 503,
   /** Un proveedor externo (TMDB, RAWG…) no respondió: se puede reintentar. */
   provider_unavailable: 502,
   /** Fallo nuestro (base de datos, bug). */

@@ -66,14 +66,17 @@ afterEach(() => {
 function okBatch() {
   fetchMock.mockImplementation(async (_url: string, init: RequestInit) => {
     const body = JSON.parse(String(init.body))
+    // Contrato: `{ data: { results, diaryImported } }`.
     return new Response(
       JSON.stringify({
-        results: body.items.map((i: { key: string; title: string }) =>
-          i.title === 'Dune'
-            ? { key: i.key, outcome: 'added', mediaId: 'movie_438631', title: 'Dune', year: 2021, by: 'title_year' }
-            : { key: i.key, outcome: 'unmatched' }
-        ),
-        diaryImported: 0,
+        data: {
+          results: body.items.map((i: { key: string; title: string }) =>
+            i.title === 'Dune'
+              ? { key: i.key, outcome: 'added', mediaId: 'movie_438631', title: 'Dune', year: 2021, by: 'title_year' }
+              : { key: i.key, outcome: 'unmatched' }
+          ),
+          diaryImported: 0,
+        },
       }),
       { status: 200, headers: { 'Content-Type': 'application/json' } }
     )

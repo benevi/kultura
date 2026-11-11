@@ -10,7 +10,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
-import { createFakeDb, fakeClient, prng, sleep, type FakeDb } from './helpers'
+import { createFakeDb, prng, sleep, type FakeDb } from './helpers'
 import { buildCatalog, buildRatingsCsv, searchCatalog } from './fixtures/letterboxd-fixture'
 import { FILMS } from './fixtures/films'
 
@@ -71,6 +71,7 @@ vi.mock('@/lib/media/upsert-from-provider', async (importOriginal) => {
 })
 
 import { POST } from '@/app/api/account/import/external/route'
+import { importBatchResultSchema } from '@/lib/api/contracts/account'
 import { parseImportFiles } from '@/lib/import/parse-file'
 import { runImport, type SendBatch } from '@/lib/import/run'
 
@@ -80,9 +81,14 @@ const send: SendBatch = async (request) => {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', referer: 'http://localhost/es/settings/import' },
       body: JSON.stringify(request),
-    }) as never
+    })
   )
-  if (res.ok) return { ok: true, data: await res.json() }
+  if (res.ok) {
+    // El contrato valida la forma; `by` llega como texto y el orquestador lo tipa.
+    const { data } = await res.json()
+    importBatchResultSchema.parse(data)
+    return { ok: true, data }
+  }
   return { ok: false, status: res.status }
 }
 

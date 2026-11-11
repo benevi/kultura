@@ -31,9 +31,11 @@ function codeForStatus(status: number): ApiErrorCode {
   if (status === 403) return 'forbidden'
   if (status === 404) return 'not_found'
   if (status === 409) return 'conflict'
+  if (status === 413) return 'payload_too_large'
   if (status === 429) return 'rate_limited'
   if (status === 400 || status === 422) return 'invalid_input'
-  if (status === 502 || status === 503 || status === 504) return 'provider_unavailable'
+  if (status === 503) return 'unavailable'
+  if (status === 502 || status === 504) return 'provider_unavailable'
   return 'internal'
 }
 

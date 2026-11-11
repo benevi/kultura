@@ -47,7 +47,7 @@
  * (y `tests/unit/push/sw-push.test.ts`, las de push).
  * ============================================================ */
 
-const VERSION = "v7";
+const VERSION = "v8";
 const CACHE_PREFIX = "kultura-";
 const STATIC_CACHE = CACHE_PREFIX + "static-" + VERSION;
 const OFFLINE_CACHE = CACHE_PREFIX + "offline-" + VERSION;

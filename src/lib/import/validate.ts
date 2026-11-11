@@ -9,8 +9,8 @@
 import { isValidDiaryDate, REVIEW_MAX } from '@/lib/library/diary'
 import { isValidRating10 } from '@/lib/library/rating'
 import { isLibraryStatus } from '@/types/library'
-import { BATCH_SIZE, MAX_AUTHOR_LENGTH, MAX_LOGS_PER_ITEM, MAX_TITLE_LENGTH } from './limits'
-import { IMPORT_KINDS, isImportSource, type ImportItem, type ImportKind, type ImportLog, type ImportSource } from './types'
+import { MAX_AUTHOR_LENGTH, MAX_LOGS_PER_ITEM, MAX_TITLE_LENGTH } from './limits'
+import { IMPORT_KINDS, type ImportItem, type ImportKind, type ImportLog } from './types'
 
 const KEY_RE = /^[A-Za-z0-9_-]{1,20}$/
 
@@ -73,21 +73,16 @@ export function parseImportItem(raw: unknown): ImportItem | null {
   return item
 }
 
-export type ParsedBatch =
-  | { ok: true; source: ImportSource; items: ImportItem[]; invalidKeys: string[] }
-  | { ok: false; error: string }
-
-/** Cuerpo de POST /api/account/import/external. */
-export function parseImportBatch(body: unknown): ParsedBatch {
-  if (!isObject(body)) return { ok: false, error: 'Invalid JSON' }
-  if (!isImportSource(body.source)) return { ok: false, error: 'Unknown source' }
-  if (!Array.isArray(body.items) || body.items.length === 0) return { ok: false, error: 'items must be a non-empty array' }
-  if (body.items.length > BATCH_SIZE) return { ok: false, error: `At most ${BATCH_SIZE} items per batch` }
-
+/**
+ * Filas de un lote de POST /api/account/import/external (origen y tamaño ya
+ * validados con `importBatchSchema`): las válidas, sin repetir clave, y las
+ * claves de las que no valen (vuelven como `invalid`).
+ */
+export function splitImportItems(raws: readonly unknown[]): { items: ImportItem[]; invalidKeys: string[] } {
   const items: ImportItem[] = []
   const invalidKeys: string[] = []
   const seen = new Set<string>()
-  for (const raw of body.items) {
+  for (const raw of raws) {
     const item = parseImportItem(raw)
     const key = isObject(raw) && typeof raw.key === 'string' && KEY_RE.test(raw.key) ? raw.key : null
     if (!item) {
@@ -99,5 +94,5 @@ export function parseImportBatch(body: unknown): ParsedBatch {
     seen.add(item.key)
     items.push(item)
   }
-  return { ok: true, source: body.source, items, invalidKeys }
+  return { items, invalidKeys }
 }

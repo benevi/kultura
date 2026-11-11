@@ -42,14 +42,21 @@ vi.mock('@/lib/social/lists', () => ({
 const mockGetFriends = vi.fn()
 vi.mock('@/lib/social/friends', () => ({ getFriends: (...a: unknown[]) => mockGetFriends(...a) }))
 
-const mockCheckRateLimit = vi.fn<() => { allowed: boolean; retryAfterSeconds: number }>(() => ({
-  allowed: true,
-  retryAfterSeconds: 0,
+// Rate limit (distribuido): por defecto permitido; un test lo fuerza a bloquear.
+const { mockCheckRateLimit } = vi.hoisted(() => ({
+  mockCheckRateLimit: vi.fn<(key: string, opts: unknown) => Promise<{ allowed: boolean; retryAfterSeconds: number }>>(
+    async () => ({ allowed: true, retryAfterSeconds: 0 })
+  ),
 }))
-vi.mock('@/lib/rate-limit', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('@/lib/rate-limit')>()
-  return { ...actual, checkRateLimit: () => mockCheckRateLimit() }
-})
+vi.mock('@/lib/rate-limit', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@/lib/rate-limit')>()),
+  checkRateLimitDistributed: mockCheckRateLimit,
+}))
+
+/** GET /api/account/export. */
+function exportRequest() {
+  return new Request('http://localhost/api/account/export')
+}
 
 const AUTH_USER = { id: 'user-001', email: 'user@example.com' }
 const PROFILE_ROW = {
@@ -128,23 +135,27 @@ function fullDb() {
 describe('GET /api/account/export', () => {
   beforeEach(() => {
     vi.clearAllMocks()
-    mockCheckRateLimit.mockReturnValue({ allowed: true, retryAfterSeconds: 0 })
+    mockCheckRateLimit.mockResolvedValue({ allowed: true, retryAfterSeconds: 0 })
     adminState.db = createFakeDb()
   })
 
   it('returns 401 if not authenticated', async () => {
     mockGetUser.mockResolvedValue({ data: { user: null }, error: null })
     const { GET } = await import('@/app/api/account/export/route')
-    const res = await GET()
+    const res = await GET(exportRequest())
     expect(res.status).toBe(401)
+    expect(await res.json()).toEqual({ error: { code: 'unauthenticated' } })
   })
 
   it('returns 429 when rate limited', async () => {
     mockGetUser.mockResolvedValue({ data: { user: AUTH_USER }, error: null })
-    mockCheckRateLimit.mockReturnValue({ allowed: false, retryAfterSeconds: 30 })
+    mockCheckRateLimit.mockResolvedValue({ allowed: false, retryAfterSeconds: 30 })
     const { GET } = await import('@/app/api/account/export/route')
-    const res = await GET()
+    const res = await GET(exportRequest())
     expect(res.status).toBe(429)
+    expect(res.headers.get('Retry-After')).toBe('30')
+    expect(await res.json()).toEqual({ error: { code: 'rate_limited' } })
+    expect(mockCheckRateLimit).toHaveBeenCalledWith(`account_export:${AUTH_USER.id}`, expect.anything())
   })
 
   it('returns profile + library + lists + friendships for the authenticated user', async () => {
@@ -155,7 +166,7 @@ describe('GET /api/account/export', () => {
     mockGetFriends.mockResolvedValue([{ friendshipId: 'f-1' }])
 
     const { GET } = await import('@/app/api/account/export/route')
-    const res = await GET()
+    const res = await GET(exportRequest())
 
     expect(res.status).toBe(200)
     const body = await res.json()
@@ -187,7 +198,7 @@ describe('GET /api/account/export', () => {
     })
 
     const { GET } = await import('@/app/api/account/export/route')
-    const body = await (await GET()).json()
+    const body = await (await GET(exportRequest())).json()
 
     expect(body.lists[0].items).toEqual(['movie_550', 'game_1'])
     // La lista ajena no se recorre: no es del usuario y no le toca recuperarla.
@@ -205,7 +216,7 @@ describe('GET /api/account/export', () => {
     mockGetFriends.mockResolvedValue([])
     mockGetListDetail.mockRejectedValue(new Error('boom'))
 
-    const res = await (await import('@/app/api/account/export/route')).GET()
+    const res = await (await import('@/app/api/account/export/route')).GET(exportRequest())
 
     expect(res.status).toBe(200)
     expect((await res.json()).lists[0].items).toEqual([])
@@ -216,7 +227,7 @@ describe('GET /api/account/export', () => {
     mockProfileSingle.mockResolvedValue({ data: null, error: { message: 'boom' } })
 
     const { GET } = await import('@/app/api/account/export/route')
-    const res = await GET()
+    const res = await GET(exportRequest())
     expect(res.status).toBe(500)
   })
 
@@ -228,7 +239,7 @@ describe('GET /api/account/export', () => {
     mockGetFriends.mockResolvedValue([])
 
     const { GET } = await import('@/app/api/account/export/route')
-    const res = await GET()
+    const res = await GET(exportRequest())
     expect(res.status).toBe(500)
   })
 
@@ -244,7 +255,7 @@ describe('GET /api/account/export', () => {
 
     async function exportAll() {
       arrange()
-      const res = await (await import('@/app/api/account/export/route')).GET()
+      const res = await (await import('@/app/api/account/export/route')).GET(exportRequest())
       expect(res.status).toBe(200)
       return res.json()
     }
@@ -299,7 +310,7 @@ describe('GET /api/account/export', () => {
         // Conversación de la que el usuario salió: ya no es miembro, no entra.
         { id: 'm5', conversation_id: 'c7', sender_id: OTHER, content: 'de un chat que dejé', created_at: '2026-01-05' },
       )
-      const body = await (await (await import('@/app/api/account/export/route')).GET()).json()
+      const body = await (await (await import('@/app/api/account/export/route')).GET(exportRequest())).json()
       expect(body.messagesReceived).toEqual([
         { id: 'm2', conversationId: 'c1', senderId: OTHER, senderUsername: 'bob', content: 'de bob', createdAt: '2026-01-03' },
         { id: 'm4', conversationId: 'c1', senderId: STRANGER, senderUsername: 'carol', content: 'antes de irme', createdAt: '2026-01-04' },
@@ -326,7 +337,7 @@ describe('GET /api/account/export', () => {
           locale: 'en', expires_at: null, failures: 0, last_success_at: null, created_at: '2026-12-22', updated_at: '2026-12-22',
         },
       ]
-      const body = await (await (await import('@/app/api/account/export/route')).GET()).json()
+      const body = await (await (await import('@/app/api/account/export/route')).GET(exportRequest())).json()
       expect(body.pushSubscriptions).toEqual([
         {
           id: 'ps1',
@@ -349,7 +360,7 @@ describe('GET /api/account/export', () => {
     it('sin la tabla de push (migración sin aplicar) el export sale igual', async () => {
       arrange()
       adminState.db.failures.push_subscriptions = { code: 'PGRST205', message: 'not found' }
-      const res = await (await import('@/app/api/account/export/route')).GET()
+      const res = await (await import('@/app/api/account/export/route')).GET(exportRequest())
       expect(res.status).toBe(200)
       expect((await res.json()).pushSubscriptions).toEqual([])
     })
@@ -376,7 +387,7 @@ describe('GET /api/account/export', () => {
     it('una tabla que aún no existe en este proyecto no tumba el export', async () => {
       arrange()
       adminState.db.failures.group_invitations = { code: '42P01', message: 'relation does not exist' }
-      const res = await (await import('@/app/api/account/export/route')).GET()
+      const res = await (await import('@/app/api/account/export/route')).GET(exportRequest())
       expect(res.status).toBe(200)
       expect((await res.json()).groupInvitations).toEqual([])
     })
@@ -384,7 +395,7 @@ describe('GET /api/account/export', () => {
     it('cualquier otro error de base → 500 (mejor reintentar que entregar un export incompleto)', async () => {
       arrange()
       adminState.db.failures.messages = { code: '57014', message: 'timeout' }
-      const res = await (await import('@/app/api/account/export/route')).GET()
+      const res = await (await import('@/app/api/account/export/route')).GET(exportRequest())
       expect(res.status).toBe(500)
     })
 
@@ -393,13 +404,13 @@ describe('GET /api/account/export', () => {
       adminState.db.tables.messages = Array.from({ length: 2345 }, (_, i) => ({
         id: `m${String(i).padStart(5, '0')}`, conversation_id: 'c1', sender_id: ME, content: String(i), created_at: '2026-01-01',
       }))
-      const body = await (await (await import('@/app/api/account/export/route')).GET()).json()
+      const body = await (await (await import('@/app/api/account/export/route')).GET(exportRequest())).json()
       expect(body.messages).toHaveLength(2345)
       expect(body.truncated).toEqual([])
     })
 
     it('endpoint push de cualquier servicio: origen y ruta base, ningún carácter del token', async () => {
-      const { truncateEndpoint } = await import('@/app/api/account/export/collect')
+      const { truncateEndpoint } = await import('@/lib/account/export-collect')
       expect(truncateEndpoint('https://fcm.googleapis.com/fcm/send/abc:DEF123')).toBe('https://fcm.googleapis.com/fcm/send/…')
       expect(truncateEndpoint('https://updates.push.services.mozilla.com/wpush/v2/gAAAA')).toBe('https://updates.push.services.mozilla.com/wpush/v2/…')
       expect(truncateEndpoint('https://web.push.apple.com/QGxyz')).toBe('https://web.push.apple.com/…')
@@ -442,11 +453,11 @@ describe('GET /api/account/export', () => {
       mockGetUserLists.mockResolvedValue([])
       mockGetFriends.mockResolvedValue([])
       adminState.db = bigDb()
-      return (await import('@/app/api/account/export/route')).GET()
+      return (await import('@/app/api/account/export/route')).GET(exportRequest())
     }
 
     it('el techo de 50.000 filas es GLOBAL por sección (no por trozo de 100 conversaciones) y se avisa en `truncated`', async () => {
-      const { MAX_ROWS_PER_SECTION } = await import('@/app/api/account/export/collect')
+      const { MAX_ROWS_PER_SECTION } = await import('@/lib/account/export-collect')
       const body = await (await exportBig()).json()
       expect(CONVERSATIONS * PER_CONVERSATION).toBeGreaterThan(MAX_ROWS_PER_SECTION)
       expect(body.messagesReceived).toHaveLength(MAX_ROWS_PER_SECTION)
