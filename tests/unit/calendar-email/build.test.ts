@@ -4,7 +4,7 @@
 // ============================================================
 
 import { describe, it, expect, vi } from 'vitest'
-import { buildCalendar, CALENDAR_REQUEST_BUDGET, type CalendarFetchers } from '@/lib/calendar/build'
+import { buildCalendar, CALENDAR_CONCURRENCY, CALENDAR_REQUEST_BUDGET, type CalendarFetchers } from '@/lib/calendar/build'
 import { getUserCalendar, toCandidates } from '@/lib/calendar/data'
 import { fakeSupabase, opsOf } from '../plataformas-listas/fake-supabase'
 import {
@@ -96,7 +96,7 @@ describe('buildCalendar', () => {
     expect(result).toMatchObject({ candidates: 70, checked: CALENDAR_REQUEST_BUDGET })
   })
 
-  it('como mucho 4 peticiones a la vez', async () => {
+  it(`como mucho ${CALENDAR_CONCURRENCY} peticiones a la vez`, async () => {
     let active = 0
     let peak = 0
     const f = fetchers({
@@ -109,7 +109,23 @@ describe('buildCalendar', () => {
       },
     })
     await buildCalendar(Array.from({ length: 12 }, (_, i) => candidate(`tv_${i + 1}`)), WINDOW, { fetchers: f })
-    expect(peak).toBeLessThanOrEqual(4)
+    expect(peak).toBeLessThanOrEqual(CALENDAR_CONCURRENCY)
+  })
+
+  it('tope: un proveedor que no responde no bloquea el calendario (saneamiento 5.1)', async () => {
+    const f = fetchers({
+      rawg: () => new Promise(() => {}),
+    })
+    const started = Date.now()
+    const result = await buildCalendar(
+      [candidate('tv_100088'), candidate('game_1', 'pending'), candidate('game_2', 'pending')],
+      WINDOW,
+      { fetchers: f, deadlineMs: 50 }
+    )
+    expect(Date.now() - started).toBeLessThan(1000)
+    expect(result.failed).toBe(2)
+    expect(result.events.length).toBeGreaterThan(0)
+    expect(result.events.every((e) => e.type === 'tv')).toBe(true)
   })
 
   it('un proveedor caído deja fuera solo sus títulos', async () => {
