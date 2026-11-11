@@ -173,10 +173,14 @@ export function GroupFeed({ groupId, currentUserId, isOwner = false, moderation 
     if (!text.trim() || posting) return
     setPosting(true)
     setPostError(null)
-    const supabase = createClient()
     const content = text.trim()
-    const { error } = await supabase.from('group_posts').insert({ group_id: groupId, user_id: currentUserId, content })
-    if (error) {
+    // Saneamiento 4.6: por la API (validación y rate limit), no directo a la base.
+    const res = await fetch(`/api/groups/${groupId}/posts`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ content }),
+    }).catch(() => null)
+    if (!res?.ok) {
       setPostError(t('postError'))
     } else {
       setText('')

@@ -147,7 +147,9 @@ describe('POST /api/push/subscribe', () => {
     state.db.tables.push_subscriptions = [row('9', OTHER, EP)]
     expect((await subscribe(post(body))).status).toBe(201)
     expect(state.db.tables.push_subscriptions.map((r) => r.user_id)).toEqual([ME])
-    expect(state.db.log.find((l) => l.op === 'delete')!.filters).toEqual([`endpoint=${EP}`, `user_id!=${ME}`])
+    expect(state.db.log.find((l) => l.op === 'delete')!.filters).toEqual([
+      `endpoint=${EP}`, `p256dh=${P256DH}`, `auth=${AUTH}`, `user_id!=${ME}`,
+    ])
   })
 
   it('pushsubscriptionchange: sustituye el endpoint viejo y conserva su idioma', async () => {

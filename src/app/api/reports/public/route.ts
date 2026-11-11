@@ -10,7 +10,7 @@
 
 import { NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/admin'
-import { checkRateLimit } from '@/lib/rate-limit'
+import { checkRateLimitDistributed } from '@/lib/rate-limit'
 import { clientIp } from '@/lib/api/discover-params'
 import { createLogger } from '@/lib/logger'
 import { notifyReport } from '@/lib/email/moderation'
@@ -30,7 +30,7 @@ const PUBLIC_REPORT_LIMIT = { windowMs: 60 * 60_000, max: 5 }
 const LEGACY_SCHEMA_CODES = new Set(['23502', '23514'])
 
 export async function POST(request: Request): Promise<NextResponse> {
-  const rl = checkRateLimit(`${clientIp(request.headers)}:reports_public`, PUBLIC_REPORT_LIMIT)
+  const rl = await checkRateLimitDistributed(`${clientIp(request.headers)}:reports_public`, PUBLIC_REPORT_LIMIT)
   if (!rl.allowed) {
     return NextResponse.json(
       { error: 'too_many_requests' },

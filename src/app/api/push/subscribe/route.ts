@@ -83,11 +83,16 @@ export async function POST(request: Request): Promise<NextResponse> {
   const existing = rows.find((r) => r.endpoint === body.endpoint)
 
   // El navegador pasó a otra cuenta: la suscripción es de quien tiene la sesión.
+  // Saneamiento 4.7: solo se libera si llegan también sus claves (p256dh y
+  // auth), que solo tiene ese navegador. Con el endpoint a secas, cualquiera
+  // que lo conociera podía borrar la suscripción de otra cuenta.
   if (!existing) {
     const { error } = await createAdminClient()
       .from('push_subscriptions')
       .delete()
       .eq('endpoint', body.endpoint)
+      .eq('p256dh', body.keys.p256dh)
+      .eq('auth', body.keys.auth)
       .neq('user_id', user.id)
     if (error) log.warn('No se pudo liberar el endpoint de otra cuenta', { code: error.code })
   }

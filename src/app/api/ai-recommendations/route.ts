@@ -17,7 +17,7 @@ import { createClient } from '@/lib/supabase/server'
 import { getDailyAiRecommendations, readTodayAiRecommendations } from '@/lib/claude/recommendations'
 import { getStarterItems } from '@/lib/recommendations/starter'
 import { getUserStats } from '@/lib/library/stats'
-import { checkRateLimit } from '@/lib/rate-limit'
+import { checkRateLimitDistributed } from '@/lib/rate-limit'
 
 // 5 req/min para GENERAR: frena a quien martillea la ruta cuando no hay nada
 // guardado (cada intento barre proveedores y puede gastar cupo de IA).
@@ -42,7 +42,7 @@ export async function GET(): Promise<NextResponse> {
   const today = await readTodayAiRecommendations(user.id, locale)
   if (today) return NextResponse.json(today)
 
-  const rl = checkRateLimit(`${user.id}:ai-recommendations`, AI_LIMIT)
+  const rl = await checkRateLimitDistributed(`${user.id}:ai-recommendations`, AI_LIMIT)
   if (!rl.allowed) {
     return NextResponse.json(
       { error: 'Too many requests' },

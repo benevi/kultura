@@ -8,6 +8,7 @@
 // ============================================================
 
 import { createClient } from '@/lib/supabase/server'
+import { escapeLikePattern } from '@/lib/utils/escape-like'
 import type { DbGroup, DbGroupInvitation, DbGroupMember, DbUser } from '@/types/supabase'
 
 // ── Row types ─────────────────────────────────────────────────────────────────
@@ -309,7 +310,8 @@ export async function getDiscoverableGroups(
     .eq('is_public', true)
     .order('created_at', { ascending: false })
 
-  if (q) query = query.ilike('name', `%${q}%`)
+  // Saneamiento 4.5: «%» o «_» se buscan tal cual, no como comodines.
+  if (q) query = query.ilike('name', `%${escapeLikePattern(q)}%`)
 
   const { data, error } = await query
 

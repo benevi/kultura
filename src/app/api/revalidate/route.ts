@@ -14,7 +14,7 @@ import { revalidateTag } from "next/cache";
 import { NextRequest, NextResponse } from "next/server";
 import { BEST_CACHE_TAG, REVALIDATABLE_TAGS } from "@/lib/best/cache-tags";
 import { clientIp } from "@/lib/api/discover-params";
-import { checkRateLimit } from "@/lib/rate-limit";
+import { checkRateLimitDistributed } from "@/lib/rate-limit";
 
 const LIMIT = { windowMs: 60_000, max: 10 };
 
@@ -29,7 +29,7 @@ export async function POST(request: NextRequest) {
   const secret = process.env.REVALIDATE_SECRET;
   if (!secret) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
-  const rl = checkRateLimit(`${clientIp(request.headers)}:revalidate`, LIMIT);
+  const rl = await checkRateLimitDistributed(`${clientIp(request.headers)}:revalidate`, LIMIT);
   if (!rl.allowed) {
     return NextResponse.json(
       { error: "Too many requests" },

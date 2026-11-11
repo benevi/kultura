@@ -22,6 +22,8 @@ const mockFromUsers = vi.fn()
 const mockFromMedia = vi.fn()
 const mockFromRecommendations = vi.fn()
 const mockFromNotifications = vi.fn()
+const mockFromFriendships = vi.fn()
+const mockFriendship = vi.fn()
 
 vi.mock('@/lib/supabase/server', () => ({
   createClient: () => ({
@@ -31,6 +33,7 @@ vi.mock('@/lib/supabase/server', () => ({
       if (table === 'media') return mockFromMedia()
       if (table === 'recommendations') return mockFromRecommendations()
       if (table === 'notifications') return mockFromNotifications()
+      if (table === 'friendships') return mockFromFriendships()
       return {}
     }),
   }),
@@ -58,6 +61,11 @@ describe('POST /api/recommendations', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     mockAdminNotifInsert.mockResolvedValue({ error: null })
+    // Por defecto sois amigos (saneamiento 4.2).
+    mockFriendship.mockResolvedValue({ data: { id: 'f-1' }, error: null })
+    mockFromFriendships.mockReturnValue({
+      select: () => ({ eq: () => ({ in: () => ({ in: () => ({ maybeSingle: mockFriendship }) }) }) }),
+    })
     mockEnsureMedia.mockResolvedValue({ ok: true, id: MEDIA_ID, title: 'Fight Club', created: false })
   })
 
@@ -165,6 +173,24 @@ describe('POST /api/recommendations', () => {
     expect(mockAdminNotifInsert).toHaveBeenCalledWith(
       expect.objectContaining({ user_id: RECEIVER_ID, type: 'recommendation' })
     )
+  })
+
+  it('saneamiento 4.2: sin amistad aceptada → 403 not_friends sin llamar al proveedor', async () => {
+    mockGetUser.mockResolvedValue({ data: { user: { id: 'user-nf' } }, error: null })
+    mockFromUsers.mockReturnValue({
+      select: vi.fn().mockReturnValue({
+        eq: vi.fn().mockReturnValue({
+          maybeSingle: vi.fn().mockResolvedValue({ data: { id: RECEIVER_ID }, error: null }),
+        }),
+      }),
+    })
+    mockFriendship.mockResolvedValue({ data: null, error: null })
+    const { POST } = await import('@/app/api/recommendations/route')
+    const res = await POST(makeRequest({ toUserId: RECEIVER_ID, mediaId: MEDIA_ID }))
+    expect(res.status).toBe(403)
+    expect(await res.json()).toEqual({ error: 'not_friends' })
+    expect(mockEnsureMedia).not.toHaveBeenCalled()
+    expect(mockFromRecommendations).not.toHaveBeenCalled()
   })
 
   it('saneamiento 2.4 (Q7): si la RLS lo rechaza (no sois amigos) → 403 not_friends, sin aviso', async () => {

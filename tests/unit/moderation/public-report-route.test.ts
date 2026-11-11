@@ -58,7 +58,7 @@ vi.mock('@/lib/email/moderation', () => ({ notifyReport: (...a: unknown[]) => mo
 
 vi.mock('@/lib/rate-limit', async (importOriginal) => {
   const actual = await importOriginal<typeof import('@/lib/rate-limit')>()
-  return { ...actual, checkRateLimit: (...a: unknown[]) => mockRateLimit(...a) }
+  return { ...actual, checkRateLimitDistributed: async (...a: unknown[]) => mockRateLimit(...a) }
 })
 
 const USER_ID = 'aaaaaaaa-0000-4000-8000-000000000001'
