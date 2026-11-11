@@ -8,7 +8,7 @@ import type { DbNotification } from '@/types/supabase'
 
 export interface AppNotification {
   id: string
-  type: 'recommendation' | 'list_invite' | 'group_invite'
+  type: 'recommendation' | 'list_invite' | 'group_invite' | 'invite_accepted'
   payload: Record<string, unknown>
   readAt: string | null
   createdAt: string

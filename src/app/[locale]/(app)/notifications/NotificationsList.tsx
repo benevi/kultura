@@ -97,6 +97,7 @@ const TYPE_ACCENT: Record<string, { fg: string }> = {
   recommendation: { fg: 'var(--accent-blue)' },
   list_invite: { fg: 'var(--accent-lime)' },
   group_invite: { fg: 'var(--accent-orange)' },
+  invite_accepted: { fg: 'var(--accent-purple)' },
   friend_request: { fg: 'var(--accent-purple)' },
 }
 
@@ -177,6 +178,21 @@ function NotificationItem({ notif }: { notif: AppNotification }) {
           ) : (groupName ?? null)}
         </p>
         {invitationId && !notif.readAt && <InviteActions invitationId={invitationId} groupName={groupName} />}
+      </div>
+    )
+  } else if (notif.type === 'invite_accepted') {
+    // Saneamiento 3.4: alguien entró con tu enlace (F-17, con INVITE_NOTIFY=1).
+    const fromUsername = p.fromUsername as string | undefined
+    content = (
+      <div className="flex-1 min-w-0">
+        <p className="text-sm text-text-primary">
+          {fromUsername ? (
+            <Link href={`/profile/${fromUsername}`} className={INLINE_LINK}>
+              {fromUsername}
+            </Link>
+          ) : null}
+          {' '}{t('joinedWithInvite')}
+        </p>
       </div>
     )
   }

@@ -132,6 +132,11 @@ export async function POST(request: Request): Promise<NextResponse> {
     return NextResponse.json({ error: 'not_allowed' }, { status: 403 })
   }
 
+  // Saneamiento 3.1: la otra persona mandó la suya a la vez (única por pareja).
+  if (insertError?.code === '23505') {
+    return NextResponse.json({ error: 'Friendship already exists' }, { status: 409 })
+  }
+
   if (insertError || !data) {
     return NextResponse.json({ error: 'Failed to send friend request' }, { status: 500 })
   }

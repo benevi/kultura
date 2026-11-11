@@ -133,6 +133,23 @@ describe('POST /api/lists/[id] — formato del título', () => {
       expect(res.status).toBe(201)
     }
   })
+
+  it('saneamiento 3.1: otra petición lo añadió a la vez (23505) → 409, no 500', async () => {
+    client = fakeSupabase({
+      user: USER,
+      tables: {
+        lists: [ownerList('mixed')],
+        list_items: [
+          (call) => call.ops.some((o) => o.name === 'insert')
+            ? { data: null, error: { code: '23505', message: 'duplicate key' } }
+            : { data: null, error: null },
+        ],
+      },
+    })
+    const { POST } = await import('@/app/api/lists/[id]/route')
+    const res = await POST(req('POST', { mediaId: 'movie_550' }), params)
+    expect(res.status).toBe(409)
+  })
 })
 
 describe('PATCH /api/lists/[id] — orden manual', () => {

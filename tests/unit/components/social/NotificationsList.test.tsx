@@ -168,3 +168,23 @@ describe('NotificationsList — leída vs no leída (artboard)', () => {
     expect(rows[1].textContent).not.toContain('unread')
   })
 })
+
+describe('NotificationsList — invite_accepted (saneamiento 3.4)', () => {
+  it('dice quién entró con tu invitación y enlaza a su perfil', () => {
+    render(
+      <NotificationsList
+        notifications={[
+          {
+            id: 'n9',
+            type: 'invite_accepted',
+            payload: { userId: 'u9', fromUsername: 'bea' },
+            readAt: null,
+            createdAt: '2026-06-04T10:00:00Z',
+          },
+        ]}
+      />
+    )
+    expect(screen.getByText('bea').closest('a')).toHaveAttribute('href', '/profile/bea')
+    expect(screen.getByText(/joinedWithInvite/)).toBeInTheDocument()
+  })
+})
