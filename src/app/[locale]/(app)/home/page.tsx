@@ -19,6 +19,7 @@ import type { HeroItem } from '@/components/home/HeroSection'
 import { Link } from '@/i18n/navigation'
 import { generatedUsername, initialsFor, purgeDate } from '@/lib/account/identity'
 import { readAccountState } from '@/lib/account/account-state'
+import { createLogger } from '@/lib/logger'
 import { progressV2Active } from '@/lib/library/progress-server'
 import {
   FriendsActivity,
@@ -45,6 +46,8 @@ async function StarterForYou({ locale }: { locale: string }) {
   return <AiRecommendations starter={starter.length > 0 ? starter : undefined} />
 }
 
+const log = createLogger('home/page')
+
 /**
  * Respaldo si el disparador `handle_new_user` no hubiera creado la fila de
  * `users` (no debería pasar). El nombre es el mismo tipo de nombre generado
@@ -54,17 +57,28 @@ async function StarterForYou({ locale }: { locale: string }) {
  */
 async function ensureProfile(userId: string): Promise<boolean> {
   const admin = createAdminClient()
-  for (let attempt = 0; attempt < 3; attempt++) {
+  let created = false
+  for (let attempt = 0; attempt < 3 && !created; attempt++) {
     const username = generatedUsername()
     const { error } = await admin
       .from('users')
       .insert({ id: userId, username, avatar_initials: initialsFor(username), avatar_color: 'blue' })
-    if (!error) return true
+    if (!error) { created = true; break }
     if (error.code !== '23505') return false
     const { data } = await admin.from('users').select('id').eq('id', userId).maybeSingle()
-    if (data) return true
+    if (data) created = true
   }
-  return false
+  if (!created) return false
+
+  // Saneamiento 1.6: la otra fila que crea el disparador. Sin ella no hay
+  // estado de onboarding ni de borrado programado. Sin términos aceptados:
+  // /welcome los pide. Si ya existía, no se toca. Que falle no echa a nadie
+  // (la fila de `users` ya está), pero se registra.
+  const { error: stateError } = await admin
+    .from('account_state')
+    .upsert({ user_id: userId }, { onConflict: 'user_id', ignoreDuplicates: true })
+  if (stateError) log.error('ensureProfile: no se pudo crear account_state', { userId, err: stateError })
+  return true
 }
 
 export default async function HomePage() {
