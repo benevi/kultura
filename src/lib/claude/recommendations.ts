@@ -25,7 +25,7 @@
 // Solo para uso server-side — ANTHROPIC_API_KEY nunca al cliente.
 // ============================================================
 
-import Anthropic from '@anthropic-ai/sdk'
+import { anthropicClient } from '@/lib/claude/client'
 import { env } from '@/lib/env.server'
 import { createClient } from '@/lib/supabase/server'
 import type { SupabaseClient } from '@supabase/supabase-js'
@@ -690,7 +690,7 @@ async function chooseWithClaude(
   }
 
   try {
-    const client = new Anthropic({ apiKey })
+    const client = anthropicClient(apiKey, 'recs')
     const message = await client.messages.create({
       model: 'claude-haiku-4-5',
       max_tokens: 1024,
