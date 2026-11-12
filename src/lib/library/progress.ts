@@ -201,6 +201,18 @@ export function progressToLegacy(value: ProgressValue | null | undefined): Episo
   return typeof value.season === 'number' ? { season: value.season, episode: value.episode } : { episode: value.episode }
 }
 
+/**
+ * Solo temporada y episodio (lo que se guardaba sin PROGRESS_V2 en el jsonb).
+ * Saneamiento 6.6: ya no se escribe el jsonb. Las demás columnas NO se mandan,
+ * como hacía el disparador: un libro con páginas no las pierde.
+ */
+export function episodeColumns(
+  value: ProgressValue | null | undefined
+): Pick<ProgressColumns, 'progress_season' | 'progress_episode'> {
+  const legacy = progressToLegacy(value)
+  return { progress_season: legacy?.season ?? null, progress_episode: legacy?.episode ?? null }
+}
+
 export type ParsedProgress = { ok: true; value: ProgressValue | null } | { ok: false; error: string }
 
 /**

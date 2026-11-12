@@ -158,25 +158,25 @@ describe('sesión y validación', () => {
   })
 })
 
-describe('antes de la migración (o sin PROGRESS_V2): solo episodios, en el jsonb de siempre', () => {
-  it('serie: T1·E3 → T1·E4 en episode_progress', async () => {
+describe('sin PROGRESS_V2: solo episodios, en progress_season y progress_episode (6.6)', () => {
+  it('serie: T1·E3 → T1·E4 en las columnas', async () => {
     entry = legacyTv({ season: 1, episode: 3 })
     const { status, json } = await post({ mediaId: 'tv_1399', action: 'next' })
     expect(status).toBe(200)
-    expect(updates[0]).toEqual({ episode_progress: { season: 1, episode: 4 } })
+    expect(updates[0]).toEqual({ progress_season: 1, progress_episode: 4 })
     expect(json).toMatchObject({ progress: { season: 1, episode: 4 }, finished: false, caughtUp: false })
   })
 
   it('fin de temporada según TMDB: T1·E10 → T2·E1', async () => {
     entry = legacyTv({ season: 1, episode: 10 })
     await post({ mediaId: 'tv_1399', action: 'next' })
-    expect(updates[0]).toEqual({ episode_progress: { season: 2, episode: 1 } })
+    expect(updates[0]).toEqual({ progress_season: 2, progress_episode: 1 })
   })
 
   it('un pendiente pasa a «En progreso» al marcar el primer episodio', async () => {
     entry = { ...legacyTv({ episode: 1 }), status: 'pending', ...COLUMNS, episode_progress: null }
     const { json } = await post({ mediaId: 'tv_1399', action: 'next' })
-    expect(updates[0]).toEqual({ episode_progress: { season: 1, episode: 1 }, status: 'in_progress' })
+    expect(updates[0]).toEqual({ progress_season: 1, progress_episode: 1, status: 'in_progress' })
     expect(json.status).toBe('in_progress')
   })
 

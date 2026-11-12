@@ -123,7 +123,8 @@ describe('upsert parcial (saneamiento 1.2)', () => {
   it('null explícito sí borra (el diálogo sustituye la entrada entera)', async () => {
     upsertResults.push({ data: ROW, error: null })
     await call({ mediaId: 'movie_550', status: 'pending', score: null, watchedAt: null, episodeProgress: null })
-    expect(upserts[0]).toMatchObject({ rating10: null, watched_at: null, episode_progress: null })
+    expect(upserts[0]).toMatchObject({ rating10: null, watched_at: null, progress_season: null, progress_episode: null })
+    expect(upserts[0]).not.toHaveProperty('episode_progress')
   })
 
   it('el apunte del diario sin nota propia ni de la entrada va con null', async () => {

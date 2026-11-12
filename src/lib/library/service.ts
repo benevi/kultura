@@ -10,16 +10,16 @@
 //
 // F-27 (PRO-5): con PROGRESS_V2=1 llega `progress` (episodios, capítulos,
 // páginas o %, horas según el formato) y se guarda en las columnas
-// `progress_*`; el disparador deja `episode_progress` como espejo. Sin la
-// bandera se guarda `episodeProgress` (de `progress` se saca temporada y
-// episodio).
+// `progress_*`. Sin la bandera se guardan solo temporada y episodio (de
+// `progress` o de `episodeProgress`), también en las columnas: el jsonb
+// `episode_progress` ya no se escribe (saneamiento 6.6).
 // ============================================================
 
 import 'server-only'
 import type { SupabaseClient, User } from '@supabase/supabase-js'
 import { invalidateLibraryCaches as invalidateCaches } from '@/lib/library/invalidate'
 import type { DbUserMedia, DbUserMediaLog } from '@/types/supabase'
-import type { DiaryConfig, DiaryLog, EpisodeProgress, LibraryStatus, RatingScale } from '@/types/library'
+import type { DiaryConfig, DiaryLog, LibraryStatus, RatingScale } from '@/types/library'
 import { ensureMediaRows, upsertMediaFromProvider } from '@/lib/media/upsert-from-provider'
 import { track } from '@/lib/analytics/track'
 import { createLogger } from '@/lib/logger'
@@ -28,11 +28,14 @@ import { RATING_SCALE_KEY, ratingScale10Enabled, readRatingScale } from '@/lib/l
 import { mapLog, parseLogInput, readDiary, today } from '@/lib/library/diary'
 import { isDemoUser } from '@/lib/demo'
 import {
+  episodeColumns,
   parseProgressInput,
+  progressFromJson,
   progressFromRow,
   progressToColumns,
   progressToLegacy,
   type LibraryEntryWithProgress,
+  type ProgressColumns,
 } from '@/lib/library/progress'
 import { progressV2Enabled } from '@/lib/library/progress-server'
 import type { LibraryBulkResult, LibraryPostInput } from '@/lib/api/contracts/library'
@@ -112,12 +115,19 @@ export async function saveEntry(
     media_id: string
     status: LibraryStatus
     watched_at?: string | null
-    episode_progress?: EpisodeProgress | null
     rating10?: number | null
     favorite?: boolean
-  }
-  const hasLegacyProgress = parsedProgress?.ok === true || input.episodeProgress !== undefined
-  const legacyRow: Row = {
+  } & Partial<ProgressColumns>
+  const hasProgress = parsedProgress?.ok === true || input.episodeProgress !== undefined
+  // Con `progress` (cliente nuevo) manda él; si no, el campo de siempre.
+  const progressColumns: Partial<ProgressColumns> = !hasProgress
+    ? {}
+    : progressV2
+      ? progressToColumns(progressValue)
+      : parsedProgress?.ok
+        ? episodeColumns(progressValue)
+        : episodeColumns(progressFromJson(input.episodeProgress ?? null))
+  const row: Row = {
     user_id: user.id,
     media_id: input.mediaId,
     status: input.status,
@@ -125,32 +135,17 @@ export async function saveEntry(
     // rellena el disparador user_media_sync_rating hasta que se retire.
     ...(rating10 !== undefined ? { rating10 } : {}),
     ...(input.watchedAt !== undefined ? { watched_at: input.watchedAt } : {}),
-    // Con `progress` (cliente nuevo) manda él; si no, el campo de siempre.
-    ...(hasLegacyProgress
-      ? {
-          episode_progress: parsedProgress?.ok
-            ? (progressToLegacy(progressValue) as EpisodeProgress | null)
-            : (input.episodeProgress ?? null),
-        }
-      : {}),
+    ...progressColumns,
   }
   const scaleExtras = scale10
     ? {
         ...(typeof input.favorite === 'boolean' ? { favorite: input.favorite } : {}),
       }
     : {}
-  // F-27: con las columnas, el espejo `episode_progress` lo escribe el
-  // disparador (mandarlo también podría pisar páginas u horas).
-  const withProgress = (row: Row): Row => {
-    if (!progressV2) return row
-    const { episode_progress: _legacy, ...rest } = row
-    void _legacy
-    return { ...rest, ...progressToColumns(progressValue) }
-  }
 
   const { data, error } = await supabase
     .from('user_media')
-    .upsert(withProgress({ ...legacyRow, ...scaleExtras }), { onConflict: 'user_id,media_id' })
+    .upsert({ ...row, ...scaleExtras }, { onConflict: 'user_id,media_id' })
     .select()
     .single()
   if (error || !data) {

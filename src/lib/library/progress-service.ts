@@ -13,8 +13,8 @@
 // complete      → pasa a «Completado» (y lo apunta en el diario si F-24 está
 //                 activo y se pide).
 //
-// Sin PROGRESS_V2 o sin las columnas, solo se guarda el progreso de episodios
-// en `episode_progress`; el resto de formatos responde `conflict` con
+// Sin PROGRESS_V2 solo se guarda el progreso de episodios (temporada y
+// episodio, en las columnas `progress_*`); el resto de formatos responde `conflict` con
 // `message: 'progress_unavailable'`.
 // ============================================================
 
@@ -28,8 +28,8 @@ import {
   nextProgress,
   progressFromRow,
   progressKindFor,
+  episodeColumns,
   progressToColumns,
-  progressToLegacy,
   supportsLegacyProgress,
   totalFor,
   type ProgressKind,
@@ -207,7 +207,7 @@ export async function advance(
   const { data: saved, error } = await supabase
     .from('user_media')
     .update({
-      ...(v2 ? progressToColumns(step.value) : { episode_progress: progressToLegacy(step.value) }),
+      ...(v2 ? progressToColumns(step.value) : episodeColumns(step.value)),
       ...(status !== row.status ? { status } : {}),
     })
     .eq('user_id', user.id)

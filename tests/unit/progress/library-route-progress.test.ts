@@ -60,24 +60,27 @@ beforeEach(() => {
 })
 afterEach(() => vi.unstubAllEnvs())
 
+const episodeOnly = (row: Record<string, unknown>) =>
+  Object.keys(row).filter((k) => k.startsWith('progress_')).sort()
+
+// Saneamiento 6.6: el jsonb episode_progress ya no se escribe. Sin la bandera
+// van solo temporada y episodio, en sus columnas; las demás no se mandan (así
+// un libro con páginas no las pierde, como antes con el disparador).
 describe('sin PROGRESS_V2 (hoy)', () => {
-  it('el episodeProgress de siempre se guarda igual', async () => {
+  it('el episodeProgress de siempre va a progress_season y progress_episode', async () => {
     await call({ mediaId: 'tv_1399', status: 'in_progress', episodeProgress: { season: 1, episode: 2 } })
-    expect(upserts[0].episode_progress).toEqual({ season: 1, episode: 2 })
-    expect(upserts[0]).not.toHaveProperty('progress_episode')
+    expect(upserts[0]).toMatchObject({ progress_season: 1, progress_episode: 2 })
+    expect(upserts[0]).not.toHaveProperty('episode_progress')
+    expect(episodeOnly(upserts[0])).toEqual(['progress_episode', 'progress_season'])
   })
 
-  it('con `progress` de un cliente nuevo, la temporada y el episodio van al jsonb', async () => {
+  it('con `progress` de un cliente nuevo, solo la temporada y el episodio', async () => {
     await call({ mediaId: 'tv_1399', status: 'in_progress', progress: { season: 3, episode: 4, total: 10 } })
-    expect(upserts[0].episode_progress).toEqual({ season: 3, episode: 4 })
-    expect(upserts[0]).not.toHaveProperty('progress_season')
+    expect(upserts[0]).toMatchObject({ progress_season: 3, progress_episode: 4 })
+    expect(upserts[0]).not.toHaveProperty('episode_progress')
+    expect(upserts[0]).not.toHaveProperty('progress_total')
   })
 
-  // Sin bandera la fila es EXACTAMENTE la de hoy (contrato de F-24), también
-  // en libros y juegos (episode_progress: null). Que eso no borre las páginas
-  // u horas ya migradas lo garantiza el disparador user_media_sync_progress
-  // (solo saca del jsonb temporada y episodio; ver migration.test.ts y la
-  // prueba sobre PostgreSQL 16 del PR), no la ruta.
   it('fila migrada de un libro y la bandera apagada: payload de siempre y la entrada conserva sus páginas', async () => {
     stored = {
       progress_season: null, progress_episode: null, progress_chapter: null, progress_volume: null,
@@ -88,18 +91,20 @@ describe('sin PROGRESS_V2 (hoy)', () => {
       upserts.length = 0
       const { status, json } = await call({ mediaId: 'book_OL1W', status: 'pending', ...extra })
       expect(status).toBe(200)
-      // Saneamiento 1.2: sin progreso en el cuerpo, ni se manda la columna.
-      if (Object.keys(extra).length === 0) expect(upserts[0]).not.toHaveProperty('episode_progress')
-      else expect(upserts[0].episode_progress).toBeNull()
-      expect(Object.keys(upserts[0]).filter((k) => k.startsWith('progress_'))).toEqual([])
+      expect(upserts[0]).not.toHaveProperty('episode_progress')
+      // Saneamiento 1.2: sin progreso en el cuerpo, ni se mandan las columnas.
+      if (Object.keys(extra).length === 0) expect(episodeOnly(upserts[0])).toEqual([])
+      else expect(upserts[0]).toMatchObject({ progress_season: null, progress_episode: null })
+      expect(upserts[0]).not.toHaveProperty('progress_page')
       expect((json.entry as Record<string, unknown>).progress).toEqual({ page: 120, total: 350 })
     }
   })
 
-  it('juego sin bandera: la fila de siempre (episode_progress null)', async () => {
+  it('juego sin bandera: temporada y episodio a null, horas intactas', async () => {
     await call({ mediaId: 'game_3498', status: 'in_progress', episodeProgress: null })
-    expect(upserts[0].episode_progress).toBeNull()
-    expect(Object.keys(upserts[0]).filter((k) => k.startsWith('progress_'))).toEqual([])
+    expect(upserts[0]).not.toHaveProperty('episode_progress')
+    expect(upserts[0]).toMatchObject({ progress_season: null, progress_episode: null })
+    expect(episodeOnly(upserts[0])).toEqual(['progress_episode', 'progress_season'])
   })
 })
 
