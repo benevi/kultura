@@ -61,3 +61,6 @@ e2e_baseline.txt
 
 # Notas de trabajo locales (no versionadas)
 __pycache__/
+
+# Resultado de los tests de contrato (tests/contract/outage-reporter.ts)
+contract-result.json

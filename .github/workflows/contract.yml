@@ -3,7 +3,8 @@ name: Contrato de proveedores
 # Cada semana (y a mano desde Actions → "Run workflow") llama a las APIs reales
 # con los clientes de la app en modo `PROVIDER_CONTRACT_MODE=enforce`. Si un
 # proveedor cambia la forma de sus respuestas, falla y abre (o actualiza) un
-# issue. Gasta unas pocas peticiones de cada cupo (RAWG 4, ComicVine 4).
+# issue. Si solo hay proveedores caídos (tiempo agotado, red, 5xx, 429), deja
+# avisos y no falla: una caída no dice nada del contrato. Gasta unas pocas peticiones de cada cupo (RAWG 4, ComicVine 4).
 #
 # Secretos necesarios (Settings → Secrets and variables → Actions):
 #   TMDB_API_KEY, RAWG_API_KEY, COMICVINE_KEY, GOOGLE_BOOKS_KEY
@@ -52,7 +53,12 @@ jobs:
         run: npm ci
 
       - name: Tests de contrato
+        id: tests
+        continue-on-error: true
         run: npm run test:contract
+
+      - name: Veredicto (caída o contrato roto)
+        run: node scripts/contract-verdict.mjs "${{ steps.tests.outcome }}"
 
       - name: Abrir o actualizar issue si falla
         if: failure()
