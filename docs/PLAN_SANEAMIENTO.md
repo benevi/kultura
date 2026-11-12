@@ -241,13 +241,16 @@ Orden: `library` → `lists` → `friends` → `chat` → `groups` → `account/
 2. Esquemas zod de respuesta en `src/lib/api/contracts/` y un test de contrato por endpoint.
 3. **Sin doble formato** (Q26): cada PR de módulo cambia servidor y cliente a la vez y **sube la versión del service worker**.
 
-## ⬜ Fase 9 · Una sola forma de pedir datos (solo la parte de datos, antes de la fase 8)
+## 🟨 Fase 9 · Una sola forma de pedir datos (solo la parte de datos, antes de la fase 8) — 2: plataformas #145 · chat leído #146 · muro del grupo #147 · 3: este PR · 12-11-2026
+
+- Hecho: en el navegador Supabase ya solo hace `auth` y realtime (más el autor de cada mensaje o publicación nueva que llega por realtime).
+- Pendiente de la regla 1: los `fetch` sueltos que quedan van a rutas que aún no usan el contrato `{ data }` / `{ error }` (Q26): `recommendations`, `search`, `popular-in-circle`, `genre-news`, `ai-recommendations`, `suggestions`, `users/search`, `email/preferences`, `discover` y `push/*`. Pasan a `apiFetch` cuando se sanee cada ruta. Las descargas (`account/export`, `letterboxd`) siguen con `fetch`: devuelven un archivo.
 
 1. **Regla:**
    - Lectura inicial: componentes de servidor con Supabase.
    - Mutaciones: `fetch` a `/api/*` a través de un cliente tipado único (`src/lib/api/client.ts`).
-2. Quitar las escrituras desde el Supabase del navegador en `GroupFeed`, `PlatformsSection` y `useAccountSettings` (salvo `auth`). En el navegador, Supabase queda solo para realtime.
-3. `WelcomeFlow` y `AddFranchiseButton` usan los wrappers.
+2. ✅ Quitar las escrituras desde el Supabase del navegador en `GroupFeed`, `PlatformsSection` y `useAccountSettings` (salvo `auth`). En el navegador, Supabase queda solo para realtime.
+3. ✅ `WelcomeFlow` y `AddFranchiseButton` usan los wrappers.
 
 Los `loading.tsx` y el componente de error con reintento pasan a la fase 8 (Q32).
 

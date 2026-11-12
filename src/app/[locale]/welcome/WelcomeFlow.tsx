@@ -24,6 +24,7 @@ import {
   type StarterTitle,
 } from '@/lib/recommendations/starter-titles'
 import type { MediaType } from '@/types/media'
+import { saveLibraryEntry } from '@/lib/library/actions'
 import {
   IconAnime,
   IconComic,
@@ -182,12 +183,8 @@ export function WelcomeFlow({ locale, next, currentUsername, suggestChange, need
       timers.current.delete(title.id)
       pending.current.delete(title.id)
       try {
-        const res = await fetch('/api/library', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ mediaId: title.id, status: 'completed', score }),
-        })
-        if (!res.ok) throw new Error(String(res.status))
+        // Saneamiento 9.3: el wrapper tipado de /api/library (lanza ApiError).
+        await saveLibraryEntry({ mediaId: title.id, status: 'completed', score })
         setSaveState((prev) => ({ ...prev, [title.id]: 'saved' }))
       } catch {
         setSaveState((prev) => ({ ...prev, [title.id]: 'error' }))
