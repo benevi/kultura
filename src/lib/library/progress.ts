@@ -11,9 +11,8 @@
 //   movie         nada
 //
 // Dónde se guarda: en las columnas `progress_*` de user_media (migración
-// 20261215270001). Saneamiento 6.6: se leen SOLO las columnas; el jsonb
-// `episode_progress` queda como espejo que mantiene el disparador hasta que
-// se retire.
+// 20261215270001). Saneamiento 6.6: es la única fuente; el jsonb
+// `episode_progress` se borró (20261231000005).
 // ============================================================
 
 import type { EpisodeProgress, LibraryEntry, LibraryPayload } from '@/types/library'
@@ -133,8 +132,8 @@ export function compactProgress(value: ProgressValue | null | undefined): Progre
 }
 
 /**
- * Lee el progreso del jsonb `episode_progress` (forma antigua `{season?,
- * episode}` o espejo de las columnas). Lo que no es número o se sale del
+ * Lee un progreso en forma de objeto (el `episodeProgress` antiguo de la API
+ * `{season?, episode}`, o lo que mande el cliente). Lo que no es número o se sale del
  * rango se descarta: un jsonb raro nunca rompe la página.
  */
 export function progressFromJson(json: unknown): ProgressValue | null {

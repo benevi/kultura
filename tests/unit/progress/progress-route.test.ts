@@ -36,16 +36,7 @@ vi.mock('@/lib/supabase/server', () => ({
           },
           update: (row: Record<string, unknown>) => {
             updates.push(row)
-            // Como el disparador user_media_sync_progress: si solo cambia el
-            // jsonb (escritor antiguo), temporada y episodio pasan a las columnas.
-            const mirrored =
-              'episode_progress' in row && !('progress_episode' in row)
-                ? {
-                    progress_season: (row.episode_progress as { season?: number } | null)?.season ?? null,
-                    progress_episode: (row.episode_progress as { episode?: number } | null)?.episode ?? null,
-                  }
-                : {}
-            const result = () => updateResults.shift() ?? { data: { ...entry, ...row, ...mirrored }, error: null }
+            const result = () => updateResults.shift() ?? { data: { ...entry, ...row }, error: null }
             const q = {
               eq: () => q,
               select: () => ({ single: async () => result() }),
@@ -91,15 +82,13 @@ const BASE = {
   id: 'e1', user_id: USER.id, status: 'in_progress', score: null, watched_at: null,
   created_at: '2026-10-20T10:00:00Z', updated_at: '2026-10-20T10:00:00Z',
 }
-// Escritor antiguo: el disparador copia el jsonb a las columnas, que son lo que se lee (6.6).
+// Serie con solo temporada y episodio (lo que se guarda sin PROGRESS_V2).
 const legacyTv = (ep: Record<string, number>) => ({
   ...BASE, media_id: 'tv_1399', ...COLUMNS,
   progress_season: ep.season ?? null, progress_episode: ep.episode ?? null,
-  episode_progress: ep,
 })
 const migratedTv = (season: number, episode: number) => ({
   ...BASE, media_id: 'tv_1399', ...COLUMNS, progress_season: season, progress_episode: episode, progress_total: 10,
-  episode_progress: { season, episode, total: 10 },
 })
 
 /** Contrato de la fase 7: `{ data }` si sale bien, `{ error }` si no. */
@@ -153,7 +142,7 @@ describe('sesión y validación', () => {
 
   it('título que no está en la biblioteca, 404; película, 400', async () => {
     expect((await post({ mediaId: 'tv_1399', action: 'next' })).status).toBe(404)
-    entry = { ...BASE, media_id: 'movie_550', episode_progress: null }
+    entry = { ...BASE, media_id: 'movie_550' }
     expect((await post({ mediaId: 'movie_550', action: 'next' })).status).toBe(400)
   })
 })
@@ -174,14 +163,14 @@ describe('sin PROGRESS_V2: solo episodios, en progress_season y progress_episode
   })
 
   it('un pendiente pasa a «En progreso» al marcar el primer episodio', async () => {
-    entry = { ...legacyTv({ episode: 1 }), status: 'pending', ...COLUMNS, episode_progress: null }
+    entry = { ...legacyTv({ episode: 1 }), status: 'pending', ...COLUMNS }
     const { json } = await post({ mediaId: 'tv_1399', action: 'next' })
     expect(updates[0]).toEqual({ progress_season: 1, progress_episode: 1, status: 'in_progress' })
     expect(json.status).toBe('in_progress')
   })
 
   it('libros y juegos sin la migración: 409 progress_unavailable (no se guarda nada)', async () => {
-    entry = { ...BASE, media_id: 'book_OL1W', episode_progress: null }
+    entry = { ...BASE, media_id: 'book_OL1W' }
     const res = await post({ mediaId: 'book_OL1W', action: 'next' })
     expect(res.status).toBe(409)
     expect(res.json.error).toEqual({ code: 'conflict', message: 'progress_unavailable' })
@@ -216,7 +205,7 @@ describe('después de la migración con PROGRESS_V2', () => {
 
   it('libro: +10 páginas con el total de la ficha', async () => {
     resolveMediaItem.mockResolvedValueOnce({ id: 'book_OL1W', type: 'book', title: 'Dune', metadata: { pageCount: 350 } })
-    entry = { ...BASE, media_id: 'book_OL1W', ...COLUMNS, progress_page: 120, episode_progress: { page: 120 } }
+    entry = { ...BASE, media_id: 'book_OL1W', ...COLUMNS, progress_page: 120 }
     const { json } = await post({ mediaId: 'book_OL1W', action: 'next' })
     expect(updates[0]).toEqual({ ...COLUMNS, progress_page: 130, progress_total: 350 })
     expect(json.progress).toEqual({ page: 130, total: 350 })
@@ -224,7 +213,7 @@ describe('después de la migración con PROGRESS_V2', () => {
 
   it('juego: +1 hora (la media de RAWG como total) aunque el proveedor no responda', async () => {
     resolveMediaItem.mockResolvedValueOnce(null)
-    entry = { ...BASE, media_id: 'game_274755', ...COLUMNS, progress_hours: 12.5, progress_total: 22, episode_progress: { hours: 12.5, total: 22 } }
+    entry = { ...BASE, media_id: 'game_274755', ...COLUMNS, progress_hours: 12.5, progress_total: 22 }
     await post({ mediaId: 'game_274755', action: 'next' })
     expect(updates[0]).toEqual({ ...COLUMNS, progress_hours: 13.5, progress_total: 22 })
   })
