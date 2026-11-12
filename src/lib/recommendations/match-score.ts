@@ -14,6 +14,7 @@ import type { MediaItem } from '@/types/media'
 import { backfillGenres } from '@/lib/library/backfill-genres'
 import { canonicalGenres } from '@/lib/recommendations/genre-canonical'
 import { createLogger } from '@/lib/logger'
+import { rating10ToScore, storedRating10 } from '@/lib/library/rating'
 
 const log = createLogger('recommendations/match-score')
 
@@ -35,7 +36,8 @@ export interface TasteProfile {
 /** Lo ÚNICO que el perfil necesita de una fila: peso y géneros. */
 interface TasteSignalRow {
   status: string
-  score: number | null
+  /** Nota fina guardada (0,5-10); numeric puede llegar como texto. */
+  rating10: number | string | null
   media: { type: string; metadata: Record<string, unknown> | null } | null
 }
 
@@ -47,8 +49,10 @@ interface UserMediaRow extends TasteSignalRow {
 }
 
 /** Peso de una fila de biblioteca como señal de gusto. 0 = sin señal (pending/abandoned sin score). */
-function rowWeight(row: { status: string; score: number | null }): number {
-  if (row.score != null) return row.score
+function rowWeight(row: { status: string; rating10: number | string | null }): number {
+  // Peso 1-5 (rating10 redondeado como la columna vieja `score`).
+  const score = rating10ToScore(storedRating10(row.rating10))
+  if (score != null) return score
   if (row.status === 'completed') return 3
   if (row.status === 'in_progress') return 1
   return 0
@@ -144,7 +148,7 @@ export async function getTasteProfile(
   const supabase = supabaseClient ?? await createClient()
   const { data } = await supabase
     .from('user_media')
-    .select('status, score, media(id, type, external_id, metadata)')
+    .select('status, rating10, media(id, type, external_id, metadata)')
     .eq('user_id', userId)
 
   const rows = (data ?? []) as unknown as UserMediaRow[]
@@ -183,10 +187,10 @@ interface FriendRow {
 interface FriendMediaRow {
   media_id: string
   status: string
-  score: number | null
+  rating10: number | string | null
 }
 
-/** Fracción (0-1) de amigos aceptados que tienen cada media_id completado o con score>=4. */
+/** Fracción (0-1) de amigos aceptados que tienen cada media_id completado o con nota ≥ 7/10 (4★). */
 async function getSocialSignal(
   userId: string,
   mediaIds: string[],
@@ -208,13 +212,13 @@ async function getSocialSignal(
 
   const { data: rows } = await supabase
     .from('user_media')
-    .select('media_id, status, score')
+    .select('media_id, status, rating10')
     .in('user_id', friendIds)
     .in('media_id', mediaIds)
 
   const likedCountByMedia = new Map<string, number>()
   for (const row of (rows ?? []) as FriendMediaRow[]) {
-    const liked = row.status === 'completed' || (row.score ?? 0) >= 4
+    const liked = row.status === 'completed' || (storedRating10(row.rating10) ?? 0) >= 7
     if (!liked) continue
     likedCountByMedia.set(row.media_id, (likedCountByMedia.get(row.media_id) ?? 0) + 1)
   }

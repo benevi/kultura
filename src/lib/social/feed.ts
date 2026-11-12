@@ -10,6 +10,7 @@
 
 import { createClient } from '@/lib/supabase/server'
 import type { DbUserMedia, DbMedia, DbUser } from '@/types/supabase'
+import { rating10ToScore, storedRating10 } from '@/lib/library/rating'
 
 export interface FeedEntry {
   id: string
@@ -72,7 +73,7 @@ export async function getFriendsFeed(
   const { data, error } = await supabase
     .from('user_media')
     .select(
-      'id, user_id, media_id, status, score, created_at, updated_at, user:user_id(id, username, avatar_color, avatar_initials), media:media_id(id, title, poster, type)'
+      'id, user_id, media_id, status, rating10, created_at, updated_at, user:user_id(id, username, avatar_color, avatar_initials), media:media_id(id, title, poster, type)'
     )
     .in('user_id', ids)
     .order('updated_at', { ascending: false })
@@ -87,7 +88,7 @@ export async function getFriendsFeed(
       userId: row.user_id,
       mediaId: row.media_id,
       status: row.status,
-      score: row.score,
+      score: rating10ToScore(storedRating10(row.rating10)),
       createdAt: row.created_at,
       updatedAt: row.updated_at,
       user: row.user!,

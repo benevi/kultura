@@ -88,18 +88,19 @@ describe("firma del enlace", () => {
 
 describe("formatShareRating: la escala del dueño", () => {
   it.each([
-    [{ rating10: 9, score: 5 }, "ten", "es", "9/10"],
-    [{ rating10: 7.5, score: 4 }, "ten", "es", "7,5/10"],
-    [{ rating10: 7.5, score: 4 }, "ten", "en", "7.5/10"],
-    [{ rating10: 9, score: 5 }, "stars", "es", "4,5★"],
-    [{ rating10: 8, score: 4 }, "stars", "en", "4★"],
-    [{ rating10: 9, score: 5 }, "legacy", "es", "5★"],
-    [{ score: 3 }, "ten", "es", "6/10"],
+    [{ rating10: 9 }, "ten", "es", "9/10"],
+    [{ rating10: 7.5 }, "ten", "es", "7,5/10"],
+    [{ rating10: 7.5 }, "ten", "en", "7.5/10"],
+    [{ rating10: 9 }, "stars", "es", "4,5★"],
+    [{ rating10: 8 }, "stars", "en", "4★"],
+    [{ rating10: 9 }, "legacy", "es", "5★"],
+    [{ rating10: 7.5 }, "legacy", "es", "4★"],
+    [{ rating10: 0.5 }, "legacy", "es", "1★"],
   ] as const)("%o en %s (%s) → %s", (entry, scale, locale, text) => {
     expect(formatShareRating(entry, scale, locale)?.text).toBe(text);
   });
   it("sin nota, nada", () => {
-    expect(formatShareRating({ score: null, rating10: null }, "ten", "es")).toBeNull();
+    expect(formatShareRating({ rating10: null }, "ten", "es")).toBeNull();
   });
 });
 

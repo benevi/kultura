@@ -132,7 +132,7 @@ describe("top 4 del perfil (CRE-8c)", () => {
     h.world.db.tables.user_media = [1, 2, 3, 4, 5].map((n) => ({
       user_id: "owner",
       media_id: `movie_${n}`,
-      score: 6 - n,
+      rating10: (6 - n) * 2,
       updated_at: `2026-10-0${n}`,
       media: { title: `Peli ${n}`, poster: `https://image.tmdb.org/t/p/w500/${n}.jpg`, type: "movie", year: 2000 + n },
     }));

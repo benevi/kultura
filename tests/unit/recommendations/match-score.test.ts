@@ -38,26 +38,26 @@ function item(overrides: Partial<MediaItem> = {}): MediaItem {
 }
 
 describe('buildTasteProfile', () => {
-  it('excluye filas sin señal real (pending/abandoned sin score)', () => {
+  it('excluye filas sin señal real (pending/abandoned sin nota)', () => {
     const profile = buildTasteProfile([
-      { status: 'pending', score: null, media: { type: 'movie', metadata: { genres: ['Drama'] } } },
-      { status: 'abandoned', score: null, media: { type: 'movie', metadata: { genres: ['Drama'] } } },
+      { status: 'pending', rating10: null, media: { type: 'movie', metadata: { genres: ['Drama'] } } },
+      { status: 'abandoned', rating10: null, media: { type: 'movie', metadata: { genres: ['Drama'] } } },
     ])
     expect(profile.signalCount).toBe(0)
     expect(profile.genreWeights.size).toBe(0)
   })
 
-  it('pondera por score cuando existe, y por status cuando no', () => {
+  it('pondera por la nota cuando existe, y por status cuando no', () => {
     const profile = buildTasteProfile([
-      { status: 'completed', score: 5, media: { type: 'movie', metadata: { genres: ['Drama'] } } },
-      { status: 'completed', score: null, media: { type: 'tv', metadata: { genres: ['Comedy'] } } },
-      { status: 'in_progress', score: null, media: { type: 'anime', metadata: { genres: ['Action'] } } },
+      { status: 'completed', rating10: 10, media: { type: 'movie', metadata: { genres: ['Drama'] } } },
+      { status: 'completed', rating10: null, media: { type: 'tv', metadata: { genres: ['Comedy'] } } },
+      { status: 'in_progress', rating10: null, media: { type: 'anime', metadata: { genres: ['Action'] } } },
     ])
     expect(profile.signalCount).toBe(3)
     // E-MATCH-VOCAB: el perfil se indexa por slug canónico, no por el nombre
     // del proveedor. Drama (peso 5) es el género dominante → normalizado a 1
     expect(profile.genreWeights.get('drama')).toBe(1)
-    // Comedy (peso 3, status completed sin score) < Drama
+    // Comedy (peso 3, status completed sin nota) < Drama
     expect(profile.genreWeights.get('comedia')).toBeCloseTo(3 / 5)
     // Action (peso 1, in_progress) es el más bajo
     expect(profile.genreWeights.get('accion')).toBeCloseTo(1 / 5)
@@ -65,15 +65,15 @@ describe('buildTasteProfile', () => {
 
   it('ignora filas sin media asociada (join nulo)', () => {
     const profile = buildTasteProfile([
-      { status: 'completed', score: 5, media: null },
+      { status: 'completed', rating10: 10, media: null },
     ])
     expect(profile.signalCount).toBe(0)
   })
 
   it('acumula el mismo género a través de varios items', () => {
     const profile = buildTasteProfile([
-      { status: 'completed', score: 4, media: { type: 'movie', metadata: { genres: ['Drama'] } } },
-      { status: 'completed', score: 3, media: { type: 'tv', metadata: { genres: ['Drama'] } } },
+      { status: 'completed', rating10: 8, media: { type: 'movie', metadata: { genres: ['Drama'] } } },
+      { status: 'completed', rating10: 6, media: { type: 'tv', metadata: { genres: ['Drama'] } } },
     ])
     // Drama acumula 4+3=7, es el único género → normalizado a 1
     expect(profile.genreWeights.get('drama')).toBe(1)
@@ -82,8 +82,8 @@ describe('buildTasteProfile', () => {
   // E-MATCH-VOCAB — el motivo de existir del vocabulario canónico.
   it('cruza proveedores e idiomas: "Acción" (TMDB es) y "Action" (AniList) son el mismo género', () => {
     const profile = buildTasteProfile([
-      { status: 'completed', score: 5, media: { type: 'movie', metadata: { genres: ['Acción'] } } },
-      { status: 'completed', score: 5, media: { type: 'anime', metadata: { genres: ['Action'] } } },
+      { status: 'completed', rating10: 10, media: { type: 'movie', metadata: { genres: ['Acción'] } } },
+      { status: 'completed', rating10: 10, media: { type: 'anime', metadata: { genres: ['Action'] } } },
     ])
     expect(profile.genreWeights.get('accion')).toBe(1)
     expect(profile.genreWeights.size).toBe(1)
@@ -91,7 +91,7 @@ describe('buildTasteProfile', () => {
 
   it('expande los géneros combinados de TMDB en televisión', () => {
     const profile = buildTasteProfile([
-      { status: 'completed', score: 5, media: { type: 'tv', metadata: { genres: ['Sci-Fi & Fantasy'] } } },
+      { status: 'completed', rating10: 10, media: { type: 'tv', metadata: { genres: ['Sci-Fi & Fantasy'] } } },
     ])
     expect(profile.genreWeights.get('ciencia-ficcion')).toBe(1)
     expect(profile.genreWeights.get('fantasia')).toBe(1)
@@ -99,7 +99,7 @@ describe('buildTasteProfile', () => {
 
   it('ignora los géneros que el vocabulario canónico no cubre', () => {
     const profile = buildTasteProfile([
-      { status: 'completed', score: 5, media: { type: 'anime', metadata: { genres: ['Mecha', 'Action'] } } },
+      { status: 'completed', rating10: 10, media: { type: 'anime', metadata: { genres: ['Mecha', 'Action'] } } },
     ])
     expect(profile.genreWeights.has('accion')).toBe(true)
     expect(profile.genreWeights.size).toBe(1)
@@ -183,8 +183,8 @@ describe('computeMatchScores — gate por señal insuficiente', () => {
         select: vi.fn().mockReturnThis(),
         eq: vi.fn().mockResolvedValue({
           data: [
-            { status: 'completed', score: 5, media: { type: 'movie', metadata: { genres: ['Drama'] } } },
-            { status: 'completed', score: 4, media: { type: 'tv', metadata: { genres: ['Comedy'] } } },
+            { status: 'completed', rating10: 10, media: { type: 'movie', metadata: { genres: ['Drama'] } } },
+            { status: 'completed', rating10: 8, media: { type: 'tv', metadata: { genres: ['Comedy'] } } },
           ],
         }),
       }),
@@ -204,9 +204,9 @@ describe('computeMatchScores — gate por señal insuficiente', () => {
       select: vi.fn().mockReturnThis(),
       eq: vi.fn().mockResolvedValue({
         data: [
-          { status: 'completed', score: 5, media: { type: 'movie', metadata: { genres: ['Drama'] } } },
-          { status: 'completed', score: 4, media: { type: 'movie', metadata: { genres: ['Drama'] } } },
-          { status: 'completed', score: 5, media: { type: 'movie', metadata: { genres: ['Drama'] } } },
+          { status: 'completed', rating10: 10, media: { type: 'movie', metadata: { genres: ['Drama'] } } },
+          { status: 'completed', rating10: 8, media: { type: 'movie', metadata: { genres: ['Drama'] } } },
+          { status: 'completed', rating10: 10, media: { type: 'movie', metadata: { genres: ['Drama'] } } },
         ],
       }),
     }
@@ -265,9 +265,9 @@ describe('computeMatchScores — gate por señal insuficiente', () => {
 
   it('F3a-FIX: en una vista de un solo tipo, el score varía según género real (no una constante)', async () => {
     const supabase = makeSingleTypeSupabase([
-      { status: 'completed', score: 5, media: { type: 'movie', metadata: { genres: ['Drama'] } } },
-      { status: 'completed', score: 5, media: { type: 'movie', metadata: { genres: ['Drama'] } } },
-      { status: 'completed', score: 5, media: { type: 'movie', metadata: { genres: ['Drama'] } } },
+      { status: 'completed', rating10: 10, media: { type: 'movie', metadata: { genres: ['Drama'] } } },
+      { status: 'completed', rating10: 10, media: { type: 'movie', metadata: { genres: ['Drama'] } } },
+      { status: 'completed', rating10: 10, media: { type: 'movie', metadata: { genres: ['Drama'] } } },
     ])
 
     const scores = await computeMatchScores(
@@ -286,9 +286,9 @@ describe('computeMatchScores — gate por señal insuficiente', () => {
 
   it('F3a-FIX: sin ninguna coincidencia real de género, el score es 0 (no un % decorativo por tipo)', async () => {
     const supabase = makeSingleTypeSupabase([
-      { status: 'completed', score: 5, media: { type: 'movie', metadata: { genres: ['Drama'] } } },
-      { status: 'completed', score: 5, media: { type: 'movie', metadata: { genres: ['Drama'] } } },
-      { status: 'completed', score: 5, media: { type: 'movie', metadata: { genres: ['Drama'] } } },
+      { status: 'completed', rating10: 10, media: { type: 'movie', metadata: { genres: ['Drama'] } } },
+      { status: 'completed', rating10: 10, media: { type: 'movie', metadata: { genres: ['Drama'] } } },
+      { status: 'completed', rating10: 10, media: { type: 'movie', metadata: { genres: ['Drama'] } } },
     ])
 
     const scores = await computeMatchScores(
@@ -308,9 +308,9 @@ describe('computeMatchScores — gate por señal insuficiente', () => {
 
   it('F3a-FIX: en modo agregado (varios tipos mezclados) la afinidad de tipo sigue contando', async () => {
     const supabase = makeSingleTypeSupabase([
-      { status: 'completed', score: 5, media: { type: 'movie', metadata: { genres: [] } } },
-      { status: 'completed', score: 5, media: { type: 'movie', metadata: { genres: [] } } },
-      { status: 'completed', score: 5, media: { type: 'movie', metadata: { genres: [] } } },
+      { status: 'completed', rating10: 10, media: { type: 'movie', metadata: { genres: [] } } },
+      { status: 'completed', rating10: 10, media: { type: 'movie', metadata: { genres: [] } } },
+      { status: 'completed', rating10: 10, media: { type: 'movie', metadata: { genres: [] } } },
     ])
 
     const scores = await computeMatchScores(
@@ -332,9 +332,9 @@ describe('computeMatchScores — gate por señal insuficiente', () => {
   // ninguno, el perfil salía sin géneros y TODA card daba 0% MATCH.
   describe('reparación de géneros que faltan en la biblioteca', () => {
     const staleRows = [
-      { status: 'completed', score: 5, media: { id: 'movie_10', type: 'movie', external_id: '10', metadata: {} } },
-      { status: 'completed', score: 5, media: { id: 'movie_11', type: 'movie', external_id: '11', metadata: {} } },
-      { status: 'completed', score: 5, media: { id: 'movie_12', type: 'movie', external_id: '12', metadata: null } },
+      { status: 'completed', rating10: 10, media: { id: 'movie_10', type: 'movie', external_id: '10', metadata: {} } },
+      { status: 'completed', rating10: 10, media: { id: 'movie_11', type: 'movie', external_id: '11', metadata: {} } },
+      { status: 'completed', rating10: 10, media: { id: 'movie_12', type: 'movie', external_id: '12', metadata: null } },
     ]
 
     it('los géneros reparados entran en el perfil: el score deja de ser 0', async () => {
@@ -365,7 +365,7 @@ describe('computeMatchScores — gate por señal insuficiente', () => {
         [item()],
         makeSingleTypeSupabase([
           ...staleRows,
-          { status: 'pending', score: null, media: { id: 'movie_99', type: 'movie', external_id: '99', metadata: {} } },
+          { status: 'pending', rating10: null, media: { id: 'movie_99', type: 'movie', external_id: '99', metadata: {} } },
         ]) as never
       )
 

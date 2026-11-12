@@ -30,7 +30,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { parseMediaId, type ParsedMediaId } from "@/lib/media/media-id";
 import { loadMediaDetail } from "@/lib/media/detail-data";
-import { entryRating10, isValidRating10 } from "@/lib/library/rating";
+import { rating10ToScore, storedRating10 } from "@/lib/library/rating";
 import { ratingScale10Enabled, readRatingScale } from "@/lib/library/scale";
 import { viewerCanReadLibrary, type LibraryVisibility } from "@/lib/social/public-collection";
 import type { MediaType } from "@/types/media";
@@ -120,17 +120,16 @@ export interface ShareRating {
  * estrellas ("4,5★") o, sin `RATING_SCALE_10`, la nota entera de siempre.
  */
 export function formatShareRating(
-  entry: { rating10?: number | null; score: number | null },
+  entry: { rating10?: number | null },
   scale: ShareScale,
   locale: string
 ): ShareRating | null {
-  const rating10 = entryRating10(entry);
+  const rating10 = storedRating10(entry.rating10);
   if (rating10 === null) return null;
   const fmt = new Intl.NumberFormat(locale === "en" ? "en" : "es", { maximumFractionDigits: 1 });
   if (scale === "ten") return { rating10, scale, text: `${fmt.format(rating10)}/10` };
   if (scale === "stars") return { rating10, scale, text: `${fmt.format(rating10 / 2)}★` };
-  const score = typeof entry.score === "number" ? entry.score : Math.max(1, Math.round(rating10 / 2));
-  return { rating10, scale, text: `${score}★` };
+  return { rating10, scale, text: `${rating10ToScore(rating10)}★` };
 }
 
 // ── Lecturas ─────────────────────────────────────────────────────────────────
@@ -197,7 +196,6 @@ export interface ShareMedia {
 }
 
 type RatingRow = {
-  score: number | null;
   rating10?: number | string | null;
   media?: { title?: string | null; poster?: string | null; year?: number | null } | null;
 };
@@ -210,16 +208,15 @@ export async function loadOwnerRating(
 ): Promise<{ score: number | null; rating10: number | null; media: ShareMedia | null } | null> {
   const { data, error } = await client
     .from("user_media")
-    .select("score, rating10, media(title, poster, year)")
+    .select("rating10, media(title, poster, year)")
     .eq("user_id", ownerId)
     .eq("media_id", mediaId)
     .maybeSingle();
   if (error || !data) return null;
   const row = data as unknown as RatingRow;
-  const raw10 = row.rating10 === null || row.rating10 === undefined ? null : Number(row.rating10);
-  const rating10 = isValidRating10(raw10) ? raw10 : null;
-  const score = typeof row.score === "number" ? row.score : null;
-  if (rating10 === null && score === null) return null;
+  const rating10 = storedRating10(row.rating10);
+  if (rating10 === null) return null;
+  const score = rating10ToScore(rating10);
   const media = row.media?.title ? { title: row.media.title, poster: row.media.poster ?? null, year: row.media.year ?? undefined } : null;
   return { score, rating10, media };
 }

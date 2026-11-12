@@ -129,12 +129,12 @@ export default async function HomePage() {
       .order('updated_at', { ascending: false })
       .limit(9),
     readTodayAiRecommendations(user.id, locale),
-    // Mismo criterio que getLibraryContext: completados o puntuados con ≥ 4.
+    // Mismo criterio que getLibraryContext: completados o con nota ≥ 7/10 (4★).
     supabase
       .from('user_media')
       .select('media_id', { count: 'exact', head: true })
       .eq('user_id', user.id)
-      .or('status.eq.completed,score.gte.4'),
+      .or('status.eq.completed,rating10.gte.7'),
     // ROJO-7: borrado programado → aviso arriba, con la salida a Ajustes.
     readAccountState(supabase, user.id),
     // F-27: «marcar siguiente» en todos los formatos solo con PROGRESS_V2 y

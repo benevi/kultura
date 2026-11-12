@@ -208,9 +208,9 @@ describe('favoritos y contadores (DIS-6)', () => {
       { data: [{ media_id: 'movie_1', status: 'completed' }, { media_id: 'anime_1', status: 'in_progress' }], error: null },
       {
         data: [
-          { media_id: 'movie_1', score: 5, media: media('movie_1', 'Alien') },
-          { media_id: 'anime_1', score: 4, media: media('anime_1', 'Akira') },
-          { media_id: 'book_1', score: 3, media: null },
+          { media_id: 'movie_1', rating10: 9.5, media: media('movie_1', 'Alien') },
+          { media_id: 'anime_1', rating10: '8', media: media('anime_1', 'Akira') },
+          { media_id: 'book_1', rating10: 6, media: null },
         ],
         error: null,
       },
@@ -219,7 +219,7 @@ describe('favoritos y contadores (DIS-6)', () => {
     const { getLibraryShowcase } = await import('@/lib/social/public-collection')
     const res = await getLibraryShowcase(client as never, 'u1')
     expect(calls.filter((c) => c.table === 'user_media' && c.method === 'eq' && c.args[0] === 'user_id').length).toBe(3)
-    expect(calls).toContainEqual({ table: 'user_media', method: 'not', args: ['score', 'is', null] })
+    expect(calls).toContainEqual({ table: 'user_media', method: 'not', args: ['rating10', 'is', null] })
     expect(res.total).toBe(2)
     expect(res.favorites.map((f) => [f.mediaId, f.score])).toEqual([['movie_1', 5], ['anime_1', 4]])
     expect(res.watching.map((w) => w.title)).toEqual(['Akira'])

@@ -24,6 +24,7 @@ import type { SupabaseClient } from '@supabase/supabase-js'
 import { createClient } from '@/lib/supabase/server'
 import type { DbMedia, DbUser } from '@/types/supabase'
 import type { MediaType } from '@/types/media'
+import { rating10ToScore, storedRating10 } from '@/lib/library/rating'
 
 /** Orden de los formatos en la página: el mismo que el resto de la app. */
 export const COLLECTION_FORMAT_ORDER: MediaType[] = [
@@ -352,7 +353,7 @@ const WATCHING_COUNT = 12
 /** Tope de filas para los contadores (una biblioteca enorme no tumba la página). */
 const COUNT_ROWS_CAP = 5000
 
-type ScoredRow = { media_id: string; score: number | null; updated_at?: string | null; media: MediaEmbed }
+type ScoredRow = { media_id: string; rating10: number | string | null; updated_at?: string | null; media: MediaEmbed }
 
 /**
  * Los 4 favoritos "hasta que exista `favorite`" (W5): los mejor puntuados,
@@ -411,10 +412,10 @@ export async function getLibraryShowcase(supabase: SupabaseClient, ownerId: stri
     supabase.from('user_media').select('media_id, status').eq('user_id', ownerId).limit(COUNT_ROWS_CAP),
     supabase
       .from('user_media')
-      .select('media_id, score, updated_at, media(id, title, poster, type, year)')
+      .select('media_id, rating10, updated_at, media(id, title, poster, type, year)')
       .eq('user_id', ownerId)
-      .not('score', 'is', null)
-      .order('score', { ascending: false })
+      .not('rating10', 'is', null)
+      .order('rating10', { ascending: false })
       .order('updated_at', { ascending: false })
       .limit(FAVORITE_CANDIDATES),
     supabase
@@ -428,8 +429,9 @@ export async function getLibraryShowcase(supabase: SupabaseClient, ownerId: stri
 
   const counts = countByFormat(countsRes.error ? [] : ((countsRes.data ?? []) as Array<{ media_id: string; status: string }>))
   const candidates = (favRes.error ? [] : ((favRes.data ?? []) as unknown as ScoredRow[]))
-    .filter((r) => typeof r.score === 'number' && r.media)
-    .map((r) => ({ ...mapItem(r), score: r.score as number }))
+    .map((r) => ({ r, score: rating10ToScore(storedRating10(r.rating10)) }))
+    .filter(({ r, score }) => score !== null && r.media)
+    .map(({ r, score }) => ({ ...mapItem(r), score: score as number }))
   const watching = (watchRes.error ? [] : ((watchRes.data ?? []) as unknown as ItemRow[]))
     .filter((r) => r.media)
     .map(mapItem)

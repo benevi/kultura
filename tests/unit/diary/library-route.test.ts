@@ -48,7 +48,7 @@ vi.mock('@/lib/analytics/track', () => ({ track: async () => undefined }))
 
 const USER = { id: '00000000-0000-4000-8000-000000000001' }
 const ROW = {
-  id: 'e1', user_id: USER.id, media_id: 'movie_550', status: 'completed', score: 5,
+  id: 'e1', user_id: USER.id, media_id: 'movie_550', status: 'completed', score: 5, rating10: 10,
   watched_at: '2026-10-20', episode_progress: null, created_at: '2026-10-20T10:00:00Z', updated_at: '2026-10-20T10:00:00Z',
 }
 const MIGRATED_ROW = { ...ROW, rating10: '9.0', favorite: true }
@@ -91,7 +91,7 @@ describe('sin la bandera (hoy)', () => {
     })
     expect(logInserts).toHaveLength(0)
     expect(json.log).toBeNull()
-    // La respuesta ya trae la nota fina derivada (score × 2) y favorito apagado.
+    // La respuesta trae la nota que rellena el disparador (rating10) y favorito apagado.
     expect(json.entry).toMatchObject({ score: 5, rating10: 10, favorite: false })
   })
 

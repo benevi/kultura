@@ -23,7 +23,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { createLogger } from '@/lib/logger'
 import { buildMediaRow, ensureMediaRows, type MediaRowInsert } from '@/lib/media/upsert-from-provider'
 import { parseMediaId } from '@/lib/media/media-id'
-import { rating10ToScore, scoreToRating10, isValidRating10 } from '@/lib/library/rating'
+import { rating10ToScore, storedRating10 } from '@/lib/library/rating'
 import { ratingScale10Enabled } from '@/lib/library/scale'
 import type { LibraryStatus } from '@/types/library'
 import type { MediaItem } from '@/types/media'
@@ -172,7 +172,7 @@ export async function processImportBatch(items: ImportItem[], opts: ProcessOptio
 
   // 4. Lo que ya hay en la biblioteca.
   const scale10 = ratingScale10Enabled()
-  const existing = await readExisting(opts.supabase, opts.userId, mediaIds, scale10)
+  const existing = await readExisting(opts.supabase, opts.userId, mediaIds)
 
   // 5. Escribir lo nuevo y lo que se completa.
   const rows: Array<Record<string, unknown>> = []
@@ -283,23 +283,21 @@ function fromPrebuilt(
 async function readExisting(
   supabase: SupabaseClient,
   userId: string,
-  mediaIds: string[],
-  scale10: boolean
+  mediaIds: string[]
 ): Promise<{ rows: Map<string, ExistingEntry> }> {
   const rows = new Map<string, ExistingEntry>()
   for (let i = 0; i < mediaIds.length; i += CHUNK) {
     const chunk = mediaIds.slice(i, i + CHUNK)
     const { data, error } = await supabase
       .from('user_media')
-      .select(scale10 ? 'media_id, status, score, rating10, watched_at' : 'media_id, status, score, watched_at')
+      .select('media_id, status, rating10, watched_at')
       .eq('user_id', userId)
       .in('media_id', chunk)
     if (error) throw new Error(`user_media: ${error.code ?? ''} ${error.message}`)
-    for (const r of (data ?? []) as unknown as Array<{ media_id: string; status: LibraryStatus; score: number | null; rating10?: unknown; watched_at: string | null }>) {
-      const fine = typeof r.rating10 === 'string' ? Number(r.rating10) : r.rating10
+    for (const r of (data ?? []) as unknown as Array<{ media_id: string; status: LibraryStatus; rating10?: unknown; watched_at: string | null }>) {
       rows.set(r.media_id, {
         status: r.status,
-        rating10: isValidRating10(fine) ? fine : scoreToRating10(r.score),
+        rating10: storedRating10(r.rating10),
         watchedAt: r.watched_at,
       })
     }

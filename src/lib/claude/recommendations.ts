@@ -35,6 +35,7 @@ import { computeMatchScores } from '@/lib/recommendations/match-score'
 import { createLogger } from '@/lib/logger'
 import { aiDay, reserveAiCall } from '@/lib/claude/budget'
 import { readDailyRecs, writeDailyRecs, type AiRecsResult } from '@/lib/claude/daily-recs'
+import { rating10ToScore, storedRating10 } from '@/lib/library/rating'
 
 export type { AiRecsResult } from '@/lib/claude/daily-recs'
 
@@ -153,16 +154,16 @@ export function invalidateRecCache(userId: string): void {
 
 /**
  * Obtiene los items relevantes de la biblioteca para el prompt:
- * completados o con score >= 4, ordenados por updated_at DESC, máx 15.
+ * completados o con nota ≥ 7/10 (4★), ordenados por updated_at DESC, máx 15.
  */
 export async function getLibraryContext(userId: string, supabaseClient?: SupabaseClient): Promise<LibraryItem[]> {
   const supabase = supabaseClient ?? await createClient()
 
   const { data } = await supabase
     .from('user_media')
-    .select('status, score, updated_at, media(title, type, year)')
+    .select('status, rating10, updated_at, media(title, type, year)')
     .eq('user_id', userId)
-    .or('status.eq.completed,score.gte.4')
+    .or('status.eq.completed,rating10.gte.7')
     .order('updated_at', { ascending: false })
     .limit(15)
 
@@ -170,7 +171,7 @@ export async function getLibraryContext(userId: string, supabaseClient?: Supabas
 
   return (data as unknown as Array<{
     status: string
-    score: number | null
+    rating10: number | string | null
     media: { title: string; type: string; year: number | null } | null
   }>)
     .filter((row) => row.media !== null)
@@ -178,7 +179,7 @@ export async function getLibraryContext(userId: string, supabaseClient?: Supabas
       title: row.media!.title,
       type: row.media!.type,
       year: row.media!.year,
-      score: row.score,
+      score: rating10ToScore(storedRating10(row.rating10)),
       status: row.status,
     }))
 }

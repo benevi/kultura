@@ -4,7 +4,7 @@
 
 import { describe, it, expect, vi, beforeEach } from "vitest";
 
-type Row = { score: unknown; user_id: string; users: { library_visibility: string } };
+type Row = { rating10: unknown; user_id: string; users: { library_visibility: string } };
 
 const db = vi.hoisted(() => ({
   rows: [] as Row[],
@@ -61,8 +61,9 @@ vi.mock("@/lib/supabase/admin", () => ({
 import { sourceLinkFor } from "@/lib/media/source-link";
 import { KULTURA_RATING_MIN_VOTES, getKulturaRating, summarizeScores } from "@/lib/media/kultura-rating";
 
+// La nota se lee de rating10 (saneamiento 6.6): el helper sigue en 1-5.
 const row = (user_id: string, score: number, library_visibility = "public"): Row => ({
-  score,
+  rating10: score * 2,
   user_id,
   users: { library_visibility },
 });

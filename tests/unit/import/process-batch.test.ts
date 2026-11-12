@@ -108,8 +108,8 @@ describe('processImportBatch', () => {
   })
 
   it('lo que ya había no se pisa (nota de KULTURA) y lo que falta se completa', async () => {
-    state.db.tables.user_media.push({ user_id: 'u1', media_id: 'movie_1', status: 'pending', score: 3, watched_at: null })
-    state.db.tables.user_media.push({ user_id: 'u1', media_id: 'movie_2', status: 'completed', score: 4, watched_at: '2019-01-01' })
+    state.db.tables.user_media.push({ user_id: 'u1', media_id: 'movie_1', status: 'pending', score: 3, rating10: 6, watched_at: null })
+    state.db.tables.user_media.push({ user_id: 'u1', media_id: 'movie_2', status: 'completed', score: 4, rating10: 8, watched_at: '2019-01-01' })
     const r = await run([
       item({ key: 'a', ids: { tmdb: 1 }, rating10: 10, watchedAt: '2020-05-05' }),
       item({ key: 'b', ids: { tmdb: 2 }, status: 'pending' }),
@@ -120,7 +120,7 @@ describe('processImportBatch', () => {
   })
 
   it('otra cuenta con el mismo título no se toca', async () => {
-    state.db.tables.user_media.push({ user_id: 'otra', media_id: 'movie_1', status: 'pending', score: null, watched_at: null })
+    state.db.tables.user_media.push({ user_id: 'otra', media_id: 'movie_1', status: 'pending', score: null, rating10: null, watched_at: null })
     await run([item({ ids: { tmdb: 1 }, rating10: 10 })])
     expect(state.db.tables.user_media.find((r) => r.user_id === 'otra')).toMatchObject({ status: 'pending', score: null })
     expect(state.db.tables.user_media.find((r) => r.user_id === 'u1')).toMatchObject({ score: 5 })
@@ -169,7 +169,7 @@ describe('processImportBatch', () => {
       data: { Page: { media: [{ id: 5114, idMal: 5114, isAdult: false, title: { romaji: 'FMA:B', english: 'FMA:B', native: null }, coverImage: {}, genres: [], startDate: { year: 2009 } }] } },
     })
     state.db.tables.media.push({ id: 'anime_5114', type: 'anime', title: 'FMA:B', metadata: {} })
-    state.db.tables.user_media.push({ user_id: 'u1', media_id: 'anime_5114', status: 'completed', score: 5, watched_at: null })
+    state.db.tables.user_media.push({ user_id: 'u1', media_id: 'anime_5114', status: 'completed', score: 5, rating10: 10, watched_at: null })
     const r = await run([item({ kind: 'anime', title: 'FMA:B', ids: { mal: 5114 }, rating10: 10 })])
     expect(r.results[0]).toMatchObject({ outcome: 'kept', mediaId: 'anime_5114', by: 'mal' })
     expect(state.db.tables.user_media.map((x) => x.media_id)).toEqual(['anime_5114'])
