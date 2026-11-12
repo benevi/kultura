@@ -37,7 +37,7 @@ vi.mock('@/lib/analytics/track', () => ({ track: async () => undefined }))
 const USER = { id: '00000000-0000-4000-8000-000000000001' }
 const ROW = {
   id: 'e1', user_id: USER.id, media_id: 'book_OL1W', status: 'in_progress', score: null,
-  watched_at: null, episode_progress: null, created_at: '2026-10-20T10:00:00Z', updated_at: '2026-10-20T10:00:00Z',
+  watched_at: null, created_at: '2026-10-20T10:00:00Z', updated_at: '2026-10-20T10:00:00Z',
 }
 
 async function call(body: unknown) {
@@ -85,7 +85,6 @@ describe('sin PROGRESS_V2 (hoy)', () => {
     stored = {
       progress_season: null, progress_episode: null, progress_chapter: null, progress_volume: null,
       progress_page: 120, progress_percent: null, progress_hours: null, progress_total: 350,
-      progress_updated_at: '2026-10-25T10:00:00Z', episode_progress: { page: 120, total: 350 },
     }
     for (const extra of [{ episodeProgress: null }, { progress: { page: 200, total: 350 } }, {}]) {
       upserts.length = 0
@@ -111,7 +110,7 @@ describe('sin PROGRESS_V2 (hoy)', () => {
 describe('con PROGRESS_V2', () => {
   beforeEach(() => vi.stubEnv('PROGRESS_V2', '1'))
 
-  it('libro: columnas de progreso; el espejo episode_progress lo pone el disparador', async () => {
+  it('libro: columnas de progreso, sin jsonb', async () => {
     const { json } = await call({ mediaId: 'book_OL1W', status: 'in_progress', progress: { page: 120, total: 350 } })
     expect(upserts[0]).toMatchObject({ progress_page: 120, progress_total: 350, progress_episode: null })
     expect(upserts[0]).not.toHaveProperty('episode_progress')

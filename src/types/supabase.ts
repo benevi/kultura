@@ -1263,7 +1263,6 @@ export type Database = {
       user_media: {
         Row: {
           created_at: string | null
-          episode_progress: Json | null
           favorite: boolean
           id: string
           media_id: string
@@ -1274,7 +1273,6 @@ export type Database = {
           progress_percent: number | null
           progress_season: number | null
           progress_total: number | null
-          progress_updated_at: string | null
           progress_volume: number | null
           rating10: number | null
           status: string
@@ -1285,7 +1283,6 @@ export type Database = {
         ComputedFields: never
         Insert: {
           created_at?: string | null
-          episode_progress?: Json | null
           favorite?: boolean
           id?: string
           media_id: string
@@ -1296,7 +1293,6 @@ export type Database = {
           progress_percent?: number | null
           progress_season?: number | null
           progress_total?: number | null
-          progress_updated_at?: string | null
           progress_volume?: number | null
           rating10?: number | null
           status: string
@@ -1306,7 +1302,6 @@ export type Database = {
         }
         Update: {
           created_at?: string | null
-          episode_progress?: Json | null
           favorite?: boolean
           id?: string
           media_id?: string
@@ -1317,7 +1312,6 @@ export type Database = {
           progress_percent?: number | null
           progress_season?: number | null
           progress_total?: number | null
-          progress_updated_at?: string | null
           progress_volume?: number | null
           rating10?: number | null
           status?: string
@@ -1804,8 +1798,6 @@ export interface DbUserMedia {
   /** F-24. Ausente antes de 20261208240001. */
   favorite?: boolean;
   watched_at: string | null; // date
-  /** jsonb. Con 20261215270001 (F-27), espejo de las columnas progress_* (user_media_sync_progress). */
-  episode_progress: { season?: number; episode: number } | null; // jsonb
   /** F-27: progreso por formato. Ausentes antes de 20261215270001 (rangos en sus CHECK). */
   progress_season?: number | null; // smallint 0-999
   progress_episode?: number | null; // integer 1-99999
@@ -1815,7 +1807,6 @@ export interface DbUserMedia {
   progress_percent?: number | null; // smallint 0-100
   progress_hours?: number | null; // numeric(6,1) 0-99999.9
   progress_total?: number | null; // integer 1-100000 (total de la unidad principal)
-  progress_updated_at?: string | null; // timestamptz
   created_at: string; // timestamptz
   updated_at: string; // timestamptz — set by trigger set_updated_at on UPDATE
 }

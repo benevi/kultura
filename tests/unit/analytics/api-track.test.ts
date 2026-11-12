@@ -45,7 +45,7 @@ vi.mock('@/lib/supabase/server', () => ({
 const USER = { id: 'u1' }
 const ROW = {
   id: 'r1', user_id: 'u1', media_id: 'movie_550', status: 'completed', score: 4,
-  watched_at: null, episode_progress: null, created_at: '2026-10-01T00:00:00Z',
+  watched_at: null, created_at: '2026-10-01T00:00:00Z',
 }
 const json = (url: string, method: string, body: unknown) =>
   new Request(url, { method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) })

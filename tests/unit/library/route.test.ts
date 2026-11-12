@@ -75,7 +75,6 @@ const DB_ROW = {
   status: 'completed',
   score: 4,
   watched_at: '2024-01-15',
-  episode_progress: null,
   created_at: '2024-01-15T10:00:00Z',
 }
 

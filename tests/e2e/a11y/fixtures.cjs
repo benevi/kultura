@@ -192,7 +192,6 @@ const tables = {
       status: "completed",
       rating10: 8,
       watched_at: null,
-      episode_progress: null,
       created_at: NOW,
       updated_at: NOW,
     },

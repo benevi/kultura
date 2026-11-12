@@ -49,7 +49,7 @@ vi.mock('@/lib/analytics/track', () => ({ track: async () => undefined }))
 const USER = { id: '00000000-0000-4000-8000-000000000001' }
 const ROW = {
   id: 'e1', user_id: USER.id, media_id: 'movie_550', status: 'completed', score: 5, rating10: 10,
-  watched_at: '2026-10-20', episode_progress: null, created_at: '2026-10-20T10:00:00Z', updated_at: '2026-10-20T10:00:00Z',
+  watched_at: '2026-10-20', created_at: '2026-10-20T10:00:00Z', updated_at: '2026-10-20T10:00:00Z',
 }
 const MIGRATED_ROW = { ...ROW, rating10: '9.0', favorite: true }
 

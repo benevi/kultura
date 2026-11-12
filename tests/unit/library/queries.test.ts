@@ -17,7 +17,6 @@ const DB_ROW_1 = {
   score: 4,
   rating10: 8,
   watched_at: '2024-01-15',
-  episode_progress: null,
   created_at: '2024-01-15T10:00:00Z',
 }
 
@@ -29,7 +28,6 @@ const DB_ROW_2 = {
   score: null,
   rating10: null,
   watched_at: null,
-  episode_progress: { season: 1, episode: 5 },
   progress_season: 1,
   progress_episode: 5,
   created_at: '2024-01-10T10:00:00Z',

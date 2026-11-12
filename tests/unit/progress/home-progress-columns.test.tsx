@@ -39,7 +39,6 @@ const NO_PROGRESS = {
 }
 const HERO_ROW = {
   media_id: 'book_1',
-  episode_progress: null,
   ...NO_PROGRESS,
   progress_page: 120,
   progress_total: 300,
@@ -50,7 +49,6 @@ const RECENT_ROWS = [
   {
     media_id: 'manga_2',
     status: 'in_progress',
-    episode_progress: null,
     ...NO_PROGRESS,
     progress_chapter: 42,
     media: { id: 'manga_2', title: 'Manga', poster: null, type: 'manga' },
