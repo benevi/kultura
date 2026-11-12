@@ -22,7 +22,7 @@ describe.skipIf(!configured)("library: añadir en bloque (proyecto de test)", ()
     // Ya en la biblioteca, terminada y con nota: no se puede tocar.
     const seeded = await ana.client
       .from("user_media")
-      .insert({ user_id: ana.id, media_id: IDS[1], status: "completed", score: 5 });
+      .insert({ user_id: ana.id, media_id: IDS[1], status: "completed", rating10: 10 });
     if (seeded.error) throw new Error(`seed: ${seeded.error.message}`);
   });
 
@@ -43,14 +43,14 @@ describe.skipIf(!configured)("library: añadir en bloque (proyecto de test)", ()
 
     const { data: rows } = await ana.client
       .from("user_media")
-      .select("media_id, status, score")
+      .select("media_id, status, rating10")
       .eq("user_id", ana.id)
       .in("media_id", IDS)
       .order("media_id");
     expect(rows).toEqual([
-      { media_id: IDS[0], status: "pending", score: null },
-      { media_id: IDS[1], status: "completed", score: 5 },
-      { media_id: IDS[2], status: "pending", score: null },
+      { media_id: IDS[0], status: "pending", rating10: null },
+      { media_id: IDS[1], status: "completed", rating10: 10 },
+      { media_id: IDS[2], status: "pending", rating10: null },
     ]);
   });
 

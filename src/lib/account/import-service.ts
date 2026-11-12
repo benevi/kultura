@@ -14,8 +14,9 @@
 //     fichero (SEG-2). Las filas que ya existen se usan tal cual y las que
 //     faltan se piden al proveedor (lib/media). Lo que no se pueda resolver
 //     ahora se omite y se cuenta en `libraryUnresolved`; reimportar lo completa.
-//   - F-24: la nota fina `rating10` (0,5-10) y `favorite` vuelven tal cual con
-//     RATING_SCALE_10=1 (sin ella se guarda `score`). El diario se reimporta
+//   - F-24: la nota fina `rating10` (0,5-10) vuelve siempre tal cual (la
+//     columna `score` ya no se escribe, saneamiento 6.6); `favorite`, con
+//     RATING_SCALE_10=1. El diario se reimporta
 //     para los títulos que estén en la biblioteca, sin duplicar apuntes.
 //   - Saneamiento 1.4: todo se escribe por lotes de 200 y se comprueba el
 //     error de cada lote. Lo que no entra se cuenta (`libraryFailed`,
@@ -38,7 +39,7 @@ import { invalidateRecCache } from '@/lib/claude/recommendations'
 import { invalidateMatchScoreCache } from '@/lib/recommendations/match-score'
 import { ensureMediaRows } from '@/lib/media/upsert-from-provider'
 import type { ApiLocale } from '@/lib/api/locale'
-import { isValidRating10, rating10ToScore, scoreToRating10 } from '@/lib/library/rating'
+import { isValidRating10, scoreToRating10 } from '@/lib/library/rating'
 import { ratingScale10Enabled } from '@/lib/library/scale'
 import { parseLogInput } from '@/lib/library/diary'
 
@@ -62,7 +63,6 @@ function chunks<T>(items: T[], size = CHUNK): T[][] {
 interface ImportableEntry {
   mediaId: string
   status: string
-  score: number | null
   /** F-24: nota fina; sin ella en el fichero, score × 2. */
   rating10: number | null
   favorite: boolean | undefined
@@ -79,7 +79,6 @@ function parseEntry(raw: unknown): ImportableEntry | null {
   return {
     mediaId: entry.mediaId,
     status: entry.status,
-    score: rating10 === null ? null : rating10ToScore(rating10),
     rating10,
     favorite: entry.favorite,
     watchedAt: entry.watchedAt ?? null,
@@ -121,9 +120,8 @@ export async function importKulturaExport(
         user_id: userId,
         media_id: entry.mediaId,
         status: entry.status,
-        score: entry.score,
+        rating10: entry.rating10,
         watched_at: entry.watchedAt,
-        ...(scale10 ? { rating10: entry.rating10 } : {}),
         ...(withFavorite ? { favorite: entry.favorite ?? false } : {}),
       })
       for (const batch of chunks(importable)) {

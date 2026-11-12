@@ -112,8 +112,8 @@ describe('import con RATING_SCALE_10=1', () => {
     const { status } = await runImport(FILE)
     expect(status).toBe(200)
     expect(upserts[0]).toEqual([
-      { user_id: ME, media_id: 'movie_1', status: 'completed', score: 5, watched_at: '2026-10-01', rating10: 9, favorite: true },
-      { user_id: ME, media_id: 'movie_2', status: 'completed', score: 3, watched_at: null, rating10: 6, favorite: false },
+      { user_id: ME, media_id: 'movie_1', status: 'completed', rating10: 9, watched_at: '2026-10-01', favorite: true },
+      { user_id: ME, media_id: 'movie_2', status: 'completed', rating10: 6, watched_at: null, favorite: false },
     ])
   })
 
@@ -155,12 +155,12 @@ describe('import con RATING_SCALE_10=1', () => {
 })
 
 describe('import sin la bandera (hoy)', () => {
-  it('escribe solo score (de rating10 si viene: 9 → 5, 7,5 → 4) y no importa el diario', async () => {
+  it('escribe rating10 tal cual (nunca score), sin favorito ni diario', async () => {
     const { json } = await runImport({
       library: [{ mediaId: 'movie_1', status: 'completed', score: 3, rating10: 7.5, favorite: true }],
       diary: FILE.diary,
     })
-    expect(upserts[0]).toEqual([{ user_id: ME, media_id: 'movie_1', status: 'completed', score: 4, watched_at: null }])
+    expect(upserts[0]).toEqual([{ user_id: ME, media_id: 'movie_1', status: 'completed', rating10: 7.5, watched_at: null }])
     expect(json.diaryImported).toBe(0)
     expect(logInserts).toHaveLength(0)
   })

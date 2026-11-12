@@ -8,10 +8,9 @@
 //   - NO SE PISA lo que ya había en KULTURA: una entrada existente solo se
 //     completa (nota o fecha que faltaban, estado que avanza: pendiente →
 //     visto, nunca al revés). Reimportar el mismo archivo no cambia nada.
-//   - Con F-24 activa (RATING_SCALE_10=1 y migración 20261208240001) se
-//     escribe la nota fina y el diario; sin ella, la nota entera de siempre
-//     (`score`) y sin diario. Si la bandera está pero la migración no, se
-//     detecta por el código de error y se vuelve a lo de antes.
+//   - La nota se escribe siempre en `rating10`, sin pérdida (saneamiento
+//     6.6: `score` ya no se escribe). El diario, solo con F-24 activa
+//     (RATING_SCALE_10=1).
 //   - Lo que no se pudo resolver ahora (presupuesto, plazo, proveedor caído)
 //     vuelve como `pending` para que el navegador lo reintente.
 //   - Ni títulos ni reseñas en los logs: solo recuentos y códigos.
@@ -23,7 +22,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { createLogger } from '@/lib/logger'
 import { buildMediaRow, ensureMediaRows, type MediaRowInsert } from '@/lib/media/upsert-from-provider'
 import { parseMediaId } from '@/lib/media/media-id'
-import { rating10ToScore, storedRating10 } from '@/lib/library/rating'
+import { storedRating10 } from '@/lib/library/rating'
 import { ratingScale10Enabled } from '@/lib/library/scale'
 import type { LibraryStatus } from '@/types/library'
 import type { MediaItem } from '@/types/media'
@@ -188,10 +187,11 @@ export async function processImportBatch(items: ImportItem[], opts: ProcessOptio
       user_id: opts.userId,
       media_id: mediaId,
       status: plan.entry.status,
-      score: rating10ToScore(plan.entry.rating10),
+      // Solo rating10 (sin pérdida: un 4,5★ de Letterboxd queda en 9); el
+      // disparador rellena `score` hasta que se retire (saneamiento 6.6).
+      rating10: plan.entry.rating10,
       watched_at: plan.entry.watchedAt,
     }
-    if (scale10) row.rating10 = plan.entry.rating10
     rows.push(row)
   }
   for (let i = 0; i < rows.length; i += CHUNK) {

@@ -186,7 +186,7 @@ async function main() {
         user_id: demoId,
         media_id: item.id,
         status,
-        score: status === "completed" ? 3 + (i % 3) : null,
+        rating10: status === "completed" ? (3 + (i % 3)) * 2 : null,
         created_at: daysAgo(i * 5 + FAMILIES.indexOf(type)),
       });
     });
@@ -201,7 +201,7 @@ async function main() {
           user_id: fid,
           media_id: item.id,
           status: i % 3 === 0 ? "in_progress" : "completed",
-          score: i % 3 === 0 ? null : 4 + (i % 2),
+          rating10: i % 3 === 0 ? null : (4 + (i % 2)) * 2,
           created_at: daysAgo(i * 2 + f),
         });
       });

@@ -3,9 +3,10 @@
 // La lógica que antes vivía en el handler de /api/library. No sabe de HTTP:
 // recibe la entrada ya validada por zod y devuelve un `ServiceResult`.
 //
-// F-24 (D-14): con RATING_SCALE_10=1 se guarda la nota fina `rating10`
-// (0,5-10) junto a `score` (1-5, derivada) y el diario. Sin la bandera se
-// escribe solo `score` y una nota fina que llegue se redondea a score.
+// F-24 (D-14): la nota se guarda siempre en `rating10` (0,5-10); un cliente
+// antiguo que mande `score` (1-5) se convierte a score × 2. `score` ya no se
+// escribe (saneamiento 6.6): lo rellena el disparador hasta que se retire.
+// Favorito y diario, solo con RATING_SCALE_10=1.
 //
 // F-27 (PRO-5): con PROGRESS_V2=1 llega `progress` (episodios, capítulos,
 // páginas o %, horas según el formato) y se guarda en las columnas
@@ -90,6 +91,7 @@ export async function saveEntry(
     : input.rating10 !== undefined
       ? input.rating10
       : scoreToRating10(input.score ?? undefined)
+  // Solo para la medición: en la base se escribe únicamente rating10 (saneamiento 6.6).
   const score = rating10 === undefined ? undefined : rating10 === null ? null : rating10ToScore(rating10)
   const scale10 = ratingScale10Enabled()
 
@@ -108,7 +110,6 @@ export async function saveEntry(
     user_id: string
     media_id: string
     status: LibraryStatus
-    score?: number | null
     watched_at?: string | null
     episode_progress?: EpisodeProgress | null
     rating10?: number | null
@@ -119,7 +120,9 @@ export async function saveEntry(
     user_id: user.id,
     media_id: input.mediaId,
     status: input.status,
-    ...(score !== undefined ? { score } : {}),
+    // La nota va SIEMPRE en rating10, con o sin RATING_SCALE_10; `score` lo
+    // rellena el disparador user_media_sync_rating hasta que se retire.
+    ...(rating10 !== undefined ? { rating10 } : {}),
     ...(input.watchedAt !== undefined ? { watched_at: input.watchedAt } : {}),
     // Con `progress` (cliente nuevo) manda él; si no, el campo de siempre.
     ...(hasLegacyProgress
@@ -132,7 +135,6 @@ export async function saveEntry(
   }
   const scaleExtras = scale10
     ? {
-        ...(rating10 !== undefined ? { rating10 } : {}),
         ...(typeof input.favorite === 'boolean' ? { favorite: input.favorite } : {}),
       }
     : {}
