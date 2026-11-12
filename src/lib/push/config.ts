@@ -103,7 +103,3 @@ export function readPushConfig(env: Env = process.env): PushConfigResult {
   memo = { key, result }
   return result
 }
-
-export function getPushConfig(env?: Env): PushConfig | null {
-  return readPushConfig(env).config
-}

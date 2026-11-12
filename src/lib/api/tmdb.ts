@@ -396,18 +396,6 @@ export async function getPopularMovies(
   return hydrateGenres(res, "movie", locale);
 }
 
-export async function getPopularTV(
-  page = 1,
-  locale?: string | null
-): Promise<TmdbTVSearchResponse> {
-  const res = await tmdbFetch<TmdbTVSearchResponse>(
-    "/tv/popular",
-    { page: String(page) },
-    locale
-  );
-  return hydrateGenres(res, "tv", locale);
-}
-
 /**
  * Descubre películas vía /discover/movie. E59: reemplaza a getPopularMovies en
  * el flujo de Descubrir para habilitar filtros nativos (with_genres, sort_by,
@@ -455,25 +443,6 @@ export async function discoverTV(
     locale
   );
   return hydrateGenres(res, "tv", locale);
-}
-
-export async function getTrendingMovies(
-  timeWindow: "day" | "week" = "week",
-  locale?: string | null
-): Promise<TmdbSearchResponse> {
-  const res = await tmdbFetch<TmdbSearchResponse>(
-    `/trending/movie/${timeWindow}`,
-    {},
-    locale
-  );
-  return hydrateGenres(res, "movie", locale);
-}
-
-export async function getMovieVideos(
-  id: number,
-  locale?: string | null
-): Promise<TmdbVideosResponse> {
-  return tmdbFetch<TmdbVideosResponse>(`/movie/${id}/videos`, {}, locale);
 }
 
 export async function getTVVideos(

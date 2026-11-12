@@ -7,7 +7,6 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 
 const mocks = vi.hoisted(() => ({
   getMovie: vi.fn(),
-  getMovieVideos: vi.fn(),
   getMovieProviders: vi.fn(),
   getTV: vi.fn(),
   getTVProviders: vi.fn(),
@@ -32,7 +31,6 @@ vi.mock("next/cache", () => ({
 vi.mock("@/lib/api/tmdb", async (orig) => ({
   ...(await orig<typeof import("@/lib/api/tmdb")>()),
   getMovie: mocks.getMovie,
-  getMovieVideos: mocks.getMovieVideos,
   getMovieProviders: mocks.getMovieProviders,
   getTV: mocks.getTV,
   getTVProviders: mocks.getTVProviders,
@@ -99,7 +97,6 @@ describe("loadMediaDetail", () => {
     const data = await loadMediaDetail("movie", "550", "es");
     expect(mocks.getMovie).toHaveBeenCalledTimes(1);
     expect(mocks.getMovie).toHaveBeenCalledWith(550, "es");
-    expect(mocks.getMovieVideos).not.toHaveBeenCalled();
     expect(mocks.getMovieProviders).not.toHaveBeenCalled();
     expect(data?.trailerKey).toBe("yt-key");
     expect(data?.watchLink).toBe(ES_LINK);

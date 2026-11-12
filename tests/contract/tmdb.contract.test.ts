@@ -9,7 +9,6 @@ import {
   discoverTV,
   getMovie,
   getMovieProviders,
-  getMovieVideos,
   getPopularMovies,
   searchMovies,
   tmdbWatchLink,
@@ -46,8 +45,9 @@ describeWithKeys(["TMDB_API_KEY"], "TMDB", () => {
   });
 
   it("vídeos y proveedores: forma y enlace 'dónde ver' de TMDB (JustWatch)", async () => {
-    const videos = await getMovieVideos(FIGHT_CLUB, "es");
-    expect(Array.isArray(videos.results)).toBe(true);
+    const movie = await getMovie(FIGHT_CLUB, "es");
+    // El tráiler llega en la ficha (append_to_response=videos).
+    expect(Array.isArray(movie.videos?.results)).toBe(true);
     const providers = await getMovieProviders(FIGHT_CLUB, "ES", "es");
     // Si TMDB deja de mandar `link`, las plataformas se quedan sin enlace.
     expect(tmdbWatchLink(providers, "ES")).toMatch(/^https:\/\/www\.themoviedb\.org\//);

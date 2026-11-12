@@ -14,7 +14,7 @@ import {
   getTV,
   discoverMovies,
   discoverTV,
-  getMovieVideos,
+  getTVVideos,
   getMovieProviders,
   getTVProviders,
 } from "@/lib/api/tmdb";
@@ -89,7 +89,7 @@ describe("language derivado del locale", () => {
   it("sin locale mantiene es-ES (paridad con el comportamiento anterior)", async () => {
     await discoverMovies(1);
     expect(lastUrl(fetchSpy).searchParams.get("language")).toBe("es-ES");
-    await getMovieVideos(550);
+    await getTVVideos(1399);
     expect(lastUrl(fetchSpy).searchParams.get("language")).toBe("es-ES");
   });
 
