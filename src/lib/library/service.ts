@@ -22,7 +22,7 @@ import type { DiaryConfig, DiaryLog, EpisodeProgress, LibraryStatus, RatingScale
 import { ensureMediaRows, upsertMediaFromProvider } from '@/lib/media/upsert-from-provider'
 import { track } from '@/lib/analytics/track'
 import { createLogger } from '@/lib/logger'
-import { entryRating10, rating10ToScore, scoreToRating10 } from '@/lib/library/rating'
+import { rating10ToScore, scoreToRating10, storedRating10 } from '@/lib/library/rating'
 import { RATING_SCALE_KEY, ratingScale10Enabled, readRatingScale } from '@/lib/library/scale'
 import { mapLog, parseLogInput, readDiary, today } from '@/lib/library/diary'
 import { isDemoUser } from '@/lib/demo'
@@ -41,14 +41,14 @@ const log = createLogger('library/service')
 
 /** Mapea una fila de user_media a LibraryEntry (con su progreso, F-27). */
 export function mapEntry(row: DbUserMedia): LibraryEntryWithProgress {
-  const rating10 = row.rating10 === null || row.rating10 === undefined ? undefined : Number(row.rating10)
+  const rating10 = storedRating10(row.rating10)
   return {
     id: row.id,
     userId: row.user_id,
     mediaId: row.media_id,
     status: row.status as LibraryStatus,
-    score: row.score,
-    rating10: entryRating10({ rating10, score: row.score }),
+    score: rating10ToScore(rating10),
+    rating10,
     favorite: row.favorite ?? false,
     watchedAt: row.watched_at,
     episodeProgress: row.episode_progress,

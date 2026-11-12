@@ -3,11 +3,11 @@
 //
 // Una sola nota guardada, `rating10`: de 0,5 a 10 en pasos de 0,5. Se
 // enseña como medias estrellas sobre 5 (rating10 / 2) o sobre 10, según la
-// preferencia de cada persona. La columna vieja `score` (1-5 enteros) se
-// sigue rellenando porque la leen el match score, las recomendaciones y los
-// perfiles: el disparador `user_media_sync_rating` de la migración
-// 20261208240001 y estas funciones redondean IGUAL (mitad hacia arriba, nunca
-// por debajo de 1), así cliente, servidor y base dicen lo mismo.
+// preferencia de cada persona. Todo se LEE de `rating10` (saneamiento 6.6);
+// la columna vieja `score` (1-5 enteros) aún se escribe hasta retirarla. Lo
+// que necesita 1-5 lo saca con `rating10ToScore`, que redondea IGUAL que el
+// disparador `user_media_sync_rating` (migración 20261208240001): mitad hacia
+// arriba, nunca por debajo de 1.
 //
 // Sin dependencias de servidor: lo usan la API, los diálogos y el importador.
 // ============================================================
@@ -48,10 +48,10 @@ export function rating10ToScore(rating10: number | null | undefined): number | n
   return Math.max(1, Math.min(5, Math.round(rating10 / 2)))
 }
 
-/** La nota fina de una entrada: la guardada o, sin la migración, score × 2. */
-export function entryRating10(entry: { rating10?: number | null; score: number | null }): number | null {
-  if (isValidRating10(entry.rating10)) return entry.rating10
-  return scoreToRating10(entry.score)
+/** La nota guardada en `rating10` (numeric: PostgREST puede darla como texto) o null. */
+export function storedRating10(raw: unknown): number | null {
+  const n = typeof raw === 'string' && raw.trim() !== '' ? Number(raw) : raw
+  return isValidRating10(n) ? n : null
 }
 
 /**

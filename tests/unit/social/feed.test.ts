@@ -21,6 +21,7 @@ const FEED_ROW = {
   media_id: 'movie_550',
   status: 'completed' as const,
   score: 5,
+  rating10: 10,
   created_at: '2024-03-01T10:00:00Z',
   updated_at: '2024-03-15T10:00:00Z',
   user: {

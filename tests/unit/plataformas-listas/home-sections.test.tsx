@@ -48,7 +48,7 @@ describe('FriendsActivity', () => {
         friendships: [{ data: [{ requester_id: ME, receiver_id: 'f1' }], error: null }],
         user_media: [{
           data: [{
-            id: 'um1', user_id: 'f1', media_id: 'movie_550', status: 'completed', score: 5,
+            id: 'um1', user_id: 'f1', media_id: 'movie_550', status: 'completed', score: 5, rating10: 10,
             created_at: '2026-10-01T00:00:00Z', updated_at: new Date().toISOString(),
             user: { id: 'f1', username: 'lucia', avatar_color: 'blue', avatar_initials: 'LU' },
             media: { id: 'movie_550', title: 'El club de la lucha', poster: null, type: 'movie' },

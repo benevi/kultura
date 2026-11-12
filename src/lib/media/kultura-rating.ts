@@ -22,6 +22,7 @@
 import { unstable_cache } from "next/cache";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createLogger } from "@/lib/logger";
+import { rating10ToScore, storedRating10 } from "@/lib/library/rating";
 
 const log = createLogger("media/kultura-rating");
 
@@ -66,7 +67,7 @@ const cachedDemoIds = unstable_cache(computeDemoUserIds, ["kultura-demo-ids-v1"]
   tags: ["kultura-rating"],
 });
 
-type RatingRow = { score: unknown; user_id: string };
+type RatingRow = { rating10: unknown; user_id: string };
 
 async function computeKulturaRating(
   mediaId: string,
@@ -74,10 +75,10 @@ async function computeKulturaRating(
 ): Promise<KulturaRating | null> {
   const { data, error } = await createAdminClient()
     .from("user_media")
-    .select("score, user_id, users!inner(library_visibility)")
+    .select("rating10, user_id, users!inner(library_visibility)")
     .eq("media_id", mediaId)
     .eq("users.library_visibility", "public")
-    .not("score", "is", null)
+    .not("rating10", "is", null)
     .limit(MAX_ROWS);
   if (error) {
     // Un error se lanza para que la caché no lo guarde; fuera queda en `null`.
@@ -87,7 +88,7 @@ async function computeKulturaRating(
   // Sin notas suficientes ni siquiera hace falta preguntar por la demo.
   if (rows.length < KULTURA_RATING_MIN_VOTES) return null;
   const demo = new Set(await demoIds());
-  return summarizeScores(rows.filter((r) => !demo.has(r.user_id)).map((r) => r.score));
+  return summarizeScores(rows.filter((r) => !demo.has(r.user_id)).map((r) => rating10ToScore(storedRating10(r.rating10))));
 }
 
 const cached = unstable_cache(

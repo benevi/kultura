@@ -7,7 +7,7 @@
 import { createClient } from '@/lib/supabase/server'
 import type { DbUserMedia, DbMedia } from '@/types/supabase'
 import type { LibraryStatus } from '@/types/library'
-import { entryRating10 } from '@/lib/library/rating'
+import { rating10ToScore, storedRating10 } from '@/lib/library/rating'
 import { progressFromRow, type LibraryEntryWithProgress } from '@/lib/library/progress'
 
 type UserMediaWithMedia = DbUserMedia & {
@@ -15,20 +15,19 @@ type UserMediaWithMedia = DbUserMedia & {
 }
 
 /**
- * Mapea una fila de user_media (con join de media) a LibraryEntry. Las
- * columnas de F-24 (rating10, favorite) llegan con `*` si la migración está
- * aplicada; si no, rating10 = score × 2 y favorite = false. Igual el
+ * Mapea una fila de user_media (con join de media) a LibraryEntry. La nota
+ * sale solo de `rating10` (saneamiento 6.6); `score` se deriva de ella. El
  * progreso de F-27 (`progress`): columnas `progress_*` o, sin ellas, el jsonb.
  */
 function mapEntry(row: UserMediaWithMedia): LibraryEntryWithProgress {
-  const rating10 = row.rating10 === null || row.rating10 === undefined ? undefined : Number(row.rating10)
+  const rating10 = storedRating10(row.rating10)
   return {
     id: row.id,
     userId: row.user_id,
     mediaId: row.media_id,
     status: row.status as LibraryStatus,
-    score: row.score,
-    rating10: entryRating10({ rating10, score: row.score }),
+    score: rating10ToScore(rating10),
+    rating10,
     favorite: row.favorite ?? false,
     watchedAt: row.watched_at,
     episodeProgress: row.episode_progress,

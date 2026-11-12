@@ -27,7 +27,7 @@ import { KInput } from '@/components/ui/KInput'
 import { ProgressInput } from '@/components/library/ProgressInput'
 import { RatingInput, type RatingMode } from '@/components/library/RatingInput'
 import { Modal } from '@/components/ui/Modal'
-import { entryRating10, formatRating, rating10ToScore } from '@/lib/library/rating'
+import { formatRating, rating10ToScore, storedRating10 } from '@/lib/library/rating'
 import { formatDiaryDate, localDateString } from '@/lib/library/dates'
 import { PRIVATE_NOTE_MAX, REVIEW_MAX } from '@/lib/library/diary'
 import {
@@ -117,7 +117,7 @@ export function LibraryStatusModal({
   const wasCompleted = current?.status === 'completed'
 
   const [status, setStatus] = useState<LibraryStatus>(current?.status ?? 'pending')
-  const initialRating = current ? entryRating10(current) : null
+  const initialRating = current ? storedRating10(current.rating10) : null
   const [rating10, setRating10] = useState<number | null>(initialRating)
   const [ratingDirty, setRatingDirty] = useState(false)
   const [favorite, setFavorite] = useState<boolean>(current?.favorite ?? false)

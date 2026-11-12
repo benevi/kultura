@@ -5,7 +5,6 @@
 
 import { describe, it, expect } from 'vitest'
 import {
-  entryRating10,
   formatRating,
   halfStarsToRating10,
   isValidRating10,
@@ -14,6 +13,7 @@ import {
   rating10ToHalfStars,
   rating10ToScore,
   scoreToRating10,
+  storedRating10,
 } from '@/lib/library/rating'
 import { parseLogInput, isValidDiaryDate } from '@/lib/library/diary'
 
@@ -48,10 +48,14 @@ describe('rating10', () => {
     expect(scoreToRating10(undefined)).toBeNull()
   })
 
-  it('entryRating10: la guardada; sin migración, score × 2', () => {
-    expect(entryRating10({ rating10: 9, score: 5 })).toBe(9)
-    expect(entryRating10({ score: 4 })).toBe(8)
-    expect(entryRating10({ rating10: null, score: null })).toBeNull()
+  it('storedRating10: solo la columna rating10 (también como texto de numeric)', () => {
+    expect(storedRating10(9)).toBe(9)
+    expect(storedRating10('7.5')).toBe(7.5)
+    expect(storedRating10(null)).toBeNull()
+    expect(storedRating10(undefined)).toBeNull()
+    expect(storedRating10('')).toBeNull()
+    expect(storedRating10(11)).toBeNull()
+    expect(storedRating10(7.3)).toBeNull()
   })
 
   it('normalizeRating10 lleva al paso de 0,5 más cercano y acota', () => {
