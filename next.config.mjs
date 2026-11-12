@@ -281,7 +281,8 @@ export default withSentryConfig(withNextIntl(nextConfig), {
   // (silenciado abajo) — el build y el SDK en runtime no se ven afectados.
   silent: true,
   widenClientFileUpload: true,
-  hideSourceMaps: true,
+  // Sentry 11 quitó `hideSourceMaps`: los mapas que genera el plugin se borran
+  // tras subirlos (`sourcemaps.deleteSourcemapsAfterUpload`, por defecto true).
   webpack: {
     treeshake: { removeDebugLogging: true },
     automaticVercelMonitors: true,

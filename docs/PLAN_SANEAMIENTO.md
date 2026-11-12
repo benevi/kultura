@@ -197,7 +197,7 @@ Los filtros de la biblioteca **no van aquí**: pasan a la fase 8 (Q28).
 - 2: hecha el 11-11-2026 en Supabase local con Docker, unos 5 min; recuentos iguales a producción (detalle en `supabase/README.md`).
 - 3: la integración corre en serie (los ficheros comparten usuarios) y el login reintenta ante el límite de Auth de `kultura-test`.
 - 5: secretos `RAWG_API_KEY`, `COMICVINE_KEY` y `GOOGLE_BOOKS_KEY` puestos el 11-11-2026. El 12-11 seguía en rojo solo por caídas (RAWG, Jikan y ComicVine sin respuesta). Desde este PR una caída (tiempo agotado, red, 5xx, 429) deja un aviso y no falla; solo un contrato roto abre issue.
-- 6: `npm audit fix` no arregla ninguna sin romper; las que quedan vienen de `@sentry/nextjs` (subida a la 11, aparte) y de `typescript-eslint` (sin arreglo publicado).
+- 6: `npm audit fix` no arregla ninguna (12-11: solo sube versiones). `@sentry/nextjs` 11.12 quita las 4 de Sentry (`glob`/`minimatch`) — este PR. Quedan 6 moderadas de `typescript-eslint` (solo lint, sin arreglo publicado: sigue con `minimatch@^10`).
 
 1. B1 hecho y comprobado.
 2. **Prueba de restauración en un Supabase local (Docker)**, que se borra al terminar. **Nunca en `kultura-test`** (Q16). Apuntar la fecha y la duración.
