@@ -212,22 +212,23 @@ Los filtros de la biblioteca **no van aquí**: pasan a la fase 8 (Q28).
 
 ---
 
-## 🟨 Fase 6 · Backend por módulos (un PR por módulo) — 1 a 3: base #118 · library #119 #120 · lists #121 · friends #122 · chat #123 · groups #124 · account/import #125 · settings #126 · 11-11-2026 · 4: chat #129 · descubrir #130 · 12-11-2026
+## 🟨 Fase 6 · Backend por módulos (un PR por módulo) — 1 a 3: base #118 · library #119 #120 · lists #121 · friends #122 · chat #123 · groups #124 · account/import #125 · settings #126 · 11-11-2026 · 4: chat #129 · descubrir #130 · franquicia #132 · timeouts #133 · 5: este PR · 12-11-2026
 
 Orden: `library` → `lists` → `friends` → `chat` → `groups` → `account/import` → `settings`. Hecho.
 
 - Cambios de comportamiento: el usuario demo con un cuerpo inválido recibe 400/413 antes que 403; `?list` inválido en el export de Letterboxd da 400; `GET /api/settings` eliminado (sin uso).
-- Pendiente, un PR por punto: 4 (cada viñeta por separado), 5 y 6.
+- Pendiente: 6 (tres PRs por par).
+- Cambio visible (#132): el aviso de progreso de «Añadir toda la franquicia» pasa a «Añadiendo N títulos…»; service worker en v10.
 
 1. ✅ **zod** en todos los bodies y query params, con un único esquema para `mediaId`.
 2. ✅ **Helpers** en `src/lib/api/route.ts`: `requireUser()`, `rateLimit()` (distribuido, con `clientIp()`), `parseBody()` (con tope de bytes), `parseQuery()`, `respond()` y `apiError()`.
 3. ✅ **Lógica fuera de los handlers**, en `src/lib/<módulo>/service.ts` (devuelven `ServiceResult`).
-4. 🟨 **Rendimiento:**
+4. ✅ **Rendimiento:**
    - ✅ N+1 en la lista de conversaciones: una sola consulta con embebidos — #129.
    - ✅ Descubrimiento de grupos paginado en SQL: RPC `discover_groups` (`20261231000003`, SECURITY INVOKER) — #130 · prod: 12-11-2026.
-   - Endpoint bulk para añadir una franquicia.
-   - Timeout y reintentos en el cliente de Anthropic y en `og/brand.ts`.
-5. ⬜ **Código muerto** que queda: `getPopularTV`, `getTrendingMovies`, `getMovieVideos` (solo tests), `getPushConfig` y `components/library/EpisodeProgress.tsx` (solo su test). `getSentGroupInvitations` y `updateLibrary` ya no existen; `addToLibrary` sigue en uso.
+   - ✅ Endpoint bulk para añadir una franquicia: `POST /api/library/bulk`, solo inserta — #132.
+   - ✅ Timeout y reintentos en el cliente de Anthropic (`lib/claude/client.ts`: 15 s / 30 s, 1 reintento) y en `og/brand.ts` (2,5 s, 1 reintento) — #133.
+5. ✅ **Código muerto** borrado: `getPopularTV`, `getTrendingMovies`, `getMovieVideos`, `getPushConfig` y `components/library/EpisodeProgress.tsx` (con su test). `getSentGroupInvitations` y `updateLibrary` ya no existían; `addToLibrary` sigue en uso.
 6. **Una sola fuente de verdad** (Q23; las seis banderas valen `1` en producción):
    - `rating10` sustituye a `score`.
    - Las columnas `progress_*` sustituyen al JSON `episode_progress`.
