@@ -39,7 +39,8 @@
 // ============================================================
 
 import { createHash } from "crypto";
-import Anthropic from "@anthropic-ai/sdk";
+import type Anthropic from "@anthropic-ai/sdk";
+import { anthropicClient } from "@/lib/claude/client";
 import { env } from "@/lib/env.server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { resolveApiLocale, type ApiLocale } from "@/lib/api/locale";
@@ -154,7 +155,7 @@ async function callModel(text: string, target: ApiLocale): Promise<string | null
   if (!(await reserveAiCall("translate"))) return null;
 
   try {
-    const client = new Anthropic({ apiKey });
+    const client = anthropicClient(apiKey, "translate");
     // Streaming: una sinopsis larga puede acercarse al tope de salida y la
     // petición sin stream es la que se queda colgada en ese caso.
     const message = await client.messages
