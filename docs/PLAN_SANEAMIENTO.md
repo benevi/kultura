@@ -212,12 +212,11 @@ Los filtros de la biblioteca **no van aquí**: pasan a la fase 8 (Q28).
 
 ---
 
-## 🟨 Fase 6 · Backend por módulos (un PR por módulo) — 1 a 3: base #118 · library #119 #120 · lists #121 · friends #122 · chat #123 · groups #124 · account/import #125 · settings #126 · 11-11-2026 · 4: chat #129 · descubrir #130 · franquicia #132 · timeouts #133 · 5: este PR · 12-11-2026
+## ✅ Fase 6 · Backend por módulos (un PR por módulo) — 1 a 3: base #118 · library #119 #120 · lists #121 · friends #122 · chat #123 · groups #124 · account/import #125 · settings #126 · 11-11-2026 · 4: chat #129 · descubrir #130 · franquicia #132 · timeouts #133 · 5: #134 · 6: #135 a #140 · 12-11-2026
 
 Orden: `library` → `lists` → `friends` → `chat` → `groups` → `account/import` → `settings`. Hecho.
 
 - Cambios de comportamiento: el usuario demo con un cuerpo inválido recibe 400/413 antes que 403; `?list` inválido en el export de Letterboxd da 400; `GET /api/settings` eliminado (sin uso).
-- Pendiente: 6 (tres PRs por par).
 - Cambio visible (#132): el aviso de progreso de «Añadir toda la franquicia» pasa a «Añadiendo N títulos…»; service worker en v10.
 
 1. ✅ **zod** en todos los bodies y query params, con un único esquema para `mediaId`.
@@ -229,11 +228,9 @@ Orden: `library` → `lists` → `friends` → `chat` → `groups` → `account/
    - ✅ Endpoint bulk para añadir una franquicia: `POST /api/library/bulk`, solo inserta — #132.
    - ✅ Timeout y reintentos en el cliente de Anthropic (`lib/claude/client.ts`: 15 s / 30 s, 1 reintento) y en `og/brand.ts` (2,5 s, 1 reintento) — #133.
 5. ✅ **Código muerto** borrado: `getPopularTV`, `getTrendingMovies`, `getMovieVideos`, `getPushConfig` y `components/library/EpisodeProgress.tsx` (con su test). `getSentGroupInvitations` y `updateLibrary` ya no existían; `addToLibrary` sigue en uso.
-6. **Una sola fuente de verdad** (Q23; las seis banderas valen `1` en producción):
-   - `rating10` sustituye a `score`.
-   - Las columnas `progress_*` sustituyen al JSON `episode_progress`.
-
-   Para cada par, tres PRs: primero leer solo de la nueva, después dejar de escribir en la vieja y por último borrarla en una migración.
+6. ✅ **Una sola fuente de verdad** (Q23; las seis banderas valen `1` en producción). Para cada par, tres PRs: leer solo de la nueva, dejar de escribir en la vieja y borrarla en una migración.
+   - ✅ `rating10` sustituye a `score` — #135 · #136 · #137 (`20261231000004`) · prod: 12-11-2026.
+   - ✅ Las columnas `progress_*` sustituyen al JSON `episode_progress` (fuera también `progress_updated_at` y el disparador `user_media_sync_progress`). Sin `PROGRESS_V2` se escriben solo `progress_season` y `progress_episode`; la API sigue aceptando y devolviendo `episodeProgress` — #138 · #139 · #140 (`20261231000005`) · prod: 12-11-2026.
 
 ## ✅ Fase 7 · Contrato de la API (junto a la fase 6) — #118 a #126 · 11-11-2026. Cliente: `apiFetch` lanza `ApiError`; service worker en v9
 
@@ -301,6 +298,31 @@ Los `loading.tsx` y el componente de error con reintento pasan a la fase 8 (Q32)
    - Migraciones con fecha futura (Q13).
 4. **Borrar el código de cada bandera en estado apagado.** Las seis banderas están a `1` en producción.
 
+## ⬜ Fase 12 · Rigor (comprobaciones automáticas; después de la 10, antes de la 8)
+
+Objetivo: que los fallos que hoy solo se ven revisando a mano los pare el CI o una alarma. Un PR por punto. Prioridad: 1, 2 y 6 primero.
+
+1. **Migraciones comprobadas solas:**
+   - El CI aplica todas las migraciones en un Supabase local, genera los tipos (`supabase gen types`) y falla si no coinciden con `src/types/supabase.ts`.
+   - Una migración con `drop column` falla si alguna función, vista o índice todavía usa la columna.
+   - Script que compara las migraciones aplicadas en producción y en `kultura-test` con los archivos del repo.
+2. **Seguridad en el CI:**
+   - `rls_audit()` y los avisos de Supabase hacen fallar el CI si aparece uno nuevo.
+   - Las funciones SECURITY DEFINER que se pueden llamar desde la API (`can_read_list`, también sin sesión): quitar el permiso de ejecución o sacarlas del esquema expuesto.
+   - Activar la protección contra contraseñas filtradas.
+3. **Banderas con caducidad:** un archivo con cada bandera (dueño, fecha, estado en producción). El CI falla si una pasa de 60 días. Empezar por `PROGRESS_V2`.
+4. **Confianza en el CI:**
+   - Tests intermitentes (`friends`, `rls-policies`) en cuarentena con motivo y plazo, y arreglados.
+   - eslint también en `tests/`, después de limpiar los errores actuales.
+   - Cobertura mínima solo en `src/lib/library` y en las rutas de la API.
+5. **Después de desplegar:**
+   - Prueba rápida automática en producción: abrir la página, entrar con el usuario demo, cargar la biblioteca.
+   - Alertas de Sentry por subida de errores en `/api/library` y `/api/progress` en la hora siguiente a desplegar (depende de la fase 10).
+6. **Restauración probada:** workflow mensual que restaura la última copia en Docker y compara el número de filas por tabla.
+7. **Proceso en el repo:**
+   - Plantilla de PR con lista: ¿migración?, ¿aplicada en test?, ¿copia hecha?, ¿versión del SW?, ¿cómo se deshace?
+   - Las reglas de cambios de esquema (patrón de 3 PRs y cuándo se pueden juntar los pasos) escritas en `CLAUDE.md`.
+
 ---
 
 ## Fuera del saneamiento (después de levantar la congelación)
@@ -311,4 +333,4 @@ Los `loading.tsx` y el componente de error con reintento pasan a la fase 8 (Q32)
 
 ## Orden final
 
-B1 + B2 → 0 → docs → `.gitattributes` → 1 → 2 → 3 → (4 ∥ 5 ∥ red de seguridad) → levantar la congelación → 6 + 7 → 9 → 10 → 8 (rediseño) → 11
+B1 + B2 → 0 → docs → `.gitattributes` → 1 → 2 → 3 → (4 ∥ 5 ∥ red de seguridad) → levantar la congelación → 6 + 7 → 9 → 10 → 12 (rigor) → 8 (rediseño) → 11
