@@ -196,7 +196,7 @@ Los filtros de la biblioteca **no van aquí**: pasan a la fase 8 (Q28).
 
 - 2: hecha el 11-11-2026 en Supabase local con Docker, unos 5 min; recuentos iguales a producción (detalle en `supabase/README.md`).
 - 3: la integración corre en serie (los ficheros comparten usuarios) y el login reintenta ante el límite de Auth de `kultura-test`.
-- 5: secretos `RAWG_API_KEY`, `COMICVINE_KEY` y `GOOGLE_BOOKS_KEY` puestos el 11-11-2026. Lo que sigue en rojo son caídas de los proveedores (RAWG, ComicVine y Jikan no responden): volver a lanzarlo cuando respondan.
+- 5: secretos `RAWG_API_KEY`, `COMICVINE_KEY` y `GOOGLE_BOOKS_KEY` puestos el 11-11-2026. El 12-11 seguía en rojo solo por caídas (RAWG, Jikan y ComicVine sin respuesta). Desde este PR una caída (tiempo agotado, red, 5xx, 429) deja un aviso y no falla; solo un contrato roto abre issue.
 - 6: `npm audit fix` no arregla ninguna sin romper; las que quedan vienen de `@sentry/nextjs` (subida a la 11, aparte) y de `typescript-eslint` (sin arreglo publicado).
 
 1. B1 hecho y comprobado.

@@ -9,6 +9,9 @@
  * Sin clave, los tests de ese proveedor se saltan; con
  * CONTRACT_REQUIRE_KEYS=1 (el workflow) fallan.
  *
+ * Reporter `tests/contract/outage-reporter.ts`: separa proveedores caídos de
+ * contratos rotos en `contract-result.json` (el workflow solo falla con estos).
+ *
  * `PROVIDER_CONTRACT_MODE=enforce`: los clientes reales lanzan
  * `ProviderContractError` si la respuesta no cumple el esquema de producción.
  */
@@ -20,6 +23,7 @@ export default defineConfig({
     environment: "node",
     globals: true,
     passWithNoTests: true,
+    reporters: ["default", "./tests/contract/outage-reporter.ts"],
     include: ["tests/contract/**/*.{test,spec}.{ts,tsx}"],
     setupFiles: ["./tests/setup.ts"],
     env: { PROVIDER_CONTRACT_MODE: "enforce" },
