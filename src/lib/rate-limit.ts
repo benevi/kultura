@@ -338,6 +338,8 @@ export const LIMITS = {
   group_invitations: { windowMs: 60_000, max: 20 },
   /** PATCH /api/settings — actualizar perfil, 10/min por usuario */
   settings: { windowMs: 60_000, max: 10 },
+  /** PUT /api/settings/platforms — «Mis plataformas» (se guarda sola al marcar), 30/min por usuario */
+  settings_platforms: { windowMs: 60_000, max: 30 },
   /** POST /api/auth/demo — entrar en la demo, 10/min por IP (E-DEMO) */
   demo_login: { windowMs: 60_000, max: 10 },
   /** DELETE /api/account — borrado de cuenta (D2), 3/hora por usuario — destructivo */

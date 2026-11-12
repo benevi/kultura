@@ -4,6 +4,8 @@
 // /api/settings   PATCH: actualiza los campos enviados del perfil y, en el
 //                 onboarding (F-12), `accept_terms` y `onboarding_done`.
 //                 `data: null`; conflictos con `SETTINGS_ERRORS`.
+// /api/settings/platforms   PUT: «Mis plataformas» (F-25), lista completa y
+//                 región. `data: null`. Saneamiento 9.2.
 // ============================================================
 
 import { z } from 'zod'
@@ -11,6 +13,7 @@ import { isValidAvatarColor, isValidLocale } from '@/lib/constants/avatarColors'
 import { isValidAvatarIcon } from '@/components/icons/avatars'
 import { LIBRARY_VISIBILITIES, USERNAME_REGEX } from '@/lib/account/identity'
 import { BIO_MAX_LENGTH, SETTINGS_ERRORS } from '@/lib/settings/errors'
+import { MAX_PLATFORMS, PLATFORM_REGIONS } from '@/lib/platforms/platforms'
 
 export { BIO_MAX_LENGTH, SETTINGS_ERRORS }
 
@@ -40,3 +43,17 @@ export type SettingsPatch = z.input<typeof settingsPatchSchema>
 
 /** `data` de PATCH /api/settings. */
 export const settingsPatchResultSchema = z.null()
+
+/** PUT /api/settings/platforms: ids de TMDB (sin repetidos) y región. */
+export const platformsPutSchema = z.object({
+  services: z
+    .array(z.number().int().positive())
+    .max(MAX_PLATFORMS)
+    .transform((ids) => [...new Set(ids)]),
+  region: z.enum(PLATFORM_REGIONS),
+})
+
+export type PlatformsPut = z.input<typeof platformsPutSchema>
+
+/** `data` de PUT /api/settings/platforms. */
+export const platformsPutResultSchema = z.null()

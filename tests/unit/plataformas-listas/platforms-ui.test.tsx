@@ -16,41 +16,37 @@ vi.mock('@/i18n/navigation', () => ({
 }))
 vi.mock('@/components/media/PosterImage', () => ({ PosterImage: () => null }))
 
+// Saneamiento 9.2: se guarda con PUT /api/settings/platforms, no con Supabase.
 const update = vi.fn()
-const tables: string[] = []
-const result = { data: [{ user_id: 'u1' }] as unknown[] | null, error: null as unknown }
-vi.mock('@/lib/supabase/client', () => ({
-  createClient: () => ({
-    from: (table: string) => {
-      tables.push(table)
-      return {
-        upsert: (values: Record<string, unknown>, opts: unknown) => {
-          // `updated_at` cambia en cada llamada: no forma parte de lo comprobado.
-          const { updated_at: _ignored, ...rest } = values
-          void _ignored
-          update(rest, opts)
-          return { select: async () => result }
-        },
-      }
-    },
-  }),
-}))
+const calls: Array<{ url: string; method?: string; keepalive?: boolean }> = []
+const result = { status: 200 }
+const fetchMock = vi.fn(async (url: string, init: RequestInit = {}) => {
+  calls.push({ url, method: init.method, keepalive: init.keepalive })
+  update(JSON.parse(String(init.body)))
+  return result.status === 200
+    ? new Response(JSON.stringify({ data: null }), { status: 200 })
+    : new Response(JSON.stringify({ error: { code: 'forbidden' } }), { status: result.status })
+})
 
 import { PlatformsSection, PLATFORMS_SAVE_DELAY_MS } from '@/app/[locale]/(app)/settings/PlatformsSection'
 import { TonightClient } from '@/app/[locale]/(app)/home/TonightClient'
 
 beforeEach(() => {
   vi.useFakeTimers()
+  vi.stubGlobal('fetch', fetchMock)
   update.mockClear()
-  tables.length = 0
-  result.data = [{ user_id: 'u1' }]
-  result.error = null
+  fetchMock.mockClear()
+  calls.length = 0
+  result.status = 200
 })
-afterEach(() => vi.useRealTimers())
+afterEach(() => {
+  vi.useRealTimers()
+  vi.unstubAllGlobals()
+})
 
 describe('PlatformsSection', () => {
   it('casillas con nombre en un grupo con nombre, y región etiquetada', () => {
-    render(<PlatformsSection userId="u1" initialServices={[8]} initialRegion="ES" />)
+    render(<PlatformsSection initialServices={[8]} initialRegion="ES" />)
     const group = screen.getByRole('group', { name: /platforms\.groupLabel/ })
     expect(within(group).getByRole('checkbox', { name: 'Netflix' })).toBeChecked()
     expect(within(group).getByRole('checkbox', { name: 'Filmin' })).not.toBeChecked()
@@ -59,7 +55,7 @@ describe('PlatformsSection', () => {
   })
 
   it('varios toques seguidos → UNA escritura con todo, tras la pausa', async () => {
-    render(<PlatformsSection userId="u1" initialServices={[]} initialRegion="ES" />)
+    render(<PlatformsSection initialServices={[]} initialRegion="ES" />)
     fireEvent.click(screen.getByRole('checkbox', { name: 'Netflix' }))
     fireEvent.click(screen.getByRole('checkbox', { name: 'Filmin' }))
     expect(update).not.toHaveBeenCalled()
@@ -68,15 +64,14 @@ describe('PlatformsSection', () => {
       await vi.advanceTimersByTimeAsync(PLATFORMS_SAVE_DELAY_MS + 10)
     })
     expect(update).toHaveBeenCalledTimes(1)
-    // Tabla privada (RLS: solo el dueño), nunca `users` (la lee cualquiera con sesión).
-    expect(tables).toEqual(['user_streaming_services'])
-    expect(update).toHaveBeenCalledWith({ user_id: 'u1', services: [8, 63], region: 'ES' }, { onConflict: 'user_id' })
+    expect(calls).toEqual([{ url: '/api/settings/platforms', method: 'PUT', keepalive: false }])
+    expect(update).toHaveBeenCalledWith({ services: [8, 63], region: 'ES' })
     expect(screen.getByRole('status')).toHaveTextContent('platforms.saved')
   })
 
-  it('si no se guarda (0 filas: RLS/demo), vuelve a lo guardado y lo avisa', async () => {
-    result.data = []
-    render(<PlatformsSection userId="u1" initialServices={[8]} initialRegion="ES" />)
+  it('si la API no lo guarda, vuelve a lo guardado y lo avisa', async () => {
+    result.status = 403
+    render(<PlatformsSection initialServices={[8]} initialRegion="ES" />)
     fireEvent.click(screen.getByRole('checkbox', { name: 'Filmin' }))
     await act(async () => {
       await vi.advanceTimersByTimeAsync(PLATFORMS_SAVE_DELAY_MS + 10)
@@ -87,17 +82,28 @@ describe('PlatformsSection', () => {
   })
 
   it('cambiar de región quita lo que no existe allí', async () => {
-    render(<PlatformsSection userId="u1" initialServices={[8, 63]} initialRegion="ES" />)
+    render(<PlatformsSection initialServices={[8, 63]} initialRegion="ES" />)
     fireEvent.change(screen.getByRole('combobox', { name: 'platforms.region' }), { target: { value: 'US' } })
     await act(async () => {
       await vi.advanceTimersByTimeAsync(PLATFORMS_SAVE_DELAY_MS + 10)
     })
-    expect(update).toHaveBeenCalledWith({ user_id: 'u1', services: [8], region: 'US' }, { onConflict: 'user_id' })
+    expect(update).toHaveBeenCalledWith({ services: [8], region: 'US' })
     expect(screen.getByRole('checkbox', { name: 'Hulu' })).toBeInTheDocument()
   })
 
+  it('al salir con un cambio a medias se guarda ya, con keepalive', async () => {
+    const { unmount } = render(<PlatformsSection initialServices={[]} initialRegion="ES" />)
+    fireEvent.click(screen.getByRole('checkbox', { name: 'Netflix' }))
+    unmount()
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(0)
+    })
+    expect(calls).toEqual([{ url: '/api/settings/platforms', method: 'PUT', keepalive: true }])
+    expect(update).toHaveBeenCalledWith({ services: [8], region: 'ES' })
+  })
+
   it('demo: se ve, pero deshabilitado y explicado', () => {
-    render(<PlatformsSection userId="u1" initialServices={[]} initialRegion="ES" isDemo />)
+    render(<PlatformsSection initialServices={[]} initialRegion="ES" isDemo />)
     expect(screen.getByRole('checkbox', { name: 'Netflix' })).toBeDisabled()
     expect(screen.getByText('platforms.demoLocked')).toBeInTheDocument()
   })

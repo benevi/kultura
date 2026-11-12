@@ -5,14 +5,15 @@
 //
 // Casillas nativas (Tab, Espacio y lector de pantalla sin trabajo extra) con
 // el catálogo de TMDB de la región elegida. Se guarda solo, con una pausa
-// corta para agrupar varios toques, con el JWT del usuario en la tabla
-// privada `user_streaming_services` (RLS: solo su dueño; demo_no_* la deja en
-// solo lectura). La cuenta demo lo ve pero no lo cambia.
+// corta para agrupar varios toques, con `PUT /api/settings/platforms`
+// (saneamiento 9.2: el navegador ya no escribe en Supabase). La cuenta demo
+// lo ve pero no lo cambia.
 // ============================================================
 
 import { useEffect, useId, useRef, useState } from 'react'
 import { useTranslations } from 'next-intl'
-import { createClient } from '@/lib/supabase/client'
+import { apiFetch } from '@/lib/api/client'
+import type { PlatformsPut } from '@/lib/api/contracts/settings'
 import { cn } from '@/lib/utils/index'
 import { PLATFORMS_BY_REGION, PLATFORM_REGIONS, type PlatformRegion } from '@/lib/platforms/platforms'
 
@@ -21,13 +22,12 @@ export const PLATFORMS_SAVE_DELAY_MS = 700
 type SaveState = 'idle' | 'saving' | 'saved' | 'error'
 
 interface PlatformsSectionProps {
-  userId: string
   initialServices: number[]
   initialRegion: PlatformRegion
   isDemo?: boolean
 }
 
-export function PlatformsSection({ userId, initialServices, initialRegion, isDemo = false }: PlatformsSectionProps) {
+export function PlatformsSection({ initialServices, initialRegion, isDemo = false }: PlatformsSectionProps) {
   const t = useTranslations('platforms')
   const regionId = useId()
   const [services, setServices] = useState<number[]>(initialServices)
@@ -39,24 +39,15 @@ export function PlatformsSection({ userId, initialServices, initialRegion, isDem
 
   const catalog = PLATFORMS_BY_REGION[region]
 
-  async function flush() {
+  async function flush(keepalive = false) {
     const next = pending.current
     pending.current = null
     timer.current = null
     if (!next) return
     try {
-      const supabase = createClient()
-      // Tabla privada (solo el dueño la lee y escribe). Upsert: la primera vez
-      // no hay fila.
-      const { data, error } = await supabase
-        .from('user_streaming_services')
-        .upsert(
-          { user_id: userId, services: next.services, region: next.region, updated_at: new Date().toISOString() },
-          { onConflict: 'user_id' }
-        )
-        .select('user_id')
-      // 0 filas = la RLS no dejó (p. ej. demo): también es un fallo.
-      if (error || !data || data.length === 0) throw new Error(error?.message ?? 'not updated')
+      const body: PlatformsPut = { services: next.services, region: next.region }
+      // `keepalive`: al salir de Ajustes la petición sigue aunque se desmonte.
+      await apiFetch<null>('/api/settings/platforms', { method: 'PUT', json: body, keepalive })
       saved.current = next
       if (!pending.current) setState('saved')
     } catch {
@@ -78,7 +69,7 @@ export function PlatformsSection({ userId, initialServices, initialRegion, isDem
     () => () => {
       if (timer.current) {
         clearTimeout(timer.current)
-        void flush()
+        void flush(true)
       }
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps
