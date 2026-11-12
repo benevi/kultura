@@ -53,6 +53,11 @@ export function fetchMessages(conversationId: string, before?: string): Promise<
   return apiFetch(`${conv(conversationId)}${qs}`)
 }
 
+/** Marca la conversación como leída (saneamiento 9.2). */
+export function markChatRead(conversationId: string): Promise<null> {
+  return apiFetch(`${conv(conversationId)}/read`, { method: 'POST' })
+}
+
 export function sendChatMessage(conversationId: string, content: string): Promise<ChatMessage> {
   return apiFetch(conv(conversationId), { method: 'POST', json: { content } })
 }

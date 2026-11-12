@@ -185,7 +185,7 @@ describe('UnreadChatProvider', () => {
     expect(mockFetch).toHaveBeenCalledTimes(1)
   })
 
-  it('markConversationRead: update de last_read_at (conv + user propios) y refetch', async () => {
+  it('markConversationRead: POST /api/chat/[id]/read (sin Supabase en el navegador) y refetch', async () => {
     stubCount(3)
     renderProvider('me')
     await waitFor(() => expect(screen.getByTestId('count')).toHaveTextContent('3'))
@@ -195,11 +195,8 @@ describe('UnreadChatProvider', () => {
       fireEvent.click(screen.getByText('mark'))
     })
 
-    expect(mockUpdate).toHaveBeenCalledWith(
-      expect.objectContaining({ last_read_at: expect.any(String) })
-    )
-    expect(mockUpdateEq1).toHaveBeenCalledWith('conversation_id', 'conv-1')
-    expect(mockUpdateEq2).toHaveBeenCalledWith('user_id', 'me')
+    expect(mockFetch).toHaveBeenCalledWith('/api/chat/conv-1/read', expect.objectContaining({ method: 'POST' }))
+    expect(mockUpdate).not.toHaveBeenCalled()
     await waitFor(() => expect(screen.getByTestId('count')).toHaveTextContent('2'))
   })
 

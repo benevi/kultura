@@ -199,6 +199,31 @@ export async function readMessages(
   return success({ messages, hasMore, currentUserId: userId })
 }
 
+/**
+ * Marca la conversación como leída (saneamiento 9.2: antes lo hacía el
+ * navegador con un UPDATE directo). Con el JWT del usuario: la política de
+ * `conversation_members` solo deja tocar la fila propia. 0 filas = no es
+ * miembro (o la demo, que no escribe): `forbidden`.
+ */
+export async function markConversationRead(
+  supabase: SupabaseClient,
+  userId: string,
+  conversationId: string
+): Promise<ServiceResult<null>> {
+  const { data, error } = await supabase
+    .from('conversation_members')
+    .update({ last_read_at: new Date().toISOString() })
+    .eq('conversation_id', conversationId)
+    .eq('user_id', userId)
+    .select('conversation_id')
+  if (error) {
+    log.error('Failed to mark conversation read', { code: error.code, message: error.message })
+    return failure('internal', { message: 'Failed to mark read' })
+  }
+  if (!data || data.length === 0) return failure('forbidden', { message: 'Not a member' })
+  return success(null)
+}
+
 /** Envía un mensaje (ya recortado y con tope por zod). */
 export async function sendMessage(
   supabase: SupabaseClient,

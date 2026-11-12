@@ -321,8 +321,8 @@ export function ConversationClient({
         setLoading(false)
         setTimeout(() => setAnnounce(true), 0)
         setTimeout(scrollToBottom, 50)
-        // E96: el GET marca leído en servidor fire-and-forget; este update
-        // awaited + refetch garantiza que el badge global baje al abrir.
+        // E96: el GET marca leído en servidor fire-and-forget; este POST
+        // /api/chat/[id]/read awaited + refetch garantiza que el badge baje al abrir.
         markConversationRead(conversationId)
       })
       .catch(() => { setLoadError(true); setLoading(false) })

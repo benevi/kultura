@@ -12,12 +12,12 @@
 import { createContext, useContext, useState, useEffect, useRef, useCallback } from 'react'
 import { usePathname } from '@/i18n/navigation'
 import { createClient } from '@/lib/supabase/client'
-import { fetchUnreadCount } from '@/lib/chat/client'
+import { fetchUnreadCount, markChatRead } from '@/lib/chat/client'
 
 interface UnreadChatContextValue {
   unreadCount: number
   refreshUnread: () => Promise<void>
-  /** Marca la conversación como leída (update directo, policy propia) y refetchea el badge. */
+  /** Marca la conversación como leída (POST /api/chat/[id]/read) y refetchea el badge. */
   markConversationRead: (conversationId: string) => Promise<void>
 }
 
@@ -53,14 +53,13 @@ export function UnreadChatProvider({ userId, children }: Props) {
   }, [])
 
   const markConversationRead = useCallback(async (conversationId: string) => {
-    const supabase = createClient()
-    await supabase
-      .from('conversation_members')
-      .update({ last_read_at: new Date().toISOString() })
-      .eq('conversation_id', conversationId)
-      .eq('user_id', userId)
+    try {
+      await markChatRead(conversationId)
+    } catch {
+      // silencioso (demo, sin red): el badge se recalcula igual
+    }
     await refreshUnread()
-  }, [userId, refreshUnread])
+  }, [refreshUnread])
 
   // Count inicial
   useEffect(() => { refreshUnread() }, [refreshUnread])
