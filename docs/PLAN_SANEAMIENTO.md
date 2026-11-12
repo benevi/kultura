@@ -167,7 +167,7 @@ Estado de partida:
 ## ✅ Fase 4 · Seguridad en la API — #108 · 11-11-2026
 
 - `HEALTH_DEEP_TOKEN` configurado en Vercel (Production); el monitor externo lo lleva si usa `?deep=1`.
-- 4.6: la RLS de `group_posts` sigue admitiendo el INSERT directo (sin el rate limit de la API). Cerrarlo con una migración en la fase 6 (módulo `groups`).
+- 4.6 ✅ cerrado en la fase 6 — #128 (migración `20261231000002_group_posts_insert_via_api`) · prod: 11-11-2026. Publicar en un grupo solo va por la API.
 
 1. Usar `checkRateLimitDistributed`, ya con Redis, en `reports/public`, `ai-recommendations`, `recommendations`, `auth/demo` y `revalidate`.
 2. `recommendations`: comprobar la amistad en el servidor **antes** de llamar al proveedor.
@@ -212,7 +212,7 @@ Los filtros de la biblioteca **no van aquí**: pasan a la fase 8 (Q28).
 
 ---
 
-## 🟨 Fase 6 · Backend por módulos (un PR por módulo) — 1 a 3: base #118 · library #119 #120 · lists #121 · friends #122 · chat #123 · groups #124 · account/import #125 · settings #126 · 11-11-2026
+## 🟨 Fase 6 · Backend por módulos (un PR por módulo) — 1 a 3: base #118 · library #119 #120 · lists #121 · friends #122 · chat #123 · groups #124 · account/import #125 · settings #126 · 11-11-2026 · 4: chat #129 · descubrir #130 · 12-11-2026
 
 Orden: `library` → `lists` → `friends` → `chat` → `groups` → `account/import` → `settings`. Hecho.
 
@@ -222,9 +222,9 @@ Orden: `library` → `lists` → `friends` → `chat` → `groups` → `account/
 1. ✅ **zod** en todos los bodies y query params, con un único esquema para `mediaId`.
 2. ✅ **Helpers** en `src/lib/api/route.ts`: `requireUser()`, `rateLimit()` (distribuido, con `clientIp()`), `parseBody()` (con tope de bytes), `parseQuery()`, `respond()` y `apiError()`.
 3. ✅ **Lógica fuera de los handlers**, en `src/lib/<módulo>/service.ts` (devuelven `ServiceResult`).
-4. ⬜ **Rendimiento:**
-   - N+1 en la lista de conversaciones (ahora en `lib/chat/service.ts`).
-   - Descubrimiento de grupos paginado en SQL.
+4. 🟨 **Rendimiento:**
+   - ✅ N+1 en la lista de conversaciones: una sola consulta con embebidos — #129.
+   - ✅ Descubrimiento de grupos paginado en SQL: RPC `discover_groups` (`20261231000003`, SECURITY INVOKER) — #130 · prod: 12-11-2026.
    - Endpoint bulk para añadir una franquicia.
    - Timeout y reintentos en el cliente de Anthropic y en `og/brand.ts`.
 5. ⬜ **Código muerto** que queda: `getPopularTV`, `getTrendingMovies`, `getMovieVideos` (solo tests), `getPushConfig` y `components/library/EpisodeProgress.tsx` (solo su test). `getSentGroupInvitations` y `updateLibrary` ya no existen; `addToLibrary` sigue en uso.
