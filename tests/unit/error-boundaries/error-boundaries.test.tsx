@@ -2,7 +2,7 @@
  * Tests unitarios para los error boundaries de rutas autenticadas.
  * Verifica que cada error.tsx renderiza el mensaje de error y el botón de reset.
  */
-import { render, screen, fireEvent } from '@testing-library/react'
+import { render, screen, fireEvent, waitFor } from '@testing-library/react'
 import { describe, it, expect, vi } from 'vitest'
 
 vi.mock('next-intl', () => ({
@@ -13,6 +13,12 @@ vi.mock('next-intl', () => ({
     }
     return map[key] ?? key
   },
+}))
+
+// Saneamiento 10.1: ErrorState manda el error a Sentry (SDK bajo demanda).
+const { captureException } = vi.hoisted(() => ({ captureException: vi.fn() }))
+vi.mock('@/lib/logger', () => ({
+  loadSentry: () => Promise.resolve({ captureException }),
 }))
 
 // Importación dinámica para aislar cada componente
@@ -45,6 +51,17 @@ describe.each(BOUNDARIES)('$name', ({ Component }) => {
   it('renderiza botón Reintentar', () => {
     render(<Component error={TEST_ERROR} reset={vi.fn()} />)
     expect(screen.getByText('Inténtalo de nuevo')).toBeInTheDocument()
+  })
+
+  it('envía el error a Sentry una vez, con la etiqueta boundary', async () => {
+    captureException.mockClear()
+    const err = Object.assign(new Error('boom'), { digest: 'd1' })
+    const { rerender } = render(<Component error={err} reset={vi.fn()} />)
+    await waitFor(() => expect(captureException).toHaveBeenCalledTimes(1))
+    expect(captureException).toHaveBeenCalledWith(err, { tags: { boundary: 'page' }, extra: { digest: 'd1' } })
+    rerender(<Component error={err} reset={vi.fn()} />)
+    await Promise.resolve()
+    expect(captureException).toHaveBeenCalledTimes(1)
   })
 
   it('botón llama a reset() al hacer click', () => {

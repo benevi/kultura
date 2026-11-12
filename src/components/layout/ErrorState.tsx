@@ -4,8 +4,12 @@ import { useEffect, useRef } from 'react'
 import { useTranslations } from 'next-intl'
 import { useParams } from 'next/navigation'
 import { KButton } from '@/components/ui/KButton'
+// Sentry bajo demanda (F-22): no entra en el JS inicial de las páginas.
+import { loadSentry } from '@/lib/logger'
 
 interface ErrorStateProps {
+  /** El error que recibe el `error.tsx`: se envía a Sentry (saneamiento 10.1). */
+  error?: Error & { digest?: string }
   reset: () => void
   minHeight?: string
   /** Destino del botón secundario. Con sesión, Inicio; en páginas públicas, la portada (`/`). */
@@ -52,7 +56,7 @@ function BrokenPosters({ sticker }: { sticker: string }) {
  * (primario) e «Ir al inicio» (secundario). El título recibe el foco al
  * aparecer para que el lector de pantalla anuncie qué ha pasado.
  */
-export function ErrorState({ reset, minHeight = 'min-h-[40vh]', homeHref = '/home' }: ErrorStateProps) {
+export function ErrorState({ error, reset, minHeight = 'min-h-[40vh]', homeHref = '/home' }: ErrorStateProps) {
   const t = useTranslations('errors')
   const tNav = useTranslations('nav')
   const headingRef = useRef<HTMLHeadingElement>(null)
@@ -64,6 +68,21 @@ export function ErrorState({ reset, minHeight = 'min-h-[40vh]', homeHref = '/hom
   useEffect(() => {
     headingRef.current?.focus()
   }, [])
+
+  // Saneamiento 10.1: sin esto, un error que pinta esta pantalla no llegaba a
+  // Sentry (Next solo reenvía al servidor los de servidor, con `digest`).
+  // Sin DSN `loadSentry()` es null y no se descarga nada.
+  useEffect(() => {
+    if (!error) return
+    loadSentry()
+      ?.then((Sentry) =>
+        Sentry.captureException(error, {
+          tags: { boundary: 'page' },
+          extra: error.digest ? { digest: error.digest } : undefined,
+        })
+      )
+      .catch(() => {})
+  }, [error])
 
   return (
     <div className={`flex flex-col items-center justify-center ${minHeight} gap-6 px-4 py-10 text-center`}>

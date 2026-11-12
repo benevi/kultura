@@ -7,6 +7,6 @@ interface Props {
   reset: () => void
 }
 
-export default function ProfileError({ reset }: Props) {
-  return <ErrorState reset={reset} />
+export default function ProfileError({ error, reset }: Props) {
+  return <ErrorState error={error} reset={reset} />
 }
