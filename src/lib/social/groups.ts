@@ -8,7 +8,6 @@
 // ============================================================
 
 import { createClient } from '@/lib/supabase/server'
-import { escapeLikePattern } from '@/lib/utils/escape-like'
 import type { DbGroup, DbGroupMember, DbUser } from '@/types/supabase'
 
 // ── Row types ─────────────────────────────────────────────────────────────────
@@ -256,39 +255,25 @@ export async function createGroupRow(
 
 // ── Discover ────────────────────────────────────────────────────────────────
 
-/** Fila de groups con join anidado a group_members (solo user_id). */
-interface DiscoverGroupQueryRow {
+/** Fila del RPC `discover_groups`. */
+interface DiscoverGroupRpcRow {
   id: string
   owner_id: string
   name: string
   description: string | null
   cover_color: string
   icon: string | null
-  is_public: boolean
   created_at: string
-  group_members: { user_id: string }[] | null
-}
-
-function inSizeBucket(count: number, size: DiscoverSize): boolean {
-  switch (size) {
-    case 'small':
-      return count >= 1 && count <= 10
-    case 'medium':
-      return count >= 11 && count <= 50
-    case 'large':
-      return count > 50
-    default:
-      return true
-  }
+  member_count: number
+  is_member: boolean
 }
 
 /**
- * Grupos para la pestaña "Descubrir" mediante queries directas PostgREST.
- *
- * Reemplaza el RPC get_discoverable_groups: el schema cache de PostgREST en
- * Supabase Cloud no recargaba la función (ver migración DEPRECATED). Trae los
- * grupos con un join anidado a group_members y deriva memberCount/isMember,
- * filtros (scope/size) y paginación en JS. El límite se recorta a [1, 50].
+ * Grupos para la pestaña "Descubrir" (saneamiento 6.4). El RPC
+ * `discover_groups` (SECURITY INVOKER) cuenta miembros, filtra (q, scope,
+ * size), ordena (más miembros, luego más reciente) y pagina en SQL; antes se
+ * traían todos los grupos con todos sus miembros y se hacía en JS. El límite
+ * se recorta a [1, 50] aquí y en la función.
  */
 export async function getDiscoverableGroups(
   params: DiscoverGroupsParams = {}
@@ -298,55 +283,27 @@ export async function getDiscoverableGroups(
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) throw new Error('Failed to fetch discoverable groups: not authenticated')
 
-  const q = params.q?.trim()
-  const scope: DiscoverScope = params.scope ?? 'all'
-  const size: DiscoverSize = params.size ?? 'all'
-  const limit = Math.min(Math.max(params.limit ?? 50, 1), 50)
-  const offset = Math.max(params.offset ?? 0, 0)
-
-  let query = supabase
-    .from('groups')
-    .select('*, group_members(user_id)')
-    // La RLS ya oculta grupos privados a no-miembros; filtro explícito por claridad (E45-c).
-    .eq('is_public', true)
-    .order('created_at', { ascending: false })
-
-  // Saneamiento 4.5: «%» o «_» se buscan tal cual, no como comodines.
-  if (q) query = query.ilike('name', `%${escapeLikePattern(q)}%`)
-
-  const { data, error } = await query
+  const { data, error } = await supabase.rpc('discover_groups', {
+    p_q: params.q?.trim() || undefined,
+    p_scope: params.scope ?? 'all',
+    p_size: params.size ?? 'all',
+    p_limit: Math.min(Math.max(params.limit ?? 50, 1), 50),
+    p_offset: Math.max(params.offset ?? 0, 0),
+  })
 
   if (error) throw new Error(`Failed to fetch discoverable groups: ${error.message}`)
 
-  const mapped: DiscoverGroup[] = ((data ?? []) as unknown as DiscoverGroupQueryRow[]).map(
-    (row) => {
-      const members = row.group_members ?? []
-      return {
-        id: row.id,
-        ownerId: row.owner_id,
-        name: row.name,
-        description: row.description,
-        coverColor: resolveCoverColor(row.cover_color),
-        icon: row.icon ?? null,
-        createdAt: row.created_at,
-        memberCount: members.length,
-        isMember: members.some((m) => m.user_id === user.id),
-      }
-    }
-  )
-
-  return mapped
-    .filter((g) => {
-      if (scope === 'joined' && !g.isMember) return false
-      if (scope === 'unjoined' && g.isMember) return false
-      return inSizeBucket(g.memberCount, size)
-    })
-    .sort((a, b) =>
-      b.memberCount !== a.memberCount
-        ? b.memberCount - a.memberCount
-        : b.createdAt.localeCompare(a.createdAt)
-    )
-    .slice(offset, offset + limit)
+  return ((data ?? []) as unknown as DiscoverGroupRpcRow[]).map((row) => ({
+    id: row.id,
+    ownerId: row.owner_id,
+    name: row.name,
+    description: row.description,
+    coverColor: resolveCoverColor(row.cover_color),
+    icon: row.icon ?? null,
+    createdAt: row.created_at,
+    memberCount: Number(row.member_count),
+    isMember: row.is_member,
+  }))
 }
 
 // ── Invitaciones ──────────────────────────────────────────────────────────────

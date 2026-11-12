@@ -1531,6 +1531,26 @@ export type Database = {
         Returns: string
       }
       deletion_preview: { Args: { p_user: string }; Returns: Json }
+      discover_groups: {
+        Args: {
+          p_limit?: number
+          p_offset?: number
+          p_q?: string
+          p_scope?: string
+          p_size?: string
+        }
+        Returns: {
+          cover_color: string
+          created_at: string
+          description: string
+          icon: string
+          id: string
+          is_member: boolean
+          member_count: number
+          name: string
+          owner_id: string
+        }[]
+      }
       email_confirm_weekly: {
         Args: {
           p_email_hash: string
