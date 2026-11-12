@@ -118,5 +118,7 @@ export async function cancelAccountDeletion(user: User): Promise<ServiceResult<n
   const demo = demoForbidden<null>(user)
   if (demo) return demo
   const ok = await cancelDeletion(createAdminClient(), user.id)
-  return ok ? success(null) : failure('internal', { message: 'Failed to update' })
+  if (ok) return success(null)
+  log.error('Failed to cancel account deletion', { userId: user.id })
+  return failure('internal', { message: 'Failed to update' })
 }

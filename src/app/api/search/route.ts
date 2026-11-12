@@ -28,6 +28,24 @@ import { filterNSFW } from "@/lib/api/nsfw-filter";
 import { CATALOG_EDGE_CACHE, NO_STORE, clientIp } from "@/lib/api/discover-params";
 import { checkRateLimitDistributed, LIMITS } from "@/lib/rate-limit";
 import type { MediaItem, MediaType } from "@/types/media";
+import { ProviderError } from "@/lib/api/http";
+import { createLogger } from "@/lib/logger";
+
+const log = createLogger("api/search");
+
+/**
+ * Saneamiento 10.2: la búsqueda no rompe por un fallo (devuelve lo que
+ * tenga), pero ya no se lo traga. Un proveedor caído ya lo avisa
+ * `lib/api/http.ts` (aquí basta un aviso); cualquier otro error es un fallo
+ * nuestro y va a Sentry.
+ */
+function reportSearchFailure(where: string, error: unknown): void {
+  if (error instanceof ProviderError) {
+    log.warn(`search: ${where} sin proveedor`, { provider: error.provider, kind: error.kind });
+    return;
+  }
+  log.error(`search: ${where} falló`, { error });
+}
 
 const MAX_SUGGESTIONS = 5;
 /** Una consulta de autocompletado no necesita más (y no se reenvía un texto enorme). */
@@ -97,7 +115,8 @@ export async function GET(request: NextRequest) {
     try {
       const items = suggestable(await searchByType(q, type, locale)).slice(0, MAX_SUGGESTIONS);
       return NextResponse.json(items, { headers: { "Cache-Control": CATALOG_EDGE_CACHE } });
-    } catch {
+    } catch (error) {
+      reportSearchFailure(type, error);
       return NextResponse.json([], { headers: { "Cache-Control": NO_STORE } });
     }
   }
@@ -110,6 +129,9 @@ export async function GET(request: NextRequest) {
       rankSearchResults(q, r.results.map((raw) => normalizeTV(raw)))
     ),
   ]);
+
+  if (movies.status === "rejected") reportSearchFailure("movie", movies.reason);
+  if (tv.status === "rejected") reportSearchFailure("tv", tv.reason);
 
   const lists = [
     movies.status === "fulfilled" ? suggestable(movies.value) : [],

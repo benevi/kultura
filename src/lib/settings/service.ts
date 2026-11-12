@@ -15,6 +15,7 @@ import 'server-only'
 import type { SupabaseClient, User } from '@supabase/supabase-js'
 import type { z } from 'zod'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { createLogger } from '@/lib/logger'
 import type { TablesUpdate } from '@/types/supabase'
 import { failure, success, type ServiceResult } from '@/lib/api/result'
 import { demoForbidden } from '@/lib/account/service'
@@ -33,7 +34,13 @@ type PlatformsInput = z.output<typeof platformsPutSchema>
 
 const taken = () => failure<null>('conflict', { field: 'username', message: SETTINGS_ERRORS.usernameTaken })
 const reserved = () => failure<null>('conflict', { field: 'username', message: SETTINGS_ERRORS.usernameReserved })
-const writeFailed = () => failure<null>('internal', { message: 'Failed to update' })
+const log = createLogger('settings/service')
+
+/** 500 registrado (saneamiento 10.2): antes salía sin dejar rastro. */
+function writeFailed(step: string, userId: string, error?: unknown): ServiceResult<null> {
+  log.error(`Failed to update settings (${step})`, { userId, error })
+  return failure<null>('internal', { message: 'Failed to update' })
+}
 
 export async function updateSettings(supabase: SupabaseClient, user: User, input: SettingsInput): Promise<ServiceResult<null>> {
   const demo = demoForbidden<null>(user)
@@ -102,11 +109,11 @@ export async function updateSettings(supabase: SupabaseClient, user: User, input
     // escritura (o solo difiere en mayúsculas). 23514: CHECK de la base.
     if (error?.code === '23505') return taken()
     if (error?.code === '23514') return reserved()
-    if (error || !data) return writeFailed()
+    if (error || !data) return writeFailed('users', user.id, error)
   }
 
-  if (admin && accept_terms && !(await recordTermsAcceptance(admin, user))) return writeFailed()
-  if (admin && onboarding_done && !(await markOnboarded(admin, user))) return writeFailed()
+  if (admin && accept_terms && !(await recordTermsAcceptance(admin, user))) return writeFailed('terms', user.id)
+  if (admin && onboarding_done && !(await markOnboarded(admin, user))) return writeFailed('onboarding', user.id)
 
   return success(null)
 }
@@ -130,6 +137,6 @@ export async function updatePlatforms(
       { onConflict: 'user_id' }
     )
     .select('user_id')
-  if (error || !data || data.length === 0) return writeFailed()
+  if (error || !data || data.length === 0) return writeFailed('platforms', user.id, error ?? '0 rows')
   return success(null)
 }

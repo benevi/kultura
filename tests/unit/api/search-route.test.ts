@@ -11,6 +11,12 @@ vi.mock("@/lib/api/tmdb", async (importOriginal) => ({
   searchMovies: vi.fn(),
   searchTV: vi.fn(),
 }));
+// Saneamiento 10.2: los fallos se registran (antes se tragaban).
+const { logWarn, logError } = vi.hoisted(() => ({ logWarn: vi.fn(), logError: vi.fn() }));
+vi.mock("@/lib/logger", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/lib/logger")>()),
+  createLogger: () => ({ debug: vi.fn(), info: vi.fn(), warn: logWarn, error: logError }),
+}));
 vi.mock("next-intl/server", () => ({
   getLocale: vi.fn().mockResolvedValue("en"),
 }));
@@ -18,6 +24,7 @@ vi.mock("next-intl/server", () => ({
 import { GET } from "@/app/api/search/route";
 import { searchMovies, searchTV } from "@/lib/api/tmdb";
 import { _resetStoreForTests } from "@/lib/rate-limit";
+import { ProviderError } from "@/lib/api/http";
 
 const movie = (id: number, title: string) => ({
   id,
@@ -69,5 +76,21 @@ describe("GET /api/search", () => {
     const res = await GET(req("?q=a"));
     expect(await res.json()).toEqual([]);
     expect(searchMovies).not.toHaveBeenCalled();
+  });
+
+  it("proveedor caído: aviso (no error), y la búsqueda sigue con lo que hay", async () => {
+    vi.mocked(searchTV).mockRejectedValue(new ProviderError("tmdb", "timeout", "tmdb /search/tv → sin respuesta"));
+    const res = await GET(req("?q=inception"));
+    expect(await res.json()).toHaveLength(1);
+    expect(logWarn).toHaveBeenCalledWith(expect.stringContaining("tv"), { provider: "tmdb", kind: "timeout" });
+    expect(logError).not.toHaveBeenCalled();
+  });
+
+  it("un fallo nuestro (no del proveedor) va a error, no se traga", async () => {
+    const bug = new TypeError("x is undefined");
+    vi.mocked(searchMovies).mockRejectedValue(bug);
+    const res = await GET(req("?q=inception"));
+    expect(res.status).toBe(200);
+    expect(logError).toHaveBeenCalledWith(expect.stringContaining("movie"), { error: bug });
   });
 });
