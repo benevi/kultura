@@ -190,7 +190,7 @@ const tables = {
       user_id: USER_ID,
       media_id: "movie_603",
       status: "completed",
-      score: 4,
+      rating10: 8,
       watched_at: null,
       episode_progress: null,
       created_at: NOW,

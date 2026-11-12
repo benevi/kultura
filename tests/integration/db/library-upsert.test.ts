@@ -83,7 +83,7 @@ describe("Library upsert — flujo completo", () => {
     expect(data!.status).toBe("pending");
   });
 
-  it("UPDATE (upsert): actualiza status y rating10 sin duplicar (como la app: nunca score)", async () => {
+  it("UPDATE (upsert): actualiza status y rating10 sin duplicar (score se retiró en 6.6)", async () => {
     const client = await clientAs(USER_EMAIL, USER_PASSWORD);
 
     const { error } = await client.from("user_media").upsert(
@@ -101,14 +101,12 @@ describe("Library upsert — flujo completo", () => {
     // Verificar que hay exactamente 1 fila (no duplicado)
     const { data, count } = await client
       .from("user_media")
-      .select("status, rating10, score", { count: "exact" })
+      .select("status, rating10", { count: "exact" })
       .match({ user_id: userId, media_id: TEST_MEDIA_ID });
 
     expect(count).toBe(1);
     expect(data![0].status).toBe("completed");
     expect(Number(data![0].rating10)).toBe(9);
-    // Mientras exista la columna, el disparador user_media_sync_rating la rellena.
-    expect(data![0].score).toBe(5);
   });
 
   it("rating10 NULL es válido (sin puntuar)", async () => {
