@@ -10,11 +10,10 @@
 //   game          horas jugadas         (total = horas medias de RAWG)
 //   movie         nada
 //
-// Dónde se guarda: con PROGRESS_V2=1 y la migración 20261215270001 aplicada,
-// en las columnas `progress_*` de user_media; si no, como siempre, en el
-// jsonb `episode_progress` ({season?, episode}, solo series y anime). El
-// disparador de la migración mantiene el jsonb como espejo de las columnas,
-// así que leer el jsonb sirve en los dos mundos (`progressFromJson`).
+// Dónde se guarda: en las columnas `progress_*` de user_media (migración
+// 20261215270001). Saneamiento 6.6: se leen SOLO las columnas; el jsonb
+// `episode_progress` queda como espejo que mantiene el disparador hasta que
+// se retire.
 // ============================================================
 
 import type { EpisodeProgress, LibraryEntry, LibraryPayload } from '@/types/library'
@@ -172,24 +171,18 @@ const COLUMN_OF: Record<keyof ProgressValue, keyof ProgressColumns> = {
   total: 'progress_total',
 }
 
-/** ¿La fila trae las columnas de la migración (`select('*')` con ella aplicada)? */
-export function rowHasProgressColumns(row: object | null | undefined): boolean {
-  return !!row && 'progress_episode' in row
-}
-
 /**
- * Progreso de una fila de user_media: las columnas si existen; si no, el
- * jsonb de siempre. PostgREST devuelve `numeric` como número.
+ * Progreso de una fila de user_media, leído SOLO de las columnas
+ * `progress_*` (saneamiento 6.6). `numeric` puede llegar como texto.
  */
 export function progressFromRow(row: Record<string, unknown> | null | undefined): ProgressValue | null {
   if (!row) return null
-  if (!rowHasProgressColumns(row)) return progressFromJson(row.episode_progress)
   const fromColumns: Record<string, unknown> = {}
   for (const [key, column] of Object.entries(COLUMN_OF)) {
     const raw = row[column]
     fromColumns[key] = typeof raw === 'string' ? Number(raw) : raw
   }
-  return progressFromJson(fromColumns) ?? progressFromJson(row.episode_progress)
+  return progressFromJson(fromColumns)
 }
 
 /** Todas las columnas (las que no van, a NULL: guardar = sustituir). */

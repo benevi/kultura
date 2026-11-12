@@ -8,7 +8,7 @@ import { createClient } from '@/lib/supabase/server'
 import type { DbUserMedia, DbMedia } from '@/types/supabase'
 import type { LibraryStatus } from '@/types/library'
 import { rating10ToScore, storedRating10 } from '@/lib/library/rating'
-import { progressFromRow, type LibraryEntryWithProgress } from '@/lib/library/progress'
+import { progressFromRow, progressToLegacy, type LibraryEntryWithProgress } from '@/lib/library/progress'
 
 type UserMediaWithMedia = DbUserMedia & {
   media: Pick<DbMedia, 'title' | 'poster' | 'year'> | null
@@ -17,10 +17,12 @@ type UserMediaWithMedia = DbUserMedia & {
 /**
  * Mapea una fila de user_media (con join de media) a LibraryEntry. La nota
  * sale solo de `rating10` (saneamiento 6.6); `score` se deriva de ella. El
- * progreso de F-27 (`progress`): columnas `progress_*` o, sin ellas, el jsonb.
+ * progreso de F-27 (`progress`): solo columnas `progress_*`; `episodeProgress`
+ * (forma antigua de la API) sale de ellas.
  */
 function mapEntry(row: UserMediaWithMedia): LibraryEntryWithProgress {
   const rating10 = storedRating10(row.rating10)
+  const progress = progressFromRow(row as unknown as Record<string, unknown>)
   return {
     id: row.id,
     userId: row.user_id,
@@ -30,9 +32,8 @@ function mapEntry(row: UserMediaWithMedia): LibraryEntryWithProgress {
     rating10,
     favorite: row.favorite ?? false,
     watchedAt: row.watched_at,
-    episodeProgress: row.episode_progress,
-    // F-27: columnas progress_* si la migración está; si no, el jsonb.
-    progress: progressFromRow(row as unknown as Record<string, unknown>),
+    episodeProgress: progressToLegacy(progress),
+    progress,
     createdAt: row.created_at,
     title: row.media?.title,
     poster: row.media?.poster ?? undefined,

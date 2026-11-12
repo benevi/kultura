@@ -43,6 +43,7 @@ const log = createLogger('library/service')
 /** Mapea una fila de user_media a LibraryEntry (con su progreso, F-27). */
 export function mapEntry(row: DbUserMedia): LibraryEntryWithProgress {
   const rating10 = storedRating10(row.rating10)
+  const progress = progressFromRow(row as unknown as Record<string, unknown>)
   return {
     id: row.id,
     userId: row.user_id,
@@ -52,8 +53,8 @@ export function mapEntry(row: DbUserMedia): LibraryEntryWithProgress {
     rating10,
     favorite: row.favorite ?? false,
     watchedAt: row.watched_at,
-    episodeProgress: row.episode_progress,
-    progress: progressFromRow(row as unknown as Record<string, unknown>),
+    episodeProgress: progressToLegacy(progress),
+    progress,
     createdAt: row.created_at,
   }
 }

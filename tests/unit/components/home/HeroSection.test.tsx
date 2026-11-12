@@ -32,7 +32,7 @@ const baseMedia = {
 
 const baseItem: HeroItem = {
   media_id: 'movie_550',
-  episode_progress: null,
+  progress: null,
   media: baseMedia,
 }
 
@@ -48,7 +48,7 @@ describe('HeroSection', () => {
   it('serie con progreso (jsonb con total): barra, texto y botón de marcar siguiente (F-27)', () => {
     const itemWithProgress: HeroItem = {
       media_id: 'tv_1399',
-      episode_progress: { season: 2, episode: 5, total: 10 },
+      progress: { season: 2, episode: 5, total: 10 },
       media: { ...baseMedia, id: 'tv_1399', type: 'tv' },
     }
     render(<HeroSection item={itemWithProgress} />)
@@ -57,7 +57,7 @@ describe('HeroSection', () => {
   })
 
   it('película: sin progreso ni botón (no hay nada que marcar)', () => {
-    render(<HeroSection item={{ ...baseItem, episode_progress: { episode: 5, total: 10 } }} />)
+    render(<HeroSection item={{ ...baseItem, progress: { episode: 5, total: 10 } }} />)
     expect(screen.queryByTestId('progress-fill')).not.toBeInTheDocument()
     expect(screen.queryByTestId('progress-next')).not.toBeInTheDocument()
   })

@@ -30,6 +30,8 @@ const DB_ROW_2 = {
   rating10: null,
   watched_at: null,
   episode_progress: { season: 1, episode: 5 },
+  progress_season: 1,
+  progress_episode: 5,
   created_at: '2024-01-10T10:00:00Z',
 }
 

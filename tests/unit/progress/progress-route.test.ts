@@ -36,7 +36,16 @@ vi.mock('@/lib/supabase/server', () => ({
           },
           update: (row: Record<string, unknown>) => {
             updates.push(row)
-            const result = () => updateResults.shift() ?? { data: { ...entry, ...row }, error: null }
+            // Como el disparador user_media_sync_progress: si solo cambia el
+            // jsonb (escritor antiguo), temporada y episodio pasan a las columnas.
+            const mirrored =
+              'episode_progress' in row && !('progress_episode' in row)
+                ? {
+                    progress_season: (row.episode_progress as { season?: number } | null)?.season ?? null,
+                    progress_episode: (row.episode_progress as { episode?: number } | null)?.episode ?? null,
+                  }
+                : {}
+            const result = () => updateResults.shift() ?? { data: { ...entry, ...row, ...mirrored }, error: null }
             const q = {
               eq: () => q,
               select: () => ({ single: async () => result() }),
@@ -82,7 +91,12 @@ const BASE = {
   id: 'e1', user_id: USER.id, status: 'in_progress', score: null, watched_at: null,
   created_at: '2026-10-20T10:00:00Z', updated_at: '2026-10-20T10:00:00Z',
 }
-const legacyTv = (ep: Record<string, number>) => ({ ...BASE, media_id: 'tv_1399', episode_progress: ep })
+// Escritor antiguo: el disparador copia el jsonb a las columnas, que son lo que se lee (6.6).
+const legacyTv = (ep: Record<string, number>) => ({
+  ...BASE, media_id: 'tv_1399', ...COLUMNS,
+  progress_season: ep.season ?? null, progress_episode: ep.episode ?? null,
+  episode_progress: ep,
+})
 const migratedTv = (season: number, episode: number) => ({
   ...BASE, media_id: 'tv_1399', ...COLUMNS, progress_season: season, progress_episode: episode, progress_total: 10,
   episode_progress: { season, episode, total: 10 },
@@ -160,7 +174,7 @@ describe('antes de la migración (o sin PROGRESS_V2): solo episodios, en el json
   })
 
   it('un pendiente pasa a «En progreso» al marcar el primer episodio', async () => {
-    entry = { ...legacyTv({ episode: 1 }), status: 'pending', episode_progress: null }
+    entry = { ...legacyTv({ episode: 1 }), status: 'pending', ...COLUMNS, episode_progress: null }
     const { json } = await post({ mediaId: 'tv_1399', action: 'next' })
     expect(updates[0]).toEqual({ episode_progress: { season: 1, episode: 1 }, status: 'in_progress' })
     expect(json.status).toBe('in_progress')
