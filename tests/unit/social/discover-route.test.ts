@@ -1,7 +1,8 @@
 // ============================================================
 // KULTURA — Route Handler GET /api/groups/discover unit tests
-// Verifica auth, validación zod, query directa PostgREST y filtros JS
-// (scope/size/q/paginación) sobre el join anidado group_members.
+// Verifica auth, validación zod, los argumentos del RPC discover_groups y el
+// mapeo a DiscoverGroup. Filtros, orden y página van en SQL (saneamiento
+// 6.4) y se prueban en tests/integration/groups/discover.test.ts.
 // ============================================================
 
 import { describe, it, expect, vi, beforeEach } from 'vitest'
@@ -11,31 +12,16 @@ import { discoverResultSchema } from '@/lib/api/contracts/groups'
 // ── Mock factories ──────────────────────────────────────────────────────────
 
 const mockGetUser = vi.fn()
-const mockOrder = vi.fn()
-const mockIlike = vi.fn()
-const mockEq = vi.fn()
-const mockSelect = vi.fn()
+const mockRpc = vi.fn()
 const mockFrom = vi.fn()
 
-// Builder encadenable: .select().order().ilike() devuelven el mismo builder,
-// que es awaitable (thenable) y resuelve { data, error }. La data se controla
-// con `queryResult`.
-let queryResult: { data: unknown; error: unknown } = { data: [], error: null }
-
-function makeBuilder() {
-  const builder: Record<string, unknown> = {}
-  builder.select = mockSelect.mockReturnValue(builder)
-  builder.eq = mockEq.mockReturnValue(builder)
-  builder.order = mockOrder.mockReturnValue(builder)
-  builder.ilike = mockIlike.mockReturnValue(builder)
-  builder.then = (resolve: (v: typeof queryResult) => unknown) => resolve(queryResult)
-  return builder
-}
+let rpcResult: { data: unknown; error: unknown } = { data: [], error: null }
 
 vi.mock('@/lib/supabase/server', () => ({
   createClient: () => ({
     auth: { getUser: mockGetUser },
-    from: mockFrom.mockImplementation(() => makeBuilder()),
+    rpc: mockRpc.mockImplementation(async () => rpcResult),
+    from: mockFrom,
   }),
 }))
 
@@ -57,16 +43,18 @@ function makeRequest(query = ''): NextRequest {
 
 const AUTH_USER = { id: 'user-001' }
 
-/** Fila cruda de groups con join anidado group_members. */
-function groupRow(
+/** Fila del RPC discover_groups. */
+function rpcRow(
   id: string,
-  memberUserIds: string[],
   overrides: Partial<{
     owner_id: string
     name: string
     description: string | null
     cover_color: string
+    icon: string | null
     created_at: string
+    member_count: number
+    is_member: boolean
   }> = {}
 ) {
   return {
@@ -75,13 +63,11 @@ function groupRow(
     name: overrides.name ?? `Grupo ${id}`,
     description: overrides.description ?? null,
     cover_color: overrides.cover_color ?? '#E82020',
+    icon: overrides.icon ?? null,
     created_at: overrides.created_at ?? '2026-01-01T00:00:00Z',
-    group_members: memberUserIds.map((user_id) => ({ user_id })),
+    member_count: overrides.member_count ?? 1,
+    is_member: overrides.is_member ?? false,
   }
-}
-
-function setRows(rows: unknown[]) {
-  queryResult = { data: rows, error: null }
 }
 
 // ── Tests ─────────────────────────────────────────────────────────────────────
@@ -90,7 +76,7 @@ describe('GET /api/groups/discover', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     mockRateLimit.mockResolvedValue({ allowed: true, retryAfterSeconds: 0 })
-    queryResult = { data: [], error: null }
+    rpcResult = { data: [], error: null }
   })
 
   it('returns 401 if not authenticated', async () => {
@@ -99,7 +85,7 @@ describe('GET /api/groups/discover', () => {
     const { GET } = await import('@/app/api/groups/discover/route')
     const res = await GET(makeRequest())
     expect(res.status).toBe(401)
-    expect(mockFrom).not.toHaveBeenCalled()
+    expect(mockRpc).not.toHaveBeenCalled()
   })
 
   it('returns 429 when rate limited', async () => {
@@ -111,7 +97,7 @@ describe('GET /api/groups/discover', () => {
     expect(res.status).toBe(429)
     expect(res.headers.get('Retry-After')).toBe('30')
     expect((await res.json()).error.code).toBe('rate_limited')
-    expect(mockFrom).not.toHaveBeenCalled()
+    expect(mockRpc).not.toHaveBeenCalled()
   })
 
   it('returns 400 on invalid scope', async () => {
@@ -121,7 +107,7 @@ describe('GET /api/groups/discover', () => {
     const res = await GET(makeRequest('scope=bogus'))
     expect(res.status).toBe(400)
     expect((await res.json()).error).toMatchObject({ code: 'invalid_input', field: 'scope' })
-    expect(mockFrom).not.toHaveBeenCalled()
+    expect(mockRpc).not.toHaveBeenCalled()
   })
 
   it('returns 400 on negative offset', async () => {
@@ -140,163 +126,80 @@ describe('GET /api/groups/discover', () => {
     expect(res.status).toBe(400)
   })
 
-  it('queries groups with nested group_members and orders by created_at desc', async () => {
+  it('makes one RPC call with defaults and no table queries', async () => {
     mockGetUser.mockResolvedValue({ data: { user: AUTH_USER }, error: null })
-    setRows([])
 
     const { GET } = await import('@/app/api/groups/discover/route')
     const res = await GET(makeRequest())
     expect(res.status).toBe(200)
-    expect(mockFrom).toHaveBeenCalledWith('groups')
-    expect(mockSelect).toHaveBeenCalledWith(
-      '*, group_members(user_id)'
-    )
-    // Filtro explícito de visibilidad: solo grupos públicos (E45-c).
-    expect(mockEq).toHaveBeenCalledWith('is_public', true)
-    expect(mockOrder).toHaveBeenCalledWith('created_at', { ascending: false })
-    // Sin q → sin ilike.
-    expect(mockIlike).not.toHaveBeenCalled()
+    expect(mockRpc).toHaveBeenCalledTimes(1)
+    expect(mockRpc).toHaveBeenCalledWith('discover_groups', {
+      p_q: undefined,
+      p_scope: 'all',
+      p_size: 'all',
+      p_limit: 50,
+      p_offset: 0,
+    })
+    expect(mockFrom).not.toHaveBeenCalled()
   })
 
-  it('always filters out private groups via .eq(is_public, true)', async () => {
-    // El filtro de visibilidad es server-side (PostgREST + RLS): los grupos
-    // privados nunca llegan al cliente. Garantía a nivel unit = el .eq se aplica
-    // siempre, también con q/scope/size presentes.
+  it('passes q (trimmed, literal), scope, size, limit and offset to SQL', async () => {
     mockGetUser.mockResolvedValue({ data: { user: AUTH_USER }, error: null })
-    setRows([])
 
     const { GET } = await import('@/app/api/groups/discover/route')
-    const res = await GET(makeRequest('q=cine&scope=unjoined&size=small'))
+    const res = await GET(makeRequest('q=%20cine%25%20&scope=unjoined&size=small&limit=10&offset=20'))
     expect(res.status).toBe(200)
-    expect(mockEq).toHaveBeenCalledWith('is_public', true)
+    expect(mockRpc).toHaveBeenCalledWith('discover_groups', {
+      p_q: 'cine%',
+      p_scope: 'unjoined',
+      p_size: 'small',
+      p_limit: 10,
+      p_offset: 20,
+    })
   })
 
-  it('applies ilike on name when q is present', async () => {
+  it('maps RPC rows to camelCase DiscoverGroup, keeping SQL order', async () => {
     mockGetUser.mockResolvedValue({ data: { user: AUTH_USER }, error: null })
-    setRows([])
-
-    const { GET } = await import('@/app/api/groups/discover/route')
-    const res = await GET(makeRequest('q=cine'))
-    expect(res.status).toBe(200)
-    expect(mockIlike).toHaveBeenCalledWith('name', '%cine%')
-  })
-
-  it('derives memberCount/isMember and maps to camelCase DiscoverGroup', async () => {
-    mockGetUser.mockResolvedValue({ data: { user: AUTH_USER }, error: null })
-    setRows([
-      groupRow('group-001', ['user-002', 'user-003'], {
-        owner_id: 'user-002',
-        name: 'Cinéfilos',
-        description: 'Grupo de cine',
-        cover_color: '#E82020',
-        created_at: '2026-01-01T00:00:00Z',
-      }),
-    ])
+    rpcResult = {
+      data: [
+        rpcRow('group-001', {
+          name: 'Cinéfilos',
+          description: 'Grupo de cine',
+          member_count: 2,
+          is_member: true,
+          icon: 'film',
+        }),
+        rpcRow('group-002', { cover_color: '#123456' }),
+      ],
+      error: null,
+    }
 
     const { GET } = await import('@/app/api/groups/discover/route')
     const res = await GET(makeRequest())
     expect(res.status).toBe(200)
-    const body = await res.json()
-    expect(discoverResultSchema.parse(body.data)).toHaveLength(1)
-    expect(discoverResultSchema.parse(body.data)[0]).toEqual({
+    const groups = discoverResultSchema.parse((await res.json()).data)
+    expect(groups.map((g) => g.id)).toEqual(['group-001', 'group-002'])
+    expect(groups[0]).toEqual({
       id: 'group-001',
       ownerId: 'user-002',
       name: 'Cinéfilos',
       description: 'Grupo de cine',
+      // Rojo legacy remapeado al leer.
       coverColor: 'var(--accent-pink)',
-      // E-AVATAR-ICONS: grupos sin icono elegido.
-      icon: null,
+      icon: 'film',
       createdAt: '2026-01-01T00:00:00Z',
       memberCount: 2,
-      isMember: false,
+      isMember: true,
     })
+    expect(groups[1]).toMatchObject({ coverColor: '#123456', icon: null, memberCount: 1, isMember: false })
   })
 
-  it('sets isMember true when the caller is in group_members', async () => {
+  it('returns 500 when the RPC fails', async () => {
     mockGetUser.mockResolvedValue({ data: { user: AUTH_USER }, error: null })
-    setRows([groupRow('group-001', ['user-001', 'user-002'])])
+    rpcResult = { data: null, error: { message: 'boom' } }
 
     const { GET } = await import('@/app/api/groups/discover/route')
     const res = await GET(makeRequest())
-    const body = await res.json()
-    expect(discoverResultSchema.parse(body.data)[0].isMember).toBe(true)
-    expect(discoverResultSchema.parse(body.data)[0].memberCount).toBe(2)
-  })
-
-  it('scope=joined keeps only groups the caller belongs to', async () => {
-    mockGetUser.mockResolvedValue({ data: { user: AUTH_USER }, error: null })
-    setRows([
-      groupRow('g-joined', ['user-001']),
-      groupRow('g-other', ['user-002']),
-    ])
-
-    const { GET } = await import('@/app/api/groups/discover/route')
-    const res = await GET(makeRequest('scope=joined'))
-    const body = await res.json()
-    expect(discoverResultSchema.parse(body.data).map((g: { id: string }) => g.id)).toEqual(['g-joined'])
-  })
-
-  it('scope=unjoined drops groups the caller belongs to', async () => {
-    mockGetUser.mockResolvedValue({ data: { user: AUTH_USER }, error: null })
-    setRows([
-      groupRow('g-joined', ['user-001']),
-      groupRow('g-other', ['user-002']),
-    ])
-
-    const { GET } = await import('@/app/api/groups/discover/route')
-    const res = await GET(makeRequest('scope=unjoined'))
-    const body = await res.json()
-    expect(discoverResultSchema.parse(body.data).map((g: { id: string }) => g.id)).toEqual(['g-other'])
-  })
-
-  it('size buckets filter by member count', async () => {
-    mockGetUser.mockResolvedValue({ data: { user: AUTH_USER }, error: null })
-    const small = groupRow('g-small', Array.from({ length: 5 }, (_, i) => `u${i}`))
-    const medium = groupRow('g-medium', Array.from({ length: 20 }, (_, i) => `u${i}`))
-    const large = groupRow('g-large', Array.from({ length: 60 }, (_, i) => `u${i}`))
-    setRows([small, medium, large])
-
-    const { GET } = await import('@/app/api/groups/discover/route')
-
-    let res = await GET(makeRequest('size=small'))
-    let body = await res.json()
-    expect(discoverResultSchema.parse(body.data).map((g: { id: string }) => g.id)).toEqual(['g-small'])
-
-    res = await GET(makeRequest('size=medium'))
-    body = await res.json()
-    expect(discoverResultSchema.parse(body.data).map((g: { id: string }) => g.id)).toEqual(['g-medium'])
-
-    res = await GET(makeRequest('size=large'))
-    body = await res.json()
-    expect(discoverResultSchema.parse(body.data).map((g: { id: string }) => g.id)).toEqual(['g-large'])
-  })
-
-  it('orders by member count desc then created_at desc', async () => {
-    mockGetUser.mockResolvedValue({ data: { user: AUTH_USER }, error: null })
-    setRows([
-      groupRow('g-few', ['u1'], { created_at: '2026-03-01T00:00:00Z' }),
-      groupRow('g-many', ['u1', 'u2', 'u3'], { created_at: '2026-01-01T00:00:00Z' }),
-      groupRow('g-mid-new', ['u1', 'u2'], { created_at: '2026-05-01T00:00:00Z' }),
-    ])
-
-    const { GET } = await import('@/app/api/groups/discover/route')
-    const res = await GET(makeRequest())
-    const body = await res.json()
-    expect(discoverResultSchema.parse(body.data).map((g: { id: string }) => g.id)).toEqual(['g-many', 'g-mid-new', 'g-few'])
-  })
-
-  it('paginates with offset/limit after filtering', async () => {
-    mockGetUser.mockResolvedValue({ data: { user: AUTH_USER }, error: null })
-    // 3 grupos con member counts 3,2,1 → orden desc por count.
-    setRows([
-      groupRow('g-a', ['u1', 'u2', 'u3']),
-      groupRow('g-b', ['u1', 'u2']),
-      groupRow('g-c', ['u1']),
-    ])
-
-    const { GET } = await import('@/app/api/groups/discover/route')
-    const res = await GET(makeRequest('limit=1&offset=1'))
-    const body = await res.json()
-    expect(discoverResultSchema.parse(body.data).map((g: { id: string }) => g.id)).toEqual(['g-b'])
+    expect(res.status).toBe(500)
   })
 })
