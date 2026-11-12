@@ -17,7 +17,6 @@ import {
   progressToColumns,
   progressToLegacy,
   quickUnit,
-  rowHasProgressColumns,
   totalFor,
 } from '@/lib/library/progress'
 import { planFromMetadata, tvPlanFromTmdb } from '@/lib/library/progress-server'
@@ -57,20 +56,17 @@ describe('lectura: antes y después de la migración', () => {
     expect(progressFromJson({ total: 10 })).toBeNull()
   })
 
-  it('sin las columnas (antes) se lee el jsonb; con ellas (después) mandan las columnas', () => {
-    const before = { status: 'in_progress', episode_progress: { season: 1, episode: 3 } }
-    expect(rowHasProgressColumns(before)).toBe(false)
-    expect(progressFromRow(before)).toEqual({ season: 1, episode: 3 })
+  it('solo mandan las columnas: el jsonb episode_progress se ignora (saneamiento 6.6)', () => {
+    const soloJson = { status: 'in_progress', episode_progress: { season: 1, episode: 3 } }
+    expect(progressFromRow(soloJson)).toBeNull()
 
-    const after = {
-      ...before,
+    const conColumnas = {
+      ...soloJson,
       ...progressToColumns(null),
       progress_page: 120,
       progress_total: 350,
-      episode_progress: { page: 120, total: 350 },
     }
-    expect(rowHasProgressColumns(after)).toBe(true)
-    expect(progressFromRow(after)).toEqual({ page: 120, total: 350 })
+    expect(progressFromRow(conColumnas)).toEqual({ page: 120, total: 350 })
   })
 
   it('PostgREST devuelve numeric como número o cadena: las dos valen', () => {

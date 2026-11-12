@@ -10,7 +10,7 @@ import { localizeHeroSynopsis } from '@/lib/media/hero-synopsis'
 
 const item = (synopsis: string | null) => ({
   media_id: 'anime_al-1',
-  episode_progress: null,
+  progress: null,
   media: { id: 'anime_al-1', title: 'X', poster: null, year: 2020, type: 'anime', synopsis },
 })
 

@@ -105,8 +105,10 @@ describe('Inicio — progreso de las columnas progress_* (saneamiento 5.4)', () 
 
     expect(selects.filter((c) => c.includes('progress_page'))).toHaveLength(2)
 
-    const hero = findByType(tree, HeroStub) as { item: { episode_progress: unknown } }
-    expect(hero.item.episode_progress).toEqual({ page: 120, total: 300 })
+    expect(selects.some((c) => c.includes('episode_progress'))).toBe(false)
+
+    const hero = findByType(tree, HeroStub) as { item: { progress: unknown } }
+    expect(hero.item.progress).toEqual({ page: 120, total: 300 })
 
     const row = findByType(tree, ContinueRowStub) as { items: { mediaId: string; progress: unknown }[] }
     expect(row.items).toEqual([expect.objectContaining({ mediaId: 'manga_2', progress: { chapter: 42 } })])

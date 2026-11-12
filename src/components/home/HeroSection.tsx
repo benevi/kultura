@@ -5,7 +5,7 @@ import { Link } from '@/i18n/navigation'
 import { useTranslations } from 'next-intl'
 import { KButton } from '@/components/ui/KButton'
 import { ContinueProgress, canQuickAdvance } from '@/components/home/ContinueProgress'
-import { progressFromJson } from '@/lib/library/progress'
+import type { ProgressValue } from '@/lib/library/progress'
 import type { LibraryStatus } from '@/types/library'
 import {
   type KIcon,
@@ -20,11 +20,8 @@ import {
 
 export interface HeroItem {
   media_id: string
-  /**
-   * jsonb de siempre ({season?, episode}) o, con la migración de F-27, espejo
-   * de las columnas de progreso ({page, total}, {hours, total}…).
-   */
-  episode_progress: Record<string, unknown> | null
+  /** Progreso por formato, de las columnas `progress_*` (null = sin progreso). */
+  progress: ProgressValue | null
   /** Por defecto «en progreso» (es lo que pide Inicio para el hero). */
   status?: LibraryStatus
   media: {
@@ -76,13 +73,12 @@ export function HeroSection({ item, fullProgress = false }: HeroSectionProps) {
   // vacías de esas mismas secciones.
   if (!item?.media) return null
 
-  const { media, episode_progress } = item
+  const { media, progress } = item
   const externalId = media.id.split('_').slice(1).join('_')
   const href = `/media/${media.type}/${externalId}`
   const TypeIcon = TYPE_ICONS[media.type] ?? IconFilm
 
   // F-27: progreso por formato con «marcar siguiente» en 1 toque.
-  const progress = progressFromJson(episode_progress)
   const quick = canQuickAdvance(media.type, fullProgress)
 
   return (

@@ -13,7 +13,7 @@ import * as React from 'react'
 import { PosterFrame } from '@/components/media/PosterFrame'
 import { Link } from '@/i18n/navigation'
 import { ContinueProgress, canQuickAdvance } from '@/components/home/ContinueProgress'
-import { progressFromJson } from '@/lib/library/progress'
+import type { ProgressValue } from '@/lib/library/progress'
 import type { LibraryStatus } from '@/types/library'
 
 export interface ContinueRowItem {
@@ -22,8 +22,8 @@ export interface ContinueRowItem {
   poster?: string | null
   type: string
   status: LibraryStatus
-  /** jsonb `episode_progress` (forma antigua o espejo de las columnas). */
-  progress: unknown
+  /** Progreso por formato, de las columnas `progress_*`. */
+  progress: ProgressValue | null
 }
 
 interface ContinueRowProps {
@@ -64,7 +64,7 @@ export function ContinueRow({ title, items, fullProgress = false }: ContinueRowP
                   mediaId={item.mediaId}
                   mediaType={item.type}
                   title={item.title}
-                  progress={progressFromJson(item.progress)}
+                  progress={item.progress}
                   status={item.status}
                   variant="card"
                 />
