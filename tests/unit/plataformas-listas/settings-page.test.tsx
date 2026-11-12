@@ -41,7 +41,7 @@ describe('Ajustes › Mis plataformas', () => {
   it('con la tabla: la sección, con lo guardado y la región del idioma si no hay', async () => {
     const slot = await render({ data: { services: [8, 8, 63], region: null }, error: null })
     expect(slot?.type).toBe(PlatformsSection)
-    expect(slot?.props).toMatchObject({ userId: 'u1', initialServices: [8, 63], initialRegion: 'US', isDemo: false })
+    expect(slot?.props).toMatchObject({ initialServices: [8, 63], initialRegion: 'US', isDemo: false })
     expect(client.calls.find((c) => c.table === 'user_streaming_services')?.ops).toContainEqual({ name: 'eq', args: ['user_id', 'u1'] })
   })
 

@@ -58,7 +58,6 @@ export default async function SettingsPage({ params, searchParams }: SettingsPag
   // F-25: «Mis plataformas» solo si su tabla existe (migración aplicada).
   const platformsSlot = platforms ? (
     <PlatformsSection
-      userId={user.id}
       initialServices={platforms.services}
       initialRegion={platforms.region}
       isDemo={isDemoUser(user)}

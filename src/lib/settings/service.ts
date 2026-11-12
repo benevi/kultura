@@ -26,9 +26,10 @@ import {
   recordTermsAcceptance,
 } from '@/lib/account/account-state'
 import { SETTINGS_ERRORS } from '@/lib/settings/errors'
-import type { settingsPatchSchema } from '@/lib/api/contracts/settings'
+import type { platformsPutSchema, settingsPatchSchema } from '@/lib/api/contracts/settings'
 
 type SettingsInput = z.output<typeof settingsPatchSchema>
+type PlatformsInput = z.output<typeof platformsPutSchema>
 
 const taken = () => failure<null>('conflict', { field: 'username', message: SETTINGS_ERRORS.usernameTaken })
 const reserved = () => failure<null>('conflict', { field: 'username', message: SETTINGS_ERRORS.usernameReserved })
@@ -107,5 +108,28 @@ export async function updateSettings(supabase: SupabaseClient, user: User, input
   if (admin && accept_terms && !(await recordTermsAcceptance(admin, user))) return writeFailed()
   if (admin && onboarding_done && !(await markOnboarded(admin, user))) return writeFailed()
 
+  return success(null)
+}
+
+/**
+ * «Mis plataformas» (F-25): guarda la lista y la región en la tabla privada
+ * `user_streaming_services` con el JWT del usuario (RLS: solo su dueño).
+ * Upsert: la primera vez no hay fila. 0 filas = la RLS no dejó: fallo.
+ */
+export async function updatePlatforms(
+  supabase: SupabaseClient,
+  user: User,
+  input: PlatformsInput
+): Promise<ServiceResult<null>> {
+  const demo = demoForbidden<null>(user)
+  if (demo) return demo
+  const { data, error } = await supabase
+    .from('user_streaming_services')
+    .upsert(
+      { user_id: user.id, services: input.services, region: input.region, updated_at: new Date().toISOString() },
+      { onConflict: 'user_id' }
+    )
+    .select('user_id')
+  if (error || !data || data.length === 0) return writeFailed()
   return success(null)
 }
