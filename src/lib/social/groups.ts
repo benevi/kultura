@@ -180,6 +180,37 @@ export async function getGroupMembers(groupId: string, limit = 20): Promise<Grou
   return ((data ?? []) as unknown as GroupMemberRow[]).map(mapMember)
 }
 
+/** Publicación del muro de un grupo, con el autor. */
+export interface GroupPost {
+  id: string
+  content: string
+  created_at: string
+  user_id: string
+  users: { username: string; avatar_color: string; avatar_initials: string } | null
+}
+
+/** Cuántas publicaciones se cargan al abrir el grupo. */
+export const GROUP_FEED_PAGE = 50
+
+/**
+ * Últimas publicaciones del grupo (saneamiento 9.2: antes las pedía el
+ * navegador). La RLS solo deja leerlas a los miembros: a los demás, [].
+ */
+export async function getGroupPosts(groupId: string, limit = GROUP_FEED_PAGE): Promise<GroupPost[]> {
+  const supabase = await createClient()
+
+  const { data, error } = await supabase
+    .from('group_posts')
+    .select('id, content, created_at, user_id, users(username, avatar_color, avatar_initials)')
+    .eq('group_id', groupId)
+    .order('created_at', { ascending: false })
+    .limit(limit)
+
+  if (error) throw new Error(`Failed to fetch group posts: ${error.message}`)
+
+  return (data ?? []) as unknown as GroupPost[]
+}
+
 /**
  * Rol del usuario en el grupo. Retorna null si no es miembro.
  */

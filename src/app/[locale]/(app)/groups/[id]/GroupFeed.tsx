@@ -7,19 +7,16 @@ import { KButton } from '@/components/ui/KButton'
 import { InlineConfirm, ReportButton, useRestoreFocus } from '@/components/social/ReportButton'
 import { createGroupPost, deleteGroupPost } from '@/lib/groups/client'
 import { createClient } from '@/lib/supabase/client'
+import type { GroupPost } from '@/lib/social/groups'
 import { F0 } from '@/lib/design/f0-tokens'
 
-interface Post {
-  id: string
-  content: string
-  created_at: string
-  user_id: string
-  users: { username: string; avatar_color: string; avatar_initials: string } | null
-}
+type Post = GroupPost
 
 interface Props {
   groupId: string
   currentUserId: string
+  /** Últimas publicaciones, leídas en el servidor (saneamiento 9.2). */
+  initialPosts: Post[]
   /** F-11: el dueño puede borrar posts ajenos (con MODERATION_V2). */
   isOwner?: boolean
   /** F-11 (MODERATION_V2): denunciar posts y moderación del dueño. */
@@ -127,25 +124,18 @@ function relativeDate(iso: string, locale: string): string {
   return rtf.format(-Math.floor(hours / 24), 'day')
 }
 
-export function GroupFeed({ groupId, currentUserId, isOwner = false, moderation = false }: Props) {
+// Saneamiento 9.2: la primera carga llega del servidor; en el navegador,
+// Supabase solo para el realtime (y el autor de cada publicación nueva).
+export function GroupFeed({ groupId, currentUserId, initialPosts, isOwner = false, moderation = false }: Props) {
   const locale = useLocale()
   const t = useTranslations('groups')
-  const [posts, setPosts] = useState<Post[]>([])
-  const [loading, setLoading] = useState(true)
+  const [posts, setPosts] = useState<Post[]>(initialPosts)
   const [text, setText] = useState('')
   const [posting, setPosting] = useState(false)
   const [postError, setPostError] = useState<string | null>(null)
 
   useEffect(() => {
     const supabase = createClient()
-
-    supabase
-      .from('group_posts')
-      .select('id, content, created_at, user_id, users(username, avatar_color, avatar_initials)')
-      .eq('group_id', groupId)
-      .order('created_at', { ascending: false })
-      .limit(50)
-      .then(({ data }) => { setPosts((data as unknown as Post[]) ?? []); setLoading(false) })
 
     const channel = supabase
       .channel(`group:${groupId}`)
@@ -215,9 +205,7 @@ export function GroupFeed({ groupId, currentUserId, isOwner = false, moderation 
         </div>
       </form>
 
-      {loading ? (
-        <div className="text-sm text-center py-8" style={{ color: F0.muted }}>...</div>
-      ) : posts.length === 0 ? (
+      {posts.length === 0 ? (
         <div
           className="rounded-bento border p-8 text-center text-sm"
           style={{ background: F0.surface, borderColor: F0.stroke, color: F0.textSecondary }}
