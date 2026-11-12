@@ -15,7 +15,7 @@ import { InviteButton } from './InviteButton'
 import { MemberRemoveButton } from './MemberRemoveButton'
 import { ReportButton } from '@/components/social/ReportButton'
 import { isModerationV2 } from '@/lib/social/friends'
-import { getGroupById, getMemberRole, getGroupMembers } from '@/lib/social/groups'
+import { getGroupById, getMemberRole, getGroupMembers, getGroupPosts } from '@/lib/social/groups'
 import { F0 } from '@/lib/design/f0-tokens'
 import type { Metadata } from 'next'
 import { IconCrown } from '@/components/icons'
@@ -36,10 +36,12 @@ export default async function GroupPage({ params }: Props) {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/login')
 
-  const [group, memberRole, members] = await Promise.all([
+  // Las publicaciones van en paralelo: a quien no es miembro la RLS le da [].
+  const [group, memberRole, members, posts] = await Promise.all([
     getGroupById(id),
     getMemberRole(id, user.id),
     getGroupMembers(id, 20),
+    getGroupPosts(id),
   ])
 
   if (!group) notFound()
@@ -157,7 +159,7 @@ export default async function GroupPage({ params }: Props) {
         {/* Feed */}
         <div className="md:col-span-2">
           {isMember ? (
-            <GroupFeed groupId={id} currentUserId={user.id} isOwner={isOwner} moderation={moderation} />
+            <GroupFeed key={id} groupId={id} currentUserId={user.id} initialPosts={posts} isOwner={isOwner} moderation={moderation} />
           ) : (
             <div
               className="rounded-bento border p-8 text-center text-sm"
