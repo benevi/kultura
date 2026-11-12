@@ -2,9 +2,9 @@
 // KULTURA — Progreso por formato en el servidor (F-27)
 //
 // Bandera PROGRESS_V2=1 (Vercel); 20261215270001_progress.sql ya está
-// aplicada. Sin la bandera, todo como antes: solo progreso de episodios
-// (series y anime) en el jsonb `episode_progress`. Con ella se escriben las
-// columnas `progress_*` de todos los formatos.
+// aplicada. Sin la bandera, solo progreso de episodios (series y anime:
+// temporada y episodio). Con ella, todos los formatos. Siempre en las
+// columnas `progress_*` (saneamiento 6.6).
 //
 // El «plan» (cuántos episodios tiene cada temporada, capítulos, páginas,
 // horas medias) sale del proveedor por los clientes de `src/lib/api`, que
