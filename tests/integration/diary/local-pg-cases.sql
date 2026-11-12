@@ -1,3 +1,6 @@
+-- AVISO (saneamiento 6.6): la migración 20261231000004 borra user_media.score
+-- y el disparador user_media_sync_rating. Estos casos solo valen aplicando las
+-- migraciones HASTA 20261231000003 (inclusive); son el registro de F-24.
 -- Casos de F-24 (notas finas y diario) contra la migración aplicada en un
 -- Postgres local (sin Supabase). Cada caso imprime "OK <caso>" o aborta con
 -- "FALLO <caso>". Uso, en una base vacía (mismo arnés que moderation):

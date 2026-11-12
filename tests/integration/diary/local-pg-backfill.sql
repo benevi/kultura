@@ -1,3 +1,6 @@
+-- AVISO (saneamiento 6.6): la migración 20261231000004 borra user_media.score
+-- y el disparador user_media_sync_rating. Estos casos solo valen aplicando las
+-- migraciones HASTA 20261231000003 (inclusive); son el registro de F-24.
 -- Relleno de rating10 (paso 3 de 20261208240001_rating10_logs.sql) en un
 -- Postgres local. Uso:
 --   1. aplicar todas las migraciones MENOS la de F-24 (ver local-pg-cases.sql);

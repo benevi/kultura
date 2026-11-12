@@ -135,7 +135,7 @@ describe.skipIf(!configured)("RLS — caminos felices", () => {
       .upsert({ id: "movie_f02_happy", external_id: "f02_happy", type: "movie", title: "F02" });
     const { error } = await a.client
       .from("user_media")
-      .upsert({ user_id: a.id, media_id: "movie_f02_happy", status: "completed", score: 4 }, { onConflict: "user_id,media_id" });
+      .upsert({ user_id: a.id, media_id: "movie_f02_happy", status: "completed", rating10: 8 }, { onConflict: "user_id,media_id" });
     expect(error).toBeNull();
     const { data } = await b.client.from("user_media").select("media_id").eq("user_id", a.id);
     expect(data).toHaveLength(1);

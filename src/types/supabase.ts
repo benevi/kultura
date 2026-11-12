@@ -1277,7 +1277,6 @@ export type Database = {
           progress_updated_at: string | null
           progress_volume: number | null
           rating10: number | null
-          score: number | null
           status: string
           updated_at: string
           user_id: string
@@ -1300,7 +1299,6 @@ export type Database = {
           progress_updated_at?: string | null
           progress_volume?: number | null
           rating10?: number | null
-          score?: number | null
           status: string
           updated_at?: string
           user_id: string
@@ -1322,7 +1320,6 @@ export type Database = {
           progress_updated_at?: string | null
           progress_volume?: number | null
           rating10?: number | null
-          score?: number | null
           status?: string
           updated_at?: string
           user_id?: string
@@ -1802,7 +1799,6 @@ export interface DbUserMedia {
   user_id: string; // uuid → users.id
   media_id: string; // text → media.id
   status: "completed" | "in_progress" | "pending" | "abandoned";
-  score: number | null; // smallint 1-5 (el disparador user_media_sync_rating la deriva de rating10)
   /** numeric(3,1) 0,5-10 en pasos de 0,5 (F-24). Ausente antes de 20261208240001. */
   rating10?: number | null;
   /** F-24. Ausente antes de 20261208240001. */

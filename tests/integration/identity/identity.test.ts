@@ -38,7 +38,7 @@ describe.skipIf(!configured)("F-12 identidad (proyecto de test)", () => {
       .upsert({ id: "movie_f12_lib", external_id: "f12_lib", type: "movie", title: "F12" });
     const { error } = await owner.client
       .from("user_media")
-      .upsert({ user_id: owner.id, media_id: "movie_f12_lib", status: "completed", score: 5 }, { onConflict: "user_id,media_id" });
+      .upsert({ user_id: owner.id, media_id: "movie_f12_lib", status: "completed", rating10: 10 }, { onConflict: "user_id,media_id" });
     if (error) throw new Error(error.message);
   });
 
