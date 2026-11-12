@@ -340,7 +340,7 @@
     "add": {
       "action": "Add the whole franchise",
       "hint": "{count, plural, one {Adds the title you don't have yet as Pending.} other {Adds the # titles you don't have yet as Pending.}}",
-      "progress": "Adding {done} of {total}…",
+      "progress": "{total, plural, one {Adding # title…} other {Adding # titles…}}",
       "waiting": "Waiting {seconds} s to stay within the adding limit…",
       "done": "{count, plural, one {Added # title as Pending.} other {Added # titles as Pending.}}",
       "partial": "Added {done} of {total}. Press again for the rest.",

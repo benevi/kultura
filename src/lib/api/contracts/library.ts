@@ -43,6 +43,32 @@ export type LibraryPostInput = z.infer<typeof libraryPostSchema>
 
 export const libraryDeleteSchema = z.object({ mediaId: mediaIdSchema })
 
+/** Títulos por petición de POST /api/library/bulk (los de una franquicia). */
+export const LIBRARY_BULK_MAX = 24
+
+/**
+ * POST /api/library/bulk (saneamiento 6.4): añade como Pendiente los que no
+ * estén ya. Solo inserta: nunca toca estado, nota ni progreso existentes.
+ */
+export const libraryBulkSchema = z.object({
+  mediaIds: z
+    .array(mediaIdSchema)
+    .min(1)
+    .max(LIBRARY_BULK_MAX)
+    .refine((ids) => new Set(ids).size === ids.length, 'mediaIds must be unique'),
+})
+
+export type LibraryBulkInput = z.infer<typeof libraryBulkSchema>
+
+/** `data` de POST /api/library/bulk: añadidos, ya estaban y sin ficha del proveedor. */
+export const libraryBulkResultSchema = z.object({
+  added: z.array(z.string()),
+  skipped: z.array(z.string()),
+  failed: z.array(z.string()),
+})
+
+export type LibraryBulkResult = z.infer<typeof libraryBulkResultSchema>
+
 // ── Respuestas ───────────────────────────────────────────────────────────────
 
 const nullableNumber = z.number().nullable()

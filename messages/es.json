@@ -340,7 +340,7 @@
     "add": {
       "action": "Añadir toda la franquicia",
       "hint": "{count, plural, one {Añade como Pendiente el título que aún no tienes.} other {Añade como Pendiente los # títulos que aún no tienes.}}",
-      "progress": "Añadiendo {done} de {total}…",
+      "progress": "{total, plural, one {Añadiendo # título…} other {Añadiendo # títulos…}}",
       "waiting": "Esperando {seconds} s para no pasar del límite de añadidos…",
       "done": "{count, plural, one {Añadido # título como Pendiente.} other {Añadidos # títulos como Pendiente.}}",
       "partial": "Añadidos {done} de {total}. Vuelve a pulsar para el resto.",

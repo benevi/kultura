@@ -19,7 +19,7 @@ import type { SupabaseClient, User } from '@supabase/supabase-js'
 import { invalidateLibraryCaches as invalidateCaches } from '@/lib/library/invalidate'
 import type { DbUserMedia, DbUserMediaLog } from '@/types/supabase'
 import type { DiaryConfig, DiaryLog, EpisodeProgress, LibraryStatus, RatingScale } from '@/types/library'
-import { upsertMediaFromProvider } from '@/lib/media/upsert-from-provider'
+import { ensureMediaRows, upsertMediaFromProvider } from '@/lib/media/upsert-from-provider'
 import { track } from '@/lib/analytics/track'
 import { createLogger } from '@/lib/logger'
 import { entryRating10, rating10ToScore, scoreToRating10 } from '@/lib/library/rating'
@@ -34,7 +34,7 @@ import {
   type LibraryEntryWithProgress,
 } from '@/lib/library/progress'
 import { progressV2Enabled } from '@/lib/library/progress-server'
-import type { LibraryPostInput } from '@/lib/api/contracts/library'
+import type { LibraryBulkResult, LibraryPostInput } from '@/lib/api/contracts/library'
 import { failure, success, type ServiceResult } from '@/lib/api/result'
 
 const log = createLogger('library/service')
@@ -218,6 +218,77 @@ export async function removeEntry(
   if (count === 0) return failure('not_found', { message: 'Entry not found' })
   invalidateCaches(userId)
   return success(null)
+}
+
+// ── Añadir en bloque (saneamiento 6.4) ───────────────────────────────────────
+
+/**
+ * Añade como Pendiente los títulos que no estén ya en la biblioteca («Añadir
+ * toda la franquicia»). SOLO INSERTA (`ignoreDuplicates`): lo que ya esté,
+ * también si entra entretanto desde otra pestaña, conserva estado, nota y
+ * progreso. Las fichas que falten se piden al proveedor por lotes, con
+ * concurrencia y tiempo acotados (`ensureMediaRows`); las que no lleguen van
+ * en `failed` y se pueden reintentar. Antes eran N POST /api/library.
+ */
+export async function addPendingBulk(
+  supabase: SupabaseClient,
+  user: User,
+  mediaIds: string[],
+  opts: { locale: string | null }
+): Promise<ServiceResult<LibraryBulkResult>> {
+  const { data: ownedRows, error: ownedError } = await supabase
+    .from('user_media')
+    .select('media_id')
+    .eq('user_id', user.id)
+    .in('media_id', mediaIds)
+  if (ownedError) {
+    log.error('Failed to read library for bulk add', { err: ownedError, userId: user.id })
+    return failure('internal', { message: 'Failed to add titles' })
+  }
+  const owned = new Set(((ownedRows ?? []) as { media_id: string }[]).map((r) => r.media_id))
+  const wanted = mediaIds.filter((id) => !owned.has(id))
+
+  let available: Set<string>
+  try {
+    available = (await ensureMediaRows(wanted, { locale: opts.locale })).available
+  } catch (err) {
+    log.error('Failed to cache media for bulk add', { err, userId: user.id })
+    return failure('internal', { message: 'Failed to cache media' })
+  }
+  const insertable = wanted.filter((id) => available.has(id))
+  const failed = wanted.filter((id) => !available.has(id))
+
+  let added: string[] = []
+  if (insertable.length > 0) {
+    const { data, error } = await supabase
+      .from('user_media')
+      .upsert(
+        insertable.map((media_id) => ({ user_id: user.id, media_id, status: 'pending' as const })),
+        { onConflict: 'user_id,media_id', ignoreDuplicates: true }
+      )
+      .select('media_id')
+    if (error) {
+      log.error('Failed to bulk add library entries', { err: error, userId: user.id })
+      return failure('internal', { message: 'Failed to add titles' })
+    }
+    // RETURNING solo trae las insertadas: las demás entraron entretanto.
+    const inserted = new Set(((data ?? []) as { media_id: string }[]).map((r) => r.media_id))
+    added = insertable.filter((id) => inserted.has(id))
+  }
+  const skipped = mediaIds.filter((id) => !added.includes(id) && !failed.includes(id))
+
+  if (added.length > 0) {
+    invalidateCaches(user.id)
+    await Promise.all(
+      added.map((id) =>
+        track(user, 'library_add', { media_type: id.split('_')[0], status: 'pending' }, {
+          dedupeKey: `library_add:${user.id}:${id}`,
+        })
+      )
+    )
+  }
+
+  return success({ added, skipped, failed })
 }
 
 // ── Diario y escala (F-24) ───────────────────────────────────────────────────
