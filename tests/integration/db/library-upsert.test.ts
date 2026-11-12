@@ -83,7 +83,7 @@ describe("Library upsert — flujo completo", () => {
     expect(data!.status).toBe("pending");
   });
 
-  it("UPDATE (upsert): actualiza status y score sin duplicar", async () => {
+  it("UPDATE (upsert): actualiza status y rating10 sin duplicar (como la app: nunca score)", async () => {
     const client = await clientAs(USER_EMAIL, USER_PASSWORD);
 
     const { error } = await client.from("user_media").upsert(
@@ -91,7 +91,7 @@ describe("Library upsert — flujo completo", () => {
         user_id: userId,
         media_id: TEST_MEDIA_ID,
         status: "completed",
-        score: 5,
+        rating10: 9,
       },
       { onConflict: "user_id,media_id" }
     );
@@ -101,15 +101,17 @@ describe("Library upsert — flujo completo", () => {
     // Verificar que hay exactamente 1 fila (no duplicado)
     const { data, count } = await client
       .from("user_media")
-      .select("status, score", { count: "exact" })
+      .select("status, rating10, score", { count: "exact" })
       .match({ user_id: userId, media_id: TEST_MEDIA_ID });
 
     expect(count).toBe(1);
     expect(data![0].status).toBe("completed");
+    expect(Number(data![0].rating10)).toBe(9);
+    // Mientras exista la columna, el disparador user_media_sync_rating la rellena.
     expect(data![0].score).toBe(5);
   });
 
-  it("score NULL es válido (sin puntuar)", async () => {
+  it("rating10 NULL es válido (sin puntuar)", async () => {
     const client = await clientAs(USER_EMAIL, USER_PASSWORD);
 
     const { error } = await client.from("user_media").upsert(
@@ -117,7 +119,7 @@ describe("Library upsert — flujo completo", () => {
         user_id: userId,
         media_id: TEST_MEDIA_ID,
         status: "in_progress",
-        score: null,
+        rating10: null,
       },
       { onConflict: "user_id,media_id" }
     );
@@ -125,7 +127,7 @@ describe("Library upsert — flujo completo", () => {
     expect(error).toBeNull();
   });
 
-  it("score fuera de rango (0 o 6) es rechazado por CHECK constraint", async () => {
+  it("rating10 fuera de rango o de paso (11, 7,3) es rechazado por CHECK constraint", async () => {
     const client = await clientAs(USER_EMAIL, USER_PASSWORD);
 
     const { error } = await client.from("user_media").upsert(
@@ -133,12 +135,18 @@ describe("Library upsert — flujo completo", () => {
         user_id: userId,
         media_id: TEST_MEDIA_ID,
         status: "completed",
-        score: 6, // Viola CHECK (score between 1 and 5)
+        rating10: 11, // Viola user_media_rating10_check (0,5-10)
       },
       { onConflict: "user_id,media_id" }
     );
 
     expect(error).not.toBeNull();
+
+    const { error: stepError } = await client.from("user_media").upsert(
+      { user_id: userId, media_id: TEST_MEDIA_ID, status: "completed", rating10: 7.3 },
+      { onConflict: "user_id,media_id" }
+    );
+    expect(stepError).not.toBeNull();
   });
 
   it("status inválido es rechazado por CHECK constraint", async () => {

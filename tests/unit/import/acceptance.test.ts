@@ -143,7 +143,7 @@ describe('aceptación F-26', () => {
     expect(rows.every((r) => r.user_id === 'user-1' && r.status === 'completed')).toBe(true)
     const shawshank = rows.find((r) => r.media_id === `movie_${catalog.expected[0]}`)!
     expect(shawshank.rating10).toBe(8) // 4★ en el fixture
-    expect(shawshank.score).toBe(4)
+    expect(shawshank).not.toHaveProperty('score') // la rellena el disparador
 
     // Reimportar el mismo archivo no duplica ni cambia nada.
     const again = await runImport({ source: parsed.source, items: parsed.items, send, sleep: async () => undefined })

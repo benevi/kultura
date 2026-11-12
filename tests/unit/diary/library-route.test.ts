@@ -81,13 +81,13 @@ afterEach(() => {
 })
 
 describe('sin la bandera (hoy)', () => {
-  it('escribe solo score, como siempre (no manda rating10, favorite ni diario)', async () => {
+  it('un cliente antiguo con score 5 → escribe rating10 10, nunca score (ni favorite ni diario)', async () => {
     upsertResults.push({ data: ROW, error: null })
     const { status, json } = await call({ mediaId: 'movie_550', status: 'completed', score: 5, log: { review: 'x' } })
     expect(status).toBe(200)
     expect(upserts[0]).toEqual({
       // Saneamiento 1.2: lo que no llega (fecha, progreso) no se manda.
-      user_id: USER.id, media_id: 'movie_550', status: 'completed', score: 5,
+      user_id: USER.id, media_id: 'movie_550', status: 'completed', rating10: 10,
     })
     expect(logInserts).toHaveLength(0)
     expect(json.log).toBeNull()
@@ -95,11 +95,11 @@ describe('sin la bandera (hoy)', () => {
     expect(json.entry).toMatchObject({ score: 5, rating10: 10, favorite: false })
   })
 
-  it('una nota fina que llegue se redondea a score (9 → 5)', async () => {
+  it('una nota fina que llegue se guarda sin pérdida (9), sin score', async () => {
     upsertResults.push({ data: ROW, error: null })
     await call({ mediaId: 'movie_550', status: 'completed', rating10: 9 })
-    expect(upserts[0]).toMatchObject({ score: 5 })
-    expect(upserts[0]).not.toHaveProperty('rating10')
+    expect(upserts[0]).toMatchObject({ rating10: 9 })
+    expect(upserts[0]).not.toHaveProperty('score')
   })
 })
 
@@ -123,7 +123,7 @@ describe('upsert parcial (saneamiento 1.2)', () => {
   it('null explícito sí borra (el diálogo sustituye la entrada entera)', async () => {
     upsertResults.push({ data: ROW, error: null })
     await call({ mediaId: 'movie_550', status: 'pending', score: null, watchedAt: null, episodeProgress: null })
-    expect(upserts[0]).toMatchObject({ score: null, watched_at: null, episode_progress: null })
+    expect(upserts[0]).toMatchObject({ rating10: null, watched_at: null, episode_progress: null })
   })
 
   it('el apunte del diario sin nota propia ni de la entrada va con null', async () => {
@@ -137,7 +137,7 @@ describe('upsert parcial (saneamiento 1.2)', () => {
 describe('con RATING_SCALE_10=1', () => {
   beforeEach(() => vi.stubEnv('RATING_SCALE_10', '1'))
 
-  it('guarda rating10 (sin pérdida) y score derivado, favorito y el apunte del diario', async () => {
+  it('guarda rating10 (sin pérdida, nunca score), favorito y el apunte del diario', async () => {
     upsertResults.push({ data: MIGRATED_ROW, error: null })
     logResults.push({
       data: {
@@ -151,7 +151,8 @@ describe('con RATING_SCALE_10=1', () => {
       log: { rewatch: true, review: 'Mejor la segunda vez' },
     })
     expect(status).toBe(200)
-    expect(upserts[0]).toMatchObject({ score: 5, rating10: 9, favorite: true })
+    expect(upserts[0]).toMatchObject({ rating10: 9, favorite: true })
+    expect(upserts[0]).not.toHaveProperty('score')
     expect(logInserts[0]).toEqual({
       user_id: USER.id, media_id: 'movie_550', watched_on: '2026-10-20', rewatch: true, rating10: 9,
       review: 'Mejor la segunda vez', spoiler: false, private_note: null,
@@ -163,7 +164,8 @@ describe('con RATING_SCALE_10=1', () => {
   it('un cliente antiguo que manda score 3 → rating10 6', async () => {
     upsertResults.push({ data: { ...ROW, score: 3, rating10: 6 }, error: null })
     await call({ mediaId: 'movie_550', status: 'completed', score: 3 })
-    expect(upserts[0]).toMatchObject({ score: 3, rating10: 6 })
+    expect(upserts[0]).toMatchObject({ rating10: 6 })
+    expect(upserts[0]).not.toHaveProperty('score')
   })
 
   it('sin favorite en el cuerpo no lo toca (no lo apaga)', async () => {
@@ -172,10 +174,11 @@ describe('con RATING_SCALE_10=1', () => {
     expect(upserts[0]).not.toHaveProperty('favorite')
   })
 
-  it('rating10 null quita la nota (y score)', async () => {
+  it('rating10 null quita la nota (score lo vacía el disparador)', async () => {
     upsertResults.push({ data: { ...ROW, score: null, rating10: null }, error: null })
     await call({ mediaId: 'movie_550', status: 'pending', rating10: null })
-    expect(upserts[0]).toMatchObject({ score: null, rating10: null })
+    expect(upserts[0]).toMatchObject({ rating10: null })
+    expect(upserts[0]).not.toHaveProperty('score')
   })
 
   it('la fecha del apunte, si no llega, es la de la entrada o hoy', async () => {

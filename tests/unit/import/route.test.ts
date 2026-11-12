@@ -136,7 +136,7 @@ describe('POST /api/account/import/external', () => {
       { key: '1', outcome: 'invalid' },
     ])
     expect(state.db.tables.user_media).toEqual([
-      expect.objectContaining({ user_id: 'user-1', media_id: 'movie_438631', status: 'completed', score: 5, watched_at: '2021-10-01' }),
+      expect.objectContaining({ user_id: 'user-1', media_id: 'movie_438631', status: 'completed', rating10: 9, watched_at: '2021-10-01' }),
     ])
     expect(state.invalidated).toBe(2)
   })

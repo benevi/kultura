@@ -176,7 +176,7 @@ describe('POST /api/account/import', () => {
         user_id: AUTH_USER.id,
         media_id: 'movie_550',
         status: 'completed',
-        score: 5,
+        rating10: 10,
         watched_at: '2026-01-01',
       },
     ])
@@ -209,8 +209,9 @@ describe('POST /api/account/import', () => {
 
   it('una puntuación fuera de 1-5 se guarda como nula en vez de reventar', async () => {
     await post({ library: [{ ...ENTRY, score: 99 }] })
-    const rows = writes['user_media.upsert'][0][0] as Array<{ score: number | null }>
-    expect(rows[0].score).toBeNull()
+    const rows = writes['user_media.upsert'][0][0] as Array<{ rating10: number | null; score?: unknown }>
+    expect(rows[0].rating10).toBeNull()
+    expect(rows[0]).not.toHaveProperty('score')
   })
 
   it('una entrada repetida en el fichero se importa una sola vez', async () => {

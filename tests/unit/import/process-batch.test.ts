@@ -84,10 +84,10 @@ describe('processImportBatch', () => {
     { watchedOn: '2022-03-02', rewatch: true, rating10: 8.5, review: null, spoiler: false },
   ]
 
-  it('sin RATING_SCALE_10: escribe score (redondeado) y no toca el diario', async () => {
+  it('sin RATING_SCALE_10: escribe rating10 sin pérdida (nunca score) y no toca el diario', async () => {
     const r = await run([item({ ids: { tmdb: 1 }, rating10: 9, watchedAt: '2022-03-02', logs })])
     expect(r.results[0]).toMatchObject({ outcome: 'added', mediaId: 'movie_1', by: 'tmdb' })
-    expect(state.db.tables.user_media[0]).toEqual({ user_id: 'u1', media_id: 'movie_1', status: 'completed', score: 5, watched_at: '2022-03-02' })
+    expect(state.db.tables.user_media[0]).toEqual({ user_id: 'u1', media_id: 'movie_1', status: 'completed', rating10: 9, watched_at: '2022-03-02' })
     expect(state.db.calls).not.toContain('user_media_logs.insert')
     expect(r.diaryImported).toBe(0)
   })
@@ -97,7 +97,7 @@ describe('processImportBatch', () => {
     const items = [item({ ids: { tmdb: 1 }, rating10: 9, watchedAt: '2022-03-02', logs })]
     const first = await run(items)
     expect(first.diaryImported).toBe(2)
-    expect(state.db.tables.user_media[0]).toMatchObject({ rating10: 9, score: 5 })
+    expect(state.db.tables.user_media[0]).toMatchObject({ rating10: 9 })
     expect(state.db.tables.user_media_logs).toHaveLength(2)
     expect(state.db.tables.user_media_logs[0]).toMatchObject({ user_id: 'u1', media_id: 'movie_1', private_note: null })
 
@@ -115,15 +115,15 @@ describe('processImportBatch', () => {
       item({ key: 'b', ids: { tmdb: 2 }, status: 'pending' }),
     ])
     expect(r.results.map((x) => x.outcome)).toEqual(['updated', 'kept'])
-    expect(state.db.tables.user_media[0]).toMatchObject({ status: 'completed', score: 3, watched_at: '2020-05-05' })
-    expect(state.db.tables.user_media[1]).toMatchObject({ status: 'completed', score: 4, watched_at: '2019-01-01' })
+    expect(state.db.tables.user_media[0]).toMatchObject({ status: 'completed', rating10: 6, watched_at: '2020-05-05' })
+    expect(state.db.tables.user_media[1]).toMatchObject({ status: 'completed', rating10: 8, watched_at: '2019-01-01' })
   })
 
   it('otra cuenta con el mismo título no se toca', async () => {
     state.db.tables.user_media.push({ user_id: 'otra', media_id: 'movie_1', status: 'pending', score: null, rating10: null, watched_at: null })
     await run([item({ ids: { tmdb: 1 }, rating10: 10 })])
-    expect(state.db.tables.user_media.find((r) => r.user_id === 'otra')).toMatchObject({ status: 'pending', score: null })
-    expect(state.db.tables.user_media.find((r) => r.user_id === 'u1')).toMatchObject({ score: 5 })
+    expect(state.db.tables.user_media.find((r) => r.user_id === 'otra')).toMatchObject({ status: 'pending', rating10: null })
+    expect(state.db.tables.user_media.find((r) => r.user_id === 'u1')).toMatchObject({ rating10: 10 })
   })
 
   it('dos filas a la misma ficha: una sola entrada, mismo resultado para las dos', async () => {
@@ -132,7 +132,7 @@ describe('processImportBatch', () => {
       item({ key: 'b', ids: { tmdb: 1 }, rating10: 6 }),
     ])
     expect(state.db.tables.user_media).toHaveLength(1)
-    expect(state.db.tables.user_media[0]).toMatchObject({ status: 'completed', score: 3 })
+    expect(state.db.tables.user_media[0]).toMatchObject({ status: 'completed', rating10: 6 })
     expect(r.results.map((x) => x.outcome)).toEqual(['added', 'added'])
   })
 
