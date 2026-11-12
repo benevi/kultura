@@ -304,6 +304,8 @@ export async function checkRateLimitDistributed(
 export const LIMITS = {
   /** POST /api/library — 30 req/min por usuario */
   library: { windowMs: 60_000, max: 30 },
+  /** POST /api/library/bulk — 5 req/min por usuario (cada una, hasta 24 títulos) */
+  library_bulk: { windowMs: 60_000, max: 5 },
   /** POST /api/friends — 10 req/min por usuario */
   friends: { windowMs: 60_000, max: 10 },
   /** POST /api/recommendations — 10 req/min por usuario */

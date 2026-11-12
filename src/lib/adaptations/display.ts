@@ -16,11 +16,12 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { loadMediaDetail } from "@/lib/media/detail-data";
 import { isProviderQuotaHot } from "@/lib/api/http";
 import { linkTitle, type AdaptationLink, type AdaptationRelation } from "./map";
+import { LIBRARY_BULK_MAX } from "@/lib/api/contracts/library";
 
 /** Tarjetas que enseña la ficha. */
 export const DISPLAY_LIMIT = 12;
-/** Títulos que "Añadir toda la franquicia" añade de una vez (límite de /api/library: 30/min). */
-export const FRANCHISE_ADD_LIMIT = 24;
+/** Títulos que "Añadir toda la franquicia" añade de una vez (una petición a /api/library/bulk). */
+export const FRANCHISE_ADD_LIMIT = LIBRARY_BULK_MAX;
 /** Portadas que se piden al proveedor por ficha si no están en `media`. */
 const POSTER_LOOKUPS = 6;
 const POSTER_LOOKUP_TIMEOUT_MS = 2500;
