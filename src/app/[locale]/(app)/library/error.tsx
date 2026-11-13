@@ -7,6 +7,6 @@ interface Props {
   reset: () => void
 }
 
-export default function LibraryError({ reset }: Props) {
-  return <ErrorState reset={reset} />
+export default function LibraryError({ error, reset }: Props) {
+  return <ErrorState error={error} reset={reset} />
 }

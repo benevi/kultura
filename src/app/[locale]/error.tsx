@@ -7,6 +7,6 @@ interface Props {
   reset: () => void
 }
 
-export default function LocaleError({ reset }: Props) {
-  return <ErrorState reset={reset} minHeight="min-h-[60vh]" />
+export default function LocaleError({ error, reset }: Props) {
+  return <ErrorState error={error} reset={reset} minHeight="min-h-[60vh]" />
 }
