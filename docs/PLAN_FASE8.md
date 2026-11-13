@@ -17,7 +17,7 @@ Leyenda: **[V]** comprobado en el repo · **[E]** estimación orientativa · **[
 - **8B (condicional):** canvas persistente, vuelo, salas 2–4, sonido, KTX2/profundidad, Wrapped y premios. Solo si pasan G2, G3b, G4, G6 (y G0 para 8B.3).
 - **Puertas:** G0 legal · G1 rendimiento en dispositivo · G2 canvas persistente · G3a/G3b usuarios · G4 valor en campo · G5 revisión de alcance · G6 coste de oportunidad (≥ 12 activos a 30 días). Tabla única en §3.
 - **Lo primero (8A.0):** declarar en `/privacy` lo que ya ocurre con las portadas (optimizador de Vercel y OG) y a Vercel como encargado; preguntarlo a asesoría legal.
-- **Coste objetivo:** ≈ 0 €/mes. Herramientas libres o gratuitas (Penpot, Storybook, Playwright, fuentes OFL, dispositivos propios o prestados, voluntarios, asesoría jurídica gratuita).
+- **Coste objetivo:** ≈ 0 €/mes. Herramientas libres o gratuitas (Google Stitch, Storybook, Playwright, fuentes OFL, dispositivos propios o prestados, voluntarios, asesoría jurídica gratuita).
 - **Tiempo:** sin fechas límite. Estimación orientativa 8A en código (8A.2–8A.6): 13,5–22 semanas base, 18–28,5 con +30 % (§4; corregido 2026-11-13: tabla recalculada base × 1,3). Manda el orden de las puertas, no el calendario.
 
 ---
@@ -90,7 +90,7 @@ Rama en curso (H20): el `error.tsx` que se fusione antes del cierre de la 12 es 
 - **Trabajo:**
   - **PR 8A.0-P (D-HOY-3, el primero de todo): P-7** (`/privacy` cuenta portadas por `/_next/image` y OG) **y P-10** (Vercel encargado de optimización/caché de imágenes y OG), fusionado en 8A.0: es un tratamiento que **ya ocurre** (art. 13 RGPD), no puede esperar a 8A.2. Texto en §9.3. D-HOY-1 (inventario por host con `docs/legal/hoy-inventario.sql` + componentes `next/image` sin `loader`) y D-HOY-2 (decisión escrita en `docs/legal/decision-hoy.md`: opción (a) elegida por Víctor el 2026-11-12) en el mismo paquete.
   - Encargo legal mínimo **enviado** (P1, P2, P4, P7, P8, P14; resto, opcional; el optimizador lo cubren P1 y P2) a una asesoría gratuita (§9.6); en paralelo, petición de permiso escrito a cada proveedor y M1 (lectura de términos con copia fechada en `docs/legal/terminos/`).
-  - Fuentes OFL elegidas (§5.4); biblia de dirección de arte (V1) y tablero en Penpot.
+  - Fuentes OFL elegidas (§5.4); biblia de dirección de arte (V1) y tablero en Google Stitch.
   - Reclutamiento de R1 (3 usuarios actuales + 2 externos, ≥ 1 con lector) y del panel visual (3 voluntarias externas, ≥ 1 diseñadora con portfolio).
   - Inventario de notificaciones existentes (H17); `docs/ops/vercel-plan.md` (plan, cuota de optimización de imágenes, alerta de 50 $ en Spend Management) (H9); `LICENSES.csv`, `NOTICE` y test (L1 de legal; corregido 2026-11-13: antes «R1 de legal», renombrado para no confundir con el riesgo R1); canal de retirada en `/legal`.
   - Dispositivos de G1: inventario de los propios y préstamos acordados (§8.3).
@@ -99,7 +99,7 @@ Rama en curso (H20): el `error.tsx` que se fusione antes del cierre de la 12 es 
 ### 8A.1 · Concepto, spikes técnicos y validación — 3,5–4,5 sem [E]
 - **Entra:** 8A.0 cerrada.
 - **Trabajo (orden interno obligatorio):**
-  1. Ficha, biblioteca e inicio en 2D alta fidelidad (prototipo navegable, Penpot o rama desechable). En paralelo, spikes **técnicos no visuales S7** (AVIF/WebP + CORS; produce `CORS_OK_HOSTS` con test) **y S10**.
+  1. Ficha, biblioteca e inicio en 2D alta fidelidad (prototipo navegable, Google Stitch o rama desechable). En paralelo, spikes **técnicos no visuales S7** (AVIF/WebP + CORS; produce `CORS_OK_HOSTS` con test) **y S10**.
   2. **Panel visual** a ciegas sobre el prototipo (§5.1) → `docs/design/panel-YYYY-MM.md`. Sin ficha 2D aprobada no empieza ningún spike visual.
   3. Ficha con T1 Cine; spikes **S1** (bundle), **S3** (dispositivo), **S5** (CSP/SW Safari iOS y PWA sin imágenes, en rama desechable), **S6** (a11y y comprensión), **S9** (RUM 3D mínimo).
   4. **P-9** (consentimiento y protocolo del estudio) firmado antes de R1; sin él no hay G3a.
@@ -196,7 +196,7 @@ Trabajo visual en 8A (V1–V8, V10, V11, sin V3b): **≈ 8–12 semanas** (≈ 7
 | Aspecto | Regla |
 |---|---|
 | Quién | 3 personas ajenas, ≥ 1 diseñadora con portfolio publicado; sin relación laboral ni familiar con Víctor. **Voluntarias, sin pago** |
-| Material | Prototipo navegable (Penpot o rama desechable) de la ficha 2D: día y noche, móvil y escritorio, 3 obras de formatos distintos y 1 título en escritura no latina |
+| Material | Prototipo navegable (Google Stitch o rama desechable) de la ficha 2D: día y noche, móvil y escritorio, 3 obras de formatos distintos y 1 título en escritura no latina |
 | A ciegas | Puntúan por separado, sin ver otras notas ni versiones anteriores |
 | Plantilla | Diseño 40 %, usabilidad 30 %, creatividad 20 %, contenido 10 %; escala 1–10 + 1 frase |
 | Umbral | Media ponderada ≥ 7,5 **y** ninguna categoría < 7 |
@@ -204,7 +204,7 @@ Trabajo visual en 8A (V1–V8, V10, V11, sin V3b): **≈ 8–12 semanas** (≈ 7
 | Iteraciones | Máximo 2. **Fallo en la 2.ª ⇒ 8A sigue solo en 2D; el T1 sale de 8A; G3a valida el 2D como esté; G3b no se celebra** |
 
 ### 5.2 Biblia de dirección de arte (V1, 8A.0–8A.1)
-`docs/design/BIBLIA.md` + tablero en Penpot.
+`docs/design/BIBLIA.md` + tablero en Google Stitch.
 - **Concepto:** «Archivo»: papel, cartón, latón, tinta, luz cálida; editorial, no nostálgico. Adjetivos: sobrio, táctil, preciso.
 - **Moodboard:** 12–20 referencias Archivo, 6–10 Cine; anotadas y con fuente.
 - **Antirreferencias:** rejilla genérica de pósters (Letterboxd/Trakt), skeuomorfismo iOS 6, glassmorphism oscuro, degradados tipo Wrapped, neón cyberpunk.
@@ -581,7 +581,7 @@ Objetivo ≈ **0 €/mes**. Gastos únicos solo si son inevitables y con «sí»
 
 | Concepto | Antes (v3.1) | Alternativa elegida | Mensual | Único |
 |---|---|---|---|---|
-| Diseño | Figma ~15 $/mes | **Penpot** (libre; plan gratuito o autoalojado) | 0 | 0 |
+| Diseño | Figma ~15 $/mes | **Google Stitch** (Google Labs, gratuito con cuenta Google; genera pantallas y exporta HTML/CSS). No subir datos de usuarios reales | 0 | 0 |
 | Regresión visual | Argos ~30 $/mes | **Snapshots de Playwright** en CI | 0 | 0 |
 | Banco de dispositivos | BrowserStack ~39 $/mes | **Dispositivos físicos** propios o prestados + depuración remota gratuita (§8.3) | 0 | 0 (segunda mano solo si no hay préstamo; opcional) |
 | Fuentes | 0–300 € | **Newsreader** + **JetBrains Mono** (OFL; alternativas Literata, Courier Prime) | 0 | 0 |

@@ -13,7 +13,7 @@ Plan: §1, §4 (8A.0), §9.2, §9.6, §10, §12.
 ## 2. Herramientas y cuentas (coste 0)
 | Herramienta | Para qué | Cuándo | Permiso explícito de Víctor |
 |---|---|---|---|
-| Penpot (plan gratuito o autoalojado) | Tablero de biblia, prototipo de ficha 2D | 8A.0 | **Sí** (crear cuenta / instalar si se autoaloja) |
+| Google Stitch (gratuito, cuenta Google) | Exploración de pantallas, tablero de biblia, prototipo de ficha 2D (exporta HTML/CSS a rama desechable) | 8A.0 | **Sí** (usar cuenta Google de Víctor) |
 | Storybook + `@storybook/addon-a11y` + `@storybook/test-runner` | Guía interna, axe por historia | 8A.3 (no antes) | **Sí** (instalar dependencias nuevas; hoy no existe `.storybook/`) |
 | Playwright (`@playwright/test` ya en `package.json`) | Snapshots `toHaveScreenshot`, E2E | 8A.2 | No (ya instalado); el contenedor Linux fijo sí requiere «sí» si añade imagen nueva |
 | `@lhci/cli@0.15.1` | Lighthouse en CI (ya en `.github/workflows/ci.yml`) | 8A.2 | No |
