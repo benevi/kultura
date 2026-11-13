@@ -237,6 +237,27 @@ jobs:
       - name: Supabase local (aplica las migraciones)
         run: supabase start -x studio,imgproxy,edge-runtime,logflare,vector,supavisor,postgres-meta
 
+      # Saneamiento 12.1: los tipos de src/types/supabase.ts tienen que salir
+      # de aplicar TODAS las migraciones. Se regeneran desde esta base local
+      # (postgres-meta, como `supabase gen types`) y el PR falla si cambian.
+      # Arreglo: bajar el artefacto «supabase-types» y copiarlo encima.
+      - name: Tipos de Supabase al día con las migraciones
+        run: |
+          bash scripts/db-diff.sh --gen-types --db-url postgresql://postgres:postgres@127.0.0.1:54322/postgres
+          if ! git diff --exit-code -- src/types/supabase.ts; then
+            echo "::error file=src/types/supabase.ts::No coincide con las migraciones. Regenéralo (scripts/db-diff.sh --gen-types contra una base con todas las migraciones) o baja el artefacto supabase-types."
+            exit 1
+          fi
+
+      - name: Tipos regenerados (artefacto)
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: supabase-types
+          path: src/types/supabase.ts
+          retention-days: 7
+          if-no-files-found: ignore
+
       - name: Claves locales al entorno
         run: |
           supabase status -o env | sed -E 's/^([A-Z_]+)="(.*)"$/\1=\2/' | grep -E '^(API_URL|ANON_KEY|SERVICE_ROLE_KEY|PUBLISHABLE_KEY|SECRET_KEY)=' >> "$GITHUB_ENV"
