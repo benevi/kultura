@@ -304,14 +304,14 @@ Los `loading.tsx` y el componente de error con reintento pasan a la fase 8 (Q32)
    - Migraciones con fecha futura (Q13).
 4. **Borrar el código de cada bandera en estado apagado.** Las seis banderas están a `1` en producción.
 
-## ⬜ Fase 12 · Rigor (comprobaciones automáticas; después de la 10, antes de la 8)
+## 🟨 Fase 12 · Rigor (comprobaciones automáticas; después de la 10, antes de la 8) — 1: #154 #155 y este PR · 13-11-2026
 
 Objetivo: que los fallos que hoy solo se ven revisando a mano los pare el CI o una alarma. Un PR por punto. Prioridad: 1, 2 y 6 primero.
 
-1. **Migraciones comprobadas solas:**
-   - El CI aplica todas las migraciones en un Supabase local, genera los tipos (`supabase gen types`) y falla si no coinciden con `src/types/supabase.ts`.
-   - Una migración con `drop column` falla si alguna función, vista o índice todavía usa la columna.
-   - Script que compara las migraciones aplicadas en producción y en `kultura-test` con los archivos del repo.
+1. ✅ **Migraciones comprobadas solas:**
+   - El CI aplica todas las migraciones en un Supabase local, genera los tipos (`supabase gen types`) y falla si no coinciden con `src/types/supabase.ts` (#154; ya faltaban dos claves ajenas de `conversations`).
+   - Una migración con `drop column` falla si alguna función todavía usa la columna, o si lleva CASCADE (las vistas y políticas ya bloquean el `drop`; los índices se borran con la columna) (#155).
+   - Script que compara las migraciones aplicadas en producción y en `kultura-test` con los archivos del repo (`scripts/check-applied-migrations.mjs`, a mano). 13-11: producción tiene todas menos `push` y `push_throttle` (Q14); test, todas.
 2. **Seguridad en el CI:**
    - `rls_audit()` y los avisos de Supabase hacen fallar el CI si aparece uno nuevo.
    - Las funciones SECURITY DEFINER que se pueden llamar desde la API (`can_read_list`, también sin sesión): quitar el permiso de ejecución o sacarlas del esquema expuesto.
