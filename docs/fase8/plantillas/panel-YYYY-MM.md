@@ -3,7 +3,7 @@
 > Copiar a `docs/design/panel-YYYY-MM.md`. Redacta Claude (agente), firma Víctor. Reglas: plan §5.1.
 
 - **Fase:** 8A.1 / 8B.5
-- **Material:** enlace al prototipo (Google Stitch o rama desechable). Incluye día y noche, móvil y escritorio, 3 obras de formatos distintos y 1 título en escritura no latina: [ ] sí
+- **Material:** enlace al prototipo (rama desechable + Storybook; build estática o preview, datos ficticios). Incluye día y noche, móvil y escritorio, 3 obras de formatos distintos y 1 título en escritura no latina: [ ] sí
 - **A ciegas:** cada persona puntuó por separado, sin ver otras notas ni versiones anteriores: [ ] sí
 
 ## Panelistas (seudónimo)
