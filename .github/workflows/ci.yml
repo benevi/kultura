@@ -61,6 +61,11 @@ jobs:
           git fetch --depth=1 origin "$GITHUB_BASE_REF"
           node scripts/check-migration-order.mjs FETCH_HEAD
 
+      # Saneamiento 12.3: cada bandera registrada en docs/banderas.json y
+      # ninguna de más de 60 días (salvo las permanentes).
+      - name: Banderas con caducidad
+        run: node scripts/check-flags.mjs
+
       - name: Lint
         run: npm run lint
 

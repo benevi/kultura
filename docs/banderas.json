@@ -1,0 +1,16 @@
+{
+  "_comentario": "Saneamiento 12.3. Cada bandera de entorno que enciende o apaga una función. scripts/check-flags.mjs (CI) falla si una bandera del código no está aquí, si una de aquí ya no está en el código, o si una no permanente pasa de 60 días desde `desde`: entonces se quita (el código se queda con un solo camino) o se renueva cambiando `desde` con el motivo en el PR. `produccion`: on, off o ? (sin comprobar).",
+  "banderas": [
+    { "nombre": "PROGRESS_V2", "dueno": "benevi", "desde": "2026-10-26", "produccion": "?", "para": "F-27: progreso en todos los formatos y «marcar siguiente»" },
+    { "nombre": "MODERATION_V2", "dueno": "benevi", "desde": "2026-10-22", "produccion": "?", "para": "F-11: denunciar, bloquear, borrar y moderar en chat y grupos" },
+    { "nombre": "RATING_SCALE_10", "dueno": "benevi", "desde": "2026-10-26", "produccion": "?", "para": "Nota sobre 10" },
+    { "nombre": "MIXED_LISTS", "dueno": "benevi", "desde": "2026-10-26", "produccion": "?", "para": "Listas con varios tipos de contenido" },
+    { "nombre": "LIBRARY_VISIBILITY", "dueno": "benevi", "desde": "2026-10-22", "produccion": "?", "para": "Biblioteca pública, amigos o privada" },
+    { "nombre": "ACCOUNT_GRACE", "dueno": "benevi", "desde": "2026-10-22", "produccion": "?", "para": "Periodo de gracia antes de borrar la cuenta" },
+    { "nombre": "SHARE_PUBLIC_LIBRARY", "dueno": "benevi", "desde": "2026-10-26", "produccion": "?", "para": "Compartir la biblioteca pública" },
+    { "nombre": "INVITE_NOTIFY", "dueno": "benevi", "desde": "2026-10-23", "produccion": "?", "para": "Aviso cuando se une alguien invitado" },
+    { "nombre": "WEEKLY_EMAIL", "dueno": "benevi", "desde": "2026-10-26", "produccion": "off", "para": "Resumen semanal por email (fuera del saneamiento, Q22)" },
+    { "nombre": "PUSH_ENABLED", "dueno": "benevi", "desde": "2026-10-26", "produccion": "off", "para": "Notificaciones push (fuera del saneamiento, Q14)" },
+    { "nombre": "ANALYTICS_DISABLED", "dueno": "benevi", "desde": "2026-10-23", "produccion": "off", "para": "Interruptor de emergencia de la analítica", "permanente": "interruptor de apagado, no un despliegue gradual" }
+  ]
+}
