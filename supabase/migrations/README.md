@@ -77,6 +77,21 @@ grant select on public.mi_tabla to anon;
 
 Y una función que deba llamar alguien sin sesión necesita `grant execute … to anon` explícito. Las funciones `security definer` que usan las políticas necesitan `EXECUTE` para el rol que consulta; el aviso del linter de Supabase sobre ellas es esperado.
 
+### ¿Qué está aplicado en cada base? (saneamiento 12.1)
+
+`scripts/check-applied-migrations.mjs` compara los archivos del repo con `supabase_migrations.schema_migrations` de una base. Compara por **nombre**: al aplicar con el MCP de Supabase la versión que queda es la fecha de aplicación, no la del archivo.
+
+```bash
+# Producción (push y push_throttle quedan sin aplicar a propósito, Q14)
+node scripts/check-applied-migrations.mjs --db-url "$SUPABASE_DB_URL" --pending push,push_throttle --strict
+# kultura-test
+node scripts/check-applied-migrations.mjs --db-url "$TEST_DB_URL" --strict
+```
+
+Sin `psql` ni la contraseña: `--json archivo` con la salida de `list_migrations` del MCP. Falla si la base tiene una migración que no está en el repo (o repetida) y, con `--strict`, si falta alguna que no sea de las `--pending`.
+
+Además, en cada PR el CI (job CUJ) aplica todas las migraciones en un Supabase local y falla si `src/types/supabase.ts` no coincide con lo que generan, o si un `drop column` deja funciones que usan la columna (`scripts/check-dropped-columns.mjs`).
+
 ## Importante: la baseline ya está aplicada en remoto
 
 La baseline está marcada como `applied` en remoto (proyecto `app movies`, ref `zfrbyphzvfuvejdwjfea`). **NO ejecutar `supabase db push` sobre ella** — el remoto ya la tiene. Hacerlo provocaría error de duplicados o estados inconsistentes.
