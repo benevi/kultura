@@ -1,10 +1,11 @@
 // ============================================================
 // KULTURA — Aviso al creador por cada denuncia (D-13, DSA art. 16)
 //
-// Cada denuncia (con sesión o desde el formulario público) manda un correo a
-// MODERATION_EMAIL con Resend. Sin RESEND_API_KEY o sin MODERATION_EMAIL no se
-// pierde: se registra como error (→ Sentry.captureMessage vía el logger) con la
-// referencia, el tipo y el id del contenido, para que alguien la lea.
+// Cada denuncia (con sesión o desde el formulario público) llega a Sentry como
+// aviso (`report_received`, nivel warning; saneamiento 10.3) con la
+// referencia, el tipo, el id del contenido y el motivo, para que alguien la
+// lea. Además manda un correo a MODERATION_EMAIL con Resend; sin
+// RESEND_API_KEY o sin MODERATION_EMAIL (hoy apagado, Q22) solo queda el aviso.
 // Tope diario (Resend Free = 100 correos/día): 80 en total
 // (MODERATION_EMAIL_DAILY_CAP) y 10 por denunciante, contados en `reports`;
 // pasado el tope la denuncia sigue guardada y solo se registra en Sentry.
@@ -149,8 +150,12 @@ export async function notifyReport(notice: ReportNotice): Promise<NotifyResult> 
     stored: notice.stored,
   }
 
+  // Sin el texto libre ni el correo de contacto: pueden traer datos personales.
+  log.notice('report_received', { ...context, reason: notice.reason, origin: notice.origin })
+
   if (!to) {
-    log.error('moderation_email_not_configured', context)
+    // El correo apagado es lo esperado (Q22): la denuncia ya está en Sentry.
+    log.warn('moderation_email_not_configured', context)
     return { ok: false, reason: 'not_configured' }
   }
 
@@ -170,10 +175,9 @@ export async function notifyReport(notice: ReportNotice): Promise<NotifyResult> 
   })
 
   if (!result.ok) {
-    log.error(
-      result.reason === 'not_configured' ? 'moderation_email_not_configured' : 'moderation_email_failed',
-      { ...context, reason: result.reason, status: 'status' in result ? result.status : undefined },
-    )
+    const failure = { ...context, reason: result.reason, status: 'status' in result ? result.status : undefined }
+    if (result.reason === 'not_configured') log.warn('moderation_email_not_configured', failure)
+    else log.error('moderation_email_failed', failure)
   }
   return result
 }

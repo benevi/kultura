@@ -108,7 +108,7 @@ export function _resetSentryForTests(): void {
 }
 
 /** Reenvío best-effort a Sentry. Nunca lanza, nunca bloquea al caller. */
-function reportToSentry(message: string, context?: LogContext): void {
+function reportToSentry(message: string, context?: LogContext, level: "error" | "warning" = "error"): void {
   const pending = loadSentry();
   if (!pending) return;
   const err = context?.err ?? context?.error;
@@ -117,7 +117,7 @@ function reportToSentry(message: string, context?: LogContext): void {
       if (err instanceof Error) {
         Sentry.captureException(err, { extra: { message, ...context } });
       } else {
-        Sentry.captureMessage(message, { level: "error", extra: context });
+        Sentry.captureMessage(message, { level, extra: context });
       }
     })
     .catch(() => {
@@ -134,6 +134,14 @@ export function createLogger(scope: string) {
     debug: (message: string, context?: LogContext) => emit("debug", scope, message, context),
     info: (message: string, context?: LogContext) => emit("info", scope, message, context),
     warn: (message: string, context?: LogContext) => emit("warn", scope, message, context),
+    /**
+     * Aviso que alguien tiene que leer aunque no sea un fallo (saneamiento
+     * 10.3: cada denuncia nueva). Va a Sentry con nivel `warning`.
+     */
+    notice: (message: string, context?: LogContext) => {
+      emit("warn", scope, message, context);
+      reportToSentry(message, context, "warning");
+    },
     error: (message: string, context?: LogContext) => {
       emit("error", scope, message, context);
       reportToSentry(message, context);

@@ -170,4 +170,23 @@ describe("logger — reenvío a Sentry", () => {
       expect.objectContaining({ level: "error" })
     );
   });
+
+  it("notice: a Sentry con nivel warning (saneamiento 10.3)", async () => {
+    process.env.NEXT_PUBLIC_SENTRY_DSN = "https://example@o0.ingest.sentry.io/1";
+    setNodeEnv("production");
+    const captureMessage = vi.fn();
+    vi.doMock("@sentry/nextjs", () => ({ captureException: vi.fn(), captureMessage }));
+    vi.resetModules();
+    const { createLogger } = await import("@/lib/logger");
+    vi.spyOn(console, "warn").mockImplementation(() => {});
+    const log = createLogger("moderation");
+
+    log.notice("report_received", { reference: "KR-1" });
+    await new Promise((resolve) => setTimeout(resolve, 0));
+
+    expect(captureMessage).toHaveBeenCalledWith(
+      "report_received",
+      expect.objectContaining({ level: "warning", extra: { reference: "KR-1" } })
+    );
+  });
 });
