@@ -242,6 +242,7 @@ jobs:
       # (postgres-meta, como `supabase gen types`) y el PR falla si cambian.
       # Arreglo: bajar el artefacto «supabase-types» y copiarlo encima.
       - name: Tipos de Supabase al día con las migraciones
+        id: types
         run: |
           bash scripts/db-diff.sh --gen-types --db-url postgresql://postgres:postgres@127.0.0.1:54322/postgres
           if ! git diff --exit-code -- src/types/supabase.ts; then
@@ -249,8 +250,14 @@ jobs:
             exit 1
           fi
 
+      # Saneamiento 12.1: un `drop column` no puede dejar funciones que aún
+      # usan la columna (Postgres no lo impide) ni llevar CASCADE.
+      - name: Columnas borradas que una función aún usa
+        if: success() || steps.types.outcome == 'failure'
+        run: node scripts/check-dropped-columns.mjs postgresql://postgres:postgres@127.0.0.1:54322/postgres
+
       - name: Tipos regenerados (artefacto)
-        if: failure()
+        if: failure() && steps.types.outcome == 'failure'
         uses: actions/upload-artifact@v4
         with:
           name: supabase-types
