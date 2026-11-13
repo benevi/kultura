@@ -324,7 +324,7 @@ Objetivo: que los fallos que hoy solo se ven revisando a mano los pare el CI o u
 5. **Después de desplegar:**
    - Prueba rápida automática en producción: abrir la página, entrar con el usuario demo, cargar la biblioteca.
    - Alertas de Sentry por subida de errores en `/api/library` y `/api/progress` en la hora siguiente a desplegar (depende de la fase 10).
-6. **Restauración probada:** workflow mensual que restaura la última copia en Docker y compara el número de filas por tabla.
+6. ✅ **Restauración probada:** cada copia semanal (`backup.yml`) se restaura en un Supabase local del runner y compara las filas por tabla con el volcado. Sin la clave privada en GitHub: prueba el volcado; el descifrado sigue en la prueba trimestral a mano.
 7. **Proceso en el repo:**
    - Plantilla de PR con lista: ¿migración?, ¿aplicada en test?, ¿copia hecha?, ¿versión del SW?, ¿cómo se deshace?
    - Las reglas de cambios de esquema (patrón de 3 PRs y cuándo se pueden juntar los pasos) escritas en `CLAUDE.md`.

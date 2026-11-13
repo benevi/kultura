@@ -7,6 +7,15 @@ name: Backup BD
 # GitHub puede descargar los artefactos: por eso nunca se sube nada en claro.
 # Restauración y prueba trimestral: ver supabase/README.md.
 #
+# Saneamiento 12.6: cada copia se prueba aquí mismo. DESPUÉS de subir el
+# artefacto cifrado (un fallo de la prueba nunca deja la semana sin copia), el
+# volcado en claro se restaura en un Supabase local (Docker del runner) y se
+# comparan las filas de cada tabla de public, auth.users y auth.identities con
+# las del volcado. Sin la clave privada: se prueba el volcado, no el
+# descifrado (eso sigue en la prueba trimestral, con la clave del dueño). Los
+# registros solo muestran nombres de tabla y números; la salida de psql, que
+# podría citar filas, no se imprime. Al final se borra todo, falle o no.
+#
 # Secretos (Settings → Secrets and variables → Actions):
 #   SUPABASE_DB_URL       cadena "Session pooler" (IPv4) de Supabase, con la
 #                         contraseña de la base: postgresql://postgres.<ref>:<pass>@aws-0-eu-central-1.pooler.supabase.com:5432/postgres
@@ -34,6 +43,15 @@ jobs:
     # Los secretos se pasan SOLO a los pasos que los usan (nunca al job entero),
     # para que no lleguen a las acciones de terceros.
     steps:
+      # Sin secretos: solo para scripts/restore-check.mjs.
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+
       - name: Comprobar secretos
         env:
           SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
@@ -53,8 +71,8 @@ jobs:
           # Fija y la misma que scripts/db-diff.sh (SUPABASE_CLI_VERSION): cambiarlas a la vez.
           version: 2.120.0
 
-      - name: Instalar age
-        run: sudo apt-get update -qq && sudo apt-get install -y -qq age
+      - name: Instalar age y psql
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq age postgresql-client
 
       - name: Volcar roles, esquema y datos
         env:
@@ -73,7 +91,9 @@ jobs:
           sha256sum roles.sql schema.sql data.sql > SHA256SUMS
           wc -c roles.sql schema.sql data.sql
 
-      - name: Cifrar con age y borrar lo que está en claro
+      # Lo que está en claro se borra en el último paso, después de la prueba
+      # de restauración (y aunque falle).
+      - name: Cifrar con age
         id: cifrar
         env:
           BACKUP_AGE_RECIPIENT: ${{ secrets.BACKUP_AGE_RECIPIENT }}
@@ -83,7 +103,6 @@ jobs:
           mkdir -p "$RUNNER_TEMP/out"
           tar -C "$RUNNER_TEMP/dump" -czf - roles.sql schema.sql data.sql SHA256SUMS \
             | age --recipient "$BACKUP_AGE_RECIPIENT" -o "$RUNNER_TEMP/out/$name"
-          rm -rf "$RUNNER_TEMP/dump"
           ls -l "$RUNNER_TEMP/out"
           echo "name=$name" >> "$GITHUB_OUTPUT"
 
@@ -95,3 +114,31 @@ jobs:
           if-no-files-found: error
           retention-days: 90
           compression-level: 0
+
+      - name: Prueba de restauración en Supabase local (saneamiento 12.6)
+        run: |
+          set -euo pipefail
+          node scripts/restore-check.mjs prepare "$RUNNER_TEMP/dump"
+          mkdir -p "$RUNNER_TEMP/drill"
+          cd "$RUNNER_TEMP/drill"
+          supabase init >/dev/null
+          start=$(date +%s)
+          supabase start -x studio,imgproxy,edge-runtime,logflare,vector,supavisor,postgres-meta >/dev/null
+          # supabase_admin: roles.sql toca roles que postgres no puede.
+          DB=postgresql://supabase_admin:postgres@127.0.0.1:54322/postgres
+          cd "$RUNNER_TEMP/dump"
+          # Roles y objetos propios de la plataforma ya existen o no aplican en
+          # local: esos errores se cuentan, no paran. Lo que decide es el
+          # recuento de filas de abajo.
+          psql "$DB" -X -f roles.sql >/dev/null 2>"$RUNNER_TEMP/drill/roles.err" || true
+          psql "$DB" -X -f schema.sql >/dev/null 2>"$RUNNER_TEMP/drill/schema.err" || true
+          psql "$DB" -X -c 'set session_replication_role = replica' -f data_restore.sql             >/dev/null 2>"$RUNNER_TEMP/drill/data.err" || true
+          echo "Errores al cargar: roles $(grep -c ERROR "$RUNNER_TEMP/drill/roles.err" || true), esquema $(grep -c ERROR "$RUNNER_TEMP/drill/schema.err" || true), datos $(grep -c ERROR "$RUNNER_TEMP/drill/data.err" || true)"
+          node "$GITHUB_WORKSPACE/scripts/restore-check.mjs" verify "$RUNNER_TEMP/dump" "$DB"
+          echo "Duración (arranque + carga + recuento): $(( $(date +%s) - start )) s"
+
+      - name: Borrar lo que está en claro y parar Supabase local
+        if: always()
+        run: |
+          (cd "$RUNNER_TEMP/drill" 2>/dev/null && supabase stop --no-backup >/dev/null 2>&1) || true
+          rm -rf "$RUNNER_TEMP/dump" "$RUNNER_TEMP/drill"

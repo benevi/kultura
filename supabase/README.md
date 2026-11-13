@@ -241,6 +241,10 @@ En Windows `age` no está en scoop: `rage` (`scoop install rage postgresql`) usa
 
 `supabase init` y `supabase start` en una carpeta temporal, y cargar con `psql` en `postgresql://supabase_admin:postgres@127.0.0.1:54322/postgres` (`postgres` no es superusuario y `roles.sql` toca `supabase_admin`). Las imágenes locales de Auth y Storage pueden ir por detrás de producción (columnas nuevas en `auth.*` y `storage.*`): cargar de `data.sql` solo los `COPY` de `public.*`, `auth.users` y `auth.identities`. Al terminar, `supabase stop --no-backup` y borrar la carpeta descifrada.
 
+### Prueba automática en cada copia (saneamiento 12.6)
+
+`backup.yml` restaura cada volcado, después de subir el artefacto cifrado, en un Supabase local del runner y compara las filas de cada tabla de `public`, `auth.users` y `auth.identities` con las del volcado (`scripts/restore-check.mjs`). Si no cuadran, la ejecución sale en rojo (la copia ya está subida). No usa la clave privada: prueba el volcado, no el descifrado, que sigue en la prueba trimestral de abajo.
+
 ### Prueba trimestral
 
 Cada trimestre (enero, abril, julio, octubre) restaurar el último artefacto en
