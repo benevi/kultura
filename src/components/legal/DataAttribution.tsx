@@ -26,6 +26,12 @@ export const SOURCE_LINK_CLASS =
  * juegos usan sus descripciones; las condiciones de su API piden que el
  * enlace a Valve no lleve `nofollow` y que no parezca que Valve nos respalda,
  * de ahí el aviso de marca.
+ * TMDB además exige su logo, menos destacado que la marca propia: el oficial
+ * (themoviedb.org/about/logos-attribution, "alt short"), a 10 px de alto,
+ * junto a su aviso. Sin enlace propio: "TMDB" ya enlaza en el texto, y otra
+ * zona táctil pequeña con el mismo nombre solo estorba. `alt=""`: el aviso de
+ * al lado ya dice "TMDB" (el lector de pantalla lo repetiría). `<img>` y no
+ * `next/image`: este no añade JS al navegador (presupuesto de Lighthouse).
  * Es una función async y no un componente: los pies que la usan ya son
  * Server Components async y la renderizan con `await`.
  */
@@ -52,7 +58,10 @@ export async function renderDataAttribution(className = "") {
           enlace va fuera del texto. */}
       {t("justwatchSource")} {link(JUSTWATCH_HOME)("JustWatch")}.{" "}
       {tb("attribution.steam")} {link(STEAM_HOME)("Steam")}.{" "}
-      {t("tmdbNotice")} {tb("attribution.steamTrademark")}
+      {t("tmdbNotice")}{" "}
+      {/* eslint-disable-next-line @next/next/no-img-element -- SVG estático de 2 KB; next/image solo sumaría JS */}
+      <img src="/tmdb-logo.svg" alt="" width={77} height={10} className="inline-block align-middle" />{" "}
+      {tb("attribution.steamTrademark")}
     </p>
   );
 }
