@@ -148,9 +148,10 @@ describe('Pies y atribución (MOV-4, ACC-12, ROJO-11)', () => {
   })
 
   it('atribución: logo oficial de TMDB junto a su aviso (condiciones de TMDB)', async () => {
-    render(await renderDataAttribution())
-    const logo = screen.getByRole('img', { name: 'TMDB' })
-    expect(logo.getAttribute('src')).toContain('/tmdb-logo.svg')
+    const { container } = render(await renderDataAttribution())
+    const logo = container.querySelector('img[src="/tmdb-logo.svg"]')
+    expect(logo).not.toBeNull()
+    expect(logo).toHaveAttribute('alt', '')
   })
 })
 
