@@ -12,9 +12,10 @@
 //      scripts/db-diff.sh --gen-types          (base de $SUPABASE_DB_URL)
 //
 //    que sustituye solo lo que hay entre las marcas. La versión actual sale de
-//    aplicar TODAS las migraciones de `supabase/migrations/` (hasta
-//    `20261208250001_platforms_mixed_lists.sql`), en orden, sobre un
-//    PostgreSQL 16 vacío:
+//    aplicar TODAS las migraciones de `supabase/migrations/`, en orden, sobre
+//    un Supabase local vacío. El CI lo comprueba en cada PR (job CUJ,
+//    saneamiento 12.1) y, si no cuadra, deja el archivo bueno como artefacto
+//    `supabase-types`. Esta versión
 //    incluye las tablas y columnas de migraciones que quizá aún no estén
 //    aplicadas en producción. Regenerar desde producción SOLO después de
 //    aplicarlas todas (ver `supabase/README.md`); si no, desaparecerían tipos
@@ -262,7 +263,22 @@ export type Database = {
           user_high?: string | null
           user_low?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "conversations_user_high_fkey"
+            columns: ["user_high"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "conversations_user_low_fkey"
+            columns: ["user_low"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       email_consent_events: {
         Row: {
@@ -694,77 +710,77 @@ export type Database = {
       }
       landing_media: {
         Row: {
-          id: string
-          week: string
-          slot: string
-          position: number
-          format: string | null
-          media_type: string
-          external_id: string
-          title: string
-          year: number | null
-          rating: number | null
-          image_path: string
-          depth_path: string
-          width: number
-          height: number
-          threshold: number
-          focus_x: number
-          focus_y: number
-          fg_ratio: number
-          layered: boolean
           accent: string
           active: boolean
           created_at: string
+          depth_path: string
+          external_id: string
+          fg_ratio: number
+          focus_x: number
+          focus_y: number
+          format: string | null
+          height: number
+          id: string
+          image_path: string
+          layered: boolean
+          media_type: string
+          position: number
+          rating: number | null
+          slot: string
+          threshold: number
+          title: string
+          week: string
+          width: number
+          year: number | null
         }
         ComputedFields: never
         Insert: {
-          id?: string
-          week: string
-          slot: string
-          position?: number
-          format?: string | null
-          media_type: string
-          external_id: string
-          title: string
-          year?: number | null
-          rating?: number | null
-          image_path: string
-          depth_path: string
-          width: number
-          height: number
-          threshold?: number
-          focus_x?: number
-          focus_y?: number
-          fg_ratio?: number
-          layered?: boolean
           accent?: string
           active?: boolean
           created_at?: string
+          depth_path: string
+          external_id: string
+          fg_ratio?: number
+          focus_x?: number
+          focus_y?: number
+          format?: string | null
+          height: number
+          id?: string
+          image_path: string
+          layered?: boolean
+          media_type: string
+          position?: number
+          rating?: number | null
+          slot: string
+          threshold?: number
+          title: string
+          week: string
+          width: number
+          year?: number | null
         }
         Update: {
-          id?: string
-          week?: string
-          slot?: string
-          position?: number
-          format?: string | null
-          media_type?: string
-          external_id?: string
-          title?: string
-          year?: number | null
-          rating?: number | null
-          image_path?: string
-          depth_path?: string
-          width?: number
-          height?: number
-          threshold?: number
-          focus_x?: number
-          focus_y?: number
-          fg_ratio?: number
-          layered?: boolean
           accent?: string
           active?: boolean
           created_at?: string
+          depth_path?: string
+          external_id?: string
+          fg_ratio?: number
+          focus_x?: number
+          focus_y?: number
+          format?: string | null
+          height?: number
+          id?: string
+          image_path?: string
+          layered?: boolean
+          media_type?: string
+          position?: number
+          rating?: number | null
+          slot?: string
+          threshold?: number
+          title?: string
+          week?: string
+          width?: number
+          year?: number | null
         }
         Relationships: []
       }
