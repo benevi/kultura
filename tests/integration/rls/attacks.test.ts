@@ -240,6 +240,22 @@ describe.skipIf(!configured)("RLS — ataques rechazados", () => {
     expect(r2.error).not.toBeNull();
   });
 
+  it("las funciones de las políticas no se llaman por la API, ni con sesión (saneamiento 12.2)", async () => {
+    const calls = [
+      ["can_read_list", { target_list: crypto.randomUUID() }],
+      ["is_group_member", { group_id: victimGroup, uid: victim.id }],
+      ["is_group_owner", { p_group_id: victimGroup, p_uid: victim.id }],
+      ["is_banned_from_group", { p_group_id: victimGroup }],
+      ["is_conversation_member", { conv_id: crypto.randomUUID(), uid: victim.id }],
+    ] as const;
+    for (const [fn, args] of calls) {
+      const anon = await anonClient().rpc(fn as never, args as never);
+      const signedIn = await attacker.client.rpc(fn as never, args as never);
+      expect(anon.error, `anon → ${fn}`).not.toBeNull();
+      expect(signedIn.error, `authenticated → ${fn}`).not.toBeNull();
+    }
+  });
+
   it("un miembro no publica en su grupo saltándose la API (saneamiento 4.6)", async () => {
     expect(await isMember(attackerGroup, attacker.id)).toBe(true);
     const post = await attacker.client

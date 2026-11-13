@@ -1528,7 +1528,6 @@ export type Database = {
     }
     Functions: {
       can_read_library: { Args: { p_owner: string }; Returns: boolean }
-      can_read_list: { Args: { target_list: string }; Returns: boolean }
       can_send_message: {
         Args: { p_conversation_id: string }
         Returns: boolean
@@ -1590,20 +1589,7 @@ export type Database = {
         Args: { p_cap: number; p_kind: string }
         Returns: boolean
       }
-      is_banned_from_group: { Args: { p_group_id: string }; Returns: boolean }
-      is_conversation_member: {
-        Args: { conv_id: string; uid: string }
-        Returns: boolean
-      }
       is_demo_session: { Args: Record<PropertyKey, never>; Returns: boolean }
-      is_group_member: {
-        Args: { group_id: string; uid: string }
-        Returns: boolean
-      }
-      is_group_owner: {
-        Args: { p_group_id: string; p_uid: string }
-        Returns: boolean
-      }
       list_successor: {
         Args: { p_list: string; p_user: string }
         Returns: string
