@@ -36,18 +36,20 @@ describe.skipIf(!configured)("RLS — saneamiento fase 2", () => {
 
   afterAll(deleteCreatedUsers, 60_000);
 
+  // Desde el saneamiento 12.2 viven en el esquema `private`: ya no se llaman
+  // por la API ni sobre uno mismo (solo las usan las políticas).
   it("2. is_group_member / is_conversation_member no responden sobre otra persona", async () => {
-    const other = await b.client.rpc("is_group_member", { group_id: groupA, uid: a.id });
-    expect(other.error).toBeNull();
-    expect(other.data).toBe(false);
-    const self = await a.client.rpc("is_group_member", { group_id: groupA, uid: a.id });
-    expect(self.data).toBe(true);
+    const other = await b.client.rpc("is_group_member" as never, { group_id: groupA, uid: a.id } as never);
+    expect(other.error?.code).toBe("PGRST202");
+    const self = await a.client.rpc("is_group_member" as never, { group_id: groupA, uid: a.id } as never);
+    expect(self.error?.code).toBe("PGRST202");
 
     const { data: conv } = await a.client.rpc("create_conversation_with_members", { target_user_id: b.id });
-    const chatOther = await stranger.client.rpc("is_conversation_member", { conv_id: conv as string, uid: a.id });
-    expect(chatOther.data).toBe(false);
-    const chatSelf = await a.client.rpc("is_conversation_member", { conv_id: conv as string, uid: a.id });
-    expect(chatSelf.data).toBe(true);
+    const chatOther = await stranger.client.rpc(
+      "is_conversation_member" as never,
+      { conv_id: conv as string, uid: a.id } as never,
+    );
+    expect(chatOther.error?.code).toBe("PGRST202");
   });
 
   it("3. username_redirect ya no existe (Q8)", async () => {
