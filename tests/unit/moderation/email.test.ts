@@ -4,14 +4,16 @@
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 
-const { mockLogError, counts, countQueries } = vi.hoisted(() => ({
+const { mockLogError, mockLogWarn, mockLogNotice, counts, countQueries } = vi.hoisted(() => ({
   mockLogError: vi.fn(),
+  mockLogWarn: vi.fn(),
+  mockLogNotice: vi.fn(),
   // Denuncias de hoy en `reports` (incluida la actual) o un error de base.
   counts: { total: 1, reporter: 1, error: null as null | { code: string } },
   countQueries: [] as Array<Record<string, unknown>>,
 }))
 vi.mock('@/lib/logger', () => ({
-  createLogger: () => ({ error: mockLogError, warn: vi.fn(), info: vi.fn(), debug: vi.fn() }),
+  createLogger: () => ({ error: mockLogError, warn: mockLogWarn, notice: mockLogNotice, info: vi.fn(), debug: vi.fn() }),
 }))
 vi.mock('@/lib/supabase/admin', () => ({
   createAdminClient: () => ({
@@ -106,6 +108,8 @@ describe('notifyReport', () => {
   beforeEach(() => {
     mockFetch.mockReset()
     mockLogError.mockReset()
+    mockLogWarn.mockReset()
+    mockLogNotice.mockReset()
     vi.stubGlobal('fetch', mockFetch)
   })
   afterEach(() => {
@@ -114,21 +118,41 @@ describe('notifyReport', () => {
     delete process.env.MODERATION_EMAIL
   })
 
-  it('sin MODERATION_EMAIL → error al logger (Sentry.captureMessage) con la referencia, sin el correo del denunciante', async () => {
+  it('cada denuncia → aviso a Sentry (notice) con la referencia y el motivo, sin datos personales', async () => {
+    await notifyReport(notice)
+    expect(mockLogNotice).toHaveBeenCalledTimes(1)
+    expect(mockLogNotice).toHaveBeenCalledWith(
+      'report_received',
+      expect.objectContaining({
+        reference: 'KR-0F8FAD5B',
+        targetType: 'media',
+        targetId: 'movie_550',
+        reason: notice.reason,
+        origin: notice.origin,
+      }),
+    )
+    const sent = JSON.stringify(mockLogNotice.mock.calls)
+    expect(sent).not.toContain('alguien@example.com')
+    if (notice.details) expect(sent).not.toContain(notice.details)
+  })
+
+  it('sin MODERATION_EMAIL → solo el aviso (correo apagado, Q22): sin error ni envío', async () => {
     const res = await notifyReport(notice)
     expect(res.ok).toBe(false)
-    expect(mockLogError).toHaveBeenCalledWith(
+    expect(mockLogWarn).toHaveBeenCalledWith(
       'moderation_email_not_configured',
       expect.objectContaining({ reference: 'KR-0F8FAD5B', targetType: 'media', targetId: 'movie_550' }),
     )
-    expect(JSON.stringify(mockLogError.mock.calls)).not.toContain('alguien@example.com')
+    expect(mockLogError).not.toHaveBeenCalled()
     expect(mockFetch).not.toHaveBeenCalled()
   })
 
-  it('sin RESEND_API_KEY (pero con buzón) → también se registra', async () => {
+  it('sin RESEND_API_KEY (pero con buzón) → también solo aviso', async () => {
     process.env.MODERATION_EMAIL = 'mod@kultura.test'
     await notifyReport(notice)
-    expect(mockLogError).toHaveBeenCalledWith('moderation_email_not_configured', expect.any(Object))
+    expect(mockLogNotice).toHaveBeenCalledWith('report_received', expect.any(Object))
+    expect(mockLogWarn).toHaveBeenCalledWith('moderation_email_not_configured', expect.any(Object))
+    expect(mockLogError).not.toHaveBeenCalled()
   })
 
   it('con todo configurado manda el correo al buzón de moderación', async () => {
