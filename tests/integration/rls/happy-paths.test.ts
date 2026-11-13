@@ -127,6 +127,14 @@ describe.skipIf(!configured)("RLS — caminos felices", () => {
     expect(itemErr).toBeNull();
     const { error: pubErr } = await a.client.from("lists").update({ is_public: true }).eq("id", list!.id);
     expect(pubErr).toBeNull();
+    // Saneamiento 12.2: can_read_list vive en `private`; la política la sigue
+    // usando y alguien sin sesión lee la lista pública y sus títulos.
+    const anon = anonClient();
+    const { data: seen, error: seenErr } = await anon.from("lists").select("id").eq("id", list!.id);
+    expect(seenErr).toBeNull();
+    expect(seen).toHaveLength(1);
+    const { data: items } = await anon.from("list_items").select("media_id").eq("list_id", list!.id);
+    expect(items).toEqual([{ media_id: "movie_f02_happy" }]);
   });
 
   it("biblioteca: upsert propio y otro usuario con sesión la ve", async () => {

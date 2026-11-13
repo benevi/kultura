@@ -159,6 +159,10 @@ function schemaFromMigrations(files: { name: string; sql: string }[]): Migration
       } else if ((m = new RegExp(String.raw`^drop function (?:if exists )?${QUAL}`, 'i').exec(stmt))) {
         const name = publicName(m[1])
         if (name) functions.delete(name)
+      } else if ((m = new RegExp(String.raw`^alter function ${QUAL}\s*\([^)]*\)\s*set schema "?(\w+)"?`, 'i').exec(stmt))) {
+        // Saneamiento 12.2: una función que sale de public deja de ser RPC.
+        const name = publicName(m[1])
+        if (name && m[2].toLowerCase() !== 'public') functions.delete(name)
       }
     }
   }
