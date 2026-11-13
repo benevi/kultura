@@ -256,6 +256,13 @@ jobs:
         if: success() || steps.types.outcome == 'failure'
         run: node scripts/check-dropped-columns.mjs postgresql://postgres:postgres@127.0.0.1:54322/postgres
 
+      # Saneamiento 12.2: rls_audit(), vistas sin security_invoker y funciones
+      # SECURITY DEFINER llamables por anon/authenticated fuera de
+      # supabase/security-allowlist.json.
+      - name: Seguridad de la base (RLS, vistas y SECURITY DEFINER)
+        if: success() || steps.types.outcome == 'failure'
+        run: node scripts/check-db-security.mjs postgresql://postgres:postgres@127.0.0.1:54322/postgres
+
       - name: Tipos regenerados (artefacto)
         if: failure() && steps.types.outcome == 'failure'
         uses: actions/upload-artifact@v4

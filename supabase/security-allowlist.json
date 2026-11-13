@@ -1,0 +1,18 @@
+{
+  "_comentario": "Saneamiento 12.2. Funciones SECURITY DEFINER de public que anon o authenticated pueden ejecutar (por tanto, llamables por /rest/v1/rpc). El CI (scripts/check-db-security.mjs) falla si aparece una que no esté aquí, o si una de aquí ya no lo está (para que la lista no se quede vieja). Añadir una exige motivo en el PR.",
+  "anon": [
+    "can_read_list(target_list uuid)"
+  ],
+  "authenticated": [
+    "can_read_library(p_owner uuid)",
+    "can_read_list(target_list uuid)",
+    "can_send_message(p_conversation_id uuid)",
+    "create_conversation_with_members(target_user_id uuid)",
+    "has_block_with(p_other uuid)",
+    "is_banned_from_group(p_group_id uuid)",
+    "is_conversation_member(conv_id uuid, uid uuid)",
+    "is_group_member(group_id uuid, uid uuid)",
+    "is_group_owner(p_group_id uuid, p_uid uuid)",
+    "set_email_weekly(p_enabled boolean, p_text_version text, p_source text)"
+  ]
+}
