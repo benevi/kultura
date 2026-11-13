@@ -254,19 +254,22 @@ Orden: `library` → `lists` → `friends` → `chat` → `groups` → `account/
 
 Los `loading.tsx` y el componente de error con reintento pasan a la fase 8 (Q32).
 
-## ⬜ Fase 10 · Monitorización
+## 🟨 Fase 10 · Monitorización
 
-1. Los 11 `error.tsx` de página llaman a `Sentry.captureException`.
-2. Los 7 handlers que devuelven 500 sin registrar el error pasan a usar `log.error`. `api/search` deja de tragarse los errores.
-3. **Cada denuncia nueva se envía también a Sentry como aviso.** El email sigue apagado: activarlo cuenta como función y va después del saneamiento (Q22).
-4. `SENTRY_AUTH_TOKEN` para subir los mapas de código fuente (Q25), con el plugin de Sentry.
-5. **Métricas base** para comparar antes y después:
-   - TTFB de Inicio: 1,2 s.
-   - Calendario: 6,6 s.
-   - Tasa de 5xx por endpoint.
-   - Errores de Sentry por semana.
+1. ✅ Los 11 `error.tsx` de página llaman a `Sentry.captureException` (vía `ErrorState`, #149).
+2. ✅ Los handlers que devolvían 500 sin registrar el error usan `log.error`. `api/search` deja de tragarse los errores (#150).
+3. ✅ **Cada denuncia nueva se envía también a Sentry como aviso** (`report_received`, nivel warning, #151). El email sigue apagado: activarlo cuenta como función y va después del saneamiento (Q22). Con el correo apagado, `moderation_email_not_configured` ya no es un error en Sentry.
+4. ⬜ `SENTRY_AUTH_TOKEN` para subir los mapas de código fuente (Q25). El código ya está listo (`next.config.mjs`); falta dar de alta `SENTRY_ORG`, `SENTRY_PROJECT` y `SENTRY_AUTH_TOKEN` en Vercel (Production) y redesplegar. Lo hace el dueño.
+5. 🟨 **Métricas base** para comparar antes y después. Volver a medirlas después de cada fase.
 
-   Volver a medirlas después de cada fase.
+   | Métrica | Antes del saneamiento | 2026-11-13 (tras fases 1–7, 9 y 10.1–10.3) |
+   |---|---|---|
+   | TTFB de Inicio (`/es/home`, cuenta demo) | 1,2 s | 0,43–0,57 s en caliente; 1,1 s en frío |
+   | Calendario (`/es/calendar`, cuenta demo, respuesta completa) | 6,6 s | 0,49–0,79 s (caché de proveedores de ~6 h) |
+   | Tasa de 5xx por endpoint | — | ⬜ pendiente: la API de logs de Vercel daba 500 al medir |
+   | Errores de Sentry por semana | — | ⬜ pendiente: sin acceso a Sentry desde aquí |
+
+   Cómo se midió: `curl` contra producción, 5 peticiones seguidas por ruta, con la sesión de la cuenta demo (`POST /api/auth/demo`). La primera petición de cada serie es la fría.
 
 ## ⬜ Fase 8 · Rediseño total (con su propio plan; Q27, Q31–Q33)
 
