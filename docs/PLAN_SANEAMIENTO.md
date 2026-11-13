@@ -328,6 +328,9 @@ Objetivo: que los fallos que hoy solo se ven revisando a mano los pare el CI o u
 7. **Proceso en el repo:**
    - Plantilla de PR con lista: ¿migración?, ¿aplicada en test?, ¿copia hecha?, ¿versión del SW?, ¿cómo se deshace?
    - Las reglas de cambios de esquema (patrón de 3 PRs y cuándo se pueden juntar los pasos) escritas en `CLAUDE.md`.
+8. **Condiciones de los proveedores** (revisadas el 13-11-2026):
+   - ✅ Logo de TMDB junto a su aviso (#157). Ya estaban el aviso de TMDB, el enlace a RAWG en cada página y el enlace a la fuente en cada ficha (también ComicVine).
+   - ⬜ **TMDB no deja guardar sus datos más de 6 meses.** Hoy `media` (título, póster, fondo, sinopsis, metadatos) y `media_translations` (sinopsis traducidas, contenido derivado) no caducan nunca. Tarea periódica que vuelva a pedir a TMDB lo que tenga más de 6 meses y actualice `updated_at`; lo que TMDB ya no devuelva, se vacía (no se borra la fila: la usan las bibliotecas). Un PR.
 
 ---
 
@@ -336,6 +339,12 @@ Objetivo: que los fallos que hoy solo se ven revisando a mano los pare el CI o u
 - Email: moderación y resumen semanal (Q22).
 - Push: aplicar `push` y `push_throttle` y activar `PUSH_ENABLED` (Q14).
 - Rediseño total: fase 8.
+- **Cobrar exige licencias antes** (condiciones revisadas el 13-11-2026):
+  - TMDB: sin uso comercial con la licencia gratuita (cobrar, webs con ingresos, recomendaciones y chatbots con sus datos). Pedir licencia comercial.
+  - ComicVine: solo no comercial y sin plan de pago. Otra fuente o cómics fuera de lo de pago.
+  - Google Books: no deja cobrar por la app sin permiso. Pedirlo o pasar a Open Library.
+  - RAWG: gratis hasta 100.000 usuarios activos al mes, con enlace; confirmar con ellos el plan (el gratuito dice «no comercial»).
+  - Jikan / MyAnimeList: sin revisar.
 
 ## Orden final
 
