@@ -322,7 +322,7 @@ Objetivo: que los fallos que hoy solo se ven revisando a mano los pare el CI o u
    - ✅ eslint también en `tests/` y `scripts/` (`npm run lint`), después de limpiar los errores (este PR). En `tests/` se apagan las reglas de next/link, next/image (los tests las simulan); la regla de la escala visual sigue activa y `scales.test.ts` la desactiva línea a línea.
    - ✅ Cobertura mínima solo en `src/lib/library` (90 % líneas, 80 % ramas) y en las rutas de la API (86 % y 79 %), medida en cada PR (`npm run test:ci`) (#165). Medida el 15-11: biblioteca 92 % y 84 %; API 89 % y 82 %.
 5. **Después de desplegar:**
-   - Prueba rápida automática en producción: abrir la página, entrar con el usuario demo, cargar la biblioteca.
+   - ✅ Prueba rápida automática en producción: abrir la página, entrar con el usuario demo, cargar la biblioteca (`.github/workflows/smoke-prod.yml`, tras cada despliegue a producción y a mano; este PR).
    - Alertas de Sentry por subida de errores en `/api/library` y `/api/progress` en la hora siguiente a desplegar (depende de la fase 10).
 6. ✅ **Restauración probada:** cada copia semanal (`backup.yml`) se restaura en un Supabase local del runner y compara las filas por tabla con el volcado. Sin la clave privada en GitHub: prueba el volcado; el descifrado sigue en la prueba trimestral a mano.
 7. **Proceso en el repo:**

@@ -1,0 +1,71 @@
+name: Prueba rápida en producción
+
+# Saneamiento 12.5: después de cada despliegue a producción (Vercel crea un
+# deployment con environment "Production" en GitHub), abre la página, entra
+# con la cuenta demo (solo lectura) y carga la biblioteca. Si algo falla, el
+# workflow falla y GitHub avisa al dueño.
+#
+# El repo es público: los logs solo muestran códigos HTTP, nunca cuerpos ni
+# cookies. La sesión demo se cierra al acabar.
+
+on:
+  deployment_status:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: smoke-prod
+  cancel-in-progress: true
+
+jobs:
+  smoke:
+    name: Página, demo y biblioteca
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event.deployment_status.state == 'success' &&
+       github.event.deployment.environment == 'Production')
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    env:
+      # Dominio de producción (src/lib/site-url.ts). La URL única del
+      # despliegue va detrás de la protección de Vercel.
+      BASE: https://kulturaapp.vercel.app
+    steps:
+      - name: Salud (base arriba)
+        run: |
+          for i in 1 2 3 4 5 6; do
+            code=$(curl -s -o health.json -w '%{http_code}' "$BASE/api/health") || code=000
+            if [ "$code" = 200 ] && jq -e '.ok == true and .db == "up"' health.json >/dev/null; then
+              echo "health: 200, base arriba"; exit 0
+            fi
+            echo "health: $code (intento $i)"; sleep 10
+          done
+          echo "::error::/api/health no responde bien"; exit 1
+
+      - name: Portada
+        run: |
+          code=$(curl -s -L -o /dev/null -w '%{http_code}' "$BASE/")
+          echo "portada: $code"
+          [ "$code" = 200 ] || { echo "::error::la portada da $code"; exit 1; }
+
+      - name: Entrar con la demo y cargar la biblioteca
+        run: |
+          jar="$RUNNER_TEMP/jar"
+          trap 'curl -s -o /dev/null -b "$jar" -X POST -F locale=es "$BASE/api/auth/demo/exit"; rm -f "$jar"' EXIT
+
+          read -r code to < <(curl -s -o /dev/null -c "$jar" -X POST -F locale=es \
+            -w '%{http_code} %{redirect_url}' "$BASE/api/auth/demo")
+          echo "demo: $code -> ${to#$BASE}"
+          [ "$code" = 303 ] && [ "$to" = "$BASE/es/home" ] || { echo "::error::la demo no entra"; exit 1; }
+
+          code=$(curl -s -o /dev/null -b "$jar" -w '%{http_code}' "$BASE/es/library")
+          echo "biblioteca: $code"
+          [ "$code" = 200 ] || { echo "::error::la biblioteca da $code (307 = sin sesión)"; exit 1; }
+
+          code=$(curl -s -o diary.json -b "$jar" -w '%{http_code}' "$BASE/api/library/diary")
+          echo "diario: $code"
+          [ "$code" = 200 ] && jq -e 'has("data")' diary.json >/dev/null || { echo "::error::/api/library/diary da $code o no trae { data }"; exit 1; }
+          rm -f diary.json
+          echo "OK: producción responde con la demo."
