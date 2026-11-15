@@ -44,7 +44,7 @@ beforeEach(() => {
 describe("buildAdaptationView", () => {
   it("título en el idioma, portada del catálogo y, si falta, de la ficha del proveedor", async () => {
     h.db.tables.media = [{ id: "book_OL1W", title: "Dune (catálogo)", poster: "https://covers.openlibrary.org/b/id/1-L.jpg", year: 1965 }];
-    h.loadMediaDetail.mockImplementation(async (type: string, id: string) =>
+    h.loadMediaDetail.mockImplementation(async (type: string) =>
       type === "movie" ? { item: { title: "Dune (TMDB)", poster: "https://image.tmdb.org/t/p/w500/x.jpg", year: 1984 } } : null
     );
     const view = await buildAdaptationView(

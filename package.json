@@ -6,7 +6,7 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint src --ext .js,.jsx,.ts,.tsx --cache --cache-location node_modules/.cache/eslint/",
+    "lint": "eslint src tests scripts --ext .js,.jsx,.ts,.tsx,.mjs,.cjs --cache --cache-location node_modules/.cache/eslint/",
     "type-check": "tsc --noEmit",
     "test": "vitest run",
     "test:watch": "vitest",
