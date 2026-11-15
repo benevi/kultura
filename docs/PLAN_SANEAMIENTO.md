@@ -330,7 +330,7 @@ Objetivo: que los fallos que hoy solo se ven revisando a mano los pare el CI o u
    - ✅ Las reglas de cambios de esquema (patrón de 3 PRs y cuándo se pueden juntar los pasos) escritas en `CLAUDE.md` (nuevo, en la raíz).
 8. **Condiciones de los proveedores** (revisadas el 13-11-2026):
    - ✅ Logo de TMDB junto a su aviso (#157). Ya estaban el aviso de TMDB, el enlace a RAWG en cada página y el enlace a la fuente en cada ficha (también ComicVine).
-   - ⬜ **TMDB no deja guardar sus datos más de 6 meses.** Hoy `media` (título, póster, fondo, sinopsis, metadatos) y `media_translations` (sinopsis traducidas, contenido derivado) no caducan nunca. Tarea periódica que vuelva a pedir a TMDB lo que tenga más de 6 meses y actualice `updated_at`; lo que TMDB ya no devuelva, se vacía (no se borra la fila: la usan las bibliotecas). Un PR.
+   - ✅ **TMDB no deja guardar sus datos más de 6 meses** (paso 5 del cron diario, `src/app/api/cron/daily/tmdb-retention.ts`; este PR: 20 fichas al día, las más viejas primero; 404 → se vacía; otro fallo → mañana; traducciones de TMDB de más de 6 meses, borradas). Antes `media` y `media_translations` no caducaban nunca; el título se conserva (referencia mínima de lo guardado).
 
 ---
 
