@@ -158,7 +158,9 @@ describe("LoginPage — modo register", () => {
           }),
         })
       )
-    );
+    );    // El registro sigue hasta la redirección a /welcome: se espera aquí para
+    // que no caiga en el test siguiente con la suite cargada (12.4).
+    await waitFor(() => expect(h.replace).toHaveBeenCalled());
   });
 
   // Los personajes se nombran en el idioma de la página (auth.characters.*),

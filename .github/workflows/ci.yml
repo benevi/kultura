@@ -79,8 +79,11 @@ jobs:
       - name: Sistema de diseño (clases sin regla y sets cerrados)
         run: npx vitest run tests/unit/visual tests/unit/design
 
-      - name: Unit tests
-        run: npm test
+      # Saneamiento 12.4: con cobertura y umbrales mínimos en src/lib/library y
+      # src/app/api (vitest.config.ts). La medición hace la suite más lenta;
+      # por eso los topes de tiempo suben solo aquí.
+      - name: Unit tests (con cobertura mínima)
+        run: npm run test:ci
 
       - name: Build
         run: npm run build

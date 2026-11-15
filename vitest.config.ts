@@ -23,7 +23,16 @@ export default defineConfig({
     setupFiles: ["./tests/setup.ts"],
     coverage: {
       reporter: ["text", "json", "html"],
+      include: ["src/**"],
       exclude: ["node_modules/", ".next/", "tests/e2e/", "tests/integration/"],
+      // Saneamiento 12.4: cobertura mínima solo donde un hueco cuesta datos
+      // (biblioteca y rutas de la API). Medida el 15-11-2026: biblioteca 92 %
+      // de líneas y 84 % de ramas; API 89 %, 82 % y 83 % de funciones. Los umbrales dejan unos
+      // puntos de margen; si un PR baja de ahí, añade tests, no baja el umbral.
+      thresholds: {
+        "src/lib/library/**": { lines: 90, statements: 87, functions: 90, branches: 80 },
+        "src/app/api/**": { lines: 86, statements: 83, functions: 81, branches: 79 },
+      },
     },
     projects: [
       {

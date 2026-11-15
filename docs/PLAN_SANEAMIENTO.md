@@ -317,10 +317,10 @@ Objetivo: que los fallos que hoy solo se ven revisando a mano los pare el CI o u
    - Las funciones SECURITY DEFINER que se pueden llamar desde la API (`can_read_list`, también sin sesión): quitar el permiso de ejecución o sacarlas del esquema expuesto.
    - Activar la protección contra contraseñas filtradas.
 3. **Banderas con caducidad:** un archivo con cada bandera (dueño, fecha, estado en producción). El CI falla si una pasa de 60 días. Empezar por `PROGRESS_V2`.
-4. **Confianza en el CI:**
+4. ✅ **Confianza en el CI:**
    - ✅ Tests intermitentes con motivo y plazo en `docs/tests-intermitentes.md` (este PR). `friends` y `rls-policies` ya estaban arreglados (integración de una en una); se arregla el foco de `AiRecommendations`; ninguno en cuarentena.
    - ✅ eslint también en `tests/` y `scripts/` (`npm run lint`), después de limpiar los errores (este PR). En `tests/` se apagan las reglas de next/link, next/image (los tests las simulan); la regla de la escala visual sigue activa y `scales.test.ts` la desactiva línea a línea.
-   - Cobertura mínima solo en `src/lib/library` y en las rutas de la API.
+   - ✅ Cobertura mínima solo en `src/lib/library` (90 % líneas, 80 % ramas) y en las rutas de la API (86 % y 79 %), medida en cada PR (`npm run test:ci`) (#165). Medida el 15-11: biblioteca 92 % y 84 %; API 89 % y 82 %.
 5. **Después de desplegar:**
    - Prueba rápida automática en producción: abrir la página, entrar con el usuario demo, cargar la biblioteca.
    - Alertas de Sentry por subida de errores en `/api/library` y `/api/progress` en la hora siguiente a desplegar (depende de la fase 10).

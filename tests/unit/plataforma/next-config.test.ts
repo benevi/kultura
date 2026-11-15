@@ -18,7 +18,8 @@ beforeAll(async () => {
   config = mod.default as unknown as Config;
   clientSentryDefines = mod.clientSentryDefines;
   rules = await config.headers();
-});
+
+}, 30_000); // next.config.mjs arrastra Sentry: con cobertura (npm run test:ci) tarda más de 10 s.
 
 function headersFor(source: string) {
   return rules.find((r) => r.source === source)?.headers ?? [];
