@@ -100,7 +100,6 @@ import {
   SHELL_CLIENT_NAMESPACES,
   WELCOME_CLIENT_NAMESPACES,
 } from "@/i18n/client-messages";
-import { siteUrl } from "@/lib/site-url";
 
 const ROOT = path.resolve(__dirname, "../../..");
 

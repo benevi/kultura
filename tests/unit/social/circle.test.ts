@@ -15,22 +15,6 @@ const USER_ID = 'user-me'
 const FRIEND_A = 'friend-a'
 const FRIEND_B = 'friend-b'
 
-function buildChain(returnValue: unknown) {
-  const chain: Record<string, unknown> = {}
-  const methods = ['select', 'eq', 'or', 'in', 'order', 'limit']
-  methods.forEach((m) => {
-    chain[m] = vi.fn().mockReturnValue(chain)
-  })
-  chain['mockResolvedValue'] = (v: unknown) => {
-    ;(chain['limit'] as ReturnType<typeof vi.fn>).mockResolvedValue(v)
-    ;(chain['or'] as ReturnType<typeof vi.fn>).mockResolvedValue(v)
-    ;(chain['in'] as ReturnType<typeof vi.fn>).mockResolvedValue(v)
-    return chain
-  }
-  void returnValue
-  return chain
-}
-
 beforeEach(() => {
   vi.clearAllMocks()
 })

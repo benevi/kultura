@@ -2,7 +2,7 @@
 // KULTURA — Copia del hero (D-11) y reglas de la galería de fondo
 // ============================================================
 
-import { describe, it, expect, vi } from "vitest";
+import { describe, it, expect } from "vitest";
 
 import es from "../../../messages/es.json";
 import en from "../../../messages/en.json";

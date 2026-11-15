@@ -7,7 +7,7 @@
  */
 import { createClient } from "@supabase/supabase-js";
 import { cachedClient } from "../login";
-import { describe, it, expect, beforeAll, afterAll } from "vitest";
+import { describe, it, expect, beforeAll } from "vitest";
 
 const TEST_URL = process.env.SUPABASE_TEST_URL ?? "";
 const TEST_ANON_KEY = process.env.SUPABASE_TEST_ANON_KEY ?? "";
@@ -151,7 +151,7 @@ describe("RLS — lists table", () => {
 describe("RLS — notifications table", () => {
   it("usuario solo ve sus propias notificaciones", async () => {
     const clientA = await clientAs(USER_A_EMAIL, USER_A_PASSWORD);
-    const clientB = await clientAs(USER_B_EMAIL, USER_B_PASSWORD);
+    await clientAs(USER_B_EMAIL, USER_B_PASSWORD);
     const { data: userA } = await clientA.auth.getUser();
 
     const { data: notifs } = await clientA.from("notifications").select("user_id");

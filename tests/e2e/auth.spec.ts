@@ -1,10 +1,10 @@
-import { test, expect } from "@playwright/test";
+import { test, expect, type Page } from "@playwright/test";
 
 const TEST_EMAIL = `test_${Date.now()}@example.com`;
 const TEST_PASSWORD = "Test1234!";
 
 // `exact`: el botón "Mostrar contraseña" también contiene "contraseña".
-const passwordField = (page: any) => page.getByLabel("Contraseña", { exact: true });
+const passwordField = (page: Page) => page.getByLabel("Contraseña", { exact: true });
 
 test.describe("Auth flow", () => {
   test("landing page loads and CTAs visible", async ({ page }) => {

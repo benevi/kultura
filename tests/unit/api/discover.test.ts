@@ -91,7 +91,6 @@ import { fetchDiscoverData } from "@/lib/api/discover";
 import { discoverMovies, discoverTV } from "@/lib/api/tmdb";
 import { discoverAnime, AniListError } from "@/lib/api/anilist";
 import { getPopularManga } from "@/lib/api/mangadex";
-import { searchGoogleBooks } from "@/lib/api/googlebooks";
 import {
   searchOpenLibrary,
   OPEN_LIBRARY_CATALOG_WINDOW,
