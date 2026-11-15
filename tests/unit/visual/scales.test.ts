@@ -64,12 +64,14 @@ describe("DIS-7 · radios", () => {
     ).toEqual([]);
   });
 
+  // eslint-disable-next-line no-restricted-syntax -- el nombre del test cita la clase prohibida
   it("0 radios arbitrarios `rounded-[…]`", () => {
     expect(offenders(new RegExp(`${B}rounded(-[a-z]{1,2})?-\\[`, "g"), { allowForeign: true })).toEqual([]);
   });
 });
 
 describe("DIS-12 · escala tipográfica", () => {
+  // eslint-disable-next-line no-restricted-syntax -- el nombre del test cita la clase prohibida
   it("0 tamaños arbitrarios `text-[Npx]` / `text-[clamp…]` (salvo archivos ajenos)", () => {
     expect(offenders(new RegExp(`${B}text-\\[(\\d|clamp)`, "g"), { allowForeign: true })).toEqual([]);
   });
@@ -99,6 +101,7 @@ describe("sombras del set cerrado", () => {
     expect(Object.keys(config.theme!.boxShadow as object).sort()).toEqual(["hard", "hard-sm", "none", "soft", "sticker"]);
   });
 
+  // eslint-disable-next-line no-restricted-syntax -- el nombre del test cita la clase prohibida
   it("0 sombras arbitrarias `shadow-[…]`", () => {
     expect(offenders(new RegExp(`${B}shadow-\\[`, "g"))).toEqual([]);
   });
