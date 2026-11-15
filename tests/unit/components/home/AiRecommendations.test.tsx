@@ -1,4 +1,4 @@
-import { render, screen, fireEvent } from '@testing-library/react'
+import { render, screen, fireEvent, waitFor } from '@testing-library/react'
 import { describe, it, expect, vi, afterEach } from 'vitest'
 
 vi.mock('@/i18n/navigation', () => ({
@@ -131,7 +131,9 @@ describe('AiRecommendations — revisión (guardado, foco y región viva)', () =
     await screen.findAllByTestId('card')
 
     const section = screen.getByRole('region', { name: 'title' })
-    expect(section).toHaveFocus()
+    // El foco llega en un useEffect después de pintar las tarjetas; con la
+    // suite entera cargada puede ir un tick por detrás (falló el 13-11-2026, #162).
+    await waitFor(() => expect(section).toHaveFocus())
     expect(section.className.split(/\s+/)).not.toContain('outline-none')
     expect(section.className).toContain('focus-visible:ring-2')
   })

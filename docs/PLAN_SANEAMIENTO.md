@@ -318,7 +318,7 @@ Objetivo: que los fallos que hoy solo se ven revisando a mano los pare el CI o u
    - Activar la protección contra contraseñas filtradas.
 3. **Banderas con caducidad:** un archivo con cada bandera (dueño, fecha, estado en producción). El CI falla si una pasa de 60 días. Empezar por `PROGRESS_V2`.
 4. **Confianza en el CI:**
-   - Tests intermitentes (`friends`, `rls-policies`) en cuarentena con motivo y plazo, y arreglados.
+   - ✅ Tests intermitentes con motivo y plazo en `docs/tests-intermitentes.md` (este PR). `friends` y `rls-policies` ya estaban arreglados (integración de una en una); se arregla el foco de `AiRecommendations`; ninguno en cuarentena.
    - ✅ eslint también en `tests/` y `scripts/` (`npm run lint`), después de limpiar los errores (este PR). En `tests/` se apagan las reglas de next/link, next/image (los tests las simulan); la regla de la escala visual sigue activa y `scales.test.ts` la desactiva línea a línea.
    - Cobertura mínima solo en `src/lib/library` y en las rutas de la API.
 5. **Después de desplegar:**
