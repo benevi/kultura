@@ -304,7 +304,7 @@ Los `loading.tsx` y el componente de error con reintento pasan a la fase 8 (Q32)
    - Migraciones con fecha futura (Q13).
 4. **Borrar el código de cada bandera en estado apagado.** Las seis banderas están a `1` en producción.
 
-## 🟨 Fase 12 · Rigor (comprobaciones automáticas; después de la 10, antes de la 8) — 1: #154 #155 y este PR · 13-11-2026
+## 🟨 Fase 12 · Rigor (comprobaciones automáticas; después de la 10, antes de la 8) — 1: #154–#156 · 2: #158 #160 · 3: #161 · 4: #163–#165 · 5: #167 #169 · 6: #162 · 7: #166 · 8: #157 #168 · 16-11-2026. Falta: migración 12.2 en producción, contraseñas filtradas y alertas de Sentry (tras el 10.4)
 
 Objetivo: que los fallos que hoy solo se ven revisando a mano los pare el CI o una alarma. Un PR por punto. Prioridad: 1, 2 y 6 primero.
 
@@ -313,24 +313,24 @@ Objetivo: que los fallos que hoy solo se ven revisando a mano los pare el CI o u
    - Una migración con `drop column` falla si alguna función todavía usa la columna, o si lleva CASCADE (las vistas y políticas ya bloquean el `drop`; los índices se borran con la columna) (#155).
    - Script que compara las migraciones aplicadas en producción y en `kultura-test` con los archivos del repo (`scripts/check-applied-migrations.mjs`, a mano). 13-11: producción tiene todas menos `push` y `push_throttle` (Q14); test, todas.
 2. **Seguridad en el CI:**
-   - `rls_audit()` y los avisos de Supabase hacen fallar el CI si aparece uno nuevo.
-   - Las funciones SECURITY DEFINER que se pueden llamar desde la API (`can_read_list`, también sin sesión): quitar el permiso de ejecución o sacarlas del esquema expuesto.
-   - Activar la protección contra contraseñas filtradas.
-3. **Banderas con caducidad:** un archivo con cada bandera (dueño, fecha, estado en producción). El CI falla si una pasa de 60 días. Empezar por `PROGRESS_V2`.
+   - ✅ `rls_audit()`, vistas sin `security_invoker` y SECURITY DEFINER fuera de la lista hacen fallar el CI (#158).
+   - 🟨 Las funciones SECURITY DEFINER que se pueden llamar desde la API (`can_read_list`, también sin sesión): movidas al esquema `private` (#160). Aplicada en `kultura-test`; **falta en producción** (tras copia y visto bueno).
+   - ⬜ Activar la protección contra contraseñas filtradas (Supabase → Authentication; lo hace el dueño).
+3. ✅ **Banderas con caducidad** (#161; `docs/banderas.json`, `scripts/check-flags.mjs`; falta el estado en producción de 8): un archivo con cada bandera (dueño, fecha, estado en producción). El CI falla si una pasa de 60 días. Empezar por `PROGRESS_V2`.
 4. ✅ **Confianza en el CI:**
-   - ✅ Tests intermitentes con motivo y plazo en `docs/tests-intermitentes.md` (este PR). `friends` y `rls-policies` ya estaban arreglados (integración de una en una); se arregla el foco de `AiRecommendations`; ninguno en cuarentena.
-   - ✅ eslint también en `tests/` y `scripts/` (`npm run lint`), después de limpiar los errores (este PR). En `tests/` se apagan las reglas de next/link, next/image (los tests las simulan); la regla de la escala visual sigue activa y `scales.test.ts` la desactiva línea a línea.
+   - ✅ Tests intermitentes con motivo y plazo en `docs/tests-intermitentes.md` (#164). `friends` y `rls-policies` ya estaban arreglados (integración de una en una); se arregla el foco de `AiRecommendations`; ninguno en cuarentena.
+   - ✅ eslint también en `tests/` y `scripts/` (`npm run lint`), después de limpiar los errores (#163). En `tests/` se apagan las reglas de next/link, next/image (los tests las simulan); la regla de la escala visual sigue activa y `scales.test.ts` la desactiva línea a línea.
    - ✅ Cobertura mínima solo en `src/lib/library` (90 % líneas, 80 % ramas) y en las rutas de la API (86 % y 79 %), medida en cada PR (`npm run test:ci`) (#165). Medida el 15-11: biblioteca 92 % y 84 %; API 89 % y 82 %.
 5. **Después de desplegar:**
-   - ✅ Prueba rápida automática en producción: abrir la página, entrar con el usuario demo, cargar la biblioteca (`.github/workflows/smoke-prod.yml`, tras cada despliegue a producción y a mano; este PR).
-   - Alertas de Sentry por subida de errores en `/api/library` y `/api/progress` en la hora siguiente a desplegar (depende de la fase 10).
+   - ✅ Prueba rápida automática en producción: abrir la página, entrar con el usuario demo, cargar la biblioteca (`.github/workflows/smoke-prod.yml`, tras cada despliegue a producción y a mano; #167, #169). Primera ejecución en verde el 16-11.
+   - ⬜ Alertas de Sentry por subida de errores en `/api/library` y `/api/progress` en la hora siguiente a desplegar (depende de la fase 10).
 6. ✅ **Restauración probada:** cada copia semanal (`backup.yml`) se restaura en un Supabase local del runner y compara las filas por tabla con el volcado. Sin la clave privada en GitHub: prueba el volcado; el descifrado sigue en la prueba trimestral a mano.
 7. ✅ **Proceso en el repo:** (#166)
    - ✅ Plantilla de PR (`.github/pull_request_template.md`) con lista: ¿migración?, ¿aplicada en test?, ¿copia hecha?, ¿versión del SW?, ¿cómo se deshace?
    - ✅ Las reglas de cambios de esquema (patrón de 3 PRs y cuándo se pueden juntar los pasos) escritas en `CLAUDE.md` (nuevo, en la raíz).
 8. **Condiciones de los proveedores** (revisadas el 13-11-2026):
    - ✅ Logo de TMDB junto a su aviso (#157). Ya estaban el aviso de TMDB, el enlace a RAWG en cada página y el enlace a la fuente en cada ficha (también ComicVine).
-   - ✅ **TMDB no deja guardar sus datos más de 6 meses** (paso 5 del cron diario, `src/app/api/cron/daily/tmdb-retention.ts`; este PR: 20 fichas al día, las más viejas primero; 404 → se vacía; otro fallo → mañana; traducciones de TMDB de más de 6 meses, borradas). Antes `media` y `media_translations` no caducaban nunca; el título se conserva (referencia mínima de lo guardado).
+   - ✅ **TMDB no deja guardar sus datos más de 6 meses** (paso 5 del cron diario, `src/app/api/cron/daily/tmdb-retention.ts`; #168: 20 fichas al día, las más viejas primero; 404 → se vacía; otro fallo → mañana; traducciones de TMDB de más de 6 meses, borradas). Antes `media` y `media_translations` no caducaban nunca; el título se conserva (referencia mínima de lo guardado).
 
 ---
 
