@@ -8,7 +8,9 @@
 //   2. purga de las cuentas cuyo borrado venció (ROJO-7, 7 días de gracia);
 //   3. retención de la analítica de producto (13 meses, F-17);
 //   4. los lunes, el correo semanal (F-28; detrás de WEEKLY_EMAIL=1 y sus
-//      claves: sin ellas `weekly.status` dice `disabled` y por qué).
+//      claves: sin ellas `weekly.status` dice `disabled` y por qué);
+//   5. los datos de TMDB con más de 6 meses se vuelven a pedir o se vacían
+//      (saneamiento 12.8, `tmdb-retention.ts`).
 //
 // El keep-alive se hace siempre (es inocuo y no puede depender de una
 // variable mal puesta). La purga exige CRON_SECRET: Vercel manda
@@ -23,6 +25,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { createLogger } from '@/lib/logger'
 import { purgeExpiredAccounts } from './purge'
 import { purgeOldAnalytics } from './analytics'
+import { refreshTmdbData } from './tmdb-retention'
 import { defaultDigestDeps, runWeeklyDigest } from '@/lib/email/digest'
 
 const log = createLogger('cron/daily')
@@ -80,11 +83,18 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
     return { status: 'error' as const }
   })
 
+  // 5. Datos de TMDB de más de 6 meses (después del correo: es lo que puede esperar a mañana).
+  const tmdb = await refreshTmdbData({ admin }).catch((e: unknown) => {
+    log.error(`datos de TMDB: ${e instanceof Error ? e.message : String(e)}`)
+    return { status: 'error' as const }
+  })
+
   const ok =
     health.ok === true &&
     purge.status !== 'error' &&
     purge.failed === 0 &&
     analytics.status !== 'error' &&
-    weekly.status !== 'error'
-  return NextResponse.json({ ok, health, purge, analytics, weekly }, { status: ok ? 200 : 500, headers: noStore })
+    weekly.status !== 'error' &&
+    tmdb.status !== 'error'
+  return NextResponse.json({ ok, health, purge, analytics, weekly, tmdb }, { status: ok ? 200 : 500, headers: noStore })
 }

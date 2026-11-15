@@ -13,6 +13,10 @@ const h = vi.hoisted(() => ({
   query: {} as Record<string, ReturnType<typeof vi.fn>>,
 }))
 
+// Paso 5 (datos de TMDB, saneamiento 12.8): tiene sus propios tests.
+vi.mock('@/app/api/cron/daily/tmdb-retention', () => ({
+  refreshTmdbData: async () => ({ status: 'done', refreshed: 0, emptied: 0, failed: 0, translationsDeleted: 0 }),
+}))
 vi.mock('@/app/api/health/route', () => ({ GET: h.health }))
 vi.mock('@/lib/supabase/admin', () => ({
   createAdminClient: () => ({
