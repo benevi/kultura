@@ -55,8 +55,11 @@ jobs:
           jar="$RUNNER_TEMP/jar"
           trap 'curl -s -o /dev/null -b "$jar" -X POST -F locale=es "$BASE/api/auth/demo/exit"; rm -f "$jar"' EXIT
 
-          read -r code to < <(curl -s -o /dev/null -c "$jar" -X POST -F locale=es \
+          # Sin `read`: la salida de -w no acaba en salto de línea y, con bash -e,
+          # read devolvería 1 y cortaría el paso sin decir nada.
+          out=$(curl -s -o /dev/null -c "$jar" -X POST -F locale=es \
             -w '%{http_code} %{redirect_url}' "$BASE/api/auth/demo")
+          code=${out%% *}; to=${out#* }
           echo "demo: $code -> ${to#$BASE}"
           [ "$code" = 303 ] && [ "$to" = "$BASE/es/home" ] || { echo "::error::la demo no entra"; exit 1; }
 
