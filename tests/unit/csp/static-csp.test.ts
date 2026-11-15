@@ -47,7 +47,8 @@ let rules: Rule[];
 beforeAll(async () => {
   mod = (await import("../../../next.config.mjs")) as unknown as ConfigModule;
   rules = await mod.default.headers();
-});
+
+}, 30_000); // next.config.mjs arrastra Sentry: con cobertura (npm run test:ci) tarda más de 10 s.
 
 const directive = (csp: string, name: string) =>
   csp.split("; ").find((d) => d === name || d.startsWith(`${name} `));

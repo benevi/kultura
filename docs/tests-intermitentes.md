@@ -15,6 +15,8 @@ Ninguno.
 | `tests/integration/db/friends.test.ts`, `library-upsert.test.ts`, `rls-policies.test.ts` | Filas de otro test, `23505`, estados cruzados (11-11) | Dos ejecuciones a la vez contra `kultura-test` con los mismos usuarios fijos | El job de integración corre de uno en uno (`concurrency: integration-test-db` en `ci.yml`). Sin fallos desde el 11-11. |
 | `tests/unit/identity/home-identity.test.tsx` · nombre generado | `expected 'NO' not to be 'NO'` (11-11) | El test exigía que las iniciales no fueran «NO» (las del email «nombre@…»), pero el nombre aleatorio a veces empezaba por «no» | Compara las iniciales con las del nombre generado (#104). |
 | `tests/unit/components/home/AiRecommendations.test.tsx` · foco | `toHaveFocus()` (13-11, #162) | El foco llega en un `useEffect` después de pintar; con la suite cargada iba un tick por detrás | `waitFor` sobre el foco (este PR). |
+| `tests/unit/components/auth/register-form.test.tsx` · «Revisa tu correo» | `h.replace` llamado (15-11, con cobertura) | El test anterior acababa al llamar a `signUp` y su redirección a `/welcome` llegaba en el siguiente | El test anterior espera la redirección (#PR de cobertura). |
+| `tests/unit/csp/static-csp.test.ts`, `tests/unit/plataforma/next-config.test.ts` | `Hook timed out in 10000ms` (15-11, con cobertura) | Importar `next.config.mjs` (arrastra Sentry) pasa de 10 s con la medición | `beforeAll` con 30 s (#PR de cobertura). |
 
 ## Vigilados
 
