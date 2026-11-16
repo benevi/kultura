@@ -3,7 +3,6 @@ import { createTranslator } from "next-intl";
 import { C, loadFont, fontsOption } from "@/lib/og/brand";
 import { posterDataUri } from "@/lib/og/poster";
 import { getPublicCollection } from "@/lib/social/public-collection";
-import { publicTopFour } from "@/lib/share/top-four";
 import { PROFILE_OG_ID } from "@/components/pwa/share";
 import es from "../../../../../messages/es.json";
 import en from "../../../../../messages/en.json";
@@ -13,12 +12,8 @@ import en from "../../../../../messages/en.json";
  * portadas de sus listas públicas. Cada portada se descarga aquí con un tope
  * de tiempo y, si falla, su hueco queda con el gradiente de póster de F0: la
  * tarjeta NUNCA depende de que un proveedor responda.
- *
- * CRE-8c (F-29): con el top 4 visible SIN CUENTA (`publicTopFour`: bandera
- * `SHARE_PUBLIC_LIBRARY=1` y biblioteca pública), la tarjeta es "El top 4
- * de …" con sus 4 favoritos. La tarjeta se pide siempre sin sesión, así que
- * nunca enseña nada de una biblioteca que un anónimo no pueda ver. Caché corta
- * (5-10 min): si cambia la visibilidad, la tarjeta no se queda un año.
+ * La tarjeta se pide siempre sin sesión: nunca enseña nada de la biblioteca.
+ * Caché corta (5-10 min): si cambian las listas, la tarjeta no se queda un año.
  *
  * El `alt` sale traducido y con el nombre («@ana en KULTURA») por
  * `generateImageMetadata`: la imagen vive en `/opengraph-image/card`
@@ -63,31 +58,29 @@ const FALLBACKS = [
 ];
 const TILT = [-6, 3, -2, 5];
 
-/** Ver la cabecera: la tarjeta puede depender de la visibilidad de la biblioteca. */
+/** Ver la cabecera: caché corta para que los cambios de las listas se vean pronto. */
 const OG_CACHE_CONTROL = "public, max-age=300, s-maxage=600";
 
 export default async function Image({ params }: { params: CardParams | Promise<CardParams> }) {
   const { locale, username: rawUsername } = await params;
   const username = decodeName(rawUsername);
   const l = cardLocale(locale);
-  const tOg = createTranslator({ locale: l, messages: MESSAGES[l], namespace: "share.og" });
   const t = createTranslator({ locale: l, messages: MESSAGES[l], namespace: "collection" });
 
   // Un nombre antiguo no se resuelve (Q8): tarjeta vacía, como uno que no
   // existe. Solo listas públicas: la tarjeta la ve cualquiera, la biblioteca
-  // nunca (salvo el top 4 cuando su dueño la deja ver sin cuenta, ver cabecera).
+  // nunca.
   const collection = await getPublicCollection(username).catch(() => null);
   const displayName = collection?.owner.username ?? username;
-  const top = collection ? await publicTopFour(displayName).catch(() => null) : null;
   const lists = collection?.lists ?? [];
-  const sources = (top ?? lists.flatMap((list) => list.items))
+  const sources = lists.flatMap((list) => list.items)
     .map((i) => i.poster)
     .filter((p): p is string => Boolean(p))
     .slice(0, 4);
   const posters = await Promise.all(sources.map(posterDataUri));
   while (posters.length < 4) posters.push(null);
 
-  const heading = top ? tOg("top4") : t("ogHeading");
+  const heading = t("ogHeading");
   const meta = t("listsCount", { count: lists.length });
   const fonts = (
     await Promise.all([

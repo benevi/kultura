@@ -11,9 +11,9 @@
 //     (la RLS decide la lectura con la sesión de quien mira);
 //   - con el ENLACE FIRMADO que genera la ficha para su dueño (`?s=`): es el
 //     consentimiento de compartir ESA nota, también sin cuenta y en la
-//     tarjeta OG. Nunca si la biblioteca está en "Solo yo" ni si hay bloqueo;
-//   - sin cuenta y sin firma, solo con `SHARE_PUBLIC_LIBRARY=1` y biblioteca
-//     "pública" (apagado: hoy "pública" es "cualquiera CON cuenta").
+//     tarjeta OG. Nunca si la biblioteca está en "Solo yo" ni si hay bloqueo.
+// Sin cuenta y sin firma, nunca: "pública" es "cualquiera CON cuenta"
+// (la bandera SHARE_PUBLIC_LIBRARY se retiró apagada, saneamiento 11.4).
 // En cualquier otro caso: tarjeta GENÉRICA (el título y el perfil, sin nota),
 // idéntica tenga o no nota, para no filtrar nada por diferencia. 404 solo si
 // no existe el usuario o el título.
@@ -236,11 +236,6 @@ export const loadShareMedia = dedupe(async (type: MediaType, externalId: string,
 
 // ── Decisión ──────────────────────────────────────────────────────────────────
 
-/** Sin cuenta y sin firma: solo con la bandera y biblioteca "pública" (ver cabecera). */
-export function anonymousCanSeeLibrary(visibility: LibraryVisibility | null): boolean {
-  return process.env.SHARE_PUBLIC_LIBRARY === "1" && visibility === "public";
-}
-
 /** ¿Hay un bloqueo entre quien mira y el dueño? Ante un error: sí (no se enseña). */
 async function hasBlockWith(client: SupabaseClient, ownerId: string): Promise<boolean> {
   try {
@@ -273,8 +268,6 @@ export type RatingShareView =
       rating: ShareRating;
       /** La vio gracias al enlace firmado (la tarjeta OG con nota es la firmada). */
       signed: boolean;
-      /** Visible sin cuenta y sin firma (bandera): la tarjeta OG normal también la lleva. */
-      publicWithoutSignature: boolean;
       isOwner: boolean;
     };
 
@@ -299,16 +292,15 @@ export async function resolveRatingShare(input: {
   const isOwner = viewer?.id === owner.id;
   const signed = isValidRatingShareSignature(owner.id, parsed.id, input.sig);
   const visibility = owner.libraryVisibility;
-  const publicWithoutSignature = anonymousCanSeeLibrary(visibility);
 
   // Quién lee la fila: la sesión de quien mira cuando la RLS ya le deja; el
-  // cliente admin solo cuando la deja ver el consentimiento (firma o bandera).
+  // cliente admin solo cuando la deja ver el consentimiento (la firma).
   let reader: SupabaseClient | null = null;
   if (isOwner) {
     reader = viewer!.supabase;
   } else if (!(viewer && (await hasBlockWith(viewer.supabase, owner.id))) && visibility !== "private") {
     if (viewer && (await viewerCanReadLibrary(viewer.supabase, owner.id))) reader = viewer.supabase;
-    else if (signed || publicWithoutSignature) reader = admin();
+    else if (signed) reader = admin();
   }
 
   const fromRow = reader ? await loadOwnerRating(reader, owner.id, parsed.id).catch(() => null) : null;
@@ -317,7 +309,7 @@ export async function resolveRatingShare(input: {
 
   const rating = fromRow ? formatShareRating(fromRow, await ownerShareScale(owner.id), input.locale) : null;
   if (!rating) return { kind: "generic", owner, parsed, media };
-  return { kind: "rated", owner, parsed, media, rating, signed, publicWithoutSignature, isOwner };
+  return { kind: "rated", owner, parsed, media, rating, signed, isOwner };
 }
 
 /**

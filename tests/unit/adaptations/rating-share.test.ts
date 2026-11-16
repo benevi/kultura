@@ -18,7 +18,6 @@ vi.mock("@/lib/media/detail-data", () => ({ loadMediaDetail: h.loadMediaDetail }
 vi.mock("@/lib/supabase/server", () => ({ createClient: async () => worldClient(h.world, "anon") }));
 
 import {
-  anonymousCanSeeLibrary,
   formatShareRating,
   isValidRatingShareSignature,
   plainRich,
@@ -58,7 +57,6 @@ beforeEach(() => {
 });
 afterEach(() => {
   delete process.env.RATING_SCALE_10;
-  delete process.env.SHARE_PUBLIC_LIBRARY;
   delete process.env.SHARE_SECRET;
 });
 
@@ -159,12 +157,11 @@ describe("resolveRatingShare", () => {
     expect((await view({ viewer: viewer("stranger"), sig: SIG() })).kind).toBe("generic");
   });
 
-  it("sin cuenta y sin firma, solo con SHARE_PUBLIC_LIBRARY=1 y biblioteca pública", async () => {
+  it("sin cuenta y sin firma, nunca: ni con la biblioteca pública", async () => {
     h.world.db.tables.users[0].library_visibility = "public";
-    expect((await view()).kind).toBe("generic");
     process.env.SHARE_PUBLIC_LIBRARY = "1";
-    expect(await view()).toMatchObject({ kind: "rated", publicWithoutSignature: true });
-    expect(anonymousCanSeeLibrary("friends")).toBe(false);
+    expect((await view()).kind).toBe("generic");
+    delete process.env.SHARE_PUBLIC_LIBRARY;
   });
 
   it("sin RATING_SCALE_10: la nota entera de siempre", async () => {
