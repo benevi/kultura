@@ -96,10 +96,10 @@ describe('GET /api/lists', () => {
     expect(listsResultSchema.parse(body.data)).toHaveLength(1)
   })
 
-  it('filters lists by mediaType', async () => {
+  it('filters lists by mediaType (y ofrece también las mixtas)', async () => {
     mockGetUser.mockResolvedValue({ data: { user: AUTH_USER }, error: null })
-    const mockEq2 = vi.fn().mockResolvedValue({ data: [LIST_ROW], error: null })
-    const mockOrder = vi.fn().mockReturnValue({ eq: mockEq2 })
+    const mockIn = vi.fn().mockResolvedValue({ data: [LIST_ROW], error: null })
+    const mockOrder = vi.fn().mockReturnValue({ in: mockIn })
     mockFromLists.mockReturnValue({
       select: vi.fn().mockReturnValue({
         eq: vi.fn().mockReturnValue({
@@ -110,7 +110,7 @@ describe('GET /api/lists', () => {
     const { GET } = await import('@/app/api/lists/route')
     const res = await GET(makeGetRequest('?mediaType=movie'))
     expect(res.status).toBe(200)
-    expect(mockEq2).toHaveBeenCalledWith('media_type', 'movie')
+    expect(mockIn).toHaveBeenCalledWith('media_type', ['movie', 'mixed'])
   })
 })
 

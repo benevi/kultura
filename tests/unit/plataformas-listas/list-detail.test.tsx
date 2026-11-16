@@ -42,7 +42,7 @@ beforeEach(() => {
   vi.stubGlobal('fetch', fetchMock)
 })
 
-function renderDetail(mixedEnabled = true, canEdit = true) {
+function renderDetail(canEdit = true) {
   return render(
     <ListDetail
       list={LIST}
@@ -51,7 +51,6 @@ function renderDetail(mixedEnabled = true, canEdit = true) {
       currentUserId="u1"
       currentUserFriends={FRIENDS}
       canEdit={canEdit}
-      mixedEnabled={mixedEnabled}
     />,
   )
 }
@@ -79,12 +78,6 @@ describe('ListDetail (F-25)', () => {
     expect(screen.getByRole('button', { name: 'lists.reorderDone' })).toHaveAttribute('aria-pressed', 'true')
     expect(screen.getAllByRole('button', { name: /lists\.dragHandle/ })).toHaveLength(2)
     expect(screen.getByRole('button', { name: /lists\.addNoteNamed.*mesías/ })).toBeInTheDocument()
-  })
-
-  it('sin la bandera: nada de ordenar, notas ni editar descripción', () => {
-    renderDetail(false)
-    expect(screen.queryByRole('button', { name: 'lists.reorder' })).toBeNull()
-    expect(screen.queryByRole('button', { name: 'lists.editDescription' })).toBeNull()
   })
 
   it('el dueño edita la descripción en línea', async () => {
