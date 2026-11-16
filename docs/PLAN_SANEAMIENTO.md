@@ -100,7 +100,7 @@ Estado de partida:
 
 **Notas de la ejecución:**
 - 1.1: para cuentas solo de Google se pide un inicio de sesión de hace menos de 10 minutos en vez de un código por email: hoy no hay servicio de email (sin `RESEND_API_KEY`). Revisar cuando lo haya.
-- 1.5: el título no se refresca (depende del idioma de quien creó la ficha). En prod ninguna ficha tiene el póster a null, así que los pósters vacíos no venían de aquí: ver el punto 2 de pendientes (probable bloqueo de hotlinking en MangaDex o ComicVine).
+- 1.5: el título no se refresca (depende del idioma de quien creó la ficha). En prod ninguna ficha tiene el póster a null, así que los pósters vacíos no venían de aquí: ver 5.2 (cerrado sin cambios: ninguna ficha sin póster y todos los hosts cargan).
 
 ---
 
@@ -192,12 +192,12 @@ Estado de partida:
 
 Los filtros de la biblioteca **no van aquí**: pasan a la fase 8 (Q28).
 
-## 🟨 Red de seguridad (en paralelo desde la fase 0) — 3 #113 · 4 #115 · 7 #114 · 11-11-2026
+## ✅ Red de seguridad (en paralelo desde la fase 0) — 3 #113 · 4 #115 · 7 #114 · 11-11-2026 · cerrada el 16-11-2026
 
 - 2: hecha el 11-11-2026 en Supabase local con Docker, unos 5 min; recuentos iguales a producción (detalle en `supabase/README.md`).
 - 3: la integración corre en serie (los ficheros comparten usuarios) y el login reintenta ante el límite de Auth de `kultura-test`.
-- 5: secretos `RAWG_API_KEY`, `COMICVINE_KEY` y `GOOGLE_BOOKS_KEY` puestos el 11-11-2026. El 12-11 seguía en rojo solo por caídas (RAWG, Jikan y ComicVine sin respuesta). Desde este PR una caída (tiempo agotado, red, 5xx, 429) deja un aviso y no falla; solo un contrato roto abre issue.
-- 6: `npm audit fix` no arregla ninguna (12-11: solo sube versiones). `@sentry/nextjs` 11.12 quita las 4 de Sentry (`glob`/`minimatch`) — este PR. Quedan 6 moderadas de `typescript-eslint` (solo lint, sin arreglo publicado: sigue con `minimatch@^10`).
+- 5: secretos `RAWG_API_KEY`, `COMICVINE_KEY` y `GOOGLE_BOOKS_KEY` puestos el 11-11-2026. El 12-11 seguía en rojo solo por caídas (RAWG, Jikan y ComicVine sin respuesta). Desde entonces una caída (tiempo agotado, red, 5xx, 429) deja un aviso y no falla; solo un contrato roto abre issue. En verde en `master` desde el 12-11-2026 (última, 16-11).
+- 6: `npm audit fix` no arregla ninguna (12-11: solo sube versiones). `@sentry/nextjs` 11.12 quita las 4 de Sentry (`glob`/`minimatch`). Quedan 6 moderadas de `typescript-eslint` (solo lint, sin arreglo publicado: sigue con `minimatch@^10`). 16-11-2026: `npm audit --omit=dev` da 0; las 6 de lint se aceptan hasta que haya arreglo.
 
 1. B1 hecho y comprobado.
 2. **Prueba de restauración en un Supabase local (Docker)**, que se borra al terminar. **Nunca en `kultura-test`** (Q16). Apuntar la fecha y la duración.
