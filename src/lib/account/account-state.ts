@@ -15,11 +15,6 @@ import { TERMS_VERSION } from '@/lib/account/identity'
 /** Solo para la UI vieja (`(app)/profile/[username]/page.tsx`); se va con ella. */
 export { isNotMigrated } from '@/lib/supabase/not-migrated'
 
-/** Bandera que Víctor activa en Vercel tras aplicar la migración. */
-export function accountGraceEnabled(): boolean {
-  return process.env.ACCOUNT_GRACE === '1'
-}
-
 export interface AccountState {
   terms_accepted_at: string | null
   terms_version: string | null

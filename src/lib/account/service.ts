@@ -14,9 +14,7 @@ import { failure, success, type ServiceResult } from '@/lib/api/result'
 import { ACCOUNT_ERRORS } from '@/lib/account/errors'
 import type { accountDeleteResultSchema, deletionSummarySchema } from '@/lib/api/contracts/account'
 import {
-  accountGraceEnabled,
   cancelDeletion,
-  deleteAccountNow,
   readAccountState,
   readDeletionPreview,
   scheduleDeletion,
@@ -69,7 +67,7 @@ export async function getDeletionSummary(supabase: SupabaseClient, userId: strin
     friends,
     groups: preview?.groups ?? null,
     sharedLists: preview?.lists ?? null,
-    graceDays: accountGraceEnabled() && account.migrated ? ACCOUNT_GRACE_DAYS : 0,
+    graceDays: account.migrated ? ACCOUNT_GRACE_DAYS : 0,
     deletionRequestedAt: account.state?.deletion_requested_at ?? null,
   })
 }
@@ -78,11 +76,9 @@ export async function getDeletionSummary(supabase: SupabaseClient, userId: strin
  * Borra la cuenta tras reautenticar: contraseña si la tiene; si no (solo
  * Google), un inicio de sesión de hace menos de 10 minutos.
  *
- * Con `ACCOUNT_GRACE=1`, la programa para dentro de 7 días (el cron diario la
- * borra; entrar y cancelar la salva). Si no se puede programar, `unavailable`
- * y nada se borra. Sin la bandera, la borra ya: primero traspasa grupos y
- * listas colaborativas y después el usuario de Auth, que se lleva en cascada
- * el resto.
+ * La programa para dentro de 7 días: el cron diario la borra (traspasa
+ * grupos y listas colaborativas y después el usuario de Auth), y entrar y
+ * cancelar la salva. Si no se puede programar, `unavailable` y nada se borra.
  */
 export async function deleteAccount(user: User, password: string | undefined): Promise<ServiceResult<AccountDeleteResult>> {
   const demo = demoForbidden<AccountDeleteResult>(user)
@@ -95,22 +91,12 @@ export async function deleteAccount(user: User, password: string | undefined): P
       : failure('forbidden', { message: identity.code })
   }
 
-  const admin = createAdminClient()
-  if (accountGraceEnabled()) {
-    const requestedAt = await scheduleDeletion(admin, user.id)
-    if (requestedAt) return success({ scheduled: true, purgeAt: purgeDate(requestedAt).toISOString() })
-    // El modal ha prometido días de gracia: mejor un error y reintentar que
-    // un borrado inmediato e irreversible.
-    log.error('ACCOUNT_GRACE activo pero no se pudo programar el borrado: no se borra', { userId: user.id })
-    return failure('unavailable', { message: ACCOUNT_ERRORS.deletionNotScheduled })
-  }
-
-  const result = await deleteAccountNow(admin, user.id)
-  if (!result.ok) {
-    log.error(`Failed to delete account (${result.step}) · ${result.message}`, { userId: user.id })
-    return failure('internal', { message: 'Failed to delete account' })
-  }
-  return success({ scheduled: false, transferred: result.transferred })
+  const requestedAt = await scheduleDeletion(createAdminClient(), user.id)
+  if (requestedAt) return success({ scheduled: true, purgeAt: purgeDate(requestedAt).toISOString() })
+  // El modal ha prometido días de gracia: mejor un error y reintentar que
+  // un borrado inmediato e irreversible.
+  log.error('No se pudo programar el borrado: no se borra', { userId: user.id })
+  return failure('unavailable', { message: ACCOUNT_ERRORS.deletionNotScheduled })
 }
 
 /** Cancela un borrado programado. */

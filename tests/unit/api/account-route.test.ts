@@ -2,7 +2,7 @@
 // KULTURA — Route Handler /api/account unit tests (D2 + ROJO-7)
 // ============================================================
 
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
+import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { accountDeleteResultSchema, deletionSummarySchema } from '@/lib/api/contracts/account'
 
 const mockGetUser = vi.fn()
@@ -60,7 +60,6 @@ function chain(result: Record<string, unknown>) {
 describe('DELETE /api/account', () => {
   beforeEach(() => {
     vi.clearAllMocks()
-    delete process.env.ACCOUNT_GRACE
     mockCheckRateLimit.mockResolvedValue({ allowed: true, retryAfterSeconds: 0 })
     mockRpc.mockResolvedValue({ data: { groups: 1, lists: 0 }, error: null })
     mockVerifyIdentity.mockResolvedValue({ ok: true })
@@ -85,7 +84,7 @@ describe('DELETE /api/account', () => {
 
   it('pasa la contraseña del cuerpo a la reautenticación', async () => {
     mockGetUser.mockResolvedValue({ data: { user: AUTH_USER }, error: null })
-    mockDeleteUser.mockResolvedValue({ error: null })
+    mockAdminFrom.mockReturnValue(chain({ error: null }))
     const { DELETE } = await import('@/app/api/account/route')
     await DELETE(del({ password: 'secreta' }))
     expect(mockVerifyIdentity).toHaveBeenCalledWith(AUTH_USER, 'secreta')
@@ -102,7 +101,7 @@ describe('DELETE /api/account', () => {
 
   it('el cupo es por usuario (clave account_delete:<id>)', async () => {
     mockGetUser.mockResolvedValue({ data: { user: AUTH_USER }, error: null })
-    mockDeleteUser.mockResolvedValue({ error: null })
+    mockAdminFrom.mockReturnValue(chain({ error: null }))
     const { DELETE } = await import('@/app/api/account/route')
     await DELETE(del())
     expect(mockCheckRateLimit).toHaveBeenCalledWith(`account_delete:${AUTH_USER.id}`, expect.anything())
@@ -157,95 +156,49 @@ describe('DELETE /api/account', () => {
     expect(mockDeleteUser).not.toHaveBeenCalled()
   })
 
-  // ROJO-7: el grupo y las listas colaborativas pasan a otra persona ANTES
-  // del borrado en cascada.
-  it('traspasa lo compartido y después borra al usuario', async () => {
+  it('programa el borrado a 7 días y no borra nada todavía', async () => {
     mockGetUser.mockResolvedValue({ data: { user: AUTH_USER }, error: null })
-    mockDeleteUser.mockResolvedValue({ error: null })
+    const state = chain({ error: null })
+    mockAdminFrom.mockReturnValue(state)
 
     const { DELETE } = await import('@/app/api/account/route')
     const res = await DELETE(del())
-
-    expect(mockRpc).toHaveBeenCalledWith('transfer_owned_content', { p_user: AUTH_USER.id })
-    expect(mockDeleteUser).toHaveBeenCalledWith(AUTH_USER.id)
-    expect(mockRpc.mock.invocationCallOrder[0]).toBeLessThan(mockDeleteUser.mock.invocationCallOrder[0])
     expect(res.status).toBe(200)
-    const { data } = await res.json()
-    expect(accountDeleteResultSchema.parse(data)).toEqual({ scheduled: false, transferred: { groups: 1, lists: 0 } })
-  })
+    const body = accountDeleteResultSchema.parse((await res.json()).data)
+    if (!body.scheduled) throw new Error('debería estar programado')
 
-  it('si el traspaso falla de verdad, NO borra (mejor eso que destruir lo de otros)', async () => {
-    mockGetUser.mockResolvedValue({ data: { user: AUTH_USER }, error: null })
-    mockRpc.mockResolvedValue({ data: null, error: { code: '40001', message: 'boom' } })
-    const { DELETE } = await import('@/app/api/account/route')
-    const res = await DELETE(del())
-    expect(res.status).toBe(500)
-    expect((await res.json()).error.code).toBe('internal')
+    expect(mockAdminFrom).toHaveBeenCalledWith('account_state')
+    expect(state.upsert).toHaveBeenCalledWith(
+      expect.objectContaining({ user_id: AUTH_USER.id, deletion_requested_at: expect.any(String) }),
+      { onConflict: 'user_id' }
+    )
     expect(mockDeleteUser).not.toHaveBeenCalled()
+    expect(body.scheduled).toBe(true)
+    const days = (Date.parse(body.purgeAt) - Date.now()) / 86_400_000
+    expect(days).toBeGreaterThan(6.9)
+    expect(days).toBeLessThan(7.1)
   })
 
-  it('returns 500 if the admin delete fails', async () => {
+  // Saneamiento 1.1: el modal ha prometido 7 días de gracia. Si no se puede
+  // programar, NO se borra en el acto (antes caía a un borrado inmediato).
+  it.each([
+    ['un error pasajero', { code: '40001', message: 'boom' }],
+    ['la tabla ausente', { code: '42P01', message: 'missing' }],
+  ])('si programar falla (%s): 503 y no se borra nada', async (_caso, error) => {
     mockGetUser.mockResolvedValue({ data: { user: AUTH_USER }, error: null })
-    mockDeleteUser.mockResolvedValue({ error: { message: 'boom' } })
-
+    mockAdminFrom.mockReturnValue(chain({ error }))
     const { DELETE } = await import('@/app/api/account/route')
     const res = await DELETE(del())
-    expect(res.status).toBe(500)
-  })
-
-  describe('con ACCOUNT_GRACE=1', () => {
-    beforeEach(() => {
-      process.env.ACCOUNT_GRACE = '1'
-    })
-    afterEach(() => {
-      delete process.env.ACCOUNT_GRACE
-    })
-
-    it('programa el borrado a 7 días y no borra nada todavía', async () => {
-      mockGetUser.mockResolvedValue({ data: { user: AUTH_USER }, error: null })
-      const state = chain({ error: null })
-      mockAdminFrom.mockReturnValue(state)
-
-      const { DELETE } = await import('@/app/api/account/route')
-      const res = await DELETE(del())
-      expect(res.status).toBe(200)
-      const body = accountDeleteResultSchema.parse((await res.json()).data)
-      if (!body.scheduled) throw new Error('debería estar programado')
-
-      expect(mockAdminFrom).toHaveBeenCalledWith('account_state')
-      expect(state.upsert).toHaveBeenCalledWith(
-        expect.objectContaining({ user_id: AUTH_USER.id, deletion_requested_at: expect.any(String) }),
-        { onConflict: 'user_id' }
-      )
-      expect(mockDeleteUser).not.toHaveBeenCalled()
-      expect(body.scheduled).toBe(true)
-      const days = (Date.parse(body.purgeAt) - Date.now()) / 86_400_000
-      expect(days).toBeGreaterThan(6.9)
-      expect(days).toBeLessThan(7.1)
-    })
-
-    // Saneamiento 1.1: el modal ha prometido 7 días de gracia. Si no se puede
-    // programar, NO se borra en el acto (antes caía a un borrado inmediato).
-    it.each([
-      ['un error pasajero', { code: '40001', message: 'boom' }],
-      ['la tabla ausente', { code: '42P01', message: 'missing' }],
-    ])('si programar falla (%s): 503 y no se borra nada', async (_caso, error) => {
-      mockGetUser.mockResolvedValue({ data: { user: AUTH_USER }, error: null })
-      mockAdminFrom.mockReturnValue(chain({ error }))
-      const { DELETE } = await import('@/app/api/account/route')
-      const res = await DELETE(del())
-      expect(res.status).toBe(503)
-      expect(await res.json()).toEqual({ error: { code: 'unavailable', message: 'deletion_not_scheduled' } })
-      expect(mockRpc).not.toHaveBeenCalled()
-      expect(mockDeleteUser).not.toHaveBeenCalled()
-    })
+    expect(res.status).toBe(503)
+    expect(await res.json()).toEqual({ error: { code: 'unavailable', message: 'deletion_not_scheduled' } })
+    expect(mockRpc).not.toHaveBeenCalled()
+    expect(mockDeleteUser).not.toHaveBeenCalled()
   })
 })
 
 describe('GET /api/account (resumen del modal)', () => {
   beforeEach(() => {
     vi.clearAllMocks()
-    delete process.env.ACCOUNT_GRACE
   })
 
   it('cuenta lo que se borra y dice a quién pasa cada grupo y lista', async () => {
@@ -271,7 +224,7 @@ describe('GET /api/account (resumen del modal)', () => {
       friends: 5,
       groups: [{ name: 'Club', successor: 'lucia_lee' }],
       sharedLists: [{ name: 'Pelis', successor: 'marcos' }],
-      graceDays: 0,
+      graceDays: 7,
     })
   })
 
