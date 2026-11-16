@@ -259,7 +259,7 @@ Los `loading.tsx` y el componente de error con reintento pasan a la fase 8 (Q32)
 1. ✅ Los 11 `error.tsx` de página llaman a `Sentry.captureException` (vía `ErrorState`, #149).
 2. ✅ Los handlers que devolvían 500 sin registrar el error usan `log.error`. `api/search` deja de tragarse los errores (#150).
 3. ✅ **Cada denuncia nueva se envía también a Sentry como aviso** (`report_received`, nivel warning, #151). El email sigue apagado: activarlo cuenta como función y va después del saneamiento (Q22). Con el correo apagado, `moderation_email_not_configured` ya no es un error en Sentry.
-4. ⬜ `SENTRY_AUTH_TOKEN` para subir los mapas de código fuente (Q25). El código ya está listo (`next.config.mjs`); falta dar de alta `SENTRY_ORG`, `SENTRY_PROJECT` y `SENTRY_AUTH_TOKEN` en Vercel (Production) y redesplegar. Lo hace el dueño.
+4. ✅ `SENTRY_AUTH_TOKEN` para subir los mapas de código fuente (Q25). `SENTRY_ORG`, `SENTRY_PROJECT` y `SENTRY_AUTH_TOKEN` dados de alta en Vercel (Production) el 16-11-2026; los mapas llegan a Sentry (Settings → Source Maps) y no se publican en el despliegue (404).
 5. 🟨 **Métricas base** para comparar antes y después. Volver a medirlas después de cada fase.
 
    | Métrica | Antes del saneamiento | 2026-11-13 (tras fases 1–7, 9 y 10.1–10.3) |
@@ -304,7 +304,7 @@ Los `loading.tsx` y el componente de error con reintento pasan a la fase 8 (Q32)
    - Migraciones con fecha futura (Q13).
 4. **Borrar el código de cada bandera en estado apagado.** Las seis banderas están a `1` en producción.
 
-## 🟨 Fase 12 · Rigor (comprobaciones automáticas; después de la 10, antes de la 8) — 1: #154–#156 · 2: #158 #160 · 3: #161 · 4: #163–#165 · 5: #167 #169 · 6: #162 · 7: #166 · 8: #157 #168 · 16-11-2026. Falta: migración 12.2 en producción, contraseñas filtradas y alertas de Sentry (tras el 10.4)
+## 🟨 Fase 12 · Rigor (comprobaciones automáticas; después de la 10, antes de la 8) — 1: #154–#156 · 2: #158 #160 · 3: #161 · 4: #163–#165 · 5: #167 #169 · 6: #162 · 7: #166 · 8: #157 #168 · 16-11-2026. Falta: contraseña mínima de 8 en Supabase y el estado en producción de 8 banderas
 
 Objetivo: que los fallos que hoy solo se ven revisando a mano los pare el CI o una alarma. Un PR por punto. Prioridad: 1, 2 y 6 primero.
 
@@ -314,16 +314,16 @@ Objetivo: que los fallos que hoy solo se ven revisando a mano los pare el CI o u
    - Script que compara las migraciones aplicadas en producción y en `kultura-test` con los archivos del repo (`scripts/check-applied-migrations.mjs`, a mano). 13-11: producción tiene todas menos `push` y `push_throttle` (Q14); test, todas.
 2. **Seguridad en el CI:**
    - ✅ `rls_audit()`, vistas sin `security_invoker` y SECURITY DEFINER fuera de la lista hacen fallar el CI (#158).
-   - 🟨 Las funciones SECURITY DEFINER que se pueden llamar desde la API (`can_read_list`, también sin sesión): movidas al esquema `private` (#160). Aplicada en `kultura-test`; **falta en producción** (tras copia y visto bueno).
+   - ✅ Las funciones SECURITY DEFINER que se pueden llamar desde la API (`can_read_list`, también sin sesión): movidas al esquema `private` (#160). Aplicada en `kultura-test` y en producción (16-11-2026, tras la copia con prueba de restauración en verde).
    - ⬜ Activar la protección contra contraseñas filtradas (Supabase → Authentication; lo hace el dueño).
 3. ✅ **Banderas con caducidad** (#161; `docs/banderas.json`, `scripts/check-flags.mjs`; falta el estado en producción de 8): un archivo con cada bandera (dueño, fecha, estado en producción). El CI falla si una pasa de 60 días. Empezar por `PROGRESS_V2`.
 4. ✅ **Confianza en el CI:**
    - ✅ Tests intermitentes con motivo y plazo en `docs/tests-intermitentes.md` (#164). `friends` y `rls-policies` ya estaban arreglados (integración de una en una); se arregla el foco de `AiRecommendations`; ninguno en cuarentena.
    - ✅ eslint también en `tests/` y `scripts/` (`npm run lint`), después de limpiar los errores (#163). En `tests/` se apagan las reglas de next/link, next/image (los tests las simulan); la regla de la escala visual sigue activa y `scales.test.ts` la desactiva línea a línea.
    - ✅ Cobertura mínima solo en `src/lib/library` (90 % líneas, 80 % ramas) y en las rutas de la API (86 % y 79 %), medida en cada PR (`npm run test:ci`) (#165). Medida el 15-11: biblioteca 92 % y 84 %; API 89 % y 82 %.
-5. **Después de desplegar:**
+5. ✅ **Después de desplegar:**
    - ✅ Prueba rápida automática en producción: abrir la página, entrar con el usuario demo, cargar la biblioteca (`.github/workflows/smoke-prod.yml`, tras cada despliegue a producción y a mano; #167, #169). Primera ejecución en verde el 16-11.
-   - ⬜ Alertas de Sentry por subida de errores en `/api/library` y `/api/progress` en la hora siguiente a desplegar (depende de la fase 10).
+   - ✅ Alerta de Sentry «Kultura · errores en biblioteca y progreso» (16-11-2026): issue nuevo, que escala o que vuelve, con `http.url` que contiene `/api/library` o `/api/progress`; email al dueño, como mucho una vez por hora.
 6. ✅ **Restauración probada:** cada copia semanal (`backup.yml`) se restaura en un Supabase local del runner y compara las filas por tabla con el volcado. Sin la clave privada en GitHub: prueba el volcado; el descifrado sigue en la prueba trimestral a mano.
 7. ✅ **Proceso en el repo:** (#166)
    - ✅ Plantilla de PR (`.github/pull_request_template.md`) con lista: ¿migración?, ¿aplicada en test?, ¿copia hecha?, ¿versión del SW?, ¿cómo se deshace?
