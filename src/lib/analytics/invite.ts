@@ -88,11 +88,6 @@ export function inviteUrl(locale: string, user: { id: string; username: string }
   return `${siteUrl()}${invitePath(locale, user)}`
 }
 
-/** Notificar a quien invita: solo cuando la lista de avisos sepa pintarlo. */
-function inviteNotifyEnabled(): boolean {
-  return process.env.INVITE_NOTIFY === '1'
-}
-
 type Admin = ReturnType<typeof createAdminClient>
 
 async function findInviter(admin: Admin, ref: string): Promise<{ id: string; username: string } | null> {
@@ -124,7 +119,7 @@ export type InviteOutcome = 'accepted' | 'already_friends' | 'blocked' | 'invali
 
 /**
  * Acepta la invitación al registrarse: amistad aceptada entre quien invita y
- * la cuenta nueva, evento `invite_accepted` y (con `INVITE_NOTIFY=1`) aviso a
+ * la cuenta nueva, evento `invite_accepted` y aviso a
  * quien invitó. Con el cliente admin porque la fila es "de los dos" y la cuenta
  * nueva no puede escribir avisos de otro. Nunca lanza.
  */
@@ -162,13 +157,11 @@ export async function acceptInvite(
     const { data: me } = await admin.from('users').select('username').eq('id', newUser.id).maybeSingle()
     await Promise.all([
       track(newUser, 'invite_accepted', { inviter_id: inviter.id }, { dedupeKey: `invite_accepted:${newUser.id}` }),
-      inviteNotifyEnabled()
-        ? admin.from('notifications').insert({
-            user_id: inviter.id,
-            type: 'invite_accepted',
-            payload: { userId: newUser.id, fromUsername: (me as { username?: string } | null)?.username ?? null },
-          })
-        : null,
+      admin.from('notifications').insert({
+        user_id: inviter.id,
+        type: 'invite_accepted',
+        payload: { userId: newUser.id, fromUsername: (me as { username?: string } | null)?.username ?? null },
+      }),
     ])
     return 'accepted'
   } catch (e) {
