@@ -11,7 +11,8 @@ import type { AvatarColorName } from '@/lib/constants/avatarColors'
 import { createClient } from '@/lib/supabase/client'
 import { getAuthErrorKeyFromError } from '@/lib/utils/auth-errors'
 import { USERNAME_REGEX, isReservedUsername, type LibraryVisibility } from '@/lib/account/identity'
-import { ApiError } from '@/lib/api/client'
+import { ApiError, apiFetch } from '@/lib/api/client'
+import { EMAIL_PREFERENCE_ERRORS, type EmailPreferenceResult } from '@/lib/api/contracts/email'
 import { ACCOUNT_ERRORS } from '@/lib/account/errors'
 import { updateSettings } from '@/lib/settings/client'
 import { SETTINGS_ERRORS } from '@/lib/settings/errors'
@@ -46,6 +47,22 @@ export interface AccountSettingsInit {
 
 /** Resumen de GET /api/account para el modal de borrado. */
 export type { DeletionSummary }
+
+type WeeklyErrorState = 'cooldown' | 'dailyLimit' | 'busy' | 'unconfirmed' | 'sendFailed' | 'error' | 'stale'
+
+/** Motivo de un error de /api/email/preferences → estado del interruptor. */
+function weeklyErrorState(err: unknown): WeeklyErrorState {
+  if (!(err instanceof ApiError)) return 'error'
+  switch (err.message) {
+    case EMAIL_PREFERENCE_ERRORS.staleConsent: return 'stale'
+    case EMAIL_PREFERENCE_ERRORS.cooldown: return 'cooldown'
+    case EMAIL_PREFERENCE_ERRORS.dailyLimit: return 'dailyLimit'
+    case EMAIL_PREFERENCE_ERRORS.busy: return 'busy'
+    case EMAIL_PREFERENCE_ERRORS.unconfirmedEmail: return 'unconfirmed'
+    case EMAIL_PREFERENCE_ERRORS.sendFailed: return 'sendFailed'
+    default: return 'error'
+  }
+}
 
 /** Cuántos grupos/listas se nombran en el modal antes de "y N más". */
 const SUMMARY_MAX_NAMED = 4
@@ -201,42 +218,20 @@ export function useAccountSettings({
     if (!enabled) setWeeklyEmail({ ...weeklyEmail, weekly: false })
     setWeeklyState('saving')
     try {
-      const res = await fetch('/api/email/preferences', {
+      const data = await apiFetch<EmailPreferenceResult>('/api/email/preferences', {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ weekly: enabled, consentVersion: WEEKLY_EMAIL_CONSENT_VERSION, locale: currentLocale }),
+        json: { weekly: enabled, consentVersion: WEEKLY_EMAIL_CONSENT_VERSION, locale: currentLocale },
       })
-      if (res.status === 202) {
+      if (data.pending) {
         setWeeklyEmail({ ...previous, weekly: false, pending: true })
         setWeeklyState('pending')
         return
       }
-      if (!res.ok) {
-        const code = ((await res.json().catch(() => ({}))) as { error?: string }).error
-        setWeeklyEmail(previous)
-        setWeeklyState(
-          res.status === 409
-            ? 'stale'
-            : code === 'cooldown'
-              ? 'cooldown'
-              : code === 'daily_limit'
-                ? 'dailyLimit'
-                : code === 'busy'
-                  ? 'busy'
-                  : code === 'unconfirmed_email'
-                ? 'unconfirmed'
-                : code === 'send_failed'
-                  ? 'sendFailed'
-                  : 'error'
-        )
-        return
-      }
-      const data = (await res.json()) as { weekly?: boolean; consentedAt?: string | null }
       setWeeklyEmail({ weekly: data.weekly === true, consentedAt: data.consentedAt ?? null, pending: false })
       setWeeklyState(data.weekly ? 'on' : 'off')
-    } catch {
+    } catch (err) {
       setWeeklyEmail(previous)
-      setWeeklyState('error')
+      setWeeklyState(weeklyErrorState(err))
     }
   }
 

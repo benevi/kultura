@@ -8,6 +8,7 @@ import { IconFlame, IconSparkles } from '@/components/icons'
 import { MediaCard } from '@/components/media/MediaCard'
 import type { AiRec, AiRecsResult } from '@/lib/claude/recommendations'
 import type { MediaItem } from '@/types/media'
+import { ApiError, apiFetch } from '@/lib/api/client'
 
 type Status = 'idle' | 'loading' | 'done' | 'starter' | 'empty' | 'error' | 'rate_limited'
 
@@ -83,11 +84,10 @@ export function AiRecommendations({
     focusOnResult.current = true
     setStatus('loading')
 
-    fetch('/api/ai-recommendations', { signal: controller.signal })
-      .then(async (r) => {
-        if (r.status === 429) { setStatus('rate_limited'); return }
-        if (!r.ok) { setStatus('error'); return }
-        const data: Partial<AiRecsResult> & { starter?: MediaItem[] } = await r.json()
+    apiFetch<Partial<AiRecsResult> & { starter?: MediaItem[] }>('/api/ai-recommendations', {
+      signal: controller.signal,
+    })
+      .then((data) => {
         const list = data.recommendations ?? []
         const popular = data.starter ?? []
         setRecs(list)
@@ -100,8 +100,8 @@ export function AiRecommendations({
         setStatus(list.length > 0 ? 'done' : popular.length > 0 ? 'starter' : 'empty')
       })
       .catch((err) => {
-        if (err instanceof DOMException && err.name === 'AbortError') return
-        setStatus('error')
+        if (controller.signal.aborted) return
+        setStatus(err instanceof ApiError && err.code === 'rate_limited' ? 'rate_limited' : 'error')
       })
   }, [])
 

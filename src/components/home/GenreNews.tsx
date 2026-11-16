@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import { MediaRow } from '@/components/home/MediaRow'
 import { useTranslations } from 'next-intl'
 import type { MediaItem } from '@/types/media'
+import { apiFetch } from '@/lib/api/client'
 
 interface GenreNewsData {
   movies: MediaItem[]
@@ -19,15 +20,14 @@ export function GenreNews() {
   useEffect(() => {
     const controller = new AbortController()
 
-    fetch('/api/genre-news', { signal: controller.signal })
-      .then((r) => r.json())
-      .then((d: GenreNewsData) => {
+    apiFetch<GenreNewsData>('/api/genre-news', { signal: controller.signal })
+      .then((d) => {
         const hasContent = d.movies.length > 0 || d.tv.length > 0
         setData(d)
         setStatus(hasContent ? 'done' : 'empty')
       })
-      .catch((err) => {
-        if (err instanceof DOMException && err.name === 'AbortError') return
+      .catch(() => {
+        if (controller.signal.aborted) return
         setStatus('error')
       })
 

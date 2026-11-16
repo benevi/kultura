@@ -162,6 +162,14 @@ describe("GET /api/users/search", () => {
     expect(blocked.headers.get("Retry-After")).toBeTruthy();
   });
 
+  it("responde con el contrato: { data } (vacío con menos de 2 caracteres)", async () => {
+    const short = await usersGET(new NextRequest("http://localhost/api/users/search?q=a"));
+    expect(await short.json()).toEqual({ data: [] });
+    expect(ilike).not.toHaveBeenCalled();
+    const res = await usersGET(new NextRequest("http://localhost/api/users/search?q=ab"));
+    expect(await res.json()).toEqual({ data: [] });
+  });
+
   it("sin usuario autenticado → 401 sin consultar", async () => {
     getUser.mockResolvedValue({ data: { user: null } });
     const res = await usersGET(new NextRequest("http://localhost/api/users/search?q=ab"));

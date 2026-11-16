@@ -6,6 +6,7 @@ import { Avatar } from '@/components/ui/Avatar'
 import { KButton } from '@/components/ui/KButton'
 import { Modal } from '@/components/ui/Modal'
 import { fetchFriends } from '@/lib/social/actions'
+import { apiFetch } from '@/lib/api/client'
 
 type Friend = Awaited<ReturnType<typeof fetchFriends>>[number]
 
@@ -56,12 +57,9 @@ export function RecommendModal({ mediaId, mediaCache, onClose }: RecommendModalP
     setStatus('sending')
     const results = await Promise.allSettled(
       Array.from(selected).map((toUserId) =>
-        fetch('/api/recommendations', {
+        apiFetch('/api/recommendations', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ toUserId, mediaId, message: message || undefined, mediaCache }),
-        }).then((r) => {
-          if (!r.ok) throw new Error('Failed')
+          json: { toUserId, mediaId, message: message || undefined, mediaCache },
         })
       )
     )
