@@ -1,10 +1,10 @@
 // ============================================================
 // F-25 — Listas mixtas, orden manual y notas en /api/lists (PRO-10).
-// Con MIXED_LISTS apagada todo responde como antes; encendida, la lista
-// admite `mixed`, descripción y plantilla, y se reordena en una sentencia.
+// La lista admite `mixed`, descripción y plantilla, y se reordena en una
+// sentencia (la bandera MIXED_LISTS se retiró encendida, saneamiento 11.4).
 // ============================================================
 
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
+import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { itemsPatchResultSchema } from '@/lib/api/contracts/lists'
 import { fakeSupabase, opsOf, type FakeClient } from './fake-supabase'
 
@@ -36,33 +36,10 @@ function ownerList(mediaType = 'mixed') {
   return { data: { owner_id: USER.id, is_collaborative: false, media_type: mediaType }, error: null }
 }
 
-afterEach(() => {
-  delete process.env.MIXED_LISTS
-})
-
 describe('POST /api/lists — tipo, descripción y plantilla', () => {
   beforeEach(() => vi.clearAllMocks())
 
-  it('sin la bandera, `mixed` es un tipo inválido (400) y no se escribe nada', async () => {
-    client = fakeSupabase({ user: USER })
-    const { POST } = await import('@/app/api/lists/route')
-    const res = await POST(req('POST', { name: 'Dune', mediaType: 'mixed' }, 'http://localhost/api/lists'))
-    expect(res.status).toBe(400)
-    expect(opsOf(client, 'lists', 'insert')).toHaveLength(0)
-  })
-
-  it('sin la bandera, descripción y plantilla se ignoran (columnas que quizá no existen)', async () => {
-    client = fakeSupabase({ user: USER, tables: { lists: [{ data: null, error: null }] } })
-    const { POST } = await import('@/app/api/lists/route')
-    const res = await POST(req('POST', { name: 'Top', mediaType: 'movie', description: 'd', template: 'ranking' }, 'http://localhost/api/lists'))
-    expect(res.status).toBe(201)
-    const inserted = opsOf(client, 'lists', 'insert')[0].args[0] as Record<string, unknown>
-    expect(inserted).not.toHaveProperty('description')
-    expect(inserted).not.toHaveProperty('template')
-  })
-
-  it('con la bandera crea una «Franquicia» mixta con descripción', async () => {
-    process.env.MIXED_LISTS = '1'
+  it('crea una «Franquicia» mixta con descripción', async () => {
     client = fakeSupabase({ user: USER, tables: { lists: [{ data: null, error: null }] } })
     const { POST } = await import('@/app/api/lists/route')
     const res = await POST(req('POST', {
@@ -74,7 +51,6 @@ describe('POST /api/lists — tipo, descripción y plantilla', () => {
   })
 
   it('rechaza plantilla desconocida, descripción larga y nombre largo', async () => {
-    process.env.MIXED_LISTS = '1'
     client = fakeSupabase({ user: USER })
     const { POST } = await import('@/app/api/lists/route')
     const url = 'http://localhost/api/lists'
@@ -86,21 +62,12 @@ describe('POST /api/lists — tipo, descripción y plantilla', () => {
 })
 
 describe('GET /api/lists?mediaType=', () => {
-  it('con la bandera, ofrece también las mixtas', async () => {
-    process.env.MIXED_LISTS = '1'
+  it('ofrece también las mixtas', async () => {
     client = fakeSupabase({ user: USER, tables: { lists: [{ data: [], error: null }] } })
     const { GET } = await import('@/app/api/lists/route')
     await GET(new Request('http://localhost/api/lists?mediaType=book'))
     expect(opsOf(client, 'lists', 'in')).toContainEqual({ name: 'in', args: ['media_type', ['book', 'mixed']] })
     expect(String(opsOf(client, 'lists', 'select')[0].args[0])).toContain('description')
-  })
-
-  it('sin la bandera, el filtro y las columnas de siempre', async () => {
-    client = fakeSupabase({ user: USER, tables: { lists: [{ data: [], error: null }] } })
-    const { GET } = await import('@/app/api/lists/route')
-    await GET(new Request('http://localhost/api/lists?mediaType=book'))
-    expect(opsOf(client, 'lists', 'eq')).toContainEqual({ name: 'eq', args: ['media_type', 'book'] })
-    expect(String(opsOf(client, 'lists', 'select')[0].args[0])).not.toContain('description')
   })
 
 })
@@ -156,17 +123,7 @@ describe('POST /api/lists/[id]/items — formato del título', () => {
 describe('PATCH /api/lists/[id]/items — orden manual', () => {
   beforeEach(() => vi.clearAllMocks())
 
-  it('sin la bandera: 404 not_available y no llama a la base', async () => {
-    client = fakeSupabase({ user: USER })
-    const { PATCH } = await import('@/app/api/lists/[id]/items/route')
-    const res = await PATCH(req('PATCH', { order: [I1, I2] }), params)
-    expect(res.status).toBe(404)
-    expect((await res.json()).error).toEqual({ code: 'not_found', message: 'not_available' })
-    expect(client.rpcCalls).toHaveLength(0)
-  })
-
   it('guarda el orden completo con una sola llamada a reorder_list_items', async () => {
-    process.env.MIXED_LISTS = '1'
     client = fakeSupabase({ user: USER, tables: { lists: [ownerList()] }, rpc: { reorder_list_items: { data: 3, error: null } } })
     const { PATCH } = await import('@/app/api/lists/[id]/items/route')
     const res = await PATCH(req('PATCH', { order: [I3, I1, I2] }), params)
@@ -178,7 +135,6 @@ describe('PATCH /api/lists/[id]/items — orden manual', () => {
   })
 
   it('valida: vacío, repetidos, no uuid', async () => {
-    process.env.MIXED_LISTS = '1'
     const { PATCH } = await import('@/app/api/lists/[id]/items/route')
     for (const order of [[], [I1, I1], ['x'], 'nope']) {
       client = fakeSupabase({ user: USER, tables: { lists: [ownerList()] } })
@@ -188,7 +144,6 @@ describe('PATCH /api/lists/[id]/items — orden manual', () => {
   })
 
   it('quien no puede editar: 403', async () => {
-    process.env.MIXED_LISTS = '1'
     client = fakeSupabase({
       user: USER,
       tables: { lists: [{ data: { owner_id: 'otro', is_collaborative: false, media_type: 'mixed' }, error: null }] },
@@ -200,7 +155,6 @@ describe('PATCH /api/lists/[id]/items — orden manual', () => {
   })
 
   it('miembro de una colaborativa: puede', async () => {
-    process.env.MIXED_LISTS = '1'
     client = fakeSupabase({
       user: USER,
       tables: {
@@ -220,7 +174,6 @@ describe('PATCH /api/lists/[id]/items — notas', () => {
   beforeEach(() => vi.clearAllMocks())
 
   it('guarda una nota recortada (y vacía → null)', async () => {
-    process.env.MIXED_LISTS = '1'
     client = fakeSupabase({ user: USER, tables: { lists: [ownerList()], list_items: [{ data: null, error: null, count: 1 }] } })
     const { PATCH } = await import('@/app/api/lists/[id]/items/route')
     const res = await PATCH(req('PATCH', { itemId: I1, note: '  La mejor  ' }), params)
@@ -233,7 +186,6 @@ describe('PATCH /api/lists/[id]/items — notas', () => {
   })
 
   it('nota de más de 500 → 400; título que no es de la lista → 404', async () => {
-    process.env.MIXED_LISTS = '1'
     const { PATCH } = await import('@/app/api/lists/[id]/items/route')
     client = fakeSupabase({ user: USER, tables: { lists: [ownerList()] } })
     expect((await PATCH(req('PATCH', { itemId: I1, note: 'x'.repeat(501) }), params)).status).toBe(400)
@@ -246,7 +198,6 @@ describe('PATCH /api/lists/[id] — datos', () => {
   beforeEach(() => vi.clearAllMocks())
 
   it('el dueño cambia nombre y descripción; un miembro no', async () => {
-    process.env.MIXED_LISTS = '1'
     const { PATCH } = await import('@/app/api/lists/[id]/route')
     client = fakeSupabase({ user: USER, tables: { lists: [{ data: { owner_id: USER.id }, error: null }, { data: null, error: null }] } })
     const ok = await PATCH(req('PATCH', { name: ' Dune ', description: 'Todo Dune' }), params)

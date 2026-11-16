@@ -2,12 +2,11 @@
 // KULTURA — Lists Queries (servidor)
 // Uso exclusivo en Server Components y Route Handlers.
 //
-// F-25: con MIXED_LISTS=1 se leen también descripción, plantilla, orden
-// manual y notas.
+// F-25: se leen también descripción, plantilla, orden manual y notas.
 // ============================================================
 
 import { createClient } from '@/lib/supabase/server'
-import { listColumns, mixedListsEnabled } from '@/lib/social/lists-shared'
+import { LIST_COLUMNS } from '@/lib/social/lists-shared'
 import type { DbList, DbListItem, DbListMember, DbUser, DbMedia } from '@/types/supabase'
 import type { List, ListItem, ListMediaType, ListMember, ListTemplate } from '@/types/list'
 import type { MediaType } from '@/types/media'
@@ -29,8 +28,7 @@ type ListMemberRow = DbListMember & {
 }
 
 const OWNER_EMBED = 'owner:owner_id(id, username, avatar_color, avatar_initials)'
-const ITEM_COLUMNS_LEGACY = 'id, list_id, media_id, added_by, added_at'
-const ITEM_COLUMNS_MIXED = `${ITEM_COLUMNS_LEGACY}, position, note`
+const ITEM_COLUMNS = 'id, list_id, media_id, added_by, added_at, position, note'
 const ITEM_EMBEDS = 'media:media_id(id, title, poster, type, year), added_by_user:added_by(id, username)'
 
 function toTemplate(value: unknown): ListTemplate | null {
@@ -129,7 +127,6 @@ export function sortListItems<T extends { position?: number | null; addedAt?: st
  */
 export async function getUserLists(userId: string): Promise<List[]> {
   const supabase = await createClient()
-  const mixed = mixedListsEnabled()
 
   const fetchOwned = (columns: string) =>
     supabase
@@ -143,7 +140,7 @@ export async function getUserLists(userId: string): Promise<List[]> {
       .select(`list_id, list:list_id(${columns}, ${OWNER_EMBED})`)
       .eq('user_id', userId)
 
-  const [owned, member] = await Promise.all([fetchOwned(listColumns(mixed)), fetchMember(listColumns(mixed))])
+  const [owned, member] = await Promise.all([fetchOwned(LIST_COLUMNS), fetchMember(LIST_COLUMNS)])
 
   if (owned.error) throw new Error(`Failed to fetch owned lists: ${owned.error.message}`)
   if (member.error) throw new Error(`Failed to fetch member lists: ${member.error.message}`)
@@ -189,29 +186,23 @@ export async function getListDetail(listId: string): Promise<{
   members: ListMember[]
 } | null> {
   const supabase = await createClient()
-  const mixed = mixedListsEnabled()
 
   const { data: listRaw, error: listErr } = await supabase
     .from('lists')
-    .select(`${listColumns(mixed)}, ${OWNER_EMBED}`)
+    .select(`${LIST_COLUMNS}, ${OWNER_EMBED}`)
     .eq('id', listId)
     .maybeSingle()
 
   if (listErr) throw new Error(`Failed to fetch list: ${listErr.message}`)
   if (!listRaw) return null
 
-  const readItems = (withOrder: boolean) => {
-    const query = supabase
-      .from('list_items')
-      .select(`${withOrder ? ITEM_COLUMNS_MIXED : ITEM_COLUMNS_LEGACY}, ${ITEM_EMBEDS}`)
-      .eq('list_id', listId)
-    return withOrder
-      ? query.order('position', { ascending: true, nullsFirst: false }).order('added_at', { ascending: false })
-      : query.order('added_at', { ascending: false })
-  }
-
   const [itemsRes, membersRes] = await Promise.all([
-    readItems(mixed),
+    supabase
+      .from('list_items')
+      .select(`${ITEM_COLUMNS}, ${ITEM_EMBEDS}`)
+      .eq('list_id', listId)
+      .order('position', { ascending: true, nullsFirst: false })
+      .order('added_at', { ascending: false }),
     supabase
       .from('list_members')
       .select('list_id, user_id, user:user_id(id, username, avatar_color, avatar_initials)')
@@ -285,10 +276,9 @@ export interface PublicListExtras {
  * otro módulo): se pide EN PARALELO con ella, solo por `listId`. La RLS
  * (can_read_list) ya limita a listas públicas para quien no es dueño ni
  * miembro, y la página solo lo usa si `getPublicList` confirma que la lista
- * es pública y de ese usuario. `null` sin bandera o sin migración.
+ * es pública y de ese usuario. `null` si no se puede leer.
  */
 export async function getPublicListExtras(listId: string): Promise<PublicListExtras | null> {
-  if (!mixedListsEnabled()) return null
   const supabase = await createClient()
   const [listRes, itemsRes] = await Promise.all([
     supabase.from('lists').select('description, template').eq('id', listId).eq('is_public', true).maybeSingle(),

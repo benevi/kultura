@@ -9,10 +9,6 @@ export const LIST_ERRORS = {
   notFriends: 'not_friends',
   /** `invalid_input` (field `mediaId`): el formato no cabe en esta lista. */
   typeMismatch: 'type_mismatch',
-  /** `invalid_input` (field `mediaType`): las listas mixtas no están activas. */
-  mixedUnavailable: 'mixed_unavailable',
   /** `invalid_input`: la lista no es colaborativa. */
   notCollaborative: 'not_collaborative',
-  /** `not_found`: orden y notas sin MIXED_LISTS. */
-  notAvailable: 'not_available',
 } as const

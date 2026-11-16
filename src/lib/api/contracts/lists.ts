@@ -6,8 +6,7 @@
 // /api/lists/[id]/items         POST (añadir) · DELETE (quitar) · PATCH (orden o nota)
 // /api/lists/[id]/members       POST (invitar) · DELETE (quitar o salir)
 //
-// Lo que depende de MIXED_LISTS (tipos válidos, descripción y plantilla) lo
-// comprueba el servicio: aquí solo la forma.
+// Los tipos válidos y la plantilla los comprueba el servicio: aquí solo la forma.
 // ============================================================
 
 import { z } from 'zod'

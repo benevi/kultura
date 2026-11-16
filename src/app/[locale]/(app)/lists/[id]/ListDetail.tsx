@@ -34,8 +34,6 @@ interface ListDetailProps {
   currentUserId: string
   currentUserFriends: Array<{ id: string; username: string; avatarColor: string; avatarInitials: string }>
   canEdit: boolean
-  /** MIXED_LISTS (F-25): ordenar, notas y descripción. */
-  mixedEnabled?: boolean
 }
 
 const DESCRIPTION_MAX = 500
@@ -47,7 +45,6 @@ export function ListDetail({
   currentUserId,
   currentUserFriends,
   canEdit,
-  mixedEnabled = false,
 }: ListDetailProps) {
   const t = useTranslations('lists')
   const tf = useTranslations('filters')
@@ -74,7 +71,7 @@ export function ListDetail({
   const descriptionFieldId = useId()
   const descriptionHintId = useId()
   const ranked = list.template === 'ranking'
-  const canOrder = mixedEnabled && canEdit
+  const canOrder = canEdit
   const onItemsChange = useCallback((next: ListItem[]) => setItems(next), [])
 
   const isOwner = list.ownerId === currentUserId
@@ -236,7 +233,7 @@ export function ListDetail({
               {description}
             </p>
           )}
-          {isOwner && mixedEnabled && !editingDescription && (
+          {isOwner && !editingDescription && (
             <button
               type="button"
               onClick={() => {
@@ -249,7 +246,7 @@ export function ListDetail({
               {description ? t('editDescription') : t('addDescription')}
             </button>
           )}
-          {isOwner && mixedEnabled && editingDescription && (
+          {isOwner && editingDescription && (
             <form onSubmit={handleSaveDescription} className="mt-4 flex max-w-2xl flex-col gap-2">
               <label htmlFor={descriptionFieldId} className="text-meta font-bold text-text-tertiary">
                 {t('descriptionLabel')}
@@ -409,7 +406,7 @@ export function ListDetail({
                 )}
                 {/* En la rejilla la nota solo se lee; se escribe en «Ordenar y
                     anotar» (una fila por título, sin controles ocultos). */}
-                {mixedEnabled && item.note ? (
+                {item.note ? (
                   <ItemNote listId={list.id} item={item} editable={false} onSaved={() => undefined} />
                 ) : null}
               </li>

@@ -7,7 +7,6 @@ import { notFound } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { getListDetail, canEditList } from '@/lib/social/lists'
 import { getFriends } from '@/lib/social/friends'
-import { mixedListsEnabled } from '@/lib/social/lists-shared'
 import { ListDetail } from './ListDetail'
 import { getTranslations } from 'next-intl/server'
 import type { Metadata } from 'next'
@@ -54,7 +53,6 @@ export default async function ListDetailPage({ params }: Props) {
         currentUserId={user?.id ?? ''}
         currentUserFriends={friends}
         canEdit={canEdit}
-        mixedEnabled={mixedListsEnabled()}
       />
     </main>
   )

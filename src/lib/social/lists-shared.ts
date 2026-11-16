@@ -3,8 +3,7 @@
 //
 // Las listas mixtas, el orden manual, las notas, la descripción y las
 // plantillas usan la migración 20261208250001_platforms_mixed_lists.sql (ya
-// aplicada). Sin MIXED_LISTS=1, todo se lee y escribe con las columnas de
-// siempre.
+// aplicada). La bandera MIXED_LISTS se retiró encendida (saneamiento 11.4).
 // ============================================================
 
 import type { MediaType } from '@/types/media'
@@ -19,23 +18,11 @@ export const LIST_NOTE_MAX = 500
 /** Tope de un orden completo (una lista más larga se ordena por tramos). */
 export const LIST_REORDER_MAX = 500
 
-/** Bandera que Víctor activa en Vercel tras aplicar la migración de F-25. */
-export function mixedListsEnabled(): boolean {
-  return process.env.MIXED_LISTS === '1'
-}
+/** Columnas de `lists`. */
+export const LIST_COLUMNS = 'id, owner_id, name, media_type, is_collaborative, is_public, created_at, description, template'
 
-/** Columnas de `lists` (las nuevas solo con la bandera). */
-export const LIST_COLUMNS_LEGACY = 'id, owner_id, name, media_type, is_collaborative, is_public, created_at'
-export const LIST_COLUMNS_MIXED = `${LIST_COLUMNS_LEGACY}, description, template`
-
-export function listColumns(mixed = mixedListsEnabled()): string {
-  return mixed ? LIST_COLUMNS_MIXED : LIST_COLUMNS_LEGACY
-}
-
-/** Tipos que admite POST /api/lists. `mixed` solo con la bandera. */
-export function validListTypes(mixed = mixedListsEnabled()): readonly ListMediaType[] {
-  return mixed ? [...SINGLE_MEDIA_TYPES, 'mixed'] : SINGLE_MEDIA_TYPES
-}
+/** Tipos que admite POST /api/lists. */
+export const LIST_MEDIA_TYPES: readonly ListMediaType[] = [...SINGLE_MEDIA_TYPES, 'mixed']
 
 /** Formato de un título a partir de su id (`book_123` → `book`). */
 export function mediaTypeOf(mediaId: string): string {

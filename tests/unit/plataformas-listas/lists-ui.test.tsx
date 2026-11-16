@@ -4,7 +4,7 @@
 // ============================================================
 
 import { render, screen, fireEvent, waitFor, within } from '@testing-library/react'
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
+import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { isValidElement, type ReactElement, type ReactNode } from 'react'
 
 vi.mock('next-intl', () => ({
@@ -31,23 +31,12 @@ beforeEach(() => {
   vi.clearAllMocks()
   vi.stubGlobal('fetch', fetchMock)
 })
-afterEach(() => {
-  delete process.env.MIXED_LISTS
-})
-
 const sent = () => JSON.parse(fetchMock.mock.calls[0][1].body)
 
-describe('CreateListModal con MIXED_LISTS', () => {
-  it('sin la bandera: ni plantillas, ni «Varios formatos», ni descripción', () => {
-    render(<CreateListModal onClose={vi.fn()} />)
-    expect(screen.queryByRole('group', { name: 'lists.templateLabel' })).toBeNull()
-    expect(screen.queryByRole('textbox', { name: 'lists.descriptionLabel' })).toBeNull()
-    expect(screen.queryByRole('option', { name: 'lists.mediaTypeMixed' })).toBeNull()
-  })
-
+describe('CreateListModal (F-25)', () => {
   it('«Franquicia» crea una lista mixta con su plantilla y descripción', async () => {
     fetchMock.mockResolvedValue({ ok: true, status: 201, json: async () => ({ data: { id: 'dune' } }) })
-    render(<CreateListModal onClose={vi.fn()} mixedEnabled />)
+    render(<CreateListModal onClose={vi.fn()} />)
     const group = screen.getByRole('group', { name: 'lists.templateLabel' })
     expect(within(group).getByRole('radio', { name: /lists\.template\.free/ })).toBeChecked()
     fireEvent.click(within(group).getByRole('radio', { name: /lists\.template\.franchise/ }))
@@ -66,27 +55,13 @@ describe('CreateListModal con MIXED_LISTS', () => {
 
   it('«Ranking personal» conserva el formato elegido', async () => {
     fetchMock.mockResolvedValue({ ok: true, status: 201, json: async () => ({ data: { id: 'top' } }) })
-    render(<CreateListModal onClose={vi.fn()} mixedEnabled />)
+    render(<CreateListModal onClose={vi.fn()} />)
     fireEvent.click(screen.getByRole('radio', { name: /lists\.template\.ranking/ }))
     fireEvent.change(screen.getByRole('textbox', { name: 'lists.listName' }), { target: { value: 'Top' } })
     fireEvent.click(screen.getByRole('button', { name: 'lists.create' }))
     await waitFor(() => expect(fetchMock).toHaveBeenCalled())
     expect(sent()).toMatchObject({ mediaType: 'movie', template: 'ranking' })
     expect(sent()).not.toHaveProperty('description')
-  })
-
-  it('mixed_unavailable (bandera antes de migrar): aviso específico en el diálogo', async () => {
-    fetchMock.mockResolvedValue({
-      ok: false, status: 400, headers: new Headers(),
-      json: async () => ({ error: { code: 'invalid_input', field: 'mediaType', message: 'mixed_unavailable' } }),
-    })
-    render(<CreateListModal onClose={vi.fn()} mixedEnabled />)
-    fireEvent.click(screen.getByRole('radio', { name: /lists\.template\.franchise/ }))
-    fireEvent.change(screen.getByRole('textbox', { name: 'lists.listName' }), { target: { value: 'Dune' } })
-    fireEvent.click(screen.getByRole('button', { name: 'lists.create' }))
-    await waitFor(() =>
-      expect(screen.getAllByRole('alert').some((a) => a.textContent === 'lists.errorMixedUnavailable')).toBe(true),
-    )
   })
 })
 
