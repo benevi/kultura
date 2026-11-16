@@ -257,8 +257,8 @@ export function FriendsClient({
 }
 
 /**
- * F-11: usuarios bloqueados, con "Desbloquear". Solo aparece si la moderación
- * está activa (MODERATION_V2 + migración) y hay alguien bloqueado.
+ * F-11: usuarios bloqueados, con "Desbloquear". Solo aparece si hay
+ * alguien bloqueado.
  */
 function BlockedUsersSection() {
   const t = useTranslations('moderation')

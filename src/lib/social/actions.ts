@@ -44,9 +44,6 @@ export function fetchFriends(): Promise<{ friendshipId: string; user: FriendProf
 export const REPORT_TARGET_TYPES = ['user', 'media', 'message', 'group_post', 'group', 'list'] as const
 export type ReportTargetType = (typeof REPORT_TARGET_TYPES)[number]
 
-/** Los que ya admitía antes de la migración (sin MODERATION_V2 solo estos). */
-export const LEGACY_REPORT_TARGET_TYPES: readonly ReportTargetType[] = ['user', 'media']
-
 /** Lo que se puede denunciar sin cuenta desde /[locale]/report (lo público). */
 export const PUBLIC_REPORT_TARGET_TYPES: readonly ReportTargetType[] = ['user', 'media', 'list']
 
@@ -108,7 +105,7 @@ export function submitPublicReport(input: {
 }
 
 export interface BlockState {
-  /** false sin MODERATION_V2: la UI no enseña bloquear. */
+  /** Siempre `true` (MODERATION_V2 se retiró encendida); se conserva por los clientes en caché. */
   enabled: boolean
   blocked: boolean
 }

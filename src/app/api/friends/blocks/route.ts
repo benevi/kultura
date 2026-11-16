@@ -4,8 +4,8 @@
 // GET              → { enabled, users }   (a quién he bloqueado)
 // POST   { userId } → bloquear (la base borra la amistad y las invitaciones)
 // DELETE { userId } → desbloquear (la amistad no vuelve: hay que pedirla)
-// `enabled: false` sin MODERATION_V2: la UI no enseña nada; POST y DELETE
-// responden `not_found` (`moderation_disabled`).
+// `enabled` siempre `true` (MODERATION_V2 se retiró encendida); se conserva
+// por los clientes en caché.
 // ============================================================
 
 import { LIMITS } from '@/lib/rate-limit'

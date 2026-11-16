@@ -118,15 +118,6 @@ export async function getFriendshipStatus(
 
 // ── Moderación (F-11) ─────────────────────────────────────────────────────────
 
-/**
- * MODERATION_V2=1 la activa Víctor tras aplicar 20261101110001_moderation.sql.
- * Sin ella la UI oculta bloquear, salir, expulsar y los tipos nuevos de
- * denuncia, y todo lo demás funciona como antes.
- */
-export function isModerationV2(): boolean {
-  return process.env.MODERATION_V2?.trim() === '1'
-}
-
 /** La RLS rechazó la escritura (insufficient_privilege). */
 export function isRlsDenied(error: { code?: string | null } | null | undefined): boolean {
   return error?.code === '42501'

@@ -63,7 +63,7 @@ beforeEach(() => {
 })
 afterEach(() => vi.unstubAllGlobals())
 
-describe('ConversationClient con MODERATION_V2', () => {
+describe('ConversationClient con moderación', () => {
   it('sin moderación no hay botones nuevos', async () => {
     routeFetch({ 'GET /api/chat/conv-1': () => page(messages) })
     renderEs(<ConversationClient conversationId="conv-1" otherUser={otherUser} currentUserId="me" />)

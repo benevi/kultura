@@ -12,7 +12,6 @@ const h = vi.hoisted(() => {
   return {
     user: null as { id: string } | null,
     list: null as unknown,
-    v2: true,
     permanentRedirect: vi.fn((url: string) => {
       throw new Error(`308 ${url}`)
     }),
@@ -41,7 +40,6 @@ vi.mock('@/lib/supabase/server', () => ({
 vi.mock('@/lib/social/public-collection', () => ({
   getPublicList: async () => h.list,
 }))
-vi.mock('@/lib/social/friends', () => ({ isModerationV2: () => h.v2 }))
 vi.mock('@/components/social/ReportButton', () => ({ ReportButton: h.M.ReportButton }))
 vi.mock('@/components/collection/PublicCollection', () => ({
   SignUpCta: h.M.SignUpCta,
@@ -78,7 +76,6 @@ beforeEach(() => {
   vi.clearAllMocks()
   h.user = null
   h.list = LIST
-  h.v2 = true
 })
 
 describe('/u/[username]/l/[id]', () => {
@@ -101,7 +98,7 @@ describe('/u/[username]/l/[id]', () => {
     expect(all(tree, h.M.SignUpCta)[0].href).toBe('/login?mode=register&ref=ana')
   })
 
-  it('con sesión: ReportButton de lista (con MODERATION_V2) y sin llamada a registrarse', async () => {
+  it('con sesión: ReportButton de lista y sin llamada a registrarse', async () => {
     h.user = { id: 'v' }
     const tree = await page()
     expect(all(tree, h.M.ReportButton)[0]).toMatchObject({ targetType: 'list', targetId: LIST.list.id })
@@ -109,7 +106,5 @@ describe('/u/[username]/l/[id]', () => {
     // Con sesión, sin la cabecera pública de «Registrarse».
     expect(all(tree, h.M.Header)).toHaveLength(0)
     expect(all(tree, h.M.SignedInBar)).toHaveLength(1)
-    h.v2 = false
-    expect(all(await page(), h.M.ReportButton)).toHaveLength(0)
   })
 })

@@ -4,7 +4,7 @@
 // /api/friends          GET (mis amigos) · POST (pedir) · PATCH (aceptar o
 //                       rechazar) · DELETE (quitar)
 // /api/friends/blocks   GET (¿he bloqueado a…? o la lista) · POST (bloquear)
-//                       · DELETE (desbloquear) — F-11, con MODERATION_V2
+//                       · DELETE (desbloquear) — F-11
 // ============================================================
 
 import { z } from 'zod'

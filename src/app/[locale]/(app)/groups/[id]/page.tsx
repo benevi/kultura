@@ -14,7 +14,6 @@ import { JoinGroupButton } from './JoinGroupButton'
 import { InviteButton } from './InviteButton'
 import { MemberRemoveButton } from './MemberRemoveButton'
 import { ReportButton } from '@/components/social/ReportButton'
-import { isModerationV2 } from '@/lib/social/friends'
 import { getGroupById, getMemberRole, getGroupMembers, getGroupPosts } from '@/lib/social/groups'
 import { F0 } from '@/lib/design/f0-tokens'
 import type { Metadata } from 'next'
@@ -48,7 +47,6 @@ export default async function GroupPage({ params }: Props) {
 
   const isMember = memberRole !== null
   const isOwner = group.ownerId === user.id
-  const moderation = isModerationV2()
   // Privado no auto-unible: ocultar el botón a quien no es miembro ni owner (evita 403/RLS confuso).
   const showJoin = isMember || isOwner || group.isPublic
 
@@ -149,7 +147,7 @@ export default async function GroupPage({ params }: Props) {
       </div>
 
       {/* F-11: denunciar el grupo (nombre, descripción o lo que se publica). */}
-      {moderation && !isOwner && (
+      {!isOwner && (
         <div className="-mt-4 flex justify-end">
           <ReportButton targetType="group" targetId={id} contextLabel={group.name} />
         </div>
@@ -159,7 +157,7 @@ export default async function GroupPage({ params }: Props) {
         {/* Feed */}
         <div className="md:col-span-2">
           {isMember ? (
-            <GroupFeed key={id} groupId={id} currentUserId={user.id} initialPosts={posts} isOwner={isOwner} moderation={moderation} />
+            <GroupFeed key={id} groupId={id} currentUserId={user.id} initialPosts={posts} isOwner={isOwner} moderation />
           ) : (
             <div
               className="rounded-bento border p-8 text-center text-sm"
@@ -195,7 +193,7 @@ export default async function GroupPage({ params }: Props) {
                   {m.role === 'owner' && (
                     <IconCrown role="img" aria-hidden={false} aria-label={tG('ownerBadge')} className="h-4 w-4 flex-shrink-0" style={{ color: F0.yellow }} />
                   )}
-                  {moderation && isOwner && m.role !== 'owner' && (
+                  {isOwner && m.role !== 'owner' && (
                     <MemberRemoveButton groupId={id} userId={m.user.id} username={m.user.username} />
                   )}
                 </div>

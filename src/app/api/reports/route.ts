@@ -1,7 +1,7 @@
 // ============================================================
 // KULTURA — Route Handler: /api/reports
 // POST: denuncia con sesión de un usuario, título, mensaje, post de grupo,
-// grupo o lista (los cuatro últimos con MODERATION_V2). Cada denuncia avisa
+// grupo o lista. Cada denuncia avisa
 // por email al creador y devuelve un número de referencia.
 // ============================================================
 
@@ -10,7 +10,6 @@ import { createClient } from '@/lib/supabase/server'
 import { checkRateLimit, LIMITS } from '@/lib/rate-limit'
 import { createLogger } from '@/lib/logger'
 import { notifyReport } from '@/lib/email/moderation'
-import { isModerationV2 } from '@/lib/social/friends'
 import { reportReference, type ReportTargetType } from '@/lib/social/actions'
 import {
   AppReportSchema,
@@ -46,7 +45,7 @@ export async function POST(request: Request): Promise<NextResponse> {
     return NextResponse.json({ error: 'invalid_body' }, { status: 400 })
   }
 
-  const allowed = allowedTargetTypes(isModerationV2(), 'app')
+  const allowed = allowedTargetTypes('app')
   if (!(allowed as readonly string[]).includes(parsed.data.targetType)) {
     return NextResponse.json({ error: 'invalid_target_type' }, { status: 400 })
   }

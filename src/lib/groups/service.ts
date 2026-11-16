@@ -4,15 +4,14 @@
 // HTTP: recibe la entrada ya validada por zod y devuelve un `ServiceResult`.
 // Las lecturas compartidas con las páginas siguen en `lib/social/groups.ts`.
 //
-// F-11 (MODERATION_V2): expulsar miembros y que el dueño borre posts
-// ajenos; sin la bandera, expulsar responde `not_found` (`moderation_disabled`).
+// F-11: expulsar miembros y que el dueño borre posts ajenos.
 // ============================================================
 
 import 'server-only'
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { createLogger } from '@/lib/logger'
-import { isModerationV2, isRlsDenied } from '@/lib/social/friends'
+import { isRlsDenied } from '@/lib/social/friends'
 import {
   createGroupRow,
   getDiscoverableGroups,
@@ -31,9 +30,6 @@ import { failure, success, type ServiceResult } from '@/lib/api/result'
 import type { DbGroupInvitation } from '@/types/supabase'
 
 const log = createLogger('groups/service')
-
-/** Mensaje del `not_found` de lo que necesita MODERATION_V2. */
-export const MODERATION_DISABLED = 'moderation_disabled'
 
 /** Color por defecto de un grupo nuevo (se remapea al leer, ver mapGroup). */
 const DEFAULT_COVER = '#E82020'
@@ -303,7 +299,6 @@ export async function removeMember(
   groupId: string,
   targetId: string
 ): Promise<ServiceResult<null>> {
-  if (!isModerationV2()) return failure('not_found', { message: MODERATION_DISABLED })
   if (targetId === userId) return failure('invalid_input', { message: GROUP_ERRORS.cannotRemoveSelf })
 
   const [myRole, targetRole] = await Promise.all([getMemberRole(groupId, userId), getMemberRole(groupId, targetId)])
@@ -372,7 +367,7 @@ export async function createPost(
   return success(null)
 }
 
-/** El autor borra su post y, con MODERATION_V2, el dueño borra cualquiera. */
+/** El autor borra su post y el dueño borra cualquiera. */
 export async function deletePost(
   supabase: SupabaseClient,
   userId: string,
@@ -388,7 +383,7 @@ export async function deletePost(
   if (!post) return failure('not_found', { message: 'Post not found' })
 
   if ((post as { user_id: string }).user_id !== userId) {
-    const role = isModerationV2() ? await getMemberRole(groupId, userId) : null
+    const role = await getMemberRole(groupId, userId)
     if (role !== 'owner') return failure('forbidden', { message: 'Author or owner only' })
   }
 

@@ -1,6 +1,6 @@
 // ============================================================
 // KULTURA — Route Handler: /api/groups/[id]/posts/[postId] (F-11)
-// DELETE: el autor borra su post y, con MODERATION_V2, el dueño cualquiera.
+// DELETE: el autor borra su post y el dueño cualquiera.
 // ============================================================
 
 import { LIMITS } from '@/lib/rate-limit'

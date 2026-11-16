@@ -51,7 +51,6 @@ const CUJ_ENV = {
   // Banderas de v2 cuyas migraciones ya están en local: se prueba ese camino
   // (progreso por formato F-27 y nota /10 F-24), no el de compatibilidad.
   // Bloquear, denunciar y moderar grupos (F-11): los E2E sociales los recorren.
-  MODERATION_V2: "1",
   NEXT_TELEMETRY_DISABLED: "1",
   // `fetch` sin red (ver offline-fetch.cjs): localhost pasa tal cual; TMDB,
   // datos fijos con búsqueda que filtra; el resto, 503.

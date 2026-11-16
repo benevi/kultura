@@ -5,7 +5,6 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { z } from 'zod'
 import {
-  LEGACY_REPORT_TARGET_TYPES,
   PUBLIC_REPORT_TARGET_TYPES,
   REPORT_DETAILS_MAX,
   REPORT_REASONS,
@@ -22,10 +21,11 @@ export function isUuid(value: string): boolean {
   return UUID_RE.test(value)
 }
 
-/** Tipos admitidos según la bandera y el canal (con sesión o formulario público). */
-export function allowedTargetTypes(moderationV2: boolean, channel: 'app' | 'public'): readonly ReportTargetType[] {
-  const base = moderationV2 ? REPORT_TARGET_TYPES : LEGACY_REPORT_TARGET_TYPES
-  return channel === 'public' ? base.filter((t) => PUBLIC_REPORT_TARGET_TYPES.includes(t)) : base
+/** Tipos admitidos según el canal (con sesión o formulario público). */
+export function allowedTargetTypes(channel: 'app' | 'public'): readonly ReportTargetType[] {
+  return channel === 'public'
+    ? REPORT_TARGET_TYPES.filter((t) => PUBLIC_REPORT_TARGET_TYPES.includes(t))
+    : REPORT_TARGET_TYPES
 }
 
 /**

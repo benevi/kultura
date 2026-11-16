@@ -2,7 +2,7 @@
 // KULTURA — Route Handler: /api/chat/[id]
 // GET:    los últimos mensajes (?before=<created_at> para los anteriores)
 // POST:   { content } → enviar (201)
-// DELETE: salir de la conversación (F-11, con MODERATION_V2)
+// DELETE: salir de la conversación (F-11)
 // Un id que no es uuid es una conversación que no existe (`not_found`).
 // ============================================================
 

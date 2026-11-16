@@ -2,7 +2,7 @@
 // KULTURA — POST /api/reports/public: denuncia sin cuenta (F-11, DSA art. 16)
 // ============================================================
 
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
+import { describe, it, expect, vi, beforeEach } from 'vitest'
 
 const { mockNotify, mockRateLimit, inserted, state } = vi.hoisted(() => ({
   mockNotify: vi.fn(),
@@ -96,10 +96,6 @@ describe('POST /api/reports/public', () => {
     mockNotify.mockReset().mockResolvedValue({ ok: true, id: 'e1' })
     mockRateLimit.mockReset().mockReturnValue({ allowed: true, retryAfterSeconds: 0, remaining: 4 })
   })
-  afterEach(() => {
-    delete process.env.MODERATION_V2
-  })
-
   it('crea la denuncia sin cuenta (reporter_id nulo, contacto, sin resolved_at) y dispara el email', async () => {
     const res = await post(valid)
     expect(res.status).toBe(201)
@@ -152,17 +148,14 @@ describe('POST /api/reports/public', () => {
     expect(await res.json()).toMatchObject({ error: 'target_not_found', field: 'target' })
   })
 
-  it('listas: solo con MODERATION_V2 y solo si son públicas', async () => {
+  it('listas: solo si son públicas', async () => {
     const list = { ...valid, targetType: 'list', target: `/es/u/troll/l/${LIST_ID}` }
-    expect((await post(list)).status).toBe(400)
-    process.env.MODERATION_V2 = '1'
     expect((await post(list)).status).toBe(201)
     state.publicLists.clear()
     expect((await post(list)).status).toBe(404)
   })
 
   it('un mensaje no se denuncia sin cuenta (no es público)', async () => {
-    process.env.MODERATION_V2 = '1'
     const res = await post({ ...valid, targetType: 'message', target: USER_ID })
     expect(res.status).toBe(400)
   })

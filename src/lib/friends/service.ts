@@ -3,7 +3,7 @@
 // La lógica que antes vivía en /api/friends y /api/friends/blocks. No sabe
 // de HTTP: recibe la entrada ya validada por zod y devuelve un `ServiceResult`.
 //
-// F-11 (MODERATION_V2): con bloqueo en cualquier sentido la RLS rechaza la
+// F-11: con bloqueo en cualquier sentido la RLS rechaza la
 // solicitud; se responde `forbidden` sin decir que hay un bloqueo.
 // ============================================================
 
@@ -14,16 +14,12 @@ import { uuidSchema } from '@/lib/api/contracts/common'
 import {
   getBlockedUsers,
   hasBlocked,
-  isModerationV2,
   isRlsDenied,
   type BlockedProfile,
 } from '@/lib/social/friends'
 import { failure, success, type ServiceResult } from '@/lib/api/result'
 
 const log = createLogger('friends/service')
-
-/** Mensaje del `not_found` de bloquear sin MODERATION_V2. */
-export const MODERATION_DISABLED = 'moderation_disabled'
 
 const FRIENDSHIP_COLUMNS = 'id, requester_id, receiver_id, status, created_at'
 
@@ -177,12 +173,11 @@ export async function removeFriendship(
 
 // ── /api/friends/blocks (F-11) ───────────────────────────────────────────────
 
-/** ¿He bloqueado a `otherId`? Sin MODERATION_V2, `enabled: false`. */
+/** ¿He bloqueado a `otherId`? `enabled` siempre `true` (compatibilidad). */
 export async function readBlockState(
   userId: string,
   otherId: string
 ): Promise<ServiceResult<{ enabled: boolean; blocked: boolean }>> {
-  if (!isModerationV2()) return success({ enabled: false, blocked: false })
   // Un id raro o el propio no es un error: simplemente no está bloqueado.
   if (!uuidSchema.safeParse(otherId).success || otherId === userId) return success({ enabled: true, blocked: false })
   try {
@@ -193,11 +188,10 @@ export async function readBlockState(
   }
 }
 
-/** A quién he bloqueado. Sin MODERATION_V2, `enabled: false` y nadie. */
+/** A quién he bloqueado. `enabled` siempre `true` (compatibilidad). */
 export async function listBlocked(
   userId: string
 ): Promise<ServiceResult<{ enabled: boolean; users: BlockedProfile[] }>> {
-  if (!isModerationV2()) return success({ enabled: false, users: [] })
   try {
     return success({ enabled: true, users: await getBlockedUsers(userId) })
   } catch (err) {
@@ -208,7 +202,6 @@ export async function listBlocked(
 
 /** Bloquea (la base borra la amistad y las invitaciones). Bloquear dos veces no es error. */
 export async function block(supabase: SupabaseClient, userId: string, otherId: string): Promise<ServiceResult<null>> {
-  if (!isModerationV2()) return failure('not_found', { message: MODERATION_DISABLED })
   if (otherId === userId) return failure('invalid_input', { field: 'userId', message: 'Cannot block yourself' })
 
   const { data: target } = await supabase.from('users').select('id').eq('id', otherId).maybeSingle()
@@ -230,7 +223,6 @@ export async function block(supabase: SupabaseClient, userId: string, otherId: s
 
 /** Desbloquea (la amistad no vuelve: hay que pedirla). */
 export async function unblock(supabase: SupabaseClient, userId: string, otherId: string): Promise<ServiceResult<null>> {
-  if (!isModerationV2()) return failure('not_found', { message: MODERATION_DISABLED })
   if (otherId === userId) return failure('invalid_input', { field: 'userId', message: 'Cannot unblock yourself' })
 
   const { error } = await supabase.from('blocks').delete().eq('blocker_id', userId).eq('blocked_id', otherId)

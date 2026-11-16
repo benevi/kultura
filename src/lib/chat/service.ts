@@ -3,14 +3,13 @@
 // La lógica que antes vivía en /api/chat y /api/chat/[id]. No sabe de HTTP:
 // recibe la entrada ya validada por zod y devuelve un `ServiceResult`.
 //
-// F-11 (MODERATION_V2): salir de una conversación y borrar mensajes propios;
-// sin la bandera responden `not_found` (`moderation_disabled`).
+// F-11: salir de una conversación y borrar mensajes propios.
 // ============================================================
 
 import 'server-only'
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { createLogger } from '@/lib/logger'
-import { isModerationV2, isRlsDenied } from '@/lib/social/friends'
+import { isRlsDenied } from '@/lib/social/friends'
 import { CHAT_ERRORS } from '@/lib/chat/errors'
 import { failure, success, type ServiceResult } from '@/lib/api/result'
 
@@ -18,9 +17,6 @@ const log = createLogger('chat/service')
 
 /** Mensajes por página. */
 export const CHAT_PAGE_SIZE = 100
-
-/** Mensaje del `not_found` de lo que necesita MODERATION_V2. */
-export const MODERATION_DISABLED = 'moderation_disabled'
 
 interface Profile {
   id: string
@@ -254,7 +250,6 @@ export async function leaveConversation(
   userId: string,
   conversationId: string
 ): Promise<ServiceResult<null>> {
-  if (!isModerationV2()) return failure('not_found', { message: MODERATION_DISABLED })
   // DELETE … RETURNING: sin la política (sin migración) o sin ser miembro no
   // se borra nada y se sabe por el array vacío.
   const { data, error } = await supabase
@@ -278,7 +273,6 @@ export async function deleteOwnMessage(
   conversationId: string,
   messageId: string
 ): Promise<ServiceResult<null>> {
-  if (!isModerationV2()) return failure('not_found', { message: MODERATION_DISABLED })
   const { data, error } = await supabase
     .from('messages')
     .delete()
