@@ -29,10 +29,10 @@ Plan: §1, §4 (8A.0), §9.2, §9.6, §10, §12.
 | Créditos de IA generativa, Meshy, Blender MCP, MCP nuevos | Fuera por defecto | — | **Sí**, cada uno |
 
 ## 3. Acciones legales inmediatas (8A.0, lo primero)
-- [ ] **D-HOY-1** Inventario por entradas y host: `docs/legal/hoy-inventario.sql` + lista de componentes `next/image` sin `loader`. — Claude (agente)
+- [x] **D-HOY-1** (16-11-2026, `docs/legal/hoy-inventario.md`) Inventario por entradas y host: `docs/legal/hoy-inventario.sql` + lista de componentes `next/image` sin `loader`. — Claude (agente)
 - [ ] **D-HOY-2** `docs/legal/decision-hoy.md`: opción (a), mantener portadas reales, optimizador y OG; riesgo R1b asumido. — Víctor
-- [ ] **D-HOY-3 / P-7** PR 8A.0-P: `/privacy` cuenta portadas por `/_next/image` (copia hasta 7 días) y OG. Texto en plan §9.3; claves en `messages/es.json` (`…privacy…p3`, hoy ~l. 1742) y `messages/en.json`. — Claude (agente) redacta, Víctor aprueba
-- [ ] **D-HOY-4 / P-10** Mismo PR: Vercel como encargado de optimización y caché de imágenes y OG (clave `vercel`, hoy ~l. 1731). — Víctor
+- [x] **D-HOY-3 / P-7** (#173, 16-11-2026) PR 8A.0-P: `/privacy` cuenta portadas por `/_next/image` (copia hasta 7 días) y OG. Texto en plan §9.3; claves en `messages/es.json` (`…privacy…p3`, hoy ~l. 1742) y `messages/en.json`. — Claude (agente) redacta, Víctor aprueba
+- [x] **D-HOY-4 / P-10** (#173) Mismo PR: Vercel como encargado de optimización y caché de imágenes y OG (clave `vercel`, hoy ~l. 1731). — Víctor
 - [ ] `privacy.updated` con la fecha del PR. — Claude (agente)
 - [ ] **D-HOY-5** Encargo mínimo enviado (P1, P2, P4, P7, P8, P14; P1 como «esto ya ocurre: ¿es aceptable?») a clínica jurídica universitaria o servicio gratuito de colegio de abogados. — Víctor
 - [ ] Correo de permiso a cada proveedor (TMDB, RAWG, ComicVine, AniList, MangaDex, MyAnimeList/Jikan, Open Library, Google Books, Steam, JustWatch) con [`plantillas/correo-proveedor-portadas.md`](plantillas/correo-proveedor-portadas.md). — Víctor envía; Claude (agente) prepara borradores
