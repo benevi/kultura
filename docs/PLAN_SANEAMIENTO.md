@@ -287,7 +287,7 @@ Los `loading.tsx` y el componente de error con reintento pasan a la fase 8 (Q32)
 
 ## ⬜ Fase 11 · Documentación
 
-1. `README.md`:
+1. ✅ `README.md` (este PR):
    - Arquitectura.
    - Cómo arrancar en local.
    - Convenciones: contrato de la API, forma de pedir datos, migraciones (regla 5) y entornos (Preview → `kultura-test`).
