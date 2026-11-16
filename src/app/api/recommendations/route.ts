@@ -2,161 +2,37 @@
 // KULTURA — Route Handler: /api/recommendations
 // POST: crear una recomendación directa entre amigos.
 // Crea fila en `recommendations` + fila en `notifications`.
+//
+// La lógica está en `lib/recommendations/service.ts`; el contrato en
+// `lib/api/contracts/recommendations.ts`. Respuesta: 201 `{ data }` o
+// `{ error: { code, message?, field? } }` (saneamiento 7 y 9).
 // ============================================================
 
-import { NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase/server'
-import { createAdminClient } from '@/lib/supabase/admin'
-import { checkRateLimitDistributed, LIMITS } from '@/lib/rate-limit'
-import { createLogger } from '@/lib/logger'
-import { upsertMediaFromProvider, mediaFailureStatus } from '@/lib/media/upsert-from-provider'
+import { LIMITS } from '@/lib/rate-limit'
+import { parseBody, rateLimit, requireUser, respond } from '@/lib/api/route'
+import { recommendationCreateSchema } from '@/lib/api/contracts/recommendations'
+import { recommendToFriend } from '@/lib/recommendations/service'
 import { localeFromRequest } from '@/lib/media/request-locale'
-import { isRlsDenied } from '@/lib/social/friends'
 
-const log = createLogger('api/recommendations')
-
-interface RecommendPayload {
-  toUserId: string
-  mediaId: string
-  message?: string
-  /** Lo sigue mandando el cliente, pero se ignora: `media` la escribe el servidor (SEG-2). */
-  mediaCache?: unknown
-}
+/** Cuerpo máximo: mensaje de 500 caracteres y el `mediaCache` que aún manda el cliente. */
+const MAX_BYTES = 32_768
 
 /** POST /api/recommendations */
-export async function POST(request: Request): Promise<NextResponse> {
-  const supabase = await createClient()
-
-  const { data: { user }, error: authError } = await supabase.auth.getUser()
-  if (authError || !user) {
-    return NextResponse.json({ error: 'Not authenticated' }, { status: 401 })
-  }
-
-  // Rate limiting — 10 req/min por usuario
-  const rl = await checkRateLimitDistributed(`${user.id}:recommendations`, LIMITS.recommendations)
-  if (!rl.allowed) {
-    return NextResponse.json(
-      { error: 'Too many requests' },
-      { status: 429, headers: { 'Retry-After': String(rl.retryAfterSeconds) } }
-    )
-  }
-
-  let body: RecommendPayload
-  try {
-    body = await request.json() as RecommendPayload
-  } catch {
-    return NextResponse.json({ error: 'Invalid JSON body' }, { status: 400 })
-  }
-
-  if (!body.toUserId) {
-    return NextResponse.json({ error: 'toUserId is required' }, { status: 400 })
-  }
-  if (!body.mediaId) {
-    return NextResponse.json({ error: 'mediaId is required' }, { status: 400 })
-  }
-  if (!/^[a-z]+_.+$/.test(body.mediaId)) {
-    return NextResponse.json(
-      { error: 'mediaId must follow the format "{type}_{externalId}"' },
-      { status: 400 }
-    )
-  }
-  if (body.toUserId === user.id) {
-    return NextResponse.json(
-      { error: 'Cannot recommend to yourself' },
-      { status: 400 }
-    )
-  }
-  // message es opcional; si viene, tope de longitud (recommendations.message es
-  // TEXT sin constraint) para evitar payloads gigantes.
-  if (body.message !== undefined && body.message !== null) {
-    if (typeof body.message !== 'string' || body.message.length > 500) {
-      return NextResponse.json(
-        { error: 'message too long (max 500 chars)' },
-        { status: 400 }
-      )
-    }
-  }
-
-  // Verificar que el receptor existe
-  const { data: receiver } = await supabase
-    .from('users')
-    .select('id')
-    .eq('id', body.toUserId)
-    .maybeSingle()
-
-  if (!receiver) {
-    return NextResponse.json({ error: 'User not found' }, { status: 404 })
-  }
-
-  // Saneamiento 4.2 (Q7): solo a amistades aceptadas, y ANTES de pedir la
-  // ficha al proveedor (sin esto, cualquiera gastaba cuota del proveedor con
-  // recomendaciones que la base iba a rechazar). La RLS lo vuelve a exigir,
-  // junto con que no haya bloqueo. Una sola fila posible por pareja (fase 3).
-  const pair = [user.id, body.toUserId]
-  const { data: friendship } = await supabase
-    .from('friendships')
-    .select('id')
-    .eq('status', 'accepted')
-    .in('requester_id', pair)
-    .in('receiver_id', pair)
-    .maybeSingle()
-
-  if (!friendship) {
-    return NextResponse.json({ error: 'not_friends' }, { status: 403 })
-  }
-
-  // Obtener username del remitente para el payload de notificación
-  const { data: senderProfile } = await supabase
-    .from('users')
-    .select('username')
-    .eq('id', user.id)
-    .maybeSingle()
-
-  // La fila de `media` (FK de recommendations) la garantiza el servidor con la
-  // ficha del proveedor; `mediaCache` se ignora (SEG-2).
-  const media = await upsertMediaFromProvider(body.mediaId, { locale: localeFromRequest(request) })
-  if (!media.ok) {
-    const failure = mediaFailureStatus(media.reason)
-    return NextResponse.json({ error: failure.error }, { status: failure.status })
-  }
-
-  // Insertar recomendación
-  const { data: recommendation, error: recError } = await supabase
-    .from('recommendations')
-    .insert({
-      from_user_id: user.id,
-      to_user_id: body.toUserId,
-      media_id: body.mediaId,
-      message: body.message ?? null,
-    })
-    .select('id')
-    .single()
-
-  // Saneamiento 2.4 (Q7): la RLS solo deja recomendar a amistades aceptadas.
-  if (isRlsDenied(recError)) {
-    return NextResponse.json({ error: 'not_friends' }, { status: 403 })
-  }
-  if (recError || !recommendation) {
-    return NextResponse.json({ error: 'Failed to create recommendation' }, { status: 500 })
-  }
-
-  // Notificación vía admin client (notifications no tiene policy INSERT para anon).
-  // No bloquea la recomendación si falla; ya no es silencioso.
-  const admin = createAdminClient()
-  const { error: notifErr } = await admin.from('notifications').insert({
-    user_id: body.toUserId,
-    type: 'recommendation',
-    payload: {
-      recommendationId: recommendation.id,
-      fromUserId: user.id,
-      fromUsername: senderProfile?.username ?? '',
-      mediaId: body.mediaId,
-      // Del catálogo, no del remitente: la notificación la lee otra persona.
-      mediaTitle: media.title,
-      message: body.message ?? null,
-    },
+export async function POST(request: Request) {
+  const auth = await requireUser()
+  if (!auth.ok) return auth.response
+  // 10 por minuto por usuario.
+  const limited = await rateLimit(request, {
+    key: 'recommendations',
+    limit: LIMITS.recommendations,
+    userId: auth.user.id,
   })
-  if (notifErr) log.error('[E83] notif insert failed', { type: 'recommendation', notifErr })
+  if (limited) return limited
+  const body = await parseBody(request, recommendationCreateSchema, { maxBytes: MAX_BYTES })
+  if (!body.ok) return body.response
 
-  return NextResponse.json({ recommendationId: recommendation.id }, { status: 201 })
+  const result = await recommendToFriend(auth.supabase, auth.user, body.value, {
+    locale: localeFromRequest(request),
+  })
+  return respond(result, { status: 201 })
 }
