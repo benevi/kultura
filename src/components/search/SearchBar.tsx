@@ -8,6 +8,7 @@ import { Spinner } from "@/components/ui/Spinner";
 import { Badge } from "@/components/ui/Badge";
 import { IconSearch } from "@/components/icons";
 import type { MediaItem } from "@/types/media";
+import { ApiError, apiFetch } from "@/lib/api/client";
 import { posterLoader } from "@/lib/images/poster-url";
 import { posterGradient } from "@/lib/images/poster-gradient";
 
@@ -94,18 +95,18 @@ export function SearchBar({
         // caché de borde no debe mezclar idiomas). F-13 (DAT-8): y la familia.
         const params = new URLSearchParams({ q: inputValue, locale });
         if (type && type !== "all") params.set("type", type);
-        const res = await fetch(`/api/search?${params.toString()}`, {
+        const data = await apiFetch<MediaItem[]>(`/api/search?${params.toString()}`, {
           signal: controller.signal,
         });
-        if (res.ok) {
-          const data: MediaItem[] = await res.json();
-          if (controller.signal.aborted) return;
-          setSuggestions(data);
-          setActiveIndex(-1);
-          setOpen(data.length > 0);
-        }
-      } catch {
         if (controller.signal.aborted) return;
+        setSuggestions(data);
+        setActiveIndex(-1);
+        setOpen(data.length > 0);
+      } catch (err) {
+        if (controller.signal.aborted) return;
+        // Una respuesta de error (p. ej. 429) deja las sugerencias que había;
+        // solo un fallo de red las vacía.
+        if (err instanceof ApiError && err.status > 0) return;
         setSuggestions([]);
         setOpen(false);
       } finally {

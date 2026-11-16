@@ -84,7 +84,7 @@ describe('POST /api/recommendations', () => {
     const res = await POST(makeRequest({ mediaId: MEDIA_ID }))
     expect(res.status).toBe(400)
     const body = await res.json()
-    expect(body.error).toContain('toUserId')
+    expect(body.error).toMatchObject({ code: 'invalid_input', field: 'toUserId' })
   })
 
   it('returns 400 if mediaId is missing', async () => {
@@ -94,7 +94,7 @@ describe('POST /api/recommendations', () => {
     const res = await POST(makeRequest({ toUserId: RECEIVER_ID }))
     expect(res.status).toBe(400)
     const body = await res.json()
-    expect(body.error).toContain('mediaId')
+    expect(body.error).toMatchObject({ code: 'invalid_input', field: 'mediaId' })
   })
 
   it('returns 400 if mediaId format is invalid', async () => {
@@ -104,7 +104,8 @@ describe('POST /api/recommendations', () => {
     const res = await POST(makeRequest({ toUserId: RECEIVER_ID, mediaId: 'invalid' }))
     expect(res.status).toBe(400)
     const body = await res.json()
-    expect(body.error).toContain('format')
+    expect(body.error).toMatchObject({ code: 'invalid_input', field: 'mediaId' })
+    expect(body.error.message).toContain('format')
   })
 
   it('returns 400 if recommending to self', async () => {
@@ -114,7 +115,7 @@ describe('POST /api/recommendations', () => {
     const res = await POST(makeRequest({ toUserId: AUTH_USER.id, mediaId: MEDIA_ID }))
     expect(res.status).toBe(400)
     const body = await res.json()
-    expect(body.error).toContain('yourself')
+    expect(body.error).toEqual({ code: 'invalid_input', field: 'toUserId', message: 'cannot_recommend_self' })
   })
 
   it('returns 400 if message exceeds max length (F4)', async () => {
@@ -126,7 +127,7 @@ describe('POST /api/recommendations', () => {
     )
     expect(res.status).toBe(400)
     const body = await res.json()
-    expect(body.error).toContain('too long')
+    expect(body.error).toMatchObject({ code: 'invalid_input', field: 'message' })
   })
 
   it('returns 404 if receiver does not exist', async () => {
@@ -167,7 +168,7 @@ describe('POST /api/recommendations', () => {
     const res = await POST(makeRequest({ toUserId: RECEIVER_ID, mediaId: MEDIA_ID }))
     expect(res.status).toBe(201)
     const body = await res.json()
-    expect(body.recommendationId).toBe('rec-001')
+    expect(body.data.recommendationId).toBe('rec-001')
     // E83: notif insertada vía admin client
     expect(mockAdminNotifInsert).toHaveBeenCalledOnce()
     expect(mockAdminNotifInsert).toHaveBeenCalledWith(
@@ -188,7 +189,7 @@ describe('POST /api/recommendations', () => {
     const { POST } = await import('@/app/api/recommendations/route')
     const res = await POST(makeRequest({ toUserId: RECEIVER_ID, mediaId: MEDIA_ID }))
     expect(res.status).toBe(403)
-    expect(await res.json()).toEqual({ error: 'not_friends' })
+    expect(await res.json()).toEqual({ error: { code: 'forbidden', message: 'not_friends' } })
     expect(mockEnsureMedia).not.toHaveBeenCalled()
     expect(mockFromRecommendations).not.toHaveBeenCalled()
   })
@@ -216,7 +217,7 @@ describe('POST /api/recommendations', () => {
     const { POST } = await import('@/app/api/recommendations/route')
     const res = await POST(makeRequest({ toUserId: RECEIVER_ID, mediaId: MEDIA_ID }))
     expect(res.status).toBe(403)
-    expect(await res.json()).toEqual({ error: 'not_friends' })
+    expect(await res.json()).toEqual({ error: { code: 'forbidden', message: 'not_friends' } })
     expect(mockAdminNotifInsert).not.toHaveBeenCalled()
   })
 
@@ -294,7 +295,7 @@ describe('POST /api/recommendations', () => {
 
     expect(res.status).toBe(201)
     expect(errSpy).toHaveBeenCalledWith(
-      '[api/recommendations]',
+      '[recommendations]',
       '[E83] notif insert failed',
       expect.objectContaining({ type: 'recommendation' })
     )
