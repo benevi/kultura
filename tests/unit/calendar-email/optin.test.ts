@@ -128,14 +128,14 @@ describe('PUT /api/email/preferences — pedir el alta', () => {
     h.user = { id: U1, email: 'ajeno@example.com', email_confirmed_at: null }
     const res = await enable()
     expect(res.status).toBe(403)
-    expect(await res.json()).toEqual({ error: 'unconfirmed_email' })
+    expect(await res.json()).toEqual({ error: { code: 'forbidden', message: 'unconfirmed_email' } })
     expect(h.send).not.toHaveBeenCalled()
   })
 
   it('NO activa nada: 202 pendiente, apunta la petición y manda el enlace "optin" a la dirección de la cuenta', async () => {
     const res = await enable()
     expect(res.status).toBe(202)
-    expect(await res.json()).toEqual({ weekly: false, pending: true })
+    expect(await res.json()).toEqual({ data: { weekly: false, pending: true } })
     // Ni alta ni consentimiento registrados: solo se reserva el envío con los topes.
     expect(server.rpcCalls).toEqual([])
     expect(admin.rpcCalls).toEqual([
@@ -171,7 +171,7 @@ describe('PUT /api/email/preferences — pedir el alta', () => {
     expect((await enable()).status).toBe(202)
     const res = await enable()
     expect(res.status).toBe(429)
-    expect(await res.json()).toEqual({ error: 'cooldown' })
+    expect(await res.json()).toEqual({ error: { code: 'rate_limited', message: 'cooldown' } })
     expect(h.send).toHaveBeenCalledTimes(1)
   })
 
@@ -195,7 +195,7 @@ describe('PUT /api/email/preferences — pedir el alta', () => {
     }
     const res = await enable()
     expect(res.status).toBe(429)
-    expect(await res.json()).toEqual({ error: 'daily_limit' })
+    expect(await res.json()).toEqual({ error: { code: 'rate_limited', message: 'daily_limit' } })
     expect(h.send).toHaveBeenCalledTimes(3)
     claims.now += 24 * 3600_000
     expect((await enable()).status).toBe(202)
@@ -209,7 +209,7 @@ describe('PUT /api/email/preferences — pedir el alta', () => {
       h.user = { id, email: `${id.slice(0, 4)}@example.com`, email_confirmed_at: CONFIRMED, app_metadata: {} }
       const res = await enable()
       statuses.push(res.status)
-      if (res.status === 503) expect(await res.json()).toEqual({ error: 'busy' })
+      if (res.status === 503) expect(await res.json()).toEqual({ error: { code: 'unavailable', message: 'busy' } })
     }
     expect(statuses).toEqual([202, 202, 503])
     expect(h.send).toHaveBeenCalledTimes(2)
@@ -244,7 +244,7 @@ describe('PUT /api/email/preferences — pedir el alta', () => {
     h.send.mockResolvedValue({ ok: false, reason: 'http_error', status: 403 })
     const res = await enable()
     expect(res.status).toBe(502)
-    expect(await res.json()).toEqual({ error: 'send_failed' })
+    expect(await res.json()).toEqual({ error: { code: 'provider_unavailable', message: 'send_failed' } })
   })
 
   it('baja: al momento, con la sesión (set_email_weekly false)', async () => {
