@@ -18,6 +18,7 @@ Ninguno.
 | `tests/unit/components/auth/register-form.test.tsx` · «Revisa tu correo» | `h.replace` llamado (15-11, con cobertura) | El test anterior acababa al llamar a `signUp` y su redirección a `/welcome` llegaba en el siguiente | El test anterior espera la redirección (#165). |
 | `tests/unit/csp/static-csp.test.ts`, `tests/unit/plataforma/next-config.test.ts` | `Hook timed out in 10000ms` (15-11, con cobertura) | Importar `next.config.mjs` (arrastra Sentry) pasa de 10 s con la medición | `beforeAll` con 30 s (#165). |
 | `tests/unit/push/push-offer.test.tsx` · Esc cierra | `aside` sigue en el DOM (16-11, #171) | El test pulsaba Esc al aparecer el contenedor; el listener se engancha cuando el aviso ya es visible | Espera a la X (aviso visible) y al cierre con `waitFor` (#171). |
+| `tests/unit/progress/home-progress-columns.test.tsx` | `Test timed out in 5000ms` (16-11, en local con la suite completa, #186) | El `import()` de la página de Inicio estaba dentro del test y con la suite cargada pasaba de 5 s | El import va en `beforeAll` con 30 s (este PR). |
 
 ## Vigilados
 
