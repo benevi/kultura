@@ -285,24 +285,24 @@ Los `loading.tsx` y el componente de error con reintento pasan a la fase 8 (Q32)
   - Un componente común de error con reintento.
 - **Hasta entonces, la interfaz solo se toca para arreglar errores.**
 
-## ⬜ Fase 11 · Documentación
+## ✅ Fase 11 · Documentación — 1: #192 · 2: #190 · 3: #191 · 4: #180 a #187 #189 · cerrada el 16-11-2026
 
-1. ✅ `README.md` (este PR):
+1. ✅ `README.md` (#192):
    - Arquitectura.
    - Cómo arrancar en local.
    - Convenciones: contrato de la API, forma de pedir datos, migraciones (regla 5) y entornos (Preview → `kultura-test`).
-2. ✅ `.env.example` completo (este PR):
+2. ✅ `.env.example` completo (#190):
    - `CRON_SECRET`, `REVALIDATE_SECRET`, `EMAIL_TOKEN_SECRET`, `SHARE_SECRET`, `INVITE_SECRET`, `RESEND_API_KEY`, `KV_REST_API_*` y `DEMO_USER_EMAIL`.
    - Las banderas.
 
    Cada variable con una línea que explique qué pasa si falta.
-3. ✅ Registro de decisiones (`docs/adr/0002` a `0006`, este PR):
+3. ✅ Registro de decisiones (`docs/adr/0002` a `0006`, #191):
    - Arreglar en lugar de rehacer.
    - Borrado de cuenta y mensajes (Q6).
    - Tablas de caché sin clave foránea (Q15).
    - Fuentes únicas de puntuación y progreso (Q23).
    - Migraciones con fecha futura (Q13).
-4. **Borrar el código de cada bandera en estado apagado.** Seis banderas están a `1` en producción (`PROGRESS_V2`, `MODERATION_V2`, `RATING_SCALE_10`, `MIXED_LISTS`, `LIBRARY_VISIBILITY`, `ACCOUNT_GRACE`): se retiran (un PR por bandera) antes de que caduquen (21–25 dic 2026, `docs/banderas.json`). `SHARE_PUBLIC_LIBRARY` e `INVITE_NOTIFY` están apagadas: decidir si se encienden, se prorrogan o se quitan.
+4. ✅ **Borrar el código de cada bandera en estado apagado.** Hecho: las seis encendidas se retiraron con un solo camino (#180, #181, #184–#187; la prop `moderation` que sobraba, #189) y las dos apagadas se quitaron (`INVITE_NOTIFY` #182: el aviso se envía siempre; `SHARE_PUBLIC_LIBRARY` #183: nunca sin cuenta). Quedan `WEEKLY_EMAIL` y `PUSH_ENABLED` (fuera del saneamiento) y el interruptor `ANALYTICS_DISABLED`. Seis banderas están a `1` en producción (`PROGRESS_V2`, `MODERATION_V2`, `RATING_SCALE_10`, `MIXED_LISTS`, `LIBRARY_VISIBILITY`, `ACCOUNT_GRACE`): se retiran (un PR por bandera) antes de que caduquen (21–25 dic 2026, `docs/banderas.json`). `SHARE_PUBLIC_LIBRARY` e `INVITE_NOTIFY` están apagadas: decidir si se encienden, se prorrogan o se quitan.
 
 ## ✅ Fase 12 · Rigor (comprobaciones automáticas; después de la 10, antes de la 8) — 1: #154–#156 · 2: #158 #160 · 3: #161 · 4: #163–#165 · 5: #167 #169 · 6: #162 · 7: #166 · 8: #157 #168 · cerrada el 16-11-2026
 
