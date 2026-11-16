@@ -8,29 +8,27 @@
 // diario compartido con las traducciones (`AI_DAILY_CALL_CAP`). Al llegar al
 // tope se responde `{ source: 'match', capped: true }` con el orden por match.
 //
+// Respuesta: `{ data: AiRecsResult & { starter? } }` o `{ error: { code } }`
+// (saneamiento 7 y 9).
+//
 // ANTHROPIC_API_KEY solo se usa en el servidor — nunca en el cliente.
 // ============================================================
 
-import { NextResponse } from 'next/server'
 import { getLocale } from 'next-intl/server'
-import { createClient } from '@/lib/supabase/server'
+import { ok, rateLimit, requireUser } from '@/lib/api/route'
 import { getDailyAiRecommendations, readTodayAiRecommendations } from '@/lib/claude/recommendations'
 import { getStarterItems } from '@/lib/recommendations/starter'
 import { getUserStats } from '@/lib/library/stats'
-import { checkRateLimitDistributed } from '@/lib/rate-limit'
 
 // 5 req/min para GENERAR: frena a quien martillea la ruta cuando no hay nada
 // guardado (cada intento barre proveedores y puede gastar cupo de IA).
 const AI_LIMIT = { windowMs: 60_000, max: 5 }
 
 /** GET /api/ai-recommendations */
-export async function GET(): Promise<NextResponse> {
-  const supabase = await createClient()
-
-  const { data: { user }, error: authError } = await supabase.auth.getUser()
-  if (authError || !user) {
-    return NextResponse.json({ error: 'Not authenticated' }, { status: 401 })
-  }
+export async function GET(request: Request) {
+  const auth = await requireUser()
+  if (!auth.ok) return auth.response
+  const { user, supabase } = auth
 
   const locale = await getLocale()
 
@@ -40,15 +38,10 @@ export async function GET(): Promise<NextResponse> {
   // pulsaran cinco a la vez. Su biblioteca no cambia: una generación al día
   // les vale a todos.
   const today = await readTodayAiRecommendations(user.id, locale)
-  if (today) return NextResponse.json(today)
+  if (today) return ok(today)
 
-  const rl = await checkRateLimitDistributed(`${user.id}:ai-recommendations`, AI_LIMIT)
-  if (!rl.allowed) {
-    return NextResponse.json(
-      { error: 'Too many requests' },
-      { status: 429, headers: { 'Retry-After': String(rl.retryAfterSeconds) } }
-    )
-  }
+  const limited = await rateLimit(request, { key: 'ai-recommendations', limit: AI_LIMIT, userId: user.id })
+  if (limited) return limited
 
   const stats = await getUserStats(user.id)
   const topGenres = stats.topGenres.map((g) => g.genre)
@@ -59,8 +52,8 @@ export async function GET(): Promise<NextResponse> {
   // no se queda vacío: lo más popular ahora mismo, un título de cada formato.
   if (result.recommendations.length === 0) {
     const starter = await getStarterItems(locale)
-    return NextResponse.json({ ...result, starter })
+    return ok({ ...result, starter })
   }
 
-  return NextResponse.json(result)
+  return ok(result)
 }
