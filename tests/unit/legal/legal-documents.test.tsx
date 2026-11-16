@@ -182,6 +182,17 @@ describe.each(['es', 'en'] as const)('documentos legales (%s)', (locale) => {
     expect(text).not.toMatch(AGE_16)
   })
 
+  it('aviso legal: canal de retirada para titulares con respuesta en 7 días (fase 8, 8A.0)', async () => {
+    const { container } = await renderDoc('notice', locale)
+    const section = container.querySelector('h2#takedown')?.parentElement
+    expect(section).not.toBeNull()
+    const text = section?.textContent ?? ''
+    expect(text).toContain(LEGAL_CONTACT_EMAIL)
+    expect(text).toMatch(locale === 'es' ? /«Retirada»/ : /“Removal”/)
+    expect(text).toMatch(locale === 'es' ? /7 días como máximo/ : /within 7 days at most/)
+    expect(text).toMatch(locale === 'es' ? /No hace falta tener cuenta/ : /You don’t need an account/)
+  })
+
   it('aviso legal: responsable, email, nota de NIF y punto de contacto DSA con /report', async () => {
     const { container } = await renderDoc('notice', locale)
     const text = container.textContent ?? ''

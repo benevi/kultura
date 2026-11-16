@@ -1872,7 +1872,7 @@
     "notice": {
       "title": "Aviso legal",
       "metaDescription": "Quién está detrás de KULTURA, cómo contactar, el punto de contacto del Reglamento de Servicios Digitales y cómo denunciar contenido.",
-      "updated": "Última actualización: 23 de octubre de 2026",
+      "updated": "Última actualización: 16 de noviembre de 2026",
       "version": "Versión 2026-10",
       "summary": {
         "s1": "Responsable: Víctor Franco. Contacto: <mail>{email}</mail>.",
@@ -1902,7 +1902,13 @@
         },
         "ip": {
           "title": "Propiedad intelectual",
-          "p1": "El código, el diseño y la marca KULTURA son de su responsable. La información de los títulos, las portadas y los logotipos de terceros pertenecen a sus titulares (ver la atribución al pie de cada página). Para avisar de una infracción, usa el <report>formulario de denuncia</report> o el correo de contacto."
+          "p1": "El código, el diseño y la marca KULTURA son de su responsable. La información de los títulos, las portadas y los logotipos de terceros pertenecen a sus titulares (ver la atribución al pie de cada página). Para pedir que retire algo sobre lo que tienes derechos, sigue el apartado siguiente; para denunciar lo que publica otra persona usuaria, usa el <report>formulario de denuncia</report>."
+        },
+        "takedown": {
+          "title": "Retirada de imágenes y datos de terceros",
+          "p1": "Si tienes derechos sobre una portada, una imagen, un logotipo o los datos de un título que aparece en KULTURA, o eres el catálogo del que salen, puedes pedirme que lo retire escribiendo a <mail>{email}</mail> con el asunto «Retirada». No hace falta tener cuenta.",
+          "p2": "Indica qué es (el enlace a la ficha o a la página donde aparece), qué derecho tienes sobre ello y cómo contactarte.",
+          "p3": "Te respondo y, si procede, lo retiro en 7 días como máximo: dejo de mostrarlo, lo borro de la caché de imágenes y de la portada de la web y, si hace falta, dejo de usar ese catálogo. Si no lo retiro, te explico por qué."
         },
         "security": {
           "title": "Seguridad y avisos de vulnerabilidades",
