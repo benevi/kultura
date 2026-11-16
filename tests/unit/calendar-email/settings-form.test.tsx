@@ -86,7 +86,7 @@ describe('Ajustes › correo semanal', () => {
   })
 
   it('doble opt-in: activar manda la versión, pide la confirmación por correo y el interruptor sigue apagado', async () => {
-    fetchMock.mockResolvedValue(new Response(JSON.stringify({ weekly: false, pending: true }), { status: 202 }))
+    fetchMock.mockResolvedValue(new Response(JSON.stringify({ data: { weekly: false, pending: true } }), { status: 202 }))
     render(<SettingsForm {...PROPS} initialWeeklyEmail={{ weekly: false, consentedAt: null }} />)
     expect(screen.getByText('weeklyEmailHowTo')).toBeInTheDocument()
     fireEvent.click(screen.getByRole('switch'))
@@ -105,13 +105,13 @@ describe('Ajustes › correo semanal', () => {
   })
 
   it.each([
-    [429, 'cooldown', 'weeklyEmailCooldown', 'status'],
-    [429, 'daily_limit', 'weeklyEmailDailyLimit', 'status'],
-    [503, 'busy', 'weeklyEmailBusy', 'status'],
-    [403, 'unconfirmed_email', 'weeklyEmailUnconfirmed', 'alert'],
-    [502, 'send_failed', 'weeklyEmailSendFailed', 'alert'],
-  ])('%s %s → %s', async (status, error, text, role) => {
-    fetchMock.mockResolvedValue(new Response(JSON.stringify({ error }), { status }))
+    [429, 'rate_limited', 'cooldown', 'weeklyEmailCooldown', 'status'],
+    [429, 'rate_limited', 'daily_limit', 'weeklyEmailDailyLimit', 'status'],
+    [503, 'unavailable', 'busy', 'weeklyEmailBusy', 'status'],
+    [403, 'forbidden', 'unconfirmed_email', 'weeklyEmailUnconfirmed', 'alert'],
+    [502, 'provider_unavailable', 'send_failed', 'weeklyEmailSendFailed', 'alert'],
+  ])('%s %s %s → %s', async (status, code, message, text, role) => {
+    fetchMock.mockResolvedValue(new Response(JSON.stringify({ error: { code, message } }), { status }))
     render(<SettingsForm {...PROPS} initialWeeklyEmail={{ weekly: false, consentedAt: null }} />)
     fireEvent.click(screen.getByRole('switch'))
     expect(await screen.findByText(text)).toHaveAttribute('role', role)
@@ -126,7 +126,9 @@ describe('Ajustes › correo semanal', () => {
   })
 
   it('texto viejo (409): vuelve atrás y pide recargar', async () => {
-    fetchMock.mockResolvedValue(new Response('{}', { status: 409 }))
+    fetchMock.mockResolvedValue(
+      new Response(JSON.stringify({ error: { code: 'conflict', message: 'stale_consent' } }), { status: 409 })
+    )
     render(<SettingsForm {...PROPS} initialWeeklyEmail={{ weekly: false, consentedAt: null }} />)
     fireEvent.click(screen.getByRole('switch'))
     expect(await screen.findByRole('alert')).toHaveTextContent('weeklyEmailStale')
@@ -134,7 +136,9 @@ describe('Ajustes › correo semanal', () => {
   })
 
   it('desactivar', async () => {
-    fetchMock.mockResolvedValue(new Response(JSON.stringify({ weekly: false, consentedAt: '2026-12-01T00:00:00Z' }), { status: 200 }))
+    fetchMock.mockResolvedValue(
+      new Response(JSON.stringify({ data: { weekly: false, pending: false, consentedAt: '2026-12-01T00:00:00Z' } }), { status: 200 })
+    )
     render(<SettingsForm {...PROPS} initialWeeklyEmail={{ weekly: true, consentedAt: '2026-12-01T00:00:00Z' }} />)
     fireEvent.click(screen.getByRole('switch'))
     expect(await screen.findByText('weeklyEmailOff')).toBeInTheDocument()
