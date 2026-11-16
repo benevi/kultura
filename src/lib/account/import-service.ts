@@ -15,8 +15,8 @@
 //     faltan se piden al proveedor (lib/media). Lo que no se pueda resolver
 //     ahora se omite y se cuenta en `libraryUnresolved`; reimportar lo completa.
 //   - F-24: la nota fina `rating10` (0,5-10) vuelve siempre tal cual (la
-//     columna `score` ya no se escribe, saneamiento 6.6); `favorite`, con
-//     RATING_SCALE_10=1. El diario se reimporta
+//     columna `score` ya no se escribe, saneamiento 6.6) y `favorite`. El
+//     diario se reimporta
 //     para los títulos que estén en la biblioteca, sin duplicar apuntes.
 //   - Saneamiento 1.4: todo se escribe por lotes de 200 y se comprueba el
 //     error de cada lote. Lo que no entra se cuenta (`libraryFailed`,
@@ -40,7 +40,6 @@ import { invalidateMatchScoreCache } from '@/lib/recommendations/match-score'
 import { ensureMediaRows } from '@/lib/media/upsert-from-provider'
 import type { ApiLocale } from '@/lib/api/locale'
 import { isValidRating10, scoreToRating10 } from '@/lib/library/rating'
-import { ratingScale10Enabled } from '@/lib/library/scale'
 import { parseLogInput } from '@/lib/library/diary'
 
 const log = createLogger('account/import')
@@ -99,7 +98,6 @@ export async function importKulturaExport(
   let libraryImported = 0
   let libraryUnresolved = 0
   const libraryFailedIds: string[] = []
-  const scale10 = ratingScale10Enabled()
   try {
     if (entries.length > 0) {
       // 1. La ficha: `user_media.media_id` es FK contra `media`, así que solo
@@ -115,7 +113,7 @@ export async function importKulturaExport(
       // 2. La entrada de biblioteca, SIEMPRE para el usuario autenticado. Un
       //    upsert de varias filas necesita las mismas columnas en todas:
       //    `favorite` solo si el fichero lo trae en alguna.
-      const withFavorite = scale10 && importable.some((entry) => entry.favorite !== undefined)
+      const withFavorite = importable.some((entry) => entry.favorite !== undefined)
       const toRow = (entry: ImportableEntry) => ({
         user_id: userId,
         media_id: entry.mediaId,
@@ -145,13 +143,11 @@ export async function importKulturaExport(
     return failure('internal', { message: 'Failed to import data' })
   }
 
-  const diary = scale10
-    ? await importDiary(file.diary, userId, supabase).catch((err) => {
-        // Secundario: no invalida la biblioteca importada.
-        log.error('Failed to import diary', { err, userId })
-        return { imported: 0, failed: 0, errored: true }
-      })
-    : { imported: 0, failed: 0, errored: false }
+  const diary = await importDiary(file.diary, userId, supabase).catch((err) => {
+    // Secundario: no invalida la biblioteca importada.
+    log.error('Failed to import diary', { err, userId })
+    return { imported: 0, failed: 0, errored: true }
+  })
 
   const lists = await importLists(file.lists, userId, supabase).catch((err) => {
     log.error('Failed to import lists', { err, userId })

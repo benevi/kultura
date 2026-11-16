@@ -3,7 +3,7 @@
 // ============================================================
 // KULTURA — RatingInput (F-24, D-14)
 // La nota de un título en la escala de cada persona:
-//   - `legacy`: 1-5 estrellas enteras (sin RATING_SCALE_10, como siempre).
+//   - `legacy`: 1-5 estrellas enteras (mientras no ha cargado el diario).
 //   - `stars`:  medias estrellas (½ a 5).
 //   - `ten`:    deslizador de 0,5 a 10 en pasos de 0,5.
 // Siempre trabaja en rating10 (0,5-10; null = sin nota). La fila mide lo

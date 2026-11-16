@@ -9,7 +9,7 @@ import { isLibraryVisibility } from '@/lib/account/identity'
 import { readAccountState } from '@/lib/account/account-state'
 import { ACCOUNT_GRACE_DAYS } from '@/lib/account/identity'
 import { hasPasswordIdentity } from '@/lib/account/reauth'
-import { ratingScale10Enabled, readRatingScale } from '@/lib/library/scale'
+import { readRatingScale } from '@/lib/library/scale'
 import { weeklyEmailAllowedFor, weeklyEmailConfig } from '@/lib/email/config'
 import { readWeeklyEmailPreference } from '@/lib/email/preferences'
 import { OPTIN_TOKEN_TTL_SECONDS } from '@/lib/email/unsubscribe-token'
@@ -81,7 +81,7 @@ export default async function SettingsPage({ params, searchParams }: SettingsPag
         hasPassword={hasPasswordIdentity(user)}
         platformsSlot={platformsSlot}
         // F-24 → F-28: la escala de notas vive aquí (antes, en la Biblioteca).
-        initialRatingScale={ratingScale10Enabled() ? readRatingScale(user) : null}
+        initialRatingScale={readRatingScale(user)}
         initialWeeklyEmail={
           weeklyEmail
             ? {

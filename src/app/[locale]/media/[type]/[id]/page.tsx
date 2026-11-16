@@ -36,7 +36,7 @@ import {
 import { isBestFormat } from "@/lib/best/best-of";
 import { AdaptationsSection } from "@/components/media/AdaptationsSection";
 import { formatShareRating, ratingSharePath } from "@/lib/share/rating-share";
-import { ratingScale10Enabled, readRatingScale } from "@/lib/library/scale";
+import { readRatingScale } from "@/lib/library/scale";
 import type { LibraryEntry } from "@/types/library";
 import type { User } from "@supabase/supabase-js";
 import { OG_LOCALE, SITE_NAME } from "@/i18n/metadata";
@@ -90,7 +90,7 @@ function shareImage(item: MediaItem) {
 /**
  * CRE-8a: "Compartir mi nota" para quien ya ha puntuado este título. El
  * enlace va FIRMADO (es lo que deja ver esa nota a quien no ve su biblioteca)
- * y la nota en SU escala (½★ o /10; sin RATING_SCALE_10, la entera de siempre).
+ * y la nota en SU escala (½★ o /10).
  */
 function shareRatingFor(
   user: User | null,
@@ -100,7 +100,7 @@ function shareRatingFor(
   locale: string
 ): { path: string; rating: string } | null {
   if (!user || !username || !entry) return null;
-  const rating = formatShareRating(entry, ratingScale10Enabled() ? readRatingScale(user) : "legacy", locale);
+  const rating = formatShareRating(entry, readRatingScale(user), locale);
   const path = ratingSharePath({ id: user.id, username }, item.type, item.externalId);
   return rating && path ? { path: `/${locale}${path}`, rating: rating.text } : null;
 }

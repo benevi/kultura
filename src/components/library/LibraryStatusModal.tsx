@@ -6,7 +6,7 @@
 // en variante hoja: en móvil sube desde abajo, cabe con el teclado abierto
 // (scroll interno, 85dvh) y se cierra arrastrando el asa (MOV-8).
 //
-// F-24 (D-14): con el diario activo (RATING_SCALE_10 y la migración), la nota
+// F-24 (D-14): con el diario cargado, la nota
 // va en la escala de la persona (½★ o /10), hay favorito y, al marcarlo como
 // completado, un apunte del diario con fecha, revisionado, reseña (con aviso
 // de spoiler) y nota personal; debajo, los apuntes anteriores. Sin el diario,

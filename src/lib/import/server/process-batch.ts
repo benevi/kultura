@@ -9,8 +9,7 @@
 //     completa (nota o fecha que faltaban, estado que avanza: pendiente →
 //     visto, nunca al revés). Reimportar el mismo archivo no cambia nada.
 //   - La nota se escribe siempre en `rating10`, sin pérdida (saneamiento
-//     6.6: `score` ya no se escribe). El diario, solo con F-24 activa
-//     (RATING_SCALE_10=1).
+//     6.6: `score` ya no se escribe), y los apuntes del diario (F-24).
 //   - Lo que no se pudo resolver ahora (presupuesto, plazo, proveedor caído)
 //     vuelve como `pending` para que el navegador lo reintente.
 //   - Ni títulos ni reseñas en los logs: solo recuentos y códigos.
@@ -23,7 +22,6 @@ import { createLogger } from '@/lib/logger'
 import { buildMediaRow, ensureMediaRows, type MediaRowInsert } from '@/lib/media/upsert-from-provider'
 import { parseMediaId } from '@/lib/media/media-id'
 import { storedRating10 } from '@/lib/library/rating'
-import { ratingScale10Enabled } from '@/lib/library/scale'
 import type { LibraryStatus } from '@/types/library'
 import type { MediaItem } from '@/types/media'
 import { BATCH_DEADLINE_MS, MAX_PROVIDER_CALLS_PER_BATCH } from '../limits'
@@ -170,7 +168,6 @@ export async function processImportBatch(items: ImportItem[], opts: ProcessOptio
   }
 
   // 4. Lo que ya hay en la biblioteca.
-  const scale10 = ratingScale10Enabled()
   const existing = await readExisting(opts.supabase, opts.userId, mediaIds)
 
   // 5. Escribir lo nuevo y lo que se completa.
@@ -200,13 +197,10 @@ export async function processImportBatch(items: ImportItem[], opts: ProcessOptio
   }
 
   // 6. Diario (F-24): apuntes que aún no tenga.
-  const diaryImported =
-    scale10
-      ? await importLogs(opts.supabase, opts.userId, merged).catch((err) => {
-          log.warn('no se pudo importar el diario del lote', { err })
-          return 0
-        })
-      : 0
+  const diaryImported = await importLogs(opts.supabase, opts.userId, merged).catch((err) => {
+    log.warn('no se pudo importar el diario del lote', { err })
+    return 0
+  })
 
   // 7. Resultado por fila, con el título del catálogo para revisar el informe.
   const titles = await readTitles(admin, mediaIds)

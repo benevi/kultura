@@ -175,7 +175,8 @@ test("StarRating: flechas cambian la nota y el foco se ve (ACC-8)", async ({ pag
   const first = group.getByRole("radio").first();
   await first.focus();
   await page.keyboard.press("ArrowRight");
-  const second = group.getByRole("radio", { name: "2 estrellas" });
+  // Medias estrellas (escala por defecto): de ½ a 1.
+  const second = group.getByRole("radio", { name: "1 estrella" });
   await expect(second).toBeFocused();
   await expect(second).toHaveAttribute("aria-checked", "true");
   const outline = await second.evaluate((el) => {

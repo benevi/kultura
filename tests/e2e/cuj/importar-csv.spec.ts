@@ -37,7 +37,7 @@ test("importar CSV: dos títulos con nota en la biblioteca y uno sin emparejar",
   for (const [mediaId, rating] of Object.entries(expected)) {
     const entry = await eventually(() => libraryEntry(user.id, mediaId), (e) => e !== null, `${mediaId} importado`);
     expect(entry!.status).toBe("completed");
-    // RATING_SCALE_10=1 (env.cjs): la nota /10 vuelve tal cual.
+    // La nota /10 vuelve tal cual.
     expect(Number(entry!.rating10)).toBe(rating);
   }
   const { count } = await admin.from("user_media").select("id", { count: "exact", head: true }).eq("user_id", user.id);

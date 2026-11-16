@@ -212,17 +212,16 @@ describe('todos los formatos', () => {
 })
 
 describe('completar', () => {
-  it('pasa a «Completado» con la fecha y, sin el diario activo, no apunta nada', async () => {
+  it('pasa a «Completado» con la fecha y, si no se pide apunte, no apunta nada', async () => {
     entry = migratedTv(8, 6)
-    const { status, json } = await post({ mediaId: 'tv_1399', action: 'complete', log: true, watchedOn: '2026-10-25' })
+    const { status, json } = await post({ mediaId: 'tv_1399', action: 'complete', log: false, watchedOn: '2026-10-25' })
     expect(status).toBe(200)
     expect(updates[0]).toEqual({ status: 'completed', watched_at: '2026-10-25' })
     expect(logInserts).toHaveLength(0)
     expect(json.log).toBeNull()
   })
 
-  it('con el diario (RATING_SCALE_10) apunta el visionado con la nota de la entrada', async () => {
-    vi.stubEnv('RATING_SCALE_10', '1')
+  it('con el diario apunta el visionado con la nota de la entrada', async () => {
     entry = { ...migratedTv(8, 6), rating10: 9 }
     logResult = {
       data: { id: 'l1', media_id: 'tv_1399', watched_on: '2026-10-25', rewatch: false, rating10: 9, review: null, spoiler: false, private_note: null, created_at: 'x' },

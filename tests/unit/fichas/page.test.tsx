@@ -254,7 +254,6 @@ describe("página de la ficha", () => {
   });
 
   it("F-29: 'Compartir mi nota' solo con nota propia, con enlace firmado y en su escala", async () => {
-    process.env.RATING_SCALE_10 = "1";
     mocks.getViewer.mockResolvedValue({ user: { id: "u1", user_metadata: { rating_scale: "ten" } }, profile: { username: "ana" } });
     mocks.getMediaEntry.mockResolvedValue({ status: "completed", score: 5, rating10: 9 });
     render(await MediaDetailPage(params()));
@@ -269,7 +268,6 @@ describe("página de la ficha", () => {
     mocks.getViewer.mockResolvedValue({ user: null, profile: null });
     render(await MediaDetailPage(params()));
     expect(mocks.mediaDetailProps.current?.shareRating).toBeNull();
-    delete process.env.RATING_SCALE_10;
   });
 
   it("con nota de KULTURA, la ficha la enseña pero el JSON-LD no la marca", async () => {

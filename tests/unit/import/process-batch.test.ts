@@ -76,7 +76,6 @@ describe('processImportBatch', () => {
     state.unavailable = new Set()
   })
   afterEach(() => {
-    delete process.env.RATING_SCALE_10
   })
 
   const logs = [
@@ -84,16 +83,7 @@ describe('processImportBatch', () => {
     { watchedOn: '2022-03-02', rewatch: true, rating10: 8.5, review: null, spoiler: false },
   ]
 
-  it('sin RATING_SCALE_10: escribe rating10 sin pérdida (nunca score) y no toca el diario', async () => {
-    const r = await run([item({ ids: { tmdb: 1 }, rating10: 9, watchedAt: '2022-03-02', logs })])
-    expect(r.results[0]).toMatchObject({ outcome: 'added', mediaId: 'movie_1', by: 'tmdb' })
-    expect(state.db.tables.user_media[0]).toEqual({ user_id: 'u1', media_id: 'movie_1', status: 'completed', rating10: 9, watched_at: '2022-03-02' })
-    expect(state.db.calls).not.toContain('user_media_logs.insert')
-    expect(r.diaryImported).toBe(0)
-  })
-
-  it('con RATING_SCALE_10 y migración: rating10 sin pérdida y diario sin duplicar al reimportar', async () => {
-    process.env.RATING_SCALE_10 = '1'
+  it('rating10 sin pérdida y diario sin duplicar al reimportar', async () => {
     const items = [item({ ids: { tmdb: 1 }, rating10: 9, watchedAt: '2022-03-02', logs })]
     const first = await run(items)
     expect(first.diaryImported).toBe(2)

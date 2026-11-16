@@ -1,6 +1,6 @@
 // ============================================================
 // F-24 · Export e import del JSON propio con la nota fina, el favorito y el
-// diario (ida y vuelta sin pérdida), con y sin RATING_SCALE_10.
+// diario (ida y vuelta sin pérdida).
 // ============================================================
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
@@ -105,8 +105,7 @@ beforeEach(() => {
 })
 afterEach(() => vi.unstubAllEnvs())
 
-describe('import con RATING_SCALE_10=1', () => {
-  beforeEach(() => vi.stubEnv('RATING_SCALE_10', '1'))
+describe('import', () => {
 
   it('rating10 y favorito vuelven tal cual; un export antiguo pasa score × 2', async () => {
     const { status } = await runImport(FILE)
@@ -154,18 +153,6 @@ describe('import con RATING_SCALE_10=1', () => {
 
 })
 
-describe('import sin la bandera (hoy)', () => {
-  it('escribe rating10 tal cual (nunca score), sin favorito ni diario', async () => {
-    const { json } = await runImport({
-      library: [{ mediaId: 'movie_1', status: 'completed', score: 3, rating10: 7.5, favorite: true }],
-      diary: FILE.diary,
-    })
-    expect(upserts[0]).toEqual([{ user_id: ME, media_id: 'movie_1', status: 'completed', rating10: 7.5, watched_at: null }])
-    expect(json.diaryImported).toBe(0)
-    expect(logInserts).toHaveLength(0)
-  })
-})
-
 describe('export', () => {
   it('incluye el diario propio (con la nota personal) y nunca el de otros', async () => {
     const db = createFakeDb({
@@ -183,7 +170,6 @@ describe('export', () => {
   })
 
   it('ida y vuelta: lo que exporta es lo que el import acepta', async () => {
-    vi.stubEnv('RATING_SCALE_10', '1')
     const db = createFakeDb({
       user_media_logs: [
         { id: 'l1', user_id: ME, media_id: 'movie_1', watched_on: '2026-10-01', rewatch: false, rating10: '9.0', review: 'Obra maestra', spoiler: true, private_note: 'Con Bea', created_at: 'c' },

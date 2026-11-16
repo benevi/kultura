@@ -72,10 +72,8 @@ beforeEach(() => {
   h.world = createWorld();
   h.responses = [];
   h.posterDataUri.mockClear();
-  process.env.RATING_SCALE_10 = "1";
 });
 afterEach(() => {
-  delete process.env.RATING_SCALE_10;
 });
 
 describe("tarjeta de la nota", () => {

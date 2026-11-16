@@ -1,5 +1,5 @@
 // ============================================================
-// F-24 · POST /api/library con y sin RATING_SCALE_10, antes y después de la
+// F-24 · POST /api/library: nota fina, favorito y diario, antes y después de la
 // migración 20261208240001 (columna o tabla inexistente → se degrada).
 // ============================================================
 
@@ -80,29 +80,6 @@ afterEach(() => {
   vi.unstubAllEnvs()
 })
 
-describe('sin la bandera (hoy)', () => {
-  it('un cliente antiguo con score 5 → escribe rating10 10, nunca score (ni favorite ni diario)', async () => {
-    upsertResults.push({ data: ROW, error: null })
-    const { status, json } = await call({ mediaId: 'movie_550', status: 'completed', score: 5, log: { review: 'x' } })
-    expect(status).toBe(200)
-    expect(upserts[0]).toEqual({
-      // Saneamiento 1.2: lo que no llega (fecha, progreso) no se manda.
-      user_id: USER.id, media_id: 'movie_550', status: 'completed', rating10: 10,
-    })
-    expect(logInserts).toHaveLength(0)
-    expect(json.log).toBeNull()
-    // La respuesta trae la nota que rellena el disparador (rating10) y favorito apagado.
-    expect(json.entry).toMatchObject({ score: 5, rating10: 10, favorite: false })
-  })
-
-  it('una nota fina que llegue se guarda sin pérdida (9), sin score', async () => {
-    upsertResults.push({ data: ROW, error: null })
-    await call({ mediaId: 'movie_550', status: 'completed', rating10: 9 })
-    expect(upserts[0]).toMatchObject({ rating10: 9 })
-    expect(upserts[0]).not.toHaveProperty('score')
-  })
-})
-
 // Saneamiento 1.2: el POST solo cambia lo que trae el cuerpo. Antes un
 // { mediaId, status } (Añadir franquicia, un cambio de estado) dejaba a null
 // la nota, la fecha y el progreso de una entrada que ya existía.
@@ -114,7 +91,6 @@ describe('upsert parcial (saneamiento 1.2)', () => {
   })
 
   it('solo estado con la escala de 10: tampoco toca rating10 ni favorito', async () => {
-    vi.stubEnv('RATING_SCALE_10', '1')
     upsertResults.push({ data: ROW, error: null })
     await call({ mediaId: 'movie_550', status: 'completed' })
     expect(upserts[0]).toEqual({ user_id: USER.id, media_id: 'movie_550', status: 'completed' })
@@ -128,15 +104,13 @@ describe('upsert parcial (saneamiento 1.2)', () => {
   })
 
   it('el apunte del diario sin nota propia ni de la entrada va con null', async () => {
-    vi.stubEnv('RATING_SCALE_10', '1')
     upsertResults.push({ data: ROW, error: null })
     await call({ mediaId: 'movie_550', status: 'completed', log: { review: 'x' } })
     expect(logInserts[0]).toMatchObject({ rating10: null })
   })
 })
 
-describe('con RATING_SCALE_10=1', () => {
-  beforeEach(() => vi.stubEnv('RATING_SCALE_10', '1'))
+describe('nota fina, favorito y diario', () => {
 
   it('guarda rating10 (sin pérdida, nunca score), favorito y el apunte del diario', async () => {
     upsertResults.push({ data: MIGRATED_ROW, error: null })

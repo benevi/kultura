@@ -69,16 +69,7 @@ describe('GET /api/library/diary', () => {
     expect((await GET(get())).status).toBe(401)
   })
 
-  it('sin la bandera: desactivado, con la preferencia, y sin tocar la base', async () => {
-    const { GET } = await import('@/app/api/library/diary/route')
-    const res = await GET(get())
-    expect(await res.json()).toEqual({ data: { enabled: false, scale: 'ten', logs: [] } })
-    expect(calls.find((c) => c.op === 'from')).toBeUndefined()
-    expect(res.headers.get('Cache-Control')).toContain('no-store')
-  })
-
   it('con la bandera: los apuntes del título, del más reciente al más antiguo', async () => {
-    vi.stubEnv('RATING_SCALE_10', '1')
     const { GET } = await import('@/app/api/library/diary/route')
     const { data: body } = await (await GET(get())).json()
     expect(body.enabled).toBe(true)
