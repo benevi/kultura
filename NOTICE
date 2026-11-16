@@ -1,0 +1,25 @@
+KULTURA
+Copyright 2026 Víctor Franco
+
+Este proyecto incluye o usa recursos de terceros. Lista completa, con la
+licencia y el estado de cada archivo: assets/LICENSES.csv.
+
+Fuentes
+- Bricolage Grotesque: Copyright 2022 The Bricolage Grotesque Project
+  Authors (https://github.com/ateliertriay/bricolage). SIL Open Font
+  License 1.1. KulturaDisplay es una instancia fija derivada de ella.
+- Figtree: Copyright 2022 The Figtree Project Authors
+  (https://github.com/erikdkennedy/figtree). SIL Open Font License 1.1.
+  Texto de la licencia: https://openfontlicense.org
+
+Datos e imágenes de catálogos
+- Este producto usa la API de TMDB, pero TMDB no lo respalda ni lo
+  certifica. Logo de TMDB usado según sus condiciones de atribución.
+- Datos de «Dónde ver» de JustWatch, a través de TMDB.
+- Datos e imágenes de RAWG, Steam, AniList, MyAnimeList (Jikan), MangaDex,
+  Open Library, Google Books y Comic Vine, con enlace a la fuente en cada
+  ficha. Las portadas y fondos son de sus titulares.
+- Las imágenes de public/landing/fallback/ son recortes de imágenes de
+  terceros y sus mapas de profundidad (modelo Depth Anything V2 Base,
+  CC BY-NC 4.0). Riesgo asumido hasta la revisión legal G0
+  (docs/PLAN_FASE8.md §9; docs/legal/hoy-inventario.md).
