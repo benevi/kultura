@@ -1,6 +1,6 @@
 // ============================================================
 // Saneamiento 5.4 — Inicio lee el progreso de las columnas `progress_*`.
-// Con PROGRESS_V2 un libro a la mitad guarda `progress_page` y deja el jsonb
+// Un libro a la mitad guarda `progress_page` y deja el jsonb
 // vacío: Inicio decía «Continuando» y «Sin empezar» a la vez.
 // ============================================================
 

@@ -28,7 +28,7 @@ import { ProgressInput } from '@/components/library/ProgressInput'
 import { ContinueProgress } from '@/components/home/ContinueProgress'
 import { ContinueRow } from '@/components/home/ContinueRow'
 
-function Controlled(props: { mediaType: string; initial: ProgressValue | null; total?: number | null; referenceHours?: number | null; full?: boolean; spy?: (v: ProgressValue | null) => void }) {
+function Controlled(props: { mediaType: string; initial: ProgressValue | null; total?: number | null; referenceHours?: number | null; spy?: (v: ProgressValue | null) => void }) {
   const [value, setValue] = useState<ProgressValue | null>(props.initial)
   return (
     <ProgressInput
@@ -38,7 +38,6 @@ function Controlled(props: { mediaType: string; initial: ProgressValue | null; t
         props.spy?.(v)
         setValue(v)
       }}
-      full={props.full ?? true}
       total={props.total}
       referenceHours={props.referenceHours}
     />
@@ -106,36 +105,11 @@ describe('ProgressInput', () => {
     expect(spy).toHaveBeenLastCalledWith({ episode: 1, total: 10 })
   })
 
-  it('sin la migración, un libro no tiene control (y una serie sí, como siempre)', () => {
-    const { container } = renderIntl(<Controlled mediaType="book" initial={null} full={false} />)
-    expect(container).toBeEmptyDOMElement()
-    renderIntl(<Controlled mediaType="tv" initial={null} full={false} />)
-    expect(screen.getByRole('spinbutton', { name: 'Episodio' })).toBeInTheDocument()
-    expect(screen.queryByTestId('progress-summary')).not.toBeInTheDocument()
-  })
-
-  it('sin la bandera la temporada empieza en 1, nunca 0 (va al jsonb antiguo)', () => {
+  it('se admite la temporada 0 (especiales)', () => {
     const spy = vi.fn()
-    renderIntl(<Controlled mediaType="tv" initial={{ season: 1, episode: 3 }} full={false} spy={spy} />)
-    const season = screen.getByRole('spinbutton', { name: 'Temporada' })
-    expect(season).toHaveAttribute('min', '1')
-    // «−» desde la 1: desactivado.
-    expect(screen.getByRole('button', { name: 'Temporada anterior' })).toBeDisabled()
-    // Escribir 0 se ajusta a 1.
-    fireEvent.change(season, { target: { value: '0' } })
-    expect(spy).toHaveBeenLastCalledWith({ season: 1, episode: 3 })
-  })
-
-  it('sin la bandera, «+» en una temporada vacía da la 1; con ella se admite la 0 (especiales)', () => {
-    const spy = vi.fn()
-    renderIntl(<Controlled mediaType="tv" initial={{ episode: 2 }} full={false} spy={spy} />)
-    fireEvent.click(screen.getByRole('button', { name: 'Temporada siguiente' }))
-    expect(spy).toHaveBeenLastCalledWith({ season: 1, episode: 2 })
-    const spy2 = vi.fn()
-    renderIntl(<Controlled mediaType="tv" initial={{ season: 1, episode: 2 }} full spy={spy2} />)
-    const [, fullSeasonDown] = screen.getAllByRole('button', { name: 'Temporada anterior' })
-    fireEvent.click(fullSeasonDown)
-    expect(spy2).toHaveBeenLastCalledWith({ season: 0, episode: 2 })
+    renderIntl(<Controlled mediaType="tv" initial={{ season: 1, episode: 2 }} spy={spy} />)
+    fireEvent.click(screen.getByRole('button', { name: 'Temporada anterior' }))
+    expect(spy).toHaveBeenLastCalledWith({ season: 0, episode: 2 })
   })
 
   it('«Limpiar progreso» lo borra', () => {
@@ -255,7 +229,6 @@ describe('ContinueRow', () => {
     renderIntl(
       <ContinueRow
         title="Continúa donde lo dejaste"
-        fullProgress
         items={[
           { mediaId: 'tv_1399', title: 'Juego de tronos', type: 'tv', status: 'in_progress', progress: { season: 1, episode: 2 } },
           { mediaId: 'movie_550', title: 'El club de la lucha', type: 'movie', status: 'pending', progress: null },
@@ -267,19 +240,6 @@ describe('ContinueRow', () => {
     expect(buttons).toHaveLength(2)
     for (const b of buttons) expect(b.closest('a')).toBeNull()
     expect(screen.getByText('Pág. 120 de 350')).toBeInTheDocument()
-  })
-
-  it('sin PROGRESS_V2 solo series y anime llevan botón', () => {
-    renderIntl(
-      <ContinueRow
-        title="Continúa"
-        items={[
-          { mediaId: 'tv_1399', title: 'Juego de tronos', type: 'tv', status: 'in_progress', progress: null },
-          { mediaId: 'book_OL1W', title: 'Dune', type: 'book', status: 'in_progress', progress: null },
-        ]}
-      />
-    )
-    expect(screen.getAllByTestId('progress-next')).toHaveLength(1)
   })
 
   it('vacía no pinta nada', () => {

@@ -20,7 +20,6 @@ import {
   progressKindFor,
   progressPercent,
   quickUnit,
-  supportsLegacyProgress,
   type ProgressValue,
 } from '@/lib/library/progress'
 import type { LibraryStatus } from '@/types/library'
@@ -34,10 +33,9 @@ export interface ContinueProgressProps {
   variant: 'hero' | 'card'
 }
 
-/** ¿Este título tiene «1 toque» en Inicio? (lo decide el servidor al pintar). */
-export function canQuickAdvance(mediaType: string, full: boolean): boolean {
-  if (!progressKindFor(mediaType)) return false
-  return full || supportsLegacyProgress(mediaType)
+/** ¿Este título tiene «1 toque» en Inicio? Todo formato con progreso. */
+export function canQuickAdvance(mediaType: string): boolean {
+  return progressKindFor(mediaType) !== null
 }
 
 export function ContinueProgress({ mediaId, mediaType, title, progress: initial, status: initialStatus, variant }: ContinueProgressProps) {

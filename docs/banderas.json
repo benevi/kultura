@@ -1,7 +1,6 @@
 {
   "_comentario": "Saneamiento 12.3. Cada bandera de entorno que enciende o apaga una función. scripts/check-flags.mjs (CI) falla si una bandera del código no está aquí, si una de aquí ya no está en el código, o si una no permanente pasa de 60 días desde `desde`: entonces se quita (el código se queda con un solo camino) o se renueva cambiando `desde` con el motivo en el PR. `produccion`: on, off o ? (sin comprobar).",
   "banderas": [
-    { "nombre": "PROGRESS_V2", "dueno": "benevi", "desde": "2026-10-26", "produccion": "on", "para": "F-27: progreso en todos los formatos y «marcar siguiente»" },
     { "nombre": "MODERATION_V2", "dueno": "benevi", "desde": "2026-10-22", "produccion": "on", "para": "F-11: denunciar, bloquear, borrar y moderar en chat y grupos" },
     { "nombre": "RATING_SCALE_10", "dueno": "benevi", "desde": "2026-10-26", "produccion": "on", "para": "Nota sobre 10" },
     { "nombre": "WEEKLY_EMAIL", "dueno": "benevi", "desde": "2026-10-26", "produccion": "off", "para": "Resumen semanal por email (fuera del saneamiento, Q22)" },

@@ -1,6 +1,6 @@
 // ============================================================
-// F-27 · /api/library/progress: «marcar siguiente» y «completar», antes y
-// después de la migración 20261215270001 y con o sin PROGRESS_V2. TMDB va
+// F-27 · /api/library/progress: «marcar siguiente» y «completar» en todos
+// los formatos (PROGRESS_V2 se retiró encendida, saneamiento 11.4). TMDB va
 // con fixtures de la API oficial (el proxy de este entorno lo bloquea).
 // ============================================================
 
@@ -13,7 +13,6 @@ const logInserts: Record<string, unknown>[] = []
 let entry: Record<string, unknown> | null = null
 let updateResults: Array<{ data: unknown; error: unknown }> = []
 let probeError: unknown = null
-let probes = 0
 let logResult: { data: unknown; error: unknown } = { data: null, error: null }
 let tv: unknown = TV_GOT
 const getTV = vi.fn(async () => tv)
@@ -28,7 +27,6 @@ vi.mock('@/lib/supabase/server', () => ({
         return {
           select: (cols: string) => {
             if (cols === 'progress_episode') {
-              probes++
               return { limit: async () => ({ data: [], error: probeError }) }
             }
             const q = { eq: () => q, maybeSingle: async () => ({ data: entry, error: null }) }
@@ -82,7 +80,7 @@ const BASE = {
   id: 'e1', user_id: USER.id, status: 'in_progress', score: null, watched_at: null,
   created_at: '2026-10-20T10:00:00Z', updated_at: '2026-10-20T10:00:00Z',
 }
-// Serie con solo temporada y episodio (lo que se guarda sin PROGRESS_V2).
+// Serie con solo temporada y episodio (filas de antes de F-27).
 const legacyTv = (ep: Record<string, number>) => ({
   ...BASE, media_id: 'tv_1399', ...COLUMNS,
   progress_season: ep.season ?? null, progress_episode: ep.episode ?? null,
@@ -118,7 +116,6 @@ beforeEach(() => {
   logInserts.length = 0
   updateResults = []
   probeError = null
-  probes = 0
   logResult = { data: null, error: null }
   tv = TV_GOT
   entry = null
@@ -147,41 +144,30 @@ describe('sesión y validación', () => {
   })
 })
 
-describe('sin PROGRESS_V2: solo episodios, en progress_season y progress_episode (6.6)', () => {
+describe('serie con solo temporada y episodio', () => {
   it('serie: T1·E3 → T1·E4 en las columnas', async () => {
     entry = legacyTv({ season: 1, episode: 3 })
     const { status, json } = await post({ mediaId: 'tv_1399', action: 'next' })
     expect(status).toBe(200)
-    expect(updates[0]).toEqual({ progress_season: 1, progress_episode: 4 })
+    expect(updates[0]).toMatchObject({ progress_season: 1, progress_episode: 4 })
     expect(json).toMatchObject({ progress: { season: 1, episode: 4 }, finished: false, caughtUp: false })
   })
 
   it('fin de temporada según TMDB: T1·E10 → T2·E1', async () => {
     entry = legacyTv({ season: 1, episode: 10 })
     await post({ mediaId: 'tv_1399', action: 'next' })
-    expect(updates[0]).toEqual({ progress_season: 2, progress_episode: 1 })
+    expect(updates[0]).toMatchObject({ progress_season: 2, progress_episode: 1 })
   })
 
   it('un pendiente pasa a «En progreso» al marcar el primer episodio', async () => {
     entry = { ...legacyTv({ episode: 1 }), status: 'pending', ...COLUMNS }
     const { json } = await post({ mediaId: 'tv_1399', action: 'next' })
-    expect(updates[0]).toEqual({ progress_season: 1, progress_episode: 1, status: 'in_progress' })
+    expect(updates[0]).toMatchObject({ progress_season: 1, progress_episode: 1, status: 'in_progress' })
     expect(json.status).toBe('in_progress')
   })
-
-  it('libros y juegos sin la migración: 409 progress_unavailable (no se guarda nada)', async () => {
-    entry = { ...BASE, media_id: 'book_OL1W' }
-    const res = await post({ mediaId: 'book_OL1W', action: 'next' })
-    expect(res.status).toBe(409)
-    expect(res.json.error).toEqual({ code: 'conflict', message: 'progress_unavailable' })
-    expect(updates).toHaveLength(0)
-  })
-
 })
 
-describe('después de la migración con PROGRESS_V2', () => {
-  beforeEach(() => vi.stubEnv('PROGRESS_V2', '1'))
-
+describe('todos los formatos', () => {
   it('serie: escribe las columnas (con el total de la temporada), no el jsonb', async () => {
     entry = migratedTv(6, 10)
     const { json } = await post({ mediaId: 'tv_1399', action: 'next' })
@@ -254,7 +240,7 @@ describe('GET: estado y plan para el diálogo', () => {
     entry = legacyTv({ season: 1, episode: 2 })
     const { json } = await get('tv_1399')
     expect(json).toMatchObject({
-      enabled: false,
+      enabled: true,
       kind: 'tv',
       progress: { season: 1, episode: 2 },
       total: 10,
@@ -263,14 +249,7 @@ describe('GET: estado y plan para el diálogo', () => {
     expect((json.plan as { seasons: unknown[] }).seasons).toHaveLength(8)
   })
 
-  it('sin PROGRESS_V2 no se lanza la sonda de columnas', async () => {
-    entry = null
-    expect((await get('book_OL1W')).json.enabled).toBe(false)
-    expect(probes).toBe(0)
-  })
-
-  it('enabled con PROGRESS_V2 aunque el título no esté en la biblioteca', async () => {
-    vi.stubEnv('PROGRESS_V2', '1')
+  it('enabled aunque el título no esté en la biblioteca', async () => {
     entry = null
     expect((await get('book_OL1W')).json.enabled).toBe(true)
   })

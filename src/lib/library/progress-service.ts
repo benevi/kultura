@@ -13,9 +13,8 @@
 // complete      → pasa a «Completado» (y lo apunta en el diario si F-24 está
 //                 activo y se pide).
 //
-// Sin PROGRESS_V2 solo se guarda el progreso de episodios (temporada y
-// episodio, en las columnas `progress_*`); el resto de formatos responde `conflict` con
-// `message: 'progress_unavailable'`.
+// Todos los formatos, en las columnas `progress_*` (PROGRESS_V2 se retiró
+// encendida, saneamiento 11.4).
 // ============================================================
 
 import 'server-only'
@@ -28,15 +27,13 @@ import {
   nextProgress,
   progressFromRow,
   progressKindFor,
-  episodeColumns,
   progressToColumns,
-  supportsLegacyProgress,
   totalFor,
   type ProgressKind,
   type ProgressPlan,
   type ProgressValue,
 } from '@/lib/library/progress'
-import { getProgressPlan, nextEpisodeInfo, progressV2Enabled } from '@/lib/library/progress-server'
+import { getProgressPlan, nextEpisodeInfo } from '@/lib/library/progress-server'
 import { invalidateLibraryCaches as invalidateCaches } from '@/lib/library/invalidate'
 import { failure, success, type ServiceResult } from '@/lib/api/result'
 import type { DbUserMediaLog } from '@/types/supabase'
@@ -117,7 +114,7 @@ export async function readProgress(
   }
 
   return success({
-    enabled: progressV2Enabled(),
+    enabled: true,
     kind,
     progress,
     total: totalFor(media.type, progress, plan) ?? progress?.total ?? null,
@@ -189,9 +186,6 @@ export async function advance(
   const row = found.value
   if (!row) return failure('not_found', { message: 'Entry not found' })
 
-  const v2 = progressV2Enabled()
-  if (!v2 && !supportsLegacyProgress(media.type)) return failure('conflict', { message: PROGRESS_UNAVAILABLE })
-
   const current = progressFromRow(row)
   const plan = await getProgressPlan(media.id, locale)
   const step = nextProgress(media.type, current, plan)
@@ -207,7 +201,7 @@ export async function advance(
   const { data: saved, error } = await supabase
     .from('user_media')
     .update({
-      ...(v2 ? progressToColumns(step.value) : episodeColumns(step.value)),
+      ...progressToColumns(step.value),
       ...(status !== row.status ? { status } : {}),
     })
     .eq('user_id', user.id)

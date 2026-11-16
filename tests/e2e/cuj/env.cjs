@@ -50,7 +50,6 @@ const CUJ_ENV = {
   ANTHROPIC_API_KEY: "sk-ant-cuj",
   // Banderas de v2 cuyas migraciones ya están en local: se prueba ese camino
   // (progreso por formato F-27 y nota /10 F-24), no el de compatibilidad.
-  PROGRESS_V2: "1",
   RATING_SCALE_10: "1",
   // Bloquear, denunciar y moderar grupos (F-11): los E2E sociales los recorren.
   MODERATION_V2: "1",

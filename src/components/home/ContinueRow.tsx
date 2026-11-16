@@ -29,11 +29,9 @@ export interface ContinueRowItem {
 interface ContinueRowProps {
   title: string
   items: ContinueRowItem[]
-  /** PROGRESS_V2: todos los formatos; si no, solo series y anime. */
-  fullProgress?: boolean
 }
 
-export function ContinueRow({ title, items, fullProgress = false }: ContinueRowProps) {
+export function ContinueRow({ title, items }: ContinueRowProps) {
   if (items.length === 0) return null
   return (
     <section>
@@ -42,7 +40,7 @@ export function ContinueRow({ title, items, fullProgress = false }: ContinueRowP
         {items.map((item) => {
           const externalId = item.mediaId.split('_').slice(1).join('_')
           const href = `/media/${item.type}/${externalId}`
-          const quick = canQuickAdvance(item.type, fullProgress)
+          const quick = canQuickAdvance(item.type)
           return (
             <li key={item.mediaId} className="w-28 md:w-36 flex-shrink-0">
               <Link href={href} className="group block cursor-pointer">

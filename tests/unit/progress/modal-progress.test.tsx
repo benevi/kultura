@@ -39,7 +39,7 @@ function submit() {
 }
 
 describe('LibraryStatusModal + progreso', () => {
-  it('libro (PROGRESS_V2): páginas con el total de la ficha y se guarda progress con total', async () => {
+  it('libro: páginas con el total de la ficha y se guarda progress con total', async () => {
     const onSave = vi.fn().mockResolvedValue(undefined)
     renderIntl(
       <LibraryStatusModal
@@ -96,23 +96,6 @@ describe('LibraryStatusModal + progreso', () => {
     )
     expect(screen.getByText('de 10')).toBeInTheDocument()
     expect(screen.getByTestId('progress-next-episode')).toHaveTextContent('Siguiente: T1 · E3 «Lord Nieve»')
-  })
-
-  it('sin PROGRESS_V2: el libro no enseña control, pero conserva su progreso al guardar', async () => {
-    const onSave = vi.fn().mockResolvedValue(undefined)
-    renderIntl(
-      <LibraryStatusModal
-        current={entry('book_OL1W', { progress: { page: 50, total: 300 } })}
-        mediaType="book"
-        onSave={onSave}
-        onClose={vi.fn()}
-        loading={false}
-        progressConfig={config({ enabled: false })}
-      />
-    )
-    expect(screen.queryByRole('spinbutton')).not.toBeInTheDocument()
-    submit()
-    await waitFor(() => expect(onSave).toHaveBeenCalledWith(expect.objectContaining({ progress: { page: 50, total: 300 } })))
   })
 
   it('serie antes de cargar la configuración: episodios como siempre (forma antigua incluida)', async () => {

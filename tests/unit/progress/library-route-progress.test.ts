@@ -1,6 +1,6 @@
 // ============================================================
-// F-27 · POST /api/library con `progress` (diálogo de biblioteca), con y sin
-// PROGRESS_V2 y antes/después de la migración 20261215270001.
+// F-27 · POST /api/library con `progress` (diálogo de biblioteca) y con el
+// `episodeProgress` de los clientes antiguos.
 // ============================================================
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
@@ -63,10 +63,10 @@ afterEach(() => vi.unstubAllEnvs())
 const episodeOnly = (row: Record<string, unknown>) =>
   Object.keys(row).filter((k) => k.startsWith('progress_')).sort()
 
-// Saneamiento 6.6: el jsonb episode_progress ya no se escribe. Sin la bandera
-// van solo temporada y episodio, en sus columnas; las demás no se mandan (así
-// un libro con páginas no las pierde, como antes con el disparador).
-describe('sin PROGRESS_V2 (hoy)', () => {
+// Saneamiento 6.6: el jsonb episode_progress ya no se escribe. Un cliente
+// antiguo con `episodeProgress` manda solo temporada y episodio, en sus
+// columnas; las demás no se mandan (así un libro con páginas no las pierde).
+describe('cliente antiguo con episodeProgress', () => {
   it('el episodeProgress de siempre va a progress_season y progress_episode', async () => {
     await call({ mediaId: 'tv_1399', status: 'in_progress', episodeProgress: { season: 1, episode: 2 } })
     expect(upserts[0]).toMatchObject({ progress_season: 1, progress_episode: 2 })
@@ -74,19 +74,12 @@ describe('sin PROGRESS_V2 (hoy)', () => {
     expect(episodeOnly(upserts[0])).toEqual(['progress_episode', 'progress_season'])
   })
 
-  it('con `progress` de un cliente nuevo, solo la temporada y el episodio', async () => {
-    await call({ mediaId: 'tv_1399', status: 'in_progress', progress: { season: 3, episode: 4, total: 10 } })
-    expect(upserts[0]).toMatchObject({ progress_season: 3, progress_episode: 4 })
-    expect(upserts[0]).not.toHaveProperty('episode_progress')
-    expect(upserts[0]).not.toHaveProperty('progress_total')
-  })
-
-  it('fila migrada de un libro y la bandera apagada: payload de siempre y la entrada conserva sus páginas', async () => {
+  it('fila de un libro: payload de siempre y la entrada conserva sus páginas', async () => {
     stored = {
       progress_season: null, progress_episode: null, progress_chapter: null, progress_volume: null,
       progress_page: 120, progress_percent: null, progress_hours: null, progress_total: 350,
     }
-    for (const extra of [{ episodeProgress: null }, { progress: { page: 200, total: 350 } }, {}]) {
+    for (const extra of [{ episodeProgress: null }, {}]) {
       upserts.length = 0
       const { status, json } = await call({ mediaId: 'book_OL1W', status: 'pending', ...extra })
       expect(status).toBe(200)
@@ -99,7 +92,7 @@ describe('sin PROGRESS_V2 (hoy)', () => {
     }
   })
 
-  it('juego sin bandera: temporada y episodio a null, horas intactas', async () => {
+  it('juego: temporada y episodio a null, horas intactas', async () => {
     await call({ mediaId: 'game_3498', status: 'in_progress', episodeProgress: null })
     expect(upserts[0]).not.toHaveProperty('episode_progress')
     expect(upserts[0]).toMatchObject({ progress_season: null, progress_episode: null })
@@ -107,9 +100,7 @@ describe('sin PROGRESS_V2 (hoy)', () => {
   })
 })
 
-describe('con PROGRESS_V2', () => {
-  beforeEach(() => vi.stubEnv('PROGRESS_V2', '1'))
-
+describe('con progress (todos los formatos)', () => {
   it('libro: columnas de progreso, sin jsonb', async () => {
     const { json } = await call({ mediaId: 'book_OL1W', status: 'in_progress', progress: { page: 120, total: 350 } })
     expect(upserts[0]).toMatchObject({ progress_page: 120, progress_total: 350, progress_episode: null })

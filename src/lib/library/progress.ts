@@ -37,7 +37,7 @@ export type ProgressField = Exclude<keyof ProgressValue, 'total'>
 /** Entrada de biblioteca con su progreso por formato (null = sin progreso). */
 export type LibraryEntryWithProgress = LibraryEntry & { progress?: ProgressValue | null }
 
-/** Cuerpo de POST /api/library con el progreso por formato (PROGRESS_V2). */
+/** Cuerpo de POST /api/library con el progreso por formato. */
 export type LibraryPayloadWithProgress = LibraryPayload & { progress?: ProgressValue | null }
 
 /** Rangos: los mismos CHECK que la migración. `whole` = entero. */
@@ -85,11 +85,6 @@ export function progressKindFor(mediaType: string | null | undefined): ProgressK
 export function progressFieldsFor(mediaType: string): ProgressField[] {
   const kind = progressKindFor(mediaType)
   return kind ? FIELDS_BY_KIND[kind] : []
-}
-
-/** Sin la migración solo se guarda el progreso de episodios (series y anime). */
-export function supportsLegacyProgress(mediaType: string): boolean {
-  return mediaType === 'tv' || mediaType === 'anime'
 }
 
 function inRange(field: keyof ProgressValue, n: unknown): n is number {
@@ -201,7 +196,7 @@ export function progressToLegacy(value: ProgressValue | null | undefined): Episo
 }
 
 /**
- * Solo temporada y episodio (lo que se guardaba sin PROGRESS_V2 en el jsonb).
+ * Solo temporada y episodio (lo que guardaba el jsonb antiguo).
  * Saneamiento 6.6: ya no se escribe el jsonb. Las demás columnas NO se mandan,
  * como hacía el disparador: un libro con páginas no las pierde.
  */
