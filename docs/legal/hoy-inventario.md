@@ -36,3 +36,11 @@ Las imágenes OG (`opengraph-image.tsx` de `[locale]`, `best`, `login`, `u/[user
 - **Landing:** la galería 3D manda todas sus portadas por el optimizador. La tabla no lo recogía.
 - **TMDB:** nunca va al optimizador. Si la ruta no encaja, `posterLoader` devuelve la URL tal cual (directo), no `/_next/image`.
 - **Caché:** `minimumCacheTTL` es de 7 días y es un **mínimo**. Vercel puede guardar la copia más tiempo si el proveedor lo indica. `/privacy` dice «copia temporal en caché, que caduca sola» (#173).
+
+## Landing: copia propia y mapas de profundidad (encontrado el 16-11-2026)
+
+- `.github/workflows/landing-media.yml` → `scripts/landing-media/build.py`, cada lunes desde el 4-11-2026. Descarga pósters y fondos de TMDB (tamaño `original`), Steam y MangaDex; los recorta a vertical y los recodifica. Calcula su mapa de profundidad con `depth-anything/Depth-Anything-V2-Base-hf` y sube imagen y mapa al bucket **público** `landing` de Supabase, con su fila en `landing_media`.
+- Producción, 16-11-2026: 54 objetos en el bucket y 27 filas, 13 activas.
+- Respaldo en el repo: `public/landing/fallback/`, 14 imágenes y 14 mapas (semana del 2-11-2026).
+- Es **copia propia y derivado** sobre portadas de terceros, lo que §9.5 bloquea hasta G0. Víctor decide el 16-11-2026 **pausar la tarea** (sin `schedule`; queda el lanzamiento a mano). La landing sigue con la última semana activa. Lo ya guardado se queda y va al encargo legal: P1 (¿es aceptable?), P2 (recorte y recodificación) y P4 (profundidad).
+- El modelo Base de Depth Anything V2 se publica, según su ficha, con licencia CC BY-NC 4.0 (no comercial; la variante Small es Apache 2.0). Hay que comprobarlo en M1 y tenerlo en cuenta antes de cobrar.

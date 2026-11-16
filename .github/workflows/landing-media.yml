@@ -16,9 +16,13 @@ name: Imágenes de la landing
 # Requiere la migración supabase/migrations/20261229350001_landing_media.sql.
 
 on:
-  schedule:
-    # Lunes 04:41 UTC (después de la copia de seguridad; fuera de la hora en punto).
-    - cron: "41 4 * * 1"
+  # PAUSADA el 16-11-2026 (decisión de Víctor, fase 8 · 8A.0): guarda copias
+  # recortadas de portadas de terceros y sus mapas de profundidad en un bucket
+  # propio, y docs/PLAN_FASE8.md §9.5 bloquea copia propia y profundidad sobre
+  # portadas ajenas hasta G0 (respuesta legal). La landing sigue con la última
+  # semana activa. Para reanudar, tras G0: volver a poner
+  #   schedule:
+  #     - cron: "41 4 * * 1"   # lunes 04:41 UTC
   workflow_dispatch:
     inputs:
       dry_run:

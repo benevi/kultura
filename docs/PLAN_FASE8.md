@@ -27,6 +27,7 @@ Leyenda: **[V]** comprobado en el repo · **[E]** estimación orientativa · **[
 | Fecha | Decisión | Quién |
 |---|---|---|
 | 2026-11-12 | **Portadas: «usar portadas reales».** Se mantiene el comportamiento actual: optimizador `/_next/image` para MangaDex, ComicVine y Steam (siempre) y AniList en `/best`; OG con portadas reales. Mínimo obligatorio: declararlo en `/privacy` con Vercel como encargado y preguntarlo a asesoría legal (P1). **Riesgo asumido** (R1b). La regla del 3D se mantiene: textura solo directa del CDN en `CORS_OK_HOSTS`, nunca `/_next/image` | Víctor |
+| 2026-11-16 | **Landing: tarea semanal `landing-media.yml` pausada hasta G0.** Desde el 4-11 guardaba copias recortadas de portadas de TMDB, Steam y MangaDex y sus mapas de profundidad (Depth Anything V2) en el bucket público `landing` de Supabase (54 objetos), más 28 en `public/landing/fallback/`: copia propia y derivados, bloqueados por §9.5 hasta G0. La landing sigue con la última semana activa; lo ya guardado se queda y entra en el encargo legal (P1, P2 y P4). Detalle en `docs/legal/hoy-inventario.md` | Víctor |
 | 2026-11-12 | **Coste ≈ 0:** alternativas libres o gratuitas; el tiempo no importa (§10) | Víctor |
 | 2026-11-12 | **Sin fechas límite:** estimaciones solo como orientación; orden por puertas; 8A primero, 8B condicional | Víctor |
 | 2026-11-12 | **Guía de diseño en Storybook** (gratuito) con `@storybook/addon-a11y` y `@storybook/test-runner`; montaje 1–2 días en 8A.3; **la guía es interna** (no hay `/design` pública) | Víctor |
