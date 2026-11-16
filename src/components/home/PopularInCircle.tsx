@@ -5,6 +5,7 @@ import { MediaRow } from '@/components/home/MediaRow'
 import { useTranslations } from 'next-intl'
 import type { CircleMediaItem } from '@/lib/social/circle'
 import { IconFriends } from '@/components/icons'
+import { apiFetch } from '@/lib/api/client'
 
 export function PopularInCircle() {
   const t = useTranslations('home')
@@ -14,15 +15,13 @@ export function PopularInCircle() {
   useEffect(() => {
     const controller = new AbortController()
 
-    fetch('/api/popular-in-circle', { signal: controller.signal })
-      .then((r) => r.json())
-      .then((data: { items?: CircleMediaItem[] }) => {
-        const list = data.items ?? []
+    apiFetch<CircleMediaItem[]>('/api/popular-in-circle', { signal: controller.signal })
+      .then((list) => {
         setItems(list)
         setStatus(list.length === 0 ? 'empty' : 'done')
       })
-      .catch((err) => {
-        if (err instanceof DOMException && err.name === 'AbortError') return
+      .catch(() => {
+        if (controller.signal.aborted) return
         setStatus('error')
       })
 
