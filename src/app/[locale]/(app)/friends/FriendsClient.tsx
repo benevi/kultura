@@ -13,6 +13,7 @@ import { getBlockedUsers, unblockUser, type BlockedUser } from '@/lib/social/act
 import type { Friendship } from '@/types/user'
 import { IconLists, IconFriends } from '@/components/icons'
 import { PushOffer } from '@/components/push/PushOffer'
+import { apiFetch } from '@/lib/api/client'
 
 interface SearchUser {
   id: string
@@ -78,14 +79,10 @@ export function FriendsClient({
     setSearchDone(false)
     setSearchError(false)
     try {
-      const res = await fetch(`/api/users/search?q=${encodeURIComponent(searchQuery.trim())}`)
-      const data = await res.json().catch(() => null)
-      if (!res.ok || !data) {
-        setSearchError(true)
-        setSearchResults([])
-        return
-      }
-      setSearchResults(data.users ?? [])
+      const users = await apiFetch<SearchUser[]>(
+        `/api/users/search?q=${encodeURIComponent(searchQuery.trim())}`
+      )
+      setSearchResults(users)
       setSearchDone(true)
     } catch {
       setSearchError(true)
