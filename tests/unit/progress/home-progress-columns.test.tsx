@@ -4,7 +4,7 @@
 // vacío: Inicio decía «Continuando» y «Sin empezar» a la vez.
 // ============================================================
 
-import { describe, it, expect, vi } from 'vitest'
+import { describe, it, expect, vi, beforeAll } from 'vitest'
 import type { ReactElement, ReactNode } from 'react'
 
 const { selects } = vi.hoisted(() => ({ selects: [] as string[] }))
@@ -96,9 +96,16 @@ function findByType(node: ReactNode, type: unknown): Record<string, unknown> | n
   return findByType(el.props?.children, type)
 }
 
+let HomePage: () => Promise<ReactNode>
+
+// La página arrastra muchos módulos: con la suite completa importarla pasaba
+// de los 5 s del test (docs/tests-intermitentes.md).
+beforeAll(async () => {
+  HomePage = (await import('@/app/[locale]/(app)/home/page')).default as unknown as () => Promise<ReactNode>
+}, 30_000)
+
 describe('Inicio — progreso de las columnas progress_* (saneamiento 5.4)', () => {
   it('pide las columnas y pasa el progreso al hero y a «Continuar»', async () => {
-    const { default: HomePage } = await import('@/app/[locale]/(app)/home/page')
     const tree = await HomePage()
 
     expect(selects.filter((c) => c.includes('progress_page'))).toHaveLength(2)
