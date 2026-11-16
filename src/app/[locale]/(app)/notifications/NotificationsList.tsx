@@ -175,7 +175,7 @@ function NotificationItem({ notif }: { notif: AppNotification }) {
       </div>
     )
   } else if (notif.type === 'invite_accepted') {
-    // Saneamiento 3.4: alguien entró con tu enlace (F-17, con INVITE_NOTIFY=1).
+    // Saneamiento 3.4: alguien entró con tu enlace (F-17).
     const fromUsername = p.fromUsername as string | undefined
     content = (
       <div className="flex-1 min-w-0">

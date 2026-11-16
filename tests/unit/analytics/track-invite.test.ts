@@ -51,7 +51,6 @@ beforeEach(() => {
 })
 afterEach(() => {
   delete process.env.INVITE_SECRET
-  delete process.env.INVITE_NOTIFY
   delete process.env.ANALYTICS_DISABLED
   vi.useRealTimers()
 })
@@ -156,15 +155,7 @@ describe('acceptInvite()', () => {
     expect(h.ops).toContainEqual(expect.objectContaining({
       table: 'analytics_events', op: 'upsert', row: expect.objectContaining({ name: 'invite_accepted', user_id: 'new-1' }),
     }))
-    // Sin INVITE_NOTIFY no se crea el aviso (la lista aún no sabe pintarlo).
-    expect(h.ops.some((o) => o.table === 'notifications')).toBe(false)
-  })
-
-  it('con INVITE_NOTIFY=1 avisa a quien invitó', async () => {
-    process.env.INVITE_NOTIFY = '1'
-    h.results.users = [{ data: { id: 'inv-1', username: 'ana' } }, { data: { username: 'u_abc123' } }]
-    h.results.friendships = [{ data: [] }, { error: null }]
-    await acceptInvite(NEW, 'ana', inviteSignature('inv-1', 'ana')!)
+    // Y avisa a quien invitó.
     expect(h.ops).toContainEqual({
       table: 'notifications', op: 'insert',
       row: { user_id: 'inv-1', type: 'invite_accepted', payload: { userId: 'new-1', fromUsername: 'u_abc123' } },

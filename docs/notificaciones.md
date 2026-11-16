@@ -13,7 +13,7 @@ La restricción `notifications_type_check` (producción) admite 4 tipos:
 | `recommendation` | Un amigo te recomienda un título | `src/app/api/recommendations/route.ts` | — | Sí: «X te recomienda Y» |
 | `list_invite` | Te invitan a una lista compartida | `src/lib/lists/service.ts` | — | Sí |
 | `group_invite` | Te invitan a un grupo | `src/lib/groups/service.ts` | — | Sí |
-| `invite_accepted` | Alguien se registra con tu enlace de invitación | `src/lib/analytics/invite.ts` | `INVITE_NOTIFY` (**apagada** en producción) | Sí |
+| `invite_accepted` | Alguien se registra con tu enlace de invitación | `src/lib/analytics/invite.ts` | — (bandera `INVITE_NOTIFY` retirada; siempre activo) | Sí |
 
 Además, sin fila en `notifications`:
 - **Contador de no leídos** en la cabecera (`AuthHeader`, desde el layout de `(app)`).
