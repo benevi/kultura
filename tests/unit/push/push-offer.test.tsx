@@ -160,9 +160,11 @@ describe('PushOffer', () => {
 
     sessionStorage.clear()
     act(() => offerPushInContext('chat'))
-    await screen.findByTestId('push-offer')
+    // Esc se escucha cuando el aviso ya es visible (con su X), no cuando el
+    // contenedor aparece: con la suite cargada iba por detrás (16-11-2026, #171).
+    await screen.findByRole('button', { name: 'close' })
     fireEvent.keyDown(document, { key: 'Escape' })
-    expect(screen.queryByTestId('push-offer')).toBeNull()
+    await waitFor(() => expect(screen.queryByTestId('push-offer')).toBeNull())
     expect(localStorage.getItem(PUSH_OFFER_DISMISSED_KEY)).toBeNull()
   })
 
