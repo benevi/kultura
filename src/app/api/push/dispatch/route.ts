@@ -8,17 +8,18 @@
 // Se compara en tiempo constante. La fila se vuelve a leer aquí (nada de lo
 // que llega se envía tal cual) y solo vale si es de los últimos 10 minutos.
 // La petición que creó el mensaje no espera a esto: pg_net la hace aparte.
-// Respuesta: { status, sent, removed, failed } (queda en net._http_response
-// para depurar desde el SQL Editor).
+// Respuesta: { data: { status, sent, removed, failed } } o { error: { code } }
+// (queda en net._http_response para depurar desde el SQL Editor).
+// Contrato: src/lib/api/contracts/push.ts (saneamiento 9).
 // ============================================================
 
 import { timingSafeEqual } from 'node:crypto'
-import { NextResponse } from 'next/server'
+import { apiError, ok, parseBody } from '@/lib/api/route'
+import { dispatchSchema, PUSH_ERRORS } from '@/lib/api/contracts/push'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { createLogger } from '@/lib/logger'
 import { readPushConfig } from '@/lib/push/config'
 import { dispatchPush } from '@/lib/push/dispatch'
-import { dispatchSchema } from '@/lib/push/schemas'
 
 const log = createLogger('api/push/dispatch')
 export const dynamic = 'force-dynamic'
@@ -31,34 +32,25 @@ function authorized(request: Request, secret: string): boolean {
   return given.length === expected.length && timingSafeEqual(given, expected)
 }
 
-export async function POST(request: Request): Promise<NextResponse> {
+export async function POST(request: Request) {
   const { config, problem } = readPushConfig()
   if (!config) {
     // Sin configuración no se puede ni comprobar el secreto: no se hace nada.
     if (problem !== 'flag_off') log.warn('Push sin configurar', { problem })
-    return NextResponse.json({ error: 'push_disabled' }, { status: 503 })
+    return apiError('unavailable', { message: PUSH_ERRORS.disabled })
   }
-  if (!authorized(request, config.dispatchSecret)) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-  }
+  if (!authorized(request, config.dispatchSecret)) return apiError('unauthenticated')
 
-  const raw = await request.text().catch(() => '')
-  if (raw.length > MAX_BODY) return NextResponse.json({ error: 'Payload too large' }, { status: 413 })
-  let json: unknown
-  try {
-    json = JSON.parse(raw)
-  } catch {
-    return NextResponse.json({ error: 'Invalid JSON body' }, { status: 400 })
-  }
-  const parsed = dispatchSchema.safeParse(json)
-  if (!parsed.success) return NextResponse.json({ error: 'invalid_event' }, { status: 400 })
+  const parsed = await parseBody(request, dispatchSchema, { maxBytes: MAX_BODY })
+  if (!parsed.ok) return parsed.response
+  const event = parsed.value
 
   try {
-    const result = await dispatchPush(parsed.data, { admin: createAdminClient(), config })
-    if (result.failed > 0) log.warn('Avisos push sin entregar', { kind: parsed.data.kind, ...result })
-    return NextResponse.json(result, { headers: { 'Cache-Control': 'no-store' } })
+    const result = await dispatchPush(event, { admin: createAdminClient(), config })
+    if (result.failed > 0) log.warn('Avisos push sin entregar', { kind: event.kind, ...result })
+    return ok(result, { headers: { 'Cache-Control': 'no-store' } })
   } catch (e) {
-    log.error('Fallo al enviar avisos push', { kind: parsed.data.kind, error: e })
-    return NextResponse.json({ error: 'dispatch_failed' }, { status: 500 })
+    log.error('Fallo al enviar avisos push', { kind: event.kind, error: e })
+    return apiError('internal', { message: 'dispatch_failed' })
   }
 }

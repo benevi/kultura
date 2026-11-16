@@ -86,10 +86,10 @@ describe('GET /api/push/status', () => {
   })
 
   it('sin bandera o sin migración → enabled: false (Ajustes no enseña nada)', async () => {
-    expect(await (await status()).json()).toEqual({ enabled: false, publicKey: null, devices: 0, endpointHashes: [] })
+    expect(await (await status()).json()).toEqual({ data: { enabled: false, publicKey: null, devices: 0, endpointHashes: [] } })
     enablePush()
     state.db.errors.push_subscriptions = { code: '42P01', message: 'missing' }
-    expect((await (await status()).json()).enabled).toBe(false)
+    expect((await (await status()).json()).data.enabled).toBe(false)
   })
 
   it('activado: clave pública y huellas de MIS suscripciones (no los endpoints)', async () => {
@@ -97,7 +97,7 @@ describe('GET /api/push/status', () => {
     state.db.tables.push_subscriptions = [row('1', ME, EP), row('2', OTHER, 'https://fcm.googleapis.com/fcm/send/other')]
     const res = await status()
     expect(res.headers.get('cache-control')).toBe('no-store')
-    const body = await res.json()
+    const { data: body } = await res.json()
     expect(body).toEqual({ enabled: true, publicKey: pair.pub, devices: 1, endpointHashes: [await endpointHash(EP)] })
     expect(JSON.stringify(body)).not.toContain('fcm.googleapis.com')
     expect(state.db.log[0].filters).toContain(`user_id=${ME}`)
@@ -115,7 +115,7 @@ describe('POST /api/push/subscribe', () => {
     state.user = { id: ME }
     const res = await subscribe(post(body))
     expect(res.status).toBe(503)
-    expect(await res.json()).toEqual({ error: 'push_disabled' })
+    expect(await res.json()).toEqual({ error: { code: 'unavailable', message: 'push_disabled' } })
     expect(state.db.tables.push_subscriptions).toEqual([])
   })
 
@@ -123,7 +123,7 @@ describe('POST /api/push/subscribe', () => {
     enablePush()
     const bad = await subscribe(post({ ...body, endpoint: 'https://169.254.169.254/latest/meta-data' }))
     expect(bad.status).toBe(400)
-    expect(await bad.json()).toEqual({ error: 'endpoint_not_allowed' })
+    expect(await bad.json()).toEqual({ error: { code: 'invalid_input', field: 'endpoint', message: 'endpoint_not_allowed' } })
     expect((await subscribe(post({ ...body, keys: { p256dh: 'x', auth: AUTH } }))).status).toBe(400)
     expect((await subscribe(post('no json'))).status).toBe(400)
     expect((await subscribe(post({ ...body, expirationTime: Date.now() - 1000 }))).status).toBe(400)
@@ -179,7 +179,7 @@ describe('POST /api/push/subscribe', () => {
     state.db.errors.push_subscriptions = { code: 'PGRST205', message: 'missing' }
     const res = await subscribe(post(body))
     expect(res.status).toBe(503)
-    expect(await res.json()).toEqual({ error: 'push_unavailable' })
+    expect(await res.json()).toEqual({ error: { code: 'unavailable', message: 'push_unavailable' } })
   })
 })
 
@@ -192,9 +192,9 @@ describe('POST /api/push/unsubscribe', () => {
     ]
     // Funciona aunque push esté apagado: darse de baja siempre se puede.
     const one = await unsubscribe(post({ endpoint: EP }))
-    expect(await one.json()).toEqual({ ok: true, removed: 1 })
+    expect(await one.json()).toEqual({ data: { removed: 1 } })
     const all = await unsubscribe(post({ all: true }))
-    expect(await all.json()).toEqual({ ok: true, removed: 1 })
+    expect(await all.json()).toEqual({ data: { removed: 1 } })
     expect(state.db.tables.push_subscriptions.map((r) => r.id)).toEqual(['3'])
   })
 
@@ -204,7 +204,7 @@ describe('POST /api/push/unsubscribe', () => {
     state.user = { id: ME }
     expect((await unsubscribe(post({ endpoint: 'https://evil.com/x' }))).status).toBe(400)
     state.db.errors.push_subscriptions = { code: '42P01', message: 'missing' }
-    expect(await (await unsubscribe(post({ all: true }))).json()).toEqual({ ok: true, removed: 0 })
+    expect(await (await unsubscribe(post({ all: true }))).json()).toEqual({ data: { removed: 0 } })
   })
 })
 
@@ -230,7 +230,7 @@ describe('POST /api/push/dispatch', () => {
     expect((await dispatch(post({ kind: 'message', id: 'x' }, { Authorization: `Bearer ${SECRET}` }))).status).toBe(400)
     const res = await dispatch(post(event, { Authorization: `Bearer ${SECRET}` }))
     expect(res.status).toBe(200)
-    expect(await res.json()).toEqual({ status: 'done', sent: 1, removed: 0, failed: 0 })
+    expect(await res.json()).toEqual({ data: { status: 'done', sent: 1, removed: 0, failed: 0 } })
     expect(dispatchMock).toHaveBeenCalledWith(event, expect.objectContaining({ config: expect.objectContaining({ publicKey: pair.pub }) }))
   })
 })

@@ -2,41 +2,39 @@
 // KULTURA — Route Handler: GET /api/push/status (F-33)
 //
 // Con sesión. Lo pide Ajustes al abrirse (nunca pide permiso al navegador):
-//   { enabled, publicKey, devices, endpointHashes }
+//   { data: { enabled, publicKey, devices, endpointHashes } }
 // `enabled` = PUSH_ENABLED=1 + par VAPID válido + secreto de envío + tabla
 // creada. `endpointHashes` = huellas (endpointHash) de las suscripciones de la
 // persona, para que el navegador sepa si la suya está dada de alta.
+// Contrato: src/lib/api/contracts/push.ts (saneamiento 9).
 // ============================================================
 
-import { NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase/server'
+import { ok, requireUser } from '@/lib/api/route'
+import type { PushStatus } from '@/lib/api/contracts/push'
 import { readPushConfig } from '@/lib/push/config'
 import { endpointHash } from '@/lib/push/endpoint'
 
 export const dynamic = 'force-dynamic'
 const NO_STORE = { 'Cache-Control': 'no-store' }
 
-export async function GET(): Promise<NextResponse> {
-  const supabase = await createClient()
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-  if (!user) return NextResponse.json({ error: 'Not authenticated' }, { status: 401, headers: NO_STORE })
+export async function GET() {
+  const auth = await requireUser()
+  if (!auth.ok) return auth.response
 
-  const disabled = { enabled: false, publicKey: null, devices: 0, endpointHashes: [] as string[] }
+  const disabled: PushStatus = { enabled: false, publicKey: null, devices: 0, endpointHashes: [] }
   const { config } = readPushConfig()
-  if (!config) return NextResponse.json(disabled, { headers: NO_STORE })
+  if (!config) return ok(disabled, { headers: NO_STORE })
 
-  const { data, error } = await supabase
+  const { data, error } = await auth.supabase
     .from('push_subscriptions')
     .select('endpoint')
-    .eq('user_id', user.id)
+    .eq('user_id', auth.user.id)
     .limit(50)
   // Sin la migración (o con la base caída) no se ofrece: mejor que un interruptor que falla.
-  if (error) return NextResponse.json(disabled, { headers: NO_STORE })
+  if (error) return ok(disabled, { headers: NO_STORE })
 
   const rows = (data ?? []) as { endpoint: string }[]
-  return NextResponse.json(
+  return ok<PushStatus>(
     {
       enabled: true,
       publicKey: config.publicKey,

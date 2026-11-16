@@ -60,9 +60,9 @@ function install({
   w.Notification = notification
   fetchMock.mockImplementation(async (url: string) => {
     if (url === '/api/push/status') {
-      return new Response(JSON.stringify({ enabled, publicKey: enabled ? KEY : null, devices: 0, endpointHashes: [] }), { status: 200 })
+      return new Response(JSON.stringify({ data: { enabled, publicKey: enabled ? KEY : null, devices: 0, endpointHashes: [] } }), { status: 200 })
     }
-    return new Response(JSON.stringify({ ok: true }), { status: 200 })
+    return new Response(JSON.stringify({ data: null }), { status: 200 })
   })
   return { pushManager }
 }

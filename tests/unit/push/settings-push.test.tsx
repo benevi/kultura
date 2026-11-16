@@ -73,9 +73,9 @@ function install({ permission = 'default', answer = 'granted', subscription = nu
   if (ios) Object.defineProperty(navigator, 'userAgent', { configurable: true, value: 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_4 like Mac OS X)' })
   fetchMock.mockImplementation(async (url: string) => {
     if (url === '/api/push/status') {
-      return new Response(JSON.stringify(status ?? { enabled: true, publicKey: KEY, devices: 0, endpointHashes: [] }), { status: 200 })
+      return new Response(JSON.stringify({ data: status ?? { enabled: true, publicKey: KEY, devices: 0, endpointHashes: [] } }), { status: 200 })
     }
-    return new Response(JSON.stringify({ ok: true }), { status: 200 })
+    return new Response(JSON.stringify({ data: null }), { status: 200 })
   })
 }
 
@@ -136,7 +136,7 @@ describe('Ajustes › push', () => {
     let release: (r: Response) => void = () => {}
     fetchMock.mockImplementation(async (url: string) =>
       url === '/api/push/status'
-        ? new Response(JSON.stringify({ enabled: true, publicKey: KEY, devices: 0, endpointHashes: [] }))
+        ? new Response(JSON.stringify({ data: { enabled: true, publicKey: KEY, devices: 0, endpointHashes: [] } }))
         : new Promise<Response>((r) => (release = r)),
     )
     render(<SettingsForm {...PROPS} />)
@@ -149,7 +149,7 @@ describe('Ajustes › push', () => {
     fireEvent.click(toggle)
     await act(async () => {})
     expect(posts('/api/push/subscribe')).toHaveLength(1)
-    await act(async () => release(new Response('{}', { status: 201 })))
+    await act(async () => release(new Response('{"data":null}', { status: 201 })))
     await waitFor(() => expect(toggle).toBeChecked())
     expect(toggle).not.toHaveAttribute('aria-disabled')
   })
@@ -171,7 +171,7 @@ describe('Ajustes › push', () => {
     install()
     fetchMock.mockImplementation(async (url: string) =>
       url === '/api/push/status'
-        ? new Response(JSON.stringify({ enabled: true, publicKey: KEY, devices: 0, endpointHashes: [] }))
+        ? new Response(JSON.stringify({ data: { enabled: true, publicKey: KEY, devices: 0, endpointHashes: [] } }))
         : new Response('{}', { status: 500 }),
     )
     render(<SettingsForm {...PROPS} />)

@@ -28,7 +28,7 @@ test.beforeEach(async ({ context, baseURL }) => {
     w.Notification = { permission: "default", requestPermission: async () => "default" };
   });
   await context.route("**/api/push/status", (route) =>
-    route.fulfill({ contentType: "application/json", body: JSON.stringify({ enabled: true, publicKey: KEY, devices: 0, endpointHashes: [] }) })
+    route.fulfill({ contentType: "application/json", body: JSON.stringify({ data: { enabled: true, publicKey: KEY, devices: 0, endpointHashes: [] } }) })
   );
   await context.route(`**/api/chat/${CONVERSATION_ID}`, (route) => {
     if (route.request().method() !== "POST") return route.fallback();

@@ -13,59 +13,43 @@
 // - `replaces`: el service worker manda el endpoint viejo en
 //   `pushsubscriptionchange`; se borra el viejo y se conserva su idioma.
 // - Como mucho MAX_DEVICES por persona: entra la nueva y sale la más antigua.
-// Sin PUSH_ENABLED / claves → 503 `push_disabled`; sin migración → 503
+// Respuesta `{ data: null }` (201 si es nueva). Sin PUSH_ENABLED / claves →
+// 503 `unavailable` + `push_disabled`; sin migración → 503 `unavailable` +
 // `push_unavailable`. Nada más se rompe.
+// Contrato: src/lib/api/contracts/push.ts (saneamiento 9).
 // ============================================================
 
-import { NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase/server'
+import { apiError, ok, parseBody, rateLimit, requireUser } from '@/lib/api/route'
+import { PUSH_ERRORS, subscribeSchema } from '@/lib/api/contracts/push'
+import { ACCOUNT_ERRORS } from '@/lib/account/errors'
 import { isNotMigrated } from '@/lib/supabase/not-migrated'
 import { createAdminClient } from '@/lib/supabase/admin'
-import { checkRateLimit, LIMITS } from '@/lib/rate-limit'
+import { LIMITS } from '@/lib/rate-limit'
 import { isDemoUser } from '@/lib/demo'
 import { createLogger } from '@/lib/logger'
 import { readPushConfig } from '@/lib/push/config'
-import { subscribeSchema } from '@/lib/push/schemas'
 
 const log = createLogger('api/push/subscribe')
 const NO_STORE = { 'Cache-Control': 'no-store' }
 const MAX_DEVICES = 10
 const MAX_BODY = 4096
 
-export async function POST(request: Request): Promise<NextResponse> {
-  const supabase = await createClient()
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-  if (!user) return NextResponse.json({ error: 'Not authenticated' }, { status: 401 })
-  if (isDemoUser(user)) return NextResponse.json({ error: 'demo_read_only' }, { status: 403 })
+export async function POST(request: Request) {
+  const auth = await requireUser()
+  if (!auth.ok) return auth.response
+  const { user, supabase } = auth
+  if (isDemoUser(user)) return apiError('forbidden', { message: ACCOUNT_ERRORS.demoReadOnly })
 
-  const rl = checkRateLimit(`push:${user.id}`, LIMITS.settings)
-  if (!rl.allowed) {
-    return NextResponse.json(
-      { error: 'Too many requests' },
-      { status: 429, headers: { 'Retry-After': String(rl.retryAfterSeconds) } },
-    )
-  }
+  const limited = await rateLimit(request, { key: 'push', limit: LIMITS.settings, userId: user.id })
+  if (limited) return limited
 
-  if (!readPushConfig().config) return NextResponse.json({ error: 'push_disabled' }, { status: 503 })
+  if (!readPushConfig().config) return apiError('unavailable', { message: PUSH_ERRORS.disabled })
 
-  const raw = await request.text().catch(() => '')
-  if (raw.length > MAX_BODY) return NextResponse.json({ error: 'Payload too large' }, { status: 413 })
-  let json: unknown
-  try {
-    json = JSON.parse(raw)
-  } catch {
-    return NextResponse.json({ error: 'Invalid JSON body' }, { status: 400 })
-  }
-  const parsed = subscribeSchema.safeParse(json)
-  if (!parsed.success) {
-    const notAllowed = parsed.error.issues.some((i) => i.message === 'endpoint_not_allowed')
-    return NextResponse.json({ error: notAllowed ? 'endpoint_not_allowed' : 'invalid_subscription' }, { status: 400 })
-  }
-  const body = parsed.data
+  const parsed = await parseBody(request, subscribeSchema, { maxBytes: MAX_BODY })
+  if (!parsed.ok) return parsed.response
+  const body = parsed.value
   if (body.expirationTime && body.expirationTime <= Date.now()) {
-    return NextResponse.json({ error: 'subscription_expired' }, { status: 400 })
+    return apiError('invalid_input', { field: 'expirationTime', message: PUSH_ERRORS.expired })
   }
 
   const { data: own, error: readError } = await supabase
@@ -74,9 +58,9 @@ export async function POST(request: Request): Promise<NextResponse> {
     .eq('user_id', user.id)
     .order('updated_at', { ascending: true })
   if (readError) {
-    if (isNotMigrated(readError)) return NextResponse.json({ error: 'push_unavailable' }, { status: 503 })
+    if (isNotMigrated(readError)) return apiError('unavailable', { message: PUSH_ERRORS.notMigrated })
     log.error('No se pudieron leer las suscripciones', { code: readError.code })
-    return NextResponse.json({ error: 'Failed to save subscription' }, { status: 500 })
+    return apiError('internal')
   }
   const rows = (own ?? []) as { id: string; endpoint: string; locale: string }[]
   const replaced = body.replaces ? rows.find((r) => r.endpoint === body.replaces) : undefined
@@ -120,11 +104,11 @@ export async function POST(request: Request): Promise<NextResponse> {
     { onConflict: 'endpoint' },
   )
   if (error) {
-    if (isNotMigrated(error)) return NextResponse.json({ error: 'push_unavailable' }, { status: 503 })
-    if (error.code === '42501') return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+    if (isNotMigrated(error)) return apiError('unavailable', { message: PUSH_ERRORS.notMigrated })
+    if (error.code === '42501') return apiError('forbidden')
     log.error('No se pudo guardar la suscripción', { code: error.code })
-    return NextResponse.json({ error: 'Failed to save subscription' }, { status: 500 })
+    return apiError('internal')
   }
 
-  return NextResponse.json({ ok: true }, { status: existing ? 200 : 201, headers: NO_STORE })
+  return ok(null, { status: existing ? 200 : 201, headers: NO_STORE })
 }

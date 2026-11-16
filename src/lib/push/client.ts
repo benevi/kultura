@@ -19,15 +19,12 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { fromBase64Url, toBase64Url } from './base64url'
 import { endpointHash } from './endpoint'
+import { apiFetch } from '@/lib/api/client'
+import type { PushStatus } from '@/lib/api/contracts/push'
+
+export type { PushStatus }
 
 export type PushSupport = 'supported' | 'unsupported' | 'ios_install'
-
-export interface PushStatus {
-  enabled: boolean
-  publicKey: string | null
-  devices: number
-  endpointHashes: string[]
-}
 
 export type PushUiState =
   | 'loading'
@@ -63,11 +60,9 @@ export function detectPushSupport(win: Win): PushSupport {
   return ok ? 'supported' : 'unsupported'
 }
 
-export async function readPushStatus(fetchImpl: typeof fetch = fetch): Promise<PushStatus | null> {
+export async function readPushStatus(): Promise<PushStatus | null> {
   try {
-    const res = await fetchImpl('/api/push/status', { cache: 'no-store', credentials: 'same-origin' })
-    if (!res.ok) return null
-    const data = (await res.json()) as Partial<PushStatus>
+    const data = await apiFetch<Partial<PushStatus>>('/api/push/status', { cache: 'no-store', credentials: 'same-origin' })
     return {
       enabled: data.enabled === true && typeof data.publicKey === 'string',
       publicKey: typeof data.publicKey === 'string' ? data.publicKey : null,
@@ -110,13 +105,8 @@ export function subscriptionPayload(subscription: PushSubscription, locale: stri
 
 async function postJson(path: string, body: unknown): Promise<boolean> {
   try {
-    const res = await fetch(path, {
-      method: 'POST',
-      credentials: 'same-origin',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(body),
-    })
-    return res.ok
+    await apiFetch(path, { method: 'POST', credentials: 'same-origin', json: body })
+    return true
   } catch {
     return false
   }
@@ -145,11 +135,10 @@ export async function unsubscribeCurrentDevice(win: Win = window as Win): Promis
     const subscription = registration ? await registration.pushManager.getSubscription().catch(() => null) : null
     if (!subscription) return
     try {
-      await fetch('/api/push/unsubscribe', {
+      await apiFetch('/api/push/unsubscribe', {
         method: 'POST',
         credentials: 'same-origin',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ endpoint: subscription.endpoint }),
+        json: { endpoint: subscription.endpoint },
         signal: AbortSignal.timeout(SIGN_OUT_PUSH_TIMEOUT_MS),
       })
     } catch {
