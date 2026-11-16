@@ -85,7 +85,7 @@ describe("SearchBar", () => {
 
   it("F-06 (DAT-1): las sugerencias se piden con el idioma de la interfaz en la URL", async () => {
     vi.useFakeTimers();
-    vi.mocked(global.fetch).mockResolvedValue({ ok: true, json: async () => [] } as Response);
+    vi.mocked(global.fetch).mockResolvedValue({ ok: true, json: async () => ({ data: [] }) } as Response);
     render(<SearchBar />);
     fireEvent.change(screen.getByRole("combobox"), { target: { value: "inception" } });
     await vi.advanceTimersByTimeAsync(450);
@@ -95,7 +95,7 @@ describe("SearchBar", () => {
 
   it("F-13 (DAT-8): con la familia activa de Descubrir, las sugerencias se piden de esa familia", async () => {
     vi.useFakeTimers();
-    vi.mocked(global.fetch).mockResolvedValue({ ok: true, json: async () => [] } as Response);
+    vi.mocked(global.fetch).mockResolvedValue({ ok: true, json: async () => ({ data: [] }) } as Response);
     render(<SearchBar type="manga" />);
     fireEvent.change(screen.getByRole("combobox"), { target: { value: "naruto" } });
     await vi.advanceTimersByTimeAsync(450);
@@ -107,7 +107,7 @@ describe("SearchBar", () => {
 
   it("F-13: con type=all no se manda tipo (cine y series)", async () => {
     vi.useFakeTimers();
-    vi.mocked(global.fetch).mockResolvedValue({ ok: true, json: async () => [] } as Response);
+    vi.mocked(global.fetch).mockResolvedValue({ ok: true, json: async () => ({ data: [] }) } as Response);
     render(<SearchBar type="all" />);
     fireEvent.change(screen.getByRole("combobox"), { target: { value: "dune" } });
     await vi.advanceTimersByTimeAsync(450);

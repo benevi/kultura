@@ -165,10 +165,12 @@ describe('SearchBar (combobox, ACC-14)', () => {
       'fetch',
       vi.fn().mockResolvedValue({
         ok: true,
-        json: async () => [
-          { id: 'movie_1', externalId: '1', type: 'movie', title: 'Dune', year: 2021 },
-          { id: 'movie_2', externalId: '2', type: 'movie', title: 'Dune: Parte dos', year: 2024 },
-        ],
+        json: async () => ({
+          data: [
+            { id: 'movie_1', externalId: '1', type: 'movie', title: 'Dune', year: 2021 },
+            { id: 'movie_2', externalId: '2', type: 'movie', title: 'Dune: Parte dos', year: 2024 },
+          ],
+        }),
       })
     )
   })

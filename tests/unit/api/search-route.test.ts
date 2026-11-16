@@ -63,7 +63,7 @@ describe("GET /api/search", () => {
     expect(res.headers.get("Cache-Control")).toBe(
       "public, s-maxage=3600, stale-while-revalidate=86400"
     );
-    expect(await res.json()).toHaveLength(1);
+    expect((await res.json()).data).toHaveLength(1);
   });
 
   it("si falla un proveedor no se cachea la respuesta parcial", async () => {
@@ -74,14 +74,14 @@ describe("GET /api/search", () => {
 
   it("menos de 2 caracteres → [] sin llamar a TMDB", async () => {
     const res = await GET(req("?q=a"));
-    expect(await res.json()).toEqual([]);
+    expect((await res.json()).data).toEqual([]);
     expect(searchMovies).not.toHaveBeenCalled();
   });
 
   it("proveedor caído: aviso (no error), y la búsqueda sigue con lo que hay", async () => {
     vi.mocked(searchTV).mockRejectedValue(new ProviderError("tmdb", "timeout", "tmdb /search/tv → sin respuesta"));
     const res = await GET(req("?q=inception"));
-    expect(await res.json()).toHaveLength(1);
+    expect((await res.json()).data).toHaveLength(1);
     expect(logWarn).toHaveBeenCalledWith(expect.stringContaining("tv"), { provider: "tmdb", kind: "timeout" });
     expect(logError).not.toHaveBeenCalled();
   });
