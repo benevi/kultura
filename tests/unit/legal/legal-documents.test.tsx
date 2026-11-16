@@ -58,6 +58,8 @@ async function renderDoc(doc: LegalDoc, locale: 'es' | 'en' = 'es') {
 }
 
 const ORIGINAL_SITE = process.env.NEXT_PUBLIC_SITE_URL
+// 16 como edad, no cualquier 16 (la fecha de actualización puede llevarlo).
+const AGE_16 = /\b16\s*(años|years)|(menor(es)? de|mayor(es)? de|under|over|at least|al menos)\s*16\b/i
 
 beforeEach(() => {
   process.env.NEXT_PUBLIC_SITE_URL = 'https://kultura.example'
@@ -131,7 +133,7 @@ describe.each(['es', 'en'] as const)('documentos legales (%s)', (locale) => {
     const { container } = await renderDoc('privacy', locale)
     const text = container.textContent ?? ''
     expect(text).toMatch(/14/)
-    expect(text).not.toMatch(/\b16\b/)
+    expect(text).not.toMatch(AGE_16)
     expect(text).toMatch(locale === 'es' ? /solo cuando pulsas/ : /only when you press/)
     expect(text).toMatch(locale === 'es' ? /7 días/ : /7 days/)
     // La exportación dice qué incluye (también lo recibido en los chats en los
@@ -141,6 +143,15 @@ describe.each(['es', 'en'] as const)('documentos legales (%s)', (locale) => {
     // Biblioteca de amigos por defecto (D-04).
     expect(text).toMatch(locale === 'es' ? /por defecto, solo tus amigos/ : /by default, only your friends/)
     expect(container.querySelector(`a[href="/${locale}/settings"]`)).not.toBeNull()
+  })
+
+  it('privacidad: portadas por el servicio de imágenes de Vercel y en las imágenes para compartir (fase 8, P-7 y P-10)', async () => {
+    const { container } = await renderDoc('privacy', locale)
+    const text = container.textContent ?? ''
+    expect(text).toMatch(locale === 'es' ? /pasan por el servicio de imágenes de Vercel/ : /go through Vercel's image service/)
+    expect(text).toMatch(locale === 'es' ? /el catálogo no recibe tu IP/ : /the catalog does not receive your IP/)
+    expect(text).toMatch(locale === 'es' ? /imágenes para compartir enlaces pueden incluir la portada/ : /Link-sharing images may include the title's cover/)
+    expect(text).toMatch(locale === 'es' ? /optimización y caché temporal de imágenes/ : /image optimization and temporary image caching/)
   })
 
   it('privacidad: datos obligatorios (art. 13.2.e), reintento de la IA y tráiler sin cookies', async () => {
@@ -168,7 +179,7 @@ describe.each(['es', 'en'] as const)('documentos legales (%s)', (locale) => {
     expect(text).toMatch(locale === 'es' ? /suspender o eliminar la cuenta/ : /suspend or delete the account/)
     expect(text).toMatch(locale === 'es' ? /bloquear/ : /block/)
     expect(text).toMatch(/14/)
-    expect(text).not.toMatch(/\b16\b/)
+    expect(text).not.toMatch(AGE_16)
   })
 
   it('aviso legal: responsable, email, nota de NIF y punto de contacto DSA con /report', async () => {
