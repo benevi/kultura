@@ -114,14 +114,14 @@ describe('GET /api/popular-in-circle', () => {
       getPopularInCircle: mockGetPopularInCircle,
     }))
     vi.doMock('@/lib/rate-limit', () => ({
-      checkRateLimit: vi.fn().mockReturnValue({ allowed: true, retryAfterSeconds: 0, remaining: 19 }),
+      checkRateLimitDistributed: vi.fn().mockResolvedValue({ allowed: true, retryAfterSeconds: 0, remaining: 19 }),
     }))
   })
 
   it('returns 401 if not authenticated', async () => {
     mockGetUser.mockResolvedValue({ data: { user: null }, error: null })
     const { GET } = await import('@/app/api/popular-in-circle/route')
-    const res = await GET()
+    const res = await GET(new Request('http://localhost/api/popular-in-circle'))
     expect(res.status).toBe(401)
     vi.doUnmock('@/lib/supabase/server')
     vi.doUnmock('@/lib/social/circle')
@@ -135,11 +135,11 @@ describe('GET /api/popular-in-circle', () => {
     ])
 
     const { GET } = await import('@/app/api/popular-in-circle/route')
-    const res = await GET()
+    const res = await GET(new Request('http://localhost/api/popular-in-circle'))
     expect(res.status).toBe(200)
     const body = await res.json()
-    expect(Array.isArray(body.items)).toBe(true)
-    expect(body.items[0].title).toBe('Test')
+    expect(Array.isArray(body.data)).toBe(true)
+    expect(body.data[0].title).toBe('Test')
 
     vi.doUnmock('@/lib/supabase/server')
     vi.doUnmock('@/lib/social/circle')
