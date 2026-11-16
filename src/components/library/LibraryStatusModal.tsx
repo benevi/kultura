@@ -15,8 +15,7 @@
 // F-27 (PRO-5): el progreso va por formato (`ProgressInput`): episodios con
 // el total de la temporada de TMDB, capítulos y volúmenes, páginas o %,
 // horas. Al llegar al final se propone pasar a «Completado» (y con ello sale
-// el apunte del diario). Sin PROGRESS_V2 o sin su migración, solo episodios
-// en series y anime, como siempre.
+// el apunte del diario).
 // ============================================================
 
 import { useId, useState, type RefObject } from 'react'
@@ -35,7 +34,6 @@ import {
   progressFromJson,
   progressKindFor,
   progressToLegacy,
-  supportsLegacyProgress,
   totalFor,
   type LibraryEntryWithProgress,
   type ProgressValue,
@@ -139,9 +137,8 @@ export function LibraryStatusModal({
   const logs = diary?.logs ?? []
   const rewatch = rewatchTouched ? rewatchValue : wasCompleted || logs.length > 0
 
-  // F-27: todos los formatos con PROGRESS_V2 y su migración; si no, episodios.
-  const fullProgress = progressConfig?.enabled === true
-  const showProgress = progressKindFor(mediaType) !== null && (fullProgress || supportsLegacyProgress(mediaType))
+  // F-27: progreso en todos los formatos.
+  const showProgress = progressKindFor(mediaType) !== null
   const plan = progressConfig?.plan ?? null
   const progressTotal = totalFor(mediaType, progress, plan) ?? progress?.total ?? null
   const reachedEnd = showProgress && status !== 'completed' && isAtEnd(mediaType, progress, plan)
@@ -271,7 +268,6 @@ export function LibraryStatusModal({
               mediaType={mediaType}
               value={progress}
               onChange={setProgress}
-              full={fullProgress}
               total={progressTotal}
               referenceHours={mediaType === 'game' ? (plan?.total ?? null) : null}
             />

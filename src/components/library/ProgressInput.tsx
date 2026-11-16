@@ -9,9 +9,7 @@
 //   libro   página o % (selector), "de 350" con las páginas de la ficha
 //   juego   horas jugadas, con la media de RAWG como referencia
 // Cada número se cambia con −/+ (44 px, nombre accesible propio) o
-// escribiéndolo; las flechas del teclado funcionan en el campo. Sin la
-// migración (`full` = false) solo se ofrece lo de siempre: episodios en
-// series y anime.
+// escribiéndolo; las flechas del teclado funcionan en el campo.
 // ============================================================
 
 import { useId } from 'react'
@@ -24,7 +22,6 @@ import {
   hasProgress,
   progressFieldsFor,
   progressPercent,
-  supportsLegacyProgress,
   type ProgressField,
   type ProgressValue,
 } from '@/lib/library/progress'
@@ -33,8 +30,6 @@ export interface ProgressInputProps {
   mediaType: string
   value: ProgressValue | null
   onChange: (value: ProgressValue | null) => void
-  /** Todos los formatos (PROGRESS_V2 y la migración); si no, solo episodios. */
-  full: boolean
   /** Total de la unidad principal (episodios de la temporada, páginas…). */
   total?: number | null
   /** Juegos: horas medias de RAWG (referencia, no un tope). */
@@ -141,7 +136,6 @@ export function ProgressInput({
   mediaType,
   value,
   onChange,
-  full,
   total = null,
   referenceHours = null,
   showSeason,
@@ -151,7 +145,7 @@ export function ProgressInput({
   const tl = useTranslations('library')
   const modeId = useId()
 
-  const fields = full || supportsLegacyProgress(mediaType) ? progressFieldsFor(mediaType) : []
+  const fields = progressFieldsFor(mediaType)
   if (fields.length === 0) return null
 
   const withSeason = showSeason ?? mediaType === 'tv'
@@ -161,7 +155,7 @@ export function ProgressInput({
     onChange(compactProgress(next))
   }
   const ofTotal = typeof total === 'number' ? t('ofTotal', { total }) : null
-  const percent = full ? progressPercent(mediaType, { ...(value ?? {}), total: total ?? value?.total ?? null }) : null
+  const percent = progressPercent(mediaType, { ...(value ?? {}), total: total ?? value?.total ?? null })
 
   let body: React.ReactNode = null
   if (mediaType === 'tv' || mediaType === 'anime') {
@@ -174,8 +168,6 @@ export function ProgressInput({
             value={value?.season}
             onValue={(n) => set('season', n)}
             testId="input-season"
-            // Sin la bandera va al jsonb antiguo ({season?, episode}): temporada 1 o más.
-            min={full ? undefined : 1}
           />
         )}
         <Stepper
@@ -270,19 +262,17 @@ export function ProgressInput({
         )}
       </div>
       {/* Barra con hueco fijo (CLS 0); el número va en texto para lectores. */}
-      {full && (
-        <div className="flex items-center gap-3" data-testid="progress-summary">
-          <div aria-hidden="true" className="h-1.5 flex-1 rounded-full bg-surface-elevated">
-            <div
-              className="h-1.5 rounded-full bg-accent-positive motion-safe:transition-[width] motion-safe:duration-slow"
-              style={{ width: `${percent ?? 0}%` }}
-            />
-          </div>
-          <span className="min-w-[3.5ch] text-right text-xs font-bold text-text-secondary tabular-nums">
-            {percent !== null ? t('percentDone', { percent }) : ''}
-          </span>
+      <div className="flex items-center gap-3" data-testid="progress-summary">
+        <div aria-hidden="true" className="h-1.5 flex-1 rounded-full bg-surface-elevated">
+          <div
+            className="h-1.5 rounded-full bg-accent-positive motion-safe:transition-[width] motion-safe:duration-slow"
+            style={{ width: `${percent ?? 0}%` }}
+          />
         </div>
-      )}
+        <span className="min-w-[3.5ch] text-right text-xs font-bold text-text-secondary tabular-nums">
+          {percent !== null ? t('percentDone', { percent }) : ''}
+        </span>
+      </div>
     </fieldset>
   )
 }

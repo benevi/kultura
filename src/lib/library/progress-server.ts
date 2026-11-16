@@ -1,10 +1,8 @@
 // ============================================================
 // KULTURA — Progreso por formato en el servidor (F-27)
 //
-// Bandera PROGRESS_V2=1 (Vercel); 20261215270001_progress.sql ya está
-// aplicada. Sin la bandera, solo progreso de episodios (series y anime:
-// temporada y episodio). Con ella, todos los formatos. Siempre en las
-// columnas `progress_*` (saneamiento 6.6).
+// Todos los formatos, en las columnas `progress_*` (saneamiento 6.6). La
+// bandera PROGRESS_V2 se retiró encendida (saneamiento 11.4).
 //
 // El «plan» (cuántos episodios tiene cada temporada, capítulos, páginas,
 // horas medias) sale del proveedor por los clientes de `src/lib/api`, que
@@ -23,19 +21,6 @@ import { createLogger } from '@/lib/logger'
 import { progressKindFor, type ProgressPlan, type SeasonPlan } from '@/lib/library/progress'
 
 const log = createLogger('library/progress')
-
-export function progressV2Enabled(): boolean {
-  return process.env.PROGRESS_V2 === '1'
-}
-
-/**
- * Igual que `progressV2Enabled()`. Conserva la firma (async, con cliente)
- * porque lo llama la UI vieja (`(app)/home/page.tsx`); se va con ella.
- */
-export async function progressV2Active(_supabase?: unknown): Promise<boolean> {
-  void _supabase
-  return progressV2Enabled()
-}
 
 // ── TMDB: temporadas y episodios ─────────────────────────────────────────────
 

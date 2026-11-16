@@ -8,11 +8,10 @@
 // escribe (saneamiento 6.6): lo rellena el disparador hasta que se retire.
 // Favorito y diario, solo con RATING_SCALE_10=1.
 //
-// F-27 (PRO-5): con PROGRESS_V2=1 llega `progress` (episodios, capítulos,
-// páginas o %, horas según el formato) y se guarda en las columnas
-// `progress_*`. Sin la bandera se guardan solo temporada y episodio (de
-// `progress` o de `episodeProgress`), también en las columnas: el jsonb
-// `episode_progress` ya no se escribe (saneamiento 6.6).
+// F-27 (PRO-5): llega `progress` (episodios, capítulos, páginas o %, horas
+// según el formato) y se guarda en las columnas `progress_*`. Un cliente
+// antiguo puede mandar aún `episodeProgress`: solo temporada y episodio,
+// también en las columnas (el jsonb ya no se escribe, saneamiento 6.6).
 // ============================================================
 
 import 'server-only'
@@ -37,7 +36,6 @@ import {
   type LibraryEntryWithProgress,
   type ProgressColumns,
 } from '@/lib/library/progress'
-import { progressV2Enabled } from '@/lib/library/progress-server'
 import type { LibraryBulkResult, LibraryPostInput } from '@/lib/api/contracts/library'
 import { failure, success, type ServiceResult } from '@/lib/api/result'
 
@@ -84,7 +82,6 @@ export async function saveEntry(
   if (parsedProgress && !parsedProgress.ok) {
     return failure('invalid_input', { field: 'progress', message: parsedProgress.error })
   }
-  const progressV2 = progressV2Enabled() && parsedProgress?.ok === true
   const progressValue = parsedProgress?.ok ? parsedProgress.value : null
 
   // Una sola nota: manda rating10 si llega; si no, la de siempre (score × 2).
@@ -122,11 +119,9 @@ export async function saveEntry(
   // Con `progress` (cliente nuevo) manda él; si no, el campo de siempre.
   const progressColumns: Partial<ProgressColumns> = !hasProgress
     ? {}
-    : progressV2
+    : parsedProgress?.ok
       ? progressToColumns(progressValue)
-      : parsedProgress?.ok
-        ? episodeColumns(progressValue)
-        : episodeColumns(progressFromJson(input.episodeProgress ?? null))
+      : episodeColumns(progressFromJson(input.episodeProgress ?? null))
   const row: Row = {
     user_id: user.id,
     media_id: input.mediaId,

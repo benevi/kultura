@@ -36,8 +36,6 @@ export interface HeroItem {
 
 interface HeroSectionProps {
   item: HeroItem | null
-  /** PROGRESS_V2 (F-27): «1 toque» en todos los formatos; si no, series y anime. */
-  fullProgress?: boolean
 }
 
 /* Mismo mapa de iconos propios que ProfileStats — icono coherente por tipo
@@ -62,7 +60,7 @@ const MEDIA_BLOCK_FALLBACK =
   'linear-gradient(160deg, oklch(30% 0.1 300), oklch(16% 0.06 280))'
 const MEDIA_BLOCK_ACCENT = 'radial-gradient(120% 100% at 20% 10%, oklch(55% 0.2 340 / 0.5) 0%, transparent 55%)'
 
-export function HeroSection({ item, fullProgress = false }: HeroSectionProps) {
+export function HeroSection({ item }: HeroSectionProps) {
   const t = useTranslations('home')
   const tMedia = useTranslations('media')
 
@@ -79,7 +77,7 @@ export function HeroSection({ item, fullProgress = false }: HeroSectionProps) {
   const TypeIcon = TYPE_ICONS[media.type] ?? IconFilm
 
   // F-27: progreso por formato con «marcar siguiente» en 1 toque.
-  const quick = canQuickAdvance(media.type, fullProgress)
+  const quick = canQuickAdvance(media.type)
 
   return (
     <section className="relative rounded-bento-xl shadow-hard-sm md:shadow-hard">

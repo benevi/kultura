@@ -57,7 +57,7 @@ export async function saveRatingScale(ratingScale: RatingScale): Promise<void> {
 
 /** Respuesta de GET /api/library/progress. */
 export interface ProgressConfig {
-  /** PROGRESS_V2=1 y la migración aplicada: todos los formatos. */
+  /** Siempre `true` (PROGRESS_V2 se retiró encendida); se conserva por los clientes en caché. */
   enabled: boolean
   kind: ProgressKind | null
   progress: ProgressValue | null

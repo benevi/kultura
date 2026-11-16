@@ -27,7 +27,7 @@ test("estado y progreso: pendiente → en curso T1E3", async ({ page }) => {
     (e) => e?.status === "in_progress",
     "estado en curso en user_media",
   );
-  // PROGRESS_V2=1 (env.cjs): va a las columnas por formato, no al jsonb antiguo.
+  // Va a las columnas por formato, no al jsonb antiguo.
   expect(entry!.progress_season).toBe(1);
   expect(entry!.progress_episode).toBe(3);
 

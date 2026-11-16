@@ -21,7 +21,6 @@ import { generatedUsername, initialsFor, purgeDate } from '@/lib/account/identit
 import { readAccountState } from '@/lib/account/account-state'
 import { createLogger } from '@/lib/logger'
 import { localizeHeroSynopsis } from '@/lib/media/hero-synopsis'
-import { progressV2Active } from '@/lib/library/progress-server'
 import { progressFromRow, type ProgressValue } from '@/lib/library/progress'
 import {
   FriendsActivity,
@@ -112,7 +111,7 @@ export default async function HomePage() {
   // Fetches paralelos: in_progress hero + recientes + lo necesario para "Para
   // ti" SIN llamar a la IA (D-06): las recomendaciones de hoy si ya existen y
   // cuántos títulos con señal tiene la biblioteca.
-  const [inProgressResult, recentResult, todayRecs, signalResult, account, fullProgress] = await Promise.all([
+  const [inProgressResult, recentResult, todayRecs, signalResult, account] = await Promise.all([
     supabase
       .from('user_media')
       .select(`media_id, ${PROGRESS_SELECT}, media(id, title, poster, year, type, synopsis)`)
@@ -137,9 +136,6 @@ export default async function HomePage() {
       .or('status.eq.completed,rating10.gte.7'),
     // ROJO-7: borrado programado → aviso arriba, con la salida a Ajustes.
     readAccountState(supabase, user.id),
-    // F-27: «marcar siguiente» en todos los formatos solo con PROGRESS_V2 y
-    // la migración aplicada (misma sonda que GET /api/library/progress).
-    progressV2Active(supabase),
   ])
   const deletionRequestedAt = account.state?.deletion_requested_at ?? null
 
@@ -197,10 +193,10 @@ export default async function HomePage() {
           </Link>
         </div>
       )}
-      <HeroSection item={inProgress} fullProgress={fullProgress} />
+      <HeroSection item={inProgress} />
 
       {/* F-27 (PRO-5): cada tarjeta con su progreso y «1 toque» para avanzar. */}
-      <ContinueRow title={t('continueWatching')} items={filteredRecent} fullProgress={fullProgress} />
+      <ContinueRow title={t('continueWatching')} items={filteredRecent} />
 
       {/* Orden tras retirar el hero vacío: primero lo propio (lo que sigues, lo
           que la IA te elige por match), después lo social y por último las
