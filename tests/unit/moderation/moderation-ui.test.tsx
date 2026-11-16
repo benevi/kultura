@@ -70,24 +70,17 @@ describe('GroupFeed', () => {
     expect(fromCalls).toEqual([])
   })
 
-  it('sin moderación: solo se puede borrar lo propio; nada de denunciar', async () => {
+  it('un miembro borra lo propio y denuncia lo ajeno, pero no lo borra', async () => {
     renderEs(<GroupFeed groupId="g1" currentUserId="me" initialPosts={posts} />)
     await screen.findByText('post ajeno')
     expect(screen.getByRole('button', { name: 'Borrar mi publicación' })).toBeInTheDocument()
-    expect(screen.queryByRole('button', { name: /Denunciar publicación/ })).not.toBeInTheDocument()
-    expect(screen.queryByRole('button', { name: 'Borrar la publicación de ana' })).not.toBeInTheDocument()
-  })
-
-  it('con moderación, un miembro denuncia lo ajeno pero no lo borra', async () => {
-    renderEs(<GroupFeed groupId="g1" currentUserId="me" initialPosts={posts} moderation />)
-    await screen.findByText('post ajeno')
     expect(screen.getByRole('button', { name: 'Denunciar publicación: ana' })).toBeInTheDocument()
     expect(screen.queryByRole('button', { name: 'Borrar la publicación de ana' })).not.toBeInTheDocument()
   })
 
   it('el dueño borra un post ajeno tras confirmar', async () => {
     mockFetch.mockResolvedValue(ok({ data: null }))
-    renderEs(<GroupFeed groupId="g1" currentUserId="me" initialPosts={posts} isOwner moderation />)
+    renderEs(<GroupFeed groupId="g1" currentUserId="me" initialPosts={posts} isOwner />)
     await screen.findByText('post ajeno')
     fireEvent.click(screen.getByRole('button', { name: 'Borrar la publicación de ana' }))
     const confirm = screen.getByRole('group', { name: '¿Borrar la publicación de ana?' })

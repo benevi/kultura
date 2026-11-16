@@ -157,7 +157,7 @@ export default async function GroupPage({ params }: Props) {
         {/* Feed */}
         <div className="md:col-span-2">
           {isMember ? (
-            <GroupFeed key={id} groupId={id} currentUserId={user.id} initialPosts={posts} isOwner={isOwner} moderation />
+            <GroupFeed key={id} groupId={id} currentUserId={user.id} initialPosts={posts} isOwner={isOwner} />
           ) : (
             <div
               className="rounded-bento border p-8 text-center text-sm"
