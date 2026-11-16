@@ -34,8 +34,8 @@ interface SettingsFormProps {
   /** Borrado programado (ROJO-7): fecha ISO en que se pidió. */
   deletionRequestedAt?: string | null
   /**
-   * Días de gracia del borrado (0 = inmediato: bandera ACCOUNT_GRACE apagada
-   * o migración sin aplicar). El texto de ayuda dice lo que de verdad pasará.
+   * Días de gracia del borrado (0 = migración sin aplicar). El texto de ayuda
+   * dice lo que de verdad pasará.
    */
   graceDays?: number
   /**

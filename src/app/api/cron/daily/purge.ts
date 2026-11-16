@@ -3,8 +3,7 @@
 //
 // Las cuentas que pidieron borrarse hace 7 días o más (account_state.
 // deletion_requested_at) se borran de verdad: traspaso de grupos y listas
-// colaborativas y después el usuario de Auth. Se ejecuta siempre, aunque
-// ACCOUNT_GRACE se haya desactivado después: un borrado pedido se cumple.
+// colaborativas y después el usuario de Auth. Un borrado pedido se cumple.
 // ============================================================
 
 import type { SupabaseClient } from '@supabase/supabase-js'

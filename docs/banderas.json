@@ -5,7 +5,6 @@
     { "nombre": "MODERATION_V2", "dueno": "benevi", "desde": "2026-10-22", "produccion": "on", "para": "F-11: denunciar, bloquear, borrar y moderar en chat y grupos" },
     { "nombre": "RATING_SCALE_10", "dueno": "benevi", "desde": "2026-10-26", "produccion": "on", "para": "Nota sobre 10" },
     { "nombre": "MIXED_LISTS", "dueno": "benevi", "desde": "2026-10-26", "produccion": "on", "para": "Listas con varios tipos de contenido" },
-    { "nombre": "ACCOUNT_GRACE", "dueno": "benevi", "desde": "2026-10-22", "produccion": "on", "para": "Periodo de gracia antes de borrar la cuenta" },
     { "nombre": "SHARE_PUBLIC_LIBRARY", "dueno": "benevi", "desde": "2026-10-26", "produccion": "off", "para": "Compartir la biblioteca pública" },
     { "nombre": "INVITE_NOTIFY", "dueno": "benevi", "desde": "2026-10-23", "produccion": "off", "para": "Aviso cuando se une alguien invitado" },
     { "nombre": "WEEKLY_EMAIL", "dueno": "benevi", "desde": "2026-10-26", "produccion": "off", "para": "Resumen semanal por email (fuera del saneamiento, Q22)" },
