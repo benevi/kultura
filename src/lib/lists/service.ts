@@ -3,9 +3,8 @@
 // La lógica que antes vivía en /api/lists y /api/lists/[id]. No sabe de
 // HTTP: recibe la entrada ya validada por zod y devuelve un `ServiceResult`.
 //
-// F-25: con MIXED_LISTS=1 una lista puede ser `mixed`, llevar descripción y
-// plantilla, y sus títulos orden manual y nota. Sin la bandera, descripción y
-// plantilla se ignoran y orden y notas responden `not_found` (`not_available`).
+// F-25: una lista puede ser `mixed`, llevar descripción y plantilla, y sus
+// títulos orden manual y nota.
 // ============================================================
 
 import 'server-only'
@@ -15,7 +14,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { createLogger } from '@/lib/logger'
 import { getListAccess } from '@/lib/social/lists'
 import { upsertMediaFromProvider } from '@/lib/media/upsert-from-provider'
-import { LIST_TEMPLATES, fitsList, listColumns, mixedListsEnabled, validListTypes } from '@/lib/social/lists-shared'
+import { LIST_COLUMNS, LIST_MEDIA_TYPES, LIST_TEMPLATES, fitsList } from '@/lib/social/lists-shared'
 import {
   LIST_ERRORS,
   type ItemsPatchInput,
@@ -52,15 +51,14 @@ export async function listMyLists(
   userId: string,
   mediaType: string | undefined
 ): Promise<ServiceResult<ListRow[]>> {
-  const mixed = mixedListsEnabled()
   let query = supabase
     .from('lists')
-    .select(listColumns(mixed))
+    .select(LIST_COLUMNS)
     .eq('owner_id', userId)
     .order('created_at', { ascending: false })
   // Una lista mixta admite cualquier formato: se ofrece siempre.
-  if (mediaType && (validListTypes(mixed) as readonly string[]).includes(mediaType)) {
-    query = mixed && mediaType !== 'mixed'
+  if (mediaType && (LIST_MEDIA_TYPES as readonly string[]).includes(mediaType)) {
+    query = mediaType !== 'mixed'
       ? query.in('media_type', [mediaType, 'mixed'])
       : query.eq('media_type', mediaType)
   }
@@ -77,18 +75,13 @@ export async function createList(
   user: User,
   input: ListCreateInput
 ): Promise<ServiceResult<ListRow>> {
-  const mixed = mixedListsEnabled()
-  const types = validListTypes(mixed) as readonly string[]
+  const types = LIST_MEDIA_TYPES as readonly string[]
   if (!types.includes(input.mediaType)) {
-    return failure('invalid_input', {
-      field: 'mediaType',
-      message: input.mediaType === 'mixed' ? LIST_ERRORS.mixedUnavailable : `mediaType must be one of: ${types.join(', ')}`,
-    })
+    return failure('invalid_input', { field: 'mediaType', message: `mediaType must be one of: ${types.join(', ')}` })
   }
 
-  // Descripción y plantilla: solo con la bandera (sin ella, se ignoran).
   let template: ListTemplate | null = null
-  if (mixed && input.template != null) {
+  if (input.template != null) {
     if (!(LIST_TEMPLATES as readonly string[]).includes(input.template)) {
       return failure('invalid_input', { field: 'template', message: `template must be one of: ${LIST_TEMPLATES.join(', ')}` })
     }
@@ -108,12 +101,10 @@ export async function createList(
     is_collaborative: input.isCollaborative === true,
     is_public: isPublic,
   }
-  const extra = mixed
-    ? {
-        ...(input.description != null ? { description: input.description } : {}),
-        ...(template ? { template } : {}),
-      }
-    : {}
+  const extra = {
+    ...(input.description != null ? { description: input.description } : {}),
+    ...(template ? { template } : {}),
+  }
 
   const { error: insertError } = await supabase.from('lists').insert({ ...base, ...extra })
   if (insertError) {
@@ -121,7 +112,7 @@ export async function createList(
     return failure('internal', { message: 'Failed to create list' })
   }
 
-  const { data } = await supabase.from('lists').select(listColumns(mixed)).eq('id', base.id).maybeSingle()
+  const { data } = await supabase.from('lists').select(LIST_COLUMNS).eq('id', base.id).maybeSingle()
   // Ya está creada: si la relectura fallase, se responde con lo insertado.
   const list = (data as ListRow | null) ?? { ...base, ...extra, created_at: new Date().toISOString() }
 
@@ -179,8 +170,7 @@ export async function updateList(
   const update: TablesUpdate<'lists'> = {}
   if (input.isPublic !== undefined) update.is_public = input.isPublic
   if (input.name !== undefined) update.name = input.name
-  // Sin la bandera la descripción se ignora (la columna existe, pero no se usa).
-  if (input.description !== undefined && mixedListsEnabled()) update.description = input.description
+  if (input.description !== undefined) update.description = input.description
   if (Object.keys(update).length === 0) return failure('invalid_input', { message: 'nothing to update' })
 
   // Un miembro de una colaborativa puede editar títulos, pero los datos son del dueño.
@@ -287,7 +277,6 @@ export async function patchItems(
   listId: string,
   input: ItemsPatchInput
 ): Promise<ServiceResult<{ moved: number | null } | { note: string | null }>> {
-  if (!mixedListsEnabled()) return failure('not_found', { message: LIST_ERRORS.notAvailable })
   const access = await getListAccess(listId, userId)
   if (!access.exists) return failure('not_found', { message: 'List not found' })
   if (!access.canEdit) return failure('forbidden')

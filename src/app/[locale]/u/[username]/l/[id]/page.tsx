@@ -5,7 +5,7 @@
 // nombre antiguo tampoco lleva al actual, Q8). Se puede denunciar (D-13):
 // con sesión, el botón de F-11; sin ella, el formulario público.
 //
-// F-25 (MIXED_LISTS): los títulos salen en el orden que eligió el dueño, con
+// F-25: los títulos salen en el orden que eligió el dueño, con
 // sus notas y la descripción; un «Ranking personal» pinta el número. Esos
 // datos se piden EN PARALELO con la lista (solo por id) y solo se usan si la
 // lista resulta ser pública y de `username`.

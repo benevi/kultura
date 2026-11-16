@@ -1,7 +1,7 @@
 // ============================================================
 // KULTURA — Tipos de Listas
-// Una lista contiene un solo formato (DEC-008) o, con F-25 (MIXED_LISTS),
-// varios (`mixed`): «Franquicia» = libro + películas + juego.
+// Una lista contiene un solo formato (DEC-008) o, con F-25, varios
+// (`mixed`): «Franquicia» = libro + películas + juego.
 // ============================================================
 
 import type { MediaType, MediaItem } from "./media";

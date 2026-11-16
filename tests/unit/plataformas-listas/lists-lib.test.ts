@@ -1,17 +1,13 @@
 // ============================================================
-// F-25 — src/lib/social/lists.ts: orden de los títulos, lecturas con y sin
-// la migración, y los extras de la lista pública.
+// F-25 — src/lib/social/lists.ts: orden de los títulos, lecturas y los
+// extras de la lista pública.
 // ============================================================
 
-import { describe, it, expect, vi, afterEach } from 'vitest'
+import { describe, it, expect, vi } from 'vitest'
 import { fakeSupabase, opsOf, type FakeClient } from './fake-supabase'
 
 let client: FakeClient
 vi.mock('@/lib/supabase/server', () => ({ createClient: async () => client }))
-
-afterEach(() => {
-  delete process.env.MIXED_LISTS
-})
 
 const LIST_ROW = {
   id: 'l1', owner_id: 'u1', name: 'Dune', media_type: 'mixed', is_collaborative: false, is_public: true,
@@ -37,8 +33,7 @@ describe('sortListItems', () => {
 })
 
 describe('getListDetail', () => {
-  it('con la bandera: pide orden, nota, descripción y plantilla, y devuelve el orden manual', async () => {
-    process.env.MIXED_LISTS = '1'
+  it('pide orden, nota, descripción y plantilla, y devuelve el orden manual', async () => {
     client = fakeSupabase({
       tables: {
         lists: [{ data: LIST_ROW, error: null }],
@@ -55,31 +50,10 @@ describe('getListDetail', () => {
     expect(opsOf(client, 'list_items', 'order')[0].args[0]).toBe('position')
   })
 
-  it('sin la bandera: columnas y orden de siempre', async () => {
-    client = fakeSupabase({
-      tables: {
-        lists: [{ data: { ...LIST_ROW, media_type: 'movie' }, error: null }],
-        list_items: [{ data: [], error: null }],
-        list_members: [{ data: [], error: null }],
-      },
-    })
-    const { getListDetail } = await import('@/lib/social/lists')
-    await getListDetail('l1')
-    expect(String(opsOf(client, 'lists', 'select')[0].args[0])).not.toContain('description')
-    expect(opsOf(client, 'list_items', 'order')[0].args[0]).toBe('added_at')
-  })
 })
 
 describe('getPublicListExtras', () => {
-  it('sin la bandera: null sin consultar', async () => {
-    client = fakeSupabase({})
-    const { getPublicListExtras } = await import('@/lib/social/lists')
-    expect(await getPublicListExtras('l1')).toBeNull()
-    expect(client.calls).toHaveLength(0)
-  })
-
-  it('con la bandera: descripción, plantilla y posición/nota por título (solo listas públicas)', async () => {
-    process.env.MIXED_LISTS = '1'
+  it('descripción, plantilla y posición/nota por título (solo listas públicas)', async () => {
     client = fakeSupabase({
       tables: {
         lists: [{ data: { description: 'd', template: 'ranking' }, error: null }],
@@ -94,7 +68,6 @@ describe('getPublicListExtras', () => {
   })
 
   it('migración sin aplicar: null', async () => {
-    process.env.MIXED_LISTS = '1'
     client = fakeSupabase({
       tables: {
         lists: [{ data: null, error: { code: '42703', message: 'x' } }],

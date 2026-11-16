@@ -616,7 +616,6 @@
     "descriptionError": "We couldn't save the description. Try again.",
     "addDescription": "Add a description",
     "editDescription": "Edit description",
-    "errorMixedUnavailable": "Mixed-format lists aren't available yet. Choose a format.",
     "inviteNotFriend": "You can only invite your friends. Send them a friend request first.",
     "reorder": "Reorder and add notes",
     "reorderDone": "Done",

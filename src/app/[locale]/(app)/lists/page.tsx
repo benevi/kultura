@@ -6,7 +6,6 @@
 import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import { getUserLists } from '@/lib/social/lists'
-import { mixedListsEnabled } from '@/lib/social/lists-shared'
 import { ListsClient } from './ListsClient'
 import { getTranslations } from 'next-intl/server'
 import type { Metadata } from 'next'
@@ -24,5 +23,5 @@ export default async function ListsPage() {
 
   const lists = await getUserLists(user.id)
 
-  return <ListsClient lists={lists} mixedEnabled={mixedListsEnabled()} />
+  return <ListsClient lists={lists} />
 }

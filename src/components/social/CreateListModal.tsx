@@ -8,9 +8,7 @@ import { KInput } from '@/components/ui/KInput'
 import { Modal } from '@/components/ui/Modal'
 import { Select } from '@/components/ui/Select'
 import { cn } from '@/lib/utils/index'
-import { ApiError } from '@/lib/api/client'
 import { createList } from '@/lib/lists/client'
-import { LIST_ERRORS } from '@/lib/lists/errors'
 
 const MEDIA_TYPE_KEYS = ['movie', 'tv', 'anime', 'book', 'comic', 'manga', 'game'] as const
 type MediaTypeKey = typeof MEDIA_TYPE_KEYS[number] | 'mixed'
@@ -41,11 +39,9 @@ const TEXTAREA_CLASS = cn(
 
 interface CreateListModalProps {
   onClose: () => void
-  /** MIXED_LISTS (F-25): plantillas, «Varios formatos» y descripción. */
-  mixedEnabled?: boolean
 }
 
-export function CreateListModal({ onClose, mixedEnabled = false }: CreateListModalProps) {
+export function CreateListModal({ onClose }: CreateListModalProps) {
   const t = useTranslations('lists')
   const tf = useTranslations('filters')
   const tc = useTranslations('common')
@@ -100,22 +96,21 @@ export function CreateListModal({ onClose, mixedEnabled = false }: CreateListMod
         mediaType: effectiveType,
         isCollaborative,
         isPublic: visibility === 'public',
-        ...(mixedEnabled && description.trim() ? { description: description.trim() } : {}),
-        ...(mixedEnabled && template !== 'free' ? { template } : {}),
+        ...(description.trim() ? { description: description.trim() } : {}),
+        ...(template !== 'free' ? { template } : {}),
       })
       router.push(`/lists/${list.id}`)
       router.refresh()
       onClose()
-    } catch (err) {
-      const mixedOff = err instanceof ApiError && err.message === LIST_ERRORS.mixedUnavailable
-      setError(mixedOff ? t('errorMixedUnavailable') : t('errorCreate'))
+    } catch {
+      setError(t('errorCreate'))
       setLoading(false)
     }
   }
 
   const typeOptions = [
     ...MEDIA_TYPE_KEYS.map((key) => ({ value: key, label: tf(key) })),
-    ...(mixedEnabled ? [{ value: 'mixed', label: t('mediaTypeMixed') }] : []),
+    { value: 'mixed', label: t('mediaTypeMixed') },
   ]
 
   return (
@@ -130,36 +125,34 @@ export function CreateListModal({ onClose, mixedEnabled = false }: CreateListMod
     >
       <form onSubmit={handleCreate} noValidate className="flex flex-col gap-4">
         {/* F-25: plantilla primero (cambia el ejemplo del nombre y el tipo). */}
-        {mixedEnabled && (
-          <fieldset className="flex flex-col gap-2">
-            <legend className="mb-1.5 text-sm text-muted">{t('templateLabel')}</legend>
-            {TEMPLATES.map((option) => {
-              const checked = template === option
-              return (
-                <label
-                  key={option}
-                  className={cn(
-                    'flex min-h-11 cursor-pointer items-start gap-3 rounded-2xl bg-surface-default px-3 py-3 transition-colors',
-                    checked && 'ring-2 ring-accent-pink'
-                  )}
-                >
-                  <input
-                    type="radio"
-                    name="list-template"
-                    value={option}
-                    checked={checked}
-                    onChange={() => chooseTemplate(option)}
-                    className="mt-0.5 h-5 w-5 flex-shrink-0 cursor-pointer accent-accent-pink"
-                  />
-                  <span className="flex flex-col">
-                    <span className="text-sm font-bold text-text-primary">{t(`template.${option}`)}</span>
-                    <span className="text-xs text-text-tertiary">{t(`template.${option}Hint`)}</span>
-                  </span>
-                </label>
-              )
-            })}
-          </fieldset>
-        )}
+        <fieldset className="flex flex-col gap-2">
+          <legend className="mb-1.5 text-sm text-muted">{t('templateLabel')}</legend>
+          {TEMPLATES.map((option) => {
+            const checked = template === option
+            return (
+              <label
+                key={option}
+                className={cn(
+                  'flex min-h-11 cursor-pointer items-start gap-3 rounded-2xl bg-surface-default px-3 py-3 transition-colors',
+                  checked && 'ring-2 ring-accent-pink'
+                )}
+              >
+                <input
+                  type="radio"
+                  name="list-template"
+                  value={option}
+                  checked={checked}
+                  onChange={() => chooseTemplate(option)}
+                  className="mt-0.5 h-5 w-5 flex-shrink-0 cursor-pointer accent-accent-pink"
+                />
+                <span className="flex flex-col">
+                  <span className="text-sm font-bold text-text-primary">{t(`template.${option}`)}</span>
+                  <span className="text-xs text-text-tertiary">{t(`template.${option}Hint`)}</span>
+                </span>
+              </label>
+            )
+          })}
+        </fieldset>
 
         <KInput
           ref={nameRef}
@@ -189,26 +182,24 @@ export function CreateListModal({ onClose, mixedEnabled = false }: CreateListMod
           />
         )}
 
-        {mixedEnabled && (
-          <div className="flex w-full flex-col gap-2">
-            <label htmlFor={descriptionId} className="font-body text-meta font-bold text-text-tertiary">
-              {t('descriptionLabel')}
-            </label>
-            <textarea
-              id={descriptionId}
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              maxLength={DESCRIPTION_MAX}
-              rows={3}
-              placeholder={t('descriptionPlaceholder')}
-              aria-describedby={descriptionHintId}
-              className={TEXTAREA_CLASS}
-            />
-            <p id={descriptionHintId} className="text-xs text-text-tertiary">
-              {t('descriptionHint', { count: DESCRIPTION_MAX - description.length })}
-            </p>
-          </div>
-        )}
+        <div className="flex w-full flex-col gap-2">
+          <label htmlFor={descriptionId} className="font-body text-meta font-bold text-text-tertiary">
+            {t('descriptionLabel')}
+          </label>
+          <textarea
+            id={descriptionId}
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+            maxLength={DESCRIPTION_MAX}
+            rows={3}
+            placeholder={t('descriptionPlaceholder')}
+            aria-describedby={descriptionHintId}
+            className={TEXTAREA_CLASS}
+          />
+          <p id={descriptionHintId} className="text-xs text-text-tertiary">
+            {t('descriptionHint', { count: DESCRIPTION_MAX - description.length })}
+          </p>
+        </div>
 
         {/* Visibilidad: radios nativos (flechas y lector gratis), privada marcada. */}
         <fieldset className="flex flex-col gap-2">
