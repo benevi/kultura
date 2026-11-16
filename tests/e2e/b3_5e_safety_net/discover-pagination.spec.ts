@@ -53,10 +53,12 @@ async function mockDiscover(page: Page) {
       status: 200,
       contentType: 'application/json',
       body: JSON.stringify({
-        items,
-        totalPages: 3,
-        hasMore: pageNum < 3,
-        fetchErrorKind: null,
+        data: {
+          items,
+          totalPages: 3,
+          hasMore: pageNum < 3,
+          fetchErrorKind: null,
+        },
       }),
     })
   })
@@ -82,10 +84,12 @@ async function mockFilteredEmptyFirstPage(page: Page) {
       status: 200,
       contentType: 'application/json',
       body: JSON.stringify({
-        items,
-        totalPages: 5,
-        hasMore: pageNum < 5,
-        fetchErrorKind: null,
+        data: {
+          items,
+          totalPages: 5,
+          hasMore: pageNum < 5,
+          fetchErrorKind: null,
+        },
       }),
     })
   })
