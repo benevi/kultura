@@ -2,7 +2,7 @@ import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import { getUserMedia } from '@/lib/library/queries'
 import { readDiary } from '@/lib/library/diary'
-import { ratingScale10Enabled, readRatingScale } from '@/lib/library/scale'
+import { readRatingScale } from '@/lib/library/scale'
 import { createLogger } from '@/lib/logger'
 import { LibraryClient } from './LibraryClient'
 import type { Metadata } from 'next'
@@ -23,16 +23,15 @@ export default async function LibraryPage() {
   } = await supabase.auth.getUser()
   if (!user) redirect('/login')
 
-  // F-24: el diario solo con RATING_SCALE_10=1 y la migración aplicada; si
-  // falta la tabla o falla, la Biblioteca de siempre.
-  const diaryPromise: Promise<{ logs: DiaryLog[]; scale: RatingScale } | null> = ratingScale10Enabled()
-    ? readDiary(supabase, user.id, { withMedia: true })
-        .then((d) => (d.migrated ? { logs: d.logs, scale: readRatingScale(user) } : null))
-        .catch((err) => {
-          log.error('Failed to read diary', { err })
-          return null
-        })
-    : Promise.resolve(null)
+  // F-24: el diario; si falta la tabla o falla, la Biblioteca de siempre.
+  const diaryPromise: Promise<{ logs: DiaryLog[]; scale: RatingScale } | null> = readDiary(supabase, user.id, {
+    withMedia: true,
+  })
+    .then((d) => (d.migrated ? { logs: d.logs, scale: readRatingScale(user) } : null))
+    .catch((err) => {
+      log.error('Failed to read diary', { err })
+      return null
+    })
 
   const [entries, diary] = await Promise.all([getUserMedia(user.id), diaryPromise])
   return (

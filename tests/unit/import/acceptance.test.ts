@@ -102,7 +102,6 @@ describe('aceptación F-26', () => {
     state.ensureCalls = 0
   })
   afterEach(() => {
-    delete process.env.RATING_SCALE_10
   })
 
   it('el fixture guardado es el que sale del generador (500 filas con la forma de Letterboxd)', () => {
@@ -113,7 +112,6 @@ describe('aceptación F-26', () => {
   })
 
   it('ratings.csv de 500 filas → ≥ 90 % emparejado y ninguno con la película equivocada', async () => {
-    process.env.RATING_SCALE_10 = '1'
     const parsed = await parseImportFiles([{ name: 'ratings.csv', bytes: new Uint8Array(readFileSync(FIXTURE)) }])
     expect(parsed.items).toHaveLength(500)
 

@@ -6,7 +6,7 @@
 // F-24 (D-14): la nota se guarda siempre en `rating10` (0,5-10); un cliente
 // antiguo que mande `score` (1-5) se convierte a score × 2. `score` ya no se
 // escribe (saneamiento 6.6): lo rellena el disparador hasta que se retire.
-// Favorito y diario, solo con RATING_SCALE_10=1.
+// Favorito y diario (F-24).
 //
 // F-27 (PRO-5): llega `progress` (episodios, capítulos, páginas o %, horas
 // según el formato) y se guarda en las columnas `progress_*`. Un cliente
@@ -23,7 +23,7 @@ import { ensureMediaRows, upsertMediaFromProvider } from '@/lib/media/upsert-fro
 import { track } from '@/lib/analytics/track'
 import { createLogger } from '@/lib/logger'
 import { rating10ToScore, scoreToRating10, storedRating10 } from '@/lib/library/rating'
-import { RATING_SCALE_KEY, ratingScale10Enabled, readRatingScale } from '@/lib/library/scale'
+import { RATING_SCALE_KEY, readRatingScale } from '@/lib/library/scale'
 import { mapLog, parseLogInput, readDiary, today } from '@/lib/library/diary'
 import { isDemoUser } from '@/lib/demo'
 import {
@@ -94,7 +94,6 @@ export async function saveEntry(
       : scoreToRating10(input.score ?? undefined)
   // Solo para la medición: en la base se escribe únicamente rating10 (saneamiento 6.6).
   const score = rating10 === undefined ? undefined : rating10 === null ? null : rating10ToScore(rating10)
-  const scale10 = ratingScale10Enabled()
 
   // La fila del catálogo compartido `media` (FK de user_media). La escribe el
   // servidor con la ficha del proveedor (SEG-2).
@@ -126,17 +125,13 @@ export async function saveEntry(
     user_id: user.id,
     media_id: input.mediaId,
     status: input.status,
-    // La nota va SIEMPRE en rating10, con o sin RATING_SCALE_10; `score` lo
+    // La nota va SIEMPRE en rating10; `score` lo
     // rellena el disparador user_media_sync_rating hasta que se retire.
     ...(rating10 !== undefined ? { rating10 } : {}),
     ...(input.watchedAt !== undefined ? { watched_at: input.watchedAt } : {}),
     ...progressColumns,
   }
-  const scaleExtras = scale10
-    ? {
-        ...(typeof input.favorite === 'boolean' ? { favorite: input.favorite } : {}),
-      }
-    : {}
+  const scaleExtras = typeof input.favorite === 'boolean' ? { favorite: input.favorite } : {}
 
   const { data, error } = await supabase
     .from('user_media')
@@ -152,7 +147,7 @@ export async function saveEntry(
   // devuelve igualmente y el cliente avisa de que el apunte no entró.
   let diaryLog: DiaryLog | null = null
   let logFailed = false
-  if (parsedLog?.ok && scale10) {
+  if (parsedLog?.ok) {
     const entry = parsedLog.log
     const { data: logRow, error: logError } = await supabase
       .from('user_media_logs')
@@ -287,7 +282,7 @@ export async function addPendingBulk(
 // ── Diario y escala (F-24) ───────────────────────────────────────────────────
 
 /**
- * Escala (bandera + preferencia ½★ o /10) y apuntes del diario: los de un
+ * Escala (preferencia ½★ o /10) y apuntes del diario: los de un
  * título o, sin `mediaId`, los últimos 100 con su ficha.
  */
 export async function readDiaryConfig(
@@ -296,7 +291,6 @@ export async function readDiaryConfig(
   mediaId: string | undefined
 ): Promise<ServiceResult<DiaryConfig>> {
   const scale = readRatingScale(user)
-  if (!ratingScale10Enabled()) return success({ enabled: false, scale, logs: [] })
   try {
     const diary = await readDiary(supabase, user.id, { mediaId, limit: mediaId ? 50 : 100, withMedia: !mediaId })
     return success({ enabled: true, scale, logs: diary.logs })

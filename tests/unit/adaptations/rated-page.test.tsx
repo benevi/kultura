@@ -73,7 +73,6 @@ beforeEach(() => {
   h.world.rpc.can_read_library = ({ p_owner, uid }) => ({ data: p_owner === uid || uid === "friend", error: null });
   h.world.rpc.has_block_with = () => ({ data: false, error: null });
   h.sessionUser = null;
-  process.env.RATING_SCALE_10 = "1";
 });
 
 describe("metadatos", () => {

@@ -53,10 +53,8 @@ beforeEach(() => {
   // can_read_library: dueño o amistad aceptada ("friends").
   h.world.rpc.can_read_library = ({ p_owner, uid }) => ({ data: p_owner === uid || uid === "friend", error: null });
   h.world.rpc.has_block_with = () => ({ data: false, error: null });
-  process.env.RATING_SCALE_10 = "1";
 });
 afterEach(() => {
-  delete process.env.RATING_SCALE_10;
   delete process.env.SHARE_SECRET;
 });
 
@@ -162,11 +160,6 @@ describe("resolveRatingShare", () => {
     process.env.SHARE_PUBLIC_LIBRARY = "1";
     expect((await view()).kind).toBe("generic");
     delete process.env.SHARE_PUBLIC_LIBRARY;
-  });
-
-  it("sin RATING_SCALE_10: la nota entera de siempre", async () => {
-    delete process.env.RATING_SCALE_10;
-    expect(await view({ sig: SIG() })).toMatchObject({ rating: { text: "5★", scale: "legacy" } });
   });
 
   it("escala ½★ del dueño", async () => {

@@ -49,8 +49,8 @@ interface SettingsFormProps {
    */
   platformsSlot?: React.ReactNode
   /**
-   * F-24 → F-28: escala de notas (½★ o /10), antes en la Biblioteca. `null`
-   * sin RATING_SCALE_10 (la escala aún no se usa en la app): no se enseña.
+   * F-24 → F-28: escala de notas (½★ o /10), antes en la Biblioteca. `null`:
+   * no se enseña.
    */
   initialRatingScale?: RatingScale | null
   /**

@@ -21,7 +21,6 @@ import 'server-only'
 import type { SupabaseClient, User } from '@supabase/supabase-js'
 import type { ParsedMediaId } from '@/lib/media/media-id'
 import { createLogger } from '@/lib/logger'
-import { ratingScale10Enabled } from '@/lib/library/scale'
 import { mapLog, today } from '@/lib/library/diary'
 import {
   nextProgress,
@@ -95,7 +94,9 @@ export async function readProgress(
   locale: string
 ): Promise<ServiceResult<ProgressConfig>> {
   const kind = progressKindFor(media.type)
-  const diary = ratingScale10Enabled()
+  // Diario siempre activo (RATING_SCALE_10 se retiró encendida); el campo se
+  // conserva por los clientes en caché.
+  const diary = true
   if (!kind) return success({ enabled: false, kind: null, progress: null, total: null, plan: null, next: null, diary })
 
   const found = await readRow(supabase, userId, media.id)
@@ -149,7 +150,7 @@ export async function complete(
 
   let diaryLog: DiaryLog | null = null
   let logFailed = false
-  if (opts.log && ratingScale10Enabled()) {
+  if (opts.log) {
     const { data: logRow, error: logError } = await supabase
       .from('user_media_logs')
       .insert({
@@ -191,7 +192,9 @@ export async function advance(
   const step = nextProgress(media.type, current, plan)
   if (!step) return failure('conflict', { message: PROGRESS_UNAVAILABLE })
 
-  const diary = ratingScale10Enabled()
+  // Diario siempre activo (RATING_SCALE_10 se retiró encendida); el campo se
+  // conserva por los clientes en caché.
+  const diary = true
   const status: LibraryStatus = row.status === 'completed' ? 'completed' : 'in_progress'
   const unchanged = JSON.stringify(progressToColumns(step.value)) === JSON.stringify(progressToColumns(current))
   if (step.caughtUp || (unchanged && status === row.status)) {

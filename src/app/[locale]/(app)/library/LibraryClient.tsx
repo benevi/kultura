@@ -17,8 +17,8 @@ import type { MediaItem, MediaType } from '@/types/media'
 interface LibraryClientProps {
   entries: LibraryEntry[]
   /**
-   * F-24: diario y escala de notas. `null` sin RATING_SCALE_10 o sin la
-   * migración: la Biblioteca de siempre.
+   * F-24: diario y escala de notas. `null` si no se pudo leer el diario:
+   * la Biblioteca de siempre.
    */
   diary?: { logs: DiaryLog[]; scale: RatingScale } | null
 }

@@ -40,7 +40,7 @@ const PROPS = {
 describe('Ajustes › escala de notas', () => {
   beforeEach(() => vi.clearAllMocks())
 
-  it('sin RATING_SCALE_10 (prop null) no aparece', () => {
+  it('con la prop null no aparece', () => {
     render(<SettingsForm {...PROPS} />)
     expect(screen.queryByRole('radiogroup', { name: 'ratingScale' })).toBeNull()
   })
@@ -157,7 +157,7 @@ vi.mock('@/lib/account/account-state', async (importOriginal) => ({
 describe('Ajustes › página', () => {
   const ENV = { WEEKLY_EMAIL: '1', RESEND_API_KEY: 're', EMAIL_FROM: 'K <a@b.c>', EMAIL_TOKEN_SECRET: 'z'.repeat(40) }
   afterEach(() => {
-    for (const k of [...Object.keys(ENV), 'RATING_SCALE_10']) delete process.env[k]
+    for (const k of Object.keys(ENV)) delete process.env[k]
   })
 
   async function formProps(
@@ -183,15 +183,13 @@ describe('Ajustes › página', () => {
     return main.props.children.props
   }
 
-  it('sin banderas: ni escala ni correo (y no se lee email_preferences)', async () => {
+  it('sin el correo configurado: ni correo ni se lee email_preferences', async () => {
     const props = await formProps({ data: { weekly_digest: true }, error: null })
-    expect(props.initialRatingScale).toBeNull()
     expect(props.initialWeeklyEmail).toBeNull()
     expect(client.calls.some((c) => c.table === 'email_preferences')).toBe(false)
   })
 
-  it('con RATING_SCALE_10: la escala guardada de la persona', async () => {
-    process.env.RATING_SCALE_10 = '1'
+  it('la escala guardada de la persona', async () => {
     expect((await formProps({ data: null, error: null })).initialRatingScale).toBe('ten')
   })
 

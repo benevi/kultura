@@ -60,10 +60,10 @@ export interface LibraryPayload {
    * toca; `null` la quita (saneamiento 1.2: el POST solo cambia lo que llega).
    */
   score?: number | null
-  /** Nota fina 0,5-10 (pasos de 0,5); `null` la quita. Solo con RATING_SCALE_10. */
+  /** Nota fina 0,5-10 (pasos de 0,5); `null` la quita. */
   rating10?: number | null
   favorite?: boolean
-  /** Apunte del diario que se crea junto con la entrada (solo con RATING_SCALE_10). */
+  /** Apunte del diario que se crea junto con la entrada. */
   log?: DiaryLogInput
   /** Ausente = no se toca; `null` la quita. */
   watchedAt?: string | null
@@ -117,7 +117,7 @@ export interface DiaryLogInput {
 
 /** Respuesta de GET /api/library/diary. */
 export interface DiaryConfig {
-  /** RATING_SCALE_10=1 y la migración aplicada. */
+  /** Siempre `true` (RATING_SCALE_10 se retiró encendida); se conserva por los clientes en caché. */
   enabled: boolean
   scale: RatingScale
   logs: DiaryLog[]

@@ -31,7 +31,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { parseMediaId, type ParsedMediaId } from "@/lib/media/media-id";
 import { loadMediaDetail } from "@/lib/media/detail-data";
 import { rating10ToScore, storedRating10 } from "@/lib/library/rating";
-import { ratingScale10Enabled, readRatingScale } from "@/lib/library/scale";
+import { readRatingScale } from "@/lib/library/scale";
 import { viewerCanReadLibrary, type LibraryVisibility } from "@/lib/social/public-collection";
 import type { MediaType } from "@/types/media";
 import type { RatingScale } from "@/types/library";
@@ -117,7 +117,7 @@ export interface ShareRating {
 
 /**
  * Texto de la nota según la escala de su dueño: sobre 10 ("9/10"), medias
- * estrellas ("4,5★") o, sin `RATING_SCALE_10`, la nota entera de siempre.
+ * estrellas ("4,5★") o, con "legacy", la nota entera de siempre.
  */
 export function formatShareRating(
   entry: { rating10?: number | null },
@@ -178,7 +178,6 @@ export const findShareOwner = dedupe(async (username: string): Promise<ShareOwne
 
 /** Escala de la persona que puntúa (su preferencia vive en `user_metadata`). */
 export async function ownerShareScale(ownerId: string): Promise<ShareScale> {
-  if (!ratingScale10Enabled()) return "legacy";
   const client = admin();
   if (!client) return "stars";
   try {
