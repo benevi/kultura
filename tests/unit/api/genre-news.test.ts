@@ -89,7 +89,7 @@ describe('GET /api/genre-news', () => {
       createClient: () => ({ auth: { getUser: mockGetUser } }),
     }))
     vi.doMock('@/lib/rate-limit', () => ({
-      checkRateLimit: vi.fn().mockReturnValue({ allowed: true, retryAfterSeconds: 0, remaining: 19 }),
+      checkRateLimitDistributed: vi.fn().mockResolvedValue({ allowed: true, retryAfterSeconds: 0, remaining: 19 }),
     }))
     vi.doMock('@/lib/library/stats', () => ({
       getUserStats: vi.fn().mockResolvedValue({
@@ -106,7 +106,7 @@ describe('GET /api/genre-news', () => {
   it('returns 401 if not authenticated', async () => {
     mockGetUser.mockResolvedValue({ data: { user: null }, error: null })
     const { GET } = await import('@/app/api/genre-news/route')
-    const res = await GET()
+    const res = await GET(new Request('http://localhost/api/genre-news'))
     expect(res.status).toBe(401)
     vi.doUnmock('@/lib/supabase/server')
     vi.doUnmock('@/lib/rate-limit')
@@ -117,9 +117,9 @@ describe('GET /api/genre-news', () => {
   it('returns 200 with movies/tv/genres on success', async () => {
     mockGetUser.mockResolvedValue({ data: { user: { id: 'user-1' } }, error: null })
     const { GET } = await import('@/app/api/genre-news/route')
-    const res = await GET()
+    const res = await GET(new Request('http://localhost/api/genre-news'))
     expect(res.status).toBe(200)
-    const body = await res.json()
+    const { data: body } = await res.json()
     expect(Array.isArray(body.movies)).toBe(true)
     expect(Array.isArray(body.tv)).toBe(true)
     expect(Array.isArray(body.genres)).toBe(true)
