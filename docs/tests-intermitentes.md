@@ -17,6 +17,7 @@ Ninguno.
 | `tests/unit/components/home/AiRecommendations.test.tsx` · foco | `toHaveFocus()` (13-11, #162) | El foco llega en un `useEffect` después de pintar; con la suite cargada iba un tick por detrás | `waitFor` sobre el foco (este PR). |
 | `tests/unit/components/auth/register-form.test.tsx` · «Revisa tu correo» | `h.replace` llamado (15-11, con cobertura) | El test anterior acababa al llamar a `signUp` y su redirección a `/welcome` llegaba en el siguiente | El test anterior espera la redirección (#165). |
 | `tests/unit/csp/static-csp.test.ts`, `tests/unit/plataforma/next-config.test.ts` | `Hook timed out in 10000ms` (15-11, con cobertura) | Importar `next.config.mjs` (arrastra Sentry) pasa de 10 s con la medición | `beforeAll` con 30 s (#165). |
+| `tests/unit/push/push-offer.test.tsx` · Esc cierra | `aside` sigue en el DOM (16-11, #171) | El test pulsaba Esc al aparecer el contenedor; el listener se engancha cuando el aviso ya es visible | Espera a la X (aviso visible) y al cierre con `waitFor` (#171). |
 
 ## Vigilados
 
