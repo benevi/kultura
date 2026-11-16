@@ -17,9 +17,9 @@ interface Props {
   currentUserId: string
   /** Últimas publicaciones, leídas en el servidor (saneamiento 9.2). */
   initialPosts: Post[]
-  /** F-11: el dueño puede borrar posts ajenos (con MODERATION_V2). */
+  /** F-11: el dueño puede borrar posts ajenos. */
   isOwner?: boolean
-  /** F-11 (MODERATION_V2): denunciar posts y moderación del dueño. */
+  /** F-11: denunciar posts y moderación del dueño. */
   moderation?: boolean
 }
 
@@ -35,8 +35,8 @@ function TrashIcon({ className }: { className?: string }) {
 }
 
 /**
- * Acciones de un post: el autor lo borra (ya lo permitía la base); con
- * MODERATION_V2, el resto lo denuncia y el dueño del grupo lo borra.
+ * Acciones de un post: el autor lo borra; el resto lo denuncia y el dueño
+ * del grupo lo borra.
  */
 function PostActions({
   groupId,

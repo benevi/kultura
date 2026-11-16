@@ -2,7 +2,7 @@
 // KULTURA — Rutas de moderación (F-11): bloquear, salir, borrar, expulsar
 // ============================================================
 
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
+import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { NextRequest } from 'next/server'
 import { GROUP_ERRORS } from '@/lib/api/contracts/groups'
 import { makeSupabase, type Handler, type QueryCall } from './supabase-mock'
@@ -43,25 +43,9 @@ function jsonReq(url: string, method: string, body?: unknown) {
 
 const params = <T,>(p: T) => ({ params: Promise.resolve(p) })
 
-afterEach(() => {
-  delete process.env.MODERATION_V2
-})
-
 // ── /api/friends/blocks ─────────────────────────────────────────────────────
 describe('/api/friends/blocks', () => {
-  it('sin MODERATION_V2: GET dice enabled:false y POST no hace nada (404)', async () => {
-    setup(() => ({}))
-    const { GET, POST } = await import('@/app/api/friends/blocks/route')
-    const g = await GET(jsonReq(`/api/friends/blocks?userId=${OTHER}`, 'GET'))
-    expect(await g.json()).toEqual({ data: { enabled: false, blocked: false } })
-    const p = await POST(jsonReq('/api/friends/blocks', 'POST', { userId: OTHER }))
-    expect(p.status).toBe(404)
-    expect((await p.json()).error).toEqual({ code: 'not_found', message: 'moderation_disabled' })
-    expect(calls.filter((c) => c.table === 'blocks')).toHaveLength(0)
-  })
-
   it('bloquear: inserta la fila propia y borra la amistad en los dos sentidos', async () => {
-    process.env.MODERATION_V2 = '1'
     setup((c) => (c.table === 'users' ? { data: { id: OTHER } } : {}))
     const { POST } = await import('@/app/api/friends/blocks/route')
     const res = await POST(jsonReq('/api/friends/blocks', 'POST', { userId: OTHER }))
@@ -76,14 +60,12 @@ describe('/api/friends/blocks', () => {
   })
 
   it('no se bloquea uno a sí mismo', async () => {
-    process.env.MODERATION_V2 = '1'
     setup(() => ({}))
     const { POST } = await import('@/app/api/friends/blocks/route')
     expect((await POST(jsonReq('/api/friends/blocks', 'POST', { userId: ME }))).status).toBe(400)
   })
 
   it('desbloquear borra solo la fila propia', async () => {
-    process.env.MODERATION_V2 = '1'
     setup(() => ({}))
     const { DELETE } = await import('@/app/api/friends/blocks/route')
     const res = await DELETE(jsonReq('/api/friends/blocks', 'DELETE', { userId: OTHER }))
@@ -92,7 +74,6 @@ describe('/api/friends/blocks', () => {
   })
 
   it('GET sin userId lista los bloqueados', async () => {
-    process.env.MODERATION_V2 = '1'
     setup((c) =>
       c.table === 'blocks'
         ? { data: [{ blocked: { id: OTHER, username: 'troll', avatar_color: '#000', avatar_initials: 'TR' } }] }
@@ -140,16 +121,7 @@ describe('/api/chat/[id]', () => {
     expect(await res.json()).toEqual({ error: { code: 'forbidden', message: 'cannot_message' } })
   })
 
-  it('DELETE (salir) sin MODERATION_V2 → 404 y no toca nada', async () => {
-    setup(() => ({}))
-    const { DELETE } = await import('@/app/api/chat/[id]/route')
-    const res = await DELETE(jsonReq(`/api/chat/${CONV}`, 'DELETE'), params({ id: CONV }))
-    expect(res.status).toBe(404)
-    expect(calls).toHaveLength(0)
-  })
-
   it('DELETE (salir) borra SOLO la pertenencia propia', async () => {
-    process.env.MODERATION_V2 = '1'
     setup((c) => (c.table === 'conversation_members' && c.op === 'delete' ? { data: [{ conversation_id: CONV }] } : {}))
     const { DELETE } = await import('@/app/api/chat/[id]/route')
     const res = await DELETE(jsonReq(`/api/chat/${CONV}`, 'DELETE'), params({ id: CONV }))
@@ -163,7 +135,6 @@ describe('/api/chat/[id]', () => {
   })
 
   it('DELETE de una conversación a la que no pertenece → 403', async () => {
-    process.env.MODERATION_V2 = '1'
     setup(() => ({ data: [] }))
     const { DELETE } = await import('@/app/api/chat/[id]/route')
     const res = await DELETE(jsonReq(`/api/chat/${CONV}`, 'DELETE'), params({ id: CONV }))
@@ -171,7 +142,6 @@ describe('/api/chat/[id]', () => {
   })
 
   it('borrar un mensaje filtra por remitente = yo (nunca lo ajeno)', async () => {
-    process.env.MODERATION_V2 = '1'
     setup((c) => (c.table === 'messages' ? { data: [{ id: M1 }] } : {}))
     const { DELETE } = await import('@/app/api/chat/[id]/messages/[messageId]/route')
     const res = await DELETE(jsonReq(`/api/chat/${CONV}/messages/${M1}`, 'DELETE'), params({ id: CONV, messageId: M1 }))
@@ -180,7 +150,6 @@ describe('/api/chat/[id]', () => {
   })
 
   it('borrar un mensaje ajeno o inexistente → 404', async () => {
-    process.env.MODERATION_V2 = '1'
     setup(() => ({ data: [] }))
     const { DELETE } = await import('@/app/api/chat/[id]/messages/[messageId]/route')
     const res = await DELETE(jsonReq(`/api/chat/${CONV}/messages/${M2}`, 'DELETE'), params({ id: CONV, messageId: M2 }))
@@ -219,7 +188,6 @@ describe('DELETE /api/groups/[id]/posts/[postId]', () => {
   })
 
   it('un miembro que no es dueño NO borra un post ajeno', async () => {
-    process.env.MODERATION_V2 = '1'
     setup(groupHandler({ author: OTHER, roles: { [ME]: 'member', [OTHER]: 'member' } }))
     const res = await call()
     expect(res.status).toBe(403)
@@ -227,19 +195,12 @@ describe('DELETE /api/groups/[id]/posts/[postId]', () => {
     expect(calls.some((c) => c.table === 'group_posts' && c.op === 'delete')).toBe(false)
   })
 
-  it('el dueño borra un post ajeno con MODERATION_V2', async () => {
-    process.env.MODERATION_V2 = '1'
+  it('el dueño borra un post ajeno', async () => {
     setup(groupHandler({ author: OTHER, roles: { [ME]: 'owner', [OTHER]: 'member' } }))
     expect((await call()).status).toBe(200)
   })
 
-  it('sin MODERATION_V2 el dueño todavía no borra lo ajeno (la política llega con la migración)', async () => {
-    setup(groupHandler({ author: OTHER, roles: { [ME]: 'owner', [OTHER]: 'member' } }))
-    expect((await call()).status).toBe(403)
-  })
-
   it('si la RLS no deja borrar (0 filas) → 403, no 200', async () => {
-    process.env.MODERATION_V2 = '1'
     setup(groupHandler({ author: OTHER, roles: { [ME]: 'owner' }, deleted: false }))
     expect((await call()).status).toBe(403)
   })
@@ -252,7 +213,6 @@ describe('DELETE /api/groups/[id]/members/[userId]', () => {
   }
 
   beforeEach(() => {
-    process.env.MODERATION_V2 = '1'
   })
 
   it('el dueño expulsa: veta (group_bans) y borra la pertenencia', async () => {
@@ -281,14 +241,6 @@ describe('DELETE /api/groups/[id]/members/[userId]', () => {
     const notOwner = await call(OTHER)
     expect(notOwner.status).toBe(403)
     expect((await notOwner.json()).error.code).toBe('forbidden')
-  })
-
-  it('sin MODERATION_V2 → 404', async () => {
-    delete process.env.MODERATION_V2
-    setup(groupHandler({ author: OTHER, roles: { [ME]: 'owner', [OTHER]: 'member' } }))
-    const res = await call(OTHER)
-    expect(res.status).toBe(404)
-    expect((await res.json()).error).toEqual({ code: 'not_found', message: 'moderation_disabled' })
   })
 
   it('ids que no son uuid → 404 sin tocar la base', async () => {

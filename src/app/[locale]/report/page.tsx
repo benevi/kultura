@@ -9,7 +9,6 @@ import type { Metadata } from 'next'
 import { getTranslations } from 'next-intl/server'
 import { Header } from '@/components/layout/Header'
 import { Footer } from '@/components/layout/Footer'
-import { isModerationV2 } from '@/lib/social/friends'
 import { allowedTargetTypes } from '@/lib/social/reports'
 import type { ReportTargetType } from '@/lib/social/actions'
 import { PublicReportForm } from './PublicReportForm'
@@ -34,7 +33,7 @@ function first(value: string | string[] | undefined): string | undefined {
 export default async function ReportPage({ searchParams }: Props) {
   const t = await getTranslations('report.page')
   const params = await searchParams
-  const types = allowedTargetTypes(isModerationV2(), 'public')
+  const types = allowedTargetTypes('public')
 
   const rawType = first(params.target)
   const presetType = types.includes(rawType as ReportTargetType) ? (rawType as ReportTargetType) : undefined

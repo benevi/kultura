@@ -14,14 +14,9 @@ import { reportReference } from '@/lib/social/actions'
 const LIST = '0f8fad5b-d9cb-469f-a165-70867728950e'
 
 describe('allowedTargetTypes', () => {
-  it('sin MODERATION_V2 solo usuario y título (lo que admite la tabla sin migrar)', () => {
-    expect(allowedTargetTypes(false, 'app')).toEqual(['user', 'media'])
-    expect(allowedTargetTypes(false, 'public')).toEqual(['user', 'media'])
-  })
-
-  it('con MODERATION_V2: los seis con sesión; sin cuenta solo lo público', () => {
-    expect(allowedTargetTypes(true, 'app')).toEqual(['user', 'media', 'message', 'group_post', 'group', 'list'])
-    expect(allowedTargetTypes(true, 'public')).toEqual(['user', 'media', 'list'])
+  it('los seis con sesión; sin cuenta solo lo público', () => {
+    expect(allowedTargetTypes('app')).toEqual(['user', 'media', 'message', 'group_post', 'group', 'list'])
+    expect(allowedTargetTypes('public')).toEqual(['user', 'media', 'list'])
   })
 })
 

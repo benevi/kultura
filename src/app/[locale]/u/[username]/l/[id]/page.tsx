@@ -22,7 +22,6 @@ import { FormatLabel, SignedInBar, SignUpCta } from '@/components/collection/Pub
 import { ReportButton } from '@/components/social/ReportButton'
 import { Link } from '@/i18n/navigation'
 import { createClient } from '@/lib/supabase/server'
-import { isModerationV2 } from '@/lib/social/friends'
 import { siteUrl } from '@/lib/site-url'
 import { getPublicList } from '@/lib/social/public-collection'
 import { getPublicListExtras, sortListItems } from '@/lib/social/lists'
@@ -151,7 +150,7 @@ export default async function PublicListPage({ params }: Props) {
         {/* D-13: denunciar la lista (con sesión, el botón; sin ella, el formulario público) */}
         <div className="flex justify-center">
           {signedIn ? (
-            isModerationV2() ? <ReportButton targetType="list" targetId={list.id} /> : null
+            <ReportButton targetType="list" targetId={list.id} />
           ) : (
             <Link
               href={`/report?target=list&id=${encodeURIComponent(list.id)}`}

@@ -7,7 +7,7 @@
 // reproduce ese comportamiento de Postgres.
 // ============================================================
 
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
+import { describe, it, expect, vi, beforeEach } from 'vitest'
 
 const mockGetUser = vi.fn()
 const inserted: Array<Record<string, unknown>> = []
@@ -82,10 +82,6 @@ describe('POST /api/reports', () => {
     mockGetUser.mockResolvedValue({ data: { user: { id: ME } }, error: null })
   })
 
-  afterEach(() => {
-    delete process.env.MODERATION_V2
-  })
-
   it('REGRESIÓN: guarda la denuncia aunque reports no tenga política SELECT (sin RETURNING)', async () => {
     visible.users = new Set([OTHER])
     const res = await post({ targetType: 'user', targetId: OTHER, reason: 'harassment', details: 'Me insulta' })
@@ -139,15 +135,7 @@ describe('POST /api/reports', () => {
     expect(inserted).toHaveLength(0)
   })
 
-  it('sin MODERATION_V2 los tipos nuevos (mensaje, post, grupo, lista) se rechazan', async () => {
-    visible.messages = new Set([MESSAGE])
-    const res = await post({ targetType: 'message', targetId: MESSAGE, reason: 'harassment' })
-    expect(res.status).toBe(400)
-    expect(inserted).toHaveLength(0)
-  })
-
-  it('con MODERATION_V2 se denuncia un mensaje que quien denuncia puede ver', async () => {
-    process.env.MODERATION_V2 = '1'
+  it('se denuncia un mensaje que quien denuncia puede ver', async () => {
     visible.messages = new Set([MESSAGE])
     const res = await post({ targetType: 'message', targetId: MESSAGE, reason: 'harassment' })
     expect(res.status).toBe(201)
@@ -155,7 +143,6 @@ describe('POST /api/reports', () => {
   })
 
   it('un mensaje que la RLS no deja ver (conversación ajena) → 404, sin guardar', async () => {
-    process.env.MODERATION_V2 = '1'
     const res = await post({ targetType: 'message', targetId: MESSAGE, reason: 'harassment' })
     expect(res.status).toBe(404)
     expect(inserted).toHaveLength(0)

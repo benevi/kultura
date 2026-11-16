@@ -14,7 +14,6 @@ import { checkRateLimitDistributed } from '@/lib/rate-limit'
 import { clientIp } from '@/lib/api/discover-params'
 import { createLogger } from '@/lib/logger'
 import { notifyReport } from '@/lib/email/moderation'
-import { isModerationV2 } from '@/lib/social/friends'
 import { reportReference, type ReportTargetType } from '@/lib/social/actions'
 import { PublicReportSchema, allowedTargetTypes, checkPublicTarget, storedReason } from '@/lib/social/reports'
 
@@ -53,7 +52,7 @@ export async function POST(request: Request): Promise<NextResponse> {
     return NextResponse.json({ error: 'invalid_body', field: typeof field === 'string' ? field : null }, { status: 400 })
   }
 
-  const allowed = allowedTargetTypes(isModerationV2(), 'public')
+  const allowed = allowedTargetTypes('public')
   if (!(allowed as readonly string[]).includes(parsed.data.targetType)) {
     return NextResponse.json({ error: 'invalid_target_type', field: 'targetType' }, { status: 400 })
   }

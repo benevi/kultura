@@ -6,7 +6,6 @@
 import { createClient } from '@/lib/supabase/server'
 import { redirect, notFound } from 'next/navigation'
 import { ConversationClient } from './ConversationClient'
-import { isModerationV2 } from '@/lib/social/friends'
 import type { Metadata } from 'next'
 import { getTranslations } from 'next-intl/server'
 
@@ -50,14 +49,13 @@ export default async function ConversationPage({ params }: Props) {
     users: { id: string; username: string; avatar_color: string; avatar_initials: string } | null
   } | null)?.users ?? null
 
-  // F-11: ¿se puede escribir? (amistad vigente y sin bloqueo). Solo con la
-  // bandera; si la función aún no existe, se deja escribir y decide la base.
-  const moderation = isModerationV2()
+  // F-11: ¿se puede escribir? (amistad vigente y sin bloqueo). Si la
+  // función falla, se deja escribir y decide la base.
   let canSend = true
-  if (moderation) {
-    const { data, error } = await supabase.rpc('can_send_message', { p_conversation_id: id })
-    if (!error && typeof data === 'boolean') canSend = data
-  }
+  const { data: canSendData, error: canSendError } = await supabase.rpc('can_send_message', {
+    p_conversation_id: id,
+  })
+  if (!canSendError && typeof canSendData === 'boolean') canSend = canSendData
 
   return (
     <main className="page-grid max-md:px-0 [&>*]:max-w-2xl">
@@ -65,7 +63,7 @@ export default async function ConversationPage({ params }: Props) {
         conversationId={id}
         otherUser={otherUser}
         currentUserId={user.id}
-        moderation={moderation}
+        moderation
         canSend={canSend}
       />
     </main>

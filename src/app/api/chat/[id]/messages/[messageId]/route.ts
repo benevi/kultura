@@ -1,7 +1,7 @@
 // ============================================================
 // KULTURA — Route Handler: /api/chat/[id]/messages/[messageId] (F-11)
-// DELETE: borrar un mensaje propio (con MODERATION_V2; la política
-// "Senders can delete own messages" llega con la migración de moderación).
+// DELETE: borrar un mensaje propio (política "Senders can delete own
+// messages", de la migración de moderación).
 // ============================================================
 
 import { LIMITS } from '@/lib/rate-limit'

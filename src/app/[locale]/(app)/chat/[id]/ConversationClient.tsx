@@ -40,7 +40,7 @@ interface Props {
   conversationId: string
   otherUser: OtherUser | null
   currentUserId: string
-  /** F-11 (MODERATION_V2): denunciar mensajes, borrar los propios, bloquear y salir. */
+  /** F-11: denunciar mensajes, borrar los propios, bloquear y salir. */
   moderation?: boolean
   /**
    * F-11: false si ya no se puede escribir (no sois amigos, hay un bloqueo o

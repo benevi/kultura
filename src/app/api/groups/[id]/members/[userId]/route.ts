@@ -1,6 +1,6 @@
 // ============================================================
 // KULTURA — Route Handler: /api/groups/[id]/members/[userId] (F-11)
-// DELETE: el dueño expulsa a un miembro (y le veta). Con MODERATION_V2.
+// DELETE: el dueño expulsa a un miembro (y le veta).
 // ============================================================
 
 import { LIMITS } from '@/lib/rate-limit'

@@ -107,7 +107,6 @@ vi.mock('@/lib/social/lists', async (importOriginal) => ({
   ...(await importOriginal<typeof import('@/lib/social/lists')>()),
   getPublicListExtras: async () => h.extras,
 }))
-vi.mock('@/lib/social/friends', () => ({ isModerationV2: () => true }))
 vi.mock('@/components/layout/Header', () => ({ Header: () => null }))
 vi.mock('@/components/layout/Footer', () => ({ Footer: () => null }))
 

@@ -34,8 +34,8 @@ interface FriendshipButtonProps {
 }
 
 /**
- * Bloquear / desbloquear (F-11). Pregunta a la API si está disponible
- * (MODERATION_V2 y migración aplicada); si no, no pinta nada.
+ * Bloquear / desbloquear (F-11). Pregunta a la API si está disponible;
+ * si no, no pinta nada.
  */
 function BlockControl({
   targetUserId,
