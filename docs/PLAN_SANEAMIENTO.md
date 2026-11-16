@@ -296,7 +296,7 @@ Los `loading.tsx` y el componente de error con reintento pasan a la fase 8 (Q32)
    - Las banderas.
 
    Cada variable con una línea que explique qué pasa si falta.
-3. Registro de decisiones:
+3. ✅ Registro de decisiones (`docs/adr/0002` a `0006`, este PR):
    - Arreglar en lugar de rehacer.
    - Borrado de cuenta y mensajes (Q6).
    - Tablas de caché sin clave foránea (Q15).
