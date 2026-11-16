@@ -2,7 +2,7 @@ import { CARD_SIZE, renderRatedCard, type CardParams } from "../../_lib/rated-ca
 
 /**
  * Tarjeta GENÉRICA de `/u/{usuario}/r/{tipo}/{id}` (CRE-8a): título y perfil,
- * sin nota salvo `SHARE_PUBLIC_LIBRARY=1` con biblioteca pública. La firmada
+ * sin nota. La firmada
  * vive aparte, en `card/[sig]` (ver `_lib/rated-card.tsx`): este archivo de
  * metadatos nunca lleva la firma. Sin `generateImageMetadata`, así la ruta es
  * `/opengraph-image` (la que espera `ogImagePath`).

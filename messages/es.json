@@ -379,8 +379,7 @@
       "ratedAlt": "@{username} le da {rating} a {title} en KULTURA",
       "genericAlt": "{title} en KULTURA",
       "profileAlt": "@{username} en KULTURA",
-      "cta": "¿Y tú qué le das?",
-      "top4": "El top 4 de"
+      "cta": "¿Y tú qué le das?"
     }
   },
   "library": {

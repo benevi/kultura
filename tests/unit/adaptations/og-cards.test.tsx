@@ -55,7 +55,6 @@ import RatedImage from "@/app/[locale]/u/[username]/r/[type]/[id]/opengraph-imag
 import { GET as signedCard } from "@/app/[locale]/u/[username]/r/[type]/[id]/card/[sig]/route";
 import ProfileImage, { generateImageMetadata as profileImageMetadata } from "@/app/[locale]/u/[username]/opengraph-image";
 import { ratingShareSignature } from "@/lib/share/rating-share";
-import { publicTopFour } from "@/lib/share/top-four";
 
 const SIG = () => ratingShareSignature("owner", "movie_438631")!;
 const params = { locale: "es", username: "benevi", type: "movie", id: "438631" };
@@ -77,7 +76,6 @@ beforeEach(() => {
 });
 afterEach(() => {
   delete process.env.RATING_SCALE_10;
-  delete process.env.SHARE_PUBLIC_LIBRARY;
 });
 
 describe("tarjeta de la nota", () => {
@@ -126,7 +124,7 @@ describe("tarjeta de la nota", () => {
   });
 });
 
-describe("top 4 del perfil (CRE-8c)", () => {
+describe("tarjeta del perfil", () => {
   beforeEach(() => {
     h.world.db.tables.users[0].library_visibility = "public";
     h.world.db.tables.user_media = [1, 2, 3, 4, 5].map((n) => ({
@@ -142,23 +140,12 @@ describe("top 4 del perfil (CRE-8c)", () => {
     });
   });
 
-  it("apagado (SHARE_PUBLIC_LIBRARY sin poner): ni se consulta la biblioteca", async () => {
-    await expect(publicTopFour("benevi")).resolves.toBeNull();
+  it("aunque la biblioteca sea pública, ni se consulta: solo las listas públicas", async () => {
+    await ProfileImage({ params: { locale: "es", username: "benevi" } });
     expect(h.world.reads.filter((r) => r.table === "user_media")).toEqual([]);
-    await ProfileImage({ params: { locale: "es", username: "benevi" } });
-    expect(text(h.responses[0].element)).toContain("La colección de");
-    expect(h.posterDataUri.mock.calls.map((c) => c[0])).toEqual(["https://image.tmdb.org/t/p/w500/lista.jpg"]);
-  });
-
-  it("con la bandera y biblioteca pública: 'El top 4 de' con sus 4 favoritos", async () => {
-    process.env.SHARE_PUBLIC_LIBRARY = "1";
-    // El doble no ordena por nota: ya vienen en orden.
-    const top = await publicTopFour("benevi");
-    expect(top?.map((t) => t.mediaId)).toEqual(["movie_1", "movie_2", "movie_3", "movie_4"]);
-    await ProfileImage({ params: { locale: "es", username: "benevi" } });
     const card = h.responses[0];
-    expect(text(card.element)).toContain("El top 4 de");
-    expect(h.posterDataUri.mock.calls.map((c) => c[0])).toContain("https://image.tmdb.org/t/p/w500/1.jpg");
+    expect(text(card.element)).toContain("La colección de");
+    expect(h.posterDataUri.mock.calls.map((c) => c[0])).toEqual(["https://image.tmdb.org/t/p/w500/lista.jpg"]);
     expect(card.options).toMatchObject({ headers: { "cache-control": "public, max-age=300, s-maxage=600" } });
   });
 
@@ -179,11 +166,5 @@ describe("top 4 del perfil (CRE-8c)", () => {
     const [en] = await profileImageMetadata({ params: Promise.resolve({ locale: "en", username: "ana%20b" }) });
     expect(es).toMatchObject({ id: "card", alt: "@benevi en KULTURA" });
     expect(en.alt).toBe("@ana b on KULTURA");
-  });
-
-  it("con la bandera pero biblioteca 'amigos': nada de la biblioteca", async () => {
-    process.env.SHARE_PUBLIC_LIBRARY = "1";
-    h.world.db.tables.users[0].library_visibility = "friends";
-    await expect(publicTopFour("benevi")).resolves.toBeNull();
   });
 });
