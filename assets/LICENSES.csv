@@ -1,0 +1,13 @@
+ruta,tipo,titular,licencia,origen,estado,notas
+public/favicon.ico,icono,KULTURA (Víctor Franco),propia,#30 (2026-10-23),sin verificar,Icono de la app; origen no documentado en el commit
+public/icons/icon-192.png,icono,KULTURA (Víctor Franco),propia,#30 (2026-10-23),sin verificar,Icono de la PWA
+public/icons/icon-512.png,icono,KULTURA (Víctor Franco),propia,#30 (2026-10-23),sin verificar,Icono de la PWA
+public/icons/maskable-512.png,icono,KULTURA (Víctor Franco),propia,#30 (2026-10-23),sin verificar,Icono de la PWA (maskable)
+public/tmdb-logo.svg,logo de terceros,TMDB,condiciones de la API de TMDB (atribución obligatoria),https://www.themoviedb.org/about/logos-attribution,verificado 2026-11-13,Logo oficial «alt short»; solo para la atribución exigida (#157)
+public/brands/justwatch.webp,logo de terceros,JustWatch,condiciones de uso de datos de JustWatch vía TMDB (atribución),TMDB watch providers,sin verificar,Atribución en «Dónde ver» (#27)
+public/sw.js,código,KULTURA (Víctor Franco),propia,repositorio,verificado,Service worker
+public/landing/fallback/*.jpg,imagen de terceros (derivada),titulares de cada título (vía TMDB / Steam / MangaDex),sin licencia propia: riesgo asumido hasta G0,scripts/landing-media/build.py (semana del 2026-11-02),pendiente G0,Recortes y recodificación de pósters y fondos; ver docs/legal/hoy-inventario.md
+public/landing/fallback/*_d.jpg,mapa de profundidad (derivado),titulares de cada título; modelo Depth-Anything-V2-Base,sin licencia propia: riesgo asumido hasta G0; modelo CC BY-NC 4.0 (ficha de Hugging Face; verificado 2026-11-16),scripts/landing-media/build.py (semana del 2026-11-02),pendiente G0,PLAN_FASE8 §9.8 pide solo Depth Anything Small; tarea pausada (#175)
+src/app/fonts/BricolageGrotesque-latin.woff2,fuente,The Bricolage Grotesque Project Authors (Mathieu Triay),SIL OFL 1.1,Google Fonts (subconjunto latino),verificado 2026-11-16 (sin Reserved Font Name),Fuente de títulos
+src/app/fonts/Figtree-latin.woff2,fuente,The Figtree Project Authors (Erik Kennedy),SIL OFL 1.1,Google Fonts (subconjunto latino),verificado 2026-11-16 (sin Reserved Font Name),Fuente de texto
+src/app/fonts/KulturaDisplay-latin.woff2,fuente (derivada),The Bricolage Grotesque Project Authors (Mathieu Triay),SIL OFL 1.1,instancia fija de Bricolage Grotesque (opsz 12 · wdth 75 · 800),verificado 2026-11-16 (sin Reserved Font Name),Fuente derivada con otro nombre (la OFL lo permite)

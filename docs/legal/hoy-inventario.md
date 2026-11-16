@@ -43,4 +43,4 @@ Las imágenes OG (`opengraph-image.tsx` de `[locale]`, `best`, `login`, `u/[user
 - Producción, 16-11-2026: 54 objetos en el bucket y 27 filas, 13 activas.
 - Respaldo en el repo: `public/landing/fallback/`, 14 imágenes y 14 mapas (semana del 2-11-2026).
 - Es **copia propia y derivado** sobre portadas de terceros, lo que §9.5 bloquea hasta G0. Víctor decide el 16-11-2026 **pausar la tarea** (sin `schedule`; queda el lanzamiento a mano). La landing sigue con la última semana activa. Lo ya guardado se queda y va al encargo legal: P1 (¿es aceptable?), P2 (recorte y recodificación) y P4 (profundidad).
-- El modelo Base de Depth Anything V2 se publica, según su ficha, con licencia CC BY-NC 4.0 (no comercial; la variante Small es Apache 2.0). Hay que comprobarlo en M1 y tenerlo en cuenta antes de cobrar.
+- El modelo Base de Depth Anything V2 tiene licencia CC BY-NC 4.0 (no comercial; ficha de Hugging Face, comprobada el 16-11-2026); la variante Small es Apache 2.0. §9.8 ya pide solo Small: si se reanuda la tarea, cambiar de modelo.
