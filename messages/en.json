@@ -379,8 +379,7 @@
       "ratedAlt": "@{username} gives {title} {rating} on KULTURA",
       "genericAlt": "{title} on KULTURA",
       "profileAlt": "@{username} on KULTURA",
-      "cta": "What would you give it?",
-      "top4": "The top 4 of"
+      "cta": "What would you give it?"
     }
   },
   "library": {

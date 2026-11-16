@@ -10,8 +10,7 @@ import en from "../../../../../../../messages/en.json";
  * sin sesión (la piden crawlers de X, WhatsApp…): nunca usa cookies.
  *
  * Dos puertas, y ninguna es un archivo de metadatos con la firma:
- *   - `[id]/opengraph-image`: la genérica (título + perfil). Solo lleva nota
- *     con `SHARE_PUBLIC_LIBRARY=1` y biblioteca pública.
+ *   - `[id]/opengraph-image`: la genérica (título + perfil), sin nota.
  *   - `[id]/card/[firma]` (route handler): la del enlace firmado del dueño,
  *     con nota salvo "Solo yo"; con una firma que no vale, 404.
  * La firma no está en `generateImageMetadata` (Next la publicaría como

@@ -95,7 +95,6 @@ async function load(props: Props) {
 function ogImageUrl(locale: string, view: Extract<RatingShareView, { kind: "rated" | "generic" }>, sig?: string) {
   const base = `${siteUrl()}/${locale}${ratingPagePath(view.owner.username, view.parsed.type, view.parsed.externalId)}`;
   if (view.kind === "rated" && view.signed && sig) return `${base}/card/${encodeURIComponent(sig)}?v=${view.rating.rating10}`;
-  if (view.kind === "rated" && view.publicWithoutSignature) return `${base}/opengraph-image?v=${view.rating.rating10}`;
   return `${base}/opengraph-image`;
 }
 
@@ -128,8 +127,8 @@ async function buildMetadata(props: Props): Promise<Metadata> {
     ? t("page.metaTitle", { ...values, rating: view.rating.text })
     : t("page.genericMetaTitle", values);
   const description = rated ? t("page.metaDescription", values) : t("page.genericLead", values);
-  // La tarjeta lleva la nota solo en sus variantes visibles sin cuenta.
-  const cardHasRating = rated && ((view.signed && Boolean(sig)) || view.publicWithoutSignature);
+  // La tarjeta lleva la nota solo en la variante firmada.
+  const cardHasRating = rated && view.signed && Boolean(sig);
   const image = {
     url: ogImageUrl(locale, view, sig),
     width: 1200,
