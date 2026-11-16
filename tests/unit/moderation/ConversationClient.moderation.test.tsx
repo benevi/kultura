@@ -63,18 +63,10 @@ beforeEach(() => {
 })
 afterEach(() => vi.unstubAllGlobals())
 
-describe('ConversationClient con moderación', () => {
-  it('sin moderación no hay botones nuevos', async () => {
-    routeFetch({ 'GET /api/chat/conv-1': () => page(messages) })
-    renderEs(<ConversationClient conversationId="conv-1" otherUser={otherUser} currentUserId="me" />)
-    await screen.findByText('insulto')
-    expect(screen.queryByRole('button', { name: /denunciar/i })).not.toBeInTheDocument()
-    expect(screen.queryByRole('button', { name: 'Opciones de la conversación' })).not.toBeInTheDocument()
-  })
-
+describe('ConversationClient: moderación', () => {
   it('cada mensaje ajeno tiene "Denunciar mensaje: <autor>" y el propio "Borrar mi mensaje"', async () => {
     routeFetch({ 'GET /api/chat/conv-1': () => page(messages) })
-    renderEs(<ConversationClient conversationId="conv-1" otherUser={otherUser} currentUserId="me" moderation />)
+    renderEs(<ConversationClient conversationId="conv-1" otherUser={otherUser} currentUserId="me" />)
     await screen.findByText('insulto')
     expect(screen.getByRole('button', { name: 'Denunciar mensaje: troll' })).toBeInTheDocument()
     expect(screen.getAllByRole('button', { name: /Denunciar mensaje/ })).toHaveLength(1)
@@ -86,7 +78,7 @@ describe('ConversationClient con moderación', () => {
       'GET /api/chat/conv-1': () => page(messages),
       'DELETE /api/chat/conv-1/messages/m-2': () => ok({ data: null }),
     })
-    renderEs(<ConversationClient conversationId="conv-1" otherUser={otherUser} currentUserId="me" moderation />)
+    renderEs(<ConversationClient conversationId="conv-1" otherUser={otherUser} currentUserId="me" />)
     await screen.findByText('lo mío')
     fireEvent.click(screen.getByRole('button', { name: 'Borrar mi mensaje' }))
     const confirm = screen.getByRole('group', { name: '¿Borrar este mensaje?' })
@@ -102,7 +94,7 @@ describe('ConversationClient con moderación', () => {
       'GET /api/chat/conv-1': () => page(messages),
       'POST /api/friends/blocks': () => ok({ data: null }),
     })
-    renderEs(<ConversationClient conversationId="conv-1" otherUser={otherUser} currentUserId="me" moderation />)
+    renderEs(<ConversationClient conversationId="conv-1" otherUser={otherUser} currentUserId="me" />)
     await screen.findByText('insulto')
     const toggle = screen.getByRole('button', { name: 'Opciones de la conversación' })
     expect(toggle).toHaveAttribute('aria-expanded', 'false')
@@ -123,7 +115,7 @@ describe('ConversationClient con moderación', () => {
       'GET /api/chat/conv-1': () => page(messages),
       'DELETE /api/chat/conv-1': () => ok({ data: null }),
     })
-    renderEs(<ConversationClient conversationId="conv-1" otherUser={otherUser} currentUserId="me" moderation />)
+    renderEs(<ConversationClient conversationId="conv-1" otherUser={otherUser} currentUserId="me" />)
     await screen.findByText('insulto')
     fireEvent.click(screen.getByRole('button', { name: 'Opciones de la conversación' }))
     fireEvent.click(screen.getByRole('button', { name: 'Salir del chat' }))
@@ -135,7 +127,7 @@ describe('ConversationClient con moderación', () => {
 
   it('canSend=false (sin amistad o con bloqueo): no hay campo, hay explicación', async () => {
     routeFetch({ 'GET /api/chat/conv-1': () => page(messages) })
-    renderEs(<ConversationClient conversationId="conv-1" otherUser={otherUser} currentUserId="me" moderation canSend={false} />)
+    renderEs(<ConversationClient conversationId="conv-1" otherUser={otherUser} currentUserId="me" canSend={false} />)
     await screen.findByText('insulto')
     expect(screen.getByRole('status')).toHaveTextContent('Ya no podéis escribiros')
     expect(screen.queryByRole('textbox')).not.toBeInTheDocument()

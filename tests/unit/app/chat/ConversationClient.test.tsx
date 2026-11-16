@@ -21,6 +21,7 @@ vi.mock('@/i18n/navigation', () => ({
   Link: ({ href, children, ...rest }: { href: string; children: React.ReactNode }) => (
     <a href={href} {...rest}>{children}</a>
   ),
+  useRouter: () => ({ push: vi.fn(), refresh: vi.fn() }),
 }))
 
 vi.mock('@/components/ui/Avatar', () => ({

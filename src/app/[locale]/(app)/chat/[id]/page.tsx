@@ -63,7 +63,6 @@ export default async function ConversationPage({ params }: Props) {
         conversationId={id}
         otherUser={otherUser}
         currentUserId={user.id}
-        moderation
         canSend={canSend}
       />
     </main>

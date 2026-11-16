@@ -19,8 +19,6 @@ interface Props {
   initialPosts: Post[]
   /** F-11: el dueño puede borrar posts ajenos. */
   isOwner?: boolean
-  /** F-11: denunciar posts y moderación del dueño. */
-  moderation?: boolean
 }
 
 /** Papelera rellena (borrar un post). */
@@ -43,14 +41,12 @@ function PostActions({
   post,
   isMine,
   isOwner,
-  moderation,
   onDeleted,
 }: {
   groupId: string
   post: Post
   isMine: boolean
   isOwner: boolean
-  moderation: boolean
   onDeleted: (id: string) => void
 }) {
   const t = useTranslations('moderation')
@@ -59,7 +55,7 @@ function PostActions({
   const [error, setError] = useState<string | null>(null)
   const { ref: triggerRef, restore } = useRestoreFocus()
 
-  const canDelete = isMine || (moderation && isOwner)
+  const canDelete = isMine || isOwner
   const author = post.users?.username ?? ''
 
   async function handleDelete() {
@@ -96,7 +92,7 @@ function PostActions({
 
   return (
     <div className="flex items-start gap-0.5 flex-shrink-0 -mr-2 -mt-2">
-      {moderation && !isMine && (
+      {!isMine && (
         <ReportButton variant="icon" targetType="group_post" targetId={post.id} contextLabel={author} />
       )}
       {canDelete && (
@@ -126,7 +122,7 @@ function relativeDate(iso: string, locale: string): string {
 
 // Saneamiento 9.2: la primera carga llega del servidor; en el navegador,
 // Supabase solo para el realtime (y el autor de cada publicación nueva).
-export function GroupFeed({ groupId, currentUserId, initialPosts, isOwner = false, moderation = false }: Props) {
+export function GroupFeed({ groupId, currentUserId, initialPosts, isOwner = false }: Props) {
   const locale = useLocale()
   const t = useTranslations('groups')
   const [posts, setPosts] = useState<Post[]>(initialPosts)
@@ -235,7 +231,6 @@ export function GroupFeed({ groupId, currentUserId, initialPosts, isOwner = fals
                 post={post}
                 isMine={post.user_id === currentUserId}
                 isOwner={isOwner}
-                moderation={moderation}
                 onDeleted={(id) => setPosts(prev => prev.filter(p => p.id !== id))}
               />
             </div>

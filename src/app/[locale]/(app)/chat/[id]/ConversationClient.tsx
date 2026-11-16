@@ -40,8 +40,6 @@ interface Props {
   conversationId: string
   otherUser: OtherUser | null
   currentUserId: string
-  /** F-11: denunciar mensajes, borrar los propios, bloquear y salir. */
-  moderation?: boolean
   /**
    * F-11: false si ya no se puede escribir (no sois amigos, hay un bloqueo o
    * el otro salió). La base lo hace cumplir igualmente; esto solo lo explica.
@@ -277,7 +275,6 @@ export function ConversationClient({
   conversationId,
   otherUser,
   currentUserId,
-  moderation = false,
   canSend: initialCanSend = true,
 }: Props) {
   const t = useTranslations('chat')
@@ -474,15 +471,13 @@ export function ConversationClient({
             </Link>
           </>
         ) : (
-          <span className="text-sm text-text-secondary">{moderation ? t('otherLeft') : '...'}</span>
+          <span className="text-sm text-text-secondary">{t('otherLeft')}</span>
         )}
-        {moderation && (
-          <ConversationOptions
-            conversationId={conversationId}
-            otherUser={otherUser}
-            onBlocked={() => setCanSend(false)}
-          />
-        )}
+        <ConversationOptions
+          conversationId={conversationId}
+          otherUser={otherUser}
+          onBlocked={() => setCanSend(false)}
+        />
       </div>
 
       {/* Estado de carga y errores: fuera del log, para que este solo anuncie
@@ -562,7 +557,7 @@ export function ConversationClient({
                   <span className="text-xs text-text-secondary px-1">
                     {timeLabel(msg.created_at, locale)}
                   </span>
-                  {moderation && !orphaned && (
+                  {!orphaned && (
                     <MessageActions
                       conversationId={conversationId}
                       message={msg}
