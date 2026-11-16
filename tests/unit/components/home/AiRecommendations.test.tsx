@@ -18,7 +18,12 @@ vi.mock('@/components/media/MediaCard', () => ({
 import { AiRecommendations } from '@/components/home/AiRecommendations'
 
 function mockFetch(body: unknown, status = 200) {
-  const fn = vi.fn().mockResolvedValue({ ok: status < 400, status, json: async () => body })
+  const fn = vi.fn().mockResolvedValue({
+    ok: status < 400,
+    status,
+    headers: new Headers(),
+    json: async () => (status < 400 ? { data: body } : body),
+  })
   vi.stubGlobal('fetch', fn)
   return fn
 }
@@ -80,7 +85,7 @@ describe('AiRecommendations — sin llamada al montar (D-06)', () => {
   })
 
   it('un 429 deja reintentar con el mismo botón de siempre', async () => {
-    const fetchMock = mockFetch({ error: 'Too many requests' }, 429)
+    const fetchMock = mockFetch({ error: { code: 'rate_limited' } }, 429)
     render(<AiRecommendations />)
 
     fireEvent.click(screen.getByRole('button', { name: 'askButton' }))
@@ -118,7 +123,7 @@ describe('AiRecommendations — revisión (guardado, foco y región viva)', () =
     expect(screen.getByRole('status')).toBe(region)
     expect(region).toHaveTextContent('generating')
 
-    resolve({ ok: true, status: 200, json: async () => ({ recommendations: [REC], source: 'ai' }) })
+    resolve({ ok: true, status: 200, json: async () => ({ data: { recommendations: [REC], source: 'ai' } }) })
     expect(await screen.findAllByTestId('card')).toHaveLength(1)
     expect(screen.getByRole('status')).toBe(region)
     expect(region).toHaveTextContent('')
