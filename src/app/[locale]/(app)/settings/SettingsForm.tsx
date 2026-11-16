@@ -27,8 +27,8 @@ interface SettingsFormProps {
   /** Se vuelve del enlace de cambio de email. */
   emailConfirmed?: boolean
   /**
-   * Quién ve la biblioteca (D-04b). `null` = la columna aún no existe o la
-   * bandera LIBRARY_VISIBILITY está apagada: el selector no se enseña.
+   * Quién ve la biblioteca (D-04b). `null` = sin un valor válido en la
+   * columna: el selector no se enseña.
    */
   initialLibraryVisibility?: LibraryVisibility | null
   /** Borrado programado (ROJO-7): fecha ISO en que se pidió. */

@@ -6,7 +6,7 @@ import { SettingsForm } from './SettingsForm'
 import { PlatformsSection } from './PlatformsSection'
 import { readPlatforms } from '@/lib/platforms/platforms'
 import { isLibraryVisibility } from '@/lib/account/identity'
-import { accountGraceEnabled, libraryVisibilityEnabled, readAccountState } from '@/lib/account/account-state'
+import { accountGraceEnabled, readAccountState } from '@/lib/account/account-state'
 import { ACCOUNT_GRACE_DAYS } from '@/lib/account/identity'
 import { hasPasswordIdentity } from '@/lib/account/reauth'
 import { ratingScale10Enabled, readRatingScale } from '@/lib/library/scale'
@@ -49,11 +49,10 @@ export default async function SettingsPage({ params, searchParams }: SettingsPag
     offerWeeklyEmail ? readWeeklyEmailPreference(supabase, user.id) : Promise.resolve(null),
   ])
 
-  // D-04b: el selector solo con la bandera Y la columna (migración aplicada);
-  // sin ellas rige la política de W1 ("cualquiera con cuenta").
+  // D-04b: el selector solo si la columna trae un valor válido.
   const visibility = (profile as { library_visibility?: unknown } | null)?.library_visibility
   const initialLibraryVisibility =
-    libraryVisibilityEnabled() && isLibraryVisibility(visibility) ? visibility : null
+    isLibraryVisibility(visibility) ? visibility : null
 
   // F-25: «Mis plataformas» solo si su tabla existe (migración aplicada).
   const platformsSlot = platforms ? (
