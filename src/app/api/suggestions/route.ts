@@ -1,52 +1,40 @@
 // ============================================================
 // KULTURA — Route Handler: /api/suggestions
-// POST: guarda sugerencia del usuario en Supabase
+// POST: guarda una sugerencia del usuario en Supabase.
+//
+// Contrato en `lib/api/contracts/suggestions.ts`. Respuesta: `{ data: null }`
+// o `{ error: { code, message?, field? } }` (saneamiento 7 y 9).
 // ============================================================
 
-import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase/server'
-import { z } from 'zod'
-import { checkRateLimit, LIMITS } from '@/lib/rate-limit'
+import { LIMITS } from '@/lib/rate-limit'
+import { apiError, ok, parseBody, rateLimit, requireUser } from '@/lib/api/route'
+import { suggestionSchema } from '@/lib/api/contracts/suggestions'
 import { createLogger } from '@/lib/logger'
 
 const log = createLogger('api/suggestions')
 
-const SuggestionSchema = z.object({
-  type: z.enum(['bug', 'feature', 'improvement', 'other']),
-  subject: z.string().min(3).max(120),
-  description: z.string().min(10).max(2000),
-})
+/** Cuerpo máximo: 2000 caracteres de descripción con margen para UTF-8. */
+const MAX_BYTES = 16_384
 
-export async function POST(req: NextRequest): Promise<NextResponse> {
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) return NextResponse.json({ error: 'Not authenticated' }, { status: 401 })
+export async function POST(request: Request) {
+  const auth = await requireUser()
+  if (!auth.ok) return auth.response
+  const limited = await rateLimit(request, { key: 'suggestions', limit: LIMITS.suggestions, userId: auth.user.id })
+  if (limited) return limited
+  const body = await parseBody(request, suggestionSchema, { maxBytes: MAX_BYTES })
+  if (!body.ok) return body.response
 
-  const rl = checkRateLimit(`suggestions:${user.id}`, LIMITS.suggestions)
-  if (!rl.allowed) {
-    return NextResponse.json(
-      { error: 'Too many requests' },
-      { status: 429, headers: { 'Retry-After': String(rl.retryAfterSeconds) } }
-    )
-  }
-
-  const body = await req.json().catch(() => null)
-  const parsed = SuggestionSchema.safeParse(body)
-  if (!parsed.success) {
-    return NextResponse.json({ error: 'Invalid data' }, { status: 400 })
-  }
-
-  const { error } = await supabase.from('suggestions').insert({
-    user_id: user.id,
-    type: parsed.data.type,
-    subject: parsed.data.subject,
-    description: parsed.data.description,
+  const { error } = await auth.supabase.from('suggestions').insert({
+    user_id: auth.user.id,
+    type: body.value.type,
+    subject: body.value.subject,
+    description: body.value.description,
   })
 
   if (error) {
     log.error('suggestions insert error', { err: error })
-    return NextResponse.json({ error: 'Failed to save' }, { status: 500 })
+    return apiError('internal')
   }
 
-  return NextResponse.json({ ok: true })
+  return ok(null)
 }
