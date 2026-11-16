@@ -302,9 +302,9 @@ Los `loading.tsx` y el componente de error con reintento pasan a la fase 8 (Q32)
    - Tablas de caché sin clave foránea (Q15).
    - Fuentes únicas de puntuación y progreso (Q23).
    - Migraciones con fecha futura (Q13).
-4. **Borrar el código de cada bandera en estado apagado.** Las seis banderas están a `1` en producción.
+4. **Borrar el código de cada bandera en estado apagado.** Seis banderas están a `1` en producción (`PROGRESS_V2`, `MODERATION_V2`, `RATING_SCALE_10`, `MIXED_LISTS`, `LIBRARY_VISIBILITY`, `ACCOUNT_GRACE`): se retiran (un PR por bandera) antes de que caduquen (21–25 dic 2026, `docs/banderas.json`). `SHARE_PUBLIC_LIBRARY` e `INVITE_NOTIFY` están apagadas: decidir si se encienden, se prorrogan o se quitan.
 
-## 🟨 Fase 12 · Rigor (comprobaciones automáticas; después de la 10, antes de la 8) — 1: #154–#156 · 2: #158 #160 · 3: #161 · 4: #163–#165 · 5: #167 #169 · 6: #162 · 7: #166 · 8: #157 #168 · 16-11-2026. Falta: contraseña mínima de 8 en Supabase y el estado en producción de 8 banderas
+## ✅ Fase 12 · Rigor (comprobaciones automáticas; después de la 10, antes de la 8) — 1: #154–#156 · 2: #158 #160 · 3: #161 · 4: #163–#165 · 5: #167 #169 · 6: #162 · 7: #166 · 8: #157 #168 · cerrada el 16-11-2026
 
 Objetivo: que los fallos que hoy solo se ven revisando a mano los pare el CI o una alarma. Un PR por punto. Prioridad: 1, 2 y 6 primero.
 
@@ -312,11 +312,11 @@ Objetivo: que los fallos que hoy solo se ven revisando a mano los pare el CI o u
    - El CI aplica todas las migraciones en un Supabase local, genera los tipos (`supabase gen types`) y falla si no coinciden con `src/types/supabase.ts` (#154; ya faltaban dos claves ajenas de `conversations`).
    - Una migración con `drop column` falla si alguna función todavía usa la columna, o si lleva CASCADE (las vistas y políticas ya bloquean el `drop`; los índices se borran con la columna) (#155).
    - Script que compara las migraciones aplicadas en producción y en `kultura-test` con los archivos del repo (`scripts/check-applied-migrations.mjs`, a mano). 13-11: producción tiene todas menos `push` y `push_throttle` (Q14); test, todas.
-2. **Seguridad en el CI:**
+2. ✅ **Seguridad en el CI:**
    - ✅ `rls_audit()`, vistas sin `security_invoker` y SECURITY DEFINER fuera de la lista hacen fallar el CI (#158).
    - ✅ Las funciones SECURITY DEFINER que se pueden llamar desde la API (`can_read_list`, también sin sesión): movidas al esquema `private` (#160). Aplicada en `kultura-test` y en producción (16-11-2026, tras la copia con prueba de restauración en verde).
-   - ⬜ Activar la protección contra contraseñas filtradas (Supabase → Authentication; lo hace el dueño).
-3. ✅ **Banderas con caducidad** (#161; `docs/banderas.json`, `scripts/check-flags.mjs`; falta el estado en producción de 8): un archivo con cada bandera (dueño, fecha, estado en producción). El CI falla si una pasa de 60 días. Empezar por `PROGRESS_V2`.
+   - ✅ Contraseñas: la protección contra contraseñas filtradas de Supabase es solo del plan Pro (descartada). En su lugar, longitud mínima de 8 también en el servidor (Supabase → Authentication → Password, producción; 16-11-2026).
+3. ✅ **Banderas con caducidad** (#161; `docs/banderas.json`, `scripts/check-flags.mjs`; estado en producción de las 8 comprobado en Vercel el 16-11-2026: 6 encendidas, `SHARE_PUBLIC_LIBRARY` e `INVITE_NOTIFY` sin definir, es decir, apagadas): un archivo con cada bandera (dueño, fecha, estado en producción). El CI falla si una pasa de 60 días. Empezar por `PROGRESS_V2`.
 4. ✅ **Confianza en el CI:**
    - ✅ Tests intermitentes con motivo y plazo en `docs/tests-intermitentes.md` (#164). `friends` y `rls-policies` ya estaban arreglados (integración de una en una); se arregla el foco de `AiRecommendations`; ninguno en cuarentena.
    - ✅ eslint también en `tests/` y `scripts/` (`npm run lint`), después de limpiar los errores (#163). En `tests/` se apagan las reglas de next/link, next/image (los tests las simulan); la regla de la escala visual sigue activa y `scales.test.ts` la desactiva línea a línea.
@@ -328,9 +328,9 @@ Objetivo: que los fallos que hoy solo se ven revisando a mano los pare el CI o u
 7. ✅ **Proceso en el repo:** (#166)
    - ✅ Plantilla de PR (`.github/pull_request_template.md`) con lista: ¿migración?, ¿aplicada en test?, ¿copia hecha?, ¿versión del SW?, ¿cómo se deshace?
    - ✅ Las reglas de cambios de esquema (patrón de 3 PRs y cuándo se pueden juntar los pasos) escritas en `CLAUDE.md` (nuevo, en la raíz).
-8. **Condiciones de los proveedores** (revisadas el 13-11-2026):
+8. ✅ **Condiciones de los proveedores** (revisadas el 13-11-2026):
    - ✅ Logo de TMDB junto a su aviso (#157). Ya estaban el aviso de TMDB, el enlace a RAWG en cada página y el enlace a la fuente en cada ficha (también ComicVine).
-   - ✅ **TMDB no deja guardar sus datos más de 6 meses** (paso 5 del cron diario, `src/app/api/cron/daily/tmdb-retention.ts`; #168: 20 fichas al día, las más viejas primero; 404 → se vacía; otro fallo → mañana; traducciones de TMDB de más de 6 meses, borradas). Antes `media` y `media_translations` no caducaban nunca; el título se conserva (referencia mínima de lo guardado).
+   - ✅ **TMDB no deja guardar sus datos más de 6 meses** (paso 5 del cron diario, `src/app/api/cron/daily/tmdb-retention.ts`; #168: 20 fichas al día, las más viejas primero; 404 → se vacía; otro fallo → mañana; traducciones de TMDB de más de 6 meses, borradas). Antes `media` y `media_translations` no caducaban nunca; el título se conserva (referencia mínima de lo guardado). Comprobado en producción el 16-11-2026: las 7 películas de más de 6 meses, refrescadas; 0 fichas y 0 traducciones de TMDB pasadas de plazo.
 
 ---
 
