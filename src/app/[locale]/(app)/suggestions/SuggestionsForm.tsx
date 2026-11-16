@@ -5,6 +5,7 @@ import { useTranslations } from 'next-intl'
 import { KButton } from '@/components/ui/KButton'
 import { cn } from '@/lib/utils/index'
 import { IconCheck } from '@/components/icons'
+import { ApiError, apiFetch } from '@/lib/api/client'
 
 type SuggestionType = 'bug' | 'feature' | 'improvement' | 'other'
 
@@ -65,19 +66,13 @@ export function SuggestionsForm() {
     setStatus('sending')
     setErrorKey(null)
     try {
-      const res = await fetch('/api/suggestions', {
+      await apiFetch<null>('/api/suggestions', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ type, subject: s, description: d }),
+        json: { type, subject: s, description: d },
       })
-      if (!res.ok) {
-        setErrorKey(res.status === 429 ? 'errorRateLimit' : 'error')
-        setStatus('error')
-        return
-      }
       setStatus('success')
-    } catch {
-      setErrorKey('error')
+    } catch (err) {
+      setErrorKey(err instanceof ApiError && err.code === 'rate_limited' ? 'errorRateLimit' : 'error')
       setStatus('error')
     }
   }
