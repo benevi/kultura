@@ -291,7 +291,7 @@ Los `loading.tsx` y el componente de error con reintento pasan a la fase 8 (Q32)
    - Arquitectura.
    - Cómo arrancar en local.
    - Convenciones: contrato de la API, forma de pedir datos, migraciones (regla 5) y entornos (Preview → `kultura-test`).
-2. `.env.example` completo:
+2. ✅ `.env.example` completo (este PR):
    - `CRON_SECRET`, `REVALIDATE_SECRET`, `EMAIL_TOKEN_SECRET`, `SHARE_SECRET`, `INVITE_SECRET`, `RESEND_API_KEY`, `KV_REST_API_*` y `DEMO_USER_EMAIL`.
    - Las banderas.
 
