@@ -4,53 +4,38 @@
 // Con sesión. `{ endpoint }` da de baja ESTE navegador; `{ all: true }`, todos
 // los de la persona. Solo borra filas propias (RLS + filtro por user_id).
 // Funciona aunque PUSH_ENABLED esté apagado (darse de baja siempre se puede)
-// y antes de la migración (no hay nada que borrar → ok).
+// y antes de la migración (no hay nada que borrar → `removed: 0`).
+// Contrato: src/lib/api/contracts/push.ts (saneamiento 9).
 // ============================================================
 
-import { NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase/server'
+import { apiError, ok, parseBody, rateLimit, requireUser } from '@/lib/api/route'
+import { unsubscribeSchema, type PushUnsubscribed } from '@/lib/api/contracts/push'
 import { isNotMigrated } from '@/lib/supabase/not-migrated'
-import { checkRateLimit, LIMITS } from '@/lib/rate-limit'
+import { LIMITS } from '@/lib/rate-limit'
 import { createLogger } from '@/lib/logger'
-import { unsubscribeSchema } from '@/lib/push/schemas'
 
 const log = createLogger('api/push/unsubscribe')
 const MAX_BODY = 2048
 
-export async function POST(request: Request): Promise<NextResponse> {
-  const supabase = await createClient()
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-  if (!user) return NextResponse.json({ error: 'Not authenticated' }, { status: 401 })
+export async function POST(request: Request) {
+  const auth = await requireUser()
+  if (!auth.ok) return auth.response
+  const { user, supabase } = auth
 
-  const rl = checkRateLimit(`push:${user.id}`, LIMITS.settings)
-  if (!rl.allowed) {
-    return NextResponse.json(
-      { error: 'Too many requests' },
-      { status: 429, headers: { 'Retry-After': String(rl.retryAfterSeconds) } },
-    )
-  }
+  const limited = await rateLimit(request, { key: 'push', limit: LIMITS.settings, userId: user.id })
+  if (limited) return limited
 
-  const raw = await request.text().catch(() => '')
-  if (raw.length > MAX_BODY) return NextResponse.json({ error: 'Payload too large' }, { status: 413 })
-  let json: unknown
-  try {
-    json = JSON.parse(raw)
-  } catch {
-    return NextResponse.json({ error: 'Invalid JSON body' }, { status: 400 })
-  }
-  const parsed = unsubscribeSchema.safeParse(json)
-  if (!parsed.success) return NextResponse.json({ error: 'invalid_request' }, { status: 400 })
+  const body = await parseBody(request, unsubscribeSchema, { maxBytes: MAX_BODY })
+  if (!body.ok) return body.response
 
   let query = supabase.from('push_subscriptions').delete().eq('user_id', user.id)
-  if ('endpoint' in parsed.data) query = query.eq('endpoint', parsed.data.endpoint)
+  if ('endpoint' in body.value) query = query.eq('endpoint', body.value.endpoint)
   const { data, error } = await query.select('id')
   if (error) {
-    if (isNotMigrated(error)) return NextResponse.json({ ok: true, removed: 0 })
-    if (error.code === '42501') return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+    if (isNotMigrated(error)) return ok<PushUnsubscribed>({ removed: 0 })
+    if (error.code === '42501') return apiError('forbidden')
     log.error('No se pudo borrar la suscripción', { code: error.code })
-    return NextResponse.json({ error: 'Failed to unsubscribe' }, { status: 500 })
+    return apiError('internal')
   }
-  return NextResponse.json({ ok: true, removed: (data ?? []).length }, { headers: { 'Cache-Control': 'no-store' } })
+  return ok<PushUnsubscribed>({ removed: (data ?? []).length }, { headers: { 'Cache-Control': 'no-store' } })
 }

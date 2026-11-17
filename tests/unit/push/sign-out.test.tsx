@@ -52,7 +52,7 @@ beforeEach(() => {
   order.length = 0
   fetchMock.mockImplementation(async (url: string) => {
     order.push(`fetch ${url}`)
-    return new Response('{"ok":true}')
+    return new Response('{"data":{"removed":1}}')
   })
   global.fetch = fetchMock as unknown as typeof fetch
 })
