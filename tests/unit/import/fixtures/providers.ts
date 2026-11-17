@@ -1,13 +1,12 @@
 // ============================================================
 // Respuestas de proveedores con la forma de su documentación oficial (F-26).
-// El proxy de este entorno bloquea TMDB, AniList, Jikan y Open Library, así
+// El proxy de este entorno bloquea TMDB, AniList y Open Library, así
 // que los tests no pueden validar la forma real: estas fixtures copian los
 // ejemplos documentados y `scripts/import-verify.sh` lo comprueba contra
 // producción.
 //   - TMDB `GET /3/find/{external_id}`: developer.themoviedb.org/reference/find-by-id
 //   - TMDB `GET /3/search/movie`: developer.themoviedb.org/reference/search-movie
 //   - AniList GraphQL `Page.media(idMal_in)`: docs.anilist.co (Media.idMal)
-//   - Jikan v4 `GET /anime/{id}/full`: docs.api.jikan.moe
 //   - Open Library `search.json?q=isbn:…`: openlibrary.org/dev/docs/api/search
 // ============================================================
 
@@ -142,27 +141,6 @@ export const ANILIST_BY_MAL = {
         },
       ],
     },
-  },
-}
-
-export const JIKAN_ANIME_5114 = {
-  data: {
-    mal_id: 5114,
-    url: 'https://myanimelist.net/anime/5114/Fullmetal_Alchemist__Brotherhood',
-    images: { jpg: { image_url: 'https://cdn.myanimelist.net/images/anime/1208/94745.jpg', large_image_url: 'https://cdn.myanimelist.net/images/anime/1208/94745l.jpg' } },
-    trailer: { youtube_id: '--IcmZkvL0Q' },
-    title: 'Fullmetal Alchemist: Brotherhood',
-    title_english: 'Fullmetal Alchemist: Brotherhood',
-    type: 'TV',
-    source: 'Manga',
-    episodes: 64,
-    status: 'Finished Airing',
-    rating: 'R - 17+ (violence & profanity)',
-    score: 9.1,
-    synopsis: 'After a horrific alchemy experiment goes wrong…',
-    year: 2009,
-    studios: [{ mal_id: 4, type: 'anime', name: 'Bones' }],
-    genres: [{ mal_id: 1, type: 'anime', name: 'Action' }],
   },
 }
 

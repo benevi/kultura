@@ -20,9 +20,14 @@
 
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { getMovie, getTV } from '@/lib/api/tmdb'
-import { getAnime as getAnimeAniList, isAniListId, fromAniListRef } from '@/lib/api/anilist'
+import {
+  getAnime as getAnimeAniList,
+  getMangaAniList,
+  isAniListId,
+  fromAniListRef,
+  normalizeAniListManga,
+} from '@/lib/api/anilist'
 import { getAnimeTmdb, isTmdbAnimeId } from '@/lib/api/anime-tmdb'
-import { getAnime as getAnimeJikan, getManga as getMangaJikan } from '@/lib/api/jikan'
 import { getManga as getMangaDex, isMangaDexId } from '@/lib/api/mangadex'
 import { getGoogleBookDetail, isOpenLibraryWorkId } from '@/lib/api/googlebooks'
 import { getBookDetail } from '@/lib/api/openlibrary'
@@ -30,9 +35,7 @@ import { getGame } from '@/lib/api/rawg'
 import {
   normalizeMovie,
   normalizeTV,
-  normalizeAnime,
   normalizeAniListAnime,
-  normalizeMangaJikan,
   normalizeMangaDex,
   normalizeBookGoogle,
   normalizeBookOpenLibrary,
@@ -96,16 +99,17 @@ export async function fetchGenresForMedia(
         if (isAniListId(externalId)) {
           return normalizeAniListAnime(await getAnimeAniList(fromAniListRef(externalId))).genres ?? []
         }
-        const legacy = await getAnimeJikan(Number(externalId))
-        return normalizeAnime(legacy.data).genres ?? []
+        return null
       }
       case 'manga': {
         if (isMangaDexId(externalId)) {
           const detail = await getMangaDex(externalId)
           return normalizeMangaDex(detail.data, locale).genres ?? []
         }
-        const legacy = await getMangaJikan(Number(externalId))
-        return normalizeMangaJikan(legacy.data).genres ?? []
+        if (isAniListId(externalId)) {
+          return normalizeAniListManga(await getMangaAniList(fromAniListRef(externalId))).genres ?? []
+        }
+        return null
       }
       case 'book': {
         if (isOpenLibraryWorkId(externalId)) {

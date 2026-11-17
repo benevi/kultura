@@ -64,9 +64,7 @@ describe('parseMediaId', () => {
       'comic_123456',
       'anime_al-21',
       'anime_tmdb-37854',
-      'anime_5114',
       'manga_a96676e5-8ae2-425e-b549-7f15dd34a6d8',
-      'manga_13',
       'book_OL7353617W',
       'book_zyTCAlFPjgYC',
     ]) {
@@ -81,6 +79,8 @@ describe('parseMediaId', () => {
       'movie_',
       '_550',
       'movie_abc',
+      'anime_5114',
+      'manga_13',
       'comic_1/../../users',
       'movie_550?x=1',
       'book_ab',

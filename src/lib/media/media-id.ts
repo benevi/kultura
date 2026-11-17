@@ -9,8 +9,10 @@
 //
 // Formas admitidas (las mismas que enruta la ficha de detalle):
 //   movie, tv, game, comic → entero
-//   anime → `al-{n}` (AniList), `tmdb-{n}` (respaldo TMDB) o entero (Jikan legacy)
-//   manga → UUID (MangaDex), `al-{n}` (AniList: obras que MangaDex no tiene) o entero (Jikan legacy)
+//   anime → `al-{n}` (AniList) o `tmdb-{n}` (respaldo TMDB)
+//   manga → UUID (MangaDex) o `al-{n}` (AniList: obras que MangaDex no tiene)
+// Los enteros planos de anime y manga eran ids de MyAnimeList vía Jikan, que se
+// retiró en la fase 8.1 (ninguna fila de producción los usaba).
 //   book  → `OL…W|M` (Open Library) o id de volumen de Google Books
 // ============================================================
 
@@ -31,8 +33,8 @@ const EXTERNAL_ID_SHAPES: Record<MediaType, RegExp> = {
   tv: /^\d{1,10}$/,
   game: /^\d{1,10}$/,
   comic: /^\d{1,10}$/,
-  anime: /^(?:al-\d{1,10}|tmdb-\d{1,10}|\d{1,10})$/,
-  manga: /^(?:[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}|al-\d{1,10}|\d{1,10})$/i,
+  anime: /^(?:al-\d{1,10}|tmdb-\d{1,10})$/,
+  manga: /^(?:[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}|al-\d{1,10})$/i,
   book: /^(?:OL\d{1,12}[WM]|[A-Za-z0-9_-]{6,24})$/,
 }
 

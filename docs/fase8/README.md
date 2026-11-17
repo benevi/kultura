@@ -1,5 +1,7 @@
 # Fase 8 · Paquete de arranque
 
+> **Aviso (17-11-2026):** este paquete corresponde a la v3 del plan, archivada en [`../archivo/PLAN_FASE8_v3.md`](../archivo/PLAN_FASE8_v3.md). Manda la **v4** ([`../PLAN_FASE8.md`](../PLAN_FASE8.md)): las tarjetas se rehacen al empezar cada fase. Los enlaces a «el plan» de aquí abajo se refieren a la v3.
+
 Fuente de verdad: [`../PLAN_FASE8.md`](../PLAN_FASE8.md) (v3). Este paquete **no cambia el plan**: lo convierte en listas de trabajo. Si algo de aquí contradice al plan, manda el plan; si el plan no lo dice, aquí pone «pendiente: …».
 
 ## Cuándo se usa

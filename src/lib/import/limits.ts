@@ -45,7 +45,6 @@ export const PROVIDER_CONCURRENCY = {
   tmdb: 6,
   openlibrary: 3,
   anilist: 1,
-  jikan: 2,
 } as const
 
 /** Lotes por usuario: compartido entre instancias (Upstash) o en memoria. */

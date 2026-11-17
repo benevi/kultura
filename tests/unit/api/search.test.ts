@@ -70,11 +70,6 @@ vi.mock("@/lib/api/mangadex", async (importOriginal) => {
   };
 });
 
-// F-13: respaldo de manga (MyAnimeList vía Jikan).
-vi.mock("@/lib/api/jikan", () => ({
-  searchMangaJikan: vi.fn().mockResolvedValue({ data: [] }),
-}));
-
 // F-13: respaldo de cómic (novela gráfica de Google Books).
 vi.mock("@/lib/api/googlebooks", () => ({
   searchComicsGoogleBooks: vi.fn().mockResolvedValue({ totalItems: 0, items: [] }),
@@ -163,12 +158,6 @@ vi.mock("@/lib/api/normalizer", () => ({
   normalizeMangaDex: vi.fn((raw: { id: string; title: string }) => ({
     id: `manga_${raw.id}`,
     externalId: raw.id,
-    type: "manga",
-    title: raw.title,
-  })),
-  normalizeMangaJikan: vi.fn((raw: { mal_id: number; title: string }) => ({
-    id: `manga_${raw.mal_id}`,
-    externalId: String(raw.mal_id),
     type: "manga",
     title: raw.title,
   })),

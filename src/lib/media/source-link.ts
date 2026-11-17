@@ -43,9 +43,7 @@ export function sourceLinkFor(
       if (al) return { name: "AniList", url: `https://anilist.co/anime/${al[1]}` };
       const tmdb = TMDB_ANIME_REF.exec(externalId);
       if (tmdb) return { name: "TMDB", url: `https://www.themoviedb.org/tv/${tmdb[1]}` };
-      return NUMERIC.test(externalId)
-        ? { name: "MyAnimeList", url: `https://myanimelist.net/anime/${externalId}` }
-        : null;
+      return null;
     }
     case "manga": {
       if (UUID.test(externalId)) {
@@ -53,9 +51,7 @@ export function sourceLinkFor(
       }
       const al = ANILIST_REF.exec(externalId);
       if (al) return { name: "AniList", url: `https://anilist.co/manga/${al[1]}` };
-      return NUMERIC.test(externalId)
-        ? { name: "MyAnimeList", url: `https://myanimelist.net/manga/${externalId}` }
-        : null;
+      return null;
     }
     case "book": {
       const ol = OPEN_LIBRARY.exec(externalId);

@@ -1,10 +1,9 @@
 // ============================================================
-// KULTURA — discover.ts + JikanError unit tests
+// KULTURA — discover.ts unit tests
 // Covers E29 guards: null-data, totalItems edge cases, catch 429.
 // ============================================================
 
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { JikanError } from "@/lib/api/jikan";
 
 // ── Mock all external API modules ─────────────────────────────────────────────
 
@@ -100,25 +99,6 @@ import { todayYear } from "@/lib/api/catalog-window";
 import { DISCOVER_MAX_PAGES } from "@/lib/api/pagination";
 import { getPopularGames, discoverGames } from "@/lib/api/rawg";
 import { getRecentComics, COMIC_MAX_PAGES } from "@/lib/api/comicvine";
-
-// ── JikanError ────────────────────────────────────────────────────────────────
-
-describe("JikanError", () => {
-  it("tiene .status accesible", () => {
-    const err = new JikanError("/top/anime", 429);
-    expect(err.status).toBe(429);
-    expect(err.name).toBe("JikanError");
-    expect(err.message).toBe("Jikan /top/anime → 429");
-    expect(err instanceof Error).toBe(true);
-    expect(err instanceof JikanError).toBe(true);
-  });
-
-  it("instanceof Error: true (herencia correcta)", () => {
-    const err = new JikanError("/top/manga", 503);
-    expect(err instanceof Error).toBe(true);
-    expect(err.status).toBe(503);
-  });
-});
 
 // ── Guard: res.data null/undefined en anime/manga ─────────────────────────────
 
@@ -523,7 +503,7 @@ describe("fetchDiscoverData — comic filtros (E59 F3c)", () => {
   });
 });
 
-// ── Catch tipado: AniListError/JikanError 429 vs genérico ─────────────────────
+// ── Catch tipado: AniListError 429 vs genérico ─────────────────────
 
 describe("fetchDiscoverData — catch tipado (E29)", () => {
   beforeEach(() => {
@@ -557,9 +537,8 @@ describe("fetchDiscoverData — catch tipado (E29)", () => {
     expect(result.fetchErrorKind).toBe("generic");
   });
 
-  it("error de red en manga (MangaDex) → fetchErrorKind = 'generic' (no es JikanError)", async () => {
-    // E-MANGA-SOURCE: manga ya no pasa por Jikan → sus fallos nunca son
-    // JikanError, así que nunca se clasifican como 'rate-limit'.
+  it("error de red en manga (MangaDex) → fetchErrorKind = 'generic'", async () => {
+    // Los fallos de MangaDex no llevan `status` tipado: nunca son 'rate-limit'.
     vi.mocked(getPopularManga).mockRejectedValue(
       new Error("MangaDex /manga → 429")
     );
@@ -1094,9 +1073,9 @@ describe("fetchDiscoverData — modo búsqueda (query)", () => {
     expect(result.hasMore).toBe(false);
   });
 
-  it("429 de Jikan en búsqueda → fetchErrorKind rate-limit", async () => {
+  it("429 de AniList en búsqueda → fetchErrorKind rate-limit", async () => {
     vi.mocked(searchByTypePaged).mockRejectedValue(
-      new JikanError("/anime", 429)
+      new AniListError("rate limited", 429)
     );
     const result = await fetchDiscoverData("anime", 1, {}, "es", "cowboy");
     expect(result.fetchErrorKind).toBe("rate-limit");

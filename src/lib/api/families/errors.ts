@@ -1,6 +1,5 @@
 // KULTURA — Cómo se presenta un fallo de proveedor en el catálogo.
 
-import { JikanError } from "@/lib/api/jikan";
 import { AniListError } from "@/lib/api/anilist";
 import { GoogleBooksError } from "@/lib/api/googlebooks";
 
@@ -25,7 +24,7 @@ export function describeError(e: unknown): string {
  */
 export function isRateLimitError(e: unknown): boolean {
   return (
-    (e instanceof JikanError || e instanceof AniListError || e instanceof GoogleBooksError) &&
+    (e instanceof AniListError || e instanceof GoogleBooksError) &&
     e.status === 429
   );
 }

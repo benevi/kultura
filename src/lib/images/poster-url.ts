@@ -79,9 +79,9 @@ export function posterLoader({ src, width, quality }: { src: string; width: numb
     return src.replace(/-(S|M|L)\.jpg$/, width <= 180 ? "-M.jpg" : "-L.jpg");
   }
 
-  // MyAnimeList (Jikan) y Google Books: ya llegan en un tamaño de card
-  // (~225 px y ~128 px); se sirven directos del CDN.
-  if (host === "cdn.myanimelist.net" || host === "books.google.com" || host.endsWith(".googleusercontent.com")) {
+  // Google Books: ya llega en un tamaño de card (~128 px); se sirve directo
+  // del CDN.
+  if (host === "books.google.com" || host.endsWith(".googleusercontent.com")) {
     return src;
   }
 
