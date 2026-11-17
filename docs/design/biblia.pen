@@ -1,0 +1,1592 @@
+{
+  "version": "2.22",
+  "children": [
+    {
+      "type": "frame",
+      "id": "LrGyo",
+      "x": 0,
+      "y": 0,
+      "name": "Biblia v0 · Archivo vivo",
+      "clip": true,
+      "width": 1600,
+      "fill": "#F5EEE0",
+      "layout": "vertical",
+      "gap": 56,
+      "padding": 64,
+      "children": [
+        {
+          "type": "frame",
+          "id": "tXWz2",
+          "name": "Cabecera",
+          "width": "fill_container",
+          "layout": "vertical",
+          "gap": 12,
+          "children": [
+            {
+              "type": "text",
+              "id": "otX2o",
+              "name": "Signatura del documento",
+              "fill": "#724D0B",
+              "content": "KUL-2026-0000 · BIBLIA V0 · 17-11-2026",
+              "fontFamily": "JetBrains Mono",
+              "fontSize": 13,
+              "fontWeight": "normal",
+              "letterSpacing": 1
+            },
+            {
+              "type": "text",
+              "id": "m0podQ",
+              "name": "Título",
+              "fill": "#221811",
+              "content": "Archivo vivo",
+              "fontFamily": "Newsreader",
+              "fontSize": 88,
+              "fontWeight": "500"
+            },
+            {
+              "type": "text",
+              "id": "jlgDo",
+              "name": "Concepto",
+              "fill": "#564B42",
+              "content": "Papel, cartón, latón, tinta y luz cálida. Editorial, no nostálgico.",
+              "fontFamily": "Bricolage Grotesque",
+              "fontSize": 24,
+              "fontWeight": "normal"
+            },
+            {
+              "type": "frame",
+              "id": "vAQyd",
+              "name": "Adjetivos",
+              "gap": 32,
+              "children": [
+                {
+                  "type": "text",
+                  "id": "F98ZZp",
+                  "name": "SOBRIO",
+                  "fill": "#221811",
+                  "content": "SOBRIO",
+                  "fontFamily": "JetBrains Mono",
+                  "fontSize": 14,
+                  "fontWeight": "normal",
+                  "letterSpacing": 2
+                },
+                {
+                  "type": "text",
+                  "id": "sShRW",
+                  "name": "TÁCTIL",
+                  "fill": "#221811",
+                  "content": "TÁCTIL",
+                  "fontFamily": "JetBrains Mono",
+                  "fontSize": 14,
+                  "fontWeight": "normal",
+                  "letterSpacing": 2
+                },
+                {
+                  "type": "text",
+                  "id": "TPtEX",
+                  "name": "PRECISO",
+                  "fill": "#221811",
+                  "content": "PRECISO",
+                  "fontFamily": "JetBrains Mono",
+                  "fontSize": 14,
+                  "fontWeight": "normal",
+                  "letterSpacing": 2
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "rectangle",
+          "id": "k9Up7Q",
+          "name": "Filete",
+          "fill": "#A97E2C",
+          "width": "fill_container",
+          "height": 1
+        },
+        {
+          "type": "frame",
+          "id": "eU9JU",
+          "name": "Paleta",
+          "width": "fill_container",
+          "layout": "vertical",
+          "gap": 24,
+          "children": [
+            {
+              "type": "text",
+              "id": "LUIZx",
+              "name": "Rótulo paleta",
+              "fill": "#724D0B",
+              "content": "01 · TOKENS BASE (PROPUESTA)",
+              "fontFamily": "JetBrains Mono",
+              "fontSize": 13,
+              "fontWeight": "normal",
+              "letterSpacing": 1
+            },
+            {
+              "type": "frame",
+              "id": "LbkAV",
+              "name": "Archivo · día",
+              "width": "fill_container",
+              "fill": "#F5EEE0",
+              "stroke": "#A97E2C",
+              "strokeWidth": 1,
+              "layout": "vertical",
+              "gap": 16,
+              "padding": 24,
+              "children": [
+                {
+                  "type": "text",
+                  "id": "D3Fly",
+                  "name": "Nombre Archivo · día",
+                  "fill": "#221811",
+                  "content": "Archivo · día",
+                  "fontFamily": "Bricolage Grotesque",
+                  "fontSize": 18,
+                  "fontWeight": "600"
+                },
+                {
+                  "type": "frame",
+                  "id": "iojYl",
+                  "name": "Muestras Archivo · día",
+                  "width": "fill_container",
+                  "gap": 16,
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "ZfzCE",
+                      "name": "Muestra papel",
+                      "width": 220,
+                      "layout": "vertical",
+                      "gap": 8,
+                      "children": [
+                        {
+                          "type": "rectangle",
+                          "id": "ihxHn",
+                          "name": "Color papel",
+                          "fill": "#F5EEE0",
+                          "width": "fill_container",
+                          "height": 72,
+                          "stroke": "#564B42",
+                          "strokeWidth": 1
+                        },
+                        {
+                          "type": "text",
+                          "id": "hDqba",
+                          "name": "Etiqueta papel",
+                          "fill": "#221811",
+                          "content": "papel",
+                          "fontFamily": "JetBrains Mono",
+                          "fontSize": 13,
+                          "fontWeight": "normal"
+                        },
+                        {
+                          "type": "text",
+                          "id": "zUOPX",
+                          "name": "Valor papel",
+                          "fill": "#221811",
+                          "content": "oklch(95% 0.02 85)\n#F5EEE0",
+                          "fontFamily": "JetBrains Mono",
+                          "fontSize": 11,
+                          "fontWeight": "normal"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "j9EBrP",
+                      "name": "Muestra cartón",
+                      "width": 220,
+                      "layout": "vertical",
+                      "gap": 8,
+                      "children": [
+                        {
+                          "type": "rectangle",
+                          "id": "K1K744",
+                          "name": "Color cartón",
+                          "fill": "#E4D5BE",
+                          "width": "fill_container",
+                          "height": 72,
+                          "stroke": "#564B42",
+                          "strokeWidth": 1
+                        },
+                        {
+                          "type": "text",
+                          "id": "bOHVc",
+                          "name": "Etiqueta cartón",
+                          "fill": "#221811",
+                          "content": "cartón",
+                          "fontFamily": "JetBrains Mono",
+                          "fontSize": 13,
+                          "fontWeight": "normal"
+                        },
+                        {
+                          "type": "text",
+                          "id": "rTGER",
+                          "name": "Valor cartón",
+                          "fill": "#221811",
+                          "content": "oklch(88% 0.035 80)\n#E4D5BE",
+                          "fontFamily": "JetBrains Mono",
+                          "fontSize": 11,
+                          "fontWeight": "normal"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "UGLew",
+                      "name": "Muestra tinta",
+                      "width": 220,
+                      "layout": "vertical",
+                      "gap": 8,
+                      "children": [
+                        {
+                          "type": "rectangle",
+                          "id": "o2YAVj",
+                          "name": "Color tinta",
+                          "fill": "#221811",
+                          "width": "fill_container",
+                          "height": 72,
+                          "stroke": "#564B42",
+                          "strokeWidth": 1
+                        },
+                        {
+                          "type": "text",
+                          "id": "e6kmio",
+                          "name": "Etiqueta tinta",
+                          "fill": "#221811",
+                          "content": "tinta",
+                          "fontFamily": "JetBrains Mono",
+                          "fontSize": 13,
+                          "fontWeight": "normal"
+                        },
+                        {
+                          "type": "text",
+                          "id": "qWf9X",
+                          "name": "Valor tinta",
+                          "fill": "#221811",
+                          "content": "oklch(22% 0.02 60)\n#221811",
+                          "fontFamily": "JetBrains Mono",
+                          "fontSize": 11,
+                          "fontWeight": "normal"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "fOBab",
+                      "name": "Muestra tinta-2",
+                      "width": 220,
+                      "layout": "vertical",
+                      "gap": 8,
+                      "children": [
+                        {
+                          "type": "rectangle",
+                          "id": "XhngA",
+                          "name": "Color tinta-2",
+                          "fill": "#564B42",
+                          "width": "fill_container",
+                          "height": 72,
+                          "stroke": "#564B42",
+                          "strokeWidth": 1
+                        },
+                        {
+                          "type": "text",
+                          "id": "Isxr9",
+                          "name": "Etiqueta tinta-2",
+                          "fill": "#221811",
+                          "content": "tinta-2",
+                          "fontFamily": "JetBrains Mono",
+                          "fontSize": 13,
+                          "fontWeight": "normal"
+                        },
+                        {
+                          "type": "text",
+                          "id": "vG8GX",
+                          "name": "Valor tinta-2",
+                          "fill": "#221811",
+                          "content": "oklch(42% 0.02 60)\n#564B42",
+                          "fontFamily": "JetBrains Mono",
+                          "fontSize": 11,
+                          "fontWeight": "normal"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "K5Pyo",
+                      "name": "Muestra latón-texto",
+                      "width": 220,
+                      "layout": "vertical",
+                      "gap": 8,
+                      "children": [
+                        {
+                          "type": "rectangle",
+                          "id": "abMmk",
+                          "name": "Color latón-texto",
+                          "fill": "#724D0B",
+                          "width": "fill_container",
+                          "height": 72,
+                          "stroke": "#564B42",
+                          "strokeWidth": 1
+                        },
+                        {
+                          "type": "text",
+                          "id": "dtWc9",
+                          "name": "Etiqueta latón-texto",
+                          "fill": "#221811",
+                          "content": "latón-texto",
+                          "fontFamily": "JetBrains Mono",
+                          "fontSize": 13,
+                          "fontWeight": "normal"
+                        },
+                        {
+                          "type": "text",
+                          "id": "omBKx",
+                          "name": "Valor latón-texto",
+                          "fill": "#221811",
+                          "content": "oklch(45% 0.09 75)\n#724D0B",
+                          "fontFamily": "JetBrains Mono",
+                          "fontSize": 11,
+                          "fontWeight": "normal"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "sqo63",
+                      "name": "Muestra latón",
+                      "width": 220,
+                      "layout": "vertical",
+                      "gap": 8,
+                      "children": [
+                        {
+                          "type": "rectangle",
+                          "id": "b7UxUX",
+                          "name": "Color latón",
+                          "fill": "#A97E2C",
+                          "width": "fill_container",
+                          "height": 72,
+                          "stroke": "#564B42",
+                          "strokeWidth": 1
+                        },
+                        {
+                          "type": "text",
+                          "id": "CAqeH",
+                          "name": "Etiqueta latón",
+                          "fill": "#221811",
+                          "content": "latón",
+                          "fontFamily": "JetBrains Mono",
+                          "fontSize": 13,
+                          "fontWeight": "normal"
+                        },
+                        {
+                          "type": "text",
+                          "id": "V3R8R",
+                          "name": "Valor latón",
+                          "fill": "#221811",
+                          "content": "oklch(62% 0.11 80)\n#A97E2C",
+                          "fontFamily": "JetBrains Mono",
+                          "fontSize": 11,
+                          "fontWeight": "normal"
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "xqm82",
+              "name": "Archivo · noche",
+              "width": "fill_container",
+              "fill": "#17100B",
+              "stroke": "#A97E2C",
+              "strokeWidth": 1,
+              "layout": "vertical",
+              "gap": 16,
+              "padding": 24,
+              "children": [
+                {
+                  "type": "text",
+                  "id": "m4gSa",
+                  "name": "Nombre Archivo · noche",
+                  "fill": "#EEE7D9",
+                  "content": "Archivo · noche",
+                  "fontFamily": "Bricolage Grotesque",
+                  "fontSize": 18,
+                  "fontWeight": "600"
+                },
+                {
+                  "type": "frame",
+                  "id": "T4Zfho",
+                  "name": "Muestras Archivo · noche",
+                  "width": "fill_container",
+                  "gap": 16,
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "BTRnc",
+                      "name": "Muestra fondo",
+                      "width": 220,
+                      "layout": "vertical",
+                      "gap": 8,
+                      "children": [
+                        {
+                          "type": "rectangle",
+                          "id": "Fd4u4",
+                          "name": "Color fondo",
+                          "fill": "#17100B",
+                          "width": "fill_container",
+                          "height": 72,
+                          "stroke": "#B3A99A",
+                          "strokeWidth": 1
+                        },
+                        {
+                          "type": "text",
+                          "id": "ssfGK",
+                          "name": "Etiqueta fondo",
+                          "fill": "#EEE7D9",
+                          "content": "fondo",
+                          "fontFamily": "JetBrains Mono",
+                          "fontSize": 13,
+                          "fontWeight": "normal"
+                        },
+                        {
+                          "type": "text",
+                          "id": "zvRba",
+                          "name": "Valor fondo",
+                          "fill": "#EEE7D9",
+                          "content": "oklch(18% 0.015 60)\n#17100B",
+                          "fontFamily": "JetBrains Mono",
+                          "fontSize": 11,
+                          "fontWeight": "normal"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "q5T5QB",
+                      "name": "Muestra cartón",
+                      "width": 220,
+                      "layout": "vertical",
+                      "gap": 8,
+                      "children": [
+                        {
+                          "type": "rectangle",
+                          "id": "L1AhB",
+                          "name": "Color cartón",
+                          "fill": "#261D15",
+                          "width": "fill_container",
+                          "height": 72,
+                          "stroke": "#B3A99A",
+                          "strokeWidth": 1
+                        },
+                        {
+                          "type": "text",
+                          "id": "lIaIs",
+                          "name": "Etiqueta cartón",
+                          "fill": "#EEE7D9",
+                          "content": "cartón",
+                          "fontFamily": "JetBrains Mono",
+                          "fontSize": 13,
+                          "fontWeight": "normal"
+                        },
+                        {
+                          "type": "text",
+                          "id": "es93h",
+                          "name": "Valor cartón",
+                          "fill": "#EEE7D9",
+                          "content": "oklch(24% 0.02 65)\n#261D15",
+                          "fontFamily": "JetBrains Mono",
+                          "fontSize": 11,
+                          "fontWeight": "normal"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "x9n0BQ",
+                      "name": "Muestra tinta",
+                      "width": 220,
+                      "layout": "vertical",
+                      "gap": 8,
+                      "children": [
+                        {
+                          "type": "rectangle",
+                          "id": "Ns92B",
+                          "name": "Color tinta",
+                          "fill": "#EEE7D9",
+                          "width": "fill_container",
+                          "height": 72,
+                          "stroke": "#B3A99A",
+                          "strokeWidth": 1
+                        },
+                        {
+                          "type": "text",
+                          "id": "SZ8S5",
+                          "name": "Etiqueta tinta",
+                          "fill": "#EEE7D9",
+                          "content": "tinta",
+                          "fontFamily": "JetBrains Mono",
+                          "fontSize": 13,
+                          "fontWeight": "normal"
+                        },
+                        {
+                          "type": "text",
+                          "id": "VQeAM",
+                          "name": "Valor tinta",
+                          "fill": "#EEE7D9",
+                          "content": "oklch(93% 0.02 85)\n#EEE7D9",
+                          "fontFamily": "JetBrains Mono",
+                          "fontSize": 11,
+                          "fontWeight": "normal"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "W5dSGr",
+                      "name": "Muestra tinta-2",
+                      "width": 220,
+                      "layout": "vertical",
+                      "gap": 8,
+                      "children": [
+                        {
+                          "type": "rectangle",
+                          "id": "FgnrJ",
+                          "name": "Color tinta-2",
+                          "fill": "#B3A99A",
+                          "width": "fill_container",
+                          "height": 72,
+                          "stroke": "#B3A99A",
+                          "strokeWidth": 1
+                        },
+                        {
+                          "type": "text",
+                          "id": "dTgGP",
+                          "name": "Etiqueta tinta-2",
+                          "fill": "#EEE7D9",
+                          "content": "tinta-2",
+                          "fontFamily": "JetBrains Mono",
+                          "fontSize": 13,
+                          "fontWeight": "normal"
+                        },
+                        {
+                          "type": "text",
+                          "id": "W9iAr",
+                          "name": "Valor tinta-2",
+                          "fill": "#EEE7D9",
+                          "content": "oklch(74% 0.025 80)\n#B3A99A",
+                          "fontFamily": "JetBrains Mono",
+                          "fontSize": 11,
+                          "fontWeight": "normal"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "omHvN",
+                      "name": "Muestra latón",
+                      "width": 220,
+                      "layout": "vertical",
+                      "gap": 8,
+                      "children": [
+                        {
+                          "type": "rectangle",
+                          "id": "HK4tx",
+                          "name": "Color latón",
+                          "fill": "#D1AC5A",
+                          "width": "fill_container",
+                          "height": 72,
+                          "stroke": "#B3A99A",
+                          "strokeWidth": 1
+                        },
+                        {
+                          "type": "text",
+                          "id": "OkgzZ",
+                          "name": "Etiqueta latón",
+                          "fill": "#EEE7D9",
+                          "content": "latón",
+                          "fontFamily": "JetBrains Mono",
+                          "fontSize": 13,
+                          "fontWeight": "normal"
+                        },
+                        {
+                          "type": "text",
+                          "id": "aBfJQ",
+                          "name": "Valor latón",
+                          "fill": "#EEE7D9",
+                          "content": "oklch(76% 0.11 85)\n#D1AC5A",
+                          "fontFamily": "JetBrains Mono",
+                          "fontSize": 11,
+                          "fontWeight": "normal"
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "alYYi",
+              "name": "Cine · noche",
+              "width": "fill_container",
+              "fill": "#0B0605",
+              "stroke": "#A97E2C",
+              "strokeWidth": 1,
+              "layout": "vertical",
+              "gap": 16,
+              "padding": 24,
+              "children": [
+                {
+                  "type": "text",
+                  "id": "v5pD9",
+                  "name": "Nombre Cine · noche",
+                  "fill": "#EEE7D9",
+                  "content": "Cine · noche",
+                  "fontFamily": "Bricolage Grotesque",
+                  "fontSize": 18,
+                  "fontWeight": "600"
+                },
+                {
+                  "type": "frame",
+                  "id": "e0q4D",
+                  "name": "Muestras Cine · noche",
+                  "width": "fill_container",
+                  "gap": 16,
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "PqA0m",
+                      "name": "Muestra fondo",
+                      "width": 220,
+                      "layout": "vertical",
+                      "gap": 8,
+                      "children": [
+                        {
+                          "type": "rectangle",
+                          "id": "lJx7b",
+                          "name": "Color fondo",
+                          "fill": "#0B0605",
+                          "width": "fill_container",
+                          "height": 72,
+                          "stroke": "#B3A99A",
+                          "strokeWidth": 1
+                        },
+                        {
+                          "type": "text",
+                          "id": "t9MbJf",
+                          "name": "Etiqueta fondo",
+                          "fill": "#EEE7D9",
+                          "content": "fondo",
+                          "fontFamily": "JetBrains Mono",
+                          "fontSize": 13,
+                          "fontWeight": "normal"
+                        },
+                        {
+                          "type": "text",
+                          "id": "rMMec",
+                          "name": "Valor fondo",
+                          "fill": "#EEE7D9",
+                          "content": "oklch(13% 0.01 30)\n#0B0605",
+                          "fontFamily": "JetBrains Mono",
+                          "fontSize": 11,
+                          "fontWeight": "normal"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "VXUU8",
+                      "name": "Muestra panel",
+                      "width": 220,
+                      "layout": "vertical",
+                      "gap": 8,
+                      "children": [
+                        {
+                          "type": "rectangle",
+                          "id": "siGsp",
+                          "name": "Color panel",
+                          "fill": "#1A1110",
+                          "width": "fill_container",
+                          "height": 72,
+                          "stroke": "#B3A99A",
+                          "strokeWidth": 1
+                        },
+                        {
+                          "type": "text",
+                          "id": "Q85UFd",
+                          "name": "Etiqueta panel",
+                          "fill": "#EEE7D9",
+                          "content": "panel",
+                          "fontFamily": "JetBrains Mono",
+                          "fontSize": 13,
+                          "fontWeight": "normal"
+                        },
+                        {
+                          "type": "text",
+                          "id": "TyKEn",
+                          "name": "Valor panel",
+                          "fill": "#EEE7D9",
+                          "content": "oklch(19% 0.015 30)\n#1A1110",
+                          "fontFamily": "JetBrains Mono",
+                          "fontSize": 11,
+                          "fontWeight": "normal"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "HvlpO",
+                      "name": "Muestra luz",
+                      "width": 220,
+                      "layout": "vertical",
+                      "gap": 8,
+                      "children": [
+                        {
+                          "type": "rectangle",
+                          "id": "RKIFZ",
+                          "name": "Color luz",
+                          "fill": "#EEB97B",
+                          "width": "fill_container",
+                          "height": 72,
+                          "stroke": "#B3A99A",
+                          "strokeWidth": 1
+                        },
+                        {
+                          "type": "text",
+                          "id": "I9mOZ5",
+                          "name": "Etiqueta luz",
+                          "fill": "#EEE7D9",
+                          "content": "luz",
+                          "fontFamily": "JetBrains Mono",
+                          "fontSize": 13,
+                          "fontWeight": "normal"
+                        },
+                        {
+                          "type": "text",
+                          "id": "Z2daUj",
+                          "name": "Valor luz",
+                          "fill": "#EEE7D9",
+                          "content": "oklch(82% 0.1 70)\n#EEB97B",
+                          "fontFamily": "JetBrains Mono",
+                          "fontSize": 11,
+                          "fontWeight": "normal"
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "rectangle",
+          "id": "yKSpR",
+          "name": "Filete",
+          "fill": "#A97E2C",
+          "width": "fill_container",
+          "height": 1
+        },
+        {
+          "type": "frame",
+          "id": "R6rUaR",
+          "name": "Tipografía",
+          "width": "fill_container",
+          "layout": "vertical",
+          "gap": 24,
+          "children": [
+            {
+              "type": "text",
+              "id": "Myqvr",
+              "name": "Rótulo tipografía",
+              "fill": "#724D0B",
+              "content": "02 · TIPOGRAFÍA (3 FAMILIAS)",
+              "fontFamily": "JetBrains Mono",
+              "fontSize": 13,
+              "fontWeight": "normal",
+              "letterSpacing": 1
+            },
+            {
+              "type": "frame",
+              "id": "rSPSv",
+              "name": "Especímenes",
+              "width": "fill_container",
+              "gap": 48,
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "xYqN6",
+                  "name": "Marca e interfaz · Bricolage Grotesque",
+                  "width": "fill_container",
+                  "layout": "vertical",
+                  "gap": 8,
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "G2bcR",
+                      "name": "Rol Bricolage Grotesque",
+                      "fill": "#564B42",
+                      "content": "Marca e interfaz · Bricolage Grotesque",
+                      "fontFamily": "JetBrains Mono",
+                      "fontSize": 12,
+                      "fontWeight": "normal"
+                    },
+                    {
+                      "type": "text",
+                      "id": "SKWTl",
+                      "name": "Muestra Bricolage Grotesque",
+                      "fill": "#221811",
+                      "textGrowth": "fixed-width",
+                      "width": "fill_container",
+                      "content": "Marcar como visto",
+                      "fontFamily": "Bricolage Grotesque",
+                      "fontSize": 40,
+                      "fontWeight": "normal"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "IDmbx",
+                  "name": "Archivo (mono) · JetBrains Mono",
+                  "width": "fill_container",
+                  "layout": "vertical",
+                  "gap": 8,
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "H8klfV",
+                      "name": "Rol JetBrains Mono",
+                      "fill": "#564B42",
+                      "content": "Archivo (mono) · JetBrains Mono",
+                      "fontFamily": "JetBrains Mono",
+                      "fontSize": 12,
+                      "fontWeight": "normal"
+                    },
+                    {
+                      "type": "text",
+                      "id": "iWnVo",
+                      "name": "Muestra JetBrains Mono",
+                      "fill": "#221811",
+                      "textGrowth": "fixed-width",
+                      "width": "fill_container",
+                      "content": "PEL-1994-0231",
+                      "fontFamily": "JetBrains Mono",
+                      "fontSize": 36,
+                      "fontWeight": "normal"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "eDn0V",
+                  "name": "Editorial (serif) · Newsreader",
+                  "width": "fill_container",
+                  "layout": "vertical",
+                  "gap": 8,
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "d84YbS",
+                      "name": "Rol Newsreader",
+                      "fill": "#564B42",
+                      "content": "Editorial (serif) · Newsreader",
+                      "fontFamily": "JetBrains Mono",
+                      "fontSize": 12,
+                      "fontWeight": "normal"
+                    },
+                    {
+                      "type": "text",
+                      "id": "M9NFK",
+                      "name": "Muestra Newsreader",
+                      "fill": "#221811",
+                      "textGrowth": "fixed-width",
+                      "width": "fill_container",
+                      "content": "El espíritu de la colmena",
+                      "fontFamily": "Newsreader",
+                      "fontSize": 40,
+                      "fontWeight": "normal"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "rectangle",
+          "id": "g0K1bb",
+          "name": "Filete",
+          "fill": "#A97E2C",
+          "width": "fill_container",
+          "height": 1
+        },
+        {
+          "type": "frame",
+          "id": "rbfpQ",
+          "name": "Fichas de muestra",
+          "width": "fill_container",
+          "layout": "vertical",
+          "gap": 24,
+          "children": [
+            {
+              "type": "text",
+              "id": "pa8Ua",
+              "name": "Rótulo fichas",
+              "fill": "#724D0B",
+              "content": "03 · FICHA Y SIGNATURA (BOCETO, NO ES LA FICHA 2D DE 8A.1)",
+              "fontFamily": "JetBrains Mono",
+              "fontSize": 13,
+              "fontWeight": "normal",
+              "letterSpacing": 1
+            },
+            {
+              "type": "frame",
+              "id": "R2p1R",
+              "name": "Fila de fichas",
+              "width": "fill_container",
+              "gap": 32,
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "naOfL",
+                  "name": "Fondo Día",
+                  "width": "fill_container",
+                  "fill": "#F5EEE0",
+                  "stroke": "#A97E2C",
+                  "strokeWidth": 1,
+                  "layout": "vertical",
+                  "gap": 12,
+                  "padding": 28,
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "iNZ7l",
+                      "name": "Modo Día",
+                      "fill": "#564B42",
+                      "content": "DÍA",
+                      "fontFamily": "JetBrains Mono",
+                      "fontSize": 11,
+                      "fontWeight": "normal",
+                      "letterSpacing": 2
+                    },
+                    {
+                      "type": "frame",
+                      "id": "SZ4pd",
+                      "name": "Ficha Día",
+                      "width": "fill_container",
+                      "fill": "#E4D5BE",
+                      "cornerRadius": 8,
+                      "layout": "vertical",
+                      "gap": 14,
+                      "padding": 24,
+                      "children": [
+                        {
+                          "type": "frame",
+                          "id": "GQeKy",
+                          "name": "Cabecera ficha Día",
+                          "width": "fill_container",
+                          "justifyContent": "space_between",
+                          "alignItems": "center",
+                          "children": [
+                            {
+                              "type": "text",
+                              "id": "vSJJN",
+                              "name": "Signatura Día",
+                              "fill": "#724D0B",
+                              "content": "PEL-1973-0412",
+                              "fontFamily": "JetBrains Mono",
+                              "fontSize": 14,
+                              "fontWeight": "normal",
+                              "letterSpacing": 1
+                            },
+                            {
+                              "type": "text",
+                              "id": "X39Gsx",
+                              "name": "Formato Día",
+                              "fill": "#564B42",
+                              "content": "PELÍCULA",
+                              "fontFamily": "JetBrains Mono",
+                              "fontSize": 11,
+                              "fontWeight": "normal",
+                              "letterSpacing": 2
+                            }
+                          ]
+                        },
+                        {
+                          "type": "rectangle",
+                          "id": "y8cwBW",
+                          "name": "Filete ficha Día",
+                          "fill": "#A97E2C",
+                          "width": "fill_container",
+                          "height": 1
+                        },
+                        {
+                          "type": "text",
+                          "id": "ADuBk",
+                          "name": "Título Día",
+                          "fill": "#221811",
+                          "textGrowth": "fixed-width",
+                          "width": "fill_container",
+                          "content": "El espíritu de la colmena",
+                          "fontFamily": "Newsreader",
+                          "fontSize": 30,
+                          "fontWeight": "500"
+                        },
+                        {
+                          "type": "text",
+                          "id": "JmNK1",
+                          "name": "Datos Día",
+                          "fill": "#564B42",
+                          "content": "Víctor Erice · 1973 · 97 min",
+                          "fontFamily": "Bricolage Grotesque",
+                          "fontSize": 14,
+                          "fontWeight": "normal"
+                        },
+                        {
+                          "type": "frame",
+                          "id": "LWWEt",
+                          "name": "Estado Día",
+                          "cornerRadius": 4,
+                          "stroke": "#724D0B",
+                          "strokeWidth": 1,
+                          "gap": 8,
+                          "padding": [
+                            6,
+                            10
+                          ],
+                          "alignItems": "center",
+                          "children": [
+                            {
+                              "type": "text",
+                              "id": "ccTU8",
+                              "name": "Sello Día",
+                              "fill": "#724D0B",
+                              "content": "VISTO · 14-11-2026",
+                              "fontFamily": "JetBrains Mono",
+                              "fontSize": 11,
+                              "fontWeight": "normal",
+                              "letterSpacing": 1
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "y1zzdk",
+                  "name": "Fondo Noche",
+                  "width": "fill_container",
+                  "fill": "#17100B",
+                  "stroke": "#A97E2C",
+                  "strokeWidth": 1,
+                  "layout": "vertical",
+                  "gap": 12,
+                  "padding": 28,
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "PPeB3",
+                      "name": "Modo Noche",
+                      "fill": "#B3A99A",
+                      "content": "NOCHE",
+                      "fontFamily": "JetBrains Mono",
+                      "fontSize": 11,
+                      "fontWeight": "normal",
+                      "letterSpacing": 2
+                    },
+                    {
+                      "type": "frame",
+                      "id": "DzFaO",
+                      "name": "Ficha Noche",
+                      "width": "fill_container",
+                      "fill": "#261D15",
+                      "cornerRadius": 8,
+                      "layout": "vertical",
+                      "gap": 14,
+                      "padding": 24,
+                      "children": [
+                        {
+                          "type": "frame",
+                          "id": "W06TG",
+                          "name": "Cabecera ficha Noche",
+                          "width": "fill_container",
+                          "justifyContent": "space_between",
+                          "alignItems": "center",
+                          "children": [
+                            {
+                              "type": "text",
+                              "id": "amCUV",
+                              "name": "Signatura Noche",
+                              "fill": "#D1AC5A",
+                              "content": "LIB-1967-1108",
+                              "fontFamily": "JetBrains Mono",
+                              "fontSize": 14,
+                              "fontWeight": "normal",
+                              "letterSpacing": 1
+                            },
+                            {
+                              "type": "text",
+                              "id": "lDqss",
+                              "name": "Formato Noche",
+                              "fill": "#B3A99A",
+                              "content": "LIBRO",
+                              "fontFamily": "JetBrains Mono",
+                              "fontSize": 11,
+                              "fontWeight": "normal",
+                              "letterSpacing": 2
+                            }
+                          ]
+                        },
+                        {
+                          "type": "rectangle",
+                          "id": "vqJP9",
+                          "name": "Filete ficha Noche",
+                          "fill": "#D1AC5A",
+                          "width": "fill_container",
+                          "height": 1
+                        },
+                        {
+                          "type": "text",
+                          "id": "OwCws",
+                          "name": "Título Noche",
+                          "fill": "#EEE7D9",
+                          "textGrowth": "fixed-width",
+                          "width": "fill_container",
+                          "content": "Cien años de soledad",
+                          "fontFamily": "Newsreader",
+                          "fontSize": 30,
+                          "fontWeight": "500"
+                        },
+                        {
+                          "type": "text",
+                          "id": "jQRNt",
+                          "name": "Datos Noche",
+                          "fill": "#B3A99A",
+                          "content": "Gabriel García Márquez · 1967",
+                          "fontFamily": "Bricolage Grotesque",
+                          "fontSize": 14,
+                          "fontWeight": "normal"
+                        },
+                        {
+                          "type": "frame",
+                          "id": "npgZ9",
+                          "name": "Estado Noche",
+                          "cornerRadius": 4,
+                          "stroke": "#D1AC5A",
+                          "strokeWidth": 1,
+                          "gap": 8,
+                          "padding": [
+                            6,
+                            10
+                          ],
+                          "alignItems": "center",
+                          "children": [
+                            {
+                              "type": "text",
+                              "id": "z6CHZJ",
+                              "name": "Sello Noche",
+                              "fill": "#D1AC5A",
+                              "content": "VISTO · 14-11-2026",
+                              "fontFamily": "JetBrains Mono",
+                              "fontSize": 11,
+                              "fontWeight": "normal",
+                              "letterSpacing": 1
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "emu49",
+                  "name": "Fondo Cine",
+                  "width": "fill_container",
+                  "fill": "#0B0605",
+                  "stroke": "#A97E2C",
+                  "strokeWidth": 1,
+                  "layout": "vertical",
+                  "gap": 12,
+                  "padding": 28,
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "gaZNu",
+                      "name": "Modo Cine",
+                      "fill": "#B3A99A",
+                      "content": "CINE",
+                      "fontFamily": "JetBrains Mono",
+                      "fontSize": 11,
+                      "fontWeight": "normal",
+                      "letterSpacing": 2
+                    },
+                    {
+                      "type": "frame",
+                      "id": "s1FWA",
+                      "name": "Ficha Cine",
+                      "width": "fill_container",
+                      "fill": "#1A1110",
+                      "cornerRadius": 8,
+                      "layout": "vertical",
+                      "gap": 14,
+                      "padding": 24,
+                      "children": [
+                        {
+                          "type": "frame",
+                          "id": "ZdIPS",
+                          "name": "Cabecera ficha Cine",
+                          "width": "fill_container",
+                          "justifyContent": "space_between",
+                          "alignItems": "center",
+                          "children": [
+                            {
+                              "type": "text",
+                              "id": "WjT9A",
+                              "name": "Signatura Cine",
+                              "fill": "#EEB97B",
+                              "content": "ANI-2001-0077",
+                              "fontFamily": "JetBrains Mono",
+                              "fontSize": 14,
+                              "fontWeight": "normal",
+                              "letterSpacing": 1
+                            },
+                            {
+                              "type": "text",
+                              "id": "Xm6AL",
+                              "name": "Formato Cine",
+                              "fill": "#B3A99A",
+                              "content": "ANIME",
+                              "fontFamily": "JetBrains Mono",
+                              "fontSize": 11,
+                              "fontWeight": "normal",
+                              "letterSpacing": 2
+                            }
+                          ]
+                        },
+                        {
+                          "type": "rectangle",
+                          "id": "USyqo",
+                          "name": "Filete ficha Cine",
+                          "fill": "#EEB97B",
+                          "width": "fill_container",
+                          "height": 1
+                        },
+                        {
+                          "type": "text",
+                          "id": "FsccU",
+                          "name": "Título Cine",
+                          "fill": "#EEE7D9",
+                          "textGrowth": "fixed-width",
+                          "width": "fill_container",
+                          "content": "千と千尋の神隠し",
+                          "fontFamily": "Newsreader",
+                          "fontSize": 30,
+                          "fontWeight": "500"
+                        },
+                        {
+                          "type": "text",
+                          "id": "yf8jJ",
+                          "name": "Datos Cine",
+                          "fill": "#B3A99A",
+                          "content": "Hayao Miyazaki · 2001 · 125 min",
+                          "fontFamily": "Bricolage Grotesque",
+                          "fontSize": 14,
+                          "fontWeight": "normal"
+                        },
+                        {
+                          "type": "frame",
+                          "id": "tkMc2",
+                          "name": "Estado Cine",
+                          "cornerRadius": 4,
+                          "stroke": "#EEB97B",
+                          "strokeWidth": 1,
+                          "gap": 8,
+                          "padding": [
+                            6,
+                            10
+                          ],
+                          "alignItems": "center",
+                          "children": [
+                            {
+                              "type": "text",
+                              "id": "pY3lK",
+                              "name": "Sello Cine",
+                              "fill": "#EEB97B",
+                              "content": "VISTO · 14-11-2026",
+                              "fontFamily": "JetBrains Mono",
+                              "fontSize": 11,
+                              "fontWeight": "normal",
+                              "letterSpacing": 1
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "rectangle",
+          "id": "macGq",
+          "name": "Filete",
+          "fill": "#A97E2C",
+          "width": "fill_container",
+          "height": 1
+        },
+        {
+          "type": "frame",
+          "id": "fNWCA",
+          "name": "Reglas",
+          "width": "fill_container",
+          "gap": 64,
+          "children": [
+            {
+              "type": "frame",
+              "id": "Fnm40",
+              "name": "Contención",
+              "width": "fill_container",
+              "layout": "vertical",
+              "gap": 12,
+              "children": [
+                {
+                  "type": "text",
+                  "id": "J6s4C",
+                  "name": "Rótulo Contención",
+                  "fill": "#724D0B",
+                  "content": "04 · CONTENCIÓN (POR PANTALLA)",
+                  "fontFamily": "JetBrains Mono",
+                  "fontSize": 13,
+                  "fontWeight": "normal",
+                  "letterSpacing": 1
+                },
+                {
+                  "type": "text",
+                  "id": "ZhjzG",
+                  "name": "1 material",
+                  "fill": "#221811",
+                  "textGrowth": "fixed-width",
+                  "width": "fill_container",
+                  "content": "1 material",
+                  "fontFamily": "Bricolage Grotesque",
+                  "fontSize": 17,
+                  "fontWeight": "normal"
+                },
+                {
+                  "type": "text",
+                  "id": "a2NFIJ",
+                  "name": "1 acento",
+                  "fill": "#221811",
+                  "textGrowth": "fixed-width",
+                  "width": "fill_container",
+                  "content": "1 acento",
+                  "fontFamily": "Bricolage Grotesque",
+                  "fontSize": 17,
+                  "fontWeight": "normal"
+                },
+                {
+                  "type": "text",
+                  "id": "iDPn3",
+                  "name": "1 objeto héroe",
+                  "fill": "#221811",
+                  "textGrowth": "fixed-width",
+                  "width": "fill_container",
+                  "content": "1 objeto héroe",
+                  "fontFamily": "Bricolage Grotesque",
+                  "fontSize": 17,
+                  "fontWeight": "normal"
+                },
+                {
+                  "type": "text",
+                  "id": "EHM7S",
+                  "name": "El formato nunca va solo",
+                  "fill": "#221811",
+                  "textGrowth": "fixed-width",
+                  "width": "fill_container",
+                  "content": "El formato nunca va solo por color: icono y etiqueta",
+                  "fontFamily": "Bricolage Grotesque",
+                  "fontSize": 17,
+                  "fontWeight": "normal"
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "qJtCw",
+              "name": "Antirreferencias",
+              "width": "fill_container",
+              "layout": "vertical",
+              "gap": 12,
+              "children": [
+                {
+                  "type": "text",
+                  "id": "E0b9y",
+                  "name": "Rótulo Antirreferencias",
+                  "fill": "#724D0B",
+                  "content": "05 · ANTIRREFERENCIAS",
+                  "fontFamily": "JetBrains Mono",
+                  "fontSize": 13,
+                  "fontWeight": "normal",
+                  "letterSpacing": 1
+                },
+                {
+                  "type": "text",
+                  "id": "C06am",
+                  "name": "Rejilla genérica de póst",
+                  "fill": "#221811",
+                  "textGrowth": "fixed-width",
+                  "width": "fill_container",
+                  "content": "Rejilla genérica de pósters",
+                  "fontFamily": "Bricolage Grotesque",
+                  "fontSize": 17,
+                  "fontWeight": "normal"
+                },
+                {
+                  "type": "text",
+                  "id": "cyGzY",
+                  "name": "Skeuomorfismo de iOS 6",
+                  "fill": "#221811",
+                  "textGrowth": "fixed-width",
+                  "width": "fill_container",
+                  "content": "Skeuomorfismo de iOS 6",
+                  "fontFamily": "Bricolage Grotesque",
+                  "fontSize": 17,
+                  "fontWeight": "normal"
+                },
+                {
+                  "type": "text",
+                  "id": "aa6te",
+                  "name": "Glassmorphism oscuro",
+                  "fill": "#221811",
+                  "textGrowth": "fixed-width",
+                  "width": "fill_container",
+                  "content": "Glassmorphism oscuro",
+                  "fontFamily": "Bricolage Grotesque",
+                  "fontSize": 17,
+                  "fontWeight": "normal"
+                },
+                {
+                  "type": "text",
+                  "id": "gW1VL",
+                  "name": "Degradados tipo Wrapped",
+                  "fill": "#221811",
+                  "textGrowth": "fixed-width",
+                  "width": "fill_container",
+                  "content": "Degradados tipo Wrapped",
+                  "fontFamily": "Bricolage Grotesque",
+                  "fontSize": 17,
+                  "fontWeight": "normal"
+                },
+                {
+                  "type": "text",
+                  "id": "NCh3C",
+                  "name": "Neón cyberpunk",
+                  "fill": "#221811",
+                  "textGrowth": "fixed-width",
+                  "width": "fill_container",
+                  "content": "Neón cyberpunk",
+                  "fontFamily": "Bricolage Grotesque",
+                  "fontSize": 17,
+                  "fontWeight": "normal"
+                },
+                {
+                  "type": "text",
+                  "id": "ys6zJ",
+                  "name": "El violeta con seis acen",
+                  "fill": "#221811",
+                  "textGrowth": "fixed-width",
+                  "width": "fill_container",
+                  "content": "El violeta con seis acentos de hoy",
+                  "fontFamily": "Bricolage Grotesque",
+                  "fontSize": 17,
+                  "fontWeight": "normal"
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "JJdIw",
+              "name": "Sonido",
+              "width": "fill_container",
+              "layout": "vertical",
+              "gap": 12,
+              "children": [
+                {
+                  "type": "text",
+                  "id": "yOirV",
+                  "name": "Rótulo Sonido",
+                  "fill": "#724D0B",
+                  "content": "06 · SONIDO (SOLO TEXTO EN 8A)",
+                  "fontFamily": "JetBrains Mono",
+                  "fontSize": 13,
+                  "fontWeight": "normal",
+                  "letterSpacing": 1
+                },
+                {
+                  "type": "text",
+                  "id": "kJucF",
+                  "name": "Madera: cajón que cierra",
+                  "fill": "#221811",
+                  "textGrowth": "fixed-width",
+                  "width": "fill_container",
+                  "content": "Madera: cajón que cierra",
+                  "fontFamily": "Bricolage Grotesque",
+                  "fontSize": 17,
+                  "fontWeight": "normal"
+                },
+                {
+                  "type": "text",
+                  "id": "yjyxB",
+                  "name": "Papel: ficha que se desl",
+                  "fill": "#221811",
+                  "textGrowth": "fixed-width",
+                  "width": "fill_container",
+                  "content": "Papel: ficha que se desliza",
+                  "fontFamily": "Bricolage Grotesque",
+                  "fontSize": 17,
+                  "fontWeight": "normal"
+                },
+                {
+                  "type": "text",
+                  "id": "cMEx3",
+                  "name": "Metal: tarjetero y sello",
+                  "fill": "#221811",
+                  "textGrowth": "fixed-width",
+                  "width": "fill_container",
+                  "content": "Metal: tarjetero y sello",
+                  "fontFamily": "Bricolage Grotesque",
+                  "fontSize": 17,
+                  "fontWeight": "normal"
+                },
+                {
+                  "type": "text",
+                  "id": "Z1Ovgt",
+                  "name": "Cortos, secos, sin melod",
+                  "fill": "#221811",
+                  "textGrowth": "fixed-width",
+                  "width": "fill_container",
+                  "content": "Cortos, secos, sin melodía",
+                  "fontFamily": "Bricolage Grotesque",
+                  "fontSize": 17,
+                  "fontWeight": "normal"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "fileToken": "8339bc1f-42fc-4e6a-97a2-45ff5c4f5cfc"
+}

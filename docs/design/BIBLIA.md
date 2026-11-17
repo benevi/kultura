@@ -3,7 +3,7 @@
 **Versión 0 (borrador), 17-11-2026.** Plan: `docs/PLAN_FASE8.md` §5.2–5.6. Redacta Claude (agente); decide Víctor.
 La V1 se aprueba al final de 8A.1, con la ficha 2D que pase el panel visual. Hasta entonces, todo lo marcado **[propuesta]** se puede cambiar.
 
-Tablero de pencil (`docs/design/biblia.pen`): pendiente. El conector de pencil no respondió el 17-11-2026; se añade cuando conecte. Mientras tanto se explora en código y Storybook (plan B de D7).
+Tablero de pencil: [`biblia.pen`](biblia.pen), generado con la CLI `pen` el 17-11-2026. Vista previa: [`biblia-v0.png`](biblia-v0.png). Las fichas del tablero son un boceto de tono, no la ficha 2D de 8A.1.
 
 ## 1. Dirección
 
