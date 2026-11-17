@@ -23,6 +23,8 @@
 import type { ZodType } from "zod";
 import { providerFetch, PROVIDER_MAX_TIMEOUT_MS } from "@/lib/api/http";
 import {
+  openLibraryAuthorSchema,
+  openLibraryEditionsSchema,
   openLibrarySearchSchema,
   openLibraryWorkSchema,
 } from "@/lib/api/schemas/openlibrary";
@@ -51,9 +53,22 @@ export interface OpenLibraryResponse {
 }
 
 export interface OpenLibraryWork {
-  key: string;
-  title: string;
+  key?: string;
+  title?: string;
   description?: string | { value: string };
+  authors?: { author?: { key: string } }[];
+  covers?: number[];
+  subjects?: string[];
+  first_publish_date?: string;
+}
+
+interface OpenLibraryEdition {
+  covers?: number[];
+  isbn_13?: string[];
+  isbn_10?: string[];
+  publishers?: string[];
+  languages?: { key: string }[];
+  publish_date?: string;
 }
 
 // ── Campos: el LISTADO no pide `isbn`, la FICHA sí (E-BOOKS-ISBN) ────────────
@@ -113,6 +128,14 @@ export class OpenLibraryError extends Error {
  */
 export const OPEN_LIBRARY_TIMEOUT_MS = PROVIDER_MAX_TIMEOUT_MS;
 
+/** Ruta sin ids para el log y las métricas. */
+function providerLabel(path: string): string {
+  if (path.startsWith("/authors/")) return "/authors/{id}.json";
+  if (path.endsWith("/editions.json")) return "/works/{id}/editions.json";
+  if (path.startsWith("/works/")) return "/works/{id}.json";
+  return path;
+}
+
 async function openLibraryFetch<T>(
   path: string,
   params: Record<string, string> = {},
@@ -125,7 +148,7 @@ async function openLibraryFetch<T>(
   // Open Library pide un User-Agent identificable: lo pone `providerFetch`.
   return providerFetch<T>("openlibrary", url.toString(), {
     schema,
-    label: path.startsWith("/works/") ? "/works/{id}.json" : path,
+    label: providerLabel(path),
     timeoutMs: OPEN_LIBRARY_TIMEOUT_MS,
     httpError: (status) => new OpenLibraryError(path, status),
     ...(cache === false ? { cache: false as const } : {}),
@@ -279,13 +302,76 @@ export interface OpenLibraryBookDetail {
   description?: string;
 }
 
+/** Primer año de cuatro cifras de una fecha libre de Open Library ("Feb 3, 2026"). */
+function yearFrom(date: string | undefined): number | undefined {
+  const m = date?.match(/\b(\d{4})\b/);
+  return m ? Number(m[1]) : undefined;
+}
+
+/**
+ * Respaldo de la ficha cuando `search.json` no responde (17-11-2026: desde
+ * Vercel la búsqueda por `key:` agotaba los 8 s a ratos y abría el circuito,
+ * mientras `/works/{id}.json` respondía en menos de un segundo). Monta el mismo
+ * `OpenLibraryDoc` con la obra, su primera edición (portada, ISBN, editorial,
+ * idioma) y los nombres de hasta tres autores. Edición y autores son
+ * best-effort: sin ellos la ficha sale igual, con menos datos.
+ */
+async function docFromWork(
+  workKey: string,
+  work: OpenLibraryWork
+): Promise<OpenLibraryDoc | null> {
+  const title = work.title?.trim();
+  if (!title) return null;
+  const authorKeys = (work.authors ?? [])
+    .map((a) => a.author?.key)
+    .filter((k): k is string => typeof k === "string" && k.startsWith("/authors/"))
+    .slice(0, 3);
+  const [editions, ...authors] = await Promise.allSettled([
+    openLibraryFetch<{ entries?: OpenLibraryEdition[] }>(
+      `${workKey}/editions.json`,
+      { limit: "1" },
+      openLibraryEditionsSchema
+    ),
+    ...authorKeys.map((k) =>
+      openLibraryFetch<{ name?: string }>(`${k}.json`, {}, openLibraryAuthorSchema)
+    ),
+  ]);
+  const edition =
+    editions.status === "fulfilled"
+      ? (editions.value as { entries?: OpenLibraryEdition[] }).entries?.[0]
+      : undefined;
+  const authorNames = authors
+    .map((r) => (r.status === "fulfilled" ? (r.value as { name?: string }).name?.trim() : undefined))
+    .filter((n): n is string => !!n);
+  const isbn = [...(edition?.isbn_13 ?? []), ...(edition?.isbn_10 ?? [])];
+  const language = edition?.languages
+    ?.map((l) => l.key.replace(/^\/languages\//, ""))
+    .filter(Boolean);
+  const coverId = [...(work.covers ?? []), ...(edition?.covers ?? [])].find((c) => c > 0);
+  const year = yearFrom(work.first_publish_date) ?? yearFrom(edition?.publish_date);
+
+  return {
+    key: workKey,
+    title,
+    ...(authorNames.length ? { author_name: authorNames } : {}),
+    ...(year ? { first_publish_year: year } : {}),
+    ...(coverId ? { cover_i: coverId } : {}),
+    ...(language?.length ? { language } : {}),
+    ...(edition?.publishers?.length ? { publisher: edition.publishers } : {}),
+    ...(work.subjects?.length ? { subject: work.subjects } : {}),
+    ...(isbn.length ? { isbn } : {}),
+  };
+}
+
 /**
  * Detalle de libro (E84c). id = workKey ("OL7353617W" o "/works/OL7353617W").
+ * Se piden a la vez:
  * 1) search-by-key (q=key:/works/{id}) → OpenLibraryDoc completo (cover, autor,
  *    año, subjects) coherente con la grid → normalizeBookOpenLibrary.
- * 2) /works/{key}.json best-effort SOLO para description (no la trae el search);
- *    si falla o no existe → sin sinopsis, sin romper.
- * 0 docs → null (el caller hace notFound).
+ * 2) /works/{key}.json → description (no la trae el search).
+ * Si el search responde sin docs → null (el caller hace notFound). Si el search
+ * FALLA (plazo, red, 5xx) y la obra sí llegó, la ficha se monta con la obra
+ * (`docFromWork`). Si fallan los dos, se lanza el error del search.
  */
 export async function getBookDetail(
   id: string
@@ -293,27 +379,18 @@ export async function getBookDetail(
   const workKey = id.startsWith("/works/") ? id : `/works/${id}`;
   // E-BOOKS-ISBN: la ficha SÍ pide `isbn` — es lo que permite puentear a Google
   // Books sin emparejar por título — y aquí es seguro: un solo documento.
-  const res = await searchOpenLibrary(
-    `key:${workKey}`,
-    1,
-    {},
-    OPEN_LIBRARY_PAGE_SIZE,
-    DETAIL_FIELDS
-  );
-  const doc = res.docs?.[0];
-  if (!doc) return null;
+  const [search, workRes] = await Promise.allSettled([
+    searchOpenLibrary(`key:${workKey}`, 1, {}, OPEN_LIBRARY_PAGE_SIZE, DETAIL_FIELDS),
+    openLibraryFetch<OpenLibraryWork>(`${workKey}.json`, {}, openLibraryWorkSchema),
+  ]);
+  const work = workRes.status === "fulfilled" ? workRes.value : undefined;
+  const description = workDescription(work?.description);
 
-  let description: string | undefined;
-  try {
-    const work = await openLibraryFetch<OpenLibraryWork>(
-      `${workKey}.json`,
-      {},
-      openLibraryWorkSchema
-    );
-    description = workDescription(work.description);
-  } catch {
-    // best-effort: sin description si /works falla
+  if (search.status === "fulfilled") {
+    const doc = search.value.docs?.[0];
+    return doc ? { doc, description } : null;
   }
-
+  const doc = work ? await docFromWork(workKey, work) : null;
+  if (!doc) throw search.reason;
   return { doc, description };
 }
