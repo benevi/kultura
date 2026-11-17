@@ -11,6 +11,7 @@ El día que termine el saneamiento (`PLAN_SANEAMIENTO.md`, orden `… → 9 → 
 3. [`puertas.md`](puertas.md) — G0–G6: métrica, umbral, quién decide, evidencia.
 4. Tarjetas de fase, en orden: [`8A.0`](8A.0.md) · [`8A.1`](8A.1.md) · [`8A.2`](8A.2.md) · [`8A.3`](8A.3.md) · [`8A.3b`](8A.3b.md) · [`8A.4`](8A.4.md) · [`8A.5`](8A.5.md) · [`8A.6`](8A.6.md) · (condicional) [`8B.1`](8B.1.md) · [`8B.2`](8B.2.md) · [`8B.3`](8B.3.md) · [`8B.4`](8B.4.md) · [`8B.5`](8B.5.md).
 5. [`plantillas/`](plantillas/) — actas y correos listos para copiar.
+6. [`skills.md`](skills.md) — qué skill de Claude usar en cada campo y cuáles evitar.
 
 ## Convenciones
 - Numeración válida: solo **8A.0–8A.6** (incluida **8A.3b**) y **8B.1–8B.5**.
