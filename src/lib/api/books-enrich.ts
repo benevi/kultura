@@ -63,6 +63,9 @@ export async function enrichBookWithGoogle(item: MediaItem): Promise<MediaItem> 
         // Los géneros de Google (BISAC) son más consistentes que los subjects
         // libres de Open Library, que traen ruido del tipo "Accessible book".
         genres: google.genres?.length ? google.genres : item.genres,
+        // De qué volumen salen esos datos: la ficha pinta con él la atribución
+        // y el enlace que piden las normas de marca de Google Books.
+        metadata: { ...item.metadata, googleBooksId: volume.id },
       };
     } catch (e) {
       // Cuota, clave ausente o red: la ficha se sirve igual con Open Library.

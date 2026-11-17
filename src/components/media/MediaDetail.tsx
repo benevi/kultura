@@ -18,6 +18,7 @@ import type { MediaItem, StreamingProvider } from "@/types/media";
 import type { LibraryEntry } from "@/types/library";
 import type { SteamInfo } from "@/lib/api/steam";
 import type { SourceLink } from "@/lib/media/source-link";
+import { googleBooksUrl, googleBooksVolumeId } from "@/lib/media/google-books";
 import type { KulturaRating } from "@/lib/media/kultura-rating";
 import { mediaPath } from "@/lib/media/seo";
 import { synopsisLang } from "@/lib/media/synopsis-lang";
@@ -27,6 +28,7 @@ import { IconSparkles } from "@/components/icons";
 import { SOURCE_LINK_CLASS } from "@/components/legal/DataAttribution";
 import { TrailerEmbed } from "./TrailerEmbed";
 import { StreamingProviders } from "./StreamingProviders";
+import { GoogleBooksAttribution } from "./GoogleBooksAttribution";
 import { SynopsisSection } from "./SynopsisSection";
 import { TranslatedSynopsis } from "./TranslatedSynopsis";
 import { SteamSection } from "./SteamSection";
@@ -203,6 +205,7 @@ export async function MediaDetail({
   const tAi = await getTranslations("aiRecommendations");
   const locale = await getLocale();
   const extraDetail = getExtraDetailValue(item);
+  const googleVolumeId = googleBooksVolumeId(item);
   const typeLabel = tMedia(item.type as Parameters<typeof tMedia>[0]);
   const genres = genreLabels ?? item.genres ?? [];
   const credits = getCredits(item);
@@ -513,7 +516,7 @@ export async function MediaDetail({
 
             {/* Fuente de los datos: enlace activo a la página del título en su
                 proveedor (RAWG lo exige en cada página con sus datos). */}
-            {source && (
+            {source && source.name !== "Google Books" && (
               <p className="text-xs text-text-tertiary leading-relaxed">
                 {t("sourceLabel")}{" "}
                 <a
@@ -526,6 +529,16 @@ export async function MediaDetail({
                   {source.name}
                 </a>
               </p>
+            )}
+
+            {/* Google Books: logo «Powered by Google» y enlace a la página del
+                libro, cuando la ficha lleva datos suyos (normas de marca). */}
+            {googleVolumeId && (
+              <GoogleBooksAttribution
+                href={googleBooksUrl(googleVolumeId)}
+                label={t("googleBooksLink")}
+                linkLabel={t("googleBooksLinkLabel")}
+              />
             )}
           </div>
         </div>

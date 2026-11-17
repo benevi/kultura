@@ -260,6 +260,7 @@
     "randomize": "Sorpréndeme",
     "randomizeAgain": "Otra vez",
     "showingRandom": "1 resultado aleatorio de {count}",
+    "googleBooksResults": "Resultados de búsqueda de Google Libros",
     "suggestionsLabel": "Sugerencias",
     "suggestionsCount": "{count, plural, =0 {Sin sugerencias} one {# sugerencia: usa las flechas para recorrerla} other {# sugerencias: usa las flechas para recorrerlas}}"
   },
@@ -315,6 +316,8 @@
     "trailerNotice": "El vídeo se carga desde YouTube al pulsar.",
     "sourceLabel": "Datos del título:",
     "sourceLinkLabel": "{name}: ficha del título (se abre en una pestaña nueva)",
+    "googleBooksLink": "Ver este libro en Google Libros",
+    "googleBooksLinkLabel": "Google Libros: página del libro (se abre en una pestaña nueva)",
     "watchType": {
       "flatrate": "Suscripción",
       "free": "Gratis",
