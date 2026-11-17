@@ -33,10 +33,10 @@ Plan: §1, §4 (8A.0), §9.2, §9.6, §10, §12.
 - [ ] **D-HOY-2** `docs/legal/decision-hoy.md`: opción (a), mantener portadas reales, optimizador y OG; riesgo R1b asumido. — Víctor
 - [x] **D-HOY-3 / P-7** (#173, 16-11-2026) PR 8A.0-P: `/privacy` cuenta portadas por `/_next/image` (copia hasta 7 días) y OG. Texto en plan §9.3; claves en `messages/es.json` (`…privacy…p3`, hoy ~l. 1742) y `messages/en.json`. — Claude (agente) redacta, Víctor aprueba
 - [x] **D-HOY-4 / P-10** (#173) Mismo PR: Vercel como encargado de optimización y caché de imágenes y OG (clave `vercel`, hoy ~l. 1731). — Víctor
-- [ ] `privacy.updated` con la fecha del PR. — Claude (agente)
+- [x] (#173, 16-11-2026) `privacy.updated` con la fecha del PR. — Claude (agente)
 - [ ] **D-HOY-5** Encargo mínimo enviado (P1, P2, P4, P7, P8, P14; P1 como «esto ya ocurre: ¿es aceptable?») a clínica jurídica universitaria o servicio gratuito de colegio de abogados. — Víctor
 - [ ] Correo de permiso a cada proveedor (TMDB, RAWG, ComicVine, AniList, MangaDex, MyAnimeList/Jikan, Open Library, Google Books, Steam, JustWatch) con [`plantillas/correo-proveedor-portadas.md`](plantillas/correo-proveedor-portadas.md). — Víctor envía; Claude (agente) prepara borradores
-- [ ] **M1** Copia fechada de términos de cada proveedor en `docs/legal/terminos/`. — Claude (agente)
-- [ ] Canal de retirada para titulares en `/legal` (respuesta ≤ 7 días). — Claude (agente), Víctor aprueba
+- [x] (17-11-2026, `docs/legal/terminos/README.md`) **M1** Copia fechada de términos de cada proveedor en `docs/legal/terminos/`. — Claude (agente)
+- [x] (#179) Canal de retirada para titulares en `/legal` (respuesta ≤ 7 días). — Claude (agente), Víctor aprueba
 
 Hechos de código comprobados (2026-11-13): `src/lib/images/poster-url.ts` (optimizador en l. 30-33; MangaDex siempre en l. 93; respaldo por defecto l. 96); `next.config.mjs` (`minimumCacheTTL` 7 días l. 199; 14 `hostname` en `remotePatterns`); `src/lib/best/poster.ts`; `src/lib/og/poster.ts`; CSP `img-src` en `src/lib/csp.ts:123`; `public/sw.js` y `tests/unit/pwa/sw.test.ts` existen.
