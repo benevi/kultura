@@ -38,6 +38,12 @@ import {
 
 const STEPS = ['name', 'formats', 'rate', 'recs'] as const
 type Step = (typeof STEPS)[number]
+/**
+ * Fase 8.2 («Llegar», bandera WELCOME_RATE_FIRST): la primera pantalla ya es
+ * puntuar, así la primera obra entra antes de pedir nada. Los formatos pasan
+ * a ser un filtro opcional dentro de ese paso y el nombre va después.
+ */
+const RATE_FIRST_STEPS: readonly Step[] = ['rate', 'name', 'recs']
 
 /** Orden e icono de los formatos (el mismo orden e iconos que Descubrir). */
 export const WELCOME_FORMATS: ReadonlyArray<{ type: MediaType; icon: KIcon }> = [
@@ -62,6 +68,12 @@ interface WelcomeFlowProps {
   suggestChange: boolean
   /** Alta con Google: falta la casilla de edad y términos (SEG-7). */
   needsTerms: boolean
+  /**
+   * Bandera WELCOME_RATE_FIRST (la lee el servidor). No se aplica si falta la
+   * casilla de edad y términos (alta con Google): esa va siempre lo primero,
+   * con el orden de siempre.
+   */
+  rateFirst?: boolean
   /** F-26: textos del paso opcional "Importar" (sin ellos no se ofrece). */
   importMessages?: AbstractIntlMessages | null
   /** F-26: cuenta de la sesión, para el avance guardado del importador. */
@@ -70,13 +82,18 @@ interface WelcomeFlowProps {
 
 type SaveState = 'saving' | 'saved' | 'error'
 
-export function WelcomeFlow({ locale, next, currentUsername, suggestChange, needsTerms, importMessages = null, userId = null }: WelcomeFlowProps) {
+export function WelcomeFlow({ locale, next, currentUsername, suggestChange, needsTerms, rateFirst = false, importMessages = null, userId = null }: WelcomeFlowProps) {
   const t = useTranslations('onboarding')
   const tAuth = useTranslations('auth')
   const router = useRouter()
 
-  const [step, setStep] = useState<Step>('name')
-  const stepIndex = STEPS.indexOf(step)
+  // El orden se fija al entrar: no cambia a mitad del recorrido.
+  const [steps] = useState<readonly Step[]>(() => (rateFirst && !needsTerms ? RATE_FIRST_STEPS : STEPS))
+  const [step, setStep] = useState<Step>(steps[0])
+  const stepIndex = steps.indexOf(step)
+  const isFirstStep = stepIndex === 0
+  const goNext = () => setStep(steps[Math.min(stepIndex + 1, steps.length - 1)])
+  const goBack = () => setStep(steps[Math.max(stepIndex - 1, 0)])
   const headingRef = useRef<HTMLHeadingElement>(null)
   const firstRender = useRef(true)
 
@@ -147,14 +164,14 @@ export function WelcomeFlow({ locale, next, currentUsername, suggestChange, need
     const body: SettingsPatch = {}
     if (changed) body.username = value
     if (termsPending) body.accept_terms = true
-    if (Object.keys(body).length === 0) return setStep('formats')
+    if (Object.keys(body).length === 0) return goNext()
 
     setSaving(true)
     try {
       await updateSettings(body)
       if (changed) setSavedUsername(value)
       setTermsPending(false)
-      setStep('formats')
+      goNext()
     } catch (err) {
       if (err instanceof ApiError && err.code === 'conflict') {
         setUsernameError(err.message === SETTINGS_ERRORS.usernameReserved ? t('nameReserved') : t('nameTaken'))
@@ -266,15 +283,17 @@ export function WelcomeFlow({ locale, next, currentUsername, suggestChange, need
           </button>
         </header>
 
-        <Progress current={stepIndex} />
+        <Progress steps={steps} current={stepIndex} />
 
         {step === 'name' && (
           <section aria-labelledby="welcome-heading" className="animate-toast-in mx-auto w-full max-w-[560px]">
             <div className={AUTH_CARD}>
-              <p className="inline-block rotate-[-4deg] rounded-pill bg-accent-lime px-3.5 py-1.5 font-display text-xs font-extrabold tracking-wide text-on-accent-lime shadow-sticker">
-                {t('welcomeBadge')}
-              </p>
-              <h1 id="welcome-heading" ref={headingRef} tabIndex={-1} className={cn(headingClass, 'mt-5')}>
+              {isFirstStep && (
+                <p className="inline-block rotate-[-4deg] rounded-pill bg-accent-lime px-3.5 py-1.5 font-display text-xs font-extrabold tracking-wide text-on-accent-lime shadow-sticker">
+                  {t('welcomeBadge')}
+                </p>
+              )}
+              <h1 id="welcome-heading" ref={headingRef} tabIndex={-1} className={cn(headingClass, isFirstStep && 'mt-5')}>
                 {t('nameTitle')}
               </h1>
               <p className={bodyClass}>{t('nameBody')}</p>
@@ -322,6 +341,11 @@ export function WelcomeFlow({ locale, next, currentUsername, suggestChange, need
                 <KButton type="submit" size="lg" loading={saving} className="mt-2 w-full">
                   {t('continue')}
                 </KButton>
+                {!isFirstStep && (
+                  <KButton type="button" variant="secondary" size="lg" onClick={goBack} className="w-full">
+                    {t('back')}
+                  </KButton>
+                )}
               </form>
             </div>
           </section>
@@ -335,37 +359,13 @@ export function WelcomeFlow({ locale, next, currentUsername, suggestChange, need
               </h1>
               <p className={bodyClass}>{t('formatsBody')}</p>
 
-              <div role="group" aria-label={t('formatsTitle')} className="mt-7 flex flex-wrap gap-3">
-                {WELCOME_FORMATS.map(({ type, icon: Icon }) => {
-                  const active = formats.includes(type)
-                  return (
-                    <button
-                      key={type}
-                      type="button"
-                      aria-pressed={active}
-                      onClick={() =>
-                        setFormats((prev) => (active ? prev.filter((f) => f !== type) : [...prev, type]))
-                      }
-                      className={cn(
-                        'inline-flex min-h-[48px] items-center gap-2 rounded-pill px-5 py-3 font-body text-body font-bold transition-colors duration-150',
-                        'focus-visible:[outline-style:solid] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus-ring',
-                        active
-                          ? 'bg-accent-pink text-on-accent-pink'
-                          : 'bg-surface-elevated text-text-primary hover:bg-surface-border'
-                      )}
-                    >
-                      <Icon aria-hidden="true" className="h-5 w-5" />
-                      {t(`formats.${type}`)}
-                    </button>
-                  )
-                })}
-              </div>
+              <FormatChips formats={formats} onChange={setFormats} className="mt-7" />
 
               <div className="mt-8 flex flex-col-reverse gap-3 sm:flex-row sm:items-center sm:justify-between">
-                <KButton type="button" variant="secondary" size="lg" onClick={() => setStep('name')}>
+                <KButton type="button" variant="secondary" size="lg" onClick={goBack}>
                   {t('back')}
                 </KButton>
-                <KButton type="button" size="lg" onClick={() => setStep('rate')}>
+                <KButton type="button" size="lg" onClick={goNext}>
                   {formats.length === 0 ? t('continueAll') : t('continue')}
                 </KButton>
               </div>
@@ -403,6 +403,14 @@ export function WelcomeFlow({ locale, next, currentUsername, suggestChange, need
               </p>
             )}
 
+            {/* Sin paso de formatos (puntuar primero): aquí, como filtro opcional. */}
+            {!steps.includes('formats') && (
+              <div>
+                <p className="font-body text-sm font-bold text-text-secondary">{t('formatsTitle')}</p>
+                <FormatChips formats={formats} onChange={setFormats} className="mt-3" compact />
+              </div>
+            )}
+
             {/* F-26: quien viene de otra app se trae su historial en vez de puntuar a mano. */}
             <WelcomeImport locale={locale} messages={importMessages} userId={userId} onFinished={setImportedCount} />
 
@@ -420,10 +428,12 @@ export function WelcomeFlow({ locale, next, currentUsername, suggestChange, need
               ))}
             </ul>
 
-            <div className="flex flex-col-reverse gap-3 sm:flex-row sm:items-center sm:justify-between">
-              <KButton type="button" variant="secondary" size="lg" onClick={() => setStep('formats')}>
-                {t('back')}
-              </KButton>
+            <div className={cn('flex flex-col-reverse gap-3 sm:flex-row sm:items-center', isFirstStep ? 'sm:justify-end' : 'sm:justify-between')}>
+              {!isFirstStep && (
+                <KButton type="button" variant="secondary" size="lg" onClick={goBack}>
+                  {t('back')}
+                </KButton>
+              )}
               <div className="flex flex-col-reverse items-stretch gap-3 sm:flex-row sm:items-center">
                 {ratedCount < STARTER_MIN_RATINGS && (
                   <KButton
@@ -432,7 +442,7 @@ export function WelcomeFlow({ locale, next, currentUsername, suggestChange, need
                     size="lg"
                     onClick={async () => {
                       await flushRatings()
-                      setStep('recs')
+                      goNext()
                     }}
                   >
                     {t('skipStep')}
@@ -445,7 +455,7 @@ export function WelcomeFlow({ locale, next, currentUsername, suggestChange, need
                   aria-describedby={ratedCount < STARTER_MIN_RATINGS ? 'rate-min-hint' : undefined}
                   onClick={async () => {
                     await flushRatings()
-                    setStep('recs')
+                    goNext()
                   }}
                 >
                   {t('toRecommendations')}
@@ -474,7 +484,7 @@ export function WelcomeFlow({ locale, next, currentUsername, suggestChange, need
             <AiRecommendations />
 
             <div className="flex flex-col-reverse gap-3 sm:flex-row sm:items-center sm:justify-between">
-              <KButton type="button" variant="secondary" size="lg" onClick={() => setStep('rate')}>
+              <KButton type="button" variant="secondary" size="lg" onClick={goBack}>
                 {t('back')}
               </KButton>
               <KButton type="button" size="lg" loading={finishing} onClick={finish}>
@@ -488,14 +498,55 @@ export function WelcomeFlow({ locale, next, currentUsername, suggestChange, need
   )
 }
 
-/** Barra de 4 segmentos: hecho = lima, actual = pink, pendiente = superficie. */
-function Progress({ current }: { current: number }) {
+/** Chips de formato: paso propio en el orden de siempre, filtro dentro de «puntuar» si no. */
+function FormatChips({
+  formats,
+  onChange,
+  className,
+  compact = false,
+}: {
+  formats: MediaType[]
+  onChange: (next: MediaType[]) => void
+  className?: string
+  compact?: boolean
+}) {
+  const t = useTranslations('onboarding')
+  return (
+    <div role="group" aria-label={t('formatsTitle')} className={cn('flex flex-wrap', compact ? 'gap-2' : 'gap-3', className)}>
+      {WELCOME_FORMATS.map(({ type, icon: Icon }) => {
+        const active = formats.includes(type)
+        return (
+          <button
+            key={type}
+            type="button"
+            aria-pressed={active}
+            onClick={() => onChange(active ? formats.filter((f) => f !== type) : [...formats, type])}
+            className={cn(
+              'inline-flex items-center gap-2 rounded-pill font-body font-bold transition-colors duration-150',
+              compact ? 'min-h-[44px] px-4 py-2 text-sm' : 'min-h-[48px] px-5 py-3 text-body',
+              'focus-visible:[outline-style:solid] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus-ring',
+              active
+                ? 'bg-accent-pink text-on-accent-pink'
+                : 'bg-surface-elevated text-text-primary hover:bg-surface-border'
+            )}
+          >
+            <Icon aria-hidden="true" className={compact ? 'h-4 w-4' : 'h-5 w-5'} />
+            {t(`formats.${type}`)}
+          </button>
+        )
+      })}
+    </div>
+  )
+}
+
+/** Barra de segmentos (uno por paso): hecho = lima, actual = pink, pendiente = superficie. */
+function Progress({ steps, current }: { steps: readonly Step[]; current: number }) {
   const t = useTranslations('onboarding')
   return (
     <nav aria-label={t('progressLabel')}>
-      <p className="sr-only">{t('stepOf', { current: current + 1, total: STEPS.length })}</p>
-      <ol className="grid grid-cols-4 gap-2">
-        {STEPS.map((step, i) => (
+      <p className="sr-only">{t('stepOf', { current: current + 1, total: steps.length })}</p>
+      <ol className={cn('grid gap-2', steps.length === 3 ? 'grid-cols-3' : 'grid-cols-4')}>
+        {steps.map((step, i) => (
           <li key={step} aria-current={i === current ? 'step' : undefined} className="flex flex-col gap-2">
             <span
               aria-hidden="true"
