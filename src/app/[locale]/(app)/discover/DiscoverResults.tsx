@@ -6,6 +6,7 @@
 import { useTranslations } from "next-intl";
 import type { MediaItem } from "@/types/media";
 import { MediaGrid } from "@/components/media/MediaGrid";
+import { QuickAddButton } from "@/components/media/QuickAddButton";
 import { GoogleBooksAttribution } from "@/components/media/GoogleBooksAttribution";
 import { googleBooksVolumeId } from "@/lib/media/google-books";
 import { cn } from "@/lib/utils/index";
@@ -19,6 +20,8 @@ export interface DiscoverResultsProps {
   randomItem: MediaItem | null;
   /** Agregado: badge de tipo por card (aquí los tipos se mezclan). */
   showType: boolean;
+  /** Fase 8.2 (bandera QUICK_ADD): botón «+» en cada tarjeta. */
+  quickAdd?: boolean;
   query: string;
   isSearching: boolean;
   hasActiveFilters: boolean;
@@ -33,6 +36,7 @@ export function DiscoverResults({
   items,
   randomItem,
   showType,
+  quickAdd = false,
   query,
   isSearching,
   hasActiveFilters,
@@ -86,7 +90,12 @@ export function DiscoverResults({
             </div>
           </div>
         )}
-        <MediaGrid items={shown} showType={showType} layout="bento" />
+        <MediaGrid
+          items={shown}
+          showType={showType}
+          layout="bento"
+          renderAction={quickAdd ? (item) => <QuickAddButton mediaId={item.id} title={item.title} /> : undefined}
+        />
         {fromGoogleBooks && <GoogleBooksAttribution label={tS("googleBooksResults")} className="mt-4" />}
       </>
     );
