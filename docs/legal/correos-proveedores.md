@@ -9,7 +9,7 @@ Van en inglés: son proveedores internacionales. Hay un cuerpo común y, por pro
 
 - **A. Copia de la landing:** se cuenta (punto 2b) a TMDB, Steam y MangaDex. Es la copia propia recortada y con mapa de profundidad del bucket `landing` y de `public/landing/fallback/` (tarea pausada, #175).
 - **B. AniList:** se le pregunta directamente (punto 6) si KULTURA cae en su prohibición de *trackers* de anime y manga.
-- **C. MyAnimeList:** no se le escribe hasta decidir si se pasa a su API oficial, que obliga a avisarles al publicar (§4(b)). A Jikan se le escribe solo por cortesía.
+- **C. MyAnimeList:** no se le escribe hasta decidir si se pasa a su API oficial, que obliga a avisarles al publicar (§4(b)). A Jikan se le escribe solo por cortesía. **Actualización (fase 8.1, 17-11-2026):** Jikan se retiró (#217) y KULTURA ya no usa datos de MyAnimeList: no se escribe a ninguno de los dos. La fila de Jikan de la tabla queda sin efecto.
 - **D. Destinatarios:** los marcados «[confirmar]» los busca Víctor en la web de contacto de cada proveedor antes de enviar.
 
 ## Cuerpo común

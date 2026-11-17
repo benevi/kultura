@@ -74,7 +74,7 @@ Detalle en [`legal/terminos/README.md`](legal/terminos/README.md).
 | Fase | Qué | Sale con | [E] sem. |
 |---|---|---|---|
 | **8.0 Preparación** | Ya hecho: `/privacy` (#173), inventario de portadas (#174), licencias (#176), notificaciones (#177), plan de Vercel (#178), canal de retirada (#179), términos de proveedores (#210), borradores de correo (#212) | Este plan aprobado | — |
-| **8.1 API oficiales y atribución** | Ver §5 | Ninguna llamada a una API no oficial; atribución completa | 1–2 |
+| **8.1 API oficiales y atribución** | **Hecha (17-11-2026):** #216, #217, #218, #219. Ver §5 | Ninguna llamada a una API no oficial; atribución completa | — |
 | **8.2 Crecer** | Ver §6 | Línea base medida; acciones rápidas en producción | 3–5 |
 | **8.3 Dirección visual y prototipo 3D** | Ver §7 | **P-Gusto** y **P-3D** | 2–4 |
 | **8.4 Sistema y deuda de interfaz** | Tokens, tipografía y componentes de la dirección elegida; Storybook como guía interna; deuda heredada (antes 8A.3b de la v3) | Componentes con estados y sin fallos graves de accesibilidad | 4–7 |
@@ -86,6 +86,14 @@ Detalle en [`legal/terminos/README.md`](legal/terminos/README.md).
 **Encaje con el saneamiento:** orden vigente `… → 9 → 10 → 12 → 8 → 11`. Las banderas de la fase 8 se registran en `docs/banderas.json`. Las migraciones siguen las reglas de `CLAUDE.md`.
 
 ## 5. Fase 8.1 · API oficiales y atribución
+
+**Hecha el 17-11-2026.** Enlace de Comic Vine en el pie (#216); Jikan retirado (#217); «Powered by Google» y enlace a cada libro (#218); «MyAnimeList» fuera del pie, de `/privacy` y de `/terms` (#219).
+
+- **Ids de Jikan en producción: 0** (consulta de agregados del 17-11-2026 sobre `media`, `user_media`, `user_media_logs`, `list_items`, `recommendations`, `group_posts`, `media_adaptations` y `media_translations`). No hubo nada que convertir ni migración. El pendiente [P] de §10.1 queda sin objeto.
+- **Importador de MyAnimeList:** si AniList no tiene el MAL ID de una fila, la fila queda sin emparejar (antes se pedía a Jikan).
+- **Queda para más adelante, sin prisa:** renombrar `src/lib/api/jikan-maps.ts` (tablas de géneros y estados; no llama a ninguna API) y quitar el trato de ids `anime_{n}` / `manga_{n}` que sobrevive en el correo de calendario y en las adaptaciones (usan AniList y Wikidata, no Jikan).
+
+Lo que sigue es la tabla con la que arrancó la fase.
 
 | Proveedor | Hoy | Qué se hace |
 |---|---|---|
@@ -142,5 +150,5 @@ Cada punto es un PR o pocos, detrás de bandera si cambia una pantalla. Privacid
 
 ## 10. Pendiente de Víctor
 
-1. Ids antiguos de Jikan que no se puedan convertir: API oficial de MAL o dejarlos (§5). Se decide con la lista real en 8.1.
+1. ~~Ids antiguos de Jikan que no se puedan convertir~~. Resuelto en 8.1: no había ninguno en producción (§5).
 2. Referencias visuales, antes de empezar 8.3 (§7).
