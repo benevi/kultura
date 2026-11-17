@@ -272,9 +272,17 @@ describe('metadatos traducidos (TXT-5/SEO-6)', () => {
 describe('textos', () => {
   it('la atribución del pie cita todos los catálogos', () => {
     for (const messages of [es, en]) {
-      for (const name of ['TMDB', 'RAWG', 'Steam', 'AniList', 'MyAnimeList', 'MangaDex', 'Open Library', 'Google Books', 'Comic Vine']) {
+      for (const name of ['TMDB', 'RAWG', 'Steam', 'AniList', 'MangaDex', 'Open Library', 'Google Books', 'Comic Vine']) {
         expect(messages.legal.dataSources).toContain(name)
       }
+    }
+  })
+
+  it('MyAnimeList ya no es fuente de datos: ni el pie ni los textos legales lo citan (fase 8.1)', () => {
+    // Jikan (API no oficial de MyAnimeList) se retiró; importar una lista de
+    // MyAnimeList sigue existiendo, pero eso va en `import`, no en `legal`.
+    for (const messages of [es, en]) {
+      expect(JSON.stringify(messages.legal)).not.toMatch(/MyAnimeList|Jikan/)
     }
   })
 

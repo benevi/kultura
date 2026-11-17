@@ -14,7 +14,7 @@ Biblioteca personal de cultura: películas, series, anime, manga, libros, cómic
 | Next.js (App Router) + React | Páginas en `src/app/[locale]/` y API en `src/app/api/`. Idiomas con next-intl (`messages/es.json` y `messages/en.json`). |
 | Supabase | Postgres con RLS, Auth y realtime. El esquema son las migraciones de `supabase/migrations/` ([`supabase/README.md`](supabase/README.md)). |
 | Vercel | Despliegue: cada fusión a `master` va a producción. Las funciones corren en `fra1`, junto a la base (Frankfurt). Hay un cron diario (`/api/cron/daily`). |
-| Proveedores | TMDB, RAWG, Steam, AniList, Jikan, MangaDex, Open Library, Google Books, Comic Vine y Wikidata. Hay un adaptador por familia y un circuito por proveedor ([ADR 0001](docs/adr/0001-catalogo-adaptadores-por-familia-y-circuito-por-proveedor.md)). |
+| Proveedores | TMDB, RAWG, Steam, AniList, MangaDex, Open Library, Google Books, Comic Vine y Wikidata. Hay un adaptador por familia y un circuito por proveedor ([ADR 0001](docs/adr/0001-catalogo-adaptadores-por-familia-y-circuito-por-proveedor.md)). |
 | Upstash Redis | Límite de peticiones compartido entre instancias (`src/lib/rate-limit.ts`). |
 | Sentry | Errores de cliente y servidor (`sentry.*.config.ts`, `src/lib/logger.ts`). |
 | Anthropic | Recomendaciones y traducción de sinopsis, con un tope diario (`src/lib/claude/`). |
