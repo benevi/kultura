@@ -10,6 +10,7 @@
 import { useEffect, useRef, useState } from "react";
 import type { MediaItem } from "@/types/media";
 import type { DiscoverResult } from "@/lib/api/discover";
+import { ApiError, apiFetch } from "@/lib/api/client";
 
 export interface DiscoverQueryInput {
   type: string;
@@ -59,8 +60,7 @@ export function useDiscoverQuery({
     if (query.trim()) params.set("q", query.trim());
     // F-06 (DAT-1): el idioma viaja en la URL (la caché de borde no mezcla idiomas).
     params.set("locale", locale);
-    fetch(`/api/discover?${params.toString()}`)
-      .then((res) => res.json() as Promise<DiscoverResult>)
+    apiFetch<DiscoverResult>(`/api/discover?${params.toString()}`)
       .then((data) => {
         if (cancelled) return;
         setItems(data.items ?? []);
@@ -69,12 +69,12 @@ export function useDiscoverQuery({
         setTotalPages(data.totalPages === undefined ? 1 : data.totalPages);
         setFetchErrorKind(data.fetchErrorKind ?? null);
       })
-      .catch(() => {
+      .catch((err) => {
         if (cancelled) return;
         setItems([]);
         setHasMore(false);
         setTotalPages(1);
-        setFetchErrorKind("generic");
+        setFetchErrorKind(err instanceof ApiError && err.code === "rate_limited" ? "rate-limit" : "generic");
       })
       .finally(() => {
         if (!cancelled) {

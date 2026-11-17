@@ -11,7 +11,7 @@ import { buildYearBuckets } from "@/lib/discover/discover-config";
 const base = { type: "movie", page: 1, filterQuery: "", query: "", locale: "es" };
 
 function respond(body: unknown) {
-  return Promise.resolve({ json: async () => body });
+  return Promise.resolve({ ok: true, status: 200, json: async () => ({ data: body }) });
 }
 
 afterEach(() => vi.unstubAllGlobals());
@@ -55,7 +55,7 @@ describe("useDiscoverQuery", () => {
     await waitFor(() => expect(result.current.loading).toBe(false));
     expect(result.current.fetchErrorKind).toBe("generic");
     await act(async () => {
-      resolveOld({ json: async () => ({ items: [{ id: "old" }], fetchErrorKind: null }) });
+      resolveOld({ ok: true, status: 200, json: async () => ({ data: { items: [{ id: "old" }], fetchErrorKind: null } }) });
     });
     expect(result.current.items).toEqual([]);
     expect(result.current.fetchErrorKind).toBe("generic");
