@@ -241,10 +241,10 @@ Orden: `library` → `lists` → `friends` → `chat` → `groups` → `account/
 2. Esquemas zod de respuesta en `src/lib/api/contracts/` y un test de contrato por endpoint.
 3. **Sin doble formato** (Q26): cada PR de módulo cambia servidor y cliente a la vez y **sube la versión del service worker**.
 
-## 🟨 Fase 9 · Una sola forma de pedir datos (solo la parte de datos, antes de la fase 8) — 2: plataformas #145 · chat leído #146 · muro del grupo #147 · 3: este PR · 12-11-2026
+## ✅ Fase 9 · Una sola forma de pedir datos (solo la parte de datos, antes de la fase 8) — 2: plataformas #145 · chat leído #146 · muro del grupo #147 · 3: #148 · 12-11-2026 · rutas que faltaban: #195 a #204 · cerrada el 17-11-2026
 
 - Hecho: en el navegador Supabase ya solo hace `auth` y realtime (más el autor de cada mensaje o publicación nueva que llega por realtime).
-- Pendiente de la regla 1: los `fetch` sueltos que quedan van a rutas que aún no usan el contrato `{ data }` / `{ error }` (Q26): `recommendations`, `search`, `popular-in-circle`, `genre-news`, `ai-recommendations`, `suggestions`, `users/search`, `email/preferences`, `discover` y `push/*`. Pasan a `apiFetch` cuando se sanee cada ruta. Las descargas (`account/export`, `letterboxd`) siguen con `fetch`: devuelven un archivo.
+- ✅ Regla 1 completa: todas las rutas que pide el navegador usan el contrato `{ data }` / `{ error }` (Q26) y el cliente las llama con `apiFetch`. Un PR por ruta: `popular-in-circle` #195, `genre-news` #196, `users/search` #197, `suggestions` #198, `ai-recommendations` #199, `email/preferences` #200, `recommendations` #201, `search` #202, `discover` #203 y `push/*` #204 (service worker en v30). Las descargas (`account/export`, `letterboxd`) siguen con `fetch`: devuelven un archivo.
 
 1. **Regla:**
    - Lectura inicial: componentes de servidor con Supabase.
