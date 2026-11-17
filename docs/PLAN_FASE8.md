@@ -75,7 +75,7 @@ Detalle en [`legal/terminos/README.md`](legal/terminos/README.md).
 |---|---|---|---|
 | **8.0 Preparación** | Ya hecho: `/privacy` (#173), inventario de portadas (#174), licencias (#176), notificaciones (#177), plan de Vercel (#178), canal de retirada (#179), términos de proveedores (#210), borradores de correo (#212) | Este plan aprobado | — |
 | **8.1 API oficiales y atribución** | **Hecha (17-11-2026):** #216, #217, #218, #219. Ver §5 | Ninguna llamada a una API no oficial; atribución completa | — |
-| **8.2 Crecer** | Ver §6 | Línea base medida; acciones rápidas en producción | 3–5 |
+| **8.2 Crecer** | **Hecha (17-11-2026):** #221–#226. Ver §6. Falta encender tres banderas en Vercel | Línea base medida; acciones rápidas fusionadas | — |
 | **8.3 Dirección visual y prototipo 3D** | Ver §7 | **P-Gusto** y **P-3D** | 2–4 |
 | **8.4 Sistema y deuda de interfaz** | Tokens, tipografía y componentes de la dirección elegida; Storybook como guía interna; deuda heredada (antes 8A.3b de la v3) | Componentes con estados y sin fallos graves de accesibilidad | 4–7 |
 | **8.5 Pantallas** | Rediseño pantalla a pantalla, empezando por las más usadas (ficha, biblioteca, buscar). Cada una detrás de una bandera; **P-Uso** antes del 100 %. El 3D de la ficha entra aquí si pasó P-3D | Todas las pantallas con el diseño nuevo | 5–9 |
@@ -111,7 +111,20 @@ Migraciones, si la conversión de ids las necesita: expandir → usar → contra
 
 ## 6. Fase 8.2 · Crecer
 
-Con el diseño actual, sin esperar al rediseño.
+**Hecha el 17-11-2026**, con el diseño actual.
+
+- **Medir** (#221). [`metricas-fase8.sql`](metricas-fase8.sql) y la línea base en [`metricas-fase8-linea-base.md`](metricas-fase8-linea-base.md): 4 cuentas, 1 activo a 30 días, 0 a 7 días. El freno es que llega poca gente, no la velocidad de registro.
+- **Registrar más rápido.** «+» en las tarjetas de Descubrir: guarda como Pendiente y avisa con «Deshacer» (#222, bandera `QUICK_ADD`). Estado y nota desde la tarjeta de la Biblioteca, con el diálogo de la ficha (#226, bandera `LIBRARY_QUICK_EDIT`).
+- **Volver** (#223, sin bandera). La fila «Continúa donde lo dejaste» y el «+1» ya existían; ahora lo que está en curso va primero y caben 12 tarjetas.
+- **Invitar** (#224, sin bandera). El perfil con su imagen de enlace y la invitación con enlace firmado ya existían; la lista pública tiene ahora su propia imagen de enlace.
+- **Llegar** (#225, bandera `WELCOME_RATE_FIRST`). La bienvenida empieza por puntuar: notas → nombre → recomendaciones. El alta con Google sin la casilla de edad y términos conserva el orden de siempre.
+
+**Pendiente:**
+- Encender en Vercel (producción) `QUICK_ADD=1`, `WELCOME_RATE_FIRST=1` y `LIBRARY_QUICK_EDIT=1`, redesplegar y pasar `produccion` a `on` en `banderas.json`. Las tres caducan el 16-01-2027 (60 días): antes, se quita la bandera y queda un solo camino.
+- **P-Números:** repetir la medición hacia el 15-12-2026 (4 semanas) y añadirla a la línea base.
+- Comprobar en Supabase que la confirmación de correo sigue apagada en producción; con ella encendida, el alta con correo no cabe en un minuto.
+
+Lo que sigue es el encargo con el que arrancó la fase.
 
 1. **Medir.** `docs/metricas-fase8.sql` (solo lectura, solo agregados): entradas por usuario activo, activos a 7 y 30 días, altas, de dónde vienen. Línea base antes de tocar nada.
 2. **Registrar más rápido.** Añadir una obra en dos toques desde la búsqueda; cambiar estado y nota sin entrar en la ficha; deshacer.
