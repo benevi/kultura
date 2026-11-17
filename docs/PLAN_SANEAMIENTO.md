@@ -266,10 +266,14 @@ Los `loading.tsx` y el componente de error con reintento pasan a la fase 8 (Q32)
    |---|---|---|
    | TTFB de Inicio (`/es/home`, cuenta demo) | 1,2 s | 0,43–0,57 s en caliente; 1,1 s en frío |
    | Calendario (`/es/calendar`, cuenta demo, respuesta completa) | 6,6 s | 0,49–0,79 s (caché de proveedores de ~6 h) |
-   | Tasa de 5xx por endpoint | — | ⬜ pendiente: la API de logs de Vercel daba 500 al medir |
-   | Errores de Sentry por semana | — | ⬜ pendiente: sin acceso a Sentry desde aquí |
+   | Tasa de 5xx por endpoint | — | 0 de 1854 peticiones (producción, últimas 12 h, medido el 17-11-2026) |
+   | Errores de Sentry por semana | — | ⬜ sin dato fiable: 0 en la semana hasta el 17-11, pero los eventos del servidor no llegaban (#208). Medir la semana siguiente al despliegue |
 
    Cómo se midió: `curl` contra producción, 5 peticiones seguidas por ruta, con la sesión de la cuenta demo (`POST /api/auth/demo`). La primera petición de cada serie es la fría.
+
+   - **5xx:** `vercel logs requests -e production --since 12h -q 'httpStatus >= 500'`. En el plan Hobby Vercel guarda 12 h de peticiones y 1 h de logs de funciones; 7 días piden Observability Plus (no se puede en Hobby).
+   - **Sentry:** Settings → Stats & Usage, categoría Errors, 7 días. El 0 de la semana hasta el 17-11 no vale: el DSN y la clave son correctos, pero en Vercel la función se congelaba antes de enviar los eventos del servidor (el SDK solo espera en Edge). Arreglado en #208: el logger y los avisos de proveedor vacían la cola dentro de `waitUntil`.
+   - **Ruido en el log:** «revalidating cache with key…» de Next.js en fichas de libro (68 de 75 errores en una hora). No era un 5xx: la ficha se servía con la copia del día anterior. Venía de `search.json` de Open Library, que agotaba los 8 s desde Vercel. Respaldo con `/works/{id}.json` en #207.
 
 ## ⬜ Fase 8 · Rediseño total (con su propio plan; Q27, Q31–Q33)
 
