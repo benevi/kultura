@@ -28,6 +28,8 @@ export interface MediaGridProps {
   requirePoster?: boolean;
   /** Nivel del título de cada card (ACC-7, ver `MediaCard`). */
   headingLevel?: 2 | 3 | 4;
+  /** Acción sobre la portada de cada card (ver `MediaCard.action`). */
+  renderAction?: (item: MediaItem) => React.ReactNode;
 }
 
 /** Cards que se cargan con prioridad: lo que se ve sin hacer scroll. */
@@ -87,6 +89,7 @@ export function MediaGrid({
   layout = "uniform",
   requirePoster = true,
   headingLevel,
+  renderAction,
 }: MediaGridProps) {
   const t = useTranslations("media");
   const [failed, setFailed] = React.useState<ReadonlySet<string>>(() => new Set());
@@ -145,6 +148,7 @@ export function MediaGrid({
               onPosterError={requirePoster ? onPosterError : undefined}
               aspect={layout === "bento" ? "fill" : "2/3"}
               headingLevel={headingLevel}
+              action={renderAction?.(item)}
               accentHue={
                 isFeature
                   ? BENTO_ACCENT_HUE_PAIRS[cycleIndex % BENTO_ACCENT_HUE_PAIRS.length][cyclePos]

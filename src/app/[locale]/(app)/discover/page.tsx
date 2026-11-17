@@ -35,7 +35,12 @@ export default async function DiscoverPage({ searchParams }: Props) {
 
   return (
     <main className="page-grid py-8">
-      <DiscoverClient currentType={type} currentPage={page} currentQuery={q} />
+      <DiscoverClient
+        currentType={type}
+        currentPage={page}
+        currentQuery={q}
+        quickAdd={process.env.QUICK_ADD === "1"}
+      />
     </main>
   );
 }

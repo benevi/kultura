@@ -7,7 +7,7 @@
 import { describe, it, expect, vi, beforeAll } from 'vitest'
 import type { ReactElement, ReactNode } from 'react'
 
-const { selects } = vi.hoisted(() => ({ selects: [] as string[] }))
+const { selects, orders, limits } = vi.hoisted(() => ({ selects: [] as string[], orders: [] as string[], limits: [] as number[] }))
 
 vi.mock('next/navigation', () => ({ redirect: vi.fn() }))
 vi.mock('@/i18n/navigation', () => ({ Link: () => null }))
@@ -68,8 +68,15 @@ vi.mock('@/lib/supabase/server', () => ({
           const chain: Record<string, unknown> = {}
           chain.eq = () => chain
           chain.in = () => chain
-          chain.order = () => chain
-          chain.limit = () =>
+          chain.order = (col: string) => {
+            orders.push(col)
+            return chain
+          }
+          chain.limit = (n: number) => {
+            limits.push(n)
+            return limitResult(opts)
+          }
+          const limitResult = (opts?: { head?: boolean }) =>
             opts?.head
               ? chain
               : Object.assign(Promise.resolve({ data: RECENT_ROWS }), { maybeSingle: async () => ({ data: HERO_ROW }) })
@@ -114,6 +121,11 @@ describe('Inicio — progreso de las columnas progress_* (saneamiento 5.4)', () 
 
     const hero = findByType(tree, HeroStub) as { item: { progress: unknown } }
     expect(hero.item.progress).toEqual({ page: 120, total: 300 })
+
+    // Fase 8.2: la fila pide primero lo que está en curso (status) y luego lo
+    // más reciente, hasta 12 tarjetas más el destacado.
+    expect(orders).toEqual(['updated_at', 'status', 'updated_at'])
+    expect(limits).toEqual([1, 13])
 
     const row = findByType(tree, ContinueRowStub) as { items: { mediaId: string; progress: unknown }[] }
     expect(row.items).toEqual([expect.objectContaining({ mediaId: 'manga_2', progress: { chapter: 42 } })])
