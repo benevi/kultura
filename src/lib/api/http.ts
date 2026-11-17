@@ -51,7 +51,7 @@
 
 import { unstable_cache } from "next/cache";
 import type { ZodType } from "zod";
-import { createLogger } from "@/lib/logger";
+import { createLogger, flushSentryInBackground } from "@/lib/logger";
 import { PROVIDER_REVALIDATE_SECONDS } from "@/lib/api/fetch-cache";
 import { isNextDynamicUsage, markRedisDown, redisAvailable, redisExec } from "@/lib/rate-limit";
 
@@ -222,6 +222,7 @@ function reportIncident(
         tags: { provider, provider_incident: kind },
         extra,
       });
+      flushSentryInBackground(Sentry);
     })
     .catch(() => {
       // Sentry no disponible: el aviso ya está en el log.

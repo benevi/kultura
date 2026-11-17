@@ -107,6 +107,34 @@ export function _resetSentryForTests(): void {
   sentryPromise = null;
 }
 
+type VercelRequestContext = { get?: () => { waitUntil?: (task: Promise<unknown>) => void } | undefined };
+
+/**
+ * En el SERVIDOR el evento se captura y el SDK lo envía en segundo plano, pero
+ * en Vercel la función se congela al terminar la respuesta y el envío se queda
+ * a medias. El SDK solo lo evita en el runtime Edge (`vercelWaitUntil` de
+ * `@sentry/core` no hace nada en Node). Medido el 17-11-2026: el aviso de
+ * «circuito abierto» de Open Library salió en el log de Vercel y en Sentry no
+ * apareció ningún evento en toda la semana.
+ *
+ * Aquí se vacía la cola (máx. 2 s) y se le pide a la plataforma que espere a
+ * ese vaciado, con el mismo contexto de petición que usa `@vercel/functions`
+ * (`waitUntil`). Fuera de Vercel o sin petición en curso solo se vacía.
+ * En el navegador no hace nada: allí la página sigue viva.
+ */
+export function flushSentryInBackground(Sentry: { flush?: (timeout?: number) => PromiseLike<boolean> }): void {
+  if (typeof window !== "undefined" || typeof Sentry.flush !== "function") return;
+  try {
+    const task = Promise.resolve(Sentry.flush(2000)).catch(() => false);
+    const ctx = (globalThis as Record<symbol, unknown>)[Symbol.for("@vercel/request-context")] as
+      | VercelRequestContext
+      | undefined;
+    ctx?.get?.()?.waitUntil?.(task);
+  } catch {
+    // Sin flush ni contexto: el evento sale si la función sigue viva.
+  }
+}
+
 /** Reenvío best-effort a Sentry. Nunca lanza, nunca bloquea al caller. */
 function reportToSentry(message: string, context?: LogContext, level: "error" | "warning" = "error"): void {
   const pending = loadSentry();
@@ -119,6 +147,7 @@ function reportToSentry(message: string, context?: LogContext, level: "error" | 
       } else {
         Sentry.captureMessage(message, { level, extra: context });
       }
+      flushSentryInBackground(Sentry);
     })
     .catch(() => {
       // Sentry no disponible o falló al cargar — no interrumpe el flujo.
