@@ -4,6 +4,8 @@ import { getTranslations } from "next-intl/server";
 const JUSTWATCH_HOME = "https://www.justwatch.com";
 /** Tienda de Steam: de ahí salen carátulas y descripciones de juegos. */
 const STEAM_HOME = "https://store.steampowered.com";
+/** Comic Vine: su API pide un enlace en las páginas que usan sus datos. */
+const COMICVINE_HOME = "https://comicvine.gamespot.com";
 
 /**
  * Enlace de la atribución. Va dentro de una frase, así que es un enlace en
@@ -22,6 +24,7 @@ export const SOURCE_LINK_CLASS =
  * "no respaldado", RAWG un enlace visible en las páginas que usan sus datos y
  * los datos de "dónde ver" (que TMDB sirve) son de JustWatch, que hay que
  * citar (PRO-2; además de la cita con logo en la propia sección de la ficha).
+ * Comic Vine pide un enlace a su web en las páginas con sus datos (fase 8.1).
  * Steam: la landing pinta sus carátulas (F-09) y los rankings y la ficha de
  * juegos usan sus descripciones; las condiciones de su API piden que el
  * enlace a Valve no lleve `nofollow` y que no parezca que Valve nos respalda,
@@ -53,6 +56,7 @@ export async function renderDataAttribution(className = "") {
       {t.rich("dataSources", {
         tmdb: link("https://www.themoviedb.org"),
         rawg: link("https://rawg.io"),
+        comicvine: link(COMICVINE_HOME),
       })}{" "}
       {/* Un solo `t.rich` por párrafo: la marca no se traduce, así que el
           enlace va fuera del texto. */}

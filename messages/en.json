@@ -1647,7 +1647,7 @@
   "legal": {
     "footerPrivacy": "Privacy",
     "footerTerms": "Terms",
-    "dataSources": "Data from <tmdb>TMDB</tmdb>, <rawg>RAWG</rawg>, Steam, AniList, MyAnimeList, MangaDex, Open Library, Google Books and Comic Vine.",
+    "dataSources": "Data from <tmdb>TMDB</tmdb>, <rawg>RAWG</rawg>, Steam, AniList, MyAnimeList, MangaDex, Open Library, Google Books and <comicvine>Comic Vine</comicvine>.",
     "tmdbNotice": "This product uses the TMDB API but is not endorsed or certified by TMDB.",
     "justwatchSource": "Streaming availability data:",
     "nav": {
