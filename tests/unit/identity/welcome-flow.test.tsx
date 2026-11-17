@@ -197,6 +197,65 @@ describe('WelcomeFlow', () => {
   })
 })
 
+// Fase 8.2 («Llegar», bandera WELCOME_RATE_FIRST): puntuar es la primera pantalla.
+describe('WelcomeFlow con rateFirst', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    global.fetch = vi.fn().mockImplementation(async () => ok())
+  })
+
+  it('empieza por puntuar: la primera obra se guarda sin pasar por nombre ni formatos', async () => {
+    renderFlow({ needsTerms: false, rateFirst: true })
+
+    // Primera pantalla: puntuar, sin «Atrás», en 3 pasos.
+    expect(screen.getByRole('heading', { name: 'rateTitle' })).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'back' })).not.toBeInTheDocument()
+    expect(screen.getByText('stepOf:{"current":1,"total":3}')).toBeInTheDocument()
+    expect(screen.getAllByRole('listitem').filter((li) => li.hasAttribute('aria-current'))).toHaveLength(1)
+
+    const groups = screen.getAllByRole('radiogroup')
+    expect(groups).toHaveLength(STARTER_RATE_COUNT)
+    for (const group of groups.slice(0, 3)) {
+      fireEvent.click(within(group).getByRole('radio', { name: 'stars:{"count":5}' }))
+    }
+    fireEvent.click(screen.getByRole('button', { name: 'toRecommendations' }))
+
+    // Segunda: el nombre (ya sin el saludo), con las tres obras guardadas.
+    await screen.findByRole('heading', { name: 'nameTitle' })
+    expect(calls('/api/library')).toHaveLength(3)
+    expect(calls('/api/library')[0]).toEqual({ mediaId: pickStarterTitles([])[0].id, status: 'completed', score: 5 })
+    expect(screen.queryByText('welcomeBadge')).not.toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'back' })).toBeInTheDocument()
+
+    // Tercera: recomendaciones, y a Inicio.
+    fireEvent.change(screen.getByLabelText('nameLabel'), { target: { value: 'cinefila_92' } })
+    fireEvent.click(screen.getByRole('button', { name: 'continue' }))
+    await screen.findByRole('heading', { name: 'recsTitle' })
+    expect(calls('/api/settings')[0]).toEqual({ username: 'cinefila_92' })
+    fireEvent.click(screen.getByRole('button', { name: 'finish' }))
+    await waitFor(() => expect(h.replace).toHaveBeenCalledWith('/es/home'))
+    expect(calls('/api/settings').pop()).toEqual({ onboarding_done: true })
+  })
+
+  it('los formatos son un filtro dentro de puntuar: elegir uno pone sus títulos primero', () => {
+    renderFlow({ needsTerms: false, rateFirst: true })
+    const games = screen.getByRole('button', { name: /formats\.game/ })
+    fireEvent.click(games)
+    expect(games).toHaveAttribute('aria-pressed', 'true')
+    expect(screen.getAllByRole('radiogroup')).toHaveLength(STARTER_RATE_COUNT)
+    const first = pickStarterTitles(['game'])[0]
+    expect(first.type).toBe('game')
+    expect(screen.getAllByRole('radiogroup')[0]).toHaveAccessibleName(`rateLabel:{"title":"${first.title.es}"}`)
+  })
+
+  it('si falta la casilla de edad y términos (alta con Google), el orden es el de siempre', () => {
+    renderFlow({ needsTerms: true, rateFirst: true })
+    expect(screen.getByRole('heading', { name: 'nameTitle' })).toBeInTheDocument()
+    expect(screen.getByRole('checkbox')).toBeInTheDocument()
+    expect(screen.getByText('stepOf:{"current":1,"total":4}')).toBeInTheDocument()
+  })
+})
+
 describe('títulos para puntuar', () => {
   it('3 notas = el mínimo con el que Inicio deja de enseñar solo lo popular', () => {
     expect(STARTER_MIN_RATINGS).toBe(MIN_LIBRARY_ITEMS)

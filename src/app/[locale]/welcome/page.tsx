@@ -74,6 +74,7 @@ export default async function WelcomePage({ params, searchParams }: WelcomeProps
         // uno ya elegido se deja escrito.
         suggestChange={GENERATED_USERNAME_REGEX.test(currentUsername)}
         needsTerms={!hasAcceptedTerms(account.state, user)}
+        rateFirst={process.env.WELCOME_RATE_FIRST === '1'}
         // F-26: textos del paso opcional "Importar", solo en esta página (el
         // paso los envuelve en su propio <ImportMessages>).
         userId={user.id}
