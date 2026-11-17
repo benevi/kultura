@@ -297,7 +297,7 @@ export function SearchBar({
                 {/* Sugerencia que viene de Google Books (respaldo de libros y
                     cómic): su logo va junto al resultado (normas de marca). */}
                 {googleBooksVolumeId(item) && (
-                  <span className="inline-flex shrink-0 items-center rounded-md bg-white px-1 py-0.5">
+                  <span className="inline-flex shrink-0 items-center rounded-lg bg-white px-1 py-0.5">
                     {/* eslint-disable-next-line @next/next/no-img-element -- PNG estático de 3 KB */}
                     <img
                       src={GOOGLE_BOOKS_LOGO.src}

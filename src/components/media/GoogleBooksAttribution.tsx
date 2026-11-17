@@ -26,7 +26,7 @@ interface GoogleBooksAttributionProps {
  */
 export function GoogleBooksAttribution({ label, href, linkLabel, className = "" }: GoogleBooksAttributionProps) {
   const logo = (
-    <span className="inline-flex shrink-0 items-center rounded-md bg-white px-1.5 py-1">
+    <span className="inline-flex shrink-0 items-center rounded-lg bg-white px-1.5 py-1">
       {/* eslint-disable-next-line @next/next/no-img-element -- PNG estático de 3 KB */}
       <img
         src={GOOGLE_BOOKS_LOGO.src}
