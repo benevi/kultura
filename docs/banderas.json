@@ -3,6 +3,7 @@
   "banderas": [
     { "nombre": "WEEKLY_EMAIL", "dueno": "benevi", "desde": "2026-10-26", "produccion": "off", "para": "Resumen semanal por email (fuera del saneamiento, Q22)" },
     { "nombre": "PUSH_ENABLED", "dueno": "benevi", "desde": "2026-10-26", "produccion": "off", "para": "Notificaciones push (fuera del saneamiento, Q14)" },
-    { "nombre": "ANALYTICS_DISABLED", "dueno": "benevi", "desde": "2026-10-23", "produccion": "off", "para": "Interruptor de emergencia de la analítica", "permanente": "interruptor de apagado, no un despliegue gradual" }
+    { "nombre": "ANALYTICS_DISABLED", "dueno": "benevi", "desde": "2026-10-23", "produccion": "off", "para": "Interruptor de emergencia de la analítica", "permanente": "interruptor de apagado, no un despliegue gradual" },
+    { "nombre": "WELCOME_RATE_FIRST", "dueno": "benevi", "desde": "2026-11-17", "produccion": "off", "para": "Fase 8.2: la bienvenida empieza por puntuar (primera obra antes de pedir el nombre)" }
   ]
 }
