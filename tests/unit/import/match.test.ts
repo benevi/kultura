@@ -5,7 +5,6 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import type { ImportItem } from '@/lib/import/types'
 import {
   ANILIST_BY_MAL,
-  JIKAN_ANIME_5114,
   OPENLIBRARY_ISBN_HUNGER_GAMES,
   OPENLIBRARY_TITLE_DUNE,
   TMDB_FIND_EMPTY,
@@ -21,8 +20,6 @@ const mocks = vi.hoisted(() => ({
   searchTV: vi.fn(),
   searchOL: vi.fn(),
   searchOLTitle: vi.fn(),
-  jikanAnime: vi.fn(),
-  jikanManga: vi.fn(),
   providerFetch: vi.fn(),
 }))
 
@@ -36,11 +33,6 @@ vi.mock('@/lib/api/openlibrary', async (importOriginal) => ({
   ...(await importOriginal<typeof import('@/lib/api/openlibrary')>()),
   searchOpenLibrary: mocks.searchOL,
   searchOpenLibraryByTitle: mocks.searchOLTitle,
-}))
-vi.mock('@/lib/api/jikan', async (importOriginal) => ({
-  ...(await importOriginal<typeof import('@/lib/api/jikan')>()),
-  getAnime: mocks.jikanAnime,
-  getManga: mocks.jikanManga,
 }))
 vi.mock('@/lib/api/http', async (importOriginal) => ({
   ...(await importOriginal<typeof import('@/lib/api/http')>()),
@@ -124,9 +116,8 @@ describe('matchItems', () => {
     expect(r.get('0')).toEqual({ status: 'excluded' })
   })
 
-  it('MAL ID → AniList en una sola petición por lote; adulto fuera; lo que AniList no tiene, a Jikan', async () => {
+  it('MAL ID → AniList en una sola petición por lote; adulto fuera; lo que AniList no tiene, sin emparejar', async () => {
     mocks.providerFetch.mockResolvedValue(ANILIST_BY_MAL)
-    mocks.jikanAnime.mockResolvedValue(JIKAN_ANIME_5114)
     const items = [
       item({ key: '0', kind: 'anime', title: 'Cowboy Bebop', ids: { mal: 1 } }),
       item({ key: '1', kind: 'anime', title: 'Adulto', ids: { mal: 666 } }),
@@ -135,19 +126,17 @@ describe('matchItems', () => {
     const r = await matchItems(items, ctx())
     expect(r.get('0')).toMatchObject({ status: 'matched', mediaId: 'anime_al-1', by: 'mal' })
     expect(r.get('1')).toEqual({ status: 'excluded' })
-    expect(r.get('2')).toMatchObject({ status: 'matched', mediaId: 'anime_5114', by: 'mal' })
+    expect(r.get('2')).toEqual({ status: 'unmatched' })
     expect(mocks.providerFetch).toHaveBeenCalledTimes(1)
     const [provider, , opts] = mocks.providerFetch.mock.calls[0]
     expect(provider).toBe('anilist')
     const body = JSON.parse(opts.body)
     expect(body.variables.ids).toEqual([1, 666, 5114])
     expect(body.query).toContain('idMal_in: $ids, type: ANIME')
-    expect(mocks.jikanAnime).toHaveBeenCalledWith(5114)
   })
 
-  it('AniList caído o sin presupuesto → pending, NUNCA Jikan (daría anime_{mal} y luego anime_al-N duplicado)', async () => {
+  it('AniList caído o sin presupuesto → pending (se reintenta en otro lote)', async () => {
     mocks.providerFetch.mockRejectedValue(new ProviderError('anilist', 'http', 'AniList → 403', { status: 403 }))
-    mocks.jikanAnime.mockResolvedValue(JIKAN_ANIME_5114)
     const items = [item({ key: '0', kind: 'anime', ids: { mal: 5114 } }), item({ key: '1', kind: 'anime', ids: { mal: 1 } })]
     const down = await matchItems(items, ctx())
     expect(down.get('0')).toEqual({ status: 'pending' })
@@ -158,35 +147,29 @@ describe('matchItems', () => {
     const noBudget = await matchItems(items, ctx(0))
     expect(Array.from(noBudget.values())).toEqual([{ status: 'pending' }, { status: 'pending' }])
     expect(mocks.providerFetch).not.toHaveBeenCalled()
-    expect(mocks.jikanAnime).not.toHaveBeenCalled()
   })
 
-  it('AniList responde pero no tiene ese MAL ID → Jikan; Jikan 404 → sin emparejar', async () => {
+  it('AniList responde pero no tiene ese MAL ID → sin emparejar (no hay otra fuente)', async () => {
     mocks.providerFetch.mockResolvedValue({ data: { Page: { media: [] } } })
-    mocks.jikanAnime.mockImplementation(async (id: number) => {
-      if (id === 5114) return JIKAN_ANIME_5114
-      throw Object.assign(new Error('Jikan → 404'), { status: 404 })
-    })
     const r = await matchItems(
       [item({ key: '0', kind: 'anime', ids: { mal: 5114 } }), item({ key: '1', kind: 'anime', ids: { mal: 404 } })],
       ctx()
     )
-    expect(r.get('0')).toMatchObject({ status: 'matched', mediaId: 'anime_5114' })
+    expect(r.get('0')).toEqual({ status: 'unmatched' })
     expect(r.get('1')).toEqual({ status: 'unmatched' })
   })
 
-  it('ya en la biblioteca por MAL ID → ese mismo título, sin preguntar a AniList ni a Jikan', async () => {
+  it('ya en la biblioteca por MAL ID → ese mismo título, sin preguntar a AniList', async () => {
     mocks.providerFetch.mockResolvedValue(ANILIST_BY_MAL)
-    const existingByMal = vi.fn(async () => new Map([[5114, 'anime_5114'], [1, 'anime_al-1']]))
+    const existingByMal = vi.fn(async () => new Map([[5114, 'anime_al-5114'], [1, 'anime_al-1']]))
     const r = await matchItems(
       [item({ key: '0', kind: 'anime', ids: { mal: 5114 } }), item({ key: '1', kind: 'anime', ids: { mal: 1 } })],
       { ...ctx(), existingByMal }
     )
     expect(existingByMal).toHaveBeenCalledWith('anime', [5114, 1])
-    expect(r.get('0')).toEqual({ status: 'matched', mediaId: 'anime_5114', by: 'mal' })
+    expect(r.get('0')).toEqual({ status: 'matched', mediaId: 'anime_al-5114', by: 'mal' })
     expect(r.get('1')).toEqual({ status: 'matched', mediaId: 'anime_al-1', by: 'mal' })
     expect(mocks.providerFetch).not.toHaveBeenCalled()
-    expect(mocks.jikanAnime).not.toHaveBeenCalled()
   })
 
   it('si no se puede comprobar la biblioteca → pending (antes que arriesgar un duplicado)', async () => {

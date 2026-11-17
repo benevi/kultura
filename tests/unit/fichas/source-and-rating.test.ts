@@ -75,7 +75,6 @@ describe("sourceLinkFor", () => {
     ["tv", "1399", {}, "TMDB", "https://www.themoviedb.org/tv/1399"],
     ["anime", "al-1535", {}, "AniList", "https://anilist.co/anime/1535"],
     ["anime", "tmdb-37854", {}, "TMDB", "https://www.themoviedb.org/tv/37854"],
-    ["anime", "1535", {}, "MyAnimeList", "https://myanimelist.net/anime/1535"],
     [
       "manga",
       "A77742B1-BEFD-49A4-BFF5-1AD4E6B0EF7B",

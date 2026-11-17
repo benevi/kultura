@@ -16,9 +16,7 @@
 // `providers` con `optional: true` pero no cuenta para `ok`, porque WDQS va
 // lento o responde 429 a menudo y la ficha sin adaptaciones sigue funcionando;
 // si contase, el monitor saltaría por algo que nadie nota. Su sonda es una
-// consulta SPARQL sin tripletas con un plazo propio de 2,5 s. Jikan queda
-// fuera a propósito: solo resuelve ids antiguos de bibliotecas (ver
-// `jikan.ts`), y su caída no se nota en ninguna pantalla nueva.
+// consulta SPARQL sin tripletas con un plazo propio de 2,5 s.
 // ============================================================
 
 import { unstable_cache } from "next/cache";

@@ -27,7 +27,7 @@ export default defineConfig({
     include: ["tests/contract/**/*.{test,spec}.{ts,tsx}"],
     setupFiles: ["./tests/setup.ts"],
     env: { PROVIDER_CONTRACT_MODE: "enforce" },
-    // De uno en uno: varios proveedores limitan por segundo (Jikan, ComicVine).
+    // De uno en uno: varios proveedores limitan por segundo (AniList, ComicVine).
     fileParallelism: false,
     // Timeout más alto — llamadas de red reales (cada una con su plazo de 6 s)
     testTimeout: 30000,

@@ -21,7 +21,6 @@ import { unstable_cache } from "next/cache";
 import type { MediaItem, MediaType, StreamingProvider } from "@/types/media";
 import { getMovie, getTV, getTVProviders } from "@/lib/api/tmdb";
 import { resolveApiLocale, tmdbRegion } from "@/lib/api/locale";
-import { getAnime as getAnimeJikan, getAnimeVideos, getManga as getMangaJikan } from "@/lib/api/jikan";
 import {
   getAnime as getAnimeAniList,
   getMangaAniList,
@@ -41,9 +40,7 @@ import { getComic } from "@/lib/api/comicvine";
 import {
   normalizeMovie,
   normalizeTV,
-  normalizeAnime,
   normalizeAniListAnime,
-  normalizeMangaJikan,
   normalizeMangaDex,
   normalizeBookGoogle,
   normalizeBookOpenLibrary,
@@ -110,7 +107,7 @@ async function resolveBook(id: string): Promise<MediaItem | null> {
   return volume ? normalizeBookGoogle(volume) : null;
 }
 
-/** Manga: MangaDex (uuid), AniList (`al-`, lo que MangaDex no tiene) o Jikan legacy. */
+/** Manga: MangaDex (uuid) o AniList (`al-`, lo que MangaDex no tiene). */
 async function resolveManga(id: string, locale: string): Promise<MediaItem | null> {
   if (isMangaDexId(id)) {
     const detail = await getMangaDex(id).catch(() => null);
@@ -120,11 +117,10 @@ async function resolveManga(id: string, locale: string): Promise<MediaItem | nul
     const ani = await getMangaAniList(fromAniListRef(id)).catch(() => null);
     return ani ? normalizeAniListManga(ani) : null;
   }
-  const legacy = await getMangaJikan(Number(id)).catch(() => null);
-  return legacy ? normalizeMangaJikan(legacy.data) : null;
+  return null;
 }
 
-/** Anime: TMDB (`tmdb-`, respaldo), AniList (`al-`) o Jikan legacy, con tráiler. */
+/** Anime: TMDB (`tmdb-`, respaldo) o AniList (`al-`), con tráiler. */
 async function resolveAnime(
   id: string,
   locale: string
@@ -136,15 +132,7 @@ async function resolveAnime(
     const item = normalizeAniListAnime(raw);
     return { item, trailerKey: item.trailerKey };
   }
-  const numId = Number(id);
-  const [detail, videos] = await Promise.allSettled([getAnimeJikan(numId), getAnimeVideos(numId)]);
-  if (detail.status === "rejected") return null;
-  const item = normalizeAnime(detail.value.data);
-  const trailerKey =
-    videos.status === "fulfilled"
-      ? (videos.value.data.promo?.[0]?.trailer?.youtube_id ?? undefined)
-      : undefined;
-  return { item, trailerKey };
+  return null;
 }
 
 /** "Dónde ver" del anime vía la serie de TMDB que sea la misma obra (PRO-6). */
