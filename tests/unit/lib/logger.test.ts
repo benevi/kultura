@@ -190,3 +190,44 @@ describe("logger — reenvío a Sentry", () => {
     );
   });
 });
+
+describe("logger — vaciado de Sentry en el servidor", () => {
+  const KEY = Symbol.for("@vercel/request-context");
+  afterEach(() => {
+    delete (globalThis as Record<symbol, unknown>)[KEY];
+  });
+
+  it("tras capturar, vacía la cola y pide a Vercel que espere (waitUntil)", async () => {
+    process.env.NEXT_PUBLIC_SENTRY_DSN = "https://example@o0.ingest.sentry.io/1";
+    setNodeEnv("production");
+    const flush = vi.fn(async () => true);
+    const waitUntil = vi.fn();
+    (globalThis as Record<symbol, unknown>)[KEY] = { get: () => ({ waitUntil }) };
+    vi.doMock("@sentry/nextjs", () => ({ captureException: vi.fn(), captureMessage: vi.fn(), flush }));
+    vi.resetModules();
+    const { createLogger } = await import("@/lib/logger");
+    vi.spyOn(console, "error").mockImplementation(() => {});
+
+    createLogger("x").error("fallo", { code: "1" });
+    await new Promise((resolve) => setTimeout(resolve, 0));
+
+    expect(flush).toHaveBeenCalledWith(2000);
+    expect(waitUntil).toHaveBeenCalledWith(expect.any(Promise));
+  });
+
+  it("sin contexto de Vercel solo vacía; sin flush no lanza", async () => {
+    const { flushSentryInBackground } = await import("@/lib/logger");
+    const flush = vi.fn(async () => true);
+    expect(() => flushSentryInBackground({ flush })).not.toThrow();
+    expect(flush).toHaveBeenCalledWith(2000);
+    expect(() => flushSentryInBackground({})).not.toThrow();
+  });
+
+  it("un flush que falla no rompe nada", async () => {
+    const { flushSentryInBackground } = await import("@/lib/logger");
+    const waitUntil = vi.fn();
+    (globalThis as Record<symbol, unknown>)[KEY] = { get: () => ({ waitUntil }) };
+    flushSentryInBackground({ flush: () => Promise.reject(new Error("red")) });
+    await expect(waitUntil.mock.calls[0][0]).resolves.toBe(false);
+  });
+});
