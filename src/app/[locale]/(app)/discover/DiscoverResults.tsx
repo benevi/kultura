@@ -6,6 +6,8 @@
 import { useTranslations } from "next-intl";
 import type { MediaItem } from "@/types/media";
 import { MediaGrid } from "@/components/media/MediaGrid";
+import { GoogleBooksAttribution } from "@/components/media/GoogleBooksAttribution";
+import { googleBooksVolumeId } from "@/lib/media/google-books";
 import { cn } from "@/lib/utils/index";
 import { IconDice, IconClose } from "@/components/icons";
 import { DISCOVER_SKELETON_CELLS } from "@/components/discover/discover-icons";
@@ -54,6 +56,9 @@ export function DiscoverResults({
   }
 
   if (items.length > 0) {
+    const shown = randomItem ? [randomItem] : items;
+    // Respaldo de la búsqueda de libros y de cómic: resultados de Google Books.
+    const fromGoogleBooks = shown.some((item) => googleBooksVolumeId(item) !== null);
     return (
       <>
         {randomItem && (
@@ -81,7 +86,8 @@ export function DiscoverResults({
             </div>
           </div>
         )}
-        <MediaGrid items={randomItem ? [randomItem] : items} showType={showType} layout="bento" />
+        <MediaGrid items={shown} showType={showType} layout="bento" />
+        {fromGoogleBooks && <GoogleBooksAttribution label={tS("googleBooksResults")} className="mt-4" />}
       </>
     );
   }
