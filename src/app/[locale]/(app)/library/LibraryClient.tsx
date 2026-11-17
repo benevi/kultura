@@ -1,6 +1,6 @@
 'use client'
 
-import { useMemo } from 'react'
+import { useMemo, useState } from 'react'
 import { PageHeading } from '@/components/layout/PageHeading'
 import { useSearchParams } from 'next/navigation'
 import { useTranslations } from 'next-intl'
@@ -11,6 +11,7 @@ import { MediaGrid } from '@/components/media/MediaGrid'
 import { IconLibrary, IconSearch } from '@/components/icons'
 import { SegmentedControl } from '@/components/ui/SegmentedControl'
 import { DiaryList } from '@/components/library/DiaryList'
+import { LibraryQuickEdit } from '@/components/library/LibraryQuickEdit'
 import type { DiaryLog, LibraryEntry, RatingScale } from '@/types/library'
 import type { MediaItem, MediaType } from '@/types/media'
 
@@ -21,6 +22,8 @@ interface LibraryClientProps {
    * la Biblioteca de siempre.
    */
   diary?: { logs: DiaryLog[]; scale: RatingScale } | null
+  /** Fase 8.2 (bandera LIBRARY_QUICK_EDIT, la lee el servidor): estado y nota desde la tarjeta. */
+  quickEdit?: boolean
 }
 
 function parseMediaId(mediaId: string): { type: MediaType; externalId: string } {
@@ -135,12 +138,22 @@ function EmptyFiltered({
   )
 }
 
-export function LibraryClient({ entries, diary = null }: LibraryClientProps) {
+export function LibraryClient({ entries: serverEntries, diary = null, quickEdit = false }: LibraryClientProps) {
   const t = useTranslations('library')
   const tF = useTranslations('filters')
   const td = useTranslations('diary')
   const router = useRouter()
   const searchParams = useSearchParams()
+
+  // Lo guardado desde una tarjeta se ve al momento (contadores y filtros);
+  // el `refresh` trae después la lista del servidor.
+  const [saved, setSaved] = useState<Record<string, LibraryEntry>>({})
+  const entries = useMemo(() => serverEntries.map((e) => saved[e.mediaId] ?? e), [serverEntries, saved])
+  const byId = useMemo(() => new Map(entries.map((e) => [e.mediaId, e])), [entries])
+  function handleSaved(entry: LibraryEntry) {
+    setSaved((prev) => ({ ...prev, [entry.mediaId]: entry }))
+    router.refresh()
+  }
 
   const currentType = searchParams.get('type') ?? 'all'
   const currentStatus = searchParams.get('status') ?? 'all'
@@ -360,7 +373,19 @@ export function LibraryClient({ entries, diary = null }: LibraryClientProps) {
 
       {/* Grid */}
       {filtered.length > 0 && (
-        <MediaGrid items={mediaItems} showType requirePoster={false} />
+        <MediaGrid
+          items={mediaItems}
+          showType
+          requirePoster={false}
+          renderAction={
+            quickEdit
+              ? (item) => {
+                  const entry = byId.get(item.id)
+                  return entry ? <LibraryQuickEdit entry={entry} title={item.title} onSaved={handleSaved} /> : null
+                }
+              : undefined
+          }
+        />
       )}
     </div>
   )

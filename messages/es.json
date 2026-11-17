@@ -436,7 +436,8 @@
     "quickAdded": "«{title}» añadido a Pendientes",
     "quickAlready": "«{title}» ya estaba en tu biblioteca",
     "quickAddFailed": "No hemos podido añadirlo. Reintenta.",
-    "quickAddRateLimited": "Demasiados seguidos. Espera un momento y reintenta."
+    "quickAddRateLimited": "Demasiados seguidos. Espera un momento y reintenta.",
+    "quickEdit": "Cambiar estado y nota de «{title}»"
   },
   "diary": {
     "title": "Diario",

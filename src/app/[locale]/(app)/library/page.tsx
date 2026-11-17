@@ -36,7 +36,7 @@ export default async function LibraryPage() {
   const [entries, diary] = await Promise.all([getUserMedia(user.id), diaryPromise])
   return (
     <main className="page-grid py-8">
-      <LibraryClient entries={entries} diary={diary} />
+      <LibraryClient entries={entries} diary={diary} quickEdit={process.env.LIBRARY_QUICK_EDIT === '1'} />
     </main>
   )
 }

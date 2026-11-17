@@ -436,7 +436,8 @@
     "quickAdded": "“{title}” added to Pending",
     "quickAlready": "“{title}” was already in your library",
     "quickAddFailed": "We couldn’t add it. Try again.",
-    "quickAddRateLimited": "Too many in a row. Wait a moment and try again."
+    "quickAddRateLimited": "Too many in a row. Wait a moment and try again.",
+    "quickEdit": "Change status and rating of “{title}”"
   },
   "diary": {
     "title": "Diary",

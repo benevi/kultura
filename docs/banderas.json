@@ -4,6 +4,7 @@
     { "nombre": "WEEKLY_EMAIL", "dueno": "benevi", "desde": "2026-10-26", "produccion": "off", "para": "Resumen semanal por email (fuera del saneamiento, Q22)" },
     { "nombre": "PUSH_ENABLED", "dueno": "benevi", "desde": "2026-10-26", "produccion": "off", "para": "Notificaciones push (fuera del saneamiento, Q14)" },
     { "nombre": "ANALYTICS_DISABLED", "dueno": "benevi", "desde": "2026-10-23", "produccion": "off", "para": "Interruptor de emergencia de la analítica", "permanente": "interruptor de apagado, no un despliegue gradual" },
-    { "nombre": "QUICK_ADD", "dueno": "benevi", "desde": "2026-11-17", "produccion": "off", "para": "Fase 8.2: botón «+» en las tarjetas de Descubrir (añadir como Pendiente en un toque, con deshacer)" }
+    { "nombre": "QUICK_ADD", "dueno": "benevi", "desde": "2026-11-17", "produccion": "off", "para": "Fase 8.2: botón «+» en las tarjetas de Descubrir (añadir como Pendiente en un toque, con deshacer)" },
+    { "nombre": "LIBRARY_QUICK_EDIT", "dueno": "benevi", "desde": "2026-11-17", "produccion": "off", "para": "Fase 8.2: cambiar estado y nota desde la tarjeta de la Biblioteca, sin entrar en la ficha" }
   ]
 }
