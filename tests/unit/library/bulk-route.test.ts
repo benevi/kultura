@@ -23,7 +23,7 @@ vi.mock('@/lib/supabase/admin', () => ({ createAdminClient: () => ({}) }))
 vi.mock('@/lib/rate-limit', () => ({
   checkRateLimit: () => ({ allowed: true, retryAfterSeconds: 0 }),
   checkRateLimitDistributed: async () => ({ allowed: true, retryAfterSeconds: 0 }),
-  LIMITS: { library: {}, library_bulk: {} },
+  LIMITS: { library: {}, library_bulk: {}, library_quick_add: {} },
 }))
 vi.mock('@/lib/media/upsert-from-provider', () => ({
   upsertMediaFromProvider: vi.fn(),

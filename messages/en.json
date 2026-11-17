@@ -430,7 +430,13 @@
     "removed": "Removed from your library",
     "saved": "Saved to your library",
     "undo": "Undo",
-    "restored": "Back in your library"
+    "restored": "Back in your library",
+    "quickAdd": "Add “{title}” to Pending",
+    "quickInLibrary": "“{title}” is in your library",
+    "quickAdded": "“{title}” added to Pending",
+    "quickAlready": "“{title}” was already in your library",
+    "quickAddFailed": "We couldn’t add it. Try again.",
+    "quickAddRateLimited": "Too many in a row. Wait a moment and try again."
   },
   "diary": {
     "title": "Diary",

@@ -30,9 +30,11 @@ export interface DiscoverClientProps {
    * página la sirve el BUSCADOR del proveedor con la misma forma de respuesta.
    */
   currentQuery?: string;
+  /** Fase 8.2 (bandera QUICK_ADD, la lee el servidor): «+» en las tarjetas. */
+  quickAdd?: boolean;
 }
 
-export function DiscoverClient({ currentType, currentPage, currentQuery = "" }: DiscoverClientProps) {
+export function DiscoverClient({ currentType, currentPage, currentQuery = "", quickAdd = false }: DiscoverClientProps) {
   const t = useTranslations("discover");
   const locale = useLocale();
   const type: DiscoverType = isDiscoverType(currentType) ? currentType : "movie";
@@ -91,6 +93,7 @@ export function DiscoverClient({ currentType, currentPage, currentQuery = "" }: 
         items={items}
         randomItem={randomItem}
         showType={type === "all"}
+        quickAdd={quickAdd}
         query={currentQuery}
         isSearching={url.isSearching}
         hasActiveFilters={url.hasActiveFilters}

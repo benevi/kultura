@@ -1,5 +1,6 @@
 "use client";
 
+import type { ReactNode } from "react";
 import { PosterFrame } from "@/components/media/PosterFrame";
 import { useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
@@ -29,6 +30,12 @@ export interface MediaCardProps {
    * un h2 de sección.
    */
   headingLevel?: 2 | 3 | 4;
+  /**
+   * Acción sobre la portada, arriba a la derecha y FUERA del enlace (un botón
+   * dentro de un enlace no es HTML válido). La pone quien usa la tarjeta: en
+   * Descubrir, el «+» de añadir rápido (fase 8.2). El resto no pasa nada.
+   */
+  action?: ReactNode;
 }
 
 export function MediaCard({
@@ -40,6 +47,7 @@ export function MediaCard({
   accentHue,
   onPosterError,
   headingLevel = 3,
+  action,
 }: MediaCardProps) {
   const Heading = `h${headingLevel}` as "h2" | "h3" | "h4";
   const href = `/media/${item.type}/${item.externalId}` as const;
@@ -48,8 +56,8 @@ export function MediaCard({
   const tBadge = useTranslations("discoverFilters.typeBadge");
 
 
-  return (
-    <Link href={href} className={cn("group block h-full", className)}>
+  const card = (
+    <Link href={href} className={cn("group block h-full", !action && className)}>
       {/* DIS-7: la misma tarjeta de póster que Inicio, listas y perfil
           (`PosterFrame`), con el título DEBAJO y no encima con velo: se lee
           igual sobre cualquier portada. En la rejilla bento (`fill`) el
@@ -107,5 +115,14 @@ export function MediaCard({
         {item.year ? <p className="mt-0.5 font-body text-xs text-text-tertiary">{item.year}</p> : null}
       </article>
     </Link>
+  );
+
+  if (!action) return card;
+  // El badge de tipo va arriba a la izquierda y la nota, abajo a la derecha.
+  return (
+    <div className={cn("relative h-full", className)}>
+      {card}
+      <div className="absolute right-2 top-2">{action}</div>
+    </div>
   );
 }

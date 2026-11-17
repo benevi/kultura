@@ -430,7 +430,13 @@
     "removed": "Quitado de tu biblioteca",
     "saved": "Guardado en tu biblioteca",
     "undo": "Deshacer",
-    "restored": "Ha vuelto a tu biblioteca"
+    "restored": "Ha vuelto a tu biblioteca",
+    "quickAdd": "Añadir «{title}» a Pendientes",
+    "quickInLibrary": "«{title}» está en tu biblioteca",
+    "quickAdded": "«{title}» añadido a Pendientes",
+    "quickAlready": "«{title}» ya estaba en tu biblioteca",
+    "quickAddFailed": "No hemos podido añadirlo. Reintenta.",
+    "quickAddRateLimited": "Demasiados seguidos. Espera un momento y reintenta."
   },
   "diary": {
     "title": "Diario",
