@@ -147,7 +147,7 @@ describe("providerFetch", () => {
       () => new Promise<Response>((resolve) => setTimeout(() => resolve(json({}, 503)), 7000))
     );
     vi.stubGlobal("fetch", fetchMock);
-    const p = providerFetch("jikan", "https://api.jikan.moe/v4/x", {
+    const p = providerFetch("wikidata", "https://query.wikidata.org/x", {
       retries: 1,
       timeoutMs: 8000,
     }).catch((e) => e);
@@ -165,14 +165,14 @@ describe("providerFetch", () => {
     fetchMock
       .mockResolvedValueOnce(json({}, 503))
       .mockResolvedValueOnce(json({ results: [] }));
-    const p = providerFetch("jikan", "https://api.jikan.moe/v4/x", { retries: 1 });
+    const p = providerFetch("wikidata", "https://query.wikidata.org/x", { retries: 1 });
     await vi.runAllTimersAsync();
     expect(await p).toEqual({ results: [] });
     expect(fetchMock).toHaveBeenCalledTimes(2);
 
     fetchMock.mockReset();
     fetchMock.mockImplementation(async () => json({}, 429));
-    const q = providerFetch("jikan", "https://api.jikan.moe/v4/y", { retries: 1 }).catch(
+    const q = providerFetch("wikidata", "https://query.wikidata.org/y", { retries: 1 }).catch(
       (e) => e
     );
     await vi.runAllTimersAsync();

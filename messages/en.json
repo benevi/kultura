@@ -260,6 +260,7 @@
     "randomize": "Surprise me",
     "randomizeAgain": "Another one",
     "showingRandom": "1 random result from {count}",
+    "googleBooksResults": "Google Books search results",
     "suggestionsLabel": "Suggestions",
     "suggestionsCount": "{count, plural, =0 {No suggestions} one {# suggestion: use the arrow keys to browse it} other {# suggestions: use the arrow keys to browse them}}"
   },
@@ -315,6 +316,8 @@
     "trailerNotice": "The video loads from YouTube when you press play.",
     "sourceLabel": "Title data:",
     "sourceLinkLabel": "{name}: title page (opens in a new tab)",
+    "googleBooksLink": "View this book on Google Books",
+    "googleBooksLinkLabel": "Google Books: book page (opens in a new tab)",
     "watchType": {
       "flatrate": "Subscription",
       "free": "Free",
@@ -1647,7 +1650,7 @@
   "legal": {
     "footerPrivacy": "Privacy",
     "footerTerms": "Terms",
-    "dataSources": "Data from <tmdb>TMDB</tmdb>, <rawg>RAWG</rawg>, Steam, AniList, MyAnimeList, MangaDex, Open Library, Google Books and Comic Vine.",
+    "dataSources": "Data from <tmdb>TMDB</tmdb>, <rawg>RAWG</rawg>, Steam, AniList, MyAnimeList, MangaDex, Open Library, Google Books and <comicvine>Comic Vine</comicvine>.",
     "tmdbNotice": "This product uses the TMDB API but is not endorsed or certified by TMDB.",
     "justwatchSource": "Streaming availability data:",
     "nav": {

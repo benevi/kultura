@@ -63,6 +63,14 @@ describe("enrichBookWithGoogle", () => {
     expect(out.genres).toEqual(["Fiction / Classics"]);
   });
 
+  it("guarda de qué volumen salen los datos (atribución de Google Books) sin perder el resto de metadata", async () => {
+    searchMock.mockResolvedValue({ items: [googleVolume()] });
+
+    const out = await enrichBookWithGoogle(olItem());
+
+    expect(out.metadata).toEqual({ isbn: ["9788491050704"], googleBooksId: "gbVolume1" });
+  });
+
   it("NO cambia el id: el enlace y la vuelta a la biblioteca dependen de él", async () => {
     searchMock.mockResolvedValue({ items: [googleVolume()] });
 

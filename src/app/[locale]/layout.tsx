@@ -40,7 +40,6 @@ const POSTER_CDNS = [
   "https://image.tmdb.org",
   "https://media.rawg.io",
   "https://s4.anilist.co",
-  "https://cdn.myanimelist.net",
   "https://covers.openlibrary.org",
 ];
 

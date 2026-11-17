@@ -278,6 +278,15 @@ describe('textos', () => {
     }
   })
 
+  it('TMDB, RAWG y Comic Vine van con enlace en la atribución del pie', () => {
+    // RAWG y Comic Vine exigen enlace activo en las páginas con sus datos.
+    for (const messages of [es, en]) {
+      for (const tag of ['tmdb', 'rawg', 'comicvine']) {
+        expect(messages.legal.dataSources).toMatch(new RegExp(`<${tag}>[^<]+</${tag}>`))
+      }
+    }
+  })
+
   it('el namespace accessibility va justo después de legal en los dos idiomas', () => {
     for (const messages of [es, en]) {
       const keys = Object.keys(messages)

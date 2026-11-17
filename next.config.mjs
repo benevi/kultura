@@ -243,18 +243,8 @@ const nextConfig = {
         hostname: "shared.akamaihd.net",
       },
       {
-        protocol: "https",
-        hostname: "myanimelist.net",
-      },
-      {
-        protocol: "https",
-        hostname: "cdn.myanimelist.net",
-      },
-      {
         // E-ANIME-SOURCE: portadas de AniList (coverImage.extraLarge/large).
-        // `s4.anilist.co` es su CDN de medios; `myanimelist.net`/
-        // `cdn.myanimelist.net` arriba se conservan solo para fichas legacy
-        // de anime guardadas cuando la fuente era Jikan.
+        // `s4.anilist.co` es su CDN de medios.
         protocol: "https",
         hostname: "s4.anilist.co",
       },

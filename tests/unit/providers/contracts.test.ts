@@ -17,7 +17,6 @@ import { ProviderContractError, resetProviderCircuits } from "@/lib/api/http";
 import { getMovie, searchMovies } from "@/lib/api/tmdb";
 import { getGame, searchGames } from "@/lib/api/rawg";
 import { getAnime as getAniListAnime, searchAnime } from "@/lib/api/anilist";
-import { getAnime as getJikanAnime } from "@/lib/api/jikan";
 import { getComic, searchComics } from "@/lib/api/comicvine";
 import { getManga, searchManga } from "@/lib/api/mangadex";
 import { searchOpenLibrary } from "@/lib/api/openlibrary";
@@ -46,7 +45,6 @@ const cases: Case[] = [
     broken: { data: { Page: { pageInfo: {} } } },
   },
   { name: "AniList ficha sin data", call: () => getAniListAnime(1), broken: {} },
-  { name: "Jikan ficha sin mal_id", call: () => getJikanAnime(1), broken: { data: { title: "x" } } },
   {
     name: "ComicVine búsqueda sin results",
     call: () => searchComics("x"),

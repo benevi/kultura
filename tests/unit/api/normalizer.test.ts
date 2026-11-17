@@ -7,9 +7,7 @@ import { describe, it, expect } from "vitest";
 import {
   normalizeMovie,
   normalizeTV,
-  normalizeAnime,
   normalizeAniListAnime,
-  normalizeMangaJikan,
   normalizeMangaDex,
   normalizeBookOpenLibrary,
   normalizeBookGoogle,
@@ -17,7 +15,6 @@ import {
   sanitizeYear,
 } from "@/lib/api/normalizer";
 import type { TmdbMovieDetail, TmdbTVDetail, TmdbProvidersResponse } from "@/lib/api/tmdb";
-import type { JikanAnimeDetail, JikanMangaDetail } from "@/lib/api/jikan";
 import type { AniListMedia } from "@/lib/api/anilist";
 import type { MangaDexManga } from "@/lib/api/mangadex";
 import type { OpenLibraryDoc } from "@/lib/api/openlibrary";
@@ -68,38 +65,6 @@ const TMDB_TV_FIXTURE: TmdbTVDetail = {
   videos: { results: [] },
 };
 
-const JIKAN_ANIME_FIXTURE: JikanAnimeDetail = {
-  mal_id: 1535,
-  title: "Death Note",
-  title_english: "Death Note",
-  images: { jpg: { large_image_url: "https://cdn.myanimelist.net/images/anime/9/9453l.jpg" } },
-  synopsis: "Un cuaderno que permite matar a cualquiera cuyo nombre esté escrito en él.",
-  score: 8.62,
-  genres: [{ name: "Mystery" }, { name: "Supernatural" }, { name: "Thriller" }],
-  year: 2006,
-  episodes: 37,
-  status: "Finished Airing",
-  studios: [{ name: "Madhouse" }],
-  source: "Manga",
-  trailer: { youtube_id: "NlJZ-YgAt-c" },
-};
-
-const JIKAN_ANIME_MINIMAL: JikanAnimeDetail = {
-  mal_id: 9999,
-  title: "Unknown Anime",
-  title_english: null,
-  images: { jpg: { large_image_url: "" } },
-  synopsis: null,
-  score: null,
-  genres: [],
-  year: null,
-  episodes: null,
-  status: "Unknown",
-  studios: [],
-  source: "Unknown",
-  trailer: { youtube_id: null },
-};
-
 const ANILIST_ANIME_FIXTURE: AniListMedia = {
   id: 1535,
   title: { romaji: "Death Note", english: "Death Note", native: "デスノート" },
@@ -133,20 +98,6 @@ const ANILIST_ANIME_MINIMAL: AniListMedia = {
   studios: null,
   trailer: null,
   source: null,
-};
-
-const JIKAN_MANGA_FIXTURE: JikanMangaDetail = {
-  mal_id: 2,
-  title: "Berserk",
-  images: { jpg: { large_image_url: "https://cdn.myanimelist.net/images/manga/1/157897l.jpg" } },
-  synopsis: "La oscura historia de Guts, un guerrero solitario.",
-  score: 9.47,
-  genres: [{ name: "Action" }, { name: "Adventure" }, { name: "Fantasy" }],
-  published: { prop: { from: { year: 1989 } } },
-  chapters: null,
-  volumes: 41,
-  status: "Publishing",
-  authors: [{ name: "Miura, Kentarou" }],
 };
 
 const MANGADEX_FIXTURE: MangaDexManga = {
@@ -342,36 +293,6 @@ describe("normalizeTV", () => {
   });
 });
 
-// ── normalizeAnime ────────────────────────────────────────────────────────────
-
-describe("normalizeAnime", () => {
-  const result = normalizeAnime(JIKAN_ANIME_FIXTURE);
-
-  it("produce id anime_*", () => {
-    expect(result.id).toBe("anime_1535");
-  });
-
-  it("tipo es anime", () => {
-    expect(result.type).toBe("anime");
-  });
-
-  it("rating MAL se pasa tal cual (ya es 0-10)", () => {
-    expect(result.rating).toBe(8.62);
-  });
-
-  it("ratingSource es MAL", () => {
-    expect(result.ratingSource).toBe("MAL");
-  });
-
-  it("trailerKey extrae el youtube_id", () => {
-    expect(result.trailerKey).toBe("NlJZ-YgAt-c");
-  });
-
-  it("genres es array de strings", () => {
-    expect(result.genres).toContain("Mystery");
-  });
-});
-
 // ── normalizeAniListAnime (E-ANIME-SOURCE) ────────────────────────────────────
 
 describe("normalizeAniListAnime", () => {
@@ -443,44 +364,6 @@ describe("normalizeAniListAnime — campos opcionales ausentes", () => {
       trailer: { id: "abc123", site: "dailymotion" },
     });
     expect(noYoutube.trailerKey).toBeUndefined();
-  });
-});
-
-describe("normalizeAnime — campos opcionales ausentes", () => {
-  it("campos opcionales ausentes → undefined, no error", () => {
-    const result = normalizeAnime(JIKAN_ANIME_MINIMAL);
-    expect(result.id).toBe("anime_9999");
-    expect(result.rating).toBeUndefined();
-    expect(result.trailerKey).toBeUndefined();
-    expect(result.synopsis).toBeUndefined();
-    expect(result.year).toBeUndefined();
-    expect(result.poster).toBeUndefined();
-  });
-});
-
-// ── normalizeMangaJikan ───────────────────────────────────────────────────────
-
-describe("normalizeMangaJikan", () => {
-  const result = normalizeMangaJikan(JIKAN_MANGA_FIXTURE);
-
-  it("produce id manga_*", () => {
-    expect(result.id).toBe("manga_2");
-  });
-
-  it("tipo es manga", () => {
-    expect(result.type).toBe("manga");
-  });
-
-  it("year extrae del published.prop.from.year", () => {
-    expect(result.year).toBe(1989);
-  });
-
-  it("rating MAL se pasa tal cual", () => {
-    expect(result.rating).toBe(9.47);
-  });
-
-  it("metadata incluye authors", () => {
-    expect(result.metadata?.authors).toContain("Miura, Kentarou");
   });
 });
 
@@ -803,16 +686,6 @@ describe("formato de ID — todos los normalizadores", () => {
 
   it("normalizeTV: id = tv_{externalId}", () => {
     const r = normalizeTV(TMDB_TV_FIXTURE);
-    expect(r.id).toBe(`${r.type}_${r.externalId}`);
-  });
-
-  it("normalizeAnime: id = anime_{externalId}", () => {
-    const r = normalizeAnime(JIKAN_ANIME_FIXTURE);
-    expect(r.id).toBe(`${r.type}_${r.externalId}`);
-  });
-
-  it("normalizeMangaJikan: id = manga_{externalId}", () => {
-    const r = normalizeMangaJikan(JIKAN_MANGA_FIXTURE);
     expect(r.id).toBe(`${r.type}_${r.externalId}`);
   });
 

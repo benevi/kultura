@@ -11,6 +11,7 @@ import type { MediaItem } from "@/types/media";
 import { ApiError, apiFetch } from "@/lib/api/client";
 import { posterLoader } from "@/lib/images/poster-url";
 import { posterGradient } from "@/lib/images/poster-gradient";
+import { GOOGLE_BOOKS_LOGO, googleBooksVolumeId } from "@/lib/media/google-books";
 
 export interface SearchBarProps {
   defaultValue?: string;
@@ -293,6 +294,21 @@ export function SearchBar({
                     <p className="text-xs text-text-tertiary">{item.year}</p>
                   ) : null}
                 </div>
+                {/* Sugerencia que viene de Google Books (respaldo de libros y
+                    cómic): su logo va junto al resultado (normas de marca). */}
+                {googleBooksVolumeId(item) && (
+                  <span className="inline-flex shrink-0 items-center rounded-lg bg-white px-1 py-0.5">
+                    {/* eslint-disable-next-line @next/next/no-img-element -- PNG estático de 3 KB */}
+                    <img
+                      src={GOOGLE_BOOKS_LOGO.src}
+                      alt={GOOGLE_BOOKS_LOGO.alt}
+                      width={GOOGLE_BOOKS_LOGO.width}
+                      height={GOOGLE_BOOKS_LOGO.height}
+                      className="h-5 w-auto"
+                      loading="lazy"
+                    />
+                  </span>
+                )}
                 <Badge variant="default">{tMedia(item.type)}</Badge>
             </li>
           ))}

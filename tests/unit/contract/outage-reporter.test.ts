@@ -5,7 +5,7 @@ import { ProviderError } from "@/lib/api/http";
 describe("isOutage (contrato de proveedores)", () => {
   it("tiempo agotado, red y circuito abierto son caídas", () => {
     expect(isOutage(new ProviderError("rawg", "timeout", "x"))).toBe(true);
-    expect(isOutage(new ProviderError("jikan", "network", "x"))).toBe(true);
+    expect(isOutage(new ProviderError("anilist", "network", "x"))).toBe(true);
     expect(isOutage(new ProviderError("rawg", "circuit_open", "x"))).toBe(true);
   });
 
