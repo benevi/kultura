@@ -83,6 +83,9 @@ async function ensureProfile(userId: string): Promise<boolean> {
 }
 
 /** Columnas de progreso por formato (migración 20261215270001_progress, aplicada). */
+/** Tarjetas de «Continúa donde lo dejaste», además del destacado (fase 8.2: antes 8). */
+const CONTINUE_ROW_MAX = 12
+
 const PROGRESS_SELECT =
   'progress_season, progress_episode, progress_chapter, progress_volume, progress_page, progress_percent, progress_hours, progress_total'
 
@@ -125,8 +128,11 @@ export default async function HomePage() {
       .select(`media_id, status, ${PROGRESS_SELECT}, media(id, title, poster, type)`)
       .eq('user_id', user.id)
       .in('status', ['in_progress', 'pending'])
+      // Fase 8.2 («Volver»): primero lo que está EN CURSO y lo pendiente solo
+      // rellena. `status` es texto y 'in_progress' ordena antes que 'pending'.
+      .order('status', { ascending: true })
       .order('updated_at', { ascending: false })
-      .limit(9),
+      .limit(CONTINUE_ROW_MAX + 1),
     readTodayAiRecommendations(user.id, locale),
     // Mismo criterio que getLibraryContext: completados o con nota ≥ 7/10 (4★).
     supabase
@@ -161,7 +167,7 @@ export default async function HomePage() {
 
   const filteredRecent = ((recentResult.data ?? []) as unknown as RecentRow[])
     .filter((item) => item.media_id !== heroMediaId)
-    .slice(0, 8)
+    .slice(0, CONTINUE_ROW_MAX)
     .map((item) => ({
       mediaId: item.media_id,
       title: item.media?.title ?? '',
