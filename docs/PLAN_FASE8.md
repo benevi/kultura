@@ -33,6 +33,10 @@ Leyenda: **[P]** pendiente del «sí» de Víctor · **[E]** estimación orienta
 | 2026-11-17 | **Los correos a los proveedores no se envían ahora; riesgo asumido.** Se mandarán más adelante. Los borradores quedan en `docs/legal/correos-proveedores.md` | Víctor |
 | 2026-11-17 | **El 3D entra en el plan; se saca si no cuadra con el diseño** | Víctor |
 | 2026-11-17 | **Todas las API tienen que ser oficiales** | Víctor |
+| 2026-11-17 | **Steam se mantiene** (`store.steampowered.com/api/appdetails`) como única excepción a «API oficiales» | Víctor |
+| 2026-11-17 | **Portadas en el 3D:** MangaDex, ComicVine y Steam pasan por el optimizador de Vercel (la misma copia temporal que ya ocurre en 2D); el resto, carga directa | Víctor |
+| 2026-11-17 | **Meta de crecimiento:** ≥ 12 activos a 30 días, como referencia; no bloquea nada | Víctor |
+| 2026-11-17 | El borrador de biblia «Archivo» (PR #214) se descarta | Víctor |
 | 2026-11-17 | Tipografías de la v3 (JetBrains Mono, Newsreader): **no gustan**. Se eligen de nuevo en 8.3. Los archivos de `assets/fonts/` se sustituyen entonces | Víctor |
 
 ### Riesgos que Víctor asume (escritos para que consten)
@@ -88,7 +92,7 @@ Detalle en [`legal/terminos/README.md`](legal/terminos/README.md).
 | TMDB, RAWG, AniList, MangaDex, ComicVine, Open Library, Google Books | API oficial | Nada |
 | JustWatch | Llega por el *endpoint* oficial de TMDB | Nada |
 | **Jikan** (MyAnimeList no oficial) | Solo resuelve ids antiguos de bibliotecas y hace de respaldo de la búsqueda de manga (`src/lib/api/jikan.ts`) | **Se retira.** Los ids antiguos se convierten a AniList o MangaDex. Si alguno no se puede convertir, **[P]**: pasar a la API oficial de MAL (exige que Víctor registre la aplicación y avise a MAL) o dejar esa obra sin datos nuevos |
-| **Steam** (`store.steampowered.com/api/appdetails`) | Descripción, capturas e idiomas de los videojuegos; no está en la Web API documentada | **[P]** Elegir: (a) retirarlo y quedarse con RAWG; (b) mantenerlo como única excepción, escrita aquí |
+| **Steam** (`store.steampowered.com/api/appdetails`) | Descripción, capturas e idiomas de los videojuegos; no está en la Web API documentada | **Se mantiene** como única excepción (decisión del 17-11-2026). Complementa a RAWG; el pie ya enlaza a Steam y lleva el aviso de marca de Valve |
 
 Atribución que falta:
 - **ComicVine:** enlace en el pie (hoy solo el nombre).
@@ -109,7 +113,7 @@ Con el diseño actual, sin esperar al rediseño.
 
 Cada punto es un PR o pocos, detrás de bandera si cambia una pantalla. Privacidad: medición agregada, sin `user_id`.
 
-**[P]** Meta de crecimiento: la v3 usaba «≥ 12 activos a 30 días». Propuesta: mantenerla como referencia, sin que bloquee nada.
+**Meta de referencia:** ≥ 12 activos a 30 días. No bloquea nada (decisión del 17-11-2026).
 
 ## 7. Fase 8.3 · Dirección visual y prototipo 3D
 
@@ -117,9 +121,9 @@ Cada punto es un PR o pocos, detrás de bandera si cambia una pantalla. Privacid
 - Cada dirección trae paleta, tipografía (fuentes libres, comprobadas) y trato de la portada.
 - Antes de empezar, Víctor da **2 o 3 referencias** de webs o apps que le gusten. **[P]**
 - **Prototipo 3D de la ficha** sobre la dirección que vaya ganando: la portada real como objeto. Se prueba en los dispositivos de Víctor.
-- **[P] Portadas en el 3D.** WebGL solo puede usar imágenes que el servidor de origen permita. Propuesta: carga directa donde se pueda; para MangaDex, ComicVine y Steam, por el optimizador de Vercel, que ya hace esa misma copia temporal en 2D (no es un uso nuevo). Alternativa: esas obras, sin 3D.
+- **Portadas en el 3D** (decisión del 17-11-2026). WebGL solo puede usar imágenes que el servidor de origen permita. Carga directa donde se pueda; MangaDex, ComicVine y Steam, por el optimizador de Vercel, que ya hace esa misma copia temporal en 2D (no es un uso nuevo). `/privacy` ya lo cuenta (#173); se revisa el texto si el 3D llega a producción.
 - Sale: `docs/design/BIBLIA.md` con la dirección elegida y firmada (**P-Gusto**) y `docs/spikes/3d-ficha.md` con el veredicto (**P-3D**).
-- El borrador de biblia «Archivo» (PR #214) queda como una de las tres propuestas o se descarta, según diga Víctor.
+- El borrador de biblia «Archivo» (PR #214) queda descartado. Las tres direcciones parten de cero.
 
 ## 8. Lo que se conserva de la v3
 
@@ -138,8 +142,5 @@ Cada punto es un PR o pocos, detrás de bandera si cambia una pantalla. Privacid
 
 ## 10. Pendiente de Víctor
 
-1. Steam: retirar `appdetails` o mantenerlo como excepción (§5).
-2. Ids antiguos de Jikan que no se puedan convertir: API oficial de MAL o dejarlos (§5).
-3. Portadas en el 3D por el optimizador, o esas obras sin 3D (§7).
-4. Referencias visuales (§7).
-5. Meta de crecimiento como referencia (§6).
+1. Ids antiguos de Jikan que no se puedan convertir: API oficial de MAL o dejarlos (§5). Se decide con la lista real en 8.1.
+2. Referencias visuales, antes de empezar 8.3 (§7).
