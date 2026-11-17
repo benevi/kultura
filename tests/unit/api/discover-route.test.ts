@@ -237,7 +237,7 @@ describe("GET /api/discover", () => {
     });
     const res = await GET(req("?type=movie&page=1"));
     expect(res.status).toBe(200);
-    const body = await res.json();
+    const { data: body } = await res.json();
     expect(body.items).toHaveLength(1);
     expect(body.totalPages).toBe(7);
     // E79 slice 1: hasMore viaja en el payload.
@@ -255,7 +255,7 @@ describe("GET /api/discover", () => {
     const res = await GET(req("?type=anime&page=1"));
     // fetchDiscoverData nunca lanza: el 429 viaja como fetchErrorKind, status 200.
     expect(res.status).toBe(200);
-    const body = await res.json();
+    const { data: body } = await res.json();
     expect(body.fetchErrorKind).toBe("rate-limit");
   });
 
@@ -269,7 +269,7 @@ describe("GET /api/discover", () => {
     } as never);
 
     const res = await GET(req("?type=movie&page=1"));
-    const body = await res.json();
+    const { data: body } = await res.json();
     expect(body.matchScores).toBeUndefined();
     expect(computeMatchScores).not.toHaveBeenCalled();
   });
@@ -364,7 +364,7 @@ describe("GET /api/discover", () => {
     });
     const res = await GET(req("?type=all&q=dune&locale=es"));
     expect(res.headers.get("Cache-Control")).toBe("no-store");
-    const body = await res.json();
+    const { data: body } = await res.json();
     expect(body.items).toHaveLength(1);
     expect(body).not.toHaveProperty("partial");
   });
@@ -394,8 +394,7 @@ describe("GET /api/discover", () => {
     expect(blocked.headers.get("Retry-After")).toBeTruthy();
     expect(blocked.headers.get("Cache-Control")).toBe("no-store");
     const body = await blocked.json();
-    expect(body.fetchErrorKind).toBe("rate-limit");
-    expect(body.items).toEqual([]);
+    expect(body.error.code).toBe("rate_limited");
     expect(fetchDiscoverData).toHaveBeenCalledTimes(120);
     // Otra IP sigue pudiendo.
     const other = await GET(

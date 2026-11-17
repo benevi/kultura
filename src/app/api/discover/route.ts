@@ -5,43 +5,26 @@
 //
 // El parser y sus tipos viven en @/lib/api/discover-params (Next.js solo permite
 // exports concretos en un route handler).
+//
+// Respuesta: `{ data: DiscoverResult }` o `{ error: { code } }` (saneamiento 7
+// y 9). Pasado el límite, 429 `rate_limited`: el cliente lo pinta como
+// `fetchErrorKind: "rate-limit"`.
 // ============================================================
 
-import { NextRequest, NextResponse } from "next/server";
+import type { NextRequest } from "next/server";
 import { fetchDiscoverData, type DiscoverResult } from "@/lib/api/discover";
 import { fetchAggregateResult } from "@/lib/api/aggregate";
-import {
-  CATALOG_EDGE_CACHE,
-  NO_STORE,
-  clientIp,
-  parseDiscoverParams,
-} from "@/lib/api/discover-params";
-import { checkRateLimitDistributed, LIMITS } from "@/lib/rate-limit";
+import { CATALOG_EDGE_CACHE, NO_STORE, parseDiscoverParams } from "@/lib/api/discover-params";
+import { LIMITS } from "@/lib/rate-limit";
+import { ok, rateLimit } from "@/lib/api/route";
 
 export async function GET(request: NextRequest) {
   // F-06 (COD-6) + F-13 (D-21): 120 peticiones por minuto e IP, compartidas
   // entre instancias si hay Upstash. Lo que sirve la caché de borde ni llega.
-  const rl = await checkRateLimitDistributed(
-    `${clientIp(request.headers)}:discover`,
-    LIMITS.discover
-  );
-  if (!rl.allowed) {
-    // Misma forma que una respuesta normal: el cliente pinta su aviso de
-    // "inténtalo en unos segundos" en vez de una rejilla vacía sin explicación.
-    const body: DiscoverResult = {
-      items: [],
-      totalPages: 1,
-      hasMore: false,
-      fetchErrorKind: "rate-limit",
-    };
-    return NextResponse.json(body, {
-      status: 429,
-      headers: {
-        "Retry-After": String(rl.retryAfterSeconds),
-        "Cache-Control": NO_STORE,
-      },
-    });
-  }
+  // El cliente convierte el 429 en su aviso de "inténtalo en unos segundos"
+  // en vez de una rejilla vacía sin explicación.
+  const limited = await rateLimit(request, { key: "discover", limit: LIMITS.discover });
+  if (limited) return limited;
 
   const parsed = parseDiscoverParams(request.nextUrl.searchParams);
   const { type, page } = parsed;
@@ -111,7 +94,7 @@ export async function GET(request: NextRequest) {
     hasMore: result.hasMore,
     fetchErrorKind: result.fetchErrorKind,
   };
-  return NextResponse.json(body, {
+  return ok(body, {
     headers: {
       "Cache-Control": result.fetchErrorKind || partial ? NO_STORE : CATALOG_EDGE_CACHE,
     },

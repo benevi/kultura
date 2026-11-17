@@ -52,7 +52,7 @@ async function mockDiscover(page: Page) {
     await route.fulfill({
       status: 200,
       contentType: 'application/json',
-      body: JSON.stringify({ items, totalPages: 1, fetchErrorKind: null }),
+      body: JSON.stringify({ data: { items, totalPages: 1, fetchErrorKind: null } }),
     })
   })
 }

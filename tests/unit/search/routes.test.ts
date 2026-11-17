@@ -71,7 +71,7 @@ describe("GET /api/search?type=manga (DAT-8)", () => {
       manga(7, "Naruto: Rai no Sho"),
     ]);
     const res = await searchGET(new NextRequest("http://localhost/api/search?q=naruto&type=manga&locale=es"));
-    const body = (await res.json()) as MediaItem[];
+    const body = ((await res.json()).data) as MediaItem[];
     expect(body).toHaveLength(5);
     expect(body.every((i) => i.type === "manga")).toBe(true);
     expect(body[0].title).toBe("Naruto");
@@ -88,7 +88,7 @@ describe("GET /api/search?type=manga (DAT-8)", () => {
       manga(4, "D", { rating: 5 }),
     ]);
     const res = await searchGET(new NextRequest("http://localhost/api/search?q=abc&type=manga"));
-    expect(((await res.json()) as MediaItem[]).map((i) => i.title)).toEqual(["C", "D"]);
+    expect((((await res.json()).data) as MediaItem[]).map((i) => i.title)).toEqual(["C", "D"]);
   });
 
   it("juegos: sugerencias de la tienda de Steam (sin gastar el cupo de RAWG), por relevancia", async () => {
@@ -97,7 +97,7 @@ describe("GET /api/search?type=manga (DAT-8)", () => {
       { id: "game_steam-367520", externalId: "steam-367520", type: "game", title: "Hollow Knight", poster: "https://shared.akamai.steamstatic.com/b.jpg" },
     ]);
     const res = await searchGET(new NextRequest("http://localhost/api/search?q=hollow%20knight&type=game&locale=es"));
-    const body = (await res.json()) as MediaItem[];
+    const body = ((await res.json()).data) as MediaItem[];
     expect(body.map((i) => i.title)).toEqual(["Hollow Knight", "Hollow Knight: Silksong"]);
     expect(searchSteamSuggestions).toHaveBeenCalledWith("hollow knight", "es");
     expect(searchByType).not.toHaveBeenCalled();
@@ -105,7 +105,7 @@ describe("GET /api/search?type=manga (DAT-8)", () => {
 
   it("cómic: sin sugerencias (las 200 búsquedas/hora de ComicVine se guardan para el grid)", async () => {
     const res = await searchGET(new NextRequest("http://localhost/api/search?q=batman&type=comic"));
-    expect(await res.json()).toEqual([]);
+    expect((await res.json()).data).toEqual([]);
     expect(searchByType).not.toHaveBeenCalled();
   });
 
@@ -126,14 +126,14 @@ describe("GET /api/search?type=manga (DAT-8)", () => {
     } as never);
     vi.mocked(searchTV).mockResolvedValue({ results: [] } as never);
     const res = await searchGET(new NextRequest("http://localhost/api/search?q=inception"));
-    const body = (await res.json()) as MediaItem[];
+    const body = ((await res.json()).data) as MediaItem[];
     expect(body[0].title).toBe("Inception");
   });
 
   it("si el proveedor de la familia falla → [] y no-store", async () => {
     vi.mocked(searchByType).mockRejectedValue(new Error("MangaDex 503"));
     const res = await searchGET(new NextRequest("http://localhost/api/search?q=naruto&type=manga"));
-    expect(await res.json()).toEqual([]);
+    expect((await res.json()).data).toEqual([]);
     expect(res.headers.get("Cache-Control")).toBe("no-store");
   });
 });
@@ -160,6 +160,14 @@ describe("GET /api/users/search", () => {
     const blocked = await usersGET(new NextRequest("http://localhost/api/users/search?q=ab"));
     expect(blocked.status).toBe(429);
     expect(blocked.headers.get("Retry-After")).toBeTruthy();
+  });
+
+  it("responde con el contrato: { data } (vacío con menos de 2 caracteres)", async () => {
+    const short = await usersGET(new NextRequest("http://localhost/api/users/search?q=a"));
+    expect(await short.json()).toEqual({ data: [] });
+    expect(ilike).not.toHaveBeenCalled();
+    const res = await usersGET(new NextRequest("http://localhost/api/users/search?q=ab"));
+    expect(await res.json()).toEqual({ data: [] });
   });
 
   it("sin usuario autenticado → 401 sin consultar", async () => {

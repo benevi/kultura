@@ -39,6 +39,8 @@ vi.mock('@/lib/claude/recommendations', () => ({
 
 vi.mock('@/lib/rate-limit', () => ({ checkRateLimitDistributed: async (...a: unknown[]) => mockRateLimit(...a) }))
 
+const REQ = () => new Request('http://localhost/api/ai-recommendations')
+
 /** Las recomendaciones del día con la forma de D-06. */
 function dailyReturns(recommendations: unknown[]) {
   mockGetDaily.mockResolvedValue({ recommendations, source: recommendations.length > 0 ? 'ai' : 'match' })
@@ -69,7 +71,7 @@ describe('GET /api/ai-recommendations', () => {
     dailyReturns([])
 
     const { GET } = await import('@/app/api/ai-recommendations/route')
-    const body = await (await GET()).json()
+    const { data: body } = await (await GET(REQ())).json()
     expect(body.starter).toEqual([
       expect.objectContaining({ id: 'movie_550', externalId: '550', type: 'movie', poster: 'https://p/1.jpg' }),
       expect.objectContaining({ id: 'anime_21', externalId: '21', type: 'anime' }),
@@ -79,7 +81,7 @@ describe('GET /api/ai-recommendations', () => {
   it('returns 401 if not authenticated', async () => {
     mockGetUser.mockResolvedValue({ data: { user: null }, error: null })
     const { GET } = await import('@/app/api/ai-recommendations/route')
-    const res = await GET()
+    const res = await GET(REQ())
     expect(res.status).toBe(401)
   })
 
@@ -102,9 +104,9 @@ describe('GET /api/ai-recommendations', () => {
     ])
 
     const { GET } = await import('@/app/api/ai-recommendations/route')
-    const res = await GET()
+    const res = await GET(REQ())
     expect(res.status).toBe(200)
-    const body = await res.json()
+    const { data: body } = await res.json()
     expect(body.recommendations).toHaveLength(1)
     expect(body.recommendations[0].item.title).toBe('Pulp Fiction')
     // La ficha se enlaza con externalId (sin prefijo) — ver MediaCard.
@@ -120,9 +122,9 @@ describe('GET /api/ai-recommendations', () => {
     dailyReturns([])
 
     const { GET } = await import('@/app/api/ai-recommendations/route')
-    const res = await GET()
+    const res = await GET(REQ())
     expect(res.status).toBe(200)
-    const body = await res.json()
+    const { data: body } = await res.json()
     expect(body.recommendations).toHaveLength(0)
   })
 
@@ -131,10 +133,10 @@ describe('GET /api/ai-recommendations', () => {
     dailyReturns([])
 
     const { GET } = await import('@/app/api/ai-recommendations/route')
-    const res = await GET()
+    const res = await GET(REQ())
     // Route siempre 200 — el fallo de Anthropic es silencioso para el cliente
     expect(res.status).toBe(200)
-    const body = await res.json()
+    const { data: body } = await res.json()
     expect(body.recommendations).toHaveLength(0)
   })
 
@@ -148,10 +150,10 @@ describe('GET /api/ai-recommendations', () => {
     mockRateLimit.mockReturnValue({ allowed: false, remaining: 0, retryAfterSeconds: 30 })
 
     const { GET } = await import('@/app/api/ai-recommendations/route')
-    const res = await GET()
+    const res = await GET(REQ())
 
     expect(res.status).toBe(200)
-    expect(await res.json()).toEqual(today)
+    expect((await res.json()).data).toEqual(today)
     expect(mockGetDaily).not.toHaveBeenCalled()
     expect(mockReadToday).toHaveBeenCalledWith('user-001', 'es')
   })
@@ -161,7 +163,7 @@ describe('GET /api/ai-recommendations', () => {
     mockRateLimit.mockReturnValue({ allowed: false, remaining: 0, retryAfterSeconds: 30 })
 
     const { GET } = await import('@/app/api/ai-recommendations/route')
-    const res = await GET()
+    const res = await GET(REQ())
 
     expect(res.status).toBe(429)
     expect(res.headers.get('Retry-After')).toBe('30')
@@ -177,7 +179,7 @@ describe('GET /api/ai-recommendations', () => {
     })
 
     const { GET } = await import('@/app/api/ai-recommendations/route')
-    const body = await (await GET()).json()
+    const { data: body } = await (await GET(REQ())).json()
 
     expect(body.source).toBe('match')
     expect(body.capped).toBe(true)
@@ -189,7 +191,7 @@ describe('GET /api/ai-recommendations', () => {
     mockGetDaily.mockResolvedValue({ recommendations: [], source: 'match' })
 
     const { GET } = await import('@/app/api/ai-recommendations/route')
-    await GET()
+    await GET(REQ())
 
     expect(mockGetDaily).toHaveBeenCalledWith('user-001', ['Thriller', 'Drama'], 'es', expect.anything())
   })

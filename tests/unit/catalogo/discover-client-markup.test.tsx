@@ -65,7 +65,7 @@ const ITEMS = [{ id: "movie_1" }, { id: "movie_2" }, { id: "movie_3" }];
 
 function stubFetch(body: unknown, ok = true) {
   const fn = vi.fn(() =>
-    ok ? Promise.resolve({ json: async () => body }) : Promise.reject(new Error("red"))
+    ok ? Promise.resolve({ ok: true, status: 200, json: async () => ({ data: body }) }) : Promise.reject(new Error("red"))
   );
   vi.stubGlobal("fetch", fn);
   return fn;
@@ -177,7 +177,7 @@ describe("Descubrir: HTML y navegación (caracterización)", () => {
       .fn()
       .mockImplementationOnce(() => new Promise((r) => (resolveFirst = r)))
       .mockImplementation(() =>
-        Promise.resolve({ json: async () => ({ items: [{ id: "tv_9" }], totalPages: 1, hasMore: false, fetchErrorKind: null }) })
+        Promise.resolve({ ok: true, status: 200, json: async () => ({ data: { items: [{ id: "tv_9" }], totalPages: 1, hasMore: false, fetchErrorKind: null } }) })
       );
     vi.stubGlobal("fetch", fn);
     current = new URLSearchParams("type=movie&page=1");
@@ -186,7 +186,7 @@ describe("Descubrir: HTML y navegación (caracterización)", () => {
     view.rerender(<DiscoverClient currentType="tv" currentPage={1} />);
     await settle();
     await act(async () => {
-      resolveFirst({ json: async () => ({ items: ITEMS, totalPages: 1, hasMore: false, fetchErrorKind: null }) });
+      resolveFirst({ ok: true, status: 200, json: async () => ({ data: { items: ITEMS, totalPages: 1, hasMore: false, fetchErrorKind: null } }) });
     });
     expect(screen.getByTestId("media-grid").textContent).toBe("tv_9");
   });

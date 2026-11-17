@@ -165,10 +165,12 @@ describe('SearchBar (combobox, ACC-14)', () => {
       'fetch',
       vi.fn().mockResolvedValue({
         ok: true,
-        json: async () => [
-          { id: 'movie_1', externalId: '1', type: 'movie', title: 'Dune', year: 2021 },
-          { id: 'movie_2', externalId: '2', type: 'movie', title: 'Dune: Parte dos', year: 2024 },
-        ],
+        json: async () => ({
+          data: [
+            { id: 'movie_1', externalId: '1', type: 'movie', title: 'Dune', year: 2021 },
+            { id: 'movie_2', externalId: '2', type: 'movie', title: 'Dune: Parte dos', year: 2024 },
+          ],
+        }),
       })
     )
   })
@@ -254,7 +256,7 @@ describe('SuggestionsForm (ACC-2/3)', () => {
   })
 
   it('el éxito se anuncia y recibe el foco', async () => {
-    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: true, status: 201 }))
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: true, status: 200, json: async () => ({ data: null }) }))
     render(<SuggestionsForm />)
     fireEvent.change(screen.getByRole('textbox', { name: 'suggestions.subjectLabel' }), { target: { value: 'Asunto' } })
     fireEvent.change(screen.getByRole('textbox', { name: 'suggestions.descriptionLabel' }), {

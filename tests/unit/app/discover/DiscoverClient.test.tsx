@@ -88,7 +88,9 @@ import { DiscoverClient } from "@/app/[locale]/(app)/discover/DiscoverClient";
 
 function mockFetchOk(items: unknown[] = [], totalPages = 1) {
   const fn = vi.fn().mockResolvedValue({
-    json: async () => ({ items, totalPages, fetchErrorKind: null }),
+    ok: true,
+    status: 200,
+    json: async () => ({ data: { items, totalPages, fetchErrorKind: null } }),
   });
   vi.stubGlobal("fetch", fn);
   return fn;
