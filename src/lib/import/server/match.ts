@@ -23,13 +23,10 @@ import type { MediaItem } from '@/types/media'
 import { providerFetch } from '@/lib/api/http'
 import { findByExternalId, searchMovies, searchTV, type TmdbMovie, type TmdbTV } from '@/lib/api/tmdb'
 import { normalizeAniListManga, type AniListManga, type AniListMedia } from '@/lib/api/anilist'
-import { getAnime as getJikanAnime, getManga as getJikanManga } from '@/lib/api/jikan'
 import { searchOpenLibrary, searchOpenLibraryByTitle, type OpenLibraryDoc } from '@/lib/api/openlibrary'
 import {
-  normalizeAnime,
   normalizeAniListAnime,
   normalizeBookOpenLibrary,
-  normalizeMangaJikan,
   normalizeMovie,
   normalizeTV,
 } from '@/lib/api/normalizer'
@@ -198,20 +195,6 @@ async function anilistByMal(ids: number[], type: 'ANIME' | 'MANGA', ctx: MatchCo
   return out
 }
 
-const JIKAN_ADULT = /hentai|rx\b/i
-
-async function jikanByMal(item: ImportItem, mal: number, ctx: MatchContext): Promise<MatchResult> {
-  return guard(async () => {
-    if (item.kind === 'anime') {
-      const { data } = await ctx.budget.call('jikan', () => getJikanAnime(mal))
-      if (JIKAN_ADULT.test(String((data as { rating?: string }).rating ?? ''))) return EXCLUDED
-      return matched(`anime_${mal}`, 'mal', normalizeAnime(data))
-    }
-    const { data } = await ctx.budget.call('jikan', () => getJikanManga(mal))
-    return matched(`manga_${mal}`, 'mal', normalizeMangaJikan(data))
-  })
-}
-
 async function matchMal(items: ImportItem[], ctx: MatchContext): Promise<Map<string, MatchResult>> {
   const results = new Map<string, MatchResult>()
   for (const kind of ['anime', 'manga'] as const) {
@@ -261,9 +244,9 @@ async function matchMal(items: ImportItem[], ctx: MatchContext): Promise<Map<str
           kind === 'anime' ? normalizeAniListAnime(media as AniListMedia) : normalizeAniListManga(media as AniListManga)
         return results.set(item.key, matched(normalized.id, 'mal', normalized))
       }
-      // 3. AniList ha respondido y no tiene ese MAL ID: no hay ficha `al-` con
-      //    la que chocar, así que Jikan (MyAnimeList) con su id de siempre.
-      results.set(item.key, await jikanByMal(item, mal, ctx))
+      // 3. AniList ha respondido y no tiene ese MAL ID: sin emparejar. Antes
+      //    se pedía a Jikan (API no oficial de MyAnimeList), retirada en 8.1.
+      results.set(item.key, UNMATCHED)
     })
   }
   // Anime/manga sin MAL ID (no debería pasar con un XML de MAL): sin emparejar.

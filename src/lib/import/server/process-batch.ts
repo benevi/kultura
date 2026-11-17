@@ -221,9 +221,8 @@ export async function processImportBatch(items: ImportItem[], opts: ProcessOptio
 }
 
 /**
- * MAL ID → id del título que la persona ya tiene en su biblioteca: el id
- * legacy de Jikan (`anime_{mal}`) o una ficha cuyo `metadata.malId` coincida
- * (los manga `al-` lo guardan). Lanza si la base falla: quien llama deja esas
+ * MAL ID → id del título que la persona ya tiene en su biblioteca: una ficha
+ * cuyo `metadata.malId` coincida (los manga `al-` lo guardan). Lanza si la base falla: quien llama deja esas
  * filas pendientes antes que arriesgar un duplicado.
  */
 export async function findLibraryByMal(
@@ -236,7 +235,6 @@ export async function findLibraryByMal(
   const out = new Map<number, string>()
   if (mals.length === 0) return out
   const candidates = new Map<string, number>()
-  for (const mal of mals) candidates.set(`${kind}_${mal}`, mal)
 
   const { data: tagged, error: mediaError } = await admin
     .from('media')

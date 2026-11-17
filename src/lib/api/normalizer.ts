@@ -14,7 +14,6 @@ import {
   type TmdbTVDetail,
   type TmdbProvidersResponse,
 } from "./tmdb";
-import type { JikanAnimeDetail, JikanMangaDetail } from "./jikan";
 import type { AniListMedia } from "./anilist";
 import { toAniListRef } from "./anilist";
 import type { MangaDexManga } from "./mangadex";
@@ -177,34 +176,6 @@ export function normalizeTV(
   };
 }
 
-export function normalizeAnime(raw: JikanAnimeDetail): MediaItem {
-  const externalId = String(raw.mal_id);
-
-  return {
-    id: `anime_${externalId}`,
-    externalId,
-    type: "anime",
-    title: raw.title_english ?? raw.title,
-    originalTitle:
-      raw.title_english && raw.title_english !== raw.title
-        ? raw.title
-        : undefined,
-    poster: raw.images?.jpg?.large_image_url || undefined,
-    year: sanitizeYear(raw.year),
-    synopsis: raw.synopsis ?? undefined,
-    genres: raw.genres?.map((g) => g.name),
-    rating: raw.score ?? undefined,
-    ratingSource: "MAL",
-    trailerKey: raw.trailer?.youtube_id ?? undefined,
-    metadata: {
-      episodes: raw.episodes ?? undefined,
-      status: raw.status,
-      studio: raw.studios?.[0]?.name ?? undefined,
-      source: raw.source,
-    },
-  };
-}
-
 /** Limpia el HTML básico (`<br>`, entidades) que AniList puede dejar en
  * `description` incluso pidiendo `asHtml: false`. `null`/vacío → undefined
  * (nunca cadena vacía, para que el resto del código trate "sin sinopsis" de
@@ -261,29 +232,6 @@ export function normalizeAniListAnime(raw: AniListMedia): MediaItem {
   };
 }
 
-export function normalizeMangaJikan(raw: JikanMangaDetail): MediaItem {
-  const externalId = String(raw.mal_id);
-
-  return {
-    id: `manga_${externalId}`,
-    externalId,
-    type: "manga",
-    title: raw.title,
-    poster: raw.images?.jpg?.large_image_url || undefined,
-    year: sanitizeYear(raw.published?.prop?.from?.year),
-    synopsis: raw.synopsis ?? undefined,
-    genres: raw.genres?.map((g) => g.name),
-    rating: raw.score ?? undefined,
-    ratingSource: "MAL",
-    metadata: {
-      chapters: raw.chapters ?? undefined,
-      volumes: raw.volumes ?? undefined,
-      status: raw.status,
-      authors: raw.authors?.map((a) => a.name) ?? [],
-    },
-  };
-}
-
 /**
  * MangaDex → MediaItem. `locale` (E-MANGADEX-LOCALE): idioma activo de la app.
  *
@@ -326,7 +274,7 @@ export function normalizeMangaDex(
       status: attrs.status,
       lastChapter: attrs.lastChapter ?? undefined,
       lastVolume: attrs.lastVolume ?? undefined,
-      // `volumes` numérico (mismo campo que normalizeMangaJikan) para que el
+      // `volumes` numérico para que el
       // post-filtro compartido `filterByMinVolumes` (jikan-maps.ts) funcione
       // igual sea cual sea la fuente. MangaDex entrega `lastVolume` como
       // STRING (o null) — se parsea, y se descarta si no es un número real.

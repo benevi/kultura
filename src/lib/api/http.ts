@@ -63,7 +63,6 @@ export const PROVIDER_IDS = [
   "tmdb",
   "rawg",
   "anilist",
-  "jikan",
   "comicvine",
   "mangadex",
   "openlibrary",

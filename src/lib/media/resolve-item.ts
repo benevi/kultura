@@ -5,8 +5,8 @@
 // manda el navegador (`mediaCache`) no se usa nunca para eso (SEG-2).
 //
 // El enrutado por forma de id replica el de la ficha de detalle
-// (`[locale]/media/[type]/[id]/page.tsx`, vía `detail-data.ts`): conviven ids de fuentes
-// actuales y legacy (AniList/Jikan, MangaDex/Jikan, Open Library/Google Books)
+// (`[locale]/media/[type]/[id]/page.tsx`, vía `detail-data.ts`): conviven ids de varias
+// fuentes (AniList/TMDB, MangaDex/AniList, Open Library/Google Books)
 // y pedir uno a la fuente equivocada sería un 404 de un título que ya está en
 // bibliotecas. Las llamadas van por los clientes de `src/lib/api`, que cachean
 // la respuesta una hora (`PROVIDER_CACHE`): como el usuario guarda desde la
@@ -23,7 +23,6 @@ import {
   normalizeAniListManga,
 } from '@/lib/api/anilist'
 import { getAnimeTmdb, isTmdbAnimeId } from '@/lib/api/anime-tmdb'
-import { getAnime as getAnimeJikan, getManga as getMangaJikan } from '@/lib/api/jikan'
 import { getManga as getMangaDex, isMangaDexId } from '@/lib/api/mangadex'
 import { getBookDetail } from '@/lib/api/openlibrary'
 import { cleanOpenLibraryDescription } from '@/lib/api/openlibrary-subjects'
@@ -34,9 +33,7 @@ import { getComic } from '@/lib/api/comicvine'
 import {
   normalizeMovie,
   normalizeTV,
-  normalizeAnime,
   normalizeAniListAnime,
-  normalizeMangaJikan,
   normalizeMangaDex,
   normalizeBookGoogle,
   normalizeBookOpenLibrary,
@@ -76,7 +73,7 @@ async function resolveUnsafe(
       if (isAniListId(externalId)) {
         return normalizeAniListAnime(await getAnimeAniList(fromAniListRef(externalId)))
       }
-      return normalizeAnime((await getAnimeJikan(Number(externalId))).data)
+      return null
     }
     case 'manga': {
       if (isMangaDexId(externalId)) {
@@ -86,7 +83,7 @@ async function resolveUnsafe(
       if (isAniListId(externalId)) {
         return normalizeAniListManga(await getMangaAniList(fromAniListRef(externalId)))
       }
-      return normalizeMangaJikan((await getMangaJikan(Number(externalId))).data)
+      return null
     }
     case 'book':
       return resolveBook(externalId)
