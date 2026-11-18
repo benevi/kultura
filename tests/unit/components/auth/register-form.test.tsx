@@ -1,5 +1,5 @@
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 
 // Render grande con consultas por rol: con la suite entera cargada se acerca
 // a los 5 s por defecto sin que nada falle (ver vitest.config.ts).
@@ -14,6 +14,7 @@ const h = vi.hoisted(() => ({
   fake: null as unknown as ReturnType<typeof import("../../auth/fake-auth").createFakeAuth>,
   replace: vi.fn(),
   params: new URLSearchParams(),
+  fetch: vi.fn(),
 }));
 
 vi.mock("@/lib/supabase/client", () => ({ createClient: () => h.fake.client }));
@@ -57,6 +58,24 @@ describe("LoginPage — modo register", () => {
     h.fake = createFakeAuth();
     h.replace.mockReset();
     h.params = new URLSearchParams("mode=register");
+    // El alta inmediata avisa al callback con `fetch` antes de redirigir
+    // (y guarda el personaje con otro). Sin doble, la petición salía de verdad
+    // a `localhost:3000` y la redirección llegaba cuando contestara la red:
+    // a veces ya dentro de otro test (docs/tests-intermitentes.md).
+    h.fetch.mockReset();
+    h.fetch.mockImplementation(async () => new Response(null, { status: 204 }));
+    vi.stubGlobal("fetch", h.fetch);
+    window.localStorage.clear();
+  });
+
+  // Ningún test termina con un alta a medias: cada `signUp` que abrió sesión
+  // acaba en una redirección, y se espera aquí para que no caiga en el test
+  // siguiente aunque el test no la mire.
+  afterEach(async () => {
+    const altas = await Promise.all(h.fake.auth.signUp.mock.results.map((r) => r.value));
+    const conSesion = altas.filter((r) => r?.data?.session).length;
+    await waitFor(() => expect(h.replace).toHaveBeenCalledTimes(conSesion));
+    vi.unstubAllGlobals();
   });
 
   // CRE-5: un solo campo de contraseña, con mostrar/ocultar.
@@ -136,6 +155,13 @@ describe("LoginPage — modo register", () => {
         },
       });
     });
+    // El alta sigue hasta el onboarding: se espera SU redirección (12.4).
+    await waitFor(() => expect(h.replace).toHaveBeenCalledWith("/en/welcome?next=%2Fen%2Fhome"));
+    // El aviso al callback va por el doble, no por la red.
+    expect(h.fetch).toHaveBeenCalledWith(
+      expect.stringContaining("/api/auth/callback?next=%2Fen%2Fhome"),
+      expect.objectContaining({ redirect: "manual" })
+    );
   });
 
   // El personaje viaja en los metadatos: si la confirmación se abre en otro
@@ -158,9 +184,10 @@ describe("LoginPage — modo register", () => {
           }),
         })
       )
-    );    // El registro sigue hasta la redirección a /welcome: se espera aquí para
-    // que no caiga en el test siguiente con la suite cargada (12.4).
-    await waitFor(() => expect(h.replace).toHaveBeenCalled());
+    );
+    // El registro sigue hasta la redirección a /welcome: se espera la de ESTE
+    // test (con su destino), no una cualquiera (12.4).
+    await waitFor(() => expect(h.replace).toHaveBeenCalledWith("/es/welcome?next=%2Fes%2Fhome"));
   });
 
   // Los personajes se nombran en el idioma de la página (auth.characters.*),
