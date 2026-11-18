@@ -1,0 +1,3 @@
+/* Dirección C «Pliego» — PENDIENTE. Todo bajo `.kp-c`. */
+.kp-c .c-stub { max-width: 720px; margin: 0 auto; padding: 24px 16px 96px; font-family: var(--kp-ui); line-height: 1.5; display: grid; gap: 12px; }
+.kp-c .c-stub .kp-shots { display: grid; gap: 8px; }

@@ -1,0 +1,3 @@
+/* Dirección B «Objeto» — PENDIENTE. Todo bajo `.kp-b`. */
+.kp-b .b-stub { max-width: 720px; margin: 0 auto; padding: 24px 16px 96px; font-family: var(--kp-ui); line-height: 1.5; display: grid; gap: 12px; }
+.kp-b .b-stub .kp-shots { display: grid; gap: 8px; }
