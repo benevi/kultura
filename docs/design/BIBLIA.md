@@ -61,7 +61,7 @@ El formato de una obra nunca se distingue solo por el color.
 | Texto e interfaz | **Instrument Sans** | SIL OFL 1.1 · github.com/Instrument/instrument-sans |
 | Hangul y japonés | **Noto Sans KR / JP**; en texto japonés va primero la japonesa, y en coreano la coreana | SIL OFL 1.1 · github.com/notofonts/noto-cjk |
 
-Fuera: JetBrains Mono y Newsreader. Sus archivos de `assets/fonts/` se sustituyen en la 8.4, con su fila en `LICENSES.csv`.
+Fuera: JetBrains Mono y Newsreader. Sus archivos de `assets/fonts/` se sustituyeron en la 8.4 por los de estas cuatro familias, con su fila en `LICENSES.csv`.
 
 ## 6. Movimiento
 

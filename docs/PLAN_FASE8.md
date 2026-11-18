@@ -164,7 +164,7 @@ Cada punto es un PR o pocos, detrás de bandera si cambia una pantalla. Privacid
 - Fondo de la pieza de libro y manga: dos variantes, sin elegir.
 - La ficha de la app da 404 cuando el proveedor tarda: es del cargador real, tarea aparte.
 - Sin probar: lector de pantalla real, Safari y Firefox, más dispositivos que los de Víctor.
-- Sustituir los archivos de `assets/fonts/` por Anybody, Instrument Sans y Noto Sans KR/JP (8.4).
+- Hecho en la 8.4: los archivos de `assets/fonts/` son ya Anybody, Instrument Sans y Noto Sans KR/JP. Falta cargarlos en la app (tokens y componentes).
 
 Lo que sigue es el encargo con el que arrancó la fase.
 

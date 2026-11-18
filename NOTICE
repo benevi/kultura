@@ -10,6 +10,16 @@ Fuentes
   License 1.1. KulturaDisplay es una instancia fija derivada de ella.
 - Figtree: Copyright 2022 The Figtree Project Authors
   (https://github.com/erikdkennedy/figtree). SIL Open Font License 1.1.
+- Anybody: Copyright 2020 The Anybody Project Authors
+  (https://github.com/Etcetera-Type-Co/Anybody). SIL Open Font License 1.1.
+- Instrument Sans: Copyright 2022 The Instrument Sans Project Authors
+  (https://github.com/Instrument/instrument-sans). SIL Open Font
+  License 1.1.
+- Noto Sans KR y Noto Sans JP: Copyright 2014-2021 Adobe
+  (http://www.adobe.com/), with Reserved Font Name 'Source'. SIL Open Font
+  License 1.1. Archivos sin modificar.
+  Anybody, Instrument Sans y Noto Sans KR/JP están en assets/fonts/, cada
+  una con su OFL.txt; la app aún no las carga.
   Texto de la licencia: https://openfontlicense.org
 
 Datos e imágenes de catálogos
