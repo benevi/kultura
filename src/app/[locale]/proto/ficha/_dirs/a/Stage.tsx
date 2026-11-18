@@ -132,12 +132,12 @@ type Box = { left: number; top: number; right: number; bottom: number; width: nu
  * `saturate(1.25)` del CSS; se mira un margen alrededor del título por el
  * movimiento del fondo con el puntero y con el scroll.
  */
-function readBehind(img: HTMLImageElement, s: Box, t: Box, b: Box | null): Behind | null {
+function readBehind(img: HTMLImageElement, s: Box, t: Box, b: Box | null, pad = 2): Behind | null {
   const behind = new Behind();
   try {
     if (b) {
-      const l = Math.max(t.left - 2, b.left), r = Math.min(t.right + 2, b.right);
-      const top = Math.max(t.top - 2, b.top), bot = Math.min(t.bottom + 2, b.bottom);
+      const l = Math.max(t.left - pad, b.left), r = Math.min(t.right + pad, b.right);
+      const top = Math.max(t.top - pad, b.top), bot = Math.min(t.bottom + pad, b.bottom);
       if (r > l && bot > top) {
         const k = Math.min(1, 1400 / (r - l));
         const c = canvas2d((r - l) * k, (bot - top) * k);
@@ -263,6 +263,8 @@ interface Mask {
   lines: number[];
   /** Caja de cada carácter (píxeles de la máscara): x, y, ancho, alto. */
   chars: [number, number, number, number][];
+  /** Otro lienzo igual, solo con las letras marcadas (mismo orden que `chars`). */
+  subset(ok: boolean[]): HTMLCanvasElement;
 }
 
 /** Letras del título pintadas a escala `k` (píxeles de canvas por píxel CSS), con origen en la esquina del `h1`. */
@@ -286,6 +288,7 @@ async function glyphMask(h1: HTMLElement, textEl: Element | null, k: number): Pr
   const text = node.data;
   const lines: number[] = [];
   const chars: [number, number, number, number][] = [];
+  const ops: ((c: CanvasRenderingContext2D) => void)[] = [];
   for (let i = 0; i < text.length; ) {
     const ch = String.fromCodePoint(text.codePointAt(i) ?? 32);
     if (ch.trim()) {
@@ -296,8 +299,12 @@ async function glyphMask(h1: HTMLElement, textEl: Element | null, k: number): Pr
         const y = Math.round((r.top - t.top) * k);
         if (!lines.some((l) => Math.abs(l - y) < 3)) lines.push(y);
         chars.push([Math.floor((r.left - t.left) * k), y, Math.ceil(r.width * k), Math.ceil(r.height * k)]);
-        if (fam && Number.isFinite(asc)) ctx.fillText(ch, (r.left - t.left) * k, (r.top - t.top) * k + asc);
-        else ctx.fillRect((r.left - t.left) * k, (r.top - t.top) * k, r.width * k, r.height * k); // sin la fuente: la caja del carácter
+        const x = (r.left - t.left) * k, yy = (r.top - t.top) * k, rw = r.width * k, rh = r.height * k;
+        const op = fam && Number.isFinite(asc)
+          ? (c2: CanvasRenderingContext2D) => c2.fillText(ch, x, yy + asc)
+          : (c2: CanvasRenderingContext2D) => c2.fillRect(x, yy, rw, rh); // sin la fuente: la caja del carácter
+        ops.push(op);
+        op(ctx);
       }
     }
     i += ch.length;
@@ -311,6 +318,15 @@ async function glyphMask(h1: HTMLElement, textEl: Element | null, k: number): Pr
     h: c.canvas.height,
     lines,
     chars,
+    subset(ok) {
+      const s = canvas2d(c.canvas.width, c.canvas.height);
+      if (!s) return c.canvas;
+      s.ctx.font = ctx.font;
+      s.ctx.textBaseline = "alphabetic";
+      s.ctx.fillStyle = "#000";
+      ops.forEach((op, i) => ok[i] && op(s.ctx));
+      return s.canvas;
+    },
   };
 }
 
@@ -373,17 +389,25 @@ export function Stage({
   const analysisRef = useRef<Analysis | null>(null);
   const blobRef = useRef<string | null>(null);
   const applyRef = useRef<() => void>(() => {});
+  const refreshRef = useRef<() => void>(() => {});
   const runRef = useRef(0);
   // Capa 3D (`?3d=capas|fondo`): ver sala3d/engine.ts.
   const planeRef = useRef<HTMLDivElement>(null);
   const engineRef = useRef<SalaHandle | null>(null);
-  const toneRef = useRef<Omit<Tone3D, "band"> | null>(null);
+  const toneRef = useRef<Omit<Tone3D, "band" | "bandLo"> | null>(null);
   const bandRef = useRef(0);
+  const bandLoRef = useRef(0);
+  const mode3dRef = useRef<Mode3D>("off");
+
   const fpsRef = useRef<HTMLDivElement>(null);
   const [mode3d, setMode3d] = useState<Mode3D>("off");
   const [state3d, setState3d] = useState<{ on: boolean; why?: string }>({ on: false });
   const [flags, setFlags] = useState({ fps: false, loop: false, gl: false, gyro: false });
   const [gyroOn, setGyroOn] = useState(false);
+  const [gyroNote, setGyroNote] = useState("");
+  const [campo, setCampo] = useState<"1" | "2">("1");
+
+  mode3dRef.current = mode3d;
 
   // Estimación del servidor para el primer pintado (el encaje real va después).
   const words = title.split(/\s+/);
@@ -396,10 +420,11 @@ export function Stage({
     const stage = stageRef.current, h1 = titleRef.current, box = boxRef.current;
     if (!stage || !h1) return;
     const desktop = window.matchMedia("(min-width: 720px)").matches;
-    const maxLines = desktop ? 2 : 3;
+    // En móvil el título va DENTRO de la imagen (no a caballo de su borde): dos líneas como mucho.
+    const maxLines = desktop || !piece ? 2 : 3;
     const stageH = stage.clientHeight;
     // Con la portada como pieza, el título cede alto a la portada.
-    const maxFs = desktop ? Math.min(stageH * (piece ? 0.24 : 0.36), piece ? 240 : 320) : 132;
+    const maxFs = desktop ? Math.min(stageH * (piece ? 0.24 : 0.36), piece ? 240 : 320) : piece ? 132 : 112;
     // El tamaño se busca SIN partir palabras; `overflow-wrap: anywhere` (a.css)
     // solo actúa si una palabra no cabe ni al tamaño mínimo.
     h1.style.overflowWrap = "normal";
@@ -430,6 +455,9 @@ export function Stage({
       const b = box.getBoundingClientRect();
       bandRef.current = Math.max(0, Math.round(b.bottom - t.top + 20));
       stage.style.setProperty("--a-band-cover", `${bandRef.current}px`);
+      // Por debajo del título (si está subido) el velo se aclara: no hace falta ahí.
+      bandLoRef.current = Math.max(0, Math.round(b.bottom - t.bottom - 16));
+      stage.style.setProperty("--a-band-lo", `${bandLoRef.current}px`);
     }
   };
 
@@ -440,6 +468,7 @@ export function Stage({
     applyRef.current();
     engineRef.current?.sync();
   };
+  refreshRef.current = refresh;
   useIsoLayoutEffect(() => {
     refresh();
     const stage = stageRef.current;
@@ -460,7 +489,7 @@ export function Stage({
       stage.removeEventListener("animationend", later);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [title]);
+  }, [title, mode3d]);
 
   // ── 1. Análisis de la portada (una vez) ─────────────────────────────────
   useEffect(() => {
@@ -501,14 +530,19 @@ export function Stage({
     applyRef.current = () => {
       const a = analysisRef.current, stage = stageRef.current, box = boxRef.current, h1 = titleRef.current;
       if (!a || !stage || !h1 || !theme) return;
-      const run = ++runRef.current;
       const { img } = a;
+      // Mientras la imagen cambia de archivo (llega la versión mayor) no hay píxeles
+      // que leer: un lienzo vacío daría un velo mínimo. Se espera al siguiente aviso.
+      if (!img.complete || !img.naturalWidth) return;
+      const run = ++runRef.current;
       const s = stage.getBoundingClientRect(), t = h1.getBoundingClientRect();
       const b = box?.getBoundingClientRect() ?? null;
 
       // 1b. Velo: el mínimo para que TODA la letra tenga contraste con lo que
       // tiene detrás a este ancho (la portada y la copia borrosa del fondo).
-      const behind = readBehind(img, s, t, b && b.width && b.height ? b : null);
+      // Con la capa 3D la imagen se mueve bajo el título (parallax y acercamiento, hasta
+      // ~40 px en una pantalla ancha): el velo se calcula con todo lo que puede llegar a quedar detrás.
+      const behind = readBehind(img, s, t, b && b.width && b.height ? b : null, mode3dRef.current === "off" ? 2 : 44);
       const ratio = a.thumb ? TITLE_RATIO_THUMB : TITLE_RATIO;
       const alphaL = behind ? minAlpha(behind, a.light, ratio) : 0.94;
       const alphaD = behind ? minAlpha(behind, a.dark, ratio) : 0.94;
@@ -677,14 +711,110 @@ export function Stage({
     };
   }, [reducedMotion]);
 
+  // ── 4b. Carga segura de la imagen ───────────────────────────────────────
+  // (1) Si la imagen falla: se esconde (queda el campo de color, nunca el icono
+  //     roto), se reintenta con espera y, si sigue fallando, se baja a un tamaño
+  //     menor. (2) Cuando la página ya está cargada y la pantalla pide más de lo
+  //     que hay, se trae la versión mayor EN SERIE (nunca a la vez que la primera:
+  //     MangaDex corta la conexión con dos descargas simultáneas) y se cambia sin
+  //     parpadeo. Si la mayor falla, se queda la que ya se ve.
+  useEffect(() => {
+    const img = imgRef.current, stage = stageRef.current;
+    if (!img || !stage || !cover) return;
+    const smaller = (cover.srcSet || "").split(",").map((c) => c.trim().split(/\s+/)[0]).filter(Boolean).reverse();
+    const chain = [cover.src, ...smaller.filter((u) => u !== cover.src), cover.small].filter((u, i, a) => a.indexOf(u) === i);
+    let step = 0, tries = 0, dead = false, upgraded = false;
+    const timers: number[] = [];
+    const later = (fn: () => void, ms: number) => timers.push(window.setTimeout(() => !dead && fn(), ms));
+    const setSrc = (url: string) => {
+      // Un solo candidato en `srcset` y el mismo en `src`: el navegador no pasa por
+      // ninguna URL intermedia (quitar el `srcset` le hacía pedir otra y cancelarla).
+      if (img.hasAttribute("srcset")) img.srcset = url;
+      img.src = url;
+    };
+    const onError = () => {
+      if (dead) return;
+      img.style.visibility = "hidden";
+      stage.dataset.img = "retry";
+      if (tries < 2) {
+        tries++;
+        later(() => setSrc(chain[step]), tries === 1 ? 800 : 2500);
+      } else if (step + 1 < chain.length) {
+        step++;
+        tries = 0;
+        setSrc(chain[step]);
+      } else {
+        stage.dataset.img = "failed"; // se queda el campo de color con el título
+      }
+    };
+    const upgrade = async () => {
+      if (upgraded || dead || cover.hi === img.currentSrc || step > 0) return;
+      const r = img.getBoundingClientRect();
+      const dpr = Math.min(window.devicePixelRatio || 1, 3);
+      // ¿Hace falta? Lo que se ve (× DPR) frente a los píxeles reales del archivo actual.
+      let real = 0;
+      try {
+        const bmp = await createImageBitmap(img);
+        real = bmp.width;
+        bmp.close();
+      } catch {
+        return;
+      }
+      const ar = img.naturalWidth / Math.max(1, img.naturalHeight);
+      const shownW = piece ? r.width : Math.max(r.width, r.height * ar);
+      if (dead || shownW * dpr <= real * 1.02) return;
+      upgraded = true;
+      for (let attempt = 0; attempt < 2 && !dead; attempt++) {
+        const ok = await new Promise<boolean>((resolve) => {
+          const big = new Image();
+          if (cover.canvasSafe) big.crossOrigin = "anonymous";
+          big.onload = () => resolve(big.naturalWidth > 0);
+          big.onerror = () => resolve(false);
+          big.src = cover.hi;
+        });
+        if (ok && !dead) {
+          setSrc(cover.hi); // ya está en caché: el cambio es inmediato
+          stage.dataset.img = "hi";
+          await img.decode().catch(() => {});
+          if (dead) return;
+          refreshRef.current(); // velo y fundido, con los píxeles definitivos
+          engineRef.current?.reloadImage();
+          return;
+        }
+        await new Promise((res) => setTimeout(res, 3000));
+      }
+    };
+    const onLoad = () => {
+      if (dead) return;
+      img.style.visibility = "";
+      if (stage.dataset.img === "retry") stage.dataset.img = "ok";
+      if (document.readyState === "complete") later(upgrade, 300);
+      else window.addEventListener("load", () => later(upgrade, 300), { once: true });
+    };
+    img.addEventListener("error", onError);
+    img.addEventListener("load", onLoad);
+    if (img.complete) {
+      if (img.naturalWidth) onLoad();
+      else onError(); // falló antes de que llegara este script
+    }
+    return () => {
+      dead = true;
+      timers.forEach((t) => clearTimeout(t));
+      img.removeEventListener("error", onError);
+      img.removeEventListener("load", onLoad);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [cover?.original]);
+
   // ── 5. Capa 3D (prototipo P-3D) ─────────────────────────────────────────
   // `?3d=capas` (sin mapa de profundidad) o `?3d=fondo` (con mapa). `?fps=1`
   // enseña el contador; `?loop=1` fuerza la deriva automática (para medir) y
   // `?gl=1` acepta una GPU por software (pruebas).
-  useEffect(() => {
+  useIsoLayoutEffect(() => {
     const q = new URLSearchParams(window.location.search);
     const m = q.get("3d");
     if (m === "capas" || m === "fondo") setMode3d(m);
+    if (q.get("campo") === "2") setCampo("2");
     setFlags({
       fps: q.get("fps") === "1",
       loop: q.get("loop") === "1",
@@ -744,7 +874,7 @@ export function Stage({
         mode: mode3d,
         spineRight,
         stage, box, img, h1, canvas, depth,
-        getTone: () => (toneRef.current ? { ...toneRef.current, band: bandRef.current } : null),
+        getTone: () => (toneRef.current ? { ...toneRef.current, band: bandRef.current, bandLo: bandLoRef.current } : null),
         titleMask: (k) => glyphMask(h1, h1.querySelector(".a-title-text"), k),
         reduced: reducedRef.current,
         forceLoop: flags.loop,
@@ -783,6 +913,7 @@ export function Stage({
       delete stage.dataset.k3dOn;
       setState3d({ on: false });
       setGyroOn(false);
+      setGyroNote("");
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [mode3d, skip3d, cover?.original, flags.loop, flags.gl, flags.fps]);
@@ -790,17 +921,36 @@ export function Stage({
   useEffect(() => {
     reducedRef.current = reducedMotion;
     engineRef.current?.setReduced(reducedMotion);
+    if (reducedMotion) {
+      engineRef.current?.disableGyro();
+      setGyroOn(false);
+    }
   }, [reducedMotion]);
 
-  // Giroscopio: solo tras pulsar, y con permiso donde el sistema lo pide (iOS). Nunca hace falta.
+  // Giroscopio: solo tras pulsar, y con permiso donde el sistema lo pide (iOS 13+:
+  // `requestPermission()` tiene que salir de un toque). Android no pide permiso.
+  // Los sensores exigen contexto seguro (HTTPS o localhost). Nunca hace falta:
+  // sin sensor, sin permiso o sin HTTPS queda el parallax por scroll y la deriva.
   const askGyro = async () => {
+    const engine = engineRef.current;
+    if (!engine) return;
+    if (gyroOn) {
+      engine.disableGyro();
+      setGyroOn(false);
+      return;
+    }
+    const no = (why: string) => setGyroNote(why);
+    setGyroNote("");
+    if (!window.isSecureContext) return no(es ? "El sensor necesita HTTPS." : "The sensor needs HTTPS.");
     try {
       const D = window.DeviceOrientationEvent as unknown as { requestPermission?: () => Promise<string> };
-      if (typeof D?.requestPermission === "function" && (await D.requestPermission()) !== "granted") return;
-      engineRef.current?.enableGyro();
-      setGyroOn(true);
+      if (typeof D?.requestPermission === "function" && (await D.requestPermission()) !== "granted") {
+        return no(es ? "Sin permiso para el sensor de movimiento." : "Motion sensor permission denied.");
+      }
+      if (await engine.enableGyro()) setGyroOn(true);
+      else no(es ? "Este dispositivo no da datos de orientación." : "This device gives no orientation data.");
     } catch {
-      // sin permiso: se queda la deriva
+      no(es ? "Sin permiso para el sensor de movimiento." : "Motion sensor permission denied.");
     }
   };
 
@@ -818,6 +968,7 @@ export function Stage({
       data-shape={cover ? (piece ? "piece" : cover.shape) : "none"}
       data-ink="light"
       data-fuse={fuse ? "on" : "off"}
+      data-campo={piece ? campo : undefined}
       style={style}
     >
       {cover && !piece && (
@@ -837,11 +988,12 @@ export function Stage({
                 ref={imgRef}
                 data-kp-cover=""
                 className="a-cover"
-                // Pieza: una sola URL (la mayor), sin `srcset`: el tamaño natural del `<img>`
-                // es el real y el CSS (`width: auto`) no puede ampliarla. Sala: el navegador
-                // elige según pantalla × DPR; en móvil la imagen se ve más ancha que la
-                // pantalla (recorte 4:5), y `sizes` lo dice.
-                src={piece ? cover.hi : cover.src}
+                // Pieza: una sola URL, sin `srcset`: el tamaño natural del `<img>` es el real
+                // y el CSS (`width: auto`) no puede ampliarla. Sala: el navegador elige entre
+                // tamaños razonables; en móvil la imagen se ve más ancha que la pantalla
+                // (recorte 4:5), y `sizes` lo dice. La versión mayor (`cover.hi`) llega
+                // después, sin competir con la primera carga (ver «Carga segura»).
+                src={cover.src}
                 srcSet={piece ? undefined : cover.srcSet}
                 sizes={piece ? undefined : `(min-width: 720px) 100vw, ${Math.round(125 * (cover.natural ? cover.natural.w / cover.natural.h : 16 / 9))}vw`}
                 alt=""
@@ -880,6 +1032,11 @@ export function Stage({
           <button type="button" className="a-fuse-toggle" aria-pressed={gyroOn} onClick={askGyro}>
             {es ? "Mover con el móvil" : "Move with the phone"}
           </button>
+        )}
+        {gyroNote && mode3d !== "off" && (
+          <p className="a-3d-why" role="status">
+            {gyroNote}
+          </p>
         )}
         {mode3d !== "off" && !state3d.on && state3d.why && (
           <p className="a-3d-why" role="status">

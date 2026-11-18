@@ -1,6 +1,6 @@
 # Prototipo 3D de la ficha · borrador para `docs/spikes/3d-ficha.md`
 
-Fase 8.3, puerta **P-3D** (`PLAN_FASE8.md` §3 y §7). Rama desechable `proto/fase8-3-direcciones`. 18-11-2026.
+Fase 8.3, puerta **P-3D** (`PLAN_FASE8.md` §3 y §7). Rama desechable `proto/fase8-3-direcciones`. 18-11-2026, **segunda ronda** (tras la primera prueba de Víctor).
 Redacta el agente de movimiento y 3D; **decide Víctor** probándolo en su móvil y su ordenador. **[P]** = pendiente de Víctor.
 
 ## Cómo probarlo
@@ -9,120 +9,128 @@ Sobre la dirección A «Sala». En la sala hay un selector **2D · 3D capas · 3
 
 | Qué | URL (`/es/proto/ficha/a/…`) |
 |---|---|
-| Sala con mapa (lo recomendado) | `movie/496243?3d=fondo` (Parásitos) · `game/274755?3d=fondo` (Hades) |
-| Sala sin mapa | `movie/496243?3d=capas` · `game/274755?3d=capas` |
-| Pieza (portada como objeto) | `book/OL20150260W?3d=capas` · `manga/801513ba-a712-498c-8f57-cae55b38cc92?3d=capas` · `anime/al-199?3d=capas` |
+| Sala con mapas (lo recomendado) | `movie/496243?3d=fondo` (Parásitos) · `game/274755?3d=fondo` (Hades) · `anime/al-199?3d=fondo` (Chihiro) |
+| Sala sin mapas | las mismas con `?3d=capas` |
+| Pieza (portada como objeto) | `book/OL20150260W?3d=capas` · `manga/801513ba-a712-498c-8f57-cae55b38cc92?3d=capas` |
+| Fondo de la Pieza, variante 2 | añadir `&campo=2` (vale también sin 3D) |
 | Contador en pantalla | añadir `&fps=1` (FPS medio, p95 del fotograma, fotogramas largos > 32 ms, CPU por fotograma, DPR, MB de texturas, GPU) |
 | Para medir sin mover el ratón | añadir `&loop=1` (deriva automática) |
 
-En móvil, el botón «Mover con el móvil» pide el giroscopio (solo tras pulsarlo; en iOS sale el permiso del sistema). Nunca hace falta.
+En móvil, el botón **«Mover con el móvil»** activa el giroscopio (ver más abajo qué hace falta).
 
-## Qué se construyó
+## Qué cambió en la segunda ronda
 
-Una capa 3D que se pone **encima** de la sala 2D, en un solo `<canvas aria-hidden>`:
-
-- **Sala** (imagen apaisada: película, serie, videojuego). La imagen con profundidad y nuestro título pintado **entre** el fondo y lo que queda delante, con una sombra suave del título sobre el fondo (no sobre lo que lo tapa). El título del lienzo es adorno; el `h1` real sigue en el HTML, en el árbol de accesibilidad y seleccionable (solo se apaga su tinta cuando el lienzo ya lo ha pintado).
-- **Pieza** (libro, manga, cómic, anime). La portada como objeto con grosor: cubierta, lomo (que sale de la propia portada), canto de páginas, sombra de contacto y un brillo que cruza la cubierta. Gira con el puntero, con el scroll o con el giroscopio. En manga el lomo va a la derecha.
-- `?fps=1`, pausa fuera de pantalla y con la pestaña oculta, densidad limitada y rebajada sola si el fotograma no llega, recuperación de pérdida de contexto, liberación al desmontar.
-
-Archivos: `src/app/[locale]/proto/ficha/_dirs/a/sala3d/engine.ts` (motor), `sala3d/depth.ts` (mapas del prototipo), `Stage.tsx` (montaje diferido, selector, contador), `a.css`; `scripts/proto-depth/build.py` (cómo se generan los mapas); `public/proto/depth/` (los mapas).
-
-## Técnica y por qué
-
-**WebGL a pelo, sin dependencias**, como el motor de la landing. Motivo: el peso.
-
-| | Minificado | gzip |
-|---|---|---|
-| Motor 3D (trozo aparte, se pide con `import()` solo si hay 3D) | 19,6 KB | **8,5 KB** |
-| Lo que crece `Stage` (siempre cargado: montaje, selector y contador del prototipo) | +4,2 KB | **+1,7 KB** |
-| Mapas por obra en `fondo` (dos JPEG en gris) | — | 43–59 KB |
-
-Medido con esbuild sobre los archivos de la rama (no con el build de Next). three.js no se ha medido aquí; su núcleo ronda diez veces o más ese peso y no aporta nada a una escena que es un rectángulo con un sombreador y una caja de seis caras.
-
-Un solo lienzo y un solo contexto (la landing usa dos lienzos con el nombre en DOM entre ambos). Ventajas de pintar el título dentro: el corte es por píxel y con borde suavizado, el título se mueve con su plano sin desfase respecto a la imagen, y hay sombra con oclusión correcta.
-
-Mejoras de acabado respecto a la landing y al fundido 2D de A:
-
-- **Borde del corte**: ancho constante de ~1,5 px de pantalla (derivadas de pantalla, `OES_standard_derivatives`) leyendo la máscara en 5 puntos: sin borrón y sin los bloques del 2D (comparar `detalle-hades-2d.png` y `detalle-hades-fondo.png`). No es perfecto: ampliado ×2 se ven escalones pequeños en el contorno, porque la máscara mide 1280 px y es un JPEG; una máscara mayor o sin pérdida los quitaría (queda por hacer). Sin esa extensión cae a un borde fijo.
-- **Máscara propia para el corte**, distinta del mapa del parallax. El parallax usa la profundidad dilatada y suavizada (como la landing: no rasga siluetas). El corte usa la profundidad sin dilatar, calculada al doble de resolución, sin el suelo (a cada fila se le resta su nivel de fondo) y con una curva en S: el umbral cae en el contorno de la figura. La landing usa un solo mapa dilatado para las dos cosas, y por eso su recorte lleva halo.
-- **Sin salto al encenderse**: el primer fotograma es la misma composición que el 2D (mismo encuadre, mismo velo) y el lienzo entra con un fundido de 0,45 s; después la imagen «despierta» (un 3,5 % de acercamiento en 1,1 s). Comprobado comparando 2D y 3D quietos: misma posición y escala; las diferencias son de remuestreo en líneas finas.
-- **Grano fijo** de ±1,5/255 para que el velo no haga bandas.
-
-## Las reglas del título (las del 2D, medidas en el 3D)
-
-El motor elige el umbral del corte con el título ya colocado, a cada ancho:
-
-1. Tapado ≤ 22 % de los píxeles de letra, en el título y en cada línea (se busca el 18 %).
-2. Ninguna letra tapada más del 62 % (45 % sin mapa). Regla nueva mía: una letra que desaparece cambia la palabra.
-3. Lo tapado no cruza más del 36 % del ancho de una línea (una franja de suelo que tacha media palabra no es una figura por delante).
-4. Si lo tapado queda por debajo del 7 %, se ve como un mordisco: el título va entero por delante.
-5. Si el título no cabe entero dentro de la imagen (móvil: va a caballo del borde inferior), va entero por delante. La landing hace lo mismo en móvil.
-
-Medido píxel a píxel con Playwright (el motor tiene un modo de depuración que pinta el título sin tapar y sin título), en reposo y con el puntero en dos esquinas, tema oscuro:
-
-| Obra · vía · ancho | Tapado medido | Contraste mínimo de la letra visible | Letra por debajo de 3:1 |
+| Lo que pidió Víctor | Qué era | Qué se hizo | Medida de después |
 |---|---|---|---|
-| Parásitos · fondo · 1440 | 14,8–15,1 % | 3,78 | 0 % |
-| Parásitos · fondo · 1024 | 7,5–7,7 % | 3,89 | 0 % |
-| Hades · fondo · 1440 | 16,1–16,2 % | 5,34 | 0 % |
-| Hades · fondo · 1024 | 14,3 % | 5,63 | 0 % |
-| Parásitos y Hades · fondo · 375 | 0 % (regla 5) | 4,55 / 3,68 | 0 % |
-| Parásitos y Hades · capas · 1440, 1024 y 375 | 0 % (ningún corte cumple las reglas) | 3,73 / 3,64 | 0 % |
+| 1. Letras fundidas con mejor acabado, también en móvil | El corte salía de umbralizar un mapa de profundidad JPEG: borde deshilachado y, dentro de las figuras, un corte arbitrario | Máscara de **primer plano** de verdad (segmentación, sin pérdida, a 2048 px). Todo borde visible es el contorno de la figura. Cada letra va entera por detrás o entera por delante. En móvil el título va dentro de la imagen | 24 casos: tapado ≤ 14,3 %, letra peor ≤ 36 %, contraste ≥ 3,48, 0 % de letra bajo 3:1 |
+| 2. Las imágenes cargan siempre | Tres cosas distintas (abajo): MangaDex cortaba la conexión, RAWG tardaba y la ficha salía 404, y el velo se calculaba a veces con la imagen a medio cambiar | Tamaño razonable primero y el grande después, en serie; reintentos y respaldo a un tamaño menor; campo de color mientras tanto; segundo intento de datos | 10 cargas en frío por obra y ancho (100): 100/100 con imagen, 0 fallos de red |
+| 3. Imágenes que llenen la pantalla sin pixelar | Chihiro (banner de 1900 × 400) había caído a Pieza; las portadas pequeñas no llenaban | Anime por TMDB: Chihiro vuelve a tener sala (3830 × 2154). Pieza: portada a su tamaño y fondo a sangre hecho con su paleta, dos variantes | Ninguna imagen ampliada en px CSS (tabla) |
+| 4. «Dónde ver» ocupa demasiado en móvil | Tres bloques con logotipo y nombre debajo | Una fila deslizable por grupo, logotipos de 44 px | Parásitos a 375: 262 px de alto con 10 servicios, sin desborde |
+| 5. Que el 3D se mueva al mover el móvil | Estaba escrito sin probar | Terminado: permiso en iOS, zona muerta, recentrado, límite, respaldo | Probado con eventos sintéticos (abajo); falta un móvil real con HTTPS |
 
-El `h1` no está oculto y el lienzo lleva `aria-hidden="true"` en todos los casos. No se midió en tema claro (la sala no cambia con el tema) ni con `en`.
+## 1. Letras fundidas: cómo queda
 
-## Las dos vías, comparadas
+**Qué se construyó.** Un solo `<canvas aria-hidden>` encima de la sala 2D (WebGL a pelo, sin dependencias). En **Sala**: la imagen con parallax, el velo, y nuestro título pintado **entre** el fondo y lo que está en primer plano, con su sombra sobre el fondo. El `h1` real sigue en el HTML, en el árbol de accesibilidad y seleccionable. En **Pieza**: la portada como objeto con grosor (lomo, canto de páginas, sombra, brillo) que gira.
 
-| | `capas` (sin mapa) | `fondo` (con mapa) |
+**De dónde sale ahora el corte** (`scripts/proto-depth/build.py`, en local):
+
+| Archivo | Qué es | Modelo y licencia |
 |---|---|---|
-| De dónde sale la profundidad | De la imagen ya cargada: lo que se aparta del color de fondo | Mapa de profundidad calculado antes, en local |
-| Parallax | Dos planos rígidos (imagen y título) que se mueven entre sí | Dentro de la imagen: lo cercano se mueve más que lo lejano |
-| Título entre capas | En las obras de prueba, **nunca** con las reglas de arriba: las formas que salen del color (un cartón en el suelo, unas estalactitas) no son figuras y tachan letras. Con las reglas más flojas salía, y se veía arbitrario | **Sí en escritorio**: el brazo del hijo pasa por delante de la «P» de Parásitos; Zagreo, por delante de la «d» de Hades. El contorno sigue a la figura |
-| En móvil | Planos, sin corte | Parallax interior, sin corte (regla 5) |
-| Pieza | Igual en las dos: la portada como objeto. El relieve dentro de la cubierta no se activa (la portada lleva su rótulo impreso; un parallax interior lo deformaría) | |
-| Coste por obra | Nada | Dos JPEG (43–59 KB) y un proceso que los calcule |
-| Peso de JS | El mismo motor | El mismo motor |
-| Tiempo de `import()` a primer fotograma | 0,3–0,7 s (calcula la máscara en ratos libres) | 0,2–0,3 s |
-| Memoria de texturas a 1440 (DPR 1 / 2) | 7,2 MB / — | 11,4 MB / 24 MB |
+| `<obra>.m.png` | **Máscara de primer plano**: figura frente a fondo. PNG sin pérdida, 2048 px de ancho, 39–51 KB | BiRefNet «general-lite» (**MIT**), vía `rembg` 2.0.67 (**MIT**) y `onnxruntime` (MIT). Pesos: 224 MB, de las publicaciones de GitHub de `rembg`. No se usa RMBG de BRIA (no comercial) |
+| `<obra>.d.jpg` | Profundidad, **solo para el parallax** (ya no decide el corte). 640 px, 10–12 KB | Depth Anything V2 **Small** (**Apache-2.0**) |
 
-**Recomendación: `fondo` para la Sala y el objeto para la Pieza.** `capas` no da lo que Víctor pide (figuras por delante de las letras) más que por casualidad; sirve como respaldo cuando una obra no tiene mapa: planos con parallax y el título limpio. Lo que hay que saber antes de decir que sí:
+Limpieza de la máscara, antes de guardarla: fuera las zonas dudosas (componentes con alfa media baja o con mucha zona «a medias»), fuera las islas de menos del 0,4 % de la imagen, huecos pequeños cerrados, contorno suavizado y ajustado a la imagen con un filtro guiado corto. Queda un alfa de 2–3 px, sin halo. En el sombreador la máscara se lee en 5 puntos y se compone premultiplicada.
 
-- El efecto «entre capas» depende de la imagen. De las dos salas de prueba sale en las dos a escritorio; en móvil, en ninguna (por composición: el título pisa el borde de la imagen). **[P]** Si en móvil se quiere el corte, hay que cambiar la composición móvil de A (título dentro de la imagen), y eso es diseño, no 3D.
-- En Hades, la «d» queda tapada en torno al 60 %. Cumple el 22 % del título, pero es una letra casi oculta. **[P]** ¿Vale ese tope por letra?
-- Chihiro ya no es Sala (regla de calidad de imagen): es Pieza.
+**Por qué cada letra va entera por detrás o entera por delante.** Con una figura de verdad delante de un título enorme, una letra queda tapada casi entera (la «d» de Hades, al 94 %). Probé tres salidas y descarté dos:
 
-## Medidas
+1. Dejar pasar solo la parte de la figura más cercana (compuerta por profundidad, borde nítido): el corte dentro de la figura sale a escalones (la profundidad es un JPEG de 8 bits). Descartado.
+2. La misma compuerta con transición suave: la letra se ve a través de la figura, como un velo. Descartado.
+3. **Lo que queda**: una letra que quedaría tapada más del 35 % va **entera por delante** de la figura; las demás, por detrás. Si aun así el título o una línea pasan del 18 %, se sacan las letras más tapadas. El corte nunca cae dentro de una figura. Es el recurso clásico de entrelazar rótulo y sujeto.
 
-**Equipo**: Windows 11, NVIDIA GeForce GTX 1070 (ANGLE, Direct3D 11), Chromium 147 de Playwright sin ventana, contra `next dev` (no es el build de producción). «375» es ese mismo equipo con ventana de móvil emulada (DPR 2): **no es un móvil**. 5 s con deriva automática (`loop=1`), 300 fotogramas por caso.
+Resultado a 1440: en Hades, Zagreo pasa por detrás de la «d» y por delante de la «a» y la «e», y las borlas del templo cruzan la «H» y la «s»; en Parásitos, las manos y las rodillas cruzan «á», «s», «i», «t», «o»; en Chihiro, las piernas de Chihiro cruzan «je de». **[P]** Es un criterio de diseño: la misma figura queda delante de unas letras y detrás de otras. Mirarlo en marcha y decidir si convence.
 
-| Caso | FPS | p95 del fotograma | Fotogramas > 32 ms | CPU por fotograma | Con CPU ×4 |
+**Reglas de legibilidad, medidas** píxel a píxel con Playwright (el motor tiene un modo que pinta el título sin tapar y otro sin título), `?3d=fondo`, tema oscuro, en reposo y con el puntero en dos esquinas:
+
+| Obra | Ancho | Letra tapada (tope 22 %) | Letra peor (tope 35 % en reposo) | Contraste mínimo de la letra visible | Letra bajo 3:1 |
 |---|---|---|---|---|---|
-| Sala `capas` y `fondo`, 1440 (DPR 1) | 60 | 16,7–16,8 ms | 0 / 300 | 0,07–0,15 ms | 60 fps, 0 largos, 0,6–0,7 ms |
-| Sala `capas` y `fondo`, 375 (DPR 2) | 60 | 16,7–16,8 ms | 0 / 300 | 0,07–0,08 ms | 60 fps, 0 largos, 0,6–0,7 ms |
-| Sala `fondo`, 1440 a DPR 2 | 60 | 16,7–16,8 ms | 1 / 400 | 0,09–0,14 ms | 60 fps, 1 largo, 0,7–0,8 ms |
-| Pieza, 1440 y 375 (tres obras) | 60 | 16,7–16,8 ms | 0 / 300 | 0,07–0,10 ms | 60 fps, 0 largos, 0,8–1,2 ms |
+| Parásitos | 1440 | 11,2–11,5 % | «o» 33,6–36,2 % | 4,13 | 0 % |
+| Parásitos | 1024 | 12,7–13,2 % | «s» 31,9–35,6 % | 4,15 | 0 % |
+| Parásitos | 375 / 390 | 2,6 / 3,1 % | 10,9 / 12,6 % | 4,18 | 0 % |
+| Hades | 1440 | 13,1–14,3 % | «s» 30,1–30,8 % | 5,54 | 0 % |
+| Hades | 1024 | 12,6–13,3 % | «e» 32,2–34 % | 5,72 | 0 % |
+| Hades | 375 / 390 | 1,1 / 1,3 % | 6 / 7,5 % | 3,67 | 0 % |
+| Chihiro | 1440 | 3,2–3,3 % | «e» 30,4–30,6 % | 8,92 | 0 % |
+| Chihiro | 1024, 375, 390 | 0 % (nada cruza el título) | — | 3,48 | 0 % |
 
-El fotograma va sobrado en esta GPU; la medida que decide P-3D es la del móvil de Víctor, con `?fps=1`.
+Con el puntero en una esquina la letra peor llega al 36,2 % (el parallax mueve la figura un poco sobre la letra): el tope se aplica en reposo. El velo se calcula ahora con todo lo que el parallax puede traer detrás del título (44 px de margen).
 
-**Tiempo hasta que aparece el 3D** (en `next dev`): la capa espera a `load`, a un rato libre y a que acaben las entradas de la sala (0,9 s). Desde `load` hasta el primer fotograma: Sala `fondo` 0,6–0,9 s, Sala `capas` 1,0–1,3 s, Pieza 0,03–0,7 s.
+**Móvil.** El título va dentro de la imagen (antes pisaba su borde inferior), así que ya hay letras entre capas: poco en Parásitos (2,6 %) y Hades (1,1 %), nada en Chihiro a 375 px, porque en el recorte 4:5 las figuras quedan por encima del título. **[P]** Es un cambio de composición de A en móvil que vale también para el 2D; si se quiere más cruce en móvil habría que subir el título dentro de la imagen (probé a colocarlo en automático según la máscara y no encontré una regla que diera buen resultado en las tres obras: lo quité).
 
-**LCP con y sin 3D** (mediana de 3 cargas, ms, en `next dev`, con mucha variación entre cargas):
+**Antes y después** (ampliado ×3, `capturas/3d/`): `detalle-x3-hades-fondo.png`, `detalle-x3-parasitos-fondo.png`, `detalle-x3-chihiro-fondo.png`; el 2D de siempre, en `detalle-hades-2d.png` y `detalle-parasitos-2d.png`. El borde de la primera ronda (deshilachado, con motas) ya no existe en el código: quedó en el commit `fe69b2bb`.
 
-| Obra | 1440: 2D / 3D | 375: 2D / 3D |
+**`capas` (sin mapas)** no cambia: dos planos con parallax y una máscara por color que, con las reglas, casi nunca deja pasar nada. Queda como respaldo para obras sin mapas.
+
+## 2. Las imágenes cargan siempre: qué era
+
+Diagnóstico con los registros de `kultura-dev` y con tiempos por origen:
+
+| Qué fallaba | Prueba | Arreglo |
 |---|---|---|
-| Parásitos | 1056 / 712 | 920 / 904 |
-| Hades | 1644 / 1456 | 1888 / 1544 |
-| Gente normal | 1460 / 1484 | 3140 / 2960 |
-| Berserk | 1360 / 956 | 864 / 596 |
-| Chihiro | 1684 / 1288 | 768 / 680 |
+| **MangaDex cortaba la conexión.** En la primera ronda pedí el original (2,4 MB) a la vez que la miniatura; con dos descargas simultáneas MangaDex cierra una (`fetch failed · other side closed`, tras 2,42 MB) y el optimizador devolvía **500** | Registro del servidor; primera petición de la miniatura: 500 en 2,4 s | Primero la miniatura de 512 px (53 KB) y el original **después y en serie**, solo si la pantalla lo pide. Era un fallo introducido por mí |
+| **La ficha de Hades salía como 404.** La API de RAWG tardó 6,2 s y el cargador real (`loadMediaDetail`) devuelve «no existe» cuando el proveedor falla | `GET /es/proto/ficha/a/game/274755 404 in 6165ms` | En el prototipo, un segundo intento antes de rendirse. **Es un problema del cargador de la app, no del prototipo**: ver decisiones |
+| **Imágenes enormes en la primera carga.** El `srcset` ofrecía el original (523 KB TMDB, 360 KB RAWG) | — | `srcset` solo con tamaños razonables (60–165 KB); el original llega después, sin competir |
+| **Velo mal calculado a veces.** Si el velo se medía justo cuando la imagen cambiaba de archivo, el lienzo estaba vacío y salía el velo mínimo (letras sin contraste). Y el 3D no se encendía si arrancaba en ese instante | Opacidad del velo 0,12 frente a 0,41 entre cargas iguales | Se espera a que la imagen esté completa; 36 arranques en frío: 36 con 3D |
+| **Open Library es lento.** Su portada redirige (302) y tarda 2,7–3,2 s de mediana | Tiempos de abajo | No tiene arreglo por nuestra parte; mientras tanto se ve el campo de color |
+| **Google Books devolvía 429** al enriquecer libros; el cortacircuitos de la app se abre 10 min | Registro del servidor | Nada: la app ya cae a Open Library |
 
-No hay diferencia atribuible al 3D (se monta después del LCP). El elemento LCP es el `<img>` de la sala; en Pieza a 1440 es el texto del título, que es mayor que la portada. Ojo: con la regla de calidad, Parásitos pide ahora el original de TMDB (523 KB frente a 149 KB de `w1280`) y Hades el de RAWG (360 KB frente a 165 KB): eso sí pesa en el LCP en una red lenta y no se ha medido con red limitada.
+Red de seguridad (en `Stage.tsx`, vale para 2D y 3D): si la imagen falla se oculta (queda el **campo de color** con el título, nunca el icono roto), se reintenta a los 0,8 s y a los 2,5 s, y después se baja a un tamaño menor; si la versión mayor falla, se queda la que ya se ve.
 
-**Memoria de texturas** (RGBA sin comprimir, aproximada): Sala `fondo` 11,4–12,1 MB a DPR 1–2 de móvil, 24 MB a 1440 con DPR 2; Sala `capas` 7,2–8 MB; Pieza 0,6–4,1 MB. La textura de la imagen se limita a lo que el lienzo enseña (tope 4096 px de lado).
+**10 cargas seguidas de cada obra, cada una en un contexto nuevo (sin caché del navegador)**, contra `next dev`:
 
-### Tamaño natural frente a tamaño en pantalla (regla de calidad)
+| Obra · ancho | Con imagen | Versión mayor | TTFB mediana / máx. | Imagen lista mediana / máx. | Fallos de red |
+|---|---|---|---|---|---|
+| Parásitos · 1440 | 10/10 | 10/10 | 276 / 584 ms | 632 / 960 ms | 0 |
+| Parásitos · 375 | 10/10 | 10/10 | 264 / 286 ms | 564 / 617 ms | 0 |
+| Gente normal · 1440 | 10/10 | no hay mayor | 743 / 1630 ms | 2713 / 5197 ms | 0 |
+| Gente normal · 375 | 10/10 | no hay mayor | 887 / 1430 ms | 3171 / 4143 ms | 0 |
+| Hades · 1440 | 10/10 | 10/10 | 888 / 8744 ms | 1098 / 8971 ms | 0 |
+| Hades · 375 | 10/10 | 10/10 | 1175 / 2514 ms | 1364 / 2717 ms | 0 |
+| Berserk · 1440 | 10/10 | no hace falta | 374 / 1135 ms | 528 / 1226 ms | 0 |
+| Berserk · 375 | 10/10 | 10/10 | 207 / 379 ms | 296 / 470 ms | 0 |
+| Chihiro · 1440 | 10/10 | 10/10 | 426 / 752 ms | 747 / 1104 ms | 0 |
+| Chihiro · 375 | 10/10 | 10/10 | 426 / 469 ms | 711 / 775 ms | 0 |
 
-| Obra | Pantalla | Modo | Archivo pintado (px) | Tamaño en pantalla (px CSS) | Ampliación en px CSS | En px de pantalla |
+El máximo de Hades (8,7 s) es el servidor esperando a RAWG. La caché de datos del servidor estaba caliente; «en frío» aquí es el navegador.
+
+Fallos provocados (Playwright corta las peticiones):
+
+| Caso | Resultado |
+|---|---|
+| Ningún tamaño llega (Sala) | 11 intentos; imagen oculta, campo de color, `h1` presente; el 3D no se monta |
+| Ningún tamaño llega (Pieza) | Reintentos; portada oculta, campo de color, título |
+| Falla dos veces y a la tercera llega | Termina con imagen y con la versión mayor |
+| El tamaño principal no llega nunca | Baja a `w780` y se ve |
+| La versión mayor no llega (Sala, con 3D) | Se queda `w1280`; el 3D se enciende igual |
+| 500 del optimizador a la primera (lo de MangaDex) | Reintenta y se ve |
+
+## 3. Imágenes que llenan la pantalla
+
+**Anime por TMDB.** Chihiro vuelve a tener sala: imagen de fondo sin rótulo de TMDB, 3830 × 2154. Cómo se cruza, en `DIRECCIONES.md` («Anime por TMDB»): en el prototipo, búsqueda por el título en japonés con coincidencia exacta de título original y año; en producción, por **Wikidata** (P8729 → P4947 / P4983), que la app ya consulta. Sin coincidencia, Pieza.
+
+**Libro, manga y cómic.** La mayor que da cada proveedor:
+- MangaDex: el original por el optimizador (Berserk: 1200 × 1706), después de la miniatura.
+- Open Library: `-L` es su tope. El original sin sufijo de tamaño mide lo mismo (331 × 500 para esta obra): comprobado.
+- Google Books: **no comprobado**: su API devolvía 429 durante la sesión. Además su servidor de imágenes no manda CORS, así que no serviría ni para el color ni para el 3D sin pasar por el optimizador (que no se amplía a hosts nuevos).
+
+**Cómo llena la pantalla una Pieza sin ampliar la portada.** La portada va a su tamaño natural como mucho y, alrededor, un fondo a sangre hecho con su **paleta**, no con sus píxeles:
+- **Variante 1** (por defecto): dos luces con los colores de la portada sobre el campo, y grano. `3d-pieza-libro-1440-campo1.png`.
+- **Variante 2** (`?campo=2`): campo plano con viñeta y grano. `3d-pieza-libro-1440-campo2.png`.
+
+El grano es ruido generado en el navegador. No se usa superresolución por IA. **[P]** Elegir variante. La portada de Open Library sigue siendo pequeña (331 px): nítida a su tamaño en DPR 1, corta en pantallas de DPR 2–3 (tabla).
+
+### Tamaño natural frente a tamaño en pantalla
+
+| Obra | Pantalla | Modo | Archivo que se queda pintado (px) | Tamaño en pantalla (px CSS) | Ampliación en px CSS | En px de pantalla |
 |---|---|---|---|---|---|---|
 | Parásitos | 1440 @1× | Sala | 2732 × 1536 (TMDB original) | 1515 × 852 | 0,55 | 0,55 |
 | Parásitos | 1440 @2× | Sala | 2732 × 1536 | 1515 × 852 | 0,55 | 1,11 |
@@ -130,86 +138,136 @@ No hay diferencia atribuible al 3D (se monta después del LCP). El elemento LCP 
 | Hades | 1440 @1× | Sala | 2580 × 1450 (RAWG original) | 1516 × 852 | 0,59 | 0,59 |
 | Hades | 1440 @2× | Sala | 2580 × 1450 | 1516 × 852 | 0,59 | 1,18 |
 | Hades | 375 @3× | Sala | 2580 × 1450 | 834 × 469 | 0,32 | 0,97 |
+| Chihiro | 1440 @1× | Sala | 3830 × 2154 (TMDB original) | 1515 × 852 | 0,40 | 0,40 |
+| Chihiro | 1440 @2× | Sala | 3830 × 2154 | 1515 × 852 | 0,40 | 0,79 |
+| Chihiro | 375 @3× | Sala | 3830 × 2154 | 833 × 469 | 0,22 | 0,65 |
 | Gente normal | 1440 @1× | Pieza | 331 × 500 (Open Library `-L`) | 331 × 500 | 1,00 | 1,00 |
 | Gente normal | 1440 @2× | Pieza | 331 × 500 | 331 × 500 | 1,00 | **2,00** |
 | Gente normal | 375 @3× | Pieza | 331 × 500 | 254 × 383 | 0,77 | **2,30** |
-| Berserk | 1440 @1× | Pieza | 1200 × 1706 (original de MangaDex por el optimizador) | 397 × 565 | 0,33 | 0,33 |
-| Berserk | 1440 @2× | Pieza | 1200 × 1706 | 397 × 565 | 0,33 | 0,66 |
+| Berserk | 1440 @1× | Pieza | 512 × 728 (miniatura de MangaDex; basta) | 397 × 565 | 0,78 | 0,78 |
+| Berserk | 1440 @2× | Pieza | 1200 × 1706 (original por el optimizador) | 397 × 565 | 0,33 | 0,66 |
 | Berserk | 375 @3× | Pieza | 1200 × 1706 | 254 × 361 | 0,21 | 0,63 |
-| Chihiro | 1440 @1× | Pieza | 460 × 656 (AniList `large`) | 412 × 587 | 0,89 | 0,89 |
-| Chihiro | 1440 @2× | Pieza | 460 × 656 | 412 × 587 | 0,89 | **1,79** |
-| Chihiro | 375 @3× | Pieza | 460 × 656 | 254 × 362 | 0,55 | **1,66** |
 
-Ninguna imagen se amplía en px CSS. **[P]** En px de pantalla, la portada de Open Library y la de AniList se quedan cortas con DPR 2–3 porque el proveedor no da una mayor; cumplir 1,25× también ahí obligaría a pintarlas mucho más pequeñas (unos 200 px CSS de ancho). He tomado la regla en px CSS, que es como se midió el «×2» del banner de Chihiro; si Víctor la quiere en px de pantalla, hay que decidir entre portada pequeña o portada blanda.
+Ninguna imagen se amplía en px CSS, y solo la portada de Open Library se queda corta en px de pantalla (el proveedor no da más). El original de la sala se pide siempre que la pantalla pida más de lo que da `w1280` (a 1440 px de ancho ya lo pide); llega después de la primera imagen.
 
-Marco del tráiler: Parásitos usa la segunda imagen sin rótulo de TMDB (distinta de la de la sala); Chihiro no tiene segunda imagen y el marco va sin imagen, con el color de la obra. Las otras tres obras no tienen tráiler.
+Marco del tráiler: Parásitos y Chihiro usan la segunda imagen sin rótulo de TMDB, distinta de la de la sala; las otras tres obras no tienen tráiler.
 
-## Respaldos comprobados
+## 4. «Dónde ver» en móvil
+
+Cada grupo (suscripción, alquiler, compra) es una fila que se desliza con el dedo; logotipos de 44 × 44 px; el nombre de cada servicio sigue en el HTML (oculto a la vista, no al lector de pantalla); el enlace «Ver todas las opciones en TMDB» se conserva, a 44 px de alto. Parásitos a 375 px: la sección mide 262 px con 10 servicios, sin desborde horizontal. Los logotipos no son botones (no hay objetivo táctil que medir). Captura: `capturas/a/a-parasitos-claro-375-donde-ver.png`.
+
+## 5. Giroscopio
+
+Botón **«Mover con el móvil»** (solo en pantallas táctiles con el sensor declarado y sin movimiento reducido):
+
+- **iOS**: `DeviceOrientationEvent.requestPermission()` se llama **solo al pulsar**; si se deniega, aviso «Sin permiso para el sensor de movimiento» y sigue el parallax por scroll y la deriva.
+- **Android**: sin permiso; se activa al pulsar.
+- Se **recentra** en la postura en que está el móvil al activarlo (y sigue muy despacio a la postura, con una constante de 30 s); **zona muerta** de 1,5°; **límite** de ±18°; el mismo suavizado que el puntero; con el móvil apaisado se intercambian los ejes.
+- Con el sensor activo se para la deriva automática: en reposo, cero fotogramas.
+- Si no llegan lecturas en 1,5 s (no hay sensor), aviso y vuelve la deriva. Con movimiento reducido el botón desaparece y el sensor se apaga. Sin contexto seguro, aviso «El sensor necesita HTTPS».
+
+Probado en Chromium con eventos `deviceorientation` **sintéticos** (la emulación de sensores por CDP entregaba lecturas nulas en el Chromium sin ventana, y eso sirvió para probar el caso «sin sensor»):
+
+| Prueba | Resultado |
+|---|---|
+| Activar | botón pulsado; 0 fotogramas en 1 s quieto |
+| Inclinación dentro de la zona muerta (1°) | 0 % de píxeles cambian |
+| Inclinación de 15° | cambian el 27 % (Sala) y el 32 % (Pieza) de los píxeles |
+| De 25° a 60° (fuera del límite) | 0 % de píxeles cambian |
+| Sin lecturas | aviso, botón sin pulsar, la deriva sigue (60 fotogramas/s) |
+| iOS, permiso denegado / concedido | se pide 0 veces antes de pulsar y 1 al pulsar; aviso / activado |
+| Movimiento reducido | el botón desaparece |
+
+**Qué hace falta para que Víctor lo pruebe en su móvil**: los sensores exigen **contexto seguro**. `http://192.168.x.x:3000` no vale; hace falta HTTPS con un certificado en el que el móvil confíe. Sin tocar certificados ni la confianza del sistema, las dos formas son un despliegue de vista previa en Vercel de esta rama (HTTPS de serie; es una rama desechable y el repo es público, así que **[P]** decide Víctor) o un túnel HTTPS hacia el puerto 3000. No he instalado ni configurado nada.
+
+## Técnica y peso
+
+WebGL a pelo, un lienzo y un contexto; el motor se pide con `import()` después de `load`, de un rato libre y de las entradas de la sala.
+
+| | Minificado | gzip |
+|---|---|---|
+| Motor 3D (trozo aparte, solo si hay 3D) | 22,9 KB | **9,8 KB** |
+| Lo que crece `Stage` (siempre cargado: carga segura de la imagen, montaje, selector, contador y giroscopio) | +6,9 KB | **+2,8 KB** |
+| Mapas por obra en `fondo` (máscara PNG + profundidad JPEG) | — | 51–62 KB |
+
+Medido con esbuild sobre los archivos de la rama (no con el build de Next). three.js no se ha medido aquí.
+
+## Medidas de rendimiento
+
+**Equipo**: Windows 11, NVIDIA GeForce GTX 1070 (ANGLE, Direct3D 11), Chromium 147 de Playwright sin ventana, contra `next dev`. «375» es ese mismo equipo con ventana de móvil emulada: **no es un móvil**.
+
+| Caso (segunda ronda, 6 s con deriva automática) | FPS | p95 del fotograma | Fotogramas > 32 ms | CPU por fotograma | Texturas |
+|---|---|---|---|---|---|
+| Hades `fondo`, 1440 a DPR 2 | 60 | 16,7 ms | 1 / 409 | 0,18 ms | 27,2 MB |
+| Parásitos `fondo`, 1440 a DPR 2 | 60 | 16,7 ms | 1 / 416 | 0,12 ms | 26,4 MB |
+| Berserk (Pieza), 1440 a DPR 2 | 60 | 16,7 ms | 1 / 406 | 0,08 ms | 4,1 MB |
+| Los mismos con CPU ×4 | 60 | 16,7–16,8 ms | 1 / ~415 | 0,6–0,9 ms | — |
+
+La matriz completa (5 obras × 2 vías × 1440 y 375 × con y sin CPU ×4: 60 fps y 0 fotogramas largos en los 40 casos) y el LCP con y sin 3D (sin diferencia atribuible) son de la **primera ronda** y no se han repetido con el motor nuevo; el sombreador de la segunda ronda hace una lectura de textura más por píxel. El lienzo pinta hasta DPR 2 y baja solo si el p95 pasa de 24 ms.
+
+## Respaldos comprobados (repetidos en la segunda ronda)
 
 Todos con Playwright; en todos la ficha conserva texto, enlaces y botones.
 
-| Caso | Cómo se probó | Resultado |
-|---|---|---|
-| GPU por software | Chromium sin GPU (SwiftShader) | No se monta; se queda el 2D. Aviso «3D no disponible» (solo en el prototipo) |
-| Sin WebGL | `--disable-3d-apis` | Igual |
-| El mapa no llega | Se bloquea `/proto/depth/` | Igual |
-| La imagen no se puede subir a la GPU | `texImage2D` forzado a fallar | Igual |
-| Sin JS | Contexto sin JavaScript | El HTML del servidor: `h1` e imagen, sin lienzo |
-| Movimiento reducido (sistema) | `prefers-reduced-motion: reduce` | Sala: composición quieta, 0 píxeles cambian al mover el puntero, 0 animaciones. Pieza: no se monta (2D) |
-| Interruptor «Movimiento» | Apagarlo con el bucle en marcha | 0 fotogramas después |
-| Pestaña oculta | `visibilitychange` simulado | 0 fotogramas mientras está oculta; se reanuda al volver |
-| Sala fuera de pantalla | Scroll hasta abajo | 0 fotogramas; se reanuda al volver |
-| En reposo con ratón | 2 s sin tocar nada | 0 fotogramas |
-| Pérdida de contexto | `WEBGL_lose_context` | El lienzo se retira y el `h1` recupera su tinta; al restaurarse, vuelve el 3D |
-| Contraste alto / colores forzados | `prefers-contrast: more` | No se monta: manda el texto real |
-| Desmontar (3D → 2D) | Selector | Se retira el lienzo y se libera el contexto |
+| Caso | Resultado |
+|---|---|
+| GPU por software (Chromium sin GPU) · sin WebGL (`--disable-3d-apis`) | No se monta; queda el 2D |
+| Los mapas no llegan · la imagen no se puede subir a la GPU | Queda el 2D |
+| Sin JS | El HTML del servidor: `h1` e imagen, sin lienzo |
+| Movimiento reducido (sistema) | Sala: composición quieta (0 píxeles cambian con el puntero, 0 animaciones). Pieza: no se monta |
+| Interruptor «Movimiento» · pestaña oculta · sala fuera de pantalla · en reposo | 0 fotogramas; se reanuda al volver |
+| Pérdida de contexto | El lienzo se retira y el `h1` recupera su tinta; al restaurarse, vuelve el 3D |
+| Contraste alto / colores forzados | No se monta: manda el texto real |
+| Desmontar (3D → 2D) | Se retira el lienzo y se libera el contexto |
 
-WCAG 2.2.2: la única deriva automática es en pantalla táctil sin giroscopio (y con `loop=1`); se para con el interruptor «Movimiento» de la barra y con movimiento reducido. WCAG 2.3.1: no hay destellos (el brillo de la pieza es una banda del 11 % que se mueve con el giro).
+WCAG 2.2.2: la única deriva automática es en pantalla táctil sin giroscopio (y con `loop=1`); se para con el interruptor «Movimiento» y con movimiento reducido. WCAG 2.3.1: sin destellos.
 
 ## Qué NO se ha verificado
 
-- **Ningún dispositivo real**: ni móvil (iOS o Android) ni el ordenador de Víctor. Es justo lo que pide P-3D.
-- **El giroscopio**: escrito, sin probar (necesita un móvil y, en iOS, HTTPS).
-- Safari y Firefox. Build de producción. Red lenta. GPU integrada o móvil de gama baja (el ×4 de CPU no ralentiza la GPU).
-- Pantallas de más de 1600 px de ancho (el tope de 1,25× está en el CSS, sin captura).
-- Lector de pantalla real (se comprobó el árbol: `h1` presente, lienzo oculto).
-- Tema claro y `en` en las medidas del título; títulos en escritura no latina dentro del lienzo.
-- El relieve dentro de la cubierta de la Pieza: está apagado por criterio, no por una prueba a fondo.
+- **Ningún dispositivo real**: ni móvil ni el ordenador de Víctor. El giroscopio, solo con eventos sintéticos.
+- Safari y Firefox. Build de producción. Red lenta. GPU integrada o de móvil.
+- La matriz de rendimiento completa y el LCP con el motor de la segunda ronda (solo los 6 casos de arriba).
+- Google Books como fuente de portada grande (429 durante la sesión).
+- Pantallas de más de 1600 px de ancho. Lector de pantalla real. Tema claro y `en` en las medidas del título.
+- La máscara en más obras: solo hay tres salas. En Chihiro, la figura de la derecha del vagón sale en la máscara a trozos (no cruza el título a ningún ancho probado).
+- El cruce anime ↔ TMDB solo con Chihiro.
 
 ## Riesgos
 
-1. **El corte depende de cada imagen.** Con otra obra puede no salir (título entero por delante) o salir raro. Las reglas lo frenan, pero solo hay dos salas probadas. Antes de producción: una tanda de 30–50 obras reales mirada a ojo.
-2. **Móvil sin «entre capas»** con la composición actual de A.
-3. **Mapas = uso nuevo de las imágenes de los proveedores** (derivado guardado en nuestro almacenamiento). Víctor levantó el bloqueo el 18-11-2026; sigue siendo un riesgo de términos (varios proveedores prohíben derivados), igual que las imágenes OG.
-4. **Licencia del modelo.** Depth Anything V2 **Small** es Apache-2.0 (es el que usa el prototipo). La variante **Base** que usa hoy la landing es CC-BY-NC-4.0 (no comercial). **[P]** Conviene pasar la landing a Small.
-5. **Peso de imagen**: los originales de TMDB y RAWG en la sala (regla de calidad) suben el LCP en redes lentas.
-6. **Memoria** en móviles modestos con DPR 3: hasta ~12 MB de texturas por sala (medido con DPR 2 emulado).
-7. La máscara de letra del lienzo necesita la fuente variable registrada otra vez con su anchura; si falla, el 3D de la Sala no se monta (se queda el 2D). Comprobado solo en Chromium.
+1. **La máscara depende de cada imagen.** Tres obras no bastan: hace falta una tanda de 30–50 mirada a ojo antes de producción.
+2. **Mapas = uso nuevo de las imágenes de los proveedores** (derivados guardados por nosotros). Bloqueo levantado por Víctor el 18-11-2026; sigue siendo un riesgo de términos.
+3. **La ficha depende de la API del proveedor en caliente** (el 404 de Hades). Es de la app, no del 3D.
+4. **Peso**: 51–62 KB de mapas por sala y hasta 27 MB de texturas a 1440 con DPR 2 (en móvil no se ha vuelto a medir).
+5. La imagen de la sala de un anime es de TMDB y los datos de AniList: la atribución tiene que nombrar a los dos.
+6. La máscara de letra del lienzo necesita la fuente variable registrada otra vez con su anchura; si falla, el 3D de la Sala no se monta. Comprobado solo en Chromium.
+7. La landing usa Depth Anything V2 **Base** (CC-BY-NC-4.0); conviene pasarla a Small (Apache-2.0).
 
 ## Qué haría falta para llevarlo a producción
 
-**De dónde salen los mapas para cualquier obra.** Tres caminos:
+**De dónde salen los mapas para cualquier obra.** Una tarea en GitHub Actions como `landing-media.yml` (0 €, repo público): calcula máscara y profundidad de las obras que lo piden (las más vistas, o una cola que alimenta la ficha: la primera visita va en 2D) y los sube al almacenamiento de Supabase. En este equipo, en CPU: ~30 s por imagen la máscara (BiRefNet lite a resolución completa) y ~3 s la profundidad. Tabla nueva (p. ej. `media_depth`) con las reglas de `CLAUDE.md` (expandir → usar; bandera en `docs/banderas.json`). Almacenamiento: ~55 KB por sala → 10 000 salas ≈ 550 MB (el plan gratuito de Supabase da 1 GB). Solo las obras en modo Sala necesitan mapas. Si un proveedor pide retirar, se borran los suyos. Calcularlo en el navegador (decenas de MB de modelo) o en una función de Vercel no es viable.
 
-| | Cómo | Coste | Pega |
-|---|---|---|---|
-| A. Tarea en GitHub Actions (recomendado) | Como `landing-media.yml`: una tarea que calcula los mapas de las obras que lo piden (las más vistas, o las que alguien abre: la ficha apunta la obra en una cola y sale en 2D hasta que el mapa existe) y los sube al almacenamiento de Supabase | 0 € (repo público). En este equipo, 5 imágenes en 17 s en CPU, con la carga del modelo incluida | No es inmediato: la primera visita va sin mapa |
-| B. En el navegador | El modelo en WebGPU/WASM | 0 € | Decenas de MB de descarga y segundos de cálculo por obra en el dispositivo del usuario: contra el principio 4 |
-| C. Función de servidor | — | — | El modelo no cabe en una función de Vercel |
+**Resto**: cargador real para las imágenes sin rótulo de TMDB y para el cruce anime ↔ TMDB por Wikidata, con revisión legal; título localizado; tests (reglas de letras con máscaras sintéticas, Playwright de respaldos y de carga); presupuesto de CI para el trozo del motor; quitar selector, contador y `window.__kp3d`; que el cargador de la app no devuelva 404 cuando el proveedor falla.
 
-Con A: tabla nueva (p. ej. `media_depth`: obra, rutas, tamaño, versión del modelo), con las reglas de `CLAUDE.md` (expandir → usar; bandera en `docs/banderas.json`). Almacenamiento: 43–59 KB por sala hoy; bajando la máscara a 960 px, unos 30 KB → 10 000 salas ≈ 300 MB (el plan gratuito de Supabase da 1 GB, y la landing ya usa parte). Solo las obras en modo Sala necesitan mapa. Retirada: si un proveedor lo pide, se borran sus mapas (encaja con `provider_art_policy`).
+**Texto para `/privacy`** (borrador; se enseña a Víctor antes de fusionar):
 
-**Resto de trabajo**: pasar al cargador real las imágenes sin rótulo de TMDB (`/images`) con revisión legal; título localizado (hueco de datos ya anotado en `DIRECCIONES.md`); tests (unitario del umbral con mapas sintéticos, Playwright de respaldos); presupuesto de CI para el trozo del motor; quitar selector, contador y `window.__kp3d`; decidir si el corte se calcula en servidor (el umbral depende del ancho: hoy se calcula en el navegador en pocos ms).
+> **Imágenes con profundidad.** En la ficha de algunas obras, la imagen se mueve ligeramente con el puntero o con el móvil. Para eso guardamos en nuestro almacenamiento (Supabase) dos imágenes en escala de grises calculadas a partir de la imagen oficial de la obra (su silueta de primer plano y un mapa de profundidad). No contienen ningún dato tuyo ni se calculan en tu dispositivo. El efecto se dibuja en tu navegador; si activas «Mover con el móvil», la orientación del dispositivo se usa solo en ese momento y en tu navegador: no se envía ni se guarda. Con «reducir movimiento» la imagen queda quieta.
 
-**Texto para `/privacy`** (borrador; se enseña a Víctor antes de fusionar, como todo texto legal):
+Y revisar la frase de #173 sobre las portadas: las imágenes de la sala se piden directamente al proveedor (TMDB, RAWG) a su tamaño original, y la de un anime, a TMDB.
 
-> **Imágenes con profundidad.** En la ficha de algunas obras, la imagen se mueve ligeramente con el puntero o con el móvil. Para eso guardamos en nuestro almacenamiento (Supabase) dos imágenes en escala de grises calculadas a partir de la imagen oficial de la obra (un «mapa de profundidad»). No contienen ningún dato tuyo ni se calculan en tu dispositivo. El efecto se dibuja en tu navegador; si activas «Mover con el móvil», la orientación del dispositivo se usa solo en ese momento y en tu navegador: no se envía ni se guarda. Con «reducir movimiento» la imagen queda quieta.
+## Decisiones para Víctor
 
-Y revisar la frase de #173 sobre las portadas: las imágenes de la sala se piden directamente al proveedor (TMDB, RAWG) a su tamaño original.
+1. **[P]** ¿Convence el criterio «cada letra entera por detrás o entera por delante»? Mirarlo en marcha en Hades.
+2. **[P]** Móvil: el título va ahora dentro de la imagen (también en 2D). ¿Vale? El cruce con las figuras es poco (1–3 %).
+3. **[P]** Fondo de la Pieza: variante 1 o 2.
+4. **[P]** Portadas pequeñas (Open Library 331 px, AniList 460 px) en pantallas de DPR 2–3: a su tamaño (cortas de resolución) o más pequeñas. Superresolución por IA: no se ha usado; lo decide Víctor.
+5. **[P]** Cómo servir la rama por HTTPS para probar el giroscopio en el móvil.
+6. **[P]** El 404 de la ficha cuando el proveedor tarda: es del cargador de la app; ¿se abre tarea aparte?
+7. **[P]** Atribución doble (AniList + TMDB) en la ficha de un anime con sala.
 
 ## Veredicto que propongo (lo firma Víctor al probarlo)
 
-- **Técnica: pasa.** Pesa 8,5 KB, no retrasa la página, se cae limpio a 2D y va a 60 fps en el equipo de pruebas.
-- **Diseño: pasa en escritorio con `fondo`**; en móvil se queda en parallax y objeto, sin letras entre capas.
-- **Pendiente para cerrar P-3D**: la prueba de Víctor en su móvil y su ordenador con `?fps=1` (¿60 fps estables, sin tirones al hacer scroll?), y sus respuestas a los **[P]** de arriba.
+- **Técnica: pasa.** 9,8 KB, no retrasa la página, se cae limpio a 2D, 60 fps en el equipo de pruebas.
+- **Acabado: mejor que la landing en el borde** (contorno de figura real, sin halo). El entrelazado letra a letra es una decisión de diseño por confirmar.
+- **Pendiente para cerrar P-3D**: la prueba de Víctor en su móvil y su ordenador con `?fps=1`, y sus respuestas a las decisiones de arriba.
 
-Capturas: `docs/proto/fase8-3/capturas/3d/` (`3d-fondo-*`, `3d-capas-*`, `3d-pieza-*`, `detalle-*` con el corte ampliado en 2D, capas y fondo, `respaldo-*`).
+Capturas: `docs/proto/fase8-3/capturas/3d/` (`3d-fondo-*`, `3d-capas-*`, `3d-pieza-*`, `detalle-*`, `detalle-x3-*`, `respaldo-*`).

@@ -87,7 +87,9 @@ function credits(item: MediaItem, l: Labels): Fact[] {
 }
 
 export const loadProtoFicha = dedupe(async (type: string, id: string, locale: string): Promise<FichaData | null> => {
-  const data = await loadMediaDetail(type, id, locale);
+  // Red de seguridad: si la API del proveedor falla o tarda (visto con RAWG: 6 s y
+  // la ficha salía como 404), se intenta una segunda vez antes de rendirse.
+  const data = (await loadMediaDetail(type, id, locale)) ?? (await loadMediaDetail(type, id, locale));
   if (!data) return null;
   const { item } = data;
   const tMedia = await getTranslations({ locale, namespace: "media" });

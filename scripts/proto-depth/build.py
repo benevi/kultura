@@ -1,34 +1,39 @@
 #!/usr/bin/env python3
 """
-KULTURA — Prototipo fase 8.3 (rama desechable): mapas de profundidad de las
-obras fijas en modo Sala (Parásitos, Hades) para la capa 3D de la ficha
-(`?3d=fondo`). La Pieza (libro, manga, anime) no usa mapa.
+KULTURA — Prototipo fase 8.3 (rama desechable): mapas de las obras fijas en
+modo Sala (Parásitos, Hades, Chihiro) para la capa 3D de la ficha
+(`?3d=fondo`). La Pieza (libro, manga) no usa mapa.
 
-Se ejecuta A MANO y en local; no sube nada a ningún sitio. Escribe archivos
-estáticos en `public/proto/depth/`:
+Se ejecuta A MANO y en local; no sube nada a ningún sitio. Escribe en
+`public/proto/depth/` y regenera `sala3d/depth.ts`:
 
-  <slug>.d.jpg   Profundidad para el parallax (cerca = blanco). Dilatada y
+  <slug>.d.jpg   Profundidad SOLO para el parallax (cerca = blanco). Dilatada y
                  suavizada como en la landing (`scripts/landing-media/build.py`,
                  `soften`): así el desplazamiento no rasga las siluetas.
-  <slug>.m.jpg   Máscara de «lo que pasa por delante del título». Es la misma
-                 profundidad SIN dilatar ni suavizar (el modelo trabaja al doble
-                 de resolución para que el contorno salga fino), sin el suelo
-                 —a cada fila se le resta su nivel de fondo: solo cuenta lo que
-                 sobresale (personajes, objetos), no el suelo que se acerca a la
-                 cámara—, con una curva en S alrededor de su corte natural y un
-                 filtro guiado muy corto que ajusta el borde a la imagen.
+                 Modelo: Depth Anything V2 Small (Apache-2.0).
+  <slug>.m.png   Máscara de primer plano de verdad: lo que pasa por delante del
+                 título. Segmentación de figura/fondo (BiRefNet, licencia MIT,
+                 vía `rembg`, MIT), a la resolución de la imagen, sin pérdida.
+                 Limpieza: fuera las zonas dudosas y las islas sueltas (solo
+                 quedan componentes grandes y firmes), huecos pequeños
+                 cerrados, y el borde ajustado a la imagen con un filtro guiado
+                 corto: alfa suave de 2–3 px, sin halo.
+El contorno del corte ya NO sale de umbralizar la profundidad (salía
+deshilachado): lo pone la máscara. La profundidad mueve la imagen y solo
+decide, con una transición suave, qué parte de la figura queda por delante
+del título (para no tapar letras de más).
 
-Modelo: Depth Anything V2 (el de la landing). Por defecto la variante Small
-(Apache-2.0); `--model base` usa la Base de la landing (CC-BY-NC-4.0).
-Dependencias: las de `scripts/landing-media/requirements.txt` (torch CPU,
-transformers, pillow, numpy, opencv). Todo libre y gratuito.
+Dependencias, todas libres y gratuitas: las de
+`scripts/landing-media/requirements.txt` (torch CPU, transformers, pillow,
+numpy, opencv) más `rembg==2.0.67` y `onnxruntime`. Los pesos de BiRefNet
+(224 MB, variante «general-lite») los baja `rembg` de sus publicaciones de
+GitHub la primera vez. No se usa RMBG de BRIA (licencia no comercial).
 
 Uso:
-  python scripts/proto-depth/build.py --src <carpeta con <slug>.jpg> [--model small|base]
+  python scripts/proto-depth/build.py --src <carpeta con <slug>.jpg>
 
-Las imágenes de origen se bajan antes a una carpeta temporal por las mismas
-rutas que usa la ficha (directa al CDN; MangaDex por el optimizador local) y
-NO se guardan en el repo: solo los dos mapas derivados.
+Las imágenes de origen (el original del proveedor) se bajan antes a una
+carpeta temporal y NO se guardan en el repo: solo los mapas derivados.
 """
 from __future__ import annotations
 
@@ -42,18 +47,24 @@ import numpy as np
 from PIL import Image
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "landing-media"))
-from build import otsu, soften  # noqa: E402  (mismo Otsu y mismo suavizado que la landing)
+from build import soften  # noqa: E402  (mismo suavizado que la landing)
 
-# slug → clave de la ficha (`type/id`), como en `_base/works.ts`.
+# slug → clave de la ficha (`tipo/id externo`).
 WORKS = {
     "parasitos": "movie/496243",
     "hades": "game/274755",
+    "chihiro": "anime/al-199",
 }
-MODELS = {
-    "small": "depth-anything/Depth-Anything-V2-Small-hf",
-    "base": "depth-anything/Depth-Anything-V2-Base-hf",
-}
-OUT = os.path.join(os.path.dirname(__file__), "..", "..", "public", "proto", "depth")
+DEPTH_MODEL = "depth-anything/Depth-Anything-V2-Small-hf"
+FG_MODEL = "birefnet-general-lite"
+ROOT = os.path.join(os.path.dirname(__file__), "..", "..")
+OUT = os.path.join(ROOT, "public", "proto", "depth")
+TS = os.path.join(ROOT, "src", "app", "[locale]", "proto", "ficha", "_dirs", "a", "sala3d", "depth.ts")
+MATTE_W = 2048          # ancho máximo de la máscara
+MIN_AREA = 0.004        # componentes menores (de la imagen) se descartan
+MIN_FIRM = 0.8          # alfa media mínima de un componente: fuera lo dudoso
+MAX_FUZZY = 0.3         # parte «a medias» máxima respecto al área del componente
+MAX_HOLE = 0.003        # huecos menores se cierran
 
 
 def box(a: np.ndarray, r: int) -> np.ndarray:
@@ -74,42 +85,57 @@ def guided(guide: np.ndarray, src: np.ndarray, r: int, eps: float) -> np.ndarray
     return np.clip(out / 3, 0, 1)
 
 
-def front(depth: np.ndarray) -> np.ndarray:
-    """Quita el suelo: a cada fila se le resta su nivel de fondo (percentil 30,
-    suavizado en vertical y nunca decreciente hacia abajo) y se reescala."""
-    base = np.percentile(depth, 30, axis=1)
-    base = np.maximum.accumulate(base)
-    k = max(3, depth.shape[0] // 12) | 1
-    base = cv2.GaussianBlur(base.reshape(-1, 1).astype("float32"), (1, k), 0).ravel()
-    f = (depth - base[:, None]) / np.maximum(1 - base[:, None], 0.08)
-    f = np.clip(f, 0, 1)
-    hi = np.percentile(f, 99.5)
-    return np.clip(f / max(hi, 1e-3), 0, 1)
-
-
-def save_gray(arr: np.ndarray, path: str, max_w: int, quality: int) -> tuple[int, int]:
-    im = Image.fromarray((np.clip(arr, 0, 1) * 255).astype("uint8"))
-    if im.width > max_w:
-        im = im.resize((max_w, round(im.height * max_w / im.width)), Image.LANCZOS)
-    im.save(path, "JPEG", quality=quality, optimize=True, progressive=True)
-    return im.size
+def clean(alpha: np.ndarray, rgb: np.ndarray) -> np.ndarray:
+    """Máscara limpia: componentes grandes y firmes, sin huecos pequeños, borde suave pegado a la imagen."""
+    h, w = alpha.shape
+    solid = (alpha > 0.5).astype("uint8")
+    n, labels, stats, _ = cv2.connectedComponentsWithStats(solid, connectivity=8)
+    keep = np.zeros_like(solid)
+    k_fuzzy = max(5, w // 60)
+    for i in range(1, n):
+        if stats[i, cv2.CC_STAT_AREA] < MIN_AREA * h * w:
+            continue
+        comp = labels == i
+        if float(alpha[comp].mean()) < MIN_FIRM:
+            continue
+        # Dudoso: mucha zona a medias (ni figura ni fondo) dentro y alrededor.
+        # Una figura limpia solo tiene una franja fina de alfa intermedia en su contorno.
+        x, y, bw, bh, area = stats[i]
+        pad = k_fuzzy
+        y0, y1, x0, x1 = max(0, y - pad), min(h, y + bh + pad), max(0, x - pad), min(w, x + bw + pad)
+        near = cv2.dilate(comp[y0:y1, x0:x1].astype("uint8"), np.ones((pad, pad), np.uint8)) > 0
+        a_loc = alpha[y0:y1, x0:x1]
+        if float(((a_loc > 0.08) & (a_loc < 0.92) & near).sum()) / area > MAX_FUZZY:
+            continue
+        keep[labels == i] = 1
+    # Huecos: componentes del fondo que no tocan el borde y son pequeños.
+    n, labels, stats, _ = cv2.connectedComponentsWithStats(1 - keep, connectivity=4)
+    for i in range(1, n):
+        x, y, bw, bh, area = stats[i]
+        if x > 0 and y > 0 and x + bw < w and y + bh < h and area < MAX_HOLE * h * w:
+            keep[labels == i] = 1
+    # Contorno liso (sin escalones) y alfa suave: se suaviza el binario y se
+    # ajusta a los bordes reales de la imagen con un filtro guiado corto.
+    r = max(1, w // 900)
+    soft = cv2.GaussianBlur(keep.astype("float32"), (0, 0), max(1.0, w / 1100))
+    soft = guided(rgb, soft, r * 2, 2e-4)
+    # Rampa centrada en el contorno: ~3 px de ancho, sin halo hacia fuera.
+    return np.clip((soft - 0.3) / 0.4, 0, 1)
 
 
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--src", required=True)
-    ap.add_argument("--model", default="small", choices=MODELS)
-    ap.add_argument("--side", type=int, default=1036, help="lado corto al que trabaja el modelo (múltiplo de 14)")
-    ap.add_argument("--gain", type=float, default=6.0, help="contraste de la máscara alrededor de su corte natural")
+    ap.add_argument("--side", type=int, default=1036, help="lado corto al que trabaja el modelo de profundidad (múltiplo de 14)")
     ap.add_argument("--debug", help="carpeta donde dejar vistas previas (no va al repo)")
     args = ap.parse_args()
 
+    from rembg import new_session, remove
     from transformers import pipeline
 
-    model = pipeline("depth-estimation", model=MODELS[args.model], device="cpu")
-    # El modelo trabaja por defecto a 518 px de lado corto; al doble, los
-    # contornos salen bastante más finos (a cambio de ~4× de tiempo en CPU).
-    model.image_processor.size = {"height": args.side, "width": args.side}
+    depth_model = pipeline("depth-estimation", model=DEPTH_MODEL, device="cpu")
+    depth_model.image_processor.size = {"height": args.side, "width": args.side}
+    fg = new_session(FG_MODEL)
     os.makedirs(OUT, exist_ok=True)
     manifest = {}
     for slug, key in WORKS.items():
@@ -117,39 +143,55 @@ def main() -> int:
         if not os.path.exists(path):
             print(f"falta {path}", file=sys.stderr)
             continue
-        im = Image.open(path).convert("RGB")
-        if im.width > 1600:
-            im = im.resize((1600, round(im.height * 1600 / im.width)), Image.LANCZOS)
-        small = im.copy()
-        small.thumbnail((2048, 2048))
-        d = model(small)["predicted_depth"].squeeze().numpy()
+        full = Image.open(path).convert("RGB")
+        # Profundidad (parallax): a 1600 px sobra.
+        im = full.copy()
+        im.thumbnail((1600, 1600))
+        d = depth_model(im)["predicted_depth"].squeeze().numpy()
         d = (d - d.min()) / (d.max() - d.min() + 1e-8)
-        d = cv2.resize(d.astype("float32"), im.size, interpolation=cv2.INTER_CUBIC)
-        d = np.clip(d, 0, 1)
-        rgb = np.asarray(im).astype("float32") / 255
+        d = np.clip(cv2.resize(d.astype("float32"), im.size, interpolation=cv2.INTER_CUBIC), 0, 1)
+        par = Image.fromarray((soften(d) * 255).astype("uint8"))
+        par.thumbnail((640, 640))
+        par.save(os.path.join(OUT, f"{slug}.d.jpg"), "JPEG", quality=86, optimize=True, progressive=True)
 
-        par = soften(d)  # parallax: dilatado + suavizado
-        mat = front(d)
-        # Más contraste alrededor del corte natural (Otsu): figura y fondo quedan
-        # separados por una rampa corta, y el umbral cae siempre en el contorno.
-        # Curva en S, sin recortar: el orden de cerca a lejos se conserva (el umbral
-        # aún puede subir para dejar solo lo más cercano).
-        mat = 1 / (1 + np.exp(-(mat - otsu(mat)) * args.gain))
-        mat = (mat - mat.min()) / (mat.max() - mat.min() + 1e-8)
-        # Un filtro guiado MUY corto: ajusta el contorno a la imagen (1-2 px) sin
-        # crear halo. Con radios mayores el contorno «brilla» alrededor de la figura.
-        mat = guided(rgb, mat.astype("float32"), max(1, im.width // 640), 1e-4)
-
-        dw, dh = save_gray(par, os.path.join(OUT, f"{slug}.d.jpg"), 640, 86)
-        mw, mh = save_gray(mat, os.path.join(OUT, f"{slug}.m.jpg"), 1280, 84)
-        manifest[key] = {"slug": slug, "w": im.width, "h": im.height, "depth": [dw, dh], "matte": [mw, mh]}
+        # Máscara de primer plano, a la resolución de la imagen (tope MATTE_W).
+        big = full.copy()
+        big.thumbnail((MATTE_W, MATTE_W), Image.LANCZOS)
+        alpha = np.asarray(remove(full, session=fg, only_mask=True).convert("L").resize(big.size, Image.LANCZOS), dtype="float32") / 255
+        mat = clean(alpha, np.asarray(big).astype("float32") / 255)
+        m8 = Image.fromarray((mat * 255).astype("uint8"))
+        m8.save(os.path.join(OUT, f"{slug}.m.png"), "PNG", optimize=True)
+        manifest[key] = {
+            "slug": slug, "w": full.width, "h": full.height, "matte": list(big.size),
+        }
         if args.debug:
             os.makedirs(args.debug, exist_ok=True)
-            Image.fromarray((d * 255).astype("uint8")).save(os.path.join(args.debug, f"{slug}-raw.png"))
-            Image.fromarray((mat * 255).astype("uint8")).save(os.path.join(args.debug, f"{slug}-matte.png"))
-        print(f"· {slug:10} {im.width}x{im.height}  d {dw}x{dh}  m {mw}x{mh}")
-    with open(os.path.join(OUT, "manifest.json"), "w", encoding="utf-8") as f:
-        json.dump({"model": MODELS[args.model], "works": manifest}, f, indent=1)
+            m8.save(os.path.join(args.debug, f"{slug}-matte.png"))
+        size = os.path.getsize(os.path.join(OUT, f"{slug}.m.png")) // 1024
+        print(f"· {slug:10} {full.width}x{full.height}  máscara {big.size[0]}x{big.size[1]} {size} KB  primer plano {mat.mean() * 100:.0f} %")
+
+    for old in os.listdir(OUT):
+        if old.endswith(".m.jpg") or old == "manifest.json":
+            os.remove(os.path.join(OUT, old))
+    rows = "\n".join(
+        f'  "{k}": {{ d: "/proto/depth/{v["slug"]}.d.jpg", m: "/proto/depth/{v["slug"]}.m.png" }},'
+        for k, v in manifest.items()
+    )
+    with open(TS, "w", encoding="utf-8", newline="\n") as f:
+        f.write(f'''// GENERADO por `scripts/proto-depth/build.py` — no editar a mano.
+// Prototipo fase 8.3 — mapas de las obras fijas en modo Sala (`?3d=fondo`).
+// Archivos estáticos de la rama, calculados EN LOCAL: no hay servicio, ni
+// subida, ni copia de la imagen; solo los mapas derivados.
+//   d: profundidad para el parallax (Depth Anything V2 Small, Apache-2.0).
+//   m: máscara de primer plano, sin pérdida (BiRefNet, MIT): lo que pasa por
+//      delante del título.
+// Clave: `tipo/id externo`. Una Sala sin mapa no admite `fondo`.
+
+export const DEPTH: Record<string, {{ d: string; m: string }}> = {{
+{rows}
+}};
+''')
+    print(json.dumps({k: v["matte"] for k, v in manifest.items()}))
     return 0
 
 

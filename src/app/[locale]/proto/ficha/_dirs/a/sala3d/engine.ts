@@ -35,8 +35,10 @@ export interface Tone3D {
   ink: RGB;
   /** Opacidad del velo (la calcula Stage con lo que el título tiene detrás). */
   alpha: number;
-  /** Alto (px CSS, desde el borde inferior de la imagen) en que el velo es macizo. */
+  /** Alto (px CSS, desde el borde inferior de la imagen) hasta donde el velo es macizo. */
   band: number;
+  /** Alto (px CSS, desde el borde inferior) donde EMPIEZA a ser macizo: por debajo se aclara (título subido). */
+  bandLo: number;
   /** Tinta clara sobre velo oscuro (`light`) o al revés (`dark`). */
   pick: "light" | "dark";
 }
@@ -51,6 +53,8 @@ export interface TitleMask {
   chars: [number, number, number, number][];
   /** Pintada con la fuente real (si no, son cajas y no vale para el lienzo). */
   exact: boolean;
+  /** Otro lienzo igual, solo con las letras marcadas (mismo orden que `chars`). */
+  subset(ok: boolean[]): HTMLCanvasElement;
 }
 
 export interface Stats {
@@ -96,9 +100,16 @@ export interface SalaHandle {
   /** Volver a medir (cambio de tamaño, de fuente, de velo). */
   sync(): void;
   setReduced(v: boolean): void;
-  /** Giroscopio: llamar SOLO tras un gesto y con el permiso ya concedido. */
-  enableGyro(): void;
+  /**
+   * Giroscopio: llamar SOLO tras un gesto y con el permiso ya concedido.
+   * Resuelve `true` cuando llega la primera lectura; `false` si no hay sensor
+   * (o no es un contexto seguro) y entonces sigue la deriva y el scroll.
+   */
+  enableGyro(): Promise<boolean>;
+  disableGyro(): void;
   stats(): Stats;
+  /** La imagen del `<img>` ha cambiado (llegó la versión mayor): se rehace su textura. */
+  reloadImage(): void;
   /** Solo para medir: 0 normal · 1 sin título · 2 título en magenta sin tapar. */
   debug(mode: number): void;
   destroy(): void;
@@ -109,7 +120,8 @@ const COVER_MAX = 0.22;
 /** Lo que se busca: margen para el movimiento (el parallax desplaza la figura sobre la letra). */
 const COVER_TARGET = 0.18;
 /** Ninguna letra suelta se tapa más que esto: una letra que desaparece cambia la palabra. */
-const CHAR_MAX = 0.62;
+/** Con máscara de primer plano: tope por letra. Una letra que quedaría más tapada va ENTERA por delante de la figura. */
+const CHAR_MAX_FRONT = 0.35;
 /** Sin mapa (máscara por color) las formas son arbitrarias: tope por letra más bajo. */
 const CHAR_MAX_COLOR = 0.45;
 /** Lo tapado no cruza más de esta parte del ancho de una línea. */
@@ -134,9 +146,9 @@ const VS_QUAD = "attribute vec2 p;varying vec2 v;void main(){v=p*.5+.5;gl_Positi
 
 /** Sala: imagen con parallax + velo + título entre capas. Coordenadas en px de lienzo, origen arriba a la izquierda. */
 const FS_WIDE = (deriv: boolean) => `${deriv ? "#extension GL_OES_standard_derivatives : enable\n" : ""}precision highp float;varying vec2 v;
-uniform sampler2D uImg,uDep,uMat,uTitle,uShadow;
+uniform sampler2D uImg,uDep,uMat,uTitle,uShadow,uOk;
 uniform vec2 uRes,uOff;uniform vec4 uBox,uFit,uTRect,uSRect;
-uniform float uZoom,uTh,uSoft,uTz,uScrimA,uBand,uFade,uShadowA,uDebug;
+uniform float uZoom,uTh,uSoft,uTz,uScrimA,uBand,uBandLo,uFade,uShadowA,uDebug,uAlpha;
 uniform vec3 uInk,uScrim;
 float inside(vec2 q){return step(0.,q.x)*step(0.,q.y)*step(q.x,1.)*step(q.y,1.);}
 float hash(vec2 q){return fract(sin(dot(q,vec2(12.9898,78.233)))*43758.5453);}
@@ -155,12 +167,18 @@ void main(){
   float mv=(texture2D(uMat,p).r*2.+texture2D(uMat,p+e).r+texture2D(uMat,p-e).r+texture2D(uMat,p+vec2(e.x,-e.y)).r+texture2D(uMat,p+vec2(-e.x,e.y)).r)/6.;
   // Borde del corte: ~1,5 px de ancho en pantalla sea cual sea la pendiente de la máscara (sin dientes ni borrón).
   float ew=${deriv ? "clamp(fwidth(mv)*1.25,.004,uSoft)" : "uSoft"};
-  float occ=smoothstep(uTh-ew,uTh+ew,mv)*inBox;
-  float sa=uScrimA*(1.-clamp((uBox.w-b.y-uBand)/uFade,0.,1.));
+  // Con máscara de primer plano (uAlpha) el alfa ya viene suave y limpio: se usa tal cual, un poco más firme.
+  // Con máscara de primer plano (uAlpha): TODO el contorno lo pone la máscara (alfa limpio, tal cual).
+  // No hay corte dentro de la figura: cada letra va entera por detrás o entera por delante (uOk).
+  float occ=mix(smoothstep(uTh-ew,uTh+ew,mv),smoothstep(.1,.9,mv)*step(uTh,1.),uAlpha)*inBox;
+  float fb=uBox.w-b.y;
+  float sa=uScrimA*(1.-clamp((fb-uBand)/uFade,0.,1.))*mix(.5,1.,clamp(fb/max(uBandLo,1.),0.,1.));
   col=mix(col,uScrim,sa);
   vec2 ts=uOff*(uTz-.5)*uFit.zw*uZoom;
   vec2 tuv=(px-uTRect.xy-ts)/uTRect.zw;
   float ta=texture2D(uTitle,tuv).a*inside(tuv);
+  // Letras que admiten figura por delante (las demás van enteras por delante: nunca quedan irreconocibles).
+  occ*=clamp(texture2D(uOk,tuv).a/max(ta,.02),0.,1.)*inside(tuv)+(1.-step(.02,ta));
   vec2 suv=(px-uSRect.xy-ts)/uSRect.zw;
   vec2 st=1.4/uSRect.zw*6.;
   float sh=(texture2D(uShadow,suv).a*2.+texture2D(uShadow,suv+vec2(st.x,0.)).a+texture2D(uShadow,suv-vec2(st.x,0.)).a+texture2D(uShadow,suv+vec2(0.,st.y)).a+texture2D(uShadow,suv-vec2(0.,st.y)).a)/6.;
@@ -394,6 +412,15 @@ export async function mountSala(o: SalaOpts): Promise<SalaHandle | null> {
     o.onState(false, why);
     return null;
   };
+  // La imagen puede estar cambiando de archivo justo ahora (llega la versión mayor): se espera.
+  if (!img.complete) {
+    await new Promise<void>((resolve) => {
+      const done = () => resolve();
+      img.addEventListener("load", done, { once: true });
+      img.addEventListener("error", done, { once: true });
+      setTimeout(done, 8000);
+    });
+  }
   if (!img.complete || !img.naturalWidth) return fail("imagen");
   if (o.mode === "fondo" && !o.depth && o.kind === "wide") return fail("sin mapa");
 
@@ -416,6 +443,8 @@ export async function mountSala(o: SalaOpts): Promise<SalaHandle | null> {
   const maskK = dpr;
   let alive = true, on = false, lost = false, debug = 0;
   let texBytes = 0, coverEst = 0;
+  /** `fondo`: la máscara es de primer plano (figura/fondo), no una rampa que umbralizar. */
+  const fgMatte = o.mode === "fondo" && o.kind === "wide";
   const texSize = new Map<WebGLTexture, number>();
   const drop = (t?: WebGLTexture) => {
     if (!t) return;
@@ -430,18 +459,20 @@ export async function mountSala(o: SalaOpts): Promise<SalaHandle | null> {
     quad: WebGLBuffer; wide?: WebGLProgram; uw?: ReturnType<typeof uniforms>;
     shadow?: WebGLProgram; us?: ReturnType<typeof uniforms>; boxPr?: WebGLProgram; ub?: ReturnType<typeof uniforms>;
     mesh?: WebGLBuffer; meshN?: number;
-    img: Tex; dep: Tex; mat?: Tex; title?: Tex; sh?: Tex;
+    img: Tex; dep: Tex; mat?: Tex; title?: Tex; sh?: Tex; ok?: Tex;
   } | null = null;
 
-  const tex = (src: TexImageSource | null, w = 1, h = 1, data?: Uint8Array, format: number = gl.LUMINANCE): Tex => {
+  const tex = (src: TexImageSource | null, w = 1, h = 1, data?: Uint8Array, format: number = gl.LUMINANCE, gray = false): Tex => {
     const t = gl.createTexture()!;
     gl.bindTexture(gl.TEXTURE_2D, t);
     gl.pixelStorei(gl.UNPACK_ALIGNMENT, 1);
     gl.pixelStorei(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL, false);
     if (src) {
-      gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, src);
+      // Los mapas (profundidad, máscara) son grises: un byte por píxel en la GPU, no cuatro.
+      const f = gray ? gl.LUMINANCE : gl.RGBA;
+      gl.texImage2D(gl.TEXTURE_2D, 0, f, f, gl.UNSIGNED_BYTE, src);
       const s = src as { width: number; height: number; naturalWidth?: number; naturalHeight?: number };
-      texSize.set(t, (s.naturalWidth || s.width) * (s.naturalHeight || s.height) * 4);
+      texSize.set(t, (s.naturalWidth || s.width) * (s.naturalHeight || s.height) * (gray ? 1 : 4));
     } else {
       gl.texImage2D(gl.TEXTURE_2D, 0, format, w, h, 0, format, gl.UNSIGNED_BYTE, data ?? new Uint8Array([0]));
       texSize.set(t, w * h * (format === gl.LUMINANCE ? 1 : 4));
@@ -472,7 +503,7 @@ export async function mountSala(o: SalaOpts): Promise<SalaHandle | null> {
     matSrc = m;
     if (!piece) {
       if (m) {
-        const px = pixels(m, m.naturalWidth, m.naturalHeight, Math.min(480, m.naturalWidth));
+        const px = pixels(m, m.naturalWidth, m.naturalHeight, Math.min(640, m.naturalWidth));
         if (px) {
           const data = new Uint8Array(px.w * px.h);
           for (let i = 0; i < data.length; i++) data[i] = px.data[i * 4];
@@ -499,7 +530,7 @@ export async function mountSala(o: SalaOpts): Promise<SalaHandle | null> {
       const r: NonNullable<typeof res> = {
         quad,
         img: tex(imgSrc),
-        dep: depSrc ? tex(depSrc) : tex(null, 1, 1, new Uint8Array([piece ? 255 : 0])),
+        dep: depSrc ? tex(depSrc, 1, 1, undefined, gl!.LUMINANCE, true) : tex(null, 1, 1, new Uint8Array([piece ? 255 : 0])),
       };
       if (piece) {
         const sp = program(gl!, VS_QUAD, FS_SHADOW), bp = program(gl!, VS_BOX, FS_BOX);
@@ -514,7 +545,7 @@ export async function mountSala(o: SalaOpts): Promise<SalaHandle | null> {
         if (!wp) return false;
         r.wide = wp;
         r.uw = uniforms(gl!, wp);
-        r.mat = matSrc && o.mode === "fondo" ? tex(matSrc) : tex(null, matte!.w, matte!.h, matte!.data);
+        r.mat = matSrc && o.mode === "fondo" ? tex(matSrc, 1, 1, undefined, gl!.LUMINANCE, true) : tex(null, matte!.w, matte!.h, matte!.data);
       }
       res = r;
       gl!.disable(gl!.CULL_FACE);
@@ -539,6 +570,67 @@ export async function mountSala(o: SalaOpts): Promise<SalaHandle | null> {
   };
   let tone: Tone3D | null = null;
   let maskRun = 0;
+
+  /**
+   * `fondo` (máscara de primer plano): qué letras admiten la figura por delante.
+   * Una letra que quedaría tapada más de CHAR_MAX_FRONT va ENTERA por delante de
+   * la figura; las demás, por detrás. Si aun así el título o una línea pasan del
+   * objetivo, se van sacando las letras más tapadas. El corte nunca cae dentro
+   * de una figura: todo borde visible es el contorno limpio de la máscara.
+   */
+  function pickLetters(mask: TitleMask, bx: DOMRect, t: DOMRect, fit: ReturnType<typeof coverFit>) {
+    const nc = mask.chars.length;
+    const none = { th: 2, cover: 0, ok: new Array<boolean>(nc).fill(false) };
+    // El título tiene que caber entero dentro de la imagen.
+    if (!matte || t.bottom > bx.bottom + 1 || t.top < bx.top) return none;
+    const nl = Math.max(1, mask.lines.length);
+    const glyph = new Uint32Array(nc), hit = new Uint32Array(nc), line = new Uint8Array(nc);
+    const zoom = reduced ? 1 : ZOOM;
+    const cx = (bx.width / 2 - fit.dx) / fit.dw, cy = (bx.height / 2 - fit.dy) / fit.dh;
+    const step = mask.w * mask.h > 400000 ? 2 : 1;
+    mask.chars.forEach(([x0, y0, cw, ch], ci) => {
+      let li = 0;
+      while (li + 1 < nl && y0 >= mask.lines[li + 1] - 2) li++;
+      line[ci] = li;
+      for (let y = Math.max(0, y0); y < Math.min(mask.h, y0 + ch); y += step) {
+        const v = ((t.top - bx.top + y / maskK - fit.dy) / fit.dh - cy) / zoom + cy;
+        const row = Math.min(matte!.h - 1, Math.max(0, Math.floor(v * matte!.h))) * matte!.w;
+        for (let x = Math.max(0, x0); x < Math.min(mask.w, x0 + cw); x += step) {
+          if (mask.a[(y * mask.w + x) * 4 + 3] < 128) continue;
+          glyph[ci]++;
+          const u = ((t.left - bx.left + x / maskK - fit.dx) / fit.dw - cx) / zoom + cx;
+          if (matte!.data[row + Math.min(matte!.w - 1, Math.max(0, Math.floor(u * matte!.w)))] >= 128) hit[ci]++;
+        }
+      }
+    });
+    const total = glyph.reduce((a, b) => a + b, 0);
+    if (!total) return none;
+    const ok = Array.from({ length: nc }, (_, i) => glyph[i] > 0 && hit[i] / glyph[i] <= CHAR_MAX_FRONT);
+    const lineTotal = new Float64Array(nl);
+    for (let i = 0; i < nc; i++) lineTotal[line[i]] += glyph[i];
+    const over = () => {
+      let all = 0;
+      const per = new Float64Array(nl);
+      for (let i = 0; i < nc; i++) if (ok[i]) { all += hit[i]; per[line[i]] += hit[i]; }
+      if (all / total > COVER_TARGET) return -1;
+      for (let li = 0; li < nl; li++) if (lineTotal[li] && per[li] / lineTotal[li] > COVER_TARGET) return li;
+      return -2;
+    };
+    for (let guard = 0; guard < nc; guard++) {
+      const li = over();
+      if (li === -2) break;
+      // Fuera la letra más tapada (de la línea que se pasa, o de todo el título).
+      let worst = -1;
+      for (let i = 0; i < nc; i++) if (ok[i] && hit[i] && (li < 0 || line[i] === li) && (worst < 0 || hit[i] > hit[worst])) worst = i;
+      if (worst < 0) break;
+      ok[worst] = false;
+    }
+    let all = 0;
+    for (let i = 0; i < nc; i++) if (ok[i]) all += hit[i];
+    const cover = all / total;
+    if (cover < 0.004) return none; // nada por delante
+    return { th: 0.5, cover, ok };
+  }
 
   /** Umbral del corte: lo tapado no pasa de COVER_TARGET en el título ni en ninguna línea, y cae donde el corte es más limpio. */
   function pickThreshold(mask: TitleMask, bx: DOMRect, t: DOMRect, fit: ReturnType<typeof coverFit>) {
@@ -594,7 +686,7 @@ export async function mountSala(o: SalaOpts): Promise<SalaHandle | null> {
       let w = 0;
       for (let g = 0; g <= nl; g++) if (glyph[g]) w = Math.max(w, above[g][bin] / glyph[g]);
       // Una letra tapada de más cuenta como si se pasara el tope.
-      const charMax = o.mode === "fondo" ? CHAR_MAX : CHAR_MAX_COLOR;
+      const charMax = CHAR_MAX_COLOR;
       for (let g = nl + 1; g < glyph.length; g++) if (glyph[g] && above[g][bin] / glyph[g] > charMax) return 1;
       // Y también si lo tapado cruza media palabra a lo ancho (el suelo, una
       // franja): eso no es una figura por delante, es un tachón.
@@ -610,7 +702,8 @@ export async function mountSala(o: SalaOpts): Promise<SalaHandle | null> {
       }
       return w;
     };
-    const minBin = Math.round((o.mode === "fondo" ? 0.22 : 0.3) * BINS);
+    const minBin = Math.round(0.3 * BINS);
+    const minCover = MIN_COVER;
     let cut = BINS;
     for (let b = BINS - 1; b >= minBin; b--) {
       if (worst(b) > COVER_TARGET) break;
@@ -622,14 +715,14 @@ export async function mountSala(o: SalaOpts): Promise<SalaHandle | null> {
     const band = 5;
     for (let b = cut; b < Math.min(BINS - 2, cut + 40); b++) {
       const cov = above[nl][b] / glyph[nl];
-      if (cov < MIN_COVER) break;
+      if (cov < minCover) break;
       const unsure = (above[nl][Math.max(0, b - band)] - above[nl][Math.min(BINS, b + band)]) / glyph[nl];
       const score = unsure - 0.8 * cov;
       if (score < bestScore) { bestScore = score; best = b; }
     }
     const cover = above[nl][best] / glyph[nl];
     // Muy poco tapado se ve como un mordisco suelto: mejor el título entero por delante.
-    if (cover < MIN_COVER || cover > COVER_MAX) return { th: 2, cover: 0 };
+    if (cover < minCover || cover > COVER_MAX) return { th: 2, cover: 0 };
     return { th: (best * 2) / 255, cover };
   }
 
@@ -675,17 +768,20 @@ export async function mountSala(o: SalaOpts): Promise<SalaHandle | null> {
       sx.drawImage(mask.canvas, pad / S, pad / S, mask.w / S, mask.h / S);
     }
     geo.srect = [geo.trect[0] - pad * q + 2 * dpr, geo.trect[1] - pad * q + 7 * dpr, sc.width * S * q, sc.height * S * q];
-    const pick = pickThreshold(mask, b, t, fit);
+    const letters = fgMatte ? pickLetters(mask, b, t, fit) : null;
+    const pick = letters ?? pickThreshold(mask, b, t, fit);
     geo.th = pick.th;
     coverEst = pick.cover;
     geo.soft = o.mode === "fondo" ? 0.035 : 0.045;
-    geo.tz = o.mode === "fondo" ? clamp(pick.th < 1.5 ? pick.th : 0.6, 0.35, 0.8) : 1;
+    geo.tz = o.mode === "fondo" ? 0.5 : 1;
     stage.dataset.k3dCover = (coverEst * 100).toFixed(1);
     drop(res.title);
     drop(res.sh);
-    res.title = res.sh = undefined;
+    drop(res.ok);
+    res.title = res.sh = res.ok = undefined;
     try {
       res.title = tex(mask.canvas);
+      if (letters && letters.ok.some((v) => !v)) res.ok = tex(mask.subset(letters.ok));
       res.sh = tex(sc);
     } catch {
       turnOff("textura");
@@ -750,7 +846,7 @@ export async function mountSala(o: SalaOpts): Promise<SalaHandle | null> {
       ox += Math.sin(t * 0.42) * 0.55;
       oy += Math.cos(t * 0.31) * 0.35;
     }
-    const key = [ox.toFixed(4), oy.toFixed(4), m.scroll.toFixed(4), wakeK.toFixed(4), geo.w, geo.h, geo.th, debug, dpr, tone?.alpha, tone?.band].join();
+    const key = [ox.toFixed(4), oy.toFixed(4), m.scroll.toFixed(4), wakeK.toFixed(4), geo.w, geo.h, geo.th, debug, dpr, tone?.alpha, tone?.band, tone?.bandLo, geo.trect[1]].join();
     if (key === lastDraw) return false;
     lastDraw = key;
     const g = gl!;
@@ -775,8 +871,8 @@ export async function mountSala(o: SalaOpts): Promise<SalaHandle | null> {
     if (!piece && res.wide && res.uw && tone) {
       const U = res.uw;
       quad(res.wide);
-      bind(0, res.img); bind(1, res.dep); bind(2, res.mat); bind(3, res.title); bind(4, res.sh);
-      g.uniform1i(U.uImg, 0); g.uniform1i(U.uDep, 1); g.uniform1i(U.uMat, 2); g.uniform1i(U.uTitle, 3); g.uniform1i(U.uShadow, 4);
+      bind(0, res.img); bind(1, res.dep); bind(2, res.mat); bind(3, res.title); bind(4, res.sh); bind(5, res.ok ?? res.title);
+      g.uniform1i(U.uImg, 0); g.uniform1i(U.uDep, 1); g.uniform1i(U.uMat, 2); g.uniform1i(U.uTitle, 3); g.uniform1i(U.uShadow, 4); g.uniform1i(U.uOk, 5);
       g.uniform2f(U.uRes, geo.w, geo.h);
       g.uniform2f(U.uOff, ox * OFF[0] * wakeK, (oy * OFF[1] - m.scroll * 0.02) * wakeK);
       g.uniform4f(U.uBox, geo.box[0], geo.box[1], geo.box[2], geo.box[3]);
@@ -789,6 +885,8 @@ export async function mountSala(o: SalaOpts): Promise<SalaHandle | null> {
       g.uniform1f(U.uTz, geo.tz);
       g.uniform1f(U.uScrimA, tone.alpha);
       g.uniform1f(U.uBand, tone.band * dpr);
+      g.uniform1f(U.uBandLo, tone.bandLo * dpr);
+      g.uniform1f(U.uAlpha, fgMatte ? 1 : 0);
       g.uniform1f(U.uFade, geo.box[3] * 0.32);
       g.uniform1f(U.uShadowA, tone.pick === "light" ? 0.32 : 0);
       g.uniform1f(U.uDebug, debug);
@@ -943,11 +1041,34 @@ export async function mountSala(o: SalaOpts): Promise<SalaHandle | null> {
   });
   io.observe(stage);
   offs.push(() => io.disconnect());
+  // Giroscopio. Se recentra en la postura en que está el móvil al activarlo (y
+  // sigue despacio a la postura si cambia: quien se recuesta no se queda con la
+  // imagen torcida), zona muerta de 1,5° contra el temblor de la mano, ±18° de
+  // recorrido y el mismo suavizado que el puntero. Con el móvil apaisado se
+  // intercambian los ejes.
+  const GYRO_RANGE = 18, GYRO_DEAD = 1.5;
+  let gyroT = 0;
+  let gamma0: number | null = null, gyroSeen: ((ok: boolean) => void) | null = null;
+  const dead = (v: number) => (Math.abs(v) < GYRO_DEAD ? 0 : v - Math.sign(v) * GYRO_DEAD);
   const onOrient = ((e: DeviceOrientationEvent) => {
-    if (reduced || e.gamma == null || e.beta == null) return;
-    if (beta0 == null) beta0 = e.beta;
-    m.tx = clamp(e.gamma / 22, -1, 1);
-    m.ty = clamp((e.beta - beta0) / 22, -1, 1);
+    if (e.gamma == null || e.beta == null) return;
+    gyroSeen?.(true);
+    if (reduced) return;
+    const angle = (screen.orientation?.angle ?? 0) % 360;
+    let lr = e.gamma, fb = e.beta;
+    if (angle === 90) { lr = e.beta; fb = -e.gamma; }
+    else if (angle === 270) { lr = -e.beta; fb = e.gamma; }
+    else if (angle === 180) { lr = -e.gamma; fb = -e.beta; }
+    if (gamma0 == null || beta0 == null) { gamma0 = lr; beta0 = fb; gyroT = performance.now(); }
+    // El centro sigue MUY despacio a la postura (constante de 30 s): quien cambia de
+    // postura acaba con la imagen centrada, pero un giro a propósito no se deshace.
+    const now = performance.now();
+    const k = 1 - Math.exp(-Math.min(1000, now - gyroT) / 30000);
+    gyroT = now;
+    gamma0 += (lr - gamma0) * k;
+    beta0 += (fb - beta0) * k;
+    m.tx = clamp(dead(lr - gamma0) / GYRO_RANGE, -1, 1);
+    m.ty = clamp(dead(fb - beta0) / GYRO_RANGE, -1, 1);
     wake();
   }) as EventListener;
 
@@ -984,11 +1105,46 @@ export async function mountSala(o: SalaOpts): Promise<SalaHandle | null> {
       void measure();
     },
     enableGyro() {
-      if (gyro) return;
-      gyro = true;
-      listen(window, "deviceorientation", onOrient, { passive: true });
+      if (gyro) return Promise.resolve(true);
+      gamma0 = beta0 = null;
+      window.addEventListener("deviceorientation", onOrient, { passive: true });
+      return new Promise<boolean>((resolve) => {
+        const timer = window.setTimeout(() => gyroSeen?.(false), 1500);
+        gyroSeen = (ok) => {
+          gyroSeen = null;
+          clearTimeout(timer);
+          gyro = ok; // con sensor, se para la deriva automática
+          if (!ok) window.removeEventListener("deviceorientation", onOrient);
+          wake();
+          resolve(ok);
+        };
+      });
+    },
+    disableGyro() {
+      gyro = false;
+      window.removeEventListener("deviceorientation", onOrient);
+      m.tx = 0;
+      m.ty = 0;
+      wake();
     },
     stats,
+    reloadImage() {
+      void (async () => {
+        try {
+          const next = await texSource(img, texCap);
+          if (!alive || !res) return;
+          (imgSrc as ImageBitmap).close?.();
+          imgSrc = next;
+          drop(res.img);
+          res.img = tex(next);
+          lastDraw = "";
+          wake();
+          if (!raf) draw(performance.now());
+        } catch {
+          // se queda la textura que había
+        }
+      })();
+    },
     debug(mode) {
       debug = mode;
       lastDraw = "";
@@ -998,10 +1154,11 @@ export async function mountSala(o: SalaOpts): Promise<SalaHandle | null> {
       alive = false;
       cancelAnimationFrame(raf);
       raf = 0;
+      window.removeEventListener("deviceorientation", onOrient);
       cancelAnimationFrame(syncRaf);
       offs.forEach((fn) => fn());
       if (res) {
-        for (const t of [res.img, res.dep, res.mat, res.title, res.sh]) drop(t);
+        for (const t of [res.img, res.dep, res.mat, res.title, res.sh, res.ok]) drop(t);
         for (const p of [res.wide, res.shadow, res.boxPr]) if (p) gl.deleteProgram(p);
         gl.deleteBuffer(res.quad);
         if (res.mesh) gl.deleteBuffer(res.mesh);

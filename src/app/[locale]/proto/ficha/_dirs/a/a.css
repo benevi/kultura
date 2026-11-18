@@ -30,6 +30,8 @@
   --a-ink: #f6f4f0;
   --a-band: 46%;
   --a-band-cover: 150px;
+  --a-band-lo: 0px;
+  --a-lift: 0px;
   --a-ar: 2 / 3;
   --a-px: 0;
   --a-py: 0;
@@ -56,6 +58,29 @@
   --a-scrim: 0 0 0;
   padding-bottom: 8px;
   transition: background-color 0.5s var(--a-ease), color 0.5s var(--a-ease);
+}
+/* La Pieza llena la pantalla SIN ampliar la portada: la portada va a su tamaño
+   y, alrededor, un fondo a sangre hecho con su paleta (no con sus píxeles).
+   Variante 1 (por defecto): dos luces del color de la portada sobre el campo y
+   grano. Variante 2 (`?campo=2`): campo plano, viñeta y grano. El grano es un
+   ruido SVG generado en el navegador: no es una imagen de la obra. La zona del
+   título se queda en el color del campo (su tinta está medida contra él). */
+.kp-a .a-stage[data-shape="piece"]::before {
+  content: "";
+  position: absolute; inset: 0; z-index: 0;
+  pointer-events: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='240' height='240'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 .5 0 0 0 0 .5 0 0 0 0 .5 0 0 0 .9 0'/%3E%3C/filter%3E%3Crect width='240' height='240' filter='url(%23n)'/%3E%3C/svg%3E");
+  mix-blend-mode: overlay;
+  opacity: 0.22;
+}
+.kp-a .a-stage[data-shape="piece"][data-campo="1"] {
+  background:
+    radial-gradient(70% 55% at 22% 18%, color-mix(in oklab, var(--cv-c2, var(--kp-field)) 55%, var(--kp-field)) 0, transparent 70%),
+    radial-gradient(65% 50% at 82% 30%, color-mix(in oklab, var(--cv-c3, var(--kp-field)) 45%, var(--kp-field)) 0, transparent 72%),
+    var(--kp-field);
+}
+.kp-a .a-stage[data-shape="piece"][data-campo="2"] {
+  background: radial-gradient(120% 90% at 50% 38%, var(--kp-field) 35%, color-mix(in oklab, var(--kp-field) 78%, #000) 100%);
 }
 .kp-a .a-stage[data-shape="piece"] .a-coverbox {
   display: flex; justify-content: center; align-items: flex-start;
@@ -107,15 +132,29 @@
   animation: a-cover-in 0.9s var(--a-ease) backwards;
 }
 .kp-a .a-cover { width: 100%; height: 100%; object-fit: cover; }
+/* Mientras la imagen llega (o si no llega): el color de la obra, nunca un hueco roto. */
+.kp-a .a-stage[data-shape="landscape"] .a-coverbox { background: var(--kp-field); }
 .kp-a .a-coverbox::after {
   content: "";
   position: absolute; inset: 0;
   background: linear-gradient(
     to top,
-    rgb(var(--a-scrim) / var(--a-scrim-a)) 0,
+    rgb(var(--a-scrim) / calc(var(--a-scrim-a) * 0.5)) 0,
+    rgb(var(--a-scrim) / var(--a-scrim-a)) var(--a-band-lo),
     rgb(var(--a-scrim) / var(--a-scrim-a)) var(--a-band-cover),
     rgb(var(--a-scrim) / 0) calc(var(--a-band-cover) + 32%)
   );
+}
+/* Sala en móvil: el título va DENTRO de la imagen (abajo), no a caballo de su
+   borde: así lo que está en primer plano puede pasar por delante de las letras
+   enteras, y el velo solo tiene que cubrir la imagen. */
+@media (max-width: 719px) {
+  .kp-a .a-stage[data-shape="landscape"] { padding-bottom: 0; }
+  .kp-a .a-stage[data-shape="landscape"] .a-title {
+    position: absolute; left: var(--a-m); right: var(--a-m);
+    bottom: calc(16px + var(--a-lift)); margin: 0;
+    font-size: clamp(34px, calc(var(--a-k, 12) * 1.15vw), 112px);
+  }
 }
 
 .kp-a .a-title {
@@ -253,7 +292,7 @@
   .kp-a .a-stage[data-shape="piece"] .a-title { margin-top: 0; text-align: center; }
   .kp-a .a-title {
     position: absolute;
-    left: var(--a-m); right: var(--a-m); bottom: 30px;
+    left: var(--a-m); right: var(--a-m); bottom: calc(30px + var(--a-lift));
     margin: 0;
     font-variation-settings: "wdth" var(--a-wdth, 100);
     font-size: clamp(48px, calc(var(--a-k, 12) * 1vw), 320px);
@@ -374,6 +413,27 @@
 .kp-a .kp-watch-group ul { display: flex; flex-wrap: wrap; gap: 12px; }
 .kp-a .kp-watch-group li { display: grid; justify-items: center; gap: 6px; width: 76px; font-size: 13px; line-height: 1.2; text-align: center; color: var(--kp-ink-2); }
 .kp-a .kp-watch-group img { width: 44px; height: 44px; }
+
+/* Móvil: «Dónde ver» compacto. Cada grupo es una fila que se desliza con el
+   dedo; los logotipos van a 44 px y el nombre queda para el lector de pantalla
+   (sigue en el HTML). El enlace a TMDB/JustWatch se conserva, a 44 px de alto. */
+@media (max-width: 719px) {
+  .kp-a .kp-watch-groups { display: grid; gap: 10px; margin-bottom: 8px; }
+  .kp-a .kp-watch-group { display: grid; grid-template-columns: 92px minmax(0, 1fr); align-items: center; gap: 8px; }
+  .kp-a .kp-watch-group h3 { margin: 0; }
+  .kp-a .kp-watch-group ul {
+    flex-wrap: nowrap; gap: 8px;
+    overflow-x: auto; overscroll-behavior-x: contain; scroll-snap-type: x proximity;
+    margin-right: calc(var(--a-m) * -1); padding: 2px var(--a-m) 2px 2px;
+    scrollbar-width: none;
+  }
+  .kp-a .kp-watch-group ul::-webkit-scrollbar { display: none; }
+  .kp-a .kp-watch-group li { flex: none; width: 44px; scroll-snap-align: start; }
+  .kp-a .kp-watch-group li span {
+    position: absolute; width: 1px; height: 1px; margin: -1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap;
+  }
+  .kp-a .kp-watch .kp-link { display: inline-flex; align-items: center; min-height: 44px; }
+}
 
 .kp-a .kp-steam-line { display: flex; flex-wrap: wrap; align-items: baseline; gap: 8px 20px; margin-bottom: 8px; }
 .kp-a .kp-steam-price { font-family: var(--a-display); font-weight: 800; font-size: 32px; line-height: 1; }
