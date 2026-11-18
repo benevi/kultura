@@ -172,6 +172,21 @@ describe("paleta de la imagen: casos borde", () => {
     expect(paletteFromSwatches([])).toBe(NEUTRAL_PALETTE);
   });
 
+  it("una muestra con valores que no son números se salta", () => {
+    const good = { rgb: [0.8, 0.1, 0.1] as const, oklch: { l: 0.55, c: 0.2, h: 28 }, share: 0.5 };
+    for (const oklch of [
+      { l: NaN, c: 0.2, h: 28 },
+      { l: 0.55, c: NaN, h: 28 },
+      { l: 0.55, c: 0.2, h: NaN },
+      { l: 0.55, c: Infinity, h: 28 },
+    ]) {
+      const broken = { ...good, oklch };
+      expect(paletteFromSwatches([broken])).toBe(NEUTRAL_PALETTE);
+      expect(paletteFromSwatches([broken, good])).toEqual(paletteFromSwatches([good]));
+    }
+    expect(paletteFromSwatches([{ ...good, share: NaN }])).toBe(NEUTRAL_PALETTE);
+  });
+
   it("la neutra lleva los colores de la biblia y cumple", () => {
     expect(NEUTRAL_PALETTE.neutral).toBe(true);
     expect(NEUTRAL_PALETTE.light.background).toBe("#e6e3dd");

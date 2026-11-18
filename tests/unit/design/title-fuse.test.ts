@@ -140,6 +140,12 @@ describe("planTitleFuse: bordes", () => {
     expect(planTitleFuse(over, 0.5).coveredShare).toBeLessThanOrEqual(TITLE_FUSE_MAX_COVERED);
   });
 
+  it("un tope que no es un número no quita el tope: vale el 22 %", () => {
+    const over = line([34, 34]); // 34 %, ninguna letra pasa del 35 %
+    expect(planTitleFuse(over, NaN)).toEqual(planTitleFuse(over));
+    expect(planTitleFuse(over, NaN).coveredShare).toBeLessThanOrEqual(TITLE_FUSE_MAX_COVERED);
+  });
+
   it("una letra sin píxeles (un espacio) no cuenta ni rompe", () => {
     const plan = planTitleFuse([{ line: 0, letterPixels: 0, coveredPixels: 0 }, ...line([10, 10])]);
     expect(plan.coveredShare).toBe(0.1);
@@ -159,6 +165,13 @@ describe("checkTitleFuse: porcentajes ya medidos", () => {
     expect(checkTitleFuse({ ...ok, lineCoveredShares: [0.1, 0.2201] })).toMatchObject({ ok: false, linesOk: false });
     expect(checkTitleFuse({ ...ok, minVisibleContrast: 2.99 })).toMatchObject({ ok: false, contrastOk: false });
     expect(checkTitleFuse({ ...ok, worstLetterShare: 0.3501 })).toMatchObject({ ok: false, lettersOk: false });
+  });
+
+  it("una medida que no es un número no cumple", () => {
+    expect(checkTitleFuse({ ...ok, coveredShare: NaN })).toMatchObject({ ok: false, titleOk: false });
+    expect(checkTitleFuse({ ...ok, lineCoveredShares: [NaN] })).toMatchObject({ ok: false, linesOk: false });
+    expect(checkTitleFuse({ ...ok, minVisibleContrast: NaN })).toMatchObject({ ok: false, contrastOk: false });
+    expect(checkTitleFuse({ ...ok, worstLetterShare: NaN })).toMatchObject({ ok: false, lettersOk: false });
   });
 
   it("las medidas del prototipo (docs/spikes/3d-ficha.md §1) cumplen en reposo", () => {
@@ -249,6 +262,17 @@ describe("medir sobre píxeles", () => {
     const failed = measureVisibleContrast(raster, plan.inFront, fail, white);
     expect(failed.minContrast).toBeLessThan(3);
     expect(failed.failingPixels).toBe(1);
+  });
+
+  it("un píxel de letra sin dato detrás (`behind` corto) no cumple", () => {
+    const plan = planTitleFuse(measureLetterCoverage(raster));
+    // Solo llega la primera fila; el resto de la rejilla no tiene dato.
+    const short = new Uint8ClampedArray(width * 4).fill(0);
+    const measured = measureVisibleContrast(raster, plan.inFront, short, white);
+    expect(measured.visiblePixels).toBe(170);
+    expect(measured.minContrast).toBe(1);
+    expect(measured.failingPixels).toBe(160); // 170 visibles − los 10 de la primera fila (segunda letra)
+    expect(checkTitleFuse({ ...plan, minVisibleContrast: measured.minContrast }).contrastOk).toBe(false);
   });
 
   it("si no se ve ninguna letra, no hay contraste que medir", () => {

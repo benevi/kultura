@@ -215,7 +215,7 @@ const PURE_INKS: readonly Rgb[] = [
  * Relleno con su tinta. Parte de `start` y mueve la luminosidad en `direction`
  * sin salir de `[min, max]`, hasta que el relleno pase `accepts` y una de las
  * dos tintas del matiz dé 4,5:1. Si ningún paso lo logra, se queda con el
- * relleno de partida (o el último que pasó `accepts`) y tinta blanca o negra
+ * primer relleno que pasó `accepts` (el de partida, si pasa) y tinta blanca o negra
  * pura: una de las dos da siempre al menos 4,58:1 sobre cualquier color.
  */
 function fillWithInk(
@@ -343,7 +343,9 @@ const TINT_MIN_CHROMA = 0.02
  * Papeles de la biblia a partir de los colores de una imagen (`extractSwatches`).
  * Si ninguno es un color útil, devuelve `NEUTRAL_PALETTE`.
  */
-export function paletteFromSwatches(swatches: readonly Swatch[]): ImagePalette {
+export function paletteFromSwatches(input: readonly Swatch[]): ImagePalette {
+  // Una muestra con algún valor que no es un número no es un color: se salta.
+  const swatches = input.filter((s) => Number.isFinite(s.oklch.l + s.oklch.c + s.oklch.h + s.share))
   let vivid: Swatch | null = null
   let best = 0
   for (const s of swatches) {

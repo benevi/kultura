@@ -75,7 +75,8 @@ export function planTitleFuse(
   letters: readonly LetterCoverage[],
   maxCovered: number = TITLE_FUSE_MAX_COVERED,
 ): TitleFusePlan {
-  const limit = Math.min(maxCovered, TITLE_FUSE_MAX_COVERED)
+  // Un tope que no es un número no es «sin tope»: vale el de la biblia.
+  const limit = Number.isNaN(maxCovered) ? TITLE_FUSE_MAX_COVERED : Math.min(maxCovered, TITLE_FUSE_MAX_COVERED)
   const lineCount = letters.reduce((n, l) => Math.max(n, l.line + 1), 0)
   const lineTotal = new Array<number>(lineCount).fill(0)
   let total = 0
@@ -154,7 +155,8 @@ export function checkTitleFuse(measure: TitleFuseMeasure): TitleFuseVerdict {
   const titleOk = measure.coveredShare <= TITLE_FUSE_MAX_COVERED
   const linesOk = measure.lineCoveredShares.every((s) => s <= TITLE_FUSE_MAX_COVERED)
   const contrastOk = measure.minVisibleContrast >= TITLE_FUSE_MIN_CONTRAST
-  const lettersOk = measure.worstLetterShare === undefined || !letterGoesInFront(measure.worstLetterShare)
+  // `<=` y no `!letterGoesInFront(…)`: una medida que no es un número no cumple.
+  const lettersOk = measure.worstLetterShare === undefined || measure.worstLetterShare <= TITLE_LETTER_MAX_COVERED
   return { ok: titleOk && linesOk && contrastOk && lettersOk, titleOk, linesOk, contrastOk, lettersOk }
 }
 
@@ -244,7 +246,9 @@ export function measureVisibleContrast(
   eachLetterPixel(raster, (index, pixel) => {
     if (!inFront[index] && raster.figure[pixel] >= MASK_ON) return
     const i = pixel * 4
-    const ratio = contrastRatio(ink, [behind[i] / 255, behind[i + 1] / 255, behind[i + 2] / 255])
+    const measured = contrastRatio(ink, [behind[i] / 255, behind[i + 1] / 255, behind[i + 2] / 255])
+    // Un píxel sin dato detrás (`behind` más corto que la rejilla) no cumple: cuenta como 1:1.
+    const ratio = Number.isFinite(measured) ? measured : 1
     result.visiblePixels++
     if (ratio < result.minContrast) result.minContrast = ratio
     if (ratio < TITLE_FUSE_MIN_CONTRAST) result.failingPixels++
