@@ -51,9 +51,9 @@ Detalle en [`legal/terminos/README.md`](legal/terminos/README.md).
 
 ## 2. Principios
 
-1. **La portada manda.** El diseño se construye alrededor de la portada real.
+1. **La portada manda.** El diseño se construye alrededor de la portada real. Precisión del 18-11-2026 (biblia, §2): en la **ficha** de película, serie, videojuego y anime manda la imagen oficial sin rótulo, a todo el ancho; la portada real sigue en tarjetas, listas y biblioteca, y en la ficha de libro, manga y cómic.
 2. **2D primero.** Todo se puede hacer sin 3D. El 3D es una capa que puede faltar sin perder texto, acción ni enlace.
-3. **El HTML del servidor es la fuente de verdad.** Ningún texto dentro del 3D.
+3. **El HTML del servidor es la fuente de verdad.** Ningún texto *solo* dentro del 3D: lo que el 3D pinte repite un texto que ya está en el HTML y va oculto a lectores de pantalla (decisión del 18-11-2026).
 4. **El 3D nunca retrasa la página.** Se carga después de que la pantalla ya sea usable.
 5. **Decide Víctor viéndolo.** Las propuestas visuales se enseñan en código, con datos reales.
 6. **Decir la verdad en `/privacy`.**
@@ -76,7 +76,7 @@ Detalle en [`legal/terminos/README.md`](legal/terminos/README.md).
 | **8.0 Preparación** | Ya hecho: `/privacy` (#173), inventario de portadas (#174), licencias (#176), notificaciones (#177), plan de Vercel (#178), canal de retirada (#179), términos de proveedores (#210), borradores de correo (#212) | Este plan aprobado | — |
 | **8.1 API oficiales y atribución** | **Hecha (17-11-2026):** #216, #217, #218, #219. Ver §5 | Ninguna llamada a una API no oficial; atribución completa | — |
 | **8.2 Crecer** | **Hecha (17-11-2026):** #221–#226. Ver §6. Falta encender tres banderas en Vercel | Línea base medida; acciones rápidas fusionadas | — |
-| **8.3 Dirección visual y prototipo 3D** | Ver §7 | **P-Gusto** y **P-3D** | 2–4 |
+| **8.3 Dirección visual y prototipo 3D** | **Hecha (18-11-2026).** Ver §7 | **P-Gusto** y **P-3D** pasadas: dirección «Sala» firmada y 3D dentro del plan | — |
 | **8.4 Sistema y deuda de interfaz** | Tokens, tipografía y componentes de la dirección elegida; Storybook como guía interna; deuda heredada (antes 8A.3b de la v3) | Componentes con estados y sin fallos graves de accesibilidad | 4–7 |
 | **8.5 Pantallas** | Rediseño pantalla a pantalla, empezando por las más usadas (ficha, biblioteca, buscar). Cada una detrás de una bandera; **P-Uso** antes del 100 %. El 3D de la ficha entra aquí si pasó P-3D | Todas las pantallas con el diseño nuevo | 5–9 |
 | **8.6 Observación** | **P-Números**; se retiran las banderas | Informe de una página | 0,5 |
@@ -137,6 +137,34 @@ Cada punto es un PR o pocos, detrás de bandera si cambia una pantalla. Privacid
 **Meta de referencia:** ≥ 12 activos a 30 días. No bloquea nada (decisión del 17-11-2026).
 
 ## 7. Fase 8.3 · Dirección visual y prototipo 3D
+
+**Hecha el 18-11-2026.**
+
+- **P-Gusto: pasada.** Entre tres direcciones hechas en código («Sala», «Objeto», «Pliego»), Víctor eligió «Sala» y firmó [`design/BIBLIA.md`](design/BIBLIA.md).
+- **P-3D: pasada.** Víctor probó el prototipo en su móvil y su ordenador: «sí al 3D, va fluido». Veredicto y medidas en [`spikes/3d-ficha.md`](spikes/3d-ficha.md). El 3D de la ficha entra en la 8.5.
+- El código de las tres direcciones y del prototipo está en la rama `proto/fase8-3-direcciones`, que no se fusiona.
+
+**Las cinco decisiones que había que resolver al empezar** (las de las referencias de Víctor):
+
+1. **Letras dentro del 3D:** sí, como adorno. El título real es uno, en el HTML del servidor (principio 3, reescrito).
+2. **Portadas en capas con profundidad:** Víctor levantó el bloqueo de §9 sobre mapas de profundidad y copia propia. La sala usa mapas calculados de antemano; queda el riesgo de términos, asumido.
+3. **Tráiler:** en la ficha, solo al pulsar y en sección aparte de la sala. El tráiler al pasar el ratón es para Descubrir (8.5) y necesita antes una preferencia que cada persona enciende o un cambio en `/privacy`.
+4. **Color sacado de la imagen:** en el navegador, ajustado hasta cumplir AA en claro y oscuro; paleta neutra de respaldo.
+5. **Gráficas de seguimiento:** fuera de la ficha; candidatas para perfil o biblioteca en la 8.5.
+
+**Sale hacia la 8.4 y la 8.5:**
+
+- Fuente de **títulos por idioma**: solo TMDB da el título traducido.
+- **Anime que es película** (El viaje de Chihiro: AniList `MOVIE`, 1 episodio) no debe salir como «Anime · Episodios 1»: formato propio, sin episodios y con duración. Pedido por Víctor el 18-11-2026 para la app real.
+- Obra de cine, juego o anime **sin imagen apaisada**: su imagen vertical se redimensiona para llenar la sala (biblia, §2). Sin construir.
+- **Producir los mapas** para el catálogo a coste cero (GitHub Actions y almacenamiento de Supabase; propuesta en el spike).
+- **Revisión de términos** antes de producción: imágenes sin rótulo de TMDB, cruce anime → TMDB, atribución doble (AniList + TMDB), copias y mapas. Texto de `/privacy` si el 3D llega a producción (borrador en el spike; se enseña a Víctor antes).
+- Fondo de la pieza de libro y manga: dos variantes, sin elegir.
+- La ficha de la app da 404 cuando el proveedor tarda: es del cargador real, tarea aparte.
+- Sin probar: lector de pantalla real, Safari y Firefox, más dispositivos que los de Víctor.
+- Sustituir los archivos de `assets/fonts/` por Anybody, Instrument Sans y Noto Sans KR/JP (8.4).
+
+Lo que sigue es el encargo con el que arrancó la fase.
 
 - **Tres direcciones distintas** de la ficha, en código (rama desechable), con obras reales y sus portadas: día y noche, móvil y escritorio, tres formatos y un título en escritura no latina.
 - Cada dirección trae paleta, tipografía (fuentes libres, comprobadas) y trato de la portada.
