@@ -69,6 +69,16 @@ body:has(.kp) { background: #161513; }
   --kp-scheme: dark;
 }
 
+/* Kanji y hanja comparten código: con `lang="ja"` (y `ja-*`) va primero la
+   japonesa; con `lang="ko"`, la coreana. Una dirección que guarde `--kp-cjk`
+   dentro de una variable suya tiene que volver a declararla bajo `:lang()`. */
+.kp :lang(ja) {
+  --kp-cjk: var(--font-kp-jp, "Noto Sans JP"), var(--font-kp-kr, "Noto Sans KR"), "Hiragino Sans", "Yu Gothic", "Apple SD Gothic Neo", "Malgun Gothic", "Noto Sans CJK JP", "Noto Sans CJK KR", sans-serif;
+}
+.kp :lang(ko) {
+  --kp-cjk: var(--font-kp-kr, "Noto Sans KR"), var(--font-kp-jp, "Noto Sans JP"), "Apple SD Gothic Neo", "Malgun Gothic", "Hiragino Sans", "Yu Gothic", "Noto Sans CJK KR", "Noto Sans CJK JP", sans-serif;
+}
+
 .kp *, .kp *::before, .kp *::after { box-sizing: border-box; }
 .kp :where(h1, h2, h3, p, ul, ol, dl, dd, figure) { margin: 0; padding: 0; }
 .kp :where(ul, ol) { list-style: none; }

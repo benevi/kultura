@@ -5,7 +5,8 @@
 
 import "./a.css";
 import { Actions } from "../../_base/content/Actions";
-import { FactList, Genres, Ratings, SourceLine, SteamBlock, Synopsis, TrailerSlot, WhereToWatch } from "../../_base/content/Blocks";
+import { FactList, Genres, Ratings, SourceLine, SteamBlock, Synopsis, WhereToWatch } from "../../_base/content/Blocks";
+import { scriptLang } from "../../_base/load";
 import type { DirectionProps } from "../../_base/types";
 import { Stage } from "./Stage";
 
@@ -16,8 +17,14 @@ export default function FichaA({ data }: DirectionProps) {
     <main id="main-content" className="a-ficha">
       <Stage
         title={data.title}
+        titleLang={scriptLang(data.title, data.type)}
         cover={data.cover}
         fuseLabel={es ? "Letras fundidas" : "Fused lettering"}
+        trailerKey={data.trailerKey}
+        trailerLabel={l.trailer}
+        playLabel={es ? `Ver el tráiler de ${data.title}` : `Watch the trailer for ${data.title}`}
+        closeLabel={es ? "Cerrar el tráiler" : "Close the trailer"}
+        trailerTitle={es ? `Tráiler de ${data.title}` : `Trailer for ${data.title}`}
       />
 
       <section className="a-band" aria-label={l.details}>
@@ -55,7 +62,6 @@ export default function FichaA({ data }: DirectionProps) {
 
         <WhereToWatch data={data} heading={<h2>{l.whereToWatch}</h2>} />
         <SteamBlock data={data} heading={<h2>{l.steam}</h2>} />
-        <TrailerSlot data={data} heading={<h2>{l.trailer}</h2>} />
       </div>
 
       <footer className="a-foot">

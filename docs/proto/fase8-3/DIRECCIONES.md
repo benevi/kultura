@@ -37,7 +37,7 @@ Lo que cambia de verdad entre las tres es **qué hace de suelo de la página**:
 
 **Composición.** Móvil: portada · título a caballo del borde inferior · franja (título original, datos, acción principal a todo el ancho) · sinopsis · panel · dónde ver · tráiler. Escritorio: sala a pantalla completa; franja en dos columnas; ficha en 12 columnas (sinopsis 7, panel 4).
 
-**Hueco del tráiler.** Señalado en la sección «Tráiler». En esta dirección el tráiler ocuparía la sala (sustituye a la copia borrosa) al pasar por encima de la portada. No se construye hasta la revisión legal.
+**Tráiler.** Botón «Tráiler» en la sala, junto al título (con cursor aparece al pasar por la sala o al llegar con el teclado; en táctil se ve siempre). Al pulsarlo (clic, toque, Intro) la sala entera pasa a ser el reproductor de `youtube-nocookie` a lo ancho (16:9), en silencio, con sus controles y su marca y sin nada encima: se retiran portada, velos y letras fundidas. Debajo del marco, el título y «Cerrar el tráiler»; Escape también cierra y el foco vuelve al botón. Antes de pulsar no sale ninguna petición a YouTube. Capturas: `capturas/a/*-trailer.png`.
 
 **Qué la distingue.** Es la única donde la imagen es el suelo y el título es parte de la imagen. La más cinematográfica y la que mejor prepara el 3D (las capas ya existen).
 

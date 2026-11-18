@@ -7,7 +7,12 @@
 //   2. el encaje del título (tamaño hasta llenar el ancho en pocas líneas),
 //   3. las letras fundidas: las partes de la portada que destacan del fondo
 //      pasan por delante de las letras (capa de adorno, `aria-hidden`),
-//   4. la profundidad en 2D al mover el puntero.
+//   4. la profundidad en 2D al mover el puntero,
+//   5. el tráiler: un botón junto al título; al pulsarlo (clic, toque, Intro) la
+//      sala entera pasa a ser el reproductor de youtube-nocookie a lo ancho
+//      (16:9), en silencio, con sus controles y su marca y sin nada encima
+//      (se retiran portada, velos y letras). Antes de pulsar no se pide nada a
+//      YouTube. Escape o el botón de debajo del marco lo cierran y el foco vuelve.
 // Sin mapas de profundidad ni copias: todo sale de la portada ya cargada.
 
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
@@ -82,10 +87,33 @@ interface StageProps {
   cover: CoverSource | null;
   /** Texto del interruptor de prueba «Letras fundidas». */
   fuseLabel: string;
+  trailerKey?: string;
+  /** Texto visible del botón («Tráiler»). */
+  trailerLabel: string;
+  /** Nombre accesible del botón («Ver el tráiler de …»). */
+  playLabel: string;
+  closeLabel: string;
+  /** `title` del reproductor. */
+  trailerTitle: string;
 }
 
-export function Stage({ title, titleLang, cover, fuseLabel }: StageProps) {
+export function Stage({
+  title,
+  titleLang,
+  cover,
+  fuseLabel,
+  trailerKey,
+  trailerLabel,
+  playLabel,
+  closeLabel,
+  trailerTitle,
+}: StageProps) {
   const { theme, reducedMotion } = useProto();
+  const [playing, setPlaying] = useState(false);
+  const playingRef = useRef(false);
+  const wasPlaying = useRef(false);
+  const playRef = useRef<HTMLButtonElement>(null);
+  const closeRef = useRef<HTMLButtonElement>(null);
   // [P] Letras fundidas: interruptor de prueba para decidir viéndolo.
   const [fuse, setFuse] = useState(true);
   const stageRef = useRef<HTMLElement>(null);
@@ -106,7 +134,7 @@ export function Stage({ title, titleLang, cover, fuseLabel }: StageProps) {
   // ── 2. Encaje del título y 3b. posición de la capa fundida ──────────────
   const layout = () => {
     const stage = stageRef.current, h1 = titleRef.current, box = boxRef.current, fuse = fuseRef.current;
-    if (!stage || !h1) return;
+    if (!stage || !h1 || playingRef.current) return;
     const desktop = window.matchMedia("(min-width: 720px)").matches;
     const maxLines = desktop ? 2 : 3;
     const stageH = stage.clientHeight;
@@ -130,6 +158,7 @@ export function Stage({ title, titleLang, cover, fuseLabel }: StageProps) {
     // Velo: macizo detrás de todo el título, y se desvanece por encima.
     const s = stage.getBoundingClientRect(), t = h1.getBoundingClientRect();
     stage.style.setProperty("--a-band", `${Math.round(s.bottom - t.top + 20)}px`);
+    stage.style.setProperty("--a-title-h", `${Math.round(t.height)}px`);
     if (box) {
       const b = box.getBoundingClientRect();
       stage.style.setProperty("--a-band-cover", `${Math.max(0, Math.round(b.bottom - t.top + 20))}px`);
@@ -323,6 +352,42 @@ export function Stage({ title, titleLang, cover, fuseLabel }: StageProps) {
     };
   }, [reducedMotion]);
 
+  // ── 5. Tráiler ──────────────────────────────────────────────────────────
+  // Al cerrar, la sala vuelve a medirse (mientras suena, el título no se ve).
+  useIsoLayoutEffect(() => {
+    playingRef.current = playing;
+    if (!playing && wasPlaying.current) {
+      layout();
+      applyRef.current();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [playing]);
+
+  // Foco: al abrir, al botón de cerrar (fuera del marco: Escape sigue llegando
+  // a la página); al cerrar, de vuelta al botón del tráiler.
+  // Sin el salto de `focus()` (centraría el botón): al abrir, la sala sube
+  // hasta debajo de la barra para que el marco se vea entero.
+  useEffect(() => {
+    if (playing) {
+      closeRef.current?.focus({ preventScroll: true });
+      stageRef.current?.scrollIntoView({ block: "start", behavior: reducedMotion ? "auto" : "smooth" });
+    } else if (wasPlaying.current) {
+      playRef.current?.focus({ preventScroll: true });
+      playRef.current?.scrollIntoView({ block: "nearest" });
+    }
+    wasPlaying.current = playing;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [playing]);
+
+  useEffect(() => {
+    if (!playing) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setPlaying(false);
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [playing]);
+
   const style = {
     "--a-wdth": wdth,
     "--a-k": (86 / (Math.max(longest, Math.ceil(len / 2)) * 0.6 * (wdth / 100))).toFixed(2),
@@ -335,6 +400,7 @@ export function Stage({ title, titleLang, cover, fuseLabel }: StageProps) {
       data-shape={cover?.shape ?? "none"}
       data-ink="light"
       data-fuse={fuse ? "on" : "off"}
+      data-playing={playing ? "" : undefined}
       style={style}
     >
       {cover && (
@@ -371,8 +437,50 @@ export function Stage({ title, titleLang, cover, fuseLabel }: StageProps) {
           </h1>
         </div>
       </div>
+      {trailerKey && (
+        <button
+          ref={playRef}
+          type="button"
+          className="a-play"
+          hidden={playing}
+          aria-label={playLabel}
+          onClick={() => setPlaying(true)}
+        >
+          <svg viewBox="0 0 12 12" width="13" height="13" aria-hidden="true" focusable="false">
+            <path d="M2 1l9 5-9 5z" fill="currentColor" />
+          </svg>
+          {trailerLabel}
+        </button>
+      )}
+      {playing && trailerKey && (
+        <div className="a-trailer" data-kp-slot="trailer">
+          <div className="a-player">
+            <iframe
+              src={`https://www.youtube-nocookie.com/embed/${encodeURIComponent(trailerKey)}?autoplay=1&mute=1&controls=1&playsinline=1&rel=0`}
+              title={trailerTitle}
+              allow="autoplay; encrypted-media; picture-in-picture; fullscreen"
+              allowFullScreen
+              referrerPolicy="strict-origin-when-cross-origin"
+            />
+          </div>
+          <div className="a-trailer-bar">
+            <span className="a-trailer-name" lang={titleLang} aria-hidden="true">
+              {title}
+            </span>
+            <button ref={closeRef} type="button" className="a-close" onClick={() => setPlaying(false)}>
+              {closeLabel}
+            </button>
+          </div>
+        </div>
+      )}
       {cover && (
-        <button type="button" className="a-fuse-toggle" aria-pressed={fuse} onClick={() => setFuse((v) => !v)}>
+        <button
+          type="button"
+          className="a-fuse-toggle"
+          hidden={playing}
+          aria-pressed={fuse}
+          onClick={() => setFuse((v) => !v)}
+        >
           {fuseLabel}
         </button>
       )}

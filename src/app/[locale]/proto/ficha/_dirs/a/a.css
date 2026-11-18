@@ -14,6 +14,12 @@
   font-size: 17px;
   line-height: 1.5;
 }
+/* La base pone primero la fuente japonesa (o la coreana) en `--kp-cjk` según
+   el `lang`; las familias de A se vuelven a declarar aquí para recogerlo. */
+.kp-a :lang(ja), .kp-a :lang(ko) {
+  --a-display: var(--font-a-display), var(--kp-cjk);
+  --a-text: var(--font-a-text), var(--kp-cjk);
+}
 
 /* ── La sala ─────────────────────────────────────────────────
    Valores de servidor seguros para CUALQUIER portada: tinta clara sobre un
@@ -32,6 +38,7 @@
   background: rgb(var(--a-scrim));
   color: var(--a-ink);
   padding-bottom: 20px;
+  scroll-margin-top: var(--kp-bar-h);
 }
 .kp-a .a-stage[data-shape="landscape"] { --a-ar: 4 / 5; }
 .kp-a .a-stage[data-shape="none"] {
@@ -126,6 +133,71 @@
 }
 .kp-a .a-fuse-toggle[aria-pressed="true"] { background: var(--kp-ink); color: var(--kp-bg); border-color: var(--kp-ink); }
 
+/* ── El tráiler ──────────────────────────────────────────────
+   El botón vive en la sala, junto al título y sin taparlo. Color macizo: no
+   depende de lo que tenga detrás (tinta / velo de la portada: ≥ 7:1). */
+.kp-a .a-play {
+  position: relative; z-index: 2;
+  display: inline-flex; align-items: center; gap: 10px;
+  min-height: 48px; margin: 18px var(--a-m) 0; padding: 0 20px 0 16px;
+  background: var(--a-ink); color: rgb(var(--a-scrim));
+  border: 0; border-radius: 0;
+  font: 700 16px/1 var(--a-text);
+  cursor: pointer;
+  transition: opacity 0.2s var(--a-ease), transform 0.1s;
+}
+.kp-a .a-play[hidden] { display: none; }
+.kp-a .a-stage[data-shape="none"] .a-play { color: var(--kp-field); }
+.kp-a .a-play:active { transform: scale(0.97); }
+.kp-a .a-play:focus-visible, .kp-a .a-trailer :focus-visible { outline: 3px solid var(--a-ink); outline-offset: 3px; }
+/* Con cursor, el botón solo aparece al pasar por la sala (o al llegar con el teclado). */
+@media (hover: hover) and (pointer: fine) {
+  .kp-a .a-play { opacity: 0; }
+  .kp-a .a-stage:hover .a-play, .kp-a .a-play:focus-visible { opacity: 1; }
+}
+
+/* Sonando: la sala a oscuras es el reproductor. Fuera portada, velos y letras
+   (el `h1` sigue en el documento, sin verse); nada encima del marco. */
+.kp-a .a-stage[data-playing] { background: #0c0c0b; color: #f6f4f0; padding-bottom: 0; --a-ink: #f6f4f0; }
+.kp-a .a-stage[data-playing] .a-back,
+.kp-a .a-stage[data-playing] .a-backscrim,
+.kp-a .a-stage[data-playing] .a-coverbox,
+.kp-a .a-stage[data-playing] .a-fuse { display: none; }
+.kp-a .a-stage[data-playing] .a-rise {
+  position: absolute; inset: auto; width: 1px; height: 1px; margin: -1px;
+  overflow: hidden; clip-path: inset(50%);
+}
+.kp-a .a-trailer { position: relative; display: grid; justify-items: center; }
+/* El marco 16:9 más grande que cabe a lo ancho y, con su barra, a lo alto. */
+.kp-a .a-player {
+  width: min(100%, calc((min(100svh - var(--kp-bar-h), 1000px) - 64px) * 16 / 9));
+  aspect-ratio: 16 / 9;
+  min-width: 200px; min-height: 200px;
+  background: #000;
+}
+.kp-a .a-player iframe { display: block; width: 100%; height: 100%; border: 0; }
+.kp-a .a-trailer-bar {
+  display: flex; align-items: center; justify-content: space-between; gap: 16px;
+  width: 100%; min-height: 64px; padding: 8px var(--a-m);
+}
+.kp-a .a-trailer-name {
+  min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  font-family: var(--a-display); font-weight: 800; font-variation-settings: "wdth" 88;
+  font-size: 22px; line-height: 1.2; letter-spacing: -0.01em;
+}
+.kp-a .a-close {
+  flex: none;
+  min-height: 44px; padding: 0 18px;
+  background: transparent; color: #f6f4f0;
+  border: 2px solid #f6f4f0; border-radius: 0;
+  font: 600 15px/1 var(--a-text);
+  cursor: pointer;
+  transition: background-color 0.15s, color 0.15s;
+}
+@media (hover: hover) {
+  .kp-a .a-close:hover { background: #f6f4f0; color: #0c0c0b; }
+}
+
 @media (min-width: 720px) {
   .kp-a .a-stage {
     height: clamp(520px, calc(100svh - var(--kp-bar-h)), 1000px);
@@ -149,6 +221,14 @@
     font-variation-settings: "wdth" var(--a-wdth, 100);
     font-size: clamp(48px, calc(var(--a-k, 12) * 1vw), 320px);
   }
+  /* Encima del título, a su izquierda. */
+  .kp-a .a-play {
+    position: absolute;
+    left: var(--a-m); bottom: calc(30px + var(--a-title-h, 30%) + 22px);
+    margin: 0;
+  }
+  /* Sonando, la sala mide lo que el marco y su barra. */
+  .kp-a .a-stage[data-playing] { height: auto; }
 }
 
 @keyframes a-cover-in { from { opacity: 0; transform: scale(1.04); } }
@@ -272,14 +352,6 @@
 .kp-a .kp-steam-langs { max-width: 70ch; color: var(--kp-ink-2); font-size: 15px; }
 .kp-a .kp-shots { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; margin-top: 20px; }
 .kp-a .kp-shots img { width: 100%; height: auto; aspect-ratio: 16 / 9; object-fit: cover; background: var(--kp-surface); }
-
-.kp-a .kp-trailer-slot {
-  display: grid; place-items: center;
-  max-width: 880px; aspect-ratio: 16 / 9; padding: 16px;
-  background: var(--kp-surface);
-  border: 2px dashed var(--kp-edge);
-  color: var(--kp-ink-2); text-align: center;
-}
 
 .kp-a .a-foot { padding: 8px var(--a-m) 72px; font-size: 14px; color: var(--kp-ink-2); }
 
