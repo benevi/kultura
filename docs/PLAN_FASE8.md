@@ -38,6 +38,7 @@ Leyenda: **[P]** pendiente del «sí» de Víctor · **[E]** estimación orienta
 | 2026-11-17 | **Meta de crecimiento:** ≥ 12 activos a 30 días, como referencia; no bloquea nada | Víctor |
 | 2026-11-17 | El borrador de biblia «Archivo» (PR #214) se descarta | Víctor |
 | 2026-11-17 | Tipografías de la v3 (JetBrains Mono, Newsreader): **no gustan**. Se eligen de nuevo en 8.3. Los archivos de `assets/fonts/` se sustituyen entonces | Víctor |
+| 2026-11-18 | **Se levanta el bloqueo de §9** sobre copia propia de portadas, KTX2 y mapas de profundidad («levanta §9»). Riesgo asumido. Llevarlo a producción sigue pidiendo su texto en `/privacy` y las reglas de migraciones y de coste | Víctor |
 
 ### Riesgos que Víctor asume (escritos para que consten)
 
@@ -46,6 +47,7 @@ Detalle en [`legal/terminos/README.md`](legal/terminos/README.md).
 - **AniList** prohíbe su API en servicios de listas de anime y manga. KULTURA lo es en parte.
 - **MangaDex** no permite enlazar sus imágenes directamente: pasan por el optimizador de Vercel (copia temporal).
 - **Imágenes para compartir (OG)** con portada: varios proveedores prohíben derivados.
+- **Copia propia de portadas y mapas de profundidad** (desde el 18-11-2026): son obras derivadas guardadas. Las vetan TMDB (§1.C: sin derivados, caché de 6 meses como máximo) y la regla general de ComicVine, Steam, MangaDex y Google Books. Incluye lo que ya sirve la landing (bucket `landing` y `public/landing/fallback/`).
 - **Sin respuesta escrita de ningún proveedor** mientras no se envíen los correos.
 - Si un proveedor pide retirar algo, se retira en 7 días (canal de `/legal`, #179). Eso manda sobre «portadas obligatorias».
 
@@ -159,7 +161,7 @@ Cada punto es un PR o pocos, detrás de bandera si cambia una pantalla. Privacid
 - Panel visual de tres voluntarias, estudio con cinco participantes y pruebas en seis modelos de móvil.
 - Puertas G0–G6 de la v3 y el bloque 8B como compromiso.
 - Encargo a asesoría jurídica: **aplazado**, como los correos. Se retoma cuando Víctor lo diga.
-- Copia propia de portadas, KTX2 y mapas de profundidad: siguen **bloqueados** (son usos nuevos, no «lo que ya ocurre»).
+- ~~Copia propia de portadas, KTX2 y mapas de profundidad~~: **bloqueo levantado el 18-11-2026** (§1). Ya no quedan fuera.
 
 ## 10. Pendiente de Víctor
 
