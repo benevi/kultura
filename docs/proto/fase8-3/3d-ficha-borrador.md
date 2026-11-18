@@ -271,3 +271,9 @@ Y revisar la frase de #173 sobre las portadas: las imágenes de la sala se piden
 - **Pendiente para cerrar P-3D**: la prueba de Víctor en su móvil y su ordenador con `?fps=1`, y sus respuestas a las decisiones de arriba.
 
 Capturas: `docs/proto/fase8-3/capturas/3d/` (`3d-fondo-*`, `3d-capas-*`, `3d-pieza-*`, `detalle-*`, `detalle-x3-*`, `respaldo-*`).
+
+## Tercera ronda (tras la prueba de Víctor en su móvil, 18-11-2026)
+
+- **Giroscopio más marcado.** Víctor: «al mover el móvil, sobre todo hacia los lados, tendría que notarse más». Con giroscopio el recorrido pasa a ×3 en horizontal y ×2 en vertical, el giro completo se alcanza a ±12° (antes ±18°) y el margen de la imagen sube de 1,035 a 1,06 para que el desplazamiento quepa sin estirar los bordes. La Pieza gira hasta 0,48 rad (antes 0,26). Sin medir en dispositivo: lo valida Víctor.
+- **«Dónde ver» en móvil:** logotipos a 28 px (no se pulsan, no les aplica el mínimo táctil); la sección de Parásitos baja de 262 a 202 px a 375.
+- **Riesgo visto al comprobar:** `image.tmdb.org` solo manda `Access-Control-Allow-Origin` si la petición lleva `Origin`, y no manda `Vary`. Si el navegador tiene en caché la misma dirección pedida antes sin CORS, la petición con CORS falla. Aquí la sala cayó al tamaño menor (780) y siguió funcionando. En producción: todas las etiquetas de una misma dirección con el mismo `crossOrigin`, o una dirección distinta para las lecturas con CORS.

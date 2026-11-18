@@ -415,10 +415,10 @@
 .kp-a .kp-watch-group img { width: 44px; height: 44px; }
 
 /* Móvil: «Dónde ver» compacto. Cada grupo es una fila que se desliza con el
-   dedo; los logotipos van a 44 px y el nombre queda para el lector de pantalla
+   dedo; los logotipos van a 28 px (no se pulsan) y el nombre queda para el lector de pantalla
    (sigue en el HTML). El enlace a TMDB/JustWatch se conserva, a 44 px de alto. */
 @media (max-width: 719px) {
-  .kp-a .kp-watch-groups { display: grid; gap: 10px; margin-bottom: 8px; }
+  .kp-a .kp-watch-groups { display: grid; gap: 6px; margin-bottom: 4px; }
   .kp-a .kp-watch-group { display: grid; grid-template-columns: 92px minmax(0, 1fr); align-items: center; gap: 8px; }
   .kp-a .kp-watch-group h3 { margin: 0; }
   .kp-a .kp-watch-group ul {
@@ -428,7 +428,8 @@
     scrollbar-width: none;
   }
   .kp-a .kp-watch-group ul::-webkit-scrollbar { display: none; }
-  .kp-a .kp-watch-group li { flex: none; width: 44px; scroll-snap-align: start; }
+  .kp-a .kp-watch-group li { flex: none; width: 28px; scroll-snap-align: start; }
+  .kp-a .kp-watch-group img { width: 28px; height: 28px; }
   .kp-a .kp-watch-group li span {
     position: absolute; width: 1px; height: 1px; margin: -1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap;
   }

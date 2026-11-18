@@ -128,8 +128,11 @@ const CHAR_MAX_COLOR = 0.45;
 const SPAN_MAX = 0.36;
 /** Por debajo de esto lo tapado se ve como un mordisco suelto, no como una figura: el título va entero por delante. */
 const MIN_COVER = 0.07;
-const ZOOM = 1.035;
+const ZOOM = 1.06;
 const OFF: [number, number] = [0.018, 0.012];
+/** Con el giroscopio el recorrido es mayor (sobre todo a los lados): con el del puntero apenas se notaba en el móvil.
+ *  El desplazamiento máximo (OFF · ganancia / 2) cabe en el margen que deja ZOOM. */
+const GYRO_GAIN: [number, number] = [3, 2];
 // El lienzo pinta a la densidad de la pantalla hasta 2× (más allá no se distingue y
 // cuesta el cuádruple); si el fotograma no llega, baja solo (ver `frame`).
 const MAX_DPR = 2;
@@ -874,7 +877,7 @@ export async function mountSala(o: SalaOpts): Promise<SalaHandle | null> {
       bind(0, res.img); bind(1, res.dep); bind(2, res.mat); bind(3, res.title); bind(4, res.sh); bind(5, res.ok ?? res.title);
       g.uniform1i(U.uImg, 0); g.uniform1i(U.uDep, 1); g.uniform1i(U.uMat, 2); g.uniform1i(U.uTitle, 3); g.uniform1i(U.uShadow, 4); g.uniform1i(U.uOk, 5);
       g.uniform2f(U.uRes, geo.w, geo.h);
-      g.uniform2f(U.uOff, ox * OFF[0] * wakeK, (oy * OFF[1] - m.scroll * 0.02) * wakeK);
+      g.uniform2f(U.uOff, ox * OFF[0] * (gyro ? GYRO_GAIN[0] : 1) * wakeK, (oy * OFF[1] * (gyro ? GYRO_GAIN[1] : 1) - m.scroll * 0.02) * wakeK);
       g.uniform4f(U.uBox, geo.box[0], geo.box[1], geo.box[2], geo.box[3]);
       g.uniform4f(U.uFit, geo.fit[0], geo.fit[1], geo.fit[2], geo.fit[3]);
       g.uniform4f(U.uTRect, geo.trect[0], geo.trect[1], geo.trect[2], geo.trect[3]);
@@ -898,8 +901,8 @@ export async function mountSala(o: SalaOpts): Promise<SalaHandle | null> {
       const [rx0, ry0, rw, rh] = geo.pieceRect;
       const side = o.spineRight ? -1 : 1;
       // Pose: un cuarto de giro hacia el lomo al despertar; el puntero (o el scroll) la mueve alrededor.
-      const ry = (side * 0.3 + ox * 0.26 + m.scroll * side * 0.22) * wakeK;
-      const rx = (-oy * 0.13 - 0.03) * wakeK;
+      const ry = (side * 0.3 + ox * (gyro ? 0.48 : 0.26) + m.scroll * side * 0.22) * wakeK;
+      const rx = (-oy * (gyro ? 0.2 : 0.13) - 0.03) * wakeK;
       // Sombra de contacto (lo único que flota).
       g.disable(g.DEPTH_TEST);
       quad(res.shadow);
@@ -1043,10 +1046,10 @@ export async function mountSala(o: SalaOpts): Promise<SalaHandle | null> {
   offs.push(() => io.disconnect());
   // Giroscopio. Se recentra en la postura en que está el móvil al activarlo (y
   // sigue despacio a la postura si cambia: quien se recuesta no se queda con la
-  // imagen torcida), zona muerta de 1,5° contra el temblor de la mano, ±18° de
+  // imagen torcida), zona muerta de 1,5° contra el temblor de la mano, ±12° de
   // recorrido y el mismo suavizado que el puntero. Con el móvil apaisado se
   // intercambian los ejes.
-  const GYRO_RANGE = 18, GYRO_DEAD = 1.5;
+  const GYRO_RANGE = 12, GYRO_DEAD = 1.5;
   let gyroT = 0;
   let gamma0: number | null = null, gyroSeen: ((ok: boolean) => void) | null = null;
   const dead = (v: number) => (Math.abs(v) < GYRO_DEAD ? 0 : v - Math.sign(v) * GYRO_DEAD);
