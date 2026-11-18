@@ -1,3 +1,402 @@
-/* Dirección C «Pliego» — PENDIENTE. Todo bajo `.kp-c`. */
-.kp-c .c-stub { max-width: 720px; margin: 0 auto; padding: 24px 16px 96px; font-family: var(--kp-ui); line-height: 1.5; display: grid; gap: 12px; }
-.kp-c .c-stub .kp-shots { display: grid; gap: 8px; }
+/* ============================================================
+   Dirección C «Pliego» — todo bajo `.kp-c`.
+   Suelo neutro que no es blanco (gris piedra / grafito), mucha letra, rejilla
+   asimétrica de tres ejes y la portada en una ventana 4:5 donde la imagen
+   deriva despacio. El color de la portada, solo en pequeño.
+   Esquinas rectas, sin sombras, sin campos de color.
+   ============================================================ */
+
+/* Posición de la imagen dentro de la ventana (0..1 en cada eje). Registradas
+   para que la animación y la transición las interpolen. Son globales por
+   fuerza (`@property` no se puede anidar): llevan el prefijo `--c-`. */
+@property --c-dx { syntax: "<number>"; inherits: true; initial-value: 0.5; }
+@property --c-dy { syntax: "<number>"; inherits: true; initial-value: 0.5; }
+@property --c-px { syntax: "<number>"; inherits: true; initial-value: 0.5; }
+@property --c-py { syntax: "<number>"; inherits: true; initial-value: 0.5; }
+@property --c-mix { syntax: "<number>"; inherits: true; initial-value: 0; }
+
+/* ── Suelo y tinta ─────────────────────────────────────────────
+   C no usa el fondo teñido de la base: pone el suyo, neutro, y la tinta a
+   juego. Contraste (medido): tinta 12:1 / 14:1, tinta-2 ≥ 5.7:1, borde ≥ 3.4:1
+   sobre suelo y panel, en claro y en oscuro. El acento sale de la portada y
+   Ventana.tsx lo ajusta a 4.5:1 contra ESTE suelo; sin portada, tinta. */
+.kp.kp-c {
+  --kp-bg: #d8d7d2;
+  --kp-surface: #cccbc5;
+  --kp-ink: #1b1b19;
+  --kp-ink-2: #474743;
+  --kp-edge: #6a6965;
+  --kp-accent: var(--c-accent-l, #2a2a27);
+  --kp-accent-ink: var(--c-accent-ink-l, #f3f2ee);
+}
+@media (prefers-color-scheme: dark) {
+  .kp.kp-c:not([data-theme="light"]) {
+    --kp-bg: #1c1d1f;
+    --kp-surface: #27282b;
+    --kp-ink: #ecebe7;
+    --kp-ink-2: #b3b2ad;
+    --kp-edge: #8a8a8d;
+    --kp-accent: var(--c-accent-d, #ecebe7);
+    --kp-accent-ink: var(--c-accent-ink-d, #1c1d1f);
+  }
+}
+.kp.kp-c[data-theme="dark"] {
+  --kp-bg: #1c1d1f;
+  --kp-surface: #27282b;
+  --kp-ink: #ecebe7;
+  --kp-ink-2: #b3b2ad;
+  --kp-edge: #8a8a8d;
+  --kp-accent: var(--c-accent-d, #ecebe7);
+  --kp-accent-ink: var(--c-accent-ink-d, #1c1d1f);
+}
+
+/* ── Letra ─────────────────────────────────────────────────────
+   LA TIPOGRAFÍA DE RÓTULO ES UNA SOLA VARIABLE: `--c-display`.
+   Con serif (apuesta de C): Fraunces, y Noto Serif para hangul y japonés.
+   Sin serif (`?serif=0`, o cambiando esta línea): Schibsted Grotesk. */
+.kp-c {
+  --c-display: var(--font-c-serif), var(--font-c-serif-kr), var(--font-c-serif-jp), var(--kp-cjk);
+  --c-display-w: 300;      /* peso del título */
+  --c-display-w2: 400;     /* peso de rótulos pequeños */
+  --c-display-track: -0.022em;
+  --c-display-cw: 0.5;     /* ancho medio de carácter, en em: fija el tamaño del título */
+  --c-text: var(--font-c-text), var(--kp-cjk);
+  --c-m: clamp(16px, 2.8vw, 40px);
+  --c-gap: 16px;
+  --c-rule: color-mix(in srgb, var(--kp-edge) 42%, transparent);
+  font-family: var(--c-text);
+  font-size: 16px;
+  line-height: 1.55;
+  -webkit-font-smoothing: antialiased;
+}
+.kp-c .c-ficha[data-serif="0"] {
+  --c-display: var(--font-c-grotesk), var(--kp-cjk);
+  --c-display-w: 500;
+  --c-display-w2: 600;
+  --c-display-track: -0.045em;
+  --c-display-cw: 0.54;
+}
+/* Japonés: primero las fuentes japonesas (las coreanas también traen han, con otras formas). */
+.kp-c :lang(ja) {
+  --c-display: var(--font-c-serif), var(--font-c-serif-jp), var(--font-kp-jp), var(--kp-cjk);
+  --c-text: var(--font-c-text), var(--font-kp-jp), var(--kp-cjk);
+}
+.kp-c .c-ficha[data-serif="0"] :lang(ja) { --c-display: var(--font-c-grotesk), var(--font-kp-jp), var(--kp-cjk); }
+
+.kp-c .c-ficha { max-width: 1520px; margin: 0 auto; padding: 0 var(--c-m) 96px; }
+
+.kp-c h2 {
+  font-family: var(--c-display);
+  font-weight: var(--c-display-w2);
+  font-size: 26px;
+  line-height: 1.1;
+  letter-spacing: -0.012em;
+  font-variation-settings: "SOFT" 40;
+}
+
+.kp-c .kp-link {
+  text-decoration: underline;
+  text-decoration-color: var(--kp-accent);
+  text-decoration-thickness: 2px;
+  text-underline-offset: 0.2em;
+}
+.kp-c .kp-link:hover { color: var(--kp-accent); }
+
+/* ── Primera hoja: título · datos · ventana · sinopsis ───────── */
+.kp-c .c-top {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 2fr);
+  column-gap: var(--c-gap);
+}
+
+.kp-c .c-head {
+  grid-column: 1 / -1; grid-row: 1;
+  container-type: inline-size;
+  padding: 36px 0 28px;
+}
+.kp-c .c-title {
+  font-family: var(--c-display);
+  font-weight: var(--c-display-w);
+  font-variation-settings: "SOFT" 30;
+  /* Llena la columna: ancho / (caracteres por línea × ancho medio). */
+  font-size: clamp(40px, calc(100cqi / (var(--c-n, 10) * var(--c-display-cw))), min(176px, 31cqi));
+  line-height: 0.94;
+  letter-spacing: var(--c-display-track);
+  text-wrap: balance;
+  overflow-wrap: anywhere;
+  margin-left: -0.03em;   /* la letra, no su caja, sobre el eje */
+}
+.kp-c .c-original {
+  margin-top: 14px;
+  font-family: var(--c-display);
+  font-weight: var(--c-display-w);
+  font-size: clamp(22px, 7cqi, 40px);
+  line-height: 1.15;
+  color: var(--kp-ink-2);
+  overflow-wrap: anywhere;
+}
+.kp-c .c-original:lang(ko), .kp-c .c-original:lang(ja), .kp-c .c-original:lang(zh) {
+  font-weight: 400;
+  letter-spacing: 0.02em;
+  word-break: keep-all;
+  line-break: strict;
+}
+
+/* Datos: columna estrecha, apoyada en el pie de la ventana. */
+.kp-c .c-data {
+  grid-column: 1; grid-row: 2;
+  align-self: end;
+  display: grid; gap: 20px;
+  padding-bottom: 44px;   /* alto del pie de la ventana: los datos se apoyan en el borde del marco */
+  min-width: 0;
+}
+.kp-c .c-facts, .kp-c .c-ratings { display: grid; gap: 12px; }
+.kp-c .c-data dt { font-size: 13px; line-height: 1.3; color: var(--kp-ink-2); }
+.kp-c .c-data dd { font-size: 16px; line-height: 1.3; font-weight: 500; overflow-wrap: anywhere; }
+.kp-c .c-data dd { font-variant-numeric: tabular-nums; }
+/* La pastilla de color junto al formato (el formato lo dice el texto). */
+.kp-c .c-facts [data-fact="format"] dd::before {
+  content: "";
+  display: inline-block; width: 0.6em; height: 0.6em; margin-right: 0.45em;
+  background: var(--kp-accent);
+}
+.kp-c .c-ratings dd {
+  font-family: var(--c-display);
+  font-weight: var(--c-display-w2);
+  font-size: 26px; line-height: 1.05;
+  letter-spacing: -0.01em;
+  font-variant-numeric: normal;
+}
+
+/* En móvil la «plancha» (ventana + acciones) se deshace en la rejilla. */
+.kp-c .c-plate { display: contents; }
+
+/* ── La ventana ──────────────────────────────────────────────── */
+.kp-c .c-win { grid-column: 2; grid-row: 2; min-width: 0; }
+.kp-c .c-frame {
+  position: relative;
+  aspect-ratio: 4 / 5;
+  overflow: hidden;
+  container-type: size;
+  background: var(--kp-surface);
+  /* Reposo (y sin movimiento): la imagen centrada. */
+  --c-dx: 0.5; --c-dy: 0.5; --c-mix: 0;
+  animation: c-drift 46s ease-in-out -9s infinite alternate;
+  transition: --c-mix 0.7s cubic-bezier(0.2, 0, 0, 1), --c-px 0.3s ease-out, --c-py 0.3s ease-out;
+}
+.kp-c .c-win[data-shape="landscape"] .c-frame { animation-duration: 80s; animation-delay: -30s; }
+.kp-c .c-win[data-paused] .c-frame,
+.kp-c .c-win[data-playing] .c-frame,
+.kp-c .c-frame[data-held] { animation-play-state: paused; }
+.kp-c .c-frame[data-held] { --c-mix: 1; }
+@keyframes c-drift {
+  from { --c-dx: 0.1; --c-dy: 0; }
+  to { --c-dx: 0.9; --c-dy: 1; }
+}
+
+.kp-c .c-shot {
+  position: absolute; inset: 0;
+  display: block; width: 100%; height: 100%;
+  padding: 0; border: 0; background: none;
+  overflow: hidden;
+}
+.kp-c .c-shot[hidden] { display: none; }
+.kp-c button.c-shot { cursor: pointer; }
+.kp-c button.c-shot:focus-visible { outline-offset: -4px; outline-color: var(--kp-bg); box-shadow: inset 0 0 0 6px var(--kp-ink); }
+
+/* La portada, un 6–8 % mayor que el marco en su lado justo; el otro lado sobra
+   y es por donde deriva hasta enseñarla entera. */
+.kp-c .c-cover {
+  position: absolute; top: 0; left: 0;
+  max-width: none;
+  width: 106cqw; height: auto; min-height: 100cqh;
+  object-fit: cover;
+  --c-x: calc(var(--c-dx) * (1 - var(--c-mix)) + var(--c-px) * var(--c-mix));
+  --c-y: calc(var(--c-dy) * (1 - var(--c-mix)) + var(--c-py) * var(--c-mix));
+  translate: calc((100cqw - 100%) * var(--c-x)) calc((100cqh - 100%) * var(--c-y));
+}
+.kp-c .c-win[data-shape="landscape"] .c-cover { width: auto; height: 108cqh; min-height: 0; min-width: 100cqw; }
+
+/* Botón de reproducir: una muesca del color del papel en la esquina. Con
+   ratón aparece al pasar por encima (o con el foco); al tacto está siempre. */
+.kp-c .c-play {
+  position: absolute; left: 0; bottom: 0;
+  display: inline-flex; align-items: center; gap: 8px;
+  min-height: 44px; padding: 0 16px 0 14px;
+  background: var(--kp-bg); color: var(--kp-ink);
+  font: 600 14px/1 var(--c-text);
+}
+@media (hover: hover) {
+  .kp-c .c-play { opacity: 0; translate: 0 6px; transition: opacity 0.18s ease-out, translate 0.18s ease-out; }
+  .kp-c .c-shot:hover .c-play, .kp-c .c-shot:focus-visible .c-play { opacity: 1; translate: 0 0; }
+}
+
+.kp-c .c-player { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; background: #000; }
+
+.kp-c .c-cap {
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  min-height: 44px;
+}
+.kp-c .c-capbtn {
+  min-height: 32px; padding: 0;
+  background: none; border: 0; cursor: pointer;
+  font-size: 13px; line-height: 1.2; color: var(--kp-ink-2);
+  text-decoration: underline; text-decoration-color: var(--c-rule); text-underline-offset: 0.25em;
+  text-align: left;
+}
+.kp-c .c-capbtn:hover { color: var(--kp-ink); text-decoration-color: currentColor; }
+.kp-c .c-capbtn[hidden] { display: none; }
+.kp-c .c-capbtn[aria-pressed="true"] { color: var(--kp-ink); text-decoration-color: var(--kp-accent); text-decoration-thickness: 2px; }
+/* Tira de color: los colores de la portada, como la tira de control de un pliego impreso. Adorno. */
+.kp-c .c-strip { display: inline-flex; margin-left: auto; }
+.kp-c .c-strip i { width: 14px; height: 14px; }
+.kp-c .c-strip i:nth-child(1) { background: var(--cv-c1, transparent); }
+.kp-c .c-strip i:nth-child(2) { background: var(--cv-c2, transparent); }
+.kp-c .c-strip i:nth-child(3) { background: var(--cv-c3, transparent); }
+.kp-c .c-strip i:nth-child(4) { background: var(--cv-c4, transparent); }
+.kp-c .c-strip i:nth-child(5) { background: var(--cv-c5, transparent); }
+
+/* Con el tráiler en marcha, en móvil la ventana toma todo el ancho (el reproductor necesita sitio). */
+.kp-c .c-top:has(.c-win[data-playing]) .c-win { grid-column: 1 / -1; }
+.kp-c .c-top:has(.c-win[data-playing]) .c-data {
+  grid-column: 1 / -1; grid-row: 3;
+  grid-auto-flow: column; justify-content: start; gap: 28px;
+  padding: 4px 0 20px;
+}
+.kp-c .c-top:has(.c-win[data-playing]) .c-facts { grid-auto-flow: column; justify-content: start; gap: 24px; }
+
+/* ── Acciones ────────────────────────────────────────────────── */
+.kp-c .c-act { grid-column: 1 / -1; grid-row: 4; padding-top: 12px; }
+.kp-c .kp-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.kp-c .kp-action {
+  min-height: 48px; padding: 8px 14px;
+  background: transparent; color: var(--kp-ink);
+  border: 1px solid var(--kp-edge); border-radius: 0;
+  font-size: 15px; font-weight: 500; line-height: 1.2;
+  cursor: pointer;
+  transition: background-color 0.15s ease-out, color 0.15s ease-out, border-color 0.15s ease-out;
+}
+.kp-c .kp-action:hover { border-color: var(--kp-ink); background: var(--kp-surface); }
+.kp-c .kp-action[data-primary] {
+  grid-column: 1 / -1;
+  min-height: 52px;
+  background: var(--kp-accent); color: var(--kp-accent-ink); border-color: var(--kp-accent);
+  font-size: 16px; font-weight: 600;
+}
+.kp-c .kp-action[data-primary]:hover { background: var(--kp-ink); color: var(--kp-bg); border-color: var(--kp-ink); }
+/* Ya en la biblioteca: deja de ser un bloque de color (y lo dice el texto). */
+.kp-c .kp-action[data-primary][aria-pressed="true"] {
+  background: transparent; color: var(--kp-ink); border-color: var(--kp-ink);
+  box-shadow: inset 0 -3px 0 var(--kp-accent);
+}
+.kp-c .c-note { margin-top: 10px; font-size: 13px; color: var(--kp-ink-2); }
+
+/* ── Sinopsis ────────────────────────────────────────────────── */
+.kp-c .c-synopsis { grid-column: 1 / -1; grid-row: 5; padding-top: 48px; min-width: 0; }
+.kp-c .c-synopsis h2 { margin-bottom: 16px; }
+.kp-c .kp-synopsis { font-size: 18px; line-height: 1.6; max-width: 62ch; text-wrap: pretty; overflow-wrap: break-word; }
+.kp-c .kp-synopsis p + p { margin-top: 0.9em; }
+.kp-c .kp-synopsis.kp-empty { color: var(--kp-ink-2); }
+
+/* ── Resto de la ficha: rótulo a la izquierda, contenido en el segundo eje ── */
+.kp-c .c-rest { margin-top: 64px; display: grid; gap: 56px; }
+.kp-c .c-rest > section { display: grid; gap: 16px; min-width: 0; }
+.kp-c .c-rest > section > * { min-width: 0; }
+
+.kp-c .c-credits .kp-fact,
+.kp-c .kp-watch-group {
+  display: grid; grid-template-columns: minmax(88px, 0.42fr) minmax(0, 1fr); gap: 4px 16px;
+  padding: 12px 0;
+  border-top: 1px solid var(--c-rule);
+}
+.kp-c .c-credits .kp-fact:last-child, .kp-c .kp-watch-group:last-child { border-bottom: 1px solid var(--c-rule); }
+.kp-c .c-credits dt, .kp-c .kp-watch-group h3 { font-size: 14px; font-weight: 400; line-height: 1.5; color: var(--kp-ink-2); }
+.kp-c .c-credits dd { font-size: 17px; line-height: 1.45; overflow-wrap: anywhere; }
+
+.kp-c .kp-watch-group ul { display: flex; flex-wrap: wrap; gap: 10px 20px; }
+.kp-c .kp-watch-group li { display: inline-flex; align-items: center; gap: 8px; font-size: 15px; }
+.kp-c .kp-watch-group img { width: 28px; height: 28px; border-radius: 4px; }
+.kp-c .kp-watch > .kp-link, .kp-c .kp-steam .kp-link { font-size: 15px; justify-self: start; }
+
+.kp-c .kp-steam-line { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 16px; }
+.kp-c .kp-steam-price {
+  font-family: var(--c-display); font-weight: var(--c-display-w2);
+  font-size: 30px; line-height: 1; letter-spacing: -0.01em;
+}
+.kp-c .kp-steam-line s { color: var(--kp-ink-2); }
+.kp-c .kp-steam-langs { font-size: 15px; color: var(--kp-ink-2); max-width: 62ch; }
+.kp-c .kp-shots { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.kp-c .kp-shots img { width: 100%; height: auto; aspect-ratio: 16 / 9; object-fit: cover; background: var(--kp-surface); }
+
+/* ── Pie ─────────────────────────────────────────────────────── */
+.kp-c .c-foot {
+  margin-top: 72px; padding-top: 16px;
+  border-top: 1px solid var(--c-rule);
+  display: grid; gap: 6px;
+  font-size: 14px; color: var(--kp-ink-2);
+}
+.kp-c .c-foot .kp-link { color: var(--kp-ink); }
+.kp-c .c-typeswitch .kp-link { text-decoration-color: var(--c-rule); text-decoration-thickness: 1px; margin-right: 6px; }
+.kp-c .c-ficha:not([data-serif="0"]) [data-serif-opt="1"],
+.kp-c .c-ficha[data-serif="0"] [data-serif-opt="0"] { font-weight: 600; text-decoration-color: var(--kp-accent); text-decoration-thickness: 2px; }
+
+/* ── Intermedio (tableta) ────────────────────────────────────── */
+@media (min-width: 600px) {
+  .kp-c { --c-gap: 24px; }
+  .kp-c .c-top { grid-template-columns: minmax(0, 1fr) minmax(0, 1.4fr); }
+  .kp-c .kp-actions { grid-template-columns: 2fr 1fr 1fr; }
+  .kp-c .kp-action[data-primary] { grid-column: auto; min-height: 48px; font-size: 15px; }
+  .kp-c .kp-shots { grid-template-columns: repeat(4, 1fr); }
+}
+
+/* ── Escritorio: 12 columnas, tres ejes (1 · 4 · 9) ──────────── */
+@media (min-width: 900px) {
+  .kp-c { font-size: 17px; }
+  .kp-c h2 { font-size: 32px; }
+
+  .kp-c .c-top {
+    grid-template-columns: repeat(12, minmax(0, 1fr));
+    grid-template-rows: auto 1fr;
+    align-items: start;
+  }
+  .kp-c .c-head { grid-column: 1 / 9; grid-row: 1; padding: 56px 0 64px; }
+  .kp-c .c-original { margin-top: 20px; }
+
+  .kp-c .c-data,
+  .kp-c .c-top:has(.c-win[data-playing]) .c-data {
+    grid-column: 1 / 3; grid-row: 2;
+    align-self: start;
+    grid-auto-flow: row; gap: 28px;
+    padding: 6px 0 0;
+  }
+  .kp-c .c-facts, .kp-c .c-ratings,
+  .kp-c .c-top:has(.c-win[data-playing]) .c-facts { grid-auto-flow: row; gap: 16px; }
+  .kp-c .c-ratings dd { font-size: 34px; }
+
+  .kp-c .c-plate {
+    display: block;
+    grid-column: 9 / 13; grid-row: 1 / 3;
+    padding-top: 64px;
+  }
+  .kp-c .c-act { padding-top: 12px; }
+  .kp-c .kp-actions { grid-template-columns: 1fr 1fr; }
+  .kp-c .kp-action[data-primary] { grid-column: 1 / -1; min-height: 52px; font-size: 16px; }
+
+  .kp-c .c-synopsis { grid-column: 4 / 9; grid-row: 2; padding-top: 0; }
+  .kp-c .c-synopsis h2 { margin-bottom: 20px; }
+  .kp-c .kp-synopsis { font-size: 20px; line-height: 1.55; }
+
+  .kp-c .c-rest { margin-top: 112px; gap: 80px; }
+  .kp-c .c-rest > section {
+    grid-template-columns: repeat(12, minmax(0, 1fr));
+    column-gap: var(--c-gap); row-gap: 20px;
+    align-items: start;
+  }
+  .kp-c .c-rest > section > h2 { grid-column: 1 / 4; }
+  .kp-c .c-rest > section > :not(h2) { grid-column: 4 / 9; }
+  .kp-c .c-rest > .kp-steam > .kp-shots { grid-column: 4 / 13; }
+  .kp-c .c-credits .kp-fact, .kp-c .kp-watch-group { grid-template-columns: minmax(120px, 0.34fr) minmax(0, 1fr); padding: 14px 0; }
+
+  .kp-c .c-foot { margin-top: 112px; grid-template-columns: repeat(12, minmax(0, 1fr)); column-gap: var(--c-gap); }
+  .kp-c .c-foot > * { grid-column: 4 / 13; }
+}
