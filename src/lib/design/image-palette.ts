@@ -218,7 +218,7 @@ const PURE_INKS: readonly Rgb[] = [
  * primer relleno que pasó `accepts` (el de partida, si pasa) y tinta blanca o negra
  * pura: una de las dos da siempre al menos 4,58:1 sobre cualquier color.
  */
-function fillWithInk(
+export function fillWithInk(
   start: OklchColor,
   range: { min: number; max: number },
   direction: 'darker' | 'lighter',

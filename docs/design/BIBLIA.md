@@ -63,6 +63,8 @@ El formato de una obra nunca se distingue solo por el color.
 
 Fuera: JetBrains Mono y Newsreader. Sus archivos de `assets/fonts/` se sustituyeron en la 8.4 por los de estas cuatro familias, con su fila en `LICENSES.csv`.
 
+Los valores concretos (colores neutros y de estado, papeles tipográficos, medidas) y cómo se usan están en [`TOKENS.md`](TOKENS.md).
+
 ## 6. Movimiento
 
 - Una entrada: la imagen se asienta y el título sube. Con ratón, imagen y título se mueven en sentidos contrarios. Al bajar, la sala se queda atrás.

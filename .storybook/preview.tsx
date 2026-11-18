@@ -1,6 +1,12 @@
 import type { Preview } from "@storybook/nextjs-vite";
 import { bricolageGrotesque, figtree } from "@/app/fonts";
 import "../src/app/globals.css";
+// «Sala» (fase 8.4): tokens y fuentes nuevas. Solo se cargan aquí; la app no
+// las importa todavía, así que sus pantallas no descargan nada de esto.
+import "../src/styles/sala/tokens.css";
+import "../src/styles/sala/fonts.css";
+import "../src/styles/sala/fonts-jp.css";
+import "../src/styles/sala/fonts-kr.css";
 
 /**
  * Mismas etiquetas de axe que el job de accesibilidad de la app
@@ -43,7 +49,7 @@ const preview: Preview = {
         icon: "contrast",
         items: [
           { value: "oscuro", title: "Oscuro" },
-          { value: "claro", title: "Claro (sin tokens todavía)" },
+          { value: "claro", title: "Claro (solo «Sala»)" },
         ],
         dynamicTitle: true,
       },
@@ -52,9 +58,9 @@ const preview: Preview = {
   initialGlobals: { tema: "oscuro" satisfies Tema },
   decorators: [
     (Story, context) => {
-      // Mecanismo del tema: `data-theme` en `<html>`. Hoy la app solo tiene
-      // oscuro (los tokens de `:root`); cuando lleguen los de claro colgarán
-      // de `[data-theme="light"]` y este selector los enseñará sin más cambios.
+      // Mecanismo del tema: `data-theme` en `<html>`. Los tokens de «Sala»
+      // (`src/styles/sala/tokens.css`) tienen claro y oscuro; los de la app de
+      // hoy solo oscuro, así que sus componentes no cambian con el selector.
       const tema: Tema = context.globals.tema === "claro" ? "claro" : "oscuro";
       document.documentElement.dataset.theme = tema === "claro" ? "light" : "dark";
       return <Story />;
