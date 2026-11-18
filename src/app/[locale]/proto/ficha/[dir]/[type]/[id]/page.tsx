@@ -29,7 +29,8 @@ export default async function ProtoFichaPage({ params }: Props) {
   const { Ficha, fontClassName } = DIRECTIONS[dir];
   return (
     <ProtoShell locale={locale} current={{ dir, type, id }} fontClassName={`${cjkFontClassName} ${fontClassName}`}>
-      <CoverColor cover={data.cover} />
+      {/* En A el color sale de la imagen de la sala (el arte apaisado, si lo hay). */}
+      <CoverColor cover={dir === "a" ? (data.art ?? data.cover) : data.cover} />
       <Ficha data={data} />
     </ProtoShell>
   );

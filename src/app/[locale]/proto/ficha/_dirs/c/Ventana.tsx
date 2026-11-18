@@ -7,7 +7,7 @@
 // · Si hay tráiler, la ventana es un botón: al pulsarla (clic, toque, Intro) se
 //   monta en el mismo marco el reproductor de youtube-nocookie, en silencio,
 //   con sus controles y su marca, y sin nada encima. Antes de pulsar no se pide
-//   nada a YouTube.
+//   nada a YouTube. Escape o «Volver a la portada» lo cierran y el foco vuelve.
 // · Afina el acento de la portada contra el suelo neutro de C (los tokens de la
 //   base garantizan el contraste contra SU fondo teñido, no contra este).
 
@@ -65,7 +65,7 @@ export function Ventana({ cover, title, trailerKey, locale }: Props) {
   const winRef = useRef<HTMLElement>(null);
   const frameRef = useRef<HTMLDivElement>(null);
   const shotRef = useRef<HTMLButtonElement>(null);
-  const playerRef = useRef<HTMLIFrameElement>(null);
+  const closeRef = useRef<HTMLButtonElement>(null);
   const wasPlaying = useRef(false);
   const [paused, setPaused] = useState(false);
   const [playing, setPlaying] = useState(false);
@@ -102,11 +102,21 @@ export function Ventana({ cover, title, trailerKey, locale }: Props) {
     };
   }, []);
 
-  // El foco sigue a lo que se ve: al reproductor al abrir, a la portada al cerrar.
+  // Foco: al abrir, a «Volver a la portada» (fuera del marco: Escape sigue
+  // llegando a la página); al cerrar, de vuelta a la ventana.
   useEffect(() => {
-    if (playing) playerRef.current?.focus();
+    if (playing) closeRef.current?.focus();
     else if (wasPlaying.current) shotRef.current?.focus();
     wasPlaying.current = playing;
+  }, [playing]);
+
+  useEffect(() => {
+    if (!playing) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setPlaying(false);
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
   }, [playing]);
 
   // Con ratón, la imagen se recoloca hacia el puntero (y la deriva espera).
@@ -180,7 +190,6 @@ export function Ventana({ cover, title, trailerKey, locale }: Props) {
         )}
         {playing && trailerKey && (
           <iframe
-            ref={playerRef}
             className="c-player"
             src={`https://www.youtube-nocookie.com/embed/${encodeURIComponent(trailerKey)}?autoplay=1&mute=1&playsinline=1&rel=0`}
             title={es ? `Tráiler de ${title}` : `Trailer for ${title}`}
@@ -193,7 +202,7 @@ export function Ventana({ cover, title, trailerKey, locale }: Props) {
 
       <figcaption className="c-cap">
         {playing ? (
-          <button type="button" className="c-capbtn" onClick={() => setPlaying(false)}>
+          <button ref={closeRef} type="button" className="c-capbtn" onClick={() => setPlaying(false)}>
             {es ? "Volver a la portada" : "Back to the cover"}
           </button>
         ) : (
@@ -201,10 +210,11 @@ export function Ventana({ cover, title, trailerKey, locale }: Props) {
             type="button"
             className="c-capbtn"
             hidden={reducedMotion}
-            aria-pressed={paused}
+            data-on={paused ? "" : undefined}
             onClick={() => setPaused((v) => !v)}
           >
-            {es ? "Pausar la portada" : "Pause the cover"}
+            {/* El estado va en el nombre (no en `aria-pressed`): el botón dice lo que hará. */}
+            {paused ? (es ? "Reanudar la portada" : "Resume the cover") : es ? "Pausar la portada" : "Pause the cover"}
           </button>
         )}
         <span className="c-strip" aria-hidden="true">

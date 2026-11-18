@@ -38,7 +38,7 @@ export default function FichaB({ data }: DirectionProps) {
 
       <div className="b-col">
         <header className="b-head">
-          <h1 className="b-title">{data.title}</h1>
+          <h1 className="b-title" lang={data.titleLang}>{data.title}</h1>
           {data.originalTitle && (
             <p className="b-original" lang={data.originalTitleLang}>
               <span className="kp-sr">{l.originalTitle}: </span>

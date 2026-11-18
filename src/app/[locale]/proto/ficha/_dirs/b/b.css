@@ -17,6 +17,13 @@
   font-size: 17px;
   line-height: 1.55;
 }
+/* La base pone primero la fuente japonesa (o la coreana) en `--kp-cjk` según el
+   `lang`; las familias de B se vuelven a declarar aquí para recogerlo (si no,
+   los kanji salen con la coreana). */
+.kp-b :lang(ja), .kp-b :lang(ko) {
+  --b-display: var(--font-b-display), var(--kp-cjk);
+  --b-text: var(--font-b-text), var(--kp-cjk);
+}
 
 /* ── La vitrina ────────────────────────────────────────────── */
 .kp-b .b-stage {
@@ -263,26 +270,35 @@
 .kp-b [data-kind="poster"] .b-gloss { inset: calc(var(--b-w) * 0.034); }
 .kp-b [data-kind="poster"] .b-shadow { display: none; }
 
-/* ── Tráiler: botón al pasar por encima; al pulsar, el reproductor ocupa el hueco ── */
+/* ── Tráiler: toda la portada es el botón; su marca se ve siempre, pequeña y en
+   una esquina, y crece al pasar o al enfocar. Al pulsar, el reproductor ocupa el hueco ── */
 .kp-b .b-play {
   position: absolute;
   inset: 0;
   z-index: 3;
   display: grid;
-  place-items: center;
+  place-items: end;
   padding: 0;
   background: transparent;
   border: 0;
   border-radius: inherit;
   cursor: pointer;
 }
-.kp-b .b-play:focus-visible { outline: 3px solid var(--kp-field-ink); outline-offset: 5px; }
+/* El anillo va por DENTRO (`.b-front` recorta lo que sale): dos filetes
+   contiguos, tinta y color del campo (≥ 4.5:1 entre sí), para que se vea
+   sobre cualquier portada. */
+.kp-b .b-play:focus-visible {
+  outline: 3px solid var(--kp-field-ink);
+  outline-offset: -6px;
+  box-shadow: inset 0 0 0 3px var(--kp-field);
+}
 .kp-b .b-play-glyph {
   display: grid;
   place-items: center;
-  width: 76px;
-  height: 76px;
-  padding-left: 3px;
+  width: 52px;
+  height: 52px;
+  margin: 12px;
+  padding-left: 2px;
   border-radius: 50%;
   background: var(--kp-field);
   color: var(--kp-field-ink);
@@ -290,17 +306,13 @@
   box-shadow: 0 10px 30px rgb(0 0 0 / 0.4);
   transition: opacity 0.18s ease-out, transform 0.22s var(--b-ease);
 }
+.kp-b .b-play-glyph svg { width: 20px; height: 20px; }
+/* Con cursor, en reposo es más pequeña; al pasar por el objeto o al enfocar, crece. */
 @media (hover: hover) {
-  .kp-b .b-play-glyph { opacity: 0; transform: scale(0.82); }
-  .kp-b .b-obj:hover .b-play-glyph,
-  .kp-b .b-play:focus-visible .b-play-glyph { opacity: 1; transform: none; }
+  .kp-b .b-play-glyph { transform: scale(0.85); transform-origin: 100% 100%; }
+  .kp-b .b-obj:hover .b-play-glyph { transform: scale(1.25); }
 }
-/* Sin cursor no hay «pasar por encima»: el botón se ve siempre, pequeño y en una esquina. */
-@media (hover: none) {
-  .kp-b .b-play { place-items: end; }
-  .kp-b .b-play-glyph { width: 52px; height: 52px; margin: 12px; }
-  .kp-b .b-play-glyph svg { width: 20px; height: 20px; }
-}
+.kp-b .b-play:focus-visible .b-play-glyph { transform: scale(1.25); transform-origin: 100% 100%; }
 .kp-b .b-play:active .b-play-glyph { transform: scale(0.94); }
 
 .kp-b .b-trailer {

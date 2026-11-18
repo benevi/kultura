@@ -48,6 +48,8 @@ export interface FichaData {
   /** «Película», «Libro»… en el idioma de la página. */
   typeLabel: string;
   title: string;
+  /** `lang` del título cuando se sabe con los datos que hay y no es el de la página (si no, sin definir). */
+  titleLang?: string;
   /** Solo si es distinto del título. */
   originalTitle?: string;
   /** `lang` del título original cuando su escritura lo delata (ko, ja, zh…). */
@@ -62,6 +64,8 @@ export interface FichaData {
   synopsis?: string;
   synopsisLang?: string;
   cover: CoverSource | null;
+  /** Arte apaisado SIN rótulo (fondo de TMDB, arte de RAWG, banner de AniList), si el proveedor lo da. */
+  art: CoverSource | null;
   trailerKey?: string;
   providers: StreamingProvider[];
   watchLink?: string;

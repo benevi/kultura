@@ -47,7 +47,7 @@ export default function FichaC({ data }: DirectionProps) {
 
       <div className="c-top">
         <header className="c-head">
-          <h1 className="c-title">{data.title}</h1>
+          <h1 className="c-title" lang={data.titleLang}>{data.title}</h1>
           {data.originalTitle && (
             <p className="c-original" lang={data.originalTitleLang}>
               <span className="kp-sr" lang={data.locale}>

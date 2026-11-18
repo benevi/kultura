@@ -202,7 +202,17 @@
 }
 .kp-c .c-shot[hidden] { display: none; }
 .kp-c button.c-shot { cursor: pointer; }
-.kp-c button.c-shot:focus-visible { outline-offset: -4px; outline-color: var(--kp-bg); box-shadow: inset 0 0 0 6px var(--kp-ink); }
+/* Foco de la ventana-botón: la imagen (posicionada) tapa cualquier anillo del
+   propio botón, así que lo pinta el marco, por encima: tinta y, por fuera, un
+   filete del color del papel (se ve sobre cualquier portada). */
+.kp-c button.c-shot:focus-visible { outline: none; }
+.kp-c .c-frame:has(.c-shot:focus-visible)::after {
+  content: "";
+  position: absolute; inset: 0; z-index: 2;
+  border: 3px solid var(--kp-bg);
+  outline: 4px solid var(--kp-ink); outline-offset: -7px;
+  pointer-events: none;
+}
 
 /* La portada, un 6–8 % mayor que el marco en su lado justo; el otro lado sobra
    y es por donde deriva hasta enseñarla entera. */
@@ -217,8 +227,8 @@
 }
 .kp-c .c-win[data-shape="landscape"] .c-cover { width: auto; height: 108cqh; min-height: 0; min-width: 100cqw; }
 
-/* Botón de reproducir: una muesca del color del papel en la esquina. Con
-   ratón aparece al pasar por encima (o con el foco); al tacto está siempre. */
+/* Botón de reproducir: una muesca del color del papel en la esquina, siempre
+   a la vista. Al pasar por la ventana o al enfocarla se invierte (tinta). */
 .kp-c .c-play {
   position: absolute; left: 0; bottom: 0;
   display: inline-flex; align-items: center; gap: 8px;
@@ -226,9 +236,10 @@
   background: var(--kp-bg); color: var(--kp-ink);
   font: 600 14px/1 var(--c-text);
 }
+.kp-c .c-play { transition: background-color 0.18s ease-out, color 0.18s ease-out; }
+.kp-c .c-shot:focus-visible .c-play { background: var(--kp-ink); color: var(--kp-bg); }
 @media (hover: hover) {
-  .kp-c .c-play { opacity: 0; translate: 0 6px; transition: opacity 0.18s ease-out, translate 0.18s ease-out; }
-  .kp-c .c-shot:hover .c-play, .kp-c .c-shot:focus-visible .c-play { opacity: 1; translate: 0 0; }
+  .kp-c .c-shot:hover .c-play { background: var(--kp-ink); color: var(--kp-bg); }
 }
 
 .kp-c .c-player { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; background: #000; }
@@ -246,7 +257,7 @@
 }
 .kp-c .c-capbtn:hover { color: var(--kp-ink); text-decoration-color: currentColor; }
 .kp-c .c-capbtn[hidden] { display: none; }
-.kp-c .c-capbtn[aria-pressed="true"] { color: var(--kp-ink); text-decoration-color: var(--kp-accent); text-decoration-thickness: 2px; }
+.kp-c .c-capbtn[data-on] { color: var(--kp-ink); text-decoration-color: var(--kp-accent); text-decoration-thickness: 2px; }
 /* Tira de color: los colores de la portada, como la tira de control de un pliego impreso. Adorno. */
 .kp-c .c-strip { display: inline-flex; margin-left: auto; }
 .kp-c .c-strip i { width: 14px; height: 14px; }
@@ -316,7 +327,7 @@
 .kp-c .kp-watch-group ul { display: flex; flex-wrap: wrap; gap: 10px 20px; }
 .kp-c .kp-watch-group li { display: inline-flex; align-items: center; gap: 8px; font-size: 15px; }
 .kp-c .kp-watch-group img { width: 28px; height: 28px; border-radius: 4px; }
-.kp-c .kp-watch > .kp-link, .kp-c .kp-steam .kp-link { font-size: 15px; justify-self: start; }
+.kp-c .kp-watch > .kp-link, .kp-c .kp-steam .kp-link { display: inline-block; min-height: 24px; padding-block: 2px; font-size: 15px; justify-self: start; }
 
 .kp-c .kp-steam-line { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 16px; }
 .kp-c .kp-steam-price {

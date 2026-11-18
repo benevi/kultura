@@ -1,14 +1,17 @@
 // Dirección A «Sala» — la obra a pantalla completa (referencia: MUBI) con el
-// título dentro de la imagen. Debajo, una franja con el color de la portada
-// (título original, datos y acciones) y la ficha sobre el fondo teñido.
+// título dentro de la imagen: arte apaisado SIN rótulo, a sangre. Si la obra no
+// lo tiene (libro, manga, cómic), la portada entera como pieza sobre un campo
+// de su color y el título debajo, sin fundir. Debajo, una franja con el color de la portada
+// (título original, datos y acciones) y la ficha sobre el fondo teñido; el
+// tráiler, en su sección, al final.
 // Server Component: todo el texto sale en el HTML.
 
 import "./a.css";
 import { Actions } from "../../_base/content/Actions";
 import { FactList, Genres, Ratings, SourceLine, SteamBlock, Synopsis, WhereToWatch } from "../../_base/content/Blocks";
-import { scriptLang } from "../../_base/load";
 import type { DirectionProps } from "../../_base/types";
 import { Stage } from "./Stage";
+import { Trailer } from "./Trailer";
 
 export default function FichaA({ data }: DirectionProps) {
   const l = data.labels;
@@ -17,14 +20,10 @@ export default function FichaA({ data }: DirectionProps) {
     <main id="main-content" className="a-ficha">
       <Stage
         title={data.title}
-        titleLang={scriptLang(data.title, data.type)}
-        cover={data.cover}
+        titleLang={data.titleLang}
+        cover={data.art ?? data.cover}
+        mode={data.art ? "wide" : "piece"}
         fuseLabel={es ? "Letras fundidas" : "Fused lettering"}
-        trailerKey={data.trailerKey}
-        trailerLabel={l.trailer}
-        playLabel={es ? `Ver el tráiler de ${data.title}` : `Watch the trailer for ${data.title}`}
-        closeLabel={es ? "Cerrar el tráiler" : "Close the trailer"}
-        trailerTitle={es ? `Tráiler de ${data.title}` : `Trailer for ${data.title}`}
       />
 
       <section className="a-band" aria-label={l.details}>
@@ -62,6 +61,21 @@ export default function FichaA({ data }: DirectionProps) {
 
         <WhereToWatch data={data} heading={<h2>{l.whereToWatch}</h2>} />
         <SteamBlock data={data} heading={<h2>{l.steam}</h2>} />
+
+        {data.trailerKey && (
+          <section className="a-trailer">
+            <h2>{l.trailer}</h2>
+            <Trailer
+              trailerKey={data.trailerKey}
+              image={(data.art ?? data.cover)?.src}
+              imageCross={(data.art ?? data.cover)?.canvasSafe ? "anonymous" : undefined}
+              playText={es ? "Ver el tráiler" : "Watch the trailer"}
+              playLabel={es ? `Ver el tráiler de ${data.title}` : `Watch the trailer for ${data.title}`}
+              closeLabel={es ? "Cerrar el tráiler" : "Close the trailer"}
+              frameTitle={es ? `Tráiler de ${data.title}` : `Trailer for ${data.title}`}
+            />
+          </section>
+        )}
       </div>
 
       <footer className="a-foot">

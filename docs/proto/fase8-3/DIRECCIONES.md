@@ -17,11 +17,26 @@ Lo que cambia de verdad entre las tres es **qué hace de suelo de la página**:
 
 ---
 
-## A · Sala — construida
+## A · Sala — elegida (con matices de Víctor)
 
-**Idea.** Entrar en la ficha es entrar en la sala: la portada ocupa la pantalla y el título vive dentro de ella, con partes de la imagen pasando por delante de las letras. Al bajar, una franja con el color de la portada (título original, datos, acciones) y la ficha sobre un fondo teñido.
+**Idea.** Entrar en la ficha es entrar en la sala: una imagen de la obra **sin rótulo** ocupa la pantalla a sangre, como en MUBI, y el título —que ponemos nosotros— vive dentro de ella, con partes de la imagen pasando por delante de las letras. Al bajar, una franja con el color de la imagen (título original, datos, acciones) y la ficha sobre un fondo teñido.
 
-**Paleta.** La sala es la portada; el tema no la cambia. Lleva solo el velo mínimo para que el título se lea, calculado con la propia portada: tinta clara sobre velo oscuro (se lee como sombra) y, si la portada es clara, tinta oscura sobre velo claro. Debajo:
+**Dos modos, según lo que dé el proveedor.**
+
+| Formato | Imagen de la sala | De dónde sale | Modo |
+|---|---|---|---|
+| Película, serie | Imagen de fondo de TMDB sin texto | `/movie/{id}/images` o `/tv/{id}/images` con `include_image_language=null` (las de `iso_639_1: null`, la más votada); si no hay, el `backdrop` de la ficha. `image.tmdb.org`, directa | Sala (apaisada a sangre, título fundido) |
+| Videojuego | Arte de RAWG | `background_image` (ya era la «portada» del juego). `media.rawg.io`, directa | Sala |
+| Anime | Banner de AniList | `bannerImage` (el cargador de la app no lo pide: se consulta solo en el prototipo). `s4.anilist.co`, directa | Sala; si no hay banner, Pieza |
+| Libro, manga, cómic | La portada (siempre trae su rótulo) | La de siempre | Pieza |
+
+- **Sala:** la imagen llena la sala (escritorio: toda la pantalla; móvil: todo el ancho, recortada a 4:5 por el centro) y el título va dentro, fundido. El color de la página sale de esa imagen.
+- **Pieza:** la portada entera, sin recortar, centrada sobre un campo plano de su color (el mismo de la franja: sala y franja son un solo bloque) y nuestro título debajo, a todo el ancho, **sin fundir** y sin velo (tinta del campo, ≥ 4.5:1). No hay copia borrosa de la portada. Mismas fuentes, esquinas rectas y franja que en Sala.
+- **[P]** Las dos peticiones nuevas (TMDB `/images` y `bannerImage` de AniList) solo existen en `_base/art.ts`. Si A sigue adelante pasan al cargador real y por la revisión legal. El banner de AniList es muy alargado (1900 × 400): a pantalla completa se amplía ×2 y se ve blando; el de Chihiro lleva un cartel con kanji que es parte del dibujo, no un rótulo.
+
+**Títulos.** El `h1` va en el idioma de la página y el original, debajo, en su escritura y con su `lang` (Parásitos / 기생충, El viaje de Chihiro / 千と千尋の神隠し, Gente normal / Normal People, Berserk / ベルセルク). **Hueco de datos para la fase 8.5:** solo TMDB da el título localizado. AniList da romaji, inglés y nativo (nunca español); Open Library da el título de la obra sin idioma; MangaDex da `en` (a menudo una romanización) y alternativos por idioma, incompletos; RAWG, solo el nombre en inglés. En el prototipo las cinco obras fijas llevan el título por idioma escrito a mano en `_base/works.ts` (apaño, marcado como tal); cualquier otra obra sale con el título del proveedor.
+
+**Paleta.** En modo Sala, la sala es la imagen; el tema no la cambia. Lleva solo el velo mínimo para que el título se lea, calculado con la propia imagen: tinta clara sobre velo oscuro (se lee como sombra) y, si la portada es clara, tinta oscura sobre velo claro. Debajo:
 - Franja: `--kp-field`, el color más vivo de la portada como bloque entero, con su tinta (≥ 4.5:1). En claro, más luminoso (L 0.52–0.80); en oscuro, más hondo (L 0.30–0.50).
 - Fondo de la ficha: `--kp-bg`, teñido con el tono dominante. Claro L 0.905 (un gris de color, no blanco); oscuro L 0.165.
 - Panel lateral: `--kp-surface` (un paso de tono, sin líneas ni sombras). Enlaces: `--kp-accent`.
@@ -31,13 +46,13 @@ Lo que cambia de verdad entre las tres es **qué hace de suelo de la página**:
 - Texto: **Instrument Sans**. SIL OFL 1.1 — https://github.com/Instrument/instrument-sans (licencia: https://github.com/google/fonts/blob/main/ofl/instrumentsans/OFL.txt).
 - Las dos cubren latín ampliado (`latin-ext`). Hangul y japonés: **Noto Sans KR / JP** (SIL OFL 1.1 — https://github.com/notofonts/noto-cjk) y, detrás, la pila del sistema.
 
-**Portada.** Entera, sin recortar, a toda la altura (escritorio: a la derecha, sobre su propia copia borrosa que llena la sala; móvil: a todo el ancho, arriba). Las imágenes apaisadas (juegos de RAWG) llenan la sala en escritorio y se recortan a 4:5 en móvil. Capas, de atrás adelante: copia borrosa · portada · velo · título · **letras fundidas** (las zonas de la portada que se apartan del color de fondo dominante se pintan otra vez por delante de las letras, como mucho en el 22 % de la zona del título). Todo sale de la portada ya cargada en el navegador: sin mapas de profundidad y sin copias.
+**Capas (modo Sala).** De atrás adelante: imagen · velo · título · **letras fundidas** (las zonas de la imagen que se apartan del color de fondo dominante se pintan otra vez por delante de las letras, como mucho en el 22 % de los **píxeles de letra**, en el título entero y en cada una de sus líneas; se busca el 20 % y se recalcula a cada ancho; si una imagen no da para fundir sin pasarse, esa obra va sin fundido). En móvil, la parte del título que cae por debajo de la imagen va sobre una copia borrosa de ese mismo arte. Todo sale de la imagen ya cargada en el navegador: sin mapas de profundidad y sin copias.
 
 **Movimiento (2D, CSS).** Una entrada (la portada se asienta, el título sube). Con ratón, el plano y el fondo se mueven en sentidos contrarios. Al bajar, la sala se queda atrás (animación ligada al scroll donde el navegador la admite). Con movimiento reducido: todo quieto y nada oculto.
 
-**Composición.** Móvil: portada · título a caballo del borde inferior · franja (título original, datos, acción principal a todo el ancho) · sinopsis · panel · dónde ver · tráiler. Escritorio: sala a pantalla completa; franja en dos columnas; ficha en 12 columnas (sinopsis 7, panel 4).
+**Composición.** Móvil: imagen · título a caballo del borde inferior (en Pieza: portada · título debajo) · franja (título original, datos, acción principal a todo el ancho) · sinopsis · panel · dónde ver · tráiler. Escritorio: sala a pantalla completa; franja en dos columnas; ficha en 12 columnas (sinopsis 7, panel 4); el tráiler, a lo ancho, al final.
 
-**Tráiler.** Botón «Tráiler» en la sala, junto al título (con cursor aparece al pasar por la sala o al llegar con el teclado; en táctil se ve siempre). Al pulsarlo (clic, toque, Intro) la sala entera pasa a ser el reproductor de `youtube-nocookie` a lo ancho (16:9), en silencio, con sus controles y su marca y sin nada encima: se retiran portada, velos y letras fundidas. Debajo del marco, el título y «Cerrar el tráiler»; Escape también cierra y el foco vuelve al botón. Antes de pulsar no sale ninguna petición a YouTube. Capturas: `capturas/a/*-trailer.png`.
+**Tráiler.** Aparte de la sala (decisión de Víctor): la sala queda solo con portada y título fundido. El tráiler tiene su sección «Tráiler» al final de la ficha: un marco 16:9 con una imagen de la obra (el fotograma apaisado de TMDB si lo hay; si no, la portada) y la orden «Ver el tráiler». Al pulsarlo (clic, toque, Intro) el mismo marco pasa a ser el reproductor de `youtube-nocookie`, en silencio, con sus controles y su marca y sin nada encima. Debajo, «Cerrar el tráiler»; Escape también cierra y el foco vuelve al botón. Antes de pulsar no sale ninguna petición a YouTube. Capturas: `capturas/a/*-trailer*.png`.
 
 **Qué la distingue.** Es la única donde la imagen es el suelo y el título es parte de la imagen. La más cinematográfica y la que mejor prepara el 3D (las capas ya existen).
 
@@ -93,8 +108,9 @@ Lo que cambia de verdad entre las tres es **qué hace de suelo de la página**:
 
 ## Decisiones para Víctor
 
-- **[P] Letras fundidas (A).** Parte de las letras queda tapada por la imagen: es el efecto que pide §7.1, pero resta legibilidad al `h1`. El velo garantiza 3.6:1 del título contra lo que tiene detrás (AA para texto grande pide 3:1); lo tapado no se puede medir como contraste. Límite actual: 22 % de la zona del título. Hay un interruptor «Letras fundidas» en la sala para verlo con y sin; se apaga solo con `prefers-contrast: more`. Cuadra con la salida 1 de §7.1: el texto real está en el HTML y la capa de delante es adorno (`aria-hidden`).
-- **[P] La sala no cambia con el tema (A).** En claro, una portada oscura sigue siendo una sala oscura; cambia todo lo de debajo. La alternativa (aclarar la portada con un velo claro) se probó y la deja lechosa.
+- **[P] Letras fundidas (A).** Parte de las letras queda tapada por la imagen: es el efecto que pide §7.1, pero resta legibilidad al `h1`. Dos garantías, medidas con Playwright en las cinco obras, claro y oscuro, a 375, 640 y 1440: (1) el velo se calcula con lo que el título tiene detrás de verdad a ese ancho (la portada y la copia borrosa del fondo) y deja el 100 % de la letra a ≥ 3:1 (se busca 3.6:1; AA para texto grande pide 3:1); (2) lo tapado no pasa del 22 % de los píxeles de letra, ni en el título entero ni en una línea (se busca el 20 %). Lo tapado no se puede medir como contraste. Hay un interruptor «Letras fundidas» en la sala para verlo con y sin; se apaga solo con `prefers-contrast: more`. Cuadra con la salida 1 de §7.1: el texto real está en el HTML y la capa de delante es adorno (`aria-hidden`). Queda por decidir si el 22 % es el tope bueno.
+- **[P] Idioma del título.** Las cinco obras fijas llevan el título en el idioma de la página (apaño en `_base/works.ts`, ver «Títulos» en A). Para cualquier otra obra, el `h1` lleva `lang` solo cuando los datos lo dicen: por la escritura (hangul, kana…), en TMDB cuando devuelve el título original (con su `original_language`) y en AniList cuando el título es su campo `english`. Open Library, Google Books, MangaDex, RAWG y ComicVine no dicen en qué idioma está el título: se queda sin `lang`, no se adivina.
+- **[P] La sala no cambia con el tema (A).** En claro, una imagen oscura sigue siendo una sala oscura (en modo Pieza el campo sí sigue al tema); cambia todo lo de debajo. La alternativa (aclarar la portada con un velo claro) se probó y la deja lechosa.
 - **[P] Portada de Google Books.** Su servidor no manda CORS: para leer el color se pide una miniatura de 256 px al optimizador de Vercel. Es la misma copia temporal que ya se hace con MangaDex, ComicVine y Steam, pero para un host que hoy va directo. Si no se quiere, esos libros se quedan con la paleta neutra.
 - **[P] Portadas de AniList.** La API da la mediana (≈ 230 px), que a pantalla completa se ve borrosa; el prototipo pide la grande del mismo CDN (`/cover/large/`).
 - **[P] Serif en C** (arriba).

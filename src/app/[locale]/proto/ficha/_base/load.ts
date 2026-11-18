@@ -7,9 +7,11 @@ import { getTranslations } from "next-intl/server";
 import { loadMediaDetail } from "@/lib/media/detail-data";
 import { synopsisLang } from "@/lib/media/synopsis-lang";
 import type { MediaItem } from "@/types/media";
+import { wideArt } from "./art";
 import { coverSource } from "./cover";
 import { labelsFor, type Labels } from "./labels";
 import type { Fact, FichaData, Rating } from "./types";
+import { WORKS } from "./works";
 
 const dedupe: <T extends (...args: never[]) => unknown>(fn: T) => T =
   (React as unknown as { cache?: <T>(fn: T) => T }).cache ?? ((fn) => fn);
@@ -21,6 +23,33 @@ export function scriptLang(text: string, type: MediaItem["type"]): string | unde
   if (/[一-鿿]/.test(text)) return type === "anime" || type === "manga" ? "ja" : "zh";
   if (/[Ѐ-ӿ]/.test(text)) return "ru";
   return undefined;
+}
+
+/**
+ * `lang` del título principal, solo cuando los datos lo dicen (no se adivina):
+ *  · por su escritura (hangul, kana, han, cirílico);
+ *  · TMDB (película, serie): si no hay traducción al idioma pedido devuelve el
+ *    título original, y `original_language` dice en qué idioma está;
+ *  · AniList (`al-…`): el título es su campo `english` cuando hay una
+ *    romanización distinta guardada como «original».
+ * Open Library, Google Books, MangaDex (su `en` suele ser una romanización),
+ * RAWG y ComicVine no dicen el idioma del título: se queda sin `lang`.
+ */
+export function titleLang(item: MediaItem, locale: string): string | undefined {
+  const title = item.title.trim();
+  const byScript = scriptLang(title, item.type);
+  if (byScript) return byScript;
+  const page = locale.slice(0, 2).toLowerCase();
+  let lang: string | undefined;
+  if (item.type === "movie" || item.type === "tv") {
+    const ol = item.metadata?.originalLanguage;
+    // Sin `originalTitle`, el normalizador vio título y título original iguales.
+    if (typeof ol === "string" && /^[a-z]{2}$/.test(ol) && ol !== "xx" && !item.originalTitle) lang = ol === "cn" ? "zh" : ol;
+  } else if (/^al-[0-9]+$/.test(item.externalId)) {
+    const native = item.metadata?.nativeTitle;
+    if (item.originalTitle && item.originalTitle.trim() !== title && native !== item.title) lang = "en";
+  }
+  return lang && lang !== page ? lang : undefined;
 }
 
 function facts(item: MediaItem, typeLabel: string, l: Labels): Fact[] {
@@ -73,15 +102,27 @@ export const loadProtoFicha = dedupe(async (type: string, id: string, locale: st
   // AniList guarda el título en su escritura en `metadata.nativeTitle` (el «original» es el romaji).
   const native = item.metadata?.nativeTitle;
   const original = (typeof native === "string" && native.trim() ? native : item.originalTitle)?.trim();
-  const originalTitle = original && original !== item.title.trim() ? original : undefined;
+  // APAÑO DE PROTOTIPO: las cinco obras fijas llevan su título en el idioma de
+  // la página escrito a mano (`works.ts`); el del proveedor pasa a «original».
+  const fixed = WORKS.find((w) => w.type === item.type && w.id === id);
+  const title = fixed ? fixed.titles[locale === "en" ? "en" : "es"] : item.title;
+  const orig = fixed
+    ? original && scriptLang(original, item.type)
+      ? { text: original, lang: scriptLang(original, item.type) }
+      : fixed.original
+    : original
+      ? { text: original, lang: scriptLang(original, item.type) }
+      : undefined;
+  const originalTitle = orig && orig.text !== title.trim() ? orig.text : undefined;
   return {
     locale,
     item,
     type: item.type,
     typeLabel,
-    title: item.title,
+    title,
+    titleLang: fixed ? undefined : titleLang(item, locale),
     originalTitle,
-    originalTitleLang: originalTitle ? scriptLang(originalTitle, item.type) : undefined,
+    originalTitleLang: originalTitle ? orig?.lang : undefined,
     year: item.year,
     genres: (data.genreLabels.length ? data.genreLabels : item.genres ?? []).slice(0, 6),
     facts: facts(item, typeLabel, l),
@@ -90,6 +131,7 @@ export const loadProtoFicha = dedupe(async (type: string, id: string, locale: st
     synopsis: item.synopsis?.trim() || undefined,
     synopsisLang: synopsisLang(item.synopsis, locale),
     cover: coverSource(item.poster, item.type),
+    art: await wideArt(item),
     trailerKey: data.trailerKey,
     providers: data.providers,
     watchLink: data.watchLink,

@@ -46,6 +46,31 @@
   --a-ink: var(--kp-field-ink);
   padding-top: 28vh;
 }
+/* La portada como pieza (libro, manga, cómic: no hay arte sin rótulo): entera,
+   sin recortar, centrada sobre un campo plano de su color —el mismo de la
+   franja de debajo— y el título debajo, sin fundir (tinta del campo ≥ 4.5:1).
+   Sin copia borrosa: la portada no se agranda con su rótulo. */
+.kp-a .a-stage[data-shape="piece"] {
+  background: var(--kp-field);
+  --a-ink: var(--kp-field-ink);
+  --a-scrim: 0 0 0;
+  padding-bottom: 8px;
+  transition: background-color 0.5s var(--a-ease), color 0.5s var(--a-ease);
+}
+.kp-a .a-stage[data-shape="piece"] .a-coverbox {
+  display: flex; justify-content: center; align-items: flex-start;
+  aspect-ratio: auto; max-height: none; overflow: visible;
+  padding: 32px var(--a-m) 0;
+}
+.kp-a .a-stage[data-shape="piece"] .a-coverbox::after { content: none; }
+.kp-a .a-stage[data-shape="piece"] .a-cover {
+  width: auto; height: auto;
+  max-width: min(74%, 340px); max-height: 60svh;
+  object-fit: contain;
+  box-shadow: 0 24px 60px rgb(0 0 0 / 0.35);
+}
+.kp-a .a-stage[data-shape="piece"] .a-title { margin-top: 28px; }
+.kp-a .a-stage[data-shape="piece"] :focus-visible { box-shadow: none; }
 
 .kp-a .a-back { position: absolute; inset: 0; overflow: hidden; }
 .kp-a .a-back img {
@@ -102,6 +127,8 @@
   line-height: 0.9;
   letter-spacing: -0.025em;
   text-wrap: balance;
+  /* Una palabra que no cabe ni al tamaño mínimo se parte en vez de salirse. */
+  overflow-wrap: anywhere;
   color: var(--a-ink);
   animation: a-title-in 0.8s var(--a-ease) 0.15s backwards;
 }
@@ -133,69 +160,12 @@
 }
 .kp-a .a-fuse-toggle[aria-pressed="true"] { background: var(--kp-ink); color: var(--kp-bg); border-color: var(--kp-ink); }
 
-/* ── El tráiler ──────────────────────────────────────────────
-   El botón vive en la sala, junto al título y sin taparlo. Color macizo: no
-   depende de lo que tenga detrás (tinta / velo de la portada: ≥ 7:1). */
-.kp-a .a-play {
-  position: relative; z-index: 2;
-  display: inline-flex; align-items: center; gap: 10px;
-  min-height: 48px; margin: 18px var(--a-m) 0; padding: 0 20px 0 16px;
-  background: var(--a-ink); color: rgb(var(--a-scrim));
-  border: 0; border-radius: 0;
-  font: 700 16px/1 var(--a-text);
-  cursor: pointer;
-  transition: opacity 0.2s var(--a-ease), transform 0.1s;
-}
-.kp-a .a-play[hidden] { display: none; }
-.kp-a .a-stage[data-shape="none"] .a-play { color: var(--kp-field); }
-.kp-a .a-play:active { transform: scale(0.97); }
-.kp-a .a-play:focus-visible, .kp-a .a-trailer :focus-visible { outline: 3px solid var(--a-ink); outline-offset: 3px; }
-/* Con cursor, el botón solo aparece al pasar por la sala (o al llegar con el teclado). */
-@media (hover: hover) and (pointer: fine) {
-  .kp-a .a-play { opacity: 0; }
-  .kp-a .a-stage:hover .a-play, .kp-a .a-play:focus-visible { opacity: 1; }
-}
-
-/* Sonando: la sala a oscuras es el reproductor. Fuera portada, velos y letras
-   (el `h1` sigue en el documento, sin verse); nada encima del marco. */
-.kp-a .a-stage[data-playing] { background: #0c0c0b; color: #f6f4f0; padding-bottom: 0; --a-ink: #f6f4f0; }
-.kp-a .a-stage[data-playing] .a-back,
-.kp-a .a-stage[data-playing] .a-backscrim,
-.kp-a .a-stage[data-playing] .a-coverbox,
-.kp-a .a-stage[data-playing] .a-fuse { display: none; }
-.kp-a .a-stage[data-playing] .a-rise {
-  position: absolute; inset: auto; width: 1px; height: 1px; margin: -1px;
-  overflow: hidden; clip-path: inset(50%);
-}
-.kp-a .a-trailer { position: relative; display: grid; justify-items: center; }
-/* El marco 16:9 más grande que cabe a lo ancho y, con su barra, a lo alto. */
-.kp-a .a-player {
-  width: min(100%, calc((min(100svh - var(--kp-bar-h), 1000px) - 64px) * 16 / 9));
-  aspect-ratio: 16 / 9;
-  min-width: 200px; min-height: 200px;
-  background: #000;
-}
-.kp-a .a-player iframe { display: block; width: 100%; height: 100%; border: 0; }
-.kp-a .a-trailer-bar {
-  display: flex; align-items: center; justify-content: space-between; gap: 16px;
-  width: 100%; min-height: 64px; padding: 8px var(--a-m);
-}
-.kp-a .a-trailer-name {
-  min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
-  font-family: var(--a-display); font-weight: 800; font-variation-settings: "wdth" 88;
-  font-size: 22px; line-height: 1.2; letter-spacing: -0.01em;
-}
-.kp-a .a-close {
-  flex: none;
-  min-height: 44px; padding: 0 18px;
-  background: transparent; color: #f6f4f0;
-  border: 2px solid #f6f4f0; border-radius: 0;
-  font: 600 15px/1 var(--a-text);
-  cursor: pointer;
-  transition: background-color 0.15s, color 0.15s;
-}
-@media (hover: hover) {
-  .kp-a .a-close:hover { background: #f6f4f0; color: #0c0c0b; }
+/* Foco de lo que hay en la sala: la sala no cambia con el tema, así que el
+   anillo va con la tinta de la sala y un filete del color del velo por dentro
+   (los dos contrastan entre sí ≥ 7:1: se ve sobre cualquier portada). */
+.kp-a .a-stage :focus-visible {
+  outline: 3px solid var(--a-ink); outline-offset: 3px;
+  box-shadow: 0 0 0 3px rgb(var(--a-scrim));
 }
 
 @media (min-width: 720px) {
@@ -214,6 +184,15 @@
     box-shadow: 0 0 90px rgb(0 0 0 / 0.45);
   }
   .kp-a .a-stage[data-shape="landscape"] .a-coverbox { inset: 0; width: 100%; box-shadow: none; }
+  /* Pieza: la portada llena el alto que deja el título, centrada. */
+  .kp-a .a-stage[data-shape="piece"] { padding-bottom: 0; }
+  .kp-a .a-stage[data-shape="piece"] .a-coverbox {
+    inset: 40px 0 calc(30px + var(--a-title-h, 24%) + 36px) 0;
+    width: auto; height: auto; padding: 0 var(--a-m);
+    box-shadow: none;
+  }
+  .kp-a .a-stage[data-shape="piece"] .a-cover { height: 100%; max-width: 100%; max-height: none; }
+  .kp-a .a-stage[data-shape="piece"] .a-title { margin-top: 0; text-align: center; }
   .kp-a .a-title {
     position: absolute;
     left: var(--a-m); right: var(--a-m); bottom: 30px;
@@ -221,14 +200,6 @@
     font-variation-settings: "wdth" var(--a-wdth, 100);
     font-size: clamp(48px, calc(var(--a-k, 12) * 1vw), 320px);
   }
-  /* Encima del título, a su izquierda. */
-  .kp-a .a-play {
-    position: absolute;
-    left: var(--a-m); bottom: calc(30px + var(--a-title-h, 30%) + 22px);
-    margin: 0;
-  }
-  /* Sonando, la sala mide lo que el marco y su barra. */
-  .kp-a .a-stage[data-playing] { height: auto; }
 }
 
 @keyframes a-cover-in { from { opacity: 0; transform: scale(1.04); } }
@@ -352,6 +323,55 @@
 .kp-a .kp-steam-langs { max-width: 70ch; color: var(--kp-ink-2); font-size: 15px; }
 .kp-a .kp-shots { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; margin-top: 20px; }
 .kp-a .kp-shots img { width: 100%; height: auto; aspect-ratio: 16 / 9; object-fit: cover; background: var(--kp-surface); }
+
+/* ── El tráiler: un marco 16:9 en su sección ─────────────────
+   En reposo, un botón con una imagen de la obra y la orden en una pastilla
+   maciza (tinta / fondo ≥ 7:1: no depende de la imagen). Al pulsar, el mismo
+   marco es el reproductor, sin nada encima. */
+.kp-a .a-tr { display: grid; justify-items: start; gap: 12px; max-width: 1120px; }
+.kp-a .a-tr-frame { position: relative; width: 100%; aspect-ratio: 16 / 9; background: #0c0c0b; overflow: hidden; }
+.kp-a .a-tr-frame iframe { display: block; width: 100%; height: 100%; border: 0; }
+.kp-a .a-tr-shot {
+  position: absolute; inset: 0;
+  display: block; width: 100%; height: 100%; padding: 0;
+  background: none; border: 0; border-radius: 0;
+  cursor: pointer;
+}
+.kp-a .a-tr-shot img { width: 100%; height: 100%; object-fit: cover; transition: transform 0.6s var(--a-ease); }
+.kp-a .a-tr-play {
+  position: absolute; left: 0; bottom: 0;
+  display: inline-flex; align-items: center; gap: 10px;
+  min-height: 56px; padding: 0 24px 0 20px;
+  background: var(--kp-ink); color: var(--kp-bg);
+  font: 700 17px/1 var(--a-text);
+  transition: background-color 0.2s var(--a-ease), color 0.2s var(--a-ease);
+}
+.kp-a .a-tr-shot:active .a-tr-play { transform: scale(0.98); transform-origin: 0 100%; }
+.kp-a .a-tr-shot:focus-visible { outline: none; }
+/* El anillo va por dentro y por encima de la imagen: tinta y un filete del fondo. */
+.kp-a .a-tr-shot:focus-visible::after {
+  content: "";
+  position: absolute; inset: 0;
+  border: 3px solid var(--kp-bg);
+  outline: 4px solid var(--kp-ink); outline-offset: -7px;
+  pointer-events: none;
+}
+.kp-a .a-tr-shot:focus-visible .a-tr-play { background: var(--kp-accent); color: var(--kp-accent-ink); }
+@media (hover: hover) {
+  .kp-a .a-tr-shot:hover img { transform: scale(1.03); }
+  .kp-a .a-tr-shot:hover .a-tr-play { background: var(--kp-accent); color: var(--kp-accent-ink); }
+}
+.kp-a .a-tr-close {
+  min-height: 44px; padding: 0 18px;
+  background: transparent; color: var(--kp-ink);
+  border: 2px solid var(--kp-ink); border-radius: 0;
+  font: 600 15px/1 var(--a-text);
+  cursor: pointer;
+  transition: background-color 0.15s, color 0.15s;
+}
+@media (hover: hover) {
+  .kp-a .a-tr-close:hover { background: var(--kp-ink); color: var(--kp-bg); }
+}
 
 .kp-a .a-foot { padding: 8px var(--a-m) 72px; font-size: 14px; color: var(--kp-ink-2); }
 
