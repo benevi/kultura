@@ -19,20 +19,29 @@ Lo que cambia de verdad entre las tres es **qué hace de suelo de la página**:
 
 ## A · Sala — elegida (con matices de Víctor)
 
+> Capa 3D de la sala (`?3d=capas`, `?3d=fondo`, `?fps=1`): ver [`3d-ficha-borrador.md`](3d-ficha-borrador.md).
+
 **Idea.** Entrar en la ficha es entrar en la sala: una imagen de la obra **sin rótulo** ocupa la pantalla a sangre, como en MUBI, y el título —que ponemos nosotros— vive dentro de ella, con partes de la imagen pasando por delante de las letras. Al bajar, una franja con el color de la imagen (título original, datos, acciones) y la ficha sobre un fondo teñido.
 
 **Dos modos, según lo que dé el proveedor.**
 
 | Formato | Imagen de la sala | De dónde sale | Modo |
 |---|---|---|---|
-| Película, serie | Imagen de fondo de TMDB sin texto | `/movie/{id}/images` o `/tv/{id}/images` con `include_image_language=null` (las de `iso_639_1: null`, la más votada); si no hay, el `backdrop` de la ficha. `image.tmdb.org`, directa | Sala (apaisada a sangre, título fundido) |
-| Videojuego | Arte de RAWG | `background_image` (ya era la «portada» del juego). `media.rawg.io`, directa | Sala |
-| Anime | Banner de AniList | `bannerImage` (el cargador de la app no lo pide: se consulta solo en el prototipo). `s4.anilist.co`, directa | Sala; si no hay banner, Pieza |
-| Libro, manga, cómic | La portada (siempre trae su rótulo) | La de siempre | Pieza |
+| Película, serie | Imagen de fondo de TMDB sin texto | `/movie/{id}/images` o `/tv/{id}/images` con `include_image_language=null` (las de `iso_639_1: null` y al menos 1280 × 720, la más votada); si no hay, el `backdrop` de la ficha. `image.tmdb.org`, directa: `w780`, `w1280` y `original` en el `srcset` | Sala (apaisada a sangre, título fundido) |
+| Videojuego | Arte de RAWG | `background_image` (ya era la «portada» del juego). `media.rawg.io`, directa: `resize/640`, `resize/1280` y el original | Sala |
+| Anime | La portada | `/cover/large/` de AniList. El banner (`bannerImage`, 1900 × 400) ya no se pide: a pantalla completa había que ampliarlo ×2 | Pieza |
+| Libro, manga, cómic | La portada (siempre trae su rótulo) | La de siempre, en su versión mayor: `-L` de Open Library; el original de MangaDex por el optimizador (no la miniatura de 512 px) | Pieza |
 
 - **Sala:** la imagen llena la sala (escritorio: toda la pantalla; móvil: todo el ancho, recortada a 4:5 por el centro) y el título va dentro, fundido. El color de la página sale de esa imagen.
 - **Pieza:** la portada entera, sin recortar, centrada sobre un campo plano de su color (el mismo de la franja: sala y franja son un solo bloque) y nuestro título debajo, a todo el ancho, **sin fundir** y sin velo (tinta del campo, ≥ 4.5:1). No hay copia borrosa de la portada. Mismas fuentes, esquinas rectas y franja que en Sala.
-- **[P]** Las dos peticiones nuevas (TMDB `/images` y `bannerImage` de AniList) solo existen en `_base/art.ts`. Si A sigue adelante pasan al cargador real y por la revisión legal. El banner de AniList es muy alargado (1900 × 400): a pantalla completa se amplía ×2 y se ve blando; el de Chihiro lleva un cartel con kanji que es parte del dibujo, no un rótulo.
+- **[P]** La petición nueva (TMDB `/images`) solo existe en `_base/art.ts`. Si A sigue adelante pasa al cargador real y por la revisión legal. La de `bannerImage` de AniList se ha quitado (ver la regla de calidad).
+
+**Regla de calidad de imagen (Víctor, 18-11-2026; vale para 2D y 3D).** Las imágenes de la sala y las portadas van siempre nítidas.
+- Se pide la resolución que la pantalla necesita (tamaño en pantalla × DPR): el `srcset` de la sala llega hasta el original del proveedor y `sizes` dice el ancho real (en móvil la imagen apaisada se ve más ancha que la pantalla: recorte 4:5).
+- **Nunca se amplía una imagen más de 1,25× su tamaño natural** (medido en px CSS). Para ser sala, una imagen apaisada tiene que medir al menos 1280 × 720; si no llega, la obra va en **Pieza**. Además, la sala no crece más de 1,25× el tamaño natural de su imagen (`--a-max-w`, `--a-max-h`): en una pantalla mayor queda centrada sobre su copia borrosa.
+- En Pieza la portada se pinta **a su tamaño natural como mucho** (`width: auto`, sin `srcset`: solo topes), nunca ampliada.
+- En 3D las texturas salen del mismo archivo que el `<img>`, a su tamaño real; solo se reducen si pasan de lo que el lienzo enseña (tope 4096 px de lado).
+- Medido en las cinco obras (tabla en `3d-ficha-borrador.md`): ninguna se amplía en px CSS. **[P]** En px de pantalla, con DPR 2–3 las portadas pequeñas siguen por debajo de la pantalla porque el proveedor no da más (Open Library `-L`: 331 × 500; AniList `large`: 460 × 656). Cumplir 1,25× también en px de pantalla obligaría a pintarlas a ~200 px CSS de ancho en un móvil. Queda a decisión de Víctor.
 
 **Títulos.** El `h1` va en el idioma de la página y el original, debajo, en su escritura y con su `lang` (Parásitos / 기생충, El viaje de Chihiro / 千と千尋の神隠し, Gente normal / Normal People, Berserk / ベルセルク). **Hueco de datos para la fase 8.5:** solo TMDB da el título localizado. AniList da romaji, inglés y nativo (nunca español); Open Library da el título de la obra sin idioma; MangaDex da `en` (a menudo una romanización) y alternativos por idioma, incompletos; RAWG, solo el nombre en inglés. En el prototipo las cinco obras fijas llevan el título por idioma escrito a mano en `_base/works.ts` (apaño, marcado como tal); cualquier otra obra sale con el título del proveedor.
 
@@ -52,7 +61,7 @@ Lo que cambia de verdad entre las tres es **qué hace de suelo de la página**:
 
 **Composición.** Móvil: imagen · título a caballo del borde inferior (en Pieza: portada · título debajo) · franja (título original, datos, acción principal a todo el ancho) · sinopsis · panel · dónde ver · tráiler. Escritorio: sala a pantalla completa; franja en dos columnas; ficha en 12 columnas (sinopsis 7, panel 4); el tráiler, a lo ancho, al final.
 
-**Tráiler.** Aparte de la sala (decisión de Víctor): la sala queda solo con portada y título fundido. El tráiler tiene su sección «Tráiler» al final de la ficha: un marco 16:9 con una imagen de la obra (el fotograma apaisado de TMDB si lo hay; si no, la portada) y la orden «Ver el tráiler». Al pulsarlo (clic, toque, Intro) el mismo marco pasa a ser el reproductor de `youtube-nocookie`, en silencio, con sus controles y su marca y sin nada encima. Debajo, «Cerrar el tráiler»; Escape también cierra y el foco vuelve al botón. Antes de pulsar no sale ninguna petición a YouTube. Capturas: `capturas/a/*-trailer*.png`.
+**Tráiler.** Aparte de la sala (decisión de Víctor): la sala queda solo con portada y título fundido. El tráiler tiene su sección «Tráiler» al final de la ficha: un marco 16:9 y la orden «Ver el tráiler». **La imagen del marco nunca es la de la sala** (regla de Víctor, 18-11-2026): es otra imagen oficial sin rótulo (la segunda más votada de TMDB `/images` con `iso_639_1: null`); si la obra no tiene una segunda imagen, el marco va sin imagen: un campo plano del color de la obra (`--kp-field`) con el botón. Nunca una miniatura de YouTube (`i.ytimg.com`): sería una petición a Google antes de pulsar. Al pulsarlo (clic, toque, Intro) el mismo marco pasa a ser el reproductor de `youtube-nocookie`, en silencio, con sus controles y su marca y sin nada encima. Debajo, «Cerrar el tráiler»; Escape también cierra y el foco vuelve al botón. Antes de pulsar no sale ninguna petición a YouTube. Capturas: `capturas/a/*-trailer*.png`.
 
 **Qué la distingue.** Es la única donde la imagen es el suelo y el título es parte de la imagen. La más cinematográfica y la que mejor prepara el 3D (las capas ya existen).
 

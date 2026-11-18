@@ -114,6 +114,7 @@ export const loadProtoFicha = dedupe(async (type: string, id: string, locale: st
       ? { text: original, lang: scriptLang(original, item.type) }
       : undefined;
   const originalTitle = orig && orig.text !== title.trim() ? orig.text : undefined;
+  const { art, trailerArt } = await wideArt(item);
   return {
     locale,
     item,
@@ -131,7 +132,8 @@ export const loadProtoFicha = dedupe(async (type: string, id: string, locale: st
     synopsis: item.synopsis?.trim() || undefined,
     synopsisLang: synopsisLang(item.synopsis, locale),
     cover: coverSource(item.poster, item.type),
-    art: await wideArt(item),
+    art,
+    trailerArt,
     trailerKey: data.trailerKey,
     providers: data.providers,
     watchLink: data.watchLink,

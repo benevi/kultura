@@ -63,6 +63,9 @@
   padding: 32px var(--a-m) 0;
 }
 .kp-a .a-stage[data-shape="piece"] .a-coverbox::after { content: none; }
+/* Sitio para los controles del prototipo (no son del diseño). */
+@media (max-width: 719px) { .kp-a .a-stage[data-shape="piece"] .a-coverbox { padding-top: 60px; } }
+/* La portada nunca se amplía: `width/height: auto` (su tamaño natural) y solo topes. */
 .kp-a .a-stage[data-shape="piece"] .a-cover {
   width: auto; height: auto;
   max-width: min(74%, 340px); max-height: 60svh;
@@ -150,8 +153,59 @@
   .kp-a .a-fuse { display: none; }
 }
 
+.kp-a .a-tools {
+  position: absolute; top: 12px; left: 12px; right: 12px; z-index: 3;
+  display: flex; flex-wrap: wrap; align-items: center; gap: 6px;
+  pointer-events: none;
+}
+.kp-a .a-tools > * { pointer-events: auto; }
+.kp-a .a-3d-pick { display: inline-flex; }
+.kp-a .a-3d-pick button {
+  min-height: 32px; padding: 0 10px;
+  background: var(--kp-bg); color: var(--kp-ink);
+  border: 1px solid var(--kp-edge); border-radius: 0;
+  font: 600 12px/1 var(--kp-ui);
+  cursor: pointer;
+}
+.kp-a .a-3d-pick button + button { border-left: 0; }
+.kp-a .a-3d-pick button:first-child { border-radius: 6px 0 0 6px; }
+.kp-a .a-3d-pick button:last-child { border-radius: 0 6px 6px 0; }
+.kp-a .a-3d-pick button[aria-pressed="true"] { background: var(--kp-ink); color: var(--kp-bg); border-color: var(--kp-ink); }
+.kp-a .a-3d-why {
+  padding: 8px 10px; border-radius: 6px;
+  background: var(--kp-bg); color: var(--kp-ink);
+  font: 600 12px/1.2 var(--kp-ui);
+}
+.kp-a .a-fps {
+  position: absolute; top: 52px; left: 12px; z-index: 3;
+  padding: 6px 8px; border-radius: 6px;
+  background: rgb(0 0 0 / 0.78); color: #fff;
+  font: 500 11px/1.45 ui-monospace, "Cascadia Mono", Consolas, monospace;
+  white-space: pre; pointer-events: none;
+}
+
+/* ── Capa 3D (prototipo P-3D): un lienzo de adorno encima de la sala ──
+   Solo se ve (`data-k3d-on`) cuando ya ha pintado su primer fotograma, que es
+   igual que el 2D: sin salto. El `h1` sigue en el HTML; en Sala su tinta se
+   apaga cuando el lienzo ya lo ha pintado (el texto real no sale del árbol de
+   accesibilidad ni deja de poder seleccionarse). */
+.kp-a .a-3d {
+  position: absolute; inset: 0;
+  display: block; width: 100%; height: 100%;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.45s var(--a-ease);
+}
+.kp-a .a-stage:not([data-shape="piece"]) .a-3d { z-index: 2; }
+.kp-a .a-stage[data-k3d-on] .a-3d { opacity: 1; }
+.kp-a .a-stage[data-k3d-on] .a-plane { transform: none; }
+.kp-a .a-title-text { transition: color 0s; }
+.kp-a .a-stage[data-k3d-on="wide"] .a-title-text { color: transparent; transition: color 0s 0.45s; }
+.kp-a .a-fuse { transition: opacity 0.45s var(--a-ease); }
+.kp-a .a-stage[data-k3d-on] .a-fuse { opacity: 0; }
+.kp-a .a-stage[data-k3d-on="piece"] .a-cover { opacity: 0; transition: opacity 0s 0.45s; }
+
 .kp-a .a-fuse-toggle {
-  position: absolute; top: 12px; left: 12px; z-index: 3;
   min-height: 32px; padding: 0 10px;
   background: var(--kp-bg); color: var(--kp-ink);
   border: 1px solid var(--kp-edge); border-radius: 6px;
@@ -183,15 +237,19 @@
     width: auto; height: 100%; max-height: none;
     box-shadow: 0 0 90px rgb(0 0 0 / 0.45);
   }
-  .kp-a .a-stage[data-shape="landscape"] .a-coverbox { inset: 0; width: 100%; box-shadow: none; }
+  /* Regla de calidad: la sala no crece más de 1,25× el tamaño natural de su imagen
+     (en pantallas mayores queda centrada sobre su copia borrosa). */
+  .kp-a .a-stage[data-shape="landscape"] { height: min(clamp(520px, calc(100svh - var(--kp-bar-h)), 1000px), var(--a-max-h, 9999px)); }
+  .kp-a .a-stage[data-shape="landscape"] .a-coverbox { inset: 0; width: 100%; max-width: var(--a-max-w, none); margin-inline: auto; box-shadow: none; }
   /* Pieza: la portada llena el alto que deja el título, centrada. */
   .kp-a .a-stage[data-shape="piece"] { padding-bottom: 0; }
   .kp-a .a-stage[data-shape="piece"] .a-coverbox {
     inset: 40px 0 calc(30px + var(--a-title-h, 24%) + 36px) 0;
     width: auto; height: auto; padding: 0 var(--a-m);
+    align-items: center;
     box-shadow: none;
   }
-  .kp-a .a-stage[data-shape="piece"] .a-cover { height: 100%; max-width: 100%; max-height: none; }
+  .kp-a .a-stage[data-shape="piece"] .a-cover { max-width: 100%; max-height: 100%; }
   .kp-a .a-stage[data-shape="piece"] .a-title { margin-top: 0; text-align: center; }
   .kp-a .a-title {
     position: absolute;
@@ -337,6 +395,8 @@
   background: none; border: 0; border-radius: 0;
   cursor: pointer;
 }
+/* Sin segunda imagen: campo plano del color de la obra (nunca la imagen de la sala). */
+.kp-a .a-tr[data-plain] .a-tr-frame:not(:has(iframe)) { background: var(--kp-field); }
 .kp-a .a-tr-shot img { width: 100%; height: 100%; object-fit: cover; transition: transform 0.6s var(--a-ease); }
 .kp-a .a-tr-play {
   position: absolute; left: 0; bottom: 0;

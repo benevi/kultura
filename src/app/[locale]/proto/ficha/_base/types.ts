@@ -39,6 +39,15 @@ export interface CoverSource {
   sample: string;
   /** Pista de forma antes de cargar: los juegos de RAWG llegan apaisados. */
   shape: "portrait" | "landscape";
+  /**
+   * La mayor versión que da el proveedor por la misma ruta (optimizador a 1200
+   * para MangaDex, ComicVine y Steam; el resto, la URL directa mayor). La usa
+   * la Pieza SIN `srcset`: así el tamaño natural del `<img>` es el real y el
+   * CSS no puede ampliarla.
+   */
+  hi: string;
+  /** Tamaño natural (px) de la mayor versión de `srcSet`, si el proveedor lo dice. */
+  natural?: { w: number; h: number };
 }
 
 export interface FichaData {
@@ -66,6 +75,8 @@ export interface FichaData {
   cover: CoverSource | null;
   /** Arte apaisado SIN rótulo (fondo de TMDB, arte de RAWG, banner de AniList), si el proveedor lo da. */
   art: CoverSource | null;
+  /** Otra imagen oficial sin rótulo, DISTINTA de la de la sala, para el marco del tráiler (o `null`: marco sin imagen). */
+  trailerArt: CoverSource | null;
   trailerKey?: string;
   providers: StreamingProvider[];
   watchLink?: string;

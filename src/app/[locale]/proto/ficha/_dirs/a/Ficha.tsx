@@ -24,6 +24,9 @@ export default function FichaA({ data }: DirectionProps) {
         cover={data.art ?? data.cover}
         mode={data.art ? "wide" : "piece"}
         fuseLabel={es ? "Letras fundidas" : "Fused lettering"}
+        depthKey={`${data.type}/${data.item.externalId}`}
+        spineRight={data.type === "manga"}
+        es={es}
       />
 
       <section className="a-band" aria-label={l.details}>
@@ -67,8 +70,10 @@ export default function FichaA({ data }: DirectionProps) {
             <h2>{l.trailer}</h2>
             <Trailer
               trailerKey={data.trailerKey}
-              image={(data.art ?? data.cover)?.src}
-              imageCross={(data.art ?? data.cover)?.canvasSafe ? "anonymous" : undefined}
+              // Nunca la imagen de la sala: otra oficial sin rótulo o, si no hay, el marco sin imagen.
+              image={data.trailerArt?.src}
+              imageSet={data.trailerArt?.srcSet}
+              imageCross={data.trailerArt?.canvasSafe ? "anonymous" : undefined}
               playText={es ? "Ver el tráiler" : "Watch the trailer"}
               playLabel={es ? `Ver el tráiler de ${data.title}` : `Watch the trailer for ${data.title}`}
               closeLabel={es ? "Cerrar el tráiler" : "Close the trailer"}

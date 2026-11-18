@@ -43,5 +43,11 @@ export function coverSource(poster: string | undefined, type: MediaType): CoverS
     // uso nuevo, dictamen legal del 18-11-2026). La lectura falla y queda la paleta neutra.
     sample: at(256),
     shape: type === "game" ? "landscape" : "portrait",
+    // MangaDex: `posterLoader` pide la miniatura de 512 px (`….jpg.512.jpg`), que a 2× se
+    // ve blanda. Para la Pieza, el original por la MISMA ruta (el optimizador, mismo host).
+    hi:
+      host === "uploads.mangadex.org"
+        ? `/_next/image?url=${encodeURIComponent(poster.replace(/(\.(?:jpe?g|png|webp))\.(?:256|512)\.jpg$/i, "$1"))}&w=1200&q=75`
+        : at(1200),
   };
 }

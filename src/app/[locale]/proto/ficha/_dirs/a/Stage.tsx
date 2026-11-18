@@ -19,6 +19,11 @@ import { readPixels } from "../../_base/CoverColor";
 import { derivePalette, extractSwatches } from "../../_base/cover-palette";
 import { useProto } from "../../_base/ProtoShell";
 import type { CoverSource } from "../../_base/types";
+import { DEPTH } from "./sala3d/depth";
+// Solo tipos: el motor 3D se carga con `import()` cuando hace falta.
+import type { SalaHandle, Stats, Tone3D } from "./sala3d/engine";
+
+type Mode3D = "off" | "capas" | "fondo";
 
 const useIsoLayoutEffect = typeof window === "undefined" ? useEffect : useLayoutEffect;
 
@@ -247,11 +252,17 @@ function smooth(map: Float32Array, w: number, h: number, r: number) {
 }
 
 interface Mask {
+  /** El lienzo pintado (la capa 3D lo usa como textura del título). */
+  canvas: HTMLCanvasElement;
+  /** Pintada con la fuente real; si no, son las cajas de los caracteres. */
+  exact: boolean;
   a: Uint8ClampedArray;
   w: number;
   h: number;
   /** Fila (en píxeles de la máscara) donde empieza cada línea del título. */
   lines: number[];
+  /** Caja de cada carácter (píxeles de la máscara): x, y, ancho, alto. */
+  chars: [number, number, number, number][];
 }
 
 /** Letras del título pintadas a escala `k` (píxeles de canvas por píxel CSS), con origen en la esquina del `h1`. */
@@ -274,6 +285,7 @@ async function glyphMask(h1: HTMLElement, textEl: Element | null, k: number): Pr
   const range = document.createRange();
   const text = node.data;
   const lines: number[] = [];
+  const chars: [number, number, number, number][] = [];
   for (let i = 0; i < text.length; ) {
     const ch = String.fromCodePoint(text.codePointAt(i) ?? 32);
     if (ch.trim()) {
@@ -283,6 +295,7 @@ async function glyphMask(h1: HTMLElement, textEl: Element | null, k: number): Pr
       if (r && r.width) {
         const y = Math.round((r.top - t.top) * k);
         if (!lines.some((l) => Math.abs(l - y) < 3)) lines.push(y);
+        chars.push([Math.floor((r.left - t.left) * k), y, Math.ceil(r.width * k), Math.ceil(r.height * k)]);
         if (fam && Number.isFinite(asc)) ctx.fillText(ch, (r.left - t.left) * k, (r.top - t.top) * k + asc);
         else ctx.fillRect((r.left - t.left) * k, (r.top - t.top) * k, r.width * k, r.height * k); // sin la fuente: la caja del carácter
       }
@@ -290,7 +303,15 @@ async function glyphMask(h1: HTMLElement, textEl: Element | null, k: number): Pr
     i += ch.length;
   }
   lines.sort((x, y) => x - y);
-  return { a: ctx.getImageData(0, 0, c.canvas.width, c.canvas.height).data, w: c.canvas.width, h: c.canvas.height, lines };
+  return {
+    canvas: c.canvas,
+    exact: Boolean(fam && Number.isFinite(asc)),
+    a: ctx.getImageData(0, 0, c.canvas.width, c.canvas.height).data,
+    w: c.canvas.width,
+    h: c.canvas.height,
+    lines,
+    chars,
+  };
 }
 
 function waitImage(img: HTMLImageElement): Promise<boolean> {
@@ -323,6 +344,11 @@ interface StageProps {
   mode: "wide" | "piece";
   /** Texto del interruptor de prueba «Letras fundidas». */
   fuseLabel: string;
+  /** `tipo/id externo`: clave de los mapas de profundidad del prototipo. */
+  depthKey: string;
+  /** Manga: el lomo va a la derecha. */
+  spineRight: boolean;
+  es: boolean;
 }
 
 export function Stage({
@@ -331,6 +357,9 @@ export function Stage({
   cover,
   mode,
   fuseLabel,
+  depthKey,
+  spineRight,
+  es,
 }: StageProps) {
   const piece = mode === "piece" || !cover;
   const { theme, reducedMotion } = useProto();
@@ -345,6 +374,16 @@ export function Stage({
   const blobRef = useRef<string | null>(null);
   const applyRef = useRef<() => void>(() => {});
   const runRef = useRef(0);
+  // Capa 3D (`?3d=capas|fondo`): ver sala3d/engine.ts.
+  const planeRef = useRef<HTMLDivElement>(null);
+  const engineRef = useRef<SalaHandle | null>(null);
+  const toneRef = useRef<Omit<Tone3D, "band"> | null>(null);
+  const bandRef = useRef(0);
+  const fpsRef = useRef<HTMLDivElement>(null);
+  const [mode3d, setMode3d] = useState<Mode3D>("off");
+  const [state3d, setState3d] = useState<{ on: boolean; why?: string }>({ on: false });
+  const [flags, setFlags] = useState({ fps: false, loop: false, gl: false, gyro: false });
+  const [gyroOn, setGyroOn] = useState(false);
 
   // Estimación del servidor para el primer pintado (el encaje real va después).
   const words = title.split(/\s+/);
@@ -389,7 +428,8 @@ export function Stage({
     stage.style.setProperty("--a-title-h", `${Math.round(t.height)}px`);
     if (box) {
       const b = box.getBoundingClientRect();
-      stage.style.setProperty("--a-band-cover", `${Math.max(0, Math.round(b.bottom - t.top + 20))}px`);
+      bandRef.current = Math.max(0, Math.round(b.bottom - t.top + 20));
+      stage.style.setProperty("--a-band-cover", `${bandRef.current}px`);
     }
   };
 
@@ -398,6 +438,7 @@ export function Stage({
   const refresh = () => {
     layout();
     applyRef.current();
+    engineRef.current?.sync();
   };
   useIsoLayoutEffect(() => {
     refresh();
@@ -478,6 +519,7 @@ export function Stage({
       const { scrim, ink } = a[pick];
       const alpha = pick === "dark" ? alphaD : alphaL;
       stage.dataset.ink = pick;
+      toneRef.current = { scrim, ink, alpha, pick };
       stage.style.setProperty("--a-scrim", scrim.join(" "));
       stage.style.setProperty("--a-scrim-a", alpha.toFixed(3));
       stage.style.setProperty("--a-ink", `rgb(${ink.join(" ")})`);
@@ -635,7 +677,136 @@ export function Stage({
     };
   }, [reducedMotion]);
 
+  // ── 5. Capa 3D (prototipo P-3D) ─────────────────────────────────────────
+  // `?3d=capas` (sin mapa de profundidad) o `?3d=fondo` (con mapa). `?fps=1`
+  // enseña el contador; `?loop=1` fuerza la deriva automática (para medir) y
+  // `?gl=1` acepta una GPU por software (pruebas).
+  useEffect(() => {
+    const q = new URLSearchParams(window.location.search);
+    const m = q.get("3d");
+    if (m === "capas" || m === "fondo") setMode3d(m);
+    setFlags({
+      fps: q.get("fps") === "1",
+      loop: q.get("loop") === "1",
+      gl: q.get("gl") === "1",
+      gyro: "DeviceOrientationEvent" in window && window.matchMedia("(pointer: coarse)").matches,
+    });
+  }, []);
+
+  const pick3d = (m: Mode3D) => {
+    setMode3d(m);
+    const url = new URL(window.location.href);
+    if (m === "off") url.searchParams.delete("3d");
+    else url.searchParams.set("3d", m);
+    window.history.replaceState(null, "", url);
+  };
+
+  const depth = DEPTH[depthKey] ?? null;
+  // Pieza con movimiento reducido: girar es todo lo que añade el 3D → se queda el 2D.
+  const skip3d = piece && reducedMotion;
+  const reducedRef = useRef(reducedMotion);
+  useEffect(() => {
+    const stage = stageRef.current, plane = planeRef.current, box = boxRef.current, img = imgRef.current, h1 = titleRef.current;
+    if (mode3d === "off" || !cover || !stage || !plane || !box || !img || !h1) return;
+    const off = (why: string) => setState3d({ on: false, why });
+    if (skip3d) return off(es ? "movimiento reducido" : "reduced motion");
+    if (!cover.canvasSafe) return off(es ? "imagen sin CORS" : "image without CORS");
+    if (mode3d === "fondo" && !depth && !piece) return off(es ? "esta obra no tiene mapa" : "no depth map for this title");
+    // Contraste alto o colores forzados: manda el texto real, sin capa encima.
+    if (!piece && window.matchMedia("(prefers-contrast: more), (forced-colors: active)").matches) return off("contraste");
+    let dead = false;
+    let handle: SalaHandle | null = null;
+    const canvas = document.createElement("canvas");
+    canvas.className = "a-3d";
+    canvas.setAttribute("aria-hidden", "true");
+    let lastFps = 0;
+    (async () => {
+      // Después de que la página sea usable: `load`, un rato libre y las entradas acabadas.
+      if (document.readyState !== "complete") await new Promise((r) => window.addEventListener("load", r, { once: true }));
+      await new Promise<void>((r) => {
+        const ric = (window as unknown as { requestIdleCallback?: (cb: () => void, o?: { timeout: number }) => void }).requestIdleCallback;
+        if (ric) ric(() => r(), { timeout: 1500 });
+        else setTimeout(r, 200);
+      });
+      await Promise.all(
+        stage
+          .getAnimations({ subtree: true })
+          .filter((a) => /^a-(cover|title)-in$/.test((a as CSSAnimation).animationName ?? ""))
+          .map((a) => a.finished.catch(() => {})),
+      );
+      if (!(await waitImage(img)) || dead) return;
+      performance.mark("kp3d:start");
+      const { mountSala } = await import("./sala3d/engine");
+      if (dead) return;
+      plane.appendChild(canvas);
+      handle = await mountSala({
+        kind: piece ? "piece" : "wide",
+        mode: mode3d,
+        spineRight,
+        stage, box, img, h1, canvas, depth,
+        getTone: () => (toneRef.current ? { ...toneRef.current, band: bandRef.current } : null),
+        titleMask: (k) => glyphMask(h1, h1.querySelector(".a-title-text"), k),
+        reduced: reducedRef.current,
+        forceLoop: flags.loop,
+        forceGl: flags.gl,
+        onState: (on, why) => {
+          if (dead) return;
+          if (on) stage.dataset.k3dOn = piece ? "piece" : "wide";
+          else delete stage.dataset.k3dOn;
+          setState3d({ on, why });
+        },
+        onStats: flags.fps
+          ? (st: Stats) => {
+              const now = performance.now();
+              if (now - lastFps < 400 || !fpsRef.current) return;
+              lastFps = now;
+              fpsRef.current.textContent =
+                `${st.moving ? st.fps.toFixed(0) : "–"} fps · p95 ${st.p95.toFixed(1)} ms · largos ${st.long}/${st.frames}` +
+                `\ncpu ${st.cpu.toFixed(2)} ms · dpr ${st.dpr} · tex ${st.texMB.toFixed(1)} MB · tapado ${(st.cover * 100).toFixed(0)} %` +
+                `\n${st.renderer.replace(/^ANGLE \(|\)$/g, "").slice(0, 70)}`;
+            }
+          : undefined,
+      });
+      if (!handle) canvas.remove(); // sin 3D: no queda nada suyo en la página
+      if (dead) handle?.destroy();
+      else {
+        engineRef.current = handle;
+        (window as unknown as { __kp3d?: SalaHandle | null }).__kp3d = handle;
+      }
+    })();
+    return () => {
+      dead = true;
+      (handle ?? engineRef.current)?.destroy();
+      engineRef.current = null;
+      (window as unknown as { __kp3d?: SalaHandle | null }).__kp3d = null;
+      canvas.remove();
+      delete stage.dataset.k3dOn;
+      setState3d({ on: false });
+      setGyroOn(false);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [mode3d, skip3d, cover?.original, flags.loop, flags.gl, flags.fps]);
+
+  useEffect(() => {
+    reducedRef.current = reducedMotion;
+    engineRef.current?.setReduced(reducedMotion);
+  }, [reducedMotion]);
+
+  // Giroscopio: solo tras pulsar, y con permiso donde el sistema lo pide (iOS). Nunca hace falta.
+  const askGyro = async () => {
+    try {
+      const D = window.DeviceOrientationEvent as unknown as { requestPermission?: () => Promise<string> };
+      if (typeof D?.requestPermission === "function" && (await D.requestPermission()) !== "granted") return;
+      engineRef.current?.enableGyro();
+      setGyroOn(true);
+    } catch {
+      // sin permiso: se queda la deriva
+    }
+  };
+
   const style = {
+    // Tope de ampliación: la sala no pasa de 1,25× el tamaño natural de su imagen.
+    ...(!piece && cover?.natural ? { "--a-max-w": `${Math.round(cover.natural.w * 1.25)}px`, "--a-max-h": `${Math.round(cover.natural.h * 1.25)}px` } : null),
     "--a-wdth": wdth,
     "--a-k": (86 / (Math.max(longest, Math.ceil(len / 2)) * 0.6 * (wdth / 100))).toFixed(2),
   } as React.CSSProperties;
@@ -658,7 +829,7 @@ export function Stage({
       )}
       {!piece && <div className="a-backscrim" aria-hidden="true" />}
       <div className="a-rise">
-        <div className="a-plane">
+        <div ref={planeRef} className="a-plane">
           {cover && (
             <div ref={boxRef} className="a-coverbox">
               {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -666,9 +837,13 @@ export function Stage({
                 ref={imgRef}
                 data-kp-cover=""
                 className="a-cover"
-                src={cover.src}
-                srcSet={cover.srcSet}
-                sizes={piece ? "(min-width: 720px) 40vh, 72vw" : "100vw"}
+                // Pieza: una sola URL (la mayor), sin `srcset`: el tamaño natural del `<img>`
+                // es el real y el CSS (`width: auto`) no puede ampliarla. Sala: el navegador
+                // elige según pantalla × DPR; en móvil la imagen se ve más ancha que la
+                // pantalla (recorte 4:5), y `sizes` lo dice.
+                src={piece ? cover.hi : cover.src}
+                srcSet={piece ? undefined : cover.srcSet}
+                sizes={piece ? undefined : `(min-width: 720px) 100vw, ${Math.round(125 * (cover.natural ? cover.natural.w / cover.natural.h : 16 / 9))}vw`}
                 alt=""
                 fetchPriority="high"
                 crossOrigin={cover.canvasSafe ? "anonymous" : undefined}
@@ -685,16 +860,35 @@ export function Stage({
           </h1>
         </div>
       </div>
-      {!piece && (
-        <button
-          type="button"
-          className="a-fuse-toggle"
-          aria-pressed={fuse}
-          onClick={() => setFuse((v) => !v)}
-        >
-          {fuseLabel}
-        </button>
-      )}
+      {/* Controles del prototipo (no son parte del diseño). */}
+      <div className="a-tools">
+        {cover && (
+          <div className="a-3d-pick" role="group" aria-label={es ? "Capa 3D" : "3D layer"}>
+            {(["off", "capas", "fondo"] as const).map((m) => (
+              <button key={m} type="button" aria-pressed={mode3d === m} onClick={() => pick3d(m)}>
+                {m === "off" ? "2D" : m === "capas" ? (es ? "3D capas" : "3D layers") : es ? "3D fondo" : "3D depth"}
+              </button>
+            ))}
+          </div>
+        )}
+        {!piece && mode3d === "off" && (
+          <button type="button" className="a-fuse-toggle" aria-pressed={fuse} onClick={() => setFuse((v) => !v)}>
+            {fuseLabel}
+          </button>
+        )}
+        {mode3d !== "off" && state3d.on && flags.gyro && !reducedMotion && (
+          <button type="button" className="a-fuse-toggle" aria-pressed={gyroOn} onClick={askGyro}>
+            {es ? "Mover con el móvil" : "Move with the phone"}
+          </button>
+        )}
+        {mode3d !== "off" && !state3d.on && state3d.why && (
+          <p className="a-3d-why" role="status">
+            {es ? "3D no disponible: " : "3D unavailable: "}
+            {state3d.why}
+          </p>
+        )}
+      </div>
+      {flags.fps && mode3d !== "off" && <div ref={fpsRef} className="a-fps" aria-hidden="true" />}
     </header>
   );
 }

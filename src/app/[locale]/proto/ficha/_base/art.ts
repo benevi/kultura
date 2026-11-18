@@ -5,86 +5,103 @@
 //     no tienen idioma (`iso_639_1: null` = sin texto) y, si no hay, vale la
 //     `backdrop` que ya trae la ficha.
 //   · videojuego: `background_image` de RAWG (es ya la «portada» del juego).
-//   · anime: `bannerImage` de AniList (el cargador de la app no lo pide: se
-//     consulta aquí, solo en el prototipo).
-//   · libro, manga y cómic: no hay arte sin rótulo → `null` (la sala enseña la
-//     portada entera como pieza).
-// [P] Dos peticiones que la app no hace hoy (TMDB `/images` y `bannerImage`):
-// si la dirección sigue adelante, pasan al cargador real y por revisión legal.
+//   · anime: el banner de AniList (1900 × 400) no da para llenar la sala sin
+//     ampliarlo ×2: ya no se pide. Anime → Pieza.
+//   · libro, manga, cómic y anime: no hay arte sin rótulo que valga → `null`
+//     (la sala enseña la portada entera como pieza, a su tamaño).
+// [P] Una petición que la app no hace hoy (TMDB `/images`): si la dirección
+// sigue adelante, pasa al cargador real y por revisión legal.
 
 import { env } from "@/lib/env.server";
 import type { MediaItem } from "@/types/media";
-import { coverSource } from "./cover";
 import type { CoverSource } from "./types";
 
 const DAY = 60 * 60 * 24;
 const TMDB_FILE = /^\/[\w-]+\.(?:jpg|png|webp)$/;
 
-function tmdbArt(file: string): CoverSource {
+/**
+ * Regla de calidad (Víctor, 18-11-2026): una imagen nunca se amplía más de
+ * ~1,25× su tamaño natural. La sala llega a 1600 × 900 px CSS antes de que el
+ * CSS la limite (`--a-max-w/h`), así que para ser sala hace falta al menos
+ * 1280 × 720. Si no llega, la obra va en modo Pieza.
+ */
+const MIN_W = 1280, MIN_H = 720;
+
+interface Backdrop { file: string; w: number; h: number }
+
+function tmdbArt({ file, w, h }: Backdrop): CoverSource {
   const at = (size: string) => `https://image.tmdb.org/t/p/${size}${file}`;
+  // `original` solo si es mayor que w1280: el navegador la elige cuando la pantalla (× DPR) lo pide.
+  const big = w > 1280 ? `, ${at("original")} ${w}w` : "";
   return {
     original: at("original"),
     src: at("w1280"),
-    srcSet: `${at("w780")} 780w, ${at("w1280")} 1280w`,
+    srcSet: `${at("w780")} 780w, ${at("w1280")} 1280w${big}`,
     small: at("w300"),
     canvasSafe: true,
     sample: at("w300"),
     shape: "landscape",
+    hi: w > 1280 ? at("original") : at("w1280"),
+    natural: { w: Math.max(w, 1280), h: Math.max(h, 720) },
   };
 }
 
-async function tmdbTextless(kind: "movie" | "tv", id: string): Promise<string | undefined> {
-  if (!/^\d+$/.test(id)) return undefined;
+/** Imágenes de fondo SIN texto de TMDB (`iso_639_1: null`), de más a menos votada. */
+async function tmdbTextless(kind: "movie" | "tv", id: string): Promise<Backdrop[]> {
+  if (!/^\d+$/.test(id)) return [];
   try {
     const url = new URL(`https://api.themoviedb.org/3/${kind}/${id}/images`);
     url.searchParams.set("api_key", env.TMDB_API_KEY);
     url.searchParams.set("include_image_language", "null");
     const res = await fetch(url, { next: { revalidate: DAY } });
-    if (!res.ok) return undefined;
+    if (!res.ok) return [];
     const json = (await res.json()) as {
-      backdrops?: { file_path?: unknown; iso_639_1?: unknown; vote_average?: unknown; aspect_ratio?: unknown }[];
+      backdrops?: { file_path?: unknown; iso_639_1?: unknown; vote_average?: unknown; aspect_ratio?: unknown; width?: unknown; height?: unknown }[];
     };
-    const best = (json.backdrops ?? [])
+    return (json.backdrops ?? [])
       .filter((b) => b.iso_639_1 == null && typeof b.file_path === "string" && TMDB_FILE.test(b.file_path))
       .filter((b) => typeof b.aspect_ratio !== "number" || b.aspect_ratio > 1.5)
-      .sort((a, b) => (Number(b.vote_average) || 0) - (Number(a.vote_average) || 0))[0];
-    return best ? (best.file_path as string) : undefined;
+      .filter((b) => Number(b.width) >= MIN_W && Number(b.height) >= MIN_H)
+      .sort((a, b) => (Number(b.vote_average) || 0) - (Number(a.vote_average) || 0))
+      .map((b) => ({ file: b.file_path as string, w: Number(b.width), h: Number(b.height) }));
   } catch {
-    return undefined;
+    return [];
   }
 }
 
-async function anilistBanner(externalId: string): Promise<string | undefined> {
-  const m = /^al-(\d+)$/.exec(externalId);
-  if (!m) return undefined;
-  try {
-    const res = await fetch("https://graphql.anilist.co", {
-      method: "POST",
-      headers: { "Content-Type": "application/json", Accept: "application/json" },
-      body: JSON.stringify({ query: "query($id:Int){Media(id:$id,type:ANIME){bannerImage}}", variables: { id: Number(m[1]) } }),
-      next: { revalidate: DAY },
-    });
-    if (!res.ok) return undefined;
-    const json = (await res.json()) as { data?: { Media?: { bannerImage?: unknown } } };
-    const url = json.data?.Media?.bannerImage;
-    return typeof url === "string" && /^https:\/\/s4\.anilist\.co\//.test(url) ? url : undefined;
-  } catch {
-    return undefined;
-  }
+/** Arte de RAWG: `resize/640`, `resize/1280` y el original (suele ser ≥ 1920 px; RAWG no dice su tamaño). */
+function rawgArt(poster: string | undefined): CoverSource | null {
+  const m = poster?.match(/^https:\/\/media\.rawg\.io\/media\/(?:resize\/\d+\/-\/|crop\/\d+\/\d+\/)?(.+)$/);
+  if (!m) return null;
+  const at = (w: number) => `https://media.rawg.io/media/resize/${w}/-/${m[1]}`;
+  const original = `https://media.rawg.io/media/${m[1]}`;
+  return {
+    original,
+    src: at(1280),
+    srcSet: `${at(640)} 640w, ${at(1280)} 1280w, ${original} 1920w`,
+    small: at(420),
+    canvasSafe: true,
+    sample: at(420),
+    shape: "landscape",
+    hi: original,
+    natural: { w: 1920, h: 1080 },
+  };
 }
 
-/** Arte apaisado sin rótulo de la obra, o `null` si el proveedor no lo da. */
-export async function wideArt(item: MediaItem): Promise<CoverSource | null> {
+/**
+ * Arte apaisado sin rótulo de la obra (`art`) y otra imagen distinta para el
+ * marco del tráiler (`trailerArt`); `null` si el proveedor no las da.
+ * Anime: el banner de AniList (1900 × 400) no llega al mínimo —a pantalla
+ * completa se ampliaba ×2 y se veía blando—, así que ya no se pide: Pieza.
+ */
+export async function wideArt(item: MediaItem): Promise<{ art: CoverSource | null; trailerArt: CoverSource | null }> {
   if (item.type === "movie" || item.type === "tv") {
-    const file = (await tmdbTextless(item.type, item.externalId)) ?? item.backdrop?.match(/(\/[\w-]+\.(?:jpg|png|webp))$/)?.[1];
-    return file ? tmdbArt(file) : null;
+    const list = await tmdbTextless(item.type, item.externalId);
+    if (list.length) return { art: tmdbArt(list[0]), trailerArt: list[1] ? tmdbArt(list[1]) : null };
+    // Sin imágenes sin texto: el fondo de la ficha (TMDB no dice aquí su tamaño; `w1280` existe siempre).
+    const file = item.backdrop?.match(/(\/[\w-]+\.(?:jpg|png|webp))$/)?.[1];
+    return { art: file ? tmdbArt({ file, w: 1280, h: 720 }) : null, trailerArt: null };
   }
-  if (item.type === "game") return coverSource(item.poster, "game");
-  if (item.type === "anime") {
-    const url = await anilistBanner(item.externalId);
-    return url
-      ? { original: url, src: url, srcSet: `${url} 1900w`, small: url, canvasSafe: true, sample: url, shape: "landscape" }
-      : null;
-  }
-  return null;
+  if (item.type === "game") return { art: rawgArt(item.poster), trailerArt: null };
+  return { art: null, trailerArt: null };
 }

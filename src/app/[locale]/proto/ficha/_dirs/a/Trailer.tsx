@@ -12,8 +12,13 @@ import { useEffect, useRef, useState } from "react";
 
 interface Props {
   trailerKey: string;
-  /** Imagen del marco en reposo (fotograma apaisado si lo hay; si no, la portada). */
+  /**
+   * Imagen del marco en reposo: una imagen oficial sin rótulo DISTINTA de la de
+   * la sala. Sin ella, el marco es un campo plano del color de la obra. Nunca
+   * una miniatura de YouTube (sería pedir algo a Google antes de pulsar).
+   */
   image?: string;
+  imageSet?: string;
   imageCross?: "anonymous";
   /** Texto visible del botón («Ver el tráiler»). */
   playText: string;
@@ -24,7 +29,7 @@ interface Props {
   frameTitle: string;
 }
 
-export function Trailer({ trailerKey, image, imageCross, playText, playLabel, closeLabel, frameTitle }: Props) {
+export function Trailer({ trailerKey, image, imageSet, imageCross, playText, playLabel, closeLabel, frameTitle }: Props) {
   const [playing, setPlaying] = useState(false);
   const wasPlaying = useRef(false);
   const playRef = useRef<HTMLButtonElement>(null);
@@ -48,7 +53,7 @@ export function Trailer({ trailerKey, image, imageCross, playText, playLabel, cl
   }, [playing]);
 
   return (
-    <div className="a-tr" data-kp-slot="trailer" data-playing={playing ? "" : undefined}>
+    <div className="a-tr" data-kp-slot="trailer" data-playing={playing ? "" : undefined} data-plain={image ? undefined : ""}>
       <div className="a-tr-frame">
         {playing ? (
           <iframe
@@ -62,7 +67,7 @@ export function Trailer({ trailerKey, image, imageCross, playText, playLabel, cl
           <button ref={playRef} type="button" className="a-tr-shot" aria-label={playLabel} onClick={() => setPlaying(true)}>
             {image && (
               // eslint-disable-next-line @next/next/no-img-element
-              <img src={image} alt="" loading="lazy" decoding="async" crossOrigin={imageCross} />
+              <img src={image} srcSet={imageSet} sizes="(min-width: 1200px) 1120px, 100vw" alt="" loading="lazy" decoding="async" crossOrigin={imageCross} />
             )}
             <span className="a-tr-play" aria-hidden="true">
               <svg viewBox="0 0 12 12" width="13" height="13" focusable="false">
