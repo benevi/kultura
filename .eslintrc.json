@@ -1,5 +1,6 @@
 {
   "root": true,
+  "ignorePatterns": ["!.storybook", "storybook-static"],
   "extends": ["next/core-web-vitals", "next/typescript"],
   "rules": {
     "no-restricted-syntax": [
