@@ -39,8 +39,9 @@ export function coverSource(poster: string | undefined, type: MediaType): CoverS
     srcSet,
     small: at(256),
     canvasSafe,
-    // Sin CORS (Google Books): una miniatura por el optimizador, solo para leer el color.
-    sample: canvasSafe ? at(256) : `/_next/image?url=${encodeURIComponent(poster)}&w=256&q=60`,
+    // Sin CORS (Google Books): no se amplía el optimizador a otros proveedores (sería un
+    // uso nuevo, dictamen legal del 18-11-2026). La lectura falla y queda la paleta neutra.
+    sample: at(256),
     shape: type === "game" ? "landscape" : "portrait",
   };
 }
