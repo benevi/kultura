@@ -168,11 +168,37 @@ Lo que sigue es el encargo con el que arrancó la fase.
 
 - **Tres direcciones distintas** de la ficha, en código (rama desechable), con obras reales y sus portadas: día y noche, móvil y escritorio, tres formatos y un título en escritura no latina.
 - Cada dirección trae paleta, tipografía (fuentes libres, comprobadas) y trato de la portada.
-- Antes de empezar, Víctor da **2 o 3 referencias** de webs o apps que le gusten. **[P]**
+- Referencias de Víctor: dadas el 18-11-2026, en §7.1.
 - **Prototipo 3D de la ficha** sobre la dirección que vaya ganando: la portada real como objeto. Se prueba en los dispositivos de Víctor.
 - **Portadas en el 3D** (decisión del 17-11-2026). WebGL solo puede usar imágenes que el servidor de origen permita. Carga directa donde se pueda; MangaDex, ComicVine y Steam, por el optimizador de Vercel, que ya hace esa misma copia temporal en 2D (no es un uso nuevo). `/privacy` ya lo cuenta (#173); se revisa el texto si el 3D llega a producción.
 - Sale: `docs/design/BIBLIA.md` con la dirección elegida y firmada (**P-Gusto**) y `docs/spikes/3d-ficha.md` con el veredicto (**P-3D**).
 - El borrador de biblia «Archivo» (PR #214) queda descartado. Las tres direcciones parten de cero.
+
+### 7.1 Referencias y gustos de Víctor (18-11-2026)
+
+Recogidas enseñándole una lista de webs y apps; son sus palabras, resumidas.
+
+**Le gusta (y qué):**
+- **MUBI:** la obra a pantalla completa.
+- **Apple Music / Apple TV:** los colores salen de la portada.
+- **Steam (biblioteca):** el tráiler al pasar por encima de la portada.
+- **Cosmos:** muy limpio; portadas con animación.
+- **The StoryGraph:** gráficas para seguir y analizar lo que se consume.
+
+**No le gusta:** Letterboxd, Backloggd, Are.na y A24 (esta, por el exceso de blanco). Criterion Channel no la pudo abrir (bloqueo por país).
+
+**Criterios:**
+- **Claro y oscuro, los dos**, y que cada persona elija.
+- **Con personalidad, sin llegar a recargado.**
+- **Del diseño actual solo salva una cosa**, y pide mejorar su acabado: las portadas en capas que dan profundidad y sensación de 3D, con las letras fundidas dentro de la imagen, como parte de ese 3D.
+- Ya constaba: no a JetBrains Mono ni a Newsreader; «Archivo» descartado.
+
+**Qué hay que resolver al empezar la 8.3** (choca con lo escrito más arriba; decide Víctor **[P]**):
+1. **Letras dentro del 3D** frente al principio 3 («ningún texto dentro del 3D»). Salida posible: el texto sigue en el HTML del servidor y la capa 3D lo repite como adorno, oculto a lectores de pantalla.
+2. **Portadas en capas con profundidad** frente a §9: la copia propia de portadas y los mapas de profundidad siguen bloqueados. Hay que ver si el efecto sale sin ellos (capas a partir de la portada cargada en el navegador) o si Víctor levanta el bloqueo.
+3. **Tráiler al pasar por encima:** es un uso nuevo de datos de proveedores (vídeos de TMDB, YouTube o Steam). Antes de construirlo, mirar términos y `/privacy` (texto legal).
+4. **Color sacado de la portada:** comprobar el contraste AA en claro y en oscuro con cualquier portada.
+5. **Gráficas de seguimiento:** no son de la ficha; candidatas para perfil o biblioteca en la 8.5.
 
 ## 8. Lo que se conserva de la v3
 
@@ -192,4 +218,5 @@ Lo que sigue es el encargo con el que arrancó la fase.
 ## 10. Pendiente de Víctor
 
 1. ~~Ids antiguos de Jikan que no se puedan convertir~~. Resuelto en 8.1: no había ninguno en producción (§5).
-2. Referencias visuales, antes de empezar 8.3 (§7).
+2. ~~Referencias visuales, antes de empezar 8.3~~. Dadas el 18-11-2026 (§7.1).
+3. Las cinco decisiones de §7.1, al empezar la 8.3.
