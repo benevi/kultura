@@ -20,6 +20,7 @@ Con personalidad, sin recargar: esquinas rectas, color plano, sin sombras ni lí
 | **Tarjetas, listas y biblioteca** | La portada real | Como hasta ahora |
 
 - Si una obra de cine, juego o anime no trae imagen apaisada, su ficha se compone como la de un libro.
+- **Siempre en alta calidad, sin pixelar.** Se pide la resolución que haga falta para el tamaño real en pantalla. Ninguna imagen se amplía por encima de 1,25 veces su tamaño natural: si la imagen apaisada de una obra no da para llenar la sala, esa obra se compone como un libro, con la portada a su tamaño.
 - Obras sin ninguna imagen: carátula generada, solo en ese caso.
 - De dónde sale la imagen sin rótulo: imágenes sin idioma de TMDB, arte de RAWG, banner de AniList. Las de TMDB y AniList son peticiones que la app no hace hoy: pasan por la revisión de términos antes de llegar a producción.
 
@@ -68,7 +69,7 @@ Fuera: JetBrains Mono y Newsreader. Sus archivos de `assets/fonts/` se sustituye
 
 ## 7. Tráiler
 
-- **En la ficha**, aparte de la sala: sección propia al final. Un marco 16:9 con una imagen de la obra y «Ver el tráiler». Al pulsar, el marco pasa a ser el reproductor de YouTube (`youtube-nocookie`), en silencio, con sus controles y su marca y sin nada encima. Antes de pulsar no sale ninguna petición a YouTube.
+- **En la ficha**, aparte de la sala: sección propia al final. Un marco 16:9 con una imagen de la obra y «Ver el tráiler». **Esa imagen nunca es la misma que la de la sala**: otra imagen oficial sin rótulo y, si la obra no tiene una segunda, el marco va sin imagen, sobre el color de la obra. Al pulsar, el marco pasa a ser el reproductor de YouTube (`youtube-nocookie`), en silencio, con sus controles y su marca y sin nada encima. Antes de pulsar no sale ninguna petición a YouTube.
 - **En Descubrir** (idea de Víctor, para la 8.5): tráiler al pasar el ratón por la tarjeta, como en la biblioteca de Steam. Condición: YouTube exige consentimiento expreso para reproducir y `/privacy` dice hoy «solo cuando pulsas reproducir»; hará falta una preferencia que cada persona enciende o cambiar ese texto legal. Los vídeos propios de Steam quedan descartados por sus términos.
 
 ## 8. 3D
