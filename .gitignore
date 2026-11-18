@@ -11,6 +11,11 @@
 /test-results/
 /playwright-report/
 
+# Storybook (guía interna): build y capturas de fallos de las pruebas
+/storybook-static/
+__screenshots__/
+.vitest-attachments/
+
 # next.js
 /.next/
 /out/
