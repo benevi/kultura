@@ -112,12 +112,20 @@ Regla común de botones y enlaces: al pasar el puntero, tinta (`bg-sala-ink` con
 
 ## Componentes
 
-En `src/components/sala/`, cada uno con sus historias (Storybook, **Sala/Botón** y **Sala/Enlace**) y sus tests (`tests/unit/components/sala/`). Conviven con los de `src/components/ui/`, que siguen siendo los de las pantallas de hoy.
+En `src/components/sala/`, cada uno con sus historias (Storybook, **Sala/Botón**, **Sala/Enlace**, **Sala/Campo de texto**, **Sala/Selección** y **Sala/Formulario**) y sus tests (`tests/unit/components/sala/`). Conviven con los de `src/components/ui/`, que siguen siendo los de las pantallas de hoy.
 
 | Componente | Para qué |
 |---|---|
 | `SalaButton` | Acción. `primary`, `secondary`, `quiet` y `danger`; con icono, solo icono (`label` obligatorio, sin `title`), como enlace (`asChild`) y cargando (`loading` + `loadingLabel`) |
 | `SalaLink` | Navegación. `inline` (dentro de un texto) y `standalone` (suelto, 48 px). Elige solo entre el enlace con idioma y un `<a>` externo, que avisa de que abre otra pestaña; el aviso va en el idioma de la interfaz aunque el enlace lleve otro `lang` |
+
+| `SalaInput` | Campo de una línea: `text`, `email`, `password` (con `revealLabel`, botón para verla), `search`, `number`, `tel`, `url`, `date`. Contador con `maxLength` + `counter`; `leading` (icono de adorno) y `trailing` (un control dentro) |
+| `SalaTextarea` | Texto de varias líneas, con el mismo contador |
+| `SalaSelect` | Desplegable nativo; las opciones son sus `<option>` |
+| `SalaCheckbox` | Casilla: se marca y cuenta al guardar |
+| `SalaRadioGroup` + `SalaRadio` | Una entre pocas opciones a la vista (`fieldset` + `legend`) |
+| `SalaSwitch` | Ajuste que vale en el momento de tocarlo |
+| `SalaField` | La pieza común: etiqueta, ayuda, error y contador alrededor de un control propio (`{(control) => <input {...control} />}`) |
 
 Una palabra más larga que su caja (una URL como texto) se parte en los dos (`overflow-wrap: anywhere`): ni el botón ni el enlace dan scroll horizontal.
 
@@ -128,6 +136,27 @@ Una palabra más larga que su caja (una URL como texto) se parte en los dos (`ov
 - **Qué se oye.** `loadingLabel`, en una región `status` que existe desde antes (por eso `loading` se pasa siempre, también en `false`).
 - **El final lo anuncia quien usa el botón.** Al acabar, la región se vacía. El botón no sabe si salió bien o mal: un «hecho» fijo mentiría en el error y repetiría el aviso de quien sí lo sabe. La pantalla anuncia el resultado con su aviso (`role="status"`, o `alert` si falló), el error junto al campo o el cambio de página.
 
+### Los campos
+
+Todos son el control nativo (`<input>`, `<textarea>`, `<select>`) con otra caja: `ref`, `className` y las props nativas llegan al control, y `fieldClassName` a la caja del campo entero. Ningún texto sale del componente: etiqueta, ayuda, error, «obligatorio», «Mostrar contraseña» y el contador llegan por props, ya traducidos.
+
+| Prop común | Qué hace |
+|---|---|
+| `label` | Etiqueta, siempre a la vista. Un placeholder no la sustituye |
+| `requirement` | La palabra «obligatorio» u «opcional» junto a la etiqueta. Nunca un asterisco ni un color. Con `required` es solo para la vista (el lector ya lo oye del control); sin él, entra en la descripción |
+| `hint` | Ayuda, entre la etiqueta y el control |
+| `error` | Qué falla y cómo arreglarlo. Pone `aria-invalid`, entra el primero en `aria-describedby` y se pinta con icono y texto |
+
+- **Caja.** 48 px de alto, letra de 17 px (con menos de 16, iOS amplía la página), borde de 2 px `sala-border` (3:1 o más). Con el puntero o el foco, el borde pasa a tinta; el foco es el anillo de siempre.
+- **Estados.** Error: borde `sala-danger` y, debajo, icono y texto. Solo lectura: una raya debajo y nada a los lados (se distingue por la forma). Deshabilitado: borde discontinuo y gris, como el botón. No hay estado de «correcto»: la biblia no lo pide y un campo que no se queja ya lo dice.
+- **El error se anuncia una vez.** Si aparece con el foco en otro sitio (al salir del campo), lo dice una región viva del propio campo, que luego se vacía. Si el foco está en el control, o llega enseguida (enviar y saltar al primer error), calla: el lector ya lo lee como descripción. El formulario lleva el foco al primer error; ver **Sala/Formulario**.
+- **No se usa `aria-errormessage`:** su soporte es desigual y, junto con la descripción, hay lectores que leen el error dos veces.
+- **Contraseña.** El botón se llama siempre igual («Mostrar contraseña»); cambian `aria-pressed` y el dibujo.
+- **Casilla, radio e interruptor.** Lo que se pulsa es la fila entera (el `<label>`), de 48 px o más; el dibujo mide 24. Marcado no es un color: un trazo en la casilla, un punto en el radio, la pieza de lado en el interruptor. El radio es redondo, la única curva del sistema: es lo que lo distingue de la casilla.
+- **Autorrelleno del navegador.** Tinta sobre panel, en los dos temas (el navegador pone si no su fondo y su letra).
+- **Colores forzados.** Bordes, foco y flecha se ven con los colores del sistema; casilla, radio e interruptor vuelven a ser los del sistema.
+- **`autoComplete` e `inputMode`** los pone la pantalla, que es quien sabe qué dato es (WCAG 1.3.5). `email`, `password` y `url` van sin corrector ni mayúscula inicial.
+
 Las piezas comunes de las historias (el suelo neutro o de una obra, las obras de ejemplo) están en `.storybook/sala.tsx`, fuera de `src`: sus clases y sus textos no entran en la app.
 
 ## Qué fija la biblia y qué es propuesta
@@ -137,4 +166,4 @@ Las piezas comunes de las historias (el suelo neutro o de una obra, las obras de
 | Papeles de color y sus neutros; AA | Colores de error, hecho y aviso; foco con la tinta; gris de lo deshabilitado |
 | Familias y orden de las fuentes CJK | Tamaños, pesos e interlineados de cada papel |
 | Esquinas rectas, sin sombras, acción de 48 px | Margen de página, grosor del foco, tiempos y curva |
-| El formato y los estados no se dicen solo con color | Variantes del botón; tinta al pasar el puntero; pulsado que encoge un punto el contenido; deshabilitado con borde discontinuo; la espera de tres cuadrados bajo el texto, que se para a los 4,4 s; enlace siempre subrayado y sin estilo de «visitado» |
+| El formato y los estados no se dicen solo con color | Variantes del botón; tinta al pasar el puntero; pulsado que encoge un punto el contenido; deshabilitado con borde discontinuo; la espera de tres cuadrados bajo el texto, que se para a los 4,4 s; enlace siempre subrayado y sin estilo de «visitado»; en los campos: borde gris en reposo y tinta con puntero o foco, «obligatorio» y «opcional» con palabra, solo lectura como raya, sin estado de «correcto», radio redondo, interruptor de pieza cuadrada |
