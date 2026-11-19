@@ -158,7 +158,8 @@ jobs:
     # Fase 8.4: guía interna de componentes. Construye Storybook, lo sube como
     # artefacto del workflow (no se publica en ningún sitio) y pinta cada
     # historia en Chromium con axe (WCAG 2.2 A/AA): cualquier violación falla
-    # (`a11y.test: "error"` en .storybook/preview.tsx). Sin secretos y sin red.
+    # (`a11y.test: "error"` en .storybook/preview.tsx), y también un contraste
+    # que axe no haya podido medir (.storybook/contraste.ts). Sin secretos y sin red.
     if: github.event_name != 'schedule'
     runs-on: ubuntu-24.04
     timeout-minutes: 15

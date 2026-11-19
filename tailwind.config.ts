@@ -22,12 +22,28 @@ function token(name: string): string {
 }
 
 /**
+ * Lo mismo para «Sala», pero mezclando en sRGB. El color que se pinta es
+ * idéntico (mezclar con `transparent` solo cambia el alfa, en cualquier
+ * espacio); lo que cambia es cómo lo devuelve el navegador. Con `in oklch`,
+ * Chromium da `oklch(L C none)` para los tokens casi grises (los neutros de
+ * «Sala» lo son) y axe-core 4.11 no sabe leer `none`: la regla
+ * `color-contrast` se quedaba sin medir nada y pasaba. Con `in srgb` da
+ * `color(srgb r g b)`, que axe sí lee. Los tokens de la app de hoy siguen con
+ * `token()`: axe los lee bien (tienen croma) y su CSS no se toca.
+ * `tests/unit/design/sala-tokens.test.ts` falla si una clase de «Sala» vuelve
+ * a mezclar fuera de sRGB.
+ */
+function salaToken(name: string): string {
+  return `color-mix(in srgb, var(${name}) calc(<alpha-value> * 100%), transparent)`;
+}
+
+/**
  * Tokens de «Sala» (fase 8.4, `src/lib/design/sala-tokens.ts`). Conviven con
  * los de la app de hoy bajo el prefijo `sala`: `bg-sala-background`,
  * `text-sala-ink`, `border-sala-border`… Las variables `--sala-*` solo
  * existen donde se carga `src/styles/sala/tokens.css`.
  */
-const salaColors = Object.fromEntries(SALA_COLOR_NAMES.map((name) => [salaVar(name).slice(2), token(salaVar(name))]));
+const salaColors = Object.fromEntries(SALA_COLOR_NAMES.map((name) => [salaVar(name).slice(2), salaToken(salaVar(name))]));
 
 const config: Config = {
   content: [

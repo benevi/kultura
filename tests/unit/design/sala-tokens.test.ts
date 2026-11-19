@@ -11,8 +11,9 @@
  *   elige el tema; los estados, que no cambian con la obra, siguen cumpliendo
  *   sobre cualquier fondo de obra. Que la paleta de una imagen cumple AA por
  *   dentro ya lo prueba `image-palette.test.ts` con 3000 portadas.
- * - Tailwind: cada token tiene su clase y ninguna clase apunta a una variable
- *   que el CSS no define.
+ * - Tailwind: cada token tiene su clase, ninguna clase apunta a una variable
+ *   que el CSS no define y los colores se mezclan en sRGB (para que axe pueda
+ *   medir el contraste en las historias; ver `.storybook/contraste.ts`).
  */
 import { beforeAll, describe, expect, it } from "vitest";
 import { readFileSync } from "fs";
@@ -302,10 +303,26 @@ describe("Tailwind expone los tokens", () => {
     expect(Array.from(used).filter((name) => !defined.has(name))).toEqual([]);
   });
 
+  // Con `in oklch`, Chromium devuelve `oklch(L C none)` para un token casi
+  // gris y axe-core no lo sabe leer: `color-contrast` no medía nada y pasaba.
+  it("los colores de «Sala» se mezclan en sRGB, que es lo que axe sabe leer", () => {
+    const mixes = Array.from(css.matchAll(/color-mix\(in ([\w-]+), var\((--sala-[\w-]+)\)/g));
+    // Todas las clases de color pasan por aquí (más la de `/80`)…
+    expect(mixes.length).toBeGreaterThan(COLOR_CLASSES.length);
+    expect(new Set(mixes.map((m) => m[2])).size).toBe(SALA_COLOR_NAMES.length);
+    // …y ninguna mezcla en otro espacio.
+    expect(mixes.filter((m) => m[1] !== "srgb").map((m) => m[0])).toEqual([]);
+  });
+
+  it("el modificador de opacidad sigue valiendo en los colores de «Sala»", () => {
+    const rule = css.split(".bg-sala-background\\/80")[1]?.split("}")[0] ?? "";
+    expect(rule).toContain("color-mix(in srgb, var(--sala-background) calc(0.8 * 100%), transparent)");
+  });
+
   it("las clases de hoy siguen igual: los tokens nuevos solo añaden nombres con «sala»", () => {
     const colors = (config.theme?.extend?.colors ?? {}) as Record<string, string>;
-    expect(colors["surface-base"]).toContain("var(--surface-base)");
-    expect(colors["text-primary"]).toContain("var(--text-primary)");
+    expect(colors["surface-base"]).toBe("color-mix(in oklch, var(--surface-base) calc(<alpha-value> * 100%), transparent)");
+    expect(colors["text-primary"]).toBe("color-mix(in oklch, var(--text-primary) calc(<alpha-value> * 100%), transparent)");
     const fonts = (config.theme?.extend?.fontFamily ?? {}) as Record<string, string[]>;
     expect(fonts.display[0]).toBe("var(--font-display)");
     expect(fonts.body[0]).toBe("var(--font-body)");

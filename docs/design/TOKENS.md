@@ -39,6 +39,21 @@ Los valores, en claro y en oscuro, están en la tabla de Storybook y en `tokens.
 
 Un estado nunca se dice solo con color: lleva texto o icono.
 
+Opacidad: `bg-sala-panel/80` funciona. Las clases mezclan el token con `transparent` en sRGB (`color-mix(in srgb, …)`), no en OKLCH como las de la app de hoy: el color pintado es el mismo, pero con OKLCH Chromium devuelve `oklch(L C none)` para los tokens casi grises y axe no lo sabe leer. Por lo mismo, un color de «Sala» escrito a mano en un `style` va como `var(--sala-…)`, sin `color-mix(in oklch, …)`.
+
+### El contraste en las historias
+
+`npm run test:storybook` pasa axe a cada historia. Falla por una violación y también por un contraste **sin medir** (`.storybook/contraste.ts`, una sola pieza para todas las historias):
+
+- Si axe no pudo leer un color o la regla dio error, falla siempre. Se arregla el color; no hay excepción.
+- Si axe leyó los colores pero no puede dar una cifra (texto sobre imagen o degradado, pseudoelementos, elementos solapados), falla hasta que la historia declare que se ha medido a mano y cómo:
+
+  ```ts
+  parameters: { contraste: { revisado: { bgImage: "Título sobre la portada con velo: 7,3:1 en el píxel más claro" } } }
+  ```
+
+  Los motivos que se pueden declarar están en `MOTIVOS_REVISABLES`. Uno declarado que ya no aparece también falla.
+
 ### El color de una obra
 
 ```tsx

@@ -1,5 +1,6 @@
 import type { Preview } from "@storybook/nextjs-vite";
 import { bricolageGrotesque, figtree } from "@/app/fonts";
+import { contrasteMedido } from "./contraste";
 import "../src/app/globals.css";
 // «Sala» (fase 8.4): tokens y fuentes nuevas. Solo se cargan aquí; la app no
 // las importa todavía, así que sus pantallas no descargan nada de esto.
@@ -56,6 +57,9 @@ const preview: Preview = {
     },
   },
   initialGlobals: { tema: "oscuro" satisfies Tema },
+  // Un contraste que axe no ha podido medir también hace fallar la historia
+  // (el addon solo mira las violaciones). La regla, en `./contraste.ts`.
+  afterEach: [contrasteMedido],
   decorators: [
     (Story, context) => {
       // Mecanismo del tema: `data-theme` en `<html>`. Los tokens de «Sala»
