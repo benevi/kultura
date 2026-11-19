@@ -131,7 +131,8 @@ const INTERACCION = [
 /** El gris es el del borde (3:1); el trazo discontinuo lo dice sin color. */
 const DESHABILITADO = "cursor-not-allowed border-dashed border-sala-border bg-transparent text-sala-ink-disabled";
 
-const ICONO = "inline-flex shrink-0 [&>svg]:h-5 [&>svg]:w-5";
+// Con colores forzados un SVG no cambia solo de color: se le da el del sistema.
+const ICONO = "inline-flex shrink-0 [&>svg]:h-5 [&>svg]:w-5 forced-colors:[&>svg]:text-[color:ButtonText]";
 
 /**
  * Un cuadrado de la espera. Con colores forzados el fondo de un elemento se
