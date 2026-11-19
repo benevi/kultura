@@ -31,8 +31,12 @@ import { SALA_POSTER_RATIO, SalaPoster, type SalaPosterRatio } from "./SalaPoste
  * a la caja de la tarjeta, que es lo que se coloca en la rejilla. Ningún
  * texto sale del componente: llegan ya traducidos.
  *
+ * **En una lista**, cada tarjeta va en un `<li>`: lo pone `SalaWorkList`, que
+ * además anuncia la carga. En una rejilla, dos columnas a 320 px de ancho: con
+ * tres, la tarjeta se queda en 85 px y casi todo título se corta.
+ *
  * Sin `"use client"`: vale en un componente de servidor. Lo único de cliente
- * es el póster.
+ * es la imagen del póster (`SalaPosterImage`).
  */
 export type SalaWorkCardVariant = "grid" | "row" | "compact";
 
@@ -70,12 +74,18 @@ export interface SalaWorkCardProps
   headingLevel?: 2 | 3 | 4 | "none";
   /**
    * Líneas del título antes de cortarlo. El corte es solo a la vista: el
-   * nombre del enlace lleva el título entero, y también su `title`.
+   * nombre del enlace lleva el título entero. No hay `title`: como el enlace
+   * cubre la tarjeta, saldría un cartelito en cualquier punto de ella.
    * `"none"` no corta nunca.
    */
   clamp?: 2 | 3 | "none";
   /** Acción secundaria (un `SalaButton` de solo icono). Va fuera del enlace. */
   action?: React.ReactNode;
+  /**
+   * Tope de ampliación del póster (1,25×). Apagado por defecto: en tarjetas y
+   * listas la portada real llena la caja, como hasta ahora (biblia §2).
+   */
+  capUpscale?: boolean;
   /** La portada no ha cargado. Solo desde un componente de cliente. */
   onPosterError?: () => void;
   /** Clases de la caja de la tarjeta. */
@@ -90,7 +100,7 @@ const CAJA: Record<SalaWorkCardVariant, string> = {
   compact: "flex min-h-sala-target items-center gap-3",
 };
 
-/** Ancho del póster cuando va al lado del texto, según su proporción. */
+/** Ancho del póster cuando va al lado del texto, según su proporción. En `rem`: crece con el texto. */
 const POSTER: Record<SalaWorkCardVariant, Record<SalaPosterRatio, string>> = {
   grid: { "2/3": "w-full", "16/9": "w-full" },
   row: { "2/3": "w-16 shrink-0 sm:w-20", "16/9": "w-28 shrink-0 sm:w-36" },
@@ -102,8 +112,9 @@ const SIZES: Record<SalaWorkCardVariant, Record<SalaPosterRatio, string>> = {
     "2/3": "(max-width: 640px) 45vw, (max-width: 1024px) 30vw, 20vw",
     "16/9": "(max-width: 640px) 92vw, (max-width: 1024px) 45vw, 30vw",
   },
-  row: { "2/3": "(min-width: 640px) 80px, 64px", "16/9": "(min-width: 640px) 144px, 112px" },
-  compact: { "2/3": "40px", "16/9": "64px" },
+  // En `rem`, como las cajas de arriba: con el texto al 200 % la caja mide el doble y se pide el doble.
+  row: { "2/3": "(min-width: 640px) 5rem, 4rem", "16/9": "(min-width: 640px) 9rem, 7rem" },
+  compact: { "2/3": "2.5rem", "16/9": "4rem" },
 };
 
 const TITULO: Record<SalaWorkCardVariant, string> = {
@@ -118,14 +129,17 @@ const CORTE: Record<2 | 3, string> = { 2: "line-clamp-2", 3: "line-clamp-3" };
  * El enlace: no pinta nada suyo salvo el texto; `::after` cubre la tarjeta y
  * lleva el anillo de foco, alrededor de toda ella. Al pasar el puntero el
  * título se marca en tinta, como los enlaces y los botones; al pulsar, con el
- * gris de los enlaces. La caja no cambia de medida en ningún estado.
+ * gris de los enlaces. La caja no cambia de medida en ningún estado. Con
+ * colores forzados la tinta no se ve (el sistema quita los fondos): el título
+ * se subraya.
  */
 const ENLACE = cn(
   "text-sala-ink no-underline [-webkit-tap-highlight-color:transparent]",
   "after:absolute after:inset-0 after:content-['']",
   "sala-focused:[outline:none] sala-focused:after:sala-focus",
   "[&>span]:sala-hover:bg-sala-ink [&>span]:sala-hover:text-sala-background",
-  "[&>span]:sala-pressed:bg-sala-ink-secondary [&>span]:sala-pressed:text-sala-background"
+  "[&>span]:sala-pressed:bg-sala-ink-secondary [&>span]:sala-pressed:text-sala-background",
+  "forced-colors:[&>span]:sala-hover:underline forced-colors:[&>span]:sala-pressed:underline"
 );
 
 /**
@@ -158,6 +172,7 @@ export const SalaWorkCard = React.forwardRef<HTMLAnchorElement, SalaWorkCardProp
     headingLevel = 3,
     clamp = variant === "grid" ? 3 : 2,
     action,
+    capUpscale = false,
     onPosterError,
     className,
     ...props
@@ -166,14 +181,13 @@ export const SalaWorkCard = React.forwardRef<HTMLAnchorElement, SalaWorkCardProp
 ) {
   const proporcion = ratio ?? SALA_POSTER_RATIO[format];
   const Titulo = headingLevel === "none" ? "p" : (`h${headingLevel}` as "h2" | "h3" | "h4");
-  const cortado = clamp !== "none";
 
   const texto = (
     <span lang={titleLang} className={MARCA}>
       {title}
     </span>
   );
-  const enlace = { ref, className: ENLACE, title: cortado ? title : undefined, ...props };
+  const enlace = { ref, className: ENLACE, ...props };
 
   return (
     <div data-sala-card={variant} className={cn("relative min-w-0", CAJA[variant], className)}>
@@ -188,12 +202,13 @@ export const SalaWorkCard = React.forwardRef<HTMLAnchorElement, SalaWorkCardProp
           priority={priority}
           palette={palette}
           fallback={variant === "grid" ? "title" : "plain"}
+          capUpscale={capUpscale}
           onLoadError={onPosterError}
         />
       </div>
       <div className="flex min-w-0 flex-1 flex-col gap-1">
         {/* La marca del título sobresale 2 px por la izquierda, hacia fuera: el texto sigue en la línea del póster y por la derecha no desborda. */}
-        <Titulo className={cn("-ml-0.5", TITULO[variant], cortado && CORTE[clamp])}>
+        <Titulo className={cn("-ml-0.5", TITULO[variant], clamp !== "none" && CORTE[clamp])}>
           {ES_RUTA.test(href) ? (
             <Link href={href} {...enlace}>
               {texto}
@@ -209,7 +224,8 @@ export const SalaWorkCard = React.forwardRef<HTMLAnchorElement, SalaWorkCardProp
             {originalTitle.text}
           </p>
         ) : null}
-        <p className="sala-type-small">
+        {/* Con el espaciado de WCAG 1.4.12 «Videojuego» no cabe en una tarjeta de 85 px: que se parta, no que se salga. */}
+        <p className="sala-type-small [overflow-wrap:anywhere]">
           <span className="mr-1 font-semibold text-sala-ink">{formatLabel}</span>
           {year !== undefined && year !== "" ? (
             <>
@@ -235,8 +251,8 @@ export const SalaWorkCard = React.forwardRef<HTMLAnchorElement, SalaWorkCardProp
  * datos. Late tres veces (3,6 s) y se queda quieto: nada se mueve solo más de
  * 5 s (biblia §6); con movimiento reducido está quieto desde el principio.
  *
- * Es adorno (`aria-hidden`): quien lo pinta marca la lista con `aria-busy` y
- * anuncia la carga una vez, no una por tarjeta.
+ * Es adorno (`aria-hidden`): la lista se marca con `aria-busy` y la carga se
+ * anuncia una vez, no una por tarjeta. Eso lo hace `SalaWorkList`.
  */
 export function SalaWorkCardSkeleton({
   variant = "grid",

@@ -56,3 +56,42 @@ export function chooseRoomLayout(candidates: readonly PixelSize[], room: PixelSi
   }
   return { layout: 'book' }
 }
+
+/** Cómo se pinta una portada en su caja cuando rige el tope de ampliación. */
+export type PosterFit =
+  /** Da para la caja: la llena (o cabe entera, con `contain`) sin pasar del tope. */
+  | { frame: 'fill' }
+  /**
+   * Se queda corta: va entera, ampliada como mucho hasta el tope y sin salirse.
+   * `width` y `height` son su tamaño en píxeles CSS; `scale`, lo que hay que
+   * encoger la imagen ya encajada entera en la caja (`object-fit: contain`)
+   * para dejarla en ese tamaño: entre 0 y 1, para un `transform`.
+   */
+  | { frame: 'piece'; scale: number; width: number; height: number }
+
+/**
+ * Qué toca en un póster con tope. `natural` es el tamaño **del archivo** en
+ * píxeles reales, no el `naturalWidth` de un `<img>` con `srcset`: ese viene
+ * dividido por la densidad del candidato elegido (ancho real × `sizes` ÷
+ * descriptor) y a densidad 2 o 3 hace pasar por pequeña casi cualquier
+ * portada. `room`, la caja en píxeles físicos (CSS × `dpr`). `null` si alguna
+ * medida no vale: todavía no se puede decidir.
+ */
+export function posterFit(
+  natural: PixelSize,
+  room: PixelSize,
+  dpr: number,
+  fit: 'cover' | 'contain' = 'cover'
+): PosterFit | null {
+  if (!usable(natural) || !usable(room) || !(dpr > 0)) return null
+  const whole = Math.min(room.width / natural.width, room.height / natural.height)
+  const needed = fit === 'cover' ? roomScale(natural, room) : whole
+  if (needed <= IMAGE_MAX_UPSCALE) return { frame: 'fill' }
+  const shown = Math.min(whole, IMAGE_MAX_UPSCALE)
+  return {
+    frame: 'piece',
+    scale: Math.round((shown / whole) * 10000) / 10000,
+    width: Math.round((natural.width * shown) / dpr),
+    height: Math.round((natural.height * shown) / dpr),
+  }
+}

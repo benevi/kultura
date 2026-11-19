@@ -126,8 +126,9 @@ En `src/components/sala/`, cada uno con sus historias (Storybook, **Sala/Botón*
 | `SalaSwitch` | Ajuste que vale en el momento de tocarlo |
 | `SalaForm` | El `<form>` de un formulario con campos de «Sala»: al enviar con errores lleva el foco al primero y anuncia una vez cuántos hay que corregir (`errorSummary`) |
 | `SalaField` | La pieza común: etiqueta, ayuda, error y contador alrededor de un control propio (`{(control) => <input {...control} />}`) |
-| `SalaPoster` | La imagen de una obra: reserva su sitio, nunca queda rota y no pixela |
+| `SalaPoster` | La imagen de una obra: reserva su sitio y nunca queda rota. Con `capUpscale`, tampoco pixela (el tope de la sala de la ficha) |
 | `SalaWorkCard` + `SalaWorkCardSkeleton` | Una obra en una rejilla o una lista: póster, título y datos, toda ella un enlace. `grid`, `row` y `compact`; con acción secundaria (`action`) |
+| `SalaWorkList` | La lista alrededor de las tarjetas: `ul`/`li`, el aviso de carga (una vez, al empezar y al acabar) y los esqueletos. Rejilla o lista |
 
 Una palabra más larga que su caja (una URL como texto) se parte en los dos (`overflow-wrap: anywhere`): ni el botón ni el enlace dan scroll horizontal.
 
@@ -141,8 +142,16 @@ Los dos conviven con `PosterFrame`, `PosterImage`, `BestPoster` y `MediaCard`, q
 - **Sin salto de maquetación.** La caja tiene su proporción antes de que llegue nada (medido en las historias: con imagen, sin ella y con la imagen rota mide lo mismo). `sizes` es obligatorio; `priority` solo para lo que se ve sin hacer scroll.
 - **Cargando, sin imagen o con error:** el campo de color con el título como rótulo (biblia §2). El campo es la franja (`bg-sala-band` con su tinta): con `palette`, la de la obra; sin ella, la del contenedor. El rótulo es adorno y su tamaño sigue al ancho de la caja, sin bajar de 14 px. En una miniatura no cabe: `fallback="plain"` deja solo el campo.
 - **`alt`, siempre.** Vacío cuando el título va escrito al lado (toda tarjeta): la imagen es adorno. Con texto cuando el póster va solo; si entonces no hay imagen, ese texto nombra la caja (`role="img"`).
-- **Tope de ampliación** (biblia §2, `src/lib/design/image-fit.ts`). Una imagen que para llenar la caja tendría que ampliarse más de 1,25 veces su tamaño natural, en píxeles físicos, no la llena: va entera, a 1,25 veces como mucho, centrada sobre el campo de color. `capUpscale={false}` lo apaga.
-- La imagen se pide con `posterLoader`, como hoy: no hay dominios nuevos. Es un componente de cliente (tiene que saber si la imagen cargó, falló o se queda corta); sin JavaScript se ve igual, salvo el tope.
+- **La portada llena la caja, como hasta ahora** (biblia §2: en tarjetas y listas, «la portada real, como hasta ahora»). El tope de ampliación se firmó para la sala de la ficha y aquí va **apagado por defecto**.
+- **Tope de ampliación** (`capUpscale`; biblia §2, `posterFit` en `src/lib/design/image-fit.ts`). Una imagen que para llenar la caja tendría que ampliarse más de 1,25 veces el tamaño de **su archivo**, en píxeles físicos, no la llena: va entera, a 1,25 veces como mucho, centrada sobre el campo de color.
+  - **Se mide el archivo, no el `<img>`.** Con `srcset` y `sizes` (lo que genera `next/image`) el `naturalWidth` de la imagen viene dividido por la densidad del candidato elegido (ancho del archivo × `sizes` ÷ descriptor): una portada de 780 px en una caja de 171 px a densidad 3 dice medir 182. Con ese número casi todo salía pieza a densidad 2 y 3. El tamaño llega por `naturalSize` (el del mayor archivo que se puede pedir para ese `src`; así se decide al montar, sin esperar a la imagen) o, si no se sabe, se lee el archivo ya cargado (`measureImageFile`, `src/lib/images/file-size.ts`: el mismo `currentSrc`, de la caché).
+  - **Sin salto ni parpadeo.** La imagen no se pinta hasta saber si llena o es pieza (mientras, el campo de color con el título), y la pieza se encoge con `transform`: la caja del marco no cambia y no suma CLS (medido: 0,000 frente a 0,010 por póster y 0,056–0,067 en una rejilla de 100).
+  - **Se vuelve a decidir** si cambia la caja o la densidad de la pantalla sin cambiar la caja (zoom, otra pantalla): un solo `ResizeObserver` y una sola escucha de densidad para todos los pósteres (`watchBox`, `src/lib/design/box-watch.ts`).
+  - **Necesita JavaScript**: sin él, con `capUpscale` se queda el campo de color con el título. Sin `capUpscale` no hace falta para ver la imagen.
+- **Qué es de cliente.** La caja, el campo de color y el rótulo salen del servidor (`SalaPoster` no lleva `"use client"`). De cliente solo es la imagen (`SalaPosterImage`): tiene que enterarse de si falla para quitarse (si no, quedaría el icono de imagen rota) y marca cuándo ha cargado en `data-sala-poster-image`; con eso el rótulo se esconde por CSS (`:has()`). Sin tope no mide nada, no observa la caja y al cargar no vuelve a pintar nada. `onLoadError` solo se puede pasar desde un componente de cliente.
+- **Colores forzados.** El campo de color desaparece (el sistema quita los fondos): la caja lleva un contorno de 1 px del color del texto. Va en una sola clase (`forced-colors:[outline:1px_solid_CanvasText]`): escrita por partes, `cn` las tomaba por repetidas y se quedaba con una.
+- **Rótulo.** Una palabra que no cabe se parte con guion donde el navegador sabe ponerlo para el idioma (`hyphens: auto` con el `lang` del título o de la página); si no, por donde toque. En japonés y coreano no cambia nada.
+- La imagen se pide con `posterLoader`, como hoy: no hay dominios nuevos.
 
 **`SalaWorkCard`**
 
@@ -150,11 +159,22 @@ Los dos conviven con `PosterFrame`, `PosterImage`, `BestPoster` y `MediaCard`, q
 - **Acción secundaria** (`action`): un `SalaButton` de solo icono, fuera del enlace y encima de él. Nunca un botón dentro del enlace. En el teclado va después de la obra. Su `label` nombra la obra («Guardar Parásitos en la biblioteca»): en una rejilla, veinte botones «Guardar» no dicen nada.
 - **El formato va con palabras** (`formatLabel`, ya traducido), en cada tarjeta.
 - **Idiomas.** `titleLang` si el título no está en el idioma de la página; `originalTitle` lleva el suyo. Con eso cada escritura sale con su fuente.
-- **Título cortado.** Tres líneas en `grid` y dos en `row` y `compact` (`clamp`; `"none"` no corta). El corte es solo a la vista: el nombre del enlace lleva el título entero, y también su `title`.
-- **Estados.** Con el puntero, el título se marca en tinta; pulsada, con el gris de los enlaces; con el foco, el anillo rodea la tarjeta entera, por fuera. La caja no cambia de medida en ninguno. Una rejilla o un carrusel deja 6 px de aire alrededor para el anillo (un contenedor con `overflow` lo recortaría).
+- **Título cortado.** Tres líneas en `grid` y dos en `row` y `compact` (`clamp`; `"none"` no corta). El corte es solo a la vista: el nombre del enlace lleva el título entero. **No lleva `title`**: el enlace cubre la tarjeta entera, así que el cartelito saldría en cualquier punto de ella.
+- **Estados.** Con el puntero, el título se marca en tinta; pulsada, con el gris de los enlaces; con el foco, el anillo rodea la tarjeta entera, por fuera. La caja no cambia de medida en ninguno. Con colores forzados la tinta no se ve (el sistema quita los fondos) y el título se subraya. Una rejilla o un carrusel deja 6 px de aire alrededor para el anillo (un contenedor con `overflow` lo recortaría).
+- **Póster.** Sin tope de ampliación (`capUpscale` existe y va apagado): la portada llena la caja. En `row` y `compact` la caja mide en `rem` (4 → 5 rem la vertical y 7 → 9 la apaisada en fila; 2,5 y 4 rem en compacta) y su `sizes` por defecto también: con el texto al 200 % la caja mide el doble y se pide una imagen del doble. En `grid` el ancho depende de la rejilla: `sizes` lo pone quien la monta.
+- **Rejilla a 320 px: dos columnas.** Con tres, la tarjeta se queda en 85 px y casi todo título se corta. La tercera columna entra a partir de 360 px.
+- **Texto que no cabe.** Con el espaciado de WCAG 1.4.12 «Videojuego» no cabe en una tarjeta de 85 px: la línea de formato y año se parte (`overflow-wrap: anywhere`), como el título, y nada se sale de la tarjeta.
 - **Dónde va cada cosa.** `ref` y las props nativas, al enlace; `className`, a la caja de la tarjeta. Es un componente de servidor.
-- **En una lista.** Cada tarjeta, en un `<li>` de una `<ul role="list">` (o `<ol>` si el orden cuenta) con nombre o bajo un encabezado. `headingLevel` es el nivel que toca bajo ese encabezado (`3` por defecto); `"none"` deja el título en un párrafo, para una lista de sugerencias que no es un índice.
-- **Esqueleto** (`SalaWorkCardSkeleton`): la misma forma, late tres veces (3,6 s) y se queda quieto; con movimiento reducido no late. Es adorno: la lista lleva `aria-busy` y la carga se anuncia una vez, no una por tarjeta.
+- **En una lista.** Cada tarjeta, en un `<li>` de una lista con nombre: lo pone `SalaWorkList`. `headingLevel` es el nivel que toca bajo el encabezado de la lista (`3` por defecto); `"none"` deja el título en un párrafo, para una lista de sugerencias que no es un índice.
+- **Esqueleto** (`SalaWorkCardSkeleton`): la misma forma, late tres veces (3,6 s) y se queda quieto; con movimiento reducido no late. Es adorno: la carga la anuncia la lista, una vez.
+
+**`SalaWorkList`**
+
+- **Pone la lista.** Un `<ul role="list">` (`<ol>` con `ordered`) y un `<li>` por hijo; la forma (columnas, huecos) va en `className`. Vale para rejilla, filas y compacta (`variant` y `ratio` dan forma a los esqueletos). Necesita nombre: `aria-label` o `aria-labelledby`.
+- **Anuncia la carga una vez, al empezar y al acabar.** Mientras `loading`, la lista lleva `aria-busy` y una región `status` dice `loadingLabel`; al acabar dice `loadedLabel` («12 obras»). La región está montada siempre y nace vacía: una región que nace con texto no se anuncia de forma fiable, porque el lector de pantalla avisa de los cambios. Una lista que llega ya cargada no dice nada.
+- **El componente tiene que seguir montado** antes y después de la carga. Si la pantalla cambia un componente de «cargando» por otro con los datos (un `fallback` de `Suspense`), la región es otra y el aviso del final se pierde.
+- **Los esqueletos no cuentan.** `skeletons` dice cuántos; van al final, solo mientras `loading`, cada uno en un `<li>` oculto a los lectores de pantalla: la lista no anuncia elementos vacíos.
+- **Sin lógica de datos.** Ni pide ni pagina: recibe las tarjetas como hijos y un `loading`. Los textos llegan traducidos. Es un componente de servidor; de cliente solo es la región viva.
 
 ### La espera del botón (`loading`)
 

@@ -1,13 +1,10 @@
-"use client";
-
 import * as React from "react";
-import Image from "next/image";
-import { IMAGE_MAX_UPSCALE, roomScale, type PixelSize } from "@/lib/design/image-fit";
+import type { PixelSize } from "@/lib/design/image-fit";
 import type { ImagePalette } from "@/lib/design/image-palette";
 import { SALA_WORK_CLASS, workPaletteVars } from "@/lib/design/sala-palette";
-import { posterLoader } from "@/lib/images/poster-url";
 import { cn } from "@/lib/utils/index";
 import type { MediaType } from "@/types/media";
+import { SalaPosterCappedImage, SalaPosterImage } from "./SalaPosterImage";
 
 /**
  * Póster de «Sala» (fase 8.4): la imagen de una obra en tarjetas, listas y
@@ -19,8 +16,9 @@ import type { MediaType } from "@/types/media";
  * - **Nunca queda rota** (biblia §2). Mientras la imagen llega, si no la hay o
  *   si falla, se ve el campo de color con el título como rótulo. El campo es
  *   la franja: con `palette`, la de la obra; sin ella, la del contenedor.
- * - **No pixela** (biblia §2). Una imagen que para llenar la caja tendría que
- *   ampliarse más de 1,25 veces su tamaño natural no la llena: se compone como
+ * - **La portada real, como hasta ahora** (biblia §2): llena la caja. El tope
+ *   de ampliación de 1,25× es de la sala de la ficha y aquí se pide aparte
+ *   (`capUpscale`): la imagen que no da para la caja se compone entonces como
  *   una pieza, entera y a su tamaño, centrada sobre el campo de color.
  * - **Esquinas rectas, sin sombra ni borde.**
  *
@@ -29,9 +27,10 @@ import type { MediaType } from "@/types/media";
  * texto cuando el póster va solo: ese texto nombra la imagen y, si no hay
  * imagen, nombra el sustituto.
  *
- * Es un componente de cliente porque tiene que enterarse de si la imagen ha
- * cargado, ha fallado o se queda corta; sin JavaScript se ve igual, salvo el
- * tope de ampliación.
+ * Sin `"use client"`: la caja, el campo de color y el rótulo salen del
+ * servidor. De cliente solo es la imagen (`SalaPosterImage`), que tiene que
+ * enterarse de si ha fallado para quitarse de en medio; con `capUpscale`,
+ * además mide. El rótulo se esconde con CSS cuando la imagen ha cargado.
  */
 export type SalaPosterRatio = "2/3" | "16/9";
 
@@ -68,14 +67,6 @@ export function salaPosterStretch(title: string): number {
   return Math.round(110 - t * 35);
 }
 
-type Estado = "loading" | "loaded" | "error";
-
-interface Seguimiento {
-  src: string | null;
-  estado: Estado;
-  natural: PixelSize | null;
-}
-
 export interface SalaPosterProps extends Omit<React.HTMLAttributes<HTMLDivElement>, "title" | "children"> {
   /** La portada. Sin ella (`null`, `undefined` o vacía) se pinta el sustituto. */
   src?: string | null;
@@ -102,35 +93,21 @@ export interface SalaPosterProps extends Omit<React.HTMLAttributes<HTMLDivElemen
   palette?: ImagePalette;
   /** `plain`: el sustituto es solo el campo de color (miniaturas donde el rótulo no cabe). */
   fallback?: "title" | "plain";
-  /** `false` deja ampliar la imagen sin tope. Solo para imágenes que no son fotos (un SVG). */
+  /**
+   * Tope de ampliación (biblia §2): la imagen no se amplía más de 1,25 veces
+   * el tamaño de su archivo; la que no da para la caja va como pieza. Apagado
+   * por defecto: en tarjetas y listas la portada llena la caja. Encendido, la
+   * imagen no se pinta hasta saber cuánto mide (hace falta JavaScript).
+   */
   capUpscale?: boolean;
-  /** La imagen no ha cargado (404, proveedor caído). El sustituto ya está puesto. */
+  /**
+   * Con `capUpscale`: tamaño en píxeles reales del mayor archivo que se puede
+   * pedir para este `src`. Con él se decide al montar, sin esperar a que la
+   * imagen cargue ni volver a leerla. Sin él, se mide el archivo ya cargado.
+   */
+  naturalSize?: PixelSize;
+  /** La imagen no ha cargado (404, proveedor caído). El sustituto ya está puesto. Solo desde un componente de cliente. */
   onLoadError?: () => void;
-}
-
-/** La caja en píxeles físicos, que es en lo que mide el tope de ampliación. */
-function medir(caja: HTMLElement): { room: PixelSize; dpr: number } {
-  const { width, height } = caja.getBoundingClientRect();
-  const dpr = window.devicePixelRatio || 1;
-  return { room: { width: width * dpr, height: height * dpr }, dpr };
-}
-
-/**
- * Tamaño CSS de la imagen cuando no puede llenar la caja: entera, ampliada como
- * mucho hasta el tope y sin salirse. `null` si la imagen da para la caja.
- */
-export function pieceSize(
-  natural: PixelSize,
-  room: PixelSize,
-  dpr: number,
-  fit: "cover" | "contain"
-): { width: number; height: number } | null {
-  if (!(room.width > 0 && room.height > 0 && natural.width > 0 && natural.height > 0)) return null;
-  const entera = Math.min(room.width / natural.width, room.height / natural.height);
-  const necesita = fit === "cover" ? roomScale(natural, room) : entera;
-  if (necesita <= IMAGE_MAX_UPSCALE) return null;
-  const escala = Math.min(entera, IMAGE_MAX_UPSCALE) / dpr;
-  return { width: Math.round(natural.width * escala), height: Math.round(natural.height * escala) };
 }
 
 export const SalaPoster = React.forwardRef<HTMLDivElement, SalaPosterProps>(function SalaPoster(
@@ -148,7 +125,8 @@ export const SalaPoster = React.forwardRef<HTMLDivElement, SalaPosterProps>(func
     loading,
     palette,
     fallback = "title",
-    capUpscale = true,
+    capUpscale = false,
+    naturalSize,
     onLoadError,
     className,
     style,
@@ -158,57 +136,21 @@ export const SalaPoster = React.forwardRef<HTMLDivElement, SalaPosterProps>(func
 ) {
   const origen = src || null;
   const proporcion = ratio ?? (format ? SALA_POSTER_RATIO[format] : "2/3");
-
-  const [seguimiento, setSeguimiento] = React.useState<Seguimiento>({ src: origen, estado: "loading", natural: null });
-  // Otra imagen: se empieza de cero, en el mismo render (sin un fotograma con el estado de la anterior).
-  if (seguimiento.src !== origen) setSeguimiento({ src: origen, estado: "loading", natural: null });
-  const { estado, natural } = seguimiento.src === origen ? seguimiento : { estado: "loading" as Estado, natural: null };
-
-  const cajaRef = React.useRef<HTMLDivElement | null>(null);
-  const setRefs = React.useCallback(
-    (nodo: HTMLDivElement | null) => {
-      cajaRef.current = nodo;
-      if (typeof ref === "function") ref(nodo);
-      else if (ref) ref.current = nodo;
-    },
-    [ref]
-  );
-
-  // El tope de ampliación depende del tamaño de la caja: se vuelve a medir si cambia.
-  const [pieza, setPieza] = React.useState<{ width: number; height: number } | null>(null);
-  React.useEffect(() => {
-    const caja = cajaRef.current;
-    if (!caja || !natural || !capUpscale) {
-      setPieza(null);
-      return;
-    }
-    const calcular = () => {
-      const { room, dpr } = medir(caja);
-      const nueva = pieceSize(natural, room, dpr, fit);
-      setPieza((antes) => (antes?.width === nueva?.width && antes?.height === nueva?.height ? antes : nueva));
-    };
-    calcular();
-    if (typeof ResizeObserver === "undefined") return;
-    const observador = new ResizeObserver(calcular);
-    observador.observe(caja);
-    return () => observador.disconnect();
-  }, [natural, capUpscale, fit]);
-
-  const hayImagen = origen !== null && estado !== "error";
-  const cargada = hayImagen && estado === "loaded";
-  // Sin imagen, el nombre lo lleva la caja; con ella, el `alt` de la imagen.
-  const nombraLaCaja = !hayImagen && alt !== "";
+  // Sin imagen, el nombre lo lleva la caja; con ella, el `alt` de la imagen (o su hueco, si falla).
+  const nombraLaCaja = origen === null && alt !== "";
+  const imagen = { alt, sizes, priority, loading, fit, focus, onLoadError };
 
   return (
     <div
-      ref={setRefs}
+      ref={ref}
       role={nombraLaCaja ? "img" : undefined}
       aria-label={nombraLaCaja ? alt : undefined}
-      data-sala-poster={origen === null ? "empty" : estado}
+      data-sala-poster={origen === null ? "empty" : "image"}
       className={cn(
-        "relative w-full overflow-hidden bg-sala-band text-sala-band-ink [container-type:inline-size]",
+        "group/sala-poster relative w-full overflow-hidden bg-sala-band text-sala-band-ink [container-type:inline-size]",
         // Con colores forzados el campo de color desaparece: que quede el contorno de la caja.
-        "forced-colors:outline forced-colors:outline-1 forced-colors:-outline-offset-1 forced-colors:outline-[CanvasText]",
+        // Cada una en una sola clase: por separado, `cn` las toma por repetidas y se queda con una.
+        "forced-colors:[outline:1px_solid_CanvasText] forced-colors:[outline-offset:-1px]",
         CAJA[proporcion],
         palette && SALA_WORK_CLASS,
         className
@@ -216,46 +158,29 @@ export const SalaPoster = React.forwardRef<HTMLDivElement, SalaPosterProps>(func
       style={palette ? { ...(workPaletteVars(palette) as React.CSSProperties), ...style } : style}
       {...props}
     >
-      {/* El rótulo va detrás y primero: es lo que se ve hasta que la imagen lo tapa. */}
-      {fallback === "title" && !cargada ? (
-        <span aria-hidden="true" data-sala-poster-title="" className="absolute inset-0 flex items-end overflow-hidden p-[8cqw]">
+      {/* El rótulo va detrás y primero: es lo que se ve hasta que la imagen lo tapa. Cargada, se esconde. */}
+      {fallback === "title" ? (
+        <span
+          aria-hidden="true"
+          data-sala-poster-title=""
+          className="absolute inset-0 flex items-end overflow-hidden p-[8cqw] group-has-[[data-sala-poster-image=loaded]]/sala-poster:hidden"
+        >
           <span
             lang={titleLang}
             // A este tamaño el interlineado del rótulo grande (0,9) hace chocar las líneas.
-            className="line-clamp-4 sala-type-title leading-none [overflow-wrap:anywhere]"
+            // Una palabra que no cabe se parte con guion donde el idioma lo sabe poner; si no, por donde toque.
+            className="line-clamp-4 hyphens-auto sala-type-title leading-none [overflow-wrap:anywhere]"
             style={{ fontSize: "clamp(0.875rem, 13cqw, 2.5rem)", fontStretch: `${salaPosterStretch(title)}%` }}
           >
             {title}
           </span>
         </span>
       ) : null}
-      {hayImagen ? (
-        <span
-          data-sala-poster-frame={pieza ? "piece" : "fill"}
-          className={cn("absolute", pieza ? "left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2" : "inset-0")}
-          style={pieza ?? undefined}
-        >
-          <Image
-            loader={posterLoader}
-            src={origen}
-            alt={alt}
-            fill
-            sizes={sizes}
-            priority={priority}
-            loading={priority ? undefined : loading}
-            className={fit === "contain" || pieza ? "object-contain" : "object-cover"}
-            style={focus ? { objectPosition: focus } : undefined}
-            onLoad={(event) => {
-              const { naturalWidth, naturalHeight } = event.currentTarget;
-              setSeguimiento({ src: origen, estado: "loaded", natural: { width: naturalWidth, height: naturalHeight } });
-            }}
-            onError={() => {
-              setSeguimiento({ src: origen, estado: "error", natural: null });
-              onLoadError?.();
-            }}
-          />
-        </span>
-      ) : null}
+      {origen === null ? null : capUpscale ? (
+        <SalaPosterCappedImage src={origen} naturalSize={naturalSize} {...imagen} />
+      ) : (
+        <SalaPosterImage src={origen} {...imagen} />
+      )}
     </div>
   );
 });

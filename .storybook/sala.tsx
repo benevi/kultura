@@ -195,3 +195,28 @@ export function fondoDe(elemento: Element): string {
   }
   throw new Error("Sin fondo opaco detrás");
 }
+
+// ------------------------------------------------------------
+// Densidad de pantalla, para los `play` que miden en píxeles físicos
+// ------------------------------------------------------------
+
+/** ¿Corre la historia dentro de `npm run test:storybook`? */
+export const EN_PRUEBAS = (import.meta as unknown as { env?: { MODE?: string } }).env?.MODE === "test";
+
+/**
+ * Pone la densidad de pantalla (`devicePixelRatio`) que se le diga, sin tocar
+ * el tamaño de la ventana, y espera a que la página la vea. Solo funciona en
+ * las pruebas de las historias (`npm run test:storybook`), con el comando
+ * `salaDensidad` de `vitest.storybook.config.ts`; en el Storybook de mirar
+ * devuelve `false` y no hace nada. Quien la cambia la devuelve a la de antes.
+ */
+export async function fijarDensidad(dpr: number): Promise<boolean> {
+  try {
+    const { commands } = await import("vitest/browser");
+    await (commands as unknown as { salaDensidad: (dpr: number) => Promise<void> }).salaDensidad(dpr);
+  } catch {
+    return false;
+  }
+  for (let i = 0; i < 100 && window.devicePixelRatio !== dpr; i++) await new Promise((seguir) => setTimeout(seguir, 20));
+  return window.devicePixelRatio === dpr;
+}

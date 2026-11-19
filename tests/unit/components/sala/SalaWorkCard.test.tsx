@@ -3,6 +3,9 @@ import { fireEvent, render, screen, within } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import { SalaWorkCard, SalaWorkCardSkeleton, type SalaWorkCardProps } from "@/components/sala/SalaWorkCard";
 
+// Lo que solo se ve con maquetación de verdad (que el enlace cubre la tarjeta,
+// el anillo de foco, la marca del puntero, el corte del título, las medidas de
+// póster y esqueleto) se mide en el navegador: historias de Sala/Tarjeta de obra.
 vi.mock("next/image", () => ({
   default: ({ fill, priority, loader, ...rest }: ComponentProps<"img"> & { fill?: boolean; priority?: boolean; loader?: unknown }) => {
     void fill;
@@ -42,20 +45,9 @@ describe("SalaWorkCard", () => {
       expect(enlaces[0]).toHaveAttribute("data-i18n-link");
     });
 
-    it("cubre la tarjeta entera con un pseudoelemento y la caja es su referencia", () => {
-      const { container } = render(<SalaWorkCard {...OBRA} />);
-      expect(screen.getByRole("link").className).toContain("after:absolute after:inset-0");
-      expect(container.firstElementChild!.className).toMatch(/(^|\s)relative(\s|$)/);
-    });
-
-    it("el foco rodea la tarjeta (en ::after) y el puntero marca el título", () => {
+    it("los estados van con las variantes de «Sala», no con las de Tailwind", () => {
       render(<SalaWorkCard {...OBRA} />);
-      const { className } = screen.getByRole("link");
-      expect(className).toContain("sala-focused:after:sala-focus");
-      expect(className).toContain("[&>span]:sala-hover:bg-sala-ink");
-      expect(className).toContain("[&>span]:sala-pressed:bg-sala-ink-secondary");
-      // Los estados van con las variantes de «Sala», no con las de Tailwind.
-      expect(className).not.toMatch(/(^|\s|:)(hover|active|focus-visible):/);
+      expect(screen.getByRole("link").className).not.toMatch(/(^|\s|:)(hover|active|focus-visible):/);
     });
 
     it("el póster es adorno: ninguna imagen con nombre", () => {
@@ -129,25 +121,30 @@ describe("SalaWorkCard", () => {
       expect(original.closest("a")).toBeNull();
     });
 
-    it("se corta a 3 líneas en la rejilla y a 2 en fila y compacta, y el título entero queda en title", () => {
+    it("no lleva title, se corte o no: el enlace cubre la tarjeta y el cartelito saldría en cualquier punto de ella", () => {
       const { rerender } = render(<SalaWorkCard {...OBRA} />);
-      expect(screen.getByRole("heading").className).toContain("line-clamp-3");
-      expect(screen.getByRole("link")).toHaveAttribute("title", "Parásitos");
-      rerender(<SalaWorkCard {...OBRA} variant="row" />);
-      expect(screen.getByRole("heading").className).toContain("line-clamp-2");
-      rerender(<SalaWorkCard {...OBRA} variant="compact" />);
-      expect(screen.getByRole("heading").className).toContain("line-clamp-2");
-    });
-
-    it('clamp="none" no corta ni pone title', () => {
-      render(<SalaWorkCard {...OBRA} clamp="none" />);
-      expect(screen.getByRole("heading").className).not.toContain("line-clamp");
       expect(screen.getByRole("link")).not.toHaveAttribute("title");
+      rerender(<SalaWorkCard {...OBRA} variant="row" clamp={2} />);
+      expect(screen.getByRole("link")).not.toHaveAttribute("title");
+      rerender(<SalaWorkCard {...OBRA} clamp="none" />);
+      expect(screen.getByRole("link")).not.toHaveAttribute("title");
+      // El nombre sigue siendo el título entero.
+      expect(screen.getByRole("link")).toHaveAccessibleName("Parásitos");
     });
 
-    it("una palabra más larga que la tarjeta se parte", () => {
-      render(<SalaWorkCard {...OBRA} />);
-      expect(screen.getByText("Parásitos", { selector: "a > span" }).className).toContain("[overflow-wrap:anywhere]");
+    it("el corte cambia con clamp, y \"none\" lo quita", () => {
+      const { rerender } = render(<SalaWorkCard {...OBRA} />);
+      const tres = screen.getByRole("heading").className;
+      rerender(<SalaWorkCard {...OBRA} clamp={2} />);
+      const dos = screen.getByRole("heading").className;
+      rerender(<SalaWorkCard {...OBRA} clamp="none" />);
+      const ninguno = screen.getByRole("heading").className;
+      expect(new Set([tres, dos, ninguno]).size).toBe(3);
+      // Fila y compacta cortan a dos por defecto.
+      rerender(<SalaWorkCard {...OBRA} variant="row" />);
+      const fila = screen.getByRole("heading").className;
+      rerender(<SalaWorkCard {...OBRA} variant="row" clamp={2} />);
+      expect(screen.getByRole("heading").className).toBe(fila);
     });
   });
 
@@ -174,10 +171,12 @@ describe("SalaWorkCard", () => {
 
   describe("póster", () => {
     it("toma la proporción del formato y ratio la fija", () => {
-      const { container, rerender } = render(<SalaWorkCard {...OBRA} format="game" formatLabel="Videojuego" />);
-      expect(container.querySelector("[data-sala-poster]")!.className).toContain("aspect-video");
+      const { container, rerender } = render(<SalaWorkCard {...OBRA} />);
+      const vertical = container.querySelector("[data-sala-poster]")!.className;
+      rerender(<SalaWorkCard {...OBRA} format="game" formatLabel="Videojuego" />);
+      expect(container.querySelector("[data-sala-poster]")!.className).not.toBe(vertical);
       rerender(<SalaWorkCard {...OBRA} format="game" formatLabel="Videojuego" ratio="2/3" />);
-      expect(container.querySelector("[data-sala-poster]")!.className).toContain("aspect-[2/3]");
+      expect(container.querySelector("[data-sala-poster]")!.className).toBe(vertical);
     });
 
     it("sin portada: el campo de color con el título (rejilla) o solo el campo (fila y compacta)", () => {
@@ -194,19 +193,28 @@ describe("SalaWorkCard", () => {
       const { container } = render(<SalaWorkCard {...OBRA} onPosterError={onPosterError} />);
       fireEvent.error(container.querySelector("img")!);
       expect(container.querySelector("img")).toBeNull();
-      expect(container.querySelector("[data-sala-poster]")).toHaveAttribute("data-sala-poster", "error");
+      expect(container.querySelector("[data-sala-poster-image]")).toHaveAttribute("data-sala-poster-image", "error");
       expect(onPosterError).toHaveBeenCalledTimes(1);
       // El enlace sigue igual.
       expect(screen.getByRole("link")).toHaveAccessibleName("Parásitos");
     });
 
-    it("sizes: uno por defecto según la variante, y el que se pase", () => {
-      const { container, rerender } = render(<SalaWorkCard {...OBRA} variant="compact" />);
-      expect(container.querySelector("img")).toHaveAttribute("sizes", "40px");
-      rerender(<SalaWorkCard {...OBRA} variant="row" />);
-      expect(container.querySelector("img")).toHaveAttribute("sizes", "(min-width: 640px) 80px, 64px");
-      rerender(<SalaWorkCard {...OBRA} sizes="160px" />);
-      expect(container.querySelector("img")).toHaveAttribute("sizes", "160px");
+    it("sizes: uno por defecto según la variante, en rem como la caja, y el que se pase", () => {
+      const sizes = (ui: React.ReactElement) => render(ui).container.querySelector("img")!.getAttribute("sizes");
+      // Cajas de 2,5 y 4 rem (compacta), y de 4 → 5 y 7 → 9 rem (fila): con el texto al 200 % miden el doble.
+      expect(sizes(<SalaWorkCard {...OBRA} variant="compact" />)).toBe("2.5rem");
+      expect(sizes(<SalaWorkCard {...OBRA} variant="compact" format="game" formatLabel="Videojuego" />)).toBe("4rem");
+      expect(sizes(<SalaWorkCard {...OBRA} variant="row" />)).toBe("(min-width: 640px) 5rem, 4rem");
+      expect(sizes(<SalaWorkCard {...OBRA} variant="row" format="game" formatLabel="Videojuego" />)).toBe("(min-width: 640px) 9rem, 7rem");
+      expect(sizes(<SalaWorkCard {...OBRA} sizes="160px" />)).toBe("160px");
+    });
+
+    it("sin tope de ampliación por defecto: la portada llena la caja; capUpscale lo enciende", () => {
+      const { container, rerender } = render(<SalaWorkCard {...OBRA} />);
+      expect(container.querySelector("[data-sala-poster-frame]")).toHaveAttribute("data-sala-poster-frame", "fill");
+      rerender(<SalaWorkCard {...OBRA} capUpscale />);
+      // Con tope, la imagen espera a que se sepa cuánto mide.
+      expect(container.querySelector("[data-sala-poster-frame]")).toHaveAttribute("data-sala-poster-frame", "pending");
     });
 
     it("priority llega a la imagen", () => {
@@ -223,38 +231,22 @@ describe("SalaWorkCard", () => {
       expect(container.firstElementChild).toHaveAttribute("data-sala-card", variant);
     });
 
-    it("compacta: 48 px de alto como poco", () => {
-      const { container } = render(<SalaWorkCard {...OBRA} variant="compact" />);
-      expect(container.firstElementChild!.className).toContain("min-h-sala-target");
-    });
   });
 });
 
 describe("SalaWorkCardSkeleton", () => {
-  it("es adorno, no lleva enlaces ni texto y se para solo", () => {
+  it("es adorno: no lleva enlaces ni texto", () => {
     const { container } = render(<SalaWorkCardSkeleton />);
     const caja = container.firstElementChild!;
     expect(caja).toHaveAttribute("aria-hidden", "true");
     expect(screen.queryByRole("link")).toBeNull();
     expect(caja.textContent!.trim()).toBe("");
-    // La animación de la espera: tres vueltas y se queda quieta; sin ella con movimiento reducido.
-    expect(caja.className).toContain("animate-sala-wait");
-    expect(caja.className).toContain("motion-reduce:animate-none");
-  });
-
-  it.each([
-    ["2/3", "aspect-[2/3]"],
-    ["16/9", "aspect-video"],
-  ] as const)("reserva el póster a %s", (ratio, clase) => {
-    const { container } = render(<SalaWorkCardSkeleton ratio={ratio} />);
-    expect(container.querySelector(`.${CSS.escape(clase)}`)).not.toBeNull();
   });
 
   it("tiene la forma de su variante", () => {
     const { container } = render(<SalaWorkCardSkeleton variant="compact" className="mt-2" />);
     const caja = container.firstElementChild!;
     expect(caja).toHaveAttribute("data-sala-card-skeleton", "compact");
-    expect(caja.className).toContain("min-h-sala-target");
     expect(caja.className).toContain("mt-2");
   });
 });
