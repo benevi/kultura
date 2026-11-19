@@ -207,8 +207,10 @@ export const SalaWorkCard = React.forwardRef<HTMLAnchorElement, SalaWorkCardProp
         />
       </div>
       <div className="flex min-w-0 flex-1 flex-col gap-1">
-        {/* La marca del título sobresale 2 px por la izquierda, hacia fuera: el texto sigue en la línea del póster y por la derecha no desborda. */}
-        <Titulo className={cn("-ml-0.5", TITULO[variant], clamp !== "none" && CORTE[clamp])}>
+        {/* La marca del título sobresale 2 px por la izquierda, hacia fuera: el texto sigue en la línea del póster. Por la derecha se
+            reservan 4 px: al partir una palabra más larga que la tarjeta, el navegador no descuenta el relleno de la marca en cada
+            línea (`box-decoration-break: clone`) y sin ese aire el texto se salía 1–2 px de la tarjeta. */}
+        <Titulo className={cn("-ml-0.5 pr-1", TITULO[variant], clamp !== "none" && CORTE[clamp])}>
           {ES_RUTA.test(href) ? (
             <Link href={href} {...enlace}>
               {texto}
