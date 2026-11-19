@@ -20,6 +20,37 @@ const salaDensidad: BrowserCommand<[dpr: number]> = async ({ page, context }, dp
   await (await sesion).send("Emulation.setDeviceMetricsOverride", { width, height, deviceScaleFactor: dpr, mobile: false });
 };
 
+// Los nombres accesibles de los encabezados, como los calcula Chromium (CDP
+// `Accessibility.getFullAXTree`, en todos los marcos): lo que leerá un lector
+// de pantalla, no lo que dice el DOM. Lo usa `nombresDeEncabezados`
+// (.storybook/sala.tsx).
+const salaEncabezados: BrowserCommand<[]> = async ({ page, context }) => {
+  let sesion = sesiones.get(page);
+  if (!sesion) sesiones.set(page, (sesion = context.newCDPSession(page)));
+  const cdp = await sesion;
+  await cdp.send("Accessibility.enable");
+  type Marco = { frame: { id: string }; childFrames?: Marco[] };
+  const { frameTree } = (await cdp.send("Page.getFrameTree")) as unknown as { frameTree: Marco };
+  const marcos: string[] = [];
+  const recorrer = (m: Marco) => {
+    marcos.push(m.frame.id);
+    for (const hijo of m.childFrames ?? []) recorrer(hijo);
+  };
+  recorrer(frameTree);
+  const nombres: string[] = [];
+  for (const frameId of marcos) {
+    try {
+      const { nodes } = (await cdp.send("Accessibility.getFullAXTree", { frameId })) as unknown as {
+        nodes: Array<{ ignored?: boolean; role?: { value?: string }; name?: { value?: string } }>;
+      };
+      for (const n of nodes) if (!n.ignored && n.role?.value === "heading") nombres.push(String(n.name?.value ?? ""));
+    } catch {
+      // Un marco que ya no existe: no tiene encabezados.
+    }
+  }
+  return nombres;
+};
+
 // Pruebas de las historias de Storybook (`npm run test:storybook`): cada
 // historia se pinta en Chromium (el de Playwright, ya instalado) y pasa axe;
 // con `a11y.test: "error"` (.storybook/preview.tsx) una violación la hace
@@ -47,7 +78,7 @@ export default defineConfig({
       headless: true,
       provider: playwright(),
       instances: [{ browser: "chromium" }],
-      commands: { salaDensidad },
+      commands: { salaDensidad, salaEncabezados },
     },
   },
 });

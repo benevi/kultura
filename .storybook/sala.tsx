@@ -286,3 +286,17 @@ export function conVentana(ancho: number, alto: number) {
     };
   };
 }
+
+/**
+ * Los nombres accesibles de los encabezados de la página, calculados por
+ * Chromium (comando `salaEncabezados` de `vitest.storybook.config.ts`). Solo
+ * en las pruebas de las historias; fuera devuelve `null`.
+ */
+export async function nombresDeEncabezados(): Promise<string[] | null> {
+  try {
+    const { commands } = await import("vitest/browser");
+    return await (commands as unknown as { salaEncabezados: () => Promise<string[]> }).salaEncabezados();
+  } catch {
+    return null;
+  }
+}

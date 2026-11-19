@@ -116,9 +116,11 @@ export function SalaTitleText({ title, preset = SALA_TITLE_PRESET.sala, plan, cl
         const w = ancha.has(i);
         return (
           <React.Fragment key={i}>
-            {compuesto.joins[i]}
+            {/* El espacio va detrás del salto y en el mismo texto que la palabra: un espacio
+                suelto junto a un <br> oculto, Chromium lo quita del nombre accesible
+                («Learnedto»). Al principio de una línea visible se pliega solo. */}
             {n || w ? <br data-n={n ? "" : undefined} data-w={w ? "" : undefined} /> : null}
-            {trozo}
+            {compuesto.joins[i] + trozo}
           </React.Fragment>
         );
       })}

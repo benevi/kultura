@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from "@storybook/nextjs-vite";
 import { expect, waitFor } from "storybook/test";
-import { conVentana, EN_PRUEBAS, fijarVentana, NOTA_PALETA, OBRAS, Suelo } from "../../../.storybook/sala";
+import { conVentana, EN_PRUEBAS, fijarVentana, nombresDeEncabezados, NOTA_PALETA, OBRAS, Suelo } from "../../../.storybook/sala";
 import { medirRotulo, rotulosListos } from "../../../.storybook/rotulo";
 import {
   planSalaTitle,
@@ -466,6 +466,47 @@ export const ReflowYZoom: Story = {
     } finally {
       espaciado.remove();
       raiz.style.fontSize = "";
+      await fijarVentana(ancho, alto);
+    }
+  },
+};
+
+// ------------------------------------------------------------
+// El nombre accesible, como lo lee un lector de pantalla
+// ------------------------------------------------------------
+
+const PARA_EL_NOMBRE = [...MEDIOS, ...LARGOS, ...LIMITES.map((l) => l.titulo)];
+
+export const NombreAccesible: Story = {
+  name: "Nombre accesible",
+  render: () => (
+    <Suelo titulo="Nombre accesible" nota="Lo que lee un lector de pantalla es el título entero, con sus espacios, en cualquier composición: los saltos de línea no pegan palabras.">
+      <div className="flex flex-col gap-8">
+        {PARA_EL_NOMBRE.map((titulo) => (
+          <SalaTitle key={titulo} title={titulo} headingLevel={3} />
+        ))}
+      </div>
+    </Suelo>
+  ),
+  play: async ({ canvasElement }) => {
+    await rotulosListos(canvasElement);
+    if (!EN_PRUEBAS) return;
+    const { innerWidth: ancho, innerHeight: alto } = window;
+    try {
+      for (const [w, h] of [
+        [375, 812],
+        [1440, 900],
+      ]) {
+        await expect(await fijarVentana(w, h)).toBe(true);
+        await rotulosListos(canvasElement);
+        const nombres = (await nombresDeEncabezados())!.map((n) => n.replace(/\s+/g, " ").trim());
+        for (const titulo of PARA_EL_NOMBRE) {
+          const esperado = titulo.replace(/\s+/g, " ");
+          // Si no está, el mensaje enseña el nombre que más se le parece (el que empieza igual).
+          await expect(nombres.includes(esperado) ? esperado : (nombres.find((n) => n.startsWith(esperado.slice(0, 5))) ?? nombres.join(" / ")), `${w} px`).toBe(esperado);
+        }
+      }
+    } finally {
       await fijarVentana(ancho, alto);
     }
   },
