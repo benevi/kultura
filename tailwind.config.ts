@@ -229,9 +229,21 @@ const config: Config = {
           "0%, 34%, 100%": { opacity: "1" },
           "50%, 84%": { opacity: "0.3" },
         },
+        /* «Sala»: lo que se superpone (diálogo, hoja, aviso efímero). Una
+           entrada corta y una salida más corta todavía; nada se queda
+           moviéndose. Con movimiento reducido `globals.css` las deja en nada
+           y el componente añade `motion-reduce:animate-none`. */
+        "sala-fade-in": { from: { opacity: "0" } },
+        "sala-fade-out": { to: { opacity: "0" } },
+        "sala-rise-in": { from: { opacity: "0", transform: "translateY(12px)" } },
+        "sala-sheet-in": { from: { transform: "translateY(100%)" } },
       },
       animation: {
         "sala-wait": `sala-wait 1.2s var(${salaVar("ease")}) 3 both`,
+        "sala-fade-in": `sala-fade-in var(${salaVar("durationFast")}) var(${salaVar("ease")}) both`,
+        "sala-fade-out": `sala-fade-out var(${salaVar("durationFast")}) var(${salaVar("ease")}) both`,
+        "sala-rise-in": `sala-rise-in var(${salaVar("durationFast")}) var(${salaVar("ease")}) both`,
+        "sala-sheet-in": `sala-sheet-in calc(var(${salaVar("durationFast")}) * 2) var(${salaVar("ease")}) both`,
       },
       backgroundImage: {
         "gradient-radial": "radial-gradient(var(--tw-gradient-stops))",
