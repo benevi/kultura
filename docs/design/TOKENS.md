@@ -92,6 +92,44 @@ Chino: sin fuente propia; cae en la japonesa o en la del sistema.
 - Espacio: la escala de Tailwind (múltiplos de 4 px). No hay tokens de espacio propios.
 - Movimiento: `duration-sala-fast` (150 ms), `duration-sala-slow` (500 ms), `ease-sala`. Con movimiento reducido ya los anula `globals.css`.
 
+## Estados de un control
+
+Un componente de «Sala» escribe sus estados con tres variantes propias, no con `hover:`, `active:` y `focus-visible:`:
+
+| Variante | Cuándo vale |
+|---|---|
+| `sala-hover:` | `:hover`, solo donde hay puntero que se posa (`@media (hover: hover)`): en táctil no se queda pegado después de tocar |
+| `sala-pressed:` | `:active` |
+| `sala-focused:` | `:focus-visible`. El anillo: `sala-focused:sala-focus` |
+
+En Storybook valen además con `data-sala-force="hover"` (o `pressed`, `focus`; admite varios separados por espacio): así una historia enseña el estado quieto, con las mismas reglas que el de verdad, y axe mide su contraste. Ese selector no llega al CSS de la app.
+
+Regla común de botones y enlaces: al pasar el puntero, tinta (`bg-sala-ink` con `text-sala-background`). Deshabilitado: `text-sala-ink-disabled` y borde discontinuo, nunca solo el gris.
+
+**Pulsado.** Nunca cambia la medida de la caja que se pulsa: si encoge, quien pulsó a 1 px del borde suelta fuera y el clic se pierde. El botón se vuelve tinta y encoge su contenido (`scale` en el envoltorio de dentro); el enlace marca el texto con `bg-sala-ink-secondary`. El botón no usa ese gris: en los neutros es casi el acento, y en táctil, sin hover, el principal no cambiaría.
+
+**Foco y puntero a la vez.** En el enlace en línea el anillo va pegado al texto; con el puntero encima se separa 2 px para no fundirse con el bloque de tinta.
+
+## Componentes
+
+En `src/components/sala/`, cada uno con sus historias (Storybook, **Sala/Botón** y **Sala/Enlace**) y sus tests (`tests/unit/components/sala/`). Conviven con los de `src/components/ui/`, que siguen siendo los de las pantallas de hoy.
+
+| Componente | Para qué |
+|---|---|
+| `SalaButton` | Acción. `primary`, `secondary`, `quiet` y `danger`; con icono, solo icono (`label` obligatorio, sin `title`), como enlace (`asChild`) y cargando (`loading` + `loadingLabel`) |
+| `SalaLink` | Navegación. `inline` (dentro de un texto) y `standalone` (suelto, 48 px). Elige solo entre el enlace con idioma y un `<a>` externo, que avisa de que abre otra pestaña; el aviso va en el idioma de la interfaz aunque el enlace lleve otro `lang` |
+
+Una palabra más larga que su caja (una URL como texto) se parte en los dos (`overflow-wrap: anywhere`): ni el botón ni el enlace dan scroll horizontal.
+
+### La espera del botón (`loading`)
+
+- **Qué se ve.** El texto sigue en su sitio, entero y sin atenuar, y debajo se encienden por turnos tres cuadrados de 4 px. Ni el ancho ni el alto cambian. Siempre hay un cuadrado encendido del todo, así que la espera no baja de 3:1 en ningún momento (WCAG 1.4.11).
+- **Se para sola.** Tres vueltas (4,4 s) y los tres cuadrados se quedan encendidos y quietos: nada se mueve solo más de 5 s (biblia §6, WCAG 2.2.2). Quien usa `loading` no tiene que hacer nada. Con movimiento reducido están así desde el principio, y con colores forzados se pintan con el color de texto del sistema.
+- **Qué se oye.** `loadingLabel`, en una región `status` que existe desde antes (por eso `loading` se pasa siempre, también en `false`).
+- **El final lo anuncia quien usa el botón.** Al acabar, la región se vacía. El botón no sabe si salió bien o mal: un «hecho» fijo mentiría en el error y repetiría el aviso de quien sí lo sabe. La pantalla anuncia el resultado con su aviso (`role="status"`, o `alert` si falló), el error junto al campo o el cambio de página.
+
+Las piezas comunes de las historias (el suelo neutro o de una obra, las obras de ejemplo) están en `.storybook/sala.tsx`, fuera de `src`: sus clases y sus textos no entran en la app.
+
 ## Qué fija la biblia y qué es propuesta
 
 | Fijado por la biblia | Propuesta (del prototipo firmado; pendiente del «sí» de Víctor) |
@@ -99,3 +137,4 @@ Chino: sin fuente propia; cae en la japonesa o en la del sistema.
 | Papeles de color y sus neutros; AA | Colores de error, hecho y aviso; foco con la tinta; gris de lo deshabilitado |
 | Familias y orden de las fuentes CJK | Tamaños, pesos e interlineados de cada papel |
 | Esquinas rectas, sin sombras, acción de 48 px | Margen de página, grosor del foco, tiempos y curva |
+| El formato y los estados no se dicen solo con color | Variantes del botón; tinta al pasar el puntero; pulsado que encoge un punto el contenido; deshabilitado con borde discontinuo; la espera de tres cuadrados bajo el texto, que se para a los 4,4 s; enlace siempre subrayado y sin estilo de «visitado» |

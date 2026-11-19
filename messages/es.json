@@ -208,7 +208,8 @@
     "close": "Cerrar",
     "stars": "{count, plural, one {# estrella} other {# estrellas}}",
     "ratingOf": "{value} de {max}",
-    "notRated": "Sin puntuar"
+    "notRated": "Sin puntuar",
+    "newTab": "(se abre en una pestaña nueva)"
   },
   "filters": {
     "type": "Tipo",

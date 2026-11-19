@@ -254,12 +254,25 @@ describe("la paleta de una obra en su contenedor", () => {
     }
 
     const bad: string[] = [];
+    // Solo información: el borde discontinuo y el texto de un control
+    // deshabilitado (el mismo gris) contra fondo y panel. WCAG lo exime y la
+    // biblia no le fija más umbral que el 3:1 del borde, que ya está en PAIRS.
+    const lowest = { light: { background: Infinity, panel: Infinity }, dark: { background: Infinity, panel: Infinity } };
     for (const palette of palettes) {
       for (const mode of SALA_MODES) {
-        const fails = failures(insideWork(mode, workPaletteVars(palette)));
+        const env = insideWork(mode, workPaletteVars(palette));
+        const fails = failures(env);
         if (fails.length) bad.push(`${mode} ${palette[mode].background}: ${fails.join("; ")}`);
+        for (const bg of ["background", "panel"] as const) {
+          lowest[mode][bg] = Math.min(lowest[mode][bg], contrastRatio(rgb(env, "inkDisabled"), rgb(env, bg)));
+        }
       }
     }
+    const show = (n: number) => n.toFixed(2).replace(".", ",");
+    console.info(
+      `[sala] Deshabilitado (borde y texto), mínimo del barrido: ` +
+        SALA_MODES.map((m) => `${m} ${show(lowest[m].background)}:1 sobre fondo y ${show(lowest[m].panel)}:1 sobre panel`).join("; "),
+    );
     expect(bad.slice(0, 5)).toEqual([]);
     expect(palettes.some((p) => !p.neutral)).toBe(true);
   });

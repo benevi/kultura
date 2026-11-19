@@ -51,9 +51,10 @@ const config: Config = {
     "./src/components/**/*.{js,ts,jsx,tsx,mdx}",
     "./src/app/**/*.{js,ts,jsx,tsx,mdx}",
     /* Las historias de Storybook no son de la app: sus clases solo se generan
-       dentro de Storybook (`.storybook/main.ts` pone la variable), para que
+       dentro de Storybook (`.storybook/main.ts` pone la variable), igual que
+       las de las piezas comunes de `.storybook/`, para que
        la guía no engorde el CSS que descargan las pantallas. */
-    ...(process.env.KULTURA_STORYBOOK ? [] : ["!./src/**/*.stories.{ts,tsx}"]),
+    ...(process.env.KULTURA_STORYBOOK ? ["./.storybook/**/*.{ts,tsx}"] : ["!./src/**/*.stories.{ts,tsx}"]),
   ],
   theme: {
     /* ─── Sets cerrados (F-30, DIS-7 y DIS-12) ──────────────────────────
@@ -216,13 +217,38 @@ const config: Config = {
         standard: "var(--ease-standard)", /* cubic-bezier(0,0,0.2,1) */
         sala: `var(${salaVar("ease")})`,
       },
+      /* «Sala»: la espera de un botón que carga. Tres cuadrados que se
+         encienden por turnos, con 400 ms de retraso entre uno y otro: cada uno
+         pasa encendido del todo algo más de un tercio del ciclo, así que
+         siempre hay uno a opacidad 1 (WCAG 1.4.11 no depende del suelo de
+         0,3). Tres vueltas y se para con los tres encendidos: 3 × 1,2 s más
+         0,8 s de retraso son 4,4 s, por debajo de los 5 s de la biblia §6
+         (WCAG 2.2.2). Con movimiento reducido están quietos y encendidos. */
+      keyframes: {
+        "sala-wait": {
+          "0%, 34%, 100%": { opacity: "1" },
+          "50%, 84%": { opacity: "0.3" },
+        },
+      },
+      animation: {
+        "sala-wait": `sala-wait 1.2s var(${salaVar("ease")}) 3 both`,
+      },
       backgroundImage: {
         "gradient-radial": "radial-gradient(var(--tw-gradient-stops))",
       },
     },
   },
   plugins: [
-    plugin(function ({ addComponents, addUtilities, theme }) {
+    plugin(function ({ addComponents, addUtilities, addVariant, theme }) {
+      /* «Sala»: estados de un control. El hover solo existe donde hay puntero
+         que se posa: en táctil no se queda pegado después de tocar.
+         En Storybook valen además con `data-sala-force="hover"` (o `pressed`,
+         `focus`; admite varios), para enseñar el estado quieto en la guía y
+         en las capturas. Ese selector no llega al CSS de la app. */
+      const forced = (state: string) => (process.env.KULTURA_STORYBOOK ? [`&[data-sala-force~="${state}"]`] : []);
+      addVariant("sala-hover", ["@media (hover: hover) { &:hover }", ...forced("hover")]);
+      addVariant("sala-pressed", ["&:active", ...forced("pressed")]);
+      addVariant("sala-focused", ["&:focus-visible", ...forced("focus")]);
       /* Retícula única (DIS-8): el mismo borde izquierdo para el logo, el h1
          y el contenido en todas las páginas. Ancho 72rem (`max-w-6xl`) con
          16 px de margen en móvil y 32 px desde `md`. Las columnas más
