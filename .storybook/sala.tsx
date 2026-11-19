@@ -159,6 +159,37 @@ export function imagenDeEjemplo(ancho: number, alto: number, tono: number): stri
   return `data:image/svg+xml,${encodeURIComponent(svg)}`;
 }
 
+/**
+ * Una escena inventada para la sala, apaisada (1600 × 900): un fondo de dos
+ * franjas con un sol y, delante, una figura que sube desde abajo. Devuelve la
+ * imagen y la figura recortada (lo mismo, sin el fondo), con el mismo
+ * encuadre: es lo que la sala recibirá ya calculado. `x` (0–1) es dónde está
+ * la figura; `claro`, una escena de día (para la tinta oscura). La figura es
+ * clara de día y oscura de noche, para que la tinta se lea sobre ella; con
+ * `figuraClara` distinta del tono de la escena, no se lee (el fundido no cumple 3:1).
+ */
+export function escenaDeEjemplo(
+  tono: number,
+  { x = 0.7, claro = false, figuraClara = claro }: { x?: number; claro?: boolean; figuraClara?: boolean } = {}
+): { imagen: string; figura: string } {
+  const W = 1600;
+  const H = 900;
+  const c = (l: number, croma: number, giro = 0) => `oklch(${l} ${croma} ${(tono + giro) % 360})`;
+  const cx = W * x;
+  const figura =
+    `<path d="M${cx - 150} ${H}V${H * 0.56}q0 -70 70 -70h160q70 0 70 70V${H}z" fill="${c(figuraClara ? 0.84 : 0.5, 0.14, 300)}"/>` +
+    `<circle cx="${cx}" cy="${H * 0.36}" r="92" fill="${c(figuraClara ? 0.92 : 0.56, 0.1, 40)}"/>` +
+    `<path d="M${cx - 150} ${H * 0.66}l-120 110 34 30 86 -70z" fill="${c(figuraClara ? 0.84 : 0.5, 0.14, 300)}"/>`;
+  const fondo =
+    `<rect width="${W}" height="${H}" fill="${c(claro ? 0.86 : 0.34, 0.09)}"/>` +
+    `<rect y="${H * 0.62}" width="${W}" height="${H * 0.38}" fill="${c(claro ? 0.74 : 0.22, 0.07, 20)}"/>` +
+    `<circle cx="${W * 0.26}" cy="${H * 0.3}" r="150" fill="${c(claro ? 0.95 : 0.78, 0.14, 60)}"/>` +
+    `<path d="M0 ${H * 0.62}l260 -150 240 110 300 -190 320 230 480 -120V${H * 0.62}z" fill="${c(claro ? 0.8 : 0.28, 0.08, 340)}"/>`;
+  const svg = (dentro: string) =>
+    `data:image/svg+xml,${encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}">${dentro}</svg>`)}`;
+  return { imagen: svg(fondo + figura), figura: svg(figura) };
+}
+
 /** Un `src` que no carga nunca: el navegador da error al leerlo, sin tocar la red. */
 export const IMAGEN_ROTA = "data:image/png;base64,AAAA";
 // ------------------------------------------------------------
@@ -240,4 +271,18 @@ export async function fijarVentana(ancho: number, alto: number): Promise<boolean
   }
   for (let i = 0; i < 100 && window.innerWidth !== ancho; i++) await new Promise((seguir) => setTimeout(seguir, 20));
   return window.innerWidth === ancho;
+}
+
+/**
+ * Para `beforeEach`: la ventana del tamaño que se diga mientras dura la
+ * historia, y la de antes al acabar. Fuera de las pruebas no hace nada.
+ */
+export function conVentana(ancho: number, alto: number) {
+  return async () => {
+    const antes = { ancho: window.innerWidth, alto: window.innerHeight };
+    if (!(await fijarVentana(ancho, alto))) return undefined;
+    return async () => {
+      await fijarVentana(antes.ancho, antes.alto);
+    };
+  };
 }

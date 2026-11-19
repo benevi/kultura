@@ -2,9 +2,16 @@ import * as React from "react";
 import type { PixelSize } from "@/lib/design/image-fit";
 import type { ImagePalette } from "@/lib/design/image-palette";
 import { SALA_WORK_CLASS, workPaletteVars } from "@/lib/design/sala-palette";
+import { SALA_TITLE_PRESET, salaScripts } from "@/lib/design/sala-title";
+import { SALA_TITLE_CSS } from "@/lib/design/sala-title-css";
 import { cn } from "@/lib/utils/index";
 import type { MediaType } from "@/types/media";
 import { SalaPosterCappedImage, SalaPosterImage } from "./SalaPosterImage";
+import { SalaScriptFonts } from "./SalaScriptFonts";
+import { SalaTitleText } from "./SalaTitle";
+
+/** Suelo y tope del rótulo del sustituto: no baja de 14 px ni en la caja más estrecha. */
+const ROTULO = { [SALA_TITLE_CSS.vars.floor]: "0.875rem", [SALA_TITLE_CSS.vars.cap]: "3rem" } as React.CSSProperties;
 
 /**
  * Póster de «Sala» (fase 8.4): la imagen de una obra en tarjetas, listas y
@@ -14,8 +21,10 @@ import { SalaPosterCappedImage, SalaPosterImage } from "./SalaPosterImage";
  * - **Reserva su sitio.** La caja tiene la proporción antes de que llegue
  *   nada: al cargar la imagen no se mueve ni un píxel (CLS 0).
  * - **Nunca queda rota** (biblia §2). Mientras la imagen llega, si no la hay o
- *   si falla, se ve el campo de color con el título como rótulo. El campo es
- *   la franja: con `palette`, la de la obra; sin ella, la del contenedor.
+ *   si falla, se ve el campo de color con el título como rótulo (el mismo de
+ *   la ficha, compuesto para una caja pequeña; necesita `title.css`). El
+ *   campo es la franja: con `palette`, la de la obra; sin ella, la del
+ *   contenedor.
  * - **La portada real, como hasta ahora** (biblia §2): llena la caja. El tope
  *   de ampliación de 1,25× es de la sala de la ficha y aquí se pide aparte
  *   (`capUpscale`): la imagen que no da para la caja se compone entonces como
@@ -55,17 +64,6 @@ const CAJA: Record<SalaPosterRatio, string> = {
   "2/3": "aspect-[2/3]",
   "16/9": "aspect-video",
 };
-
-/**
- * Anchura del rótulo del sustituto (eje de Anybody, 50–150 %): un título corto
- * va ancho y uno largo, estrecho, para que quepa en una caja pequeña. Las
- * escrituras sin eje de anchura (japonés, coreano) no cambian. Propuesta.
- */
-export function salaPosterStretch(title: string): number {
-  const largo = Array.from(title.trim()).length;
-  const t = Math.min(1, Math.max(0, (largo - 8) / 32));
-  return Math.round(110 - t * 35);
-}
 
 export interface SalaPosterProps extends Omit<React.HTMLAttributes<HTMLDivElement>, "title" | "children"> {
   /** La portada. Sin ella (`null`, `undefined` o vacía) se pinta el sustituto. */
@@ -139,6 +137,8 @@ export const SalaPoster = React.forwardRef<HTMLDivElement, SalaPosterProps>(func
   // Sin imagen, el nombre lo lleva la caja; con ella, el `alt` de la imagen (o su hueco, si falla).
   const nombraLaCaja = origen === null && alt !== "";
   const imagen = { alt, sizes, priority, loading, fit, focus, onLoadError };
+  // Un rótulo en japonés o en coreano trae su fuente (solo si hay rótulo que pintar).
+  const escrituras = fallback === "title" ? salaScripts({ text: title, lang: titleLang }) : [];
 
   return (
     <div
@@ -165,15 +165,20 @@ export const SalaPoster = React.forwardRef<HTMLDivElement, SalaPosterProps>(func
           data-sala-poster-title=""
           className="absolute inset-0 flex items-end overflow-hidden p-[8cqw] group-has-[[data-sala-poster-image=loaded]]/sala-poster:hidden"
         >
-          <span
-            lang={titleLang}
-            // A este tamaño el interlineado del rótulo grande (0,9) hace chocar las líneas.
-            // Una palabra que no cabe se parte con guion donde el idioma lo sabe poner; si no, por donde toque.
-            className="line-clamp-4 hyphens-auto sala-type-title leading-none [overflow-wrap:anywhere]"
-            style={{ fontSize: "clamp(0.875rem, 13cqw, 2.5rem)", fontStretch: `${salaPosterStretch(title)}%` }}
-          >
-            {title}
+          {/* El mismo rótulo que el de la ficha, compuesto para una caja pequeña (`SalaTitleText`):
+              llena el ancho. Si la caja es tan estrecha que el suelo de 14 px no cabe, parte donde
+              puede (con guion donde el idioma lo sabe poner) y se corta a cuatro líneas. */}
+          <span className="block w-full [container-type:inline-size]">
+            <SalaTitleText
+              title={title}
+              lang={titleLang}
+              preset={SALA_TITLE_PRESET.poster}
+              // A este tamaño el interlineado del rótulo grande (0,9) hace chocar las líneas.
+              className="line-clamp-4 hyphens-auto leading-none"
+              style={ROTULO}
+            />
           </span>
+          {escrituras.length > 0 ? <SalaScriptFonts scripts={escrituras} /> : null}
         </span>
       ) : null}
       {origen === null ? null : capUpscale ? (

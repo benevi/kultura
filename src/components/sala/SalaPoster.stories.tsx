@@ -218,7 +218,7 @@ export const LosEstados: Story = {
       await expect(estilo.boxShadow).toBe("none");
     }
     // El rótulo no baja de 14 px ni en la caja más estrecha, y no se sale de ella.
-    for (const rotulo of Array.from(canvasElement.querySelectorAll<HTMLElement>("[data-sala-poster-title] > span"))) {
+    for (const rotulo of Array.from(canvasElement.querySelectorAll<HTMLElement>("[data-sala-poster-title] [data-sala-title-text]"))) {
       await expect(parseFloat(getComputedStyle(rotulo).fontSize)).toBeGreaterThanOrEqual(14);
       const caja = rotulo.closest("[data-sala-poster]")!.getBoundingClientRect();
       await expect(rotulo.getBoundingClientRect().right).toBeLessThanOrEqual(caja.right + 1);
