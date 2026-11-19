@@ -1,0 +1,95 @@
+/* GENERADO desde src/lib/design/sala-tokens.ts. No editar: npm run tokens:sala */
+
+/* Lo que no cambia con el tema. */
+:root {
+  --sala-font-display: "Anybody", "Noto Sans JP", "Noto Sans KR", system-ui, sans-serif;
+  --sala-font-text: "Instrument Sans", "Noto Sans JP", "Noto Sans KR", system-ui, sans-serif;
+  --sala-target: 48px;
+  --sala-margin: clamp(16px, 4vw, 56px);
+  --sala-focus-width: 3px;
+  --sala-focus-offset: 3px;
+  --sala-ease: cubic-bezier(0.2, 0, 0, 1);
+  --sala-duration-fast: 150ms;
+  --sala-duration-slow: 500ms;
+}
+
+/* Biblia §5: en coreano va primero la fuente coreana. */
+:lang(ko) {
+  --sala-font-display: "Anybody", "Noto Sans KR", "Noto Sans JP", system-ui, sans-serif;
+  --sala-font-text: "Instrument Sans", "Noto Sans KR", "Noto Sans JP", system-ui, sans-serif;
+}
+
+/* Otro idioma marcado dentro de un texto coreano vuelve al orden por defecto. */
+[lang]:not(:lang(ko)) {
+  --sala-font-display: "Anybody", "Noto Sans JP", "Noto Sans KR", system-ui, sans-serif;
+  --sala-font-text: "Instrument Sans", "Noto Sans JP", "Noto Sans KR", system-ui, sans-serif;
+}
+
+/* Tema: data-theme en <html> (o en cualquier contenedor). Sin atributo, oscuro. */
+:root,
+[data-theme="dark"] {
+  color-scheme: dark;
+  /* Interruptores para .sala-work: «initial» deja pasar el valor de este tema; el vacío lo anula. */
+  --sala-on-dark: initial;
+  --sala-on-light: ;
+  --sala-band: #64625d;
+  --sala-band-ink: #fdfaf4;
+  --sala-background: #171614;
+  --sala-panel: #252422;
+  --sala-ink: #f2f0eb;
+  --sala-ink-secondary: #b2b1ae;
+  --sala-accent: #c0bdb8;
+  --sala-accent-ink: #140e04;
+  --sala-border: #757472;
+  --sala-danger: #ff8579;
+  --sala-danger-ink: #190b09;
+  --sala-success: #73c385;
+  --sala-success-ink: #07120a;
+  --sala-warning: #dba15c;
+  --sala-warning-ink: #160d04;
+  --sala-focus: var(--sala-ink);
+  --sala-ink-disabled: var(--sala-border);
+}
+
+[data-theme="light"] {
+  color-scheme: light;
+  /* Interruptores para .sala-work: «initial» deja pasar el valor de este tema; el vacío lo anula. */
+  --sala-on-light: initial;
+  --sala-on-dark: ;
+  --sala-band: #6c6a65;
+  --sala-band-ink: #fdfaf4;
+  --sala-background: #e6e3dd;
+  --sala-panel: #d6d3cc;
+  --sala-ink: #1b1a17;
+  --sala-ink-secondary: #524f4a;
+  --sala-accent: #5d5a56;
+  --sala-accent-ink: #fdfaf4;
+  --sala-border: #787670;
+  --sala-danger: #ac0311;
+  --sala-danger-ink: #fff8f7;
+  --sala-success: #006129;
+  --sala-success-ink: #f6fcf7;
+  --sala-warning: #774a00;
+  --sala-warning-ink: #fef9f4;
+  --sala-focus: var(--sala-ink);
+  --sala-ink-disabled: var(--sala-border);
+}
+
+/* Una obra: los papeles salen de su paleta (workPaletteVars) y, si aún no ha
+   llegado, de los neutros. El tema lo eligen los interruptores de arriba. Un
+   data-theme dentro de la obra cambia de tema sin perder su paleta: sin la
+   segunda línea, su bloque de tema volvería a poner los neutros. */
+.sala-work,
+.sala-work [data-theme] {
+  --sala-background: var(--sala-on-light, var(--sala-work-light-background, #e6e3dd)) var(--sala-on-dark, var(--sala-work-dark-background, #171614));
+  --sala-panel: var(--sala-on-light, var(--sala-work-light-panel, #d6d3cc)) var(--sala-on-dark, var(--sala-work-dark-panel, #252422));
+  --sala-ink: var(--sala-on-light, var(--sala-work-light-ink, #1b1a17)) var(--sala-on-dark, var(--sala-work-dark-ink, #f2f0eb));
+  --sala-ink-secondary: var(--sala-on-light, var(--sala-work-light-ink-secondary, #524f4a)) var(--sala-on-dark, var(--sala-work-dark-ink-secondary, #b2b1ae));
+  --sala-accent: var(--sala-on-light, var(--sala-work-light-accent, #5d5a56)) var(--sala-on-dark, var(--sala-work-dark-accent, #c0bdb8));
+  --sala-accent-ink: var(--sala-on-light, var(--sala-work-light-accent-ink, #fdfaf4)) var(--sala-on-dark, var(--sala-work-dark-accent-ink, #140e04));
+  --sala-band: var(--sala-on-light, var(--sala-work-light-band, #6c6a65)) var(--sala-on-dark, var(--sala-work-dark-band, #64625d));
+  --sala-band-ink: var(--sala-on-light, var(--sala-work-light-band-ink, #fdfaf4)) var(--sala-on-dark, var(--sala-work-dark-band-ink, #fdfaf4));
+  --sala-border: var(--sala-on-light, var(--sala-work-light-border, #787670)) var(--sala-on-dark, var(--sala-work-dark-border, #757472));
+  --sala-focus: var(--sala-ink);
+  --sala-ink-disabled: var(--sala-border);
+}

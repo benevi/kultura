@@ -1,5 +1,7 @@
 import type { Config } from "tailwindcss";
 import plugin from "tailwindcss/plugin";
+import { salaVar } from "./src/lib/design/sala-palette";
+import { SALA_COLOR_NAMES, salaTypeStyles } from "./src/lib/design/sala-tokens";
 
 /**
  * Color del tema a partir de una custom property, con canal alfa.
@@ -19,11 +21,39 @@ function token(name: string): string {
   return `color-mix(in oklch, var(${name}) calc(<alpha-value> * 100%), transparent)`;
 }
 
+/**
+ * Lo mismo para «Sala», pero mezclando en sRGB. El color que se pinta es
+ * idéntico (mezclar con `transparent` solo cambia el alfa, en cualquier
+ * espacio); lo que cambia es cómo lo devuelve el navegador. Con `in oklch`,
+ * Chromium da `oklch(L C none)` para los tokens casi grises (los neutros de
+ * «Sala» lo son) y axe-core 4.11 no sabe leer `none`: la regla
+ * `color-contrast` se quedaba sin medir nada y pasaba. Con `in srgb` da
+ * `color(srgb r g b)`, que axe sí lee. Los tokens de la app de hoy siguen con
+ * `token()`: axe los lee bien (tienen croma) y su CSS no se toca.
+ * `tests/unit/design/sala-tokens.test.ts` falla si una clase de «Sala» vuelve
+ * a mezclar fuera de sRGB.
+ */
+function salaToken(name: string): string {
+  return `color-mix(in srgb, var(${name}) calc(<alpha-value> * 100%), transparent)`;
+}
+
+/**
+ * Tokens de «Sala» (fase 8.4, `src/lib/design/sala-tokens.ts`). Conviven con
+ * los de la app de hoy bajo el prefijo `sala`: `bg-sala-background`,
+ * `text-sala-ink`, `border-sala-border`… Las variables `--sala-*` solo
+ * existen donde se carga `src/styles/sala/tokens.css`.
+ */
+const salaColors = Object.fromEntries(SALA_COLOR_NAMES.map((name) => [salaVar(name).slice(2), salaToken(salaVar(name))]));
+
 const config: Config = {
   content: [
     "./src/pages/**/*.{js,ts,jsx,tsx,mdx}",
     "./src/components/**/*.{js,ts,jsx,tsx,mdx}",
     "./src/app/**/*.{js,ts,jsx,tsx,mdx}",
+    /* Las historias de Storybook no son de la app: sus clases solo se generan
+       dentro de Storybook (`.storybook/main.ts` pone la variable), para que
+       la guía no engorde el CSS que descargan las pantallas. */
+    ...(process.env.KULTURA_STORYBOOK ? [] : ["!./src/**/*.stories.{ts,tsx}"]),
   ],
   theme: {
     /* ─── Sets cerrados (F-30, DIS-7 y DIS-12) ──────────────────────────
@@ -143,6 +173,9 @@ const config: Config = {
         warning: token("--accent-highlight"),
         info: token("--accent-info"),
         danger: token("--accent-danger"),
+
+        /* ─── «Sala» ─── */
+        ...salaColors,
       },
       /* ACC-4: TODO texto rojo usa la variante accesible (6,16:1 sobre la
          tarjeta en vez de 4,05:1). Se hace aquí y no en cada pantalla, así que
@@ -163,14 +196,25 @@ const config: Config = {
         display: ["var(--font-display)", "system-ui", "sans-serif"],
         body: ["var(--font-body)", "system-ui", "sans-serif"],
         /* Legacy aliases */
+        /* «Sala»: la pila entera (con las fuentes CJK) va en la variable. */
+        "sala-display": [`var(${salaVar("fontDisplay")})`],
+        "sala-text": [`var(${salaVar("fontText")})`],
+      },
+      /* «Sala»: `min-h-sala-target`, `px-sala-margin`. */
+      spacing: {
+        "sala-target": `var(${salaVar("target")})`,
+        "sala-margin": `var(${salaVar("margin")})`,
       },
       transitionDuration: {
         fast: "var(--duration-fast)",   /* 100ms */
         base: "var(--duration-base)",   /* 150ms */
         slow: "var(--duration-slow)",   /* 250ms */
+        "sala-fast": `var(${salaVar("durationFast")})`,
+        "sala-slow": `var(${salaVar("durationSlow")})`,
       },
       transitionTimingFunction: {
         standard: "var(--ease-standard)", /* cubic-bezier(0,0,0.2,1) */
+        sala: `var(${salaVar("ease")})`,
       },
       backgroundImage: {
         "gradient-radial": "radial-gradient(var(--tw-gradient-stops))",
@@ -193,6 +237,15 @@ const config: Config = {
           [`@media (min-width: ${theme("screens.md")})`]: {
             paddingInline: theme("spacing.8"),
           },
+        },
+      });
+      /* «Sala»: papeles tipográficos (`sala-type-heading`…) y anillo de foco
+         (`focus-visible:sala-focus`). Salen de `sala-tokens.ts`. */
+      addComponents(salaTypeStyles());
+      addUtilities({
+        ".sala-focus": {
+          outline: `var(${salaVar("focusWidth")}) solid var(${salaVar("focus")})`,
+          outlineOffset: `var(${salaVar("focusOffset")})`,
         },
       });
       addUtilities({

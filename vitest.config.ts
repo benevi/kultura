@@ -24,7 +24,7 @@ export default defineConfig({
     coverage: {
       reporter: ["text", "json", "html"],
       include: ["src/**"],
-      exclude: ["node_modules/", ".next/", "tests/e2e/", "tests/integration/"],
+      exclude: ["node_modules/", ".next/", "tests/e2e/", "tests/integration/", "src/**/*.stories.tsx"],
       // Saneamiento 12.4: cobertura mínima solo donde un hueco cuesta datos
       // (biblioteca y rutas de la API). Medida el 15-11-2026: biblioteca 92 %
       // de líneas y 84 % de ramas; API 89 %, 82 % y 83 % de funciones. Los umbrales dejan unos

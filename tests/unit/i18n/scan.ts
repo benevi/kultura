@@ -48,6 +48,9 @@ export function walk(dir: string, re = /\.(ts|tsx)$/): string[] {
   return fs.readdirSync(dir, { withFileTypes: true }).flatMap((entry) => {
     const full = path.join(dir, entry.name);
     if (entry.isDirectory()) return walk(full, re);
+    // Las historias de Storybook (guía interna, solo en castellano) no son
+    // interfaz de la app: sus textos de ejemplo no se traducen.
+    if (/\.stories\.tsx?$/.test(entry.name)) return [];
     return re.test(entry.name) ? [full] : [];
   });
 }

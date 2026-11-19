@@ -153,6 +153,66 @@ jobs:
             test-results/a11y
           retention-days: 14
 
+  storybook:
+    name: Storybook (build y accesibilidad de las historias)
+    # Fase 8.4: guía interna de componentes. Construye Storybook, lo sube como
+    # artefacto del workflow (no se publica en ningún sitio) y pinta cada
+    # historia en Chromium con axe (WCAG 2.2 A/AA): cualquier violación falla
+    # (`a11y.test: "error"` en .storybook/preview.tsx), y también un contraste
+    # que axe no haya podido medir (.storybook/contraste.ts). Sin secretos y sin red.
+    if: github.event_name != 'schedule'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      # Mismo Chromium (y misma caché) que los jobs de accesibilidad y CUJ.
+      - name: Versión de Playwright
+        id: playwright
+        run: echo "version=$(node -p "require('@playwright/test/package.json').version")" >> "$GITHUB_OUTPUT"
+
+      - name: Caché de navegadores de Playwright
+        id: pw-cache
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ steps.playwright.outputs.version }}-chromium
+
+      - name: Navegador de Playwright (descarga)
+        if: steps.pw-cache.outputs.cache-hit != 'true'
+        run: npx playwright install --with-deps chromium
+
+      - name: Navegador de Playwright (desde la caché)
+        if: steps.pw-cache.outputs.cache-hit == 'true'
+        run: npx playwright install chromium
+
+      - name: Build de Storybook
+        id: build
+        run: npm run build-storybook
+
+      - name: Historias con axe (vitest en Chromium)
+        run: npm run test:storybook
+
+      # También si las historias fallan: la guía construida sirve para ver qué.
+      - name: Storybook construido (artefacto)
+        if: ${{ !cancelled() && steps.build.outcome == 'success' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: storybook-static
+          path: storybook-static
+          retention-days: 14
+
   lighthouse:
     name: Rendimiento (Lighthouse CI con presupuesto)
     # REN (criterio 6, F-22): falla el PR si el JS inicial de la portada, un
