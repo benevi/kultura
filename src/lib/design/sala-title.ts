@@ -37,8 +37,15 @@ export const SALA_TITLE_MIN_PX = 18
 /** Títulos más largos que esto se componen igual, pero la garantía de tamaño mínimo ya no vale. */
 export const SALA_TITLE_MAX_LENGTH = 120
 
-/** Holgura de cada línea respecto de la caja: redondeos del navegador al pintar. */
-const SAFETY = 0.012
+/**
+ * Holgura de cada línea respecto de la caja. Los avances medidos son los de
+ * Chromium con posicionamiento subpíxel (Windows, macOS, Android); Chromium en
+ * Linux sin él redondea cada avance a píxeles enteros y pinta hasta un 0,4 %
+ * más ancho (medido en el CI). Un 3 % cubre ese redondeo con creces también en
+ * una línea de muchas letras a 18 px.
+ */
+export const SALA_TITLE_SAFETY = 0.03
+const SAFETY = SALA_TITLE_SAFETY
 /** Más líneas solo si el cuerpo crece al menos esto. */
 const LINE_GAIN = 1.15
 /** Cuánto se puede ensanchar un título, sobre la anchura que le toca, para llenar la caja. */

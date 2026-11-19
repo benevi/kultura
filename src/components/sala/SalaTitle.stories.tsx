@@ -5,6 +5,7 @@ import { medirRotulo, rotulosListos } from "../../../.storybook/rotulo";
 import {
   planSalaTitle,
   SALA_TITLE_MIN_PX,
+  SALA_TITLE_SAFETY,
   SALA_TITLE_STRETCH_MAX,
   SALA_TITLE_STRETCH_MIN,
   salaTitleLayoutFor,
@@ -94,9 +95,10 @@ async function comprobarRotulos(canvasElement: HTMLElement, { minimo = SALA_TITL
       // Cabe: ninguna línea se sale de la caja ni se parte.
       await expect(linea.derecha, `${donde}: «${linea.texto}»`).toBeLessThanOrEqual(m.caja + 0.5);
       await expect(linea.izquierda, `${donde}: «${linea.texto}»`).toBeGreaterThanOrEqual(-0.5);
-      // Lo pintado nunca mide más que lo calculado (el interletraje solo estrecha), y se le parece.
+      // Lo pintado no se pasa de lo calculado más de la holgura del plan (el redondeo de
+      // avances en Linux pinta hasta un 0,4 % más ancho), y se le parece.
       const calculado = layout.widths[i] * m.cuerpo;
-      await expect(linea.ancho, `${donde}: «${linea.texto}»`).toBeLessThanOrEqual(calculado + 1);
+      await expect(linea.ancho, `${donde}: «${linea.texto}»`).toBeLessThanOrEqual(calculado * (1 + SALA_TITLE_SAFETY));
       if (plan.exact) await expect(linea.ancho, `${donde}: «${linea.texto}»`).toBeGreaterThan(calculado * 0.88);
     }
     // El bloque mide sus líneas, ni una más: nada se ha partido por su cuenta.
@@ -385,6 +387,14 @@ export const SinSaltoAlCargar: Story = {
   beforeEach: conVentana(1440, 900),
   play: async ({ canvasElement }) => {
     await rotulosListos(canvasElement);
+    // El respaldo es una fuente del sistema (`local()`): Arial, Liberation Sans, Arimo o Roboto.
+    // Donde no hay ninguna (un Linux mínimo) no hay nada que comparar: se avisa y no se mide.
+    const respaldos = Array.from(document.fonts).filter((f) => f.family.replace(/["']/g, "") === "Anybody Fallback");
+    await Promise.all(respaldos.map((f) => f.load().catch(() => null)));
+    if (!respaldos.some((f) => f.status === "loaded")) {
+      console.warn("«Anybody Fallback» no encuentra ninguna fuente local: la comparación con el respaldo no se ha hecho.");
+      return;
+    }
     for (const pareja of Array.from(canvasElement.querySelectorAll<HTMLElement>("[data-pareja]"))) {
       const [anybody, respaldo] = Array.from(pareja.querySelectorAll<HTMLElement>("[data-sala-title]")).map(medirRotulo);
       const donde = `«${anybody.titulo}» en ${Math.round(anybody.caja)} px`;
