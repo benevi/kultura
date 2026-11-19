@@ -188,6 +188,17 @@ describe("SalaButton", () => {
       expect(boton.firstElementChild).toContainElement(screen.getByTestId("icono"));
     });
 
+    it("con colores forzados el icono hereda el color del botón: no se le fuerza el de texto", () => {
+      // Con `ButtonText` fijo, el icono de un botón deshabilitado parecía activo
+      // (no salía en `GrayText`) y el de un enlace no salía en `LinkText`.
+      render(
+        <SalaButton icon={<Icono />} disabled>
+          Añadir
+        </SalaButton>
+      );
+      expect(screen.getByTestId("icono").parentElement!.className).not.toContain("forced-colors:");
+    });
+
     it("el icono puede ir al final", () => {
       render(
         <SalaButton icon={<Icono />} iconPosition="end">

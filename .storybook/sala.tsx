@@ -130,3 +130,44 @@ export const IconoPapelera = () => (
     <path d="M3 5h14M8 5V3h4v2M5 5l1 12h8l1-12" />
   </svg>
 );
+
+export const IconoLupa = () => (
+  <svg {...trazo}>
+    <path d="M3 3h10v10H3zM13 13l4 4" />
+  </svg>
+);
+
+// ------------------------------------------------------------
+// Medidas para los `play`: contraste de lo que el navegador ha pintado
+// ------------------------------------------------------------
+
+/** Un color calculado (`rgb(…)`, `rgba(…)` o `color(srgb …)`) como r, g, b (0–255) y alfa. */
+function leerColor(valor: string): { rgb: [number, number, number]; alfa: number } {
+  const n = (valor.match(/-?\d*\.?\d+(e-?\d+)?/g) ?? []).map(Number);
+  if (n.length < 3) throw new Error(`No es un color: «${valor}»`);
+  const escala = valor.startsWith("color(") ? 255 : 1;
+  return { rgb: [n[0] * escala, n[1] * escala, n[2] * escala], alfa: n[3] ?? 1 };
+}
+
+function luminancia([r, g, b]: [number, number, number]): number {
+  const canal = (v: number) => {
+    const c = v / 255;
+    return c <= 0.04045 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4;
+  };
+  return 0.2126 * canal(r) + 0.7152 * canal(g) + 0.0722 * canal(b);
+}
+
+/** Contraste WCAG entre dos colores calculados opacos. */
+export function contraste(a: string, b: string): number {
+  const [clara, oscura] = [luminancia(leerColor(a).rgb), luminancia(leerColor(b).rgb)].sort((x, y) => y - x);
+  return (clara + 0.05) / (oscura + 0.05);
+}
+
+/** El fondo que hay detrás de un elemento: el del primer antepasado que pinta uno opaco. */
+export function fondoDe(elemento: Element): string {
+  for (let el: Element | null = elemento.parentElement; el; el = el.parentElement) {
+    const fondo = getComputedStyle(el).backgroundColor;
+    if (leerColor(fondo).alfa === 1) return fondo;
+  }
+  throw new Error("Sin fondo opaco detrás");
+}

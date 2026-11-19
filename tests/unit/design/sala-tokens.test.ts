@@ -127,6 +127,13 @@ const PAIRS: Array<{ fg: string; bg: string; min: number }> = [
   { fg: "accentInk", bg: "accent", min: TEXT_CONTRAST },
   { fg: "bandInk", bg: "band", min: TEXT_CONTRAST },
   ...SALA_STATES.map((state) => ({ fg: `${state}Ink`, bg: state, min: TEXT_CONTRAST })),
+  // Campos (fase 8.4). Casi todo lo suyo ya está arriba: el borde en reposo
+  // (`border`), el de error y su mensaje (`danger`), el ejemplo de dentro
+  // (`inkSecondary`, también sobre el panel del autorrelleno) y lo
+  // deshabilitado. Lo único nuevo es un dibujo del color del fondo sobre un
+  // relleno de tinta: la marca de la casilla y la pieza del interruptor
+  // encendido (WCAG 1.4.11).
+  { fg: "background", bg: "ink", min: COMPONENT_CONTRAST },
 ];
 
 function failures(env: Vars, pairs = PAIRS): string[] {

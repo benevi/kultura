@@ -131,6 +131,9 @@ const INTERACCION = [
 /** El gris es el del borde (3:1); el trazo discontinuo lo dice sin color. */
 const DESHABILITADO = "cursor-not-allowed border-dashed border-sala-border bg-transparent text-sala-ink-disabled";
 
+// Con colores forzados el icono (trazo `currentColor`) hereda el color que el
+// sistema le pone al botón: el de texto, el gris si está deshabilitado, el de
+// enlace si es un enlace. No se le fuerza otro: parecería activo sin estarlo.
 const ICONO = "inline-flex shrink-0 [&>svg]:h-5 [&>svg]:w-5";
 
 /**
