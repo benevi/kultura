@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import { cn } from "@/lib/utils/index";
-import { SALA_CHOICE_BELOW, SALA_CHOICE_BOX, SALA_CHOICE_ROW, SALA_CHOICE_ROW_HOVER, SALA_CHOICE_TEXT, salaForce } from "./SalaCheckbox";
+import { SALA_CHOICE_BELOW, SALA_CHOICE_BOX, SALA_CHOICE_ROW, SALA_CHOICE_ROW_DISABLED, SALA_CHOICE_ROW_HOVER, SALA_CHOICE_TEXT, salaForce } from "./SalaCheckbox";
 import { SalaFieldAnnouncer, SalaFieldError, SalaFieldHint, useSalaField } from "./SalaField";
 
 /**
@@ -24,6 +24,14 @@ import { SalaFieldAnnouncer, SalaFieldError, SalaFieldHint, useSalaField } from 
  *
  * El radio es redondo: es la única curva del sistema, y es la que lo distingue
  * de una casilla sin leer nada.
+ *
+ * - **El error** lo lleva cada radio en su descripción, no el grupo: al llevar
+ *   el foco a un radio, no todos los lectores leen la descripción del grupo
+ *   (VoiceOver), y puesto en los dos sitios se oiría dos veces. El grupo lleva
+ *   `aria-invalid` y la ayuda.
+ * - **Obligatorio** lo dice el grupo (`aria-required`). Cada radio lleva
+ *   además `required` para el formulario, pero el navegador no lo pasa al
+ *   árbol de accesibilidad de cada radio (medido en Chromium): se oye una vez.
  */
 export interface SalaRadioGroupProps extends Omit<React.FieldsetHTMLAttributes<HTMLFieldSetElement>, "onChange" | "defaultValue"> {
   /** La pregunta del grupo, siempre a la vista. */
@@ -49,6 +57,8 @@ interface Grupo {
   required: boolean | undefined;
   disabled: boolean | undefined;
   invalid: boolean;
+  /** Id del error del grupo, si lo hay: entra en la descripción de cada radio. */
+  errorId: string | undefined;
 }
 
 const GrupoContexto = React.createContext<Grupo | null>(null);
@@ -58,15 +68,23 @@ export const SalaRadioGroup = React.forwardRef<HTMLFieldSetElement, SalaRadioGro
   ref
 ) {
   const { control, ids, invalid, anuncio } = useSalaField({ id, hint, error, describedBy });
+  const errorId = invalid ? ids.error : undefined;
   const grupo = React.useMemo<Grupo>(
-    () => ({ name, value, defaultValue, onChange, required, disabled, invalid }),
-    [name, value, defaultValue, onChange, required, disabled, invalid]
+    () => ({ name, value, defaultValue, onChange, required, disabled, invalid, errorId }),
+    [name, value, defaultValue, onChange, required, disabled, invalid, errorId]
   );
+  // El error no describe al grupo: lo lleva cada radio (una sola vez por el camino del foco).
+  const descripcion =
+    control["aria-describedby"]
+      ?.split(" ")
+      .filter((parte) => parte !== ids.error)
+      .join(" ") || undefined;
 
   return (
     <fieldset
       ref={ref}
       {...control}
+      aria-describedby={descripcion}
       // Un `fieldset` es un grupo cualquiera; `radiogroup` es el que admite
       // «obligatorio» y «no válido». Su nombre es la `legend`.
       role="radiogroup"
@@ -123,7 +141,7 @@ export const SalaRadio = React.forwardRef<HTMLInputElement, SalaRadioProps>(func
         data-sala-force={salaForce(props)}
         className={cn(
           SALA_CHOICE_ROW,
-          disabled ? "cursor-not-allowed text-sala-ink-disabled" : "text-sala-ink",
+          disabled ? SALA_CHOICE_ROW_DISABLED : "text-sala-ink",
           !disabled && !grupo.invalid && SALA_CHOICE_ROW_HOVER,
           !disabled && grupo.invalid && "cursor-pointer"
         )}
@@ -138,7 +156,7 @@ export const SalaRadio = React.forwardRef<HTMLInputElement, SalaRadioProps>(func
             {...elegido}
             required={grupo.required}
             disabled={disabled}
-            aria-describedby={[describedBy, hint ? hintId : undefined].filter(Boolean).join(" ") || undefined}
+            aria-describedby={[describedBy, grupo.errorId, hint ? hintId : undefined].filter(Boolean).join(" ") || undefined}
             onChange={(event) => {
               onChange?.(event);
               if (event.target.checked) grupo.onChange?.(value);

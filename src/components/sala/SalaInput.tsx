@@ -18,9 +18,20 @@ import { SALA_CONTROL, SALA_CONTROL_STATE, SalaField, salaControlState, useSalaL
  *   inicial. `autoComplete` e `inputMode` se pasan tal cual: quien conoce el
  *   dato (`email`, `current-password`, `one-time-code`…) es la pantalla
  *   (WCAG 1.3.5).
+ * - **Qué tipo para qué dato.** `number` solo para cantidades que suben y
+ *   bajan (un capítulo, unas páginas). Un código, un año o un teléfono no lo
+ *   son: `type="text"` con `inputMode="numeric"` (o `tel`), que saca el
+ *   teclado de números sin flechas ni rueda. Con `number`, teclear una «e»
+ *   deja `value` vacío sin estarlo a la vista: al validar hay que mirar
+ *   también `validity.badInput`. `date` es para fechas cercanas (el selector
+ *   del sistema); una fecha lejana, como la de nacimiento, se escribe mejor.
+ * - **Ejemplos y formatos van en `hint`,** no en `placeholder`: el placeholder
+ *   desaparece al escribir y hay quien lo toma por un valor ya puesto.
  * - **Contraseña:** con `revealLabel` («Mostrar contraseña») aparece un botón
  *   de 48 px que la enseña. Su nombre no cambia; lo que cambia es
- *   `aria-pressed` y el dibujo (ojo tachado, ojo abierto).
+ *   `aria-pressed` y el dibujo (ojo tachado, ojo abierto). Al enviar el
+ *   formulario vuelve a ocultarse: lo enviado no queda a la vista ni se
+ *   guarda como un texto cualquiera.
  * - **Contador:** con `maxLength` y `counter`, que da el texto («12 de 60»).
  * - `leading`: un icono de adorno delante (la lupa de una búsqueda).
  *   `trailing`: un control detrás (un `SalaButton` de solo icono que borra).
@@ -41,14 +52,13 @@ export interface SalaInputProps extends Omit<React.InputHTMLAttributes<HTMLInput
 /** En estos, el corrector y la mayúscula inicial estorban (y la contraseña no debe salir hacia un corrector). */
 const SIN_CORRECTOR: ReadonlySet<SalaInputType> = new Set(["email", "password", "url"]);
 
-/** Un SVG no cambia de color solo con colores forzados: se le da el del texto de un botón. */
+/** El trazo es `currentColor`: con colores forzados hereda el que el sistema le pone al botón. */
 const trazo = {
   viewBox: "0 0 20 20",
   fill: "none",
   stroke: "currentColor",
   strokeWidth: 2,
   strokeLinecap: "square",
-  className: "forced-colors:text-[color:ButtonText]",
 } as const;
 
 /** Ojo tachado: la contraseña está oculta. */
@@ -97,6 +107,32 @@ export const SalaInput = React.forwardRef<HTMLInputElement, SalaInputProps>(func
   const { length: largo, setOwn: setPropio, watch } = useSalaLength(value, defaultValue, ref);
 
   const conBoton = type === "password" && revealLabel !== undefined;
+
+  // La contraseña a la vista vuelve a ocultarse al enviar. El tipo se cambia
+  // en el propio `<input>`, sin esperar a pintar: tiene que estar oculta
+  // cuando el navegador recoge el formulario.
+  const campo = React.useRef<HTMLInputElement | null>(null);
+  const unir = React.useCallback(
+    (el: HTMLInputElement | null) => {
+      campo.current = el;
+      const soltar = watch(el);
+      return () => {
+        campo.current = null;
+        soltar?.();
+      };
+    },
+    [watch]
+  );
+  React.useEffect(() => {
+    const form = visible ? campo.current?.form : null;
+    if (!form) return;
+    const ocultar = () => {
+      if (campo.current) campo.current.type = "password";
+      setVisible(false);
+    };
+    form.addEventListener("submit", ocultar);
+    return () => form.removeEventListener("submit", ocultar);
+  }, [visible]);
   const count = counter && maxLength !== undefined ? { text: counter(largo, maxLength), full: largo >= maxLength } : undefined;
   const sinCorrector = SIN_CORRECTOR.has(type);
 
@@ -126,7 +162,7 @@ export const SalaInput = React.forwardRef<HTMLInputElement, SalaInputProps>(func
             </span>
           ) : null}
           <input
-            ref={watch}
+            ref={unir}
             {...control}
             type={type === "password" && visible ? "text" : type}
             required={required}
@@ -159,7 +195,6 @@ export const SalaInput = React.forwardRef<HTMLInputElement, SalaInputProps>(func
                 icon={visible ? <OjoAbierto /> : <OjoTachado />}
                 label={revealLabel}
                 aria-pressed={visible}
-                aria-controls={control.id}
                 disabled={disabled}
                 onClick={() => setVisible((v) => !v)}
               />

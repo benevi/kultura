@@ -127,42 +127,85 @@ describe("SalaInput", () => {
       expect(anuncio(container)).toBeEmptyDOMElement();
     });
 
-    it("un error que aparece con el foco en otro sitio se anuncia una vez y luego se retira", () => {
+    it("un error que aparece con el foco en otro sitio se anuncia al momento, con la etiqueta delante", () => {
       vi.useFakeTimers();
-      const { container, rerender } = render(<SalaInput label="Correo" />);
+      const { container, rerender } = render(<SalaInput label="Correo" required requirement="obligatorio" />);
       const region = anuncio(container);
-      rerender(<SalaInput label="Correo" error="Falta la arroba" />);
-      expect(region).toBeEmptyDOMElement();
-      act(() => void vi.advanceTimersByTime(100));
+      rerender(<SalaInput label="Correo" required requirement="obligatorio" error="Falta la arroba" />);
       expect(anuncio(container)).toBe(region);
-      expect(region).toHaveTextContent("Falta la arroba");
-      // Se retira: recorriendo la página el error se lee una vez, en su sitio.
-      act(() => void vi.advanceTimersByTime(2000));
+      // Sin la palabra «obligatorio», que es solo para la vista.
+      expect(region.textContent).toBe("Correo: Falta la arroba");
+      // No se retira al segundo y medio: un anuncio que desaparece antes de que el lector llegue a él se pierde.
+      act(() => void vi.advanceTimersByTime(5000));
+      expect(region.textContent).toBe("Correo: Falta la arroba");
+      act(() => void vi.advanceTimersByTime(6000));
       expect(region).toBeEmptyDOMElement();
       expect(screen.getByText("Falta la arroba")).toBeInTheDocument();
     });
 
-    it("si el foco está en el campo no se anuncia aparte: el lector ya lo lee como descripción", () => {
-      vi.useFakeTimers();
+    it("el anuncio se retira cuando el foco entra en el campo: ahí el error se lee como descripción", () => {
       const { container, rerender } = render(<SalaInput label="Correo" />);
       rerender(<SalaInput label="Correo" error="Falta la arroba" />);
-      // El formulario lleva el foco al primer error después de pintar.
+      expect(anuncio(container).textContent).toBe("Correo: Falta la arroba");
       act(() => screen.getByRole("textbox").focus());
-      act(() => void vi.advanceTimersByTime(2000));
       expect(anuncio(container)).toBeEmptyDOMElement();
       expect(screen.getByRole("textbox")).toHaveAccessibleDescription("Falta la arroba");
     });
 
-    it("al cambiar el texto del error se vuelve a anunciar; al arreglarse, calla", () => {
+    it("si el foco acaba de llegar al campo (enviar y saltar al primer error) no se anuncia aparte", () => {
+      const { container, rerender } = render(<SalaInput label="Correo" />);
+      // El formulario pone los errores y lleva el foco al primero, en el mismo gesto.
+      act(() => screen.getByRole("textbox").focus());
+      rerender(<SalaInput label="Correo" error="Falta la arroba" />);
+      expect(anuncio(container)).toBeEmptyDOMElement();
+      expect(screen.getByRole("textbox")).toHaveAccessibleDescription("Falta la arroba");
+    });
+
+    it("si el foco ya estaba en el campo, el error se anuncia: una descripción que cambia no se lee sola (WCAG 4.1.3)", () => {
+      const { container, rerender } = render(<SalaInput label="Correo" />);
+      const campo = screen.getByRole("textbox");
+      act(() => campo.focus());
+      // Enter dentro del campo: el foco no se mueve.
+      fireEvent.keyDown(campo, { key: "Enter" });
+      rerender(<SalaInput label="Correo" error="Escribe tu correo" />);
+      expect(campo).toHaveFocus();
+      expect(anuncio(container).textContent).toBe("Correo: Escribe tu correo");
+      // Validar mientras se escribe: el error cambia con el foco dentro.
+      fireEvent.change(campo, { target: { value: "chihiro" } });
+      rerender(<SalaInput label="Correo" error="Falta la arroba" />);
+      expect(anuncio(container).textContent).toBe("Correo: Falta la arroba");
+      // Al salir del campo se retira.
+      act(() => campo.blur());
+      expect(anuncio(container)).toBeEmptyDOMElement();
+    });
+
+    it("con el foco quieto en el campo desde hace rato, un error que llega solo también se anuncia", () => {
       vi.useFakeTimers();
+      const { container, rerender } = render(<SalaInput label="Correo" />);
+      act(() => screen.getByRole("textbox").focus());
+      act(() => void vi.advanceTimersByTime(3000));
+      rerender(<SalaInput label="Correo" error="Ese correo ya tiene cuenta" />);
+      expect(anuncio(container).textContent).toBe("Correo: Ese correo ya tiene cuenta");
+    });
+
+    it("al cambiar el texto del error se vuelve a anunciar; al arreglarse, calla", () => {
       const { container, rerender } = render(<SalaInput label="Nombre" error="Ponle un nombre" />);
       rerender(<SalaInput label="Nombre" error="Muy corto" />);
-      act(() => void vi.advanceTimersByTime(100));
-      expect(anuncio(container)).toHaveTextContent("Muy corto");
+      expect(anuncio(container).textContent).toBe("Nombre: Muy corto");
       rerender(<SalaInput label="Nombre" />);
-      act(() => void vi.advanceTimersByTime(100));
       expect(anuncio(container)).toBeEmptyDOMElement();
       expect(screen.getByRole("textbox")).not.toHaveAttribute("aria-invalid");
+    });
+
+    it("un control propio en SalaField anuncia igual, con su etiqueta", () => {
+      const campo = (error?: string) => (
+        <SalaField label="Nota" error={error}>
+          {(control) => <input type="range" {...control} />}
+        </SalaField>
+      );
+      const { container, rerender } = render(campo());
+      rerender(campo("Elige una nota"));
+      expect(anuncio(container).textContent).toBe("Nota: Elige una nota");
     });
   });
 
@@ -213,13 +256,16 @@ describe("SalaInput", () => {
       expect(screen.getByLabelText("Contraseña")).toHaveAttribute("type", "password");
     });
 
-    it("el botón la enseña y la oculta: mismo nombre, aria-pressed y aria-controls", () => {
+    it("el botón la enseña y la oculta: mismo nombre y aria-pressed", () => {
       render(<SalaInput label="Contraseña" type="password" revealLabel="Mostrar contraseña" defaultValue="aburaya" autoComplete="current-password" />);
       const campo = screen.getByLabelText("Contraseña");
       const boton = screen.getByRole("button", { name: "Mostrar contraseña" });
       expect(boton).toHaveAttribute("type", "button");
       expect(boton).toHaveAttribute("aria-pressed", "false");
-      expect(boton).toHaveAttribute("aria-controls", campo.id);
+      // Sin `aria-controls`: no aporta nada a quien usa lector y hay lectores que lo anuncian.
+      expect(boton).not.toHaveAttribute("aria-controls");
+      // El dibujo hereda el color del botón, también con colores forzados.
+      expect(boton.querySelector("svg")).not.toHaveAttribute("class");
 
       fireEvent.click(boton);
       expect(campo).toHaveAttribute("type", "text");
@@ -232,6 +278,28 @@ describe("SalaInput", () => {
       fireEvent.click(boton);
       expect(campo).toHaveAttribute("type", "password");
       expect(boton).toHaveAttribute("aria-pressed", "false");
+    });
+
+    it("al enviar el formulario vuelve a ocultarse", () => {
+      const onSubmit = vi.fn((event: React.FormEvent<HTMLFormElement>) => {
+        event.preventDefault();
+        // Ya está oculta cuando el formulario se recoge.
+        return (event.currentTarget.elements.namedItem("clave") as HTMLInputElement).type;
+      });
+      render(
+        <form onSubmit={onSubmit}>
+          <SalaInput label="Contraseña" name="clave" type="password" revealLabel="Mostrar contraseña" defaultValue="aburaya" />
+          <button type="submit">Entrar</button>
+        </form>
+      );
+      const campo = screen.getByLabelText("Contraseña");
+      fireEvent.click(screen.getByRole("button", { name: "Mostrar contraseña" }));
+      expect(campo).toHaveAttribute("type", "text");
+      fireEvent.click(screen.getByRole("button", { name: "Entrar" }));
+      expect(onSubmit).toHaveReturnedWith("password");
+      expect(campo).toHaveAttribute("type", "password");
+      expect(campo).toHaveValue("aburaya");
+      expect(screen.getByRole("button", { name: "Mostrar contraseña" })).toHaveAttribute("aria-pressed", "false");
     });
 
     it("deshabilitada, el botón tampoco se puede pulsar", () => {

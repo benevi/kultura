@@ -29,10 +29,13 @@ import { cn } from "@/lib/utils/index";
  *   control lleva `aria-invalid` y el error entra en su `aria-describedby`,
  *   el primero. No se usa `aria-errormessage`: su soporte es desigual y, junto
  *   con la descripción, hay lectores que leen el error dos veces.
- * - **El error se anuncia una vez.** Si aparece con el foco en otro sitio
- *   (validar al salir del campo), lo dice una región viva. Si el foco está en
- *   el control —o llega a él enseguida, como al enviar y saltar al primer
- *   error—, calla: el lector ya lo lee como descripción del control.
+ * - **El error se anuncia una vez, y siempre.** Lo dice una región viva del
+ *   campo, con la etiqueta delante («Nombre: Ponle un nombre»), salvo en dos
+ *   casos: cuando el foco acaba de llegar al control (el lector ya lo lee
+ *   como descripción) y cuando habla el formulario (`SalaForm`, al enviar).
+ *   Si el foco ya estaba dentro —enviar con Enter, validar mientras se
+ *   escribe, un interruptor que no se ha podido guardar—, se anuncia: una
+ *   descripción que cambia con el foco puesto no se lee sola (WCAG 4.1.3).
  */
 export interface SalaFieldTexts {
   /** La etiqueta, siempre a la vista. */
@@ -69,10 +72,47 @@ interface Opciones {
   count?: SalaFieldCount;
 }
 
-/** Cuánto se espera antes de anunciar: lo que tarda el foco en llegar al control al enviar. */
-const ESPERA_ANUNCIO = 60;
-/** El anuncio se retira después: si se quedara, el error se leería dos veces al recorrer la página. */
-const RETIRADA_ANUNCIO = 1500;
+/**
+ * El foco «acaba de llegar» si entró en el control y desde entonces no se ha
+ * tocado nada en él. Este tope solo cubre un caso raro: el foco lleva un rato
+ * quieto en el control y el error llega solo (una respuesta del servidor). Si
+ * se queda corto, el error se oye dos veces; si se quitara, no se oiría.
+ */
+const RECIEN_LLEGADO = 1000;
+/**
+ * El anuncio se retira cuando el foco entra en el control o sale de él (ahí el
+ * error ya se lee en su sitio y, si se quedara, se oiría dos veces). Este plazo
+ * es solo la red para quien no mueve el foco: es largo a propósito, porque un
+ * anuncio «polite» que desaparece antes de que el lector llegue a él se pierde.
+ */
+const RETIRADA_ANUNCIO = 10_000;
+
+/**
+ * Dentro de un `SalaForm`: mientras el formulario da cuenta de un envío, los
+ * campos callan y habla él (cuántos campos hay que corregir, una sola vez).
+ */
+export const SalaFormContext = React.createContext<{ silent: React.RefObject<boolean> } | null>(null);
+
+/** El texto que oye un lector: sin lo que lleva `aria-hidden` (el dibujo, «obligatorio»). */
+function textoLeido(nodo: Node): string {
+  if (nodo.nodeType === Node.TEXT_NODE) return nodo.textContent ?? "";
+  if (!(nodo instanceof Element) || nodo.getAttribute("aria-hidden") === "true") return "";
+  return Array.from(nodo.childNodes, textoLeido).join("");
+}
+
+/**
+ * Lo que se anuncia de un campo con error: su etiqueta y el error («Nombre:
+ * Ponle un nombre»). Un error suelto no dice de qué campo es. La etiqueta se
+ * lee del `<label>` del control o, en un grupo, de su `<legend>`; el error, si
+ * no se pasa, del que el campo tiene pintado.
+ */
+export function salaFieldAnnouncement(control: HTMLElement | null, error?: string): string {
+  if (!control) return error ?? "";
+  const dicho = error ?? document.getElementById(`${control.id}-error`)?.textContent ?? "";
+  const fuente = (control as HTMLInputElement).labels?.[0] ?? control.querySelector("legend");
+  const etiqueta = fuente ? textoLeido(fuente).replace(/\s+/g, " ").trim() : "";
+  return etiqueta ? `${etiqueta}: ${dicho}` : dicho;
+}
 
 /**
  * Ids y asociaciones de un campo. Para quien monta su propia composición (la
@@ -101,29 +141,64 @@ export function useSalaField({ id, hint, error, requirement, required, described
       .filter(Boolean)
       .join(" ") || undefined;
 
-  // El error que aparece después de pintar el campo se anuncia, salvo que el
-  // foco esté en el control (o dentro, en un grupo): ahí ya es su descripción.
+  const form = React.useContext(SalaFormContext);
   const [anuncio, setAnuncio] = React.useState("");
-  const montado = React.useRef(false);
+  /** Cuándo entró el foco en el control, si después no se ha tocado nada en él; si no, 0. */
+  const llegada = React.useRef(0);
+
+  // El orden de lo que pasa, no un reloj: el foco entra (y el lector lee la
+  // descripción), y cualquier tecla, clic o cambio dentro del control quiere
+  // decir que ya estaba. Al entrar o salir el foco, el anuncio se retira.
   React.useEffect(() => {
-    if (!montado.current) {
-      montado.current = true;
-      return;
-    }
-    if (!error) return;
-    const decir = window.setTimeout(() => {
-      const control = document.getElementById(controlId);
-      const foco = document.activeElement;
-      if (control && foco && (control === foco || control.contains(foco))) return;
-      setAnuncio(error);
-    }, ESPERA_ANUNCIO);
-    const callar = window.setTimeout(() => setAnuncio(""), RETIRADA_ANUNCIO);
-    return () => {
-      window.clearTimeout(decir);
-      window.clearTimeout(callar);
+    const control = document.getElementById(controlId);
+    if (!control) return;
+    // Dentro de un grupo de radios, pasar de uno a otro no es entrar ni salir.
+    const deDentro = (event: FocusEvent) => event.relatedTarget instanceof Node && control.contains(event.relatedTarget);
+    const entra = (event: FocusEvent) => {
+      if (deDentro(event)) return;
+      llegada.current = Date.now();
       setAnuncio("");
     };
-  }, [error, controlId]);
+    const sale = (event: FocusEvent) => {
+      if (deDentro(event)) return;
+      llegada.current = 0;
+      setAnuncio("");
+    };
+    const toca = () => {
+      llegada.current = 0;
+    };
+    const toques = ["keydown", "input", "change", "click"] as const;
+    control.addEventListener("focusin", entra);
+    control.addEventListener("focusout", sale);
+    for (const toque of toques) control.addEventListener(toque, toca);
+    return () => {
+      control.removeEventListener("focusin", entra);
+      control.removeEventListener("focusout", sale);
+      for (const toque of toques) control.removeEventListener(toque, toca);
+    };
+  }, [controlId]);
+
+  // Se anuncia el error que cambia después de pintar el campo; el que ya venía
+  // pintado, no.
+  const previo = React.useRef(error);
+  React.useEffect(() => {
+    if (previo.current === error) return;
+    previo.current = error;
+    const recien = llegada.current > 0 && Date.now() - llegada.current < RECIEN_LLEGADO;
+    llegada.current = 0;
+    const control = document.getElementById(controlId);
+    const dentro = Boolean(control && control.contains(document.activeElement));
+    // Calla si no hay error, si habla el formulario o si el foco acaba de
+    // llegar (enviar y saltar al primer error): ahí el lector lo lee como
+    // descripción del control.
+    if (!error || form?.silent.current || (dentro && recien)) {
+      setAnuncio("");
+      return;
+    }
+    setAnuncio(salaFieldAnnouncement(control, error));
+    const callar = window.setTimeout(() => setAnuncio(""), RETIRADA_ANUNCIO);
+    return () => window.clearTimeout(callar);
+  }, [error, controlId, form]);
 
   const control: SalaFieldControl = {
     id: controlId,

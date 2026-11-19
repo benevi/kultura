@@ -18,6 +18,13 @@ import { SalaFieldAnnouncer, SalaFieldError, SalaFieldHint, useSalaField, type S
  * `ref`, `className` y el resto de props llegan al `<input>`. Con colores
  * forzados se devuelve la casilla del sistema, que conserva el papel de
  * interruptor.
+ *
+ * **Si no se ha podido guardar**, `error` lo dice debajo y se anuncia (el foco
+ * sigue en el interruptor, así que el lector no lo leería solo). No lleva
+ * `aria-invalid`: encendido y apagado son los dos válidos, lo que ha fallado
+ * es guardar, y `aria-invalid` no está admitido en un `switch` (ARIA 1.2). Tras
+ * el fallo, `checked` tiene que volver al valor que de verdad está guardado:
+ * un interruptor que dice «encendido» sin estarlo miente.
  */
 export interface SalaSwitchProps extends Omit<React.InputHTMLAttributes<HTMLInputElement>, "type" | "role" | "children">, Omit<SalaFieldTexts, "requirement"> {
   fieldClassName?: string;
@@ -38,7 +45,7 @@ export const SalaSwitch = React.forwardRef<HTMLInputElement, SalaSwitchProps>(fu
         data-sala-force={salaForce(props)}
         className={cn(
           "flex min-h-sala-target max-w-full items-center justify-between gap-4 py-2 sala-type-text [-webkit-tap-highlight-color:transparent]",
-          disabled ? "cursor-not-allowed text-sala-ink-disabled" : "cursor-pointer text-sala-ink",
+          disabled ? "cursor-not-allowed text-sala-ink-disabled forced-colors:text-[color:GrayText]" : "cursor-pointer text-sala-ink",
           !disabled && !invalid && "[&_input]:sala-hover:border-sala-ink"
         )}
       >
@@ -47,6 +54,7 @@ export const SalaSwitch = React.forwardRef<HTMLInputElement, SalaSwitchProps>(fu
           <input
             ref={ref}
             {...control}
+            aria-invalid={undefined}
             type="checkbox"
             role="switch"
             disabled={disabled}

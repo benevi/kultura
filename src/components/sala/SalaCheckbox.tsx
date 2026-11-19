@@ -22,9 +22,18 @@ export interface SalaCheckboxProps extends Omit<React.InputHTMLAttributes<HTMLIn
   fieldClassName?: string;
 }
 
-/** La fila que se pulsa: el dibujo y su texto. 48 px de alto como poco. */
+/**
+ * La fila que se pulsa: el dibujo y su texto. 48 px de alto como poco, y de
+ * ancho lo que ocupan (`w-fit`): un toque en el hueco vacío de la derecha no
+ * marca nada. En el móvil ese hueco es por donde pasa el pulgar, y una casilla
+ * de «acepto» marcada sin querer es peor que una fila algo más corta. El
+ * interruptor sí ocupa la fila entera: su pieza está al final.
+ */
 export const SALA_CHOICE_ROW =
-  "flex min-h-sala-target min-w-sala-target max-w-full items-start gap-3 py-3 sala-type-text [-webkit-tap-highlight-color:transparent]";
+  "flex min-h-sala-target w-fit min-w-sala-target max-w-full items-start gap-3 py-3 sala-type-text [-webkit-tap-highlight-color:transparent]";
+
+/** La fila deshabilitada. Con colores forzados, el texto pasa al gris del sistema, como el dibujo. */
+export const SALA_CHOICE_ROW_DISABLED = "cursor-not-allowed text-sala-ink-disabled forced-colors:text-[color:GrayText]";
 
 /** Con el puntero en cualquier punto de la fila, el borde del dibujo pasa a tinta. */
 export const SALA_CHOICE_ROW_HOVER = "cursor-pointer [&_input]:sala-hover:border-sala-ink";
@@ -62,7 +71,7 @@ export const SalaCheckbox = React.forwardRef<HTMLInputElement, SalaCheckboxProps
         data-sala-force={salaForce(props)}
         className={cn(
           SALA_CHOICE_ROW,
-          disabled ? "cursor-not-allowed text-sala-ink-disabled" : "text-sala-ink",
+          disabled ? SALA_CHOICE_ROW_DISABLED : "text-sala-ink",
           !disabled && !invalid && SALA_CHOICE_ROW_HOVER,
           !disabled && invalid && "cursor-pointer"
         )}

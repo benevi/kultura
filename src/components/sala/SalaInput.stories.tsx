@@ -386,7 +386,7 @@ export const Contrasena: Story = {
     const boton = canvas.getByRole("button", { name: "Mostrar contraseña" });
     await expect(campo).toHaveAttribute("type", "password");
     await expect(boton).toHaveAttribute("aria-pressed", "false");
-    await expect(boton).toHaveAttribute("aria-controls", campo.id);
+    await expect(boton).not.toHaveAttribute("aria-controls");
     // El botón cabe dentro del campo y no tapa lo escrito.
     const caja = campo.getBoundingClientRect();
     const b = boton.getBoundingClientRect();
@@ -461,8 +461,13 @@ function Largos() {
         counter={(largo, tope) => `${largo} de ${tope} caracteres`}
         defaultValue="Donaudampfschifffahrtsgesellschaftskapitän"
       />
-      <SalaInput lang="ja" label="リストの名前" name="l2" hint="あとから設定で変更できます。" error="この名前はすでに使われています。別の名前を入力してください。" defaultValue="千と千尋の神隠し" />
-      <SalaInput lang="ko" label="목록 이름" name="l3" hint="나중에 설정에서 바꿀 수 있습니다." error="이미 사용 중인 이름입니다. 다른 이름을 입력해 주세요." defaultValue="기생충" />
+      {/* `lang` en el campo llega solo al `<input>`: con la etiqueta, la ayuda y el error en otro idioma, se envuelve el campo entero. */}
+      <div lang="ja" className="min-w-0">
+        <SalaInput label="リストの名前" name="l2" hint="あとから設定で変更できます。" error="この名前はすでに使われています。別の名前を入力してください。" defaultValue="千と千尋の神隠し" />
+      </div>
+      <div lang="ko" className="min-w-0">
+        <SalaInput label="목록 이름" name="l3" hint="나중에 설정에서 바꿀 수 있습니다." error="이미 사용 중인 이름입니다. 다른 이름을 입력해 주세요." defaultValue="기생충" />
+      </div>
       <SalaTextarea
         label="Enlace"
         name="l4"

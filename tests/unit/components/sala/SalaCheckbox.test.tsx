@@ -1,5 +1,5 @@
 import { createRef, useState } from "react";
-import { render, screen } from "@testing-library/react";
+import { act, fireEvent, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
 import { SalaCheckbox } from "@/components/sala/SalaCheckbox";
@@ -19,6 +19,8 @@ describe("SalaCheckbox", () => {
     const fila = casilla.closest("label")!;
     expect(fila.className).toContain("min-h-sala-target");
     expect(fila.className).toContain("min-w-sala-target");
+    // La fila mide lo que ocupan el dibujo y el texto: el hueco vacío de la derecha no marca.
+    expect(fila.className).toContain("w-fit");
     // Un clic en el texto la marca.
     await user.click(screen.getByText("Avísame de los estrenos"));
     expect(casilla).toBeChecked();
@@ -86,6 +88,15 @@ describe("SalaCheckbox", () => {
     expect(onChange).not.toHaveBeenCalled();
     expect(casilla.className).toContain("border-dashed");
     expect(casilla.closest("label")!.className).not.toMatch(/sala-hover:/);
+    // Con colores forzados el texto pasa al gris del sistema, como el dibujo.
+    expect(casilla.closest("label")!.className).toContain("forced-colors:text-[color:GrayText]");
+  });
+
+  it("un error que aparece con el foco en otro sitio se anuncia con el texto de la casilla delante", () => {
+    const casilla = (error?: string) => <SalaCheckbox label="Acepto los términos" required requirement="obligatorio" error={error} />;
+    const { container, rerender } = render(casilla());
+    rerender(casilla("Marca la casilla"));
+    expect(container.querySelector("[data-sala-announcer]")!.textContent).toBe("Acepto los términos: Marca la casilla");
   });
 });
 
@@ -161,18 +172,39 @@ describe("SalaRadioGroup", () => {
     expect(screen.getByRole("status")).toHaveTextContent("public");
   });
 
-  it("obligatorio y con error: lo dice el grupo, con icono, y cada radio es required", () => {
+  it("obligatorio y con error: el grupo queda como no válido y el error lo lleva cada radio, una sola vez", () => {
     render(grupo({ required: true, requirement: "obligatorio", hint: "Se puede cambiar", error: "Elige una opción" }));
     const caja = screen.getByRole("radiogroup", { name: "Quién puede verla" });
-    expect(caja).toHaveAttribute("aria-required", "true");
     expect(caja).toHaveAttribute("aria-invalid", "true");
-    expect(caja).toHaveAccessibleDescription("Elige una opción Se puede cambiar");
+    // La ayuda del grupo, en el grupo; el error, en los radios (si no, se oiría dos veces al entrar).
+    expect(caja).toHaveAccessibleDescription("Se puede cambiar");
     expect(screen.getByText("obligatorio")).toHaveAttribute("aria-hidden", "true");
     expect(screen.getByText("Elige una opción").closest("p")!.querySelector("svg")).not.toBeNull();
+    // «Obligatorio» lo dice el grupo; el `required` de cada radio es para el formulario.
+    expect(caja).toHaveAttribute("aria-required", "true");
     for (const radio of screen.getAllByRole("radio")) {
       expect(radio).toBeRequired();
       expect(radio.className).toContain("border-sala-danger");
     }
+    expect(screen.getByRole("radio", { name: "Solo yo" })).toHaveAccessibleDescription("Elige una opción");
+    // El error va delante de la ayuda de la opción.
+    expect(screen.getByRole("radio", { name: "Mis amigos" })).toHaveAccessibleDescription("Elige una opción Los de tu lista de amigos");
+  });
+
+  it("sin error, los radios no describen nada de más; el error se anuncia con la pregunta delante", () => {
+    const { container, rerender } = render(grupo({ required: true, requirement: "obligatorio" }));
+    expect(screen.getByRole("radio", { name: "Solo yo" })).not.toHaveAttribute("aria-describedby");
+    rerender(grupo({ required: true, requirement: "obligatorio", error: "Elige una opción" }));
+    expect(container.querySelector("[data-sala-announcer]")!.textContent).toBe("Quién puede verla: Elige una opción");
+  });
+
+  it("pasar de un radio a otro no es salir del grupo: un error con el foco dentro se anuncia", async () => {
+    const user = userEvent.setup();
+    const { container, rerender } = render(grupo({ defaultValue: "private" }));
+    await user.tab();
+    await user.keyboard("{ArrowDown}");
+    rerender(grupo({ defaultValue: "private", error: "No se ha podido guardar" }));
+    expect(container.querySelector("[data-sala-announcer]")!.textContent).toBe("Quién puede verla: No se ha podido guardar");
   });
 
   it("deshabilitado: el grupo entero o una sola opción", async () => {
@@ -242,10 +274,54 @@ describe("SalaSwitch", () => {
 
   it("con error y deshabilitado", () => {
     const { rerender } = render(<SalaSwitch label="Correo semanal" error="No se ha podido guardar" />);
-    expect(screen.getByRole("switch")).toHaveAttribute("aria-invalid", "true");
+    // Lo que ha fallado es guardar, no el valor: sin `aria-invalid` (que un `switch` no admite).
+    expect(screen.getByRole("switch")).not.toHaveAttribute("aria-invalid");
     expect(screen.getByRole("switch")).toHaveAccessibleDescription("No se ha podido guardar");
+    expect(screen.getByText("No se ha podido guardar").closest("p")!.querySelector("svg")).not.toBeNull();
     rerender(<SalaSwitch label="Correo semanal" disabled />);
     expect(screen.getByRole("switch")).toBeDisabled();
     expect(screen.getByRole("switch").className).toContain("border-dashed");
+    expect(screen.getByRole("switch").closest("label")!.className).toContain("forced-colors:text-[color:GrayText]");
+  });
+
+  it("si no se ha podido guardar, se anuncia aunque el foco esté en el interruptor, y vuelve al valor real", async () => {
+    const user = userEvent.setup();
+    function Ajuste() {
+      const [encendido, setEncendido] = useState(false);
+      const [error, setError] = useState<string>();
+      return (
+        <>
+          <SalaSwitch
+            label="Correo semanal"
+            checked={encendido}
+            error={error}
+            onChange={(event) => {
+              setEncendido(event.target.checked);
+              setError(undefined);
+            }}
+          />
+          <button
+            type="button"
+            onClick={() => {
+              // La respuesta del servidor: no se ha guardado.
+              setEncendido(false);
+              setError("No se ha podido guardar. Vuelve a probar en un momento.");
+            }}
+          >
+            falla
+          </button>
+        </>
+      );
+    }
+    const { container } = render(<Ajuste />);
+    const interruptor = screen.getByRole("switch", { name: "Correo semanal" });
+    await user.tab();
+    await user.keyboard(" ");
+    expect(interruptor).toBeChecked();
+    // El fallo llega con el foco todavía en el interruptor.
+    act(() => fireEvent.click(screen.getByRole("button", { name: "falla" })));
+    expect(interruptor).toHaveFocus();
+    expect(interruptor).not.toBeChecked();
+    expect(container.querySelector("[data-sala-announcer]")!.textContent).toBe("Correo semanal: No se ha podido guardar. Vuelve a probar en un momento.");
   });
 });

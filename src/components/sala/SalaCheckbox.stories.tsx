@@ -224,10 +224,20 @@ export const LosEstados: Story = {
       contraste(getComputedStyle(encendido.nextElementSibling!).backgroundColor, getComputedStyle(encendido).backgroundColor)
     ).toBeGreaterThanOrEqual(3);
 
-    // Error del grupo: en el árbol de accesibilidad, el grupo tiene nombre, es obligatorio y no válido, y lo describe el error.
+    // Error del grupo: el grupo tiene nombre y queda como no válido; el error lo lleva cada radio
+    // (al llegar el foco a un radio no todos los lectores leen la descripción del grupo), y solo ahí.
     const [grupo] = canvas.getAllByRole("radiogroup", { name: /Quién puede ver la lista/ }).filter((g) => g.getAttribute("aria-invalid") === "true");
+    await expect(grupo).not.toHaveAttribute("aria-describedby");
+    // «Obligatorio» lo dice el grupo.
     await expect(grupo).toHaveAttribute("aria-required", "true");
-    await expect(grupo).toHaveAccessibleDescription("Elige quién puede verla.");
+    for (const radio of Array.from(grupo.querySelectorAll<HTMLInputElement>("input[type=radio]"))) {
+      await expect(radio).toBeRequired();
+      await expect(radio).toHaveAccessibleDescription(/^Elige quién puede verla\./);
+    }
+    // El interruptor que no se ha podido guardar no es «no válido»: lo dice su descripción.
+    const fallido = interruptores.find((i) => i.getAttribute("aria-describedby")?.includes("-error"))!;
+    await expect(fallido).not.toHaveAttribute("aria-invalid");
+    await expect(fallido).toHaveAccessibleDescription(/No se ha podido guardar/);
     // La casilla con error.
     const [terminos] = canvas.getAllByRole("checkbox", { name: "Tengo 14 años o más y acepto los términos" });
     await expect(terminos).toBeRequired();
@@ -344,7 +354,10 @@ function Largos() {
         requirement="obligatorio"
         error="Marca la casilla para crear tu cuenta. Sin aceptar los términos no podemos guardar nada tuyo."
       />
-      <SalaCheckbox lang="ja" label="新しいエピソードが公開されたらお知らせを受け取る" name="t2" hint="通知は公開日に一度だけ届きます。" />
+      {/* `lang` en la casilla llega solo al `<input>`: con la etiqueta y la ayuda en otro idioma, se envuelve la casilla entera. */}
+      <div lang="ja" className="min-w-0">
+        <SalaCheckbox label="新しいエピソードが公開されたらお知らせを受け取る" name="t2" hint="通知は公開日に一度だけ届きます。" />
+      </div>
       <SalaRadioGroup lang="ko" legend="이 목록을 볼 수 있는 사람" name={`${suelo}-t3`} defaultValue="friends" hint="나중에 설정에서 바꿀 수 있습니다.">
         <SalaRadio value="private" label="나만 보기" />
         <SalaRadio value="friends" label="친구에게만 공개" />
@@ -366,7 +379,7 @@ export const TextoLargo: Story = {
       <Largos />
     </EnLosDosSuelos>
   ),
-  play: async ({ canvasElement }) => {
+  play: async ({ canvas, canvasElement, userEvent }) => {
     for (const columna of Array.from(canvasElement.querySelectorAll<HTMLElement>("section > div > div"))) {
       const limite = columna.getBoundingClientRect().right;
       await expect(columna.scrollWidth).toBeLessThanOrEqual(columna.clientWidth);
@@ -375,6 +388,25 @@ export const TextoLargo: Story = {
       }
     }
     await expect(document.documentElement.scrollWidth).toBeLessThanOrEqual(document.documentElement.clientWidth);
+
+    // El idioma cubre también la etiqueta y la ayuda, no solo el control.
+    const japonesa = canvas.getAllByRole("checkbox", { name: /お知らせ/ })[0];
+    await expect(japonesa.closest("[lang]")).toHaveAttribute("lang", "ja");
+    await expect(japonesa.closest("label")!.closest("[lang]")).toHaveAttribute("lang", "ja");
+    await expect(document.getElementById(japonesa.getAttribute("aria-describedby")!)!.closest("[lang]")).toHaveAttribute("lang", "ja");
+
+    // Pulsar un enlace dentro de la etiqueta no marca la casilla; el resto del texto, sí.
+    const terminos = canvas.getAllByRole("checkbox", { name: /Tengo 14 años o más/ })[0] as HTMLInputElement;
+    const enlace = canvas.getAllByRole("link", { name: "términos" })[0];
+    const sinNavegar = (event: Event) => event.preventDefault();
+    enlace.addEventListener("click", sinNavegar);
+    await userEvent.click(enlace);
+    enlace.removeEventListener("click", sinNavegar);
+    await expect(terminos).not.toBeChecked();
+    await userEvent.click(canvas.getAllByText(/Tengo 14 años o más/)[0]);
+    await expect(terminos).toBeChecked();
+    await userEvent.click(terminos);
+    await expect(terminos).not.toBeChecked();
   },
 };
 
