@@ -10,7 +10,7 @@ import { SALA_WORK_CLASS, workPaletteVars } from "@/lib/design/sala-palette";
  */
 
 /** Una imagen de un solo color: basta para ver un componente sobre una paleta. */
-const deColor = (l: number, c: number, h: number) =>
+export const deColor = (l: number, c: number, h: number) =>
   paletteFromSwatches([{ rgb: [0, 0, 0], oklch: { l, c, h }, share: 1 }]);
 
 export interface ObraDeEjemplo {
@@ -137,6 +137,30 @@ export const IconoLupa = () => (
   </svg>
 );
 
+// ------------------------------------------------------------
+// Imágenes de ejemplo
+// ------------------------------------------------------------
+
+/**
+ * Una portada inventada: un SVG de colores planos en un `data:` URI. Las
+ * historias no bajan nada de la red ni enseñan portadas con derechos. `ancho`
+ * y `alto` son su tamaño natural en píxeles, que es lo que mide el tope de
+ * ampliación; `tono` (0–360), el matiz.
+ */
+export function imagenDeEjemplo(ancho: number, alto: number, tono: number): string {
+  const c = (l: number, croma: number, giro = 0) => `oklch(${l} ${croma} ${(tono + giro) % 360})`;
+  const svg =
+    `<svg xmlns="http://www.w3.org/2000/svg" width="${ancho}" height="${alto}" viewBox="0 0 ${ancho} ${alto}">` +
+    `<rect width="100%" height="100%" fill="${c(0.42, 0.12)}"/>` +
+    `<rect y="${alto * 0.58}" width="100%" height="${alto * 0.42}" fill="${c(0.26, 0.08, 20)}"/>` +
+    `<circle cx="${ancho * 0.64}" cy="${alto * 0.36}" r="${Math.min(ancho, alto) * 0.24}" fill="${c(0.82, 0.14, 60)}"/>` +
+    `<rect x="${ancho * 0.12}" y="${alto * 0.44}" width="${ancho * 0.3}" height="${alto * 0.4}" fill="${c(0.62, 0.17, 320)}"/>` +
+    `</svg>`;
+  return `data:image/svg+xml,${encodeURIComponent(svg)}`;
+}
+
+/** Un `src` que no carga nunca: el navegador da error al leerlo, sin tocar la red. */
+export const IMAGEN_ROTA = "data:image/png;base64,AAAA";
 // ------------------------------------------------------------
 // Medidas para los `play`: contraste de lo que el navegador ha pintado
 // ------------------------------------------------------------

@@ -112,7 +112,7 @@ Regla común de botones y enlaces: al pasar el puntero, tinta (`bg-sala-ink` con
 
 ## Componentes
 
-En `src/components/sala/`, cada uno con sus historias (Storybook, **Sala/Botón**, **Sala/Enlace**, **Sala/Campo de texto**, **Sala/Selección** y **Sala/Formulario**) y sus tests (`tests/unit/components/sala/`). Conviven con los de `src/components/ui/`, que siguen siendo los de las pantallas de hoy.
+En `src/components/sala/`, cada uno con sus historias (Storybook, **Sala/Botón**, **Sala/Enlace**, **Sala/Campo de texto**, **Sala/Selección**, **Sala/Formulario**, **Sala/Póster** y **Sala/Tarjeta de obra**) y sus tests (`tests/unit/components/sala/`). Conviven con los de `src/components/ui/`, que siguen siendo los de las pantallas de hoy.
 
 | Componente | Para qué |
 |---|---|
@@ -126,8 +126,35 @@ En `src/components/sala/`, cada uno con sus historias (Storybook, **Sala/Botón*
 | `SalaSwitch` | Ajuste que vale en el momento de tocarlo |
 | `SalaForm` | El `<form>` de un formulario con campos de «Sala»: al enviar con errores lleva el foco al primero y anuncia una vez cuántos hay que corregir (`errorSummary`) |
 | `SalaField` | La pieza común: etiqueta, ayuda, error y contador alrededor de un control propio (`{(control) => <input {...control} />}`) |
+| `SalaPoster` | La imagen de una obra: reserva su sitio, nunca queda rota y no pixela |
+| `SalaWorkCard` + `SalaWorkCardSkeleton` | Una obra en una rejilla o una lista: póster, título y datos, toda ella un enlace. `grid`, `row` y `compact`; con acción secundaria (`action`) |
 
 Una palabra más larga que su caja (una URL como texto) se parte en los dos (`overflow-wrap: anywhere`): ni el botón ni el enlace dan scroll horizontal.
+
+### Póster y tarjeta de obra
+
+Los dos conviven con `PosterFrame`, `PosterImage`, `BestPoster` y `MediaCard`, que siguen en las pantallas de hoy; la sustitución es de la 8.5.
+
+**`SalaPoster`**
+
+- **Proporción.** Sale del formato (`format`) o se fija con `ratio`. Todos los proveedores dan una portada vertical cercana a 2:3 salvo el de videojuegos (RAWG), que da arte de 16:9: `SALA_POSTER_RATIO`. Una rejilla que mezcla formatos pone `ratio="2/3"` a todas para que las filas cuadren.
+- **Sin salto de maquetación.** La caja tiene su proporción antes de que llegue nada (medido en las historias: con imagen, sin ella y con la imagen rota mide lo mismo). `sizes` es obligatorio; `priority` solo para lo que se ve sin hacer scroll.
+- **Cargando, sin imagen o con error:** el campo de color con el título como rótulo (biblia §2). El campo es la franja (`bg-sala-band` con su tinta): con `palette`, la de la obra; sin ella, la del contenedor. El rótulo es adorno y su tamaño sigue al ancho de la caja, sin bajar de 14 px. En una miniatura no cabe: `fallback="plain"` deja solo el campo.
+- **`alt`, siempre.** Vacío cuando el título va escrito al lado (toda tarjeta): la imagen es adorno. Con texto cuando el póster va solo; si entonces no hay imagen, ese texto nombra la caja (`role="img"`).
+- **Tope de ampliación** (biblia §2, `src/lib/design/image-fit.ts`). Una imagen que para llenar la caja tendría que ampliarse más de 1,25 veces su tamaño natural, en píxeles físicos, no la llena: va entera, a 1,25 veces como mucho, centrada sobre el campo de color. `capUpscale={false}` lo apaga.
+- La imagen se pide con `posterLoader`, como hoy: no hay dominios nuevos. Es un componente de cliente (tiene que saber si la imagen cargó, falló o se queda corta); sin JavaScript se ve igual, salvo el tope.
+
+**`SalaWorkCard`**
+
+- **Un solo enlace, y es el título.** Cubre la tarjeta entera con `::after`, así que toda ella se pulsa, pero su nombre accesible es solo el título: la lista de enlaces de una rejilla de 50 son 50 títulos. El título original, el formato, el año y `detail` van fuera del enlace y se leen al recorrer la tarjeta.
+- **Acción secundaria** (`action`): un `SalaButton` de solo icono, fuera del enlace y encima de él. Nunca un botón dentro del enlace. En el teclado va después de la obra. Su `label` nombra la obra («Guardar Parásitos en la biblioteca»): en una rejilla, veinte botones «Guardar» no dicen nada.
+- **El formato va con palabras** (`formatLabel`, ya traducido), en cada tarjeta.
+- **Idiomas.** `titleLang` si el título no está en el idioma de la página; `originalTitle` lleva el suyo. Con eso cada escritura sale con su fuente.
+- **Título cortado.** Tres líneas en `grid` y dos en `row` y `compact` (`clamp`; `"none"` no corta). El corte es solo a la vista: el nombre del enlace lleva el título entero, y también su `title`.
+- **Estados.** Con el puntero, el título se marca en tinta; pulsada, con el gris de los enlaces; con el foco, el anillo rodea la tarjeta entera, por fuera. La caja no cambia de medida en ninguno. Una rejilla o un carrusel deja 6 px de aire alrededor para el anillo (un contenedor con `overflow` lo recortaría).
+- **Dónde va cada cosa.** `ref` y las props nativas, al enlace; `className`, a la caja de la tarjeta. Es un componente de servidor.
+- **En una lista.** Cada tarjeta, en un `<li>` de una `<ul role="list">` (o `<ol>` si el orden cuenta) con nombre o bajo un encabezado. `headingLevel` es el nivel que toca bajo ese encabezado (`3` por defecto); `"none"` deja el título en un párrafo, para una lista de sugerencias que no es un índice.
+- **Esqueleto** (`SalaWorkCardSkeleton`): la misma forma, late tres veces (3,6 s) y se queda quieto; con movimiento reducido no late. Es adorno: la lista lleva `aria-busy` y la carga se anuncia una vez, no una por tarjeta.
 
 ### La espera del botón (`loading`)
 
@@ -195,4 +222,4 @@ Las piezas comunes de las historias (el suelo neutro o de una obra, las obras de
 | Papeles de color y sus neutros; AA | Colores de error, hecho y aviso; foco con la tinta; gris de lo deshabilitado |
 | Familias y orden de las fuentes CJK | Tamaños, pesos e interlineados de cada papel |
 | Esquinas rectas, sin sombras, acción de 48 px | Margen de página, grosor del foco, tiempos y curva |
-| El formato y los estados no se dicen solo con color | Variantes del botón; tinta al pasar el puntero; pulsado que encoge un punto el contenido; deshabilitado con borde discontinuo; la espera de tres cuadrados bajo el texto, que se para a los 4,4 s; enlace siempre subrayado y sin estilo de «visitado»; en los campos: borde gris en reposo y tinta con puntero o foco, «obligatorio» y «opcional» con palabra, solo lectura como raya, sin estado de «correcto», radio redondo, interruptor de pieza cuadrada |
+| El formato y los estados no se dicen solo con color | Variantes del botón; tinta al pasar el puntero; pulsado que encoge un punto el contenido; deshabilitado con borde discontinuo; la espera de tres cuadrados bajo el texto, que se para a los 4,4 s; enlace siempre subrayado y sin estilo de «visitado»; en los campos: borde gris en reposo y tinta con puntero o foco, «obligatorio» y «opcional» con palabra, solo lectura como raya, sin estado de «correcto», radio redondo, interruptor de pieza cuadrada; en el póster y la tarjeta: 16:9 para videojuegos, el rótulo del sustituto y su anchura según la longitud del título, el tope de 1,25× también en las tarjetas, el título marcado en tinta al pasar el puntero, el corte del título a 3 y 2 líneas, el esqueleto que late tres veces |
