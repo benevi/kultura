@@ -51,6 +51,17 @@ const salaEncabezados: BrowserCommand<[]> = async ({ page, context }) => {
   return nombres;
 };
 
+// Emula preferencias del sistema (`forced-colors`, `prefers-contrast`…) con CDP
+// `Emulation.setEmulatedMedia`. Lo usa `emularMedios` (.storybook/sala.tsx);
+// solo admite esas dos y el movimiento reducido. Una lista vacía lo deja como estaba.
+const MEDIOS_PERMITIDOS = new Set(["forced-colors", "prefers-contrast", "prefers-reduced-motion"]);
+const salaMedios: BrowserCommand<[features: Array<{ name: string; value: string }>]> = async ({ page, context }, features) => {
+  if (!features.every((f) => MEDIOS_PERMITIDOS.has(f.name))) throw new Error("Medio no permitido");
+  let sesion = sesiones.get(page);
+  if (!sesion) sesiones.set(page, (sesion = context.newCDPSession(page)));
+  await (await sesion).send("Emulation.setEmulatedMedia", { features });
+};
+
 // Pruebas de las historias de Storybook (`npm run test:storybook`): cada
 // historia se pinta en Chromium (el de Playwright, ya instalado) y pasa axe;
 // con `a11y.test: "error"` (.storybook/preview.tsx) una violación la hace
@@ -78,7 +89,7 @@ export default defineConfig({
       headless: true,
       provider: playwright(),
       instances: [{ browser: "chromium" }],
-      commands: { salaDensidad, salaEncabezados },
+      commands: { salaDensidad, salaEncabezados, salaMedios },
     },
   },
 });

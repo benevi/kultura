@@ -336,19 +336,30 @@
    figura (`background-clip: text`), sin repetir el título.
    ------------------------------------------------------------ */
 
+/* Filas: hueco que se encoge (la imagen), el título, lo de debajo y el margen.
+   El título y lo de debajo nunca se recortan: si no caben en el alto que se le
+   da, la sala crece. Por eso quien la usa le pone un alto mínimo (o una
+   proporción), nunca un alto fijo ni un máximo. Sobre el título queda siempre
+   un hueco (el margen o un cuarto del cuerpo, lo mayor), donde cabe lo que
+   asoman las letras; lo demás, como el fundido del velo, se recorta. */
 .sala-stage {
   position: relative;
   isolation: isolate;
   display: grid;
   grid-template-columns: minmax(0, 1fr);
-  grid-template-rows: minmax(0, 1fr) auto var(--sala-margin);
-  overflow: hidden;
+  grid-template-rows: minmax(0, 1fr) auto auto var(--sala-margin);
+  overflow: clip;
   container-type: inline-size;
   --sala-title-unit: calc((100cqw - 2 * var(--sala-margin)) / 100);
 }
 
+@media (prefers-contrast: more) {
+  .sala-stage {
+    --sala-stage-veil-min: 0.85;
+  }
+}
+
 .sala-stage-image,
-.sala-stage-veil,
 .sala-stage-figure {
   position: absolute;
   inset: 0;
@@ -364,9 +375,22 @@
   object-position: var(--sala-stage-focus, 50% 50%);
 }
 
+/* El velo sigue al contenido: opaco desde el hueco sobre el título hasta
+   abajo (lo de debajo y el margen incluidos) y, encima, un fundido de 12cqw. */
 .sala-stage-veil {
+  position: relative;
+  grid-area: 2 / 1 / -1 / -1;
   pointer-events: none;
-  background: linear-gradient(to top, color-mix(in srgb, var(--sala-background) calc(var(--sala-stage-veil, 0.7) * 100%), transparent) 0, color-mix(in srgb, var(--sala-background) calc(var(--sala-stage-veil, 0.7) * 100%), transparent) calc(var(--sala-title-n-block, 30) * var(--sala-title-unit, 1cqw) + 5rem), transparent calc(calc(var(--sala-title-n-block, 30) * var(--sala-title-unit, 1cqw) + 5rem) + 12cqw));
+  background: color-mix(in srgb, var(--sala-background) calc(max(var(--sala-stage-veil, 0.7), var(--sala-stage-veil-min, 0)) * 100%), transparent);
+}
+
+.sala-stage-veil::before {
+  content: "";
+  position: absolute;
+  inset-inline: 0;
+  bottom: 100%;
+  height: 12cqw;
+  background: linear-gradient(to top, color-mix(in srgb, var(--sala-background) calc(max(var(--sala-stage-veil, 0.7), var(--sala-stage-veil-min, 0)) * 100%), transparent), transparent);
 }
 
 /* La figura solo se pinta con el fundido encendido. */
@@ -380,7 +404,7 @@
   grid-area: 1 / 1 / -1 / -1;
   display: grid;
   grid-template-columns: minmax(0, 1fr);
-  grid-template-rows: minmax(0, 1fr);
+  grid-template-rows: minmax(0, 1fr) auto auto var(--sala-margin);
   margin: 0;
 }
 
@@ -391,8 +415,9 @@
 }
 
 .sala-stage-heading > .sala-title-text {
-  grid-row: 1;
+  grid-row: 2;
   align-self: end;
+  margin-top: max(var(--sala-margin), 0.25 * clamp(var(--sala-title-floor, 0px), calc(var(--sala-title-n-size) * var(--sala-title-unit, 1cqw)), var(--sala-title-cap, 1000rem)));
   padding-inline: var(--sala-margin);
   animation: sala-title-rise var(--sala-duration-slow) var(--sala-ease) backwards;
 }
@@ -404,7 +429,7 @@
 
 .sala-stage-below {
   position: relative;
-  grid-area: 2 / 1;
+  grid-area: 3 / 1;
   padding: 0.75rem var(--sala-margin) 0;
 }
 
@@ -430,8 +455,8 @@
 }
 
 @container (min-width: 45rem) {
-  .sala-stage-veil {
-    background: linear-gradient(to top, color-mix(in srgb, var(--sala-background) calc(var(--sala-stage-veil, 0.7) * 100%), transparent) 0, color-mix(in srgb, var(--sala-background) calc(var(--sala-stage-veil, 0.7) * 100%), transparent) calc(var(--sala-title-w-block, 30) * var(--sala-title-unit, 1cqw) + 5rem), transparent calc(calc(var(--sala-title-w-block, 30) * var(--sala-title-unit, 1cqw) + 5rem) + 12cqw));
+  .sala-stage-heading > .sala-title-text {
+    margin-top: max(var(--sala-margin), 0.25 * clamp(var(--sala-title-floor, 0px), calc(var(--sala-title-w-size) * var(--sala-title-unit, 1cqw)), var(--sala-title-cap, 1000rem)));
   }
 }
 
@@ -485,15 +510,18 @@
   }
 }
 
-[data-sala-motion="reduce"] .sala-stage-heading > .sala-title-text {
+[data-sala-motion="reduce"] .sala-stage-heading > .sala-title-text,
+.sala-stage[data-sala-motion="reduce"] .sala-stage-heading > .sala-title-text {
   animation: none;
 }
 
-[data-sala-motion="reduce"] .sala-stage .sala-stage-figure {
+[data-sala-motion="reduce"] .sala-stage .sala-stage-figure,
+.sala-stage[data-sala-motion="reduce"] .sala-stage-figure {
   display: none;
 }
 
-[data-sala-motion="reduce"] .sala-stage .sala-stage-heading {
+[data-sala-motion="reduce"] .sala-stage .sala-stage-heading,
+.sala-stage[data-sala-motion="reduce"] .sala-stage-heading {
   background: none;
   color: inherit;
   animation: none;

@@ -300,3 +300,19 @@ export async function nombresDeEncabezados(): Promise<string[] | null> {
     return null;
   }
 }
+
+/**
+ * Emula preferencias del sistema (`forced-colors: active`,
+ * `prefers-contrast: more`…) con el comando `salaMedios`. Solo en las
+ * pruebas de las historias: fuera devuelve `false`. `[]` las quita.
+ */
+export async function emularMedios(features: Array<{ name: string; value: string }>): Promise<boolean> {
+  try {
+    const { commands } = await import("vitest/browser");
+    await (commands as unknown as { salaMedios: (f: typeof features) => Promise<void> }).salaMedios(features);
+  } catch {
+    return false;
+  }
+  await new Promise((seguir) => requestAnimationFrame(() => requestAnimationFrame(() => seguir(undefined))));
+  return true;
+}

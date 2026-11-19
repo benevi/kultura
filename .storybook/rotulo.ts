@@ -138,39 +138,34 @@ function leerRgb(valor: string): [number, number, number, number] {
   return [n[0] * escala, n[1] * escala, n[2] * escala, n[3] ?? 1];
 }
 
-/** El velo, leído de lo que el navegador ha calculado: su color y su opacidad en cada fila (de arriba abajo). */
-function velo(elemento: Element | null, alto: number): { rgb: [number, number, number]; alfa: Float32Array } {
+/**
+ * El velo, leído de lo que el navegador ha calculado: su color y su opacidad
+ * en cada fila de la sala (de arriba abajo). Es una caja opaca que va del
+ * título hacia abajo y, encima, un fundido (`::before`) que sube hasta
+ * transparente. Sin velo (colores forzados), opacidad cero.
+ */
+function velo(elemento: Element | null, sala: Element, alto: number): { rgb: [number, number, number]; alfa: Float32Array } {
   const alfa = new Float32Array(Math.max(1, Math.round(alto)));
   if (!elemento) return { rgb: [0, 0, 0], alfa };
-  const fondo = getComputedStyle(elemento).backgroundImage;
-  const dentro = /^linear-gradient\((.*)\)$/.exec(fondo)?.[1];
-  if (!dentro) throw new Error(`El velo no es un degradado: «${fondo}»`);
-  // Paradas: «color posición», separadas por comas que no están dentro de un paréntesis.
-  const partes = dentro.split(/,(?![^(]*\))/).map((p) => p.trim());
-  if (partes[0] !== "to top") throw new Error(`El velo no sube: «${fondo}»`);
-  const paradas = partes.slice(1).map((p) => {
-    const m = /^(.*\))\s+(-?[\d.]+)px$/.exec(p) ?? /^(.*\))\s+(-?[\d.]+)%$/.exec(p);
-    if (!m) throw new Error(`Parada ilegible en el velo: «${p}»`);
-    const [r, g, b, a] = leerRgb(m[1]);
-    return { rgb: [r, g, b] as [number, number, number], a, en: p.endsWith("%") ? (parseFloat(m[2]) / 100) * alto : parseFloat(m[2]) };
-  });
-  const color = paradas.find((p) => p.a > 0)?.rgb ?? [0, 0, 0];
-  for (let fila = 0; fila < alfa.length; fila++) {
-    const desdeAbajo = alto - (fila + 0.5);
-    let a = paradas[paradas.length - 1].a;
-    if (desdeAbajo <= paradas[0].en) a = paradas[0].a;
-    else {
-      for (let i = 1; i < paradas.length; i++) {
-        if (desdeAbajo <= paradas[i].en) {
-          const t = (desdeAbajo - paradas[i - 1].en) / Math.max(1e-6, paradas[i].en - paradas[i - 1].en);
-          a = paradas[i - 1].a + (paradas[i].a - paradas[i - 1].a) * t;
-          break;
-        }
-      }
-    }
-    alfa[fila] = a;
+  let rgb: [number, number, number] = [0, 0, 0];
+  let a = 0;
+  try {
+    const [r, g, b, al] = leerRgb(getComputedStyle(elemento).backgroundColor);
+    rgb = [r, g, b];
+    a = al;
+  } catch {
+    return { rgb, alfa };
   }
-  return { rgb: color, alfa };
+  const caja = elemento.getBoundingClientRect();
+  const arriba = caja.top - sala.getBoundingClientRect().top;
+  const abajo = arriba + caja.height;
+  const fundido = parseFloat(getComputedStyle(elemento, "::before").height) || 0;
+  for (let fila = 0; fila < alfa.length; fila++) {
+    const y = fila + 0.5;
+    if (y >= arriba && y <= abajo) alfa[fila] = a;
+    else if (y < arriba && y >= arriba - fundido && fundido > 0) alfa[fila] = a * (1 - (arriba - y) / fundido);
+  }
+  return { rgb, alfa };
 }
 
 /**
@@ -205,7 +200,7 @@ export async function medirSala(sala: HTMLElement, figura?: string): Promise<Med
     fondo.ctx.fillRect(0, 0, W, H);
   }
   const base = fondo.ctx.getImageData(0, 0, W, H).data;
-  const v = velo(sala.querySelector(".sala-stage-veil"), H);
+  const v = velo(sala.querySelector(".sala-stage-veil"), sala, H);
   for (let y = 0; y < H; y++) {
     const a = v.alfa[y];
     for (let x = 0; x < W; x++) {

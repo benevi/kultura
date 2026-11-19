@@ -14,9 +14,12 @@ import { SalaTitleText, salaTitleVars } from "./SalaTitle";
  * - **El título es el de verdad**: un encabezado con el texto entero, una
  *   sola vez. No hay copia para el efecto.
  * - **Sin datos, el título va entero por delante**, sobre un velo. El velo
- *   por defecto (0,7) da 5:1 o más sobre cualquier imagen: con 0,5 ya son
- *   3:1 aunque la imagen sea blanca. Quien conozca la imagen puede bajarlo
- *   (`veil`), y entonces mide.
+ *   sigue al contenido: opaco desde un poco por encima del título hasta abajo
+ *   (el original, `children` y el margen incluidos), con un fundido encima.
+ *   El de por defecto (0,7) deja la tinta a 4,5:1 o más aunque la imagen sea
+ *   blanca o negra del todo (lo miden las historias). Quien conozca la imagen
+ *   puede bajarlo (`veil`), y entonces mide. Con `prefers-contrast: more`
+ *   no baja de 0,85.
  * - **Fundido** (`fuse`): partes de la imagen pasan por delante de las
  *   letras. Entra con las coberturas ya medidas y la figura recortada; el
  *   plan sale de `planTitleFuse` y no se pinta si no cumple (22 %, 3:1, 35 %):
@@ -31,7 +34,11 @@ import { SalaTitleText, salaTitleVars } from "./SalaTitle";
  *   `data-theme`. `tone="dark"` es tinta clara sobre velo oscuro.
  * - **Sin imagen**, o mientras llega: el campo de color con el título.
  *
- * El alto lo pone quien la usa (`className`: una proporción o un alto).
+ * El alto lo pone quien la usa (`className`), y siempre como mínimo: una
+ * proporción (`aspect-ratio`) o un `min-height`, nunca un alto fijo ni un
+ * `max-height`. Con el texto al 200 %, en una ventana apaisada baja o con
+ * más espaciado, el título y lo de debajo no caben y la sala crece; con un
+ * alto fijo se cortarían.
  * `ref` y las props nativas van a la caja de la sala.
  */
 export interface SalaStageFuse {
@@ -54,7 +61,11 @@ export interface SalaStageProps extends Omit<React.HTMLAttributes<HTMLDivElement
   headingId?: string;
   /** La imagen de la obra, que llena la sala: un `<img>` o un `next/image`. Sin ella, el campo de color. */
   image?: React.ReactNode;
-  /** Punto de interés de la imagen (`object-position`). */
+  /**
+   * Punto de interés de la imagen (`object-position`): una o dos palabras clave
+   * (`left`, `center`, `top`…), porcentajes o longitudes. Si no es válido, se
+   * ignora y la sala va sin fundido.
+   */
   focus?: string;
   /** `dark`: tinta clara sobre velo oscuro. `light`: al revés, para imágenes muy claras. */
   tone?: "dark" | "light";
@@ -66,8 +77,16 @@ export interface SalaStageProps extends Omit<React.HTMLAttributes<HTMLDivElement
   children?: React.ReactNode;
 }
 
-/** Velo por defecto: tinta clara a 5:1 o más sobre cualquier imagen. */
+/** Velo por defecto: la tinta a 4,5:1 o más sobre cualquier imagen. */
 export const SALA_STAGE_VEIL = 0.7;
+
+const POSICION = /^(left|center|right|top|bottom|-?\d+(\.\d+)?(%|px|rem|em)?)$/;
+
+/** ¿Es un `object-position` sencillo y seguro? Una o dos partes: palabras clave, porcentajes o longitudes. */
+export function salaStageFocusOk(focus: string): boolean {
+  const partes = focus.trim().split(/\s+/);
+  return partes.length >= 1 && partes.length <= 2 && partes.every((p) => POSICION.test(p));
+}
 
 export const SalaStage = React.forwardRef<HTMLDivElement, SalaStageProps>(function SalaStage(
   {
@@ -97,7 +116,10 @@ export const SalaStage = React.forwardRef<HTMLDivElement, SalaStageProps>(functi
   const conImagen = image !== undefined && image !== null && image !== false;
 
   // El fundido, por composición. Solo con imagen, figura y unas medidas que cumplen.
-  const figura = conImagen && fuse?.figure ? fuse.figure : null;
+  // Un punto de interés que no se entiende no se usa, y sin él no se sabe dónde cae la figura.
+  const focoMalo = focus !== undefined && !salaStageFocusOk(focus);
+  const foco = focoMalo ? undefined : focus?.trim();
+  const figura = conImagen && fuse?.figure && !focoMalo ? fuse.figure : null;
   const estrecho = figura ? resolveSalaFuse(fuse?.narrow, title, fuse?.ratio?.narrow) : null;
   const ancho = figura ? resolveSalaFuse(fuse?.wide, title, fuse?.ratio?.wide) : null;
   const fundido = [estrecho ? "n" : "", ancho ? "w" : ""].filter(Boolean).join(" ");
@@ -105,9 +127,9 @@ export const SalaStage = React.forwardRef<HTMLDivElement, SalaStageProps>(functi
   const vars = {
     ...salaTitleVars(plan),
     [c.vars.veil]: Math.min(1, Math.max(0, Number.isFinite(veil) ? veil : SALA_STAGE_VEIL)),
-    ...(focus ? { [c.vars.focus]: focus } : {}),
-    ...(figura && estrecho ? { [c.vars.fuseNarrow]: salaFuseBackground(estrecho, figura, focus) } : {}),
-    ...(figura && ancho ? { [c.vars.fuseWide]: salaFuseBackground(ancho, figura, focus) } : {}),
+    ...(foco ? { [c.vars.focus]: foco } : {}),
+    ...(figura && estrecho ? { [c.vars.fuseNarrow]: salaFuseBackground(estrecho, figura, foco) } : {}),
+    ...(figura && ancho ? { [c.vars.fuseWide]: salaFuseBackground(ancho, figura, foco) } : {}),
   } as React.CSSProperties;
 
   return (

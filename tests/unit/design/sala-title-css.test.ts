@@ -115,7 +115,13 @@ describe("apagados del fundido", () => {
   });
 
   it("el interruptor de la app lo apaga igual que el del sistema", () => {
-    expect(css).toMatch(/\[data-sala-motion="reduce"\] \.sala-stage \.sala-stage-heading \{\s*background: none;/);
+    // En un antepasado o en la propia sala.
+    expect(css).toMatch(/\[data-sala-motion="reduce"\] \.sala-stage \.sala-stage-heading,\s*\.sala-stage\[data-sala-motion="reduce"\] \.sala-stage-heading \{\s*background: none;/);
+  });
+
+  it("con más contraste el velo no baja de 0,85", () => {
+    expect(css).toMatch(/@media \(prefers-contrast: more\) \{\s*\.sala-stage \{\s*--sala-stage-veil-min: 0\.85;/);
+    expect(css).toContain("max(var(--sala-stage-veil, 0.7), var(--sala-stage-veil-min, 0))");
   });
 });
 

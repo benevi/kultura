@@ -67,6 +67,8 @@ export const SALA_TITLE_CSS = {
     floor: '--sala-title-floor',
     /** Opacidad del velo (0–1). */
     veil: '--sala-stage-veil',
+    /** Opacidad mínima del velo: la sube `prefers-contrast: more`. */
+    veilMin: '--sala-stage-veil-min',
     /** Fondo del fundido en la caja estrecha y en la ancha. */
     fuseNarrow: '--sala-fuse-n',
     fuseWide: '--sala-fuse-w',
@@ -100,11 +102,9 @@ export function salaTitleCss(): string {
   const v = c.vars
   const wide = `(min-width: ${SALA_TITLE_WIDE_FROM_REM}rem)`
   const size = (name: string) => `clamp(var(${v.floor}, 0px), calc(var(${name}) * var(${v.unit}, 1cqw)), var(${v.cap}, 1000rem))`
-  const veil = (block: string) => {
-    const band = `calc(var(${block}, 30) * var(${v.unit}, 1cqw) + 5rem)`
-    const color = `color-mix(in srgb, var(--sala-background) calc(var(${v.veil}, 0.7) * 100%), transparent)`
-    return `linear-gradient(to top, ${color} 0, ${color} ${band}, transparent calc(${band} + 12cqw))`
-  }
+  const veilColor = `color-mix(in srgb, var(--sala-background) calc(max(var(${v.veil}, 0.7), var(${v.veilMin}, 0)) * 100%), transparent)`
+  // Hueco sobre la primera línea: lo que asoma de las letras sobre su caja (y el margen). El velo empieza ahí.
+  const rise = (name: string) => `max(var(--sala-margin), 0.25 * ${size(name)})`
   // Quien pide menos movimiento o más contraste, o tiene colores forzados, no tiene fundido.
   const fuseOk = '(prefers-reduced-motion: no-preference) and (prefers-contrast: no-preference) and (forced-colors: none)'
   const fused = (name: string) => `background: var(${name});
@@ -193,19 +193,30 @@ ${fallbackFaces()}
    figura (\`background-clip: text\`), sin repetir el título.
    ------------------------------------------------------------ */
 
+/* Filas: hueco que se encoge (la imagen), el título, lo de debajo y el margen.
+   El título y lo de debajo nunca se recortan: si no caben en el alto que se le
+   da, la sala crece. Por eso quien la usa le pone un alto mínimo (o una
+   proporción), nunca un alto fijo ni un máximo. Sobre el título queda siempre
+   un hueco (el margen o un cuarto del cuerpo, lo mayor), donde cabe lo que
+   asoman las letras; lo demás, como el fundido del velo, se recorta. */
 .${c.stage} {
   position: relative;
   isolation: isolate;
   display: grid;
   grid-template-columns: minmax(0, 1fr);
-  grid-template-rows: minmax(0, 1fr) auto var(--sala-margin);
-  overflow: hidden;
+  grid-template-rows: minmax(0, 1fr) auto auto var(--sala-margin);
+  overflow: clip;
   container-type: inline-size;
   ${v.unit}: calc((100cqw - 2 * var(--sala-margin)) / 100);
 }
 
+@media (prefers-contrast: more) {
+  .${c.stage} {
+    ${v.veilMin}: 0.85;
+  }
+}
+
 .${c.stageImage},
-.${c.stageVeil},
 .${c.stageFigure} {
   position: absolute;
   inset: 0;
@@ -221,9 +232,22 @@ ${fallbackFaces()}
   object-position: var(${v.focus}, 50% 50%);
 }
 
+/* El velo sigue al contenido: opaco desde el hueco sobre el título hasta
+   abajo (lo de debajo y el margen incluidos) y, encima, un fundido de 12cqw. */
 .${c.stageVeil} {
+  position: relative;
+  grid-area: 2 / 1 / -1 / -1;
   pointer-events: none;
-  background: ${veil(v.narrowBlock)};
+  background: ${veilColor};
+}
+
+.${c.stageVeil}::before {
+  content: "";
+  position: absolute;
+  inset-inline: 0;
+  bottom: 100%;
+  height: 12cqw;
+  background: linear-gradient(to top, ${veilColor}, transparent);
 }
 
 /* La figura solo se pinta con el fundido encendido. */
@@ -237,7 +261,7 @@ ${fallbackFaces()}
   grid-area: 1 / 1 / -1 / -1;
   display: grid;
   grid-template-columns: minmax(0, 1fr);
-  grid-template-rows: minmax(0, 1fr);
+  grid-template-rows: minmax(0, 1fr) auto auto var(--sala-margin);
   margin: 0;
 }
 
@@ -248,8 +272,9 @@ ${fallbackFaces()}
 }
 
 .${c.stageHeading} > .${c.text} {
-  grid-row: 1;
+  grid-row: 2;
   align-self: end;
+  margin-top: ${rise(v.narrowSize)};
   padding-inline: var(--sala-margin);
   animation: sala-title-rise var(--sala-duration-slow) var(--sala-ease) backwards;
 }
@@ -261,7 +286,7 @@ ${fallbackFaces()}
 
 .${c.stageBelow} {
   position: relative;
-  grid-area: 2 / 1;
+  grid-area: 3 / 1;
   padding: 0.75rem var(--sala-margin) 0;
 }
 
@@ -287,8 +312,8 @@ ${fallbackFaces()}
 }
 
 @container ${wide} {
-  .${c.stageVeil} {
-    background: ${veil(v.wideBlock)};
+  .${c.stageHeading} > .${c.text} {
+    margin-top: ${rise(v.wideSize)};
   }
 }
 
@@ -334,15 +359,18 @@ ${fallbackFaces()}
   }
 }
 
-[data-sala-motion="reduce"] .${c.stageHeading} > .${c.text} {
+[data-sala-motion="reduce"] .${c.stageHeading} > .${c.text},
+.${c.stage}[data-sala-motion="reduce"] .${c.stageHeading} > .${c.text} {
   animation: none;
 }
 
-[data-sala-motion="reduce"] .${c.stage} .${c.stageFigure} {
+[data-sala-motion="reduce"] .${c.stage} .${c.stageFigure},
+.${c.stage}[data-sala-motion="reduce"] .${c.stageFigure} {
   display: none;
 }
 
-[data-sala-motion="reduce"] .${c.stage} .${c.stageHeading} {
+[data-sala-motion="reduce"] .${c.stage} .${c.stageHeading},
+.${c.stage}[data-sala-motion="reduce"] .${c.stageHeading} {
   background: none;
   color: inherit;
   animation: none;

@@ -1,8 +1,8 @@
 import * as React from "react";
 import type { Meta, StoryObj } from "@storybook/nextjs-vite";
 import { expect, waitFor } from "storybook/test";
-import { contraste, conVentana, escenaDeEjemplo, Suelo } from "../../../.storybook/sala";
-import { fundidoPintado, medirSala, resolver } from "../../../.storybook/rotulo";
+import { contraste, conVentana, emularMedios, EN_PRUEBAS, escenaDeEjemplo, fijarVentana, Suelo } from "../../../.storybook/sala";
+import { fundidoPintado, medirRotulo, medirSala, resolver } from "../../../.storybook/rotulo";
 import { TITLE_FUSE_MAX_COVERED, TITLE_FUSE_MIN_CONTRAST, TITLE_LETTER_MAX_COVERED } from "@/lib/design/title-fuse";
 import { SalaStage, type SalaStageFuse, type SalaStageProps } from "./SalaStage";
 
@@ -32,8 +32,8 @@ const NOCHE = escenaDeEjemplo(250, { x: 0.62 });
 const DIA = escenaDeEjemplo(80, { x: 0.3, claro: true });
 const FIGURA_ILEGIBLE = escenaDeEjemplo(250, { x: 0.62, figuraClara: true });
 
-/** Proporción de la sala: apaisada en escritorio, más alta en el móvil. */
-const PROPORCION = "aspect-[4/5] sm:aspect-[16/9] max-h-[90vh] w-full";
+/** Proporción de la sala: apaisada en escritorio, más alta en el móvil. Es un mínimo: si el título no cabe, crece. */
+const PROPORCION = "aspect-[4/5] sm:aspect-[16/9] w-full";
 
 type Escena = { imagen: string; figura: string };
 
@@ -153,16 +153,15 @@ function colorDe(sala: HTMLElement, variable: string): string {
  * de debajo del título.
  */
 function contrasteEnElVelo(sala: HTMLElement): number {
-  const veil = parseFloat(getComputedStyle(sala).getPropertyValue("--sala-stage-veil"));
   const tinta = colorDe(sala, "--sala-ink");
-  const fondo = colorDe(sala, "--sala-background");
+  // El color del velo ya calculado, con su opacidad (la de `veil` o, con más contraste, 0,85).
+  const fondo = getComputedStyle(sala.querySelector(".sala-stage-veil")!).backgroundColor;
   const lienzo = document.createElement("canvas").getContext("2d")!;
   return Math.min(
     ...["#fff", "#000"].map((imagen) => {
       lienzo.globalAlpha = 1;
       lienzo.fillStyle = imagen;
       lienzo.fillRect(0, 0, 1, 1);
-      lienzo.globalAlpha = veil;
       lienzo.fillStyle = fondo;
       lienzo.fillRect(0, 0, 1, 1);
       const [r, g, b] = lienzo.getImageData(0, 0, 1, 1).data;
@@ -174,7 +173,7 @@ function contrasteEnElVelo(sala: HTMLElement): number {
 const SOBRE_LA_SALA =
   "El título está en una subrejilla que ocupa la sala entera, encima de la imagen y del velo, y axe no ve su fondo. El `play` lo mide a mano (`medirSala`): cada letra, pintada en un lienzo donde la ha puesto el navegador, contra la imagen velada píxel a píxel; 3:1 o más (texto grande) en el peor píxel.";
 const EN_EL_VELO =
-  "Texto sobre el velo (el color del fondo al 70 % sobre la imagen). El `play` lo mide en el peor caso, con la imagen blanca o negra del todo debajo: 4,5:1 o más.";
+  "Texto sobre el velo: el color del fondo al 70 % (85 % con más contraste), macizo, sobre la imagen; axe ve la imagen debajo y no sabe mezclarlos. El `play` lo mide en el peor caso, con la imagen blanca o negra del todo debajo: 4,5:1 o más.";
 
 const NOTA_FUNDIDO =
   "La figura pasa por delante de algunas letras. Las que perderían más del 35 % van por delante, enteras; en total la figura no tapa más del 22 % del título, y lo que se ve de cada letra está a 3:1 o más. El texto es el encabezado de verdad, una sola vez: el fundido es ese mismo texto pintado con la imagen.";
@@ -248,7 +247,7 @@ export const SinFundido: Story = {
     contraste: {
       revisado: {
         bgOverlap: SOBRE_LA_SALA,
-        bgGradient: EN_EL_VELO,
+        imgNode: EN_EL_VELO,
       },
     },
   },
@@ -306,7 +305,7 @@ export const MovimientoReducido: Story = {
   parameters: {
     contraste: {
       revisado: {
-        bgGradient: SOBRE_LA_SALA,
+        imgNode: SOBRE_LA_SALA,
       },
     },
   },
@@ -355,6 +354,203 @@ export const SinImagen: Story = {
 };
 
 // ------------------------------------------------------------
+// Imagen blanca, con el original y más cosas debajo: el velo sigue al contenido
+// ------------------------------------------------------------
+
+const BLANCA = `data:image/svg+xml,${encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="900"><rect width="1600" height="900" fill="#fff"/></svg>')}`;
+
+function SalaConDebajo({ className = PROPORCION, title }: { className?: string; title: string }) {
+  return (
+    <SalaStage
+      className={className}
+      title={title}
+      headingLevel={3}
+      original={{ text: "千と千尋の神隠し", lang: "ja" }}
+      // eslint-disable-next-line @next/next/no-img-element
+      image={<img src={BLANCA} alt="" />}
+    >
+      <p className="mt-2 sala-type-text">Película · 2001 · Hayao Miyazaki</p>
+      <p className="mt-1 sala-type-small">Vista el 3 de marzo. Tu nota: 9</p>
+    </SalaStage>
+  );
+}
+
+/** La tinta, sobre el velo, en todo lo que hay del título hacia abajo. */
+async function comprobarVelo(canvasElement: HTMLElement, donde: string) {
+  const sala = canvasElement.querySelector<HTMLElement>("[data-sala-stage]")!;
+  const medida = await medirSala(sala);
+  // Cada letra del título, en su peor píxel (también el borde de arriba de la primera línea).
+  await expect(medida.contrasteSinFundido, `${donde}: título`).toBeGreaterThanOrEqual(4.5);
+  // El original y lo de debajo: en el peor caso de imagen.
+  await expect(contrasteEnElVelo(sala), `${donde}: debajo`).toBeGreaterThanOrEqual(4.5);
+  // El velo empieza por encima de la primera línea y llega al pie de la sala.
+  const velo = sala.querySelector(".sala-stage-veil")!.getBoundingClientRect();
+  const texto = sala.querySelector("[data-sala-title-text]")!.getBoundingClientRect();
+  const caja = sala.getBoundingClientRect();
+  await expect(velo.top, `${donde}: el velo empieza encima del título`).toBeLessThanOrEqual(texto.top);
+  await expect(velo.bottom, `${donde}: y llega abajo`).toBeGreaterThanOrEqual(caja.bottom - 0.5);
+}
+
+export const ImagenBlanca: Story = {
+  name: "Imagen blanca, con lo de debajo",
+  parameters: { contraste: { revisado: { bgOverlap: SOBRE_LA_SALA, imgNode: EN_EL_VELO } } },
+  render: (args) => (
+    <Suelo
+      titulo="Imagen blanca"
+      nota="El peor caso del velo: una imagen blanca del todo. El velo va del título hacia abajo, con el original y lo que haya debajo, y la tinta queda a 4,5:1 o más."
+    >
+      <SalaConDebajo title={args.title} />
+    </Suelo>
+  ),
+  beforeEach: conVentana(1440, 900),
+  play: async ({ canvasElement }) => {
+    await comprobarVelo(canvasElement, "1440 px");
+    if (!EN_PRUEBAS) return;
+    const { innerWidth: ancho, innerHeight: alto } = window;
+    try {
+      for (const [w, h] of [
+        [375, 812],
+        [320, 640],
+      ]) {
+        await expect(await fijarVentana(w, h)).toBe(true);
+        await comprobarVelo(canvasElement, `${w} px`);
+      }
+    } finally {
+      await fijarVentana(ancho, alto);
+    }
+  },
+};
+
+// ------------------------------------------------------------
+// Alto limitado, texto al 200 % y espaciado: la sala crece, el título no se corta
+// ------------------------------------------------------------
+
+/** El título y lo de debajo, enteros dentro de la sala; nada se sale a lo ancho. */
+async function comprobarEntera(canvasElement: HTMLElement, donde: string) {
+  const sala = canvasElement.querySelector<HTMLElement>("[data-sala-stage]")!;
+  const caja = sala.getBoundingClientRect();
+  const texto = sala.querySelector("[data-sala-title-text]")!.getBoundingClientRect();
+  const debajo = sala.querySelector(".sala-stage-below")!.getBoundingClientRect();
+  await expect(texto.top, `${donde}: el título empieza dentro`).toBeGreaterThanOrEqual(caja.top - 0.5);
+  const velo = sala.querySelector(".sala-stage-veil")!.getBoundingClientRect();
+  await expect(velo.top, `${donde}: el velo empieza encima del título`).toBeLessThanOrEqual(texto.top);
+  await expect(velo.top, `${donde}: y dentro de la sala`).toBeGreaterThanOrEqual(caja.top - 0.5);
+  await expect(debajo.bottom, `${donde}: lo de debajo acaba dentro`).toBeLessThanOrEqual(caja.bottom + 0.5);
+  const m = medirRotulo(sala);
+  await expect(m.recortado, `${donde}: nada recorta el título`).toBe(false);
+  for (const linea of m.lineas) await expect(linea.derecha, `${donde}: «${linea.texto}»`).toBeLessThanOrEqual(caja.width + 0.5);
+  await expect(document.documentElement.scrollWidth, `${donde}: sin scroll horizontal`).toBeLessThanOrEqual(document.documentElement.clientWidth);
+}
+
+export const AltoLimitado: Story = {
+  name: "Ventana baja, texto al 200 % y espaciado",
+  parameters: { contraste: { revisado: { bgOverlap: SOBRE_LA_SALA, imgNode: EN_EL_VELO } } },
+  args: { title: "Dr. Strangelove or: How I Learned to Stop Worrying and Love the Bomb" },
+  render: (args) => (
+    <Suelo
+      titulo="Alto limitado"
+      nota="La sala lleva un alto mínimo, no fijo. En una ventana apaisada baja, con el texto al 200 % o con el espaciado de WCAG 1.4.12, el título y lo de debajo no caben en ese alto: la sala crece y no se corta nada."
+    >
+      <SalaConDebajo className="w-full min-h-[70vh]" title={args.title} />
+    </Suelo>
+  ),
+  play: async ({ canvasElement }) => {
+    if (!EN_PRUEBAS) return comprobarEntera(canvasElement, "aquí");
+    const { innerWidth: ancho, innerHeight: alto } = window;
+    const raiz = document.documentElement;
+    const espaciado = document.createElement("style");
+    try {
+      for (const [w, h] of [
+        [640, 360],
+        [1280, 400],
+      ]) {
+        await expect(await fijarVentana(w, h)).toBe(true);
+        await comprobarEntera(canvasElement, `${w}×${h}`);
+      }
+      await expect(await fijarVentana(1280, 720)).toBe(true);
+      raiz.style.fontSize = "200%";
+      await comprobarEntera(canvasElement, "1280×720 al 200 %");
+      raiz.style.fontSize = "";
+      await expect(await fijarVentana(320, 640)).toBe(true);
+      espaciado.textContent =
+        "* { letter-spacing: 0.12em !important; word-spacing: 0.16em !important; line-height: 1.5 !important; } p { margin-bottom: 2em !important; }";
+      document.head.appendChild(espaciado);
+      await comprobarEntera(canvasElement, "320 px con espaciado de texto");
+    } finally {
+      espaciado.remove();
+      raiz.style.fontSize = "";
+      await fijarVentana(ancho, alto);
+    }
+  },
+};
+
+// ------------------------------------------------------------
+// Colores forzados y más contraste; un punto de interés que no vale
+// ------------------------------------------------------------
+
+/** Opacidad de un color calculado (`rgba(…)` o `color(srgb … / a)`). */
+function opacidad(color: string): number {
+  const n = color.match(/-?\d*\.?\d+(e-?\d+)?/g)?.map(Number) ?? [];
+  return n.length >= 4 ? n[3] : 1;
+}
+
+export const ColoresForzadosYMasContraste: Story = {
+  name: "Colores forzados y más contraste",
+  parameters: { contraste: { revisado: { bgOverlap: SOBRE_LA_SALA } } },
+  render: (args) => (
+    <Suelo
+      titulo="Colores forzados y más contraste"
+      nota="Con colores forzados o con más contraste no hay fundido: el título entero, por delante. Con más contraste, además, el velo no baja de 0,85."
+    >
+      <SalaMedida escena={NOCHE} title={args.title} headingLevel={3} />
+    </Suelo>
+  ),
+  beforeEach: conVentana(1440, 900),
+  play: async ({ canvasElement }) => {
+    const { sala } = await salaPintada(canvasElement, NOCHE.figura);
+    await waitFor(() => expect(sala.dataset.salaFuse).toBeTruthy());
+    if (!EN_PRUEBAS) return;
+    const encabezado = sala.querySelector<HTMLElement>(".sala-stage-heading")!;
+    const sinFundido = async (que: string) => {
+      await expect(getComputedStyle(encabezado).backgroundClip, que).not.toContain("text");
+      await expect(getComputedStyle(encabezado).color, que).not.toBe("rgba(0, 0, 0, 0)");
+      await expect(getComputedStyle(sala.querySelector(".sala-stage-figure")!).display, que).toBe("none");
+    };
+    try {
+      await expect(await emularMedios([{ name: "forced-colors", value: "active" }])).toBe(true);
+      await sinFundido("colores forzados");
+      await expect(await emularMedios([{ name: "prefers-contrast", value: "more" }])).toBe(true);
+      await sinFundido("más contraste");
+      const velo = getComputedStyle(sala.querySelector(".sala-stage-veil")!).backgroundColor;
+      await expect(opacidad(velo), "velo con más contraste").toBeGreaterThanOrEqual(0.85 - 1e-3);
+      await expect(contrasteEnElVelo(sala)).toBeGreaterThanOrEqual(7);
+    } finally {
+      await emularMedios([]);
+    }
+  },
+};
+
+export const FocoNoValido: Story = {
+  name: "Punto de interés que no vale",
+  parameters: { contraste: { revisado: { bgOverlap: SOBRE_LA_SALA } } },
+  render: (args) => (
+    <Suelo
+      titulo="Punto de interés que no vale"
+      nota="Un punto de interés que no es una posición (aquí, una expresión con calc y var) se ignora y la sala va sin fundido: el título se ve entero."
+    >
+      <SalaMedida escena={NOCHE} title={args.title} headingLevel={3} focus="calc(50% + var(--x))" />
+    </Suelo>
+  ),
+  beforeEach: conVentana(1440, 900),
+  play: async ({ canvasElement }) => {
+    const { sala } = await salaPintada(canvasElement, NOCHE.figura);
+    await expect(sala.dataset.salaFuse).toBeUndefined();
+    await expect(sala.style.getPropertyValue("--sala-stage-focus")).toBe("");
+    await comprobarSinFundido(canvasElement, NOCHE.figura);
+  },
+};
+
+// ------------------------------------------------------------
 // Las mismas en claro (la sala no cambia con el tema; lo de alrededor, sí).
 // ------------------------------------------------------------
 
@@ -364,3 +560,4 @@ export const ConFundidoEnClaro: Story = { ...ConFundido, ...SOLO_PRUEBA };
 export const ConFundidoEnMovilEnClaro: Story = { ...ConFundidoEnMovil, ...SOLO_PRUEBA };
 export const SinFundidoEnClaro: Story = { ...SinFundido, ...SOLO_PRUEBA };
 export const SinImagenEnClaro: Story = { ...SinImagen, ...SOLO_PRUEBA };
+export const ImagenBlancaEnClaro: Story = { ...ImagenBlanca, ...SOLO_PRUEBA };
