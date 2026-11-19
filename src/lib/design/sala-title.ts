@@ -16,7 +16,7 @@
 // al llegar la fuente: el número de líneas está decidido antes de pintar.
 //
 // Garantía (la comprueba `tests/unit/design/sala-title.test.ts` para
-// cualquier título de 1 a 120 caracteres): la anchura queda entre 50 y 150,
+// cualquier título de 1 a 120 caracteres): la anchura queda entre 55 y 150,
 // ninguna línea mide más que la caja y el tamaño no baja del mínimo legible.
 // La suma de avances es un tope: el interletraje de Anybody solo estrecha.
 // ============================================================
@@ -24,8 +24,8 @@
 import { SALA_TITLE_ADVANCES_RAW } from './sala-title-metrics'
 import { SALA_TYPE } from './sala-tokens'
 
-/** Límites del eje de anchura de Anybody (%). */
-export const SALA_TITLE_STRETCH_MIN = 50
+/** Límites de anchura del rótulo (%). Anybody llega a 50, pero por debajo de 55 las letras de los títulos largos se pegan en móvil (decisión de Víctor, 2026-11-20). */
+export const SALA_TITLE_STRETCH_MIN = 55
 export const SALA_TITLE_STRETCH_MAX = 150
 
 /** Ancho de caja mínimo para el que vale la garantía (320 px de ventana menos los márgenes). */
@@ -104,7 +104,7 @@ export const SALA_TITLE_PRESET = {
 export interface SalaTitleLayout {
   /** Índice del primer trozo de cada línea (el primero es siempre 0). */
   starts: number[]
-  /** Eje de anchura, entero, 50–150 (%). */
+  /** Eje de anchura, entero, 55–150 (%). */
   stretch: number
   /** Cuerpo, en partes por cien del ancho de la caja (es decir, en `cqw`). */
   size: number
@@ -282,7 +282,7 @@ const STRETCH_CURVE: ReadonlyArray<readonly [number, number]> = [
  * Anchura del eje `wdth` de Anybody que le toca a un título por su longitud:
  * uno corto va ancho y uno largo, estrecho. Es el suelo del que parte el
  * rótulo; si a esa anchura no llena la caja, se ensancha hasta llenarla.
- * `scale` la estrecha para cajas estrechas (móvil, póster). Entero, 50–150.
+ * `scale` la estrecha para cajas estrechas (móvil, póster). Entero, 55–150.
  */
 export function salaTitleStretch(title: string, scale = 1): number {
   const length = Array.from(title.trim().replace(/\s+/g, ' ')).length
@@ -523,7 +523,9 @@ function layout(chunks: readonly Chunk[], title: string, rules: SalaTitleRules, 
 export function planSalaTitle(title: string, preset: SalaTitlePreset = SALA_TITLE_PRESET.sala): SalaTitlePlan {
   const clean = title.trim().replace(/\s+/g, ' ')
   // Un trozo cabe en una línea al tamaño mínimo de la composición más exigente.
-  const limit = (100 * (1 - SAFETY)) / Math.max(preset.narrow.minSize, preset.wide.minSize)
+  // El mínimo se redondea hacia arriba a centésimas: el cuerpo se redondea hacia
+  // abajo (`floor2`) y así un trozo al límite sigue sin bajar del mínimo.
+  const limit = (100 * (1 - SAFETY)) / (Math.ceil(Math.max(preset.narrow.minSize, preset.wide.minSize) * 100) / 100)
   const chunks = chunksOf(clean, limit)
   const leading = Array.from(clean).some((ch) => scriptOf(ch) !== 'other') ? SALA_TITLE_CJK_LINE_HEIGHT : LINE_HEIGHT
   return {

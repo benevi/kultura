@@ -6,7 +6,7 @@
  * longitud del título, que llena el ancho en 1–2 líneas (3 en móvil)».
  *
  * La regla que se prueba aquí, como propiedad: para cualquier título de 1 a
- * 120 caracteres y cualquier caja de 280 a 1600 px, la anchura queda entre 50
+ * 120 caracteres y cualquier caja de 280 a 1600 px, la anchura queda entre 55
  * y 150, el título cabe en su caja y el tamaño no baja del mínimo legible.
  * Que lo que se pinta mide lo que aquí se calcula lo miden las historias
  * (**Sala/Rótulo**), en el navegador.
@@ -110,7 +110,7 @@ function comprobar(texto: string, plan: SalaTitlePlan, layout: SalaTitleLayout, 
 const entero = (plan: SalaTitlePlan) => plan.chunks.map((c, i) => plan.joins[i] + c).join("");
 
 describe("propiedad: cualquier título de 1 a 120 caracteres en cualquier caja de 280 a 1600 px", () => {
-  it("anchura en 50–150, cabe en su caja y no baja de 18 px", () => {
+  it("anchura en 55–150, cabe en su caja y no baja de 18 px", () => {
     const rnd = azar(20261119);
     for (let caso = 0; caso < 4000; caso++) {
       const largo = 1 + Math.floor(rnd() * SALA_TITLE_MAX_LENGTH);
@@ -289,7 +289,7 @@ describe("japonés y coreano", () => {
 });
 
 describe("anchura por longitud", () => {
-  it("baja con la longitud, sin salir de 50–150", () => {
+  it("baja con la longitud, sin salir de 55–150", () => {
     let anterior = Infinity;
     for (let largo = 1; largo <= 140; largo++) {
       const w = salaTitleStretch("a".repeat(largo));
@@ -299,7 +299,7 @@ describe("anchura por longitud", () => {
       anterior = w;
     }
     expect(salaTitleStretch("Her")).toBe(135);
-    expect(salaTitleStretch("a".repeat(120))).toBe(50);
+    expect(salaTitleStretch("a".repeat(120))).toBe(55);
   });
 
   it("en una caja estrecha, más estrecha", () => {

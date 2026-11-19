@@ -67,8 +67,8 @@ describe("respaldo de Anybody", () => {
     .slice(1)
     .map((b) => b.slice(0, b.indexOf("}")));
 
-  it("los tramos cubren el eje entero, 50–150 %, sin huecos ni solapes", () => {
-    expect(SALA_TITLE_FALLBACK[0].from).toBe(SALA_TITLE_STRETCH_MIN);
+  it("los tramos cubren todo el eje del rótulo (desde 50, aunque el rótulo no baje de 55), sin huecos ni solapes", () => {
+    expect(SALA_TITLE_FALLBACK[0].from).toBeLessThanOrEqual(SALA_TITLE_STRETCH_MIN);
     expect(SALA_TITLE_FALLBACK.at(-1)!.to).toBe(SALA_TITLE_STRETCH_MAX);
     SALA_TITLE_FALLBACK.slice(1).forEach((b, i) => expect(b.from).toBe(SALA_TITLE_FALLBACK[i].to + 1));
     expect(faces).toHaveLength(SALA_TITLE_FALLBACK.length);
