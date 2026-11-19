@@ -988,6 +988,7 @@
     "conversationCount": "{count, plural, =0 {No conversations} one {# conversation} other {# conversations}}",
     "otherLeft": "No longer in this chat",
     "loadingMessages": "Loading messages…",
+    "openingConversation": "Opening conversation…",
     "logLabel": "Messages with {username}",
     "deletedUser": "Deleted user",
     "deletedMessage": "Message from a deleted account",
