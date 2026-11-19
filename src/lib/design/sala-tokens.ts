@@ -3,7 +3,7 @@
 // ------------------------------------------------------------
 // Biblia de diseño (`docs/design/BIBLIA.md`). De aquí salen:
 // - `src/styles/sala/tokens.css`, generado (`npm run tokens:sala`);
-//   `tests/unit/design/sala-tokens.test.ts` falla si el archivo no coincide;
+//   `tests/unit/design/sala-tokens-css.test.ts` falla si el archivo no coincide;
 // - las clases de Tailwind `*-sala-*` (`tailwind.config.ts`);
 // - la página «Sala/Fundamentos» de Storybook y `docs/design/TOKENS.md`.
 //
@@ -138,7 +138,7 @@ export interface SalaTypeRole {
  * firmó (rama `proto/fase8-3-direcciones`), pasados a `rem`: son propuesta.
  * Cada papel es una clase `sala-type-<papel>` (`tailwind.config.ts`).
  */
-export const SALA_TYPE: Record<string, SalaTypeRole> = {
+const TYPE_ROLES = {
   title: {
     font: 'display',
     weight: 800,
@@ -172,7 +172,11 @@ export const SALA_TYPE: Record<string, SalaTypeRole> = {
   text: { font: 'text', weight: 400, size: '1.0625rem', lineHeight: '1.5', use: 'Texto de interfaz' },
   label: { font: 'text', weight: 600, size: '0.9375rem', lineHeight: '1.2', use: 'Botones, pestañas y campos' },
   small: { font: 'text', weight: 500, size: '0.875rem', lineHeight: '1.3', use: 'Etiquetas de dato y notas. No hay texto más pequeño' },
-}
+} satisfies Record<string, SalaTypeRole>
+
+/** Nombres de los papeles: quien los recorre (la historia, los tests) no puede dejarse uno. */
+export type SalaTypeName = keyof typeof TYPE_ROLES
+export const SALA_TYPE: Record<SalaTypeName, SalaTypeRole> = TYPE_ROLES
 
 // ------------------------------------------------------------
 // 3. Medidas y movimiento
@@ -261,6 +265,14 @@ ${declarations([
 ])}
 }
 
+/* Otro idioma marcado dentro de un texto coreano vuelve al orden por defecto. */
+[lang]:not(:lang(ko)) {
+${declarations([
+  [salaVar('fontDisplay'), SALA_FONT.display.default],
+  [salaVar('fontText'), SALA_FONT.text.default],
+])}
+}
+
 /* Tema: data-theme en <html> (o en cualquier contenedor). Sin atributo, oscuro. */
 ${themeBlock(':root,\n[data-theme="dark"]', 'dark')}
 
@@ -276,8 +288,11 @@ ${themeBlock(':root:not([data-theme])', 'light').replace(/^/gm, '  ')}
     : ''
 }
 /* Una obra: los papeles salen de su paleta (workPaletteVars) y, si aún no ha
-   llegado, de los neutros. El tema lo eligen los interruptores de arriba. */
-.${SALA_WORK_CLASS} {
+   llegado, de los neutros. El tema lo eligen los interruptores de arriba. Un
+   data-theme dentro de la obra cambia de tema sin perder su paleta: sin la
+   segunda línea, su bloque de tema volvería a poner los neutros. */
+.${SALA_WORK_CLASS},
+.${SALA_WORK_CLASS} [data-theme] {
 ${work}
 }
 `

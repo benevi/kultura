@@ -1,17 +1,27 @@
 import type { CSSProperties, ReactNode } from "react";
 import type { Meta, StoryObj } from "@storybook/nextjs-vite";
+import { expect } from "storybook/test";
 import { contrastRatio, parseHex, type Rgb } from "@/lib/design/color";
 import { NEUTRAL_PALETTE, paletteFromSwatches, type ImagePalette } from "@/lib/design/image-palette";
-import { SALA_WORK_CLASS, salaVar, workPaletteVars, type SalaMode } from "@/lib/design/sala-palette";
+import {
+  SALA_MODES,
+  SALA_ROLES,
+  SALA_WORK_CLASS,
+  salaVar,
+  workPaletteVars,
+  type SalaMode,
+} from "@/lib/design/sala-palette";
 import {
   SALA_COLOR,
   SALA_COLOR_ALIAS,
+  SALA_FAMILY,
   SALA_MOTION,
   SALA_SIZE,
   SALA_SPACE_STEPS,
   SALA_STATES,
   SALA_TYPE,
   type SalaState,
+  type SalaTypeName,
 } from "@/lib/design/sala-tokens";
 
 /**
@@ -129,9 +139,13 @@ function Tablero({ mode, palette, nombre }: { mode: SalaMode; palette?: ImagePal
           <div className="text-sala-ink-secondary">
             <Ficha token="accent" hex={p.accent} sobre={p.panel} />
           </div>
-          <div className="mt-4 flex min-h-sala-target items-center border-2 border-sala-border px-4 text-sala-ink-disabled">
-            Borde de un campo y texto deshabilitado
-          </div>
+          <input
+            type="text"
+            disabled
+            aria-label="Campo deshabilitado, de muestra"
+            defaultValue="Borde de un campo y texto deshabilitado"
+            className="mt-4 min-h-sala-target w-full border-2 border-sala-border bg-transparent px-4 text-sala-ink-disabled"
+          />
           <div className="mt-2 text-sala-ink-secondary">
             <Ficha token="border" hex={p.border} sobre={p.panel} />
           </div>
@@ -154,7 +168,7 @@ function Tablero({ mode, palette, nombre }: { mode: SalaMode; palette?: ImagePal
               </div>
               <div className="flex flex-col justify-center" style={{ color: `var(${salaVar(estado)})` }}>
                 <span className="font-semibold">{ESTADO[estado].frase}</span>
-                <Ficha token={estado} hex={estados[estado]} sobre={p.panel} />
+                <Ficha token={estado} hex={estados[estado]} sobre={p.background} />
               </div>
             </li>
           ))}
@@ -261,7 +275,7 @@ const ROTULOS: Array<{ titulo: string; original?: string; lang?: string; anchura
   { titulo: "Berserk", original: "ベルセルク", lang: "ja", anchura: 130 },
 ];
 
-const MUESTRA: Record<string, string> = {
+const MUESTRA: Record<SalaTypeName, string> = {
   title: "Parásitos",
   heading: "Dónde verla",
   data: "132 min",
@@ -272,7 +286,7 @@ const MUESTRA: Record<string, string> = {
 };
 
 /** Escritas enteras: Tailwind solo genera las clases que encuentra tal cual en el código. */
-const CLASE_DE_PAPEL: Record<string, string> = {
+const CLASE_DE_PAPEL: Record<SalaTypeName, string> = {
   title: "sala-type-title",
   heading: "sala-type-heading",
   data: "sala-type-data",
@@ -329,23 +343,26 @@ function Tipos() {
         nota="Texto e interfaz van en Instrument Sans. Cada papel es una clase; el más pequeño mide 14 px."
       >
         <dl className="grid gap-8">
-          {Object.entries(SALA_TYPE).map(([nombre, papel]) => (
-            <div key={nombre} className="grid gap-2 border-t-2 border-sala-border pt-4 md:grid-cols-[16rem_1fr] md:gap-8">
-              <dt>
-                <code className="font-sala-text font-semibold">{CLASE_DE_PAPEL[nombre]}</code>
-                <span className="mt-1 block sala-type-small text-sala-ink-secondary">{papel.use}</span>
-                <span className="mt-1 block sala-type-small tabular-nums text-sala-ink-secondary">
-                  {[papel.size ?? "tamaño libre", `interlineado ${papel.lineHeight}`, `peso ${papel.weight}`].join(", ")}
-                </span>
-              </dt>
-              <dd
-                className={`${CLASE_DE_PAPEL[nombre]} max-w-[62ch]`}
-                style={nombre === "title" ? { fontSize: "clamp(2.75rem, 8vw, 5rem)" } : undefined}
-              >
-                {MUESTRA[nombre]}
-              </dd>
-            </div>
-          ))}
+          {(Object.keys(SALA_TYPE) as SalaTypeName[]).map((nombre) => {
+            const papel = SALA_TYPE[nombre];
+            return (
+              <div key={nombre} className="grid gap-2 border-t-2 border-sala-border pt-4 md:grid-cols-[16rem_1fr] md:gap-8">
+                <dt>
+                  <code className="font-sala-text font-semibold">{CLASE_DE_PAPEL[nombre]}</code>
+                  <span className="mt-1 block sala-type-small text-sala-ink-secondary">{papel.use}</span>
+                  <span className="mt-1 block sala-type-small tabular-nums text-sala-ink-secondary">
+                    {[papel.size ?? "tamaño libre", `interlineado ${papel.lineHeight}`, `peso ${papel.weight}`].join(", ")}
+                  </span>
+                </dt>
+                <dd
+                  className={`${CLASE_DE_PAPEL[nombre]} max-w-[62ch]`}
+                  style={nombre === "title" ? { fontSize: "clamp(2.75rem, 8vw, 5rem)" } : undefined}
+                >
+                  {MUESTRA[nombre]}
+                </dd>
+              </div>
+            );
+          })}
         </dl>
       </Seccion>
 
@@ -449,6 +466,97 @@ export const Espacio: Story = {
       <Medidas />
     </Pagina>
   ),
+};
+
+// ------------------------------------------------------------
+// Anidados: un tema dentro de una obra y un idioma dentro de otro. La prueba
+// lee lo que calcula el navegador, no un simulador de `var()`.
+// ------------------------------------------------------------
+
+const OBRA = EJEMPLOS[0].palette;
+
+/** Como lo devuelve `getComputedStyle`: `rgb(205, 225, 255)`. */
+const rgbCss = (hex: string) =>
+  `rgb(${(parseHex(hex) as Rgb).map((canal) => Math.round(canal * 255)).join(", ")})`;
+
+function Anidados() {
+  return (
+    <>
+      <Seccion
+        titulo="Tema dentro de una obra"
+        nota="Un contenedor con data-theme dentro de una obra cambia de tema y sigue pintando con la paleta de la obra."
+      >
+        <div className={`${SALA_WORK_CLASS} grid gap-4 sm:grid-cols-2`} style={workPaletteVars(OBRA) as CSSProperties}>
+          {SALA_MODES.map((mode) => (
+            <div
+              key={mode}
+              data-theme={mode}
+              data-testid={`obra-${mode}`}
+              className="p-5"
+              style={{ background: `var(${salaVar("background")})`, color: `var(${salaVar("ink")})` }}
+            >
+              <p className="sala-type-data">{TEMA[mode]}</p>
+              <Ficha token="background" hex={OBRA[mode].background} />
+              <Ficha token="ink" hex={OBRA[mode].ink} sobre={OBRA[mode].background} />
+            </div>
+          ))}
+        </div>
+      </Seccion>
+
+      <Seccion
+        titulo="Idioma dentro de otro"
+        nota="Un título japonés dentro de un texto coreano sale con la fuente japonesa primero."
+      >
+        <div lang="ko">
+          <p data-testid="ko" className="font-sala-display text-4xl font-extrabold">
+            기생충 直 骨 令
+          </p>
+          <p lang="ja" data-testid="ja-en-ko" className="mt-3 font-sala-display text-4xl font-extrabold">
+            千と千尋の神隠し 直 骨 令
+          </p>
+        </div>
+      </Seccion>
+    </>
+  );
+}
+
+export const AnidadosDePrueba: Story = {
+  name: "Anidados",
+  tags: ["!dev"],
+  render: () => (
+    <Pagina titulo="Anidados" entrada="Casos que comprueba la prueba de esta historia, con los valores que calcula el navegador.">
+      <Anidados />
+    </Pagina>
+  ),
+  play: async ({ canvasElement }) => {
+    const nodo = (id: string) => canvasElement.querySelector<HTMLElement>(`[data-testid="${id}"]`)!;
+    const token = (el: HTMLElement, name: string) => getComputedStyle(el).getPropertyValue(salaVar(name)).trim();
+
+    for (const mode of SALA_MODES) {
+      const el = nodo(`obra-${mode}`);
+      // La obra no es gris: si saliera el neutro, se notaría.
+      await expect(OBRA[mode].background).not.toBe(NEUTRAL_PALETTE[mode].background);
+      for (const role of SALA_ROLES) await expect(token(el, role), `${mode} ${role}`).toBe(OBRA[mode][role]);
+      // Los alias siguen a la obra, y lo que se pinta es eso.
+      await expect(token(el, "focus")).toBe(OBRA[mode].ink);
+      await expect(token(el, "inkDisabled")).toBe(OBRA[mode].border);
+      await expect(getComputedStyle(el).backgroundColor).toBe(rgbCss(OBRA[mode].background));
+      await expect(getComputedStyle(el).color).toBe(rgbCss(OBRA[mode].ink));
+      // Los estados son los del tema del contenedor anidado.
+      await expect(token(el, "danger")).toBe(SALA_COLOR[mode].danger);
+    }
+
+    const orden = (el: HTMLElement) => {
+      const pila = getComputedStyle(el).fontFamily;
+      return { jp: pila.indexOf(SALA_FAMILY.jp), kr: pila.indexOf(SALA_FAMILY.kr) };
+    };
+    const coreano = orden(nodo("ko"));
+    await expect(coreano.kr).toBeGreaterThan(0);
+    await expect(coreano.kr).toBeLessThan(coreano.jp);
+    const japones = orden(nodo("ja-en-ko"));
+    await expect(japones.jp).toBeGreaterThan(0);
+    await expect(japones.jp).toBeLessThan(japones.kr);
+  },
 };
 
 // ------------------------------------------------------------

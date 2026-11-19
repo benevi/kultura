@@ -22,18 +22,24 @@ export type SalaMode = (typeof SALA_MODES)[number]
 
 export type SalaRole = keyof ThemePalette
 
+/**
+ * Un papel por clave de `ThemePalette`: si a la paleta le sale un papel nuevo
+ * (o se le quita uno), esto deja de compilar hasta que se ponga al día.
+ */
+const ROLE_ORDER: Record<SalaRole, true> = {
+  background: true,
+  panel: true,
+  ink: true,
+  inkSecondary: true,
+  accent: true,
+  accentInk: true,
+  band: true,
+  bandInk: true,
+  border: true,
+}
+
 /** Los papeles de la biblia, en el orden en que se documentan. */
-export const SALA_ROLES: readonly SalaRole[] = [
-  'background',
-  'panel',
-  'ink',
-  'inkSecondary',
-  'accent',
-  'accentInk',
-  'band',
-  'bandInk',
-  'border',
-]
+export const SALA_ROLES = Object.keys(ROLE_ORDER) as readonly SalaRole[]
 
 /** `inkSecondary` → `ink-secondary`. */
 export const kebab = (name: string) => name.replace(/[A-Z]/g, (ch) => `-${ch.toLowerCase()}`)

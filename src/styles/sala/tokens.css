@@ -19,6 +19,12 @@
   --sala-font-text: "Instrument Sans", "Noto Sans KR", "Noto Sans JP", system-ui, sans-serif;
 }
 
+/* Otro idioma marcado dentro de un texto coreano vuelve al orden por defecto. */
+[lang]:not(:lang(ko)) {
+  --sala-font-display: "Anybody", "Noto Sans JP", "Noto Sans KR", system-ui, sans-serif;
+  --sala-font-text: "Instrument Sans", "Noto Sans JP", "Noto Sans KR", system-ui, sans-serif;
+}
+
 /* Tema: data-theme en <html> (o en cualquier contenedor). Sin atributo, oscuro. */
 :root,
 [data-theme="dark"] {
@@ -70,8 +76,11 @@
 }
 
 /* Una obra: los papeles salen de su paleta (workPaletteVars) y, si aún no ha
-   llegado, de los neutros. El tema lo eligen los interruptores de arriba. */
-.sala-work {
+   llegado, de los neutros. El tema lo eligen los interruptores de arriba. Un
+   data-theme dentro de la obra cambia de tema sin perder su paleta: sin la
+   segunda línea, su bloque de tema volvería a poner los neutros. */
+.sala-work,
+.sala-work [data-theme] {
   --sala-background: var(--sala-on-light, var(--sala-work-light-background, #e6e3dd)) var(--sala-on-dark, var(--sala-work-dark-background, #171614));
   --sala-panel: var(--sala-on-light, var(--sala-work-light-panel, #d6d3cc)) var(--sala-on-dark, var(--sala-work-dark-panel, #252422));
   --sala-ink: var(--sala-on-light, var(--sala-work-light-ink, #1b1a17)) var(--sala-on-dark, var(--sala-work-dark-ink, #f2f0eb));

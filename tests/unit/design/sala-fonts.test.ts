@@ -142,7 +142,7 @@ describe("@font-face de «Sala»", () => {
 describe("orden de las fuentes (biblia §5)", () => {
   const tokens = readFileSync(join(SHEETS_DIR, "tokens.css"), "utf8");
   const stacks = (selector: string) => {
-    const body = new RegExp(`${selector.replace(/[()]/g, "\\$&")} \\{([^}]*)\\}`).exec(tokens)?.[1] ?? "";
+    const body = new RegExp(`${selector.replace(/[()[\]]/g, "\\$&")} \\{([^}]*)\\}`).exec(tokens)?.[1] ?? "";
     return Array.from(body.matchAll(/--sala-font-[\w-]+:\s*([^;]+);/g), (m) => m[1]);
   };
 
@@ -159,6 +159,12 @@ describe("orden de las fuentes (biblia §5)", () => {
       expect(s.indexOf(SALA_FAMILY.kr)).toBeGreaterThan(0);
       expect(s.indexOf(SALA_FAMILY.kr)).toBeLessThan(s.indexOf(SALA_FAMILY.jp));
     }
+  });
+
+  it("otro idioma marcado dentro de un texto coreano vuelve al orden por defecto", () => {
+    // `<div lang="ko"><p lang="ja">`: sin esta regla el párrafo heredaría la pila coreana.
+    expect(stacks("[lang]:not(:lang(ko))")).toEqual(stacks(":root"));
+    expect(stacks("[lang]:not(:lang(ko))")).toHaveLength(2);
   });
 
   it("la fuente latina va siempre la primera", () => {

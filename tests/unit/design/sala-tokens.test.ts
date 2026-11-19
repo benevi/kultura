@@ -31,7 +31,7 @@ import {
   type ImagePalette,
   type Swatch,
 } from "@/lib/design/image-palette";
-import { SALA_MODES, SALA_ROLES, SALA_WORK_CLASS, salaVar, workPaletteVars, type SalaMode } from "@/lib/design/sala-palette";
+import { kebab, SALA_MODES, SALA_ROLES, SALA_WORK_CLASS, salaVar, workPaletteVars, type SalaMode } from "@/lib/design/sala-palette";
 import {
   SALA_COLOR,
   SALA_COLOR_ALIAS,
@@ -98,9 +98,9 @@ const THEME: Record<SalaMode, Vars> = { light: block(CSS, THEME_SELECTOR.light),
 const WORK = block(CSS, `.${SALA_WORK_CLASS}`);
 
 /** Variables que ve un elemento dentro de un contenedor de obra con ese `style`, en ese tema. */
-function insideWork(mode: SalaMode, style: Vars): Vars {
+function insideWork(mode: SalaMode, style: Vars, inherited: Vars = {}): Vars {
   // En orden, como están escritas: primero los papeles y después los alias, que los leen.
-  const resolved: Vars = { ...THEME[mode], ...style };
+  const resolved: Vars = { ...inherited, ...THEME[mode], ...style };
   for (const name of Object.keys(WORK)) resolved[name] = substitute(WORK[name], resolved);
   return resolved;
 }
@@ -218,6 +218,17 @@ describe("la paleta de una obra en su contenedor", () => {
     for (const role of SALA_ROLES) expect(env[salaVar(role)], role).toBe(NEUTRAL_PALETTE[mode][role]);
   });
 
+  it.each(SALA_MODES)("un data-theme %s anidado dentro de la obra conserva su paleta", (inner) => {
+    const outer: SalaMode = inner === "light" ? "dark" : "light";
+    // El bloque del contenedor de obra vale también para un [data-theme] de dentro…
+    expect(block(CSS, `.${SALA_WORK_CLASS} [data-theme]`)).toEqual(WORK);
+    // …que hereda las variables de la obra y cambia solo de tema.
+    const env = insideWork(inner, {}, insideWork(outer, workPaletteVars(VIVID)));
+    for (const role of SALA_ROLES) expect(env[salaVar(role)], role).toBe(VIVID[inner][role]);
+    expect(rgb(env, "inkDisabled")).toEqual(parseHex(VIVID[inner].border));
+    expect(failures(env)).toEqual([]);
+  });
+
   it("los estados y el foco cumplen sobre el fondo y el panel de cualquier obra", () => {
     const palettes: ImagePalette[] = [];
     // Barrido: todos los matices, de casi gris a saturado, oscuros y claros.
@@ -269,7 +280,7 @@ describe("Tailwind expone los tokens", () => {
     "ease-sala",
     "sala-focus",
     "focus-visible:sala-focus",
-    ...Object.keys(SALA_TYPE).map((role) => `sala-type-${role}`),
+    ...Object.keys(SALA_TYPE).map((role) => `sala-type-${kebab(role)}`),
   ];
   let css = "";
 

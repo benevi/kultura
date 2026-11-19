@@ -11,14 +11,14 @@ Cómo se usan los tokens de la dirección «Sala». Qué es «Sala» y por qué 
 | Valores | `src/lib/design/sala-tokens.ts` | A mano. Después, `npm run tokens:sala` |
 | Variables CSS `--sala-*` | `src/styles/sala/tokens.css` (generado) | No se edita. `tests/unit/design/sala-tokens-css.test.ts` falla si no coincide |
 | Clases | `tailwind.config.ts` (lee el `.ts`) | Solas |
-| `@font-face` | `src/styles/sala/fonts.css`, `fonts-jp.css`, `fonts-kr.css` (generados) | `npm run fonts:sala -- <dir>`; ver la cabecera de `scripts/gen-sala-fonts.mjs` |
+| `@font-face` | `src/styles/sala/fonts.css`, `fonts-jp.css`, `fonts-kr.css` (generados) | `npm run fonts:sala -- <dir>`; ver la cabecera de `scripts/gen-sala-fonts.mjs`. Se para si los paquetes no son de la versión fijada o un `.woff2` no coincide |
 | Paleta de una obra → variables | `src/lib/design/sala-palette.ts` | — |
 
 **Conviven con los tokens de hoy.** Todo lleva el prefijo `sala` (`--sala-ink`, `bg-sala-panel`, `sala-type-heading`) y vive en hojas que la app todavía no importa: solo las carga Storybook. Los `--surface-*`, `--text-*`, las clases y las fuentes de las pantallas actuales no cambian. Una pantalla de la 8.5 empieza a usar «Sala» importando `tokens.css` y `fonts.css`.
 
 ## Tema
 
-`data-theme="light"` o `"dark"` en `<html>` (o en cualquier contenedor). Sin atributo vale el oscuro, que es la app de hoy.
+`data-theme="light"` o `"dark"` en `<html>` (o en cualquier contenedor, también dentro de una obra: cambia de tema y conserva su paleta). Sin atributo vale el oscuro, que es la app de hoy.
 
 Para la 8.5 («por defecto, el del sistema»): `salaTokensCss({ followSystem: true })` añade el bloque `prefers-color-scheme` para cuando `<html>` no lleva atributo. Hoy está apagado. Un componente nunca pregunta por el tema: usa el token.
 
@@ -64,7 +64,7 @@ Dentro de `sala-work` las mismas clases pintan con la paleta de la obra, en el t
 
 Sueltas: `font-sala-display` y `font-sala-text`.
 
-**Coreano y japonés.** Las dos pilas terminan en Noto Sans JP y KR. Por defecto va primero la japonesa; dentro de `lang="ko"`, la coreana. El título original se marca siempre con su idioma (biblia, §3), y con eso basta. Las hojas `fonts-jp.css` y `fonts-kr.css` declaran un `@font-face` por trozo con su `unicode-range`: el navegador solo baja los trozos de los caracteres que hay en pantalla. Pesan 99 KB y 50 KB sin comprimir, así que no van en el CSS de todas las páginas: las carga quien pinta un título en esa escritura.
+**Coreano y japonés.** Las dos pilas terminan en Noto Sans JP y KR. Por defecto va primero la japonesa; dentro de `lang="ko"`, la coreana, y otro idioma marcado ahí dentro (`<p lang="ja">`) vuelve al orden por defecto. El título original se marca siempre con su idioma (biblia, §3), y con eso basta. Las hojas `fonts-jp.css` y `fonts-kr.css` declaran un `@font-face` por trozo con su `unicode-range`: el navegador solo baja los trozos de los caracteres que hay en pantalla. Pesan 99 KB y 50 KB sin comprimir, así que no van en el CSS de todas las páginas: las carga quien pinta un título en esa escritura.
 
 Chino: sin fuente propia; cae en la japonesa o en la del sistema.
 
