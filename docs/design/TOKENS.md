@@ -92,6 +92,31 @@ Chino: sin fuente propia; cae en la japonesa o en la del sistema.
 - Espacio: la escala de Tailwind (múltiplos de 4 px). No hay tokens de espacio propios.
 - Movimiento: `duration-sala-fast` (150 ms), `duration-sala-slow` (500 ms), `ease-sala`. Con movimiento reducido ya los anula `globals.css`.
 
+## Estados de un control
+
+Un componente de «Sala» escribe sus estados con tres variantes propias, no con `hover:`, `active:` y `focus-visible:`:
+
+| Variante | Cuándo vale |
+|---|---|
+| `sala-hover:` | `:hover`, solo donde hay puntero que se posa (`@media (hover: hover)`): en táctil no se queda pegado después de tocar |
+| `sala-pressed:` | `:active` |
+| `sala-focused:` | `:focus-visible`. El anillo: `sala-focused:sala-focus` |
+
+En Storybook valen además con `data-sala-force="hover"` (o `pressed`, `focus`; admite varios separados por espacio): así una historia enseña el estado quieto, con las mismas reglas que el de verdad, y axe mide su contraste. Ese selector no llega al CSS de la app.
+
+Regla común de botones y enlaces: al pasar el puntero, tinta (`bg-sala-ink` con `text-sala-background`). Deshabilitado: `text-sala-ink-disabled` y borde discontinuo, nunca solo el gris.
+
+## Componentes
+
+En `src/components/sala/`, cada uno con sus historias (Storybook, **Sala/Botón** y **Sala/Enlace**) y sus tests (`tests/unit/components/sala/`). Conviven con los de `src/components/ui/`, que siguen siendo los de las pantallas de hoy.
+
+| Componente | Para qué |
+|---|---|
+| `SalaButton` | Acción. `primary`, `secondary`, `quiet` y `danger`; con icono, solo icono (`label` obligatorio), como enlace (`asChild`) y cargando (`loading` + `loadingLabel`) |
+| `SalaLink` | Navegación. `inline` (dentro de un texto) y `standalone` (suelto, 48 px). Elige solo entre el enlace con idioma y un `<a>` externo, que avisa de que abre otra pestaña |
+
+Las piezas comunes de las historias (el suelo neutro o de una obra, las obras de ejemplo) están en `.storybook/sala.tsx`, fuera de `src`: sus clases y sus textos no entran en la app.
+
 ## Qué fija la biblia y qué es propuesta
 
 | Fijado por la biblia | Propuesta (del prototipo firmado; pendiente del «sí» de Víctor) |
@@ -99,3 +124,4 @@ Chino: sin fuente propia; cae en la japonesa o en la del sistema.
 | Papeles de color y sus neutros; AA | Colores de error, hecho y aviso; foco con la tinta; gris de lo deshabilitado |
 | Familias y orden de las fuentes CJK | Tamaños, pesos e interlineados de cada papel |
 | Esquinas rectas, sin sombras, acción de 48 px | Margen de página, grosor del foco, tiempos y curva |
+| El formato y los estados no se dicen solo con color | Variantes del botón; tinta al pasar el puntero; pulsado que encoge un punto; deshabilitado con borde discontinuo; la espera de tres cuadrados; enlace siempre subrayado y sin estilo de «visitado» |

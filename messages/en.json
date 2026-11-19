@@ -208,7 +208,8 @@
     "close": "Close",
     "stars": "{count, plural, one {# star} other {# stars}}",
     "ratingOf": "{value} out of {max}",
-    "notRated": "Not rated"
+    "notRated": "Not rated",
+    "newTab": "(opens in a new tab)"
   },
   "filters": {
     "type": "Type",

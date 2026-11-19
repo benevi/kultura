@@ -51,9 +51,10 @@ const config: Config = {
     "./src/components/**/*.{js,ts,jsx,tsx,mdx}",
     "./src/app/**/*.{js,ts,jsx,tsx,mdx}",
     /* Las historias de Storybook no son de la app: sus clases solo se generan
-       dentro de Storybook (`.storybook/main.ts` pone la variable), para que
+       dentro de Storybook (`.storybook/main.ts` pone la variable), igual que
+       las de las piezas comunes de `.storybook/`, para que
        la guía no engorde el CSS que descargan las pantallas. */
-    ...(process.env.KULTURA_STORYBOOK ? [] : ["!./src/**/*.stories.{ts,tsx}"]),
+    ...(process.env.KULTURA_STORYBOOK ? ["./.storybook/**/*.{ts,tsx}"] : ["!./src/**/*.stories.{ts,tsx}"]),
   ],
   theme: {
     /* ─── Sets cerrados (F-30, DIS-7 y DIS-12) ──────────────────────────
@@ -216,13 +217,33 @@ const config: Config = {
         standard: "var(--ease-standard)", /* cubic-bezier(0,0,0.2,1) */
         sala: `var(${salaVar("ease")})`,
       },
+      /* «Sala»: la espera de un botón que carga. Tres cuadrados que se
+         encienden por turnos; con movimiento reducido se quedan quietos. */
+      keyframes: {
+        "sala-wait": {
+          "0%, 60%, 100%": { opacity: "0.25" },
+          "30%": { opacity: "1" },
+        },
+      },
+      animation: {
+        "sala-wait": `sala-wait 1.2s var(${salaVar("ease")}) infinite both`,
+      },
       backgroundImage: {
         "gradient-radial": "radial-gradient(var(--tw-gradient-stops))",
       },
     },
   },
   plugins: [
-    plugin(function ({ addComponents, addUtilities, theme }) {
+    plugin(function ({ addComponents, addUtilities, addVariant, theme }) {
+      /* «Sala»: estados de un control. El hover solo existe donde hay puntero
+         que se posa: en táctil no se queda pegado después de tocar.
+         En Storybook valen además con `data-sala-force="hover"` (o `pressed`,
+         `focus`; admite varios), para enseñar el estado quieto en la guía y
+         en las capturas. Ese selector no llega al CSS de la app. */
+      const forced = (state: string) => (process.env.KULTURA_STORYBOOK ? [`&[data-sala-force~="${state}"]`] : []);
+      addVariant("sala-hover", ["@media (hover: hover) { &:hover }", ...forced("hover")]);
+      addVariant("sala-pressed", ["&:active", ...forced("pressed")]);
+      addVariant("sala-focused", ["&:focus-visible", ...forced("focus")]);
       /* Retícula única (DIS-8): el mismo borde izquierdo para el logo, el h1
          y el contenido en todas las páginas. Ancho 72rem (`max-w-6xl`) con
          16 px de margen en móvil y 32 px desde `md`. Las columnas más

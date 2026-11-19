@@ -1,4 +1,6 @@
 import type { Preview } from "@storybook/nextjs-vite";
+import { NextIntlClientProvider } from "next-intl";
+import mensajes from "../messages/es.json";
 import { bricolageGrotesque, figtree } from "@/app/fonts";
 import { contrasteMedido } from "./contraste";
 import "../src/app/globals.css";
@@ -36,6 +38,8 @@ const preview: Preview = {
     // El fondo lo pone el `<body>` con los tokens de la app, no el selector
     // de fondos de Storybook (pintaría colores que no son del sistema).
     backgrounds: { disable: true },
+    // La app usa el App Router: `next/navigation` simulado para los enlaces.
+    nextjs: { appDirectory: true },
     a11y: {
       // Una violación de axe hace fallar la historia (en el panel y en el CI).
       test: "error",
@@ -67,7 +71,14 @@ const preview: Preview = {
       // hoy solo oscuro, así que sus componentes no cambian con el selector.
       const tema: Tema = context.globals.tema === "claro" ? "claro" : "oscuro";
       document.documentElement.dataset.theme = tema === "claro" ? "light" : "dark";
-      return <Story />;
+      // Los componentes leen de next-intl sus textos por defecto (el aviso de
+      // «se abre en una pestaña nueva») y los enlaces internos, el idioma:
+      // aquí, siempre castellano.
+      return (
+        <NextIntlClientProvider locale="es" messages={mensajes} timeZone="Europe/Madrid">
+          <Story />
+        </NextIntlClientProvider>
+      );
     },
   ],
 };
