@@ -3,15 +3,17 @@
 // van la cabecera con la persona, el hueco de los mensajes y el campo de
 // escribir, a toda la altura y con las mismas medidas que `ConversationClient`.
 // El centro se deja vacío porque `ConversationClient` arranca ahí con su propio
-// «Cargando mensajes…»; así nada cambia de sitio al llegar la página. El pulso
-// solo con `motion-safe`.
+// «Cargando mensajes…»; así nada cambia de sitio al llegar la página. Ese texto
+// también es `role="status"`, así que aquí se anuncia otro («Abriendo la
+// conversación…») para no repetir el mismo dos veces. El pulso solo con
+// `motion-safe`.
 import { getTranslations } from 'next-intl/server'
 
 export default async function ConversationLoading() {
   const t = await getTranslations('chat')
   return (
     <main aria-busy="true" className="page-grid max-md:px-0 [&>*]:max-w-2xl">
-      <p role="status" className="sr-only">{t('loadingMessages')}</p>
+      <p role="status" className="sr-only">{t('openingConversation')}</p>
       <div
         aria-hidden="true"
         className="flex flex-col h-[calc(100dvh-56px-4rem-env(safe-area-inset-bottom))] md:h-[calc(100dvh-56px)] motion-safe:animate-pulse"

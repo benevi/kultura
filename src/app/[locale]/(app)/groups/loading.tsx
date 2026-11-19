@@ -10,15 +10,15 @@ export default async function GroupsLoading() {
     <main aria-busy="true" className="page-grid py-8">
       <p role="status" className="sr-only">{t('loading')}</p>
       <div aria-hidden="true" className="motion-safe:animate-pulse">
-        <div className="mb-7 h-9 w-40 md:h-11 rounded-button bg-surface-elevated" />
+        <div className="mb-7 h-10 w-40 md:h-11 rounded-button bg-surface-elevated" />
         <div className="flex flex-col gap-6">
           <div className="flex gap-2">
             <div className="h-11 flex-1 rounded-full bg-surface-elevated" />
             <div className="h-11 flex-1 rounded-full bg-surface-elevated" />
           </div>
           <div className="flex items-center justify-between">
-            <div className="h-6 w-32 rounded-button bg-surface-elevated" />
-            <div className="h-9 w-32 rounded-full bg-surface-elevated" />
+            <div className="h-7 w-32 rounded-button bg-surface-elevated" />
+            <div className="h-8 w-32 rounded-full bg-surface-elevated" />
           </div>
           <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
             {[0, 1, 2, 3, 4, 5].map((i) => (

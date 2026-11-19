@@ -12,10 +12,10 @@ export default async function GroupDetailLoading() {
       <div aria-hidden="true" className="flex flex-col gap-8 motion-safe:animate-pulse">
         <div className="flex items-start gap-4 rounded-bento-xl bg-surface-elevated p-6 md:py-9 md:px-10">
           <div className="h-14 w-14 flex-shrink-0 rounded-2xl rounded-bl-lg bg-surface-default" />
-          <div className="flex flex-1 flex-col gap-2">
+          <div className="flex min-w-0 flex-1 flex-col gap-2">
             <div className="h-8 w-1/2 rounded-button bg-surface-default" />
             <div className="h-3.5 w-2/3 rounded-button bg-surface-default" />
-            <div className="mt-2 flex items-center gap-3">
+            <div className="mt-2 flex flex-wrap items-center gap-3">
               <div className="flex">
                 {[0, 1, 2].map((i) => (
                   <div key={i} className={`h-10 w-10 rounded-full bg-surface-default ${i > 0 ? '-ml-3' : ''}`} />
