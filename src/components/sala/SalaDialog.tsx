@@ -106,6 +106,12 @@ const primero = (dentro: Element | null) => dentro?.querySelector<HTMLElement>(T
  * Con menos, deja de tener scroll propio y se desplaza el diálogo entero.
  */
 const CUERPO_MINIMO = 120;
+/**
+ * Para volver al scroll del cuerpo tiene que sobrar este margen (px). El pie
+ * no mide lo mismo en un modo que en otro (16 px de aire): sin margen, en el
+ * umbral justo los dos modos se llamarían el uno al otro sin parar.
+ */
+const HOLGURA = 24;
 
 /**
  * Cuánto tapa el teclado en pantalla, en `--sala-kb` del velo. `dvh` no lo
@@ -117,6 +123,9 @@ function useTeclado(velo: React.RefObject<HTMLElement | null>, activo: boolean) 
     const ventana = window.visualViewport;
     if (!activo || !ventana) return;
     const medir = () => {
+      // Con zoom de pellizco la ventana visual también encoge, sin teclado: no
+      // se mide (a escala 2 daría media pantalla de «teclado» y la hoja saltaría).
+      if (ventana.scale > 1.01) return;
       const tapado = Math.max(0, Math.round(window.innerHeight - ventana.height - ventana.offsetTop));
       velo.current?.style.setProperty("--sala-kb", `${tapado}px`);
     };
@@ -166,7 +175,16 @@ export function SalaDialog({
   const pie = React.useRef<HTMLDivElement>(null);
   const [entero, setEntero] = React.useState(false);
   const [desborda, setDesborda] = React.useState(false);
-  const [soloTexto, setSoloTexto] = React.useState(false);
+  /** Quién puede recibir el foco para desplazarse con el teclado. */
+  const [enfocable, setEnfocable] = React.useState<{ rollo: boolean; cuerpo: boolean }>({ rollo: false, cuerpo: false });
+  const [tituloId, setTituloId] = React.useState<string>();
+  /** El modo en que está ahora, para medir con holgura y fuera del render. */
+  const modo = React.useRef(false);
+
+  const sigueAbierto = React.useRef(open);
+  React.useEffect(() => {
+    sigueAbierto.current = open;
+  }, [open]);
 
   const hoja = variant === "sheet";
   useTeclado(velo, open);
@@ -174,6 +192,20 @@ export function SalaDialog({
   const pedirCierre = () => {
     if (dismissible) onClose();
   };
+
+  /** ¿Le queda sitio al cuerpo entre la cabecera y el pie? Si no, se desplaza el diálogo entero. */
+  const apretado = React.useCallback((): boolean => {
+    const caja = panel.current;
+    const nodo = cuerpo.current;
+    if (!caja || !nodo) return false;
+    const tope = parseFloat(getComputedStyle(caja).maxHeight);
+    if (!Number.isFinite(tope)) return false;
+    const fijo = (cabecera.current?.offsetHeight ?? 0) + (pie.current?.offsetHeight ?? 0) + (fallo.current?.offsetHeight ?? 0);
+    const hueco = tope - fijo;
+    const necesita = Math.min(nodo.scrollHeight, CUERPO_MINIMO);
+    // Entrar es fácil y salir cuesta un poco más: no oscila en el umbral.
+    return modo.current ? hueco < necesita + HOLGURA : hueco < necesita;
+  }, []);
 
   // ¿Cabe el cuerpo? Se vuelve a mirar si cambia de tamaño él, lo que lleva o
   // el diálogo. El nodo llega por la ref (el portal lo monta después que este
@@ -183,18 +215,29 @@ export function SalaDialog({
     cuerpo.current = nodo;
     setNodoCuerpo(nodo);
   }, []);
+  const medir = React.useCallback(() => {
+    const nodo = cuerpo.current;
+    if (!nodo) return;
+    const todo = apretado();
+    modo.current = todo;
+    const noCabe = !todo && nodo.scrollHeight > nodo.clientHeight + 1;
+    const soloTexto = primero(nodo) === null;
+    const lista = rollo.current;
+    const largo = todo && lista !== null && lista.scrollHeight > lista.clientHeight + 1;
+    const activo = document.activeElement;
+    setEntero(todo);
+    setDesborda(noCabe);
+    // Lo que se desplaza y no tiene ningún control dentro tiene que poder
+    // recibir el foco: si no, con el teclado no se puede leer entero. Y a quien
+    // ya tiene el foco no se le quita el `tabindex`: el foco caería en `<body>`.
+    setEnfocable((antes) => {
+      const ahora = { rollo: (largo && soloTexto) || activo === lista, cuerpo: (noCabe && soloTexto) || activo === nodo };
+      return ahora.rollo === antes.rollo && ahora.cuerpo === antes.cuerpo ? antes : ahora;
+    });
+    setTituloId(panel.current?.getAttribute("aria-labelledby") ?? undefined);
+  }, [apretado]);
   React.useEffect(() => {
     if (!nodoCuerpo) return;
-    const medir = () => {
-      const caja = panel.current;
-      const tope = caja ? parseFloat(getComputedStyle(caja).maxHeight) : NaN;
-      const fijo = (cabecera.current?.offsetHeight ?? 0) + (pie.current?.offsetHeight ?? 0) + (fallo.current?.offsetHeight ?? 0);
-      // No depende de quién se desplace ahora: no puede oscilar entre un modo y otro.
-      const apretado = Number.isFinite(tope) && tope - fijo < Math.min(nodoCuerpo.scrollHeight, CUERPO_MINIMO);
-      setEntero(apretado);
-      setDesborda(!apretado && nodoCuerpo.scrollHeight > nodoCuerpo.clientHeight + 1);
-      setSoloTexto(primero(apretado ? rollo.current : nodoCuerpo) === null);
-    };
     medir();
     if (typeof ResizeObserver === "undefined") return;
     const observador = new ResizeObserver(medir);
@@ -202,14 +245,20 @@ export function SalaDialog({
       if (nodo) observador.observe(nodo);
     }
     return () => observador.disconnect();
-  }, [nodoCuerpo, children, footer, title, description, error]);
+  }, [nodoCuerpo, medir, children, footer, title, description, error]);
 
-  // Lo que se desplaza y no tiene ningún control dentro tiene que poder recibir
-  // el foco: si no, con el teclado no se puede leer entero.
-  const cuerpoEnfocable = desborda && soloTexto;
-  const rolloEnfocable = entero && soloTexto;
+  // Red: si al cambiar de modo el foco se ha quedado en `<body>` (fuera del
+  // diálogo, que es modal), vuelve a lo que se desplaza o al propio diálogo.
+  React.useEffect(() => {
+    if (!nodoCuerpo || document.activeElement !== document.body) return;
+    const destino = enfocable.rollo ? rollo.current : enfocable.cuerpo ? cuerpo.current : panel.current;
+    destino?.focus({ preventScroll: true });
+  }, [nodoCuerpo, entero, enfocable]);
+
   // El cuerpo deja su propio aire debajo salvo cuando lleva la raya o no existe.
   const aire = desborda || !children;
+  /** Lo que recibe el foco para desplazarse dice qué es: un grupo con el nombre del diálogo. */
+  const comoGrupo = (si: boolean) => (si ? ({ tabIndex: 0, role: "group", "aria-labelledby": tituloId } as const) : {});
 
   return (
     <Dialog.Root
@@ -226,6 +275,11 @@ export function SalaDialog({
           data-sala-dialog-veil=""
           onPointerDown={(event) => {
             empezoEnElVelo.current = event.target;
+          }}
+          // Pulsar el velo no mueve el foco: si no cierra (una confirmación), el
+          // foco se quedaría en `<body>`, fuera del diálogo.
+          onMouseDown={(event) => {
+            if (event.target === event.currentTarget) event.preventDefault();
           }}
           onClick={(event) => {
             const empezoAqui = empezoEnElVelo.current === null || empezoEnElVelo.current === event.currentTarget;
@@ -254,25 +308,39 @@ export function SalaDialog({
             onOpenAutoFocus={(event) => {
               quienAbrio.current = document.activeElement as HTMLElement | null;
               const caja = cuerpo.current;
-              // Solo texto y no cabe: el foco va al cuerpo, que se desplaza con las flechas.
-              const cuerpoLargo = caja && caja.scrollHeight > caja.clientHeight + 1 && primero(caja) === null ? caja : null;
-              if (cuerpoLargo) cuerpoLargo.tabIndex = 0;
-              const destino =
-                initialFocusRef?.current ??
-                panel.current?.querySelector<HTMLElement>("[data-autofocus]") ??
-                cuerpoLargo ??
-                primero(caja) ??
-                primero(pie.current);
+              const soloTexto = caja !== null && primero(caja) === null;
+              const pedido = initialFocusRef?.current ?? panel.current?.querySelector<HTMLElement>("[data-autofocus]");
+              // Solo texto que no cabe: el foco va a lo que se desplaza (el cuerpo
+              // o, si no le queda sitio, el diálogo entero), que se mueve con las
+              // flechas y se queda arriba del todo. Ir al botón del pie lo abriría
+              // por el final.
+              let largo: HTMLElement | null = null;
+              if (!pedido && caja && soloTexto) {
+                if (apretado()) largo = rollo.current;
+                else if (caja.scrollHeight > caja.clientHeight + 1) largo = caja;
+              }
+              if (largo) {
+                largo.tabIndex = 0;
+                setEnfocable((antes) => (largo === caja ? { ...antes, cuerpo: true } : { ...antes, rollo: true }));
+              }
+              const destino = pedido ?? largo ?? primero(caja) ?? primero(pie.current);
               // Sin destino, Radix lo pone en el primer control: el botón de cerrar.
               if (destino) {
                 event.preventDefault();
-                destino.focus();
+                destino.focus({ preventScroll: destino === largo });
+                if (destino === largo) largo.scrollTop = 0;
               }
             }}
             onCloseAutoFocus={(event) => {
               event.preventDefault();
               const antes = quienAbrio.current;
-              (antes && antes.isConnected ? antes : finalFocusRef?.current)?.focus();
+              // `<body>` no es nadie: quien lo abrió ya no tenía el foco (o no existe).
+              const vuelve = antes && antes.isConnected && antes !== document.body ? antes : finalFocusRef?.current;
+              if (vuelve) vuelve.focus();
+              // Solo si se ha cerrado: si la pantalla entera se desmonta, no hay nada que devolver.
+              else if (!sigueAbierto.current && process.env.NODE_ENV !== "production") {
+                console.warn("SalaDialog: al cerrar no hay a dónde devolver el foco. Pasa `finalFocusRef`.");
+              }
             }}
             // Fuera cierra el velo con su propio clic (arriba); Radix, no: un
             // aviso efímero que se pulsa con el diálogo abierto no lo cierra.
@@ -310,9 +378,13 @@ export function SalaDialog({
             <div
               ref={rollo}
               data-sala-dialog-scroll={entero ? "panel" : "body"}
-              tabIndex={rolloEnfocable ? 0 : undefined}
+              {...comoGrupo(enfocable.rollo)}
+              onBlur={medir}
               className={cn(
-                "flex min-h-0 flex-1 flex-col",
+                // `relative`: lo que va con posición absoluta dentro (los textos
+                // solo para lectores) tiene que colgar de quien se desplaza. Si
+                // cuelga del panel, escapa del recorte y alarga el velo.
+                "relative flex min-h-0 flex-1 flex-col",
                 entero && "overflow-y-auto overscroll-contain sala-focused:sala-focus sala-focused:!outline-offset-[-3px]"
               )}
             >
@@ -339,9 +411,10 @@ export function SalaDialog({
               <div
                 ref={unirCuerpo}
                 data-sala-dialog-body=""
-                tabIndex={cuerpoEnfocable ? 0 : undefined}
+                {...comoGrupo(enfocable.cuerpo)}
+                onBlur={medir}
                 className={cn(
-                  "px-5 [overflow-wrap:anywhere]",
+                  "relative px-5 [overflow-wrap:anywhere]",
                   entero ? "shrink-0" : "min-h-0 flex-1 overflow-y-auto overscroll-contain",
                   // La raya dice que hay más: solo cuando el cuerpo no cabe.
                   desborda ? "border-y-2 border-sala-border py-4" : "pb-5 pt-1",

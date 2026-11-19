@@ -301,7 +301,7 @@ describe("SalaDialog", () => {
 
   it("con el teclado en pantalla, el velo sabe cuánto tapa (visualViewport)", async () => {
     const oyentes: Record<string, () => void> = {};
-    const ventana = { height: 500, offsetTop: 0, addEventListener: (tipo: string, fn: () => void) => (oyentes[tipo] = fn), removeEventListener: vi.fn() };
+    const ventana = { height: 500, offsetTop: 0, scale: 1, addEventListener: (tipo: string, fn: () => void) => (oyentes[tipo] = fn), removeEventListener: vi.fn() };
     vi.stubGlobal("visualViewport", ventana);
     vi.stubGlobal("innerHeight", 800);
     vi.stubGlobal("requestAnimationFrame", (fn: FrameRequestCallback) => {
@@ -317,6 +317,79 @@ describe("SalaDialog", () => {
     ventana.height = 800;
     oyentes.resize();
     expect(velo.style.getPropertyValue("--sala-kb")).toBe("0px");
+    // Zoom de pellizco a escala 2: la ventana visual mide la mitad y no hay teclado. No se toca.
+    ventana.height = 400;
+    ventana.scale = 2;
+    oyentes.resize();
+    expect(velo.style.getPropertyValue("--sala-kb")).toBe("0px");
+  });
+
+  it("pulsar el velo no se lleva el foco a <body>", async () => {
+    render(<Caso closeOnOutside={false} footer={<button>Guardar</button>} />);
+    const caja = await abrir();
+    const velo = caja.parentElement!;
+    // El foco se mueve en `mousedown`: sobre el velo se anula; dentro, no.
+    expect(fireEvent.mouseDown(velo)).toBe(false);
+    expect(fireEvent.mouseDown(screen.getByRole("button", { name: "Guardar" }))).toBe(true);
+    await userEvent.click(velo);
+    expect(caja).toContainElement(document.activeElement as HTMLElement);
+  });
+
+  it("abierto sin que nadie tuviera el foco, al cerrar va a finalFocusRef; si falta, avisa en desarrollo", async () => {
+    const aviso = vi.spyOn(console, "warn").mockImplementation(() => {});
+    function SinDisparador({ conDestino }: { conDestino: boolean }) {
+      const [abierto, setAbierto] = useState(true);
+      const destino = useRef<HTMLHeadingElement>(null);
+      return (
+        <>
+          <h1 ref={destino} tabIndex={-1}>
+            Biblioteca
+          </h1>
+          <SalaDialog open={abierto} onClose={() => setAbierto(false)} title="Crear una lista" closeLabel="Cerrar" finalFocusRef={conDestino ? destino : undefined} />
+        </>
+      );
+    }
+    const { unmount } = render(<SinDisparador conDestino />);
+    await userEvent.keyboard("{Escape}");
+    expect(screen.getByRole("heading", { name: "Biblioteca" })).toHaveFocus();
+    expect(aviso).not.toHaveBeenCalledWith(expect.stringContaining("finalFocusRef"));
+    unmount();
+    render(<SinDisparador conDestino={false} />);
+    await userEvent.keyboard("{Escape}");
+    expect(aviso).toHaveBeenCalledWith(expect.stringContaining("finalFocusRef"));
+    aviso.mockRestore();
+  });
+
+  it("lo que se desplaza cuelga de sí mismo (relative): lo absoluto de dentro no escapa de su recorte", async () => {
+    render(
+      <Caso>
+        <p>Texto</p>
+      </Caso>
+    );
+    const caja = await abrir();
+    expect(caja.querySelector("[data-sala-dialog-scroll]")).toHaveClass("relative");
+    expect(caja.querySelector("[data-sala-dialog-body]")).toHaveClass("relative");
+  });
+
+  it("un cuerpo de solo texto que no cabe recibe el foco, arriba del todo, y dice qué es", async () => {
+    // jsdom no maqueta: se le dice que el cuerpo no cabe.
+    const alto = vi.spyOn(HTMLElement.prototype, "scrollHeight", "get").mockImplementation(function (this: HTMLElement) {
+      return this.hasAttribute("data-sala-dialog-body") ? 900 : 0;
+    });
+    render(
+      <Caso footer={<button>Entendido</button>}>
+        <p>Texto largo</p>
+      </Caso>
+    );
+    const caja = await abrir();
+    const cuerpo = caja.querySelector<HTMLElement>("[data-sala-dialog-body]")!;
+    expect(cuerpo).toHaveFocus();
+    expect(cuerpo).toHaveAttribute("tabindex", "0");
+    expect(cuerpo.scrollTop).toBe(0);
+    // Un grupo con el nombre del diálogo: el lector no dice un foco sin nombre.
+    expect(cuerpo).toHaveAttribute("role", "group");
+    expect(cuerpo).toHaveAccessibleName("Crear una lista");
+    alto.mockRestore();
   });
 
   it("con palette, el diálogo (que cuelga de body) lleva la paleta de la obra", async () => {

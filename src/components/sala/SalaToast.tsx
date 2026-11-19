@@ -20,8 +20,12 @@ import { SalaCloseIcon, SalaStatusIcon } from "./SalaStatusIcon";
  * toast.showError(t("errorSaving"));
  * ```
  *
- * - **Cola.** Tres a la vez como mucho; el cuarto desplaza al más viejo (que
- *   «caduca»: se llama a su `onExpire`).
+ * - **Cola.** Tres a la vez como mucho; el cuarto desplaza al más viejo que no
+ *   sea fijo (que «caduca»: se llama a su `onExpire`). Un aviso fijo
+ *   (`duration: Infinity`, un error `persistent`) solo sale si los tres lo son.
+ * - **Cada aviso se resuelve una vez:** o se pulsa su acción (`onAction`) o
+ *   caduca (`onExpire`), nunca las dos cosas ni dos veces la misma, aunque se
+ *   pulse dos veces o lo desplace otro mientras se está yendo.
  * - **Regiones vivas montadas desde el principio** y vacías: una `assertive`
  *   para los errores y un `status` para lo demás. Un lector avisa de lo que
  *   cambia, no de lo que nace con texto.
@@ -31,8 +35,10 @@ import { SalaCloseIcon, SalaStatusIcon } from "./SalaStatusIcon";
  *   en segundo plano. `duration: Infinity` (o `showError(…, { persistent })`)
  *   lo deja hasta que se cierre.
  * - **No roba el foco.** Aparece y el foco sigue donde estaba. Con el teclado
- *   se llega con **F8** (lleva el foco al aviso más reciente y para el reloj);
- *   Escape lo cierra y devuelve el foco a donde estaba. Si se cierra con el
+ *   se llega con **F8**: lleva el foco a la acción del aviso más reciente (a
+ *   su botón de cerrar si no tiene acción) y para el reloj. Un aviso con
+ *   acción dice la tecla al lector (`labels.hint`). Escape lo cierra y
+ *   devuelve el foco a donde estaba. Si se cierra con el
  *   foco dentro, el foco pasa al siguiente aviso o vuelve a su sitio: nunca se
  *   pierde. `action.autoFocus` lo lleva a la acción al aparecer, para cuando el
  *   control que la provocó ya no existe (tras cerrar un diálogo).
@@ -49,9 +55,12 @@ import { SalaCloseIcon, SalaStatusIcon } from "./SalaStatusIcon";
  *   movimiento reducido, ni lo uno ni lo otro. En táctil se descarta también
  *   deslizándolo a un lado; el botón de cerrar hace lo mismo sin arrastrar.
  * - **Con un diálogo abierto** siguen viéndose (van por encima) y oyéndose
- *   (el diálogo no esconde las regiones vivas). Aun así, el error de una
- *   acción del diálogo va dentro de él (`SalaDialog`, prop `error`): el foco
- *   está atrapado allí y no puede llegar al aviso.
+ *   (el diálogo no esconde las regiones vivas). Pero el foco está atrapado en
+ *   el diálogo: ni F8 ni Tab llegan al aviso. Por eso **un aviso con acción
+ *   no corre mientras haya un diálogo modal abierto**: se queda hasta que se
+ *   cierre, y entonces sigue su reloj y F8 llega a él. En desarrollo se avisa
+ *   por consola. El error de una acción del diálogo va dentro de él
+ *   (`SalaDialog`, prop `error`), no aquí.
  */
 export type SalaToastType = "success" | "error" | "info";
 
@@ -84,6 +93,8 @@ export interface SalaToastLabels {
   region: string;
   /** Nombre del botón que cierra un aviso. */
   dismiss: string;
+  /** Lo que oye el lector en un aviso con acción: «Pulsa F8 para ir al aviso». */
+  hint?: string;
 }
 
 export const SALA_TOAST_MAX = 3;
@@ -145,11 +156,14 @@ interface UnAvisoProps {
   toast: SalaToastItem;
   paused: boolean;
   dismissLabel: string;
+  hint?: string;
+  /** `true` la primera vez que se pide para este aviso; después, `false`. */
+  onSettle: (id: string) => boolean;
   /** `conFoco`: el foco estaba dentro al cerrarlo, y hay que llevarlo a otro sitio. */
   onDismiss: (id: string, conFoco: boolean) => void;
 }
 
-function UnAviso({ toast, paused, dismissLabel, onDismiss }: UnAvisoProps) {
+function UnAviso({ toast, paused, dismissLabel, hint, onSettle, onDismiss }: UnAvisoProps) {
   const caja = React.useRef<HTMLDivElement>(null);
   const accion = React.useRef<HTMLButtonElement>(null);
   const reloj = React.useRef<number | null>(null);
@@ -160,16 +174,21 @@ function UnAviso({ toast, paused, dismissLabel, onDismiss }: UnAvisoProps) {
   const [saliendo, setSaliendo] = React.useState(false);
   const [dx, setDx] = React.useState(0);
 
-  const alExpirar = React.useRef(toast.action?.onExpire);
+  const accionDe = React.useRef(toast.action);
   React.useEffect(() => {
-    alExpirar.current = toast.action?.onExpire;
+    accionDe.current = toast.action;
   });
 
   const irse = React.useCallback(
     (pulsada = false) => {
       if (cerrado.current) return;
       cerrado.current = true;
-      if (!pulsada) alExpirar.current?.();
+      // O la acción o caducar, y una sola vez: lo lleva la cuenta el proveedor,
+      // que también puede haberlo dado ya por caducado al desplazarlo.
+      if (onSettle(toast.id)) {
+        if (pulsada) accionDe.current?.onAction();
+        else accionDe.current?.onExpire?.();
+      }
       if (reloj.current !== null) window.clearTimeout(reloj.current);
       reloj.current = null;
       const conFoco = Boolean(caja.current?.contains(document.activeElement));
@@ -190,7 +209,7 @@ function UnAviso({ toast, paused, dismissLabel, onDismiss }: UnAvisoProps) {
         { once: true }
       );
     },
-    [toast.id, onDismiss]
+    [toast.id, onDismiss, onSettle]
   );
 
   // El reloj: corre mientras no esté parado, y al parar guarda lo que le queda.
@@ -223,12 +242,19 @@ function UnAviso({ toast, paused, dismissLabel, onDismiss }: UnAvisoProps) {
     <div
       ref={caja}
       data-sala-toast={toast.type}
+      data-sala-toast-id={toast.id}
       onKeyDown={(event) => {
         if (event.key === "Escape") irse();
       }}
       onPointerDown={(event) => {
         if (event.pointerType === "mouse" || (event.target as HTMLElement).closest("button")) return;
         arrastre.current = { x: event.clientX, id: event.pointerId };
+        // El dedo puede salirse del aviso a medio deslizar: los eventos siguen llegando aquí.
+        try {
+          event.currentTarget.setPointerCapture(event.pointerId);
+        } catch {
+          // Un puntero que ya no existe: se desliza igual mientras siga encima.
+        }
       }}
       onPointerMove={(event) => {
         if (arrastre.current?.id === event.pointerId) setDx(event.clientX - arrastre.current.x);
@@ -247,16 +273,16 @@ function UnAviso({ toast, paused, dismissLabel, onDismiss }: UnAvisoProps) {
     >
       <SalaStatusIcon tone={toast.type} className="mt-[0.875rem]" />
       <div className="flex min-w-0 flex-1 flex-wrap items-center justify-end gap-x-3">
-        <p className="min-w-0 flex-1 basis-32 py-[0.6875rem] [overflow-wrap:anywhere]">{toast.message}</p>
+        <p className="min-w-0 flex-1 basis-32 py-[0.6875rem] [overflow-wrap:anywhere]">
+          {toast.message}
+          {toast.action && hint ? <span className="sr-only"> {hint}</span> : null}
+        </p>
         {toast.action ? (
           <button
             ref={accion}
             type="button"
             data-sala-toast-action=""
-            onClick={() => {
-              toast.action?.onAction();
-              irse(true);
-            }}
+            onClick={() => irse(true)}
             className={cn(BOTON, "max-w-full border-current px-4 [overflow-wrap:anywhere]", INVERTIDO[toast.type])}
           >
             {toast.action.label}
@@ -299,14 +325,33 @@ export function SalaToastProvider({ children, labels }: { children: React.ReactN
     setToasts(siguiente);
   }, []);
 
+  /** Los avisos ya resueltos (acción pulsada o caducados): cada uno, una sola vez. */
+  const resueltos = React.useRef(new Set<string>());
+  const resolver = React.useCallback((id: string) => {
+    if (resueltos.current.has(id)) return false;
+    resueltos.current.add(id);
+    return true;
+  }, []);
+
   const show = React.useCallback<SalaToastApi["show"]>(
     ({ message, type = "info", duration, action }) => {
-      const sobran = lista.current.length + 1 - SALA_TOAST_MAX;
-      // El que sale desplazado por los nuevos también caduca.
-      if (sobran > 0) for (const viejo of lista.current.slice(0, sobran)) viejo.action?.onExpire?.();
-      poner([...lista.current.slice(Math.max(0, sobran)), { id: nuevoId(), message, type, duration, ...(action ? { action } : {}) }]);
+      let quedan = lista.current;
+      // No cabe: sale el más viejo que no sea fijo (un error `persistent` no lo
+      // echan tres avisos corrientes); si todos lo son, el más viejo. El que
+      // sale también caduca, si no estaba ya resuelto.
+      while (quedan.length >= SALA_TOAST_MAX) {
+        const fuera = quedan.find((toast) => toast.duration !== Infinity) ?? quedan[0];
+        if (resolver(fuera.id)) fuera.action?.onExpire?.();
+        quedan = quedan.filter((toast) => toast !== fuera);
+      }
+      if (action && process.env.NODE_ENV !== "production" && document.querySelector('[aria-modal="true"]')) {
+        console.warn(
+          "SalaToast: aviso con acción mientras hay un diálogo modal abierto. El foco no puede salir del diálogo, así que el aviso se queda fijo hasta que se cierre. Si la acción es de ese diálogo, ponla dentro."
+        );
+      }
+      poner([...quedan, { id: nuevoId(), message, type, duration, ...(action ? { action } : {}) }]);
     },
-    [poner]
+    [poner, resolver]
   );
 
   const showError = React.useCallback<SalaToastApi["showError"]>(
@@ -315,6 +360,12 @@ export function SalaToastProvider({ children, labels }: { children: React.ReactN
   );
 
   const dismiss = React.useCallback((id: string) => poner(lista.current.filter((toast) => toast.id !== id)), [poner]);
+
+  // La cuenta de resueltos no crece sin fin: se olvida a los que ya no están.
+  React.useEffect(() => {
+    const vivos = new Set(toasts.map((toast) => toast.id));
+    for (const id of resueltos.current) if (!vivos.has(id)) resueltos.current.delete(id);
+  }, [toasts]);
 
   const alCerrar = React.useCallback(
     (id: string, conFoco: boolean) => {
@@ -328,7 +379,7 @@ export function SalaToastProvider({ children, labels }: { children: React.ReactN
   React.useEffect(() => {
     if (!devolverFoco.current) return;
     devolverFoco.current = false;
-    const siguiente = zona.current?.querySelector<HTMLElement>("[data-sala-toast] button:last-of-type");
+    const siguiente = zona.current?.querySelector<HTMLElement>("[data-sala-toast] button");
     if (siguiente) siguiente.focus();
     else if (antes.current?.isConnected) antes.current.focus();
     // Un control que desaparece con el foco puesto no avisa de que lo pierde.
@@ -350,14 +401,15 @@ export function SalaToastProvider({ children, labels }: { children: React.ReactN
     return () => document.removeEventListener("visibilitychange", mirar);
   }, []);
 
-  // F8 lleva el foco al aviso más reciente.
+  // F8 lleva el foco al aviso más reciente: a su acción o, si no tiene, a su
+  // botón de cerrar (el primer botón del aviso es la acción cuando la hay).
   const hay = toasts.length > 0;
   React.useEffect(() => {
     if (!hay) return;
     const tecla = (event: KeyboardEvent) => {
       if (event.key !== "F8" || event.altKey || event.ctrlKey || event.metaKey) return;
-      const botones = zona.current?.querySelectorAll<HTMLElement>("[data-sala-toast] button");
-      const destino = botones?.[botones.length - 1];
+      const ultimo = lista.current[lista.current.length - 1];
+      const destino = ultimo ? zona.current?.querySelector<HTMLElement>(`[data-sala-toast-id="${ultimo.id}"] button`) : null;
       if (!destino) return;
       event.preventDefault();
       destino.focus();
@@ -365,6 +417,24 @@ export function SalaToastProvider({ children, labels }: { children: React.ReactN
     document.addEventListener("keydown", tecla);
     return () => document.removeEventListener("keydown", tecla);
   }, [hay]);
+
+  // Con un diálogo modal abierto el foco no puede llegar al aviso: los que
+  // llevan acción no corren hasta que se cierre. Los diálogos cuelgan de
+  // `<body>`, así que basta con mirar a sus hijos.
+  const hayAccion = toasts.some((toast) => toast.action);
+  const [modal, setModal] = React.useState(false);
+  React.useEffect(() => {
+    if (!hayAccion) {
+      setModal(false);
+      return;
+    }
+    const mirar = () => setModal(document.querySelector('[aria-modal="true"]') !== null);
+    mirar();
+    if (typeof MutationObserver === "undefined") return;
+    const observador = new MutationObserver(mirar);
+    observador.observe(document.body, { childList: true });
+    return () => observador.disconnect();
+  }, [hayAccion]);
 
   // WCAG 2.4.11: si la pila tapa el control que tiene el foco, se va al otro lado.
   React.useEffect(() => {
@@ -389,7 +459,17 @@ export function SalaToastProvider({ children, labels }: { children: React.ReactN
   const parado = encima || dentro || oculta;
   const errores = toasts.filter((toast) => toast.type === "error");
   const otros = toasts.filter((toast) => toast.type !== "error");
-  const pintar = (toast: SalaToastItem) => <UnAviso key={toast.id} toast={toast} paused={parado} dismissLabel={labels.dismiss} onDismiss={alCerrar} />;
+  const pintar = (toast: SalaToastItem) => (
+    <UnAviso
+      key={toast.id}
+      toast={toast}
+      paused={parado || (modal && toast.action !== undefined)}
+      dismissLabel={labels.dismiss}
+      hint={labels.hint}
+      onSettle={resolver}
+      onDismiss={alCerrar}
+    />
+  );
 
   return (
     <Contexto.Provider value={api}>
@@ -414,7 +494,11 @@ export function SalaToastProvider({ children, labels }: { children: React.ReactN
               }}
               // Por encima del diálogo (z-50). Los huecos no reciben clics.
               className={cn(
-                "pointer-events-none fixed inset-x-4 z-[60] flex flex-col md:left-auto md:right-6 md:w-96",
+                // A la derecha se suma el ancho de la barra de scroll que quita un
+                // diálogo al abrirse (la variable la pone Radix en `<body>`): la
+                // zona no da un salto.
+                "pointer-events-none fixed left-4 right-[calc(1rem+var(--removed-body-scroll-bar-size,0px))] z-[60] flex flex-col",
+                "md:left-auto md:right-[calc(1.5rem+var(--removed-body-scroll-bar-size,0px))] md:w-96",
                 arriba
                   ? "top-[calc(0.5rem+env(safe-area-inset-top))]"
                   : "bottom-[calc(1rem+var(--sala-toast-clear,0px)+env(safe-area-inset-bottom))] md:bottom-[calc(1.5rem+env(safe-area-inset-bottom))]"

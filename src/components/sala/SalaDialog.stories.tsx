@@ -200,6 +200,8 @@ function NuevaLista({ palette }: { palette?: ImagePalette }) {
         variant="sheet"
         title="Crear una lista"
         closeLabel="Cerrar"
+        // Con un formulario dentro, un toque fuera no tira lo escrito.
+        closeOnOutside={false}
         dismissible={!guardando}
         error={fallo}
         palette={palette}
@@ -245,7 +247,8 @@ function NuevaLista({ palette }: { palette?: ImagePalette }) {
 /**
  * Con `SalaForm` dentro: el foco empieza en el primer campo, no en el aspa. El
  * botón de enviar va en el pie (`form={id}`), fuera del scroll. Un fallo al
- * guardar se ve y se anuncia dentro del diálogo, que sigue abierto.
+ * guardar se ve y se anuncia dentro del diálogo, que sigue abierto. Pulsar
+ * fuera no lo cierra (`closeOnOutside={false}`): se perdería lo escrito.
  */
 export const ConFormulario: Story = {
   name: "Con un formulario",
@@ -257,6 +260,14 @@ export const ConFormulario: Story = {
     const dentro = within(caja);
     const nombre = dentro.getByRole("textbox", { name: "Nombre" });
     await conFoco(nombre);
+
+    // Con algo escrito, un toque fuera no lo cierra ni se lleva el foco.
+    await userEvent.type(nombre, "Fa");
+    await userEvent.click(caja.parentElement!);
+    await expect(caja).toBeVisible();
+    await expect(nombre).toHaveValue("Fa");
+    await conFoco(nombre);
+    await userEvent.clear(nombre);
 
     // La región del error existe desde que se abre, vacía.
     const alerta = caja.querySelector("[data-sala-dialog-error]")!;
@@ -444,8 +455,22 @@ export const ContenidoLargo: Story = {
       await desplazadoEntero();
       // Ventana muy baja (móvil apaisado), con el texto a su tamaño: lo mismo.
       raiz.style.fontSize = "";
-      await fijarVentana(568, 320);
+      await fijarVentana(568, 240);
       await desplazadoEntero();
+      // 568 × 320 cae justo en el umbral entre un modo y otro (depende de la
+      // fuente y de la barra de scroll). No se exige uno: se exige que se quede
+      // en el que sea, que el foco no se caiga y que el cuerpo tenga sitio.
+      await fijarVentana(568, 320);
+      await new Promise((seguir) => setTimeout(seguir, 400));
+      const modo = rollo.getAttribute("data-sala-dialog-scroll");
+      for (let i = 0; i < 6; i++) {
+        await new Promise((seguir) => setTimeout(seguir, 50));
+        await expect(rollo).toHaveAttribute("data-sala-dialog-scroll", modo!);
+        await expect(document.activeElement).not.toBe(document.body);
+        await expect(caja).toContainElement(document.activeElement as HTMLElement);
+      }
+      if (modo === "body") await expect(cuerpo.getBoundingClientRect().height).toBeGreaterThanOrEqual(119);
+      await cabeEnLaVentana(caja);
     } finally {
       raiz.style.fontSize = "";
       await fijarVentana(ancho, alto);
@@ -619,6 +644,213 @@ export const ConfirmacionAbiertaEnUnaObra: Story = {
 };
 
 // ------------------------------------------------------------
+// En una ventana pequeña desde el principio
+// ------------------------------------------------------------
+
+/** Pone la ventana y el tamaño de letra, corre la prueba y lo deja todo como estaba. Solo en las pruebas. */
+async function enVentana(ancho: number, alto: number, letra: string, prueba: () => Promise<void>) {
+  const antes = { ancho: window.innerWidth, alto: window.innerHeight };
+  const raiz = document.documentElement;
+  try {
+    await expect(await fijarVentana(ancho, alto)).toBe(true);
+    raiz.style.fontSize = letra;
+    await prueba();
+  } finally {
+    raiz.style.fontSize = "";
+    await fijarVentana(antes.ancho, antes.alto);
+  }
+}
+
+/** El botón de cerrar, entero dentro de la ventana y sin nada encima. */
+async function cerrarALaVista(caja: HTMLElement) {
+  const cerrar = within(caja).getByRole("button", { name: "Cerrar" });
+  const sitio = cerrar.getBoundingClientRect();
+  await expect(sitio.top).toBeGreaterThanOrEqual(-0.5);
+  await expect(sitio.left).toBeGreaterThanOrEqual(-0.5);
+  await expect(sitio.bottom).toBeLessThanOrEqual(window.innerHeight + 0.5);
+  await expect(sitio.right).toBeLessThanOrEqual(document.documentElement.clientWidth + 0.5);
+  await expect(cerrar.contains(document.elementFromPoint(sitio.left + sitio.width / 2, sitio.top + sitio.height / 2))).toBe(true);
+}
+
+/**
+ * La hoja con formulario abierta ya en 320 px con el texto al 200 %, y en un
+ * móvil apaisado: el diálogo se desplaza entero, pero dentro de sí mismo. El
+ * velo no gana scroll (lo que el formulario pinta solo para lectores no se
+ * escapa del recorte) y el botón de cerrar está en la ventana.
+ */
+export const FormularioEnPequeno: Story = {
+  name: "Con un formulario, a 320 px y al 200 %",
+  render: () => <NuevaLista />,
+  play: async ({ canvas, userEvent }) => {
+    if (!EN_PRUEBAS) return;
+    for (const [ancho, alto] of [
+      [320, 568],
+      [568, 320],
+    ]) {
+      await enVentana(ancho, alto, "200%", async () => {
+        await userEvent.click(canvas.getByRole("button", { name: "Nueva lista" }));
+        const caja = await dialogo("Crear una lista");
+        const velo = caja.parentElement!;
+        const rollo = caja.querySelector<HTMLElement>("[data-sala-dialog-scroll]")!;
+        await waitFor(() => expect(rollo).toHaveAttribute("data-sala-dialog-scroll", "panel"));
+        // El velo no se desplaza: todo cabe en la ventana. (Se espera a que la
+        // hoja acabe de subir: mientras entra, asoma por debajo.)
+        await waitFor(() => expect(velo.scrollHeight).toBe(velo.clientHeight), { timeout: 3000 });
+        await expect(velo.scrollTop).toBe(0);
+        const marco = caja.getBoundingClientRect();
+        await expect(marco.top).toBeGreaterThanOrEqual(-0.5);
+        await expect(marco.bottom).toBeLessThanOrEqual(window.innerHeight + 0.5);
+        await cerrarALaVista(caja);
+        // El foco está en el primer campo, y el campo se ve.
+        const nombre = within(caja).getByRole("textbox", { name: "Nombre" });
+        await conFoco(nombre);
+        const campo = nombre.getBoundingClientRect();
+        await expect(campo.top).toBeGreaterThanOrEqual(marco.top - 0.5);
+        await expect(campo.bottom).toBeLessThanOrEqual(marco.bottom + 0.5);
+        // Enviar vacío: aparece el error (otro texto solo para lectores) y sigue sin escaparse.
+        await userEvent.keyboard("{Enter}");
+        await expect(nombre).toHaveAttribute("aria-invalid", "true");
+        await expect(velo.scrollHeight).toBe(velo.clientHeight);
+        await cerrarALaVista(caja);
+        await userEvent.keyboard("{Escape}");
+        await cerrado();
+      });
+    }
+  },
+};
+
+/**
+ * Texto largo abierto ya en una ventana donde se desplaza el diálogo entero:
+ * se abre por el principio, no por el botón del pie. El foco va a lo que se
+ * desplaza, que dice qué es (un grupo con el nombre del diálogo).
+ */
+export const ContenidoLargoEnPequeno: Story = {
+  name: "Contenido largo, a 320 px y al 200 %",
+  parameters: ContenidoLargo.parameters,
+  render: () => <Largo />,
+  play: async ({ canvas, userEvent }) => {
+    if (!EN_PRUEBAS) return;
+    for (const [ancho, alto, letra] of [
+      [320, 568, "200%"],
+      [568, 240, ""],
+    ] as const) {
+      await enVentana(ancho, alto, letra, async () => {
+        await userEvent.click(canvas.getByRole("button", { name: "Leer las normas" }));
+        const caja = await dialogo("Normas de las listas públicas");
+        const rollo = caja.querySelector<HTMLElement>("[data-sala-dialog-scroll]")!;
+        await waitFor(() => expect(rollo).toHaveAttribute("data-sala-dialog-scroll", "panel"));
+        await new Promise((seguir) => setTimeout(seguir, 200));
+        await expect(rollo.scrollHeight).toBeGreaterThan(rollo.clientHeight);
+        // Arriba del todo: se lee desde el título.
+        await expect(rollo.scrollTop).toBe(0);
+        await conFoco(rollo);
+        await expect(rollo).toHaveAttribute("tabindex", "0");
+        await expect(rollo).toHaveAttribute("role", "group");
+        await expect(rollo).toHaveAccessibleName("Normas de las listas públicas");
+        await cerrarALaVista(caja);
+        const velo = caja.parentElement!;
+        await expect(velo.scrollHeight).toBe(velo.clientHeight);
+        await userEvent.keyboard("{Escape}");
+        await cerrado();
+      });
+    }
+    // Deja el diálogo abierto, como «Contenido largo», para axe.
+    await userEvent.click(canvas.getByRole("button", { name: "Leer las normas" }));
+    await dialogo("Normas de las listas públicas");
+  },
+};
+
+// ------------------------------------------------------------
+// Un diálogo sobre otro
+// ------------------------------------------------------------
+
+function DosDialogos() {
+  const [lista, setLista] = React.useState(false);
+  const [borrar, setBorrar] = React.useState(false);
+  return (
+    <Pagina>
+      <SalaButton variant="secondary" onClick={() => setLista(true)}>
+        Editar la lista
+      </SalaButton>
+      <SalaDialog
+        open={lista}
+        onClose={() => setLista(false)}
+        title="Editar «Pendientes»"
+        closeLabel="Cerrar"
+        closeOnOutside={false}
+        footer={
+          <>
+            <SalaButton variant="quiet" icon={<IconoPapelera />} onClick={() => setBorrar(true)}>
+              Borrar la lista
+            </SalaButton>
+            <SalaButton onClick={() => setLista(false)}>Guardar</SalaButton>
+          </>
+        }
+      >
+        <SalaInput label="Nombre" name="nombre" defaultValue="Pendientes" autoComplete="off" />
+      </SalaDialog>
+      <SalaConfirmDialog
+        open={borrar}
+        danger
+        title="¿Borrar «Pendientes»?"
+        message="Se borran la lista y sus notas. Las obras siguen en tu biblioteca."
+        cancelLabel="No, dejarla"
+        confirmLabel="Borrar la lista"
+        onCancel={() => setBorrar(false)}
+        onConfirm={() => {
+          setBorrar(false);
+          setLista(false);
+        }}
+      />
+    </Pagina>
+  );
+}
+
+/**
+ * Una confirmación abierta desde un diálogo. Escape cierra solo la de arriba
+ * y el foco vuelve al botón del primero; el de abajo queda inerte mientras.
+ */
+export const UnoSobreOtro: Story = {
+  name: "Un diálogo sobre otro",
+  render: () => <DosDialogos />,
+  play: async ({ canvas, userEvent }) => {
+    const abrir = canvas.getByRole("button", { name: "Editar la lista" });
+    await userEvent.click(abrir);
+    const primero = await dialogo("Editar «Pendientes»");
+    const borrar = within(primero).getByRole("button", { name: "Borrar la lista" });
+    await userEvent.click(borrar);
+    const segundo = await dialogo("¿Borrar «Pendientes»?", "alertdialog");
+    await conFoco(within(segundo).getByRole("button", { name: "No, dejarla" }));
+
+    // Lo del de abajo queda fuera del árbol de accesibilidad y el foco no baja a él.
+    // (Su caja sigue: dentro lleva la región viva de un campo, que Radix no esconde.)
+    await expect(borrar.closest('[aria-hidden="true"]')).not.toBeNull();
+    await expect(within(primero).queryByRole("button", { name: "Guardar" })).toBeNull();
+    for (let i = 0; i < 5; i++) {
+      await userEvent.tab();
+      await expect(segundo).toContainElement(document.activeElement as HTMLElement);
+    }
+    // El de arriba está encima: lo que hay en su centro es suyo.
+    const marco = segundo.getBoundingClientRect();
+    await expect(segundo.contains(document.elementFromPoint(marco.left + marco.width / 2, marco.top + 24))).toBe(true);
+
+    // Escape cierra solo el de arriba, y el foco vuelve al botón del primero.
+    await userEvent.keyboard("{Escape}");
+    await waitFor(() => expect(screen.queryByRole("alertdialog")).toBeNull());
+    await expect(primero).toBeVisible();
+    await conFoco(borrar);
+    await expect(borrar.closest('[aria-hidden="true"]')).toBeNull();
+    await expect(getComputedStyle(document.body).overflow).toBe("hidden");
+
+    // Otro Escape cierra el primero y el foco vuelve a la página.
+    await userEvent.keyboard("{Escape}");
+    await cerrado();
+    await conFoco(abrir);
+    await expect(getComputedStyle(document.body).overflow).not.toBe("hidden");
+  },
+};
+
+// ------------------------------------------------------------
 // Las mismas en claro, para que axe las pase en los dos temas.
 // ------------------------------------------------------------
 
@@ -632,3 +864,5 @@ export const ContenidoLargoEnClaro: Story = { ...ContenidoLargo, ...SOLO_PRUEBA 
 export const TitulosLargosEnClaro: Story = { ...TitulosLargos, ...SOLO_PRUEBA };
 export const ConfirmacionAbiertaEnClaro: Story = { ...ConfirmacionAbierta, ...SOLO_PRUEBA };
 export const ConfirmacionAbiertaEnUnaObraEnClaro: Story = { ...ConfirmacionAbiertaEnUnaObra, ...SOLO_PRUEBA };
+export const ContenidoLargoEnPequenoEnClaro: Story = { ...ContenidoLargoEnPequeno, ...SOLO_PRUEBA };
+export const UnoSobreOtroEnClaro: Story = { ...UnoSobreOtro, ...SOLO_PRUEBA };

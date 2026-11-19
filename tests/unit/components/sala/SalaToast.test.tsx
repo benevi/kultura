@@ -11,7 +11,7 @@ import {
   type SalaToastApi,
 } from "@/components/sala/SalaToast";
 
-const ETIQUETAS = { region: "Avisos (F8)", dismiss: "Cerrar el aviso" };
+const ETIQUETAS = { region: "Avisos (F8)", dismiss: "Cerrar el aviso", hint: "Pulsa F8 para ir al aviso." };
 
 let toast: SalaToastApi;
 function Captura() {
@@ -129,6 +129,30 @@ describe("SalaToastProvider", () => {
     act(() => toast.showError("Falló otra vez", { persistent: true }));
     pasar(60_000);
     expect(avisos()).toHaveLength(1);
+  });
+
+  it("un aviso fijo no lo echan los corrientes: sale el más viejo que no lo sea", () => {
+    montar();
+    act(() => toast.showError("Error que se queda", { persistent: true }));
+    mostrar({ message: "Uno" });
+    mostrar({ message: "Dos" });
+    mostrar({ message: "Tres" });
+    mostrar({ message: "Cuatro" });
+    expect(avisos()).toHaveLength(3);
+    expect(zona()).toHaveTextContent("Error que se queda");
+    expect(zona()).not.toHaveTextContent("Uno");
+    expect(zona()).not.toHaveTextContent("Dos");
+    expect(zona()).toHaveTextContent("Cuatro");
+  });
+
+  it("si los tres son fijos, sale el más viejo", () => {
+    montar();
+    mostrar({ message: "Uno", duration: Infinity });
+    mostrar({ message: "Dos", duration: Infinity });
+    mostrar({ message: "Tres", duration: Infinity });
+    mostrar({ message: "Cuatro" });
+    expect(avisos()).toHaveLength(3);
+    expect(zona()).not.toHaveTextContent("Uno");
   });
 
   it("cola de tres: el cuarto desplaza al más viejo, que caduca", () => {
@@ -252,6 +276,93 @@ describe("SalaToastProvider", () => {
       expect(onExpire).toHaveBeenCalledTimes(2);
     });
 
+    it("pulsarla dos veces la ejecuta una", () => {
+      montar();
+      const onAction = vi.fn();
+      mostrar({ message: "Quitada.", action: { label: "Deshacer", onAction } });
+      const deshacer = screen.getByRole("button", { name: "Deshacer" });
+      fireEvent.click(deshacer);
+      fireEvent.click(deshacer);
+      expect(onAction).toHaveBeenCalledTimes(1);
+    });
+
+    it("un aviso que se está yendo no caduca otra vez al desplazarlo, ni después de pulsar su acción", () => {
+      // Con animación de salida el aviso sigue en la cola un momento después de resolverse.
+      const prototipo = HTMLElement.prototype as unknown as { getAnimations?: () => unknown[] };
+      const tenia = prototipo.getAnimations;
+      prototipo.getAnimations = () => [];
+      montar();
+      const onAction = vi.fn();
+      const onExpire = vi.fn();
+      mostrar({ message: "Uno", action: { label: "Deshacer", onAction, onExpire } });
+      fireEvent.click(screen.getByRole("button", { name: "Deshacer" }));
+      // Sigue en pantalla, saliendo.
+      expect(avisos()).toHaveLength(1);
+      mostrar({ message: "Dos" });
+      mostrar({ message: "Tres" });
+      mostrar({ message: "Cuatro" });
+      expect(onAction).toHaveBeenCalledTimes(1);
+      expect(onExpire).not.toHaveBeenCalled();
+
+      // Y al revés: caducado por el aspa, desplazarlo no lo caduca otra vez.
+      const otra = vi.fn();
+      mostrar({ message: "Cinco", action: { label: "Rehacer", onAction: vi.fn(), onExpire: otra } });
+      fireEvent.click(within(avisos().find((aviso) => aviso.textContent?.includes("Cinco"))!).getByRole("button", { name: "Cerrar el aviso" }));
+      mostrar({ message: "Seis" });
+      mostrar({ message: "Siete" });
+      mostrar({ message: "Ocho" });
+      expect(otra).toHaveBeenCalledTimes(1);
+      if (tenia) prototipo.getAnimations = tenia;
+      else delete prototipo.getAnimations;
+    });
+
+    it("dice la tecla al lector, solo en los avisos con acción", () => {
+      montar();
+      mostrar({ message: "Quitada.", action: { label: "Deshacer", onAction: vi.fn() } });
+      mostrar({ message: "Guardada." });
+      const [conAccion, sinAccion] = avisos();
+      expect(conAccion).toHaveTextContent("Quitada. Pulsa F8 para ir al aviso.");
+      expect(within(conAccion).getByText("Pulsa F8 para ir al aviso.")).toHaveClass("sr-only");
+      expect(sinAccion).not.toHaveTextContent("F8");
+    });
+
+    it("F8 va a la acción del aviso más reciente, no a su botón de cerrar", () => {
+      montar();
+      mostrar({ message: "Guardada." });
+      mostrar({ message: "Quitada.", action: { label: "Deshacer", onAction: vi.fn() } });
+      fireEvent.keyDown(document, { key: "F8" });
+      expect(screen.getByRole("button", { name: "Deshacer" })).toHaveFocus();
+    });
+
+    it("con un diálogo modal abierto no corre (el foco no puede llegar a él) y avisa en desarrollo; al cerrarse, sigue", async () => {
+      const aviso = vi.spyOn(console, "warn").mockImplementation(() => {});
+      montar();
+      const modal = document.createElement("div");
+      modal.setAttribute("aria-modal", "true");
+      await act(async () => {
+        document.body.append(modal);
+      });
+      const onExpire = vi.fn();
+      mostrar({ message: "Quitada.", action: { label: "Deshacer", onAction: vi.fn(), onExpire } });
+      mostrar({ message: "Guardada." });
+      expect(aviso).toHaveBeenCalledTimes(1);
+      expect(aviso).toHaveBeenCalledWith(expect.stringContaining("diálogo modal"));
+      pasar(60_000);
+      // El corriente se ha ido; el de la acción sigue ahí.
+      expect(zona()).not.toHaveTextContent("Guardada.");
+      expect(zona()).toHaveTextContent("Quitada.");
+      expect(onExpire).not.toHaveBeenCalled();
+      await act(async () => {
+        modal.remove();
+        // El observador de `<body>` avisa en una microtarea.
+        await Promise.resolve();
+      });
+      pasar(SALA_TOAST_LONG_MS);
+      expect(avisos()).toHaveLength(0);
+      expect(onExpire).toHaveBeenCalledTimes(1);
+      aviso.mockRestore();
+    });
+
     it("autoFocus lleva el foco a la acción al aparecer", () => {
       montar();
       mostrar({ message: "Quitada.", action: { label: "Deshacer", onAction: vi.fn(), autoFocus: true } });
@@ -270,7 +381,11 @@ describe("SalaToastProvider", () => {
     fireEvent.pointerMove(aviso, { pointerType: "touch", pointerId: 2, clientX: 30 });
     fireEvent.pointerUp(aviso, { pointerType: "touch", pointerId: 2, clientX: 30 });
     expect(avisos()).toHaveLength(1);
+    // El dedo se captura: si se sale del aviso a medio deslizar, sigue contando.
+    const capturar = vi.fn();
+    aviso.setPointerCapture = capturar;
     fireEvent.pointerDown(aviso, { pointerType: "touch", pointerId: 3, clientX: 0 });
+    expect(capturar).toHaveBeenCalledWith(3);
     fireEvent.pointerUp(aviso, { pointerType: "touch", pointerId: 3, clientX: 120 });
     expect(avisos()).toHaveLength(0);
   });
@@ -287,6 +402,8 @@ describe("SalaToastProvider", () => {
     expect(zona()).toHaveAttribute("data-sala-toast-viewport", "top");
     // Los huecos de la zona no reciben clics; los avisos, sí.
     expect(zona().className).toContain("pointer-events-none");
+    // No salta cuando un diálogo quita la barra de scroll.
+    expect(zona().className).toContain("var(--removed-body-scroll-bar-size,0px)");
     expect(avisos()[0].className).toContain("pointer-events-auto");
   });
 

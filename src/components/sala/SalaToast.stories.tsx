@@ -9,8 +9,9 @@ import { SalaToastProvider, useSalaToast } from "./SalaToast";
 /**
  * Aviso efímero de «Sala». En la app el proveedor se monta una vez, alrededor
  * de todo; aquí, alrededor de cada historia. Los tiempos de las historias de
- * prueba son cortos a propósito (se pasan con `duration`): los de verdad son
- * 5 s, y 8 s para un error o un aviso con acción.
+ * prueba se pasan con `duration`: 0,7 s solo donde se mira que el aviso se va
+ * solo, y 3 s donde hay que llegar a él antes de que se vaya. Los de verdad
+ * son 5 s, y 8 s para un error o un aviso con acción.
  */
 const meta = {
   title: "Sala/Aviso efímero",
@@ -20,7 +21,7 @@ const meta = {
 export default meta;
 type Story = StoryObj<typeof meta>;
 
-const ETIQUETAS = { region: "Avisos (F8)", dismiss: "Cerrar el aviso" };
+const ETIQUETAS = { region: "Avisos (F8)", dismiss: "Cerrar el aviso", hint: "Pulsa F8 para ir al aviso." };
 
 const zona = () => document.querySelector<HTMLElement>("[data-sala-toast-viewport]")!;
 const avisos = () => Array.from(zona().querySelectorAll<HTMLElement>("[data-sala-toast]"));
@@ -95,18 +96,22 @@ export const LosTipos: Story = {
 // La cola
 // ------------------------------------------------------------
 
-function Lanzadores({ corto = false }: { corto?: boolean }) {
+function Lanzadores({ corto, largo }: { corto?: number; largo?: number } = {}) {
   const toast = useSalaToast();
   const cuenta = React.useRef(0);
-  const duration = corto ? 700 : undefined;
   return (
     <div className="flex flex-wrap gap-3">
-      <SalaButton variant="secondary" onClick={() => toast.show({ message: `Guardada (${++cuenta.current}).`, type: "success", duration })}>
+      <SalaButton variant="secondary" onClick={() => toast.show({ message: `Guardada (${++cuenta.current}).`, type: "success", duration: largo })}>
         Guardar
       </SalaButton>
-      <SalaButton variant="secondary" onClick={() => toast.show({ message: "Enlace copiado.", duration })}>
+      <SalaButton variant="secondary" onClick={() => toast.show({ message: "Enlace copiado.", duration: largo })}>
         Copiar el enlace
       </SalaButton>
+      {corto ? (
+        <SalaButton variant="secondary" onClick={() => toast.show({ message: "Hecho.", duration: corto })}>
+          Aviso breve
+        </SalaButton>
+      ) : null}
       <SalaButton variant="secondary" onClick={() => toast.showError("No se ha podido guardar. Inténtalo otra vez.", { persistent: true })}>
         Fallar
       </SalaButton>
@@ -158,44 +163,59 @@ export const Cola: Story = {
 // El reloj se para
 // ------------------------------------------------------------
 
+/** Lo que dura el aviso en las historias del reloj: da tiempo de sobra a llegar a él. */
+const LARGO = 3000;
+
 /**
- * WCAG 2.2.1: el reloj se para con el puntero encima y con el foco dentro, y
- * sigue donde iba al salir. Aquí el aviso dura 0,7 s para verlo en la prueba.
+ * WCAG 2.2.1: el reloj se para con el puntero encima y sigue donde iba al
+ * salir. El aviso dura 3 s; con el puntero encima aguanta más que eso.
  */
-export const Pausa: Story = {
-  name: "Se para con el puntero y con el foco",
+export const PausaConElPuntero: Story = {
+  name: "Se para con el puntero",
   render: () => (
     <Marco>
-      <Lanzadores corto />
+      <Lanzadores corto={700} largo={LARGO} />
     </Marco>
   ),
   play: async ({ canvas, userEvent }) => {
-    const copiar = canvas.getByRole("button", { name: "Copiar el enlace" });
-
-    // Sin tocarlo, se va solo.
-    await userEvent.click(copiar);
+    // Sin tocarlo, se va solo (este dura 0,7 s).
+    await userEvent.click(canvas.getByRole("button", { name: "Aviso breve" }));
     await waitFor(() => expect(avisos()).toHaveLength(1));
-    await waitFor(() => expect(avisos()).toHaveLength(0), { timeout: 3000 });
+    await waitFor(() => expect(avisos()).toHaveLength(0), { timeout: 5000 });
 
-    // Con el puntero encima, no se va: pasa el doble de su tiempo y sigue ahí.
+    // Con el puntero encima no se va: pasa más de su tiempo y sigue ahí.
+    const copiar = canvas.getByRole("button", { name: "Copiar el enlace" });
     await userEvent.click(copiar);
     await waitFor(() => expect(avisos()).toHaveLength(1));
     await userEvent.hover(avisos()[0]);
-    await espera(1400);
+    await espera(LARGO + 500);
     await expect(avisos()).toHaveLength(1);
     // Al salir el puntero, sigue el reloj.
     await userEvent.unhover(avisos()[0]);
     await userEvent.hover(copiar);
-    await waitFor(() => expect(avisos()).toHaveLength(0), { timeout: 3000 });
+    await waitFor(() => expect(avisos()).toHaveLength(0), { timeout: LARGO + 3000 });
+  },
+};
 
-    // Con el foco dentro (F8 lo lleva), tampoco se va.
+/**
+ * Con el foco dentro tampoco corre. F8 lo lleva al aviso más reciente; Escape
+ * lo cierra y el foco vuelve a donde estaba.
+ */
+export const PausaConElFoco: Story = {
+  name: "Se para con el foco",
+  render: () => (
+    <Marco>
+      <Lanzadores largo={LARGO} />
+    </Marco>
+  ),
+  play: async ({ canvas, userEvent }) => {
+    const copiar = canvas.getByRole("button", { name: "Copiar el enlace" });
     await userEvent.click(copiar);
     await waitFor(() => expect(avisos()).toHaveLength(1));
     await userEvent.keyboard("{F8}");
     await expect(within(avisos()[0]).getByRole("button", { name: "Cerrar el aviso" })).toHaveFocus();
-    await espera(1400);
+    await espera(LARGO + 500);
     await expect(avisos()).toHaveLength(1);
-    // Escape lo cierra y el foco vuelve a donde estaba.
     await userEvent.keyboard("{Escape}");
     await waitFor(() => expect(avisos()).toHaveLength(0), { timeout: 3000 });
     await waitFor(() => expect(copiar).toHaveFocus());
@@ -211,13 +231,15 @@ const alCaducar = fn();
 
 function Deshacer() {
   const toast = useSalaToast();
+  const quitar = (duration: number) => () =>
+    toast.show({ message: "«Berserk» quitada de «Pendientes».", duration, action: { label: "Deshacer", onAction: alDeshacer, onExpire: alCaducar } });
   return (
     <div className="flex flex-wrap gap-3">
-      <SalaButton
-        variant="secondary"
-        onClick={() => toast.show({ message: "«Berserk» quitada de «Pendientes».", duration: 700, action: { label: "Deshacer", onAction: alDeshacer, onExpire: alCaducar } })}
-      >
+      <SalaButton variant="secondary" onClick={quitar(LARGO)}>
         Quitar de la lista
+      </SalaButton>
+      <SalaButton variant="secondary" onClick={quitar(700)}>
+        Quitar (aviso breve)
       </SalaButton>
     </div>
   );
@@ -225,7 +247,8 @@ function Deshacer() {
 
 /**
  * «Deshacer»: pulsar la acción la ejecuta y cierra el aviso; si el aviso se va
- * sin pulsarla (tiempo, aspa, deslizar), se llama a `onExpire`, una vez.
+ * sin pulsarla (tiempo, aspa, deslizar), se llama a `onExpire`. Una cosa o la
+ * otra, y una sola vez. F8 lleva a la acción, y el aviso dice la tecla.
  */
 export const ConAccion: Story = {
   name: "Con acción",
@@ -239,19 +262,25 @@ export const ConAccion: Story = {
     alCaducar.mockClear();
     const quitar = canvas.getByRole("button", { name: "Quitar de la lista" });
 
-    // Se pulsa la acción (con el puntero encima el reloj está parado).
+    // Con el teclado: F8 lleva a la acción (no al aspa), y el lector oye la tecla.
     await userEvent.click(quitar);
     await waitFor(() => expect(avisos()).toHaveLength(1));
-    await userEvent.click(within(avisos()[0]).getByRole("button", { name: "Deshacer" }));
+    await expect(avisos()[0]).toHaveTextContent("Pulsa F8 para ir al aviso.");
+    await userEvent.keyboard("{F8}");
+    const deshacer = within(avisos()[0]).getByRole("button", { name: "Deshacer" });
+    await expect(deshacer).toHaveFocus();
+    // Dos pulsaciones seguidas la ejecutan una vez.
+    await userEvent.keyboard("{Enter}");
+    deshacer.click();
     await expect(alDeshacer).toHaveBeenCalledTimes(1);
     await waitFor(() => expect(avisos()).toHaveLength(0), { timeout: 3000 });
     await expect(alCaducar).not.toHaveBeenCalled();
+    await waitFor(() => expect(quitar).toHaveFocus());
 
-    // Se deja pasar: caduca una vez.
-    await userEvent.click(quitar);
+    // Se deja pasar (este dura 0,7 s): caduca una vez.
+    await userEvent.click(canvas.getByRole("button", { name: "Quitar (aviso breve)" }));
     await waitFor(() => expect(avisos()).toHaveLength(1));
-    await userEvent.hover(quitar);
-    await waitFor(() => expect(avisos()).toHaveLength(0), { timeout: 3000 });
+    await waitFor(() => expect(avisos()).toHaveLength(0), { timeout: 5000 });
     await expect(alCaducar).toHaveBeenCalledTimes(1);
     await expect(alDeshacer).toHaveBeenCalledTimes(1);
   },
@@ -323,7 +352,14 @@ function ConDialogo() {
         onClose={() => setAbierto(false)}
         title="Compartir la lista"
         closeLabel="Cerrar"
-        footer={<SalaButton onClick={() => toast.show({ message: "Enlace copiado.", type: "success", duration: Infinity })}>Copiar el enlace</SalaButton>}
+        footer={
+          <>
+            <SalaButton variant="quiet" onClick={() => toast.show({ message: "Enlace anterior anulado.", duration: 700, action: { label: "Deshacer", onAction: alDeshacer, onExpire: alCaducar } })}>
+              Anular el enlace anterior
+            </SalaButton>
+            <SalaButton onClick={() => toast.show({ message: "Enlace copiado.", type: "success", duration: Infinity })}>Copiar el enlace</SalaButton>
+          </>
+        }
       >
         <p>Cualquiera con el enlace puede ver la lista.</p>
       </SalaDialog>
@@ -334,7 +370,9 @@ function ConDialogo() {
 /**
  * El aviso sale por encima del diálogo, se oye (el diálogo no esconde las
  * regiones vivas) y se puede cerrar con el puntero sin que el diálogo se
- * cierre. El foco no sale del diálogo.
+ * cierre. El foco no sale del diálogo, así que ni F8 ni Tab llegan al aviso:
+ * por eso uno con acción no corre mientras el diálogo esté abierto, y al
+ * cerrarlo sigue su reloj y F8 llega a él.
  */
 export const SobreUnDialogo: Story = {
   name: "Con un diálogo abierto",
@@ -363,6 +401,29 @@ export const SobreUnDialogo: Story = {
     await waitFor(() => expect(avisos()).toHaveLength(0), { timeout: 3000 });
     await expect(caja).toBeVisible();
     await expect(caja).toContainElement(document.activeElement as HTMLElement);
+
+    // Un aviso con acción (aquí de 0,7 s): con el diálogo abierto no corre.
+    alDeshacer.mockClear();
+    alCaducar.mockClear();
+    const anular = within(caja).getByRole("button", { name: "Anular el enlace anterior" });
+    anular.focus();
+    await userEvent.keyboard("{Enter}");
+    await waitFor(() => expect(avisos()).toHaveLength(1));
+    await espera(1500);
+    await expect(avisos()).toHaveLength(1);
+    await expect(alCaducar).not.toHaveBeenCalled();
+    // F8 no saca el foco del diálogo.
+    await userEvent.keyboard("{F8}");
+    await expect(caja).toContainElement(document.activeElement as HTMLElement);
+    // Al cerrar el diálogo, F8 llega a la acción.
+    await userEvent.keyboard("{Escape}");
+    await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
+    await userEvent.keyboard("{F8}");
+    await expect(within(avisos()[0]).getByRole("button", { name: "Deshacer" })).toHaveFocus();
+    await userEvent.keyboard("{Enter}");
+    await expect(alDeshacer).toHaveBeenCalledTimes(1);
+    await expect(alCaducar).not.toHaveBeenCalled();
+    await waitFor(() => expect(avisos()).toHaveLength(0), { timeout: 3000 });
   },
 };
 
