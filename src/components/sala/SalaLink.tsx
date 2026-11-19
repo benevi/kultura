@@ -1,5 +1,5 @@
 import * as React from "react";
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
 import { cn } from "@/lib/utils/index";
 
@@ -11,12 +11,14 @@ import { cn } from "@/lib/utils/index";
  *
  * Siempre va subrayado: el acento solo no basta para distinguirlo del texto
  * (WCAG 1.4.1), y en los neutros el acento es un gris. Al pasar el puntero el
- * texto se marca en tinta, como los botones.
+ * texto se marca en tinta, como los botones. Una palabra más larga que la
+ * línea (una URL como texto) se parte antes que dar scroll horizontal.
  *
  * El destino decide el elemento:
  * - una ruta de la app (`/library`) usa el `Link` con idioma del repo;
  * - una web externa (`https://…`) es un `<a>` que se abre en otra pestaña, lo
- *   dice en su nombre accesible y lo marca con una flecha;
+ *   dice en su nombre accesible (en el idioma de la interfaz, aunque el enlace
+ *   lleve otro `lang`) y lo marca con una flecha;
  * - `mailto:`, `tel:` y `#ancla` son un `<a>` a secas.
  *
  * No hay estilo de «visitado»: los enlaces de la app son navegación, no una
@@ -37,20 +39,25 @@ const ES_RUTA = /^\/(?!\/)/;
 const REL_EXTERNO = "noopener noreferrer";
 
 /** El subrayado y la marca al pasar el puntero: el texto, no la caja. */
-const TEXTO = "underline decoration-2 underline-offset-4";
+const TEXTO = "underline decoration-2 underline-offset-4 [overflow-wrap:anywhere]";
 const TRANSICION = "transition-colors duration-sala-fast ease-sala motion-reduce:transition-none";
 
 const CLASES: Record<SalaLinkVariant, string> = {
   inline: cn(
     // El relleno hace que la marca ocupe la línea entera y que la zona que se
-    // pulsa pase de 24 px con el texto de interfaz (17 px); no mueve el texto.
+    // pulsa llegue a 24 px con el texto de interfaz (17 px) y el de lectura; no
+    // mueve el texto. En una nota de 14 px se queda en 22 px: WCAG 2.5.8 exime
+    // al enlace dentro de una frase, y más relleno pisaría la línea de al lado.
     "-mx-0.5 px-0.5 py-0.5 font-semibold text-sala-accent [box-decoration-break:clone] [-webkit-box-decoration-break:clone]",
     TEXTO,
     TRANSICION,
     "sala-hover:bg-sala-ink sala-hover:text-sala-background sala-hover:decoration-transparent",
     "sala-pressed:bg-sala-ink-secondary sala-pressed:text-sala-background sala-pressed:decoration-transparent",
     // Dentro de una frase el anillo va pegado: separado pisaría la palabra de al lado.
-    "sala-focused:sala-focus sala-focused:!outline-offset-0"
+    "sala-focused:sala-focus sala-focused:!outline-offset-0",
+    // Con el puntero encima, el bloque de tinta se comería el anillo, que es
+    // de tinta también: ahí se separa 2 px y entre los dos se ve el fondo.
+    "sala-hover:sala-focused:!outline-offset-2"
   ),
   // La caja de 48 px es la zona que se pulsa; lo que se marca es el texto de dentro.
   standalone: cn(
@@ -61,11 +68,15 @@ const CLASES: Record<SalaLinkVariant, string> = {
   ),
 };
 
-const TEXTO_SUELTO = cn("-mx-0.5 px-0.5 py-1", TEXTO, TRANSICION);
+const TEXTO_SUELTO = cn("-mx-0.5 min-w-0 px-0.5 py-1", TEXTO, TRANSICION);
 
 /** Flecha de «sale de aquí»: trazo recto, del tamaño de la letra. */
 function MarcaExterna() {
   const t = useTranslations("common");
+  // El aviso va en el idioma de la interfaz: sin esto heredaría el `lang` del
+  // enlace y un título en japonés haría leerlo con voz japonesa (WCAG 3.1.2).
+  // `useLocale` vale en servidor y en cliente, como `useTranslations`.
+  const locale = useLocale();
   return (
     <>
       <svg
@@ -79,7 +90,10 @@ function MarcaExterna() {
       >
         <path d="M3 9 9 3M4 3h5v5" />
       </svg>
-      <span className="sr-only"> {t("newTab")}</span>
+      <span lang={locale} className="sr-only">
+        {" "}
+        {t("newTab")}
+      </span>
     </>
   );
 }

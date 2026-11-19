@@ -58,6 +58,13 @@ function Parrafo() {
       <p className="sala-type-small text-sala-ink-secondary">
         En un texto pequeño el enlace hereda el tamaño: <SalaLink href="/privacy">cómo tratamos tus datos</SalaLink>.
       </p>
+      {/* Una dirección como texto, en una columna estrecha: se parte, no desborda. */}
+      <p data-testid="columna-estrecha" className="max-w-[18rem]">
+        La fuente:{" "}
+        <SalaLink href="https://www.themoviedb.org/movie/129-sen-to-chihiro-no-kamikakushi" newTab={false}>
+          https://www.themoviedb.org/movie/129-sen-to-chihiro-no-kamikakushi
+        </SalaLink>
+      </p>
     </div>
   );
 }
@@ -75,6 +82,15 @@ export const EnLinea: Story = {
     await expect(getComputedStyle(enlace).textDecorationLine).toBe("underline");
     // En línea no hace falta la zona de 48 px, pero sí 24 (WCAG 2.5.8).
     await expect(enlace.getBoundingClientRect().height).toBeGreaterThanOrEqual(24);
+    // Una URL como texto no se sale de su columna ni da scroll horizontal (WCAG 1.4.10).
+    for (const columna of canvas.getAllByTestId("columna-estrecha")) {
+      const limite = columna.getBoundingClientRect().right;
+      for (const trozo of Array.from(columna.querySelector("a")!.getClientRects())) {
+        await expect(trozo.right).toBeLessThanOrEqual(limite + 2);
+      }
+      await expect(columna.scrollWidth).toBeLessThanOrEqual(columna.clientWidth + 2);
+    }
+    await expect(document.documentElement.scrollWidth).toBeLessThanOrEqual(document.documentElement.clientWidth);
   },
 };
 
@@ -126,6 +142,7 @@ function Estados() {
     { pie: "Con el puntero encima", force: "hover" },
     { pie: "Con el foco del teclado", force: "focus" },
     { pie: "Pulsado", force: "pressed" },
+    { pie: "Con el puntero y el foco", force: "hover focus" },
   ];
   return (
     <>
@@ -170,6 +187,16 @@ export const LosEstados: Story = {
       <Estados />
     </EnLosDosSuelos>
   ),
+  play: async ({ canvas }) => {
+    // En línea, el anillo va pegado; con el puntero encima se separa 2 px para
+    // que no se funda con el bloque de tinta.
+    const enLinea = canvas.getAllByRole("link", { name: "Hayao Miyazaki" });
+    const foco = enLinea.find((a) => a.dataset.salaForce === "focus")!;
+    const punteroYFoco = enLinea.find((a) => a.dataset.salaForce === "hover focus")!;
+    await expect(getComputedStyle(foco).outlineOffset).toBe("0px");
+    await expect(getComputedStyle(punteroYFoco).outlineOffset).toBe("2px");
+    await expect(getComputedStyle(punteroYFoco).outlineWidth).toBe("3px");
+  },
 };
 
 export const SobreUnPanel: Story = {
@@ -212,6 +239,11 @@ export const Destinos: Story = {
             Escríbenos
           </SalaLink>
         </li>
+        <li>
+          <SalaLink variant="standalone" href="https://www.ghibli.jp/works/chihiro/" lang="ja">
+            千と千尋の神隠し
+          </SalaLink>
+        </li>
       </ul>
     </Suelo>
   ),
@@ -219,13 +251,19 @@ export const Destinos: Story = {
     const interno = canvas.getByRole("link", { name: "Tu biblioteca" });
     await expect(interno).not.toHaveAttribute("target");
 
-    const externo = canvas.getByRole("link", { name: /^The Movie Database ?\(se abre en una pestaña nueva\)$/ });
+    // En el navegador el espacio que separa el aviso es obligatorio.
+    const externo = canvas.getByRole("link", { name: /^The Movie Database \(se abre en una pestaña nueva\)$/ });
     await expect(externo).toHaveAttribute("target", "_blank");
     await expect(externo).toHaveAttribute("rel", "noopener noreferrer");
 
     const mismaPestana = canvas.getByRole("link", { name: "The Movie Database, en esta pestaña" });
     await expect(mismaPestana).not.toHaveAttribute("target");
     await expect(mismaPestana).toHaveAttribute("rel", "noopener noreferrer");
+
+    // El enlace va en japonés; su aviso, en el idioma de la interfaz (WCAG 3.1.2).
+    const japones = canvas.getByRole("link", { name: /^千と千尋の神隠し \(se abre en una pestaña nueva\)$/ });
+    await expect(japones).toHaveAttribute("lang", "ja");
+    await expect(japones.querySelector(".sr-only")).toHaveAttribute("lang", "es");
 
     // Foco de teclado: el anillo de «Sala».
     await userEvent.tab();
@@ -292,3 +330,4 @@ export const SueltoEnClaro: Story = { ...Suelto, ...SOLO_PRUEBA };
 export const EstadosEnClaro: Story = { ...LosEstados, ...SOLO_PRUEBA };
 export const SobreUnPanelEnClaro: Story = { ...SobreUnPanel, ...SOLO_PRUEBA };
 export const EnUnaFichaEnClaro: Story = { ...EnUnaFicha, ...SOLO_PRUEBA };
+export const DestinosEnClaro: Story = { ...Destinos, ...SOLO_PRUEBA };

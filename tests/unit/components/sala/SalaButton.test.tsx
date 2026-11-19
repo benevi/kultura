@@ -42,6 +42,21 @@ describe("SalaButton", () => {
     expect(className).not.toMatch(/rounded|shadow/);
   });
 
+  it("al pulsar encoge el contenido, no la caja: un clic en el borde no se pierde", () => {
+    render(<SalaButton>Guardar</SalaButton>);
+    const boton = screen.getByRole("button");
+    // Ninguna clase escala el propio botón (ni `sala-pressed:scale-…` ni `active:scale-…`).
+    expect(boton.className).not.toMatch(/(^|\s)(sala-pressed:|active:)?scale-/);
+    expect(boton.className).toContain("[&>span:first-child]:sala-pressed:scale-[0.96]");
+    // El contenido es ese primer hijo.
+    expect(boton.firstElementChild).toContainElement(screen.getByText("Guardar"));
+  });
+
+  it("una palabra más larga que el botón se parte (WCAG 1.4.10)", () => {
+    render(<SalaButton>Supercalifragilisticoespialidoso</SalaButton>);
+    expect(screen.getByText("Supercalifragilisticoespialidoso").className).toContain("[overflow-wrap:anywhere]");
+  });
+
   describe("deshabilitado", () => {
     it("usa el atributo nativo y no dispara onClick", () => {
       const onClick = vi.fn();
@@ -105,21 +120,58 @@ describe("SalaButton", () => {
       expect(aviso).toHaveTextContent("Guardando en tu biblioteca");
     });
 
+    it("al acabar la carga la región se vacía: el resultado lo anuncia quien usa el botón", () => {
+      const boton = (loading: boolean) => (
+        <SalaButton loading={loading} loadingLabel="Guardando en tu biblioteca">
+          Guardar
+        </SalaButton>
+      );
+      const { rerender } = render(boton(true));
+      const aviso = screen.getByRole("status");
+      expect(aviso).toHaveTextContent("Guardando en tu biblioteca");
+      rerender(boton(false));
+      expect(screen.getByRole("status")).toBe(aviso);
+      expect(aviso).toBeEmptyDOMElement();
+      expect(screen.getByRole("button")).not.toHaveAttribute("aria-busy");
+      expect(screen.getByRole("button")).not.toHaveAttribute("aria-disabled");
+    });
+
     it("los tipos exigen el texto del aviso cuando el botón puede cargar", () => {
       // @ts-expect-error -- `loading` sin `loadingLabel` no compila.
       render(<SalaButton loading>Guardar</SalaButton>);
       expect(screen.getByRole("button")).toHaveAttribute("aria-busy", "true");
     });
 
-    it("el texto sigue ocupando su sitio (no cambia de ancho) y el indicador es adorno", () => {
+    it("el texto sigue a la vista (biblia §6: nada oculto) y el indicador es adorno", () => {
       render(
         <SalaButton loading loadingLabel="Cargando…">
           Guardar
         </SalaButton>
       );
       const boton = screen.getByRole("button");
-      expect(screen.getByText("Guardar")).toBeInTheDocument();
-      expect(boton.querySelector("[data-sala-loader]")).toHaveAttribute("aria-hidden", "true");
+      const texto = screen.getByText("Guardar");
+      // Ni el texto ni lo que lo envuelve se ocultan o se atenúan.
+      for (let el: HTMLElement | null = texto; el && el !== boton; el = el.parentElement) {
+        expect(el.className).not.toMatch(/opacity-|invisible|hidden|sr-only/);
+      }
+      const espera = boton.querySelector("[data-sala-loader]")!;
+      expect(espera).toHaveAttribute("aria-hidden", "true");
+      // Fuera del flujo: no cambia el ancho ni el alto del botón.
+      expect(espera.className).toContain("absolute");
+    });
+
+    it("los cuadrados de la espera se ven con colores forzados y se quedan quietos con movimiento reducido", () => {
+      render(
+        <SalaButton loading loadingLabel="Cargando…">
+          Guardar
+        </SalaButton>
+      );
+      const cuadrados = Array.from(screen.getByRole("button").querySelectorAll("[data-sala-loader] > span"));
+      expect(cuadrados).toHaveLength(3);
+      for (const cuadrado of cuadrados) {
+        expect(cuadrado.className).toContain("forced-colors:bg-[ButtonText]");
+        expect(cuadrado.className).toContain("motion-reduce:animate-none");
+      }
     });
 
     it("un botón que nunca carga no monta la región viva", () => {
@@ -149,7 +201,8 @@ describe("SalaButton", () => {
     it("solo icono: el nombre accesible sale de `label` y el botón es cuadrado", () => {
       render(<SalaButton icon={<Icono />} label="Cerrar" />);
       const boton = screen.getByRole("button", { name: "Cerrar" });
-      expect(boton).toHaveAttribute("title", "Cerrar");
+      // Sin `title`: repetiría el nombre y no llega al teclado ni al táctil.
+      expect(boton).not.toHaveAttribute("title");
       expect(boton.className).toContain("w-sala-target");
     });
 
@@ -189,7 +242,20 @@ describe("SalaButton", () => {
           <a href="/library" />
         </SalaButton>
       );
-      expect(screen.getByRole("link", { name: "Volver a la biblioteca" })).toBeInTheDocument();
+      const enlace = screen.getByRole("link", { name: "Volver a la biblioteca" });
+      expect(enlace).not.toHaveAttribute("title");
+    });
+
+    it("el contenido del hijo va en el mismo envoltorio que el del botón (pulsa y parte igual)", () => {
+      render(
+        <SalaButton asChild>
+          <a href="/library">Ir a la biblioteca</a>
+        </SalaButton>
+      );
+      const enlace = screen.getByRole("link");
+      expect(enlace.children).toHaveLength(1);
+      expect(screen.getByText("Ir a la biblioteca").className).toContain("[overflow-wrap:anywhere]");
+      expect(enlace.className).toContain("[&>span:first-child]:sala-pressed:scale-[0.96]");
     });
 
     it("deshabilitado: aria-disabled y el clic no navega ni llega a onClick", () => {

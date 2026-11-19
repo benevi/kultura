@@ -218,15 +218,20 @@ const config: Config = {
         sala: `var(${salaVar("ease")})`,
       },
       /* «Sala»: la espera de un botón que carga. Tres cuadrados que se
-         encienden por turnos; con movimiento reducido se quedan quietos. */
+         encienden por turnos, con 400 ms de retraso entre uno y otro: cada uno
+         pasa encendido del todo algo más de un tercio del ciclo, así que
+         siempre hay uno a opacidad 1 (WCAG 1.4.11 no depende del suelo de
+         0,3). Tres vueltas y se para con los tres encendidos: 3 × 1,2 s más
+         0,8 s de retraso son 4,4 s, por debajo de los 5 s de la biblia §6
+         (WCAG 2.2.2). Con movimiento reducido están quietos y encendidos. */
       keyframes: {
         "sala-wait": {
-          "0%, 60%, 100%": { opacity: "0.25" },
-          "30%": { opacity: "1" },
+          "0%, 34%, 100%": { opacity: "1" },
+          "50%, 84%": { opacity: "0.3" },
         },
       },
       animation: {
-        "sala-wait": `sala-wait 1.2s var(${salaVar("ease")}) infinite both`,
+        "sala-wait": `sala-wait 1.2s var(${salaVar("ease")}) 3 both`,
       },
       backgroundImage: {
         "gradient-radial": "radial-gradient(var(--tw-gradient-stops))",

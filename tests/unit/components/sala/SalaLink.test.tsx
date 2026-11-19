@@ -5,6 +5,7 @@ import { SalaLink } from "@/components/sala/SalaLink";
 
 vi.mock("next-intl", () => ({
   useTranslations: (ns: string) => (key: string) => `(${ns}.${key})`,
+  useLocale: () => "es",
 }));
 
 // El enlace interno es el de next-intl: aquí, un <a> marcado para reconocerlo.
@@ -48,6 +49,20 @@ describe("SalaLink", () => {
       expect(enlace.querySelector("svg")).toHaveAttribute("aria-hidden", "true");
     });
 
+    it("el aviso va en el idioma de la interfaz, no en el del enlace (WCAG 3.1.2)", () => {
+      render(
+        <SalaLink href="https://www.ghibli.jp" lang="ja">
+          千と千尋の神隠し
+        </SalaLink>
+      );
+      const enlace = screen.getByRole("link");
+      expect(enlace).toHaveAttribute("lang", "ja");
+      const aviso = screen.getByText("(common.newTab)");
+      expect(aviso).toHaveAttribute("lang", "es");
+      // El espacio que lo separa del texto va dentro del aviso: no depende de quien escribe el enlace.
+      expect(aviso.textContent).toBe(" (common.newTab)");
+    });
+
     it("newTab={false}: misma pestaña, sin aviso, y sigue sin dar el referente", () => {
       render(
         <SalaLink href="https://www.themoviedb.org" newTab={false}>
@@ -85,6 +100,22 @@ describe("SalaLink", () => {
       expect(className).toMatch(/(^|\s)underline(\s|$)/);
       expect(className).toContain("sala-focused:sala-focus");
       expect(className).not.toContain("min-h-sala-target");
+    });
+
+    it.each(["inline", "standalone"] as const)("%s: una palabra más larga que la línea se parte (WCAG 1.4.10)", (variant) => {
+      render(
+        <SalaLink href="https://example.org" variant={variant} newTab={false}>
+          https://example.org/una/ruta/larguisima/sin/espacios
+        </SalaLink>
+      );
+      const enlace = screen.getByRole("link");
+      const texto = variant === "inline" ? enlace : enlace.firstElementChild!;
+      expect(texto.className).toContain("[overflow-wrap:anywhere]");
+    });
+
+    it("en línea, con puntero y foco a la vez el anillo se separa del bloque de tinta", () => {
+      render(<SalaLink href="/library">Tu biblioteca</SalaLink>);
+      expect(screen.getByRole("link").className).toContain("sala-hover:sala-focused:!outline-offset-2");
     });
 
     it("suelto: 48 px de alto y el texto subrayado", () => {
