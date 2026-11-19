@@ -6,6 +6,9 @@ import type { StorybookConfig } from "@storybook/nextjs-vite";
  * construye, pasa axe a cada historia (`npm run test:storybook`) y lo sube
  * como artefacto del workflow.
  */
+// El Tailwind de la app no mira las historias (`tailwind.config.ts`); aquí sí.
+process.env.KULTURA_STORYBOOK = "1";
+
 const config: StorybookConfig = {
   // Las historias viven junto a su componente. Next no las empaqueta: nadie
   // las importa y no están en una ruta de `src/app`.

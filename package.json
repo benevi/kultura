@@ -23,6 +23,8 @@
     "storybook": "storybook dev -p 6006",
     "build-storybook": "storybook build",
     "test:storybook": "vitest run --config vitest.storybook.config.ts",
+    "tokens:sala": "vitest run tests/unit/design/sala-tokens-css.test.ts -u",
+    "fonts:sala": "node scripts/gen-sala-fonts.mjs",
     "test:all": "npm run type-check && npm run lint && npm run test && npm run test:e2e",
     "verify": "npm run build && npm run test:all"
   },
@@ -63,6 +65,7 @@
     "@vitejs/plugin-react": "^5.2.0",
     "@vitest/browser-playwright": "4.1.12",
     "@vitest/coverage-v8": "^4.1.12",
+    "axe-core": "4.11.2",
     "eslint": "^8",
     "eslint-config-next": "15.5.28",
     "jsdom": "^29.0.2",
