@@ -220,3 +220,24 @@ export async function fijarDensidad(dpr: number): Promise<boolean> {
   for (let i = 0; i < 100 && window.devicePixelRatio !== dpr; i++) await new Promise((seguir) => setTimeout(seguir, 20));
   return window.devicePixelRatio === dpr;
 }
+
+// ------------------------------------------------------------
+// Tamaño de la ventana, para los `play` que miden a 320 px
+// ------------------------------------------------------------
+
+/**
+ * Pone el tamaño de la ventana y espera a que la página lo vea. Como
+ * `fijarDensidad`, solo funciona en las pruebas de las historias; en el
+ * Storybook de mirar devuelve `false` y no hace nada. Quien lo cambia lo
+ * devuelve al de antes.
+ */
+export async function fijarVentana(ancho: number, alto: number): Promise<boolean> {
+  try {
+    const { page } = await import("vitest/browser");
+    await page.viewport(ancho, alto);
+  } catch {
+    return false;
+  }
+  for (let i = 0; i < 100 && window.innerWidth !== ancho; i++) await new Promise((seguir) => setTimeout(seguir, 20));
+  return window.innerWidth === ancho;
+}

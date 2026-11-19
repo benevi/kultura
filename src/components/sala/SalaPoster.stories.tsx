@@ -41,7 +41,8 @@ function Hueco({ ancho = "w-40", children }: { ancho?: string; children: React.R
 }
 
 const cargados = (canvasElement: HTMLElement, cuantos: number) =>
-  waitFor(() => expect(canvasElement.querySelectorAll('[data-sala-poster-image="loaded"]')).toHaveLength(cuantos));
+  // Con plazo largo: son imágenes de verdad, y en una máquina cargada tardan más de un segundo.
+  waitFor(() => expect(canvasElement.querySelectorAll('[data-sala-poster-image="loaded"]')).toHaveLength(cuantos), { timeout: 10_000 });
 
 // ------------------------------------------------------------
 // Una sola pieza, con controles

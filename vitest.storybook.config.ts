@@ -38,7 +38,7 @@ export default defineConfig({
   // usa) y que, sin esto, le hacen recargar a media prueba con la caché fría:
   // todas las historias fallaban con «Vitest failed to find the current suite».
   optimizeDeps: {
-    include: ["next-intl", "next-intl/navigation", "next-intl/routing", "@radix-ui/react-slot", "clsx", "tailwind-merge"],
+    include: ["next-intl", "next-intl/navigation", "next-intl/routing", "@radix-ui/react-slot", "@radix-ui/react-dialog", "clsx", "tailwind-merge"],
   },
   test: {
     name: "storybook",

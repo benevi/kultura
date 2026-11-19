@@ -91,6 +91,7 @@ Chino: sin fuente propia; cae en la japonesa o en la del sistema.
 - Margen de página: `px-sala-margin`.
 - Espacio: la escala de Tailwind (múltiplos de 4 px). No hay tokens de espacio propios.
 - Movimiento: `duration-sala-fast` (150 ms), `duration-sala-slow` (500 ms), `ease-sala`. Con movimiento reducido ya los anula `globals.css`.
+- Entradas de lo que se superpone: `animate-sala-fade-in` (el velo), `animate-sala-rise-in` (diálogo y aviso efímero: suben 12 px en 150 ms), `animate-sala-sheet-in` (la hoja, 300 ms) y `animate-sala-fade-out` (el aviso efímero al irse). El diálogo se va sin animación. Quien las usa añade `motion-reduce:animate-none`.
 
 ## Estados de un control
 
@@ -112,7 +113,7 @@ Regla común de botones y enlaces: al pasar el puntero, tinta (`bg-sala-ink` con
 
 ## Componentes
 
-En `src/components/sala/`, cada uno con sus historias (Storybook, **Sala/Botón**, **Sala/Enlace**, **Sala/Campo de texto**, **Sala/Selección**, **Sala/Formulario**, **Sala/Póster** y **Sala/Tarjeta de obra**) y sus tests (`tests/unit/components/sala/`). Conviven con los de `src/components/ui/`, que siguen siendo los de las pantallas de hoy.
+En `src/components/sala/`, cada uno con sus historias (Storybook, **Sala/Botón**, **Sala/Enlace**, **Sala/Campo de texto**, **Sala/Selección**, **Sala/Formulario**, **Sala/Póster**, **Sala/Tarjeta de obra**, **Sala/Diálogo**, **Sala/Aviso**, **Sala/Aviso efímero** y **Sala/Estado de bloque**) y sus tests (`tests/unit/components/sala/`). Conviven con los de `src/components/ui/`, que siguen siendo los de las pantallas de hoy.
 
 | Componente | Para qué |
 |---|---|
@@ -129,6 +130,12 @@ En `src/components/sala/`, cada uno con sus historias (Storybook, **Sala/Botón*
 | `SalaPoster` | La imagen de una obra: reserva su sitio y nunca queda rota. Con `capUpscale`, tampoco pixela (el tope de la sala de la ficha) |
 | `SalaWorkCard` + `SalaWorkCardSkeleton` | Una obra en una rejilla o una lista: póster, título y datos, toda ella un enlace. `grid`, `row` y `compact`; con acción secundaria (`action`) |
 | `SalaWorkList` | La lista alrededor de las tarjetas: `ul`/`li`, el aviso de carga (una vez, al empezar y al acabar) y los esqueletos. Rejilla o lista |
+| `SalaDialog` | Diálogo modal: título, descripción, cuerpo con scroll propio y pie de acciones. `dialog` (centrado) y `sheet` (hoja inferior en móvil) |
+| `SalaConfirmDialog` | Confirmación antes de algo sin vuelta atrás: `alertdialog`, foco en cancelar, `danger` |
+| `SalaNotice` | Aviso en línea, dentro de la página: `info`, `success`, `warning` y `error`; con acción y con cierre |
+| `SalaToastProvider` + `useSalaToast` | Aviso efímero: el resultado de una acción, que flota y se va. La misma API que `ToastProvider` |
+| `SalaBlockState` | Lo que va donde iba el contenido: el error con reintento de los `error.tsx` y el estado vacío |
+| `SalaStatusIcon` | Los cuatro dibujos de tono (cada uno con su forma) y el aspa de cerrar |
 
 Una palabra más larga que su caja (una URL como texto) se parte en los dos (`overflow-wrap: anywhere`): ni el botón ni el enlace dan scroll horizontal.
 
@@ -175,6 +182,54 @@ Los dos conviven con `PosterFrame`, `PosterImage`, `BestPoster` y `MediaCard`, q
 - **El componente tiene que seguir montado** antes y después de la carga. Si la pantalla cambia un componente de «cargando» por otro con los datos (un `fallback` de `Suspense`), la región es otra y el aviso del final se pierde.
 - **Los esqueletos no cuentan.** `skeletons` dice cuántos; van al final, solo mientras `loading`, cada uno en un `<li>` oculto a los lectores de pantalla: la lista no anuncia elementos vacíos.
 - **Sin lógica de datos.** Ni pide ni pagina: recibe las tarjetas como hijos y un `loading`. Los textos llegan traducidos. Es un componente de servidor; de cliente solo es la región viva.
+
+### Diálogo, avisos y estado de bloque
+
+Conviven con `Modal`, `ConfirmModal`, `Toast`/`ToastProvider` y `ErrorState`, que siguen en las pantallas de hoy; la sustitución es de la 8.5. Ningún texto sale de ellos: los nombres de los botones de cerrar y de la zona de avisos llegan por props.
+
+**`SalaDialog`**
+
+- **Sobre Radix (`@radix-ui/react-dialog`), como `Modal`; no es un `<dialog>` nativo.** `showModal()` deja inerte todo lo que no cuelga del diálogo y lo pinta en la capa superior: un aviso efímero no se vería encima ni se oiría. Tampoco bloquea el scroll de la página, ni cierra al pulsar fuera, ni devuelve el foco si el botón que lo abrió ha cambiado. Radix ya lo hace, ya está en la app (sin dependencias nuevas) y el job de accesibilidad ya lo prueba.
+- **Qué se ve.** Panel `sala-panel` con borde de tinta de 2 px, sobre un velo que es el color de fondo al 90 %: color plano, sin sombra ni desenfoque. Lo de detrás se adivina y no se lee. Con colores forzados el velo no se pinta y el panel se distingue por su borde.
+- **Foco al abrir**, en este orden: `initialFocusRef`, el control con `data-autofocus`, el primer control del cuerpo, el primero del pie, el botón de cerrar. Un texto largo sin controles recibe el foco en lo que se desplaza (el cuerpo o, si no le queda sitio, el diálogo entero), que queda arriba del todo y dice qué es (`role="group"` con el nombre del diálogo): las flechas lo mueven y no se abre por el botón del pie. A lo que tiene el foco nunca se le quita el `tabindex`. Al cerrar, vuelve a quien lo abrió; si no hay nadie (no está, o el foco estaba en `<body>`), a `finalFocusRef`, y si falta se avisa por consola en desarrollo.
+- **Fondo.** El resto de la página sale del árbol de accesibilidad (`aria-hidden`) y no recibe clics; el scroll se bloquea y se compensa el ancho de la barra. **Lo que lleva `aria-live` escrito no se esconde**: por eso las regiones del aviso efímero lo llevan aunque `role="status"` ya lo implique.
+- **Cierre.** Escape, el botón (`closeLabel`) y pulsar el velo (`closeOnOutside={false}` lo quita). Solo cierra el clic que empieza y acaba en el velo, y pulsarlo no se lleva el foco fuera del diálogo. `dismissible={false}` mientras se guarda.
+- **Con un formulario dentro, `closeOnOutside={false}`.** Un toque fuera no puede tirar lo que se ha escrito. Quedan Escape, el botón de cerrar y «Cancelar»; si hace falta proteger también esos, la pantalla pregunta antes de cerrar.
+- **Lo que no cabe.** El cuerpo tiene su scroll, con una raya arriba y abajo (`sala-border`, 3:1) que solo sale cuando hace falta; cabecera y pie se quedan. Si entre los dos no le dejan 120 px al cuerpo (texto al 200 % a 320 px, móvil apaisado), se desplaza el diálogo entero; para volver al scroll del cuerpo tienen que sobrar 24 px más, así que en el umbral no oscila. **El botón de cerrar no va dentro de lo que se desplaza:** está siempre en su esquina, con fondo. Lo que se desplaza lleva `position: relative`: los textos solo para lectores (`sr-only`, con posición absoluta) cuelgan de él y no se escapan de su recorte.
+- **Un diálogo sobre otro** (una confirmación desde un diálogo): Escape cierra solo el de arriba y el foco vuelve al botón del de abajo.
+- **Móvil** (`variant="sheet"`): hoja pegada abajo, a todo el ancho y del 85 % del alto como mucho, por debajo de `md`. Sin asa de arrastre: se cierra con el botón, con Escape o pulsando fuera. Zonas seguras con `env()`; con el teclado en pantalla el velo recibe en `--sala-kb` lo que tapa (`visualViewport`) y la hoja sube. Con zoom de pellizco no se mide: la ventana visual encoge sin que haya teclado.
+- **`error`**: el fallo de la acción se ve (un `SalaNotice`) y se anuncia dentro, en una región `alert` montada desde que se abre. No va en un aviso efímero: el foco está atrapado en el diálogo.
+- **`palette`**: el diálogo cuelga de `<body>`, fuera de la obra; con `palette` lleva su color.
+- **Movimiento.** Entra en 150 ms (la hoja, en 300 ms) y se va sin animación: cerrar no espera a nada.
+
+**`SalaConfirmDialog`**: `alertdialog`. El foco empieza en cancelar; no lleva aspa; pulsar fuera no lo cierra (Escape sí, y cancela). `danger` pinta la confirmación de peligro, y su texto nombra lo que se pierde. `loading` + `loadingLabel`: el botón espera y nada cierra.
+
+**`SalaNotice`**
+
+- **El tono no es solo color:** borde de 2 px y un dibujo con forma propia (una «i» en un cuadrado, una marca, un triángulo, un aspa en un cuadrado). El texto es siempre tinta sobre panel. No hay token de «info»: usa el gris del borde y la tinta.
+- **Quién lo anuncia** (`live`): por defecto `error` es `role="alert"` y los demás `role="status"`. El papel lo lleva solo el texto (los botones quedan fuera) y nunca se suma `aria-live`. `live="off"` para un aviso que ya estaba en la página o que ya anuncia otro.
+- **Un aviso que aparece después** nace dentro de una región que ya existía (`<div role="alert">` siempre montado, y el aviso dentro con `live="off"`): un lector avisa de lo que cambia, no de lo que nace con texto.
+- `action` (un `SalaButton` o un `SalaLink`) va debajo del texto; `onClose` + `closeLabel` ponen el aspa. Al cerrar, el foco lo recoloca quien lo cierra.
+
+**`SalaToastProvider` y `useSalaToast()`**
+
+- **La misma API que `ToastProvider`**: `show({ message, type, duration, action })`, `showError(message, { persistent, duration })` y `dismiss(id)`; `action` con `label`, `onAction`, `onExpire` y `autoFocus`. En la 8.5, `useToastContext()` pasa a `useSalaToast()`. El proveedor recibe `labels={{ region, dismiss, hint }}`.
+- **Textos (para la 8.5).** Faltan las claves de i18n de estas piezas: el nombre de la zona de avisos con su tecla («Avisos (F8)»), el de cerrar un aviso (hoy `nav.dismiss`), la pista de un aviso con acción («Pulsa F8 para ir al aviso»), el de cerrar un diálogo (`common.close`) y los `loadingLabel` de cada confirmación. Entran con la primera pantalla que monte el proveedor, en los namespaces que el shell entrega siempre al cliente.
+- **Regiones vivas montadas desde el principio**, vacías: `aria-live="assertive"` para errores y `role="status"` para lo demás.
+- **Tiempo** (WCAG 2.2.1): 5 s; 8 s un error o un aviso con acción (nunca menos de 6 s un error); 60 ms más por carácter a partir de 80, hasta 15 s. El reloj de todos se para con el puntero encima, con el foco dentro y con la pestaña en segundo plano. `duration: Infinity` lo deja fijo.
+- **Teclado.** No roba el foco. **F8** lo lleva al aviso más reciente, a su acción o, si no tiene, a su botón de cerrar (y para el reloj); Escape lo cierra y el foco vuelve a donde estaba. Un aviso con acción dice la tecla al lector (`labels.hint`, oculto a la vista).
+- **Con un diálogo modal abierto, un aviso con acción no corre.** El foco está atrapado en el diálogo y ni F8 ni Tab llegan al aviso: se queda hasta que el diálogo se cierre, y entonces sigue su reloj y F8 llega. En desarrollo se avisa por consola. Si la acción es de ese diálogo, va dentro de él.
+- **Cada aviso se resuelve una vez:** o `onAction` o `onExpire`, nunca los dos ni dos veces (doble clic, o desplazado por otro mientras se va). Si se cierra un aviso con el foco dentro, el foco pasa al siguiente o vuelve: no se pierde. El nombre de la zona conviene que diga la tecla («Avisos (F8)»).
+- **No tapa el foco** (WCAG 2.4.11). Va abajo (a la derecha desde `md`), por encima de la zona segura y de la barra inferior: quien pinta la barra pone su alto en `--sala-toast-clear` (en `:root` o en `<body>`). Si la pila queda encima del control con el foco, se pasa arriba. Los huecos de la zona no reciben clics. Al abrirse un diálogo la zona no salta: suma a su derecha el ancho de la barra de scroll que el diálogo quita.
+- **Qué se ve.** Un bloque de tinta con el color del fondo encima; el error, un bloque `sala-danger`. Cada tipo, su dibujo. Sin sombra. Siempre con los neutros: es de la app, no de una obra. Con colores forzados, un borde.
+- **Cola:** tres; el cuarto desplaza al más viejo que no sea fijo, que caduca (`onExpire`). Un aviso fijo (`duration: Infinity`, un error `persistent`) solo sale si los tres lo son.
+- En táctil se descarta también deslizando a un lado.
+
+**`SalaBlockState`**
+
+- **Error** (`tone="error"`): la pieza común de los 11 `error.tsx`, que hoy pintan todos `ErrorState`. Título, explicación, `action` («Reintentar») y `secondary` (la salida). Con `headingLevel={1}` y `focusTitle`, el título recibe el foco al aparecer y el lector dice qué ha pasado; no lleva `role="alert"` (se oiría dos veces). Enviar el error a Sentry y montar el enlace de salida siguen en quien lo usa.
+- **Vacío** (por defecto): qué es este sitio y cuál es el primer paso.
+- Alineado a la izquierda, en el borde del contenido al que sustituye. De servidor; de cliente solo es el encabezado.
 
 ### La espera del botón (`loading`)
 
@@ -242,4 +297,4 @@ Las piezas comunes de las historias (el suelo neutro o de una obra, las obras de
 | Papeles de color y sus neutros; AA | Colores de error, hecho y aviso; foco con la tinta; gris de lo deshabilitado |
 | Familias y orden de las fuentes CJK | Tamaños, pesos e interlineados de cada papel |
 | Esquinas rectas, sin sombras, acción de 48 px | Margen de página, grosor del foco, tiempos y curva |
-| El formato y los estados no se dicen solo con color | Variantes del botón; tinta al pasar el puntero; pulsado que encoge un punto el contenido; deshabilitado con borde discontinuo; la espera de tres cuadrados bajo el texto, que se para a los 4,4 s; enlace siempre subrayado y sin estilo de «visitado»; en los campos: borde gris en reposo y tinta con puntero o foco, «obligatorio» y «opcional» con palabra, solo lectura como raya, sin estado de «correcto», radio redondo, interruptor de pieza cuadrada; en el póster y la tarjeta: 16:9 para videojuegos, el rótulo del sustituto y su anchura según la longitud del título, el tope de 1,25× también en las tarjetas, el título marcado en tinta al pasar el puntero, el corte del título a 3 y 2 líneas, el esqueleto que late tres veces |
+| El formato y los estados no se dicen solo con color | Variantes del botón; tinta al pasar el puntero; pulsado que encoge un punto el contenido; deshabilitado con borde discontinuo; la espera de tres cuadrados bajo el texto, que se para a los 4,4 s; enlace siempre subrayado y sin estilo de «visitado»; en los campos: borde gris en reposo y tinta con puntero o foco, «obligatorio» y «opcional» con palabra, solo lectura como raya, sin estado de «correcto», radio redondo, interruptor de pieza cuadrada; en el póster y la tarjeta: 16:9 para videojuegos, el rótulo del sustituto y su anchura según la longitud del título, el tope de 1,25× también en las tarjetas, el título marcado en tinta al pasar el puntero, el corte del título a 3 y 2 líneas, el esqueleto que late tres veces; en el diálogo y los avisos: el velo del color de fondo al 90 %, el panel con borde de tinta, la hoja inferior en móvil sin asa de arrastre, que el diálogo se vaya sin animación, que una confirmación no se cierre al pulsar fuera, el aviso efímero como bloque de tinta, sus tiempos (5 s, 8 s, hasta 15 s), F8 para llegar a él, que la pila se pase arriba si tapa el foco, y el estado de bloque alineado a la izquierda y sin ilustración |
