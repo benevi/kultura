@@ -301,7 +301,6 @@ function BlockedUsersSection() {
                   loading={busyId === u.id}
                   onClick={() => handleUnblock(u)}
                   aria-label={t('unblockUser', { username: u.username })}
-                  className="hover:text-text-secondary"
                 >
                   {t('unblock')}
                 </KButton>

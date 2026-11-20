@@ -143,7 +143,6 @@ export function DiscoverGroupsClient() {
             loading={loading}
             disabled={loading}
             onClick={handleLoadMore}
-            className="hover:text-text-secondary"
           >
             {loading ? '...' : t('loadMore')}
           </KButton>

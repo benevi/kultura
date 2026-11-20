@@ -141,7 +141,6 @@ export function CreateGroupForm({ onCreated, onCancel }: CreateGroupFormProps) {
           size="sm"
           variant="secondary"
           onClick={onCancel}
-          className="hover:text-text-secondary"
         >
           ✕
         </KButton>

@@ -102,7 +102,6 @@ function BlockControl({
             size="sm"
             loading={busy}
             onClick={() => run('unblock')}
-            className="hover:text-text-secondary"
           >
             {t('unblock')}
           </KButton>
@@ -232,12 +231,14 @@ function FriendshipAction({
   }
 
   if (status === 'pending_sent') {
+    // Apagado a propósito: deshabilitado, y KButton deshabilitado no recibe el
+    // ratón (`pointer-events: none`), así que no se aclara al pasar por encima.
     return (
       <KButton
         variant="secondary"
         size="sm"
         disabled
-        className="text-text-tertiary hover:text-text-tertiary"
+        className="text-text-tertiary"
       >
         {t('requestSent')}
       </KButton>
@@ -265,7 +266,7 @@ function FriendshipAction({
       size="sm"
       loading={loading}
       onClick={handleRemove}
-      className="hover:opacity-90 hover:text-text-secondary"
+      className="hover:opacity-90"
     >
       {t('friends')} ✓
     </KButton>
