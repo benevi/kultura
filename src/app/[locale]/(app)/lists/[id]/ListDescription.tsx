@@ -1,5 +1,6 @@
 import { useTranslations } from 'next-intl'
 import { KButton } from '@/components/ui/KButton'
+import { KTextarea } from '@/components/ui/KTextarea'
 import { DESCRIPTION_MAX } from './list-detail-utils'
 import type { ListDescriptionState } from './useListDescription'
 
@@ -46,11 +47,10 @@ export function ListDescription({
       )}
       {isOwner && editing && (
         <form onSubmit={save} className="mt-4 flex max-w-2xl flex-col gap-2">
-          <label htmlFor={fieldId} className="text-meta font-bold text-text-tertiary">
-            {t('descriptionLabel')}
-          </label>
-          <textarea
+          <KTextarea
             id={fieldId}
+            label={t('descriptionLabel')}
+            error={error ? t('descriptionError') : undefined}
             autoFocus
             value={draft}
             onChange={(e) => setDraft(e.target.value)}
@@ -58,13 +58,11 @@ export function ListDescription({
             rows={3}
             placeholder={t('descriptionPlaceholder')}
             aria-describedby={hintId}
-            aria-invalid={error ? true : undefined}
-            className="w-full min-h-[88px] resize-y rounded-2xl border border-field-border bg-surface-elevated px-4 py-3 font-body text-base md:text-body text-text-primary placeholder:text-text-tertiary focus-visible:[outline-style:solid] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus-ring"
+            className="min-h-[88px]"
           />
           <p id={hintId} className="text-xs text-text-tertiary">
             {t('descriptionHint', { count: DESCRIPTION_MAX - draft.length })}
           </p>
-          {error && <p role="alert" className="text-sm text-accent-danger">{t('descriptionError')}</p>}
           <div className="flex gap-2">
             <KButton type="submit" size="sm" loading={saving}>{t('descriptionSave')}</KButton>
             <KButton type="button" size="sm" variant="secondary" onClick={cancelEditing} disabled={saving}>

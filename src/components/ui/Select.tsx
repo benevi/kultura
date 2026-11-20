@@ -1,7 +1,8 @@
 "use client";
 
-import { forwardRef, useId } from "react";
+import { forwardRef } from "react";
 import { cn } from "@/lib/utils/index";
+import { K_FIELD_BOX, K_FIELD_ERROR, KFieldFrame, useKField } from "./KField";
 
 export interface SelectOption {
   value: string;
@@ -15,37 +16,49 @@ export interface SelectProps
   options: SelectOption[];
   /** Etiqueta visible asociada con `htmlFor`. Sin ella, pasa `aria-label`. */
   label?: string;
+  /** Error debajo, con `role="alert"`; el select queda con `aria-invalid`. */
+  error?: string;
+  /** Ayuda debajo, enlazada con `aria-describedby`. */
+  hint?: string;
   className?: string;
 }
 
 /**
- * Desplegable nativo. La etiqueta se asocia con `htmlFor` (antes era un
- * `<label>` suelto y el select no tenía nombre accesible), el borde usa
- * `--field-border` (3,65:1 contra la tarjeta, ACC-4) y la letra es de 16 px en
- * móvil para que iOS no haga zoom al enfocar (MOV-5). El resto de atributos
- * (`aria-*`, `data-*`, `name`…) llega tal cual al `<select>`.
+ * El `<select>` nativo no aplica `line-height`: con la caja de `KInput` mediría
+ * 53 px en móvil y 52 desde `md`, y no 56 y 54 como el campo de al lado
+ * (24 o 22 de línea, 15 + 15 de relleno y 1 + 1 de borde). El alto mínimo lo
+ * iguala; el texto sigue centrado.
+ */
+const SELECT_HEIGHT = "min-h-14 md:min-h-[54px]";
+
+/**
+ * Desplegable nativo con la caja de `KInput` (C14): la misma etiqueta (13 px
+ * en negrita), el mismo fondo, radio, borde (`--field-border`, ACC-4), alto y
+ * foco, para que no se vea distinto que los campos que tiene al lado. La
+ * etiqueta se asocia con `htmlFor` y la letra es de 16 px en móvil para que
+ * iOS no haga zoom al enfocar (MOV-5). El resto de atributos (`aria-*`,
+ * `data-*`, `name`…) llega tal cual al `<select>`.
  */
 export const Select = forwardRef<HTMLSelectElement, SelectProps>(function Select(
-  { value, onChange, options, label, className, id: idProp, ...rest },
+  { value, onChange, options, label, error, hint, className, id, "aria-describedby": describedByProp, ...rest },
   ref
 ) {
-  const autoId = useId();
-  const id = idProp ?? autoId;
+  const { controlId, messageId, ...aria } = useKField({
+    id,
+    prefix: "kselect",
+    error,
+    hint,
+    describedBy: describedByProp,
+  });
   return (
-    <div className="flex flex-col gap-1">
-      {label && (
-        <label htmlFor={id} className="text-sm text-muted">{label}</label>
-      )}
+    <KFieldFrame controlId={controlId} messageId={messageId} label={label} error={error} hint={hint}>
       <select
         ref={ref}
-        id={id}
+        id={controlId}
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        className={cn(
-          "bg-surface border border-field-border rounded-lg px-3 py-2 min-h-11 text-base md:text-sm text-text",
-          "focus-visible:[outline-style:solid] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus-ring cursor-pointer",
-          className
-        )}
+        {...aria}
+        className={cn(K_FIELD_BOX, SELECT_HEIGHT, "cursor-pointer", error && K_FIELD_ERROR, className)}
         {...rest}
       >
         {options.map((opt) => (
@@ -54,6 +67,6 @@ export const Select = forwardRef<HTMLSelectElement, SelectProps>(function Select
           </option>
         ))}
       </select>
-    </div>
+    </KFieldFrame>
   );
 });

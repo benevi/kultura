@@ -1,5 +1,6 @@
 import * as React from "react";
 import { cn } from "@/lib/utils/index";
+import { K_FIELD_BOX, K_FIELD_ERROR, KFieldFrame, useKField } from "./KField";
 
 export interface KInputProps extends React.ComponentProps<"input"> {
   label?: string;
@@ -28,6 +29,9 @@ export interface KInputProps extends React.ComponentProps<"input"> {
  * `aria-invalid` + `aria-describedby`, así el lector de pantalla lo anuncia y
  * lo vuelve a leer al llegar al campo. El id se genera con `useId` si no llega
  * uno, para que dos campos con la misma etiqueta no compartan id.
+ *
+ * La caja, la etiqueta y el mensaje son los de `KField`: `KTextarea` y
+ * `Select` los comparten.
  */
 export const KInput = React.forwardRef<HTMLInputElement, KInputProps>(
   (
@@ -45,55 +49,28 @@ export const KInput = React.forwardRef<HTMLInputElement, KInputProps>(
     },
     ref
   ) => {
-    const autoId = React.useId();
-    const inputId = id ?? `kinput-${autoId}`;
-    const messageId = `${inputId}-msg`;
-    const message = error || hint;
-    const describedBy =
-      [describedByProp, message ? messageId : undefined].filter(Boolean).join(" ") || undefined;
+    const { controlId, messageId, ...aria } = useKField({
+      id,
+      prefix: "kinput",
+      error,
+      hint,
+      describedBy: describedByProp,
+    });
     const isEmail = type === "email";
 
     return (
-      <div className="flex w-full flex-col gap-2">
-        {label && (
-          <label
-            htmlFor={inputId}
-            className="font-body text-meta font-bold text-text-tertiary"
-          >
-            {label}
-          </label>
-        )}
+      <KFieldFrame controlId={controlId} messageId={messageId} label={label} error={error} hint={hint}>
         <input
-          id={inputId}
+          id={controlId}
           type={type}
-          aria-invalid={error ? true : undefined}
-          aria-describedby={describedBy}
+          {...aria}
           autoCapitalize={autoCapitalize ?? (isEmail ? "none" : undefined)}
           spellCheck={spellCheck ?? (isEmail ? false : undefined)}
-          className={cn(
-            "w-full rounded-2xl bg-surface-elevated px-[18px] py-[15px]",
-            "border border-field-border",
-            "font-body text-base md:text-body text-text-primary",
-            "placeholder:text-text-tertiary",
-            "transition-colors duration-base ease-standard",
-            "focus-visible:[outline-style:solid] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus-ring",
-            "disabled:cursor-not-allowed disabled:opacity-50",
-            error && "border-accent-danger",
-            className
-          )}
+          className={cn(K_FIELD_BOX, error && K_FIELD_ERROR, className)}
           ref={ref}
           {...props}
         />
-        {error ? (
-          <p id={messageId} role="alert" className="font-body text-xs text-accent-danger">
-            {error}
-          </p>
-        ) : hint ? (
-          <p id={messageId} className="font-body text-xs text-text-tertiary">
-            {hint}
-          </p>
-        ) : null}
-      </div>
+      </KFieldFrame>
     );
   }
 );

@@ -23,6 +23,7 @@ import { useLocale, useTranslations } from 'next-intl'
 import { Select } from '@/components/ui/Select'
 import { KButton } from '@/components/ui/KButton'
 import { KInput } from '@/components/ui/KInput'
+import { KTextarea } from '@/components/ui/KTextarea'
 import { ProgressInput } from '@/components/library/ProgressInput'
 import { RatingInput, type RatingMode } from '@/components/library/RatingInput'
 import { Modal } from '@/components/ui/Modal'
@@ -83,8 +84,6 @@ interface LibraryStatusModalProps {
   progressConfig?: ProgressConfig | null
 }
 
-const TEXTAREA =
-  'w-full bg-surface-elevated border border-field-border rounded-2xl px-[18px] py-3 font-body text-base md:text-body text-text-primary placeholder:text-text-tertiary resize-y focus-visible:[outline-style:solid] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus-ring'
 const CHECK_ROW = 'flex min-h-11 items-center gap-3 cursor-pointer rounded-2xl bg-surface-default px-3 py-2.5'
 const CHECKBOX = 'accent-accent-positive w-5 h-5 flex-shrink-0'
 
@@ -325,18 +324,15 @@ export function LibraryStatusModal({
                 </label>
 
                 <div className="flex flex-col gap-2">
-                  <label htmlFor={reviewId} className="font-body text-meta font-bold text-text-tertiary">
-                    {td('review')}
-                  </label>
-                  <textarea
+                  <KTextarea
                     id={reviewId}
+                    label={td('review')}
                     value={review}
                     onChange={(e) => setReview(e.target.value)}
                     placeholder={td('reviewPlaceholder')}
                     rows={3}
                     maxLength={REVIEW_MAX}
                     aria-describedby={reviewCountId}
-                    className={TEXTAREA}
                   />
                   <span id={reviewCountId} className="self-end text-xs text-text-tertiary tabular-nums">
                     {td('chars', { count: review.length, max: REVIEW_MAX })}
@@ -354,20 +350,15 @@ export function LibraryStatusModal({
                   <span className="text-sm font-medium text-text-primary">{td('spoiler')}</span>
                 </label>
 
-                <div className="flex flex-col gap-2">
-                  <label htmlFor={noteId} className="font-body text-meta font-bold text-text-tertiary">
-                    {td('privateNote')}
-                  </label>
-                  <textarea
-                    id={noteId}
-                    value={privateNote}
-                    onChange={(e) => setPrivateNote(e.target.value)}
-                    placeholder={td('privateNotePlaceholder')}
-                    rows={2}
-                    maxLength={PRIVATE_NOTE_MAX}
-                    className={TEXTAREA}
-                  />
-                </div>
+                <KTextarea
+                  id={noteId}
+                  label={td('privateNote')}
+                  value={privateNote}
+                  onChange={(e) => setPrivateNote(e.target.value)}
+                  placeholder={td('privateNotePlaceholder')}
+                  rows={2}
+                  maxLength={PRIVATE_NOTE_MAX}
+                />
               </>
             )}
           </fieldset>
