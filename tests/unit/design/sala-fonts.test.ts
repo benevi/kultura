@@ -175,13 +175,15 @@ describe("orden de las fuentes (biblia §5)", () => {
 });
 
 describe("las pantallas de hoy no descargan nada de «Sala»", () => {
-  it("solo Storybook importa las hojas de src/styles/sala", () => {
+  it("solo Storybook (y las piezas de «Sala», que no usa ninguna pantalla) importa las hojas de src/styles/sala", () => {
     const importers = walk(join(ROOT, "src"))
       .filter((f) => /\.(tsx?|css|mdx?)$/.test(f) && dirname(f) !== SHEETS_DIR)
       .filter((f) => /styles\/sala\//.test(readFileSync(f, "utf8")))
       .map((f) => relative(ROOT, f).split(sep).join("/"))
       // Comentarios que nombran la ruta no cuentan: solo quien la importa.
       .filter((f) => /(import|@import|require)[^\n]*styles\/sala\//.test(readFileSync(join(ROOT, f), "utf8")));
-    expect(importers).toEqual([]);
+    // `SalaScriptFonts` pide las hojas de japonés y coreano cuando hace falta. Es de
+    // `src/components/sala`, que ninguna pantalla importa (lo comprueba sala-title-css.test.ts).
+    expect(importers).toEqual(["src/components/sala/SalaScriptFonts.tsx"]);
   });
 });

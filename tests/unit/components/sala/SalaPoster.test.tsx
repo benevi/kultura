@@ -1,7 +1,7 @@
 import { createRef, type ComponentProps } from "react";
 import { act, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { SALA_POSTER_RATIO, SalaPoster, salaPosterStretch } from "@/components/sala/SalaPoster";
+import { SALA_POSTER_RATIO, SalaPoster } from "@/components/sala/SalaPoster";
 import { NEUTRAL_PALETTE } from "@/lib/design/image-palette";
 import { forgetMeasuredFiles } from "@/lib/images/file-size";
 import { posterLoader } from "@/lib/images/poster-url";
@@ -66,7 +66,7 @@ describe("SalaPoster", () => {
       expect(container.querySelector("img")).toBeNull();
       expect(container.firstElementChild).toHaveAttribute("data-sala-poster", "empty");
       expect(container.querySelector("[data-sala-poster-image]")).toBeNull();
-      expect(screen.getByText("Berserk").parentElement).toHaveAttribute("aria-hidden", "true");
+      expect(screen.getByText("Berserk").closest("[aria-hidden]")).toHaveAttribute("aria-hidden", "true");
     });
 
     it.each([null, undefined, ""])("src=%j vale por «sin imagen»", (src) => {
@@ -136,12 +136,17 @@ describe("SalaPoster", () => {
       expect(screen.getByText("千と千尋の神隠し")).toHaveAttribute("lang", "ja");
     });
 
-    it("la anchura del rótulo baja con la longitud del título, entre 75 y 110 %", () => {
-      expect(salaPosterStretch("Her")).toBe(110);
-      expect(salaPosterStretch("Birdman o (la inesperada virtud de la ignorancia)")).toBe(75);
-      const medio = salaPosterStretch("El viaje de Chihiro");
-      expect(medio).toBeGreaterThan(75);
-      expect(medio).toBeLessThan(110);
+    it("el rótulo es el de la ficha, compuesto para una caja pequeña: anchura por longitud y tamaño según la caja", () => {
+      const { container } = render(<SalaPoster alt="" title="El viaje de Chihiro" sizes="160px" />);
+      const rotulo = container.querySelector<HTMLElement>("[data-sala-title-text]")!;
+      // La anchura y el tamaño los pone `planSalaTitle` (lo prueba tests/unit/design/sala-title.test.ts).
+      expect(rotulo.style.getPropertyValue("--sala-title-n-stretch")).toMatch(/^\d+%$/);
+      expect(Number(rotulo.style.getPropertyValue("--sala-title-n-size"))).toBeGreaterThan(0);
+      // No baja de 14 px ni pasa de 48: el suelo y el tope van en `rem`.
+      expect(rotulo.style.getPropertyValue("--sala-title-floor")).toBe("0.875rem");
+      expect(rotulo.style.getPropertyValue("--sala-title-cap")).toBe("3rem");
+      // Su tamaño sale del ancho de su caja, no del de la página.
+      expect(rotulo.parentElement!.className).toContain("[container-type:inline-size]");
     });
   });
 

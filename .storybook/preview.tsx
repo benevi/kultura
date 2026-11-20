@@ -8,6 +8,8 @@ import "../src/app/globals.css";
 // las importa todavía, así que sus pantallas no descargan nada de esto.
 import "../src/styles/sala/tokens.css";
 import "../src/styles/sala/fonts.css";
+// La hoja del rótulo: el respaldo de Anybody y las reglas de `SalaTitle` y `SalaStage`.
+import "../src/styles/sala/title.css";
 import "../src/styles/sala/fonts-jp.css";
 import "../src/styles/sala/fonts-kr.css";
 

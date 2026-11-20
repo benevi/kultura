@@ -1,0 +1,528 @@
+/* GENERADO desde src/lib/design/sala-title-css.ts. No editar: npm run title:sala */
+
+/* ------------------------------------------------------------
+   1. Respaldo de Anybody mientras llega la fuente.
+   Arial Bold (o su equivalente) escalada por tramo del eje de anchura para
+   que nunca mida más que Anybody: el título ocupa las mismas líneas con una
+   y con otra, y la caja no cambia de alto. Solo cubre lo que cubre Anybody.
+   ------------------------------------------------------------ */
+
+@font-face {
+  font-family: "Anybody Fallback";
+  font-style: normal;
+  font-weight: 100 900;
+  font-stretch: 50% 54%;
+  src: local("Arial Bold"), local("Arial-BoldMT"), local("Liberation Sans Bold"), local("LiberationSans-Bold"), local("Arimo Bold"), local("Arimo-Bold"), local("Roboto Bold"), local("Roboto-Bold");
+  size-adjust: 41.5%;
+  ascent-override: 191.6%;
+  descent-override: 57.8%;
+  line-gap-override: 0%;
+  unicode-range: U+0020-007E,U+00A0-00AC,U+00AE-0148,U+014A-017E,U+2013-2014,U+2018-201A,U+201C-201E,U+2026,U+2039-203A,U+20AC;
+}
+
+@font-face {
+  font-family: "Anybody Fallback";
+  font-style: normal;
+  font-weight: 100 900;
+  font-stretch: 55% 59%;
+  src: local("Arial Bold"), local("Arial-BoldMT"), local("Liberation Sans Bold"), local("LiberationSans-Bold"), local("Arimo Bold"), local("Arimo-Bold"), local("Roboto Bold"), local("Roboto-Bold");
+  size-adjust: 46.4%;
+  ascent-override: 171.3%;
+  descent-override: 51.7%;
+  line-gap-override: 0%;
+  unicode-range: U+0020-007E,U+00A0-00AC,U+00AE-0148,U+014A-017E,U+2013-2014,U+2018-201A,U+201C-201E,U+2026,U+2039-203A,U+20AC;
+}
+
+@font-face {
+  font-family: "Anybody Fallback";
+  font-style: normal;
+  font-weight: 100 900;
+  font-stretch: 60% 64%;
+  src: local("Arial Bold"), local("Arial-BoldMT"), local("Liberation Sans Bold"), local("LiberationSans-Bold"), local("Arimo Bold"), local("Arimo-Bold"), local("Roboto Bold"), local("Roboto-Bold");
+  size-adjust: 51.3%;
+  ascent-override: 155%;
+  descent-override: 46.8%;
+  line-gap-override: 0%;
+  unicode-range: U+0020-007E,U+00A0-00AC,U+00AE-0148,U+014A-017E,U+2013-2014,U+2018-201A,U+201C-201E,U+2026,U+2039-203A,U+20AC;
+}
+
+@font-face {
+  font-family: "Anybody Fallback";
+  font-style: normal;
+  font-weight: 100 900;
+  font-stretch: 65% 69%;
+  src: local("Arial Bold"), local("Arial-BoldMT"), local("Liberation Sans Bold"), local("LiberationSans-Bold"), local("Arimo Bold"), local("Arimo-Bold"), local("Roboto Bold"), local("Roboto-Bold");
+  size-adjust: 56.2%;
+  ascent-override: 141.5%;
+  descent-override: 42.7%;
+  line-gap-override: 0%;
+  unicode-range: U+0020-007E,U+00A0-00AC,U+00AE-0148,U+014A-017E,U+2013-2014,U+2018-201A,U+201C-201E,U+2026,U+2039-203A,U+20AC;
+}
+
+@font-face {
+  font-family: "Anybody Fallback";
+  font-style: normal;
+  font-weight: 100 900;
+  font-stretch: 70% 74%;
+  src: local("Arial Bold"), local("Arial-BoldMT"), local("Liberation Sans Bold"), local("LiberationSans-Bold"), local("Arimo Bold"), local("Arimo-Bold"), local("Roboto Bold"), local("Roboto-Bold");
+  size-adjust: 60.2%;
+  ascent-override: 132.1%;
+  descent-override: 39.9%;
+  line-gap-override: 0%;
+  unicode-range: U+0020-007E,U+00A0-00AC,U+00AE-0148,U+014A-017E,U+2013-2014,U+2018-201A,U+201C-201E,U+2026,U+2039-203A,U+20AC;
+}
+
+@font-face {
+  font-family: "Anybody Fallback";
+  font-style: normal;
+  font-weight: 100 900;
+  font-stretch: 75% 79%;
+  src: local("Arial Bold"), local("Arial-BoldMT"), local("Liberation Sans Bold"), local("LiberationSans-Bold"), local("Arimo Bold"), local("Arimo-Bold"), local("Roboto Bold"), local("Roboto-Bold");
+  size-adjust: 63.9%;
+  ascent-override: 124.4%;
+  descent-override: 37.6%;
+  line-gap-override: 0%;
+  unicode-range: U+0020-007E,U+00A0-00AC,U+00AE-0148,U+014A-017E,U+2013-2014,U+2018-201A,U+201C-201E,U+2026,U+2039-203A,U+20AC;
+}
+
+@font-face {
+  font-family: "Anybody Fallback";
+  font-style: normal;
+  font-weight: 100 900;
+  font-stretch: 80% 84%;
+  src: local("Arial Bold"), local("Arial-BoldMT"), local("Liberation Sans Bold"), local("LiberationSans-Bold"), local("Arimo Bold"), local("Arimo-Bold"), local("Roboto Bold"), local("Roboto-Bold");
+  size-adjust: 67.6%;
+  ascent-override: 117.6%;
+  descent-override: 35.5%;
+  line-gap-override: 0%;
+  unicode-range: U+0020-007E,U+00A0-00AC,U+00AE-0148,U+014A-017E,U+2013-2014,U+2018-201A,U+201C-201E,U+2026,U+2039-203A,U+20AC;
+}
+
+@font-face {
+  font-family: "Anybody Fallback";
+  font-style: normal;
+  font-weight: 100 900;
+  font-stretch: 85% 89%;
+  src: local("Arial Bold"), local("Arial-BoldMT"), local("Liberation Sans Bold"), local("LiberationSans-Bold"), local("Arimo Bold"), local("Arimo-Bold"), local("Roboto Bold"), local("Roboto-Bold");
+  size-adjust: 71.2%;
+  ascent-override: 111.7%;
+  descent-override: 33.7%;
+  line-gap-override: 0%;
+  unicode-range: U+0020-007E,U+00A0-00AC,U+00AE-0148,U+014A-017E,U+2013-2014,U+2018-201A,U+201C-201E,U+2026,U+2039-203A,U+20AC;
+}
+
+@font-face {
+  font-family: "Anybody Fallback";
+  font-style: normal;
+  font-weight: 100 900;
+  font-stretch: 90% 94%;
+  src: local("Arial Bold"), local("Arial-BoldMT"), local("Liberation Sans Bold"), local("LiberationSans-Bold"), local("Arimo Bold"), local("Arimo-Bold"), local("Roboto Bold"), local("Roboto-Bold");
+  size-adjust: 74.9%;
+  ascent-override: 106.1%;
+  descent-override: 32%;
+  line-gap-override: 0%;
+  unicode-range: U+0020-007E,U+00A0-00AC,U+00AE-0148,U+014A-017E,U+2013-2014,U+2018-201A,U+201C-201E,U+2026,U+2039-203A,U+20AC;
+}
+
+@font-face {
+  font-family: "Anybody Fallback";
+  font-style: normal;
+  font-weight: 100 900;
+  font-stretch: 95% 99%;
+  src: local("Arial Bold"), local("Arial-BoldMT"), local("Liberation Sans Bold"), local("LiberationSans-Bold"), local("Arimo Bold"), local("Arimo-Bold"), local("Roboto Bold"), local("Roboto-Bold");
+  size-adjust: 78.6%;
+  ascent-override: 101.1%;
+  descent-override: 30.5%;
+  line-gap-override: 0%;
+  unicode-range: U+0020-007E,U+00A0-00AC,U+00AE-0148,U+014A-017E,U+2013-2014,U+2018-201A,U+201C-201E,U+2026,U+2039-203A,U+20AC;
+}
+
+@font-face {
+  font-family: "Anybody Fallback";
+  font-style: normal;
+  font-weight: 100 900;
+  font-stretch: 100% 104%;
+  src: local("Arial Bold"), local("Arial-BoldMT"), local("Liberation Sans Bold"), local("LiberationSans-Bold"), local("Arimo Bold"), local("Arimo-Bold"), local("Roboto Bold"), local("Roboto-Bold");
+  size-adjust: 82.2%;
+  ascent-override: 96.7%;
+  descent-override: 29.2%;
+  line-gap-override: 0%;
+  unicode-range: U+0020-007E,U+00A0-00AC,U+00AE-0148,U+014A-017E,U+2013-2014,U+2018-201A,U+201C-201E,U+2026,U+2039-203A,U+20AC;
+}
+
+@font-face {
+  font-family: "Anybody Fallback";
+  font-style: normal;
+  font-weight: 100 900;
+  font-stretch: 105% 109%;
+  src: local("Arial Bold"), local("Arial-BoldMT"), local("Liberation Sans Bold"), local("LiberationSans-Bold"), local("Arimo Bold"), local("Arimo-Bold"), local("Roboto Bold"), local("Roboto-Bold");
+  size-adjust: 85.9%;
+  ascent-override: 92.5%;
+  descent-override: 27.9%;
+  line-gap-override: 0%;
+  unicode-range: U+0020-007E,U+00A0-00AC,U+00AE-0148,U+014A-017E,U+2013-2014,U+2018-201A,U+201C-201E,U+2026,U+2039-203A,U+20AC;
+}
+
+@font-face {
+  font-family: "Anybody Fallback";
+  font-style: normal;
+  font-weight: 100 900;
+  font-stretch: 110% 114%;
+  src: local("Arial Bold"), local("Arial-BoldMT"), local("Liberation Sans Bold"), local("LiberationSans-Bold"), local("Arimo Bold"), local("Arimo-Bold"), local("Roboto Bold"), local("Roboto-Bold");
+  size-adjust: 89.6%;
+  ascent-override: 88.7%;
+  descent-override: 26.8%;
+  line-gap-override: 0%;
+  unicode-range: U+0020-007E,U+00A0-00AC,U+00AE-0148,U+014A-017E,U+2013-2014,U+2018-201A,U+201C-201E,U+2026,U+2039-203A,U+20AC;
+}
+
+@font-face {
+  font-family: "Anybody Fallback";
+  font-style: normal;
+  font-weight: 100 900;
+  font-stretch: 115% 119%;
+  src: local("Arial Bold"), local("Arial-BoldMT"), local("Liberation Sans Bold"), local("LiberationSans-Bold"), local("Arimo Bold"), local("Arimo-Bold"), local("Roboto Bold"), local("Roboto-Bold");
+  size-adjust: 93.3%;
+  ascent-override: 85.2%;
+  descent-override: 25.7%;
+  line-gap-override: 0%;
+  unicode-range: U+0020-007E,U+00A0-00AC,U+00AE-0148,U+014A-017E,U+2013-2014,U+2018-201A,U+201C-201E,U+2026,U+2039-203A,U+20AC;
+}
+
+@font-face {
+  font-family: "Anybody Fallback";
+  font-style: normal;
+  font-weight: 100 900;
+  font-stretch: 120% 124%;
+  src: local("Arial Bold"), local("Arial-BoldMT"), local("Liberation Sans Bold"), local("LiberationSans-Bold"), local("Arimo Bold"), local("Arimo-Bold"), local("Roboto Bold"), local("Roboto-Bold");
+  size-adjust: 96.9%;
+  ascent-override: 82%;
+  descent-override: 24.8%;
+  line-gap-override: 0%;
+  unicode-range: U+0020-007E,U+00A0-00AC,U+00AE-0148,U+014A-017E,U+2013-2014,U+2018-201A,U+201C-201E,U+2026,U+2039-203A,U+20AC;
+}
+
+@font-face {
+  font-family: "Anybody Fallback";
+  font-style: normal;
+  font-weight: 100 900;
+  font-stretch: 125% 129%;
+  src: local("Arial Bold"), local("Arial-BoldMT"), local("Liberation Sans Bold"), local("LiberationSans-Bold"), local("Arimo Bold"), local("Arimo-Bold"), local("Roboto Bold"), local("Roboto-Bold");
+  size-adjust: 100.6%;
+  ascent-override: 79%;
+  descent-override: 23.9%;
+  line-gap-override: 0%;
+  unicode-range: U+0020-007E,U+00A0-00AC,U+00AE-0148,U+014A-017E,U+2013-2014,U+2018-201A,U+201C-201E,U+2026,U+2039-203A,U+20AC;
+}
+
+@font-face {
+  font-family: "Anybody Fallback";
+  font-style: normal;
+  font-weight: 100 900;
+  font-stretch: 130% 134%;
+  src: local("Arial Bold"), local("Arial-BoldMT"), local("Liberation Sans Bold"), local("LiberationSans-Bold"), local("Arimo Bold"), local("Arimo-Bold"), local("Roboto Bold"), local("Roboto-Bold");
+  size-adjust: 104.3%;
+  ascent-override: 76.2%;
+  descent-override: 23%;
+  line-gap-override: 0%;
+  unicode-range: U+0020-007E,U+00A0-00AC,U+00AE-0148,U+014A-017E,U+2013-2014,U+2018-201A,U+201C-201E,U+2026,U+2039-203A,U+20AC;
+}
+
+@font-face {
+  font-family: "Anybody Fallback";
+  font-style: normal;
+  font-weight: 100 900;
+  font-stretch: 135% 139%;
+  src: local("Arial Bold"), local("Arial-BoldMT"), local("Liberation Sans Bold"), local("LiberationSans-Bold"), local("Arimo Bold"), local("Arimo-Bold"), local("Roboto Bold"), local("Roboto-Bold");
+  size-adjust: 108%;
+  ascent-override: 73.6%;
+  descent-override: 22.2%;
+  line-gap-override: 0%;
+  unicode-range: U+0020-007E,U+00A0-00AC,U+00AE-0148,U+014A-017E,U+2013-2014,U+2018-201A,U+201C-201E,U+2026,U+2039-203A,U+20AC;
+}
+
+@font-face {
+  font-family: "Anybody Fallback";
+  font-style: normal;
+  font-weight: 100 900;
+  font-stretch: 140% 144%;
+  src: local("Arial Bold"), local("Arial-BoldMT"), local("Liberation Sans Bold"), local("LiberationSans-Bold"), local("Arimo Bold"), local("Arimo-Bold"), local("Roboto Bold"), local("Roboto-Bold");
+  size-adjust: 111.6%;
+  ascent-override: 71.2%;
+  descent-override: 21.5%;
+  line-gap-override: 0%;
+  unicode-range: U+0020-007E,U+00A0-00AC,U+00AE-0148,U+014A-017E,U+2013-2014,U+2018-201A,U+201C-201E,U+2026,U+2039-203A,U+20AC;
+}
+
+@font-face {
+  font-family: "Anybody Fallback";
+  font-style: normal;
+  font-weight: 100 900;
+  font-stretch: 145% 150%;
+  src: local("Arial Bold"), local("Arial-BoldMT"), local("Liberation Sans Bold"), local("LiberationSans-Bold"), local("Arimo Bold"), local("Arimo-Bold"), local("Roboto Bold"), local("Roboto-Bold");
+  size-adjust: 115.3%;
+  ascent-override: 69%;
+  descent-override: 20.8%;
+  line-gap-override: 0%;
+  unicode-range: U+0020-007E,U+00A0-00AC,U+00AE-0148,U+014A-017E,U+2013-2014,U+2018-201A,U+201C-201E,U+2026,U+2039-203A,U+20AC;
+}
+
+/* ------------------------------------------------------------
+   2. El rótulo (SalaTitle).
+   El servidor decide por dónde se parte, la anchura y el tamaño como parte
+   del ancho de la caja; aquí solo se elige entre la composición estrecha y
+   la ancha según lo que mida el contenedor.
+   ------------------------------------------------------------ */
+
+.sala-title {
+  container-type: inline-size;
+}
+
+/* Sin unidades de contenedor (navegadores de antes de 2023): un título normal, que parte donde puede.
+   `:where`: quien lo usa puede cambiarle el `display` (el póster lo corta a cuatro líneas). */
+:where(.sala-title-text) {
+  display: block;
+}
+
+.sala-title-text {
+  font-size: clamp(1.75rem, 9vw, 4rem);
+  overflow-wrap: anywhere;
+}
+
+.sala-title-text > br {
+  display: none;
+}
+
+.sala-title-original {
+  margin: 0.5em 0 0;
+  font-family: var(--sala-font-display);
+  font-weight: 700;
+  font-size: clamp(1.125rem, 3.4cqw, 1.75rem);
+  line-height: 1.15;
+  overflow-wrap: anywhere;
+}
+
+@supports (width: 1cqw) {
+  .sala-title-text {
+    font-size: clamp(var(--sala-title-floor, 0px), calc(var(--sala-title-n-size) * var(--sala-title-unit, 1cqw)), var(--sala-title-cap, 1000rem));
+    font-stretch: var(--sala-title-n-stretch);
+  }
+
+  .sala-title-text > br[data-n] {
+    display: inline;
+  }
+
+  @container (min-width: 45rem) {
+    .sala-title-text {
+      font-size: clamp(var(--sala-title-floor, 0px), calc(var(--sala-title-w-size) * var(--sala-title-unit, 1cqw)), var(--sala-title-cap, 1000rem));
+      font-stretch: var(--sala-title-w-stretch);
+    }
+
+    .sala-title-text > br[data-n] {
+      display: none;
+    }
+
+    .sala-title-text > br[data-w] {
+      display: inline;
+    }
+  }
+}
+
+/* ------------------------------------------------------------
+   3. El rótulo sobre la imagen (SalaStage).
+   La imagen llena la sala; encima, el velo; encima, el título, abajo.
+   El encabezado ocupa la sala entera (subrejilla): así su fondo casa con la
+   imagen sin medir nada, y el fundido es el propio texto pintado con la
+   figura (`background-clip: text`), sin repetir el título.
+   ------------------------------------------------------------ */
+
+/* Filas: hueco que se encoge (la imagen), el título, lo de debajo y el margen.
+   El título y lo de debajo nunca se recortan: si no caben en el alto que se le
+   da, la sala crece. Por eso quien la usa le pone un alto mínimo (o una
+   proporción), nunca un alto fijo ni un máximo. Sobre el título queda siempre
+   un hueco (el margen o un cuarto del cuerpo, lo mayor), donde cabe lo que
+   asoman las letras; lo demás, como el fundido del velo, se recorta. */
+.sala-stage {
+  position: relative;
+  isolation: isolate;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-rows: minmax(0, 1fr) auto auto var(--sala-margin);
+  overflow: clip;
+  container-type: inline-size;
+  --sala-title-unit: calc((100cqw - 2 * var(--sala-margin)) / 100);
+}
+
+@media (prefers-contrast: more) {
+  .sala-stage {
+    --sala-stage-veil-min: 0.85;
+  }
+}
+
+.sala-stage-image,
+.sala-stage-figure {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.sala-stage-image > img,
+.sala-stage-figure {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: var(--sala-stage-focus, 50% 50%);
+}
+
+/* El velo sigue al contenido: opaco desde el hueco sobre el título hasta
+   abajo (lo de debajo y el margen incluidos) y, encima, un fundido de 12cqw. */
+.sala-stage-veil {
+  position: relative;
+  grid-area: 2 / 1 / -1 / -1;
+  pointer-events: none;
+  background: color-mix(in srgb, var(--sala-background) calc(max(var(--sala-stage-veil, 0.7), var(--sala-stage-veil-min, 0)) * 100%), transparent);
+}
+
+.sala-stage-veil::before {
+  content: "";
+  position: absolute;
+  inset-inline: 0;
+  bottom: 100%;
+  height: 12cqw;
+  background: linear-gradient(to top, color-mix(in srgb, var(--sala-background) calc(max(var(--sala-stage-veil, 0.7), var(--sala-stage-veil-min, 0)) * 100%), transparent), transparent);
+}
+
+/* La figura solo se pinta con el fundido encendido. */
+.sala-stage-figure {
+  display: none;
+  pointer-events: none;
+}
+
+.sala-stage-heading {
+  position: relative;
+  grid-area: 1 / 1 / -1 / -1;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-rows: minmax(0, 1fr) auto auto var(--sala-margin);
+  margin: 0;
+}
+
+@supports (grid-template-rows: subgrid) {
+  .sala-stage-heading {
+    grid-template-rows: subgrid;
+  }
+}
+
+.sala-stage-heading > .sala-title-text {
+  grid-row: 2;
+  align-self: end;
+  margin-top: max(var(--sala-margin), 0.25 * clamp(var(--sala-title-floor, 0px), calc(var(--sala-title-n-size) * var(--sala-title-unit, 1cqw)), var(--sala-title-cap, 1000rem)));
+  padding-inline: var(--sala-margin);
+  animation: sala-title-rise var(--sala-duration-slow) var(--sala-ease) backwards;
+}
+
+.sala-stage-heading ::selection {
+  background: var(--sala-ink);
+  color: var(--sala-background);
+}
+
+.sala-stage-below {
+  position: relative;
+  grid-area: 3 / 1;
+  padding: 0.75rem var(--sala-margin) 0;
+}
+
+/* Biblia §6: el título sube. Sin opacidad: lo que se ve desde el primer momento es el título. */
+@keyframes sala-title-rise {
+  from {
+    transform: translateY(0.18em);
+  }
+}
+
+/* El fundido espera a que el título esté en su sitio y entonces aparece, sin animarse. */
+@keyframes sala-stage-fuse-wait {
+  from {
+    background-image: none;
+    color: var(--sala-ink);
+  }
+}
+
+@keyframes sala-stage-figure-wait {
+  from {
+    visibility: hidden;
+  }
+}
+
+@container (min-width: 45rem) {
+  .sala-stage-heading > .sala-title-text {
+    margin-top: max(var(--sala-margin), 0.25 * clamp(var(--sala-title-floor, 0px), calc(var(--sala-title-w-size) * var(--sala-title-unit, 1cqw)), var(--sala-title-cap, 1000rem)));
+  }
+}
+
+@supports (grid-template-rows: subgrid) and ((background-clip: text) or (-webkit-background-clip: text)) {
+  @media (prefers-reduced-motion: no-preference) and (prefers-contrast: no-preference) and (forced-colors: none) {
+    .sala-stage[data-sala-fuse~="n"] .sala-stage-figure {
+      display: block;
+      animation: sala-stage-figure-wait 0s linear var(--sala-duration-slow) backwards;
+    }
+
+    .sala-stage[data-sala-fuse~="n"] .sala-stage-heading {
+        background: var(--sala-fuse-n);
+        -webkit-background-clip: text;
+        background-clip: text;
+        color: transparent;
+        animation: sala-stage-fuse-wait 0s linear var(--sala-duration-slow) backwards;
+    }
+
+    @container (min-width: 45rem) {
+      .sala-stage[data-sala-fuse~="n"] .sala-stage-figure {
+        display: none;
+      }
+
+      .sala-stage[data-sala-fuse~="n"] .sala-stage-heading {
+        background: none;
+        color: inherit;
+        animation: none;
+      }
+
+      .sala-stage[data-sala-fuse~="w"] .sala-stage-figure {
+        display: block;
+        animation: sala-stage-figure-wait 0s linear var(--sala-duration-slow) backwards;
+      }
+
+      .sala-stage[data-sala-fuse~="w"] .sala-stage-heading {
+        background: var(--sala-fuse-w);
+        -webkit-background-clip: text;
+        background-clip: text;
+        color: transparent;
+        animation: sala-stage-fuse-wait 0s linear var(--sala-duration-slow) backwards;
+      }
+    }
+  }
+}
+
+/* Movimiento reducido (del sistema o el interruptor de la app, `data-sala-motion="reduce"`):
+   todo quieto y nada oculto (biblia §6). Sin entrada y sin fundido. */
+@media (prefers-reduced-motion: reduce) {
+  .sala-stage-heading > .sala-title-text {
+    animation: none;
+  }
+}
+
+[data-sala-motion="reduce"] .sala-stage-heading > .sala-title-text,
+.sala-stage[data-sala-motion="reduce"] .sala-stage-heading > .sala-title-text {
+  animation: none;
+}
+
+[data-sala-motion="reduce"] .sala-stage .sala-stage-figure,
+.sala-stage[data-sala-motion="reduce"] .sala-stage-figure {
+  display: none;
+}
+
+[data-sala-motion="reduce"] .sala-stage .sala-stage-heading,
+.sala-stage[data-sala-motion="reduce"] .sala-stage-heading {
+  background: none;
+  color: inherit;
+  animation: none;
+}

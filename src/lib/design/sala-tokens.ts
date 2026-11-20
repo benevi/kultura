@@ -97,14 +97,17 @@ export const SALA_COLOR_NAMES: readonly string[] = [...Object.keys(SALA_COLOR.li
 /** Nombres de familia de los `@font-face` de `src/styles/sala/fonts*.css`. */
 export const SALA_FAMILY = {
   display: 'Anybody',
+  /** Respaldo de Anybody con métricas ajustadas (`src/styles/sala/title.css`). Donde no se carga esa hoja, se salta. */
+  displayFallback: 'Anybody Fallback',
   text: 'Instrument Sans',
   jp: 'Noto Sans JP',
   kr: 'Noto Sans KR',
 } as const
 
-const stack = (first: string, cjk: readonly string[]) =>
-  [first, ...cjk].map((f) => `"${f}"`).join(', ') + ', system-ui, sans-serif'
+const stack = (first: readonly string[], cjk: readonly string[]) =>
+  [...first, ...cjk].map((f) => `"${f}"`).join(', ') + ', system-ui, sans-serif'
 
+const DISPLAY = [SALA_FAMILY.display, SALA_FAMILY.displayFallback]
 const JP_FIRST = [SALA_FAMILY.jp, SALA_FAMILY.kr]
 const KR_FIRST = [SALA_FAMILY.kr, SALA_FAMILY.jp]
 
@@ -115,8 +118,8 @@ const KR_FIRST = [SALA_FAMILY.kr, SALA_FAMILY.jp]
  * qué trazo salen los caracteres chinos que comparten.
  */
 export const SALA_FONT = {
-  display: { default: stack(SALA_FAMILY.display, JP_FIRST), ko: stack(SALA_FAMILY.display, KR_FIRST) },
-  text: { default: stack(SALA_FAMILY.text, JP_FIRST), ko: stack(SALA_FAMILY.text, KR_FIRST) },
+  display: { default: stack(DISPLAY, JP_FIRST), ko: stack(DISPLAY, KR_FIRST) },
+  text: { default: stack([SALA_FAMILY.text], JP_FIRST), ko: stack([SALA_FAMILY.text], KR_FIRST) },
 } as const
 
 export interface SalaTypeRole {

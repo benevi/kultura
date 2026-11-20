@@ -2,7 +2,7 @@
 
 /* Lo que no cambia con el tema. */
 :root {
-  --sala-font-display: "Anybody", "Noto Sans JP", "Noto Sans KR", system-ui, sans-serif;
+  --sala-font-display: "Anybody", "Anybody Fallback", "Noto Sans JP", "Noto Sans KR", system-ui, sans-serif;
   --sala-font-text: "Instrument Sans", "Noto Sans JP", "Noto Sans KR", system-ui, sans-serif;
   --sala-target: 48px;
   --sala-margin: clamp(16px, 4vw, 56px);
@@ -15,13 +15,13 @@
 
 /* Biblia §5: en coreano va primero la fuente coreana. */
 :lang(ko) {
-  --sala-font-display: "Anybody", "Noto Sans KR", "Noto Sans JP", system-ui, sans-serif;
+  --sala-font-display: "Anybody", "Anybody Fallback", "Noto Sans KR", "Noto Sans JP", system-ui, sans-serif;
   --sala-font-text: "Instrument Sans", "Noto Sans KR", "Noto Sans JP", system-ui, sans-serif;
 }
 
 /* Otro idioma marcado dentro de un texto coreano vuelve al orden por defecto. */
 [lang]:not(:lang(ko)) {
-  --sala-font-display: "Anybody", "Noto Sans JP", "Noto Sans KR", system-ui, sans-serif;
+  --sala-font-display: "Anybody", "Anybody Fallback", "Noto Sans JP", "Noto Sans KR", system-ui, sans-serif;
   --sala-font-text: "Instrument Sans", "Noto Sans JP", "Noto Sans KR", system-ui, sans-serif;
 }
 
