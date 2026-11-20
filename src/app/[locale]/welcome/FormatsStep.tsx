@@ -6,7 +6,7 @@ import { KButton } from '@/components/ui/KButton'
 import type { MediaType } from '@/types/media'
 import { AUTH_CARD } from '../login/AuthShell'
 import { FormatChips } from './FormatChips'
-import { BODY_CLASS, HEADING_CLASS } from './welcome-steps'
+import { BODY_CLASS, HEADING_CLASS } from './welcome-styles'
 
 interface FormatsStepProps {
   headingRef: RefObject<HTMLHeadingElement | null>

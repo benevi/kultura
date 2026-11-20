@@ -10,7 +10,7 @@ import { FormatChips } from './FormatChips'
 import { RateTile } from './RateTile'
 import { WelcomeImport } from './WelcomeImport'
 import type { StarterRatings } from './useStarterRatings'
-import { BODY_CLASS, HEADING_CLASS } from './welcome-steps'
+import { BODY_CLASS, HEADING_CLASS } from './welcome-styles'
 
 interface RateStepProps {
   headingRef: RefObject<HTMLHeadingElement | null>
@@ -22,10 +22,8 @@ interface RateStepProps {
   onFormatsChange: (next: MediaType[]) => void
   titles: StarterTitle[]
   ratings: StarterRatings
-  ratedCount: number
   importMessages: AbstractIntlMessages | null
   userId: string | null
-  onImported: (inLibrary: number) => void
   onBack: () => void
   onNext: () => void
 }
@@ -40,15 +38,13 @@ export function RateStep({
   onFormatsChange,
   titles,
   ratings,
-  ratedCount,
   importMessages,
   userId,
-  onImported,
   onBack,
   onNext,
 }: RateStepProps) {
   const t = useTranslations('onboarding')
-  const { scores, rateError, rate, flushRatings } = ratings
+  const { scores, rateError, ratedCount, setImportedCount, rate, flushRatings } = ratings
 
   return (
     <section aria-labelledby="welcome-heading" className="animate-toast-in flex flex-col gap-7">
@@ -89,7 +85,7 @@ export function RateStep({
       )}
 
       {/* F-26: quien viene de otra app se trae su historial en vez de puntuar a mano. */}
-      <WelcomeImport locale={locale} messages={importMessages} userId={userId} onFinished={onImported} />
+      <WelcomeImport locale={locale} messages={importMessages} userId={userId} onFinished={setImportedCount} />
 
       <ul className="grid grid-cols-2 gap-5 sm:grid-cols-3 lg:grid-cols-5">
         {titles.map((title, i) => (

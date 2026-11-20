@@ -1,5 +1,3 @@
-'use client'
-
 import { useRef, useState } from 'react'
 import { useTranslations } from 'next-intl'
 import { ApiError } from '@/lib/api/client'
@@ -30,6 +28,29 @@ export function useNameForm({ currentUsername, suggestChange, needsTerms, onDone
   const [nameFailed, setNameFailed] = useState('')
   const usernameRef = useRef<HTMLInputElement>(null)
   const termsRef = useRef<HTMLInputElement>(null)
+
+  /** Escribir en el campo borra el error que hubiera. */
+  function changeUsername(value: string) {
+    setUsername(value)
+    if (usernameError) setUsernameError('')
+  }
+
+  /** Marcar la casilla borra su error. */
+  function changeTerms(checked: boolean) {
+    setTermsChecked(checked)
+    if (checked) setTermsError('')
+  }
+
+  /**
+   * SEG-7: la casilla de edad y términos sigue pendiente (no marcada, o el
+   * servidor no tiene la aceptación). Pone el error y, si se pide, lleva el
+   * foco a la casilla en cuanto esté pintada.
+   */
+  function requireTerms({ focus }: { focus: boolean }) {
+    setTermsPending(true)
+    setTermsError(tAuth('termsRequired'))
+    if (focus) requestAnimationFrame(() => termsRef.current?.focus())
+  }
 
   async function submitName(e: React.FormEvent) {
     e.preventDefault()
@@ -73,16 +94,14 @@ export function useNameForm({ currentUsername, suggestChange, needsTerms, onDone
 
   return {
     username,
-    setUsername,
+    changeUsername,
     savedUsername,
     usernameError,
-    setUsernameError,
     termsPending,
-    setTermsPending,
     termsChecked,
-    setTermsChecked,
+    changeTerms,
     termsError,
-    setTermsError,
+    requireTerms,
     saving,
     nameFailed,
     usernameRef,

@@ -60,6 +60,11 @@ function renderFlow(props: Partial<Parameters<typeof WelcomeFlow>[0]> = {}) {
   )
 }
 
+// jsdom no implementa scrollTo: cada paso nuevo lo llama.
+beforeEach(() => {
+  window.scrollTo = vi.fn() as unknown as typeof window.scrollTo
+})
+
 describe('WelcomeFlow', () => {
   beforeEach(() => {
     vi.clearAllMocks()
@@ -285,7 +290,6 @@ describe('WelcomeFlow: caracterización (C12)', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     global.fetch = vi.fn().mockImplementation(async () => ok())
-    window.scrollTo = vi.fn() as unknown as typeof window.scrollTo
   })
 
   async function toRateStep() {
@@ -431,6 +435,23 @@ describe('WelcomeFlow: caracterización (C12)', () => {
     await screen.findByRole('heading', { name: 'rateTitle' })
     expect(screen.getByRole('status')).toHaveTextContent(`rateReady:{"count":${STARTER_MIN_RATINGS}}`)
   })
+
+  // «Saltar todo» con una nota aún en el debounce: se guarda antes de terminar.
+  for (const rateFirst of [false, true]) {
+    it(`saltar todo guarda la nota pendiente antes de terminar${rateFirst ? ' (rateFirst)' : ''}`, async () => {
+      renderFlow({ needsTerms: false, rateFirst })
+      if (!rateFirst) await toRateStep()
+      const [group] = screen.getAllByRole('radiogroup')
+      fireEvent.click(within(group).getByRole('radio', { name: 'stars:{"count":4}' }))
+      expect(calls('/api/library')).toHaveLength(0)
+      fireEvent.click(screen.getByRole('button', { name: 'skipAll' }))
+      await waitFor(() => expect(h.replace).toHaveBeenCalledWith('/es/home'))
+      const urls = (global.fetch as ReturnType<typeof vi.fn>).mock.calls.map(([u]) => u)
+      expect(urls).toEqual(['/api/library', '/api/settings'])
+      expect(calls('/api/library')).toEqual([{ mediaId: pickStarterTitles([])[0].id, status: 'completed', score: 4 }])
+      expect(calls('/api/settings')).toEqual([{ onboarding_done: true }])
+    })
+  }
 
   it('en el orden de siempre, puntuar no repite el filtro de formatos', async () => {
     renderFlow({ needsTerms: false })

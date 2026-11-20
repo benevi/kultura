@@ -15,7 +15,7 @@ import {
 } from '@/components/icons'
 
 /** Orden e icono de los formatos (el mismo orden e iconos que Descubrir). */
-export const WELCOME_FORMATS: ReadonlyArray<{ type: MediaType; icon: KIcon }> = [
+const WELCOME_FORMATS: ReadonlyArray<{ type: MediaType; icon: KIcon }> = [
   { type: 'movie', icon: IconFilm },
   { type: 'tv', icon: IconTv },
   { type: 'anime', icon: IconAnime },

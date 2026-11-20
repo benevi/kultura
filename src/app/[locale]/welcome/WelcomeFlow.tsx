@@ -41,14 +41,12 @@ interface WelcomeFlowProps {
 
 export function WelcomeFlow({ locale, next, currentUsername, suggestChange, needsTerms, rateFirst = false, importMessages = null, userId = null }: WelcomeFlowProps) {
   const t = useTranslations('onboarding')
-  const tAuth = useTranslations('auth')
   const router = useRouter()
 
   const { steps, step, setStep, stepIndex, isFirstStep, goNext, goBack, headingRef } = useWelcomeSteps(rateFirst, needsTerms)
 
   // Paso "nombre" (+ términos si entró con Google)
-  const name = useNameForm({ currentUsername, suggestChange, needsTerms, onDone: goNext })
-  const { termsPending, termsChecked, setTermsPending, setTermsError, termsRef } = name
+  const nameForm = useNameForm({ currentUsername, suggestChange, needsTerms, onDone: goNext })
 
   // Paso "formatos" (o filtro dentro de "puntuar")
   const [formats, setFormats] = useState<MediaType[]>([])
@@ -56,9 +54,6 @@ export function WelcomeFlow({ locale, next, currentUsername, suggestChange, need
   // Paso "puntuar"
   const titles = useMemo(() => pickStarterTitles(formats), [formats])
   const ratings = useStarterRatings(locale)
-  // F-26: lo importado de otra app (paso opcional) también cuenta.
-  const [importedCount, setImportedCount] = useState(0)
-  const ratedCount = ratings.savedCount + importedCount
 
   const [finishing, setFinishing] = useState(false)
 
@@ -69,17 +64,16 @@ export function WelcomeFlow({ locale, next, currentUsername, suggestChange, need
   async function finish() {
     // SEG-7: todo se puede saltar MENOS la casilla de edad y términos (alta
     // con Google). Sin marcarla, "Saltar" se queda en el paso 1 y lo explica.
-    if (termsPending && !termsChecked) {
+    if (nameForm.termsPending && !nameForm.termsChecked) {
       setStep('name')
-      setTermsError(tAuth('termsRequired'))
-      requestAnimationFrame(() => termsRef.current?.focus())
+      nameForm.requireTerms({ focus: true })
       return
     }
     setFinishing(true)
     await ratings.flushRatings()
     // Casilla marcada pero aún sin guardar (salta desde el paso 1): va junta.
     const termsMissing = await updateSettings(
-      termsPending ? { accept_terms: true, onboarding_done: true } : { onboarding_done: true }
+      nameForm.termsPending ? { accept_terms: true, onboarding_done: true } : { onboarding_done: true }
     ).then(
       () => false,
       (err) => err instanceof ApiError && err.message === SETTINGS_ERRORS.termsRequired
@@ -87,9 +81,8 @@ export function WelcomeFlow({ locale, next, currentUsername, suggestChange, need
     if (termsMissing) {
       // El servidor no tiene la aceptación: de vuelta a la casilla.
       setFinishing(false)
-      setTermsPending(true)
       setStep('name')
-      setTermsError(tAuth('termsRequired'))
+      nameForm.requireTerms({ focus: false })
       return
     }
     // Cualquier otro fallo: la próxima vez vuelve a ofrecerse; no impide entrar.
@@ -115,7 +108,7 @@ export function WelcomeFlow({ locale, next, currentUsername, suggestChange, need
         <WelcomeProgress steps={steps} current={stepIndex} />
 
         {step === 'name' && (
-          <NameStep form={name} headingRef={headingRef} isFirstStep={isFirstStep} suggestChange={suggestChange} onBack={goBack} />
+          <NameStep form={nameForm} headingRef={headingRef} isFirstStep={isFirstStep} suggestChange={suggestChange} onBack={goBack} />
         )}
 
         {step === 'formats' && (
@@ -132,17 +125,15 @@ export function WelcomeFlow({ locale, next, currentUsername, suggestChange, need
             onFormatsChange={setFormats}
             titles={titles}
             ratings={ratings}
-            ratedCount={ratedCount}
             importMessages={importMessages}
             userId={userId}
-            onImported={setImportedCount}
             onBack={goBack}
             onNext={goNext}
           />
         )}
 
         {step === 'recs' && (
-          <RecsStep headingRef={headingRef} ratedCount={ratedCount} finishing={finishing} onBack={goBack} onFinish={finish} />
+          <RecsStep headingRef={headingRef} ratings={ratings} finishing={finishing} onBack={goBack} onFinish={finish} />
         )}
       </div>
     </main>

@@ -5,19 +5,21 @@ import { useTranslations } from 'next-intl'
 import { KButton } from '@/components/ui/KButton'
 import { AiRecommendations } from '@/components/home/AiRecommendations'
 import { STARTER_MIN_RATINGS } from '@/lib/recommendations/starter-titles'
-import { BODY_CLASS, HEADING_CLASS } from './welcome-steps'
+import type { StarterRatings } from './useStarterRatings'
+import { BODY_CLASS, HEADING_CLASS } from './welcome-styles'
 
 interface RecsStepProps {
   headingRef: RefObject<HTMLHeadingElement | null>
-  ratedCount: number
+  ratings: StarterRatings
   finishing: boolean
   onBack: () => void
   onFinish: () => void
 }
 
 /** Paso "recomendaciones": el botón de "Para ti" y terminar. */
-export function RecsStep({ headingRef, ratedCount, finishing, onBack, onFinish }: RecsStepProps) {
+export function RecsStep({ headingRef, ratings, finishing, onBack, onFinish }: RecsStepProps) {
   const t = useTranslations('onboarding')
+  const { ratedCount } = ratings
   return (
     <section aria-labelledby="welcome-heading" className="animate-toast-in flex flex-col gap-8">
       <div>

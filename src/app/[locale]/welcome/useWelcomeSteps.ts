@@ -1,5 +1,3 @@
-'use client'
-
 import { useEffect, useRef, useState } from 'react'
 import { initialSteps, type Step } from './welcome-steps'
 

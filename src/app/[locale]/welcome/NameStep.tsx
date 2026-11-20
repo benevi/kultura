@@ -8,7 +8,7 @@ import { cn } from '@/lib/utils/index'
 import { AUTH_CARD } from '../login/AuthShell'
 import { TermsCheckbox } from '../login/TermsCheckbox'
 import type { NameForm } from './useNameForm'
-import { BODY_CLASS, HEADING_CLASS } from './welcome-steps'
+import { BODY_CLASS, HEADING_CLASS } from './welcome-styles'
 
 interface NameStepProps {
   form: NameForm
@@ -24,15 +24,13 @@ export function NameStep({ form, headingRef, isFirstStep, suggestChange, onBack 
   const t = useTranslations('onboarding')
   const {
     username,
-    setUsername,
+    changeUsername,
     savedUsername,
     usernameError,
-    setUsernameError,
     termsPending,
     termsChecked,
-    setTermsChecked,
+    changeTerms,
     termsError,
-    setTermsError,
     saving,
     nameFailed,
     usernameRef,
@@ -60,10 +58,7 @@ export function NameStep({ form, headingRef, isFirstStep, suggestChange, onBack 
             name="username"
             label={t('nameLabel')}
             value={username}
-            onChange={(e) => {
-              setUsername(e.target.value)
-              if (usernameError) setUsernameError('')
-            }}
+            onChange={(e) => changeUsername(e.target.value)}
             placeholder={t('namePlaceholder')}
             hint={suggestChange ? t('nameHintGenerated', { current: savedUsername }) : t('nameHint')}
             error={usernameError}
@@ -79,10 +74,7 @@ export function NameStep({ form, headingRef, isFirstStep, suggestChange, onBack 
               ref={termsRef}
               id="welcome-terms"
               checked={termsChecked}
-              onChange={(checked) => {
-                setTermsChecked(checked)
-                if (checked) setTermsError('')
-              }}
+              onChange={changeTerms}
               error={termsError}
             />
           )}

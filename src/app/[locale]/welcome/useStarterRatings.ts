@@ -1,5 +1,3 @@
-'use client'
-
 import { useEffect, useRef, useState } from 'react'
 import { useTranslations } from 'next-intl'
 import type { StarterTitle } from '@/lib/recommendations/starter-titles'
@@ -16,8 +14,10 @@ export function useStarterRatings(locale: 'es' | 'en') {
   const [rateError, setRateError] = useState('')
   const timers = useRef(new Map<string, ReturnType<typeof setTimeout>>())
   const pending = useRef(new Map<string, () => Promise<void>>())
+  // F-26: lo importado de otra app (paso opcional) también cuenta.
+  const [importedCount, setImportedCount] = useState(0)
   // Lo que se está guardando ya cuenta: si falla, se descuenta y se avisa.
-  const savedCount = Object.values(saveState).filter((s) => s !== 'error').length
+  const ratedCount = Object.values(saveState).filter((s) => s !== 'error').length + importedCount
 
   useEffect(() => {
     const map = timers.current
@@ -62,7 +62,7 @@ export function useStarterRatings(locale: 'es' | 'en') {
     await Promise.all(saves.map((save) => save()))
   }
 
-  return { scores, rateError, savedCount, rate, flushRatings }
+  return { scores, rateError, ratedCount, setImportedCount, rate, flushRatings }
 }
 
 export type StarterRatings = ReturnType<typeof useStarterRatings>
