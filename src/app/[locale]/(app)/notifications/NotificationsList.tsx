@@ -88,11 +88,11 @@ const INLINE_LINK = `inline-flex items-center justify-center min-h-11 min-w-11 a
 
 /** Color del icono por tipo: acentos decorativos de la paleta F0 (tokens). */
 const TYPE_ACCENT: Record<string, { fg: string }> = {
-  recommendation: { fg: 'var(--accent-blue)' },
-  list_invite: { fg: 'var(--accent-lime)' },
-  group_invite: { fg: 'var(--accent-orange)' },
-  invite_accepted: { fg: 'var(--accent-purple)' },
-  friend_request: { fg: 'var(--accent-purple)' },
+  recommendation: { fg: 'text-accent-blue' },
+  list_invite: { fg: 'text-accent-lime' },
+  group_invite: { fg: 'text-accent-orange' },
+  invite_accepted: { fg: 'text-accent-purple' },
+  friend_request: { fg: 'text-accent-purple' },
 }
 
 function NotificationItem({ notif }: { notif: AppNotification }) {
@@ -201,8 +201,7 @@ function NotificationItem({ notif }: { notif: AppNotification }) {
       className={`flex items-center gap-4 rounded-2xl px-5 py-4 ${unread ? 'bg-surface-default' : 'bg-transparent'}`}
     >
       <div
-        className="flex-shrink-0 w-[42px] h-[42px] rounded-2xl bg-surface-elevated flex items-center justify-center"
-        style={{ color: accent.fg }}
+        className={`flex-shrink-0 w-[42px] h-[42px] rounded-2xl bg-surface-elevated flex items-center justify-center ${accent.fg}`}
       >
         {notif.type === 'recommendation' ? (
           <IconSparkles className="w-5 h-5" />

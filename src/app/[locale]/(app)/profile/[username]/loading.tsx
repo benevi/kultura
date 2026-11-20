@@ -50,11 +50,10 @@ export default function ProfileLoading() {
       <section className="animate-pulse">
         <div className="h-5 w-36 bg-surface-elevated rounded-pill mb-4" />
         <div className="flex flex-wrap gap-2">
-          {[80, 64, 96, 72, 88, 56].map((w, i) => (
+          {['w-[80px]', 'w-[64px]', 'w-[96px]', 'w-[72px]', 'w-[88px]', 'w-[56px]'].map((w, i) => (
             <div
               key={i}
-              className="h-7 bg-surface-elevated rounded-full"
-              style={{ width: `${w}px` }}
+              className={`h-7 bg-surface-elevated rounded-full ${w}`}
             />
           ))}
         </div>

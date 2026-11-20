@@ -66,11 +66,7 @@ export async function ProfileHeader({
           el mismo error ya corregido en GroupDetail. */}
       <div
         aria-hidden="true"
-        className="h-[120px] md:h-[160px] rounded-bento-xl"
-        style={{
-          background:
-            'radial-gradient(120% 100% at 20% 10%, oklch(55% 0.2 260 / 0.6) 0%, transparent 55%), linear-gradient(160deg, oklch(30% 0.1 260), oklch(16% 0.06 240))',
-        }}
+        className="h-[120px] md:h-[160px] rounded-bento-xl bg-[radial-gradient(120%_100%_at_20%_10%,oklch(55%_0.2_260/0.6)_0%,transparent_55%),linear-gradient(160deg,oklch(30%_0.1_260),oklch(16%_0.06_240))]"
       />
 
       {/* Avatar solapando la portada + nombre a su lado */}

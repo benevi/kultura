@@ -134,11 +134,7 @@ export async function InviteBanner({
   return (
     <aside
       aria-labelledby="invite-title"
-      className="relative rounded-bento-xl bg-surface-default p-6 md:p-8 flex flex-col md:flex-row md:items-center gap-5 justify-between"
-      style={{
-        background:
-          'radial-gradient(120% 100% at 20% 10%, oklch(68% 0.24 350 / 0.28) 0%, transparent 55%), var(--surface-default)',
-      }}
+      className="relative rounded-bento-xl bg-surface-default bg-[radial-gradient(120%_100%_at_20%_10%,oklch(68%_0.24_350/0.28)_0%,transparent_55%)] p-6 md:p-8 flex flex-col md:flex-row md:items-center gap-5 justify-between"
     >
       <div>
         {/* No es un encabezado: el banner va antes del h1 de la página. */}
