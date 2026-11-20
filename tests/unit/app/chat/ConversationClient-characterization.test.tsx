@@ -24,6 +24,8 @@ const { mockPush, mockShow, mockMarkRead, rt } = vi.hoisted(() => ({
     onArgs: null as unknown[] | null,
     handler: null as ((p: { new: Record<string, unknown> }) => Promise<void>) | null,
     channel: { id: 'canal' } as Record<string, unknown>,
+    /** Canales abiertos, en orden (cada `subscribe()` devuelve uno nuevo). */
+    channels: [] as { name: string }[],
     removeChannel: null as null | ((c: unknown) => void),
     lookups: [] as string[],
   },
@@ -59,7 +61,11 @@ vi.mock('@/lib/supabase/client', () => ({
           rt.handler = args[2] as typeof rt.handler
           return chain
         },
-        subscribe: () => rt.channel,
+        subscribe: () => {
+          rt.channel = { name }
+          rt.channels.push(rt.channel as { name: string })
+          return rt.channel
+        },
       }
       return chain
     },
@@ -110,7 +116,13 @@ function deferred<T>() {
 function renderConv(props: Partial<React.ComponentProps<typeof ConversationClient>> = {}) {
   return render(<ConversationClient conversationId="conv-1" otherUser={otherUser} currentUserId="me" {...props} />)
 }
-const html = () => document.body.innerHTML
+/** Los ids de `useId` dependen de cuántos componentes se montaron antes. */
+const normalizeIds = (s: string) => s.replace(/_r_[a-z0-9]+_/g, '_r_ID_')
+const html = () => normalizeIds(document.body.innerHTML)
+const outer = (el: Element) => normalizeIds(el.outerHTML)
+/** El historial entra con la región callada y se activa en un `setTimeout(0)`. */
+const logAnnounces = () =>
+  waitFor(() => expect(screen.getByRole('log')).toHaveAttribute('aria-live', 'polite'))
 
 beforeEach(() => {
   mockFetch.mockReset()
@@ -122,6 +134,7 @@ beforeEach(() => {
   rt.handler = null
   rt.removeChannel = vi.fn()
   rt.lookups = []
+  rt.channels = []
   vi.stubGlobal('fetch', mockFetch)
   vi.stubGlobal('requestAnimationFrame', (cb: FrameRequestCallback) => { cb(0); return 0 })
   Element.prototype.scrollIntoView = vi.fn()
@@ -139,7 +152,7 @@ describe('ConversationClient: HTML (caracterización)', () => {
     routeFetch({ 'GET /api/chat/conv-1': () => page(MSGS, true) })
     renderConv()
     await screen.findByText('lo mío')
-    await waitFor(() => expect(screen.getByRole('log')).toHaveAttribute('aria-live', 'polite'))
+    await logAnnounces()
     expect(html()).toMatchSnapshot()
   })
 
@@ -147,6 +160,7 @@ describe('ConversationClient: HTML (caracterización)', () => {
     routeFetch({ 'GET /api/chat/conv-1': () => page([]) })
     renderConv({ otherUser: null })
     await screen.findByText('chat.messagePlaceholder', { selector: 'div' })
+    await logAnnounces()
     expect(html()).toMatchSnapshot()
   })
 
@@ -161,6 +175,7 @@ describe('ConversationClient: HTML (caracterización)', () => {
     routeFetch({ 'GET /api/chat/conv-1': () => page(MSGS) })
     renderConv({ canSend: false })
     await screen.findByText('hola')
+    await logAnnounces()
     expect(html()).toMatchSnapshot()
   })
 
@@ -173,18 +188,19 @@ describe('ConversationClient: HTML (caracterización)', () => {
     await screen.findByText('hola')
     const toggle = screen.getByRole('button', { name: 'moderation.conversationOptions' })
     fireEvent.click(toggle)
-    expect(toggle.parentElement!.outerHTML).toMatchSnapshot('abiertas')
+    expect(outer(toggle.parentElement!)).toMatchSnapshot('abiertas')
     fireEvent.click(screen.getByRole('button', { name: 'moderation.blockUser(troll)' }))
-    expect(toggle.parentElement!.outerHTML).toMatchSnapshot('bloquear')
+    expect(outer(toggle.parentElement!)).toMatchSnapshot('bloquear')
     fireEvent.click(screen.getByRole('button', { name: 'moderation.cancel' }))
     fireEvent.click(screen.getByRole('button', { name: 'moderation.leave' }))
-    expect(toggle.parentElement!.outerHTML).toMatchSnapshot('salir')
+    expect(outer(toggle.parentElement!)).toMatchSnapshot('salir')
     fireEvent.click(screen.getByRole('button', { name: 'moderation.cancel' }))
     fireEvent.click(screen.getByRole('button', { name: 'moderation.blockUser(troll)' }))
     await act(async () => {
       fireEvent.click(within(screen.getByRole('group')).getByRole('button', { name: 'moderation.block' }))
     })
     await screen.findByText('moderation.blockedNotice')
+    await logAnnounces()
     expect(html()).toMatchSnapshot('bloqueado')
   })
 
@@ -192,8 +208,9 @@ describe('ConversationClient: HTML (caracterización)', () => {
     routeFetch({ 'GET /api/chat/conv-1': () => page(MSGS) })
     renderConv()
     await screen.findByText('lo mío')
+    await logAnnounces()
     fireEvent.click(screen.getByRole('button', { name: 'moderation.deleteMessage' }))
-    expect(screen.getByRole('log').outerHTML).toMatchSnapshot()
+    expect(outer(screen.getByRole('log'))).toMatchSnapshot()
   })
 })
 
@@ -209,6 +226,53 @@ describe('ConversationClient: realtime (caracterización)', () => {
     ])
     unmount()
     expect(rt.removeChannel).toHaveBeenCalledWith(rt.channel)
+  })
+
+  it('un solo canal aunque se vuelva a pintar (escribir, recibir un mensaje)', async () => {
+    routeFetch({ 'GET /api/chat/conv-1': () => page(MSGS) })
+    renderConv()
+    await screen.findByText('hola')
+    await logAnnounces()
+    const input = screen.getByLabelText('chat.messageLabel')
+    fireEvent.change(input, { target: { value: 'a' } })
+    fireEvent.change(input, { target: { value: 'ab' } })
+    await act(async () => {
+      await rt.handler!({ new: { id: 'r-9', content: 'llega', sender_id: 'other-user', created_at: '2026-11-01T11:00:00Z' } })
+    })
+    await screen.findByText('llega')
+    expect(rt.channels).toHaveLength(1)
+    expect(rt.removeChannel).not.toHaveBeenCalled()
+  })
+
+  it('otra conversación: quita el canal viejo y abre el nuevo', async () => {
+    routeFetch({
+      'GET /api/chat/conv-1': () => page([]),
+      'GET /api/chat/conv-2': () => page([]),
+    })
+    const { rerender } = renderConv()
+    await waitFor(() => expect(mockMarkRead).toHaveBeenCalledWith('conv-1'))
+    const [first] = rt.channels
+    rerender(<ConversationClient conversationId="conv-2" otherUser={otherUser} currentUserId="me" />)
+    await waitFor(() => expect(mockMarkRead).toHaveBeenCalledWith('conv-2'))
+    expect(rt.removeChannel).toHaveBeenCalledTimes(1)
+    expect(rt.removeChannel).toHaveBeenCalledWith(first)
+    expect(rt.channels.map((c) => c.name)).toEqual(['conversation:conv-1', 'conversation:conv-2'])
+    expect(rt.onArgs![1]).toMatchObject({ filter: 'conversation_id=eq.conv-2' })
+  })
+
+  it('con movimiento reducido el desplazamiento al final no anima', async () => {
+    const original = window.matchMedia
+    window.matchMedia = vi.fn((q: string) => ({ matches: q === '(prefers-reduced-motion: reduce)', media: q })) as unknown as typeof window.matchMedia
+    try {
+      routeFetch({ 'GET /api/chat/conv-1': () => page(MSGS) })
+      renderConv()
+      await screen.findByText('hola')
+      await waitFor(() => expect(Element.prototype.scrollIntoView).toHaveBeenCalledWith({ behavior: 'auto' }))
+      expect(window.matchMedia).toHaveBeenCalledWith('(prefers-reduced-motion: reduce)')
+      expect(Element.prototype.scrollIntoView).not.toHaveBeenCalledWith({ behavior: 'smooth' })
+    } finally {
+      window.matchMedia = original
+    }
   })
 
   it('un mensaje ajeno busca al autor, se pinta con su perfil, desplaza suave y no duplica', async () => {

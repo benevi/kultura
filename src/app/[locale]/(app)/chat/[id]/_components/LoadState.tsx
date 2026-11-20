@@ -22,7 +22,7 @@ export function LoadState({
       )}
       {!loading && loadError && (
         <div role="alert" className="text-center py-8 flex flex-col items-center gap-3">
-            <p className="text-sm text-text-secondary">{t('loadError')}</p>
+          <p className="text-sm text-text-secondary">{t('loadError')}</p>
           <button
             type="button"
             onClick={onRetry}
