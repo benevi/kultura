@@ -13,8 +13,6 @@ import { render, screen, fireEvent, waitFor, within, act } from '@testing-librar
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import type { List, ListItem, ListMember } from '@/types/list'
 
-vi.setConfig({ testTimeout: 15000 })
-
 const { client, router, log } = vi.hoisted(() => ({
   client: {
     deleteList: vi.fn(),
