@@ -60,6 +60,11 @@ function renderFlow(props: Partial<Parameters<typeof WelcomeFlow>[0]> = {}) {
   )
 }
 
+// jsdom no implementa scrollTo: cada paso nuevo lo llama.
+beforeEach(() => {
+  window.scrollTo = vi.fn() as unknown as typeof window.scrollTo
+})
+
 describe('WelcomeFlow', () => {
   beforeEach(() => {
     vi.clearAllMocks()
@@ -276,5 +281,181 @@ describe('títulos para puntuar', () => {
     expect(picked.slice(0, 4).map((t) => t.type)).toEqual(['book', 'game', 'book', 'game'])
     // Solo cómic (sin títulos fijos): se rellena con el resto, nunca vacío.
     expect(pickStarterTitles(['comic'])).toHaveLength(STARTER_RATE_COUNT)
+  })
+})
+
+// Fase 8.4 (C12): caracterización antes de partir WelcomeFlow en piezas.
+// Fija foco, anuncios, navegación y errores que los tests de arriba no tocan.
+describe('WelcomeFlow: caracterización (C12)', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    global.fetch = vi.fn().mockImplementation(async () => ok())
+  })
+
+  async function toRateStep() {
+    fireEvent.click(screen.getByRole('button', { name: 'continue' }))
+    fireEvent.click(await screen.findByRole('button', { name: 'continueAll' }))
+    await screen.findByRole('heading', { name: 'rateTitle' })
+  }
+
+  it('el foco va al título de cada paso nuevo, nunca al cargar', async () => {
+    renderFlow({ needsTerms: false })
+    expect(screen.getByRole('heading', { name: 'nameTitle' })).not.toHaveFocus()
+    expect(window.scrollTo).not.toHaveBeenCalled()
+    fireEvent.click(screen.getByRole('button', { name: 'continue' }))
+    const heading = await screen.findByRole('heading', { name: 'formatsTitle' })
+    expect(heading).toHaveFocus()
+    expect(heading).toHaveAttribute('id', 'welcome-heading')
+    expect(heading).toHaveAttribute('tabindex', '-1')
+    expect(window.scrollTo).toHaveBeenCalledWith({ top: 0 })
+  })
+
+  it('progreso: «paso X de N» y aria-current en el paso actual', async () => {
+    renderFlow({ needsTerms: false })
+    const nav = screen.getByRole('navigation', { name: 'progressLabel' })
+    expect(within(nav).getByText('stepOf:{"current":1,"total":4}')).toBeInTheDocument()
+    let items = within(nav).getAllByRole('listitem')
+    expect(items).toHaveLength(4)
+    expect(items[0]).toHaveAttribute('aria-current', 'step')
+    fireEvent.click(screen.getByRole('button', { name: 'continue' }))
+    await screen.findByRole('heading', { name: 'formatsTitle' })
+    expect(within(nav).getByText('stepOf:{"current":2,"total":4}')).toBeInTheDocument()
+    items = within(nav).getAllByRole('listitem')
+    expect(items[0]).not.toHaveAttribute('aria-current')
+    expect(items[1]).toHaveAttribute('aria-current', 'step')
+  })
+
+  it('el saludo y la falta de «Atrás» solo en el primer paso; «Atrás» conserva lo escrito', async () => {
+    renderFlow({ needsTerms: false, suggestChange: false, currentUsername: 'pepa' })
+    expect(screen.getByText('welcomeBadge')).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'back' })).not.toBeInTheDocument()
+    expect(screen.getByLabelText('nameLabel')).toHaveValue('pepa')
+    expect(screen.getByText('nameHint')).toBeInTheDocument()
+    // Sin cambios en el nombre: avanza sin llamar a la API.
+    fireEvent.click(screen.getByRole('button', { name: 'continue' }))
+    await screen.findByRole('heading', { name: 'formatsTitle' })
+    expect(global.fetch).not.toHaveBeenCalled()
+    fireEvent.click(screen.getByRole('button', { name: /formats\.anime/ }))
+    expect(screen.getByRole('button', { name: 'continue' })).toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: 'back' }))
+    expect(await screen.findByRole('heading', { name: 'nameTitle' })).toHaveFocus()
+    expect(screen.getByLabelText('nameLabel')).toHaveValue('pepa')
+    // Y al volver a formatos sigue elegido lo de antes.
+    fireEvent.click(screen.getByRole('button', { name: 'continue' }))
+    expect(await screen.findByRole('button', { name: /formats\.anime/ })).toHaveAttribute('aria-pressed', 'true')
+  })
+
+  it('con nombre generado, el campo empieza vacío y la pista enseña el actual', () => {
+    renderFlow({ needsTerms: false })
+    expect(screen.getByLabelText('nameLabel')).toHaveValue('')
+    expect(screen.getByText('nameHintGenerated:{"current":"u_3f9a1c"}')).toBeInTheDocument()
+  })
+
+  it('nombre con formato inválido → error, foco en el campo y sin API; escribir lo borra', () => {
+    renderFlow({ needsTerms: false })
+    const input = screen.getByLabelText('nameLabel')
+    fireEvent.change(input, { target: { value: 'a b' } })
+    fireEvent.click(screen.getByRole('button', { name: 'continue' }))
+    expect(screen.getByText('nameInvalid')).toBeInTheDocument()
+    expect(input).toHaveAttribute('aria-invalid', 'true')
+    expect(input).toHaveFocus()
+    expect(global.fetch).not.toHaveBeenCalled()
+    fireEvent.change(input, { target: { value: 'ab_c' } })
+    expect(screen.queryByText('nameInvalid')).not.toBeInTheDocument()
+  })
+
+  it('invalid_input del servidor → nameInvalid en el campo', async () => {
+    global.fetch = vi.fn().mockResolvedValue(new Response(JSON.stringify({ error: { code: 'invalid_input', message: 'x' } }), { status: 400 }))
+    renderFlow({ needsTerms: false })
+    fireEvent.change(screen.getByLabelText('nameLabel'), { target: { value: 'pepe_01' } })
+    fireEvent.click(screen.getByRole('button', { name: 'continue' }))
+    expect(await screen.findByText('nameInvalid')).toBeInTheDocument()
+    expect(screen.getByLabelText('nameLabel')).toHaveFocus()
+  })
+
+  it('conflict con username_reserved del servidor → nameReserved', async () => {
+    global.fetch = vi.fn().mockResolvedValue(new Response(JSON.stringify({ error: { code: 'conflict', message: 'username_reserved' } }), { status: 409 }))
+    renderFlow({ needsTerms: false })
+    fireEvent.change(screen.getByLabelText('nameLabel'), { target: { value: 'pepe_02' } })
+    fireEvent.click(screen.getByRole('button', { name: 'continue' }))
+    expect(await screen.findByText('nameReserved')).toBeInTheDocument()
+  })
+
+  it('otro fallo al guardar el nombre → aviso (role=alert) y se queda en el paso', async () => {
+    global.fetch = vi.fn().mockResolvedValue(new Response(null, { status: 500 }))
+    renderFlow({ needsTerms: false })
+    fireEvent.change(screen.getByLabelText('nameLabel'), { target: { value: 'pepe_03' } })
+    fireEvent.click(screen.getByRole('button', { name: 'continue' }))
+    expect(await screen.findByRole('alert')).toHaveTextContent('saveError')
+    expect(screen.getByRole('heading', { name: 'nameTitle' })).toBeInTheDocument()
+  })
+
+  it('al intentar saltar sin la casilla, el foco va a la casilla', async () => {
+    renderFlow({ needsTerms: true })
+    fireEvent.click(screen.getByRole('button', { name: 'skipAll' }))
+    await waitFor(() => expect(screen.getByRole('checkbox')).toHaveFocus())
+  })
+
+  it('puntuar: contador accesible, pista del mínimo y «Saltar paso» que guarda lo pendiente', async () => {
+    renderFlow({ needsTerms: false })
+    await toRateStep()
+    expect(screen.getByRole('status')).toHaveTextContent(`rateProgress:{"count":0,"min":${STARTER_MIN_RATINGS}}`)
+    const next = screen.getByRole('button', { name: 'toRecommendations' })
+    expect(next).toHaveAttribute('aria-describedby', 'rate-min-hint')
+    expect(document.getElementById('rate-min-hint')).toHaveTextContent(`rateMinHint:{"min":${STARTER_MIN_RATINGS}}`)
+
+    // Dos notas seguidas al mismo título: una sola petición, con la última.
+    const [group] = screen.getAllByRole('radiogroup')
+    fireEvent.click(within(group).getByRole('radio', { name: 'stars:{"count":3}' }))
+    fireEvent.click(within(group).getByRole('radio', { name: 'stars:{"count":5}' }))
+    expect(screen.getByRole('status')).toHaveTextContent(`rateProgress:{"count":1,"min":${STARTER_MIN_RATINGS}}`)
+    expect(calls('/api/library')).toHaveLength(0)
+
+    fireEvent.click(screen.getByRole('button', { name: 'skipStep' }))
+    await screen.findByRole('heading', { name: 'recsTitle' })
+    expect(calls('/api/library')).toEqual([{ mediaId: pickStarterTitles([])[0].id, status: 'completed', score: 5 }])
+    expect(screen.getByText('recsBodyNoRatings')).toBeInTheDocument()
+  })
+
+  it('con el mínimo de notas: estado «listo», sin «Saltar paso» y el cuerpo de recomendaciones con notas', async () => {
+    renderFlow({ needsTerms: false })
+    await toRateStep()
+    for (const group of screen.getAllByRole('radiogroup').slice(0, STARTER_MIN_RATINGS)) {
+      fireEvent.click(within(group).getByRole('radio', { name: 'stars:{"count":4}' }))
+    }
+    expect(screen.getByRole('status')).toHaveTextContent(`rateReady:{"count":${STARTER_MIN_RATINGS}}`)
+    expect(screen.queryByRole('button', { name: 'skipStep' })).not.toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'toRecommendations' })).not.toHaveAttribute('aria-describedby')
+    expect(document.getElementById('rate-min-hint')).toBeNull()
+    fireEvent.click(screen.getByRole('button', { name: 'toRecommendations' }))
+    await screen.findByRole('heading', { name: 'recsTitle' })
+    expect(screen.getByText('recsBody')).toBeInTheDocument()
+    // «Atrás» desde recomendaciones vuelve a puntuar con las notas puestas.
+    fireEvent.click(screen.getByRole('button', { name: 'back' }))
+    await screen.findByRole('heading', { name: 'rateTitle' })
+    expect(screen.getByRole('status')).toHaveTextContent(`rateReady:{"count":${STARTER_MIN_RATINGS}}`)
+  })
+
+  // «Saltar todo» con una nota aún en el debounce: se guarda antes de terminar.
+  for (const rateFirst of [false, true]) {
+    it(`saltar todo guarda la nota pendiente antes de terminar${rateFirst ? ' (rateFirst)' : ''}`, async () => {
+      renderFlow({ needsTerms: false, rateFirst })
+      if (!rateFirst) await toRateStep()
+      const [group] = screen.getAllByRole('radiogroup')
+      fireEvent.click(within(group).getByRole('radio', { name: 'stars:{"count":4}' }))
+      expect(calls('/api/library')).toHaveLength(0)
+      fireEvent.click(screen.getByRole('button', { name: 'skipAll' }))
+      await waitFor(() => expect(h.replace).toHaveBeenCalledWith('/es/home'))
+      const urls = (global.fetch as ReturnType<typeof vi.fn>).mock.calls.map(([u]) => u)
+      expect(urls).toEqual(['/api/library', '/api/settings'])
+      expect(calls('/api/library')).toEqual([{ mediaId: pickStarterTitles([])[0].id, status: 'completed', score: 4 }])
+      expect(calls('/api/settings')).toEqual([{ onboarding_done: true }])
+    })
+  }
+
+  it('en el orden de siempre, puntuar no repite el filtro de formatos', async () => {
+    renderFlow({ needsTerms: false })
+    await toRateStep()
+    expect(screen.queryByRole('group', { name: 'formatsTitle' })).not.toBeInTheDocument()
   })
 })
