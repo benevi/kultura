@@ -16,6 +16,7 @@
 
 import { getTranslations } from "next-intl/server";
 import { BestPoster } from "@/components/best/BestPoster";
+import { posterFrameClass } from "@/components/media/poster-frame-class";
 import { posterGradient } from "@/lib/images/poster-gradient";
 import { bestItemPath, type BestItem } from "@/lib/best/best-of";
 import { localeHref, saveHref } from "@/lib/best/links";
@@ -159,7 +160,7 @@ export async function BestPodium({ items, locale }: { items: BestItem[]; locale:
             ) : null}
             <div
               aria-hidden="true"
-              className={`relative aspect-[2/3] shrink-0 overflow-hidden rounded-2xl ${look.poster}`}
+              className={posterFrameClass({ className: `shrink-0 ${look.poster}` })}
               style={{ background: posterGradient(item.id) }}
             >
               <BestPoster src={item.poster} alt={item.title} sizes={look.sizes} priority />
@@ -215,7 +216,7 @@ export async function BestRankList({ items, locale }: { items: BestItem[]; local
             </span>
             <div
               aria-hidden="true"
-              className="relative aspect-[2/3] w-16 shrink-0 overflow-hidden rounded-2xl md:w-20"
+              className={posterFrameClass({ className: "w-16 shrink-0 md:w-20" })}
               style={{ background: posterGradient(item.id) }}
             >
               <BestPoster src={item.poster} alt={item.title} sizes="(min-width: 768px) 80px, 64px" />

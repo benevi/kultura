@@ -2,8 +2,7 @@
 
 import { useState } from 'react'
 import { useTranslations } from 'next-intl'
-import { PosterImage } from '@/components/media/PosterImage'
-import { posterGradient } from '@/lib/images/poster-gradient'
+import { PosterFrame } from '@/components/media/PosterFrame'
 import { cn } from '@/lib/utils/index'
 import type { StarterTitle } from '@/lib/recommendations/starter-titles'
 import { RateStars } from './RateStars'
@@ -34,23 +33,20 @@ export function RateTile({ title, locale, score, priority, formatLabel, onRate }
           ★ {score}
         </span>
       ) : null}
-      <div
+      <PosterFrame
+        seed={title.id}
+        title={name}
+        poster={posterFailed ? null : title.poster}
+        sizes="(max-width: 640px) 45vw, (max-width: 1024px) 30vw, 200px"
+        priority={priority}
+        onFail={() => setPosterFailed(true)}
+        initials={false}
+        zoom={false}
         className={cn(
-          'relative aspect-[2/3] w-full overflow-hidden rounded-2xl bg-surface-elevated transition-shadow duration-200',
+          'transition-shadow duration-200',
           rated && 'ring-2 ring-accent-lime ring-offset-2 ring-offset-surface-base'
         )}
-      >
-        <div aria-hidden="true" className="absolute inset-0" style={{ background: posterGradient(title.id) }} />
-        {!posterFailed && (
-          <PosterImage
-            src={title.poster}
-            sizes="(max-width: 640px) 45vw, (max-width: 1024px) 30vw, 200px"
-            priority={priority}
-            className="object-cover"
-            onFail={() => setPosterFailed(true)}
-          />
-        )}
-      </div>
+      />
       <p className="mt-3 line-clamp-2 font-body text-sm font-bold text-text-primary">{name}</p>
       <p className="font-body text-xs text-text-tertiary">
         {formatLabel}

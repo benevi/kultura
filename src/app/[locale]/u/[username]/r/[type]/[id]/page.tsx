@@ -20,11 +20,10 @@ import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/layout/Footer";
 import { KButton } from "@/components/ui/KButton";
 import { Avatar } from "@/components/ui/Avatar";
-import { PosterImage } from "@/components/media/PosterImage";
+import { PosterFrame } from "@/components/media/PosterFrame";
 import { SignedInBar, SignUpCta } from "@/components/collection/PublicCollection";
 import { Link } from "@/i18n/navigation";
 import { createClient } from "@/lib/supabase/server";
-import { posterGradient } from "@/lib/images/poster-gradient";
 import { mediaPath } from "@/lib/media/seo";
 import { siteUrl } from "@/lib/site-url";
 import { parseAttributionRecord, withAttribution, type AttributionParams } from "@/lib/analytics/attribution";
@@ -190,18 +189,25 @@ export default async function RatedTitlePage(props: Props) {
         <article
           className="rounded-bento-xl bg-surface-default p-6 md:p-10 shadow-hard-sm md:shadow-hard flex flex-col sm:flex-row gap-6 md:gap-10"
         >
-          <div
-            className="relative w-36 sm:w-44 md:w-52 aspect-[2/3] flex-shrink-0 rounded-2xl overflow-hidden self-center sm:self-start"
-            style={{ background: posterGradient(parsed.id) }}
+          {/* Iniciales grandes propias (text-3xl) y solo sin portada: las de
+              PosterFrame van apagadas. */}
+          <PosterFrame
+            seed={parsed.id}
+            title={media.title}
+            poster={media.poster}
+            sizes="(max-width: 640px) 144px, 208px"
+            priority
+            initials={false}
+            zoom={false}
+            elevated={false}
+            className="w-36 sm:w-44 md:w-52 flex-shrink-0 self-center sm:self-start"
           >
-            {media.poster ? (
-              <PosterImage src={media.poster} sizes="(max-width: 640px) 144px, 208px" className="object-cover" priority />
-            ) : (
+            {media.poster ? null : (
               <span aria-hidden="true" className="absolute inset-0 flex items-center justify-center text-white/90 font-display font-extrabold text-3xl">
                 {media.title.slice(0, 2).toUpperCase()}
               </span>
             )}
-          </div>
+          </PosterFrame>
 
           <div className="flex flex-col gap-5 min-w-0">
             <Link

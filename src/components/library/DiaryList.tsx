@@ -11,9 +11,8 @@ import { useState } from 'react'
 import { useLocale, useTranslations } from 'next-intl'
 import { Link } from '@/i18n/navigation'
 import { KButton } from '@/components/ui/KButton'
-import { PosterImage } from '@/components/media/PosterImage'
+import { PosterFrame } from '@/components/media/PosterFrame'
 import { useToastContext } from '@/components/ui/ToastProvider'
-import { posterGradient } from '@/lib/images/poster-gradient'
 import { deleteDiaryLog } from '@/lib/library/actions'
 import { formatDiaryDate, formatDiaryMonth } from '@/lib/library/dates'
 import { formatRating } from '@/lib/library/rating'
@@ -100,10 +99,16 @@ export function DiaryList({ logs: initialLogs, scale }: DiaryListProps) {
               return (
                 <li key={log.id} className="flex gap-4 rounded-bento bg-surface-default p-3">
                   {/* Portada con tamaño fijo y gradiente detrás (CLS 0). */}
-                  <div className="relative h-24 w-16 shrink-0 overflow-hidden rounded-lg bg-surface-elevated">
-                    <div aria-hidden="true" className="absolute inset-0" style={{ background: posterGradient(log.mediaId) }} />
-                    {log.poster ? <PosterImage src={log.poster} sizes="64px" className="object-cover" /> : null}
-                  </div>
+                  <PosterFrame
+                    seed={log.mediaId}
+                    title={title}
+                    poster={log.poster}
+                    sizes="64px"
+                    radius="sm"
+                    initials={false}
+                    zoom={false}
+                    className="h-24 w-16 shrink-0"
+                  />
                   <div className="flex min-w-0 flex-1 flex-col gap-1">
                     <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
                       <Link

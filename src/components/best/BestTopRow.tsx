@@ -5,6 +5,7 @@
 // ============================================================
 
 import { BestPoster } from "@/components/best/BestPoster";
+import { posterFrameClass } from "@/components/media/poster-frame-class";
 import { posterGradient } from "@/lib/images/poster-gradient";
 import { bestItemPath, type BestItem } from "@/lib/best/best-of";
 import { localeHref } from "@/lib/best/links";
@@ -23,7 +24,7 @@ export function BestTopRow({ items, locale, label }: { items: BestItem[]; locale
           >
             <span
               aria-hidden="true"
-              className="relative block aspect-[2/3] w-full overflow-hidden rounded-2xl"
+              className={posterFrameClass({ className: "block w-full" })}
               style={{ background: posterGradient(item.id) }}
             >
               <BestPoster src={item.poster} alt={item.title} sizes="(min-width: 896px) 160px, (min-width: 640px) 18vw, 30vw" />
