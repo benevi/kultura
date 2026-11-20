@@ -53,7 +53,6 @@ export function ImportClient({ locale, userId, isDemo = false, compact = false, 
         <FilePicker
           locale={locale}
           compact={compact}
-          inputRef={flow.inputRef}
           phase={phase}
           parseError={flow.parseError}
           read={flow.read}

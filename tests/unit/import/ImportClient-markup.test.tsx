@@ -6,6 +6,10 @@
 // qué se llama en cada paso (lectura, `runImport`, avance guardado, informe,
 // foco, cancelación), para partir el componente sin cambiar nada. La lectura
 // y la importación están simuladas: así se recorren todas las ramas sin red.
+//
+// Los snapshots fijan el marcado de la refactorización de C12 (partir
+// ImportClient sin cambiar lo que se ve). Regenerarlos con `-u` solo si el
+// cambio de marcado es deliberado; si no, el fallo es una regresión.
 // ============================================================
 
 import { render, screen, fireEvent, act, waitFor } from '@testing-library/react'

@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { useImportT } from '@/lib/import/i18n'
 import { KButton } from '@/components/ui/KButton'
 import { cn } from '@/lib/utils/index'
@@ -7,11 +7,12 @@ import { ImportHowTo } from './ImportHowTo'
 import { ACCEPT, MB } from './shared'
 import type { ImportFlow } from './useImportFlow'
 
-type Props = { locale: 'es' | 'en'; compact: boolean } & Pick<ImportFlow, 'inputRef' | 'phase' | 'parseError' | 'read'>
+type Props = { locale: 'es' | 'en'; compact: boolean } & Pick<ImportFlow, 'phase' | 'parseError' | 'read'>
 
 /** Fase 1: elegir o soltar el archivo (también mientras se lee o si falla). */
-export function FilePicker({ locale, compact, inputRef, phase, parseError, read }: Props) {
+export function FilePicker({ locale, compact, phase, parseError, read }: Props) {
   const t = useImportT()
+  const inputRef = useRef<HTMLInputElement>(null)
   const [dragging, setDragging] = useState(false)
 
   return (

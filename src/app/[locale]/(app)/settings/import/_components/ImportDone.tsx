@@ -5,7 +5,7 @@ import { cn } from '@/lib/utils/index'
 import type { ImportOutcome, ParsedImport } from '@/lib/import/types'
 import { ImportCounts } from './ImportCounts'
 import { UnmatchedList } from './UnmatchedList'
-import { useDownloadReport } from './report-download'
+import { useDownloadReport } from './useDownloadReport'
 import { card } from './shared'
 import type { ImportFlow } from './useImportFlow'
 

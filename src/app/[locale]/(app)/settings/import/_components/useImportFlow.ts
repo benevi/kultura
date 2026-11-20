@@ -14,9 +14,9 @@ import { MAX_FILE_BYTES } from '@/lib/import/limits'
 import { ImportParseError, type ImportItemResult, type ParseErrorCode, type ParsedImport } from '@/lib/import/types'
 import { clearProgress, loadProgress, saveProgress } from '@/lib/import/import-storage'
 
-export type Phase = 'idle' | 'reading' | 'preview' | 'running' | 'paused' | 'done' | 'error'
-export type RunErrorCode = 'auth' | 'demo' | 'server' | 'network'
-export type AmbiguousAs = 'watched' | 'watchlist'
+type Phase = 'idle' | 'reading' | 'preview' | 'running' | 'paused' | 'done' | 'error'
+type RunErrorCode = 'auth' | 'demo' | 'server' | 'network'
+type AmbiguousAs = 'watched' | 'watchlist'
 
 interface Options {
   /** Cuenta de la sesión: el avance guardado en este navegador es por cuenta. */
@@ -27,7 +27,6 @@ interface Options {
 }
 
 export function useImportFlow({ userId, isDemo, onFinished }: Options) {
-  const inputRef = useRef<HTMLInputElement>(null)
   const abortRef = useRef<AbortController | null>(null)
   const statusRef = useRef<HTMLHeadingElement>(null)
 
@@ -143,11 +142,9 @@ export function useImportFlow({ userId, isDemo, onFinished }: Options) {
     setResults(new Map())
     setPrevious(null)
     setDiary(0)
-    if (inputRef.current) inputRef.current.value = ''
   }
 
   return {
-    inputRef,
     statusRef,
     phase,
     parsed,
