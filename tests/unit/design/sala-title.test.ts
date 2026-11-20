@@ -13,6 +13,7 @@
  */
 import { describe, expect, it } from "vitest";
 import {
+  SALA_TITLE_SAFETY,
   planSalaTitle,
   SALA_TITLE_MAX_LENGTH,
   SALA_TITLE_MIN_BOX,
@@ -198,7 +199,7 @@ describe("títulos reales", () => {
         [plan.narrow, SALA_TITLE_PRESET.sala.narrow],
         [plan.wide, SALA_TITLE_PRESET.sala.wide],
       ] as const) {
-        if (layout.fill < 0.95) {
+        if (layout.fill < 1 - SALA_TITLE_SAFETY - 0.02) {
           // No llena: va al cuerpo máximo (o al alto máximo del bloque) y tan ancho como se le deja.
           const tope = Math.min(reglas.maxSize, reglas.maxBlock / (layout.starts.length * plan.lineHeight));
           expect(layout.size, texto).toBeCloseTo(tope, 1);
