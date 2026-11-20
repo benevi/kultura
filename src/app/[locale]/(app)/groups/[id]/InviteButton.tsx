@@ -20,7 +20,7 @@ export function InviteButton({ groupId }: Props) {
         variant="secondary"
         size="sm"
         onClick={() => setOpen(true)}
-        className="flex-shrink-0 hover:text-text-secondary"
+        className="flex-shrink-0"
       >
         <IconUserPlus className="w-3.5 h-3.5" />
         {t('invite')}
