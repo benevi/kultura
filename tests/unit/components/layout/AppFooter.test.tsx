@@ -5,8 +5,10 @@ vi.mock('next-intl/server', () => ({
   getTranslations: vi.fn(async () => Object.assign((key: string) => {
     const map: Record<string, string> = {
       suggestions: 'Sugerencias',
-      footerPrivacy: 'Privacidad',
-      footerTerms: 'Términos',
+      'nav.privacy': 'Privacidad',
+      'nav.terms': 'Términos',
+      'nav.notice': 'Aviso legal',
+      'nav.accessibility': 'Accesibilidad',
     }
     return map[key] ?? key
   }, {
@@ -41,6 +43,12 @@ describe('AppFooter (D1)', () => {
   it('conserva el enlace a /suggestions (comportamiento previo)', async () => {
     render(await AppFooter())
     expect(screen.getByRole('link', { name: 'Sugerencias' })).toHaveAttribute('href', '/suggestions')
+  })
+
+  it('enlaza, en este orden, Privacidad, Términos y Sugerencias; aún no el aviso legal ni la accesibilidad', async () => {
+    render(await AppFooter())
+    const nav = screen.getByRole('navigation')
+    expect(Array.from(nav.querySelectorAll('a')).map((a) => a.getAttribute('href'))).toEqual(['/privacy', '/terms', '/suggestions'])
   })
 
   it('los enlaces van en una nav con nombre y miden 44 px de alto (MOV-4, ACC-12)', async () => {
