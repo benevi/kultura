@@ -174,8 +174,8 @@ describe("orden de las fuentes (biblia §5)", () => {
   });
 });
 
-describe("las pantallas de hoy no descargan nada de «Sala»", () => {
-  it("solo Storybook (y las piezas de «Sala», que no usa ninguna pantalla) importa las hojas de src/styles/sala", () => {
+describe("las pantallas de hoy solo descargan «Sala» donde ya la usan", () => {
+  it("solo Storybook, las piezas de «Sala» y el estado de error de los error.tsx importan las hojas de src/styles/sala", () => {
     const importers = walk(join(ROOT, "src"))
       .filter((f) => /\.(tsx?|css|mdx?)$/.test(f) && dirname(f) !== SHEETS_DIR)
       .filter((f) => /styles\/sala\//.test(readFileSync(f, "utf8")))
@@ -184,6 +184,8 @@ describe("las pantallas de hoy no descargan nada de «Sala»", () => {
       .filter((f) => /(import|@import|require)[^\n]*styles\/sala\//.test(readFileSync(join(ROOT, f), "utf8")));
     // `SalaScriptFonts` pide las hojas de japonés y coreano cuando hace falta. Es de
     // `src/components/sala`, que ninguna pantalla importa (lo comprueba sala-title-css.test.ts).
-    expect(importers).toEqual(["src/components/sala/SalaScriptFonts.tsx"]);
+    // `ErrorState` (fase 8.4, C11) es la primera pantalla con «Sala»: trae los
+    // tokens y las fuentes latinas mientras el layout no los cargue.
+    expect(importers.sort()).toEqual(["src/components/layout/ErrorState.tsx", "src/components/sala/SalaScriptFonts.tsx"]);
   });
 });

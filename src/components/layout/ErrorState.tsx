@@ -1,10 +1,10 @@
 'use client'
 
-import { useEffect, type MouseEvent } from 'react'
+import { useEffect } from 'react'
 import { useTranslations } from 'next-intl'
+import { useParams } from 'next/navigation'
 import { SalaBlockState } from '@/components/sala/SalaBlockState'
 import { SalaButton } from '@/components/sala/SalaButton'
-import { SalaLink } from '@/components/sala/SalaLink'
 import { cn } from '@/lib/utils/index'
 // Sentry bajo demanda (F-22): no entra en el JS inicial de las páginas.
 import { loadSentry } from '@/lib/logger'
@@ -25,26 +25,23 @@ interface ErrorStateProps {
 }
 
 /**
- * Tras un error conviene empezar de cero, sin el estado de cliente que lo
- * provocó: la salida recarga la página entera en lugar de navegar dentro de la
- * app. Con una tecla de modificación (abrir en otra pestaña) se deja al
- * navegador.
- */
-function recargarAlSalir(event: MouseEvent<HTMLAnchorElement>) {
-  if (event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return
-  event.preventDefault()
-  window.location.assign(event.currentTarget.href)
-}
-
-/**
  * Estado de error de los `error.tsx` (fase 8.4, C11): el `SalaBlockState` de
  * error con el título como `h1`, que recibe el foco al aparecer para que el
  * lector de pantalla diga qué ha pasado; una explicación, «Reintentar»
  * (`reset`) y la salida a Inicio. Pinta su propio fondo de «Sala» para que
  * valga en claro y en oscuro dentro del envoltorio de hoy.
+ *
+ * La salida es un `<a>` normal con el aspecto de `SalaButton`, no un
+ * `SalaLink`: este límite se pinta también en las rutas cacheables (F-22), donde
+ * no puede entrar el `Link` de next-intl (la página de destino heredaría la CSP
+ * de la de origen; `tests/unit/csp/static-pages.test.ts`). Además, tras un error
+ * conviene recargar el documento y empezar sin el estado de cliente que lo
+ * provocó.
  */
 export function ErrorState({ error, reset, fullPage = false, homeHref = '/home' }: ErrorStateProps) {
   const t = useTranslations('errors')
+  const locale = useParams<{ locale?: string }>()?.locale
+  const home = `${locale ? `/${locale}` : ''}${homeHref === '/' && locale ? '' : homeHref}`
 
   // Saneamiento 10.1: sin esto, un error que pinta esta pantalla no llegaba a
   // Sentry (Next solo reenvía al servidor los de servidor, con `digest`).
@@ -72,9 +69,9 @@ export function ErrorState({ error, reset, fullPage = false, homeHref = '/home' 
         description={<p>{t('unexpectedDescription')}</p>}
         action={<SalaButton onClick={reset}>{t('tryAgain')}</SalaButton>}
         secondary={
-          <SalaLink variant="standalone" href={homeHref} onClick={recargarAlSalir}>
-            {t('goHome')}
-          </SalaLink>
+          <SalaButton variant="secondary" asChild>
+            <a href={home}>{t('goHome')}</a>
+          </SalaButton>
         }
       />
     </div>

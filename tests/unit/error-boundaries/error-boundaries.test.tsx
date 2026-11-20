@@ -2,7 +2,6 @@
  * Tests unitarios para los error boundaries de rutas autenticadas.
  * Verifica que cada error.tsx renderiza el mensaje de error y el botón de reset.
  */
-import type { ComponentProps } from 'react'
 import { render, screen, fireEvent, waitFor } from '@testing-library/react'
 import { describe, it, expect, vi } from 'vitest'
 
@@ -15,15 +14,6 @@ vi.mock('next-intl', () => ({
     return map[key] ?? key
   },
   useLocale: () => 'es',
-}))
-
-// La salida usa el Link con idioma de next-intl (SalaLink): aquí, un <a>.
-vi.mock('@/i18n/navigation', () => ({
-  Link: ({ href, children, ...rest }: ComponentProps<'a'>) => (
-    <a href={href} {...rest}>
-      {children}
-    </a>
-  ),
 }))
 
 // Saneamiento 10.1: ErrorState manda el error a Sentry (SDK bajo demanda).
