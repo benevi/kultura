@@ -2,6 +2,7 @@
  * Tests unitarios para los error boundaries de rutas autenticadas.
  * Verifica que cada error.tsx renderiza el mensaje de error y el botón de reset.
  */
+import type { ComponentProps } from 'react'
 import { render, screen, fireEvent, waitFor } from '@testing-library/react'
 import { describe, it, expect, vi } from 'vitest'
 
@@ -13,6 +14,16 @@ vi.mock('next-intl', () => ({
     }
     return map[key] ?? key
   },
+  useLocale: () => 'es',
+}))
+
+// La salida usa el Link con idioma de next-intl (SalaLink): aquí, un <a>.
+vi.mock('@/i18n/navigation', () => ({
+  Link: ({ href, children, ...rest }: ComponentProps<'a'>) => (
+    <a href={href} {...rest}>
+      {children}
+    </a>
+  ),
 }))
 
 // Saneamiento 10.1: ErrorState manda el error a Sentry (SDK bajo demanda).
@@ -29,6 +40,10 @@ import FriendsError from '@/app/[locale]/(app)/friends/error'
 import DiscoverError from '@/app/[locale]/(app)/discover/error'
 import SearchError from '@/app/[locale]/(app)/search/error'
 import MediaDetailError from '@/app/[locale]/media/[type]/[id]/error'
+import HomeError from '@/app/[locale]/(app)/home/error'
+import ListsError from '@/app/[locale]/(app)/lists/error'
+import AppError from '@/app/[locale]/(app)/error'
+import LocaleError from '@/app/[locale]/error'
 
 const TEST_ERROR = new Error('Test error') as Error & { digest?: string }
 
@@ -40,17 +55,23 @@ const BOUNDARIES = [
   { name: 'DiscoverError', Component: DiscoverError },
   { name: 'SearchError', Component: SearchError },
   { name: 'MediaDetailError', Component: MediaDetailError },
+  { name: 'HomeError', Component: HomeError },
+  { name: 'ListsError', Component: ListsError },
+  { name: 'AppError', Component: AppError },
+  { name: 'LocaleError', Component: LocaleError },
 ]
 
 describe.each(BOUNDARIES)('$name', ({ Component }) => {
-  it('renderiza mensaje de error', () => {
+  it('renderiza mensaje de error como único h1', () => {
     render(<Component error={TEST_ERROR} reset={vi.fn()} />)
-    expect(screen.getByText('Algo salió mal')).toBeInTheDocument()
+    expect(screen.getAllByRole('heading', { level: 1 })).toHaveLength(1)
+    expect(screen.getByRole('heading', { level: 1, name: 'Algo salió mal' })).toBeInTheDocument()
   })
 
-  it('renderiza botón Reintentar', () => {
+  it('renderiza botón Reintentar y la salida', () => {
     render(<Component error={TEST_ERROR} reset={vi.fn()} />)
-    expect(screen.getByText('Inténtalo de nuevo')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Inténtalo de nuevo' })).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: 'goHome' })).toHaveAttribute('href', Component === MediaDetailError ? '/' : '/home')
   })
 
   it('envía el error a Sentry una vez, con la etiqueta boundary', async () => {

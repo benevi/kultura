@@ -8,5 +8,5 @@ interface Props {
 }
 
 export default function LocaleError({ error, reset }: Props) {
-  return <ErrorState error={error} reset={reset} minHeight="min-h-[60vh]" />
+  return <ErrorState error={error} reset={reset} fullPage />
 }

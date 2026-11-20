@@ -1,73 +1,50 @@
 'use client'
 
-import { useEffect, useRef } from 'react'
+import { useEffect, type MouseEvent } from 'react'
 import { useTranslations } from 'next-intl'
-import { useParams } from 'next/navigation'
-import { KButton } from '@/components/ui/KButton'
+import { SalaBlockState } from '@/components/sala/SalaBlockState'
+import { SalaButton } from '@/components/sala/SalaButton'
+import { SalaLink } from '@/components/sala/SalaLink'
+import { cn } from '@/lib/utils/index'
 // Sentry bajo demanda (F-22): no entra en el JS inicial de las páginas.
 import { loadSentry } from '@/lib/logger'
+// La app todavía no carga «Sala» en el layout: los papeles `--sala-*` y sus
+// fuentes vienen con la pieza que los usa. Si el layout los carga más
+// adelante, estas importaciones no duplican nada (el CSS se sirve una vez).
+import '@/styles/sala/tokens.css'
+import '@/styles/sala/fonts.css'
 
 interface ErrorStateProps {
   /** El error que recibe el `error.tsx`: se envía a Sentry (saneamiento 10.1). */
   error?: Error & { digest?: string }
   reset: () => void
-  minHeight?: string
-  /** Destino del botón secundario. Con sesión, Inicio; en páginas públicas, la portada (`/`). */
-  homeHref?: string
+  /** Ocupa más alto: el `error.tsx` de `[locale]`, sin el envoltorio de la app. */
+  fullPage?: boolean
+  /** Destino de la salida. Con sesión, Inicio; en páginas públicas, la portada (`/`). */
+  homeHref?: '/home' | '/'
 }
 
 /**
- * Tres pósteres «rotos»: los gradientes de dos paradas del mismo matiz de
- * el sistema de diseño, rotados en abanico, el central partido en dos, y la pegatina
- * colgante. Decorativo.
+ * Tras un error conviene empezar de cero, sin el estado de cliente que lo
+ * provocó: la salida recarga la página entera en lugar de navegar dentro de la
+ * app. Con una tecla de modificación (abrir en otra pestaña) se deja al
+ * navegador.
  */
-function BrokenPosters({ sticker }: { sticker: string }) {
-  const poster = 'absolute w-16 h-24 rounded-2xl'
-  return (
-    <div aria-hidden className="relative w-48 h-32 mx-auto">
-      <span
-        className={`${poster} left-3 top-5 -rotate-[10deg]`}
-        style={{ background: 'linear-gradient(155deg, oklch(62% 0.19 300), oklch(40% 0.12 300))' }}
-      />
-      <span
-        className={`${poster} right-3 top-5 rotate-[8deg]`}
-        style={{ background: 'linear-gradient(155deg, oklch(72% 0.19 55), oklch(48% 0.12 55))' }}
-      />
-      {/* Póster central «roto»: dos mitades separadas por una grieta. */}
-      <span
-        className="absolute left-1/2 top-2 -ml-8 w-16 h-12 rounded-t-2xl -rotate-[4deg] origin-bottom-left"
-        style={{ background: 'linear-gradient(155deg, oklch(68% 0.24 350), oklch(55% 0.2 350))' }}
-      />
-      <span
-        className="absolute left-1/2 top-[3.6rem] -ml-8 w-16 h-12 rounded-b-2xl rotate-[5deg] origin-top-right"
-        style={{ background: 'linear-gradient(155deg, oklch(55% 0.2 350), oklch(45% 0.16 350))' }}
-      />
-      <span
-        className="absolute -top-1 left-1 -rotate-[8deg] rounded-full bg-accent-lime px-3 py-1 text-xs font-extrabold text-on-accent-lime shadow-sticker"
-      >
-        {sticker}
-      </span>
-    </div>
-  )
+function recargarAlSalir(event: MouseEvent<HTMLAnchorElement>) {
+  if (event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return
+  event.preventDefault()
+  window.location.assign(event.currentTarget.href)
 }
 
 /**
- * Estado de error de los `error.tsx` (DIS-13): ilustración, título, «Reintentar»
- * (primario) e «Ir al inicio» (secundario). El título recibe el foco al
- * aparecer para que el lector de pantalla anuncie qué ha pasado.
+ * Estado de error de los `error.tsx` (fase 8.4, C11): el `SalaBlockState` de
+ * error con el título como `h1`, que recibe el foco al aparecer para que el
+ * lector de pantalla diga qué ha pasado; una explicación, «Reintentar»
+ * (`reset`) y la salida a Inicio. Pinta su propio fondo de «Sala» para que
+ * valga en claro y en oscuro dentro del envoltorio de hoy.
  */
-export function ErrorState({ error, reset, minHeight = 'min-h-[40vh]', homeHref = '/home' }: ErrorStateProps) {
+export function ErrorState({ error, reset, fullPage = false, homeHref = '/home' }: ErrorStateProps) {
   const t = useTranslations('errors')
-  const tNav = useTranslations('nav')
-  const headingRef = useRef<HTMLHeadingElement>(null)
-  const locale = useParams<{ locale?: string }>()?.locale
-  // Enlace normal (recarga completa) a propósito: tras un error conviene
-  // empezar de cero, sin el estado de cliente que lo provocó.
-  const home = `${locale ? `/${locale}` : ''}${homeHref === '/' && locale ? '' : homeHref}`
-
-  useEffect(() => {
-    headingRef.current?.focus()
-  }, [])
 
   // Saneamiento 10.1: sin esto, un error que pinta esta pantalla no llegaba a
   // Sentry (Next solo reenvía al servidor los de servidor, con `digest`).
@@ -85,23 +62,21 @@ export function ErrorState({ error, reset, minHeight = 'min-h-[40vh]', homeHref 
   }, [error])
 
   return (
-    <div className={`flex flex-col items-center justify-center ${minHeight} gap-6 px-4 py-10 text-center`}>
-      <BrokenPosters sticker={tNav('oops')} />
-      <h1
-        ref={headingRef}
-        tabIndex={-1}
-        className="font-display text-2xl font-bold text-text-primary focus:outline-none"
-      >
-        {t('somethingWentWrong')}
-      </h1>
-      <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full max-w-xs sm:max-w-none sm:w-auto">
-        <KButton size="lg" onClick={reset}>
-          {t('tryAgain')}
-        </KButton>
-        <KButton size="lg" variant="secondary" asChild>
-          <a href={home}>{t('goHome')}</a>
-        </KButton>
-      </div>
+    <div className="bg-sala-background px-sala-margin text-sala-ink">
+      <SalaBlockState
+        tone="error"
+        headingLevel={1}
+        focusTitle
+        className={cn('justify-center', fullPage ? 'min-h-[60vh]' : 'min-h-[40vh]')}
+        title={t('somethingWentWrong')}
+        description={<p>{t('unexpectedDescription')}</p>}
+        action={<SalaButton onClick={reset}>{t('tryAgain')}</SalaButton>}
+        secondary={
+          <SalaLink variant="standalone" href={homeHref} onClick={recargarAlSalir}>
+            {t('goHome')}
+          </SalaLink>
+        }
+      />
     </div>
   )
 }

@@ -20,8 +20,7 @@
     "accountNav": "Cuenta",
     "language": "Idioma",
     "footerNav": "Información",
-    "dismiss": "Cerrar aviso",
-    "oops": "¡Ups!"
+    "dismiss": "Cerrar aviso"
   },
   "auth": {
     "signIn": "Iniciar sesión",
