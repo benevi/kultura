@@ -1,6 +1,6 @@
 /**
- * Tests unitarios para los error boundaries de rutas autenticadas.
- * Verifica que cada error.tsx renderiza el mensaje de error y el botón de reset.
+ * Tests unitarios de los once error.tsx: mensaje, «Reintentar», la salida
+ * (Inicio con sesión, portada en las públicas) y el envío a Sentry.
  */
 import { render, screen, fireEvent, waitFor } from '@testing-library/react'
 import { describe, it, expect, vi } from 'vitest'
@@ -10,11 +10,14 @@ vi.mock('next-intl', () => ({
     const map: Record<string, string> = {
       somethingWentWrong: 'Algo salió mal',
       tryAgain: 'Inténtalo de nuevo',
+      goHome: 'Ir al inicio',
     }
     return map[key] ?? key
   },
   useLocale: () => 'es',
 }))
+
+vi.mock('next/navigation', () => ({ useParams: () => ({ locale: 'es' }) }))
 
 // Saneamiento 10.1: ErrorState manda el error a Sentry (SDK bajo demanda).
 const { captureException } = vi.hoisted(() => ({ captureException: vi.fn() }))
@@ -51,6 +54,9 @@ const BOUNDARIES = [
   { name: 'LocaleError', Component: LocaleError },
 ]
 
+// Páginas públicas: «Ir al inicio» lleva a la portada, que no pide sesión.
+const PUBLIC = new Set<unknown>([MediaDetailError, LocaleError])
+
 describe.each(BOUNDARIES)('$name', ({ Component }) => {
   it('renderiza mensaje de error como único h1', () => {
     render(<Component error={TEST_ERROR} reset={vi.fn()} />)
@@ -61,7 +67,7 @@ describe.each(BOUNDARIES)('$name', ({ Component }) => {
   it('renderiza botón Reintentar y la salida', () => {
     render(<Component error={TEST_ERROR} reset={vi.fn()} />)
     expect(screen.getByRole('button', { name: 'Inténtalo de nuevo' })).toBeInTheDocument()
-    expect(screen.getByRole('link', { name: 'goHome' })).toHaveAttribute('href', Component === MediaDetailError ? '/' : '/home')
+    expect(screen.getByRole('link', { name: 'Ir al inicio' })).toHaveAttribute('href', PUBLIC.has(Component) ? '/es' : '/es/home')
   })
 
   it('envía el error a Sentry una vez, con la etiqueta boundary', async () => {

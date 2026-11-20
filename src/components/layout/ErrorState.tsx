@@ -63,6 +63,9 @@ export function ErrorState({ error, reset, fullPage = false, homeHref = '/home' 
     // retícula de la app (DIS-8), con el borde izquierdo del logo y del
     // contenido. El fondo es el de la página.
     <main className="page-grid text-sala-ink">
+      {/* La pestaña dice qué ha pasado, no el título de la página que falló.
+          React 19 lo sube al <head>. */}
+      <title>{`${t('somethingWentWrong')} · KULTURA`}</title>
       <SalaBlockState
         tone="error"
         headingLevel={1}

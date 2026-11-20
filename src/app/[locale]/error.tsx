@@ -7,6 +7,10 @@ interface Props {
   reset: () => void
 }
 
+/**
+ * Cubre las páginas públicas: «Ir al inicio» lleva a la portada, que vale con
+ * y sin sesión (`/home` mandaría al login a quien no la tiene).
+ */
 export default function LocaleError({ error, reset }: Props) {
-  return <ErrorState error={error} reset={reset} fullPage />
+  return <ErrorState error={error} reset={reset} fullPage homeHref="/" />
 }

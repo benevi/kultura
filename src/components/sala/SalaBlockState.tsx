@@ -32,7 +32,9 @@ import { SalaStatusIcon } from "./SalaStatusIcon";
  * - El título es un encabezado de verdad (`headingLevel`: `1` si sustituye a
  *   la página entera, `2` por defecto para una sección).
  * - `focusTitle`: el título recibe el foco al aparecer (ver
- *   `SalaBlockStateTitle`). Para los `error.tsx`; un estado vacío no lo lleva.
+ *   `SalaBlockStateTitle`) y la explicación es su descripción
+ *   (`aria-describedby`), para que el lector la lea al llegar el foco. Para los
+ *   `error.tsx`; un estado vacío no lo lleva.
  * - El error lleva su dibujo, además del color; `media` pone otro adorno
  *   (una ilustración), siempre oculto a los lectores.
  * - Ningún texto sale de aquí. Es un componente de servidor; de cliente solo
@@ -57,6 +59,10 @@ export const SalaBlockState = React.forwardRef<HTMLDivElement, SalaBlockStatePro
   { tone = "neutral", title, headingLevel = 2, description, action, secondary, media, focusTitle = false, className, ...props },
   ref
 ) {
+  // Con `focusTitle` el foco llega al título: que el lector lea también la
+  // explicación, no solo el título.
+  const idDescripcion = React.useId();
+  const describe = focusTitle && description ? idDescripcion : undefined;
   const adorno = media ?? (tone === "error" ? <SalaStatusIcon tone="error" className="h-10 w-10 text-sala-danger" /> : null);
   return (
     <div ref={ref} data-sala-block-state={tone} className={cn("flex flex-col items-start py-12 text-sala-ink sala-type-text", className)} {...props}>
@@ -68,13 +74,15 @@ export const SalaBlockState = React.forwardRef<HTMLDivElement, SalaBlockStatePro
       <SalaBlockStateTitle
         level={headingLevel}
         focus={focusTitle}
-        // El foco que llega solo no pinta anillo (no es un control); el que
-        // llega con el teclado, sí.
+        describedBy={describe}
+        // Anillo con `:focus-visible`: el del teclado lo pinta. El que pone el
+        // script al aparecer también, en Chromium, si antes no se ha usado el
+        // puntero (pasa en la carga inicial); se queda, marca dónde está el foco.
         className="max-w-[30ch] text-balance outline-none sala-type-heading [overflow-wrap:anywhere] sala-focused:sala-focus"
       >
         {title}
       </SalaBlockStateTitle>
-      {description ? <div className="mt-4 max-w-prose text-sala-ink-secondary [overflow-wrap:anywhere]">{description}</div> : null}
+      {description ? <div id={describe} className="mt-4 max-w-prose text-sala-ink-secondary [overflow-wrap:anywhere]">{description}</div> : null}
       {action || secondary ? (
         <div className="mt-8 flex max-w-full flex-wrap items-center gap-x-6 gap-y-2">
           {action}

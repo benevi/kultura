@@ -182,10 +182,10 @@ describe("las pantallas de hoy solo descargan «Sala» donde ya la usan", () => 
       .map((f) => relative(ROOT, f).split(sep).join("/"))
       // Comentarios que nombran la ruta no cuentan: solo quien la importa.
       .filter((f) => /(import|@import|require)[^\n]*styles\/sala\//.test(readFileSync(join(ROOT, f), "utf8")));
-    // `SalaScriptFonts` pide las hojas de japonés y coreano cuando hace falta. Es de
-    // `src/components/sala`, que ninguna pantalla importa (lo comprueba sala-title-css.test.ts).
-    // `ErrorState` (fase 8.4, C11) es la primera pantalla con «Sala»: trae los
-    // tokens y las fuentes latinas mientras el layout no los cargue.
+    // - `SalaScriptFonts` pide las hojas de japonés y coreano cuando hace falta.
+    // - `ErrorState` (`src/components/layout`, fase 8.4, C11) es la primera pieza
+    //   de la app que importa «Sala»: la usan todos los error.tsx y trae los
+    //   tokens y las fuentes latinas mientras el layout no los cargue.
     expect(importers.sort()).toEqual(["src/components/layout/ErrorState.tsx", "src/components/sala/SalaScriptFonts.tsx"]);
   });
 });
