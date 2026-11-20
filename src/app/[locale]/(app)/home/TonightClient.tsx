@@ -11,9 +11,8 @@ import { useState } from 'react'
 import { useTranslations } from 'next-intl'
 import { Link } from '@/i18n/navigation'
 import { KButton } from '@/components/ui/KButton'
-import { PosterImage } from '@/components/media/PosterImage'
+import { PosterFrame } from '@/components/media/PosterFrame'
 import { IconDice } from '@/components/icons'
-import { posterGradient } from '@/lib/images/poster-gradient'
 import type { TonightPick } from '@/lib/home/tonight'
 
 function hrefOf(item: TonightPick): string {
@@ -30,12 +29,17 @@ export function pickIndex(length: number, previous: number | null, random: () =>
 
 function Poster({ item, sizes }: { item: TonightPick; sizes: string }) {
   return (
-    <div
-      className="relative aspect-[2/3] w-full overflow-hidden rounded-2xl bg-surface-elevated"
-      style={{ background: posterGradient(item.mediaId || item.title) }}
-    >
-      {item.poster ? <PosterImage src={item.poster} sizes={sizes} className="object-cover" /> : null}
-    </div>
+    // Sin `bg-surface-elevated`: antes el gradiente iba en el propio marco y lo
+    // tapaba (el `background` en línea gana a la clase).
+    <PosterFrame
+      seed={item.mediaId}
+      title={item.title}
+      poster={item.poster}
+      sizes={sizes}
+      initials={false}
+      zoom={false}
+      elevated={false}
+    />
   )
 }
 

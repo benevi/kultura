@@ -12,6 +12,7 @@
 // ============================================================
 
 import { PosterImage } from "@/components/media/PosterImage";
+import { posterGradientFeature } from "@/lib/images/poster-gradient";
 import { Suspense, type ReactNode } from "react";
 import { getLocale, getTranslations } from "next-intl/server";
 import type { MediaItem, StreamingProvider } from "@/types/media";
@@ -101,25 +102,6 @@ interface DetailTile {
   label: string;
   value: string;
   hint?: string;
-}
-
-// ── Poster fallback (sin imagen real) ────────────────────────────────────────
-// Misma fórmula que "Posters/cards sin imagen real" + "Cards feature grandes"
-// del sistema de diseño: degradado lineal de dos paradas del mismo
-// matiz + acento radial en la esquina superior-izquierda. El matiz se deriva
-// del id del item (determinista) para variar entre títulos.
-const POSTER_HUES = [350, 130, 55, 300, 250, 95] as const;
-
-function posterGradient(seed: string): string {
-  let hash = 0;
-  for (let i = 0; i < seed.length; i++) {
-    hash = (hash * 31 + seed.charCodeAt(i)) >>> 0;
-  }
-  const hue = POSTER_HUES[hash % POSTER_HUES.length];
-  return [
-    `radial-gradient(120% 90% at 20% 15%, oklch(50% 0.16 ${hue} / 0.55) 0%, transparent 55%)`,
-    `linear-gradient(160deg, oklch(38% 0.13 ${hue}), oklch(18% 0.06 ${hue}))`,
-  ].join(", ");
 }
 
 type ExtraKey = "duration" | "episodes" | "chapters" | "pages";
@@ -296,7 +278,7 @@ export async function MediaDetail({
                     dejaba la ficha con un hueco del color de fondo. */}
                 <div
                   className="absolute inset-0 flex items-center justify-center"
-                  style={{ background: posterGradient(item.id) }}
+                  style={{ background: posterGradientFeature(item.id) }}
                 >
                   {!item.poster && (
                     <span aria-hidden="true" className="text-white/90 font-display font-extrabold text-3xl">

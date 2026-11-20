@@ -17,8 +17,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { Link } from '@/i18n/navigation'
 import { PageHeading } from '@/components/layout/PageHeading'
 import { IconCalendar } from '@/components/icons'
-import { PosterImage } from '@/components/media/PosterImage'
-import { posterGradient } from '@/lib/images/poster-gradient'
+import { PosterFrame } from '@/components/media/PosterFrame'
 import { cn } from '@/lib/utils/index'
 import { isDemoUser } from '@/lib/demo'
 import { createLogger } from '@/lib/logger'
@@ -237,10 +236,16 @@ function EventRow({ event, what, typeLabel }: { event: CalendarEvent; what: stri
   return (
     <li className="flex gap-4 rounded-bento bg-surface-default p-3">
       {/* Portada de tamaño fijo con el gradiente siempre detrás (CLS 0). */}
-      <div className="relative h-[72px] w-12 shrink-0 overflow-hidden rounded-lg bg-surface-elevated">
-        <div aria-hidden="true" className="absolute inset-0" style={{ background: posterGradient(event.mediaId) }} />
-        {event.poster ? <PosterImage src={event.poster} sizes="48px" className="object-cover" /> : null}
-      </div>
+      <PosterFrame
+        seed={event.mediaId}
+        title={event.title}
+        poster={event.poster}
+        sizes="48px"
+        radius="sm"
+        initials={false}
+        zoom={false}
+        className="h-[72px] w-12 shrink-0"
+      />
       <div className="flex min-w-0 flex-1 flex-col justify-center gap-1">
         <Link href={href} className={cn('font-body font-semibold text-text-primary hover:underline rounded-lg self-start', FOCUS)}>
           {event.title}

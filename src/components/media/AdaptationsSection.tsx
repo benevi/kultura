@@ -13,13 +13,12 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { getTranslations } from "next-intl/server";
 import type { MediaItem } from "@/types/media";
-import { posterGradient } from "@/lib/images/poster-gradient";
 import { Link } from "@/i18n/navigation";
 import { mediaPath } from "@/lib/media/seo";
 import { getAdaptations } from "@/lib/adaptations/load";
 import { buildAdaptationView } from "@/lib/adaptations/display";
 import { SOURCE_LINK_CLASS } from "@/components/legal/DataAttribution";
-import { PosterImage } from "./PosterImage";
+import { PosterFrame } from "./PosterFrame";
 import { AddFranchiseButton } from "./AddFranchiseButton";
 
 const sectionTitle = "font-display text-xl font-bold text-text-primary mb-1";
@@ -86,13 +85,18 @@ export async function AdaptationsSection({ item, locale, userId, supabase }: Pro
                 href={`/media/${card.type}/${encodeURIComponent(card.externalId)}`}
                 className={`group flex items-center gap-3 rounded-2xl bg-surface-default p-2.5 pr-4 min-h-11 hover:bg-surface-elevated transition-colors ${FOCUS}`}
               >
-                <span
-                  className="relative w-12 h-[72px] flex-shrink-0 rounded-2xl overflow-hidden"
-                  style={{ background: posterGradient(card.mediaId) }}
+                <PosterFrame
+                  as="span"
                   aria-hidden="true"
-                >
-                  {card.poster && <PosterImage src={card.poster} sizes="48px" className="object-cover" />}
-                </span>
+                  seed={card.mediaId}
+                  title={card.title}
+                  poster={card.poster}
+                  sizes="48px"
+                  initials={false}
+                  zoom={false}
+                  elevated={false}
+                  className="w-12 h-[72px] flex-shrink-0"
+                />
                 <span className="min-w-0 flex-1">
                   <span className="block font-bold text-sm text-text-primary line-clamp-2 group-hover:text-accent-pink transition-colors">
                     {card.title}
