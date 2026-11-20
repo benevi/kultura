@@ -13,7 +13,6 @@ import {
   unblockUser,
 } from '@/lib/social/actions'
 import { createLogger } from '@/lib/logger'
-import { F0 } from '@/lib/design/f0-tokens'
 import type { FriendshipStatusResult } from '@/lib/social/friends'
 import { offerPushInContext } from '@/lib/push/offer'
 
@@ -96,15 +95,14 @@ function BlockControl({
       <p role="status" className="sr-only">{announce}</p>
       {blocked ? (
         <>
-          <p className="text-xs" style={{ color: F0.textSecondary }}>{t('blockedNotice')}</p>
+          <p className="text-xs text-text-secondary">{t('blockedNotice')}</p>
           <KButton
             ref={triggerRef}
             variant="secondary"
             size="sm"
             loading={busy}
             onClick={() => run('unblock')}
-            className="rounded-full font-bold border-2"
-            style={{ borderColor: F0.stroke, color: F0.textSecondary }}
+            className="rounded-full font-bold border-2 hover:text-text-secondary"
           >
             {t('unblock')}
           </KButton>
@@ -228,7 +226,6 @@ function FriendshipAction({
         loading={loading}
         onClick={handleSendRequest}
         className="rounded-full font-extrabold"
-        style={{ background: F0.pink, color: F0.onPink }}
       >
         {t('addFriend')}
       </KButton>
@@ -241,8 +238,7 @@ function FriendshipAction({
         variant="secondary"
         size="sm"
         disabled
-        className="rounded-full font-bold border-2"
-        style={{ borderColor: F0.stroke, color: F0.muted }}
+        className="rounded-full font-bold border-2 text-text-tertiary hover:text-text-tertiary"
       >
         {t('requestSent')}
       </KButton>
@@ -257,7 +253,6 @@ function FriendshipAction({
         loading={loading}
         onClick={handleAccept}
         className="rounded-full font-extrabold"
-        style={{ background: F0.pink, color: F0.onPink }}
       >
         {t('accept')}
       </KButton>
@@ -272,8 +267,7 @@ function FriendshipAction({
       size="sm"
       loading={loading}
       onClick={handleRemove}
-      className="rounded-full font-bold border-2 hover:opacity-90"
-      style={{ borderColor: F0.stroke, color: F0.textSecondary }}
+      className="rounded-full font-bold border-2 hover:opacity-90 hover:text-text-secondary"
     >
       {t('friends')} ✓
     </KButton>

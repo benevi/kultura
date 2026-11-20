@@ -7,7 +7,6 @@ import { Avatar } from '@/components/ui/Avatar'
 import { Spinner } from '@/components/ui/Spinner'
 import { KButton } from '@/components/ui/KButton'
 import { Modal } from '@/components/ui/Modal'
-import { F0 } from '@/lib/design/f0-tokens'
 import { fetchInvitableFriends, inviteToGroup, type InvitableFriend } from '@/lib/groups/client'
 
 interface InviteFriendsModalProps {
@@ -65,19 +64,18 @@ export function InviteFriendsModal({ groupId, onClose }: InviteFriendsModalProps
           <Spinner size="md" label={tc('loading')} />
         </div>
       ) : loadError ? (
-        <p role="alert" className="text-sm py-4 text-center" style={{ color: F0.orange }}>{t('inviteError')}</p>
+        <p role="alert" className="text-sm py-4 text-center text-accent-orange">{t('inviteError')}</p>
       ) : friends.length === 0 ? (
-        <p className="text-sm py-8 text-center" style={{ color: F0.muted }}>{t('noInvitableFriends')}</p>
+        <p className="text-sm py-8 text-center text-text-tertiary">{t('noInvitableFriends')}</p>
       ) : (
         <ul className="flex flex-col max-h-72 overflow-y-auto">
           {friends.map((f) => (
             <li
               key={f.id}
-              className="flex items-center gap-3 py-2.5 border-t first:border-t-0"
-              style={{ borderColor: F0.stroke }}
+              className="flex items-center gap-3 py-2.5 border-t first:border-t-0 border-surface-border"
             >
               <Avatar initials={f.avatarInitials} color={f.avatarColor} size="sm" />
-              <span id={`invite-${groupId}-${f.id}`} className="text-sm flex-1 truncate font-medium" style={{ color: F0.text }}>{f.username}</span>
+              <span id={`invite-${groupId}-${f.id}`} className="text-sm flex-1 truncate font-medium text-text-primary">{f.username}</span>
               <KButton
                 size="sm"
                 onClick={() => handleInvite(f.id)}
