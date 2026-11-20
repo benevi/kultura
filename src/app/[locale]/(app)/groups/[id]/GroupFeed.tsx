@@ -8,7 +8,6 @@ import { InlineConfirm, ReportButton, useRestoreFocus } from '@/components/socia
 import { createGroupPost, deleteGroupPost } from '@/lib/groups/client'
 import { createClient } from '@/lib/supabase/client'
 import type { GroupPost } from '@/lib/social/groups'
-import { F0 } from '@/lib/design/f0-tokens'
 
 type Post = GroupPost
 
@@ -181,11 +180,10 @@ export function GroupFeed({ groupId, currentUserId, initialPosts, isOwner = fals
           aria-label={t('postPlaceholder')}
           rows={3}
           maxLength={1000}
-          className="w-full rounded-bento border-2 px-3 py-2.5 text-sm placeholder:opacity-60 resize-none focus:outline-none focus:ring-2 focus-visible:ring-accent-pink"
-          style={{ background: F0.surface2, borderColor: F0.stroke, color: F0.text }}
+          className="w-full rounded-bento border-2 px-3 py-2.5 text-sm placeholder:opacity-60 resize-none focus:outline-none focus:ring-2 focus-visible:ring-accent-pink bg-surface-elevated border-surface-border text-text-primary"
         />
         {postError && (
-          <p role="alert" className="text-xs" style={{ color: F0.orange }}>{postError}</p>
+          <p role="alert" className="text-xs text-accent-orange">{postError}</p>
         )}
         <div className="flex justify-end">
           <KButton
@@ -194,7 +192,6 @@ export function GroupFeed({ groupId, currentUserId, initialPosts, isOwner = fals
             variant="primary"
             disabled={!text.trim() || posting}
             className="rounded-full font-extrabold"
-            style={{ background: F0.pink, color: F0.onPink }}
           >
             {posting ? '...' : t('publish')}
           </KButton>
@@ -203,8 +200,7 @@ export function GroupFeed({ groupId, currentUserId, initialPosts, isOwner = fals
 
       {posts.length === 0 ? (
         <div
-          className="rounded-bento border p-8 text-center text-sm"
-          style={{ background: F0.surface, borderColor: F0.stroke, color: F0.textSecondary }}
+          className="rounded-bento border p-8 text-center text-sm bg-surface-default border-surface-border text-text-secondary"
         >
           {t('beFirst')}
         </div>
@@ -213,18 +209,17 @@ export function GroupFeed({ groupId, currentUserId, initialPosts, isOwner = fals
           {posts.map(post => (
             <div
               key={post.id}
-              className="rounded-bento border p-4 flex flex-wrap gap-3"
-              style={{ background: F0.surface, borderColor: F0.stroke }}
+              className="rounded-bento border p-4 flex flex-wrap gap-3 bg-surface-default border-surface-border"
             >
               {post.users && (
                 <Avatar initials={post.users.avatar_initials} color={post.users.avatar_color} size="sm" />
               )}
               <div className="flex-1 min-w-0">
                 <div className="flex items-baseline gap-2 mb-1">
-                  <span className="text-sm font-bold" style={{ color: F0.text }}>{post.users?.username}</span>
-                  <span className="text-xs" style={{ color: F0.muted }}>{relativeDate(post.created_at, locale)}</span>
+                  <span className="text-sm font-bold text-text-primary">{post.users?.username}</span>
+                  <span className="text-xs text-text-tertiary">{relativeDate(post.created_at, locale)}</span>
                 </div>
-                <p className="text-sm leading-relaxed whitespace-pre-wrap" style={{ color: F0.text }}>{post.content}</p>
+                <p className="text-sm leading-relaxed whitespace-pre-wrap text-text-primary">{post.content}</p>
               </div>
               <PostActions
                 groupId={groupId}

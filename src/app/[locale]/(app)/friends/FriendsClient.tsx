@@ -8,7 +8,6 @@ import { Input } from '@/components/ui/input'
 import { KButton } from '@/components/ui/KButton'
 import { FriendCard } from '@/components/social/FriendCard'
 import { FriendshipButton } from '@/components/social/FriendshipButton'
-import { F0 } from '@/lib/design/f0-tokens'
 import { getBlockedUsers, unblockUser, type BlockedUser } from '@/lib/social/actions'
 import type { Friendship } from '@/types/user'
 import { IconLists, IconFriends } from '@/components/icons'
@@ -27,11 +26,6 @@ interface FriendsClientProps {
   pendingRequests: Friendship[]
   profileUrl: string
 }
-
-/* Card F0 estándar (combinación de primitivos: mismo radio,
-   mismo stroke que el resto de la pantalla). Reutilizada por las varias
-   secciones de esta pantalla en vez de repetir las mismas clases. */
-const CARD_STYLE = { background: F0.surface, borderColor: F0.stroke }
 
 export function FriendsClient({
   friends: initialFriends,
@@ -96,20 +90,14 @@ export function FriendsClient({
     <div className="flex flex-col gap-6">
       {/* Share link — card "feature" (gradiente + acento radial) */}
       <section
-        className="relative overflow-hidden rounded-bento-xl p-5 flex items-center justify-between gap-4"
-        style={{
-          background: `linear-gradient(155deg, oklch(30% 0.05 280), ${F0.bg})`,
-        }}
+        className="relative overflow-hidden rounded-bento-xl p-5 flex items-center justify-between gap-4 bg-[linear-gradient(155deg,oklch(30%_0.05_280),var(--surface-base))]"
       >
         <div
-          className="absolute inset-0 pointer-events-none"
-          style={{
-            background: `radial-gradient(120% 100% at 20% 10%, oklch(68% 0.24 350 / 0.55) 0%, transparent 55%)`,
-          }}
+          className="absolute inset-0 pointer-events-none bg-[radial-gradient(120%_100%_at_20%_10%,oklch(68%_0.24_350/0.55)_0%,transparent_55%)]"
         />
         <div className="relative z-10 min-w-0">
-          <p className="text-sm font-extrabold" style={{ color: F0.text }}>{t('shareProfile')}</p>
-          <p className="text-xs mt-0.5 truncate" style={{ color: F0.textSecondary }}>{profileUrl}</p>
+          <p className="text-sm font-extrabold text-text-primary">{t('shareProfile')}</p>
+          <p className="text-xs mt-0.5 truncate text-text-secondary">{profileUrl}</p>
         </div>
         <KButton
           size="sm"
@@ -118,7 +106,6 @@ export function FriendsClient({
           aria-label={copied ? undefined : t('copyProfileLink')}
           title={t('copyProfileLink')}
           className="relative z-10 flex-shrink-0 rounded-full font-extrabold"
-          style={{ background: F0.pink, color: F0.onPink }}
         >
           {copied ? t('profileLinkCopied') : <IconLists className="h-4 w-4" />}
         </KButton>
@@ -127,25 +114,23 @@ export function FriendsClient({
       {/* Link a grupos (los grupos ahora viven en /groups) */}
       <Link
         href="/groups"
-        className="rounded-bento border p-4 flex items-center justify-between gap-4 transition-colors hover:brightness-110"
-        style={CARD_STYLE}
+        className="rounded-bento border p-4 flex items-center justify-between gap-4 transition-colors hover:brightness-110 bg-surface-default border-surface-border"
       >
-        <span className="text-sm font-bold" style={{ color: F0.text }}>{t('groups')}</span>
-        <span style={{ color: F0.muted }} aria-hidden>→</span>
+        <span className="text-sm font-bold text-text-primary">{t('groups')}</span>
+        <span className="text-text-tertiary" aria-hidden>→</span>
       </Link>
 
       <div className="flex flex-col gap-8">
         {/* Search by username */}
         <section>
-          <h2 className="font-display text-xl font-bold mb-3" style={{ color: F0.text }}>{t('searchFriend')}</h2>
+          <h2 className="font-display text-xl font-bold mb-3 text-text-primary">{t('searchFriend')}</h2>
           <form onSubmit={handleSearch} className="flex gap-2 items-end">
             <Input
               type="text"
               value={searchQuery}
               onChange={e => setSearchQuery(e.target.value)}
               placeholder={t('searchPlaceholder')}
-              className="flex-1 rounded-2xl border-2 focus-visible:ring-accent-pink"
-              style={{ background: F0.surface2, borderColor: F0.stroke, color: F0.text }}
+              className="flex-1 rounded-2xl border-2 focus-visible:ring-accent-pink bg-surface-elevated border-surface-border text-text-primary"
             />
             <KButton
               type="submit"
@@ -154,18 +139,17 @@ export function FriendsClient({
               loading={searching}
               disabled={searching}
               className="flex-shrink-0 rounded-full font-extrabold"
-              style={{ background: F0.pink, color: F0.onPink }}
             >
               {searching ? '...' : t('search')}
             </KButton>
           </form>
 
           {searchError && (
-            <p role="alert" className="text-sm mt-3" style={{ color: F0.orange }}>{t('searchError')}</p>
+            <p role="alert" className="text-sm mt-3 text-accent-orange">{t('searchError')}</p>
           )}
 
           {!searchError && searchDone && searchResults.length === 0 && (
-            <p className="text-sm mt-3" style={{ color: F0.textSecondary }}>{t('noUserFound')}</p>
+            <p className="text-sm mt-3 text-text-secondary">{t('noUserFound')}</p>
           )}
 
           {searchResults.length > 0 && (
@@ -173,14 +157,12 @@ export function FriendsClient({
               {searchResults.map(u => (
                 <div
                   key={u.id}
-                  className="flex items-center gap-4 rounded-bento px-[22px] py-4"
-                  style={{ background: F0.surface }}
+                  className="flex items-center gap-4 rounded-bento px-[22px] py-4 bg-surface-default"
                 >
                   <Avatar initials={u.avatar_initials} color={u.avatar_color} size="sm" />
                   <Link
                     href={`/profile/${u.username}`}
-                    className="flex-1 text-sm font-bold hover:opacity-80 transition-opacity"
-                    style={{ color: F0.text }}
+                    className="flex-1 text-sm font-bold hover:opacity-80 transition-opacity text-text-primary"
                   >
                     {u.username}
                   </Link>
@@ -199,11 +181,10 @@ export function FriendsClient({
         {/* Pending requests */}
         {pending.length > 0 && (
           <section>
-            <h2 className="font-display text-xl font-bold mb-3 flex items-center gap-2" style={{ color: F0.text }}>
+            <h2 className="font-display text-xl font-bold mb-3 flex items-center gap-2 text-text-primary">
               {t('pendingRequests')}
               <span
-                className="inline-flex items-center justify-center min-w-[22px] h-[22px] px-1.5 rounded-full font-body text-xs font-extrabold"
-                style={{ background: F0.lime, color: F0.onLime }}
+                className="inline-flex items-center justify-center min-w-[22px] h-[22px] px-1.5 rounded-full font-body text-xs font-extrabold bg-accent-lime text-on-accent-lime"
               >
                 {pending.length}
               </span>
@@ -224,12 +205,12 @@ export function FriendsClient({
 
         {/* Friends list */}
         <section>
-          <h2 className="font-display text-xl font-bold mb-3" style={{ color: F0.text }}>{t('myFriends')}</h2>
+          <h2 className="font-display text-xl font-bold mb-3 text-text-primary">{t('myFriends')}</h2>
           {friends.length === 0 ? (
-            <div className="rounded-bento border p-8 text-center" style={CARD_STYLE}>
-              <IconFriends aria-hidden="true" className="mx-auto mb-3 h-8 w-8" style={{ color: F0.muted }} />
-              <p className="text-sm" style={{ color: F0.textSecondary }}>{t('noFriends')}</p>
-              <p className="text-xs mt-1" style={{ color: F0.muted }}>{t('noFriendsHint')}</p>
+            <div className="rounded-bento border p-8 text-center bg-surface-default border-surface-border">
+              <IconFriends aria-hidden="true" className="mx-auto mb-3 h-8 w-8 text-text-tertiary" />
+              <p className="text-sm text-text-secondary">{t('noFriends')}</p>
+              <p className="text-xs mt-1 text-text-tertiary">{t('noFriendsHint')}</p>
             </div>
           ) : (
             <div className="flex flex-col gap-3">
@@ -298,21 +279,19 @@ function BlockedUsersSection() {
             id="blocked-users-heading"
             ref={headingRef}
             tabIndex={-1}
-            className="font-display text-xl font-bold mb-1 focus:outline-none"
-            style={{ color: F0.text }}
+            className="font-display text-xl font-bold mb-1 focus:outline-none text-text-primary"
           >
             {t('blockedListTitle')}
           </h2>
-          <p className="text-xs mb-3" style={{ color: F0.textSecondary }}>{t('blockedListHint')}</p>
+          <p className="text-xs mb-3 text-text-secondary">{t('blockedListHint')}</p>
           {error && <p role="alert" className="text-xs mb-2 text-accent-danger">{t('unblockError')}</p>}
           <ul className="flex flex-col gap-3">
             {users.map((u) => (
-              <li key={u.id} className="flex items-center gap-4 rounded-bento px-[22px] py-4" style={{ background: F0.surface }}>
+              <li key={u.id} className="flex items-center gap-4 rounded-bento px-[22px] py-4 bg-surface-default">
                 <Avatar initials={u.avatarInitials} color={u.avatarColor} size="sm" />
                 <Link
                   href={`/profile/${u.username}`}
-                  className="flex-1 text-sm font-bold hover:opacity-80 transition-opacity"
-                  style={{ color: F0.text }}
+                  className="flex-1 text-sm font-bold hover:opacity-80 transition-opacity text-text-primary"
                 >
                   {u.username}
                 </Link>
@@ -322,8 +301,7 @@ function BlockedUsersSection() {
                   loading={busyId === u.id}
                   onClick={() => handleUnblock(u)}
                   aria-label={t('unblockUser', { username: u.username })}
-                  className="rounded-full font-bold border-2"
-                  style={{ borderColor: F0.stroke, color: F0.textSecondary }}
+                  className="rounded-full font-bold border-2 hover:text-text-secondary"
                 >
                   {t('unblock')}
                 </KButton>
