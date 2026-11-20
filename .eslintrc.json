@@ -44,6 +44,23 @@
     {
       "files": ["**/*.cjs"],
       "rules": { "@typescript-eslint/no-require-imports": "off" }
+    },
+    {
+      "files": ["**/*.{js,jsx,ts,tsx,mjs,cjs}"],
+      "excludedFiles": ["src/app/[[]locale]/(app)/settings/**"],
+      "rules": {
+        "no-restricted-imports": [
+          "error",
+          {
+            "patterns": [
+              {
+                "group": ["**/settings/_components/*"],
+                "message": "Las piezas de settings/_components son privadas de Ajustes: usa SettingsForm."
+              }
+            ]
+          }
+        ]
+      }
     }
   ]
 }
