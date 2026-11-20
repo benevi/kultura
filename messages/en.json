@@ -20,8 +20,7 @@
     "accountNav": "Account",
     "language": "Language",
     "footerNav": "Information",
-    "dismiss": "Dismiss notice",
-    "oops": "Oops!"
+    "dismiss": "Dismiss notice"
   },
   "auth": {
     "signIn": "Sign in",

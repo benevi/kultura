@@ -1,6 +1,6 @@
 // ============================================================
-// KULTURA — Envoltorio de la app con sesión, pies, ErrorState e idioma
-// (MOV-6, V8, ROJO-11, DIS-13, MOV-4, ACC-12).
+// KULTURA — Envoltorio de la app con sesión, pies e idioma
+// (MOV-6, V8, ROJO-11, MOV-4, ACC-12). ErrorState (DIS-13): tests/unit/error-boundaries.
 // ============================================================
 
 import { render, screen, fireEvent, within } from '@testing-library/react'
@@ -9,8 +9,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 // ── Mocks comunes ─────────────────────────────────────────────────────────────
 const tr = (ns: string) => (key: string) => {
   const maps: Record<string, Record<string, string>> = {
-    errors: { somethingWentWrong: 'Algo salió mal', tryAgain: 'Inténtalo de nuevo', goHome: 'Ir al inicio' },
-    nav: { oops: '¡Ups!', language: 'Idioma', suggestions: 'Sugerencias', footerNav: 'Información' },
+    nav: { language: 'Idioma', suggestions: 'Sugerencias', footerNav: 'Información' },
     legal: { footerPrivacy: 'Privacidad', footerTerms: 'Términos' },
   }
   return maps[ns]?.[key] ?? key
@@ -67,7 +66,6 @@ vi.mock('@/components/pwa/PwaShell', () => ({ PwaShell: () => null }))
 vi.mock('@/lib/demo', () => ({ isDemoUser: () => false }))
 
 import AppLayout from '@/app/[locale]/(app)/layout'
-import { ErrorState } from '@/components/layout/ErrorState'
 import { Footer } from '@/components/layout/Footer'
 import { LanguageSwitcher } from '@/components/layout/LanguageSwitcher'
 import { renderDataAttribution } from '@/components/legal/DataAttribution'
@@ -96,38 +94,6 @@ describe('(app)/layout con sesión', () => {
   it('la BottomNav recibe el usuario para su pestaña Perfil', async () => {
     await renderLayout()
     expect(screen.getByTestId('bottom-nav')).toHaveAttribute('data-username', 'ana')
-  })
-})
-
-describe('ErrorState (DIS-13)', () => {
-  it('tiene dos acciones: Reintentar (primaria) e Ir al inicio', () => {
-    const reset = vi.fn()
-    render(<ErrorState reset={reset} />)
-    fireEvent.click(screen.getByRole('button', { name: 'Inténtalo de nuevo' }))
-    expect(reset).toHaveBeenCalled()
-    expect(screen.getByRole('link', { name: 'Ir al inicio' })).toHaveAttribute('href', '/es/home')
-  })
-
-  it('el destino de «Ir al inicio» se puede cambiar (páginas públicas → /)', () => {
-    render(<ErrorState reset={vi.fn()} homeHref="/" />)
-    expect(screen.getByRole('link', { name: 'Ir al inicio' })).toHaveAttribute('href', '/es')
-  })
-
-  it('el título es un encabezado que recibe el foco al aparecer', () => {
-    render(<ErrorState reset={vi.fn()} />)
-    const h = screen.getByRole('heading', { name: 'Algo salió mal' })
-    expect(document.activeElement).toBe(h)
-  })
-
-  it('los dos botones miden 44 px de alto', () => {
-    render(<ErrorState reset={vi.fn()} />)
-    expect(screen.getByRole('button').className).toContain('h-11')
-    expect(screen.getByRole('link').className).toContain('h-11')
-  })
-
-  it('la ilustración es decorativa', () => {
-    render(<ErrorState reset={vi.fn()} />)
-    expect(screen.getByText('¡Ups!').closest('[aria-hidden]')).not.toBeNull()
   })
 })
 
