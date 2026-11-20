@@ -110,7 +110,9 @@ function comprobar(texto: string, plan: SalaTitlePlan, layout: SalaTitleLayout, 
 /** El título entero, tal como sale al juntar los trozos. */
 const entero = (plan: SalaTitlePlan) => plan.chunks.map((c, i) => plan.joins[i] + c).join("");
 
-describe("propiedad: cualquier título de 1 a 120 caracteres en cualquier caja de 280 a 1600 px", () => {
+// Miles de composiciones: tarda unos segundos y, con la máquina cargada (CI o la batería
+// entera en paralelo), pasaba de los 5 s por defecto. Es trabajo de CPU, no una espera.
+describe("propiedad: cualquier título de 1 a 120 caracteres en cualquier caja de 280 a 1600 px", { timeout: 30_000 }, () => {
   it("anchura en 55–150, cabe en su caja y no baja de 18 px", () => {
     const rnd = azar(20261119);
     for (let caso = 0; caso < 4000; caso++) {

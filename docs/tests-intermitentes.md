@@ -20,6 +20,7 @@ Ninguno.
 | `tests/unit/csp/static-csp.test.ts`, `tests/unit/plataforma/next-config.test.ts` | `Hook timed out in 10000ms` (15-11, con cobertura) | Importar `next.config.mjs` (arrastra Sentry) pasa de 10 s con la medición | `beforeAll` con 30 s (#165). |
 | `tests/unit/push/push-offer.test.tsx` · Esc cierra | `aside` sigue en el DOM (16-11, #171; otra vez el 16-11 en #198) | El listener de Esc se engancha en un `useEffect` después de pintar: ni el contenedor ni la X garantizan que ya escuche | Primero esperaba a la X (#171); no bastó. Ahora pulsa Esc dentro del `waitFor` hasta que cierra (este PR). |
 | `tests/unit/progress/home-progress-columns.test.tsx` | `Test timed out in 5000ms` (16-11, en local con la suite completa, #186) | El `import()` de la página de Inicio estaba dentro del test y con la suite cargada pasaba de 5 s | El import va en `beforeAll` con 30 s (este PR). |
+| `tests/unit/design/sala-title.test.ts` · propiedad (1 a 120 caracteres) | `Test timed out in 5000ms` (20-11, en local con la suite completa y con tres agentes a la vez) | Miles de composiciones por test: trabajo de CPU que con la máquina cargada pasa de 5 s | `describe` con 30 s (este PR). |
 
 ## Vigilados
 
