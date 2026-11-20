@@ -75,7 +75,8 @@ describe('NotificationsList — group_invite', () => {
     const reject = screen.getByText('reject').closest('button')!
     expect(accept).toHaveAttribute('aria-label', 'acceptInvite')
     expect(reject).toHaveAttribute('aria-label', 'rejectInvite')
-    expect(accept.className).toContain('min-h-11')
+    // Aceptar es KButton lg (h-11); Rechazar sigue a mano (min-h-11).
+    expect(accept.className.split(' ')).toContain('h-11')
     expect(reject.className).toContain('min-h-11')
   })
 

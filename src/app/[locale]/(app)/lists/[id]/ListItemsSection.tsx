@@ -60,12 +60,9 @@ export function ListItemsSection({
           <IconLists aria-hidden="true" className="h-8 w-8 text-text-tertiary" />
           <p className="text-text-primary text-sm font-medium">{t('noItems')}</p>
           <p className="text-text-secondary text-sm">{t('noItemsHint')}</p>
-          <Link
-            href="/discover"
-            className="inline-flex items-center justify-center h-8 px-4 mt-1 text-xs rounded-pill font-body font-bold bg-accent-pink text-on-accent-pink hover:brightness-110 transition-all"
-          >
-            {t('noItemsDiscover')}
-          </Link>
+          <KButton asChild size="sm" className="mt-1">
+            <Link href="/discover">{t('noItemsDiscover')}</Link>
+          </KButton>
         </div>
       ) : (
         // El orden manual es el orden de lectura (lista numerada); el número

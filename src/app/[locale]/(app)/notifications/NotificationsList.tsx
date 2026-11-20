@@ -5,6 +5,7 @@ import { useTranslations, useLocale } from 'next-intl'
 import { Link, useRouter } from '@/i18n/navigation'
 import { IconSparkles, IconLists, IconUserPlus, IconGroups, IconBell } from '@/components/icons'
 import { useToastContext } from '@/components/ui/ToastProvider'
+import { KButton } from '@/components/ui/KButton'
 import type { AppNotification } from '@/lib/social/notifications'
 import { FOCUS_RING as FOCUS } from '@/components/layout/nav-shared'
 import { respondToGroupInvitation } from '@/lib/groups/client'
@@ -56,15 +57,15 @@ function InviteActions({ invitationId, groupName }: { invitationId: string; grou
     <div className="flex flex-wrap gap-2 mt-2">
       {/* 44 px de alto (MOV-4, ACC-12) y nombre con el grupo: fuera de
           contexto, un lector oiría solo «Aceptar». */}
-      <button
+      <KButton
         type="button"
+        size="lg"
         onClick={() => respond('accept')}
         disabled={loading}
         aria-label={groupName ? t('acceptInvite', { group: groupName }) : undefined}
-        className={`min-h-11 px-5 text-sm font-extrabold bg-accent-pink text-on-accent-pink rounded-full hover:brightness-110 transition-all disabled:opacity-50 ${FOCUS}`}
       >
         {t('accept')}
-      </button>
+      </KButton>
       <button
         type="button"
         onClick={() => respond('reject')}

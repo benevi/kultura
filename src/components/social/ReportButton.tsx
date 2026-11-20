@@ -229,12 +229,11 @@ export function ReportButton({ targetType, targetId, variant = 'button', context
     ) : (
       <KButton
         ref={triggerRef}
-        variant="secondary"
+        variant="danger"
         size="sm"
         aria-expanded={status !== 'idle'}
         aria-controls={status !== 'idle' ? panelId : undefined}
         aria-label={contextLabel ? triggerLabel : undefined}
-        className="text-xs text-text-tertiary hover:text-accent-danger hover:border-accent-danger"
         onClick={() => (status === 'idle' ? setStatus('open') : close())}
       >
         <FlagIcon className="w-3.5 h-3.5" />
