@@ -13,7 +13,8 @@ import { render, screen, fireEvent, waitFor, within, act } from '@testing-librar
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import type { List, ListItem, ListMember } from '@/types/list'
 
-const { client, router, log } = vi.hoisted(() => ({
+const { client, router, log, reorderCallbacks } = vi.hoisted(() => ({
+  reorderCallbacks: [] as unknown[],
   client: {
     deleteList: vi.fn(),
     inviteListMember: vi.fn(),
@@ -57,14 +58,18 @@ vi.mock('@/app/[locale]/(app)/lists/[id]/ReorderableItems', () => ({
     items: Array<{ id: string }>
     onItemsChange: (next: unknown[]) => void
     ranked: boolean
-  }) => (
+  }) => {
+    reorderCallbacks.push(onItemsChange)
+    return (
     <div data-reorderable={listId} data-ranked={String(ranked)}>
       {items.map((i) => i.id).join(',')}
       <button type="button" onClick={() => onItemsChange([...items].reverse())}>invertir</button>
     </div>
-  ),
+    )
+  },
 }))
 
+import { renderToString } from 'react-dom/server'
 import { ApiError } from '@/lib/api/client'
 import { ListDetail } from '@/app/[locale]/(app)/lists/[id]/ListDetail'
 
@@ -119,6 +124,9 @@ function setup(over: Partial<Props> = {}) {
   return render(<ListDetail {...props} />)
 }
 
+/** Los ids de `useId` en cliente salen de un contador global: se normalizan. */
+const norm = (html: string) => html.replace(/_r_[0-9a-z]+_/g, '_r_X_')
+
 function deferred<T = unknown>() {
   let resolve!: (v: T) => void
   let reject!: (e: unknown) => void
@@ -128,13 +136,14 @@ function deferred<T = unknown>() {
 
 beforeEach(() => {
   vi.clearAllMocks()
+  reorderCallbacks.length = 0
   for (const fn of Object.values(client)) fn.mockResolvedValue(null)
 })
 
 describe('ListDetail — HTML', () => {
   it('dueño de una lista colaborativa, pública, en ranking y con descripción', () => {
     const { container } = setup()
-    expect(container.innerHTML).toMatchSnapshot()
+    expect(norm(container.innerHTML)).toMatchSnapshot()
   })
 
   it('visitante de una lista privada, de varios formatos y sin plantilla', () => {
@@ -144,12 +153,12 @@ describe('ListDetail — HTML', () => {
       currentUserFriends: [],
       canEdit: false,
     })
-    expect(container.innerHTML).toMatchSnapshot()
+    expect(norm(container.innerHTML)).toMatchSnapshot()
   })
 
   it('quien colabora sin ser dueño (puede editar, no administra)', () => {
     const { container } = setup({ currentUserId: 'u2', canEdit: true, list: makeList({ template: 'franchise' }) })
-    expect(container.innerHTML).toMatchSnapshot()
+    expect(norm(container.innerHTML)).toMatchSnapshot()
   })
 
   it('lista vacía, colaborativa, sin dueño embebido y sin sesión', () => {
@@ -160,12 +169,12 @@ describe('ListDetail — HTML', () => {
       currentUserFriends: [],
       canEdit: false,
     })
-    expect(container.innerHTML).toMatchSnapshot()
+    expect(norm(container.innerHTML)).toMatchSnapshot()
   })
 
   it('dueño con la lista vacía (sin botón de ordenar)', () => {
     const { container } = setup({ items: [], list: makeList({ isCollaborative: false, description: '' }) })
-    expect(container.innerHTML).toMatchSnapshot()
+    expect(norm(container.innerHTML)).toMatchSnapshot()
   })
 
   it('pública pero sin dueño embebido: no hay enlace para compartir', () => {
@@ -177,19 +186,41 @@ describe('ListDetail — HTML', () => {
   it('editando la descripción', () => {
     const { container } = setup()
     fireEvent.click(screen.getByRole('button', { name: 'lists.editDescription' }))
-    expect(container.innerHTML).toMatchSnapshot()
+    expect(norm(container.innerHTML)).toMatchSnapshot()
+    // Sin normalizar: la etiqueta y la pista apuntan al campo de verdad.
+    const field = container.querySelector('textarea')!
+    const label = container.querySelector('form label') as HTMLLabelElement
+    expect(field.id).not.toBe('')
+    expect(label.htmlFor).toBe(field.id)
+    const hint = document.getElementById(field.getAttribute('aria-describedby')!)
+    expect(hint).toHaveTextContent('lists.descriptionHint(473)')
+    expect(hint?.id).not.toBe(field.id)
   })
 
   it('ordenando', () => {
     const { container } = setup()
     fireEvent.click(screen.getByRole('button', { name: 'lists.reorder' }))
-    expect(container.innerHTML).toMatchSnapshot()
+    expect(norm(container.innerHTML)).toMatchSnapshot()
+  })
+
+  it('SSR de la vista del dueño (ids de useId sin normalizar)', () => {
+    const html = renderToString(
+      <ListDetail
+        list={makeList()}
+        items={ITEMS}
+        members={MEMBERS}
+        currentUserId="u1"
+        currentUserFriends={FRIENDS}
+        canEdit
+      />
+    )
+    expect(html).toMatchSnapshot()
   })
 
   it('diálogo de borrar abierto', () => {
     setup()
     fireEvent.click(screen.getByRole('button', { name: 'lists.deleteList' }))
-    expect(document.body.innerHTML).toMatchSnapshot()
+    expect(norm(document.body.innerHTML)).toMatchSnapshot()
   })
 })
 
@@ -331,6 +362,9 @@ describe('ListDetail — títulos', () => {
     expect(screen.getByText(/i1,i2,i3/).closest('[data-reorderable]')).toHaveAttribute('data-ranked', 'true')
     fireEvent.click(screen.getByRole('button', { name: 'invertir' }))
     expect(screen.getByText(/i3,i2,i1/)).toBeInTheDocument()
+    // onItemsChange es estable entre renders (useCallback): no reinicia ReorderableItems.
+    expect(reorderCallbacks.length).toBeGreaterThan(1)
+    expect(new Set(reorderCallbacks).size).toBe(1)
     fireEvent.click(done)
     const cards = Array.from(document.querySelectorAll('ol > li')).map((li) => li.textContent)
     expect(cards[0]).toContain('movie_3')

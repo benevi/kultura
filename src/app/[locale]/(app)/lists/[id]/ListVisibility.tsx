@@ -1,5 +1,3 @@
-'use client'
-
 import { useTranslations } from 'next-intl'
 import { SegmentedControl } from '@/components/ui/SegmentedControl'
 import { ShareLinkButton } from '@/components/social/ShareLinkButton'

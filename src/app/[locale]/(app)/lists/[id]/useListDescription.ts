@@ -1,6 +1,6 @@
 // ============================================================
 // KULTURA — /lists/[id]: estado y guardado de la descripción.
-// Lo llama ListDetail (los `useId` siguen siendo suyos).
+// Los `useId` se llaman desde la fibra de ListDetail, en el mismo orden que antes.
 // ============================================================
 
 import { useId, useState } from 'react'

@@ -1,5 +1,3 @@
-'use client'
-
 import { useTranslations } from 'next-intl'
 import { KButton } from '@/components/ui/KButton'
 import { DESCRIPTION_MAX } from './list-detail-utils'

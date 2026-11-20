@@ -1,5 +1,3 @@
-'use client'
-
 import { useTranslations } from 'next-intl'
 import { CloseButton } from '@/components/ui/CloseButton'
 import { MediaCard } from '@/components/media/MediaCard'
