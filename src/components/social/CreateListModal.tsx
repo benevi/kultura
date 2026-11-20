@@ -5,6 +5,7 @@ import { useTranslations } from 'next-intl'
 import { useRouter } from '@/i18n/navigation'
 import { KButton } from '@/components/ui/KButton'
 import { KInput } from '@/components/ui/KInput'
+import { KTextarea } from '@/components/ui/KTextarea'
 import { Modal } from '@/components/ui/Modal'
 import { Select } from '@/components/ui/Select'
 import { cn } from '@/lib/utils/index'
@@ -27,16 +28,6 @@ type TemplateKey = typeof TEMPLATES[number]
 
 const DESCRIPTION_MAX = 500
 
-/** Mismo acabado que `KInput` (caja surface-2, radio 14, foco pink). */
-const TEXTAREA_CLASS = cn(
-  'w-full min-h-[88px] resize-y rounded-2xl bg-surface-elevated px-[18px] py-[15px]',
-  'border border-field-border',
-  'font-body text-base md:text-body text-text-primary',
-  'placeholder:text-text-tertiary',
-  'transition-colors duration-base ease-standard',
-  'focus-visible:[outline-style:solid] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus-ring'
-)
-
 interface CreateListModalProps {
   onClose: () => void
 }
@@ -49,7 +40,6 @@ export function CreateListModal({ onClose }: CreateListModalProps) {
   const nameRef = useRef<HTMLInputElement>(null)
   const errorId = useId()
   const descriptionId = useId()
-  const descriptionHintId = useId()
 
   const [name, setName] = useState('')
   const [nameError, setNameError] = useState('')
@@ -182,24 +172,17 @@ export function CreateListModal({ onClose }: CreateListModalProps) {
           />
         )}
 
-        <div className="flex w-full flex-col gap-2">
-          <label htmlFor={descriptionId} className="font-body text-meta font-bold text-text-tertiary">
-            {t('descriptionLabel')}
-          </label>
-          <textarea
-            id={descriptionId}
-            value={description}
-            onChange={(e) => setDescription(e.target.value)}
-            maxLength={DESCRIPTION_MAX}
-            rows={3}
-            placeholder={t('descriptionPlaceholder')}
-            aria-describedby={descriptionHintId}
-            className={TEXTAREA_CLASS}
-          />
-          <p id={descriptionHintId} className="text-xs text-text-tertiary">
-            {t('descriptionHint', { count: DESCRIPTION_MAX - description.length })}
-          </p>
-        </div>
+        <KTextarea
+          id={descriptionId}
+          label={t('descriptionLabel')}
+          hint={t('descriptionHint', { count: DESCRIPTION_MAX - description.length })}
+          value={description}
+          onChange={(e) => setDescription(e.target.value)}
+          maxLength={DESCRIPTION_MAX}
+          rows={3}
+          placeholder={t('descriptionPlaceholder')}
+          className="min-h-[88px]"
+        />
 
         {/* Visibilidad: radios nativos (flechas y lector gratis), privada marcada. */}
         <fieldset className="flex flex-col gap-2">
