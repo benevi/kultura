@@ -1656,8 +1656,6 @@
     }
   },
   "legal": {
-    "footerPrivacy": "Privacy",
-    "footerTerms": "Terms",
     "dataSources": "Data from <tmdb>TMDB</tmdb>, <rawg>RAWG</rawg>, Steam, AniList, MangaDex, Open Library, Google Books and <comicvine>Comic Vine</comicvine>.",
     "tmdbNotice": "This product uses the TMDB API but is not endorsed or certified by TMDB.",
     "justwatchSource": "Streaming availability data:",
@@ -2119,10 +2117,6 @@
       "onX": "Share on X",
       "onWhatsApp": "Share on WhatsApp",
       "text": "{title}: the ranking on KULTURA"
-    },
-    "footer": {
-      "notice": "Legal notice",
-      "accessibility": "Accessibility"
     },
     "attribution": {
       "steam": "Video game artwork and descriptions:",

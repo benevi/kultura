@@ -3,6 +3,7 @@ import { routing } from "@/i18n/routing";
 import { kulturaDisplay } from "@/app/fonts";
 import { Landing, COMPARE_FORMATS, type LandingCopy } from "@/components/landing/Landing";
 import { renderDataAttribution } from "@/components/legal/DataAttribution";
+import { legalFooterLinks } from "@/lib/legal/footer-links";
 import { getLandingMedia } from "@/lib/landing/media";
 import { buildLandingScenes } from "@/lib/landing/scenes";
 import { faqJsonLd, faqKeys, type FaqItem } from "@/lib/landing/faq";
@@ -125,12 +126,7 @@ export default async function HomePage({ params }: Props) {
     faq: { title: t("faq.title"), items: faq },
     footer: {
       nav: tn("footerNav"),
-      links: [
-        { href: "/privacy", text: tl("nav.privacy") },
-        { href: "/terms", text: tl("nav.terms") },
-        { href: "/legal", text: tl("nav.notice") },
-        { href: "/accessibility", text: tl("nav.accessibility") },
-      ],
+      links: legalFooterLinks(tl),
       otherLocale: { href: `/${other}`, text: t("footer.otherLocale"), lang: other },
     },
     attribution: await renderDataAttribution(),

@@ -1,10 +1,14 @@
 import { getTranslations } from 'next-intl/server'
 import { Link } from '@/i18n/navigation'
 import { renderDataAttribution } from '@/components/legal/DataAttribution'
+import { legalFooterLinks, type LegalFooterKey } from '@/lib/legal/footer-links'
 
 const FOOTER_LINK =
   'inline-flex items-center min-h-11 px-2 rounded-2xl text-sm text-text-secondary hover:text-accent-pink transition-colors ' +
   'focus-visible:[outline-style:solid] focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-focus-ring'
+
+/** Enlaces legales del pie con sesión (de momento solo estos dos). */
+const APP_LEGAL: readonly LegalFooterKey[] = ['privacy', 'terms']
 
 /**
  * Pie de la app con sesión. En móvil queda por encima de la `BottomNav`
@@ -23,16 +27,13 @@ export async function AppFooter() {
         </span>
         <nav aria-label={t('footerNav')}>
           <ul className="flex flex-wrap items-center -mx-2">
-            <li>
-              <Link href="/privacy" className={FOOTER_LINK}>
-                {tLegal('footerPrivacy')}
-              </Link>
-            </li>
-            <li>
-              <Link href="/terms" className={FOOTER_LINK}>
-                {tLegal('footerTerms')}
-              </Link>
-            </li>
+            {legalFooterLinks(tLegal, APP_LEGAL).map((l) => (
+              <li key={l.key}>
+                <Link href={l.href} className={FOOTER_LINK}>
+                  {l.text}
+                </Link>
+              </li>
+            ))}
             <li>
               <Link href="/suggestions" className={FOOTER_LINK}>
                 {t('suggestions')}

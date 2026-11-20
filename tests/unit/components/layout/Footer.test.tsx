@@ -5,12 +5,12 @@ vi.mock('next-intl/server', () => ({
   getLocale: vi.fn(async () => 'es'),
   getTranslations: vi.fn(async () => Object.assign((key: string) => {
     const map: Record<string, string> = {
-      footerPrivacy: 'Privacidad',
-      footerTerms: 'Términos',
+      'nav.privacy': 'Privacidad',
+      'nav.terms': 'Términos',
       'attribution.steam': 'Carátulas y descripciones de videojuegos:',
       'attribution.steamTrademark': 'Steam y el logotipo de Steam son marcas de Valve Corporation.',
-      'footer.notice': 'Aviso legal',
-      'footer.accessibility': 'Accesibilidad',
+      'nav.notice': 'Aviso legal',
+      'nav.accessibility': 'Accesibilidad',
     }
     return map[key] ?? key
   }, {
@@ -46,18 +46,6 @@ describe('Footer (D1)', () => {
       '/es/legal',
       '/es/accessibility',
     ])
-  })
-
-  it('con las claves de F-19 en legal.nav usa esos rótulos', async () => {
-    const { getTranslations } = await import('next-intl/server')
-    vi.mocked(getTranslations).mockImplementationOnce((async () =>
-      Object.assign((key: string) => ({ 'nav.notice': 'Aviso legal (F-19)', 'nav.accessibility': 'Accesibilidad (F-19)' })[key] ?? key, {
-        has: (key: string) => key.startsWith('nav.'),
-        rich: (_k: string, tags: Record<string, (c: string) => React.ReactNode>) => [tags.tmdb('TMDB'), tags.rawg('RAWG')],
-      })) as never)
-    render(await Footer())
-    expect(screen.getByRole('link', { name: 'Aviso legal (F-19)' })).toHaveAttribute('href', '/es/legal')
-    expect(screen.getByRole('link', { name: 'Accesibilidad (F-19)' })).toHaveAttribute('href', '/es/accessibility')
   })
 
   it('muestra el copyright', async () => {

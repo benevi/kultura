@@ -10,7 +10,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 const tr = (ns: string) => (key: string) => {
   const maps: Record<string, Record<string, string>> = {
     nav: { language: 'Idioma', suggestions: 'Sugerencias', footerNav: 'Información' },
-    legal: { footerPrivacy: 'Privacidad', footerTerms: 'Términos' },
+    legal: { 'nav.privacy': 'Privacidad', 'nav.terms': 'Términos' },
   }
   return maps[ns]?.[key] ?? key
 }

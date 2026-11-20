@@ -6,6 +6,7 @@ import type { LandingScenes } from "@/lib/landing/scenes";
 import type { FaqItem } from "@/lib/landing/faq";
 import type { HeroScene } from "./engine";
 import { LandingMotion } from "./LandingMotion";
+import { LandingFooter, type LandingFooterCopy } from "./LandingFooter";
 import "./landing.css";
 
 /** Las siete columnas de la comparativa, en orden. */
@@ -35,7 +36,7 @@ export interface LandingCopy {
   how: { title: string; steps: { title: string; desc: string }[]; status: string };
   compare: { title: string; sub: string; app: string; yes: string; no: string; note: string; formats: Record<CompareFormat, string>; short: Record<CompareFormat, string> };
   faq: { title: string; items: FaqItem[] };
-  footer: { nav: string; links: { href: string; text: string }[]; otherLocale: { href: string; text: string; lang: string } };
+  footer: Omit<LandingFooterCopy, "attribution">;
   /** Pie de proveedores de datos (ya renderizado en el servidor). */
   attribution: ReactNode;
   /** «Película», «Serie»… para el pie de cada escena de la portada. */
@@ -328,29 +329,7 @@ export function Landing({ scenes, copy, base }: { scenes: LandingScenes; copy: L
         </section>
       </main>
 
-      <footer className="kl-foot">
-        <nav aria-label={copy.footer.nav}>
-          <ul className="kl-flinks">
-            {copy.footer.links.map((l) => (
-              <li key={l.href}>
-                <a href={href(l.href)}>{l.text}</a>
-              </li>
-            ))}
-            <li>
-              <a href={copy.footer.otherLocale.href} hrefLang={copy.footer.otherLocale.lang} lang={copy.footer.otherLocale.lang}>
-                {copy.footer.otherLocale.text}
-              </a>
-            </li>
-          </ul>
-        </nav>
-        <div className="kl-fword kl-display" aria-hidden="true" data-reveal="">
-          KULTURA
-        </div>
-        <div className="kl-legal">
-          <p>© {new Date().getFullYear()} KULTURA</p>
-          {copy.attribution}
-        </div>
-      </footer>
+      <LandingFooter copy={{ ...copy.footer, attribution: copy.attribution }} base={base} bigWord />
     </div>
   );
 }

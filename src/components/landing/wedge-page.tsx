@@ -11,6 +11,7 @@ import { getTranslations, setRequestLocale } from "next-intl/server";
 import type { Metadata } from "next";
 import { kulturaDisplay } from "@/app/fonts";
 import { renderDataAttribution } from "@/components/legal/DataAttribution";
+import { legalFooterLinks } from "@/lib/legal/footer-links";
 import { getLandingMedia } from "@/lib/landing/media";
 import { buildLandingScenes } from "@/lib/landing/scenes";
 import { pickWedgePoster } from "@/lib/landing/wedge";
@@ -93,15 +94,12 @@ export async function WedgePage({ wedge, rawLocale }: { wedge: Wedge; rawLocale:
     lead: text.lead,
     points: text.points,
     cta: tland("hero.cta"),
-    footerNav: tn("footerNav"),
-    links: [
-      { href: "/privacy", text: tl("nav.privacy") },
-      { href: "/terms", text: tl("nav.terms") },
-      { href: "/legal", text: tl("nav.notice") },
-      { href: "/accessibility", text: tl("nav.accessibility") },
-    ],
-    otherLocale: { href: `/${other}/${wedge}`, text: tland("footer.otherLocale"), lang: other },
-    attribution: await renderDataAttribution(),
+    footer: {
+      nav: tn("footerNav"),
+      links: legalFooterLinks(tl),
+      otherLocale: { href: `/${other}/${wedge}`, text: tland("footer.otherLocale"), lang: other },
+      attribution: await renderDataAttribution(),
+    },
   };
 
   return (
