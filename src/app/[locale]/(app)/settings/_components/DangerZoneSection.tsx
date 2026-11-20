@@ -84,7 +84,7 @@ export function DangerZoneSection({
           <KButton
             variant="secondary"
             size="sm"
-            className="flex-shrink-0 border-2 border-accent-danger/50 text-accent-danger hover:bg-accent-danger/10"
+            className="flex-shrink-0 border-accent-danger/50 text-accent-danger hover:bg-accent-danger/10"
             onClick={openDeleteModal}
           >
             {t('deleteAccount')}

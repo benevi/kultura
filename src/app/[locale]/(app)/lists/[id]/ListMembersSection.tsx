@@ -62,7 +62,7 @@ export function ListMembersSection({
                   variant="secondary"
                   size="sm"
                   onClick={() => onRemoveMember(m.userId)}
-                  className="text-text-secondary hover:text-accent-danger flex-shrink-0"
+                  className="hover:text-accent-danger flex-shrink-0"
                 >
                   {t('removeMember')}
                 </KButton>

@@ -133,7 +133,6 @@ export function CreateGroupForm({ onCreated, onCancel }: CreateGroupFormProps) {
           variant="primary"
           loading={creating}
           disabled={creating}
-          className="rounded-full font-extrabold"
         >
           {creating ? '...' : t('createGroup')}
         </KButton>
@@ -142,7 +141,7 @@ export function CreateGroupForm({ onCreated, onCancel }: CreateGroupFormProps) {
           size="sm"
           variant="secondary"
           onClick={onCancel}
-          className="rounded-full font-bold border-2 hover:text-text-secondary"
+          className="hover:text-text-secondary"
         >
           ✕
         </KButton>

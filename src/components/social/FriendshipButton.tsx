@@ -102,7 +102,7 @@ function BlockControl({
             size="sm"
             loading={busy}
             onClick={() => run('unblock')}
-            className="rounded-full font-bold border-2 hover:text-text-secondary"
+            className="hover:text-text-secondary"
           >
             {t('unblock')}
           </KButton>
@@ -225,7 +225,6 @@ function FriendshipAction({
         size="sm"
         loading={loading}
         onClick={handleSendRequest}
-        className="rounded-full font-extrabold"
       >
         {t('addFriend')}
       </KButton>
@@ -238,7 +237,7 @@ function FriendshipAction({
         variant="secondary"
         size="sm"
         disabled
-        className="rounded-full font-bold border-2 text-text-tertiary hover:text-text-tertiary"
+        className="text-text-tertiary hover:text-text-tertiary"
       >
         {t('requestSent')}
       </KButton>
@@ -252,7 +251,6 @@ function FriendshipAction({
         size="sm"
         loading={loading}
         onClick={handleAccept}
-        className="rounded-full font-extrabold"
       >
         {t('accept')}
       </KButton>
@@ -267,7 +265,7 @@ function FriendshipAction({
       size="sm"
       loading={loading}
       onClick={handleRemove}
-      className="rounded-full font-bold border-2 hover:opacity-90 hover:text-text-secondary"
+      className="hover:opacity-90 hover:text-text-secondary"
     >
       {t('friends')} ✓
     </KButton>

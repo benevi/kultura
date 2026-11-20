@@ -45,7 +45,7 @@ export function JoinGroupButton({ groupId, isMember, isOwner }: Props) {
         size="sm"
         onClick={handleClick}
         disabled={loading}
-        className="flex-shrink-0 rounded-full font-bold border-2 hover:text-text-secondary"
+        className="flex-shrink-0 hover:text-text-secondary"
       >
         {loading ? '…' : t('leaveGroup')}
       </KButton>
@@ -58,7 +58,7 @@ export function JoinGroupButton({ groupId, isMember, isOwner }: Props) {
       size="sm"
       onClick={handleClick}
       disabled={loading}
-      className="flex-shrink-0 rounded-full font-extrabold"
+      className="flex-shrink-0"
     >
       {loading ? '…' : t('joinGroup')}
     </KButton>
