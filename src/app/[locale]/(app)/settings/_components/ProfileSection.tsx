@@ -7,11 +7,35 @@ import { EmailRow } from './EmailRow'
 import { AvatarColorRow, AvatarIconRow } from './AvatarRows'
 import { eyebrow, row, type AccountSettings } from './shared'
 
+/** Lo que la sección Perfil toma del hook (y pasa a EmailRow y AvatarRows). */
+type ProfileSettings = Pick<
+  AccountSettings,
+  | 'emailFormOpen'
+  | 'setEmailFormOpen'
+  | 'newEmail'
+  | 'setNewEmail'
+  | 'emailError'
+  | 'setEmailError'
+  | 'emailSending'
+  | 'emailSentTo'
+  | 'setEmailSentTo'
+  | 'newEmailRef'
+  | 'handleChangeEmail'
+  | 'username'
+  | 'usernameError'
+  | 'usernameRef'
+  | 'handleUsernameChange'
+  | 'avatarColor'
+  | 'setAvatarColor'
+  | 'avatarIcon'
+  | 'setAvatarIcon'
+>
+
 type Props = {
   userEmail: string
   isDemo: boolean
   emailConfirmed: boolean
-  settings: AccountSettings
+  settings: ProfileSettings
 }
 
 /** Sección Perfil: email, nombre, color y personaje del avatar, contraseña. */

@@ -1,7 +1,10 @@
 import { useTranslations } from 'next-intl'
 import { KButton } from '@/components/ui/KButton'
 import { cn } from '@/lib/utils/index'
-import { eyebrow, row, PRIVACY_CONTACT_EMAIL, type AccountSettings } from './shared'
+// Contacto para pedir lo que la exportación no incluye (mensajes recibidos):
+// el mismo que publica la política de privacidad.
+import { LEGAL_CONTACT_EMAIL } from '@/app/.well-known/contact'
+import { eyebrow, row, type AccountSettings } from './shared'
 
 type Props = { graceDays: number } & Pick<
   AccountSettings,
@@ -32,7 +35,7 @@ export function DangerZoneSection({
       <p className={cn(eyebrow, 'text-accent-danger')}>{t('dangerZone')}</p>
       <div className="flex flex-col rounded-bento bg-surface-default divide-y divide-surface-border overflow-hidden">
         <div className={cn(row, 'flex items-center justify-between gap-4 flex-wrap')}>
-          <p className="text-sm font-body text-text-tertiary max-w-xs">{t('exportDataHint', { email: PRIVACY_CONTACT_EMAIL })}</p>
+          <p className="text-sm font-body text-text-tertiary max-w-xs">{t('exportDataHint', { email: LEGAL_CONTACT_EMAIL })}</p>
           <KButton
             variant="secondary"
             size="sm"

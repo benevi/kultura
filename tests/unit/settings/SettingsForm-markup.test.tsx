@@ -11,6 +11,10 @@ import { render, screen, fireEvent } from '@testing-library/react'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { createRef } from 'react'
 
+// Las fechas de los snapshots (borrado pendiente, correo semanal) no dependen
+// de la zona de la máquina. Node relee TZ al cambiarla; se formatean en los tests.
+process.env.TZ = 'UTC'
+
 vi.mock('next-intl', () => ({
   useTranslations: (ns?: string) => (key: string, values?: Record<string, unknown>) =>
     `${ns ? `${ns}.` : ''}${key}${values ? `(${Object.values(values).join(',')})` : ''}`,
@@ -206,7 +210,7 @@ describe('SettingsForm: HTML (caracterización)', () => {
 })
 
 describe('SettingsForm: cada control llama a su función del hook', () => {
-  it('cambio de correo: abrir, escribir, enviar y cancelar', () => {
+  it('cambio de correo: abrir', () => {
     render(<SettingsForm {...PROPS} />)
     fireEvent.click(screen.getByText('settings.changeEmail'))
     expect(state.setEmailFormOpen).toHaveBeenCalledWith(true)
