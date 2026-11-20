@@ -28,8 +28,8 @@ interface ErrorStateProps {
  * Estado de error de los `error.tsx` (fase 8.4, C11): el `SalaBlockState` de
  * error con el título como `h1`, que recibe el foco al aparecer para que el
  * lector de pantalla diga qué ha pasado; una explicación, «Reintentar»
- * (`reset`) y la salida a Inicio. Pinta su propio fondo de «Sala» para que
- * valga en claro y en oscuro dentro del envoltorio de hoy.
+ * (`reset`) y la salida a Inicio. Hereda el fondo de la página; los papeles
+ * `--sala-*` son los del tema oscuro, el único de la app de hoy.
  *
  * La salida es un `<a>` normal con el aspecto de `SalaButton`, no un
  * `SalaLink`: este límite se pinta también en las rutas cacheables (F-22), donde
@@ -59,7 +59,10 @@ export function ErrorState({ error, reset, fullPage = false, homeHref = '/home' 
   }, [error])
 
   return (
-    <div className="bg-sala-background px-sala-margin text-sala-ink">
+    // Sustituye a la página, que es quien pone el `<main>`: lo pone él, en la
+    // retícula de la app (DIS-8), con el borde izquierdo del logo y del
+    // contenido. El fondo es el de la página.
+    <main className="page-grid text-sala-ink">
       <SalaBlockState
         tone="error"
         headingLevel={1}
@@ -74,6 +77,6 @@ export function ErrorState({ error, reset, fullPage = false, homeHref = '/home' 
           </SalaButton>
         }
       />
-    </div>
+    </main>
   )
 }

@@ -33,6 +33,14 @@ describe('ErrorState', () => {
     expect(screen.getByText('La página no ha cargado bien.')).toBeInTheDocument()
   })
 
+  it('sustituye a la página: es su <main>, en la retícula de la app y sin fondo propio', () => {
+    render(<ErrorState reset={vi.fn()} />)
+    const main = screen.getByRole('main')
+    expect(main).toContainElement(screen.getByRole('heading', { level: 1 }))
+    expect(main.className).toContain('page-grid')
+    expect(main.className).not.toMatch(/\bbg-/)
+  })
+
   it('el título recibe el foco al aparecer, sin aviso doble', () => {
     const { container } = render(<ErrorState reset={vi.fn()} />)
     const titulo = screen.getByRole('heading', { level: 1 })
