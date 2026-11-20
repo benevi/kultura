@@ -3,7 +3,7 @@ import { Slot } from "@radix-ui/react-slot";
 import { cn } from "@/lib/utils/index";
 import { Spinner } from "./Spinner";
 
-export type KButtonVariant = "primary" | "secondary";
+export type KButtonVariant = "primary" | "secondary" | "tonal" | "danger";
 export type KButtonSize = "sm" | "md" | "lg";
 
 export interface KButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
@@ -35,7 +35,16 @@ export const KButton = React.forwardRef<HTMLButtonElement, KButtonProps>(
              lo recorta a un estadio perfecto — el "botón pill" del sistema de diseño. */
           "inline-flex items-center justify-center gap-2 rounded-pill font-body whitespace-nowrap",
           "transition-all duration-150 ease-out",
-          "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-pink focus-visible:ring-offset-2 focus-visible:ring-offset-surface-base",
+          /* Foco de teclado: contorno (`outline`) pink de 2 px separado 2 px,
+             como el resto de controles a mano y como `SalaButton`. Antes era un
+             `ring` (`box-shadow`), que con colores forzados no se pinta: el
+             foco desaparecía. El `outline` sí se pinta, con el color del
+             sistema. Grosor, separación y color se fijan siempre y solo el
+             estilo cambia con el foco: así `transition-all` no anima el
+             contorno desde el color del texto. El hueco de 2 px es
+             transparente (deja ver lo que hay detrás); el `ring` lo pintaba
+             del fondo de la página. */
+          "outline-2 outline-offset-2 outline-focus-ring focus-visible:[outline-style:solid]",
           "disabled:pointer-events-none disabled:opacity-40",
           /* Size */
           sizeClasses[size],
@@ -65,6 +74,30 @@ export const KButton = React.forwardRef<HTMLButtonElement, KButtonProps>(
             "bg-transparent border-2 border-surface-border",
             "text-text-secondary",
             "hover:bg-surface-elevated hover:text-text-primary",
+            "active:scale-[0.98]",
+          ],
+          /* Tonal: fondo un paso más claro, sin borde. Sale de los botones a
+             mano de compartir (`MAIN` de ShareRanking y ShareRatingButton), el
+             aviso de correo del calendario y los de email/confirm y
+             email/unsubscribe. Para lo que no debe competir con el primario.
+             En «Sala» corresponde a `quiet`. */
+          variant === "tonal" && [
+            "font-bold",
+            "bg-surface-elevated",
+            "text-text-primary",
+            "hover:text-accent-pink",
+            "active:scale-[0.98]",
+          ],
+          /* Peligro discreto: el secundario apagado, que se tiñe de rojo solo
+             al pasar el ratón (bloquear, salir de la conversación, reportar).
+             Sale de ConversationOptions, FriendshipButton y ReportButton.
+             El rojo no avisa solo: el texto nombra lo que se pierde. En
+             «Sala» corresponde a `danger`. */
+          variant === "danger" && [
+            "font-bold",
+            "bg-transparent border-2 border-surface-border",
+            "text-text-tertiary",
+            "hover:bg-surface-elevated hover:text-accent-danger hover:border-accent-danger",
             "active:scale-[0.98]",
           ],
           className
