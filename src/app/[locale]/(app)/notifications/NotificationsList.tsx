@@ -71,7 +71,7 @@ function InviteActions({ invitationId, groupName }: { invitationId: string; grou
         onClick={() => respond('reject')}
         disabled={loading}
         aria-label={groupName ? t('rejectInvite', { group: groupName }) : undefined}
-        className={`min-h-11 px-5 text-sm font-bold bg-surface-elevated text-text-secondary rounded-full hover:bg-accent-danger/10 hover:text-accent-danger transition-colors disabled:opacity-50 ${FOCUS}`}
+        className={`min-h-11 px-5 text-base font-bold bg-surface-elevated text-text-secondary rounded-full hover:bg-accent-danger/10 hover:text-accent-danger transition-colors disabled:opacity-50 ${FOCUS}`}
       >
         {t('reject')}
       </button>

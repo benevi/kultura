@@ -75,7 +75,7 @@ export default async function UnsubscribePage({ params, searchParams }: Props) {
           <p className="text-text-secondary leading-relaxed mb-6">{body}</p>
 
           {view === 'confirm' || (view === 'error' && token) ? (
-            <form method="post" action="/api/email/unsubscribe" className="flex flex-wrap gap-3">
+            <form method="post" action="/api/email/unsubscribe" className="flex flex-col gap-3 sm:flex-row sm:flex-wrap">
               <input type="hidden" name="t" value={token} />
               <input type="hidden" name="l" value={locale} />
               <KButton type="submit" size="lg">
@@ -86,7 +86,7 @@ export default async function UnsubscribePage({ params, searchParams }: Props) {
               </KButton>
             </form>
           ) : (
-            <div className="flex flex-wrap gap-3">
+            <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap">
               <KButton asChild variant="tonal" size="lg">
                 <a href={`/${locale}/settings#email`}>{t('settings')}</a>
               </KButton>

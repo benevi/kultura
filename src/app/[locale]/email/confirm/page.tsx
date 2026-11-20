@@ -67,7 +67,7 @@ export default async function ConfirmPage({ params, searchParams }: Props) {
           <h1 className="font-display text-2xl md:text-3xl font-extrabold tracking-tight text-text-primary mb-3">{title}</h1>
           <p className="text-text-secondary leading-relaxed mb-6">{body}</p>
           {showForm ? (
-            <form method="post" action="/api/email/confirm" className="flex flex-wrap gap-3">
+            <form method="post" action="/api/email/confirm" className="flex flex-col gap-3 sm:flex-row sm:flex-wrap">
               <input type="hidden" name="t" value={token} />
               <input type="hidden" name="l" value={locale} />
               <KButton type="submit" size="lg">
@@ -75,7 +75,7 @@ export default async function ConfirmPage({ params, searchParams }: Props) {
               </KButton>
             </form>
           ) : (
-            <div className="flex flex-wrap gap-3">
+            <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap">
               {view === 'done' ? (
                 <KButton asChild size="lg">
                   <a href={`/${locale}/calendar`}>{t('calendar')}</a>

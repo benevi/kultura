@@ -93,14 +93,17 @@ export function ShareRatingButton({ path, title, rating }: Props) {
         </svg>
         {t("action")}
       </KButton>
+      {/* En móvil, rejilla de 2 columnas («Copiar enlace» ocupa la fila
+          entera; X y WhatsApp debajo, a medias) para que ninguna opción quede
+          sola en otra línea. Desde `sm`, en fila. */}
       <div
         id={menuId}
         hidden={!open}
         aria-label={t("menu")}
         role="group"
-        className={`${open ? "flex" : "hidden"} flex-wrap items-center gap-2`}
+        className={`${open ? "grid sm:flex" : "hidden"} w-full grid-cols-2 gap-2 sm:w-auto sm:flex-wrap sm:items-center`}
       >
-        <KButton type="button" variant="secondary" size="lg" onClick={copy}>
+        <KButton type="button" variant="secondary" size="lg" className="col-span-2" onClick={copy}>
           {t("copy")}
         </KButton>
         <KButton
