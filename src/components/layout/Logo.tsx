@@ -71,14 +71,13 @@ export function Logo({ size = 26, variant = 'full', className = '' }: LogoProps)
         kultura
         <span
           aria-hidden="true"
-          className="inline-block bg-accent-lime align-middle"
+          className="inline-block bg-accent-lime align-middle rotate-[14deg]"
           style={{
             width: size * 0.15,
             height: size * 0.15,
             borderRadius: 3,
             marginLeft: size * 0.06,
             marginBottom: size * 0.02,
-            transform: 'rotate(14deg)',
           }}
         />
       </span>

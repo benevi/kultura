@@ -34,8 +34,7 @@ export function ListItemCard({ listId, item, index, ranked, canEdit, removing, o
         <MediaCard item={item.media} />
       ) : (
         <div
-          className="aspect-[2/3] rounded-2xl flex items-center justify-center"
-          style={{ background: 'linear-gradient(155deg, var(--surface2), var(--surface))' }}
+          className="aspect-[2/3] rounded-2xl flex items-center justify-center bg-[linear-gradient(155deg,var(--surface2),var(--surface))]"
         >
           <span className="text-xs text-text-secondary text-center px-1 line-clamp-3">{item.mediaId}</span>
         </div>
