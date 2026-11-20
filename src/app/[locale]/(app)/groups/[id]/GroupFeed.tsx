@@ -191,7 +191,6 @@ export function GroupFeed({ groupId, currentUserId, initialPosts, isOwner = fals
             size="sm"
             variant="primary"
             disabled={!text.trim() || posting}
-            className="rounded-full font-extrabold"
           >
             {posting ? '...' : t('publish')}
           </KButton>

@@ -9,6 +9,7 @@ import { getTranslations } from "next-intl/server";
 import { BEST_FORMATS, type BestFormat } from "@/lib/best/best-of";
 import { localeHref, loginHref, signUpHref } from "@/lib/best/links";
 import type { Crumb } from "@/lib/best/seo";
+import { KButton } from "@/components/ui/KButton";
 
 const FOCUS =
   "focus-visible:[outline-style:solid] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus-ring";
@@ -137,20 +138,16 @@ export async function BestCta({ locale, year, returnTo }: { locale: string; year
       </h2>
       <p className="max-w-prose text-base text-text-secondary">{t("cta.body", { year })}</p>
       <div className="flex flex-wrap gap-3">
-        <a
-          href={signUpHref(locale, returnTo)}
-          rel="nofollow"
-          className="inline-flex h-11 items-center rounded-full bg-accent-pink px-6 text-base font-extrabold text-on-accent-pink transition-all hover:brightness-110 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-pink focus-visible:ring-offset-2 focus-visible:ring-offset-surface-base"
-        >
-          {t("cta.action")}
-        </a>
-        <a
-          href={loginHref(locale, returnTo)}
-          rel="nofollow"
-          className="inline-flex h-11 items-center rounded-full border-2 border-surface-border px-6 text-base font-bold text-text-secondary transition-all hover:bg-surface-elevated hover:text-text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-pink focus-visible:ring-offset-2 focus-visible:ring-offset-surface-base"
-        >
-          {t("cta.login")}
-        </a>
+        <KButton asChild size="lg" variant="primary">
+          <a href={signUpHref(locale, returnTo)} rel="nofollow">
+            {t("cta.action")}
+          </a>
+        </KButton>
+        <KButton asChild size="lg" variant="secondary">
+          <a href={loginHref(locale, returnTo)} rel="nofollow">
+            {t("cta.login")}
+          </a>
+        </KButton>
       </div>
     </section>
   );

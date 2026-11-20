@@ -60,7 +60,7 @@ export function ListHeader({
             variant="secondary"
             size="sm"
             onClick={onDeleteClick}
-            className="text-text-secondary hover:text-accent-danger"
+            className="hover:text-accent-danger"
           >
             {t('deleteList')}
           </KButton>

@@ -20,6 +20,7 @@ import { Footer } from "@/components/layout/Footer";
 import { BestPodium, BestRankList } from "@/components/best/BestOfList";
 import { BestBreadcrumbs, BestCta, BestFormatNav, BestYearNav } from "@/components/best/BestNav";
 import { ShareRanking } from "@/components/best/ShareRanking";
+import { KButton } from "@/components/ui/KButton";
 import {
   bestYears,
   getBestRanking,
@@ -129,12 +130,11 @@ export default async function BestOfPage({ params }: Props) {
               {t("empty.body", { year: parsed.year, noun: t(`noun.${parsed.format}`) })}
             </p>
             {previousYear ? (
-              <a
-                href={localeHref(locale, `/best/${parsed.format}/${previousYear}`)}
-                className="inline-flex h-11 items-center rounded-full bg-accent-pink px-6 text-base font-extrabold text-on-accent-pink transition-all hover:brightness-110 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-pink focus-visible:ring-offset-2 focus-visible:ring-offset-surface-base"
-              >
-                {t("empty.previous", { year: previousYear })}
-              </a>
+              <KButton asChild size="lg" variant="primary">
+                <a href={localeHref(locale, `/best/${parsed.format}/${previousYear}`)}>
+                  {t("empty.previous", { year: previousYear })}
+                </a>
+              </KButton>
             ) : null}
           </section>
         ) : (

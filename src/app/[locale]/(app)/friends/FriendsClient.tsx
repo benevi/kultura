@@ -105,7 +105,7 @@ export function FriendsClient({
           onClick={handleCopyProfileLink}
           aria-label={copied ? undefined : t('copyProfileLink')}
           title={t('copyProfileLink')}
-          className="relative z-10 flex-shrink-0 rounded-full font-extrabold"
+          className="relative z-10 flex-shrink-0"
         >
           {copied ? t('profileLinkCopied') : <IconLists className="h-4 w-4" />}
         </KButton>
@@ -138,7 +138,7 @@ export function FriendsClient({
               variant="primary"
               loading={searching}
               disabled={searching}
-              className="flex-shrink-0 rounded-full font-extrabold"
+              className="flex-shrink-0"
             >
               {searching ? '...' : t('search')}
             </KButton>
@@ -301,7 +301,7 @@ function BlockedUsersSection() {
                   loading={busyId === u.id}
                   onClick={() => handleUnblock(u)}
                   aria-label={t('unblockUser', { username: u.username })}
-                  className="rounded-full font-bold border-2 hover:text-text-secondary"
+                  className="hover:text-text-secondary"
                 >
                   {t('unblock')}
                 </KButton>

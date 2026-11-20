@@ -107,7 +107,6 @@ export function FriendCard({ friendship, variant, onAction }: FriendCardProps) {
               variant="primary"
               loading={loading}
               onClick={handleAccept}
-              className="rounded-full font-extrabold"
             >
               {t('accept')}
             </KButton>
@@ -116,7 +115,7 @@ export function FriendCard({ friendship, variant, onAction }: FriendCardProps) {
               variant="secondary"
               loading={loading}
               onClick={handleDecline}
-              className="rounded-full font-bold border-2 hover:text-text-secondary"
+              className="hover:text-text-secondary"
             >
               {t('decline')}
             </KButton>
@@ -127,7 +126,7 @@ export function FriendCard({ friendship, variant, onAction }: FriendCardProps) {
             variant="secondary"
             loading={loading}
             onClick={handleRemove}
-            className="rounded-full font-bold border-2 hover:opacity-90 hover:text-text-secondary"
+            className="hover:opacity-90 hover:text-text-secondary"
           >
             {t('removeFriend')}
           </KButton>

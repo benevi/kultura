@@ -77,7 +77,6 @@ export function GroupsClient({ myGroups: initialGroups }: GroupsClientProps) {
               size="sm"
               variant="primary"
               onClick={() => setShowCreate(v => !v)}
-              className="rounded-full font-extrabold"
             >
               + {tFriends('createGroup')}
             </KButton>
