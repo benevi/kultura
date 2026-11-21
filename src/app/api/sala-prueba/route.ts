@@ -23,7 +23,9 @@ export function GET(request: NextRequest) {
   if (on !== "1" && on !== "0") {
     return NextResponse.json({ error: "on=1|0" }, { status: 400, headers: { "Cache-Control": "no-store" } });
   }
-  const target = new URL(salaTestNext(request.nextUrl.searchParams.get("next")), request.url);
+  let target = new URL(salaTestNext(request.nextUrl.searchParams.get("next")), request.url);
+  // Segunda barrera: pase lo que pase el filtro, nunca se sale de este sitio.
+  if (target.origin !== new URL(request.url).origin) target = new URL("/", request.url);
   const response = NextResponse.redirect(target, 303);
   response.headers.set("Cache-Control", "no-store");
   const cookie = salaTestCookie(on === "1", process.env.NODE_ENV === "production");

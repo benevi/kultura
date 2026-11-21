@@ -85,7 +85,7 @@ describe("salaTestNext", () => {
   it("solo rutas de este sitio", () => {
     expect(salaTestNext("/es/media/movie/496243")).toBe("/es/media/movie/496243");
     expect(salaTestNext("/es/media/movie/1?x=1")).toBe("/es/media/movie/1?x=1");
-    for (const raw of [null, "", "https://x.com", "//x.com", "/\\x.com", "es/media"]) expect(salaTestNext(raw)).toBe("/");
+    for (const raw of [null, "", "https://x.com", "//x.com", "/\\x.com", "es/media", "/\t/x.com", "/\n/x.com", "/\r/x.com", "/x\u0000"]) expect(salaTestNext(raw)).toBe("/");
   });
 });
 
@@ -127,6 +127,8 @@ describe("GET /api/sala-prueba", () => {
   });
   it("next de otra web: a la portada", () => {
     expect(call("?on=1&next=%2F%2Fevil.example").headers.get("location")).toBe("http://localhost:3000/");
+    for (const next of ["%2F%09%2Fevil.example", "%2F%0A%2Fevil.example", "%2F%0D%2Fevil.example"])
+      expect(call(`?on=1&next=${next}`).headers.get("location")).toBe("http://localhost:3000/");
   });
   it("sin on válido: 400 y sin cookie", () => {
     const res = call("?on=si");

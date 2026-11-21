@@ -59,7 +59,7 @@ export function SalaFichaHero({ item }: { item: MediaItem }) {
     original && !original.lang ? <p className={cn(SALA_TITLE_CSS.original, "mt-0")}>{original.text}</p> : null;
 
   return (
-    <section data-sala-ficha={layout} className={cn(SALA_WORK_CLASS, "font-sala-text")} aria-labelledby="sala-ficha-title">
+    <section key={item.id} data-sala-ficha={layout} className={cn(SALA_WORK_CLASS, "font-sala-text")} aria-labelledby="sala-ficha-title">
       <link rel="preload" href={ANYBODY_LATIN.pathname} as="font" type="font/woff2" crossOrigin="anonymous" />
       <SalaFichaAssets />
       {layout === "stage" ? (

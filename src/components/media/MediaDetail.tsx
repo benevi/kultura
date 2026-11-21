@@ -300,7 +300,8 @@ export async function MediaDetail({
                     src={item.poster}
                     sizes="(max-width: 768px) 90vw, 420px"
                     className="object-cover object-[center_25%] sm:object-center"
-                    priority
+                    // Con la sala, la imagen grande es la de arriba: esta no le quita la precarga.
+                    priority={!sala}
                   />
                 )}
 

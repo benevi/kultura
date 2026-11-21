@@ -55,10 +55,15 @@ export function salaTestCookie(on: boolean, secure: boolean) {
 
 /**
  * A dónde vuelve el enlace de prueba: una ruta de este sitio
- * (`/es/media/movie/496243`), nunca otra web (`//x.com`, `/\x.com`).
+ * (`/es/media/movie/496243`), nunca otra web (`//x.com`, `/\x.com`,
+ * `/<tab>/x.com`: el analizador de URL quita tabuladores y saltos de línea,
+ * así que también se rechaza cualquier carácter de control).
  */
+// eslint-disable-next-line no-control-regex -- justo lo que se busca rechazar
+const UNSAFE_NEXT = /[\u0000-\u001F\u007F\\]/;
+
 export function salaTestNext(raw: string | null): string {
-  if (!raw || !raw.startsWith("/") || raw.startsWith("//") || raw.includes("\\")) return "/";
+  if (!raw || !raw.startsWith("/") || raw.startsWith("//") || UNSAFE_NEXT.test(raw)) return "/";
   return raw;
 }
 
@@ -67,8 +72,8 @@ export function salaTestNext(raw: string | null): string {
  * `prueba`: con `0` la ficha sale como hoy.
  */
 export async function salaFichaEnabled(): Promise<boolean> {
-  if (process.env.SALA_FICHA?.trim() === "1") return true;
   const mode = salaFlagMode(process.env.SALA_FICHA);
+  if (mode === "on") return true;
   if (mode !== "test") return false;
   const { cookies } = await import("next/headers");
   const store = await cookies();
