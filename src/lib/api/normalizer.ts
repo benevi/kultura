@@ -124,6 +124,7 @@ export function normalizeMovie(
       extractProviders(providers ?? raw["watch/providers"]),
     metadata: {
       runtime: raw.runtime ?? undefined,
+      originalLanguage: raw.original_language || undefined,
       director,
       cast,
     },

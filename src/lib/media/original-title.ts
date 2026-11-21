@@ -22,6 +22,13 @@ const HANGUL = /[ᄀ-ᇿ㄰-㆏가-힯]/;
 const KANA = /[぀-ヿㇰ-ㇿ]/;
 const HAN = /[㐀-䶿一-鿿]/;
 const LANG = /^[a-z]{2,3}$/;
+/** Códigos de TMDB que no son BCP 47: `cn` es su cantonés; `xx` y `zxx`, sin idioma. */
+const TMDB_LANG: Record<string, string | null> = { cn: "yue", xx: null, zxx: null };
+
+function bcp47(code: string | undefined): string | null {
+  if (!code || !LANG.test(code)) return null;
+  return code in TMDB_LANG ? TMDB_LANG[code] : code;
+}
 
 /** Idioma por la escritura, solo donde no hay duda (hangul → coreano, kana → japonés). */
 export function scriptLang(text: string): string | null {
@@ -44,8 +51,8 @@ export function originalTitleOf(item: MediaItem): OriginalTitle | null {
 
   const original = text(item.originalTitle);
   if (!original || original === item.title) return null;
-  const declared = text(m.originalLanguage)?.toLowerCase();
-  if (declared && LANG.test(declared)) return { text: original, lang: declared };
+  const declared = bcp47(text(m.originalLanguage)?.toLowerCase());
+  if (declared) return { text: original, lang: declared };
   const byScript = scriptLang(original);
   if (byScript) return { text: original, lang: byScript };
   // El romaji de AniList y MangaDex: japonés en letra latina.

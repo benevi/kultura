@@ -61,6 +61,15 @@ describe("originalTitleOf", () => {
     expect(originalTitleOf(item({ title: "Up" }))).toBeNull();
     expect(scriptLang("卧虎藏龙")).toBeNull();
   });
+  it("idioma de TMDB: cn → yue; xx sin marcar; películas también", () => {
+    const o = (lang: string, originalTitle = "x original") =>
+      originalTitleOf(item({ title: "X", originalTitle, metadata: { originalLanguage: lang } }))?.lang;
+    expect(o("fr", "Le Fabuleux Destin d'Amélie Poulain")).toBe("fr");
+    expect(o("cn", "英雄本色")).toBe("yue");
+    expect(o("zh", "霸王别姬")).toBe("zh");
+    expect(o("xx")).toBeNull();
+    expect(o("zxx")).toBeNull();
+  });
 });
 
 describe("paletteReadable", () => {

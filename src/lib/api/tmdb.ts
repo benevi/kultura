@@ -33,6 +33,7 @@ export interface TmdbMovie {
   id: number;
   title: string;
   original_title: string;
+  original_language?: string;
   poster_path: string | null;
   backdrop_path: string | null;
   release_date: string; // "YYYY-MM-DD"
