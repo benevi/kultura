@@ -5,6 +5,7 @@ import { useTranslations } from 'next-intl'
 import { FilterBar, type FilterGroup } from '@/components/ui/FilterBar'
 import { GroupCard, type GroupCardData } from '@/components/social/GroupCard'
 import { KButton } from '@/components/ui/KButton'
+import { KInput } from '@/components/ui/KInput'
 import { IconSearch } from '@/components/icons'
 import { discoverGroups } from '@/lib/groups/client'
 
@@ -102,13 +103,12 @@ export function DiscoverGroupsClient() {
 
   return (
     <div className="flex flex-col gap-6">
-      <input
+      <KInput
         type="search"
         value={query}
         onChange={e => setQuery(e.target.value)}
         placeholder={t('searchPlaceholder')}
         aria-label={t('searchPlaceholder')}
-        className="w-full rounded-2xl border-2 px-4 py-2.5 text-sm placeholder:opacity-60 focus:outline-none focus:ring-2 focus-visible:ring-accent-pink bg-surface-elevated border-surface-border text-text-primary"
       />
 
       {/* Filtros sticky bajo el header de la app (h-14), como DiscoverClient */}
