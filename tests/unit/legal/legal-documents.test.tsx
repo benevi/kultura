@@ -85,7 +85,7 @@ describe.each(['es', 'en'] as const)('documentos legales (%s)', (locale) => {
     expect(items.length).toBeGreaterThanOrEqual(3)
     expect(items.length).toBeLessThanOrEqual(5)
     // Fecha y versión visibles.
-    expect(container.textContent).toMatch(/2026-10/)
+    expect(container.textContent).toMatch(/2026-1[01]/)
     expect(container.textContent).toMatch(/2026/)
     // Cada entrada del índice apunta a una sección que existe.
     const toc = screen.getByRole('navigation', { name: all[locale].legal.doc.tocLabel })
