@@ -57,7 +57,7 @@ const SAME_TEXT_DIFFERENT_ROLE: { keys: string[]; why: string }[] = [
   { keys: ["legal.nav.notice", "legal.notice.title"], why: "navegación y título del documento" },
   // La privacidad cambió el 26-10 (exportación y notificaciones push); el aviso legal y los términos siguen en su fecha.
   { keys: ["legal.notice.updated", "legal.privacy.updated"], why: "cada documento lleva su fecha" },
-  { keys: ["legal.notice.version", "legal.privacy.version", "legal.terms.version"], why: "cada documento lleva su versión" },
+  { keys: ["legal.privacy.version", "legal.terms.version"], why: "cada documento lleva su versión" },
   { keys: ["legal.privacy.sections.minors.title", "legal.terms.sections.age.title"], why: "sección de dos documentos distintos" },
   { keys: ["legal.notice.sections.law.title", "legal.terms.sections.law.title"], why: "sección de dos documentos distintos" },
   { keys: ["pwa.offline.metaTitle", "pwa.offline.title"], why: "<title> y h1 de la página" },
