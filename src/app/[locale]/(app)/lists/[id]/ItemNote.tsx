@@ -10,18 +10,13 @@
 import { useId, useRef, useState } from 'react'
 import { useTranslations } from 'next-intl'
 import { KButton } from '@/components/ui/KButton'
+import { K_FIELD_ERROR } from '@/components/ui/KField'
+import { KTextarea } from '@/components/ui/KTextarea'
 import { cn } from '@/lib/utils/index'
 import type { ListItem } from '@/types/list'
 import { setListItemNote } from '@/lib/lists/client'
 
 export const NOTE_MAX = 500
-
-const TEXTAREA_CLASS = cn(
-  'w-full min-h-[72px] resize-y rounded-2xl bg-surface-elevated px-4 py-3',
-  'border border-field-border',
-  'font-body text-base md:text-sm text-text-primary placeholder:text-text-tertiary',
-  'focus-visible:[outline-style:solid] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus-ring'
-)
 
 interface ItemNoteProps {
   listId: string
@@ -75,12 +70,10 @@ export function ItemNote({ listId, item, editable, onSaved, className }: ItemNot
   if (editing) {
     return (
       <form onSubmit={save} className={cn('flex flex-col gap-2', className)}>
-        <label htmlFor={fieldId} className="text-meta font-bold text-text-tertiary">
-          {t('noteLabel', { title })}
-        </label>
-        <textarea
+        <KTextarea
           ref={fieldRef}
           id={fieldId}
+          label={t('noteLabel', { title })}
           value={draft}
           onChange={(e) => setDraft(e.target.value)}
           maxLength={NOTE_MAX}
@@ -95,7 +88,7 @@ export function ItemNote({ listId, item, editable, onSaved, className }: ItemNot
               close()
             }
           }}
-          className={TEXTAREA_CLASS}
+          className={cn('min-h-[72px]', error && K_FIELD_ERROR)}
         />
         <p id={hintId} className="text-xs text-text-tertiary">
           {t('noteHint', { count: NOTE_MAX - draft.length })}

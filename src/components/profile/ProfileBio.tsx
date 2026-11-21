@@ -3,6 +3,9 @@
 import { useState } from 'react'
 import { useTranslations } from 'next-intl'
 import { KButton } from '@/components/ui/KButton'
+import { K_FIELD_ERROR } from '@/components/ui/KField'
+import { KTextarea } from '@/components/ui/KTextarea'
+import { cn } from '@/lib/utils/index'
 import { updateSettings } from '@/lib/settings/client'
 import { BIO_MAX_LENGTH } from '@/lib/settings/errors'
 
@@ -41,7 +44,7 @@ export function ProfileBio({ bio, isOwner }: Props) {
   if (editing) {
     return (
       <div className="flex flex-col gap-2">
-        <textarea
+        <KTextarea
           value={draft}
           onChange={(e) => setDraft(e.target.value)}
           maxLength={BIO_MAX_LENGTH}
@@ -49,7 +52,7 @@ export function ProfileBio({ bio, isOwner }: Props) {
           placeholder={t('bioPlaceholder')}
           aria-label={t('bio')}
           aria-invalid={saveError || undefined}
-          className="w-full bg-surface-elevated border border-surface-border rounded-button px-3 py-2 text-sm text-text-primary placeholder:text-text-tertiary resize-none focus:outline-none focus:ring-1 focus:ring-accent-pink"
+          className={cn('resize-none', saveError && K_FIELD_ERROR)}
           autoFocus
         />
         <div className="flex items-center gap-2">

@@ -15,6 +15,7 @@ import { useTranslations } from 'next-intl'
 import { apiFetch } from '@/lib/api/client'
 import type { PlatformsPut } from '@/lib/api/contracts/settings'
 import { cn } from '@/lib/utils/index'
+import { Select } from '@/components/ui/Select'
 import { PLATFORMS_BY_REGION, PLATFORM_REGIONS, type PlatformRegion } from '@/lib/platforms/platforms'
 
 export const PLATFORMS_SAVE_DELAY_MS = 700
@@ -106,17 +107,15 @@ export function PlatformsSection({ initialServices, initialRegion, isDemo = fals
           <label htmlFor={regionId} className="text-sm font-semibold text-text-primary">
             {t('region')}
           </label>
-          <select
-            id={regionId}
-            value={region}
-            disabled={isDemo}
-            onChange={(e) => changeRegion(e.target.value)}
-            className="min-h-11 rounded-button border border-field-border bg-surface-base px-3 py-2 text-base md:text-sm text-text-primary focus-visible:[outline-style:solid] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus-ring disabled:opacity-50"
-          >
-            {PLATFORM_REGIONS.map((r) => (
-              <option key={r} value={r}>{t(`regions.${r}`)}</option>
-            ))}
-          </select>
+          <div>
+            <Select
+              id={regionId}
+              value={region}
+              disabled={isDemo}
+              onChange={changeRegion}
+              options={PLATFORM_REGIONS.map((r) => ({ value: r, label: t(`regions.${r}`) }))}
+            />
+          </div>
         </div>
 
         <fieldset disabled={isDemo} className="flex flex-col gap-3 disabled:opacity-60">
