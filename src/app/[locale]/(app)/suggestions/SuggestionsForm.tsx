@@ -3,6 +3,9 @@
 import { useEffect, useId, useRef, useState } from 'react'
 import { useTranslations } from 'next-intl'
 import { KButton } from '@/components/ui/KButton'
+import { K_FIELD_ERROR, K_FIELD_LABEL } from '@/components/ui/KField'
+import { KInput } from '@/components/ui/KInput'
+import { KTextarea } from '@/components/ui/KTextarea'
 import { cn } from '@/lib/utils/index'
 import { IconCheck } from '@/components/icons'
 import { ApiError, apiFetch } from '@/lib/api/client'
@@ -12,9 +15,6 @@ type SuggestionType = 'bug' | 'feature' | 'improvement' | 'other'
 const SUBJECT_MIN = 3
 const DESCRIPTION_MIN = 10
 const DESCRIPTION_MAX = 2000
-
-const FIELD_CLASS =
-  'w-full bg-surface-elevated border border-field-border rounded-2xl px-[18px] py-[15px] text-base md:text-sm text-text-primary placeholder-text-tertiary focus-visible:[outline-style:solid] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus-ring'
 
 /**
  * Formulario de sugerencias (ACC-2, ACC-3, ACC-10):
@@ -31,7 +31,6 @@ export function SuggestionsForm() {
   const id = useId()
   const subjectId = `${id}-subject`
   const descriptionId = `${id}-description`
-  const subjectErrorId = `${id}-subject-error`
   const descriptionErrorId = `${id}-description-error`
   const counterId = `${id}-counter`
   const subjectRef = useRef<HTMLInputElement>(null)
@@ -110,7 +109,7 @@ export function SuggestionsForm() {
     <form onSubmit={handleSubmit} noValidate className="flex flex-col gap-5">
       {/* Type */}
       <fieldset>
-        <legend className="block text-sm font-semibold text-text-primary mb-2">{t('typeLabel')}</legend>
+        <legend className={cn(K_FIELD_LABEL, 'mb-2 block')}>{t('typeLabel')}</legend>
         <div className="flex flex-wrap gap-2">
           {typeOptions.map(opt => (
             <button
@@ -133,41 +132,30 @@ export function SuggestionsForm() {
       </fieldset>
 
       {/* Subject */}
-      <div>
-        <label htmlFor={subjectId} className="block text-sm font-semibold text-text-primary mb-2">
-          {t('subjectLabel')}
-        </label>
-        <input
-          ref={subjectRef}
-          id={subjectId}
-          type="text"
-          value={subject}
-          onChange={e => {
-            setSubject(e.target.value)
-            if (fieldErrors.subject && e.target.value.trim().length >= SUBJECT_MIN) {
-              setFieldErrors((f) => ({ ...f, subject: undefined }))
-            }
-          }}
-          placeholder={t('subjectPlaceholder')}
-          maxLength={120}
-          aria-required="true"
-          aria-invalid={fieldErrors.subject ? true : undefined}
-          aria-describedby={fieldErrors.subject ? subjectErrorId : undefined}
-          className={cn(FIELD_CLASS, fieldErrors.subject && 'border-accent-danger')}
-        />
-        {fieldErrors.subject && (
-          <p id={subjectErrorId} role="alert" className="mt-1 text-xs text-accent-danger">{fieldErrors.subject}</p>
-        )}
-      </div>
+      <KInput
+        ref={subjectRef}
+        id={subjectId}
+        type="text"
+        label={t('subjectLabel')}
+        error={fieldErrors.subject}
+        value={subject}
+        onChange={e => {
+          setSubject(e.target.value)
+          if (fieldErrors.subject && e.target.value.trim().length >= SUBJECT_MIN) {
+            setFieldErrors((f) => ({ ...f, subject: undefined }))
+          }
+        }}
+        placeholder={t('subjectPlaceholder')}
+        maxLength={120}
+        aria-required="true"
+      />
 
       {/* Description */}
       <div>
-        <label htmlFor={descriptionId} className="block text-sm font-semibold text-text-primary mb-2">
-          {t('descriptionLabel')}
-        </label>
-        <textarea
+        <KTextarea
           ref={descriptionRef}
           id={descriptionId}
+          label={t('descriptionLabel')}
           value={description}
           onChange={e => {
             setDescription(e.target.value)
@@ -181,7 +169,7 @@ export function SuggestionsForm() {
           aria-required="true"
           aria-invalid={fieldErrors.description ? true : undefined}
           aria-describedby={[fieldErrors.description ? descriptionErrorId : null, counterId].filter(Boolean).join(' ')}
-          className={cn(FIELD_CLASS, 'resize-none', fieldErrors.description && 'border-accent-danger')}
+          className={cn('resize-none', fieldErrors.description && K_FIELD_ERROR)}
         />
         <div className="mt-1 flex justify-between gap-3">
           {fieldErrors.description ? (

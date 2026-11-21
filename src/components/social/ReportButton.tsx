@@ -11,6 +11,7 @@
 import { useEffect, useId, useRef, useState } from 'react'
 import { useTranslations } from 'next-intl'
 import { KButton } from '@/components/ui/KButton'
+import { KTextarea } from '@/components/ui/KTextarea'
 import {
   ModerationRequestError,
   REPORT_DETAILS_MAX,
@@ -154,7 +155,6 @@ export function ReportButton({ targetType, targetId, variant = 'button', context
   const panelId = useId()
   const titleId = useId()
   const detailsId = useId()
-  const detailsHintId = useId()
   const errorId = useId()
   const triggerRef = useRef<HTMLButtonElement>(null)
   const firstReasonRef = useRef<HTMLInputElement>(null)
@@ -275,20 +275,17 @@ export function ReportButton({ targetType, targetId, variant = 'button', context
               </label>
             ))}
           </fieldset>
-          <div className="flex flex-col gap-1">
-            <label htmlFor={detailsId} className="text-xs font-bold text-text-secondary">{t('detailsLabel')}</label>
-            <textarea
-              id={detailsId}
-              value={details}
-              onChange={(e) => setDetails(e.target.value)}
-              placeholder={t('placeholder')}
-              maxLength={REPORT_DETAILS_MAX}
-              rows={3}
-              aria-describedby={detailsHintId}
-              className="w-full bg-surface-base border border-surface-border rounded-button px-2 py-1.5 text-sm text-text-primary placeholder:text-text-tertiary resize-none focus:outline-none focus-visible:ring-2 focus-visible:ring-accent-pink"
-            />
-            <p id={detailsHintId} className="text-xs text-text-tertiary">{t('detailsHint')}</p>
-          </div>
+          <KTextarea
+            id={detailsId}
+            label={t('detailsLabel')}
+            hint={t('detailsHint')}
+            value={details}
+            onChange={(e) => setDetails(e.target.value)}
+            placeholder={t('placeholder')}
+            maxLength={REPORT_DETAILS_MAX}
+            rows={3}
+            className="resize-none"
+          />
           {error && (
             <p id={errorId} role="alert" className="text-xs text-accent-danger">{error}</p>
           )}
