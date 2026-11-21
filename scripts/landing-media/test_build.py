@@ -92,5 +92,39 @@ class SeleccionTest(unittest.TestCase):
         self.assertEqual(build.to_portrait(np.zeros((90, 160, 3), dtype=np.uint8)).shape[:2], (90, 60))
 
 
+class MesTest(unittest.TestCase):
+    def test_rango_del_mes(self):
+        self.assertEqual(build.month_range(build.dt.date(2026, 12, 1)), ("2026-12-01", "2026-12-31"))
+        self.assertEqual(build.month_range(build.dt.date(2028, 2, 15)), ("2028-02-01", "2028-02-29"))
+
+    def test_meses_antes(self):
+        self.assertEqual(build.months_before(build.dt.date(2027, 2, 1), 4), "2026-10-01")
+        self.assertEqual(build.months_before(build.dt.date(2026, 12, 1), 0), "2026-12-01")
+
+    def test_novedades_tmdb_populares(self):
+        res = [{"id": 1, "popularity": 80, "poster_path": "/a.jpg"},
+               {"id": 2, "popularity": 3, "poster_path": "/b.jpg"},          # desconocida
+               {"id": 3, "popularity": 90, "adult": True, "poster_path": "/c.jpg"},
+               {"id": 4, "popularity": 50}]                                  # sin imagen
+        self.assertEqual([r["id"] for r in build.popular_tmdb(res)], [1])
+
+    def test_novedades_rawg_populares(self):
+        res = [{"id": 1, "added": 400, "background_image": "u"}, {"id": 2, "added": 5, "background_image": "v"},
+               {"id": 3, "added": 900, "background_image": None}]
+        self.assertEqual([r["id"] for r in build.popular_rawg(res)], [1])
+
+    def test_alterna_cine_y_series(self):
+        self.assertEqual(build.alternate([1, 2, 3], ["a"]), [1, "a", 2, 3])
+
+    def test_candidatos_de_discover(self):
+        items = [{"id": 7, "title": "Peli", "release_date": "2026-12-05", "poster_path": "/p.jpg", "vote_average": 7.1},
+                 {"id": 8, "name": "Serie", "first_air_date": "2026-12-10", "backdrop_path": "/b.jpg"}]
+        posters = build.tmdb_picks(items, "movie", "ranking", True)
+        self.assertEqual([(p.external_id, p.year, p.url) for p in posters],
+                         [("7", 2026, "https://image.tmdb.org/t/p/w500/p.jpg")])
+        backs = build.tmdb_picks(items, "tv", "hero", False)
+        self.assertEqual([(p.title, p.portrait) for p in backs], [("Serie", False)])
+
+
 if __name__ == "__main__":
     unittest.main()

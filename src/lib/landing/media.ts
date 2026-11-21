@@ -1,11 +1,12 @@
 // ============================================================
 // KULTURA — Imágenes con profundidad de la landing (rediseño)
 //
-// Las elige y prepara cada semana la tarea de GitHub Actions
-// `landing-media.yml` (scripts/landing-media/build.py): toma los líderes de los
-// rankings, lo más visto de la semana y la muestra de portadas, calcula el mapa
-// de profundidad de cada imagen y escribe la tabla `landing_media` (solo las
-// filas `active` de la semana en curso se pueden leer).
+// Las elige y prepara cada mes (día 1) la tarea de GitHub Actions
+// `landing-media.yml` (scripts/landing-media/build.py): toma las novedades del
+// mes y, de respaldo, los líderes de los rankings, lo más visto de la semana y
+// la muestra de portadas; calcula el mapa de profundidad de cada imagen y
+// escribe la tabla `landing_media` (solo las filas `active` de la tanda en
+// curso se pueden leer; la columna `week` guarda el día 1 del mes).
 //
 // Aquí solo se LEEN. Caché de 7 días con la etiqueta `landing-media`, que la
 // propia tarea vacía al terminar (POST /api/revalidate), así que el cambio se
@@ -100,7 +101,7 @@ const cached = unstable_cache(
   { revalidate: WEEK_SECONDS, tags: [LANDING_MEDIA_CACHE_TAG] },
 );
 
-/** Imágenes activas de la semana, ordenadas por sección y posición. Nunca lanza. */
+/** Imágenes activas de la tanda del mes, ordenadas por sección y posición. Nunca lanza. */
 export async function getLandingMedia(): Promise<LandingMedia[]> {
   try {
     return await cached();

@@ -1,28 +1,31 @@
 name: Imágenes de la landing
 
-# Renueva cada semana las imágenes con profundidad de la landing
-# (scripts/landing-media/build.py): toma lo más visto de la semana y los
-# líderes de los rankings, calcula su mapa de profundidad con Depth Anything V2
+# Renueva cada mes las imágenes con profundidad de la landing
+# (scripts/landing-media/build.py): toma las novedades del mes (estrenos de
+# cine, series que empiezan, juegos que salen, con popularidad mínima) y, si
+# un formato no tiene bastantes, rellena con lo más visto de la semana y los
+# líderes de los rankings. Calcula su mapa de profundidad con Depth Anything V2
 # (CPU, unos segundos por imagen), las sube al bucket «landing» de Supabase y
-# activa la semana nueva en `landing_media`. Si algo falla, no activa nada y la
-# landing sigue con la semana anterior. Los rankings siguen renovándose cada
-# día por su cuenta (/best, caché de 24 h).
+# activa la tanda nueva en `landing_media` (columna `week` = día 1 del mes).
+# Si algo falla, no activa nada y la landing sigue con la tanda anterior. Los
+# rankings siguen renovándose cada día por su cuenta (/best, caché de 24 h).
 #
 # Secretos (Settings → Secrets and variables → Actions):
 #   SUPABASE_URL               https://<ref>.supabase.co
 #   SUPABASE_SERVICE_ROLE_KEY  la misma de Vercel (solo la usa el paso que sube)
 #   TMDB_API_KEY               la misma de Vercel
+#   RAWG_API_KEY               opcional; la misma de Vercel (novedades de juegos)
 #   REVALIDATE_SECRET          opcional; la misma de Vercel, para vaciar la caché al acabar
 # Requiere la migración supabase/migrations/20261229350001_landing_media.sql.
 
 on:
-  # PAUSADA el 16-11-2026 (decisión de Víctor, fase 8 · 8A.0): guarda copias
-  # recortadas de portadas de terceros y sus mapas de profundidad en un bucket
-  # propio, y docs/PLAN_FASE8.md §9.5 bloquea copia propia y profundidad sobre
-  # portadas ajenas hasta G0 (respuesta legal). La landing sigue con la última
-  # semana activa. Para reanudar, tras G0: volver a poner
-  #   schedule:
-  #     - cron: "41 4 * * 1"   # lunes 04:41 UTC
+  # Pausada el 16-11-2026 (#175) porque guarda copias recortadas de portadas
+  # de terceros y sus mapas de profundidad. Reanudada: el 18-11-2026 Víctor
+  # levantó el bloqueo de §9 (docs/PLAN_FASE8.md §1, riesgo asumido) y el
+  # 20-11-2026 decidió que el hero se renueve cada mes con lo nuevo del mes.
+  # Requisito del 18-11: antes de fusionar, /privacy declara estas copias.
+  schedule:
+    - cron: "41 3 1 * *"   # día 1 de cada mes, 03:41 UTC
   workflow_dispatch:
     inputs:
       dry_run:
@@ -83,6 +86,7 @@ jobs:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
           TMDB_API_KEY: ${{ secrets.TMDB_API_KEY }}
+          RAWG_API_KEY: ${{ secrets.RAWG_API_KEY }}
           REVALIDATE_SECRET: ${{ secrets.REVALIDATE_SECRET }}
           DRY_RUN: ${{ inputs.dry_run && '1' || '0' }}
         run: python scripts/landing-media/build.py
