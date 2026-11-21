@@ -19,9 +19,8 @@
 import { useCallback, useEffect, useId, useLayoutEffect, useRef, useState } from 'react'
 import { useTranslations } from 'next-intl'
 import { KButton } from '@/components/ui/KButton'
-import { PosterImage } from '@/components/media/PosterImage'
+import { PosterFrame } from '@/components/media/PosterFrame'
 import { IconChevronDown, IconChevronUp } from '@/components/icons'
-import { posterGradient } from '@/lib/images/poster-gradient'
 import { cn } from '@/lib/utils/index'
 import type { ListItem } from '@/types/list'
 import { ItemNote } from './ItemNote'
@@ -311,12 +310,17 @@ export function ReorderableItems({ listId, items, onItemsChange, ranked }: Reord
                   {index + 1}
                 </span>
 
-                <div
-                  className="relative h-[60px] w-10 flex-shrink-0 overflow-hidden rounded-lg"
-                  style={{ background: posterGradient(item.mediaId) }}
-                >
-                  {item.media?.poster ? <PosterImage src={item.media.poster} sizes="40px" /> : null}
-                </div>
+                <PosterFrame
+                  seed={item.mediaId}
+                  title={title}
+                  poster={item.media?.poster}
+                  sizes="40px"
+                  radius="sm"
+                  initials={false}
+                  zoom={false}
+                  elevated={false}
+                  className="h-[60px] w-10 flex-shrink-0"
+                />
 
                 <span className="min-w-0 flex-1 font-display text-body font-bold leading-tight text-text-primary line-clamp-2">
                   {title}

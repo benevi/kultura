@@ -37,14 +37,12 @@ const ALLOWED: Record<string, [number, string]> = {
   // ── Degradado de póster sin imagen: `posterGradient(id)` (matiz por hash del id) ──
   // C14: los marcos y miniaturas a mano pasan a `PosterFrame`, que lleva el
   // único `style` del degradado. Quedan /best (servidor sin `next/image`,
-  // REN-1; comparte las clases con `posterFrameClass()`), la ficha (otra
-  // fórmula), y ReorderableItems y SearchBar (sus arreglos cambian lo que se ve).
-  "src/app/[locale]/(app)/lists/[id]/ReorderableItems.tsx": [1, "posterGradient(item.mediaId)"],
+  // REN-1; comparte las clases con `posterFrameClass()`) y la ficha (otra
+  // fórmula). ReorderableItems y SearchBar pasaron en el PR 11.
   "src/components/best/BestOfList.tsx": [2, "posterGradient(item.id) en las dos filas"],
   "src/components/best/BestTopRow.tsx": [1, "posterGradient(item.id)"],
   "src/components/media/MediaDetail.tsx": [1, "posterGradientFeature(item.id), la fórmula de la ficha"],
   "src/components/media/PosterFrame.tsx": [1, "posterGradient(seed), el de todos los pósteres y miniaturas"],
-  "src/components/search/SearchBar.tsx": [1, "posterGradient(item.id)"],
 
   // ── Colores que vienen de datos ─────────────────────────────────────────
   "src/app/[locale]/(app)/groups/GroupsClient.tsx": [1, "coverColor del grupo"],
