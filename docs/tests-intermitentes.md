@@ -27,3 +27,7 @@ Ninguno.
 | Test | Último fallo | Nota |
 | --- | --- | --- |
 | `tests/e2e/a11y/push-offer.spec.ts:46` · aviso de push en el chat (`movil-390`) | 7-11 (en `master`) y 9-11 (rama de la UI v2) | Sin fallos desde que se quitó la UI v2 (#95) y se rehízo el chat (#123). Si vuelve a fallar, pasa a cuarentena con fecha. |
+| `tests/unit/ai/home-page-recs.test.tsx` | 21-11 (en local, con un `next build` a la vez) | Pasó de 13 s; con la máquina libre pasa (6 de 6). Si falla en el CI, a cuarentena con fecha. |
+| `tests/unit/progress/library-route-progress.test.ts` | 21-11 (en local, con la suite completa) | Un `Test timed out in 5000ms` y un fallo de comparación que viene de él; solo pasa (12 de 12). Mismo patrón que `home-progress-columns`: probar el import en `beforeAll`. |
+| `tests/unit/library/route.test.ts` y `tests/unit/diary/library-route.test.ts` | 20-11 (en local, con un build a la vez) | `Test timed out in 5000ms`; solos pasan. Mismo patrón de import pesado dentro del test. |
+| `tests/unit/import/tmdb-find.test.ts` | 20-11 (en local) | Visto una vez durante la 8.4; sin reproducir. |
