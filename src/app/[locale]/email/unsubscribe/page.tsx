@@ -12,6 +12,7 @@ import type { Metadata } from 'next'
 import { getTranslations } from 'next-intl/server'
 import { Header } from '@/components/layout/Header'
 import { Footer } from '@/components/layout/Footer'
+import { KButton } from '@/components/ui/KButton'
 import { EMAIL_TOKEN_SECRET_MIN } from '@/lib/email/config'
 import { verifyUnsubscribeToken } from '@/lib/email/unsubscribe-token'
 
@@ -45,7 +46,9 @@ function viewFor(status: string, token: string): View {
   return verifyUnsubscribeToken(token, secret).ok ? 'confirm' : 'invalid'
 }
 
-const BUTTON =
+// Solo para «Volver al inicio», que es un enlace de texto sin fondo ni borde:
+// no corresponde a ninguna variante de KButton. Los demás son KButton.
+const TEXT_LINK =
   'inline-flex items-center justify-center min-h-11 px-6 rounded-pill font-body font-bold text-sm transition-colors ' +
   'focus-visible:[outline-style:solid] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus-ring'
 
@@ -72,22 +75,22 @@ export default async function UnsubscribePage({ params, searchParams }: Props) {
           <p className="text-text-secondary leading-relaxed mb-6">{body}</p>
 
           {view === 'confirm' || (view === 'error' && token) ? (
-            <form method="post" action="/api/email/unsubscribe" className="flex flex-wrap gap-3">
+            <form method="post" action="/api/email/unsubscribe" className="flex flex-col gap-3 sm:flex-row sm:flex-wrap">
               <input type="hidden" name="t" value={token} />
               <input type="hidden" name="l" value={locale} />
-              <button type="submit" className={`${BUTTON} bg-accent-pink text-on-accent-pink hover:opacity-90`}>
+              <KButton type="submit" size="lg">
                 {view === 'error' ? t('retry') : t('confirm')}
-              </button>
-              <a href={`/${locale}/settings#email`} className={`${BUTTON} bg-surface-elevated text-text-primary`}>
-                {t('settings')}
-              </a>
+              </KButton>
+              <KButton asChild variant="tonal" size="lg">
+                <a href={`/${locale}/settings#email`}>{t('settings')}</a>
+              </KButton>
             </form>
           ) : (
-            <div className="flex flex-wrap gap-3">
-              <a href={`/${locale}/settings#email`} className={`${BUTTON} bg-surface-elevated text-text-primary`}>
-                {t('settings')}
-              </a>
-              <a href={`/${locale}`} className={`${BUTTON} text-text-secondary hover:text-text-primary`}>
+            <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap">
+              <KButton asChild variant="tonal" size="lg">
+                <a href={`/${locale}/settings#email`}>{t('settings')}</a>
+              </KButton>
+              <a href={`/${locale}`} className={`${TEXT_LINK} text-text-secondary hover:text-text-primary`}>
                 {t('home')}
               </a>
             </div>

@@ -125,10 +125,9 @@ function BlockControl({
       ) : (
         <KButton
           ref={triggerRef}
-          variant="secondary"
+          variant="danger"
           size="sm"
           onClick={() => setConfirming(true)}
-          className="text-xs text-text-tertiary hover:text-accent-danger hover:border-accent-danger"
         >
           {t('block')}
         </KButton>

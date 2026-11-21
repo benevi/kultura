@@ -18,6 +18,7 @@ import { Link } from '@/i18n/navigation'
 import { PageHeading } from '@/components/layout/PageHeading'
 import { IconCalendar } from '@/components/icons'
 import { PosterFrame } from '@/components/media/PosterFrame'
+import { KButton } from '@/components/ui/KButton'
 import { cn } from '@/lib/utils/index'
 import { isDemoUser } from '@/lib/demo'
 import { createLogger } from '@/lib/logger'
@@ -191,15 +192,9 @@ export default async function CalendarPage({ params, searchParams }: Props) {
             </h2>
             <p className="text-sm text-text-secondary">{t('emailPromoBody')}</p>
           </div>
-          <Link
-            href="/settings#email"
-            className={cn(
-              'inline-flex items-center min-h-11 px-5 rounded-pill bg-surface-elevated text-sm font-bold text-text-primary',
-              FOCUS
-            )}
-          >
-            {t('emailPromoCta')}
-          </Link>
+          <KButton asChild variant="tonal" size="lg">
+            <Link href="/settings#email">{t('emailPromoCta')}</Link>
+          </KButton>
         </aside>
       ) : null}
 
@@ -262,12 +257,9 @@ function EmptyState({ title, body, cta, href }: { title: string; body: string; c
     <div className="flex flex-col items-center justify-center gap-3 rounded-bento bg-surface-default px-6 py-14 text-center">
       <h2 className="font-display text-xl font-semibold text-text-primary">{title}</h2>
       <p className="max-w-sm text-sm leading-relaxed text-text-secondary">{body}</p>
-      <Link
-        href={href}
-        className={cn('mt-2 inline-flex items-center min-h-11 px-5 rounded-pill bg-accent-pink text-on-accent-pink text-sm font-bold', FOCUS)}
-      >
-        {cta}
-      </Link>
+      <KButton asChild size="lg" className="mt-2">
+        <Link href={href}>{cta}</Link>
+      </KButton>
     </div>
   )
 }

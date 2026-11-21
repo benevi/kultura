@@ -115,9 +115,9 @@ export function ConversationOptions({
               )}
               {otherUser && !blocked && (
                 <KButton
-                  variant="secondary"
+                  variant="danger"
                   size="sm"
-                  className="justify-start text-xs text-text-tertiary hover:text-accent-danger hover:border-accent-danger"
+                  className="justify-start"
                   onClick={() => setConfirm('block')}
                 >
                   {t('blockUser', { username: otherUser.username })}
@@ -125,9 +125,9 @@ export function ConversationOptions({
               )}
               {blocked && <p role="status" className="text-xs text-text-secondary">{t('blockedNotice')}</p>}
               <KButton
-                variant="secondary"
+                variant="danger"
                 size="sm"
-                className="justify-start text-xs text-text-tertiary hover:text-accent-danger hover:border-accent-danger"
+                className="justify-start"
                 onClick={() => setConfirm('leave')}
               >
                 {t('leave')}
