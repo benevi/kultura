@@ -1,0 +1,101 @@
+"use client";
+
+import * as React from "react";
+import Image from "next/image";
+import { posterLoader } from "@/lib/images/poster-url";
+import { paletteFromPixels } from "@/lib/design/image-palette";
+import { SALA_WORK_CLASS, workPaletteVars } from "@/lib/design/sala-palette";
+
+/**
+ * La imagen de la sala de la ficha (fase 8.5, F1): la apaisada de la obra
+ * (película, serie, juego, anime) o la portada (libro, manga, cómic).
+ *
+ * Lo único de cliente de la sala, y hace dos cosas:
+ * - **El color sale de la imagen, en el navegador** (biblia §4): ya cargada,
+ *   se pinta en un lienzo de 32×32, se sacan los papeles con
+ *   `paletteFromPixels` y se ponen como variables en el contenedor
+ *   `sala-work` más cercano. Sin estado de React: no se vuelve a pintar nada.
+ *   Si el origen no deja leerla (Google Books) o no da color útil, se queda
+ *   en los neutros.
+ * - **Nunca queda rota**: si falla, se quita y se ve el campo de color.
+ *
+ * `crossOrigin="anonymous"` donde el CDN responde con CORS (TMDB, RAWG, Open
+ * Library; comprobado en el navegador el 21-11-2026) o la imagen sale del
+ * optimizador de Next (mismo origen). Con Google Books y AniList, sin él:
+ * pedirla con CORS la rompería. Si aun así una imagen con CORS falla, se
+ * pide otra vez sin él.
+ */
+export interface SalaFichaImageProps {
+  src: string;
+  sizes: string;
+  /** `cover`: llena la sala. `contain`: la portada entera, a su proporción. */
+  fit?: "cover" | "contain";
+}
+
+/**
+ * Sin CORS fiable: Google Books no lo manda; AniList lo manda a `curl`, pero
+ * al navegador le llega a menudo sin él (su caché no distingue el origen) y
+ * la imagen se tendría que pedir dos veces. Se quedan en los neutros.
+ */
+const NO_CORS_HOSTS = ["books.google.com", "s4.anilist.co"];
+
+/** ¿Se pueden leer los píxeles de esta imagen sin romperla? */
+export function paletteReadable(src: string): boolean {
+  let host: string;
+  try {
+    host = new URL(src).hostname;
+  } catch {
+    // Relativa: mismo origen.
+    return true;
+  }
+  return !(NO_CORS_HOSTS.includes(host) || host.endsWith(".googleusercontent.com"));
+}
+
+const SAMPLE = 32;
+
+function applyPalette(img: HTMLImageElement) {
+  const work = img.closest<HTMLElement>(`.${SALA_WORK_CLASS}`);
+  if (!work) return;
+  try {
+    const canvas = document.createElement("canvas");
+    canvas.width = SAMPLE;
+    canvas.height = SAMPLE;
+    const ctx = canvas.getContext("2d", { willReadFrequently: true });
+    if (!ctx) return;
+    ctx.drawImage(img, 0, 0, SAMPLE, SAMPLE);
+    const palette = paletteFromPixels(ctx.getImageData(0, 0, SAMPLE, SAMPLE).data);
+    if (palette.neutral) return;
+    for (const [name, value] of Object.entries(workPaletteVars(palette))) work.style.setProperty(name, value);
+    work.dataset.salaPalette = "image";
+  } catch {
+    // Lienzo «manchado» (sin CORS): neutros.
+  }
+}
+
+type Attempt = "cors" | "plain" | "broken";
+
+export function SalaFichaImage({ src, sizes, fit = "cover" }: SalaFichaImageProps) {
+  // El único estado: cómo ha ido con esta imagen. Otra imagen vuelve a empezar.
+  const [failed, setFailed] = React.useState<{ src: string; attempt: Attempt } | null>(null);
+  const first: Attempt = paletteReadable(src) ? "cors" : "plain";
+  const attempt = failed?.src === src ? failed.attempt : first;
+  if (attempt === "broken") return null;
+  const cors = attempt === "cors";
+  return (
+    <Image
+      key={`${src} ${attempt}`}
+      loader={posterLoader}
+      src={src}
+      alt=""
+      fill
+      sizes={sizes}
+      priority
+      crossOrigin={cors ? "anonymous" : undefined}
+      className={fit === "contain" ? "object-contain" : "object-cover"}
+      onLoad={cors ? (event) => applyPalette(event.currentTarget) : undefined}
+      // Con CORS, un CDN que a veces no lo manda (AniList detrás de su caché) rompe la imagen:
+      // se pide otra vez sin él y la obra se queda en los neutros. Si tampoco, fuera.
+      onError={() => setFailed({ src, attempt: cors ? "plain" : "broken" })}
+    />
+  );
+}

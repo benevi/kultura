@@ -43,6 +43,7 @@ import { OG_LOCALE, SITE_NAME } from "@/i18n/metadata";
 import { routing } from "@/i18n/routing";
 import { siteUrl } from "@/lib/site-url";
 import type { AppLocale } from "@/i18n/detect";
+import { salaFichaEnabled } from "@/lib/flags/sala";
 
 interface Props {
   params: Promise<{ locale: string; type: string; id: string }>;
@@ -163,7 +164,7 @@ export default async function MediaDetailPage({ params }: Props) {
   const { user, profile } = await getViewer();
   const supabase = user ? await createClient() : null;
 
-  const [initialEntry, kulturaRating, matchScores, synopsis, t, tMedia] = await Promise.all([
+  const [initialEntry, kulturaRating, matchScores, synopsis, t, tMedia, sala] = await Promise.all([
     user ? getMediaEntry(user.id, item.id).catch(() => null) : Promise.resolve(null),
     getKulturaRating(item.id),
     // Afinidad (F3a) solo como compuerta de "Por qué te lo recomendamos": sin
@@ -174,6 +175,8 @@ export default async function MediaDetailPage({ params }: Props) {
     cachedSynopsis(item.synopsis, item.id, locale),
     getTranslations({ locale, namespace: "media_detail" }),
     getTranslations({ locale, namespace: "media" }),
+    // Fase 8.5, F1: la sala de «Sala» (bandera SALA_FICHA: 0, prueba o 1).
+    salaFichaEnabled(),
   ]);
 
   // Miga de pan: la misma en pantalla y en el JSON-LD. El formato enlaza a su
@@ -214,6 +217,7 @@ export default async function MediaDetailPage({ params }: Props) {
         isAuthenticated={Boolean(user)}
         matchScore={matchScores.get(item.id)}
         shareRating={shareRatingFor(user, profile?.username, initialEntry, item, locale)}
+        sala={sala}
         adaptations={
           // F-29: Wikidata (o su caché) llega en streaming; la ficha no la espera.
           <React.Suspense fallback={null}>

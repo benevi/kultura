@@ -1,0 +1,82 @@
+// ============================================================
+// Fase 8.5 · F1: composición de la sala de la ficha, título original con su
+// idioma y qué imágenes se pueden leer para sacar el color.
+// ============================================================
+
+import { describe, expect, it } from "vitest";
+import { originalTitleOf, scriptLang } from "@/lib/media/original-title";
+import { salaFichaLayout } from "@/components/media/sala/SalaFichaHero";
+import { paletteReadable } from "@/components/media/sala/SalaFichaImage";
+import type { MediaItem } from "@/types/media";
+
+const item = (over: Partial<MediaItem>): MediaItem => ({ id: "x", externalId: "1", type: "movie", title: "T", ...over });
+
+describe("salaFichaLayout", () => {
+  it("película, serie, juego y anime con apaisada: la sala", () => {
+    for (const type of ["movie", "tv", "game", "anime"] as const) {
+      expect(salaFichaLayout(item({ type, backdrop: "b", poster: "p" }))).toBe("stage");
+    }
+  });
+  it("libro, manga y cómic: la portada como pieza, aunque haya apaisada", () => {
+    for (const type of ["book", "manga", "comic"] as const) {
+      expect(salaFichaLayout(item({ type, backdrop: "b", poster: "p" }))).toBe("piece");
+    }
+  });
+  it("juegos: la imagen de RAWG (llega como poster) es la apaisada", () => {
+    expect(salaFichaLayout(item({ type: "game", poster: "p" }))).toBe("stage");
+  });
+  it("sin apaisada: como un libro; sin ninguna imagen: el campo de color", () => {
+    expect(salaFichaLayout(item({ type: "anime", poster: "p" }))).toBe("piece");
+    expect(salaFichaLayout(item({ type: "movie" }))).toBe("empty");
+  });
+});
+
+describe("originalTitleOf", () => {
+  it("coreano y japonés por su escritura", () => {
+    expect(originalTitleOf(item({ title: "Parásitos", originalTitle: "기생충" }))).toEqual({ text: "기생충", lang: "ko" });
+    expect(originalTitleOf(item({ title: "El viaje de Chihiro", originalTitle: "千と千尋の神隠し" }))).toEqual({
+      text: "千と千尋の神隠し",
+      lang: "ja",
+    });
+  });
+  it("el idioma que declara TMDB manda", () => {
+    expect(
+      originalTitleOf(item({ type: "tv", title: "La casa de papel", originalTitle: "Money Heist", metadata: { originalLanguage: "en" } }))
+    ).toEqual({ text: "Money Heist", lang: "en" });
+  });
+  it("AniList: el nativo, y solo kanji sigue siendo japonés", () => {
+    expect(
+      originalTitleOf(item({ type: "anime", title: "Jujutsu Kaisen", originalTitle: "Jujutsu Kaisen", metadata: { nativeTitle: "呪術廻戦" } }))
+    ).toEqual({ text: "呪術廻戦", lang: "ja" });
+  });
+  it("el romaji, como japonés en letra latina", () => {
+    expect(originalTitleOf(item({ type: "anime", title: "Attack on Titan", originalTitle: "Shingeki no Kyojin" }))).toEqual({
+      text: "Shingeki no Kyojin",
+      lang: "ja-Latn",
+    });
+  });
+  it("sin idioma seguro: se enseña sin marcar; igual al título o vacío: nada", () => {
+    expect(originalTitleOf(item({ title: "Amélie", originalTitle: "Le Fabuleux Destin d'Amélie Poulain" }))?.lang).toBeNull();
+    expect(originalTitleOf(item({ title: "Up", originalTitle: "Up" }))).toBeNull();
+    expect(originalTitleOf(item({ title: "Up" }))).toBeNull();
+    expect(scriptLang("卧虎藏龙")).toBeNull();
+  });
+});
+
+describe("paletteReadable", () => {
+  it("TMDB, RAWG, Open Library y el optimizador: sí", () => {
+    for (const src of [
+      "https://image.tmdb.org/t/p/w1280/a.jpg",
+      "https://media.rawg.io/media/games/a.jpg",
+      "https://covers.openlibrary.org/b/id/1-L.jpg",
+      "/_next/image?url=x",
+    ]) {
+      expect(paletteReadable(src)).toBe(true);
+    }
+  });
+  it("Google Books y AniList: no (sin CORS fiable, pedirla con CORS la rompería)", () => {
+    expect(paletteReadable("https://s4.anilist.co/file/anilistcdn/media/anime/cover/large/a.png")).toBe(false);
+    expect(paletteReadable("https://books.google.com/books/content?id=x")).toBe(false);
+    expect(paletteReadable("https://books.googleusercontent.com/x")).toBe(false);
+  });
+});
