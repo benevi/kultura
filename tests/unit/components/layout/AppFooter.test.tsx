@@ -45,10 +45,26 @@ describe('AppFooter (D1)', () => {
     expect(screen.getByRole('link', { name: 'Sugerencias' })).toHaveAttribute('href', '/suggestions')
   })
 
-  it('enlaza, en este orden, Privacidad, Términos y Sugerencias; aún no el aviso legal ni la accesibilidad', async () => {
+  it('enlaza a /legal', async () => {
+    render(await AppFooter())
+    expect(screen.getByRole('link', { name: 'Aviso legal' })).toHaveAttribute('href', '/legal')
+  })
+
+  it('enlaza a /accessibility', async () => {
+    render(await AppFooter())
+    expect(screen.getByRole('link', { name: 'Accesibilidad' })).toHaveAttribute('href', '/accessibility')
+  })
+
+  it('enlaza en el mismo orden que el pie público y Sugerencias al final (WCAG 3.2.6)', async () => {
     render(await AppFooter())
     const nav = screen.getByRole('navigation')
-    expect(Array.from(nav.querySelectorAll('a')).map((a) => a.getAttribute('href'))).toEqual(['/privacy', '/terms', '/suggestions'])
+    expect(Array.from(nav.querySelectorAll('a')).map((a) => a.getAttribute('href'))).toEqual([
+      '/privacy',
+      '/terms',
+      '/legal',
+      '/accessibility',
+      '/suggestions',
+    ])
   })
 
   it('los enlaces van en una nav con nombre y miden 44 px de alto (MOV-4, ACC-12)', async () => {

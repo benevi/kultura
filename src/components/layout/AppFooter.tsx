@@ -1,19 +1,17 @@
 import { getTranslations } from 'next-intl/server'
 import { Link } from '@/i18n/navigation'
 import { renderDataAttribution } from '@/components/legal/DataAttribution'
-import { legalFooterLinks, type LegalFooterKey } from '@/lib/legal/footer-links'
+import { legalFooterLinks } from '@/lib/legal/footer-links'
 
 const FOOTER_LINK =
   'inline-flex items-center min-h-11 px-2 rounded-2xl text-sm text-text-secondary hover:text-accent-pink transition-colors ' +
   'focus-visible:[outline-style:solid] focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-focus-ring'
 
-/** Enlaces legales del pie con sesión (de momento solo estos dos). */
-const APP_LEGAL: readonly LegalFooterKey[] = ['privacy', 'terms']
-
 /**
  * Pie de la app con sesión. En móvil queda por encima de la `BottomNav`
  * porque el layout pone el relleno inferior en el envoltorio que lo incluye
- * (MOV-6, ROJO-11: la atribución a TMDB y RAWG se ve entera).
+ * (MOV-6, ROJO-11: la atribución a TMDB y RAWG se ve entera). Los enlaces
+ * legales van en el mismo orden que el pie público (WCAG 3.2.6).
  */
 export async function AppFooter() {
   const t = await getTranslations('nav')
@@ -27,7 +25,7 @@ export async function AppFooter() {
         </span>
         <nav aria-label={t('footerNav')}>
           <ul className="flex flex-wrap items-center -mx-2">
-            {legalFooterLinks(tLegal, APP_LEGAL).map((l) => (
+            {legalFooterLinks(tLegal).map((l) => (
               <li key={l.key}>
                 <Link href={l.href} className={FOOTER_LINK}>
                   {l.text}
