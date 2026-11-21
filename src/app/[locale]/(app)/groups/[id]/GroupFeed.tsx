@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import { useLocale, useTranslations } from 'next-intl'
 import { Avatar } from '@/components/ui/Avatar'
 import { KButton } from '@/components/ui/KButton'
+import { KTextarea } from '@/components/ui/KTextarea'
 import { InlineConfirm, ReportButton, useRestoreFocus } from '@/components/social/ReportButton'
 import { createGroupPost, deleteGroupPost } from '@/lib/groups/client'
 import { createClient } from '@/lib/supabase/client'
@@ -173,14 +174,14 @@ export function GroupFeed({ groupId, currentUserId, initialPosts, isOwner = fals
     <div className="flex flex-col gap-4">
       {/* Post form */}
       <form onSubmit={handlePost} className="flex flex-col gap-2">
-        <textarea
+        <KTextarea
           value={text}
           onChange={e => setText(e.target.value)}
           placeholder={t('postPlaceholder')}
           aria-label={t('postPlaceholder')}
           rows={3}
           maxLength={1000}
-          className="w-full rounded-bento border-2 px-3 py-2.5 text-sm placeholder:opacity-60 resize-none focus:outline-none focus:ring-2 focus-visible:ring-accent-pink bg-surface-elevated border-surface-border text-text-primary"
+          className="resize-none"
         />
         {postError && (
           <p role="alert" className="text-xs text-accent-orange">{postError}</p>

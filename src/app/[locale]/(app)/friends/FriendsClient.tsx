@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from 'react'
 import { useTranslations } from 'next-intl'
 import { Link } from '@/i18n/navigation'
 import { Avatar } from '@/components/ui/Avatar'
-import { Input } from '@/components/ui/input'
+import { KInput } from '@/components/ui/KInput'
 import { KButton } from '@/components/ui/KButton'
 import { FriendCard } from '@/components/social/FriendCard'
 import { FriendshipButton } from '@/components/social/FriendshipButton'
@@ -124,13 +124,12 @@ export function FriendsClient({
         {/* Search by username */}
         <section>
           <h2 className="font-display text-xl font-bold mb-3 text-text-primary">{t('searchFriend')}</h2>
-          <form onSubmit={handleSearch} className="flex gap-2 items-end">
-            <Input
+          <form onSubmit={handleSearch} className="flex gap-2 items-center">
+            <KInput
               type="text"
               value={searchQuery}
               onChange={e => setSearchQuery(e.target.value)}
               placeholder={t('searchPlaceholder')}
-              className="flex-1 rounded-2xl border-2 focus-visible:ring-accent-pink bg-surface-elevated border-surface-border text-text-primary"
             />
             <KButton
               type="submit"

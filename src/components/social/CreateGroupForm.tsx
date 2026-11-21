@@ -4,6 +4,8 @@ import { useState } from 'react'
 import { AvatarIconPicker } from '@/components/ui/AvatarIconPicker'
 import { useTranslations } from 'next-intl'
 import { KButton } from '@/components/ui/KButton'
+import { KInput } from '@/components/ui/KInput'
+import { KTextarea } from '@/components/ui/KTextarea'
 import { createGroup, type GroupSummary } from '@/lib/groups/client'
 
 interface CreateGroupFormProps {
@@ -12,9 +14,6 @@ interface CreateGroupFormProps {
   /** Cerrar el form sin crear. */
   onCancel: () => void
 }
-
-const FIELD_CLASS =
-  'w-full rounded-2xl border-2 px-3 py-2.5 text-sm placeholder:opacity-60 resize-none focus:outline-none focus:ring-2 focus-visible:ring-accent-pink bg-surface-elevated border-surface-border text-text-primary'
 
 /**
  * Form de creación de grupo. Reutilizado por FriendsClient (tab grupos, temporal)
@@ -62,7 +61,7 @@ export function CreateGroupForm({ onCreated, onCancel }: CreateGroupFormProps) {
       onSubmit={handleSubmit}
       className="rounded-bento border p-4 flex flex-col gap-3 bg-surface-default border-surface-border"
     >
-      <input
+      <KInput
         type="text"
         value={groupName}
         onChange={e => setGroupName(e.target.value)}
@@ -71,16 +70,15 @@ export function CreateGroupForm({ onCreated, onCancel }: CreateGroupFormProps) {
         aria-label={t('groupName')}
         maxLength={60}
         required
-        className={FIELD_CLASS}
       />
-      <textarea
+      <KTextarea
         value={groupDesc}
         onChange={e => setGroupDesc(e.target.value)}
         placeholder={t('groupDescPlaceholder')}
         aria-label={t('groupDescription')}
         maxLength={200}
         rows={2}
-        className={FIELD_CLASS}
+        className="resize-none"
       />
       {/* Icono del grupo (E-AVATAR-ICONS) — opcional: sin elegir, el grupo se
           identifica por la inicial de su nombre, como hasta ahora. */}
