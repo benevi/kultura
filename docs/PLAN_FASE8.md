@@ -39,6 +39,7 @@ Leyenda: **[P]** pendiente del «sí» de Víctor · **[E]** estimación orienta
 | 2026-11-17 | El borrador de biblia «Archivo» (PR #214) se descarta | Víctor |
 | 2026-11-17 | Tipografías de la v3 (JetBrains Mono, Newsreader): **no gustan**. Se eligen de nuevo en 8.3. Los archivos de `assets/fonts/` se sustituyen entonces | Víctor |
 | 2026-11-18 | **Se levanta el bloqueo de §9** sobre copia propia de portadas, KTX2 y mapas de profundidad («levanta §9»). Riesgo asumido. Llevarlo a producción sigue pidiendo su texto en `/privacy` y las reglas de migraciones y de coste | Víctor |
+| 2026-11-21 | **Plan de la 8.5 aprobado** ([`fase8/8-5-pantallas.md`](fase8/8-5-pantallas.md)): ficha → biblioteca → Descubrir (con búsqueda) → inicio → perfil → listas → resto; una bandera por pantalla con modo `prueba` para P-Uso; `KButton sm` no sube a 44 px y los dos degradados no se unifican: se retiran al pasar cada pantalla a «Sala» | Víctor |
 
 ### Riesgos que Víctor asume (escritos para que consten)
 
