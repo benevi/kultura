@@ -7,10 +7,9 @@ import { cn } from "@/lib/utils/index";
 import { Spinner } from "@/components/ui/Spinner";
 import { Badge } from "@/components/ui/Badge";
 import { IconSearch } from "@/components/icons";
+import { PosterFrame } from "@/components/media/PosterFrame";
 import type { MediaItem } from "@/types/media";
 import { ApiError, apiFetch } from "@/lib/api/client";
-import { posterLoader } from "@/lib/images/poster-url";
-import { posterGradient } from "@/lib/images/poster-gradient";
 import { GOOGLE_BOOKS_LOGO, googleBooksVolumeId } from "@/lib/media/google-books";
 
 export interface SearchBarProps {
@@ -268,26 +267,24 @@ export function SearchBar({
                   : "hover:bg-surface-default"
               )}
             >
-                {/* Miniatura de 36×48: se pide al CDN a ese tamaño
-                    (E-PORTADAS-RAPIDAS); antes bajaba la portada original —
-                    con RAWG, una captura de 1920 px por sugerencia. Gradiente
-                    detrás por si no hay portada o no carga. */}
-                <span
+                {/* Miniatura de 36×48 (C14): `PosterFrame`, que pide la
+                    portada al CDN al tamaño justo con `posterLoader`
+                    (E-PORTADAS-RAPIDAS) y deja el gradiente detrás por si no
+                    hay portada o no carga. Medidas fijas: manda el 3:4 de
+                    `w-9 h-12`, no el 2:3 del marco. */}
+                <PosterFrame
+                  as="span"
                   aria-hidden="true"
-                  className="relative w-9 h-12 rounded-lg overflow-hidden flex-shrink-0"
-                  style={{ background: posterGradient(item.id || item.title) }}
-                >
-                  {item.poster && (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img
-                      src={posterLoader({ src: item.poster, width: 96 })}
-                      alt=""
-                      loading="lazy"
-                      decoding="async"
-                      className="absolute inset-0 w-full h-full object-cover"
-                    />
-                  )}
-                </span>
+                  seed={item.id}
+                  title={item.title}
+                  poster={item.poster}
+                  sizes="36px"
+                  radius="sm"
+                  initials={false}
+                  zoom={false}
+                  elevated={false}
+                  className="w-9 h-12 flex-shrink-0"
+                />
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-body font-medium text-text-primary truncate">{item.title}</p>
                   {item.year ? (

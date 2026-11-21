@@ -96,6 +96,8 @@ describe("PosterFrame", () => {
     "src/app/[locale]/welcome/RateTile.tsx",
     "src/components/library/DiaryList.tsx",
     "src/components/media/AdaptationsSection.tsx",
+    "src/app/[locale]/(app)/lists/[id]/ReorderableItems.tsx",
+    "src/components/search/SearchBar.tsx",
   ])("%s usa la tarjeta única", (file) => {
     const code = readFileSync(resolve(ROOT, file), "utf8");
     expect(code).toMatch(/<PosterFrame\b/);
