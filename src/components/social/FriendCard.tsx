@@ -7,7 +7,6 @@ import { Avatar } from '@/components/ui/Avatar'
 import { KButton } from '@/components/ui/KButton'
 import { respondToFriendRequest, removeFriend } from '@/lib/social/actions'
 import { createLogger } from '@/lib/logger'
-import { F0 } from '@/lib/design/f0-tokens'
 import type { Friendship } from '@/types/user'
 import { offerPushInContext } from '@/lib/push/offer'
 
@@ -29,10 +28,9 @@ interface FriendCardProps {
 function AttentionRing({ children }: { children: React.ReactNode }) {
   return (
     <div
-      className="rounded-full p-[3px] flex-shrink-0"
-      style={{ background: `conic-gradient(from 180deg, ${F0.pink}, ${F0.orange}, ${F0.lime}, ${F0.pink})` }}
+      className="rounded-full p-[3px] flex-shrink-0 bg-[conic-gradient(from_180deg,var(--accent-pink),var(--accent-orange),var(--accent-lime),var(--accent-pink))]"
     >
-      <div className="rounded-full p-[3px]" style={{ background: F0.bg }}>
+      <div className="rounded-full p-[3px] bg-surface-base">
         {children}
       </div>
     </div>
@@ -86,8 +84,7 @@ export function FriendCard({ friendship, variant, onAction }: FriendCardProps) {
     // Fila suelta del artboard de Amigos: superficie propia, radio 20,
     // padding 16/22 y gap 16 — sin borde ni separadores.
     <div
-      className="flex items-center gap-4 rounded-bento px-[22px] py-4"
-      style={{ background: F0.surface }}
+      className="flex items-center gap-4 rounded-bento px-[22px] py-4 bg-surface-default"
     >
       <Link href={`/profile/${otherUser.username}`}>
         {variant === 'pending' ? <AttentionRing>{avatar}</AttentionRing> : avatar}
@@ -96,8 +93,7 @@ export function FriendCard({ friendship, variant, onAction }: FriendCardProps) {
       <div className="flex-1 min-w-0">
         <Link
           href={`/profile/${otherUser.username}`}
-          className="font-bold hover:opacity-80 transition-opacity block truncate"
-          style={{ color: F0.text }}
+          className="font-bold hover:opacity-80 transition-opacity block truncate text-text-primary"
         >
           {otherUser.username}
         </Link>
@@ -111,8 +107,6 @@ export function FriendCard({ friendship, variant, onAction }: FriendCardProps) {
               variant="primary"
               loading={loading}
               onClick={handleAccept}
-              className="rounded-full font-extrabold"
-              style={{ background: F0.pink, color: F0.onPink }}
             >
               {t('accept')}
             </KButton>
@@ -121,8 +115,6 @@ export function FriendCard({ friendship, variant, onAction }: FriendCardProps) {
               variant="secondary"
               loading={loading}
               onClick={handleDecline}
-              className="rounded-full font-bold border-2"
-              style={{ borderColor: F0.stroke, color: F0.textSecondary }}
             >
               {t('decline')}
             </KButton>
@@ -133,8 +125,7 @@ export function FriendCard({ friendship, variant, onAction }: FriendCardProps) {
             variant="secondary"
             loading={loading}
             onClick={handleRemove}
-            className="rounded-full font-bold border-2 hover:opacity-90"
-            style={{ borderColor: F0.stroke, color: F0.textSecondary }}
+            className="hover:opacity-90"
           >
             {t('removeFriend')}
           </KButton>

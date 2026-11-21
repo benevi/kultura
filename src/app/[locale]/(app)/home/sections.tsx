@@ -12,8 +12,7 @@ import { getFriendIds, getFriendsFeed, type FeedEntry } from '@/lib/social/feed'
 import { Link } from '@/i18n/navigation'
 import { Avatar } from '@/components/ui/Avatar'
 import { KButton } from '@/components/ui/KButton'
-import { PosterImage } from '@/components/media/PosterImage'
-import { posterGradient } from '@/lib/images/poster-gradient'
+import { PosterFrame } from '@/components/media/PosterFrame'
 import { platformNames, readPlatforms } from '@/lib/platforms/platforms'
 import { availableTonight, type TonightCandidate } from '@/lib/home/tonight'
 import { TonightClient } from './TonightClient'
@@ -179,12 +178,17 @@ function activityList(entries: FeedEntry[], locale: string, t: HomeT) {
               </p>
             </div>
             <Link href={href} tabIndex={-1} aria-hidden="true" className="flex-shrink-0">
-              <div
-                className="relative h-[60px] w-10 overflow-hidden rounded-lg"
-                style={{ background: posterGradient(media.id || media.title) }}
-              >
-                {media.poster ? <PosterImage src={media.poster} sizes="40px" className="object-cover" /> : null}
-              </div>
+              <PosterFrame
+                seed={media.id}
+                title={media.title}
+                poster={media.poster}
+                sizes="40px"
+                radius="sm"
+                initials={false}
+                zoom={false}
+                elevated={false}
+                className="h-[60px] w-10"
+              />
             </Link>
           </li>
         )

@@ -4,6 +4,8 @@ import { useEffect, useId, useState } from 'react'
 import { useTranslations } from 'next-intl'
 import { Avatar } from '@/components/ui/Avatar'
 import { KButton } from '@/components/ui/KButton'
+import { K_FIELD_LABEL } from '@/components/ui/KField'
+import { KTextarea } from '@/components/ui/KTextarea'
 import { Modal } from '@/components/ui/Modal'
 import { fetchFriends } from '@/lib/social/actions'
 import { apiFetch } from '@/lib/api/client'
@@ -83,7 +85,7 @@ export function RecommendModal({ mediaId, mediaCache, onClose }: RecommendModalP
     >
       {/* Lista de amigos: casillas nativas dentro de un grupo con nombre. */}
       <fieldset className="flex flex-col gap-1">
-        <legend className="mb-1 text-sm text-text-secondary">{t('selectFriends')}</legend>
+        <legend className={`mb-1 ${K_FIELD_LABEL}`}>{t('selectFriends')}</legend>
         <div className="flex flex-col gap-1 max-h-48 overflow-y-auto">
           {loadingFriends && (
             <p role="status" className="text-sm text-text-secondary text-center py-4">{t('loadingFriends')}</p>
@@ -115,18 +117,16 @@ export function RecommendModal({ mediaId, mediaCache, onClose }: RecommendModalP
 
       {/* Mensaje */}
       {friends.length > 0 && (
-        <div className="flex flex-col gap-1">
-          <label htmlFor={messageId} className="text-sm text-text-secondary">{t('message')}</label>
-          <textarea
-            id={messageId}
-            value={message}
-            onChange={(e) => setMessage(e.target.value)}
-            placeholder={t('messagePlaceholder')}
-            rows={2}
-            maxLength={500}
-            className="w-full bg-surface-default border border-field-border rounded-2xl px-3 py-2 text-base md:text-sm text-text-primary placeholder:text-text-tertiary resize-none focus-visible:[outline-style:solid] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus-ring"
-          />
-        </div>
+        <KTextarea
+          id={messageId}
+          label={t('message')}
+          value={message}
+          onChange={(e) => setMessage(e.target.value)}
+          placeholder={t('messagePlaceholder')}
+          rows={2}
+          maxLength={500}
+          className="resize-none"
+        />
       )}
 
       {/* Resultado del envío: región viva que existe desde el principio. */}

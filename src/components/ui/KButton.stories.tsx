@@ -7,7 +7,7 @@ const meta = {
   component: KButton,
   args: { children: "Guardar" },
   argTypes: {
-    variant: { control: "inline-radio", options: ["primary", "secondary"] },
+    variant: { control: "inline-radio", options: ["primary", "secondary", "tonal", "danger"] },
     size: { control: "inline-radio", options: ["sm", "md", "lg"] },
   },
 } satisfies Meta<typeof KButton>;
@@ -38,12 +38,66 @@ export const Tamanos: Story = {
   ),
 };
 
-/** Foco de teclado: anillo pink de 2 px con separación. */
+/**
+ * Foco de teclado: contorno (`outline`) pink de 2 px separado 2 px. Con
+ * colores forzados se pinta con el color del sistema (el `ring` de antes,
+ * una sombra, desaparecía).
+ */
 export const Foco: Story = {
   play: async ({ canvas, userEvent }) => {
     await userEvent.tab();
-    await expect(canvas.getByRole("button", { name: "Guardar" })).toHaveFocus();
+    const boton = canvas.getByRole("button", { name: "Guardar" });
+    await expect(boton).toHaveFocus();
+    await expect(getComputedStyle(boton).outlineStyle).toBe("solid");
+    await expect(getComputedStyle(boton).outlineWidth).toBe("2px");
+    await expect(getComputedStyle(boton).outlineOffset).toBe("2px");
   },
+};
+
+/** El foco en las cuatro variantes, una tras otra con el tabulador. */
+export const FocoVariantes: Story = {
+  name: "Foco en cada variante",
+  render: (args) => (
+    <div className="flex flex-wrap items-center gap-4">
+      <KButton {...args} variant="primary">
+        Guardar
+      </KButton>
+      <KButton {...args} variant="secondary">
+        Cancelar
+      </KButton>
+      <KButton {...args} variant="tonal">
+        Compartir
+      </KButton>
+      <KButton {...args} variant="danger">
+        Bloquear
+      </KButton>
+    </div>
+  ),
+  play: async ({ canvas, userEvent }) => {
+    for (const name of ["Guardar", "Cancelar", "Compartir", "Bloquear"]) {
+      await userEvent.tab();
+      const boton = canvas.getByRole("button", { name });
+      await expect(boton).toHaveFocus();
+      await expect(getComputedStyle(boton).outlineStyle).toBe("solid");
+    }
+  },
+};
+
+/**
+ * Tonal: fondo un paso más claro y sin borde, para lo que no compite con el
+ * primario (compartir, ir a ajustes). Al pasar el ratón el texto se vuelve pink.
+ */
+export const Tonal: Story = {
+  args: { variant: "tonal", children: "Compartir" },
+};
+
+/**
+ * Peligro discreto: el secundario apagado, que se tiñe de rojo al pasar el
+ * ratón (bloquear, salir, reportar). El texto nombra lo que se pierde.
+ */
+export const PeligroDiscreto: Story = {
+  name: "Peligro discreto",
+  args: { variant: "danger", size: "sm", children: "Bloquear" },
 };
 
 export const Deshabilitado: Story = {

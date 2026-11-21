@@ -11,6 +11,8 @@ import { useEffect, useId, useRef, useState } from 'react'
 import { useTranslations } from 'next-intl'
 import { KButton } from '@/components/ui/KButton'
 import { KInput } from '@/components/ui/KInput'
+import { KTextarea } from '@/components/ui/KTextarea'
+import { Select } from '@/components/ui/Select'
 import {
   ModerationRequestError,
   REPORT_DETAILS_MAX,
@@ -54,7 +56,6 @@ export function PublicReportForm({ types, presetType, presetTarget }: Props) {
     targetMsg: useId(),
     reasonMsg: useId(),
     details: useId(),
-    detailsMsg: useId(),
     faithMsg: useId(),
     summary: useId(),
   }
@@ -153,21 +154,13 @@ export function PublicReportForm({ types, presetType, presetTarget }: Props) {
         </div>
       ) : (
         <>
-          <div className="flex flex-col gap-2">
-            <label htmlFor={ids.type} className="font-body text-meta font-bold text-text-tertiary">
-              {t('typeLabel')}
-            </label>
-            <select
-              id={ids.type}
-              value={targetType}
-              onChange={(e) => setTargetType(e.target.value as ReportTargetType)}
-              className="w-full rounded-2xl bg-surface-elevated px-[18px] py-[15px] border border-field-border font-body text-base md:text-body text-text-primary focus-visible:[outline-style:solid] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus-ring"
-            >
-              {types.map((type) => (
-                <option key={type} value={type}>{t(`types.${type}`)}</option>
-              ))}
-            </select>
-          </div>
+          <Select
+            id={ids.type}
+            label={t('typeLabel')}
+            value={targetType}
+            onChange={(value) => setTargetType(value as ReportTargetType)}
+            options={types.map((type) => ({ value: type, label: t(`types.${type}`) }))}
+          />
           <KInput
             id={ids.target}
             label={t('targetLabel')}
@@ -208,29 +201,17 @@ export function PublicReportForm({ types, presetType, presetTarget }: Props) {
         {errors.reason && <p id={ids.reasonMsg} role="alert" className="text-xs text-accent-danger">{errors.reason}</p>}
       </fieldset>
 
-      <div className="flex flex-col gap-2">
-        <label htmlFor={ids.details} className="font-body text-meta font-bold text-text-tertiary">
-          {t('detailsLabel')}
-        </label>
-        <textarea
-          id={ids.details}
-          value={details}
-          onChange={(e) => setDetails(e.target.value)}
-          rows={5}
-          maxLength={REPORT_DETAILS_MAX}
-          required
-          aria-invalid={errors.details ? true : undefined}
-          aria-describedby={ids.detailsMsg}
-          className={`w-full rounded-2xl bg-surface-elevated px-[18px] py-[15px] border font-body text-base md:text-body text-text-primary placeholder:text-text-tertiary resize-y focus-visible:[outline-style:solid] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus-ring ${errors.details ? 'border-accent-danger' : 'border-field-border'}`}
-        />
-        {errors.details ? (
-          <p id={ids.detailsMsg} role="alert" className="text-xs text-accent-danger">{errors.details}</p>
-        ) : (
-          <p id={ids.detailsMsg} className="text-xs text-text-tertiary">
-            {t('detailsHint', { count: details.length, max: REPORT_DETAILS_MAX })}
-          </p>
-        )}
-      </div>
+      <KTextarea
+        id={ids.details}
+        label={t('detailsLabel')}
+        hint={t('detailsHint', { count: details.length, max: REPORT_DETAILS_MAX })}
+        error={errors.details}
+        value={details}
+        onChange={(e) => setDetails(e.target.value)}
+        rows={5}
+        maxLength={REPORT_DETAILS_MAX}
+        required
+      />
 
       <KInput
         type="email"

@@ -10,10 +10,10 @@
 // CDN, más la isla mínima del CTA (`WedgeCta`).
 // ============================================================
 
-import type { ReactNode } from "react";
 import type { LandingMedia } from "@/lib/landing/media";
 import type { Wedge } from "@/lib/analytics/attribution";
 import { WedgeCta } from "./WedgeCta";
+import { LandingFooter, type LandingFooterCopy } from "./LandingFooter";
 import "./landing.css";
 
 export interface WedgeCopy {
@@ -24,10 +24,7 @@ export interface WedgeCopy {
   lead: string;
   points: string[];
   cta: string;
-  footerNav: string;
-  links: Array<{ href: string; text: string }>;
-  otherLocale: { href: string; text: string; lang: string };
-  attribution: ReactNode;
+  footer: LandingFooterCopy;
 }
 
 const pct = (n: number) => `${Math.round(n * 1000) / 10}%`;
@@ -103,26 +100,7 @@ export function WedgeLanding({
         </section>
       </main>
 
-      <footer className="kl-foot">
-        <nav aria-label={copy.footerNav}>
-          <ul className="kl-flinks">
-            {copy.links.map((l) => (
-              <li key={l.href}>
-                <a href={href(l.href)}>{l.text}</a>
-              </li>
-            ))}
-            <li>
-              <a href={copy.otherLocale.href} hrefLang={copy.otherLocale.lang} lang={copy.otherLocale.lang}>
-                {copy.otherLocale.text}
-              </a>
-            </li>
-          </ul>
-        </nav>
-        <div className="kl-legal">
-          <p>© {new Date().getFullYear()} KULTURA</p>
-          {copy.attribution}
-        </div>
-      </footer>
+      <LandingFooter copy={copy.footer} base={base} />
     </div>
   );
 }

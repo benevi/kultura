@@ -17,8 +17,8 @@ export default function LibraryLoading() {
         </div>
 
         <div className="flex gap-2 overflow-hidden mb-6 pb-6 border-b border-surface-border">
-          {[80, 100, 72, 88, 64, 96].map((w, i) => (
-            <div key={i} className="h-9 bg-surface-elevated rounded-pill flex-shrink-0" style={{ width: `${w}px` }} />
+          {['w-[80px]', 'w-[100px]', 'w-[72px]', 'w-[88px]', 'w-[64px]', 'w-[96px]'].map((w, i) => (
+            <div key={i} className={`h-9 bg-surface-elevated rounded-pill flex-shrink-0 ${w}`} />
           ))}
         </div>
 

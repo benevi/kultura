@@ -39,7 +39,8 @@ Leyenda: **[P]** pendiente del «sí» de Víctor · **[E]** estimación orienta
 | 2026-11-17 | El borrador de biblia «Archivo» (PR #214) se descarta | Víctor |
 | 2026-11-17 | Tipografías de la v3 (JetBrains Mono, Newsreader): **no gustan**. Se eligen de nuevo en 8.3. Los archivos de `assets/fonts/` se sustituyen entonces | Víctor |
 | 2026-11-18 | **Se levanta el bloqueo de §9** sobre copia propia de portadas, KTX2 y mapas de profundidad («levanta §9»). Riesgo asumido. Llevarlo a producción sigue pidiendo su texto en `/privacy` y las reglas de migraciones y de coste | Víctor |
-| 2026-11-20 | **El hero muestra lo nuevo de cada mes:** las imágenes de la portada de la app no son siempre las mismas; cada mes pasan a los estrenos o novedades de ese mes (cine, series, juegos, libros…), sin intervención manual. Se hace en 8.5 con el rediseño de la pantalla que lleve el hero. Relacionado: la tarea `landing-media.yml`, pausada el 16-11 (#175) | Víctor |
+| 2026-11-20 | **El hero muestra lo nuevo de cada mes:** las imágenes de la portada de la app no son siempre las mismas; cada mes pasan a los estrenos o novedades de ese mes (cine, series, juegos, libros…), sin intervención manual. Se adelanta a la 8.5: reanuda `landing-media.yml` con cron mensual y criterio «novedades del mes» (#269), que no se fusiona hasta que `/privacy` declare las copias. Relacionado: la tarea `landing-media.yml`, pausada el 16-11 (#175) | Víctor |
+| 2026-11-21 | **Plan de la 8.5 aprobado** ([`fase8/8-5-pantallas.md`](fase8/8-5-pantallas.md)): ficha → biblioteca → Descubrir (con búsqueda) → inicio → perfil → listas → resto; una bandera por pantalla con modo `prueba` para P-Uso; `KButton sm` no sube a 44 px y los dos degradados no se unifican: se retiran al pasar cada pantalla a «Sala» | Víctor |
 
 ### Riesgos que Víctor asume (escritos para que consten)
 
@@ -80,7 +81,7 @@ Detalle en [`legal/terminos/README.md`](legal/terminos/README.md).
 | **8.1 API oficiales y atribución** | **Hecha (17-11-2026):** #216, #217, #218, #219. Ver §5 | Ninguna llamada a una API no oficial; atribución completa | — |
 | **8.2 Crecer** | **Hecha (17-11-2026):** #221–#226. Ver §6. Falta encender tres banderas en Vercel | Línea base medida; acciones rápidas fusionadas | — |
 | **8.3 Dirección visual y prototipo 3D** | **Hecha (18-11-2026).** Ver §7 | **P-Gusto** y **P-3D** pasadas: dirección «Sala» firmada y 3D dentro del plan | — |
-| **8.4 Sistema y deuda de interfaz** | Tokens, tipografía y componentes de la dirección elegida; Storybook como guía interna; deuda heredada (antes 8A.3b de la v3) | Componentes con estados y sin fallos graves de accesibilidad | 4–7 |
+| **8.4 Sistema y deuda de interfaz** | **Hecha (21-11-2026):** #233–#266. Ver §11 | Componentes con estados y sin fallos graves de accesibilidad | — |
 | **8.5 Pantallas** | Rediseño pantalla a pantalla, empezando por las más usadas (ficha, biblioteca, buscar). Cada una detrás de una bandera; **P-Uso** antes del 100 %. El 3D de la ficha entra aquí si pasó P-3D. El hero se renueva cada mes con lo nuevo (§1, 20-11-2026) | Todas las pantallas con el diseño nuevo | 5–9 |
 | **8.6 Observación** | **P-Números**; se retiran las banderas | Informe de una página | 0,5 |
 
@@ -165,7 +166,7 @@ Cada punto es un PR o pocos, detrás de bandera si cambia una pantalla. Privacid
 - Fondo de la pieza de libro y manga: dos variantes, sin elegir.
 - La ficha de la app da 404 cuando el proveedor tarda: es del cargador real, tarea aparte.
 - Sin probar: lector de pantalla real, Safari y Firefox, más dispositivos que los de Víctor.
-- Hecho en la 8.4: los archivos de `assets/fonts/` son ya Anybody, Instrument Sans y Noto Sans KR/JP. Falta cargarlos en la app (tokens y componentes).
+- Hecho en la 8.4: las fuentes de «Sala» (Anybody, Instrument Sans y Noto Sans KR/JP) están en `assets/fonts/` y cargadas en los tokens y componentes (§11).
 
 Lo que sigue es el encargo con el que arrancó la fase.
 
@@ -223,3 +224,38 @@ Recogidas enseñándole una lista de webs y apps; son sus palabras, resumidas.
 1. ~~Ids antiguos de Jikan que no se puedan convertir~~. Resuelto en 8.1: no había ninguno en producción (§5).
 2. ~~Referencias visuales, antes de empezar 8.3~~. Dadas el 18-11-2026 (§7.1).
 3. Las cinco decisiones de §7.1, al empezar la 8.3.
+
+## 11. Fase 8.4 · Sistema y deuda de interfaz
+
+**Hecha el 21-11-2026.** PRs #233–#266.
+
+**Sistema «Sala»:**
+
+- Color sacado de la imagen, ajustado a AA, y reglas medibles de la biblia (#233).
+- Fuentes en `assets/fonts/` (#234) y tokens en claro y oscuro con página de Fundamentos (#236). Referencia: [`design/TOKENS.md`](design/TOKENS.md).
+- Storybook como guía interna, con axe en cada historia dentro del CI (#235).
+- Componentes con sus estados: botón y enlace (#238), campos (#239), póster y tarjeta de obra (#240), diálogo, avisos y estado de bloque (#241), rótulo y sala (#243).
+- Carga en las páginas de `(app)` que no la tenían (#242) y `error.tsx` con el estado de error común (#244).
+
+**Deuda heredada (antes 8A.3b de la v3):**
+
+- Componentes partidos en piezas y hooks: WelcomeFlow, SettingsForm, ImportClient, ListDetail y ConversationClient (#246–#249, #251).
+- Los `style={{}}` pasan a tokens (#252, #253). Quedan solo los que dependen de un dato (un porcentaje, un color sacado de la imagen). Un test barrera (`tests/unit/visual/inline-styles.test.ts`) guarda la lista cerrada de archivos, cuántos tiene cada uno y por qué.
+- Pósteres y miniaturas a mano pasan a `PosterFrame` (#255, #265).
+- Botones a mano pasan a `KButton` (#256, #257, #259, #260). El foco es un contorno visible también con colores forzados, y hay variantes `tonal` y `danger`.
+- Campos a mano pasan a `KInput`, `KTextarea` y `Select`, que comparten `KField`: etiqueta, error anunciado y `aria-describedby` (#258, #261, #262).
+- Un solo pie legal para la landing y la app, con Privacidad, Términos, Aviso legal y Accesibilidad en el mismo orden (#254, #264).
+- La declaración de accesibilidad recoge que los fallos conocidos están arreglados (#266).
+- Intermitentes vistos, apuntados en `docs/tests-intermitentes.md` (#250, #263).
+
+**Pasa a la 8.5:**
+
+- Sustituir pantalla a pantalla lo que aún no usa «Sala», cada pantalla detrás de su bandera.
+- Decidir si `KButton` pequeño sube de 32 a 44 px (afecta a 84 botones) y unificar los colores del degradado de la ficha y de las tarjetas.
+
+**Fallos pequeños sin arreglar** (para PRs sueltos):
+
+- El buscador muestra el icono de imagen rota si falla una portada.
+- «Buscar amigo» no tiene etiqueta accesible.
+- En Descubrir: dos botones × con el mismo nombre, un error de carga que no se anuncia y el botón de pausa cambia `aria-pressed` y `aria-label` a la vez.
+- El simulado de Supabase del arnés de accesibilidad no cubre los embebidos por columna ni `discover_groups`.

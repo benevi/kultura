@@ -12,6 +12,7 @@
 
 import { useEffect, useId, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
+import { KButton } from "@/components/ui/KButton";
 import { preloadShareImage, prepareShareImage, shareNative } from "@/components/pwa/share";
 
 interface ShareRankingProps {
@@ -19,13 +20,6 @@ interface ShareRankingProps {
   path: string;
   title: string;
 }
-
-const FOCUS =
-  "focus-visible:[outline-style:solid] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus-ring";
-const MAIN =
-  `inline-flex min-h-11 items-center gap-2 rounded-full bg-surface-elevated px-5 text-sm font-bold text-text-primary hover:text-accent-pink transition-colors ${FOCUS}`;
-const OPTION =
-  `inline-flex min-h-11 items-center rounded-full border-2 border-stroke px-4 text-sm font-bold text-text-primary hover:bg-surface-elevated transition-colors ${FOCUS}`;
 
 export function ShareRanking({ path, title }: ShareRankingProps) {
   const t = useTranslations("best.share");
@@ -87,10 +81,11 @@ export function ShareRanking({ path, title }: ShareRankingProps) {
 
   return (
     <div ref={rootRef} role="group" aria-label={t("label")} className="flex flex-wrap items-center gap-2">
-      <button
+      <KButton
         ref={toggleRef}
         type="button"
-        className={MAIN}
+        variant="tonal"
+        size="lg"
         aria-expanded={open}
         aria-controls={menuId}
         onClick={share}
@@ -101,37 +96,42 @@ export function ShareRanking({ path, title }: ShareRankingProps) {
           <path d="M12 3v12M7 8l5-5 5 5M5 13v6a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-6" />
         </svg>
         {t("action")}
-      </button>
+      </KButton>
       {/* Atributo `hidden` (lo respeta el árbol de accesibilidad) y además la
           clase: con `flex` siempre puesta, la clase ganaría al atributo. */}
+      {/* En móvil, rejilla de 2 columnas («Copiar enlace» ocupa la fila
+          entera; X y WhatsApp debajo, a medias) para que ninguna opción quede
+          sola en otra línea. Desde `sm`, en fila. */}
       <div
         id={menuId}
         hidden={!open}
         aria-label={t("menu")}
         role="group"
-        className={`${open ? "flex" : "hidden"} flex-wrap items-center gap-2`}
+        className={`${open ? "grid sm:flex" : "hidden"} w-full grid-cols-2 gap-2 sm:w-auto sm:flex-wrap sm:items-center`}
       >
-        <button type="button" className={OPTION} onClick={copy}>
+        <KButton type="button" variant="secondary" size="lg" className="col-span-2" onClick={copy}>
           {t("copy")}
-        </button>
-        <button
+        </KButton>
+        <KButton
           type="button"
-          className={OPTION}
+          variant="secondary"
+          size="lg"
           aria-label={t("onX")}
           onClick={() =>
             openWindow(`https://x.com/intent/post?text=${encodeURIComponent(text)}&url=${encodeURIComponent(fullUrl())}`)
           }
         >
           X
-        </button>
-        <button
+        </KButton>
+        <KButton
           type="button"
-          className={OPTION}
+          variant="secondary"
+          size="lg"
           aria-label={t("onWhatsApp")}
           onClick={() => openWindow(`https://wa.me/?text=${encodeURIComponent(`${text} ${fullUrl()}`)}`)}
         >
           WhatsApp
-        </button>
+        </KButton>
       </div>
       <span role="status" aria-live="polite" className="text-sm font-bold text-accent-positive">
         {copied ? t("copied") : ""}

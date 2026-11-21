@@ -18,8 +18,8 @@ export default async function SuggestionsLoading() {
           <div>
             <div className="mb-2 h-3.5 w-24 rounded-button bg-surface-elevated" />
             <div className="flex flex-wrap gap-2">
-              {[72, 88, 64, 80].map((w, i) => (
-                <div key={i} className="h-11 rounded-pill bg-surface-elevated" style={{ width: `${w}px` }} />
+              {['w-[72px]', 'w-[88px]', 'w-[64px]', 'w-[80px]'].map((w, i) => (
+                <div key={i} className={`h-11 rounded-pill bg-surface-elevated ${w}`} />
               ))}
             </div>
           </div>

@@ -13,7 +13,6 @@ import {
   unblockUser,
 } from '@/lib/social/actions'
 import { createLogger } from '@/lib/logger'
-import { F0 } from '@/lib/design/f0-tokens'
 import type { FriendshipStatusResult } from '@/lib/social/friends'
 import { offerPushInContext } from '@/lib/push/offer'
 
@@ -96,15 +95,13 @@ function BlockControl({
       <p role="status" className="sr-only">{announce}</p>
       {blocked ? (
         <>
-          <p className="text-xs" style={{ color: F0.textSecondary }}>{t('blockedNotice')}</p>
+          <p className="text-xs text-text-secondary">{t('blockedNotice')}</p>
           <KButton
             ref={triggerRef}
             variant="secondary"
             size="sm"
             loading={busy}
             onClick={() => run('unblock')}
-            className="rounded-full font-bold border-2"
-            style={{ borderColor: F0.stroke, color: F0.textSecondary }}
           >
             {t('unblock')}
           </KButton>
@@ -128,10 +125,9 @@ function BlockControl({
       ) : (
         <KButton
           ref={triggerRef}
-          variant="secondary"
+          variant="danger"
           size="sm"
           onClick={() => setConfirming(true)}
-          className="text-xs text-text-tertiary hover:text-accent-danger hover:border-accent-danger"
         >
           {t('block')}
         </KButton>
@@ -227,8 +223,6 @@ function FriendshipAction({
         size="sm"
         loading={loading}
         onClick={handleSendRequest}
-        className="rounded-full font-extrabold"
-        style={{ background: F0.pink, color: F0.onPink }}
       >
         {t('addFriend')}
       </KButton>
@@ -236,13 +230,14 @@ function FriendshipAction({
   }
 
   if (status === 'pending_sent') {
+    // Apagado a propósito: deshabilitado, y KButton deshabilitado no recibe el
+    // ratón (`pointer-events: none`), así que no se aclara al pasar por encima.
     return (
       <KButton
         variant="secondary"
         size="sm"
         disabled
-        className="rounded-full font-bold border-2"
-        style={{ borderColor: F0.stroke, color: F0.muted }}
+        className="text-text-tertiary"
       >
         {t('requestSent')}
       </KButton>
@@ -256,8 +251,6 @@ function FriendshipAction({
         size="sm"
         loading={loading}
         onClick={handleAccept}
-        className="rounded-full font-extrabold"
-        style={{ background: F0.pink, color: F0.onPink }}
       >
         {t('accept')}
       </KButton>
@@ -272,8 +265,7 @@ function FriendshipAction({
       size="sm"
       loading={loading}
       onClick={handleRemove}
-      className="rounded-full font-bold border-2 hover:opacity-90"
-      style={{ borderColor: F0.stroke, color: F0.textSecondary }}
+      className="hover:opacity-90"
     >
       {t('friends')} ✓
     </KButton>

@@ -17,8 +17,8 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { Link } from '@/i18n/navigation'
 import { PageHeading } from '@/components/layout/PageHeading'
 import { IconCalendar } from '@/components/icons'
-import { PosterImage } from '@/components/media/PosterImage'
-import { posterGradient } from '@/lib/images/poster-gradient'
+import { PosterFrame } from '@/components/media/PosterFrame'
+import { KButton } from '@/components/ui/KButton'
 import { cn } from '@/lib/utils/index'
 import { isDemoUser } from '@/lib/demo'
 import { createLogger } from '@/lib/logger'
@@ -192,15 +192,9 @@ export default async function CalendarPage({ params, searchParams }: Props) {
             </h2>
             <p className="text-sm text-text-secondary">{t('emailPromoBody')}</p>
           </div>
-          <Link
-            href="/settings#email"
-            className={cn(
-              'inline-flex items-center min-h-11 px-5 rounded-pill bg-surface-elevated text-sm font-bold text-text-primary',
-              FOCUS
-            )}
-          >
-            {t('emailPromoCta')}
-          </Link>
+          <KButton asChild variant="tonal" size="lg">
+            <Link href="/settings#email">{t('emailPromoCta')}</Link>
+          </KButton>
         </aside>
       ) : null}
 
@@ -237,10 +231,16 @@ function EventRow({ event, what, typeLabel }: { event: CalendarEvent; what: stri
   return (
     <li className="flex gap-4 rounded-bento bg-surface-default p-3">
       {/* Portada de tamaño fijo con el gradiente siempre detrás (CLS 0). */}
-      <div className="relative h-[72px] w-12 shrink-0 overflow-hidden rounded-lg bg-surface-elevated">
-        <div aria-hidden="true" className="absolute inset-0" style={{ background: posterGradient(event.mediaId) }} />
-        {event.poster ? <PosterImage src={event.poster} sizes="48px" className="object-cover" /> : null}
-      </div>
+      <PosterFrame
+        seed={event.mediaId}
+        title={event.title}
+        poster={event.poster}
+        sizes="48px"
+        radius="sm"
+        initials={false}
+        zoom={false}
+        className="h-[72px] w-12 shrink-0"
+      />
       <div className="flex min-w-0 flex-1 flex-col justify-center gap-1">
         <Link href={href} className={cn('font-body font-semibold text-text-primary hover:underline rounded-lg self-start', FOCUS)}>
           {event.title}
@@ -257,12 +257,9 @@ function EmptyState({ title, body, cta, href }: { title: string; body: string; c
     <div className="flex flex-col items-center justify-center gap-3 rounded-bento bg-surface-default px-6 py-14 text-center">
       <h2 className="font-display text-xl font-semibold text-text-primary">{title}</h2>
       <p className="max-w-sm text-sm leading-relaxed text-text-secondary">{body}</p>
-      <Link
-        href={href}
-        className={cn('mt-2 inline-flex items-center min-h-11 px-5 rounded-pill bg-accent-pink text-on-accent-pink text-sm font-bold', FOCUS)}
-      >
-        {cta}
-      </Link>
+      <KButton asChild size="lg" className="mt-2">
+        <Link href={href}>{cta}</Link>
+      </KButton>
     </div>
   )
 }

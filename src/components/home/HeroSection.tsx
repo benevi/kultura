@@ -54,11 +54,8 @@ const TYPE_ICONS: Record<string, KIcon> = {
    tonos + acento radial en la esquina superior-izquierda — misma fórmula
    que "cards feature grandes" en el sistema de diseño, con los valores oklch literales
    del hero real. */
-const HERO_GRADIENT = 'linear-gradient(120deg, oklch(38% 0.14 300) 0%, oklch(22% 0.08 280) 100%)'
-const MEDIA_BLOCK_FALLBACK =
-  'radial-gradient(120% 100% at 20% 10%, oklch(55% 0.2 340 / 0.6) 0%, transparent 55%), ' +
-  'linear-gradient(160deg, oklch(30% 0.1 300), oklch(16% 0.06 280))'
-const MEDIA_BLOCK_ACCENT = 'radial-gradient(120% 100% at 20% 10%, oklch(55% 0.2 340 / 0.5) 0%, transparent 55%)'
+/* Degradados del héroe (fondo, respaldo de la portada y acento radial):
+   van como valores arbitrarios idénticos a los que iban en línea (C13). */
 
 export function HeroSection({ item }: HeroSectionProps) {
   const t = useTranslations('home')
@@ -84,19 +81,17 @@ export function HeroSection({ item }: HeroSectionProps) {
       {/* Badge colgante — misma pegatina lime/rotada/sombra dura que el match badge
           de F0, reutilizada aquí con texto real ("Continuando"), no un dato inventado. */}
       <div
-        className="absolute -top-3.5 left-6 md:left-9 z-20 rounded-pill px-4 py-2 bg-accent-lime text-on-accent-lime font-display text-xs font-extrabold tracking-wide shadow-sticker"
-        style={{ transform: 'rotate(-6deg)' }}
+        className="absolute -top-3.5 left-6 md:left-9 z-20 rounded-pill px-4 py-2 bg-accent-lime text-on-accent-lime font-display text-xs font-extrabold tracking-wide shadow-sticker -rotate-[6deg]"
       >
         <span aria-hidden="true">▶</span> <span className="uppercase">{t('continuing')}</span>
       </div>
 
       <div
-        className="relative overflow-hidden rounded-bento-xl flex flex-col md:flex-row"
-        style={{ background: HERO_GRADIENT }}
+        className="relative overflow-hidden rounded-bento-xl flex flex-col md:flex-row bg-[linear-gradient(120deg,oklch(38%_0.14_300)_0%,oklch(22%_0.08_280)_100%)]"
       >
         <div className="relative w-full md:w-64 lg:w-80 aspect-[16/9] md:aspect-auto md:self-stretch flex-shrink-0 overflow-hidden rounded-t-bento-xl md:rounded-l-bento-xl md:rounded-tr-none">
           {/* Respaldo SIEMPRE detrás: si la portada falla queda color, no hueco. */}
-          <div className="absolute inset-0" style={{ background: MEDIA_BLOCK_FALLBACK }} />
+          <div className="absolute inset-0 bg-[radial-gradient(120%_100%_at_20%_10%,oklch(55%_0.2_340/0.6)_0%,transparent_55%),linear-gradient(160deg,oklch(30%_0.1_300),oklch(16%_0.06_280))]" />
           {media.poster && (
             <>
               <PosterImage
@@ -108,7 +103,7 @@ export function HeroSection({ item }: HeroSectionProps) {
               <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/10 to-transparent" />
             </>
           )}
-          <div className="absolute inset-0 pointer-events-none" style={{ background: MEDIA_BLOCK_ACCENT }} />
+          <div className="absolute inset-0 pointer-events-none bg-[radial-gradient(120%_100%_at_20%_10%,oklch(55%_0.2_340/0.5)_0%,transparent_55%)]" />
         </div>
 
         <div className="relative flex-1 p-6 md:p-9 flex flex-col justify-center gap-3 min-w-0">

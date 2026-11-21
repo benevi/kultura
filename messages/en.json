@@ -20,8 +20,7 @@
     "accountNav": "Account",
     "language": "Language",
     "footerNav": "Information",
-    "dismiss": "Dismiss notice",
-    "oops": "Oops!"
+    "dismiss": "Dismiss notice"
   },
   "auth": {
     "signIn": "Sign in",
@@ -1657,8 +1656,6 @@
     }
   },
   "legal": {
-    "footerPrivacy": "Privacy",
-    "footerTerms": "Terms",
     "dataSources": "Data from <tmdb>TMDB</tmdb>, <rawg>RAWG</rawg>, Steam, AniList, MangaDex, Open Library, Google Books and <comicvine>Comic Vine</comicvine>.",
     "tmdbNotice": "This product uses the TMDB API but is not endorsed or certified by TMDB.",
     "justwatchSource": "Streaming availability data:",
@@ -1883,7 +1880,7 @@
       "title": "Legal notice",
       "metaDescription": "Who is behind KULTURA, how to get in touch, the Digital Services Act point of contact and how to report content.",
       "updated": "Last updated: 17 November 2026",
-      "version": "Version 2026-10",
+      "version": "Version 2026-11",
       "summary": {
         "s1": "Run by: Víctor Franco. Contact: <mail>{email}</mail>.",
         "s2": "To report content, even without an account, use the <report>report form</report>.",
@@ -1934,29 +1931,22 @@
   "accessibility": {
     "title": "Accessibility statement",
     "metaDescription": "How accessible KULTURA is, what still needs fixing and how to report a barrier.",
-    "updated": "Last reviewed: 23 October 2026",
-    "version": "Version 2026-10",
+    "updated": "Last reviewed: 21 November 2026",
+    "version": "Version 2026-11",
     "summary": {
       "s1": "Goal: meet WCAG 2.2 level AA (European standard EN 301 549).",
-      "s2": "Status: partially conformant. Public pages pass automated tests; inside the app there are known issues, already being fixed.",
+      "s2": "Status: partially conformant. Public pages and the app's main screens pass automated tests and there are no known issues; it still needs testing with people who use screen readers.",
       "s3": "If there's something you can't use, write to <mail>{email}</mail> and I'll give you an alternative."
     },
     "intro": "I want KULTURA ({site}) to be usable with a keyboard, a screen reader, magnification or any other way of access. This statement explains where it stands.",
     "sections": {
       "status": {
         "title": "Conformance status",
-        "p1": "KULTURA is <b>partially conformant</b> with the Web Content Accessibility Guidelines (WCAG) 2.2, level AA, as included in the European standard EN 301 549, because of the issues listed below."
+        "p1": "KULTURA is <b>partially conformant</b> with the Web Content Accessibility Guidelines (WCAG) 2.2, level AA, as included in the European standard EN 301 549, because the assessment isn't complete yet: it hasn't been tested with a screen reader and doesn't cover every screen of the app."
       },
       "known": {
         "title": "Content that is not yet accessible",
-        "p1": "Known issues in the signed-in app:",
-        "list": {
-          "dialogs": "Some pop-up dialogs (create list, change status, invite friends, recommend) don't yet keep keyboard focus inside or return it when they close (WCAG 2.4.3 and 4.1.2).",
-          "forms": "Some form fields have no associated label or don't announce their errors to screen readers (1.3.1, 3.3.1 and 4.1.2).",
-          "rating": "Star ratings can't be operated with the arrow keys and don't always show focus (2.1.1 and 2.4.7).",
-          "search": "Search suggestions aren't announced as a list of options (4.1.2).",
-          "targets": "Some close buttons (×) are smaller than 24 × 24 pixels (2.5.8)."
-        },
+        "p1": "There are no known issues in the signed-in app. Those listed in the review of 23 October 2026 have been fixed: pop-up dialogs keep and return focus, form fields have labels and announce their errors, star ratings work with the arrow keys, search suggestions are announced as a list of options and close buttons (×) meet the minimum size.",
         "p2": "Outside my control: synopses and covers come from third-party catalogs and are sometimes only in their original language; each cover is described by its title. Trailers use the YouTube player, with its own captions and controls."
       },
       "features": {
@@ -1970,7 +1960,7 @@
       },
       "method": {
         "title": "How it was assessed",
-        "p1": "Self-assessment by the owner on 22 October 2026: automated tests with axe-core 4.10 at 390 and 1440 pixels wide on the home page, rankings, public profile, sign-in and legal pages, plus a manual review of the signed-in app's code. It hasn't been tested yet with people who use screen readers; that's planned."
+        "p1": "Self-assessment by the owner on 22 October 2026, reviewed on 21 November 2026: automated tests with axe-core 4.11 at 390 and 1440 pixels wide on the home page, rankings, public profile, sign-in, legal pages and fifteen screens of the signed-in app; keyboard tests of the pop-up dialogs, star ratings and search, plus a manual code review. It hasn't been tested yet with people who use screen readers; that's planned."
       },
       "contact": {
         "title": "Feedback and requests",
@@ -1982,7 +1972,7 @@
       },
       "review": {
         "title": "Preparation of this statement",
-        "p1": "Statement prepared on 23 October 2026. I update it whenever an issue on the list is fixed and at least once a year."
+        "p1": "Statement prepared on 23 October 2026 and reviewed on 21 November 2026. I update it whenever an issue on the list is fixed and at least once a year."
       }
     }
   },
@@ -2120,10 +2110,6 @@
       "onX": "Share on X",
       "onWhatsApp": "Share on WhatsApp",
       "text": "{title}: the ranking on KULTURA"
-    },
-    "footer": {
-      "notice": "Legal notice",
-      "accessibility": "Accessibility"
     },
     "attribution": {
       "steam": "Video game artwork and descriptions:",

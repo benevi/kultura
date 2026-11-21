@@ -226,12 +226,12 @@ export default async function ProfilePage({ params }: Props) {
       {libraryVisible && !hasAnyContent && (
         <div className="flex flex-col items-center gap-3 py-16 text-center">
           <IconLibrary className="w-12 h-12 text-text-tertiary" />
-          <p className="font-bold" style={{ color: 'var(--text-primary)' }}>
+          <p className="font-bold text-text-primary">
             {isOwnProfile
               ? t('emptyOwn')
               : t('emptyOther', { username: profileUser.username })}
           </p>
-          <p className="text-sm" style={{ color: 'var(--text-tertiary)' }}>
+          <p className="text-sm text-text-tertiary">
             {isOwnProfile ? t('emptyOwnHint') : t('emptyOtherHint')}
           </p>
         </div>

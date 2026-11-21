@@ -5,6 +5,7 @@ import { useTranslations, useLocale } from 'next-intl'
 import { Link, useRouter } from '@/i18n/navigation'
 import { IconSparkles, IconLists, IconUserPlus, IconGroups, IconBell } from '@/components/icons'
 import { useToastContext } from '@/components/ui/ToastProvider'
+import { KButton } from '@/components/ui/KButton'
 import type { AppNotification } from '@/lib/social/notifications'
 import { FOCUS_RING as FOCUS } from '@/components/layout/nav-shared'
 import { respondToGroupInvitation } from '@/lib/groups/client'
@@ -56,21 +57,21 @@ function InviteActions({ invitationId, groupName }: { invitationId: string; grou
     <div className="flex flex-wrap gap-2 mt-2">
       {/* 44 px de alto (MOV-4, ACC-12) y nombre con el grupo: fuera de
           contexto, un lector oiría solo «Aceptar». */}
-      <button
+      <KButton
         type="button"
+        size="lg"
         onClick={() => respond('accept')}
         disabled={loading}
         aria-label={groupName ? t('acceptInvite', { group: groupName }) : undefined}
-        className={`min-h-11 px-5 text-sm font-extrabold bg-accent-pink text-on-accent-pink rounded-full hover:brightness-110 transition-all disabled:opacity-50 ${FOCUS}`}
       >
         {t('accept')}
-      </button>
+      </KButton>
       <button
         type="button"
         onClick={() => respond('reject')}
         disabled={loading}
         aria-label={groupName ? t('rejectInvite', { group: groupName }) : undefined}
-        className={`min-h-11 px-5 text-sm font-bold bg-surface-elevated text-text-secondary rounded-full hover:bg-accent-danger/10 hover:text-accent-danger transition-colors disabled:opacity-50 ${FOCUS}`}
+        className={`min-h-11 px-5 text-base font-bold bg-surface-elevated text-text-secondary rounded-full hover:bg-accent-danger/10 hover:text-accent-danger transition-colors disabled:opacity-50 ${FOCUS}`}
       >
         {t('reject')}
       </button>
@@ -88,11 +89,11 @@ const INLINE_LINK = `inline-flex items-center justify-center min-h-11 min-w-11 a
 
 /** Color del icono por tipo: acentos decorativos de la paleta F0 (tokens). */
 const TYPE_ACCENT: Record<string, { fg: string }> = {
-  recommendation: { fg: 'var(--accent-blue)' },
-  list_invite: { fg: 'var(--accent-lime)' },
-  group_invite: { fg: 'var(--accent-orange)' },
-  invite_accepted: { fg: 'var(--accent-purple)' },
-  friend_request: { fg: 'var(--accent-purple)' },
+  recommendation: { fg: 'text-accent-blue' },
+  list_invite: { fg: 'text-accent-lime' },
+  group_invite: { fg: 'text-accent-orange' },
+  invite_accepted: { fg: 'text-accent-purple' },
+  friend_request: { fg: 'text-accent-purple' },
 }
 
 function NotificationItem({ notif }: { notif: AppNotification }) {
@@ -201,8 +202,7 @@ function NotificationItem({ notif }: { notif: AppNotification }) {
       className={`flex items-center gap-4 rounded-2xl px-5 py-4 ${unread ? 'bg-surface-default' : 'bg-transparent'}`}
     >
       <div
-        className="flex-shrink-0 w-[42px] h-[42px] rounded-2xl bg-surface-elevated flex items-center justify-center"
-        style={{ color: accent.fg }}
+        className={`flex-shrink-0 w-[42px] h-[42px] rounded-2xl bg-surface-elevated flex items-center justify-center ${accent.fg}`}
       >
         {notif.type === 'recommendation' ? (
           <IconSparkles className="w-5 h-5" />

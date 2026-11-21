@@ -16,6 +16,8 @@
 
 import { getTranslations } from "next-intl/server";
 import { BestPoster } from "@/components/best/BestPoster";
+import { KButton } from "@/components/ui/KButton";
+import { posterFrameClass } from "@/components/media/poster-frame-class";
 import { posterGradient } from "@/lib/images/poster-gradient";
 import { bestItemPath, type BestItem } from "@/lib/best/best-of";
 import { localeHref, saveHref } from "@/lib/best/links";
@@ -25,11 +27,6 @@ const STRETCHED_LINK =
   "after:absolute after:inset-0 after:rounded-bento hover:text-accent-pink transition-colors " +
   "focus-visible:outline-none focus-visible:after:[outline-style:solid] focus-visible:after:outline-2 " +
   "focus-visible:after:outline-offset-2 focus-visible:after:outline-focus-ring";
-
-const SAVE_LINK =
-  "relative z-10 inline-flex min-h-11 items-center self-start rounded-full border-2 border-stroke px-4 " +
-  "text-sm font-bold text-text-secondary hover:bg-surface-elevated hover:text-text-primary transition-colors " +
-  "focus-visible:[outline-style:solid] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus-ring";
 
 function formatRating(rating: number, locale: string): string {
   return new Intl.NumberFormat(locale, { minimumFractionDigits: 1, maximumFractionDigits: 1 }).format(rating);
@@ -64,12 +61,15 @@ function Meta({ item, locale, t }: { item: BestItem; locale: string; t: T }) {
 
 function SaveLink({ item, locale, t }: { item: BestItem; locale: string; t: T }) {
   return (
-    <a href={saveHref(locale, item)} className={SAVE_LINK}>
-      {t.rich("save", {
-        title: item.title,
-        hidden: (chunks) => <span className="sr-only">{chunks}</span>,
-      })}
-    </a>
+    // `relative z-10`: por encima del enlace estirado de la card.
+    <KButton asChild variant="secondary" size="lg" className="relative z-10 self-start">
+      <a href={saveHref(locale, item)}>
+        {t.rich("save", {
+          title: item.title,
+          hidden: (chunks) => <span className="sr-only">{chunks}</span>,
+        })}
+      </a>
+    </KButton>
   );
 }
 
@@ -159,7 +159,7 @@ export async function BestPodium({ items, locale }: { items: BestItem[]; locale:
             ) : null}
             <div
               aria-hidden="true"
-              className={`relative aspect-[2/3] shrink-0 overflow-hidden rounded-2xl ${look.poster}`}
+              className={posterFrameClass({ className: `shrink-0 ${look.poster}` })}
               style={{ background: posterGradient(item.id) }}
             >
               <BestPoster src={item.poster} alt={item.title} sizes={look.sizes} priority />
@@ -215,7 +215,7 @@ export async function BestRankList({ items, locale }: { items: BestItem[]; local
             </span>
             <div
               aria-hidden="true"
-              className="relative aspect-[2/3] w-16 shrink-0 overflow-hidden rounded-2xl md:w-20"
+              className={posterFrameClass({ className: "w-16 shrink-0 md:w-20" })}
               style={{ background: posterGradient(item.id) }}
             >
               <BestPoster src={item.poster} alt={item.title} sizes="(min-width: 768px) 80px, 64px" />

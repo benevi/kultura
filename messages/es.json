@@ -20,8 +20,7 @@
     "accountNav": "Cuenta",
     "language": "Idioma",
     "footerNav": "Información",
-    "dismiss": "Cerrar aviso",
-    "oops": "¡Ups!"
+    "dismiss": "Cerrar aviso"
   },
   "auth": {
     "signIn": "Iniciar sesión",
@@ -886,7 +885,7 @@
     "noFriends": "Aún no tienes amigos en KULTURA",
     "noFriendsHint": "Comparte tu enlace de invitación: quien se registre con él será tu amigo en KULTURA",
     "searchFriend": "Buscar por nombre de usuario",
-    "searchPlaceholder": "Introduce un nombre de usuario…",
+    "searchPlaceholder": "Nombre de usuario…",
     "search": "Buscar",
     "noUserFound": "No se encontró ningún usuario con ese nombre",
     "searchError": "No hemos podido buscar ahora. Reintenta en un momento.",
@@ -1657,8 +1656,6 @@
     }
   },
   "legal": {
-    "footerPrivacy": "Privacidad",
-    "footerTerms": "Términos",
     "dataSources": "Datos de <tmdb>TMDB</tmdb>, <rawg>RAWG</rawg>, Steam, AniList, MangaDex, Open Library, Google Books y <comicvine>Comic Vine</comicvine>.",
     "tmdbNotice": "Este producto usa la API de TMDB, pero TMDB no lo respalda ni lo certifica.",
     "justwatchSource": "Datos de disponibilidad en plataformas:",
@@ -1883,7 +1880,7 @@
       "title": "Aviso legal",
       "metaDescription": "Quién está detrás de KULTURA, cómo contactar, el punto de contacto del Reglamento de Servicios Digitales y cómo denunciar contenido.",
       "updated": "Última actualización: 17 de noviembre de 2026",
-      "version": "Versión 2026-10",
+      "version": "Versión 2026-11",
       "summary": {
         "s1": "Responsable: Víctor Franco. Contacto: <mail>{email}</mail>.",
         "s2": "Para denunciar contenido, incluso sin cuenta, usa el <report>formulario de denuncia</report>.",
@@ -1934,29 +1931,22 @@
   "accessibility": {
     "title": "Declaración de accesibilidad",
     "metaDescription": "Cómo de accesible es KULTURA, qué queda por arreglar y cómo avisar de una barrera.",
-    "updated": "Última revisión: 23 de octubre de 2026",
-    "version": "Versión 2026-10",
+    "updated": "Última revisión: 21 de noviembre de 2026",
+    "version": "Versión 2026-11",
     "summary": {
       "s1": "Objetivo: cumplir las WCAG 2.2 nivel AA (norma europea EN 301 549).",
-      "s2": "Estado: parcialmente conforme. Las páginas públicas pasan las pruebas automáticas; dentro de la app quedan fallos conocidos, ya en arreglo.",
+      "s2": "Estado: parcialmente conforme. Las páginas públicas y las pantallas principales de la app pasan las pruebas automáticas y no quedan fallos conocidos; falta probarla con personas que usan lector de pantalla.",
       "s3": "Si algo no puedes usar, escríbeme a <mail>{email}</mail> y te doy una alternativa."
     },
     "intro": "Quiero que KULTURA ({site}) se pueda usar con teclado, lector de pantalla, ampliación o cualquier otra forma de acceso. Esta declaración explica en qué punto está.",
     "sections": {
       "status": {
         "title": "Situación de cumplimiento",
-        "p1": "KULTURA es <b>parcialmente conforme</b> con las Pautas de Accesibilidad para el Contenido Web (WCAG) 2.2, nivel AA, que recoge la norma europea EN 301 549, por los fallos que se indican a continuación."
+        "p1": "KULTURA es <b>parcialmente conforme</b> con las Pautas de Accesibilidad para el Contenido Web (WCAG) 2.2, nivel AA, que recoge la norma europea EN 301 549, porque la evaluación aún no está completa: no se ha probado con lector de pantalla ni cubre todas las pantallas de la app."
       },
       "known": {
         "title": "Contenido que aún no es accesible",
-        "p1": "Fallos conocidos de la app con sesión iniciada:",
-        "list": {
-          "dialogs": "Algunas ventanas emergentes (crear lista, cambiar estado, invitar amigos, recomendar) aún no mantienen el foco del teclado dentro ni lo devuelven al cerrarse (WCAG 2.4.3 y 4.1.2).",
-          "forms": "Algunos campos de formulario no tienen etiqueta asociada o no anuncian sus errores al lector de pantalla (1.3.1, 3.3.1 y 4.1.2).",
-          "rating": "La valoración con estrellas no se maneja con las flechas del teclado ni muestra siempre el foco (2.1.1 y 2.4.7).",
-          "search": "Las sugerencias del buscador no se anuncian como una lista de opciones (4.1.2).",
-          "targets": "Algunos botones de cerrar (×) miden menos de 24 × 24 píxeles (2.5.8)."
-        },
+        "p1": "No hay fallos conocidos en la app con sesión iniciada. Los de la revisión del 23 de octubre de 2026 están arreglados: las ventanas emergentes mantienen y devuelven el foco, los campos tienen etiqueta y anuncian sus errores, la valoración con estrellas se maneja con las flechas, las sugerencias del buscador se anuncian como lista de opciones y los botones de cerrar (×) cumplen el tamaño mínimo.",
         "p2": "Fuera de mi control: las sinopsis y portadas vienen de catálogos de terceros y a veces solo están en su idioma original; cada portada se describe con el título. Los tráileres usan el reproductor de YouTube, con sus propios subtítulos y controles."
       },
       "features": {
@@ -1970,7 +1960,7 @@
       },
       "method": {
         "title": "Cómo se ha evaluado",
-        "p1": "Autoevaluación del responsable el 22 de octubre de 2026: pruebas automáticas con axe-core 4.10 a 390 y 1440 píxeles de ancho sobre la portada, los rankings, el perfil público, el acceso y las páginas legales, y revisión manual del código de la app con sesión. Todavía no se ha probado con personas que usan lector de pantalla; está previsto."
+        "p1": "Autoevaluación del responsable el 22 de octubre de 2026, revisada el 21 de noviembre de 2026: pruebas automáticas con axe-core 4.11 a 390 y 1440 píxeles de ancho sobre la portada, los rankings, el perfil público, el acceso, las páginas legales y quince pantallas de la app con sesión; pruebas de teclado de las ventanas emergentes, la valoración con estrellas y el buscador, y revisión manual del código. Todavía no se ha probado con personas que usan lector de pantalla; está previsto."
       },
       "contact": {
         "title": "Avisos y peticiones",
@@ -1982,7 +1972,7 @@
       },
       "review": {
         "title": "Elaboración de esta declaración",
-        "p1": "Declaración elaborada el 23 de octubre de 2026. La actualizo cada vez que se arregla un fallo de la lista y, como mínimo, una vez al año."
+        "p1": "Declaración elaborada el 23 de octubre de 2026 y revisada el 21 de noviembre de 2026. La actualizo cada vez que se arregla un fallo de la lista y, como mínimo, una vez al año."
       }
     }
   },
@@ -2120,10 +2110,6 @@
       "onX": "Compartir en X",
       "onWhatsApp": "Compartir en WhatsApp",
       "text": "{title}: el ranking en KULTURA"
-    },
-    "footer": {
-      "notice": "Aviso legal",
-      "accessibility": "Accesibilidad"
     },
     "attribution": {
       "steam": "Carátulas y descripciones de videojuegos:",

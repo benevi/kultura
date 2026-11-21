@@ -15,7 +15,6 @@ import { InviteButton } from './InviteButton'
 import { MemberRemoveButton } from './MemberRemoveButton'
 import { ReportButton } from '@/components/social/ReportButton'
 import { getGroupById, getMemberRole, getGroupMembers, getGroupPosts } from '@/lib/social/groups'
-import { F0 } from '@/lib/design/f0-tokens'
 import type { Metadata } from 'next'
 import { IconCrown } from '@/components/icons'
 
@@ -75,8 +74,8 @@ export default async function GroupPage({ params }: Props) {
         }}
       >
         <div
-          className="relative z-10 w-14 h-14 rounded-2xl rounded-bl-lg flex-shrink-0 flex items-center justify-center font-display font-extrabold text-xl"
-          style={{ background: group.coverColor, color: F0.onPink }}
+          className="relative z-10 w-14 h-14 rounded-2xl rounded-bl-lg flex-shrink-0 flex items-center justify-center font-display font-extrabold text-xl text-on-accent-pink"
+          style={{ background: group.coverColor }}
         >
           {GroupIcon ? (
             <GroupIcon className="w-7 h-7" aria-hidden="true" />
@@ -89,7 +88,7 @@ export default async function GroupPage({ params }: Props) {
             {/* Mismo criterio que ListDetail: el nombre del grupo es el
                 título de la pantalla y va al tipo del canvas, pero vive dentro
                 de la portada con el icono, no en una fila de título. */}
-            <h1 className="font-display text-2xl md:text-3xl font-extrabold tracking-tight truncate" style={{ color: F0.text }}>
+            <h1 className="font-display text-2xl md:text-3xl font-extrabold tracking-tight truncate text-text-primary">
               {group.name}
             </h1>
             {!group.isPublic && (
@@ -102,7 +101,7 @@ export default async function GroupPage({ params }: Props) {
             )}
           </div>
           {group.description && (
-            <p className="text-sm mt-1" style={{ color: F0.textSecondary }}>{group.description}</p>
+            <p className="text-sm mt-1 text-text-secondary">{group.description}</p>
           )}
 
           <div className="flex items-center gap-3 mt-3 flex-wrap">
@@ -112,11 +111,9 @@ export default async function GroupPage({ params }: Props) {
                 {stackPreview.map((m, i) => m.user && (
                   <div
                     key={m.user.id}
-                    className="w-10 h-10 rounded-full flex items-center justify-center text-xs font-extrabold text-white"
+                    className={`w-10 h-10 rounded-full flex items-center justify-center text-xs font-extrabold text-white border-2 border-surface-base${i === 0 ? '' : ' -ml-3'}`}
                     style={{
                       background: `linear-gradient(135deg, ${m.user.avatarColor}, color-mix(in srgb, ${m.user.avatarColor} 55%, black))`,
-                      border: `2px solid ${F0.bg}`,
-                      marginLeft: i === 0 ? 0 : '-12px',
                       zIndex: stackPreview.length - i,
                     }}
                   >
@@ -125,7 +122,7 @@ export default async function GroupPage({ params }: Props) {
                 ))}
               </div>
             )}
-            <p className="text-sm" style={{ color: F0.muted }}>
+            <p className="text-sm text-text-tertiary">
               {/* La clave i18n ya incluye el número: pintarlo también aquí fuera
                   daba el "1 1 miembros" visto en producción. Se usa la del
                   namespace `groups`, que además tiene singular ("1 miembro"),
@@ -160,8 +157,7 @@ export default async function GroupPage({ params }: Props) {
             <GroupFeed key={id} groupId={id} currentUserId={user.id} initialPosts={posts} isOwner={isOwner} />
           ) : (
             <div
-              className="rounded-bento border p-8 text-center text-sm"
-              style={{ background: F0.surface, borderColor: F0.stroke, color: F0.textSecondary }}
+              className="rounded-bento border p-8 text-center text-sm bg-surface-default border-surface-border text-text-secondary"
             >
               {tG('joinHint')}
             </div>
@@ -170,28 +166,26 @@ export default async function GroupPage({ params }: Props) {
 
         {/* Members sidebar */}
         <div className="flex flex-col gap-3">
-          <h2 className="font-display text-lg font-bold" style={{ color: F0.text }}>{tG('members')}</h2>
-          <div className="rounded-bento border overflow-hidden" style={{ background: F0.surface, borderColor: F0.stroke }}>
+          <h2 className="font-display text-lg font-bold text-text-primary">{tG('members')}</h2>
+          <div className="rounded-bento border overflow-hidden bg-surface-default border-surface-border">
             {members.map((m) => (
               m.user && (
                 <div
                   key={m.user.id}
-                  className="flex flex-wrap items-center gap-3 px-3 py-2.5 border-t first:border-t-0"
-                  style={{ borderColor: F0.stroke }}
+                  className="flex flex-wrap items-center gap-3 px-3 py-2.5 border-t first:border-t-0 border-surface-border"
                 >
                   {m.role === 'owner' ? (
                     <div
-                      className="rounded-full p-[2px] flex-shrink-0"
-                      style={{ background: `conic-gradient(from 180deg, ${F0.yellow}, ${F0.orange}, ${F0.yellow})` }}
+                      className="rounded-full p-[2px] flex-shrink-0 bg-[conic-gradient(from_180deg,var(--accent-yellow),var(--accent-orange),var(--accent-yellow))]"
                     >
                       <Avatar initials={m.user.avatarInitials} color={m.user.avatarColor} size="sm" />
                     </div>
                   ) : (
                     <Avatar initials={m.user.avatarInitials} color={m.user.avatarColor} size="sm" />
                   )}
-                  <span className="text-sm flex-1 truncate font-medium" style={{ color: F0.text }}>{m.user.username}</span>
+                  <span className="text-sm flex-1 truncate font-medium text-text-primary">{m.user.username}</span>
                   {m.role === 'owner' && (
-                    <IconCrown role="img" aria-hidden={false} aria-label={tG('ownerBadge')} className="h-4 w-4 flex-shrink-0" style={{ color: F0.yellow }} />
+                    <IconCrown role="img" aria-hidden={false} aria-label={tG('ownerBadge')} className="h-4 w-4 flex-shrink-0 text-accent-yellow" />
                   )}
                   {isOwner && m.role !== 'owner' && (
                     <MemberRemoveButton groupId={id} userId={m.user.id} username={m.user.username} />

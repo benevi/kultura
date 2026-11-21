@@ -12,6 +12,7 @@ import type { Metadata } from 'next'
 import { getTranslations } from 'next-intl/server'
 import { Header } from '@/components/layout/Header'
 import { Footer } from '@/components/layout/Footer'
+import { KButton } from '@/components/ui/KButton'
 import { EMAIL_TOKEN_SECRET_MIN } from '@/lib/email/config'
 import { isCurrentConsentVersion } from '@/lib/email/consent'
 import { verifyOptinToken } from '@/lib/email/unsubscribe-token'
@@ -46,10 +47,6 @@ function viewFor(status: string, token: string): View {
   return isCurrentConsentVersion(check.textVersion) ? 'confirm' : 'stale'
 }
 
-const BUTTON =
-  'inline-flex items-center justify-center min-h-11 px-6 rounded-pill font-body font-bold text-sm transition-colors ' +
-  'focus-visible:[outline-style:solid] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus-ring'
-
 export default async function ConfirmPage({ params, searchParams }: Props) {
   const { locale: rawLocale } = await params
   const locale = rawLocale === 'en' ? 'en' : 'es'
@@ -70,23 +67,23 @@ export default async function ConfirmPage({ params, searchParams }: Props) {
           <h1 className="font-display text-2xl md:text-3xl font-extrabold tracking-tight text-text-primary mb-3">{title}</h1>
           <p className="text-text-secondary leading-relaxed mb-6">{body}</p>
           {showForm ? (
-            <form method="post" action="/api/email/confirm" className="flex flex-wrap gap-3">
+            <form method="post" action="/api/email/confirm" className="flex flex-col gap-3 sm:flex-row sm:flex-wrap">
               <input type="hidden" name="t" value={token} />
               <input type="hidden" name="l" value={locale} />
-              <button type="submit" className={`${BUTTON} bg-accent-pink text-on-accent-pink hover:opacity-90`}>
+              <KButton type="submit" size="lg">
                 {view === 'error' ? t('retry') : t('confirm')}
-              </button>
+              </KButton>
             </form>
           ) : (
-            <div className="flex flex-wrap gap-3">
+            <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap">
               {view === 'done' ? (
-                <a href={`/${locale}/calendar`} className={`${BUTTON} bg-accent-pink text-on-accent-pink hover:opacity-90`}>
-                  {t('calendar')}
-                </a>
+                <KButton asChild size="lg">
+                  <a href={`/${locale}/calendar`}>{t('calendar')}</a>
+                </KButton>
               ) : null}
-              <a href={`/${locale}/settings#email`} className={`${BUTTON} bg-surface-elevated text-text-primary`}>
-                {t('settings')}
-              </a>
+              <KButton asChild variant="tonal" size="lg">
+                <a href={`/${locale}/settings#email`}>{t('settings')}</a>
+              </KButton>
             </div>
           )}
         </div>

@@ -3,11 +3,10 @@ export default function DiscoverLoading() {
     <main className="page-grid py-8">
       {/* Filter bar skeleton */}
       <div className="animate-pulse flex gap-2 mb-6">
-        {[80, 60, 72, 56, 68, 64, 76].map((w, i) => (
+        {['w-[80px]', 'w-[60px]', 'w-[72px]', 'w-[56px]', 'w-[68px]', 'w-[64px]', 'w-[76px]'].map((w, i) => (
           <div
             key={i}
-            className="h-8 bg-surface-elevated rounded-pill flex-shrink-0"
-            style={{ width: `${w}px` }}
+            className={`h-8 bg-surface-elevated rounded-pill flex-shrink-0 ${w}`}
           />
         ))}
       </div>
