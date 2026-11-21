@@ -39,6 +39,7 @@ Leyenda: **[P]** pendiente del «sí» de Víctor · **[E]** estimación orienta
 | 2026-11-17 | El borrador de biblia «Archivo» (PR #214) se descarta | Víctor |
 | 2026-11-17 | Tipografías de la v3 (JetBrains Mono, Newsreader): **no gustan**. Se eligen de nuevo en 8.3. Los archivos de `assets/fonts/` se sustituyen entonces | Víctor |
 | 2026-11-18 | **Se levanta el bloqueo de §9** sobre copia propia de portadas, KTX2 y mapas de profundidad («levanta §9»). Riesgo asumido. Llevarlo a producción sigue pidiendo su texto en `/privacy` y las reglas de migraciones y de coste | Víctor |
+| 2026-11-20 | **El hero muestra lo nuevo de cada mes:** las imágenes de la portada de la app no son siempre las mismas; cada mes pasan a los estrenos o novedades de ese mes (cine, series, juegos, libros…), sin intervención manual. Se adelanta a la 8.5: reanuda `landing-media.yml` con cron mensual y criterio «novedades del mes» (#269), que no se fusiona hasta que `/privacy` declare las copias. Relacionado: la tarea `landing-media.yml`, pausada el 16-11 (#175) | Víctor |
 | 2026-11-21 | **Plan de la 8.5 aprobado** ([`fase8/8-5-pantallas.md`](fase8/8-5-pantallas.md)): ficha → biblioteca → Descubrir (con búsqueda) → inicio → perfil → listas → resto; una bandera por pantalla con modo `prueba` para P-Uso; `KButton sm` no sube a 44 px y los dos degradados no se unifican: se retiran al pasar cada pantalla a «Sala» | Víctor |
 
 ### Riesgos que Víctor asume (escritos para que consten)
@@ -81,7 +82,7 @@ Detalle en [`legal/terminos/README.md`](legal/terminos/README.md).
 | **8.2 Crecer** | **Hecha (17-11-2026):** #221–#226. Ver §6. Falta encender tres banderas en Vercel | Línea base medida; acciones rápidas fusionadas | — |
 | **8.3 Dirección visual y prototipo 3D** | **Hecha (18-11-2026).** Ver §7 | **P-Gusto** y **P-3D** pasadas: dirección «Sala» firmada y 3D dentro del plan | — |
 | **8.4 Sistema y deuda de interfaz** | **Hecha (21-11-2026):** #233–#266. Ver §11 | Componentes con estados y sin fallos graves de accesibilidad | — |
-| **8.5 Pantallas** | Rediseño pantalla a pantalla, empezando por las más usadas (ficha, biblioteca, buscar). Cada una detrás de una bandera; **P-Uso** antes del 100 %. El 3D de la ficha entra aquí si pasó P-3D | Todas las pantallas con el diseño nuevo | 5–9 |
+| **8.5 Pantallas** | Rediseño pantalla a pantalla, empezando por las más usadas (ficha, biblioteca, buscar). Cada una detrás de una bandera; **P-Uso** antes del 100 %. El 3D de la ficha entra aquí si pasó P-3D. El hero se renueva cada mes con lo nuevo (§1, 20-11-2026) | Todas las pantallas con el diseño nuevo | 5–9 |
 | **8.6 Observación** | **P-Números**; se retiran las banderas | Informe de una página | 0,5 |
 
 **Laboratorio (sin compromiso ni orden):** salas por formato, vuelo entre pantallas, sonido, Wrapped, perfil en 3D. Solo se sacan de aquí si el 3D de la ficha funciona y Víctor lo pide.
