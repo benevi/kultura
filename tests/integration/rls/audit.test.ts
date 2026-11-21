@@ -7,6 +7,14 @@
 import { describe, it, expect, beforeAll, afterAll } from "vitest";
 import { configured, adminClient, anonClient, createUser, deleteCreatedUsers, type TestUser } from "./helpers";
 
+/**
+ * Tablas que viven en kultura-test pero no son de KULTURA: las crea otro
+ * proyecto que comparte esa base de pruebas. Ninguna migración del repo las
+ * toca, así que la auditoría no las juzga. Si una de ellas pasa a ser de
+ * KULTURA (con su migración), se quita de aquí.
+ */
+const TABLAS_AJENAS = new Set(["aula_progreso"]);
+
 interface AuditRow {
   tabla: string;
   rls: boolean;
@@ -32,7 +40,7 @@ describe.skipIf(!configured)("RLS — auditoría de la base", () => {
   it("rls_audit(): ninguna tabla con problemas", async () => {
     const { data, error } = await adminClient().rpc("rls_audit");
     expect(error).toBeNull();
-    const rows = (data ?? []) as AuditRow[];
+    const rows = ((data ?? []) as AuditRow[]).filter((r) => !TABLAS_AJENAS.has(r.tabla));
     expect(rows.length).toBeGreaterThan(10);
     expect(rows.filter((r) => !r.ok)).toEqual([]);
   });
