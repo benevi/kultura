@@ -12,7 +12,7 @@ test("amistad: pedir, aceptar y bloquear", async ({ browser }) => {
 
   // A busca a B por su nombre y le pide amistad.
   await pageA.goto("/es/friends");
-  await pageA.getByPlaceholder("Introduce un nombre de usuario…").fill(b.username);
+  await pageA.getByPlaceholder("Nombre de usuario…").fill(b.username);
   await pageA.getByRole("button", { name: "Buscar" }).click();
   await expect(pageA.getByRole("link", { name: b.username })).toBeVisible();
   await pageA.getByRole("button", { name: "Añadir amigo" }).click();
