@@ -18,7 +18,7 @@ function prefersReducedMotion(): boolean {
  * subpágina (`/lists/abc`) vuelve a la raíz de la pestaña.
  *
  * Mientras está, los avisos de «Sala» (`SalaToastProvider`) suben por encima
- * de ella en móvil: `data-bottom-nav` activa `--sala-toast-clear` en
+ * de ella en móvil: `data-bottom-nav` activa `--bottom-nav-clear` en
  * globals.css (solo CSS, sin JS en todas las páginas).
  */
 export function BottomNav({ username }: { username: string }) {

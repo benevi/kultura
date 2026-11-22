@@ -43,7 +43,7 @@ import { SalaCloseIcon, SalaStatusIcon } from "./SalaStatusIcon";
  *   pierde. `action.autoFocus` lo lleva a la acción al aparecer, para cuando el
  *   control que la provocó ya no existe (tras cerrar un diálogo).
  * - **No tapa lo que tiene el foco** (WCAG 2.4.11). Va abajo, por encima de la
- *   barra inferior de la app (`--sala-toast-clear`, que pone quien la pinta) y
+ *   barra inferior de la app (`--bottom-nav-clear`, que pone quien la pinta) y
  *   de la zona segura; si el control con el foco queda debajo de la pila, la
  *   pila se pasa arriba. Solo los avisos reciben clics: el hueco entre ellos y
  *   a sus lados deja pasar el puntero.
@@ -501,7 +501,7 @@ export function SalaToastProvider({ children, labels }: { children: React.ReactN
                 "md:left-auto md:right-[calc(1.5rem+var(--removed-body-scroll-bar-size,0px))] md:w-96",
                 arriba
                   ? "top-[calc(0.5rem+env(safe-area-inset-top))]"
-                  : "bottom-[calc(1rem+var(--sala-toast-clear,0px)+env(safe-area-inset-bottom))] md:bottom-[calc(1.5rem+env(safe-area-inset-bottom))]"
+                  : "bottom-[calc(1rem+var(--bottom-nav-clear,0px)+env(safe-area-inset-bottom))] md:bottom-[calc(1.5rem+env(safe-area-inset-bottom))]"
               )}
             >
               <div aria-live="assertive" aria-relevant="additions text" data-sala-toast-live="assertive" className="flex flex-col">

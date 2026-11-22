@@ -5,7 +5,7 @@
 /* Con la barra inferior de móvil (BottomNav), los avisos de «Sala» suben por
    encima de ella. Solo CSS: no añade JS a todas las páginas. */
 :root:has([data-bottom-nav]) {
-  --sala-toast-clear: 4rem;
+  --bottom-nav-clear: 4rem;
 }
 
 :root {
