@@ -111,7 +111,14 @@ export interface LibraryToastApi {
     message: string
     type?: 'success' | 'error' | 'info'
     duration?: number
-    action?: { label: string; onAction: () => void; onExpire?: () => void; autoFocus?: boolean }
+    action?: {
+      label: string
+      onAction: () => void
+      onExpire?: () => void
+      autoFocus?: boolean
+      /** A dónde va el foco tras la acción (lo usan los avisos de «Sala»). */
+      focusAfter?: () => HTMLElement | null
+    }
   }) => void
   showError: (message: string) => void
 }
@@ -152,6 +159,8 @@ export function useLibraryAction({
   const [diary, setDiary] = useState<DiaryConfig | null>(null)
   const [progressConfig, setProgressConfig] = useState<ProgressConfig | null>(null)
   const [stamp, setStamp] = useState(0)
+  // Tras «Deshacer», el foco va a «Actualizar», que vuelve a pintarse (2.4.3).
+  const [focusUpdate, setFocusUpdate] = useState(0)
   // Al guardar o quitar, el botón que abrió el diálogo desaparece ("Añadir"
   // pasa a "Actualizar" y al revés): el foco va al que lo sustituye.
   const addRef = useRef<HTMLButtonElement>(null)
@@ -207,6 +216,10 @@ export function useLibraryAction({
     }, STAMP_VISIBLE_MS)
     return () => window.clearTimeout(timer)
   }, [stamp, playStamp])
+
+  useEffect(() => {
+    if (focusUpdate > 0) updateRef.current?.focus()
+  }, [focusUpdate])
 
   async function handleSave(data: LibraryStatusSaveData) {
     // Volver a añadirlo mientras sigue el aviso: el borrado pendiente no se hace.
@@ -272,6 +285,7 @@ export function useLibraryAction({
     pending.settled = true
     pendingRef.current = null
     setEntry(pending.entry)
+    setFocusUpdate((n) => n + 1)
     show({ message: t('restored'), type: 'success' })
   }
 
@@ -301,6 +315,18 @@ export function useLibraryAction({
     return () => window.removeEventListener('pagehide', flush)
   })
 
+  // Irse a otra pantalla dentro de la app (sin `pagehide`): el componente se
+  // desmonta y el aviso con «Deshacer» puede irse con él. El borrado pendiente
+  // se hace ya, igual que al cerrar la página.
+  const commitRef = useRef(commitRemove)
+  commitRef.current = commitRemove
+  useEffect(
+    () => () => {
+      if (pendingRef.current) void commitRef.current(pendingRef.current, true)
+    },
+    []
+  )
+
   function handleRemove() {
     if (!entry) return
     const pending: PendingRemoval = { entry, settled: false }
@@ -316,6 +342,7 @@ export function useLibraryAction({
         onAction: () => undoRemove(pending),
         onExpire: () => void commitRemove(pending),
         autoFocus: true,
+        focusAfter: () => updateRef.current,
       },
     })
   }

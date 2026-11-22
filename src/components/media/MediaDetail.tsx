@@ -41,8 +41,7 @@ import { ReportButton } from "@/components/social/ReportButton";
 import { SalaFicha } from "./sala/SalaFicha";
 import { SalaFichaBody, type SalaFichaFact } from "./sala/SalaFichaBody";
 import { salaFichaLayout } from "./sala/SalaFichaHero";
-import { SalaLibraryAction } from "@/components/library/sala/SalaLibraryAction";
-import { SalaLibraryCta } from "@/components/library/sala/SalaLibraryCta";
+import { SalaLibraryActionLazy as SalaLibraryAction, SalaLibraryCtaLazy as SalaLibraryCta } from "@/components/library/sala/SalaLibraryLazy";
 import {
   IconCalendar,
   IconFormat,

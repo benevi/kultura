@@ -71,6 +71,13 @@ export interface SalaToastAction {
   onExpire?: () => void;
   /** Lleva el foco a la acción al aparecer. */
   autoFocus?: boolean;
+  /**
+   * A dónde va el foco tras pulsar la acción, si la acción lo cambia de sitio
+   * (p. ej. «Deshacer» vuelve a pintar «Actualizar»). Se pide al quitar el
+   * aviso, cuando ya está pintado; si no da nada, lo de siempre (el aviso
+   * siguiente o donde estaba antes).
+   */
+  focusAfter?: () => HTMLElement | null;
 }
 
 export interface SalaToastItem {
@@ -159,8 +166,11 @@ interface UnAvisoProps {
   hint?: string;
   /** `true` la primera vez que se pide para este aviso; después, `false`. */
   onSettle: (id: string) => boolean;
-  /** `conFoco`: el foco estaba dentro al cerrarlo, y hay que llevarlo a otro sitio. */
-  onDismiss: (id: string, conFoco: boolean) => void;
+  /**
+   * `conFoco`: el foco estaba dentro al cerrarlo, y hay que llevarlo a otro
+   * sitio; `destino`, a dónde lo pide la acción pulsada.
+   */
+  onDismiss: (id: string, conFoco: boolean, destino?: () => HTMLElement | null) => void;
 }
 
 function UnAviso({ toast, paused, dismissLabel, hint, onSettle, onDismiss }: UnAvisoProps) {
@@ -193,7 +203,8 @@ function UnAviso({ toast, paused, dismissLabel, hint, onSettle, onDismiss }: UnA
       reloj.current = null;
       const conFoco = Boolean(caja.current?.contains(document.activeElement));
       const nodo = caja.current;
-      const quitar = () => onDismiss(toast.id, conFoco);
+      const destino = pulsada ? accionDe.current?.focusAfter : undefined;
+      const quitar = () => onDismiss(toast.id, conFoco, destino);
       // Sin animación (movimiento reducido, o un navegador que no anima) se quita ya.
       const anima = nodo && typeof nodo.getAnimations === "function" && !window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
       if (!anima) return quitar();
@@ -317,6 +328,8 @@ export function SalaToastProvider({ children, labels }: { children: React.ReactN
   /** Dónde estaba el foco antes de entrar en la zona: ahí vuelve. */
   const antes = React.useRef<HTMLElement | null>(null);
   const devolverFoco = React.useRef(false);
+  /** Lo que pidió la acción pulsada (`focusAfter`), si lo pidió. */
+  const destinoFoco = React.useRef<(() => HTMLElement | null) | null>(null);
 
   React.useEffect(() => setMontado(true), []);
 
@@ -368,8 +381,11 @@ export function SalaToastProvider({ children, labels }: { children: React.ReactN
   }, [toasts]);
 
   const alCerrar = React.useCallback(
-    (id: string, conFoco: boolean) => {
-      if (conFoco) devolverFoco.current = true;
+    (id: string, conFoco: boolean, destino?: () => HTMLElement | null) => {
+      if (conFoco) {
+        devolverFoco.current = true;
+        destinoFoco.current = destino ?? null;
+      }
       dismiss(id);
     },
     [dismiss]
@@ -379,6 +395,13 @@ export function SalaToastProvider({ children, labels }: { children: React.ReactN
   React.useEffect(() => {
     if (!devolverFoco.current) return;
     devolverFoco.current = false;
+    const pedido = destinoFoco.current?.() ?? null;
+    destinoFoco.current = null;
+    if (pedido?.isConnected) {
+      pedido.focus();
+      setDentro(false);
+      return;
+    }
     const siguiente = zona.current?.querySelector<HTMLElement>("[data-sala-toast] button");
     if (siguiente) siguiente.focus();
     else if (antes.current?.isConnected) antes.current.focus();

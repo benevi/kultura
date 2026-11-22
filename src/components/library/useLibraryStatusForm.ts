@@ -74,6 +74,7 @@ export function useLibraryStatusForm({
   progressConfig = null,
 }: UseLibraryStatusFormOptions) {
   const td = useTranslations('diary')
+  const t = useTranslations('library')
 
   const diaryOn = diary?.enabled === true
   const mode: RatingMode = diaryOn ? diary!.scale : 'legacy'
@@ -84,7 +85,14 @@ export function useLibraryStatusForm({
   const [rating10, setRating10] = useState<number | null>(initialRating)
   const [ratingDirty, setRatingDirty] = useState(false)
   const [favorite, setFavorite] = useState<boolean>(current?.favorite ?? false)
-  const [watchedAt, setWatchedAt] = useState<string>(current?.watchedAt ?? '')
+  const [watchedAt, setWatchedAtValue] = useState<string>(current?.watchedAt ?? '')
+  // La fecha no puede ser futura. El formulario de «Sala» va con `noValidate`
+  // (los errores los dice el campo, no el globo del navegador): se comprueba aquí.
+  const [dateError, setDateError] = useState<string | null>(null)
+  function setWatchedAt(value: string) {
+    setWatchedAtValue(value)
+    setDateError(null)
+  }
   const [progress, setProgress] = useState<ProgressValue | null>(
     (current as LibraryEntryWithProgress | null)?.progress ?? progressFromJson(current?.episodeProgress ?? null)
   )
@@ -130,6 +138,10 @@ export function useLibraryStatusForm({
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
+    if (status === 'completed' && watchedAt && watchedAt > localDateString()) {
+      setDateError(t('errors.futureDate'))
+      return
+    }
     const finalRating = ratingDirty ? rating10 : initialRating
     const completedOn = status === 'completed' && watchedAt ? watchedAt : null
     // El total del proveedor viaja con el progreso (para la barra de Inicio).
@@ -159,14 +171,17 @@ export function useLibraryStatusForm({
     })
   }
 
-  async function handleDelete(id: string) {
-    if (!onDeleteLog) return
+  /** Borra un apunte anterior; `true` si se borró. */
+  async function handleDelete(id: string): Promise<boolean> {
+    if (!onDeleteLog) return false
     setDeleting(id)
     setDeleteError(null)
     try {
       await onDeleteLog(id)
+      return true
     } catch {
       setDeleteError(td('deleteFailed'))
+      return false
     } finally {
       setDeleting(null)
     }
@@ -183,6 +198,7 @@ export function useLibraryStatusForm({
     setFavorite,
     watchedAt,
     setWatchedAt,
+    dateError,
     progress,
     setProgress,
     addToDiary,

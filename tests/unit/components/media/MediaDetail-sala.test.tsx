@@ -60,10 +60,12 @@ vi.mock("@/components/media/TrailerEmbed", () => ({
   TrailerEmbed: ({ youtubeKey }: { youtubeKey: string }) => <div data-testid="trailer-embed" data-key={youtubeKey} />,
 }));
 vi.mock("@/components/library/LibraryAction", () => ({ LibraryAction: () => <div data-testid="library-action" /> }));
-vi.mock("@/components/library/sala/SalaLibraryAction", () => ({
-  SalaLibraryAction: ({ mediaId, toastLabels }: { mediaId: string; toastLabels: { region: string } }) => (
+// F2b: la biblioteca de Sala llega por next/dynamic (SalaLibraryLazy); aquí, directa.
+vi.mock("@/components/library/sala/SalaLibraryLazy", async () => ({
+  SalaLibraryActionLazy: ({ mediaId, toastLabels }: { mediaId: string; toastLabels: { region: string } }) => (
     <div data-testid="sala-library-action" data-media={mediaId} data-region={toastLabels.region} />
   ),
+  SalaLibraryCtaLazy: (await import("@/components/library/sala/SalaLibraryCta")).SalaLibraryCta,
 }));
 vi.mock("@/components/social/RecommendButton", () => ({ RecommendButton: () => <div data-testid="recommend-button" /> }));
 vi.mock("@/components/social/ReportButton", () => ({ ReportButton: () => <div data-testid="report-button" /> }));
@@ -286,6 +288,16 @@ describe("MediaDetail con sala=true (F2a)", () => {
     expect(container.querySelectorAll('a[href*="mode=login"]')).toHaveLength(1);
     // Denunciar sigue en la ficha de hoy (fuera de F2b).
     expect(screen.getByRole("link", { name: "reportPublic" }).closest(".sala-work")).toBeNull();
+  });
+
+  it("F2b: la biblioteca de Sala llega por next/dynamic (no pesa en la ficha con la bandera apagada)", async () => {
+    const { readFileSync } = await import("node:fs");
+    const src = readFileSync("src/components/media/MediaDetail.tsx", "utf8");
+    expect(src).toContain("@/components/library/sala/SalaLibraryLazy");
+    expect(src).not.toMatch(/from "@\/components\/library\/sala\/SalaLibrary(Action|Cta)"/);
+    const lazy = readFileSync("src/components/library/sala/SalaLibraryLazy.tsx", "utf8");
+    expect(lazy).toContain('import("./SalaLibraryAction")');
+    expect(lazy).toContain('import("./SalaLibraryCta")');
   });
 
   it("las demás acciones, «Dónde ver», tráiler y adaptaciones siguen debajo, como hoy", async () => {

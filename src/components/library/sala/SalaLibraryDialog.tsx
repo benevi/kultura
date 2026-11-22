@@ -14,7 +14,7 @@
 // contenedor `sala-work`.
 // ============================================================
 
-import { useId, type RefObject } from 'react'
+import { useEffect, useId, useRef, useState, type RefObject } from 'react'
 import { useLocale, useTranslations } from 'next-intl'
 import { SalaDialog } from '@/components/sala/SalaDialog'
 import { SalaButton } from '@/components/sala/SalaButton'
@@ -96,6 +96,7 @@ function SalaLibraryDialogOpen({
     setFavorite,
     watchedAt,
     setWatchedAt,
+    dateError,
     progress,
     setProgress,
     addToDiary,
@@ -124,6 +125,42 @@ function SalaLibraryDialogOpen({
 
   const counter = (count: number, max: number) => td('chars', { count, max })
 
+  // Cuando el control pulsado desaparece, el foco va a un sitio con sentido
+  // (WCAG 2.4.3), nunca a <body>.
+  const statusRef = useRef<HTMLSelectElement>(null)
+  const dateRef = useRef<HTMLInputElement>(null)
+  const logsHeadingRef = useRef<HTMLHeadingElement>(null)
+  const logsListRef = useRef<HTMLUListElement>(null)
+  const [announce, setAnnounce] = useState('')
+  const [focusLogAt, setFocusLogAt] = useState<number | null>(null)
+
+  // Fecha futura: el error lo dice el campo y el foco va a él.
+  useEffect(() => {
+    if (dateError) dateRef.current?.focus()
+  }, [dateError])
+
+  // Tras borrar un apunte: al siguiente (o al anterior si era el último) o,
+  // si no queda ninguno, al encabezado de la sección.
+  useEffect(() => {
+    if (focusLogAt === null) return
+    const buttons = logsListRef.current?.querySelectorAll<HTMLButtonElement>('[data-delete-log]')
+    if (buttons && buttons.length > 0) buttons[Math.min(focusLogAt, buttons.length - 1)].focus()
+    else (logsHeadingRef.current ?? statusRef.current)?.focus()
+    setFocusLogAt(null)
+  }, [logs.length, focusLogAt])
+
+  async function deleteLog(id: string, index: number) {
+    // Si falló, el apunte sigue y el foco se queda en su botón.
+    if (await handleDelete(id)) setFocusLogAt(index)
+  }
+
+  function markCompleted() {
+    changeStatus('completed')
+    setAnnounce(tp('markedCompleted'))
+    // El aviso con el botón desaparece: el foco va a «Estado», que ya dice «Completado».
+    requestAnimationFrame(() => statusRef.current?.focus())
+  }
+
   return (
     <SalaDialog
       open
@@ -147,9 +184,14 @@ function SalaLibraryDialogOpen({
         </>
       }
     >
-      <form id={formId} onSubmit={handleSubmit} className="flex flex-col gap-6" data-testid="sala-library-form">
+      {/* `noValidate`: los errores los dicen los campos, no el globo del navegador. */}
+      <form id={formId} onSubmit={handleSubmit} noValidate className="flex flex-col gap-6" data-testid="sala-library-form">
+        <p role="status" className="sr-only">
+          {announce}
+        </p>
         {/* Estado: primer control, recibe el foco al abrir. */}
         <SalaSelect
+          ref={statusRef}
           label={t('statusLabel')}
           value={status}
           onChange={(e) => changeStatus(e.target.value as LibraryStatus)}
@@ -177,7 +219,9 @@ function SalaLibraryDialogOpen({
         {/* Fecha — solo cuando está completado */}
         {status === 'completed' && (
           <SalaInput
+            ref={dateRef}
             type="date"
+            error={dateError ?? undefined}
             label={t('watchedAt')}
             value={watchedAt}
             max={localDateString()}
@@ -210,7 +254,7 @@ function SalaLibraryDialogOpen({
                 <SalaNotice
                   live="off"
                   action={
-                    <SalaButton type="button" variant="secondary" onClick={() => changeStatus('completed')}>
+                    <SalaButton type="button" variant="secondary" onClick={markCompleted}>
                       {tp('markCompleted')}
                     </SalaButton>
                   }
@@ -251,6 +295,7 @@ function SalaLibraryDialogOpen({
                 />
                 <SalaCheckbox
                   label={td('spoiler')}
+                  hint={review.trim() === '' ? td('spoilerHint') : undefined}
                   checked={spoiler && review.trim() !== ''}
                   disabled={review.trim() === ''}
                   onChange={(e) => setSpoiler(e.target.checked)}
@@ -272,11 +317,11 @@ function SalaLibraryDialogOpen({
         {/* Apuntes anteriores de este título */}
         {diaryOn && logs.length > 0 && (
           <section aria-labelledby={logsId} className="flex flex-col gap-3">
-            <h3 id={logsId} className="sala-type-label text-sala-ink">
+            <h3 id={logsId} ref={logsHeadingRef} tabIndex={-1} className="sala-type-label text-sala-ink focus:outline-none sala-focused:sala-focus">
               {td('previousLogs', { count: logs.length })}
             </h3>
-            <ul className="flex flex-col gap-2">
-              {logs.map((log) => {
+            <ul ref={logsListRef} className="flex flex-col gap-2">
+              {logs.map((log, index) => {
                 const date = formatDiaryDate(log.watchedOn, locale)
                 return (
                   <li key={log.id} className="flex items-start gap-3 bg-sala-panel px-4 py-3">
@@ -302,7 +347,8 @@ function SalaLibraryDialogOpen({
                       <SalaButton
                         type="button"
                         variant="quiet"
-                        onClick={() => handleDelete(log.id)}
+                        onClick={() => void deleteLog(log.id, index)}
+                        data-delete-log=""
                         loading={deleting === log.id}
                         loadingLabel={td('delete')}
                         disabled={deleting !== null}

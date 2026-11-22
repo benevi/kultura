@@ -135,7 +135,7 @@ function SalaLibraryActionView({ mediaId, mediaCache, initialEntry }: Omit<SalaL
             {t('updateEntry')}
           </SalaButton>
           <SalaButton variant="quiet" onClick={askRemove} onPointerEnter={prefetch} onFocus={prefetch} disabled={loading}>
-            {t('remove')}
+            {t('removeConfirm')}
           </SalaButton>
         </>
       ) : (

@@ -81,7 +81,7 @@ describe('SalaLibraryAction (F2b)', () => {
     expect(screen.getByTestId('sala-library-status')).toHaveTextContent('status.in_progress')
     expect(screen.getByText('statusLabel')).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'updateEntry' }).className).toContain('min-h-sala-target')
-    expect(screen.getByRole('button', { name: 'remove' }).className).toContain('min-h-sala-target')
+    expect(screen.getByRole('button', { name: 'removeConfirm' }).className).toContain('min-h-sala-target')
   })
 
   it('añadir: abre el diálogo de Sala con el foco en «Estado» y guarda con la server action', async () => {
@@ -133,7 +133,7 @@ describe('SalaLibraryAction (F2b)', () => {
 
   it('quitar: confirma con SalaConfirmDialog (botón danger) y deja un «Deshacer» de Sala', async () => {
     renderAction(entry)
-    fireEvent.click(screen.getByRole('button', { name: 'remove' }))
+    fireEvent.click(screen.getByRole('button', { name: 'removeConfirm' }))
     const confirm = await screen.findByRole('alertdialog')
     expect(confirm).toHaveTextContent('removeConfirmBody')
     const ok = within(confirm).getByRole('button', { name: 'removeConfirm' })

@@ -12,7 +12,7 @@
 // escribiéndolo; las flechas del teclado funcionan en el campo.
 // ============================================================
 
-import { useId } from 'react'
+import { useId, useRef } from 'react'
 import { useTranslations } from 'next-intl'
 import { CloseButton } from '@/components/ui/CloseButton'
 import { SalaButton } from '@/components/sala/SalaButton'
@@ -204,6 +204,13 @@ export function ProgressInput({
   const tl = useTranslations('library')
   const modeId = useId()
   const skin = SKINS[variant]
+  const boxRef = useRef<HTMLFieldSetElement>(null)
+  // «Limpiar progreso» desaparece al pulsarlo: el foco va al primer campo.
+  const clear = () => {
+    if (onClear) onClear()
+    else onChange(null)
+    boxRef.current?.querySelector<HTMLInputElement>('input[type=number]')?.focus()
+  }
 
   const fields = progressFieldsFor(mediaType)
   if (fields.length === 0) return null
@@ -232,7 +239,7 @@ export function ProgressInput({
           />
         )}
         <Stepper
-            skin={skin}
+          skin={skin}
           field="episode"
           label={t('episode')}
           value={value?.episode}
@@ -294,7 +301,7 @@ export function ProgressInput({
   } else if (mediaType === 'game') {
     body = (
       <Stepper
-            skin={skin}
+        skin={skin}
         field="hours"
         label={t('hours')}
         value={value?.hours}
@@ -307,7 +314,7 @@ export function ProgressInput({
   }
 
   return (
-    <fieldset className="flex flex-col gap-2">
+    <fieldset ref={boxRef} className="flex flex-col gap-2">
       <legend className={skin.legend}>{t('title')}</legend>
       <div className="flex flex-wrap items-start gap-x-4 gap-y-1">
         {body}
@@ -315,7 +322,7 @@ export function ProgressInput({
           <SalaButton
             type="button"
             variant="quiet"
-            onClick={() => (onClear ? onClear() : onChange(null))}
+            onClick={clear}
             data-testid="clear-progress"
             className="mt-6"
           >
@@ -324,7 +331,7 @@ export function ProgressInput({
         )}
         {hasProgress(value) && variant !== 'sala' && (
           <CloseButton
-            onClick={() => (onClear ? onClear() : onChange(null))}
+            onClick={clear}
             label={tl('clearProgress')}
             data-testid="clear-progress"
             className="mt-5"

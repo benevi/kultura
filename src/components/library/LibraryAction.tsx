@@ -196,7 +196,7 @@ export function LibraryAction({
           disabled={loading}
           className="text-accent-danger hover:text-accent-danger border-accent-danger/30 hover:border-accent-danger/60"
         >
-          {t('remove')}
+          {t('removeConfirm')}
         </KButton>
       </div>
 

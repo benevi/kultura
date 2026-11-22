@@ -400,14 +400,14 @@
     },
     "addToLibrary": "Añadir a biblioteca",
     "updateEntry": "Actualizar",
-    "remove": "Eliminar",
     "score": "Puntuación",
     "watchedAt": "Fecha",
     "episode": "Episodio",
     "errors": {
       "saveFailed": "No hemos podido guardarlo. Revisa la conexión y reintenta.",
       "providerUnavailable": "No hemos podido guardar el cambio: el catálogo no responde. Reintenta en un momento.",
-      "removeFailed": "No hemos podido quitarlo de tu biblioteca. Reintenta."
+      "removeFailed": "No hemos podido quitarlo de tu biblioteca. Reintenta.",
+      "futureDate": "La fecha no puede ser posterior a hoy."
     },
     "title": "Mi biblioteca",
     "empty": {
@@ -457,8 +457,9 @@
     "rewatchShort": "{type, select, book {relectura} manga {relectura} comic {relectura} game {otra partida} other {revisionado}}",
     "review": "Reseña",
     "reviewPlaceholder": "¿Qué te ha parecido?",
-    "chars": "{count, number} / {max, number}",
+    "chars": "{max, plural, one {{count, number} de # carácter} other {{count, number} de # caracteres}}",
     "spoiler": "Contiene spoilers",
+    "spoilerHint": "Escribe una reseña para marcarla.",
     "spoilerHidden": "Reseña con spoilers (oculta)",
     "showSpoiler": "Mostrar la reseña con spoilers",
     "hideSpoiler": "Ocultar la reseña",
@@ -523,6 +524,7 @@
     "unavailable": "El progreso de este formato aún no está disponible.",
     "reachedEnd": "{type, select, book {Has llegado al final del libro.} manga {Has llegado al último capítulo.} comic {Has llegado al último número.} game {Has llegado al final.} other {Has llegado al último episodio.}}",
     "markCompleted": "Marcar como completado",
+    "markedCompleted": "Marcado como completado.",
     "finishTitle": "¿Has terminado «{title}»?",
     "finishBody": "{type, select, book {Has llegado a la última página. ¿Lo marcamos como leído?} manga {Has marcado el último capítulo. ¿Lo marcamos como leído?} comic {Has marcado el último número. ¿Lo marcamos como leído?} other {Has marcado el último episodio. ¿Lo marcamos como visto?}}",
     "finishConfirm": "{type, select, book {Sí, leído} manga {Sí, leído} comic {Sí, leído} game {Sí, jugado} other {Sí, visto}}",
