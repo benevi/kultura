@@ -1,6 +1,6 @@
 'use client'
 
-import type { MouseEvent } from 'react'
+import { useEffect, type MouseEvent } from 'react'
 import { useTranslations } from 'next-intl'
 import { Link, usePathname } from '@/i18n/navigation'
 import { cn } from '@/lib/utils/index'
@@ -16,10 +16,21 @@ function prefersReducedMotion(): boolean {
  * celda ocupa todo el alto (64 px) y un quinto del ancho (≥ 64 px a 320).
  * Re-tocar la pestaña en la que ya estás sube al principio (MOV-7); desde una
  * subpágina (`/lists/abc`) vuelve a la raíz de la pestaña.
+ *
+ * Mientras está, los avisos de «Sala» (`SalaToastProvider`) suben por encima
+ * de ella en móvil: les deja su alto en `--sala-toast-clear`.
  */
 export function BottomNav({ username }: { username: string }) {
   const t = useTranslations('nav')
   const pathname = usePathname()
+
+  useEffect(() => {
+    const root = document.documentElement
+    root.style.setProperty('--sala-toast-clear', '4rem')
+    return () => {
+      root.style.removeProperty('--sala-toast-clear')
+    }
+  }, [])
 
   function handleClick(e: MouseEvent<HTMLAnchorElement>, href: string) {
     if (pathname !== href) return

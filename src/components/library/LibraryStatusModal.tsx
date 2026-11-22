@@ -18,51 +18,23 @@
 // el apunte del diario).
 // ============================================================
 
-import { useId, useState, type RefObject } from 'react'
+import { useId, type RefObject } from 'react'
 import { useLocale, useTranslations } from 'next-intl'
 import { Select } from '@/components/ui/Select'
 import { KButton } from '@/components/ui/KButton'
 import { KInput } from '@/components/ui/KInput'
 import { KTextarea } from '@/components/ui/KTextarea'
 import { ProgressInput } from '@/components/library/ProgressInput'
-import { RatingInput, type RatingMode } from '@/components/library/RatingInput'
+import { RatingInput } from '@/components/library/RatingInput'
 import { Modal } from '@/components/ui/Modal'
-import { formatRating, rating10ToScore, storedRating10 } from '@/lib/library/rating'
+import { useLibraryStatusForm, type LibraryStatusSaveData } from '@/components/library/useLibraryStatusForm'
+import { formatRating } from '@/lib/library/rating'
 import { formatDiaryDate, localDateString } from '@/lib/library/dates'
 import { PRIVATE_NOTE_MAX, REVIEW_MAX } from '@/lib/library/diary'
-import {
-  isAtEnd,
-  progressFromJson,
-  progressKindFor,
-  progressToLegacy,
-  totalFor,
-  type LibraryEntryWithProgress,
-  type ProgressValue,
-} from '@/lib/library/progress'
 import type { ProgressConfig } from '@/lib/library/actions'
-import type {
-  DiaryConfig,
-  DiaryLogInput,
-  LibraryEntry,
-  LibraryStatus,
-  EpisodeProgress as EpisodeProgressType,
-} from '@/types/library'
+import type { DiaryConfig, LibraryEntry, LibraryStatus } from '@/types/library'
 
-export interface LibraryStatusSaveData {
-  status: LibraryStatus
-  /** Nota entera 1-5 (derivada de rating10). */
-  score: number | null
-  /** Nota fina 0,5-10; la de antes si no se ha tocado (no se pierde precisión). */
-  rating10: number | null
-  /** Solo con el diario activo. */
-  favorite?: boolean
-  watchedAt: string | null
-  episodeProgress: EpisodeProgressType | null
-  /** Progreso por formato (F-27); ausente en formatos sin progreso. */
-  progress?: ProgressValue | null
-  /** Apunte del diario a crear (solo con el diario activo). */
-  log?: DiaryLogInput
-}
+export type { LibraryStatusSaveData }
 
 interface LibraryStatusModalProps {
   current: LibraryEntry | null
@@ -109,43 +81,42 @@ export function LibraryStatusModal({
   const noteId = useId()
   const reviewCountId = useId()
 
-  const diaryOn = diary?.enabled === true
-  const mode: RatingMode = diaryOn ? diary!.scale : 'legacy'
-  const wasCompleted = current?.status === 'completed'
-
-  const [status, setStatus] = useState<LibraryStatus>(current?.status ?? 'pending')
-  const initialRating = current ? storedRating10(current.rating10) : null
-  const [rating10, setRating10] = useState<number | null>(initialRating)
-  const [ratingDirty, setRatingDirty] = useState(false)
-  const [favorite, setFavorite] = useState<boolean>(current?.favorite ?? false)
-  const [watchedAt, setWatchedAt] = useState<string>(current?.watchedAt ?? '')
-  const [progress, setProgress] = useState<ProgressValue | null>(
-    (current as LibraryEntryWithProgress | null)?.progress ?? progressFromJson(current?.episodeProgress ?? null)
-  )
-  // Diario: se propone apuntar al marcarlo como completado por primera vez;
-  // al editar algo que ya estaba completado, no (no duplicar apuntes).
-  const [addToDiary, setAddToDiary] = useState(false)
-  const [rewatchTouched, setRewatchTouched] = useState(false)
-  const [rewatchValue, setRewatchValue] = useState(false)
-  const [review, setReview] = useState('')
-  const [spoiler, setSpoiler] = useState(false)
-  const [privateNote, setPrivateNote] = useState('')
-  const [deleting, setDeleting] = useState<string | null>(null)
-  const [deleteError, setDeleteError] = useState<string | null>(null)
-
-  const logs = diary?.logs ?? []
-  const rewatch = rewatchTouched ? rewatchValue : wasCompleted || logs.length > 0
-
-  // F-27: progreso en todos los formatos.
-  const showProgress = progressKindFor(mediaType) !== null
-  const plan = progressConfig?.plan ?? null
-  const progressTotal = totalFor(mediaType, progress, plan) ?? progress?.total ?? null
-  const reachedEnd = showProgress && status !== 'completed' && isAtEnd(mediaType, progress, plan)
-  const next = progressConfig?.next ?? null
-  const showNext =
-    next !== null &&
-    JSON.stringify(progress ?? null) === JSON.stringify(progressConfig?.progress ?? null)
-  const showDiary = diaryOn && status === 'completed'
+  const {
+    diaryOn,
+    mode,
+    status,
+    changeStatus,
+    rating10,
+    changeRating,
+    favorite,
+    setFavorite,
+    watchedAt,
+    setWatchedAt,
+    progress,
+    setProgress,
+    addToDiary,
+    setAddToDiary,
+    rewatch,
+    changeRewatch,
+    review,
+    setReview,
+    spoiler,
+    setSpoiler,
+    privateNote,
+    setPrivateNote,
+    deleting,
+    deleteError,
+    logs,
+    showProgress,
+    plan,
+    progressTotal,
+    reachedEnd,
+    next,
+    showNext,
+    showDiary,
+    handleSubmit,
+    handleDelete,
+  } = useLibraryStatusForm({ current, mediaType, onSave, diary, onDeleteLog, progressConfig })
 
   const statusOptions = [
     { value: 'completed', label: t('status.completed') },
@@ -153,60 +124,6 @@ export function LibraryStatusModal({
     { value: 'pending', label: t('status.pending') },
     { value: 'abandoned', label: t('status.abandoned') },
   ]
-
-  function changeStatus(next: LibraryStatus) {
-    setStatus(next)
-    if (next === 'completed' && !wasCompleted) setAddToDiary(true)
-  }
-
-  function changeRating(next: number | null) {
-    setRating10(next)
-    setRatingDirty(true)
-  }
-
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault()
-    const finalRating = ratingDirty ? rating10 : initialRating
-    const completedOn = status === 'completed' && watchedAt ? watchedAt : null
-    // El total del proveedor viaja con el progreso (para la barra de Inicio).
-    const savedProgress = progress && progressTotal !== null ? { ...progress, total: progressTotal } : progress
-    await onSave({
-      status,
-      score: rating10ToScore(finalRating),
-      rating10: finalRating,
-      ...(diaryOn ? { favorite } : {}),
-      watchedAt: completedOn,
-      episodeProgress: showProgress ? progressToLegacy(savedProgress) : null,
-      // Siempre que el formato tenga progreso, aunque el control aún no se
-      // vea (configuración sin cargar): guardar = sustituir, y así no se
-      // pierden las páginas u horas que ya había.
-      ...(progressKindFor(mediaType) !== null ? { progress: savedProgress } : {}),
-      ...(showDiary && addToDiary
-        ? {
-            log: {
-              watchedOn: completedOn ?? localDateString(),
-              rewatch,
-              review: review.trim() || undefined,
-              spoiler: review.trim() !== '' && spoiler,
-              privateNote: privateNote.trim() || undefined,
-            },
-          }
-        : {}),
-    })
-  }
-
-  async function handleDelete(id: string) {
-    if (!onDeleteLog) return
-    setDeleting(id)
-    setDeleteError(null)
-    try {
-      await onDeleteLog(id)
-    } catch {
-      setDeleteError(td('deleteFailed'))
-    } finally {
-      setDeleting(null)
-    }
-  }
 
   return (
     <Modal
@@ -314,10 +231,7 @@ export function LibraryStatusModal({
                   <input
                     type="checkbox"
                     checked={rewatch}
-                    onChange={(e) => {
-                      setRewatchTouched(true)
-                      setRewatchValue(e.target.checked)
-                    }}
+                    onChange={(e) => changeRewatch(e.target.checked)}
                     className={CHECKBOX}
                   />
                   <span className="text-sm font-medium text-text-primary">{td('rewatch', { type: mediaType })}</span>

@@ -40,6 +40,23 @@ export function playStamp(el: Element | null | undefined): boolean {
 }
 
 /**
+ * Sello de «Visto» en «Sala» (fase 8.5): un bloque plano, sin giro ni sombra,
+ * que «cae» de escala 1,15 a 1 en el mismo tiempo que el de hoy. Devuelve
+ * false si no se anima (movimiento reducido o navegador sin WAAPI).
+ */
+export function playSalaStamp(el: Element | null | undefined): boolean {
+  if (!canAnimate(el)) return false
+  el.animate(
+    [
+      { transform: 'scale(1.15)', opacity: 0 },
+      { transform: 'scale(1)', opacity: 1 },
+    ],
+    { duration: STAMP_MS, easing: EASE_STANDARD, fill: 'both' }
+  )
+  return true
+}
+
+/**
  * Estrellas que se rellenan en cascada: cada una «salta» 40 ms después de la
  * anterior. Con 5 estrellas: 4 × 40 + 140 = 300 ms en total.
  */

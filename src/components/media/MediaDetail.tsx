@@ -40,7 +40,9 @@ import { AddToListButton } from "@/components/social/AddToListButton";
 import { ReportButton } from "@/components/social/ReportButton";
 import { SalaFicha } from "./sala/SalaFicha";
 import { SalaFichaBody, type SalaFichaFact } from "./sala/SalaFichaBody";
-import { salaFichaColumnPoster, salaFichaLayout } from "./sala/SalaFichaHero";
+import { salaFichaLayout } from "./sala/SalaFichaHero";
+import { SalaLibraryAction } from "@/components/library/sala/SalaLibraryAction";
+import { SalaLibraryCta } from "@/components/library/sala/SalaLibraryCta";
 import {
   IconCalendar,
   IconFormat,
@@ -254,8 +256,35 @@ export async function MediaDetail({
   const next = encodeURIComponent(selfPath);
 
   // ── Con «Sala» (F2a): franja, sinopsis y créditos van arriba, en la sala ──
-  // El póster de la columna solo queda si es otra imagen que la de la sala.
-  const showPoster = !sala || salaFichaColumnPoster(item);
+  // F2b (decisión de Víctor): el cuerpo de «Sala» no lleva póster, como el
+  // prototipo; las acciones de biblioteca van también arriba, en la sala.
+  const showPoster = !sala;
+  const libraryMediaCache = {
+    externalId: item.externalId,
+    type: item.type,
+    title: item.title,
+    poster: item.poster,
+    backdrop: item.backdrop,
+    year: item.year,
+    synopsis: item.synopsis,
+    genres: item.genres,
+  };
+  const salaActions = !sala ? null : isAuthenticated ? (
+    <SalaLibraryAction
+      mediaId={item.id}
+      mediaCache={libraryMediaCache}
+      initialEntry={initialEntry}
+      toastLabels={{ region: t("salaToastRegion"), dismiss: t("salaToastDismiss"), hint: t("salaToastHint") }}
+    />
+  ) : (
+    <SalaLibraryCta
+      registerHref={`/login?mode=register&next=${next}`}
+      loginHref={`/login?mode=login&next=${next}`}
+      addLabel={t("ctaAdd")}
+      hint={t("ctaHint")}
+      loginLabel={t("ctaLogin")}
+    />
+  );
   const salaFacts: SalaFichaFact[] = sala
     ? [
         // En la franja, «Formato» (decisión de Víctor); la ficha de hoy sigue con «Tipo».
@@ -294,6 +323,8 @@ export async function MediaDetail({
                 </Suspense>
               ) : null
             }
+            actions={salaActions}
+            actionsLabel={t("salaLibraryLabel")}
             creditsLabel={t("details")}
             credits={credits.map(({ key, value }) => ({ key, label: t(`credits.${key}`), value }))}
             breadcrumbs={
@@ -448,24 +479,18 @@ export async function MediaDetail({
             )}
 
             {/* CTAs — primario "+ Añadir a mi biblioteca" / secundarios */}
-            <div className={sala && !showPoster ? "flex flex-col gap-2.5" : "flex flex-col gap-2.5 mt-6"}>
+            <div className={sala ? "flex flex-col gap-2.5" : "flex flex-col gap-2.5 mt-6"}>
               {isAuthenticated ? (
                 <>
-                  <LibraryAction
-                    mediaId={item.id}
-                    mediaCache={{
-                      externalId: item.externalId,
-                      type: item.type,
-                      title: item.title,
-                      poster: item.poster,
-                      backdrop: item.backdrop,
-                      year: item.year,
-                      synopsis: item.synopsis,
-                      genres: item.genres,
-                    }}
-                    initialEntry={initialEntry}
-                    isAuthenticated
-                  />
+                  {/* Con «Sala», la biblioteca va arriba (`SalaLibraryAction`). */}
+                  {!sala && (
+                    <LibraryAction
+                      mediaId={item.id}
+                      mediaCache={libraryMediaCache}
+                      initialEntry={initialEntry}
+                      isAuthenticated
+                    />
+                  )}
                   <div className="flex items-center gap-2.5 flex-wrap">
                     <AddToListButton item={item} />
                     <RecommendButton item={item} />
@@ -477,21 +502,25 @@ export async function MediaDetail({
                 </>
               ) : (
                 <>
-                  <KButton asChild variant="primary" size="lg">
-                    <Link href={`/login?mode=register&next=${next}`} rel="nofollow">
-                      <span aria-hidden="true">+</span> {t("ctaAdd")}
-                    </Link>
-                  </KButton>
-                  <p className="text-xs text-text-secondary leading-relaxed">
-                    {t("ctaHint")}{" "}
-                    <Link
-                      href={`/login?mode=login&next=${next}`}
-                      rel="nofollow"
-                      className="whitespace-nowrap font-bold text-text-primary underline underline-offset-2 hover:text-accent-pink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-pink rounded-lg"
-                    >
-                      {t("ctaLogin")}
-                    </Link>
-                  </p>
+                  {!sala && (
+                    <>
+                      <KButton asChild variant="primary" size="lg">
+                        <Link href={`/login?mode=register&next=${next}`} rel="nofollow">
+                          <span aria-hidden="true">+</span> {t("ctaAdd")}
+                        </Link>
+                      </KButton>
+                      <p className="text-xs text-text-secondary leading-relaxed">
+                        {t("ctaHint")}{" "}
+                        <Link
+                          href={`/login?mode=login&next=${next}`}
+                          rel="nofollow"
+                          className="whitespace-nowrap font-bold text-text-primary underline underline-offset-2 hover:text-accent-pink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-pink rounded-lg"
+                        >
+                          {t("ctaLogin")}
+                        </Link>
+                      </p>
+                    </>
+                  )}
                   <KButton asChild variant="secondary" size="sm" className="self-start text-xs text-text-tertiary">
                     <Link href={`/report?target=media&id=${encodeURIComponent(item.id)}`} rel="nofollow">
                       {t("reportPublic")}
