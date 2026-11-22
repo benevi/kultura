@@ -17,7 +17,6 @@ import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { KButton } from "@/components/ui/KButton";
-import { SalaButtonLazy as SalaButton } from "@/components/sala/SalaButtonLazy";
 import { ApiError, apiFetch } from "@/lib/api/client";
 import type { LibraryBulkResult } from "@/lib/api/contracts/library";
 
@@ -45,14 +44,8 @@ function addBulk(mediaIds: string[]): Promise<LibraryBulkResult> {
   return apiFetch<LibraryBulkResult>("/api/library/bulk", { method: "POST", json: { mediaIds } });
 }
 
-/**
- * `skin="sala"`: el botón es un `SalaButton` y los textos van en la tinta de
- * la obra (ficha con «Sala», F2c). El comportamiento es el mismo.
- */
-export function AddFranchiseButton({ items, skin }: { items: FranchiseItem[]; skin?: "sala" }) {
+export function AddFranchiseButton({ items }: { items: FranchiseItem[] }) {
   const t = useTranslations("adaptations.add");
-  const tc = useTranslations("common");
-  const sala = skin === "sala";
   const router = useRouter();
   const [phase, setPhase] = useState<Phase>({ kind: "idle" });
   const [remaining, setRemaining] = useState(items);
@@ -128,31 +121,15 @@ export function AddFranchiseButton({ items, skin }: { items: FranchiseItem[]; sk
     <div className="flex flex-col items-start gap-1.5">
       {remaining.length > 0 && phase.kind !== "done" && phase.kind !== "allIn" && (
         <>
-          {sala ? (
-            <SalaButton
-              variant="secondary"
-              onClick={run}
-              loading={busy}
-              loadingLabel={tc("loading")}
-              aria-describedby="franchise-hint"
-            >
-              {t("action")}
-            </SalaButton>
-          ) : (
-            <KButton type="button" variant="secondary" size="md" onClick={run} loading={busy} aria-describedby="franchise-hint">
-              <span aria-hidden="true">+</span> {t("action")}
-            </KButton>
-          )}
-          <p id="franchise-hint" className={sala ? "sala-type-small text-sala-ink-secondary" : "text-xs text-text-tertiary"}>
+          <KButton type="button" variant="secondary" size="md" onClick={run} loading={busy} aria-describedby="franchise-hint">
+            <span aria-hidden="true">+</span> {t("action")}
+          </KButton>
+          <p id="franchise-hint" className="text-xs text-text-tertiary">
             {t("hint", { count: remaining.length })}
           </p>
         </>
       )}
-      <p
-        role="status"
-        aria-live="polite"
-        className={sala ? "sala-type-small text-sala-ink min-h-4" : "text-xs font-bold text-text-secondary min-h-4"}
-      >
+      <p role="status" aria-live="polite" className="text-xs font-bold text-text-secondary min-h-4">
         {message}
       </p>
     </div>

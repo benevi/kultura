@@ -5,8 +5,8 @@
 //   del código de `master` ANTES de tocar `MediaDetail` (caracterización).
 //   Si una cambia, la ficha de hoy ha cambiado.
 // - Con `sala=true`: un solo `h1`, franja de datos y panel con la sinopsis y
-//   los créditos; F2c: el resto (acciones, «Dónde ver», Steam, adaptaciones,
-//   fuentes) también en «Sala»; solo el tráiler sigue debajo, como hoy.
+//   los créditos; F2c: el resto (acciones, «Dónde ver», Steam, fuentes)
+//   también en «Sala», sin adaptaciones; solo el tráiler sigue debajo, como hoy.
 // ============================================================
 
 import { render, screen, within } from "@testing-library/react";
@@ -318,7 +318,7 @@ describe("MediaDetail con sala=true (F2a)", () => {
     expect(lazy).toContain('import("./SalaLibraryCta")');
   });
 
-  it("F2c: las demás acciones, «Dónde ver» y las adaptaciones van en «Sala»; el tráiler sigue debajo", async () => {
+  it("F2c: las demás acciones y «Dónde ver» van en «Sala»; el tráiler sigue debajo", async () => {
     const { container } = render(await sala(movie, { isAuthenticated: true }));
     const work = container.querySelector(".sala-work") as HTMLElement;
     for (const id of ["add-to-list-button", "recommend-button", "report-button"]) {
@@ -328,7 +328,8 @@ describe("MediaDetail con sala=true (F2a)", () => {
     }
     const more = screen.getByRole("region", { name: "salaMoreActionsLabel" });
     expect(within(more).getByRole("heading", { level: 2, name: "salaMoreActionsLabel" })).toHaveClass("sr-only");
-    expect(screen.getByTestId("adaptations-slot").closest(".sala-work")).toBe(work);
+    // Sin adaptaciones con «Sala» (decisión de Víctor), aunque la página las pase.
+    expect(screen.queryByTestId("adaptations-slot")).toBeNull();
     // «Dónde ver» es el de «Sala», no el de hoy.
     expect(screen.queryByTestId("streaming-providers")).toBeNull();
     expect(within(work).getByRole("heading", { level: 2, name: "whereToWatch" })).toBeInTheDocument();
@@ -341,9 +342,13 @@ describe("MediaDetail con sala=true (F2a)", () => {
     expect(container.querySelectorAll("[data-testid=add-to-list-button]")).toHaveLength(1);
   });
 
-  it("F2c: el orden de abajo: acciones, por qué, dónde ver, adaptaciones (llegan en streaming, al final) y fuentes", async () => {
+  it("F2c: el orden de abajo: acciones, por qué, dónde ver, Steam y fuentes", async () => {
     const { container } = render(
-      await sala(movie, { isAuthenticated: true, source: { name: "TMDB", url: "https://www.themoviedb.org/movie/496243" } })
+      await sala(movie, {
+        isAuthenticated: true,
+        source: { name: "TMDB", url: "https://www.themoviedb.org/movie/496243" },
+        steam: { appId: 1, storeUrl: "https://store.steampowered.com/app/1", isFree: true },
+      })
     );
     const order = Array.from(container.querySelectorAll("[data-sala-ficha-more] > *")).map(
       (el) =>
@@ -356,7 +361,7 @@ describe("MediaDetail con sala=true (F2a)", () => {
       "data-sala-ficha-more-actions",
       undefined, // «Por qué te lo recomendamos» (sin data-)
       "data-sala-ficha-watch",
-      "adaptations-slot",
+      "data-sala-ficha-steam",
       "data-sala-ficha-sources",
     ]);
   });

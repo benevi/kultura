@@ -96,6 +96,7 @@ interface MediaDetailProps {
   /**
    * F-29: "También existe como…" (`AdaptationsSection` dentro de un
    * <Suspense>, lo monta la página). Sin él, la ficha sale igual que antes.
+   * Solo en la ficha de hoy: con «Sala» no hay adaptaciones (F2c).
    */
   adaptations?: ReactNode;
   /**
@@ -106,9 +107,9 @@ interface MediaDetailProps {
   /**
    * Fase 8.5 (bandera `SALA_FICHA`, la lee la página): la sala de «Sala»
    * arriba del todo, con el único `h1` (F1), y debajo la franja de datos y la
-   * ficha con sinopsis y créditos (F2a). Lo demás (acciones, «Dónde ver»,
-   * tráiler, adaptaciones, Steam) sigue como hoy, debajo. Sin ella, la ficha
-   * de siempre, sin un solo cambio.
+   * ficha con sinopsis y créditos (F2a), y el resto en «Sala» (F2c): las
+   * acciones, «Dónde ver», Steam y las fuentes, sin adaptaciones. El tráiler
+   * sigue debajo, como hoy. Sin ella, la ficha de siempre, sin un solo cambio.
    */
   sala?: boolean;
 }
@@ -329,8 +330,7 @@ export async function MediaDetail({
 
       {steam && <SalaSteam steam={steam} />}
 
-      {/* Llega en streaming: al final, para no mover lo demás cuando aparece. */}
-      {adaptations}
+      {/* Sin «También existe como…» con «Sala» (decisión de Víctor, F2c). */}
 
       <SalaFichaSources source={source} googleBooksHref={googleVolumeId ? googleBooksUrl(googleVolumeId) : null} />
     </>

@@ -20,8 +20,8 @@ import { cn } from "@/lib/utils/index";
  *   cuerpo (en móvil, justo debajo de la franja).
  *
  * - **El resto** (F2c, `more`): las demás acciones, «Por qué te lo
- *   recomendamos», «Dónde ver», Steam, las adaptaciones y la cita de las
- *   fuentes, debajo de la sinopsis, sobre el mismo fondo teñido.
+ *   recomendamos», «Dónde ver», Steam y la cita de las fuentes, debajo de
+ *   la sinopsis, sobre el mismo fondo teñido. Sin adaptaciones (Víctor).
  *
  * El tráiler sigue, de momento, en la ficha de hoy, debajo (F3).
  */
