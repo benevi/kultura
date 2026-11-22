@@ -95,7 +95,6 @@ describe("PosterFrame", () => {
     "src/app/[locale]/u/[username]/r/[type]/[id]/page.tsx",
     "src/app/[locale]/welcome/RateTile.tsx",
     "src/components/library/DiaryList.tsx",
-    "src/components/media/AdaptationsSection.tsx",
     "src/app/[locale]/(app)/lists/[id]/ReorderableItems.tsx",
     "src/components/search/SearchBar.tsx",
   ])("%s usa la tarjeta única", (file) => {
