@@ -175,7 +175,7 @@ describe("orden de las fuentes (biblia §5)", () => {
 });
 
 describe("las pantallas de hoy solo descargan «Sala» donde ya la usan", () => {
-  it("solo Storybook, las piezas de «Sala» y el estado de error de los error.tsx importan las hojas de src/styles/sala", () => {
+  it("solo Storybook, las piezas de «Sala», el estado de error de los error.tsx y la sala de la ficha importan las hojas de src/styles/sala", () => {
     const importers = walk(join(ROOT, "src"))
       .filter((f) => /\.(tsx?|css|mdx?)$/.test(f) && dirname(f) !== SHEETS_DIR)
       .filter((f) => /styles\/sala\//.test(readFileSync(f, "utf8")))
@@ -186,6 +186,12 @@ describe("las pantallas de hoy solo descargan «Sala» donde ya la usan", () => 
     // - `ErrorState` (`src/components/layout`, fase 8.4, C11) es la primera pieza
     //   de la app que importa «Sala»: la usan todos los error.tsx y trae los
     //   tokens y las fuentes latinas mientras el layout no los cargue.
-    expect(importers.sort()).toEqual(["src/components/layout/ErrorState.tsx", "src/components/sala/SalaScriptFonts.tsx"]);
+    // - `SalaFichaStyles` (fase 8.5, F1): la sala de la ficha, por `next/dynamic`
+    //   y solo con la bandera `SALA_FICHA` encendida.
+    expect(importers.sort()).toEqual([
+      "src/components/layout/ErrorState.tsx",
+      "src/components/media/sala/SalaFichaStyles.tsx",
+      "src/components/sala/SalaScriptFonts.tsx",
+    ]);
   });
 });

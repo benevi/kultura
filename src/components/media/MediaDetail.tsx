@@ -38,6 +38,7 @@ import { LibraryAction } from "@/components/library/LibraryAction";
 import { RecommendButton } from "@/components/social/RecommendButton";
 import { AddToListButton } from "@/components/social/AddToListButton";
 import { ReportButton } from "@/components/social/ReportButton";
+import { SalaFichaHero } from "./sala/SalaFichaHero";
 import {
   IconCalendar,
   IconFormat,
@@ -94,6 +95,12 @@ interface MediaDetailProps {
    * este título ("Compartir mi nota"). Solo para el dueño de la nota.
    */
   shareRating?: { path: string; rating: string } | null;
+  /**
+   * Fase 8.5, F1 (bandera `SALA_FICHA`, la lee la página): la sala de
+   * «Sala» arriba del todo, con el único `h1`. El póster de la columna se
+   * queda sin el título encima. Sin ella, la ficha de siempre.
+   */
+  sala?: boolean;
 }
 
 interface DetailTile {
@@ -180,6 +187,7 @@ export async function MediaDetail({
   breadcrumbs = [],
   adaptations,
   shareRating,
+  sala = false,
 }: MediaDetailProps) {
   const t = await getTranslations("media_detail");
   const tMedia = await getTranslations("media");
@@ -243,6 +251,7 @@ export async function MediaDetail({
 
   return (
     <main id="main" className="min-h-screen">
+      {sala && <SalaFichaHero item={item} />}
       <div className="page-grid pt-1 pb-[calc(3.5rem+env(safe-area-inset-bottom))] md:pb-14">
         {breadcrumbs.length > 0 && (
           <nav aria-label={t("breadcrumbLabel")} className="mb-2">
@@ -291,23 +300,29 @@ export async function MediaDetail({
                     src={item.poster}
                     sizes="(max-width: 768px) 90vw, 420px"
                     className="object-cover object-[center_25%] sm:object-center"
-                    priority
+                    // Con la sala, la imagen grande es la de arriba: esta no le quita la precarga.
+                    priority={!sala}
                   />
                 )}
 
-                {/* Scrim inferior — legibilidad del título superpuesto */}
-                <div className="absolute inset-x-0 bottom-0 h-2/3 bg-gradient-to-t from-black/85 via-black/30 to-transparent pointer-events-none" />
+                {/* Con la sala, el título (el único `h1`) está arriba: aquí, solo la portada. */}
+                {!sala && (
+                  <>
+                    {/* Scrim inferior — legibilidad del título superpuesto */}
+                    <div className="absolute inset-x-0 bottom-0 h-2/3 bg-gradient-to-t from-black/85 via-black/30 to-transparent pointer-events-none" />
 
-                <div className="relative z-[1] w-full">
-                  <h1 className="font-display text-2xl sm:text-3xl font-extrabold tracking-tight text-white line-clamp-3">
-                    {item.title}
-                  </h1>
-                  {item.originalTitle && item.originalTitle !== item.title && (
-                    <p className="text-white/70 text-sm mt-1 line-clamp-1">
-                      {item.originalTitle}
-                    </p>
-                  )}
-                </div>
+                    <div className="relative z-[1] w-full">
+                      <h1 className="font-display text-2xl sm:text-3xl font-extrabold tracking-tight text-white line-clamp-3">
+                        {item.title}
+                      </h1>
+                      {item.originalTitle && item.originalTitle !== item.title && (
+                        <p className="text-white/70 text-sm mt-1 line-clamp-1">
+                          {item.originalTitle}
+                        </p>
+                      )}
+                    </div>
+                  </>
+                )}
               </div>
             </div>
 
