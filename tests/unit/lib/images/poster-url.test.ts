@@ -69,9 +69,20 @@ describe("backdropLoader", () => {
     expect(L("https://image.tmdb.org/t/p/w500/abc.jpg", 2000)).toBe("https://image.tmdb.org/t/p/original/abc.jpg");
   });
 
+  it("RAWG: el endpoint de redimensionado con 1280 de tope (nunca la captura original)", () => {
+    const shot = "https://media.rawg.io/media/games/1a2/shot.jpg";
+    expect(B(shot, 384)).toBe("https://media.rawg.io/media/resize/420/-/games/1a2/shot.jpg");
+    expect(B(shot, 1080)).toBe("https://media.rawg.io/media/resize/1280/-/games/1a2/shot.jpg");
+    expect(B(shot, 3840)).toBe("https://media.rawg.io/media/resize/1280/-/games/1a2/shot.jpg");
+    expect(B("https://media.rawg.io/media/resize/640/-/games/1a2/shot.jpg", 3840)).toBe(
+      "https://media.rawg.io/media/resize/1280/-/games/1a2/shot.jpg"
+    );
+    // posterLoader no cambia: por encima de 1280, la original.
+    expect(L(shot, 3840)).toBe("https://media.rawg.io/media/games/1a2/shot.jpg");
+  });
+
   it("otros proveedores: lo mismo que posterLoader", () => {
     for (const s of [
-      "https://media.rawg.io/media/games/1a2/shot.jpg",
       "https://s4.anilist.co/file/anilistcdn/media/anime/cover/large/bx1.jpg",
       "https://covers.openlibrary.org/b/id/42-L.jpg",
       "https://example.org/x.jpg",

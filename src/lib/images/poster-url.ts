@@ -105,8 +105,8 @@ const TMDB_BACKDROP_WIDTHS = [300, 780, 1280] as const;
 
 /**
  * `loader` de `next/image` para la imagen apaisada de la sala (los fondos de
- * TMDB): el ancho nativo más pequeño que cubre el que se pide, con `w1280`
- * como tope. Las demás imágenes (RAWG, pósteres…) van como en `posterLoader`,
+ * TMDB y el arte de RAWG): el ancho nativo más pequeño que cubre el que se
+ * pide, con 1280 como tope. Las demás imágenes van como en `posterLoader`,
  * que no cambia.
  */
 export function backdropLoader({ src, width, quality }: { src: string; width: number; quality?: number }): string {
@@ -121,6 +121,15 @@ export function backdropLoader({ src, width, quality }: { src: string; width: nu
     if (m) {
       const w = pick(TMDB_BACKDROP_WIDTHS, width) ?? TMDB_BACKDROP_WIDTHS[TMDB_BACKDROP_WIDTHS.length - 1];
       return `https://image.tmdb.org/t/p/w${w}${m[1]}`;
+    }
+    return src;
+  }
+  // RAWG: el mismo endpoint de redimensionado, con 1280 de tope (sin él, la captura original, de 1920 px o más).
+  if (url.hostname === "media.rawg.io") {
+    const m = url.pathname.match(/^\/media\/(?:resize\/\d+\/-\/|crop\/\d+\/\d+\/)?(.+)$/);
+    if (m) {
+      const w = pick(RAWG_WIDTHS, width) ?? RAWG_WIDTHS[RAWG_WIDTHS.length - 1];
+      return `https://media.rawg.io/media/resize/${w}/-/${m[1]}`;
     }
     return src;
   }

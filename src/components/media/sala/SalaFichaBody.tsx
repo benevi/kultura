@@ -51,9 +51,19 @@ interface SalaFichaBodyProps {
   creditsLabel: string;
   credits: SalaFichaCredit[];
   breadcrumbs?: SalaFichaCrumbs | null;
+  /**
+   * La franja sigue el tema de la sala, no el de la página (decisión de
+   * Víctor, F2a): en libro, manga, cómic y cualquier obra sin apaisada, la
+   * sala es un campo `band` en oscuro, y la franja va con él en un solo bloque,
+   * separada por un filete de su tinta. En la sala con imagen, la franja sigue
+   * el tema de la página.
+   */
+  bandWithStage?: boolean;
 }
 
 const SYNOPSIS_ID = "sala-ficha-synopsis";
+const FACTS_ID = "sala-ficha-facts";
+const CREDITS_ID = "sala-ficha-credits";
 
 function SalaFichaBreadcrumbs({ label, items, current }: SalaFichaCrumbs) {
   return (
@@ -75,7 +85,7 @@ function SalaFichaBreadcrumbs({ label, items, current }: SalaFichaCrumbs) {
           </li>
         ))}
         <li className="inline-flex min-h-sala-target min-w-0 items-center">
-          <span aria-current="page" className="line-clamp-1 text-sala-ink">
+          <span aria-current="page" className="line-clamp-2 text-sala-ink">
             {current}
           </span>
         </li>
@@ -92,21 +102,35 @@ export function SalaFichaBody({
   creditsLabel,
   credits,
   breadcrumbs,
+  bandWithStage = false,
 }: SalaFichaBodyProps) {
   const hasBody = Boolean(synopsis) || credits.length > 0 || Boolean(breadcrumbs);
   return (
     <>
       {facts.length > 0 && (
         <section
-          aria-label={factsLabel}
+          aria-labelledby={FACTS_ID}
           data-sala-ficha-band=""
+          // El mismo tema que la sala: un solo bloque de color con ella.
+          data-theme={bandWithStage ? "dark" : undefined}
           className={cn(
-            "bg-sala-band text-sala-band-ink px-sala-margin py-8 sm:py-10",
+            "bg-sala-band text-sala-band-ink px-sala-margin",
+            bandWithStage ? "pb-8 sm:pb-10" : "py-8 sm:py-10",
             // Cuando llega la paleta, la franja cambia de color sin salto.
             "transition-colors duration-sala-slow ease-sala motion-reduce:transition-none"
           )}
         >
-          <dl className="flex flex-wrap gap-x-10 gap-y-5">
+          <h2 id={FACTS_ID} className="sr-only">
+            {factsLabel}
+          </h2>
+          {/* Con la sala del mismo color, un filete de la tinta de la franja (≥ 4,5:1)
+              marca dónde acaba el título y empiezan los datos. */}
+          <dl
+            className={cn(
+              "flex flex-wrap gap-x-10 gap-y-5",
+              bandWithStage && "border-t-2 border-sala-band-ink pt-6 sm:pt-8"
+            )}
+          >
             {facts.map(({ key, label, srLabel, value, hint }) => (
               <div key={key} data-fact={key} className="min-w-0 max-w-full">
                 <dt className="sala-type-small">
@@ -143,13 +167,16 @@ export function SalaFichaBody({
                 </section>
               )}
               {credits.length > 0 && (
-                <aside
-                  aria-label={creditsLabel}
+                <section
+                  aria-labelledby={CREDITS_ID}
                   className={cn(
                     "min-w-0 self-start bg-sala-panel p-6",
                     synopsis ? "lg:col-span-4 lg:col-start-9" : "lg:col-span-5"
                   )}
                 >
+                  <h2 id={CREDITS_ID} className="sala-type-small mb-4 text-sala-ink">
+                    {creditsLabel}
+                  </h2>
                   <dl className="grid gap-4">
                     {credits.map(({ key, label, value }) => (
                       <div key={key}>
@@ -158,7 +185,7 @@ export function SalaFichaBody({
                       </div>
                     ))}
                   </dl>
-                </aside>
+                </section>
               )}
             </div>
           )}

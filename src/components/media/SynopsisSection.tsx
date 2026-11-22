@@ -38,8 +38,10 @@ export function SynopsisSection({ text, lang, variant }: Props) {
   const t = useTranslations('media_detail')
   const [expanded, setExpanded] = useState(false)
   const textId = useId()
-  const isLong = text.length > CHAR_LIMIT
-  const displayed = isLong && !expanded ? text.slice(0, CHAR_LIMIT) + '…' : text
+  // Por puntos de código: el corte nunca parte un carácter de fuera del BMP (emoji, CJK ampliado).
+  const chars = Array.from(text)
+  const isLong = chars.length > CHAR_LIMIT
+  const displayed = isLong && !expanded ? chars.slice(0, CHAR_LIMIT).join('') + '…' : text
   const c = variant === 'sala' ? SALA_CLASSES : CLASSES
 
   return (

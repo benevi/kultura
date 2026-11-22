@@ -5,7 +5,7 @@
 
 import { describe, expect, it } from "vitest";
 import { originalTitleOf, scriptLang } from "@/lib/media/original-title";
-import { salaFichaLayout } from "@/components/media/sala/SalaFichaHero";
+import { salaFichaColumnPoster, salaFichaLayout } from "@/components/media/sala/SalaFichaHero";
 import { paletteReadable } from "@/components/media/sala/SalaFichaImage";
 import type { MediaItem } from "@/types/media";
 
@@ -28,6 +28,33 @@ describe("salaFichaLayout", () => {
   it("sin apaisada: como un libro; sin ninguna imagen: el campo de color", () => {
     expect(salaFichaLayout(item({ type: "anime", poster: "p" }))).toBe("piece");
     expect(salaFichaLayout(item({ type: "movie" }))).toBe("empty");
+  });
+});
+
+describe("salaFichaColumnPoster (F2a)", () => {
+  it("película, serie y anime con apaisada: el póster vertical es otra imagen y se queda", () => {
+    for (const type of ["movie", "tv", "anime"] as const) {
+      expect(salaFichaColumnPoster(item({ type, backdrop: "b", poster: "p" }))).toBe(true);
+    }
+  });
+  it("película o serie sin apaisada: la sala ya es la portada (pieza), no se repite", () => {
+    for (const type of ["movie", "tv", "anime"] as const) {
+      expect(salaFichaLayout(item({ type, poster: "p" }))).toBe("piece");
+      expect(salaFichaColumnPoster(item({ type, poster: "p" }))).toBe(false);
+    }
+  });
+  it("libro, manga y cómic: tampoco, aunque traigan apaisada", () => {
+    for (const type of ["book", "manga", "comic"] as const) {
+      expect(salaFichaColumnPoster(item({ type, backdrop: "b", poster: "p" }))).toBe(false);
+    }
+  });
+  it("juegos: la imagen de RAWG es la sala; con apaisada propia distinta, el póster sí", () => {
+    expect(salaFichaColumnPoster(item({ type: "game", poster: "p" }))).toBe(false);
+    expect(salaFichaColumnPoster(item({ type: "game", backdrop: "b", poster: "p" }))).toBe(true);
+  });
+  it("sin póster: nada en la columna (ni el degradado)", () => {
+    expect(salaFichaColumnPoster(item({ type: "movie", backdrop: "b" }))).toBe(false);
+    expect(salaFichaColumnPoster(item({ type: "movie" }))).toBe(false);
   });
 });
 

@@ -40,7 +40,7 @@ import { AddToListButton } from "@/components/social/AddToListButton";
 import { ReportButton } from "@/components/social/ReportButton";
 import { SalaFicha } from "./sala/SalaFicha";
 import { SalaFichaBody, type SalaFichaFact } from "./sala/SalaFichaBody";
-import { salaFichaColumnPoster } from "./sala/SalaFichaHero";
+import { salaFichaColumnPoster, salaFichaLayout } from "./sala/SalaFichaHero";
 import {
   IconCalendar,
   IconFormat,
@@ -258,7 +258,8 @@ export async function MediaDetail({
   const showPoster = !sala || salaFichaColumnPoster(item);
   const salaFacts: SalaFichaFact[] = sala
     ? [
-        ...tiles.map(({ key, label, value }) => ({ key, label, value })),
+        // En la franja, «Formato» (decisión de Víctor); la ficha de hoy sigue con «Tipo».
+        ...tiles.map(({ key, label, value }) => ({ key, label: key === "type" ? t("format") : label, value })),
         ...ratings.map(({ key, label, srLabel, value, hint }) => ({ key: `rating-${key}`, label, srLabel, value, hint })),
         ...(genres.length > 0 ? [{ key: "genres", label: t("genres"), value: genres.slice(0, 5).join(", ") }] : []),
       ]
@@ -270,6 +271,7 @@ export async function MediaDetail({
         <SalaFicha key={item.id} item={item}>
           <SalaFichaBody
             factsLabel={t("salaFactsLabel")}
+            bandWithStage={salaFichaLayout(item) !== "stage"}
             facts={salaFacts}
             synopsisHeading={t("synopsis")}
             synopsis={

@@ -190,6 +190,12 @@ describe("MediaDetail con sala=true (F2a)", () => {
     const facts = Array.from(band.querySelectorAll("[data-fact]")).map((el) => el.getAttribute("data-fact"));
     expect(facts).toEqual(["year", "type", "duration", "rating-kultura", "rating-provider", "genres"]);
     expect(within(band).getByText("movie")).toBeInTheDocument();
+    // «Formato» en la franja (decisión de Víctor); la ficha de hoy sigue con «Tipo».
+    expect(within(band).getByText("format")).toBeInTheDocument();
+    expect(within(band).queryByText("type")).toBeNull();
+    // Nombrada por un h2 oculto, no por aria-label.
+    expect(band).not.toHaveAttribute("aria-label");
+    expect(within(band).getByRole("heading", { level: 2, name: "salaFactsLabel" })).toHaveClass("sr-only");
     expect(within(band).getByText("8,5/10")).toBeInTheDocument();
     expect(within(band).getByText('providerRatingLabel:{"source":"TMDB"}')).toHaveClass("sr-only");
     expect(within(band).getByText("Comedia, Suspense, Drama")).toBeInTheDocument();
@@ -197,19 +203,35 @@ describe("MediaDetail con sala=true (F2a)", () => {
 
   it("panel: los créditos según el tipo; la sinopsis con los tokens de Sala", async () => {
     render(await sala(movie));
-    const panel = screen.getByRole("complementary", { name: "details" });
+    const panel = screen.getByRole("region", { name: "details" });
     expect(within(panel).getByText("credits.director")).toBeInTheDocument();
     expect(within(panel).getByText("Bong Joon-ho")).toBeInTheDocument();
     expect(screen.getByText(movie.synopsis!)).toHaveClass("sala-type-lead");
     // Sin repetir la ficha de hoy: un solo bloque de sinopsis y de créditos.
     expect(screen.getAllByRole("heading", { name: "synopsis" })).toHaveLength(1);
-    expect(screen.queryByRole("heading", { name: "details" })).toBeNull();
+    // Los créditos llevan su propio h2 (visible), una sola vez.
+    expect(screen.getAllByRole("heading", { level: 2, name: "details" })).toHaveLength(1);
     expect(screen.queryByRole("list", { name: "ratingsLabel" })).toBeNull();
+  });
+
+  it("con imagen apaisada, la franja sigue el tema de la página; sin ella, el de la sala, con un filete", async () => {
+    const { unmount, container } = render(await sala(movie));
+    const stageBand = container.querySelector("[data-sala-ficha-band]")!;
+    expect(stageBand).not.toHaveAttribute("data-theme");
+    expect(stageBand.querySelector("dl")!.className).not.toContain("border-t-2");
+    unmount();
+    for (const item of [book, bare, { ...movie, backdrop: undefined }]) {
+      const r = render(await sala(item));
+      const band = r.container.querySelector("[data-sala-ficha-band]")!;
+      expect(band).toHaveAttribute("data-theme", "dark");
+      expect(band.querySelector("dl")!.className).toContain("border-t-2 border-sala-band-ink");
+      r.unmount();
+    }
   });
 
   it("libro: autoría y editorial; sin la portada repetida en la columna", async () => {
     const { container } = render(await sala(book));
-    const panel = screen.getByRole("complementary", { name: "details" });
+    const panel = screen.getByRole("region", { name: "details" });
     expect(within(panel).getByText("Gabriel García Márquez")).toBeInTheDocument();
     expect(within(panel).getByText("Sudamericana")).toBeInTheDocument();
     expect(container.querySelector("[data-library-stamp]")).toBeNull();
@@ -252,6 +274,7 @@ describe("MediaDetail con sala=true (F2a)", () => {
     expect(navs).toHaveLength(1);
     expect(navs[0].closest(".sala-work")).not.toBeNull();
     expect(navs[0].querySelector('[aria-current="page"]')).toHaveTextContent("Parásitos");
+    expect(navs[0].querySelector('[aria-current="page"]')).toHaveClass("line-clamp-2");
   });
 
   it("sinopsis larga: «leer más» de 48 px con el acento de la obra", async () => {
@@ -261,10 +284,17 @@ describe("MediaDetail con sala=true (F2a)", () => {
     expect(more.className).toContain("text-sala-accent");
   });
 
+  it("el corte de la sinopsis no parte caracteres de fuera del BMP", async () => {
+    // 279 letras y un emoji (dos unidades UTF-16) en la posición 280, y más texto detrás.
+    const text = "a".repeat(279) + "😀" + "b".repeat(40);
+    render(await sala({ ...movie, synopsis: text }));
+    expect(screen.getByText("a".repeat(279) + "😀…")).toBeInTheDocument();
+  });
+
   it("sin sinopsis ni créditos ni miga: solo la franja", async () => {
     const { container } = render(await sala(bare, { breadcrumbs: [] }));
     expect(screen.queryByRole("heading", { name: "synopsis" })).toBeNull();
-    expect(screen.queryByRole("complementary")).toBeNull();
+    expect(screen.queryByRole("region", { name: "details" })).toBeNull();
     expect(container.querySelector("[data-sala-ficha-band]")).not.toBeNull();
   });
 });
