@@ -63,7 +63,7 @@ const DIALOGS: DialogCase[] = [
   {
     name: "ConfirmModal (quitar de la biblioteca)",
     path: "/es/media/movie/603",
-    opener: "Eliminar",
+    opener: es.library.removeConfirm,
     title: "¿Quitar de tu biblioteca?",
     role: "alertdialog",
   },
