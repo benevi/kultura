@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, type MouseEvent } from 'react'
+import type { MouseEvent } from 'react'
 import { useTranslations } from 'next-intl'
 import { Link, usePathname } from '@/i18n/navigation'
 import { cn } from '@/lib/utils/index'
@@ -18,19 +18,12 @@ function prefersReducedMotion(): boolean {
  * subpágina (`/lists/abc`) vuelve a la raíz de la pestaña.
  *
  * Mientras está, los avisos de «Sala» (`SalaToastProvider`) suben por encima
- * de ella en móvil: les deja su alto en `--sala-toast-clear`.
+ * de ella en móvil: `data-bottom-nav` activa `--sala-toast-clear` en
+ * globals.css (solo CSS, sin JS en todas las páginas).
  */
 export function BottomNav({ username }: { username: string }) {
   const t = useTranslations('nav')
   const pathname = usePathname()
-
-  useEffect(() => {
-    const root = document.documentElement
-    root.style.setProperty('--sala-toast-clear', '4rem')
-    return () => {
-      root.style.removeProperty('--sala-toast-clear')
-    }
-  }, [])
 
   function handleClick(e: MouseEvent<HTMLAnchorElement>, href: string) {
     if (pathname !== href) return
@@ -40,6 +33,7 @@ export function BottomNav({ username }: { username: string }) {
 
   return (
     <nav
+      data-bottom-nav
       aria-label={t('primaryNav')}
       className="md:hidden fixed bottom-0 inset-x-0 z-40 bg-surface-default border-t border-surface-border pb-[env(safe-area-inset-bottom)]"
     >
