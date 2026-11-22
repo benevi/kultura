@@ -34,7 +34,6 @@ import {
   serializeJsonLd,
 } from "@/lib/media/seo";
 import { isBestFormat } from "@/lib/best/best-of";
-import { AdaptationsSection } from "@/components/media/AdaptationsSection";
 import { formatShareRating, ratingSharePath } from "@/lib/share/rating-share";
 import { readRatingScale } from "@/lib/library/scale";
 import type { LibraryEntry } from "@/types/library";
@@ -218,12 +217,9 @@ export default async function MediaDetailPage({ params }: Props) {
         matchScore={matchScores.get(item.id)}
         shareRating={shareRatingFor(user, profile?.username, initialEntry, item, locale)}
         sala={sala}
-        adaptations={
-          // F-29: Wikidata (o su caché) llega en streaming; la ficha no la espera.
-          <React.Suspense fallback={null}>
-            <AdaptationsSection item={item} locale={locale} userId={user?.id ?? null} supabase={supabase} />
-          </React.Suspense>
-        }
+        // Sin «También existe como…» (F-29): Víctor no quiere que se vea
+        // (22-11-2026). AdaptationsSection queda en el código, sin usar, y
+        // ya no se consulta Wikidata desde la ficha.
       />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: serializeJsonLd(jsonLd) }} />
     </>

@@ -247,10 +247,9 @@ describe("página de la ficha", () => {
     ]);
   });
 
-  it("F-29: 'También existe como…' va como hueco en streaming, con o sin sesión", async () => {
+  it("F-29: la ficha ya no enseña 'También existe como…' (Víctor, 22-11-2026)", async () => {
     render(await MediaDetailPage(params()));
-    const slot = mocks.mediaDetailProps.current?.adaptations as React.ReactElement<{ children: React.ReactElement<Record<string, unknown>> }>;
-    expect(slot.props.children.props).toMatchObject({ item: { id: "movie_550" }, locale: "es", userId: null, supabase: null });
+    expect(mocks.mediaDetailProps.current?.adaptations).toBeUndefined();
   });
 
   it("F-29: 'Compartir mi nota' solo con nota propia, con enlace firmado y en su escala", async () => {
