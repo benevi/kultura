@@ -38,7 +38,9 @@ import { LibraryAction } from "@/components/library/LibraryAction";
 import { RecommendButton } from "@/components/social/RecommendButton";
 import { AddToListButton } from "@/components/social/AddToListButton";
 import { ReportButton } from "@/components/social/ReportButton";
-import { SalaFichaHero } from "./sala/SalaFichaHero";
+import { SalaFicha } from "./sala/SalaFicha";
+import { SalaFichaBody, type SalaFichaFact } from "./sala/SalaFichaBody";
+import { salaFichaColumnPoster } from "./sala/SalaFichaHero";
 import {
   IconCalendar,
   IconFormat,
@@ -96,9 +98,11 @@ interface MediaDetailProps {
    */
   shareRating?: { path: string; rating: string } | null;
   /**
-   * Fase 8.5, F1 (bandera `SALA_FICHA`, la lee la página): la sala de
-   * «Sala» arriba del todo, con el único `h1`. El póster de la columna se
-   * queda sin el título encima. Sin ella, la ficha de siempre.
+   * Fase 8.5 (bandera `SALA_FICHA`, la lee la página): la sala de «Sala»
+   * arriba del todo, con el único `h1` (F1), y debajo la franja de datos y la
+   * ficha con sinopsis y créditos (F2a). Lo demás (acciones, «Dónde ver»,
+   * tráiler, adaptaciones, Steam) sigue como hoy, debajo. Sin ella, la ficha
+   * de siempre, sin un solo cambio.
    */
   sala?: boolean;
 }
@@ -249,11 +253,63 @@ export async function MediaDetail({
   const selfPath = mediaPath(locale, item.type, item.externalId);
   const next = encodeURIComponent(selfPath);
 
+  // ── Con «Sala» (F2a): franja, sinopsis y créditos van arriba, en la sala ──
+  // El póster de la columna solo queda si es otra imagen que la de la sala.
+  const showPoster = !sala || salaFichaColumnPoster(item);
+  const salaFacts: SalaFichaFact[] = sala
+    ? [
+        ...tiles.map(({ key, label, value }) => ({ key, label, value })),
+        ...ratings.map(({ key, label, srLabel, value, hint }) => ({ key: `rating-${key}`, label, srLabel, value, hint })),
+        ...(genres.length > 0 ? [{ key: "genres", label: t("genres"), value: genres.slice(0, 5).join(", ") }] : []),
+      ]
+    : [];
+
   return (
     <main id="main" className="min-h-screen">
-      {sala && <SalaFichaHero item={item} />}
-      <div className="page-grid pt-1 pb-[calc(3.5rem+env(safe-area-inset-bottom))] md:pb-14">
-        {breadcrumbs.length > 0 && (
+      {sala && (
+        <SalaFicha key={item.id} item={item}>
+          <SalaFichaBody
+            factsLabel={t("salaFactsLabel")}
+            facts={salaFacts}
+            synopsisHeading={t("synopsis")}
+            synopsis={
+              item.synopsis ? (
+                <Suspense
+                  fallback={
+                    <SynopsisSection
+                      text={item.synopsis}
+                      lang={synopsisLang(item.synopsis, locale)}
+                      variant="sala"
+                    />
+                  }
+                >
+                  <TranslatedSynopsis
+                    text={item.synopsis}
+                    mediaId={item.id}
+                    cacheOnly={!isAuthenticated}
+                    variant="sala"
+                  />
+                </Suspense>
+              ) : null
+            }
+            creditsLabel={t("details")}
+            credits={credits.map(({ key, value }) => ({ key, label: t(`credits.${key}`), value }))}
+            breadcrumbs={
+              breadcrumbs.length > 0
+                ? { label: t("breadcrumbLabel"), items: breadcrumbs, current: item.title }
+                : null
+            }
+          />
+        </SalaFicha>
+      )}
+      <div
+        className={
+          sala
+            ? "page-grid pt-10 pb-[calc(3.5rem+env(safe-area-inset-bottom))] md:pb-14"
+            : "page-grid pt-1 pb-[calc(3.5rem+env(safe-area-inset-bottom))] md:pb-14"
+        }
+      >
+        {!sala && breadcrumbs.length > 0 && (
           <nav aria-label={t("breadcrumbLabel")} className="mb-2">
             <ol className="flex flex-wrap items-center gap-x-1.5 text-xs text-text-tertiary">
               {breadcrumbs.map((c) => (
@@ -278,58 +334,60 @@ export async function MediaDetail({
           <div className="w-full md:w-[420px] flex-shrink-0">
             {/* `data-library-stamp`: aquí cuelga el sello «Visto» de
                 `LibraryAction` al marcarlo como completado (DIS-14). */}
-            <div className="relative" data-library-stamp="">
-              <div
-                className="relative w-full h-[260px] sm:h-auto sm:aspect-[3/4] rounded-bento-xl overflow-hidden flex items-end p-6 md:p-8 shadow-hard-sm md:shadow-hard"
-              >
-                {/* Gradiente SIEMPRE detrás (E-CARD-PORTADA-404): con
-                    `poster ? imagen : gradiente`, una portada que da 404
-                    dejaba la ficha con un hueco del color de fondo. */}
+            {showPoster && (
+              <div className="relative" data-library-stamp="">
                 <div
-                  className="absolute inset-0 flex items-center justify-center"
-                  style={{ background: posterGradientFeature(item.id) }}
+                  className="relative w-full h-[260px] sm:h-auto sm:aspect-[3/4] rounded-bento-xl overflow-hidden flex items-end p-6 md:p-8 shadow-hard-sm md:shadow-hard"
                 >
-                  {!item.poster && (
-                    <span aria-hidden="true" className="text-white/90 font-display font-extrabold text-3xl">
-                      {item.title.slice(0, 2).toUpperCase()}
-                    </span>
+                  {/* Gradiente SIEMPRE detrás (E-CARD-PORTADA-404): con
+                      `poster ? imagen : gradiente`, una portada que da 404
+                      dejaba la ficha con un hueco del color de fondo. */}
+                  <div
+                    className="absolute inset-0 flex items-center justify-center"
+                    style={{ background: posterGradientFeature(item.id) }}
+                  >
+                    {!item.poster && (
+                      <span aria-hidden="true" className="text-white/90 font-display font-extrabold text-3xl">
+                        {item.title.slice(0, 2).toUpperCase()}
+                      </span>
+                    )}
+                  </div>
+                  {item.poster && (
+                    <PosterImage
+                      src={item.poster}
+                      sizes="(max-width: 768px) 90vw, 420px"
+                      className="object-cover object-[center_25%] sm:object-center"
+                      // Con la sala, la imagen grande es la de arriba: esta no le quita la precarga.
+                      priority={!sala}
+                    />
+                  )}
+
+                  {/* Con la sala, el título (el único `h1`) está arriba: aquí, solo la portada. */}
+                  {!sala && (
+                    <>
+                      {/* Scrim inferior — legibilidad del título superpuesto */}
+                      <div className="absolute inset-x-0 bottom-0 h-2/3 bg-gradient-to-t from-black/85 via-black/30 to-transparent pointer-events-none" />
+
+                      <div className="relative z-[1] w-full">
+                        <h1 className="font-display text-2xl sm:text-3xl font-extrabold tracking-tight text-white line-clamp-3">
+                          {item.title}
+                        </h1>
+                        {item.originalTitle && item.originalTitle !== item.title && (
+                          <p className="text-white/70 text-sm mt-1 line-clamp-1">
+                            {item.originalTitle}
+                          </p>
+                        )}
+                      </div>
+                    </>
                   )}
                 </div>
-                {item.poster && (
-                  <PosterImage
-                    src={item.poster}
-                    sizes="(max-width: 768px) 90vw, 420px"
-                    className="object-cover object-[center_25%] sm:object-center"
-                    // Con la sala, la imagen grande es la de arriba: esta no le quita la precarga.
-                    priority={!sala}
-                  />
-                )}
-
-                {/* Con la sala, el título (el único `h1`) está arriba: aquí, solo la portada. */}
-                {!sala && (
-                  <>
-                    {/* Scrim inferior — legibilidad del título superpuesto */}
-                    <div className="absolute inset-x-0 bottom-0 h-2/3 bg-gradient-to-t from-black/85 via-black/30 to-transparent pointer-events-none" />
-
-                    <div className="relative z-[1] w-full">
-                      <h1 className="font-display text-2xl sm:text-3xl font-extrabold tracking-tight text-white line-clamp-3">
-                        {item.title}
-                      </h1>
-                      {item.originalTitle && item.originalTitle !== item.title && (
-                        <p className="text-white/70 text-sm mt-1 line-clamp-1">
-                          {item.originalTitle}
-                        </p>
-                      )}
-                    </div>
-                  </>
-                )}
               </div>
-            </div>
+            )}
 
             {/* Chips: año / tipo / duración o episodios (chip inactivo).
                 La etiqueta va como texto para lector (un `aria-label` en un
                 <span> sin rol no se anuncia). */}
-            {tiles.length > 0 && (
+            {!sala && tiles.length > 0 && (
               <ul className="flex flex-wrap gap-2 mt-4">
                 {tiles.map(({ key, icon: Icon, label, value, hint }) => (
                   <li
@@ -346,7 +404,7 @@ export async function MediaDetail({
             )}
 
             {/* Notas: KULTURA (1-5) y proveedor (0-10), con su etiqueta visible. */}
-            {ratings.length > 0 && (
+            {!sala && ratings.length > 0 && (
               <ul aria-label={t("ratingsLabel")} className="flex flex-wrap gap-2 mt-2">
                 {ratings.map(({ key, label, srLabel, value, hint }) => (
                   <li
@@ -374,7 +432,7 @@ export async function MediaDetail({
             )}
 
             {/* Géneros — chip "outline" */}
-            {genres.length > 0 && (
+            {!sala && genres.length > 0 && (
               <ul aria-label={t("genres")} className="flex flex-wrap gap-2 mt-2.5">
                 {genres.slice(0, 5).map((g) => (
                   <li
@@ -388,7 +446,7 @@ export async function MediaDetail({
             )}
 
             {/* CTAs — primario "+ Añadir a mi biblioteca" / secundarios */}
-            <div className="flex flex-col gap-2.5 mt-6">
+            <div className={sala && !showPoster ? "flex flex-col gap-2.5" : "flex flex-col gap-2.5 mt-6"}>
               {isAuthenticated ? (
                 <>
                   <LibraryAction
@@ -457,7 +515,7 @@ export async function MediaDetail({
             )}
 
             {/* Sinopsis */}
-            {item.synopsis && (
+            {!sala && item.synopsis && (
               <section>
                 <h2 className={sectionTitle}>{t("synopsis")}</h2>
                 {/* E-SINOPSIS-I18N: AniList, RAWG y ComicVine solo publican
@@ -478,7 +536,7 @@ export async function MediaDetail({
             )}
 
             {/* Ficha técnica */}
-            {credits.length > 0 && (
+            {!sala && credits.length > 0 && (
               <section>
                 <h2 className={sectionTitle}>{t("details")}</h2>
                 <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-2 text-sm">
