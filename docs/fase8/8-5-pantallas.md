@@ -19,7 +19,7 @@ Una por pantalla, leída en el servidor como `QUICK_ADD`: `SALA_FICHA`, `SALA_BI
 - F3: tráiler al final (marco 16:9, youtube-nocookie al pulsar).
 - F4: datos: anime-película con formato propio; vertical redimensionada para llenar la sala (tope 1,25×); título original con su idioma.
 - F5: imágenes sin rótulo de TMDB y cruce anime→TMDB por Wikidata (revisión de términos antes, kultura-legal-privacidad).
-- F6: P-Uso y 100 %; se retira la ficha vieja.
+- F6: P-Uso y 100 %; se retira la ficha vieja. Con ella se retira `SalaButtonLazy` (`src/components/sala/`): solo existe para que la ficha con la bandera apagada no descargue `SalaButton` (los botones de la ficha con `skin="sala"` lo importan así); al 100 % se importa `SalaButton` directo.
 - 3D: 3D-1 migración `media_depth` (expandir; «sí» de Víctor para producción) · 3D-2 tarea de Actions que produce los mapas (0 €) · 3D-3 motor WebGL detrás de `SALA_FICHA_3D` + texto de `/privacy` (se enseña antes) · 3D-4 P-Uso.
 
 ## Biblioteca

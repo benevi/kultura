@@ -396,8 +396,18 @@ describe("MediaDetail con sala=true (F2a)", () => {
       "watchType.flatrate",
       "watchType.rent",
     ]);
-    const links = within(watch).getAllByRole("link", { name: /providerLinkLabel/ });
+    const links = within(watch).getAllByRole("link", { name: /salaProviderLinkLabel/ });
     expect(links).toHaveLength(2); // sin repetidos
+    // El nombre accesible lleva la modalidad (la misma plataforma puede estar en dos).
+    expect(links.map((a) => a.getAttribute("aria-label"))).toEqual([
+      'salaProviderLinkLabel:{"name":"Netflix","type":"flatrate"}',
+      'salaProviderLinkLabel:{"name":"Apple TV","type":"rent"}',
+    ]);
+    // Sin recorte del nombre; la flecha va fuera del texto.
+    const name = within(watch).getByText("Apple TV");
+    expect(name.className).not.toContain("line-clamp");
+    expect(name.querySelector("svg")).toBeNull();
+    expect(links[1].querySelector(":scope > svg[aria-hidden='true']")).not.toBeNull();
     for (const a of links) {
       expect(a).toHaveAttribute("target", "_blank");
       expect(a).toHaveAttribute("rel", "noopener noreferrer");
@@ -422,7 +432,7 @@ describe("MediaDetail con sala=true (F2a)", () => {
     expect(row).toHaveAttribute("tabindex", "0");
     expect(row).toHaveAttribute("role", "group");
     expect(row).toHaveAttribute("aria-labelledby", "sala-ficha-watch");
-    expect(within(watch).queryByRole("link", { name: /providerLinkLabel/ })).toBeNull();
+    expect(within(watch).queryByRole("link", { name: /salaProviderLinkLabel/ })).toBeNull();
   });
 
   it("F2c: juego con Steam: precio, idiomas, capturas con nombre y enlace a la tienda, en «Sala»", async () => {
@@ -448,7 +458,10 @@ describe("MediaDetail con sala=true (F2a)", () => {
     expect(steam.closest(".sala-work")).not.toBeNull();
     expect(within(steam).getByText("9,99€")).toBeInTheDocument();
     expect(within(steam).getByText("29,99€").tagName).toBe("S");
-    expect(within(steam).getByText("−67%")).toBeInTheDocument();
+    // El descuento se anuncia como tal, no solo «menos 67 por ciento».
+    const discountLabel = within(steam).getByText("steamDiscount");
+    expect(discountLabel).toHaveClass("sr-only");
+    expect(discountLabel.parentElement!.textContent).toMatch(/^steamDiscount\s*−67%$/);
     expect(within(steam).getByText("93")).toBeInTheDocument();
     expect(within(steam).getByText("Español, English")).toBeInTheDocument();
     const shots = within(steam).getAllByRole("link", { name: /steamScreenshotLink/ });

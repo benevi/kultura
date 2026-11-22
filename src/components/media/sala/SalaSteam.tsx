@@ -41,7 +41,9 @@ export function SalaSteam({ steam }: { steam: SteamInfo }) {
                   </span>
                 )}
                 {steam.discountPercent !== undefined && (
-                  <span className="sala-type-small ml-2 whitespace-nowrap">−{steam.discountPercent}%</span>
+                  <span className="sala-type-small ml-2 whitespace-nowrap">
+                    <span className="sr-only">{t("steamDiscount")} </span>−{steam.discountPercent}%
+                  </span>
                 )}
               </dd>
             </div>

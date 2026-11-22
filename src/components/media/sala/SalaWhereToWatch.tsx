@@ -20,8 +20,10 @@ const HEADING_ID = "sala-ficha-watch";
  *   enlace, la fila misma entra en el orden del teclado para poder moverla
  *   con las flechas. No hay que salir de ella con nada especial.
  * - **Cada enlace dice que abre otra web**: su nombre accesible lo avisa
- *   (`providerLinkLabel`) y una flecha lo marca a la vista.
- * - **El nombre de la plataforma se ve**, no solo su logo.
+ *   (`salaProviderLinkLabel`, con la modalidad: «Apple TV, alquiler») y una
+ *   flecha en la esquina lo marca a la vista.
+ * - **El nombre de la plataforma se ve**, no solo su logo, y entero: se parte
+ *   y la tarjeta crece.
  * - **La cita de JustWatch va siempre** (TMDB la exige, PRO-2): texto y logo
  *   con enlace, sin ocultarse ni encogerse.
  *
@@ -81,22 +83,23 @@ export function SalaWhereToWatch({
                       loading="lazy"
                       className="h-14 w-14 object-contain"
                     />
-                    <span className="sala-type-small line-clamp-2 w-full text-center [overflow-wrap:anywhere]">
-                      {p.name}
-                      {p.href && (
-                        <svg
-                          aria-hidden="true"
-                          viewBox="0 0 12 12"
-                          fill="none"
-                          stroke="currentColor"
-                          strokeWidth="1.75"
-                          strokeLinecap="square"
-                          className="ml-[0.25em] inline-block h-[0.7em] w-[0.7em] align-baseline"
-                        >
-                          <path d="M3 9 9 3M4 3h5v5" />
-                        </svg>
-                      )}
-                    </span>
+                    {/* Sin recorte: un nombre largo se parte y la tarjeta crece
+                        (WCAG 1.4.12). La flecha de «abre otra web» va en la
+                        esquina, fuera del texto, para que no se pierda. */}
+                    <span className="sala-type-small w-full text-center [overflow-wrap:anywhere]">{p.name}</span>
+                    {p.href && (
+                      <svg
+                        aria-hidden="true"
+                        viewBox="0 0 12 12"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="1.75"
+                        strokeLinecap="square"
+                        className="absolute right-0.5 top-0.5 h-2.5 w-2.5"
+                      >
+                        <path d="M3 9 9 3M4 3h5v5" />
+                      </svg>
+                    )}
                   </>
                 );
                 return (
@@ -106,9 +109,9 @@ export function SalaWhereToWatch({
                         href={p.href}
                         target="_blank"
                         rel="noopener noreferrer"
-                        aria-label={t("providerLinkLabel", { name: p.name })}
+                        aria-label={t("salaProviderLinkLabel", { name: p.name, type: group.type })}
                         className={cn(
-                          "flex min-h-sala-target flex-col items-center gap-2 p-1 text-sala-ink",
+                          "relative flex min-h-sala-target flex-col items-center gap-2 p-1 text-sala-ink",
                           "transition-colors duration-sala-fast ease-sala motion-reduce:transition-none",
                           "[&>span]:sala-hover:underline [&>span]:sala-hover:decoration-2 [&>span]:sala-hover:underline-offset-4",
                           "sala-focused:sala-focus"

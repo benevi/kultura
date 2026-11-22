@@ -72,11 +72,15 @@ test.describe("retícula única (DIS-8)", () => {
     test(`logo, h1 y contenido alineados en ${route.path}`, async ({ page, context, baseURL }) => {
       if (route.session) await signIn(context, baseURL!);
       await open(page, route.path);
+      // Ficha con «Sala» (`SALA_FICHA=1`): el rótulo (h1) va a sangre, en la
+      // sala, como la portada, y el cuerpo usa el margen de «Sala»; lo que
+      // sigue la retícula es lo de debajo (el tráiler, hasta F3).
+      const sala = (await page.locator("[data-sala-ficha]").count()) > 0;
       const e = await edges(page, route.content);
       expect(e.logo, "sin logo en la cabecera").not.toBeNull();
       expect(e.h1, "sin h1 visible").not.toBeNull();
       expect(e.content, "sin bloque de contenido").not.toBeNull();
-      const xs = [e.logo!, e.h1!, e.content!];
+      const xs = sala ? [e.logo!, e.content!] : [e.logo!, e.h1!, e.content!];
       expect(Math.max(...xs) - Math.min(...xs), `bordes ${JSON.stringify(e)}`).toBeLessThanOrEqual(4);
     });
   }

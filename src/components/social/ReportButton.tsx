@@ -242,7 +242,7 @@ export function ReportButton({ targetType, targetId, variant = 'button', context
       <SalaButton
         ref={triggerRef}
         variant="quiet"
-        icon={<FlagIcon />}
+        icon={<FlagIcon className="h-5 w-5" />}
         aria-expanded={status !== 'idle'}
         aria-controls={status !== 'idle' ? panelId : undefined}
         aria-label={contextLabel ? triggerLabel : undefined}

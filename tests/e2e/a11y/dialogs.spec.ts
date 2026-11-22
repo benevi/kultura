@@ -100,7 +100,10 @@ for (const c of DIALOGS) {
       expect(await focusIsInside(page, dialog), `Mayús+Tab ${i + 1} sale del diálogo`).toBe(true);
     }
 
-    await expectNoBlockingViolations(page, `${c.name} abierto`, '[data-testid="modal-panel"]');
+    // El panel del diálogo: `Modal` de hoy o `SalaDialog` (ficha con
+    // `SALA_FICHA=1`, mismos casos y mismas exigencias).
+    const panel = (await page.locator("[data-sala-dialog]").count()) > 0 ? "[data-sala-dialog]" : '[data-testid="modal-panel"]';
+    await expectNoBlockingViolations(page, `${c.name} abierto`, panel);
 
     if (c.sheet && testInfo.project.name === "movil-390") {
       const box = await dialog.boundingBox();
@@ -168,6 +171,26 @@ test("error al añadir a una lista: el aviso se ve y se anuncia con el diálogo 
 test("StarRating: flechas cambian la nota y el foco se ve (ACC-8)", async ({ page }) => {
   await open(page, "/es/media/movie/550");
   await page.getByRole("button", { name: "Añadir a biblioteca", exact: true }).click();
+  // Con «Sala» (`SALA_FICHA=1`) la nota es un deslizador nativo
+  // (`SalaRatingInput`): una parada, las flechas cambian la nota y el foco se ve.
+  const slider = page.getByRole("slider", { name: "Puntuación" });
+  await expect(slider.or(page.getByRole("radiogroup", { name: "Puntuación" }))).toBeVisible();
+  if (await slider.isVisible()) {
+    await slider.focus();
+    await page.keyboard.press("ArrowRight");
+    await page.keyboard.press("ArrowRight");
+    await expect(slider).toBeFocused();
+    const before = await slider.inputValue();
+    await page.keyboard.press("ArrowRight");
+    await expect.poll(() => slider.inputValue().then(Number)).toBeGreaterThan(Number(before));
+    await expect(slider).toHaveAttribute("aria-valuetext", /\S/);
+    const ring = await slider.evaluate((el) => {
+      const s = getComputedStyle(el);
+      return s.outlineStyle !== "none" && parseFloat(s.outlineWidth) >= 2;
+    });
+    expect(ring, "anillo de foco visible").toBe(true);
+    return;
+  }
   const group = page.getByRole("radiogroup", { name: "Puntuación" });
   await expect(group).toBeVisible();
   // Una sola parada de Tab en el grupo.

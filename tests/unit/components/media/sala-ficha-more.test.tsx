@@ -6,7 +6,7 @@
 // ============================================================
 
 import { render, screen, fireEvent, act, within } from "@testing-library/react";
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { describe, it, expect, vi, beforeEach, beforeAll, afterAll } from "vitest";
 import { readFileSync } from "node:fs";
 import type { MediaItem } from "@/types/media";
 
@@ -131,20 +131,60 @@ describe("F2c: disparadores con skin=sala", () => {
 });
 
 describe("F2c: la fila de «Dónde ver»", () => {
-  it("enseña entero lo que tiene el foco, sin mover la página en vertical", () => {
-    const spy = vi.fn();
-    Element.prototype.scrollIntoView = spy;
-    render(
-      <SalaScrollRow data-testid="row">
-        <a href="https://example.com">Uno</a>
-      </SalaScrollRow>
-    );
-    act(() => screen.getByRole("link", { name: "Uno" }).focus());
-    expect(spy).toHaveBeenCalledWith(expect.objectContaining({ block: "nearest", inline: "nearest" }));
-    spy.mockClear();
-    // La fila misma (cuando es foco) no se mueve sola.
-    screen.getByTestId("row").setAttribute("tabindex", "0");
-    act(() => screen.getByTestId("row").focus());
-    expect(spy).not.toHaveBeenCalled();
+  // jsdom no trae `scrollIntoView`: se pone uno vacío para poder espiarlo y se
+  // quita al acabar, para no dejarlo a otros archivos.
+  const hadScroll = "scrollIntoView" in Element.prototype;
+  beforeAll(() => {
+    if (!hadScroll) Element.prototype.scrollIntoView = () => {};
+  });
+  afterAll(() => {
+    if (!hadScroll) delete (Element.prototype as Partial<Element>).scrollIntoView;
+  });
+
+  // jsdom no sabe si el foco es de teclado: se decide en cada test.
+  function mockFocusVisible(value: boolean) {
+    const original = Element.prototype.matches;
+    return vi.spyOn(Element.prototype, "matches").mockImplementation(function (this: Element, selector: string) {
+      return selector === ":focus-visible" ? value : original.call(this, selector);
+    });
+  }
+
+  it("con el foco de teclado, enseña entero lo que tiene el foco", () => {
+    const scroll = vi.spyOn(Element.prototype, "scrollIntoView").mockImplementation(() => {});
+    const matches = mockFocusVisible(true);
+    try {
+      render(
+        <SalaScrollRow data-testid="row">
+          <a href="https://example.com">Uno</a>
+        </SalaScrollRow>
+      );
+      act(() => screen.getByRole("link", { name: "Uno" }).focus());
+      expect(scroll).toHaveBeenCalledWith(expect.objectContaining({ block: "nearest", inline: "nearest" }));
+      scroll.mockClear();
+      // La fila misma (cuando es foco) no se mueve sola.
+      screen.getByTestId("row").setAttribute("tabindex", "0");
+      act(() => screen.getByTestId("row").focus());
+      expect(scroll).not.toHaveBeenCalled();
+    } finally {
+      scroll.mockRestore();
+      matches.mockRestore();
+    }
+  });
+
+  it("un foco que no es de teclado (clic, toque) no mueve la fila", () => {
+    const scroll = vi.spyOn(Element.prototype, "scrollIntoView").mockImplementation(() => {});
+    const matches = mockFocusVisible(false);
+    try {
+      render(
+        <SalaScrollRow>
+          <a href="https://example.com">Uno</a>
+        </SalaScrollRow>
+      );
+      act(() => screen.getByRole("link", { name: "Uno" }).focus());
+      expect(scroll).not.toHaveBeenCalled();
+    } finally {
+      scroll.mockRestore();
+      matches.mockRestore();
+    }
   });
 });
