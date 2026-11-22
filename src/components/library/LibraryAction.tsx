@@ -24,94 +24,25 @@
 // el control de progreso por formato del diálogo.
 // ============================================================
 
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { useTranslations } from 'next-intl'
 import { Link } from '@/i18n/navigation'
 import { KButton } from '@/components/ui/KButton'
-import { LibraryStatusModal, type LibraryStatusSaveData } from '@/components/library/LibraryStatusModal'
+import { LibraryStatusModal } from '@/components/library/LibraryStatusModal'
 import { ConfirmModal } from '@/components/ui/ConfirmModal'
 import { useToastContext } from '@/components/ui/ToastProvider'
-import {
-  removeFromLibrary,
-  saveLibraryEntry,
-  fetchDiaryConfig,
-  deleteDiaryLog,
-  fetchProgressConfig,
-  type ProgressConfig,
-} from '@/lib/library/actions'
-import type { LibraryPayloadWithProgress } from '@/lib/library/progress'
-import { playStamp, prefersReducedMotion } from '@/lib/library/motion'
+import { useLibraryAction, type LibraryMediaCache } from '@/components/library/useLibraryAction'
+import { playStamp } from '@/lib/library/motion'
 import { cn } from '@/lib/utils/index'
-import { createLogger } from '@/lib/logger'
-import { ApiError } from '@/lib/api/client'
-import type { DiaryConfig, LibraryEntry, LibraryStatus } from '@/types/library'
-
-const log = createLogger('LibraryAction')
-
-/** Cuánto se queda la pegatina de «Visto» antes de irse. */
-const STAMP_VISIBLE_MS = 1400
-
-/** Escala y diario por título, mientras dure la página (una petición por título). */
-const diaryCache = new Map<string, Promise<DiaryConfig | null>>()
-
-function loadDiary(mediaId: string): Promise<DiaryConfig | null> {
-  let pending = diaryCache.get(mediaId)
-  if (!pending) {
-    pending = fetchDiaryConfig(mediaId).catch((err) => {
-      // Sin la configuración, el diálogo de siempre (estrellas enteras).
-      log.warn('Failed to load diary config', { err })
-      diaryCache.delete(mediaId)
-      return null
-    })
-    diaryCache.set(mediaId, pending)
-  }
-  return pending
-}
-
-/** Progreso y plan del proveedor por título (F-27), igual que el diario. */
-const progressCache = new Map<string, Promise<ProgressConfig | null>>()
-
-function loadProgress(mediaId: string): Promise<ProgressConfig | null> {
-  let pending = progressCache.get(mediaId)
-  if (!pending) {
-    pending = Promise.resolve()
-      .then(() => fetchProgressConfig(mediaId))
-      .catch((err) => {
-        // Sin la configuración, el progreso de siempre (episodios).
-        log.warn('Failed to load progress config', { err })
-        progressCache.delete(mediaId)
-        return null
-      })
-    progressCache.set(mediaId, pending)
-  }
-  return pending
-}
-
-/** Borrado pendiente mientras dura el aviso con «Deshacer». */
-interface PendingRemoval {
-  entry: LibraryEntry
-  settled: boolean
-}
+import type { LibraryEntry, LibraryStatus } from '@/types/library'
 
 /** Solo para tests. */
-export function __resetDiaryCache() {
-  diaryCache.clear()
-  progressCache.clear()
-}
+export { __resetDiaryCache } from '@/components/library/useLibraryAction'
 
 interface LibraryActionProps {
   mediaId: string
-  mediaCache: {
-    externalId: string
-    type: string
-    title: string
-    poster?: string
-    backdrop?: string
-    year?: number
-    synopsis?: string
-    genres?: string[]
-  }
+  mediaCache: LibraryMediaCache
   initialEntry: LibraryEntry | null
   isAuthenticated: boolean
 }
@@ -133,176 +64,44 @@ export function LibraryAction({
   const t = useTranslations('library')
   const td = useTranslations('diary')
   const tc = useTranslations('common')
-  const { show, showError } = useToastContext()
-
-  const [entry, setEntry] = useState<LibraryEntry | null>(initialEntry)
-  const [modalOpen, setModalOpen] = useState(false)
-  const [confirmRemove, setConfirmRemove] = useState(false)
-  const [loading, setLoading] = useState(false)
-  // ACC-11: los fallos se dicen DENTRO del diálogo que sigue abierto (un
-  // toast quedaría debajo y fuera del árbol accesible mientras dure).
-  const [saveError, setSaveError] = useState<string | null>(null)
-  const [removeError, setRemoveError] = useState<string | null>(null)
-  const [diary, setDiary] = useState<DiaryConfig | null>(null)
-  const [progressConfig, setProgressConfig] = useState<ProgressConfig | null>(null)
-  const [stamp, setStamp] = useState(0)
-  // Al guardar o quitar, el botón que abrió el diálogo desaparece ("Añadir"
-  // pasa a "Actualizar" y al revés): el foco va al que lo sustituye.
-  const addRef = useRef<HTMLButtonElement>(null)
-  const updateRef = useRef<HTMLButtonElement>(null)
-  const stampRef = useRef<HTMLSpanElement>(null)
-  const pendingRef = useRef<PendingRemoval | null>(null)
-  // Tras confirmar, el foco va al «Deshacer» del aviso (el botón que abrió el
-  // diálogo ya no existe); si no hay aviso, a «Añadir».
-  const afterRemoveFocus = {
-    get current(): HTMLElement | null {
-      const actions = document.querySelectorAll<HTMLElement>('[data-toast-action]')
-      return actions[actions.length - 1] ?? addRef.current
-    },
-  }
+  const toast = useToastContext()
+  const {
+    entry,
+    modalOpen,
+    openModal,
+    closeModal,
+    confirmRemove,
+    openConfirmRemove,
+    cancelRemove,
+    loading,
+    saveError,
+    removeError,
+    diary,
+    progressConfig,
+    stamp,
+    prefetch,
+    handleSave,
+    handleDeleteLog,
+    handleRemove,
+    removeMessage,
+    addRef,
+    updateRef,
+    stampRef,
+    afterRemoveFocus,
+  } = useLibraryAction({
+    mediaId,
+    mediaCache,
+    initialEntry,
+    isAuthenticated,
+    toast,
+    undoSelector: '[data-toast-action]',
+    playStamp,
+  })
   // El póster de la ficha, si lo hay: el sello se pinta colgado de él.
   const [posterAnchor, setPosterAnchor] = useState<HTMLElement | null>(null)
   useEffect(() => {
     setPosterAnchor(document.querySelector<HTMLElement>('[data-library-stamp]'))
   }, [])
-
-  function prefetch() {
-    if (!isAuthenticated) return
-    void loadDiary(mediaId).then((config) => {
-      if (config) setDiary(config)
-    })
-    void loadProgress(mediaId).then((config) => {
-      if (config) setProgressConfig(config)
-    })
-  }
-
-  function openModal() {
-    setModalOpen(true)
-    prefetch()
-  }
-
-  // Sello de «Visto»: pegatina en posición absoluta (no ocupa sitio, CLS 0).
-  useEffect(() => {
-    if (stamp === 0) return
-    const el = stampRef.current
-    if (!el || !playStamp(el)) return
-    const timer = window.setTimeout(() => {
-      el.animate?.([{ opacity: 1 }, { opacity: 0 }], { duration: 200, fill: 'forwards' })
-    }, STAMP_VISIBLE_MS)
-    return () => window.clearTimeout(timer)
-  }, [stamp])
-
-  async function handleSave(data: LibraryStatusSaveData) {
-    // Volver a añadirlo mientras sigue el aviso: el borrado pendiente no se hace.
-    if (pendingRef.current) pendingRef.current.settled = true
-    setLoading(true)
-    setSaveError(null)
-    try {
-      const payload: LibraryPayloadWithProgress = {
-        mediaId,
-        status: data.status,
-        // El diálogo sustituye la entrada entera: lo vacío va como `null`
-        // explícito (el POST ya no borra lo que no llega).
-        score: data.score,
-        rating10: data.rating10,
-        ...(data.favorite !== undefined ? { favorite: data.favorite } : {}),
-        watchedAt: data.watchedAt,
-        episodeProgress: data.episodeProgress,
-        ...(data.progress !== undefined ? { progress: data.progress } : {}),
-        ...(data.log ? { log: data.log } : {}),
-        mediaCache,
-      }
-      const result = await saveLibraryEntry(payload)
-      const becameCompleted = result.entry.status === 'completed' && entry?.status !== 'completed'
-      setEntry(result.entry)
-      // El progreso guardado pasa a ser el de partida (y el plan sigue valiendo).
-      progressCache.delete(mediaId)
-      setProgressConfig((prev) =>
-        prev ? { ...prev, progress: (result.entry as { progress?: ProgressConfig['progress'] }).progress ?? null, next: null } : prev
-      )
-      if (result.log) {
-        const added = result.log
-        setDiary((prev) => (prev ? { ...prev, logs: [added, ...prev.logs] } : prev))
-        diaryCache.delete(mediaId)
-      }
-      setModalOpen(false)
-      if (becameCompleted && !prefersReducedMotion()) setStamp((n) => n + 1)
-      if (result.logFailed) showError(td('logFailed'))
-      else show({ message: result.log ? td('savedWithLog') : t('saved'), type: 'success' })
-    } catch (err) {
-      log.error('Failed to save library entry', { err })
-      // ACC-11: antes el fallo solo iba al log y la persona no se enteraba.
-      // El diálogo sigue abierto con sus datos para reintentar.
-      setSaveError(
-        err instanceof ApiError && err.code === 'provider_unavailable'
-          ? t('errors.providerUnavailable')
-          : t('errors.saveFailed')
-      )
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  async function handleDeleteLog(id: string) {
-    await deleteDiaryLog(id)
-    setDiary((prev) => (prev ? { ...prev, logs: prev.logs.filter((l) => l.id !== id) } : prev))
-    diaryCache.delete(mediaId)
-    show({ message: td('deleted', { title: mediaCache.title }), type: 'success' })
-  }
-
-  /** «Deshacer»: el borrado no llega a hacerse; la entrada vuelve tal cual. */
-  function undoRemove(pending: PendingRemoval) {
-    if (pending.settled) return
-    pending.settled = true
-    pendingRef.current = null
-    setEntry(pending.entry)
-    show({ message: t('restored'), type: 'success' })
-  }
-
-  /** El aviso se fue sin «Deshacer» (o se cierra la página): ahora sí se borra. */
-  async function commitRemove(pending: PendingRemoval, keepalive = false) {
-    if (pending.settled) return
-    pending.settled = true
-    if (pendingRef.current === pending) pendingRef.current = null
-    try {
-      await (keepalive ? removeFromLibrary(mediaId, { keepalive: true }) : removeFromLibrary(mediaId))
-      // La FK borra el diario del título con la entrada.
-      setDiary((prev) => (prev ? { ...prev, logs: [] } : prev))
-      diaryCache.delete(mediaId)
-    } catch (err) {
-      log.error('Failed to remove library entry', { err })
-      setEntry(pending.entry)
-      showError(t('errors.removeFailed'))
-    }
-  }
-
-  // Cerrar o dejar la página con un borrado pendiente: se hace ya.
-  useEffect(() => {
-    const flush = () => {
-      if (pendingRef.current) void commitRemove(pendingRef.current, true)
-    }
-    window.addEventListener('pagehide', flush)
-    return () => window.removeEventListener('pagehide', flush)
-  })
-
-  function handleRemove() {
-    if (!entry) return
-    const pending: PendingRemoval = { entry, settled: false }
-    pendingRef.current = pending
-    setRemoveError(null)
-    setEntry(null)
-    setConfirmRemove(false)
-    show({
-      message: t('removed'),
-      type: 'success',
-      action: {
-        label: t('undo'),
-        onAction: () => undoRemove(pending),
-        onExpire: () => void commitRemove(pending),
-        autoFocus: true,
-      },
-    })
-  }
 
   function stampBadge(position: string) {
     return (
@@ -333,7 +132,7 @@ export function LibraryAction({
       current={entry}
       mediaType={mediaCache.type}
       onSave={handleSave}
-      onClose={() => { setModalOpen(false); setSaveError(null) }}
+      onClose={closeModal}
       loading={loading}
       finalFocusRef={entry ? undefined : updateRef}
       error={saveError}
@@ -391,13 +190,13 @@ export function LibraryAction({
         <KButton
           variant="secondary"
           size="sm"
-          onClick={() => { setConfirmRemove(true); prefetch() }}
+          onClick={openConfirmRemove}
           onPointerEnter={prefetch}
           onFocus={prefetch}
           disabled={loading}
           className="text-accent-danger hover:text-accent-danger border-accent-danger/30 hover:border-accent-danger/60"
         >
-          {t('remove')}
+          {t('removeConfirm')}
         </KButton>
       </div>
 
@@ -407,17 +206,13 @@ export function LibraryAction({
       <ConfirmModal
         isOpen={confirmRemove}
         title={t('removeConfirmTitle')}
-        message={
-          diary?.enabled
-            ? td('removeConfirmBody', { title: mediaCache.title })
-            : t('removeConfirmBody', { title: mediaCache.title })
-        }
+        message={removeMessage}
         confirmLabel={t('removeConfirm')}
         cancelLabel={tc('cancel')}
         isDestructive
         loading={loading}
         onConfirm={handleRemove}
-        onCancel={() => { setConfirmRemove(false); setRemoveError(null) }}
+        onCancel={cancelRemove}
         finalFocusRef={afterRemoveFocus}
         error={removeError}
       />

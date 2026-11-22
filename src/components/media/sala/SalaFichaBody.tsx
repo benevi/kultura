@@ -16,8 +16,11 @@ import { cn } from "@/lib/utils/index";
  * Server Component: todo sale en el HTML. Pinta con los tokens `--sala-*`, así
  * que vale con los neutros y con la paleta de la obra (el contenedor
  * `sala-work` que la envuelve), en claro y en oscuro, sin saber cuál toca.
- * Las acciones, «Dónde ver», el tráiler, las adaptaciones y Steam siguen,
- * de momento, en la ficha de hoy (F2b y F2c).
+ * - **Tu biblioteca** (F2b): las acciones de biblioteca, lo primero del
+ *   cuerpo (en móvil, justo debajo de la franja).
+ *
+ * «Dónde ver», el tráiler, las adaptaciones y Steam siguen, de momento, en
+ * la ficha de hoy (F2c).
  */
 export interface SalaFichaFact {
   key: string;
@@ -59,11 +62,15 @@ interface SalaFichaBodyProps {
    * el tema de la página.
    */
   bandWithStage?: boolean;
+  /** Las acciones de biblioteca, ya montadas (F2b), con su encabezado para el lector. */
+  actions?: ReactNode;
+  actionsLabel?: string;
 }
 
 const SYNOPSIS_ID = "sala-ficha-synopsis";
 const FACTS_ID = "sala-ficha-facts";
 const CREDITS_ID = "sala-ficha-credits";
+const ACTIONS_ID = "sala-ficha-library";
 
 function SalaFichaBreadcrumbs({ label, items, current }: SalaFichaCrumbs) {
   return (
@@ -103,8 +110,10 @@ export function SalaFichaBody({
   credits,
   breadcrumbs,
   bandWithStage = false,
+  actions,
+  actionsLabel,
 }: SalaFichaBodyProps) {
-  const hasBody = Boolean(synopsis) || credits.length > 0 || Boolean(breadcrumbs);
+  const hasBody = Boolean(synopsis) || credits.length > 0 || Boolean(breadcrumbs) || Boolean(actions);
   return (
     <>
       {facts.length > 0 && (
@@ -156,6 +165,14 @@ export function SalaFichaBody({
       {hasBody && (
         <div className="px-sala-margin pt-10 pb-14 sm:pt-14">
           {breadcrumbs && <SalaFichaBreadcrumbs {...breadcrumbs} />}
+          {actions && (
+            <section aria-labelledby={ACTIONS_ID} data-sala-ficha-actions="" className="mb-12 pt-2">
+              <h2 id={ACTIONS_ID} className="sr-only">
+                {actionsLabel}
+              </h2>
+              {actions}
+            </section>
+          )}
           {(synopsis || credits.length > 0) && (
             <div className="grid gap-12 lg:grid-cols-12 lg:gap-x-12">
               {synopsis && (

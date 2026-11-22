@@ -160,7 +160,7 @@ describe('LibraryAction', () => {
       />
     )
     expect(screen.getByText('updateEntry')).toBeInTheDocument()
-    expect(screen.getByText('remove')).toBeInTheDocument()
+    expect(screen.getByText('removeConfirm')).toBeInTheDocument()
   })
 
   it('click Eliminar → llama removeFromLibrary y limpia entry', async () => {
@@ -172,7 +172,7 @@ describe('LibraryAction', () => {
         isAuthenticated={true}
       />
     )
-    fireEvent.click(screen.getByText('remove'))
+    fireEvent.click(screen.getByText('removeConfirm'))
     // ACC-11: antes de borrar se confirma (estado, nota y progreso se pierden).
     expect(mockRemoveFromLibrary).not.toHaveBeenCalled()
     expect(screen.getByRole('alertdialog')).toHaveTextContent('removeConfirmBody')
@@ -304,7 +304,7 @@ describe('LibraryAction', () => {
     render(
       <LibraryAction mediaId="movie_550" mediaCache={mediaCache} initialEntry={baseEntry} isAuthenticated={true} />
     )
-    fireEvent.click(screen.getByText('remove'))
+    fireEvent.click(screen.getByText('removeConfirm'))
     fireEvent.click(screen.getByRole('button', { name: 'removeConfirm' }))
     await waitFor(() => expect(mockShow).toHaveBeenCalled())
     const toast = mockShow.mock.calls[0][0] as { action: { onExpire: () => void } }
@@ -333,7 +333,7 @@ describe('LibraryAction', () => {
       render(
         <LibraryAction mediaId="movie_550" mediaCache={mediaCache} initialEntry={entry} isAuthenticated={true} />
       )
-      fireEvent.click(screen.getByText('remove'))
+      fireEvent.click(screen.getByText('removeConfirm'))
       fireEvent.click(screen.getByRole('button', { name: 'removeConfirm' }))
       await waitFor(() => expect(mockShow).toHaveBeenCalled())
       return mockShow.mock.calls[0][0] as Toast

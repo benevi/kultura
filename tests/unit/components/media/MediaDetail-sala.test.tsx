@@ -60,6 +60,13 @@ vi.mock("@/components/media/TrailerEmbed", () => ({
   TrailerEmbed: ({ youtubeKey }: { youtubeKey: string }) => <div data-testid="trailer-embed" data-key={youtubeKey} />,
 }));
 vi.mock("@/components/library/LibraryAction", () => ({ LibraryAction: () => <div data-testid="library-action" /> }));
+// F2b: la biblioteca de Sala llega por next/dynamic (SalaLibraryLazy); aquí, directa.
+vi.mock("@/components/library/sala/SalaLibraryLazy", async () => ({
+  SalaLibraryActionLazy: ({ mediaId, toastLabels }: { mediaId: string; toastLabels: { region: string } }) => (
+    <div data-testid="sala-library-action" data-media={mediaId} data-region={toastLabels.region} />
+  ),
+  SalaLibraryCtaLazy: (await import("@/components/library/sala/SalaLibraryCta")).SalaLibraryCta,
+}));
 vi.mock("@/components/social/RecommendButton", () => ({ RecommendButton: () => <div data-testid="recommend-button" /> }));
 vi.mock("@/components/social/ReportButton", () => ({ ReportButton: () => <div data-testid="report-button" /> }));
 vi.mock("@/components/social/AddToListButton", () => ({ AddToListButton: () => <div data-testid="add-to-list-button" /> }));
@@ -248,15 +255,54 @@ describe("MediaDetail con sala=true (F2a)", () => {
     expect(screen.queryByText("SI")).toBeNull();
   });
 
-  it("película: el póster vertical se queda en la columna (es otra imagen que la apaisada)", async () => {
+  it("película (F2b): sin póster vertical en la columna, como el prototipo", async () => {
     const { container } = render(await sala(movie));
-    expect(container.querySelector('[data-library-stamp] img[src*="poster.jpg"]')).not.toBeNull();
+    expect(container.querySelector("[data-library-stamp]")).toBeNull();
+    expect(container.querySelector('img[src*="poster.jpg"]')).toBeNull();
   });
 
-  it("las acciones, «Dónde ver», tráiler y adaptaciones siguen debajo, como hoy", async () => {
+  it("F2b: con sesión, la biblioteca va en la sala (Sala) y no en la columna de hoy", async () => {
+    const { container } = render(await sala(movie, { isAuthenticated: true }));
+    const region = screen.getByRole("region", { name: "salaLibraryLabel" });
+    expect(region.closest(".sala-work")).not.toBeNull();
+    expect(within(region).getByRole("heading", { level: 2, name: "salaLibraryLabel" })).toHaveClass("sr-only");
+    const action = within(region).getByTestId("sala-library-action");
+    expect(action).toHaveAttribute("data-media", movie.id);
+    expect(action).toHaveAttribute("data-region", "salaToastRegion");
+    expect(screen.queryByTestId("library-action")).toBeNull();
+    // Antes de la sinopsis: en móvil, lo primero debajo de la franja.
+    const synopsis = screen.getByRole("heading", { level: 2, name: "synopsis" });
+    expect(region.compareDocumentPosition(synopsis) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(container.querySelectorAll('a[href*="mode=register"]')).toHaveLength(0);
+  });
+
+  it("F2b: sin sesión, «Añadir a mi biblioteca» y «Entra» van en la sala, una sola vez", async () => {
+    const { container } = render(await sala(book));
+    const region = screen.getByRole("region", { name: "salaLibraryLabel" });
+    const add = within(region).getByRole("link", { name: "ctaAdd" });
+    expect(add.getAttribute("href")).toContain("mode=register");
+    expect(add.className).toContain("min-h-sala-target");
+    expect(within(region).getByRole("link", { name: "ctaLogin" }).className).toContain("min-h-sala-target");
+    expect(within(region).getByText(/ctaHint/)).toBeInTheDocument();
+    expect(container.querySelectorAll('a[href*="mode=register"]')).toHaveLength(1);
+    expect(container.querySelectorAll('a[href*="mode=login"]')).toHaveLength(1);
+    // Denunciar sigue en la ficha de hoy (fuera de F2b).
+    expect(screen.getByRole("link", { name: "reportPublic" }).closest(".sala-work")).toBeNull();
+  });
+
+  it("F2b: la biblioteca de Sala llega por next/dynamic (no pesa en la ficha con la bandera apagada)", async () => {
+    const { readFileSync } = await import("node:fs");
+    const src = readFileSync("src/components/media/MediaDetail.tsx", "utf8");
+    expect(src).toContain("@/components/library/sala/SalaLibraryLazy");
+    expect(src).not.toMatch(/from "@\/components\/library\/sala\/SalaLibrary(Action|Cta)"/);
+    const lazy = readFileSync("src/components/library/sala/SalaLibraryLazy.tsx", "utf8");
+    expect(lazy).toContain('import("./SalaLibraryAction")');
+    expect(lazy).toContain('import("./SalaLibraryCta")');
+  });
+
+  it("las demás acciones, «Dónde ver», tráiler y adaptaciones siguen debajo, como hoy", async () => {
     render(await sala(movie, { isAuthenticated: true }));
     for (const id of [
-      "library-action",
       "add-to-list-button",
       "recommend-button",
       "report-button",

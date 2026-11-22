@@ -81,8 +81,8 @@ describe('textos REALES del diario (messages/*.json, sin simular)', () => {
   })
 
   it('el contador de la reseña agrupa miles según el idioma', async () => {
-    expect((await translator('es'))('chars', { count: 12, max: 5000 })).toBe('12 / 5000')
-    expect((await translator('en'))('chars', { count: 12, max: 5000 })).toBe('12 / 5,000')
+    expect((await translator('es'))('chars', { count: 12, max: 5000 })).toBe('12 de 5000 caracteres')
+    expect((await translator('en'))('chars', { count: 12, max: 5000 })).toBe('12 of 5,000 characters')
   })
 
   it('borrar un apunte nombra el título', async () => {

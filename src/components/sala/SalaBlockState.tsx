@@ -1,7 +1,7 @@
 import * as React from "react";
 import { cn } from "@/lib/utils/index";
 import { SalaBlockStateTitle } from "./SalaBlockStateTitle";
-import { SalaStatusIcon } from "./SalaStatusIcon";
+import { SalaBlockStateErrorIcon } from "./SalaBlockStateErrorIcon";
 
 /**
  * Estado de un bloque de «Sala» (fase 8.4): lo que se pone donde iba el
@@ -63,7 +63,7 @@ export const SalaBlockState = React.forwardRef<HTMLDivElement, SalaBlockStatePro
   // explicación, no solo el título.
   const idDescripcion = React.useId();
   const describe = focusTitle && description ? idDescripcion : undefined;
-  const adorno = media ?? (tone === "error" ? <SalaStatusIcon tone="error" className="h-10 w-10 text-sala-danger" /> : null);
+  const adorno = media ?? (tone === "error" ? <SalaBlockStateErrorIcon className="h-10 w-10 text-sala-danger" /> : null);
   return (
     <div ref={ref} data-sala-block-state={tone} className={cn("flex flex-col items-start py-12 text-sala-ink sala-type-text", className)} {...props}>
       {adorno ? (

@@ -68,3 +68,26 @@ export function workPaletteVars(palette: ImagePalette): Record<string, string> {
   }
   return vars
 }
+
+/**
+ * La paleta que lleva puesta un contenedor `sala-work` (la que le dio
+ * `workPaletteVars`), leída de su `style`. Para lo que cuelga de `<body>`
+ * (un diálogo) y tiene que llevar los colores de la obra consigo. Sin paleta
+ * completa (aún no ha llegado, o la imagen dio la neutra), `undefined`: los
+ * neutros del tema.
+ */
+export function paletteFromElement(el: HTMLElement | null | undefined): ImagePalette | undefined {
+  if (!el) return undefined
+  const read = (mode: SalaMode): ThemePalette | undefined => {
+    const out = {} as Record<SalaRole, string>
+    for (const role of SALA_ROLES) {
+      const value = el.style.getPropertyValue(salaWorkVar(mode, role)).trim()
+      if (!value) return undefined
+      out[role] = value
+    }
+    return out as ThemePalette
+  }
+  const light = read('light')
+  const dark = read('dark')
+  return light && dark ? { neutral: false, light, dark } : undefined
+}

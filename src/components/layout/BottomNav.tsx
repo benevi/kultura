@@ -16,6 +16,10 @@ function prefersReducedMotion(): boolean {
  * celda ocupa todo el alto (64 px) y un quinto del ancho (≥ 64 px a 320).
  * Re-tocar la pestaña en la que ya estás sube al principio (MOV-7); desde una
  * subpágina (`/lists/abc`) vuelve a la raíz de la pestaña.
+ *
+ * Mientras está, los avisos de «Sala» (`SalaToastProvider`) suben por encima
+ * de ella en móvil: `data-bottom-nav` activa `--bottom-nav-clear` en
+ * globals.css (solo CSS, sin JS en todas las páginas).
  */
 export function BottomNav({ username }: { username: string }) {
   const t = useTranslations('nav')
@@ -29,6 +33,7 @@ export function BottomNav({ username }: { username: string }) {
 
   return (
     <nav
+      data-bottom-nav
       aria-label={t('primaryNav')}
       className="md:hidden fixed bottom-0 inset-x-0 z-40 bg-surface-default border-t border-surface-border pb-[env(safe-area-inset-bottom)]"
     >

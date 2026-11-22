@@ -12,9 +12,10 @@
 // escribiéndolo; las flechas del teclado funcionan en el campo.
 // ============================================================
 
-import { useId } from 'react'
+import { useId, useRef } from 'react'
 import { useTranslations } from 'next-intl'
 import { CloseButton } from '@/components/ui/CloseButton'
+import { SalaButton } from '@/components/sala/SalaButton'
 import { cn } from '@/lib/utils/index'
 import {
   PROGRESS_LIMITS,
@@ -38,6 +39,11 @@ export interface ProgressInputProps {
   showSeason?: boolean
   /** Botón «Limpiar progreso» (por defecto, `onChange(null)`). */
   onClear?: () => void
+  /**
+   * `sala`: con los componentes y tokens de «Sala» (fase 8.5, ficha con
+   * `SALA_FICHA`). La lógica es la misma; solo cambia cómo se pinta.
+   */
+  variant?: 'default' | 'sala'
 }
 
 // Borde `--field-border` y anillo de 2 px del sistema (ACC-4); 16 px en
@@ -47,6 +53,57 @@ const INPUT =
 const STEP_BUTTON =
   'inline-flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-full border border-field-border bg-surface-default font-display text-lg font-bold text-text-primary hover:bg-surface-elevated focus-visible:[outline-style:solid] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus-ring disabled:pointer-events-none disabled:opacity-40 transition-colors'
 const LABEL = 'block text-xs font-body font-medium text-text-secondary mb-1'
+
+/** Cómo se pinta cada pieza: la ficha de hoy o «Sala» (48 px, esquinas rectas). */
+interface Skin {
+  input: string
+  step: string
+  label: string
+  hint: string
+  legend: string
+  modeGroup: string
+  modeOption: string
+  modeOn: string
+  modeOff: string
+  track: string
+  bar: string
+  percent: string
+}
+
+const SKINS: Record<'default' | 'sala', Skin> = {
+  default: {
+    input: INPUT,
+    step: STEP_BUTTON,
+    label: LABEL,
+    hint: 'mt-1 min-h-4 text-xs text-text-tertiary tabular-nums',
+    legend: 'text-sm font-body font-medium text-text-secondary mb-1',
+    modeGroup: 'flex rounded-full border border-field-border p-0.5',
+    modeOption:
+      'inline-flex min-h-11 min-w-[4.5rem] cursor-pointer items-center justify-center rounded-full px-3 text-sm font-bold transition-colors has-[:focus-visible]:[outline-style:solid] has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-focus-ring',
+    modeOn: 'bg-accent-positive text-on-accent-positive',
+    modeOff: 'text-text-secondary hover:text-text-primary',
+    track: 'h-1.5 flex-1 rounded-full bg-surface-elevated',
+    bar: 'h-1.5 rounded-full bg-accent-positive motion-safe:transition-[width] motion-safe:duration-slow',
+    percent: 'min-w-[3.5ch] text-right text-xs font-bold text-text-secondary tabular-nums',
+  },
+  sala: {
+    input:
+      'min-h-sala-target border-2 border-sala-border bg-sala-background px-3 text-base text-sala-ink text-center tabular-nums sala-hover:border-sala-ink sala-focused:border-sala-ink sala-focused:sala-focus transition-colors duration-sala-fast ease-sala motion-reduce:transition-none',
+    step:
+      'inline-flex h-sala-target w-sala-target flex-shrink-0 items-center justify-center border-2 border-sala-ink bg-transparent sala-type-data text-sala-ink enabled:sala-hover:bg-sala-ink enabled:sala-hover:text-sala-background sala-focused:sala-focus disabled:cursor-not-allowed disabled:border-dashed disabled:border-sala-border disabled:text-sala-ink-secondary transition-colors duration-sala-fast ease-sala motion-reduce:transition-none',
+    label: 'block sala-type-small text-sala-ink mb-1',
+    hint: 'mt-1 min-h-5 sala-type-small text-sala-ink-secondary tabular-nums',
+    legend: 'sala-type-label text-sala-ink mb-2',
+    modeGroup: 'flex border-2 border-sala-ink',
+    modeOption:
+      'inline-flex min-h-sala-target min-w-[5rem] cursor-pointer items-center justify-center px-4 sala-type-label has-[:focus-visible]:sala-focus transition-colors duration-sala-fast ease-sala motion-reduce:transition-none',
+    modeOn: 'bg-sala-ink text-sala-background',
+    modeOff: 'text-sala-ink sala-hover:bg-sala-panel',
+    track: 'h-2 flex-1 bg-sala-panel outline outline-1 outline-sala-border',
+    bar: 'h-2 bg-sala-accent motion-safe:transition-[width] motion-safe:duration-sala-slow',
+    percent: 'min-w-[3.5ch] text-right sala-type-small text-sala-ink tabular-nums',
+  },
+}
 
 function clampField(field: ProgressField, n: number, min: number = PROGRESS_LIMITS[field].min): number {
   const lim = PROGRESS_LIMITS[field]
@@ -66,9 +123,10 @@ interface StepperProps {
   width?: string
   /** Mínimo propio (más alto que el de la base). */
   min?: number
+  skin: Skin
 }
 
-function Stepper({ field, label, value, onValue, hint, step, testId, width = 'w-20', min: minProp }: StepperProps) {
+function Stepper({ field, label, value, onValue, hint, step, testId, width = 'w-20', min: minProp, skin }: StepperProps) {
   const t = useTranslations('progress')
   const id = useId()
   const lim = { ...PROGRESS_LIMITS[field], min: Math.max(PROGRESS_LIMITS[field].min, minProp ?? PROGRESS_LIMITS[field].min) }
@@ -88,13 +146,13 @@ function Stepper({ field, label, value, onValue, hint, step, testId, width = 'w-
 
   return (
     <div role="group" aria-labelledby={`${id}-label`} className="flex flex-col">
-      <label id={`${id}-label`} htmlFor={`${id}-input`} className={LABEL}>
+      <label id={`${id}-label`} htmlFor={`${id}-input`} className={skin.label}>
         {label}
       </label>
       <div className="flex items-center gap-2">
         <button
           type="button"
-          className={STEP_BUTTON}
+          className={skin.step}
           aria-label={t('decrease', { unit: field })}
           disabled={current === null || current <= lim.min}
           onClick={() => onValue(current === null ? null : clampField(field, current - inc, lim.min))}
@@ -111,12 +169,12 @@ function Stepper({ field, label, value, onValue, hint, step, testId, width = 'w-
           value={current ?? ''}
           onChange={handleInput}
           aria-describedby={hint ? `${id}-hint` : undefined}
-          className={cn(INPUT, width)}
+          className={cn(skin.input, width)}
           data-testid={testId}
         />
         <button
           type="button"
-          className={STEP_BUTTON}
+          className={skin.step}
           aria-label={t('increase', { unit: field })}
           disabled={current !== null && current >= lim.max}
           onClick={() => onValue(clampField(field, current === null ? Math.max(lim.min, (field === 'episode' ? 0 : PROGRESS_LIMITS[field].min) + inc) : current + inc, lim.min))}
@@ -125,7 +183,7 @@ function Stepper({ field, label, value, onValue, hint, step, testId, width = 'w-
         </button>
       </div>
       {/* Hueco fijo: la pista no mueve nada al aparecer (CLS 0). */}
-      <span id={`${id}-hint`} className="mt-1 min-h-4 text-xs text-text-tertiary tabular-nums">
+      <span id={`${id}-hint`} className={skin.hint}>
         {hint ?? ''}
       </span>
     </div>
@@ -140,10 +198,19 @@ export function ProgressInput({
   referenceHours = null,
   showSeason,
   onClear,
+  variant = 'default',
 }: ProgressInputProps) {
   const t = useTranslations('progress')
   const tl = useTranslations('library')
   const modeId = useId()
+  const skin = SKINS[variant]
+  const boxRef = useRef<HTMLFieldSetElement>(null)
+  // «Limpiar progreso» desaparece al pulsarlo: el foco va al primer campo.
+  const clear = () => {
+    if (onClear) onClear()
+    else onChange(null)
+    boxRef.current?.querySelector<HTMLInputElement>('input[type=number]')?.focus()
+  }
 
   const fields = progressFieldsFor(mediaType)
   if (fields.length === 0) return null
@@ -163,6 +230,7 @@ export function ProgressInput({
       <>
         {withSeason && (
           <Stepper
+            skin={skin}
             field="season"
             label={t('season')}
             value={value?.season}
@@ -171,6 +239,7 @@ export function ProgressInput({
           />
         )}
         <Stepper
+          skin={skin}
           field="episode"
           label={t('episode')}
           value={value?.episode}
@@ -184,8 +253,8 @@ export function ProgressInput({
   } else if (mediaType === 'manga' || mediaType === 'comic') {
     body = (
       <>
-        <Stepper field="chapter" label={t('chapter')} value={value?.chapter} onValue={(n) => set('chapter', n)} hint={ofTotal} testId="input-chapter" width="w-24" />
-        <Stepper field="volume" label={t('volume')} value={value?.volume} onValue={(n) => set('volume', n)} testId="input-volume" />
+        <Stepper skin={skin} field="chapter" label={t('chapter')} value={value?.chapter} onValue={(n) => set('chapter', n)} hint={ofTotal} testId="input-chapter" width="w-24" />
+        <Stepper skin={skin} field="volume" label={t('volume')} value={value?.volume} onValue={(n) => set('volume', n)} testId="input-volume" />
       </>
     )
   } else if (mediaType === 'book') {
@@ -203,16 +272,12 @@ export function ProgressInput({
     body = (
       <>
         <fieldset className="flex flex-col">
-          <legend id={modeId} className={LABEL}>{t('bookMode')}</legend>
-          <div className="flex rounded-full border border-field-border p-0.5">
+          <legend id={modeId} className={skin.label}>{t('bookMode')}</legend>
+          <div className={skin.modeGroup}>
             {([false, true] as const).map((pct) => (
               <label
                 key={String(pct)}
-                className={cn(
-                  'inline-flex min-h-11 min-w-[4.5rem] cursor-pointer items-center justify-center rounded-full px-3 text-sm font-bold transition-colors',
-                  'has-[:focus-visible]:[outline-style:solid] has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-focus-ring',
-                  pct === byPercent ? 'bg-accent-positive text-on-accent-positive' : 'text-text-secondary hover:text-text-primary'
-                )}
+                className={cn(skin.modeOption, pct === byPercent ? skin.modeOn : skin.modeOff)}
               >
                 <input
                   type="radio"
@@ -227,15 +292,16 @@ export function ProgressInput({
           </div>
         </fieldset>
         {byPercent ? (
-          <Stepper field="percent" label={t('percent')} value={value?.percent} onValue={(n) => set('percent', n)} step={5} testId="input-percent" />
+          <Stepper skin={skin} field="percent" label={t('percent')} value={value?.percent} onValue={(n) => set('percent', n)} step={5} testId="input-percent" />
         ) : (
-          <Stepper field="page" label={t('page')} value={value?.page} onValue={(n) => set('page', n)} step={10} hint={ofTotal} testId="input-page" width="w-24" />
+          <Stepper skin={skin} field="page" label={t('page')} value={value?.page} onValue={(n) => set('page', n)} step={10} hint={ofTotal} testId="input-page" width="w-24" />
         )}
       </>
     )
   } else if (mediaType === 'game') {
     body = (
       <Stepper
+        skin={skin}
         field="hours"
         label={t('hours')}
         value={value?.hours}
@@ -248,13 +314,24 @@ export function ProgressInput({
   }
 
   return (
-    <fieldset className="flex flex-col gap-2">
-      <legend className="text-sm font-body font-medium text-text-secondary mb-1">{t('title')}</legend>
+    <fieldset ref={boxRef} className="flex flex-col gap-2">
+      <legend className={skin.legend}>{t('title')}</legend>
       <div className="flex flex-wrap items-start gap-x-4 gap-y-1">
         {body}
-        {hasProgress(value) && (
+        {hasProgress(value) && variant === 'sala' && (
+          <SalaButton
+            type="button"
+            variant="quiet"
+            onClick={clear}
+            data-testid="clear-progress"
+            className="mt-6"
+          >
+            {tl('clearProgress')}
+          </SalaButton>
+        )}
+        {hasProgress(value) && variant !== 'sala' && (
           <CloseButton
-            onClick={() => (onClear ? onClear() : onChange(null))}
+            onClick={clear}
             label={tl('clearProgress')}
             data-testid="clear-progress"
             className="mt-5"
@@ -263,13 +340,13 @@ export function ProgressInput({
       </div>
       {/* Barra con hueco fijo (CLS 0); el número va en texto para lectores. */}
       <div className="flex items-center gap-3" data-testid="progress-summary">
-        <div aria-hidden="true" className="h-1.5 flex-1 rounded-full bg-surface-elevated">
+        <div aria-hidden="true" className={skin.track}>
           <div
-            className="h-1.5 rounded-full bg-accent-positive motion-safe:transition-[width] motion-safe:duration-slow"
+            className={skin.bar}
             style={{ width: `${percent ?? 0}%` }}
           />
         </div>
-        <span className="min-w-[3.5ch] text-right text-xs font-bold text-text-secondary tabular-nums">
+        <span className={skin.percent}>
           {percent !== null ? t('percentDone', { percent }) : ''}
         </span>
       </div>

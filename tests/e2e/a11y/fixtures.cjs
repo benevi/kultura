@@ -183,7 +183,7 @@ const tables = {
     added_by: USER_ID,
     added_at: NOW,
   })),
-  // Matrix ya está en la biblioteca: su ficha enseña "Actualizar" y "Eliminar".
+  // Matrix ya está en la biblioteca: su ficha enseña "Actualizar" y "Quitar".
   user_media: [
     {
       id: "00000000-0000-4000-8000-0000000000a9",

@@ -2,6 +2,12 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Con la barra inferior de móvil (BottomNav), los avisos de «Sala» suben por
+   encima de ella. Solo CSS: no añade JS a todas las páginas. */
+:root:has([data-bottom-nav]) {
+  --bottom-nav-clear: 4rem;
+}
+
 :root {
   /* ─── KULTURA Design System — modo oscuro (canónico) ───
      Tokens OKLCH tomados literalmente del canvas de diseño F0 v2

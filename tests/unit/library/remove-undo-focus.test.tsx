@@ -1,7 +1,7 @@
 // DIS-14 · Quitar con «Deshacer» con el aviso de verdad (ToastProvider):
 // el foco va a «Deshacer», el borrado real espera a que el aviso se vaya y
 // «Deshacer» lo cancela.
-import { render, screen, fireEvent, waitFor, act } from '@testing-library/react'
+import { render, screen, fireEvent, waitFor, act, within } from '@testing-library/react'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import type { LibraryEntry } from '@/types/library'
 
@@ -40,8 +40,8 @@ function renderIt() {
 }
 
 async function confirmRemove() {
-  fireEvent.click(screen.getByText('remove'))
-  fireEvent.click(screen.getByRole('button', { name: 'removeConfirm' }))
+  fireEvent.click(screen.getByText('removeConfirm'))
+  fireEvent.click(within(screen.getByRole('alertdialog')).getByRole('button', { name: 'removeConfirm' }))
   return screen.findByRole('button', { name: 'undo' })
 }
 
