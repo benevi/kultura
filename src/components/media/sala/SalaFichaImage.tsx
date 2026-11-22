@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import Image from "next/image";
-import { posterLoader } from "@/lib/images/poster-url";
+import { backdropLoader, posterLoader } from "@/lib/images/poster-url";
 import { paletteFromPixels } from "@/lib/design/image-palette";
 import { SALA_WORK_CLASS, workPaletteVars } from "@/lib/design/sala-palette";
 
@@ -84,7 +84,8 @@ export function SalaFichaImage({ src, sizes, fit = "cover" }: SalaFichaImageProp
   return (
     <Image
       key={`${src} ${attempt}`}
-      loader={posterLoader}
+      // La apaisada (`cover`) con tope en w1280 de TMDB; la portada, como siempre.
+      loader={fit === "cover" ? backdropLoader : posterLoader}
       src={src}
       alt=""
       fill

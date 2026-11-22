@@ -1,7 +1,6 @@
 import { SalaStage } from "@/components/sala/SalaStage";
 import { SalaTitle } from "@/components/sala/SalaTitle";
 import { SALA_TITLE_CSS } from "@/lib/design/sala-title-css";
-import { SALA_WORK_CLASS } from "@/lib/design/sala-palette";
 import { originalTitleOf } from "@/lib/media/original-title";
 import { cn } from "@/lib/utils/index";
 import type { MediaItem, MediaType } from "@/types/media";
@@ -42,6 +41,18 @@ export function salaFichaLayout(item: Pick<MediaItem, "type" | "backdrop" | "pos
 }
 
 /**
+ * ¿La columna de la ficha de hoy puede enseñar el póster sin repetir la
+ * imagen de la sala? (F2a). No, si la sala ya es la portada (libro, manga,
+ * cómic, o cualquier obra sin apaisada), si la apaisada es el propio `poster`
+ * (los juegos de RAWG) o si no hay póster (sin el degradado de respaldo: el
+ * campo de color de la sala ya hace ese papel).
+ */
+export function salaFichaColumnPoster(item: Pick<MediaItem, "type" | "backdrop" | "poster">): boolean {
+  if (!item.poster) return false;
+  return salaFichaLayout(item) === "stage" && salaFichaWideImage(item) !== item.poster;
+}
+
+/**
  * El `.woff2` latino de Anybody, el mismo archivo que pide `fonts.css` (Next
  * le da la misma URL con huella). Se precarga solo en la ficha con la sala
  * (TOKENS.md, «Precarga», decidido el 20-11-2026), con `font-display: swap`.
@@ -59,7 +70,9 @@ export function SalaFichaHero({ item }: { item: MediaItem }) {
     original && !original.lang ? <p className={cn(SALA_TITLE_CSS.original, "mt-0")}>{original.text}</p> : null;
 
   return (
-    <section key={item.id} data-sala-ficha={layout} className={cn(SALA_WORK_CLASS, "font-sala-text")} aria-labelledby="sala-ficha-title">
+    // La paleta la recibe el contenedor `sala-work` de fuera (`SalaFicha`), que
+    // envuelve también la franja y la ficha (F2a): el color llega a todo.
+    <section data-sala-ficha={layout} aria-labelledby="sala-ficha-title">
       <link rel="preload" href={ANYBODY_LATIN.pathname} as="font" type="font/woff2" crossOrigin="anonymous" />
       <SalaFichaAssets />
       {layout === "stage" ? (

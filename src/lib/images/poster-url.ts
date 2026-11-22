@@ -95,3 +95,43 @@ export function posterLoader({ src, width, quality }: { src: string; width: numb
 
   return optimizer(src, width, quality);
 }
+
+/**
+ * Anchos de TMDB para imágenes apaisadas (`backdrop_sizes` de su
+ * `/configuration`). `w1280` es el tope: `original` puede pasar de 3 000 px y
+ * varios MB, y la sala no lo necesita (biblia §2, fase 8.5 F2a).
+ */
+const TMDB_BACKDROP_WIDTHS = [300, 780, 1280] as const;
+
+/**
+ * `loader` de `next/image` para la imagen apaisada de la sala (los fondos de
+ * TMDB y el arte de RAWG): el ancho nativo más pequeño que cubre el que se
+ * pide, con 1280 como tope. Las demás imágenes van como en `posterLoader`,
+ * que no cambia.
+ */
+export function backdropLoader({ src, width, quality }: { src: string; width: number; quality?: number }): string {
+  let url: URL;
+  try {
+    url = new URL(src);
+  } catch {
+    return src;
+  }
+  if (url.hostname === "image.tmdb.org") {
+    const m = url.pathname.match(/^\/t\/p\/[^/]+(\/.+)$/);
+    if (m) {
+      const w = pick(TMDB_BACKDROP_WIDTHS, width) ?? TMDB_BACKDROP_WIDTHS[TMDB_BACKDROP_WIDTHS.length - 1];
+      return `https://image.tmdb.org/t/p/w${w}${m[1]}`;
+    }
+    return src;
+  }
+  // RAWG: el mismo endpoint de redimensionado, con 1280 de tope (sin él, la captura original, de 1920 px o más).
+  if (url.hostname === "media.rawg.io") {
+    const m = url.pathname.match(/^\/media\/(?:resize\/\d+\/-\/|crop\/\d+\/\d+\/)?(.+)$/);
+    if (m) {
+      const w = pick(RAWG_WIDTHS, width) ?? RAWG_WIDTHS[RAWG_WIDTHS.length - 1];
+      return `https://media.rawg.io/media/resize/${w}/-/${m[1]}`;
+    }
+    return src;
+  }
+  return posterLoader({ src, width, quality });
+}

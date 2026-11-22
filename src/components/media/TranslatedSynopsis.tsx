@@ -29,10 +29,12 @@ interface Props {
   mediaId: string;
   /** `true` = no llamar al modelo, solo leer la caché de traducciones. */
   cacheOnly?: boolean;
+  /** `sala`: con los tokens de «Sala» (fase 8.5, F2a). */
+  variant?: "sala";
 }
 
-export async function TranslatedSynopsis({ text, mediaId, cacheOnly = false }: Props) {
+export async function TranslatedSynopsis({ text, mediaId, cacheOnly = false, variant }: Props) {
   const locale = await getLocale();
   const translated = await translateSynopsis({ text, locale, mediaId, cacheOnly });
-  return <SynopsisSection text={translated} lang={synopsisLang(translated, locale)} />;
+  return <SynopsisSection text={translated} lang={synopsisLang(translated, locale)} variant={variant} />;
 }
