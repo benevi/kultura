@@ -42,10 +42,6 @@ vi.mock("@/lib/social/notifications", () => ({ getUnreadCount: mocks.getUnreadCo
 vi.mock("@/lib/translate/synopsis", () => ({
   translateSynopsis: vi.fn(async ({ text }: { text: string }) => text),
 }));
-// F-29: la sección de adaptaciones tiene sus propios tests (tests/unit/adaptations).
-vi.mock("@/components/media/AdaptationsSection", () => ({
-  AdaptationsSection: () => <section data-testid="adaptations" />,
-}));
 vi.mock("@/components/media/MediaDetail", () => ({
   MediaDetail: (props: Record<string, unknown>) => {
     mocks.mediaDetailProps.current = props;

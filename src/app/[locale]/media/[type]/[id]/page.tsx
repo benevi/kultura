@@ -218,8 +218,8 @@ export default async function MediaDetailPage({ params }: Props) {
         shareRating={shareRatingFor(user, profile?.username, initialEntry, item, locale)}
         sala={sala}
         // Sin «También existe como…» (F-29): Víctor no quiere que se vea
-        // (22-11-2026). AdaptationsSection queda en el código, sin usar, y
-        // ya no se consulta Wikidata desde la ficha.
+        // (22-11-2026). Se borró la sección y ya no se consulta Wikidata
+        // desde la ficha; la carga de datos (src/lib/adaptations) sigue.
       />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: serializeJsonLd(jsonLd) }} />
     </>
