@@ -42,6 +42,11 @@ import { SalaFicha } from "./sala/SalaFicha";
 import { SalaFichaBody, type SalaFichaFact } from "./sala/SalaFichaBody";
 import { salaFichaLayout } from "./sala/SalaFichaHero";
 import { SalaLibraryActionLazy as SalaLibraryAction, SalaLibraryCtaLazy as SalaLibraryCta } from "@/components/library/sala/SalaLibraryLazy";
+import { SalaLink } from "@/components/sala/SalaLink";
+import { SalaFichaSection } from "./sala/SalaFichaSection";
+import { SalaWhereToWatch } from "./sala/SalaWhereToWatch";
+import { SalaSteam } from "./sala/SalaSteam";
+import { SalaFichaSources } from "./sala/SalaFichaSources";
 import {
   IconCalendar,
   IconFormat,
@@ -257,7 +262,7 @@ export async function MediaDetail({
   // ── Con «Sala» (F2a): franja, sinopsis y créditos van arriba, en la sala ──
   // F2b (decisión de Víctor): el cuerpo de «Sala» no lleva póster, como el
   // prototipo; las acciones de biblioteca van también arriba, en la sala.
-  const showPoster = !sala;
+  // F2c: el resto de la ficha (menos el tráiler, F3) pasa también a «Sala».
   const libraryMediaCache = {
     externalId: item.externalId,
     type: item.type,
@@ -283,6 +288,52 @@ export async function MediaDetail({
       hint={t("ctaHint")}
       loginLabel={t("ctaLogin")}
     />
+  );
+  const salaMore = !sala ? null : (
+    <>
+      {/* Las demás acciones: listas, recomendar, compartir la nota y denunciar. */}
+      <SalaFichaSection
+        id="sala-ficha-more-actions"
+        heading={t("salaMoreActionsLabel")}
+        hiddenHeading
+        data-sala-ficha-more-actions=""
+      >
+        <div className="flex flex-wrap items-start gap-3">
+          {isAuthenticated ? (
+            <>
+              <AddToListButton item={item} skin="sala" />
+              <RecommendButton item={item} skin="sala" />
+              {shareRating && (
+                <ShareRatingButton path={shareRating.path} title={item.title} rating={shareRating.rating} skin="sala" />
+              )}
+              <ReportButton targetType="media" targetId={item.id} skin="sala" />
+            </>
+          ) : (
+            <SalaLink href={`/report?target=media&id=${encodeURIComponent(item.id)}`} variant="standalone" rel="nofollow">
+              {t("reportPublic")}
+            </SalaLink>
+          )}
+        </div>
+      </SalaFichaSection>
+
+      {/* Por qué te lo recomendamos — solo con señal real (ver arriba) */}
+      {showWhyRecommended && (
+        <SalaFichaSection id="sala-ficha-why" heading={t("whyRecommended")}>
+          <p className="sala-type-text max-w-prose">{tAi("whyRecommendedText", { genres: topGenres.join(", ") })}</p>
+        </SalaFichaSection>
+      )}
+
+      {providers && providers.length > 0 && (
+        <SalaWhereToWatch providers={providers} title={t("whereToWatch")} link={watchLink} />
+      )}
+
+      {steam && <SalaSteam steam={steam} />}
+
+      {/* Llega en streaming: al final, para no mover lo demás cuando aparece. */}
+      {adaptations}
+
+      <SalaFichaSources source={source} googleBooksHref={googleVolumeId ? googleBooksUrl(googleVolumeId) : null} />
+    </>
   );
   const salaFacts: SalaFichaFact[] = sala
     ? [
@@ -324,6 +375,7 @@ export async function MediaDetail({
             }
             actions={salaActions}
             actionsLabel={t("salaLibraryLabel")}
+            more={salaMore}
             creditsLabel={t("details")}
             credits={credits.map(({ key, value }) => ({ key, label: t(`credits.${key}`), value }))}
             breadcrumbs={
@@ -334,14 +386,19 @@ export async function MediaDetail({
           />
         </SalaFicha>
       )}
-      <div
-        className={
-          sala
-            ? "page-grid pt-10 pb-[calc(3.5rem+env(safe-area-inset-bottom))] md:pb-14"
-            : "page-grid pt-1 pb-[calc(3.5rem+env(safe-area-inset-bottom))] md:pb-14"
-        }
-      >
-        {!sala && breadcrumbs.length > 0 && (
+      {sala ? (
+        // Con «Sala», debajo solo queda el tráiler (F3), como hoy.
+        <div className="page-grid pb-[calc(3.5rem+env(safe-area-inset-bottom))] md:pb-14">
+          {trailerKey && (
+            <section className="pt-10">
+              <h2 className={sectionTitle}>{t("trailer")}</h2>
+              <TrailerEmbed youtubeKey={trailerKey} title={t("trailerTitle", { title: item.title })} />
+            </section>
+          )}
+        </div>
+      ) : (
+      <div className="page-grid pt-1 pb-[calc(3.5rem+env(safe-area-inset-bottom))] md:pb-14">
+        {breadcrumbs.length > 0 && (
           <nav aria-label={t("breadcrumbLabel")} className="mb-2">
             <ol className="flex flex-wrap items-center gap-x-1.5 text-xs text-text-tertiary">
               {breadcrumbs.map((c) => (
@@ -366,8 +423,7 @@ export async function MediaDetail({
           <div className="w-full md:w-[420px] flex-shrink-0">
             {/* `data-library-stamp`: aquí cuelga el sello «Visto» de
                 `LibraryAction` al marcarlo como completado (DIS-14). */}
-            {showPoster && (
-              <div className="relative" data-library-stamp="">
+            <div className="relative" data-library-stamp="">
                 <div
                   className="relative w-full h-[260px] sm:h-auto sm:aspect-[3/4] rounded-bento-xl overflow-hidden flex items-end p-6 md:p-8 shadow-hard-sm md:shadow-hard"
                 >
@@ -389,14 +445,11 @@ export async function MediaDetail({
                       src={item.poster}
                       sizes="(max-width: 768px) 90vw, 420px"
                       className="object-cover object-[center_25%] sm:object-center"
-                      // Con la sala, la imagen grande es la de arriba: esta no le quita la precarga.
-                      priority={!sala}
+                      priority
                     />
                   )}
 
-                  {/* Con la sala, el título (el único `h1`) está arriba: aquí, solo la portada. */}
-                  {!sala && (
-                    <>
+                  <>
                       {/* Scrim inferior — legibilidad del título superpuesto */}
                       <div className="absolute inset-x-0 bottom-0 h-2/3 bg-gradient-to-t from-black/85 via-black/30 to-transparent pointer-events-none" />
 
@@ -410,16 +463,14 @@ export async function MediaDetail({
                           </p>
                         )}
                       </div>
-                    </>
-                  )}
+                  </>
                 </div>
               </div>
-            )}
 
             {/* Chips: año / tipo / duración o episodios (chip inactivo).
                 La etiqueta va como texto para lector (un `aria-label` en un
                 <span> sin rol no se anuncia). */}
-            {!sala && tiles.length > 0 && (
+            {tiles.length > 0 && (
               <ul className="flex flex-wrap gap-2 mt-4">
                 {tiles.map(({ key, icon: Icon, label, value, hint }) => (
                   <li
@@ -436,7 +487,7 @@ export async function MediaDetail({
             )}
 
             {/* Notas: KULTURA (1-5) y proveedor (0-10), con su etiqueta visible. */}
-            {!sala && ratings.length > 0 && (
+            {ratings.length > 0 && (
               <ul aria-label={t("ratingsLabel")} className="flex flex-wrap gap-2 mt-2">
                 {ratings.map(({ key, label, srLabel, value, hint }) => (
                   <li
@@ -464,7 +515,7 @@ export async function MediaDetail({
             )}
 
             {/* Géneros — chip "outline" */}
-            {!sala && genres.length > 0 && (
+            {genres.length > 0 && (
               <ul aria-label={t("genres")} className="flex flex-wrap gap-2 mt-2.5">
                 {genres.slice(0, 5).map((g) => (
                   <li
@@ -478,18 +529,15 @@ export async function MediaDetail({
             )}
 
             {/* CTAs — primario "+ Añadir a mi biblioteca" / secundarios */}
-            <div className={sala ? "flex flex-col gap-2.5" : "flex flex-col gap-2.5 mt-6"}>
+            <div className="flex flex-col gap-2.5 mt-6">
               {isAuthenticated ? (
                 <>
-                  {/* Con «Sala», la biblioteca va arriba (`SalaLibraryAction`). */}
-                  {!sala && (
-                    <LibraryAction
-                      mediaId={item.id}
-                      mediaCache={libraryMediaCache}
-                      initialEntry={initialEntry}
-                      isAuthenticated
-                    />
-                  )}
+                  <LibraryAction
+                    mediaId={item.id}
+                    mediaCache={libraryMediaCache}
+                    initialEntry={initialEntry}
+                    isAuthenticated
+                  />
                   <div className="flex items-center gap-2.5 flex-wrap">
                     <AddToListButton item={item} />
                     <RecommendButton item={item} />
@@ -501,25 +549,21 @@ export async function MediaDetail({
                 </>
               ) : (
                 <>
-                  {!sala && (
-                    <>
-                      <KButton asChild variant="primary" size="lg">
-                        <Link href={`/login?mode=register&next=${next}`} rel="nofollow">
-                          <span aria-hidden="true">+</span> {t("ctaAdd")}
-                        </Link>
-                      </KButton>
-                      <p className="text-xs text-text-secondary leading-relaxed">
-                        {t("ctaHint")}{" "}
-                        <Link
-                          href={`/login?mode=login&next=${next}`}
-                          rel="nofollow"
-                          className="whitespace-nowrap font-bold text-text-primary underline underline-offset-2 hover:text-accent-pink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-pink rounded-lg"
-                        >
-                          {t("ctaLogin")}
-                        </Link>
-                      </p>
-                    </>
-                  )}
+                  <KButton asChild variant="primary" size="lg">
+                    <Link href={`/login?mode=register&next=${next}`} rel="nofollow">
+                      <span aria-hidden="true">+</span> {t("ctaAdd")}
+                    </Link>
+                  </KButton>
+                  <p className="text-xs text-text-secondary leading-relaxed">
+                    {t("ctaHint")}{" "}
+                    <Link
+                      href={`/login?mode=login&next=${next}`}
+                      rel="nofollow"
+                      className="whitespace-nowrap font-bold text-text-primary underline underline-offset-2 hover:text-accent-pink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-pink rounded-lg"
+                    >
+                      {t("ctaLogin")}
+                    </Link>
+                  </p>
                   <KButton asChild variant="secondary" size="sm" className="self-start text-xs text-text-tertiary">
                     <Link href={`/report?target=media&id=${encodeURIComponent(item.id)}`} rel="nofollow">
                       {t("reportPublic")}
@@ -545,7 +589,7 @@ export async function MediaDetail({
             )}
 
             {/* Sinopsis */}
-            {!sala && item.synopsis && (
+            {item.synopsis && (
               <section>
                 <h2 className={sectionTitle}>{t("synopsis")}</h2>
                 {/* E-SINOPSIS-I18N: AniList, RAWG y ComicVine solo publican
@@ -566,7 +610,7 @@ export async function MediaDetail({
             )}
 
             {/* Ficha técnica */}
-            {!sala && credits.length > 0 && (
+            {credits.length > 0 && (
               <section>
                 <h2 className={sectionTitle}>{t("details")}</h2>
                 <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-2 text-sm">
@@ -628,6 +672,7 @@ export async function MediaDetail({
           </div>
         </div>
       </div>
+      )}
     </main>
   );
 }

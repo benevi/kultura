@@ -14,6 +14,8 @@
 import { useEffect, useId, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
 import { KButton } from "@/components/ui/KButton";
+import { SalaButtonLazy as SalaButton } from "@/components/sala/SalaButtonLazy";
+import { cn } from "@/lib/utils/index";
 import { shareNative } from "@/components/pwa/share";
 
 interface Props {
@@ -22,9 +24,21 @@ interface Props {
   title: string;
   /** Nota ya formateada en la escala de su dueño ("9/10", "4,5★"). */
   rating: string;
+  /**
+   * `sala`: los botones son `SalaButton` y el aviso va en la tinta de la obra
+   * (ficha con «Sala», F2c). El comportamiento es el mismo.
+   */
+  skin?: "sala";
 }
 
-export function ShareRatingButton({ path, title, rating }: Props) {
+const SHARE_ICON = (size: number) => (
+  <svg aria-hidden="true" viewBox="0 0 24 24" width={size} height={size} fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M12 3v12M7 8l5-5 5 5M5 13v6a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-6" />
+  </svg>
+);
+
+export function ShareRatingButton({ path, title, rating, skin }: Props) {
+  const sala = skin === "sala";
   const t = useTranslations("share.rating");
   const [open, setOpen] = useState(false);
   const [copied, setCopied] = useState(false);
@@ -79,20 +93,31 @@ export function ShareRatingButton({ path, title, rating }: Props) {
 
   return (
     <div ref={rootRef} role="group" aria-label={t("label", { title })} className="flex flex-wrap items-center gap-2">
-      <KButton
-        ref={toggleRef}
-        type="button"
-        variant="tonal"
-        size="lg"
-        aria-expanded={open}
-        aria-controls={menuId}
-        onClick={share}
-      >
-        <svg aria-hidden="true" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-          <path d="M12 3v12M7 8l5-5 5 5M5 13v6a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-6" />
-        </svg>
-        {t("action")}
-      </KButton>
+      {sala ? (
+        <SalaButton
+          ref={toggleRef}
+          variant="secondary"
+          icon={SHARE_ICON(20)}
+          aria-expanded={open}
+          aria-controls={menuId}
+          onClick={share}
+        >
+          {t("action")}
+        </SalaButton>
+      ) : (
+        <KButton
+          ref={toggleRef}
+          type="button"
+          variant="tonal"
+          size="lg"
+          aria-expanded={open}
+          aria-controls={menuId}
+          onClick={share}
+        >
+          {SHARE_ICON(18)}
+          {t("action")}
+        </KButton>
+      )}
       {/* En móvil, rejilla de 2 columnas («Copiar enlace» ocupa la fila
           entera; X y WhatsApp debajo, a medias) para que ninguna opción quede
           sola en otra línea. Desde `sm`, en fila. */}
@@ -103,31 +128,50 @@ export function ShareRatingButton({ path, title, rating }: Props) {
         role="group"
         className={`${open ? "grid sm:flex" : "hidden"} w-full grid-cols-2 gap-2 sm:w-auto sm:flex-wrap sm:items-center`}
       >
-        <KButton type="button" variant="secondary" size="lg" className="col-span-2" onClick={copy}>
-          {t("copy")}
-        </KButton>
-        <KButton
-          type="button"
-          variant="secondary"
-          size="lg"
-          aria-label={t("onX")}
-          onClick={() =>
-            openWindow(`https://x.com/intent/post?text=${encodeURIComponent(text)}&url=${encodeURIComponent(fullUrl())}`)
-          }
-        >
-          X
-        </KButton>
-        <KButton
-          type="button"
-          variant="secondary"
-          size="lg"
-          aria-label={t("onWhatsApp")}
-          onClick={() => openWindow(`https://wa.me/?text=${encodeURIComponent(`${text} ${fullUrl()}`)}`)}
-        >
-          WhatsApp
-        </KButton>
+        {(
+          [
+            { key: "copy", text: t("copy"), label: undefined, onClick: copy, wide: true },
+            {
+              key: "x",
+              text: "X",
+              label: t("onX"),
+              onClick: () =>
+                openWindow(`https://x.com/intent/post?text=${encodeURIComponent(text)}&url=${encodeURIComponent(fullUrl())}`),
+              wide: false,
+            },
+            {
+              key: "whatsapp",
+              text: "WhatsApp",
+              label: t("onWhatsApp"),
+              onClick: () => openWindow(`https://wa.me/?text=${encodeURIComponent(`${text} ${fullUrl()}`)}`),
+              wide: false,
+            },
+          ] as const
+        ).map((b) =>
+          sala ? (
+            <SalaButton key={b.key} variant="quiet" aria-label={b.label} className={cn(b.wide && "col-span-2")} onClick={b.onClick}>
+              {b.text}
+            </SalaButton>
+          ) : (
+            <KButton
+              key={b.key}
+              type="button"
+              variant="secondary"
+              size="lg"
+              aria-label={b.label}
+              className={b.wide ? "col-span-2" : undefined}
+              onClick={b.onClick}
+            >
+              {b.text}
+            </KButton>
+          )
+        )}
       </div>
-      <span role="status" aria-live="polite" className="text-meta font-bold text-accent-positive">
+      <span
+        role="status"
+        aria-live="polite"
+        className={sala ? "sala-type-small text-sala-ink" : "text-meta font-bold text-accent-positive"}
+      >
         {copied ? t("copied") : ""}
       </span>
     </div>

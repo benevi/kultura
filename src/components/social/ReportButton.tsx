@@ -11,6 +11,7 @@
 import { useEffect, useId, useRef, useState } from 'react'
 import { useTranslations } from 'next-intl'
 import { KButton } from '@/components/ui/KButton'
+import { SalaButtonLazy as SalaButton } from '@/components/sala/SalaButtonLazy'
 import { KTextarea } from '@/components/ui/KTextarea'
 import {
   ModerationRequestError,
@@ -32,6 +33,12 @@ interface Props {
   variant?: 'button' | 'icon'
   contextLabel?: string
   className?: string
+  /**
+   * `sala` (solo con `variant="button"`): el disparador es un `SalaButton`
+   * discreto y la confirmación va en la tinta de la obra (ficha con «Sala»,
+   * F2c). El formulario es el mismo, con su propio fondo.
+   */
+  skin?: 'sala'
 }
 
 type Status = 'idle' | 'open' | 'sending' | 'sent'
@@ -144,7 +151,8 @@ export function InlineConfirm({
   )
 }
 
-export function ReportButton({ targetType, targetId, variant = 'button', contextLabel, className }: Props) {
+export function ReportButton({ targetType, targetId, variant = 'button', contextLabel, className, skin }: Props) {
+  const sala = skin === 'sala' && variant === 'button'
   const t = useTranslations('report')
   const [status, setStatus] = useState<Status>('idle')
   const [reason, setReason] = useState<ReportReason | null>(null)
@@ -205,9 +213,13 @@ export function ReportButton({ targetType, targetId, variant = 'button', context
         ref={sentRef}
         tabIndex={-1}
         role="status"
-        className="text-xs text-text-secondary px-2 py-1 rounded-button focus:outline-none focus-visible:ring-2 focus-visible:ring-accent-pink"
+        className={
+          sala
+            ? 'sala-type-small text-sala-ink-secondary py-1 focus:outline-none sala-focused:sala-focus'
+            : 'text-xs text-text-secondary px-2 py-1 rounded-button focus:outline-none focus-visible:ring-2 focus-visible:ring-accent-pink'
+        }
       >
-        <span className="font-bold text-text-primary">{t('sent')}</span>{' '}
+        <span className={sala ? 'font-semibold text-sala-ink' : 'font-bold text-text-primary'}>{t('sent')}</span>{' '}
         {t('sentReference', { reference: reference ?? '' })}
       </p>
     )
@@ -226,6 +238,18 @@ export function ReportButton({ targetType, targetId, variant = 'button', context
       >
         <FlagIcon className="w-4 h-4" />
       </button>
+    ) : sala ? (
+      <SalaButton
+        ref={triggerRef}
+        variant="quiet"
+        icon={<FlagIcon />}
+        aria-expanded={status !== 'idle'}
+        aria-controls={status !== 'idle' ? panelId : undefined}
+        aria-label={contextLabel ? triggerLabel : undefined}
+        onClick={() => (status === 'idle' ? setStatus('open') : close())}
+      >
+        {t('label')}
+      </SalaButton>
     ) : (
       <KButton
         ref={triggerRef}

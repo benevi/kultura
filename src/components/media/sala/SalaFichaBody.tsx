@@ -19,8 +19,11 @@ import { cn } from "@/lib/utils/index";
  * - **Tu biblioteca** (F2b): las acciones de biblioteca, lo primero del
  *   cuerpo (en móvil, justo debajo de la franja).
  *
- * «Dónde ver», el tráiler, las adaptaciones y Steam siguen, de momento, en
- * la ficha de hoy (F2c).
+ * - **El resto** (F2c, `more`): las demás acciones, «Por qué te lo
+ *   recomendamos», «Dónde ver», Steam, las adaptaciones y la cita de las
+ *   fuentes, debajo de la sinopsis, sobre el mismo fondo teñido.
+ *
+ * El tráiler sigue, de momento, en la ficha de hoy, debajo (F3).
  */
 export interface SalaFichaFact {
   key: string;
@@ -65,6 +68,8 @@ interface SalaFichaBodyProps {
   /** Las acciones de biblioteca, ya montadas (F2b), con su encabezado para el lector. */
   actions?: ReactNode;
   actionsLabel?: string;
+  /** La mitad de abajo (F2c), ya montada: cada sección trae su `h2`. */
+  more?: ReactNode;
 }
 
 const SYNOPSIS_ID = "sala-ficha-synopsis";
@@ -112,8 +117,10 @@ export function SalaFichaBody({
   bandWithStage = false,
   actions,
   actionsLabel,
+  more,
 }: SalaFichaBodyProps) {
-  const hasBody = Boolean(synopsis) || credits.length > 0 || Boolean(breadcrumbs) || Boolean(actions);
+  const hasBody =
+    Boolean(synopsis) || credits.length > 0 || Boolean(breadcrumbs) || Boolean(actions) || Boolean(more);
   return (
     <>
       {facts.length > 0 && (
@@ -204,6 +211,11 @@ export function SalaFichaBody({
                   </dl>
                 </section>
               )}
+            </div>
+          )}
+          {more && (
+            <div data-sala-ficha-more="" className={cn("grid gap-14 sm:gap-16", (synopsis || credits.length > 0) && "mt-14 sm:mt-16")}>
+              {more}
             </div>
           )}
         </div>

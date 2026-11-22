@@ -221,7 +221,7 @@ export default async function MediaDetailPage({ params }: Props) {
         adaptations={
           // F-29: Wikidata (o su caché) llega en streaming; la ficha no la espera.
           <React.Suspense fallback={null}>
-            <AdaptationsSection item={item} locale={locale} userId={user?.id ?? null} supabase={supabase} />
+            <AdaptationsSection item={item} locale={locale} userId={user?.id ?? null} supabase={supabase} sala={sala} />
           </React.Suspense>
         }
       />

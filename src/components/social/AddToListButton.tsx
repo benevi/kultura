@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import { useTranslations } from 'next-intl'
 import { Link } from '@/i18n/navigation'
 import { KButton } from '@/components/ui/KButton'
+import { SalaButtonLazy as SalaButton } from '@/components/sala/SalaButtonLazy'
 import { Spinner } from '@/components/ui/Spinner'
 import { Modal } from '@/components/ui/Modal'
 import { useToastContext } from '@/components/ui/ToastProvider'
@@ -20,9 +21,11 @@ interface RawList {
 
 interface AddToListButtonProps {
   item: MediaItem
+  /** `sala`: el disparador es un `SalaButton` (ficha con «Sala», F2c). El diálogo es el mismo. */
+  skin?: 'sala'
 }
 
-export function AddToListButton({ item }: AddToListButtonProps) {
+export function AddToListButton({ item, skin }: AddToListButtonProps) {
   const t = useTranslations('lists')
   const tc = useTranslations('common')
   const { show } = useToastContext()
@@ -76,9 +79,15 @@ export function AddToListButton({ item }: AddToListButtonProps) {
 
   return (
     <>
-      <KButton variant="secondary" size="sm" onClick={() => setOpen(true)}>
-        {t('addToList')}
-      </KButton>
+      {skin === 'sala' ? (
+        <SalaButton variant="secondary" onClick={() => setOpen(true)}>
+          {t('addToList')}
+        </SalaButton>
+      ) : (
+        <KButton variant="secondary" size="sm" onClick={() => setOpen(true)}>
+          {t('addToList')}
+        </KButton>
+      )}
 
       <Modal
         open={open}

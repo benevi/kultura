@@ -20,6 +20,7 @@ import { buildAdaptationView } from "@/lib/adaptations/display";
 import { SOURCE_LINK_CLASS } from "@/components/legal/DataAttribution";
 import { PosterFrame } from "./PosterFrame";
 import { AddFranchiseButton } from "./AddFranchiseButton";
+import { SalaAdaptations } from "./sala/SalaAdaptations";
 
 const sectionTitle = "font-display text-xl font-bold text-text-primary mb-1";
 const FOCUS =
@@ -31,6 +32,8 @@ interface Props {
   /** Con sesión: para "En tu biblioteca" y "Añadir toda la franquicia". */
   userId: string | null;
   supabase: SupabaseClient | null;
+  /** Ficha con «Sala» (F2c): las mismas obras con `SalaAdaptations`. */
+  sala?: boolean;
 }
 
 /**
@@ -57,7 +60,7 @@ function withinBudget<T>(promise: Promise<T>, fallback: T): Promise<T> {
   });
 }
 
-export async function AdaptationsSection({ item, locale, userId, supabase }: Props) {
+export async function AdaptationsSection({ item, locale, userId, supabase, sala = false }: Props) {
   const { links } = await withinBudget(getAdaptations(item), { links: [], source: "none" as const });
   if (links.length === 0) return null;
   const view = await buildAdaptationView(links, { locale, userId, supabase });
@@ -68,6 +71,16 @@ export async function AdaptationsSection({ item, locale, userId, supabase }: Pro
     getTranslations({ locale, namespace: "media" }),
   ]);
   const selfPath = mediaPath(locale, item.type, item.externalId);
+
+  if (sala) {
+    return (
+      <SalaAdaptations
+        view={view}
+        userId={userId}
+        loginHref={`/login?mode=login&next=${encodeURIComponent(selfPath)}`}
+      />
+    );
+  }
 
   return (
     <section aria-labelledby="adaptations-title">
