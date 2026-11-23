@@ -1,10 +1,11 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useTranslations } from 'next-intl'
 import { Link } from '@/i18n/navigation'
 import { KButton } from '@/components/ui/KButton'
 import { SalaButtonLazy as SalaButton } from '@/components/sala/SalaButtonLazy'
+import { SalaAddToListDialogLazy as SalaAddToListDialog } from '@/components/social/sala/SalaSocialDialogsLazy'
 import { Spinner } from '@/components/ui/Spinner'
 import { Modal } from '@/components/ui/Modal'
 import { useToastContext } from '@/components/ui/ToastProvider'
@@ -21,7 +22,10 @@ interface RawList {
 
 interface AddToListButtonProps {
   item: MediaItem
-  /** `sala`: el disparador es un `SalaButton` (ficha con «Sala», F2c). El diálogo es el mismo. */
+  /**
+   * `sala` (ficha con «Sala»): el disparador es un `SalaButton` (F2c) y el
+   * diálogo, `SalaDialog` (F2d). El estado y lo que se guarda, los mismos.
+   */
   skin?: 'sala'
 }
 
@@ -38,6 +42,7 @@ export function AddToListButton({ item, skin }: AddToListButtonProps) {
   const [adding, setAdding] = useState(false)
   // El fallo se anuncia dentro del diálogo, que sigue abierto (ver Modal).
   const [addError, setAddError] = useState<string | null>(null)
+  const triggerRef = useRef<HTMLButtonElement>(null)
 
   useEffect(() => {
     if (!open) return
@@ -77,17 +82,35 @@ export function AddToListButton({ item, skin }: AddToListButtonProps) {
   // Una lista mixta (F-25) admite cualquier formato.
   const compatibleLists = lists.filter((l) => l.media_type === item.type || l.media_type === 'mixed')
 
-  return (
-    <>
-      {skin === 'sala' ? (
-        <SalaButton variant="secondary" onClick={() => setOpen(true)}>
+  if (skin === 'sala') {
+    return (
+      <>
+        <SalaButton ref={triggerRef} variant="secondary" aria-haspopup="dialog" onClick={() => setOpen(true)}>
           {t('addToList')}
         </SalaButton>
-      ) : (
-        <KButton variant="secondary" size="sm" onClick={() => setOpen(true)}>
-          {t('addToList')}
-        </KButton>
-      )}
+        <SalaAddToListDialog
+          open={open}
+          onClose={() => { setOpen(false); setAddError(null) }}
+          anchorRef={triggerRef}
+          loading={loadingLists}
+          fetchError={fetchError}
+          hasLists={lists.length > 0}
+          lists={compatibleLists}
+          selectedListId={selectedListId}
+          onSelect={setSelectedListId}
+          adding={adding}
+          addError={addError}
+          onAdd={handleAdd}
+        />
+      </>
+    )
+  }
+
+  return (
+    <>
+      <KButton variant="secondary" size="sm" onClick={() => setOpen(true)}>
+        {t('addToList')}
+      </KButton>
 
       <Modal
         open={open}

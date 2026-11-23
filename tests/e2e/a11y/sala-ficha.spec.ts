@@ -182,7 +182,7 @@ test("320 px y espaciado de texto (1.4.10, 1.4.12): sin desbordes ni nombres rec
   }
 });
 
-test.describe("diálogos desde «Más acciones»: el foco entra y vuelve al botón", () => {
+test.describe("diálogos desde «Más acciones» (SalaDialog, F2d): el foco entra, no sale y vuelve al botón", () => {
   test.beforeEach(async ({ context, baseURL }) => {
     await signIn(context, baseURL!);
   });
@@ -190,30 +190,65 @@ test.describe("diálogos desde «Más acciones»: el foco entra y vuelve al bot�
   for (const c of [
     { opener: "Añadir a lista", dialog: "Añadir a una lista" },
     { opener: "Recomendar", dialog: "Recomendar a un amigo" },
+    { opener: "Denunciar", dialog: "Denunciar título" },
   ]) {
-    test(c.opener, async ({ page }) => {
-      await open(page, "/es/media/movie/550");
-      const opener = page.locator("[data-sala-ficha-more-actions]").getByRole("button", { name: c.opener, exact: true });
-      await opener.focus();
-      await page.keyboard.press("Enter");
-      const dialog = page.getByRole("dialog", { name: c.dialog });
-      await expect(dialog).toBeVisible();
-      await expect.poll(() => dialog.evaluate((el) => el.contains(document.activeElement))).toBe(true);
-      await page.keyboard.press("Escape");
-      await expect(dialog).toBeHidden();
-      await expect(opener).toBeFocused();
-    });
+    for (const scheme of ["light", "dark"] as const) {
+      test(`${c.opener} (${scheme})`, async ({ page }) => {
+        await page.emulateMedia({ colorScheme: scheme });
+        await open(page, "/es/media/movie/550");
+        const opener = page.locator("[data-sala-ficha-more-actions]").getByRole("button", { name: c.opener, exact: true });
+        await expect(opener).toHaveAttribute("aria-haspopup", "dialog");
+        await opener.focus();
+        await page.keyboard.press("Enter");
+        const dialog = page.getByRole("dialog", { name: c.dialog });
+        await expect(dialog).toBeVisible();
+        await expect(dialog).toHaveAttribute("data-sala-dialog", "sheet");
+        await expect(dialog).toHaveAttribute("aria-modal", "true");
+        const inside = () => dialog.evaluate((el) => el.contains(document.activeElement));
+        await expect.poll(inside, { message: "el foco entra al abrir" }).toBe(true);
+        for (let i = 0; i < 12; i++) {
+          await page.keyboard.press("Tab");
+          expect(await inside(), `Tab ${i + 1} sale del diálogo`).toBe(true);
+        }
+        await page.keyboard.press("Shift+Tab");
+        expect(await inside(), "Mayús+Tab sale del diálogo").toBe(true);
+        await expectNoBlockingViolations(page, `${c.dialog} Sala ${scheme}`, "[data-sala-dialog]");
+        await page.keyboard.press("Escape");
+        await expect(dialog).toBeHidden();
+        await expect(opener).toBeFocused();
+      });
+    }
   }
 
-  test("Denunciar", async ({ page }) => {
+  test("Añadir a lista: cuando llegan las listas, el foco pasa a la primera", async ({ page }) => {
+    // Las listas tardan: al abrir, el foco está en «Cancelar»; al llegar, en la primera lista.
+    let release!: () => void;
+    const gate = new Promise<void>((r) => (release = r));
+    await page.route("**/api/lists", async (route) => {
+      if (route.request().method() !== "GET") return route.continue();
+      await gate;
+      await route.continue();
+    });
     await open(page, "/es/media/movie/550");
-    const opener = page.locator("[data-sala-ficha-more-actions]").getByRole("button", { name: "Denunciar", exact: true });
+    const opener = page.locator("[data-sala-ficha-more-actions]").getByRole("button", { name: "Añadir a lista", exact: true });
     await opener.focus();
     await page.keyboard.press("Enter");
-    await expect(opener).toHaveAttribute("aria-expanded", "true");
-    await expect.poll(() => page.evaluate(() => document.activeElement?.getAttribute("type"))).toBe("radio");
-    await page.keyboard.press("Escape");
-    await expect(opener).toHaveAttribute("aria-expanded", "false");
-    await expect(opener).toBeFocused();
+    const dialog = page.getByRole("dialog", { name: "Añadir a una lista" });
+    await expect(dialog.getByRole("button", { name: "Cancelar", exact: true })).toBeFocused();
+    release();
+    await expect(dialog.getByRole("radio", { name: "Pelis para el finde" })).toBeFocused();
+  });
+
+  test("Denunciar: el foco entra en el primer motivo y, sin motivo, el error lo dice el grupo", async ({ page }) => {
+    await open(page, "/es/media/movie/550");
+    const opener = page.locator("[data-sala-ficha-more-actions]").getByRole("button", { name: "Denunciar", exact: true });
+    await opener.click();
+    const dialog = page.getByRole("dialog", { name: "Denunciar título" });
+    const first = dialog.getByRole("radio", { name: "Acoso o intimidación" });
+    await expect(first).toBeFocused();
+    await dialog.getByRole("button", { name: "Enviar denuncia", exact: true }).click();
+    await expect(dialog.getByRole("radiogroup", { name: "¿Por qué lo denuncias?" })).toHaveAttribute("aria-invalid", "true");
+    await expect(first).toBeFocused();
+    await expect(dialog).toBeVisible();
   });
 });

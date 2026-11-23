@@ -12,6 +12,7 @@ import { useEffect, useId, useRef, useState } from 'react'
 import { useTranslations } from 'next-intl'
 import { KButton } from '@/components/ui/KButton'
 import { SalaButtonLazy as SalaButton } from '@/components/sala/SalaButtonLazy'
+import { SalaReportDialogLazy as SalaReportDialog } from '@/components/social/sala/SalaReportDialogLazy'
 import { KTextarea } from '@/components/ui/KTextarea'
 import {
   ModerationRequestError,
@@ -34,11 +35,18 @@ interface Props {
   contextLabel?: string
   className?: string
   /**
-   * `sala` (solo con `variant="button"`): el disparador es un `SalaButton`
-   * discreto y la confirmación va en la tinta de la obra (ficha con «Sala»,
-   * F2c). El formulario es el mismo, con su propio fondo.
+   * `sala` (solo con `variant="button"`, ficha con «Sala»): el disparador es
+   * un `SalaButton` discreto y la confirmación va en la tinta de la obra
+   * (F2c); el formulario, en vez de desplegarse en línea, va en un
+   * `SalaDialog` (F2d). El envío y los errores, los mismos.
    */
   skin?: 'sala'
+  /**
+   * Con `skin="sala"`: el nombre del botón de cerrar del diálogo
+   * (`common.close`), ya traducido. Sin él, el diálogo cierra con Escape y
+   * «Cancelar».
+   */
+  closeLabel?: string
 }
 
 type Status = 'idle' | 'open' | 'sending' | 'sent'
@@ -151,7 +159,7 @@ export function InlineConfirm({
   )
 }
 
-export function ReportButton({ targetType, targetId, variant = 'button', contextLabel, className, skin }: Props) {
+export function ReportButton({ targetType, targetId, variant = 'button', contextLabel, className, skin, closeLabel }: Props) {
   const sala = skin === 'sala' && variant === 'button'
   const t = useTranslations('report')
   const [status, setStatus] = useState<Status>('idle')
@@ -207,19 +215,63 @@ export function ReportButton({ targetType, targetId, variant = 'button', context
     ? t('triggerWithContext', { target: t(TRIGGER_KEY[targetType]), context: contextLabel })
     : t(TRIGGER_KEY[targetType])
 
+  if (sala) {
+    const sending = status === 'sending'
+    // Sin motivo, el único error posible es «Elige un motivo»: lo dice el grupo.
+    const reasonError = error && !reason ? error : undefined
+    return (
+      <div className={className}>
+        {status === 'sent' ? (
+          <p
+            ref={sentRef}
+            tabIndex={-1}
+            role="status"
+            className="sala-type-small text-sala-ink-secondary py-1 focus:outline-none sala-focused:sala-focus"
+          >
+            <span className="font-semibold text-sala-ink">{t('sent')}</span>{' '}
+            {t('sentReference', { reference: reference ?? '' })}
+          </p>
+        ) : (
+          <SalaButton
+            ref={triggerRef}
+            variant="quiet"
+            icon={<FlagIcon className="h-5 w-5" />}
+            aria-haspopup="dialog"
+            aria-label={contextLabel ? triggerLabel : undefined}
+            onClick={() => setStatus('open')}
+          >
+            {t('label')}
+          </SalaButton>
+        )}
+        <SalaReportDialog
+          open={status === 'open' || sending}
+          onClose={close}
+          anchorRef={triggerRef}
+          finalFocusRef={sentRef}
+          title={triggerLabel}
+          closeLabel={closeLabel}
+          reason={reason}
+          onReason={(r) => { setReason(r); setError(null) }}
+          details={details}
+          onDetails={setDetails}
+          reasonError={reasonError}
+          error={reasonError ? null : error}
+          sending={sending}
+          onSubmit={handleSubmit}
+        />
+      </div>
+    )
+  }
+
   if (status === 'sent') {
     return (
       <p
         ref={sentRef}
         tabIndex={-1}
         role="status"
-        className={
-          sala
-            ? 'sala-type-small text-sala-ink-secondary py-1 focus:outline-none sala-focused:sala-focus'
-            : 'text-xs text-text-secondary px-2 py-1 rounded-button focus:outline-none focus-visible:ring-2 focus-visible:ring-accent-pink'
-        }
+        className="text-xs text-text-secondary px-2 py-1 rounded-button focus:outline-none focus-visible:ring-2 focus-visible:ring-accent-pink"
       >
-        <span className={sala ? 'font-semibold text-sala-ink' : 'font-bold text-text-primary'}>{t('sent')}</span>{' '}
+        <span className="font-bold text-text-primary">{t('sent')}</span>{' '}
         {t('sentReference', { reference: reference ?? '' })}
       </p>
     )
@@ -238,18 +290,6 @@ export function ReportButton({ targetType, targetId, variant = 'button', context
       >
         <FlagIcon className="w-4 h-4" />
       </button>
-    ) : sala ? (
-      <SalaButton
-        ref={triggerRef}
-        variant="quiet"
-        icon={<FlagIcon className="h-5 w-5" />}
-        aria-expanded={status !== 'idle'}
-        aria-controls={status !== 'idle' ? panelId : undefined}
-        aria-label={contextLabel ? triggerLabel : undefined}
-        onClick={() => (status === 'idle' ? setStatus('open') : close())}
-      >
-        {t('label')}
-      </SalaButton>
     ) : (
       <KButton
         ref={triggerRef}
