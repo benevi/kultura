@@ -182,6 +182,80 @@ test("320 px y espaciado de texto (1.4.10, 1.4.12): sin desbordes ni nombres rec
   }
 });
 
+test.describe("tráiler (F3): marco 16:9, nada de YouTube hasta pulsar", () => {
+  const TRAILER = "[data-sala-ficha-trailer]";
+  const NAME = "Reproducir el tráiler de El club de la lucha";
+
+  /** Peticiones a YouTube (las corta `isolateNetwork`, pero se cuentan). */
+  function watchYouTube(page: Page) {
+    const hits: string[] = [];
+    page.on("request", (r) => {
+      if (/youtube|ytimg|googlevideo/.test(r.url())) hits.push(r.url());
+    });
+    return hits;
+  }
+
+  for (const scheme of ["light", "dark"] as const) {
+    for (const width of [375, 1440]) {
+      test(`antes de pulsar (${scheme}, ${width} px): marco 16:9 en la retícula, axe y sin YouTube`, async ({ page }) => {
+        const hits = watchYouTube(page);
+        await page.emulateMedia({ colorScheme: scheme });
+        await page.setViewportSize({ width, height: 900 });
+        await open(page, "/es/media/movie/550");
+        const section = page.locator(TRAILER);
+        await expect(section.getByRole("heading", { level: 2, name: "Tráiler" })).toBeVisible();
+        await section.scrollIntoViewIfNeeded();
+        const frame = await section.locator(".aspect-video").boundingBox();
+        expect(frame, "marco").not.toBeNull();
+        expect(Math.abs(frame!.width / frame!.height - 16 / 9), "proporción 16:9").toBeLessThan(0.02);
+        await expect(section.locator("iframe")).toHaveCount(0);
+        await expectSalaBodyOnGrid(page);
+        await expectNoHorizontalScroll(page, width);
+        await expectNoBlockingViolations(page, `tráiler Sala ${scheme} ${width}`, TRAILER);
+        expect(hits, "peticiones a YouTube antes de pulsar").toEqual([]);
+      });
+    }
+  }
+
+  test("con el teclado: el botón dice qué tráiler, tiene anillo y al pulsar el foco pasa al reproductor", async ({ page }) => {
+    const hits = watchYouTube(page);
+    await page.emulateMedia({ reducedMotion: "reduce" });
+    await open(page, "/es/media/movie/550");
+    const button = page.locator(TRAILER).getByRole("button", { name: NAME });
+    await expect(button).toHaveAccessibleDescription("El vídeo se carga desde YouTube al pulsar.");
+    // Llega con Tab (foco de teclado, con anillo visible).
+    await button.focus();
+    await page.keyboard.press("Shift+Tab");
+    await page.keyboard.press("Tab");
+    await expect(button).toBeFocused();
+    const ring = await button.evaluate((el) => {
+      const s = getComputedStyle(el);
+      return s.outlineStyle !== "none" ? parseFloat(s.outlineWidth) : 0;
+    });
+    expect(ring, "anillo del botón").toBeGreaterThanOrEqual(2);
+    // Con movimiento reducido, sin transiciones.
+    expect(await button.evaluate((el) => getComputedStyle(el).transitionProperty)).toBe("none");
+    expect(hits).toEqual([]);
+
+    await page.keyboard.press("Enter");
+    const iframe = page.locator(`${TRAILER} iframe`);
+    await expect(iframe).toHaveAttribute("src", "https://www.youtube-nocookie.com/embed/Kultura0550?autoplay=1&rel=0");
+    await expect(iframe).toHaveAttribute("title", "Tráiler de El club de la lucha");
+    await expect(iframe).toBeFocused();
+    await expect(page.locator(TRAILER).getByRole("button")).toHaveCount(0);
+    // Solo después de pulsar, y solo al dominio sin cookies.
+    expect(hits.length).toBeGreaterThan(0);
+    for (const url of hits) expect(url).toMatch(/^https:\/\/www\.youtube-nocookie\.com\//);
+  });
+
+  test("sin tráiler (603): ni sección ni encabezado", async ({ page }) => {
+    await open(page, "/es/media/movie/603");
+    await expect(page.locator("[data-sala-ficha-more]")).toBeVisible();
+    await expect(page.locator(TRAILER)).toHaveCount(0);
+    await expect(page.getByRole("heading", { name: "Tráiler" })).toHaveCount(0);
+  });
+});
+
 test.describe("diálogos desde «Más acciones» (SalaDialog, F2d): el foco entra, no sale y vuelve al botón", () => {
   test.beforeEach(async ({ context, baseURL }) => {
     await signIn(context, baseURL!);

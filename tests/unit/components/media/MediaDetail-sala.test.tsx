@@ -6,7 +6,7 @@
 //   Si una cambia, la ficha de hoy ha cambiado.
 // - Con `sala=true`: un solo `h1`, franja de datos y panel con la sinopsis y
 //   los créditos; F2c: el resto (acciones, «Dónde ver», Steam, fuentes)
-//   también en «Sala», sin adaptaciones; solo el tráiler sigue debajo, como hoy.
+//   también en «Sala», sin adaptaciones; F3: el tráiler también, al final.
 // ============================================================
 
 import { render, screen, within } from "@testing-library/react";
@@ -64,7 +64,11 @@ vi.mock("@/components/media/sala/SalaFichaAssets", () => ({ SalaFichaAssets: () 
 vi.mock("@/components/media/TrailerEmbed", () => ({
   TrailerEmbed: ({ youtubeKey }: { youtubeKey: string }) => <div data-testid="trailer-embed" data-key={youtubeKey} />,
 }));
-vi.mock("@/components/library/LibraryAction", () => ({ LibraryAction: () => <div data-testid="library-action" /> }));
+// F3: el tráiler de Sala llega por next/dynamic (SalaTrailerLazy); aquí, el de verdad.
+vi.mock("@/components/media/sala/SalaTrailerLazy", async () => ({
+  SalaTrailerLazy: (await import("@/components/media/sala/SalaTrailer")).SalaTrailer,
+}));
+vi.mock("@/components/library/LibraryAction",() => ({ LibraryAction: () => <div data-testid="library-action" /> }));
 // F2b: la biblioteca de Sala llega por next/dynamic (SalaLibraryLazy); aquí, directa.
 vi.mock("@/components/library/sala/SalaLibraryLazy", async () => ({
   SalaLibraryActionLazy: ({ mediaId, toastLabels }: { mediaId: string; toastLabels: { region: string } }) => (
@@ -136,6 +140,9 @@ const providers: StreamingProvider[] = [{ name: "Netflix", logoPath: "https://im
 
 /** El HTML, con los `useId` de React normalizados (dependen del orden de los tests). */
 const html = (el: Element) => el.innerHTML.replace(/_r_[a-z0-9]+_/g, "_r_");
+
+/** Una clave de YouTube que vale (la de `full`, "abc", es la de las instantáneas de siempre). */
+const YT = "dQw4w9WgXcQ";
 
 const full = {
   providers,
@@ -318,8 +325,8 @@ describe("MediaDetail con sala=true (F2a)", () => {
     expect(lazy).toContain('import("./SalaLibraryCta")');
   });
 
-  it("F2c: las demás acciones y «Dónde ver» van en «Sala»; el tráiler sigue debajo", async () => {
-    const { container } = render(await sala(movie, { isAuthenticated: true }));
+  it("F2c: las demás acciones y «Dónde ver» van en «Sala»", async () => {
+    const { container } = render(await sala(movie, { isAuthenticated: true, trailerKey: YT }));
     const work = container.querySelector(".sala-work") as HTMLElement;
     for (const id of ["add-to-list-button", "recommend-button", "report-button"]) {
       const el = screen.getByTestId(id);
@@ -333,19 +340,20 @@ describe("MediaDetail con sala=true (F2a)", () => {
     // «Dónde ver» es el de «Sala», no el de hoy.
     expect(screen.queryByTestId("streaming-providers")).toBeNull();
     expect(within(work).getByRole("heading", { level: 2, name: "whereToWatch" })).toBeInTheDocument();
-    // El tráiler (F3), fuera de la sala y una sola vez.
-    expect(screen.getAllByTestId("trailer-embed")).toHaveLength(1);
-    expect(screen.getByTestId("trailer-embed").closest(".sala-work")).toBeNull();
+    // El tráiler (F3): el de «Sala», dentro de la obra y una sola vez; el de hoy, no.
+    expect(screen.queryByTestId("trailer-embed")).toBeNull();
     expect(screen.getAllByRole("heading", { name: "trailer" })).toHaveLength(1);
+    expect(within(work).getByRole("region", { name: "trailer" })).toBeInTheDocument();
     // Ni la columna de hoy ni su biblioteca.
     expect(screen.queryByTestId("library-action")).toBeNull();
     expect(container.querySelectorAll("[data-testid=add-to-list-button]")).toHaveLength(1);
   });
 
-  it("F2c: el orden de abajo: acciones, por qué, dónde ver, Steam y fuentes", async () => {
+  it("F2c/F3: el orden de abajo: acciones, por qué, dónde ver, Steam, tráiler y fuentes", async () => {
     const { container } = render(
       await sala(movie, {
         isAuthenticated: true,
+        trailerKey: YT,
         source: { name: "TMDB", url: "https://www.themoviedb.org/movie/496243" },
         steam: { appId: 1, storeUrl: "https://store.steampowered.com/app/1", isFree: true },
       })
@@ -362,8 +370,74 @@ describe("MediaDetail con sala=true (F2a)", () => {
       undefined, // «Por qué te lo recomendamos» (sin data-)
       "data-sala-ficha-watch",
       "data-sala-ficha-steam",
+      "data-sala-ficha-trailer",
       "data-sala-ficha-sources",
     ]);
+  });
+
+  it("F3: tráiler en marco 16:9 con la imagen de la obra; nada de YouTube antes de pulsar", async () => {
+    const { container } = render(await sala(movie, { trailerKey: YT }));
+    const region = screen.getByRole("region", { name: "trailer" });
+    expect(within(region).getByRole("heading", { level: 2, name: "trailer" })).toHaveClass("sala-type-heading");
+    expect(region.querySelector(".aspect-video")).not.toBeNull();
+    // Ni iframe ni miniatura de YouTube: el fondo es la apaisada de la obra.
+    expect(region.querySelector("iframe")).toBeNull();
+    expect(container.innerHTML).not.toMatch(/youtube|ytimg/);
+    const img = region.querySelector("img")!;
+    expect(img).toHaveAttribute("src", movie.backdrop);
+    expect(img).toHaveAttribute("alt", "");
+    // El botón: texto visible al principio del nombre (2.5.3), con el título; el aviso es su descripción.
+    const button = within(region).getByRole("button", {
+      name: `salaTrailerPlay:${JSON.stringify({ title: movie.title })}`,
+    });
+    expect(button).toHaveTextContent("trailerPlay");
+    expect(button).toHaveAccessibleDescription("trailerNotice");
+    expect(button.className).toContain("min-h-sala-target");
+    expect(button.className).toContain("sala-focused:sala-focus");
+    // Sala: sin radios ni sombras.
+    expect(region.innerHTML).not.toMatch(/rounded|shadow/);
+  });
+
+  it("F3: al pulsar, youtube-nocookie en reproducción, con título, y el foco en el reproductor", async () => {
+    const { fireEvent } = await import("@testing-library/react");
+    render(await sala(movie, { trailerKey: ` ${YT}\t` }));
+    const region = screen.getByRole("region", { name: "trailer" });
+    fireEvent.click(within(region).getByRole("button"));
+    const iframe = region.querySelector("iframe")!;
+    expect(iframe).toHaveAttribute("src", `https://www.youtube-nocookie.com/embed/${YT}?autoplay=1&rel=0`);
+    expect(iframe).toHaveAttribute("title", `trailerTitle:${JSON.stringify({ title: movie.title })}`);
+    expect(iframe).toHaveAttribute("allowfullscreen");
+    expect(document.activeElement).toBe(iframe);
+    expect(within(region).queryByRole("button")).toBeNull();
+  });
+
+  it("F3: libro sin apaisada: la portada de fondo; sin imagen, el panel liso", async () => {
+    const a = render(await sala(book, { trailerKey: YT }));
+    expect(within(a.container).getByRole("region", { name: "trailer" }).querySelector("img")).toHaveAttribute(
+      "src",
+      book.poster
+    );
+    a.unmount();
+    const b = render(await sala(bare, { trailerKey: YT }));
+    expect(within(b.container).getByRole("region", { name: "trailer" }).querySelector("img")).toBeNull();
+  });
+
+  it("F3: sin tráiler, o con una clave que no vale, no se pinta nada", async () => {
+    for (const trailerKey of [undefined, "abc", 'x"><script>']) {
+      const { container, unmount } = render(await sala(movie, { trailerKey }));
+      expect(within(container).queryByRole("region", { name: "trailer" })).toBeNull();
+      expect(within(container).queryByRole("heading", { name: "trailer" })).toBeNull();
+      expect(container.querySelector("[data-sala-trailer], iframe")).toBeNull();
+      unmount();
+    }
+  });
+
+  it("F3: el tráiler de Sala llega por next/dynamic (no pesa en la ficha con la bandera apagada)", async () => {
+    const { readFileSync } = await import("node:fs");
+    const src = readFileSync("src/components/media/MediaDetail.tsx", "utf8");
+    expect(src).toContain('from "./sala/SalaTrailerLazy"');
+    expect(src).not.toMatch(/from "\.\/sala\/SalaTrailer"/);
+    expect(readFileSync("src/components/media/sala/SalaTrailerLazy.tsx", "utf8")).toContain('import("./SalaTrailer")');
   });
 
   it("F2c: «Por qué te lo recomendamos» con su h2, solo con señal", async () => {

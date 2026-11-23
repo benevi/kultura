@@ -87,6 +87,8 @@ export async function expectSalaBodyOnGrid(page: Page) {
       actions: left("[data-sala-ficha-actions]"),
       more: left("[data-sala-ficha-more]"),
       watch: left("[data-sala-ficha-watch] h2"),
+      trailer: left("[data-sala-ficha-trailer] h2"),
+      trailerFrame: left("[data-sala-trailer]"),
       sources: left("[data-sala-ficha-sources]"),
     };
   });

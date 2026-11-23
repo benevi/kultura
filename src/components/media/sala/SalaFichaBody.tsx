@@ -23,7 +23,8 @@ import { cn } from "@/lib/utils/index";
  *   recomendamos», «Dónde ver», Steam y la cita de las fuentes, debajo de
  *   la sinopsis, sobre el mismo fondo teñido. Sin adaptaciones (Víctor).
  *
- * El tráiler sigue, de momento, en la ficha de hoy, debajo (F3).
+ * - **El tráiler** (F3) va en `more`, al final, antes de la cita de las
+ *   fuentes (`SalaTrailer`).
  */
 export interface SalaFichaFact {
   key: string;
