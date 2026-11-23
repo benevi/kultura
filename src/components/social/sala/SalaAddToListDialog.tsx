@@ -8,7 +8,8 @@
 // Llega por next/dynamic (`SalaSocialDialogsLazy`): la ficha de hoy no lo
 // descarga.
 //
-// Foco: al abrir, las listas aún están cargando y el foco cae en «Cancelar».
+// Foco: al abrir, las listas aún están cargando (el diálogo lo da por hecho
+// desde que se abre) y el foco cae en «Cancelar».
 // Cuando llegan, pasa a la primera lista, salvo que mientras tanto la persona
 // haya pulsado una tecla o el puntero (decisión de Víctor, F2d).
 // ============================================================
@@ -42,7 +43,7 @@ export function SalaAddToListDialog({
   open,
   onClose,
   anchorRef,
-  loading,
+  loading: loadingProp,
   fetchError,
   hasLists,
   lists,
@@ -55,6 +56,15 @@ export function SalaAddToListDialog({
   const t = useTranslations('lists')
   const tc = useTranslations('common')
   const palette = useWorkPalette(anchorRef, open)
+  // Abierto pero sin haber empezado a cargar (el botón pide las listas en un
+  // efecto, después del primer pintado): también es «cargando». Si no, el
+  // primer fotograma diría «No tienes listas» y su enlace se llevaría el foco.
+  // Va aquí y no en el botón para que el botón, que se comparte con la ficha
+  // de hoy, no cambie.
+  const started = useRef(false)
+  if (!open) started.current = false
+  else if (loadingProp) started.current = true
+  const loading = loadingProp || (open && !started.current)
   const ready = !loading && !fetchError
   const canAdd = ready && lists.length > 0
   const empty = ready && lists.length === 0
