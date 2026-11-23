@@ -10,7 +10,7 @@
  * Corre en el mismo job que axe (Supabase simulado, sin red).
  */
 import { test, expect, type Page } from "@playwright/test";
-import { isolateNetwork, open, signIn } from "./helpers";
+import { expectSalaBodyOnGrid, isolateNetwork, open, signIn } from "./helpers";
 
 interface GridRoute {
   path: string;
@@ -72,6 +72,13 @@ test.describe("retícula única (DIS-8)", () => {
     test(`logo, h1 y contenido alineados en ${route.path}`, async ({ page, context, baseURL }) => {
       if (route.session) await signIn(context, baseURL!);
       await open(page, route.path);
+      // Ficha con «Sala» (`SALA_FICHA=1`): el rótulo (h1) y la imagen van a
+      // sangre, en la sala, como la portada; el cuerpo (franja de datos,
+      // sinopsis, acciones y la mitad de abajo) sigue la retícula.
+      if ((await page.locator("[data-sala-ficha]").count()) > 0) {
+        await expectSalaBodyOnGrid(page);
+        return;
+      }
       const e = await edges(page, route.content);
       expect(e.logo, "sin logo en la cabecera").not.toBeNull();
       expect(e.h1, "sin h1 visible").not.toBeNull();

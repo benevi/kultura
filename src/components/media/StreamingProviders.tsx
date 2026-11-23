@@ -59,6 +59,20 @@ const focusRing =
 /** Modalidades en el orden en que se pintan (claves de `media_detail.watchType`). */
 const GROUPS = ["flatrate", "free", "ads", "rent", "buy"] as const;
 
+/**
+ * Las plataformas agrupadas por modalidad, en el orden de `GROUPS`, sin
+ * repetidos por nombre dentro de cada grupo y sin grupos vacíos. La usan la
+ * ficha de hoy y la de «Sala» (`SalaWhereToWatch`).
+ */
+export function groupProviders(providers: StreamingProvider[]) {
+  return GROUPS.map((type) => ({
+    type,
+    items: providers
+      .filter((p) => p.type === type)
+      .filter((p, i, arr) => arr.findIndex((x) => x.name === p.name) === i),
+  })).filter((g) => g.items.length > 0);
+}
+
 export function StreamingProviders({
   providers,
   title,
@@ -67,12 +81,7 @@ export function StreamingProviders({
   const t = useTranslations("media_detail");
   const locale = useLocale();
 
-  const groups = GROUPS.map((type) => ({
-    type,
-    items: providers
-      .filter((p) => p.type === type)
-      .filter((p, i, arr) => arr.findIndex((x) => x.name === p.name) === i),
-  })).filter((g) => g.items.length > 0);
+  const groups = groupProviders(providers);
 
   if (groups.length === 0) return null;
 

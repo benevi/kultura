@@ -22,6 +22,10 @@ const A11Y_ENV = {
   ANTHROPIC_API_KEY: "sk-ant-a11y",
   MOCK_SUPABASE_PORT: String(MOCK_SUPABASE_PORT),
   NEXT_TELEMETRY_DISABLED: "1",
+  // Ficha con «Sala» (fase 8.5): por defecto en `prueba`, así la ficha de hoy
+  // es la que ven todos los specs y `sala-ficha.spec.ts` entra con la cookie.
+  // Con `SALA_FICHA=1 npm run test:a11y` todos los specs ven «Sala».
+  SALA_FICHA: process.env.SALA_FICHA || "prueba",
   NODE_OPTIONS: `--require ${path.join(ROOT, "tests/e2e/a11y/offline-fetch.cjs")}`,
 };
 

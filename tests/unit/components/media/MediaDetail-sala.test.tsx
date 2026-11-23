@@ -5,7 +5,8 @@
 //   del código de `master` ANTES de tocar `MediaDetail` (caracterización).
 //   Si una cambia, la ficha de hoy ha cambiado.
 // - Con `sala=true`: un solo `h1`, franja de datos y panel con la sinopsis y
-//   los créditos; las acciones, «Dónde ver», tráiler y Steam siguen debajo.
+//   los créditos; F2c: el resto (acciones, «Dónde ver», Steam, fuentes)
+//   también en «Sala», sin adaptaciones; solo el tráiler sigue debajo, como hoy.
 // ============================================================
 
 import { render, screen, within } from "@testing-library/react";
@@ -36,7 +37,11 @@ vi.mock("@/components/media/TranslatedSynopsis", async () => {
   };
 });
 
-vi.mock("next-intl", () => ({ useTranslations: () => (key: string) => key }));
+vi.mock("next-intl", () => ({
+  useTranslations: () => (key: string, values?: Record<string, unknown>) =>
+    values ? `${key}:${JSON.stringify(values)}` : key,
+  useLocale: () => "es",
+}));
 
 vi.mock("next/image", () => ({
   default: ({
@@ -67,10 +72,18 @@ vi.mock("@/components/library/sala/SalaLibraryLazy", async () => ({
   ),
   SalaLibraryCtaLazy: (await import("@/components/library/sala/SalaLibraryCta")).SalaLibraryCta,
 }));
-vi.mock("@/components/social/RecommendButton", () => ({ RecommendButton: () => <div data-testid="recommend-button" /> }));
-vi.mock("@/components/social/ReportButton", () => ({ ReportButton: () => <div data-testid="report-button" /> }));
-vi.mock("@/components/social/AddToListButton", () => ({ AddToListButton: () => <div data-testid="add-to-list-button" /> }));
-vi.mock("@/components/media/StreamingProviders", () => ({
+// `data-skin`: con `sala`, los disparadores son de «Sala» (F2c). Sin la prop no se pinta.
+vi.mock("@/components/social/RecommendButton", () => ({
+  RecommendButton: ({ skin }: { skin?: string }) => <div data-testid="recommend-button" data-skin={skin} />,
+}));
+vi.mock("@/components/social/ReportButton", () => ({
+  ReportButton: ({ skin }: { skin?: string }) => <div data-testid="report-button" data-skin={skin} />,
+}));
+vi.mock("@/components/social/AddToListButton", () => ({
+  AddToListButton: ({ skin }: { skin?: string }) => <div data-testid="add-to-list-button" data-skin={skin} />,
+}));
+vi.mock("@/components/media/StreamingProviders", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/components/media/StreamingProviders")>()),
   StreamingProviders: ({ providers }: { providers: StreamingProvider[] }) => (
     <div data-testid="streaming-providers" data-count={providers.length} />
   ),
@@ -286,8 +299,13 @@ describe("MediaDetail con sala=true (F2a)", () => {
     expect(within(region).getByText(/ctaHint/)).toBeInTheDocument();
     expect(container.querySelectorAll('a[href*="mode=register"]')).toHaveLength(1);
     expect(container.querySelectorAll('a[href*="mode=login"]')).toHaveLength(1);
-    // Denunciar sigue en la ficha de hoy (fuera de F2b).
-    expect(screen.getByRole("link", { name: "reportPublic" }).closest(".sala-work")).toBeNull();
+    // F2c: denunciar sin cuenta también va en «Sala», una sola vez.
+    const report = screen.getAllByRole("link", { name: "reportPublic" });
+    expect(report).toHaveLength(1);
+    expect(report[0].closest(".sala-work")).not.toBeNull();
+    expect(report[0].getAttribute("href")).toContain("/report?target=media&id=book_OL1");
+    expect(report[0]).toHaveAttribute("rel", "nofollow");
+    expect(report[0].className).toContain("min-h-sala-target");
   });
 
   it("F2b: la biblioteca de Sala llega por next/dynamic (no pesa en la ficha con la bandera apagada)", async () => {
@@ -300,18 +318,192 @@ describe("MediaDetail con sala=true (F2a)", () => {
     expect(lazy).toContain('import("./SalaLibraryCta")');
   });
 
-  it("las demás acciones, «Dónde ver», tráiler y adaptaciones siguen debajo, como hoy", async () => {
-    render(await sala(movie, { isAuthenticated: true }));
-    for (const id of [
-      "add-to-list-button",
-      "recommend-button",
-      "report-button",
-      "streaming-providers",
-      "trailer-embed",
-      "adaptations-slot",
-    ]) {
-      expect(screen.getByTestId(id)).toBeInTheDocument();
+  it("F2c: las demás acciones y «Dónde ver» van en «Sala»; el tráiler sigue debajo", async () => {
+    const { container } = render(await sala(movie, { isAuthenticated: true }));
+    const work = container.querySelector(".sala-work") as HTMLElement;
+    for (const id of ["add-to-list-button", "recommend-button", "report-button"]) {
+      const el = screen.getByTestId(id);
+      expect(el.closest(".sala-work")).toBe(work);
+      expect(el).toHaveAttribute("data-skin", "sala");
     }
+    const more = screen.getByRole("region", { name: "salaMoreActionsLabel" });
+    expect(within(more).getByRole("heading", { level: 2, name: "salaMoreActionsLabel" })).toHaveClass("sr-only");
+    // Sin adaptaciones con «Sala» (decisión de Víctor), aunque la página las pase.
+    expect(screen.queryByTestId("adaptations-slot")).toBeNull();
+    // «Dónde ver» es el de «Sala», no el de hoy.
+    expect(screen.queryByTestId("streaming-providers")).toBeNull();
+    expect(within(work).getByRole("heading", { level: 2, name: "whereToWatch" })).toBeInTheDocument();
+    // El tráiler (F3), fuera de la sala y una sola vez.
+    expect(screen.getAllByTestId("trailer-embed")).toHaveLength(1);
+    expect(screen.getByTestId("trailer-embed").closest(".sala-work")).toBeNull();
+    expect(screen.getAllByRole("heading", { name: "trailer" })).toHaveLength(1);
+    // Ni la columna de hoy ni su biblioteca.
+    expect(screen.queryByTestId("library-action")).toBeNull();
+    expect(container.querySelectorAll("[data-testid=add-to-list-button]")).toHaveLength(1);
+  });
+
+  it("F2c: el orden de abajo: acciones, por qué, dónde ver, Steam y fuentes", async () => {
+    const { container } = render(
+      await sala(movie, {
+        isAuthenticated: true,
+        source: { name: "TMDB", url: "https://www.themoviedb.org/movie/496243" },
+        steam: { appId: 1, storeUrl: "https://store.steampowered.com/app/1", isFree: true },
+      })
+    );
+    const order = Array.from(container.querySelectorAll("[data-sala-ficha-more] > *")).map(
+      (el) =>
+        el.getAttribute("data-testid") ??
+        Array.from(el.attributes)
+          .map((a) => a.name)
+          .find((n) => n.startsWith("data-sala-ficha-"))
+    );
+    expect(order).toEqual([
+      "data-sala-ficha-more-actions",
+      undefined, // «Por qué te lo recomendamos» (sin data-)
+      "data-sala-ficha-watch",
+      "data-sala-ficha-steam",
+      "data-sala-ficha-sources",
+    ]);
+  });
+
+  it("F2c: «Por qué te lo recomendamos» con su h2, solo con señal", async () => {
+    render(await sala(movie));
+    const why = screen.getByRole("region", { name: "whyRecommended" });
+    expect(why.closest(".sala-work")).not.toBeNull();
+    expect(within(why).getByText(/whyRecommendedText/)).toHaveClass("sala-type-text");
+    const r = render(await sala(movie, { matchScore: undefined }));
+    expect(within(r.container).queryByRole("region", { name: "whyRecommended" })).toBeNull();
+  });
+
+  it("F2c: «Dónde ver» se desliza; cada plataforma es un enlace que avisa de que abre otra web", async () => {
+    const { container } = render(
+      await sala(movie, {
+        providers: [
+          { name: "Netflix", logoPath: "https://img/n", type: "flatrate" },
+          { name: "Netflix", logoPath: "https://img/n", type: "flatrate" },
+          { name: "Apple TV", logoPath: "https://img/a", type: "rent" },
+        ],
+        watchLink: "https://www.themoviedb.org/movie/496243/watch?locale=ES",
+      })
+    );
+    const watch = screen.getByRole("region", { name: "whereToWatch" });
+    const row = watch.querySelector("[data-sala-watch-row]")!;
+    expect(row.className).toContain("overflow-x-auto");
+    // Sale hasta el borde de la retícula (`page-grid`) y respeta ese margen.
+    expect(row.className).toContain("scroll-px-4");
+    expect(row.className).toContain("md:scroll-px-8");
+    // Todo son enlaces: la fila no es otra parada del tabulador.
+    expect(row).not.toHaveAttribute("tabindex");
+    expect(within(watch).getAllByRole("heading", { level: 3 }).map((h) => h.textContent)).toEqual([
+      "watchType.flatrate",
+      "watchType.rent",
+    ]);
+    const links = within(watch).getAllByRole("link", { name: /salaProviderLinkLabel/ });
+    expect(links).toHaveLength(2); // sin repetidos
+    // El nombre accesible lleva la modalidad (la misma plataforma puede estar en dos).
+    expect(links.map((a) => a.getAttribute("aria-label"))).toEqual([
+      'salaProviderLinkLabel:{"name":"Netflix","type":"flatrate"}',
+      'salaProviderLinkLabel:{"name":"Apple TV","type":"rent"}',
+    ]);
+    // Sin recorte del nombre; la flecha va fuera del texto.
+    const name = within(watch).getByText("Apple TV");
+    expect(name.className).not.toContain("line-clamp");
+    expect(name.querySelector("svg")).toBeNull();
+    expect(links[1].querySelector(":scope > svg[aria-hidden='true']")).not.toBeNull();
+    for (const a of links) {
+      expect(a).toHaveAttribute("target", "_blank");
+      expect(a).toHaveAttribute("rel", "noopener noreferrer");
+      expect(a.getAttribute("href")).toMatch(/^https:\/\/www\.themoviedb\.org\//);
+      expect(a.className).toContain("min-h-sala-target");
+    }
+    // El nombre se ve; el logo es adorno.
+    expect(within(watch).getByText("Apple TV")).toBeInTheDocument();
+    expect(watch.querySelector('img[src="https://img/a"]')).toHaveAttribute("alt", "");
+    // La cita de JustWatch, siempre, con su logo y su enlace.
+    expect(within(watch).getByText("justwatchAttribution")).toBeInTheDocument();
+    const jw = within(watch).getByRole("link", { name: "justwatchLinkLabel" });
+    expect(jw).toHaveAttribute("href", "https://www.justwatch.com/es");
+    expect(within(jw).getByRole("img", { name: "JustWatch" })).toBeInTheDocument();
+    expect(container.querySelectorAll("[data-sala-ficha-watch]")).toHaveLength(1);
+  });
+
+  it("F2c: si una plataforma no tiene enlace, la fila entra en el teclado (para moverla con las flechas)", async () => {
+    render(await sala(movie, { providers: [{ name: "Filmin", logoPath: "https://img/f", type: "flatrate" }], watchLink: undefined }));
+    const watch = screen.getByRole("region", { name: "whereToWatch" });
+    const row = watch.querySelector("[data-sala-watch-row]")!;
+    expect(row).toHaveAttribute("tabindex", "0");
+    expect(row).toHaveAttribute("role", "group");
+    expect(row).toHaveAttribute("aria-labelledby", "sala-ficha-watch");
+    expect(within(watch).queryByRole("link", { name: /salaProviderLinkLabel/ })).toBeNull();
+  });
+
+  it("F2c: juego con Steam: precio, idiomas, capturas con nombre y enlace a la tienda, en «Sala»", async () => {
+    render(
+      await sala(game, {
+        steam: {
+          appId: 292030,
+          storeUrl: "https://store.steampowered.com/app/292030",
+          isFree: false,
+          price: "9,99€",
+          priceOriginal: "29,99€",
+          discountPercent: 67,
+          supportedLanguages: ["Español", "English"],
+          screenshots: [
+            { thumb: "https://cdn/s1.jpg", full: "https://cdn/s1-full.jpg" },
+            { thumb: "https://cdn/s2.jpg", full: "https://cdn/s2-full.jpg" },
+          ],
+          metacritic: 93,
+        },
+      })
+    );
+    const steam = screen.getByRole("region", { name: "steamTitle" });
+    expect(steam.closest(".sala-work")).not.toBeNull();
+    expect(within(steam).getByText("9,99€")).toBeInTheDocument();
+    expect(within(steam).getByText("29,99€").tagName).toBe("S");
+    // El descuento se anuncia como tal, no solo «menos 67 por ciento».
+    const discountLabel = within(steam).getByText("steamDiscount");
+    expect(discountLabel).toHaveClass("sr-only");
+    expect(discountLabel.parentElement!.textContent).toMatch(/^steamDiscount\s*−67%$/);
+    expect(within(steam).getByText("93")).toBeInTheDocument();
+    expect(within(steam).getByText("Español, English")).toBeInTheDocument();
+    const shots = within(steam).getAllByRole("link", { name: /steamScreenshotLink/ });
+    expect(shots).toHaveLength(2);
+    expect(shots[1]).toHaveAccessibleName('steamScreenshotLink:{"n":2,"total":2} newTab');
+    expect(shots[1]).toHaveAttribute("target", "_blank");
+    const store = within(steam).getByRole("link", { name: /steamViewOnStore/ });
+    expect(store).toHaveAttribute("href", "https://store.steampowered.com/app/292030");
+    expect(store).toHaveAttribute("target", "_blank");
+    // jsdom junta el texto oculto sin el espacio; el navegador lo lee «… (se abre en una pestaña nueva)».
+    expect(store).toHaveAccessibleName(/^steamViewOnStore\s*newTab$/);
+  });
+
+  it("F2c: la fuente del título (RAWG) va en «Sala», visible y con su enlace", async () => {
+    render(await sala(game, { source: { name: "RAWG", url: "https://rawg.io/games/the-witcher-3-wild-hunt" } }));
+    const link = screen.getByRole("link", { name: /^RAWG\s*newTab$/ });
+    expect(link.closest(".sala-work")).not.toBeNull();
+    expect(link).toHaveAttribute("href", "https://rawg.io/games/the-witcher-3-wild-hunt");
+    expect(link).toHaveAttribute("target", "_blank");
+    expect(link.className).toContain("min-h-sala-target");
+    expect(link.closest("p")).toHaveTextContent("sourceLabel");
+    expect(link.closest("p")!.className).not.toContain("sr-only");
+    expect(screen.getAllByText("sourceLabel")).toHaveLength(1);
+  });
+
+  it("F2c: Google Books: el logo «Powered by Google» y el enlace al libro, en «Sala»", async () => {
+    render(
+      await sala(
+        { ...book, id: "book_zyTCAlFPjgYC", externalId: "zyTCAlFPjgYC" },
+        { source: { name: "Google Books", url: "https://books.google.com/books?id=zyTCAlFPjgYC" } }
+      )
+    );
+    const attributions = screen.getAllByTestId("google-books-attribution");
+    expect(attributions).toHaveLength(1);
+    expect(attributions[0].closest(".sala-work")).not.toBeNull();
+    expect(within(attributions[0]).getByRole("img")).toBeInTheDocument();
+    const link = within(attributions[0]).getByRole("link", { name: /^googleBooksLink\s*newTab$/ });
+    expect(link).toHaveAttribute("href", "https://books.google.com/books?id=zyTCAlFPjgYC");
+    // La fuente «Google Books» no se repite como «Datos del título».
+    expect(screen.queryByText("sourceLabel")).toBeNull();
   });
 
   it("la miga de pan va en la ficha de Sala, una sola vez", async () => {

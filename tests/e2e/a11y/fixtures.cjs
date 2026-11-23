@@ -87,6 +87,52 @@ function tmdbMovie(m, i) {
 
 const tmdbResults = MOVIES.map(tmdbMovie);
 
+/**
+ * «Dónde ver» (TMDB, datos de JustWatch) para dos obras: 550 con la página de
+ * TMDB (cada plataforma es un enlace) y 603 sin ella (la fila no tiene
+ * enlaces y se mueve con las flechas). Nombres largos y varias modalidades
+ * para que la fila desborde a 390 px y algún nombre se parta.
+ */
+const PROVIDERS = {
+  550: {
+    ES: {
+      link: "https://www.themoviedb.org/movie/550-fight-club/watch?locale=ES",
+      flatrate: [
+        { provider_name: "Amazon Prime Video", logo_path: "/a.jpg" },
+        { provider_name: "Movistar Plus+ Ficción Total", logo_path: "/b.jpg" },
+        { provider_name: "Netflix", logo_path: "/c.jpg" },
+      ],
+      rent: [
+        { provider_name: "Apple TV", logo_path: "/d.jpg" },
+        { provider_name: "Google Play Movies", logo_path: "/e.jpg" },
+        { provider_name: "Rakuten TV", logo_path: "/f.jpg" },
+      ],
+      buy: [
+        { provider_name: "Apple TV", logo_path: "/d.jpg" },
+        { provider_name: "Google Play Movies", logo_path: "/e.jpg" },
+      ],
+    },
+  },
+  603: {
+    ES: {
+      flatrate: [
+        { provider_name: "Filmin", logo_path: "/g.jpg" },
+        { provider_name: "HBO Max", logo_path: "/h.jpg" },
+      ],
+      rent: [
+        { provider_name: "Apple TV", logo_path: "/d.jpg" },
+        { provider_name: "Google Play Movies", logo_path: "/e.jpg" },
+        { provider_name: "Rakuten TV", logo_path: "/f.jpg" },
+        { provider_name: "Amazon Video", logo_path: "/i.jpg" },
+      ],
+    },
+  },
+};
+
+function watchProviders(id) {
+  return { id, results: PROVIDERS[id] ?? {} };
+}
+
 function tmdbDetail(id) {
   const base = tmdbResults.find((m) => m.id === id) ?? tmdbMovie({ id, title: `Título ${id}`, year: 2020 }, 0);
   return {
@@ -102,7 +148,7 @@ function tmdbDetail(id) {
     ],
     credits: { cast: [], crew: [] },
     videos: { results: [] },
-    "watch/providers": { results: {} },
+    "watch/providers": watchProviders(id),
     external_ids: {},
     production_companies: [],
     spoken_languages: [],
@@ -116,7 +162,7 @@ function tmdbResponse(pathname) {
     const [, , id, sub] = detail;
     if (!sub) return tmdbDetail(Number(id));
     if (sub === "/videos") return { id: Number(id), results: [] };
-    if (sub === "/watch/providers") return { id: Number(id), results: {} };
+    if (sub === "/watch/providers") return watchProviders(Number(id));
     if (sub === "/credits") return { id: Number(id), cast: [], crew: [] };
     if (sub === "/external_ids") return { id: Number(id) };
     // recommendations, similar…
