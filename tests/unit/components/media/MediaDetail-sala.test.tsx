@@ -215,7 +215,7 @@ describe("MediaDetail con sala=true (F2a)", () => {
     render(await sala(movie));
     const band = screen.getByRole("region", { name: "salaFactsLabel" });
     const facts = Array.from(band.querySelectorAll("[data-fact]")).map((el) => el.getAttribute("data-fact"));
-    expect(facts).toEqual(["year", "type", "duration", "rating-kultura", "rating-provider", "genres", "original-title"]);
+    expect(facts).toEqual(["year", "type", "duration", "rating-kultura", "rating-provider", "genres", "original-language"]);
     expect(within(band).getByText("movie")).toBeInTheDocument();
     // «Formato» en la franja (decisión de Víctor); la ficha de hoy sigue con «Tipo».
     expect(within(band).getByText("format")).toBeInTheDocument();
@@ -603,20 +603,29 @@ describe("MediaDetail con sala=true (F2a)", () => {
     expect(screen.getByText("a".repeat(279) + "😀…")).toBeInTheDocument();
   });
 
-  it("F4: el título original con su idioma, marcado con `lang`, solo si no es el que se ve", async () => {
+  it("F4: si el original ya va bajo el rótulo, la franja da solo el idioma original", async () => {
     const { unmount } = render(await sala({ ...movie, metadata: { ...movie.metadata, originalLanguage: "ko" } }));
     const band = screen.getByRole("region", { name: "salaFactsLabel" });
-    const fact = band.querySelector('[data-fact="original-title"]')!;
-    expect(within(fact as HTMLElement).getByText("originalTitle")).toBeInTheDocument();
-    const value = within(fact as HTMLElement).getByText("기생충");
-    expect(value).toHaveAttribute("lang", "ko");
-    // El nombre del idioma, en el de la página y fuera del `lang` del título.
-    expect(fact.querySelector("dd")!.textContent).toBe("기생충· coreano");
-    expect(value.textContent).toBe("기생충");
+    expect(band.querySelector('[data-fact="original-title"]')).toBeNull();
+    const fact = band.querySelector('[data-fact="original-language"]')!;
+    expect(within(fact as HTMLElement).getByText("originalLanguage")).toBeInTheDocument();
+    expect(fact.querySelector("dd")!.textContent).toBe("coreano");
+    // El título original sale una sola vez: bajo el rótulo, con su `lang`.
+    expect(screen.getAllByText("기생충")).toHaveLength(1);
     unmount();
 
-    // AniList: el romaji, como japonés en letra latina.
-    const r = render(
+    // Sin idioma conocido no hay nada que añadir.
+    const s = render(await sala({ ...movie, originalTitle: "Original sin escritura" }));
+    expect(document.querySelector('[data-fact="original-language"]')).toBeNull();
+    s.unmount();
+
+    // Igual que el título que se ve: no se pinta nada.
+    render(await sala({ ...movie, originalTitle: undefined }));
+    expect(document.querySelector('[data-fact^="original-"]')).toBeNull();
+  });
+
+  it("F4: si el rótulo enseña otro (el nativo), la franja da el título original con su idioma", async () => {
+    render(
       await sala({
         id: "anime_al-199",
         externalId: "al-199",
@@ -626,14 +635,13 @@ describe("MediaDetail con sala=true (F2a)", () => {
         metadata: { nativeTitle: "千と千尋の神隠し" },
       })
     );
-    const romaji = screen.getByText("Sen to Chihiro no Kamikakushi");
+    const fact = document.querySelector('[data-fact="original-title"]')!;
+    expect(within(fact as HTMLElement).getByText("originalTitle")).toBeInTheDocument();
+    const romaji = within(fact as HTMLElement).getByText("Sen to Chihiro no Kamikakushi");
     expect(romaji).toHaveAttribute("lang", "ja-Latn");
-    expect(romaji.closest("dd")!.textContent).toContain("· japonés");
-    r.unmount();
-
-    // Igual que el título que se ve: no se pinta.
-    render(await sala({ ...movie, originalTitle: undefined }));
-    expect(document.querySelector('[data-fact="original-title"]')).toBeNull();
+    // El nombre del idioma, en el de la página y fuera del `lang` del título.
+    expect(fact.querySelector("dd")!.textContent).toBe("Sen to Chihiro no Kamikakushi· japonés");
+    expect(document.querySelector('[data-fact="original-language"]')).toBeNull();
   });
 
   it("sin sinopsis ni créditos ni miga: solo la franja", async () => {

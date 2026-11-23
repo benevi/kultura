@@ -280,6 +280,7 @@
     "salaFactsLabel": "Datos de la obra",
     "format": "Formato",
     "originalTitle": "Título original",
+    "originalLanguage": "Idioma original",
     "salaLibraryLabel": "Tu biblioteca",
     "salaMoreActionsLabel": "Más acciones",
     "salaToastRegion": "Avisos (F8)",
