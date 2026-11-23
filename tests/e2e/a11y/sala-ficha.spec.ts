@@ -220,6 +220,25 @@ test.describe("diálogos desde «Más acciones» (SalaDialog, F2d): el foco entr
     }
   }
 
+  test("Añadir a lista: cuando llegan las listas, el foco pasa a la primera", async ({ page }) => {
+    // Las listas tardan: al abrir, el foco está en «Cancelar»; al llegar, en la primera lista.
+    let release!: () => void;
+    const gate = new Promise<void>((r) => (release = r));
+    await page.route("**/api/lists", async (route) => {
+      if (route.request().method() !== "GET") return route.continue();
+      await gate;
+      await route.continue();
+    });
+    await open(page, "/es/media/movie/550");
+    const opener = page.locator("[data-sala-ficha-more-actions]").getByRole("button", { name: "Añadir a lista", exact: true });
+    await opener.focus();
+    await page.keyboard.press("Enter");
+    const dialog = page.getByRole("dialog", { name: "Añadir a una lista" });
+    await expect(dialog.getByRole("button", { name: "Cancelar", exact: true })).toBeFocused();
+    release();
+    await expect(dialog.getByRole("radio", { name: "Pelis para el finde" })).toBeFocused();
+  });
+
   test("Denunciar: el foco entra en el primer motivo y, sin motivo, el error lo dice el grupo", async ({ page }) => {
     await open(page, "/es/media/movie/550");
     const opener = page.locator("[data-sala-ficha-more-actions]").getByRole("button", { name: "Denunciar", exact: true });

@@ -85,6 +85,32 @@ describe('F2d: añadir a una lista en SalaDialog', () => {
     expect(trigger).toHaveFocus()
   })
 
+  it('al abrir dice «Cargando» (no «No tienes listas») y, cuando llegan, el foco pasa a la primera lista', async () => {
+    let answer!: (v: unknown) => void
+    mockFetch.mockReturnValueOnce(new Promise((r) => (answer = r)))
+    renderEs(<AddToListButton item={item} skin="sala" />)
+    await act(async () => fireEvent.click(screen.getByRole('button', { name: 'Añadir a lista' })))
+    const dialog = screen.getByRole('dialog', { name: 'Añadir a una lista' })
+    expect(within(dialog).getByRole('status')).toHaveTextContent('Cargando')
+    expect(within(dialog).queryByText('No tienes listas todavía')).toBeNull()
+    expect(within(dialog).getByRole('button', { name: 'Cancelar' })).toHaveFocus()
+    await act(async () => answer(ok(lists)))
+    expect(within(dialog).getByRole('radio', { name: 'Pelis para el finde' })).toHaveFocus()
+  })
+
+  it('si mientras cargaba la persona ha movido el foco, no se le quita', async () => {
+    let answer!: (v: unknown) => void
+    mockFetch.mockReturnValueOnce(new Promise((r) => (answer = r)))
+    renderEs(<AddToListButton item={item} skin="sala" />)
+    await act(async () => fireEvent.click(screen.getByRole('button', { name: 'Añadir a lista' })))
+    const dialog = screen.getByRole('dialog', { name: 'Añadir a una lista' })
+    const close = within(dialog).getByRole('button', { name: 'Cerrar' })
+    fireEvent.keyDown(document.activeElement!, { key: 'Tab', shiftKey: true })
+    close.focus()
+    await act(async () => answer(ok(lists)))
+    expect(close).toHaveFocus()
+  })
+
   it('añade a la lista elegida, avisa y cierra', async () => {
     mockFetch.mockResolvedValueOnce(ok(lists)).mockResolvedValueOnce(ok({ id: 'i1' }, 201))
     renderEs(<AddToListButton item={item} skin="sala" />)

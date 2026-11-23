@@ -7,9 +7,13 @@
 // pinta, con `SalaDialog` (hoja en móvil), `SalaRadioGroup` y `SalaButton`.
 // Llega por next/dynamic (`SalaSocialDialogsLazy`): la ficha de hoy no lo
 // descarga.
+//
+// Foco: al abrir, las listas aún están cargando y el foco cae en «Cancelar».
+// Cuando llegan, pasa a la primera lista, salvo que mientras tanto la persona
+// haya pulsado una tecla o el puntero (decisión de Víctor, F2d).
 // ============================================================
 
-import type { RefObject } from 'react'
+import { useEffect, useRef, type RefObject } from 'react'
 import { useTranslations } from 'next-intl'
 import { SalaDialog } from '@/components/sala/SalaDialog'
 import { SalaButton } from '@/components/sala/SalaButton'
@@ -55,6 +59,27 @@ export function SalaAddToListDialog({
   const canAdd = ready && lists.length > 0
   const empty = ready && lists.length === 0
 
+  // ¿La persona ha tocado algo (tecla o puntero) mientras cargaban las listas?
+  // Entonces el foco es suyo y no se mueve.
+  const touched = useRef(false)
+  const firstListRef = useRef<HTMLInputElement>(null)
+  useEffect(() => {
+    if (!open || !loading) return
+    touched.current = false
+    const mark = () => {
+      touched.current = true
+    }
+    document.addEventListener('keydown', mark, true)
+    document.addEventListener('pointerdown', mark, true)
+    return () => {
+      document.removeEventListener('keydown', mark, true)
+      document.removeEventListener('pointerdown', mark, true)
+    }
+  }, [open, loading])
+  useEffect(() => {
+    if (canAdd && !touched.current) firstListRef.current?.focus()
+  }, [canAdd])
+
   return (
     <SalaDialog
       open={open}
@@ -96,8 +121,8 @@ export function SalaAddToListDialog({
 
       {canAdd && (
         <SalaRadioGroup legend={t('selectList')} name="list-select" value={selectedListId} onChange={onSelect}>
-          {lists.map((l) => (
-            <SalaRadio key={l.id} value={l.id} label={l.name} />
+          {lists.map((l, i) => (
+            <SalaRadio key={l.id} ref={i === 0 ? firstListRef : undefined} value={l.id} label={l.name} />
           ))}
         </SalaRadioGroup>
       )}

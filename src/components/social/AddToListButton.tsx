@@ -85,7 +85,14 @@ export function AddToListButton({ item, skin }: AddToListButtonProps) {
   if (skin === 'sala') {
     return (
       <>
-        <SalaButton ref={triggerRef} variant="secondary" aria-haspopup="dialog" onClick={() => setOpen(true)}>
+        <SalaButton
+          ref={triggerRef}
+          variant="secondary"
+          aria-haspopup="dialog"
+          // Abre ya «cargando»: sin esto, el primer fotograma diría «No tienes
+          // listas» (y su enlace se llevaría el foco) antes de pedirlas.
+          onClick={() => { setLoadingLists(true); setOpen(true) }}
+        >
           {t('addToList')}
         </SalaButton>
         <SalaAddToListDialog
