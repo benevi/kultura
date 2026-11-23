@@ -92,6 +92,9 @@ describe('SalaLibraryAction (F2b)', () => {
     expect(dialog).toHaveAttribute('data-sala-dialog', 'sheet')
     const status = within(dialog).getByRole('combobox', { name: 'statusLabel' })
     await waitFor(() => expect(status).toHaveFocus())
+    // Pie de todos los diálogos de «Sala»: «Cancelar» primero, la acción principal al final.
+    const footer = dialog.querySelector<HTMLElement>('[data-sala-dialog-footer]')!
+    expect(within(footer).getAllByRole('button').map((b) => b.textContent)).toEqual(['cancel', 'saveStatus'])
     // Una nota en el deslizador de Sala (escala de siempre: 1-5 enteras).
     fireEvent.change(within(dialog).getByTestId('sala-rating'), { target: { value: '4' } })
     fireEvent.click(within(dialog).getByRole('button', { name: 'saveStatus' }))
