@@ -339,6 +339,16 @@ describe("normalizeAniListAnime", () => {
   it("year: seasonYear", () => {
     expect(result.year).toBe(2006);
   });
+
+  it("F4: sin formato ni duración (el catálogo no los pide), ni las claves", () => {
+    expect(result.metadata).not.toHaveProperty("format");
+    expect(result.metadata).not.toHaveProperty("duration");
+  });
+
+  it("F4: el detalle trae el formato y la duración", () => {
+    const movie = normalizeAniListAnime({ ...ANILIST_ANIME_FIXTURE, format: "MOVIE", duration: 125, episodes: 1 });
+    expect(movie.metadata).toMatchObject({ format: "MOVIE", duration: 125, episodes: 1 });
+  });
 });
 
 describe("normalizeAniListAnime — campos opcionales ausentes", () => {

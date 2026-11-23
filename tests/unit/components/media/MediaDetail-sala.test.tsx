@@ -631,6 +631,47 @@ describe("MediaDetail con sala=true (F2a)", () => {
     expect(container.querySelector(".sala-stage")).toHaveAttribute("data-sala-fill", "all");
   });
 
+  it("F4: anime que es película: «Película de anime» y lo que dura, en vez de «Episodios: 1»", async () => {
+    const chihiro: MediaItem = {
+      id: "anime_al-199",
+      externalId: "al-199",
+      type: "anime",
+      title: "Spirited Away",
+      year: 2001,
+      metadata: { format: "MOVIE", duration: 125, episodes: 1, studio: "Studio Ghibli" },
+    };
+    const { unmount } = render(await sala(chihiro));
+    const band = screen.getByRole("region", { name: "salaFactsLabel" });
+    const facts = Array.from(band.querySelectorAll("[data-fact]")).map((el) => el.getAttribute("data-fact"));
+    expect(facts).toEqual(["year", "type", "duration", "rating-kultura"]);
+    expect(within(band).getByText("formatAnimeMovie")).toBeInTheDocument();
+    expect(within(band).getByText('durationValue:{"minutes":125}')).toBeInTheDocument();
+    expect(within(band).queryByText("anime")).toBeNull();
+    unmount();
+
+    // Sin duración, el dato de siempre; una serie de anime sigue siendo «anime».
+    const r = render(await sala({ ...chihiro, metadata: { format: "MOVIE", episodes: 1 } }));
+    expect(within(screen.getByRole("region", { name: "salaFactsLabel" })).getByText("1")).toBeInTheDocument();
+    r.unmount();
+    render(await sala({ ...chihiro, metadata: { format: "TV", duration: 24, episodes: 26 } }));
+    const tv = screen.getByRole("region", { name: "salaFactsLabel" });
+    expect(within(tv).getByText("anime")).toBeInTheDocument();
+    expect(within(tv).getByText("26")).toBeInTheDocument();
+  });
+
+  it("F4: con sala=false, un anime que es película sigue como hoy", async () => {
+    const chihiro: MediaItem = {
+      id: "anime_al-199",
+      externalId: "al-199",
+      type: "anime",
+      title: "Spirited Away",
+      metadata: { format: "MOVIE", duration: 125, episodes: 1 },
+    };
+    render(await MediaDetail({ item: chihiro, initialEntry: null, isAuthenticated: false }));
+    expect(screen.queryByText("formatAnimeMovie")).toBeNull();
+    expect(screen.getByText("anime")).toBeInTheDocument();
+  });
+
   it("sin sinopsis ni créditos ni miga: solo la franja", async () => {
     const { container } = render(await sala(bare, { breadcrumbs: [] }));
     expect(screen.queryByRole("heading", { name: "synopsis" })).toBeNull();

@@ -46,6 +46,10 @@ export interface AniListMedia {
   studios: { nodes: { name: string }[] } | null;
   trailer: { id: string; site: string } | null;
   source: string | null;
+  /** Solo en el detalle (F4): TV, TV_SHORT, MOVIE, SPECIAL, OVA, ONA, MUSIC. */
+  format?: string | null;
+  /** Solo en el detalle (F4): minutos por episodio (en una película, lo que dura). */
+  duration?: number | null;
 }
 
 export interface AniListPageInfo {
@@ -185,10 +189,14 @@ const DISCOVER_QUERY = `
   }
 `;
 
+// El formato y la duración solo hacen falta en la ficha (F4: «Película de
+// anime»); el catálogo no los pide y su consulta no cambia.
 const DETAIL_QUERY = `
   query ($id: Int) {
     Media(id: $id, type: ANIME) {
       ${MEDIA_FIELDS}
+      format
+      duration
     }
   }
 `;
