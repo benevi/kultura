@@ -1,0 +1,186 @@
+/* Generado por salaPosterCss() (src/lib/design/sala-poster-css.ts). No editar a mano. */
+
+/* La vertical que llena la sala (fase 8.5, F4; biblia §2): por encima del
+   ancho de ventana de `data-sala-fill`, la imagen pasaría de 1,25 veces su
+   tamaño natural y la obra se compone como un libro: la portada entera
+   sobre su campo de color y el título debajo, sin velo. */
+
+.sala-stage[data-sala-fill="none"] {
+  aspect-ratio: auto;
+  padding-top: 2rem;
+  color: var(--sala-band-ink);
+}
+.sala-stage[data-sala-fill="none"] .sala-stage-image {
+  position: relative;
+  inset: auto;
+  grid-area: 1 / 1;
+  justify-self: center;
+  width: min(calc(100% - 2 * var(--sala-margin)), 22rem);
+  height: auto;
+  aspect-ratio: 2 / 3;
+}
+.sala-stage[data-sala-fill="none"] .sala-stage-image > img {
+  object-fit: contain;
+}
+.sala-stage[data-sala-fill="none"] .sala-stage-veil {
+  display: none;
+}
+.sala-stage[data-sala-fill="none"] .sala-stage-heading > .sala-title-text {
+  margin-top: 2rem;
+}
+
+@media (min-width: 480.02px) {
+  .sala-stage[data-sala-fill="480"] {
+    aspect-ratio: auto;
+    padding-top: 2rem;
+    color: var(--sala-band-ink);
+  }
+  .sala-stage[data-sala-fill="480"] .sala-stage-image {
+    position: relative;
+    inset: auto;
+    grid-area: 1 / 1;
+    justify-self: center;
+    width: min(calc(100% - 2 * var(--sala-margin)), 22rem);
+    height: auto;
+    aspect-ratio: 2 / 3;
+  }
+  .sala-stage[data-sala-fill="480"] .sala-stage-image > img {
+    object-fit: contain;
+  }
+  .sala-stage[data-sala-fill="480"] .sala-stage-veil {
+    display: none;
+  }
+  .sala-stage[data-sala-fill="480"] .sala-stage-heading > .sala-title-text {
+    margin-top: 2rem;
+  }
+}
+
+@media (min-width: 640.02px) {
+  .sala-stage[data-sala-fill="640"] {
+    aspect-ratio: auto;
+    padding-top: 2rem;
+    color: var(--sala-band-ink);
+  }
+  .sala-stage[data-sala-fill="640"] .sala-stage-image {
+    position: relative;
+    inset: auto;
+    grid-area: 1 / 1;
+    justify-self: center;
+    width: min(calc(100% - 2 * var(--sala-margin)), 22rem);
+    height: auto;
+    aspect-ratio: 2 / 3;
+  }
+  .sala-stage[data-sala-fill="640"] .sala-stage-image > img {
+    object-fit: contain;
+  }
+  .sala-stage[data-sala-fill="640"] .sala-stage-veil {
+    display: none;
+  }
+  .sala-stage[data-sala-fill="640"] .sala-stage-heading > .sala-title-text {
+    margin-top: 2rem;
+  }
+}
+
+@media (min-width: 768.02px) {
+  .sala-stage[data-sala-fill="768"] {
+    aspect-ratio: auto;
+    padding-top: 2rem;
+    color: var(--sala-band-ink);
+  }
+  .sala-stage[data-sala-fill="768"] .sala-stage-image {
+    position: relative;
+    inset: auto;
+    grid-area: 1 / 1;
+    justify-self: center;
+    width: min(calc(100% - 2 * var(--sala-margin)), 22rem);
+    height: auto;
+    aspect-ratio: 2 / 3;
+  }
+  .sala-stage[data-sala-fill="768"] .sala-stage-image > img {
+    object-fit: contain;
+  }
+  .sala-stage[data-sala-fill="768"] .sala-stage-veil {
+    display: none;
+  }
+  .sala-stage[data-sala-fill="768"] .sala-stage-heading > .sala-title-text {
+    margin-top: 2rem;
+  }
+}
+
+@media (min-width: 1024.02px) {
+  .sala-stage[data-sala-fill="1024"] {
+    aspect-ratio: auto;
+    padding-top: 2rem;
+    color: var(--sala-band-ink);
+  }
+  .sala-stage[data-sala-fill="1024"] .sala-stage-image {
+    position: relative;
+    inset: auto;
+    grid-area: 1 / 1;
+    justify-self: center;
+    width: min(calc(100% - 2 * var(--sala-margin)), 22rem);
+    height: auto;
+    aspect-ratio: 2 / 3;
+  }
+  .sala-stage[data-sala-fill="1024"] .sala-stage-image > img {
+    object-fit: contain;
+  }
+  .sala-stage[data-sala-fill="1024"] .sala-stage-veil {
+    display: none;
+  }
+  .sala-stage[data-sala-fill="1024"] .sala-stage-heading > .sala-title-text {
+    margin-top: 2rem;
+  }
+}
+
+@media (min-width: 1280.02px) {
+  .sala-stage[data-sala-fill="1280"] {
+    aspect-ratio: auto;
+    padding-top: 2rem;
+    color: var(--sala-band-ink);
+  }
+  .sala-stage[data-sala-fill="1280"] .sala-stage-image {
+    position: relative;
+    inset: auto;
+    grid-area: 1 / 1;
+    justify-self: center;
+    width: min(calc(100% - 2 * var(--sala-margin)), 22rem);
+    height: auto;
+    aspect-ratio: 2 / 3;
+  }
+  .sala-stage[data-sala-fill="1280"] .sala-stage-image > img {
+    object-fit: contain;
+  }
+  .sala-stage[data-sala-fill="1280"] .sala-stage-veil {
+    display: none;
+  }
+  .sala-stage[data-sala-fill="1280"] .sala-stage-heading > .sala-title-text {
+    margin-top: 2rem;
+  }
+}
+
+@media (min-width: 1536.02px) {
+  .sala-stage[data-sala-fill="1536"] {
+    aspect-ratio: auto;
+    padding-top: 2rem;
+    color: var(--sala-band-ink);
+  }
+  .sala-stage[data-sala-fill="1536"] .sala-stage-image {
+    position: relative;
+    inset: auto;
+    grid-area: 1 / 1;
+    justify-self: center;
+    width: min(calc(100% - 2 * var(--sala-margin)), 22rem);
+    height: auto;
+    aspect-ratio: 2 / 3;
+  }
+  .sala-stage[data-sala-fill="1536"] .sala-stage-image > img {
+    object-fit: contain;
+  }
+  .sala-stage[data-sala-fill="1536"] .sala-stage-veil {
+    display: none;
+  }
+  .sala-stage[data-sala-fill="1536"] .sala-stage-heading > .sala-title-text {
+    margin-top: 2rem;
+  }
+}
