@@ -127,6 +127,10 @@ interface DetailTile {
 
 type ExtraKey = "duration" | "episodes" | "chapters" | "pages";
 
+function positiveNumber(v: unknown): number | null {
+  return typeof v === "number" && Number.isFinite(v) && v > 0 ? v : null;
+}
+
 function getExtraDetailValue(item: MediaItem): { key: ExtraKey; value: number } | null {
   const m = item.metadata;
   if (!m) return null;
@@ -375,10 +379,21 @@ export async function MediaDetail({
       },
     ];
   }
+  // F4: un anime que es una película (AniList, `format: MOVIE`) tiene su propio
+  // formato en la franja y, en vez de «Episodios: 1», lo que dura. Solo con «Sala».
+  const animeMovie = sala && item.type === "anime" && item.metadata?.format === "MOVIE";
+  const animeMovieMinutes = animeMovie ? positiveNumber(item.metadata?.duration) : null;
+  const salaTiles = tiles.map(({ key, label, value }): Pick<DetailTile, "key" | "label" | "value"> => {
+    // En la franja, «Formato» (decisión de Víctor); la ficha de hoy sigue con «Tipo».
+    if (key === "type") return { key, label: t("format"), value: animeMovie ? t("formatAnimeMovie") : value };
+    if (key === "episodes" && animeMovieMinutes) {
+      return { key: "duration", label: t("duration"), value: t("durationValue", { minutes: animeMovieMinutes }) };
+    }
+    return { key, label, value };
+  });
   const salaFacts: SalaFichaFact[] = sala
     ? [
-        // En la franja, «Formato» (decisión de Víctor); la ficha de hoy sigue con «Tipo».
-        ...tiles.map(({ key, label, value }) => ({ key, label: key === "type" ? t("format") : label, value })),
+        ...salaTiles,
         ...ratings.map(({ key, label, srLabel, value, hint }) => ({ key: `rating-${key}`, label, srLabel, value, hint })),
         ...(genres.length > 0 ? [{ key: "genres", label: t("genres"), value: genres.slice(0, 5).join(", ") }] : []),
         ...salaOriginalFact(),

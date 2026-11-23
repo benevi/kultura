@@ -230,6 +230,9 @@ export function normalizeAniListAnime(raw: AniListMedia): MediaItem {
       status: raw.status,
       studio: raw.studios?.nodes?.[0]?.name ?? undefined,
       source: raw.source ?? undefined,
+      // Solo los trae el detalle (F4); sin ellos, ni la clave (el catálogo no cambia).
+      ...(raw.format ? { format: raw.format } : {}),
+      ...(typeof raw.duration === "number" && raw.duration > 0 ? { duration: raw.duration } : {}),
     },
   };
 }
