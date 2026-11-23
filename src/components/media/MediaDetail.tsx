@@ -40,7 +40,9 @@ import { AddToListButton } from "@/components/social/AddToListButton";
 import { ReportButton } from "@/components/social/ReportButton";
 import { SalaFicha } from "./sala/SalaFicha";
 import { SalaFichaBody, type SalaFichaFact } from "./sala/SalaFichaBody";
-import { salaFichaLayout } from "./sala/SalaFichaHero";
+import { salaFichaLayout, salaFichaWideImage } from "./sala/SalaFichaHero";
+import { SalaTrailerLazy as SalaTrailer } from "./sala/SalaTrailerLazy";
+import { youtubeTrailerKey } from "@/lib/media/trailer";
 import { SalaLibraryActionLazy as SalaLibraryAction, SalaLibraryCtaLazy as SalaLibraryCta } from "@/components/library/sala/SalaLibraryLazy";
 import { SalaLink } from "@/components/sala/SalaLink";
 import { SalaFichaSection } from "./sala/SalaFichaSection";
@@ -264,7 +266,7 @@ export async function MediaDetail({
   // ── Con «Sala» (F2a): franja, sinopsis y créditos van arriba, en la sala ──
   // F2b (decisión de Víctor): el cuerpo de «Sala» no lleva póster, como el
   // prototipo; las acciones de biblioteca van también arriba, en la sala.
-  // F2c: el resto de la ficha (menos el tráiler, F3) pasa también a «Sala».
+  // F2c: el resto de la ficha pasa también a «Sala»; F3, el tráiler.
   const libraryMediaCache = {
     externalId: item.externalId,
     type: item.type,
@@ -291,6 +293,15 @@ export async function MediaDetail({
       loginLabel={t("ctaLogin")}
     />
   );
+  // F3: el tráiler va en el cuerpo de «Sala», con la imagen de la obra de fondo
+  // (nada de YouTube antes de pulsar). Una clave que no vale no pinta la sección.
+  const salaTrailerKey = sala ? youtubeTrailerKey(trailerKey) : null;
+  const salaWide = sala ? salaFichaWideImage(item) : undefined;
+  const salaTrailerImage = salaWide
+    ? { src: salaWide, wide: true }
+    : item.poster
+      ? { src: item.poster, wide: false }
+      : null;
   const salaMore = !sala ? null : (
     <>
       {/* Las demás acciones: listas, recomendar, compartir la nota y denunciar. */}
@@ -332,6 +343,13 @@ export async function MediaDetail({
       {steam && <SalaSteam steam={steam} />}
 
       {/* Sin «También existe como…» con «Sala» (decisión de Víctor, F2c). */}
+
+      {/* El tráiler, al final (F3); debajo solo la cita de las fuentes. */}
+      {salaTrailerKey && (
+        <SalaFichaSection id="sala-ficha-trailer" heading={t("trailer")} data-sala-ficha-trailer="">
+          <SalaTrailer youtubeKey={salaTrailerKey} title={item.title} image={salaTrailerImage} />
+        </SalaFichaSection>
+      )}
 
       <SalaFichaSources source={source} googleBooksHref={googleVolumeId ? googleBooksUrl(googleVolumeId) : null} />
     </>
@@ -388,15 +406,9 @@ export async function MediaDetail({
         </SalaFicha>
       )}
       {sala ? (
-        // Con «Sala», debajo solo queda el tráiler (F3), como hoy.
-        <div className="page-grid pb-[calc(3.5rem+env(safe-area-inset-bottom))] md:pb-14">
-          {trailerKey && (
-            <section className="pt-10">
-              <h2 className={sectionTitle}>{t("trailer")}</h2>
-              <TrailerEmbed youtubeKey={trailerKey} title={t("trailerTitle", { title: item.title })} />
-            </section>
-          )}
-        </div>
+        // Con «Sala» todo va en el cuerpo, el tráiler también (F3): aquí solo
+        // queda el hueco de la barra de abajo en móvil, como hasta ahora.
+        <div aria-hidden="true" className="pb-[calc(3.5rem+env(safe-area-inset-bottom))] md:pb-14" />
       ) : (
       <div className="page-grid pt-1 pb-[calc(3.5rem+env(safe-area-inset-bottom))] md:pb-14">
         {breadcrumbs.length > 0 && (

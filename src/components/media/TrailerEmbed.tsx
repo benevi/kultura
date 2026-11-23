@@ -14,6 +14,7 @@
 
 import { useEffect, useId, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
+import { trailerEmbedUrl, trailerThumbnailUrl, youtubeTrailerKey } from "@/lib/media/trailer";
 
 interface TrailerEmbedProps {
   youtubeKey: string;
@@ -21,20 +22,8 @@ interface TrailerEmbedProps {
   title: string;
 }
 
-/** Ids de YouTube: 11 caracteres de `[A-Za-z0-9_-]`. Otra cosa no se pinta. */
-const YOUTUBE_ID = /^[A-Za-z0-9_-]{6,20}$/;
-
-export function trailerEmbedUrl(youtubeKey: string): string {
-  return `https://www.youtube-nocookie.com/embed/${encodeURIComponent(youtubeKey)}?autoplay=1&rel=0`;
-}
-
-export function trailerThumbnailUrl(youtubeKey: string): string {
-  return `https://i.ytimg.com/vi/${encodeURIComponent(youtubeKey)}/hqdefault.jpg`;
-}
-
 export function TrailerEmbed({ youtubeKey: rawKey, title }: TrailerEmbedProps) {
-  // AniList manda ids con espacios o tabuladores al final ("LHtdKWJdif4\t").
-  const youtubeKey = rawKey.trim();
+  const youtubeKey = youtubeTrailerKey(rawKey);
   const t = useTranslations("media_detail");
   const [playing, setPlaying] = useState(false);
   const iframeRef = useRef<HTMLIFrameElement>(null);
@@ -45,7 +34,7 @@ export function TrailerEmbed({ youtubeKey: rawKey, title }: TrailerEmbedProps) {
     if (playing) iframeRef.current?.focus();
   }, [playing]);
 
-  if (!YOUTUBE_ID.test(youtubeKey)) return null;
+  if (!youtubeKey) return null;
 
   return (
     <div className="relative aspect-video w-full rounded-bento overflow-hidden bg-surface-elevated">

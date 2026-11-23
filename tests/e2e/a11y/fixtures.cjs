@@ -129,6 +129,18 @@ const PROVIDERS = {
   },
 };
 
+/**
+ * Tráiler (F3): solo 550 lo tiene; 603 se queda sin él. La clave es inventada:
+ * en las pruebas nada sale a YouTube (`isolateNetwork` corta la red de fuera).
+ */
+const VIDEOS = {
+  550: [{ site: "YouTube", type: "Trailer", key: "Kultura0550", name: "Tráiler" }],
+};
+
+function videos(id) {
+  return { id, results: VIDEOS[id] ?? [] };
+}
+
 function watchProviders(id) {
   return { id, results: PROVIDERS[id] ?? {} };
 }
@@ -147,7 +159,7 @@ function tmdbDetail(id) {
       { id: 53, name: "Suspense" },
     ],
     credits: { cast: [], crew: [] },
-    videos: { results: [] },
+    videos: videos(id),
     "watch/providers": watchProviders(id),
     external_ids: {},
     production_companies: [],
@@ -161,7 +173,7 @@ function tmdbResponse(pathname) {
   if (detail) {
     const [, , id, sub] = detail;
     if (!sub) return tmdbDetail(Number(id));
-    if (sub === "/videos") return { id: Number(id), results: [] };
+    if (sub === "/videos") return videos(Number(id));
     if (sub === "/watch/providers") return watchProviders(Number(id));
     if (sub === "/credits") return { id: Number(id), cast: [], crew: [] };
     if (sub === "/external_ids") return { id: Number(id) };
