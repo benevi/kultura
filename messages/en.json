@@ -279,6 +279,7 @@
     "details": "Details",
     "salaFactsLabel": "About this title",
     "format": "Format",
+    "originalTitle": "Original title",
     "salaLibraryLabel": "Your library",
     "salaMoreActionsLabel": "More actions",
     "salaToastRegion": "Notifications (F8)",

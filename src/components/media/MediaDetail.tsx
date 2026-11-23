@@ -23,6 +23,7 @@ import { googleBooksUrl, googleBooksVolumeId } from "@/lib/media/google-books";
 import type { KulturaRating } from "@/lib/media/kultura-rating";
 import { mediaPath } from "@/lib/media/seo";
 import { synopsisLang } from "@/lib/media/synopsis-lang";
+import { languageName, originalTitleFact } from "@/lib/media/original-title";
 import { Link } from "@/i18n/navigation";
 import { KButton } from "@/components/ui/KButton";
 import { IconSparkles } from "@/components/icons";
@@ -354,12 +355,28 @@ export async function MediaDetail({
       <SalaFichaSources source={source} googleBooksHref={googleVolumeId ? googleBooksUrl(googleVolumeId) : null} />
     </>
   );
+  // F4: el título original con su idioma («Sen to Chihiro no Kamikakushi · japonés»), marcado con `lang`.
+  function salaOriginalFact(): SalaFichaFact[] {
+    const original = originalTitleFact(item);
+    if (!original) return [];
+    const name = languageName(original.lang, locale);
+    return [
+      {
+        key: "original-title",
+        label: t("originalTitle"),
+        value: original.text,
+        ...(original.lang ? { valueLang: original.lang } : {}),
+        ...(name ? { hint: name } : {}),
+      },
+    ];
+  }
   const salaFacts: SalaFichaFact[] = sala
     ? [
         // En la franja, «Formato» (decisión de Víctor); la ficha de hoy sigue con «Tipo».
         ...tiles.map(({ key, label, value }) => ({ key, label: key === "type" ? t("format") : label, value })),
         ...ratings.map(({ key, label, srLabel, value, hint }) => ({ key: `rating-${key}`, label, srLabel, value, hint })),
         ...(genres.length > 0 ? [{ key: "genres", label: t("genres"), value: genres.slice(0, 5).join(", ") }] : []),
+        ...salaOriginalFact(),
       ]
     : [];
 
