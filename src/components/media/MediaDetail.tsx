@@ -204,6 +204,7 @@ export async function MediaDetail({
   const tMedia = await getTranslations("media");
   // La misma frase que la recomendación de Inicio: un solo texto que mantener.
   const tAi = await getTranslations("aiRecommendations");
+  const tCommon = await getTranslations("common");
   const locale = await getLocale();
   const extraDetail = getExtraDetailValue(item);
   const googleVolumeId = googleBooksVolumeId(item);
@@ -307,7 +308,7 @@ export async function MediaDetail({
               {shareRating && (
                 <ShareRatingButton path={shareRating.path} title={item.title} rating={shareRating.rating} skin="sala" />
               )}
-              <ReportButton targetType="media" targetId={item.id} skin="sala" />
+              <ReportButton targetType="media" targetId={item.id} skin="sala" closeLabel={tCommon("close")} />
             </>
           ) : (
             <SalaLink href={`/report?target=media&id=${encodeURIComponent(item.id)}`} variant="standalone" rel="nofollow">

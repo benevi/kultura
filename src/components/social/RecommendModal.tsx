@@ -1,29 +1,17 @@
 'use client'
 
-import { useEffect, useId, useState } from 'react'
+import { useId } from 'react'
 import { useTranslations } from 'next-intl'
 import { Avatar } from '@/components/ui/Avatar'
 import { KButton } from '@/components/ui/KButton'
 import { K_FIELD_LABEL } from '@/components/ui/KField'
 import { KTextarea } from '@/components/ui/KTextarea'
 import { Modal } from '@/components/ui/Modal'
-import { fetchFriends } from '@/lib/social/actions'
-import { apiFetch } from '@/lib/api/client'
-
-type Friend = Awaited<ReturnType<typeof fetchFriends>>[number]
+import { useRecommendForm, type RecommendMediaCache } from './useRecommendForm'
 
 interface RecommendModalProps {
   mediaId: string
-  mediaCache: {
-    externalId: string
-    type: string
-    title: string
-    poster?: string
-    backdrop?: string
-    year?: number
-    synopsis?: string
-    genres?: string[]
-  }
+  mediaCache: RecommendMediaCache
   onClose: () => void
 }
 
@@ -32,47 +20,8 @@ export function RecommendModal({ mediaId, mediaCache, onClose }: RecommendModalP
   const tc = useTranslations('common')
   const messageId = useId()
 
-  const [friends, setFriends] = useState<Friend[]>([])
-  const [loadingFriends, setLoadingFriends] = useState(true)
-  const [selected, setSelected] = useState<Set<string>>(new Set())
-  const [message, setMessage] = useState('')
-  const [status, setStatus] = useState<'idle' | 'sending' | 'sent' | 'error'>('idle')
-
-  useEffect(() => {
-    fetchFriends()
-      .then(setFriends)
-      .catch(() => setFriends([]))
-      .finally(() => setLoadingFriends(false))
-  }, [])
-
-  function toggleFriend(userId: string) {
-    setSelected((prev) => {
-      const next = new Set(prev)
-      if (next.has(userId)) next.delete(userId)
-      else next.add(userId)
-      return next
-    })
-  }
-
-  async function handleSend() {
-    if (selected.size === 0) return
-    setStatus('sending')
-    const results = await Promise.allSettled(
-      Array.from(selected).map((toUserId) =>
-        apiFetch('/api/recommendations', {
-          method: 'POST',
-          json: { toUserId, mediaId, message: message || undefined, mediaCache },
-        })
-      )
-    )
-    const anyFailed = results.some((r) => r.status === 'rejected')
-    if (anyFailed) {
-      setStatus('error')
-    } else {
-      setStatus('sent')
-      setTimeout(onClose, 1200)
-    }
-  }
+  const { friends, loadingFriends, selected, toggleFriend, message, setMessage, status, handleSend } =
+    useRecommendForm(mediaId, mediaCache, onClose)
 
   return (
     <Modal

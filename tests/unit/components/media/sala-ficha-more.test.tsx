@@ -5,7 +5,7 @@
 // «Dónde ver», que enseña entero lo que tiene el foco.
 // ============================================================
 
-import { render, screen, fireEvent, act, within } from "@testing-library/react";
+import { render, screen, fireEvent, act } from "@testing-library/react";
 import { describe, it, expect, vi, beforeEach, beforeAll, afterAll } from "vitest";
 import { readFileSync } from "node:fs";
 import type { MediaItem } from "@/types/media";
@@ -42,6 +42,12 @@ vi.mock("@/components/pwa/share", () => ({ shareNative: h.shareNative }));
 vi.mock("@/components/sala/SalaButtonLazy", async () => ({
   SalaButtonLazy: (await import("@/components/sala/SalaButton")).SalaButton,
 }));
+// Los diálogos de «Sala» (F2d) se prueban en sala-dialogs.test; aquí no se abren.
+vi.mock("@/components/social/sala/SalaSocialDialogsLazy", () => ({
+  SalaAddToListDialogLazy: () => null,
+  SalaRecommendDialogLazy: () => null,
+}));
+vi.mock("@/components/social/sala/SalaReportDialogLazy", () => ({ SalaReportDialogLazy: () => null }));
 
 import { AddToListButton } from "@/components/social/AddToListButton";
 import { RecommendButton } from "@/components/social/RecommendButton";
@@ -79,20 +85,13 @@ describe("F2c: disparadores con skin=sala", () => {
     expect(isSala(screen.getByRole("button", { name: "recommend" }))).toBe(false);
   });
 
-  it("denunciar: SalaButton discreto con su bandera; abre el mismo formulario y Escape devuelve el foco", async () => {
+  it("denunciar: SalaButton discreto con su bandera que abre un diálogo (F2d; el diálogo, en sala-dialogs.test)", () => {
     render(<ReportButton targetType="media" targetId="movie_550" skin="sala" />);
     const trigger = screen.getByRole("button", { name: "label" });
     expect(isSala(trigger)).toBe(true);
     expect(trigger.className).toContain("text-sala-ink");
     expect(trigger.querySelector("svg")).toHaveAttribute("aria-hidden", "true");
-    expect(trigger).toHaveAttribute("aria-expanded", "false");
-    await act(async () => fireEvent.click(trigger));
-    expect(trigger).toHaveAttribute("aria-expanded", "true");
-    const form = screen.getByRole("form", { name: "prompt" });
-    expect(within(form).getAllByRole("radio")[0]).toHaveFocus();
-    await act(async () => fireEvent.keyDown(form, { key: "Escape" }));
-    expect(screen.queryByRole("form")).toBeNull();
-    expect(trigger).toHaveFocus();
+    expect(trigger).toHaveAttribute("aria-haspopup", "dialog");
   });
 
   it("denunciar con variant=icon ignora la piel (la bandera de 44 px de los mensajes)", () => {
