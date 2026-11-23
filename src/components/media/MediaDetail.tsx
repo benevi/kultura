@@ -23,6 +23,7 @@ import { googleBooksUrl, googleBooksVolumeId } from "@/lib/media/google-books";
 import type { KulturaRating } from "@/lib/media/kultura-rating";
 import { mediaPath } from "@/lib/media/seo";
 import { synopsisLang } from "@/lib/media/synopsis-lang";
+import { languageName, originalTitleFact, originalTitleOf } from "@/lib/media/original-title";
 import { Link } from "@/i18n/navigation";
 import { KButton } from "@/components/ui/KButton";
 import { IconSparkles } from "@/components/icons";
@@ -358,6 +359,26 @@ export async function MediaDetail({
       <SalaFichaSources source={source} googleBooksHref={googleVolumeId ? googleBooksUrl(googleVolumeId) : null} />
     </>
   );
+  // F4: el título original con su idioma («Sen to Chihiro no Kamikakushi · japonés»), marcado con `lang`.
+  // Si es el mismo que ya va bajo el rótulo de la sala, no se repite: solo
+  // «Idioma original: japonés» (decisión de Víctor).
+  function salaOriginalFact(): SalaFichaFact[] {
+    const original = originalTitleFact(item);
+    if (!original) return [];
+    const name = languageName(original.lang, locale);
+    if (original.text === originalTitleOf(item)?.text) {
+      return name ? [{ key: "original-language", label: t("originalLanguage"), value: name }] : [];
+    }
+    return [
+      {
+        key: "original-title",
+        label: t("originalTitle"),
+        value: original.text,
+        ...(original.lang ? { valueLang: original.lang } : {}),
+        ...(name ? { hint: name } : {}),
+      },
+    ];
+  }
   // F4: un anime que es una película (AniList, `format: MOVIE`) tiene su propio
   // formato en la franja y, en vez de «Episodios: 1», lo que dura. Solo con «Sala».
   const animeMovie = sala && item.type === "anime" && item.metadata?.format === "MOVIE";
@@ -375,6 +396,7 @@ export async function MediaDetail({
         ...salaTiles,
         ...ratings.map(({ key, label, srLabel, value, hint }) => ({ key: `rating-${key}`, label, srLabel, value, hint })),
         ...(genres.length > 0 ? [{ key: "genres", label: t("genres"), value: genres.slice(0, 5).join(", ") }] : []),
+        ...salaOriginalFact(),
       ]
     : [];
 

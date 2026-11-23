@@ -279,6 +279,8 @@
     "details": "Details",
     "salaFactsLabel": "About this title",
     "format": "Format",
+    "originalTitle": "Original title",
+    "originalLanguage": "Original language",
     "formatAnimeMovie": "Anime film",
     "salaLibraryLabel": "Your library",
     "salaMoreActionsLabel": "More actions",

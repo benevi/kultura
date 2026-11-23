@@ -126,6 +126,8 @@ export function normalizeMovie(
       runtime: raw.runtime ?? undefined,
       director,
       cast,
+      // F4: el idioma del título original (`lang` en la ficha con «Sala»).
+      ...(raw.original_language ? { originalLanguage: raw.original_language } : {}),
     },
   };
 }

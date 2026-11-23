@@ -4,7 +4,7 @@
 // ============================================================
 
 import { describe, expect, it } from "vitest";
-import { originalTitleOf, scriptLang } from "@/lib/media/original-title";
+import { languageName, originalTitleFact, originalTitleOf, scriptLang } from "@/lib/media/original-title";
 import { salaFichaColumnPoster, salaFichaLayout } from "@/components/media/sala/SalaFichaHero";
 import { paletteReadable } from "@/components/media/sala/SalaFichaImage";
 import type { MediaItem } from "@/types/media";
@@ -116,5 +116,43 @@ describe("paletteReadable", () => {
     expect(paletteReadable("https://s4.anilist.co/file/anilistcdn/media/anime/cover/large/a.png")).toBe(false);
     expect(paletteReadable("https://books.google.com/books/content?id=x")).toBe(false);
     expect(paletteReadable("https://books.googleusercontent.com/x")).toBe(false);
+  });
+});
+
+describe("originalTitleFact (F4, la franja)", () => {
+  it("TMDB: el original con el idioma que declara", () => {
+    expect(
+      originalTitleFact(item({ title: "El viaje de Chihiro", originalTitle: "千と千尋の神隠し", metadata: { originalLanguage: "ja" } }))
+    ).toEqual({ text: "千と千尋の神隠し", lang: "ja" });
+    expect(originalTitleFact(item({ title: "Amélie", originalTitle: "Le Fabuleux Destin d'Amélie Poulain", metadata: { originalLanguage: "fr" } }))).toEqual({
+      text: "Le Fabuleux Destin d'Amélie Poulain",
+      lang: "fr",
+    });
+  });
+  it("AniList: el romaji antes que el nativo (el nativo ya va bajo el título)", () => {
+    expect(
+      originalTitleFact(
+        item({ type: "anime", title: "Spirited Away", originalTitle: "Sen to Chihiro no Kamikakushi", metadata: { nativeTitle: "千と千尋の神隠し" } })
+      )
+    ).toEqual({ text: "Sen to Chihiro no Kamikakushi", lang: "ja-Latn" });
+  });
+  it("sin romaji distinto, el nativo; igual que el título, nada", () => {
+    expect(
+      originalTitleFact(item({ type: "anime", title: "Jujutsu Kaisen", originalTitle: "Jujutsu Kaisen", metadata: { nativeTitle: "呪術廻戦" } }))
+    ).toEqual({ text: "呪術廻戦", lang: "ja" });
+    expect(originalTitleFact(item({ title: "Matrix", originalTitle: "Matrix" }))).toBeNull();
+    expect(originalTitleFact(item({ title: "Matrix" }))).toBeNull();
+  });
+});
+
+describe("languageName", () => {
+  it("en el idioma de la página, sin la escritura", () => {
+    expect(languageName("ja", "es")).toBe("japonés");
+    expect(languageName("ja-Latn", "es")).toBe("japonés");
+    expect(languageName("ko", "en")).toBe("Korean");
+  });
+  it("sin idioma o con uno que no existe: nada", () => {
+    expect(languageName(null, "es")).toBeNull();
+    expect(languageName("zz", "es")).toBeNull();
   });
 });

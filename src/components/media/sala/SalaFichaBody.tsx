@@ -33,6 +33,8 @@ export interface SalaFichaFact {
   /** Lo que oye el lector si la etiqueta visible no basta (la fuente de una nota). */
   srLabel?: string;
   value: string;
+  /** Idioma del valor si no es el de la página (el título original, F4). */
+  valueLang?: string;
   /** Detalle del dato, más pequeño («7 notas»). */
   hint?: string;
 }
@@ -151,7 +153,7 @@ export function SalaFichaBody({
                 bandWithStage && "border-t-2 border-sala-band-ink pt-6 sm:pt-8"
               )}
             >
-              {facts.map(({ key, label, srLabel, value, hint }) => (
+              {facts.map(({ key, label, srLabel, value, valueLang, hint }) => (
                 <div key={key} data-fact={key} className="min-w-0 max-w-full">
                   <dt className="sala-type-small">
                     {srLabel ? (
@@ -164,7 +166,7 @@ export function SalaFichaBody({
                     )}
                   </dt>
                   <dd className="sala-type-data [overflow-wrap:anywhere]">
-                    {value}
+                    {valueLang ? <span lang={valueLang}>{value}</span> : value}
                     {hint && <span className="sala-type-small ml-2 whitespace-nowrap">· {hint}</span>}
                   </dd>
                 </div>

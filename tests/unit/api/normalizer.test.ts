@@ -759,3 +759,16 @@ describe("F-06 · normalizeTV (origen para separar anime de series)", () => {
     expect(r.metadata?.originalLanguage).toBeUndefined();
   });
 });
+
+describe("F4 · normalizeMovie (idioma del título original)", () => {
+  it("guarda el idioma original de TMDB", () => {
+    const r = normalizeMovie({ ...TMDB_MOVIE_FIXTURE, original_language: "en" } as TmdbMovieDetail);
+    expect(r.metadata?.originalLanguage).toBe("en");
+  });
+
+  it("sin él, ni la clave", () => {
+    expect(normalizeMovie({ ...TMDB_MOVIE_FIXTURE, original_language: "" } as TmdbMovieDetail).metadata).not.toHaveProperty(
+      "originalLanguage"
+    );
+  });
+});

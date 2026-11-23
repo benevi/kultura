@@ -40,6 +40,8 @@ export interface TmdbMovie {
   vote_average: number; // 0-10
   genre_ids?: number[];
   genres?: { id: number; name: string }[];
+  /** Idioma del título original (F4: `lang` en la ficha con «Sala»). */
+  original_language?: string;
 }
 
 export interface TmdbMovieDetail extends TmdbMovie {
