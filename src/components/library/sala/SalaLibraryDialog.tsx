@@ -173,13 +173,15 @@ function SalaLibraryDialogOpen({
       error={error}
       palette={palette}
       closeLabel={tc('close')}
+      // «Cancelar» primero y la acción principal al final, como en todos los
+      // diálogos de «Sala» (decisión de Víctor, 8.5).
       footer={
         <>
-          <SalaButton type="submit" form={formId} variant="primary" loading={loading} loadingLabel={t('saving')}>
-            {t('saveStatus')}
-          </SalaButton>
           <SalaButton type="button" variant="quiet" onClick={onClose} disabled={loading}>
             {t('cancel')}
+          </SalaButton>
+          <SalaButton type="submit" form={formId} variant="primary" loading={loading} loadingLabel={t('saving')}>
+            {t('saveStatus')}
           </SalaButton>
         </>
       }
