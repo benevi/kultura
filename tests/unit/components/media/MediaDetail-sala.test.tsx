@@ -644,6 +644,34 @@ describe("MediaDetail con sala=true (F2a)", () => {
     expect(document.querySelector('[data-fact="original-language"]')).toBeNull();
   });
 
+  it("F4: anime sin apaisada: la vertical grande de AniList llena la sala hasta 480 px; luego, libro", async () => {
+    const anime: MediaItem = {
+      id: "anime_al-199",
+      externalId: "al-199",
+      type: "anime",
+      title: "Spirited Away",
+      poster: "https://s4.anilist.co/file/anilistcdn/media/anime/cover/medium/bx199-sWefXJvXkDOb.jpg",
+    };
+    const { container } = render(await sala(anime));
+    const hero = container.querySelector("[data-sala-ficha]")!;
+    expect(hero).toHaveAttribute("data-sala-ficha", "poster");
+    const stage = hero.querySelector(".sala-stage")!;
+    expect(stage).toHaveAttribute("data-sala-fill", "480");
+    // Una sola imagen (la grande) y un solo h1, dentro de la sala.
+    const imgs = hero.querySelectorAll("img");
+    expect(imgs).toHaveLength(1);
+    expect(imgs[0].getAttribute("src")).toContain("/cover/large/");
+    expect(within(stage as HTMLElement).getAllByRole("heading", { level: 1 })).toHaveLength(1);
+    // La franja va con la sala (tema oscuro y filete), como en el libro.
+    expect(container.querySelector("[data-sala-ficha-band]")).toHaveAttribute("data-theme", "dark");
+  });
+
+  it("F4: película sin apaisada (TMDB): llena a cualquier ancho; lo comprueba el cliente al cargar", async () => {
+    const { container } = render(await sala({ ...movie, backdrop: undefined }));
+    expect(container.querySelector("[data-sala-ficha]")).toHaveAttribute("data-sala-ficha", "poster");
+    expect(container.querySelector(".sala-stage")).toHaveAttribute("data-sala-fill", "all");
+  });
+
   it("F4: anime que es película: «Película de anime» y lo que dura, en vez de «Episodios: 1»", async () => {
     const chihiro: MediaItem = {
       id: "anime_al-199",
