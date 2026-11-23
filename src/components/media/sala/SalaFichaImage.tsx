@@ -83,13 +83,25 @@ function applyPalette(img: HTMLImageElement) {
  * F4: la sala con vertical (`data-sala-fill`) se queda llenando solo si la
  * imagen no pasa de 1,25 veces su tamaño natural. Si el proveedor la sirvió
  * más pequeña de lo que se suponía, baja el paso y la obra pasa a libro.
+ *
+ * Ojo: con `srcset` de anchos, `naturalWidth` viene dividido por la densidad
+ * que eligió el navegador (con AniList, la misma URL para todos los anchos,
+ * 460 px salían como 44). Los píxeles de verdad se leen de una imagen suelta
+ * con la misma URL, ya en caché.
  */
 function checkFill(img: HTMLImageElement) {
   const stage = img.closest<HTMLElement>("[data-sala-fill]");
-  if (!stage || !img.naturalWidth) return;
-  if (getComputedStyle(img).objectFit !== "cover") return;
-  if (img.clientWidth <= img.naturalWidth * SALA_POSTER_MAX_SCALE) return;
-  stage.dataset.salaFill = salaPosterFill(img.naturalWidth);
+  if (!stage || !img.currentSrc) return;
+  const probe = new window.Image();
+  // Con el mismo modo CORS, para que salga de la caché y no se pida otra vez.
+  if (img.crossOrigin) probe.crossOrigin = img.crossOrigin;
+  probe.onload = () => {
+    const width = probe.naturalWidth;
+    if (!width || getComputedStyle(img).objectFit !== "cover") return;
+    if (img.clientWidth <= width * SALA_POSTER_MAX_SCALE) return;
+    stage.dataset.salaFill = salaPosterFill(width);
+  };
+  probe.src = img.currentSrc;
 }
 
 type Attempt = "cors" | "plain" | "broken";
