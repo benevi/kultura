@@ -1661,7 +1661,7 @@
     "privacy": {
       "title": "Privacy Policy",
       "metaDescription": "What data KULTURA processes, why, with which providers, for how long and how to exercise your rights, in plain words.",
-      "updated": "Last updated: 17 November 2026",
+      "updated": "Last updated: 22 November 2026",
       "version": "Version 2026-10",
       "summary": {
         "s1": "KULTURA is made by me, Víctor Franco, as a free personal project with no ads. For anything about your data, write to <mail>{email}</mail>.",
@@ -1734,7 +1734,7 @@
             "github": "<b>GitHub</b> (GitHub Inc., USA): stores the backups, which are encrypted before they leave, so GitHub can't read them."
           },
           "p2": "Several are US companies or may access data from there to provide support. These <b>international transfers</b> rely on the EU-US Data Privacy Framework where the company is certified and, in any case, on the European Commission's standard contractual clauses included in their processing terms (Arts. 45 and 46 GDPR).",
-          "p3": "Title information comes from public catalogs: TMDB (with JustWatch data for “Where to watch”), RAWG, Steam, AniList, MangaDex, Open Library, Google Books and Comic Vine. KULTURA's server makes these requests with the search text, without your IP or your account. Covers are shown in two ways: many load directly from those catalogs' image servers, which receive your IP as with any website you visit; others go through Vercel's image service, which downloads them, resizes them for your screen and keeps a temporary cached copy, which expires on its own, to serve them faster. In that case the catalog does not receive your IP. Link-sharing images may include the title's cover.",
+          "p3": "Title information comes from public catalogs: TMDB (with JustWatch data for “Where to watch”), RAWG, Steam, AniList, MangaDex, Open Library, Google Books and Comic Vine. KULTURA's server makes these requests with the search text, without your IP or your account. Covers are shown in two ways: many load directly from those catalogs' image servers, which receive your IP as with any website you visit; others go through Vercel's image service, which downloads them, resizes them for your screen and keeps a temporary cached copy, which expires on its own, to serve them faster. In that case the catalog does not receive your IP. Link-sharing images may include the title's cover. For the website's front page, KULTURA also keeps a cropped copy of some covers and images from those catalogs (the month's new releases) and a depth map generated from each one, used for the 3D effect. They are renewed every month, stored in Supabase in the EU (Frankfurt), and older months are deleted automatically. They contain no data about you.",
           "p4": "Trailers on some title pages come from YouTube (Google): the trailer loads from youtube-nocookie.com only when you press play; from that moment, Google's policy applies.",
           "p5": "No provider receives data for advertising, and I don't sell or share data with anyone unless the law requires it."
         },
