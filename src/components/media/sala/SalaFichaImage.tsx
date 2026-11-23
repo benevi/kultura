@@ -5,6 +5,7 @@ import Image from "next/image";
 import { backdropLoader, posterLoader } from "@/lib/images/poster-url";
 import { paletteFromPixels } from "@/lib/design/image-palette";
 import { SALA_WORK_CLASS, workPaletteVars } from "@/lib/design/sala-palette";
+import { SALA_POSTER_MAX_SCALE, salaPosterFill } from "@/lib/design/sala-poster";
 
 /**
  * La imagen de la sala de la ficha (fase 8.5, F1): la apaisada de la obra
@@ -30,6 +31,12 @@ export interface SalaFichaImageProps {
   sizes: string;
   /** `cover`: llena la sala. `contain`: la portada entera, a su proporción. */
   fit?: "cover" | "contain";
+  /**
+   * La vertical que llena la sala (F4): se pide como portada (no con el tope
+   * de las apaisadas) y, ya cargada, se comprueba que no pasa de 1,25 veces
+   * su tamaño natural; si pasa, la sala se compone como un libro.
+   */
+  vertical?: boolean;
 }
 
 /**
@@ -72,9 +79,22 @@ function applyPalette(img: HTMLImageElement) {
   }
 }
 
+/**
+ * F4: la sala con vertical (`data-sala-fill`) se queda llenando solo si la
+ * imagen no pasa de 1,25 veces su tamaño natural. Si el proveedor la sirvió
+ * más pequeña de lo que se suponía, baja el paso y la obra pasa a libro.
+ */
+function checkFill(img: HTMLImageElement) {
+  const stage = img.closest<HTMLElement>("[data-sala-fill]");
+  if (!stage || !img.naturalWidth) return;
+  if (getComputedStyle(img).objectFit !== "cover") return;
+  if (img.clientWidth <= img.naturalWidth * SALA_POSTER_MAX_SCALE) return;
+  stage.dataset.salaFill = salaPosterFill(img.naturalWidth);
+}
+
 type Attempt = "cors" | "plain" | "broken";
 
-export function SalaFichaImage({ src, sizes, fit = "cover" }: SalaFichaImageProps) {
+export function SalaFichaImage({ src, sizes, fit = "cover", vertical = false }: SalaFichaImageProps) {
   // El único estado: cómo ha ido con esta imagen. Otra imagen vuelve a empezar.
   const [failed, setFailed] = React.useState<{ src: string; attempt: Attempt } | null>(null);
   const first: Attempt = paletteReadable(src) ? "cors" : "plain";
@@ -84,8 +104,8 @@ export function SalaFichaImage({ src, sizes, fit = "cover" }: SalaFichaImageProp
   return (
     <Image
       key={`${src} ${attempt}`}
-      // La apaisada (`cover`) con tope en w1280 de TMDB; la portada, como siempre.
-      loader={fit === "cover" ? backdropLoader : posterLoader}
+      // La apaisada (`cover`) con tope en w1280 de TMDB; la portada (y la vertical que llena la sala), como siempre.
+      loader={fit === "cover" && !vertical ? backdropLoader : posterLoader}
       src={src}
       alt=""
       fill
@@ -93,7 +113,14 @@ export function SalaFichaImage({ src, sizes, fit = "cover" }: SalaFichaImageProp
       priority
       crossOrigin={cors ? "anonymous" : undefined}
       className={fit === "contain" ? "object-contain" : "object-cover"}
-      onLoad={cors ? (event) => applyPalette(event.currentTarget) : undefined}
+      onLoad={
+        cors || vertical
+          ? (event) => {
+              if (vertical) checkFill(event.currentTarget);
+              if (cors) applyPalette(event.currentTarget);
+            }
+          : undefined
+      }
       // Con CORS, un CDN que a veces no lo manda (AniList detrás de su caché) rompe la imagen:
       // se pide otra vez sin él y la obra se queda en los neutros. Si tampoco, fuera.
       onError={() => setFailed({ src, attempt: cors ? "plain" : "broken" })}

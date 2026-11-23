@@ -25,8 +25,10 @@ describe("salaFichaLayout", () => {
   it("juegos: la imagen de RAWG (llega como poster) es la apaisada", () => {
     expect(salaFichaLayout(item({ type: "game", poster: "p" }))).toBe("stage");
   });
-  it("sin apaisada: como un libro; sin ninguna imagen: el campo de color", () => {
-    expect(salaFichaLayout(item({ type: "anime", poster: "p" }))).toBe("piece");
+  it("sin apaisada: la vertical llena la sala (F4); sin ninguna imagen: el campo de color", () => {
+    for (const type of ["movie", "tv", "anime"] as const) {
+      expect(salaFichaLayout(item({ type, poster: "p" }))).toBe("poster");
+    }
     expect(salaFichaLayout(item({ type: "movie" }))).toBe("empty");
   });
 });
@@ -37,9 +39,9 @@ describe("salaFichaColumnPoster (F2a)", () => {
       expect(salaFichaColumnPoster(item({ type, backdrop: "b", poster: "p" }))).toBe(true);
     }
   });
-  it("película o serie sin apaisada: la sala ya es la portada (pieza), no se repite", () => {
+  it("película o serie sin apaisada: la sala ya es la vertical, no se repite", () => {
     for (const type of ["movie", "tv", "anime"] as const) {
-      expect(salaFichaLayout(item({ type, poster: "p" }))).toBe("piece");
+      expect(salaFichaLayout(item({ type, poster: "p" }))).toBe("poster");
       expect(salaFichaColumnPoster(item({ type, poster: "p" }))).toBe(false);
     }
   });

@@ -1,6 +1,8 @@
+import type { ReactNode } from "react";
 import { SalaStage } from "@/components/sala/SalaStage";
 import { SalaTitle } from "@/components/sala/SalaTitle";
 import { SALA_TITLE_CSS } from "@/lib/design/sala-title-css";
+import { salaPosterFill, salaPosterSizes, salaPosterSource } from "@/lib/design/sala-poster";
 import { originalTitleOf } from "@/lib/media/original-title";
 import { cn } from "@/lib/utils/index";
 import type { MediaItem, MediaType } from "@/types/media";
@@ -13,18 +15,20 @@ import { SalaFichaImage } from "./SalaFichaImage";
  *
  * - **Película, serie, videojuego y anime** con imagen apaisada: la sala
  *   (`SalaStage`) con esa imagen a todo el ancho y el rótulo dentro.
- * - **Libro, manga y cómic**, o una obra sin imagen apaisada: la portada
- *   entera, a su proporción, centrada sobre un campo hecho con su paleta, y el
- *   rótulo debajo (nunca encima de la portada). Redimensionar la vertical para
- *   llenar la sala es de F4. Sin ninguna imagen, el campo de color con el
- *   título.
+ * - **Película, serie, videojuego y anime sin apaisada** (F4): su vertical
+ *   llena la sala, recortada por arriba, mientras no pase de 1,25 veces su
+ *   tamaño natural; a más ancho, se compone como un libro. Un solo HTML para
+ *   las dos cosas (`sala-poster.ts`, `poster.css`).
+ * - **Libro, manga y cómic**: la portada entera, a su proporción, centrada
+ *   sobre un campo hecho con su paleta, y el rótulo debajo (nunca encima de
+ *   la portada). Sin ninguna imagen, el campo de color con el título.
  *
  * La sala no cambia con el tema (biblia §4): lleva su propio `data-theme`.
  * Sin 3D y sin fundido (falta la máscara de la figura).
  */
 const STAGE_TYPES: ReadonlySet<MediaType> = new Set(["movie", "tv", "game", "anime"]);
 
-export type SalaFichaLayout = "stage" | "piece" | "empty";
+export type SalaFichaLayout = "stage" | "poster" | "piece" | "empty";
 
 /**
  * La imagen apaisada que ya tiene la obra. En los juegos, la de RAWG
@@ -37,13 +41,17 @@ export function salaFichaWideImage(item: Pick<MediaItem, "type" | "backdrop" | "
 
 export function salaFichaLayout(item: Pick<MediaItem, "type" | "backdrop" | "poster">): SalaFichaLayout {
   if (salaFichaWideImage(item)) return "stage";
-  return item.poster ? "piece" : "empty";
+  if (!item.poster) return "empty";
+  return STAGE_TYPES.has(item.type) ? "poster" : "piece";
 }
+
+/** Punto de interés de la vertical al llenar la sala: el tercio de arriba, no el rótulo de abajo. */
+const POSTER_FOCUS = "center 25%";
 
 /**
  * ¿La columna de la ficha de hoy puede enseñar el póster sin repetir la
  * imagen de la sala? (F2a). No, si la sala ya es la portada (libro, manga,
- * cómic, o cualquier obra sin apaisada), si la apaisada es el propio `poster`
+ * cómic, o la vertical de cualquier obra sin apaisada), si la apaisada es el propio `poster`
  * (los juegos de RAWG) o si no hay póster (sin el degradado de respaldo: el
  * campo de color de la sala ya hace ese papel).
  */
@@ -75,7 +83,11 @@ export function SalaFichaHero({ item }: { item: MediaItem }) {
     <section data-sala-ficha={layout} aria-labelledby="sala-ficha-title">
       <link rel="preload" href={ANYBODY_LATIN.pathname} as="font" type="font/woff2" crossOrigin="anonymous" />
       <SalaFichaAssets />
-      {layout === "stage" ? (
+      {layout === "poster" ? (
+        <SalaFichaPoster item={item} original={marked}>
+          {unmarked}
+        </SalaFichaPoster>
+      ) : layout === "stage" ? (
         <SalaStage
           title={item.title}
           original={marked}
@@ -104,5 +116,33 @@ export function SalaFichaHero({ item }: { item: MediaItem }) {
         </div>
       )}
     </section>
+  );
+}
+
+/** La vertical que llena la sala o, donde pasaría de 1,25×, la obra como un libro (F4). */
+function SalaFichaPoster({
+  item,
+  original,
+  children,
+}: {
+  item: MediaItem;
+  original: { text: string; lang: string } | null;
+  children?: ReactNode;
+}) {
+  const poster = salaPosterSource(item.poster!);
+  const fill = salaPosterFill(poster.width);
+  return (
+    <SalaStage
+      title={item.title}
+      original={original}
+      headingLevel={1}
+      headingId="sala-ficha-title"
+      focus={POSTER_FOCUS}
+      data-sala-fill={fill}
+      className="w-full aspect-[4/5] sm:aspect-[16/9] lg:aspect-[2/1]"
+      image={<SalaFichaImage src={poster.src} sizes={salaPosterSizes(fill)} vertical />}
+    >
+      {children}
+    </SalaStage>
   );
 }
