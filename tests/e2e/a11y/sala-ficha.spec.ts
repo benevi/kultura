@@ -7,7 +7,14 @@
  * plataforma es un enlace); 603, sin ella (la fila no tiene enlaces).
  */
 import { test, expect, type BrowserContext, type Page } from "@playwright/test";
-import { isolateNetwork, signIn, open, expectNoBlockingViolations, expectNoHorizontalScroll } from "./helpers";
+import {
+  isolateNetwork,
+  signIn,
+  open,
+  expectNoBlockingViolations,
+  expectNoHorizontalScroll,
+  expectSalaBodyOnGrid,
+} from "./helpers";
 
 async function salaCookie(context: BrowserContext, baseURL: string) {
   await context.addCookies([
@@ -65,6 +72,21 @@ async function expectNamesWhole(page: Page, label: string) {
       .map((s) => s.textContent)
   );
   expect(clipped, `${label}: nombres recortados`).toEqual([]);
+}
+
+// El cuerpo de la sala en la retícula de la app (DIS-8) a cada ancho, en las
+// dos fichas de prueba (con «Dónde ver» enlazado y sin enlaces).
+for (const width of [390, 768, 1024, 1440]) {
+  test(`cuerpo en la retícula a ${width} px`, async ({ page, context, baseURL }) => {
+    await signIn(context, baseURL!);
+    await page.setViewportSize({ width, height: 900 });
+    for (const path of ["/es/media/movie/550", "/es/media/movie/603"]) {
+      await open(page, path);
+      await expect(page.locator("[data-sala-ficha]").first()).toBeVisible();
+      await expectSalaBodyOnGrid(page);
+      await expectNoHorizontalScroll(page, width);
+    }
+  });
 }
 
 for (const scheme of ["light", "dark"] as const) {

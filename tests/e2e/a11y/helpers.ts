@@ -67,6 +67,37 @@ export async function expectNoBlockingViolations(page: Page, label: string, incl
   expect(blocking, `${label}: violaciones de axe\n${report.join("\n")}`).toEqual([]);
 }
 
+/**
+ * Ficha con «Sala»: el cuerpo empieza donde el logo de la cabecera (DIS-8).
+ * Se mide el borde izquierdo de los datos de la franja, la miga, las
+ * acciones, la mitad de abajo, «Dónde ver» (su título) y las fuentes.
+ */
+export async function expectSalaBodyOnGrid(page: Page) {
+  const e = await page.evaluate(() => {
+    const left = (sel: string) => {
+      const el = document.querySelector(sel);
+      if (!el) return null;
+      const r = el.getBoundingClientRect();
+      return r.width > 0 && r.height > 0 ? Math.round(r.left) : null;
+    };
+    return {
+      logo: left("header svg"),
+      band: left("[data-sala-ficha-band] dl"),
+      breadcrumbs: left("main .sala-work nav ol"),
+      actions: left("[data-sala-ficha-actions]"),
+      more: left("[data-sala-ficha-more]"),
+      watch: left("[data-sala-ficha-watch] h2"),
+      sources: left("[data-sala-ficha-sources]"),
+    };
+  });
+  expect(e.logo, "sin logo en la cabecera").not.toBeNull();
+  const parts = Object.entries(e).filter(([k, v]) => k !== "logo" && v !== null) as [string, number][];
+  expect(parts.length, `sin cuerpo de la sala: ${JSON.stringify(e)}`).toBeGreaterThanOrEqual(3);
+  for (const [name, x] of parts) {
+    expect(Math.abs(x - e.logo!), `${name} en x=${x}, el logo en x=${e.logo} (${JSON.stringify(e)})`).toBeLessThanOrEqual(4);
+  }
+}
+
 /** Ancho de documento: a 320 px no puede haber scroll horizontal (1.4.10). */
 export async function expectNoHorizontalScroll(page: Page, width: number) {
   const scrollWidth = await page.evaluate(() => document.documentElement.scrollWidth);

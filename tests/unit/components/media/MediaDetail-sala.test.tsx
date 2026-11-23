@@ -389,7 +389,9 @@ describe("MediaDetail con sala=true (F2a)", () => {
     const watch = screen.getByRole("region", { name: "whereToWatch" });
     const row = watch.querySelector("[data-sala-watch-row]")!;
     expect(row.className).toContain("overflow-x-auto");
-    expect(row.className).toContain("scroll-px-sala-margin");
+    // Sale hasta el borde de la retícula (`page-grid`) y respeta ese margen.
+    expect(row.className).toContain("scroll-px-4");
+    expect(row.className).toContain("md:scroll-px-8");
     // Todo son enlaces: la fila no es otra parada del tabulador.
     expect(row).not.toHaveAttribute("tabindex");
     expect(within(watch).getAllByRole("heading", { level: 3 }).map((h) => h.textContent)).toEqual([

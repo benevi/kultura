@@ -61,8 +61,9 @@ export function SalaWhereToWatch({
         // para moverla con las flechas (WCAG 2.1.1), y con nombre.
         {...(allLinked ? {} : { tabIndex: 0, role: "group", "aria-labelledby": HEADING_ID })}
         className={cn(
-          "-mx-sala-margin flex gap-10 overflow-x-auto overscroll-x-contain px-sala-margin pb-4 pt-1",
-          "scroll-px-sala-margin [scrollbar-width:thin]",
+          // Sale hasta el borde de la retícula (`page-grid`: 16 px, 32 px desde md).
+          "-mx-4 flex gap-10 overflow-x-auto overscroll-x-contain px-4 pb-4 pt-1 md:-mx-8 md:px-8",
+          "scroll-px-4 md:scroll-px-8 [scrollbar-width:thin]",
           !allLinked && "sala-focused:sala-focus"
         )}
       >

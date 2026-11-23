@@ -130,47 +130,52 @@ export function SalaFichaBody({
           // El mismo tema que la sala: un solo bloque de color con ella.
           data-theme={bandWithStage ? "dark" : undefined}
           className={cn(
-            "bg-sala-band text-sala-band-ink px-sala-margin",
+            // El color va a sangre; el contenido, en la retícula de la app
+            // (`page-grid`, DIS-8): empieza donde el logo de la cabecera.
+            "bg-sala-band text-sala-band-ink",
             bandWithStage ? "pb-8 sm:pb-10" : "py-8 sm:py-10",
             // Cuando llega la paleta, la franja cambia de color sin salto.
             "transition-colors duration-sala-slow ease-sala motion-reduce:transition-none"
           )}
         >
-          <h2 id={FACTS_ID} className="sr-only">
-            {factsLabel}
-          </h2>
-          {/* Con la sala del mismo color, un filete de la tinta de la franja (≥ 4,5:1)
-              marca dónde acaba el título y empiezan los datos. */}
-          <dl
-            className={cn(
-              "flex flex-wrap gap-x-10 gap-y-5",
-              bandWithStage && "border-t-2 border-sala-band-ink pt-6 sm:pt-8"
-            )}
-          >
-            {facts.map(({ key, label, srLabel, value, hint }) => (
-              <div key={key} data-fact={key} className="min-w-0 max-w-full">
-                <dt className="sala-type-small">
-                  {srLabel ? (
-                    <>
-                      <span className="sr-only">{srLabel}</span>
-                      <span aria-hidden="true">{label}</span>
-                    </>
-                  ) : (
-                    label
-                  )}
-                </dt>
-                <dd className="sala-type-data [overflow-wrap:anywhere]">
-                  {value}
-                  {hint && <span className="sala-type-small ml-2 whitespace-nowrap">· {hint}</span>}
-                </dd>
-              </div>
-            ))}
-          </dl>
+          <div className="page-grid">
+            <h2 id={FACTS_ID} className="sr-only">
+              {factsLabel}
+            </h2>
+            {/* Con la sala del mismo color, un filete de la tinta de la franja (≥ 4,5:1)
+                marca dónde acaba el título y empiezan los datos. */}
+            <dl
+              className={cn(
+                "flex flex-wrap gap-x-10 gap-y-5",
+                bandWithStage && "border-t-2 border-sala-band-ink pt-6 sm:pt-8"
+              )}
+            >
+              {facts.map(({ key, label, srLabel, value, hint }) => (
+                <div key={key} data-fact={key} className="min-w-0 max-w-full">
+                  <dt className="sala-type-small">
+                    {srLabel ? (
+                      <>
+                        <span className="sr-only">{srLabel}</span>
+                        <span aria-hidden="true">{label}</span>
+                      </>
+                    ) : (
+                      label
+                    )}
+                  </dt>
+                  <dd className="sala-type-data [overflow-wrap:anywhere]">
+                    {value}
+                    {hint && <span className="sala-type-small ml-2 whitespace-nowrap">· {hint}</span>}
+                  </dd>
+                </div>
+              ))}
+            </dl>
+          </div>
         </section>
       )}
 
       {hasBody && (
-        <div className="px-sala-margin pt-10 pb-14 sm:pt-14">
+        // En la retícula de la app (DIS-8), como la franja.
+        <div className="page-grid pt-10 pb-14 sm:pt-14">
           {breadcrumbs && <SalaFichaBreadcrumbs {...breadcrumbs} />}
           {actions && (
             <section aria-labelledby={ACTIONS_ID} data-sala-ficha-actions="" className="mb-12 pt-2">
