@@ -26,6 +26,9 @@ const A11Y_ENV = {
   // es la que ven todos los specs y `sala-ficha.spec.ts` entra con la cookie.
   // Con `SALA_FICHA=1 npm run test:a11y` todos los specs ven «Sala».
   SALA_FICHA: process.env.SALA_FICHA || "prueba",
+  // Biblioteca con «Sala» (fase 8.5 B1): igual, `sala-biblioteca.spec.ts`
+  // entra con la cookie y `SALA_BIBLIOTECA=1` la enseña en todos los specs.
+  SALA_BIBLIOTECA: process.env.SALA_BIBLIOTECA || "prueba",
   NODE_OPTIONS: `--require ${path.join(ROOT, "tests/e2e/a11y/offline-fetch.cjs")}`,
 };
 

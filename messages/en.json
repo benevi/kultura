@@ -429,7 +429,9 @@
     "quickAlready": "“{title}” was already in your library",
     "quickAddFailed": "We couldn’t add it. Try again.",
     "quickAddRateLimited": "Too many in a row. Wait a moment and try again.",
-    "quickEdit": "Change status and rating of “{title}”"
+    "quickEdit": "Change status and rating of “{title}”",
+    "gridLabel": "Your titles",
+    "cardScore": "{scale, select, ten {Your rating: {value} out of 10} other {Your rating: {value} out of 5}}"
   },
   "diary": {
     "title": "Diary",

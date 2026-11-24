@@ -12,6 +12,8 @@ import { IconLibrary, IconSearch } from '@/components/icons'
 import { SegmentedControl } from '@/components/ui/SegmentedControl'
 import { DiaryList } from '@/components/library/DiaryList'
 import { LibraryQuickEdit } from '@/components/library/LibraryQuickEdit'
+import { SalaLibraryGridLazy } from '@/components/library/sala/SalaLibraryGridLazy'
+import type { SalaLibraryGridProps } from '@/components/library/sala/SalaLibraryGrid'
 import type { DiaryLog, LibraryEntry, RatingScale } from '@/types/library'
 import type { MediaItem, MediaType } from '@/types/media'
 
@@ -24,6 +26,11 @@ interface LibraryClientProps {
   diary?: { logs: DiaryLog[]; scale: RatingScale } | null
   /** Fase 8.2 (bandera LIBRARY_QUICK_EDIT, la lee el servidor): estado y nota desde la tarjeta. */
   quickEdit?: boolean
+  /**
+   * Fase 8.5 B1 (bandera SALA_BIBLIOTECA, la lee el servidor): la rejilla en
+   * «Sala», con la edición rápida en su diálogo. `null`: la de hoy.
+   */
+  sala?: Pick<SalaLibraryGridProps, 'toastLabels'> | null
 }
 
 function parseMediaId(mediaId: string): { type: MediaType; externalId: string } {
@@ -138,7 +145,7 @@ function EmptyFiltered({
   )
 }
 
-export function LibraryClient({ entries: serverEntries, diary = null, quickEdit = false }: LibraryClientProps) {
+export function LibraryClient({ entries: serverEntries, diary = null, quickEdit = false, sala = null }: LibraryClientProps) {
   const t = useTranslations('library')
   const tF = useTranslations('filters')
   const td = useTranslations('diary')
@@ -371,8 +378,11 @@ export function LibraryClient({ entries: serverEntries, diary = null, quickEdit 
         <EmptyFiltered t={t} tF={tF} onReset={resetFilters} />
       )}
 
-      {/* Grid */}
-      {filtered.length > 0 && (
+      {/* Grid: con «Sala» (B1), su rejilla y su edición rápida */}
+      {filtered.length > 0 && sala && (
+        <SalaLibraryGridLazy entries={filtered} scale={scale} onSaved={handleSaved} toastLabels={sala.toastLabels} />
+      )}
+      {filtered.length > 0 && !sala && (
         <MediaGrid
           items={mediaItems}
           showType

@@ -208,6 +208,15 @@ function tmdbResponse(pathname) {
   return { page: 1, total_pages: 1, total_results: tmdbResults.length, results: tmdbResults };
 }
 
+/**
+ * Dos obras de otros formatos para la biblioteca (fase 8.5 B1): un manga con
+ * el título en japonés y un videojuego. Sin portada: se ve el respaldo.
+ */
+const OTHER_MEDIA = [
+  { id: "manga_108556", external_id: "108556", type: "manga", title: "転生したらスライムだった件", year: 2014 },
+  { id: "game_326243", external_id: "326243", type: "game", title: "Elden Ring", year: 2022 },
+];
+
 /** Filas de `media` (catálogo cacheado) para listas y biblioteca. */
 const mediaRows = MOVIES.slice(0, 4).map((m) => ({
   id: `movie_${m.id}`,
@@ -222,6 +231,9 @@ const mediaRows = MOVIES.slice(0, 4).map((m) => ({
   metadata: null,
   updated_at: NOW,
 }));
+for (const m of OTHER_MEDIA) {
+  mediaRows.push({ ...m, poster: null, backdrop: null, synopsis: `Sinopsis de prueba de ${m.title}.`, genres: [], metadata: null, updated_at: NOW });
+}
 
 const list = {
   id: LIST_ID,
@@ -264,6 +276,27 @@ const tables = {
       media_id: "movie_603",
       status: "completed",
       rating10: 8,
+      watched_at: null,
+      created_at: NOW,
+      updated_at: NOW,
+    },
+    // Biblioteca (fase 8.5 B1): tres formatos y un título en japonés.
+    {
+      id: "00000000-0000-4000-8000-0000000000aa",
+      user_id: USER_ID,
+      media_id: "manga_108556",
+      status: "in_progress",
+      rating10: null,
+      watched_at: null,
+      created_at: NOW,
+      updated_at: NOW,
+    },
+    {
+      id: "00000000-0000-4000-8000-0000000000ab",
+      user_id: USER_ID,
+      media_id: "game_326243",
+      status: "pending",
+      rating10: 7,
       watched_at: null,
       created_at: NOW,
       updated_at: NOW,
