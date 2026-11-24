@@ -287,6 +287,9 @@ const tables = {
       media_id: "manga_108556",
       status: "in_progress",
       rating10: null,
+      // Fase 8.5 B2: la tarjeta de «Sala» dice por dónde va («Cap. 34 · Vol. 5»).
+      progress_chapter: 34,
+      progress_volume: 5,
       watched_at: null,
       created_at: NOW,
       updated_at: NOW,

@@ -23,7 +23,7 @@ Una por pantalla, leída en el servidor como `QUICK_ADD`: `SALA_FICHA`, `SALA_BI
 - 3D: 3D-1 migración `media_depth` (expandir; «sí» de Víctor para producción) · 3D-2 tarea de Actions que produce los mapas (0 €) · 3D-3 motor WebGL detrás de `SALA_FICHA_3D` + texto de `/privacy` (se enseña antes) · 3D-4 P-Uso.
 
 ## Biblioteca
-B1 rejilla con SalaWorkList/SalaWorkCard + edición rápida en SalaDialog · B2 filtros y orden · (opcional) gráficas de seguimiento · P-Uso.
+B1 rejilla con SalaWorkList/SalaWorkCard + edición rápida en SalaDialog · B2 cabecera, contadores que filtran por estado, panel de filtros, orden (`?sort=`) y progreso en la tarjeta · (opcional) gráficas de seguimiento · P-Uso.
 
 ## Descubrir
 D1 barra + rejilla Sala (arregla de paso: imagen rota, × repetidos, error no anunciado, aria-pressed) · D2 filtros · tráiler al pasar: aparte, necesita preferencia o cambio en `/privacy` · P-Uso.
