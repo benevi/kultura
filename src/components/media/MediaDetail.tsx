@@ -117,7 +117,8 @@ interface MediaDetailProps {
    */
   sala?: boolean;
   /**
-   * Fase 8.5, F5: lo que la sala añade (la apaisada sin rótulo de TMDB). Solo
+   * Fase 8.5, F5: lo que la sala añade (la apaisada sin rótulo de TMDB y, en
+   * un anime cruzado con TMDB, tráiler, «Dónde ver» y la segunda fuente). Solo
    * se usa con `sala`; la imagen para compartir y la biblioteca siguen con
    * `item.backdrop`.
    */
@@ -308,7 +309,12 @@ export async function MediaDetail({
   );
   // F3: el tráiler va en el cuerpo de «Sala», con la imagen de la obra de fondo
   // (nada de YouTube antes de pulsar). Una clave que no vale no pinta la sección.
-  const salaTrailerKey = sala ? youtubeTrailerKey(trailerKey) : null;
+  // F5c: en un anime de AniList cruzado con TMDB, el tráiler y «Dónde ver» de
+  // TMDB si los de siempre no están (`salaExtras` solo los trae en ese caso).
+  const salaTrailerKey = sala ? youtubeTrailerKey(trailerKey ?? salaExtras?.trailerKey) : null;
+  const ownProviders = Boolean(providers && providers.length > 0);
+  const salaProviders = ownProviders ? providers! : (salaExtras?.providers ?? []);
+  const salaWatchLink = ownProviders ? watchLink : salaExtras?.watchLink;
   // F5: la sala pinta la obra con su apaisada sin rótulo, si la hay.
   const salaItem = salaItemOf(item, sala ? salaExtras : null);
   const salaWide = sala ? salaFichaWideImage(salaItem) : undefined;
@@ -351,8 +357,8 @@ export async function MediaDetail({
         </SalaFichaSection>
       )}
 
-      {providers && providers.length > 0 && (
-        <SalaWhereToWatch providers={providers} title={t("whereToWatch")} link={watchLink} />
+      {salaProviders.length > 0 && (
+        <SalaWhereToWatch providers={salaProviders} title={t("whereToWatch")} link={salaWatchLink} />
       )}
 
       {steam && <SalaSteam steam={steam} />}
@@ -366,7 +372,11 @@ export async function MediaDetail({
         </SalaFichaSection>
       )}
 
-      <SalaFichaSources source={source} googleBooksHref={googleVolumeId ? googleBooksUrl(googleVolumeId) : null} />
+      <SalaFichaSources
+        source={source}
+        googleBooksHref={googleVolumeId ? googleBooksUrl(googleVolumeId) : null}
+        extraSource={salaExtras?.extraSource}
+      />
     </>
   );
   // F4: el título original con su idioma («Sen to Chihiro no Kamikakushi · japonés»), marcado con `lang`.

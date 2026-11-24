@@ -250,6 +250,73 @@ export async function getAnime(id: number): Promise<AniListMedia> {
   return data.Media;
 }
 
+// ── Cruce con TMDB (fase 8.5, F5c) ───────────────────────────────────────────
+//
+// Lo justo para cruzar un anime con su ficha de TMDB por Wikidata: el id de
+// MyAnimeList (segunda vía en Wikidata), formato, año y las relaciones (una
+// PRECUELA que es serie dice «temporada posterior»). Solo la pide el cruce,
+// al abrir la ficha de un anime con la sala; la ficha de siempre no cambia.
+
+export interface AniListCrossInfo {
+  id: number;
+  idMal: number | null;
+  format: string | null;
+  seasonYear: number | null;
+  startDate: { year: number | null } | null;
+  relations: { relationType: string; type: string | null; format: string | null; year: number | null }[];
+}
+
+const CROSS_INFO_QUERY = `
+  query ($id: Int) {
+    Media(id: $id, type: ANIME) {
+      id
+      idMal
+      format
+      seasonYear
+      startDate { year }
+      relations { edges { relationType(version: 2) node { id type format startDate { year } } } }
+    }
+  }
+`;
+
+interface RawCrossInfo {
+  id: number;
+  idMal?: number | null;
+  format?: string | null;
+  seasonYear?: number | null;
+  startDate?: { year?: number | null } | null;
+  relations?: {
+    edges?: ({
+      relationType?: string | null;
+      node?: { type?: string | null; format?: string | null; startDate?: { year?: number | null } | null } | null;
+    } | null)[] | null;
+  } | null;
+}
+
+export async function getAnimeCrossInfo(id: number): Promise<AniListCrossInfo> {
+  const data = await anilistFetch<{ Media: RawCrossInfo }>(CROSS_INFO_QUERY, { id }, anilistMediaSchema);
+  const m = data.Media;
+  return {
+    id: m.id,
+    idMal: typeof m.idMal === "number" ? m.idMal : null,
+    format: m.format ?? null,
+    seasonYear: m.seasonYear ?? null,
+    startDate: m.startDate ? { year: m.startDate.year ?? null } : null,
+    relations: (m.relations?.edges ?? []).flatMap((e) =>
+      e?.relationType
+        ? [
+            {
+              relationType: e.relationType,
+              type: e.node?.type ?? null,
+              format: e.node?.format ?? null,
+              year: e.node?.startDate?.year ?? null,
+            },
+          ]
+        : []
+    ),
+  };
+}
+
 /**
  * true si `id` tiene forma de referencia AniList (`al-{entero}`). Los ids
  * legacy de Jikan (bibliotecas guardadas cuando anime venía de MAL) son

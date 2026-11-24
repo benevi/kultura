@@ -331,6 +331,8 @@
     "salaTrailerPlay": "Play the trailer for {title}",
     "trailerNotice": "The video loads from YouTube when you press play.",
     "sourceLabel": "Title data:",
+    "extraSourceLabel": "Image, trailer and availability:",
+    "extraSourceImageLabel": "Image:",
     "sourceLinkLabel": "{name}: title page (opens in a new tab)",
     "googleBooksLink": "View this book on Google Books",
     "googleBooksLinkLabel": "Google Books: book page (opens in a new tab)",

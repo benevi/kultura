@@ -331,6 +331,8 @@
     "salaTrailerPlay": "Reproducir el tráiler de {title}",
     "trailerNotice": "El vídeo se carga desde YouTube al pulsar.",
     "sourceLabel": "Datos del título:",
+    "extraSourceLabel": "Imagen, tráiler y disponibilidad:",
+    "extraSourceImageLabel": "Imagen:",
     "sourceLinkLabel": "{name}: ficha del título (se abre en una pestaña nueva)",
     "googleBooksLink": "Ver este libro en Google Libros",
     "googleBooksLinkLabel": "Google Libros: página del libro (se abre en una pestaña nueva)",
