@@ -108,6 +108,24 @@ describe('Cerrar sesión desde el menú del avatar', () => {
     expect(order).toEqual(['fetch /api/push/unsubscribe', 'browser-unsubscribe', 'signOut'])
   })
 
+  it('borra el avance de importación de todas las cuentas antes del signOut (y nada más)', async () => {
+    window.localStorage.setItem('kultura:import:v2:user-a', '{}')
+    window.localStorage.setItem('kultura:import:v2:user-b', '{}')
+    window.localStorage.setItem('kultura:import:v1', '{}')
+    window.localStorage.setItem('kultura.pwa.install', '{"installed":true}')
+    signOut.mockImplementationOnce(async () => {
+      order.push(`signOut con ${window.localStorage.length} claves`)
+      return {}
+    })
+    render(<AvatarDropdown username="ana" avatarColor="blue" avatarInitials="AN" avatarIcon={null} />)
+    fireEvent.click(screen.getByRole('button', { name: 'Cuenta de ana' }))
+    fireEvent.click(screen.getByRole('button', { name: 'signOut' }))
+    await waitFor(() => expect(signOut).toHaveBeenCalled())
+    expect(order).toEqual(['signOut con 1 claves'])
+    expect(window.localStorage.getItem('kultura.pwa.install')).toBe('{"installed":true}')
+    window.localStorage.clear()
+  })
+
   it('sin push en el navegador cierra sesión igual, sin peticiones de más', async () => {
     render(<AvatarDropdown username="ana" avatarColor="blue" avatarInitials="AN" avatarIcon={null} />)
     fireEvent.click(screen.getByRole('button', { name: 'Cuenta de ana' }))

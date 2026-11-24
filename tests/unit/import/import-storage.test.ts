@@ -2,7 +2,7 @@
 // F-26 — Avance del importador en este navegador: por cuenta, borrable y sin
 // romper si el almacenamiento falla.
 import { describe, it, expect, beforeEach, vi } from 'vitest'
-import { clearProgress, loadProgress, progressKey, saveProgress } from '@/lib/import/import-storage'
+import { clearAllProgress, clearProgress, loadProgress, progressKey, saveProgress } from '@/lib/import/import-storage'
 import type { ImportItemResult } from '@/lib/import/types'
 
 const results = new Map<string, ImportItemResult>([['0', { key: '0', outcome: 'added', mediaId: 'movie_1' }]])
@@ -38,10 +38,30 @@ describe('import-storage', () => {
     expect(loadProgress('user-b', 'fp1')).not.toBeNull()
   })
 
-  it('pasada una semana se empieza de cero', () => {
+  it('pasada una semana se empieza de cero y la clave caducada se borra al leerla', () => {
     saveProgress('user-a', 'fp1', 'letterboxd', results)
     vi.spyOn(Date, 'now').mockReturnValue(Date.now() + 8 * 24 * 3600_000)
     expect(loadProgress('user-a', 'fp1')).toBeNull()
+    expect(window.localStorage.getItem(progressKey('user-a'))).toBeNull()
+  })
+
+  it('caducada se borra aunque se lea con otro archivo; vigente con otro archivo, no', () => {
+    saveProgress('user-a', 'fp1', 'letterboxd', results)
+    expect(loadProgress('user-a', 'fp2')).toBeNull()
+    expect(window.localStorage.getItem(progressKey('user-a'))).not.toBeNull()
+    vi.spyOn(Date, 'now').mockReturnValue(Date.now() + 8 * 24 * 3600_000)
+    expect(loadProgress('user-a', 'fp2')).toBeNull()
+    expect(window.localStorage.getItem(progressKey('user-a'))).toBeNull()
+  })
+
+  it('clearAllProgress (cerrar sesión) borra el avance de todas las cuentas y la clave vieja, nada más', () => {
+    saveProgress('user-a', 'fp1', 'letterboxd', results)
+    saveProgress('user-b', 'fp1', 'letterboxd', results)
+    window.localStorage.setItem('kultura:import:v1', '{}')
+    window.localStorage.setItem('kultura.pwa.install', '{"installed":true}')
+    clearAllProgress()
+    expect(window.localStorage.length).toBe(1)
+    expect(window.localStorage.getItem('kultura.pwa.install')).toBe('{"installed":true}')
   })
 
   it('almacenamiento bloqueado (modo privado): ni lanza ni guarda', () => {
@@ -57,5 +77,6 @@ describe('import-storage', () => {
     expect(() => saveProgress('user-a', 'fp1', 'letterboxd', results)).not.toThrow()
     expect(loadProgress('user-a', 'fp1')).toBeNull()
     expect(() => clearProgress('user-a')).not.toThrow()
+    expect(() => clearAllProgress()).not.toThrow()
   })
 })

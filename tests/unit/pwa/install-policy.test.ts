@@ -1,6 +1,7 @@
 /**
- * MOV-3 — cuándo se ofrece "Instalar la app": 2.ª visita o 1.ª entrada en la
- * biblioteca, nunca instalada, y no vuelve en 30 días tras descartarlo.
+ * MOV-3 — cuándo se ofrece "Instalar la app": al entrar en la biblioteca,
+ * nunca instalada, y no vuelve en 30 días tras descartarlo. Sin contador de
+ * visitas: solo se guarda la respuesta (24-11-2026).
  */
 // @vitest-environment node
 import { describe, it, expect } from "vitest";
@@ -8,13 +9,12 @@ import {
   DISMISS_MS,
   EMPTY_STATE,
   INSTALL_STORAGE_KEY,
-  VISIT_GAP_MS,
   detectPlatform,
   dismiss,
   isLibraryPath,
   markInstalled,
+  pruneInstallState,
   readInstallState,
-  registerVisit,
   shouldOfferInstall,
   writeInstallState,
   type InstallState,
@@ -31,85 +31,86 @@ function memory(initial?: string) {
     data,
     getItem: (k: string) => data.get(k) ?? null,
     setItem: (k: string, v: string) => void data.set(k, v),
+    removeItem: (k: string) => void data.delete(k),
   };
 }
 
+const LIBRARY = "/es/library";
 const offer = (over: Partial<OfferInput> & { state: InstallState }) =>
-  shouldOfferInstall({ now: NOW, pathname: "/es/home", standalone: false, canPrompt: true, platform: "android", ...over });
-
-describe("visitas", () => {
-  it("la primera carga es la visita 1; recargar al rato no suma", () => {
-    let s = registerVisit(EMPTY_STATE, NOW);
-    expect(s.visits).toBe(1);
-    s = registerVisit(s, NOW + 5 * 60 * 1000);
-    expect(s.visits).toBe(1);
-  });
-
-  it("volver tras más de 30 min sin actividad es otra visita", () => {
-    const first = registerVisit(EMPTY_STATE, NOW);
-    expect(registerVisit(first, NOW + VISIT_GAP_MS + 1).visits).toBe(2);
-    expect(registerVisit(first, NOW + VISIT_GAP_MS).visits).toBe(1);
-  });
-
-  it("un reloj que va hacia atrás cuenta como visita nueva (no se queda bloqueado)", () => {
-    const first = registerVisit(EMPTY_STATE, NOW);
-    expect(registerVisit(first, NOW - DAY).visits).toBe(2);
-  });
-});
+  shouldOfferInstall({ now: NOW, pathname: LIBRARY, standalone: false, canPrompt: true, platform: "android", ...over });
 
 describe("shouldOfferInstall", () => {
-  const second: InstallState = { visits: 2, lastSeenAt: NOW };
-  const first: InstallState = { visits: 1, lastSeenAt: NOW };
-
-  it("no en la 1.ª visita; sí en la 2.ª", () => {
-    expect(offer({ state: first })).toBe(false);
-    expect(offer({ state: second })).toBe(true);
-  });
-
-  it("sí en la 1.ª entrada en la biblioteca (es y en, con subrutas)", () => {
-    expect(offer({ state: first, pathname: "/es/library" })).toBe(true);
-    expect(offer({ state: first, pathname: "/en/library/" })).toBe(true);
-    expect(offer({ state: first, pathname: "/es/library?status=watching" })).toBe(true);
+  it("solo en la biblioteca (es y en, con subrutas); en el resto, nunca", () => {
+    expect(offer({ state: EMPTY_STATE })).toBe(true);
+    expect(offer({ state: EMPTY_STATE, pathname: "/en/library/" })).toBe(true);
+    expect(offer({ state: EMPTY_STATE, pathname: "/es/library?status=watching" })).toBe(true);
+    expect(offer({ state: EMPTY_STATE, pathname: "/es/home" })).toBe(false);
     expect(isLibraryPath("/es/librarything")).toBe(false);
     expect(isLibraryPath(null)).toBe(false);
   });
 
   it("tras descartarlo no vuelve en 30 días; a los 30 días, sí", () => {
-    const dismissed = dismiss(second, NOW);
+    const dismissed = dismiss(EMPTY_STATE, NOW);
     expect(offer({ state: dismissed, now: NOW + DAY })).toBe(false);
     expect(offer({ state: dismissed, now: NOW + DISMISS_MS - 1 })).toBe(false);
     expect(offer({ state: dismissed, now: NOW + DISMISS_MS })).toBe(true);
-    // También en la biblioteca.
-    expect(offer({ state: dismissed, now: NOW + DAY, pathname: "/es/library" })).toBe(false);
   });
 
   it("nunca si ya está instalada o se ejecuta en modo app", () => {
-    expect(offer({ state: markInstalled(second) })).toBe(false);
-    expect(offer({ state: second, standalone: true })).toBe(false);
+    expect(offer({ state: markInstalled(EMPTY_STATE) })).toBe(false);
+    expect(offer({ state: EMPTY_STATE, standalone: true })).toBe(false);
   });
 
   it("sin beforeinstallprompt solo en iOS (instrucciones); en el resto, nada", () => {
-    expect(offer({ state: second, canPrompt: false, platform: "desktop" })).toBe(false);
-    expect(offer({ state: second, canPrompt: false, platform: "android" })).toBe(false);
-    expect(offer({ state: second, canPrompt: false, platform: "ios" })).toBe(true);
+    expect(offer({ state: EMPTY_STATE, canPrompt: false, platform: "desktop" })).toBe(false);
+    expect(offer({ state: EMPTY_STATE, canPrompt: false, platform: "android" })).toBe(false);
+    expect(offer({ state: EMPTY_STATE, canPrompt: false, platform: "ios" })).toBe(true);
   });
 });
 
 describe("almacenamiento", () => {
-  it("ida y vuelta", () => {
+  it("ida y vuelta: solo la respuesta", () => {
     const store = memory();
-    const state = dismiss(registerVisit(EMPTY_STATE, NOW), NOW);
+    const state = dismiss(EMPTY_STATE, NOW);
     writeInstallState(store, state);
     expect(readInstallState(store)).toEqual(state);
+    expect(store.data.get(INSTALL_STORAGE_KEY)).toBe(JSON.stringify({ dismissedAt: NOW }));
+  });
+
+  it("sin respuesta no se guarda nada (y se borra lo que hubiera)", () => {
+    const store = memory('{"installed":true}');
+    writeInstallState(store, EMPTY_STATE);
+    expect(store.data.has(INSTALL_STORAGE_KEY)).toBe(false);
+  });
+
+  it("nunca escribe campos de más, aunque se los pasen", () => {
+    const store = memory();
+    writeInstallState(store, { installed: true, visits: 3 } as InstallState);
+    expect(store.data.get(INSTALL_STORAGE_KEY)).toBe('{"installed":true}');
+  });
+
+  it("pruneInstallState: quita el contador de versiones anteriores", () => {
+    const withAnswer = memory(JSON.stringify({ visits: 4, lastSeenAt: NOW, dismissedAt: NOW }));
+    pruneInstallState(withAnswer);
+    expect(withAnswer.data.get(INSTALL_STORAGE_KEY)).toBe(JSON.stringify({ dismissedAt: NOW }));
+
+    const onlyCounter = memory(JSON.stringify({ visits: 4, lastSeenAt: NOW }));
+    pruneInstallState(onlyCounter);
+    expect(onlyCounter.data.has(INSTALL_STORAGE_KEY)).toBe(false);
+
+    const broken = memory("{no json");
+    pruneInstallState(broken);
+    expect(broken.data.has(INSTALL_STORAGE_KEY)).toBe(false);
+
+    const clean = memory('{"installed":true}');
+    pruneInstallState(clean);
+    expect(clean.data.get(INSTALL_STORAGE_KEY)).toBe('{"installed":true}');
   });
 
   it("JSON roto, valores raros o storage que lanza: se empieza de cero sin romper", () => {
     expect(readInstallState(memory("{no json"))).toEqual(EMPTY_STATE);
     expect(readInstallState(memory("null"))).toEqual(EMPTY_STATE);
-    expect(readInstallState(memory('{"visits":"9","lastSeenAt":-1,"dismissedAt":"x","installed":"yes"}'))).toEqual({
-      visits: 0,
-      lastSeenAt: -1,
-    });
+    expect(readInstallState(memory('{"dismissedAt":"x","installed":"yes"}'))).toEqual(EMPTY_STATE);
     const throwing = {
       getItem: () => {
         throw new Error("SecurityError");
@@ -117,9 +118,14 @@ describe("almacenamiento", () => {
       setItem: () => {
         throw new Error("QuotaExceeded");
       },
+      removeItem: () => {
+        throw new Error("SecurityError");
+      },
     };
     expect(readInstallState(throwing)).toEqual(EMPTY_STATE);
     expect(() => writeInstallState(throwing, EMPTY_STATE)).not.toThrow();
+    expect(() => writeInstallState(throwing, { installed: true })).not.toThrow();
+    expect(() => pruneInstallState(throwing)).not.toThrow();
     expect(readInstallState(null)).toEqual(EMPTY_STATE);
   });
 });

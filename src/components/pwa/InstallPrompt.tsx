@@ -24,8 +24,8 @@ import {
   detectPlatform,
   dismiss,
   markInstalled,
+  pruneInstallState,
   readInstallState,
-  registerVisit,
   shouldOfferInstall,
   writeInstallState,
   type InstallPlatform,
@@ -79,8 +79,8 @@ export function InstallPrompt({ labels }: { labels: InstallLabels }) {
 
   const evaluate = useCallback(() => {
     const now = Date.now();
-    const state = registerVisit(readInstallState(storage()), now);
-    writeInstallState(storage(), state);
+    pruneInstallState(storage());
+    const state = readInstallState(storage());
     const current = detectPlatform(navigator.userAgent, navigator.maxTouchPoints ?? 0);
     setPlatform(current);
     setOpen(

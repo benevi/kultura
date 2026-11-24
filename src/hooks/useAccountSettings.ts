@@ -6,6 +6,7 @@ import { isValidAvatarColor } from '@/lib/constants/avatarColors'
 import { saveRatingScale } from '@/lib/library/actions'
 import { WEEKLY_EMAIL_CONSENT_VERSION } from '@/lib/email/consent'
 import { unsubscribeCurrentDevice, usePushSettings } from '@/lib/push/client'
+import { clearAllProgress } from '@/lib/import/import-storage'
 import { isRatingScale, type RatingScale } from '@/types/library'
 import type { AvatarColorName } from '@/lib/constants/avatarColors'
 import { createClient } from '@/lib/supabase/client'
@@ -413,6 +414,7 @@ export function useAccountSettings({
       setDeleteModalOpen(false)
       const supabase = createClient()
       await unsubscribeCurrentDevice()
+      clearAllProgress()
       await supabase.auth.signOut()
       router.push(
         result.scheduled
