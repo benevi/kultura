@@ -781,7 +781,7 @@ describe("MediaDetail · F5c: anime de AniList cruzado con TMDB", () => {
     trailerKey: YT,
     providers: tmdbProviders,
     watchLink: "https://www.themoviedb.org/tv/209867/watch?locale=ES",
-    extraSource: { name: "TMDB", url: "https://www.themoviedb.org/tv/209867" },
+    extraSource: { name: "TMDB", url: "https://www.themoviedb.org/tv/209867", imageOnly: false },
   };
 
   it("sala completa con la imagen de TMDB, tráiler, «Dónde ver» con JustWatch y dos líneas de fuente", async () => {
@@ -798,6 +798,27 @@ describe("MediaDetail · F5c: anime de AniList cruzado con TMDB", () => {
     expect(lines[0]).toContain("AniList");
     const extra = sources.querySelector("[data-sala-ficha-extra-source]")!;
     expect(extra).toHaveTextContent("extraSourceLabel");
+    expect(extra).not.toHaveTextContent("extraSourceImageLabel");
+    expect(within(extra as HTMLElement).getByRole("link")).toHaveAttribute("href", "https://www.themoviedb.org/tv/209867");
+  });
+
+  it("temporada posterior (solo la imagen de TMDB): el pie dice solo «Imagen»", async () => {
+    const { container } = render(
+      await MediaDetail({
+        item: frieren,
+        initialEntry: null,
+        isAuthenticated: false,
+        source,
+        sala: true,
+        salaExtras: {
+          backdrop: extras.backdrop,
+          extraSource: { name: "TMDB", url: "https://www.themoviedb.org/tv/209867", imageOnly: true },
+        },
+      })
+    );
+    const extra = container.querySelector("[data-sala-ficha-extra-source]")!;
+    expect(extra).toHaveTextContent("extraSourceImageLabel");
+    expect(extra).not.toHaveTextContent("extraSourceLabel");
     expect(within(extra as HTMLElement).getByRole("link")).toHaveAttribute("href", "https://www.themoviedb.org/tv/209867");
   });
 

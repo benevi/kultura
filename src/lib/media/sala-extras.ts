@@ -104,7 +104,12 @@ export async function animeCrossExtras(item: MediaItem, ctx: SalaExtrasContext):
     }
   }
   if (extras.backdrop || extras.trailerKey || extras.providers) {
-    extras.extraSource = { name: "TMDB", url: `https://www.themoviedb.org/${cross.kind}/${cross.id}` };
+    extras.extraSource = {
+      name: "TMDB",
+      url: `https://www.themoviedb.org/${cross.kind}/${cross.id}`,
+      // El pie dice solo «Imagen» si de TMDB no se usa nada más (p. ej., temporada 2).
+      imageOnly: !extras.trailerKey && !extras.providers,
+    };
   }
   return extras;
 }

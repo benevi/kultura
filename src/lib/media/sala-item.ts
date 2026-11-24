@@ -20,7 +20,7 @@ export interface SalaFichaExtras {
    * disponibilidad: TMDB») cuando algo de lo de arriba viene de TMDB y la
    * fuente del título es otra. Enlaza a la ficha de esa obra en TMDB.
    */
-  extraSource?: { name: string; url: string };
+  extraSource?: { name: string; url: string; imageOnly?: boolean };
 }
 
 /**

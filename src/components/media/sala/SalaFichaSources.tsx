@@ -31,7 +31,7 @@ export function SalaFichaSources({
   /** Página del libro en Google Libros, si la ficha lleva datos suyos. */
   googleBooksHref?: string | null;
   /** Segunda fuente (F5c): lo que la sala trae de TMDB cuando el título es de otro proveedor. */
-  extraSource?: { name: string; url: string } | null;
+  extraSource?: { name: string; url: string; imageOnly?: boolean } | null;
 }) {
   const t = useTranslations("media_detail");
   const showSource = source && source.name !== "Google Books";
@@ -49,7 +49,7 @@ export function SalaFichaSources({
       )}
       {extraSource && (
         <p data-sala-ficha-extra-source="" className="flex flex-wrap items-center gap-x-2">
-          <span>{t("extraSourceLabel")}</span>
+          <span>{extraSource.imageOnly ? t("extraSourceImageLabel") : t("extraSourceLabel")}</span>
           <SalaLink href={extraSource.url} variant="standalone">
             {extraSource.name}
           </SalaLink>

@@ -170,7 +170,7 @@ describe("loadSalaFichaExtras · anime de AniList (F5c)", () => {
       trailerKey: "qgQ0CmwbaRs",
       providers: [{ name: "Crunchyroll", logoPath: "https://image.tmdb.org/t/p/w92/cr.jpg", type: "flatrate" }],
       watchLink: "https://www.themoviedb.org/tv/209867/watch?locale=ES",
-      extraSource: { name: "TMDB", url: "https://www.themoviedb.org/tv/209867" },
+      extraSource: { name: "TMDB", url: "https://www.themoviedb.org/tv/209867", imageOnly: false },
     });
   });
 
@@ -179,7 +179,7 @@ describe("loadSalaFichaExtras · anime de AniList (F5c)", () => {
     cross.value = { kind: "tv", id: 209867, scope: "full" };
     await expect(loadSalaFichaExtras(frieren, { locale: "es", hasTrailer: true, hasProviders: true })).resolves.toEqual({
       backdrop: "https://image.tmdb.org/t/p/w1280/sin.jpg",
-      extraSource: { name: "TMDB", url: "https://www.themoviedb.org/tv/209867" },
+      extraSource: { name: "TMDB", url: "https://www.themoviedb.org/tv/209867", imageOnly: true },
     });
   });
 
@@ -189,7 +189,7 @@ describe("loadSalaFichaExtras · anime de AniList (F5c)", () => {
     const extras = await loadSalaFichaExtras({ ...frieren, id: "anime_al-182255", externalId: "al-182255" }, ctx);
     expect(extras).toEqual({
       backdrop: "https://image.tmdb.org/t/p/w1280/sin.jpg",
-      extraSource: { name: "TMDB", url: "https://www.themoviedb.org/tv/209867" },
+      extraSource: { name: "TMDB", url: "https://www.themoviedb.org/tv/209867", imageOnly: true },
     });
   });
 
