@@ -71,7 +71,8 @@ export function SalaWhereToWatch({
         className={cn(
           // Sale hasta el borde de la retícula (`page-grid`: 16 px, 32 px desde md).
           // Por debajo de `sm`, en varias líneas (F6); desde `sm`, la fila que se desliza.
-          "flex flex-wrap gap-x-10 gap-y-6 pb-4 pt-1",
+          // El relleno deja sitio al anillo de foco dentro de la fila (2.4.11).
+          "-mx-2 flex flex-wrap gap-x-10 gap-y-6 px-2 pb-4 pt-1",
           "sm:-mx-4 sm:flex-nowrap sm:overflow-x-auto sm:overscroll-x-contain sm:px-4 md:-mx-8 md:px-8",
           "sm:scroll-px-4 md:scroll-px-8 [scrollbar-width:thin]",
           !allLinked && "sala-focused:sala-focus"
