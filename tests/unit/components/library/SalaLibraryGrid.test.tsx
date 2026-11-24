@@ -175,15 +175,44 @@ describe('SalaLibraryGrid: edición rápida', () => {
   })
 })
 
+describe('SalaLibraryGrid: progreso (B2)', () => {
+  const withProgress = [
+    entry('tv_1399', 'in_progress', { title: 'Juego de tronos', progress: { season: 2, episode: 5 } } as Partial<LibraryEntry>),
+    entry('manga_108556', 'in_progress', { title: 'Slime', progress: { chapter: 34, volume: 5 } } as Partial<LibraryEntry>),
+    entry('book_OL2W', 'in_progress', { title: 'Libro', progress: { page: 120, total: 350 } } as Partial<LibraryEntry>),
+    entry('anime_1', 'completed', { title: 'Acabado', progress: { episode: 12 } } as Partial<LibraryEntry>),
+    entry('anime_2', 'in_progress', { title: 'Sin dato', progress: null } as Partial<LibraryEntry>),
+    entry('movie_3', 'in_progress', { title: 'Película', progress: { episode: 1 } } as Partial<LibraryEntry>),
+  ]
+
+  it('en curso y con dato: temporada y episodio, capítulo o página, con «Progreso» para el lector', () => {
+    renderGrid({ entries: withProgress })
+    const item = (title: string) => screen.getAllByRole('listitem').find((li) => li.textContent?.includes(title))!
+    const progress = (title: string) => item(title).querySelector('[data-sala-library-progress]')
+    expect(progress('Juego de tronos')?.textContent).toBe('progress.title: progress.label.tv:{"season":2,"episode":5}')
+    expect(progress('Slime')?.textContent).toBe('progress.title: progress.label.chapter:{"chapter":34} · progress.label.volume:{"volume":5}')
+    expect(progress('Libro')?.textContent).toBe('progress.title: progress.label.pageOf:{"page":120,"total":350}')
+    expect(progress('Libro')?.querySelector('.sr-only')?.textContent).toBe('progress.title: ')
+  })
+
+  it('sin progreso si no está en curso, si no hay dato o si el formato no lo tiene', () => {
+    renderGrid({ entries: withProgress })
+    const item = (title: string) => screen.getAllByRole('listitem').find((li) => li.textContent?.includes(title))!
+    for (const title of ['Acabado', 'Sin dato', 'Película']) {
+      expect(item(title).querySelector('[data-sala-library-progress]'), title).toBeNull()
+    }
+  })
+})
+
 describe('Biblioteca con la bandera apagada: sin código de «Sala»', () => {
   it('LibraryClient solo trae «Sala» por next/dynamic (y tipos)', () => {
     const src = readFileSync(join(process.cwd(), 'src/app/[locale]/(app)/library/LibraryClient.tsx'), 'utf8')
     const salaImports = [...src.matchAll(/^import (type )?.*from '([^']*sala[^']*)'/gim)].map((m) => ({ type: !!m[1], from: m[2] }))
     expect(salaImports.length).toBeGreaterThan(0)
     for (const imp of salaImports) {
-      expect(imp.type || imp.from === '@/components/library/sala/SalaLibraryGridLazy', imp.from).toBe(true)
+      expect(imp.type || imp.from === '@/components/library/sala/SalaLibraryViewLazy', imp.from).toBe(true)
     }
-    const lazy = readFileSync(join(process.cwd(), 'src/components/library/sala/SalaLibraryGridLazy.tsx'), 'utf8')
-    expect(lazy).toMatch(/dynamic\(\(\) => import\("\.\/SalaLibraryGrid"\)/)
+    const lazy = readFileSync(join(process.cwd(), 'src/components/library/sala/SalaLibraryViewLazy.tsx'), 'utf8')
+    expect(lazy).toMatch(/dynamic\(\(\) => import\("\.\/SalaLibraryView"\)/)
   })
 })

@@ -17,6 +17,8 @@
 //   color ni con un símbolo («Tu nota: 4 de 5»).
 // - Todas las portadas en 2/3 aunque se mezclen formatos: las filas cuadran.
 // - Los avisos («Guardado en tu biblioteca») van por `SalaToastProvider`.
+// - B2: en las obras en curso, el progreso que ya trae la página («T2 · E5»,
+//   «Cap. 34 · Vol. 5», «Pág. 120 de 350»), con «Progreso» para el lector.
 // ============================================================
 
 import '@/styles/sala/tokens.css'
@@ -29,13 +31,15 @@ import { SalaWorkList } from '@/components/sala/SalaWorkList'
 import { SalaWorkCard } from '@/components/sala/SalaWorkCard'
 import { SalaToastProvider, type SalaToastLabels } from '@/components/sala/SalaToast'
 import { SalaLibraryQuickEdit } from '@/components/library/sala/SalaLibraryQuickEdit'
-import { storedRating10 } from '@/lib/library/rating'
+import { useProgressLabel } from '@/components/library/useProgressLabel'
+import { hasProgress, progressKindFor, type LibraryEntryWithProgress } from '@/lib/library/progress'
+import { entryRating10 } from '@/lib/library/sort'
 import type { LibraryEntry, RatingScale } from '@/types/library'
 import type { MediaType } from '@/types/media'
 
 export interface SalaLibraryGridProps {
-  /** Los títulos que se ven (ya filtrados). */
-  entries: LibraryEntry[]
+  /** Los títulos que se ven (ya filtrados y ordenados), con su progreso si lo hay. */
+  entries: LibraryEntryWithProgress[]
   /** Escala de notas de la persona (Ajustes, F-28). */
   scale: RatingScale
   /** La entrada tal como quedó guardada. */
@@ -55,11 +59,6 @@ function parseMediaId(mediaId: string): { type: MediaType; externalId: string } 
   return { type: mediaId.slice(0, idx) as MediaType, externalId: mediaId.slice(idx + 1) }
 }
 
-/** Nota guardada en 0,5-10: la fina si la hay; si no, la entera de siempre. */
-function ratingOf(entry: LibraryEntry): number | null {
-  return storedRating10(entry.rating10) ?? (entry.score ? entry.score * 2 : null)
-}
-
 export function SalaLibraryGrid({ toastLabels, ...props }: SalaLibraryGridProps) {
   return (
     <SalaToastProvider labels={toastLabels}>
@@ -71,6 +70,8 @@ export function SalaLibraryGrid({ toastLabels, ...props }: SalaLibraryGridProps)
 function SalaLibraryGridView({ entries, scale, onSaved }: Omit<SalaLibraryGridProps, 'toastLabels'>) {
   const t = useTranslations('library')
   const tType = useTranslations('discoverFilters.typeBadge')
+  const tProgress = useTranslations('progress')
+  const progressLabel = useProgressLabel()
   const locale = useLocale()
   const listRef = useRef<HTMLUListElement | HTMLOListElement>(null)
   const number = new Intl.NumberFormat(locale, { maximumFractionDigits: 1 })
@@ -89,7 +90,12 @@ function SalaLibraryGridView({ entries, scale, onSaved }: Omit<SalaLibraryGridPr
         {entries.map((entry, i) => {
           const { type, externalId } = parseMediaId(entry.mediaId)
           const title = entry.title ?? entry.mediaId
-          const rating = ratingOf(entry)
+          const rating = entryRating10(entry)
+          // Solo en curso y con dato: «Sin empezar» no aporta en la tarjeta.
+          const progress =
+            entry.status === 'in_progress' && progressKindFor(type) && hasProgress(entry.progress)
+              ? progressLabel(type, entry.progress)
+              : null
           return (
             <SalaWorkCard
               key={entry.mediaId}
@@ -106,6 +112,12 @@ function SalaLibraryGridView({ entries, scale, onSaved }: Omit<SalaLibraryGridPr
               detail={
                 <span className="flex flex-col">
                   <span data-sala-library-status="">{t(`status.${entry.status}`)}</span>
+                  {progress ? (
+                    <span data-sala-library-progress="" className="tabular-nums">
+                      <span className="sr-only">{tProgress('title')}: </span>
+                      {progress}
+                    </span>
+                  ) : null}
                   {rating !== null ? (
                     <span>
                       {t('cardScore', {

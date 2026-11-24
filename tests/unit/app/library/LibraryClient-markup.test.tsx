@@ -24,8 +24,9 @@ vi.mock('next-intl', () => {
 vi.mock('@/components/ui/ToastProvider', () => ({
   useToastContext: () => ({ show: vi.fn(), showError: vi.fn(), dismiss: vi.fn() }),
 }))
+const mockPush = vi.fn()
 vi.mock('@/i18n/navigation', () => ({
-  useRouter: () => ({ push: vi.fn(), refresh: vi.fn() }),
+  useRouter: () => ({ push: mockPush, refresh: vi.fn() }),
   Link: ({ href, children, className }: { href: string; children: React.ReactNode; className?: string }) => (
     <a href={href} className={className}>
       {children}
@@ -35,13 +36,18 @@ vi.mock('@/i18n/navigation', () => ({
 let current = new URLSearchParams()
 vi.mock('next/navigation', () => ({ useSearchParams: () => current }))
 
-// Con «Sala» la rejilla llega por next/dynamic: aquí, un doble que enseña lo que recibe.
-vi.mock('@/components/library/sala/SalaLibraryGridLazy', () => ({
-  SalaLibraryGridLazy: ({ entries, scale }: { entries: LibraryEntry[]; scale: string }) => (
-    <div data-testid="sala-grid" data-scale={scale}>
-      {entries.map((e) => e.mediaId).join(',')}
-    </div>
-  ),
+// Con «Sala» la biblioteca llega por next/dynamic: aquí, un doble que guarda lo que recibe.
+let salaProps: Record<string, unknown> | null = null
+vi.mock('@/components/library/sala/SalaLibraryViewLazy', () => ({
+  SalaLibraryViewLazy: (props: { entries: LibraryEntry[]; scale: string; diary?: React.ReactNode }) => {
+    salaProps = props
+    return (
+      <div data-testid="sala-view" data-scale={props.scale}>
+        {props.entries.map((e) => e.mediaId).join(',')}
+        {props.diary}
+      </div>
+    )
+  },
 }))
 
 import { LibraryClient } from '@/app/[locale]/(app)/library/LibraryClient'
@@ -103,21 +109,62 @@ describe('LibraryClient con «Sala» (SALA_BIBLIOTECA)', () => {
 
   beforeEach(() => {
     current = new URLSearchParams()
+    salaProps = null
+    mockPush.mockReset()
   })
 
-  it('la rejilla de «Sala» sustituye a la de hoy, con lo filtrado y la escala', () => {
-    current = new URLSearchParams('status=pending')
+  it('la vista de «Sala» sustituye a toda la biblioteca, con lo filtrado, los contadores y la escala', () => {
+    current = new URLSearchParams('status=pending&sort=title')
     const { container } = render(<LibraryClient entries={ENTRIES} diary={DIARY} quickEdit sala={sala} />)
-    const grid = screen.getByTestId('sala-grid')
-    expect(grid.textContent).toBe('game_3')
-    expect(grid.dataset.scale).toBe('stars')
+    const view = screen.getByTestId('sala-view')
+    expect(view.textContent).toBe('game_3')
+    expect(view.dataset.scale).toBe('stars')
+    // Nada de la de hoy: ni su cabecera, ni sus chips, ni su edición rápida.
+    expect(container.querySelector('h1')).toBeNull()
+    expect(container.querySelector('[role="group"]')).toBeNull()
     expect(container.querySelector('[data-testid="library-quick-edit"]')).toBeNull()
+    expect(salaProps).toMatchObject({
+      view: 'collection',
+      totalCount: 4,
+      counts: { completed: 1, in_progress: 1, pending: 1, abandoned: 1 },
+      filters: { type: 'all', status: 'pending', score: 'all', favorites: false, sort: 'title' },
+      viewHrefs: { collection: '/library?status=pending&sort=title', diary: '/library?view=diary&status=pending&sort=title' },
+      toastLabels: sala.toastLabels,
+    })
   })
 
-  it('sin títulos que encajen, el mismo vacío de hoy', () => {
+  it('los filtros siguen en la URL y en el historial, sin ir al servidor: conserva el resto y el orden', () => {
+    current = new URLSearchParams('type=movie&sort=year')
+    const pushState = vi.spyOn(window.history, 'pushState').mockImplementation(() => undefined)
+    render(<LibraryClient entries={ENTRIES} diary={DIARY} sala={sala} />)
+    const onFilter = salaProps!.onFilter as (next: Record<string, string>) => void
+    const path = window.location.pathname
+    onFilter({ status: 'completed' })
+    expect(pushState).toHaveBeenLastCalledWith(null, '', `${path}?type=movie&status=completed&sort=year`)
+    onFilter({ type: 'all', status: 'all', score: 'all', fav: 'all' })
+    expect(pushState).toHaveBeenLastCalledWith(null, '', `${path}?sort=year`)
+    onFilter({ type: 'all', sort: 'recent' })
+    expect(pushState).toHaveBeenLastCalledWith(null, '', path)
+    expect(mockPush).not.toHaveBeenCalled()
+    pushState.mockRestore()
+  })
+
+  it('sin diario: ni selector de vista ni favoritos', () => {
+    render(<LibraryClient entries={ENTRIES} sala={sala} />)
+    expect(salaProps!.viewHrefs).toBeNull()
+  })
+
+  it('el diario va dentro de la vista de «Sala»', () => {
+    current = new URLSearchParams('view=diary')
+    render(<LibraryClient entries={ENTRIES} diary={DIARY} sala={sala} />)
+    expect(salaProps!.view).toBe('diary')
+    expect(salaProps!.diary).toBeTruthy()
+  })
+
+  it('sin títulos que encajen, la vista recibe la lista vacía (su vacío es de «Sala»)', () => {
     current = new URLSearchParams('type=comic')
     render(<LibraryClient entries={ENTRIES} sala={sala} />)
-    expect(screen.queryByTestId('sala-grid')).toBeNull()
-    expect(screen.getByText('library.empty.filtered')).toBeTruthy()
+    expect(screen.getByTestId('sala-view').textContent).toBe('')
+    expect(screen.queryByText('library.empty.filtered')).toBeNull()
   })
 })

@@ -1,11 +1,13 @@
 /**
- * Biblioteca con «Sala» (fase 8.5 B1): la rejilla de `SalaWorkCard` y la
- * edición rápida en `SalaDialog`. La red arranca con `SALA_BIBLIOTECA=prueba`
+ * Biblioteca con «Sala» (fase 8.5 B1 y B2): la rejilla de `SalaWorkCard`, la
+ * edición rápida en `SalaDialog` y, desde B2, la cabecera, los contadores que
+ * filtran por estado, el panel de filtros y el orden. La red arranca con `SALA_BIBLIOTECA=prueba`
  * (`env.cjs`) y este spec entra con la cookie de prueba; con
  * `SALA_BIBLIOTECA=1` también pasa (salvo el caso «sin cookie»).
  *
  * Datos (`fixtures.cjs`): Matrix (película, completada, 8/10), un manga con
- * el título en japonés (en curso, sin nota) y Elden Ring (pendiente, 7/10).
+ * el título en japonés (en curso, sin nota, por el capítulo 34 del volumen 5)
+ * y Elden Ring (pendiente, 7/10).
  * Ninguna trae portada: se ve el respaldo con el título.
  */
 import { test, expect, type BrowserContext, type Page } from "@playwright/test";
@@ -150,5 +152,121 @@ test.describe("con «Sala»", () => {
     await dialog.getByRole("button", { name: es.library.saveStatus, exact: true }).click();
     await expect(dialog.getByRole("alert").filter({ hasText: "el catálogo no responde" })).toBeVisible();
     await expect(dialog).toBeVisible();
+  });
+
+  test("cabecera: un h1 y el número de títulos, que se anuncia", async ({ page }) => {
+    await openLibrary(page);
+    await expect(page.getByRole("heading", { level: 1, name: es.library.title, exact: true })).toBeVisible();
+    await expect(page.locator("[data-sala-library-count]")).toHaveAttribute("role", "status");
+    await expect(page.locator("[data-sala-library-count]")).toHaveText("3 títulos");
+  });
+
+  test("progreso: el manga en curso dice capítulo y volumen", async ({ page }) => {
+    await openLibrary(page);
+    const manga = page.getByRole("listitem").filter({ hasText: "転生したらスライムだった件" });
+    await expect(manga.locator("[data-sala-library-progress]")).toHaveText(/Cap\. 34 · Vol\. 5$/);
+    await expect(page.getByRole("listitem").filter({ hasText: "Matrix" }).locator("[data-sala-library-progress]")).toHaveCount(0);
+  });
+
+  test("contadores: filtran por estado con aria-pressed, a la URL y anunciado", async ({ page }) => {
+    await openLibrary(page);
+    const group = page.getByRole("group", { name: es.library.sala.statusFilter });
+    const pending = group.getByRole("button", { name: `1 ${es.library.counters.pending}`, exact: true });
+    await expect(pending).toHaveAttribute("aria-pressed", "false");
+    await pending.focus();
+    await page.keyboard.press("Enter");
+    await expect(page).toHaveURL(/[?&]status=pending/);
+    await expect(pending).toHaveAttribute("aria-pressed", "true");
+    await expect(pending, "el foco sigue en el contador").toBeFocused();
+    await expect(page.locator("[data-sala-library-count]")).toHaveText("1 título");
+    await expect(page.getByRole("list", { name: es.library.gridLabel }).getByRole("listitem")).toHaveCount(1);
+    // Otra vez: quita el filtro.
+    await page.keyboard.press("Enter");
+    await expect(page).not.toHaveURL(/status=/);
+    await expect(page.locator("[data-sala-library-count]")).toHaveText("3 títulos");
+  });
+
+  test("filtros: el panel se abre con el teclado, filtra con aria-pressed y axe limpio", async ({ page }) => {
+    await openLibrary(page);
+    // Su nombre cambia con los filtros puestos («Filtros · 1»): se busca por el panel que abre.
+    const toggle = page.locator("button[aria-controls]").filter({ hasText: es.filters.filters });
+    await expect(toggle).toHaveAttribute("aria-expanded", "false");
+    await toggle.focus();
+    await page.keyboard.press("Enter");
+    await expect(toggle).toHaveAttribute("aria-expanded", "true");
+    const type = page.getByRole("group", { name: es.filters.type, exact: true });
+    await expect(type).toBeVisible();
+    await expect(type.getByRole("button", { name: es.filters.all, exact: true })).toHaveAttribute("aria-pressed", "true");
+    await expectNoBlockingViolations(page, "biblioteca con los filtros abiertos");
+
+    await type.getByRole("button", { name: es.filters.game, exact: true }).click();
+    await expect(page).toHaveURL(/[?&]type=game/);
+    await expect(type.getByRole("button", { name: es.filters.game, exact: true })).toHaveAttribute("aria-pressed", "true");
+    await expect(toggle, "el panel sigue abierto y dice cuántos filtros hay").toHaveAttribute("aria-expanded", "true");
+    await expect(toggle).toHaveText("Filtros · 1");
+    await expect(page.locator("[data-sala-library-count]")).toHaveText("1 título");
+
+    await page.getByRole("button", { name: es.filters.reset, exact: true }).first().click();
+    await expect(page).not.toHaveURL(/type=/);
+  });
+
+  test("nota mínima en un desplegable y «Solo favoritos» en un interruptor", async ({ page }) => {
+    await openLibrary(page);
+    await page.locator("button[aria-controls]").filter({ hasText: es.filters.filters }).click();
+    const score = page.getByRole("combobox", { name: es.library.sala.scoreLabel });
+    await expect(score).toHaveValue("all");
+    await score.selectOption("4");
+    await expect(page).toHaveURL(/[?&]score=4/);
+    // Matrix (8/10) y Elden Ring (7/10, 4 estrellas redondeando) quedan; el manga, sin nota, no.
+    await expect(page.locator("[data-sala-library-count]")).toHaveText("2 títulos");
+
+    const fav = page.getByRole("switch", { name: es.library.sala.favoritesOnly });
+    await expect(fav).toBeVisible();
+    // La fila entera se pulsa: 44 px o más.
+    const row = await fav.evaluate((el) => el.closest("label")!.getBoundingClientRect().height);
+    expect(row).toBeGreaterThanOrEqual(44);
+    await fav.focus();
+    await page.keyboard.press("Space");
+    await expect(fav).toBeChecked();
+    await expect(page).toHaveURL(/[?&]fav=1/);
+    await expect(fav, "el foco sigue en el interruptor").toBeFocused();
+    await expectNoBlockingViolations(page, "filtros con nota y favoritos");
+  });
+
+  test("orden: el desplegable va a la URL y reordena la rejilla", async ({ page }) => {
+    await openLibrary(page);
+    // Un `<select>` cambiado antes de hidratar no llega a React: se espera a
+    // que la página responda (el panel se abre) antes de elegir.
+    const toggle = page.locator("button[aria-controls]").filter({ hasText: es.filters.filters });
+    await toggle.click();
+    await expect(toggle).toHaveAttribute("aria-expanded", "true");
+    const sort = page.getByRole("combobox", { name: es.library.sala.sortLabel });
+    await sort.selectOption("title");
+    await expect(page).toHaveURL(/[?&]sort=title/);
+    const titles = page.getByRole("list", { name: es.library.gridLabel }).getByRole("heading", { level: 2 });
+    await expect(titles).toHaveText(["Elden Ring", "Matrix", "転生したらスライムだった件"]);
+  });
+
+  test("320 px con los filtros abiertos: sin scroll horizontal y objetivos de 44 px o más", async ({ page }) => {
+    await page.setViewportSize({ width: 320, height: 800 });
+    await openLibrary(page);
+    await page.getByRole("button", { name: es.filters.filters, exact: true }).click();
+    await expect(page.getByRole("group", { name: es.filters.type, exact: true })).toBeVisible();
+    await expectNoHorizontalScroll(page, 320);
+    const small = await page.$$eval("[data-sala-library] button, [data-sala-library] nav a, [data-sala-library] select", (els) =>
+      els
+        .filter((el) => !el.closest("[data-sala-library-grid]") && (el as HTMLElement).offsetParent !== null)
+        .map((el) => ({ text: el.textContent?.trim(), h: el.getBoundingClientRect().height }))
+        .filter((r) => r.h < 44)
+    );
+    expect(small, "controles de menos de 44 px").toEqual([]);
+  });
+
+  test("movimiento reducido: el panel aparece sin animación", async ({ page }) => {
+    await page.emulateMedia({ reducedMotion: "reduce" });
+    await openLibrary(page);
+    await page.getByRole("button", { name: es.filters.filters, exact: true }).click();
+    const animation = await page.locator("[data-sala-library-filters]").evaluate((el) => getComputedStyle(el).animationName);
+    expect(animation).toBe("none");
   });
 });
