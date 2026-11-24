@@ -249,6 +249,19 @@
     "fetchError": {
       "generic": "Ahora mismo no llegamos a los catálogos. Reintenta en un minuto.",
       "rateLimit": "Hay mucha gente consultando. Dale unos segundos y reintenta."
+    },
+    "sala": {
+      "searchLabel": "Buscar en el catálogo",
+      "clearSearch": "Borrar la búsqueda",
+      "resultsFor": "Resultados para «{query}»",
+      "gridLabel": "Obras",
+      "loading": "Cargando obras",
+      "results": "{count, plural, =0 {Sin resultados} one {# obra} other {# obras}}",
+      "errorTitle": "No se ha podido cargar Descubrir",
+      "retry": "Reintentar",
+      "emptySearch": "No encontramos nada para «{query}»",
+      "emptySearchHint": "Prueba con otras palabras o con otro tipo.",
+      "emptyFiltersHint": "Quita algún filtro para ver más obras."
     }
   },
   "search": {

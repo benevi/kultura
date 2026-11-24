@@ -1,4 +1,6 @@
 import type { Metadata } from "next";
+import { getTranslations } from "next-intl/server";
+import { salaDescubrirEnabled } from "@/lib/flags/sala";
 import { DiscoverClient } from "./DiscoverClient";
 
 interface SearchParams {
@@ -33,6 +35,21 @@ export default async function DiscoverPage({ searchParams }: Props) {
   const page = Math.max(1, parseInt(resolvedSearchParams.page ?? "1", 10) || 1);
   const q = resolvedSearchParams.q?.trim() ?? "";
 
+  // Fase 8.5 D1: Descubrir en «Sala» (bandera SALA_DESCUBRIR: 0, prueba o 1).
+  // Los textos de su zona de avisos, los mismos que en la ficha y la
+  // biblioteca: van por aquí para no mandar todo `media_detail` a cada página
+  // con sesión (REN-5).
+  const tMedia = (await salaDescubrirEnabled()) ? await getTranslations("media_detail") : null;
+  const sala = tMedia
+    ? {
+        toastLabels: {
+          region: tMedia("salaToastRegion"),
+          dismiss: tMedia("salaToastDismiss"),
+          hint: tMedia("salaToastHint"),
+        },
+      }
+    : null;
+
   return (
     <main className="page-grid py-8">
       <DiscoverClient
@@ -40,6 +57,7 @@ export default async function DiscoverPage({ searchParams }: Props) {
         currentPage={page}
         currentQuery={q}
         quickAdd={process.env.QUICK_ADD === "1"}
+        sala={sala}
       />
     </main>
   );

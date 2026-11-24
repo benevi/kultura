@@ -29,6 +29,9 @@ const A11Y_ENV = {
   // Biblioteca con «Sala» (fase 8.5 B1): igual, `sala-biblioteca.spec.ts`
   // entra con la cookie y `SALA_BIBLIOTECA=1` la enseña en todos los specs.
   SALA_BIBLIOTECA: process.env.SALA_BIBLIOTECA || "prueba",
+  // Descubrir con «Sala» (fase 8.5 D1): igual, `sala-descubrir.spec.ts`
+  // entra con la cookie y `SALA_DESCUBRIR=1` la enseña en todos los specs.
+  SALA_DESCUBRIR: process.env.SALA_DESCUBRIR || "prueba",
   NODE_OPTIONS: `--require ${path.join(ROOT, "tests/e2e/a11y/offline-fetch.cjs")}`,
 };
 

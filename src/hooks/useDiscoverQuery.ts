@@ -7,7 +7,7 @@
 // única fuente de verdad y el servidor aplica todos los filtros.
 // ============================================================
 
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import type { MediaItem } from "@/types/media";
 import type { DiscoverResult } from "@/lib/api/discover";
 import { ApiError, apiFetch } from "@/lib/api/client";
@@ -32,6 +32,8 @@ export interface DiscoverQueryState {
   totalPages: number | null;
   fetchErrorKind: DiscoverResult["fetchErrorKind"];
   loading: boolean;
+  /** Vuelve a pedir la misma página (el «Reintentar» del error, fase 8.5 D1). */
+  retry: () => void;
 }
 
 export function useDiscoverQuery({
@@ -47,6 +49,8 @@ export function useDiscoverQuery({
   const [totalPages, setTotalPages] = useState<number | null>(1);
   const [fetchErrorKind, setFetchErrorKind] = useState<DiscoverResult["fetchErrorKind"]>(null);
   const [loading, setLoading] = useState(true);
+  // Cada «Reintentar» sube el contador y el efecto vuelve a pedir.
+  const [attempt, setAttempt] = useState(0);
   // El aviso de fin no es una dependencia del fetch: cambiarlo no re-pide.
   const settled = useRef(onSettled);
   settled.current = onSettled;
@@ -85,7 +89,8 @@ export function useDiscoverQuery({
     return () => {
       cancelled = true;
     };
-  }, [type, page, filterQuery, query, locale]);
+  }, [type, page, filterQuery, query, locale, attempt]);
 
-  return { items, hasMore, totalPages, fetchErrorKind, loading };
+  const retry = useCallback(() => setAttempt((n) => n + 1), []);
+  return { items, hasMore, totalPages, fetchErrorKind, loading, retry };
 }

@@ -21,6 +21,8 @@ import { isDiscoverType } from "@/lib/discover/discover-config";
 import { useFilterGroups } from "@/hooks/useFilterGroups";
 import { DiscoverToolbar } from "./DiscoverToolbar";
 import { DiscoverResults } from "./DiscoverResults";
+import { SalaDiscoverViewLazy } from "@/components/discover/sala/SalaDiscoverViewLazy";
+import type { SalaDiscoverViewProps } from "@/components/discover/sala/SalaDiscoverView";
 
 export interface DiscoverClientProps {
   currentType: string;
@@ -32,9 +34,14 @@ export interface DiscoverClientProps {
   currentQuery?: string;
   /** Fase 8.2 (bandera QUICK_ADD, la lee el servidor): «+» en las tarjetas. */
   quickAdd?: boolean;
+  /**
+   * Fase 8.5 D1 (bandera SALA_DESCUBRIR, la lee el servidor): Descubrir en
+   * «Sala» (buscador, tipos, rejilla y paginación). `null`: la de hoy.
+   */
+  sala?: Pick<SalaDiscoverViewProps, "toastLabels"> | null;
 }
 
-export function DiscoverClient({ currentType, currentPage, currentQuery = "", quickAdd = false }: DiscoverClientProps) {
+export function DiscoverClient({ currentType, currentPage, currentQuery = "", quickAdd = false, sala = null }: DiscoverClientProps) {
   const t = useTranslations("discover");
   const locale = useLocale();
   const type: DiscoverType = isDiscoverType(currentType) ? currentType : "movie";
@@ -44,7 +51,7 @@ export function DiscoverClient({ currentType, currentPage, currentQuery = "", qu
   // "Sorpréndeme": un ítem al azar de la página actual; se suelta al llegar
   // otra página (pertenece a la que se estaba viendo).
   const [randomItem, setRandomItem] = useState<MediaItem | null>(null);
-  const { items, hasMore, totalPages, fetchErrorKind, loading } = useDiscoverQuery({
+  const { items, hasMore, totalPages, fetchErrorKind, loading, retry } = useDiscoverQuery({
     type,
     page: currentPage,
     filterQuery: url.filterQuery,
@@ -56,6 +63,37 @@ export function DiscoverClient({ currentType, currentPage, currentQuery = "", qu
   function pickRandom() {
     if (items.length === 0) return;
     setRandomItem(items[Math.floor(Math.random() * items.length)]);
+  }
+
+  // Con «Sala» (D1), su vista sustituye a toda la pantalla; el estado sigue aquí.
+  if (sala) {
+    return (
+      <SalaDiscoverViewLazy
+        type={type}
+        query={currentQuery}
+        isSearching={url.isSearching}
+        loading={loading}
+        items={items}
+        fetchErrorKind={fetchErrorKind}
+        onRetry={retry}
+        randomItem={randomItem}
+        onRandom={pickRandom}
+        onClearRandom={() => setRandomItem(null)}
+        filterGroups={filterGroups}
+        activeFilters={url.activeFilters}
+        hasActiveFilters={url.hasActiveFilters}
+        onFilterChange={url.changeFilter}
+        onSearch={url.submitSearch}
+        onClearSearch={url.resetToCatalog}
+        onTypeChange={url.changeType}
+        currentPage={currentPage}
+        hasMore={hasMore}
+        totalPages={totalPages}
+        onPageChange={url.goToPage}
+        quickAdd={quickAdd}
+        toastLabels={sala.toastLabels}
+      />
+    );
   }
 
   return (
