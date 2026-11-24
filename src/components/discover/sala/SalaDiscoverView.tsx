@@ -19,7 +19,8 @@
 //   búsqueda con otra ni × en el aleatorio: «Sorpréndeme» se apaga pulsándolo.
 // - **Error anunciado:** región `alert` montada siempre; el aviso entra en
 //   ella, con «Reintentar».
-// - **`aria-pressed`** en lo que alterna: los tipos y «Sorpréndeme».
+// - **`aria-pressed`** en lo que alterna: los tipos y «Sorpréndeme». En el
+//   móvil los tipos van en un `<select>` nativo (Víctor, #299).
 // - **Resultados anunciados:** la lista dice «Cargando obras» y, al acabar,
 //   «12 obras» (`SalaWorkList`); el aleatorio, por su propia región.
 // ============================================================
@@ -35,6 +36,7 @@ import type { DiscoverResult } from "@/lib/api/discover";
 import { TYPE_ORDER, type DiscoverType } from "@/lib/discover/type-filters";
 import { googleBooksVolumeId } from "@/lib/media/google-books";
 import { FilterBar, type FilterGroup } from "@/components/ui/FilterBar";
+import { SalaSelect } from "@/components/sala/SalaSelect";
 import { ELLIPSIS, buildPageWindow } from "@/components/ui/Pagination";
 import { GoogleBooksAttribution } from "@/components/media/GoogleBooksAttribution";
 import { SalaButton } from "@/components/sala/SalaButton";
@@ -179,7 +181,23 @@ function View(props: Omit<SalaDiscoverViewProps, "toastLabels">) {
         </p>
       ) : null}
 
-      <div role="group" aria-labelledby={typeId} className="mb-4">
+      {/* Tipo (Víctor, #299): en el móvil, un `<select>` nativo como los de la
+          biblioteca; desde `sm`, los botones con `aria-pressed`. Mismo manejador
+          y mismo parámetro de la URL: solo cambia lo que se ve (CSS). */}
+      <SalaSelect
+        data-sala-discover-type-select=""
+        label={tF("type")}
+        value={type}
+        onChange={(e) => onTypeChange(e.target.value)}
+        fieldClassName="mb-4 w-full sm:hidden"
+      >
+        {TYPE_ORDER.map((tp) => (
+          <option key={tp} value={tp}>
+            {tF(tp)}
+          </option>
+        ))}
+      </SalaSelect>
+      <div role="group" aria-labelledby={typeId} data-sala-discover-type-toggles="" className="mb-4 hidden sm:block">
         <p id={typeId} className="mb-2 sala-type-label">
           {tF("type")}
         </p>

@@ -101,7 +101,7 @@ describe('SalaDiscoverView', () => {
     expect(screen.getAllByRole('button', { name: 'discover.sala.clearSearch' })).toHaveLength(1)
     expect(screen.queryByRole('button', { name: 'filters.reset' })).toBeNull()
     expect(screen.getByText('discover.sala.resultsFor:{"query":"matrix"}')).toBeInTheDocument()
-    expect(screen.getByRole('search')).toContainElement(screen.getByRole('combobox'))
+    expect(screen.getByRole('search')).toContainElement(screen.getByRole('combobox', { name: 'discover.sala.searchLabel' }))
   })
 
   it('borrar la búsqueda vuelve al catálogo y deja el foco en el campo', () => {
@@ -109,8 +109,8 @@ describe('SalaDiscoverView', () => {
     render(<SalaDiscoverView {...p} />)
     fireEvent.click(screen.getByRole('button', { name: 'discover.sala.clearSearch' }))
     expect(p.onClearSearch).toHaveBeenCalled()
-    expect(screen.getByRole('combobox')).toHaveFocus()
-    expect(screen.getByRole('combobox')).toHaveValue('')
+    expect(screen.getByRole('combobox', { name: 'discover.sala.searchLabel' })).toHaveFocus()
+    expect(screen.getByRole('combobox', { name: 'discover.sala.searchLabel' })).toHaveValue('')
   })
 
   it('el campo tiene etiqueta a la vista y Enter busca', () => {
@@ -120,6 +120,22 @@ describe('SalaDiscoverView', () => {
     fireEvent.change(input, { target: { value: 'dune' } })
     fireEvent.keyDown(input, { key: 'Enter' })
     expect(p.onSearch).toHaveBeenCalledWith('dune')
+  })
+
+  it('tipo en el móvil: un select nativo con las mismas opciones y el mismo manejador', () => {
+    const p = props()
+    render(<SalaDiscoverView {...p} />)
+    const select = screen.getByRole('combobox', { name: 'filters.type' })
+    expect(select).toHaveValue('movie')
+    const group = screen.getByRole('group', { name: 'filters.type' })
+    const options = within(select).getAllByRole('option').map((o) => o.textContent)
+    const buttons = within(group).getAllByRole('button').map((b) => b.textContent)
+    expect(options).toEqual(buttons)
+    // Uno u otro según el ancho, solo con CSS.
+    expect(select.closest('.sm\\:hidden')).not.toBeNull()
+    expect(group).toHaveClass('hidden', 'sm:block')
+    fireEvent.change(select, { target: { value: 'tv' } })
+    expect(p.onTypeChange).toHaveBeenCalledWith('tv')
   })
 
   it('aria-pressed en los tipos y en «Sorpréndeme»', () => {

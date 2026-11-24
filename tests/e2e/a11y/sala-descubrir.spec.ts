@@ -153,7 +153,9 @@ test.describe("con «Sala»", () => {
     await expect(page.getByRole("alert").filter({ hasText: es.discover.sala.errorTitle })).toHaveCount(0);
   });
 
-  test("aria-pressed: los tipos y «Sorpréndeme», que se apaga pulsándolo otra vez", async ({ page }) => {
+  test("aria-pressed: los tipos (desde sm) y «Sorpréndeme», que se apaga pulsándolo otra vez", async ({ page }) => {
+    // Los botones de tipo, desde 640 px; por debajo, el desplegable (prueba de 320 y 375 px).
+    await page.setViewportSize({ width: 1024, height: 800 });
     await mockDiscover(page);
     await openDiscover(page, "/es/discover?type=movie");
     const types = page.getByRole("group", { name: es.filters.type, exact: true });
@@ -171,6 +173,7 @@ test.describe("con «Sala»", () => {
     await expect(random).toHaveAttribute("aria-pressed", "false");
     await expect(page.getByRole("list", { name: GRID }).getByRole("listitem")).toHaveCount(3);
 
+    await expect(page.getByRole("combobox", { name: es.filters.type, exact: true })).toBeHidden();
     await types.getByRole("button", { name: es.filters.tv, exact: true }).click();
     await expect(page).toHaveURL(/[?&]type=tv/);
   });
@@ -194,20 +197,41 @@ test.describe("con «Sala»", () => {
     expect(ring, "la tarjeta enfocada lleva su anillo").toBe(true);
   });
 
-  test("320 px: sin scroll horizontal y objetivos de 44 px o más", async ({ page }) => {
-    await page.setViewportSize({ width: 320, height: 800 });
-    await mockDiscover(page, { hasMore: true });
-    await openDiscover(page);
-    await expectNoHorizontalScroll(page, 320);
-    const small = await page.$$eval(`${VIEW} button, ${VIEW} input`, (els) =>
-      els
-        // Los filtros siguen siendo los de hoy hasta D2.
-        .filter((el) => !el.closest('[role="group"]:not([aria-labelledby])') && (el as HTMLElement).offsetParent !== null)
-        .map((el) => ({ text: el.textContent?.trim() || el.getAttribute("aria-label"), h: el.getBoundingClientRect().height, w: el.getBoundingClientRect().width }))
-        .filter((r) => r.h < 44 || r.w < 44)
-    );
-    expect(small, "controles de menos de 44 px").toEqual([]);
-  });
+  for (const width of [320, 375]) {
+    test(`${width} px: tipo en un desplegable, sin scroll horizontal, axe limpio y objetivos de 44 px o más`, async ({ page }) => {
+      await page.setViewportSize({ width, height: 800 });
+      await mockDiscover(page, { hasMore: true });
+      await openDiscover(page, "/es/discover?type=movie");
+      await expectNoHorizontalScroll(page, width);
+
+      // En el móvil, el tipo es un `<select>` nativo con etiqueta a la vista; los botones, ocultos.
+      const select = page.getByRole("combobox", { name: es.filters.type, exact: true });
+      await expect(select).toBeVisible();
+      await expect(select).toHaveValue("movie");
+      await expect(page.getByRole("group", { name: es.filters.type, exact: true })).toBeHidden();
+      await expect(page.locator(`${VIEW} label`, { hasText: es.filters.type })).toBeVisible();
+
+      const small = await page.$$eval(`${VIEW} button, ${VIEW} input, ${VIEW} select`, (els) =>
+        els
+          // Los filtros siguen siendo los de hoy hasta D2.
+          .filter((el) => !el.closest('[role="group"]:not([aria-labelledby])') && (el as HTMLElement).offsetParent !== null)
+          .map((el) => ({ text: el.textContent?.trim() || el.getAttribute("aria-label"), h: el.getBoundingClientRect().height, w: el.getBoundingClientRect().width }))
+          .filter((r) => r.h < 44 || r.w < 44)
+      );
+      expect(small, "controles de menos de 44 px").toEqual([]);
+      await expectNoBlockingViolations(page, `Descubrir con «Sala» a ${width} px`);
+
+      // Teclado: el desplegable es una parada con foco visible y cambia el tipo de la URL.
+      const stops = await walkTab(page, 30);
+      const stop = stops.find((s) => s.tag === "select");
+      expect(stop, JSON.stringify(stops)).toBeTruthy();
+      expect(stop!.visible && stop!.indicator, "el desplegable, a la vista y con foco visible").toBe(true);
+      await select.focus();
+      await select.selectOption("tv");
+      await expect(page).toHaveURL(/[?&]type=tv/);
+      await expect(page.getByRole("combobox", { name: es.filters.type, exact: true })).toHaveValue("tv");
+    });
+  }
 
   test("movimiento reducido: los esqueletos de carga, quietos", async ({ page }) => {
     await page.emulateMedia({ reducedMotion: "reduce" });
