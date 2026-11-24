@@ -431,7 +431,22 @@
     "quickAddRateLimited": "Demasiados seguidos. Espera un momento y reintenta.",
     "quickEdit": "Cambiar estado y nota de «{title}»",
     "gridLabel": "Tus títulos",
-    "cardScore": "{scale, select, ten {Tu nota: {value} de 10} other {Tu nota: {value} de 5}}"
+    "cardScore": "{scale, select, ten {Tu nota: {value} de 10} other {Tu nota: {value} de 5}}",
+    "sala": {
+      "statusFilter": "Filtrar por estado",
+      "filtersActive": "{count, plural, one {Filtros · #} other {Filtros · #}}",
+      "sortLabel": "Ordenar por",
+      "sort": {
+        "recent": "Añadidos hace menos",
+        "title": "Título (A-Z)",
+        "year": "Año (más nuevos primero)",
+        "rating": "Tu nota (más alta primero)"
+      },
+      "scoreAny": "Cualquier nota",
+      "scoreTop": "5 estrellas",
+      "scoreMin": "{stars, plural, one {# estrella o más} other {# estrellas o más}}",
+      "favoritesOnly": "Solo favoritos"
+    }
   },
   "diary": {
     "title": "Diario",
