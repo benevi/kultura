@@ -1666,7 +1666,7 @@
     "privacy": {
       "title": "Privacy Policy",
       "metaDescription": "What data KULTURA processes, why, with which providers, for how long and how to exercise your rights, in plain words.",
-      "updated": "Last updated: 17 November 2026",
+      "updated": "Last updated: 24 November 2026",
       "version": "Version 2026-10",
       "summary": {
         "s1": "KULTURA is made by me, Víctor Franco, as a free personal project with no ads. For anything about your data, write to <mail>{email}</mail>.",
@@ -1739,7 +1739,7 @@
             "github": "<b>GitHub</b> (GitHub Inc., USA): stores the backups, which are encrypted before they leave, so GitHub can't read them."
           },
           "p2": "Several are US companies or may access data from there to provide support. These <b>international transfers</b> rely on the EU-US Data Privacy Framework where the company is certified and, in any case, on the European Commission's standard contractual clauses included in their processing terms (Arts. 45 and 46 GDPR).",
-          "p3": "Title information comes from public catalogs: TMDB (with JustWatch data for “Where to watch”), RAWG, Steam, AniList, MangaDex, Open Library, Google Books and Comic Vine. KULTURA's server makes these requests with the search text, without your IP or your account. Covers are shown in two ways: many load directly from those catalogs' image servers, which receive your IP as with any website you visit; others go through Vercel's image service, which downloads them, resizes them for your screen and keeps a temporary cached copy, which expires on its own, to serve them faster. In that case the catalog does not receive your IP. Link-sharing images may include the title's cover.",
+          "p3": "Title information comes from public catalogs: TMDB (with JustWatch data for “Where to watch”), RAWG, Steam, AniList, MangaDex, Open Library, Google Books and Comic Vine. To find the same title in several catalogs (for example, an AniList anime and its TMDB page), KULTURA queries Wikidata. KULTURA's server makes these requests with the search text or the title's public identifier, without your IP or your account. Covers are shown in two ways: many load directly from those catalogs' image servers, which receive your IP as with any website you visit; others go through Vercel's image service, which downloads them, resizes them for your screen and keeps a temporary cached copy, which expires on its own, to serve them faster. In that case the catalog does not receive your IP. Link-sharing images may include the title's cover.",
           "p4": "Trailers on some title pages come from YouTube (Google): the trailer loads from youtube-nocookie.com only when you press play; from that moment, Google's policy applies.",
           "p5": "No provider receives data for advertising, and I don't sell or share data with anyone unless the law requires it."
         },
@@ -1844,7 +1844,7 @@
         },
         "thirdparty": {
           "title": "Third-party content",
-          "p1": "Title information (synopses, covers, ratings and availability) comes from public catalogs: TMDB, JustWatch, RAWG, Steam, AniList, MangaDex, Open Library, Google Books and Comic Vine. It belongs to its owners and may contain errors. This product uses the TMDB API but is not endorsed or certified by TMDB.",
+          "p1": "Title information (synopses, covers, ratings and availability) comes from public catalogs: TMDB, JustWatch, RAWG, Steam, AniList, MangaDex, Open Library, Google Books and Comic Vine, and links between catalogs come from Wikidata. It belongs to its owners and may contain errors. This product uses the TMDB API but is not endorsed or certified by TMDB.",
           "p2": "If you think something infringes your copyright, use the <report>report form</report> or write to me."
         },
         "ai": {
