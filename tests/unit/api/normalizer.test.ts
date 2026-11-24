@@ -132,7 +132,7 @@ const OPEN_LIBRARY_FIXTURE: OpenLibraryDoc = {
   cover_i: 8231856,
   language: ["eng", "spa"],
   publisher: ["Scribner", "Penguin"],
-  subject: ["American fiction", "Novels", "Jazz Age", "Tragedy", "Love", "Wealth"],
+  subject: ["American fiction", "Romance", "Jazz Age", "Gatsby, Jay (Fictitious character)", "Historical", "Wealth"],
   ebook_access: "borrowable",
 };
 
@@ -543,10 +543,8 @@ describe("normalizeBookOpenLibrary", () => {
     expect(result.year).toBe(1925);
   });
 
-  it("genres es subset de subjects (máx 5)", () => {
-    expect(result.genres).toContain("American fiction");
-    expect(result.genres).toHaveLength(5);
-    expect(result.genres).not.toContain("Wealth");
+  it("genres son solo los subjects que son géneros reconocidos", () => {
+    expect(result.genres).toEqual(["Romance", "Historical"]);
   });
 
   it("rating y ratingSource undefined (valoración oculta para book)", () => {
