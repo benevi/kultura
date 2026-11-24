@@ -12,13 +12,15 @@ import { IconLibrary, IconSearch } from '@/components/icons'
 import { SegmentedControl } from '@/components/ui/SegmentedControl'
 import { DiaryList } from '@/components/library/DiaryList'
 import { LibraryQuickEdit } from '@/components/library/LibraryQuickEdit'
-import { SalaLibraryGridLazy } from '@/components/library/sala/SalaLibraryGridLazy'
+import { SalaLibraryViewLazy } from '@/components/library/sala/SalaLibraryViewLazy'
 import type { SalaLibraryGridProps } from '@/components/library/sala/SalaLibraryGrid'
+import type { LibraryEntryWithProgress } from '@/lib/library/progress'
 import type { DiaryLog, LibraryEntry, RatingScale } from '@/types/library'
 import type { MediaItem, MediaType } from '@/types/media'
 
 interface LibraryClientProps {
-  entries: LibraryEntry[]
+  /** Con el progreso de cada título (F-27), que la rejilla de «Sala» enseña (B2). */
+  entries: LibraryEntryWithProgress[]
   /**
    * F-24: diario y escala de notas. `null` si no se pudo leer el diario:
    * la Biblioteca de siempre.
@@ -27,8 +29,9 @@ interface LibraryClientProps {
   /** Fase 8.2 (bandera LIBRARY_QUICK_EDIT, la lee el servidor): estado y nota desde la tarjeta. */
   quickEdit?: boolean
   /**
-   * Fase 8.5 B1 (bandera SALA_BIBLIOTECA, la lee el servidor): la rejilla en
-   * «Sala», con la edición rápida en su diálogo. `null`: la de hoy.
+   * Fase 8.5 B1 y B2 (bandera SALA_BIBLIOTECA, la lee el servidor): la
+   * Biblioteca en «Sala» (cabecera, filtros, orden y rejilla con la edición
+   * rápida en su diálogo). `null`: la de hoy.
    */
   sala?: Pick<SalaLibraryGridProps, 'toastLabels'> | null
 }
@@ -154,7 +157,7 @@ export function LibraryClient({ entries: serverEntries, diary = null, quickEdit 
 
   // Lo guardado desde una tarjeta se ve al momento (contadores y filtros);
   // el `refresh` trae después la lista del servidor.
-  const [saved, setSaved] = useState<Record<string, LibraryEntry>>({})
+  const [saved, setSaved] = useState<Record<string, LibraryEntryWithProgress>>({})
   const entries = useMemo(() => serverEntries.map((e) => saved[e.mediaId] ?? e), [serverEntries, saved])
   const byId = useMemo(() => new Map(entries.map((e) => [e.mediaId, e])), [entries])
   function handleSaved(entry: LibraryEntry) {
@@ -167,10 +170,12 @@ export function LibraryClient({ entries: serverEntries, diary = null, quickEdit 
   const currentScore = searchParams.get('score') ?? 'all'
   const onlyFavorites = diary !== null && searchParams.get('fav') === '1'
   const view = diary !== null && searchParams.get('view') === 'diary' ? 'diary' : 'collection'
+  // B2: el orden solo lo usa «Sala»; con la bandera apagada no hay `sort` en la URL.
+  const currentSort = searchParams.get('sort') ?? 'recent'
   // F-28: la escala se elige en Ajustes; aquí solo se usa para pintar el diario.
   const scale: RatingScale = diary?.scale ?? 'stars'
 
-  function push(next: Record<string, string>) {
+  function hrefFor(next: Record<string, string>) {
     const params = new URLSearchParams()
     const merged = {
       type: currentType,
@@ -178,6 +183,7 @@ export function LibraryClient({ entries: serverEntries, diary = null, quickEdit 
       score: currentScore,
       fav: onlyFavorites ? '1' : 'all',
       view,
+      sort: currentSort,
       ...next,
     }
     if (merged.view === 'diary') params.set('view', 'diary')
@@ -185,8 +191,13 @@ export function LibraryClient({ entries: serverEntries, diary = null, quickEdit 
     if (merged.status !== 'all') params.set('status', merged.status)
     if (merged.score !== 'all') params.set('score', merged.score)
     if (merged.fav === '1') params.set('fav', '1')
+    if (merged.sort !== 'recent') params.set('sort', merged.sort)
     const qs = params.toString()
-    router.push(`/library${qs ? `?${qs}` : ''}`)
+    return `/library${qs ? `?${qs}` : ''}`
+  }
+
+  function push(next: Record<string, string>) {
+    router.push(hrefFor(next))
   }
 
   function handleFilterChange(key: string, value: string) {
@@ -224,6 +235,34 @@ export function LibraryClient({ entries: serverEntries, diary = null, quickEdit 
 
   const hasActiveFilters =
     currentType !== 'all' || currentStatus !== 'all' || currentScore !== 'all' || onlyFavorites
+
+  // Fase 8.5 B2: con «Sala», la Biblioteca entera es suya (sin código de
+  // «Sala» en esta página con la bandera apagada: llega por next/dynamic).
+  if (sala) {
+    return (
+      <SalaLibraryViewLazy
+        view={view}
+        viewHrefs={diary ? { collection: hrefFor({ view: 'collection' }), diary: hrefFor({ view: 'diary' }) } : null}
+        diary={diary && view === 'diary' ? <DiaryList logs={diary.logs} scale={scale} /> : null}
+        totalCount={entries.length}
+        counts={counts}
+        filters={{ type: currentType, status: currentStatus, score: currentScore, favorites: onlyFavorites, sort: currentSort }}
+        // Filtrar y ordenar es cosa del cliente (la página ya trae toda la
+        // biblioteca): `pushState` deja el estado en la URL y en el historial
+        // (Next lo sincroniza con `useSearchParams`) sin ir al servidor. Con
+        // `router.push` la página se volvía a montar (`loading.tsx`): el foco
+        // salía del filtro pulsado y el panel se cerraba.
+        onFilter={(next) => {
+          const href = hrefFor(next)
+          window.history.pushState(null, '', `${window.location.pathname}${href.slice('/library'.length)}`)
+        }}
+        entries={filtered}
+        scale={scale}
+        onSaved={handleSaved}
+        toastLabels={sala.toastLabels}
+      />
+    )
+  }
 
   // F-24: vista (colección / diario), solo con el diario activo. La escala de
   // notas se cambia en Ajustes (F-28).
@@ -378,11 +417,8 @@ export function LibraryClient({ entries: serverEntries, diary = null, quickEdit 
         <EmptyFiltered t={t} tF={tF} onReset={resetFilters} />
       )}
 
-      {/* Grid: con «Sala» (B1), su rejilla y su edición rápida */}
-      {filtered.length > 0 && sala && (
-        <SalaLibraryGridLazy entries={filtered} scale={scale} onSaved={handleSaved} toastLabels={sala.toastLabels} />
-      )}
-      {filtered.length > 0 && !sala && (
+      {/* Grid */}
+      {filtered.length > 0 && (
         <MediaGrid
           items={mediaItems}
           showType

@@ -434,7 +434,23 @@
     "quickAddRateLimited": "Too many in a row. Wait a moment and try again.",
     "quickEdit": "Change status and rating of “{title}”",
     "gridLabel": "Your titles",
-    "cardScore": "{scale, select, ten {Your rating: {value} out of 10} other {Your rating: {value} out of 5}}"
+    "cardScore": "{scale, select, ten {Your rating: {value} out of 10} other {Your rating: {value} out of 5}}",
+    "sala": {
+      "statusFilter": "Filter by status",
+      "filtersActive": "{count, plural, one {Filters · #} other {Filters · #}}",
+      "sortLabel": "Sort by",
+      "sort": {
+        "recent": "Recently added",
+        "title": "Title (A-Z)",
+        "year": "Year (newest first)",
+        "rating": "Your rating (highest first)"
+      },
+      "scoreLabel": "Minimum rating",
+      "scoreAny": "Any",
+      "scoreTop": "5 stars",
+      "scoreMin": "{stars, plural, one {# star or more} other {# stars or more}}",
+      "favoritesOnly": "Favorites only"
+    }
   },
   "diary": {
     "title": "Diary",
