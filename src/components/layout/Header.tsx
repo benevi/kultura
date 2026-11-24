@@ -20,7 +20,7 @@ import { Logo } from "@/components/layout/Logo";
 export async function Header({ locale }: { locale?: string } = {}) {
   const lang = locale ?? (await getLocale());
   const t = await getTranslations({ locale: lang, namespace: "auth" });
-  const compact = "h-9 px-3 text-xs sm:h-10 sm:px-4 sm:text-sm";
+  const compact = "h-9 px-2 min-[360px]:px-3 text-xs sm:h-10 sm:px-4 sm:text-sm";
 
   return (
     <header className="sticky top-0 z-50 bg-surface-default border-b border-surface-border">

@@ -374,7 +374,7 @@ export function LoginPage({ locale }: LoginPageProps) {
               href={modeHref(mode === "login" ? "register" : "login")}
               className={`${FOOT_LINK} font-bold text-accent-pink`}
             >
-              {mode === "login" ? tAuth("signUpAction") : tAuth("signInAction")}
+              {mode === "login" ? tAuth("signUpAction") : tAuth("signIn")}
             </Link>
           </>
         )}
