@@ -1746,12 +1746,16 @@
         },
         "analytics": {
           "title": "Analítica y cookies",
-          "p1": "No hay banner de cookies porque KULTURA no usa cookies que necesiten tu consentimiento:",
+          "p1": "No hay banner de cookies porque KULTURA no usa cookies ni almacenamiento del navegador que necesiten tu consentimiento:",
           "list": {
-            "session": "<b>Sesión</b> (Supabase): cookies estrictamente necesarias para mantenerte conectado.",
-            "locale": "<b>Idioma</b> (NEXT_LOCALE): recuerda el idioma que eliges.",
+            "session": "<b>Sesión</b> (Supabase, cookies sb-…-auth-token): estrictamente necesarias para mantenerte conectado. Se borran al cerrar sesión y duran como mucho 400 días.",
+            "locale": "<b>Idioma</b> (NEXT_LOCALE): recuerda el idioma que eliges hasta que cierras el navegador.",
             "sala": "<b>Prueba de «Sala»</b> (kultura_sala_prueba): solo se pone si abres el enlace de prueba que doy a algunas personas para ver el diseño nuevo de algunas pantallas (por ahora, la ficha de cada título) antes de que llegue a todos. Vale «1»: no guarda ningún dato tuyo ni sirve para seguirte, y solo la lee el servidor de KULTURA. Dura 60 días; para quitarla antes, abre la dirección /api/sala-prueba?on=0 de esta web o borra las cookies de este sitio.",
-            "storage": "<b>Almacenamiento local</b>: durante el registro, el navegador guarda un momento el personaje que eliges y lo borra al terminar el alta."
+            "storage": "<b>Almacenamiento local</b>: durante el registro, el navegador guarda un momento el personaje que eliges y lo borra al terminar el alta.",
+            "import": "<b>Avance de una importación</b> (almacenamiento local): si importas tu biblioteca de otro servicio, el navegador guarda lo que ya se ha emparejado (título y año de cada obra, nunca el archivo) para seguir por donde ibas si cierras la página. Va ligado a tu cuenta, deja de usarse pasada una semana y se borra con «Empezar de cero».",
+            "install": "<b>Aviso de instalar la app</b> (almacenamiento local): cuántas visitas llevas en este navegador, cuándo fue la última, si pulsaste «Ahora no» y si ya la instalaste, para ofrecerla en buen momento y no insistir. No caduca: se borra al borrar los datos de este sitio en el navegador.",
+            "push": "<b>Oferta de notificaciones</b> (almacenamiento local y de sesión): si pulsas «Ahora no», el navegador lo recuerda para no volver a ofrecértelas; además, mientras dura la visita, recuerda que ya se ofrecieron para hacerlo como mucho una vez.",
+            "cache": "<b>Caché de la app</b>: con la sesión iniciada, el navegador guarda los archivos de la web (código, estilos y fuentes) y una página «sin conexión», para cargar más rápido y avisarte si no hay red. Nunca guarda páginas con tus datos."
           },
           "p2": "Las visitas se cuentan con Vercel Web Analytics, que no usa cookies: cuenta páginas vistas con una huella temporal que se descarta en 24 horas y no permite identificarte.",
           "p3": "Además, KULTURA puede registrar eventos de uso de las personas registradas (por ejemplo, el alta, el primer título guardado o una invitación aceptada) y por dónde llegaste al registrarte (un enlace de invitación o de una campaña), para estudiarlos de forma agregada, sin cookies y sin rastreo entre webs."
